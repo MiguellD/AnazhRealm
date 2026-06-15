@@ -6,8 +6,14 @@
 > Anblick vergiftete (magenta Himmel `[0.65,0.35,0.86]`), ist SUBTIL (V18.236, EIN
 > Knopf `auraTintStrength` → Himmel blau `[0.19,0.21,0.61]`). Ω-OPSIS war in V18.226–235
 > weitgehend GEBAUT, aber **UN-GELANDET** (der Drift: „fertig" headless-grün, Welt bei
-> 10%). **NÄCHSTE:** §7 Sky-Env-Map (PBR-Metalle render schwarz — GEMESSEN keine
-> `scene.environment`) · Laub-Sättigung · der Boden (Ω-O1, der größte Hebel).
+> 10%). **§7 Sky-Env-Map GEBAUT (V18.239, die MECHANIK):** GEMESSEN war die Wurzel keine
+> `scene.environment` → PBR-Metalle render schwarz (sie holen ihre Farbe aus der Reflexion).
+> PMREMGenerator.fromScene ist WebGPU-inkompatibel (greift WebGL-`buffers`); der robuste
+> WebGPU-native Weg ist eine prozedurale Equirekt-Gradient-Env aus der live Himmel-Farbe
+> (`_ensureSkyEnvironment`, lawful: die Env IST der Himmel, kein HDRI), headless als Mechanik
+> bewiesen (`diag-skyenv`: environment gesetzt, kein Crash). **Der LOOK selbst ist AUGEN-bound
+> (Wand 1) — der Schöpfer-Browser richtet.** **NÄCHSTE:** der Boden (Ω-O1, der größte Hebel)
+> · Gras-Klingen (Ω-O4) · Laub-Sättigung (Ω-O9) — alle augen-bound.
 >
 > **DIE FÜNF WÄNDE GEGEN DEN DRIFT (verbindlich, jede Welle):** (1) SEHEN vor
 > behaupten — kein Ω-O „fertig" ohne Schöpfer-Browser-BILD; headless-grün ist NIE

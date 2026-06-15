@@ -1,12 +1,22 @@
 # DER WAHRE BAUPLAN — Ω-PHYSIS
 
-> **STAND (15.06.2026 — DER AKTIVE BOGEN · Gesicht „SEIN / Physik"):** Ω-Φ1 (der
-> Schwerpunkt — der fehlende Grundstein, GEMESSEN 0 Treffer im 67k-System) ist
-> GEBAUT + objektiv bewiesen (V18.238, `_compoundCenterOfMass`, 6 Wände grün,
-> headless-flake-frei — reine Berechnung). **NÄCHSTE Wellen (§8-Reihenfolge):**
-> Ω-Φ2 Stützpolygon+Stabilität (vertieft `spread`) → Ω-Φ3 Steifigkeit+Versagen →
-> Ω-Φ4 Hebel+Schwung → Ω-Φ5 Lastpfad → SÄULE II (der Leser liest die Physik, die
-> Attrappe wird entlarvt — DER Kern) → SÄULE III Grammatik → SÄULE IV Werkstatt.
+> **STAND (15.06.2026 — DER AKTIVE BOGEN · Gesicht „SEIN / Physik"):** SÄULE I (der
+> Schiedsrichter) + SÄULE II (der vertiefte Leser) sind GEBAUT + objektiv bewiesen
+> (V18.238–V18.239, headless-flake-frei — reine Berechnung). **Ω-Φ1** Schwerpunkt
+> (`_compoundCenterOfMass`) · **Ω-Φ2** Stützpolygon+Stabilität (`_supportPolygon`/
+> `_stability`, der SSF — CoM-Höhe über der Basis) · **Ω-Φ3** Steifigkeit+Versagen
+> (`_bendingStiffness`/`_failsUnderLoad`, das Knicken §9#8) · **Ω-Φ4** Hebel+Schwung
+> (`_swingDynamics`) · **Ω-Φ5** Lastpfad+Schneide (`_loadPath`/`_edgeContinuity`).
+> **Ω-L1** die Physik-Achsen im Produkt-Vektor (regressionsfrei — neue Keys, 0 Rollen-
+> Sprung) · **Ω-L2** vehicle/architecture lesen stability/rollable/loadSound (das
+> WAHRHEITS-BAND: ein kopflastiges Fahrzeug liest schwächer; Built-ins domain-fest,
+> GEMESSEN kein Live-Rollen-Drift) · **Ω-L3** AXIS_CLASS (physik/konvention/form) ·
+> **Ω-W1** der Warum-Chip ZITIERT die gerechnete Physik (KONSUM-Beweis). 16/16
+> `diag-physis` + die Bänder `checkBandOmegaPhysisSaeuleI_II` grün. **NÄCHSTE:**
+> SÄULE III Grammatik (Entasis/Kanneluren/Oakeshott — die Schönheit, größer +
+> teils AUGEN-bound) → SÄULE IV Werkstatt-Spiegel (Ω-W2 Optimierung · Ω-W3 Bau-
+> Feedback: instabiles wankt sichtbar). Die Minimal-Wahrheit (§8) — Säule I+II — IST
+> gelandet: das unsichtbare Kugel-Problem der Bedeutungs-Schicht ist geheilt.
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein

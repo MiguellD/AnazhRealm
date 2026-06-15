@@ -13828,6 +13828,73 @@ class AnazhRealm {
         }
     }
 
+    // ═══ Ω-OPSIS · §7 — DIE SKY-ENV-MAP (wahreranblick §8, der „neue Glanz") ═══
+    // Ω-OPSIS-Wurzel GEMESSEN: PBR-Metalle (eisen: metalness ~1) rendern SCHWARZ, weil
+    // es keine `scene.environment` gibt — ein Metall holt seine Farbe AUS der Reflexion,
+    // und ohne Umgebung reflektiert es Nichts. Der lawful Fix: eine prozedurale Sky-Env
+    // (KEIN gemaltes HDRI — ein Auslesewert der HIMMEL-Farbe): ein Gradient-Himmel
+    // (Zenit hell → Horizont → Boden dunkel) aus der live `nebulaColor`, PMREM-gefiltert,
+    // als `scene.environment`. So spiegelt das Metall den ECHTEN Himmel + atmet mit Tag/Nacht.
+    // Defensiv: feature-detected + try/catch → schlägt es fehl, bleibt environment null
+    // (= heutiges Verhalten, kein Crash). Gedrosselt: regeneriert nur bei Farb-Drift, nie pro Frame.
+    _ensureSkyEnvironment(force) {
+        const st = this.state;
+        if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
+        if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
+        // GEMESSEN (diag-skyenv): PMREMGenerator.fromScene greift in WebGL-Interna (`buffers`)
+        // → unter WebGPURenderer (r184) inkompatibel. Der robuste WebGPU-native Weg: eine
+        // prozedurale EQUIREKT-Gradient-Textur (CPU, billig) direkt als scene.environment —
+        // GEMESSEN rendert WebGPU das Env-Node fehlerfrei. Lawful: die Env IST der Himmel
+        // (kein gemaltes HDRI), ein Gradient Zenit→Horizont→Boden aus der live nebulaColor.
+        const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
+        const sky = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
+        const last = st._skyEnvLastColor;
+        if (!force && last && Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) < 0.04) {
+            return true; // env steht + Farbe stabil → nichts regenerieren (Drift-Drossel)
+        }
+        try {
+            const W = 64,
+                H = 32;
+            if (!st._skyEnvTex) {
+                st._skyEnvData = new Uint8Array(W * H * 4);
+                const tex = new THREE.DataTexture(st._skyEnvData, W, H);
+                tex.mapping = THREE.EquirectangularReflectionMapping;
+                tex.colorSpace = THREE.SRGBColorSpace;
+                tex.generateMipmaps = true; // Mip-Kette → raue Metalle blenden die Reflexion weich
+                tex.minFilter = THREE.LinearMipmapLinearFilter;
+                tex.magFilter = THREE.LinearFilter;
+                st._skyEnvTex = tex;
+            }
+            const d = st._skyEnvData;
+            for (let y = 0; y < H; y++) {
+                const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
+                // Boden 0.35× (erd-dunkel) → Horizont 1.0× → Zenit 1.6× (hell) — der Himmel-Auslesewert
+                const fac = v >= 0.5 ? 1.0 + 0.6 * ((v - 0.5) / 0.5) : 0.35 + 0.65 * (v / 0.5);
+                const rr = Math.min(255, sky.r * fac * 255),
+                    gg = Math.min(255, sky.g * fac * 255),
+                    bb = Math.min(255, sky.b * fac * 255);
+                for (let x = 0; x < W; x++) {
+                    const i = (y * W + x) * 4;
+                    d[i] = rr;
+                    d[i + 1] = gg;
+                    d[i + 2] = bb;
+                    d[i + 3] = 255;
+                }
+            }
+            st._skyEnvTex.needsUpdate = true;
+            st.scene.environment = st._skyEnvTex;
+            st._skyEnvLastColor = sky;
+            return true;
+        } catch (err) {
+            this.log(
+                `Ω-OPSIS §7 Sky-Env-Map fehlgeschlagen (${err && err.message}) — environment bleibt null`,
+                "ERROR"
+            );
+            st._skyEnvFailed = true;
+            return false;
+        }
+    }
+
     // ===== ATLAS §06 · KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd =====
     // ### Kreaturen ### V7.42
     removeCreature(creature) {
@@ -49075,19 +49142,29 @@ class AnazhRealm {
             const contrib = (v[axis] || 0) * sig[axis];
             // V18.172-Nachbau-Fund: Beiträge unter 0.05 ERKLÄREN nichts (die
             // Eiche las „Härte 0.0 · Standfläche 0.0" — Rauschen als Begründung).
-            if (Math.abs(contrib) > 0.05) beitraege.push({ axis, contrib });
+            // Ω-W1/Ω-L3 (wahrerbauplan §5): jeder Beitrag trägt seinen GELTUNGSBEREICH
+            // (physik = gerechnete Wahrheit · konvention = Welt-Physik · form = Stellvertreter),
+            // damit der Warum-Chip die GERECHNETE Physik sichtbar von der Konvention trennt.
+            if (Math.abs(contrib) > 0.05)
+                beitraege.push({
+                    axis,
+                    contrib,
+                    cls: (AnazhRealm.AXIS_CLASS && AnazhRealm.AXIS_CLASS[axis]) || "form",
+                });
         }
         if (!beitraege.length) return null;
         beitraege.sort((a, b) => Math.abs(b.contrib) - Math.abs(a.contrib));
-        const text = beitraege
-            .slice(0, 3)
+        const top = beitraege.slice(0, 3);
+        const clsTag = { physik: "gerechnet", konvention: "Welt-Konvention" };
+        const text = top
             .map((p) => {
                 const label = (AnazhRealm.AXIS_LABELS && AnazhRealm.AXIS_LABELS[p.axis]) || p.axis;
+                const tag = clsTag[p.cls] ? ` (${clsTag[p.cls]})` : ""; // Form bleibt unmarkiert (Übergang)
                 // 2 Dezimalen — die Skala ist der ÷3-normierte Vektor (klein, ehrlich).
-                return `${label} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(2)}`;
+                return `${label}${tag} ${p.contrib < 0 ? "−" : ""}${Math.abs(p.contrib).toFixed(2)}`;
             })
             .join(" · ");
-        return { role, text };
+        return { role, text, beitraege: top };
     }
 
     // §7.3(b) — der KONJUNKTIONS-RUF (die wertvollste Lehrer-Geste): resoniert
@@ -50315,6 +50392,22 @@ class AnazhRealm {
         // (1 m — die Nahrungs-Klasse mit hauchdünner consumable-Margin 0.5 vs 0.4) exakt 0.
         // consumable liest NEGATIV (kein Baum-Trank), architecture POSITIV (Masse).
         v.bulk = Math.max(0, Math.min(1, (longest - 2) / 6));
+        // ── Ω-L1 (wahrerbauplan §5 — DIE VEREINIGUNG: Physik speist den Leser) ──
+        // Die in Säule I GERECHNETE Physik (Ω-Φ2..Φ5) wird zu Achsen DESSELBEN Vektors.
+        // ADDITIV + [0,1]-skalen-konsistent (die §50250-Lehre: Material und Form auf EINER
+        // Skala): NEUE Achsen, die KEINE bestehende Signatur liest → exakt 0 Rollen-Sprung;
+        // Ω-L2 webt sie selektiv ein. Der Warum-Chip kann sie zitieren (gerechnete Wahrheit,
+        // klar getrennt von den Konventions-Achsen — Ω-L3). Bau-/Edit-Zeit, nicht pro Frame.
+        const physStab = this._stability(bp);
+        v.stability = physStab.margin; // Ω-Φ2: CoM über Stützpolygon (SSF) — „steht WIRKLICH"
+        const physBend = this._bendingStiffness(bp);
+        v.stiffness = Math.max(0, Math.min(1, Math.sqrt(physBend.Imin) / Math.max(1e-4, physBend.area))); // Ω-Φ3: Biege-Effizienz
+        const physSwing = this._swingDynamics(bp);
+        v.balance = Math.max(0, Math.min(1, physSwing.balance / Math.max(0.001, longest))); // Ω-Φ4: Kopflastigkeit rel. Länge
+        v.leverage = Math.max(0, Math.min(1, v.balance * v.bulk)); // Ω-Φ4: τ-Potenzial (Kopf weit + massiv)
+        const physLoad = this._loadPath(bp);
+        v.loadSound = physLoad.intact ? 1 : Math.max(0, 1 - physLoad.floatingFrac); // Ω-Φ5: Lastpfad zum Boden intakt
+        v.rollable = this._rollableFraction(bp); // Ω-Φ2/L2: rollt am Boden (nicht „rund")
         return v;
     }
 
@@ -50450,6 +50543,377 @@ class AnazhRealm {
         out.com.z = mz / mass;
         out.mass = mass;
         return out;
+    }
+
+    // ── Ω-PHYSIS · Geometrie-Helfer (reine Mathematik, von Säule I geteilt) ──
+    // Andrew's monotone chain: die konvexe Hülle einer (x,z)-Punktwolke, gegen
+    // den Uhrzeigersinn. Billig (O(n log n)), exakt — der Richter für das
+    // Stützpolygon (Ω-Φ2). Kollineare/Doppelpunkte werden geschluckt.
+    _convexHull2D(points) {
+        const pts = (points || []).slice().sort((a, b) => a.x - b.x || a.z - b.z);
+        const n = pts.length;
+        if (n < 3) return pts;
+        const cross = (o, a, b) => (a.x - o.x) * (b.z - o.z) - (a.z - o.z) * (b.x - o.x);
+        const lower = [];
+        for (let i = 0; i < n; i++) {
+            while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], pts[i]) <= 0)
+                lower.pop();
+            lower.push(pts[i]);
+        }
+        const upper = [];
+        for (let i = n - 1; i >= 0; i--) {
+            while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], pts[i]) <= 0)
+                upper.pop();
+            upper.push(pts[i]);
+        }
+        lower.pop();
+        upper.pop();
+        return lower.concat(upper);
+    }
+
+    // Polygon-Fläche (Schnürsenkel-Formel, Betrag) + Schwerpunkt-im-Polygon-Test
+    // + kürzester Abstand zu einer Kante. Die drei Bausteine des Stabilitäts-Richters.
+    _polygonArea2D(poly) {
+        let a = 0;
+        for (let i = 0, n = poly.length; i < n; i++) {
+            const p = poly[i],
+                q = poly[(i + 1) % n];
+            a += p.x * q.z - q.x * p.z;
+        }
+        return Math.abs(a) / 2;
+    }
+    _pointInPolygon2D(p, poly) {
+        let inside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            const a = poly[i],
+                b = poly[j];
+            if (a.z > p.z !== b.z > p.z && p.x < ((b.x - a.x) * (p.z - a.z)) / (b.z - a.z || 1e-9) + a.x)
+                inside = !inside;
+        }
+        return inside;
+    }
+    _distToPolygonEdge2D(p, poly) {
+        let best = Infinity;
+        for (let i = 0, n = poly.length; i < n; i++) {
+            const a = poly[i],
+                b = poly[(i + 1) % n];
+            const dx = b.x - a.x,
+                dz = b.z - a.z;
+            const len2 = dx * dx + dz * dz || 1e-9;
+            let t = ((p.x - a.x) * dx + (p.z - a.z) * dz) / len2;
+            t = Math.max(0, Math.min(1, t));
+            const cx = a.x + t * dx,
+                cz = a.z + t * dz;
+            const d = Math.hypot(p.x - cx, p.z - cz);
+            if (d < best) best = d;
+        }
+        return best;
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ2 — STÜTZPOLYGON + STABILITÄT (vertieft `spread`) ═══
+    // (wahrerbauplan §4 Ω-Φ2) — der Unterschied zwischen „Basis breit" (die alte
+    // BBox-Heuristik `_compoundSpread`) und „steht WIRKLICH". Ein breiter Turm mit
+    // Übergewicht oben kippt — die Heuristik sah ihn stabil, das Gesetz nicht. Der
+    // Richter: sitzt der gerechnete Schwerpunkt (Ω-Φ1) über der konvexen Hülle der
+    // Bodenkontakte? Dasselbe Polygon beurteilt Fahrzeug-Fahrstabilität UND ob eine
+    // KREATUR stehen kann (CoM über dem Fuß-Stützpolygon) — ein Gesetz, zwei Subsysteme.
+    _supportPolygon(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return null;
+        let minBottom = Infinity,
+            maxTop = -Infinity;
+        const aabbs = [];
+        for (const p of bp.parts) {
+            const a = this._partWorldAABB(p);
+            if (!a) continue;
+            aabbs.push(a);
+            if (a.min.y < minBottom) minBottom = a.min.y;
+            if (a.max.y > maxTop) maxTop = a.max.y;
+        }
+        if (!aabbs.length) return null;
+        const totalH = Math.max(0.001, maxTop - minBottom);
+        const band = Math.max(0.1, totalH * (AnazhRealm.PHYSIS.groundBandFrac || 0.15));
+        const pts = [];
+        for (const a of aabbs) {
+            if (a.min.y > minBottom + band) continue;
+            pts.push({ x: a.min.x, z: a.min.z });
+            pts.push({ x: a.max.x, z: a.min.z });
+            pts.push({ x: a.max.x, z: a.max.z });
+            pts.push({ x: a.min.x, z: a.max.z });
+        }
+        const hull = this._convexHull2D(pts);
+        const area = hull.length >= 3 ? this._polygonArea2D(hull) : 0;
+        return { hull, area, contactCount: pts.length / 4, minBottom, totalH };
+    }
+    _stability(bp) {
+        const com = this._compoundCenterOfMass(bp);
+        const poly = this._supportPolygon(bp);
+        if (!poly || poly.hull.length < 3 || poly.area < 1e-4) {
+            // entartete Basis (ein Punkt/eine Linie — ein einbeiniger Mast) → kippt
+            return { inside: false, margin: 0, area: poly ? poly.area : 0, com: com.com, mass: com.mass };
+        }
+        const p = { x: com.com.x, z: com.com.z };
+        const inside = this._pointInPolygon2D(p, poly.hull);
+        const dEdge = this._distToPolygonEdge2D(p, poly.hull);
+        // Der Static-Stability-Factor (wahrerbauplan §3.5 Fahrzeuge): tan(Kipp-Winkel)
+        // = horizontaler Abstand zur Kante / SCHWERPUNKT-HÖHE. Ein breiter flacher
+        // Tisch kippt erst bei großem Winkel (margin≈1); ein einbeiniger Mast hat den
+        // CoM hoch über winziger Basis → kippt bei kleinstem Winkel (margin≈0). So
+        // unterscheidet das Gesetz „Basis breit" von „steht WIRKLICH" — und derselbe
+        // SSF beurteilt Fahrzeug UND Kreatur-Stand (CoM über dem Fuß-Stützpolygon).
+        const comHeight = Math.max(0.05, com.com.y - poly.minBottom);
+        const margin = inside ? Math.max(0, Math.min(1, dEdge / comHeight)) : 0;
+        return { inside, margin, comHeight, area: poly.area, com: com.com, mass: com.mass };
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ3 — STEIFIGKEIT + VERSAGEN (vertieft `hollowness`) ═══
+    // (wahrerbauplan §4 Ω-Φ3) — ZWEI Fragen, nicht eine (die Reflexions-Korrektur,
+    // §9#8): (a) wie stark biegt es sich [Flächenträgheitsmoment I = Σ A·y², Material
+    // WEG von der Biegeachse zählt im QUADRAT] UND (b) bricht/knickt es unter Last.
+    // Die alte `hollowness` (Volumen-Verhältnis) verwechselte I-Profil und Stab; das
+    // Gesetz unterscheidet sie. Und die isolierte Steifigkeit allein ließ die schlanke
+    // Säule durch, die nicht kippt, aber unterm Dach KNICKT — Ω-Φ3-b fängt sie.
+    _bendingStiffness(bp) {
+        const empty = { Ix: 0, Iz: 0, Imin: 0, Imax: 0, anisotropy: 1, area: 0 };
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return empty;
+        const items = [];
+        let A = 0,
+            cx = 0,
+            cz = 0;
+        for (const p of bp.parts) {
+            const ext = this._partWorldExtents(p);
+            const a = Math.max(1e-4, (ext.ex || 0) * (ext.ez || 0));
+            const pos = p.position || { x: 0, z: 0 };
+            items.push({ a, x: pos.x || 0, z: pos.z || 0, ex: ext.ex || 0, ez: ext.ez || 0 });
+            A += a;
+            cx += a * (pos.x || 0);
+            cz += a * (pos.z || 0);
+        }
+        if (A <= 0) return empty;
+        cx /= A;
+        cz /= A;
+        // I_z = Σ A·(x−cx)² + Eigenanteil A·ex²/12 (Biegung mit Durchbiegung in x);
+        // I_x analog in z. Der Parallel-Achsen-Satz: Material weit von der Achse ²-gewichtet.
+        let Ix = 0,
+            Iz = 0;
+        for (const it of items) {
+            Iz += it.a * (it.x - cx) * (it.x - cx) + (it.a * it.ex * it.ex) / 12;
+            Ix += it.a * (it.z - cz) * (it.z - cz) + (it.a * it.ez * it.ez) / 12;
+        }
+        const Imin = Math.min(Ix, Iz),
+            Imax = Math.max(Ix, Iz);
+        return { Ix, Iz, Imin, Imax, anisotropy: Imax / Math.max(1e-6, Imin), area: A };
+    }
+    // (b) das VERSAGEN: das schlankste last-tragende vertikale Glied + Euler-Knicken.
+    // Kritische Schlankheit ∝ √(härte) (E ∝ härte) — eine dorische 1:7-Säule (Schlankheit
+    // height/width ~7) knickt nicht; eine 1:25-Über-Schlankheit knickt. Grob-Sanitäts-
+    // Richter (§1-Geltungsbereich), keine FEA: er fängt die groben Verstöße.
+    _failsUnderLoad(bp) {
+        const out = { buckles: false, maxSlenderness: 0, criticalSlenderness: 0, slenderPart: -1 };
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
+        const mats = this.state.materials || {};
+        let worst = 0,
+            worstIdx = -1,
+            worstCrit = Infinity;
+        for (let i = 0; i < bp.parts.length; i++) {
+            const p = bp.parts[i];
+            const ext = this._partWorldExtents(p);
+            const h = ext.ey || 0;
+            const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
+            if (h < w * 1.2) continue; // kein vertikales Glied (Platte/Klotz) → kein Knicken
+            const slender = h / w;
+            const härte = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.härte) || 0.5;
+            const crit = Math.max(
+                AnazhRealm.PHYSIS.bucklingSlendernessMin || 8,
+                Math.min(
+                    AnazhRealm.PHYSIS.bucklingSlendernessMax || 28,
+                    (AnazhRealm.PHYSIS.bucklingSlendernessBase || 16) * Math.sqrt(Math.max(0.05, härte) / 0.5)
+                )
+            );
+            if (slender > worst) {
+                worst = slender;
+                worstIdx = i;
+                worstCrit = crit;
+            }
+        }
+        out.maxSlenderness = worst;
+        out.criticalSlenderness = Number.isFinite(worstCrit) ? worstCrit : 0;
+        out.slenderPart = worstIdx;
+        out.buckles = worst > 0 && worst > worstCrit;
+        return out;
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ4 — HEBEL + SCHWUNG-TRÄGHEIT (Schwert/Werkzeug) ═══
+    // (wahrerbauplan §4 Ω-Φ4) — „balanciert" wird der gerechnete Balancepunkt rel.
+    // Griff, kein erfundener Wert. Ein kopflastiges Schwert schlägt hart aber träge;
+    // ein griffnah balanciertes schnell aber leichter — das echte Trade-off, MESSBAR.
+    _inferGripPoint(bp, com) {
+        const bbox = this._compoundBBox(bp);
+        const c = (com && com.com) || { x: 0, y: 0, z: 0 };
+        if (!bbox) return { x: c.x, y: c.y, z: c.z };
+        const span = { x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y, z: bbox.max.z - bbox.min.z };
+        const axis = span.y >= span.x && span.y >= span.z ? "y" : span.x >= span.z ? "x" : "z";
+        const lo = bbox.min[axis],
+            hi = bbox.max[axis];
+        // der Griff ist das vom CoM ENTFERNTE Ende (das leichte Griff-Ende; der CoM
+        // sitzt nah am schweren Kopf).
+        const gripCoord = Math.abs(hi - c[axis]) > Math.abs(lo - c[axis]) ? hi : lo;
+        const grip = { x: c.x, y: c.y, z: c.z };
+        grip[axis] = gripCoord;
+        return grip;
+    }
+    _swingDynamics(bp, gripPoint) {
+        const com = this._compoundCenterOfMass(bp);
+        const out = {
+            balance: 0,
+            swingInertia: 0,
+            swingSpeed: 0,
+            leverage: 0,
+            mass: com.mass,
+            com: com.com,
+            grip: null,
+        };
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length || com.mass <= 0) return out;
+        const grip = gripPoint || this._inferGripPoint(bp, com);
+        out.grip = grip;
+        out.balance = Math.hypot(com.com.x - grip.x, com.com.y - grip.y, com.com.z - grip.z);
+        const mats = this.state.materials || {};
+        let I = 0;
+        for (const p of bp.parts) {
+            const s = p.size || { x: 1, y: 1, z: 1 };
+            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
+            const d = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5;
+            const m = vol * Math.max(0.05, d);
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            I += m * ((pos.x - grip.x) ** 2 + (pos.y - grip.y) ** 2 + (pos.z - grip.z) ** 2);
+        }
+        out.swingInertia = I;
+        out.swingSpeed = I > 1e-6 ? 1 / Math.sqrt(I) : 0; // ∝ 1/√I
+        out.leverage = out.mass * out.balance; // τ-Potenzial: Kopf-Masse × Hebelarm
+        return out;
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ5 — LASTPFAD + KONNEKTIVITÄT ═══
+    // (wahrerbauplan §4 Ω-Φ5) — „zwei Achsen kollinear" war nie die Regel; die Regel
+    // ist „die Last erreicht den Boden". BFS über räumliche Adjazenz (AABB-Berührung)
+    // von den Boden-Kontakten: ein abgetrenntes (schwebendes) Teil trägt 0. Und die
+    // Schneide: ein durchgehender Pfad — eine Klinge mit Lücke schneidet nicht.
+    _loadPath(bp) {
+        const out = { intact: true, floatingFrac: 0, floatingCount: 0, groundCount: 0 };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return out;
+        const n = bp.parts.length;
+        // Kosten-Wand: die Adjazenz ist O(n²). Ein sehr großer Bauplan (Baum 75+ Parts)
+        // braucht den exakten Lastpfad nicht für die Rollen-Resonanz (er ist eindeutig
+        // verbunden) — optimistisch intakt zurück (der Richter bleibt billig, §1).
+        if (n > 120) return out;
+        const aabb = bp.parts.map((p) => this._partWorldAABB(p));
+        let minBottom = Infinity,
+            maxTop = -Infinity;
+        for (const a of aabb) {
+            if (!a) continue;
+            if (a.min.y < minBottom) minBottom = a.min.y;
+            if (a.max.y > maxTop) maxTop = a.max.y;
+        }
+        const band = Math.max(0.12, (maxTop - minBottom) * 0.12);
+        const adj = Array.from({ length: n }, () => []);
+        const e = 0.06;
+        const touch = (a, b) =>
+            a.min.x <= b.max.x + e &&
+            a.max.x >= b.min.x - e &&
+            a.min.y <= b.max.y + e &&
+            a.max.y >= b.min.y - e &&
+            a.min.z <= b.max.z + e &&
+            a.max.z >= b.min.z - e;
+        for (let i = 0; i < n; i++)
+            for (let j = i + 1; j < n; j++) {
+                if (aabb[i] && aabb[j] && touch(aabb[i], aabb[j])) {
+                    adj[i].push(j);
+                    adj[j].push(i);
+                }
+            }
+        const seen = new Array(n).fill(false);
+        const q = [];
+        for (let i = 0; i < n; i++) {
+            if (aabb[i] && aabb[i].min.y <= minBottom + band) {
+                seen[i] = true;
+                q.push(i);
+                out.groundCount++;
+            }
+        }
+        while (q.length) {
+            const i = q.pop();
+            for (const j of adj[i]) if (!seen[j]) ((seen[j] = true), q.push(j));
+        }
+        const mats = this.state.materials || {};
+        let total = 0,
+            floating = 0;
+        for (let i = 0; i < n; i++) {
+            const p = bp.parts[i];
+            const s = p.size || { x: 1, y: 1, z: 1 };
+            const m =
+                Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
+                Math.max(0.05, (mats[p.material] && mats[p.material].tags && mats[p.material].tags.dichte) || 0.5);
+            total += m;
+            if (!seen[i]) {
+                floating += m;
+                out.floatingCount++;
+            }
+        }
+        out.floatingFrac = total > 0 ? floating / total : 0;
+        out.intact = out.floatingFrac < 0.02;
+        return out;
+    }
+    // Schneide-Kontinuität: die Parts entlang der Längsachse sortiert — sind die
+    // aufeinanderfolgenden räumlich verbunden? Eine Lücke (Loch in der Schneide) senkt
+    // die Kontinuität → die Klinge schneidet nicht (topologisch geprüft, kraft-begründet).
+    _edgeContinuity(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return 1;
+        const bbox = this._compoundBBox(bp);
+        if (!bbox) return 1;
+        const span = { x: bbox.max.x - bbox.min.x, y: bbox.max.y - bbox.min.y, z: bbox.max.z - bbox.min.z };
+        const axis = span.x >= span.y && span.x >= span.z ? "x" : span.y >= span.z ? "y" : "z";
+        const aabb = bp.parts.map((p) => this._partWorldAABB(p)).filter(Boolean);
+        aabb.sort((a, b) => (a.min[axis] + a.max[axis]) / 2 - (b.min[axis] + b.max[axis]) / 2);
+        let bridged = 0;
+        const gaps = aabb.length - 1;
+        const e = Math.max(0.05, span[axis] * 0.04);
+        for (let i = 0; i < gaps; i++) {
+            const a = aabb[i],
+                b = aabb[i + 1];
+            // berühren/überlappen sie entlang der Achse (mit kleiner Toleranz)?
+            if (b.min[axis] <= a.max[axis] + e) bridged++;
+        }
+        return gaps > 0 ? bridged / gaps : 1;
+    }
+    // Ω-Φ2/L2 — die ROLL-PHYSIK: der Anteil runder Parts (Zylinder/Kugel) im Boden-
+    // Band. „Rad" emergiert aus der Roll-Geometrie am Bodenkontakt, nicht aus der
+    // bloßen Rundheit der Form (ein Kuppel-Dach ist rund, rollt aber nicht — es liegt
+    // nicht am Boden). Ein Wagen (Räder unten) → hoch; ein Tempel (Blöcke unten) → 0.
+    _rollableFraction(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return 0;
+        const aabb = bp.parts.map((p) => this._partWorldAABB(p));
+        let minB = Infinity,
+            maxT = -Infinity;
+        for (const a of aabb) {
+            if (!a) continue;
+            if (a.min.y < minB) minB = a.min.y;
+            if (a.max.y > maxT) maxT = a.max.y;
+        }
+        const band = Math.max(0.15, (maxT - minB) * 0.25);
+        let roll = 0,
+            ground = 0;
+        for (let i = 0; i < bp.parts.length; i++) {
+            const p = bp.parts[i],
+                a = aabb[i];
+            if (!a || a.min.y > minB + band) continue;
+            ground++;
+            // Eine Kugel rollt immer; ein Zylinder NUR mit HORIZONTALER Symmetrie-Achse
+            // (ein Rad liegt, die Achse zeigt zur Seite) — ein VERTIKALER Zylinder ist ein
+            // Stamm/eine Säule und rollt NICHT. So emergiert „Rad" aus der Roll-Geometrie,
+            // nicht aus der Rundheit (sonst läse ein Baumstamm/eine Drehbank als Fahrzeug).
+            if (p.shape === "sphere") roll++;
+            else if (p.shape === "cylinder" && this._cylinderWorldAxis(p) !== "y") roll++;
+        }
+        return ground > 0 ? Math.min(1, roll / ground) : 0;
     }
 
     // V17.90 (resonanz-system.md §1 + Schöpfer-Befund „größer = stärker, doch 3× größer = identische Werte"):
@@ -63560,6 +64024,9 @@ class AnazhRealm {
             // Schwellen-Senker (mehr Deckung = mehr Wolken). Browser-justierbar.
             u.cloudCover.value = Math.min(1, this._weatherBlendedValue(0.32, 0.9)); // D5a: [0,1]-Konsument clampt lokal
         }
+        // Ω-OPSIS §7 — die Sky-Env-Map mit der frischen Himmelsfarbe nachziehen (intern
+        // gedrosselt: regeneriert nur bei Farb-Drift). Einmal-Fehlschlag → nicht erneut versuchen.
+        if (!this.state._skyEnvFailed) this._ensureSkyEnvironment();
     }
 
     // V8.28 6.G4.b A — Stern-Feld-Opacity. starField (diskrete Points) nur
@@ -67793,7 +68260,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.238.0";
+AnazhRealm.VERSION = "18.239.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69303,6 +69770,15 @@ AnazhRealm.MATERIAL_TAG_KEYS = Object.freeze([
 // materialTag[0..1]); ÷3 normalisiert die Material-Tags des Produkt-Vektors auf [0..1] (= dieselbe Skala wie
 // die Form-Achsen) → die FORM konkurriert mit dem MATERIAL in der Resonanz (heilt die Spektrum-Sättigung).
 AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
+// Ω-PHYSIS (wahrerbauplan §4) — die Tunables des Physik-Schiedsrichters. Der
+// Richter ist ein GROB-Sanitäts-Richter (§1-Geltungsbereich), kein FEA-Simulator:
+// diese Schwellen kalibrieren die groben Verstöße (Kippen, Knicken). browser-justierbar.
+AnazhRealm.PHYSIS = {
+    groundBandFrac: 0.15, // Ω-Φ2: das untere Höhen-Band, das als Bodenkontakt zählt
+    bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5
+    bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
+    bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
+};
 // Λ.2 (V18.173 — V18.181-merge-Λ Sub 3a — clever-gauss): die HSL-Spannweite,
 // die jede gespawnte Architektur-Instanz bekommt (seed-deterministisch aus
 // entry.tintH/.tintS/.tintV; HISM-instanceColor). rangeH 0.08 = ±8 % Hue →
@@ -70093,9 +70569,15 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
     portal: Object.freeze({ portalShape: 2.0, magieleitung: 1.0, transparent: 0.5, resoniert: 0.4 }),
     // FAHRZEUG: Trag-Basis, zäh, gestreckt, angetrieben (magie/strom), tot, mittel-dicht.
     // M2 — + rideable (sitz ∧ moveable): der deklarierte Sitz ist die Fahrzeug-Essenz.
+    // Ω-L2 (wahrerbauplan §5) — + die GERECHNETE Fahr-Physik: `stability` (der SSF, CoM
+    // über dem Rad-Stützpolygon) + `rollable` (rollt am Boden, nicht „rund"). Ein
+    // kopflastiges Schein-Fahrzeug liest jetzt SCHWÄCHER als Fahrzeug — die Attrappe
+    // gefangen (das WAHRHEITS-BAND §10). `spread` (BBox-Heuristik) gesenkt → die Physik führt.
     vehicle: Object.freeze({
         rideable: 1.0,
-        spread: 1.4,
+        stability: 0.7,
+        rollable: 0.7,
+        spread: 0.8,
         zähigkeit: 1.0,
         elongation: 0.4,
         magieleitung: 0.4,
@@ -70108,7 +70590,17 @@ AnazhRealm.ROLE_SIGNATURES = Object.freeze({
     // WERKSTATT: solide Substanz (Präzision) + Standfläche; die Domäne emergiert separat (R1).
     "workshop-station": Object.freeze({ dichte: 1.0, härte: 0.7, spread: 0.3 }),
     // BAUWERK: massiv, hart, standfest, nicht spitz.
-    architecture: Object.freeze({ dichte: 1.2, härte: 0.7, spread: 0.4, pointedFraction: -0.6 }),
+    // Ω-L2 (wahrerbauplan §5) — + `stability` (steht: CoM über Stützpolygon) + `loadSound`
+    // (trägt: Lastpfad zum Boden intakt). „Standfest" wird gerechnet, nicht aus BBox-`spread`
+    // geraten. Ein schwebendes/kippliges Schein-Bauwerk liest schwächer (das WAHRHEITS-BAND).
+    architecture: Object.freeze({
+        dichte: 1.2,
+        härte: 0.7,
+        stability: 0.5,
+        loadSound: 0.5,
+        spread: 0.25,
+        pointedFraction: -0.6,
+    }),
 });
 // Die Passung ∈ [min, max] (1.0 = neutral): ein gut geformtes Werk → max (Buff), ein form-fremdes → min
 // (Nerf). Der per-Rolle ref normalisiert (die vollen Signaturen haben andere Skalen) — an Archetypen gemessen.
@@ -70168,7 +70660,52 @@ AnazhRealm.AXIS_LABELS = Object.freeze({
     brennbar: "Brennbarkeit",
     bodyShape: "Körper-Form",
     portalShape: "Tor-Form",
+    // Ω-L1 (wahrerbauplan §5) — die GERECHNETEN Physik-Achsen (Säule I).
+    stability: "Standfestigkeit",
+    stiffness: "Steifigkeit",
+    balance: "Balance",
+    leverage: "Hebelwucht",
+    loadSound: "Lastpfad",
+    rollable: "Rollfähigkeit",
 });
+// Ω-L3 (wahrerbauplan §5) — der GELTUNGSBEREICH jeder Achse, für den Warum-Chip + die
+// Werkstatt sichtbar getrennt (das Meta-Gesetz §1): „physik" = gerechnete Wahrheit mit
+// einem Richter außerhalb des Systems (DARF Wahrheit behaupten); „konvention" = AnazhRealms
+// erfundene, in sich konsistente Welt-Physik (behauptet nur KONSISTENZ, nie Wahrheit — bleibt,
+// aber markiert); „form" = geometrische Stellvertreter (Übergang, bis Ω-L2 die Physik einwebt).
+AnazhRealm.AXIS_CLASS = Object.freeze({
+    // PHYSIKALISCH — Material-Eigenschaften mit echtem Richter
+    härte: "physik",
+    dichte: "physik",
+    zähigkeit: "physik",
+    wärmeleitung: "physik",
+    stromleitung: "physik",
+    transparent: "physik",
+    brennbar: "physik",
+    // PHYSIKALISCH — gerechnete Größen (Säule I, Ω-Φ1..Φ5)
+    stability: "physik",
+    stiffness: "physik",
+    balance: "physik",
+    leverage: "physik",
+    loadSound: "physik",
+    rollable: "physik",
+    // KONVENTION — AnazhRealms erfundene Welt-Physik (kein physikalischer Richter)
+    magieleitung: "konvention",
+    resoniert: "konvention",
+    lebendig: "konvention",
+    // FORM — geometrische Stellvertreter (Übergangs-Fallback, §5 Ω-L1)
+    pointedFraction: "form",
+    elongation: "form",
+    hollowness: "form",
+    axialSymmetry: "form",
+    spread: "form",
+    bodyShape: "form",
+    portalShape: "form",
+    livingBody: "form",
+    rideable: "form",
+    bulk: "form",
+});
+AnazhRealm.AXIS_CLASS_LABEL = Object.freeze({ physik: "gerechnet", konvention: "Welt-Konvention", form: "Form" });
 // §7.3(b) (V18.164) — KONJUNKTIONS-Achsen (0/1) sind TATEN, keine Zahlen: die
 // WARUM-Führung (_blueprintRoleGapHint) spricht sie als deutsche Handlung aus.
 AnazhRealm.AXIS_ACTION_HINTS = Object.freeze({

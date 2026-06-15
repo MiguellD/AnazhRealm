@@ -6096,6 +6096,130 @@ async function checkBandOmegaPhi1CoM(ctx) {
     check("Ω-Φ1: leerer/ungültiger Bauplan → Masse 0 (sicher, keine Div/0)", res.emptySafe === true);
 }
 
+// Ω-PHYSIS Säule I (Ω-Φ2..Φ5 der Schiedsrichter) + Säule II (Ω-L1..L3 + Ω-W1 die
+// Vereinigung — Physik speist den Leser). Reine Berechnung → headless VOLL verifizierbar,
+// kein Flake (wahrerbauplan §4/§5/§10). Die zwei Seelen vereint: die gerechnete Physik
+// wird vom Resonanz-Leser + vom Warum-Chip gelesen, klar getrennt von der Konvention.
+async function checkBandOmegaPhysisSaeuleI_II(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            C = r.constructor;
+        const mats = r.state.materials || {};
+        let dense = mats.eisen ? "eisen" : null,
+            light = mats.holz ? "holz" : null;
+        if (!dense || !light) {
+            let dd = -1,
+                ld = 2;
+            for (const m in mats) {
+                const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
+                if (typeof d !== "number") continue;
+                if (d > dd) ((dd = d), (dense = m));
+                if (d < ld) ((ld = d), (light = m));
+            }
+        }
+        const P = (parts, connections) => ({ parts, connections });
+        const pt = (x, y, z, sx, sy, sz, m, shape, rot) => ({ position: { x, y, z }, size: { x: sx, y: sy, z: sz }, material: m || dense, shape, rotation: rot });
+        const o = {};
+        // ── Ω-Φ2 Stützpolygon + Stabilität (SSF) ──
+        o.phi2Exists = typeof r._stability === "function" && typeof r._supportPolygon === "function";
+        const table = P([pt(-2, 0, -2, 0.4, 1, 0.4), pt(2, 0, -2, 0.4, 1, 0.4), pt(-2, 0, 2, 0.4, 1, 0.4), pt(2, 0, 2, 0.4, 1, 0.4), pt(0, 1, 0, 4, 0.3, 4, light)]);
+        const tippy = P([pt(0, 0, 0, 1, 1, 1), pt(6, 4, 0, 2, 2, 2, dense)]);
+        o.tableStable = r._stability(table).margin > 0.5;
+        const tp = r._stability(tippy);
+        o.tippyTips = tp.margin === 0 && tp.inside === false;
+        o.mastUnstable = r._stability(P([pt(0, 0, 0, 0.3, 6, 0.3)])).margin < 0.15;
+        // ── Ω-Φ3 Steifigkeit + Versagen ──
+        o.phi3Exists = typeof r._bendingStiffness === "function" && typeof r._failsUnderLoad === "function";
+        o.boardAniso = r._bendingStiffness(P([pt(0, 0, 0, 6, 0.3, 0.6)])).anisotropy > 3;
+        const ring = P([pt(-1.5, 0, -1.5, 1, 1, 1), pt(1.5, 0, -1.5, 1, 1, 1), pt(-1.5, 0, 1.5, 1, 1, 1), pt(1.5, 0, 1.5, 1, 1, 1)]);
+        const solid = P([pt(0, 0, 0, 4, 1, 4)]);
+        const mOf = (bp) => r._compoundCenterOfMass(bp).mass;
+        o.hollowEfficient = r._bendingStiffness(ring).Imin / mOf(ring) > r._bendingStiffness(solid).Imin / mOf(solid);
+        o.slenderBuckles = r._failsUnderLoad(P([pt(0, 0, 0, 0.2, 5, 0.2)])).buckles === true;
+        o.stockyHolds = r._failsUnderLoad(P([pt(0, 0, 0, 1, 5, 1)])).buckles === false;
+        // ── Ω-Φ4 Hebel + Schwung ──
+        o.phi4Exists = typeof r._swingDynamics === "function";
+        const headHeavy = P([pt(0, 0.3, 0, 0.2, 0.6, 0.2, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)]);
+        const balanced = P([pt(0, 0.3, 0, 0.5, 0.6, 0.5, dense), pt(0, 3, 0, 0.2, 4, 0.2, light)]);
+        const sh = r._swingDynamics(headHeavy),
+            sb = r._swingDynamics(balanced);
+        o.headHeavier = sh.balance > sb.balance;
+        o.balancedFaster = sb.swingSpeed > sh.swingSpeed;
+        // ── Ω-Φ5 Lastpfad + Schneide ──
+        o.phi5Exists = typeof r._loadPath === "function" && typeof r._edgeContinuity === "function";
+        o.stackIntact = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 2, 0, 1, 1, 1)])).intact === true;
+        const ft = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)]));
+        o.floatBreaks = ft.intact === false && ft.floatingFrac > 0;
+        o.edgeContinuous = r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(1, 0, 0, 1, 0.3, 0.1), pt(2, 0, 0, 1, 0.3, 0.1)])) === 1;
+        o.edgeGapped = r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(3, 0, 0, 1, 0.3, 0.1)])) < 1;
+        // ── Ω-L1 die Physik-Achsen im Produkt-Vektor (alle [0,1], skalen-konsistent) ──
+        const v = r._blueprintProductVector(table);
+        const axes = ["stability", "stiffness", "balance", "leverage", "loadSound", "rollable"];
+        o.l1AxesPresent = axes.every((a) => typeof v[a] === "number");
+        o.l1AxesBounded = axes.every((a) => v[a] >= 0 && v[a] <= 1);
+        // rollable: ein Wagen (liegende Rad-Zylinder unten) > 0, ein Tempel = 0
+        const wheel = (x, z) => pt(x, 0, z, 0.6, 0.6, 0.2, dense, "cylinder", { x: 0, y: 0, z: Math.PI / 2 });
+        const veh = P([wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 0.8, 0, 2.4, 0.5, 2.4, light)], [{ type: "sitz", a: 4, b: 0 }]);
+        o.rollableWheels = r._blueprintProductVector(veh).rollable > 0;
+        o.rollableTrunkZero = r._rollableFraction(P([pt(0, 0, 0, 0.5, 5, 0.5, dense, "cylinder")])) === 0; // vertikaler Stamm rollt nicht
+        // ── Ω-L2 die Physik in den Rollen-Signaturen + das WAHRHEITS-BAND ──
+        const sigV = C.ROLE_SIGNATURES.vehicle,
+            sigA = C.ROLE_SIGNATURES.architecture;
+        o.l2VehicleReadsPhysik = sigV.stability > 0 && sigV.rollable > 0;
+        o.l2ArchReadsPhysik = sigA.stability > 0 && sigA.loadSound > 0;
+        const topHeavyVeh = P([wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 4, 0, 2.4, 3, 2.4, dense)], [{ type: "sitz", a: 4, b: 0 }]);
+        const vehRes = r._blueprintResonance(r._blueprintProductVector(veh), sigV);
+        const topRes = r._blueprintResonance(r._blueprintProductVector(topHeavyVeh), sigV);
+        o.truthBand = r._stability(topHeavyVeh).margin < r._stability(veh).margin && topRes < vehRes; // kippliges Fahrzeug schwächer
+        // ── Ω-L2 KEINE Live-Rollen-Verschiebung: Built-ins bleiben (domain-fest) ──
+        o.builtinsHold =
+            r.computeBlueprintRole(r.state.blueprints.temple) === "architecture" &&
+            r.computeBlueprintRole(r.state.blueprints.welt_portal) === "portal" &&
+            (r.state.blueprints.fahrzeug_wagen ? r.computeBlueprintRole(r.state.blueprints.fahrzeug_wagen) === "vehicle" : true);
+        // ── Ω-L3 Geltungsbereich-Markierung ──
+        o.l3Marks = C.AXIS_CLASS && C.AXIS_CLASS.stability === "physik" && C.AXIS_CLASS.magieleitung === "konvention" && C.AXIS_CLASS.spread === "form";
+        // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
+        const why = r._blueprintRoleWhy(r.state.blueprints.fahrzeug_wagen || veh);
+        o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
+        return o;
+    });
+    check("Ω-Φ2 (wahrerbauplan): _stability/_supportPolygon existieren", res.phi2Exists === true);
+    check("Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0", res.tableStable && res.tippyTips && res.mastUnstable);
+    check("Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)", res.phi3Exists && res.boardAniso && res.hollowEfficient);
+    check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
+    check("Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller", res.phi4Exists && res.headHeavier && res.balancedFaster);
+    check("Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad", res.phi5Exists && res.stackIntact && res.floatBreaks);
+    check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);
+    check("Ω-L1: die Physik-Achsen sind im Produkt-Vektor, alle [0,1]", res.l1AxesPresent && res.l1AxesBounded);
+    check("Ω-L1: rollable aus Roll-Physik (Räder>0, vertikaler Stamm=0)", res.rollableWheels && res.rollableTrunkZero);
+    check("Ω-L2: vehicle liest stability+rollable, architecture stability+loadSound", res.l2VehicleReadsPhysik && res.l2ArchReadsPhysik);
+    check("⟡ Ω-L2 WAHRHEITS-BAND: kopflastiges Fahrzeug liest schwächer (§10)", res.truthBand === true);
+    check("Ω-L2: KEINE Live-Rollen-Verschiebung (Built-ins domain-fest)", res.builtinsHold === true);
+    check("Ω-L3: Achsen-Geltungsbereich markiert (physik/konvention/form)", res.l3Marks === true);
+    check("Ω-W1: Warum-Chip ZITIERT gerechnete Physik (KONSUM, kein Passagier)", res.w1ConsumesPhysik === true);
+}
+
+// Ω-OPSIS §7 (wahreranblick §8) — die Sky-Env-Map-MECHANIK: ohne scene.environment
+// rendern PBR-Metalle schwarz (sie holen ihre Farbe aus der Reflexion). Der lawful Fix
+// (prozedurale Equirekt-Gradient-Env aus der Himmel-Farbe) ist headless als MECHANIK
+// beweisbar (environment gesetzt, kein Crash); der LOOK ist AUGEN-bound (Wand 1).
+async function checkBandOmegaOpsisSkyEnv(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            st = r.state;
+        const out = { hasMethod: typeof r._ensureSkyEnvironment === "function", ready: !!st.rendererReady };
+        if (out.hasMethod) out.ensured = r._ensureSkyEnvironment(true);
+        out.envSet = !!(st.scene && st.scene.environment && st.scene.environment.isTexture);
+        out.notFailed = !st._skyEnvFailed;
+        return out;
+    });
+    check("Ω-OPSIS §7: _ensureSkyEnvironment existiert (PBR-Metalle vs schwarz)", res.hasMethod === true);
+    // wenn der Renderer (headless) bereit ist, MUSS die Env stehen; sonst kein Flake-Zwang
+    check("Ω-OPSIS §7: scene.environment gesetzt (Renderer-bereit) ohne Fehlschlag", res.ready ? res.envSet && res.notFailed : res.notFailed);
+}
+
 async function checkBandV1772Library(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -55248,6 +55372,8 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1771ToolOpFromForm(ctx);
             await checkBandV1772Library(ctx);
             await checkBandOmegaPhi1CoM(ctx);
+            await checkBandOmegaPhysisSaeuleI_II(ctx);
+            await checkBandOmegaOpsisSkyEnv(ctx);
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);
             await checkBandV1775MakeActCost(ctx);
