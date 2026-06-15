@@ -36101,8 +36101,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
                             r.constructor.FOLIAGE_DENSITY.cardsPerAnchor[0]) ||
                         1;
                     out.foliageCardsPerAnchor = _K0;
-                    out.foliageVertsMatchAnchors =
-                        fol.geom.attributes.position.count === out.skelAnchorCount * _K0 * 8;
+                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * _K0 * 8;
                 }
             }
 
@@ -40120,6 +40119,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
         // aus früheren _feelAction-Bands rein, V9.56-i).
         if (r.state.emotionField) r.state.emotionField.clear();
+        // V18.236 (V17.32-Disziplin): der Default `auraTintStrength` 0.15 macht den
+        // Feld/Emotion-Tint SUBTIL (Look) → die Marge-Tests (awe/magie heben Blau um
+        // +0.02) würden flaky. Diese Proben prüfen den MECHANISMUS (DASS die Achse den
+        // Himmel tönt) → bei VOLLER Stärke (1.0) messen = große, deterministische Marge,
+        // unabhängig vom Look-Default. Zurückgesetzt am Block-Ende (vor Vision 6).
+        const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         r._applyDayNightToScene();
         // V10.0-f-1 Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
@@ -40250,6 +40256,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         r.setTimeOfDay(0.5); // Reset
 
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
+        // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
         // Mock worldFieldAt für hohe magieleitung
         r.worldFieldAt = function () {
             return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
@@ -40264,7 +40271,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const skyDichteField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         // Magie-Region sollte mehr Blau haben als dichte-Region
         out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
-        // Reset
+        // Reset (auch den Aura-Tint-Default vom Block-Anfang)
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraKg3;
         r.worldFieldAt = origWFA;
         r._applyDayNightToScene();
 

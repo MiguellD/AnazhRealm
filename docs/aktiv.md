@@ -11,6 +11,10 @@
 
 ## Stand (jüngste oben)
 
+**15.06.2026 — V18.236 ✅ §1 DER WAHRE ANBLICK: DIE AURA SUBTIL + der Plan, der HÄLT, Branch `claude/inspiring-johnson-n510dk`:** Schöpfer-Auftrag: „reflektiere zuerst über den Drift, der immer passiert; aktualisiere die Planung, dass sie hält." **DER DRIFT, benannt:** drei Sessions strandeten am SEHEN — und die tiefste Wurzel war die **zu starke Aura**: am Spawn (glut 0.95 + awe 1.0 → der Nexus tönt awe→lila) wusch das Feld den Himmel MAGENTA (`sky=[0.65,0.35,0.86]`) → jeder Screenshot sah alien aus → niemand konnte das Rendering beurteilen → Thrash/Phantom-Fixes/blinde „fertig"-Behauptungen. **GEHEILT:** EIN Knopf `atmosphere.auraTintStrength` (0.15) skaliert ALLE Feld+Emotion-Tint-Beiträge (Schicht 2+3 in `_dayNightComputeTint`) UND den Mood/DSL-`skyTint`-Blend (`_dayNightApplySkybox`). GEMESSEN: Himmel → `[0.19,0.21,0.61]` = BLAU (Browser-Shot bestätigt). Die Welt atmet noch (ein Hauch Wärme), vergiftet die Beurteilung nicht mehr. **Der Plan `docs/wahreranblick-plan.md` ist NEU geschrieben — anti-drift, geordnet, mit den fünf Wänden:** §1 Aura subtil ✅ → §2 PBR/Toon-raus → §3 EIN Seh-Werkzeug → §4 eine Baum-Quelle → §5 lushe Kronen → §6 Dichte → §7 Oberflächen+Strukturen-Licht. **OFFEN/nächste:** §2 Toon-raus (PBR ist schon Default) · §3 Seh-Tool konsolidieren · der Browser-Sign-off des blauen Himmels. Tonemapping ACES→Neutral wurde ERWOGEN, aber zurückgerollt (augen-validierte Look-Entscheidung für eine eigene Welle, nicht als stiller Drift mit dem Aura-Fix gebündelt).
+
+---
+
 **14.06.2026 — DER LEBENDIGE GIGANT IST VOLLENDET (V18.216–V18.225, eine Session), Branch `claude/peaceful-goldberg-49tj81` → main:** alle Plan-§13-Bänder GEMESSEN erfüllt (Dichte 178 Instanzen/Chunk · echtes Touch→Real ohne Sprung · PBR physik-hergeleitet · distinkte Tags · Tubes/Cards/Wind). Neun Wellen, alle ~3500 Wände grün. Die Karte + die drei Session-Lehren stehen im `CLAUDE.md`-Kopf, die volle Chronik in `docs/archiv/handover.md`, der Schluss-Stand in `docs/gigant-fortsetzung-plan.md`. **OFFEN nur dem Schöpfer-Auge (KEINE Vision-Lücke):** Browser-Look-Sign-off (swiftshader-Headless zu langsam für den kalten Full-Scatter-Screenshot; `gpuScatter` default an) · Auflösungs-Tune (`SCATTER.layers`-tree-cap für dichtere Canopy) · GPU-Compute-Millionen (Perf-Haut, pcg2d bit-fertig).
 
 ---
@@ -18,6 +22,7 @@
 **14.06.2026 — PLAN-REFLEXION + V18.216-V18.223 VORGEPLANT (HISTORIE — alle gebaut):** Schöpfer-Reflexions-Befund: V18.215 war als „faktisch vollendet" beschrieben — ehrliche Selbst-Reflexion zeigte: GPU im Plan (§5+§8), PBR im Plan (§10), Büsche definiert (§3.5+§8.2), KARST im Plan (§3.3) — ALLE übergangen mit Shortcut-Argumenten. **DER WAHRE STAND:** ~5 von 13 Plan-Punkten erfüllt; 8 echte Welle offen. **DER VOLLSTÄNDIGE FORTSETZUNG-PLAN in voller Tiefe** lebt jetzt in **`docs/gigant-fortsetzung-plan.md`** (komplett neu geschrieben):
 
 **V18.216-V18.223, 10-14 Sessions:**
+
 - §1 V18.216 — **KARST + BÜSCHE/UNDERSTORY-BAUPLANE** (Plan §3.3 + §3.5 + §8.2): KARST-Spezies (gnarl, Klippen), Hazel (1.9-2.9m), Farn-Cluster, Stand-Blume. Bush-Pass in `_vegetationSampleSpawn`.
 - §2 V18.217 — **VARIANTEN-POOL** (Plan §2.5): N=16 Varianten × 7 Spezies, gefrorenes `worldMeta.variantSeed[]`, P2P-deterministisch. **Voraussetzung Ω-H.**
 - §3 V18.218 — **LOD-STUFEN** (Plan §3.6, §6 Ω-G4): 3 LODs pro Variante (Hero/Tubes-cap/Single-Card), Hysterese, ferner Wald billig.
@@ -35,7 +40,7 @@
 **DER ATEMBERAUBENDE WALD** (Schöpfer-Auftrag „champ, keine halben sachen mehr, der plan steht, vollende ihn, du kannst das, habe mut!" + „die regel der werkstatt evt nicht genug geschärft, eher die regel provisorisch schärfen als zurück zu weichen"). Die GPU-freien Plan-Punkte aus lebendiger-gigant be15a050 §4+§7+§8.2 sind GESCHLOSSEN.
 
 - **Ω-K3 PALETTE:** holz 0x8b5a2b → 0x5e3a1c (erdiger Braun, LAAS „dunkle Töne"), laub 0x2e8b3f → 0x2b5e2c (gedämpfter Wald-Grün). Per-Spezies foliage.color bleibt (Vielfalt).
-- **Ω-R1 DISTINKTE TAGS:** `SPECIES_TAG_VARIATION` frozen mit form-begründeter Modulation: Tanne brennbar+0.10+resoniert+0.05 · Buche/Birke lebendig+0.08-0.10 · Totholz lebendig-0.30+brennbar+0.20. `computeCompoundTags` wendet additiv für _isGrown an. Spawn-Affinität + Audio-Resonanz erkennen jetzt die Spezies.
+- **Ω-R1 DISTINKTE TAGS:** `SPECIES_TAG_VARIATION` frozen mit form-begründeter Modulation: Tanne brennbar+0.10+resoniert+0.05 · Buche/Birke lebendig+0.08-0.10 · Totholz lebendig-0.30+brennbar+0.20. `computeCompoundTags` wendet additiv für \_isGrown an. Spawn-Affinität + Audio-Resonanz erkennen jetzt die Spezies.
 - **V17.16-VARIATIONS-WAND GESCHÄRFT:** deklarierte Achsen sind „form-begründet freipass" (Plan §7), undeklarierte bleiben strict (Δ < 0.05). Die DEKLARATION trägt die Wahrheit, nicht die Schwelle — Schöpfer-Direktive „eher schärfen als zurück zu weichen" gefolgt.
 - **SÄULE III:** `baum_totholz` SPECIES_GRAMMAR (snag, foliage.kind="none" → nur bark-Tube, keine Cards). In TREE_NAMES + candidates + SPECIES_TREE_PARAMS. SAMPLES 8→10 (+56% Spawn-Versuche pro Chunk).
 - **GPU-Pipeline EMERGENT erfüllt** (V18.212-Lehre): in unserer Architektur sind Bäume IMMER echte Welt-Programm-Dinge → Ω-B+Ω-S sind Million-Bäume-Optimierung, KEIN Plan-§13-Beweis-Band hängt davon.
@@ -55,7 +60,7 @@
 - **Ω-R2 §3.7 TOLERANZEN:** `AnazhRealm.SPECIES_TREE_PARAMS` (frozen, VERMUTUNG-markiert) — per-Spezies slopeMax (Birke 0.6 / Tanne 1.2) + heightRange. `_vegetationSampleSpawn` gated den Spawn vor der chance-Probe.
 - **Welt-Routing:** `_skeleton` an gewachsenen Bauplänen ab genVersion 7, Side-Channel `_lastTreeSkeleton`. `_archFlattenBlueprint` priorisiert Skeleton-Pfad. genVersion 6→7 für FRESH-Welten; alte Welten gen<7 fallen auf V18.213-cylinder-merge zurück (bit-identisch).
 - **Tag-Neutralität:** bp.parts UNVERÄNDERT → V17.16-Wand STRUKTURELL bewahrt. computeCompoundTags bit-identisch GEMESSEN.
-- **Snapshot:** _skeleton NICHT persistiert (re-baubar aus seed wie parts).
+- **Snapshot:** \_skeleton NICHT persistiert (re-baubar aus seed wie parts).
 
 28 V18.214-Wände grün (T1-T10) + ~3500 bestehende grün erwartet. Version 18.213.0→18.214.0. **Diag GEMESSEN:** archInstanceGroups 174→26 (6.7× weniger Pools welt-weit), Skeleton-Build 0.5ms (vs V18.213 cylinder-merge 10.5ms).
 
@@ -104,6 +109,7 @@
 
 **14.06.2026 — V18.211 ✅ FERTIG, Branch `claude/kind-rubin-udn6cn`:**
 **DER LEBENDIGE GIGANT, SÄULE I (Skeleton-Grammar)** — Bäume lesen jetzt als Bäume, nicht als „Zylinder + 8 Kugeln". Der vorige `abschluss-plan.md` ist superseded vom Schöpfer-Anhang `69189e03-lebendigergigant.md` (DER LEBENDIGE GIGANT — Ω∞). Diese Welle baut **die visuelle Wurzel von Säule I**: `AnazhRealm.SPECIES_GRAMMAR` (frozen, 6 Arten × Plan-§3.3-Werte) + `_growTreeBlueprintRich(speciesKey, seed, grammar)` (Multi-Level-Wachstums-Grammatik mit perpBasis + Tropismus + Wander + Droop + TipCurl + Foliage AT TIPS). 75-81 Parts pro Baum (vs V18.210's 12). genVersion 4→5 routet bei gen≥5 zur Rich-Methode. **§2.5 (Variant-Pool + Wind + Snapshot)** sind GEERBT/GEHEILT:
+
 - **Variant-Pool**: der V18.210-Region-Cache (256m × Welt-Seed × Spezies) ist faktisch §2.5 in Region-Form.
 - **Wind**: V18.181-`positionWorld`-basiertes Sway gibt Per-Instance-Phasen gratis.
 - **Snapshot-Heilung**: 75 Parts × 54 Region-Varianten = 400 KB → sprengt 256-KB-`pinCurrentWorld`-Wand → NUR Metadata persistieren, Parts re-wachsen via f(seed). Φ5-Tests grün.
@@ -120,13 +126,14 @@ Die vier Sub-Akte aus `docs/abschluss-plan.md §1` sind verdrahtet — plus
 drei Audit-Cycles, die NEUN echte Mängel fanden (drei kritisch) und alle
 heilten. Alle ~3500 Invarianten grün, `npm run smoke:multiuser` grün.
 
-| Commit | Welle |
-|---|---|
-| `fa70879` | A1-A4 + 5 Audit-Heilungen (Sub-Agent-Review) |
-| `8cdddb8` | _growTreeNoise-Welt-Wechsel-Reset (Selbst-Audit) |
+| Commit    | Welle                                                          |
+| --------- | -------------------------------------------------------------- |
+| `fa70879` | A1-A4 + 5 Audit-Heilungen (Sub-Agent-Review)                   |
+| `8cdddb8` | \_growTreeNoise-Welt-Wechsel-Reset (Selbst-Audit)              |
 | `d5d33a1` | A3-Memoization + A2-Mini-Passagier weg (Schöpfer-Watch 14.06.) |
 
 **Die vier Sub-Akte:**
+
 - **A1** Γ7 Worldgen-Hook: `_growTreeBlueprintForSpawn` mit REGION-Caching
   (256m-Grid × Welt-Seed × Species), gen Default 3→4, V17.16-Tag-Wand pro
   Spezies-Referenz, SPECIES_PROFILE (6 Arten × Form/Farbe), Snapshot-
@@ -134,7 +141,7 @@ heilten. Alle ~3500 Invarianten grün, `npm run smoke:multiuser` grün.
 - **A2** R5 Live-Slider: `setStructureBoost` + Live-TSL-Uniform + DOM-Slider
   „Struktur-Tiefe", Default 1.0→1.3 (sichtbar), `_applySubstanceResponse`
   liest Uniform direkt (tote Fallback-Branch weg, V18.210-Watch #3).
-- **A3** _scentAt KI: wild-Temperament wittert scheu/sanft/wehrhaft-Beute
+- **A3** \_scentAt KI: wild-Temperament wittert scheu/sanft/wehrhaft-Beute
   in 50m, 4-Richtungs-Gradient, strike via `damageCreature("jagd")`,
   replaced NEUTRAL-wander-Branch, `_scentSizeBySoul`-Cache (V18.210-Watch #1).
 - **A4** Mana-Konsument γ: `phaseChange`-Op-Klasse zieht 15 Mana statt 10
@@ -142,6 +149,7 @@ heilten. Alle ~3500 Invarianten grün, `npm run smoke:multiuser` grün.
   Pfad spiegeln EXAKT, Return-Symmetrie (`manaRemaining`+`staminaRemaining`).
 
 **Permanente Lehren (in CLAUDE.md):**
+
 1. **Region-Caching für Worldgen → Instancing:** Hash-pro-Spawn bricht
    das Instancing-Pattern. Region-basierter Cache (~256m-Grid) ist die
    synergetische Form: lokaler Wald-Stil emergiert + Instancing wirkt.
@@ -165,17 +173,17 @@ halben sachen mehr").
 
 ## Quellen-Karte (was wo lebt)
 
-| Quelle | Was sie trägt |
-|---|---|
-| **`docs/abschluss-plan.md`** | DER EINE PLAN — alle offenen Punkte mit Sub-Schritten + Reihenfolge V18.211-V18.250+ |
-| `docs/archiv/handover.md` | Volle Wellen-Chronik (jüngste oben), permanente Lehren |
-| `CLAUDE.md` | Aktueller Stand auto-geladen + tragende Gotchas |
-| `docs/rueckmeldung.md` | Schöpfer-Rückmeldungs-Korpus (S-Abnahmen) |
-| `docs/state-of-realm.md` | Vision |
-| `docs/das-lebendige-feld.md` | Wahrer Norden (Vision) |
-| `docs/taille-spec.md` + `.en.md` | NORMATIV, frozen |
-| `docs/roadmap.md` | Karte vorwärts (3 Phasen + gemerkte Fäden); operative Details leben in `abschluss-plan.md` |
-| `docs/archiv/<bogen>-plan.md` | Vergangene Bogen-Pläne (Vergangenheit, nicht aktiv) |
+| Quelle                           | Was sie trägt                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| **`docs/abschluss-plan.md`**     | DER EINE PLAN — alle offenen Punkte mit Sub-Schritten + Reihenfolge V18.211-V18.250+       |
+| `docs/archiv/handover.md`        | Volle Wellen-Chronik (jüngste oben), permanente Lehren                                     |
+| `CLAUDE.md`                      | Aktueller Stand auto-geladen + tragende Gotchas                                            |
+| `docs/rueckmeldung.md`           | Schöpfer-Rückmeldungs-Korpus (S-Abnahmen)                                                  |
+| `docs/state-of-realm.md`         | Vision                                                                                     |
+| `docs/das-lebendige-feld.md`     | Wahrer Norden (Vision)                                                                     |
+| `docs/taille-spec.md` + `.en.md` | NORMATIV, frozen                                                                           |
+| `docs/roadmap.md`                | Karte vorwärts (3 Phasen + gemerkte Fäden); operative Details leben in `abschluss-plan.md` |
+| `docs/archiv/<bogen>-plan.md`    | Vergangene Bogen-Pläne (Vergangenheit, nicht aktiv)                                        |
 
 ---
 
@@ -192,10 +200,10 @@ halben sachen mehr").
 
 ## Schöpfer-Entscheide (echt offen)
 
-| ID | Frage | Antwort/Default | Wann |
-|---|---|---|---|
-| R-037 | T-Welle Typ-Sicherheit? | Ruhen lassen (no-build bleibt rein) | wenn dritter Bauer mit-tippt |
-| R-039 | Devlog/Welle-Schau gegen Versanden? | Schöpfer-Wort offen | nach öffentlicher Phase |
+| ID    | Frage                               | Antwort/Default                     | Wann                         |
+| ----- | ----------------------------------- | ----------------------------------- | ---------------------------- |
+| R-037 | T-Welle Typ-Sicherheit?             | Ruhen lassen (no-build bleibt rein) | wenn dritter Bauer mit-tippt |
+| R-039 | Devlog/Welle-Schau gegen Versanden? | Schöpfer-Wort offen                 | nach öffentlicher Phase      |
 
 (V18.210-A4 Mana-Konsumenten-Mechanik ist beantwortet — die `phaseChange`-Op-Klasse zieht Mana, gebaut + verifiziert.)
 

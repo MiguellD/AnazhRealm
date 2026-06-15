@@ -414,6 +414,16 @@ class AnazhRealm {
                 // erwartete physik-bestimmtes Licht („keine halben Sachen"). Toggle
                 // zurück via `state.atmosphere.materialMode = "toon"` + Reload.
                 materialMode: "pbr",
+                // V18.236 (DER WAHRE ANBLICK) — die STÄRKE des Feld/Emotion-Welt-Tints
+                // (Schicht 2+3 in `_dayNightComputeTint`: glut→warm, awe→kühl, joy→gold).
+                // Das Feld SOLL die Welt tönen (der wahre Norden: die Welt atmet mit
+                // Emotion), aber SUBTIL — bei vollem glut+awe wusch der alte Faktor 1.0
+                // den Himmel nach MAGENTA (GEMESSEN sky=[0.65,0.35,0.86]) = „alles sieht
+                // alien aus", der die Render-Beurteilung VERGIFTETE. GEMESSEN: die
+                // Basis-Himmel-Farbe bei Mittag hat fast kein Rot ([0.07]) → schon ein
+                // kleiner Rot-Zuschuss kippt sie nach purpur; 0.15 hält den Himmel BLAU
+                // mit nur einem Atemzug Wärme. Live-justierbar (`atmosphere.auraTintStrength`).
+                auraTintStrength: 0.15,
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
@@ -51509,7 +51519,8 @@ class AnazhRealm {
         // deterministischer [0,1)-Hash aus (anchor, card, salt) — die Krone-Streuung
         // ist bit-identisch über Re-Wachstum (gleiche Variante → gleiche Krone).
         const h01 = (av, bv, salt) => {
-            let h = (Math.imul(av + 1, 374761393) ^ Math.imul(bv + 1, 668265263) ^ Math.imul(salt + 1, 2147483647)) >>> 0;
+            let h =
+                (Math.imul(av + 1, 374761393) ^ Math.imul(bv + 1, 668265263) ^ Math.imul(salt + 1, 2147483647)) >>> 0;
             h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
             return (h >>> 0) / 4294967296;
         };
@@ -51741,7 +51752,12 @@ class AnazhRealm {
             // Kronen-Mitte gebogen) zeigten ihre RÜCKSEITE nach aussen → back-face-
             // gecullt → die Krone las sparse/unsichtbar von aussen. DoubleSide rendert
             // jede Karte von beiden Seiten → die geschlossene, volle Krone.
-            const foliageMatOpts = { vertexColors: true, useInstanceTint: true, useFlexAttr: true, side: THREE.DoubleSide };
+            const foliageMatOpts = {
+                vertexColors: true,
+                useInstanceTint: true,
+                useFlexAttr: true,
+                side: THREE.DoubleSide,
+            };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             const foliageMat = this._buildToonNodeMaterial(foliageMatOpts);
             leaves.push({ geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() });
@@ -63753,6 +63769,14 @@ class AnazhRealm {
         const lightColor = stop.light.clone();
         let lightIntensity = stop.intensity * lightMul;
         // Schicht 2 — Welt-Feld-Tint (Welt-Affinität am Spieler)
+        // V18.236 (DER WAHRE ANBLICK) — die Aura tönt SUBTIL (kein magenta-Anstrich
+        // mehr). EIN Stärke-Faktor skaliert ALLE Feld+Emotion-Tint-Beiträge (Schicht
+        // 2+3); das Feld atmet weiter (der wahre Norden), aber es vergiftet die Welt
+        // nicht. Live-justierbar via `atmosphere.auraTintStrength`.
+        const auraK =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.auraTintStrength)
+                ? Math.max(0, this.state.atmosphere.auraTintStrength)
+                : 0.3;
         const pm = this.state.playerMesh;
         const aura = pm && typeof this.auraAt === "function" ? this.auraAt(pm.position.x, pm.position.z) : null;
         if (aura) {
@@ -63762,19 +63786,19 @@ class AnazhRealm {
                 const glut = Math.max(0, Math.min(1, field.glut || 0));
                 const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
                 if (mag > 0.5) {
-                    const m = (mag - 0.5) * 0.3;
+                    const m = (mag - 0.5) * 0.3 * auraK;
                     skyColor.r = Math.min(1, skyColor.r + m * 0.6);
                     skyColor.b = Math.min(1, skyColor.b + m * 1.0);
                     lightColor.b = Math.min(1, lightColor.b + m * 0.4);
                 }
                 if (glut > 0.5) {
-                    const g = (glut - 0.5) * 0.4;
+                    const g = (glut - 0.5) * 0.4 * auraK;
                     skyColor.r = Math.min(1, skyColor.r + g);
                     skyColor.g = Math.max(0, skyColor.g - g * 0.3);
                     lightColor.r = Math.min(1, lightColor.r + g * 0.6);
                 }
                 if (lebendig > 0.5) {
-                    const l = (lebendig - 0.5) * 0.25;
+                    const l = (lebendig - 0.5) * 0.25 * auraK;
                     skyColor.g = Math.min(1, skyColor.g + l);
                     skyColor.r = Math.min(1, skyColor.r + l * 0.3);
                 }
@@ -63791,22 +63815,22 @@ class AnazhRealm {
         const awe = Math.max(0, Math.min(1, emotions.awe || 0));
         const chaos = Math.max(0, Math.min(1, emotions.chaos || 0));
         if (joy > 0.2) {
-            const j = (joy - 0.2) * 0.25;
+            const j = (joy - 0.2) * 0.25 * auraK;
             skyColor.r = Math.min(1, skyColor.r + j);
             skyColor.g = Math.min(1, skyColor.g + j * 0.7);
             lightColor.r = Math.min(1, lightColor.r + j * 0.5);
-            lightIntensity *= 1 + (joy - 0.2) * 0.15;
+            lightIntensity *= 1 + (joy - 0.2) * 0.15 * auraK;
         }
         if (sorrow > 0.2) {
-            const s = (sorrow - 0.2) * 0.5;
+            const s = (sorrow - 0.2) * 0.5 * auraK;
             const greyR = (skyColor.r + skyColor.g + skyColor.b) / 3;
             skyColor.r = skyColor.r * (1 - s) + greyR * s;
             skyColor.g = skyColor.g * (1 - s) + greyR * s;
             skyColor.b = skyColor.b * (1 - s) + greyR * s;
-            lightIntensity *= 1 - (sorrow - 0.2) * 0.2;
+            lightIntensity *= 1 - (sorrow - 0.2) * 0.2 * auraK;
         }
         if (awe > 0.2) {
-            const a = (awe - 0.2) * 0.35;
+            const a = (awe - 0.2) * 0.35 * auraK;
             skyColor.b = Math.min(1, skyColor.b + a);
             skyColor.r = Math.min(1, skyColor.r + a * 0.6);
             lightColor.b = Math.min(1, lightColor.b + a * 0.5);
@@ -63815,7 +63839,7 @@ class AnazhRealm {
             // performance.now() — Side-Effect-Stream-Position: das chaos-Flimmern
             // liest die Zeit hier (Tint-Phase). V9.56-i bewahrt die Aufruf-
             // Reihenfolge bit-identisch.
-            const c = (chaos - 0.3) * 0.15;
+            const c = (chaos - 0.3) * 0.15 * auraK;
             const flutter = Math.sin(performance.now() / 180) * c;
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
@@ -63826,6 +63850,7 @@ class AnazhRealm {
             lightIntensity,
             skyMul,
             lightMul,
+            auraK, // V18.236 — gated auch den Mood/DSL-skyTint-Blend in _dayNightApplySkybox
             skyR: skyColor.r * skyMul,
             skyG: skyColor.g * skyMul,
             skyB: skyColor.b * skyMul,
@@ -63863,7 +63888,11 @@ class AnazhRealm {
                 if (st.skyTintTo) st.skyTint.lerp(st.skyTintTo, 0.08);
                 st.skyTintStrength += (st.skyTintTarget - st.skyTintStrength) * 0.12; // smooth ramp (kein Snap)
                 st.skyTintTarget = Math.max(0, st.skyTintTarget - 0.001); // langsamer Decay (~60 s) → fadet aus
-                if (st.skyTintStrength > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength);
+                // V18.236 — der Mood/DSL-skyTint-Blend wird vom EINEN auraTintStrength-
+                // Knopf mitgedämpft (der Nexus tönte den Himmel bei awe nach lila =
+                // magenta-Wäsche). Der Mensch kann auraTintStrength heben, will er es satt.
+                const _aK = tint && Number.isFinite(tint.auraK) ? tint.auraK : 1;
+                if (st.skyTintStrength * _aK > 0.002) u.nebulaColor.value.lerp(st.skyTint, st.skyTintStrength * _aK);
             }
         }
         if (u.cloudCover) {
@@ -65941,11 +65970,12 @@ class AnazhRealm {
             throw new Error(msg);
         }
         const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
-        // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR
-        // (Sonne 2.4 + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei
-        // 1.0 = ausgewaschen/blass. ACES rollt die HDR-Lichter filmisch ab
-        // (reiche Highlights, satte Mitten, tiefere Schatten). Reine Render-
-        // Output-Stufe -> keine Geometrie-/Daten-/Determinismus-Aenderung.
+        // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR (Sonne 2.4
+        // + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei 1.0 = ausgewaschen.
+        // ACES rollt die HDR-Lichter filmisch ab. (NeutralToneMapping [Khronos] wäre
+        // ein Kandidat — entsättigt die Highlights weniger — aber das ist eine
+        // bewusste, augen-validierte Look-Entscheidung für eine eigene Welle, nicht
+        // als stiller Drift mit dem Aura-Fix gebündelt.) Reine Render-Output-Stufe.
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.05;
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
@@ -68104,7 +68134,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.235.0";
+AnazhRealm.VERSION = "18.236.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
