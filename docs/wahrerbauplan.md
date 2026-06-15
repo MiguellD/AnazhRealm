@@ -39,12 +39,19 @@
 > Lastpfad SCHLIESST (0 schwebende Teile); der Kontrast: über-schlank knickt. Plus die
 > **Ω-Φ3-b-WAND-TREUE (V18.242)**: eine breite tragende Wand (Cella) ist KEINE freie
 > Euler-Säule (verstrebt) → knickt nicht — heilt auch Ω-W3 für Spieler-Wände. 16/16
-> `diag-grammatik` + `checkBandOmegaGrammatik` grün; der finale LOOK (Fluting-Tiefe, Look
-> der Klinge) AUGEN-bound (Wand 1). **NÄCHSTE (Säule III-Reste, klein):** Ω-B4 Varianten-
-> Pool für Architektur (das Baum-Instancing erbt es) · Ω-B5 Allometrie — GEMESSEN KEIN
-> Skalierungs-Haken (Kreatur-Körper sind feste Templates); das Physik-URTEIL über Körper
-> ist SCHON da (Ω-W3 zählt `soul` zu den stehenden Rollen → ein zu-schlank-beiniger Avatar
-> liest „wackelig/knickt"). **Ω-PHYSIS ist damit der SUBSTANZ nach VOLLENDET** (Säule I–IV).
+> `diag-grammatik` + `checkBandOmegaGrammatik` grün. **Ω-B4 — DIE REGEL IST GENERATIV
+> (V18.244):** `_classicalTempleVariant(seed)` würfelt aus dem Seed eine Variante (Ordnung ·
+> Säulen-Zahl · Tiefe · Durchmesser → 64 Kombinationen), JEDE physik-garant — die Welt
+> würfelt aus ihrem Seed ihren EIGENEN Tempel (GEMESSEN: 5 Seeds → 5 verschiedene Tempel,
+> alle stehen + knicken nicht). Plus der **EINGANG** (eine Tür in der Front-Cella) + der
+> **TYMPANON** (`gableTriangle` schließt den Giebel) + der **DACH-FIX V18.243** (das Vorzeichen
+> `−sgn·pitch` — der Schöpfer-Augen-Befund „das Dach ist verkehrt": die headless-Tests sahen
+> nur „2 geneigte Flächen", true auch invertiert → der LOOK ist der letzte Richter, Wand 1).
+> Der finale LOOK (Fluting-Tiefe, Triglyphen-Stege, Klingen-Hohlkehle) AUGEN-bound. **NÄCHSTE
+> (klein):** Ω-B5 Allometrie — GEMESSEN KEIN Skalierungs-Haken (Kreatur-Körper sind feste
+> Templates); das Physik-URTEIL über Körper ist SCHON da (Ω-W3 zählt `soul` zu den stehenden
+> Rollen → ein zu-schlank-beiniger Avatar liest „wackelig/knickt"). **Ω-PHYSIS ist damit der
+> SUBSTANZ nach VOLLENDET** (Säule I–IV, die Grammatik generativ).
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein

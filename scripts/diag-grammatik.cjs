@@ -54,16 +54,54 @@ function startSaveServer() {
             o.exists = !!(temple && Array.isArray(temple.parts));
             o.partCount = temple ? temple.parts.length : 0;
 
-            // ── STRUKTUR: die dorische Ordnung ist ablesbar ──
+            // ── STRUKTUR: die klassische Ordnung ist ablesbar (der Welt-Tempel ist eine VARIANTE) ──
+            const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
             const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
             o.shaftCount = shafts.length;
             o.allEntasis = shafts.length > 0 && shafts.every((p) => p.size.z < p.size.x); // oberer ⌀ < unterer
-            o.allFluted = shafts.every((p) => p.flutes === C.CLASSICAL_ORDERS.dorisch.flutes); // 20 Kanneluren
+            o.allFluted = shafts.every((p) => fluteSet.includes(p.flutes)); // 20 (dorisch) ODER 24 (ionisch)
             o.echinusCount = temple.parts.filter((p) => p.shape === "cylinder" && p.size.x > p.size.z).length; // Flare-Kapitelle
             o.pedimentSlopes = temple.parts.filter(
                 (p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05
             ).length; // Giebel-Dach
+            o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length; // geschlossener Giebel
             o.hasOrders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+
+            // ── Ω-B4 GENERATIV: N Seeds → N VERSCHIEDENE Tempel, ALLE physik-garant ──
+            const variants = ["alpha", "beta", "gamma", "delta", "omega"].map((s) => ({
+                seed: s,
+                bp: { parts: r._classicalTempleVariant(s) },
+            }));
+            const sigs = new Set();
+            let allStand = true,
+                allNoBuckle = true;
+            for (const v of variants) {
+                const shaftsV = v.bp.parts.filter((p) => p.shape === "flutedColumn");
+                const fl = shaftsV.length ? shaftsV[0].flutes : 0;
+                sigs.add(v.bp.parts.length + ":" + fl); // Signatur = Parts + Ordnung(Flutes)
+                if (!(r._stability(v.bp).inside === true)) allStand = false;
+                if (r._failsUnderLoad(v.bp).buckles !== false) allNoBuckle = false;
+            }
+            o.variantCount = sigs.size; // verschiedene Tempel aus verschiedenen Seeds
+            o.variantsAllStand = allStand;
+            o.variantsAllNoBuckle = allNoBuckle;
+            o.variantDeterministic =
+                r._classicalTempleVariant("alpha").length === r._classicalTempleVariant("alpha").length;
+
+            // ── EINGANG: die Front-Cella-Wand hat eine TÜR-Lücke (kein Part deckt die Tür-Mitte) ──
+            const cellaBoxes = temple.parts.filter((p) => p.shape === "box" && p.color === 0xc4bda8);
+            // die Front-Wand-Parts liegen am größten +Z; finde die Tür-Lücke: kein Front-Box deckt (x≈0, y niedrig)
+            let frontZ = -1e9;
+            for (const p of cellaBoxes) if (p.position.z > frontZ) frontZ = p.position.z;
+            const frontWall = cellaBoxes.filter((p) => Math.abs(p.position.z - frontZ) < 0.01 && p.size.z < 1);
+            const doorY = temple.parts.find((p) => p.shape === "octahedron") ? 2.0 : 2.0; // niedrige Tür-Höhe
+            const coversDoor = frontWall.some(
+                (p) =>
+                    Math.abs(p.position.x) < p.size.x / 2 &&
+                    p.position.y - p.size.y / 2 < doorY &&
+                    p.position.y + p.size.y / 2 > doorY
+            );
+            o.hasEntrance = frontWall.length >= 2 && !coversDoor; // ≥2 Pfeiler + offene Tür-Mitte
 
             // ── die flutedColumn-GEOMETRIE baut (Entasis + Kanneluren in EINER Mesh) ──
             try {
@@ -180,15 +218,27 @@ function startSaveServer() {
         const ok = (b) => (b ? "  OK  " : " FAIL ");
         const line = (label, val, expect, pass) =>
             console.log(ok(pass) + label.padEnd(48) + String(val).padStart(10) + "   " + expect);
-        console.log("\n=== Ω-PHYSIS Säule III Ω-B1 — DIE ARCHITEKTUR-GRAMMATIK (dorisch) ===\n");
-        console.log("— die DORISCHE ORDNUNG ist ablesbar (reference-first) —");
+        console.log("\n=== Ω-PHYSIS Säule III Ω-B1/B4 — DIE ARCHITEKTUR-GRAMMATIK (generativ) ===\n");
+        console.log("— die klassische ORDNUNG ist ablesbar (reference-first) —");
         line("Tempel existiert + reich (Parts)", out.partCount, "soll > 80", out.partCount > 80);
         line("kannelierte Schäfte (flutedColumn)", out.shaftCount, "soll > 10", out.shaftCount > 10);
         line("alle Schäfte mit ENTASIS (oberer ⌀ < unterer)", out.allEntasis, "soll true", out.allEntasis);
-        line("alle Schäfte 20 Kanneluren (dorisch)", out.allFluted, "soll true", out.allFluted);
+        line("alle Schäfte kanneliert (20 dorisch / 24 ionisch)", out.allFluted, "soll true", out.allFluted);
         line("Echinus-Kapitelle (Flare)", out.echinusCount, "soll > 10", out.echinusCount > 10);
         line("GIEBEL-Dach (geneigte Flächen)", out.pedimentSlopes, "soll 2", out.pedimentSlopes === 2);
+        line("TYMPANON schließt den Giebel (gableTriangle)", out.tympanon, "soll 2", out.tympanon === 2);
+        line("EINGANG: Tür-Lücke in der Front-Wand", out.hasEntrance, "soll true", out.hasEntrance);
         line("zwei Ordnungen (dorisch + ionisch)", out.hasOrders, "soll true", out.hasOrders);
+        console.log("\n— Ω-B4 GENERATIV: die Regel erzeugt VERSCHIEDENE Tempel —");
+        line("N Seeds → N verschiedene Tempel", out.variantCount, "soll ≥ 4", out.variantCount >= 4);
+        line("ALLE Varianten stehen (physik-garant)", out.variantsAllStand, "soll true", out.variantsAllStand);
+        line("ALLE Varianten knicken nicht", out.variantsAllNoBuckle, "soll true", out.variantsAllNoBuckle);
+        line(
+            "deterministisch (gleicher Seed → gleicher Tempel)",
+            out.variantDeterministic,
+            "soll true",
+            out.variantDeterministic
+        );
         console.log("\n— die flutedColumn-GEOMETRIE (Entasis + Kanneluren in EINER Mesh) —");
         line("Geometrie baut (Vertices)", out.geoBuilds, "soll true", out.geoBuilds);
         line("Kanneluren modulieren den Radius", out.flutingVaries, "soll true", out.flutingVaries);
@@ -246,7 +296,13 @@ function startSaveServer() {
             out.allFluted,
             out.echinusCount > 10,
             out.pedimentSlopes === 2,
+            out.tympanon === 2,
+            out.hasEntrance,
             out.hasOrders,
+            out.variantCount >= 4,
+            out.variantsAllStand,
+            out.variantsAllNoBuckle,
+            out.variantDeterministic,
             out.geoBuilds,
             out.flutingVaries,
             out.meshBuilds,

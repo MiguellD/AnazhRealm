@@ -6361,16 +6361,26 @@ async function checkBandOmegaGrammatik(ctx) {
         const r = window.anazhRealm,
             C = r.constructor;
         const o = {};
-        // ── Ω-B1 der dorische Tempel ──
+        // ── Ω-B1/B4 der klassische Tempel (der Welt-Tempel ist eine VARIANTE — dorisch ODER ionisch) ──
         const temple = r.state.blueprints.temple;
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
+        const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
         const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
-        o.doricShafts =
-            shafts.length > 10 &&
-            shafts.every((p) => p.size.z < p.size.x && p.flutes === C.CLASSICAL_ORDERS.dorisch.flutes);
+        o.doricShafts = shafts.length > 10 && shafts.every((p) => p.size.z < p.size.x && fluteSet.includes(p.flutes));
         o.pediment =
             temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
+        o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length === 2; // geschlossener Giebel
         o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+        // Ω-B4 GENERATIV: N Seeds → N verschiedene Tempel, ALLE physik-garant
+        const sigs = new Set();
+        let varStand = true;
+        for (const s of ["a1", "b2", "c3", "d4", "e5"]) {
+            const bp = { parts: r._classicalTempleVariant(s) };
+            const sh = bp.parts.filter((p) => p.shape === "flutedColumn");
+            sigs.add(bp.parts.length + ":" + (sh.length ? sh[0].flutes : 0));
+            if (r._stability(bp).inside !== true || r._failsUnderLoad(bp).buckles !== false) varStand = false;
+        }
+        o.variantsDistinct = sigs.size >= 4 && varStand; // verschiedene + alle physik-garant
         // die flutedColumn-Geometrie baut (Entasis + Kanneluren in EINER Mesh)
         try {
             const g = r._makePartGeometry({
@@ -6436,7 +6446,8 @@ async function checkBandOmegaGrammatik(ctx) {
         "Ω-B1: der Tempel folgt der dorischen Ordnung (kannelierte Schäfte + Entasis)",
         res.templeOk && res.doricShafts
     );
-    check("Ω-B1: Giebel-Dach (geneigte Flächen) + zwei Ordnungen", res.pediment && res.orders);
+    check("Ω-B1: Giebel-Dach + TYMPANON (geschlossen) + zwei Ordnungen", res.pediment && res.tympanon && res.orders);
+    check("⟡ Ω-B4 GENERATIV: N Seeds → N verschiedene Tempel, alle physik-garant", res.variantsDistinct === true);
     check("Ω-B1: die flutedColumn-Geometrie baut (Entasis + Kanneluren, EINE Mesh)", res.flutedGeo === true);
     check("⟡ Ω-B1 PHYSIK-GARANT: der Tempel steht + liest als Bauwerk", res.templeStands && res.templeRole);
     check(

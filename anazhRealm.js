@@ -4105,6 +4105,7 @@ class AnazhRealm {
             "helix",
             "flutedColumn",
             "bladeProfile",
+            "gableTriangle",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -45940,6 +45941,40 @@ class AnazhRealm {
                 g.computeVertexNormals();
                 return g;
             }
+            case "gableTriangle": {
+                // Ω-B1 (wahrerbauplan §6) — das TYMPANON: ein flaches dreieckiges Giebelfeld
+                // (Basis unten, Spitze am First) als dünnes Prisma — schließt den Giebel
+                // vorne/hinten (kein offenes Dach). size: x=Basis-Breite, y=Höhe, z=Dicke.
+                const w = Math.max(0.02, sx),
+                    hh = Math.max(0.02, sy),
+                    tt = Math.max(0.01, sz);
+                const v = [
+                    -w / 2,
+                    -hh / 2,
+                    tt / 2,
+                    w / 2,
+                    -hh / 2,
+                    tt / 2,
+                    0,
+                    hh / 2,
+                    tt / 2, // Front
+                    -w / 2,
+                    -hh / 2,
+                    -tt / 2,
+                    w / 2,
+                    -hh / 2,
+                    -tt / 2,
+                    0,
+                    hh / 2,
+                    -tt / 2, // Rück
+                ];
+                const tri = [0, 1, 2, 5, 4, 3, 0, 3, 1, 1, 3, 4, 1, 4, 2, 2, 4, 5, 2, 5, 0, 0, 5, 3];
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(v, 3));
+                g.setIndex(tri);
+                g.computeVertexNormals();
+                return g;
+            }
             case "box":
             default:
                 return new THREE.BoxGeometry(sx, sy, sz);
@@ -46093,18 +46128,36 @@ class AnazhRealm {
             });
         }
         box(cap, 0, eaveY + roofRise + roofThick * 0.3, 0, D * 0.5, roofThick * 1.2, roofZ); // First-Balken
+        // TYMPANON — das dreieckige Giebelfeld schließt den Giebel vorne + hinten (kein offenes Dach).
+        for (const sgnZ of [-1, 1]) {
+            parts.push({
+                shape: "gableTriangle",
+                material: mat,
+                color: 0xd2cab5,
+                position: { x: 0, y: eaveY + roofRise / 2, z: sgnZ * (ringZ / 2 + 0.05 * D) },
+                size: { x: eaveX * 1.9, y: roofRise, z: roofThick * 0.9 },
+            });
+        }
 
         // (5) CELLA (Naos) — der innere Raum: 4 Wände innerhalb des Peristyls, auf dem
-        // Stylobat bis unters Gebälk. Gibt dem Tempel einen soliden Kern (kein Hohlraum-Skelett).
+        // Stylobat bis unters Gebälk. Die FRONT-Wand (+Z) trägt den EINGANG — eine TÜR
+        // (Lücke + Sturz), durch die man den Tempel betritt (der „Eingang", Schöpfer-Wunsch).
         const cellaX = frontW - 1.4 * D;
         const cellaZ = sideD - 1.4 * D;
         const cellaH = shaftH + echH + abH;
         const cellaYc = stylTop + cellaH / 2;
         const wallT = D * 0.4;
-        box(0xc4bda8, 0, cellaYc, cellaZ / 2, cellaX, cellaH, wallT); // Wand +Z (mit Tür-Lücke nicht modelliert)
-        box(0xc4bda8, 0, cellaYc, -cellaZ / 2, cellaX, cellaH, wallT);
-        box(0xc4bda8, cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT);
-        box(0xc4bda8, -cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT);
+        const wallC = 0xc4bda8;
+        const cellaFrontZ = cellaZ / 2;
+        const doorW = Math.min(cellaX * 0.5, 1.7 * D); // Tür-Breite
+        const doorH = cellaH * 0.72; // Tür-Höhe
+        const sideW = (cellaX - doorW) / 2; // je ein Wand-Pfeiler links + rechts der Tür
+        box(wallC, -(doorW / 2 + sideW / 2), cellaYc, cellaFrontZ, sideW, cellaH, wallT); // Pfeiler links
+        box(wallC, doorW / 2 + sideW / 2, cellaYc, cellaFrontZ, sideW, cellaH, wallT); // Pfeiler rechts
+        box(wallC, 0, stylTop + (doorH + cellaH) / 2, cellaFrontZ, doorW, cellaH - doorH, wallT); // Sturz über der Tür
+        box(wallC, 0, cellaYc, -cellaZ / 2, cellaX, cellaH, wallT); // Rück-Wand (geschlossen)
+        box(wallC, cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT); // Seiten-Wand +X
+        box(wallC, -cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT); // Seiten-Wand −X
 
         // (6) ALTAR + KRISTALL — im Cella-Inneren, auf dem Boden (Lastpfad intakt: der
         // Kristall sitzt auf dem Altar, schwebt NICHT — der Tempel ist strukturell ehrlich).
@@ -46118,6 +46171,27 @@ class AnazhRealm {
             size: { x: 0.8, y: 1.0, z: 0.8 },
         });
         return parts;
+    }
+
+    // Ω-B4 (wahrerbauplan §6) — DIE REGEL IST GENERATIV, kein Einzel-Beispiel: ein
+    // deterministischer Seed → eine VARIANTE (Ordnung · Säulen-Zahl · Tiefe · Durchmesser).
+    // 2 Ordnungen × 2 Fronten × 4 Tiefen × 4 Durchmesser = 64 verschiedene Tempel, ALLE
+    // physik-garant (die Ordnung liefert solide Proportionen, §6). Jede Welt würfelt aus
+    // ihrem Seed ihren eigenen Tempel — die Grammatik erzeugt verschiedene Tempel, nicht
+    // EINE Attrappe. Hexastyle+ (≥6 Front), damit jede Variante reich bleibt.
+    _classicalTempleVariant(seed) {
+        let h = 2166136261;
+        const s = "temple:" + (seed == null ? "anazh" : String(seed));
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        h = h >>> 0;
+        const order = h & 1 ? "ionisch" : "dorisch";
+        const columnsFront = 6 + 2 * ((h >> 1) & 1); // 6 (hexastyle) oder 8 (octastyle)
+        const columnsSide = columnsFront + 3 + 2 * ((h >> 2) & 3); // Tiefe variiert
+        const columnDiameter = 0.78 + ((h >> 5) & 3) * 0.05; // 0.78..0.93
+        return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter });
     }
 
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
@@ -46731,7 +46805,10 @@ class AnazhRealm {
         // Ordnung ABGELEITET, nicht hand-geraten. Die alte „6 glatte Zylinder + Kegeldach"-
         // Attrappe ist ersetzt. Physik-garant: die 1:7-Säulen knicken nicht (Ω-Φ3-b),
         // der Lastpfad schließt (Ω-Φ5). Parametrisch — ionisch ist ein Parameter-Tausch.
-        const templeParts = this._buildClassicalTemple("dorisch");
+        // Ω-B4 — die Welt würfelt aus ihrem Seed ihren EIGENEN Tempel (generativ, nicht eine
+        // Attrappe): Ordnung/Größe/Säulen-Zahl variieren deterministisch, alle physik-garant.
+        const _templeSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-temple";
+        const templeParts = this._classicalTempleVariant(_templeSeed);
 
         const waterfallParts = [
             // Klippe hinten
@@ -68734,7 +68811,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.243.0";
+AnazhRealm.VERSION = "18.244.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
