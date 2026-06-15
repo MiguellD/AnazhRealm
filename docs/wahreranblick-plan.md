@@ -161,10 +161,18 @@ sichtbar dicht (LAAS-Wald) UND FPS gehalten (§3-Last-Zähler + Schöpfer-GPU).
 
 Das ANBLICK-BAND (jede Fläche ein sichtbarer Auslesewert) + zwei GEMESSENE Befunde:
 
-- **Strukturen schwarz bei Mittag** (Metall-Turm/Stein-Tor): vertikale Flächen kriegen
-  bei Zenit-Sonne ~0 Direktlicht; Ambient/Hemi zu schwach → fast schwarz. Fix: die
-  Mittag-Sonne leicht aus dem Zenit kippen (realistischer + lichtet Vertikale +
-  bessere Modellierung) ODER Ambient/Hemi-Boden anheben. (GEMESSEN, render-only.)
+- **Strukturen schwarz bei Mittag — GEMESSEN-Wurzel (15.06.):** ZWEI Ursachen.
+  (a) **PBR-METALLE haben KEINE `scene.environment`** (grep: nirgends gesetzt) → ein
+  Metall (Eisen-Turm, metalness 0.85) reflektiert NICHTS → render SCHWARZ (außer dem
+  direkten Specular). Das ist der klassische PBR-ohne-IBL-Fehler. **Fix: eine Sky-
+  Environment-Map** (PMREM/`computeEnvironmentAsync` des Himmels ODER ein neutraler
+  Studio-Env) → Metalle reflektieren den Himmel statt Schwarz. ACHTUNG: IBL HELLT die
+  ganze Welt (Augen-Sign-off Pflicht, W3; kann den getunten Look auswaschen). (b) die
+  **dielektrischen Vertikalen** (Stein-Tor) kriegen bei Zenit-Sonne ~0 Direktlicht +
+  Ambient×dunkle-Albedo ≈ dunkel → ein PBR-Schatten-Boden (der Toon-B8-LUT-0.25-Boden
+  fiel mit §2 weg, war toon-only) ODER die Mittag-Sonne leicht aus dem Zenit kippen.
+  Beides render-only, beides Augen-bound (über die ZUVERLÄSSIGEN Welt-ground-Shots
+  verifizierbar — nicht den flake-isolierten Baum).
 - **Geologie/Rinde/Fels/PBR-roughness** (Ω-O1/O5/O7/O8/O15): pro Ω-O ein Bild, das
   das Landen beweist (W3). „browser-justierbar" war eine Schuld, kein Abschluss.
 
