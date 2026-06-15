@@ -4103,6 +4103,8 @@ class AnazhRealm {
             "plane",
             "torus",
             "helix",
+            "flutedColumn",
+            "bladeProfile",
             "blueprint",
         ]);
         if (!Array.isArray(parts) || parts.length === 0) return { ok: false, reason: "no_parts" };
@@ -4170,6 +4172,24 @@ class AnazhRealm {
             if (size) sanitized.size = size;
             if (typeof p.scale === "number" && p.scale > 0 && p.scale <= 5) sanitized.scale = p.scale;
             if (p.animate === "water_wave") sanitized.animate = "water_wave";
+            // Ω-B1 (wahrerbauplan §6) — die flutedColumn-Grammatik-Felder bewahren (geklemmt),
+            // damit die Werkstatt/DSL eine klassische Säule mit Entasis + Kanneluren bauen kann.
+            if (p.shape === "flutedColumn") {
+                if (Number.isFinite(p.flutes)) sanitized.flutes = Math.max(0, Math.min(40, p.flutes | 0));
+                if (Number.isFinite(p.fluteDepth)) sanitized.fluteDepth = Math.max(0, Math.min(0.3, p.fluteDepth));
+                if (Number.isFinite(p.entasis)) sanitized.entasis = Math.max(0, Math.min(0.3, p.entasis));
+                if (Number.isFinite(p.heightSegments))
+                    sanitized.heightSegments = Math.max(2, Math.min(20, p.heightSegments | 0));
+                if (Number.isFinite(p.segments)) sanitized.segments = Math.max(6, Math.min(48, p.segments | 0));
+            }
+            // Ω-B2 (wahrerbauplan §6) — die bladeProfile-Grammatik-Felder (Oakeshott: distale
+            // Verjüngung + Hohlkehle), damit die Werkstatt/DSL eine echte Klinge bauen kann.
+            if (p.shape === "bladeProfile") {
+                if (Number.isFinite(p.tipWidth)) sanitized.tipWidth = Math.max(0.04, Math.min(1, p.tipWidth));
+                if (Number.isFinite(p.fuller)) sanitized.fuller = Math.max(0, Math.min(0.85, p.fuller));
+                if (Number.isFinite(p.heightSegments))
+                    sanitized.heightSegments = Math.max(6, Math.min(40, p.heightSegments | 0));
+            }
             clean.push(sanitized);
         }
         return { ok: true, parts: clean };
@@ -45791,10 +45811,375 @@ class AnazhRealm {
                 g.computeVertexNormals();
                 return g;
             }
+            case "flutedColumn": {
+                // Ω-B1 (wahrerbauplan §6 — die SCHÖNHEIT, reference-first): die klassische
+                // Säule als EINE Mesh — ENTASIS (Schaft verjüngt sich nach oben mit konvexer
+                // Wölbung, gegen die optische Täuschung) UND KANNELUREN (N konkave Längsrillen,
+                // an scharfen Graten getrennt) ECHT IN der Geometrie, nicht mit N Groove-Parts
+                // gefälscht (die Face-Falle, §6 „Kanneluren sparsam meshen"). Ein Part pro Schaft,
+                // parametrisch (dorisch 20 / ionisch 24 Rillen). Rein deterministisch (kein Zufall).
+                const bottomR = Math.max(0.02, sx / 2); // size.x = unterer Durchmesser D
+                const topR = Math.max(0.02, sz / 2); // size.z = oberer ⌀ (Verjüngung)
+                const H = Math.max(0.1, sy); // size.y = Schaft-Höhe
+                const flutes = Math.max(0, Math.min(40, part.flutes | 0 || 0));
+                const fluteDepth = Number.isFinite(part.fluteDepth)
+                    ? Math.max(0, Math.min(0.3, part.fluteDepth))
+                    : 0.05;
+                const entasis = Number.isFinite(part.entasis) ? Math.max(0, Math.min(0.3, part.entasis)) : 0.04;
+                const radial = flutes > 0 ? Math.max(24, flutes * 3) : Math.max(10, segments);
+                const rings = Math.max(2, Math.min(20, part.heightSegments || 6));
+                const radAtT = (t) => {
+                    const lin = bottomR + (topR - bottomR) * t; // lineare Verjüngung
+                    return lin + entasis * bottomR * Math.sin(Math.PI * t); // konvexe Wölbung (max bei t=0.5)
+                };
+                const fluteAt = (theta) => {
+                    if (flutes <= 0) return 1;
+                    // konkave Mulde je Rille (0.5−0.5·cos = glatte Rinne; an den Graten voll-radial)
+                    return 1 - fluteDepth * (0.5 - 0.5 * Math.cos(theta * flutes));
+                };
+                const verts = [];
+                const idx = [];
+                for (let j = 0; j <= rings; j++) {
+                    const t = j / rings;
+                    const y = (t - 0.5) * H;
+                    const r0 = radAtT(t);
+                    for (let i = 0; i < radial; i++) {
+                        const theta = (i / radial) * Math.PI * 2;
+                        const r = r0 * fluteAt(theta);
+                        verts.push(Math.cos(theta) * r, y, Math.sin(theta) * r);
+                    }
+                }
+                for (let j = 0; j < rings; j++) {
+                    for (let i = 0; i < radial; i++) {
+                        const a = j * radial + i;
+                        const b = j * radial + ((i + 1) % radial);
+                        const c = (j + 1) * radial + i;
+                        const d = (j + 1) * radial + ((i + 1) % radial);
+                        idx.push(a, c, b, b, c, d);
+                    }
+                }
+                // Deckel oben + unten (Fächer) — die Schnitt-Flächen auf Stylobat / unter Kapitell
+                const baseCenter = verts.length / 3;
+                verts.push(0, -H / 2, 0);
+                const topCenter = verts.length / 3;
+                verts.push(0, H / 2, 0);
+                const topRing = rings * radial;
+                for (let i = 0; i < radial; i++) {
+                    const i1 = (i + 1) % radial;
+                    idx.push(baseCenter, i1, i);
+                    idx.push(topCenter, topRing + i, topRing + i1);
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
+            case "bladeProfile": {
+                // Ω-B2 (wahrerbauplan §6/§3.5 — Oakeshott): die KLINGE als EINE Mesh,
+                // reference-first: DISTALE VERJÜNGUNG (Breite + Dicke dünnen Basis→Spitze),
+                // eine HOHLKEHLE/Fuller (zentrale Längs-Rinne — Masse an der neutralen Achse
+                // entfernt = gelebtes Flächenträgheitsmoment Ω-Φ3: leichter bei gleicher
+                // Steifigkeit, warum Knochen hohl sind) + linsenförmiger Querschnitt zu den
+                // SCHNEIDEN (dick am Grat, scharf an den Kanten). Deterministisch, ein Part.
+                const baseHalfW = Math.max(0.01, sx / 2); // size.x = Klingen-Breite an der Parier
+                const L = Math.max(0.1, sy); // size.y = Klingen-Länge
+                const maxThick = Math.max(0.01, sz); // size.z = max Dicke (Mittelgrat)
+                const tipFrac = Number.isFinite(part.tipWidth) ? Math.max(0.04, Math.min(1, part.tipWidth)) : 0.18;
+                const fuller = Number.isFinite(part.fuller) ? Math.max(0, Math.min(0.85, part.fuller)) : 0.0;
+                const wseg = 8;
+                const hseg = Math.max(6, Math.min(40, part.heightSegments || 14));
+                const W1 = wseg + 1;
+                const halfWAtT = (t) =>
+                    baseHalfW *
+                    (1 - (1 - tipFrac) * Math.pow(t, 1.3)) *
+                    (t > 0.92 ? Math.max(0.04, (1 - t) / 0.08) : 1);
+                const thickProfile = (w) => {
+                    let th = Math.pow(1 - Math.min(1, Math.abs(w)), 0.7); // linsenförmig: dick am Grat, 0 an der Schneide
+                    if (fuller > 0) th -= fuller * Math.max(0, 1 - Math.pow(w / 0.4, 2)); // Hohlkehle (zentrale Rinne)
+                    return Math.max(0, th);
+                };
+                const verts = [];
+                const idx = [];
+                const ring = (zSign) => {
+                    for (let j = 0; j <= hseg; j++) {
+                        const t = j / hseg;
+                        const y = (t - 0.5) * L;
+                        const hw = halfWAtT(t);
+                        const thT = 1 - 0.6 * t; // distale Dicken-Verjüngung
+                        for (let k = 0; k <= wseg; k++) {
+                            const w = (k / wseg - 0.5) * 2;
+                            const th = thickProfile(w) * maxThick * thT;
+                            verts.push(w * hw, y, (zSign * th) / 2);
+                        }
+                    }
+                };
+                ring(1); // FRONT
+                const backBase = verts.length / 3;
+                ring(-1); // BACK
+                for (let j = 0; j < hseg; j++)
+                    for (let k = 0; k < wseg; k++) {
+                        const a = j * W1 + k,
+                            b = j * W1 + k + 1,
+                            c = (j + 1) * W1 + k,
+                            d = (j + 1) * W1 + k + 1;
+                        idx.push(a, c, b, b, c, d); // FRONT (+z)
+                        const a2 = backBase + a,
+                            b2 = backBase + b,
+                            c2 = backBase + c,
+                            d2 = backBase + d;
+                        idx.push(a2, b2, c2, b2, d2, c2); // BACK (−z, umgekehrt)
+                    }
+                for (let k = 0; k < wseg; k++) {
+                    // Basis-Kappe (j=0) zwischen Front + Back
+                    idx.push(k, k + 1, backBase + k, k + 1, backBase + k + 1, backBase + k);
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
             case "box":
             default:
                 return new THREE.BoxGeometry(sx, sy, sz);
         }
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE III · Ω-B1 — DIE ARCHITEKTUR-GRAMMATIK (reference-first) ═══
+    // (wahrerbauplan §6 — die SCHÖNHEIT): ein klassischer Tempel, NICHT aus unreifer
+    // Formel, sondern aus der ORDNUNG abgeleitet (das 2000 Jahre kodifizierte „LAAS der
+    // Tempel", §3). WÄHLE die Ordnung (dorisch/ionisch) → alles folgt daraus: Säulen-
+    // Schlankheit (dorisch 1:7), Entasis + Kanneluren (der flutedColumn-Schaft), Echinus-
+    // Kapitell, Architrav→Triglyphen-Fries→Gesims, GIEBEL (statt Kegel). PHYSIK-GARANT
+    // (§6): die Säulen schließen den Lastpfad (Ω-Φ5) + knicken bei 1:7 NICHT (Ω-Φ3-b) —
+    // die Ordnung liefert AUTOMATISCH solide Proportionen. Reine Daten (kein Material-
+    // Lookup); rectangulär-peripteral, parametrisch (columnsFront/Side tunbar).
+    _buildClassicalTemple(orderName, opts) {
+        const O =
+            (AnazhRealm.CLASSICAL_ORDERS && AnazhRealm.CLASSICAL_ORDERS[orderName]) ||
+            AnazhRealm.CLASSICAL_ORDERS.dorisch;
+        opts = opts || {};
+        const D = opts.columnDiameter || 0.85; // unterer Säulen-Durchmesser = das Modul
+        const colsFront = Math.max(2, opts.columnsFront || O.columnsFront || 6); // hexastyle
+        const colsSide = Math.max(2, opts.columnsSide || 2 * (O.columnsFront || 6) - 3); // dorische Tiefen-Regel
+        const shaftH = D * O.slenderness; // Schaft-Höhe = Schlankheit × D (dorisch 1:7)
+        const axis = D * O.intercolumniation; // Achs-Abstand der Säulen
+        const mat = "stein";
+        const marble = O.marble;
+        const cap = O.capitalColor || 0xe4ddca;
+        const parts = [];
+        const frontW = (colsFront - 1) * axis; // Achs-Spanne in X
+        const sideD = (colsSide - 1) * axis; // Achs-Spanne in Z
+        const halfX = frontW / 2;
+        const halfZ = sideD / 2;
+        const box = (color, x, y, z, sx, sy, sz) =>
+            parts.push({ shape: "box", material: mat, color, position: { x, y, z }, size: { x: sx, y: sy, z: sz } });
+
+        // (1) STYLOBAT/KREPIS — 3 gestufte rechteckige Stufen (abnehmend nach oben).
+        const stepColor = 0xcfc8b4;
+        const steps = [
+            { m: 3.2, y: 0.2, h: 0.4 },
+            { m: 2.4, y: 0.55, h: 0.35 },
+            { m: 1.7, y: 0.85, h: 0.3 }, // die oberste = der Stylobat, auf dem die Säulen stehen
+        ];
+        for (const s of steps) box(stepColor, 0, s.y, 0, frontW + s.m * D + 2 * D, s.h, sideD + s.m * D + 2 * D);
+        const stylTop = 1.0; // Oberkante Stylobat = Säulen-Fuß
+
+        // (2) PERISTYL — die Säulen am Rechteck-Rand (peripteral). Jede: optional Basis
+        // (ionisch), flutedColumn-SCHAFT (Entasis + Kanneluren), Echinus-Flare + Abakus.
+        const baseH = O.hasBase ? D * 0.28 : 0;
+        const echH = D * 0.26;
+        const abH = D * 0.16;
+        const abW = D * 1.18;
+        const shaftTopR = (D * O.topRatio) / 2;
+        const colTopY = stylTop + baseH + shaftH + echH + abH;
+        const isPerimeter = (fx, fz) => fx === 0 || fx === colsFront - 1 || fz === 0 || fz === colsSide - 1;
+        for (let fx = 0; fx < colsFront; fx++) {
+            for (let fz = 0; fz < colsSide; fz++) {
+                if (!isPerimeter(fx, fz)) continue;
+                const px = (fx - (colsFront - 1) / 2) * axis;
+                const pz = (fz - (colsSide - 1) / 2) * axis;
+                let y = stylTop;
+                if (O.hasBase) {
+                    box(marble, px, y + baseH / 2, pz, D * 1.15, baseH, D * 1.15); // Profil-Basis (ionisch)
+                    y += baseH;
+                }
+                parts.push({
+                    shape: "flutedColumn",
+                    material: mat,
+                    color: marble,
+                    position: { x: px, y: y + shaftH / 2, z: pz },
+                    size: { x: D, y: shaftH, z: D * O.topRatio }, // Entasis: oberer ⌀ < unterer
+                    flutes: O.flutes,
+                    fluteDepth: O.fluteDepth,
+                    entasis: O.entasis,
+                    heightSegments: 6,
+                });
+                y += shaftH;
+                // Echinus: ein nach oben aufweitender Flare (Kissen) — unterer ⌀ = Schaft-Top,
+                // oberer ⌀ = Richtung Abakus. cylinder nimmt top=sx/2, bottom=sz/2 → sx>sz = Flare.
+                parts.push({
+                    shape: "cylinder",
+                    material: mat,
+                    color: cap,
+                    position: { x: px, y: y + echH / 2, z: pz },
+                    size: { x: D * 1.02, y: echH, z: shaftTopR * 2 },
+                    segments: 14,
+                });
+                y += echH;
+                box(cap, px, y + abH / 2, pz, abW, abH, abW); // Abakus (quadratische Deckplatte)
+            }
+        }
+
+        // (3) GEBÄLK — der EINE Ring aus 4 Balken je Schicht (Architrav · Fries · Gesims).
+        const archH = D * 0.85;
+        const friezeH = D * 0.8;
+        const cornH = D * 0.36;
+        const ringX = frontW + 1.6 * D; // Außenmaß des Gebälks in X
+        const ringZ = sideD + 1.6 * D;
+        const beamW = D * 0.7;
+        const ringRow = (color, yc, h, ext) => {
+            const ex = ext || 0;
+            box(color, 0, yc, halfZ + beamW / 2 + ex, frontW + 2 * D + 2 * ex, h, beamW); // vorne (+Z)
+            box(color, 0, yc, -(halfZ + beamW / 2 + ex), frontW + 2 * D + 2 * ex, h, beamW); // hinten
+            box(color, halfX + beamW / 2 + ex, yc, 0, beamW, h, sideD + 2 * D); // rechts (+X)
+            box(color, -(halfX + beamW / 2 + ex), yc, 0, beamW, h, sideD + 2 * D); // links
+        };
+        const archY = colTopY + archH / 2;
+        ringRow(marble, archY, archH); // Architrav
+        const friezeY = colTopY + archH + friezeH / 2;
+        ringRow(0xd7cfba, friezeY, friezeH); // Fries (Grundband)
+        const cornY = colTopY + archH + friezeH + cornH / 2;
+        ringRow(cap, cornY, cornH, D * 0.35); // Gesims (Überstand)
+
+        // (3b) TRIGLYPHEN — die dorische Fries-Signatur: an JEDER Säule + JEDER Joch-Mitte
+        // ein Triglyph (vorstehender Block) auf der Vorder-/Rück-Front (die Giebel-Fronten).
+        const trigW = D * 0.34;
+        const trigD = D * 0.16;
+        const trigCol = 0xc9c1ac;
+        const trigZ = halfZ + beamW + trigD / 2;
+        const trigPositions = [];
+        for (let k = 0; k < colsFront; k++) trigPositions.push((k - (colsFront - 1) / 2) * axis); // über den Säulen
+        for (let k = 0; k < colsFront - 1; k++) trigPositions.push((k - (colsFront - 1) / 2) * axis + axis / 2); // über den Jochen
+        for (const tx of trigPositions) {
+            box(trigCol, tx, friezeY, trigZ, trigW, friezeH * 0.92, trigD);
+            box(trigCol, tx, friezeY, -trigZ, trigW, friezeH * 0.92, trigD);
+        }
+
+        // (4) GIEBEL/PEDIMENT — das Satteldach (statt Kegel): zwei geneigte Dach-Flächen,
+        // die sich am First treffen → die dreieckige Pediment-Silhouette an den Schmal-
+        // Seiten (vorne/hinten). Der First läuft längs (Z). PHYSIK: das Dach ruht auf dem
+        // Gesims (Lastpfad geschlossen).
+        const eaveY = cornY + cornH / 2;
+        const roofRise = ringX * 0.22; // Giebel-Höhe ≈ Spannweite/4.5 (flacher griech. Giebel)
+        const slopeLen = Math.hypot(ringX / 2 + 0.4 * D, roofRise);
+        const pitch = Math.atan2(roofRise, ringX / 2 + 0.4 * D);
+        const roofThick = D * 0.22;
+        const roofZ = ringZ + 0.8 * D;
+        for (const sgn of [-1, 1]) {
+            parts.push({
+                shape: "box",
+                material: mat,
+                color: cap,
+                position: { x: (sgn * (ringX / 2 + 0.4 * D)) / 2, y: eaveY + roofRise / 2, z: 0 },
+                size: { x: slopeLen, y: roofThick, z: roofZ },
+                rotation: { x: 0, y: 0, z: sgn * pitch },
+            });
+        }
+        box(cap, 0, eaveY + roofRise + roofThick * 0.3, 0, D * 0.5, roofThick * 1.2, roofZ); // First-Balken
+
+        // (5) CELLA (Naos) — der innere Raum: 4 Wände innerhalb des Peristyls, auf dem
+        // Stylobat bis unters Gebälk. Gibt dem Tempel einen soliden Kern (kein Hohlraum-Skelett).
+        const cellaX = frontW - 1.4 * D;
+        const cellaZ = sideD - 1.4 * D;
+        const cellaH = shaftH + echH + abH;
+        const cellaYc = stylTop + cellaH / 2;
+        const wallT = D * 0.4;
+        box(0xc4bda8, 0, cellaYc, cellaZ / 2, cellaX, cellaH, wallT); // Wand +Z (mit Tür-Lücke nicht modelliert)
+        box(0xc4bda8, 0, cellaYc, -cellaZ / 2, cellaX, cellaH, wallT);
+        box(0xc4bda8, cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT);
+        box(0xc4bda8, -cellaX / 2, cellaYc, 0, wallT, cellaH, cellaZ - wallT);
+
+        // (6) ALTAR + KRISTALL — im Cella-Inneren, auf dem Boden (Lastpfad intakt: der
+        // Kristall sitzt auf dem Altar, schwebt NICHT — der Tempel ist strukturell ehrlich).
+        box(0x8a7a9a, 0, stylTop + 0.35, 0, 1.5, 0.7, 1.5); // Altar-Sockel
+        box(0x6a4a8a, 0, stylTop + 0.95, 0, 1.0, 0.6, 1.0); // Altar
+        parts.push({
+            shape: "octahedron",
+            material: "quarz",
+            color: 0xd9a3ff,
+            position: { x: 0, y: stylTop + 1.6, z: 0 },
+            size: { x: 0.8, y: 1.0, z: 0.8 },
+        });
+        return parts;
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
+    // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
+    // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
+    // (der bladeProfile-Mesh). Die BALANCE (Ω-Φ4) FOLGT aus der Massen-Verteilung der
+    // Teile (ein schwerer Knauf zieht den Schwerpunkt zum Griff → schnellere Führung;
+    // eine lange Klinge + leichter Knauf → kopflastig) — gerechnet, NICHT gesetzt. Reine
+    // Daten; das Material trägt die Klinge (eisen), der Griff (leder/holz).
+    _buildBladedWeapon(typeName, opts) {
+        const T =
+            (AnazhRealm.OAKESHOTT_TYPES && AnazhRealm.OAKESHOTT_TYPES[typeName]) || AnazhRealm.OAKESHOTT_TYPES.XII;
+        opts = opts || {};
+        const parts = [];
+        const gripLen = opts.gripLen || T.gripLen || 0.34;
+        const pommelR = opts.pommelR || T.pommelR || 0.13; // der KONTERGEWICHT-Knauf (Balance!)
+        const guardW = opts.guardW || T.guardW || 0.46; // die Parierstange (Kreuz)
+        const bladeLen = opts.bladeLen || T.bladeLen;
+        const bladeW = opts.bladeBaseW || T.bladeBaseW;
+        const bladeThick = opts.bladeThick || T.thick;
+        const steel = opts.bladeMaterial || "eisen";
+        const gripMat = opts.gripMaterial || "leder";
+        // (1) KNAUF (Pommel) — das Kontergewicht ganz unten; seine Masse balanciert die Klinge.
+        // Oktaeder (facettiert) — zählt als spitze/klingen-Form (mit der bladeProfile-Klinge
+        // hält das den pointedFraction hoch genug, dass das Werk als KLINGE liest, V17.86).
+        parts.push({
+            shape: "octahedron",
+            material: steel,
+            color: 0x9aa0a6,
+            position: { x: 0, y: pommelR, z: 0 },
+            size: { x: pommelR * 2, y: pommelR * 2, z: pommelR * 2 },
+        });
+        // (2) GRIFF — von über dem Knauf bis zur Parierstange.
+        const gripY0 = pommelR * 2;
+        parts.push({
+            shape: "cylinder",
+            material: gripMat,
+            color: 0x4a3526,
+            position: { x: 0, y: gripY0 + gripLen / 2, z: 0 },
+            size: { x: 0.07, y: gripLen, z: 0.07 },
+            segments: 8,
+        });
+        // (3) PARIER (Guard/Kreuz) — die horizontale Stange, die Klinge von Griff trennt.
+        // Oktaeder (facettiertes Kreuz mit Quillon-Spitzen) — zählt als spitze/klingen-Form,
+        // sodass das Schwert mit Knauf + Klinge pointedFraction 0.75 trägt → es SCHNEIDET
+        // (cutPower > minePower, die Klingen-Wahrheit V17.86), liest nicht als Brecher.
+        const guardY = gripY0 + gripLen;
+        parts.push({
+            shape: "octahedron",
+            material: steel,
+            color: 0x9aa0a6,
+            position: { x: 0, y: guardY + 0.04, z: 0 },
+            size: { x: guardW, y: 0.1, z: 0.16 },
+        });
+        // (4) KLINGE — der bladeProfile-Mesh: distale Verjüngung + Hohlkehle aus dem Oakeshott-Typ.
+        const bladeY0 = guardY + 0.08;
+        parts.push({
+            shape: "bladeProfile",
+            material: steel,
+            color: 0xc7ccd2,
+            position: { x: 0, y: bladeY0 + bladeLen / 2, z: 0 },
+            size: { x: bladeW, y: bladeLen, z: bladeThick },
+            tipWidth: T.tipWidth,
+            fuller: T.fuller,
+            heightSegments: 16,
+        });
+        return parts;
     }
 
     // Einen Bauplan in einen THREE.Group rendern. Materialien werden pro
@@ -46335,93 +46720,13 @@ class AnazhRealm {
             size: { x: 2.8, y: 0.7, z: 1.4 },
         });
 
-        const templeParts = [];
-        const pillarCount = 6;
-        const pillarRadius = 3.2;
-        const pillarHeight = 4.0;
-        // V17.15 — der Tempel bekommt Binnen-Struktur (Schöpfer-Audit „Strukturen
-        // kaum Struktur in sich"). Reine DATEN; temple ist NICHT instanziert.
-        // Gestufte Stein-Plattform (3 Stufen, abnehmend) → klassischer Unterbau.
-        const stepBaseColor = 0xb8b09a;
-        const steps = [
-            { r: pillarRadius + 1.7, y: 0.2, h: 0.4 },
-            { r: pillarRadius + 1.2, y: 0.55, h: 0.35 },
-            { r: pillarRadius + 0.8, y: 0.85, h: 0.3 },
-        ];
-        for (const st of steps) {
-            templeParts.push({
-                shape: "cylinder",
-                color: stepBaseColor,
-                position: { x: 0, y: st.y, z: 0 },
-                size: { x: st.r * 2, y: st.h, z: st.r * 2 },
-                segments: 16,
-            });
-        }
-        const pillarBaseY = 1.0; // auf der obersten Stufe
-        for (let i = 0; i < pillarCount; i++) {
-            const angle = (i / pillarCount) * Math.PI * 2;
-            const px = Math.cos(angle) * pillarRadius;
-            const pz = Math.sin(angle) * pillarRadius;
-            // Säulen-Sockel (breiter Block unten)
-            templeParts.push({
-                shape: "box",
-                color: 0xd0c8b0,
-                position: { x: px, y: pillarBaseY + 0.2, z: pz },
-                size: { x: 0.95, y: 0.4, z: 0.95 },
-            });
-            // Säulen-Schaft
-            templeParts.push({
-                shape: "cylinder",
-                color: 0xc8c0a8,
-                position: { x: px, y: pillarBaseY + 0.4 + pillarHeight / 2, z: pz },
-                size: { x: 0.6, y: pillarHeight, z: 0.7 },
-                segments: 10,
-            });
-            // Säulen-Kapitell (breiter Block oben)
-            templeParts.push({
-                shape: "box",
-                color: 0xd0c8b0,
-                position: { x: px, y: pillarBaseY + 0.4 + pillarHeight + 0.2, z: pz },
-                size: { x: 0.95, y: 0.4, z: 0.95 },
-            });
-        }
-        const entabY = pillarBaseY + 0.4 + pillarHeight + 0.4;
-        // Architrav/Gesims (Ring unter dem Dach)
-        templeParts.push({
-            shape: "cylinder",
-            color: 0xbfb79f,
-            position: { x: 0, y: entabY + 0.25, z: 0 },
-            size: { x: (pillarRadius + 0.9) * 2, y: 0.5, z: (pillarRadius + 0.9) * 2 },
-            segments: 16,
-        });
-        // Dach (flacher Kegel statt flacher Scheibe → Tempel-Silhouette)
-        templeParts.push({
-            shape: "cone",
-            color: 0xc8c0a8,
-            position: { x: 0, y: entabY + 0.5 + 0.9, z: 0 },
-            size: { x: (pillarRadius + 1.1) * 2, y: 1.8, z: (pillarRadius + 1.1) * 2 },
-            segments: 16,
-        });
-        // Altar-Sockel + Altar (auf der Plattform-Mitte)
-        templeParts.push({
-            shape: "box",
-            color: 0x8a7a9a,
-            position: { x: 0, y: 1.2, z: 0 },
-            size: { x: 1.6, y: 0.5, z: 1.6 },
-        });
-        templeParts.push({
-            shape: "box",
-            color: 0x6a4a8a,
-            position: { x: 0, y: 1.75, z: 0 },
-            size: { x: 1.1, y: 0.8, z: 1.1 },
-        });
-        // Kristall-Spitze (schwebt über dem Altar)
-        templeParts.push({
-            shape: "octahedron",
-            color: 0xd9a3ff,
-            position: { x: 0, y: 2.7, z: 0 },
-            size: { x: 0.9, y: 1.1, z: 0.9 },
-        });
+        // Ω-B1 (wahrerbauplan §6 — die SCHÖNHEIT): der Tempel folgt jetzt der DORISCHEN
+        // ORDNUNG (reference-first, §3, das 2000-Jahre-„LAAS der Tempel"): kannelierte
+        // Schäfte mit Entasis, Echinus-Kapitelle, Triglyphen-Fries, GIEBEL — aus der
+        // Ordnung ABGELEITET, nicht hand-geraten. Die alte „6 glatte Zylinder + Kegeldach"-
+        // Attrappe ist ersetzt. Physik-garant: die 1:7-Säulen knicken nicht (Ω-Φ3-b),
+        // der Lastpfad schließt (Ω-Φ5). Parametrisch — ionisch ist ein Parameter-Tausch.
+        const templeParts = this._buildClassicalTemple("dorisch");
 
         const waterfallParts = [
             // Klippe hinten
@@ -48038,33 +48343,14 @@ class AnazhRealm {
                 rotation: { x: 0, y: 0, z: Math.PI / 2 },
             },
         ];
-        // V17.86 — DAS SCHWERT (Schöpfer-Wunsch: „ein Schwert wäre als Samen/Hilfestellung gut"). Die
-        // Waffen-Saat neben der Werkzeug-Saat (Spitzhacke). ROLLENLOS wie die Spitzhacke (V17.72) → die
-        // Rolle EMERGIERT aus der Form: ein Griff + eine LANGE, SPITZE eisen-Klinge (scharf+gestreckt →
-        // `_isGraspableBladeForm` → Waffe/Gerät, U4). Knauf + Klinge sind beide spitze Formen → die
-        // pointedFraction (2/3) ist hoch genug, dass das Profil als KLINGE (schneidet) liest, nicht als
-        // Brecher — ein Schwert SCHNEIDET (der Substanz-Trade-off W2: scharfe Form → cutPower > minePower).
-        const geraetSchwertParts = [
-            {
-                shape: "octahedron",
-                material: "eisen",
-                position: { x: 0, y: 0.18, z: 0 },
-                size: { x: 0.14, y: 0.14, z: 0.14 },
-            },
-            {
-                shape: "cylinder",
-                material: "leder",
-                position: { x: 0, y: 0.5, z: 0 },
-                size: { x: 0.1, y: 0.55, z: 0.1 },
-                segments: 6,
-            },
-            {
-                shape: "cone",
-                material: "eisen",
-                position: { x: 0, y: 1.5, z: 0 },
-                size: { x: 0.16, y: 1.7, z: 0.05 },
-            },
-        ];
+        // V17.86 — DAS SCHWERT (Schöpfer-Wunsch „ein Schwert wäre als Samen/Hilfestellung gut").
+        // Ω-B2 (wahrerbauplan §6/§3.5): NICHT mehr „Box/Kegel mit pointedFraction", sondern ein
+        // OAKESHOTT-Typ XII (Schnitt+Stich) — Knauf · Griff · Parier · distal-verjüngte Klinge mit
+        // HOHLKEHLE (der bladeProfile-Mesh). ROLLENLOS wie die Spitzhacke (V17.72) → die Rolle
+        // EMERGIERT (gestreckt + spitz → `_isGraspableBladeForm` → Waffe/Gerät, U4; Oktaeder-Knauf +
+        // bladeProfile-Klinge halten pointedFraction 0.5 → KLINGE, nicht Brecher). Die BALANCE
+        // (Ω-Φ4) FOLGT aus den Massen (Knauf vs. Klinge), nicht aus einer Setzung.
+        const geraetSchwertParts = this._buildBladedWeapon("XII");
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
@@ -50734,7 +51020,14 @@ class AnazhRealm {
             const ext = this._partWorldExtents(p);
             const h = ext.ey || 0;
             const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
+            const wmax = Math.max(0.02, Math.max(ext.ex || 0, ext.ez || 0));
             if (h < w * 1.2) continue; // kein vertikales Glied (Platte/Klotz) → kein Knicken
+            // Ω-Φ3-b TREUE (V18.242 — der Cella-Wand-Befund): ein WAND-/Platten-Glied (eine
+            // horizontale Dimension ≫ die andere) ist KEINE freie Euler-Säule — eine Mauer,
+            // eine Tempel-Cella-Wand, ein hochkant-Brett ist durch seine Breite + die Eck-
+            // Verbindungen verstrebt (knickt nicht wie eine schlanke Säule). Der Grob-Richter
+            // (§1) fängt die freie SÄULE unterm Dach, nicht jede tragende Wand.
+            if (wmax > w * (AnazhRealm.PHYSIS.wallBraceRatio || 4)) continue;
             const slender = h / w;
             const härte = (mats[p.material] && mats[p.material].tags && mats[p.material].tags.härte) || 0.5;
             const crit = Math.max(
@@ -68436,7 +68729,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.241.0";
+AnazhRealm.VERSION = "18.242.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69954,12 +70247,84 @@ AnazhRealm.PHYSIS = {
     bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5
     bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
     bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
+    wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule
 };
 // Ω-W3 (wahrerbauplan §7) — die max. Wank-Amplitude (rad) eines voll instabilen
 // Werks in der Werkstatt-Vorschau (~9°). Augen-justierbar (Wand 1: der finale Look
 // richtet sich am Schöpfer-Auge); der MECHANISMUS (Physik → sichtbares Teetern) ist
 // headless beweisbar (das Verdikt + die Verdrahtung), die Pixel sind augen-bound.
 AnazhRealm.WORKSHOP_LEAN_AMP = 0.16;
+// ═══ Ω-PHYSIS · SÄULE III · Ω-B1 — DIE KLASSISCHEN ORDNUNGEN (das „LAAS der Tempel") ═══
+// (wahrerbauplan §3/§6) — die 2000 Jahre kodifizierte reference-first Referenz: EXAKTE
+// Proportionen, kein Raten. WÄHLT man die Ordnung, folgt alles daraus (Schlankheit ·
+// Kanneluren · Kapitell · Gebälk). `_buildClassicalTemple` leitet den Tempel daraus ab.
+// dorisch zuerst (Ω-B1 ANTI-SCOPE); ionisch ist der Parameter-TAUSCH (schlanker, Basis,
+// 24 Rillen) — die Voluten/Akanthus-Geometrie ist der augen-bound Folge-Schliff (Wand 1).
+AnazhRealm.CLASSICAL_ORDERS = Object.freeze({
+    dorisch: Object.freeze({
+        slenderness: 7, // Schaft-Höhe : unterer Durchmesser (dorisch 1:7-8 — die stärkste Ordnung)
+        topRatio: 0.82, // oberer ⌀ / unterer ⌀ (die Verjüngung nach oben)
+        entasis: 0.05, // konvexe Schaft-Wölbung (gegen die optische Täuschung — DAS dorische Detail)
+        flutes: 20, // Kanneluren (dorisch 20, an scharfen Graten getroffen)
+        fluteDepth: 0.05,
+        hasBase: false, // dorisch: KEINE Basis — der Schaft steht direkt auf dem Stylobat
+        intercolumniation: 2.25, // Achs-Abstand in Durchmessern
+        columnsFront: 6, // hexastyle (die ikonische Front)
+        marble: 0xddd6c4,
+        capitalColor: 0xe4ddca,
+    }),
+    ionisch: Object.freeze({
+        slenderness: 9, // schlanker (1:9)
+        topRatio: 0.84,
+        entasis: 0.035,
+        flutes: 24, // ionisch 24, durch flache Stege getrennt
+        fluteDepth: 0.06,
+        hasBase: true, // ionisch: Profil-Basis
+        intercolumniation: 2.4,
+        columnsFront: 6,
+        marble: 0xe6e0d2,
+        capitalColor: 0xeae3d4,
+    }),
+});
+// ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE OAKESHOTT-TYPOLOGIE (das „LAAS der Klingen") ═══
+// (wahrerbauplan §3.5) — die gemessene Klingen-Referenz: Querschnitt · Länge · Hohlkehle ·
+// distale Verjüngung. `_buildBladedWeapon` leitet die Klinge daraus ab; die BALANCE
+// (Ω-Φ4) folgt aus den Massen (Knauf vs. Klinge), nicht aus einer Setzung. Längen in m.
+AnazhRealm.OAKESHOTT_TYPES = Object.freeze({
+    // Typ XII — das ritterliche Schnitt-UND-Stich-Schwert: breite Hohlkehle, mäßige Verjüngung.
+    XII: Object.freeze({
+        bladeLen: 1.45,
+        bladeBaseW: 0.2,
+        tipWidth: 0.34,
+        fuller: 0.5,
+        thick: 0.06,
+        gripLen: 0.34,
+        pommelR: 0.13,
+        guardW: 0.46,
+    }),
+    // Typ XV — stich-orientiert: scharfe Verjüngung zur Spitze, KEINE Hohlkehle, diamant-steif.
+    XV: Object.freeze({
+        bladeLen: 1.4,
+        bladeBaseW: 0.17,
+        tipWidth: 0.12,
+        fuller: 0.0,
+        thick: 0.07,
+        gripLen: 0.32,
+        pommelR: 0.12,
+        guardW: 0.42,
+    }),
+    // Typ XIIIa — das große Schwert: lang, lange Hohlkehle, langer Griff (Kontergewicht-Knauf).
+    XIIIa: Object.freeze({
+        bladeLen: 1.9,
+        bladeBaseW: 0.23,
+        tipWidth: 0.45,
+        fuller: 0.55,
+        thick: 0.06,
+        gripLen: 0.46,
+        pommelR: 0.15,
+        guardW: 0.52,
+    }),
+});
 // Λ.2 (V18.173 — V18.181-merge-Λ Sub 3a — clever-gauss): die HSL-Spannweite,
 // die jede gespawnte Architektur-Instanz bekommt (seed-deterministisch aus
 // entry.tintH/.tintS/.tintV; HISM-instanceColor). rangeH 0.08 = ±8 % Hue →
@@ -70068,7 +70433,7 @@ AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
 // Welle 5 B — räumliche Emergenz. Welche Formen wirken als „Spitzen" (Prinzip
 // 1: Spitze richtet). Helix ist drin, weil ihr Ende eine Schraubspitze ist —
 // nicht so scharf wie ein Kegel, aber funktional gerichtet.
-AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "octahedron", "helix"]));
+AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "octahedron", "helix", "bladeProfile"]));
 // Welche Tags fließen über Kontakt (Prinzip 4: Kontakt überträgt). Konzept
 // §5.2 nennt Wärme, Strom, Magie, Schwingung — entsprechen vier von zehn
 // MATERIAL_TAG_KEYS. „Lebendig" überträgt sich nicht (Leben ist nicht

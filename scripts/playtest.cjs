@@ -6349,6 +6349,112 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
     );
 }
 
+// Ω-PHYSIS Säule III — DIE BAUPLAN-GRAMMATIK (wahrerbauplan §6). Ω-B1 Architektur
+// (der Tempel folgt der DORISCHEN ORDNUNG: Entasis + Kanneluren [flutedColumn] · Echinus ·
+// Triglyphen · Giebel) + Ω-B2 Objekte (das Schwert als OAKESHOTT-Typ: bladeProfile mit
+// distaler Verjüngung + Hohlkehle). Reference-first UND PHYSIK-GARANT: der Tempel steht +
+// die 1:7-Säulen knicken nicht, die Balance der Klinge ist gerechnet. Reine Berechnung →
+// kein Flake (der LOOK augen-bound, Wand 1).
+async function checkBandOmegaGrammatik(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            C = r.constructor;
+        const o = {};
+        // ── Ω-B1 der dorische Tempel ──
+        const temple = r.state.blueprints.temple;
+        o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
+        const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
+        o.doricShafts =
+            shafts.length > 10 &&
+            shafts.every((p) => p.size.z < p.size.x && p.flutes === C.CLASSICAL_ORDERS.dorisch.flutes);
+        o.pediment =
+            temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
+        o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+        // die flutedColumn-Geometrie baut (Entasis + Kanneluren in EINER Mesh)
+        try {
+            const g = r._makePartGeometry({
+                shape: "flutedColumn",
+                size: { x: 1, y: 7, z: 0.82 },
+                flutes: 20,
+                entasis: 0.05,
+            });
+            o.flutedGeo = !!(g && g.getAttribute("position") && g.getAttribute("position").count > 100);
+        } catch (e) {
+            o.flutedGeo = false;
+        }
+        // PHYSIK-GARANT: steht, knickt nicht, Lastpfad schließt
+        o.templeStands = r._stability(temple).inside === true && r._stability(temple).margin > 0;
+        o.templeRole = r.computeBlueprintRole(temple) === "architecture";
+        o.doricNoBuckle = r._failsUnderLoad(temple).buckles === false;
+        const small = { parts: r._buildClassicalTemple("dorisch", { columnsFront: 4, columnsSide: 5 }) };
+        o.loadCloses = r._loadPath(small).intact === true && r._loadPath(small).floatingParts.length === 0;
+        // KONTRAST: über-schlank knickt
+        o.overSlenderBuckles =
+            r._failsUnderLoad({
+                parts: [
+                    {
+                        shape: "flutedColumn",
+                        material: "stein",
+                        size: { x: 0.2, y: 6, z: 0.164 },
+                        position: { x: 0, y: 3, z: 0 },
+                    },
+                ],
+            }).buckles === true;
+        // die WAND-Verfeinerung (V18.242): eine breite tragende Wand knickt NICHT (keine freie Säule)
+        o.wallNoBuckle =
+            r._failsUnderLoad({
+                parts: [
+                    { shape: "box", material: "stein", size: { x: 8, y: 6, z: 0.34 }, position: { x: 0, y: 3, z: 0 } },
+                ],
+            }).buckles === false;
+        // ── Ω-B2 die Oakeshott-Klinge ──
+        const sword = r.state.blueprints.geraet_schwert;
+        o.swordOk = !!(sword && Array.isArray(sword.parts));
+        const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
+        o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
+        o.oakeshott = !!(C.OAKESHOTT_TYPES && C.OAKESHOTT_TYPES.XII && C.OAKESHOTT_TYPES.XV);
+        o.swordImplement = o.swordOk && r._isGraspableBladeForm(sword) === true; // gestreckt + spitz → Klinge
+        try {
+            const bg = r._makePartGeometry({
+                shape: "bladeProfile",
+                size: { x: 0.2, y: 1.4, z: 0.06 },
+                tipWidth: 0.34,
+                fuller: 0.5,
+            });
+            o.bladeGeo = !!(bg && bg.getAttribute("position") && bg.getAttribute("position").count > 50);
+        } catch (e) {
+            o.bladeGeo = false;
+        }
+        // die Balance (Ω-Φ4) ist gerechnet + typ-abhängig (großes Schwert kopflastiger)
+        o.balanceTyped =
+            r._swingDynamics({ parts: r._buildBladedWeapon("XIIIa") }).balance >
+            r._swingDynamics({ parts: r._buildBladedWeapon("XV") }).balance;
+        return o;
+    });
+    check(
+        "Ω-B1: der Tempel folgt der dorischen Ordnung (kannelierte Schäfte + Entasis)",
+        res.templeOk && res.doricShafts
+    );
+    check("Ω-B1: Giebel-Dach (geneigte Flächen) + zwei Ordnungen", res.pediment && res.orders);
+    check("Ω-B1: die flutedColumn-Geometrie baut (Entasis + Kanneluren, EINE Mesh)", res.flutedGeo === true);
+    check("⟡ Ω-B1 PHYSIK-GARANT: der Tempel steht + liest als Bauwerk", res.templeStands && res.templeRole);
+    check(
+        "⟡ Ω-B1 PHYSIK-GARANT: die 1:7-Säulen knicken nicht, der Lastpfad schließt",
+        res.doricNoBuckle && res.loadCloses
+    );
+    check(
+        "Ω-B1 KONTRAST: über-schlank knickt; eine breite Wand knickt NICHT (V18.242)",
+        res.overSlenderBuckles && res.wallNoBuckle
+    );
+    check(
+        "Ω-B2: das Schwert ist eine echte Klinge (bladeProfile: Verjüngung + Hohlkehle)",
+        res.realBlade && res.oakeshott
+    );
+    check("Ω-B2: die Klingen-Geometrie baut; liest als gehaltene Klinge", res.bladeGeo && res.swordImplement);
+    check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
+}
+
 // Ω-OPSIS §7 (wahreranblick §8) — die Sky-Env-Map-MECHANIK: ohne scene.environment
 // rendern PBR-Metalle schwarz (sie holen ihre Farbe aus der Reflexion). Der lawful Fix
 // (prozedurale Equirekt-Gradient-Env aus der Himmel-Farbe) ist headless als MECHANIK
@@ -55526,6 +55632,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandOmegaPhi1CoM(ctx);
             await checkBandOmegaPhysisSaeuleI_II(ctx);
             await checkBandOmegaWerkstattSpiegel(ctx);
+            await checkBandOmegaGrammatik(ctx);
             await checkBandOmegaOpsisSkyEnv(ctx);
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);

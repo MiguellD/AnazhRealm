@@ -24,10 +24,27 @@
 > kopflastig — rollen-bewusst (eine Waffe „kippt" nicht, sie schwingt träge). 10/10
 > `diag-werkstatt-spiegel` + `checkBandOmegaWerkstattSpiegel` grün (Mechanismus + CONSUM
 > hart bewiesen; der finale LOOK des Wankens ist AUGEN-bound, Wand 1 von Ω-OPSIS).
-> **NÄCHSTE:** SÄULE III Grammatik (Entasis/Kanneluren/Oakeshott — die Schönheit, größer
-> + teils AUGEN-bound). Die Minimal-Wahrheit (§8) — Säule I+II — war gelandet; mit
-> Säule IV ist der WERKSTATT-Spiegel rund: das unsichtbare Kugel-Problem ist geheilt UND
-> die Wahrheit ist sichtbar, bevor das Werk in die Welt geht.
+> **SÄULE III — DIE BAUPLAN-GRAMMATIK GEBAUT (V18.242, die SCHÖNHEIT, reference-first):**
+> **Ω-B1** der Tempel folgt der DORISCHEN ORDNUNG (das 2000-Jahre-„LAAS der Tempel", §3) —
+> ein NEUER `flutedColumn`-Mesh trägt ENTASIS (konvexe Schaft-Verjüngung) UND echte
+> KANNELUREN (20 Rillen, Radius-Modulation um den Umfang) in EINER Geometrie (nicht mit
+> N Groove-Parts gefälscht — die Face-Falle §6), + Echinus-Kapitelle, Triglyphen-Fries,
+> GIEBEL (statt Kegel); `_buildClassicalTemple(order)` leitet alles aus der Ordnung ab,
+> ionisch ist der Parameter-Tausch. **Ω-B2** das Schwert ist ein OAKESHOTT-Typ — ein NEUER
+> `bladeProfile`-Mesh trägt distale Verjüngung + HOHLKEHLE (das gelebte Flächenträgheits-
+> moment Ω-Φ3) + linsenförmigen Querschnitt zu den Schneiden; `_buildBladedWeapon(typ)`,
+> die Balance (Ω-Φ4) FOLGT aus den Massen (XV 0.64 → XIIIa 0.85, das große Schwert
+> kopflastiger). **PHYSIK-GARANT (das WAHRHEITS-BAND §10): wahr UND schön zugleich** — der
+> Tempel STEHT (margin 1.0) + die 1:7-Säulen KNICKEN NICHT (s 8.5 < crit, Ω-Φ3-b) + der
+> Lastpfad SCHLIESST (0 schwebende Teile); der Kontrast: über-schlank knickt. Plus die
+> **Ω-Φ3-b-WAND-TREUE (V18.242)**: eine breite tragende Wand (Cella) ist KEINE freie
+> Euler-Säule (verstrebt) → knickt nicht — heilt auch Ω-W3 für Spieler-Wände. 16/16
+> `diag-grammatik` + `checkBandOmegaGrammatik` grün; der finale LOOK (Fluting-Tiefe, Look
+> der Klinge) AUGEN-bound (Wand 1). **NÄCHSTE (Säule III-Reste, klein):** Ω-B4 Varianten-
+> Pool für Architektur (das Baum-Instancing erbt es) · Ω-B5 Allometrie — GEMESSEN KEIN
+> Skalierungs-Haken (Kreatur-Körper sind feste Templates); das Physik-URTEIL über Körper
+> ist SCHON da (Ω-W3 zählt `soul` zu den stehenden Rollen → ein zu-schlank-beiniger Avatar
+> liest „wackelig/knickt"). **Ω-PHYSIS ist damit der SUBSTANZ nach VOLLENDET** (Säule I–IV).
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein
