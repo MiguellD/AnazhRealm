@@ -6022,6 +6022,80 @@ async function checkBandV1771ToolOpFromForm(ctx) {
 // (fertigeBlueprint routet, das Role-Gate beißt), (c) kein Worldgen-Litter.
 // Player-State wird gesnapshottet + restauriert (V17.66-Lehre: forge-equip
 // + embody mutieren equipped/soul/boosts → ein dangling Held bräche spätere Bands).
+// ═══ Ω-PHYSIS · SÄULE I · Ω-Φ1 — SCHWERPUNKT + MASSE (der Grundstein) ═══
+// wahrerbauplan §4 Ω-Φ1 — der Physik-Schiedsrichter, der bis hier KOMPLETT fehlte
+// (0 Treffer). BEWEIS objektiv + headless (reine Berechnung, KEIN WebGPU-Flake):
+// ein asymmetrischer Bauplan hat den CoM nahe der schweren Seite, nicht in der Mitte.
+async function checkBandOmegaPhi1CoM(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const out = {};
+        out.exists = typeof r._compoundCenterOfMass === "function";
+        if (!out.exists) return out;
+        const mats = r.state.materials || {};
+        let dense = null,
+            light = null,
+            dd = -1,
+            ld = 2;
+        for (const name in mats) {
+            const d = mats[name] && mats[name].tags && mats[name].tags.dichte;
+            if (typeof d !== "number") continue;
+            if (d > dd) {
+                dd = d;
+                dense = name;
+            }
+            if (d < ld) {
+                ld = d;
+                light = name;
+            }
+        }
+        out.haveMats = !!dense && !!light && dense !== light && dd > ld;
+        const mk = (parts) => ({ parts });
+        // (1) symmetrisch: zwei identische Teile bei ±x → CoM.x ≈ 0
+        const cSym = r._compoundCenterOfMass(
+            mk([
+                { position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
+                { position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
+            ])
+        );
+        out.symCentered = Math.abs(cSym.com.x) < 1e-6 && cSym.mass > 0;
+        // (2) größeres Teil bei +x → CoM verschiebt sich dorthin (Volumen → Masse)
+        const cVol = r._compoundCenterOfMass(
+            mk([
+                { position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
+                { position: { x: 2, y: 0, z: 0 }, size: { x: 2, y: 2, z: 2 }, material: dense },
+            ])
+        );
+        out.volShiftsCoM = cVol.com.x > 0.5;
+        // (3) dichteres Material bei +x → CoM verschiebt sich dorthin (dichte → Masse)
+        const cDch = r._compoundCenterOfMass(
+            mk([
+                { position: { x: -2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light },
+                { position: { x: 2, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense },
+            ])
+        );
+        out.dichteShiftsCoM = out.haveMats ? cDch.com.x > 0 : true;
+        // (4) Masse skaliert mit dichte (gleiche Form, dense > light)
+        const mDense = r._compoundCenterOfMass(
+            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: dense }])
+        ).mass;
+        const mLight = r._compoundCenterOfMass(
+            mk([{ position: { x: 0, y: 0, z: 0 }, size: { x: 1, y: 1, z: 1 }, material: light }])
+        ).mass;
+        out.massScalesDichte = out.haveMats ? mDense > mLight : true;
+        // (5) leerer/ungültiger Bauplan → sicher 0 (keine Division durch 0)
+        out.emptySafe = r._compoundCenterOfMass({ parts: [] }).mass === 0 && r._compoundCenterOfMass(null).mass === 0;
+        return out;
+    });
+    check("Ω-Φ1 (wahrerbauplan): _compoundCenterOfMass existiert (der fehlende Grundstein)", res.exists === true);
+    check("Ω-Φ1: symmetrischer Bauplan → CoM zentriert (x≈0)", res.symCentered === true);
+    check("Ω-Φ1: größeres Teil → CoM verschiebt sich dorthin (Volumen→Masse)", res.volShiftsCoM === true);
+    check("Ω-Φ1: dichteres Material → CoM verschiebt sich dorthin (dichte→Masse)", res.dichteShiftsCoM === true);
+    check("Ω-Φ1: Masse skaliert mit dichte (dense > light)", res.massScalesDichte === true);
+    check("Ω-Φ1: leerer/ungültiger Bauplan → Masse 0 (sicher, keine Div/0)", res.emptySafe === true);
+}
+
 async function checkBandV1772Library(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -55173,6 +55247,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1770WorkshopStationMark(ctx);
             await checkBandV1771ToolOpFromForm(ctx);
             await checkBandV1772Library(ctx);
+            await checkBandOmegaPhi1CoM(ctx);
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);
             await checkBandV1775MakeActCost(ctx);

@@ -50409,6 +50409,49 @@ class AnazhRealm {
         return Math.max(0, Math.min(1, Math.max(sMaxX - sMinX, sMaxZ - sMinZ) / compW));
     }
 
+    // ═══ Ω-PHYSIS · SÄULE I · Ω-Φ1 — SCHWERPUNKT + MASSE (der Grundstein) ═══
+    // (wahrerbauplan §4 Ω-Φ1) — der EINE Richter, aus dem die halbe Physik fällt
+    // (Stabilität · Balance · Hebel). Bis hier rät `spread` die Stabilität, WEIL der
+    // Schwerpunkt nirgends existierte (0 Treffer im 67k-System). Jetzt gerechnet, nicht
+    // geraten: jedes Teil ist eine Punktmasse an seinem Zentrum, gewichtet mit
+    // Volumen·dichte (dichte ist ein Material-Tag — schon da). Reference-first der
+    // Physik: rechne die Wahrheit, lies die Eigenschaft daraus.
+    //
+    // EHRLICHKEIT (wahrerbauplan §4): dichte ist [0,1]-normiert, kein kg/m³ → die
+    // Wahrheit ist RELATIV/vergleichend ("schwerer als", "kippt eher als"), nie
+    // absolute Newton. Genau das, was Stabilität/Balance/Versagen VERGLEICHEN brauchen.
+    // ANTI-SCOPE Ω-Φ1: nur die Berechnung. Keine Rolle liest sie noch (das ist Säule II).
+    // Bau-/Edit-Zeit-Größe, gecacht vom Aufrufer — nicht pro Frame.
+    _compoundCenterOfMass(bp) {
+        const out = { com: { x: 0, y: 0, z: 0 }, mass: 0 };
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return out;
+        const mats = this.state.materials || {};
+        let mx = 0,
+            my = 0,
+            mz = 0,
+            mass = 0;
+        for (const p of bp.parts) {
+            const s = p.size || { x: 1, y: 1, z: 1 };
+            const vol = Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1));
+            const mat = mats[p.material];
+            const dichte = mat && mat.tags && typeof mat.tags.dichte === "number" ? mat.tags.dichte : 0.5;
+            // dichte-Floor 0.05: ein dichte-0-Material (Geist/Luft) hat trotzdem Form-
+            // Masse > 0 (sonst kollabiert der CoM einer rein-leichten Struktur auf 0).
+            const m = vol * Math.max(0.05, dichte);
+            const pos = p.position || { x: 0, y: 0, z: 0 };
+            mx += (pos.x || 0) * m;
+            my += (pos.y || 0) * m;
+            mz += (pos.z || 0) * m;
+            mass += m;
+        }
+        if (mass <= 0) return out;
+        out.com.x = mx / mass;
+        out.com.y = my / mass;
+        out.com.z = mz / mass;
+        out.mass = mass;
+        return out;
+    }
+
     // V17.90 (resonanz-system.md §1 + Schöpfer-Befund „größer = stärker, doch 3× größer = identische Werte"):
     // die MASSE/GRÖSSE eines Werks verstärkt seine Wucht. Bis hier war die Wirkung GRÖSSEN-BLIND (die Compound-
     // Tags sind MAX-aggregiert → eine 3× größere gleich-materielle Klinge gab dieselben Stats). Der Größen-
@@ -67750,7 +67793,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.237.0";
+AnazhRealm.VERSION = "18.238.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
