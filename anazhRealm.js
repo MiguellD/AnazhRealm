@@ -64021,6 +64021,11 @@ class AnazhRealm {
                 }
                 if (au.density) au.density.value = 0.0085 + rainyMix * 0.006;
                 if (au.hazeTop) au.hazeTop.value = 150 - rainyMix * 55;
+                // V18.231 (Ω-OPSIS Säule V Ω-O13) — der HÖHEN-MELT-Beginn (hazeNear)
+                // rückt bei feuchtem Wetter NÄHER → ferne Berge verblassen STÄRKER
+                // im Dunst (Plan „Stärker bei feuchtem Wetter"). Vollendet die
+                // Wetter-Kopplung über ALLE Dunst-Uniforms (density/hazeTop/fog/near).
+                if (au.hazeNear) au.hazeNear.value = 70 - rainyMix * 30;
                 // §7.5(a) (V18.164) — das Mond-Rim atmet mit der Nacht: voll,
                 // wenn die Sonne unter dem Horizont steht, ausgeblendet bis
                 // Sonnenhöhe 0.25 (Dämmerung), tags 0. Regen dämpft (kein
@@ -68010,7 +68015,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.230.0";
+AnazhRealm.VERSION = "18.231.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

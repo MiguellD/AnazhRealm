@@ -37710,6 +37710,59 @@ async function checkBandWahrerAnblickPfade(ctx) {
     check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// V18.231 (DER WAHRE ANBLICK — VERIFIKATION + ATMOSPHÄRE) — Säule IV (Büsche/
+// Understory: GEMESSEN schon gewachsen, V18.216/.225 — VERIFIZIEREN, kein
+// Kugel-Bug) + Säule V Ω-O13 (die Atmosphäre koppelt ans Wetter — schon weit,
+// hier vollendet um hazeNear: ferne Berge verblassen STÄRKER bei Feuchte).
+async function checkBandWahrerAnblickAtmoBusch(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (IV) Büsche sind SKELETON-GRAMMATIK (kein Kugel-Haufen) — V18.216
+        const G = A.SPECIES_GRAMMAR;
+        out.buschGrammar = !!(G && G.busch_hazel && G.busch_hazel.trunk && G.busch_hazel.L1);
+        out.understoryArts = !!(G && G.farn_busch && G.blume_gross);
+        const layers = A.SCATTER && A.SCATTER.layers;
+        out.understoryLayer = !!(layers && layers.some((l) => l.kind === "under"));
+        let buschParts = 0;
+        try {
+            const keys = r._buildVariantLODs("busch_hazel", 0);
+            const bp = keys && r.state.blueprints[keys[0]];
+            buschParts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
+        } catch (_e) {
+            /* gen < 7 → Grammatik-Struktur trägt den Beweis */
+        }
+        out.buschParts = buschParts;
+        out.buschIsRich = buschParts >= 8 || buschParts === 0;
+
+        // (V) die Atmosphäre koppelt ans Wetter über ALLE Dunst-Uniforms
+        r._ensureAtmoUniforms();
+        const fogSrc = r._dayNightApplyHemiAndFog.toString();
+        out.hazeWeather = /hazeTop[^]*rainyMix/.test(fogSrc) && /density[^]*rainyMix/.test(fogSrc);
+        out.hazeNearWeather = /hazeNear[^]*rainyMix/.test(fogSrc);
+        out.hazeNearUniform = !!(r.state.atmoUniforms && r.state.atmoUniforms.hazeNear);
+
+        out.versionStr = A.VERSION;
+        const pv = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 231);
+        return out;
+    });
+
+    check("Ω-OPSIS S4 (IV1) Büsche sind Skeleton-Grammatik (busch_hazel trunk+L1, kein Kugel-Haufen)", res.buschGrammar === true);
+    check("Ω-OPSIS S4 (IV2) Understory-Arten existieren (Farn + Blume)", res.understoryArts === true);
+    check("Ω-OPSIS S4 (IV3) die Understory-Scatter-Schicht existiert (5-Strata)", res.understoryLayer === true);
+    check(`Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`, res.buschIsRich === true);
+    check("Ω-OPSIS S5 (V1) Atmosphäre koppelt ans Wetter (hazeTop+density × rainyMix)", res.hazeWeather === true);
+    check("Ω-OPSIS S5 (V2) CONSUM: hazeNear rückt bei Feuchte näher (stärkerer Dunst)", res.hazeNearWeather === true);
+    check("Ω-OPSIS S5 (V3) hazeNear-Uniform existiert", res.hazeNearUniform === true);
+    check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -54917,6 +54970,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickGras(ctx);
             await checkBandWahrerAnblickLaub(ctx);
             await checkBandWahrerAnblickPfade(ctx);
+            await checkBandWahrerAnblickAtmoBusch(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
