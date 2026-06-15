@@ -6119,11 +6119,23 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
             }
         }
         const P = (parts, connections) => ({ parts, connections });
-        const pt = (x, y, z, sx, sy, sz, m, shape, rot) => ({ position: { x, y, z }, size: { x: sx, y: sy, z: sz }, material: m || dense, shape, rotation: rot });
+        const pt = (x, y, z, sx, sy, sz, m, shape, rot) => ({
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            material: m || dense,
+            shape,
+            rotation: rot,
+        });
         const o = {};
         // ── Ω-Φ2 Stützpolygon + Stabilität (SSF) ──
         o.phi2Exists = typeof r._stability === "function" && typeof r._supportPolygon === "function";
-        const table = P([pt(-2, 0, -2, 0.4, 1, 0.4), pt(2, 0, -2, 0.4, 1, 0.4), pt(-2, 0, 2, 0.4, 1, 0.4), pt(2, 0, 2, 0.4, 1, 0.4), pt(0, 1, 0, 4, 0.3, 4, light)]);
+        const table = P([
+            pt(-2, 0, -2, 0.4, 1, 0.4),
+            pt(2, 0, -2, 0.4, 1, 0.4),
+            pt(-2, 0, 2, 0.4, 1, 0.4),
+            pt(2, 0, 2, 0.4, 1, 0.4),
+            pt(0, 1, 0, 4, 0.3, 4, light),
+        ]);
         const tippy = P([pt(0, 0, 0, 1, 1, 1), pt(6, 4, 0, 2, 2, 2, dense)]);
         o.tableStable = r._stability(table).margin > 0.5;
         const tp = r._stability(tippy);
@@ -6132,7 +6144,12 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         // ── Ω-Φ3 Steifigkeit + Versagen ──
         o.phi3Exists = typeof r._bendingStiffness === "function" && typeof r._failsUnderLoad === "function";
         o.boardAniso = r._bendingStiffness(P([pt(0, 0, 0, 6, 0.3, 0.6)])).anisotropy > 3;
-        const ring = P([pt(-1.5, 0, -1.5, 1, 1, 1), pt(1.5, 0, -1.5, 1, 1, 1), pt(-1.5, 0, 1.5, 1, 1, 1), pt(1.5, 0, 1.5, 1, 1, 1)]);
+        const ring = P([
+            pt(-1.5, 0, -1.5, 1, 1, 1),
+            pt(1.5, 0, -1.5, 1, 1, 1),
+            pt(-1.5, 0, 1.5, 1, 1, 1),
+            pt(1.5, 0, 1.5, 1, 1, 1),
+        ]);
         const solid = P([pt(0, 0, 0, 4, 1, 4)]);
         const mOf = (bp) => r._compoundCenterOfMass(bp).mass;
         o.hollowEfficient = r._bendingStiffness(ring).Imin / mOf(ring) > r._bendingStiffness(solid).Imin / mOf(solid);
@@ -6148,10 +6165,12 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.balancedFaster = sb.swingSpeed > sh.swingSpeed;
         // ── Ω-Φ5 Lastpfad + Schneide ──
         o.phi5Exists = typeof r._loadPath === "function" && typeof r._edgeContinuity === "function";
-        o.stackIntact = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 2, 0, 1, 1, 1)])).intact === true;
+        o.stackIntact =
+            r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 2, 0, 1, 1, 1)])).intact === true;
         const ft = r._loadPath(P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)]));
         o.floatBreaks = ft.intact === false && ft.floatingFrac > 0;
-        o.edgeContinuous = r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(1, 0, 0, 1, 0.3, 0.1), pt(2, 0, 0, 1, 0.3, 0.1)])) === 1;
+        o.edgeContinuous =
+            r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(1, 0, 0, 1, 0.3, 0.1), pt(2, 0, 0, 1, 0.3, 0.1)])) === 1;
         o.edgeGapped = r._edgeContinuity(P([pt(0, 0, 0, 1, 0.3, 0.1), pt(3, 0, 0, 1, 0.3, 0.1)])) < 1;
         // ── Ω-L1 die Physik-Achsen im Produkt-Vektor (alle [0,1], skalen-konsistent) ──
         const v = r._blueprintProductVector(table);
@@ -6160,7 +6179,10 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.l1AxesBounded = axes.every((a) => v[a] >= 0 && v[a] <= 1);
         // rollable: ein Wagen (liegende Rad-Zylinder unten) > 0, ein Tempel = 0
         const wheel = (x, z) => pt(x, 0, z, 0.6, 0.6, 0.2, dense, "cylinder", { x: 0, y: 0, z: Math.PI / 2 });
-        const veh = P([wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 0.8, 0, 2.4, 0.5, 2.4, light)], [{ type: "sitz", a: 4, b: 0 }]);
+        const veh = P(
+            [wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 0.8, 0, 2.4, 0.5, 2.4, light)],
+            [{ type: "sitz", a: 4, b: 0 }]
+        );
         o.rollableWheels = r._blueprintProductVector(veh).rollable > 0;
         o.rollableTrunkZero = r._rollableFraction(P([pt(0, 0, 0, 0.5, 5, 0.5, dense, "cylinder")])) === 0; // vertikaler Stamm rollt nicht
         // ── Ω-L2 die Physik in den Rollen-Signaturen + das WAHRHEITS-BAND ──
@@ -6168,7 +6190,10 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
             sigA = C.ROLE_SIGNATURES.architecture;
         o.l2VehicleReadsPhysik = sigV.stability > 0 && sigV.rollable > 0;
         o.l2ArchReadsPhysik = sigA.stability > 0 && sigA.loadSound > 0;
-        const topHeavyVeh = P([wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 4, 0, 2.4, 3, 2.4, dense)], [{ type: "sitz", a: 4, b: 0 }]);
+        const topHeavyVeh = P(
+            [wheel(-1.5, -1), wheel(1.5, -1), wheel(-1.5, 1), wheel(1.5, 1), pt(0, 4, 0, 2.4, 3, 2.4, dense)],
+            [{ type: "sitz", a: 4, b: 0 }]
+        );
         const vehRes = r._blueprintResonance(r._blueprintProductVector(veh), sigV);
         const topRes = r._blueprintResonance(r._blueprintProductVector(topHeavyVeh), sigV);
         o.truthBand = r._stability(topHeavyVeh).margin < r._stability(veh).margin && topRes < vehRes; // kippliges Fahrzeug schwächer
@@ -6176,28 +6201,152 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         o.builtinsHold =
             r.computeBlueprintRole(r.state.blueprints.temple) === "architecture" &&
             r.computeBlueprintRole(r.state.blueprints.welt_portal) === "portal" &&
-            (r.state.blueprints.fahrzeug_wagen ? r.computeBlueprintRole(r.state.blueprints.fahrzeug_wagen) === "vehicle" : true);
+            (r.state.blueprints.fahrzeug_wagen
+                ? r.computeBlueprintRole(r.state.blueprints.fahrzeug_wagen) === "vehicle"
+                : true);
         // ── Ω-L3 Geltungsbereich-Markierung ──
-        o.l3Marks = C.AXIS_CLASS && C.AXIS_CLASS.stability === "physik" && C.AXIS_CLASS.magieleitung === "konvention" && C.AXIS_CLASS.spread === "form";
+        o.l3Marks =
+            C.AXIS_CLASS &&
+            C.AXIS_CLASS.stability === "physik" &&
+            C.AXIS_CLASS.magieleitung === "konvention" &&
+            C.AXIS_CLASS.spread === "form";
         // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
         const why = r._blueprintRoleWhy(r.state.blueprints.fahrzeug_wagen || veh);
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
         return o;
     });
     check("Ω-Φ2 (wahrerbauplan): _stability/_supportPolygon existieren", res.phi2Exists === true);
-    check("Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0", res.tableStable && res.tippyTips && res.mastUnstable);
-    check("Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)", res.phi3Exists && res.boardAniso && res.hollowEfficient);
+    check(
+        "Ω-Φ2: breite Basis → stabil; Last außerhalb → kippt; Mast → ~0",
+        res.tableStable && res.tippyTips && res.mastUnstable
+    );
+    check(
+        "Ω-Φ3a: Brett anisotrop steif; hohl effizienter als voll (I/Masse)",
+        res.phi3Exists && res.boardAniso && res.hollowEfficient
+    );
     check("Ω-Φ3b: schlanke Säule knickt, stämmige trägt (das Versagen, §9#8)", res.slenderBuckles && res.stockyHolds);
-    check("Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller", res.phi4Exists && res.headHeavier && res.balancedFaster);
-    check("Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad", res.phi5Exists && res.stackIntact && res.floatBreaks);
+    check(
+        "Ω-Φ4: kopflastig schwerer balanciert; griffnah schneller",
+        res.phi4Exists && res.headHeavier && res.balancedFaster
+    );
+    check(
+        "Ω-Φ5: Stapel intakt, schwebendes Teil bricht Lastpfad",
+        res.phi5Exists && res.stackIntact && res.floatBreaks
+    );
     check("Ω-Φ5: Schneide durchgehend=1, mit Lücke<1", res.edgeContinuous && res.edgeGapped);
     check("Ω-L1: die Physik-Achsen sind im Produkt-Vektor, alle [0,1]", res.l1AxesPresent && res.l1AxesBounded);
     check("Ω-L1: rollable aus Roll-Physik (Räder>0, vertikaler Stamm=0)", res.rollableWheels && res.rollableTrunkZero);
-    check("Ω-L2: vehicle liest stability+rollable, architecture stability+loadSound", res.l2VehicleReadsPhysik && res.l2ArchReadsPhysik);
+    check(
+        "Ω-L2: vehicle liest stability+rollable, architecture stability+loadSound",
+        res.l2VehicleReadsPhysik && res.l2ArchReadsPhysik
+    );
     check("⟡ Ω-L2 WAHRHEITS-BAND: kopflastiges Fahrzeug liest schwächer (§10)", res.truthBand === true);
     check("Ω-L2: KEINE Live-Rollen-Verschiebung (Built-ins domain-fest)", res.builtinsHold === true);
     check("Ω-L3: Achsen-Geltungsbereich markiert (physik/konvention/form)", res.l3Marks === true);
     check("Ω-W1: Warum-Chip ZITIERT gerechnete Physik (KONSUM, kein Passagier)", res.w1ConsumesPhysik === true);
+}
+
+// Ω-PHYSIS Säule IV — DER WAHRHEITS-SPIEGEL (wahrerbauplan §7/§10). DIE ZWEI SEELEN
+// VEREINT: die in Säule I gerechnete Physik (das SEIN) wird Ω-W2 physik-wahre
+// Optimierung + Ω-W3 sichtbares Bau-Feedback (der ANBLICK, wahreranblick.md). Reine
+// Berechnung + CONSUM-Source-Probe → kein GPU-Flake (der finale LOOK des Wankens ist
+// augen-bound, Wand 1; der MECHANISMUS ist hart bewiesen).
+async function checkBandOmegaWerkstattSpiegel(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm,
+            C = r.constructor;
+        const mats = r.state.materials || {};
+        let dense = mats.eisen ? "eisen" : null,
+            light = mats.holz ? "holz" : null;
+        if (!dense || !light) {
+            let dd = -1,
+                ld = 2;
+            for (const m in mats) {
+                const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
+                if (typeof d !== "number") continue;
+                if (d > dd) ((dd = d), (dense = m));
+                if (d < ld) ((ld = d), (light = m));
+            }
+        }
+        const pt = (x, y, z, sx, sy, sz, m) => ({
+            position: { x, y, z },
+            size: { x: sx, y: sy, z: sz },
+            material: m || dense,
+        });
+        const P = (parts, role) => ({ parts, role, roleManual: !!role });
+        const lineHas = (v, re) => v.lines.some((l) => re.test(l.text));
+        const o = {};
+        // ── Ω-W2 physik-wahre Optimierung (die Tat verschiebt die GERECHNETE Größe) ──
+        const h = C.AXIS_ACTION_HINTS || {};
+        o.w2Verbs =
+            /Basis|Standfläche/.test(h.stability || "") &&
+            /Lastpfad/.test(h.loadSound || "") &&
+            /Räder|Achse/.test(h.rollable || "");
+        const narrow = P([pt(0, 0, 0, 1, 0.5, 1), pt(0, 2, 0, 2, 2, 2)], "architecture");
+        const wide = P([pt(0, 0, 0, 4, 0.5, 4), pt(0, 2, 0, 2, 2, 2)], "architecture");
+        o.w2Promise = r._stability(wide).margin > r._stability(narrow).margin;
+        // ── Ω-Φ5 floatingParts offengelegt (EINE Quelle, additiv) ──
+        const floatTower = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(0, 5, 0, 1, 1, 1)], "architecture");
+        o.floatIdx =
+            Array.isArray(r._loadPath(floatTower).floatingParts) && r._loadPath(floatTower).floatingParts.includes(2);
+        // ── Ω-W3 das Verdikt (rollen-bewusst) ──
+        o.verdictFn = typeof r._workshopPhysicsVerdict === "function";
+        const leaner = P([pt(0, 0, 0, 1, 1, 1), pt(0, 1, 0, 1, 1, 1), pt(1.5, 2, 0, 3, 1, 3)], "architecture");
+        const vLean = r._workshopPhysicsVerdict(leaner);
+        o.leanWankt =
+            vLean.lean > 0.5 &&
+            lineHas(vLean, /kippt|wackelig/) &&
+            vLean.floatingParts.length === 0 &&
+            Math.abs(vLean.leanDir.x) + Math.abs(vLean.leanDir.z) > 0.1;
+        const vFloat = r._workshopPhysicsVerdict(floatTower);
+        o.floatMarked = vFloat.floatingParts.length > 0 && lineHas(vFloat, /schwebend|Lastpfad/);
+        const vSlender = r._workshopPhysicsVerdict(P([pt(0, 0, 0, 0.2, 5, 0.2)], "architecture"));
+        o.slenderKnickt = vSlender.buckles === true && lineHas(vSlender, /schlank|knickt/);
+        const table = P(
+            [
+                pt(-2, 0, -2, 0.4, 1.6, 0.4),
+                pt(2, 0, -2, 0.4, 1.6, 0.4),
+                pt(-2, 0, 2, 0.4, 1.6, 0.4),
+                pt(2, 0, 2, 0.4, 1.6, 0.4),
+                pt(0, 0.9, 0, 4, 0.3, 4, light),
+            ],
+            "architecture"
+        );
+        const vStable = r._workshopPhysicsVerdict(table);
+        o.stableRuht =
+            vStable.lean === 0 &&
+            vStable.floatingParts.length === 0 &&
+            lineHas(vStable, /steht/) &&
+            !lineHas(vStable, /kippt|wackelig/);
+        const vWeapon = r._workshopPhysicsVerdict(
+            P([pt(0, 0.5, 0, 0.3, 1, 0.3, light), pt(0, 3, 0, 0.4, 4, 0.4, dense)], "weapon")
+        );
+        o.weaponTraege =
+            vWeapon.swingDrag > 0.5 &&
+            lineHas(vWeapon, /kopflastig/) &&
+            vWeapon.lean === 0 &&
+            !lineHas(vWeapon, /kippt/);
+        // ── Ω-W3 CONSUM: die Vorschau LIEST das Verdikt (Source-Probe, kein GPU) ──
+        o.consumRebuild = /_workshopPhysicsVerdict/.test(r._workshopRebuildPreviewMesh.toString());
+        o.consumTick =
+            /physicsVerdict/.test(r._workshopStartRAF.toString()) && /rotation/.test(r._workshopStartRAF.toString());
+        o.consumRender = /floatingParts/.test(r._workshopRender.toString());
+        return o;
+    });
+    check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
+    check("Ω-W2: die Tat verschiebt die GERECHNETE Größe (Basis breit → stabiler)", res.w2Promise === true);
+    check("Ω-Φ5: _loadPath legt die schwebenden Teil-Indizes offen (EINE Quelle)", res.floatIdx === true);
+    check("Ω-W3: das Verdikt-Funktion existiert", res.verdictFn === true);
+    check("⟡ Ω-W3: kippliges Bauwerk WANKT (lean>0.5, kippt/wackelig, Richtung)", res.leanWankt === true);
+    check("Ω-W3: schwebendes Teil markiert + Lastpfad-Warnung", res.floatMarked === true);
+    check("Ω-W3: zu schlanke Säule knickt (Versagen sichtbar)", res.slenderKnickt === true);
+    check("Ω-W3: stabiles Bauwerk RUHT (lean 0, steht, keine Warnung)", res.stableRuht === true);
+    check("Ω-W3 ROLLEN-bewusst: kopflastige Waffe → traeger Schwung, nicht kippt", res.weaponTraege === true);
+    check(
+        "⟡ Ω-W3 CONSUM: die Vorschau liest das Verdikt (wankt/markiert/cacht — kein Passagier)",
+        res.consumRebuild && res.consumTick && res.consumRender
+    );
 }
 
 // Ω-OPSIS §7 (wahreranblick §8) — die Sky-Env-Map-MECHANIK: ohne scene.environment
@@ -6217,7 +6366,10 @@ async function checkBandOmegaOpsisSkyEnv(ctx) {
     });
     check("Ω-OPSIS §7: _ensureSkyEnvironment existiert (PBR-Metalle vs schwarz)", res.hasMethod === true);
     // wenn der Renderer (headless) bereit ist, MUSS die Env stehen; sonst kein Flake-Zwang
-    check("Ω-OPSIS §7: scene.environment gesetzt (Renderer-bereit) ohne Fehlschlag", res.ready ? res.envSet && res.notFailed : res.notFailed);
+    check(
+        "Ω-OPSIS §7: scene.environment gesetzt (Renderer-bereit) ohne Fehlschlag",
+        res.ready ? res.envSet && res.notFailed : res.notFailed
+    );
 }
 
 async function checkBandV1772Library(ctx) {
@@ -55373,6 +55525,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV1772Library(ctx);
             await checkBandOmegaPhi1CoM(ctx);
             await checkBandOmegaPhysisSaeuleI_II(ctx);
+            await checkBandOmegaWerkstattSpiegel(ctx);
             await checkBandOmegaOpsisSkyEnv(ctx);
             await checkBandV1773HeldMesh(ctx);
             await checkBandV1774UseByRole(ctx);

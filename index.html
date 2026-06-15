@@ -6391,6 +6391,21 @@
                 opacity: 0.92;
                 margin: 1px 0 3px;
             }
+            /* Ω-W3 — der Physik-Spiegel: das gerechnete Verdikt (kippt/steht/schwebt/knickt).
+               warn = Bernstein-rot (eine gerechnete Warnung), ok = ruhiges Grün. */
+            .spec-physis-line {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 10.5px;
+                margin: 1px 0;
+                line-height: 1.35;
+            }
+            .spec-physis-warn {
+                color: #f0a060;
+            }
+            .spec-physis-ok {
+                color: #9ad29a;
+                opacity: 0.9;
+            }
             /* Werte-Chip-Streifen. */
             .spec-stat-strip {
                 display: flex;
@@ -9332,6 +9347,6 @@
          V8.41: ?v=<version> als Cache-Buster — sonst servieren Browser/CDN
          (githack) bei einem Version-Sprung eine stale anazhRealm.js gegen die
          frische index.html. Bei jedem Version-Bump diese Query mitziehen. -->
-        <script src="anazhRealm.js?v=18.240.0" defer></script>
+        <script src="anazhRealm.js?v=18.241.0" defer></script>
     </body>
 </html>

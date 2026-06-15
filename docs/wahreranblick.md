@@ -28,6 +28,15 @@
 > (Ω-PHYSIS, das SEIN) sind dasselbe Gesetz — der Auslesewert der Wahrheit. Während
 > Ω-PHYSIS headless verifizierbar ist, ist der LOOK flake-begrenzt → **das Schöpfer-
 > Auge ist hier der letzte Richter** (Wand 1).
+>
+> **DIE ZWEI SEELEN VEREINT (V18.241 — der erste Ort, wo SEIN sichtbar wird):** der
+> WAHRHEITS-SPIEGEL der Werkstatt (Ω-PHYSIS Säule IV, `wahrerbauplan.md §7`) ist die
+> erste gebaute Naht zwischen den Gesichtern: die in Säule I GERECHNETE Physik (das
+> SEIN — Schwerpunkt · Stützpolygon · Lastpfad) wird sichtbares Bau-Feedback (der
+> ANBLICK) — ein instabiles Werk WANKT sichtbar in der 3D-Vorschau, ein schwebendes
+> Teil wird warn-markiert. Der MECHANISMUS (Physik → bewegter Anblick) ist headless
+> bewiesen (`diag-werkstatt-spiegel`); der finale LOOK des Wankens (Amplitude/Rhythmus)
+> bleibt AUGEN-bound (Wand 1) — `WORKSHOP_LEAN_AMP` ist der Browser-Regler.
 
 ---
 

@@ -50813,7 +50813,11 @@ class AnazhRealm {
     // von den Boden-Kontakten: ein abgetrenntes (schwebendes) Teil trägt 0. Und die
     // Schneide: ein durchgehender Pfad — eine Klinge mit Lücke schneidet nicht.
     _loadPath(bp) {
-        const out = { intact: true, floatingFrac: 0, floatingCount: 0, groundCount: 0 };
+        // Ω-W3 (wahrerbauplan §7) — `floatingParts` legt die Indizes der schwebenden
+        // Teile offen (dieselbe `seen[]`-BFS, EINE Quelle): die Werkstatt MARKIERT sie
+        // sichtbar (der gebrochene Lastpfad wird zum farbigen Warn-Tint). Additiv —
+        // die bestehenden Leser (intact/floatingFrac) bleiben unberührt.
+        const out = { intact: true, floatingFrac: 0, floatingCount: 0, groundCount: 0, floatingParts: [] };
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 2) return out;
         const n = bp.parts.length;
         // Kosten-Wand: die Adjazenz ist O(n²). Ein sehr großer Bauplan (Baum 75+ Parts)
@@ -50871,6 +50875,7 @@ class AnazhRealm {
             if (!seen[i]) {
                 floating += m;
                 out.floatingCount++;
+                out.floatingParts.push(i);
             }
         }
         out.floatingFrac = total > 0 ? floating / total : 0;
@@ -60557,6 +60562,31 @@ class AnazhRealm {
                     p.dirty = true;
                 }
             }
+            // Ω-W3 (wahrerbauplan §7 — DIE SEELEN VEREINT): die gerechnete Physik WANKT
+            // sichtbar. Ein instabiles Werk (Schwerpunkt nah/über der Kipp-Kante) teetert
+            // um seine Ruhe-Pose, Amplitude ∝ Instabilität, in die KIPP-Richtung (zum
+            // überhängenden CoM); ein stehendes Werk ruht still. Liest die build-Zeit-
+            // gecachte Verdikt-Wahrheit (kein Frame-Rechnen, §1). Die Amplitude ist
+            // augen-justierbar (Wand 1: der finale Look richtet sich am Schöpfer-Auge).
+            const vd = p.physicsVerdict;
+            if (p.currentMesh) {
+                const restX = p._restRotX || 0,
+                    restZ = p._restRotZ || 0;
+                if (vd && vd.lean > 0.01 && !p.probe) {
+                    const t = performance.now() / 1000;
+                    const amp = vd.lean * (AnazhRealm.WORKSHOP_LEAN_AMP || 0.16); // bis ~9° bei voll instabil
+                    const osc = Math.sin(t * 2.6) * amp; // langsames Teetern
+                    p.currentMesh.rotation.z = restZ - osc * (vd.leanDir.x || 0);
+                    p.currentMesh.rotation.x = restX + osc * (vd.leanDir.z || 0);
+                    p._leanWasApplied = true;
+                    p.dirty = true;
+                } else if (p._leanWasApplied) {
+                    p.currentMesh.rotation.x = restX;
+                    p.currentMesh.rotation.z = restZ;
+                    p._leanWasApplied = false;
+                    p.dirty = true;
+                }
+            }
             if (p.dirty || p.drag || p.dragManipulator) {
                 this._workshopRender();
                 p.dirty = false;
@@ -60595,6 +60625,96 @@ class AnazhRealm {
             cancelAnimationFrame(ws.preview.rafId);
             ws.preview.rafId = null;
         }
+    }
+
+    // ═══ Ω-PHYSIS · SÄULE IV · Ω-W3 — DER WAHRHEITS-SPIEGEL (Physik → sichtbar) ═══
+    // (wahrerbauplan §7/§10 — DIE ZWEI SEELEN VEREINT): die in Säule I GERECHNETE
+    // Physik (das SEIN) wird in der Werkstatt sichtbares Bau-Feedback (der ANBLICK,
+    // wahreranblick.md). Liest NUR die Säule-I-Funktionen (_stability/_loadPath/
+    // _failsUnderLoad/_swingDynamics/_edgeContinuity) — kein erfundener Richter, das
+    // WAHRHEITS-BAND §10. ROLLEN-bewusst: ein STEHENDES Werk (Bauwerk/Fahrzeug/Körper)
+    // wird auf Standfestigkeit gerichtet (kippt → wankt sichtbar in der Vorschau), ein
+    // GEHALTENES (Gerät/Waffe) auf Schwung+Schneide; jedes auf den Lastpfad (ein
+    // schwebendes Teil ist immer falsch). Bau-/Edit-Zeit gerechnet, gecacht (§1 — NICHT
+    // pro Frame; der RAF-Tick liest nur die gecachte Wahrheit).
+    _workshopPhysicsVerdict(bp) {
+        const out = { lean: 0, leanDir: { x: 0, z: 0 }, floatingParts: [], buckles: false, swingDrag: 0, lines: [] };
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
+        const role = (typeof this._displayRole === "function" && this._displayRole(bp)) || bp.role || "";
+        const standing =
+            role === "architecture" ||
+            role === "vehicle" ||
+            role === "machine" ||
+            role === "workshop-station" ||
+            role === "soul" ||
+            role === "portal";
+        const wielded = role === "held" || role === "weapon" || role === "tool" || role === "brecher";
+        // Ω-Φ5 Lastpfad — universell (ein schwebendes Teil trägt nichts, egal die Rolle).
+        const lp = this._loadPath(bp);
+        out.floatingParts = Array.isArray(lp.floatingParts) ? lp.floatingParts.slice() : [];
+        if (out.floatingParts.length) {
+            out.lines.push({
+                sev: "warn",
+                text: `${out.floatingParts.length}× schwebendes Teil — der Lastpfad zum Boden ist gebrochen`,
+            });
+        }
+        // Ω-Φ2 Stabilität — für STEHENDE Werke (kippt → wankt). Ein Schwert „kippt" nicht.
+        if (standing) {
+            const stab = this._stability(bp);
+            if (!stab.inside) {
+                out.lean = 1;
+                out.lines.push({ sev: "warn", text: "kippt — der Schwerpunkt liegt außerhalb der Standfläche" });
+            } else if (stab.margin < 0.25) {
+                out.lean = Math.max(0, Math.min(1, 1 - stab.margin / 0.25)); // nahe der Kipp-Kante
+                out.lines.push({ sev: "warn", text: "wackelig — der Schwerpunkt sitzt nah an der Kipp-Kante" });
+            } else {
+                out.lines.push({ sev: "ok", text: "steht — der Schwerpunkt sitzt sicher über der Standfläche" });
+            }
+            // Kipp-Richtung: vom Stützpolygon-Schwerpunkt zum CoM.xz (dorthin überhängt das Gewicht).
+            const poly = this._supportPolygon(bp);
+            if (poly && poly.hull && poly.hull.length && stab.com) {
+                let cx = 0,
+                    cz = 0;
+                for (const h of poly.hull) ((cx += h.x), (cz += h.z));
+                cx /= poly.hull.length;
+                cz /= poly.hull.length;
+                const dx = stab.com.x - cx,
+                    dz = stab.com.z - cz;
+                const len = Math.hypot(dx, dz) || 1;
+                out.leanDir = { x: dx / len, z: dz / len };
+            }
+            // Ω-Φ3-b Knicken — knickt ein schlankes tragendes Glied unter der Last?
+            const fail = this._failsUnderLoad(bp);
+            if (fail.buckles) {
+                out.buckles = true;
+                out.lines.push({ sev: "warn", text: "zu schlank — ein tragendes Glied knickt unter der Last" });
+            }
+        }
+        // Ω-Φ4 Schwung — für GEHALTENE Werke (kopflastig → träge).
+        if (wielded) {
+            const sw = this._swingDynamics(bp);
+            const bbox = this._compoundBBox(bp);
+            const span = bbox ? Math.max(bbox.max.x - bbox.min.x, bbox.max.y - bbox.min.y, bbox.max.z - bbox.min.z) : 1;
+            const balanceFrac = Math.max(0, Math.min(1, sw.balance / Math.max(0.1, span)));
+            out.swingDrag = balanceFrac;
+            if (balanceFrac > 0.5)
+                out.lines.push({
+                    sev: "warn",
+                    text: "kopflastig — die Masse sitzt weit vom Griff, der Schwung ist träge",
+                });
+            else if (sw.mass > 0)
+                out.lines.push({ sev: "ok", text: "griffnah balanciert — schnelle, leichte Führung" });
+            // Klinge/Brecher: eine durchgehende Schneide?
+            if (role === "weapon" || role === "brecher") {
+                const edge = this._edgeContinuity(bp);
+                if (edge < 0.999)
+                    out.lines.push({
+                        sev: "warn",
+                        text: "die Schneide hat eine Lücke — sie schneidet nicht durchgehend",
+                    });
+            }
+        }
+        return out;
     }
 
     // Baut das Mesh aus dem aktiven Bauplan neu, populiert die
@@ -60662,6 +60782,13 @@ class AnazhRealm {
         }
         p.currentMesh = group;
         p.scene.add(group);
+        // Ω-W3 (wahrerbauplan §7) — die gerechnete Physik beim BAU gecacht (§1, nicht
+        // pro Frame); der RAF-Tick liest sie fürs Wanken, _workshopRender für den
+        // Schwebe-Marker. Die Ruhe-Pose merken (das Wanken oszilliert um sie).
+        p.physicsVerdict = this._workshopPhysicsVerdict(bp);
+        p._restRotX = group.rotation.x;
+        p._restRotZ = group.rotation.z;
+        p._leanWasApplied = false;
 
         // Auto-center: Kamera-Target auf Bauplan-Center, Distanz aus Diagonale
         const bbox = new THREE.Box3().setFromObject(group);
@@ -60729,6 +60856,11 @@ class AnazhRealm {
         // Selection-Tint: violett-Mischung 50:50 mit Original-Farbe.
         // Alle anderen Parts zurück auf Original (idempotent).
         const selIdx = ws.selectedPartIdx;
+        // Ω-W3 (wahrerbauplan §7) — die SCHWEBENDEN Teile (Lastpfad gebrochen) werden
+        // sichtbar warn-rot getintet: der gerechnete Lastpfad-Bruch (Ω-Φ5) wird Anblick.
+        // Die Auswahl-Tönung hat Vorrang (der Spieler arbeitet daran).
+        const fp = p.physicsVerdict && p.physicsVerdict.floatingParts;
+        const floatSet = fp && fp.length ? new Set(fp) : null;
         for (const [mesh, idx] of p.partMeshes) {
             const orig = p.origColors.get(mesh);
             if (typeof orig !== "number") continue;
@@ -60743,6 +60875,14 @@ class AnazhRealm {
                 const rB = Math.round(r1 * 0.5 + r2 * 0.5);
                 const gB = Math.round(g1 * 0.5 + g2 * 0.5);
                 const bB = Math.round(b1 * 0.5 + b2 * 0.5);
+                mesh.material.color.setHex((rB << 16) | (gB << 8) | bB);
+            } else if (floatSet && floatSet.has(idx)) {
+                const r1 = (orig >> 16) & 0xff,
+                    g1 = (orig >> 8) & 0xff,
+                    b1 = orig & 0xff;
+                const rB = Math.round(r1 * 0.4 + 0xff * 0.6);
+                const gB = Math.round(g1 * 0.4 + 0x46 * 0.6);
+                const bB = Math.round(b1 * 0.4 + 0x32 * 0.6);
                 mesh.material.color.setHex((rB << 16) | (gB << 8) | bB);
             } else {
                 mesh.material.color.setHex(orig);
@@ -61989,6 +62129,27 @@ class AnazhRealm {
                         class: "spec-motion-line",
                         text: mtxt,
                         title: "Die Bewegungs-Rollen emergieren aus Form × Lage × Spiegelung — und aus den VERBINDUNGEN: ein Gelenk (Rad/Tür/Wirbel/Scharnier) entsteht am Anker zwischen zwei verbundenen Teilen. Als Seele getragen oder als Bau erwacht bewegt sich das Werk genau so.",
+                    })
+                );
+            }
+        }
+        // Ω-W3 (wahrerbauplan §7 — DER WAHRHEITS-SPIEGEL): die in Säule I GERECHNETE
+        // Physik in Worten — kippt/wackelig/steht (Schwerpunkt über Stützpolygon),
+        // schwebendes Teil (Lastpfad), knickt (Versagen), kopflastig (Schwung). Die
+        // Werkstatt LÜGT nicht — sie zeigt die Wahrheit, bevor das Werk in die Welt
+        // geht. Klar als „gerechnet" markiert (Ω-L3); in der Vorschau wankt das
+        // Instabile zudem sichtbar (der RAF-Tick) — die zwei Seelen vereint.
+        const verdict = this._workshopPhysicsVerdict(bp);
+        if (verdict && verdict.lines && verdict.lines.length) {
+            rightChildren.push(
+                this._el("div", { class: "spec-col-head spec-col-head-sub", text: "Physik-Spiegel (gerechnet)" })
+            );
+            for (const ln of verdict.lines) {
+                rightChildren.push(
+                    this._el("div", {
+                        class: `spec-physis-line spec-physis-${ln.sev}`,
+                        text: `${ln.sev === "warn" ? "⚠" : "✓"} ${ln.text}`,
+                        title: "Der Wahrheits-Spiegel: die in Säule I gerechnete Physik (Schwerpunkt · Stützpolygon · Lastpfad · Knicken · Schwung) — ein Richter außerhalb des Systems, kein erfundener Wert. Ein instabiles Werk wankt zudem sichtbar in der 3D-Vorschau.",
                     })
                 );
             }
@@ -68275,7 +68436,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.240.0";
+AnazhRealm.VERSION = "18.241.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69794,6 +69955,11 @@ AnazhRealm.PHYSIS = {
     bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
     bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
 };
+// Ω-W3 (wahrerbauplan §7) — die max. Wank-Amplitude (rad) eines voll instabilen
+// Werks in der Werkstatt-Vorschau (~9°). Augen-justierbar (Wand 1: der finale Look
+// richtet sich am Schöpfer-Auge); der MECHANISMUS (Physik → sichtbares Teetern) ist
+// headless beweisbar (das Verdikt + die Verdrahtung), die Pixel sind augen-bound.
+AnazhRealm.WORKSHOP_LEAN_AMP = 0.16;
 // Λ.2 (V18.173 — V18.181-merge-Λ Sub 3a — clever-gauss): die HSL-Spannweite,
 // die jede gespawnte Architektur-Instanz bekommt (seed-deterministisch aus
 // entry.tintH/.tintS/.tintV; HISM-instanceColor). rangeH 0.08 = ±8 % Hue →
@@ -70728,6 +70894,17 @@ AnazhRealm.AXIS_ACTION_HINTS = Object.freeze({
     livingBody: "nutze lebendiges Material am Körper",
     bodyShape: "forme einen Körper (symmetrisch · vertikal · Glieder)",
     portalShape: "forme einen Ring in Reisenden-Größe",
+    // Ω-W2 (wahrerbauplan §7 — Optimierung an ECHTEN Größen): die GERECHNETEN
+    // Physik-Achsen (Säule I) bekommen ihren physik-wahren Verb — der Hinweis
+    // zitiert das Gesetz, nicht nur eine Zahl. „verbreitere die Basis → der
+    // Schwerpunkt sitzt sicherer im Stützpolygon → stabiler" (BEWEIS: die Tat
+    // verschiebt die gerechnete Größe messbar in die versprochene Richtung).
+    stability: "verbreitere die Basis (Schwerpunkt sicher über der Standfläche)",
+    loadSound: "schließe den Lastpfad zum Boden (kein schwebendes Teil)",
+    rollable: "setze runde Räder an den Boden (rollt um eine freie Achse)",
+    stiffness: "lege Material weg von der Biegeachse (Hohlrohr/I-Profil statt Vollstab)",
+    balance: "verlagere die Masse zum Griff (näher balanciert → schnellere Führung)",
+    leverage: "rücke die Kopfmasse nach vorn (längerer Hebel → mehr Wucht)",
 });
 
 // S10 (kampf-plan §11.10) — die KATALYSATOR-OP aus der Form: ein Werkzeug katalysiert eine Transformation, und

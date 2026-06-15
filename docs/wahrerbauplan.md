@@ -12,11 +12,22 @@
 > WAHRHEITS-BAND: ein kopflastiges Fahrzeug liest schwächer; Built-ins domain-fest,
 > GEMESSEN kein Live-Rollen-Drift) · **Ω-L3** AXIS_CLASS (physik/konvention/form) ·
 > **Ω-W1** der Warum-Chip ZITIERT die gerechnete Physik (KONSUM-Beweis). 16/16
-> `diag-physis` + die Bänder `checkBandOmegaPhysisSaeuleI_II` grün. **NÄCHSTE:**
-> SÄULE III Grammatik (Entasis/Kanneluren/Oakeshott — die Schönheit, größer +
-> teils AUGEN-bound) → SÄULE IV Werkstatt-Spiegel (Ω-W2 Optimierung · Ω-W3 Bau-
-> Feedback: instabiles wankt sichtbar). Die Minimal-Wahrheit (§8) — Säule I+II — IST
-> gelandet: das unsichtbare Kugel-Problem der Bedeutungs-Schicht ist geheilt.
+> `diag-physis` + die Bänder `checkBandOmegaPhysisSaeuleI_II` grün. **SÄULE IV — DER
+> WAHRHEITS-SPIEGEL GEBAUT (V18.241, die zwei Seelen vereint):** **Ω-W2** die
+> Optimierung an ECHTEN Größen (`AXIS_ACTION_HINTS` liest die gerechneten Physik-Achsen
+> physik-wahr — „verbreitere die Basis → Schwerpunkt sicherer"; BEWIESEN: die Tat
+> verschiebt die gerechnete Größe messbar, `_stability().margin` 0.234→1.0) · **Ω-W3**
+> das BAU-FEEDBACK (`_workshopPhysicsVerdict` — die in Säule I gerechnete Physik [das
+> SEIN] wird sichtbares Werkstatt-Feedback [der ANBLICK]): ein instabiles Werk WANKT
+> sichtbar in der Vorschau (`_loadPath.floatingParts` + der Lean-Tick), ein schwebendes
+> Teil wird warn-markiert, der Physik-Spiegel sagt kippt/wackelig/steht/knickt/
+> kopflastig — rollen-bewusst (eine Waffe „kippt" nicht, sie schwingt träge). 10/10
+> `diag-werkstatt-spiegel` + `checkBandOmegaWerkstattSpiegel` grün (Mechanismus + CONSUM
+> hart bewiesen; der finale LOOK des Wankens ist AUGEN-bound, Wand 1 von Ω-OPSIS).
+> **NÄCHSTE:** SÄULE III Grammatik (Entasis/Kanneluren/Oakeshott — die Schönheit, größer
+> + teils AUGEN-bound). Die Minimal-Wahrheit (§8) — Säule I+II — war gelandet; mit
+> Säule IV ist der WERKSTATT-Spiegel rund: das unsichtbare Kugel-Problem ist geheilt UND
+> die Wahrheit ist sichtbar, bevor das Werk in die Welt geht.
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein
