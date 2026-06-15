@@ -2,11 +2,11 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V18.186 (13.06.2026, Branch `claude/zen-pascal-7k36wk`) — **DIE ZWEI WURDEN EINS**: die zwei Schwester-Branches `clever-gauss-nuh9lq` (Λ-Welle: lebendige Welt + AAA-Atmosphäre + Γ-Bogen Boden-atmet/Welt-Komposition/Slope-Rock) und `determined-tesla-oz2edw` (W-Welle: Stamm-Atlas + Wald-WOW + Fluss-Glättung + UI-Puls + Frequenzband + Pro-Instanz-Yaw) sind als ein Stamm zusammengeführt (18 Commits über 7 Wellen + 2 Reviewer-Heilungen, 27 spezifische Λ-Klassifikations-Wände). Tesla = Knochen, clever-gauss = Sehnen. Die volle Synthese-Chronik in `docs/wellen-synthese-plan.md` + `docs/archiv/wellen-synthese-plan.md` (Hunk-Karte + Konflikt-Analyse + Code-Synthesen + 9 permanente Lehren). Auf `main` läuft weiter der **Meister-Plan-Marsch** (`docs/archiv/meister-plan.md` §8): der WALD-WOW (W-H: Pro-Instanz-Rotation [Klon-Killer] + painterly geschichtete Kronen + Gestalt-Varianten je Baumart, seed-gewählt nach dem Affinitäts-Sieg) + begreifbare Werkstatt-GELENKE (W-G: Achsen-Geister · Lehr-Satz · Progressive Disclosure · Gelenk-Probe) + der UI-PULS (W3: ein `_uiDirty(raum)`-Organ + rAF-gebündelte Render-Inseln) + der FLUSS wie von Profis (W-F: die EINE geglättete Lauf-Fläche, −56 % Häuschenpapier · Boot-Schwimmen Substanz-emergent · Narben-Wand via Zentrums-Blende geehrt) + das FREQUENZBAND (W-E: EIN Band-Empfänger, die Licht-Antwort emergiert aus der Substanz) + der STAMM-ATLAS (W6: 26 Zonen-Marker + `npm run atlas`) + die Wahrheits-Politur der Räume + **der Leuchtturm** (`npm run leuchtturm`, taille-spec §7 DE+EN). Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4) · die Welten-Föderation (W18) · der Genese-Bogen-Kern (Γ) · das lebendige Feld · der Emotion-Kern · der Kampf- und Schöpfungs-Fluss · die Resonanz-Vereinheitlichung.
+**Stand**: V18.238 (15.06.2026) — der **AKTIVE BOGEN** ist EIN Prinzip in zwei Gesichtern (_jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie geraten/gemalt_): **`docs/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN — der Physik-Schiedsrichter; Ω-Φ1 Schwerpunkt gebaut, headless-verifizierbar) + **`docs/wahreranblick.md`** (Ω-OPSIS · der ANBLICK — jede Oberfläche ein Auslesewert; PBR die eine Material-Wahrheit, toon raus, die Aura subtil). Das WERDEN (Wasser-CA, Ω-CHRONOS) ist gebaut. Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4) · die Welten-Föderation (Φ/W18) · der Genese-Bogen (Γ) · das lebendige Feld · der Emotion-Kern · der Kampf-/Schöpfungs-Fluss · die Resonanz-Vereinheitlichung · der Lebendige Gigant (Wald).
 
 > Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
 
-**Nächste offene Fäden** (der verbindliche Marsch in `docs/archiv/meister-plan.md` §8.8): **W-E das Frequenzband** (eine Atmosphäre, alle Ebenen als Antennen — die Inventur ist gemessen, die Schnitt-Karte liegt) → W-F Wasser-Look (Lauf-Glättung statt Häuschenpapier) → W3 UI-Puls → W-G Gelenk-Begreifbarkeit · W-H Wald-WOW → W6 Stamm-Atlas → M9 die Aufstiegs-Leiter. Parallel-fähig: der Archipel-Bogen Φ0/Φ1 (`docs/archipel-plan.md`) + der Genese-Rest (Γ4 Makro-Anker, `docs/archiv/genese-plan.md`). Offen daneben: die Schöpfer-Browser-Abnahme der gesammelten S-Punkte (`docs/rueckmeldung.md` ist der verfolgbare Korpus).
+**Nächste offene Fäden:** der aktive Bogen — Ω-PHYSIS Ω-Φ2→Φ5 + Säule II–IV (`docs/wahrerbauplan.md`, headless-verifizierbar) · Ω-OPSIS §7 Sky-Env-Map + Boden + Laub-Sättigung (`docs/wahreranblick.md`, augen-bound). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`. Der verfolgbare Rückmeldungs-Korpus: `docs/rueckmeldung.md`.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/archiv/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 
@@ -70,8 +70,8 @@ Die **EINE kanonische Doc-Landkarte** lebt in **[`docs/README.md`](docs/README.m
 - **JETZT** (Stand + Gotchas) → `CLAUDE.md` (auto-geladen)
 - **DIE CHRONIK** (Wellen-Historie + Start) → `docs/archiv/handover.md`
 - **DIE VISION** → `docs/state-of-realm.md` · **DER WAHRE NORDEN** → `docs/das-lebendige-feld.md`
-- **DER PLAN** → `docs/roadmap.md` · **DER AKTIVE BOGEN** → `docs/kampf-plan.md`
-- **REFERENZ** → `docs/crafting-konzept.md` · `docs/aktivierungsmatrix.md` · `docs/hydrosphere.md` · `docs/world-portal.md`
+- **DER AKTIVE BOGEN** (ein Prinzip, zwei Gesichter) → `docs/wahrerbauplan.md` (Ω-PHYSIS · das Sein) · `docs/wahreranblick.md` (Ω-OPSIS · der Anblick) · **DER WEG** → `docs/roadmap.md`
+- **REFERENZ** → `docs/archiv/crafting-konzept.md` · `docs/archiv/aktivierungsmatrix.md` · `docs/archiv/hydrosphere.md` · `docs/archiv/world-portal.md`
 - **ARCHIV** (abgeschlossen) → `docs/archiv/` (Index: `docs/archiv/README.md`)
 
 ## Heilige Lektion
@@ -84,7 +84,7 @@ Details in `docs/state-of-realm.md` §2.
 
 > _„Andere bauen Welten FÜR Spieler. Wir bauen eine Welt, in der Spieler SELBST Welten bauen können — und durch Welten anderer Spieler gehen können."_
 
-Bibliothek von Alexandria der Vibecode-Ära. Detail in `docs/world-portal.md`.
+Bibliothek von Alexandria der Vibecode-Ära. Detail in `docs/archiv/world-portal.md`.
 
 ## Lizenz
 

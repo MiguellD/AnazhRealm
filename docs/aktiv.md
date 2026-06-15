@@ -1,11 +1,37 @@
-# DER AKTIVE TISCH — schlank, der eine Plan liegt anderswo
+# DER AKTIVE TISCH — Stand + Reflexion
 
-> **Auftrag Schöpfer 14.06.2026:** „Bringe einen plan zusammen, der alle offenen
-> punkte aufnimmt … wieder einheit erzeugt. Keine pausen, kein zögern mehr."
->
-> **DIESES FILE TRÄGT NICHTS MEHR ALS DEN VERWEIS.** Der eine Plan mit allen
-> offenen Punkten, Sub-Schritten, Reihenfolge: **`docs/abschluss-plan.md`**.
-> Hier nur: aktuelle Welle + Stand.
+> **DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen** (ein Prinzip, zwei
+> Gesichter — der Auslesewert der Wahrheit): **`docs/wahrerbauplan.md`** (Ω-PHYSIS ·
+> das SEIN · Physik-Schiedsrichter) + **`docs/wahreranblick.md`** (Ω-OPSIS · der
+> ANBLICK · lawful Oberflächen). Die Vision: `state-of-realm.md` + `das-lebendige-feld.md`.
+> Der Backlog + die gemerkten Fäden: `roadmap.md`. Hier: der Live-Stand + die Reflexion.
+
+---
+
+## DIE REFLEXION (15.06.2026 — erledigt · offen · wo nicht mehr synergetisch)
+
+**ERLEDIGT diese Session (verifiziert + committed):** §1 Aura subtil (V18.236 — die
+Wurzel des Drifts, magenta→blau) · §2 TOON RAUS (V18.237 — PBR die EINE Material-
+Wahrheit, −384 Z., der Toon-Zwilling gestrichen) · §3 Seh-Werkzeug + §5-Verdikt (Krone
+GEMESSEN grün+voll) · **Ω-Φ1 Schwerpunkt** (V18.238 — der fehlende Physik-Grundstein,
+0→gebaut, 6 objektive Wände, kein Flake).
+
+**OFFEN (geordnet):** Ω-PHYSIS Ω-Φ2…Φ5 + Säule II–IV (headless-verifizierbar, ich lande
+es) · Ω-OPSIS §7 Sky-Env-Map (PBR-Metalle schwarz) + Laub-Sättigung + der Boden (augen-
+bound, Schöpfer richtet) · die gemerkten Fäden (`roadmap.md`: Phase E · R6 · Mana · KI-
+Symbiose · Wasser-Nachfliessen · VR · IndexedDB · Statusbar).
+
+**WO NICHT MEHR SYNERGETISCH (Parallelcode/Chaos — zu vereinheitlichen, KEINE Eile):**
+
+- **Die Heuristik-Achsen** (`spread`/`hollowness`/`axialSymmetry`/`pointedFraction`) raten
+  nach Physik, ohne sie zu rechnen → Ω-PHYSIS Säule II ersetzt sie durch die gerechneten.
+- **Die Kugel-Bäume** (`baumEicheParts`… + `_growTreeBlueprintLegacy` + gen<4-Switch) leben
+  als Code neben der Grammatik (in modernen Welten schon unsichtbar via gen-gating).
+- **Die Toon-Reste** (`_ensureStructureGradient` verwaist; `_refreshToonGradient`/
+  `toonGradientMap` nur noch für Avatar/Gras → auch die nach PBR ziehen, dann ganz raus).
+- **Die fünf diag-Seh-Tools** (sicht/anblick/krone/settled/sichtbar) → EINES (Ω-OPSIS §3).
+- **Das Wasser** trägt noch zwei Naturen (statisches `L`-Höhenfeld vs. CA-Fluss).
+- **Emotion→Welt-Kopplungen** (`sorrow→rainy`) noch hartcodiert, nicht DSL-emergent.
 
 ---
 
@@ -15,15 +41,15 @@
 
 ---
 
-**15.06.2026 — V18.236 ✅ §1 DER WAHRE ANBLICK: DIE AURA SUBTIL + der Plan, der HÄLT, Branch `claude/inspiring-johnson-n510dk`:** Schöpfer-Auftrag: „reflektiere zuerst über den Drift, der immer passiert; aktualisiere die Planung, dass sie hält." **DER DRIFT, benannt:** drei Sessions strandeten am SEHEN — und die tiefste Wurzel war die **zu starke Aura**: am Spawn (glut 0.95 + awe 1.0 → der Nexus tönt awe→lila) wusch das Feld den Himmel MAGENTA (`sky=[0.65,0.35,0.86]`) → jeder Screenshot sah alien aus → niemand konnte das Rendering beurteilen → Thrash/Phantom-Fixes/blinde „fertig"-Behauptungen. **GEHEILT:** EIN Knopf `atmosphere.auraTintStrength` (0.15) skaliert ALLE Feld+Emotion-Tint-Beiträge (Schicht 2+3 in `_dayNightComputeTint`) UND den Mood/DSL-`skyTint`-Blend (`_dayNightApplySkybox`). GEMESSEN: Himmel → `[0.19,0.21,0.61]` = BLAU (Browser-Shot bestätigt). Die Welt atmet noch (ein Hauch Wärme), vergiftet die Beurteilung nicht mehr. **Der Plan `docs/wahreranblick-plan.md` ist NEU geschrieben — anti-drift, geordnet, mit den fünf Wänden:** §1 Aura subtil ✅ → §2 PBR/Toon-raus → §3 EIN Seh-Werkzeug → §4 eine Baum-Quelle → §5 lushe Kronen → §6 Dichte → §7 Oberflächen+Strukturen-Licht. **OFFEN/nächste:** §2 Toon-raus (PBR ist schon Default) · §3 Seh-Tool konsolidieren · der Browser-Sign-off des blauen Himmels. Tonemapping ACES→Neutral wurde ERWOGEN, aber zurückgerollt (augen-validierte Look-Entscheidung für eine eigene Welle, nicht als stiller Drift mit dem Aura-Fix gebündelt).
+**15.06.2026 — V18.236 ✅ §1 DER WAHRE ANBLICK: DIE AURA SUBTIL + der Plan, der HÄLT, Branch `claude/inspiring-johnson-n510dk`:** Schöpfer-Auftrag: „reflektiere zuerst über den Drift, der immer passiert; aktualisiere die Planung, dass sie hält." **DER DRIFT, benannt:** drei Sessions strandeten am SEHEN — und die tiefste Wurzel war die **zu starke Aura**: am Spawn (glut 0.95 + awe 1.0 → der Nexus tönt awe→lila) wusch das Feld den Himmel MAGENTA (`sky=[0.65,0.35,0.86]`) → jeder Screenshot sah alien aus → niemand konnte das Rendering beurteilen → Thrash/Phantom-Fixes/blinde „fertig"-Behauptungen. **GEHEILT:** EIN Knopf `atmosphere.auraTintStrength` (0.15) skaliert ALLE Feld+Emotion-Tint-Beiträge (Schicht 2+3 in `_dayNightComputeTint`) UND den Mood/DSL-`skyTint`-Blend (`_dayNightApplySkybox`). GEMESSEN: Himmel → `[0.19,0.21,0.61]` = BLAU (Browser-Shot bestätigt). Die Welt atmet noch (ein Hauch Wärme), vergiftet die Beurteilung nicht mehr. **Der Plan `docs/archiv/wahreranblick-antidrift-plan.md` ist NEU geschrieben — anti-drift, geordnet, mit den fünf Wänden:** §1 Aura subtil ✅ → §2 PBR/Toon-raus → §3 EIN Seh-Werkzeug → §4 eine Baum-Quelle → §5 lushe Kronen → §6 Dichte → §7 Oberflächen+Strukturen-Licht. **OFFEN/nächste:** §2 Toon-raus (PBR ist schon Default) · §3 Seh-Tool konsolidieren · der Browser-Sign-off des blauen Himmels. Tonemapping ACES→Neutral wurde ERWOGEN, aber zurückgerollt (augen-validierte Look-Entscheidung für eine eigene Welle, nicht als stiller Drift mit dem Aura-Fix gebündelt).
 
 ---
 
-**14.06.2026 — DER LEBENDIGE GIGANT IST VOLLENDET (V18.216–V18.225, eine Session), Branch `claude/peaceful-goldberg-49tj81` → main:** alle Plan-§13-Bänder GEMESSEN erfüllt (Dichte 178 Instanzen/Chunk · echtes Touch→Real ohne Sprung · PBR physik-hergeleitet · distinkte Tags · Tubes/Cards/Wind). Neun Wellen, alle ~3500 Wände grün. Die Karte + die drei Session-Lehren stehen im `CLAUDE.md`-Kopf, die volle Chronik in `docs/archiv/handover.md`, der Schluss-Stand in `docs/gigant-fortsetzung-plan.md`. **OFFEN nur dem Schöpfer-Auge (KEINE Vision-Lücke):** Browser-Look-Sign-off (swiftshader-Headless zu langsam für den kalten Full-Scatter-Screenshot; `gpuScatter` default an) · Auflösungs-Tune (`SCATTER.layers`-tree-cap für dichtere Canopy) · GPU-Compute-Millionen (Perf-Haut, pcg2d bit-fertig).
+**14.06.2026 — DER LEBENDIGE GIGANT IST VOLLENDET (V18.216–V18.225, eine Session), Branch `claude/peaceful-goldberg-49tj81` → main:** alle Plan-§13-Bänder GEMESSEN erfüllt (Dichte 178 Instanzen/Chunk · echtes Touch→Real ohne Sprung · PBR physik-hergeleitet · distinkte Tags · Tubes/Cards/Wind). Neun Wellen, alle ~3500 Wände grün. Die Karte + die drei Session-Lehren stehen im `CLAUDE.md`-Kopf, die volle Chronik in `docs/archiv/handover.md`, der Schluss-Stand in `docs/archiv/gigant-fortsetzung-plan.md`. **OFFEN nur dem Schöpfer-Auge (KEINE Vision-Lücke):** Browser-Look-Sign-off (swiftshader-Headless zu langsam für den kalten Full-Scatter-Screenshot; `gpuScatter` default an) · Auflösungs-Tune (`SCATTER.layers`-tree-cap für dichtere Canopy) · GPU-Compute-Millionen (Perf-Haut, pcg2d bit-fertig).
 
 ---
 
-**14.06.2026 — PLAN-REFLEXION + V18.216-V18.223 VORGEPLANT (HISTORIE — alle gebaut):** Schöpfer-Reflexions-Befund: V18.215 war als „faktisch vollendet" beschrieben — ehrliche Selbst-Reflexion zeigte: GPU im Plan (§5+§8), PBR im Plan (§10), Büsche definiert (§3.5+§8.2), KARST im Plan (§3.3) — ALLE übergangen mit Shortcut-Argumenten. **DER WAHRE STAND:** ~5 von 13 Plan-Punkten erfüllt; 8 echte Welle offen. **DER VOLLSTÄNDIGE FORTSETZUNG-PLAN in voller Tiefe** lebt jetzt in **`docs/gigant-fortsetzung-plan.md`** (komplett neu geschrieben):
+**14.06.2026 — PLAN-REFLEXION + V18.216-V18.223 VORGEPLANT (HISTORIE — alle gebaut):** Schöpfer-Reflexions-Befund: V18.215 war als „faktisch vollendet" beschrieben — ehrliche Selbst-Reflexion zeigte: GPU im Plan (§5+§8), PBR im Plan (§10), Büsche definiert (§3.5+§8.2), KARST im Plan (§3.3) — ALLE übergangen mit Shortcut-Argumenten. **DER WAHRE STAND:** ~5 von 13 Plan-Punkten erfüllt; 8 echte Welle offen. **DER VOLLSTÄNDIGE FORTSETZUNG-PLAN in voller Tiefe** lebt jetzt in **`docs/archiv/gigant-fortsetzung-plan.md`** (komplett neu geschrieben):
 
 **V18.216-V18.223, 10-14 Sessions:**
 
@@ -89,7 +115,7 @@
 
 20 neue V18.213-Wände grün + ~3500 bestehende grün. Version 18.212→18.213.
 
-**📋 NÄCHSTE SESSION:** der Plan-Rest liegt in **`docs/gigant-fortsetzung-plan.md`** — 6 verbleibende Wellen V18.214-V18.219. **REIHENFOLGE:** ✅ Mesh-Merge (V18.213) → LOD (V18.214) → Ω-B GPU-Feld-Bake (V18.215) → Ω-S GPU-Compute-Scatter (V18.216) → ⟡ Ω-H Promotion / SEELEN-Band (V18.217) → Canopy-Vertiefung (V18.218 optional) → PBR (V18.219 optional). Verbleibend ~7-11 Sessions.
+**📋 NÄCHSTE SESSION:** der Plan-Rest liegt in **`docs/archiv/gigant-fortsetzung-plan.md`** — 6 verbleibende Wellen V18.214-V18.219. **REIHENFOLGE:** ✅ Mesh-Merge (V18.213) → LOD (V18.214) → Ω-B GPU-Feld-Bake (V18.215) → Ω-S GPU-Compute-Scatter (V18.216) → ⟡ Ω-H Promotion / SEELEN-Band (V18.217) → Canopy-Vertiefung (V18.218 optional) → PBR (V18.219 optional). Verbleibend ~7-11 Sessions.
 
 ---
 
@@ -126,7 +152,7 @@ Alle ~3500 Invarianten grün + 16 neue V18.211-S1-S6-Wände. Tests-wander-mit-Co
 
 **14.06.2026 — V18.210 ✅ FERTIG (3 Commits + 3 Audit-Cycles), Branch `claude/relaxed-hawking-dzkj9g`:**
 
-Die vier Sub-Akte aus `docs/abschluss-plan.md §1` sind verdrahtet — plus
+Die vier Sub-Akte aus `docs/archiv/abschluss-plan.md §1` sind verdrahtet — plus
 drei Audit-Cycles, die NEUN echte Mängel fanden (drei kritisch) und alle
 heilten. Alle ~3500 Invarianten grün, `npm run smoke:multiuser` grün.
 
@@ -177,17 +203,17 @@ halben sachen mehr").
 
 ## Quellen-Karte (was wo lebt)
 
-| Quelle                           | Was sie trägt                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------------ |
-| **`docs/abschluss-plan.md`**     | DER EINE PLAN — alle offenen Punkte mit Sub-Schritten + Reihenfolge V18.211-V18.250+       |
-| `docs/archiv/handover.md`        | Volle Wellen-Chronik (jüngste oben), permanente Lehren                                     |
-| `CLAUDE.md`                      | Aktueller Stand auto-geladen + tragende Gotchas                                            |
-| `docs/rueckmeldung.md`           | Schöpfer-Rückmeldungs-Korpus (S-Abnahmen)                                                  |
-| `docs/state-of-realm.md`         | Vision                                                                                     |
-| `docs/das-lebendige-feld.md`     | Wahrer Norden (Vision)                                                                     |
-| `docs/taille-spec.md` + `.en.md` | NORMATIV, frozen                                                                           |
-| `docs/roadmap.md`                | Karte vorwärts (3 Phasen + gemerkte Fäden); operative Details leben in `abschluss-plan.md` |
-| `docs/archiv/<bogen>-plan.md`    | Vergangene Bogen-Pläne (Vergangenheit, nicht aktiv)                                        |
+| Quelle                              | Was sie trägt                                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------ |
+| **`docs/archiv/abschluss-plan.md`** | DER EINE PLAN — alle offenen Punkte mit Sub-Schritten + Reihenfolge V18.211-V18.250+       |
+| `docs/archiv/handover.md`           | Volle Wellen-Chronik (jüngste oben), permanente Lehren                                     |
+| `CLAUDE.md`                         | Aktueller Stand auto-geladen + tragende Gotchas                                            |
+| `docs/rueckmeldung.md`              | Schöpfer-Rückmeldungs-Korpus (S-Abnahmen)                                                  |
+| `docs/state-of-realm.md`            | Vision                                                                                     |
+| `docs/das-lebendige-feld.md`        | Wahrer Norden (Vision)                                                                     |
+| `docs/taille-spec.md` + `.en.md`    | NORMATIV, frozen                                                                           |
+| `docs/roadmap.md`                   | Karte vorwärts (3 Phasen + gemerkte Fäden); operative Details leben in `abschluss-plan.md` |
+| `docs/archiv/<bogen>-plan.md`       | Vergangene Bogen-Pläne (Vergangenheit, nicht aktiv)                                        |
 
 ---
 

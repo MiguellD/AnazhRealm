@@ -1,37 +1,39 @@
 # docs/ — die Landkarte
 
-**Vier lebende Texte tragen das JETZT, das WOHIN und den WEG.** Alles Detail — die volle Chronik, die
-fertigen Pläne, die schlafenden Bau-Pläne, die Referenzen — lebt in der **Bibliothek** (`docs/archiv/`),
-durchsuchbar. Das Prinzip: *der aktive Tisch trägt nur die nächste Tat; ein Bogen erwacht → sein Plan
-kommt aus der Bibliothek auf den Tisch; er vollendet → zurück ins Archiv.* So wird der Hauptraum nie
-wieder zur Halde.
+**Wenige fundamentale Texte tragen alles.** Der Rest — die Chronik, die vollendeten Bögen, die
+schlafenden Pläne, die Referenzen — lebt im Archiv (`docs/archiv/`), durchsuchbar. Das Prinzip:
+_der aktive Tisch trägt das JETZT + den AKTIVEN BOGEN; ein Plan vollendet → er wandert ins Archiv
+(`git mv`)._ So bleibt der Hauptraum **eine Wahrheit, keine Halde.**
 
 ---
 
-## Die lebenden Säulen (immer aktuell gepflegt)
+## Die fundamentalen Texte (die EINE Wahrheit, immer aktuell)
 
-| Datei | Ebene | Was |
-|---|---|---|
-| **`CLAUDE.md`** (Wurzel) | **JETZT** | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session. |
-| **`docs/state-of-realm.md`** | **WOHIN** | Die Vision — die Pfeiler aus den Testamenten, die Heilige Lektion, die Stand-vs-Vision-Matrix, das Welten-Ultiversum. |
-| **`docs/das-lebendige-feld.md`** | **DER WAHRE NORDEN** | Der operative Vision-Anker: die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor Arbeit an lebendiger Welt / Emotion / Nexus / DSL / Kreaturen. |
-| **`docs/abschluss-plan.md`** | **DER EINE PLAN** | DER ABSCHLUSS-PLAN — alle offenen Punkte mit Sub-Schritten + Reihenfolge V18.211 bis V18.250+ + Abschluss-Kriterium. Eine Welle wandert nach Abschluss → ihr Block wird strikethrough + Datum + Commit; danach fällt der Block. **Es gibt keine zweite offene-Punkte-Liste.** |
-| **`docs/aktiv.md`** | **DER TISCH** | Live-Stand (jüngste Welle, nächste Welle); verweist auf `abschluss-plan.md` für die volle Tiefe. |
-| **`docs/roadmap.md`** | **DIE KARTE** | Der Plan vorwärts (3 Phasen) · die offene-Fäden-Karte (inkl. der GEMERKTEN FÄDEN) · die Vergangenheit stichwortmäßig · die Disziplin. |
-| **`docs/taille-spec.md`** | **DER VERTRAG** | Die gefrorene Taille, NORMATIV (Ω1) — Draht-Formen · must-ignore/must-preserve · Empfänger-Gesetz · Versions-Semantik · Ledger-Gesetz · Namensraum · **§7 Broker-Protokoll (der Leuchtturm, V18.171)**. **ZUERST** vor Arbeit an Serialisierung/Import/p2p-Schema/Snapshot-Schema/Broker. Die ausführbare Form: `spec/golden/v1/` (EINGEFROREN, nie regenerieren). |
-| `docs/taille-spec.en.md` | EN-Spiegel | Der englische VOLL-Spiegel der Taille (R-035 — das Andock-Dokument für Fremde; bei Divergenz gewinnt das Deutsche). Drift-bewacht im Golden-Band. |
-| **`docs/rueckmeldung.md`** | **DAS GESETZ** | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Session-Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand.** |
-| **`docs/archiv/archipel-plan.md`** | **DER PFAD Φ (VOLLENDET)** | Das Welten-Netz — ALLE 7 Wellen GEBAUT (V18.188 Φ0/Φ1/Φ2 · V18.189 Φ3/Φ4/Φ5 · V18.190 Φ7 · V18.191 Φ6). M9-Sprossen 1+2+3 stehen. Voller Plan im Archiv. |
-| **`docs/archiv/wellen-synthese-plan.md`** | **DIE SYNTHESE (VOLLENDET, ARCHIVIERT 14.06.2026)** | Schluss-Bilanz der Branch-Synthese `clever-gauss-nuh9lq` × `determined-tesla-oz2edw` → ein Stamm (V18.180-FIX bis V18.187, 20 Commits über 8 Wellen + 2 Reviewer-Audit-Vertiefungen, 31 Λ-Klassifikations-Wände, 10 permanente Lehren). Volle Plan-Datei mit Hunk-Karte · Konflikt-Analyse · Code-Synthesen · Risiken. Der frühere Verweis-Stub `docs/wellen-synthese-plan.md` ist gefallen (Doc-Hygiene V18.210). |
-| **`README.md`** (Wurzel) | **DIE TÜR** | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion. |
+| Datei                               | Ebene                       | Was                                                                                                                                                                                                                                                                                 |
+| ----------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`CLAUDE.md`** (Wurzel)            | **JETZT**                   | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session.                                                                                                                                                                                     |
+| **`docs/state-of-realm.md`**        | **DIE VISION**              | Die Pfeiler aus den Testamenten · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                                                                                                                                                         |
+| **`docs/das-lebendige-feld.md`**    | **DER WAHRE NORDEN**        | Die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor lebendiger Welt / Emotion / Nexus / DSL / Kreaturen.                                                                                                |
+| **`docs/wahrerbauplan.md`**         | **AKTIVER BOGEN · SEIN**    | Ω-PHYSIS — der Physik-Schiedsrichter (Schwerpunkt → Stabilität → Steifigkeit/Versagen → Hebel → Lastpfad → der Leser → die Grammatik → die Werkstatt). Das _unsichtbare_ Kugel-Problem. **ZUERST** vor Bauplan / Physik / Stabilität / Werkstatt / Crafting-Tiefe / Kreatur-Körper. |
+| **`docs/wahreranblick.md`**         | **AKTIVER BOGEN · ANBLICK** | Ω-OPSIS — jede Oberfläche ein Auslesewert der Welt (Boden · Bewuchs · Materialien · Form · Atmosphäre · Geometrie-Feinheit) + die fünf Wände gegen den Drift. **ZUERST** vor Anblick / Render / Material / Terrain-Look / Vegetation-Look / Atmosphäre.                             |
+| **`docs/aktiv.md`**                 | **DER TISCH**               | Live-Stand (jüngste + nächste Welle) + die Reflexion (erledigt · offen · wo das System nicht mehr synergetisch ist).                                                                                                                                                                |
+| **`docs/roadmap.md`**               | **DIE KARTE**               | Der Backlog vorwärts + **DIE GEMERKTEN FÄDEN** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · IndexedDB · …).                                                                                                                                                      |
+| **`docs/taille-spec.md`** (+ `.en`) | **DER VERTRAG**             | Die gefrorene Taille, NORMATIV (Ω1) — Serialisierung · Import · p2p-Schema · Snapshot · §7 Broker-Protokoll. **ZUERST** vor Serialisierung/Import/Broker. `spec/golden/v1/` EINGEFROREN.                                                                                            |
+| **`docs/rueckmeldung.md`**          | **DAS GESETZ**              | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand.**                                                                                                        |
+| **`README.md`** (Wurzel)            | **DIE TÜR**                 | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion.                                                                                                                                                                                                                       |
 
-(Der frühere „Auf dem Tisch"-Plan `docs/archiv/terrain-koharenz-plan.md` ist VOLLENDET + archiviert —
-die aktiven Pläne stehen in der Tabelle oben.)
+**EIN PRINZIP, DREI GESICHTER:** `wahrerbauplan` (Ω-PHYSIS · das SEIN), `wahreranblick`
+(Ω-OPSIS · der ANBLICK) und der vollendete Wasser-CA (Ω-CHRONOS · das WERDEN) sind **dasselbe
+Gesetz** — _jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie
+geraten/gemalt._ Ω-PHYSIS ist headless verifizierbar (kein Flake), Ω-OPSIS ist augen-bound
+(das Schöpfer-Browser-Bild ist der Richter). Die Vision verankern `state-of-realm` +
+`das-lebendige-feld`.
 
-**Über dem Tisch — der Master-Blick:** `docs/archiv/gigant-plan.md` (DER GIGANT, 10.06.2026 — das
-umfassende gemessene Bild + die neun Säulen G1–G9/Ω [der §5-Pfad ist GESCHLOSSEN seit V18.147; NACHFOLGER: `docs/archiv/meister-plan.md` — der Schöpfer-Audit 12.06. + die Aufstiegs-Leiter] + die
-Zwillinge + Stand-der-Technik-Karte + die Reihenfolge + **DIE GEMERKTEN FÄDEN** am §5-Ende).
-Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
+**Frisch archiviert (15.06.2026 — Doc-Ordnung):** `gigant-fortsetzung-plan.md` (VOLLENDET V18.225),
+`abschluss-plan.md` (Vorgänger, vom aktiven Bogen abgelöst), `wahreranblick-antidrift-plan.md`
+(die Drift-Geschichte; die fünf Wände leben jetzt im Kopf von `wahreranblick.md`).
+**Über den Detail-Plänen — der Master-Blick:** `docs/archiv/gigant-plan.md` (das umfassende
+gemessene Bild der neun Säulen; der §5-Pfad GESCHLOSSEN seit V18.147).
 
 ---
 
@@ -39,24 +41,24 @@ Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
 
 **Schlafende aktive Pläne** — kommen auf den Tisch, wenn ihr Bogen dran ist:
 
-| Datei | Was | Trigger |
-|---|---|---|
-| `archiv/wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die Drei-Schichten-Architektur) | Wasser · Fluss · See · Wasserfall · Naht · Render · Dynamik |
-| `archiv/terrain-t4-wasser-ca-plan.md` | Der Wasser-CA-Bogen (VOLLENDET V18.84–.94) — die Chronik der Fluid-Entscheidungen (Quellen-Pin · Receiver-Support · Flow-Regel) | Wasser-CA · Nachfliessen · Quellen · Flow-Regel |
-| `archiv/lod-kaskade-plan.md` | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter) | LOD · Streaming · Sicht-Ring · Schatten-CSM · Deko-Distanz · Draw-Calls |
-| `archiv/kampf-plan.md` | Crafting/Kampf §11 (Schöpfungs-Fluss, Resonanz, S6-B/S9/S11/Phase E) | Kampf · Waffe · Werkzeug · Rüstung · Trank · Avatar · Werkstatt · Crafting |
-| `archiv/world-portal-w18-plan.md` | W18 — in fremden Welten leben (Ko-Präsenz) | Portal-Ko-Präsenz · fremde Welten |
-| `archiv/taille-plan.md` | Ω — der Ewigkeits-Bogen (VOLLENDET V18.137–.141) — die Risse + der Weg; die NORM lebt in `docs/taille-spec.md` | Taille · Serialisierung · Import · Versions-Felder · Perpetuum |
-| `archiv/robustheit-plan.md` | G8 — die drei Ringe + Immunsystem (R0–R5 ✓); **R6 Selbst-Erweiterung = GEMERKTER FADEN #1** | Sicherheit · Sandbox · Rückruf · Souverän · R6 |
+| Datei                                      | Was                                                                                                                             | Trigger                                                                    |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `archiv/wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die Drei-Schichten-Architektur)                                                        | Wasser · Fluss · See · Wasserfall · Naht · Render · Dynamik                |
+| `archiv/terrain-t4-wasser-ca-plan.md`      | Der Wasser-CA-Bogen (VOLLENDET V18.84–.94) — die Chronik der Fluid-Entscheidungen (Quellen-Pin · Receiver-Support · Flow-Regel) | Wasser-CA · Nachfliessen · Quellen · Flow-Regel                            |
+| `archiv/lod-kaskade-plan.md`               | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter)                                                                       | LOD · Streaming · Sicht-Ring · Schatten-CSM · Deko-Distanz · Draw-Calls    |
+| `archiv/kampf-plan.md`                     | Crafting/Kampf §11 (Schöpfungs-Fluss, Resonanz, S6-B/S9/S11/Phase E)                                                            | Kampf · Waffe · Werkzeug · Rüstung · Trank · Avatar · Werkstatt · Crafting |
+| `archiv/world-portal-w18-plan.md`          | W18 — in fremden Welten leben (Ko-Präsenz)                                                                                      | Portal-Ko-Präsenz · fremde Welten                                          |
+| `archiv/taille-plan.md`                    | Ω — der Ewigkeits-Bogen (VOLLENDET V18.137–.141) — die Risse + der Weg; die NORM lebt in `docs/taille-spec.md`                  | Taille · Serialisierung · Import · Versions-Felder · Perpetuum             |
+| `archiv/robustheit-plan.md`                | G8 — die drei Ringe + Immunsystem (R0–R5 ✓); **R6 Selbst-Erweiterung = GEMERKTER FADEN #1**                                     | Sicherheit · Sandbox · Rückruf · Souverän · R6                             |
 
 **Referenz** — Nachschlagewerke:
 
-| Datei | Was |
-|---|---|
-| `archiv/hydrosphere.md` | Wasser-Daten-Modell — die frozen Schichten (Drainage-Netz + Zell-Wasser, der V13-Schnitt). |
-| `archiv/crafting-konzept.md` | Das Hylomorphismus-Substrat — Bausteine · Operationen · Compounds · räumliche Prinzipien. |
-| `archiv/aktivierungsmatrix.md` | Die Form-Tag-Aktivierungs-Matrix (9×10) — Quellcode für `FORM_TAG_ACTIVATION`. |
-| `archiv/world-portal.md` | W12-Vision-Anker — das Tor zu anderen Vibecode-Welten. |
+| Datei                          | Was                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------ |
+| `archiv/hydrosphere.md`        | Wasser-Daten-Modell — die frozen Schichten (Drainage-Netz + Zell-Wasser, der V13-Schnitt). |
+| `archiv/crafting-konzept.md`   | Das Hylomorphismus-Substrat — Bausteine · Operationen · Compounds · räumliche Prinzipien.  |
+| `archiv/aktivierungsmatrix.md` | Die Form-Tag-Aktivierungs-Matrix (9×10) — Quellcode für `FORM_TAG_ACTIVATION`.             |
+| `archiv/world-portal.md`       | W12-Vision-Anker — das Tor zu anderen Vibecode-Welten.                                     |
 
 **Die Chronik + die vollendeten Bögen** — die Vergangenheit:
 
@@ -68,12 +70,12 @@ Die Karte ÜBER den Detail-Plänen; pro vollendeter Säule wird sie kürzer.
 
 ## Begleit-Dateien (außerhalb docs/)
 
-| Datei | Was |
-|---|---|
-| `spec/golden/v1/` | Die vier goldenen Draht-Artefakte der Taille (Ω0) — **EINGEFROREN, NIE regenerieren**; `scripts/diag-taille.cjs` prüft Konformanz. |
-| `vendor/README.md` | Vendor-Libs (Three.js r184 / Ammo / simplex-noise) — Versionen + Update-Befehl. |
-| `.claude/commands/audit.md` | Der `/audit`-Slash-Befehl. |
-| `.github/workflows/check.yml` | CI — zwei Jobs (statische Checks + Playtest-Gate). |
+| Datei                         | Was                                                                                                                                |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `spec/golden/v1/`             | Die vier goldenen Draht-Artefakte der Taille (Ω0) — **EINGEFROREN, NIE regenerieren**; `scripts/diag-taille.cjs` prüft Konformanz. |
+| `vendor/README.md`            | Vendor-Libs (Three.js r184 / Ammo / simplex-noise) — Versionen + Update-Befehl.                                                    |
+| `.claude/commands/audit.md`   | Der `/audit`-Slash-Befehl.                                                                                                         |
+| `.github/workflows/check.yml` | CI — zwei Jobs (statische Checks + Playtest-Gate).                                                                                 |
 
 ## Doku-Disziplin (für den nächsten Agenten)
 

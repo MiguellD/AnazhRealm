@@ -6,7 +6,12 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand: `main` @ V18.172 (Merge `claude/bold-bardeen-ky7gmx`, 12.06.2026); aktiv `claude/relaxed-hawking-dzkj9g` @ V18.210 — der EINE PLAN lebt in `docs/abschluss-plan.md` (V18.211-V18.250+), der aktive Tisch in `docs/aktiv.md`. Der frühere Marsch `meister-plan.md §8.8` ist ARCHIVIERT.**
+> **Stand 15.06.2026 (V18.238):** DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen —
+> **`docs/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN) + **`docs/wahreranblick.md`** (Ω-OPSIS ·
+> der ANBLICK), ein Prinzip (der Auslesewert der Wahrheit). Der Live-Stand + die Reflexion:
+> `docs/aktiv.md`. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
+> Fäden, die NICHT im aktiven Bogen liegen, aber dem Schöpfer alle wichtig sind. (Die alten
+> „EINE-Plan"-Pläne `abschluss-plan` + `gigant-fortsetzung-plan` sind archiviert/abgelöst.)
 
 ---
 
@@ -82,23 +87,30 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ---
 
-## §4 · Die offenen Fäden — siehe **`docs/abschluss-plan.md`**
+## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 14.06.2026 (V18.209):** Schöpfer-Auftrag „bringe einen plan zusammen,
-> der alle offenen punkte aufnimmt … wieder einheit erzeugt". Der vollständige
-> Backlog mit Sub-Schritten, Reihenfolge V18.210-V18.230+, und Abschluss-
-> Kriterium lebt in **`docs/abschluss-plan.md`** als DIE EINE Quelle. Dieser §4
-> ist auf seine Karten-Rolle reduziert (was wo lebt), damit es keine zweite
-> offene-Punkte-Liste gibt.
+> **Stand 15.06.2026 (V18.238):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) liegt in
+> **`docs/wahrerbauplan.md`** (Ω-PHYSIS) + **`docs/wahreranblick.md`** (Ω-OPSIS), der Live-
+> Stand + die Reflexion (erledigt/offen/Chaos) in **`docs/aktiv.md`**. **Dieser §4 ist die
+> EINE Quelle für die Fäden, die NICHT im aktiven Bogen liegen** — die gemerkten Fäden, die
+> dem Schöpfer alle wichtig sind („nie vergessen, nie still streichen").
 
 **Wo finde ich was offen ist:**
 
-- **`docs/abschluss-plan.md` §1-§9** — vollständig: Verdrahtungs-Schulden, Browser-Sign-offs, Render-Schluss, Crafting-Reste, Lebendiges Feld, U6 Clipmap, Sozial-3, M9-Sprossen, gemerkte Fäden
-- **`docs/aktiv.md`** — aktuelle Welle + Live-Stand
-- **CLAUDE.md "Aktueller Stand"** — auto-geladene Wahrheit
+- **`docs/wahrerbauplan.md` + `docs/wahreranblick.md`** — der aktive Bogen (Physik + Anblick), Welle für Welle
+- **`docs/aktiv.md`** — aktuelle Welle · Live-Stand · die Reflexion (Parallelcode/Chaos zu vereinheitlichen)
+- **CLAUDE.md „Aktueller Stand"** — auto-geladene Wahrheit
 - **`docs/rueckmeldung.md`** — Schöpfer-Audit-Korpus (S-Abnahmen)
+- **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
 
-**Die 8 GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment) sind in `abschluss-plan.md §9` namentlich + mit Auslöser geführt: B1 Wasser-Sheet→Worker · V18→V19-Zeit-Portal · VR/WebXR · R-037 T-Welle · R-039 Devlog · IndexedDB-extras · Fahrzeug-Fahr-Tiefe · Statusbar-Tiefe.
+**DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen):
+**Phase E** Bedrohung/Furcht (`archiv/kampf-plan.md`; D4-Temperament ist die Vorstufe) ·
+**R6** Selbst-Erweiterung (R2+R4 stehen, `archiv/robustheit-plan.md`) ·
+**Mana-Symmetrie** (`magieleitung`→Äther, zweite Ausdauer-Achse) ·
+**KI als volle Co-Schöpferin** (LLM schreibt Regeln, aber opt-in) ·
+**Wasser-Nachfliessen** (das statische `L`-Höhenfeld → echtes Minecraft-Fluid) ·
+das echte **V18→V19-Zeit-Portal** · **VR/WebXR** · **IndexedDB** · **Fahrzeug-Fahr-Tiefe** ·
+**Statusbar-Tiefe** · B1 Wasser-Sheet→Worker.
 
 ---
 
@@ -109,6 +121,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 > Fluid) unberührt blieb — pixel-blind tweaken statt die Wurzel benennen ist die Spirale selbst.
 
 **Wasser-Render:**
+
 - Wasser-Fläche auf die Zell-Maske klippen (V18.7/.8/.9) → revertiert V18.10, **Sägezahn** (die
   Uferlinie gehört in den Tiefenpuffer, NIE in die Geometrie).
 - Flacher Fluss-Querschnitt (V18.12) → revertiert V18.13, „Leben raus" — **und WIEDER (V18.26) →
@@ -122,9 +135,10 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
   EINE Skala + die Zellen als Wahrheit + das Glätten-PRINZIP — der Render ist ein
   Oberflächen-SHEET (wasser-plan §0), kein geteilter Volumen-Mesher.
 - 3D-GPU-Fluid-Sim → als „falsches Werkzeug" markiert (Heilige-Lektion-Sünde; der gewählte Weg ist ein
-  *zellulärer Automat*, nicht eine GPU-Sim).
+  _zellulärer Automat_, nicht eine GPU-Sim).
 
 **GPU/Render:**
+
 - GPU-Density-WGSL-Pfad → abgeklemmt V14.6, geschnitten V17.20 (WebGPU-Roundtrip teurer als Worker-CPU).
 - Cel/Schatten/Wind für WebGPU geopfert (V10.0-g) → Rollback V10.0-g.r (502 Issues/Frame, r160-Vendor-
   Bug; nativ geheilt in V12.0-f mit r184).
@@ -132,11 +146,13 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
   war die Facetten-Lichtung, geheilt via Shading-`normalNode`, V17.107).
 
 **Hydrosphäre:**
+
 - Submarine-Biom-Dämpfung (V9.60-a) → zurückgerollt, Symptom-Pflaster (Wurzel: Biome unter Wasser).
 - Perzentil-waterLevel-Magie + tanh-Bipolarisierung → verworfen (Sample-Region ≪ modulierende
   Wellenlänge; eine adaptive Konstante über zu kleine Region ist faktisch fest).
 
 **Spawn:**
+
 - Architektur-Optik-Aufwertung (Turm/Kristall, V17.16) → revertiert, entfesselte die Material-Resonanz
   (Baum-Spawn fiel auf 0) — eine Optik-Anreicherung MUSS tag-neutral sein (4 Achsen vorher/nachher messen).
 
@@ -202,7 +218,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 ## §9 · Die operative Disziplin
 
 1. **Regel #0** — pixel-blinde Arbeit browser-validiert, bevor die nächste Welle stapelt.
-2. **Miss, rate nicht** — die 73 diag-Skripte; der Reproducer mit Output-Lesen *vor* dem Fix.
+2. **Miss, rate nicht** — die 73 diag-Skripte; der Reproducer mit Output-Lesen _vor_ dem Fix.
 3. **Verdichte, baue nie parallel** (V17.9, §6) · **Harmonie statt Revert** (V17.23) · **verifiziere
    KONSUM, nicht Existenz** (V17.31).
 4. **Keine halben Schritte** (V17.30) — Plan klar + Gap benannt → das ganze Subsystem an die Wurzel.
@@ -212,8 +228,8 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
    Plan wandert sofort in die Bibliothek).
 7. **Read-as-stranger VOR jeder Präsentation** (V18.3, verallgemeinert 09.06.) — bevor ein Plan, eine
    Analyse, ein „fertig" den Schöpfer erreicht, lies es feindlich, als wäre es von einem Fremden:
-   *wirklich gemessen oder behauptet? aktuellster Stand oder nur die Klassiker? Hypothese als Hypothese
-   markiert? Samen/Fäden verwoben oder vergessen?* Der Selbst-Review ist mein Reflex, nicht die Frage des
+   _wirklich gemessen oder behauptet? aktuellster Stand oder nur die Klassiker? Hypothese als Hypothese
+   markiert? Samen/Fäden verwoben oder vergessen?_ Der Selbst-Review ist mein Reflex, nicht die Frage des
    Schöpfers — er fand schon einen geshippten Bug (V18.3) UND einen zu selbstsicheren Plan (09.06.).
 
 ## §10 · Versions-Konvention
