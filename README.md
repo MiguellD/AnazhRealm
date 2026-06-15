@@ -6,7 +6,7 @@ Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Ei
 
 > Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
 
-**Nächste offene Fäden:** der aktive Bogen — Ω-PHYSIS Ω-Φ2→Φ5 + Säule II–IV (`docs/wahrerbauplan.md`, headless-verifizierbar) · Ω-OPSIS §7 Sky-Env-Map + Boden + Laub-Sättigung (`docs/wahreranblick.md`, augen-bound). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`. Der verfolgbare Rückmeldungs-Korpus: `docs/rueckmeldung.md`.
+**Nächste offene Fäden:** der aktive Bogen — Ω-PHYSIS Ω-Φ2→Φ5 + Säule II–IV (`docs/wahrerbauplan.md`, headless-verifizierbar) · Ω-OPSIS §7 Sky-Env-Map + Boden + Laub-Sättigung (`docs/wahreranblick.md`, augen-bound). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/archiv/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 

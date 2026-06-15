@@ -9,7 +9,7 @@
 > **Stand 15.06.2026 (V18.238):** DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen —
 > **`docs/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN) + **`docs/wahreranblick.md`** (Ω-OPSIS ·
 > der ANBLICK), ein Prinzip (der Auslesewert der Wahrheit). Der Live-Stand + die Reflexion:
-> `docs/aktiv.md`. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
+> der **„Aktueller Stand"-Kopf in `CLAUDE.md`**. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
 > Fäden, die NICHT im aktiven Bogen liegen, aber dem Schöpfer alle wichtig sind. (Die alten
 > „EINE-Plan"-Pläne `abschluss-plan` + `gigant-fortsetzung-plan` sind archiviert/abgelöst.)
 
@@ -91,16 +91,15 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 > **Stand 15.06.2026 (V18.238):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) liegt in
 > **`docs/wahrerbauplan.md`** (Ω-PHYSIS) + **`docs/wahreranblick.md`** (Ω-OPSIS), der Live-
-> Stand + die Reflexion (erledigt/offen/Chaos) in **`docs/aktiv.md`**. **Dieser §4 ist die
+> Stand + die Reflexion (erledigt/offen/Chaos) im **`CLAUDE.md`-Stand**. **Dieser §4 ist die
 > EINE Quelle für die Fäden, die NICHT im aktiven Bogen liegen** — die gemerkten Fäden, die
 > dem Schöpfer alle wichtig sind („nie vergessen, nie still streichen").
 
 **Wo finde ich was offen ist:**
 
 - **`docs/wahrerbauplan.md` + `docs/wahreranblick.md`** — der aktive Bogen (Physik + Anblick), Welle für Welle
-- **`docs/aktiv.md`** — aktuelle Welle · Live-Stand · die Reflexion (Parallelcode/Chaos zu vereinheitlichen)
-- **CLAUDE.md „Aktueller Stand"** — auto-geladene Wahrheit
-- **`docs/rueckmeldung.md`** — Schöpfer-Audit-Korpus (S-Abnahmen)
+- **`CLAUDE.md` „Aktueller Stand"** — die auto-geladene Wahrheit: aktuelle Welle · Live-Stand · die Reflexion (Parallelcode/Chaos zu vereinheitlichen)
+- **`docs/archiv/handover.md`** — die volle Wellen-Chronik (jüngste oben) + das Schöpfer-Audit-Gedächtnis (der alte `rueckmeldung.md`-Korpus liegt als Snapshot in `archiv/`)
 - **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
 
 **DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen):

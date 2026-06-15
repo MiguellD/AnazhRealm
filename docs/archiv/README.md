@@ -14,8 +14,9 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 `docs/das-lebendige-feld.md` (der wahre Norden), `docs/wahrerbauplan.md` +
 `docs/wahreranblick.md` (der aktive Bogen), `docs/roadmap.md` (der Weg).
 
-**Frisch archiviert (15.06.2026 — die Doc-Ordnung wiederhergestellt, der aktive Tisch
-verschlankt auf zwei Bogen-Pläne):**
+**Frisch archiviert (15.06.2026 — die Doc-Ordnung wiederhergestellt: die vier ewigen Heimaten
+[Stand `CLAUDE.md` · Chronik `handover.md` · Plan `roadmap.md` · Vision `state-of-realm.md` +
+`das-lebendige-feld.md`] + der aktive Bogen [zwei Pläne], die Prozess-Docs zurückgefaltet):**
 
 - `gigant-fortsetzung-plan.md` — DER LEBENDIGE GIGANT, VOLLENDET V18.216–V18.225 (alle
   §13-Bänder gemessen-erfüllt: Dichte/Promotion/PBR/LOD). Reine Geschichte.
@@ -25,6 +26,12 @@ verschlankt auf zwei Bogen-Pläne):**
 - `wahreranblick-antidrift-plan.md` — die Drift-Geschichte (15.06.): WARUM drei Sessions
   am SEHEN strandeten + die fünf Wände. Die Wände leben jetzt im Kopf von
   `docs/wahreranblick.md`; diese Datei trägt die volle Begründung.
+- `aktiv.md` — DER TISCH (Live-Stand + Reflexion). **Gefaltet** in den `CLAUDE.md`-Stand
+  („Aktueller Stand"-Kopf trägt jetzt Live + Reflexion); der Snapshot bleibt als Beleg.
+- `rueckmeldung.md` — DER RÜCKMELDUNGS-KORPUS (der 12.06.-Schöpfer-Audit, R-001…R-044,
+  fast alles gebaut/abgenommen). **Gefaltet:** die Disziplin lebt als Konvention in
+  `CLAUDE.md` (handeln, nicht horten), die Geschichte in `handover.md`, offene Entscheide
+  in `roadmap.md §4`. Kein stehender Ledger mehr — der Snapshot bleibt als Beleg.
 
 ---
 
@@ -32,14 +39,14 @@ verschlankt auf zwei Bogen-Pläne):**
 
 | Datei                               | Was                                                                                                                                   | Stand                                                                                                                                                                                                     |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `meister-plan.md`                   | Der große Schöpfer-Browser-Audit (12.06.2026): §8-Marsch W-A…W-H · M1–M8 · §3 Aufstiegs-Leiter · §8.6 Matrix · die Profi-Lücken-Karte | **§8 + M1–M8 VOLLENDET** (V18.154–V18.179 + Synthese-Welle-2); **§3 M9-Aufstiegs-Leiter** + **§8.8 Φ-Bogen** leben in `docs/aktiv.md` §1.A+1.B                                                            |
-| `genese-plan.md`                    | Der Γ-Bogen: LAAS-Transfer „Neue Felder, alte Leser" — Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz · Makro-Anker                   | **Γ-KERN + Γ4-BOGEN VOLLENDET** (V18.166 + V18.179–V18.181 via Synthese-Sub-3h+3i); Reste (Γ7 · Lesart 5 · Γ3 · Γ-M · Γ8 · Totholz) in `docs/aktiv.md` §1.C                                               |
-| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur)                                       | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit; **§6 Drei-Optionen-Entscheid offen** (siehe `docs/aktiv.md` §3)             |
-| `lod-kaskade-plan.md`               | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter)                                                                             | **AKTIV** — U1/U3/U4/U5 gebaut, U2/U6 offen (`docs/aktiv.md` §1.D)                                                                                                                                        |
+| `meister-plan.md`                   | Der große Schöpfer-Browser-Audit (12.06.2026): §8-Marsch W-A…W-H · M1–M8 · §3 Aufstiegs-Leiter · §8.6 Matrix · die Profi-Lücken-Karte | **§8 + M1–M8 VOLLENDET** (V18.154–V18.179 + Synthese-Welle-2); **§3 M9-Aufstiegs-Leiter** + **§8.8 Φ-Bogen** leben in `docs/roadmap.md` §4                                                            |
+| `genese-plan.md`                    | Der Γ-Bogen: LAAS-Transfer „Neue Felder, alte Leser" — Feuchte-Feld · Kronen-Lesarten · Stream-Gesetz · Makro-Anker                   | **Γ-KERN + Γ4-BOGEN VOLLENDET** (V18.166 + V18.179–V18.181 via Synthese-Sub-3h+3i); Reste (Γ7 · Lesart 5 · Γ3 · Γ-M · Γ8 · Totholz) in `docs/roadmap.md` §4                                               |
+| `wasser-render-architektur-plan.md` | Wasser — die EINE Wahrheit (6 Schichten, die 30-Wellen-Spirale, die Drei-Schichten-Architektur)                                       | **REFERENZ** — der Fluid-Bogen ist GEBAUT (V18.84–.94, `terrain-t4-wasser-ca-plan.md`); ZUERST lesen bei jeder Wasser-Arbeit; **§6 Drei-Optionen-Entscheid offen** (siehe `docs/roadmap.md` §4)             |
+| `lod-kaskade-plan.md`               | Die Detail-Kaskade (U1–U6, eine Distanz, sechs Gesichter)                                                                             | **AKTIV** — U1/U3/U4/U5 gebaut, U2/U6 offen (`docs/roadmap.md` §4)                                                                                                                                        |
 | `kampf-plan.md`                     | Crafting/Kampf §11 — Schöpfungs-Fluss + Resonanz                                                                                      | **VOLLENDET** — Kern + S6-B + Phase E V18.148 (Raubtier-Seele + Jagd + Furcht/Triumph/Schuld); S-Reste = abgenommene Vermerke                                                                             |
-| `world-portal-w18-plan.md`          | W18 — in fremden Welten leben (Ko-Präsenz)                                                                                            | **VOLLENDET** Stufe 0/1+Wohnen (V18.144–V18.146); Stufe 2–4 = M9-Sprossen (`docs/aktiv.md` §1.B)                                                                                                          |
-| `taille-plan.md`                    | Ω — der Ewigkeits-Bogen: die gefrorene Taille (die Risse + der Weg Ω0–Ω6)                                                             | **VOLLENDET (V18.137–.141)** — die NORM lebt auf dem Tisch (`docs/taille-spec.md` + `spec/golden/v1/`); hier die Historie; **das echte V18→V19-Zeit-Portal = GEMERKTER FADEN** (siehe `docs/aktiv.md` §2) |
-| `robustheit-plan.md`                | G8 — drei Ringe + lebendes Immunsystem                                                                                                | **R0–R6-Kern VOLLENDET (V18.122–.152)**; Rest des R6-Bogens = M9-Sprosse 3 (`docs/aktiv.md` §1.B)                                                                                                         |
+| `world-portal-w18-plan.md`          | W18 — in fremden Welten leben (Ko-Präsenz)                                                                                            | **VOLLENDET** Stufe 0/1+Wohnen (V18.144–V18.146); Stufe 2–4 = M9-Sprossen (`docs/roadmap.md` §4)                                                                                                          |
+| `taille-plan.md`                    | Ω — der Ewigkeits-Bogen: die gefrorene Taille (die Risse + der Weg Ω0–Ω6)                                                             | **VOLLENDET (V18.137–.141)** — die NORM lebt auf dem Tisch (`docs/taille-spec.md` + `spec/golden/v1/`); hier die Historie; **das echte V18→V19-Zeit-Portal = GEMERKTER FADEN** (siehe `docs/roadmap.md` §4) |
+| `robustheit-plan.md`                | G8 — drei Ringe + lebendes Immunsystem                                                                                                | **R0–R6-Kern VOLLENDET (V18.122–.152)**; Rest des R6-Bogens = M9-Sprosse 3 (`docs/roadmap.md` §4)                                                                                                         |
 
 ## Referenz (Nachschlagewerke)
 
@@ -75,7 +82,7 @@ nicht mehr Klon-Feld in einer Farbe). Branch-Synthese-Completeness gemessen:
 | ------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `wellen-synthese-plan.md` | Volle Plan-Datei: Hunk-Karte · Konflikt-Analyse · Code-Synthesen · 9 Risiken · 9 permanente Lehren | **VOLLENDET** (V18.186) — die nächste Branch-Synthese-Session liest sie als Vorbild |
 
-Stamm-Pointer in `docs/wellen-synthese-plan.md` (Schluss-Bilanz mit allen
+Stamm-Pointer in `wellen-synthese-plan.md` (Schluss-Bilanz mit allen
 Commit-SHAs); kanonische Welle-für-Welle-Chronik in `handover.md`-Eintrag
 „V18.180-FIX bis V18.186"; CLAUDE.md trägt die 9 permanenten Lehren.
 
@@ -166,6 +173,6 @@ ansteht, erzeugt der `/audit`-Slash-Befehl einen frischen Bericht. Der liegt dan
 in `docs/` bis er selbst wieder hierher wandert.
 
 - **`gigant-plan.md`** — DER GIGANT (die neun Säulen, §5-Pfad GESCHLOSSEN V18.147; die
-  GEMERKTEN FÄDEN fortgeschrieben in `docs/meister-plan.md` §5 — dem aktiven Nachfolger).
+  GEMERKTEN FÄDEN fortgeschrieben in `meister-plan.md` §5 — dem aktiven Nachfolger).
 - **`terrain-koharenz-plan.md`** — der Terrain-Kohärenz-Bogen (T0–T8 + N1–N3 GEBAUT; die
   Chunk-Naht als die EINE Wurzel — vollendet V18.103).

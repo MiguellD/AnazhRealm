@@ -2,8 +2,10 @@
 
 **Wenige fundamentale Texte tragen alles.** Der Rest — die Chronik, die vollendeten Bögen, die
 schlafenden Pläne, die Referenzen — lebt im Archiv (`docs/archiv/`), durchsuchbar. Das Prinzip:
-_der aktive Tisch trägt das JETZT + den AKTIVEN BOGEN; ein Plan vollendet → er wandert ins Archiv
-(`git mv`)._ So bleibt der Hauptraum **eine Wahrheit, keine Halde.**
+_`CLAUDE.md` trägt das JETZT (Stand + Gotchas + Konventionen); ein Plan vollendet → er wandert ins
+Archiv (`git mv`)._ So bleibt der Hauptraum **eine Wahrheit, keine Halde.** Die vier ewigen Heimaten
+sind schlank: **Stand+Lehren** (`CLAUDE.md`) · **Chronik** (`archiv/handover.md`) · **Plan**
+(`roadmap.md`) · **Vision** (`state-of-realm.md` + `das-lebendige-feld.md`) — kein Prozess-Doc daneben.
 
 ---
 
@@ -11,15 +13,13 @@ _der aktive Tisch trägt das JETZT + den AKTIVEN BOGEN; ein Plan vollendet → e
 
 | Datei                               | Ebene                       | Was                                                                                                                                                                                                                                                                                 |
 | ----------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`CLAUDE.md`** (Wurzel)            | **JETZT**                   | Stand · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session.                                                                                                                                                                                     |
+| **`CLAUDE.md`** (Wurzel)            | **JETZT · DER TISCH**       | Stand (Live + die Reflexion: erledigt · offen · wo nicht mehr synergetisch) · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session.                                                                                                                |
 | **`docs/state-of-realm.md`**        | **DIE VISION**              | Die Pfeiler aus den Testamenten · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                                                                                                                                                         |
 | **`docs/das-lebendige-feld.md`**    | **DER WAHRE NORDEN**        | Die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor lebendiger Welt / Emotion / Nexus / DSL / Kreaturen.                                                                                                |
 | **`docs/wahrerbauplan.md`**         | **AKTIVER BOGEN · SEIN**    | Ω-PHYSIS — der Physik-Schiedsrichter (Schwerpunkt → Stabilität → Steifigkeit/Versagen → Hebel → Lastpfad → der Leser → die Grammatik → die Werkstatt). Das _unsichtbare_ Kugel-Problem. **ZUERST** vor Bauplan / Physik / Stabilität / Werkstatt / Crafting-Tiefe / Kreatur-Körper. |
 | **`docs/wahreranblick.md`**         | **AKTIVER BOGEN · ANBLICK** | Ω-OPSIS — jede Oberfläche ein Auslesewert der Welt (Boden · Bewuchs · Materialien · Form · Atmosphäre · Geometrie-Feinheit) + die fünf Wände gegen den Drift. **ZUERST** vor Anblick / Render / Material / Terrain-Look / Vegetation-Look / Atmosphäre.                             |
-| **`docs/aktiv.md`**                 | **DER TISCH**               | Live-Stand (jüngste + nächste Welle) + die Reflexion (erledigt · offen · wo das System nicht mehr synergetisch ist).                                                                                                                                                                |
 | **`docs/roadmap.md`**               | **DIE KARTE**               | Der Backlog vorwärts + **DIE GEMERKTEN FÄDEN** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · IndexedDB · …).                                                                                                                                                      |
 | **`docs/taille-spec.md`** (+ `.en`) | **DER VERTRAG**             | Die gefrorene Taille, NORMATIV (Ω1) — Serialisierung · Import · p2p-Schema · Snapshot · §7 Broker-Protokoll. **ZUERST** vor Serialisierung/Import/Broker. `spec/golden/v1/` EINGEFROREN.                                                                                            |
-| **`docs/rueckmeldung.md`**          | **DAS GESETZ**              | Der Rückmeldungs-Korpus — jede Schöpfer-Rückmeldung mit ID·Status·Wurzel·Welle. **VOR jeder Planung lesen; kein „GEBAUT ✓" ohne Korpus-Update + Nachbau im Nutzer-Zustand.**                                                                                                        |
 | **`README.md`** (Wurzel)            | **DIE TÜR**                 | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion.                                                                                                                                                                                                                       |
 
 **EIN PRINZIP, DREI GESICHTER:** `wahrerbauplan` (Ω-PHYSIS · das SEIN), `wahreranblick`
@@ -31,7 +31,9 @@ geraten/gemalt._ Ω-PHYSIS ist headless verifizierbar (kein Flake), Ω-OPSIS ist
 
 **Frisch archiviert (15.06.2026 — Doc-Ordnung):** `gigant-fortsetzung-plan.md` (VOLLENDET V18.225),
 `abschluss-plan.md` (Vorgänger, vom aktiven Bogen abgelöst), `wahreranblick-antidrift-plan.md`
-(die Drift-Geschichte; die fünf Wände leben jetzt im Kopf von `wahreranblick.md`).
+(die Drift-Geschichte; die fünf Wände leben jetzt im Kopf von `wahreranblick.md`), **`aktiv.md` +
+`rueckmeldung.md`** (die zwei Prozess-Docs — der Tisch faltete in den `CLAUDE.md`-Stand zurück, der
+Rückmeldungs-Korpus in die Gotchas/handover; die zwei Snapshots bleiben als Beleg im Archiv).
 **Über den Detail-Plänen — der Master-Blick:** `docs/archiv/gigant-plan.md` (das umfassende
 gemessene Bild der neun Säulen; der §5-Pfad GESCHLOSSEN seit V18.147).
 
