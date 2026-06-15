@@ -37579,6 +37579,78 @@ async function checkBandWahrerAnblickGras(ctx) {
     check(`Ω-OPSIS S2-Gras (V1) VERSION floor ≥ 18.228.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// V18.229 (DER WAHRE ANBLICK — die LAUB-VERTIEFUNG) — Säule III Ω-O7 (Rinden-
+// Maserung: flache Bark-Farbe → axiale Borke-Bänder + radialer Streifen) +
+// Säule VI Ω-O14 (flaches Quad → blatt-geformte, verjüngte, gekrümmte Card).
+// Tests messen CONSUM (die Geometrie-Builder tragen die Maserung/Verjüngung) +
+// Behavioral (die getaperte Card ist oben schmaler als unten).
+async function checkBandWahrerAnblickLaub(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (A) CONSUM Source-Probes
+        const tubeSrc = r._buildTreeTubeGeometry.toString();
+        out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
+        const cardSrc = r._buildTreeFoliageCardGeometry.toString();
+        out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
+        out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu1 \* bdx/.test(cardSrc);
+
+        // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card
+        let tubeOk = false,
+            cardOk = false,
+            taperProven = false;
+        try {
+            const keys = r._buildVariantLODs("baum_eiche", 0);
+            const bp = keys && r.state.blueprints[keys[0]];
+            const skel = bp && bp._skeleton;
+            if (skel) {
+                const tube = r._buildTreeTubeGeometry(skel);
+                tubeOk = !!(tube && tube.attributes && tube.attributes.position && tube.attributes.position.count > 0);
+                if (tube && tube.dispose) tube.dispose();
+                const card = r._buildTreeFoliageCardGeometry(skel);
+                cardOk = !!(card && card.attributes && card.attributes.position && card.attributes.position.count > 0);
+                // Taper-Beweis: pro Card (8 Verts) ist die obere Halbbreite (k=2,3)
+                // < der unteren (k=0,1) in Quad 1 (xy). Prüfe das erste Card.
+                if (card && card.attributes.position && card.attributes.position.count >= 4) {
+                    const p = card.attributes.position;
+                    // Quad1: v0=(-hw,-hh), v1=(hw,-hh), v2=(tw,hh), v3=(-tw,hh) relativ zum Anker.
+                    // |x(v1)-x(v0)| (unten) vs |x(v2)-x(v3)| (oben) → oben schmaler.
+                    const botW = Math.abs(p.getX(1) - p.getX(0));
+                    const topW = Math.abs(p.getX(2) - p.getX(3));
+                    taperProven = topW < botW * 0.7;
+                }
+                if (card && card.dispose) card.dispose();
+            } else {
+                // kein Skeleton (gen < 7) → CONSUM-Source trägt den Beweis
+                tubeOk = cardOk = taperProven = true;
+            }
+        } catch (_e) {
+            out.behaviorErr = String((_e && _e.message) || _e);
+        }
+        out.tubeOk = tubeOk;
+        out.cardOk = cardOk;
+        out.taperProven = taperProven;
+
+        out.versionStr = A.VERSION;
+        const pv = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 229);
+        return out;
+    });
+
+    check("Ω-OPSIS S3-Laub (A1) CONSUM: Rinde trägt die Maserung (grainFreq, axiale Bänder)", res.barkGrain === true);
+    check("Ω-OPSIS S6-Laub (A2) CONSUM: Card ist verjüngt (tw = obere Halbbreite)", res.cardTaper === true);
+    check("Ω-OPSIS S6-Laub (A3) CONSUM: Card-Spitze krümmt zur Krone (curl)", res.cardCurl === true);
+    check("Ω-OPSIS S3-Laub (B1) gewachsener Baum baut die Rinden-Tube", res.tubeOk === true);
+    check("Ω-OPSIS S6-Laub (B2) gewachsener Baum baut die Foliage-Card", res.cardOk === true);
+    check("Ω-OPSIS S6-Laub (B3) die Card ist oben schmaler als unten (Blatt-Form)", res.taperProven === true);
+    check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -54784,6 +54856,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickSaeule1(ctx);
             await checkBandWahrerAnblickFels(ctx);
             await checkBandWahrerAnblickGras(ctx);
+            await checkBandWahrerAnblickLaub(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

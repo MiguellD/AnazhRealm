@@ -51306,9 +51306,19 @@ class AnazhRealm {
                     // — V18.211/V18.213-Brightness-Spiegel. Per-Vertex-Color
                     // erlaubt subtile Variation entlang der Polylinie.
                     const tintT = 0.6 + 0.15 * (1 - flexVal); // unten dunkler
-                    colors[vIdx] = 0.36 * tintT;
-                    colors[vIdx + 1] = 0.22 * tintT;
-                    colors[vIdx + 2] = 0.12 * tintT;
+                    // V18.229 (Ω-OPSIS Säule III Ω-O7) — RINDEN-MASERUNG: axiale
+                    // Borke-Bänder (sin über den Polylinien-Index i) + ein radialer
+                    // Streifen (über j) → die Rinde liest nicht mehr als flache
+                    // Farbe (Stamm gröber gebändert als die feineren Äste). Billig
+                    // (sin), deterministisch, per-Vertex — kein Worker/Determinismus.
+                    const grainFreq = br.isTrunk ? 2.1 : 3.6;
+                    const grain =
+                        1 -
+                        0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
+                        0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
+                    colors[vIdx] = 0.36 * tintT * grain;
+                    colors[vIdx + 1] = 0.22 * tintT * grain;
+                    colors[vIdx + 2] = 0.12 * tintT * grain;
                     // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
                     const vF = i * radialSegs + j;
                     flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
@@ -51439,28 +51449,36 @@ class AnazhRealm {
             bn2.x /= bn2len;
             bn2.y /= bn2len;
             bn2.z /= bn2len;
-            // Quad 1 corners: (-hw,-hh,0), (+hw,-hh,0), (+hw,+hh,0), (-hw,+hh,0)
+            // V18.229 (Ω-OPSIS Säule VI Ω-O14) — BLATT-GEFORMTE Card: unten breit,
+            // oben verjüngt (Tropfen/Blatt statt Rechteck), die Spitze KRÜMMT zur
+            // Krone (curl, im Position-Write) → ein 3D-Blatt-Cluster statt einer
+            // flachen Platte. tw = obere (Spitzen-) Halbbreite.
+            const tw = hw * 0.42;
+            const curl = hh * 0.32;
+            // Quad 1 corners (xy): unten ±hw, oben ±tw (verjüngt)
             const q1corners = [
                 [-hw, -hh, 0],
                 [hw, -hh, 0],
-                [hw, hh, 0],
-                [-hw, hh, 0],
+                [tw, hh, 0],
+                [-tw, hh, 0],
             ];
-            // Quad 2 corners: (0,-hh,-hw), (0,-hh,+hw), (0,+hh,+hw), (0,+hh,-hw)
+            // Quad 2 corners (zy): unten ±hw, oben ±tw
             const q2corners = [
                 [0, -hh, -hw],
                 [0, -hh, hw],
-                [0, hh, hw],
-                [0, hh, -hw],
+                [0, hh, tw],
+                [0, hh, -tw],
             ];
             const phBase = hashPhase(ai, 0);
             const flexBase = Math.max(0.5, Math.min(1, a.y / totalH));
             // Quad 1
             for (let k = 0; k < 4; k++) {
                 const v3 = vWrite * 3;
-                positions[v3] = a.x + q1corners[k][0];
-                positions[v3 + 1] = a.y + q1corners[k][1];
-                positions[v3 + 2] = a.z + q1corners[k][2];
+                // Ω-O14 — die Spitze (k≥2) krümmt zur Krone (bd-Richtung).
+                const cu1 = k >= 2 ? curl : 0;
+                positions[v3] = a.x + q1corners[k][0] + cu1 * bdx;
+                positions[v3 + 1] = a.y + q1corners[k][1] + cu1 * bdy;
+                positions[v3 + 2] = a.z + q1corners[k][2] + cu1 * bdz;
                 normals[v3] = bn1.x;
                 normals[v3 + 1] = bn1.y;
                 normals[v3 + 2] = bn1.z;
@@ -51475,9 +51493,10 @@ class AnazhRealm {
             // Quad 2
             for (let k = 0; k < 4; k++) {
                 const v3 = vWrite * 3;
-                positions[v3] = a.x + q2corners[k][0];
-                positions[v3 + 1] = a.y + q2corners[k][1];
-                positions[v3 + 2] = a.z + q2corners[k][2];
+                const cu2 = k >= 2 ? curl : 0;
+                positions[v3] = a.x + q2corners[k][0] + cu2 * bdx;
+                positions[v3 + 1] = a.y + q2corners[k][1] + cu2 * bdy;
+                positions[v3 + 2] = a.z + q2corners[k][2] + cu2 * bdz;
                 normals[v3] = bn2.x;
                 normals[v3 + 1] = bn2.y;
                 normals[v3 + 2] = bn2.z;
@@ -67958,7 +67977,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.228.0";
+AnazhRealm.VERSION = "18.229.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
