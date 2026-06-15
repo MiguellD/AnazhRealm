@@ -21391,6 +21391,29 @@ class AnazhRealm {
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
 
+    // V18.230 (Ω-OPSIS Säule II Ω-O6) — das PFAD-FELD: die Fluss-BÄNKE sind
+    // getrampelte Erde (Tiere + Menschen folgen lawful dem Wasser, wie der Pfad
+    // dem Tal). Knapp AUSSERHALB der Wasserkante (dist ∈ [halfW, halfW+bankW])
+    // UND auf NIEDRIGER Bank (0..5 m über dem Spiegel, keine hohe Klippe) → ein
+    // Pfad ∈ [0,1] (stark an der Kante, fade nach aussen). Render-only-Auslese-
+    // wert (Boden-Farbe gepackt + Gras unterdrückt); nutzt den schon worker-
+    // gespiegelten _hydroDistAt → P2P bit-identisch (wie _feuchteAt).
+    _pathFieldAt(x, z, surfY) {
+        if (this._genVersion() < 2) return 0;
+        const r = this._hydroDistAt(x, z);
+        if (!Number.isFinite(r.dist)) return 0;
+        const inner = Math.max(1, r.halfW);
+        const bankW = 4.5;
+        const d = r.dist - inner;
+        if (d < 0 || d > bankW) return 0;
+        if (Number.isFinite(surfY)) {
+            const above = surfY - this._waterLevelAt(x, z);
+            if (above < 0 || above > 5) return 0;
+        }
+        const band = 1 - d / bankW;
+        return band * band;
+    }
+
     // V9.45-b — das See-Becken an einer xz-Welt-Position. Liefert `{bedY, w}`
     // oder null: `bedY` ist die flache, wasserdichte Bett-Höhe des Sees,
     // `w` ∈ [0,1] die Becken-Zugehörigkeit (1 im See-Innern, rampt über den
@@ -22068,6 +22091,7 @@ class AnazhRealm {
         // die Uferlinie zu einer emergenten Beige-Linie — der Schöpfer-
         // Befund "küste versteht das sie küste ist".
         const sand = [0.87, 0.78, 0.55];
+        const packedDirt = [0.32, 0.26, 0.18]; // V18.230 (Ω-O6) getrampelte Pfad-Erde
         // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die
         // schmal-aber-deutlich-Kurve der Feuchte-Sichtbarkeit aus AnazhRealm.
         // FEUCHTE gelesen (browser-justierbar im Main); der Worker-Spiegel
@@ -22162,6 +22186,11 @@ class AnazhRealm {
                 // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
                 // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
             }
+            // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
+            // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
+            // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
+            const pathF = this._pathFieldAt(x, z, y);
+            if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
             colors[i * 3] = c[0];
             colors[i * 3 + 1] = c[1];
             colors[i * 3 + 2] = c[2];
@@ -28196,7 +28225,11 @@ class AnazhRealm {
                 // homogener Dichte — dasselbe Klump-Feld, das den Bäumen die
                 // Wald-Maske gibt, eine Oktave feiner. Totale ≈ unverändert.
                 const clump = Math.max(0.15, Math.min(2.2, 1 + 1.2 * this._clumpAt(baseX, baseZ, 0.035)));
-                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump);
+                // V18.230 (Ω-OPSIS Säule II Ω-O6) — auf einem PFAD (getrampelte
+                // Fluss-Bank) wächst kein Gras: der gepackte Boden trägt den Trampel-
+                // pfad, die Halme weichen → die bare Erd-Linie wird sichtbar.
+                const pathSuppress = this._pathFieldAt ? 1 - this._pathFieldAt(baseX, baseZ, surfY) * 0.92 : 1;
+                const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump * pathSuppress);
                 // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
                 // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
                 // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
@@ -67977,7 +68010,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.229.0";
+AnazhRealm.VERSION = "18.230.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

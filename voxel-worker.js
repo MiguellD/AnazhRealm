@@ -934,6 +934,24 @@ function feuchteAt(x, z, surfY) {
     return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
 }
 
+// V18.230 (Ω-OPSIS Säule II Ω-O6) — das PFAD-FELD, Worker-Spiegel (bit-identisch
+// zum Main _pathFieldAt): die Fluss-Bänke als getrampelte Erde.
+function pathFieldAt(x, z, surfY) {
+    if (state.genVersion < 2) return 0;
+    const r = hydroDistAt(x, z);
+    if (!Number.isFinite(r.dist)) return 0;
+    const inner = Math.max(1, r.halfW);
+    const bankW = 4.5;
+    const d = r.dist - inner;
+    if (d < 0 || d > bankW) return 0;
+    if (Number.isFinite(surfY)) {
+        const above = surfY - waterLevelAt(x, z);
+        if (above < 0 || above > 5) return 0;
+    }
+    const band = 1 - d / bankW;
+    return band * band;
+}
+
 function waterLevelAt(x, z) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
@@ -1388,6 +1406,7 @@ function attachFieldColors(positions) {
     const snow = [0.92, 0.93, 1.0];
     const sed = [0.78, 0.72, 0.52];
     const sand = [0.87, 0.78, 0.55];
+    const packedDirt = [0.32, 0.26, 0.18]; // V18.230 (Ω-O6) getrampelte Pfad-Erde
     const sandNoise = state.noise; // Mirror anazhRealm._voxelNoise (selber Seed)
     const base = state.baseHeight || 0;
     // V17.105 — Schnee-Prominenz-Schwelle (Mirror von _attachVoxelFieldColors).
@@ -1443,6 +1462,10 @@ function attachFieldColors(positions) {
                 mix(sand, shoreBlend * intensity);
             }
         }
+        // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE (Worker-Spiegel, bit-
+        // identisch): die Fluss-Bänke als getrampelte, gepackte Erde.
+        const pathF = pathFieldAt(x, z, y);
+        if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];

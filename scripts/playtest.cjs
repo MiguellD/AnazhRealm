@@ -37651,6 +37651,65 @@ async function checkBandWahrerAnblickLaub(ctx) {
     check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// V18.230 (DER WAHRE ANBLICK — die PFADE) — Säule II Ω-O6: der einzige Samen,
+// der aus NICHTS wuchs. Die Fluss-Bänke sind getrampelte Erde (lawful aus dem
+// Drainage-Netz): _pathFieldAt → der Boden packt (packedDirt, worker-gespiegelt
+// bit-identisch) + das Gras weicht. Tests messen CONSUM + die Feld-Logik.
+async function checkBandWahrerAnblickPfade(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        out.helperExists = typeof r._pathFieldAt === "function";
+        // (A) Logik: fern jeden Flusses → kein Pfad
+        out.farIsZero = r._pathFieldAt(99999, 99999, 10) === 0;
+        // gebunden [0,1]
+        let bounded = true;
+        for (let gx = -200; gx <= 200; gx += 37) {
+            const sy = r._voxelSurfaceY ? r._voxelSurfaceY(gx, 0) : 10;
+            const v = r._pathFieldAt(gx, 0, sy);
+            if (!(v >= 0 && v <= 1)) bounded = false;
+        }
+        out.pathBounded = bounded;
+
+        // (B) CONSUM — der Boden-Bau packt die Pfad-Erde, der Gras-Bau weicht
+        const attachSrc = r._attachVoxelFieldColors.toString();
+        out.attachReadsPath = /_pathFieldAt/.test(attachSrc) && /packedDirt/.test(attachSrc);
+        const grassSrc = r._buildVoxelChunkGrass.toString();
+        out.grassReadsPath = /pathSuppress/.test(grassSrc) && /_pathFieldAt/.test(grassSrc);
+
+        // (B3) Behavioral (soft): wie viele Pfad-Treffer in einem 600m-Raster?
+        let hits = 0,
+            samples = 0;
+        for (let gx = -300; gx <= 300; gx += 20) {
+            for (let gz = -300; gz <= 300; gz += 20) {
+                samples++;
+                const sy = r._voxelSurfaceY ? r._voxelSurfaceY(gx, gz) : 10;
+                if (r._pathFieldAt(gx, gz, sy) > 0.1) hits++;
+            }
+        }
+        out.pathSamples = samples;
+        out.pathHits = hits;
+
+        out.versionStr = A.VERSION;
+        const pv = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 230);
+        return out;
+    });
+
+    check("Ω-OPSIS S2-Pfad (A1) _pathFieldAt Helfer existiert", res.helperExists === true);
+    check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
+    check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
+    check("Ω-OPSIS S2-Pfad (B1) CONSUM: der Boden-Bau packt die Pfad-Erde (packedDirt)", res.attachReadsPath === true);
+    check("Ω-OPSIS S2-Pfad (B2) CONSUM: der Gras-Bau unterdrückt Gras auf dem Pfad", res.grassReadsPath === true);
+    check(`Ω-OPSIS S2-Pfad (B3) Pfad-Feld im Welt-Raster gemessen (${res.pathHits}/${res.pathSamples} Treffer)`, res.pathHits >= 0 && res.pathSamples > 0);
+    check(`Ω-OPSIS S2-Pfad (V1) VERSION floor ≥ 18.230.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -54857,6 +54916,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickFels(ctx);
             await checkBandWahrerAnblickGras(ctx);
             await checkBandWahrerAnblickLaub(ctx);
+            await checkBandWahrerAnblickPfade(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
