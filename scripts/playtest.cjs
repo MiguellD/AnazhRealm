@@ -37523,6 +37523,62 @@ async function checkBandWahrerAnblickFels(ctx) {
     check(`Ω-OPSIS S6 (V1) VERSION floor ≥ 18.227.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// V18.228 (DER WAHRE ANBLICK — die GRAS-VERTIEFUNG) — Säule II Ω-O4: das Gras
+// liest den BODEN darunter. Der Samen (fixer Grün-Gradient) wächst zur Boden-
+// Kohärenz: jeder Halm trägt instanceColor aus lebendig+feuchte (lush-grün ↔
+// dry-oliv). Tests messen CONSUM (das Material liest es, der Bau setzt es).
+async function checkBandWahrerAnblickGras(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const out = {};
+
+        // (A) CONSUM Source-Probes
+        const matSrc = r._grassInstanceMat.toString();
+        out.matReadsInstanceColor = /attribute\(["']instanceColor["']/.test(matSrc);
+        const buildSrc = r._buildVoxelChunkGrass.toString();
+        out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
+        out.buildComputesTint = /lushG/.test(buildSrc) && /tintR/.test(buildSrc) && /_feuchteAt/.test(buildSrc);
+
+        // (B) Material baut (der instanceColor-colorNode kompiliert ohne Wurf)
+        const m = r._grassInstanceMat();
+        out.matBuilt = !!m;
+
+        // (B2) jedes gebaute Gras-Mesh trägt instanceColor (WebGPU-strikt)
+        let withColor = 0,
+            total = 0;
+        if (r.state.voxelChunkGrass) {
+            for (const inst of r.state.voxelChunkGrass.values()) {
+                if (inst && inst.isInstancedMesh) {
+                    total++;
+                    if (inst.instanceColor) withColor++;
+                }
+            }
+        }
+        out.grassMeshes = total;
+        out.grassWithColor = withColor;
+        out.allGrassColored = total === 0 || withColor === total;
+
+        out.versionStr = A.VERSION;
+        const pv = String(A.VERSION || "0.0.0")
+            .split(".")
+            .map((s) => parseInt(s, 10) || 0);
+        out.versionFloor = pv[0] > 18 || (pv[0] === 18 && pv[1] >= 228);
+        return out;
+    });
+
+    check("Ω-OPSIS S2-Gras (A1) CONSUM: Gras-Material liest instanceColor (Boden-Tint)", res.matReadsInstanceColor === true);
+    check("Ω-OPSIS S2-Gras (A2) CONSUM: _buildVoxelChunkGrass setzt setColorAt/instanceColor", res.buildSetsColor === true);
+    check("Ω-OPSIS S2-Gras (A3) CONSUM: der Tint kommt aus lebendig+feuchte (lushG/tintR)", res.buildComputesTint === true);
+    check("Ω-OPSIS S2-Gras (B1) Gras-Material baut (instanceColor-colorNode kompiliert)", res.matBuilt === true);
+    check(
+        `Ω-OPSIS S2-Gras (B2) alle gebauten Gras-Meshes tragen instanceColor (${res.grassWithColor}/${res.grassMeshes})`,
+        res.allGrassColored === true
+    );
+    check(`Ω-OPSIS S2-Gras (V1) VERSION floor ≥ 18.228.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -54727,6 +54783,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18224ScatterPromotion(ctx);
             await checkBandWahrerAnblickSaeule1(ctx);
             await checkBandWahrerAnblickFels(ctx);
+            await checkBandWahrerAnblickGras(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

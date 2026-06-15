@@ -13741,6 +13741,16 @@ class AnazhRealm {
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
                 albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
+                // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-BEZUG: die Streu-Pass
+                // setzt `instanceColor` pro Halm aus lebendig+feuchte (lush-grün ↔
+                // dry-oliv) → das Gras liest den Boden darunter, kohärent mit der
+                // Geologie (nasse Senke = saftig, trockener Grat = strohig). Ein
+                // MULTIPLIKATOR um ~1 (jeder Halm trägt instanceColor → kein
+                // fehlendes Attribut, WebGPU-strikt-sicher). Vor dem Gegenlicht-
+                // glow (der ist additives Licht, nicht getönt).
+                if (TSL.attribute) {
+                    albedo = albedo.mul(TSL.attribute("instanceColor", "vec3"));
+                }
                 // V16.2 - Gegenlicht-Translucency (der Ghost-of-Tsushima-Magie-
                 // Moment): wenn die Sonne HINTER dem Gras steht (Blickrichtung
                 // ~entgegengesetzt zur Sonne), leuchten die Halme golden-grün
@@ -28187,6 +28197,14 @@ class AnazhRealm {
                 // Wald-Maske gibt, eine Oktave feiner. Totale ≈ unverändert.
                 const clump = Math.max(0.15, Math.min(2.2, 1 + 1.2 * this._clumpAt(baseX, baseZ, 0.035)));
                 const count = Math.floor((lebendig * 14 + rnd() * 2) * farFactor * clump);
+                // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
+                // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
+                // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
+                const feuchteG = this._feuchteAt ? this._feuchteAt(baseX, baseZ, surfY) : 0;
+                const lushG = Math.max(0, Math.min(1, lebendig * 0.7 + feuchteG * 0.5 - 0.1));
+                const tintR = 1.22 - 0.42 * lushG;
+                const tintG = 0.95 + 0.13 * lushG;
+                const tintB = 0.62 + 0.26 * lushG;
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
@@ -28204,6 +28222,7 @@ class AnazhRealm {
                     const r2 = rnd();
                     const sXZ = 0.65 + r2 * 0.6; // Breite [0.65, 1.25]
                     const sY = 0.5 + r1 * r1 * 1.3; // Höhe [0.5, 1.8], kurze häufiger
+                    const tj = 0.9 + r2 * 0.2; // ±10 % per-Halm-Helligkeits-Jitter
                     blades.push({
                         x: gx,
                         y: by,
@@ -28213,6 +28232,9 @@ class AnazhRealm {
                         sY,
                         tilt: (rnd() - 0.5) * 0.5, // ±0.25 rad Neigung
                         tiltDir: rnd() * Math.PI * 2,
+                        tR: tintR * tj,
+                        tG: tintG * tj,
+                        tB: tintB * tj,
                     });
                 }
             }
@@ -28294,6 +28316,10 @@ class AnazhRealm {
         const scl = new THREE.Vector3();
         const up = new THREE.Vector3(0, 1, 0);
         const tiltAxis = new THREE.Vector3();
+        // V18.228 (Ω-OPSIS Säule II Ω-O4) — jeder Halm trägt instanceColor (der
+        // Boden-Tint); das geteilte Gras-Material liest es → JEDES Gras-Mesh MUSS
+        // das Attribut tragen (WebGPU-strikt, V10.0-g.1) → wir setzen es immer.
+        const gcol = new THREE.Color();
         for (let i = 0; i < realCount; i++) {
             const b = blades[i];
             pos.set(b.x, b.y, b.z);
@@ -28307,8 +28333,11 @@ class AnazhRealm {
             scl.set(b.sXZ || 1, b.sY || 1, b.sXZ || 1);
             m.compose(pos, q, scl);
             inst.setMatrixAt(i, m);
+            gcol.setRGB(b.tR || 1, b.tG || 1, b.tB || 1);
+            inst.setColorAt(i, gcol);
         }
         inst.instanceMatrix.needsUpdate = true;
+        if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
         inst.castShadow = false;
         inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
         // V11.0-d.fix.gras (27.05.2026, Schöpfer-Browser-Audit-Wurzel) — beim
@@ -67929,7 +67958,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.227.0";
+AnazhRealm.VERSION = "18.228.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
