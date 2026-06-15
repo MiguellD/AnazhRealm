@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+> **⚠ WAHRHEITS-KORREKTUR (15.06.2026, nach der Schöpfer-Abrechnung):** die
+> Einträge V18.226–V18.232 unten behaupten „der Ω-OPSIS-Arc IST ABGESCHLOSSEN /
+> alle sechs Säulen gegossen + verifiziert". **Das ist FALSCH.** Es war headless-
+> CONSUM-grün, nie mit dem Auge gesehen. Als das Auge hinsah (V18.233): die Welt
+> ist GEMESSEN bei ~10% (dünne Stachel-Bäume, flacher Boden). Gebaut wurden die
+> sicheren ~30% (testbare Politur); die harten, sichtbaren Punkte — Dichte als
+> GPU-Funktion (statt geschnitten), lushe Kronen (Ω-O16), EINE Baum-Quelle (die
+> Kugel-Bauplane leben weiter), das visuelle Landen — sind OFFEN. „verifiziert"
+> hieß eine Teil-Zahl (Busch 75 Teile), nicht das Bild. Die KORRIGIERTE, VOLLE
+> Wahrheit + der Pfad: `docs/wahreranblick-plan.md` + der CLAUDE.md-Kopf. Die
+> historischen Einträge bleiben als Lern-Material stehen; diese Korrektur führt.
+
 **V18.234 — PBR-VOLLENDUNG + DEFAULT (Schöpfer „keine halben Sachen mehr, der Pfad ist klar").** Der Schöpfer erwartete physik-bestimmtes Licht („dachte alles mit PBR"), aber der Default war `toon` UND `_buildPbrNodeMaterial` war ein HALBER Dispatch (kein Wind, kein Laub-Tint, Glut-Emissiv dichte-abhängig kaputt). Diese Welle macht PBR VOLLSTÄNDIG + zum Default — synergetisch, kein Parallelpfad. **(1) Geteilter Helfer `_applyVegetationResponse(mat, opts, responseProfile)`** — die drei Vegetations-Blöcke (Instance-Tint-Marker · Wind-Sway via positionNode · Subsurface-Backlit) aus dem Toon-Builder EXTRAHIERT; Toon UND PBR rufen ihn (eine Quelle, die eingeschärfte Lehre) → in BEIDEN Lichtmodellen wiegen die Bäume, tönt das Laub per-Instanz, glüht das Gegenlicht. **(2) PBR-Emissiv geheilt** — war in einer `else if (brennbar≥0.7)`-Kette → eine dichte Glut (dichte≥0.85) fiel in den STEIN-Zweig = kein Glühen. Jetzt liest PBR die `responseProfile.emissiv`-GLOW-ACHSE (glimmen = waermeleitung·brennbar, DIESELBE wie Toon, dichte-UNABHÄNGIG; nur der glimmen-Anteil über dem 0.5-Floor, PBR-Scale 0.6) → Glut glüht physisch, egal wie dicht; Stein bleibt dunkel. **(3) `materialMode: "toon" → "pbr"` (Default).** **TESTS gewandert (V9.56-i):** V18.223 Q2/D2 (Default `pbr`), Λ.3/Λ.6 (Wind/Backlit-Quell-Proben → `_applyVegetationResponse`), V18.214-T2 + V18.212-Wind (swaySrc → Helfer), 5 „Material IST MeshToon"-Annahmen mode-agnostisch (Toon ODER MeshStandard/PBR: V9.42-c Insel · V8.28 Architektur · Ring5 Avatar · V18.212-C5b Canopy · W-E Glut-Glow via Emissiv-Farbe×Intensität statt nur emissiveIntensity), V18.223-S7 realistische Glut (+waermeleitung). **ALLE ~3500 grün im PBR-DEFAULT-Modus** = die ganze Welt rendert funktional in PBR ohne Bruch (die echte funktionale Verifikation). **EHRLICH:** der LOOK gehört dem Schöpfer-WebGPU-Browser (mein Headless-Render kann ihn weiter nicht zuverlässig zeigen); aber PBR ist jetzt COMPLETE (kein Flag-Flip nötig — Default; Toggle zurück `state.atmosphere.materialMode = "toon"` + Reload).
 
 

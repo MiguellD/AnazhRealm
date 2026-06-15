@@ -128,7 +128,12 @@ richtige, harte Weg.
 ## §5 — DIE OBERFLÄCHEN SICHTBAR LANDEN (das ANBLICK-BAND, je Ω-O verifiziert)
 
 Jeder Ω-O wurde im CODE gebaut, aber NIE im BILD bestätigt. Jetzt: jeder einzeln
-mit einem Screenshot, der beweist, dass er landet (mit den §1-Werkzeugen).
+mit einem Screenshot, der beweist, dass er landet (mit den §1-Werkzeugen). Das
+gilt AUCH für die headless-„verifizierten" Säulen — **IV Büsche** („busch_hazel
+75 Teile") und **V Atmosphäre** (wetter-gekoppelt) — sowie die hier ungelisteten
+**Ω-O3** (Nah-Detail) · **Ω-O10/O11** (Büsche/Understory) · **Ω-O12/O13**
+(Himmel/Dunst): die „Verifikation" war eine TEIL-ZAHL, nicht das Auge. Visuell
+sind sie ALLE unbestätigt.
 
 - **Ω-O1 Boden-Geologie** — bewusst konservativ getunt → unsichtbar. JUSTIEREN,
   bis Fels am Hang + Moos in der Senke bei Mittag OFFENSICHTLICH sind (A/B
