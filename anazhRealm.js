@@ -46072,19 +46072,24 @@ class AnazhRealm {
         // Seiten (vorne/hinten). Der First läuft längs (Z). PHYSIK: das Dach ruht auf dem
         // Gesims (Lastpfad geschlossen).
         const eaveY = cornY + cornH / 2;
-        const roofRise = ringX * 0.22; // Giebel-Höhe ≈ Spannweite/4.5 (flacher griech. Giebel)
-        const slopeLen = Math.hypot(ringX / 2 + 0.4 * D, roofRise);
-        const pitch = Math.atan2(roofRise, ringX / 2 + 0.4 * D);
+        const roofRise = ringX * 0.16; // Giebel-Höhe ≈ Spannweite/6 (flacher griechischer Giebel ~17°)
+        const eaveX = ringX / 2 + 0.4 * D; // X der Traufe (mit Überstand)
+        const slopeLen = Math.hypot(eaveX, roofRise);
+        const pitch = Math.atan2(roofRise, eaveX);
         const roofThick = D * 0.22;
         const roofZ = ringZ + 0.8 * D;
         for (const sgn of [-1, 1]) {
+            // jede Dach-Fläche läuft von der TRAUFE (außen, ±X, tief) zum FIRST (Mitte x=0, hoch).
+            // V18.243-FIX (Schöpfer-Augen-Befund „das Dach ist verkehrt"): die Rotation war
+            // `sgn·pitch` → die Außenkante ging HOCH = ein Schmetterling/X statt Giebel; korrekt
+            // ist `−sgn·pitch` (die Innenkante zum First hoch, die Traufe tief).
             parts.push({
                 shape: "box",
                 material: mat,
                 color: cap,
-                position: { x: (sgn * (ringX / 2 + 0.4 * D)) / 2, y: eaveY + roofRise / 2, z: 0 },
+                position: { x: (sgn * eaveX) / 2, y: eaveY + roofRise / 2, z: 0 },
                 size: { x: slopeLen, y: roofThick, z: roofZ },
-                rotation: { x: 0, y: 0, z: sgn * pitch },
+                rotation: { x: 0, y: 0, z: -sgn * pitch },
             });
         }
         box(cap, 0, eaveY + roofRise + roofThick * 0.3, 0, D * 0.5, roofThick * 1.2, roofZ); // First-Balken
@@ -68729,7 +68734,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.242.0";
+AnazhRealm.VERSION = "18.243.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
