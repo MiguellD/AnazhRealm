@@ -45,7 +45,61 @@ async function renderWerk(page, bpName, view) {
             }
             // eigene NEUTRALE Szene (nur das Werk → schnell, kein Welt-Render) mit der echten
             // Sky-IBL + neutralen Lichtern; die Material-Pipeline ist die echte (_buildFromBlueprint).
-            const grp = r._buildFromBlueprint(st.blueprints[bpName], 0, undefined, {});
+            let grp;
+            window.__treeInfo = "";
+            if (bpName.indexOf("tree:") === 0) {
+                // BAUM isoliert: den Baum DIREKT wachsen (`_growTreeBlueprintRich` setzt
+                // `_lastTreeSkeleton`), dann die echten Render-leaves (Tube-Stamm + Foliage-
+                // Cards) via `_buildTreeSkeletonLeaves` — derselbe Pfad wie die Welt. genV=7
+                // erzwingen, sonst setzt das Wachsen kein Skeleton. Instanced-Mesh count=1
+                // (für den Foliage-Tint). Fallback: die Parts primitiv (kein Skeleton).
+                const species = bpName.split(":")[1] || "baum_eiche";
+                grp = new THREE.Group();
+                let leaves = null;
+                try {
+                    if (r.state.worldMeta) r.state.worldMeta.genVersion = 7;
+                    const grammar = (r.constructor.SPECIES_GRAMMAR || {})[species];
+                    if (!grammar) window.__treeInfo = "no-grammar:" + species;
+                    if (grammar && r._growTreeBlueprintRich) {
+                        const parts = r._growTreeBlueprintRich(species, "iso-" + species, grammar, { lod: 0 });
+                        const skel = r._lastTreeSkeleton;
+                        window.__treeInfo = "parts=" + (parts ? parts.length : 0) + " skel=" + (skel ? "Y" : "N");
+                        const tbp = {
+                            name: "_isoTree",
+                            parts,
+                            _skeleton: skel,
+                            instanced: true,
+                            _grownSpecies: species,
+                        };
+                        if (skel && r._buildTreeSkeletonLeaves) {
+                            const se = r._buildTreeSkeletonLeaves(tbp);
+                            if (se && Array.isArray(se.leaves) && se.leaves.length) leaves = se.leaves;
+                            window.__treeInfo += " leaves=" + (leaves ? leaves.length : 0);
+                        }
+                        if (!leaves && Array.isArray(parts) && parts.length)
+                            grp = r._buildFromBlueprint(tbp, 0, undefined, {});
+                    }
+                } catch (_e) {
+                    window.__treeInfo = "ERR:" + _e.message;
+                }
+                if (leaves) {
+                    for (const lf of leaves) {
+                        if (!lf || !lf.geom || !lf.mat) continue;
+                        const im = new THREE.InstancedMesh(lf.geom, lf.mat, 1);
+                        im.setMatrixAt(0, new THREE.Matrix4());
+                        im.instanceMatrix.needsUpdate = true;
+                        try {
+                            if (im.setColorAt) {
+                                im.setColorAt(0, new THREE.Color(0x6f9a4d));
+                                if (im.instanceColor) im.instanceColor.needsUpdate = true;
+                            }
+                        } catch (_e) {}
+                        grp.add(im);
+                    }
+                }
+            } else {
+                grp = r._buildFromBlueprint(st.blueprints[bpName], 0, undefined, {});
+            }
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x9bb4d0);
             if (st.scene && st.scene.environment) scene.environment = st.scene.environment;
@@ -62,10 +116,14 @@ async function renderWerk(page, bpName, view) {
             grp.position.sub(c); // ins Zentrum
             scene.add(grp);
             const maxd = Math.max(sz.x, sz.y, sz.z) || 2;
+            const isTree = bpName.indexOf("tree:") === 0;
             const cam = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
-            const a = view === "front" ? 0.1 : 1.0;
-            cam.position.set(maxd * a, maxd * 0.28, maxd * 1.45);
-            cam.lookAt(0, -sz.y * 0.04, 0);
+            const a = view === "front" ? 0.12 : 1.0;
+            // Bäume: weiter weg + leicht von oben, damit Stamm UND Krone ganz im Bild sind.
+            const dist = isTree ? 2.0 : 1.45;
+            const cy = isTree ? 0.32 : 0.28;
+            cam.position.set(maxd * a, maxd * cy, maxd * dist);
+            cam.lookAt(0, isTree ? 0 : -sz.y * 0.04, 0);
             window.__rs = () => {
                 try {
                     st.renderer.render(scene, cam);
@@ -106,14 +164,14 @@ async function renderWerk(page, bpName, view) {
                 await new Promise((r) => setTimeout(r, 100));
         });
         for (const [bp, file, view] of [
-            ["temple", "werk-tempel.png", "iso"],
-            ["temple", "werk-tempel-front.png", "front"],
-            ["geraet_schwert", "werk-schwert.png", "iso"],
+            ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"],
+            ["tree:baum_tanne:0", "werk-baum-tanne.png", "front"],
         ]) {
             await renderWerk(page, bp, view);
+            const info = await page.evaluate(() => window.__treeInfo || "");
             const out = path.join(root, "artifacts", file);
             await page.screenshot({ path: out, clip: { x: 0, y: 0, width: 900, height: 900 } });
-            console.log("geschrieben:", "artifacts/" + file);
+            console.log("geschrieben:", "artifacts/" + file, "|", info);
         }
     } finally {
         await browser.close();

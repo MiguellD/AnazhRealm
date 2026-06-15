@@ -24654,7 +24654,22 @@ class AnazhRealm {
                         // die Krone wusch zur reinen Licht-Farbe (GEMESSEN: pures Rot-Albedo
                         // rendert teal). Mit dem expliziten colorNode liegt das Laub-Grün
                         // garantiert in der Lichtung → die Krone liest GRÜN.
-                        mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                        let _alpha = _Ta.float(1.0);
+                        if (opts.foliageLeaf && _Ta.vec2 && _Ta.smoothstep && _Ta.attribute) {
+                            // Ω-O14 (wahreranblick §8.5) — eine weiche runde BLATT-Alpha-Maske
+                            // aus der Karten-UV: 1 in der Mitte, 0 an den Ecken (leicht oval,
+                            // Blatt höher als breit). alphaTest clippt die harten Rechteck-Ecken
+                            // → die Krone liest als Laub, nicht als Karten-Stapel (der „cardy"-Befund).
+                            try {
+                                const _uv = _Ta.attribute("uv", "vec2");
+                                const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
+                                _alpha = _Ta.float(1.0).sub(_Ta.smoothstep(0.3, 0.5, _d));
+                                mat.alphaTest = 0.42;
+                            } catch (_e) {
+                                _alpha = _Ta.float(1.0);
+                            }
+                        }
+                        mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     const _c = new THREE.Color(opts.color);
@@ -45200,7 +45215,9 @@ class AnazhRealm {
         const MAX_BRANCH_PARTS = lodLevel === 0 ? 40 : lodLevel === 1 ? 14 : 0;
         const foliageAnchors = [];
         if (lodLevel < 2) {
-            // Mind. L1 erlaubt (LOD 0 und 1)
+            // Mind. L1 erlaubt (LOD 0 und 1). TIEFENZUERST (L1[0] + seine L2/L3, dann L1[1]…)
+            // — die Foliage-Anker (anchorLevel L2/L3) werden interleaved gesammelt, damit jeder
+            // Baum Laub trägt (eine breitenzuerst-Variante hungerte L2 aus → leere Krone, V18.245).
             const l1Tips = collectTips(trunkPts, grammar.L1);
             for (let li = 0; li < l1Tips.length && parts.length < MAX_BRANCH_PARTS; li++) {
                 const tip1 = l1Tips[li];
@@ -45209,8 +45226,7 @@ class AnazhRealm {
                     const l2Tips = collectTips(l1Pts, grammar.L2);
                     for (let lj = 0; lj < l2Tips.length && parts.length < MAX_BRANCH_PARTS; lj++) {
                         const tip2 = l2Tips[lj];
-                        // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster
-                        // und vermeidet Symmetrie-Klone.
+                        // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster, vermeidet Klone.
                         const childPhi = tip2.phi + tip1.phi * 0.3;
                         const l2Pts = growBranch(tip2.pos, childPhi, tip2.pos.r, grammar.L2, 2, foliageAnchors);
                         if (grammar.L3 && parts.length < MAX_BRANCH_PARTS) {
@@ -45242,6 +45258,24 @@ class AnazhRealm {
                 y: totalH * 0.85,
                 z: trunkPts[trunkPts.length - 1].z,
             });
+        }
+        // V18.245 — die KEGEL-SÄULE: ein Nadelbaum (crown "cone") trägt Nadeln am GANZEN
+        // Stamm bis zur SPITZE (die echte Tanne hat keinen kahlen Stamm/Leader — der Schöpfer-
+        // Referenz-Befund). Foliage-Anker DIREKT am Stamm (18–95 %), unabhängig von der Ast-
+        // Generierung → der konische Nadel-Mantel füllt sich robust, kein kahler Spike. Die
+        // Karten-Größe verjüngt nach oben (über die Anker-Höhe/flexBase) → die Kegel-Silhouette.
+        if (
+            grammar.crown === "cone" &&
+            lodLevel < 2 &&
+            grammar.foliage &&
+            grammar.foliage.kind !== "none" &&
+            trunkPts.length > 1
+        ) {
+            const leaderTs = lodLevel === 0 ? [0.18, 0.28, 0.38, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95] : [0.4, 0.7, 0.92];
+            for (const ft of leaderTs) {
+                const idx = Math.min(trunkPts.length - 1, Math.max(0, Math.round(ft * (trunkPts.length - 1))));
+                foliageAnchors.push({ x: trunkPts[idx].x, y: trunkPts[idx].y, z: trunkPts[idx].z });
+            }
         }
 
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
@@ -52021,6 +52055,11 @@ class AnazhRealm {
         const colors = new Float32Array(M * 8 * 3);
         const flex = new Float32Array(M * 8);
         const phase = new Float32Array(M * 8);
+        // Ω-O14 (wahreranblick §8.5) — per-Ecke UV [0..1], damit das Laub-Material eine
+        // weiche BLATT-Alpha-Maske rechnen kann (die harten Rechteck-Ecken wegclippen →
+        // die Krone liest als Laub, nicht als Karten-Stapel). Ecken: 0,1,2,3.
+        const uvs = new Float32Array(M * 8 * 2);
+        const UVC = [0, 0, 1, 0, 1, 1, 0, 1]; // (0,0)(1,0)(1,1)(0,1)
         const indices = new Uint32Array(M * 12);
         // foliageColor aus skeleton (gemischt aus grammar.color + Jitter im
         // _growTreeBlueprintRich).
@@ -52127,6 +52166,8 @@ class AnazhRealm {
                     colors[v3 + 2] = fb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + c * 0.7;
+                    uvs[vWrite * 2] = UVC[c * 2];
+                    uvs[vWrite * 2 + 1] = UVC[c * 2 + 1];
                     vWrite++;
                 }
                 // Quad 2 (Tangente t2=(sR,0,cR), ⟂ zu t1)
@@ -52145,6 +52186,8 @@ class AnazhRealm {
                     colors[v3 + 2] = fb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + 1.7 + c * 0.7;
+                    uvs[vWrite * 2] = UVC[c * 2];
+                    uvs[vWrite * 2 + 1] = UVC[c * 2 + 1];
                     vWrite++;
                 }
                 indices[iWrite++] = base;
@@ -52167,6 +52210,7 @@ class AnazhRealm {
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+        g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
         g.computeBoundingBox();
         g.computeBoundingSphere();
@@ -52274,6 +52318,7 @@ class AnazhRealm {
                 vertexColors: true,
                 useInstanceTint: true,
                 useFlexAttr: true,
+                foliageLeaf: true, // Ω-O14: weiche Blatt-Alpha-Maske (alphaTest) statt harter Karte
                 side: THREE.DoubleSide,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
@@ -68811,7 +68856,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.244.0";
+AnazhRealm.VERSION = "18.245.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69281,10 +69326,14 @@ AnazhRealm.CANOPY_SHELL = Object.freeze({
 // per cardsPerAnchor stark aus (der LOD-Pfad trägt die Performance, kein Cap-Schnitt).
 // Browser-justierbar (state.atmosphere kann die Werte überschreiben — _foliageDensity()).
 AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
-    cardsPerAnchor: [12, 3, 1], // pro LOD0/1/2 — der Kronen-Füll-Faktor
-    jitterFrac: 1.25, // Cluster-Jitter-Radius als Bruchteil der Karten-Breite
+    // V18.245 (wahreranblick §8.5 — gegen die echten Referenz-Bäume): die echte Eiche/Tanne
+    // hat eine DICHTE, geschlossene Krone; meine war locker/löchrig. Mehr Karten + engerer
+    // Cluster + mehr Volumen-Füllung → die geschlossene Dome/Kegel-Masse. LOD0 only (LOD1/2
+    // bleiben dünn → die FPS-Last trägt der LOD-Pfad, kein Cap-Schnitt).
+    cardsPerAnchor: [16, 4, 1], // pro LOD0/1/2 — der Kronen-Füll-Faktor
+    jitterFrac: 1.05, // Cluster-Jitter-Radius als Bruchteil der Karten-Breite (enger → weniger Lücken)
     sizeVar: 0.45, // ±45% Karten-Größen-Varianz im Cluster (organisch, kein Gitter)
-    innerFill: 0.45, // Anteil der Karten, die zur Kronen-Mitte gezogen werden (Volumen-Füllung)
+    innerFill: 0.55, // Anteil der Karten, die zur Kronen-Mitte gezogen werden (Volumen-Füllung)
 });
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale
@@ -69315,21 +69364,21 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
         crown: "cone",
         trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.78, baseR: 0.42 }),
         L1: Object.freeze({
-            density: 1.4,
+            density: 1.9,
             whorl: 4,
-            childStart: 0.12,
-            childEnd: 0.96,
+            childStart: 0.1,
+            childEnd: 0.97,
             angleBase: 1.65,
-            lenRatio: 0.22,
+            lenRatio: 0.26,
             droop: 0.32,
             tipCurl: 0.22,
             radRatio: 0.38,
         }),
         L2: Object.freeze({
-            density: 1.6,
+            density: 2.0,
             whorl: 0,
-            childStart: 0.15,
-            childEnd: 0.95,
+            childStart: 0.12,
+            childEnd: 0.97,
             angleBase: 1.0,
             lenRatio: 0.18,
             droop: 0.42,
@@ -69337,11 +69386,14 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             radRatio: 0.45,
         }),
         foliage: Object.freeze({
+            // V18.245 — der KEGEL füllt sich bis zur Spitze: Foliage auf L1 (reicht bis 97 %,
+            // nicht nur die kurzen L2 unten) + größere Sprays → konische Tanne (echte Referenz)
+            // statt kahler Stamm-Spike mit Laub nur unten.
             kind: "needleSpray",
-            anchorLevel: 2,
-            clusterSize: [1, 2],
+            anchorLevel: 1,
+            clusterSize: [2, 3],
             color: 0x2c5a2c,
-            size: 0.46,
+            size: 0.62,
         }),
     }),
     baum_kiefer: Object.freeze({
@@ -69466,7 +69518,7 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             radRatio: 0.52,
         }),
         L2: Object.freeze({
-            density: 2.0,
+            density: 2.4,
             whorl: 0,
             childStart: 0.25,
             childEnd: 0.98,
@@ -69479,9 +69531,9 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
         foliage: Object.freeze({
             kind: "leafCluster",
             anchorLevel: 2,
-            clusterSize: [2, 4],
+            clusterSize: [3, 5], // V18.245 — dichtere Eichen-Kuppel (gegen die echte Referenz)
             color: 0x4a8a3a,
-            size: 0.65,
+            size: 0.82,
         }),
     }),
     baum_erle: Object.freeze({
