@@ -13882,7 +13882,16 @@ class AnazhRealm {
                 }
             }
             st._skyEnvTex.needsUpdate = true;
-            st.scene.environment = st._skyEnvTex;
+            // PMREM die Equirekt-Gradient-Env — GEMESSEN ist `fromEquirectangular` WebGPU-
+            // tauglich (anders als das WebGL-interne `fromScene`). Das gibt ECHTE roughness-
+            // gefilterte IBL: Metalle (eisen-Turm) SPIEGELN den Himmel statt schwarz, und die
+            // PBR-Schatten bekommen indirektes Himmels-Licht (nicht pur schwarz — die Wurzel
+            // des „alles schwarz im Schatten"-Befunds nach dem PBR-Default).
+            if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
+            const rt = st._skyPmrem.fromEquirectangular(st._skyEnvTex);
+            if (st._skyEnvRT && st._skyEnvRT.dispose) st._skyEnvRT.dispose(); // altes Target räumen (kein Leck)
+            st._skyEnvRT = rt;
+            st.scene.environment = rt.texture;
             st._skyEnvLastColor = sky;
             return true;
         } catch (err) {
@@ -22158,7 +22167,13 @@ class AnazhRealm {
         // 0.19] — der Cel-Schritt im V12-Renderer steuert die Sättigung, hier
         // braucht es nur den klaren Anker-Ton.
         const dampEarth = [0.22, 0.18, 0.12];
-        const lava = [0.46, 0.2, 0.11];
+        // Ω-OPSIS Säule I (wahreranblick §0/§4 — „der Boden flach und ROT" war DER Befund):
+        // GEMESSEN war glut≈0.95 am Spawn → das alte lava[0.46,0.2,0.11] @ ss(0.38,0.92) malte
+        // den Boden PUR HELLROT. Echte vulkanische Erde ist DUNKLES BASALT-Gestein (Glut sitzt
+        // in den Rissen = das PBR-Emissiv, nicht in der Albedo). Darum: dunkler/entsättigt +
+        // höhere Schwelle + gekappte Misch-Stärke → der Stein/Erd-Grund scheint durch (dunkle
+        // vulkanische Erde statt flacher roter Fläche). Worker-Mirror identisch (Determinismus).
+        const lava = [0.32, 0.19, 0.15];
         const violet = [0.55, 0.36, 0.86];
         const snow = [0.92, 0.93, 1.0];
         const sed = [0.78, 0.72, 0.52];
@@ -22216,7 +22231,7 @@ class AnazhRealm {
                 lichenCluster *
                 LCH.strength;
             mix(LCH.tint, lichenMix);
-            mix(lava, ss(0.38, 0.92, f.glut));
+            mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
             mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
             // V17.105 — Schnee auf PROMINENZ (y − kontinentale Basis cont0), nicht
             // absolutem y. Die alte ss(12,42,y) war kalibriert, als Gipfel bei ~40 m
@@ -68260,7 +68275,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.239.0";
+AnazhRealm.VERSION = "18.240.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -1401,7 +1401,7 @@ function attachFieldColors(positions) {
     const LICHEN_DICHTE_HI = 0.85;
     const LICHEN_STRENGTH = 0.22;
     const lichenTint = [0.42, 0.5, 0.34];
-    const lava = [0.46, 0.2, 0.11];
+    const lava = [0.32, 0.19, 0.15]; // Ω-OPSIS Säule I — dunkles Basalt (Main-Mirror, Determinismus)
     const violet = [0.55, 0.36, 0.86];
     const snow = [0.92, 0.93, 1.0];
     const sed = [0.78, 0.72, 0.52];
@@ -1438,7 +1438,7 @@ function attachFieldColors(positions) {
             lichenCluster *
             LICHEN_STRENGTH;
         mix(lichenTint, lichenMix);
-        mix(lava, ss(0.38, 0.92, f.glut));
+        mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt (Main-Mirror)
         mix(violet, ss(0.55, 1.0, f.magieleitung) * 0.33);
         // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
         // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
