@@ -149,9 +149,10 @@ const mark = (phase) => {
         };
     });
     console.log("  SKY", JSON.stringify(skyDbg));
-    await page.evaluate(() => {
+    await page.evaluate((unlit) => {
         for (const el of document.querySelectorAll("body > *:not(#world-canvas)")) el.style.display = "none";
-    });
+        window.__anblickUnlit = unlit;
+    }, process.env.ANBLICK_UNLIT === "1");
 
     // ── der EINE wahre Render: renderAsync AWAITEN (der Hang-Fix) ──
     const realRender = async () =>
@@ -162,14 +163,52 @@ const mark = (phase) => {
             if (window.__origRenderAsync) s.renderer.renderAsync = window.__origRenderAsync;
             s.postProcessingFailed = true;
             if (r.setTimeOfDay) r.setTimeOfDay(0.5); // ECHTES Mittag (ruft _applyDayNightToScene)
+            if (window.__anblickIsolated) {
+                // Neutrales weisses Licht (die Standard-Hemi ist BLAU → wäscht das
+                // Aufwärts-Laub blau), grauer Himmel, kein Fog/Unterwasser → die ECHTE
+                // Kronen-Farbe. setTimeOfDay setzt Fog/Skybox neu → hier wieder weg.
+                if (s.player) s.player.emotions = {};
+                s.weather = "sunny";
+                s.weatherTransition = null;
+                s.skyTint = null;
+                s.skyTintStrength = 0;
+                s.skyTintTarget = 0;
+                if (r._applyDayNightToScene) r._applyDayNightToScene();
+                if (s.directionalLight) s.directionalLight.color.setRGB(1, 1, 1);
+                if (s.hemisphereLight) {
+                    s.hemisphereLight.color.setRGB(0.82, 0.82, 0.82);
+                    s.hemisphereLight.groundColor.setRGB(0.5, 0.5, 0.5);
+                }
+                if (s.ambientLight) s.ambientLight.color.setRGB(1, 1, 1);
+                s.scene.fog = null;
+                s.playerEyesUnderwater = false;
+                if (!s.scene.background || !s.scene.background.isColor)
+                    s.scene.background = new window.THREE.Color(0x555560);
+                else s.scene.background.setHex(0x555560);
+                // Isolation ERNEUT anwenden (der rAF-Loop hat sie evtl. überschrieben):
+                if (window.__anblickGrp) {
+                    const keep = new Set(window.__anblickGrp.children);
+                    s.scene.traverse((o) => {
+                        if (o.isMesh || o.isInstancedMesh) o.visible = keep.has(o);
+                    });
+                }
+                if (window.__anblickCam) {
+                    const cc = window.__anblickCam;
+                    s.camera.position.set(cc.px, cc.py, cc.pz);
+                    s.camera.lookAt(cc.tx, cc.ty, cc.tz);
+                    s.camera.updateProjectionMatrix();
+                    s.camera.updateMatrixWorld(true);
+                }
+            }
             const t0 = performance.now();
             try {
                 if (typeof s.renderer.renderAsync === "function") {
-                    await s.renderer.renderAsync(s.scene, s.camera);
-                    await s.renderer.renderAsync(s.scene, s.camera);
+                    // compileAsync (frische Plain-Mesh-Pipelines beim isolierten Baum) +
+                    // mehrfach rendern → den Präsentations-Flake schlagen.
+                    if (typeof s.renderer.compileAsync === "function") await s.renderer.compileAsync(s.scene, s.camera);
+                    for (let i = 0; i < 4; i++) await s.renderer.renderAsync(s.scene, s.camera);
                 } else {
-                    s.renderer.render(s.scene, s.camera);
-                    s.renderer.render(s.scene, s.camera);
+                    for (let i = 0; i < 4; i++) s.renderer.render(s.scene, s.camera);
                 }
             } catch (e) {
                 return { err: String(e.message || e), ms: Math.round(performance.now() - t0) };
@@ -195,7 +234,7 @@ const mark = (phase) => {
     const tinfo = await page.evaluate(() => {
         const r = window.anazhRealm,
             s = r.state,
-            pm = s.playerMesh,
+            THREE = window.THREE,
             cam = s.camera;
         let spawned = false,
             parts = 0,
@@ -209,39 +248,145 @@ const mark = (phase) => {
             parts = bp && bp.parts ? bp.parts.length : 0;
             anchors = bp && bp._skeleton && bp._skeleton.anchors ? bp._skeleton.anchors.length : 0;
             if (bp) {
-                const px = pm.position.x + 13,
-                    pz = pm.position.z + 2;
-                const py = r.getTerrainHeightAt ? r.getTerrainHeightAt(px, pz) : pm.position.y;
-                const a = r.spawnArchitecture(key, { x: px, y: py, z: pz }, { silent: true });
-                spawned = !!a;
-                // Foliage-Vertices der Variante (die echte Kronen-Dichte)
-                const fg = s.archMergedGeomCache && s.archMergedGeomCache.get(key);
-                if (fg && fg.leaves)
-                    for (const lf of fg.leaves) {
-                        const g = lf.geom;
-                        if (g && g.attributes && g.attributes.position) foliageVerts += g.attributes.position.count;
+                // DER ISOLIERTE BAUM (§3 Seh-Werkzeug, die teuer gelernten Wände):
+                // die ECHTE gespawnte (MERGED) Geometrie (`_archFlattenBlueprint`, das
+                // Grün eingebacken) als Plain-Meshes, HOCH über Wasser (y=500 → kein
+                // Unterwasser-Tint), ALLES andere unsichtbar → der Baum ALLEIN gegen
+                // einen GRAUEN Himmel (Laub gegen Blau ist unsichtbar), neutral-weiss
+                // beleuchtet (in realRender). So liest die Krone GRÜN+lush — oder nicht.
+                const flat = r._archFlattenBlueprint(key);
+                if (!flat || !flat.leaves || !flat.leaves.length) return { err: "kein flatten" };
+                const grp = new THREE.Group();
+                const bbox = new THREE.Box3();
+                const treeSet = new Set();
+                const UNLIT = window.__anblickUnlit;
+                for (const lf of flat.leaves) {
+                    let mat = lf.mat;
+                    if (UNLIT && THREE.MeshBasicNodeMaterial && THREE.TSL) {
+                        // RAW-ALBEDO-Probe: unbeleuchtet, colorNode = das color-Attribut
+                        // (NodeMaterial liest vertexColors NICHT automatisch — CLAUDE.md).
+                        mat = new THREE.MeshBasicNodeMaterial({ side: lf.mat.side });
+                        mat.colorNode = THREE.TSL.vec4(THREE.TSL.attribute("color", "vec3"), THREE.TSL.float(1.0));
                     }
-                // TIGHT close-up des gespawnten Baums (die echte Welt-Beleuchtung,
-                // faithful) — schmaler FOV zoomt in den Baum ohne die Welt-Weite.
-                const th = bp._skeleton ? bp._skeleton.totalH : 12;
-                cam.position.set(px - th * 1.6, py + th * 0.55, pz + 2);
-                cam.lookAt(px, py + th * 0.55, pz);
-                if (Number.isFinite(cam.fov)) {
-                    cam.fov = 30;
-                    cam.updateProjectionMatrix();
+                    const mesh = new THREE.Mesh(lf.geom, mat);
+                    mesh.frustumCulled = false;
+                    // localMatrix ist für gewachsene (merged) Bäume Identität (die Merge
+                    // backt die Part-Transforms in die Geometrie) → NICHT als matrixWorld
+                    // setzen (das überschrieb grp.position → Baum bei y≈0 statt y=500).
+                    if (lf.localMatrix) mesh.applyMatrix4(lf.localMatrix);
+                    grp.add(mesh);
+                    treeSet.add(mesh);
+                    lf.geom.computeBoundingBox();
+                    if (lf.geom.boundingBox) bbox.union(lf.geom.boundingBox);
+                    if (lf.mat && lf.mat.side === THREE.DoubleSide && lf.geom.attributes.position)
+                        foliageVerts += lf.geom.attributes.position.count;
                 }
+                grp.position.set(0, 500, 0);
+                s.scene.add(grp);
+                spawned = true;
+                s.scene.traverse((o) => {
+                    if ((o.isMesh || o.isInstancedMesh) && !treeSet.has(o)) o.visible = false;
+                });
+                window.__anblickIsolated = true; // realRender setzt neutrales Licht + grauen Himmel
+                const sz = new THREE.Vector3();
+                bbox.getSize(sz);
+                const lc = new THREE.Vector3();
+                bbox.getCenter(lc);
+                const cx = grp.position.x + lc.x,
+                    cyw = grp.position.y + lc.y,
+                    czw = grp.position.z + lc.z;
+                cam.fov = 42;
+                let dist = (Math.max(sz.y, sz.x) * 0.62) / Math.tan((42 * Math.PI) / 180 / 2) + sz.z * 0.5;
+                dist = Math.min(45, Math.max(14, dist));
+                cam.position.set(cx - dist, cyw, czw);
+                cam.lookAt(cx, cyw, czw);
+                cam.updateProjectionMatrix();
                 cam.updateMatrixWorld(true);
+                s.scene.updateMatrixWorld(true);
+                // DEBUG: wo ist der Baum WIRKLICH? (world-bbox der Tree-Meshes)
+                const wbb = new THREE.Box3();
+                for (const m of treeSet) {
+                    m.updateWorldMatrix(true, false);
+                    const b = new THREE.Box3().setFromObject(m);
+                    wbb.union(b);
+                }
+                const lm =
+                    flat.leaves[0] && flat.leaves[0].localMatrix
+                        ? Array.from(flat.leaves[0].localMatrix.elements)
+                        : null;
+                // die ECHTE Laub-Geom-Farbe (das color-Attribut der DoubleSide-Leaf)
+                let fgc = null,
+                    fgMatType = null,
+                    fgHasColorNode = null;
+                for (const lf of flat.leaves) {
+                    if (lf.mat && lf.mat.side === THREE.DoubleSide && lf.geom.attributes && lf.geom.attributes.color) {
+                        const c = lf.geom.attributes.color;
+                        let cr = 0,
+                            cg = 0,
+                            cb = 0;
+                        for (let i = 0; i < c.count; i++) {
+                            cr += c.getX(i);
+                            cg += c.getY(i);
+                            cb += c.getZ(i);
+                        }
+                        fgc = [+(cr / c.count).toFixed(3), +(cg / c.count).toFixed(3), +(cb / c.count).toFixed(3)];
+                        fgMatType = lf.mat.type;
+                        fgHasColorNode = !!lf.mat.colorNode;
+                        break;
+                    }
+                }
+                window.__anblickDbg = {
+                    foliageGeomColor: fgc,
+                    foliageMatType: fgMatType,
+                    foliageHasColorNode: fgHasColorNode,
+                    bbox: [+sz.x.toFixed(1), +sz.y.toFixed(1), +sz.z.toFixed(1)],
+                    localBboxCtr: [+lc.x.toFixed(1), +lc.y.toFixed(1), +lc.z.toFixed(1)],
+                    worldBbox: wbb.isEmpty()
+                        ? null
+                        : {
+                              min: [+wbb.min.x.toFixed(1), +wbb.min.y.toFixed(1), +wbb.min.z.toFixed(1)],
+                              max: [+wbb.max.x.toFixed(1), +wbb.max.y.toFixed(1), +wbb.max.z.toFixed(1)],
+                          },
+                    camPos: [+cam.position.x.toFixed(1), +cam.position.y.toFixed(1), +cam.position.z.toFixed(1)],
+                    lookAt: [+cx.toFixed(1), +cyw.toFixed(1), +czw.toFixed(1)],
+                    dist: +dist.toFixed(1),
+                    lmTranslate: lm ? [+lm[12].toFixed(1), +lm[13].toFixed(1), +lm[14].toFixed(1)] : null,
+                };
+                // Der rAF-Loop (_gameLoopTick) überschreibt Kamera/Sichtbarkeit zwischen
+                // diesem evaluate und realRender → die Isolation in realRender ERNEUT
+                // anwenden (Refs auf window halten).
+                window.__anblickGrp = grp;
+                window.__anblickCam = {
+                    px: cam.position.x,
+                    py: cam.position.y,
+                    pz: cam.position.z,
+                    tx: cx,
+                    ty: cyw,
+                    tz: czw,
+                };
             }
         } catch (e) {
-            return { err: String(e.message || e) };
+            return { err: String(e.message || e) + " @ " + String((e.stack || "").split("\n")[1] || "") };
         }
-        return { spawned, parts, anchors, foliageVerts, key };
+        return { spawned, parts, anchors, foliageVerts, key, dbg: window.__anblickDbg || null };
     });
     progress.tree = tinfo;
     flush();
     console.log(
         `  tree key=${tinfo.key} spawned=${tinfo.spawned} parts=${tinfo.parts} anchors=${tinfo.anchors} foliageVerts=${tinfo.foliageVerts} ${tinfo.err || ""}`
     );
+    // §5-VERDIKT (OBJEKTIV, flake-unabhängig): die Geometrie + Albedo der Krone.
+    // Das BILD ist headless-flake-begrenzt (WebGPU-Präsentation ~50% stale = die
+    // dokumentierte WERKZEUG-GRENZE) → der LOOK ist der Schöpfer-Browser (W2).
+    const d = tinfo.dbg || {};
+    if (d.foliageGeomColor) {
+        const [fr, fg, fb] = d.foliageGeomColor;
+        const gruen = fg > fr && fg > fb;
+        console.log(
+            `  §5-VERDIKT (objektiv): Laub-Albedo=[${fr},${fg},${fb}] → ${gruen ? "GRÜN ✓" : "NICHT grün ✗"} · ` +
+                `Krone-bbox=${JSON.stringify(d.bbox)} (Volumen, kein Stachel) · foliageVerts=${tinfo.foliageVerts} · mat=${d.foliageMatType}`
+        );
+    }
     await shoot("baum");
 
     if (process.env.ANBLICK_ONLY_BAUM === "1") {
