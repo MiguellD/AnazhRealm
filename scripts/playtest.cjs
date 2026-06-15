@@ -20923,7 +20923,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t2NoMorphError = !window.__terrainMorphError;
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
         out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(r._finalizeVoxelChunkBuild.toString());
-        out.t2MaterialHasMorph = /positionNode\s*=/.test(r._buildToonNodeMaterial.toString());
+        out.t2MaterialHasMorph = /positionNode\s*=/.test(r._buildPbrNodeMaterial.toString()); // V18.236: PBR ist der EINE Builder
         let t2HasAttrs = false,
             t2ChunksWithMorph = 0;
         if (r.state.voxelChunks) {
@@ -37280,9 +37280,10 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         out.pbrBuilderExists = typeof r._buildPbrNodeMaterial === "function";
         out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
         // Dispatch-Source-Probe
+        // V18.236 (§2 — toon raus): _buildToonNodeMaterial delegiert jetzt IMMER an PBR
+        // (kein materialMode-Toggle mehr) — der Source-Beweis ist die PBR-Delegation.
         const toonSrc = r._buildToonNodeMaterial.toString();
-        out.toonDispatchesOnMode =
-            /materialMode\s*===\s*["']pbr["']/.test(toonSrc) && /_buildPbrNodeMaterial/.test(toonSrc);
+        out.toonDispatchesOnMode = /_buildPbrNodeMaterial/.test(toonSrc);
 
         // Build a PBR material directly
         if (out.pbrBuilderExists) {
@@ -37708,7 +37709,7 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
 
         // (B) CONSUM — BEIDE Builder rufen den Helfer (eine Quelle, zwei Lichtmodelle)
-        out.toonCallsGeology = /_terrainGeologyAlbedo/.test(r._buildToonNodeMaterial.toString());
+        out.toonCallsGeology = /_terrainGeologyAlbedo/.test(r._buildPbrNodeMaterial.toString()); // V18.236: PBR der EINE Builder
         out.pbrCallsGeology = /_terrainGeologyAlbedo/.test(r._buildPbrNodeMaterial.toString());
 
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
@@ -37856,9 +37857,9 @@ async function checkBandWahrerAnblickFels(ctx) {
         );
 
         // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
-        const toonSrc = r._buildToonNodeMaterial.toString();
-        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(toonSrc);
+        // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
         const pbrSrc = r._buildPbrNodeMaterial.toString();
+        out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(pbrSrc);
         out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
 
         // (F) Version
@@ -38413,7 +38414,7 @@ async function checkBandWEFrequenzband(ctx) {
         out.grasOutput = !!gm && gm.outputNode != null;
         // (5) E3 BAND-REGLER: das Terrain-Mikro liest den microStrength-Uniform
         // (vorher 0.13-Hardcode im colorNode — ein Regler, eine Welt-Antwort).
-        out.terrainMicroAmBand = /microStrength/.test(r._buildToonNodeMaterial.toString());
+        out.terrainMicroAmBand = /microStrength/.test(r._applySubstanceResponse.toString()); // V18.236: das Mikro lebt im geteilten Empfänger
         // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
         // Restore migriert den alten auto-gebackenen 0.12-Default.
         out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
@@ -38470,7 +38471,7 @@ async function checkBandM7LichtFeinschliff(ctx) {
         // reicht die per-Vertex-Albedo-Quelle — W-E: die Probe wanderte mit
         // dem Code in den EINEN Band-Empfänger, V9.56-i).
         const aerialSrc = r._applySubstanceResponse.toString();
-        const toonSrc = r._buildToonNodeMaterial.toString();
+        const toonSrc = r._buildPbrNodeMaterial.toString(); // V18.236 (§2): PBR der EINE Builder
         out.treeConsumes =
             /_au\.microStrength/.test(aerialSrc) &&
             /terrainNightFloor/.test(aerialSrc) &&
@@ -40879,7 +40880,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             typeof r._buildToonNodeMaterial === "function" ? r._buildToonNodeMaterial({ color: 0x808080 }) : null;
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
-        const _btSrc = r._buildToonNodeMaterial ? r._buildToonNodeMaterial.toString() : "";
+        // V18.236 (§2): PBR ist der EINE Builder; _buildToonNodeMaterial delegiert an ihn.
+        const _btSrc = r._buildPbrNodeMaterial ? r._buildPbrNodeMaterial.toString() : "";
         out.aerialFromOneSource = _btSrc.includes("_applySubstanceResponse") && !_btSrc.includes("__structAerialError");
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
