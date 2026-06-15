@@ -24534,6 +24534,14 @@ class AnazhRealm {
                             albedoNode = _geo;
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
                         }
+                    } else if (opts.useFlexAttr && _Ta.vec4) {
+                        // V18.235 (§5 Ω-O9) — VEGETATION (Bäume: Rinde + Laub) trägt die
+                        // Per-Vertex-Albedo EXPLIZIT als colorNode (DURANTE der Konstruktion,
+                        // VOR der Response). Sonst fiel die Grün-Albedo aus `_T.output` →
+                        // die Krone wusch zur reinen Licht-Farbe (GEMESSEN: pures Rot-Albedo
+                        // rendert teal). Mit dem expliziten colorNode liegt das Laub-Grün
+                        // garantiert in der Lichtung → die Krone liest GRÜN.
+                        mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                     }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     const _c = new THREE.Color(opts.color);
@@ -24547,7 +24555,11 @@ class AnazhRealm {
         // V18.113 — geflattete SHADING-Normale für vertexColors (Terrain).
         // PBR-Pfad ehrt dieselbe Disziplin: die 2.5D-Lichtung schmiegt die
         // Surface-Nets-Facetten visuell auf eine glattere Antwort.
-        if (opts.vertexColors) {
+        // V18.235 (§3/§5 Ω-O9) — NUR Terrain (vertexColors OHNE useFlexAttr).
+        // Vegetation (Rinde + Laub tragen useFlexAttr) BEHÄLT ihre echte Normale:
+        // die Terrain-Flachung zur UP-Achse hätte ALLE Laub-Karten nach oben
+        // gerichtet → bei Mittag voll sonnen-lit → ACES wäscht die Krone teal/weiss.
+        if (opts.vertexColors && !opts.useFlexAttr) {
             try {
                 const _Tn = THREE.TSL;
                 const _aun = this.state.atmoUniforms;
@@ -24855,6 +24867,13 @@ class AnazhRealm {
                 const _Ta = THREE.TSL;
                 if (opts.vertexColors === true && _Ta && _Ta.attribute) {
                     albedoNode = _Ta.attribute("color", "vec3");
+                    if (opts.useFlexAttr && _Ta.vec4) {
+                        // V18.235 (§5 Ω-O9) — Vegetation: explizite colorNode (wie PBR) →
+                        // das Laub-Grün liegt garantiert in der Lichtung, kein Wäsch zur
+                        // reinen Licht-Farbe. NUR Vegetation (useFlexAttr), Terrain bleibt
+                        // nativ-vertexColors (sein Geologie-Albedo lebt im Füll-Licht).
+                        mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                    }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     const _c = new THREE.Color(opts.color);
                     albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
@@ -24865,7 +24884,13 @@ class AnazhRealm {
             this._applySubstanceResponse(mat, responseProfile, { albedoNode });
         }
 
-        if (opts.vertexColors) {
+        if (opts.vertexColors && !opts.useFlexAttr) {
+            // V18.235 (§3/§5 Ω-O9) — die Terrain-Normalen-Flachung NUR für Terrain
+            // (vertexColors OHNE useFlexAttr). Vegetation (Bäume: Rinde + Laub tragen
+            // useFlexAttr) BEHÄLT ihre echten Normalen — sonst zeigen ALLE Laub-Karten
+            // nach OBEN → bei Mittag voll sonnen-lit → ACES wäscht die Krone teal/weiss
+            // (der gemessene Burnout). Mit der echten Kugel-Normale schattiert die Krone
+            // wie ein 3D-Ball (oben grün-lit, unten Schatten) → lush GRÜN.
             // V18.113 — die 2.5D-LICHTUNG flacht die SHADING-Normale (V17.107-Form),
             // jetzt mit der EINGEFRORENEN Konstante TERRAIN_NORMAL_FLATTEN (der
             // Slider bleibt geschnitten — S-Entscheid). NUR Shading: die GEOMETRIE
@@ -45493,8 +45518,20 @@ class AnazhRealm {
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
         const fo = grammar.foliage;
         const baseColor = fo.color;
-        const colorJitter = Math.floor(r01() * 0x0c0c0c);
-        const laubColor = (baseColor + colorJitter) & 0xffffff;
+        // V18.235 (§5 Ω-O9 — DIE GRÜN-WURZEL): die Variation MUSS PER-KANAL sein.
+        // Das alte `baseColor + Math.floor(r01()*0x0c0c0c)` war eine NUMERISCHE
+        // Addition — die mittleren/unteren Bytes des Jitters sind NICHT auf 0x0c
+        // begrenzt (nur die Summe), sie überliefen die Kanäle → GEMESSEN wusch ein
+        // Grün 0x4a8a3a gelegentlich zu PURPLE 0x4e28da (der „lila Krone"-Befund).
+        // Jetzt: ein kleiner ±12-Wert PRO KANAL, geklemmt → die Krone bleibt GRÜN.
+        const _bjR = (baseColor >> 16) & 0xff,
+            _bjG = (baseColor >> 8) & 0xff,
+            _bjB = baseColor & 0xff;
+        const _cl = (v) => Math.max(0, Math.min(255, v | 0));
+        const laubColor =
+            (_cl(_bjR + Math.floor((r01() - 0.5) * 24)) << 16) |
+            (_cl(_bjG + Math.floor((r01() - 0.5) * 24)) << 8) |
+            _cl(_bjB + Math.floor((r01() - 0.5) * 24));
         // Ein Limit gegen extreme Bäume (Performance-Wand). Wenn die Grammatik
         // mehr Anker produziert als das Limit, samplen wir gleichmäßig: jedes
         // skip-te Anker. So bleibt die Verteilung visuell gleich (kein
@@ -45709,8 +45746,16 @@ class AnazhRealm {
         // pro Ende deterministisch. SPEZIES moduliert Farb-Basis + Krone-Grösse
         // (V18.210 Audit-Heilung #3 — Tanne dunkel-konisch, Birke hell-zart).
         const baseColor = prof.crownColor;
-        const colorJitter = Math.floor(r01() * 0x141414); // sanfte Variation, ~5% pro Kanal
-        const laubColor = baseColor + colorJitter;
+        // V18.235 (§5 Ω-O9) — PER-KANAL-Variation (das numerische `baseColor + jitter`
+        // ließ die Bytes überlaufen → Grün wusch zu Purple). ±16 pro Kanal, geklemmt.
+        const _lbR = (baseColor >> 16) & 0xff,
+            _lbG = (baseColor >> 8) & 0xff,
+            _lbB = baseColor & 0xff;
+        const _lcl = (v) => Math.max(0, Math.min(255, v | 0));
+        const laubColor =
+            (_lcl(_lbR + Math.floor((r01() - 0.5) * 32)) << 16) |
+            (_lcl(_lbG + Math.floor((r01() - 0.5) * 32)) << 8) |
+            _lcl(_lbB + Math.floor((r01() - 0.5) * 32));
         const laubRadiusBase = lerp(0.85, 1.4, r01()) * prof.crownScale;
         for (const end of astEnds) {
             const subCount = 1 + Math.floor(r01() * 2); // 1 oder 2 Ellipsoide
@@ -51431,130 +51476,161 @@ class AnazhRealm {
             h = (h ^ (h >>> 13)) >>> 0;
             return ((h * 0.00000000023283) % 1) * Math.PI * 2;
         };
-        // Per-Anchor: 8 Vertices (2 Quads × 4 Vertices) + 12 Indizes (2 Quads
-        // × 2 Triangles × 3). Gesamt: anchors·8 Vertices, anchors·12 Indizes.
+        // V18.235 (wahreranblick §3 — DIE LUSHE KRONE, „die Samen werden zu Mammut-
+        // bäumen"): ein CLUSTER aus K Karten pro Anchor (statt EINER) füllt das
+        // Kronen-VOLUMEN → die geschlossene, lushe Krone (hunderte Karten statt ~21,
+        // dem GEMESSENEN Stachel-Befund). Jede Karte = card{cross} (8 Verts + 12
+        // Indizes), im Volumen jittered (ein Teil zur Mitte gezogen), mit Größen-
+        // Varianz + Kreuz-Drehung um y (kein Gitter-Look). LOD1/2 dünnen via
+        // cardsPerAnchor stark aus (der LOD-Pfad trägt die FPS, KEIN Cap-Schnitt).
         const N = skeleton.anchors.length;
-        const positions = new Float32Array(N * 8 * 3);
-        const normals = new Float32Array(N * 8 * 3);
-        const colors = new Float32Array(N * 8 * 3);
-        const flex = new Float32Array(N * 8);
-        const phase = new Float32Array(N * 8);
-        const indices = new Uint32Array(N * 12);
+        const fd = (this.state.atmosphere && this.state.atmosphere.foliageDensity) || AnazhRealm.FOLIAGE_DENSITY;
+        const lod = skeleton.lodLevel | 0;
+        const K = Math.max(1, (fd.cardsPerAnchor[lod] != null ? fd.cardsPerAnchor[lod] : fd.cardsPerAnchor[0]) | 0);
+        const M = N * K; // Gesamt-Karten in der Krone
+        const positions = new Float32Array(M * 8 * 3);
+        const normals = new Float32Array(M * 8 * 3);
+        const colors = new Float32Array(M * 8 * 3);
+        const flex = new Float32Array(M * 8);
+        const phase = new Float32Array(M * 8);
+        const indices = new Uint32Array(M * 12);
         // foliageColor aus skeleton (gemischt aus grammar.color + Jitter im
         // _growTreeBlueprintRich).
+        // V18.235 (§5 Ω-O9) — tieferes, satteres Wald-Grün: das helle Medium-Grün
+        // wusch unter der hellen Mittag-Beleuchtung (ACES) teal/weiss. R+B gedämpft,
+        // G gehalten → ein sattes Forst-Grün, das die Beleuchtungs-Wäsche überlebt.
         const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-        const fr = ((c0 >> 16) & 0xff) / 255;
-        const fg = ((c0 >> 8) & 0xff) / 255;
-        const fb = (c0 & 0xff) / 255;
+        const fr = (((c0 >> 16) & 0xff) / 255) * 0.72;
+        const fg = (((c0 >> 8) & 0xff) / 255) * 0.95;
+        const fb = ((c0 & 0xff) / 255) * 0.55;
+        const jitterR = cardW * (fd.jitterFrac || 1.0);
+        const sizeVar = fd.sizeVar || 0;
+        const innerFill = fd.innerFill || 0;
+        // deterministischer [0,1)-Hash aus (anchor, card, salt) — die Krone-Streuung
+        // ist bit-identisch über Re-Wachstum (gleiche Variante → gleiche Krone).
+        const h01 = (av, bv, salt) => {
+            let h = (Math.imul(av + 1, 374761393) ^ Math.imul(bv + 1, 668265263) ^ Math.imul(salt + 1, 2147483647)) >>> 0;
+            h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+            return (h >>> 0) / 4294967296;
+        };
+        const bendStr = 0.6; // normalBend (Plan §3.4 ≈ 0.5-0.7)
         let vWrite = 0;
         let iWrite = 0;
+        let cardIdx = 0;
         for (let ai = 0; ai < N; ai++) {
             const a = skeleton.anchors[ai];
-            // Bend-Direction: vom Anker zum Krone-Zentrum normalisiert.
-            let bdx = cx - a.x;
-            let bdy = cy - a.y;
-            let bdz = cz - a.z;
-            const blen = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz) || 1;
-            bdx /= blen;
-            bdy /= blen;
-            bdz /= blen;
-            // 8 Vertices: Quad1 in xy-Ebene, Quad2 in zy-Ebene (= card{cross}).
-            // halbe Größe nach jeder Seite.
-            const hw = cardW * 0.5;
-            const hh = cardH * 0.5;
-            // Quad 1 (xy-Ebene, normal = +z, gemischt mit bend)
-            const q1n = { x: 0, y: 0, z: 1 };
-            // Quad 2 (zy-Ebene, normal = +x, gemischt mit bend)
-            const q2n = { x: 1, y: 0, z: 0 };
-            // normalBend = 0.6 (Plan §3.4 normalBend ≈ 0.5-0.7)
-            const bendStr = 0.6;
-            const blend = (nrm) => ({
-                x: nrm.x * (1 - bendStr) + bdx * bendStr,
-                y: nrm.y * (1 - bendStr) + bdy * bendStr,
-                z: nrm.z * (1 - bendStr) + bdz * bendStr,
-            });
-            const bn1 = blend(q1n);
-            const bn2 = blend(q2n);
-            const bn1len = Math.sqrt(bn1.x * bn1.x + bn1.y * bn1.y + bn1.z * bn1.z) || 1;
-            bn1.x /= bn1len;
-            bn1.y /= bn1len;
-            bn1.z /= bn1len;
-            const bn2len = Math.sqrt(bn2.x * bn2.x + bn2.y * bn2.y + bn2.z * bn2.z) || 1;
-            bn2.x /= bn2len;
-            bn2.y /= bn2len;
-            bn2.z /= bn2len;
-            // V18.229 (Ω-OPSIS Säule VI Ω-O14) — BLATT-GEFORMTE Card: unten breit,
-            // oben verjüngt (Tropfen/Blatt statt Rechteck), die Spitze KRÜMMT zur
-            // Krone (curl, im Position-Write) → ein 3D-Blatt-Cluster statt einer
-            // flachen Platte. tw = obere (Spitzen-) Halbbreite.
-            const tw = hw * 0.42;
-            const curl = hh * 0.32;
-            // Quad 1 corners (xy): unten ±hw, oben ±tw (verjüngt)
-            const q1corners = [
-                [-hw, -hh, 0],
-                [hw, -hh, 0],
-                [tw, hh, 0],
-                [-tw, hh, 0],
-            ];
-            // Quad 2 corners (zy): unten ±hw, oben ±tw
-            const q2corners = [
-                [0, -hh, -hw],
-                [0, -hh, hw],
-                [0, hh, tw],
-                [0, hh, -tw],
-            ];
-            const phBase = hashPhase(ai, 0);
-            const flexBase = Math.max(0.5, Math.min(1, a.y / totalH));
-            // Quad 1
-            for (let k = 0; k < 4; k++) {
-                const v3 = vWrite * 3;
-                // Ω-O14 — die Spitze (k≥2) krümmt zur Krone (bd-Richtung).
-                const cu1 = k >= 2 ? curl : 0;
-                positions[v3] = a.x + q1corners[k][0] + cu1 * bdx;
-                positions[v3 + 1] = a.y + q1corners[k][1] + cu1 * bdy;
-                positions[v3 + 2] = a.z + q1corners[k][2] + cu1 * bdz;
-                normals[v3] = bn1.x;
-                normals[v3 + 1] = bn1.y;
-                normals[v3 + 2] = bn1.z;
-                colors[v3] = fr;
-                colors[v3 + 1] = fg;
-                colors[v3 + 2] = fb;
-                // Outer-Vertices (oben am Card) flexen stärker (k=2,3).
-                flex[vWrite] = flexBase * (k >= 2 ? 1.0 : 0.55);
-                phase[vWrite] = phBase + k * 0.7;
-                vWrite++;
+            for (let kk = 0; kk < K; kk++, cardIdx++) {
+                // Karten-Mitte: Anker + Jitter im Kronen-Volumen. Ein Teil der
+                // Karten (innerFill) wird zur Kronen-Mitte gezogen → das Innere
+                // füllt sich (nicht nur die Schale). K=1 (LOD2) sitzt am Anker.
+                let ax = a.x,
+                    ay = a.y,
+                    az = a.z;
+                if (K > 1) {
+                    ax += (h01(ai, kk, 1) * 2 - 1) * jitterR;
+                    ay += (h01(ai, kk, 2) * 2 - 1) * jitterR * 0.8;
+                    az += (h01(ai, kk, 3) * 2 - 1) * jitterR;
+                    if (h01(ai, kk, 7) < innerFill) {
+                        const pull = 0.35 + h01(ai, kk, 8) * 0.45;
+                        ax += (cx - a.x) * pull;
+                        ay += (cy - a.y) * pull;
+                        az += (cz - a.z) * pull;
+                    }
+                }
+                // Bend-Direction: von der Karte zum Krone-Zentrum (normalBend §3.4).
+                let bdx = cx - ax,
+                    bdy = cy - ay,
+                    bdz = cz - az;
+                const blen = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz) || 1;
+                bdx /= blen;
+                bdy /= blen;
+                bdz /= blen;
+                // Größen-Varianz + Kreuz-Drehung um y (organisch, kein Gitter).
+                const szJ = 1 + (h01(ai, kk, 4) - 0.5) * 2 * sizeVar;
+                const hw = cardW * 0.5 * szJ;
+                const hh = cardH * 0.5 * szJ;
+                const tw = hw * 0.42; // Blatt-Form Ω-O14: oben verjüngt
+                const curl = hh * 0.32; // Spitze krümmt zur Krone
+                const rot = h01(ai, kk, 5) * Math.PI;
+                const cR = Math.cos(rot),
+                    sR = Math.sin(rot);
+                // Tangenten (um y gedreht): t1=(cR,0,−sR), t2=(sR,0,cR) (⟂).
+                // Normalen: n1=+z→(sR,0,cR); n2=+x→(cR,0,−sR); zur Kronen-SCHALE
+                // (AUSWÄRTS, od=−bd) gebogen → die Krone schattiert wie eine 3D-Kugel
+                // (oben sonnen-lit, unten im Schatten). Auswärts ist Pflicht: die alte
+                // EINWÄRTS-Biegung machte die sonnenseitige Krone-Oberseite DUNKEL.
+                const odx = -bdx,
+                    ody = -bdy,
+                    odz = -bdz;
+                let bn1x = sR * (1 - bendStr) + odx * bendStr,
+                    bn1y = ody * bendStr,
+                    bn1z = cR * (1 - bendStr) + odz * bendStr;
+                let bn2x = cR * (1 - bendStr) + odx * bendStr,
+                    bn2y = ody * bendStr,
+                    bn2z = -sR * (1 - bendStr) + odz * bendStr;
+                const l1 = Math.sqrt(bn1x * bn1x + bn1y * bn1y + bn1z * bn1z) || 1;
+                const l2 = Math.sqrt(bn2x * bn2x + bn2y * bn2y + bn2z * bn2z) || 1;
+                bn1x /= l1;
+                bn1y /= l1;
+                bn1z /= l1;
+                bn2x /= l2;
+                bn2y /= l2;
+                bn2z /= l2;
+                // Eck-Halbbreiten (Blatt-Form Ω-O14): unten ±hw, oben ±tw.
+                const lxs = [-hw, hw, tw, -tw];
+                const lys = [-hh, -hh, hh, hh];
+                const phBase = hashPhase(ai, kk);
+                const flexBase = Math.max(0.5, Math.min(1, ay / totalH));
+                const base = cardIdx * 8;
+                // Quad 1 (Tangente t1=(cR,0,−sR))
+                for (let c = 0; c < 4; c++) {
+                    const lx = lxs[c];
+                    const cu = c >= 2 ? curl : 0;
+                    const v3 = vWrite * 3;
+                    positions[v3] = ax + lx * cR + cu * bdx;
+                    positions[v3 + 1] = ay + lys[c] + cu * bdy;
+                    positions[v3 + 2] = az - lx * sR + cu * bdz;
+                    normals[v3] = bn1x;
+                    normals[v3 + 1] = bn1y;
+                    normals[v3 + 2] = bn1z;
+                    colors[v3] = fr;
+                    colors[v3 + 1] = fg;
+                    colors[v3 + 2] = fb;
+                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
+                    phase[vWrite] = phBase + c * 0.7;
+                    vWrite++;
+                }
+                // Quad 2 (Tangente t2=(sR,0,cR), ⟂ zu t1)
+                for (let c = 0; c < 4; c++) {
+                    const lx = lxs[c];
+                    const cu = c >= 2 ? curl : 0;
+                    const v3 = vWrite * 3;
+                    positions[v3] = ax + lx * sR + cu * bdx;
+                    positions[v3 + 1] = ay + lys[c] + cu * bdy;
+                    positions[v3 + 2] = az + lx * cR + cu * bdz;
+                    normals[v3] = bn2x;
+                    normals[v3 + 1] = bn2y;
+                    normals[v3 + 2] = bn2z;
+                    colors[v3] = fr;
+                    colors[v3 + 1] = fg;
+                    colors[v3 + 2] = fb;
+                    flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
+                    phase[vWrite] = phBase + 1.7 + c * 0.7;
+                    vWrite++;
+                }
+                indices[iWrite++] = base;
+                indices[iWrite++] = base + 1;
+                indices[iWrite++] = base + 2;
+                indices[iWrite++] = base;
+                indices[iWrite++] = base + 2;
+                indices[iWrite++] = base + 3;
+                indices[iWrite++] = base + 4;
+                indices[iWrite++] = base + 5;
+                indices[iWrite++] = base + 6;
+                indices[iWrite++] = base + 4;
+                indices[iWrite++] = base + 6;
+                indices[iWrite++] = base + 7;
             }
-            // Quad 2
-            for (let k = 0; k < 4; k++) {
-                const v3 = vWrite * 3;
-                const cu2 = k >= 2 ? curl : 0;
-                positions[v3] = a.x + q2corners[k][0] + cu2 * bdx;
-                positions[v3 + 1] = a.y + q2corners[k][1] + cu2 * bdy;
-                positions[v3 + 2] = a.z + q2corners[k][2] + cu2 * bdz;
-                normals[v3] = bn2.x;
-                normals[v3 + 1] = bn2.y;
-                normals[v3 + 2] = bn2.z;
-                colors[v3] = fr;
-                colors[v3 + 1] = fg;
-                colors[v3 + 2] = fb;
-                flex[vWrite] = flexBase * (k >= 2 ? 1.0 : 0.55);
-                phase[vWrite] = phBase + 1.7 + k * 0.7;
-                vWrite++;
-            }
-            // Indizes: pro Quad zwei Triangles (CCW von außen).
-            const base = ai * 8;
-            indices[iWrite++] = base;
-            indices[iWrite++] = base + 1;
-            indices[iWrite++] = base + 2;
-            indices[iWrite++] = base;
-            indices[iWrite++] = base + 2;
-            indices[iWrite++] = base + 3;
-            indices[iWrite++] = base + 4;
-            indices[iWrite++] = base + 5;
-            indices[iWrite++] = base + 6;
-            indices[iWrite++] = base + 4;
-            indices[iWrite++] = base + 6;
-            indices[iWrite++] = base + 7;
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
@@ -51660,7 +51736,12 @@ class AnazhRealm {
         const foliageGeom = this._buildTreeFoliageCardGeometry(skel);
         if (foliageGeom) {
             const laubMat = this.state.materials && this.state.materials.laub;
-            const foliageMatOpts = { vertexColors: true, useInstanceTint: true, useFlexAttr: true };
+            // V18.235 (§3 lushe Krone) — DoubleSide: ein Blatt ist dünn, von BEIDEN
+            // Seiten sichtbar. Vorher FrontSide → die äusseren Karten (Normale zur
+            // Kronen-Mitte gebogen) zeigten ihre RÜCKSEITE nach aussen → back-face-
+            // gecullt → die Krone las sparse/unsichtbar von aussen. DoubleSide rendert
+            // jede Karte von beiden Seiten → die geschlossene, volle Krone.
+            const foliageMatOpts = { vertexColors: true, useInstanceTint: true, useFlexAttr: true, side: THREE.DoubleSide };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             const foliageMat = this._buildToonNodeMaterial(foliageMatOpts);
             leaves.push({ geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() });
@@ -54198,7 +54279,14 @@ class AnazhRealm {
                     }
                     return 1;
                 }
-                // Helper-fallback (null) → fixe Varianten (V17.16-Wand-Trigger).
+                // V18.235 (§2 — EINE Baum-Quelle, „die zwei Seelen zu eins"):
+                // gen ≥ 4 spawnt NIE einen Kugel-Baum. Gibt der Grammatik-Helfer
+                // null (V17.16-Tag-Drift, selten), ÜBERSPRINGEN wir den Spawn,
+                // statt auf die alten Kugel-Bauplane (baumEicheParts …) zurück-
+                // zufallen. Die Kugel-Bauplane bleiben reine Test-Fixtures
+                // (Rolle/Tag/Affinität-Referenz) — sie erscheinen NIE in einer
+                // modernen Welt; der switch unten ist damit strikt gen < 4.
+                return 0;
             }
             // V18.181-merge-Λ Sub 3e (Plan §10 — Mischwald-TREE_VARIANTS):
             // Eiche/Kiefer tragen tesla's W-H-Varianten (breit/jung/schlank,
@@ -68016,7 +68104,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.234.0";
+AnazhRealm.VERSION = "18.235.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -68475,6 +68563,21 @@ AnazhRealm.CANOPY_SHELL = Object.freeze({
     // Lift-Skala: 1.0 = Plan-Formel direkt. Browser-justierbar wenn die
     // Bäume „zu hoch" über dem Terrain liegen.
     liftScale: 0.85,
+});
+
+// V18.235 (wahreranblick §3 — DIE LUSHE KRONE, „die Samen werden zu Mammutbäumen"):
+// die Krone als VOLUMEN. Vorher EINE card{cross} pro Foliage-Anchor (~21 Karten in
+// einem 22 m-Baum → ein dünner Stachel, der GEMESSENE 10%-Befund). Jetzt ein
+// CLUSTER aus K Karten pro Anchor, jittered im Kronen-Volumen (ein Teil zur Mitte
+// gezogen) → die geschlossene, lushe Krone (hunderte Karten). Eine card{cross} ist
+// billig (8 Verts) → die volle Krone ist FPS-tragbar bei LOD0 (nah); LOD1/2 dünnen
+// per cardsPerAnchor stark aus (der LOD-Pfad trägt die Performance, kein Cap-Schnitt).
+// Browser-justierbar (state.atmosphere kann die Werte überschreiben — _foliageDensity()).
+AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
+    cardsPerAnchor: [12, 3, 1], // pro LOD0/1/2 — der Kronen-Füll-Faktor
+    jitterFrac: 1.25, // Cluster-Jitter-Radius als Bruchteil der Karten-Breite
+    sizeVar: 0.45, // ±45% Karten-Größen-Varianz im Cluster (organisch, kein Gitter)
+    innerFill: 0.45, // Anteil der Karten, die zur Kronen-Mitte gezogen werden (Volumen-Füllung)
 });
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale

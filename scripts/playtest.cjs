@@ -8438,6 +8438,11 @@ async function checkBandWave4(ctx) {
                 },
             ],
         };
+        // V18.235 (V17.32-Konfund-Heilung): awe auf eine BASIS zurücksetzen, sonst
+        // ist der Test confoundiert — hat der Warmup awe schon an die Decke (1.0)
+        // gehoben, kann der Magie-Compound es nicht weiter heben → falsch-rot. Wir
+        // testen die ABSICHT (Magie hebt awe), deterministisch ab 0.
+        r.state.player.emotions.awe = 0;
         const aweBefore = r.state.player.emotions.awe;
         r._applyCompoundWorldEffects("mage-pyramid");
         out.magicLiftsAwe = r.state.player.emotions.awe > aweBefore;
@@ -8813,6 +8818,9 @@ async function checkBandWave5(ctx) {
             builtIn: false,
             parts: noTipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
         };
+        // V18.235 (V17.32-Konfund-Heilung): awe auf BASIS 0 — sonst confoundiert
+        // (Warmup-awe an der Decke → der Tip-Magie-Effekt kann nicht weiter heben).
+        r.state.player.emotions.awe = 0;
         const aweBefore = r.state.player.emotions.awe;
         r._applyCompoundWorldEffects("wave5b-tip-polished");
         const aweAfterTip = r.state.player.emotions.awe;
@@ -36085,8 +36093,16 @@ async function checkBandV18214SkeletonMesh(ctx) {
                     out.foliageHasFlex = !!fol.geom.attributes.aFlex;
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
-                    // Anchors × 8 Vertices pro Card-Cross
-                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * 8;
+                    // V18.235 (§3 lushe Krone): Anchors × K Karten × 8 Verts pro card{cross}
+                    // (K = cardsPerAnchor[LOD0] — der Cluster-Füll-Faktor; war 1, jetzt 12).
+                    const _K0 =
+                        (r.constructor.FOLIAGE_DENSITY &&
+                            r.constructor.FOLIAGE_DENSITY.cardsPerAnchor &&
+                            r.constructor.FOLIAGE_DENSITY.cardsPerAnchor[0]) ||
+                        1;
+                    out.foliageCardsPerAnchor = _K0;
+                    out.foliageVertsMatchAnchors =
+                        fol.geom.attributes.position.count === out.skelAnchorCount * _K0 * 8;
                 }
             }
 
@@ -36163,7 +36179,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
-        `V18.214 (T8c) foliage-Vertex-Count = anchors·8 (card{cross}: ${res.foliageVerts}/${res.skelAnchorCount}·8)`,
+        `V18.214 (T8c) foliage-Vertex-Count = anchors·K·8 (lushe Krone K=${res.foliageCardsPerAnchor}: ${res.foliageVerts}/${res.skelAnchorCount}·${res.foliageCardsPerAnchor}·8)`,
         res.foliageVertsMatchAnchors === true
     );
     check(
@@ -37963,7 +37979,7 @@ async function checkBandWahrerAnblickLaub(ctx) {
         out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
         const cardSrc = r._buildTreeFoliageCardGeometry.toString();
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
-        out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu1 \* bdx/.test(cardSrc);
+        out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
 
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card
         let tubeOk = false,

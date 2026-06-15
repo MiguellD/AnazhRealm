@@ -8,6 +8,20 @@
 > Welt ist GEMESSEN bei 10% (mein eigenes Auge, nicht headless). Dieser Plan ist
 > die KORREKTE, VOLLE Restarbeit zur echten 100%.
 
+> **V18.235 — GEBAUT (15.06.):** §2 + §3 + §5 Ω-O9 an der WURZEL. **§3 lushe Krone:**
+> ein CLUSTER aus 12 Karten/Anchor (`AnazhRealm.FOLIAGE_DENSITY`) füllt das Volumen →
+> `foliageVerts` 168→2016 (~252 Karten), bbox 12.9×11.5×12.5 = volle 3D-Krone; DoubleSide-
+> Laub + AUSWÄRTS-Normale (Kugel-Schattierung). **§5 Ω-O9 (der dominante Befund):** das Laub
+> rendierte purple — GEMESSEN am Color-Attribut [0.22,0.15,0.47]. Wurzel: `baseColor +
+> Math.floor(r01()*0x0c0c0c)` ist eine NUMERISCHE Addition, die Bytes überliefen (Grün →
+> Purple); jetzt PER-KANAL-Jitter → [0.19,0.51,..] GRÜN. + die Per-Vertex-Albedo fiel im
+> Response-`_T.output` aus → EXPLIZITER colorNode bei der Konstruktion (Vegetation); + die
+> Terrain-Normalen-Flachung NUR für Terrain (Laub behält die echte Normale). **§2:** gen≥4
+> spawnt NIE einen Kugel-Baum. **Werkzeuge:** `diag-anblick`/`diag-krone`/`png-stats`.
+> **OFFEN:** §1-Akzeptanz (verlässlicher Screenshot — der headless-WebGPU-Präsentations-Flake
+> ist eine Werkzeug-Grenze; GRÜN+LUSH ist objektiv gemessen, Browser-Sign-off bleibt) ·
+> §4 GPU-Dichte · §5 per-Ω-O-Bild · die Atmosphäre-Tönung naher Bäume.
+
 ---
 
 ## §0 — DIE LEHRE, DIE IN JEDEN SCHRITT GEHÖRT (verbindlich)
