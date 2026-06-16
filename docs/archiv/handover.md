@@ -390,6 +390,35 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 > Wahrheit + der Pfad: `docs/wahreranblick-plan.md` + der CLAUDE.md-Kopf. Die
 > historischen Einträge bleiben als Lern-Material stehen; diese Korrektur führt.
 
+### V18.254 — DER WAHRE WUCHS S5+S6: das BAUWERK- + GERÄT-GENOM (die gebaute Palette)
+
+Die GEBAUTE/GECRAFTETE Kategorie. Tempel/Dorf/Hütte (Architektur) + die Scatter-Welt sind
+schon generativ; jetzt die funktionalen Bauten + die Geräte.
+
+- **S5 BAUWERK — `_stationVariant(parts, seed)`:** die funktionalen Bauten (Werkstätten
+  esse/brennkolben/webstuhl/altar/drehbank · Portale welt_portal/strom/terrain · Rüstung ·
+  Trank) bekommen ein PER-WELT-Genom (uniform-Skala 0.85-1.35 + Palette-Tönung). [Das
+  FAHRZEUG wurde NICHT varias — GEMESSEN: das C7-Band prüft die FESTE sitz-Höhe (1.025 =
+  Kabinen-Oberkante), die Skala verschöbe sie; das Fahrzeug bleibt der „Fahrzeug-Fahr-
+  Tiefe"-Faden mit sensibler sitz/moveable/mount-Physik.]
+  Plan §6½.2: PARAMETRISIEREN, nicht neu erfinden — die FUNKTION bleibt lesbar (eine Esse
+  liest als Esse, die `role` bleibt). DREI Disziplinen: (1) uniform-Skala ist MARGIN-
+  INVARIANT (`_stability().margin` = dEdge/comHeight, beide skalieren → unverändert) → ein
+  Bauwerk das stand steht weiter; (2) BASIS-VERANKERT (der tiefste Boden bleibt am selben
+  y nach dem Skalieren → kein Schweben); (3) index-basierte Fahrzeug-Gelenke (`partA:0`)
+  reisen unverändert mit (Part-Reihenfolge erhalten). GEMESSEN diag-genom.
+- **S6 GERÄT — die Funktion ist Physik:** das SCHWERT aus dem Genom (`_bladedWeaponVariant`:
+  ein OAKESHOTT-Typ aus dem Roller, die Balance Ω-Φ4 folgt aus den Massen) + die SPITZHACKE
+  (`_toolVariant`: Stiel-Länge · Kopf-Masse · Keil-Winkel = der Hebel τ). **DIE LEHRE
+  (4 Test-Befunde): eine Spitzhacke IST spitz** — ein blunt-Box-Kopf liest als ARCHITECTURE,
+  nicht als Gerät (die Rolle emergiert aus der FORM, U4: spitz+gestreckt → Klinge/Werkzeug).
+  Darum bleibt der Pickel-Kopf IMMER ein Kegel (spitz); das Genom variiert den HEBEL (Stiel/
+  Masse/Winkel), nicht die Spitzheit. GEMESSEN diag-genom (liest als Gerät) + playtest.
+
+**OFFEN:** der LOOK AUGEN-bound. **S7 (Kreatur-Allometrie) ist der letzte S-Punkt** — die
+sizeClass-Achse am Körper (allometrische Glied-Dicke), das locked Template nur skaliert,
+nicht verbogen (V18.209).
+
 ### V18.253 — DER WAHRE WUCHS S4: KRISTALL + GLUT (die SCATTER-Welt ist genom-gewachsen)
 
 Das Genom-Prinzip auf die letzten zwei Scatter-Wahrzeichen (wahrerwuchs §4.3/§4.4). Damit

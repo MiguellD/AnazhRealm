@@ -401,9 +401,18 @@ S4  KRISTALL · GLUT · BÜSCHE  ✅ GEBAUT (V18.253) — `_crystalVariant` (Hab
       garant (steht/intakt/knickt-nicht — breite quarz-Matrix, gedrungenes Becken),
       GEMESSEN diag-genom (KRISTALL+GLUT-Bänder grün). Büsche erben S1 (sizeClass-gated
       auf normal, age variiert). → die GANZE SCATTER-Welt ist jetzt Genom-gewachsen.
-S5  BAUWERKE verallgemeinert — Werkstätten · Bauten · Portale (Tempel-Muster:
-      Palette + Größe + Detail, physik-garant).
-S6  GERÄT/RÜSTUNG/TRANK · FAHRZEUG — Genome (der Hebel/SSF physik-wahr).
+S5  BAUWERKE  ✅ GEBAUT (V18.254) — Tempel/Dorf/Hütte sind schon generativ; die
+      FUNKTIONALEN Bauten (Werkstätten · Portale) PARAMETRISIERT über `_stationVariant(parts,
+      seed)` (uniform-Skala + Palette-Tönung, BASIS-verankert = kein Schweben). Die FUNKTION
+      bleibt lesbar (eine Esse liest als Esse; role bleibt). PHYSIK: uniform-Skala ist margin-
+      invariant (steht weiter), Tags neutral — GEMESSEN diag-genom (BAUWERK-Bänder grün).
+S6  GERÄT  ✅ GEBAUT (V18.254) — das SCHWERT aus dem Genom (`_bladedWeaponVariant`: ein
+      OAKESHOTT-Typ aus dem Roller, die Balance Ω-Φ4 GERECHNET) + die SPITZHACKE
+      (`_toolVariant`: Stiel-Länge · Kopf-Masse · Keil-Winkel = der Hebel Ω-Φ4; IMMER spitz
+      → liest als Gerät, U4) + Rüstung/Trank via `_stationVariant`. GEMESSEN diag-genom
+      (GERÄT-Bänder grün: Oakeshott-Varianten, Balance gerechnet, Hebel-Varianten, liest als
+      Gerät). [Das FAHRZEUG bleibt der eigene gemerkte Faden „Fahrzeug-Fahr-Tiefe" — sein
+      sitz-Punkt/moveable/mount ist sensibel, die Skala verschöbe die feste Sitz-Höhe.]
 S7  KREATUR-ALLOMETRIE (Ω-B5) — die Größenklasse-Achse am Körper, falls der
       Schöpfer es will (heute bewusst fix, V18.209).
 ```

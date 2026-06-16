@@ -304,6 +304,107 @@ function startSaveServer() {
             o.glut = testLandmark("_glutVariant", "glutbrunnen", "gy", ["stein", "glut"]);
             o.glutPool = !!(r.state.blueprints && r.state.blueprints.glut_var0);
 
+            // ── S5 BAUWERK: _stationVariant ERHÄLT die Stabilität (uniform-Skala ist margin-
+            //    invariant) + die Tags (Größe/Farbe tag-neutral) + VERANKERT die Basis (kein
+            //    Schweben), deterministisch, variiert. ──
+            if (typeof r._stationVariant === "function") {
+                const base = {
+                    parts: [
+                        {
+                            shape: "box",
+                            material: "stein",
+                            color: 0x808080,
+                            position: { x: 0, y: 0.5, z: 0 },
+                            size: { x: 2, y: 1, z: 2 },
+                        },
+                        {
+                            shape: "box",
+                            material: "stein",
+                            color: 0x808080,
+                            position: { x: 0, y: 1.5, z: 0 },
+                            size: { x: 1.2, y: 1, z: 1.2 },
+                        },
+                    ],
+                };
+                const baseStab = r._stability(base);
+                const baseTags = tagsOf(base.parts);
+                let stabOk = true,
+                    tagsOk = true,
+                    anchored = true;
+                const sizes = new Set();
+                for (let s = 0; s < 60; s++) {
+                    const v = { parts: r._stationVariant(base.parts, "st" + s) };
+                    if (Math.abs(r._stability(v).margin - baseStab.margin) > 0.02) stabOk = false;
+                    const vt = tagsOf(v.parts);
+                    if (
+                        !["lebendig", "dichte", "brennbar", "magieleitung"].every(
+                            (a) => Math.abs((vt[a] || 0) - (baseTags[a] || 0)) < 1e-9
+                        )
+                    )
+                        tagsOk = false;
+                    let mb = Infinity;
+                    for (const p of v.parts) mb = Math.min(mb, p.position.y - p.size.y / 2);
+                    if (Math.abs(mb) > 0.01) anchored = false; // Basis bleibt bei y=0 (kein Schweben)
+                    sizes.add(v.parts[0].size.x.toFixed(3));
+                }
+                o.stationStab = stabOk;
+                o.stationTags = tagsOk;
+                o.stationAnchored = anchored;
+                o.stationVaries = sizes.size > 3;
+                const d1 = r._stationVariant(base.parts, "det-st");
+                const d2 = r._stationVariant(base.parts, "det-st");
+                o.stationDet =
+                    d1.length === d2.length &&
+                    d1.every((p, i) => Math.abs(p.size.x - d2[i].size.x) < 1e-12 && p.color === d2[i].color);
+                o.stationApplied = !!(
+                    r.state.blueprints.esse &&
+                    r.state.blueprints.esse.parts &&
+                    r.state.blueprints.esse.parts.length
+                );
+            }
+            // ── S6 GERÄT: Schwert (Oakeshott-Typ + Balance Ω-Φ4) + Werkzeug (Stiel/Kopf-Hebel) ──
+            if (typeof r._bladedWeaponVariant === "function") {
+                const sigs = new Set();
+                let balanceOk = true;
+                for (let s = 0; s < 40; s++) {
+                    const sw = r._bladedWeaponVariant("sw" + s);
+                    const sd = r._swingDynamics({ parts: sw });
+                    if (!(sd.balance > 0 && sd.swingSpeed > 0)) balanceOk = false;
+                    const blade = sw.find((p) => p.shape === "bladeProfile");
+                    sigs.add(blade ? blade.size.y.toFixed(2) + ":" + (blade.fuller || 0) : "none");
+                }
+                o.swordVaries = sigs.size >= 2;
+                o.swordBalance = balanceOk;
+                o.swordDet =
+                    JSON.stringify(r._bladedWeaponVariant("dsw")) === JSON.stringify(r._bladedWeaponVariant("dsw"));
+            }
+            if (typeof r._toolVariant === "function") {
+                const levers = new Set();
+                let wellFormed = true,
+                    readsAsTool = true;
+                for (let s = 0; s < 40; s++) {
+                    const t = r._toolVariant("t" + s);
+                    // wohlgeformt: Holz-Stiel + SPITZER eisen-Kegel (die Spitzhacke IST spitz).
+                    if (
+                        !(
+                            t.length === 2 &&
+                            t[0].material === "holz" &&
+                            t[1].material === "eisen" &&
+                            t[1].shape === "cone"
+                        )
+                    )
+                        wellFormed = false;
+                    // die FORM liest als Gerät/Klinge (spitz + gestreckt, U4) — NICHT Bauwerk.
+                    if (r._isGraspableBladeForm && r._isGraspableBladeForm({ parts: t }) !== true) readsAsTool = false;
+                    // der HEBEL variiert: Stiel-Länge × Kopf-Masse/Keil-Winkel.
+                    levers.add(t[0].size.y.toFixed(2) + ":" + t[1].size.x.toFixed(2));
+                }
+                o.toolVaries = levers.size >= 3;
+                o.toolWellFormed = wellFormed;
+                o.toolReadsAsTool = readsAsTool;
+                o.toolDet = JSON.stringify(r._toolVariant("dt")) === JSON.stringify(r._toolVariant("dt"));
+            }
+
             // ── ROLLER: range im Bereich, int inklusiv, pick aus Liste, chance ~p, seq [0,1) + det ──
             const G = r._rollGenome("rtest", "diag");
             const G2 = r._rollGenome("rtest", "diag");
@@ -423,6 +524,32 @@ function startSaveServer() {
             "GLUT-DETERMINISMUS + Pool registriert",
             `${gt.det}/${out.glutPool}`,
             gt.det === true && out.glutPool === true
+        );
+        // ── S5 BAUWERK ──
+        ck(
+            "BAUWERK: _stationVariant erhält Stabilität (Ω-Φ2 margin-invariant) + Tags",
+            `${out.stationStab}/${out.stationTags}`,
+            out.stationStab === true && out.stationTags === true
+        );
+        ck(
+            "BAUWERK: Basis verankert (kein Schweben) + variiert + applied",
+            `${out.stationAnchored}/${out.stationVaries}/${out.stationApplied}`,
+            out.stationAnchored === true && out.stationVaries === true && out.stationApplied === true
+        );
+        ck("BAUWERK-DETERMINISMUS", out.stationDet, out.stationDet === true);
+        // ── S6 GERÄT ──
+        ck(
+            "GERÄT-SCHWERT: Oakeshott-Varianten + Balance gerechnet (Ω-Φ4) + det.",
+            `${out.swordVaries}/${out.swordBalance}/${out.swordDet}`,
+            out.swordVaries === true && out.swordBalance === true && out.swordDet === true
+        );
+        ck(
+            "GERÄT-WERKZEUG: Hebel-Varianten + spitz (liest als Gerät, U4) + det.",
+            `${out.toolVaries}/${out.toolWellFormed}/${out.toolReadsAsTool}/${out.toolDet}`,
+            out.toolVaries === true &&
+                out.toolWellFormed === true &&
+                out.toolReadsAsTool === true &&
+                out.toolDet === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");

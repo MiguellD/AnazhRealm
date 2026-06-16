@@ -46791,6 +46791,97 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ DAS BAUWERK-GENOM (wahrerwuchs §4.5 S5) — die FUNKTIONALEN Bauten ═══
+    // Tempel/Dorf/Hütte sind schon generativ; die funktionalen Bauten (Werkstätten ·
+    // Portale · Bauten · Rüstung · Trank · Fahrzeug) werden PARAMETRISIERT (Plan §6½.2:
+    // „die bestehende Parts-Liste parametrisieren, NICHT neu erfinden" — die FUNKTION muss
+    // lesbar bleiben, eine Esse liest als Esse). Das Genom variiert GRÖSSE (uniform → die
+    // Stabilität bleibt) + PALETTE (Farb-Tönung, tag-neutral). Basis-verankert (der tiefste
+    // Boden bleibt am selben Ort → kein Schweben nach dem Skalieren). Index-basierte
+    // connections (Fahrzeug-Gelenke) reisen unverändert mit (Part-Reihenfolge erhalten).
+    _stationVariant(parts, seed) {
+        if (!Array.isArray(parts) || !parts.length) return parts;
+        const g = this._rollGenome(seed, "station");
+        const scale = g.range("scale", 0.85, 1.35);
+        const tr = g.range("tintR", 0.84, 1.12),
+            tg = g.range("tintG", 0.84, 1.12),
+            tb = g.range("tintB", 0.84, 1.12);
+        const clampB = (v) => Math.max(0, Math.min(255, Math.round(v)));
+        const tint = (c) =>
+            typeof c === "number"
+                ? (clampB(((c >> 16) & 0xff) * tr) << 16) |
+                  (clampB(((c >> 8) & 0xff) * tg) << 8) |
+                  clampB((c & 0xff) * tb)
+                : c;
+        const lowBottom = (arr) => {
+            let m = Infinity;
+            for (const p of arr) {
+                const py = (p.position && p.position.y) || 0;
+                const sy = (p.size && p.size.y) || 0.3;
+                if (py - sy / 2 < m) m = py - sy / 2;
+            }
+            return m;
+        };
+        const before = lowBottom(parts);
+        const out = parts.map((p) => {
+            const np = { ...p };
+            if (p.size)
+                np.size = { x: (p.size.x || 0.3) * scale, y: (p.size.y || 0.3) * scale, z: (p.size.z || 0.3) * scale };
+            if (p.position)
+                np.position = {
+                    x: (p.position.x || 0) * scale,
+                    y: (p.position.y || 0) * scale,
+                    z: (p.position.z || 0) * scale,
+                };
+            if (typeof p.color === "number") np.color = tint(p.color);
+            return np;
+        });
+        const shift = before - lowBottom(out); // den Boden re-verankern (kein Schweben)
+        if (Math.abs(shift) > 1e-9) for (const p of out) if (p.position) p.position.y += shift;
+        return out;
+    }
+
+    // ═══ DAS GERÄT-GENOM (wahrerwuchs §4.6 S6) — die FUNKTION ist Physik ═══
+    // SCHWERT: ein OAKESHOTT-Typ aus dem Roller (die BALANCE folgt aus den Massen, Ω-Φ4,
+    // GERECHNET nie gesetzt — das `_buildBladedWeapon`-Muster). WERKZEUG: der einfache Hebel
+    // (τ = Kopf-Masse · Stiel-Länge; Keil-Winkel; die Form treibt mine/cut-Profil, U4). Beide
+    // GEHALTEN (kein freistehender Richter — Ω-Φ4 Schwung/Hebel ist der Maßstab).
+    _bladedWeaponVariant(seed) {
+        const g = this._rollGenome(seed, "blade");
+        const types = (AnazhRealm.OAKESHOTT_TYPES && Object.keys(AnazhRealm.OAKESHOTT_TYPES)) || ["XII"];
+        return this._buildBladedWeapon(g.pick("typ", types));
+    }
+    _toolVariant(seed) {
+        const g = this._rollGenome(seed, "tool");
+        const parts = [];
+        const handleLen = g.range("handle", 0.95, 1.6); // Stiel-Länge (der Hebelarm)
+        const headMass = g.range("headMass", 0.78, 1.4); // Kopf-Masse (das Drehmoment)
+        const keilWinkel = g.range("keil", 0.62, 1.05); // Keil-Winkel: schmal/scharf ↔ breit
+        // Stiel (holz) — der Hebel.
+        parts.push({
+            shape: "cylinder",
+            material: "holz",
+            color: 0x6e4a28,
+            position: { x: 0, y: handleLen / 2, z: 0 },
+            size: { x: 0.12, y: handleLen, z: 0.12 },
+            segments: 6,
+        });
+        // Der KOPF ist immer ein SPITZER eisen-Pickel (eine Spitzhacke IST spitz — die Form
+        // treibt die Gerät-Rolle, U4: spitz+gestreckt → Klinge/Werkzeug, NICHT Bauwerk). Das
+        // Genom variiert den HEBEL: Stiel-Länge (oben), Kopf-Masse (Kegel-Länge), Keil-Winkel
+        // (Kegel-Breite, scharfer Pickel ↔ breite Haue). Der Schwung/Hebel (Ω-Φ4) folgt aus
+        // den Massen + dem Arm, gerechnet nie gesetzt.
+        parts.push({
+            shape: "cone",
+            material: "eisen",
+            color: 0xb9bfc6,
+            position: { x: 0, y: handleLen + 0.05, z: 0 },
+            size: { x: 0.3 * headMass * keilWinkel, y: 0.95 * headMass, z: 0.3 * headMass * keilWinkel },
+            rotation: { x: 0, y: 0, z: Math.PI / 2 },
+        });
+        return parts;
+    }
+
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
@@ -48970,22 +49061,10 @@ class AnazhRealm {
         // GERÄT — eine Spitzhacke (Werkzeug UND Waffe, W2-B). Holz-Stiel + eiserne
         // Spitze; eisen ist hart+dicht → kräftiges Abbauen/Schneiden. Rollenlos:
         // gehalten, die Fähigkeit emergiert aus Form × Material.
-        const geraetSpitzhackeParts = [
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: 0, y: 0.6, z: 0 },
-                size: { x: 0.12, y: 1.2, z: 0.12 },
-                segments: 6,
-            },
-            {
-                shape: "cone",
-                material: "eisen",
-                position: { x: 0, y: 1.25, z: 0 },
-                size: { x: 0.3, y: 0.95, z: 0.3 },
-                rotation: { x: 0, y: 0, z: Math.PI / 2 },
-            },
-        ];
+        // wahrerwuchs §4.6 S6 — das WERKZEUG aus dem Genom: Stiel-Länge · Kopf-Masse ·
+        // Kopf-Form (Pickel/Axt/Schlägel) → der Hebel (Ω-Φ4) + das mine/cut-Profil emergieren.
+        const _toolSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const geraetSpitzhackeParts = this._toolVariant(`${_toolSeed}-tool`);
         // V17.86 — DAS SCHWERT (Schöpfer-Wunsch „ein Schwert wäre als Samen/Hilfestellung gut").
         // Ω-B2 (wahrerbauplan §6/§3.5): NICHT mehr „Box/Kegel mit pointedFraction", sondern ein
         // OAKESHOTT-Typ XII (Schnitt+Stich) — Knauf · Griff · Parier · distal-verjüngte Klinge mit
@@ -48993,7 +49072,9 @@ class AnazhRealm {
         // EMERGIERT (gestreckt + spitz → `_isGraspableBladeForm` → Waffe/Gerät, U4; Oktaeder-Knauf +
         // bladeProfile-Klinge halten pointedFraction 0.5 → KLINGE, nicht Brecher). Die BALANCE
         // (Ω-Φ4) FOLGT aus den Massen (Knauf vs. Klinge), nicht aus einer Setzung.
-        const geraetSchwertParts = this._buildBladedWeapon("XII");
+        // wahrerwuchs §4.6 S6 — das SCHWERT aus dem Genom: ein OAKESHOTT-Typ aus dem Roller
+        // (die Balance Ω-Φ4 folgt aus den Massen, gerechnet nie gesetzt).
+        const geraetSchwertParts = this._bladedWeaponVariant(`${_toolSeed}-blade`);
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
@@ -49475,7 +49556,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: esseParts,
+                parts: this._stationVariant(esseParts, felsWorldSeed + "-esse"),
             },
             // V17.77 — die craftbare MEISTER-Esse (Eisen): eine bessere Werkstatt → höherer Präzisions-Cap.
             // Die „bessere Esse", die der Schöpfer suchte; sie lehrt das Prinzip (besseres Material → feiner).
@@ -49485,7 +49566,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: esseMeisterParts,
+                parts: this._stationVariant(esseMeisterParts, felsWorldSeed + "-essemeister"),
             },
             brennkolben: {
                 name: "brennkolben",
@@ -49493,7 +49574,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: brennkolbenParts,
+                parts: this._stationVariant(brennkolbenParts, felsWorldSeed + "-brennkolben"),
             },
             webstuhl: {
                 name: "webstuhl",
@@ -49501,7 +49582,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: webstuhlParts,
+                parts: this._stationVariant(webstuhlParts, felsWorldSeed + "-webstuhl"),
             },
             seelenstein_altar: {
                 name: "seelenstein_altar",
@@ -49509,7 +49590,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: seelenstein_altarParts,
+                parts: this._stationVariant(seelenstein_altarParts, felsWorldSeed + "-altar"),
             },
             drehbank: {
                 name: "drehbank",
@@ -49517,7 +49598,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "workshop-station",
                 roleManual: true,
-                parts: drehbankParts,
+                parts: this._stationVariant(drehbankParts, felsWorldSeed + "-drehbank"),
             },
             // W12 Phase 1 — Welt-Portal. Rolle "portal" — emergiert aus
             // einem magie-leitenden Ring (siehe _isPortalShaped); hier als
@@ -49530,7 +49611,7 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("skeleton"),
-                parts: weltPortalParts,
+                parts: this._stationVariant(weltPortalParts, felsWorldSeed + "-portal1"),
             },
             // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
             // Sub-Welt: three-fluid-fx (fremde Engine) auf modernem Three.js,
@@ -49544,7 +49625,7 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("fluid"),
-                parts: weltStromParts,
+                parts: this._stationVariant(weltStromParts, felsWorldSeed + "-portal2"),
             },
             // W12 Phase 2 — Terrain-Welt-Portal: die zweite fremde Welt.
             // three.terrain.js (klassisches Global-Skript) — eine 3D-Land-
@@ -49557,7 +49638,7 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("terrain"),
-                parts: weltTerrainParts,
+                parts: this._stationVariant(weltTerrainParts, felsWorldSeed + "-portal3"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
             // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
@@ -49582,7 +49663,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "armor",
                 roleManual: true,
-                parts: ruestungBrustpanzerParts,
+                parts: this._stationVariant(ruestungBrustpanzerParts, felsWorldSeed + "-armor"),
             },
             trank_lebenssaft: {
                 name: "trank_lebenssaft",
@@ -49590,7 +49671,7 @@ class AnazhRealm {
                 builtIn: true,
                 role: "consumable",
                 roleManual: true,
-                parts: trankLebenssaftParts,
+                parts: this._stationVariant(trankLebenssaftParts, felsWorldSeed + "-trank"),
             },
             avatar_waechter: {
                 name: "avatar_waechter",
@@ -69548,7 +69629,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.253.0";
+AnazhRealm.VERSION = "18.254.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
