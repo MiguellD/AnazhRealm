@@ -45040,6 +45040,47 @@ class AnazhRealm {
             return (v + 1) * 0.5;
         };
         const lerp = (a, b, t) => a + (b - a) * t;
+        // ─── DAS GENOM (wahrerwuchs §4.1 — die drei fehlenden Achsen) ───
+        // Über den GETEILTEN Roller (deterministisch, UNSIGNED, eigener Stream je Achse,
+        // orthogonal zur prozeduralen r01()-Wander-Sequenz). Drei kritisch gewählte Achsen
+        // tragen die volle Palette (Moos → Mammutbaum, jung → uralt) ohne neue Rezepte:
+        //   sizeClass — Strauch · Baum · GROSS · GIGANT (Sequoia-Allometrie 30-80 m)
+        //   age       — jung(dünn, sparse) ↔ alt(dick, voll, knorrig) — EINE Achse, sie
+        //               ersetzt die 12 statischen _jung/_alt-Blobs (wahrerwuchs §4.1)
+        //   foliageVar— Sommer-Grün ↔ Herbst (gold/rot/braun) — tag-neutral (bleibt laub)
+        // Die Achsen sind ORTHOGONAL: ein junger Gigant, eine alte Strauch-Eiche. Für die
+        // Größenklasse „normal" ist die Höhe EXAKT die alte Spezies-Spanne → bit-identisch.
+        const genome = this._rollGenome(sKey, "tree-genome");
+        // Die Größenklasse gilt nur den BÄUMEN (baum_*). Sträucher/Farne/Blumen tragen
+        // ihre eigene kleine Grammatik-Höhe (sie SIND die Strauch-Lebensform) → kein
+        // 77-m-Riesen-Blume-Unsinn; nur das Alter variiert sie (jung/alt). wahrerwuchs §4.6.
+        const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
+        const sizeRoll = genome.axis("sizeClass");
+        let sizeClass, hLo, hHi;
+        if (!isTreeSpecies) {
+            sizeClass = "normal";
+            hLo = grammar.height[0];
+            hHi = grammar.height[1];
+        } else if (sizeRoll < 0.14) {
+            sizeClass = "strauch";
+            hLo = 1.5;
+            hHi = 4.0;
+        } else if (sizeRoll < 0.82) {
+            sizeClass = "normal";
+            hLo = grammar.height[0];
+            hHi = grammar.height[1];
+        } else if (sizeRoll < 0.96) {
+            sizeClass = "gross";
+            hLo = grammar.height[1] * 1.3;
+            hHi = grammar.height[1] * 1.95;
+        } else {
+            // GIGANT (Sequoia 30-80 m) ~4 % — selten, aber bei 16 Varianten/Art
+            // zuverlässig da (~4 Mammut-Haine/Welt; ein Wunder, das man findet).
+            sizeClass = "gigant";
+            hLo = 30;
+            hHi = 80;
+        }
+        const ageMul = genome.axis("age"); // 0 = jung (dünn/sparse) .. 1 = uralt (dick/knorrig/voll)
         const parts = [];
         // V18.214 — Skeleton-Container: ein flacher Branch-Pool (jeder Branch
         // mit seinen Polylinie-Punkten + Level + isTrunk-Flag), die foliage-
@@ -45059,9 +45100,23 @@ class AnazhRealm {
         };
 
         // ─── STAMM (TRUNK) ────────────────────────────────────────────
-        // Multi-segment polyline mit wander + taper.
-        const totalH = lerp(grammar.height[0], grammar.height[1], r01());
+        // Multi-segment polyline mit wander + taper. Die Höhe aus der Größenklasse —
+        // für „normal" ist das EXAKT die alte Spezies-Spanne (bit-identische Welt für
+        // die 70 % normalen Bäume); Strauch/Gross/Gigant weiten den Bereich auf 1.5-80 m.
+        const totalH = lerp(hLo, hHi, r01());
         skeleton.totalH = totalH;
+        // Allometrie (Ω-B5, Quadrat-Kubik): ein größerer Baum braucht überproportional
+        // dicke Glieder, sonst knickt er (Ω-Φ3-b fängt den zu-dünnen Riesen). sizeFactor =
+        // Höhe relativ zur Spezies-Normalhöhe; bei „normal" ≈ 1 (kein Bruch). Exponent 1.15
+        // → der Mammutbaum trägt sich selbst (der Richter garantiert es, die Referenz hält
+        // die Proportion). segLenBase skaliert mit, damit die Part-Zahl bezahlbar bleibt.
+        const refH = (grammar.height[0] + grammar.height[1]) * 0.5;
+        const sizeFactor = totalH / Math.max(0.5, refH);
+        const allometry = Math.pow(sizeFactor, 1.15);
+        const segLenBase = 0.55 * Math.max(1, Math.pow(sizeFactor, 0.6));
+        // GERÜST-Dicke + Laub-Größe ans Alter koppeln (die age-Achse, wahrerwuchs §4.1):
+        // jung = dünn/klein, uralt = dick/knorrig/voll. tag-neutral (nur Größe/Form).
+        const foliageScale = Math.max(0.55, Math.pow(sizeFactor, 0.62)) * (0.78 + ageMul * 0.5);
         // V18.214 — flare am Stamm-Fuß (Plan §3.3): pro Spezies kalibriert.
         // Werte aus SPECIES_TREE_PARAMS (Plan §3.7), Default bei unbekannter
         // Spezies. Eine Spezies ohne Eintrag erhält DEFAULT_TREE_FLARE
@@ -45075,9 +45130,11 @@ class AnazhRealm {
         // V18.247 (LAAS-Tiefe) — substanziellerer Stamm: ein dickerer Stamm + Haupt-
         // Limbs lesen als sichtbares Ast-GERÜST (wie LAAS), statt unter dem Laub zu
         // verschwinden. Der radRatio trägt die Dicke in die Äste weiter.
-        const trunkBaseR = grammar.trunk.baseR * 1.32 * lerp(0.92, 1.1, r01());
+        const trunkBaseR = grammar.trunk.baseR * 1.32 * lerp(0.92, 1.1, r01()) * allometry * (0.85 + ageMul * 0.35);
         const trunkTaper = grammar.trunk.taper;
-        const trunkWander = grammar.trunk.wander;
+        // Alter: ein uralter Baum windet sich stärker (knorrig); modest gehalten, damit
+        // der Schwerpunkt über dem Stützpolygon bleibt (Ω-Φ2, GEMESSEN in diag-genom).
+        const trunkWander = grammar.trunk.wander * (0.8 + ageMul * 0.6);
         const segH = totalH / trunkSegs;
         // Build trunk points (polyline).
         const trunkPts = [{ x: 0, y: 0, z: 0, r: trunkBaseR }];
@@ -45088,7 +45145,10 @@ class AnazhRealm {
             cx += (r01() - 0.5) * trunkWander * segH;
             cz += (r01() - 0.5) * trunkWander * segH;
             const y = i * segH;
-            const r = Math.max(0.06, trunkBaseR * Math.pow(Math.max(0, 1 - t), trunkTaper));
+            // Trunk-Top-Floor ∝ Segment-Höhe (wahrerwuchs §4.1 — der Euler-Knick-Constraint
+            // STRUKTURELL: ein langes vertikales Glied muss dicker sein, sonst knickt es im
+            // Richter, Ω-Φ3-b). Der verjüngte Wipfel bleibt damit knick-sicher (GEMESSEN).
+            const r = Math.max(segH * 0.06, trunkBaseR * Math.pow(Math.max(0, 1 - t), trunkTaper));
             trunkPts.push({ x: cx, y: y, z: cz, r: r });
         }
         // V18.214 — Stamm-Polylinie als Skeleton-Branch (level 0, isTrunk).
@@ -45223,8 +45283,10 @@ class AnazhRealm {
             const droop = levelGrammar.droop || 0.2;
             const tipCurl = levelGrammar.tipCurl || 0.1;
             const radRatio = levelGrammar.radRatio || 0.4;
-            // Segment-Anzahl: ~0.55 m pro Segment (so dass eine 2m-Ast 4 Segmente hat).
-            const branchSegs = Math.max(3, Math.round(branchLen / 0.55));
+            // Segment-Länge skaliert mit der Größe (wahrerwuchs §4.1 lock #2): ein normaler
+            // Baum ~0.55 m/Segment (2m-Ast = 4 Segmente), ein Gigant baut LANGE Segmente
+            // (kein Tausend-Mikro-Zylinder-Ast) → die Part-Zahl bleibt unterm Cap bezahlbar.
+            const branchSegs = Math.max(3, Math.round(branchLen / segLenBase));
             const segLen = branchLen / branchSegs;
             // Initial direction: tilted by `angle` from up, rotated around y by phi.
             const sinA = Math.sin(angle);
@@ -45254,7 +45316,12 @@ class AnazhRealm {
                 dir.y /= dl;
                 dir.z /= dl;
                 const prev = points[i - 1];
-                const r = Math.max(0.03, baseR * Math.pow(Math.max(0, 1 - t), 1.0));
+                // Radius-Floor ∝ Segment-Länge (wahrerwuchs §4.1 — der Euler-Knick-Constraint
+                // STRUKTURELL: ein langes Glied MUSS dicker sein, sonst knickt es). Hält die
+                // Schlankheit JEDER Spitze size-invariant ~7 < crit (holz 10.1, GEMESSEN) —
+                // die Allometrie greift bis in die Zweige, der Gigant-Ast ist nicht haar-dünn.
+                const rFloor = Math.max(0.022, segLen * 0.072);
+                const r = Math.max(rFloor, baseR * Math.pow(Math.max(0, 1 - t), 1.0));
                 points.push({
                     x: prev.x + dir.x * segLen,
                     y: prev.y + dir.y * segLen,
@@ -45298,7 +45365,11 @@ class AnazhRealm {
         //   lod 2 = keine Äste (nur Stamm — die Krone trägt 1 Foliage-Karte)
         // Plan §3.6 sagt: „LOD2-Cards single, LOD1-Cards 4". Der Foliage-Block
         // unten cappt zusätzlich `MAX_FOLIAGE_PARTS` per LOD.
-        const MAX_BRANCH_PARTS = lodLevel === 0 ? 40 : lodLevel === 1 ? 14 : 0;
+        // Dynamischer Cap pro Größenklasse (wahrerwuchs §4.1 lock #3): der Gigant darf
+        // mehr Glieder tragen (die segLen-Skalierung hält die Zahl pro Ast niedrig; der
+        // Skeleton-Render merged sie zu EINER Tube → kein Draw-Call-Sprung).
+        const sizeCapBoost = sizeClass === "gigant" ? 1.5 : sizeClass === "gross" ? 1.2 : 1;
+        const MAX_BRANCH_PARTS = Math.round((lodLevel === 0 ? 40 : lodLevel === 1 ? 14 : 0) * sizeCapBoost);
         const foliageAnchors = [];
         if (lodLevel < 2) {
             // Mind. L1 erlaubt (LOD 0 und 1). TIEFENZUERST (L1[0] + seine L2/L3, dann L1[1]…)
@@ -45366,7 +45437,13 @@ class AnazhRealm {
 
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
         const fo = grammar.foliage;
-        const baseColor = fo.color;
+        // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
+        // ein Teil der LAUB-Bäume (nicht Nadel) färbt herbstlich (gold/orange/rot/braun)
+        // → ein gemischter Wald statt monochrom-grün. Deterministisch je Baum.
+        let baseColor = fo.color;
+        if (fo.kind === "leafCluster" && genome.chance("autumn", 0.24)) {
+            baseColor = genome.pick("autumnTint", [0xc89a3a, 0xbf7a2a, 0xa84e22, 0x9a7a30, 0xb5532a]);
+        }
         // V18.235 (§5 Ω-O9 — DIE GRÜN-WURZEL): die Variation MUSS PER-KANAL sein.
         // Das alte `baseColor + Math.floor(r01()*0x0c0c0c)` war eine NUMERISCHE
         // Addition — die mittleren/unteren Bytes des Jitters sind NICHT auf 0x0c
@@ -45388,7 +45465,7 @@ class AnazhRealm {
         // Cluster (vs vorher 8 Kugeln) ist ein dramatischer Sprung in
         // Krone-Dichte, im Instancing-Budget bezahlbar.
         // V18.218 — Foliage-Cap per LOD (Plan §3.6 „LOD1-Cards 4, LOD2-Card 1").
-        const MAX_FOLIAGE_PARTS = lodLevel === 0 ? 35 : lodLevel === 1 ? 4 : 1;
+        const MAX_FOLIAGE_PARTS = Math.round((lodLevel === 0 ? 35 : lodLevel === 1 ? 4 : 1) * sizeCapBoost);
         const targetClusterCount = Math.min(MAX_FOLIAGE_PARTS, foliageAnchors.length * Math.max(1, fo.clusterSize[0]));
         const anchorStep = Math.max(
             1,
@@ -45400,10 +45477,10 @@ class AnazhRealm {
             const cs = fo.clusterSize;
             const clusterCount = cs[0] + Math.floor(r01() * Math.max(1, cs[1] - cs[0] + 1));
             for (let c = 0; c < clusterCount && foliageEmitted < MAX_FOLIAGE_PARTS; c++) {
-                const ox = (r01() - 0.5) * 0.55;
-                const oy = (r01() - 0.5) * 0.35;
-                const oz = (r01() - 0.5) * 0.55;
-                const lR = fo.size * lerp(0.75, 1.1, r01());
+                const ox = (r01() - 0.5) * 0.55 * foliageScale;
+                const oy = (r01() - 0.5) * 0.35 * foliageScale;
+                const oz = (r01() - 0.5) * 0.55 * foliageScale;
+                const lR = fo.size * lerp(0.75, 1.1, r01()) * foliageScale;
                 if (fo.kind === "needleSpray") {
                     // Card{cross} — zwei senkrecht stehende Quads (§3.4).
                     // Wir nutzen unsere bestehende sphere-Form mit y-Stretch =
@@ -45437,6 +45514,10 @@ class AnazhRealm {
         // Anchor mit normalBend zur Krone-Sphere).
         skeleton.anchors = foliageAnchors.map((a) => ({ x: a.x, y: a.y, z: a.z }));
         skeleton.foliageColor = laubColor;
+        // wahrerwuchs §4.1 — die Krone-Karten skalieren mit Größe + Alter (ein Mammut-
+        // baum trägt große Büschel, ein junger Strauch kleine). Der Card-Builder liest es.
+        skeleton.foliageScale = foliageScale;
+        skeleton.sizeClass = sizeClass;
         // Side-Channel: der Aufrufer (`_growTreeBlueprintForSpawn`,
         // `_loadStateRestoreGrownBlueprints`) liest das direkt nach dem Aufruf.
         this._lastTreeSkeleton = skeleton;
@@ -46300,29 +46381,72 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ Ω-GENESIS — DER GETEILTE GENOM-ROLLER (wahrerwuchs §3) ═══════════════
+    // EINE Quelle für das deterministische Achsen-Würfeln. Jeder _<genre>Variant
+    // rollt seine formbaren Achsen (das Genom) über DIESEN Roller — deklarativ,
+    // auditierbar, UNSIGNED. Das `h >>> n` lebt NUR hier (der V18.250-Vorzeichen-
+    // Bug, der den Welt-Tempel still auf Default zwang, ist strukturell unmöglich).
+    // Jede benannte Achse ist ein EIGENER FNV-Stream (namespace|seed|name) → eine
+    // Achse hinzuzufügen re-rollt NIE eine andere (das Stream-Gesetz Γ5, auf die
+    // Genom-Achsen angewandt). `.seq(name)` gibt einen sequentiellen Sub-Strom
+    // (xorshift32) für prozedurale Wuchs-Schleifen (Stamm-Wander, Ast-Jitter).
+    // Determinismus: zwei Roller desselben (seed, namespace) → bit-identisch.
+    _rollGenome(seed, namespace) {
+        const base = (namespace == null ? "g" : String(namespace)) + "|" + (seed == null ? "anazh" : String(seed));
+        const hashStr = (str) => {
+            let h = 2166136261;
+            for (let i = 0; i < str.length; i++) {
+                h ^= str.charCodeAt(i);
+                h = Math.imul(h, 16777619);
+            }
+            return h >>> 0; // UNSIGNED — die EINE Vorzeichen-Wand
+        };
+        const axis = (name) => hashStr(base + "|" + String(name)) / 4294967296; // [0,1)
+        return {
+            seed: seed,
+            namespace: namespace,
+            axis: axis,
+            // lo + axis·(hi−lo) → kontinuierlich [lo, hi)
+            range: (name, lo, hi) => lo + axis(name) * (hi - lo),
+            // ganzzahlig, INKLUSIV [lo..hi]
+            int: (name, lo, hi) => lo + Math.floor(axis(name) * (hi - lo + 1)),
+            // ein Element der Liste (UNSIGNED → kein neg.-Index-Leak)
+            pick: (name, list) =>
+                list && list.length ? list[Math.floor(axis(name) * list.length) % list.length] : undefined,
+            chance: (name, p) => axis(name) < p,
+            // sequentieller Sub-Strom für Wuchs-Schleifen: deterministisch, eigener
+            // Strom je name (unabhängig von den Achsen UND voneinander). xorshift32.
+            seq: (name) => {
+                let h = hashStr(base + "#" + String(name)) || 1;
+                return () => {
+                    h ^= h << 13;
+                    h >>>= 0;
+                    h ^= h >> 17;
+                    h ^= h << 5;
+                    h >>>= 0;
+                    return h / 4294967296;
+                };
+            },
+        };
+    }
+
     // Ω-B4 (wahrerbauplan §6) — DIE REGEL IST GENERATIV, kein Einzel-Beispiel: ein
     // deterministischer Seed → eine VARIANTE (Ordnung · Säulen-Zahl · Tiefe · Durchmesser).
-    // 2 Ordnungen × 2 Fronten × 4 Tiefen × 4 Durchmesser = 64 verschiedene Tempel, ALLE
-    // physik-garant (die Ordnung liefert solide Proportionen, §6). Jede Welt würfelt aus
-    // ihrem Seed ihren eigenen Tempel — die Grammatik erzeugt verschiedene Tempel, nicht
-    // EINE Attrappe. Hexastyle+ (≥6 Front), damit jede Variante reich bleibt.
+    // 2 Ordnungen × 4 Fronten × 4 Tiefen × 8 Durchmesser × 4 Paletten = 1024 verschiedene
+    // Tempel, ALLE physik-garant (die Ordnung liefert solide Proportionen, §6). Jede Welt
+    // würfelt aus ihrem Seed ihren eigenen Tempel über den GETEILTEN Roller (wahrerwuchs §3
+    // S0 — kein inlined Bit-Slicing mehr, kein Vorzeichen-Leak). Hexastyle+ reich.
     _classicalTempleVariant(seed) {
-        let h = 2166136261;
-        const s = "temple:" + (seed == null ? "anazh" : String(seed));
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619);
-        }
-        h = h >>> 0;
-        const order = h & 1 ? "ionisch" : "dorisch";
+        const g = this._rollGenome(seed, "temple");
+        const order = g.pick("order", ["dorisch", "ionisch"]);
         // V18.250 (Schöpfer „gigantisch, unterschiedlichster formen und grössen") — WEITE
-        // Größen-Spanne: intim-tetrastyle (4 Säulen, schmal) bis GIGANTISCH (12 Säulen, dick).
+        // Größen-Spanne: intim-tetrastyle (4 Säulen, schmal) bis GIGANTISCH (10 Säulen, dick).
         // Die Schlankheit (1:7/1:9) ist FIX → ein größerer Durchmesser macht den Tempel
         // proportional höher + breiter (physik-garant: der Lastpfad/Knick-Test fängt den
         // Ausreißer; die Ordnung hält die Proportion solide).
-        const columnsFront = 4 + 2 * ((h >> 1) & 3); // 4 · 6 · 8 · 10 Säulen-Front
-        const columnsSide = columnsFront + 3 + 2 * ((h >> 3) & 3); // Tiefe variiert
-        const columnDiameter = 0.7 + ((h >> 5) & 7) * 0.1; // 0.7..1.4 (intim → gigantisch)
+        const columnsFront = 4 + 2 * g.int("columnsFront", 0, 3); // 4 · 6 · 8 · 10 Säulen-Front
+        const columnsSide = columnsFront + 3 + 2 * g.int("columnsSide", 0, 3); // Tiefe variiert
+        const columnDiameter = 0.7 + g.int("columnDiameter", 0, 7) * 0.1; // 0.7..1.4 (intim → gigantisch)
         // STEIN-PALETTE aus dem Seed: Marmor · Sandstein · Granit · dunkler Basalt
         const palettes = [
             { marble: 0xe6e0d2, cap: 0xeae3d4, step: 0xd8d2c0, wall: 0xcfc8b4, frieze: 0xdcd5c2, trig: 0xcfc7b2 }, // Marmor (weiss)
@@ -46330,7 +46454,7 @@ class AnazhRealm {
             { marble: 0x8e8c88, cap: 0x9a9894, step: 0x807e7a, wall: 0x787672, frieze: 0x908e8a, trig: 0x82807c }, // Granit (grau)
             { marble: 0x46443e, cap: 0x55534c, step: 0x3c3a34, wall: 0x34322c, frieze: 0x4a4842, trig: 0x3e3c36 }, // Basalt (dunkel)
         ];
-        const palette = palettes[(h >>> 9) % palettes.length]; // UNSIGNED shift (sonst neg. Index → undefined)
+        const palette = g.pick("palette", palettes);
         return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter, palette });
     }
 
@@ -46345,13 +46469,9 @@ class AnazhRealm {
     // auf den Wänden (Lastpfad Ω-Φ5). LOKAL gebaut (Tür auf +Z), via yaw=atan2(ix,iz) zum
     // Dorf-Zentrum gedreht (die Tür schaut auf den Platz). Deterministisch über Peers.
     _villageHutVariant(seed, index, place) {
-        let h = 2166136261;
-        const s = "hut:" + (seed == null ? "anazh" : String(seed)) + ":" + (index | 0);
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619);
-        }
-        h = h >>> 0;
+        // wahrerwuchs §3 S0 — über den GETEILTEN Roller (kein inlined Bit-Slicing,
+        // kein Vorzeichen-Leak); jede Hütte ein eigener (seed:index)-Namensraum.
+        const g = this._rollGenome(String(seed == null ? "anazh" : seed) + ":" + (index | 0), "hut");
         const { hx, hz, ix, iz } = place;
         const parts = [];
         const yaw = Math.atan2(ix, iz); // lokal +Z (Tür) → Welt (ix,iz) = zum Zentrum
@@ -46370,12 +46490,12 @@ class AnazhRealm {
         // V18.250 (Schöpfer „grosse, kleine") — WEITE Größen-Spanne: Kate (0.78×) bis
         // Langhaus/Gehöft (1.73×); physik-garant (ein breiter Kasten steht immer) + 8 Holz-/
         // Lehm-Töne (war 5) → ein Dorf mit echtem Größen- + Farb-Reichtum statt Klonen.
-        const sv = 0.78 + ((h & 7) / 7) * 0.95; // 0.78..1.73 (Kate → Langhaus)
-        const tall = ((h >> 3) & 1) === 1; // zweites Geschoss
-        const winSide = ((h >> 4) & 1) === 1 ? 1 : 2; // Fenster je Seitenwand
-        const chimney = ((h >> 5) & 1) === 1;
+        const sv = 0.78 + g.axis("size") * 0.95; // 0.78..1.73 (Kate → Langhaus)
+        const tall = g.chance("tall", 0.5); // zweites Geschoss
+        const winSide = g.chance("winOne", 0.5) ? 1 : 2; // Fenster je Seitenwand
+        const chimney = g.chance("chimney", 0.5);
         const tints = [0x7a4a28, 0x8a5a30, 0x6e4220, 0x946a40, 0x63421f, 0x9a7048, 0x5a3a1c, 0x84512a];
-        const wallColor = tints[h % tints.length];
+        const wallColor = g.pick("tint", tints);
         const trimColor = 0x4a2c14;
         const roofColor = 0x8b2a1e;
         const stoneColor = 0x6a6258;
@@ -46425,7 +46545,7 @@ class AnazhRealm {
         }
         // (6) WALM-DACH (Pyramide, sauber) — Basis ≈ √2·(Spannweite+Überstand), 45° gedreht
         // → die Dach-FLÄCHEN (nicht die Diamant-Ecken) decken die Wände + ein Traufen-Überstand.
-        const roofH = (1.25 + ((h >> 6) & 1) * 0.55) * sv;
+        const roofH = (1.25 + (g.chance("roofTall", 0.5) ? 0.55 : 0)) * sv;
         const roofBase = 1.42 * (Math.max(W, D) + 1.2);
         box(trimColor, 0, wallTop + 0.04, 0, W + 0.7, 0.16, D + 0.7); // Traufe-Kranz
         parts.push({
@@ -52297,8 +52417,12 @@ class AnazhRealm {
         // Büschel an einem ~10 m-Baum, nicht ein 3.4 m-Mega-Blatt). Mehr Karten/Anker
         // (FOLIAGE_DENSITY) halten die Krone trotzdem voll.
         // Nadel-Sprays drapen größer als ein Laub-Büschel → die Konifere bleibt voll.
-        const cardW = baseSize * (isNeedle ? 2.4 : 2.1);
-        const cardH = baseSize * (isNeedle ? 3.4 : 1.85);
+        // wahrerwuchs §4.1 — die Büschel-Karten skalieren mit der Baum-Größe/Alter
+        // (skeleton.foliageScale): ein Mammutbaum trägt proportional große Büschel,
+        // ein junger Strauch kleine. Default 1 (für Alt-Skelette ohne das Feld).
+        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
+        const cardW = baseSize * (isNeedle ? 2.4 : 2.1) * fScale;
+        const cardH = baseSize * (isNeedle ? 3.4 : 1.85) * fScale;
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -55168,41 +55292,16 @@ class AnazhRealm {
                 // modernen Welt; der switch unten ist damit strikt gen < 4.
                 return 0;
             }
-            // V18.181-merge-Λ Sub 3e (Plan §10 — Mischwald-TREE_VARIANTS):
-            // Eiche/Kiefer tragen tesla's W-H-Varianten (breit/jung/schlank,
-            // V18.178/.179); die 4 neuen Baumarten bekommen die clever-gauss-
-            // Demographie 30/50/20 (jung/normal/alt, baum_X_jung·1 +
-            // baum_X·2 + baum_X·2 + baum_X_alt·1, drei Gestalten dann je
-            // Art über die 5er-Liste mit 30/40/20-Prozentual). Welle 4
-            // (V18.182-Painterly-Mischwald, PFLICHT) gleicht die Krone-
-            // Tiefe an die V18.179-Painterly-Form an.
-            let variants;
-            switch (bestName) {
-                case "baum_eiche":
-                    variants = ["baum_eiche", "baum_eiche_breit", "baum_eiche_breit", "baum_eiche_jung"];
-                    break;
-                case "baum_kiefer":
-                    variants = ["baum_kiefer", "baum_kiefer_schlank", "baum_kiefer_schlank"];
-                    break;
-                case "baum_birke":
-                    variants = ["baum_birke_jung", "baum_birke", "baum_birke", "baum_birke", "baum_birke_alt"];
-                    break;
-                case "baum_erle":
-                    variants = ["baum_erle_jung", "baum_erle", "baum_erle", "baum_erle", "baum_erle_alt"];
-                    break;
-                case "baum_buche":
-                    variants = ["baum_buche_jung", "baum_buche", "baum_buche", "baum_buche", "baum_buche_alt"];
-                    break;
-                case "baum_tanne":
-                    variants = ["baum_tanne_jung", "baum_tanne", "baum_tanne", "baum_tanne", "baum_tanne_alt"];
-                    break;
-                default:
-                    variants = [bestName];
-            }
-            // eigene Seed-Bits (Suffix-Regel, Γ5) — re-rollt keinen anderen Stream.
-            spawnName = variants[(seedForSpawn >>> 7) % variants.length];
+            // wahrerwuchs §5 S2 — DER LEGACY-SCHNITT: die statischen _jung/_alt/_breit-
+            // Kugel-Bäume („die Bäume von früher, schlecht aussehen") sind durch die
+            // Grammatik-Achsen (Größenklasse + Alter, S1) ERSETZT — verifiziert in
+            // diag-genom (jung↔alt↔gross↔gigant emergieren über EINE Quelle). Alte Welten
+            // (gen<4) spawnen jetzt die BASIS-Art statt der Blob-Variante; modern (gen≥4)
+            // ist dieser Pfad eh unerreichbar (der Grammatik-Block oben kehrt vorher
+            // zurück). Kein statischer Blob mehr in der gewachsenen Welt.
+            spawnName = bestName;
             const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2; // [0,1]
-            spawnScale = 0.7 + sz * 0.66; // ~0.7..1.36 (±~40 %, der volle Plan-Wert)
+            spawnScale = 0.7 + sz * 0.66; // ~0.7..1.36 (±~40 %)
         }
         // Yaw aus eigenen Seed-Bits — Bäume UND Felsen (alle ~radial-symmetrisch
         // im Footprint → der Quadrat-AABB der Kollision über-deckt; Gotcha).
@@ -69157,7 +69256,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.250.0";
+AnazhRealm.VERSION = "18.251.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

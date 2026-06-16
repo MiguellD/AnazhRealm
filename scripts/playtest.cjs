@@ -32173,13 +32173,14 @@ async function checkBandWHWald(ctx) {
         out.eicheJungNeutral = tagsEq("baum_eiche", "baum_eiche_jung");
         out.kieferNeutral = tagsEq("baum_kiefer", "baum_kiefer_schlank");
         // (3) die Varianten sind NICHT im Affinitäts-Wettstreit (candidates) —
-        // der Spawn wählt sie NACH dem Sieg, mit dem kanonischen bestName.
-        // V18.181-merge-Λ Sub 3e (V9.56-i): die Probe wandert auf den Mischwald-
-        // Synthese-Form: candidates kann ein multi-line Array sein (10 statt 5
-        // Bäume). Wichtig ist STRUKTURELL: KEINE Varianten (_breit/_jung/_alt/
-        // _schlank) im candidates-Pool — die emergieren NACH dem Affinitäts-
-        // Sieg über das switch-case (W-H sicherer Pfad). Die Wand bleibt
-        // strukturell heil; nur ihr Suchmuster aktualisiert sich.
+        // der Spawn wählt die Gestalt NACH dem Sieg, mit dem kanonischen bestName.
+        // wahrerwuchs §5 S2 (V9.56-i — die Probe WANDERT mit dem Code): die alte
+        // `switch(bestName){…_jung/_alt/_breit…}`-Variantenwahl ist GESCHNITTEN.
+        // Die Gestalt-Vielfalt kommt jetzt aus der GRAMMATIK (grown, sizeClass/age-
+        // Genom über _growTreeBlueprintForSpawn) bzw. der kanonischen Basis (gen<4) —
+        // KEINE statische _jung/_alt-Variante mehr im Spawn. Das STRUKTURELLE Gesetz
+        // bleibt heil (Varianten nicht im candidates-Pool); nur ihr Beweis aktualisiert
+        // sich auf den neuen, einen Pfad.
         const src = r._vegetationSampleSpawn.toString();
         const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
         const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
@@ -32188,9 +32189,13 @@ async function checkBandWHWald(ctx) {
             /["']baum_kiefer["']/.test(candidatesBlock) &&
             !/baum_eiche_(breit|jung|alt)/.test(candidatesBlock) &&
             !/baum_kiefer_schlank/.test(candidatesBlock);
+        // der Sieger (bestName) wird NACH dem Affinitäts-Sieg durch die Grammatik
+        // gestaltet (gen≥4) bzw. als kanonische Basis gespawnt (gen<4) — und die
+        // Funktion trägt KEINE _jung/_alt/_breit-Variante mehr (der Legacy-Schnitt).
         out.variantPickAfterWin =
-            /spawnName = variants\[/.test(src) &&
-            (/bestName === ["']baum_eiche["']/.test(src) || /case ["']baum_eiche["']/.test(src));
+            /_growTreeBlueprintForSpawn\(bestName/.test(src) &&
+            /spawnName = bestName/.test(src) &&
+            !/baum_\w+_(jung|alt|breit|schlank)/.test(src);
         // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
         out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
         // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift).
@@ -36061,11 +36066,14 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         if (typeof r._growTreeBlueprintRich === "function" && A.SPECIES_GRAMMAR) {
             const grammar = A.SPECIES_GRAMMAR.baum_tanne;
             const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test", grammar);
+            // wahrerwuchs §4.1 (V9.56-i — die Probe WANDERT): der Flare skaliert jetzt
+            // mit der Größenklasse (ein Strauch trägt einen kleinen, ein Gigant einen
+            // riesigen Saum). Die alte absolute Schwelle `size.x > baseR*2` verfehlte den
+            // Strauch-Flare. Robust: der Flare ist eine FLACHE DISK (x ≫ y, Verhältnis
+            // ~5.5) am Sockel — größenklassen-unabhängig, trennt ihn von den runden
+            // Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
             const sockelParts = parts.filter(
-                (p) =>
-                    p.material === "laub" &&
-                    p.position.y < grammar.trunk.baseR * 2 &&
-                    p.size.x > grammar.trunk.baseR * 2
+                (p) => p.material === "laub" && p.position.y < grammar.trunk.baseR * 2 && p.size.x > p.size.y * 1.5
             );
             out.k2HasFlare = sockelParts.length >= 1;
             // Der Sockel-Part liegt am Stamm-Ursprung (xz-Position klein).

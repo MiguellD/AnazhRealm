@@ -368,18 +368,26 @@ GEMESSEN (der Legacy-GROW-Pfad ist schon dormant): `_growTreeBlueprintLegacy` (8
 ## §6 — DIE REIHENFOLGE (S-Punkte, je physik-garant + render + playtest)
 
 ```
-S0  DER GENOM-ROLLER  `_rollGenome` + die 4 bestehenden Generatoren darauf
-                      refaktorieren (kein Verhaltens-Sprung, nur EINE Quelle).
+S0  DER GENOM-ROLLER  ✅ GEBAUT — `_rollGenome(seed, namespace)` (UNSIGNED, eigener
+        Stream je Achse: axis/range/int/pick/chance/seq). Temple + Hut refaktoriert
+        darauf (das inlined Bit-Slicing + der Vorzeichen-Bug strukturell weg).
         ▼
-S1  BÄUME — DIE DREI FEHLENDEN ACHSEN (der Kern):
-      Größenklasse (Strauch/Baum/GIGANT) · Alter (jung/alt/knorrig) · Blatt-TYP
-      (Laub/Nadel/Palme/kahl, je ein Atlas-Bake). + die Allometrie (Ω-B5) echt.
-        ▼  [S-GATE: ein Mammutbaum (30-80 m) steht + knickt nicht; ein Strauch; ein
-           junger + ein uralter derselben Art — GEMESSEN verschieden]
-S2  LEGACY-SCHNITT — die 12 statischen Tree-Blobs raus (durch S1 ersetzt).
+S1  BÄUME — DIE DREI FEHLENDEN ACHSEN  ✅ GEBAUT (der Kern):
+      sizeClass (Strauch 1.5-4 · Baum · Gross · GIGANT 30-80 m, nur baum_*; Büsche
+        bleiben klein) · age (jung dünn/sparse ↔ alt dick/knorrig/voll) · foliageVar
+        (Sommer ↔ Herbst, tag-neutral). + Allometrie ECHT (trunkBaseR ∝ sizeFactor^1.15,
+        segLenBase + radius-floor ∝ Segment-Länge = der Euler-Knick-Constraint strukturell).
+        GEMESSEN diag-genom: Höhen 1.6-77 m über 4 Klassen, JEDER Gigant knickt nicht,
+        deterministisch, Tags frozen (Gigant == Normal), nur holz+laub.
+        ▼
+S2  LEGACY-SCHNITT  ✅ GEBAUT — der `switch(bestName){…_jung/_alt/_breit…}`-Scatter-
+        Pool ist raus (→ `spawnName = bestName`); kein statischer Blob spawnt mehr in
+        der gewachsenen Welt. (Die 12 statischen DEFINITIONEN bleiben als Tag/Affinität-
+        Test-Fixtures registriert — sie spawnen nie; ihre Entfernung ist all-or-nothing
+        gekoppelt an eslint-unused + 2 Test-Migrationen → getrackter Sediment-Cleanup.)
         ▼
 S3  FELS-GENOM (Form/Größe/Schichtung/Verwitterung) — der größte sichtbare Fern-Hebel.
-S4  KRISTALL · GLUT · BÜSCHE — Genome (Größe/Habitus/Farbe/Dichte).
+S4  KRISTALL · GLUT · BÜSCHE — Genome (Größe/Habitus/Farbe/Dichte; Büsche erben S1).
 S5  BAUWERKE verallgemeinert — Werkstätten · Bauten · Portale (Tempel-Muster:
       Palette + Größe + Detail, physik-garant).
 S6  GERÄT/RÜSTUNG/TRANK · FAHRZEUG — Genome (der Hebel/SSF physik-wahr).
@@ -387,9 +395,22 @@ S7  KREATUR-ALLOMETRIE (Ω-B5) — die Größenklasse-Achse am Körper, falls de
       Schöpfer es will (heute bewusst fix, V18.209).
 ```
 
-**Minimal-Wahrheit (der Kern):** S0 + S1 + S2 — der Genom-Roller, die drei fehlenden
-Baum-Achsen, der Legacy-Schnitt. Das allein heilt „mamutbäume + bäume von früher".
-S3–S7 ziehen die Tiefe über die GANZE Palette.
+**Minimal-Wahrheit (der Kern): S0 + S1 + S2 GEBAUT + GEMESSEN (`scripts/diag-genom.cjs`).**
+Das allein heilt „mamutbäume + bäume von früher". S3–S7 ziehen die Tiefe über die GANZE
+Palette (der AUGEN-Sign-off des LOOKs bleibt dem Schöpfer-Browser — Wand 1).
+
+**ZWEI GEMESSENE PHYSIK-LEHREN (S1, „miss zuerst"):** der Richter für einen BAUM ist
+NICHT derselbe wie für einen freistehenden Bau. (1) Ω-Φ2 KIPP-Stabilität (Schwerpunkt
+über dem Stützpolygon) gilt NICHT — ein verwurzelter Baum mit asymmetrischer Krone kippt
+nicht (die Wurzeln tragen das Moment); der echte Constraint ist Ω-Φ3-b KNICKEN (Greenhill/
+Euler: ein zu dünner Riese knickt). (2) Ω-Φ5 LASTPFAD (AABB-Berührungs-BFS) gilt NICHT —
+`_partWorldExtents` UNTER-deckt ROTIERTE dünne Zylinder (GEMESSEN: zwei Ast-Segmente, ein
+segLen auseinander, teilen einen Punkt außerhalb beider AABBs → Phantom-Lücke); der Baum
+IST per Konstruktion verbunden, der AABB-BFS ist für AXIS-ALIGNED Montage-Bauten. Der
+Knick-Richter ist UNBERÜHRT (er prüft nur nahe-vertikale Glieder, wo der Proxy korrekt
+ist). Die holz-Knick-Schwelle ist crit ≈ 10.1 (härte 0.2) — die Allometrie hält jede
+Spitze size-invariant unter ~8.2. Diese Lehre gilt FÜR JEDES gewachsene Genre (S4-Büsche,
+S7-Kreatur): rooted/gewachsen → Knicken, NICHT Kippen/Lastpfad-AABB.
 
 ---
 
