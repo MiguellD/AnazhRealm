@@ -54,14 +54,17 @@ Seed × wenige Achsen die volle Palette (Moos → Mammutbaum), kein Klon. **T1�
 (V18.256, `scripts/diag-genom.cjs`): Blatt-Typen+Brettwurzel · Bauwerk-Proportion+Detail · Geologie/
 Mineralogie-Glanz (emissiv/Facetten/Sediment) · Rüstung/Trank-Genome+Fahrzeug-SSF · Kreatur-Allometrie
 (Galileo) · Kronen-Formen/Lean/Mehrstämmig. Die Landmark-Platzierung reicht jetzt bis zur FORM
-(Hang→Spire/Brocken). **Der NÄCHSTE Schub ist `wahrerwuchs.md §10` — der volle VERTIKAL-Bogen** (das
-Genom als Kette MICRO → Assembly → Gestalt → Platzierung, je × FORM/PHYSIK/ANBLICK): **V1 Kreatur
-form-folgt-dem-Feld** (der einzige scatter-Bürger, dessen Form das Feld noch ignoriert — nur Größe) ·
-**V2 Bauwerk from-scratch** (Werkstatt/Portal-Teile parametrisch wie der Tempel, statt scale+ornament) ·
-V3 Micro-Rest (Rüstung/Trank-Oberfläche) · **V4 der LOOK** (Wand 1, Schöpfer-Auge — Mammutbaum/Koloss/
-Palmen-Hain) · V5 Schuld-Tilgung (S0 r01→roller.seq · S2 DEF-Schnitt · Ω-B4 LOD-Swap). Die Physik-
-Referenz ist `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS RUND, der Richter im Code), der Anblick
-`docs/wahreranblick.md`.
+(Hang→Spire/Brocken). **⚑ ABER der Schöpfer-Katalog (16.06., `diag-werk-render`) zeigte „kaum ein
+Upgrade, es fehlen viele Details" — die WURZEL (`wahrerwuchs §11`): das Genom gab VARIATION, aber die
+meisten Werke sind rohe PRIMITIV-Blobs (Rüstung=Box+2 Kugeln · Kristall=Kugel · Kreatur=Box+Kopf+Stummel),
+nur Tempel/Schwert haben dedizierte DETAIL-Meshes.** **Der NÄCHSTE Schub ist `wahrerwuchs.md §11` —
+DIE FIDELITÄT (die Priorität):** jedes System auf Tempel/Schwert-Niveau heben (ein reference-grounded
+Detail-Mesh-Builder, das Genom reitet oben drauf) — **F1 Kreatur** (echtes Anatomie-Skelett, die
+schlimmste Lücke) · **F2 Gerät** (Brustplatte/Phiole/Pickel) · **F3 Werkstatt/Portal** (Amboss/Blasebalg/
+Glyphen) · **F4 Kristall+Fels** (Facetten/Sediment-Geometrie) · **F5 Fahrzeug** (Speichen-Räder) ·
+**F6 Bäume+Glut**. §10 (Vertikal-Bogen: Platzierung-folgt-Feld, V1 Kreatur · V2 Bauwerk from-scratch)
+bleibt gültig, rückt HINTER §11 (ein form-folgt-dem-Feld-Blob ist immer noch ein Blob). Physik-Referenz
+`docs/archiv/wahrerbauplan.md`, Anblick `docs/wahreranblick.md`.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:

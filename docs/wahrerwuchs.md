@@ -945,3 +945,136 @@ Schichten stehen — die FORM (dieser Plan), die PHYSIK (der Richter, `archiv/wa
 der ANBLICK (`wahreranblick.md`, Wand 1) — UND die VERTIKALE Kette reicht (Micro →
 Assembly → Gestalt → Platzierung). MISS die Plan-Zahl (diag-genom erweitern), nicht
 Existenz. Dann erst — und dann ganz — ist der Wuchs-Bogen WIRKLICH rund.
+
+---
+
+## §11 — DIE FIDELITÄT (die WURZEL-Diagnose des Schöpfer-Katalogs, 16.06.2026)
+
+> **Der Schöpfer sah die gerenderten Bilder aller Systeme: „da fehlt ja noch einiges,
+> sehe kaum ein Upgrade ehrlicherweise, es fehlen viele Details."** Er hat recht — und
+> der Befund schneidet TIEFER als §10. §11 ist die ehrliche Wurzel + der Plan, der den
+> SICHTBAREN Upgrade liefert. Diese §11 ist ab jetzt die PRIORITÄT (vor §10-Vertikal).
+
+### §11.1 — DIE WURZEL (gemessen am Katalog `scripts/diag-werk-render.cjs`)
+
+Das Genom (T1–T6) gab **VARIATION** (Größe · Proportion · Farbe · Form-Klasse aus dem
+Seed). ABER die BASIS-GEOMETRIE der meisten Werke ist eine **rohe Primitiv-Montage**
+(Box + Kugel + Zylinder + Kegel) OHNE die definierenden Merkmale der Referenz. GEMESSEN
+am Bild:
+
+```
+LIEST ALS DAS DING (Fidelität ✓ — dedizierter Detail-Mesh):
+  Tempel  → kannelierte Säulen (Entasis) + Triglyphen + Giebel + Stufen  (flutedColumn)
+  Schwert → distal-verjüngte Klinge + Hohlkehle + Knauf + Parier         (bladeProfile)
+  Palme   → kahler Schaft + fiedrige Wedel-Krone                          (palm-Atlas)
+
+LIEST ALS BLOB (Fidelität ✗ — nackte Primitive, die Varianz ist UNSICHTBAR):
+  Rüstung  = Box + 2 Kugeln          (liest als Box, NICHT als Panzer)
+  Kristall = glatte Kugel            (liest als Ball, NICHT als Kristall)
+  Kreatur  = Box + Kopf + Stummel    (liest als Blob, NICHT als Tier)
+  Esse     = Box + Kuppel + Kugeln   (liest kaum als Schmiede)
+  Wagen    = Box + Rad-Scheiben      (liest als Kiste auf Rädern)
+  Trank/Spitzhacke/Portal/Glut/Fels  = Primitiv-Montagen, geringes Detail
+```
+
+**Die Lehre:** die Varianz IST da (verschiedene Größen/Farben), aber sie liest nicht als
+Tiefe, weil jedes EINZELNE Werk ein roher Blob ist. **Das Genom war die META-Schicht
+(Varianz); die FIDELITÄT (der detaillierte, reference-grounded Mesh je System) ist die
+fehlende BASIS — sie macht die Varianz erst sichtbar.** „Kaum ein Upgrade" = genau das.
+
+**Ehrliche Selbst-Kritik (die Fischer-Lehre, scharf):** ich baute T1–T6 (Varianz) auf
+rohen Primitiven, OHNE den Anblick je Werk zu RENDERN. Hätte ich den Katalog WÄHREND
+T1–T6 gerendert (Wand 1, das Auge), hätte ich gesehen, dass die Basis-Werke Blobs sind.
+Der Schöpfer-Wunsch „rendere Bilder" hat es aufgedeckt — DARUM ist das Auge der Richter.
+
+### §11.2 — DAS PRINZIP (was Tempel + Schwert beweisen)
+
+Ein Werk liest als das, was es IST, NUR wenn seine GEOMETRIE die **definierenden
+Merkmale der Referenz** trägt — NICHT ein skalierter Block, sondern ein dedizierter,
+reference-grounded DETAIL-Mesh (`flutedColumn` trägt Entasis+Kannelur in EINER Geometrie;
+`bladeProfile` die distale Verjüngung+Hohlkehle). Das ist die FIDELITÄT. Das Genom (Varianz)
+reitet OBEN DRAUF: `_classicalTempleVariant` würfelt Ordnung/Säulen/Palette auf dem
+detaillierten Säulen-Mesh. **Erst Fidelität, dann Varianz — sonst variiert man Blobs.**
+
+### §11.3 — DAS NEUE ORGANISIERENDE PRINZIP: FIDELITÄT × GENOM × VERTIKAL
+
+```
+FIDELITÄT (NEU, §11 — die Priorität): jedes System bekommt die Tempel/Schwert-Behandlung —
+            ein dedizierter Detail-Mesh-Builder, der die definierenden Merkmale trägt.
+GENOM     (gebaut, T1–T6): die Varianz (Größe/Proportion/Farbe/Form) reitet oben drauf.
+VERTIKAL  (§10, teils): die Platzierung reicht zur Form (Landmarks ✓, Kreatur offen).
+```
+
+Die FIDELITÄT ist die fehlende, SICHTBARE Schicht. Sie ist der „echte Upgrade". §10
+(Vertikal) bleibt gültig, rückt aber HINTER §11 — denn ein form-folgt-dem-Feld-Blob ist
+immer noch ein Blob.
+
+### §11.4 — PER-SYSTEM: die Fidelitäts-Lücke + der reference-grounded Mesh (was zu bauen ist)
+
+```
+SYSTEM     LIEST HEUTE          DEFINIERENDE MERKMALE (Referenz)          DER MESH-BUILDER (wie flutedColumn)
+──────────────────────────────────────────────────────────────────────────────────────────────────────────
+KREATUR    Box+Kopf+Stummel     echtes ANATOMIE-Skelett: Quadruped       _buildCreatureBody(skelett, allometrie)
+(F1, die    (kein Tier)          (Rumpf+4 Beine+Hals+Kopf+Schwanz) ODER    — echte Glieder + Gelenke + Proportion,
+schlimmste)                      Biped (Rumpf+2 Bein+2 Arm+Kopf), Gelenke  NICHT 3 Primitive. Tier-Anatomie.
+RÜSTUNG    Box+2 Kugeln         gewölbte Brustplatte + Lamellen (fauld) + _buildBreastplate — gewölbte Platte +
+(F2)                            Hals-Öffnung + Schulter-Lamellen           artikulierte Lamellen (gebogene Mesh).
+TRANK      Kugeln+Zylinder      geformte Phiole (Hals/Bauch/Boden) +      _buildPhiole — Glas-Profil (lathe/
+(F2)                            Korken + Flüssigkeits-Meniskus             revolve), Flüssigkeit innen, Korken.
+SPITZHACKE Zylinder+Kegel       gebogener Pickel-Kopf + Gegen-Adze +      _buildPickaxeHead — gebogene Spitze
+(F2)                            Bindung am Stiel                           (custom), nicht ein Kegel.
+ESSE/      Box+Kuppel+Kugeln    funktionale Teile: Amboss · Blasebalg ·   _buildForge/_buildLoom/_buildPortal —
+WERKSTATT  (kaum Schmiede)      Schornstein · Kohlenbett (Esse); Rahmen+   dedizierte funktionale Teile (das
+PORTAL (F3)                     Kettfäden (Webstuhl); Ring+Glyphen (Portal) §10-V2, aber mit ECHTEM Detail).
+KRISTALL   glatte Kugel         hexagonales Prisma + pyramidale           _buildCrystalCluster — prismatische
+(F4)                            Termination + scharfe Facetten + Glanz     Facetten + Termination, NICHT sphere.
+FELS       faceted Brocken      geometrische STRATIFIKATION (Schichten)+  noiserock + Sediment-Schicht-Geometrie
+(F4)                            Verwitterungs-Risse + scharfe Kanten       (nicht nur Farbe) + Riss-Detail.
+FAHRZEUG   Box+Rad-Scheiben     Fahrgestell: SPEICHEN-Räder + Rahmen/Bett _buildCart — Speichen-Räder (custom) +
+(F5)                            + Achsen + Deichsel/Joch + Sitz            Rahmen + Deichsel.
+BÄUME      Atlas-Laub (gut),    dichtere Krone + sichtbares Gabelungs-    Ω-O16-Politur: cardsPerAnchor + Kronen-
+(F6)       Krone sparse         GERÜST (LAAS) + tiefere Karten             Hülle + Ast-Gabelung sichtbar.
+GLUT       Becken+Kugel         züngelnde Flamme (mehr Zungen) + Glut-    _buildGlut — geschichtete Flammen-
+(F6)                            Bett-Detail + stärkeres Emissiv            Zungen + emissive Glut-Brocken.
+```
+
+### §11.5 — DIE DISZIPLIN (die Tempel/Schwert-Lehre, verallgemeinert auf jeden Mesh-Builder)
+
+```
+1. REFERENCE-FIRST: die echte Form (Plattenrüstung 15. Jh. · Quarz-Kristallographie · Quadruped-
+   Anatomie · Apotheker-Phiole), nicht erfunden. Das definierende Merkmal benennen, DANN bauen.
+2. EIN MERKMAL = EINE custom Geometrie (Face-Disziplin): flutedColumn trägt Entasis+Kannelur in
+   EINEM Mesh, nicht N Groove-Parts. Ein gebogener Panzer ist EIN Mesh, nicht 1 Box. (V18.242-Lehre.)
+3. EIN NEUER SHAPE koppelt an DREI Stellen: das `_makePartGeometry`-switch, die
+   `validateBlueprintParts`-Whitelist + Feld-Bewahrung (User-Zugriff), die Form-LESER
+   (SPATIAL_POINTED_SHAPES etc.). Built-ins umgehen die Validierung.
+4. DER RICHTER GARANTIERT: jeder Detail-Mesh durch Ω-PHYSIS (steht/knickt/Lastpfad/Balance);
+   die Referenz hält die Proportion solide (die Ordnung/Oakeshott/Anatomie).
+5. DAS GENOM REITET OBEN: nach dem Detail-Mesh würfelt `_<genre>Variant` die Achsen DARAUF
+   (wie der Tempel Ordnung/Palette auf flutedColumn) — Fidelität × Varianz, nicht statt.
+6. AFFINITÄT: scatter (Fels/Kristall/Glut/Kreatur) → Tags FROZEN (Form/Detail tag-neutral);
+   gesten/library (Werkstatt/Gerät/Rüstung) → Material/Detail frei. Ein neuer Shape MUSS tag-
+   neutral bleiben ODER die FROZEN-Baseline wird neu vermessen (diag-arch-tags).
+7. AUGEN VOR BEHAUPTEN (die §11-Geburts-Lehre): jeden Detail-Mesh im Werk-Katalog RENDERN
+   (`diag-werk-render`) + ANSEHEN, BEVOR „fertig" — liest er als das Ding? Headless-grün ≠ Fidelität.
+```
+
+### §11.6 — DIE REIHENFOLGE (nach sichtbarem Hebel — der Katalog ist der Maßstab)
+
+```
+F1  KREATUR/AVATAR — ein echtes Anatomie-Skelett (Quadruped/Biped, Glieder+Gelenke+Proportion).
+      Die schlimmste Lücke + das lebendigste System. Vereint mit §10-V1 (Form-folgt-Feld) + T5-Allometrie.
+F2  GERÄT-FIDELITÄT — Brustplatte (gewölbt+Lamellen) · Phiole (Glas-Profil) · Pickel-Kopf (gebogen).
+      Kleine, klar referenzierte Meshes, hoher Lese-Gewinn.
+F3  WERKSTATT/PORTAL — funktionale Detail-Builder (Amboss/Blasebalg/Schornstein · Rahmen/Kette · Glyphen-Ring).
+      Das §10-V2, jetzt mit ECHTEM Detail.
+F4  KRISTALL + FELS — kristallographische Facetten/Termination · Sediment-Schicht-Geometrie + Risse.
+F5  FAHRZEUG — Speichen-Räder + Rahmen + Deichsel (das Fahrgestell, sitz-safe wie T4).
+F6  BÄUME + GLUT — Krone-Dichte/Ast-Gerüst (Ω-O16) · züngelnde Flammen + Glut-Bett.
+```
+
+**Die EINE Regel:** jedes F ist erst voll, wenn (a) der Detail-Mesh die definierenden Merkmale
+trägt (reference-first), (b) er im `diag-werk-render`-Katalog als das Ding LIEST (das Auge,
+Wand 1), (c) das Genom DARAUF variiert (Fidelität × Varianz), (d) der Richter + die Affinität-
+Wand halten. **Erst wenn der Katalog jedes Werk als das Ding zeigt (kein Blob), ist der Wuchs-
+Bogen WIRKLICH ein Upgrade — vorher ist er Varianz auf Primitiven.** Der nächste Schub: F1.
