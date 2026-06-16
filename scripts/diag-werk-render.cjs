@@ -149,6 +149,25 @@ async function renderWerk(page, bpName, view) {
                         }
                     });
                 }
+            } else if (bpName.indexOf("playeravatar:") === 0) {
+                // GUSS 2b — der ECHTE getragene Spieler-Avatar (_buildHumanGroup) + die Pose,
+                // die animatePlayerSoul fahren würde. `playeravatar:pose` (rest/walk).
+                const pose = bpName.split(":")[1] || "rest";
+                grp = new THREE.Group();
+                try {
+                    const av = r._buildHumanGroup();
+                    grp.add(av);
+                    if (av.userData && av.userData.rig) {
+                        if (pose === "walk") r._animateHuman(av, 0, Math.PI * 0.32, true, false);
+                        else r._animateHuman(av, 0, 0, false, false);
+                        av.updateMatrixWorld(true);
+                        window.__treeInfo = "playeravatar " + pose + " rig=yes";
+                    } else {
+                        window.__treeInfo = "playeravatar " + pose + " rig=NO(fallback)";
+                    }
+                } catch (_e) {
+                    window.__treeInfo = "ERR:" + _e.message;
+                }
             } else if (bpName.indexOf("humanoidrig:") === 0) {
                 // GUSS 2 — das RIG (SkinnedMesh + Bones): `humanoidrig:pose:sex` (bind/rest/walk).
                 const hk = bpName.split(":");
@@ -369,6 +388,8 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "werk-rig-rest.png", "front"], // Kontrapost-Ruhepose (S-Kurve)
             ["humanoidrig:rest:0", "werk-rig-rest-seite.png", "side"], // Kontrapost Profil
             ["humanoidrig:walk:0", "werk-rig-walk.png", "side"], // Walk-Pose (Profil zeigt den Schritt)
+            ["playeravatar:rest", "werk-player-rest.png", "front"], // GUSS 2b: der ECHTE Spieler-Avatar
+            ["playeravatar:walk", "werk-player-walk.png", "side"], // im Walk-Cycle
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)

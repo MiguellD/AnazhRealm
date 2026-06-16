@@ -15222,6 +15222,11 @@ class AnazhRealm {
         const parts = AnazhRealm._humanoidSkeleton(g);
         const geom = this._buildCreatureSkinGeometry(parts);
         if (!geom) return null;
+        // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
+        // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
+        // → die Skinning-Distanzen bleiben konsistent.
+        const oy = g.oy || 0;
+        if (oy && typeof geom.translate === "function") geom.translate(0, oy, 0);
         // ── Bone-Spezifikation (Welt = Mesh-Lokal in Bind-Pose, in KH·kh): [name, parent,
         //    Gelenk-Pos, Segment-Ende (für die Skinning-Distanz, deckt das Glied ab)] ──
         const spec = [
@@ -15242,7 +15247,7 @@ class AnazhRealm {
                 ["ankle" + f, "knee" + f, [s * 0.46, 0.42, 0], [s * 0.46, 0.2, 0.85]]
             );
         }
-        const sc = (p) => [p[0] * kh, p[1] * kh, p[2] * kh];
+        const sc = (p) => [p[0] * kh, p[1] * kh + oy, p[2] * kh];
         const bones = [];
         const byName = {};
         const segs = [];
@@ -15335,6 +15340,7 @@ class AnazhRealm {
             armR: { shoulder: byName.shoulderR, elbow: byName.elbowR, wrist: byName.wristR },
             legL: { hip: byName.hipL, knee: byName.kneeL, ankle: byName.ankleL },
             legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
+            kh,
         };
         return { mesh, skeleton, bones, rig, kh };
     }
@@ -15392,7 +15398,9 @@ class AnazhRealm {
             y(r.hips, 0.07 * sw);
             y(r.chest, -0.06 * sw);
             // CoM-Bob (doppelte Frequenz)
-            r.hips.position.y = (r._baseHipY || (r._baseHipY = r.hips.position.y)) + Math.abs(Math.cos(walkPhase)) * 0.06 * (r.kh || 1);
+            r.hips.position.y =
+                (r._baseHipY != null ? r._baseHipY : (r._baseHipY = r.hips.position.y)) +
+                Math.abs(Math.cos(walkPhase)) * 0.3 * (r.kh || 1);
             return;
         }
         // RUHE — Kontrapost (Standbein rechts/R): Hüfte kippt, Wirbelsäule lehnt gegen, Kopf zurück.
@@ -43358,6 +43366,38 @@ class AnazhRealm {
         // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
         // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
         group.rotation.order = "YXZ";
+        // wahrerguss System B (GUSS 2b) — der getragene Avatar IST jetzt das humanoide RIG
+        // (SkinnedMesh + Bones + anatomische Metaball-Haut): EINE glatte Gestalt, die sich über
+        // die Knochen bewegt (der Strichmann war die lose Box-Montage darunter). parts.{leftArm,
+        // rightArm,…} → die WRIST-/HÜFT-Bones (equipHeld hängt das Gerät an die Hand, die Posen
+        // an die Gelenke; ein Mesh-Kind eines Bones folgt ihm). Fällt auf den alten Box-Avatar
+        // zurück, wenn SkinnedMesh fehlt.
+        const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
+            FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
+        const soulCol = (this.playerSoulDefs.human && this.playerSoulDefs.human.color) || 0xc0392b;
+        let rig = null;
+        try {
+            rig = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: soulCol });
+        } catch (_e) {
+            rig = null;
+        }
+        if (rig && rig.mesh) {
+            rig.mesh.receiveShadow = true;
+            group.add(rig.mesh);
+            group.userData.skinnedMesh = rig.mesh;
+            group.userData.rig = rig.rig;
+            group.userData.material = rig.mesh.material;
+            group.userData.parts = {
+                torso: rig.rig.chest,
+                head: rig.rig.head,
+                leftArm: rig.rig.armL.wrist,
+                rightArm: rig.rig.armR.wrist,
+                leftLeg: rig.rig.legL.hip,
+                rightLeg: rig.rig.legR.hip,
+            };
+            return group;
+        }
+        // ── FALLBACK: der alte Box-Avatar (SkinnedMesh nicht verfügbar) ──
         // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
         // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
         // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
@@ -43387,6 +43427,11 @@ class AnazhRealm {
     }
 
     _animateHuman(group, t, walkPhase, isMoving, underwater) {
+        // GUSS 2b — der Rig-Avatar wird über die Bones bewegt (Walk/Idle/Kontrapost/Schwimm).
+        if (group.userData && group.userData.rig) {
+            this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater);
+            return;
+        }
         const p = group.userData.parts;
         if (underwater) {
             // V8.33 — Schwimm-Pose: der Körper neigt sich vorwärts ins
@@ -43434,6 +43479,23 @@ class AnazhRealm {
     // die _animateHuman-Sprache); _animateHuman räumt die Pose beim Absteigen
     // (sein Idle-/Walk-Zweig setzt alle Rotationen absolut).
     _applySeatPose(group, t) {
+        // GUSS 2b — der Rig-Avatar SITZT über die Bein-/Arm-Bones (Beine angewinkelt nach
+        // vorn, Arme vorgehalten); absolute Werte (kein Drift — _animateHumanoidRig räumt sie).
+        const rig = group.userData && group.userData.rig;
+        if (rig) {
+            for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
+            for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
+                for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
+            rig.legL.hip.rotation.x = -1.2; // Oberschenkel waagerecht nach vorn
+            rig.legR.hip.rotation.x = -1.2;
+            rig.legL.knee.rotation.x = 1.05; // Unterschenkel hängt
+            rig.legR.knee.rotation.x = 1.05;
+            rig.armL.shoulder.rotation.x = -0.4; // Arme vorgehalten (Zügel-Geste)
+            rig.armR.shoulder.rotation.x = -0.4;
+            rig.armL.elbow.rotation.x = -0.5;
+            rig.armR.elbow.rotation.x = -0.5;
+            return;
+        }
         const p = group.userData.parts;
         if (!p || !p.leftLeg || !p.rightLeg) return;
         group.rotation.x = 0;
