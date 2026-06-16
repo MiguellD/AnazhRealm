@@ -46314,16 +46314,16 @@ class AnazhRealm {
         return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter });
     }
 
-    // Ω-B4 (wahrerbauplan §6 — DIE REGEL IST GENERATIV, für Architektur verallgemeinert) —
-    // ein Dorf zeigt VARIIERTE, nicht geklonte Hütten (das Baum-/Tempel-Varianten-Muster,
-    // aufs Dorf angewandt): ein deterministischer Seed (Welt-Seed + Hütten-Index) → eine
-    // Hütten-VARIANTE (Größe · Geschoss-Zahl · Dach-Typ Walm/Giebel · Fenster-Zahl ·
-    // Schornstein · Farb-Tönung). NUR box+pyramid (KEINE neue Form, KEIN Material) → die
-    // Spawn-Affinität bleibt bit-identisch (V17.17-Disziplin: mehr Parts DESSELBEN Form-
-    // Satzes ist tag-neutral). PHYSIK-GARANT (§6): eine Hütte ist ein breiter, niedriger
-    // Kasten (Schwerpunkt tief, breite Basis → Ω-Φ2 stabil), das Dach ruht auf dem Körper
-    // (Lastpfad geschlossen, Ω-Φ5). `place` trägt die Welt-Platzierung (hx/hz/bodyRot +
-    // inward/side-Richtungen, im Dorf-Loop berechnet). Deterministisch über Peers.
+    // Ω-B4 (wahrerbauplan §6 — DIE REGEL IST GENERATIV, für Architektur) — V18.248: eine
+    // BEGEHBARE Hütte (Schöpfer „ein haus das man begehen kann?"): ein HOHLES Haus aus 4
+    // Wänden mit echter Tür-LÜCKE (wie die Tempel-Cella). Die Architektur-Kollision ist
+    // PER-PART (jede Wand ein eigener Box-Shape, GEMESSEN) → die Tür-Lücke hat KEIN Part →
+    // man geht hindurch in den hohlen Raum. Ein deterministischer Seed (Welt-Seed + Index)
+    // → eine VARIANTE (Größe · Geschoss · Fenster-Zahl · Schornstein · Dach-Pitch · Tönung).
+    // NUR box+pyramid (KEINE neue Form, KEIN Material) → Spawn-Affinität bit-identisch
+    // (V17.17). PHYSIK-GARANT: die Wände stehen auf dem Fundament (Ω-Φ2), das Walm-Dach ruht
+    // auf den Wänden (Lastpfad Ω-Φ5). LOKAL gebaut (Tür auf +Z), via yaw=atan2(ix,iz) zum
+    // Dorf-Zentrum gedreht (die Tür schaut auf den Platz). Deterministisch über Peers.
     _villageHutVariant(seed, index, place) {
         let h = 2166136261;
         const s = "hut:" + (seed == null ? "anazh" : String(seed)) + ":" + (index | 0);
@@ -46332,185 +46332,89 @@ class AnazhRealm {
             h = Math.imul(h, 16777619);
         }
         h = h >>> 0;
-        const { hx, hz, bodyRot, ix, iz, sx, sz } = place;
+        const { hx, hz, ix, iz } = place;
         const parts = [];
-        const sv = 0.8 + ((h & 7) / 7) * 0.5; // 0.8..1.3 Größe
+        const yaw = Math.atan2(ix, iz); // lokal +Z (Tür) → Welt (ix,iz) = zum Zentrum
+        const cY = Math.cos(yaw);
+        const sY = Math.sin(yaw);
+        // lokale (lx,ly,lz) → Welt: um yaw um y gedreht, nach (hx,hz) verschoben.
+        const box = (color, lx, ly, lz, sx, sy, sz) =>
+            parts.push({
+                shape: "box",
+                color,
+                position: { x: hx + lx * cY + lz * sY, y: ly, z: hz - lx * sY + lz * cY },
+                rotation: { x: 0, y: yaw, z: 0 },
+                size: { x: sx, y: sy, z: sz },
+            });
+        // ─── Variation aus dem Seed ───
+        const sv = 0.92 + ((h & 7) / 7) * 0.42; // 0.92..1.34
         const tall = ((h >> 3) & 1) === 1; // zweites Geschoss
-        const gable = ((h >> 4) & 1) === 1; // Giebel- (Sattel-) statt Walm- (Pyramiden-) Dach
-        const winN = 1 + ((h >> 5) & 1); // 1 oder 2 Fenster
-        const chimney = ((h >> 6) & 1) === 1;
-        // V18.247 — substanziellere Hütten (Schöpfer „häuser klein"): größere Grundfläche +
-        // höhere Geschosse, damit eine Hütte ein bewohnbares Haus liest, kein Würfel.
-        const bw = 2.9 * sv;
-        const bd = 3.3 * sv;
-        const storyH = 1.85 * sv;
-        const bh = tall ? storyH * 1.78 : storyH;
-        const bodyY = 0.36 + bh / 2;
-        const roofBaseY = bodyY + bh / 2;
-        const bodyTints = [0x6e3a14, 0x7a4a22, 0x63411f, 0x82573a, 0x5d3a1a];
-        const bodyColor = bodyTints[h % bodyTints.length];
-        // (1) Stein-Fundament (etwas breiter, niedrig)
-        parts.push({
-            shape: "box",
-            color: 0x6a6258,
-            position: { x: hx, y: 0.18, z: hz },
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: bw + 0.5, y: 0.36, z: bd + 0.5 },
-        });
-        // (2) Körper (Lehm/Holz, per-Hütte getönt)
-        parts.push({
-            shape: "box",
-            color: bodyColor,
-            position: { x: hx, y: bodyY, z: hz },
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: bw, y: bh, z: bd },
-        });
-        // Geschoss-Gurtsims bei zweistöckig (dünnes Band auf Story-Höhe)
-        if (tall) {
-            parts.push({
-                shape: "box",
-                color: 0x4a2810,
-                position: { x: hx, y: 0.36 + storyH, z: hz },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: bw + 0.12, y: 0.12, z: bd + 0.12 },
-            });
-        }
-        // (3) DER ECHTE EINGANG (V18.247, Schöpfer „keine eingänge") — kein gemaltes
-        // Rechteck, sondern ein TIEFER Eingang wie am Tempel: eine zurückgesetzte dunkle
-        // Tür (liest als Öffnung ins Dunkel) + ein VORSTEHENDER Rahmen (zwei Pfosten +
-        // Sturz, werfen Schatten auf die recessed Tür → Tiefe) + eine Schwelle (Tritt) +
-        // ein VORDACH (Überstand, beschattet den Eingang). `fp` baut Welt-Positionen aus
-        // (inward, side, y); alle Teile überlappen den Körper (Lastpfad geschlossen, Ω-Φ5).
-        const faceOut = bd / 2; // die Körper-Front-Fläche (inward)
-        const fp = (inOff, sideOff, y) => ({
-            x: hx + ix * inOff + sx * sideOff,
-            y,
-            z: hz + iz * inOff + sz * sideOff,
-        });
-        const doorW = 0.95;
-        const doorH = Math.min(bh, storyH) * 0.72;
-        const doorTopY = 0.36 + doorH;
-        // die Tür-Platte (bündig an der Front, hinter der Rahmen-Ebene → recessed)
-        parts.push({
-            shape: "box",
-            color: 0x2a1a0c,
-            position: fp(faceOut - 0.04, 0, 0.36 + doorH / 2),
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: doorW, y: doorH, z: 0.12 },
-        });
-        // Rahmen: zwei Pfosten + Sturz, VORSTEHEND (helleres Holz) → Schatten auf die Tür
-        const frameC = 0x8a6038;
-        const postProud = faceOut + 0.07;
+        const winSide = ((h >> 4) & 1) === 1 ? 1 : 2; // Fenster je Seitenwand
+        const chimney = ((h >> 5) & 1) === 1;
+        const tints = [0x7a4a28, 0x8a5a30, 0x6e4220, 0x946a40, 0x63421f];
+        const wallColor = tints[h % tints.length];
+        const trimColor = 0x4a2c14;
+        const roofColor = 0x8b2a1e;
+        const stoneColor = 0x6a6258;
+        // ─── Maße (quadratisch-nah → das Walm-Dach passt sauber) ───
+        const W = 4.2 * sv; // Breite (x)
+        const D = 4.6 * sv; // Tiefe (z), Tür auf +D/2
+        const wallT = 0.26;
+        const foundH = 0.4;
+        const floorY = foundH;
+        const storyH = 2.7;
+        const wallH = tall ? storyH * 1.85 : storyH;
+        const wallTop = floorY + wallH;
+        const wallYc = floorY + wallH / 2;
+        const doorW = 1.3;
+        const doorH = 2.4;
+        // (1) Fundament + Innen-Boden
+        box(stoneColor, 0, foundH / 2, 0, W + 0.6, foundH, D + 0.6);
+        box(trimColor, 0, floorY + 0.06, 0, W - 0.1, 0.12, D - 0.1);
+        // (2) Rück-Wand + 2 Seiten-Wände (massiv, kollidierbar)
+        box(wallColor, 0, wallYc, -D / 2 + wallT / 2, W, wallH, wallT);
+        box(wallColor, W / 2 - wallT / 2, wallYc, 0, wallT, wallH, D);
+        box(wallColor, -(W / 2 - wallT / 2), wallYc, 0, wallT, wallH, D);
+        // (3) FRONT-Wand mit Tür-LÜCKE: 2 Pfeiler + Sturz (die Lücke = BEGEHBARE Tür)
+        const fpw = (W - doorW) / 2;
+        box(wallColor, -(doorW / 2 + fpw / 2), wallYc, D / 2 - wallT / 2, fpw, wallH, wallT);
+        box(wallColor, doorW / 2 + fpw / 2, wallYc, D / 2 - wallT / 2, fpw, wallH, wallT);
+        box(wallColor, 0, floorY + doorH + (wallH - doorH) / 2, D / 2 - wallT / 2, doorW, wallH - doorH, wallT);
+        // (4) gerahmter Eingang: Rahmen (vorstehend) + Schwelle (Tritt) + Vordach
+        box(trimColor, -(doorW / 2 + 0.08), floorY + doorH / 2, D / 2 + 0.05, 0.16, doorH, 0.22);
+        box(trimColor, doorW / 2 + 0.08, floorY + doorH / 2, D / 2 + 0.05, 0.16, doorH, 0.22);
+        box(trimColor, 0, floorY + doorH + 0.11, D / 2 + 0.05, doorW + 0.5, 0.22, 0.22);
+        box(stoneColor, 0, floorY + 0.09, D / 2 + 0.32, doorW + 0.6, 0.18, 0.6);
+        box(roofColor, 0, floorY + doorH + 0.36, D / 2 + 0.36, doorW + 0.85, 0.14, 0.74);
+        // (5) Fenster (vorstehender Rahmen + warm leuchtende Scheibe) in den Seitenwänden
+        const winY = floorY + Math.min(wallH, storyH) * 0.52;
         for (const sgn of [-1, 1]) {
-            parts.push({
-                shape: "box",
-                color: frameC,
-                position: fp(postProud, sgn * (doorW / 2 + 0.1), 0.36 + (doorH + 0.22) / 2),
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.17, y: doorH + 0.22, z: 0.2 },
-            });
-        }
-        parts.push({
-            shape: "box",
-            color: frameC,
-            position: fp(postProud, 0, doorTopY + 0.1),
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: doorW + 0.5, y: 0.2, z: 0.2 },
-        });
-        // Schwelle / Tritt (Stein, ragt heraus)
-        parts.push({
-            shape: "box",
-            color: 0x6a6258,
-            position: fp(faceOut + 0.26, 0, 0.36 + 0.09),
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: doorW + 0.55, y: 0.18, z: 0.55 },
-        });
-        // VORDACH — ein kleiner Überstand über dem Eingang (Dach-Farbe, beschattet)
-        parts.push({
-            shape: "box",
-            color: 0x8b2a1e,
-            position: fp(faceOut + 0.32, 0, doorTopY + 0.34),
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: doorW + 0.7, y: 0.14, z: 0.7 },
-        });
-        // (4) Fenster (1-2, GERAHMT: ein vorstehender Holz-Rahmen + warm leuchtende Scheibe
-        // dahinter → Tiefe statt aufgemaltem Fleck). Seitlich versetzt, ein Geschoss hoch.
-        const winY = 0.36 + Math.min(bh, storyH) * 0.55;
-        for (let w = 0; w < winN; w++) {
-            const off = winN === 1 ? 0 : w === 0 ? -0.78 : 0.78;
-            // Rahmen (vorstehend, Holz)
-            parts.push({
-                shape: "box",
-                color: 0x6e4a2a,
-                position: fp(faceOut + 0.05, off, winY),
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.58, y: 0.58, z: 0.16 },
-            });
-            // Scheibe (warm leuchtend, bündig dahinter → recessed)
-            parts.push({
-                shape: "box",
-                color: 0xe2b667,
-                position: fp(faceOut - 0.02, off, winY),
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.44, y: 0.44, z: 0.14 },
-            });
-        }
-        // (5) Dach-Überstand (eaves) — dünner breiter Kranz am Dachfuß
-        parts.push({
-            shape: "box",
-            color: 0x4a2810,
-            position: { x: hx, y: roofBaseY + 0.04, z: hz },
-            rotation: { x: 0, y: bodyRot, z: 0 },
-            size: { x: bw + 0.7, y: 0.18, z: bd + 0.7 },
-        });
-        // (6) DACH — Walm (Pyramide) ODER Giebel (zwei geneigte Box-Flächen + First).
-        const roofH = 1.2 * sv;
-        if (!gable) {
-            parts.push({
-                shape: "pyramid",
-                color: 0x8b2a1e,
-                position: { x: hx, y: roofBaseY + roofH * 0.58, z: hz },
-                rotation: { x: 0, y: bodyRot + Math.PI / 4, z: 0 },
-                size: { x: bw + 1.2, y: roofH, z: bd + 1.2 },
-            });
-        } else {
-            // Satteldach: First läuft längs der Hütten-z-Achse (in Welt-Raum via bodyRot).
-            // Zwei box-Flächen, je um −sgn·pitch um z geneigt (V18.243-Konvention: Traufe
-            // tief, Innenkante zum First hoch), als Ganzes um bodyRot um y gedreht.
-            const span = bw + 0.9;
-            const rise = roofH * 1.05;
-            const eaveX = span / 2;
-            const slope = Math.hypot(eaveX, rise);
-            const pitch = Math.atan2(rise, eaveX);
-            const ridgeZ = bd + 1.0;
-            const cR = Math.cos(bodyRot),
-                sR = Math.sin(bodyRot);
-            for (const sgn of [-1, 1]) {
-                const lx = (sgn * eaveX) / 2; // lokaler x-Offset → Welt via bodyRot
-                parts.push({
-                    shape: "box",
-                    color: 0x8b2a1e,
-                    position: { x: hx + lx * cR, y: roofBaseY + rise / 2, z: hz - lx * sR },
-                    rotation: { x: 0, y: bodyRot, z: -sgn * pitch },
-                    size: { x: slope, y: 0.16, z: ridgeZ },
-                });
+            for (let w = 0; w < winSide; w++) {
+                const lz = winSide === 1 ? 0 : w === 0 ? -D * 0.22 : D * 0.22;
+                box(trimColor, sgn * (W / 2 + 0.03), winY, lz, 0.16, 0.64, 0.64);
+                box(0xe2b667, sgn * (W / 2 - 0.04), winY, lz, 0.12, 0.48, 0.48);
             }
-            parts.push({
-                shape: "box",
-                color: 0x55180f,
-                position: { x: hx, y: roofBaseY + rise + 0.05, z: hz },
-                rotation: { x: 0, y: bodyRot, z: 0 },
-                size: { x: 0.3, y: 0.16, z: ridgeZ },
-            });
         }
-        // (7) Schornstein (optional, seitlich auf dem Dach)
+        // zweites Geschoss: Gurtsims + ein Fenster vorne oben
+        if (tall) {
+            box(trimColor, 0, floorY + storyH, 0, W + 0.14, 0.14, D + 0.14);
+            box(0xe2b667, 0, floorY + storyH * 1.4, D / 2 + 0.03, 0.5, 0.5, 0.16);
+        }
+        // (6) WALM-DACH (Pyramide, sauber) — Basis ≈ √2·(Spannweite+Überstand), 45° gedreht
+        // → die Dach-FLÄCHEN (nicht die Diamant-Ecken) decken die Wände + ein Traufen-Überstand.
+        const roofH = (1.25 + ((h >> 6) & 1) * 0.55) * sv;
+        const roofBase = 1.42 * (Math.max(W, D) + 1.2);
+        box(trimColor, 0, wallTop + 0.04, 0, W + 0.7, 0.16, D + 0.7); // Traufe-Kranz
+        parts.push({
+            shape: "pyramid",
+            color: roofColor,
+            position: { x: hx, y: wallTop + roofH * 0.5 + 0.1, z: hz },
+            rotation: { x: 0, y: yaw + Math.PI / 4, z: 0 },
+            size: { x: roofBase, y: roofH, z: roofBase },
+        });
+        // (7) Schornstein (optional)
         if (chimney) {
-            parts.push({
-                shape: "box",
-                color: 0x55504a,
-                position: { x: hx + sx * (bw * 0.3), y: roofBaseY + roofH * 0.7, z: hz + sz * (bw * 0.3) },
-                size: { x: 0.32, y: roofH * 0.9, z: 0.32 },
-            });
+            box(stoneColor, W * 0.3, wallTop + roofH * 0.5, -D * 0.2, 0.42, roofH * 1.2, 0.42);
         }
         return parts;
     }
@@ -52332,8 +52236,10 @@ class AnazhRealm {
         // Baum-Volumen → ein 12m-Baum las als dünner Stachel). GRÖSSERE, überlappende
         // Karten füllen das Kronen-Volumen → der Baum liest als Baum. FPS-NEUTRAL
         // (gleiche Vertex-Zahl, nur grösser). Schöpfer-Befund „Bäume ragen kaum".
-        const cardW = baseSize * (isNeedle ? 2.3 : 3.1);
-        const cardH = baseSize * (isNeedle ? 3.1 : 2.4);
+        // V18.248 — größere Büschel-Karten (wenige Karten/Anker, s. FOLIAGE_DENSITY): jede
+        // Karte zeigt ein volles Atlas-Büschel → größer halten sie die Krone voll + ruhig.
+        const cardW = baseSize * (isNeedle ? 3.0 : 4.2);
+        const cardH = baseSize * (isNeedle ? 4.4 : 3.4);
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -69192,7 +69098,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.247.0";
+AnazhRealm.VERSION = "18.248.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69666,17 +69572,16 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     // hat eine DICHTE, geschlossene Krone; meine war locker/löchrig. Mehr Karten + engerer
     // Cluster + mehr Volumen-Füllung → die geschlossene Dome/Kegel-Masse. LOD0 only (LOD1/2
     // bleiben dünn → die FPS-Last trägt der LOD-Pfad, kein Cap-Schnitt).
-    // V18.247 (wahreranblick §8.5 — gegen die LAAS-Referenz-Fotos, Schöpfer „unglaublich
-    // deren Tiefe, das kannst du auch"): die echte Krone ist KEINE solide Masse — sie ist
-    // Laub-BÜSCHEL an den Ast-SPITZEN mit einem SICHTBAREN Ast-Gerüst dazwischen (Himmel
-    // scheint durch). Der frühere Voll-Füll-Block (innerFill 0.55) begrub das Gerüst. Jetzt:
-    // die Karten bleiben an den Ankern (Ast-Tips) → die Krone ist eine offene Büschel-Schale,
-    // das Stamm/Ast-Gerüst tritt hervor (die LAAS-Tiefe). Etwas engere Cluster = distinkte
-    // Büschel statt Brei. Die DICHTE bleibt hoch (16 Karten/Anchor) → die Büschel sind voll.
-    cardsPerAnchor: [16, 4, 1], // pro LOD0/1/2 — der Büschel-Füll-Faktor (volle Büschel)
-    jitterFrac: 0.82, // engerer Cluster → distinkte Laub-Büschel mit Lücken (Himmel scheint durch)
-    sizeVar: 0.5, // ±50% Karten-Größen-Varianz (organischer, weniger Gitter)
-    innerFill: 0.18, // NUR wenig zur Mitte → offene Schale, das Ast-Gerüst bleibt sichtbar (LAAS)
+    // V18.248 (wahreranblick §8.5 — DIE LAAS-KARTEN-ZAHL, Schöpfer „bäume sehen noch sehr
+    // chaotisch aus"): die Wurzel des Chaos — seit der Atlas (V18.247) eine Karte zu einem
+    // GEBACKENEN ~16-Blatt-Büschel macht, sind 16 Karten/Anker = 16×16 Blätter pro Anker in
+    // einer Jitter-Wolke = Brei. LAAS nutzt 1-2 Karten/Anker (das Büschel STECKT im Atlas).
+    // Jetzt 3 große, RUHIGE Büschel-Karten/Anker → distinkte, geordnete Laub-Büschel an den
+    // Ast-Spitzen statt Chaos. Größere Karten (s.u. cardW/cardH) halten die Krone voll.
+    cardsPerAnchor: [3, 2, 1], // pro LOD0/1/2 — wenige große Büschel-Karten (LAAS-Zahl)
+    jitterFrac: 0.42, // enger Cluster → ruhige, distinkte Büschel (kein Streu-Chaos)
+    sizeVar: 0.28, // ±28% (organisch, aber nicht chaotisch)
+    innerFill: 0.16, // offene Schale, das Ast-Gerüst bleibt sichtbar
 });
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale

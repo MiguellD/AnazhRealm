@@ -149,8 +149,10 @@ function startSaveServer() {
             let allHutsLoadIntact = true;
             let onlyBoxPyramid = true;
             let noMaterialField = true;
+            let allHollow = true; // V18.248: BEGEHBAR — die Innen-Mitte ist frei
             for (let i = 0; i < 6; i++) {
-                const hut = r._villageHutVariant("anazh-seed-A", i, placeFor(i));
+                const place = placeFor(i);
+                const hut = r._villageHutVariant("anazh-seed-A", i, place);
                 hutSigs.add(sig(hut));
                 const bp = { parts: hut };
                 if (!(r._stability(bp).inside === true)) allHutsStand = false;
@@ -161,12 +163,28 @@ function startSaveServer() {
                     if (p.shape !== "box" && p.shape !== "pyramid") onlyBoxPyramid = false;
                     if (p.material) noMaterialField = false;
                 }
+                // BEGEHBAR (V18.248): die Hütte ist HOHL — kein Part deckt die Innen-Mitte auf
+                // Brusthöhe (eine solide Box hätte sie gefüllt). Per-Part-Kollision → man betritt
+                // den Raum durch die Tür-Lücke (Welt-AABB-Containment via _partWorldAABB).
+                const aabbs = hut.map((p) => r._partWorldAABB(p)).filter(Boolean);
+                const cy = 1.6; // Brusthöhe über dem Fundament
+                const covered = aabbs.some(
+                    (a) =>
+                        place.hx >= a.min.x &&
+                        place.hx <= a.max.x &&
+                        cy >= a.min.y &&
+                        cy <= a.max.y &&
+                        place.hz >= a.min.z &&
+                        place.hz <= a.max.z
+                );
+                if (covered) allHollow = false;
             }
             o.b4VariantCount = hutSigs.size; // verschiedene Hütten in EINEM Dorf
             o.b4AllStand = allHutsStand; // jede Hütte steht (Ω-Φ2)
             o.b4LoadIntact = allHutsLoadIntact; // jede Hütte: Lastpfad schließt (Ω-Φ5)
             o.b4OnlyBoxPyramid = onlyBoxPyramid; // KEINE neue Form → affinität-neutral (V17.17)
             o.b4NoMaterial = noMaterialField; // KEIN Material → 0 Affinität, DSL-gespawnt
+            o.b4Hollow = allHollow; // BEGEHBAR — der Innenraum ist frei (kein solider Block)
             // (b) verschiedene Welt-Seeds → verschiedene Dörfer.
             const dorfA = r._villageHutVariant("alpha", 0, placeFor(0));
             const dorfB = r._villageHutVariant("beta", 0, placeFor(0));
@@ -263,6 +281,7 @@ function startSaveServer() {
         line("N Hütten EINES Dorfs sind variiert", out.b4VariantCount, "soll ≥ 3", out.b4VariantCount >= 3);
         line("JEDE Hütte STEHT (Ω-Φ2)", out.b4AllStand, "soll true", out.b4AllStand);
         line("JEDE Hütte: Lastpfad schließt (Ω-Φ5)", out.b4LoadIntact, "soll true", out.b4LoadIntact);
+        line("JEDE Hütte ist HOHL/BEGEHBAR (Innen frei)", out.b4Hollow, "soll true", out.b4Hollow);
         line("NUR box+pyramid (affinität-neutral)", out.b4OnlyBoxPyramid, "soll true", out.b4OnlyBoxPyramid);
         line("KEIN Material (0 Affinität, DSL-gespawnt)", out.b4NoMaterial, "soll true", out.b4NoMaterial);
         line(
@@ -305,6 +324,7 @@ function startSaveServer() {
             out.b4VariantCount >= 3,
             out.b4AllStand,
             out.b4LoadIntact,
+            out.b4Hollow,
             out.b4OnlyBoxPyramid,
             out.b4NoMaterial,
             out.b4WorldSeedVaries,
