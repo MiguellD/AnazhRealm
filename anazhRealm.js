@@ -14512,6 +14512,28 @@ class AnazhRealm {
             }
         }
 
+        // (2b) FÜSSE/PFOTEN (wahrerguss System B) — gerundete Klötze an den Bein-Enden,
+        //      vorn überstehend (eine Pfote/Huf). Im Skin-Pfad rundet die Metaball-Haut
+        //      sie zu echten Pfoten (heilt das spitze Auslaufen, §12-Befund); im angular-
+        //      Pfad sind es sichtbare Füße, die die Stance erden. box+limbMat ist TAG-NEUTRAL
+        //      (box × limbMat liegt schon im Compound über den Rumpf/die Glieder → der MAX
+        //      bleibt unverändert; GEMESSEN-Pflicht diag-genom Affinität-Band).
+        const footY = legCY - legLen * 0.5 + legR * 0.55;
+        for (const sgnZ of [-1, 1])
+            for (const sgnX of [-1, 1])
+                add(
+                    "box",
+                    limbMat,
+                    sgnX * stanceX,
+                    footY,
+                    sgnZ * legZ + legR * 0.9,
+                    legR * 2.0,
+                    legR * 1.2,
+                    legR * 3.0,
+                    null,
+                    limbCol
+                );
+
         // (3) HALS — ein verjüngtes Glied, vom Rumpf-Vorderteil schräg nach vorn-oben.
         const neckCY = torsoH * 0.45;
         const neckCZ = torsoLen * 0.42;
@@ -14521,6 +14543,9 @@ class AnazhRealm {
         const headCY = torsoH * 0.55 + neckLen * 0.42;
         const headCZ = torsoLen * 0.5 + headR * 0.3;
         add(headShape, headMat, 0, headCY, headCZ, headR, headR * 0.9, headR * 1.05, null, limbCol);
+        // der KOPF-ANKER (nicht-tag): _buildCreatureGroup hängt das GESICHT (Augen/Ohren)
+        // relativ daran an — als separate Deko-Meshes, NICHT in bodyParts (kein Tag-Drift).
+        parts[parts.length - 1].bodyRole = "head";
         add(
             snoutShape,
             headMat,
@@ -14620,8 +14645,17 @@ class AnazhRealm {
             mxx = -1e9,
             mxy = -1e9,
             mxz = -1e9;
+        // wahrerguss System B — die FALLOFF-Reichweite: weit genug, dass die Glieder am Gelenk
+        // in den Rumpf VERSCHMELZEN, die hohe Auflösung (N=40) + das Gesicht halten Kopf/Hals
+        // trotz des Falloffs definiert. WELD = ein ABSOLUTER Gelenk-Schweiß-Term (lokale
+        // Einheiten): er bridged DÜNNE Glieder (Kegel-Beine eines Raubtiers, GEMESSEN am Auge
+        // schwebten sie sonst) an den Rumpf, ohne die dicken Teile zu verblobben (für r=0.16
+        // marginal, für r=0.04 verdoppelt er die Reichweite → das Bein erreicht den Körper).
+        const BLEND = 1.7;
+        const WELD = 0.045;
         for (const p of parts) {
             if (!p.size || !p.position) continue;
+            if (p.feature) continue; // Gesichts-Features (Augen/Ohren) werden NICHT umhüllt
             const sx = Math.abs(p.size.x) || 0.1,
                 sy = Math.abs(p.size.y) || 0.1,
                 sz = Math.abs(p.size.z) || 0.1;
@@ -14645,7 +14679,7 @@ class AnazhRealm {
                 p.position.z + dir[2] * segHalf,
             ];
             bones.push({ a, b, r });
-            const R = r * 1.7;
+            const R = r * BLEND + WELD;
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
                 mny = Math.min(mny, pt[1] - R);
@@ -14672,7 +14706,7 @@ class AnazhRealm {
         const field = (x, y, z) => {
             let f = 0;
             for (const bn of bones) {
-                const R = bn.r * 1.7; // Falloff > Knochen-Radius → benachbarte Knochen VERSCHMELZEN
+                const R = bn.r * BLEND + WELD; // Falloff > Knochen-Radius → benachbarte Knochen VERSCHMELZEN
                 const d = distSeg(x, y, z, bn.a, bn.b);
                 if (d < R) {
                     const t = 1 - d / R;
@@ -14686,7 +14720,7 @@ class AnazhRealm {
         const PAD = 0.02;
         const min = { x: mnx - PAD, y: mny - PAD, z: mnz - PAD };
         const span = Math.max(0.2, Math.max(mxx - mnx, mxy - mny, mxz - mnz) + 2 * PAD);
-        const N = 26; // Gitter-Auflösung (Würfel; ~4-5 cm Zellen bei ~1 m Wesen)
+        const N = 40; // Gitter-Auflösung (wahrerguss System B: 26→40 für KLARE Anatomie statt Blob)
         const h = span / N;
         const off = [
             [0, 0, 0],
@@ -14820,20 +14854,96 @@ class AnazhRealm {
                 const geom = this._buildCreatureSkinGeometry(soul.bodyParts);
                 if (geom) {
                     const col = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-                    const mat = this._buildToonNodeMaterial
-                        ? this._buildToonNodeMaterial({ color: col })
-                        : new THREE.MeshStandardMaterial({ color: col });
+                    // wahrerguss System B — die Haut trägt die SUBSTANZ (PBR-Pass, System A):
+                    // ein tag-getriebenes Hide-Material (fleischige Mottle/Kavität aus den
+                    // Seele-Tags) statt eines flachen Toon-Kleckses. So liest die Haut als
+                    // lebendiges Gewebe, nicht als Plastik-Lump.
+                    let tags = null;
+                    try {
+                        tags = this.computeCompoundTags ? this.computeCompoundTags({ parts: soul.bodyParts }) : null;
+                    } catch (_e) {
+                        tags = null;
+                    }
+                    const mat = this._buildPbrNodeMaterial
+                        ? this._buildPbrNodeMaterial({ color: col, tags })
+                        : this._buildToonNodeMaterial
+                          ? this._buildToonNodeMaterial({ color: col })
+                          : new THREE.MeshStandardMaterial({ color: col });
                     const skin = new THREE.Mesh(geom, mat);
                     skin.userData._creatureSkin = true;
                     skin.castShadow = true;
-                    for (const ch of group.children) ch.visible = false; // die Knochen verbergen
-                    group.add(skin); // die Haut ist die sichtbare Gestalt (letztes Kind)
+                    // die Knochen-Teile verbergen (die Haut IST die Gestalt); ein Feature-Teil
+                    // (falls je eins in bodyParts wandert) bliebe sichtbar.
+                    soul.bodyParts.forEach((p, i) => {
+                        const ch = group.children[i];
+                        if (ch) ch.visible = !!p.feature;
+                    });
+                    group.add(skin); // die Haut (vor dem Gesicht eingefügt)
+                    // DAS GESICHT (wahrerguss System B) — Augen + Ohren als separate Deko-Meshes
+                    // am Kopf-Anker: NICHT in bodyParts (kein Tag-Drift), NICHT umhüllt (sichtbar).
+                    // Ein Wesen mit Augen liest sofort als lebendig.
+                    try {
+                        this._addCreatureFace(group, soul);
+                    } catch (_e) {
+                        /* Gesicht optional — kein Crash */
+                    }
                 }
             } catch (_e) {
                 /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
             }
         }
         return group;
+    }
+
+    // wahrerguss System B — DAS GESICHT: Augen (+ Ohren) als separate Deko-Meshes am
+    // Kopf-Anker (`bodyRole:"head"`). Sie liegen NICHT in bodyParts (kein Tag-Drift,
+    // keine Allometrie-/Index-Kopplung — sie hängen jenseits von parts.length) und werden
+    // NICHT von der Metaball-Haut umhüllt → sichtbar AUF der Haut. Augen = dunkle Kugeln
+    // (Raubtier: glühende Glut-Augen, emissiv); Ohren = kleine Kegel in Haut-Farbe.
+    _addCreatureFace(group, soul) {
+        if (typeof THREE === "undefined" || !group || !soul) return;
+        const head = (soul.bodyParts || []).find((p) => p && p.bodyRole === "head");
+        if (!head || !head.position || !head.size) return;
+        const hr = Math.abs(head.size.x) || 0.2;
+        const hx = head.position.x || 0,
+            hy = head.position.y || 0,
+            hz = head.position.z || 0;
+        const predator = !!soul.predator;
+        const eyeCol = predator ? 0xff5a1e : 0x0b0b0e;
+        const skinCol = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
+        const mkMesh = (geom, color, emissive) => {
+            let mat;
+            try {
+                mat = this._buildPbrNodeMaterial
+                    ? this._buildPbrNodeMaterial({ color })
+                    : new THREE.MeshStandardMaterial({ color });
+            } catch (_e) {
+                mat = new THREE.MeshStandardMaterial({ color });
+            }
+            if (emissive && mat.emissive) {
+                mat.emissive.setHex(color);
+                mat.emissiveIntensity = 0.85;
+            }
+            const m = new THREE.Mesh(geom, mat);
+            m.userData._creatureFace = true;
+            m.castShadow = false;
+            return m;
+        };
+        // AUGEN — zwei kleine glänzende Kugeln vorn-oben am Kopf.
+        const eyeGeom = new THREE.SphereGeometry(hr * 0.2, 10, 8);
+        for (const sgnX of [-1, 1]) {
+            const e = mkMesh(eyeGeom, eyeCol, predator);
+            e.position.set(hx + sgnX * hr * 0.42, hy + hr * 0.14, hz + hr * 0.66);
+            group.add(e);
+        }
+        // OHREN — zwei kleine Kegel oben am Kopf (Haut-Farbe), leicht nach außen geneigt.
+        const earGeom = new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8);
+        for (const sgnX of [-1, 1]) {
+            const ear = mkMesh(earGeom, skinCol, false);
+            ear.position.set(hx + sgnX * hr * 0.5, hy + hr * 0.7, hz - hr * 0.05);
+            ear.rotation.z = sgnX * -0.3;
+            group.add(ear);
+        }
     }
 
     // S7 (wahrerwuchs §4.7 / Ω-B5) — DIE KÖRPERGRÖSSE-ACHSE: aus einer Identitäts-Zeichenkette
@@ -72662,8 +72772,14 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 crest: true,
             }).map((p) => Object.freeze(p))
         ),
-        // KEINE Metaball-Haut: das Raubtier bleibt ANGULAR (box+cone-Klauen lesen als fierce
-        // Bestie; die Kegel-Beine verschmelzen nicht sauber + die Kante IST die Bedrohung).
+        // wahrerguss System B — die Haut VERBINDET die Bestie (statt schwebender Kegel): die
+        // Metaball-Haut umhüllt Rumpf/Glieder/Kamm zu EINEM zusammenhängenden Körper, der
+        // Kamm wird ein gezackter Rücken-Grat, die Kegel-Beine verbundene Glieder. Das Gesicht
+        // trägt GLÜHENDE Augen (predator → emissiv). Tag-NEUTRAL: Augen/Ohren sind separate
+        // Deko-Meshes (nicht in bodyParts), die Füße box+glut liegen schon im Compound → das
+        // WILDE Temperament bleibt tag-emergent (GEMESSEN diag-genom). Eine dunkle Glut-Haut.
+        skin: true,
+        skinColor: 0x6e2412,
         auraY: 0.7,
     }),
 });
