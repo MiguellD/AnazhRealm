@@ -14706,6 +14706,136 @@ class AnazhRealm {
         return parts;
     }
 
+    // wahrerguss System B (GUSS 1) — DAS HUMANOIDE SKELETT-GESETZ (biped, anatomisch
+    // reference-kalibriert; Loomis/Vitruv 8-Kopf): ein aufrechter Zweibeiner aus echten
+    // Proportionen — Schritt = exakte Körpermitte (4 KH), Nabel auf φ (61.8 % v. unten),
+    // Schulter 2 KH breit, V-Taper (Schulter:Taille:Hüfte ≈ 1:0.66:0.78, geschlechts-
+    // moduliert), Glieder GEGLIEDERT (Ober-/Unterarm, Ober-/Unterschenkel, Hand, Fuß). In
+    // A-POSE gebaut (Arme ~45° abwärts → saubere Schulter-Verschmelzung, kein Weight-Bleed
+    // beim Skinnen). Die Glieder ÜBERLAPPEN Schulter/Becken → die Metaball-Haut
+    // (`_buildCreatureSkinGeometry`) verschmilzt sie zu EINER glatten Gestalt: der Strichmann
+    // (lose schwebende Zylinder) verschwindet by construction. EINE Einheit = Kopfhöhe (KH);
+    // `g.kh` skaliert auf Welt-Maß, `g.sex` ∈ [0..1] (0 = mask. V-Taper, 1 = weibl. Sanduhr).
+    static _humanoidSkeleton(g) {
+        g = g || {};
+        const kh = g.kh || 1; // Kopfhöhe als Einheit
+        const bodyMat = g.bodyMat || "fleisch";
+        const limbMat = g.limbMat || bodyMat;
+        const headMat = g.headMat || "knochen";
+        const bodyCol = g.bodyColor;
+        const limbCol = typeof g.limbColor === "number" ? g.limbColor : bodyCol;
+        const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask., 1 weibl.
+        const parts = [];
+        const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
+            const p = {
+                shape,
+                material,
+                position: { x: x * kh, y: y * kh, z: z * kh },
+                size: { x: sx * kh, y: sy * kh, z: sz * kh },
+            };
+            if (rot && (rot.x || rot.y || rot.z)) p.rotation = rot;
+            if (typeof col === "number") p.color = col;
+            if (extra) Object.assign(p, extra);
+            parts.push(p);
+            return p;
+        };
+        // ein gegliedertes Glied A→B als getaperte Kapsel: rotation.z bildet die lokale +y-
+        // Achse auf (dx,dy) ab (xy-Frontalebene — aufrechte Glieder mit lateraler Auslenkung).
+        // Die Länge schließt die runden Caps ein (+diam·0.8) → das Glied überlappt seine
+        // Gelenke (die smin-Verschmelzung der Metaball-Haut).
+        const limb = (ax, ay, az, bx, by, bz, diam, mat, col) => {
+            const dx = bx - ax,
+                dy = by - ay;
+            const len = Math.hypot(dx, dy, bz - az) || 0.01;
+            add(
+                "limb",
+                mat || limbMat,
+                (ax + bx) / 2,
+                (ay + by) / 2,
+                (az + bz) / 2,
+                diam,
+                len + diam * 0.8,
+                diam,
+                { x: 0, y: 0, z: Math.atan2(-dx, dy) },
+                typeof col === "number" ? col : limbCol
+            );
+        };
+        // ── PROPORTIONEN (8-Kopf, von unten gemessen, Sohle y=0) ──
+        const shoulderHalf = 1.0 - sex * 0.25; // Schulter 2 KH (mask.) → schmaler (weibl.)
+        const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen, aber kein Wespen-Kink)
+        const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl. Sanduhr)
+        const hipY = 4.15,
+            waistY = 5.0,
+            shoulderY = 6.5;
+        // ── (1) RUMPF — eine vertikale Kette aus Stationen mit glatten BREITE- UND TIEFE-
+        //    Profilen (wie der Kreatur-Leib): die V-/Sanduhr-Silhouette UND die Körper-TIEFE
+        //    (Brustkorb tief, Taille schmaler) EMERGIEREN aus den Profilen — kein Wespentaillen-
+        //    Kink durch diskrete Blöcke, kein Brett. Stationen überlappen (smin verschmilzt). ──
+        const lerpCP = (cps, t) => {
+            if (t <= cps[0][0]) return cps[0][1];
+            for (let i = 1; i < cps.length; i++)
+                if (t <= cps[i][0]) {
+                    const f = (t - cps[i - 1][0]) / (cps[i][0] - cps[i - 1][0]);
+                    return cps[i - 1][1] + (cps[i][1] - cps[i - 1][1]) * f;
+                }
+            return cps[cps.length - 1][1];
+        };
+        // Breite (Halbachse x): Hüfte → Taille (schmal) → Schulter (breit). t: 0=Becken … 1=Schulter
+        const widthCP = [
+            [0, hipHalf * 0.84],
+            [0.16, hipHalf],
+            [0.42, waistHalf],
+            [0.66, shoulderHalf * 0.9],
+            [0.86, shoulderHalf],
+            [1, shoulderHalf * 0.95],
+        ];
+        // Tiefe (Halbachse z): Becken tief → Taille schmaler → Brustkorb am TIEFSTEN → Schulter flach
+        const depthCP = [
+            [0, 0.44],
+            [0.42, 0.34],
+            [0.66, 0.5],
+            [1, 0.32],
+        ];
+        const torsoBaseY = 3.8,
+            torsoTopY = 6.62,
+            NT = 9;
+        for (let i = 0; i < NT; i++) {
+            const t = i / (NT - 1);
+            const y = torsoBaseY + (torsoTopY - torsoBaseY) * t;
+            const role = i === 0 ? "pelvis" : i === NT - 1 ? "chest" : null;
+            add("box", bodyMat, 0, y, 0, lerpCP(widthCP, t) * 2, 0.6, lerpCP(depthCP, t) * 2, null, bodyCol, role && {
+                bodyRole: role,
+            });
+        }
+        // ── (2) HALS + KOPF (Hals dick + tief eingebettet → kein offener Ring; Kopf rund,
+        //    leicht in z vor → kein eiförmiger Spitz) ──
+        limb(0, shoulderY - 0.05, 0.02, 0, 7.05, 0.06, 0.52, bodyMat, bodyCol);
+        add("sphere", headMat, 0, 7.45, 0.05, 0.78, 0.92, 0.82, null, limbCol, { bodyRole: "head", eyeFront: 0.85 });
+        // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
+        for (const s of [-1, 1]) {
+            const shX = s * shoulderHalf * 0.92,
+                shY = shoulderY + 0.02;
+            add("sphere", limbMat, shX, shY, 0, 0.56, 0.56, 0.56, null, limbCol); // Deltoideus (Arm↔Torso-Brücke, eingebettet)
+            const elbowX = s * (shoulderHalf + 0.5),
+                elbowY = waistY + 0.05;
+            const wristX = s * (shoulderHalf + 0.62),
+                wristY = hipY - 0.05;
+            limb(shX, shY, 0, elbowX, elbowY, 0, 0.4, limbMat); // Oberarm
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32, limbMat); // Unterarm
+            add("sphere", limbMat, wristX + s * 0.04, wristY - 0.2, 0.05, 0.32, 0.44, 0.22, null, limbCol); // Hand
+        }
+        // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert, Fuß 1 KH lang nach vorn) ──
+        for (const s of [-1, 1]) {
+            const hipX = s * (hipHalf * 0.55),
+                kneeX = s * 0.5,
+                ankleX = s * 0.46;
+            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.62, limbMat); // Oberschenkel (kräftig)
+            limb(kneeX, 2.3, 0, ankleX, 0.42, 0, 0.44, limbMat); // Unterschenkel (sehnig)
+            add("box", limbMat, ankleX, 0.16, 0.32, 0.44, 0.32, 1.05, null, limbCol); // Fuß
+        }
+        return parts;
+    }
+
     // ═══ F1-TIEFE (wahrerwuchs §11/§12) — DAS METABALL-HAUT-GESETZ (Skelett → Feld → Haut) ═══
     // Der mandat-§11.7-Kern für Kreaturen: ein virtuelles SKELETT (Knochen-Kapseln) erzeugt ein
     // glattes zusammenhängendes FELD (Σ Kapsel-Beiträge); seine ISOFLÄCHE (Surface Nets — DIE

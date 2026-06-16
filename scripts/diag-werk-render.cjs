@@ -149,6 +149,32 @@ async function renderWerk(page, bpName, view) {
                         }
                     });
                 }
+            } else if (bpName.indexOf("humanoid:") === 0) {
+                // GUSS 1 — das HUMANOIDE Skelett-Gesetz isoliert: Skelett → Metaball-Haut →
+                // Hide-Material. `humanoid:sex` (0 mask., 1 weibl.). __skel zeigt die rohen Teile.
+                const hk = bpName.split(":");
+                const sex = parseFloat(hk[1]) || 0;
+                const skinCol = 0xc98a63;
+                grp = new THREE.Group();
+                try {
+                    const parts = r.constructor._humanoidSkeleton({ sex, bodyColor: skinCol, limbColor: skinCol });
+                    window.__treeInfo = "humanoid sex=" + sex + " parts=" + parts.length;
+                    if (window.__skel) {
+                        grp = r._buildFromBlueprint({ name: "_humanoid", parts }, 0, undefined, {});
+                    } else {
+                        const geom = r._buildCreatureSkinGeometry(parts);
+                        if (geom) {
+                            const mat = r._buildCreatureHideMaterial(skinCol, {});
+                            const skin = new THREE.Mesh(geom, mat);
+                            skin.castShadow = true;
+                            grp.add(skin);
+                        } else {
+                            window.__treeInfo += " NO-GEOM";
+                        }
+                    }
+                } catch (_e) {
+                    window.__treeInfo = "ERR:" + _e.message;
+                }
             } else if (bpName.indexOf("templevar:") === 0) {
                 // V18.250 — eine Tempel-VARIANTE direkt aus einem Seed (zeigt Palette + Größe)
                 const seed = bpName.split(":")[1] || "anazh";
@@ -229,7 +255,7 @@ async function renderWerk(page, bpName, view) {
                 scene.background = bgTex;
             } catch (_e) {}
             const isTree = bpName.indexOf("tree:") === 0;
-            const isCreature = bpName.indexOf("creature:") === 0;
+            const isCreature = bpName.indexOf("creature:") === 0 || bpName.indexOf("humanoid:") === 0;
             const isTall = isTree || isCreature; // braucht mehr Distanz (volle Höhe ins Bild)
             const cam = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
             const dist = isTall ? 2.0 : 1.5;
@@ -315,6 +341,9 @@ async function renderWerk(page, bpName, view) {
             ["ruestung_brustpanzer", "werk-ruestung.png", ""], // T4: Platten + Artikulation
             ["trank_lebenssaft", "werk-trank.png", ""], // T4: Phiole + Glasur
             // ── AVATAR / KREATUR (T5) ──
+            ["humanoid:0", "werk-humanoid-front.png", "front"], // GUSS 1: anatomisches Skelett → Metaball-Haut
+            ["humanoid:0", "werk-humanoid-seite.png", "side"], // Profil (A-Pose, V-Taper)
+            ["humanoid:1", "werk-humanoid-frau.png", "front"], // Sanduhr (sex=1)
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)
