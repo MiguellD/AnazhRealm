@@ -14572,7 +14572,10 @@ class AnazhRealm {
         //     verschmilzt ihn mit dem Körper).
         const tRootZ = -torsoLen * 0.62,
             tRootY = torsoH * 0.18; // Schwanz-Wurzel am HECK des langen Leibs
-        segBetween(0, tRootY, tRootZ, 0, tRootY - tailLen * 0.55, tRootZ - tailLen * 0.78, legR * 1.15);
+        // dicker Schwanz-ANSATZ (torsoH·0.2, tapert zur Spitze) → liest als Schwanz, der aus dem
+        // Körper wächst, statt als dünner Stummel, den die Körper-Masse verschluckt. Der Ansatz
+        // SITZT im Heck (überlappt die Hüft-Wirbel) → verbindet ohne Kneif.
+        segBetween(0, tRootY, tRootZ, 0, tRootY - tailLen * 0.5, tRootZ - tailLen * 0.82, torsoH * 0.2);
 
         // (6) ACCESSOIRES — Hörner + Rücken-Kamm (symmetrisch/zentral → Template unverbogen).
         if (g.horns) {
@@ -14714,7 +14717,7 @@ class AnazhRealm {
                 // PRO-GELENK-k (Forschung: k ≈ 0.3× Radius, kompakter Träger) — KLEIN, sonst
                 // schmelzen die Glieder in den Körper (der Klumpen-Blob). Die Wurzeln sitzen IM
                 // Rumpf (interpenetrierend) → kleines k verbindet trotzdem, ohne zu verschmelzen.
-                const k = Math.max(0.01, Math.min(bn.ra, bn.rb) * 0.32);
+                const k = Math.max(0.02, Math.min(bn.ra, bn.rb) * 0.32);
                 d = smin(d, sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
