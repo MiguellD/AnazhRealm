@@ -46803,6 +46803,7 @@ class AnazhRealm {
             });
         };
         const form = g.pick("form", ["brocken", "brocken", "stapel", "nadel", "geroell"]);
+        this._lastLandmarkForm = form; // T-FULLSTACK: die Form reist zur Platzierung (field-meaningful)
         const weather = g.range("weather", 0.12, 0.4); // Verwitterung (scharf↔gerundet)
         const det = g.int("detail", 1, 2);
         if (form === "brocken") {
@@ -46908,6 +46909,7 @@ class AnazhRealm {
                 ...(rot ? { rotation: rot } : {}),
             });
         const habitus = g.pick("habitus", ["einzel", "cluster", "geode", "druse"]);
+        this._lastLandmarkForm = habitus; // T-FULLSTACK: die Habitus-Form reist zur Platzierung
         const sizeMul = g.range("size", 0.6, 1.8);
         // Die MATRIX (breite, niedrige quarz-Basis) trägt jede Spitze → Schwerpunkt stabil.
         const baseR = g.range("baseR", 0.55, 1.1) * sizeMul;
@@ -46982,6 +46984,7 @@ class AnazhRealm {
         const parts = [];
         const r = g.range("basinR", 0.7, 1.5);
         const basinH = g.range("basinH", 0.5, 1.0);
+        this._lastLandmarkForm = basinH > 0.78 ? "tief" : "flach"; // T-FULLSTACK: tiefe Esse ↔ flacher Lava-See
         // T3 (wahrerwuchs §4.4 S4) — zwei neue Achsen: die ÖFFNUNG (Becken-Weite: enge Esse-
         // Glut ↔ weiter Lava-See) + die INTENSITÄT (emissiv-Boost: die Glut lodert, DIESE
         // heißer — getragen vom glut-wärmeleitung/brennbar-Tag). Tag-NEUTRAL (Form/Glanz).
@@ -49729,12 +49732,14 @@ class AnazhRealm {
         const landmarkVariants = {};
         for (let i = 0; i < AnazhRealm.ROCK_VARIANTS; i++) {
             const key = `fels_var${i}`;
+            const parts = this._rockVariant(`${felsWorldSeed}-fels-${i}`);
             landmarkVariants[key] = {
                 name: key,
                 label: "Felsformation",
                 builtIn: true,
                 instanced: true,
-                parts: this._rockVariant(`${felsWorldSeed}-fels-${i}`),
+                parts,
+                _formClass: this._lastLandmarkForm, // T-FULLSTACK: der Scatter wählt die Form nach dem Feld
             };
         }
         // wahrerwuchs §4.3 S4 — DAS KRISTALL-GENOM (Habitus/Größe/Facetten, quarz, tag-frozen
@@ -49742,22 +49747,26 @@ class AnazhRealm {
         // tag-frozen zu glutbrunnen). Dieselbe Pool-Mechanik wie der Fels.
         for (let i = 0; i < AnazhRealm.CRYSTAL_VARIANTS; i++) {
             const key = `kristall_var${i}`;
+            const parts = this._crystalVariant(`${felsWorldSeed}-kristall-${i}`);
             landmarkVariants[key] = {
                 name: key,
                 label: "Kristall-Formation",
                 builtIn: true,
                 instanced: true,
-                parts: this._crystalVariant(`${felsWorldSeed}-kristall-${i}`),
+                parts,
+                _formClass: this._lastLandmarkForm,
             };
         }
         for (let i = 0; i < AnazhRealm.GLUT_VARIANTS; i++) {
             const key = `glut_var${i}`;
+            const parts = this._glutVariant(`${felsWorldSeed}-glut-${i}`);
             landmarkVariants[key] = {
                 name: key,
                 label: "Glut-Formation",
                 builtIn: true,
                 instanced: true,
-                parts: this._glutVariant(`${felsWorldSeed}-glut-${i}`),
+                parts,
+                _formClass: this._lastLandmarkForm,
             };
         }
 
@@ -55772,6 +55781,23 @@ class AnazhRealm {
         return 1;
     }
 
+    // T-FULLSTACK (wahrerwuchs §4.2-§4.4) — die Landmark-PLATZIERUNG reicht bis zur FORM: die
+    // Hangneigung wählt die Formations-Form (steil → aufragend, flach → gedrungen), genau wie der
+    // Blatt-Typ dem warmen Feld folgt. Region-deterministisch (HISM-kohärent), Affinität unberührt
+    // (es wählt eine VARIANTE der gleichen Art). Fallback (Pool trägt nur EINE Form): reiner Region-Pick.
+    _landmarkVariantIdx(prefix, n, regX, regZ, slope, worldSeed) {
+        const g = this._rollGenome(`${worldSeed}|${regX},${regZ}`, `${prefix}-region`);
+        const tall = (AnazhRealm.LANDMARK_TALL_FORMS && AnazhRealm.LANDMARK_TALL_FORMS[prefix]) || [];
+        const wantTall = (slope || 0) > AnazhRealm.LANDMARK_SLOPE_TALL;
+        const fit = [];
+        for (let vi = 0; vi < n; vi++) {
+            const vbp = this.state.blueprints && this.state.blueprints[`${prefix}_var${vi}`];
+            if (vbp && tall.includes(vbp._formClass) === wantTall) fit.push(vi);
+        }
+        const choices = fit.length ? fit : null;
+        return choices ? choices[g.int("pick", 0, choices.length - 1)] : g.int("pick", 0, n - 1);
+    }
+
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
         // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
         // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
@@ -56067,10 +56093,19 @@ class AnazhRealm {
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
             const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            const idx = this._rollGenome(`${worldSeed}|${regX},${regZ}`, `${landmarkPool.prefix}-region`).int(
-                "pick",
-                0,
-                landmarkPool.n - 1
+            // T-FULLSTACK (Schöpfer 16.06., „sogar bis zur Platzierung?") — die FORM folgt dem
+            // TERRAIN: steile Hänge → aufragende Formationen (Nadel/Stapel/Druse/tiefe Esse), flaches
+            // Land → gedrungene (Brocken/Geröll/Cluster/flacher Lava-See). Die Platzierung reicht
+            // damit BIS ZUR FORM — wie der Blatt-Typ dem warmen Feld folgt (`_scatterSpeciesForCell`),
+            // nicht ein blinder Region-Hash. Region-Hash bricht die Gleichstände (HISM-kohärent: ein
+            // Feld trägt EINEN Stil). Affinität unberührt (es wählt die VARIANTE, nicht die Art).
+            const idx = this._landmarkVariantIdx(
+                landmarkPool.prefix,
+                landmarkPool.n,
+                regX,
+                regZ,
+                this._slopeAt(sampleX, sampleZ),
+                worldSeed
             );
             const key = `${landmarkPool.prefix}_var${idx}`;
             if (this.state.blueprints && this.state.blueprints[key]) spawnName = key;
@@ -70473,6 +70508,17 @@ AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
     kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
     glutbrunnen: Object.freeze({ prefix: "glut", n: 6 }),
 });
+// T-FULLSTACK (wahrerwuchs §4.2-§4.4) — welche Formations-FORM ist AUFRAGEND (für steile Hänge)?
+// `_landmarkVariantIdx` wählt sie an steilem Terrain, die gedrungenen Formen am flachen Land →
+// die Platzierung reicht bis zur Form (wie der Blatt-Typ dem warmen Feld folgt). Die `_formClass`
+// jeder Pool-Variante kommt aus ihrem Genom-Roll (Fels: Brocken/Stapel/Nadel/Geröll · Kristall:
+// Einzel/Cluster/Geode/Druse · Glut: tief/flach).
+AnazhRealm.LANDMARK_TALL_FORMS = Object.freeze({
+    fels: Object.freeze(["nadel", "stapel"]),
+    kristall: Object.freeze(["druse", "einzel"]),
+    glut: Object.freeze(["tief"]),
+});
+AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt der Scatter aufragende Formen
 
 // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-DISTANZEN. Die
 // Schwellen lesen alle Konsumenten (`_chooseLODForDistance`, `_tickArchitectureLOD`

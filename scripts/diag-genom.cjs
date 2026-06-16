@@ -810,6 +810,42 @@ function startSaveServer() {
             r._growTreeBlueprintRich("baum_eiche", "t6-det", C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
             o.t6Det = t6a === r._lastTreeSkeleton.crownForm + ":" + r._lastTreeSkeleton.leanMag.toFixed(4);
 
+            // ══ FULLSTACK (Schöpfer 16.06., „bis zur Platzierung?") — die Landmark-PLATZIERUNG
+            //    reicht bis zur FORM: die Hangneigung wählt die Formations-Form (steil → aufragend,
+            //    flach → gedrungen), wie der Blatt-Typ dem warmen Feld folgt. ══
+            if (typeof r._landmarkVariantIdx === "function" && C.LANDMARK_TALL_FORMS) {
+                const felsN = C.SCATTER_VARIANT_POOL.stein_block.n;
+                const formOf = (idx) => {
+                    const b = r.state.blueprints["fels_var" + idx];
+                    return b && b._formClass;
+                };
+                const tallSet = C.LANDMARK_TALL_FORMS.fels;
+                let allClassed = true,
+                    hasTall = false,
+                    hasSquat = false;
+                for (let i = 0; i < felsN; i++) {
+                    const f = formOf(i);
+                    if (!f) allClassed = false;
+                    else if (tallSet.includes(f)) hasTall = true;
+                    else hasSquat = true;
+                }
+                o.landmarkAllClassed = allClassed;
+                o.landmarkPoolSpansBoth = hasTall && hasSquat;
+                let steepTall = 0,
+                    flatSquat = 0;
+                const N = 200;
+                for (let rr = 0; rr < N; rr++) {
+                    if (tallSet.includes(formOf(r._landmarkVariantIdx("fels", felsN, rr, 7, 0.8, "w")))) steepTall++;
+                    if (!tallSet.includes(formOf(r._landmarkVariantIdx("fels", felsN, rr, 7, 0.05, "w")))) flatSquat++;
+                }
+                o.landmarkSteepTallFrac = +(steepTall / N).toFixed(3);
+                o.landmarkFlatSquatFrac = +(flatSquat / N).toFixed(3);
+                // bei einem Pool, der beide Formen trägt, ist die Korrelation EXAKT (form-reiner Filter).
+                o.landmarkFormFollowsField = o.landmarkPoolSpansBoth && steepTall === N && flatSquat === N;
+                const vegSrc2 = r._vegetationSampleSpawn.toString();
+                o.landmarkConsumes = /_landmarkVariantIdx/.test(vegSrc2) && /_slopeAt/.test(vegSrc2);
+            }
+
             return o;
         });
 
@@ -1043,6 +1079,22 @@ function startSaveServer() {
             out.treeLeanVaries === true && out.treePhylloVaries === true && out.t6Det === true
         );
         ck("T6-MEHRSTÄMMIG: Birken-Klumpen erscheinen (Nebenstämme)", out.treeMultiStem, out.treeMultiStem === true);
+        // ── FULLSTACK (die Landmark-Platzierung reicht bis zur FORM, wie der Blatt-Typ zum Feld) ──
+        ck(
+            "FULLSTACK: Landmark-Varianten form-klassiert + Pool spannt aufragend+gedrungen",
+            `classed=${out.landmarkAllClassed}/both=${out.landmarkPoolSpansBoth}`,
+            out.landmarkAllClassed === true && out.landmarkPoolSpansBoth === true
+        );
+        ck(
+            "FULLSTACK: die FORM folgt dem TERRAIN (steil→aufragend, flach→gedrungen) — Platzierung→Form",
+            `steepTall=${out.landmarkSteepTallFrac}/flatSquat=${out.landmarkFlatSquatFrac}`,
+            out.landmarkFormFollowsField === true
+        );
+        ck(
+            "FULLSTACK: der Scatter KONSUMIERT die Form-Wahl (_landmarkVariantIdx + _slopeAt)",
+            out.landmarkConsumes,
+            out.landmarkConsumes === true
+        );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");
         for (const c of checks) console.log(`  ${c.ok ? "✓" : "✗"} ${c.name} — ${JSON.stringify(c.val)}`);
