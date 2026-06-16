@@ -14481,57 +14481,81 @@ class AnazhRealm {
         // (1) RUMPF — Wirbelsäulen-Kern (box, trägt die dichte-Tags), darüber organisch eine
         //     Kapsel-Tonne. Der Kern bleibt kompakt im Schaft (die Würfel-Kanten verschwinden).
         const barrel = g.bodyBarrel !== false;
-        // der Kern bleibt KOMPAKT (Verhältnis längste:kürzeste < 1.7) → die Allometrie
-        // behandelt ihn als RUMPF (uniform), nicht als schlankes Glied (T5-Invariante).
+        // der LEIB ist ein LÄNGLICHER horizontaler Körper (reference-first: echte Tiere ~1.6×
+        // länger als hoch — NICHT eine Kugel). Der Barrel (rotiert: y-Länge → z-Körperachse) ist
+        // die dominante glatte Masse; die Glieder fließen an den Enden hinein. Der Kern bleibt
+        // KOMPAKT (Verhältnis < 1.7 → die Allometrie behandelt ihn als Rumpf, T5-Invariante).
+        const bodyLen = torsoLen * 1.55; // die sichtbare Körper-Länge entlang z (länglich)
         const coreW = barrel ? torsoW * 0.7 : torsoW;
         const coreH = barrel ? torsoH * 0.7 : torsoH;
         const coreL = barrel ? torsoLen * 0.42 : torsoLen;
         add(torsoShape, bodyMat, 0, 0, 0, coreW, coreH, coreL, null, bodyCol);
         if (barrel) {
-            const bD = Math.hypot(torsoW, torsoH) * 1.08;
-            add("limb", limbMat, 0, 0, 0, bD, torsoLen * 1.04, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
+            const bD = Math.hypot(torsoW, torsoH) * 0.92; // schmaler als lang → kein Kugel-Leib
+            add("limb", limbMat, 0, 0, 0, bD, bodyLen, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
         }
 
         // (2) BEINE — GEGLIEDERT (Biomechanik): ein dicker OBER-Schenkel (im Rumpf VERANKERT →
         //     die Metaball-Haut verschmilzt ihn, kein Schweben) + ein dünnerer UNTER-Schenkel
         //     (distal schlank) + eine Pfote/Huf am Boden. Vier Paare → das Stützpolygon (Ω-Φ2).
         //     Vertikal gestapelt = Euler-knick-sicher (Ω-Φ3-b: schlanke Säule, aber kurz pro Glied).
-        const shoulderZ = torsoLen * 0.34;
-        const hipZ = torsoLen * 0.32;
-        const rootY = -torsoH * 0.16; // im Rumpf verankert (überlappt den Kern → kein Gap)
-        const buildLeg = (sgnX, sgnZ, zPos) => {
-            const upR = legR * 1.35,
-                loR = legR * 0.92;
-            const upCY = rootY - upperLen * 0.5;
-            add(limbShape, limbMat, sgnX * stanceX, upCY, sgnZ * zPos, upR * 2, upperLen, upR * 2, claw ? { x: Math.PI } : null, limbCol);
-            const loCY = rootY - upperLen - lowerLen * 0.5;
-            add(limbShape, limbMat, sgnX * stanceX, loCY, sgnZ * zPos, loR * 2, lowerLen, loR * 2, claw ? { x: Math.PI } : null, limbCol);
-            const footY = rootY - legLen + loR * 0.5;
-            add("box", limbMat, sgnX * stanceX, footY, sgnZ * zPos + loR * 1.1, loR * 2.1, loR * 1.3, loR * 3.3, null, limbCol);
+        const shoulderZ = torsoLen * 0.58; // Schulter an der Brust-Front (Enden des langen Leibs)
+        const hipZ = torsoLen * 0.54; // Hüfte am Heck
+        const rootY = -torsoH * 0.08; // Gelenk-Wurzel im Rumpf verankert (überlappt den Kern)
+        // wahrerguss System B — GEGLIEDERTE, GEBOGENE Beine (reference-first, die Tier-Fotos):
+        // ein echtes Bein ist KEINE gerade Säule — Hüfte→Knie(vor)→Fuß bildet einen Knick.
+        // segBetween setzt ein Glied zwischen zwei Punkte (rotation.x richtet die y-Achse aus:
+        // rotV([0,1,0],{x:θ})=(0,cosθ,sinθ)); die Metaball-Haut liest die Bone-Segmente → fließende
+        // Gelenke. Vorderbein fast gerade (Ellbogen leicht), Hinterbein klar gebogen (Stifle vor).
+        const segBetween = (ax, ay, az, bx, by, bz, r) => {
+            const dy = by - ay,
+                dz = bz - az;
+            const len = Math.hypot(bx - ax, dy, dz) || 0.01;
+            add(limbShape, limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, r * 2, len, r * 2, { x: Math.atan2(dz, dy), y: 0, z: 0 }, limbCol);
         };
-        buildLeg(-1, 1, shoulderZ);
-        buildLeg(1, 1, shoulderZ);
-        buildLeg(-1, -1, hipZ);
-        buildLeg(1, -1, hipZ);
+        const buildLeg = (sgnX, zPos, kneeFwd, footFwd) => {
+            const upR = legR * 1.4,
+                loR = legR * 0.95,
+                x = sgnX * stanceX;
+            const kneeY = rootY - upperLen,
+                footTopY = rootY - legLen + loR * 0.6;
+            segBetween(x, rootY, zPos, x, kneeY, zPos + kneeFwd, upR); // Ober-Schenkel (nach vorn)
+            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, loR); // Unter-Schenkel (zurück)
+            add("box", limbMat, x, rootY - legLen + loR * 0.5, zPos + footFwd + loR * 1.0, loR * 2.1, loR * 1.3, loR * 3.2, null, limbCol); // Pfote/Huf
+        };
+        const kf = af("kneeFwd", 0.05) * BL;
+        buildLeg(-1, shoulderZ, kf * 0.45, kf * 0.1); // Vorderbeine: leichter Knick (Ellbogen)
+        buildLeg(1, shoulderZ, kf * 0.45, kf * 0.1);
+        buildLeg(-1, -hipZ, kf * 1.4, kf * 0.55); // Hinterbeine: klarer Knick (Stifle vor, Sprunggelenk)
+        buildLeg(1, -hipZ, kf * 1.4, kf * 0.55);
 
         // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
         //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
         //     vorn-oben. Der Kopf sitzt am Hals-Ende; er trägt den ANKER + die Augen-FRONTALITÄT.
-        const neckCY = torsoH * 0.32,
-            neckCZ = torsoLen * 0.42;
+        const neckCY = torsoH * 0.34,
+            neckCZ = torsoLen * 0.64; // Hals an der Brust-FRONT des langen Leibs
         const dirY = Math.cos(neckTilt),
             dirZ = Math.sin(neckTilt);
         add(limbShape, limbMat, 0, neckCY, neckCZ, legR * 2.3, neckLen, legR * 1.9, { x: neckTilt, y: 0, z: 0 }, limbCol);
         const headCY = neckCY + dirY * (neckLen * 0.5 + headR * 0.55);
         const headCZ = neckCZ + dirZ * (neckLen * 0.5 + headR * 0.55);
-        add(headShape, headMat, 0, headCY, headCZ, headFull * 0.95, headFull * 0.82, headFull * 1.08, null, limbCol, {
+        add(headShape, headMat, 0, headCY, headCZ, headFull * 0.92, headFull * 0.86, headFull * 1.12, null, limbCol, {
             bodyRole: "head",
             eyeFront,
         });
-        add(snoutShape, headMat, 0, headCY - headR * 0.2, headCZ + headR * 0.78, headR * 0.9, headR * 1.25, headR * 0.9, { x: 1.4, y: 0, z: 0 }, limbCol);
+        // MAUL/SCHNAUZE — nach vorn (rotation x≈1.5 → fast +z). Länge aus der Rolle: ein
+        // Pflanzenfresser (eyeFront niedrig) trägt ein längeres Grasmaul, ein Jäger ein
+        // kürzeres, tieferes (höhere Bisskraft). reference-first an den Tier-Fotos.
+        const muzzleLen = headR * (1.05 + (1 - eyeFront) * 0.85);
+        const muzzleW = headR * (0.95 - eyeFront * 0.1);
+        add(snoutShape, headMat, 0, headCY - headR * 0.16, headCZ + headR * 0.82, muzzleW, muzzleLen, muzzleW, { x: 1.5, y: 0, z: 0 }, limbCol);
 
-        // (5) SCHWANZ — hinten herabhängend (dick an der Wurzel → Spitze).
-        add(tailShape, limbMat, 0, torsoH * 0.1, -torsoLen * 0.5 - tailLen * 0.3, legR * 1.8, tailLen, legR * 0.5, { x: 0.9, y: 0, z: 0 }, limbCol);
+        // (5) SCHWANZ — im HECK VERANKERT (die Wurzel überlappt den Rumpf → kein schwebender
+        //     Stummel, der reference-Fix), nach hinten-unten via segBetween (die Metaball-Haut
+        //     verschmilzt ihn mit dem Körper).
+        const tRootZ = -torsoLen * 0.62,
+            tRootY = torsoH * 0.18; // Schwanz-Wurzel am HECK des langen Leibs
+        segBetween(0, tRootY, tRootZ, 0, tRootY - tailLen * 0.55, tRootZ - tailLen * 0.78, legR * 1.15);
 
         // (6) ACCESSOIRES — Hörner + Rücken-Kamm (symmetrisch/zentral → Template unverbogen).
         if (g.horns) {
@@ -14657,7 +14681,7 @@ class AnazhRealm {
         const PAD = 0.02;
         const min = { x: mnx - PAD, y: mny - PAD, z: mnz - PAD };
         const span = Math.max(0.2, Math.max(mxx - mnx, mxy - mny, mxz - mnz) + 2 * PAD);
-        const N = 40; // Gitter-Auflösung (wahrerguss System B: 26→40 für KLARE Anatomie statt Blob)
+        const N = 48; // Gitter-Auflösung (wahrerguss System B: höher = weniger Facetten, glatter Leib)
         const h = span / N;
         const off = [
             [0, 0, 0],
@@ -14793,9 +14817,9 @@ class AnazhRealm {
                     verts[v * 3 + 2] += (az * inv - src[v * 3 + 2]) * factor;
                 }
             };
-            for (let pass = 0; pass < 2; pass++) {
-                relax(0.5); // λ glätten
-                relax(-0.53); // μ < -λ zurück-blähen → Taubin (kein Schrumpf)
+            for (let pass = 0; pass < 4; pass++) {
+                relax(0.55); // λ glätten (mehr Pässe = glatter Leib, weniger Facetten)
+                relax(-0.58); // μ < -λ zurück-blähen → Taubin (kein Schrumpf)
             }
         }
         const geom = new THREE.BufferGeometry();
@@ -72691,14 +72715,17 @@ AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
 // Schenkel (cursorial → distal länger), torsoW/H=Rumpf-Querschnitt, neckFrac/neckTilt=Hals,
 // headFrac=Kopf, tailFrac=Schwanz, eyeFront=Augen-Frontalität (1=Jäger vorwärts, 0=Pflanzer
 // seitlich). Form folgt Funktion; der Physik-Richter (Ω-Φ2/Φ3-b) garantiert das Stehen/Nicht-Knicken.
+// reference-kalibriert an echten Tier-Seitenprofilen (Schöpfer-Foto-Tafel): der KÖRPER ist die
+// dominante Masse (tiefer Brustkorb, torsoH 0.42–0.5), die Beine GEBOGEN (kneeFwd = Knie-Knick
+// nach vorn), der Kopf substanziell (headFrac), die Topline aus Schulter→Becken.
 AnazhRealm.CREATURE_ARCHETYPES = Object.freeze({
-    balanced: { legFrac: 0.5, segRatio: 1.0, torsoL: 0.55, torsoW: 0.3, torsoH: 0.36, neckFrac: 0.24, neckTilt: 0.55, headFrac: 0.22, tailFrac: 0.34, eyeFront: 0.4 },
-    deer: { legFrac: 0.62, segRatio: 0.82, torsoL: 0.52, torsoW: 0.24, torsoH: 0.32, neckFrac: 0.34, neckTilt: 0.42, headFrac: 0.18, tailFrac: 0.18, eyeFront: 0.12 },
-    wolf: { legFrac: 0.55, segRatio: 1.0, torsoL: 0.56, torsoW: 0.27, torsoH: 0.34, neckFrac: 0.22, neckTilt: 0.48, headFrac: 0.24, tailFrac: 0.42, eyeFront: 0.5 },
-    bear: { legFrac: 0.42, segRatio: 1.25, torsoL: 0.58, torsoW: 0.42, torsoH: 0.46, neckFrac: 0.16, neckTilt: 0.42, headFrac: 0.24, tailFrac: 0.12, eyeFront: 0.35 },
-    bigcat: { legFrac: 0.52, segRatio: 1.0, torsoL: 0.56, torsoW: 0.3, torsoH: 0.36, neckFrac: 0.18, neckTilt: 0.4, headFrac: 0.22, tailFrac: 0.46, eyeFront: 0.75 },
-    weasel: { legFrac: 0.2, segRatio: 1.0, torsoL: 0.82, torsoW: 0.2, torsoH: 0.2, neckFrac: 0.16, neckTilt: 0.5, headFrac: 0.18, tailFrac: 0.5, eyeFront: 0.35 },
-    horse: { legFrac: 0.65, segRatio: 0.78, torsoL: 0.54, torsoW: 0.26, torsoH: 0.4, neckFrac: 0.32, neckTilt: 0.46, headFrac: 0.2, tailFrac: 0.3, eyeFront: 0.12 },
+    balanced: { legFrac: 0.5, segRatio: 1.0, torsoL: 0.58, torsoW: 0.32, torsoH: 0.42, neckFrac: 0.24, neckTilt: 0.55, headFrac: 0.24, tailFrac: 0.34, eyeFront: 0.4, kneeFwd: 0.05 },
+    deer: { legFrac: 0.6, segRatio: 0.82, torsoL: 0.54, torsoW: 0.28, torsoH: 0.44, neckFrac: 0.34, neckTilt: 0.5, headFrac: 0.21, tailFrac: 0.16, eyeFront: 0.12, kneeFwd: 0.055 },
+    wolf: { legFrac: 0.54, segRatio: 1.0, torsoL: 0.6, torsoW: 0.3, torsoH: 0.44, neckFrac: 0.22, neckTilt: 0.46, headFrac: 0.26, tailFrac: 0.42, eyeFront: 0.5, kneeFwd: 0.06 },
+    bear: { legFrac: 0.42, segRatio: 1.2, torsoL: 0.62, torsoW: 0.46, torsoH: 0.52, neckFrac: 0.16, neckTilt: 0.42, headFrac: 0.26, tailFrac: 0.12, eyeFront: 0.35, kneeFwd: 0.05 },
+    bigcat: { legFrac: 0.48, segRatio: 1.0, torsoL: 0.62, torsoW: 0.36, torsoH: 0.48, neckFrac: 0.16, neckTilt: 0.38, headFrac: 0.27, tailFrac: 0.5, eyeFront: 0.75, kneeFwd: 0.065 },
+    weasel: { legFrac: 0.2, segRatio: 1.0, torsoL: 0.86, torsoW: 0.22, torsoH: 0.24, neckFrac: 0.16, neckTilt: 0.5, headFrac: 0.2, tailFrac: 0.5, eyeFront: 0.35, kneeFwd: 0.03 },
+    horse: { legFrac: 0.62, segRatio: 0.78, torsoL: 0.58, torsoW: 0.3, torsoH: 0.46, neckFrac: 0.32, neckTilt: 0.46, headFrac: 0.22, tailFrac: 0.3, eyeFront: 0.12, kneeFwd: 0.05 },
 });
 AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_ARCHETYPES));
 AnazhRealm.CREATURE_SOULS = Object.freeze({
