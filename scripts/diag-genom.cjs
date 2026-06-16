@@ -240,10 +240,69 @@ function startSaveServer() {
                         (a) => Math.abs((tsb[a] || 0) - (trk[a] || 0)) < 1e-9
                     );
                 }
-                // WIRED: der Pool ist registriert + der Scatter wählt eine Fels-Variante
+                // WIRED: der Pool ist registriert + der Scatter wählt eine Landmark-Variante
                 o.felsPoolRegistered = !!(r.state.blueprints && r.state.blueprints.fels_var0);
-                o.scatterPicksFels = /fels_var\$\{felsIdx\}|fels_var/.test(r._vegetationSampleSpawn.toString());
+                o.scatterPicksFels = /SCATTER_VARIANT_POOL|landmarkPool/.test(r._vegetationSampleSpawn.toString());
             }
+
+            // ── S4 KRISTALL- + GLUT-GENOM: dieselbe FREISTEHEND-Physik (Ω-Φ2/Φ5/Φ3-b) +
+            //    AFFINITÄT-frozen zum Wahrzeichen (kristall_geode / glutbrunnen) ──
+            const testLandmark = (fnName, refKey, seedPrefix, axisMats) => {
+                if (typeof r[fnName] !== "function") return null;
+                let stand = true,
+                    intact = true,
+                    noBuckle = true,
+                    matsOk = true;
+                const bad = [];
+                for (let s = 0; s < 300; s++) {
+                    const p = r[fnName](seedPrefix + s);
+                    if (!Array.isArray(p) || p.length < 1) {
+                        bad.push({ s, why: "empty" });
+                        continue;
+                    }
+                    p.forEach((q) => {
+                        if (!axisMats.includes(q.material)) matsOk = false;
+                    });
+                    const bp = { parts: p };
+                    const st = r._stability(bp);
+                    const lp = r._loadPath(bp);
+                    const fl = r._failsUnderLoad(bp);
+                    if (st.inside !== true) {
+                        stand = false;
+                        if (bad.length < 5) bad.push({ s, why: "tips", m: +st.margin.toFixed(3), n: p.length });
+                    }
+                    if (lp.intact !== true) {
+                        intact = false;
+                        if (bad.length < 5) bad.push({ s, why: "float", f: +lp.floatingFrac.toFixed(3), n: p.length });
+                    }
+                    if (fl.buckles === true) {
+                        noBuckle = false;
+                        if (bad.length < 5) bad.push({ s, why: "buckle", sl: +fl.maxSlenderness.toFixed(1) });
+                    }
+                }
+                const ref = r.state.blueprints[refKey];
+                let tagsFrozen = false;
+                if (ref) {
+                    const tr = tagsOf(ref.parts);
+                    const tv = tagsOf(r[fnName](seedPrefix + "aff"));
+                    tagsFrozen = ["lebendig", "dichte", "brennbar", "magieleitung"].every(
+                        (a) => Math.abs((tr[a] || 0) - (tv[a] || 0)) < 1e-9
+                    );
+                }
+                const a = r[fnName](seedPrefix + "det");
+                const b = r[fnName](seedPrefix + "det");
+                const det =
+                    a.length === b.length &&
+                    a.every(
+                        (q, i) =>
+                            Math.abs(q.size.x - b[i].size.x) < 1e-12 && Math.abs(q.position.y - b[i].position.y) < 1e-12
+                    );
+                return { stand, intact, noBuckle, matsOk, tagsFrozen, det, bad };
+            };
+            o.crystal = testLandmark("_crystalVariant", "kristall_geode", "ky", ["quarz"]);
+            o.crystalPool = !!(r.state.blueprints && r.state.blueprints.kristall_var0);
+            o.glut = testLandmark("_glutVariant", "glutbrunnen", "gy", ["stein", "glut"]);
+            o.glutPool = !!(r.state.blueprints && r.state.blueprints.glut_var0);
 
             // ── ROLLER: range im Bereich, int inklusiv, pick aus Liste, chance ~p, seq [0,1) + det ──
             const G = r._rollGenome("rtest", "diag");
@@ -327,9 +386,43 @@ function startSaveServer() {
         ck("FELS-AFFINITÄT: Tags == stein_block (V17.17)", out.rockTagsFrozen, out.rockTagsFrozen === true);
         ck("FELS-DETERMINISMUS: gleicher Seed → bit-identisch", out.rockDet, out.rockDet === true);
         ck(
-            "FELS-WIRED: Pool registriert + Scatter wählt eine Fels-Variante",
+            "FELS-WIRED: Pool registriert + Scatter wählt eine Landmark-Variante",
             `${out.felsPoolRegistered}/${out.scatterPicksFels}`,
             out.felsPoolRegistered === true && out.scatterPicksFels === true
+        );
+        // ── S4 KRISTALL ──
+        const cx = out.crystal || {};
+        ck(
+            "KRISTALL-PHYSIK: steht (Ω-Φ2) + intakt (Ω-Φ5) + knickt nicht (Ω-Φ3-b)",
+            JSON.stringify({ st: cx.stand, lp: cx.intact, bk: cx.noBuckle, bad: cx.bad }),
+            cx.stand === true && cx.intact === true && cx.noBuckle === true
+        );
+        ck(
+            "KRISTALL-AFFINITÄT: nur quarz + Tags == kristall_geode",
+            cx.tagsFrozen,
+            cx.matsOk === true && cx.tagsFrozen === true
+        );
+        ck(
+            "KRISTALL-DETERMINISMUS + Pool registriert",
+            `${cx.det}/${out.crystalPool}`,
+            cx.det === true && out.crystalPool === true
+        );
+        // ── S4 GLUT ──
+        const gt = out.glut || {};
+        ck(
+            "GLUT-PHYSIK: das Becken steht (Ω-Φ2) + intakt (Ω-Φ5)",
+            JSON.stringify({ st: gt.stand, lp: gt.intact, bad: gt.bad }),
+            gt.stand === true && gt.intact === true && gt.noBuckle === true
+        );
+        ck(
+            "GLUT-AFFINITÄT: nur stein+glut + Tags == glutbrunnen",
+            gt.tagsFrozen,
+            gt.matsOk === true && gt.tagsFrozen === true
+        );
+        ck(
+            "GLUT-DETERMINISMUS + Pool registriert",
+            `${gt.det}/${out.glutPool}`,
+            gt.det === true && out.glutPool === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");

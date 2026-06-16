@@ -393,7 +393,14 @@ S3  FELS-GENOM  ✅ GEBAUT (V18.252) — `_rockVariant(seed)` über den Roller: 
       region-deterministisch wählt. PHYSIK-GARANT (Fels ist FREISTEHEND, anders als der Baum):
       jeder steht (Ω-Φ2) · Lastpfad intakt (Ω-Φ5, der Stapel achsen-parallel) · die Nadel
       knickt nicht (Ω-Φ3-b) — GEMESSEN diag-genom (FELS-Bänder grün).
-S4  KRISTALL · GLUT · BÜSCHE — Genome (Größe/Habitus/Farbe/Dichte; Büsche erben S1).
+S4  KRISTALL · GLUT · BÜSCHE  ✅ GEBAUT (V18.253) — `_crystalVariant` (Habitus: Einzel/
+      Cluster/Geode/Druse · Größe · Facetten, quarz, tag-frozen zu kristall_geode) +
+      `_glutVariant` (Becken/Flamme/Intensität, stein+glut, tag-frozen zu glutbrunnen);
+      Pools `kristall_var0..7` + `glut_var0..5`, der Scatter wählt sie über die
+      generalisierte `SCATTER_VARIANT_POOL`-Karte (EINE Landmark-Pick-Mechanik). PHYSIK-
+      garant (steht/intakt/knickt-nicht — breite quarz-Matrix, gedrungenes Becken),
+      GEMESSEN diag-genom (KRISTALL+GLUT-Bänder grün). Büsche erben S1 (sizeClass-gated
+      auf normal, age variiert). → die GANZE SCATTER-Welt ist jetzt Genom-gewachsen.
 S5  BAUWERKE verallgemeinert — Werkstätten · Bauten · Portale (Tempel-Muster:
       Palette + Größe + Detail, physik-garant).
 S6  GERÄT/RÜSTUNG/TRANK · FAHRZEUG — Genome (der Hebel/SSF physik-wahr).

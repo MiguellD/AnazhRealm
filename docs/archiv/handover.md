@@ -390,6 +390,31 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 > Wahrheit + der Pfad: `docs/wahreranblick-plan.md` + der CLAUDE.md-Kopf. Die
 > historischen Einträge bleiben als Lern-Material stehen; diese Korrektur führt.
 
+### V18.253 — DER WAHRE WUCHS S4: KRISTALL + GLUT (die SCATTER-Welt ist genom-gewachsen)
+
+Das Genom-Prinzip auf die letzten zwei Scatter-Wahrzeichen (wahrerwuchs §4.3/§4.4). Damit
+ist die GANZE gescatterte Welt — Bäume (S1) · Fels (S3) · Kristall + Glut (S4) — aus dem
+Seed gewachsen, kein statischer Klon mehr.
+
+- **`_crystalVariant(seed)` — die KRISTALLOGRAPHIE:** HABITUS (Einzel-Spitze · Cluster ·
+  Geode · Säulen-Druse) · Größe · Facetten. NUR `quarz` + die kristall_geode-Formen
+  (sphere-Matrix + octahedron-Spitzen) → tag-frozen. Eine BREITE quarz-Matrix trägt jede
+  Spitze (Ω-Φ2-stabil); Pool `kristall_var0..7`.
+- **`_glutVariant(seed)` — die THERMODYNAMIK:** Becken-Größe · Flammen-Höhe · Öffnung ·
+  Intensität (emissiv folgt aus dem glut-Tag). NUR die glutbrunnen-Formen (stein-cylinder-
+  Schale + glut-sphere-Kern + optionale y-gestreckte glut-Flammenzunge — KEIN cone, damit
+  tag-frozen) → ein gedrungenes Becken STEHT; Pool `glut_var0..5`.
+
+**DIE SCATTER-WIRING GENERALISIERT:** der V18.252-`if (bestName === "stein_block")`-Zweig
+ist eine EINE Pick-Mechanik über `AnazhRealm.SCATTER_VARIANT_POOL` (Sieger-Name → {Pool-
+Präfix, Zahl}) → der Scatter würfelt REGION-deterministisch `<prefix>_var<idx>` aus dem
+passenden Pool (Fels/Kristall/Glut), tag-frozen zum Wahrzeichen (V17.17 — der Affinitäts-
+Sieg unberührt). PHYSIK-GARANT (freistehend → Ω-Φ2/Φ5/Φ3-b): GEMESSEN diag-genom
+(KRISTALL+GLUT-Bänder grün: steht/intakt/knickt-nicht, tag-frozen == Wahrzeichen,
+deterministisch, Pools registriert) + playtest. **OFFEN:** der LOOK (Kristall-Druse,
+Glut-Becken im Vulkan-Anker) AUGEN-bound → Schöpfer-Browser. **DIE GEBAUTE/GECRAFTETE
+Palette (S5 Bauwerke · S6 Gerät/Fahrzeug · S7 Kreatur) ist die nächste Kategorie.**
+
 ### V18.252 — DER WAHRE WUCHS S3: das FELS-GENOM (vom Kiesel zum Felsturm)
 
 Das Genom-Prinzip auf die GEOLOGIE angewandt (wahrerwuchs §4.2). `_rockVariant(seed)`

@@ -46663,6 +46663,134 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ DAS KRISTALL-GENOM (wahrerwuchs §4.3 S4) — von der Druse zum Riesen-Quarz ═══
+    // Die KRISTALLOGRAPHIE als Gesetz: HABITUS (Einzel-Spitze · Cluster · Geode · Säulen-
+    // Druse) · Größe · Facetten. NUR `quarz` + die kristall_geode-Formen (sphere-Matrix +
+    // octahedron-Spitzen) → tag-frozen zu kristall_geode (V17.17). PHYSIK-GARANT: jeder
+    // Kristall STEHT (Ω-Φ2 — eine breite quarz-Matrix trägt die Spitzen) + Lastpfad intakt.
+    _crystalVariant(seed) {
+        const g = this._rollGenome(seed, "crystal");
+        const parts = [];
+        const xtal = (shape, x, y, z, sx, sy, sz, rot) =>
+            parts.push({
+                shape,
+                material: "quarz",
+                color: 0x9fd6e8,
+                opacity: 0.85,
+                position: { x, y, z },
+                size: { x: sx, y: sy, z: sz },
+                ...(rot ? { rotation: rot } : {}),
+            });
+        const habitus = g.pick("habitus", ["einzel", "cluster", "geode", "druse"]);
+        const sizeMul = g.range("size", 0.6, 1.8);
+        // Die MATRIX (breite, niedrige quarz-Basis) trägt jede Spitze → Schwerpunkt stabil.
+        const baseR = g.range("baseR", 0.55, 1.1) * sizeMul;
+        if (habitus === "einzel") {
+            const h = g.range("h", 1.1, 3.0) * sizeMul;
+            xtal("sphere", 0, baseR * 0.32, 0, baseR * 1.7, baseR * 0.7, baseR * 1.7);
+            xtal("octahedron", 0, baseR * 0.5 + h * 0.45, 0, baseR * 0.85, h * 0.9, baseR * 0.85, {
+                x: 0,
+                y: g.axis("ry") * 6.283,
+                z: 0,
+            });
+        } else if (habitus === "cluster") {
+            xtal("sphere", 0, baseR * 0.3, 0, baseR * 1.9, baseR * 0.7, baseR * 1.9);
+            const n = g.int("n", 3, 6);
+            for (let i = 0; i < n; i++) {
+                const a = g.axis("a" + i) * 6.283;
+                const d = g.range("d" + i, 0, baseR * 0.8);
+                const s = g.range("s" + i, 0.3, 0.7) * baseR;
+                xtal("octahedron", Math.cos(a) * d, baseR * 0.4 + s * 0.9, Math.sin(a) * d, s, s * 1.7, s, {
+                    x: g.axis("rx" + i) * 0.5,
+                    y: a,
+                    z: g.axis("rz" + i) * 0.5,
+                });
+            }
+        } else if (habitus === "geode") {
+            const r = g.range("r", 0.85, 1.7) * sizeMul;
+            xtal("sphere", 0, r * 0.55, 0, r * 1.7, r * 1.7, r * 1.7);
+            const n = g.int("n", 2, 4);
+            for (let i = 0; i < n; i++) {
+                const a = g.axis("a" + i) * 6.283;
+                const s = g.range("s" + i, 0.3, 0.55) * r;
+                xtal("octahedron", Math.cos(a) * r * 0.4, r * 0.85 + s * 0.4, Math.sin(a) * r * 0.4, s, s, s, {
+                    x: g.axis("rx" + i) * 0.5,
+                    y: a,
+                    z: g.axis("rz" + i) * 0.3,
+                });
+            }
+        } else {
+            // Druse: eine niedrige Säule aus Spitzen auf breiter Basis (steht, schmaler nach oben).
+            xtal("sphere", 0, baseR * 0.28, 0, baseR * 1.8, baseR * 0.6, baseR * 1.8);
+            const n = g.int("n", 3, 5);
+            let y = baseR * 0.4;
+            for (let i = 0; i < n; i++) {
+                const s = baseR * (0.8 - i * 0.12);
+                xtal(
+                    "octahedron",
+                    (g.axis("ox" + i) - 0.5) * baseR * 0.4,
+                    y + s * 0.7,
+                    (g.axis("oz" + i) - 0.5) * baseR * 0.4,
+                    s,
+                    s * 1.5,
+                    s,
+                    {
+                        x: g.axis("rx" + i) * 0.3,
+                        y: g.axis("ry" + i) * 6.283,
+                        z: g.axis("rz" + i) * 0.3,
+                    }
+                );
+                y += s * 0.7;
+            }
+        }
+        return parts;
+    }
+
+    // ═══ DAS GLUT-GENOM (wahrerwuchs §4.4 S4) — die Thermodynamik (Gefäß + Flamme) ═══
+    // Becken-Größe · Flammen-Höhe · Öffnung · Intensität (das emissiv folgt aus dem
+    // glut-Material-Tag, kein gesetzter Glow). NUR die glutbrunnen-Formen (stein-cylinder-
+    // Schale + glut-sphere/cone-Kern) → tag-frozen zu glutbrunnen (V17.17). PHYSIK: ein
+    // gedrungenes Becken STEHT (Ω-Φ2).
+    _glutVariant(seed) {
+        const g = this._rollGenome(seed, "glut");
+        const parts = [];
+        const r = g.range("basinR", 0.7, 1.5);
+        const basinH = g.range("basinH", 0.5, 1.0);
+        // (1) Stein-Becken (Schale) — breit + niedrig → steht immer.
+        parts.push({
+            shape: "cylinder",
+            material: "stein",
+            color: 0x6a6258,
+            position: { x: 0, y: basinH * 0.5, z: 0 },
+            size: { x: r * 2, y: basinH, z: r * 2 },
+            segments: 12,
+        });
+        // (2) Glut-Kern (halb-transparent, emissiv aus dem Material-Tag) — Intensität via Größe.
+        const coreR = r * g.range("core", 0.55, 0.8);
+        const flame = g.range("flame", 0.9, 1.7); // Flammen-Höhe
+        parts.push({
+            shape: "sphere",
+            material: "glut",
+            color: 0xff7a2a,
+            opacity: 0.75,
+            position: { x: 0, y: basinH + coreR * 0.5, z: 0 },
+            size: { x: coreR * 2, y: coreR * 2 * flame, z: coreR * 2 },
+        });
+        // (3) optional eine aufsteigende Flammen-ZUNGE — eine y-gestreckte glut-Kugel (KEIN
+        // neuer Shape → tag-frozen zu glutbrunnen, V17.17; die Streckung macht die Flamme).
+        if (g.chance("tongue", 0.5)) {
+            parts.push({
+                shape: "sphere",
+                material: "glut",
+                color: 0xffb347,
+                opacity: 0.6,
+                position: { x: 0, y: basinH + coreR * flame, z: 0 },
+                size: { x: coreR * 0.9, y: coreR * 2.0 * flame, z: coreR * 0.9 },
+            });
+        }
+        return parts;
+    }
+
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
@@ -49136,10 +49264,10 @@ class AnazhRealm {
         // Welt-Seed (`_rockVariant` über den geteilten Roller); persistiert trivial als
         // Built-in (kein grow-for-spawn nötig). Physik-garant (steht/Lastpfad/knickt nicht).
         const felsWorldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const felsVariants = {};
+        const landmarkVariants = {};
         for (let i = 0; i < AnazhRealm.ROCK_VARIANTS; i++) {
             const key = `fels_var${i}`;
-            felsVariants[key] = {
+            landmarkVariants[key] = {
                 name: key,
                 label: "Felsformation",
                 builtIn: true,
@@ -49147,9 +49275,32 @@ class AnazhRealm {
                 parts: this._rockVariant(`${felsWorldSeed}-fels-${i}`),
             };
         }
+        // wahrerwuchs §4.3 S4 — DAS KRISTALL-GENOM (Habitus/Größe/Facetten, quarz, tag-frozen
+        // zu kristall_geode) + §4.4 DAS GLUT-GENOM (Becken/Flamme/Intensität, stein+glut,
+        // tag-frozen zu glutbrunnen). Dieselbe Pool-Mechanik wie der Fels.
+        for (let i = 0; i < AnazhRealm.CRYSTAL_VARIANTS; i++) {
+            const key = `kristall_var${i}`;
+            landmarkVariants[key] = {
+                name: key,
+                label: "Kristall-Formation",
+                builtIn: true,
+                instanced: true,
+                parts: this._crystalVariant(`${felsWorldSeed}-kristall-${i}`),
+            };
+        }
+        for (let i = 0; i < AnazhRealm.GLUT_VARIANTS; i++) {
+            const key = `glut_var${i}`;
+            landmarkVariants[key] = {
+                name: key,
+                label: "Glut-Formation",
+                builtIn: true,
+                instanced: true,
+                parts: this._glutVariant(`${felsWorldSeed}-glut-${i}`),
+            };
+        }
 
         return {
-            ...felsVariants,
+            ...landmarkVariants,
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
@@ -55319,23 +55470,25 @@ class AnazhRealm {
         let spawnName = bestName;
         let spawnScale = 1;
         let spawnYaw = 0;
-        // wahrerwuchs §4.2 S3 — DAS FELS-GENOM: ist der Affinitäts-Sieger ein Felsblock,
-        // wähle eine REGION-deterministische Fels-FORMATION (Brocken/Stapel/Nadel/Geröll)
-        // statt des immer-gleichen 2.4-Würfels. Region-geteilt (ein Fels-Feld trägt EINEN
-        // lokalen Stil → das HISM-Instancing wirkt); die Gestalt kommt NACH dem Sieg, der
-        // Felsblock bleibt der kanonische Affinitäts-Träger (tag-frozen, V17.17). Variation
-        // PRO Fels kommt aus scale/yaw (unten). Über den geteilten Roller (S0).
-        if (bestName === "stein_block" && AnazhRealm.ROCK_VARIANTS > 0) {
+        // wahrerwuchs §4.2/§4.3/§4.4 S3+S4 — DIE LANDMARK-GENOME: ist der Affinitäts-Sieger
+        // ein Fels/Kristall/Glut-Wahrzeichen, wähle eine REGION-deterministische FORMATION
+        // (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut:
+        // Becken-Größe/Flamme/Intensität) statt des immer-gleichen Klons. Region-geteilt
+        // (ein Feld trägt EINEN lokalen Stil → das HISM-Instancing wirkt); die Gestalt kommt
+        // NACH dem Sieg, der Wahrzeichen-Name bleibt der kanonische Affinitäts-Träger
+        // (tag-frozen, V17.17). Variation PRO Stück aus scale/yaw (unten). Geteilter Roller (S0).
+        const landmarkPool = AnazhRealm.SCATTER_VARIANT_POOL && AnazhRealm.SCATTER_VARIANT_POOL[bestName];
+        if (landmarkPool && landmarkPool.n > 0) {
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
             const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-            const felsIdx = this._rollGenome(`${worldSeed}|${regX},${regZ}`, "fels-region").int(
+            const idx = this._rollGenome(`${worldSeed}|${regX},${regZ}`, `${landmarkPool.prefix}-region`).int(
                 "pick",
                 0,
-                AnazhRealm.ROCK_VARIANTS - 1
+                landmarkPool.n - 1
             );
-            const felsKey = `fels_var${felsIdx}`;
-            if (this.state.blueprints && this.state.blueprints[felsKey]) spawnName = felsKey;
+            const key = `${landmarkPool.prefix}_var${idx}`;
+            if (this.state.blueprints && this.state.blueprints[key]) spawnName = key;
         }
         if (isTree) {
             // V18.210 (§1-A1) — Γ7 WORLDGEN-HOOK: gen ≥ 4 baut prozedurale
@@ -69395,7 +69548,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.252.0";
+AnazhRealm.VERSION = "18.253.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69721,9 +69874,20 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // justierbar; eine Änderung erfordert KEINEN Welt-Reset (die Pool-Aufstellung
 // ist lazy, alte Welten ohne variantSeed migrieren still).
 AnazhRealm.VARIANTS_PER_SPECIES = 16;
-// wahrerwuchs §4.2 S3 — die Zahl der Genom-gewürfelten Fels-Formationen (Brocken/
-// Stapel/Nadel/Geröll), die der Scatter nach dem stein_block-Affinitäts-Sieg wählt.
+// wahrerwuchs §4.2-4.4 S3+S4 — die Zahl der Genom-gewürfelten Landmark-Formationen
+// (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut:
+// Becken/Flamme/Intensität), die der Scatter NACH dem Affinitäts-Sieg wählt.
 AnazhRealm.ROCK_VARIANTS = 12;
+AnazhRealm.CRYSTAL_VARIANTS = 8;
+AnazhRealm.GLUT_VARIANTS = 6;
+// Die Landmark-Pool-Karte: Sieger-Name → { Pool-Präfix, Zahl }. Der Scatter würfelt
+// REGION-deterministisch einen `<prefix>_var<idx>` aus dem passenden Pool (tag-frozen
+// zum Wahrzeichen → kein Affinitäts-Shift, V17.17).
+AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
+    stein_block: Object.freeze({ prefix: "fels", n: 12 }),
+    kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
+    glutbrunnen: Object.freeze({ prefix: "glut", n: 6 }),
+});
 
 // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-DISTANZEN. Die
 // Schwellen lesen alle Konsumenten (`_chooseLODForDistance`, `_tickArchitectureLOD`
