@@ -168,10 +168,23 @@ async function renderWerk(page, bpName, view) {
             const isCreature = bpName.indexOf("creature:") === 0;
             const isTall = isTree || isCreature; // braucht mehr Distanz (volle Höhe ins Bild)
             const cam = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
-            const a = view === "front" ? 0.18 : 0.85;
             const dist = isTall ? 2.0 : 1.5;
             const cy = isTall ? 0.3 : 0.26;
-            cam.position.set(maxd * a, maxd * cy, maxd * dist);
+            // MULTI-ANGLE: "side" blickt ENTLANG -x (die Seiten-Silhouette — wo die
+            // Gesetze sich zeigen: Profil, Glied-Anbindung, schwebende Teile); "front"
+            // frontal; sonst 3/4. (Die Front allein versteckt die fehlenden Gesetze.)
+            let camX, camZ;
+            if (view === "side") {
+                camX = maxd * dist;
+                camZ = maxd * 0.22;
+            } else if (view === "front") {
+                camX = maxd * 0.18;
+                camZ = maxd * dist;
+            } else {
+                camX = maxd * 0.85;
+                camZ = maxd * dist;
+            }
+            cam.position.set(camX, maxd * cy, camZ);
             cam.lookAt(0, isTree ? 0 : -sz.y * 0.02, 0);
             window.__rs = () => {
                 try {
@@ -238,7 +251,10 @@ async function renderWerk(page, bpName, view) {
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)
+            ["creature:wesen:2.5", "werk-kreatur-koloss-seite.png", "side"], // SEITE: das Profil/die Gesetze
             ["creature:glutwesen:2.0", "werk-kreatur-glutwesen.png", "front"], // T5: Glut-Wesen, gross
+            ["creature:glutwesen:2.0", "werk-kreatur-glutwesen-seite.png", "side"], // SEITE
+            ["ruestung_brustpanzer", "werk-ruestung-seite.png", "side"], // SEITE: wie getragen liest
             // ── FAHRZEUG (T4) ──
             ["fahrzeug_wagen", "werk-wagen.png", ""], // SSF: Spur/Rad/Kabine
         ]) {

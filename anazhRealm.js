@@ -14818,6 +14818,49 @@ class AnazhRealm {
                         );
                 }
         if (!verts.length || !idx.length) return null;
+        // wahrerguss System D — SUBDIVISION/GLÄTTUNG: der rohe Surface-Nets-Leib ist
+        // facettig/klumpig (klay-Look). TAUBIN-Glättung (λ schrumpft, μ bläht zurück →
+        // volumen-erhaltend, kein Schrumpf-Bug der reinen Laplace-Glättung) rundet die
+        // Haut zu einer glatten organischen Oberfläche. Adjazenz aus dem Dreiecks-Index.
+        const VN = verts.length / 3;
+        if (VN > 3) {
+            const adj = new Array(VN);
+            for (let v = 0; v < VN; v++) adj[v] = new Set();
+            for (let t = 0; t + 2 < idx.length; t += 3) {
+                const a = idx[t],
+                    b = idx[t + 1],
+                    c = idx[t + 2];
+                adj[a].add(b);
+                adj[a].add(c);
+                adj[b].add(a);
+                adj[b].add(c);
+                adj[c].add(a);
+                adj[c].add(b);
+            }
+            const relax = (factor) => {
+                const src = verts.slice();
+                for (let v = 0; v < VN; v++) {
+                    const nb = adj[v];
+                    if (!nb || !nb.size) continue;
+                    let ax = 0,
+                        ay = 0,
+                        az = 0;
+                    for (const n of nb) {
+                        ax += src[n * 3];
+                        ay += src[n * 3 + 1];
+                        az += src[n * 3 + 2];
+                    }
+                    const inv = 1 / nb.size;
+                    verts[v * 3] += (ax * inv - src[v * 3]) * factor;
+                    verts[v * 3 + 1] += (ay * inv - src[v * 3 + 1]) * factor;
+                    verts[v * 3 + 2] += (az * inv - src[v * 3 + 2]) * factor;
+                }
+            };
+            for (let pass = 0; pass < 2; pass++) {
+                relax(0.5); // λ glätten
+                relax(-0.53); // μ < -λ zurück-blähen → Taubin (kein Schrumpf)
+            }
+        }
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
         geom.setIndex(idx);
@@ -14911,35 +14954,55 @@ class AnazhRealm {
         const predator = !!soul.predator;
         const eyeCol = predator ? 0xff5a1e : 0x0b0b0e;
         const skinCol = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-        const mkMesh = (geom, color, emissive) => {
+        const mkMesh = (geom, color, opts = {}) => {
             let mat;
             try {
                 mat = this._buildPbrNodeMaterial
-                    ? this._buildPbrNodeMaterial({ color })
+                    ? this._buildPbrNodeMaterial({
+                          color,
+                          roughness: opts.roughness,
+                          metalness: opts.metalness,
+                      })
                     : new THREE.MeshStandardMaterial({ color });
             } catch (_e) {
                 mat = new THREE.MeshStandardMaterial({ color });
             }
-            if (emissive && mat.emissive) {
+            if (opts.emissive && mat.emissive) {
                 mat.emissive.setHex(color);
-                mat.emissiveIntensity = 0.85;
+                mat.emissiveIntensity = opts.emissiveIntensity || 0.85;
             }
             const m = new THREE.Mesh(geom, mat);
             m.userData._creatureFace = true;
             m.castShadow = false;
             return m;
         };
-        // AUGEN — zwei kleine glänzende Kugeln vorn-oben am Kopf.
-        const eyeGeom = new THREE.SphereGeometry(hr * 0.2, 10, 8);
+        // AUGEN — kleiner, tiefer sitzend, GLÄNZEND (niedrige roughness → fängt ein
+        // Glanzlicht = das „lebendige" Auge) + ein winziger heller Catch-Light-Punkt
+        // (der Funke, der ein Auge lebendig macht). Raubtier → glühend.
+        const eyeR = hr * 0.16;
+        const eyeGeom = new THREE.SphereGeometry(eyeR, 12, 10);
+        const sparkGeom = new THREE.SphereGeometry(eyeR * 0.34, 8, 6);
         for (const sgnX of [-1, 1]) {
-            const e = mkMesh(eyeGeom, eyeCol, predator);
-            e.position.set(hx + sgnX * hr * 0.42, hy + hr * 0.14, hz + hr * 0.66);
+            const ex = hx + sgnX * hr * 0.4,
+                ey = hy + hr * 0.12,
+                ez = hz + hr * 0.6;
+            const e = mkMesh(eyeGeom, eyeCol, {
+                roughness: 0.12,
+                metalness: 0,
+                emissive: predator,
+                emissiveIntensity: 1.0,
+            });
+            e.position.set(ex, ey, ez);
             group.add(e);
+            // der Catch-Light-Funke (oben-außen auf der Pupille), emissiv-weiß.
+            const spark = mkMesh(sparkGeom, 0xfff4e0, { emissive: true, emissiveIntensity: 1.3, roughness: 0.3 });
+            spark.position.set(ex + sgnX * eyeR * 0.3, ey + eyeR * 0.34, ez + eyeR * 0.74);
+            group.add(spark);
         }
         // OHREN — zwei kleine Kegel oben am Kopf (Haut-Farbe), leicht nach außen geneigt.
         const earGeom = new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8);
         for (const sgnX of [-1, 1]) {
-            const ear = mkMesh(earGeom, skinCol, false);
+            const ear = mkMesh(earGeom, skinCol, {});
             ear.position.set(hx + sgnX * hr * 0.5, hy + hr * 0.7, hz - hr * 0.05);
             ear.rotation.z = sgnX * -0.3;
             group.add(ear);
