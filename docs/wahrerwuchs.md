@@ -1250,17 +1250,30 @@ Material?"):**
   ist jetzt ein KOMPAKTER dichter Nugget GANZ INNERHALB einer Kapsel-Tonne (`limb`) → die
   Würfel-Kanten verschwinden, der Koloss liest als stockiges Tier. Tag-neutral (limb==cylinder,
   der stein-Kern hält dichte=3 → wesenMoreDichte/HasLebendig + die V18.208-Monotonie unberührt,
-  GEMESSEN; das Raubtier bleibt angular). Das volle Skelett+Metaball+Marching-Cubes (verschmelzende
-  Haut) bleibt ein eigener Bogen (kollidiert mit dem parts-Animations-/Tag-System).
+  GEMESSEN; das Raubtier bleibt angular).
+- **DER TIEFEN-SCHRITT (Schöpfer „einen Schritt zurück und dann in die volle Tiefe") — DIE
+  METABALL-HAUT (das §11.7-Skelett-Gesetz):** statt hand-gestapelter Kapseln EMERGIERT die
+  Kreatur-Gestalt jetzt aus dem GESETZ — `_buildCreatureSkinGeometry`: ein Metaball-FELD aus
+  den Skelett-Knochen (Kapsel-Distanz, benachbarte Knochen VERSCHMELZEN via Falloff>Radius),
+  dessen Isofläche **SURFACE NETS** (die Terrain-Mesher-Technik der Welt = EINE Quelle, die
+  heilige Lektion) als eine glatte organische HAUT zieht, in der die Glieder in den Rumpf
+  fliessen. Die Knochen-TEILE bleiben (verborgen) als die WAHRHEIT für Tags/Physik/Motion/
+  Allometrie (children-Index + alle Gesetze GEMESSEN unberührt: diag-genom grün, T5 csy=1);
+  die Haut ist die sichtbare Gestalt (`soul.skin`, nur `wesen` — das Raubtier bleibt angular,
+  seine Kegel-Klauen verschmelzen nicht sauber + die Kante IST die Bedrohung). Damit liest
+  `wesen` als gewachsenes Tier (Glieder fusioniert), nicht als Kapsel-Stapel.
 - **DIE PHYSIK-SCHÄRFUNG (der Method-Befund):** `_workshopStationPrecision` liest jetzt MASSE
   (Compound-dichte) + die ROHE Material-HÄRTE des härtesten Bauteils (der Amboss-Stahl, NICHT
   form-verstärkt — ein scharfes Horn ist kein härteres Werkzeug; daran sättigte die alte
   Compound-härte). Die Forge-Steigerung EMERGIERT jetzt aus der Amboss-Härte (Eisen 0.93 >
   Stein 0.904, weil Eisen härter IST), kein Etikett-Tausch — ein Auslesewert der Schmiede-Physik.
 
-**EHRLICH OFFEN (kein Über-Claim — die Kalibrierung ehren):** mehrere Werke sind GEHOBEN, aber
-NICHT alle auf Baum/Tempel-Niveau (90%): die Kreatur ist organisch, aber Kopf/Gesicht noch
-schlicht (~75%); die Forge/Phiole/Kürass lesen klar, aber low-poly. WEITERE Werkstätten
-(brennkolben/webstuhl/drehbank/altar) + der holzross-Mount tragen noch ihre alten Box-Listen
-(Kandidaten für die Forge-Grammatik / das Skelett-Gesetz). BÄUME (F6 Ω-O16) Krone/Gabelung
-nicht angefasst. Der finale LOOK bleibt AUGEN-bound (Schöpfer-Browser im echten WebGPU).
+**EHRLICH OFFEN (kein Über-Claim — die Kalibrierung ehren):** die `wesen`-Haut ist organisch
+(verschmolzene Glieder), aber die FÜSSE laufen spitz aus (Metaball folgt der Kapsel-Spitze →
+ein Fuss-Knochen fehlt) + Kopf/Gesicht ohne Merkmale (Augen/Ohren) + die Haut ist STATISCH
+(die Beine laufen nicht; das volle Skelett+SkinnedMesh-Bone-Skinning, das die Haut der Motion
+folgen lässt, ist der nächste Schritt — die Knochen+Skeleton stehen dafür bereit). Die
+Forge/Phiole/Kürass lesen klar, aber low-poly. WEITERE Werkstätten (brennkolben/webstuhl/
+drehbank/altar) + der holzross-Mount tragen noch ihre alten Box-Listen (Kandidaten für die
+Forge-Grammatik / das Skelett+Haut-Gesetz). BÄUME (F6 Ω-O16) Krone/Gabelung nicht angefasst.
+Der finale LOOK bleibt AUGEN-bound (Schöpfer-Browser im echten WebGPU).

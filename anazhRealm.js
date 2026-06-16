@@ -14586,6 +14586,211 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ F1-TIEFE (wahrerwuchs §11/§12) — DAS METABALL-HAUT-GESETZ (Skelett → Feld → Haut) ═══
+    // Der mandat-§11.7-Kern für Kreaturen: ein virtuelles SKELETT (Knochen-Kapseln) erzeugt ein
+    // glattes zusammenhängendes FELD (Σ Kapsel-Beiträge); seine ISOFLÄCHE (Surface Nets — DIE
+    // Terrain-Technik der Welt, EINE Quelle) ist eine organische HAUT, in der die Glieder
+    // VERSCHMELZEN — keine hand-gestapelten Kapseln mehr, die Gestalt EMERGIERT aus dem Feld.
+    // Reine Geometrie (kein Material). `parts` = die Body-Masse-Knochen (Rumpf/Hals/Kopf);
+    // die animierten Beine bleiben separate Teile (sie tragen die Bewegung). Liefert eine
+    // BufferGeometry (Vertices in Kreatur-Lokal-Koords) oder null.
+    _buildCreatureSkinGeometry(parts) {
+        if (typeof THREE === "undefined" || !Array.isArray(parts) || !parts.length) return null;
+        const rotV = (v, rot) => {
+            if (!rot || (!rot.x && !rot.y && !rot.z)) return v;
+            const cx = Math.cos(rot.x || 0),
+                sx = Math.sin(rot.x || 0),
+                cy = Math.cos(rot.y || 0),
+                sy = Math.sin(rot.y || 0),
+                cz = Math.cos(rot.z || 0),
+                sz = Math.sin(rot.z || 0);
+            const [x, y, z] = v; // Euler XYZ: R = Rx·Ry·Rz
+            const x1 = cz * x - sz * y,
+                y1 = sz * x + cz * y,
+                z1 = z;
+            const x2 = cy * x1 + sy * z1,
+                y2 = y1,
+                z2 = -sy * x1 + cy * z1;
+            return [x2, cx * y2 - sx * z2, sx * y2 + cx * z2];
+        };
+        const bones = [];
+        let mnx = 1e9,
+            mny = 1e9,
+            mnz = 1e9,
+            mxx = -1e9,
+            mxy = -1e9,
+            mxz = -1e9;
+        for (const p of parts) {
+            if (!p.size || !p.position) continue;
+            const sx = Math.abs(p.size.x) || 0.1,
+                sy = Math.abs(p.size.y) || 0.1,
+                sz = Math.abs(p.size.z) || 0.1;
+            const half = [sx / 2, sy / 2, sz / 2];
+            let ax = 0;
+            if (sy >= sx && sy >= sz) ax = 1;
+            else if (sz >= sx && sz >= sy) ax = 2;
+            const r = Math.max(0.03, (Math.min(sx, sy, sz) / 2) * 1.12);
+            let dir = [0, 0, 0];
+            dir[ax] = 1;
+            dir = rotV(dir, p.rotation);
+            const segHalf = Math.max(0, half[ax] - r * 0.8);
+            const a = [
+                p.position.x - dir[0] * segHalf,
+                p.position.y - dir[1] * segHalf,
+                p.position.z - dir[2] * segHalf,
+            ];
+            const b = [
+                p.position.x + dir[0] * segHalf,
+                p.position.y + dir[1] * segHalf,
+                p.position.z + dir[2] * segHalf,
+            ];
+            bones.push({ a, b, r });
+            const R = r * 1.7;
+            for (const pt of [a, b]) {
+                mnx = Math.min(mnx, pt[0] - R);
+                mny = Math.min(mny, pt[1] - R);
+                mnz = Math.min(mnz, pt[2] - R);
+                mxx = Math.max(mxx, pt[0] + R);
+                mxy = Math.max(mxy, pt[1] + R);
+                mxz = Math.max(mxz, pt[2] + R);
+            }
+        }
+        if (!bones.length) return null;
+        const distSeg = (px, py, pz, a, b) => {
+            const abx = b[0] - a[0],
+                aby = b[1] - a[1],
+                abz = b[2] - a[2];
+            const ab2 = abx * abx + aby * aby + abz * abz;
+            let t = ab2 > 1e-9 ? ((px - a[0]) * abx + (py - a[1]) * aby + (pz - a[2]) * abz) / ab2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const cx = a[0] + abx * t,
+                cy = a[1] + aby * t,
+                cz = a[2] + abz * t;
+            return Math.hypot(px - cx, py - cy, pz - cz);
+        };
+        const ISO = 0.55; // Isofläche-Schwelle (höher = die Haut hugt enger an die Knochen)
+        const field = (x, y, z) => {
+            let f = 0;
+            for (const bn of bones) {
+                const R = bn.r * 1.7; // Falloff > Knochen-Radius → benachbarte Knochen VERSCHMELZEN
+                const d = distSeg(x, y, z, bn.a, bn.b);
+                if (d < R) {
+                    const t = 1 - d / R;
+                    f += t * t;
+                }
+            }
+            return f - ISO; // > 0 = innen
+        };
+        // ── SURFACE NETS (naiv, dual): ein Vertex pro Vorzeichen-wechselnder Zelle, an die
+        //    gemittelten Kanten-Kreuzungen gesetzt; Quads über kreuzende Gitter-Kanten. ──
+        const PAD = 0.02;
+        const min = { x: mnx - PAD, y: mny - PAD, z: mnz - PAD };
+        const span = Math.max(0.2, Math.max(mxx - mnx, mxy - mny, mxz - mnz) + 2 * PAD);
+        const N = 26; // Gitter-Auflösung (Würfel; ~4-5 cm Zellen bei ~1 m Wesen)
+        const h = span / N;
+        const off = [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+            [0, 0, 1],
+            [1, 0, 1],
+            [0, 1, 1],
+            [1, 1, 1],
+        ];
+        const edges = [
+            [0, 1],
+            [0, 2],
+            [0, 4],
+            [1, 3],
+            [1, 5],
+            [2, 3],
+            [2, 6],
+            [3, 7],
+            [4, 5],
+            [4, 6],
+            [5, 7],
+            [6, 7],
+        ];
+        const G = N + 1;
+        const grid = new Float32Array(G * G * G);
+        const gi = (i, j, k) => i + G * (j + G * k);
+        for (let k = 0; k < G; k++)
+            for (let j = 0; j < G; j++)
+                for (let i = 0; i < G; i++) grid[gi(i, j, k)] = field(min.x + i * h, min.y + j * h, min.z + k * h);
+        const cellVert = new Int32Array(N * N * N).fill(-1);
+        const ci = (i, j, k) => i + N * (j + N * k);
+        const verts = [];
+        for (let k = 0; k < N; k++)
+            for (let j = 0; j < N; j++)
+                for (let i = 0; i < N; i++) {
+                    let inside = 0;
+                    const c = [];
+                    for (let n = 0; n < 8; n++) {
+                        const v = grid[gi(i + off[n][0], j + off[n][1], k + off[n][2])];
+                        c.push(v);
+                        if (v > 0) inside++;
+                    }
+                    if (inside === 0 || inside === 8) continue;
+                    let vx = 0,
+                        vy = 0,
+                        vz = 0,
+                        cnt = 0;
+                    for (const [a, b] of edges) {
+                        if (c[a] > 0 !== c[b] > 0) {
+                            const t = c[a] / (c[a] - c[b]);
+                            vx += off[a][0] + (off[b][0] - off[a][0]) * t;
+                            vy += off[a][1] + (off[b][1] - off[a][1]) * t;
+                            vz += off[a][2] + (off[b][2] - off[a][2]) * t;
+                            cnt++;
+                        }
+                    }
+                    cellVert[ci(i, j, k)] = verts.length / 3;
+                    verts.push(min.x + (i + vx / cnt) * h, min.y + (j + vy / cnt) * h, min.z + (k + vz / cnt) * h);
+                }
+        const idx = [];
+        const quad = (a, b, cc, d, flip) => {
+            if (a < 0 || b < 0 || cc < 0 || d < 0) return;
+            if (flip) idx.push(a, d, cc, a, cc, b);
+            else idx.push(a, b, cc, a, cc, d);
+        };
+        for (let k = 0; k < N; k++)
+            for (let j = 0; j < N; j++)
+                for (let i = 0; i < N; i++) {
+                    const g0 = grid[gi(i, j, k)] > 0;
+                    if (i + 1 < G && j > 0 && k > 0 && g0 !== grid[gi(i + 1, j, k)] > 0)
+                        quad(
+                            cellVert[ci(i, j - 1, k - 1)],
+                            cellVert[ci(i, j, k - 1)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i, j - 1, k)],
+                            g0
+                        );
+                    if (j + 1 < G && i > 0 && k > 0 && g0 !== grid[gi(i, j + 1, k)] > 0)
+                        quad(
+                            cellVert[ci(i - 1, j, k - 1)],
+                            cellVert[ci(i - 1, j, k)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i, j, k - 1)],
+                            g0
+                        );
+                    if (k + 1 < G && i > 0 && j > 0 && g0 !== grid[gi(i, j, k + 1)] > 0)
+                        quad(
+                            cellVert[ci(i - 1, j - 1, k)],
+                            cellVert[ci(i, j - 1, k)],
+                            cellVert[ci(i, j, k)],
+                            cellVert[ci(i - 1, j, k)],
+                            g0
+                        );
+                }
+        if (!verts.length || !idx.length) return null;
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+        geom.setIndex(idx);
+        geom.computeVertexNormals();
+        return geom;
+    }
+
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
@@ -14604,6 +14809,30 @@ class AnazhRealm {
                 child.material.opacity = part.opacity;
             }
         });
+        // F1-TIEFE (wahrerwuchs §11/§12) — für ORGANISCHE Seelen (`skin`) die METABALL-HAUT
+        // bauen: aus den Skelett-Knochen-Teilen ein glattes Feld → Surface-Nets-Isofläche →
+        // EINE organische Haut, in der die Glieder VERSCHMELZEN. Die Knochen-Teile bleiben
+        // (verborgen) als die WAHRHEIT für Tags/Physik/Motion/Allometrie (children-Index +
+        // alle Gesetze unberührt); die Haut ist die sichtbare Gestalt. So liest die Kreatur
+        // als gewachsenes Tier statt als Kapsel-Stapel — das Detail emergiert aus dem Gesetz.
+        if (soul.skin && this._buildCreatureSkinGeometry) {
+            try {
+                const geom = this._buildCreatureSkinGeometry(soul.bodyParts);
+                if (geom) {
+                    const col = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
+                    const mat = this._buildToonNodeMaterial
+                        ? this._buildToonNodeMaterial({ color: col })
+                        : new THREE.MeshStandardMaterial({ color: col });
+                    const skin = new THREE.Mesh(geom, mat);
+                    skin.userData._creatureSkin = true;
+                    skin.castShadow = true;
+                    for (const ch of group.children) ch.visible = false; // die Knochen verbergen
+                    group.add(skin); // die Haut ist die sichtbare Gestalt (letztes Kind)
+                }
+            } catch (_e) {
+                /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
+            }
+        }
         return group;
     }
 
@@ -72320,6 +72549,8 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 limbColor: 0x6e4d30, // harmonierte holz-Glieder + der Leib
             }).map((p) => Object.freeze(p))
         ),
+        skin: true, // F1-TIEFE: die Metaball-Haut (Glieder verschmelzen → organisches Tier)
+        skinColor: 0x6e4d30,
         auraY: 0.8,
     }),
     geist: Object.freeze({
@@ -72374,6 +72605,8 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 crest: true,
             }).map((p) => Object.freeze(p))
         ),
+        // KEINE Metaball-Haut: das Raubtier bleibt ANGULAR (box+cone-Klauen lesen als fierce
+        // Bestie; die Kegel-Beine verschmelzen nicht sauber + die Kante IST die Bedrohung).
         auraY: 0.7,
     }),
 });
