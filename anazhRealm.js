@@ -14466,9 +14466,6 @@ class AnazhRealm {
         const torsoW = BL * af("torsoW", 0.3);
         const torsoH = BL * af("torsoH", 0.36);
         const legLen = BL * af("legFrac", 0.5);
-        const segRatio = af("segRatio", 1.0); // Ober:Unter-Schenkel
-        const upperLen = legLen * (segRatio / (1 + segRatio));
-        const lowerLen = legLen - upperLen;
         const legR = BL * af("legR", 0.05);
         const neckLen = BL * af("neckFrac", 0.24);
         const neckTilt = af("neckTilt", 0.55); // +y-Ende nach vorn-oben (rotV: (0,cos,sin))
@@ -14476,75 +14473,132 @@ class AnazhRealm {
         const headR = headFull * 0.5;
         const tailLen = BL * af("tailFrac", 0.34);
         const eyeFront = af("eyeFront", 0.4);
-        const stanceX = torsoW * 0.5; // Beine an der Rumpf-Kante
+        const stanceX = torsoW * 0.42; // Beine leicht INNERHALB der Körper-Kante (Bein überlappt den Leib)
 
-        // (1) RUMPF — Wirbelsäulen-Kern (box, trägt die dichte-Tags), darüber organisch eine
-        //     Kapsel-Tonne. Der Kern bleibt kompakt im Schaft (die Würfel-Kanten verschwinden).
+        // (1) RUMPF — die ZWEI LASTTRAGENDEN BLÖCKE (Reh-Referenz, Schöpfer-Tafel; „ein
+        //     Tierkörper ist gebaute Topologieoptimierung"): ein tiefer BRUSTKORB (Thorax,
+        //     vorn-tief, die dominante Masse) + ein hohes BECKEN (Kruppe, hinten), verbunden
+        //     durch eine leichtere Lende mit Bauch-Einzug. Die Topline ist GEKRÜMMT (Widerrist
+        //     → Senke → Kruppe), nie gerade (Spore-Lektion: die gerade Oberlinie liest tot).
+        //     ALLE Massen sind KONVEX + überlappend → der smin verschmilzt sie zu EINEM Leib
+        //     OHNE Front-Mulde (der alte 5-Kugel-Spine erzeugte den konkaven Brust-Krater).
+        //     TAG-NEUTRAL: nur torsoShape + bodyMat, allein Längen/Positionen variieren.
         const barrel = g.bodyBarrel !== false;
-        // der LEIB ist ein LÄNGLICHER horizontaler Körper (reference-first: echte Tiere ~1.6×
-        // länger als hoch — NICHT eine Kugel). Der Barrel (rotiert: y-Länge → z-Körperachse) ist
-        // die dominante glatte Masse; die Glieder fließen an den Enden hinein. Der Kern bleibt
-        // KOMPAKT (Verhältnis < 1.7 → die Allometrie behandelt ihn als Rumpf, T5-Invariante).
-        const bodyLen = torsoLen * 1.7; // die sichtbare Körper-Länge entlang z (länglich, ~1.8:1)
-        const coreW = barrel ? torsoW * 0.7 : torsoW;
-        const coreH = barrel ? torsoH * 0.7 : torsoH;
-        const coreL = barrel ? torsoLen * 0.42 : torsoLen;
-        add(torsoShape, bodyMat, 0, 0, 0, coreW, coreH, coreL, null, bodyCol);
+        const bodyLen = torsoLen * 1.7; // sichtbare Körper-Länge entlang z
+        // ── DER KÖRPER ALS REGEL (Schöpfer „schärfe die Regel statt zu brute-forcen — kein fetter
+        //    Ball"): ZWEI KURVEN + ein PROFIL, an N Stationen abgetastet — KEINE hand-platzierten
+        //    Blobs. · TOPLINE yTop(zf): die Rücken-Kurve (Widerrist hoch · Rücken · Kruppe hoch).
+        //    · TIEFE depth(zf): die Brust-Tiefe nach UNTEN (Ribcage tief · Flanke getuckt · Becken).
+        //    · BREITE width(zf): die SCHMALE Körper-Breite. Jede Station ist ein ANISOTROPES
+        //    Ellipsoid (x schmal, y tief, z = Scheibe) → Rücken = yTop, Bauch = yTop − depth: die
+        //    tiefe SCHMALE Brust + der Flanken-Tuck EMERGIEREN aus den Profilen. Reh-Referenz-
+        //    Parameter (Archetyp/Genom variieren sie). TAG-NEUTRAL (torsoShape+bodyMat; Maße zählen
+        //    nicht in die Compound-Tags).
+        const lerpCurve = (cps, zf) => {
+            if (zf >= cps[0][0]) return cps[0][1];
+            for (let i = 1; i < cps.length; i++)
+                if (zf >= cps[i][0]) {
+                    const t = (zf - cps[i][0]) / (cps[i - 1][0] - cps[i][0]);
+                    return cps[i][1] + (cps[i - 1][1] - cps[i][1]) * t;
+                }
+            return cps[cps.length - 1][1];
+        };
+        const toplineCP = af("topline", 0) || [
+            [0.5, 0.36],
+            [0.32, 0.46],
+            [0.08, 0.36],
+            [-0.16, 0.32],
+            [-0.32, 0.46],
+            [-0.5, 0.26],
+        ];
+        const depthCP = af("depthProfile", 0) || [
+            [0.5, 0.34],
+            [0.34, 0.96],
+            [0.12, 0.86],
+            [-0.06, 0.6],
+            [-0.3, 0.82],
+            [-0.5, 0.34],
+        ];
+        const widthCP = af("widthProfile", 0) || [
+            [0.5, 0.42],
+            [0.3, 0.96],
+            [0.0, 0.78],
+            [-0.3, 0.92],
+            [-0.5, 0.4],
+        ];
+        // der dichte Kern (verborgen) — trägt die dichte-Tags.
+        add(torsoShape, bodyMat, 0, 0, 0, torsoW * 0.5, torsoH * 0.4, torsoLen * 0.5, null, bodyCol);
+        let bellyShoulder = -torsoH * 0.3,
+            bellyHip = -torsoH * 0.3;
         if (barrel) {
-            // WIRBELSÄULE mit RADIUS-PROFIL (Pudgy-Pals / reference, vom Profi gerechnet): der
-            // Körper ist KEIN uniformes Fass — er hat eine tiefe BRUST (Ribcage, vorn), einen
-            // TAILLE/BAUCH-Einzug, eine HÜFTE (Becken) + die Schwanz-Verjüngung. Die SDF+smin
-            // verschmilzt die Kugeln (hier box=torsoShape → tag-neutral) zu EINEM Leib mit
-            // echtem Brust/Bauch-Verlauf. [z-Anteil von bodyLen, Radius-Anteil von torsoH/2,
-            // y-Versatz (Bauch hängt leicht)]. Profi-Verhältnisse: Brust am tiefsten ~1.0,
-            // Taille ~0.84 (sichtbarer Bauch-Einzug), Hüfte ~0.98.
-            const spine = [
-                [0.44, 0.78, 0.04], // Brust-Vorderkante (Schulter)
-                [0.2, 1.0, 0.02], // tiefe BRUST (Ribcage)
-                [-0.04, 0.86, -0.04], // TAILLE / Bauch (leicht hängend)
-                [-0.3, 0.99, 0.0], // HÜFTE / Becken
-                [-0.48, 0.68, 0.06], // Croup → Schwanz-Ansatz
-            ];
-            const halfH = torsoH * 0.5;
-            for (const [zf, rf, yf] of spine) {
-                const rr = halfH * rf;
-                add(torsoShape, bodyMat, 0, yf * torsoH, zf * bodyLen, rr * 2, rr * 1.84, rr * 2, null, bodyCol);
+            const NS = 9;
+            for (let i = 0; i < NS; i++) {
+                const zf = 0.5 - (i / (NS - 1)) * 1.0; // +0.5 … −0.5 (Front → Heck)
+                const yTop = lerpCurve(toplineCP, zf) * torsoH;
+                const depth = Math.max(0.06, lerpCurve(depthCP, zf) * torsoH);
+                const width = Math.max(0.06, lerpCurve(widthCP, zf) * torsoW);
+                const cy = yTop - depth * 0.5; // Top ≈ Topline (Rücken), Bauch hängt um depth
+                const sliceZ = (bodyLen / (NS - 1)) * 2.6; // TIEF überlappende Scheiben → ein glatter Leib (kein Riffeln)
+                add(torsoShape, bodyMat, 0, cy, zf * bodyLen, width, depth, sliceZ, null, bodyCol);
+                if (Math.abs(zf - 0.34) < 0.07) bellyShoulder = yTop - depth; // Bauch an der Schulter
+                if (Math.abs(zf + 0.28) < 0.07) bellyHip = yTop - depth; // Bauch an der Hüfte
             }
         }
 
-        // (2) BEINE — GEGLIEDERT (Biomechanik): ein dicker OBER-Schenkel (im Rumpf VERANKERT →
-        //     die Metaball-Haut verschmilzt ihn, kein Schweben) + ein dünnerer UNTER-Schenkel
-        //     (distal schlank) + eine Pfote/Huf am Boden. Vier Paare → das Stützpolygon (Ω-Φ2).
-        //     Vertikal gestapelt = Euler-knick-sicher (Ω-Φ3-b: schlanke Säule, aber kurz pro Glied).
-        const shoulderZ = torsoLen * 0.58; // Schulter an der Brust-Front (Enden des langen Leibs)
-        const hipZ = torsoLen * 0.54; // Hüfte am Heck
-        const rootY = -torsoH * 0.08; // Gelenk-Wurzel im Rumpf verankert (überlappt den Kern)
-        // wahrerguss System B — GEGLIEDERTE, GEBOGENE Beine (reference-first, die Tier-Fotos):
-        // ein echtes Bein ist KEINE gerade Säule — Hüfte→Knie(vor)→Fuß bildet einen Knick.
-        // segBetween setzt ein Glied zwischen zwei Punkte (rotation.x richtet die y-Achse aus:
-        // rotV([0,1,0],{x:θ})=(0,cosθ,sinθ)); die Metaball-Haut liest die Bone-Segmente → fließende
-        // Gelenke. Vorderbein fast gerade (Ellbogen leicht), Hinterbein klar gebogen (Stifle vor).
+        // (2) BEINE — schlanke gegliederte Streben aus dem BAUCH jeder Station (Kragträger): das
+        //     obere Glied tief im Bauch verankert (glatte Emergenz, kein Pin-Kneif), das untere
+        //     sehnig-dünn, ein flacher HUF-Donor am Boden. Vorderbein fast gerade, Hinterbein
+        //     Z-gebogen (Stifle/Sprunggelenk — die Reh-Signatur). Vier Paare → Stützpolygon (Ω-Φ2).
+        const shoulderZ = torsoLen * 0.5;
+        const hipZ = torsoLen * 0.48;
         const segBetween = (ax, ay, az, bx, by, bz, r) => {
             const dy = by - ay,
                 dz = bz - az;
             const len = Math.hypot(bx - ax, dy, dz) || 0.01;
-            add(limbShape, limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, r * 2, len, r * 2, { x: Math.atan2(dz, dy), y: 0, z: 0 }, limbCol);
+            add(
+                limbShape,
+                limbMat,
+                (ax + bx) / 2,
+                (ay + by) / 2,
+                (az + bz) / 2,
+                r * 2,
+                len,
+                r * 2,
+                { x: Math.atan2(dz, dy), y: 0, z: 0 },
+                limbCol
+            );
         };
-        const buildLeg = (sgnX, zPos, kneeFwd, footFwd) => {
-            const upR = legR * 1.4,
-                loR = legR * 0.95,
-                x = sgnX * stanceX;
-            const kneeY = rootY - upperLen,
-                footTopY = rootY - legLen + loR * 0.6;
-            segBetween(x, rootY, zPos, x, kneeY, zPos + kneeFwd, upR); // Ober-Schenkel (nach vorn)
-            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, loR); // Unter-Schenkel (zurück)
-            add("box", limbMat, x, rootY - legLen + loR * 0.5, zPos + footFwd + loR * 1.0, loR * 2.1, loR * 1.3, loR * 3.2, null, limbCol); // Pfote/Huf
+        const hoofCol = typeof limbCol === "number" ? (limbCol >> 1) & 0x7f7f7f : limbCol; // dunkler Huf (tag-neutral)
+        const embedY = torsoH * 0.08;
+        const groundY = Math.min(bellyShoulder, bellyHip) - legLen; // gemeinsamer Boden → Füße auf einer Ebene
+        const buildLeg = (sgnX, belly, zPos, kneeFwd, footFwd) => {
+            const x = sgnX * stanceX;
+            const topY = belly + embedY; // tief im Bauch verankert (glatte Emergenz)
+            const footTopY = groundY + legR * 0.6;
+            const kneeY = topY - (topY - footTopY) * 0.5;
+            segBetween(x, topY, zPos, x, kneeY, zPos + kneeFwd, legR * 1.15); // oberes Glied
+            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, legR * 0.7); // unteres Glied (sehnig)
+            // HUF — kleiner flacher Donor am Boden (feature: NICHT umhüllt → liest als Fuß, greift
+            // den Boden; die Spore-Rigblock-Lektion statt eines Blob-Nubs).
+            add(
+                "box",
+                limbMat,
+                x,
+                groundY + legR * 0.3,
+                zPos + footFwd + legR * 0.35,
+                legR * 1.2,
+                legR * 0.65,
+                legR * 1.7,
+                null,
+                hoofCol,
+                { feature: true }
+            );
         };
         const kf = af("kneeFwd", 0.05) * BL;
-        buildLeg(-1, shoulderZ, kf * 0.45, kf * 0.1); // Vorderbeine: leichter Knick (Ellbogen)
-        buildLeg(1, shoulderZ, kf * 0.45, kf * 0.1);
-        buildLeg(-1, -hipZ, kf * 1.4, kf * 0.55); // Hinterbeine: klarer Knick (Stifle vor, Sprunggelenk)
-        buildLeg(1, -hipZ, kf * 1.4, kf * 0.55);
+        buildLeg(-1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1); // Vorderbein: fast gerade
+        buildLeg(1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1);
+        buildLeg(-1, bellyHip, -hipZ, kf * 1.6, kf * 0.7); // Hinterbein: Z-Knick (Stifle vor)
+        buildLeg(1, bellyHip, -hipZ, kf * 1.6, kf * 0.7);
 
         // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
         //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
@@ -14553,7 +14607,34 @@ class AnazhRealm {
             neckCZ = torsoLen * 0.64; // Hals an der Brust-FRONT des langen Leibs
         const dirY = Math.cos(neckTilt),
             dirZ = Math.sin(neckTilt);
-        add(limbShape, limbMat, 0, neckCY, neckCZ, legR * 2.3, neckLen, legR * 1.9, { x: neckTilt, y: 0, z: 0 }, limbCol);
+        // THROAT-BRIDGE — eine ~kubische torsoShape-Masse (→ Kugel im Feld) füllt den Hals-Brust-
+        // Reentrant; ohne sie liest der dünne Hals auf der großen Brust von VORN als konkaver
+        // Kehl-Krater. torsoShape+bodyMat → tag-neutral (Box in beiden Seelen-Sets; Größe geht
+        // nicht in die Compound-Tags ein).
+        add(
+            torsoShape,
+            bodyMat,
+            0,
+            neckCY * 0.5,
+            neckCZ * 0.92,
+            torsoW * 0.78,
+            torsoH * 0.5,
+            torsoLen * 0.41,
+            null,
+            bodyCol
+        );
+        add(
+            limbShape,
+            limbMat,
+            0,
+            neckCY,
+            neckCZ,
+            legR * 2.3,
+            neckLen,
+            legR * 1.9,
+            { x: neckTilt, y: 0, z: 0 },
+            limbCol
+        );
         const headCY = neckCY + dirY * (neckLen * 0.5 + headR * 0.55);
         const headCZ = neckCZ + dirZ * (neckLen * 0.5 + headR * 0.55);
         add(headShape, headMat, 0, headCY, headCZ, headFull * 0.92, headFull * 0.86, headFull * 1.12, null, limbCol, {
@@ -14565,7 +14646,18 @@ class AnazhRealm {
         // kürzeres, tieferes (höhere Bisskraft). reference-first an den Tier-Fotos.
         const muzzleLen = headR * (1.05 + (1 - eyeFront) * 0.85);
         const muzzleW = headR * (0.95 - eyeFront * 0.1);
-        add(snoutShape, headMat, 0, headCY - headR * 0.16, headCZ + headR * 0.82, muzzleW, muzzleLen, muzzleW, { x: 1.5, y: 0, z: 0 }, limbCol);
+        add(
+            snoutShape,
+            headMat,
+            0,
+            headCY - headR * 0.16,
+            headCZ + headR * 0.82,
+            muzzleW,
+            muzzleLen,
+            muzzleW,
+            { x: 1.5, y: 0, z: 0 },
+            limbCol
+        );
 
         // (5) SCHWANZ — im HECK VERANKERT (die Wurzel überlappt den Rumpf → kein schwebender
         //     Stummel, der reference-Fix), nach hinten-unten via segBetween (die Metaball-Haut
@@ -14582,12 +14674,34 @@ class AnazhRealm {
             const hornShape = SH.horn || "cone";
             const hl = BL * af("hornFrac", 0.18);
             for (const sgnX of [-1, 1])
-                add(hornShape, headMat, sgnX * headR * 0.7, headCY + headR * 1.0, headCZ - headR * 0.2, headR * 0.55, hl, headR * 0.55, { x: -0.3, y: 0, z: sgnX * 0.3 }, limbCol);
+                add(
+                    hornShape,
+                    headMat,
+                    sgnX * headR * 0.7,
+                    headCY + headR * 1.0,
+                    headCZ - headR * 0.2,
+                    headR * 0.55,
+                    hl,
+                    headR * 0.55,
+                    { x: -0.3, y: 0, z: sgnX * 0.3 },
+                    limbCol
+                );
         }
         if (g.crest) {
             const crestShape = SH.crest || "cone";
             for (let i = 0; i < 3; i++)
-                add(crestShape, limbMat, 0, torsoH * 0.45, torsoLen * (0.2 - i * 0.2), legR * 0.9, legR * 2.4, legR * 0.7, null, limbCol);
+                add(
+                    crestShape,
+                    limbMat,
+                    0,
+                    torsoH * 0.45,
+                    torsoLen * (0.2 - i * 0.2),
+                    legR * 0.9,
+                    legR * 2.4,
+                    legR * 0.7,
+                    null,
+                    limbCol
+                );
         }
         return parts;
     }
@@ -14632,11 +14746,36 @@ class AnazhRealm {
             const sx = Math.abs(p.size.x) || 0.1,
                 sy = Math.abs(p.size.y) || 0.1,
                 sz = Math.abs(p.size.z) || 0.1;
+            const rot = p.rotation;
+            const rotated = !!(rot && (rot.x || rot.y || rot.z));
+            if (!rotated) {
+                // ANISOTROPES ELLIPSOID (achsen-ausgerichtete Körper-Masse; Schöpfer „kein fetter
+                // Ball — schärfe die Regel"): die BOX-MASSE SIND die Halbachsen → eine TIEFE, SCHMALE
+                // Brust (y groß, x klein, z lang) EMERGIERT aus den Maßen, statt zur runden Kugel
+                // gezwungen zu werden (die runde Kapsel war die Wurzel des „fetten Balls"). Die Iso
+                // (field=0) ist EXAKT das Ellipsoid; nur der Betrag fern davon skaliert mit der
+                // kleinsten Achse (= die smin-Blendbreite).
+                const rx = Math.max(0.03, (sx / 2) * 1.06),
+                    ry = Math.max(0.03, (sy / 2) * 1.06),
+                    rz = Math.max(0.03, (sz / 2) * 1.06);
+                const c = [p.position.x, p.position.y, p.position.z];
+                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz) });
+                const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
+                mnx = Math.min(mnx, c[0] - RR[0]);
+                mny = Math.min(mny, c[1] - RR[1]);
+                mnz = Math.min(mnz, c[2] - RR[2]);
+                mxx = Math.max(mxx, c[0] + RR[0]);
+                mxy = Math.max(mxy, c[1] + RR[1]);
+                mxz = Math.max(mxz, c[2] + RR[2]);
+                continue;
+            }
+            // RUNDE getaperte Kapsel (rotierte Glieder/Hals/Schwanz): Segment entlang der längsten
+            // Achse, runder Querschnitt. WOLFF/Round-Cone: das tiefere Ende distal-dünn.
             const half = [sx / 2, sy / 2, sz / 2];
             let ax = 0;
             if (sy >= sx && sy >= sz) ax = 1;
             else if (sz >= sx && sz >= sy) ax = 2;
-            const r = Math.max(0.025, (Math.min(sx, sy, sz) / 2) * 1.08); // Kapsel-SDF-Radius (schlank, nicht aufgebläht)
+            const r = Math.max(0.025, (Math.min(sx, sy, sz) / 2) * 1.08);
             let dir = [0, 0, 0];
             dir[ax] = 1;
             dir = rotV(dir, p.rotation);
@@ -14651,10 +14790,6 @@ class AnazhRealm {
                 p.position.y + dir[1] * segHalf,
                 p.position.z + dir[2] * segHalf,
             ];
-            // WOLFFSCHES GESETZ / Round-Cone (Forschung): ein effizientes Glied ist KEINE
-            // uniforme Röhre — es ist proximal dick (hohes Biegemoment am Körper), distal dünn
-            // (r ∝ M^(1/3); Masse proximal minimiert die Glied-Trägheit). Schlanke Knochen
-            // (Bein/Schwanz) tapern: das höher-y-Ende = proximal (dick), das tiefere distal (dünn).
             const segLen = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
             let ra = r,
                 rb = r;
@@ -14663,7 +14798,7 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, r, ra, rb });
+            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb) });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -14711,14 +14846,24 @@ class AnazhRealm {
                 dz = pz - (a[2] + abz * t);
             return Math.hypot(dx, dy, dz) - (bn.ra + (bn.rb - bn.ra) * t);
         };
+        const sdEllipsoid = (px, py, pz, bn) => {
+            const c = bn.c,
+                r = bn.r;
+            const ex = (px - c[0]) / r[0],
+                ey = (py - c[1]) / r[1],
+                ez = (pz - c[2]) / r[2];
+            const kl = Math.sqrt(ex * ex + ey * ey + ez * ez);
+            return (kl - 1) * bn.rmin; // Iso (=0) EXAKT das Ellipsoid; Betrag ~ kleinste Achse (smin-Blend)
+        };
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
-                // PRO-GELENK-k (Forschung: k ≈ 0.3× Radius, kompakter Träger) — KLEIN, sonst
-                // schmelzen die Glieder in den Körper (der Klumpen-Blob). Die Wurzeln sitzen IM
-                // Rumpf (interpenetrierend) → kleines k verbindet trotzdem, ohne zu verschmelzen.
-                const k = Math.max(0.02, Math.min(bn.ra, bn.rb) * 0.32);
-                d = smin(d, sdTaper(x, y, z, bn), k);
+                // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
+                // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
+                // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
+                // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
+                const k = Math.min(0.12, Math.max(0.03, bn.rmin * 0.55));
+                d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
         };
@@ -14727,7 +14872,7 @@ class AnazhRealm {
         const PAD = 0.02;
         const min = { x: mnx - PAD, y: mny - PAD, z: mnz - PAD };
         const span = Math.max(0.2, Math.max(mxx - mnx, mxy - mny, mxz - mnz) + 2 * PAD);
-        const N = 48; // Gitter-Auflösung (wahrerguss System B: höher = weniger Facetten, glatter Leib)
+        const N = 64; // Gitter-Auflösung (wahrerguss System B: höher = weniger Facetten, glatter Leib)
         const h = span / N;
         const off = [
             [0, 0, 0],
@@ -14863,9 +15008,9 @@ class AnazhRealm {
                     verts[v * 3 + 2] += (az * inv - src[v * 3 + 2]) * factor;
                 }
             };
-            for (let pass = 0; pass < 4; pass++) {
-                relax(0.55); // λ glätten (mehr Pässe = glatter Leib, weniger Facetten)
-                relax(-0.58); // μ < -λ zurück-blähen → Taubin (kein Schrumpf)
+            for (let pass = 0; pass < 6; pass++) {
+                relax(0.46); // λ glätten — mehr Pässe räumen die Stations-RINGE des Leibs weg (der
+                relax(-0.49); // konvexe Reh-Leib pincht nicht mehr); μ<−λ zurück-blähen → Taubin (kein Schrumpf)
             }
         }
         const geom = new THREE.BufferGeometry();
@@ -14886,7 +15031,7 @@ class AnazhRealm {
     // (eigenständig, kein _applySubstanceResponse-Konflikt). Fallback: schlichtes Material.
     _buildCreatureHideMaterial(color, opts = {}) {
         if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") {
-            return new THREE.MeshStandardMaterial ? new THREE.MeshStandardMaterial({ color }) : null;
+            return typeof THREE.MeshStandardMaterial === "function" ? new THREE.MeshStandardMaterial({ color }) : null;
         }
         const mat = new THREE.MeshStandardNodeMaterial({ color, roughness: 0.85, metalness: 0 });
         const T = THREE.TSL;
@@ -15114,13 +15259,15 @@ class AnazhRealm {
                 sz = part.size.z || 0.1;
             const longest = Math.max(sx, sy, sz);
             const shortest = Math.min(sx, sy, sz);
-            // ein GLIED = schlankes Stütz-Teil (längste Achse ≥ 1.7× kürzeste). Die zwei
-            // NICHT-längsten Achsen (der Querschnitt) bekommen √L; die längste (die Länge) bleibt 1.
-            if (longest < shortest * 1.7) {
+            // ein GLIED = ein VERTIKALES schlankes Stütz-Teil (y die LÄNGSTE Achse, ≥ 1.7× kürzeste):
+            // nur die Beine bekommen den √L-Querschnitt (x,z ×√L, Länge y bleibt 1). Horizontale
+            // Körper-Massen (z-lang: Rumpf-Scheiben, Kern) skalieren uniform über group.scale —
+            // Galileo gilt dem tragenden Glied, nicht dem Leib (sonst wird der Koloss-Rumpf fett).
+            if (sy !== longest || longest < shortest * 1.7) {
                 child.scale.set(1, 1, 1);
                 continue;
             }
-            child.scale.set(sx === longest ? 1 : allo, sy === longest ? 1 : allo, sz === longest ? 1 : allo);
+            child.scale.set(allo, 1, allo);
         }
     }
 
@@ -72822,13 +72969,97 @@ AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
 // dominante Masse (tiefer Brustkorb, torsoH 0.42–0.5), die Beine GEBOGEN (kneeFwd = Knie-Knick
 // nach vorn), der Kopf substanziell (headFrac), die Topline aus Schulter→Becken.
 AnazhRealm.CREATURE_ARCHETYPES = Object.freeze({
-    balanced: { legFrac: 0.5, segRatio: 1.0, torsoL: 0.58, torsoW: 0.32, torsoH: 0.42, neckFrac: 0.24, neckTilt: 0.55, headFrac: 0.24, tailFrac: 0.34, eyeFront: 0.4, kneeFwd: 0.05 },
-    deer: { legFrac: 0.6, segRatio: 0.82, torsoL: 0.54, torsoW: 0.28, torsoH: 0.44, neckFrac: 0.34, neckTilt: 0.5, headFrac: 0.21, tailFrac: 0.16, eyeFront: 0.12, kneeFwd: 0.055 },
-    wolf: { legFrac: 0.54, segRatio: 1.0, torsoL: 0.6, torsoW: 0.3, torsoH: 0.44, neckFrac: 0.22, neckTilt: 0.46, headFrac: 0.26, tailFrac: 0.42, eyeFront: 0.5, kneeFwd: 0.06 },
-    bear: { legFrac: 0.42, segRatio: 1.2, torsoL: 0.62, torsoW: 0.46, torsoH: 0.52, neckFrac: 0.16, neckTilt: 0.42, headFrac: 0.26, tailFrac: 0.12, eyeFront: 0.35, kneeFwd: 0.05 },
-    bigcat: { legFrac: 0.48, segRatio: 1.0, torsoL: 0.62, torsoW: 0.36, torsoH: 0.48, neckFrac: 0.16, neckTilt: 0.38, headFrac: 0.27, tailFrac: 0.5, eyeFront: 0.75, kneeFwd: 0.065 },
-    weasel: { legFrac: 0.2, segRatio: 1.0, torsoL: 0.86, torsoW: 0.22, torsoH: 0.24, neckFrac: 0.16, neckTilt: 0.5, headFrac: 0.2, tailFrac: 0.5, eyeFront: 0.35, kneeFwd: 0.03 },
-    horse: { legFrac: 0.62, segRatio: 0.78, torsoL: 0.58, torsoW: 0.3, torsoH: 0.46, neckFrac: 0.32, neckTilt: 0.46, headFrac: 0.22, tailFrac: 0.3, eyeFront: 0.12, kneeFwd: 0.05 },
+    balanced: {
+        legFrac: 0.5,
+        segRatio: 1.0,
+        torsoL: 0.58,
+        torsoW: 0.32,
+        torsoH: 0.42,
+        neckFrac: 0.24,
+        neckTilt: 0.55,
+        headFrac: 0.24,
+        tailFrac: 0.34,
+        eyeFront: 0.4,
+        kneeFwd: 0.05,
+    },
+    deer: {
+        legFrac: 0.6,
+        segRatio: 0.82,
+        torsoL: 0.54,
+        torsoW: 0.28,
+        torsoH: 0.44,
+        neckFrac: 0.34,
+        neckTilt: 0.5,
+        headFrac: 0.21,
+        tailFrac: 0.16,
+        eyeFront: 0.12,
+        kneeFwd: 0.055,
+    },
+    wolf: {
+        legFrac: 0.54,
+        segRatio: 1.0,
+        torsoL: 0.6,
+        torsoW: 0.3,
+        torsoH: 0.44,
+        neckFrac: 0.22,
+        neckTilt: 0.46,
+        headFrac: 0.26,
+        tailFrac: 0.42,
+        eyeFront: 0.5,
+        kneeFwd: 0.06,
+    },
+    bear: {
+        legFrac: 0.42,
+        segRatio: 1.2,
+        torsoL: 0.62,
+        torsoW: 0.46,
+        torsoH: 0.52,
+        neckFrac: 0.16,
+        neckTilt: 0.42,
+        headFrac: 0.26,
+        tailFrac: 0.12,
+        eyeFront: 0.35,
+        kneeFwd: 0.05,
+    },
+    bigcat: {
+        legFrac: 0.48,
+        segRatio: 1.0,
+        torsoL: 0.62,
+        torsoW: 0.36,
+        torsoH: 0.48,
+        neckFrac: 0.16,
+        neckTilt: 0.38,
+        headFrac: 0.27,
+        tailFrac: 0.5,
+        eyeFront: 0.75,
+        kneeFwd: 0.065,
+    },
+    weasel: {
+        legFrac: 0.2,
+        segRatio: 1.0,
+        torsoL: 0.86,
+        torsoW: 0.22,
+        torsoH: 0.24,
+        neckFrac: 0.16,
+        neckTilt: 0.5,
+        headFrac: 0.2,
+        tailFrac: 0.5,
+        eyeFront: 0.35,
+        kneeFwd: 0.03,
+    },
+    horse: {
+        legFrac: 0.62,
+        segRatio: 0.78,
+        torsoL: 0.58,
+        torsoW: 0.3,
+        torsoH: 0.46,
+        neckFrac: 0.32,
+        neckTilt: 0.46,
+        headFrac: 0.22,
+        tailFrac: 0.3,
+        eyeFront: 0.12,
+        kneeFwd: 0.05,
+    },
 });
 AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_ARCHETYPES));
 AnazhRealm.CREATURE_SOULS = Object.freeze({
@@ -72868,7 +73099,8 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
                 // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
                 // ohnehin `_creatureBodySize`).
-                size: 0.92,
+                size: 0.64, // Tarierung des sizeFactor ins Tie-Band (V18.208-Monotonie); der LOOK ist
+                // size-invariant (uniform, kamera-gerahmt), die Welt-Größe trägt _creatureBodySize.
                 archetype: AnazhRealm.CREATURE_ARCHETYPES.deer, // sanfter Pflanzenfresser (leggy, seitliche Augen)
                 bodyMat: "stein",
                 limbMat: "holz",
@@ -72924,7 +73156,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         predator: true,
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton({
-                size: 0.92, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
+                size: 0.57, // Tarierung: hält den sizeFactor im Tie-Band um sprite/wesen (V18.208-Monotonie)
                 archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat, // Jäger (frontale Augen, langer Schwanz, Klauen)
                 bodyMat: "glut",
                 limbMat: "glut",

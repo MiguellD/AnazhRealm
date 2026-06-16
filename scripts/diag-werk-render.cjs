@@ -134,6 +134,21 @@ async function renderWerk(page, bpName, view) {
                 grp.scale.setScalar(bs);
                 if (r._applyCreatureAllometry) r._applyCreatureAllometry(grp, soul, bs);
                 window.__treeInfo = "creature " + soul + " bodySize=" + bs;
+                if (window.__skel) {
+                    // DEBUG: die Haut ausblenden, die rohen Knochen-Teile zeigen (das Skelett in 3D)
+                    grp.traverse((o) => {
+                        if (o.isMesh) o.visible = !o.userData._creatureSkin;
+                    });
+                }
+                if (window.__normskin) {
+                    // DEBUG: die Haut mit MeshNormalMaterial (Normalen als RGB) → invertierte
+                    // Normalen-Inseln werden als „falsche" Farbe sichtbar (Loch vs. konvex).
+                    grp.traverse((o) => {
+                        if (o.isMesh && o.userData._creatureSkin) {
+                            o.material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+                        }
+                    });
+                }
             } else if (bpName.indexOf("templevar:") === 0) {
                 // V18.250 — eine Tempel-VARIANTE direkt aus einem Seed (zeigt Palette + Größe)
                 const seed = bpName.split(":")[1] || "anazh";
@@ -274,6 +289,9 @@ async function renderWerk(page, bpName, view) {
             )
                 await new Promise((r) => setTimeout(r, 100));
         });
+        const FILTER = process.argv[2] || ""; // optionaler Substring-Filter (bp+file) für gezielte Werk-Renders
+        if (process.argv[3] === "skel") await page.evaluate(() => (window.__skel = true)); // DEBUG: Skelett statt Haut
+        if (process.argv[3] === "norm") await page.evaluate(() => (window.__normskin = true)); // DEBUG: Normalen als RGB
         for (const [bp, file, view] of [
             // ── BÄUME (T1/T6) ──
             ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"], // Breitblatt + Rinde-Maserung
@@ -301,12 +319,14 @@ async function renderWerk(page, bpName, view) {
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)
             ["creature:wesen:2.5", "werk-kreatur-koloss-seite.png", "side"], // SEITE: das Profil/die Gesetze
+            ["creature:wesen:2.5", "werk-kreatur-34.png", ""], // DEBUG 3/4 (die Mulde in 3D)
             ["creature:glutwesen:2.0", "werk-kreatur-glutwesen.png", "front"], // T5: Glut-Wesen, gross
             ["creature:glutwesen:2.0", "werk-kreatur-glutwesen-seite.png", "side"], // SEITE
             ["ruestung_brustpanzer", "werk-ruestung-seite.png", "side"], // SEITE: wie getragen liest
             // ── FAHRZEUG (T4) ──
             ["fahrzeug_wagen", "werk-wagen.png", ""], // SSF: Spur/Rad/Kabine
         ]) {
+            if (FILTER && !(bp + " " + file).includes(FILTER)) continue;
             await renderWerk(page, bp, view);
             const info = await page.evaluate(() => window.__treeInfo || "");
             const out = path.join(root, "artifacts", file);
