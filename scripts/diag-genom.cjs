@@ -748,7 +748,12 @@ function startSaveServer() {
                     let li = -1;
                     parts.forEach((p, i) => {
                         const a = [p.size.x, p.size.y, p.size.z];
-                        if (li < 0 && Math.max(...a) >= Math.min(...a) * 1.7) li = i;
+                        // ein VERTIKALES Glied (y die längste Achse, schlank) = ein Bein-Segment,
+                        // dessen LÄNGE isometrisch bleiben soll (die Allometrie verdickt nur den
+                        // x/z-Querschnitt). Die flache Pfote (z längste Achse) ist KEIN solches
+                        // Glied — daher y-längste-Achse fordern (wahrerguss System B: gegliederte
+                        // Beine + Pfoten änderten die Part-Struktur, die Heuristik wandert mit).
+                        if (li < 0 && p.size.y === Math.max(...a) && p.size.y >= Math.min(...a) * 1.7) li = i;
                     });
                     return li;
                 };

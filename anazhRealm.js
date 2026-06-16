@@ -14440,173 +14440,110 @@ class AnazhRealm {
         const headShape = SH.head || "sphere";
         const snoutShape = SH.snout || "limb";
         const tailShape = SH.tail || "limb";
-        const claw = limbShape === "cone"; // ein Raubtier-Bein (Kegel) endet in einer Klaue (Spitze unten)
+        const claw = limbShape === "cone";
         const s = g.size || 1;
-        // VISUELLE KOHÄRENZ (tag-neutral): die Tags kommen aus shape×material (V17.16), die
-        // FARBE gehört zur Substanz, aber ein expliziter color-Override tintet ohne Tag-Drift
-        // (`_buildFromBlueprint`: part.color schlägt material.color). So trägt ein stein-Rumpf
-        // (dichte=3, wesenMoreDichte) eine erdige Tönung statt grau gegen die holz-Glieder.
+        const bodyCol = g.bodyColor;
+        const limbCol = g.limbColor;
         const parts = [];
-        const add = (shape, material, x, y, z, sx, sy, sz, rot, col) => {
+        const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
             const p = { shape, material, position: { x, y, z }, size: { x: sx, y: sy, z: sz } };
             if (rot && (rot.x || rot.y || rot.z)) p.rotation = rot;
             if (typeof col === "number") p.color = col;
+            if (extra) Object.assign(p, extra);
             parts.push(p);
+            return p;
         };
-        // Proportionen (die formbaren Achsen) — Default = ein gedrungener Vierbeiner.
-        // Rumpf-Proportion: länger als hoch (liest als Leib), ABER die längste Achse < 1.7×
-        // der kürzesten → der Rumpf ist KEIN „Glied" für die Allometrie (sie verdickt nur die
-        // schlanken Stütz-Glieder, der Rumpf bleibt uniform, T5-Band). 0.60/0.36 = 1.67.
-        const torsoLen = (g.torsoLen || 0.6) * s;
-        const torsoW = (g.torsoW || 0.38) * s;
-        const torsoH = (g.torsoH || 0.36) * s;
-        const legLen = (g.legLen || 0.34) * s;
-        const legR = (g.legR || 0.06) * s;
-        const neckLen = (g.neckLen || 0.26) * s;
-        const headR = (g.headR || 0.2) * s;
-        const tailLen = (g.tailLen || 0.36) * s;
-        const stanceX = (g.stanceX || 0.13) * s;
-        const bodyCol = g.bodyColor; // optionale erdige Tönung (tag-neutral)
-        const limbCol = g.limbColor;
+        // wahrerguss System B — die BIOMECHANISCHE ARCHETYP-Grammatik (Form folgt Funktion,
+        // recherchiert): Wolf/Reh/Bär/Wiesel/Pferd/Großkatze unterscheiden sich in Bein-Anteil,
+        // Glied-Gliederung (distal schlanker), Hals/Kopf, Rumpf-Breite/Höhe, Augen-FRONTALITÄT
+        // (Jäger vorwärts ~0.7 / Pflanzenfresser seitlich ~0.12), Neigung. EIN Schema, viele
+        // Tiere. TAG-NEUTRAL: nur Längen/Positionen/Anzahl variieren (gleiche Shapes+Materialien
+        // → der compound-MAX bleibt unverändert; GEMESSEN diag-genom Affinität-Band).
+        const A = g.archetype || (AnazhRealm.CREATURE_ARCHETYPES && AnazhRealm.CREATURE_ARCHETYPES.balanced) || {};
+        const af = (k, d) => (A && A[k] != null ? A[k] : d);
+        const BL = (g.bodyLen != null ? g.bodyLen : 1.0) * s; // Körper-Länge = Referenz
+        const torsoLen = BL * af("torsoL", 0.55);
+        const torsoW = BL * af("torsoW", 0.3);
+        const torsoH = BL * af("torsoH", 0.36);
+        const legLen = BL * af("legFrac", 0.5);
+        const segRatio = af("segRatio", 1.0); // Ober:Unter-Schenkel
+        const upperLen = legLen * (segRatio / (1 + segRatio));
+        const lowerLen = legLen - upperLen;
+        const legR = BL * af("legR", 0.05);
+        const neckLen = BL * af("neckFrac", 0.24);
+        const neckTilt = af("neckTilt", 0.55); // +y-Ende nach vorn-oben (rotV: (0,cos,sin))
+        const headFull = BL * af("headFrac", 0.22);
+        const headR = headFull * 0.5;
+        const tailLen = BL * af("tailFrac", 0.34);
+        const eyeFront = af("eyeFront", 0.4);
+        const stanceX = torsoW * 0.5; // Beine an der Rumpf-Kante
 
-        // (1) RUMPF — die Wirbelsäulen-Achse (horizontal entlang z, vorn = +z). Bei einem
-        //     organischen LEIB (`bodyBarrel`) ist der box-Kern ein KOMPAKTER dichter Nugget
-        //     (das dichte Skelett, trägt die DICHTE-Tags) GANZ INNERHALB der Kapsel-Tonne →
-        //     die Würfel-Kanten verschwinden, die Gestalt liest als Tier-Körper. Tag-neutral
-        //     (limb == cylinder, das Wesen trägt schon Glieder + den stein-Kern für dichte=3).
-        //     Der Raubtier-Leib bleibt angular (kein bodyBarrel → box+cone → wild tag-emergent).
-        const barrel = !!g.bodyBarrel;
+        // (1) RUMPF — Wirbelsäulen-Kern (box, trägt die dichte-Tags), darüber organisch eine
+        //     Kapsel-Tonne. Der Kern bleibt kompakt im Schaft (die Würfel-Kanten verschwinden).
+        const barrel = g.bodyBarrel !== false;
+        // der Kern bleibt KOMPAKT (Verhältnis längste:kürzeste < 1.7) → die Allometrie
+        // behandelt ihn als RUMPF (uniform), nicht als schlankes Glied (T5-Invariante).
         const coreW = barrel ? torsoW * 0.7 : torsoW;
         const coreH = barrel ? torsoH * 0.7 : torsoH;
-        const coreL = barrel ? torsoLen * 0.28 : torsoLen;
+        const coreL = barrel ? torsoLen * 0.42 : torsoLen;
         add(torsoShape, bodyMat, 0, 0, 0, coreW, coreH, coreL, null, bodyCol);
         if (barrel) {
-            // ⌀ > Kern-DIAGONALE + LÄNGE so, dass der Kern im voll-radialen Schaft liegt (die
-            // Kapsel verjüngt an den Enden → ein langer Kern würde durchstossen). Ratio < 1.7 →
-            // die Allometrie behandelt den Leib als Rumpf (uniform), nicht als Glied.
-            const bD = Math.hypot(torsoW, torsoH) * 1.12;
-            add("limb", limbMat, 0, 0, 0, bD, torsoLen * 1.3, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
+            const bD = Math.hypot(torsoW, torsoH) * 1.08;
+            add("limb", limbMat, 0, 0, 0, bD, torsoLen * 1.04, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
         }
 
-        // (2) BEINE — vier Glied-PAARE (vorn/hinten × links/rechts). Jedes Bein ein
-        //     verjüngtes Glied (dicke Hüfte oben → schmaler Knöchel unten). Die VIER Füße
-        //     spannen das Stützpolygon (Ω-Φ2: der Schwerpunkt fällt hinein → steht satt).
-        const legZ = torsoLen * 0.32;
-        const legTopY = -torsoH * 0.35;
-        const legCY = legTopY - legLen * 0.5;
-        for (const sgnZ of [-1, 1]) {
-            for (const sgnX of [-1, 1]) {
-                const rot = claw ? { x: Math.PI } : { x: 0, y: 0, z: sgnX * 0.08 };
-                add(
-                    limbShape,
-                    limbMat,
-                    sgnX * stanceX,
-                    legCY,
-                    sgnZ * legZ,
-                    legR * 1.4,
-                    legLen,
-                    legR * 2.2,
-                    rot,
-                    limbCol
-                );
-            }
-        }
+        // (2) BEINE — GEGLIEDERT (Biomechanik): ein dicker OBER-Schenkel (im Rumpf VERANKERT →
+        //     die Metaball-Haut verschmilzt ihn, kein Schweben) + ein dünnerer UNTER-Schenkel
+        //     (distal schlank) + eine Pfote/Huf am Boden. Vier Paare → das Stützpolygon (Ω-Φ2).
+        //     Vertikal gestapelt = Euler-knick-sicher (Ω-Φ3-b: schlanke Säule, aber kurz pro Glied).
+        const shoulderZ = torsoLen * 0.34;
+        const hipZ = torsoLen * 0.32;
+        const rootY = -torsoH * 0.16; // im Rumpf verankert (überlappt den Kern → kein Gap)
+        const buildLeg = (sgnX, sgnZ, zPos) => {
+            const upR = legR * 1.35,
+                loR = legR * 0.92;
+            const upCY = rootY - upperLen * 0.5;
+            add(limbShape, limbMat, sgnX * stanceX, upCY, sgnZ * zPos, upR * 2, upperLen, upR * 2, claw ? { x: Math.PI } : null, limbCol);
+            const loCY = rootY - upperLen - lowerLen * 0.5;
+            add(limbShape, limbMat, sgnX * stanceX, loCY, sgnZ * zPos, loR * 2, lowerLen, loR * 2, claw ? { x: Math.PI } : null, limbCol);
+            const footY = rootY - legLen + loR * 0.5;
+            add("box", limbMat, sgnX * stanceX, footY, sgnZ * zPos + loR * 1.1, loR * 2.1, loR * 1.3, loR * 3.3, null, limbCol);
+        };
+        buildLeg(-1, 1, shoulderZ);
+        buildLeg(1, 1, shoulderZ);
+        buildLeg(-1, -1, hipZ);
+        buildLeg(1, -1, hipZ);
 
-        // (2b) FÜSSE/PFOTEN (wahrerguss System B) — gerundete Klötze an den Bein-Enden,
-        //      vorn überstehend (eine Pfote/Huf). Im Skin-Pfad rundet die Metaball-Haut
-        //      sie zu echten Pfoten (heilt das spitze Auslaufen, §12-Befund); im angular-
-        //      Pfad sind es sichtbare Füße, die die Stance erden. box+limbMat ist TAG-NEUTRAL
-        //      (box × limbMat liegt schon im Compound über den Rumpf/die Glieder → der MAX
-        //      bleibt unverändert; GEMESSEN-Pflicht diag-genom Affinität-Band).
-        const footY = legCY - legLen * 0.5 + legR * 0.55;
-        for (const sgnZ of [-1, 1])
-            for (const sgnX of [-1, 1])
-                add(
-                    "box",
-                    limbMat,
-                    sgnX * stanceX,
-                    footY,
-                    sgnZ * legZ + legR * 0.9,
-                    legR * 2.0,
-                    legR * 1.2,
-                    legR * 3.0,
-                    null,
-                    limbCol
-                );
+        // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
+        //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
+        //     vorn-oben. Der Kopf sitzt am Hals-Ende; er trägt den ANKER + die Augen-FRONTALITÄT.
+        const neckCY = torsoH * 0.32,
+            neckCZ = torsoLen * 0.42;
+        const dirY = Math.cos(neckTilt),
+            dirZ = Math.sin(neckTilt);
+        add(limbShape, limbMat, 0, neckCY, neckCZ, legR * 2.3, neckLen, legR * 1.9, { x: neckTilt, y: 0, z: 0 }, limbCol);
+        const headCY = neckCY + dirY * (neckLen * 0.5 + headR * 0.55);
+        const headCZ = neckCZ + dirZ * (neckLen * 0.5 + headR * 0.55);
+        add(headShape, headMat, 0, headCY, headCZ, headFull * 0.95, headFull * 0.82, headFull * 1.08, null, limbCol, {
+            bodyRole: "head",
+            eyeFront,
+        });
+        add(snoutShape, headMat, 0, headCY - headR * 0.2, headCZ + headR * 0.78, headR * 0.9, headR * 1.25, headR * 0.9, { x: 1.4, y: 0, z: 0 }, limbCol);
 
-        // (3) HALS — ein verjüngtes Glied, vom Rumpf-Vorderteil schräg nach vorn-oben.
-        const neckCY = torsoH * 0.45;
-        const neckCZ = torsoLen * 0.42;
-        add(limbShape, limbMat, 0, neckCY, neckCZ, legR * 2.4, neckLen, legR * 1.8, { x: -0.7, y: 0, z: 0 }, limbCol);
+        // (5) SCHWANZ — hinten herabhängend (dick an der Wurzel → Spitze).
+        add(tailShape, limbMat, 0, torsoH * 0.1, -torsoLen * 0.5 - tailLen * 0.3, legR * 1.8, tailLen, legR * 0.5, { x: 0.9, y: 0, z: 0 }, limbCol);
 
-        // (4) KOPF + SCHNAUZE — der Kopf am Hals-Ende, eine kleine Schnauze/ein Maul davor.
-        const headCY = torsoH * 0.55 + neckLen * 0.42;
-        const headCZ = torsoLen * 0.5 + headR * 0.3;
-        add(headShape, headMat, 0, headCY, headCZ, headR, headR * 0.9, headR * 1.05, null, limbCol);
-        // der KOPF-ANKER (nicht-tag): _buildCreatureGroup hängt das GESICHT (Augen/Ohren)
-        // relativ daran an — als separate Deko-Meshes, NICHT in bodyParts (kein Tag-Drift).
-        parts[parts.length - 1].bodyRole = "head";
-        add(
-            snoutShape,
-            headMat,
-            0,
-            headCY - headR * 0.12,
-            headCZ + headR * 0.62,
-            headR * 0.5,
-            headR * 0.7,
-            headR * 0.5,
-            { x: 1.4, y: 0, z: 0 },
-            limbCol
-        );
-
-        // (5) SCHWANZ — ein verjüngtes Glied, hinten herabhängend (dick an der Wurzel → Spitze).
-        add(
-            tailShape,
-            limbMat,
-            0,
-            torsoH * 0.12,
-            -torsoLen * 0.5 - tailLen * 0.3,
-            legR * 1.8,
-            tailLen,
-            legR * 0.5,
-            { x: 0.9, y: 0, z: 0 },
-            limbCol
-        );
-
-        // (6) ACCESSOIRES — symmetrische Hörner + ein Rücken-Kamm (Raubtier-Stacheln), INNER-
-        //     HALB der Symmetrie (Paare/zentrale Reihe → das Template bleibt unverbogen).
+        // (6) ACCESSOIRES — Hörner + Rücken-Kamm (symmetrisch/zentral → Template unverbogen).
         if (g.horns) {
             const hornShape = SH.horn || "cone";
-            const hl = (g.hornLen || 0.18) * s;
+            const hl = BL * af("hornFrac", 0.18);
             for (const sgnX of [-1, 1])
-                add(
-                    hornShape,
-                    headMat,
-                    sgnX * headR * 0.4,
-                    headCY + headR * 0.55,
-                    headCZ - headR * 0.1,
-                    headR * 0.28,
-                    hl,
-                    headR * 0.28,
-                    { x: -0.3, y: 0, z: sgnX * 0.3 },
-                    limbCol
-                );
+                add(hornShape, headMat, sgnX * headR * 0.7, headCY + headR * 1.0, headCZ - headR * 0.2, headR * 0.55, hl, headR * 0.55, { x: -0.3, y: 0, z: sgnX * 0.3 }, limbCol);
         }
         if (g.crest) {
             const crestShape = SH.crest || "cone";
             for (let i = 0; i < 3; i++)
-                add(
-                    crestShape,
-                    limbMat,
-                    0,
-                    torsoH * 0.55,
-                    torsoLen * (0.22 - i * 0.2),
-                    legR * 0.9,
-                    legR * 2.4,
-                    legR * 0.7,
-                    null,
-                    limbCol
-                );
+                add(crestShape, limbMat, 0, torsoH * 0.45, torsoLen * (0.2 - i * 0.2), legR * 0.9, legR * 2.4, legR * 0.7, null, limbCol);
         }
         return parts;
     }
@@ -14979,13 +14916,16 @@ class AnazhRealm {
         // AUGEN — kleiner, tiefer sitzend, GLÄNZEND (niedrige roughness → fängt ein
         // Glanzlicht = das „lebendige" Auge) + ein winziger heller Catch-Light-Punkt
         // (der Funke, der ein Auge lebendig macht). Raubtier → glühend.
+        // AUGEN-PLATZIERUNG aus der ROLLE (Biomechanik): Jäger frontal (eng+vorn, binokular),
+        // Pflanzenfresser lateral (weit+seitlich, Rundum-Sicht). eyeFront ∈ [0..1] vom Kopf-Anker.
+        const ef = head.eyeFront != null ? head.eyeFront : 0.4;
         const eyeR = hr * 0.16;
         const eyeGeom = new THREE.SphereGeometry(eyeR, 12, 10);
         const sparkGeom = new THREE.SphereGeometry(eyeR * 0.34, 8, 6);
         for (const sgnX of [-1, 1]) {
-            const ex = hx + sgnX * hr * 0.4,
-                ey = hy + hr * 0.12,
-                ez = hz + hr * 0.6;
+            const ex = hx + sgnX * hr * (0.82 - 0.5 * ef), // lateral weit → frontal eng
+                ey = hy + hr * 0.18,
+                ez = hz + hr * (0.26 + 0.58 * ef); // lateral hinten → frontal vorn
             const e = mkMesh(eyeGeom, eyeCol, {
                 roughness: 0.12,
                 metalness: 0,
@@ -25476,7 +25416,21 @@ class AnazhRealm {
                                 .add(_broad.mul(_Ta.float(_broadAmp)))
                                 .sub(_cavity.mul(_Ta.float(_cavityAmp)));
                             albedoNode = albedoNode.mul(_mod.clamp(0.66, 1.3));
+                            // COUNTER-SHADING (2-Ton-Höhen-Gradient) — unten dunkler, oben heller:
+                            // real bei Tieren (heller Bauch wirkt der Eigen-Schattierung entgegen) UND
+                            // Stein/Metall (Staub unten, Licht oben). Hebt die flache Einfarbigkeit.
+                            const _yN = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
+                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.82), _Ta.float(1.14), _yN));
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                            // ROUGHNESS-VARIATION (der #1 Profi-Hebel, Material-Agent): NIE konstant —
+                            // flach-uniforme roughness IST der Plastik-Tell. Das Korn hebt, die Kavität
+                            // senkt → das Licht liest echte Mikro-Struktur statt einer Plastikfläche.
+                            mat.roughnessNode = _Ta
+                                .float(params.roughness)
+                                .add(_mottle.mul(_Ta.float(0.22)))
+                                .add(_broad.mul(_Ta.float(0.1)))
+                                .sub(_cavity.mul(_Ta.float(0.15)))
+                                .clamp(0.05, 1.0);
                         } catch (_e) {
                             if (typeof window !== "undefined")
                                 window.__substanceFlatError = String((_e && _e.message) || _e);
@@ -72732,6 +72686,21 @@ AnazhRealm.MOTION_ROLE_SIGNATURES = Object.freeze({
 // Unter diesem argmax-Score bewegt sich ein Part NICHT (Torso/Deko bleiben ruhig).
 AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
 
+// wahrerguss System B — die ARCHETYP-PROPORTIONEN (Biomechanik, recherchiert): jede Zeile ein
+// Tier-Bauplan als Bruchteile der Körper-Länge L. legFrac=Hüfte→Boden, segRatio=Ober:Unter-
+// Schenkel (cursorial → distal länger), torsoW/H=Rumpf-Querschnitt, neckFrac/neckTilt=Hals,
+// headFrac=Kopf, tailFrac=Schwanz, eyeFront=Augen-Frontalität (1=Jäger vorwärts, 0=Pflanzer
+// seitlich). Form folgt Funktion; der Physik-Richter (Ω-Φ2/Φ3-b) garantiert das Stehen/Nicht-Knicken.
+AnazhRealm.CREATURE_ARCHETYPES = Object.freeze({
+    balanced: { legFrac: 0.5, segRatio: 1.0, torsoL: 0.55, torsoW: 0.3, torsoH: 0.36, neckFrac: 0.24, neckTilt: 0.55, headFrac: 0.22, tailFrac: 0.34, eyeFront: 0.4 },
+    deer: { legFrac: 0.62, segRatio: 0.82, torsoL: 0.52, torsoW: 0.24, torsoH: 0.32, neckFrac: 0.34, neckTilt: 0.42, headFrac: 0.18, tailFrac: 0.18, eyeFront: 0.12 },
+    wolf: { legFrac: 0.55, segRatio: 1.0, torsoL: 0.56, torsoW: 0.27, torsoH: 0.34, neckFrac: 0.22, neckTilt: 0.48, headFrac: 0.24, tailFrac: 0.42, eyeFront: 0.5 },
+    bear: { legFrac: 0.42, segRatio: 1.25, torsoL: 0.58, torsoW: 0.42, torsoH: 0.46, neckFrac: 0.16, neckTilt: 0.42, headFrac: 0.24, tailFrac: 0.12, eyeFront: 0.35 },
+    bigcat: { legFrac: 0.52, segRatio: 1.0, torsoL: 0.56, torsoW: 0.3, torsoH: 0.36, neckFrac: 0.18, neckTilt: 0.4, headFrac: 0.22, tailFrac: 0.46, eyeFront: 0.75 },
+    weasel: { legFrac: 0.2, segRatio: 1.0, torsoL: 0.82, torsoW: 0.2, torsoH: 0.2, neckFrac: 0.16, neckTilt: 0.5, headFrac: 0.18, tailFrac: 0.5, eyeFront: 0.35 },
+    horse: { legFrac: 0.65, segRatio: 0.78, torsoL: 0.54, torsoW: 0.26, torsoH: 0.4, neckFrac: 0.32, neckTilt: 0.46, headFrac: 0.2, tailFrac: 0.3, eyeFront: 0.12 },
+});
+AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_ARCHETYPES));
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     sprite: Object.freeze({
         label: "Sprite",
@@ -72769,7 +72738,8 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
                 // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
                 // ohnehin `_creatureBodySize`).
-                size: 0.81,
+                size: 0.92,
+                archetype: AnazhRealm.CREATURE_ARCHETYPES.deer, // sanfter Pflanzenfresser (leggy, seitliche Augen)
                 bodyMat: "stein",
                 limbMat: "holz",
                 headMat: "holz",
@@ -72824,14 +72794,12 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         predator: true,
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton({
-                size: 0.81, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
+                size: 0.92, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
+                archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat, // Jäger (frontale Augen, langer Schwanz, Klauen)
                 bodyMat: "glut",
                 limbMat: "glut",
                 headMat: "glut",
                 shapes: { torso: "box", limb: "cone", head: "box", snout: "cone", tail: "cone", crest: "cone" },
-                torsoLen: 0.56,
-                torsoW: 0.36,
-                legLen: 0.3,
                 crest: true,
             }).map((p) => Object.freeze(p))
         ),

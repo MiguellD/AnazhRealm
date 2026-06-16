@@ -149,21 +149,70 @@ async function renderWerk(page, bpName, view) {
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x9bb4d0);
             if (st.scene && st.scene.environment) scene.environment = st.scene.environment;
-            scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-            const key = new THREE.DirectionalLight(0xfff1d8, 1.3);
-            key.position.set(6, 11, 8);
+            // PRODUKT-SHOT-LICHT (repräsentiert die belichtete Spiel-Welt: Sonne + Schatten +
+            // Sky-IBL + Rim, nicht flaches Grau): kräftiger warmer KEY (wirft Schatten) + kühler
+            // FILL + ein warmer RIM von hinten-oben (hebt die Silhouette/das Fell aus dem Grund).
+            scene.add(new THREE.AmbientLight(0xffffff, 0.32));
+            const key = new THREE.DirectionalLight(0xfff1d8, 1.85);
+            key.position.set(7, 13, 9);
+            key.castShadow = true;
             scene.add(key);
             const fill = new THREE.DirectionalLight(0xaecbe8, 0.4);
-            fill.position.set(-5, 3, -5);
+            fill.position.set(-6, 3, -4);
             scene.add(fill);
+            const rim = new THREE.DirectionalLight(0xffd9a8, 1.1);
+            rim.position.set(-4, 7, -10);
+            scene.add(rim);
             const box = new THREE.Box3().setFromObject(grp);
             const c = box.getCenter(new THREE.Vector3());
             const sz = box.getSize(new THREE.Vector3());
             grp.position.sub(c); // ins Zentrum
+            grp.traverse((o) => {
+                if (o.isMesh) o.castShadow = true;
+            });
             scene.add(grp);
             // maxd aus der DOMINANTEN Dimension (hohe Dinge wie Bäume/Kreaturen sind y-lang →
             // die volle vertikale Spanne muss ins Bild, sonst Crop) + 10 % Luft.
             const maxd = (Math.max(sz.x, sz.y, sz.z) || 2) * 1.1;
+            // BODEN + SCHATTEN — erdet das Werk (kein Schweben im Nichts) + Kontakt-Schatten,
+            // die die FORM lesen lassen. Repräsentiert die Spiel-Welt (Sonne wirft Schatten).
+            try {
+                if (st.renderer && st.renderer.shadowMap) st.renderer.shadowMap.enabled = true;
+                key.shadow.mapSize.set(1024, 1024);
+                const sc = key.shadow.camera;
+                sc.left = -maxd;
+                sc.right = maxd;
+                sc.top = maxd;
+                sc.bottom = -maxd;
+                sc.near = 0.1;
+                sc.far = maxd * 6;
+                sc.updateProjectionMatrix();
+                key.shadow.bias = -0.0009;
+                const ground = new THREE.Mesh(
+                    new THREE.PlaneGeometry(maxd * 8, maxd * 8),
+                    new THREE.MeshStandardMaterial({ color: 0x8593a6, roughness: 0.96, metalness: 0 })
+                );
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -sz.y / 2 - maxd * 0.004;
+                ground.receiveShadow = true;
+                scene.add(ground);
+            } catch (_e) {}
+            // GRADIENT-HINTERGRUND (atmosphärisch, nicht flach grau).
+            try {
+                const cv = document.createElement("canvas");
+                cv.width = 16;
+                cv.height = 256;
+                const g2 = cv.getContext("2d");
+                const grd = g2.createLinearGradient(0, 0, 0, 256);
+                grd.addColorStop(0, "#cdd8e3");
+                grd.addColorStop(0.55, "#a3b3c4");
+                grd.addColorStop(1, "#717f90");
+                g2.fillStyle = grd;
+                g2.fillRect(0, 0, 16, 256);
+                const bgTex = new THREE.CanvasTexture(cv);
+                if (THREE.SRGBColorSpace) bgTex.colorSpace = THREE.SRGBColorSpace;
+                scene.background = bgTex;
+            } catch (_e) {}
             const isTree = bpName.indexOf("tree:") === 0;
             const isCreature = bpName.indexOf("creature:") === 0;
             const isTall = isTree || isCreature; // braucht mehr Distanz (volle Höhe ins Bild)
