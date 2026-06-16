@@ -47,11 +47,17 @@
 > **TYMPANON** (`gableTriangle` schließt den Giebel) + der **DACH-FIX V18.243** (das Vorzeichen
 > `−sgn·pitch` — der Schöpfer-Augen-Befund „das Dach ist verkehrt": die headless-Tests sahen
 > nur „2 geneigte Flächen", true auch invertiert → der LOOK ist der letzte Richter, Wand 1).
-> Der finale LOOK (Fluting-Tiefe, Triglyphen-Stege, Klingen-Hohlkehle) AUGEN-bound. **NÄCHSTE
-> (klein):** Ω-B5 Allometrie — GEMESSEN KEIN Skalierungs-Haken (Kreatur-Körper sind feste
-> Templates); das Physik-URTEIL über Körper ist SCHON da (Ω-W3 zählt `soul` zu den stehenden
-> Rollen → ein zu-schlank-beiniger Avatar liest „wackelig/knickt"). **Ω-PHYSIS ist damit der
-> SUBSTANZ nach VOLLENDET** (Säule I–IV, die Grammatik generativ).
+> Der finale LOOK (Fluting-Tiefe, Triglyphen-Stege, Klingen-Hohlkehle) AUGEN-bound. **NÄCHSTE:**
+> Ω-B5 Allometrie — der Skalierungs-HAKEN existiert jetzt (V18.255 `_creatureBodySize` →
+> `group.scale.setScalar`, der Wuchs-Bogen S7), ABER **ISOMETRISCH** (uniform-skaliert = exakt
+> die „starre Skalierung", die Ω-B5 als FALLE benennt) → der Koloss ist ein 2.7× vergrößerter
+> Zwerg, KEIN biomechanischer Riese mit überproportional dicken Gliedern. **Ω-B5 bleibt OFFEN**
+> (= die Wuchs-T5-Welle, `wahrerwuchs.md §9.1`); Voraussetzung ist ein glied-bewusstes Template.
+> Das Physik-URTEIL über Körper ist SCHON da (Ω-W3 zählt `soul` zu den stehenden Rollen → ein
+> zu-schlank-beiniger Avatar liest „wackelig/knickt"). **Ω-PHYSIS ist der SUBSTANZ nach
+> VOLLENDET** (Säule I–IV, die Grammatik generativ); die offenen Reste (Ω-B5 Allometrie, Ω-B4
+> LOD je Variante) wandern in den Wuchs-Bogen, wo Form × Physik × Anblick je Genre zusammen-
+> kommen.
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein
@@ -777,8 +783,18 @@ V7.75) — schon da.
 Pro Struktur-Typ N Varianten (seed-deterministisch), instanziiert + 3 LODs.
 Identisch zum Varianten-Pool des Baums — bezahlbar, P2P-deterministisch.
 
+**STAND (V18.251–.255, der Wuchs-Bogen):** der VARIANTEN-POOL ist gebaut —
+`_classicalTempleVariant`/`_villageHutVariant` (Tempel/Dorf) + die Wuchs-Pools
+`fels_var0..11` · `kristall_var0..7` · `glut_var0..5` · `_stationVariant`
+(Werkstatt/Portal/Rüstung/Trank), seed-deterministisch, in die geteilten HISM-
+Gruppen gestreut (Instancing erbt sich). **OFFEN:** der per-Variante-LOD-Swap ohne
+Pop (`_tickArchitectureLOD` wie ihn Baum/Tempel haben) für die NEUEN Pools — sie
+tragen heute nur EINE Auflösung. = die Wuchs-T2-Welle (`wahrerwuchs.md §9.1`),
+zusammen mit dem echten parametrischen Bauwerk-Genom (mein S5 ist noch scale+tint).
+
 **BEWEIS Ω-B4:** ein Dorf zeigt variierte, nicht geklonte Gebäude; LOD-Swap
-ohne Pop; deterministisch über Peers.
+ohne Pop; deterministisch über Peers. _(Variation + Determinismus ✅ GEMESSEN
+`diag-genom`; der LOD-Swap je Wuchs-Variante OFFEN → T2.)_
 
 ### Ω-B5 — Kreaturen-Körper (Biomechanik-geerdet, nutzt was schon da ist)
 
@@ -796,10 +812,22 @@ Physik: Ω-Φ2 prüft, ob die Kreatur steht (CoM über Fuß-Stützpolygon);
   Ω-Φ3-b prüft, ob die Glieder die Masse tragen (Quadrat-Kubik-Versagen).
 ```
 
+**STAND (V18.255, der Wuchs-Bogen S7):** der per-Kreatur-Größen-HAKEN ist gebaut
+(`_creatureBodySize(netId)` würfelt klein→GIGANT in Bändern, deterministisch aus der
+netId, im Snapshot persistiert, stat-gekoppelt robust+träge), ABER er skaliert das
+locked Template **UNIFORM** (`group.scale.setScalar` + Hitbox) = **ISOMETRISCH** —
+genau die „starre Skalierung", die der BEWEIS unten als FALLE benennt. Der Koloss
+ist ein 2.7× vergrößerter Zwerg, KEINE überproportional dicken Glieder. Die uniform-
+Skala ist margin-/schlankheits-INVARIANT (er STEHT, Ω-Φ2), aber NICHT allometrisch.
+**Ω-B5 bleibt damit OFFEN** (= die Wuchs-T5-Welle, `wahrerwuchs.md §9.1`); die
+Voraussetzung ist ein glied-bewusstes Template (heute sind die Kreatur-Templates
+abstrakt, ohne einzeln trag-fähige Glieder, an denen die Quadrat-Kubik-Verdickung
+ansetzen könnte).
+
 **BEWEIS Ω-B5:** eine groß skalierte Kreatur bekommt dickere Glieder (sonst
 meldet Ω-Φ3-b Versagen); eine mit zu eng stehenden Beinen liest als instabil
 (Ω-Φ2). Die Kreatur steht und bewegt sich biomechanisch plausibel, nicht als
-starre Skalierung.
+starre Skalierung. _(STEHT ✅ uniform-invariant; die ALLOMETRIE ⚠ OFFEN → T5.)_
 
 ---
 

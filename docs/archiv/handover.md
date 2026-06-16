@@ -425,7 +425,19 @@ FLACHSTE (nur uniform-Skala + Tönung, keine Proportion/Detail — kein echtes B
 S6 Rüstung/Trank nur scale+tint + Fahrzeug zurückgestellt · S7 nur uniform-Skala (keine
 allometrische Glied-Dicke). Die VOLL-TIEFE-Punktliste (T1–T6) + das Tiefen-Prinzip stehen in
 `docs/wahrerwuchs.md` §9 — die nächste Sitzung baut DARAUF die volle Tiefe. OFFEN: §9-Tiefe +
-der LOOK (AUGEN-bound).
+der LOOK (AUGEN-bound). **NACHTRAG — DIE DREI-PLAN-WAHRHEIT (§9.1, nach Schöpfer-Frage „der
+Bogen entstand aus zwei weiteren md.files — ist dort noch etwas offen?"): der Wuchs-Bogen ist
+die FORM/GEOMETRIE-Schicht (`_<genre>Variant`), aber die VOLLE Tiefe je Genre lebt über DREI
+Pläne — FORM (`wahrerwuchs`) × PHYSIK (`wahrerbauplan` Ω-PHYSIS) × ANBLICK (`wahreranblick`
+Ω-OPSIS). Die zwei SCHARFEN, nicht-integrierten Quell-Plan-Fäden, jetzt explizit verdrahtet:
+(1) Ω-B5 KREATUR-ALLOMETRIE — der Plan verlangt wörtlich „ALLOMETRISCH, nicht isometrisch …
+nicht als starre Skalierung"; mein S7 (`_creatureBodySize` → `group.scale.setScalar`) ist EXAKT
+die starre/uniform-Skala, die der Plan als FALLE benennt → Ω-B5 bleibt OFFEN (= Wuchs-T5). (2)
+Ω-B4 VARIANTEN-POOL+LOD — der Pool ist gebaut (fels/kristall/glut/station), aber der LOD-Swap
+je neuer Variante OFFEN → Wuchs-T2. §9.1 trägt die T1–T6-Tabelle mit allen drei Plan-Spalten;
+die Quell-Pläne (`wahrerbauplan` Ω-B4/Ω-B5, `wahreranblick` Ω-O14/Ω-O15) sind mit dem korrekten
+Stand + Cross-Ref auf den Wuchs-Bogen aktualisiert. So erreicht die nächste Sitzung die
+ULTIMATIVE Tiefe statt nur das Gerüst.**
 
 ### V18.254 — DER WAHRE WUCHS S5+S6: das BAUWERK- + GERÄT-GENOM (die gebaute Palette)
 

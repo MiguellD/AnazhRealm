@@ -491,6 +491,14 @@ Die Blatt-Card wird blatt-FÖRMIG: eine getaperte, gefaltete, leicht gekrümmte
 **BEWEIS Ω-O14:** ein Blatt liest als Blatt — getapert, gefaltet, geclustert —
 nicht als Quadrat. Verschiedene Arten distinkt (Nadel vs. Breitblatt).
 
+> **WUCHS-LINKAGE (V18.255):** der Wuchs-Bogen baute die Baum-FORM-Vielfalt
+> (sizeClass/age/foliageVar, `_growTreeBlueprintRich`) + die LAAS-Atlas-Methode
+> (`_ensureFoliageClusterAtlas`, V18.247) — aber die Blatt-TYPEN (Palme/Schuppe je
+> eigener Atlas-Bake) sind die **Wuchs-T1-Welle** (`wahrerwuchs.md §9.1`), und IHR
+> Look-Kern ist genau dieses Ω-O14. Wer T1 baut, baut Ω-O14 mit: ein neuer Atlas-
+> Bake pro Blatt-Typ, distinkt Nadel≠Breitblatt≠Palme. Das ist der größte sichtbare
+> Sprung des Wuchs-Bogens.
+
 ### Ω-O15 — Fels-Mikrostruktur-Grammatik (Primitiv → lawful Fels)
 
 **GEMESSEN-Anker:** `stein\_block` (heute Box-Parts, `steinBlockParts` Z. 48416)
@@ -511,6 +519,15 @@ Dieselbe prozedurale Philosophie: die Fels-Form emergiert aus Tags + Noise,
 **BEWEIS Ω-O15:** ein Fels hat Facetten, Kanten, Mikrostruktur, die aus härte
 emergieren — harter Fels scharfkantig, weicher gerundet; nicht eine glatte Box.
 Klippen sind angekleidet, nicht flache Wände.
+
+> **WUCHS-LINKAGE (V18.227 + V18.252):** die Fels-MIKROSTRUKTUR (`noiserock` —
+> verschobenes Polyeder aus härte+Noise) ist SCHON gebaut (V18.227). Der Wuchs-Bogen
+> setzte die Fels-FORM-Vielfalt DARAUF (`_rockVariant` S3: Brocken/Stapel/Nadel/Geröll,
+> tag-frozen zu `stein_block`, 12-Pool) — die Oberfläche (Ω-O15) × die Form-Grammatik
+> (Wuchs S3) sind die zwei Schichten DESSELBEN Fels. **OFFEN bleibt der Wuchs-Sekundär-
+> Faden** (T3, `wahrerwuchs.md §9.1`): die Sediment-SCHICHTUNG (Y-Bänder aus
+> `_terrainGeologyAlbedo`) + die Flechten/MOOS-Deckung im feuchten Feld — beide
+> Oberflächen-nah, also Ω-OPSIS-Arbeit, die den Wuchs-S3-Look vollendet.
 
 ### Ω-O16 — Ast- + Laub-Fidelitäts-Tuning (Grammatik gegen LAAS kalibrieren)
 

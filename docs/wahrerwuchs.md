@@ -660,3 +660,91 @@ T6  S1-Kronen-Formen/Lean/Mehrstämmig/Phyllotaxis + S0-Tree-r01→roller.seq + 
 Jede T-Welle: dieselbe Disziplin (§4-Achse nennen → Referenz → `_<genre>Variant` erweitern →
 Richter → diag-Band → Schöpfer-Browser für den LOOK). **Erst wenn T1–T6 stehen, ist der Bogen
 WIRKLICH rund — vorher ist er ein verifiziertes GERÜST mit der Headline-Achse je Genre.**
+
+---
+
+## §9.1 — DIE DREI-PLAN-WAHRHEIT (woher die VOLLE Tiefe kommt — der nächste Sitzung das Gesamtbild)
+
+**Dieser Bogen ist EINER von DREI, die DASSELBE Genre formen — und die volle Tiefe
+lebt erst, wenn alle drei für ein Genre stehen.** Der Selbst-Audit (§9) maß nur die
+GEOMETRIE-Achse (`_<genre>Variant`, dieser Plan). Aber „ein echter Mammutbaum",
+„ein Koloss, der biomechanisch steht", „eine Werkstatt, die nicht geklont wirkt"
+sind PRODUKTE aus drei Schichten:
+
+```
+                 ┌─────────────────────────────────────────────────────────────┐
+                 │  EIN GENRE, DREI PLÄNE — das Produkt ist ihr Skalarprodukt    │
+                 ├──────────────┬──────────────────┬───────────────────────────┤
+                 │ FORM/GEOMETRIE│ PHYSIK (das SEIN)│ ANBLICK (die OPTIK)        │
+                 │ wahrerwuchs   │ wahrerbauplan    │ wahreranblick             │
+                 │ (DIESER Plan) │ (Ω-PHYSIS)       │ (Ω-OPSIS)                 │
+                 │ _<g>Variant   │ steht/knickt?    │ Oberfläche · Atlas · PBR  │
+                 └──────────────┴──────────────────┴───────────────────────────┘
+```
+
+**Der Bogen entstand aus den zwei Quell-Plänen — was sie noch OFFEN tragen, das
+diese Geometrie-Schicht NICHT allein schließt (die nächste Sitzung integriert es):**
+
+```
+T-Welle  FORM (wahrerwuchs §4)         PHYSIK (wahrerbauplan)      ANBLICK (wahreranblick)
+─────────────────────────────────────────────────────────────────────────────────────────
+T1       S1 Blatt-TYPEN + Brettwurzel  (Ω-Φ3-b trägt schon —       Ω-O14 Blatt-Geometrie
+         (Palme/Schuppe, Atlas-Bake)   der Gigant knickt nicht)    (Quad→blatt-FÖRMIG,
+                                                                   Nadel≠Breitblatt distinkt)
+                                                                   ← der AUGEN-bound Look-Kern
+─────────────────────────────────────────────────────────────────────────────────────────
+T2       S5 Bauwerk-Genom PARAMETRISCH Ω-B4 Varianten-Pool + LOD   (Ω-O folgt — die Bauten
+         (Teile generieren wie der     pro Struktur-Typ (mein S5   erben den PBR-Pfad schon)
+         Tempel, nicht scale+tint)     ist FIXER Pool, der LOD-
+                                       Swap je Variante OFFEN)
+─────────────────────────────────────────────────────────────────────────────────────────
+T3       S4 emissiv-Kopplung +         (Ω-Φ trägt — Fels/Kristall  Ω-O15 Fels-Mikrostruktur
+         S3 Sediment-Schichtung/Moos   stehen)                     (noiserock SCHON gebaut
+                                                                   V18.227 — mein S3 FORM-
+                                                                   Genom sitzt DARAUF; die
+                                                                   Schichtung/Moos ist neu)
+─────────────────────────────────────────────────────────────────────────────────────────
+T4       S6 Rüstung/Trank-Genom +      Ω-Φ4 Fahrzeug-SSF (sitz-    (Material-PBR trägt schon)
+         Fahrzeug-SSF (sitz-bewusst)   bewusste Skala, der zurück-
+                                       gestellte Faden)
+─────────────────────────────────────────────────────────────────────────────────────────
+T5       S7 allometrische Glied-Dicke  Ω-B5 KREATUR-ALLOMETRIE     (die neuen Körper-Formen
+         (skelett-bewusst, ∝√Masse)    (Galileo Quadrat-Kubik —    sind AUGEN-bound)
+                                       mein S7 ist ISOMETRISCH,
+                                       genau die vom Plan benannte
+                                       „starre Skalierung"-FALLE)
+─────────────────────────────────────────────────────────────────────────────────────────
+T6       S1 Kronen-Formen/Lean/        (trägt)                     Ω-O16 Ast+Laub-Fidelität
+         Phyllotaxis + S0/S2-Tilgung                               (LAAS-Kalibrierung, dünn→
+                                                                   voll — laufende Politur)
+```
+
+**DIE ZWEI SCHARFEN OFFENEN FÄDEN AUS DEN QUELL-PLÄNEN (die ich NICHT voll
+integriert habe — Wahrheit, kein Verstecken):**
+
+1. **Ω-B5 (wahrerbauplan §6) — die KREATUR-ALLOMETRIE ist NICHT erfüllt, nur
+   ANGEFANGEN.** Der Plan verlangt wörtlich (Z. 792–802): „Glied-Proportionen
+   ALLOMETRISCH skalieren (Quadrat-Kubik), **nicht isometrisch** — große Kreatur →
+   überproportional dicke Glieder, sonst brechen sie" + BEWEIS „nicht als **starre
+   Skalierung**". Mein S7 (`_creatureBodySize` → `group.scale.setScalar`) ist EXAKT
+   die starre/isometrische Skalierung, die der Plan als FALLE benennt — der Koloss
+   ist ein 2.7× vergrößerter Zwerg, kein biomechanischer Riese. Das ist **T5** + die
+   Voraussetzung dafür ist ein gliedmaßen-bewusstes Template (heute sind die
+   Kreatur-Templates abstrakt, ohne echte trag-fähige Glieder, §9-Tabelle S7). **Bis
+   T5 steht: Ω-B5 bleibt OFFEN, der Skalierungs-Haken existiert (V18.255), die
+   Allometrie nicht.**
+
+2. **Ω-B4 (wahrerbauplan §6) — der Varianten-Pool ist da, der LOD-Swap je Variante
+   NICHT.** Mein S3/S4/S5 streuen FIXE Varianten-Pools (fels/kristall/glut/station)
+   in die geteilten HISM-Gruppen (das Instancing erbt sich), aber jede Variante
+   trägt nur EINE Auflösung — der per-Variante-LOD-Swag ohne Pop (`_tickArchitectureLOD`,
+   wie ihn der Baum/Tempel hat) ist für die neuen Pools OFFEN. Das ist **T2**
+   (zusammen mit dem echten parametrischen Bauwerk-Genom).
+
+**DIE INTEGRATIONS-REGEL FÜR DIE NÄCHSTE SITZUNG:** eine T-Welle ist erst „voll
+tief", wenn ihre DREI Plan-Schichten stehen — die FORM (`_<genre>Variant` erweitern,
+dieser Plan §4), die PHYSIK (gegen den Ω-Φ-Richter messen, wahrerbauplan), der
+ANBLICK (gegen die Genre-Referenz im Schöpfer-Browser, wahreranblick Wand 1). Die
+§9-Tabelle nennt die FORM-Achse, diese §9.1-Tabelle nennt die zwei Schwester-Fäden.
+Wer T1 baut, liest Ω-O14; wer T5 baut, liest Ω-B5; wer T2 baut, liest Ω-B4. **So
+erreicht der Bogen die ULTIMATIVE Tiefe statt nur das Gerüst — Fischer UND Gigant.**
