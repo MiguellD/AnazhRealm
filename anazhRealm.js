@@ -4103,6 +4103,7 @@ class AnazhRealm {
             "plane",
             "torus",
             "helix",
+            "limb",
             "flutedColumn",
             "bladeProfile",
             "gableTriangle",
@@ -14386,6 +14387,158 @@ class AnazhRealm {
     _pickCreatureName() {
         const pool = AnazhRealm.CREATURE_NAME_POOL;
         return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    // ═══ F1 (wahrerwuchs §11) — DAS KREATUR-SKELETT-GESETZ (reference-first) ═══
+    // Ein Wesen ist ein SKELETT — Rumpf (die Wirbelsäulen-Achse) + Glied-PAARE + Hals +
+    // Kopf/Schnauze + Schwanz + Accessoires. Die ANATOMIE (echte verjüngte Glieder mit
+    // Hüft-Knöchel-Profil, ein Kopf mit Schnauze, ein herabhängender Schwanz) EMERGIERT
+    // aus wenigen Achsen — statt aus „Box + Kopf + Stummel" (der §11-Katalog-Blob). Das
+    // Detail ist ein AUSLESEWERT der Gesetz-Schärfe (das Projekt-Axiom auf die Geometrie;
+    // die Schultern: tetrapoden-Anatomie, Galileo-Allometrie). Reine Daten (kein THREE,
+    // kein `this`) → läuft schon bei der CREATURE_SOULS-Definition (Modul-Init).
+    //
+    // AFFINITÄT-WAND (V17.16/§11.5#6): das Genom wählt die SHAPES, NIE neue Tags. Ein
+    // sanftes Wesen baut aus holz-`limb` (Aktivierung == cylinder → das wesen trug schon
+    // einen holz-Zylinder → Compound-MAX BIT-IDENTISCH, wesenHasLebendig/wesenMoreDichte
+    // unberührt). Ein RAUBTIER (glutwesen) baut aus box+cone (lebendig=0 → das WILDE
+    // Temperament bleibt tag-emergent). Form/Größe/Position sind ohnehin tag-neutral.
+    static _creatureSkeleton(g) {
+        g = g || {};
+        const bodyMat = g.bodyMat || "stein";
+        const limbMat = g.limbMat || bodyMat;
+        const headMat = g.headMat || limbMat;
+        const SH = g.shapes || {};
+        const torsoShape = SH.torso || "box";
+        const limbShape = SH.limb || "limb";
+        const headShape = SH.head || "sphere";
+        const snoutShape = SH.snout || "limb";
+        const tailShape = SH.tail || "limb";
+        const claw = limbShape === "cone"; // ein Raubtier-Bein (Kegel) endet in einer Klaue (Spitze unten)
+        const s = g.size || 1;
+        // VISUELLE KOHÄRENZ (tag-neutral): die Tags kommen aus shape×material (V17.16), die
+        // FARBE gehört zur Substanz, aber ein expliziter color-Override tintet ohne Tag-Drift
+        // (`_buildFromBlueprint`: part.color schlägt material.color). So trägt ein stein-Rumpf
+        // (dichte=3, wesenMoreDichte) eine erdige Tönung statt grau gegen die holz-Glieder.
+        const parts = [];
+        const add = (shape, material, x, y, z, sx, sy, sz, rot, col) => {
+            const p = { shape, material, position: { x, y, z }, size: { x: sx, y: sy, z: sz } };
+            if (rot && (rot.x || rot.y || rot.z)) p.rotation = rot;
+            if (typeof col === "number") p.color = col;
+            parts.push(p);
+        };
+        // Proportionen (die formbaren Achsen) — Default = ein gedrungener Vierbeiner.
+        const torsoLen = (g.torsoLen || 0.64) * s; // länger als breit → liest als Leib, nicht als Würfel
+        const torsoW = (g.torsoW || 0.34) * s;
+        const torsoH = (g.torsoH || 0.27) * s;
+        const legLen = (g.legLen || 0.34) * s;
+        const legR = (g.legR || 0.06) * s;
+        const neckLen = (g.neckLen || 0.26) * s;
+        const headR = (g.headR || 0.2) * s;
+        const tailLen = (g.tailLen || 0.36) * s;
+        const stanceX = (g.stanceX || 0.13) * s;
+        const bodyCol = g.bodyColor; // optionale erdige Tönung (tag-neutral)
+        const limbCol = g.limbColor;
+
+        // (1) RUMPF — die Wirbelsäulen-Achse (horizontal entlang z, vorn = +z).
+        add(torsoShape, bodyMat, 0, 0, 0, torsoW, torsoH, torsoLen, null, bodyCol);
+
+        // (2) BEINE — vier Glied-PAARE (vorn/hinten × links/rechts). Jedes Bein ein
+        //     verjüngtes Glied (dicke Hüfte oben → schmaler Knöchel unten). Die VIER Füße
+        //     spannen das Stützpolygon (Ω-Φ2: der Schwerpunkt fällt hinein → steht satt).
+        const legZ = torsoLen * 0.32;
+        const legTopY = -torsoH * 0.35;
+        const legCY = legTopY - legLen * 0.5;
+        for (const sgnZ of [-1, 1]) {
+            for (const sgnX of [-1, 1]) {
+                const rot = claw ? { x: Math.PI } : { x: 0, y: 0, z: sgnX * 0.08 };
+                add(
+                    limbShape,
+                    limbMat,
+                    sgnX * stanceX,
+                    legCY,
+                    sgnZ * legZ,
+                    legR * 1.4,
+                    legLen,
+                    legR * 2.2,
+                    rot,
+                    limbCol
+                );
+            }
+        }
+
+        // (3) HALS — ein verjüngtes Glied, vom Rumpf-Vorderteil schräg nach vorn-oben.
+        const neckCY = torsoH * 0.45;
+        const neckCZ = torsoLen * 0.42;
+        add(limbShape, limbMat, 0, neckCY, neckCZ, legR * 2.4, neckLen, legR * 1.8, { x: -0.7, y: 0, z: 0 }, limbCol);
+
+        // (4) KOPF + SCHNAUZE — der Kopf am Hals-Ende, eine kleine Schnauze/ein Maul davor.
+        const headCY = torsoH * 0.55 + neckLen * 0.42;
+        const headCZ = torsoLen * 0.5 + headR * 0.3;
+        add(headShape, headMat, 0, headCY, headCZ, headR, headR * 0.9, headR * 1.05, null, limbCol);
+        add(
+            snoutShape,
+            headMat,
+            0,
+            headCY - headR * 0.12,
+            headCZ + headR * 0.62,
+            headR * 0.5,
+            headR * 0.7,
+            headR * 0.5,
+            { x: 1.4, y: 0, z: 0 },
+            limbCol
+        );
+
+        // (5) SCHWANZ — ein verjüngtes Glied, hinten herabhängend (dick an der Wurzel → Spitze).
+        add(
+            tailShape,
+            limbMat,
+            0,
+            torsoH * 0.12,
+            -torsoLen * 0.5 - tailLen * 0.3,
+            legR * 1.8,
+            tailLen,
+            legR * 0.5,
+            { x: 0.9, y: 0, z: 0 },
+            limbCol
+        );
+
+        // (6) ACCESSOIRES — symmetrische Hörner + ein Rücken-Kamm (Raubtier-Stacheln), INNER-
+        //     HALB der Symmetrie (Paare/zentrale Reihe → das Template bleibt unverbogen).
+        if (g.horns) {
+            const hornShape = SH.horn || "cone";
+            const hl = (g.hornLen || 0.18) * s;
+            for (const sgnX of [-1, 1])
+                add(
+                    hornShape,
+                    headMat,
+                    sgnX * headR * 0.4,
+                    headCY + headR * 0.55,
+                    headCZ - headR * 0.1,
+                    headR * 0.28,
+                    hl,
+                    headR * 0.28,
+                    { x: -0.3, y: 0, z: sgnX * 0.3 },
+                    limbCol
+                );
+        }
+        if (g.crest) {
+            const crestShape = SH.crest || "cone";
+            for (let i = 0; i < 3; i++)
+                add(
+                    crestShape,
+                    limbMat,
+                    0,
+                    torsoH * 0.55,
+                    torsoLen * (0.22 - i * 0.2),
+                    legR * 0.9,
+                    legR * 2.4,
+                    legR * 0.7,
+                    null,
+                    limbCol
+                );
+        }
+        return parts;
     }
 
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
@@ -46174,6 +46327,34 @@ class AnazhRealm {
                 const tubularSegments = Math.max(20, Math.floor(turns * 16));
                 return new THREE.TubeGeometry(curve, tubularSegments, tubeRadius, 6, false);
             }
+            case "limb": {
+                // F1 (wahrerwuchs §11 — das KREATUR-SKELETT-GESETZ, reference-first):
+                // ein GLIED/Knochen als verjüngte KAPSEL (Bein/Hals/Schwanz/Schnauze) —
+                // ein lathe-revolviertes Profil: untere Halbkugel (Radius rb) → konischer
+                // Schaft → obere Halbkugel (Radius rt). Liest als organisches Glied (nicht
+                // ein flach-gekappter Zylinder), aus EINER Geometrie. size.x = unterer ⌀,
+                // size.y = Länge (lange Achse → die Allometrie verdickt den Querschnitt,
+                // T5), size.z = oberer ⌀ (Verjüngung: dick an der Hüfte, schmal am Knöchel).
+                const rb = Math.max(0.005, sx / 2);
+                const rt = Math.max(0.005, sz / 2);
+                const L = Math.max(0.04, sy);
+                const capB = Math.min(rb, L * 0.48);
+                const capT = Math.min(rt, L * 0.48);
+                const yBot = -L / 2,
+                    yTop = L / 2;
+                const NB = 5;
+                const pts = [];
+                for (let i = 0; i <= NB; i++) {
+                    const a = (i / NB) * (Math.PI / 2);
+                    pts.push(new THREE.Vector2(Math.sin(a) * rb, yBot + capB - Math.cos(a) * capB));
+                }
+                pts.push(new THREE.Vector2(rt, yTop - capT)); // Schaft-Verjüngung
+                for (let i = 1; i <= NB; i++) {
+                    const a = (i / NB) * (Math.PI / 2);
+                    pts.push(new THREE.Vector2(Math.cos(a) * rt, yTop - capT + Math.sin(a) * capT));
+                }
+                return new THREE.LatheGeometry(pts, Math.max(6, Math.min(20, segments)));
+            }
             case "noiserock": {
                 // V18.227 (Ω-OPSIS Säule VI Ω-O15) — der LAWFUL FELS: ein
                 // Ikosaeder, dessen Vertices entlang der Radial-Richtung per
@@ -71592,31 +71773,30 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         ]),
         auraY: 0.55,
     }),
+    // F1 (wahrerwuchs §11) — `wesen` ist ein VIERBEINER aus dem Skelett-Gesetz: Rumpf
+    // (box stein) + Kopf (sphere holz) + Hals/Beine/Schwanz (holz `limb`-Kapseln). Die
+    // Glieder-Aktivierung == cylinder, und das alte wesen trug schon einen holz-Zylinder
+    // → die Compound-Tags sind BIT-IDENTISCH (wesenMoreDichte/wesenHasLebendig unberührt,
+    // GEMESSEN diag-genom F1-Band). Liest als Tier statt als Box+Stummel.
     wesen: Object.freeze({
         label: "Wesen",
-        bodyParts: Object.freeze([
-            Object.freeze({
-                shape: "box",
-                material: "stein",
-                size: { x: 0.38, y: 0.32, z: 0.32 },
-                position: { x: 0, y: 0, z: 0 },
-                label: "Körper",
-            }),
-            Object.freeze({
-                shape: "sphere",
-                material: "holz",
-                size: { x: 0.2, y: 0.2, z: 0.2 },
-                position: { x: 0, y: 0.3, z: 0 },
-                label: "Kopf",
-            }),
-            Object.freeze({
-                shape: "cylinder",
-                material: "holz",
-                size: { x: 0.07, y: 0.28, z: 0.07 },
-                position: { x: 0, y: -0.28, z: 0 },
-                label: "Stamm-Bein",
-            }),
-        ]),
+        bodyParts: Object.freeze(
+            AnazhRealm._creatureSkeleton({
+                // `size` 0.87: die GLIEDER sind dünne Kapseln, deren AABB-Hülle (die Quelle
+                // von `_compoundSizeFactor`) das echte Volumen ÜBER-zählt → ohne diese Tarierung
+                // überholte der sizeFactor `sprite` und brach die V18.208-Cross-Seelen-Monotonie
+                // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
+                // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
+                // ohnehin `_creatureBodySize`).
+                size: 0.87,
+                bodyMat: "stein",
+                limbMat: "holz",
+                headMat: "holz",
+                shapes: { torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" },
+                bodyColor: 0x7a5a3a, // erdige Tönung auf dem stein-Rumpf (tag-neutral, dichte bleibt 3)
+                limbColor: 0x6e4d30, // harmonierte holz-Glieder
+            }).map((p) => Object.freeze(p))
+        ),
         auraY: 0.8,
     }),
     geist: Object.freeze({
@@ -71650,39 +71830,27 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     // entsteht nur durch bewusste Schöpfung (Chat/DSL/Nexus/Hof). VERMERK:
     // die ambiente Glut-Region-Geburt wäre eine eigene Welle MIT
     // Spawn-Verteilungs-Messung (die V17.16-Affinitäts-Lehre).
+    // F1 (wahrerwuchs §11) — `glutwesen` ist ein RAUBTIER aus demselben Skelett-Gesetz,
+    // aber aus box+cone(glut) gebaut (Klauen-Kegel-Beine, ein box-Schädel mit Kegel-Maul,
+    // ein Rücken-Kamm aus Stacheln). box+cone tragen lebendig=0 → die Compound-Tags
+    // bleiben BIT-IDENTISCH zum alten box+cone-glutwesen → das WILDE Temperament bleibt
+    // tag-emergent (kein hostile-Flag; `_creatureTemperament` liest „wild", GEMESSEN).
     glutwesen: Object.freeze({
         label: "Glutwesen",
         predator: true,
-        bodyParts: Object.freeze([
-            Object.freeze({
-                shape: "box",
-                material: "glut",
-                size: { x: 0.42, y: 0.28, z: 0.32 },
-                position: { x: 0, y: 0, z: 0 },
-                label: "Glut-Leib",
-            }),
-            Object.freeze({
-                shape: "cone",
-                material: "glut",
-                size: { x: 0.16, y: 0.24, z: 0.16 },
-                position: { x: 0, y: 0.04, z: 0.28 },
-                label: "Maul",
-            }),
-            Object.freeze({
-                shape: "box",
-                material: "glut",
-                size: { x: 0.09, y: 0.2, z: 0.09 },
-                position: { x: -0.12, y: -0.24, z: 0 },
-                label: "Bein",
-            }),
-            Object.freeze({
-                shape: "box",
-                material: "glut",
-                size: { x: 0.09, y: 0.2, z: 0.09 },
-                position: { x: 0.12, y: -0.24, z: 0 },
-                label: "Bein",
-            }),
-        ]),
+        bodyParts: Object.freeze(
+            AnazhRealm._creatureSkeleton({
+                size: 0.87, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
+                bodyMat: "glut",
+                limbMat: "glut",
+                headMat: "glut",
+                shapes: { torso: "box", limb: "cone", head: "box", snout: "cone", tail: "cone", crest: "cone" },
+                torsoLen: 0.56,
+                torsoW: 0.36,
+                legLen: 0.3,
+                crest: true,
+            }).map((p) => Object.freeze(p))
+        ),
         auraY: 0.7,
     }),
 });
@@ -73552,6 +73720,24 @@ AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
         lebendig: 1,
     }),
     cylinder: Object.freeze({
+        härte: 1,
+        dichte: 2,
+        zähigkeit: 2,
+        wärmeleitung: 3,
+        stromleitung: 3,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    // F1 (wahrerwuchs §11 — das KREATUR-SKELETT-GESETZ): ein `limb` ist ein
+    // verjüngter Kapsel-Knochen (Glied/Hals/Schwanz). Morphologisch IST er eine
+    // Kapsel/Zylinder → die Aktivierung ist BIT-IDENTISCH zu `cylinder`. Damit ist
+    // jedes aus Gliedern gebaute Wesen tag-NEUTRAL gegen die alte Zylinder-Form
+    // (V17.16): `wesen` trug schon einen holz-Zylinder, die Compound-MAX bleibt
+    // unverändert → wesenHasLebendig / wesenMoreDichte / spriteMoreMagie unberührt.
+    limb: Object.freeze({
         härte: 1,
         dichte: 2,
         zähigkeit: 2,
