@@ -950,10 +950,53 @@ Existenz. Dann erst — und dann ganz — ist der Wuchs-Bogen WIRKLICH rund.
 
 ## §11 — DIE FIDELITÄT (die WURZEL-Diagnose des Schöpfer-Katalogs, 16.06.2026)
 
+> ## ⚑ DAS MANDAT (lies das ZUERST, nächster Agent — bindend, unausweichlich)
+>
+> **Giesse wie ein GIGANT auf den Schultern von RIESEN.** Der Schöpfer-Katalog
+> (`scripts/diag-werk-render.cjs`) zeigte: „kaum ein Upgrade, es fehlen viele Details."
+> Die WURZEL ist KEIN fehlender Hand-Mesh — sie ist ein fehlendes **GESETZ**. Sieben
+> Wände, die den nächsten Schub binden (verletze KEINE):
+>
+> 1. **DAS GESETZ ERZEUGT DAS DETAIL, NIE DIE HAND.** Detail ist ein AUSLESEWERT der
+>    Gesetz-Schärfe (das Projekt-Axiom auf die Geometrie). Du baust pro Domäne ein
+>    SCHARFES generatives GESETZ (Grammatik/Skelett/Simulation), aus dem das Detail
+>    EMERGIERT — wie der Tempel aus der dorischen Ordnung, das Schwert aus Oakeshott.
+>    Ein „bau einen Detail-Mesh von Hand"-Reflex ist die FALLE (Brute-Force, skaliert
+>    nicht, verletzt das Axiom). Hand-Arbeit ist NUR die ~20 %-Politur.
+> 2. **SCHULTERN VON RIESEN — RECHERCHIERE ZUERST.** Für JEDE Domäne ZUERST das Profi-
+>    Vorbild (CGA/Split-Shape-Grammatik · L-System · creature-Skelett+Metaball+Marching-
+>    Cubes · Kristallographie/Voronoi · Erosion/Fraktur · Lathe/Revolve). Nie erfinden,
+>    nie raten — das etablierte Gesetz holen, DANN giessen. „Wir sind nicht die ersten."
+> 3. **DAS GESETZ IST AUCH DAS TOR.** Eine scharfe Grammatik emittiert KEINEN Blob; die
+>    geschärfte Resonanz weist ihn ab. Heile das Leck `roleManual` (ein Blob beansprucht
+>    eine Rolle, ohne sie über die FORM zu verdienen). Ziel: die Rolle EMERGIERT aus der
+>    gesetz-erzeugten Form — „sonst wären diese Systeme gar nicht durchgekommen".
+> 4. **BREITE: ALLE Systeme (F1–F6), kein Auslassen.** Kreatur · Gerät · Werkstatt/Portal ·
+>    Kristall/Fels · Fahrzeug · Bäume/Glut — jedes bekommt sein Gesetz. Der Katalog ist
+>    erst rund, wenn JEDES Werk als das Ding liest.
+> 5. **TIEFE: pro Domäne das GANZE Gesetz in EINEM Guss** (kein halber Mesh, kein „sag
+>    weiter"-Slicing, V17.30). Das Genom (T1–T6-Varianz) reitet OBEN auf dem Gesetz
+>    (Fidelität × Varianz, nicht statt).
+> 6. **AUGEN VOR BEHAUPTEN.** Jedes gesetz-erzeugte Werk in den `diag-werk-render`-Katalog
+>    + ANSEHEN, BEVOR „fertig" — liest es als das Ding? Headless-grün ≠ Fidelität. (Die
+>    §11-Geburts-Lehre: ich baute Varianz auf Blobs, OHNE zu rendern.)
+> 7. **DER RICHTER HÄLT.** Jeder gesetz-erzeugte Mesh durch Ω-PHYSIS (steht/knickt/
+>    Lastpfad/Balance) + die Affinität-Wand (scatter tag-frozen, library/gesten frei).
+>
+> **Reihenfolge:** F1 (Kreatur-Skelett-Gesetz, die schlimmste Lücke) zuerst. **Stop-
+> Bedingung je F (alle JA):** (a) das Domänen-GESETZ recherchiert + gegossen, Detail
+> emergiert; (b) der `diag-werk-render`-Katalog zeigt das Werk als das DING (kein Blob,
+> Schöpfer-Auge); (c) das Genom variiert DARAUF; (d) der Richter + das Tor (Blob fällt
+> durch) halten; (e) diag-genom erweitert + grün. **Erst wenn ALLE F1–F6 das tragen,
+> ist der Wuchs-Bogen WIRKLICH ein Upgrade.** Die HOW-Tiefe steht in §11.7; die WARUM-
+> Diagnose in §11.1–6; die Profi-Quellen + per-Domäne-Gesetz in §11.7.
+
 > **Der Schöpfer sah die gerenderten Bilder aller Systeme: „da fehlt ja noch einiges,
 > sehe kaum ein Upgrade ehrlicherweise, es fehlen viele Details."** Er hat recht — und
 > der Befund schneidet TIEFER als §10. §11 ist die ehrliche Wurzel + der Plan, der den
 > SICHTBAREN Upgrade liefert. Diese §11 ist ab jetzt die PRIORITÄT (vor §10-Vertikal).
+> **§11.1–6 = die DIAGNOSE (warum Blobs); §11.7 = die METHODE (das Gesetz, korrigiert).
+> Das ⚑ MANDAT oben bindet beide.**
 
 ### §11.1 — DIE WURZEL (gemessen am Katalog `scripts/diag-werk-render.cjs`)
 
@@ -1009,7 +1052,12 @@ Die FIDELITÄT ist die fehlende, SICHTBARE Schicht. Sie ist der „echte Upgrade
 (Vertikal) bleibt gültig, rückt aber HINTER §11 — denn ein form-folgt-dem-Feld-Blob ist
 immer noch ein Blob.
 
-### §11.4 — PER-SYSTEM: die Fidelitäts-Lücke + der reference-grounded Mesh (was zu bauen ist)
+### §11.4 — PER-SYSTEM: die Fidelitäts-Lücke (was fehlt)
+
+> **ACHTUNG (Korrektur §11.7):** die „Mesh-Builder"-Spalte unten benennt die DIAGNOSE der
+> Lücke (welches Detail fehlt) — NICHT die Methode. Der WEG ist NICHT „diesen Mesh von Hand
+> bauen", sondern das Domänen-GESETZ (Grammatik/Skelett/Sim) schärfen, aus dem genau dieses
+> Detail EMERGIERT (§11.7 + das ⚑ Mandat). Lies die Spalte als „was das Gesetz erzeugen muss".
 
 ```
 SYSTEM     LIEST HEUTE          DEFINIERENDE MERKMALE (Referenz)          DER MESH-BUILDER (wie flutedColumn)
