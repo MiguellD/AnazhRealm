@@ -15385,8 +15385,10 @@ class AnazhRealm {
             // Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag +0.4)
             x(r.legL.hip, 0.5 * sw);
             x(r.legR.hip, 0.5 * Math.sin(walkPhase + Math.PI));
-            x(r.legL.knee, -0.75 * Math.max(0, Math.sin(walkPhase + 0.4)));
-            x(r.legR.knee, -0.75 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)));
+            // Knie beugt NACH HINTEN (Fuß hebt zum Gesäß — menschlich), gleiche Richtung wie die
+            // Sitz-Pose (+); negativ wäre Hyperextension/Vogel-Knie (Schöpfer-Befund 16.06.).
+            x(r.legL.knee, 0.85 * Math.max(0, Math.sin(walkPhase + 0.4)));
+            x(r.legR.knee, 0.85 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)));
             // Arme gegen die Beine (Arm L mit Bein R)
             x(r.armL.shoulder, -0.4 * sw);
             x(r.armR.shoulder, 0.4 * sw);
@@ -15410,8 +15412,8 @@ class AnazhRealm {
         x(r.spine, -0.02 + breath); // sanfter Atem
         // Spielbein (L) leicht gebeugt + vorgestellt, Standbein (R) gestreckt
         x(r.legL.hip, 0.08);
-        x(r.legL.knee, -0.16);
-        x(r.legR.knee, -0.02);
+        x(r.legL.knee, 0.16); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
+        x(r.legR.knee, 0.04);
         // Arme entspannt aus der A-Pose (leichte Asymmetrie → lebendig, nicht steif)
         x(r.armL.elbow, -0.2);
         x(r.armR.elbow, -0.12);

@@ -523,5 +523,64 @@ fitness = w1·stabilität(Schwerpunkt-Marge)         (Ω-Φ2, existiert)
 Das macht den Klumpen STRUKTURELL unmöglich (er scored niedrig, fällt durch) UND vereint
 Form·Physik·Selektion zu EINER Quelle (Karl-Sims-Prinzip auf das Familie+WERTEN-Axiom). Profi-
 Zahlen liegen bereit (Wolff `r∝M^⅓` · CoT∝M^−0.32 · McMahon `d∝L^1.5` · Sims-Fitness=Leistung
-an simulierter Physik · smin-`k`≈0.1–0.3·r). **Die nächste Sitzung gießt den Selektions-Richter
-+ die feinere Anatomie + die Gang-Animation (Froude Fr≈0.5 Gang-Wechsel) + den Avatar.**
+an simulierter Physik · smin-`k`≈0.1–0.3·r).
+
+---
+
+## §12 — DER HUMANOIDE AVATAR: SKELETT → HAUT → SKINNING → BEWEGUNG (GUSS 1/2/2b GEBAUT)
+
+> **STAND (16.06.2026, Schöpfer-Auftrag „prozedural schärfen, auf Ready-Player-Me-Niveau,
+> mit dem Wissen aller Profis").** Der Katalog-Befund „Avatar = zerfallener Strichmann"
+> (§0) ist GEHEILT. Die Wurzel war NICHT der „Selektions-Richter" (§11, eine Quadruped-
+> Idee) — sie war, dass der HUMANOIDE Avatar nie durch die Metaball-Pipeline lief: er
+> kombinierte lose Primitive (Box-Torso + schwebende Zylinder-Arme). Profi-recherchiert
+> (Loomis/Vitruv-Proportionen · Kontrapost · Three.js-SkinnedMesh · Walk-Cycle · Froude).
+
+**GEBAUT — drei verifizierte Güsse (`diag-werk-render` humanoid/humanoidrig/playeravatar, eigene Augen):**
+
+- **GUSS 1 — `_humanoidSkeleton(g)` (static):** ein biped Skelett-Gesetz aus echten 8-Kopf-
+  Proportionen (Schritt = Körpermitte 4 KH · Nabel auf φ · Schulter 2 KH · V-Taper/Sanduhr
+  über `sex` · gegliederte Glieder in A-Pose). Läuft durch die bewährte
+  `_buildCreatureSkinGeometry` (SDF-Metaball + Surface-Nets + Taubin). Der Rumpf ist eine
+  STATIONS-KETTE mit glatten Breite- UND Tiefe-Profilen → die Silhouette + Körper-Tiefe
+  emergieren (kein Wespentaillen-Kink, kein Brett). Die Glieder ÜBERLAPPEN Schulter/Becken
+  → die Haut verschmilzt sie. Der Strichmann verschwindet by construction.
+- **GUSS 2 — `_buildHumanoidRig(g)` + `_animateHumanoidRig`:** ein echtes 17-Bone-
+  `THREE.Skeleton` (anatomische Hierarchie) + die Haut wird ein `SkinnedMesh`; skinWeights
+  fallen aus der BONE-SEGMENT-NÄHE (top-4-Blending → weiche Gelenke, kein Schulter-Riss).
+  Posen über Bone-Rotation: Kontrapost-Ruhe (S-Kurve), 4-Posen-Walk-Cycle (Bein gegenphasig,
+  Knie nur beugen, Arme gegen die Beine, CoM-Bob doppelte Frequenz), Schwimmen. Auf WebGPU
+  mit NodeMaterial automatisch geskinnt (KEIN `SkeletonUtils.clone` — Crash #32236; KEIN
+  `positionNode`-Override — umginge die Skinning-Injektion).
+- **GUSS 2b — Integration:** der getragene Spieler-Avatar (`_buildHumanGroup`) IST jetzt das
+  Rig (Fallback auf den alten Box-Avatar, wenn SkinnedMesh fehlt). Die load-bearing
+  `userData.parts`-Schnittstelle gewahrt: → die WRIST-/HÜFT-Bones (equipHeld hängt das Gerät
+  an die Hand), `userData.rig` für die Pose; `_animateHuman`/`_applySeatPose` branchen aufs Rig.
+
+**PERMANENTE LEHREN dieser Güsse:**
+1. **Verschmolzene Haut UND Bewegung = SkinnedMesh** — es gibt keinen Mittelweg. Separate
+   animierbare Glied-Gruppen (alt) lesen als Strichmann an den Gelenken; eine verschmolzene
+   Metaball-Haut ist starr. Nur Skinning (eine Haut, über Bones deformiert) hat beides.
+2. **Eine Avatar-Refaktorierung bricht die Tests, die seine ALTEN Internas prüfen (V9.56-i)** —
+   3 Invarianten fielen (Schwimm-`group.rotation.x` · Material-Farbe · Sitz-`parts.leftLeg`).
+   Die Heilung BEWEGT das Verhalten an seinen neuen Ort / heilt die Wurzel, sie WEICHT den
+   Test NICHT auf. (Schwimmen: der ganze Körper legt sich horizontal — auch korrekter als der
+   Spine-Bend.)
+3. **MISS, bevor du den Test änderst (V13.0)** — der Material-Fehlschlag SAH aus wie ein
+   fehlendes `isMeshStandardMaterial`-Flag; eine Probe zeigte die WAHRE Wurzel: ich nahm
+   `playerSoulDefs.human.color` (0xff0000, grell) statt des gedämpften 0xc0392b. Kein
+   Test-Change nötig — ein Farb-Fix. Fast hätte ich den Test fälschlich aufgeweicht.
+
+**OFFEN — GUSS 3 (der nächste Schritt, am Avatar + der Kreatur):**
+- **Gesicht + Hände am Avatar:** `_addCreatureFace` wird für den Humanoiden noch nicht
+  gerufen (keine Augen); Hände/Füße sind Knubbel.
+- **Achsel-Skinning:** die Schulter kollabiert leicht beim Arm-Schwung (Achsel-Weight-Bleed;
+  ein „clavicle"-Helper-Bone oder geschärfte Weights).
+- **Avatar-Farbe + Haut-Substanz (System A):** das Hide-Material trägt Fell-Korn (für ein Tier
+  gedacht) — der Mensch will glattere Haut/Stoff; die Farbe ist der Schöpfer-Wahl.
+- **Phoenix/Dragon** hängen noch am alten Box-Pfad (`_buildPhoenixGroup`/`_buildDragonGroup`).
+- **Kreatur-Politur:** die losen Box-Füße verbinden, Beine, S-Curve.
+- **Der Selektions-Richter (§11)** bleibt die genialste Achse für die KREATUR-Vielfalt
+  (Quadruped) — orthogonal zum humanoiden Rig, ein eigener Guss.
+
+**Die nächste Sitzung:** Guss 3 (Gesicht/Hände/Substanz am Avatar) + die Kreatur-Politur.
