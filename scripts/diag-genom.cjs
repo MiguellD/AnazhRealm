@@ -692,10 +692,12 @@ function startSaveServer() {
                         rotation: { x: 0, y: 0, z: 1.5708 },
                     })),
                 ];
-                // Ω-Φ4 SSF = Spur / (2·Schwerpunkt-Höhe) — die echte Kipp-Schwelle (ein
-                // zentrierter CoM sättigt die _stability-Marge, darum die SSF direkt rechnen:
-                // die Spur variiert mit dem track-Genom, die CoM-Höhe bleibt seat-safe konstant).
+                // Ω-Φ4 SSF = Spur / (2·CoM-Höhe ÜBER GRUND) — die echte Kipp-Schwelle. Die CoM-
+                // Höhe über Grund nutzt das ENGINE-`_compoundBottomY` (rotation-korrekt, DIESELBE
+                // Quelle, aus der mountArchitecture _groundClear ableitet) → die SSF variiert mit
+                // BEIDEM: der Spur (track) UND der Rad-Größe (wheelR hebt das Gefährt = kippiger).
                 const ssfs = new Set();
+                const bottoms = new Set();
                 let allStand = true,
                     seatSafe = true,
                     sameCount = true;
@@ -711,9 +713,14 @@ function startSaveServer() {
                         comY += (p.position && p.position.y) || 0;
                     }
                     comY /= v.length;
-                    ssfs.add((trackMax / (2 * Math.max(0.1, comY))).toFixed(3));
+                    const bottomY = r._compoundBottomY({ parts: v });
+                    bottoms.add(bottomY.toFixed(3));
+                    ssfs.add((trackMax / (2 * Math.max(0.1, comY - bottomY))).toFixed(3));
                 }
                 o.vehicleSSFSpread = ssfs.size;
+                // die Rad-GRÖSSE variiert ECHT → die Unterkante (der Re-Anker-Punkt) variiert
+                // → das Gefährt re-verankert sich an seiner eigenen Geometrie (kein gefrorenes Rad).
+                o.vehicleWheelVaries = bottoms.size >= 4;
                 o.vehicleAllStand = allStand;
                 o.vehicleSeatSafe = seatSafe;
                 o.vehicleSameCount = sameCount;
@@ -997,9 +1004,10 @@ function startSaveServer() {
                 out.potionDet === true
         );
         ck(
-            "T4-FAHRZEUG: SSF/Spur variiert (Stabilität) + jede STEHT + SEAT-SAFE (y heil) + Gelenke heil",
-            `ssf=${out.vehicleSSFSpread}/stand=${out.vehicleAllStand}/seat=${out.vehicleSeatSafe}/count=${out.vehicleSameCount}`,
+            "T4-FAHRZEUG: SSF + Rad-Größe variieren (re-verankert) + jede STEHT + SEAT-SAFE + Gelenke heil",
+            `ssf=${out.vehicleSSFSpread}/wheel=${out.vehicleWheelVaries}/stand=${out.vehicleAllStand}/seat=${out.vehicleSeatSafe}/count=${out.vehicleSameCount}`,
             out.vehicleSSFSpread >= 4 &&
+                out.vehicleWheelVaries === true &&
                 out.vehicleAllStand === true &&
                 out.vehicleSeatSafe === true &&
                 out.vehicleSameCount === true &&

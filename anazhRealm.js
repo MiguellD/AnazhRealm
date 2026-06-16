@@ -47270,18 +47270,25 @@ class AnazhRealm {
     _vehicleVariant(parts, seed) {
         if (!Array.isArray(parts) || !parts.length) return parts;
         const g = this._rollGenome(seed, "vehicle");
-        const track = g.range("track", 0.9, 1.32); // Spur/Stand-Breite (Rad/Bein-x) — breiter = stabiler
+        const track = g.range("track", 0.9, 1.32); // Spur (Rad/Bein-x) — breiter = stabiler (SSF↑)
         const cabinScale = g.range("cabin", 0.85, 1.2); // Korpus-Breite/Tiefe
+        // Die RAD-GRÖSSE variiert ECHT (Karren-Räder ↔ Wagen-Räder) — KEINE Ausweichung: das
+        // Gefährt RE-VERANKERT sich an seiner eigenen Geometrie. `mountArchitecture` leitet
+        // `_groundClear = −_compoundBottomY·scale` AB (kein gefrorenes Maß) → die Unterkante ruht
+        // IMMER auf dem Terrain, egal wie groß die Räder; ein großes Rad hebt das Gefährt (höherer
+        // Sitz, höherer Schwerpunkt über Grund = ehrlich kippiger, Ω-Φ4). Die y-BREITE des Rads
+        // bleibt (die Lauffläche), nur der RADIUS (x/z) wächst — physik-wahr, nicht eingefroren.
+        const wheelR = g.range("wheelR", 0.8, 1.32);
         return parts.map((p) => {
             const np = { ...p };
             const isWheel = p.material === "eisen" && p.shape === "cylinder";
             // die SPUR weitet (Rad/Bein-x × track) → der SSF variiert; y bleibt überall (seat-safe).
             if (p.position)
                 np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
-            // die RAD-GRÖSSE bleibt UNANGETASTET (sonst verschiebt sich die Boden-Kontakt-Höhe
-            // _compoundBottomY → der Reiter versinkt/schwebt, M3 GEMESSEN); nur der KORPUS variiert x/z.
-            if (p.size && !isWheel)
-                np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
+            if (p.size) {
+                if (isWheel) np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR }; // Radius wächst, Lauffläche bleibt
+                else np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
+            }
             return np;
         });
     }

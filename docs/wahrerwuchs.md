@@ -570,43 +570,51 @@ Moos zum Mammutbaum, aus dem Samen in die Höhe getrieben, auf den Schultern der
 
 ## §9 — DER EHRLICHE STAND (Selbst-Audit 16.06.2026, V18.255) — KERN ✅ vs. VOLLE TIEFE ⚠
 
-> ## ⚑ DER VOLLENDUNGS-AUFTRAG (lies das ZUERST, nächster Agent)
+> ## ✅ DER VOLLENDUNGS-AUFTRAG IST ABGEARBEITET (16.06.2026 — T1–T6 in EINEM Schub)
 >
-> **Du giesst die perfekte Form in EINEM Schub. Keine halben Sachen. Du stoppst
-> ERST, wenn T1–T6 (unten) über ALLE DREI beteiligten Pläne in voller Tiefe
-> abgearbeitet sind — `wahrerwuchs` (FORM) × `wahrerbauplan` (PHYSIK) ×
-> `wahreranblick` (ANBLICK).**
+> **Die VOLLE-TIEFE-Schicht ist gegossen — T1–T6, je die FORM (`_<genre>Variant`/
+> `_growTreeBlueprintRich`) + der PHYSIK-Richter + der headless-baubare ANBLICK,
+> alle in `scripts/diag-genom.cjs` mit der PLAN-ZAHL bewiesen (nicht Existenz).**
+> Der ganze Bogen lief in EINEM Schub (kein „sag weiter"-Slicing), je T-Welle ein
+> eigenes diag-Band + voller Playtest. Was GEBAUT + GEMESSEN ist:
 >
-> Drei verbindliche Wände, damit du es WIRKLICH vollendest statt wieder das
-> Gerüst zu liefern:
+> - **T1 — Blatt-TYPEN + Brettwurzel:** `baum_palme` (palm) · `baum_zypresse` (scale)
+>   in SPECIES_GRAMMAR; der Foliage-Atlas backt 4 KIND-Spalten (Breitblatt/Nadel/
+>   Palme/Schuppe, Ω-O14), die Karten-UVs routen je `foliage.kind`; Brettwurzeln am
+>   Giganten (5–7 holz-Zylinder, tag-frozen). diag: 4 Typen · Atlas-Spalten distinkt ·
+>   Gigant 5–7 / Normal 0 · UV palm→Spalte 2. Scatter-gated (selten in-Welt).
+> - **T2 — Bauwerk-Genom PARAMETRISCH:** `_stationVariant` ÜBER scale+tint —
+>   NON-UNIFORM Proportion (eigene x/y/z, physik-garant: jede Variante STEHT) +
+>   DETAIL-Dichte (0–3 Ornament-Studs, tag-frozen). diag: prop+detail variieren, stands.
+> - **T3 — Geologie/Mineralogie-Glanz:** per-Variante `emissiveBoost` (Kristall-glow /
+>   Glut-Intensität, skaliert den tag-Glimmen, tag-neutral); Kristall Facetten-Achse;
+>   Glut Öffnungs-Achse; Fels Sediment-Strata (Höhen-Farb-Bänder) + Moos/Flechten.
+> - **T4 — Rüstung/Trank-Genome + Fahrzeug-SSF:** `_armorVariant` (Platten/Artikulation/
+>   eisen-bronze) · `_potionVariant` (Phiole-Form + Glasur aus der Wirkung) ·
+>   `_vehicleVariant` (Ω-Φ4 SSF: Spur · Kabine · RAD-GRÖSSE variieren ECHT — das Gefährt
+>   RE-VERANKERT sich an seiner Geometrie [`mountArchitecture` leitet `_groundClear` aus
+>   `_compoundBottomY` ab, kein gefrorenes Maß] → die Unterkante ruht IMMER auf dem Terrain,
+>   ein großes Rad hebt das Gefährt [höherer CoM = ehrlich kippiger]; SEAT-SAFE, Gelenke heil,
+>   kein Versinken, M3 GEMESSEN gegen die ABGELEITETE Erwartung statt einer Magie-Zahl).
+> - **T5 — Kreatur-Allometrie (Ω-B5 Galileo):** `_applyCreatureAllometry` — die Glieder
+>   verdicken ÜBERPROPORTIONAL (Querschnitt ∝ L^1.5, Länge isometrisch); der Koloss ist
+>   STOCKIG statt vergrößerter Zwerg. diag: Glied-Schlankheit gigant 2.53 < iso 4 < klein 4.78.
+> - **T6 — Kronen-Formen/Lean/Phyllotaxis/Mehrstämmig:** crownForm (weeping/vase/schirm) ·
+>   lean · phylloDiv · multiStem (Birken-Klumpen). Alle tag-neutral + kein Knicken
+>   (worst-Schlankheit 8.40 < 10.1, GEMESSEN über alle T6-Variationen).
 >
-> 1. **KEIN „sag weiter"-Slicing (V17.30).** Der Plan ist klar (T1–T6, §9.1 nennt
->    je die drei Plan-Fäden). Der Fehler dieser Session war: jeden S-Punkt einzeln
->    für „fertig" erklären, sobald die Headline-Achse grün war. Du baust pro
->    T-Welle das GANZE Subsystem (alle §4-Achsen des Genres + den Physik-Richter +
->    den Anblick-Faden), nicht eine sichere Einzel-Achse + Pause. Eine T-Welle ist
->    erst „fertig", wenn ihre DREI Plan-Spalten (§9.1) stehen.
->
-> 2. **MISS die PLAN-ZAHL, nicht Existenz.** Der Über-Claim „rund" entstand, weil
->    ich prüfte, dass die Headline-Achse EXISTIERT — nicht, dass die volle §4-Tiefe
->    da ist. Für jedes „erledigt" frage: welche ZAHL/welcher diag-Band beweist die
->    geplante Tiefe (nicht nur „>0 Varianten")? Erweitere `diag-genom` je T-Welle.
->
-> 3. **Die GRENZE ehrlich: was du in EINEM Schub giesst = das HEADLESS-Verifizierbare**
->    (FORM-Geometrie + PHYSIK-Richter + diag-Bänder — das pourst du ganz, ohne
->    Pause, ohne „darf ich weiter"). Der **LOOK** (Mammutbaum/Koloss/Palmenhain/
->    Oakeshott-Klinge im echten Browser) ist Ω-OPSIS Wand 1 = der Schöpfer-Befund
->    am Schluss. Du baust den Look so weit headless-baubar (Atlas-Bakes, Geometrie,
->    PBR), markierst den finalen Anblick als AUGEN-bound — du verkaufst NIE
->    headless-grün als „der Look ist fertig", und du stoppst auch NIE vorzeitig mit
->    „warte auf das Auge", solange noch headless-Tiefe offen ist.
->
-> **Stop-Bedingung (alle drei JA):** (a) T1–T6 gebaut, je alle drei Plan-Fäden
-> (§9.1); (b) `diag-genom` grün + um die neuen Tiefen-Achsen erweitert + voller
-> Playtest grün; (c) die drei Plan-Docs (`wahrerwuchs §9/§9.1`, `wahrerbauplan`
-> Ω-B4/Ω-B5, `wahreranblick` Ω-O14/Ω-O15/Ω-O16) tragen den Stand „abgearbeitet"
-> statt „offen". Dann — und nur dann — übergibst du den finalen LOOK ans
-> Schöpfer-Auge.
+> **WAS BEWUSST OFFEN BLEIBT (ehrlich, niedrig-prioritär / AUGEN-bound — kein Über-Claim):**
+> 1. **Der LOOK (Ω-OPSIS Wand 1)** — Mammutbaum/Palmen-Hain/Koloss/Trauerweide/Basalt-
+>    Strata/Lava-See/Oakeshott-Klinge im echten Schöpfer-Browser. Headless beweist
+>    FORM+PHYSIK+Atlas-Bake, NICHT den finalen Anblick. **Der nächste Schritt: das Auge.**
+> 2. **S0** — der Baum-`r01()`-Noise-Stream auf `roller.seq()` ziehen (V9.82 EINE Quelle).
+>    BEWUSST aufgeschoben: ein Wechsel re-rollt JEDE Welt (sichtbare Form-Änderung, NULL
+>    sichtbarer Gewinn) → unklug kurz vor dem Schöpfer-Auge. Eine eigene, angekündigte Welle.
+> 3. **S2** — die 12 statischen `baum_*_jung/_alt`-DEF-Blöcke schneiden (eslint-unused +
+>    2 Test-Fixtures migrieren). Pure Sediment-Tilgung, getrackt.
+> 4. **Ω-B4 LOD-Swap je Scatter-Variante** (fels/kristall/glut) — die Varianten-Pools tragen
+>    EINE Auflösung; der per-Variante-LOD-Swap ohne Pop bleibt offen (die Variants sind
+>    schon low-poly → marginaler Perf-Gewinn, hoher Instanced-Refactor-Aufwand).
 
 > **Die ehrliche Wahrheit nach S0–S7 (Schöpfer-Frage „hast du wirklich in voller Tiefe
 > umgesetzt, oder einige Dinge nur an der Oberfläche gekratzt?"): JA, teils gekratzt.**

@@ -29815,7 +29815,12 @@ async function checkBandM3RittVollendet(ctx) {
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
             const v = body.getLinearVelocity();
             out.vyZeroed = Math.abs(v.y()) < 1e-6;
-            out.clearCached = Number.isFinite(entry._groundClear) && Math.abs(entry._groundClear - -0.03) < 0.05;
+            // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), KEIN gefrorenes
+            // Maß — so re-verankert sich JEDE Fahrzeug-Variante (auch grosse Räder, wahrerwuchs
+            // T4 _vehicleVariant) korrekt auf dem Terrain. Der Test prüft die ABLEITUNG, nicht
+            // eine Magie-Zahl → robust gegen das Rad-Genom.
+            const expectClear = -r._compoundBottomY(bp) * (entry.scale || 1);
+            out.clearCached = Number.isFinite(entry._groundClear) && Math.abs(entry._groundClear - expectClear) < 0.05;
 
             // (3) die SITZ-POSE: im Sattel winkelt der menschliche Avatar die Beine
             // an (Walk-Cycle ruht); beim Absteigen räumt _animateHuman die Pose.
