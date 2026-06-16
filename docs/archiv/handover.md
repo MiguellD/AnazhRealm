@@ -390,6 +390,27 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 > Wahrheit + der Pfad: `docs/wahreranblick-plan.md` + der CLAUDE.md-Kopf. Die
 > historischen Einträge bleiben als Lern-Material stehen; diese Korrektur führt.
 
+### V18.252 — DER WAHRE WUCHS S3: das FELS-GENOM (vom Kiesel zum Felsturm)
+
+Das Genom-Prinzip auf die GEOLOGIE angewandt (wahrerwuchs §4.2). `_rockVariant(seed)`
+würfelt über den geteilten Roller (S0) eine Fels-Formation: **Form-Klasse** (Brocken ·
+Stapel/Cairn · Nadel/Spire · Geröll/Scree) · **Größe** · **Verwitterung** (noiseStrength,
+scharf↔gerundet) · **Detail**. NUR `noiserock` + `stein` → tag-frozen (identische Tags wie
+stein_block, V17.17 — kein Affinitäts-Shift). Ein Pool `fels_var0..11` (Built-ins in
+`_defaultBlueprints`, deterministisch aus dem Welt-Seed), den der Scatter NACH dem
+stein_block-Affinitäts-Sieg REGION-deterministisch wählt (ein Fels-Feld trägt EINEN lokalen
+Stil → das HISM-Instancing wirkt; Variation pro Fels aus scale/yaw). Persistiert trivial als
+Built-in (kein grow-for-spawn nötig).
+
+**PHYSIK-GARANT — und HIER gelten alle drei Richter** (ein Fels ist FREISTEHEND, anders als
+der verwurzelte Baum): jeder Fels STEHT (Ω-Φ2 — Brocken gedrungen/breit, Stapel narrowing
+mit kleinem Versatz, Nadel mit breitem Fuß, Geröll boden-verankert), der Lastpfad SCHLIESST
+(Ω-Φ5 — der Stapel ACHSEN-PARALLEL gehalten, damit der AABB-BFS exakt ist; die V18.251-
+Lehre „rotierte dünne Zylinder unter-decken" angewandt), die Nadel KNICKT NICHT (Ω-Φ3-b —
+breiter Fuß, stein-härte hohe crit). GEMESSEN `scripts/diag-genom.cjs` FELS-Bänder (3 Formen,
+jeder steht/intakt/knickt-nicht, tag-frozen == stein_block, deterministisch, Pool+Scatter
+wired). OFFEN: der LOOK (Brocken/Spire/Cairn im Fels-Feld) AUGEN-bound → Schöpfer-Browser.
+
 ### V18.251 — DER WAHRE WUCHS: das Bauplan-Genom S0+S1+S2 (der Kern)
 
 **Der Schöpfer-Auftrag „wirklich die volle palette möglich, sogar mamutbäume, ohne hundert

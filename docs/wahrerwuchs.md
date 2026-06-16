@@ -386,7 +386,13 @@ S2  LEGACY-SCHNITT  ✅ GEBAUT — der `switch(bestName){…_jung/_alt/_breit…
         Test-Fixtures registriert — sie spawnen nie; ihre Entfernung ist all-or-nothing
         gekoppelt an eslint-unused + 2 Test-Migrationen → getrackter Sediment-Cleanup.)
         ▼
-S3  FELS-GENOM (Form/Größe/Schichtung/Verwitterung) — der größte sichtbare Fern-Hebel.
+S3  FELS-GENOM  ✅ GEBAUT (V18.252) — `_rockVariant(seed)` über den Roller: Form-Klasse
+      (Brocken/Stapel/Nadel/Geröll) · Größe · Verwitterung (noiseStrength) · Detail, NUR
+      noiserock+stein (tag-frozen = stein_block, V17.17). Ein Pool `fels_var0..11` (Built-
+      ins, `_defaultBlueprints`), den der Scatter NACH dem stein_block-Affinitäts-Sieg
+      region-deterministisch wählt. PHYSIK-GARANT (Fels ist FREISTEHEND, anders als der Baum):
+      jeder steht (Ω-Φ2) · Lastpfad intakt (Ω-Φ5, der Stapel achsen-parallel) · die Nadel
+      knickt nicht (Ω-Φ3-b) — GEMESSEN diag-genom (FELS-Bänder grün).
 S4  KRISTALL · GLUT · BÜSCHE — Genome (Größe/Habitus/Farbe/Dichte; Büsche erben S1).
 S5  BAUWERKE verallgemeinert — Werkstätten · Bauten · Portale (Tempel-Muster:
       Palette + Größe + Detail, physik-garant).

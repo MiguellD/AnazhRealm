@@ -46562,6 +46562,107 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ DAS FELS-GENOM (wahrerwuchs §4.2 S3) — vom Kiesel zum Felsturm, EIN Genom ═══
+    // Über den geteilten Roller (deterministisch, UNSIGNED). Die GEOLOGIE als Gesetz:
+    // Form-Klasse (Brocken · Stapel · Nadel · Geröll), Größe, Verwitterung (noiseStrength),
+    // Detail. Tag-NEUTRAL: nur `noiserock` (= box-Aktivierung) + `stein` → die Spawn-
+    // Affinität ist bit-identisch zu stein_block (V17.17). PHYSIK-GARANT: ein Fels STEHT
+    // (Ω-Φ2, freistehend — anders als der verwurzelte Baum), der Stapel-Lastpfad SCHLIESST
+    // (Ω-Φ5), die Nadel knickt nicht (Ω-Φ3-b) — verifiziert in diag-genom. Der Stapel
+    // bleibt ACHSEN-PARALLEL (kein rotierter Zylinder → der AABB-Lastpfad ist exakt).
+    _rockVariant(seed) {
+        const g = this._rollGenome(seed, "rock");
+        const parts = [];
+        const rock = (x, y, z, sx, sy, sz, str, det, rot) =>
+            parts.push({
+                shape: "noiserock",
+                material: "stein",
+                position: { x, y, z },
+                size: { x: sx, y: sy, z: sz },
+                noiseStrength: str,
+                noiseDetail: det,
+                ...(rot ? { rotation: rot } : {}),
+            });
+        const form = g.pick("form", ["brocken", "brocken", "stapel", "nadel", "geroell"]);
+        const weather = g.range("weather", 0.12, 0.4); // Verwitterung (scharf↔gerundet)
+        const det = g.int("detail", 1, 2);
+        if (form === "brocken") {
+            // ein gedrungener Felsbrocken (breite Basis, tief → kippt nie); optional ein Begleiter.
+            const r = g.range("brockenR", 0.7, 2.6);
+            rock(0, r * 0.5, 0, r * 1.4, r * 0.95, r * 1.3, weather, det);
+            if (g.chance("companion", 0.55)) {
+                const r2 = r * g.range("c2", 0.3, 0.55);
+                rock(r * 0.85, r2 * 0.5, r * 0.4, r2 * 1.3, r2 * 0.9, r2 * 1.2, weather, det, {
+                    x: 0.15,
+                    y: g.axis("cy") * 6.283,
+                    z: 0.1,
+                });
+            }
+        } else if (form === "stapel") {
+            // ein verwitterter Stapel/Cairn: N achsen-parallele Blöcke, jeder auf dem
+            // darunter (überlappend → Lastpfad schließt), nach oben schmaler, kleiner
+            // Versatz (Schwerpunkt bleibt über der Basis → steht, Ω-Φ2).
+            const n = g.int("stackN", 3, 5);
+            let r = g.range("stapelR", 0.65, 1.25);
+            let y = 0;
+            for (let i = 0; i < n; i++) {
+                const bw = r * 1.6;
+                const bh = r * 0.9;
+                y += bh * 0.5;
+                rock(
+                    (g.axis("ox" + i) - 0.5) * r * 0.3,
+                    y,
+                    (g.axis("oz" + i) - 0.5) * r * 0.3,
+                    bw,
+                    bh,
+                    bw * 0.92,
+                    weather,
+                    det
+                );
+                y += bh * 0.42; // den nächsten Block leicht überlappen (Lastpfad-Berührung)
+                r *= 0.8;
+            }
+        } else if (form === "nadel") {
+            // eine verjüngte Fels-NADEL/Spire mit BREITEM Fuß (steht + knickt nicht).
+            const h = g.range("nadelH", 3, 7.5);
+            const baseR = h * 0.16; // breite Basis → Schwerpunkt stabil + niedrige Schlankheit
+            const segs = 4;
+            let y = 0;
+            for (let i = 0; i < segs; i++) {
+                const t = i / segs;
+                const rr = baseR * (1 - t * 0.62);
+                const segH = h / segs;
+                rock(0, y + segH * 0.5, 0, rr * 2, segH, rr * 2, weather, det);
+                y += segH;
+            }
+        } else {
+            // Geröll-Streu (Scree): N kleine Felsen, jeder auf dem Boden (alle boden-
+            // verankert → Lastpfad intakt; die gemeinsame Hülle trägt den Schwerpunkt).
+            const n = g.int("screeN", 4, 7);
+            for (let i = 0; i < n; i++) {
+                const rr = g.range("r" + i, 0.18, 0.55);
+                const ang = g.axis("a" + i) * 6.283;
+                const dist = g.range("d" + i, 0, 1.1);
+                rock(
+                    Math.cos(ang) * dist,
+                    rr * 0.45,
+                    Math.sin(ang) * dist,
+                    rr * 1.2,
+                    rr * 0.85,
+                    rr * 1.1,
+                    weather,
+                    det,
+                    {
+                        x: g.axis("rx" + i) * 0.4,
+                        y: g.axis("ry" + i) * 6.283,
+                        z: g.axis("rz" + i) * 0.4,
+                    }
+                );
+            }
+        }
+        return parts;
+    }
+
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
@@ -49028,7 +49129,27 @@ class AnazhRealm {
             return meta;
         };
 
+        // wahrerwuchs §4.2 S3 — DAS FELS-GENOM: ein Pool Genom-gewürfelter Fels-
+        // Formationen (Brocken/Stapel/Nadel/Geröll), die der Scatter NACH dem stein_block-
+        // Affinitäts-Sieg seed-deterministisch wählt (tag-frozen: noiserock+stein →
+        // identische Tags wie stein_block, kein Affinitäts-Shift). Deterministisch aus dem
+        // Welt-Seed (`_rockVariant` über den geteilten Roller); persistiert trivial als
+        // Built-in (kein grow-for-spawn nötig). Physik-garant (steht/Lastpfad/knickt nicht).
+        const felsWorldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const felsVariants = {};
+        for (let i = 0; i < AnazhRealm.ROCK_VARIANTS; i++) {
+            const key = `fels_var${i}`;
+            felsVariants[key] = {
+                name: key,
+                label: "Felsformation",
+                builtIn: true,
+                instanced: true,
+                parts: this._rockVariant(`${felsWorldSeed}-fels-${i}`),
+            };
+        }
+
         return {
+            ...felsVariants,
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
@@ -55198,6 +55319,24 @@ class AnazhRealm {
         let spawnName = bestName;
         let spawnScale = 1;
         let spawnYaw = 0;
+        // wahrerwuchs §4.2 S3 — DAS FELS-GENOM: ist der Affinitäts-Sieger ein Felsblock,
+        // wähle eine REGION-deterministische Fels-FORMATION (Brocken/Stapel/Nadel/Geröll)
+        // statt des immer-gleichen 2.4-Würfels. Region-geteilt (ein Fels-Feld trägt EINEN
+        // lokalen Stil → das HISM-Instancing wirkt); die Gestalt kommt NACH dem Sieg, der
+        // Felsblock bleibt der kanonische Affinitäts-Träger (tag-frozen, V17.17). Variation
+        // PRO Fels kommt aus scale/yaw (unten). Über den geteilten Roller (S0).
+        if (bestName === "stein_block" && AnazhRealm.ROCK_VARIANTS > 0) {
+            const regX = Math.floor(sampleX / 256);
+            const regZ = Math.floor(sampleZ / 256);
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const felsIdx = this._rollGenome(`${worldSeed}|${regX},${regZ}`, "fels-region").int(
+                "pick",
+                0,
+                AnazhRealm.ROCK_VARIANTS - 1
+            );
+            const felsKey = `fels_var${felsIdx}`;
+            if (this.state.blueprints && this.state.blueprints[felsKey]) spawnName = felsKey;
+        }
         if (isTree) {
             // V18.210 (§1-A1) — Γ7 WORLDGEN-HOOK: gen ≥ 4 baut prozedurale
             // Baum-Bauplane via _growTreeBlueprintForSpawn (Cache-by-Region).
@@ -69256,7 +69395,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.251.0";
+AnazhRealm.VERSION = "18.252.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69582,6 +69721,9 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // justierbar; eine Änderung erfordert KEINEN Welt-Reset (die Pool-Aufstellung
 // ist lazy, alte Welten ohne variantSeed migrieren still).
 AnazhRealm.VARIANTS_PER_SPECIES = 16;
+// wahrerwuchs §4.2 S3 — die Zahl der Genom-gewürfelten Fels-Formationen (Brocken/
+// Stapel/Nadel/Geröll), die der Scatter nach dem stein_block-Affinitäts-Sieg wählt.
+AnazhRealm.ROCK_VARIANTS = 12;
 
 // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-DISTANZEN. Die
 // Schwellen lesen alle Konsumenten (`_chooseLODForDistance`, `_tickArchitectureLOD`

@@ -175,6 +175,76 @@ function startSaveServer() {
             o.onlyWoodLeaf = [...mats].every((m) => m === "holz" || m === "laub");
             o.matsUsed = [...mats];
 
+            // ── S3 FELS-GENOM: Form-Vielfalt + PHYSIK (Fels ist FREISTEHEND → Ω-Φ2 KIPP +
+            //    Ω-Φ5 LASTPFAD gelten, anders als beim verwurzelten Baum) + AFFINITÄT-frozen ──
+            if (typeof r._rockVariant === "function") {
+                let rockStand = true,
+                    rockIntact = true,
+                    rockNoBuckle = true,
+                    rockMatsOk = true;
+                const rockForms = new Set();
+                const rockBad = [];
+                for (let s = 0; s < 400; s++) {
+                    const rp = r._rockVariant("rk" + s);
+                    if (!Array.isArray(rp) || rp.length < 1) {
+                        rockBad.push({ s, why: "empty" });
+                        continue;
+                    }
+                    rp.forEach((p) => {
+                        if (p.shape !== "noiserock" || p.material !== "stein") rockMatsOk = false;
+                    });
+                    // grobe Form-Erkennung aus der Part-Signatur (für die Vielfalt-Probe)
+                    const n = rp.length;
+                    const tall = rp.some((p) => p.size.y > p.size.x * 1.3);
+                    rockForms.add(n === 1 || n === 2 ? "brocken" : tall ? "nadel/stapel" : "geroell/stapel");
+                    const bp = { parts: rp };
+                    const st = r._stability(bp);
+                    const lp = r._loadPath(bp);
+                    const fl = r._failsUnderLoad(bp);
+                    if (st.inside !== true) {
+                        rockStand = false;
+                        if (rockBad.length < 6) rockBad.push({ s, why: "tips", margin: +st.margin.toFixed(3), n });
+                    }
+                    if (lp.intact !== true) {
+                        rockIntact = false;
+                        if (rockBad.length < 6) rockBad.push({ s, why: "float", frac: +lp.floatingFrac.toFixed(3), n });
+                    }
+                    if (fl.buckles === true) {
+                        rockNoBuckle = false;
+                        if (rockBad.length < 6)
+                            rockBad.push({ s, why: "buckle", sl: +fl.maxSlenderness.toFixed(1), n });
+                    }
+                }
+                o.rockStand = rockStand;
+                o.rockIntact = rockIntact;
+                o.rockNoBuckle = rockNoBuckle;
+                o.rockMatsOk = rockMatsOk;
+                o.rockFormCount = rockForms.size;
+                o.rockBad = rockBad;
+                // DETERMINISMUS: gleicher Seed → bit-identisch
+                const ra = r._rockVariant("det-rock");
+                const rb = r._rockVariant("det-rock");
+                o.rockDet =
+                    ra.length === rb.length &&
+                    ra.every(
+                        (p, i) =>
+                            Math.abs(p.size.x - rb[i].size.x) < 1e-12 &&
+                            Math.abs(p.position.y - rb[i].position.y) < 1e-12
+                    );
+                // AFFINITÄT: eine Fels-Formation hat IDENTISCHE Tags zu stein_block (V17.17)
+                const steinBlock = r.state.blueprints.stein_block;
+                if (steinBlock) {
+                    const tsb = tagsOf(steinBlock.parts);
+                    const trk = tagsOf(r._rockVariant("aff-rock"));
+                    o.rockTagsFrozen = ["lebendig", "dichte", "brennbar", "magieleitung"].every(
+                        (a) => Math.abs((tsb[a] || 0) - (trk[a] || 0)) < 1e-9
+                    );
+                }
+                // WIRED: der Pool ist registriert + der Scatter wählt eine Fels-Variante
+                o.felsPoolRegistered = !!(r.state.blueprints && r.state.blueprints.fels_var0);
+                o.scatterPicksFels = /fels_var\$\{felsIdx\}|fels_var/.test(r._vegetationSampleSpawn.toString());
+            }
+
             // ── ROLLER: range im Bereich, int inklusiv, pick aus Liste, chance ~p, seq [0,1) + det ──
             const G = r._rollGenome("rtest", "diag");
             const G2 = r._rollGenome("rtest", "diag");
@@ -248,6 +318,19 @@ function startSaveServer() {
             out.legacyVariantsInScatter,
             out.legacyVariantsInScatter === false
         );
+        // ── S3 FELS-GENOM ──
+        ck("FELS: ≥2 Formen erscheinen (Brocken/Stapel/Nadel/Geröll)", out.rockFormCount, out.rockFormCount >= 2);
+        ck("FELS-PHYSIK: jeder Fels STEHT (Ω-Φ2, freistehend)", out.rockStand, out.rockStand === true);
+        ck("FELS-PHYSIK: Lastpfad intakt (Ω-Φ5, der Stapel trägt)", out.rockIntact, out.rockIntact === true);
+        ck("FELS-PHYSIK: die Nadel knickt nicht (Ω-Φ3-b)", out.rockNoBuckle, out.rockNoBuckle === true);
+        ck("FELS-AFFINITÄT: nur noiserock+stein (tag-frozen)", out.rockMatsOk, out.rockMatsOk === true);
+        ck("FELS-AFFINITÄT: Tags == stein_block (V17.17)", out.rockTagsFrozen, out.rockTagsFrozen === true);
+        ck("FELS-DETERMINISMUS: gleicher Seed → bit-identisch", out.rockDet, out.rockDet === true);
+        ck(
+            "FELS-WIRED: Pool registriert + Scatter wählt eine Fels-Variante",
+            `${out.felsPoolRegistered}/${out.scatterPicksFels}`,
+            out.felsPoolRegistered === true && out.scatterPicksFels === true
+        );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");
         for (const c of checks) console.log(`  ${c.ok ? "✓" : "✗"} ${c.name} — ${JSON.stringify(c.val)}`);
@@ -255,6 +338,7 @@ function startSaveServer() {
             `\n  Klassen-Verteilung: ${JSON.stringify(out.classes)} | Höhen ${out.minHeight}–${out.maxHeight} m`
         );
         if (out.badBuckle.length) console.log("  badBuckle:", JSON.stringify(out.badBuckle));
+        if (out.rockBad && out.rockBad.length) console.log("  rockBad:", JSON.stringify(out.rockBad));
         console.log(`\n  ${failed ? "✗ FEHLGESCHLAGEN" : "✓ ALLE BÄNDER GRÜN"}\n`);
     } catch (e) {
         console.error("DIAG-FEHLER:", e);
