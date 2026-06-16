@@ -4105,6 +4105,10 @@ class AnazhRealm {
             "helix",
             "limb",
             "crystalPoint",
+            "latheProfile",
+            "plateShell",
+            "spokeWheel",
+            "pickHead",
             "flutedColumn",
             "bladeProfile",
             "gableTriangle",
@@ -4191,6 +4195,21 @@ class AnazhRealm {
                 if (Number.isFinite(p.facets)) sanitized.facets = Math.max(3, Math.min(12, p.facets | 0));
                 if (Number.isFinite(p.termFrac)) sanitized.termFrac = Math.max(0.05, Math.min(0.9, p.termFrac));
             }
+            // F2/F5 (wahrerwuchs §11) — die Detail-Grammatik-Felder (Gefäß-Profil · Platten-
+            // Wölbung · Speichen-Zahl · Pickel-Krümmung), damit Werkstatt/DSL sie bauen kann.
+            if (p.shape === "latheProfile" && Array.isArray(p.profile)) {
+                const prof = p.profile
+                    .slice(0, 24)
+                    .filter((q) => Array.isArray(q) && q.length >= 2)
+                    .map((q) => [Math.max(0, Math.min(1, +q[0] || 0)), Math.max(0, Math.min(1, +q[1] || 0))]);
+                if (prof.length >= 2) sanitized.profile = prof;
+            }
+            if (p.shape === "plateShell" && Number.isFinite(p.wrap))
+                sanitized.wrap = Math.max(0.4, Math.min(3.0, p.wrap));
+            if (p.shape === "spokeWheel" && Number.isFinite(p.spokes))
+                sanitized.spokes = Math.max(4, Math.min(16, p.spokes | 0));
+            if (p.shape === "pickHead" && Number.isFinite(p.curve))
+                sanitized.curve = Math.max(0, Math.min(0.6, p.curve));
             // Ω-B2 (wahrerbauplan §6) — die bladeProfile-Grammatik-Felder (Oakeshott: distale
             // Verjüngung + Hohlkehle), damit die Werkstatt/DSL eine echte Klinge bauen kann.
             if (p.shape === "bladeProfile") {
@@ -14843,7 +14862,10 @@ class AnazhRealm {
                     })(),
                     lowAnchor: c01(1 - (M.py - M.sy / 2 - minY) / (0.3 * H)),
                 };
-                const isCyl = M.shape === "cylinder";
+                // F5 (§11): ein `spokeWheel` IST ein Rad (wie der Zylinder, den es ersetzt) →
+                // es bekommt dieselbe RAD-Gelenk-Erkennung (rollt um seine Eigen-Achse). Sonst
+                // verlöre der Wagen seine Gelenke/Fahr-Tiefe (V18.119/V18.150/M3).
+                const isCyl = M.shape === "cylinder" || M.shape === "spokeWheel";
                 const longAxis = M.sy >= M.sx && M.sy >= M.sz ? "y" : M.sx >= M.sz ? "x" : "z";
                 let jointRole, jointAxis, phase;
                 if (chainIdx.has(movIdx)) {
@@ -46409,6 +46431,196 @@ class AnazhRealm {
                 g.computeVertexNormals();
                 return g;
             }
+            case "latheProfile": {
+                // F2 (wahrerwuchs §11 — DAS DREH-/REVOLVE-GESETZ): ein lathe-revolviertes
+                // Gefäß-Profil — Phiole · Vase · Urne · Goblet · Becken · Baluster. Das
+                // charakteristische Silhouetten-Profil (Bauch · Schulter · Hals · Lippe)
+                // EMERGIERT aus den Kontrollpunkten; eine Phiole liest als Phiole, nicht als
+                // Kugel (§11-Befund). part.profile = [[radiusFrac, heightFrac], …] (0..1).
+                // size.x = max ⌀, size.y = Höhe. DER Werkstoff-Workhorse (viele Domänen).
+                const prof =
+                    Array.isArray(part.profile) && part.profile.length >= 2
+                        ? part.profile
+                        : [
+                              [0.5, 0],
+                              [0.5, 1],
+                          ];
+                const rMax = Math.max(0.01, sx / 2);
+                const H = Math.max(0.05, sy);
+                const lpts = prof.map(
+                    (p) => new THREE.Vector2(Math.max(0.0008, (p[0] || 0) * rMax), ((p[1] || 0) - 0.5) * H)
+                );
+                return new THREE.LatheGeometry(lpts, Math.max(8, Math.min(28, part.segments || 16)));
+            }
+            case "plateShell": {
+                // F2 (wahrerwuchs §11 — DAS KÖRPER-KONFORME GESETZ): eine GEWÖLBTE Platte als
+                // Zylinder-Sektion — sie FOLGT der Torso-Kurve (Brustplatte) bzw. der Schulter
+                // (Pauldron) bzw. ist eine artikulierte Lamelle (Fauld). Eine gebogene Platte
+                // liest als Rüstung, nicht als Box+Kugel (§11-Befund). size.x = Breite (Sehne),
+                // size.y = Höhe, size.z = Wölbungs-Tiefe; part.wrap = Bogen-Winkel (rad).
+                const W = Math.max(0.05, sx);
+                const Hs = Math.max(0.04, sy);
+                const bulge = Math.max(0.02, sz);
+                const wrap = Number.isFinite(part.wrap) ? Math.max(0.4, Math.min(3.0, part.wrap)) : 2.0;
+                const R = W / 2 / Math.sin(wrap / 2);
+                const th = Math.max(0.012, bulge * 0.35);
+                const seg = Math.max(6, Math.min(28, part.segments || 12));
+                const verts = [];
+                const idx = [];
+                // 4 Ringe: außen-unten, außen-oben, innen-unten, innen-oben (je seg+1 Punkte).
+                const ring = (rad, top) => {
+                    for (let i = 0; i <= seg; i++) {
+                        const th2 = -wrap / 2 + (i / seg) * wrap;
+                        verts.push(Math.sin(th2) * rad, top ? Hs / 2 : -Hs / 2, Math.cos(th2) * rad - (R - bulge));
+                    }
+                };
+                ring(R, false);
+                ring(R, true);
+                ring(R - th, false);
+                ring(R - th, true);
+                const N = seg + 1;
+                const OU = 0,
+                    OO = N,
+                    IU = 2 * N,
+                    IO = 3 * N;
+                for (let i = 0; i < seg; i++) {
+                    // Außenfläche (sieht nach vorn) + Innenfläche (umgekehrt) + obere/untere Kante.
+                    idx.push(OU + i, OO + i, OU + i + 1, OU + i + 1, OO + i, OO + i + 1);
+                    idx.push(IU + i, IU + i + 1, IO + i, IU + i + 1, IO + i + 1, IO + i);
+                    idx.push(OO + i, IO + i, OO + i + 1, OO + i + 1, IO + i, IO + i + 1); // Oberkante
+                    idx.push(OU + i, OU + i + 1, IU + i, OU + i + 1, IU + i + 1, IU + i); // Unterkante
+                }
+                // die zwei seitlichen Kanten (Bogen-Enden) schließen.
+                idx.push(OU, IU, OO, OO, IU, IO);
+                idx.push(OU + seg, OO + seg, IU + seg, OO + seg, IO + seg, IU + seg);
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
+            case "spokeWheel": {
+                // F5 (wahrerwuchs §11 — DAS FAHRGESTELL-GESETZ): ein SPEICHEN-Rad — Nabe +
+                // N radiale Speichen + Felgen-Ring (radiale Subdivision), NICHT eine volle
+                // Scheibe (§11-Befund „Kiste auf Rädern"). Achse = lokal Y (wie der cylinder,
+                // den es ersetzt → dieselbe z-Rotation macht ein stehendes Rad). size.x = ⌀,
+                // size.y = Breite (Lauffläche), size.z = ⌀ (= x). part.spokes = N.
+                const Rw = Math.max(0.05, sx / 2);
+                const wid = Math.max(0.03, sy);
+                const nsp = Math.max(4, Math.min(16, part.spokes | 0 || 8));
+                const rimW = Rw * 0.16; // Felgen-Dicke
+                const hubR = Rw * 0.2;
+                const verts = [];
+                const idx = [];
+                const NS = 24; // Ring-Auflösung
+                const pushRing = (rad, y) => {
+                    const base = verts.length / 3;
+                    for (let i = 0; i < NS; i++) {
+                        const a = (i / NS) * Math.PI * 2;
+                        verts.push(Math.cos(a) * rad, y, Math.sin(a) * rad);
+                    }
+                    return base;
+                };
+                // FELGE: ein rechteckiger Torus (außen Ro, innen Ri) über beide Breiten-Seiten.
+                const Ro = Rw,
+                    Ri = Rw - rimW;
+                const roT = pushRing(Ro, wid / 2),
+                    roB = pushRing(Ro, -wid / 2),
+                    riT = pushRing(Ri, wid / 2),
+                    riB = pushRing(Ri, -wid / 2);
+                const band = (a, b) => {
+                    for (let i = 0; i < NS; i++) {
+                        const j = (i + 1) % NS;
+                        idx.push(a + i, a + j, b + i, a + j, b + j, b + i);
+                    }
+                };
+                band(roT, roB); // Außen-Lauffläche
+                band(riB, riT); // Innen (umgekehrt)
+                band(riT, roT); // Oberkante (Innen→Außen)
+                band(roB, riB); // Unterkante
+                // NABE: ein kleiner Zylinder in der Mitte.
+                const huT = pushRing(hubR, wid / 2),
+                    huB = pushRing(hubR, -wid / 2);
+                band(huB, huT);
+                const cT = verts.length / 3;
+                verts.push(0, wid / 2, 0);
+                const cB = verts.length / 3;
+                verts.push(0, -wid / 2, 0);
+                for (let i = 0; i < NS; i++) {
+                    const j = (i + 1) % NS;
+                    idx.push(cT, huT + i, huT + j);
+                    idx.push(cB, huB + j, huB + i);
+                }
+                // SPEICHEN: N dünne Balken von der Nabe zur Felge (als schmale Quads in der Rad-Ebene).
+                for (let s = 0; s < nsp; s++) {
+                    const a = (s / nsp) * Math.PI * 2;
+                    const ca = Math.cos(a),
+                        sa = Math.sin(a);
+                    const pa = a + Math.PI / 2;
+                    const cp = Math.cos(pa) * rimW * 0.35,
+                        sp = Math.sin(pa) * rimW * 0.35;
+                    const b = verts.length / 3;
+                    verts.push(ca * hubR + cp, wid * 0.18, sa * hubR + sp);
+                    verts.push(ca * hubR - cp, wid * 0.18, sa * hubR - sp);
+                    verts.push(ca * Ri + cp, wid * 0.18, sa * Ri + sp);
+                    verts.push(ca * Ri - cp, wid * 0.18, sa * Ri - sp);
+                    verts.push(ca * hubR + cp, -wid * 0.18, sa * hubR + sp);
+                    verts.push(ca * hubR - cp, -wid * 0.18, sa * hubR - sp);
+                    verts.push(ca * Ri + cp, -wid * 0.18, sa * Ri + sp);
+                    verts.push(ca * Ri - cp, -wid * 0.18, sa * Ri - sp);
+                    // Top-Fläche + Bottom-Fläche der Speiche (sichtbar von der Seite).
+                    idx.push(b, b + 2, b + 1, b + 1, b + 2, b + 3);
+                    idx.push(b + 4, b + 5, b + 6, b + 5, b + 7, b + 6);
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
+            case "pickHead": {
+                // F2 (wahrerwuchs §11 — DAS WERKZEUG-GESETZ): ein gebogener SPITZHACKEN-Kopf —
+                // eine Spitze (pick) auf einer Seite, ein flacher Adze/Brecher auf der anderen,
+                // beide vom Auge (Stiel-Loch) ausschwingend. Liest als Pickel, nicht als Kegel
+                // (§11-Befund). size.x = Spannweite (Spitze↔Adze), size.y = Höhe (Auge), size.z
+                // = Dicke. Schwingt entlang X (über dem Stiel). part.curve = Krümmung.
+                const span = Math.max(0.1, sx);
+                const eyeH = Math.max(0.05, sy);
+                const thick = Math.max(0.03, sz);
+                const curve = Number.isFinite(part.curve) ? Math.max(0, Math.min(0.6, part.curve)) : 0.28;
+                const NSEG = 8;
+                const verts = [];
+                const idx = [];
+                // ein verjüngter, gebogener Arm von t=0 (Auge) nach t=1 (Spitze), in der XY-Ebene,
+                // Dicke in Z. zwei Arme: pick (+x, spitz) + adze (−x, stumpf breit).
+                const arm = (dir, tipFrac, taper, reach) => {
+                    const base = verts.length / 3;
+                    for (let j = 0; j <= NSEG; j++) {
+                        const t = j / NSEG;
+                        const x = dir * (span / 2) * reach * t;
+                        const droop = -curve * span * 0.32 * t * t; // schwingt leicht nach unten
+                        const hw = (eyeH / 2) * (1 - (1 - taper) * t); // Höhe verjüngt
+                        const hz = (thick / 2) * (1 - (1 - tipFrac) * t); // Dicke verjüngt → Schneide
+                        verts.push(x, droop + hw, hz, x, droop + hw, -hz, x, droop - hw, hz, x, droop - hw, -hz);
+                    }
+                    for (let j = 0; j < NSEG; j++) {
+                        const a = base + j * 4;
+                        const b = base + (j + 1) * 4;
+                        // 4 Längs-Flächen (oben/unten/vorn/hinten) der Arm-„Röhre".
+                        idx.push(a, b, a + 1, a + 1, b, b + 1); // oben
+                        idx.push(a + 2, a + 3, b + 2, a + 3, b + 3, b + 2); // unten
+                        idx.push(a, a + 2, b, b, a + 2, b + 2); // +z
+                        idx.push(a + 1, b + 1, a + 3, a + 3, b + 1, b + 3); // −z
+                    }
+                };
+                arm(1, 0.04, 0.06, 1.15); // pick: lang + verjüngt zur scharfen Spitze
+                arm(-1, 0.7, 0.7, 0.55); // adze: kurz + stumpf-breit (Brecher)
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
             case "noiserock": {
                 // V18.227 (Ω-OPSIS Säule VI Ω-O15) — der LAWFUL FELS: ein
                 // Ikosaeder, dessen Vertices entlang der Radial-Richtung per
@@ -47273,30 +47485,57 @@ class AnazhRealm {
             size: { x: rimR * 2, y: basinH, z: rimR * 2 },
             segments: 12,
         });
-        // (2) Glut-Kern (halb-transparent, emissiv aus dem Material-Tag × Intensität) — die
-        // Kern-Weite folgt der Öffnung (eine weite Öffnung zeigt eine breitere Glut-Fläche).
-        const coreR = r * g.range("core", 0.55, 0.8) * (0.7 + 0.4 * opening);
-        const flame = g.range("flame", 0.9, 1.7); // Flammen-Höhe
+        // F6 (§11): die Glut ist jetzt ein glühendes KOHLEN-BETT + züngelnde FLAMMEN-Zungen
+        // (`latheProfile`-Tropfen) statt einer Kugel → liest als Feuer. latheProfile-Aktivierung
+        // == sphere (= der alte glut-Kern) → tag-frozen zu glutbrunnen (V17.16). Emissiv aus dem
+        // glut-Tag × Intensität (kein gesetzter Glow). PHYSIK: das Bett ist breit+niedrig
+        // (steht), die Tropfen wurzeln im Bett (intakt), w∝h (knickt nicht).
+        const coreR = r * g.range("core", 0.6, 0.85) * (0.7 + 0.4 * opening);
+        // (2) Kohlen-Bett — eine flache glühende glut-Schale im Becken.
+        const bedProfile = [
+            [0, 0],
+            [0.85, 0.04],
+            [1.0, 0.3],
+            [0.8, 0.55],
+            [0, 0.62],
+        ];
         parts.push({
-            shape: "sphere",
+            shape: "latheProfile",
             material: "glut",
             color: 0xff7a2a,
-            opacity: 0.75,
-            emissiveBoost: intensity, // T3: die wärmeleitung/brennbar-Glut, je Variante moduliert
-            position: { x: 0, y: basinH + coreR * 0.5, z: 0 },
-            size: { x: coreR * 2, y: coreR * 2 * flame, z: coreR * 2 },
+            opacity: 0.85,
+            emissiveBoost: intensity,
+            position: { x: 0, y: basinH + coreR * 0.18, z: 0 },
+            size: { x: coreR * 2, y: coreR * 0.9, z: coreR * 2 },
+            profile: bedProfile,
         });
-        // (3) optional eine aufsteigende Flammen-ZUNGE — eine y-gestreckte glut-Kugel (KEIN
-        // neuer Shape → tag-frozen zu glutbrunnen, V17.17; die Streckung macht die Flamme).
-        if (g.chance("tongue", 0.5)) {
+        // (3) FLAMMEN-Zungen — Tropfen-Profile, die aus dem Bett züngeln (Höhe/Versatz/Farbe
+        // variieren → ein lebendiges Feuer; w ∝ h → keine knickenden Spitzen).
+        const flameProfile = [
+            [0, 0],
+            [0.55, 0.06],
+            [0.6, 0.2],
+            [0.45, 0.42],
+            [0.26, 0.66],
+            [0.1, 0.86],
+            [0, 1],
+        ];
+        const nTongue = g.int("tongues", 2, 4);
+        for (let i = 0; i < nTongue; i++) {
+            const a = g.axis("ta" + i) * 6.283;
+            const d = g.range("td" + i, 0, coreR * 0.55);
+            const fh = g.range("fh" + i, 0.9, 1.9) * coreR;
+            const fw = fh * g.range("fw" + i, 0.42, 0.6); // w ∝ h → knickt nicht
+            const hot = i === 0;
             parts.push({
-                shape: "sphere",
+                shape: "latheProfile",
                 material: "glut",
-                color: 0xffb347,
-                opacity: 0.6,
-                emissiveBoost: intensity * 1.1, // die Zunge lodert am hellsten
-                position: { x: 0, y: basinH + coreR * flame, z: 0 },
-                size: { x: coreR * 0.9, y: coreR * 2.0 * flame, z: coreR * 0.9 },
+                color: hot ? 0xffd27a : 0xffa23a,
+                opacity: 0.66,
+                emissiveBoost: intensity * (hot ? 1.25 : 1.05),
+                position: { x: Math.cos(a) * d, y: basinH + coreR * 0.3 + fh * 0.45, z: Math.sin(a) * d },
+                size: { x: fw, y: fh, z: fw },
+                profile: flameProfile,
             });
         }
         return parts;
@@ -47432,30 +47671,31 @@ class AnazhRealm {
     _toolVariant(seed) {
         const g = this._rollGenome(seed, "tool");
         const parts = [];
-        const handleLen = g.range("handle", 0.95, 1.6); // Stiel-Länge (der Hebelarm)
-        const headMass = g.range("headMass", 0.78, 1.4); // Kopf-Masse (das Drehmoment)
-        const keilWinkel = g.range("keil", 0.62, 1.05); // Keil-Winkel: schmal/scharf ↔ breit
+        const handleLen = g.range("handle", 1.0, 1.6); // Stiel-Länge (der Hebelarm)
+        // F2 (§11): der KOPF ist jetzt ein gebogener `pickHead` (Pick-Spitze + Adze über dem
+        // Auge) statt eines Kegels → liest als Spitzhacke. Die Spannweite < handleLen/2.2 hält
+        // das Werk gestreckt+spitz (U4 → Gerät, nicht Bauwerk; _isGraspableBladeForm). Der
+        // HEBEL (Ω-Φ4) variiert: Stiel-Länge × Kopf-Masse(Auge) × Spannweite(Pick-Reichweite).
+        const span = handleLen * g.range("spanFrac", 0.32, 0.42); // Spitze↔Adze
+        const headMass = g.range("headMass", 0.13, 0.2); // Auge-Höhe (die Masse) — schlanker Kopf
+        const curve = g.range("curve", 0.12, 0.3); // Krümmung des Pickels (leicht herabgebogen)
         // Stiel (holz) — der Hebel.
         parts.push({
             shape: "cylinder",
             material: "holz",
             color: 0x6e4a28,
             position: { x: 0, y: handleLen / 2, z: 0 },
-            size: { x: 0.12, y: handleLen, z: 0.12 },
+            size: { x: 0.1, y: handleLen, z: 0.1 },
             segments: 6,
         });
-        // Der KOPF ist immer ein SPITZER eisen-Pickel (eine Spitzhacke IST spitz — die Form
-        // treibt die Gerät-Rolle, U4: spitz+gestreckt → Klinge/Werkzeug, NICHT Bauwerk). Das
-        // Genom variiert den HEBEL: Stiel-Länge (oben), Kopf-Masse (Kegel-Länge), Keil-Winkel
-        // (Kegel-Breite, scharfer Pickel ↔ breite Haue). Der Schwung/Hebel (Ω-Φ4) folgt aus
-        // den Massen + dem Arm, gerechnet nie gesetzt.
+        // Kopf (eisen `pickHead`) — über dem Stiel, schwingend.
         parts.push({
-            shape: "cone",
+            shape: "pickHead",
             material: "eisen",
             color: 0xb9bfc6,
-            position: { x: 0, y: handleLen + 0.05, z: 0 },
-            size: { x: 0.3 * headMass * keilWinkel, y: 0.95 * headMass, z: 0.3 * headMass * keilWinkel },
-            rotation: { x: 0, y: 0, z: Math.PI / 2 },
+            position: { x: 0, y: handleLen + headMass * 0.3, z: 0 },
+            size: { x: span, y: headMass, z: 0.14 },
+            curve,
         });
         return parts;
     }
@@ -47472,40 +47712,59 @@ class AnazhRealm {
         const parts = [];
         const plateMat = g.pick("plateMat", ["eisen", "eisen", "bronze"]);
         const trimMat = plateMat === "eisen" ? "bronze" : "eisen";
-        const chestW = g.range("chestW", 0.82, 1.3); // Platten-Breite
+        const chestW = g.range("chestW", 0.9, 1.35); // Platten-Breite (Sehne)
         const chestH = g.range("chestH", 1.0, 1.45); // Platten-Höhe
-        const pauld = g.range("pauldron", 0.3, 0.56); // Schulter-Artikulation
+        const pauld = g.range("pauldron", 0.36, 0.62); // Schulter-Kappen-Größe
+        const wrap = g.range("wrap", 1.7, 2.3); // wie eng der Brustpanzer umschließt
         const cY = 1.05;
-        const spread = chestW * 0.55 + pauld * 0.35;
-        // Brustplatte
+        const spread = chestW * 0.52;
+        // F2 (§11): die Rüstung ist jetzt aus GEWÖLBTEN Platten (`plateShell`, folgen der
+        // Körper-Kurve) statt Box+Kugel → liest als Plattenpanzer. Brustplatte + Schulter-
+        // Kappen (Pauldron-Paar) + artikulierte FAULD-Lamellen + Gurt + optional Gorget.
+        // (1) Brustplatte — eine gewölbte Platte, Bauch nach vorn.
         parts.push({
-            shape: "box",
+            shape: "plateShell",
             material: plateMat,
             position: { x: 0, y: cY, z: 0 },
-            size: { x: chestW, y: chestH, z: 0.45 },
+            size: { x: chestW, y: chestH, z: 0.42 },
+            wrap,
         });
-        // Pauldrons (Artikulation) — Spiegel-Paar
+        // (2) Pauldrons — gewölbte Schulter-Kappen (Spiegel-Paar, nach außen geneigt).
         for (const sgn of [-1, 1])
             parts.push({
-                shape: "sphere",
+                shape: "plateShell",
                 material: plateMat,
-                position: { x: sgn * spread, y: cY + chestH * 0.35, z: 0 },
-                size: { x: pauld, y: pauld, z: pauld },
+                position: { x: sgn * spread, y: cY + chestH * 0.4, z: 0.02 },
+                size: { x: pauld, y: pauld * 0.8, z: pauld * 0.7 },
+                wrap: 2.6,
+                rotation: { x: 0, y: 0, z: sgn * 0.6 },
             });
-        // Gurt-Zier (Material-Kontrast)
+        // (3) FAULD — artikulierte Lamellen-Schürze (2-3 horizontale Streifen unter der Brust).
+        const lam = g.int("lam", 2, 3);
+        for (let i = 0; i < lam; i++)
+            parts.push({
+                shape: "plateShell",
+                material: plateMat,
+                position: { x: 0, y: cY - chestH * 0.5 - i * 0.16, z: 0 },
+                size: { x: chestW * (0.95 - i * 0.08), y: 0.15, z: 0.4 },
+                wrap: wrap * 1.05,
+            });
+        // (4) Gurt-Zier (Material-Kontrast).
         parts.push({
-            shape: "box",
+            shape: "plateShell",
             material: trimMat,
-            position: { x: 0, y: cY - chestH * 0.42, z: 0 },
-            size: { x: chestW * 1.04, y: 0.16, z: 0.48 },
+            position: { x: 0, y: cY - chestH * 0.44, z: 0 },
+            size: { x: chestW * 1.02, y: 0.12, z: 0.44 },
+            wrap,
         });
-        // optional ein Hals-Gorget (mehr Artikulation, Detail-Dichte)
+        // (5) optional Gorget (Hals-Schutz).
         if (g.chance("gorget", 0.5))
             parts.push({
-                shape: "sphere",
+                shape: "plateShell",
                 material: plateMat,
-                position: { x: 0, y: cY + chestH * 0.56, z: 0 },
-                size: { x: chestW * 0.42, y: 0.3, z: 0.42 },
+                position: { x: 0, y: cY + chestH * 0.55, z: 0.02 },
+                size: { x: chestW * 0.5, y: 0.28, z: 0.36 },
+                wrap: 2.4,
             });
         return parts;
     }
@@ -47517,34 +47776,62 @@ class AnazhRealm {
     _potionVariant(seed) {
         const g = this._rollGenome(seed, "potion");
         const parts = [];
-        const bodyW = g.range("bodyW", 0.34, 0.56); // Phiole-Breite
-        const bodyH = g.range("bodyH", 0.42, 0.72); // Phiole-Höhe (schmal-hoch ↔ breit)
-        const neckH = g.range("neckH", 0.18, 0.34);
+        const bodyW = g.range("bodyW", 0.4, 0.6); // Phiole-Breite
+        const bodyH = g.range("bodyH", 0.55, 0.95); // Phiole-Höhe (schmal-hoch ↔ breit-gedrungen)
+        const belly = g.range("belly", 0.82, 1.05); // Bauch-Fülle
         // Glasur-Farbe aus der Wirkung (eine kleine Trank-Palette: heil/mana/blut/gift/arkan).
         const glaze = g.pick("glaze", [0x4e9a3c, 0x3c8ad8, 0xd84e6e, 0xd8b43c, 0x9a4ed8]);
-        const bodyY = bodyH * 0.75;
-        // Flasche (leder) + Flüssigkeit (kraut, durch die Glasur gefärbt) + Hals/Korken (holz).
+        const bodyY = bodyH * 0.5;
+        // F2 (§11): eine geformte APOTHEKER-PHIOLE (`latheProfile`: Bauch · Schulter · Hals ·
+        // Lippe) aus klarem Glas, durch das die Wirkungs-Flüssigkeit (Glasur-Farbe) sichtbar
+        // ist + ein Korken. Liest als Trank, nicht als Ball+Zylinder (§11-Befund).
+        const phial = [
+            [0, 0],
+            [0.5 * belly, 0.05],
+            [0.58 * belly, 0.3],
+            [0.5, 0.48],
+            [0.28, 0.62],
+            [0.24, 0.82],
+            [0.32, 0.9],
+            [0.26, 0.97],
+            [0, 0.99],
+        ];
+        // Flasche (leder = das „Glas", klar) — die längliche Achse (size.y) ist die Höhe.
         parts.push({
-            shape: "sphere",
+            shape: "latheProfile",
             material: "leder",
-            opacity: 0.92,
+            opacity: 0.42,
+            color: 0xcfe6f0,
             position: { x: 0, y: bodyY, z: 0 },
             size: { x: bodyW, y: bodyH, z: bodyW },
+            profile: phial,
         });
+        // Flüssigkeit (kraut, Glasur-Farbe) — füllt den Bauch bis zu einem Meniskus.
+        const liq = [
+            [0, 0],
+            [0.45 * belly, 0.05],
+            [0.52 * belly, 0.28],
+            [0.42, 0.46],
+            [0.22, 0.56],
+            [0, 0.59],
+        ];
         parts.push({
-            shape: "sphere",
+            shape: "latheProfile",
             material: "kraut",
             color: glaze,
-            opacity: 0.8,
+            opacity: 0.85,
             position: { x: 0, y: bodyY, z: 0 },
-            size: { x: bodyW * 0.78, y: bodyH * 0.78, z: bodyW * 0.78 },
+            size: { x: bodyW * 0.92, y: bodyH, z: bodyW * 0.92 },
+            profile: liq,
         });
+        // Korken (holz) auf dem Hals.
         parts.push({
             shape: "cylinder",
             material: "holz",
-            position: { x: 0, y: bodyY + bodyH * 0.5 + neckH * 0.5, z: 0 },
-            size: { x: 0.14, y: neckH, z: 0.14 },
-            segments: 6,
+            color: 0x6e4a28,
+            position: { x: 0, y: bodyY + bodyH * 0.49, z: 0 },
+            size: { x: 0.14, y: 0.11, z: 0.14 },
+            segments: 8,
         });
         return parts;
     }
@@ -47570,7 +47857,7 @@ class AnazhRealm {
         const wheelR = g.range("wheelR", 0.8, 1.32);
         return parts.map((p) => {
             const np = { ...p };
-            const isWheel = p.material === "eisen" && p.shape === "cylinder";
+            const isWheel = p.material === "eisen" && (p.shape === "cylinder" || p.shape === "spokeWheel");
             // die SPUR weitet (Rad/Bein-x × track) → der SSF variiert; y bleibt überall (seat-safe).
             if (p.position)
                 np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
@@ -49861,34 +50148,39 @@ class AnazhRealm {
                 position: { x: 0, y: 0.85, z: 0 },
                 size: { x: 1.3, y: 0.35, z: 2.1 },
             },
-            // 4 Räder: vertikale Scheiben (Zylinder um Z gekippt → Achse X),
-            // bodennah + gespreizt (die moveable-Trag-Basis + C1-RAD-Gelenke).
+            // F5 (§11): 4 SPEICHEN-Räder (`spokeWheel`: Nabe + Speichen + Felge) statt voller
+            // Scheiben → liest als Wagen, nicht als „Kiste auf Discs". Achse = lokal Y, um Z
+            // gekippt → vertikales Rad (Achse X); bodennah + gespreizt (Trag-Basis + RAD-Gelenke).
             {
-                shape: "cylinder",
+                shape: "spokeWheel",
                 material: "eisen",
-                position: { x: -0.72, y: 0.34, z: 0.8 },
-                size: { x: 0.62, y: 0.14, z: 0.62 },
+                spokes: 8,
+                position: { x: -0.72, y: 0.36, z: 0.8 },
+                size: { x: 0.7, y: 0.14, z: 0.7 },
                 rotation: { x: 0, y: 0, z: 1.5707963 },
             },
             {
-                shape: "cylinder",
+                shape: "spokeWheel",
                 material: "eisen",
-                position: { x: 0.72, y: 0.34, z: 0.8 },
-                size: { x: 0.62, y: 0.14, z: 0.62 },
+                spokes: 8,
+                position: { x: 0.72, y: 0.36, z: 0.8 },
+                size: { x: 0.7, y: 0.14, z: 0.7 },
                 rotation: { x: 0, y: 0, z: 1.5707963 },
             },
             {
-                shape: "cylinder",
+                shape: "spokeWheel",
                 material: "eisen",
-                position: { x: -0.72, y: 0.34, z: -0.8 },
-                size: { x: 0.62, y: 0.14, z: 0.62 },
+                spokes: 8,
+                position: { x: -0.72, y: 0.36, z: -0.8 },
+                size: { x: 0.7, y: 0.14, z: 0.7 },
                 rotation: { x: 0, y: 0, z: 1.5707963 },
             },
             {
-                shape: "cylinder",
+                shape: "spokeWheel",
                 material: "eisen",
-                position: { x: 0.72, y: 0.34, z: -0.8 },
-                size: { x: 0.62, y: 0.14, z: 0.62 },
+                spokes: 8,
+                position: { x: 0.72, y: 0.36, z: -0.8 },
+                size: { x: 0.7, y: 0.14, z: 0.7 },
                 rotation: { x: 0, y: 0, z: 1.5707963 },
             },
         ];
@@ -52659,7 +52951,7 @@ class AnazhRealm {
             // Stamm/eine Säule und rollt NICHT. So emergiert „Rad" aus der Roll-Geometrie,
             // nicht aus der Rundheit (sonst läse ein Baumstamm/eine Drehbank als Fahrzeug).
             if (p.shape === "sphere") roll++;
-            else if (p.shape === "cylinder" && this._cylinderWorldAxis(p) !== "y") roll++;
+            else if ((p.shape === "cylinder" || p.shape === "spokeWheel") && this._cylinderWorldAxis(p) !== "y") roll++;
         }
         return ground > 0 ? Math.min(1, roll / ground) : 0;
     }
@@ -72249,7 +72541,9 @@ AnazhRealm.MATERIAL_TAG_DEFAULTS = Object.freeze(
 // Welle 5 B — räumliche Emergenz. Welche Formen wirken als „Spitzen" (Prinzip
 // 1: Spitze richtet). Helix ist drin, weil ihr Ende eine Schraubspitze ist —
 // nicht so scharf wie ein Kegel, aber funktional gerichtet.
-AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(new Set(["cone", "pyramid", "octahedron", "helix", "bladeProfile"]));
+AnazhRealm.SPATIAL_POINTED_SHAPES = Object.freeze(
+    new Set(["cone", "pyramid", "octahedron", "helix", "bladeProfile", "pickHead"])
+);
 // Welche Tags fließen über Kontakt (Prinzip 4: Kontakt überträgt). Konzept
 // §5.2 nennt Wärme, Strom, Magie, Schwingung — entsprechen vier von zehn
 // MATERIAL_TAG_KEYS. „Lebendig" überträgt sich nicht (Leben ist nicht
@@ -73782,6 +74076,58 @@ AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
         transparent: 1,
         brennbar: 1,
         resoniert: 0,
+        lebendig: 0,
+    }),
+    // F2 (wahrerwuchs §11) — eine gewölbte Platte IST ein solides Panel → Aktivierung == box.
+    plateShell: Object.freeze({
+        härte: 1,
+        dichte: 3,
+        zähigkeit: 1,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 0,
+        transparent: 1,
+        brennbar: 1,
+        resoniert: 0,
+        lebendig: 0,
+    }),
+    // F2 (wahrerwuchs §11) — ein revolviertes Gefäß IST eine gerundete Hohl-Form → == sphere.
+    latheProfile: Object.freeze({
+        härte: 0,
+        dichte: 3,
+        zähigkeit: 0,
+        wärmeleitung: 1,
+        stromleitung: 1,
+        magieleitung: 2,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 3,
+        lebendig: 1,
+    }),
+    // F5 (wahrerwuchs §11) — ein Speichen-Rad IST eine Zylinder-Scheibe → Aktivierung == cylinder.
+    spokeWheel: Object.freeze({
+        härte: 1,
+        dichte: 2,
+        zähigkeit: 2,
+        wärmeleitung: 3,
+        stromleitung: 3,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 2,
+        lebendig: 2,
+    }),
+    // F2 (wahrerwuchs §11) — ein Spitzhacken-Kopf IST eine spitze Schneide → Aktivierung == cone.
+    pickHead: Object.freeze({
+        härte: 3,
+        dichte: 1,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 2,
+        magieleitung: 2,
+        transparent: 2,
+        brennbar: 1,
+        resoniert: 1,
         lebendig: 0,
     }),
     // V18.227 (Ω-OPSIS Säule VI) — der prozedurale Fels ist eine dichte Masse wie

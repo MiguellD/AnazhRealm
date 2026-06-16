@@ -397,13 +397,13 @@ function startSaveServer() {
                     readsAsTool = true;
                 for (let s = 0; s < 40; s++) {
                     const t = r._toolVariant("t" + s);
-                    // wohlgeformt: Holz-Stiel + SPITZER eisen-Kegel (die Spitzhacke IST spitz).
+                    // F2: wohlgeformt: Holz-Stiel + gebogener eisen-`pickHead` (die Spitzhacke IST spitz).
                     if (
                         !(
                             t.length === 2 &&
                             t[0].material === "holz" &&
                             t[1].material === "eisen" &&
-                            t[1].shape === "cone"
+                            t[1].shape === "pickHead"
                         )
                     )
                         wellFormed = false;
@@ -646,11 +646,13 @@ function startSaveServer() {
                 let armorWF = true;
                 for (let s = 0; s < 120; s++) {
                     const p = r._armorVariant("ar" + s);
-                    const chest = p.find((q) => q.shape === "box" && q.size.y > 0.8);
+                    // F2: die Brustplatte ist jetzt eine gewölbte `plateShell` (y > 0.8),
+                    // die Pauldrons sind seitliche `plateShell`-Kappen (x ≠ 0).
+                    const chest = p.find((q) => q.shape === "plateShell" && q.size.y > 0.8);
                     if (!chest || p.length < 4) armorWF = false;
                     if (chest) chestWs.add(chest.size.x.toFixed(2));
                     p.forEach((q) => armMats.add(q.material));
-                    const pa = p.find((q) => q.shape === "sphere");
+                    const pa = p.find((q) => q.shape === "plateShell" && Math.abs(q.position.x) > 0.1);
                     if (pa) pauldVar.add(pa.size.x.toFixed(2));
                 }
                 o.armorChestSpread = chestWs.size;
