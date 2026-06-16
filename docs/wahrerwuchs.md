@@ -1078,3 +1078,79 @@ trägt (reference-first), (b) er im `diag-werk-render`-Katalog als das Ding LIES
 Wand 1), (c) das Genom DARAUF variiert (Fidelität × Varianz), (d) der Richter + die Affinität-
 Wand halten. **Erst wenn der Katalog jedes Werk als das Ding zeigt (kein Blob), ist der Wuchs-
 Bogen WIRKLICH ein Upgrade — vorher ist er Varianz auf Primitiven.** Der nächste Schub: F1.
+
+### §11.7 — DIE TIEFERE WURZEL (Schöpfer-Korrektur 16.06.): das GESETZ erzeugt das Detail, nicht der Hand-Mesh
+
+> **Schöpfer: „hast du geschaut wie es Profis machen? die Gesetze die sie verbinden —
+> je schärfer und klarer die Gesetze, umso detaillierter und besser die Blueprints,
+> oder? Dann wären diese Systeme gar nicht erst durchgekommen."** — Das korrigiert §11.1–6
+> an der WURZEL. Mein §11 (F1–F6 „einen Detail-Mesh je System von Hand bauen") war das
+> BRUTE-FORCE-Gegenteil des Projekt-Gesetzes. Der synergetische, professionelle Weg ist:
+> **das Detail EMERGIERT aus einem SCHARFEN generativen GESETZ (Grammatik), es wird nicht
+> gemalt.** Detail ist ein AUSLESEWERT der Gesetz-Schärfe — exakt das Projekt-Axiom
+> (_jede Eigenschaft gerechnet/gelesen, nie geraten/gemalt_), auf die GEOMETRIE angewandt.
+
+**Wie es Profis machen (recherchiert, die Referenzen):**
+- **Gebäude** — CGA/Split-Shape-Grammatik: ein Massen-Modell → REKURSIVE Split-Regeln (Fassade
+  → Stockwerke → Fenster → Rahmen) → Detail EMERGIERT aus der Grammatik, kein gemaltes Mesh.
+  Der Tempel (dorische Ordnung) IST genau so eine Mini-Grammatik (Säulen-Zahl → Kannelur →
+  Triglyphen-Rhythmus → Giebel) — DARUM trägt er Detail.
+- **Pflanzen** — L-System: rekursive Wuchs-Regeln → fraktales Geäst, Detail auf jeder Skala
+  (LOD via Subdivision). Unser Baum-Grammatik-System IST ein L-System.
+- **Kreaturen** — SKELETT + Metaball + Marching-Cubes: ein virtuelles Skelett (Wirbelsäulen-
+  Spline + Glied-Paare + Kopf) → Metabälle entlang der Knochen → eine GLATTE Haut (marschiert),
+  Bone-Weights emergieren. NICHT Box+Kugel+Stummel — eine skelett-getriebene Gestalt.
+- **Der HYBRID (80/20):** die Grammatik macht ~80 % (das Detail emergiert), Hand-Politur die
+  letzten ~20 %. Mein §11 hatte es INVERTIERT (Hand-Mesh als Basis).
+
+**Die zwei verbundenen Wahrheiten, die der Schöpfer benennt:**
+
+1. **DETAIL = AUSLESEWERT DER GESETZ-SCHÄRFE.** Je schärfer das generative Gesetz (die
+   Domänen-Grammatik), umso reicher EMERGIERT das Blueprint — automatisch, für JEDE Variante.
+   Der Tempel/das Schwert beweisen es (scharfes Gesetz → Detail). Die anderen Systeme haben
+   KEIN scharfes Gesetz — nur hand-platzierte Primitive + ein paar Varianz-Achsen → Blobs.
+
+2. **DAS GESETZ IST AUCH DAS TOR (die „wären gar nicht durchgekommen"-Wahrheit).** Wenn das
+   Blueprint von seiner Grammatik ERZEUGT würde (statt von Hand montiert), KÖNNTE ein Blob
+   nicht existieren — die Grammatik emittiert nur gesetz-konformes Detail (eine Kristall-
+   Grammatik gibt nie eine glatte Kugel aus; eine Rüstungs-Grammatik gibt nie einen nackten
+   Kasten aus). Der LECK ist `roleManual`: er lässt einen hand-montierten Blob eine Rolle
+   BEANSPRUCHEN, ohne sie über seine FORM zu verdienen. Das scharfe Gesetz macht die Rolle
+   EMERGENT (kein Override) UND weist den Blob ab (die Resonanz/der Richter fordert die
+   definierenden Merkmale). Schärfe das Tor → der Blob fällt durch, das Detail wird Pflicht.
+
+**DIE RE-FRAMUNG VON F1–F6: nicht „Hand-Mesh", sondern „das Domänen-GESETZ schärfen":**
+```
+SYSTEM     DAS SCHARFE GESETZ (die Grammatik, aus der das Detail EMERGIERT)
+─────────────────────────────────────────────────────────────────────────────────────────
+KREATUR    ein SKELETT-Gesetz: Wirbelsäule + Glied-PAARE + Kopf/Gelenke → Metaball/Tube-Haut →
+(F1)       die Gestalt EMERGIERT (wie das pro creature-gen). Die T5-Allometrie + §10-Feld reiten drauf.
+STATION    eine SHAPE-GRAMMATIK je Funktion: Masse → Split → KOMPONENTEN (Amboss/Blasebalg/
+(F3)       Schornstein als Grammatik-Teile, wie CGA-Fassaden-Detail). Der Tempel ist die Blaupause.
+KRISTALL   ein KRISTALLOGRAPHIE-Gesetz: Gitter → prismatische Facetten + Termination (Symmetrie/
+(F4)       Voronoi). Die Grammatik gibt NIE eine Kugel aus.
+FELS       ein FRAKTUR/EROSIONS-Gesetz: Voronoi-Bruch + Noise-Displacement + Sediment-Strata.
+(F4)
+RÜSTUNG/   ein KÖRPER-KONFORMES Gesetz: die Platte FOLGT der Torso-Kurve, Lamellen artikulieren
+GERÄT (F2) (eine Grammatik über die Körper-Form). Glas-Phiole = Lathe/Revolve-Profil-Gesetz.
+FAHRZEUG   ein FAHRGESTELL-Gesetz: Speichen-Rad (radiale Subdivision) + Rahmen + Achse.
+(F5)
+BÄUME (F6) das L-System SCHÄRFEN (Gabelung/Dichte/Phyllotaxis sichtbarer), nicht ersetzen.
+```
+
+**DIE DISZIPLIN (die korrigierte §11-Regel):**
+1. Pro Domäne ZUERST das GESETZ (die Grammatik/das Skelett/die Simulation) — recherchiert
+   am Profi-Vorbild (CGA · L-System · creature-skeleton · Kristallographie · Voronoi-Fraktur).
+2. Das Detail EMERGIERT rekursiv aus dem Gesetz (Subdivision → Detail auf jeder Skala, LOD-fähig).
+   Hand-Mesh ist nur die ~20 %-Politur, NIE die Basis.
+3. Das GESETZ schärft das TOR: die Resonanz/der Rollen-Leser FORDERT die definierenden Merkmale
+   → ein Blob fällt durch. `roleManual` wird zum Verdacht (verdient die FORM die Rolle, oder
+   beansprucht sie ein Blob?). Ziel: die Rolle EMERGIERT aus der gesetz-erzeugten Form.
+4. AUGEN VOR BEHAUPTEN bleibt (`diag-werk-render`): liest das gesetz-erzeugte Werk als das Ding?
+5. Die Varianz (T1–T6-Genom) reitet OBEN auf dem scharfen Gesetz (Fidelität × Varianz).
+
+**Die Selbst-Lehre (verbindlich):** der erste Reflex „bau einen Detail-Mesh" ist die Brute-
+Force-Falle — sie verletzt das Projekt-Axiom (Auslesewert statt Hand-Werk) UND skaliert nicht
+(N bespoke Meshes statt EIN Gesetz). Die professionelle, synergetische Antwort ist IMMER: das
+GESETZ schärfen, bis das Detail emergiert + der Blob durchs Tor fällt. F1 (Kreatur-Skelett-Gesetz)
+ist der erste Schub — recherchiert (creature-skeleton/metaball), gesetz-getrieben, kein Hand-Blob.

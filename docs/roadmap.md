@@ -58,11 +58,13 @@ Mineralogie-Glanz (emissiv/Facetten/Sediment) · Rüstung/Trank-Genome+Fahrzeug-
 Upgrade, es fehlen viele Details" — die WURZEL (`wahrerwuchs §11`): das Genom gab VARIATION, aber die
 meisten Werke sind rohe PRIMITIV-Blobs (Rüstung=Box+2 Kugeln · Kristall=Kugel · Kreatur=Box+Kopf+Stummel),
 nur Tempel/Schwert haben dedizierte DETAIL-Meshes.** **Der NÄCHSTE Schub ist `wahrerwuchs.md §11` —
-DIE FIDELITÄT (die Priorität):** jedes System auf Tempel/Schwert-Niveau heben (ein reference-grounded
-Detail-Mesh-Builder, das Genom reitet oben drauf) — **F1 Kreatur** (echtes Anatomie-Skelett, die
-schlimmste Lücke) · **F2 Gerät** (Brustplatte/Phiole/Pickel) · **F3 Werkstatt/Portal** (Amboss/Blasebalg/
-Glyphen) · **F4 Kristall+Fels** (Facetten/Sediment-Geometrie) · **F5 Fahrzeug** (Speichen-Räder) ·
-**F6 Bäume+Glut**. §10 (Vertikal-Bogen: Platzierung-folgt-Feld, V1 Kreatur · V2 Bauwerk from-scratch)
+DIE FIDELITÄT (die Priorität):** jedes System auf Tempel/Schwert-Niveau heben. Schöpfer-Korrektur §11.7:
+NICHT Detail-Meshes von Hand (Brute-Force), sondern **das Domänen-GESETZ schärfen** (Grammatik/Skelett/
+Simulation — der Profi-Weg: CGA-Shape-Grammatik · L-System · creature-Skelett+Metaball · Kristallographie ·
+Voronoi-Fraktur), aus dem das Detail EMERGIERT (wie Tempel←dorisch, Schwert←Oakeshott); das Gesetz ist
+auch das TOR (eine scharfe Grammatik emittiert keinen Blob, die Resonanz weist ihn ab — `roleManual` =
+der Leck). **F1 Kreatur** (Skelett-Gesetz, die schlimmste Lücke) · **F2 Gerät** · **F3 Werkstatt** (Shape-
+Grammatik) · **F4 Kristall+Fels** · **F5 Fahrzeug** · **F6 Bäume+Glut**; das Genom reitet oben. §10 (Vertikal-Bogen: Platzierung-folgt-Feld, V1 Kreatur · V2 Bauwerk from-scratch)
 bleibt gültig, rückt HINTER §11 (ein form-folgt-dem-Feld-Blob ist immer noch ein Blob). Physik-Referenz
 `docs/archiv/wahrerbauplan.md`, Anblick `docs/wahreranblick.md`.
 
