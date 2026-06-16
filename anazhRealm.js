@@ -25252,6 +25252,63 @@ class AnazhRealm {
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
                     const _c = new THREE.Color(opts.color);
                     albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
+                    // SUBSTANZ-PASS (wahrerguss System A) — der UNIVERSELLE prozedurale
+                    // Material-Auslesewert für FLACH-FARB-WERKE (Tempel · Schwert · Rüstung ·
+                    // Kreatur · Kristall · Werkstatt · …): er bricht die flache Plastik-Farbe
+                    // in echte Substanz — KEINE Bitmap, aus den Material-Tags GERECHNET (das
+                    // Anti-Attrappe-Gesetz auf JEDE Oberfläche, nicht nur Terrain/Rinde). Bis
+                    // hierher trugen nur Terrain (Geologie-Albedo) + Vegetation (Rinde Ω-O7)
+                    // einen reichen colorNode; die Werke blieben flach-einfarbig = der „Blob"-
+                    // Look des Schöpfer-Katalogs (16.06.). positionLocal hält es INSTANZ-STABIL
+                    // (jedes Werk dieselbe Maserung, nicht welt-gesmeared). Render-only →
+                    // tag-NEUTRAL (die Compound-Tags ändern sich nie; Affinität/Scatter unberührt).
+                    if (_Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow && _Ta.float) {
+                        try {
+                            const _t = opts.tags || {};
+                            const _ht = Math.max(0, Math.min(1, Number(_t["härte"]) || 0.4));
+                            const _di = Math.max(0, Math.min(1, (Number(_t.dichte) || 0) / 3));
+                            const _metal = Math.max(0, Math.min(1, params.metalness || 0));
+                            const _pl = _Ta.positionLocal;
+                            // (1) MOTTLE — grobe Material-Variation (Stein-Flecken · Holz-Ton ·
+                            //     Leder-Narbe): dichte → stärker (steiniger), härte → feiner.
+                            //     Bei Metall ist die Mottle ANISOTROP (längs y gestreckt → der
+                            //     geschmiedete/gebürstete Schliff statt körniger Stein-Fleck).
+                            const _mottleF = 2.2 + _ht * 3.4;
+                            const _mPos =
+                                _metal > 0.5
+                                    ? _Ta.vec3(
+                                          _pl.x.mul(_mottleF * 2.6),
+                                          _pl.y.mul(_mottleF * 0.4),
+                                          _pl.z.mul(_mottleF * 2.6)
+                                      )
+                                    : _pl.mul(_Ta.float(_mottleF));
+                            const _mottle = _Ta.mx_noise_float(_mPos);
+                            // (1b) BREITE Ton-Zonen (niedrige Frequenz) — große, weiche Material-
+                            //      Flecken (verwitterte Patina · ungleiche Brennung · Adern), die
+                            //      der flachen Farbe Tiefe geben, bevor das feine Korn greift.
+                            const _broad = _Ta.mx_noise_float(_pl.mul(_Ta.float(0.85)));
+                            // (2) KAVITÄT/RINNE — ridged Hochfrequenz-Noise = Mikro-Relief /
+                            //     Verschleiß-Schatten (wie die Rinde-Risse Ω-O7, generalisiert).
+                            const _crF = 6.5 + _ht * 9.0;
+                            const _crN = _Ta.mx_noise_float(_pl.mul(_Ta.float(_crF)));
+                            const _cavity = _Ta.pow(_Ta.float(1.0).sub(_crN.mul(_crN)), _Ta.float(2.4));
+                            // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/
+                            //   Holz körnig). Glut (emissiv) bleibt subtil — es glüht ohnehin.
+                            const _mottleAmp = (0.07 + _di * 0.13) * (_metal > 0.5 ? 0.65 : 1.0);
+                            const _broadAmp = (0.05 + _di * 0.07) * (_metal > 0.5 ? 0.5 : 1.0);
+                            const _cavityAmp = 0.06 + _ht * 0.14;
+                            const _mod = _Ta
+                                .float(1.0)
+                                .add(_mottle.mul(_Ta.float(_mottleAmp)))
+                                .add(_broad.mul(_Ta.float(_broadAmp)))
+                                .sub(_cavity.mul(_Ta.float(_cavityAmp)));
+                            albedoNode = albedoNode.mul(_mod.clamp(0.66, 1.3));
+                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                        } catch (_e) {
+                            if (typeof window !== "undefined")
+                                window.__substanceFlatError = String((_e && _e.message) || _e);
+                        }
+                    }
                 }
             } catch (_e) {
                 /* ohne Albedo-Quelle fällt nur das Füll-Licht */
