@@ -2,11 +2,11 @@
 
 Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum. Eine Datei, ein Stamm, viele Ringe.
 
-**Stand**: V18.238 (15.06.2026) — der **AKTIVE BOGEN** ist EIN Prinzip in zwei Gesichtern (_jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie geraten/gemalt_): **`docs/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN — der Physik-Schiedsrichter; Ω-Φ1 Schwerpunkt gebaut, headless-verifizierbar) + **`docs/wahreranblick.md`** (Ω-OPSIS · der ANBLICK — jede Oberfläche ein Auslesewert; PBR die eine Material-Wahrheit, toon raus, die Aura subtil). Das WERDEN (Wasser-CA, Ω-CHRONOS) ist gebaut. Darunter stehen die großen Bögen RUND: die gefrorene Taille (Ω, golden-verankert) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4) · die Welten-Föderation (Φ/W18) · der Genese-Bogen (Γ) · das lebendige Feld · der Emotion-Kern · der Kampf-/Schöpfungs-Fluss · die Resonanz-Vereinheitlichung · der Lebendige Gigant (Wald).
+**Stand**: V18.256 (16.06.2026) — der **AKTIVE BOGEN** ist **`docs/wahrerguss.md`** (DER WAHRE GUSS — der Master-Plan zum atemberaubenden Bauplan): das EINE Gesetz _jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie geraten/gemalt_, auf die Bauplan-Erzeugung angewandt. Ein Bauplan ist kein Mesh, sondern ein GESETZ; Detail·Schönheit·Vielfalt·Leben sind Auslesewerte VIER geteilter Pässe (Substanz · Körper/Skelett · Grammatik-Tiefe · Detail), durch die jeder Bauplan fließt — das Genom (T1–T6) reitet oben, der Richter (Ω-PHYSIS) garantiert, das Tor erzwingt die Fidelität, das Auge richtet. Darunter stehen die großen Bögen RUND: Ω-PHYSIS (der Richter im Code) · die gefrorene Taille (Ω) · das Robustheits-Immunsystem (R0–R6-Kern) · der soziale Bogen (F4) · die Welten-Föderation (Φ/W18) · der Genese-Bogen (Γ) · das WERDEN (Wasser-CA) · das lebendige Feld · der Emotion-Kern · der Kampf-/Schöpfungs-Fluss · der Lebendige Gigant (Wald).
 
 > Der **live gepflegte Stand** (mit allen Gotchas) lebt im `CLAUDE.md`-Kopf — dort steht immer die Wahrheit, dieser Absatz ist nur ein Schnappschuss.
 
-**Nächste offene Fäden:** der aktive Bogen — Ω-PHYSIS Ω-Φ2→Φ5 + Säule II–IV (`docs/wahrerbauplan.md`, headless-verifizierbar) · Ω-OPSIS §7 Sky-Env-Map + Boden + Laub-Sättigung (`docs/wahreranblick.md`, augen-bound). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`.
+**Nächste offene Fäden:** der aktive Bogen — `docs/wahrerguss.md` Guss 1 (SUBSTANZ — der prozedurale Material-Pass, der breiteste Hebel) · Guss 2 (KÖRPER — Skelett+Haut+Bewegung, das lebendige Herz). Die **gemerkten Fäden** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · …) in `docs/roadmap.md §4`.
 
 Die **volle Wellen-Chronik** (jede Welle ein Eintrag) lebt in `docs/archiv/handover.md`; der **aktuelle Stand + Gotchas** in `CLAUDE.md`; der **Plan vorwärts** in `docs/roadmap.md`; die **Vision** in `docs/state-of-realm.md`.
 
@@ -70,7 +70,7 @@ Die **EINE kanonische Doc-Landkarte** lebt in **[`docs/README.md`](docs/README.m
 - **JETZT** (Stand + Gotchas) → `CLAUDE.md` (auto-geladen)
 - **DIE CHRONIK** (Wellen-Historie + Start) → `docs/archiv/handover.md`
 - **DIE VISION** → `docs/state-of-realm.md` · **DER WAHRE NORDEN** → `docs/das-lebendige-feld.md`
-- **DER AKTIVE BOGEN** (ein Prinzip, zwei Gesichter) → `docs/wahrerbauplan.md` (Ω-PHYSIS · das Sein) · `docs/wahreranblick.md` (Ω-OPSIS · der Anblick) · **DER WEG** → `docs/roadmap.md`
+- **DER AKTIVE BOGEN** (der Master-Plan zum atemberaubenden Bauplan) → `docs/wahrerguss.md` (DER WAHRE GUSS — die vier geteilten Pässe; Richter: `docs/archiv/wahrerbauplan.md`) · **DER WEG** → `docs/roadmap.md`
 - **REFERENZ** → `docs/archiv/crafting-konzept.md` · `docs/archiv/aktivierungsmatrix.md` · `docs/archiv/hydrosphere.md` · `docs/archiv/world-portal.md`
 - **ARCHIV** (abgeschlossen) → `docs/archiv/` (Index: `docs/archiv/README.md`)
 

@@ -49,24 +49,23 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 > FÄDEN** (§5-Ende — Schöpfer 11.06.: „alle wichtig, nie vergessen")).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
 
-**⭐ DER AKTIVE LEAD-BOGEN — DER WAHRE WUCHS (das Bauplan-GENOM, `docs/wahrerwuchs.md`):** aus EINEM
-Seed × wenige Achsen die volle Palette (Moos → Mammutbaum), kein Klon. **T1–T6 GEBAUT + GEMESSEN**
-(V18.256, `scripts/diag-genom.cjs`): Blatt-Typen+Brettwurzel · Bauwerk-Proportion+Detail · Geologie/
-Mineralogie-Glanz (emissiv/Facetten/Sediment) · Rüstung/Trank-Genome+Fahrzeug-SSF · Kreatur-Allometrie
-(Galileo) · Kronen-Formen/Lean/Mehrstämmig. Die Landmark-Platzierung reicht jetzt bis zur FORM
-(Hang→Spire/Brocken). **⚑ ABER der Schöpfer-Katalog (16.06., `diag-werk-render`) zeigte „kaum ein
-Upgrade, es fehlen viele Details" — die WURZEL (`wahrerwuchs §11`): das Genom gab VARIATION, aber die
-meisten Werke sind rohe PRIMITIV-Blobs (Rüstung=Box+2 Kugeln · Kristall=Kugel · Kreatur=Box+Kopf+Stummel),
-nur Tempel/Schwert haben dedizierte DETAIL-Meshes.** **Der NÄCHSTE Schub ist `wahrerwuchs.md §11` —
-DIE FIDELITÄT (die Priorität):** jedes System auf Tempel/Schwert-Niveau heben. Schöpfer-Korrektur §11.7:
-NICHT Detail-Meshes von Hand (Brute-Force), sondern **das Domänen-GESETZ schärfen** (Grammatik/Skelett/
-Simulation — der Profi-Weg: CGA-Shape-Grammatik · L-System · creature-Skelett+Metaball · Kristallographie ·
-Voronoi-Fraktur), aus dem das Detail EMERGIERT (wie Tempel←dorisch, Schwert←Oakeshott); das Gesetz ist
-auch das TOR (eine scharfe Grammatik emittiert keinen Blob, die Resonanz weist ihn ab — `roleManual` =
-der Leck). **F1 Kreatur** (Skelett-Gesetz, die schlimmste Lücke) · **F2 Gerät** · **F3 Werkstatt** (Shape-
-Grammatik) · **F4 Kristall+Fels** · **F5 Fahrzeug** · **F6 Bäume+Glut**; das Genom reitet oben. §10 (Vertikal-Bogen: Platzierung-folgt-Feld, V1 Kreatur · V2 Bauwerk from-scratch)
-bleibt gültig, rückt HINTER §11 (ein form-folgt-dem-Feld-Blob ist immer noch ein Blob). Physik-Referenz
-`docs/archiv/wahrerbauplan.md`, Anblick `docs/wahreranblick.md`.
+**⭐ DER AKTIVE LEAD-BOGEN — DER WAHRE GUSS (der Master-Plan, `docs/wahrerguss.md`):** der Schöpfer-Katalog
+(16.06., `scripts/diag-werk-render.cjs`, mit eigenen Augen geprüft) zeigte: die Fidelität LANDET, wo das
+Gesetz scharf ist (Tempel·Schwert·Wagen·Esse·Kristall·Portal), aber das LEBENDIGE Herz ist Blob (Avatar =
+zerfallener Strichmann · Kreatur ~10 % · Glutwesen lose Kegel) und ALLES low-poly+flach-einfarbig (selbst
+der Tempel „immer ähnlich"). **Die REFLEXION (Schöpfer „der Weg den Profis kaum sehen, die Zukunft"):** jede
+Iteration (T1–T6-Genom, F1–F6-Fidelität) bekämpfte den Blob am OBJEKT-Niveau (mehr Meshes = Amateur-Instinkt).
+Der Profi-Weg: das Objekt NICHT anfassen, **vier GETEILTE Systeme bauen**, durch die jeder Bauplan fließt —
+**Detail·Schönheit·Vielfalt·Leben sind Auslesewerte dieser Pässe:** (A) **SUBSTANZ** (prozedurales PBR aus
+Krümmung/AO/Gradient/Tags — der breiteste Hebel, hebt jedes Werk auf einmal) · (B) **KÖRPER** (Skelett+Haut+
+Bewegung+Rüstung-konform — das lebendige Herz) · (C) **GRAMMATIK-TIEFE** (rekursiv/kombinatorisch → tötet
+„immer ähnlich" + ein geteiltes Vokabular, heilt die scale+tint-Reste) · (D) **DETAIL-PASS** (Subdivision/
+Displacement). Das Genom (T1–T6, GEBAUT+GEMESSEN) reitet OBEN, der Richter (Ω-PHYSIS) garantiert, das **TOR**
+(`wahrerguss §4` — Fidelität als Resonanz-Achse) erzwingt die Detail-Treue (kein Blob kommt durch), das Auge
+richtet (Wand 1). **WEG: Substanz zuerst, dann Körper, dann Tor/Tiefe/Detail.** Fast nichts wird erfunden —
+Surface-Nets-Mesher · triplanarer Albedo · L-System-Bäume · Metaball-Haut sind die Beweise, die nur
+GENERALISIERT werden. Physik-Referenz `docs/archiv/wahrerbauplan.md`; die alten Gesichter-Pläne (FORM-Genom-
+Detail, ANBLICK-Pfeiler Ω-O1..O16) in `docs/archiv/wahrerwuchs.md` + `docs/archiv/wahreranblick.md`.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:

@@ -11,8 +11,8 @@ Hier liegt **alles Detail, das nicht auf dem aktiven Tisch sein muss** — durch
 
 Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`** →
 `CLAUDE.md` (JETZT + Gotchas), `docs/state-of-realm.md` (Vision),
-`docs/das-lebendige-feld.md` (der wahre Norden), `docs/archiv/wahrerbauplan.md` +
-`docs/wahreranblick.md` (der aktive Bogen), `docs/roadmap.md` (der Weg).
+`docs/das-lebendige-feld.md` (der wahre Norden), **`docs/wahrerguss.md`** (der aktive
+Bogen — der Master-Plan; Richter: `docs/archiv/wahrerbauplan.md`), `docs/roadmap.md` (der Weg).
 
 **Frisch archiviert (15.06.2026 — die Doc-Ordnung wiederhergestellt: die vier ewigen Heimaten
 [Stand `CLAUDE.md` · Chronik `handover.md` · Plan `roadmap.md` · Vision `state-of-realm.md` +
@@ -25,7 +25,17 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
   jetzt in `docs/roadmap.md §4` (die gemerkten Fäden).
 - `wahreranblick-antidrift-plan.md` — die Drift-Geschichte (15.06.): WARUM drei Sessions
   am SEHEN strandeten + die fünf Wände. Die Wände leben jetzt im Kopf von
-  `docs/wahreranblick.md`; diese Datei trägt die volle Begründung.
+  `docs/archiv/wahreranblick.md` (+ `docs/wahrerguss.md §6`); diese Datei trägt die volle Begründung.
+
+**Frisch archiviert (16.06.2026 — die Konvergenz zum Master-Plan):**
+
+- `wahrerwuchs.md` — Ω-GENESIS der FORM (das Bauplan-Genom; T1–T6/F1–F6/S0–S7-Iteration).
+  Verarbeitet: das Genom-PRINZIP + die §4-Achsen leben jetzt in `docs/wahrerguss.md` (System C).
+- `wahreranblick.md` — Ω-OPSIS der ANBLICK (die Substanz-Pfeiler Ω-O1..O16 + die fünf Wände).
+  Absorbiert als die Detailliste von `docs/wahrerguss.md` System A (SUBSTANZ). Bleibt die tiefe Referenz.
+  Grund der Konvergenz: die drei Gesichter-Pläne (wuchs/bauplan/anblick) re-diagnostizierten sich
+  gegenseitig (fünf überlappende „was-ist-flach"-Sektionen) — das Symptom des fehlenden EINEN Gesetzes.
+  `wahrerguss.md` ist die Konvergenz: aus dem Tagebuch ein Gesetz-Blatt.
 - `aktiv.md` — DER TISCH (Live-Stand + Reflexion). **Gefaltet** in den `CLAUDE.md`-Stand
   („Aktueller Stand"-Kopf trägt jetzt Live + Reflexion); der Snapshot bleibt als Beleg.
 - `rueckmeldung.md` — DER RÜCKMELDUNGS-KORPUS (der 12.06.-Schöpfer-Audit, R-001…R-044,

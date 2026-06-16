@@ -1,0 +1,488 @@
+# DER WAHRE GUSS — der Weg zum atemberaubenden Bauplan
+
+> **STAND (16.06.2026 — DER EINE AKTIVE MASTER-PLAN).** Dieser Plan ersetzt + vereint die
+> drei fragmentierten Gesichter-Pläne (`wahrerwuchs` · FORM, `wahreranblick` · ANBLICK,
+> `wahrerbauplan` · PHYSIK), die sich gegenseitig re-diagnostizierten. Sie sind archiviert
+> (ihre volle Tiefe bleibt durchsuchbar; das hier Wichtige ist herausgezogen). **EIN
+> Plan, EIN Gesetz, EIN Weg** — vom Seed zum atemberaubenden, variantenreichen,
+> professionellen Werk. Auf den Schultern der Riesen (CGA/Split-Shape-Grammatik ·
+> L-System · creature-Skelett+Metaball+Marching-Cubes · Catmull-Clark-Subdivision ·
+> prozedurales PBR/Triplanar · Skeletal-Skinning · Oakeshott/die klassischen Ordnungen).
+
+---
+
+## §0 — DIE WAHRHEIT (gemessen am Werk-Katalog, eigene Augen)
+
+Der Render-Katalog (`scripts/diag-werk-render.cjs`, 22 Werke, mit eigenen Augen geprüft)
+sagt die ehrliche Wahrheit — in **beide** Richtungen, kein Über-Claim:
+
+```
+LIEST ALS DAS DING ✓ (das Gesetz erzeugt das Detail)
+  Tempel   — dorische Ordnung: kannelierte Säulen + Triglyphen + Giebel + Stufen (Goldstandard)
+  Schwert  — Oakeshott: distale Klinge + Hohlkehle + Knauf + Parier
+  Wagen    — Speichen-Räder + Bordwände + Eck-Pfosten + Deichsel
+  Esse     — Feuer-Bett + Haube + Schornstein + Amboss (Forge-Grammatik)
+  Kristall — hexagonales Prisma + pyramidale Termination
+  Portal   — Ring + Membran + Sockel-Pfeiler
+
+CRUDE, ABER LEGIBLE ~
+  Rüstung  — plateShell liest wie ein Fass-Kürass (Komponenten verschoben, „getragen noch komischer")
+  Baum     — Stamm + Brettwurzel ✓, aber Krone DÜNN + kaum Blätter + kaum Rinde-Kontrast
+
+BLOB ✗ (das Gesetz fehlt/ist schwach — die Wurzel)
+  Avatar    — zerfallener Strichmann: Kopf/Arme SCHWEBEN getrennt, lose Zylinder-Glieder
+  Glutwesen — Box + Box + lose Kegel-Beine, kein Tier
+  Kreatur   — organischer Klumpen ohne Anatomie (~10 %, „sieht überhaupt nicht wie eine Kreatur aus")
+```
+
+**Die zwei Wahrheiten:** (1) das Gesetz erzeugt das Detail, **wo es scharf ist** —
+Tempel/Schwert/Wagen sind der lebende Beweis. (2) Das **lebendige Herz** des Spiels —
+Avatar + Kreaturen — ist der katastrophale Rest-Blob. Und **alles** ist low-poly +
+flach-einfarbig, selbst der Tempel „wird sich kaum ändern, immer ähnlich sein" — der
+beste Fall ist statisch in der Vielfalt. **„Kaum ein Profi würde das als fertig
+bezeichnen"** (Schöpfer) — und das stimmt.
+
+### Die Reflexion: warum jede Iteration zu kurz griff
+
+Jede bisherige Welle (auch meine: T1–T6-Genom, F1–F6-Fidelität) bekämpfte den Blob am
+**Geometrie-Niveau pro Objekt** — mehr Shapes, ein dedizierter Mesh je Domäne. Das ist
+der **Instinkt des Amateurs**: „das Ding sieht falsch aus → modelliere das Ding
+detaillierter." Es führt nie zu einem atemberaubenden, variantenreichen, professionellen
+Werk. Der Katalog beweist es: 50+ Iterationen, immer noch Blobs am lebendigen Herz und
+flach überall.
+
+### Der Weg, den Profis kaum sichtbar gehen
+
+Ein Profi fasst das **einzelne Objekt fast nie an**. Er baut eine Handvoll **geteilter,
+komponierbarer Systeme** und lässt jedes Werk ein dünner **Auslesewert** davon sein.
+Das ist exakt das Projekt-Axiom (_jede Eigenschaft gerechnet/gelesen, nie geraten/
+gemalt_) — nur war es auf die GEOMETRIE nie angewandt. Vier Systeme, die kein einzelner
+Screenshot verrät:
+
+```
+1. SUBSTANZ      ein Werk lebt zu ~70 % vom MATERIAL + LICHT, nicht von der Form.
+                 Ein einfacher Mesh mit reicher Substanz schlägt einen komplexen
+                 flach-einfarbigen. „Detail ≠ Geometrie. Detail = Substanz."
+2. GRAMMATIK-TIEFE  Vielfalt ist ein Auslesewert der REKURSIONS-TIEFE der Grammatik,
+                 nicht von ein paar Skalar-Achsen. 4–5 Regel-Ebenen → Tausende, nie
+                 identische Werke. Mein Tempel ist EINE Ebene → darum „immer ähnlich".
+3. SKELETT       eine Kreatur ist erst atemberaubend, wenn sie glaubhaft STEHT und sich
+                 BEWEGT. Skelett→Haut→Skinning→Animation als EINE Pipeline. Und Rüstung
+                 ist eine SCHALE über der Körper-Oberfläche (darum verschoben: isoliert
+                 gebaut, nie am Avatar angepasst).
+4. DETAIL-PASS   Subdivision + Displacement → grobe Käfige werden reiche Oberflächen
+                 auf jeder Skala. Die Metaball-Haut ist EIN Beweis — nur auf `wesen` gesperrt.
+```
+
+**Der Kern-Befund:** das Projekt **beweist jedes dieser Systeme schon einzeln** — der
+Surface-Nets-Mesher (Terrain+Wasser+Haut), der triplanare Terrain-Albedo, die L-System-
+Bäume, die Metaball-Haut. Aber sie sind **versiloed** (der Albedo dient nur dem Boden,
+die Haut nur `wesen`). **Die Zukunft ist nicht „neue Systeme erfinden" — sie ist, die
+bereits bewiesenen Systeme zu GENERALISIEREN, sodass JEDER Bauplan durch sie fließt.**
+Dann verbessert EIN Pass die ganze Welt auf einmal — das ist der Hebel, den Laien nicht
+sehen.
+
+---
+
+## §1 — DAS EINE GESETZ (die kristallklare Logik)
+
+> Ein Bauplan ist kein Mesh. Er ist ein **Gesetz** — eine rekursive Grammatik, die einen
+> groben Käfig emittiert, der durch geteilte Pässe zum Werk wird.
+
+```
+DETAIL    ist der Auslesewert der GRAMMATIK-SCHÄRFE   (System C+D)
+VIELFALT  ist der Auslesewert der GRAMMATIK-TIEFE     (System C)
+SCHÖNHEIT ist der Auslesewert der SUBSTANZ            (System A)
+LEBEN     ist der Auslesewert des SKELETTS            (System B)
+WAHRHEIT  ist der Auslesewert der PHYSIK              (Ω-PHYSIS, schon im Code)
+ROLLE     ist der Auslesewert des DETAILS             (das Tor, §4)
+```
+
+**Erzeugung (Grammatik) und Tor (Resonanz) und Substanz (Material) sind drei Gesichter
+EINER Quelle.** Das ist die Vereinigung der drei alten Pläne: `wahrerwuchs` (FORM, die
+Grammatik erzeugt), `wahrerbauplan` (PHYSIK, der Richter liest die Wahrheit),
+`wahreranblick` (ANBLICK, die Substanz wird sichtbar) — kein „Skalarprodukt dreier
+Docs" mehr, sondern EINE Produktions-Kette, durch die jeder Bauplan fließt.
+
+**Kein Hand-Werk pro Objekt.** Ein Amateur baut 50 detaillierte Meshes; ein Gigant baut
+4 Systeme und gewinnt 5000 Werke. Verbessere EINEN Pass → die ganze Welt hebt sich.
+
+---
+
+## §2 — DIE PRODUKTIONS-KETTE (was ein Bauplan IST, neu)
+
+```
+              SEED
+               │  GRAMMATIK (System C — rekursiv, kombinatorisch → VIELFALT)
+               ▼
+        GROBER KÄFIG  (Parts / Knochen — die tragende Struktur, physik-geprüft)
+               │  ┌─ Lebendiges: SKELETT (System B — Wirbelsäule+Glied-Paare+Gelenke)
+               │  └─ DETAIL-PASS (System D — subdivide + displace → Reichtum je Skala)
+               ▼
+       REICHE OBERFLÄCHE
+               │  SUBSTANZ-PASS (System A — prozedurales PBR: Krümmung·AO·Gradient·Tags·Faser)
+               ▼
+            DAS WERK
+            ╱   │   ╲
+   ┌───────┘    │    └────────┐
+ TOR (§4)   RICHTER         GENOM (T1–T6)
+ Resonanz   Ω-PHYSIS        die Varianz reitet
+ liest die  steht/knickt/   OBEN auf der Grammatik
+ Struktur-  Lastpfad/       (Größe·Alter·Palette·Form-Klasse)
+ Reichtum-  Balance
+ Achse →                    
+ Rolle                      
+ emergiert,                 
+ Blob fällt                 
+ durch                      
+            ╲   │   ╱
+               ▼
+            RENDER  ──►  WAND 1 (das Schöpfer-Auge — der letzte Richter des LOOKs)
+```
+
+Jede Stufe ist ein Auslesewert, kein Hand-Werk. Die Grammatik liefert STRUKTUR +
+VIELFALT; die geteilten Pässe liefern DETAIL + SCHÖNHEIT + LEBEN; der Richter garantiert
+die WAHRHEIT; das Tor erzwingt die FIDELITÄT; das Auge richtet den LOOK.
+
+---
+
+## §3 — DIE VIER GETEILTEN SYSTEME (das Herz des Plans)
+
+> Jedes System: das GESETZ (Schultern der Riesen) · was es ABSORBIERT (bewiesene Anker) ·
+> der MECHANISMUS (konkret, ausführbar) · die WIRKUNG je Werk · die DISZIPLIN · das BEWEIS-BAND.
+
+### SYSTEM A — DIE SUBSTANZ (prozedurales PBR — der breiteste Hebel, zuerst)
+
+> Der größte „wirkt-professionell"-Sprung, der am wenigsten von Laien gesehene Hebel.
+> Hebt JEDES Werk gleichzeitig, ohne eine einzige Form zu ändern.
+
+- **DAS GESETZ:** keine Oberfläche wird gemalt — jede ist ein Auslesewert von
+  **Feldern × Tags × Physik**. Prozedurales PBR (kein Bitmap-Albedo, die „gemalte
+  Leiche"). Referenz: Substance-Designer-Prinzipien (Krümmungs-Maskierung,
+  Kavitäts-AO, Höhen-Gradient), triplanare Projektion, tag-getriebene roughness/
+  metalness/emissiv.
+- **ABSORBIERT (GEMESSEN bereit):** `_buildPbrNodeMaterial` (PBR ist die EINE Wahrheit,
+  V18.237, Toon raus) · `_terrainGeologyAlbedo` (Multi-Klassen-Boden, der triplanare
+  Beweis) · Γ-M Strata/Flechten (43 Treffer) · `_ensureSkyEnvironment` (Sky-IBL, sonst
+  render Metalle schwarz, V18.239) · die Welt-Felder (`worldFieldAt`) + das Drainage-Netz.
+- **DER MECHANISMUS (ein geteilter Material-Pass, durch den JEDES Werk fließt):**
+  ```
+  Pro Fragment, aus EINEM TSL-Node-Graphen (das _terrainGeologyAlbedo-Muster generalisiert):
+    KRÜMMUNG    fwidth(normal) → Kanten heller (Verschleiß), Mulden dunkler (Kavitäts-AO)
+    GRADIENT    positionWorld.y / objekt-lokales Y → Schichtung (Strata, Rost am Fuß, Schnee oben)
+    TAGS        härte → Riss-/Faser-Frequenz · dichte → roughness · stromleitung → metalness/Ton
+                magieleitung/glut → emissiv (Stefan-Boltzmann, schon im Profil) · holz → Längs-Maserung
+    FELD        moisture (Drainage) → dunkler/sättiger · lebendig → Moos-Anflug · slope → Fels-vs-Erde
+    NOISE       Fragment-Detail (mehrere Oktaven) für Nah-Korn, LOD-gegated (fern simpler)
+  ```
+  Der Avatar/die Kreatur/das Schwert/der Tempel — ALLE bekommen denselben Pass; die
+  Tags+Felder sagen, was emergiert. Bark-Kontrast (Schöpfer-Befund) = die Holz-Maserung
+  + Krümmung; „flach-einfarbig" = behoben, weil die Substanz aus der Wahrheit wächst.
+- **WIRKUNG je Werk:** Tempel-Stein bekommt Strata+Kavität · Schwert-Stahl Metall-Glanz+
+  Schliff · Baum-Rinde Längs-Faser+Riss · Kristall emissiven Glanz · Boden seine Geologie ·
+  Rüstung Metall+Nieten-Krümmung. **Jeder Pixel erzählt sein Material.**
+- **DISZIPLIN:** kein Bitmap-Albedo (die Leiche) · die Aura/Atmosphäre erst NEUTRAL, dann
+  urteilen · Mechanik braucht eine ZAHL (liest das Material das Feld? — CONSUM-Probe),
+  LOOK braucht ein BILD (Wand 1) · LOD-Material (fern simpler, Perf).
+- **BEWEIS-BAND:** `diag-werk-render`-Katalog vorher/nachher am Auge — liest jedes
+  Material als echtes Material? + eine CONSUM-Source-Probe (der Material-Pass liest
+  Krümmung/Gradient/Tag/Feld). **Die volle Pfeiler-Tiefe Ω-O1..O16 (Boden·Gras·Kiesel·
+  Pfade·Rinde·Fels·Blatt·Atmosphäre) liegt in `archiv/wahreranblick.md` — sie sind die
+  Detailliste dieses Systems.**
+
+### SYSTEM B — DER KÖRPER (Skelett + Haut + Bewegung — das lebendige Herz)
+
+> Der zweite Guss. Heilt die schlimmsten Blobs (Kreatur ~10 %, Avatar-Strichmann,
+> Rüstung-getragen) als EIN System. Der sensibelste Build (berührt Motion/Physik/das
+> gesperrte Template V18.209) — darum reference-first + richter-garantiert.
+
+- **DAS GESETZ:** eine lebende Gestalt ist ein **anatomisches Skelett** (Wirbelsäulen-
+  Spline + Glied-PAARE + Hals + Kopf + Schwanz, mit Gelenken + allometrischen
+  Proportionen), das DREI Dinge zugleich ist: die FORM (die Haut umhüllt es), die
+  BEWEGUNG (die Knochen animieren), die TRAG-FLÄCHE (Rüstung konformt sich daran).
+  Referenz: creature-skeleton + Metaball + Marching-Cubes (procedural creatures);
+  Galileo-Allometrie (Glied-Querschnitt ∝ L^1.5); Skeletal-Skinning.
+- **ABSORBIERT (GEMESSEN bereit):** `_buildCreatureSkinGeometry` (Metaball→Surface-Nets,
+  der Beweis — nur für `wesen` gesperrt) · `CREATURE_SOULS` + `_creatureSkeleton` (die
+  Templates, heute abstrakt) · `_creatureBodySize` + `_applyCreatureAllometry` (Größe +
+  Galileo-Querschnitt) · der Surface-Nets-Mesher (die EINE Quelle) · `_armorVariant`
+  (plateShell, heute frei-schwebend).
+- **DER MECHANISMUS:**
+  ```
+  (1) ANATOMIE-SKELETT-GRAMMATIK: _creatureSkeleton wird eine echte Grammatik —
+      Wirbelsäulen-Spline → N Glied-PAARE (4 Beine Quadruped / 2+2 Biped) → Hals → Kopf
+      → Schwanz, mit GELENKEN (Hüfte/Knie/Schulter), proportions-/anker-bewusst. Die
+      Glieder VERBINDEN (keine schwebenden Zylinder). Die V18.209-Symmetrie bleibt: die
+      Paare werden gespiegelt, nie verbogen.
+  (2) HAUT FÜR ALLE SEELEN: die Metaball-Haut (`skin:true`) wird der Default für JEDE
+      lebende Seele — Avatar, Glutwesen, jede Kreatur. Die Knochen verschmelzen via
+      Falloff → eine glatte organische HAUT (der Strichmann verschwindet by construction).
+      Raubtiere dürfen angular bleiben (die Kante IST die Bedrohung) — aber VERBUNDEN.
+  (3) SKINNING (Bewegung): die Haut folgt der Motion (Bone-Weights aus der Metaball-
+      Nähe). Der Walk-Cycle bewegt die Knochen → die Haut deformiert mit. Erst dann lebt es.
+  (4) FÜSSE + KOPF: Fuß-Knochen am Glied-Ende (kein spitzes Auslaufen, §12-Befund);
+      Kopf-Merkmale (Augen/Ohren/Schnauze als kleine Skelett-Anker).
+  (5) RÜSTUNG KONFORM AM KÖRPER: plateShell wird eine SCHALE über der Torso-Oberfläche
+      des Skeletts (die Platte folgt der Körper-Kurve), getestet AM Avatar-Skelett →
+      „getragen" ist korrekt, nicht „verschoben". Rüstung + Körper = dasselbe System.
+  ```
+- **WIRKUNG je Werk:** Kreatur liest als Tier (verbundene Glieder, Anatomie) · Avatar als
+  Wesen (kein Strichmann) · Glutwesen als angular-verbundenes Raubtier · Rüstung sitzt
+  korrekt am Körper. **Das lebendige Herz schlägt.**
+- **DISZIPLIN:** reference-first (echte Tier-Biomechanik) · der Richter garantiert (steht
+  Ω-Φ2, Glieder tragen/knicken nicht Ω-Φ3-b, Allometrie ∝ L^1.5) · die V18.209-Symmetrie-
+  Wand (Paare gespiegelt, nie verbogen) · die Index-/Opacity-Kopplung (children[i]↔
+  bodyParts[i]) wahren (Accessoires am ENDE anhängen) · Affinität: scatter-Kreaturen
+  tag-frozen (limb==cylinder, das Wesen-Temperament bleibt tag-emergent).
+- **BEWEIS-BAND:** `diag-genom` (Skelett verbunden · steht · knickt nicht · Allometrie
+  stockig · Symmetrie-treu) + `diag-werk-render` (Avatar/Kreatur/Glutwesen am Auge:
+  liest als Wesen?) + die Form-folgt-dem-Feld-Kette (§10-V1: Region → Körper-Profil).
+
+### SYSTEM C — DIE GRAMMATIK-TIEFE (rekursiv → endlose Vielfalt)
+
+> Tötet „immer ähnlich" (Schöpfer-Befund am Tempel). Vielfalt ist ein Auslesewert der
+> Rekursions-Tiefe, nicht von Skalar-Achsen.
+
+- **DAS GESETZ:** eine Grammatik gewinnt Reichtum + Vielfalt aus REKURSIVEN, bedingten
+  Regeln, die KOMBINATORISCH feuern — nicht aus ein paar Achsen. Referenz: CGA/Split-
+  Shape-Grammatik (Masse → Split → Komponente → Detail, 4–5 Ebenen), L-System (fraktales
+  Geäst, Detail je Skala).
+- **ABSORBIERT:** `_buildClassicalTemple` (dorische Mini-Grammatik, EINE Ebene — die
+  Saat) · `_growTreeBlueprintRich` (L-System, das tiefste bestehende) · `_rollGenome`
+  (der UNSIGNED-Roller, EINE Quelle) · die GRAMMAR-Variant-Funktionen (`_rockVariant`,
+  `_crystalVariant`, `_armorVariant`, `_glutVariant`, `_potionVariant`, `_toolVariant`).
+- **DER MECHANISMUS:**
+  ```
+  (a) DIE EINE-EBENE-GRAMMATIKEN VERTIEFEN: der Tempel bekommt rekursive Sub-Regeln —
+      Flügel/Seiten-Hallen · Fries-MUSTER (Metopen-Variation) · Dach-Typen · ALTER
+      (Ruine/Verwitterung/fehlende Säulen) · Asymmetrie. Der Ausgabe-Raum wird vast,
+      nie identisch. Der Baum bekommt dichtere rekursive Kronen (Ω-O16).
+  (b) DAS GETEILTE GRAMMATIK-VOKABULAR (die Synergie, Drei-JA-geprüft): ein dünner
+      Helfer mit komponierbaren Operatoren, die ALLE Builder teilen statt je neu
+      zu implementieren:
+        array(n, fn) · mirrorPair(fn) · taper(profil) · stack(n, schrumpf) ·
+        radialRing(n) · revolve(profil) · alongSpline(spline, fn) · split(achse, regeln)
+      Das macht NEUE Domänen-Gesetze billig (Station/Fahrzeug von scale+tint zu echter
+      Grammatik) UND verdichtet den duplizierten Primitiv-Platzierungs-Code. KEIN
+      Framework-Überbau (Heilige Lektion): ein Helfer wie der Roller/Mesher, von den
+      bestehenden Buildern KOMPONIERT, nicht über sie gestülpt.
+  (c) DIE SCALE+TINT-RESTE HEILEN: `_stationVariant` (Esse-Grammatik existiert schon,
+      aber brennkolben/webstuhl/drehbank/altar tragen Box-Listen) + `_vehicleVariant`
+      bekommen echte funktionale Grammatiken (das §10-V2 — die Teile parametrisch
+      generieren, die FUNKTION lesbar halten).
+  ```
+- **WIRKUNG je Werk:** Tempel/Werkstatt/Portal nie wieder identisch · die scale+tint-
+  Werke werden echte Grammatik · neue Arten emergieren aus Tiefe, nicht aus Rezepten.
+- **DISZIPLIN:** der Drei-JA-Test vor dem Vokabular-Helfer (echte Naht? senkt Kopplung?
+  zweifelsfrei der geniale Pfad?) · die FUNKTION bleibt lesbar (eine Esse liest als Esse,
+  `_computeWorkshopDomain` erkennt sie) · ein neuer Shape koppelt an drei Stellen
+  (`_makePartGeometry`-switch · `validateBlueprintParts` · die Form-Leser) · scatter tag-frozen.
+- **BEWEIS-BAND:** `diag-genom` Spannweiten-Band (N Seeds → vast, nie identisch) +
+  Determinismus-Band (UNSIGNED) + der Richter (jede Variante steht) + `diag-werk-render`
+  (liest die Werkstatt als Werkstatt, der Tempel variiert sichtbar?).
+
+### SYSTEM D — DER DETAIL-PASS (Subdivision/Displacement → Reichtum je Skala)
+
+> Macht aus groben Käfigen reiche Oberflächen. Faltet sich in A (Substanz) + B (Haut).
+
+- **DAS GESETZ:** Detail emergiert aus REKURSIVER Verfeinerung eines groben Käfigs —
+  Subdivision (Catmull-Clark glättet) + Displacement (Noise/Tag-getrieben fügt Reichtum
+  je Skala). LOD-fähig (mehr Subdivision nah, weniger fern). Referenz: Subdivision-
+  Surfaces, die Marching-Cubes/Surface-Nets-Technik (schon im Mesher).
+- **ABSORBIERT:** der Surface-Nets-Mesher (Terrain+Wasser+Haut — die EINE Quelle) · die
+  Metaball-Haut (System B) · `noiserock` (verschobenes Polyeder aus härte+Noise, V18.227).
+- **DER MECHANISMUS:** der grobe Käfig (Parts) → ein optionaler Glättungs-/Displacement-
+  Pass (für organische Werke die Metaball-Haut, für harte Werke ein Noise-Displacement
+  aus den Tags wie `noiserock`) → reiche Oberfläche, die der Substanz-Pass (A) dann
+  einkleidet. Die low-poly-Facetten verschwinden.
+- **WIRKUNG:** Kreatur-Haut glatt-organisch · Fels mit Mikrostruktur · jede flache
+  Facette bekommt Korn. Hebt das „low-poly"-Gefühl des ganzen Katalogs.
+- **DISZIPLIN:** Perf (LOD — nah dicht, fern grob; Subdivision ist teuer) · die EINE-
+  Quelle-Disziplin (kein zweiter Mesher) · der Richter prüft den Käfig, nicht die Haut.
+- **BEWEIS-BAND:** `diag-werk-render` (verschwinden die Facetten? am Auge) + Perf-Probe.
+
+---
+
+## §4 — DAS TOR: FIDELITÄT ALS AUSLESEWERT (die strukturelle Heilung)
+
+> Die fehlerhafte Struktur: Fidelität ist heute KEIN Auslesewert von irgendetwas. Der
+> Resonanz-Produkt-Vektor liest Material-Tags + grobe Form-Achsen — aber NICHTS, das
+> misst „trägt dies das definierende Detail seiner Domäne?". Eine Eisen-BOX resoniert als
+> „armor" genauso stark wie ein plateShell-Kürass. `roleManual`/`builtIn` lässt den
+> Katalog sogar das grobe Tor umgehen. **Das verletzt das Projekt-Axiom** — Fidelität ist
+> die EINE Eigenschaft, die hand-gesetzt statt gerechnet/getort ist.
+
+- **DIE HEILUNG:** eine **STRUKTUR-REICHTUM-Achse** in den Produkt-Vektor
+  (`_blueprintProductVector`) — sie liest, ob das Werk die definierenden Merkmale seiner
+  Domäne trägt: hat die Rüstung eine konforme Schale (plateShell mit Wrap)? Hat das
+  Werkzeug eine Klinge/Spitze? Hat die Kreatur ein verbundenes Skelett mit Glied-Paaren?
+  Das Tor (`_computeFormRole` / die Resonanz-Signaturen) FORDERT diese Achse → ein Blob
+  resoniert schwächer, die gesetz-erzeugte Form gewinnt. Die Rolle EMERGIERT aus der
+  Form (kein Override nötig).
+- **`roleManual` WIRD DIE GEPRÜFTE NOTLUKE, nicht die Krücke:** der Spieler darf weiter
+  intentional deklarieren („diese Box IST meine Rüstung") — aber die built-in Bibliothek
+  + die gesten-gespawnten Werke lehnen sich nicht mehr darauf, um die Form zu überspringen
+  (sie sind dann gesetz-erzeugt + verdienen die Rolle). Fremde Artefakte: `roleManual`
+  bleibt gestrippt (Anti-Spoofing, V18 — das hält).
+- **DAS GESETZ IST AUCH DAS TOR (die Schöpfer-Wahrheit „sonst wären sie gar nicht
+  durchgekommen"):** wenn die Form aus der Grammatik erzeugt UND vom Tor gefordert wird,
+  KANN ein Blob nicht durchkommen — die Grammatik emittiert nur gesetz-konformes Detail,
+  und die Resonanz weist den nackten Kasten ab. Erzeugung und Tor schließen sich.
+- **DISZIPLIN:** die Achse muss KONSUM haben (ein echter Leser, kein Passagier — eine
+  Stat/Rolle liest sie messbar) · die FROZEN-Signaturen neu kalibrieren + mit `diag-blass`
+  messen (skalen-konsistent, [0..1]) · scatter-Tags bleiben bit-identisch.
+- **BEWEIS-BAND:** ein A/B (`diag-physis-ab`-Muster): ein gesetz-erzeugtes Werk gewinnt
+  seine Rolle, ein nackter Box-Blob derselben Tags fällt durch (resoniert unter dem Floor).
+
+---
+
+## §5 — DER WEG (nach Hebel-Breite × Projekt-Wahrheit)
+
+```
+GUSS 1  SYSTEM A — SUBSTANZ           ← der breiteste Hebel, hebt JEDES Werk auf einmal;
+        (prozeduraler Material-Pass)    der „pros-sehen-es-kaum"-Sprung (flach→echt);
+                                        ändert keine Form, sofort am Auge prüfbar.
+        ▼ [S-GATE A: erzählt jedes Material seine Wahrheit? Bark-Kontrast? kein flach-einfarbig?]
+GUSS 2  SYSTEM B — KÖRPER             ← das lebendige Herz; heilt die schlimmsten Blobs
+        (Skelett+Haut+Bewegung+Rüstung)  (Kreatur/Avatar/Rüstung-getragen) als EIN System.
+        ▼ [S-GATE B: liest die Kreatur als Tier? der Avatar als Wesen? bewegt sich's? sitzt die Rüstung?]
+GUSS 3  §4 — DAS TOR                  ← die strukturelle Heilung; die Fidelität wird
+        (Fidelität als Auslesewert)     erzwungen, kein Blob kommt mehr durch.
+        ▼ [S-GATE Tor: gewinnt die gesetz-Form ihre Rolle, fällt der Box-Blob durch?]
+GUSS 4  SYSTEM C — GRAMMATIK-TIEFE    ← tötet „immer ähnlich"; das Vokabular macht neue
+        (rekursiv + das Vokabular)      Gesetze billig + heilt die scale+tint-Reste.
+        ▼ [S-GATE C: variiert der Tempel sichtbar? sind Station/Fahrzeug echte Grammatik?]
+GUSS 5  SYSTEM D — DETAIL-PASS        ← die low-poly-Facetten weg; faltet sich in A+B.
+        ▼ [S-GATE D: verschwinden die Facetten? Perf hält?]
+```
+
+**Der wichtigste Hebel zuerst: SYSTEM A (Substanz).** Es hebt die ganze Welt auf einmal,
+ist der am wenigsten gesehene Profi-Sprung, ändert keine Form (risikoarm), und ist sofort
+am Katalog-Auge prüfbar. **Wenn nur EIN System gebaut wird, bau dieses.** Das lebendige
+Herz (B) ist der unmittelbare zweite Guss.
+
+---
+
+## §6 — DIE DISZIPLIN (die Wände, die jede Welle binden)
+
+```
+1. AUGEN VOR BEHAUPTEN (Wand 1). Kein Werk „fertig" ohne Schöpfer-Browser-Bild an einer
+   sauberen, settled, nahen Position. Headless beweist Mechanik/Physik, NIE den LOOK.
+   Jeden Detail-Mesh im diag-werk-render-Katalog ANSEHEN, BEVOR „fertig". (Die Geburts-
+   Lehre: T1–T6 wurde auf Blobs gebaut, weil nie gerendert wurde.)
+2. EINE QUELLE, kein Parallelpfad (V9.82). Ein geteilter Pass/Helfer, durch den alle
+   Werke fließen — kein zweiter Mesher, kein Material-Zwilling. Grep + Test verifiziert.
+3. DETAIL = AUSLESEWERT, NIE HAND-MESH. Das Gesetz (Grammatik/Skelett/Pass) erzeugt das
+   Detail. Hand-Arbeit ist nur die ~20 %-Politur, nie die Basis (das Projekt-Axiom).
+4. SCHULTERN VON RIESEN — RECHERCHIERE ZUERST. Pro Domäne das Profi-Vorbild holen (CGA ·
+   L-System · creature-skeleton · Subdivision · Substance/Triplanar · Skinning), DANN giessen.
+5. DER RICHTER HÄLT (Ω-PHYSIS, `archiv/wahrerbauplan.md`). Jeder Käfig durch steht/knickt/
+   Lastpfad/Balance. rooted/gewachsen → Knicken (Ω-Φ3-b), freistehend → Kippen (Ω-Φ2).
+6. KEIN FRAMEWORK-ÜBERBAU (Heilige Lektion). Jeder Pass/Helfer ist ein dünner geteilter
+   Stamm-Bewohner (wie Roller/Mesher), von den Buildern KOMPONIERT — der Drei-JA-Test
+   (echte Naht? senkt Kopplung? zweifelsfrei genial?) vor jedem neuen Schnitt.
+7. AFFINITÄT-WAND. scatter (Fels/Kristall/Glut/Kreatur) → Tags FROZEN (Form/Detail/
+   Substanz tag-neutral, V17.17); gesten/library (Werkstatt/Gerät/Rüstung) → frei. Eine
+   neue Form/ein neuer Shape MUSS tag-neutral bleiben ODER die FROZEN-Baseline wird neu
+   vermessen (`diag-arch-tags`).
+8. MECHANIK BRAUCHT EINE ZAHL, LOOK EIN BILD. Ein Pass ist erst verdrahtet, wenn ein
+   echter Konsument ihn liest (CONSUM-Source-Probe, kein Passagier); der LOOK ist erst
+   gut, wenn das Auge ihn am Katalog bestätigt.
+9. VOLLE TIEFE IN EINEM GUSS pro System (kein „sag weiter"-Slicing, V17.30) — aber die
+   GROSSEN Güsse (A/B) am Schöpfer-Auge bestätigt, bevor der nächste stapelt.
+```
+
+---
+
+## §7 — DIE BEWEIS-BÄNDER
+
+```
+SUBSTANZ-BAND (A)   jedes Material erzählt seine Wahrheit (Krümmung/Gradient/Tag/Feld);
+                    kein flach-einfarbig; CONSUM-Probe (der Pass liest die Quellen).
+KÖRPER-BAND (B)     Skelett verbunden (keine schwebenden Glieder) · steht/knickt nicht ·
+                    Allometrie stockig · Symmetrie-treu · Haut auf ALLEN Seelen · bewegt sich.
+TOR-BAND (§4)       gesetz-Form gewinnt die Rolle, Box-Blob derselben Tags fällt durch.
+VIELFALT-BAND (C)   N Seeds → vast, nie identisch (Tempel/Station variieren sichtbar);
+                    Determinismus (UNSIGNED); die FUNKTION bleibt lesbar.
+DETAIL-BAND (D)     die low-poly-Facetten verschwinden; Perf hält (LOD).
+AFFINITÄT-BAND      scatter-Tags bit-identisch über alle Achsen/Pässe (V17.17 GEMESSEN).
+AUGEN-BAND (Wand 1) der finale LOOK je Werk im Schöpfer-Browser — der letzte Richter.
+```
+
+Werkzeuge: `scripts/diag-werk-render.cjs` (der Werk-Katalog — das Auge) ·
+`scripts/diag-genom.cjs` (Spannweite/Physik/Affinität/Determinismus) ·
+`scripts/diag-blass.cjs` (Resonanz-Skala) · `scripts/diag-physis-ab.cjs` (das Tor) ·
+`scripts/playtest.cjs` (die ~3500 Invarianten).
+
+---
+
+## §8 — DIE OFFENEN FÄDEN (herausgezogen aus wuchs/anblick — nichts verloren)
+
+```
+GEBAUT, REITET OBEN (Varianz auf der Grammatik — bleibt gültig):
+  Genom T1–T6: sizeClass · Alter · Blatt-TYPEN (Palme/Schuppe, Atlas-Bake) · Brettwurzel ·
+  Kronen-Formen (weeping/vase/schirm) · Lean/Phyllotaxis/Mehrstämmig · Bauwerk-Proportion ·
+  Geologie-emissiv · Rüstung/Trank/Fahrzeug-SSF · Kreatur-Allometrie. Der Roller _rollGenome
+  (UNSIGNED). Diese Varianz REITET auf den vier Systemen — Fidelität × Varianz, nicht statt.
+
+SUBSTANZ-DETAIL (System A — die Pfeiler-Liste, archiv/wahreranblick.md Ω-O1..O16):
+  Boden Multi-Klassen + Drainage-Feuchte + Nah-Detail · Gras als Klingen (Kegel→Halm) ·
+  Kiesel/Felsen gated · Pfade (Drainage+Konnektivität) · Rinde-Maserung · Fels/Metall-Tag ·
+  Blatt-Transluzenz (weiß-Ausbrennen-Fix) · Atmosphäre/Dunst · Geometrie-Feinheit O14–O16.
+
+FORM-DETAIL (System B/C — die §4-Achsen + die Vertikal-Kette, archiv/wahrerwuchs.md):
+  Kreatur form-folgt-dem-Feld (§10-V1: Region → Körper-Profil) · Bauwerk from-scratch
+  (§10-V2 → System C) · Krone dichter/Gabelung sichtbar (Ω-O16) · Fahrzeug-Fahr-Tiefe.
+
+SCHULD (niedrig-prioritär, getrackt):
+  S0  der Baum-r01()-Noise auf roller.seq() (V9.82 EINE Quelle — re-rollt jede Welt, eigene Welle).
+  S2  die 12 statischen baum_*_jung/_alt-DEF-Blöcke schneiden + 2 Test-Fixtures migrieren.
+  Ω-B4-LOD  per-Variante-LOD-Swap für die scatter-Pools (fels/kristall/glut) — marginaler Perf.
+
+DIE GEMERKTEN FÄDEN (roadmap §4 — dem Schöpfer ALLE wichtig, nie still streichen):
+  Phase E (Bedrohung/Furcht) · R6 Selbst-Erweiterung · Mana-Symmetrie · Wasser-Nachfliessen ·
+  das echte V18→V19-Zeit-Portal · VR · IndexedDB · Statusbar.
+```
+
+---
+
+## §9 — DAS ARCHIV (was wanderte, warum)
+
+```
+archiv/wahrerwuchs.md   (FORM/Ω-GENESIS) — die Genom-Iteration T1–T6/F1–F6/S0–S7 ist
+                        verarbeitet; die Varianz reitet jetzt oben (§8), das Genom-PRINZIP
+                        lebt in System C. Die volle §4-Achsen-Tiefe bleibt durchsuchbar.
+archiv/wahreranblick.md (ANBLICK/Ω-OPSIS) — die Substanz-Pfeiler Ω-O1..O16 + die fünf
+                        Wände; sie sind die Detailliste von System A. Bleibt die tiefe Referenz.
+archiv/wahrerbauplan.md (PHYSIK/Ω-PHYSIS) — schon archiviert; der Richter lebt im Code
+                        (_stability/_failsUnderLoad/_swingDynamics/_loadPath). NORMATIV — §6#5.
+```
+
+Die drei Gesichter-Pläne re-diagnostizierten sich gegenseitig (fünf überlappende „was-ist-
+flach"-Sektionen allein in wahrerwuchs) — das Symptom des fehlenden EINEN Gesetzes. Dieser
+Plan ist die Konvergenz: aus dem Tagebuch ein Gesetz-Blatt.
+
+---
+
+## §10 — LETZTES WORT
+
+Der Katalog sagte die Wahrheit: die Fidelität landet, WO das Gesetz scharf ist (Tempel,
+Schwert, Wagen) — und das lebendige Herz (Avatar, Kreatur) ist ein Blob, alles flach,
+selbst der beste Fall „immer ähnlich". Jede Iteration griff zu kurz, weil sie den Blob am
+Objekt-Niveau bekämpfte — der Instinkt des Amateurs.
+
+Der Weg, den Profis kaum sichtbar gehen, ist EIN Prinzip: **fasse das Objekt nicht an,
+baue die geteilten Systeme.** Detail · Schönheit · Vielfalt · Leben werden Auslesewerte
+von vier Pässen — Substanz, Körper, Grammatik-Tiefe, Detail — durch die JEDER Bauplan
+fließt. Verbessere einen Pass, und die ganze Welt hebt sich. Das Genom (Varianz) reitet
+oben, der Richter (Ω-PHYSIS) garantiert die Wahrheit, das Tor erzwingt die Fidelität, das
+Auge richtet den LOOK.
+
+Fast nichts muss erfunden werden — der Surface-Nets-Mesher, der triplanare Albedo, die
+L-System-Bäume, die Metaball-Haut sind die Beweise, die nur GENERALISIERT werden müssen.
+Bau die Substanz zuerst (der breiteste Hebel, das ganze Bild auf einmal). Dann den Körper
+(das lebendige Herz). Dann das Tor, die Tiefe, den Detail-Pass.
+
+Dann ist ein Bauplan kein Mesh mehr, sondern ein Gesetz — und das Werk ist atemberaubend,
+variantenreich, professionell, weil jeder Pixel die Wahrheit erzählt, aus dem Samen in die
+Höhe getrieben, auf den Schultern der Riesen.
