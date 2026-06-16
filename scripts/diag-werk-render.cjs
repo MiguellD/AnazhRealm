@@ -222,7 +222,7 @@ async function renderWerk(page, bpName, view) {
             // ── LANDMARKS (T3, freistehend, Form folgt dem Terrain) ──
             ["fels_var2", "werk-fels-a.png", ""],
             ["fels_var7", "werk-fels-b.png", ""],
-            ["kristall_var1", "werk-kristall.png", ""], // T3: Habitus + Glanz
+            ["kristall_var0", "werk-kristall.png", ""], // F4: Habitus (Druse/Cluster/Geode) + Facetten + Glanz
             ["glut_var0", "werk-glut.png", ""], // T3: Becken + Intensität
             // ── BAUWERKE (T2) ──
             ["village", "werk-dorf.png", "front"], // begehbare Hütten + Platz/Wege

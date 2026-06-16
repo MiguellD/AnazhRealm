@@ -4104,6 +4104,7 @@ class AnazhRealm {
             "torus",
             "helix",
             "limb",
+            "crystalPoint",
             "flutedColumn",
             "bladeProfile",
             "gableTriangle",
@@ -4183,6 +4184,12 @@ class AnazhRealm {
                 if (Number.isFinite(p.heightSegments))
                     sanitized.heightSegments = Math.max(2, Math.min(20, p.heightSegments | 0));
                 if (Number.isFinite(p.segments)) sanitized.segments = Math.max(6, Math.min(48, p.segments | 0));
+            }
+            // F4 (wahrerwuchs §11) — die crystalPoint-Grammatik-Felder (Prisma-Facetten +
+            // Termination), damit Werkstatt/DSL einen echten Kristall bauen kann.
+            if (p.shape === "crystalPoint") {
+                if (Number.isFinite(p.facets)) sanitized.facets = Math.max(3, Math.min(12, p.facets | 0));
+                if (Number.isFinite(p.termFrac)) sanitized.termFrac = Math.max(0.05, Math.min(0.9, p.termFrac));
             }
             // Ω-B2 (wahrerbauplan §6) — die bladeProfile-Grammatik-Felder (Oakeshott: distale
             // Verjüngung + Hohlkehle), damit die Werkstatt/DSL eine echte Klinge bauen kann.
@@ -14428,9 +14435,12 @@ class AnazhRealm {
             parts.push(p);
         };
         // Proportionen (die formbaren Achsen) — Default = ein gedrungener Vierbeiner.
-        const torsoLen = (g.torsoLen || 0.64) * s; // länger als breit → liest als Leib, nicht als Würfel
-        const torsoW = (g.torsoW || 0.34) * s;
-        const torsoH = (g.torsoH || 0.27) * s;
+        // Rumpf-Proportion: länger als hoch (liest als Leib), ABER die längste Achse < 1.7×
+        // der kürzesten → der Rumpf ist KEIN „Glied" für die Allometrie (sie verdickt nur die
+        // schlanken Stütz-Glieder, der Rumpf bleibt uniform, T5-Band). 0.60/0.36 = 1.67.
+        const torsoLen = (g.torsoLen || 0.6) * s;
+        const torsoW = (g.torsoW || 0.38) * s;
+        const torsoH = (g.torsoH || 0.36) * s;
         const legLen = (g.legLen || 0.34) * s;
         const legR = (g.legR || 0.06) * s;
         const neckLen = (g.neckLen || 0.26) * s;
@@ -46355,6 +46365,50 @@ class AnazhRealm {
                 }
                 return new THREE.LatheGeometry(pts, Math.max(6, Math.min(20, segments)));
             }
+            case "crystalPoint": {
+                // F4 (wahrerwuchs §11 — DAS KRISTALLOGRAPHIE-GESETZ, reference-first): ein
+                // Quarz-Kristall ist ein PRISMA (n-seitige Säule) mit pyramidaler TERMINATION
+                // (die charakteristische Spitze) — NIE eine glatte Kugel (der §11-Katalog-Befund
+                // „Kristall = Ball"). Die scharfen Facetten + die Termination EMERGIEREN aus der
+                // Gitter-Symmetrie (n). EINE Geometrie, deterministisch. size.x/z = Prisma-⌀
+                // (Querschnitt, darf elliptisch sein), size.y = Gesamt-Länge; part.facets = n
+                // (6 = Quarz), part.termFrac = Anteil der Spitze.
+                const n = Math.max(3, Math.min(12, part.facets | 0 || 6));
+                const rX = Math.max(0.01, sx / 2);
+                const rZ = Math.max(0.01, sz / 2);
+                const L = Math.max(0.05, sy);
+                const termFrac = Number.isFinite(part.termFrac) ? Math.max(0.05, Math.min(0.9, part.termFrac)) : 0.32;
+                const yBot = -L / 2,
+                    yTop = L / 2,
+                    yShoulder = yTop - termFrac * L;
+                const verts = [];
+                const idx = [];
+                // Ring 0 (Boden) + Ring 1 (Schulter), dann Apex + Boden-Zentrum.
+                for (const yy of [yBot, yShoulder]) {
+                    for (let i = 0; i < n; i++) {
+                        const a = (i / n) * Math.PI * 2;
+                        verts.push(Math.cos(a) * rX, yy, Math.sin(a) * rZ);
+                    }
+                }
+                const apex = verts.length / 3;
+                verts.push(0, yTop, 0);
+                const botC = verts.length / 3;
+                verts.push(0, yBot, 0);
+                for (let i = 0; i < n; i++) {
+                    const a = i,
+                        b = (i + 1) % n,
+                        a2 = n + i,
+                        b2 = n + ((i + 1) % n);
+                    idx.push(a, a2, b, b, a2, b2); // Prisma-Wand (Quad)
+                    idx.push(apex, a2, b2); // Termination (Dreieck → Spitze)
+                    idx.push(botC, b, i); // Boden-Kappe
+                }
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
+                g.setIndex(idx);
+                g.computeVertexNormals();
+                return g;
+            }
             case "noiserock": {
                 // V18.227 (Ω-OPSIS Säule VI Ω-O15) — der LAWFUL FELS: ein
                 // Ikosaeder, dessen Vertices entlang der Radial-Richtung per
@@ -47072,84 +47126,122 @@ class AnazhRealm {
     _crystalVariant(seed) {
         const g = this._rollGenome(seed, "crystal");
         const parts = [];
-        // T3 (wahrerwuchs §4.3 S4) — zwei neue Achsen: die GLANZ-Intensität (emissiv-Boost je
-        // Variante, getragen vom quarz-magieleitung-Tag → ein Kristall glüht, DIESER heller)
-        // + die FACETTEN-/Termination-Spitzen-Zahl (Kristallographie: mehr Spitzen = reicheres
-        // Habitus). Beide tag-NEUTRAL (Farbe/Geometrie, kein Material/Tag-Shift → V17.16).
+        // F4 (wahrerwuchs §11 — DAS KRISTALLOGRAPHIE-GESETZ): ein quarz-BETT (flache Matrix,
+        // trägt die Tags + den Schwerpunkt) + N facettierte PRISMA-SPITZEN mit pyramidaler
+        // Termination (`crystalPoint`). Statt der glatten Kugel (§11-Befund) emittiert das
+        // Gesetz jetzt scharfe Facetten + Spitzen — DAS Ding. Achsen: Habitus · Größe ·
+        // Facetten-Zahl (n des Prismas) · Spitzen-Zahl · GLANZ (emissiv aus magieleitung).
+        // TAG-NEUTRAL: crystalPoint-Aktivierung == octahedron + das sphere-Bett → Compound
+        // == kristall_geode (V17.16, GEMESSEN diag-genom). PHYSIK: das breite Bett trägt
+        // (Ω-Φ2), die Spitzen wurzeln im Bett (Ω-Φ5), die Schlankheit ist GEBUNDEN
+        // (Breite ∝ Höhe → der Greenhill-Knick-Richter Ω-Φ3-b ist erfüllt).
         const glow = g.range("glow", 0.7, 1.7);
-        const facets = g.int("facets", 4, 8);
-        const xtal = (shape, x, y, z, sx, sy, sz, rot) =>
+        const facets = g.int("facets", 6, 8); // n des Prismas (Quarz hexagonal, manche 8)
+        const term = g.range("term", 0.26, 0.44);
+        const sizeMul = g.range("size", 0.7, 1.8);
+        const baseR = g.range("baseR", 0.5, 0.95) * sizeMul;
+        const bed = (x, y, z, sx, sy, sz) =>
             parts.push({
-                shape,
+                shape: "sphere",
                 material: "quarz",
-                color: 0x9fd6e8,
-                opacity: 0.85,
-                emissiveBoost: glow, // T3: die magieleitung-Glut, je Variante moduliert
+                color: 0x86bccf,
+                opacity: 0.78,
+                emissiveBoost: glow * 0.6,
                 position: { x, y, z },
                 size: { x: sx, y: sy, z: sz },
+            });
+        const point = (x, y, z, h, aspect, rot) => {
+            const w = h * aspect; // die Schlankheit gebunden → knickt nicht (Ω-Φ3-b)
+            parts.push({
+                shape: "crystalPoint",
+                material: "quarz",
+                color: 0x9fd6e8,
+                opacity: 0.86,
+                emissiveBoost: glow,
+                facets,
+                termFrac: term,
+                position: { x, y, z },
+                size: { x: w, y: h, z: w },
                 ...(rot ? { rotation: rot } : {}),
             });
+        };
         const habitus = g.pick("habitus", ["einzel", "cluster", "geode", "druse"]);
         this._lastLandmarkForm = habitus; // T-FULLSTACK: die Habitus-Form reist zur Platzierung
-        const sizeMul = g.range("size", 0.6, 1.8);
-        // Die MATRIX (breite, niedrige quarz-Basis) trägt jede Spitze → Schwerpunkt stabil.
-        const baseR = g.range("baseR", 0.55, 1.1) * sizeMul;
+        // das BETT — ein KLEINER, tief-sitzender quarz-Matrix-Nub (trägt nur die Tags + den
+        // Fuß; sphere nutzt nur size.x → es ist IMMER rund, darum KLEIN halten, sonst dominiert
+        // ein Ball [§11-Befund]). Die SPITZEN dominieren die Silhouette + wurzeln im Nub (Ω-Φ5).
+        bed(0, baseR * 0.16, 0, baseR * 0.95, baseR * 0.6, baseR * 0.95);
         if (habitus === "einzel") {
-            const h = g.range("h", 1.1, 3.0) * sizeMul;
-            xtal("sphere", 0, baseR * 0.32, 0, baseR * 1.7, baseR * 0.7, baseR * 1.7);
-            xtal("octahedron", 0, baseR * 0.5 + h * 0.45, 0, baseR * 0.85, h * 0.9, baseR * 0.85, {
-                x: 0,
+            // EIN großer dominanter Quarz (ein „Kristall-Zepter") + tight wurzelnde Begleiter.
+            const h = g.range("h", 2.1, 3.6) * sizeMul;
+            point(0, baseR * 0.2 + h * 0.46, 0, h, g.range("asp", 0.3, 0.4), {
+                x: g.range("tlt", -0.1, 0.1),
                 y: g.axis("ry") * 6.283,
-                z: 0,
+                z: g.range("tlt2", -0.1, 0.1),
             });
+            const m = g.int("comp", 2, 3);
+            for (let i = 0; i < m; i++) {
+                const a = g.axis("a" + i) * 6.283;
+                const d = baseR * g.range("d" + i, 0.2, 0.46);
+                const hh = g.range("hh" + i, 0.9, 1.8) * sizeMul;
+                point(Math.cos(a) * d, baseR * 0.2 + hh * 0.44, Math.sin(a) * d, hh, g.range("as" + i, 0.3, 0.42), {
+                    x: Math.cos(a) * 0.35,
+                    y: a,
+                    z: Math.sin(a) * 0.35,
+                });
+            }
         } else if (habitus === "cluster") {
-            xtal("sphere", 0, baseR * 0.3, 0, baseR * 1.9, baseR * 0.7, baseR * 1.9);
-            const n = Math.max(3, Math.min(6, facets)); // T3: die Facetten-Achse treibt die Spitzen-Zahl
+            const n = g.int("pts", 5, 9);
             for (let i = 0; i < n; i++) {
                 const a = g.axis("a" + i) * 6.283;
-                const d = g.range("d" + i, 0, baseR * 0.8);
-                const s = g.range("s" + i, 0.3, 0.7) * baseR;
-                xtal("octahedron", Math.cos(a) * d, baseR * 0.4 + s * 0.9, Math.sin(a) * d, s, s * 1.7, s, {
-                    x: g.axis("rx" + i) * 0.5,
+                const d = g.range("d" + i, 0, baseR * 0.5);
+                const hh = g.range("hh" + i, 1.0, 2.6) * sizeMul;
+                point(Math.cos(a) * d, baseR * 0.18 + hh * 0.44, Math.sin(a) * d, hh, g.range("as" + i, 0.3, 0.4), {
+                    x: Math.cos(a) * g.range("t" + i, 0.1, 0.4),
                     y: a,
-                    z: g.axis("rz" + i) * 0.5,
+                    z: Math.sin(a) * g.range("t2" + i, 0.1, 0.4),
                 });
             }
         } else if (habitus === "geode") {
-            const r = g.range("r", 0.85, 1.7) * sizeMul;
-            xtal("sphere", 0, r * 0.55, 0, r * 1.7, r * 1.7, r * 1.7);
-            const n = Math.max(2, Math.min(5, facets - 3)); // T3: Facetten-Achse
+            const r = g.range("r", 0.8, 1.5) * sizeMul;
+            bed(0, r * 0.18, 0, r * 1.1, r * 0.55, r * 1.1); // ein etwas breiterer Matrix-Boden
+            const n = g.int("pts", 7, 11);
             for (let i = 0; i < n; i++) {
-                const a = g.axis("a" + i) * 6.283;
-                const s = g.range("s" + i, 0.3, 0.55) * r;
-                xtal("octahedron", Math.cos(a) * r * 0.4, r * 0.85 + s * 0.4, Math.sin(a) * r * 0.4, s, s, s, {
-                    x: g.axis("rx" + i) * 0.5,
-                    y: a,
-                    z: g.axis("rz" + i) * 0.3,
-                });
-            }
-        } else {
-            // Druse: eine niedrige Säule aus Spitzen auf breiter Basis (steht, schmaler nach oben).
-            xtal("sphere", 0, baseR * 0.28, 0, baseR * 1.8, baseR * 0.6, baseR * 1.8);
-            const n = Math.max(3, Math.min(6, facets - 1)); // T3: Facetten-Achse
-            let y = baseR * 0.4;
-            for (let i = 0; i < n; i++) {
-                const s = baseR * (0.8 - i * 0.12);
-                xtal(
-                    "octahedron",
-                    (g.axis("ox" + i) - 0.5) * baseR * 0.4,
-                    y + s * 0.7,
-                    (g.axis("oz" + i) - 0.5) * baseR * 0.4,
-                    s,
-                    s * 1.5,
-                    s,
+                const a = (i / n) * 6.283 + g.axis("j" + i) * 0.4;
+                const hh = g.range("hh" + i, 0.55, 1.15) * r;
+                const tilt = g.range("tl" + i, 0.35, 0.8);
+                point(
+                    Math.cos(a) * r * 0.42,
+                    r * 0.3 + hh * 0.32,
+                    Math.sin(a) * r * 0.42,
+                    hh,
+                    g.range("as" + i, 0.32, 0.42),
                     {
-                        x: g.axis("rx" + i) * 0.3,
-                        y: g.axis("ry" + i) * 6.283,
-                        z: g.axis("rz" + i) * 0.3,
+                        x: Math.sin(a) * -tilt,
+                        y: a,
+                        z: Math.cos(a) * tilt,
                     }
                 );
-                y += s * 0.7;
+            }
+        } else {
+            // druse: eine Säule aus Spitzen, nach oben schmaler (steht, knickt nicht).
+            const n = g.int("pts", 4, 7);
+            let y = baseR * 0.3;
+            for (let i = 0; i < n; i++) {
+                const hh = (1.1 - i * 0.1) * baseR * g.range("k", 1.4, 2.2);
+                point(
+                    (g.axis("ox" + i) - 0.5) * baseR * 0.5,
+                    y + hh * 0.4,
+                    (g.axis("oz" + i) - 0.5) * baseR * 0.5,
+                    Math.max(0.18, hh),
+                    g.range("as" + i, 0.32, 0.42),
+                    {
+                        x: g.range("rx" + i, -0.22, 0.22),
+                        y: g.axis("ry" + i) * 6.283,
+                        z: g.range("rz" + i, -0.22, 0.22),
+                    }
+                );
+                y += hh * 0.3;
             }
         }
         return parts;
@@ -71788,7 +71880,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
                 // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
                 // ohnehin `_creatureBodySize`).
-                size: 0.87,
+                size: 0.81,
                 bodyMat: "stein",
                 limbMat: "holz",
                 headMat: "holz",
@@ -71840,7 +71932,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         predator: true,
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton({
-                size: 0.87, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
+                size: 0.81, // s. wesen — die AABB-Tarierung hält den sizeFactor im Tie-Band (V18.208)
                 bodyMat: "glut",
                 limbMat: "glut",
                 headMat: "glut",
@@ -73774,6 +73866,23 @@ AnazhRealm.FORM_TAG_ACTIVATION = Object.freeze({
         lebendig: 0,
     }),
     octahedron: Object.freeze({
+        härte: 3,
+        dichte: 2,
+        zähigkeit: 0,
+        wärmeleitung: 2,
+        stromleitung: 1,
+        magieleitung: 3,
+        transparent: 3,
+        brennbar: 0,
+        resoniert: 2,
+        lebendig: 0,
+    }),
+    // F4 (wahrerwuchs §11 — das KRISTALLOGRAPHIE-GESETZ): ein `crystalPoint` ist ein
+    // facettiertes Prisma mit pyramidaler Termination. Kristallographisch IST das die
+    // facettierte Spitze, die der octahedron näherte → die Aktivierung ist BIT-IDENTISCH
+    // zu `octahedron`. So ist ein aus crystalPoint gebauter Kristall tag-NEUTRAL gegen die
+    // alte sphere+octahedron-Druse (kristall_geode bleibt frozen, V17.16/§11.5#6).
+    crystalPoint: Object.freeze({
         härte: 3,
         dichte: 2,
         zähigkeit: 0,

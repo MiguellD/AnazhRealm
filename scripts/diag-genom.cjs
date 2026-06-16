@@ -583,11 +583,17 @@ function startSaveServer() {
             // (a) KRISTALL: die Facetten-/Spitzen-Zahl variiert + jedes Teil trägt emissiveBoost.
             const xtalFacets = new Set();
             let xtalHasBoost = true;
+            let xtalHasPoints = true; // F4: jede Variante trägt facettierte crystalPoint-Spitzen (kein Ball)
             for (let s = 0; s < 200; s++) {
                 const p = r._crystalVariant("fac" + s);
-                xtalFacets.add(p.filter((q) => q.shape === "octahedron").length);
+                // F4: die Spitzen-Zahl variiert (crystalPoint = das prismatische Termination-Gesetz,
+                // ersetzt das octahedron → der Kristall liest als Kristall, nicht als Kugel).
+                const pts = p.filter((q) => q.shape === "crystalPoint").length;
+                xtalFacets.add(pts);
+                if (pts < 1) xtalHasPoints = false;
                 if (!p.every((q) => Number.isFinite(q.emissiveBoost))) xtalHasBoost = false;
             }
+            o.crystalHasPoints = xtalHasPoints;
             o.crystalFacetSpread = [...xtalFacets].sort((a, b) => a - b);
             o.crystalHasBoost = xtalHasBoost;
             // (b) der GLANZ-Boost koppelt: ein höherer emissiveBoost → höhere emissiveIntensity (>0, vom Tag).
@@ -1004,9 +1010,12 @@ function startSaveServer() {
 
         // ── T3 (wahrerwuchs §4.2-§4.4): KRISTALL-FACETTEN+GLANZ · GLUT-ÖFFNUNG · FELS-SEDIMENT/MOOS ──
         ck(
-            "T3-KRISTALL: Facetten-/Spitzen-Zahl variiert (≥3) + emissiveBoost je Teil",
-            `${JSON.stringify(out.crystalFacetSpread)}/${out.crystalHasBoost}`,
-            Array.isArray(out.crystalFacetSpread) && out.crystalFacetSpread.length >= 3 && out.crystalHasBoost === true
+            "F4-KRISTALL: facettierte crystalPoint-Spitzen (kein Ball) + Zahl variiert (≥3) + emissiveBoost",
+            `${JSON.stringify(out.crystalFacetSpread)}/points=${out.crystalHasPoints}/boost=${out.crystalHasBoost}`,
+            Array.isArray(out.crystalFacetSpread) &&
+                out.crystalFacetSpread.length >= 3 &&
+                out.crystalHasPoints === true &&
+                out.crystalHasBoost === true
         );
         ck(
             "T3-GLANZ: Kristall glüht (magieleitung-Tag) + höherer Boost → höhere Intensität",
