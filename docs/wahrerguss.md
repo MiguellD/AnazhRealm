@@ -486,3 +486,42 @@ Bau die Substanz zuerst (der breiteste Hebel, das ganze Bild auf einmal). Dann d
 Dann ist ein Bauplan kein Mesh mehr, sondern ein Gesetz — und das Werk ist atemberaubend,
 variantenreich, professionell, weil jeder Pixel die Wahrheit erzählt, aus dem Samen in die
 Höhe getrieben, auf den Schultern der Riesen.
+
+---
+
+## §11 — DER SELEKTIONS-RICHTER (der Körper behauptet sich) — die gefundene Wurzel
+
+> **STAND (16.06.2026):** Schöpfer-Befund „in der Natur muss sich jeder Körper behaupten — hier
+> nicht, der ineffiziente Klumpen kommt durch". Fünf Forschungs-Stränge (Wolffsches Gesetz ·
+> Topologie-/Fully-Stressed-Optimierung · Cost-of-Transport · Karl-Sims-evolvierte-Morphologie ·
+> die smin/Round-Cone-Praxis) KONVERGIEREN auf EINE Wurzel + EINE Heilung.
+
+**DIE WURZEL (gemessen am Code + bestätigt):** der Physik-Richter ist ein **PASS/FAIL-TOR**
+(steht? knickt? schwebt?), kein **SELEKTIONS-DRUCK**. Ein ineffizienter Klumpen besteht die
+Hürden → „kommt durch". In der Natur formt SELEKTION (Fitness/Effizienz) den Körper; das Tor
+WERTET nicht. Zwei Geometrie-Symptome dazu: (a) uniforme Kapsel-Glieder → Wurst-Beine; (b) ein
+zu großes globales smin-`k` → die Glieder schmelzen in den Körper (der Schmelz-Blob).
+
+**GEBAUT (V18.x, dieser Guss) — die zwei Geometrie-Fixes (formel-belegt):**
+- **Wolffsches Gesetz / Round-Cone:** Glied-Radius getapert proximal-dick → distal-dünn
+  (`r(x) ∝ M(x)^(1/3)`, fully-stressed; Masse proximal minimiert die Glied-Trägheit Σmᵢrᵢ²).
+  `sdTaper` (interpolierter Radius) statt uniformer Kapsel → effiziente Beine, keine Würste.
+- **Pro-Gelenk-`k`** (`k ≈ 0.32·min(ra,rb)`, kompakter Polynom-smin-Träger) statt globalem 0.045
+  → scharfe Gelenke statt Schmelz-Blob; die im Rumpf SITZENDEN Wurzeln verbinden trotzdem.
+
+**OFFEN — DER KERN-GUSS (die genialste Achse, der dritte Vers WERTEN):** der Richter wird vom
+TOR zum **SELEKTOR**. Der Körper muss seine Form VERDIENEN — `_buildCreatureGroup` (oder ein
+`_selectFittestBody`) würfelt **N Proportions-Kandidaten** (Archetyp ± Streuung) und nimmt den
+**argmax einer biomechanischen FITNESS**, statt des ersten, der ein Tor passiert:
+```
+fitness = w1·stabilität(Schwerpunkt-Marge)         (Ω-Φ2, existiert)
+        + w2·struktur-effizienz(Stärke/Gewicht)    (Z/A je Glied; fully-stressed η=σ/σ_allow→1)
+        − w3·glied-trägheit(Σ mᵢ·rᵢ² um die Hüfte)  (proximale Masse, leichte Füße)
+        − w4·cost-of-transport(P/(m·g·v)-Proxy)     (Fr=v²/gL; effiziente Fortbewegung)
+        − w5·knick-risiko(Euler-Schlankheit KL/r)   (Ω-Φ3-b, existiert)
+```
+Das macht den Klumpen STRUKTURELL unmöglich (er scored niedrig, fällt durch) UND vereint
+Form·Physik·Selektion zu EINER Quelle (Karl-Sims-Prinzip auf das Familie+WERTEN-Axiom). Profi-
+Zahlen liegen bereit (Wolff `r∝M^⅓` · CoT∝M^−0.32 · McMahon `d∝L^1.5` · Sims-Fitness=Leistung
+an simulierter Physik · smin-`k`≈0.1–0.3·r). **Die nächste Sitzung gießt den Selektions-Richter
++ die feinere Anatomie + die Gang-Animation (Froude Fr≈0.5 Gang-Wechsel) + den Avatar.**

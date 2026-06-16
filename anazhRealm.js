@@ -14648,7 +14648,19 @@ class AnazhRealm {
                 p.position.y + dir[1] * segHalf,
                 p.position.z + dir[2] * segHalf,
             ];
-            bones.push({ a, b, r });
+            // WOLFFSCHES GESETZ / Round-Cone (Forschung): ein effizientes Glied ist KEINE
+            // uniforme Röhre — es ist proximal dick (hohes Biegemoment am Körper), distal dünn
+            // (r ∝ M^(1/3); Masse proximal minimiert die Glied-Trägheit). Schlanke Knochen
+            // (Bein/Schwanz) tapern: das höher-y-Ende = proximal (dick), das tiefere distal (dünn).
+            const segLen = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+            let ra = r,
+                rb = r;
+            if (segLen > r * 1.6) {
+                const taper = 0.6;
+                if (a[1] >= b[1]) rb = r * taper;
+                else ra = r * taper;
+            }
+            bones.push({ a, b, r, ra, rb });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -14677,16 +14689,33 @@ class AnazhRealm {
         // verschmilzt sie WEICH zu EINER Masse „wie aus Ton" — statt eines additiven Kugel-
         // BEUTELS (der die Klumpen + harten Schulter/Hüft-Nähte erzeugte). K = die Blend-Breite
         // (klein genug, dass das Feld ein gültiges SDF bleibt, sonst „floating island"-Artefakte).
-        const K = 0.045;
         const smin = (a, b, k) => {
             const h = Math.max(0, Math.min(1, 0.5 + (0.5 * (b - a)) / k));
             return b * (1 - h) + a * h - k * h * (1 - h);
         };
+        // getaperte Kapsel (interpolierter Radius entlang des Segments) — die Round-Cone-Form.
+        const sdTaper = (px, py, pz, bn) => {
+            const a = bn.a,
+                b = bn.b;
+            const abx = b[0] - a[0],
+                aby = b[1] - a[1],
+                abz = b[2] - a[2];
+            const ab2 = abx * abx + aby * aby + abz * abz;
+            let t = ab2 > 1e-9 ? ((px - a[0]) * abx + (py - a[1]) * aby + (pz - a[2]) * abz) / ab2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const dx = px - (a[0] + abx * t),
+                dy = py - (a[1] + aby * t),
+                dz = pz - (a[2] + abz * t);
+            return Math.hypot(dx, dy, dz) - (bn.ra + (bn.rb - bn.ra) * t);
+        };
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
-                const dc = distSeg(x, y, z, bn.a, bn.b) - bn.r; // Kapsel-SDF (<0 innen)
-                d = smin(d, dc, K);
+                // PRO-GELENK-k (Forschung: k ≈ 0.3× Radius, kompakter Träger) — KLEIN, sonst
+                // schmelzen die Glieder in den Körper (der Klumpen-Blob). Die Wurzeln sitzen IM
+                // Rumpf (interpenetrierend) → kleines k verbindet trotzdem, ohne zu verschmelzen.
+                const k = Math.max(0.01, Math.min(bn.ra, bn.rb) * 0.32);
+                d = smin(d, sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
         };
