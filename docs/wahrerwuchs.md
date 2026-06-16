@@ -603,6 +603,22 @@ Moos zum Mammutbaum, aus dem Samen in die Höhe getrieben, auf den Schultern der
 >   lean · phylloDiv · multiStem (Birken-Klumpen). Alle tag-neutral + kein Knicken
 >   (worst-Schlankheit 8.40 < 10.1, GEMESSEN über alle T6-Variationen).
 >
+> **FULLSTACK (Schöpfer-Nachfrage „bis zur Platzierung?", 16.06.) — DIE PLATZIERUNG REICHT BIS
+> ZUR FORM:** bei den BLÄTTERN reicht das Genom von der untersten Ebene (das Blatt) bis zur
+> Platzierung (Palme → warmes Feld). Bei den LANDMARKS war die Platzierung ein BLINDER Region-
+> Hash. GEHEILT: `_landmarkVariantIdx` wählt die Form nach der HANGNEIGUNG (`_slopeAt`) — steile
+> Hänge → aufragende Formen (Nadel/Stapel/Druse/tiefe Esse), flaches Land → gedrungene (Brocken/
+> Geröll/Cluster/flacher See); jede Variante trägt ihre `_formClass`. So reicht das Landmark-
+> Genom jetzt von der Form bis zur Platzierung, wie der Blatt-Typ zum Feld. GEMESSEN steepTall=1.0/
+> flatSquat=1.0. **DIE EHRLICHE VERTIKAL-BILANZ je System** (lowest → assembly → placement):
+> Bäume/Blätter ✅ voll · Landmarks (Fels/Kristall/Glut) ✅ voll (NEU) · Gerät/Rüstung/Trank/
+> Fahrzeug ✅ within-nature (intent-platziert: der Spieler IST die Platzierung; Micro-Mesh beim
+> Schwert/Werkzeug erreicht [`bladeProfile`/Kegel], Rüstung/Trank-Oberfläche fix). **NOCH NICHT
+> voll:** KREATUR (scatter-platziert, aber die FORM folgt NICHT dem Feld — nur die Größe per netId;
+> full-stack = Form/Accessoire nach Region/Feld) · BAUWERK (Assembly = scale+ornament fixer Teile,
+> NICHT from-scratch wie der Tempel; Micro-Teil-Geometrie fix). Das sind die zwei nächsten Voll-
+> Stack-Ziele.
+>
 > **WAS BEWUSST OFFEN BLEIBT (ehrlich, niedrig-prioritär / AUGEN-bound — kein Über-Claim):**
 > 1. **Der LOOK (Ω-OPSIS Wand 1)** — Mammutbaum/Palmen-Hain/Koloss/Trauerweide/Basalt-
 >    Strata/Lava-See/Oakeshott-Klinge im echten Schöpfer-Browser. Headless beweist
