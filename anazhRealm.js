@@ -15206,6 +15206,212 @@ class AnazhRealm {
         return mat;
     }
 
+    // wahrerguss System B (GUSS 2) — DAS RIG: das humanoide Skelett-Gesetz wird ein echtes
+    // THREE.Skeleton (Bone-Hierarchie hips→spine→chest→neck→head · chest→shoulder→ellbogen→
+    // handgelenk · hips→hüfte→knie→knöchel) UND die Metaball-Haut wird ein SkinnedMesh, dessen
+    // skinWeights aus der BONE-SEGMENT-NÄHE fallen (der Profi-Pfad, Recherche-Methode B/A: weiche
+    // Gelenk-Übergänge gratis, weil das smin-Feld dort schon glatt blendet). So lebt die EINE
+    // glatte Gestalt + bewegt sich. Auf WebGPU mit NodeMaterial automatisch geskinnt (kein
+    // SkeletonUtils.clone — WebGPU-Crash #32236; kein positionNode-Override — umginge die
+    // Skinning-Injektion). Liefert { mesh, skeleton, bones, rig, kh } oder null.
+    _buildHumanoidRig(g) {
+        if (typeof THREE === "undefined" || typeof THREE.SkinnedMesh !== "function") return null;
+        g = g || {};
+        const kh = g.kh || 1;
+        const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
+        const parts = AnazhRealm._humanoidSkeleton(g);
+        const geom = this._buildCreatureSkinGeometry(parts);
+        if (!geom) return null;
+        // ── Bone-Spezifikation (Welt = Mesh-Lokal in Bind-Pose, in KH·kh): [name, parent,
+        //    Gelenk-Pos, Segment-Ende (für die Skinning-Distanz, deckt das Glied ab)] ──
+        const spec = [
+            ["hips", null, [0, 4.15, 0], [0, 4.55, 0]],
+            ["spine", "hips", [0, 5.05, 0], [0, 5.55, 0]],
+            ["chest", "spine", [0, 6.0, 0], [0, 6.55, 0]],
+            ["neck", "chest", [0, 6.62, 0], [0, 7.0, 0]],
+            ["head", "neck", [0, 7.2, 0], [0, 7.95, 0]],
+        ];
+        for (const s of [1, -1]) {
+            const f = s > 0 ? "L" : "R";
+            spec.push(
+                ["shoulder" + f, "chest", [s * 0.92, 6.5, 0], [s * 1.5, 5.05, 0]],
+                ["elbow" + f, "shoulder" + f, [s * 1.5, 5.05, 0], [s * 1.64, 3.9, 0]],
+                ["wrist" + f, "elbow" + f, [s * 1.64, 3.9, 0], [s * 1.66, 3.55, 0.06]],
+                ["hip" + f, "hips", [s * 0.42, 4.15, 0], [s * 0.5, 2.3, 0]],
+                ["knee" + f, "hip" + f, [s * 0.5, 2.3, 0], [s * 0.46, 0.42, 0]],
+                ["ankle" + f, "knee" + f, [s * 0.46, 0.42, 0], [s * 0.46, 0.2, 0.85]]
+            );
+        }
+        const sc = (p) => [p[0] * kh, p[1] * kh, p[2] * kh];
+        const bones = [];
+        const byName = {};
+        const segs = [];
+        for (const [name, parent, jp, se] of spec) {
+            const b = new THREE.Bone();
+            b.name = name;
+            const wp = sc(jp);
+            b._worldPos = wp;
+            byName[name] = b;
+            if (parent && byName[parent]) {
+                const pw = byName[parent]._worldPos;
+                b.position.set(wp[0] - pw[0], wp[1] - pw[1], wp[2] - pw[2]);
+                byName[parent].add(b);
+            } else {
+                b.position.set(wp[0], wp[1], wp[2]);
+            }
+            bones.push(b);
+            segs.push({ a: wp, b: sc(se) });
+        }
+        // ── SKINNING — pro Vertex die 2 nächsten Bone-Segmente, invers-quadratisch gewichtet
+        //    (weiche Gelenk-Mischung; smin hat das Feld dort schon glatt geblendet) ──
+        const pos = geom.attributes.position;
+        const VN = pos.count;
+        const skinIndex = new Uint16Array(VN * 4);
+        const skinWeight = new Float32Array(VN * 4);
+        const dSeg2 = (px, py, pz, s) => {
+            const ax = s.a[0],
+                ay = s.a[1],
+                az = s.a[2];
+            const abx = s.b[0] - ax,
+                aby = s.b[1] - ay,
+                abz = s.b[2] - az;
+            const ab2 = abx * abx + aby * aby + abz * abz || 1e-6;
+            let t = ((px - ax) * abx + (py - ay) * aby + (pz - az) * abz) / ab2;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const dx = px - (ax + abx * t),
+                dy = py - (ay + aby * t),
+                dz = pz - (az + abz * t);
+            return dx * dx + dy * dy + dz * dz;
+        };
+        for (let i = 0; i < VN; i++) {
+            const px = pos.getX(i),
+                py = pos.getY(i),
+                pz = pos.getZ(i);
+            // die 4 NÄCHSTEN Bone-Segmente (top-4 → weiche Gelenk-Mischung, kein Schulter-Riss)
+            const bd = [-1, -1, -1, -1],
+                bv = [1e18, 1e18, 1e18, 1e18];
+            for (let b = 0; b < segs.length; b++) {
+                const d = dSeg2(px, py, pz, segs[b]);
+                if (d < bv[3]) {
+                    let p = 3;
+                    while (p > 0 && d < bv[p - 1]) {
+                        bv[p] = bv[p - 1];
+                        bd[p] = bd[p - 1];
+                        p--;
+                    }
+                    bv[p] = d;
+                    bd[p] = b;
+                }
+            }
+            let sum = 0;
+            const w = [0, 0, 0, 0];
+            for (let k = 0; k < 4; k++)
+                if (bd[k] >= 0) {
+                    w[k] = 1 / (bv[k] + 1e-4); // invers-quadratisch (bv ist schon d²) → glatte Mischung
+                    sum += w[k];
+                }
+            for (let k = 0; k < 4; k++) {
+                skinIndex[i * 4 + k] = bd[k] >= 0 ? bd[k] : 0;
+                skinWeight[i * 4 + k] = sum > 0 ? w[k] / sum : k === 0 ? 1 : 0;
+            }
+        }
+        geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
+        geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
+        const mat = this._buildCreatureHideMaterial(skinCol, { tags: g.tags || null });
+        const mesh = new THREE.SkinnedMesh(geom, mat);
+        mesh.castShadow = true;
+        mesh.userData._creatureSkin = true;
+        mesh.add(bones[0]); // root (hips) als Kind der Mesh — Pflicht
+        mesh.updateMatrixWorld(true); // Bone-Welt-Matrizen VOR Skeleton/bind berechnen
+        const skeleton = new THREE.Skeleton(bones);
+        mesh.bind(skeleton);
+        const rig = {
+            hips: byName.hips,
+            spine: byName.spine,
+            chest: byName.chest,
+            neck: byName.neck,
+            head: byName.head,
+            armL: { shoulder: byName.shoulderL, elbow: byName.elbowL, wrist: byName.wristL },
+            armR: { shoulder: byName.shoulderR, elbow: byName.elbowR, wrist: byName.wristR },
+            legL: { hip: byName.hipL, knee: byName.kneeL, ankle: byName.ankleL },
+            legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
+        };
+        return { mesh, skeleton, bones, rig, kh };
+    }
+
+    // wahrerguss System B (GUSS 2) — die LEBENDIGE POSE: rotiert die Rig-Bones (absolute Werte
+    // pro Frame, kein Drift). Ruhe = KONTRAPOST (S-Kurve: Lehne über die Wirbelsäule, Spielbein
+    // gebeugt — die Beine bleiben am Boden, weil der Lean in spine/chest sitzt, nicht im Hüft-
+    // Root); Gehen = der 4-Posen-Walk-Cycle (Bein ±28°, Knie nur beugen, Arme gegenphasig,
+    // CoM-Bob doppelte Frequenz); Schwimmen = Vorlehnen + Kraul/Flattern.
+    _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater) {
+        if (!rig) return;
+        const r = rig;
+        const z = (b, v) => {
+            if (b) b.rotation.z = v;
+        };
+        const x = (b, v) => {
+            if (b) b.rotation.x = v;
+        };
+        const y = (b, v) => {
+            if (b) b.rotation.y = v;
+        };
+        // alles zuerst auf neutral (absolut → kein Drift zwischen Posen)
+        for (const b of [r.hips, r.spine, r.chest, r.neck, r.head]) if (b) b.rotation.set(0, 0, 0);
+        for (const side of [r.armL, r.armR, r.legL, r.legR])
+            for (const k in side) if (side[k]) side[k].rotation.set(0, 0, 0);
+        if (underwater) {
+            // Schwimm-Pose: Körper waagerecht-vor (über die Wirbelsäule), Arme kraulen, Beine flattern
+            x(r.spine, 0.5);
+            x(r.chest, 0.3);
+            x(r.head, -0.5);
+            const aA = isMoving ? 1.3 : 0.6;
+            x(r.armL.shoulder, Math.sin(walkPhase) * aA - 0.3);
+            x(r.armR.shoulder, Math.sin(walkPhase + Math.PI) * aA - 0.3);
+            z(r.armL.shoulder, 0.5);
+            z(r.armR.shoulder, -0.5);
+            const kA = isMoving ? 0.4 : 0.16;
+            x(r.legL.hip, Math.sin(walkPhase * 1.6) * kA);
+            x(r.legR.hip, Math.sin(walkPhase * 1.6 + Math.PI) * kA);
+            return;
+        }
+        if (isMoving) {
+            const sw = Math.sin(walkPhase);
+            // Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag +0.4)
+            x(r.legL.hip, 0.5 * sw);
+            x(r.legR.hip, 0.5 * Math.sin(walkPhase + Math.PI));
+            x(r.legL.knee, -0.75 * Math.max(0, Math.sin(walkPhase + 0.4)));
+            x(r.legR.knee, -0.75 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)));
+            // Arme gegen die Beine (Arm L mit Bein R)
+            x(r.armL.shoulder, -0.4 * sw);
+            x(r.armR.shoulder, 0.4 * sw);
+            x(r.armL.elbow, -0.3 - 0.2 * Math.max(0, -sw));
+            x(r.armR.elbow, -0.3 - 0.2 * Math.max(0, sw));
+            // Becken-Roll/Yaw + Brust-Gegendreh
+            z(r.hips, 0.05 * sw);
+            y(r.hips, 0.07 * sw);
+            y(r.chest, -0.06 * sw);
+            // CoM-Bob (doppelte Frequenz)
+            r.hips.position.y = (r._baseHipY || (r._baseHipY = r.hips.position.y)) + Math.abs(Math.cos(walkPhase)) * 0.06 * (r.kh || 1);
+            return;
+        }
+        // RUHE — Kontrapost (Standbein rechts/R): Hüfte kippt, Wirbelsäule lehnt gegen, Kopf zurück.
+        const breath = Math.sin(t * 1.6) * 0.02;
+        z(r.spine, 0.1); // Oberkörper lehnt zur Standbein-Seite
+        z(r.chest, -0.06); // Brust-Gegenkipp
+        z(r.neck, 0.05); // Kopf wieder aufrecht (krönt die S-Kurve)
+        x(r.spine, -0.02 + breath); // sanfter Atem
+        // Spielbein (L) leicht gebeugt + vorgestellt, Standbein (R) gestreckt
+        x(r.legL.hip, 0.08);
+        x(r.legL.knee, -0.16);
+        x(r.legR.knee, -0.02);
+        // Arme entspannt aus der A-Pose (leichte Asymmetrie → lebendig, nicht steif)
+        x(r.armL.elbow, -0.2);
+        x(r.armR.elbow, -0.12);
+        z(r.armL.shoulder, 0.04);
+        z(r.armR.shoulder, -0.04);
+    }
+
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.

@@ -149,6 +149,27 @@ async function renderWerk(page, bpName, view) {
                         }
                     });
                 }
+            } else if (bpName.indexOf("humanoidrig:") === 0) {
+                // GUSS 2 — das RIG (SkinnedMesh + Bones): `humanoidrig:pose:sex` (bind/rest/walk).
+                const hk = bpName.split(":");
+                const pose = hk[1] || "rest";
+                const sex = parseFloat(hk[2]) || 0;
+                grp = new THREE.Group();
+                try {
+                    const rig = r._buildHumanoidRig({ sex, skinColor: 0xc98a63 });
+                    if (rig && rig.mesh) {
+                        grp.add(rig.mesh);
+                        if (pose === "rest") r._animateHumanoidRig(rig.rig, 0, 0, false, false);
+                        else if (pose === "walk") r._animateHumanoidRig(rig.rig, 0, Math.PI * 0.32, true, false);
+                        else if (pose === "walk2") r._animateHumanoidRig(rig.rig, 0, Math.PI * 1.15, true, false);
+                        rig.mesh.updateMatrixWorld(true);
+                        window.__treeInfo = "humanoidrig " + pose + " bones=" + rig.bones.length;
+                    } else {
+                        window.__treeInfo = "NO-RIG";
+                    }
+                } catch (_e) {
+                    window.__treeInfo = "ERR:" + _e.message;
+                }
             } else if (bpName.indexOf("humanoid:") === 0) {
                 // GUSS 1 — das HUMANOIDE Skelett-Gesetz isoliert: Skelett → Metaball-Haut →
                 // Hide-Material. `humanoid:sex` (0 mask., 1 weibl.). __skel zeigt die rohen Teile.
@@ -344,6 +365,10 @@ async function renderWerk(page, bpName, view) {
             ["humanoid:0", "werk-humanoid-front.png", "front"], // GUSS 1: anatomisches Skelett → Metaball-Haut
             ["humanoid:0", "werk-humanoid-seite.png", "side"], // Profil (A-Pose, V-Taper)
             ["humanoid:1", "werk-humanoid-frau.png", "front"], // Sanduhr (sex=1)
+            ["humanoidrig:bind:0", "werk-rig-bind.png", "front"], // GUSS 2: SkinnedMesh Bind-Pose
+            ["humanoidrig:rest:0", "werk-rig-rest.png", "front"], // Kontrapost-Ruhepose (S-Kurve)
+            ["humanoidrig:rest:0", "werk-rig-rest-seite.png", "side"], // Kontrapost Profil
+            ["humanoidrig:walk:0", "werk-rig-walk.png", "side"], // Walk-Pose (Profil zeigt den Schritt)
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)
