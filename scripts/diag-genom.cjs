@@ -577,10 +577,7 @@ function startSaveServer() {
             o.palmUV = uvColOf("baum_palme");
             o.broadUV = uvColOf("baum_eiche");
             o.uvRoutesByKind =
-                !!(o.palmUV && o.broadUV) &&
-                o.palmUV[0] >= 0.49 &&
-                o.palmUV[1] <= 0.76 &&
-                o.broadUV[1] <= 0.26;
+                !!(o.palmUV && o.broadUV) && o.palmUV[0] >= 0.49 && o.palmUV[1] <= 0.76 && o.broadUV[1] <= 0.26;
 
             // ══ T3 (wahrerwuchs §4.2-§4.4) — KRISTALL-FACETTEN+GLANZ · GLUT-ÖFFNUNG+INTENSITÄT · FELS-SEDIMENT/MOOS ══
             // (a) KRISTALL: die Facetten-/Spitzen-Zahl variiert + jedes Teil trägt emissiveBoost.
@@ -678,7 +675,12 @@ function startSaveServer() {
             }
             if (typeof r._vehicleVariant === "function") {
                 const wagenBase = [
-                    { shape: "box", material: "holz", position: { x: 0, y: 0.85, z: 0 }, size: { x: 1.3, y: 0.35, z: 2.1 } },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 0.85, z: 0 },
+                        size: { x: 1.3, y: 0.35, z: 2.1 },
+                    },
                     ...[
                         [-0.72, 0.8],
                         [0.72, 0.8],
@@ -709,7 +711,10 @@ function startSaveServer() {
                     let trackMax = 0,
                         comY = 0;
                     for (const p of v) {
-                        trackMax = Math.max(trackMax, Math.abs((p.position && p.position.x) || 0) + ((p.size && p.size.x) || 0) / 2);
+                        trackMax = Math.max(
+                            trackMax,
+                            Math.abs((p.position && p.position.x) || 0) + ((p.size && p.size.x) || 0) / 2
+                        );
                         comY += (p.position && p.position.y) || 0;
                     }
                     comY /= v.length;

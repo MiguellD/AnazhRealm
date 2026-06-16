@@ -491,13 +491,14 @@ Die Blatt-Card wird blatt-FÖRMIG: eine getaperte, gefaltete, leicht gekrümmte
 **BEWEIS Ω-O14:** ein Blatt liest als Blatt — getapert, gefaltet, geclustert —
 nicht als Quadrat. Verschiedene Arten distinkt (Nadel vs. Breitblatt).
 
-> **WUCHS-LINKAGE (V18.255):** der Wuchs-Bogen baute die Baum-FORM-Vielfalt
-> (sizeClass/age/foliageVar, `_growTreeBlueprintRich`) + die LAAS-Atlas-Methode
-> (`_ensureFoliageClusterAtlas`, V18.247) — aber die Blatt-TYPEN (Palme/Schuppe je
-> eigener Atlas-Bake) sind die **Wuchs-T1-Welle** (`wahrerwuchs.md §9.1`), und IHR
-> Look-Kern ist genau dieses Ω-O14. Wer T1 baut, baut Ω-O14 mit: ein neuer Atlas-
-> Bake pro Blatt-Typ, distinkt Nadel≠Breitblatt≠Palme. Das ist der größte sichtbare
-> Sprung des Wuchs-Bogens.
+> **WUCHS-LINKAGE — Ω-O14 ✅ ABGEARBEITET (Wuchs-T1, 16.06.2026):** der Foliage-Atlas
+> backt jetzt **4 KIND-Spalten** (Breitblatt · Nadel · Palme · Schuppe) × 2 Varianten in
+> EINER Textur (`_ensureFoliageClusterAtlas`); die Karten-UVs in `_buildTreeFoliageCardGeometry`
+> routen je `foliage.kind` in die richtige Spalte (kein per-Kind-Material — beide Material-
+> Builder unberührt). Nadel = dünne Striche, Palme = lange fiedrige Wedel, Schuppe = dichte
+> Sprays, Breitblatt = ovale Cluster — DISTINKT (GEMESSEN: die Silhouette-Deckung pro Spalte
+> unterscheidet sich, UV palm→Spalte 2 / Breitblatt→Spalte 0). Neue Arten `baum_palme` +
+> `baum_zypresse`. **Der finale LOOK** (liest eine Palme als Palme im Browser?) bleibt Wand 1.
 
 ### Ω-O15 — Fels-Mikrostruktur-Grammatik (Primitiv → lawful Fels)
 
@@ -524,10 +525,13 @@ Klippen sind angekleidet, nicht flache Wände.
 > verschobenes Polyeder aus härte+Noise) ist SCHON gebaut (V18.227). Der Wuchs-Bogen
 > setzte die Fels-FORM-Vielfalt DARAUF (`_rockVariant` S3: Brocken/Stapel/Nadel/Geröll,
 > tag-frozen zu `stein_block`, 12-Pool) — die Oberfläche (Ω-O15) × die Form-Grammatik
-> (Wuchs S3) sind die zwei Schichten DESSELBEN Fels. **OFFEN bleibt der Wuchs-Sekundär-
-> Faden** (T3, `wahrerwuchs.md §9.1`): die Sediment-SCHICHTUNG (Y-Bänder aus
-> `_terrainGeologyAlbedo`) + die Flechten/MOOS-Deckung im feuchten Feld — beide
-> Oberflächen-nah, also Ω-OPSIS-Arbeit, die den Wuchs-S3-Look vollendet.
+> (Wuchs S3) sind die zwei Schichten DESSELBEN Fels. **Ω-O15-T3 ✅ ABGEARBEITET (16.06.2026,
+> FORM-Ebene):** `_rockVariant` trägt jetzt die SEDIMENT-Schichtung (per-Block-Farb-Bänder aus
+> der Welt-Höhe, das `_terrainGeologyAlbedo`-Strata-Muster) + die FLECHTEN/MOOS-Deckung (grüner
+> Anflug am Fuß bei `mossy`) — tag-NEUTRAL (Farbe ≠ Material/Tag, die Fels-Tags bleiben ==
+> `stein_block`). GEMESSEN `diag-genom`: 45 distinkte Strata-Farben + Moos grün-dominant. **Die
+> tiefere SHADER-Strata** (kontinuierliche Y-Band-Maserung im noiserock-Material statt per-Block-
+> Farbe) bleibt die AUGEN-bound Politur — die FORM-Schicht trägt den Sediment-Look schon.
 
 ### Ω-O16 — Ast- + Laub-Fidelitäts-Tuning (Grammatik gegen LAAS kalibrieren)
 
@@ -547,6 +551,14 @@ Die SPECIES\_GRAMMAR-Werte gegen die LAAS-Referenz-Bäume (phase-4/hero-beech,
 **BEWEIS Ω-O16:** ein Baum liest voll + organisch wie ein LAAS-Referenz-Baum
 (hero-beech/spruce), nicht dünn/spitz. Die Krone ist dicht, die Äste
 gestaffelt, die Verjüngung natürlich.
+
+> **WUCHS-LINKAGE — Ω-O16 (Wuchs-T6, 16.06.2026):** die FORM-seitige Ast-Vielfalt steht jetzt
+> reicher — `crownForm` (weeping/vase/schirm über die Spezies-Default), `lean` (Stamm-Neigung),
+> `phylloDiv` (Blattstellung golden±Varianz), `multiStem` (Birken-Klumpen). Das gibt der
+> Silhouette echte Vielfalt (eine Trauerweide hängt, eine Schirm-Pinie krönt oben, ein Klumpen
+> spreizt). **Das finale Fidelitäts-TUNING gegen die LAAS-Referenz-Fotos (dünn→voll, die Karten-
+> Dichte/Gabelung)** bleibt die laufende AUGEN-bound Politur — die FORM trägt die Vielfalt, das
+> Auge kalibriert den letzten Look.
 
 ### DIE GEOMETRIE-ACHSE — EHRLICH EINGEORDNET
 

@@ -378,6 +378,51 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.256 — DER WAHRE WUCHS: DIE VOLLE TIEFE T1–T6 (in EINEM Schub, FORM × PHYSIK × ANBLICK-headless)
+
+Der V18.255-Selbst-Audit (`wahrerwuchs.md §9`) fand: das Genom-GERÜST steht (Headline-Achse je
+Genre), aber die REICHEN §4-Sekundär-Achsen fehlen. Der VOLLENDUNGS-AUFTRAG (⚑) verlangte die
+volle Tiefe T1–T6 in EINEM Schub, je die PLAN-ZAHL bewiesen (nicht Existenz), kein Slicing. GEBAUT
++ GEMESSEN (`scripts/diag-genom.cjs` alle Bänder grün + voller Playtest grün):
+
+- **T1 — Blatt-TYPEN + Brettwurzel (Ω-O14):** `baum_palme` (palm) + `baum_zypresse` (scale) in
+  SPECIES_GRAMMAR; `_ensureFoliageClusterAtlas` backt 4 KIND-Spalten (Breitblatt/Nadel/Palme/
+  Schuppe) × 2 Varianten in EINER Textur; `_buildTreeFoliageCardGeometry` routet die Karten-UVs
+  je `foliage.kind` in die Spalte (kein per-Kind-Material). Brettwurzeln am Giganten (5–7 holz-
+  Zylinder, tag-frozen). Scatter-gated (`_scatterSpeciesForCell`, selten). diag: 4 Typen · Atlas-
+  Spalten distinkt · Gigant 5–7 / Normal 0 · UV palm→Spalte 2.
+- **T2 — Bauwerk-Genom PARAMETRISCH:** `_stationVariant` über scale+tint — NON-UNIFORM Proportion
+  (eigene x/y/z, physik-garant: jede STEHT Ω-Φ2) + DETAIL-Dichte (0–3 Ornament-Studs, geklont aus
+  einem Teil → tag-frozen-by-construction). diag: prop+detail variieren, stands, Tags frozen.
+- **T3 — Geologie/Mineralogie-Glanz:** per-Part `emissiveBoost`-Kanal (`_buildFromBlueprint` →
+  `_buildPbrNodeMaterial`, skaliert den tag-getragenen Glimmen, tag-neutral). Kristall Facetten-
+  Achse + glow; Glut Öffnungs-Achse + Intensität; Fels Sediment-Strata (Höhen-Farb-Bänder) +
+  Moos/Flechten am Fuß. diag: facets [1–6] · glow [0.196→0.477] · 130 Öffnungen · 45 Sediment-Farben.
+- **T4 — Rüstung/Trank-Genome + Fahrzeug-SSF:** `_armorVariant` (Platten/Artikulation/eisen-bronze,
+  role armor) · `_potionVariant` (Phiole-Form + Glasur aus der Wirkung, role consumable) ·
+  `_vehicleVariant` (Ω-Φ4 SSF: Spur·Kabine·RAD-GRÖSSE variieren — das Gefährt RE-VERANKERT sich an
+  `_compoundBottomY`, kein gefrorenes Rad). Die alten fixen Parts-Listen geschnitten.
+- **T5 — Kreatur-ALLOMETRIE (Ω-B5 Galileo):** `_applyCreatureAllometry` verdickt die Glieder
+  ÜBERPROPORTIONAL (Querschnitt ∝ L^1.5, Länge isometrisch) → der Koloss STOCKIG statt vergrößerter
+  Zwerg. diag: Glied-Schlankheit gigant 2.53 < iso 4.0 < klein 4.78. Symmetrie-treu, Rumpf uniform.
+- **T6 — Kronen-Formen/Lean/Phyllotaxis/Mehrstämmig:** crownForm (weeping/vase/schirm) · lean ·
+  phylloDiv · multiStem (Birken-Klumpen). Tag-neutral + kein Knicken (worst-Schlankheit 8.40 < 10.1).
+
+**ZWEI SCHÖPFER-KORREKTUREN dieser Session (verbindlich gelernt):** (1) M3-REGRESSION — der erste
+`_vehicleVariant` skalierte die Rad-GRÖSSE → die Boden-Kontakt-Höhe verschob sich → der Reiter
+versank (`_groundClear` ≈ -0.03 brach). FIX: das Gefährt re-verankert sich an `_compoundBottomY`
+(schon im Code abgeleitet), der M3-Test prüft die ABLEITUNG statt der Magie-Zahl. (2) „GEWICHEN STATT
+GENIAL" — die erste Heilung war, das Rad EINZUFRIEREN (Ausweichung). Der Schöpfer rügte das zu Recht;
+die GENIALE Wurzel-Lösung lässt die Räder variieren UND re-verankert das Gefährt (ein großes Rad hebt
+es ehrlich höher = kippiger, Ω-Φ4). LEHRE: bei einem Test-Bruch durch ein neues Genom NICHT die Achse
+einfrieren — die Wurzel lösen (Geometrie-abgeleitete Verankerung) + den Test auf die ABLEITUNG stellen.
+
+**OFFEN (ehrlich, kein Über-Claim):** der LOOK (Wand 1, Schöpfer-Browser — headless beweist FORM+
+PHYSIK+Atlas, NICHT den Anblick) + drei niedrig-prioritäre Fäden: S0 (`r01`→`roller.seq`, Welt-Re-
+Roll → eigene Welle), S2 (12 tote DEF-Blöcke + 2 Test-Fixtures), Ω-B4 LOD-Swap je Scatter-Variante
+(low-poly, marginal). Plan + Bilanz: `docs/wahrerwuchs.md §9` (✅-Block am Kopf).
+
+
 > **⚠ WAHRHEITS-KORREKTUR (15.06.2026, nach der Schöpfer-Abrechnung):** die
 > Einträge V18.226–V18.232 unten behaupten „der Ω-OPSIS-Arc IST ABGESCHLOSSEN /
 > alle sechs Säulen gegossen + verifiziert". **Das ist FALSCH.** Es war headless-

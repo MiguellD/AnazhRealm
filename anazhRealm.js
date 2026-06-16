@@ -45194,7 +45194,10 @@ class AnazhRealm {
         const leanZ = Math.sin(leanDir) * leanMag;
         const phylloDiv = isTreeSpecies ? genome.range("phyllo", 2.18, 2.62) : 2.39996323; // golden ± Varianz
         const multiStem =
-            isTreeSpecies && sizeClass !== "gigant" && grammar.foliage.kind !== "none" && genome.chance("multiStem", 0.22)
+            isTreeSpecies &&
+            sizeClass !== "gigant" &&
+            grammar.foliage.kind !== "none" &&
+            genome.chance("multiStem", 0.22)
                 ? genome.int("stems", 1, 2)
                 : 0;
         const parts = [];
@@ -47074,8 +47077,7 @@ class AnazhRealm {
         const before = lowBottom(parts);
         const out = parts.map((p) => {
             const np = { ...p };
-            if (p.size)
-                np.size = { x: (p.size.x || 0.3) * sx, y: (p.size.y || 0.3) * sy, z: (p.size.z || 0.3) * sz };
+            if (p.size) np.size = { x: (p.size.x || 0.3) * sx, y: (p.size.y || 0.3) * sy, z: (p.size.z || 0.3) * sz };
             if (p.position)
                 np.position = {
                     x: (p.position.x || 0) * sx,
@@ -47200,7 +47202,12 @@ class AnazhRealm {
         const cY = 1.05;
         const spread = chestW * 0.55 + pauld * 0.35;
         // Brustplatte
-        parts.push({ shape: "box", material: plateMat, position: { x: 0, y: cY, z: 0 }, size: { x: chestW, y: chestH, z: 0.45 } });
+        parts.push({
+            shape: "box",
+            material: plateMat,
+            position: { x: 0, y: cY, z: 0 },
+            size: { x: chestW, y: chestH, z: 0.45 },
+        });
         // Pauldrons (Artikulation) — Spiegel-Paar
         for (const sgn of [-1, 1])
             parts.push({
@@ -47241,7 +47248,13 @@ class AnazhRealm {
         const glaze = g.pick("glaze", [0x4e9a3c, 0x3c8ad8, 0xd84e6e, 0xd8b43c, 0x9a4ed8]);
         const bodyY = bodyH * 0.75;
         // Flasche (leder) + Flüssigkeit (kraut, durch die Glasur gefärbt) + Hals/Korken (holz).
-        parts.push({ shape: "sphere", material: "leder", opacity: 0.92, position: { x: 0, y: bodyY, z: 0 }, size: { x: bodyW, y: bodyH, z: bodyW } });
+        parts.push({
+            shape: "sphere",
+            material: "leder",
+            opacity: 0.92,
+            position: { x: 0, y: bodyY, z: 0 },
+            size: { x: bodyW, y: bodyH, z: bodyW },
+        });
         parts.push({
             shape: "sphere",
             material: "kraut",
@@ -47286,8 +47299,14 @@ class AnazhRealm {
             if (p.position)
                 np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
             if (p.size) {
-                if (isWheel) np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR }; // Radius wächst, Lauffläche bleibt
-                else np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
+                if (isWheel)
+                    np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR }; // Radius wächst, Lauffläche bleibt
+                else
+                    np.size = {
+                        x: (p.size.x || 0.3) * cabinScale,
+                        y: p.size.y || 0.3,
+                        z: (p.size.z || 0.3) * cabinScale,
+                    };
             }
             return np;
         });
@@ -53118,7 +53137,7 @@ class AnazhRealm {
                 for (const sgn of [-1, 1]) {
                     ctx.save();
                     ctx.translate(rx, ry);
-                    ctx.rotate(sgn * spread + (curve * 0.4));
+                    ctx.rotate(sgn * spread + curve * 0.4);
                     ctx.strokeStyle = `rgb(${Math.round(90 * lum)},${Math.round(150 * lum)},${Math.round(70 * lum)})`;
                     ctx.lineWidth = Math.max(1, ll * 0.12);
                     ctx.lineCap = "round";
@@ -53235,7 +53254,6 @@ class AnazhRealm {
         const grammar = skeleton.grammar;
         const fo = grammar && grammar.foliage;
         if (!fo) return null;
-        const isNeedle = fo.kind === "needleSpray";
         // T1 (wahrerwuchs §4.1 + Ω-O14) — die KIND-Spalte im 4×2-Atlas + die je-Kind-
         // Karten-Proportion: Breitblatt(0) breit-gedrungen, Nadel(1) lang-schmal, Palme(2)
         // große lange Wedel-Karten, Schuppe(3) feine dichte Sprays. Das Material sampelt
@@ -70115,7 +70133,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.255.0";
+AnazhRealm.VERSION = "18.256.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

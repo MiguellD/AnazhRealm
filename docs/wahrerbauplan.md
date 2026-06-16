@@ -47,17 +47,16 @@
 > **TYMPANON** (`gableTriangle` schließt den Giebel) + der **DACH-FIX V18.243** (das Vorzeichen
 > `−sgn·pitch` — der Schöpfer-Augen-Befund „das Dach ist verkehrt": die headless-Tests sahen
 > nur „2 geneigte Flächen", true auch invertiert → der LOOK ist der letzte Richter, Wand 1).
-> Der finale LOOK (Fluting-Tiefe, Triglyphen-Stege, Klingen-Hohlkehle) AUGEN-bound. **NÄCHSTE:**
-> Ω-B5 Allometrie — der Skalierungs-HAKEN existiert jetzt (V18.255 `_creatureBodySize` →
-> `group.scale.setScalar`, der Wuchs-Bogen S7), ABER **ISOMETRISCH** (uniform-skaliert = exakt
-> die „starre Skalierung", die Ω-B5 als FALLE benennt) → der Koloss ist ein 2.7× vergrößerter
-> Zwerg, KEIN biomechanischer Riese mit überproportional dicken Gliedern. **Ω-B5 bleibt OFFEN**
-> (= die Wuchs-T5-Welle, `wahrerwuchs.md §9.1`); Voraussetzung ist ein glied-bewusstes Template.
-> Das Physik-URTEIL über Körper ist SCHON da (Ω-W3 zählt `soul` zu den stehenden Rollen → ein
-> zu-schlank-beiniger Avatar liest „wackelig/knickt"). **Ω-PHYSIS ist der SUBSTANZ nach
-> VOLLENDET** (Säule I–IV, die Grammatik generativ); die offenen Reste (Ω-B5 Allometrie, Ω-B4
-> LOD je Variante) wandern in den Wuchs-Bogen, wo Form × Physik × Anblick je Genre zusammen-
-> kommen.
+> Der finale LOOK (Fluting-Tiefe, Triglyphen-Stege, Klingen-Hohlkehle) AUGEN-bound. **Ω-B5
+> Allometrie ✅ ABGEARBEITET (Wuchs-T5, 16.06.2026):** `_applyCreatureAllometry` verdickt die
+> GLIEDER ÜBERPROPORTIONAL (Querschnitt ∝ L^1.5 = √L extra auf die kurzen Achsen, die Länge
+> bleibt L isometrisch) → der Koloss ist STOCKIG, KEIN vergrößerter Zwerg mehr (die „starre
+> Skalierung"-Falle GEHEILT). GEMESSEN `diag-genom`: Glied-Schlankheit gigant 2.53 < iso 4.0 <
+> klein 4.78 (das Quadrat-Kubik-Gesetz, der Riese trägt sich). Symmetrie-treu (das locked
+> Template bleibt unverbogen, V18.209), Rumpf/Kopf uniform. **Ω-B4 LOD-Swap je Scatter-Variante
+> bleibt OFFEN** (die Varianten-POOLS stehen [fels/kristall/glut/station], der per-Variante-LOD
+> ohne Pop nicht — die Varianten sind low-poly, marginaler Perf-Gewinn). **Ω-PHYSIS ist der
+> SUBSTANZ nach VOLLENDET** (Säule I–IV); der LOOK aller Genres bleibt Wand 1 (Schöpfer-Auge).
 >
 > **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (das SEIN) und `wahreranblick.md`
 > (Ω-OPSIS, der ANBLICK) sind dasselbe Gesetz — _jede Eigenschaft ist ein
@@ -815,19 +814,18 @@ Physik: Ω-Φ2 prüft, ob die Kreatur steht (CoM über Fuß-Stützpolygon);
 **STAND (V18.255, der Wuchs-Bogen S7):** der per-Kreatur-Größen-HAKEN ist gebaut
 (`_creatureBodySize(netId)` würfelt klein→GIGANT in Bändern, deterministisch aus der
 netId, im Snapshot persistiert, stat-gekoppelt robust+träge), ABER er skaliert das
-locked Template **UNIFORM** (`group.scale.setScalar` + Hitbox) = **ISOMETRISCH** —
-genau die „starre Skalierung", die der BEWEIS unten als FALLE benennt. Der Koloss
-ist ein 2.7× vergrößerter Zwerg, KEINE überproportional dicken Glieder. Die uniform-
-Skala ist margin-/schlankheits-INVARIANT (er STEHT, Ω-Φ2), aber NICHT allometrisch.
-**Ω-B5 bleibt damit OFFEN** (= die Wuchs-T5-Welle, `wahrerwuchs.md §9.1`); die
-Voraussetzung ist ein glied-bewusstes Template (heute sind die Kreatur-Templates
-abstrakt, ohne einzeln trag-fähige Glieder, an denen die Quadrat-Kubik-Verdickung
-ansetzen könnte).
+locked Template UNIFORM (`group.scale.setScalar`); DARAUF legt **T5 (16.06.2026,
+`_applyCreatureAllometry`)** die ALLOMETRIE: jedes GLIED (schlankes Stütz-Teil, längste
+Achse ≥ 1.7× kürzeste) bekommt einen ZUSÄTZLICHEN Querschnitt-Faktor √L auf seine zwei
+kurzen Achsen → Welt-Querschnitt = L·√L = **L^1.5** (Quadrat-Kubik), die Glied-Länge bleibt
+L. Der Koloss ist STOCKIG, kein vergrößerter Zwerg. Rumpf/Kopf (gedrungen) bleiben uniform;
+beide Glieder eines Paares gleich → SYMMETRIE-treu (das locked Template unverbogen, V18.209).
 
-**BEWEIS Ω-B5:** eine groß skalierte Kreatur bekommt dickere Glieder (sonst
-meldet Ω-Φ3-b Versagen); eine mit zu eng stehenden Beinen liest als instabil
-(Ω-Φ2). Die Kreatur steht und bewegt sich biomechanisch plausibel, nicht als
-starre Skalierung. _(STEHT ✅ uniform-invariant; die ALLOMETRIE ⚠ OFFEN → T5.)_
+**BEWEIS Ω-B5 ✅ ERFÜLLT (GEMESSEN `diag-genom`):** die Glied-Schlankheit (Länge/Querschnitt)
+SINKT mit der Größe — gigant 2.53 < isometrisch 4.0 < klein 4.78 → der Riese trägt sich
+(überproportional dicke Glieder), das Quadrat-Kubik-Gesetz ist im Bauplan, nicht geraten.
+Glied-Länge isometrisch (csy=1), Querschnitt verdickt (csx=csz=√L), Rumpf uniform. _(STEHT ✅
+uniform-invariant UND ✅ ALLOMETRISCH — T5 abgearbeitet.)_
 
 ---
 
