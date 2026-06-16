@@ -89,7 +89,12 @@ function startSaveServer() {
                 r._classicalTempleVariant("alpha").length === r._classicalTempleVariant("alpha").length;
 
             // ── EINGANG: die Front-Cella-Wand hat eine TÜR-Lücke (kein Part deckt die Tür-Mitte) ──
-            const cellaBoxes = temple.parts.filter((p) => p.shape === "box" && p.color === 0xc4bda8);
+            // V18.250 — der Welt-Tempel trägt jetzt eine seed-gewürfelte STEIN-PALETTE (Marmor/
+            // Sandstein/Granit/Basalt), darum ist die Cella-Farbe nicht mehr fix; die Eingangs-
+            // STRUKTUR ist palette-unabhängig → gegen einen Default-Palette-Referenz-Tempel prüfen
+            // (kein `palette`-opt → Cella = 0xc4bda8).
+            const refTempleParts = r._buildClassicalTemple("dorisch", { columnsFront: 6, columnsSide: 9 });
+            const cellaBoxes = refTempleParts.filter((p) => p.shape === "box" && p.color === 0xc4bda8);
             // die Front-Wand-Parts liegen am größten +Z; finde die Tür-Lücke: kein Front-Box deckt (x≈0, y niedrig)
             let frontZ = -1e9;
             for (const p of cellaBoxes) if (p.position.z > frontZ) frontZ = p.position.z;

@@ -46121,8 +46121,15 @@ class AnazhRealm {
         const shaftH = D * O.slenderness; // Schaft-Höhe = Schlankheit × D (dorisch 1:7)
         const axis = D * O.intercolumniation; // Achs-Abstand der Säulen
         const mat = "stein";
-        const marble = O.marble;
-        const cap = O.capitalColor || 0xe4ddca;
+        // V18.250 (Schöpfer „weissem basalt, dunkler stein, gigantisch") — ein STEIN-PALETTE-
+        // Override: derselbe Tempel kann in Marmor, Sandstein, Granit ODER dunklem Basalt
+        // stehen (die Variante würfelt die Palette aus dem Seed). Material bleibt "stein"
+        // (Affinität unberührt) — nur die FARBEN wechseln. Default = die Ordnungs-Marmor-Farbe.
+        const PAL = opts.palette || null;
+        const marble = (PAL && PAL.marble) || O.marble;
+        const cap = (PAL && PAL.cap) || O.capitalColor || 0xe4ddca;
+        const friezeCol = (PAL && PAL.frieze) || 0xd7cfba;
+        const trigCol2 = (PAL && PAL.trig) || 0xc9c1ac;
         const parts = [];
         const frontW = (colsFront - 1) * axis; // Achs-Spanne in X
         const sideD = (colsSide - 1) * axis; // Achs-Spanne in Z
@@ -46132,7 +46139,7 @@ class AnazhRealm {
             parts.push({ shape: "box", material: mat, color, position: { x, y, z }, size: { x: sx, y: sy, z: sz } });
 
         // (1) STYLOBAT/KREPIS — 3 gestufte rechteckige Stufen (abnehmend nach oben).
-        const stepColor = 0xcfc8b4;
+        const stepColor = (PAL && PAL.step) || 0xcfc8b4;
         const steps = [
             { m: 3.2, y: 0.2, h: 0.4 },
             { m: 2.4, y: 0.55, h: 0.35 },
@@ -46204,7 +46211,7 @@ class AnazhRealm {
         const archY = colTopY + archH / 2;
         ringRow(marble, archY, archH); // Architrav
         const friezeY = colTopY + archH + friezeH / 2;
-        ringRow(0xd7cfba, friezeY, friezeH); // Fries (Grundband)
+        ringRow(friezeCol, friezeY, friezeH); // Fries (Grundband)
         const cornY = colTopY + archH + friezeH + cornH / 2;
         ringRow(cap, cornY, cornH, D * 0.35); // Gesims (Überstand)
 
@@ -46212,7 +46219,7 @@ class AnazhRealm {
         // ein Triglyph (vorstehender Block) auf der Vorder-/Rück-Front (die Giebel-Fronten).
         const trigW = D * 0.34;
         const trigD = D * 0.16;
-        const trigCol = 0xc9c1ac;
+        const trigCol = trigCol2;
         const trigZ = halfZ + beamW + trigD / 2;
         const trigPositions = [];
         for (let k = 0; k < colsFront; k++) trigPositions.push((k - (colsFront - 1) / 2) * axis); // über den Säulen
@@ -46253,7 +46260,7 @@ class AnazhRealm {
             parts.push({
                 shape: "gableTriangle",
                 material: mat,
-                color: 0xd2cab5,
+                color: trigCol2,
                 position: { x: 0, y: eaveY + roofRise / 2, z: sgnZ * (ringZ / 2 + 0.05 * D) },
                 size: { x: eaveX * 1.9, y: roofRise, z: roofThick * 0.9 },
             });
@@ -46267,7 +46274,7 @@ class AnazhRealm {
         const cellaH = shaftH + echH + abH;
         const cellaYc = stylTop + cellaH / 2;
         const wallT = D * 0.4;
-        const wallC = 0xc4bda8;
+        const wallC = (PAL && PAL.wall) || 0xc4bda8;
         const cellaFrontZ = cellaZ / 2;
         const doorW = Math.min(cellaX * 0.5, 1.7 * D); // Tür-Breite
         const doorH = cellaH * 0.72; // Tür-Höhe
@@ -46308,10 +46315,23 @@ class AnazhRealm {
         }
         h = h >>> 0;
         const order = h & 1 ? "ionisch" : "dorisch";
-        const columnsFront = 6 + 2 * ((h >> 1) & 1); // 6 (hexastyle) oder 8 (octastyle)
-        const columnsSide = columnsFront + 3 + 2 * ((h >> 2) & 3); // Tiefe variiert
-        const columnDiameter = 0.78 + ((h >> 5) & 3) * 0.05; // 0.78..0.93
-        return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter });
+        // V18.250 (Schöpfer „gigantisch, unterschiedlichster formen und grössen") — WEITE
+        // Größen-Spanne: intim-tetrastyle (4 Säulen, schmal) bis GIGANTISCH (12 Säulen, dick).
+        // Die Schlankheit (1:7/1:9) ist FIX → ein größerer Durchmesser macht den Tempel
+        // proportional höher + breiter (physik-garant: der Lastpfad/Knick-Test fängt den
+        // Ausreißer; die Ordnung hält die Proportion solide).
+        const columnsFront = 4 + 2 * ((h >> 1) & 3); // 4 · 6 · 8 · 10 Säulen-Front
+        const columnsSide = columnsFront + 3 + 2 * ((h >> 3) & 3); // Tiefe variiert
+        const columnDiameter = 0.7 + ((h >> 5) & 7) * 0.1; // 0.7..1.4 (intim → gigantisch)
+        // STEIN-PALETTE aus dem Seed: Marmor · Sandstein · Granit · dunkler Basalt
+        const palettes = [
+            { marble: 0xe6e0d2, cap: 0xeae3d4, step: 0xd8d2c0, wall: 0xcfc8b4, frieze: 0xdcd5c2, trig: 0xcfc7b2 }, // Marmor (weiss)
+            { marble: 0xcaa878, cap: 0xd4b886, step: 0xbf9f70, wall: 0xbb9a68, frieze: 0xc6a880, trig: 0xb89a6a }, // Sandstein (warm)
+            { marble: 0x8e8c88, cap: 0x9a9894, step: 0x807e7a, wall: 0x787672, frieze: 0x908e8a, trig: 0x82807c }, // Granit (grau)
+            { marble: 0x46443e, cap: 0x55534c, step: 0x3c3a34, wall: 0x34322c, frieze: 0x4a4842, trig: 0x3e3c36 }, // Basalt (dunkel)
+        ];
+        const palette = palettes[(h >>> 9) % palettes.length]; // UNSIGNED shift (sonst neg. Index → undefined)
+        return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter, palette });
     }
 
     // Ω-B4 (wahrerbauplan §6 — DIE REGEL IST GENERATIV, für Architektur) — V18.248: eine
@@ -46347,11 +46367,14 @@ class AnazhRealm {
                 size: { x: sx, y: sy, z: sz },
             });
         // ─── Variation aus dem Seed ───
-        const sv = 0.92 + ((h & 7) / 7) * 0.42; // 0.92..1.34
+        // V18.250 (Schöpfer „grosse, kleine") — WEITE Größen-Spanne: Kate (0.78×) bis
+        // Langhaus/Gehöft (1.73×); physik-garant (ein breiter Kasten steht immer) + 8 Holz-/
+        // Lehm-Töne (war 5) → ein Dorf mit echtem Größen- + Farb-Reichtum statt Klonen.
+        const sv = 0.78 + ((h & 7) / 7) * 0.95; // 0.78..1.73 (Kate → Langhaus)
         const tall = ((h >> 3) & 1) === 1; // zweites Geschoss
         const winSide = ((h >> 4) & 1) === 1 ? 1 : 2; // Fenster je Seitenwand
         const chimney = ((h >> 5) & 1) === 1;
-        const tints = [0x7a4a28, 0x8a5a30, 0x6e4220, 0x946a40, 0x63421f];
+        const tints = [0x7a4a28, 0x8a5a30, 0x6e4220, 0x946a40, 0x63421f, 0x9a7048, 0x5a3a1c, 0x84512a];
         const wallColor = tints[h % tints.length];
         const trimColor = 0x4a2c14;
         const roofColor = 0x8b2a1e;
@@ -46921,7 +46944,7 @@ class AnazhRealm {
             return ((hh >>> 0) % 1000000) / 1000000; // [0,1)
         };
         const hutCount = 5 + Math.floor(vHash("count") * 3); // 5-7 Häuser (variierte Dorf-Größe)
-        const baseRadius = 12.5; // groß genug, dass die ~5 m-Häuser nicht kollidieren
+        const baseRadius = 15.5; // groß genug, dass auch die großen Langhäuser (bis ~8 m) nicht kollidieren
         // (A) der zentrale PLATZ — eine flache Stein-Plattform (gibt dem Dorf eine Mitte)
         villageParts.push({
             shape: "cylinder",
@@ -69134,7 +69157,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.249.0";
+AnazhRealm.VERSION = "18.250.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

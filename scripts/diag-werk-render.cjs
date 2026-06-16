@@ -97,6 +97,15 @@ async function renderWerk(page, bpName, view) {
                         grp.add(im);
                     }
                 }
+            } else if (bpName.indexOf("templevar:") === 0) {
+                // V18.250 — eine Tempel-VARIANTE direkt aus einem Seed (zeigt Palette + Größe)
+                const seed = bpName.split(":")[1] || "anazh";
+                grp = r._buildFromBlueprint(
+                    { name: "_tvar", parts: r._classicalTempleVariant(seed) },
+                    0,
+                    undefined,
+                    {}
+                );
             } else {
                 grp = r._buildFromBlueprint(st.blueprints[bpName], 0, undefined, {});
             }
@@ -167,7 +176,9 @@ async function renderWerk(page, bpName, view) {
             ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"], // Ω-O7: die Rinde-Maserung am Stamm
             ["tree:baum_tanne:0", "werk-baum-tanne.png", "front"],
             ["village", "werk-dorf.png", "front"], // Ω-B4: die variierten Hütten
-            ["temple", "werk-tempel.png", "front"],
+            ["templevar:n", "werk-tempel-marmor.png", "front"], // V18.250: weisser Marmor
+            ["templevar:c", "werk-tempel-basalt.png", "front"], // V18.250: dunkler Basalt
+            ["templevar:h", "werk-tempel-granit.png", "front"], // V18.250: Granit, gigantisch
         ]) {
             await renderWerk(page, bp, view);
             const info = await page.evaluate(() => window.__treeInfo || "");
