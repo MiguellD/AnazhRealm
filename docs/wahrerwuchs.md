@@ -279,6 +279,96 @@ S3–S7 ziehen die Tiefe über die GANZE Palette.
 
 ---
 
+## §6½ — DIE GELERNTEN DISZIPLINEN (damit der Plan in EINEM Schub durchgeht)
+
+> Die Iterationen dieser Session (LAAS-Rückgriff · Karten-Chaos · Blatt-Proportion ·
+> begehbare Häuser · Dorf-Struktur · das Vorzeichen-Bug) sind hier als VORWEG-GENOMMENE
+> Disziplinen verbaut — jeder S-Punkt kennt seine Falle, BEVOR er sie tritt. Kein
+> Re-Iterieren derselben Lehre. Vor jedem S-Punkt: lies die passende Unter-Sektion.
+
+### §6½.0 — Die QUER-Disziplinen (für JEDES Genom)
+
+```
+1. LERNE VON DER QUELLE, nicht von der Heuristik. Bei „X sieht fake aus" die ECHTE
+   Referenz holen (LAAS-Repo · Botanik · Oakeshott · die Ordnungen) + die METHODE
+   anwenden, NICHT den eigenen Regler tunen. Das war der 90%-Sprung (Atlas-baked-from-
+   geometry vs flache Karte). Disziplin VOR jedem Genre-Bau, nicht danach.
+2. UNSIGNED-Shift. Jeder Achsen-Roll `h >>> n` (NIE `h >> n` — signed leakt das
+   Vorzeichen → negativer Index → undefined; der V18.250-Paletten-Bug, der den Welt-
+   Tempel still auf Default zwang). Der `_rollGenome` kapselt das EINMAL → strukturell weg.
+3. DER RICHTER IST DIE WAND. Jede gewürfelte Variante durch Ω-PHYSIS (steht/knickt/
+   Lastpfad) — der Gigant, der intim-Bau, der Riesen-Kristall. Die Referenz (Allometrie/
+   Ordnung) hält die Proportion, der Richter fängt den Ausreißer. Der Test bestätigt, der
+   Richter garantiert.
+4. AFFINITÄT: Form/Größe/Farbe sind tag-neutral — ABER eine FORM-Affordanz kann
+   emergieren. Keine neue Form/Material → Tags frozen (scatter-safe, V17.17). Eine Größen-
+   Weitung kann aber eine FORM-getriebene Affordanz wecken (balancing aus flachen Flächen,
+   V18.247) → „kein-Affordanz"-Test-Kontrollen IMMER auf einen garantiert-leeren Compound
+   (`stein_block`), nie auf eine Struktur, deren Größe driftet.
+5. SERIELL MESSEN. Render-Diags + Playtests NIE gleichzeitig (CPU-Contention → die Welt
+   blutet in den isolierten Render + Screenshot-Timeout). Nicht zu viele schwere Objekte
+   auf EINEN Render-Lauf (OOM 137 gemessen) — ein Genre, ein Lauf, wenige Werke.
+6. KOMPENSATIONS-WURZEL. Ein Quality-Befund hat oft eine Über-Korrektur-Wurzel (Karten
+   16→3 → Karten ×4.2 vergrößert → Mega-Blätter). Senkst du eine Achse, prüfe, ob du eine
+   andere über-korrigierst — fixe BEIDE zusammen, nicht einen Regler.
+7. „KEINE STRUKTUR" = oft „die Struktur ist nicht SICHTBAR". Die generative Grammatik
+   existiert; das LAYOUT/die Anordnung muss sie ZEIGEN (Dorf: Platz+Wege+Orientierung).
+8. AUGEN VOR BEHAUPTEN (Wand 1). Kein Genre „fertig" ohne Schöpfer-Browser-Bild an einer
+   sauberen, settled, nahen Position. Headless beweist Mechanik/Physik, nicht den LOOK.
+```
+
+### §6½.1 — BÄUME (die LAAS-Lehren, vorweg verbaut — gilt S1/S2)
+
+```
+- Blatt = GEBACKENES Cluster-Atlas (echte Blatt-Silhouetten, Alpha-Maske), NIE flache
+  Farb-Karte/runde Maske. §3.7-konform (Auslesewert der Grammatik, kein Bitmap-Download).
+- Karten-ZAHL ↔ Atlas-DICHTE gekoppelt: jede Karte IST ein ~30-Blatt-Büschel → WENIGE
+  Karten/Anker (LAAS 1-2, wir ~5), NIE 16 (= Brei). Die Dichte steckt im Atlas, nicht in
+  der Karten-Zahl. (Beim Blatt-TYP-Bake dieselbe Kopplung halten.)
+- PROPORTION: die Karten-GRÖSSE = die scheinbare Blatt-Größe (Blatt:Krone realistisch);
+  NIE die Karte vergrößern, um wenige Karten zu kompensieren (Mega-Blatt-Falle, V18.249).
+- RADIAL, nicht Fächer: das Atlas-Büschel strahlt golden-angle vom Zentrum nach AUSSEN
+  (liest aus jedem Karten-Winkel) — kein Aufwärts-Fächer (zeigt bei Zufalls-Drehung falsch).
+- Krone: Kronen-Hülle (volle gerundete Form) + niedriger innerFill (Ast-Gerüst sichtbar) +
+  gedappelte Tiefe (per-Karte Höhe-Helligkeit). Schon gebaut → gilt für JEDE Größenklasse.
+- GIGANT: die DREI Schlösser ZUSAMMEN lösen (height-Range + `segLenRatio`-Achse +
+  dynamischer MAX_BRANCH_PARTS pro Größenklasse) + Allometrie (überproportional dicke
+  Glieder, Quadrat-Kubik) — sonst knickt der Riese (der Richter fängt ihn, Ω-Φ3-b). Erst
+  die Achse + GEMESSEN ein STEHENDER Gigant, DANN selten/regional spawnen.
+- Blatt-TYP: je ein Atlas-Bake (Laub-Oval · Nadel-Strich · Palme-Wedel · Schuppe), gekeyt
+  auf `foliage.kind` (der Atlas ist heute GETEILT — ein neuer Typ = ein neuer Bake).
+- Legacy-Schnitt erst NACH der Alter-Achse (V17.20: erst ersetzt, dann schneiden — kein Loch).
+```
+
+### §6½.2 — ARCHITEKTUR (begehbar + Struktur, vorweg verbaut — gilt S5)
+
+```
+- BEGEHBAR = per-Part-Kollision (GEMESSEN): ein hohles Haus (4 Wände + Tür-Lücke) ist
+  begehbar BY CONSTRUCTION — die Kollision baut EINEN Box-Shape pro gerendertem Part, die
+  Tür-Lücke hat KEIN Part. Die Kollisions-Wahrheit (per-Part vs Voll-AABB) VOR dem Bau
+  bestätigen. Ein echter Eingang ist eine ÖFFNUNG (Lücke), kein gemaltes/recessed Panel.
+- DACH sauber: Walm (Pyramide) braucht Basis √2·(Spannweite+Überstand) + 45°-Drehung (die
+  FLÄCHEN, nicht die Diamant-Ecken, decken die Wände); ein Giebel ohne `gableTriangle` lässt
+  einen offenen Giebel-Spalt → Walm ODER den Giebel mit einem Tympanon schließen.
+- LAYOUT = STRUKTUR: ein Cluster (Dorf/Lager/Ruine) braucht sichtbare Struktur (Platz +
+  Wege + organisch seed-gestreute, KOLLISIONSFREIE, zur-Mitte-gewandte Positionen) — nicht
+  „im Kreis". Größere Bauten → größerer Radius (kein Überlappen, V18.250 gemessen).
+- Affinität: das Dorf/der Tempel ist gesten-gespawnt → Material/Farb-Palette FREI; aber im
+  Form-Satz bleiben (box/pyramid/cylinder + die Custom-Meshes) → keine neue spawnbare Form.
+```
+
+### §6½.3 — DIE ÜBRIGEN GENRES (das bewährte Muster anwenden — S3/S4/S6)
+
+```
+Fels · Kristall · Glut · Büsche · Werkstatt · Portal · Gerät · Fahrzeug: KEIN neues
+Render-Verfahren erfinden — das Tempel/Haus-Muster anwenden (das Genom rollt Form/Größe/
+Material-Farbe/Detail-Dichte, der Builder baut, der Richter prüft, die Affinität-Wand hält).
+Fels nutzt die `noiserock`-Saat (V18.227); Kristall/Glut die emissiv-Achse; Werkstatt/Portal
+das Größe+Palette-Muster. Jedes Genre erbt §6½.0 + die geteilte `_rollGenome`-Quelle.
+```
+
+---
+
 ## §7 — DIE BEWEIS-BÄNDER (`diag-genom.cjs`)
 
 ```
