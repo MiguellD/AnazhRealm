@@ -14469,8 +14469,24 @@ class AnazhRealm {
         const bodyCol = g.bodyColor; // optionale erdige Tönung (tag-neutral)
         const limbCol = g.limbColor;
 
-        // (1) RUMPF — die Wirbelsäulen-Achse (horizontal entlang z, vorn = +z).
-        add(torsoShape, bodyMat, 0, 0, 0, torsoW, torsoH, torsoLen, null, bodyCol);
+        // (1) RUMPF — die Wirbelsäulen-Achse (horizontal entlang z, vorn = +z). Bei einem
+        //     organischen LEIB (`bodyBarrel`) ist der box-Kern ein KOMPAKTER dichter Nugget
+        //     (das dichte Skelett, trägt die DICHTE-Tags) GANZ INNERHALB der Kapsel-Tonne →
+        //     die Würfel-Kanten verschwinden, die Gestalt liest als Tier-Körper. Tag-neutral
+        //     (limb == cylinder, das Wesen trägt schon Glieder + den stein-Kern für dichte=3).
+        //     Der Raubtier-Leib bleibt angular (kein bodyBarrel → box+cone → wild tag-emergent).
+        const barrel = !!g.bodyBarrel;
+        const coreW = barrel ? torsoW * 0.7 : torsoW;
+        const coreH = barrel ? torsoH * 0.7 : torsoH;
+        const coreL = barrel ? torsoLen * 0.28 : torsoLen;
+        add(torsoShape, bodyMat, 0, 0, 0, coreW, coreH, coreL, null, bodyCol);
+        if (barrel) {
+            // ⌀ > Kern-DIAGONALE + LÄNGE so, dass der Kern im voll-radialen Schaft liegt (die
+            // Kapsel verjüngt an den Enden → ein langer Kern würde durchstossen). Ratio < 1.7 →
+            // die Allometrie behandelt den Leib als Rumpf (uniform), nicht als Glied.
+            const bD = Math.hypot(torsoW, torsoH) * 1.12;
+            add("limb", limbMat, 0, 0, 0, bD, torsoLen * 1.3, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
+        }
 
         // (2) BEINE — vier Glied-PAARE (vorn/hinten × links/rechts). Jedes Bein ein
         //     verjüngtes Glied (dicke Hüfte oben → schmaler Knöchel unten). Die VIER Füße
@@ -72299,8 +72315,9 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 limbMat: "holz",
                 headMat: "holz",
                 shapes: { torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" },
-                bodyColor: 0x7a5a3a, // erdige Tönung auf dem stein-Rumpf (tag-neutral, dichte bleibt 3)
-                limbColor: 0x6e4d30, // harmonierte holz-Glieder
+                bodyBarrel: true, // ein organischer Leib (Kapsel-Tonne) über dem dichten box-Kern
+                bodyColor: 0x6e4d30, // erdige Tönung auf dem stein-Kern (tag-neutral, dichte bleibt 3)
+                limbColor: 0x6e4d30, // harmonierte holz-Glieder + der Leib
             }).map((p) => Object.freeze(p))
         ),
         auraY: 0.8,

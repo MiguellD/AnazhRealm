@@ -1240,13 +1240,27 @@ gebunden) · Lastpfad schliesst (Ω-Φ5). (3) GELENKE — spokeWheel in die RAD-
 rollable + isWheel → Fahr-Tiefe/Mount-Achse heil (V18.119/.150/M3). (4) AUGE — jedes Werk im
 `diag-werk-render`-Katalog angesehen BEVOR „fertig" (die §11-Geburts-Lehre eingelöst).
 
-**EHRLICH OFFEN (kein Über-Claim):**
-- **KREATUR-Körper** ist ein kohärenter Vierbeiner, aber noch LOW-POLY-blockig (box-Rumpf +
-  Kapsel-Glieder). Das volle Skelett+Metaball+Marching-Cubes-Gesetz (organische Haut, in die
-  die Glieder verschmelzen) ist NICHT gebaut — es kollidiert mit dem parts-basierten Animations-/
-  Tag-/Allometrie-System (Skinning wäre ein eigener grosser Bogen). Der nächste Tiefen-Schritt.
-- **WEITERE Werkstätten** (brennkolben/webstuhl/drehbank/altar) tragen noch ihre alten Teil-
-  Listen — nur die Esse bekam die Forge-Grammatik. Die Grammatik auf sie auszuweiten ist der
-  nächste F3-Schritt.
-- **BÄUME (F6 Ω-O16)** Krone/Gabelung sind nicht angefasst (laufende LAAS-Politur).
-- Der finale LOOK bleibt AUGEN-bound (Schöpfer-Browser im echten WebGPU), nicht nur swiftshader.
+**DER QUALITÄTS-LIFT (Schöpfer-Kalibrierung „Baum genial, Tempel 90%, Dorf 70%, Wagen-
+Räder gut/Rest 60%" + „schärfst du das Gesetz zu wahrer Physik oder spielst du nur mit dem
+Material?"):**
+- **WAGEN** von ~60% auf einen echten Bauern-KARREN gehoben — Bord-Wände + Eck-Pfosten +
+  Achs-Balken + DEICHSEL + Singletree (nach den Rädern, Index 5+ → die sitz/hafting-Gelenke
+  0–4 + rad=4/Achse-x bleiben heil).
+- **KREATUR-Körper** von der blockigen Box auf einen ORGANISCHEN LEIB gehoben: der box-Kern
+  ist jetzt ein KOMPAKTER dichter Nugget GANZ INNERHALB einer Kapsel-Tonne (`limb`) → die
+  Würfel-Kanten verschwinden, der Koloss liest als stockiges Tier. Tag-neutral (limb==cylinder,
+  der stein-Kern hält dichte=3 → wesenMoreDichte/HasLebendig + die V18.208-Monotonie unberührt,
+  GEMESSEN; das Raubtier bleibt angular). Das volle Skelett+Metaball+Marching-Cubes (verschmelzende
+  Haut) bleibt ein eigener Bogen (kollidiert mit dem parts-Animations-/Tag-System).
+- **DIE PHYSIK-SCHÄRFUNG (der Method-Befund):** `_workshopStationPrecision` liest jetzt MASSE
+  (Compound-dichte) + die ROHE Material-HÄRTE des härtesten Bauteils (der Amboss-Stahl, NICHT
+  form-verstärkt — ein scharfes Horn ist kein härteres Werkzeug; daran sättigte die alte
+  Compound-härte). Die Forge-Steigerung EMERGIERT jetzt aus der Amboss-Härte (Eisen 0.93 >
+  Stein 0.904, weil Eisen härter IST), kein Etikett-Tausch — ein Auslesewert der Schmiede-Physik.
+
+**EHRLICH OFFEN (kein Über-Claim — die Kalibrierung ehren):** mehrere Werke sind GEHOBEN, aber
+NICHT alle auf Baum/Tempel-Niveau (90%): die Kreatur ist organisch, aber Kopf/Gesicht noch
+schlicht (~75%); die Forge/Phiole/Kürass lesen klar, aber low-poly. WEITERE Werkstätten
+(brennkolben/webstuhl/drehbank/altar) + der holzross-Mount tragen noch ihre alten Box-Listen
+(Kandidaten für die Forge-Grammatik / das Skelett-Gesetz). BÄUME (F6 Ω-O16) Krone/Gabelung
+nicht angefasst. Der finale LOOK bleibt AUGEN-bound (Schöpfer-Browser im echten WebGPU).
