@@ -570,6 +570,44 @@ Moos zum Mammutbaum, aus dem Samen in die Höhe getrieben, auf den Schultern der
 
 ## §9 — DER EHRLICHE STAND (Selbst-Audit 16.06.2026, V18.255) — KERN ✅ vs. VOLLE TIEFE ⚠
 
+> ## ⚑ DER VOLLENDUNGS-AUFTRAG (lies das ZUERST, nächster Agent)
+>
+> **Du giesst die perfekte Form in EINEM Schub. Keine halben Sachen. Du stoppst
+> ERST, wenn T1–T6 (unten) über ALLE DREI beteiligten Pläne in voller Tiefe
+> abgearbeitet sind — `wahrerwuchs` (FORM) × `wahrerbauplan` (PHYSIK) ×
+> `wahreranblick` (ANBLICK).**
+>
+> Drei verbindliche Wände, damit du es WIRKLICH vollendest statt wieder das
+> Gerüst zu liefern:
+>
+> 1. **KEIN „sag weiter"-Slicing (V17.30).** Der Plan ist klar (T1–T6, §9.1 nennt
+>    je die drei Plan-Fäden). Der Fehler dieser Session war: jeden S-Punkt einzeln
+>    für „fertig" erklären, sobald die Headline-Achse grün war. Du baust pro
+>    T-Welle das GANZE Subsystem (alle §4-Achsen des Genres + den Physik-Richter +
+>    den Anblick-Faden), nicht eine sichere Einzel-Achse + Pause. Eine T-Welle ist
+>    erst „fertig", wenn ihre DREI Plan-Spalten (§9.1) stehen.
+>
+> 2. **MISS die PLAN-ZAHL, nicht Existenz.** Der Über-Claim „rund" entstand, weil
+>    ich prüfte, dass die Headline-Achse EXISTIERT — nicht, dass die volle §4-Tiefe
+>    da ist. Für jedes „erledigt" frage: welche ZAHL/welcher diag-Band beweist die
+>    geplante Tiefe (nicht nur „>0 Varianten")? Erweitere `diag-genom` je T-Welle.
+>
+> 3. **Die GRENZE ehrlich: was du in EINEM Schub giesst = das HEADLESS-Verifizierbare**
+>    (FORM-Geometrie + PHYSIK-Richter + diag-Bänder — das pourst du ganz, ohne
+>    Pause, ohne „darf ich weiter"). Der **LOOK** (Mammutbaum/Koloss/Palmenhain/
+>    Oakeshott-Klinge im echten Browser) ist Ω-OPSIS Wand 1 = der Schöpfer-Befund
+>    am Schluss. Du baust den Look so weit headless-baubar (Atlas-Bakes, Geometrie,
+>    PBR), markierst den finalen Anblick als AUGEN-bound — du verkaufst NIE
+>    headless-grün als „der Look ist fertig", und du stoppst auch NIE vorzeitig mit
+>    „warte auf das Auge", solange noch headless-Tiefe offen ist.
+>
+> **Stop-Bedingung (alle drei JA):** (a) T1–T6 gebaut, je alle drei Plan-Fäden
+> (§9.1); (b) `diag-genom` grün + um die neuen Tiefen-Achsen erweitert + voller
+> Playtest grün; (c) die drei Plan-Docs (`wahrerwuchs §9/§9.1`, `wahrerbauplan`
+> Ω-B4/Ω-B5, `wahreranblick` Ω-O14/Ω-O15/Ω-O16) tragen den Stand „abgearbeitet"
+> statt „offen". Dann — und nur dann — übergibst du den finalen LOOK ans
+> Schöpfer-Auge.
+
 > **Die ehrliche Wahrheit nach S0–S7 (Schöpfer-Frage „hast du wirklich in voller Tiefe
 > umgesetzt, oder einige Dinge nur an der Oberfläche gekratzt?"): JA, teils gekratzt.**
 > Was STEHT: das GERÜST des Bogens — das Genom-PRINZIP ist über ALLE 8 Genres bewiesen
