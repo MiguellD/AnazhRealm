@@ -15367,10 +15367,9 @@ class AnazhRealm {
         for (const side of [r.armL, r.armR, r.legL, r.legR])
             for (const k in side) if (side[k]) side[k].rotation.set(0, 0, 0);
         if (underwater) {
-            // Schwimm-Pose: Körper waagerecht-vor (über die Wirbelsäule), Arme kraulen, Beine flattern
-            x(r.spine, 0.5);
-            x(r.chest, 0.3);
-            x(r.head, -0.5);
+            // Schwimm-Pose: der ganze Körper liegt waagerecht (die group-Lehne in _animateHuman);
+            // hier kraulen die Arme + flattern die Beine, der Kopf hebt leicht (Blick voraus).
+            x(r.head, -0.35);
             const aA = isMoving ? 1.3 : 0.6;
             x(r.armL.shoulder, Math.sin(walkPhase) * aA - 0.3);
             x(r.armR.shoulder, Math.sin(walkPhase + Math.PI) * aA - 0.3);
@@ -43374,10 +43373,12 @@ class AnazhRealm {
         // zurück, wenn SkinnedMesh fehlt.
         const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
             FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
-        const soulCol = (this.playerSoulDefs.human && this.playerSoulDefs.human.color) || 0xc0392b;
+        // gedämpftes Avatar-Rot (wie der alte _buildHumanGroup; die Soul-Identitätsfarbe
+        // playerSoulDefs.human.color = 0xff0000 ist greller — für die Haut das gedämpfte 0xc0392b).
+        const skinTint = 0xc0392b;
         let rig = null;
         try {
-            rig = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: soulCol });
+            rig = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint });
         } catch (_e) {
             rig = null;
         }
@@ -43429,6 +43430,9 @@ class AnazhRealm {
     _animateHuman(group, t, walkPhase, isMoving, underwater) {
         // GUSS 2b — der Rig-Avatar wird über die Bones bewegt (Walk/Idle/Kontrapost/Schwimm).
         if (group.userData && group.userData.rig) {
+            // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne — wie ein Schwimmer);
+            // die Glieder kraulen/flattern macht das Rig. An Land aufrecht (rotation.x = 0).
+            group.rotation.x = underwater ? (isMoving ? 0.6 : 0.3) : 0;
             this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater);
             return;
         }
@@ -43486,8 +43490,8 @@ class AnazhRealm {
             for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
             for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
                 for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
-            rig.legL.hip.rotation.x = -1.2; // Oberschenkel waagerecht nach vorn
-            rig.legR.hip.rotation.x = -1.2;
+            rig.legL.hip.rotation.x = -1.3; // Oberschenkel waagerecht nach vorn (Sitz)
+            rig.legR.hip.rotation.x = -1.3;
             rig.legL.knee.rotation.x = 1.05; // Unterschenkel hängt
             rig.legR.knee.rotation.x = 1.05;
             rig.armL.shoulder.rotation.x = -0.4; // Arme vorgehalten (Zügel-Geste)
