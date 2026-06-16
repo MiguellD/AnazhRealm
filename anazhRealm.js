@@ -14606,14 +14606,6 @@ class AnazhRealm {
             mxx = -1e9,
             mxy = -1e9,
             mxz = -1e9;
-        // wahrerguss System B — die FALLOFF-Reichweite: weit genug, dass die Glieder am Gelenk
-        // in den Rumpf VERSCHMELZEN, die hohe Auflösung (N=40) + das Gesicht halten Kopf/Hals
-        // trotz des Falloffs definiert. WELD = ein ABSOLUTER Gelenk-Schweiß-Term (lokale
-        // Einheiten): er bridged DÜNNE Glieder (Kegel-Beine eines Raubtiers, GEMESSEN am Auge
-        // schwebten sie sonst) an den Rumpf, ohne die dicken Teile zu verblobben (für r=0.16
-        // marginal, für r=0.04 verdoppelt er die Reichweite → das Bein erreicht den Körper).
-        const BLEND = 1.7;
-        const WELD = 0.045;
         for (const p of parts) {
             if (!p.size || !p.position) continue;
             if (p.feature) continue; // Gesichts-Features (Augen/Ohren) werden NICHT umhüllt
@@ -14624,7 +14616,7 @@ class AnazhRealm {
             let ax = 0;
             if (sy >= sx && sy >= sz) ax = 1;
             else if (sz >= sx && sz >= sy) ax = 2;
-            const r = Math.max(0.03, (Math.min(sx, sy, sz) / 2) * 1.12);
+            const r = Math.max(0.025, (Math.min(sx, sy, sz) / 2) * 1.08); // Kapsel-SDF-Radius (schlank, nicht aufgebläht)
             let dir = [0, 0, 0];
             dir[ax] = 1;
             dir = rotV(dir, p.rotation);
@@ -14640,7 +14632,7 @@ class AnazhRealm {
                 p.position.z + dir[2] * segHalf,
             ];
             bones.push({ a, b, r });
-            const R = r * BLEND + WELD;
+            const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
                 mny = Math.min(mny, pt[1] - R);
@@ -14663,18 +14655,23 @@ class AnazhRealm {
                 cz = a[2] + abz * t;
             return Math.hypot(px - cx, py - cy, pz - cz);
         };
-        const ISO = 0.55; // Isofläche-Schwelle (höher = die Haut hugt enger an die Knochen)
+        // wahrerguss System B — SDF + SMOOTH-MINIMUM (Inigo Quilez, der Profi-Kern, Schöpfer-
+        // Recherche): jeder Knochen ist eine KAPSEL-SDF (signierte Distanz, <0 innen); smin
+        // verschmilzt sie WEICH zu EINER Masse „wie aus Ton" — statt eines additiven Kugel-
+        // BEUTELS (der die Klumpen + harten Schulter/Hüft-Nähte erzeugte). K = die Blend-Breite
+        // (klein genug, dass das Feld ein gültiges SDF bleibt, sonst „floating island"-Artefakte).
+        const K = 0.045;
+        const smin = (a, b, k) => {
+            const h = Math.max(0, Math.min(1, 0.5 + (0.5 * (b - a)) / k));
+            return b * (1 - h) + a * h - k * h * (1 - h);
+        };
         const field = (x, y, z) => {
-            let f = 0;
+            let d = 1e9;
             for (const bn of bones) {
-                const R = bn.r * BLEND + WELD; // Falloff > Knochen-Radius → benachbarte Knochen VERSCHMELZEN
-                const d = distSeg(x, y, z, bn.a, bn.b);
-                if (d < R) {
-                    const t = 1 - d / R;
-                    f += t * t;
-                }
+                const dc = distSeg(x, y, z, bn.a, bn.b) - bn.r; // Kapsel-SDF (<0 innen)
+                d = smin(d, dc, K);
             }
-            return f - ISO; // > 0 = innen
+            return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
         };
         // ── SURFACE NETS (naiv, dual): ein Vertex pro Vorzeichen-wechselnder Zelle, an die
         //    gemittelten Kanten-Kreuzungen gesetzt; Quads über kreuzende Gitter-Kanten. ──
@@ -14829,6 +14826,62 @@ class AnazhRealm {
         return geom;
     }
 
+    // wahrerguss System A×B — DAS FELL/HIDE-MATERIAL (Profi-Rezept, Material-Agent): macht aus
+    // der glatten Einfarb-Haut lebendiges Gewebe. KEINE Bitmap — aus der Form gerechnet:
+    //  · COUNTER-SHADING (Bauch dunkler, Rücken heller — real bei Tieren)
+    //  · FELL-KORN (feines Mehr-Oktaven-Noise = Strähnen-Brechung) + breite Ton-Zonen
+    //  · KAVITÄT (Krümmung → Gelenk-/Falten-Schatten)
+    //  · ROUGHNESS-VARIATION (#1 Hebel — Fell ist nie uniform-glatt)
+    //  · WARMES SSS-BACKLIGHT-RIM (Fresnel → die Silhouette glüht im Gegenlicht = lebendig)
+    // positionLocal hält es instanz-stabil; setzt colorNode+roughnessNode+outputNode selbst
+    // (eigenständig, kein _applySubstanceResponse-Konflikt). Fallback: schlichtes Material.
+    _buildCreatureHideMaterial(color, opts = {}) {
+        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") {
+            return new THREE.MeshStandardMaterial ? new THREE.MeshStandardMaterial({ color }) : null;
+        }
+        const mat = new THREE.MeshStandardNodeMaterial({ color, roughness: 0.85, metalness: 0 });
+        const T = THREE.TSL;
+        if (!T || !T.positionLocal || !T.vec3 || !T.float) return mat;
+        try {
+            const c = new THREE.Color(color);
+            let albedo = T.vec3(c.r, c.g, c.b);
+            const pl = T.positionLocal;
+            // COUNTER-SHADING (Bauch↓ / Rücken↑)
+            const yN = pl.y.mul(1.4).add(0.5).clamp(0, 1);
+            albedo = albedo.mul(T.mix(T.float(0.7), T.float(1.18), yN));
+            // FELL-KORN (fein) + breite Ton-Zonen
+            const fur = T.mx_fractal_noise_float
+                ? T.mx_fractal_noise_float(pl.mul(26.0), 3, 2.0, 0.5)
+                : T.mx_noise_float
+                  ? T.mx_noise_float(pl.mul(26.0))
+                  : T.float(0);
+            const broad = T.mx_noise_float ? T.mx_noise_float(pl.mul(3.2)) : T.float(0);
+            albedo = albedo.mul(T.float(1.0).add(fur.mul(0.13)).add(broad.mul(0.1)));
+            // KAVITÄT (Krümmung → Gelenk-/Falten-Schatten)
+            let curv = T.float(0);
+            if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
+            albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
+            mat.colorNode = T.vec4(albedo, 1.0);
+            // ROUGHNESS-VARIATION (#1 Hebel)
+            const furN = fur.mul(0.5).add(0.5);
+            mat.roughnessNode = T.float(0.8).add(furN.mul(0.18)).sub(curv.mul(0.12)).clamp(0.4, 1.0);
+            // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
+            const vd =
+                T.positionViewDirection ||
+                (T.cameraPosition && T.positionWorld ? T.cameraPosition.sub(T.positionWorld).normalize() : null);
+            const nv = T.normalView || T.transformedNormalView;
+            if (vd && nv && T.output) {
+                const fres = vd.dot(nv).clamp(0, 1).oneMinus().pow(2.6);
+                const warm = opts.predator ? T.vec3(1.0, 0.5, 0.25) : T.vec3(1.0, 0.72, 0.45);
+                const o = T.output;
+                mat.outputNode = T.vec4(o.xyz.add(warm.mul(fres.mul(0.36))), o.w);
+            }
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__hideMatError = String((_e && _e.message) || _e);
+        }
+        return mat;
+    }
+
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
@@ -14868,11 +14921,12 @@ class AnazhRealm {
                     } catch (_e) {
                         tags = null;
                     }
-                    const mat = this._buildPbrNodeMaterial
-                        ? this._buildPbrNodeMaterial({ color: col, tags })
-                        : this._buildToonNodeMaterial
-                          ? this._buildToonNodeMaterial({ color: col })
-                          : new THREE.MeshStandardMaterial({ color: col });
+                    const mat =
+                        typeof this._buildCreatureHideMaterial === "function"
+                            ? this._buildCreatureHideMaterial(col, { predator: !!soul.predator, tags })
+                            : this._buildPbrNodeMaterial
+                              ? this._buildPbrNodeMaterial({ color: col, tags })
+                              : new THREE.MeshStandardMaterial({ color: col });
                     const skin = new THREE.Mesh(geom, mat);
                     skin.userData._creatureSkin = true;
                     skin.castShadow = true;
