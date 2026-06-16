@@ -367,6 +367,11 @@ GEMESSEN (der Legacy-GROW-Pfad ist schon dormant): `_growTreeBlueprintLegacy` (8
 
 ## §6 — DIE REIHENFOLGE (S-Punkte, je physik-garant + render + playtest)
 
+> **⚠ S0–S7 sind ✅ GEBAUT, ABER nur die HEADLINE-Achse je Genre (das GERÜST, V18.255).
+> Die VOLLE Tiefe der §4-Achsen-Landkarte fehlt weitgehend — siehe `§9` (der ehrliche Stand
+> + die Voll-Tiefe-Punktliste T1–T6). „✅ GEBAUT" unten = der Kern steht + ist verifiziert,
+> NICHT „in voller Tiefe".**
+
 ```
 S0  DER GENOM-ROLLER  ✅ GEBAUT — `_rollGenome(seed, namespace)` (UNSIGNED, eigener
         Stream je Achse: axis/range/int/pick/chance/seq). Temple + Hut refaktoriert
@@ -560,3 +565,98 @@ EIN Gesetz über die ganze Welt: jede Substanz ein Genom, jede Vielfalt aus weni
 formbaren Achsen, der Richter als die Wand, die Referenz als der Anker. Dann gibt es
 keine „Bäume von früher" mehr und keine statischen Klone — nur den einen Wuchs, vom
 Moos zum Mammutbaum, aus dem Samen in die Höhe getrieben, auf den Schultern der Riesen.
+
+---
+
+## §9 — DER EHRLICHE STAND (Selbst-Audit 16.06.2026, V18.255) — KERN ✅ vs. VOLLE TIEFE ⚠
+
+> **Die ehrliche Wahrheit nach S0–S7 (Schöpfer-Frage „hast du wirklich in voller Tiefe
+> umgesetzt, oder einige Dinge nur an der Oberfläche gekratzt?"): JA, teils gekratzt.**
+> Was STEHT: das GERÜST des Bogens — das Genom-PRINZIP ist über ALLE 8 Genres bewiesen
+> (ein Roller, je eine `_<genre>Variant`-Funktion, je die HEADLINE-Achse, physik-garant +
+> headless verifiziert in `diag-genom`). Das ist real (der 77-m-Gigant der STEHT, die 4
+> Fels-Formen, das Oakeshott-Schwert, der Koloss). **Was NICHT steht: die VOLLE Tiefe der
+> §4-Achsen-Landkarte.** Jedes Genre bekam seine wichtigste Achse, aber die REICHEN
+> Sekundär-Achsen fehlen weitgehend. Der frühere Schluss „der Bogen ist RUND" war ÜBER-
+> CLAIM — korrekt ist: **das Gerüst ist rund, die volle Tiefe ist die nächste Schicht.**
+> Diese §9 ist die konkrete Punktliste, damit die nächste Sitzung sie WIRKLICH vollendet.
+
+**DAS TIEFEN-PRINZIP (warum §4 die Wahrheit ist, nicht §6):** §4 (die Achsen-Landkarte) IST
+die volle Tiefe je Genre. §6 (S0–S7) baute pro Genre die EINE Headline-Achse. Voll-Tiefe =
+die übrigen §4-Achsen bauen, jede mit Referenz (Botanik/Geologie/Oakeshott) + Richter +
+diag-Band. KEIN neues Framework — dieselbe `_<genre>Variant` + Roller, nur reicher.
+
+```
+GENRE   KERN ✅ (gebaut+verifiziert)        FLACH/FEHLT ⚠ (die volle §4-Tiefe)            NÄCHSTE WELLE (konkret)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S0      _rollGenome + Temple/Hut            der BAUM behält seinen eigenen r01()-Noise-   den Tree-r01 auf roller.seq()
+        refaktoriert, UNSIGNED              Stream PARALLEL zum Roller; _buildBladed-      ziehen (EINE Quelle, V9.82);
+                                            Weapon selbst nicht refaktoriert              eine harmlose Saat, aber Schuld
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S1      sizeClass · age · foliage-FARBE     Blatt-TYPEN fehlen: kein PALME-Wedel, kein    (1) Blatt-Typ-Achse mit JE
+BÄUME   (Sommer↔Herbst) + Allometrie;       SCHUPPE (Zypresse) — `foliageVar` ist nur     eigenem Atlas-Bake (Palme/
+        Gigant 77 m STEHT (gemessen)        FARBE, nicht TYP (nur Laub/Nadel existieren,  Schuppe), gekeyt auf foliage.kind
+                                            §4.1 wollte „je eigener Bake"). KEINE BRETT-  (2) Brettwurzel-Geometrie am
+                                            WURZELN am Giganten (er ist ein skalierter    Giganten (geflarte Sequoia-Basis,
+                                            Normalbaum, keine geflarte Sequoia-Basis).    nicht nur die flache Ω-K2-Disk)
+                                            KEINE Kronen-Formen weeping/vase/Schirm.      (3) Kronen-Form-Achse (Trauer-
+                                            KEIN Mehrstämmig · Neigung/Lean · Phyllo-     weide/Akazie/Schirm) (4) Lean +
+                                            taxis-Varianz.                                Mehrstämmig + Phyllotaxis
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S2      Scatter-Schnitt (Blobs spawnen      die 12 statischen DEF-Blöcke + ihre Parts-    die DEFs + Parts-Arrays schneiden,
+LEGACY  NICHT mehr in der Welt)             Arrays liegen noch (eslint-unused-gekoppelt   die 2 Test-Fixtures (playtest 31244
+                                            an 2 Test-Migrationen) — aufgeschoben         + diag-lambda-volltiefe) migrieren
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S3      4 Formen (Brocken/Stapel/Nadel/     SCHICHTUNG fehlt (Sediment-Y-Bänder, §4.2 —   (1) Sediment-Schichtung (Y-Bänder
+FELS    Geröll) physik-garant               `_terrainGeologyAlbedo` wiederverwenden).     aus _terrainGeologyAlbedo) (2)
+                                            FLECHTEN/MOOS-Deckung fehlt (feucht). FIXER   Flechten/Moos-Deckung im feuchten
+                                            12-Pool statt grow-for-spawn (nicht infinite- Feld (3) optional grow-for-spawn
+                                            from-seed wie die Bäume)                      (infinite statt 12-Pool)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S4      Habitus (Druse/Cluster/Geode) +     FACETTEN-ZAHL-Achse fehlt (Kristall). GLANZ/  (1) emissiv AUS magieleitung→Tag
+KRIST.  Becken/Flamme-Formen                GLUT EMISSIV aus magieleitung fehlt (nur      koppeln (Kristall+Glut) (2)
+GLUT    physik-garant                       opacity gesetzt). Öffnung + Intensität-       Facetten-Zahl-Achse (3) Glut-
+                                            emissiv-Kopplung (Glut) fehlt. Fixe Pools.    Öffnungs-Achse
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S5      _stationVariant (uniform-Skala +    DER FLACHSTE — NUR Skala + Farb-Tönung. KEINE (1) ein echtes Werkstatt/Portal-
+BAUTEN  Palette-Tönung), margin-invariant   PROPORTION (nicht-uniform, physik-garant),    Genom: die Teile PARAMETRISCH
+                                            KEINE Detail-Dichte (Ornamente/Teile hinzu/   generieren (wie der Tempel), nicht
+                                            weg), KEINE funktionale Variation. §4.5       nur skalieren (2) Proportion-Achse
+                                            wollte „Proportion · Detail-Dichte"           (3) Detail-Dichte-Achse
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S6      Schwert (OAKESHOTT-Typ + Balance)   RÜSTUNG nur scale+tint (kein echtes Platten-  (1) Rüstungs-Genom (Platten-Größe/
+GERÄT   + Werkzeug (Stiel/Masse/Keil-       Größe/Artikulation/Material-Genom). TRANK     Artikulation/Material) (2) Trank-
+        Winkel-Hebel) genuin TIEF           nur scale+tint (kein Phiole-Form/Glasur-      Genom (Phiole-Form, Glasur-Farbe
+                                            Genom). FAHRZEUG KOMPLETT zurückgestellt      aus der Wirkung) (3) Fahrzeug-SSF-
+                                            (→ „Fahrzeug-Fahr-Tiefe"-Faden)               Genom (sitz-bewusste Skala, §4.7)
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+S7      per-Kreatur-Größe (klein→GIGANT),   ALLOMETRISCHE Glied-Dicke fehlt (NUR UNIFORM/ (1) skelett-bewusstes allometrisches
+KREATUR uniform-skaliert, physik-invariant, isometrisch — der Koloss hat KEINE stockigeren Skalieren (Beine ∝ √Masse, die
+        stat-gekoppelt (robust+träge)       Beine, §4.7 wollte „∝ Quadrat-Kubik"). KEINE  Galileo-Allometrie) (2) Accessoire-
+                                            Accessoires (keine Part-Varianz). Die abs-    Achse (3) ggf. ein realistischeres
+                                            trakten Templates haben keine echten Glieder  Skelett-Template als Voraussetzung
+```
+
+**WAS GENUIN TIEF IST (kein Kratzen, der Stolz-Teil — fair zu sich selbst):** das Genom-
+PRINZIP über alle 8 Genres · der PHYSIK-Richter (rooted-vs-freistehend, margin-/schlankheits-
+Invarianz, Knicken, Oakeshott-Balance, alles GEMESSEN nicht geraten) · die HEADLINE-Achse je
+Genre (der stehende 77-m-Gigant, die 4 Fels-Formen, der Oakeshott-Typ, der Koloss) · die
+gelernten + ANGEWANDTEN Lehren (Spitzhacke-IST-spitz, der Test wandert, Vehicle-Revert, die
+uniform-Invarianz). Das Gerüst trägt — die Sekundär-Achsen bauen jetzt auf ihm auf.
+
+**DIE REIHENFOLGE DER VOLL-TIEFE (nach sichtbarem Hebel × Reife der Referenz):**
+```
+T1  S1-Blatt-TYPEN (Palme/Schuppe, je Atlas-Bake) + Brettwurzel am Giganten  ← der größte
+      sichtbare Sprung (ein Palmen-Hain, ein echter Mammutbaum mit Basis), LAAS-Methode reif
+T2  S5-Bauwerk-Genom ECHT (Teile parametrisch, nicht scale+tint)  ← der flachste Punkt, hebt
+      sich am meisten; das _classicalTempleVariant-Muster auf Werkstätten/Portale anwenden
+T3  S4-emissiv-Kopplung (Kristall/Glut leuchten aus dem Tag) + S3-Schichtung/Moos  ← Geologie/
+      Mineralogie-Tiefe, der Fern-Look
+T4  S6-Rüstung/Trank-Genom + Fahrzeug-SSF (sitz-bewusst)  ← die restliche Crafting-Palette
+T5  S7-allometrische Glied-Dicke (skelett-bewusst) + Accessoires  ← die Kreatur-Biomechanik
+T6  S1-Kronen-Formen/Lean/Mehrstämmig/Phyllotaxis + S0-Tree-r01→roller.seq + S2-DEF-Schnitt
+      ← die Politur + die Schuld-Tilgung
+```
+Jede T-Welle: dieselbe Disziplin (§4-Achse nennen → Referenz → `_<genre>Variant` erweitern →
+Richter → diag-Band → Schöpfer-Browser für den LOOK). **Erst wenn T1–T6 stehen, ist der Bogen
+WIRKLICH rund — vorher ist er ein verifiziertes GERÜST mit der Headline-Achse je Genre.**

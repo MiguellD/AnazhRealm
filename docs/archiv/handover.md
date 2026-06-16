@@ -413,10 +413,19 @@ leiten dieselbe Größe aus `e.id` ab, der Γ5-Stream-Disziplin treu) + reist im
 das Wesen beim Reload seine Größe). GEMESSEN diag-genom (KREATUR-Bänder: 4 Klassen, physik-
 invariant, robust+träge, deterministisch+persistiert) + playtest.
 
-**DER GANZE BOGEN DER WAHRE WUCHS (S0–S7) IST RUND:** aus EINEM Seed × wenige formbare
-Achsen wächst die volle Palette — Bäume (Moos→Mammutbaum) · Fels · Kristall · Glut · Bauwerke
-· Gerät · Kreatur (Zwerg→Koloss), kein Klon mehr, jede Variante physik-garant. OFFEN nur der
-LOOK (AUGEN-bound, Schöpfer-Browser).
+**DAS GERÜST DES BOGENS DER WAHRE WUCHS STEHT (S0–S7):** aus EINEM Seed × wenige Achsen
+wächst je die HEADLINE-Vielfalt — Bäume (Moos→Mammutbaum) · Fels · Kristall · Glut · Bauwerke
+· Gerät · Kreatur (Zwerg→Koloss), kein Klon mehr, jede Variante physik-garant + headless
+verifiziert. **EHRLICHKEITS-KORREKTUR (Selbst-Audit nach Schöpfer-Frage „voll umgesetzt oder
+nur gekratzt?"): der frühere Schluss „der Bogen ist RUND" war ÜBER-CLAIM.** Was steht: das
+Genom-PRINZIP über alle 8 Genres + je die wichtigste Achse + der Physik-Richter. Was FEHLT:
+die REICHEN §4-Sekundär-Achsen — S1 Blatt-TYPEN (Palme/Schuppe, je Atlas-Bake) + Brettwurzeln
+am Giganten · S3 Sediment-Schichtung + Moos · S4 emissiv-aus-magieleitung · **S5 ist der
+FLACHSTE (nur uniform-Skala + Tönung, keine Proportion/Detail — kein echtes Bau-Genom)** ·
+S6 Rüstung/Trank nur scale+tint + Fahrzeug zurückgestellt · S7 nur uniform-Skala (keine
+allometrische Glied-Dicke). Die VOLL-TIEFE-Punktliste (T1–T6) + das Tiefen-Prinzip stehen in
+`docs/wahrerwuchs.md` §9 — die nächste Sitzung baut DARAUF die volle Tiefe. OFFEN: §9-Tiefe +
+der LOOK (AUGEN-bound).
 
 ### V18.254 — DER WAHRE WUCHS S5+S6: das BAUWERK- + GERÄT-GENOM (die gebaute Palette)
 
