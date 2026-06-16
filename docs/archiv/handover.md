@@ -390,6 +390,34 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 > Wahrheit + der Pfad: `docs/wahreranblick-plan.md` + der CLAUDE.md-Kopf. Die
 > historischen Einträge bleiben als Lern-Material stehen; diese Korrektur führt.
 
+### V18.255 — DER WAHRE WUCHS S7: KREATUR-ALLOMETRIE (DER BOGEN IST RUND)
+
+Der letzte S-Punkt — die Größenklasse-Achse am KÖRPER (Ω-B5). `_creatureBodySize(netId)`
+würfelt über den geteilten Roller eine per-Kreatur-Körpergröße in BÄNDERN (klein 0.6-0.82 ·
+normal 0.85-1.18 · gross 1.25-1.75 · GIGANT 1.9-2.7, der Koloss ~3.5 % selten). GEMESSEN:
+0.6-2.69 über 4 Klassen.
+
+**DIE DISZIPLIN (das locked Template, V18.209):** das CREATURE_SOULS-Template wird NUR
+UNIFORM skaliert (`group.scale.setScalar(bodySize)` + die Hitbox ×bodySize), nie verbogen —
+die Symmetrie/Struktur bleibt der Anker. **DIE PHYSIK-LEHRE: uniform-Skala ist margin-/
+schlankheits-INVARIANT** (`_stability().inside` + die Schlankheit h/w skalieren mit → ein
+Koloss steht GENAU DANN, wenn das Zwerg-Template steht, Ω-Φ2/Φ3-b). Darum braucht es KEINE
+allometrische Glied-Verdickung für die Physik (die wäre nur nötig, würfe man Höhe unabhängig
+von der Dicke) — die uniform-Skala erreicht das Plan-Ziel „der Riese steht" direkt. Die
+per-Kreatur-Größe speist DIESELBE V18.208-Größen-Symmetrie (`_compoundSizeFactor ×
+bodySize^0.5`) → ein Koloss ist robust (HP↑) + träge (speed↓), ein Zwerg flink + zart.
+
+**DETERMINISMUS + KONSISTENZ ohne Sync-Feld:** die Größe folgt aus der netId (→ Peers
+leiten dieselbe Größe aus `e.id` ab, der Γ5-Stream-Disziplin treu) + reist im Snapshot
+(der Restore re-spawnt mit NEUER netId → bodySize MUSS persistiert werden, sonst änderte
+das Wesen beim Reload seine Größe). GEMESSEN diag-genom (KREATUR-Bänder: 4 Klassen, physik-
+invariant, robust+träge, deterministisch+persistiert) + playtest.
+
+**DER GANZE BOGEN DER WAHRE WUCHS (S0–S7) IST RUND:** aus EINEM Seed × wenige formbare
+Achsen wächst die volle Palette — Bäume (Moos→Mammutbaum) · Fels · Kristall · Glut · Bauwerke
+· Gerät · Kreatur (Zwerg→Koloss), kein Klon mehr, jede Variante physik-garant. OFFEN nur der
+LOOK (AUGEN-bound, Schöpfer-Browser).
+
 ### V18.254 — DER WAHRE WUCHS S5+S6: das BAUWERK- + GERÄT-GENOM (die gebaute Palette)
 
 Die GEBAUTE/GECRAFTETE Kategorie. Tempel/Dorf/Hütte (Architektur) + die Scatter-Welt sind

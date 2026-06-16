@@ -47961,7 +47961,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 2. computeCreatureStats liefert {tags, stats} mit allen Schlüsseln
         const player = r.state.playerMesh.position;
-        const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen");
+        const cw = r.spawnCreatureAt(player.x + 200, player.y, player.z + 200, "happy", "wesen", { bodySize: 1 });
         const csW = r.computeCreatureStats(cw);
         out.statsHasTags = csW && csW.tags && Object.keys(csW.tags).length > 0;
         out.statsHasAll8 =
@@ -47975,9 +47975,13 @@ async function checkBandWelle6HCreatureStats(ctx) {
             Number.isFinite(csW.stats.magicResist) &&
             Number.isFinite(csW.stats.heatResist);
 
+        // S7 (V9.56-i — der Test WANDERT): die Test-Wesen werden mit bodySize:1 gespawnt,
+        // damit die SOUL-Diskrimination (sprite vs wesen) ISOLIERT ist — die per-Kreatur-
+        // Körpergröße (S7) ist eine orthogonale Achse (in diag-genom geprüft), die hier
+        // sonst die Soul-Speed-Relation überlagert.
         // 3. Soul-Diskrimination: Sprite ist schneller als Wesen (weniger dichte)
-        const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite");
-        const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist");
+        const cs = r.spawnCreatureAt(player.x + 210, player.y, player.z + 210, "happy", "sprite", { bodySize: 1 });
+        const cg = r.spawnCreatureAt(player.x + 220, player.y, player.z + 220, "happy", "geist", { bodySize: 1 });
         const sW = csW.stats;
         const sS = r.computeCreatureStats(cs).stats;
         const sG = r.computeCreatureStats(cg).stats;
@@ -48040,7 +48044,7 @@ async function checkBandWelle6HCreatureStats(ctx) {
 
         // 8. Spec-Bonus auf magieleitung emergiert in stats
         // Frische Kreatur ohne Specs vs. mit 3 erfolgreichen Gather-Memories
-        const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen");
+        const cFresh = r.spawnCreatureAt(player.x + 230, player.y, player.z + 230, "happy", "wesen", { bodySize: 1 });
         cFresh.userData.memory = [];
         const baseTags = r.computeCreatureStats(cFresh).tags;
         cFresh.userData.memory = [

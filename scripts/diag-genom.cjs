@@ -405,6 +405,50 @@ function startSaveServer() {
                 o.toolDet = JSON.stringify(r._toolVariant("dt")) === JSON.stringify(r._toolVariant("dt"));
             }
 
+            // ── S7 KREATUR-ALLOMETRIE: per-Kreatur-Körpergröße (klein/normal/gross/GIGANT),
+            //    deterministisch, PHYSIK-INVARIANT (uniform-Skala erhält das Stehen), STAT-
+            //    gekoppelt (ein Koloss ist robust + träge), persistiert. ──
+            if (typeof r._creatureBodySize === "function") {
+                const classes = { klein: 0, normal: 0, gross: 0, gigant: 0 };
+                let minS = 9,
+                    maxS = 0;
+                for (let i = 0; i < 2000; i++) {
+                    const s = r._creatureBodySize("c" + i);
+                    minS = Math.min(minS, s);
+                    maxS = Math.max(maxS, s);
+                    if (s < 0.85) classes.klein++;
+                    else if (s < 1.25) classes.normal++;
+                    else if (s < 1.9) classes.gross++;
+                    else classes.gigant++;
+                }
+                o.creatureSizeRange = [+minS.toFixed(2), +maxS.toFixed(2)];
+                o.creatureClasses = classes;
+                o.creatureSizeDet = r._creatureBodySize("c-det") === r._creatureBodySize("c-det");
+                // PHYSIK: uniform-Skala erhält die Stand-Eigenschaft (Ω-Φ2) — ein skaliertes
+                // Wesen steht GENAU DANN, wenn das Template steht (das locked Template nur skaliert).
+                let physInvariant = true;
+                for (const sk of Object.keys(C.CREATURE_SOULS)) {
+                    const parts = C.CREATURE_SOULS[sk].bodyParts;
+                    const i1 = r._stability({ parts }).inside;
+                    const scaled = parts.map((p) => ({
+                        ...p,
+                        position: { x: p.position.x * 2.2, y: p.position.y * 2.2, z: p.position.z * 2.2 },
+                        size: { x: p.size.x * 2.2, y: p.size.y * 2.2, z: p.size.z * 2.2 },
+                    }));
+                    if (r._stability({ parts: scaled }).inside !== i1) physInvariant = false;
+                }
+                o.creaturePhysInvariant = physInvariant;
+                // STATS: ein großes Wesen (bodySize 2.5) ist robuster (HP) + träger (speed) als ein kleines (0.7).
+                const mkC = (bs) => ({ userData: { soul: "wesen", boosts: [], bodySize: bs } });
+                const small = r.computeCreatureStats(mkC(0.7)).stats;
+                const big = r.computeCreatureStats(mkC(2.5)).stats;
+                o.creatureStatTrade = big.hpMax > small.hpMax && big.speed < small.speed;
+                // PERSISTENZ: bodySize reist im Serialize + wird im Restore zurückgelesen (Source).
+                o.creaturePersist =
+                    /bodySize/.test(r._serializeCreature.toString()) &&
+                    /bodySize/.test(r._restoreCreatureFromSnapshot.toString());
+            }
+
             // ── ROLLER: range im Bereich, int inklusiv, pick aus Liste, chance ~p, seq [0,1) + det ──
             const G = r._rollGenome("rtest", "diag");
             const G2 = r._rollGenome("rtest", "diag");
@@ -550,6 +594,31 @@ function startSaveServer() {
                 out.toolWellFormed === true &&
                 out.toolReadsAsTool === true &&
                 out.toolDet === true
+        );
+        // ── S7 KREATUR ──
+        ck(
+            "KREATUR: 4 Größenklassen (klein/normal/gross/GIGANT) + Range",
+            `${JSON.stringify(out.creatureClasses)} ${JSON.stringify(out.creatureSizeRange)}`,
+            out.creatureClasses &&
+                out.creatureClasses.klein > 0 &&
+                out.creatureClasses.normal > 0 &&
+                out.creatureClasses.gross > 0 &&
+                out.creatureClasses.gigant > 0
+        );
+        ck(
+            "KREATUR-PHYSIK: uniform-Skala erhält das Stehen (Ω-Φ2, Template nur skaliert)",
+            out.creaturePhysInvariant,
+            out.creaturePhysInvariant === true
+        );
+        ck(
+            "KREATUR-STATS: ein Koloss ist robust + träge (HP↑ speed↓, gleiche Seele)",
+            out.creatureStatTrade,
+            out.creatureStatTrade === true
+        );
+        ck(
+            "KREATUR: deterministisch (netId → Größe) + persistiert (serialize+restore)",
+            `${out.creatureSizeDet}/${out.creaturePersist}`,
+            out.creatureSizeDet === true && out.creaturePersist === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");

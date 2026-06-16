@@ -6971,6 +6971,10 @@ class AnazhRealm {
             if (!rc) {
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
                 if (!mesh) continue;
+                // S7 — die Sicht-Kopie trägt die Körpergröße des Originals (aus seiner netId
+                // = e.id deterministisch abgeleitet → derselbe Wuchs wie beim Sender, ohne ein
+                // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
+                mesh.scale.setScalar(this._creatureBodySize(e.id));
                 mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
@@ -14022,6 +14026,18 @@ class AnazhRealm {
         // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
         group.userData.netId = "c" + this.state._creatureNetSeq;
+        // S7 (wahrerwuchs §4.7 / Ω-B5) — DIE GRÖSSENKLASSE AM KÖRPER: jede Kreatur trägt
+        // eine eigene Körpergröße (klein/normal/gross/GIGANT, der Koloss selten),
+        // deterministisch aus ihrer netId (→ über Peers + Re-Wachstum konsistent) ODER aus
+        // dem Snapshot (Restore, opts.bodySize). Das locked Template (V18.209) wird NUR
+        // UNIFORM skaliert, nicht verbogen — die Symmetrie bleibt, und alle Physik-
+        // Verhältnisse sind margin-/schlankheits-INVARIANT unter uniform-Skala (ein großes
+        // Wesen steht wie das kleine, Ω-Φ2/Φ3-b). Muss VOR der hp-Init unten stehen (die
+        // Stats lesen bodySize → robust+träge).
+        group.userData.bodySize = Number.isFinite(opts.bodySize)
+            ? opts.bodySize
+            : this._creatureBodySize(group.userData.netId);
+        group.scale.setScalar(group.userData.bodySize);
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
         // Welle 6.H Phase 2D.1 — bornAt als Identitäts-Marker. Persistierte
         // Kreaturen überleben Reload mit demselben bornAt; neue bekommen den
@@ -14058,10 +14074,11 @@ class AnazhRealm {
                 ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
                 : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
         if (this.state.physicsWorld) {
-            // Hitbox bleibt bewusst kompakt (0.5×0.5×0.5 wie pre-V7.82) — die
-            // Visual-Höhe variiert je Seele, aber Kollision soll vorhersagbar
-            // sein. Selbe Disziplin wie Spieler-Seele (0.5er Hitbox, Visual 1.7m).
-            const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(0.25, 0.25, 0.25));
+            // Hitbox ~kompakt (0.5er Basis wie pre-V7.82), aber S7 skaliert sie mit der
+            // Körpergröße (ein Koloss ist auch ein größeres Ziel — das Visual + die Kollision
+            // bleiben kohärent); bounded durch die bodySize-Bänder (~0.6-2.7).
+            const _hb = 0.25 * (group.userData.bodySize || 1);
+            const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(_hb, _hb, _hb));
             this.addRigidBody(group, 0.5, creatureShape);
         }
         // Ring 4 — Spawn-Klang. DSL-getriggert pingt, initial-spawn (über
@@ -14095,6 +14112,9 @@ class AnazhRealm {
                 z: creature.position ? creature.position.z : 0,
             },
             bornAt: Number.isFinite(ud.bornAt) ? ud.bornAt : Date.now(),
+            // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
+            // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
+            bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // Welle 6.H Phase 2F.2 — Equipped-Slots persistieren. Tasks +
             // carrying bleiben weiterhin Geste (nicht persistiert), aber
             // Werkzeug + Rüstung sind Identitäts-Komponenten wie Memory.
@@ -14115,6 +14135,9 @@ class AnazhRealm {
         // es stand — auch direkt neben dem Spieler (die Klemme gilt nur frischen Spawns).
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
+            // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
+            // neuen netId eine andere Größe).
+            bodySize: Number.isFinite(snap.bodySize) ? snap.bodySize : undefined,
         });
         if (!c) return null;
         if (typeof snap.name === "string" && snap.name.length > 0) {
@@ -14376,6 +14399,19 @@ class AnazhRealm {
             }
         });
         return group;
+    }
+
+    // S7 (wahrerwuchs §4.7 / Ω-B5) — DIE KÖRPERGRÖSSE-ACHSE: aus einer Identitäts-Zeichenkette
+    // (netId) eine deterministische Körpergröße in BÄNDERN würfeln (klein/normal/gross/GIGANT,
+    // der Koloss selten). Über den geteilten Roller (S0, UNSIGNED) → konsistent über Peers
+    // (gleiche netId → gleiche Größe) + Re-Wachstum. Wie die Baum-Größenklasse, am Körper.
+    _creatureBodySize(idStr) {
+        const g = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size");
+        const roll = g.axis("class");
+        if (roll < 0.18) return g.range("klein", 0.6, 0.82); // Jungtier/Zwerg (flink, zart)
+        if (roll < 0.82) return g.range("normal", 0.85, 1.18); // typisch
+        if (roll < 0.965) return g.range("gross", 1.25, 1.75); // ein großes Tier
+        return g.range("gigant", 1.9, 2.7); // GIGANT — ein Koloss (robust, träge), selten
     }
 
     // === V18.99 (G1 — die Werkstatt ATMET): die MOTION-RESONANZ ============
@@ -14919,7 +14955,13 @@ class AnazhRealm {
         const creatureSoul =
             creatureSoulName && AnazhRealm.CREATURE_SOULS && AnazhRealm.CREATURE_SOULS[creatureSoulName];
         if (creatureSoul && Array.isArray(creatureSoul.bodyParts)) {
-            const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts });
+            // S7 — die per-Kreatur-Körpergröße (bodySize) speist DIESELBE Größen-Symmetrie
+            // (ein Koloss ist robust + träge): das Hüll-Volumen skaliert ∝ bodySize³, der
+            // Volumen-Exponent macht daraus ~bodySize^0.5 am Größen-Faktor. Default 1
+            // (eine Kreatur ohne bodySize, z.B. der Test-fakeCreature, bleibt unverändert).
+            const bodySize =
+                creature.userData && Number.isFinite(creature.userData.bodySize) ? creature.userData.bodySize : 1;
+            const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts }) * Math.pow(bodySize, 0.5);
             const sizeHpMul = Math.sqrt(creatureSize);
             const sizeSpeedMul = 1 / sizeHpMul;
             if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
@@ -69629,7 +69671,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.254.0";
+AnazhRealm.VERSION = "18.255.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

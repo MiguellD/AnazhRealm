@@ -413,8 +413,15 @@ S6  GERÄT  ✅ GEBAUT (V18.254) — das SCHWERT aus dem Genom (`_bladedWeaponVa
       (GERÄT-Bänder grün: Oakeshott-Varianten, Balance gerechnet, Hebel-Varianten, liest als
       Gerät). [Das FAHRZEUG bleibt der eigene gemerkte Faden „Fahrzeug-Fahr-Tiefe" — sein
       sitz-Punkt/moveable/mount ist sensibel, die Skala verschöbe die feste Sitz-Höhe.]
-S7  KREATUR-ALLOMETRIE (Ω-B5) — die Größenklasse-Achse am Körper, falls der
-      Schöpfer es will (heute bewusst fix, V18.209).
+S7  KREATUR-ALLOMETRIE (Ω-B5)  ✅ GEBAUT (V18.255) — `_creatureBodySize(netId)` würfelt eine
+      per-Kreatur-Körpergröße in BÄNDERN (klein 0.6 · normal · gross · GIGANT 2.7, der Koloss
+      selten), deterministisch aus der netId (→ über Peers + Re-Wachstum konsistent, ohne
+      Sync-Feld) bzw. aus dem Snapshot (Restore). Das locked Template (V18.209) wird NUR
+      UNIFORM skaliert (group.scale + Hitbox), nicht verbogen — die Symmetrie bleibt, und
+      jede Physik ist margin-/schlankheits-INVARIANT unter uniform-Skala (ein Koloss steht
+      wie das Zwerg-Template, Ω-Φ2 GEMESSEN). STAT-gekoppelt (die per-Kreatur-Größe speist
+      DIESELBE V18.208-Symmetrie → ein Koloss ist robust + träge). GEMESSEN diag-genom
+      (KREATUR-Bänder grün). → DER GANZE BOGEN S0–S7 ist RUND.
 ```
 
 **Minimal-Wahrheit (der Kern): S0 + S1 + S2 GEBAUT + GEMESSEN (`scripts/diag-genom.cjs`).**
