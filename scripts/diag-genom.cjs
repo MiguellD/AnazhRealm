@@ -493,6 +493,82 @@ function startSaveServer() {
             const vegSrc = r._vegetationSampleSpawn.toString();
             o.legacyVariantsInScatter = /baum_\w+_(jung|alt|breit|schlank)/.test(vegSrc);
 
+            // ══ T1 (wahrerwuchs §4.1 + wahreranblick Ω-O14) — BLATT-TYPEN + BRETTWURZEL ══
+            // (a) ≥4 distinkte foliage.kind über baum_* (Laub · Nadel · Palme · Schuppe).
+            const leafKinds = new Set();
+            for (const k of Object.keys(C.SPECIES_GRAMMAR)) {
+                if (!k.startsWith("baum_")) continue;
+                const g = C.SPECIES_GRAMMAR[k];
+                if (g && g.foliage && g.foliage.kind) leafKinds.add(g.foliage.kind);
+            }
+            o.leafKinds = [...leafKinds];
+            // (b) der 4×2-Atlas ist je KIND-Spalte DISTINKT gebacken — die Alpha-Silhouette-
+            // Deckung pro Spalte unterscheidet sich (Breitblatt ≠ Nadel ≠ Palme ≠ Schuppe).
+            let atlasCov = null;
+            try {
+                const tex = r._ensureFoliageClusterAtlas();
+                const cv = tex && tex.image;
+                if (cv && cv.getContext) {
+                    const cctx = cv.getContext("2d");
+                    const W = cv.width,
+                        H = cv.height;
+                    const colW = (W / 4) | 0;
+                    const cov = [];
+                    for (let col = 0; col < 4; col++) {
+                        const img = cctx.getImageData(col * colW, 0, colW, H).data;
+                        let ink = 0;
+                        for (let p = 3; p < img.length; p += 4) if (img[p] > 16) ink++;
+                        cov.push(+(ink / (img.length / 4)).toFixed(4));
+                    }
+                    atlasCov = cov;
+                }
+            } catch (_e) {
+                atlasCov = "err:" + (_e && _e.message);
+            }
+            o.atlasColCoverage = atlasCov;
+            o.atlasColsDistinct =
+                Array.isArray(atlasCov) &&
+                atlasCov.length === 4 &&
+                atlasCov.every((v) => v > 0.001) &&
+                new Set(atlasCov.map((v) => Math.round(v * 200))).size >= 3;
+            // (c) BRETTWURZEL: ein GIGANT-Eiche trägt 5-7 Wurzelanlauf-Branches (level0,
+            // !isTrunk, 2 Punkte), ein NORMALER KEINE. Tag-frozen (holz, von der Aff-Band geprüft).
+            let giantButt = -1,
+                normalButt = -1;
+            for (let s = 0; s < 3000 && (giantButt < 0 || normalButt < 0); s++) {
+                r._growTreeBlueprintRich("baum_eiche", "butt" + s, C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
+                const sk = r._lastTreeSkeleton;
+                const nb = sk.branches.filter(
+                    (b) => b.level === 0 && !b.isTrunk && b.points && b.points.length === 2
+                ).length;
+                if (sk.sizeClass === "gigant" && giantButt < 0) giantButt = nb;
+                if (sk.sizeClass === "normal" && normalButt < 0) normalButt = nb;
+            }
+            o.giantButtresses = giantButt;
+            o.normalButtresses = normalButt;
+            // (d) UV-ROUTING: die Palmen-Karten landen in Atlas-Spalte 2 (uv.x ∈ [0.5,0.75]),
+            // die Breitblatt-Karten in Spalte 0 (uv.x ∈ [0,0.25]) → der Blatt-TYP ist gewahrt.
+            const uvColOf = (sp) => {
+                r._growTreeBlueprintRich(sp, "uv-" + sp, C.SPECIES_GRAMMAR[sp], { lod: 0 });
+                const geom = r._buildTreeFoliageCardGeometry(r._lastTreeSkeleton);
+                if (!geom || !geom.attributes || !geom.attributes.uv) return null;
+                const uv = geom.attributes.uv.array;
+                let minx = 9,
+                    maxx = -9;
+                for (let i = 0; i < uv.length; i += 2) {
+                    if (uv[i] < minx) minx = uv[i];
+                    if (uv[i] > maxx) maxx = uv[i];
+                }
+                return [+minx.toFixed(3), +maxx.toFixed(3)];
+            };
+            o.palmUV = uvColOf("baum_palme");
+            o.broadUV = uvColOf("baum_eiche");
+            o.uvRoutesByKind =
+                !!(o.palmUV && o.broadUV) &&
+                o.palmUV[0] >= 0.49 &&
+                o.palmUV[1] <= 0.76 &&
+                o.broadUV[1] <= 0.26;
+
             return o;
         });
 
@@ -619,6 +695,29 @@ function startSaveServer() {
             "KREATUR: deterministisch (netId → Größe) + persistiert (serialize+restore)",
             `${out.creatureSizeDet}/${out.creaturePersist}`,
             out.creatureSizeDet === true && out.creaturePersist === true
+        );
+
+        // ── T1: BLATT-TYPEN + BRETTWURZEL (wahrerwuchs §4.1 · wahreranblick Ω-O14) ──
+        ck(
+            "T1-BLATT: ≥4 Blatt-Typen (Laub/Nadel/Palme/Schuppe)",
+            out.leafKinds,
+            Array.isArray(out.leafKinds) &&
+                ["leafCluster", "needleSpray", "palm", "scale"].every((k) => out.leafKinds.includes(k))
+        );
+        ck(
+            "T1-ATLAS: 4 Kind-Spalten distinkt gebacken (Silhouette-Deckung)",
+            out.atlasColCoverage,
+            out.atlasColsDistinct === true
+        );
+        ck(
+            "T1-BRETTWURZEL: Gigant 5-7 Wurzelanläufe, Normal 0 (holz, tag-frozen)",
+            `gigant=${out.giantButtresses} normal=${out.normalButtresses}`,
+            out.giantButtresses >= 5 && out.giantButtresses <= 7 && out.normalButtresses === 0
+        );
+        ck(
+            "T1-UV: Palmen-Karten→Atlas-Spalte 2, Breitblatt→Spalte 0 (Typ gewahrt)",
+            `palm=${JSON.stringify(out.palmUV)} broad=${JSON.stringify(out.broadUV)}`,
+            out.uvRoutesByKind === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");

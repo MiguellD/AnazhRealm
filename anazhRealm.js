@@ -44431,10 +44431,16 @@ class AnazhRealm {
             return pick < 110 ? "baum_buche" : pick < 200 ? "baum_eiche" : "baum_birke";
         }
         if (lebendig > 0.4) {
+            // T1 (wahrerwuchs §4.1) — eine PALME in milder Zone (die Blatt-Typ-Vielfalt
+            // sichtbar; selten → ein gefundener Hain, kein Klon-Teppich).
+            if (pick >= 232) return "baum_palme";
             return pick < 120 ? "baum_eiche" : pick < 200 ? "baum_kiefer" : "baum_tanne";
         }
-        // karger Boden → Nadelwald + Karst an Steilstellen
-        return pick < 150 ? "baum_tanne" : pick < 220 ? "baum_kiefer" : "baum_karst";
+        // karger Boden → Nadelwald + Karst + (selten) säulen-förmige ZYPRESSE (Schuppen-Laub)
+        if (pick < 140) return "baum_tanne";
+        if (pick < 190) return "baum_kiefer";
+        if (pick < 214) return "baum_zypresse"; // T1: mediterrane Säulen-Zypresse
+        return "baum_karst";
     }
 
     // V18.225 — die Spezies-Wahl pro SCHICHT (Plan §13 „5 Strata"). Canopy nutzt
@@ -45249,6 +45255,35 @@ class AnazhRealm {
             position: { x: 0, y: flareH * 0.4, z: 0 },
             size: { x: flareR * 2, y: flareH * 1.6, z: flareR * 2 },
         });
+        // T1 (wahrerwuchs §4.1 — DIE BRETTWURZEL, Sequoia/Würgfeige) — ein GIGANT trägt
+        // einen geflarten WURZELANLAUF: N strebende Brettwurzeln am Fuß, die das Moment des
+        // Riesen in den Boden tragen (statt der flachen Ω-K2-Disk allein). NUR holz-Zylinder
+        // (gleiche Form+Material wie der Stamm) → die Compound-Tags bleiben bit-identisch
+        // (V17.16; GEMESSEN diag-genom: Gigant-Tags == Normal-Tags). Niedrig + auswärts-
+        // angewinkelt (NICHT nahe-vertikal) → der Knick-Richter (Ω-Φ3-b) prüft sie nicht;
+        // sie verbreitern die Basis (steht satter). Nur am Giganten — kleinere Bäume haben
+        // keinen sichtbaren Brettwurzel-Anlauf (Allometrie der Form).
+        if (sizeClass === "gigant" && trunkBaseR > 0.001) {
+            const nButt = 5 + Math.floor(r01() * 3); // 5-7 Brettwurzeln
+            const buttH = totalH * (0.05 + r01() * 0.04); // niedriger Anlauf
+            const outR = trunkBaseR * (1.8 + r01() * 0.8);
+            for (let b = 0; b < nButt; b++) {
+                const th = (b / nButt) * Math.PI * 2 + r01() * 0.3;
+                const baseP = { x: Math.cos(th) * outR, y: 0, z: Math.sin(th) * outR, r: trunkBaseR * 0.5 };
+                const topP = {
+                    x: Math.cos(th) * trunkBaseR * 0.6,
+                    y: buttH,
+                    z: Math.sin(th) * trunkBaseR * 0.6,
+                    r: trunkBaseR * 0.85,
+                };
+                emitCylinderBetween(baseP, topP, 5);
+                skeleton.branches.push({
+                    points: [baseP, topP].map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
+                    level: 0,
+                    isTrunk: false,
+                });
+            }
+        }
 
         // ─── TIP-COLLECTION (Childen-Punkte pro Eltern-Ebene) ─────────
         const collectTips = (parentPts, levelGrammar) => {
@@ -52705,14 +52740,22 @@ class AnazhRealm {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const TILE = 256;
-        const GRID = 2;
-        const SZ = TILE * GRID;
+        // T1 (wahrerwuchs §4.1 + wahreranblick Ω-O14) — DIE BLATT-TYP-ACHSE: vier
+        // KIND-Spalten (breitblatt · nadel · palme · schuppe) × zwei Varianten-Reihen.
+        // Jede Spalte trägt eine GEBACKENE Blatt-Silhouette ihres Typs (echte Geometrie,
+        // §3.7 — kein gemaltes Bitmap): das Material sampelt EINE Textur, die Karten-UVs
+        // routen je `foliage.kind` in die richtige Spalte (kein per-Kind-Material nötig →
+        // beide Material-Builder unberührt). Distinkt: Nadel ≠ Breitblatt ≠ Palme ≠ Schuppe.
+        const COLS = 4; // Kind-Spalten: 0 breitblatt · 1 nadel · 2 palme · 3 schuppe
+        const ROWS = 2; // Varianten je Kind (kein Wiederholungs-Muster)
+        const SZW = TILE * COLS;
+        const SZH = TILE * ROWS;
         const canvas = document.createElement("canvas");
-        canvas.width = SZ;
-        canvas.height = SZ;
+        canvas.width = SZW;
+        canvas.height = SZH;
         const ctx = canvas.getContext("2d");
         if (!ctx) return null;
-        ctx.clearRect(0, 0, SZ, SZ);
+        ctx.clearRect(0, 0, SZW, SZH);
         let seed = 0x9e3779b9 >>> 0;
         const rnd = () => {
             seed = (Math.imul(seed ^ (seed >>> 15), 0x2c1b3c6d) + 0x6e) >>> 0;
@@ -52747,28 +52790,129 @@ class AnazhRealm {
             ctx.stroke();
             ctx.restore();
         };
-        for (let ty = 0; ty < GRID; ty++) {
-            for (let tx = 0; tx < GRID; tx++) {
+        // eine NADEL — ein dünner, gerader Strich (Konifere); viele bilden den Spray.
+        const drawNeedle = (bx, by, ang, len, lum) => {
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(ang);
+            ctx.strokeStyle = `rgb(${Math.round(70 * lum)},${Math.round(120 * lum)},${Math.round(70 * lum)})`;
+            ctx.lineWidth = Math.max(1, len * 0.05);
+            ctx.lineCap = "round";
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -len);
+            ctx.stroke();
+            ctx.restore();
+        };
+        // eine PALMEN-FROND — eine lange gekrümmte Rachis mit fiedrigen Blättchen (pinnat).
+        const drawFrond = (bx, by, ang, len, lum, curve) => {
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(ang);
+            const tipX = curve * len * 0.5;
+            // Rachis (Mittelstiel, gebogen)
+            ctx.strokeStyle = `rgb(${Math.round(150 * lum)},${Math.round(170 * lum)},${Math.round(90 * lum)})`;
+            ctx.lineWidth = Math.max(1.5, len * 0.03);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(tipX * 0.5, -len * 0.55, tipX, -len);
+            ctx.stroke();
+            // Fiedern (Blättchen) entlang der Rachis, paarig
+            const leaflets = 9 + Math.floor(rnd() * 5);
+            for (let k = 1; k <= leaflets; k++) {
+                const t = k / (leaflets + 1);
+                const rx = tipX * t * (1.5 - t);
+                const ry = -len * t;
+                const ll = len * 0.26 * (1 - t * 0.55);
+                const spread = 0.7 + t * 0.5;
+                for (const sgn of [-1, 1]) {
+                    ctx.save();
+                    ctx.translate(rx, ry);
+                    ctx.rotate(sgn * spread + (curve * 0.4));
+                    ctx.strokeStyle = `rgb(${Math.round(90 * lum)},${Math.round(150 * lum)},${Math.round(70 * lum)})`;
+                    ctx.lineWidth = Math.max(1, ll * 0.12);
+                    ctx.lineCap = "round";
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(0, -ll);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+            ctx.restore();
+        };
+        // eine SCHUPPEN-Spray (Zypresse) — eine flache, verzweigte Spray winziger
+        // Schuppenblätter (überlappende Tröpfchen entlang feiner Zweige).
+        const drawScaleSpray = (bx, by, ang, len, lum) => {
+            ctx.save();
+            ctx.translate(bx, by);
+            ctx.rotate(ang);
+            ctx.fillStyle = `rgb(${Math.round(70 * lum)},${Math.round(115 * lum)},${Math.round(80 * lum)})`;
+            const branches = 3 + Math.floor(rnd() * 3);
+            for (let b = 0; b < branches; b++) {
+                const bAng = (b / branches - 0.5) * 0.9;
+                const bl = len * (0.55 + rnd() * 0.45);
+                const scales = 5 + Math.floor(rnd() * 4);
+                for (let s = 1; s <= scales; s++) {
+                    const t = s / scales;
+                    const sx = Math.sin(bAng) * bl * t;
+                    const sy = -bl * t;
+                    const sr = len * 0.06 * (1 - t * 0.4);
+                    ctx.beginPath();
+                    ctx.ellipse(sx, sy, sr, sr * 1.6, bAng, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        };
+        // pro KIND-Spalte × Varianten-Reihe ein gebackenes Büschel des jeweiligen Typs.
+        for (let ty = 0; ty < ROWS; ty++) {
+            for (let tx = 0; tx < COLS; tx++) {
                 const ox = tx * TILE;
                 const oy = ty * TILE;
                 const cx = ox + TILE * 0.5;
                 const cy = oy + TILE * 0.5; // Zentrum (RADIAL-Büschel)
-                // V18.249 (Schöpfer „blätter unverhältnismässig gross ... cluster falsch
-                // gebacken?") — ein RADIALES Büschel: viele FEINE Blätter strahlen vom Zentrum
-                // nach AUSSEN (golden-angle, gleichmäßig in alle Richtungen) → liest als
-                // rundes Laub-Büschel aus JEDEM Karten-Winkel (der frühere Aufwärts-Fächer
-                // zeigte bei zufälliger Karten-Drehung in falsche Richtungen). Kleinere Blätter
-                // (len 0.18-0.4 Kachel) + mehr (28-36) → feines, proportioniertes Laub.
-                const N = 28 + Math.floor(rnd() * 9); // 28-36 feine Blätter
-                for (let i = 0; i < N; i++) {
-                    const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4; // golden-angle, radial
-                    const rad = TILE * 0.5 * (0.1 + Math.sqrt(rnd()) * 0.4); // flächengleich gestreut
-                    const len = TILE * (0.18 + rnd() * 0.22); // KLEINER = feiner
-                    const wid = len * (0.32 + rnd() * 0.12);
-                    const lum = 0.74 + rnd() * 0.34;
-                    const bx = cx + Math.cos(dir) * rad;
-                    const by = cy + Math.sin(dir) * rad;
-                    drawLeaf(bx, by, dir + Math.PI / 2, len, wid, lum); // Spitze zeigt nach AUSSEN
+                if (tx === 0) {
+                    // BREITBLATT — viele feine ovale Blätter radial (V18.249-Methode).
+                    const N = 28 + Math.floor(rnd() * 9);
+                    for (let i = 0; i < N; i++) {
+                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4;
+                        const rad = TILE * 0.5 * (0.1 + Math.sqrt(rnd()) * 0.4);
+                        const len = TILE * (0.18 + rnd() * 0.22);
+                        const wid = len * (0.32 + rnd() * 0.12);
+                        const lum = 0.74 + rnd() * 0.34;
+                        drawLeaf(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, wid, lum);
+                    }
+                } else if (tx === 1) {
+                    // NADEL — ein dichter Spray vieler dünner Striche (Konifere).
+                    const N = 54 + Math.floor(rnd() * 18);
+                    for (let i = 0; i < N; i++) {
+                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.3;
+                        const rad = TILE * 0.5 * (0.05 + Math.sqrt(rnd()) * 0.32);
+                        const len = TILE * (0.26 + rnd() * 0.2);
+                        const lum = 0.72 + rnd() * 0.32;
+                        drawNeedle(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, lum);
+                    }
+                } else if (tx === 2) {
+                    // PALME — wenige lange fiedrige Fronds radial (das Palmen-Kronen-Lesen).
+                    const N = 6 + Math.floor(rnd() * 4);
+                    for (let i = 0; i < N; i++) {
+                        const dir = (i / N) * Math.PI * 2 + (rnd() - 0.5) * 0.3;
+                        const len = TILE * (0.42 + rnd() * 0.12);
+                        const lum = 0.74 + rnd() * 0.26;
+                        const curve = (rnd() - 0.5) * 1.2;
+                        drawFrond(cx, cy, dir + Math.PI / 2, len, lum, curve);
+                    }
+                } else {
+                    // SCHUPPE — dichte flache Sprays winziger Schuppenblätter (Zypresse).
+                    const N = 12 + Math.floor(rnd() * 6);
+                    for (let i = 0; i < N; i++) {
+                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4;
+                        const rad = TILE * 0.5 * (0.06 + Math.sqrt(rnd()) * 0.36);
+                        const len = TILE * (0.2 + rnd() * 0.16);
+                        const lum = 0.7 + rnd() * 0.3;
+                        drawScaleSpray(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, lum);
+                    }
                 }
             }
         }
@@ -52802,6 +52946,11 @@ class AnazhRealm {
         const fo = grammar && grammar.foliage;
         if (!fo) return null;
         const isNeedle = fo.kind === "needleSpray";
+        // T1 (wahrerwuchs §4.1 + Ω-O14) — die KIND-Spalte im 4×2-Atlas + die je-Kind-
+        // Karten-Proportion: Breitblatt(0) breit-gedrungen, Nadel(1) lang-schmal, Palme(2)
+        // große lange Wedel-Karten, Schuppe(3) feine dichte Sprays. Das Material sampelt
+        // EINE Atlas-Textur, diese Spalte routet die UVs (kein per-Kind-Material).
+        const kindCol = fo.kind === "needleSpray" ? 1 : fo.kind === "palm" ? 2 : fo.kind === "scale" ? 3 : 0;
         const baseSize = fo.size || 0.5;
         // V18.233 (SUBSTANZ-FIX) — die Krone war sparse (kleine Karten in grossem
         // Baum-Volumen → ein 12m-Baum las als dünner Stachel). GRÖSSERE, überlappende
@@ -52816,8 +52965,11 @@ class AnazhRealm {
         // (skeleton.foliageScale): ein Mammutbaum trägt proportional große Büschel,
         // ein junger Strauch kleine. Default 1 (für Alt-Skelette ohne das Feld).
         const fScale = Math.max(0.4, skeleton.foliageScale || 1);
-        const cardW = baseSize * (isNeedle ? 2.4 : 2.1) * fScale;
-        const cardH = baseSize * (isNeedle ? 3.4 : 1.85) * fScale;
+        // je-Kind-Aspekt: Nadel lang-schmal, Palme große breite Wedel, Schuppe feine Sprays.
+        const _wByKind = kindCol === 1 ? 2.4 : kindCol === 2 ? 3.0 : kindCol === 3 ? 1.7 : 2.1;
+        const _hByKind = kindCol === 1 ? 3.4 : kindCol === 2 ? 3.4 : kindCol === 3 ? 1.7 : 1.85;
+        const cardW = baseSize * _wByKind * fScale;
+        const cardH = baseSize * _hByKind * fScale;
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -52931,11 +53083,13 @@ class AnazhRealm {
                 const hh = cardH * 0.5 * szJ;
                 const tw = hw * 0.42; // Blatt-Form Ω-O14: oben verjüngt
                 const curl = hh * 0.32; // Spitze krümmt zur Krone
-                // Ω-O14 (LAAS-Methode) — jede Karte wählt eine der 4 Atlas-Varianten
-                // (2×2-Kacheln) → kein Wiederholungs-Muster über die Krone.
-                const tile = Math.floor(h01(ai, kk, 6) * 4) & 3;
-                const tuX = (tile % 2) * 0.5;
-                const tuY = (tile >> 1) * 0.5;
+                // T1 (Ω-O14) — der 4×2-Atlas: die SPALTE = der Blatt-TYP (kindCol), die
+                // REIHE = eine der 2 Varianten (Hash) → kein Wiederholungs-Muster, aber der
+                // Typ ist gewahrt (eine Palme zieht NUR Palmen-Wedel, keine Nadeln). UV-
+                // Skala (1/4, 1/2) je Kachel im 4-Spalten-2-Reihen-Atlas.
+                const tvar = h01(ai, kk, 6) < 0.5 ? 0 : 1;
+                const tuX = kindCol * 0.25;
+                const tuY = tvar * 0.5;
                 const rot = h01(ai, kk, 5) * Math.PI;
                 const cR = Math.cos(rot),
                     sR = Math.sin(rot);
@@ -52983,7 +53137,7 @@ class AnazhRealm {
                     colors[v3 + 2] = cb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + c * 0.7;
-                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.5;
+                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
                 }
@@ -53003,7 +53157,7 @@ class AnazhRealm {
                     colors[v3 + 2] = cb;
                     flex[vWrite] = flexBase * (c >= 2 ? 1.0 : 0.55);
                     phase[vWrite] = phBase + 1.7 + c * 0.7;
-                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.5;
+                    uvs[vWrite * 2] = tuX + UVC[c * 2] * 0.25;
                     uvs[vWrite * 2 + 1] = tuY + UVC[c * 2 + 1] * 0.5;
                     vWrite++;
                 }
@@ -70598,6 +70752,70 @@ AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
             size: 0.18,
         }),
     }),
+    // T1 (wahrerwuchs §4.1 — DIE BLATT-TYP-ACHSE) — die PALME: ein hoher, fast
+    // kahler Schaft mit einer Krone fiedriger Wedel NUR an der Spitze (foliage am
+    // L1, childStart 0.82 → Anker nur oben). kind "palm" → die Karten ziehen die
+    // Palmen-Wedel-Spalte des Atlas (Ω-O14). Tag-NEUTRAL (holz+laub, V17.16).
+    baum_palme: Object.freeze({
+        height: [6, 12],
+        crown: "column", // schmaler Schaft, Krone konzentriert oben
+        trunk: Object.freeze({ segs: 7, wander: 0.05, taper: 0.86, baseR: 0.3 }),
+        L1: Object.freeze({
+            density: 2.6,
+            whorl: 0,
+            childStart: 0.82, // Wedel NUR an der Spitze (kahler Schaft darunter)
+            childEnd: 1.0,
+            angleBase: 1.5, // Wedel splayen weit aus
+            lenRatio: 0.34,
+            droop: 0.5, // Wedel hängen anmutig
+            tipCurl: 0.06,
+            radRatio: 0.3,
+        }),
+        foliage: Object.freeze({
+            kind: "palm",
+            anchorLevel: 1,
+            clusterSize: [2, 3],
+            color: 0x4f8a3a,
+            size: 0.7,
+        }),
+    }),
+    // T1 — DIE ZYPRESSE: ein schmaler, säulen-förmiger Nadelholz-Verwandter mit
+    // SCHUPPEN-Laub (Cupressus). kind "scale" → die Schuppen-Spray-Spalte des Atlas.
+    // Die Äste hugen den Stamm (angleBase niedrig, lenRatio niedrig → schmale Säule).
+    baum_zypresse: Object.freeze({
+        height: [8, 16],
+        crown: "column",
+        trunk: Object.freeze({ segs: 6, wander: 0.04, taper: 0.82, baseR: 0.34 }),
+        L1: Object.freeze({
+            density: 3.4,
+            whorl: 0,
+            childStart: 0.1,
+            childEnd: 0.97,
+            angleBase: 0.5, // Äste hugen den Stamm → schmale Säule
+            lenRatio: 0.16,
+            droop: 0.12,
+            tipCurl: 0.08,
+            radRatio: 0.4,
+        }),
+        L2: Object.freeze({
+            density: 2.4,
+            whorl: 0,
+            childStart: 0.2,
+            childEnd: 1.0,
+            angleBase: 0.6,
+            lenRatio: 0.14,
+            droop: 0.1,
+            tipCurl: 0.05,
+            radRatio: 0.45,
+        }),
+        foliage: Object.freeze({
+            kind: "scale",
+            anchorLevel: 2,
+            clusterSize: [2, 4],
+            color: 0x3f6a48,
+            size: 0.42,
+        }),
+    }),
 });
 
 // V18.214 (DER LEBENDIGE GIGANT, SÄULE I+II+IV VOLLENDUNG) — die zwei neuen
@@ -70680,6 +70898,18 @@ AnazhRealm.SPECIES_TREE_PARAMS = Object.freeze({
         flare: Object.freeze({ amp: 0.0, lobes: 0 }),
         slopeMax: 0.4,
         heightRange: Object.freeze([-30, 50]),
+    }),
+    // T1 (wahrerwuchs §4.1) — PALME: warmes Tiefland, meidet Steile + Höhe (Küsten/Oasen).
+    baum_palme: Object.freeze({
+        flare: Object.freeze({ amp: 0.3, lobes: 4 }),
+        slopeMax: 0.6,
+        heightRange: Object.freeze([-30, 35]),
+    }),
+    // T1 — ZYPRESSE: säulen-förmig, tolerant (Hügel + mittlere Höhe).
+    baum_zypresse: Object.freeze({
+        flare: Object.freeze({ amp: 0.35, lobes: 5 }),
+        slopeMax: 1.0,
+        heightRange: Object.freeze([-30, 120]),
     }),
 });
 
