@@ -46904,27 +46904,54 @@ class AnazhRealm {
         // imperativ und liefern flache Part-Listen zurück. Da das nur EINMAL
         // beim Initialisieren läuft, kostet das nichts.
         const villageParts = [];
-        const hutCount = 6;
-        // Ω-B4 — der Dorf-Seed (Welt-Seed) würfelt jede Hütte eigen + deterministisch.
+        // Ω-B4 — der Dorf-Seed (Welt-Seed) würfelt das Dorf eigen + deterministisch.
         const villageSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-village";
+        // V18.249 (Schöpfer „häuser kollidieren, immer gleiche anordnung ... keine struktur") —
+        // das Dorf bekommt eine sichtbare STRUKTUR statt „Hütten im Kreis": ein zentraler PLATZ,
+        // organisch GESTREUTE Häuser (seed-variierter Winkel + Radius → kein zwei Dörfer gleich,
+        // kein Überlappen durch großen Radius + Streuung), und STEIN-WEGE von jeder Tür zum Platz.
+        // Die Häuser schauen mit der Tür auf den Platz (yaw=atan2(ix,iz) in der Variante).
+        const vHash = (salt) => {
+            let hh = 2166136261;
+            const ss = "vlayout:" + villageSeed + ":" + salt;
+            for (let ci = 0; ci < ss.length; ci++) {
+                hh ^= ss.charCodeAt(ci);
+                hh = Math.imul(hh, 16777619);
+            }
+            return ((hh >>> 0) % 1000000) / 1000000; // [0,1)
+        };
+        const hutCount = 5 + Math.floor(vHash("count") * 3); // 5-7 Häuser (variierte Dorf-Größe)
+        const baseRadius = 12.5; // groß genug, dass die ~5 m-Häuser nicht kollidieren
+        // (A) der zentrale PLATZ — eine flache Stein-Plattform (gibt dem Dorf eine Mitte)
+        villageParts.push({
+            shape: "cylinder",
+            color: 0x8f877b,
+            position: { x: 0, y: 0.12, z: 0 },
+            size: { x: 7.6, y: 0.24, z: 7.6 },
+            segments: 18,
+        });
         for (let i = 0; i < hutCount; i++) {
-            const angle = (i / hutCount) * Math.PI * 2;
-            const radius = 7.5;
+            const angle = (i / hutCount) * Math.PI * 2 + (vHash(i + ":a") - 0.5) * 0.7; // ±0.35 rad Streuung
+            const radius = baseRadius * (0.92 + vHash(i + ":r") * 0.36); // 0.92..1.28 × base
             const hx = Math.cos(angle) * radius;
             const hz = Math.sin(angle) * radius;
-            const bodyRot = -angle + Math.PI;
-            // V17.15 — die Hütten tragen Binnen-Struktur (Schöpfer-Audit „Dorf kaum
-            // Strukturen in sich"). Ω-B4 (V18.247): jede Hütte ist eine deterministische
-            // VARIANTE statt eines Klons — `_villageHutVariant(seed, index, place)` würfelt
-            // Größe · Geschoss · Dach-Typ · Fenster · Schornstein · Tönung aus dem Welt-Seed,
-            // box+pyramid-only (affinität-neutral, V17.17). Tür/Fenster auf der zum Zentrum
-            // gewandten Fassade (inward), via bodyRot mit der Wand ausgerichtet.
-            const ix = -Math.cos(angle); // Richtung zum Zentrum (Fassade)
+            const ix = -Math.cos(angle); // zum Zentrum (die Tür schaut auf den Platz)
             const iz = -Math.sin(angle);
-            const sx = -Math.sin(angle); // seitlich (für Fenster/Schornstein)
-            const sz = Math.cos(angle);
-            const hutParts = this._villageHutVariant(villageSeed, i, { hx, hz, bodyRot, ix, iz, sx, sz });
+            const hutParts = this._villageHutVariant(villageSeed, i, { hx, hz, ix, iz });
             for (let hp = 0; hp < hutParts.length; hp++) villageParts.push(hutParts[hp]);
+            // (B) ein STEIN-WEG von der Tür zum Platz (radial ausgerichtet) — die Dorf-Struktur
+            const pathInner = 3.8;
+            const pathOuter = radius - 3.4; // bis kurz vor die Tür
+            if (pathOuter > pathInner + 0.6) {
+                const pmid = (pathInner + pathOuter) / 2;
+                villageParts.push({
+                    shape: "box",
+                    color: 0x9a9388,
+                    position: { x: Math.cos(angle) * pmid, y: 0.1, z: Math.sin(angle) * pmid },
+                    rotation: { x: 0, y: Math.atan2(Math.cos(angle), Math.sin(angle)), z: 0 },
+                    size: { x: 1.5, y: 0.16, z: pathOuter - pathInner },
+                });
+            }
         }
         // Dorf-Brunnen im Zentrum (statt der flachen Platte): Stein-Ring +
         // dunkles Wasser innen + zwei Pfosten + Dach-Andeutung.
@@ -52187,17 +52214,23 @@ class AnazhRealm {
                 const ox = tx * TILE;
                 const oy = ty * TILE;
                 const cx = ox + TILE * 0.5;
-                const cyB = oy + TILE * 0.88; // Fächer wächst vom unteren Rand
-                const N = 15 + Math.floor(rnd() * 6); // 15-20 Blätter (LAAS 14-20)
+                const cy = oy + TILE * 0.5; // Zentrum (RADIAL-Büschel)
+                // V18.249 (Schöpfer „blätter unverhältnismässig gross ... cluster falsch
+                // gebacken?") — ein RADIALES Büschel: viele FEINE Blätter strahlen vom Zentrum
+                // nach AUSSEN (golden-angle, gleichmäßig in alle Richtungen) → liest als
+                // rundes Laub-Büschel aus JEDEM Karten-Winkel (der frühere Aufwärts-Fächer
+                // zeigte bei zufälliger Karten-Drehung in falsche Richtungen). Kleinere Blätter
+                // (len 0.18-0.4 Kachel) + mehr (28-36) → feines, proportioniertes Laub.
+                const N = 28 + Math.floor(rnd() * 9); // 28-36 feine Blätter
                 for (let i = 0; i < N; i++) {
-                    const tt = N > 1 ? i / (N - 1) : 0.5;
-                    const ang = (tt - 0.5) * 2 * 1.16 + (rnd() - 0.5) * 0.34; // Fächer ±1.16 rad
-                    const len = TILE * (0.4 + rnd() * 0.34);
-                    const wid = len * (0.28 + rnd() * 0.13);
-                    const lum = 0.78 + rnd() * 0.32;
-                    const bx = cx + (rnd() - 0.5) * TILE * 0.2;
-                    const by = cyB + (rnd() - 0.5) * TILE * 0.12;
-                    drawLeaf(bx, by, ang, len, wid, lum);
+                    const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4; // golden-angle, radial
+                    const rad = TILE * 0.5 * (0.1 + Math.sqrt(rnd()) * 0.4); // flächengleich gestreut
+                    const len = TILE * (0.18 + rnd() * 0.22); // KLEINER = feiner
+                    const wid = len * (0.32 + rnd() * 0.12);
+                    const lum = 0.74 + rnd() * 0.34;
+                    const bx = cx + Math.cos(dir) * rad;
+                    const by = cy + Math.sin(dir) * rad;
+                    drawLeaf(bx, by, dir + Math.PI / 2, len, wid, lum); // Spitze zeigt nach AUSSEN
                 }
             }
         }
@@ -52236,10 +52269,13 @@ class AnazhRealm {
         // Baum-Volumen → ein 12m-Baum las als dünner Stachel). GRÖSSERE, überlappende
         // Karten füllen das Kronen-Volumen → der Baum liest als Baum. FPS-NEUTRAL
         // (gleiche Vertex-Zahl, nur grösser). Schöpfer-Befund „Bäume ragen kaum".
-        // V18.248 — größere Büschel-Karten (wenige Karten/Anker, s. FOLIAGE_DENSITY): jede
-        // Karte zeigt ein volles Atlas-Büschel → größer halten sie die Krone voll + ruhig.
-        const cardW = baseSize * (isNeedle ? 3.0 : 4.2);
-        const cardH = baseSize * (isNeedle ? 4.4 : 3.4);
+        // V18.249 (Schöpfer „blätter unverhältnismässig gross") — KLEINERE Büschel-Karten:
+        // jede Karte zeigt ein feines Atlas-Büschel in PROPORTIONIERTER Größe (ein 1.5-2 m-
+        // Büschel an einem ~10 m-Baum, nicht ein 3.4 m-Mega-Blatt). Mehr Karten/Anker
+        // (FOLIAGE_DENSITY) halten die Krone trotzdem voll.
+        // Nadel-Sprays drapen größer als ein Laub-Büschel → die Konifere bleibt voll.
+        const cardW = baseSize * (isNeedle ? 2.4 : 2.1);
+        const cardH = baseSize * (isNeedle ? 3.4 : 1.85);
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -69098,7 +69134,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.248.0";
+AnazhRealm.VERSION = "18.249.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -69578,10 +69614,13 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
     // einer Jitter-Wolke = Brei. LAAS nutzt 1-2 Karten/Anker (das Büschel STECKT im Atlas).
     // Jetzt 3 große, RUHIGE Büschel-Karten/Anker → distinkte, geordnete Laub-Büschel an den
     // Ast-Spitzen statt Chaos. Größere Karten (s.u. cardW/cardH) halten die Krone voll.
-    cardsPerAnchor: [3, 2, 1], // pro LOD0/1/2 — wenige große Büschel-Karten (LAAS-Zahl)
-    jitterFrac: 0.42, // enger Cluster → ruhige, distinkte Büschel (kein Streu-Chaos)
-    sizeVar: 0.28, // ±28% (organisch, aber nicht chaotisch)
-    innerFill: 0.16, // offene Schale, das Ast-Gerüst bleibt sichtbar
+    // V18.249 (Schöpfer „blätter unverhältnismässig gross") — kleinere Büschel-Karten (s.u.
+    // cardW), dafür ein paar mehr/Anker → proportionierte Blätter UND volle Krone. Das
+    // RADIALE Atlas-Büschel (feine Blätter) hält es ruhig trotz mehr Karten.
+    cardsPerAnchor: [5, 2, 1], // pro LOD0/1/2 — moderate Zahl mittelgroßer Büschel
+    jitterFrac: 0.5, // Cluster-Spreizung (Büschel überlappen sanft → volle Krone)
+    sizeVar: 0.3, // ±30% (organisch)
+    innerFill: 0.2, // etwas Füllung, das Ast-Gerüst bleibt aber sichtbar
 });
 
 // V18.211 (DER LEBENDIGE GIGANT §3.3/§6) — SPECIES_GRAMMAR: die zentrale
