@@ -224,6 +224,120 @@ KREATUR   Skelett-Template (fix) + ALLOMETRISCHE Skalierung (Größe → Glied-D
 
 ---
 
+## §4¾ — DIE META-LEHRE, PRO GENRE GEFOLGERT (das Bau-Rezept je Bereich, reibungsfrei)
+
+> Die Frage des Schöpfers: was BEDEUTET die Meta-Lehre für die spezifischen Baupläne,
+> wie müssen sie GEBAUT werden, damit kaum Reibung bleibt? Hier die Folgerung — EIN
+> Bau-Verfahren, auf jedes Genre konkret angewandt.
+
+### Die Meta-Lehre in EINEM Satz
+
+> **Jedes Genre hat ein reales GESETZ, das seine Form regiert. Die Tiefe kommt daher,
+> DIESES Gesetzes wenige ACHSEN zu kodieren und das VERHALTEN aus dem Ω-PHYSIS-Richter
+> FOLGEN zu lassen — nie aus Appearance-Tuning, nie aus gesetzten Verhaltens-Werten.**
+> Die Referenz sagt WELCHE Achsen + ihre SPANNEN; der Richter GARANTIERT das Ergebnis.
+> Darum „kaum Reibung": ich leite nichts neu her und tune nichts blind — ich (1) nenne
+> das Gesetz/die Referenz, (2) kodiere seine Achsen via Genom, (3) lasse den Richter
+> urteilen. Immer derselbe Drei-Schritt.
+
+### Die FOLGERUNG #1 — die Genres KOLLABIEREN (kein „hundert Rezepte")
+
+Die ~37 statischen Baupläne werden NICHT 37 Generatoren — sie fallen in **~7 Genome**
+zusammen, weil dasselbe Gesetz viele „Arten" trägt:
+
+```
+EIN BAUM-GENOM trägt:  Baum · Strauch · Farn · Blume · GIGANT · jung/alt/breit/schlank ·
+                       Totholz  (= sizeClass + Alter + Blatt-Typ + Krone — eine Familie)
+EIN FELS-GENOM trägt:  Kiesel · Brocken · Block · Bogen · Nadel · Stapel · Geröll
+EIN KRISTALL-GENOM:    Druse · Cluster · Geode · Säulen-Quarz · Riesen-Kristall
+EIN BAU-GENOM trägt:   Tempel · Hütte · Werkstatt · Bauwerk · Portal  (Größe+Palette+Stil)
+EIN GERÄT-GENOM trägt: Schwert · Hammer · Axt · Spitzhacke  (Hebel/Keil/Klinge)
+EIN KÖRPER-GENOM:      jede Kreatur/Avatar  (Template + Allometrie)
+EIN FAHRZEUG-GENOM:    Wagen · Karre · Kutsche  (SSF)
+```
+
+DAS ist „die volle Palette ohne hundert Rezepte": ein Dutzend Genome × den Seed.
+
+### Die FOLGERUNG #2 — das Bau-Rezept je Genre (das Gesetz · die Achsen · das Verhalten folgt · die Reibung vorweg)
+
+```
+FELS  ─ GESETZ: Geologie (Bruch + Verwitterung; Sediment-Bänderung; härte→Angularität)
+        ACHSEN: Form-Klasse (Brocken/Bogen/Nadel/Stapel) · Größe · Schichtung (Y-Bänder)
+                · Verwitterung (gerundet↔scharf, aus härte) · Flechten (feucht)
+        GEBAUT: die `noiserock`-Saat (V18.227) + Form-Klasse-Selektor; die Y-Schichtung
+                aus `_terrainGeologyAlbedo` WIEDERVERWENDEN (kein neuer Pfad).
+        FOLGT:  steht (Ω-Φ2) — ein Bogen/Stapel muss den Lastpfad schließen (Ω-Φ5).
+        REIBUNG: SCATTER → Tags FROZEN; nur Form/Größe/Noise variieren, KEIN Material.
+                noiserock ist in FORM_TAG_ACTIVATION (=box) → tag-sicher.
+
+KRISTALL ─ GESETZ: Kristallographie (HABITUS — die charakteristische Wuchsform; Facetten
+                aus dem Kristall-System, z.B. Quarz 6-seitig + Pyramiden-Spitze)
+        ACHSEN: Habitus (Einzel/Cluster/Geode/Säulen-Druse) · Facetten-Zahl · Größe ·
+                Termination (Pyramiden-Kappe) · Glanz/Glut (aus magieleitung→emissiv)
+        GEBAUT: parametrische Prismen+Pyramiden-Montage (cone/pyramid/octahedron da);
+                Habitus ordnet N Prismen (Cluster/Druse/Geode-Schale).
+        FOLGT:  emissiv aus dem Material-Tag (Stefan-Boltzmann, schon im PBR-Profil).
+        REIBUNG: SCATTER → quarz-Material fix; nur Form/Größe/Facetten variieren.
+
+GLUT  ─ GESETZ: Thermodynamik (Gefäß + Flamme; Glut = emissiv ∝ Intensität)
+        ACHSEN: Becken-Größe · Flammen-Höhe · Öffnung · Intensität (→ emissiv)
+        GEBAUT: Becken (cylinder) + Flamme (cone, emissiv) × Intensität.
+        FOLGT:  emissiv aus responseProfile.emissiv (schon da); kein gesetzter Glow.
+        REIBUNG: SCATTER → glut/stein fix; nur Größe/Höhe/Intensität.
+
+BÜSCHE/FARN/BLUME ─ GESETZ: dieselbe Botanik wie Bäume, Lebensform=Strauch.
+        → KEIN eigenes Genre: das BAUM-GENOM mit sizeClass=Strauch + Blatt-Typ
+          (Farn=Wedel, Blume=blüten-Karte). Die größte Synergie: ein Genom, Moos→Mammut.
+
+WERKSTATT/PORTAL/BAUWERK ─ GESETZ: Funktion bestimmt Form (Esse=Ofen+Esse+Amboss;
+                Webstuhl=Rahmen+Kette; Portal=Ring/Tor) + Architektur-Solidität.
+        ACHSEN: Größe · Proportion · Material-Palette · Detail-Dichte (das Tempel-Muster).
+        GEBAUT: die bestehende Parts-Liste PARAMETRISIEREN (Größe/Palette via Genom),
+                NICHT neu erfinden — das `_classicalTempleVariant`-Muster.
+        FOLGT:  steht + Lastpfad (Ω-Φ2/Φ5).
+        REIBUNG: GESTEN-gespawnt → Material/Palette FREI; aber die FUNKTION muss lesbar
+                bleiben (eine Esse liest als Esse) → das Genom variiert Größe/Detail, NIE
+                die funktionale Essenz. Im Form-Satz bleiben (keine neue spawnbare Form).
+
+GERÄT/RÜSTUNG/TRANK ─ GESETZ: die einfache Maschine (Hebel τ=Kopf·Stiel; Keil-Winkel;
+                Klinge=Flächenträgheit/Hohlkehle Ω-Φ3) — die FUNKTION ist Physik.
+        ACHSEN: Kopf-Masse · Stiel-Länge · Keil-Winkel · Klingen-Profil/Hohlkehle ·
+                Material (eisen/holz) · (Rüstung: Platten-Deckung; Trank: Phiole/Farbe)
+        GEBAUT: parametrische Montage Kopf+Stiel/Knauf+Griff+Parier+Klinge (das
+                `_buildBladedWeapon`-Muster, Oakeshott).
+        FOLGT:  Balance/Schlagpunkt/Hebel GERECHNET (Ω-Φ4), NIE gesetzt — wie das Schwert.
+        REIBUNG: eine neue spitze/Klingen-Form MUSS in SPATIAL_POINTED_SHAPES (V18.242),
+                sonst kippt die emergente Rolle (Klinge→Brecher).
+
+FAHRZEUG ─ GESETZ: Fahrdynamik (SSF = Spur/(2·Schwerpunkt-Höhe) — die echte Kipp-Schwelle)
+        ACHSEN: Kabinen-Breite · Rad-Größe · Radstand · Spur · Material
+        GEBAUT: parametrische Räder+Achsen+Kabine.
+        FOLGT:  Stabilität = SSF (Ω-Φ2), GERECHNET — ein kopflastiger Wagen liest instabil.
+        REIBUNG: `rollable` liest die HORIZONTALE Zylinder-Achse (Rad), nicht Rundheit
+                (ein vertikaler Stamm rollt nicht, V18.239).
+
+KREATUR/AVATAR ─ GESETZ: Biomechanik (Quadrat-Kubik — der Riese braucht überproportional
+                dicke Glieder; DASSELBE Gesetz wie der Gigant-Baum)
+        ACHSEN: Skelett-Template (Anker, fix) + sizeClass + ALLOMETRISCHE Glied-Dicke
+        GEBAUT: das Template (CREATURE_SOULS) skaliert allometrisch (Glied-Dicke ∝ √Masse).
+        FOLGT:  steht (Ω-Φ2) + Glieder tragen (Ω-Φ3-b) — der Richter fängt den zu-dünnen
+                Riesen, EXAKT wie beim Baum (Ω-B5 = die sizeClass-Achse am Körper).
+        REIBUNG: Symmetrie/Template ist gesperrt (V18.209) → NUR allometrisch skalieren,
+                das Template nicht verbiegen.
+```
+
+### Die FOLGERUNG #3 — warum das die Reibung TÖTET
+
+```
+- EIN Verfahren (Gesetz → Achsen → Richter) → ich rate nie, tune nie blind, leite nie neu her.
+- EIN Roller (_rollGenome, UNSIGNED) → der Vorzeichen-Bug ist strukturell unmöglich.
+- DER RICHTER garantiert (steht/knickt/Lastpfad) → kein „sieht stabil aus aber kippt".
+- DIE REFERENZ kalibriert die Spannen (Sequoia 30-80 m, SSF≥1.2, Oakeshott) → kein Ausreißer.
+- DIE KOLLAPS (37→7 Genome) → ich baue 7 Dinge, nicht 37 → die Vielfalt ist Seed, nicht Arbeit.
+```
+
+---
+
 ## §5 — DIE LEGACY-BEREINIGUNG (das tote Holz)
 
 Nach der Saat-Disziplin (CLAUDE.md): schneide NUR, was VERIFIZIERT durch etwas
