@@ -1202,3 +1202,51 @@ Force-Falle — sie verletzt das Projekt-Axiom (Auslesewert statt Hand-Werk) UND
 (N bespoke Meshes statt EIN Gesetz). Die professionelle, synergetische Antwort ist IMMER: das
 GESETZ schärfen, bis das Detail emergiert + der Blob durchs Tor fällt. F1 (Kreatur-Skelett-Gesetz)
 ist der erste Schub — recherchiert (creature-skeleton/metaball), gesetz-getrieben, kein Hand-Blob.
+
+---
+
+## §12 — DER FIDELITÄTS-SCHUB (Stand 16.06.2026 — F1–F6 GEBAUT, ehrliche Bilanz)
+
+> **Schöpfer-Rüge (mitten im Schub): „ich kann nichtmehr zusehen wie du dir auf die
+> Schulter klopfst während die Ergebnisse kaum 5% erreichen."** Recht gehabt — die
+> ersten Schritte (Kreatur als brauner Kasten-Vierbeiner, ein leicht besserer Kristall)
+> waren als „grosser Upgrade" gefeiert, während der Katalog noch Blobs zeigte. Die
+> KORREKTUR: nicht das einzelne System feiern, sondern den GANZEN Katalog auf „liest als
+> das Ding" heben — über reference-grounded GEOMETRIE-GESETZE (das Detail EMERGIERT), nicht
+> Hand-Meshes. Danach ging es in die Breite.
+
+**GEBAUT + verifiziert (diag-genom alle Bänder grün · diag-werk-render am Auge · playtest):**
+sieben neue Geometrie-GESETZE ersetzen die Primitiv-Montagen, das Genom (T1–T6) reitet oben:
+
+```
+GESETZ (neuer Shape)        DOMÄNE              WAR              LIEST JETZT ALS
+─────────────────────────────────────────────────────────────────────────────────────
+limb (verjüngte Kapsel)     F1 Kreatur          Box+Kopf+Stummel  Vierbeiner/Klauen-Raubtier
+crystalPoint (Prisma+Term.) F4 Kristall          glatte Kugel      Quarz-Säule/Druse/Geode
+latheProfile (Revolve)      F2 Trank · F6 Glut   Ball+Zyl/Becken+K Glas-Phiole · Brazier-Flamme
+plateShell (Zyl-Sektion)    F2 Rüstung           Box+2 Kugeln      Kürass+Pauldrons+Fauld
+spokeWheel (radiale Subdiv) F5 Fahrzeug          Kiste auf Scheiben Wagen mit Speichen-Rädern
+pickHead (Pick+Adze)        F2 Werkzeug          Kegel             Spitzhacke (scharfe Spitze)
+_buildForgeParts (Grammatik)F3 Werkstatt         Box+2 Kugeln      FORGE (Feuer/Haube/Amboss)
++ Portal grounded+Runen     F3 Portal            schwebender Ring  stehendes Runen-Tor
+```
+
+**Die DISZIPLIN, die hielt (jedes Gesetz):** (1) AFFINITÄT — jede neue Form-Aktivierung ==
+die der ersetzten (limb==cylinder · crystalPoint==octahedron · plateShell==box · latheProfile==
+sphere · spokeWheel==cylinder · pickHead==cone) → Tags BIT-IDENTISCH, scatter-frozen hält
+(V17.16); glutwesen bleibt box+cone (wild-Temperament tag-emergent); die Esse bleibt FORGING
+(GEMESSEN). (2) RICHTER — jede Variante steht (Ω-Φ2) · knickt nicht (Ω-Φ3-b, Schlankheit
+gebunden) · Lastpfad schliesst (Ω-Φ5). (3) GELENKE — spokeWheel in die RAD-Erkennung (isCyl) +
+rollable + isWheel → Fahr-Tiefe/Mount-Achse heil (V18.119/.150/M3). (4) AUGE — jedes Werk im
+`diag-werk-render`-Katalog angesehen BEVOR „fertig" (die §11-Geburts-Lehre eingelöst).
+
+**EHRLICH OFFEN (kein Über-Claim):**
+- **KREATUR-Körper** ist ein kohärenter Vierbeiner, aber noch LOW-POLY-blockig (box-Rumpf +
+  Kapsel-Glieder). Das volle Skelett+Metaball+Marching-Cubes-Gesetz (organische Haut, in die
+  die Glieder verschmelzen) ist NICHT gebaut — es kollidiert mit dem parts-basierten Animations-/
+  Tag-/Allometrie-System (Skinning wäre ein eigener grosser Bogen). Der nächste Tiefen-Schritt.
+- **WEITERE Werkstätten** (brennkolben/webstuhl/drehbank/altar) tragen noch ihre alten Teil-
+  Listen — nur die Esse bekam die Forge-Grammatik. Die Grammatik auf sie auszuweiten ist der
+  nächste F3-Schritt.
+- **BÄUME (F6 Ω-O16)** Krone/Gabelung sind nicht angefasst (laufende LAAS-Politur).
+- Der finale LOOK bleibt AUGEN-bound (Schöpfer-Browser im echten WebGPU), nicht nur swiftshader.

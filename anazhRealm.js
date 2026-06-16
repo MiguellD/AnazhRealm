@@ -47541,6 +47541,59 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ F3 (wahrerwuchs §11) — DIE WERKSTATT-SHAPE-GRAMMATIK: DIE ESSE ALS FORGE ═══
+    // Eine Esse ist ein SCHMIEDE-FEUER, kein Box+2-Kugeln-Blob (§11-Befund). Die FUNKTION
+    // diktiert die Teile (das CGA/Tempel-Muster auf die Werkstatt): Feuerbox + glühendes
+    // KOHLEN-Bett (`latheProfile`, emissiv) + verjüngte ESSE-HAUBE auf zwei Pfeilern +
+    // SCHORNSTEIN + AMBOSS (eisen-Block + Horn auf Holz-Stumpf) + BLASEBALG. Das Detail
+    // EMERGIERT aus der Funktion. Die FORGING-Domäne bleibt (dichte+wärmeleitung dominant:
+    // stein/eisen/glut → `_computeWorkshopDomain` == forging, GEMESSEN). PHYSIK: die breite
+    // Feuerbox trägt (Ω-Φ2), Haube/Schornstein wurzeln auf den Pfeilern (Ω-Φ5), Amboss +
+    // Blasebalg sind boden-/herd-verankert. opts.master = die Eisen-Meister-Esse.
+    _buildForgeParts(opts) {
+        opts = opts || {};
+        const bodyMat = opts.master ? "eisen" : "stein";
+        // Der Amboss-Werkstoff trägt die STEIGERUNG (V17.77/.88): die Basis-Esse hat einen
+        // BRONZE-Amboss (weicher → niedrigerer Präzisions-Cap), die Meister-Esse einen EISEN-
+        // Amboss (dichter → höherer Cap). Kein eisen in der Basis → die Compound-dichte (die
+        // Quelle von _workshopStationPrecision) bleibt unter der der Meister-Esse.
+        const anvilMat = opts.master ? "eisen" : "bronze";
+        const anvilCol = opts.master ? 0x9aa0a6 : 0xb08d57;
+        const stoneCol = opts.master ? 0x8a8f96 : 0x6a6258;
+        const P = [];
+        const add = (shape, material, x, y, z, sx, sy, sz, extra) =>
+            P.push({ shape, material, position: { x, y, z }, size: { x: sx, y: sy, z: sz }, ...(extra || {}) });
+        // (1) Feuerbox — der breite Herd (steht).
+        add("box", bodyMat, 0, 0.55, 0, 2.0, 1.1, 1.6, { color: stoneCol });
+        // (2) Kohlen-Bett — die glühende Glut (latheProfile-Schale, emissiv).
+        add("latheProfile", "glut", 0, 1.18, 0, 1.4, 0.5, 1.2, {
+            color: 0xff7a2a,
+            opacity: 0.88,
+            emissiveBoost: opts.master ? 1.7 : 1.5,
+            profile: [
+                [0, 0],
+                [0.85, 0.05],
+                [1.0, 0.35],
+                [0.8, 0.6],
+                [0, 0.66],
+            ],
+        });
+        // (3) Esse-Haube auf zwei Hinter-Pfeilern (das Feuer bleibt vorn offen) + Schornstein.
+        for (const sx of [-1, 1]) add("box", bodyMat, sx * 0.82, 1.7, -0.6, 0.24, 1.7, 0.24, { color: stoneCol });
+        add("cone", bodyMat, 0, 2.85, -0.45, 1.9, 1.3, 1.5, { color: stoneCol });
+        add("cylinder", bodyMat, 0, 3.8, -0.45, 0.55, 1.1, 0.55, { segments: 10, color: stoneCol });
+        // (4) Amboss — eisen-Block + Horn auf einem Holz-Stumpf, neben dem Herd.
+        add("cylinder", "holz", 1.55, 0.45, 0.6, 0.55, 0.9, 0.55, { segments: 8, color: 0x6e4a28 });
+        add("box", anvilMat, 1.55, 1.05, 0.6, 0.5, 0.32, 1.0, { color: anvilCol });
+        add("cone", anvilMat, 1.55, 1.05, 1.32, 0.32, 0.7, 0.32, {
+            rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            color: anvilCol,
+        });
+        // (5) Blasebalg — ein Holz-Keil an der Herd-Seite (die Luft-Pumpe).
+        add("box", "holz", -1.15, 0.8, 0, 0.5, 0.6, 1.1, { color: 0x6e4a28 });
+        return P;
+    }
+
     // ═══ DAS BAUWERK-GENOM (wahrerwuchs §4.5 S5) — die FUNKTIONALEN Bauten ═══
     // Tempel/Dorf/Hütte sind schon generativ; die funktionalen Bauten (Werkstätten ·
     // Portale · Bauten · Rüstung · Trank · Fahrzeug) werden PARAMETRISIERT (Plan §6½.2:
@@ -47645,9 +47698,25 @@ class AnazhRealm {
             ];
             for (let d = 0; d < detail; d++) {
                 const [ox, oz] = corners[d % 4];
+                // F3-FIX: den LOKALEN Scheitel an dieser Ecke finden (das höchste Teil, dessen
+                // Grundfläche die Ecke enthält) → der Stud sitzt AUF einem echten Teil. Bei
+                // einer HOHEN Struktur (Esse mit Schornstein) lag der alte `maxY`-Stud über dem
+                // Schornstein in der Luft (schwebende Debris) — jetzt ruht er auf dem Herd.
+                let localTop = -Infinity;
+                for (const p of out) {
+                    const px = (p.position && p.position.x) || 0,
+                        pz = (p.position && p.position.z) || 0;
+                    const hx = ((p.size && p.size.x) || 0.3) / 2,
+                        hz = ((p.size && p.size.z) || 0.3) / 2,
+                        hy = ((p.size && p.size.y) || 0.3) / 2,
+                        py = (p.position && p.position.y) || 0;
+                    if (ox >= px - hx && ox <= px + hx && oz >= pz - hz && oz <= pz + hz && py + hy > localTop)
+                        localTop = py + hy;
+                }
+                if (!Number.isFinite(localTop)) continue; // nichts an dieser Ecke → kein Schweben
                 out.push({
                     ...tmpl,
-                    position: { x: ox, y: maxY - studS * 0.5, z: oz },
+                    position: { x: ox, y: localTop - studS * 0.4, z: oz },
                     size: { x: studS, y: studS, z: studS },
                     ...(typeof tmpl.color === "number" ? { color: tint(tmpl.color) } : {}),
                 });
@@ -49822,46 +49891,11 @@ class AnazhRealm {
         // eine passende Welt-Werkstatt in WORKSHOP_PROXIMITY_M Nähe ist.
         // Construction-Default-Bauplane (architecture) brauchen keine
         // Welt-Werkstatt — sie sind die "Open-Air-Welt" selbst.
-        const esseParts = [
-            // Stein-Sockel
-            {
-                shape: "box",
-                material: "stein",
-                position: { x: 0, y: 0.5, z: 0 },
-                size: { x: 2.0, y: 1.0, z: 1.6 },
-            },
-            // Bronze-Schale für die Glut
-            {
-                shape: "sphere",
-                material: "bronze",
-                position: { x: 0, y: 1.3, z: 0 },
-                size: { x: 1.4, y: 0.6, z: 1.2 },
-                opacity: 0.9,
-            },
-            // Glut-Kern, leuchtend
-            {
-                shape: "sphere",
-                material: "glut",
-                position: { x: 0, y: 1.4, z: 0 },
-                size: { x: 0.9, y: 0.5, z: 0.8 },
-                opacity: 0.85,
-            },
-        ];
-        // V17.77 — die MEISTER-Esse: derselbe Schmiede-Sinn, aber ein EISEN-Körper (dichter + härter als
-        // Stein/Bronze → feinere Toleranzen) + ein Eisen-Amboss; die Glut bleibt das Feuer. Die craftbare
-        // „bessere Esse" — sie hebt den Präzisions-Cap, den Werke an ihr erreichen (die Steigerung sichtbar).
-        const esseMeisterParts = [
-            { shape: "box", material: "eisen", position: { x: 0, y: 0.6, z: 0 }, size: { x: 2.2, y: 1.2, z: 1.8 } },
-            { shape: "box", material: "eisen", position: { x: 0, y: 1.5, z: 0 }, size: { x: 1.6, y: 0.6, z: 1.4 } },
-            {
-                shape: "sphere",
-                material: "glut",
-                position: { x: 0, y: 1.7, z: 0 },
-                size: { x: 1.0, y: 0.55, z: 0.9 },
-                opacity: 0.85,
-            },
-            { shape: "box", material: "eisen", position: { x: 0, y: 2.2, z: 0 }, size: { x: 1.2, y: 0.5, z: 0.8 } },
-        ];
+        // F3 (§11): die Esse als echtes FORGE (Feuerbox + Glut-Bett + Haube + Amboss + Blasebalg).
+        const esseParts = this._buildForgeParts({});
+        // V17.77 — die MEISTER-Esse: dieselbe Schmiede-Grammatik mit EISEN-Körper (dichter + härter
+        // → feinere Toleranzen, höherer Präzisions-Cap). Die Glut lodert heißer (emissiv↑).
+        const esseMeisterParts = this._buildForgeParts({ master: true });
         const brennkolbenParts = [
             // Holz-Untersatz
             {
@@ -49981,20 +50015,36 @@ class AnazhRealm {
         // (Torus, vertikal stehend wie ein Türrahmen) mit einer schimmernden
         // Quarz-Membran im Innern. Quarz ist transparent + magieleitend → die
         // Membran wirkt durchscheinend-arkan.
+        // F3 (§11): das Portal als GROUNDED, RUNEN-Tor (Ring + arkane Membran + Basis-Sockel +
+        // zwei Pfeiler [es STEHT] + Runen-Glyphen um den Ring) statt eines schwebenden Rings.
         const weltPortalParts = [
-            {
-                shape: "torus",
-                material: "stein",
-                position: { x: 0, y: 2.2, z: 0 },
-                size: { x: 3.4, y: 3.4, z: 3.4 },
-            },
+            // der STEIN-RING (Tor-Rahmen) + die arkane QUARZ-MEMBRAN.
+            { shape: "torus", material: "stein", position: { x: 0, y: 2.5, z: 0 }, size: { x: 3.4, y: 3.4, z: 3.4 } },
             {
                 shape: "cylinder",
                 material: "quarz",
-                position: { x: 0, y: 2.2, z: 0 },
+                color: 0x9fd6e8,
+                opacity: 0.5,
+                position: { x: 0, y: 2.5, z: 0 },
                 size: { x: 2.6, y: 0.16, z: 2.6 },
                 rotation: { x: Math.PI / 2, y: 0, z: 0 },
             },
+            // BASIS-Sockel + zwei Pfeiler → das Tor steht auf dem Boden (Lastpfad geschlossen).
+            { shape: "box", material: "stein", position: { x: 0, y: 0.2, z: 0 }, size: { x: 4.2, y: 0.4, z: 1.5 } },
+            { shape: "box", material: "stein", position: { x: -1.55, y: 1.3, z: 0 }, size: { x: 0.5, y: 2.4, z: 0.6 } },
+            { shape: "box", material: "stein", position: { x: 1.55, y: 1.3, z: 0 }, size: { x: 0.5, y: 2.4, z: 0.6 } },
+            // RUNEN-Glyphen (quarz octahedron) gleichmäßig um den Ring.
+            ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+                const a = (i / 8) * Math.PI * 2 + 0.2;
+                const rr = 2.05; // auf dem AUSSEN-Rand des Torus-Wulstes (sichtbar, nicht eingebettet)
+                return {
+                    shape: "octahedron",
+                    material: "quarz",
+                    color: 0x9fd6e8,
+                    position: { x: Math.cos(a) * rr, y: 2.5 + Math.sin(a) * rr, z: 0 },
+                    size: { x: 0.34, y: 0.34, z: 0.34 },
+                };
+            }),
         ];
 
         // W12 Phase 2 — Strom-Welt-Portal: ein Quarz-Ring (Crystalline Tor,
@@ -50182,6 +50232,64 @@ class AnazhRealm {
                 position: { x: 0.72, y: 0.36, z: -0.8 },
                 size: { x: 0.7, y: 0.14, z: 0.7 },
                 rotation: { x: 0, y: 0, z: 1.5707963 },
+            },
+            // F5 (§11, Quality-Lift): das FAHRGESTELL — nicht nur eine Kiste, sondern ein
+            // Karren mit Bord-WÄNDEN, Eck-Pfosten, ACHSEN unter dem Bett + einer DEICHSEL
+            // (Zug-Stange + Querholz). Die Teile kommen NACH den Rädern (Index 5+) → die
+            // sitz/hafting-connections (0–4) bleiben heil. Alles holz-box (kein eisen →
+            // nicht als Rad mis-erkannt; kein cylinder → kein Phantom-Gelenk).
+            // Bord-Wände (2 Längs-Seiten + Front/Heck).
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -0.61, y: 1.22, z: 0 },
+                size: { x: 0.1, y: 0.4, z: 1.95 },
+            },
+            { shape: "box", material: "holz", position: { x: 0.61, y: 1.22, z: 0 }, size: { x: 0.1, y: 0.4, z: 1.95 } },
+            { shape: "box", material: "holz", position: { x: 0, y: 1.22, z: 0.97 }, size: { x: 1.3, y: 0.4, z: 0.1 } },
+            { shape: "box", material: "holz", position: { x: 0, y: 1.22, z: -0.97 }, size: { x: 1.3, y: 0.4, z: 0.1 } },
+            // 4 Eck-Pfosten (Stake-Posts).
+            ...[
+                [-0.6, 0.92],
+                [0.6, 0.92],
+                [-0.6, -0.92],
+                [0.6, -0.92],
+            ].map(([x, z]) => ({
+                shape: "box",
+                material: "holz",
+                color: 0x5a3d22,
+                position: { x, y: 1.32, z },
+                size: { x: 0.13, y: 0.62, z: 0.13 },
+            })),
+            // 2 Achs-Balken (verbinden die Rad-Paare unter dem Bett).
+            {
+                shape: "box",
+                material: "holz",
+                color: 0x5a3d22,
+                position: { x: 0, y: 0.36, z: 0.8 },
+                size: { x: 1.6, y: 0.13, z: 0.15 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 0x5a3d22,
+                position: { x: 0, y: 0.36, z: -0.8 },
+                size: { x: 1.6, y: 0.13, z: 0.15 },
+            },
+            // DEICHSEL — die Zug-Stange nach vorn (+Z) + ein Querholz (Singletree) am Ende.
+            {
+                shape: "box",
+                material: "holz",
+                color: 0x5a3d22,
+                position: { x: 0, y: 0.62, z: 1.95 },
+                size: { x: 0.13, y: 0.13, z: 1.8 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 0x5a3d22,
+                position: { x: 0, y: 0.62, z: 2.78 },
+                size: { x: 0.95, y: 0.11, z: 0.11 },
             },
         ];
         const fahrzeugWagenConnections = [
@@ -58489,10 +58597,24 @@ class AnazhRealm {
     _workshopStationPrecision(bp) {
         const t = this.computeCompoundTags(bp) || {};
         const cfg = AnazhRealm.WORKSHOP_PRECISION;
-        // dichte über dichteRef normalisiert (die Compound-dichte reicht bis ~2.7) → ein dichteres Material
-        // DIFFERENZIERT, statt bei 1 zu sättigen; härte ist schon ~[0,1]. So zählt „dichter UND härter".
+        // Die PRÄZISION ist ein AUSLESEWERT der Schmiede-PHYSIK, kein Material-Etikett-Tausch:
+        // (1) MASSE — die Compound-dichte (form×material): ein massiver, dichter Korpus dämpft
+        //     die Vibration → feiner. Form-verstärkt ist hier EHRLICH (ein grosser dichter Block
+        //     IST massereicher). Sättigt für jede ernste Werkstatt bei ~1.
         const solid = Math.min(1, (t.dichte || 0) / (cfg.dichteRef || 1));
-        const hard = Math.min(1, t.härte || 0);
+        // (2) AMBOSS-HÄRTE — die ROHE Material-Härte des härtesten Bauteils (der Amboss-Stahl),
+        //     NICHT form-verstärkt: auf dem flachen Amboss wird geformt; ein scharfes Horn (Kegel,
+        //     härte-Aktivierung ×3) ist KEIN härteres Werkzeug als sein Stahl — die alte Compound-
+        //     härte sättigte daran fälschlich. Ein Eisen-Amboss formt feiner als ein Bronze-Amboss
+        //     WEIL Eisen härter IST (echte Physik) — die Materie trägt die Wahrheit, das Gesetz liest
+        //     sie, statt dass „besser" ein gewechseltes Etikett wäre.
+        const mats = this.state.materials || {};
+        let hard = 0;
+        for (const p of bp.parts) {
+            const m = mats[p.material];
+            if (m && m.tags && (m.tags.härte || 0) > hard) hard = m.tags.härte;
+        }
+        hard = Math.min(1, hard);
         return Math.max(0, Math.min(cfg.max, cfg.base + cfg.fromDichte * solid + cfg.fromHärte * hard));
     }
 
