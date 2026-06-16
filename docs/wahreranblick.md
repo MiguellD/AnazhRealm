@@ -24,13 +24,13 @@
 > committed Wert pro Welle. _(Die Geschichte des Drifts + warum die Wände nötig sind:
 > `archiv/wahreranblick-antidrift-plan.md`.)_
 >
-> **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (der ANBLICK) und `wahrerbauplan.md`
+> **EIN PRINZIP, ZWEI GESICHTER:** dieser Plan (der ANBLICK) und `archiv/wahrerbauplan.md`
 > (Ω-PHYSIS, das SEIN) sind dasselbe Gesetz — der Auslesewert der Wahrheit. Während
 > Ω-PHYSIS headless verifizierbar ist, ist der LOOK flake-begrenzt → **das Schöpfer-
 > Auge ist hier der letzte Richter** (Wand 1).
 >
 > **DIE ZWEI SEELEN VEREINT (V18.241 — der erste Ort, wo SEIN sichtbar wird):** der
-> WAHRHEITS-SPIEGEL der Werkstatt (Ω-PHYSIS Säule IV, `wahrerbauplan.md §7`) ist die
+> WAHRHEITS-SPIEGEL der Werkstatt (Ω-PHYSIS Säule IV, `archiv/wahrerbauplan.md §7`) ist die
 > erste gebaute Naht zwischen den Gesichtern: die in Säule I GERECHNETE Physik (das
 > SEIN — Schwerpunkt · Stützpolygon · Lastpfad) wird sichtbares Bau-Feedback (der
 > ANBLICK) — ein instabiles Werk WANKT sichtbar in der 3D-Vorschau, ein schwebendes

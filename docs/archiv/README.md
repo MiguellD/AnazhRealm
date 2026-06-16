@@ -11,7 +11,7 @@ Hier liegt **alles Detail, das nicht auf dem aktiven Tisch sein muss** — durch
 
 Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`** →
 `CLAUDE.md` (JETZT + Gotchas), `docs/state-of-realm.md` (Vision),
-`docs/das-lebendige-feld.md` (der wahre Norden), `docs/wahrerbauplan.md` +
+`docs/das-lebendige-feld.md` (der wahre Norden), `docs/archiv/wahrerbauplan.md` +
 `docs/wahreranblick.md` (der aktive Bogen), `docs/roadmap.md` (der Weg).
 
 **Frisch archiviert (15.06.2026 — die Doc-Ordnung wiederhergestellt: die vier ewigen Heimaten

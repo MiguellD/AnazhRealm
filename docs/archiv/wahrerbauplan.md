@@ -1,3 +1,12 @@
+> **✅ ARCHIVIERT (16.06.2026) — DER Ω-PHYSIS-BOGEN IST RUND.** Säule I–IV (der Schiedsrichter ·
+> die Vereinigung · die Bauplan-Grammatik · der Wahrheits-Spiegel) sind GEBAUT + GEMESSEN; Ω-B5
+> (Kreatur-Allometrie) ist via Wuchs-T5 ERFÜLLT (`_applyCreatureAllometry`, Galileo Quadrat-Kubik).
+> Der RICHTER lebt im Code (`_stability`/`_failsUnderLoad`/`_swingDynamics`/`_loadPath`) + wird
+> fortlaufend KONSUMIERT (jede Genom-Variante wird gegen ihn gemessen). Offener Rest: Ω-B4 LOD-Swap
+> je Scatter-Variante (marginal → `docs/roadmap.md` §4). Der aktive Form-Bogen lebt in
+> `docs/wahrerwuchs.md` (§10 = der volle Vertikal-Bogen); der Anblick in `docs/wahreranblick.md`.
+> Dieser Plan ist die NORMATIVE Physik-Referenz — vor Physik-Arbeit ZUERST hier.
+
 # DER WAHRE BAUPLAN — Ω-PHYSIS
 
 > **STAND (15.06.2026 — DER AKTIVE BOGEN · Gesicht „SEIN / Physik"):** SÄULE I (der

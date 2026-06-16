@@ -810,3 +810,138 @@ ANBLICK (gegen die Genre-Referenz im Schöpfer-Browser, wahreranblick Wand 1). D
 §9-Tabelle nennt die FORM-Achse, diese §9.1-Tabelle nennt die zwei Schwester-Fäden.
 Wer T1 baut, liest Ω-O14; wer T5 baut, liest Ω-B5; wer T2 baut, liest Ω-B4. **So
 erreicht der Bogen die ULTIMATIVE Tiefe statt nur das Gerüst — Fischer UND Gigant.**
+
+---
+
+## §10 — DER VOLLE VERTIKAL-BOGEN (das WAS-FEHLT, in voller Synergie + Tiefe)
+
+> **STAND 16.06.2026 (nach T1–T6 + dem Landmark-Fullstack):** Der Schöpfer sah den
+> tiefsten Bruch — *„bei den Blättern sind wir bis zur untersten Ebene gelandet, hoch
+> bis zum Baum, sogar bis zur PLATZIERUNG. Haben wir das bei den anderen Systemen
+> ebenfalls getan?"* Die ehrliche Antwort: NEIN, noch nicht überall. §10 ist der
+> aktive Plan, der das vollendet — KEIN Gerüst mehr, der volle vertikale Guss.
+
+### §10.1 — DAS PRINZIP: das Genom ist eine VERTIKALE KETTE, keine flache Insel
+
+Ein wahres Genom reicht durch VIER Ebenen, und an jeder Ebene durch die DREI Pläne:
+
+```
+          FORM (wahrerwuchs)   PHYSIK (wahrerbauplan)   ANBLICK (wahreranblick)
+  MICRO   das einzelne          trägt das Primitiv?      die Oberfläche/Silhouette
+          Primitiv (Blatt,      (Knick/Last je Glied)    (Atlas-Bake, Maserung)
+          Klinge, Glied, Teil)
+    │
+  ASSEMBLY  wie die Primitive    steht/schließt der       die zusammengesetzte
+            sich fügen           Lastpfad (Ω-Φ2/Φ5)?      Gestalt
+    │
+  GESTALT   das ganze Ding       die Gesamt-Balance       der Gesamt-Look
+            (Größe/Alter/Stil)   (SSF/Schwung Ω-Φ4)
+    │
+  PLATZIERUNG  WO/WELCHE Variante  steht es am Ort?         der Anblick im Kontext
+            erscheint — feld-                              (Hain/Formation/Herde)
+            bedeutsam ODER Intent
+```
+
+**Die Synergie:** EIN Seed treibt JEDE Ebene; DER RICHTER garantiert JEDE Ebene; DIE
+REFERENZ ankert JEDE Ebene; DIE PLATZIERUNG liest das Feld (scatter) ODER folgt der
+Absicht (Werkstatt/Gerät). Das ist „den grossen Plan im Kopf": nicht eine
+Variant-Funktion, sondern eine durchgehende Kette vom Korn bis zur Welt-Stelle.
+
+### §10.2 — DIE EHRLICHE VERTIKAL-BILANZ (welches System erreicht welche Ebene)
+
+```
+SYSTEM            MICRO         ASSEMBLY   GESTALT    PLATZIERUNG→FORM      VOLL?
+──────────────────────────────────────────────────────────────────────────────────
+Bäume/Blätter     ✅ Atlas/Typ  ✅          ✅          ✅ Feld (Wärme→Palme)  ✅ VOLL
+Landmarks F/K/G   ✅ Form-Klasse ✅          ✅          ✅ Hang→Form (NEU)     ✅ VOLL
+Gerät Schwert/Werkz ✅ bladeProfile ✅       ✅          ⊙ Intent (Spieler)    ✅ within-nature
+Rüstung/Trank     ⚠ Oberfläche fix ✅        ✅          ⊙ Intent              ~ (Micro offen)
+Kreatur           ✗ Template fix  ⚠ nur Größe ⚠ nur Größe ✗ Form folgt Feld NICHT  ✗ FLACH
+Bauwerk Werkstatt/Portal ✗ Teil-Geo fix ⚠ scale+ornament ✅ ⊙ Intent           ✗ FLACH (Assembly)
+```
+
+Zwei Systeme sind FLACH (eine Variant-Funktion, ohne die volle Kette): **KREATUR**
+(die Form ignoriert das Feld, nur Größe variiert) + **BAUWERK** (der Bau skaliert+
+ornamentiert FIXE Teile, statt sie wie der Tempel from-scratch zu generieren). Das
+sind die zwei nächsten Voll-Stack-Ziele. Dazu zwei Micro-Reste (Rüstung/Trank-
+Oberfläche) + die Schuld-Tilgung + der LOOK.
+
+### §10.3 — V1: KREATUR voll-vertikal (der klarste scatter-Fall, direkt analog Blatt→Wärme)
+
+> Der EINZIGE scatter-platzierte Bürger, dessen Form das Feld noch ignoriert. Heute:
+> `_creatureBodySize(netId)` → nur eine Größe; das Template (CREATURE_SOULS) ist fix.
+
+- **FORM (wahrerwuchs):** (a) die KÖRPER-FORM folgt der Region/dem Feld — ein
+  `_creatureFormForField(field, netId)` wählt Seele/Körper-Profil nach dem Welt-Feld
+  (karges Hochland → karge/harte Wesen, üppiges Tal → saftige; glut-Region → Glut-
+  Wesen), genau wie `_scatterSpeciesForCell` den Baum nach moisture/lebendig wählt.
+  (b) per-Wesen FORM-Variation: Glied-Proportion (Bein-Länge, Kopf-Größe, Rumpf-Bulk)
+  + symmetrische ACCESSOIRES (Hörner/Kamm/Stacheln-Paare) aus dem netId-Genom, INNERHALB
+  der V18.209-Symmetrie (beide Glieder eines Paares gleich → das locked Template wird
+  symmetrisch variiert, nie verbogen). Das ist die unterste Ebene (die Körper-Teile
+  variieren per Wesen, wie das Blatt per Baum).
+- **PHYSIK (Ω-B5/wahrerbauplan):** die variierten/akzessorierten Glieder müssen TRAGEN
+  (der Stand/Knick-Richter); die T5-Allometrie (∝L^1.5) gilt weiter; die Symmetrie-
+  Wand bleibt (kein verbogenes Template).
+- **ANBLICK (wahreranblick):** die neuen Körper-Formen + Accessoires AUGEN-bound (Wand 1).
+- **PLATZIERUNG→FORM:** der scatter/spawn-Pfad liest das Feld am Spawn-Ort → die Form
+  folgt (die Kette reicht bis zur Platzierung, wie beim Blatt).
+- **DISZIPLIN:** reference-first (echte Tier-Biomechanik/Allometrie); der Richter
+  garantiert (steht/trägt); diag-band (Form korreliert mit Feld + Symmetrie-treu + steht);
+  der Look am Schöpfer-Auge. Migrations-Falle: die Opacity/Index-Kopplung
+  (children[i]↔bodyParts[i]) — Accessoires am ENDE anhängen, den Vertrag wahren.
+
+### §10.4 — V2: BAUWERK from-scratch (das §9-T2-Ideal vollendet)
+
+> Heute: `_stationVariant` skaliert+tönt+ornamentiert die FIXE Parts-Liste. Die
+> unterste Ebene (die Teil-Geometrie) erreicht das Genom nicht.
+
+- **FORM:** ein echtes Werkstatt/Portal-Genom — die Teile PARAMETRISCH generieren (das
+  `_buildClassicalTemple`-Muster): die Esse aus Ofen+Esse+Amboss-Parametern (Höhe/Breite/
+  Schlot), der Webstuhl aus Rahmen+Kette, das Portal aus Ring-Radius+Membran+Pfeiler.
+  Die FUNKTION bleibt lesbar (§6½.2: eine Esse liest als Esse; `_computeWorkshopDomain`
+  muss sie weiter erkennen). Im Form-Satz bleiben (box/cylinder/pyramid + Custom-Meshes).
+- **PHYSIK:** steht (Ω-Φ2) + Lastpfad (Ω-Φ5) — jede generierte Werkstatt physik-garant.
+- **ANBLICK:** die generierten Teile + Detail-Dichte AUGEN-bound.
+- **PLATZIERUNG:** Intent (Gesten/Nexus/Spieler platziert) — within-nature voll, kein Feld.
+- **DISZIPLIN:** ein Builder pro Funktions-Typ (Esse/Brennkolben/Webstuhl/Altar/Drehbank/
+  Portal), reference-first (die funktionale Essenz), der Domänen-Leser bleibt grün.
+
+### §10.5 — V3: DER MICRO-REST (Rüstung/Trank-Oberfläche) — die letzte unterste Ebene
+
+- Rüstung: die Platten-OBERFLÄCHE (Nieten/Riefen/Wappen aus dem Material-Tag, wie die
+  Rinde-Maserung Ω-O7) statt flacher Farbe. Trank: das Glas/die Phiolen-Oberfläche
+  (Lichtbrechung/Glasur-Tiefe). Beide ANBLICK-nah (Shader/Geometrie-Detail), AUGEN-bound.
+
+### §10.6 — V4: DER LOOK (Ω-OPSIS Wand 1 — das Schöpfer-Auge, der letzte Richter)
+
+Headless beweist FORM+PHYSIK+Atlas-Bake; den finalen ANBLICK urteilt nur das Auge:
+Mammutbaum · Palmen-Hain · Herbstwald · Trauerweide · Fels-Formationen (Spire vs Brocken
+am Hang) · Kristall-Druse glüht · Lava-See · Oakeshott-Klinge · Koloss-Beine · die neuen
+Kreatur-Formen · die generierten Bauten. Jeder Punkt ein Schöpfer-Browser-Sign-off.
+
+### §10.7 — V5: DIE SCHULD-TILGUNG (niedrig-prioritär, getrackt)
+
+- **S0** — der Baum-`r01()`-Noise auf `roller.seq()` (V9.82 EINE Quelle). Re-rollt JEDE
+  Welt sichtbar bei null Gewinn → eine EIGENE, angekündigte Welle (nicht beiläufig).
+- **S2** — die 12 toten `baum_*_jung/_alt`-DEF-Blöcke schneiden + 2 Test-Fixtures
+  (playtest 31244 + diag-lambda-volltiefe) migrieren.
+- **Ω-B4 LOD-Swap je Scatter-Variante** — die Pools sind low-poly → marginaler Perf-
+  Gewinn, hoher Instanced-Refactor-Aufwand. Nur wenn ein gemessener FPS-Druck es weckt.
+
+### §10.8 — DIE REIHENFOLGE (nach Vertikal-Lücke × Hebel)
+
+```
+V1  KREATUR form-folgt-dem-Feld + per-Wesen-Form    ← der klarste FLACHE Fall, scatter,
+      (FORM × Ω-B5 × Anblick)                          direkt analog Blatt→Wärme
+V2  BAUWERK from-scratch (Werkstatt/Portal-Genom)    ← die zweite FLACHE Stelle (Assembly)
+V3  MICRO-Rest (Rüstung/Trank-Oberfläche)            ← die letzte unterste Ebene
+V4  DER LOOK (alle T1–T6 + V1/V2 am Schöpfer-Auge)   ← Wand 1, der letzte Richter
+V5  Schuld-Tilgung (S0 · S2 · Ω-B4-LOD)              ← Politur, getrackt
+```
+
+**Die EINE Regel (wie für T1–T6):** jede V-Welle ist erst voll, wenn ihre DREI Plan-
+Schichten stehen — die FORM (dieser Plan), die PHYSIK (der Richter, `archiv/wahrerbauplan.md`),
+der ANBLICK (`wahreranblick.md`, Wand 1) — UND die VERTIKALE Kette reicht (Micro →
+Assembly → Gestalt → Platzierung). MISS die Plan-Zahl (diag-genom erweitern), nicht
+Existenz. Dann erst — und dann ganz — ist der Wuchs-Bogen WIRKLICH rund.

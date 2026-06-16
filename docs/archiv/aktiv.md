@@ -1,7 +1,7 @@
 # DER AKTIVE TISCH — Stand + Reflexion
 
 > **DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen** (ein Prinzip, zwei
-> Gesichter — der Auslesewert der Wahrheit): **`docs/wahrerbauplan.md`** (Ω-PHYSIS ·
+> Gesichter — der Auslesewert der Wahrheit): **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS ·
 > das SEIN · Physik-Schiedsrichter) + **`docs/wahreranblick.md`** (Ω-OPSIS · der
 > ANBLICK · lawful Oberflächen). Die Vision: `state-of-realm.md` + `das-lebendige-feld.md`.
 > Der Backlog + die gemerkten Fäden: `roadmap.md`. Hier: der Live-Stand + die Reflexion.

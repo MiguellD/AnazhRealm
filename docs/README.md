@@ -16,19 +16,25 @@ sind schlank: **Stand+Lehren** (`CLAUDE.md`) · **Chronik** (`archiv/handover.md
 | **`CLAUDE.md`** (Wurzel)            | **JETZT · DER TISCH**       | Stand (Live + die Reflexion: erledigt · offen · wo nicht mehr synergetisch) · die quer-schneidenden Gotchas · Konventionen · Doc-Map. Auto-geladen bei jeder Session.                                                                                                                |
 | **`docs/state-of-realm.md`**        | **DIE VISION**              | Die Pfeiler aus den Testamenten · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                                                                                                                                                         |
 | **`docs/das-lebendige-feld.md`**    | **DER WAHRE NORDEN**        | Die Welt als EIN Feld, das alle lesen · schreiben · WERTEN — wie es GEMESSEN im Code lebt + der Vektor vorwärts. **ZUERST** vor lebendiger Welt / Emotion / Nexus / DSL / Kreaturen.                                                                                                |
-| **`docs/wahrerbauplan.md`**         | **AKTIVER BOGEN · SEIN**    | Ω-PHYSIS — der Physik-Schiedsrichter (Schwerpunkt → Stabilität → Steifigkeit/Versagen → Hebel → Lastpfad → der Leser → die Grammatik → die Werkstatt). Das _unsichtbare_ Kugel-Problem. **ZUERST** vor Bauplan / Physik / Stabilität / Werkstatt / Crafting-Tiefe / Kreatur-Körper. |
+| **`docs/wahrerwuchs.md`**           | **AKTIVER BOGEN · FORM (LEAD)** | Ω-GENESIS der Form — das Bauplan-GENOM: aus EINEM Seed × wenige Achsen die volle Palette (Moos → Mammutbaum). T1–T6 GEBAUT; **§10 = der volle VERTIKAL-Bogen** (was fehlt: Kreatur form-folgt-Feld · Bauwerk from-scratch · der LOOK). **ZUERST** vor Genom / Bäume / Vegetation / Fels / Kristall / Gerät / Kreatur-Form / Variation. |
+| **`docs/archiv/wahrerbauplan.md`**  | **ARCHIVIERT · SEIN (RUND)**| Ω-PHYSIS — der Physik-Schiedsrichter (Schwerpunkt → Stabilität → Steifigkeit/Versagen → Hebel → Lastpfad → Leser → Grammatik → Werkstatt). Säule I–IV + Ω-B5 RUND; der Richter lebt im Code (`_stability`/`_failsUnderLoad`/`_swingDynamics`/`_loadPath`). **ZUERST** vor Physik / Stabilität / Kreatur-Körper — die NORMATIVE Physik-Referenz. |
 | **`docs/wahreranblick.md`**         | **AKTIVER BOGEN · ANBLICK** | Ω-OPSIS — jede Oberfläche ein Auslesewert der Welt (Boden · Bewuchs · Materialien · Form · Atmosphäre · Geometrie-Feinheit) + die fünf Wände gegen den Drift. **ZUERST** vor Anblick / Render / Material / Terrain-Look / Vegetation-Look / Atmosphäre.                             |
 | **`docs/roadmap.md`**               | **DIE KARTE**               | Der Backlog vorwärts + **DIE GEMERKTEN FÄDEN** (Phase E · R6 · Mana · KI-Symbiose · Wasser-Nachfliessen · VR · IndexedDB · …).                                                                                                                                                      |
 | **`docs/taille-spec.md`** (+ `.en`) | **DER VERTRAG**             | Die gefrorene Taille, NORMATIV (Ω1) — Serialisierung · Import · p2p-Schema · Snapshot · §7 Broker-Protokoll. **ZUERST** vor Serialisierung/Import/Broker. `spec/golden/v1/` EINGEFROREN.                                                                                            |
 | **`README.md`** (Wurzel)            | **DIE TÜR**                 | Die öffentliche Tür — Was/Schnellstart/Tests/Heilige Lektion.                                                                                                                                                                                                                       |
 
-**EIN PRINZIP, DREI GESICHTER:** `wahrerbauplan` (Ω-PHYSIS · das SEIN), `wahreranblick`
-(Ω-OPSIS · der ANBLICK) und der vollendete Wasser-CA (Ω-CHRONOS · das WERDEN) sind **dasselbe
-Gesetz** — _jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen, nie
-geraten/gemalt._ Ω-PHYSIS ist headless verifizierbar (kein Flake), Ω-OPSIS ist augen-bound
-(das Schöpfer-Browser-Bild ist der Richter). Die Vision verankern `state-of-realm` +
-`das-lebendige-feld`.
+**EIN PRINZIP, DREI GESICHTER:** `wahrerwuchs` (Ω-GENESIS · die FORM), `archiv/wahrerbauplan`
+(Ω-PHYSIS · das SEIN, RUND — der Richter lebt im Code), `wahreranblick` (Ω-OPSIS · der ANBLICK)
+sind **dasselbe Gesetz** — _jede Eigenschaft ist ein Auslesewert der Wahrheit, gerechnet/gelesen,
+nie geraten/gemalt._ Das GENOM (wahrerwuchs) reicht durch DREI von ihnen als VERTIKALE Kette:
+MICRO → ASSEMBLY → GESTALT → PLATZIERUNG, je × FORM/PHYSIK/ANBLICK (wahrerwuchs §10). Ω-PHYSIS
+ist headless verifizierbar (kein Flake), Ω-OPSIS ist augen-bound (das Schöpfer-Browser-Bild ist
+der Richter). Die Vision verankern `state-of-realm` + `das-lebendige-feld`.
 
+**Frisch archiviert (16.06.2026):** `wahrerbauplan.md` → `archiv/` (der Ω-PHYSIS-Bogen ist RUND —
+Säule I–IV + Ω-B5; der Richter lebt im Code + wird fortlaufend konsumiert; bleibt die NORMATIVE
+Physik-Referenz). Der aktive Lead ist jetzt `wahrerwuchs.md` (FORM, §10 = der Vertikal-Bogen),
+flankiert von `wahreranblick.md` (ANBLICK · Wand 1).
 **Frisch archiviert (15.06.2026 — Doc-Ordnung):** `gigant-fortsetzung-plan.md` (VOLLENDET V18.225),
 `abschluss-plan.md` (Vorgänger, vom aktiven Bogen abgelöst), `wahreranblick-antidrift-plan.md`
 (die Drift-Geschichte; die fünf Wände leben jetzt im Kopf von `wahreranblick.md`), **`aktiv.md` +

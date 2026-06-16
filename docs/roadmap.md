@@ -7,7 +7,7 @@
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
 > **Stand 15.06.2026 (V18.238):** DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen —
-> **`docs/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN) + **`docs/wahreranblick.md`** (Ω-OPSIS ·
+> **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN) + **`docs/wahreranblick.md`** (Ω-OPSIS ·
 > der ANBLICK), ein Prinzip (der Auslesewert der Wahrheit). Der Live-Stand + die Reflexion:
 > der **„Aktueller Stand"-Kopf in `CLAUDE.md`**. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
 > Fäden, die NICHT im aktiven Bogen liegen, aber dem Schöpfer alle wichtig sind. (Die alten
@@ -48,6 +48,20 @@ Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
 > `docs/archiv/taille-plan.md`) + die Zwillings-Karte + die Reihenfolge §5 + **DIE GEMERKTEN
 > FÄDEN** (§5-Ende — Schöpfer 11.06.: „alle wichtig, nie vergessen")).
 > Dieser §3 bleibt die operative Kurz-Form; der Gigant-Plan trägt das Warum + die Anker.
+
+**⭐ DER AKTIVE LEAD-BOGEN — DER WAHRE WUCHS (das Bauplan-GENOM, `docs/wahrerwuchs.md`):** aus EINEM
+Seed × wenige Achsen die volle Palette (Moos → Mammutbaum), kein Klon. **T1–T6 GEBAUT + GEMESSEN**
+(V18.256, `scripts/diag-genom.cjs`): Blatt-Typen+Brettwurzel · Bauwerk-Proportion+Detail · Geologie/
+Mineralogie-Glanz (emissiv/Facetten/Sediment) · Rüstung/Trank-Genome+Fahrzeug-SSF · Kreatur-Allometrie
+(Galileo) · Kronen-Formen/Lean/Mehrstämmig. Die Landmark-Platzierung reicht jetzt bis zur FORM
+(Hang→Spire/Brocken). **Der NÄCHSTE Schub ist `wahrerwuchs.md §10` — der volle VERTIKAL-Bogen** (das
+Genom als Kette MICRO → Assembly → Gestalt → Platzierung, je × FORM/PHYSIK/ANBLICK): **V1 Kreatur
+form-folgt-dem-Feld** (der einzige scatter-Bürger, dessen Form das Feld noch ignoriert — nur Größe) ·
+**V2 Bauwerk from-scratch** (Werkstatt/Portal-Teile parametrisch wie der Tempel, statt scale+ornament) ·
+V3 Micro-Rest (Rüstung/Trank-Oberfläche) · **V4 der LOOK** (Wand 1, Schöpfer-Auge — Mammutbaum/Koloss/
+Palmen-Hain) · V5 Schuld-Tilgung (S0 r01→roller.seq · S2 DEF-Schnitt · Ω-B4 LOD-Swap). Die Physik-
+Referenz ist `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS RUND, der Richter im Code), der Anblick
+`docs/wahreranblick.md`.
 
 **⭐ Die EINE Wurzel — die Chunk-Naht (Schöpfer-Befund 09.06.2026, gemessen):** blobiges Terrain ·
 Edit-/LOD-Naht · die Wasser-Naht (30 Wellen) · „Wasser fließt nicht" sind **fünf Symptome EINER Wurzel**:
@@ -90,14 +104,14 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
 > **Stand 15.06.2026 (V18.238):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) liegt in
-> **`docs/wahrerbauplan.md`** (Ω-PHYSIS) + **`docs/wahreranblick.md`** (Ω-OPSIS), der Live-
+> **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS) + **`docs/wahreranblick.md`** (Ω-OPSIS), der Live-
 > Stand + die Reflexion (erledigt/offen/Chaos) im **`CLAUDE.md`-Stand**. **Dieser §4 ist die
 > EINE Quelle für die Fäden, die NICHT im aktiven Bogen liegen** — die gemerkten Fäden, die
 > dem Schöpfer alle wichtig sind („nie vergessen, nie still streichen").
 
 **Wo finde ich was offen ist:**
 
-- **`docs/wahrerbauplan.md` + `docs/wahreranblick.md`** — der aktive Bogen (Physik + Anblick), Welle für Welle
+- **`docs/archiv/wahrerbauplan.md` + `docs/wahreranblick.md`** — der aktive Bogen (Physik + Anblick), Welle für Welle
 - **`CLAUDE.md` „Aktueller Stand"** — die auto-geladene Wahrheit: aktuelle Welle · Live-Stand · die Reflexion (Parallelcode/Chaos zu vereinheitlichen)
 - **`docs/archiv/handover.md`** — die volle Wellen-Chronik (jüngste oben) + das Schöpfer-Audit-Gedächtnis (der alte `rueckmeldung.md`-Korpus liegt als Snapshot in `archiv/`)
 - **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
