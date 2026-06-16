@@ -635,6 +635,93 @@ function startSaveServer() {
             o.rockSedimentDistinct = rockCols.size;
             o.rockHasMoss = anyMoss;
 
+            // ══ T4 (wahrerwuchs §4.6/§4.7) — RÜSTUNG · TRANK · FAHRZEUG-SSF ══
+            if (typeof r._armorVariant === "function") {
+                const chestWs = new Set(),
+                    armMats = new Set(),
+                    pauldVar = new Set();
+                let armorWF = true;
+                for (let s = 0; s < 120; s++) {
+                    const p = r._armorVariant("ar" + s);
+                    const chest = p.find((q) => q.shape === "box" && q.size.y > 0.8);
+                    if (!chest || p.length < 4) armorWF = false;
+                    if (chest) chestWs.add(chest.size.x.toFixed(2));
+                    p.forEach((q) => armMats.add(q.material));
+                    const pa = p.find((q) => q.shape === "sphere");
+                    if (pa) pauldVar.add(pa.size.x.toFixed(2));
+                }
+                o.armorChestSpread = chestWs.size;
+                o.armorPauldronSpread = pauldVar.size;
+                o.armorMats = [...armMats];
+                o.armorWellFormed = armorWF;
+                o.armorMatsOk = [...armMats].every((m) => ["eisen", "bronze"].includes(m));
+                o.armorDet = JSON.stringify(r._armorVariant("dar")) === JSON.stringify(r._armorVariant("dar"));
+                o.armorRole = r.state.blueprints.ruestung_brustpanzer && r.state.blueprints.ruestung_brustpanzer.role;
+            }
+            if (typeof r._potionVariant === "function") {
+                const glazes = new Set(),
+                    bodyVar = new Set(),
+                    potMats = new Set();
+                for (let s = 0; s < 120; s++) {
+                    const p = r._potionVariant("po" + s);
+                    const liq = p.find((q) => q.material === "kraut");
+                    if (liq && typeof liq.color === "number") glazes.add(liq.color);
+                    const fl = p.find((q) => q.material === "leder");
+                    if (fl) bodyVar.add(fl.size.x.toFixed(2) + ":" + fl.size.y.toFixed(2));
+                    p.forEach((q) => potMats.add(q.material));
+                }
+                o.potionGlazeSpread = glazes.size;
+                o.potionBodyVar = bodyVar.size;
+                o.potionMatsOk = [...potMats].every((m) => ["leder", "kraut", "holz"].includes(m));
+                o.potionDet = JSON.stringify(r._potionVariant("dpo")) === JSON.stringify(r._potionVariant("dpo"));
+                o.potionRole = r.state.blueprints.trank_lebenssaft && r.state.blueprints.trank_lebenssaft.role;
+            }
+            if (typeof r._vehicleVariant === "function") {
+                const wagenBase = [
+                    { shape: "box", material: "holz", position: { x: 0, y: 0.85, z: 0 }, size: { x: 1.3, y: 0.35, z: 2.1 } },
+                    ...[
+                        [-0.72, 0.8],
+                        [0.72, 0.8],
+                        [-0.72, -0.8],
+                        [0.72, -0.8],
+                    ].map(([x, z]) => ({
+                        shape: "cylinder",
+                        material: "eisen",
+                        position: { x, y: 0.34, z },
+                        size: { x: 0.62, y: 0.14, z: 0.62 },
+                        rotation: { x: 0, y: 0, z: 1.5708 },
+                    })),
+                ];
+                // Ω-Φ4 SSF = Spur / (2·Schwerpunkt-Höhe) — die echte Kipp-Schwelle (ein
+                // zentrierter CoM sättigt die _stability-Marge, darum die SSF direkt rechnen:
+                // die Spur variiert mit dem track-Genom, die CoM-Höhe bleibt seat-safe konstant).
+                const ssfs = new Set();
+                let allStand = true,
+                    seatSafe = true,
+                    sameCount = true;
+                for (let s = 0; s < 120; s++) {
+                    const v = r._vehicleVariant(wagenBase, "vh" + s);
+                    if (v.length !== wagenBase.length) sameCount = false;
+                    if (Math.abs(v[0].position.y - wagenBase[0].position.y) > 1e-9) seatSafe = false;
+                    if (r._stability({ parts: v }).inside !== true) allStand = false;
+                    let trackMax = 0,
+                        comY = 0;
+                    for (const p of v) {
+                        trackMax = Math.max(trackMax, Math.abs((p.position && p.position.x) || 0) + ((p.size && p.size.x) || 0) / 2);
+                        comY += (p.position && p.position.y) || 0;
+                    }
+                    comY /= v.length;
+                    ssfs.add((trackMax / (2 * Math.max(0.1, comY))).toFixed(3));
+                }
+                o.vehicleSSFSpread = ssfs.size;
+                o.vehicleAllStand = allStand;
+                o.vehicleSeatSafe = seatSafe;
+                o.vehicleSameCount = sameCount;
+                o.vehicleDet =
+                    JSON.stringify(r._vehicleVariant(wagenBase, "dvh")) ===
+                    JSON.stringify(r._vehicleVariant(wagenBase, "dvh"));
+            }
+
             return o;
         });
 
@@ -811,6 +898,36 @@ function startSaveServer() {
             "T3-FELS: Sediment-Strata (≥3 Farben) + Moos/Flechten (grün-dominant)",
             `sed=${out.rockSedimentDistinct}/moss=${out.rockHasMoss}`,
             out.rockSedimentDistinct >= 3 && out.rockHasMoss === true
+        );
+
+        // ── T4 (wahrerwuchs §4.6/§4.7): RÜSTUNG · TRANK · FAHRZEUG-SSF ──
+        ck(
+            "T4-RÜSTUNG: Platten-Größe + Artikulation variieren + Material {eisen,bronze} + role armor",
+            `chest=${out.armorChestSpread}/pauld=${out.armorPauldronSpread}/mats=${JSON.stringify(out.armorMats)}/role=${out.armorRole}`,
+            out.armorChestSpread >= 4 &&
+                out.armorPauldronSpread >= 3 &&
+                out.armorMatsOk === true &&
+                out.armorWellFormed === true &&
+                out.armorRole === "armor" &&
+                out.armorDet === true
+        );
+        ck(
+            "T4-TRANK: Phiole-Form + Glasur variieren + weiche Materialien + role consumable",
+            `glaze=${out.potionGlazeSpread}/body=${out.potionBodyVar}/role=${out.potionRole}`,
+            out.potionGlazeSpread >= 3 &&
+                out.potionBodyVar >= 4 &&
+                out.potionMatsOk === true &&
+                out.potionRole === "consumable" &&
+                out.potionDet === true
+        );
+        ck(
+            "T4-FAHRZEUG: SSF/Spur variiert (Stabilität) + jede STEHT + SEAT-SAFE (y heil) + Gelenke heil",
+            `ssf=${out.vehicleSSFSpread}/stand=${out.vehicleAllStand}/seat=${out.vehicleSeatSafe}/count=${out.vehicleSameCount}`,
+            out.vehicleSSFSpread >= 4 &&
+                out.vehicleAllStand === true &&
+                out.vehicleSeatSafe === true &&
+                out.vehicleSameCount === true &&
+                out.vehicleDet === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");

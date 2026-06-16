@@ -47074,6 +47074,111 @@ class AnazhRealm {
         return parts;
     }
 
+    // ═══ DAS RÜSTUNGS-GENOM (wahrerwuchs §4.6 T4) — Platten-Größe · Artikulation · Material ═══
+    // Eine Rüstung ist GESTEN/Bibliothek-gespawnt (NICHT scatter) → Material FREI (V17.17 §2).
+    // Die Achsen: Brustplatten-Größe (chestW/chestH) · ARTIKULATION (Pauldron-Größe/Spreizung +
+    // optionales Gorget) · Plattenwerkstoff (eisen/bronze — beide hart → role bleibt armor,
+    // ohnehin roleManual). Bilateral symmetrisch (Pauldron-Paar). Parametrisch generiert, kein
+    // scale+tint einer fixen Liste (§9 T4). PHYSIK: getragen, nicht freistehend → kein Stand-
+    // Richter; die FORM liest als Rüstung (Brustplatte + Schultern).
+    _armorVariant(seed) {
+        const g = this._rollGenome(seed, "armor");
+        const parts = [];
+        const plateMat = g.pick("plateMat", ["eisen", "eisen", "bronze"]);
+        const trimMat = plateMat === "eisen" ? "bronze" : "eisen";
+        const chestW = g.range("chestW", 0.82, 1.3); // Platten-Breite
+        const chestH = g.range("chestH", 1.0, 1.45); // Platten-Höhe
+        const pauld = g.range("pauldron", 0.3, 0.56); // Schulter-Artikulation
+        const cY = 1.05;
+        const spread = chestW * 0.55 + pauld * 0.35;
+        // Brustplatte
+        parts.push({ shape: "box", material: plateMat, position: { x: 0, y: cY, z: 0 }, size: { x: chestW, y: chestH, z: 0.45 } });
+        // Pauldrons (Artikulation) — Spiegel-Paar
+        for (const sgn of [-1, 1])
+            parts.push({
+                shape: "sphere",
+                material: plateMat,
+                position: { x: sgn * spread, y: cY + chestH * 0.35, z: 0 },
+                size: { x: pauld, y: pauld, z: pauld },
+            });
+        // Gurt-Zier (Material-Kontrast)
+        parts.push({
+            shape: "box",
+            material: trimMat,
+            position: { x: 0, y: cY - chestH * 0.42, z: 0 },
+            size: { x: chestW * 1.04, y: 0.16, z: 0.48 },
+        });
+        // optional ein Hals-Gorget (mehr Artikulation, Detail-Dichte)
+        if (g.chance("gorget", 0.5))
+            parts.push({
+                shape: "sphere",
+                material: plateMat,
+                position: { x: 0, y: cY + chestH * 0.56, z: 0 },
+                size: { x: chestW * 0.42, y: 0.3, z: 0.42 },
+            });
+        return parts;
+    }
+
+    // ═══ DAS TRANK-GENOM (wahrerwuchs §4.6 T4) — Phiole-Form · Glasur (aus der Wirkung) ═══
+    // Achsen: Phiole-Proportion (schmal-hoch ↔ breit-gedrungen) · Hals-Höhe · GLASUR-Farbe
+    // (die Wirkungs-Farbe der Flüssigkeit — heil/mana/blut/…). Die Materialien bleiben WEICH
+    // (leder/kraut/holz) → die Trank-Lesart ist robust (role consumable, roleManual). Parametrisch.
+    _potionVariant(seed) {
+        const g = this._rollGenome(seed, "potion");
+        const parts = [];
+        const bodyW = g.range("bodyW", 0.34, 0.56); // Phiole-Breite
+        const bodyH = g.range("bodyH", 0.42, 0.72); // Phiole-Höhe (schmal-hoch ↔ breit)
+        const neckH = g.range("neckH", 0.18, 0.34);
+        // Glasur-Farbe aus der Wirkung (eine kleine Trank-Palette: heil/mana/blut/gift/arkan).
+        const glaze = g.pick("glaze", [0x4e9a3c, 0x3c8ad8, 0xd84e6e, 0xd8b43c, 0x9a4ed8]);
+        const bodyY = bodyH * 0.75;
+        // Flasche (leder) + Flüssigkeit (kraut, durch die Glasur gefärbt) + Hals/Korken (holz).
+        parts.push({ shape: "sphere", material: "leder", opacity: 0.92, position: { x: 0, y: bodyY, z: 0 }, size: { x: bodyW, y: bodyH, z: bodyW } });
+        parts.push({
+            shape: "sphere",
+            material: "kraut",
+            color: glaze,
+            opacity: 0.8,
+            position: { x: 0, y: bodyY, z: 0 },
+            size: { x: bodyW * 0.78, y: bodyH * 0.78, z: bodyW * 0.78 },
+        });
+        parts.push({
+            shape: "cylinder",
+            material: "holz",
+            position: { x: 0, y: bodyY + bodyH * 0.5 + neckH * 0.5, z: 0 },
+            size: { x: 0.14, y: neckH, z: 0.14 },
+            segments: 6,
+        });
+        return parts;
+    }
+
+    // ═══ DAS FAHRZEUG-SSF-GENOM (wahrerwuchs §4.7 T4 / Ω-Φ4) — die Fahrdynamik-Stabilität ═══
+    // SSF = Spur / (2 · Schwerpunkt-Höhe) — die echte Kipp-Schwelle. Das Genom variiert die
+    // SPUR (Rad/Bein-x) · die KABINEN-Breite · die RAD-Größe — die HÖHE (y) bleibt UNANGETASTET
+    // → der SITZ-Punkt + die Gelenk-Indizes (connections) bleiben heil (der „Fahrzeug-Fahr-
+    // Tiefe"-Faden unberührt: keine moveable/mount/Sitz-Höhen-Verschiebung). Eine breitere Spur
+    // senkt das Kippen (Ω-Φ2/Φ4 GEMESSEN: die Stabilitäts-Marge variiert, jede Variante steht).
+    // Part-Reihenfolge/-Zahl bleibt → die Index-basierten connections reisen unverändert mit.
+    _vehicleVariant(parts, seed) {
+        if (!Array.isArray(parts) || !parts.length) return parts;
+        const g = this._rollGenome(seed, "vehicle");
+        const track = g.range("track", 0.9, 1.32); // Spur/Stand-Breite (Rad/Bein-x) — breiter = stabiler
+        const cabinScale = g.range("cabin", 0.85, 1.2); // Korpus-Breite/Tiefe
+        const wheelR = g.range("wheelR", 0.85, 1.25); // Rad-Größe (eisen-Zylinder)
+        return parts.map((p) => {
+            const np = { ...p };
+            const isWheel = p.material === "eisen" && p.shape === "cylinder";
+            if (p.position)
+                np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
+            if (p.size) {
+                if (isWheel)
+                    np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR };
+                else np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
+            }
+            return np;
+        });
+    }
+
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
@@ -49273,62 +49378,10 @@ class AnazhRealm {
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
-        const ruestungBrustpanzerParts = [
-            {
-                shape: "box",
-                material: "eisen",
-                position: { x: 0, y: 1.05, z: 0 },
-                size: { x: 1.0, y: 1.2, z: 0.45 },
-            },
-            {
-                shape: "sphere",
-                material: "eisen",
-                position: { x: -0.58, y: 1.5, z: 0 },
-                size: { x: 0.42, y: 0.42, z: 0.42 },
-            },
-            {
-                shape: "sphere",
-                material: "eisen",
-                position: { x: 0.58, y: 1.5, z: 0 },
-                size: { x: 0.42, y: 0.42, z: 0.42 },
-            },
-            {
-                shape: "box",
-                material: "bronze",
-                position: { x: 0, y: 0.95, z: 0.0 },
-                size: { x: 1.04, y: 0.16, z: 0.48 },
-            },
-        ];
-        // TRANK — ein Lebenssaft. Leder-Flasche + Laub-Essenz (lebendig 1.0,
-        // härte 0.05) + Holz-Korken: weich + lebendig → resoniert ehrlich
-        // `consumable` (ein Spieler-Klon emergierte zur selben Rolle). KEIN
-        // hartes Material (quarz/stein) — sonst kippte die Resonanz zu
-        // architecture (dichte+härte). brewConsumable verlangt role:"consumable".
-        const trankLebenssaftParts = [
-            {
-                shape: "sphere",
-                material: "leder",
-                position: { x: 0, y: 0.42, z: 0 },
-                size: { x: 0.46, y: 0.56, z: 0.46 },
-                opacity: 0.92,
-            },
-            {
-                // S6-B (V18.133) — laub → kraut: der Lebenssaft zieht jetzt
-                // GEPFLUECKTE Zutaten (Foraging-Oekonomie; tag-nah, Rolle bleibt).
-                shape: "sphere",
-                material: "kraut",
-                position: { x: 0, y: 0.42, z: 0 },
-                size: { x: 0.36, y: 0.44, z: 0.36 },
-                opacity: 0.8,
-            },
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: 0, y: 0.82, z: 0 },
-                size: { x: 0.14, y: 0.26, z: 0.14 },
-                segments: 6,
-            },
-        ];
+        // T4 (wahrerwuchs §4.6) — RÜSTUNG + TRANK sind jetzt DEDIZIERTE Genome
+        // (`_armorVariant` / `_potionVariant`, parametrisch generiert) statt fixer
+        // Parts-Listen durch _stationVariant (scale+tint). Die alten Listen sind
+        // ersetzt (V17.20: erst tiefer-ersetzt, dann geschnitten).
         // AVATAR — ein hölzerner Wächter. Sechs Parts (Torso + Kopf + 2 Arme +
         // 2 Beine), bilateral symmetrisch + vertikal + Glied-Paare → _isBodyShaped
         // TRUE → resoniert ehrlich `soul` (bodyShape 2.0 + lebendig). role:"soul"
@@ -49858,7 +49911,9 @@ class AnazhRealm {
                 builtIn: true,
                 role: "armor",
                 roleManual: true,
-                parts: this._stationVariant(ruestungBrustpanzerParts, felsWorldSeed + "-armor"),
+                // T4 — das dedizierte RÜSTUNGS-Genom (Platten-Größe/Artikulation/Material),
+                // nicht mehr scale+tint einer fixen Liste (§9 T4).
+                parts: this._armorVariant(felsWorldSeed + "-armor"),
             },
             trank_lebenssaft: {
                 name: "trank_lebenssaft",
@@ -49866,7 +49921,8 @@ class AnazhRealm {
                 builtIn: true,
                 role: "consumable",
                 roleManual: true,
-                parts: this._stationVariant(trankLebenssaftParts, felsWorldSeed + "-trank"),
+                // T4 — das dedizierte TRANK-Genom (Phiole-Form + Glasur aus der Wirkung).
+                parts: this._potionVariant(felsWorldSeed + "-trank"),
             },
             avatar_waechter: {
                 name: "avatar_waechter",
@@ -49881,14 +49937,16 @@ class AnazhRealm {
                 name: "fahrzeug_wagen",
                 label: "Wagen",
                 builtIn: true,
-                parts: fahrzeugWagenParts,
+                // T4 (Ω-Φ4 SSF) — die Spur/Kabine/Rad-Größe variieren (SEAT-SAFE: y unberührt
+                // → die Sitz-/Gelenk-connections bleiben heil; der Fahr-Tiefe-Faden unangetastet).
+                parts: this._vehicleVariant(fahrzeugWagenParts, felsWorldSeed + "-wagen"),
                 connections: fahrzeugWagenConnections,
             },
             reittier_holzross: {
                 name: "reittier_holzross",
                 label: "Holzross",
                 builtIn: true,
-                parts: reittierHolzrossParts,
+                parts: this._vehicleVariant(reittierHolzrossParts, felsWorldSeed + "-holzross"),
                 connections: reittierHolzrossConnections,
             },
             // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
