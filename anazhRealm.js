@@ -14485,14 +14485,31 @@ class AnazhRealm {
         // länger als hoch — NICHT eine Kugel). Der Barrel (rotiert: y-Länge → z-Körperachse) ist
         // die dominante glatte Masse; die Glieder fließen an den Enden hinein. Der Kern bleibt
         // KOMPAKT (Verhältnis < 1.7 → die Allometrie behandelt ihn als Rumpf, T5-Invariante).
-        const bodyLen = torsoLen * 1.55; // die sichtbare Körper-Länge entlang z (länglich)
+        const bodyLen = torsoLen * 1.7; // die sichtbare Körper-Länge entlang z (länglich, ~1.8:1)
         const coreW = barrel ? torsoW * 0.7 : torsoW;
         const coreH = barrel ? torsoH * 0.7 : torsoH;
         const coreL = barrel ? torsoLen * 0.42 : torsoLen;
         add(torsoShape, bodyMat, 0, 0, 0, coreW, coreH, coreL, null, bodyCol);
         if (barrel) {
-            const bD = Math.hypot(torsoW, torsoH) * 0.92; // schmaler als lang → kein Kugel-Leib
-            add("limb", limbMat, 0, 0, 0, bD, bodyLen, bD, { x: Math.PI / 2, y: 0, z: 0 }, limbCol);
+            // WIRBELSÄULE mit RADIUS-PROFIL (Pudgy-Pals / reference, vom Profi gerechnet): der
+            // Körper ist KEIN uniformes Fass — er hat eine tiefe BRUST (Ribcage, vorn), einen
+            // TAILLE/BAUCH-Einzug, eine HÜFTE (Becken) + die Schwanz-Verjüngung. Die SDF+smin
+            // verschmilzt die Kugeln (hier box=torsoShape → tag-neutral) zu EINEM Leib mit
+            // echtem Brust/Bauch-Verlauf. [z-Anteil von bodyLen, Radius-Anteil von torsoH/2,
+            // y-Versatz (Bauch hängt leicht)]. Profi-Verhältnisse: Brust am tiefsten ~1.0,
+            // Taille ~0.84 (sichtbarer Bauch-Einzug), Hüfte ~0.98.
+            const spine = [
+                [0.44, 0.78, 0.04], // Brust-Vorderkante (Schulter)
+                [0.2, 1.0, 0.02], // tiefe BRUST (Ribcage)
+                [-0.04, 0.86, -0.04], // TAILLE / Bauch (leicht hängend)
+                [-0.3, 0.99, 0.0], // HÜFTE / Becken
+                [-0.48, 0.68, 0.06], // Croup → Schwanz-Ansatz
+            ];
+            const halfH = torsoH * 0.5;
+            for (const [zf, rf, yf] of spine) {
+                const rr = halfH * rf;
+                add(torsoShape, bodyMat, 0, yf * torsoH, zf * bodyLen, rr * 2, rr * 1.84, rr * 2, null, bodyCol);
+            }
         }
 
         // (2) BEINE — GEGLIEDERT (Biomechanik): ein dicker OBER-Schenkel (im Rumpf VERANKERT →
