@@ -722,6 +722,82 @@ function startSaveServer() {
                     JSON.stringify(r._vehicleVariant(wagenBase, "dvh"));
             }
 
+            // ══ T5 (wahrerwuchs §4.7 / Ω-B5) — KREATUR-ALLOMETRIE (Galileo Quadrat-Kubik) ══
+            if (typeof r._applyCreatureAllometry === "function" && C.CREATURE_SOULS && C.CREATURE_SOULS.wesen) {
+                const firstLimb = (parts) => {
+                    let li = -1;
+                    parts.forEach((p, i) => {
+                        const a = [p.size.x, p.size.y, p.size.z];
+                        if (li < 0 && Math.max(...a) >= Math.min(...a) * 1.7) li = i;
+                    });
+                    return li;
+                };
+                const limbEff = (bs) => {
+                    const soul = C.CREATURE_SOULS.wesen;
+                    const grp = r._buildCreatureGroup("wesen");
+                    grp.scale.setScalar(bs);
+                    r._applyCreatureAllometry(grp, "wesen", bs);
+                    const li = firstLimb(soul.bodyParts);
+                    const p = soul.bodyParts[li],
+                        cs = grp.children[li].scale;
+                    const ex = bs * cs.x * p.size.x,
+                        ey = bs * cs.y * p.size.y,
+                        ez = bs * cs.z * p.size.z;
+                    const long = Math.max(ex, ey, ez),
+                        short = Math.min(ex, ey, ez);
+                    return {
+                        csx: +cs.x.toFixed(3),
+                        csy: +cs.y.toFixed(3),
+                        csz: +cs.z.toFixed(3),
+                        slender: +(long / short).toFixed(3),
+                        relThick: +(short / long).toFixed(3),
+                    };
+                };
+                const big = limbEff(2.5),
+                    small = limbEff(0.7);
+                const ip = C.CREATURE_SOULS.wesen.bodyParts[firstLimb(C.CREATURE_SOULS.wesen.bodyParts)];
+                const isoSlender =
+                    Math.max(ip.size.x, ip.size.y, ip.size.z) / Math.min(ip.size.x, ip.size.y, ip.size.z);
+                o.alloBig = big;
+                o.alloSmall = small;
+                o.alloIso = +isoSlender.toFixed(3);
+                o.alloAllometric = big.slender < isoSlender * 0.95 && big.relThick > small.relThick * 1.25;
+                o.alloLenIsometric = Math.abs(big.csy - 1) < 1e-6;
+                o.alloCrossThickens = big.csx > 1.2 && big.csz > 1.2;
+                // RUMPF (kein Glied) bleibt uniform: der Körper-Teil (gedrungen) hat scale 1.
+                const torso = r._buildCreatureGroup("wesen");
+                torso.scale.setScalar(2.5);
+                r._applyCreatureAllometry(torso, "wesen", 2.5);
+                o.alloTorsoUniform = Math.abs(torso.children[0].scale.x - 1) < 1e-6;
+            }
+
+            // ══ T6 (wahrerwuchs §4.1) — KRONEN-FORMEN · LEAN · PHYLLOTAXIS · MEHRSTÄMMIG ══
+            // (die PHYSIK — kein Knicken trotz Lean/weeping/Klumpen — deckt die SPANNWEITEN-Band
+            //  oben ab: ihre 360-Seeds-Schleife würfelt jetzt AUCH die T6-Achsen.)
+            const crownForms = new Set();
+            const leanVals = new Set();
+            const phylloVals = new Set();
+            let anyLean = false,
+                anyMulti = false;
+            for (let s = 0; s < 600; s++) {
+                r._growTreeBlueprintRich("baum_eiche", "t6-" + s, C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
+                const sk = r._lastTreeSkeleton;
+                if (sk.crownForm) crownForms.add(sk.crownForm);
+                if (sk.leanMag > 0.02) anyLean = true;
+                leanVals.add((sk.leanMag || 0).toFixed(2));
+                phylloVals.add((sk.phylloDiv || 0).toFixed(3));
+                if (sk.multiStem > 0) anyMulti = true;
+            }
+            o.crownFormsSeen = [...crownForms];
+            o.crownVariantsPresent = ["weeping", "vase", "schirm"].every((c) => crownForms.has(c));
+            o.treeLeanVaries = anyLean && leanVals.size >= 4;
+            o.treePhylloVaries = phylloVals.size >= 5;
+            o.treeMultiStem = anyMulti;
+            r._growTreeBlueprintRich("baum_eiche", "t6-det", C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
+            const t6a = r._lastTreeSkeleton.crownForm + ":" + r._lastTreeSkeleton.leanMag.toFixed(4);
+            r._growTreeBlueprintRich("baum_eiche", "t6-det", C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
+            o.t6Det = t6a === r._lastTreeSkeleton.crownForm + ":" + r._lastTreeSkeleton.leanMag.toFixed(4);
+
             return o;
         });
 
@@ -929,6 +1005,31 @@ function startSaveServer() {
                 out.vehicleSameCount === true &&
                 out.vehicleDet === true
         );
+
+        // ── T5 (wahrerwuchs §4.7 / Ω-B5): KREATUR-ALLOMETRIE (Galileo Quadrat-Kubik) ──
+        ck(
+            "T5-KREATUR-ALLOMETRIE: Koloss relativ STOCKIGER (Glied-Schlankheit < isometrisch)",
+            `big.slender=${out.alloBig && out.alloBig.slender} iso=${out.alloIso} small.slender=${out.alloSmall && out.alloSmall.slender}`,
+            out.alloAllometric === true
+        );
+        ck(
+            "T5-ALLOMETRIE: Glied-LÄNGE isometrisch (csy≈1) + QUERSCHNITT verdickt (∝√L) + Rumpf uniform",
+            `csy=${out.alloBig && out.alloBig.csy} csx=${out.alloBig && out.alloBig.csx} torso=${out.alloTorsoUniform}`,
+            out.alloLenIsometric === true && out.alloCrossThickens === true && out.alloTorsoUniform === true
+        );
+
+        // ── T6 (wahrerwuchs §4.1): KRONEN-FORMEN · LEAN · PHYLLOTAXIS · MEHRSTÄMMIG ──
+        ck(
+            "T6-KRONEN-FORM: weeping/vase/schirm erscheinen (über die Spezies-Default)",
+            JSON.stringify(out.crownFormsSeen),
+            out.crownVariantsPresent === true
+        );
+        ck(
+            "T6-LEAN + PHYLLOTAXIS: Neigung + Divergenz variieren (deterministisch)",
+            `lean=${out.treeLeanVaries}/phyllo=${out.treePhylloVaries}/det=${out.t6Det}`,
+            out.treeLeanVaries === true && out.treePhylloVaries === true && out.t6Det === true
+        );
+        ck("T6-MEHRSTÄMMIG: Birken-Klumpen erscheinen (Nebenstämme)", out.treeMultiStem, out.treeMultiStem === true);
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");
         for (const c of checks) console.log(`  ${c.ok ? "✓" : "✗"} ${c.name} — ${JSON.stringify(c.val)}`);

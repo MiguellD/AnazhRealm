@@ -6974,7 +6974,11 @@ class AnazhRealm {
                 // S7 — die Sicht-Kopie trägt die Körpergröße des Originals (aus seiner netId
                 // = e.id deterministisch abgeleitet → derselbe Wuchs wie beim Sender, ohne ein
                 // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
-                mesh.scale.setScalar(this._creatureBodySize(e.id));
+                const _peerBs = this._creatureBodySize(e.id);
+                mesh.scale.setScalar(_peerBs);
+                // T5 (Ω-B5) — dieselbe Allometrie wie beim Original (die Sicht-Kopie ist stockig,
+                // wenn das Original ein Koloss ist; deterministisch aus der netId, kein Sync-Feld).
+                this._applyCreatureAllometry(mesh, typeof e.soul === "string" ? e.soul : "wesen", _peerBs);
                 mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
@@ -14038,6 +14042,10 @@ class AnazhRealm {
             ? opts.bodySize
             : this._creatureBodySize(group.userData.netId);
         group.scale.setScalar(group.userData.bodySize);
+        // T5 (Ω-B5) — die ALLOMETRIE: die Glieder verdicken überproportional (√bodySize auf den
+        // Querschnitt), der Koloss wird stockig statt ein vergrößerter Zwerg. NACH der Uniform-
+        // Skala (sie trägt L, die Allometrie legt √L auf den Glied-Querschnitt). Render-only.
+        this._applyCreatureAllometry(group, chosenSoul, group.userData.bodySize);
         group.userData.task = { name: "wander", args: {}, since: performance.now() / 1000 };
         // Welle 6.H Phase 2D.1 — bornAt als Identitäts-Marker. Persistierte
         // Kreaturen überleben Reload mit demselben bornAt; neue bekommen den
@@ -14412,6 +14420,41 @@ class AnazhRealm {
         if (roll < 0.82) return g.range("normal", 0.85, 1.18); // typisch
         if (roll < 0.965) return g.range("gross", 1.25, 1.75); // ein großes Tier
         return g.range("gigant", 1.9, 2.7); // GIGANT — ein Koloss (robust, träge), selten
+    }
+
+    // T5 (wahrerwuchs §4.7 / Ω-B5 — DIE GALILEO-ALLOMETRIE, Quadrat-Kubik): ein größeres
+    // Wesen braucht ÜBERPROPORTIONAL dicke Glieder. Die Biomechanik: Masse ∝ L³, die
+    // tragende Glied-QUERSCHNITTSFLÄCHE muss mitwachsen ∝ L³ → der Glied-DURCHMESSER ∝ L^1.5.
+    // Die group-Skala (V18.255) trägt die UNIFORME Größe L (isometrisch); HIER bekommt jedes
+    // GLIED (schlankes Stütz-Teil) einen ZUSÄTZLICHEN Querschnitt-Faktor √L auf seine zwei
+    // KURZEN Achsen → Welt-Querschnitt = L·√L = L^1.5 (Galileo), die Glied-LÄNGE bleibt L.
+    // So ist der Koloss KEIN vergrößerter Zwerg mehr (die vom Plan benannte ISOMETRIE-Falle),
+    // sondern stockig + biomechanisch tragend. SYMMETRIE-treu (beide Glieder eines Paares
+    // gleich → das locked Template V18.209 bleibt unverbogen) + es verbreitert die Basis
+    // (steht satter, Ω-Φ2). Rumpf/Kopf (gedrungen, longest < 1.7×shortest) bleiben uniform.
+    _applyCreatureAllometry(group, soulName, bodySize) {
+        if (!group || !group.children || !Number.isFinite(bodySize)) return;
+        const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
+        const parts = soul && soul.bodyParts;
+        if (!Array.isArray(parts)) return;
+        const allo = Math.sqrt(Math.max(0.01, bodySize)); // der EXTRA-Querschnitt (relativ zur Uniform-Skala)
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            const child = group.children[i];
+            if (!child || !part || !part.size) continue;
+            const sx = part.size.x || 0.1,
+                sy = part.size.y || 0.1,
+                sz = part.size.z || 0.1;
+            const longest = Math.max(sx, sy, sz);
+            const shortest = Math.min(sx, sy, sz);
+            // ein GLIED = schlankes Stütz-Teil (längste Achse ≥ 1.7× kürzeste). Die zwei
+            // NICHT-längsten Achsen (der Querschnitt) bekommen √L; die längste (die Länge) bleibt 1.
+            if (longest < shortest * 1.7) {
+                child.scale.set(1, 1, 1);
+                continue;
+            }
+            child.scale.set(sx === longest ? 1 : allo, sy === longest ? 1 : allo, sz === longest ? 1 : allo);
+        }
     }
 
     // === V18.99 (G1 — die Werkstatt ATMET): die MOTION-RESONANZ ============
@@ -45135,6 +45178,25 @@ class AnazhRealm {
             hHi = 80;
         }
         const ageMul = genome.axis("age"); // 0 = jung (dünn/sparse) .. 1 = uralt (dick/knorrig/voll)
+        // T6 (wahrerwuchs §4.1 — KRONEN-FORM/LEAN/PHYLLOTAXIS/MEHRSTÄMMIG): vier weitere
+        // orthogonale Achsen, je tag-neutral (Form/Lage) + physik-safe (der Knick-Richter Ω-Φ3-b
+        // hält; Lean kippt einen verwurzelten Baum nicht). NUR baum_* (Büsche/Blumen behalten
+        // ihre einfache Form — kein Trauer-Farn). crownForm weitet die Krone ÜBER die Spezies-
+        // Default (weeping/vase/schirm); lean neigt den Stamm (Wind/Hang); phylloDiv variiert die
+        // Blattstellung (golden ± Varianz); multiStem würfelt einen Birken-Klumpen (Nebenstämme).
+        const crownForm = isTreeSpecies
+            ? genome.pick("crownForm", [grammar.crown, grammar.crown, grammar.crown, "weeping", "vase", "schirm"])
+            : grammar.crown;
+        const isWeeping = crownForm === "weeping";
+        const leanMag = isTreeSpecies ? genome.range("leanMag", 0, 0.16) * (sizeClass === "gigant" ? 0.4 : 1) : 0;
+        const leanDir = genome.axis("leanDir") * 6.283;
+        const leanX = Math.cos(leanDir) * leanMag;
+        const leanZ = Math.sin(leanDir) * leanMag;
+        const phylloDiv = isTreeSpecies ? genome.range("phyllo", 2.18, 2.62) : 2.39996323; // golden ± Varianz
+        const multiStem =
+            isTreeSpecies && sizeClass !== "gigant" && grammar.foliage.kind !== "none" && genome.chance("multiStem", 0.22)
+                ? genome.int("stems", 1, 2)
+                : 0;
         const parts = [];
         // V18.214 — Skeleton-Container: ein flacher Branch-Pool (jeder Branch
         // mit seinen Polylinie-Punkten + Level + isTrunk-Flag), die foliage-
@@ -45196,8 +45258,8 @@ class AnazhRealm {
             cz = 0;
         for (let i = 1; i <= trunkSegs; i++) {
             const t = i / trunkSegs;
-            cx += (r01() - 0.5) * trunkWander * segH;
-            cz += (r01() - 0.5) * trunkWander * segH;
+            cx += (r01() - 0.5) * trunkWander * segH + leanX * segH; // T6: + konsistente Neigung (Lean)
+            cz += (r01() - 0.5) * trunkWander * segH + leanZ * segH;
             const y = i * segH;
             // Trunk-Top-Floor ∝ Segment-Höhe (wahrerwuchs §4.1 — der Euler-Knick-Constraint
             // STRUKTURELL: ein langes vertikales Glied muss dicker sein, sonst knickt es im
@@ -45323,7 +45385,7 @@ class AnazhRealm {
                     phi = (inWhorl / whorl) * Math.PI * 2 + whorlIdx * 0.7 + r01() * 0.25;
                 } else {
                     // Golden-angle spiral (LAAS-Konstante 2.39996323).
-                    phi = i * 2.39996323 + r01() * 0.3;
+                    phi = i * phylloDiv + r01() * 0.3; // T6: Phyllotaxis-Divergenz (golden ± Varianz)
                 }
                 tips.push({ pos: pos, phi: phi, t: tClamp });
             }
@@ -45337,13 +45399,20 @@ class AnazhRealm {
         // nicht der flache Klecks. hFrac = Höhe in der Krone (0 Basis .. 1 Spitze).
         const crownEnvelope = (hFrac) => {
             const u = Math.max(0, Math.min(1, hFrac));
-            switch (grammar.crown) {
+            switch (crownForm) {
                 case "cone": // Tanne/Fichte: lang unten, spitz nach oben
                     return 1.0 - 0.72 * u;
                 case "column": // Erle: schmal, fast konstant
                     return 0.74 + 0.16 * Math.sin(Math.PI * u);
                 case "ellipsoid": // Kiefer/Birke: voll in der Mitte
                     return 0.5 + 0.56 * Math.sqrt(Math.max(0, 1 - ((u - 0.5) / 0.5) ** 2));
+                // T6 — die drei neuen Kronen-Formen (über die Spezies-Default hinaus):
+                case "weeping": // Trauerweide: volle Krone, der DROOP macht das Hängen (s. growBranch)
+                    return 0.6 + 0.5 * Math.sqrt(Math.max(0, 1 - u * u));
+                case "vase": // Akazie/Vase: schmal unten, weit ausladend oben
+                    return 0.38 + 0.62 * u;
+                case "schirm": // Schirm/Pinie: Krone NUR oben (flacher Schirm)
+                    return u < 0.62 ? 0.28 : 0.46 + 1.25 * (u - 0.62);
                 case "dome":
                 case "irregular": // Eiche/Buche: gerundete Kuppel (voll, sanft zur Spitze)
                 default:
@@ -45363,7 +45432,7 @@ class AnazhRealm {
             // Reichweite → die Krone bekommt ihre volle, gerundete Gestalt.
             const hFrac = (start.y / Math.max(1, totalH) - 0.28) / 0.72;
             const branchLen = Math.max(0.4, totalH * lenRatio * lerp(0.8, 1.2, r01()) * crownEnvelope(hFrac));
-            const droop = levelGrammar.droop || 0.2;
+            const droop = (levelGrammar.droop || 0.2) * (isWeeping ? 2.1 : 1); // T6: Trauerweide hängt
             const tipCurl = levelGrammar.tipCurl || 0.1;
             const radRatio = levelGrammar.radRatio || 0.4;
             // Segment-Länge skaliert mit der Größe (wahrerwuchs §4.1 lock #2): ein normaler
@@ -45487,6 +45556,40 @@ class AnazhRealm {
                 }
             }
         }
+        // T6 — MEHRSTÄMMIG (Birken-Klumpen): 1-2 Nebenstämme aus dem Fuß, je nach AUSSEN geneigt,
+        // jeder mit einer kleinen Klumpen-Krone am Top (Foliage-Anker). NUR holz+laub (tag-neutral),
+        // gegated durch MAX_BRANCH_PARTS. Verwurzelt → kein Kipp-Risiko (Ω-Φ2); die Glieder dick
+        // genug (Knick-Floor) → kein Knicken (Ω-Φ3-b, GEMESSEN in diag-genom).
+        if (multiStem > 0 && lodLevel < 2 && grammar.foliage.kind !== "none" && parts.length < MAX_BRANCH_PARTS) {
+            for (let m = 0; m < multiStem && parts.length < MAX_BRANCH_PARTS; m++) {
+                const ang = (m / multiStem) * 6.283 + genome.axis("stemDir" + m) * 1.5;
+                const off = trunkBaseR * (1.4 + genome.axis("stemOff" + m) * 1.0);
+                const stemH = totalH * (0.55 + r01() * 0.25); // kürzer als der Hauptstamm
+                const lx = Math.cos(ang) * 0.16,
+                    lz = Math.sin(ang) * 0.16; // nach außen geneigt (Klumpen spreizt)
+                const sSegs = Math.max(3, Math.round(stemH / Math.max(0.5, segLenBase) / 2));
+                const sPts = [{ x: Math.cos(ang) * off, y: 0, z: Math.sin(ang) * off, r: trunkBaseR * 0.62 }];
+                let scx = sPts[0].x,
+                    scz = sPts[0].z;
+                const sSegH = stemH / sSegs;
+                for (let i = 1; i <= sSegs; i++) {
+                    const t = i / sSegs;
+                    scx += (r01() - 0.5) * trunkWander * sSegH + lx * sSegH;
+                    scz += (r01() - 0.5) * trunkWander * sSegH + lz * sSegH;
+                    const rr = Math.max(sSegH * 0.06, trunkBaseR * 0.62 * Math.pow(Math.max(0, 1 - t), trunkTaper));
+                    sPts.push({ x: scx, y: t * stemH, z: scz, r: rr });
+                }
+                for (let i = 1; i < sPts.length; i++) emitCylinderBetween(sPts[i - 1], sPts[i], 5);
+                skeleton.branches.push({
+                    points: sPts.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
+                    level: 0,
+                    isTrunk: true,
+                });
+                const topN = Math.max(1, Math.floor(sPts.length * 0.4));
+                for (let i = sPts.length - topN; i < sPts.length; i++)
+                    foliageAnchors.push({ x: sPts[i].x, y: sPts[i].y, z: sPts[i].z });
+            }
+        }
         // LOD 2: keine Äste, aber die Foliage soll trotzdem an EINEM zentralen
         // Anchor in der Krone-Mitte sitzen. Wir synthetisieren EINEN Anchor an
         // 0.85·totalH (Plan §3.4 „LOD2-card single, im Krone-Zentrum"). EIN
@@ -45601,6 +45704,11 @@ class AnazhRealm {
         // baum trägt große Büschel, ein junger Strauch kleine). Der Card-Builder liest es.
         skeleton.foliageScale = foliageScale;
         skeleton.sizeClass = sizeClass;
+        // T6 — die neuen Form-Achsen am Skeleton (für diag-genom + den Card-Builder lesbar).
+        skeleton.crownForm = crownForm;
+        skeleton.leanMag = leanMag;
+        skeleton.multiStem = multiStem;
+        skeleton.phylloDiv = phylloDiv;
         // Side-Channel: der Aufrufer (`_growTreeBlueprintForSpawn`,
         // `_loadStateRestoreGrownBlueprints`) liest das direkt nach dem Aufruf.
         this._lastTreeSkeleton = skeleton;
@@ -47164,17 +47272,16 @@ class AnazhRealm {
         const g = this._rollGenome(seed, "vehicle");
         const track = g.range("track", 0.9, 1.32); // Spur/Stand-Breite (Rad/Bein-x) — breiter = stabiler
         const cabinScale = g.range("cabin", 0.85, 1.2); // Korpus-Breite/Tiefe
-        const wheelR = g.range("wheelR", 0.85, 1.25); // Rad-Größe (eisen-Zylinder)
         return parts.map((p) => {
             const np = { ...p };
             const isWheel = p.material === "eisen" && p.shape === "cylinder";
+            // die SPUR weitet (Rad/Bein-x × track) → der SSF variiert; y bleibt überall (seat-safe).
             if (p.position)
                 np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
-            if (p.size) {
-                if (isWheel)
-                    np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR };
-                else np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
-            }
+            // die RAD-GRÖSSE bleibt UNANGETASTET (sonst verschiebt sich die Boden-Kontakt-Höhe
+            // _compoundBottomY → der Reiter versinkt/schwebt, M3 GEMESSEN); nur der KORPUS variiert x/z.
+            if (p.size && !isWheel)
+                np.size = { x: (p.size.x || 0.3) * cabinScale, y: p.size.y || 0.3, z: (p.size.z || 0.3) * cabinScale };
             return np;
         });
     }
