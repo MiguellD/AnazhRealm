@@ -24669,7 +24669,13 @@ class AnazhRealm {
         if (_glimmen > 0.01 && mat.emissive && opts.color !== undefined) {
             emissiveColor = opts.color;
             mat.emissive.setHex(emissiveColor);
-            emissiveIntensity = Math.min(1.2, _glimmen * 0.6);
+            // T3 (wahrerwuchs §4.3/§4.4) — der PER-VARIANTE GLANZ: ein Genom (Kristall-glow /
+            // Glut-Intensität) reicht `emissiveBoost` durch → ein Kristall glüht, DIESER heller;
+            // eine Glut lodert, DIESE intensiver. Der Boost SKALIERT nur den tag-getragenen
+            // Glimmen (das SEIN bleibt der magieleitung/wärmeleitung-Tag) — tag-neutral (Affinität
+            // unberührt; GEMESSEN diag-genom: Kristall/Glut-Tags weiter frozen).
+            const _boost = Number.isFinite(opts.emissiveBoost) ? Math.max(0, opts.emissiveBoost) : 1;
+            emissiveIntensity = Math.min(1.5, _glimmen * 0.6 * _boost);
             mat.emissiveIntensity = emissiveIntensity;
         }
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
@@ -46650,16 +46656,41 @@ class AnazhRealm {
     _rockVariant(seed) {
         const g = this._rollGenome(seed, "rock");
         const parts = [];
-        const rock = (x, y, z, sx, sy, sz, str, det, rot) =>
+        // T3 (wahrerwuchs §4.2 S3) — SEDIMENT-Schichtung + FLECHTEN/MOOS: die noiserock-Farbe
+        // folgt der Welt-Höhe (Strata-Bänder, das _terrainGeologyAlbedo-Muster auf den FREI-
+        // STEHENDEN Fels) → der Fels erzählt seine Ablagerung; ein feuchter Fels (mossy) trägt
+        // am Fuß einen grünen Flechten-Anflug. Tag-NEUTRAL (Farbe ≠ Material/Tag → V17.16,
+        // GEMESSEN diag-genom: Fels-Tags weiter == stein_block). Der Mikro-Bruch: die noiserock-Saat.
+        const mossy = g.chance("mossy", 0.4);
+        const SEDIMENT = [0x6f6b62, 0x787262, 0x837c6e, 0x6a6258, 0x726c60, 0x7d7568];
+        const blendCol = (a, b, t) => {
+            t = Math.max(0, Math.min(1, t));
+            const ar = (a >> 16) & 0xff,
+                ag = (a >> 8) & 0xff,
+                ab = a & 0xff;
+            const br = (b >> 16) & 0xff,
+                bg = (b >> 8) & 0xff,
+                bb = b & 0xff;
+            return (
+                ((Math.round(ar + (br - ar) * t) & 0xff) << 16) |
+                ((Math.round(ag + (bg - ag) * t) & 0xff) << 8) |
+                (Math.round(ab + (bb - ab) * t) & 0xff)
+            );
+        };
+        const rock = (x, y, z, sx, sy, sz, str, det, rot) => {
+            let col = SEDIMENT[Math.abs(Math.floor(y * 1.7)) % SEDIMENT.length]; // Strata aus der Höhe
+            if (mossy && y < 1.2) col = blendCol(col, 0x4a5a36, 0.5 * (1 - y / 1.2)); // Moos am Fuß
             parts.push({
                 shape: "noiserock",
                 material: "stein",
+                color: col,
                 position: { x, y, z },
                 size: { x: sx, y: sy, z: sz },
                 noiseStrength: str,
                 noiseDetail: det,
                 ...(rot ? { rotation: rot } : {}),
             });
+        };
         const form = g.pick("form", ["brocken", "brocken", "stapel", "nadel", "geroell"]);
         const weather = g.range("weather", 0.12, 0.4); // Verwitterung (scharf↔gerundet)
         const det = g.int("detail", 1, 2);
@@ -46748,12 +46779,19 @@ class AnazhRealm {
     _crystalVariant(seed) {
         const g = this._rollGenome(seed, "crystal");
         const parts = [];
+        // T3 (wahrerwuchs §4.3 S4) — zwei neue Achsen: die GLANZ-Intensität (emissiv-Boost je
+        // Variante, getragen vom quarz-magieleitung-Tag → ein Kristall glüht, DIESER heller)
+        // + die FACETTEN-/Termination-Spitzen-Zahl (Kristallographie: mehr Spitzen = reicheres
+        // Habitus). Beide tag-NEUTRAL (Farbe/Geometrie, kein Material/Tag-Shift → V17.16).
+        const glow = g.range("glow", 0.7, 1.7);
+        const facets = g.int("facets", 4, 8);
         const xtal = (shape, x, y, z, sx, sy, sz, rot) =>
             parts.push({
                 shape,
                 material: "quarz",
                 color: 0x9fd6e8,
                 opacity: 0.85,
+                emissiveBoost: glow, // T3: die magieleitung-Glut, je Variante moduliert
                 position: { x, y, z },
                 size: { x: sx, y: sy, z: sz },
                 ...(rot ? { rotation: rot } : {}),
@@ -46772,7 +46810,7 @@ class AnazhRealm {
             });
         } else if (habitus === "cluster") {
             xtal("sphere", 0, baseR * 0.3, 0, baseR * 1.9, baseR * 0.7, baseR * 1.9);
-            const n = g.int("n", 3, 6);
+            const n = Math.max(3, Math.min(6, facets)); // T3: die Facetten-Achse treibt die Spitzen-Zahl
             for (let i = 0; i < n; i++) {
                 const a = g.axis("a" + i) * 6.283;
                 const d = g.range("d" + i, 0, baseR * 0.8);
@@ -46786,7 +46824,7 @@ class AnazhRealm {
         } else if (habitus === "geode") {
             const r = g.range("r", 0.85, 1.7) * sizeMul;
             xtal("sphere", 0, r * 0.55, 0, r * 1.7, r * 1.7, r * 1.7);
-            const n = g.int("n", 2, 4);
+            const n = Math.max(2, Math.min(5, facets - 3)); // T3: Facetten-Achse
             for (let i = 0; i < n; i++) {
                 const a = g.axis("a" + i) * 6.283;
                 const s = g.range("s" + i, 0.3, 0.55) * r;
@@ -46799,7 +46837,7 @@ class AnazhRealm {
         } else {
             // Druse: eine niedrige Säule aus Spitzen auf breiter Basis (steht, schmaler nach oben).
             xtal("sphere", 0, baseR * 0.28, 0, baseR * 1.8, baseR * 0.6, baseR * 1.8);
-            const n = g.int("n", 3, 5);
+            const n = Math.max(3, Math.min(6, facets - 1)); // T3: Facetten-Achse
             let y = baseR * 0.4;
             for (let i = 0; i < n; i++) {
                 const s = baseR * (0.8 - i * 0.12);
@@ -46833,23 +46871,31 @@ class AnazhRealm {
         const parts = [];
         const r = g.range("basinR", 0.7, 1.5);
         const basinH = g.range("basinH", 0.5, 1.0);
-        // (1) Stein-Becken (Schale) — breit + niedrig → steht immer.
+        // T3 (wahrerwuchs §4.4 S4) — zwei neue Achsen: die ÖFFNUNG (Becken-Weite: enge Esse-
+        // Glut ↔ weiter Lava-See) + die INTENSITÄT (emissiv-Boost: die Glut lodert, DIESE
+        // heißer — getragen vom glut-wärmeleitung/brennbar-Tag). Tag-NEUTRAL (Form/Glanz).
+        const opening = g.range("opening", 0.6, 1.35); // Öffnungs-Weite (Becken-Radius-Faktor)
+        const intensity = g.range("intensity", 0.8, 1.8); // Glut-Intensität (emissiv-Boost)
+        const rimR = r * (0.82 + 0.34 * opening); // die offene Schale (breit+niedrig → steht)
+        // (1) Stein-Becken (Schale) — breit + niedrig → steht immer; die ÖFFNUNG macht den Rand.
         parts.push({
             shape: "cylinder",
             material: "stein",
             color: 0x6a6258,
             position: { x: 0, y: basinH * 0.5, z: 0 },
-            size: { x: r * 2, y: basinH, z: r * 2 },
+            size: { x: rimR * 2, y: basinH, z: rimR * 2 },
             segments: 12,
         });
-        // (2) Glut-Kern (halb-transparent, emissiv aus dem Material-Tag) — Intensität via Größe.
-        const coreR = r * g.range("core", 0.55, 0.8);
+        // (2) Glut-Kern (halb-transparent, emissiv aus dem Material-Tag × Intensität) — die
+        // Kern-Weite folgt der Öffnung (eine weite Öffnung zeigt eine breitere Glut-Fläche).
+        const coreR = r * g.range("core", 0.55, 0.8) * (0.7 + 0.4 * opening);
         const flame = g.range("flame", 0.9, 1.7); // Flammen-Höhe
         parts.push({
             shape: "sphere",
             material: "glut",
             color: 0xff7a2a,
             opacity: 0.75,
+            emissiveBoost: intensity, // T3: die wärmeleitung/brennbar-Glut, je Variante moduliert
             position: { x: 0, y: basinH + coreR * 0.5, z: 0 },
             size: { x: coreR * 2, y: coreR * 2 * flame, z: coreR * 2 },
         });
@@ -46861,6 +46907,7 @@ class AnazhRealm {
                 material: "glut",
                 color: 0xffb347,
                 opacity: 0.6,
+                emissiveBoost: intensity * 1.1, // die Zunge lodert am hellsten
                 position: { x: 0, y: basinH + coreR * flame, z: 0 },
                 size: { x: coreR * 0.9, y: coreR * 2.0 * flame, z: coreR * 0.9 },
             });
@@ -46879,7 +46926,24 @@ class AnazhRealm {
     _stationVariant(parts, seed) {
         if (!Array.isArray(parts) || !parts.length) return parts;
         const g = this._rollGenome(seed, "station");
-        const scale = g.range("scale", 0.85, 1.35);
+        // T2 (wahrerwuchs §4.5 S5 — DAS PARAMETRISCHE BAUWERK-GENOM, „nicht nur skalieren"):
+        // die bestehende Parts-Liste wird über DREI Achsen variiert (§6½.2: parametrisieren,
+        // NICHT die Funktion neu erfinden — eine Esse bleibt eine Esse):
+        //   (1) GRÖSSE      — eine Gesamt-Skala (wie bisher)
+        //   (2) PROPORTION  — NICHT-UNIFORM: eigene x/y/z-Achse, BESCHRÄNKT so dass die
+        //                     Funktion lesbar bleibt + die Stabilität hält (Ω-Φ2, GEMESSEN
+        //                     diag-genom: jede Variante STEHT trotz non-uniform).
+        //   (3) DETAIL-DICHTE — 0-3 ORNAMENTE (Eck-Studs/Finial), geklont aus einem
+        //                     bestehenden Teil (gleiche Form+Material) → tag-frozen (V17.16,
+        //                     die Compound-MAX bleibt invariant) + an die Bbox skaliert.
+        //   + PALETTE       — Farb-Tönung (wie bisher).
+        const base = g.range("scale", 0.85, 1.35);
+        const propX = g.range("propX", 0.85, 1.2);
+        const propY = g.range("propY", 0.8, 1.25);
+        const propZ = g.range("propZ", 0.85, 1.2);
+        const sx = base * propX,
+            sy = base * propY,
+            sz = base * propZ;
         const tr = g.range("tintR", 0.84, 1.12),
             tg = g.range("tintG", 0.84, 1.12),
             tb = g.range("tintB", 0.84, 1.12);
@@ -46894,8 +46958,8 @@ class AnazhRealm {
             let m = Infinity;
             for (const p of arr) {
                 const py = (p.position && p.position.y) || 0;
-                const sy = (p.size && p.size.y) || 0.3;
-                if (py - sy / 2 < m) m = py - sy / 2;
+                const syy = (p.size && p.size.y) || 0.3;
+                if (py - syy / 2 < m) m = py - syy / 2;
             }
             return m;
         };
@@ -46903,16 +46967,67 @@ class AnazhRealm {
         const out = parts.map((p) => {
             const np = { ...p };
             if (p.size)
-                np.size = { x: (p.size.x || 0.3) * scale, y: (p.size.y || 0.3) * scale, z: (p.size.z || 0.3) * scale };
+                np.size = { x: (p.size.x || 0.3) * sx, y: (p.size.y || 0.3) * sy, z: (p.size.z || 0.3) * sz };
             if (p.position)
                 np.position = {
-                    x: (p.position.x || 0) * scale,
-                    y: (p.position.y || 0) * scale,
-                    z: (p.position.z || 0) * scale,
+                    x: (p.position.x || 0) * sx,
+                    y: (p.position.y || 0) * sy,
+                    z: (p.position.z || 0) * sz,
                 };
             if (typeof p.color === "number") np.color = tint(p.color);
             return np;
         });
+        // ── DETAIL-DICHTE: Ornamente aus einem Klon-Teil (Form+Material gewahrt → tag-frozen) ──
+        const detail = g.int("detail", 0, 3);
+        if (detail > 0) {
+            // Bbox des skalierten Kerns (für die Ornament-Platzierung am oberen Rand).
+            let minX = Infinity,
+                maxX = -Infinity,
+                minZ = Infinity,
+                maxZ = -Infinity,
+                maxY = -Infinity;
+            for (const p of out) {
+                const px = (p.position && p.position.x) || 0,
+                    py = (p.position && p.position.y) || 0,
+                    pz = (p.position && p.position.z) || 0;
+                const hx = ((p.size && p.size.x) || 0.3) / 2,
+                    hy = ((p.size && p.size.y) || 0.3) / 2,
+                    hz = ((p.size && p.size.z) || 0.3) / 2;
+                if (px - hx < minX) minX = px - hx;
+                if (px + hx > maxX) maxX = px + hx;
+                if (pz - hz < minZ) minZ = pz - hz;
+                if (pz + hz > maxZ) maxZ = pz + hz;
+                if (py + hy > maxY) maxY = py + hy;
+            }
+            // Klon-Vorlage: das Teil mit dem KLEINSTEN Volumen (ein Detail, kein Tragwerk) —
+            // sein shape+material wird übernommen → die Compound-Tags bleiben bit-identisch.
+            let tmpl = out[0],
+                tmplVol = Infinity;
+            for (const p of out) {
+                const v = ((p.size && p.size.x) || 0.3) * ((p.size && p.size.y) || 0.3) * ((p.size && p.size.z) || 0.3);
+                if (v < tmplVol) {
+                    tmplVol = v;
+                    tmpl = p;
+                }
+            }
+            const studS = Math.max(0.12, Math.min(maxX - minX, maxZ - minZ) * 0.14);
+            // an den 4 oberen Ecken (innerhalb des Stützpolygons → kippt nicht), `detail` Stück.
+            const corners = [
+                [minX + studS, maxZ - studS],
+                [maxX - studS, maxZ - studS],
+                [minX + studS, minZ + studS],
+                [maxX - studS, minZ + studS],
+            ];
+            for (let d = 0; d < detail; d++) {
+                const [ox, oz] = corners[d % 4];
+                out.push({
+                    ...tmpl,
+                    position: { x: ox, y: maxY - studS * 0.5, z: oz },
+                    size: { x: studS, y: studS, z: studS },
+                    ...(typeof tmpl.color === "number" ? { color: tint(tmpl.color) } : {}),
+                });
+            }
+        }
         const shift = before - lowBottom(out); // den Boden re-verankern (kein Schweben)
         if (Math.abs(shift) > 1e-9) for (const p of out) if (p.position) p.position.y += shift;
         return out;
@@ -47110,6 +47225,9 @@ class AnazhRealm {
             // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
             // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
             if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
+            // T3 — der per-Teil GLANZ-Boost (Kristall/Glut-Genom): skaliert den tag-getragenen
+            // Emissiv-Glimmen je Variante (tag-neutral; das SEIN bleibt der Material-Tag).
+            if (Number.isFinite(part.emissiveBoost)) matOpts.emissiveBoost = part.emissiveBoost;
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;

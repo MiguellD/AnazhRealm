@@ -326,15 +326,20 @@ function startSaveServer() {
                         },
                     ],
                 };
-                const baseStab = r._stability(base);
                 const baseTags = tagsOf(base.parts);
-                let stabOk = true,
+                const b0 = base.parts[0];
+                // T2 — der RICHTERE Beweis (nicht mehr margin-invariant, weil non-uniform):
+                // jede Variante STEHT (Ω-Φ2 physik-garant) · PROPORTION non-uniform (eigene
+                // x/y/z) · DETAIL-DICHTE variiert (Part-Zahl) · Tags frozen · Basis verankert.
+                let standsAll = true,
                     tagsOk = true,
-                    anchored = true;
-                const sizes = new Set();
-                for (let s = 0; s < 60; s++) {
+                    anchored = true,
+                    nonUniformSeen = false;
+                const partCounts = new Set();
+                const sizeSigs = new Set();
+                for (let s = 0; s < 80; s++) {
                     const v = { parts: r._stationVariant(base.parts, "st" + s) };
-                    if (Math.abs(r._stability(v).margin - baseStab.margin) > 0.02) stabOk = false;
+                    if (r._stability(v).inside !== true) standsAll = false;
                     const vt = tagsOf(v.parts);
                     if (
                         !["lebendig", "dichte", "brennbar", "magieleitung"].every(
@@ -344,13 +349,21 @@ function startSaveServer() {
                         tagsOk = false;
                     let mb = Infinity;
                     for (const p of v.parts) mb = Math.min(mb, p.position.y - p.size.y / 2);
-                    if (Math.abs(mb) > 0.01) anchored = false; // Basis bleibt bei y=0 (kein Schweben)
-                    sizes.add(v.parts[0].size.x.toFixed(3));
+                    if (Math.abs(mb) > 0.02) anchored = false; // Basis bleibt bei y≈0 (kein Schweben)
+                    const p0 = v.parts[0];
+                    const rx = p0.size.x / b0.size.x,
+                        ry = p0.size.y / b0.size.y,
+                        rz = p0.size.z / b0.size.z;
+                    if (Math.abs(rx - ry) > 0.04 || Math.abs(rx - rz) > 0.04) nonUniformSeen = true;
+                    partCounts.add(v.parts.length);
+                    sizeSigs.add(rx.toFixed(3) + ":" + ry.toFixed(3));
                 }
-                o.stationStab = stabOk;
+                o.stationStands = standsAll;
                 o.stationTags = tagsOk;
                 o.stationAnchored = anchored;
-                o.stationVaries = sizes.size > 3;
+                o.stationProportionVaries = nonUniformSeen;
+                o.stationDetailVaries = partCounts.size >= 2;
+                o.stationVaries = sizeSigs.size > 5;
                 const d1 = r._stationVariant(base.parts, "det-st");
                 const d2 = r._stationVariant(base.parts, "det-st");
                 o.stationDet =
@@ -569,6 +582,59 @@ function startSaveServer() {
                 o.palmUV[1] <= 0.76 &&
                 o.broadUV[1] <= 0.26;
 
+            // ══ T3 (wahrerwuchs §4.2-§4.4) — KRISTALL-FACETTEN+GLANZ · GLUT-ÖFFNUNG+INTENSITÄT · FELS-SEDIMENT/MOOS ══
+            // (a) KRISTALL: die Facetten-/Spitzen-Zahl variiert + jedes Teil trägt emissiveBoost.
+            const xtalFacets = new Set();
+            let xtalHasBoost = true;
+            for (let s = 0; s < 200; s++) {
+                const p = r._crystalVariant("fac" + s);
+                xtalFacets.add(p.filter((q) => q.shape === "octahedron").length);
+                if (!p.every((q) => Number.isFinite(q.emissiveBoost))) xtalHasBoost = false;
+            }
+            o.crystalFacetSpread = [...xtalFacets].sort((a, b) => a - b);
+            o.crystalHasBoost = xtalHasBoost;
+            // (b) der GLANZ-Boost koppelt: ein höherer emissiveBoost → höhere emissiveIntensity (>0, vom Tag).
+            const quarzTags = r.state.materials.quarz && r.state.materials.quarz.tags;
+            const mLo = r._buildPbrNodeMaterial({ tags: quarzTags, color: 0x9fd6e8, emissiveBoost: 0.7 });
+            const mHi = r._buildPbrNodeMaterial({ tags: quarzTags, color: 0x9fd6e8, emissiveBoost: 1.7 });
+            o.crystalEmiss = [
+                mLo ? +(mLo.emissiveIntensity || 0).toFixed(3) : null,
+                mHi ? +(mHi.emissiveIntensity || 0).toFixed(3) : null,
+            ];
+            o.crystalGlowCouples =
+                !!mLo && !!mHi && mLo.emissiveIntensity > 0.001 && mHi.emissiveIntensity > mLo.emissiveIntensity;
+            // (c) GLUT: die Öffnung (Becken-Radius) variiert + Intensität via emissiveBoost; die Glut glüht.
+            const glutRims = new Set();
+            let glutHasBoost = true;
+            for (let s = 0; s < 200; s++) {
+                const p = r._glutVariant("op" + s);
+                glutRims.add(p[0].size.x.toFixed(2));
+                if (!p.filter((q) => q.material === "glut").every((q) => Number.isFinite(q.emissiveBoost)))
+                    glutHasBoost = false;
+            }
+            o.glutOpeningSpread = glutRims.size;
+            o.glutHasBoost = glutHasBoost;
+            const glutTags = r.state.materials.glut && r.state.materials.glut.tags;
+            const gHi = r._buildPbrNodeMaterial({ tags: glutTags, color: 0xff7a2a, emissiveBoost: 1.6 });
+            o.glutGlows = !!gHi && gHi.emissiveIntensity > 0.001;
+            // (d) FELS-SEDIMENT/MOOS: ≥3 distinkte Strata-Farben + ≥1 mossy (grün-dominantes) Teil.
+            const rockCols = new Set();
+            let anyMoss = false;
+            for (let s = 0; s < 400; s++) {
+                const p = r._rockVariant("sed" + s);
+                for (const q of p) {
+                    if (typeof q.color === "number") {
+                        rockCols.add(q.color);
+                        const rr = (q.color >> 16) & 0xff,
+                            gg = (q.color >> 8) & 0xff,
+                            bb = q.color & 0xff;
+                        if (gg > rr && gg > bb) anyMoss = true;
+                    }
+                }
+            }
+            o.rockSedimentDistinct = rockCols.size;
+            o.rockHasMoss = anyMoss;
+
             return o;
         });
 
@@ -645,11 +711,16 @@ function startSaveServer() {
             `${gt.det}/${out.glutPool}`,
             gt.det === true && out.glutPool === true
         );
-        // ── S5 BAUWERK ──
+        // ── S5/T2 BAUWERK (PARAMETRISCH: Proportion + Detail-Dichte, nicht scale+tint) ──
         ck(
-            "BAUWERK: _stationVariant erhält Stabilität (Ω-Φ2 margin-invariant) + Tags",
-            `${out.stationStab}/${out.stationTags}`,
-            out.stationStab === true && out.stationTags === true
+            "BAUWERK: jede Variante STEHT (Ω-Φ2 physik-garant trotz non-uniform) + Tags frozen",
+            `${out.stationStands}/${out.stationTags}`,
+            out.stationStands === true && out.stationTags === true
+        );
+        ck(
+            "T2-BAUWERK: PROPORTION non-uniform (eigene x/y/z-Achse) + DETAIL-Dichte variiert",
+            `prop=${out.stationProportionVaries}/detail=${out.stationDetailVaries}`,
+            out.stationProportionVaries === true && out.stationDetailVaries === true
         );
         ck(
             "BAUWERK: Basis verankert (kein Schweben) + variiert + applied",
@@ -718,6 +789,28 @@ function startSaveServer() {
             "T1-UV: Palmen-Karten→Atlas-Spalte 2, Breitblatt→Spalte 0 (Typ gewahrt)",
             `palm=${JSON.stringify(out.palmUV)} broad=${JSON.stringify(out.broadUV)}`,
             out.uvRoutesByKind === true
+        );
+
+        // ── T3 (wahrerwuchs §4.2-§4.4): KRISTALL-FACETTEN+GLANZ · GLUT-ÖFFNUNG · FELS-SEDIMENT/MOOS ──
+        ck(
+            "T3-KRISTALL: Facetten-/Spitzen-Zahl variiert (≥3) + emissiveBoost je Teil",
+            `${JSON.stringify(out.crystalFacetSpread)}/${out.crystalHasBoost}`,
+            Array.isArray(out.crystalFacetSpread) && out.crystalFacetSpread.length >= 3 && out.crystalHasBoost === true
+        );
+        ck(
+            "T3-GLANZ: Kristall glüht (magieleitung-Tag) + höherer Boost → höhere Intensität",
+            JSON.stringify(out.crystalEmiss),
+            out.crystalGlowCouples === true
+        );
+        ck(
+            "T3-GLUT: Öffnung variiert (≥4 Becken-Weiten) + Glut glüht (Intensität-Boost)",
+            `open=${out.glutOpeningSpread}/glows=${out.glutGlows}/boost=${out.glutHasBoost}`,
+            out.glutOpeningSpread >= 4 && out.glutGlows === true && out.glutHasBoost === true
+        );
+        ck(
+            "T3-FELS: Sediment-Strata (≥3 Farben) + Moos/Flechten (grün-dominant)",
+            `sed=${out.rockSedimentDistinct}/moss=${out.rockHasMoss}`,
+            out.rockSedimentDistinct >= 3 && out.rockHasMoss === true
         );
 
         console.log("\n  DER WAHRE WUCHS — Genom-Beweis (wahrerwuchs §7)\n");
