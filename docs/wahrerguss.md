@@ -571,16 +571,29 @@ an simulierter Physik · smin-`k`≈0.1–0.3·r).
    `playerSoulDefs.human.color` (0xff0000, grell) statt des gedämpften 0xc0392b. Kein
    Test-Change nötig — ein Farb-Fix. Fast hätte ich den Test fälschlich aufgeweicht.
 
-**OFFEN — GUSS 3 (der nächste Schritt, am Avatar + der Kreatur):**
-- **Gesicht + Hände am Avatar:** `_addCreatureFace` wird für den Humanoiden noch nicht
-  gerufen (keine Augen); Hände/Füße sind Knubbel.
-- **Achsel-Skinning:** die Schulter kollabiert leicht beim Arm-Schwung (Achsel-Weight-Bleed;
-  ein „clavicle"-Helper-Bone oder geschärfte Weights).
-- **Avatar-Farbe + Haut-Substanz (System A):** das Hide-Material trägt Fell-Korn (für ein Tier
-  gedacht) — der Mensch will glattere Haut/Stoff; die Farbe ist der Schöpfer-Wahl.
-- **Phoenix/Dragon** hängen noch am alten Box-Pfad (`_buildPhoenixGroup`/`_buildDragonGroup`).
-- **Kreatur-Politur:** die losen Box-Füße verbinden, Beine, S-Curve.
-- **Der Selektions-Richter (§11)** bleibt die genialste Achse für die KREATUR-Vielfalt
-  (Quadruped) — orthogonal zum humanoiden Rig, ein eigener Guss.
+**GUSS 3 GEBAUT (Gesicht · glatte Haut · echte Hände/Füße · entspannte Arme) — selbstkritische
+Augen-Auswertung (Schöpfer: „die Analyse oft noch nicht echt"):** jeder Winkel gerendert
+(front/seite/hinten/3-4 + NORMALEN-Ansicht), die Fehler wie ein strenger Art-Director benannt,
+DANN gelöst:
+- **GESICHT** (war blankes Ei = Schaufensterpuppe): `_addHumanoidFace` — mandelige, kleine, auf
+  Kopf-MITTE eingesenkte Augen + Catchlight + subtile Brauen + Nase, Kind des Kopf-Bones (folgt
+  der Bewegung). Erst-Wurf hatte Doll-Augen (zu groß/hoch) → nachgeschärft bis ruhige Miene.
+- **HAUT** (war fleckig): `opts.skin` dämpft Fell-Korn + SSS-Rim (0.36→0.12, sonst orangener
+  Hotspot am Unterarm) → glatte Haut.
+- **KOPF/HALS** (war Vorragen + Nacken-Kerbe): Cluster Schädel+Occiput+Kiefer, Hals vertikal.
+- **HÄNDE** (war Flossen): Handteller+Daumen+Finger. **FÜSSE** (war Latschen): Ferse+Spann.
+- **RUHE-ARME** (war A-Pose-Spreiz): adduziert (~8°), entspannter Hang.
 
-**Die nächste Sitzung:** Guss 3 (Gesicht/Hände/Substanz am Avatar) + die Kreatur-Politur.
+**EHRLICH NOCH OFFEN (nicht „fertig" — der nächste Pass):**
+- **Rück-Winkel-Augen-Bleed** im swiftshader-Diag (Tiefen-Quirk des Hide-Materials; NORMALEN-
+  Ansicht beweist solide/geschlossene Geometrie) → echte-WebGPU-Browser-Abnahme.
+- **Achsel-Skinning** kollabiert leicht beim Arm-Schwung (clavicle-Helper-Bone / Weights).
+- **Waden spindeldürr**, Hände noch klobig (Fäustlinge), Rest-Rim in der Arm-Hüft-Falte.
+- **Phoenix/Dragon** noch am alten Box-Pfad (`_buildPhoenixGroup`/`_buildDragonGroup`).
+- **Kreatur-Politur:** lose Box-Füße verbinden, Beine, S-Curve.
+- **Selektions-Richter (§11)** für die KREATUR-Vielfalt (Quadruped) — eigener Guss.
+
+**PERMANENTE LEHRE (Schöpfer 16.06.): die Augen-Analyse muss ECHT sein.** Bilder erstellen
+genügt nicht — jeden Winkel rendern (auch hinten + Normalen-Ansicht), die Fehler wie ein
+strenger fremder Art-Director benennen (kein „Durchbruch!"), DANN lösen. Ein „sieht gut aus"
+ohne Mehr-Winkel-Prüfung ist die Beschönigungs-Falle.
