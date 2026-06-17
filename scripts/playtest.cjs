@@ -41269,10 +41269,16 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.skybox.material &&
             r.state.skybox.material.isMeshBasicNodeMaterial === true
         );
-        // Wolken-Cover folgt weather (Pfad zieht aus state.skyboxUniforms)
+        // Wolken-Cover folgt weather (Pfad zieht aus state.skyboxUniforms).
+        // V17.32-Härtung: eine aktive `weatherTransition` aus dem Warmup ÜBERSTIMMT das direkt
+        // gesetzte `state.weather` in `_weatherBlendedValue` (es liest dann wt.from/to/progress)
+        // → beide Lese-Vorgänge lieferten denselben Transitions-Wert = Flake. Die Transition
+        // leeren misst die ECHTE Wetter→Wolken-Kopplung deterministisch (kein verdünnter Live-Blend).
+        r.state.weatherTransition = null;
         r.state.weather = "rainy";
         r._applyDayNightToScene();
         const cloudRainy = r.state.skyboxUniforms.cloudCover.value;
+        r.state.weatherTransition = null;
         r.state.weather = "sunny";
         r._applyDayNightToScene();
         const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
