@@ -15043,15 +15043,16 @@ class AnazhRealm {
                 "sphere",
                 bodyMat,
                 s * hipHalf * 0.44,
-                hipY - 0.44,
-                -0.56 * girthF, // klar HINTER dem Becken — die flache Tiefe (unten) hält die VorderKante hinter der Mitte (kein Groin-Wrap)
+                hipY - 0.18, // HÖHER (war hipY-0.44 → hing als „poo" tief herab); das Gesäß sitzt auf Becken-Höhe
+                -0.52 * girthF, // klar HINTER dem Becken (die Gesäß-Masse)
                 hipHalf * 0.62 * girthF,
-                0.76,
-                0.44 * girthF,
+                0.66,
+                0.46 * girthF,
                 null,
                 bodyCol,
                 {
                     kScale: 0.92,
+                    def: true, // Gluteus = MUSKEL (rot), kein halbtransparentes Fleisch (kein Parallelpfad zum Atlas-Gluteus)
                 }
             );
         // ── MUSKEL-RELIEF + LANDMARK-SCHÄRFE (lebendiger-koerper §2½ — der Torso liest als KÖRPER,
@@ -15061,10 +15062,10 @@ class AnazhRealm {
         // mF (Muskel-Fülle) kommt aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle.
         // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
-        add("box", "knochen", 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 1.5, 0.12, 0.2, null, limbCol, {
+        add("box", "knochen", 0, shoulderY + 0.06, 0.16 * girthF, shoulderHalf * 1.12, 0.1, 0.18, null, limbCol, {
             kScale: 0.46,
             struct: true,
-        });
+        }); // KLAVIKEL — endet an den Schultern (war shoulderHalf*1.5 = breiter ALS die Schultern), höher + schmaler = dezenter Grat
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
@@ -15084,7 +15085,7 @@ class AnazhRealm {
         //   y gewürfelt (Schöpfer: „die Dinge wissen nicht, was sie verbinden" — wie bei den Zehen).
         //   Die kScale-Furchen schnitzen Linea alba + Querfurchen; ein unteres Segment Nabel→Schambein.
         const absMF = 0.9 + muscle * 0.5;
-        const xiphoidY = 5.0,
+        const xiphoidY = 5.45, // HÖHER (war 5.0): der Rectus reicht jetzt bis unter die Pecs (kein Bauch-Loch unter der Brust, Schöpfer-Befund „Bauchmuskelposition")
             navelY = 4.32,
             pubisY = 3.78; // die Knoten des Rectus
         const absZ = 0.4 * girthF;
@@ -15148,7 +15149,7 @@ class AnazhRealm {
         //    einschmilzt — KEINE aufgeklebten Tropfen, geringe z-Halbweite. Augen-Partie bleibt FREI.
         add("box", limbMat, 0, 7.78, 0.24, 0.4 * hr, 0.16 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.74 }); // Frontalis (Stirn)
         for (const s of [-1, 1]) {
-            add("box", limbMat, s * 0.6 * hr, 7.62, 0.02, 0.08 * hr, 0.26 * hr, 0.24 * hr, null, limbCol, { def: true, kScale: 0.7 }); // Temporalis (Schläfe-Fächer)
+            add("box", limbMat, s * 0.5 * hr, 7.6, -0.02, 0.09 * hr, 0.22 * hr, 0.18 * hr, null, limbCol, { def: true, kScale: 0.7 }); // Temporalis — flach AN der Schläfe (war x0.6/z-tief0.24 → stand als „Ohrenmuffe" ab); hugt den Schädel
             add("box", limbMat, s * 0.2 * hr, 7.66, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — oberer Bogen
             add("box", limbMat, s * 0.2 * hr, 7.44, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — unterer Bogen
             add("box", limbMat, s * 0.33 * hr, 7.55, 0.32, 0.045 * hr, 0.1 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — lateraler Schenkel
