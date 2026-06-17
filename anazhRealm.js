@@ -15425,6 +15425,30 @@ class AnazhRealm {
         nose.rotation.x = Math.PI * 0.5;
         nose.castShadow = false;
         rig.head.add(nose);
+        // MUND — eine dünne dunkle Linie unter der Nase (vollendet das Gesicht; kein toter Blick)
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.16 * kh, 0.035 * kh, 0.05 * kh), eyeMat(0x4a2420, false, 0, 0.6));
+        mouth.position.copy(L(0, 7.18, 0.41));
+        mouth.castShadow = false;
+        rig.head.add(mouth);
+        // OHREN — kleine flache Muscheln an den Kopf-Seiten (auf Augen-/Nasen-Höhe, Hautton)
+        const earGeom = new THREE.SphereGeometry(0.09 * kh, 10, 8);
+        earGeom.scale(0.45, 1.15, 0.8); // flach an den Kopf gelegt, hochkant
+        for (const s of [-1, 1]) {
+            const ear = new THREE.Mesh(earGeom, skinM);
+            ear.position.copy(L(s * 0.44, 7.42, 0.0));
+            ear.castShadow = false;
+            rig.head.add(ear);
+        }
+        // HAAR — eine Kappe, die Scheitel + Hinterkopf + Seiten bis zur Stirn-/Brauen-Linie deckt
+        // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
+        // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
+        const hairMat = eyeMat(0x241712, false, 0, 0.72);
+        const hairGeom = new THREE.SphereGeometry(0.4 * kh, 18, 14);
+        hairGeom.scale(1.12, 0.8, 1.25); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
+        const hair = new THREE.Mesh(hairGeom, hairMat);
+        hair.position.copy(L(0, 7.78, -0.12)); // HOCH (Scheitel) + zurück → deckt nur Krone+Hinterkopf, Gesicht frei
+        hair.castShadow = true;
+        rig.head.add(hair);
     }
 
     // wahrerguss System B (GUSS 2) — die LEBENDIGE POSE: rotiert die Rig-Bones (absolute Werte

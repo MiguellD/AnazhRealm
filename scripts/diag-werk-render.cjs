@@ -374,6 +374,16 @@ async function renderWerk(page, bpName, view) {
         const FILTER = process.argv[2] || ""; // optionaler Substring-Filter (bp+file) für gezielte Werk-Renders
         if (process.argv[3] === "skel") await page.evaluate(() => (window.__skel = true)); // DEBUG: Skelett statt Haut
         if (process.argv[3] === "norm") await page.evaluate(() => (window.__normskin = true)); // DEBUG: Normalen als RGB
+        // COLD-START-FIX: den Spiel-Loop EINMAL einfrieren BEVOR der erste Werk-Render läuft —
+        // sonst erwischte der erste Screenshot (front) das Welt-Frame statt des isolierten Werks
+        // (der Loop rendert die Welt-Szene noch, während renderWerk gerade erst die Iso-Szene baut).
+        await page.evaluate(() => {
+            const r = window.anazhRealm,
+                st = r && r.state;
+            if (r) r._gameLoopTick = () => {};
+            if (st && st.renderer && st.renderer.setAnimationLoop) st.renderer.setAnimationLoop(null);
+        });
+        await new Promise((res) => setTimeout(res, 200));
         for (const [bp, file, view] of [
             // ── BÄUME (T1/T6) ──
             ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"], // Breitblatt + Rinde-Maserung
@@ -411,7 +421,7 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "eval-rest-side.png", "side"],
             ["humanoidrig:rest:0", "eval-rest-back.png", "back"],
             ["humanoidrig:rest:0", "eval-rest-34.png", ""],
-            ["humanoidrig:walk:0", "eval-walk-34.png", ""]
+            ["humanoidrig:walk:0", "eval-walk-34.png", ""],
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)
