@@ -281,11 +281,18 @@ async function renderWerk(page, bpName, view) {
                         grp = new THREE.Group();
                         for (const p of parts) {
                             if (!p.size || !p.position || p.feature) continue;
-                            const col = p.material === "knochen" ? 0xe6dcc4 : p.def ? 0xcf4a3a : 0xd9bca0;
-                            const m = new THREE.Mesh(
-                                new THREE.SphereGeometry(0.5, 18, 12),
-                                new THREE.MeshStandardMaterial({ color: col, roughness: 0.7, metalness: 0 })
-                            );
+                            // wie die Referenz: Fleisch DURCHSICHTIG, Knochen (beige) + Muskel (rot)
+                            // OPAK → das Skelett + die Massen werden sichtbar (nicht vom Fleisch verdeckt).
+                            const isBone = p.material === "knochen";
+                            const isMuscle = !!p.def;
+                            const col = isBone ? 0xe6dcc4 : isMuscle ? 0xcf4a3a : 0xd9bca0;
+                            const mo = { color: col, roughness: 0.7, metalness: 0 };
+                            if (!isBone && !isMuscle) {
+                                mo.transparent = true;
+                                mo.opacity = 0.16;
+                                mo.depthWrite = false;
+                            }
+                            const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 12), new THREE.MeshStandardMaterial(mo));
                             m.scale.set(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
                             m.position.set(p.position.x, p.position.y, p.position.z);
                             if (p.rotation) m.rotation.set(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0);

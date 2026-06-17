@@ -15042,6 +15042,16 @@ class AnazhRealm {
                 { x: 0.2, y: 0, z: s * 0.6 },
                 limbCol
             ); // Daumen (vorn-innen, abgespreizt)
+            // FINGER-KNOCHEN (knochen, dünn, IM Fleisch-Handteller): die Knochen-Ansicht zeigt
+            //    artikulierte Finger mit KNÖCHELN (Gelenke), die HAUT bleibt eine glatte Hand (keine
+            //    Klauen — das Fleisch-Paket ist die Oberfläche, die Knochen sind das innere Gerüst).
+            for (let f = 0; f < 4; f++) {
+                const fx = hw + (f - 1.5) * 0.12 * limbF;
+                const fl = f === 1 || f === 2 ? 0.34 : 0.27; // Mittel-/Zeigefinger länger
+                limb(fx, wristY - 0.26, 0.03, fx, wristY - 0.26 - fl, 0.16, 0.055 * limbF, "knochen", limbCol); // Finger (Metacarpal→Phalangen)
+                add("sphere", "knochen", fx, wristY - 0.26 - fl * 0.5, 0.1, 0.06 * limbF, 0.06 * limbF, 0.06 * limbF, null, limbCol, { kScale: 0.4 }); // Knöchel-GELENK
+            }
+            limb(wristX - s * 0.13, wristY - 0.16, 0.06, wristX - s * 0.24, wristY - 0.32, 0.14, 0.06 * limbF, "knochen", limbCol); // Daumen-Knochen
         }
         // GLUTEUS MAXIMUS — der HINTERN (z<0, HINTEN): zwei runde Massen am Becken-RÜCKEN. Er
         // FEHLTE komplett im Skelett → der Rücken war flach und die nach vorn beulenden Schenkel-
@@ -15114,6 +15124,14 @@ class AnazhRealm {
             add("box", limbMat, ankleX, 0.2, -0.18, 0.3, 0.34, 0.34, null, limbCol); // Ferse (klar HINTEN — Achilles/Knöchel)
             add("box", limbMat, ankleX, 0.11, 0.2, 0.32, 0.22, 0.46, null, limbCol); // Mittelfuß/Rist (länger, flacher → echte Sohle)
             add("box", limbMat, ankleX, 0.06, 0.56, 0.34, 0.13, 0.36, null, limbCol); // Zehen (klar VORN, flach)
+            // FUSS-KNOCHEN (knochen, dünn, IM Fleisch): Mittelfuß-Knochen (Metatarsals) + Zehen-Knochen
+            //    fächern nach vorn → die Knochen-Ansicht zeigt einen artikulierten Fuß, die Haut bleibt
+            //    eine glatte Sohle. Plus Fersenbein (Calcaneus) als knochen-Landmarke.
+            add("sphere", "knochen", ankleX, 0.16, -0.16, 0.18, 0.16, 0.2, null, limbCol, { kScale: 0.5 }); // Fersenbein (Calcaneus)
+            for (let t = 0; t < 4; t++) {
+                const tx = ankleX + (t - 1.5) * 0.08;
+                limb(tx, 0.09, 0.16, tx, 0.07, 0.16 + 0.42, 0.06, "knochen", limbCol); // Mittelfuß+Zehen-Knochen
+            }
         }
         return parts;
     }
