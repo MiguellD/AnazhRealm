@@ -14995,6 +14995,12 @@ class AnazhRealm {
             const wristX = s * (shoulderHalf + 0.56),
                 wristY = hipY - 0.05;
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
+            // BIZEPS (vorn) + TRIZEPS (hinten) am Oberarm — getrennte DEF-Massen → der Seam-Groove
+            // zeichnet die Arm-Definition (war ein glattes Rohr). Der smin schmilzt sie in den Arm.
+            const uaMidX = (shX + elbowX) * 0.5,
+                uaMidY = (shY - 0.18 + elbowY) * 0.5;
+            add("sphere", limbMat, uaMidX, uaMidY + 0.12, 0.15 * limbF, 0.25 * limbF, 0.46 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Bizeps
+            add("sphere", limbMat, uaMidX, uaMidY, -0.15 * limbF, 0.25 * limbF, 0.52 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Trizeps
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
             add("box", limbMat, elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen)
             // HAND — eine RUHENDE HAND als ZUSAMMENHÄNGENDE Masse (Profi-Stilisierung: Handteller +
