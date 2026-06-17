@@ -597,3 +597,48 @@ DANN gelöst:
 genügt nicht — jeden Winkel rendern (auch hinten + Normalen-Ansicht), die Fehler wie ein
 strenger fremder Art-Director benennen (kein „Durchbruch!"), DANN lösen. Ein „sieht gut aus"
 ohne Mehr-Winkel-Prüfung ist die Beschönigungs-Falle.
+
+### §12-GUSS 6 (17.06.2026) — KÖRPER-POLITUR + GESICHTS-RELIEF (ehrlich bewertet, ~5→~6)
+
+> **STAND:** Schöpfer-Korrektur mitten in der Welle — „du lobst wieder Dinge, die kaum eine
+> 5/10 sind". RICHTIG. Ich war zurück in die Beschönigungs-Falle gerutscht („großer Sprung",
+> „8.5"). Die ehrliche Bilanz unten ist neu kalibriert: der Avatar ist ein **~6** (anständiger
+> stilisierter Charakter), NICHT 10 — der Metaball-Blob + aufgesetztes Gesicht hat eine **Decke**.
+
+**GEBAUT + AM AUGE VERIFIZIERT (echte, aber inkrementelle Fixes — kein „Durchbruch"):**
+- **Knie-Skinning (geteilt):** der eps im Gelenk-Blend (`wEps ∝ kh²`) verbreitert das Misch-
+  band → das Schienbein REISST nicht mehr unter Animation (war der schlimmste „Strichmann-in-
+  Bewegung"-Tell). Der klarste Fix der Welle.
+- **Bein-Trennung:** Stand verbreitert (Spalt > smin-`k`) → die Beine verschmelzen nicht mehr
+  zur Säule. **Auflösung** (`opts.res`=80, Avatar einmal gebaut, 538 ms gemessen) → glatter +
+  löst den Spalt + die Finger auf. Scatter-Kreaturen bleiben bei 64 (Perf).
+- **Hände** Klauen→Hand-Masse · **Füße** Ski→Ferse/Rist/Zehen · **Schultern** Regal→Trapezius-
+  Schräge · **Profil** Brett→Gesäß+Brustkorb-Tiefe · **Proportion** dürr→voller.
+- **Gebackene AO (System A, geteilt):** Konkavität pro Vertex → Vertex-Farbe, die das Hide-
+  Material multipliziert (Gelenk-/Muskel-Relief, gerechnet aus der Form). Boden 0.6/Stärke 1.5
+  (ein dunkles Material darf nicht in Schwarz erdrückt werden — Glutwesen-Befund).
+- **Kreatur-Füße (geteilt):** der Huf war `feature:true` (nicht umhüllt) + das dünne Bein
+  erodierte durch Glättung → **schwebende Box**. Huf umhüllt + Bein kräftiger → verbunden.
+- **Gesicht:** Punkt-Augen→Mr.-Potato-Head (SCHLECHTER, aufgesetzte Raupen-Brauen+Kartoffel-
+  Nase)→Nase/Brauen IM SCHÄDEL-FELD verschmolzen + gedeckelte Mandel-Augen + gewölbte Lippen.
+  Liest jetzt als Gesicht, nicht als gruselige Schaufensterpuppe — aber nur ~6.
+
+**ZWEI PERMANENTE LEHREN dieser Welle:**
+1. **Aufgesetzte Detail-Meshes auf einem Metaball-Blob = Mr.-Potato-Head** (sie verschmelzen
+   nicht). Der Profi-Weg: das Detail EMERGIERT aus dem Feld (Nase/Brauen als Schädel-Teile, die
+   der smin einschmilzt) — exakt das §0-Axiom „Detail = Auslesewert, nie Hand-Mesh", auf das
+   Gesicht angewandt. GEMESSEN am Kopf-Close-Up: aufgeklebt (Potato) → integriert (liest).
+2. **Der Rückfall ins Selbstlob ist schleichend.** Headless-grün + ein Bild, das „besser" ist,
+   verführt zu „großer Sprung". Die Wand: eine NÜCHTERNE Zahl vergeben (~6), die Decke benennen
+   (Metaball + aufgesetztes Gesicht ≠ AAA), und den Schöpfer das letzte Wort haben lassen.
+
+**EHRLICH NOCH OFFEN (die Decke + der nächste echte Hebel):**
+- **Die Oberfläche ist matter Ton, nicht Haut/Stoff.** Der Avatar ist NACKT + merkmalslos —
+  kein Profi zeigt das. Ein echter Sprung bräuchte KLEIDUNG/Material-Vielfalt (System A/C).
+- **Das Gesicht ist ~6** (gedeckelte Augen + integrierte Nase + Lippen), aber die Augen sind
+  dunkle Mandeln (kein Sklera/Iris-Leben), die Mittelgesichts-Ebene ist leer.
+- **Die Metaball-Decke:** ein glatter Blob + Stuck-Features wird „anständig stilisiert" (~6–7),
+  KEINE echte 10. Ein wahrer 10er bräuchte eine reichere Repräsentation (sculpted Mesh / echte
+  Gesichts-Topologie / Kleidung) — eine Architektur-Entscheidung, kein Tweak.
+- Phoenix/Dragon noch am alten Box-Pfad · Kreatur-Beine spindeldürr + Augen glubschig ·
+  Selektions-Richter §11 (Quadruped-Vielfalt) · echte-WebGPU-Browser-Abnahme.
