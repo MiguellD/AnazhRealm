@@ -15215,8 +15215,11 @@ class AnazhRealm {
             if (vd && nv && T.output) {
                 const fres = vd.dot(nv).clamp(0, 1).oneMinus().pow(2.6);
                 const warm = opts.predator ? T.vec3(1.0, 0.5, 0.25) : T.vec3(1.0, 0.72, 0.45);
+                // HAUT: das warme Rim DEZENT (0.12) — auf glatter Haut liest das volle Fell-Rim
+                // (0.36) als greller orangener Hotspot am Unterarm; Fell behält das volle Glühen.
+                const rimAmt = opts.skin ? 0.12 : 0.36;
                 const o = T.output;
-                mat.outputNode = T.vec4(o.xyz.add(warm.mul(fres.mul(0.36))), o.w);
+                mat.outputNode = T.vec4(o.xyz.add(warm.mul(fres.mul(rimAmt))), o.w);
             }
         } catch (_e) {
             if (typeof window !== "undefined") window.__hideMatError = String((_e && _e.message) || _e);
