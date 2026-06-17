@@ -288,22 +288,46 @@ async function renderWerk(page, bpName, view) {
                                     mo.depthWrite = false;
                                 }
                                 const bind = new THREE.Vector3(p.position.x, p.position.y, p.position.z);
-                                let best = 0,
-                                    bd = 1e9;
+                                // SMOOTH SKINNING (wie das ECHTE Rig, _buildHumanoidRig): die 4 nächsten
+                                // Bones invers-quadratisch gewichtet (eps-Blend) → der Teil-Mittelpunkt
+                                // folgt dem GEWICHTETEN Mittel der Bone-Transforme. So zeigt die Anatomie-
+                                // Ansicht TREU, was der Avatar wirklich tut — kein hartes Nearest-Bone-
+                                // Snappen, das einen Torso-Muskel fälschlich GANZ mit dem Arm hochreisst.
+                                const eps = 0.12;
+                                const idx = [-1, -1, -1, -1],
+                                    dv = [1e18, 1e18, 1e18, 1e18];
                                 for (let i = 0; i < bones.length; i++) {
                                     const d = bind.distanceToSquared(bbp[i]);
-                                    if (d < bd) {
-                                        bd = d;
-                                        best = i;
+                                    if (d < dv[3]) {
+                                        let q2 = 3;
+                                        while (q2 > 0 && d < dv[q2 - 1]) {
+                                            dv[q2] = dv[q2 - 1];
+                                            idx[q2] = idx[q2 - 1];
+                                            q2--;
+                                        }
+                                        dv[q2] = d;
+                                        idx[q2] = i;
                                     }
                                 }
-                                const skinM = new THREE.Matrix4().multiplyMatrices(bones[best].matrixWorld, bInv[best]);
+                                let wsum = 0;
+                                const wt = [0, 0, 0, 0];
+                                for (let k = 0; k < 4; k++) if (idx[k] >= 0) (wt[k] = 1 / (dv[k] + eps)), (wsum += wt[k]);
+                                const skinnedC = new THREE.Vector3(),
+                                    tmp = new THREE.Vector3();
+                                for (let k = 0; k < 4; k++)
+                                    if (idx[k] >= 0) {
+                                        const M = new THREE.Matrix4().multiplyMatrices(bones[idx[k]].matrixWorld, bInv[idx[k]]);
+                                        skinnedC.add(tmp.copy(bind).applyMatrix4(M).multiplyScalar(wt[k] / wsum));
+                                    }
+                                // Orientierung: der dominante Bone (höchstes Gewicht = idx[0]) dreht den Teil
+                                const domM = new THREE.Matrix4().multiplyMatrices(bones[idx[0]].matrixWorld, bInv[idx[0]]);
+                                const domRot = new THREE.Quaternion().setFromRotationMatrix(domM);
                                 const q = new THREE.Quaternion();
                                 if (p.rotation) q.setFromEuler(new THREE.Euler(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0));
+                                domRot.multiply(q);
                                 const sc = new THREE.Vector3(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
-                                const partM = new THREE.Matrix4().compose(bind, q, sc);
                                 const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 10), new THREE.MeshStandardMaterial(mo));
-                                m.applyMatrix4(new THREE.Matrix4().multiplyMatrices(skinM, partM));
+                                m.applyMatrix4(new THREE.Matrix4().compose(skinnedC, domRot, sc));
                                 m.castShadow = true;
                                 grp.add(m);
                             }
@@ -489,6 +513,13 @@ async function renderWerk(page, bpName, view) {
             }
             cam.position.set(camX, maxd * (view === "iso" ? cy + 0.62 : cy), camZ);
             cam.lookAt(0, isTree ? 0 : -sz.y * 0.02, 0);
+            if (view === "foot") {
+                // FUSS-NAHAUFNAHME: die Kamera dicht an die Sohle (unten am zentrierten Modell),
+                // 3/4-Winkel leicht von oben-vorn → die Fuß-Knochen (Ferse/Mittelfuß/Zehen) gross.
+                const footY = -sz.y / 2;
+                cam.position.set(maxd * 0.1, footY + maxd * 0.1, maxd * 0.17);
+                cam.lookAt(0, footY + maxd * 0.03, sz.z * 0.1);
+            }
             window.__rs = () => {
                 try {
                     st.renderer.render(scene, cam);
@@ -583,6 +614,9 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "eval-rest-34.png", ""],
             ["humanoidrig:walk:0", "eval-walk-34.png", ""],
             ["humanoidrig:tpose:0", "eval-anat-tpose-iso.png", "iso"], // Anatomie T-Pose isometrisch (skel)
+            ["humanoidrig:tpose:0", "eval-anat-tpose-front.png", "front"], // T-Pose FRONTAL — Proportionen/Abstände messen
+            ["humanoidrig:tpose:0", "eval-anat-tpose-side.png", "side"], // T-Pose PROFIL
+            ["humanoidrig:tpose:0", "eval-anat-foot.png", "foot"], // FUSS-NAHAUFNAHME — die Zehen/Ferse gross prüfen
             ["humanoidrig:walk:0", "eval-anat-walk-iso.png", "iso"], // Anatomie Gehen isometrisch (skel)
             // GUSS 5 — die VIELFALT-GALERIE (RPM in den Schatten)
             ["humanoidlineup", "eval-lineup.png", "front"],

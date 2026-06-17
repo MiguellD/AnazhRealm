@@ -14845,21 +14845,25 @@ class AnazhRealm {
         void NT;
         void torsoBaseY;
         void torsoTopY;
-        // BRUSTKORB (thorax, knochen): das Ei-Ovoid — gibt die Brust-Breite + -Tiefe.
-        add("box", "knochen", 0, 5.78, 0.05 * girthF, shoulderHalf * 1.62, 1.58, 1.12 * girthF, null, limbCol, {
+        // BRUSTKORB (thorax, knochen): das Ovoid — WIDER als TIEF und nur die OBERE Rumpf-Hälfte
+        //    (kein kugel-rundes Barrel, GEMESSEN: war 1.81×1.58×1.23 ≈ ein Ei über den ganzen Rumpf
+        //    bis in den Hals). Jetzt ein flacheres, kürzeres Brust-Ovoid, das zur Taille tapert.
+        add("box", "knochen", 0, 5.6, 0.04 * girthF, shoulderHalf * 1.32, 0.98, 0.76 * girthF, null, limbCol, {
             kScale: 0.96,
             bodyRole: "chest",
         });
         // RIPPEN (costae, knochen, dünn, IM Brustkorb-Ovoid): horizontale Bänder, die das Ovoid als
-        //    echten RIPPENKORB lesen lassen (Referenz). Schmaler oben + unten (Ei-Form), breit Mitte.
+        //    echten RIPPENKORB lesen lassen (Referenz). Schmaler oben + unten (Ei-Form), breit Mitte,
+        //    flach in der Tiefe (kein Barrel).
         for (let rb = 0; rb < 6; rb++) {
-            const ry = 5.15 + rb * 0.3; // sechs Rippen-Ebenen
-            const rw = shoulderHalf * (1.0 + 0.55 * Math.sin((rb + 0.5) / 6 * Math.PI)); // Ei: Mitte am breitesten
-            const rd = (0.85 + 0.35 * Math.sin((rb + 0.5) / 6 * Math.PI)) * girthF;
-            add("box", "knochen", 0, ry, 0.06 * girthF, rw, 0.12, rd, null, limbCol, { kScale: 0.5 });
+            const ry = 4.92 + rb * 0.26; // sechs Rippen-Ebenen (über die Brustkorb-Höhe verteilt)
+            const tt = (rb + 0.5) / 6;
+            const rw = shoulderHalf * (0.92 + 0.42 * Math.sin(tt * Math.PI)); // Ei: Mitte am breitesten
+            const rd = (0.58 + 0.24 * Math.sin(tt * Math.PI)) * girthF; // flacher als breit
+            add("box", "knochen", 0, ry, 0.05 * girthF, rw, 0.11, rd, null, limbCol, { kScale: 0.5 });
         }
         // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
-        add("box", "knochen", 0, 5.66, 0.42 * girthF, shoulderHalf * 0.56, 1.1, 0.2, null, limbCol, { kScale: 0.66 });
+        add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66 });
         // BAUCH (abdomen, fleisch WEICH): die viszerale Masse = die TAILLE (schmaler als Brustkorb+Becken).
         add("box", bodyMat, 0, 4.66, 0.05 * girthF, waistHalf * 1.66, 1.05, 0.84 * girthF, null, bodyCol, {
             kScale: 1.08,
@@ -14930,12 +14934,12 @@ class AnazhRealm {
         const absMF = 0.9 + muscle * 0.5;
         for (const sx of [-1, 1])
             for (let row = 0; row < 3; row++) {
-                const ay = 4.58 + row * 0.4; // drei Reihen vom Unterbauch zur Brust-Basis
-                const aw = (0.23 - row * 0.012) * absMF; // obere Päckchen leicht breiter
-                add("box", bodyMat, sx * 0.2, ay, 0.5 * girthF, aw, 0.22, 0.36 * girthF, null, bodyCol, {
-                    kScale: 0.34,
+                const ay = 4.6 + row * 0.36; // drei Reihen vom Unterbauch zur Brust-Basis
+                const aw = (0.19 - row * 0.012) * absMF; // obere Päckchen leicht breiter
+                add("box", bodyMat, sx * 0.17, ay, 0.34 * girthF, aw, 0.17, 0.15 * girthF, null, bodyCol, {
+                    kScale: 0.52,
                     def: true,
-                }); // protrudiert klar vorn → echte Wölbung, scharfe Furchen dazwischen
+                }); // FLACHE Wölbung knapp über der Bauch-Front (Furchen dazwischen) — NICHT mehr extrem protrudierend (war z 0.86·girthF, weit vor der Brust; Schöpfer-Befund „viel zu extrem")
             }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
@@ -14946,12 +14950,17 @@ class AnazhRealm {
         // LATISSIMUS / FLANKE — die breiten Flügel-Massen unter den Achseln: der V-TAPER. Breit+hoch
         //    am Achsel-Ansatz, tapern zur Taille. Verstärkt (Referenz: ausgeprägtes Rücken-V).
         for (const s of [-1, 1]) {
-            add("box", bodyMat, s * shoulderHalf * 0.86, shoulderY - 0.78, -0.05 * girthF, 0.4 * mF, 1.3, 0.56 * girthF, null, bodyCol, {
+            // Der Lat sweept vom unteren Rücken/der Taille (medial-tief) hoch-aussen zur Achsel — seine
+            //    MASSE liegt am RUMPF (er ist ein Rücken-Muskel), nur die Sehne läuft zum Arm. Darum
+            //    medialer + tiefer verankert (war x 0.86 direkt am Arm-Bone → riss in der T-Pose mit dem
+            //    Arm hoch, Schöpfer-Befund „muskeln gehen falsch mit"). Jetzt bleibt er am Torso.
+            add("box", bodyMat, s * shoulderHalf * 0.62, shoulderY - 1.05, -0.06 * girthF, 0.42 * mF, 1.34, 0.5 * girthF, null, bodyCol, {
                 kScale: 0.88,
                 def: true,
             });
-            // TERES / hintere Achsel-Falte — füllt die Lücke Lat→Deltoid (der „Flügel"-Ansatz).
-            add("sphere", bodyMat, s * shoulderHalf * 0.92, shoulderY - 0.32, -0.18 * girthF, 0.28 * mF, 0.42, 0.3 * girthF, null, bodyCol, {
+            // TERES / hintere Achsel-Falte — füllt die Lücke Lat→Deltoid (der „Flügel"-Ansatz; bewegt
+            //    sich anatomisch korrekt MIT dem Arm, Teres-major-Insertion am Humerus).
+            add("sphere", bodyMat, s * shoulderHalf * 0.88, shoulderY - 0.42, -0.18 * girthF, 0.26 * mF, 0.4, 0.3 * girthF, null, bodyCol, {
                 kScale: 0.8,
                 def: true,
             });
@@ -15136,27 +15145,43 @@ class AnazhRealm {
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.16 * limbF, "knochen", limbCol); // Tibia/Fibula-Schaft
             add("sphere", "knochen", hipX, hipY - 0.06, -0.12, 0.32 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72 }); // Femurkopf (Hüft-Gelenk)
             add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
-            add("sphere", "knochen", ankleX, 1.5, -0.04, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.6 }); // Knöchel (Malleolen)
+            add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.55 }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
             add("sphere", limbMat, kneeX * 0.85, 1.72, -0.14, 0.42 * limbF, 0.78 * limbF, 0.46 * limbF, null, limbCol, { def: true }); // WADE (Gastrocnemius — VOLLER, hinten-oben, der kräftige Referenz-Bauch)
             add("sphere", limbMat, ankleX, 1.3, -0.1, 0.26 * limbF, 0.5 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.82, def: true }); // SOLEUS (unterer Waden-Bauch → die Wade tapert zur Achillessehne)
             add("sphere", limbMat, kneeX * 0.75, 1.7, 0.16, 0.2 * limbF, 0.62 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.8, def: true }); // TIBIALIS ANTERIOR (Schienbein-Muskel vorn-aussen → der Unterschenkel war vorn nackt)
-            // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
-            // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
-            // der Knöchel ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung.
+            // FUSS — DREI Fleisch-Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach):
+            // eine gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; der Knöchel
+            // ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung (glatte Sohle).
             add("box", limbMat, ankleX, 0.2, -0.18, 0.3, 0.34, 0.34, null, limbCol); // Ferse (klar HINTEN — Achilles/Knöchel)
             add("box", limbMat, ankleX, 0.11, 0.2, 0.32, 0.22, 0.46, null, limbCol); // Mittelfuß/Rist (länger, flacher → echte Sohle)
             add("box", limbMat, ankleX, 0.06, 0.56, 0.34, 0.13, 0.36, null, limbCol); // Zehen (klar VORN, flach)
-            // FUSS-KNOCHEN (knochen, dünn, IM Fleisch): Mittelfuß-Knochen (Metatarsals) + Zehen-Knochen
-            //    fächern nach vorn → die Knochen-Ansicht zeigt einen artikulierten Fuß, die Haut bleibt
-            //    eine glatte Sohle. Plus Fersenbein (Calcaneus) als knochen-Landmarke.
-            add("sphere", "knochen", ankleX, 0.16, -0.16, 0.18, 0.16, 0.2, null, limbCol, { kScale: 0.5 }); // Fersenbein (Calcaneus)
-            // MITTELFUSS (Metatarsals, längs IM Fuß) + kurze ZEHEN (Phalangen) vorn, FLACH am Boden →
-            //    ein artikulierter Fuß, KEINE langen nach-unten-ragenden Klauen (Schöpfer-Befund Seite).
-            for (let t = 0; t < 4; t++) {
-                const tx = ankleX + (t - 1.5) * 0.085;
-                limb(tx, 0.13, 0.12, tx, 0.085, 0.46, 0.055, "knochen", limbCol); // Mittelfuß-Knochen (gewölbter Rist → Ball)
-                limb(tx, 0.07, 0.5, tx, 0.072, 0.64, 0.045, "knochen", limbCol); // Zehe (KURZ, flach, vorn)
+            // ── FUSS-SKELETT (knochen) — ein ARTIKULIERTER Fuß als L-Profil, der den Fleisch-Fuß FÜLLT
+            //    (kein Klauen-Büschel mehr, Schöpfer-Befund „fussknochen falsch"): Talus (sockelt die
+            //    Tibia) → Calcaneus (Fersenbein, ragt nach HINTEN-unten, trägt die Ferse) → Fußwurzel
+            //    (das Rist-Gewölbe) → fünf Mittelfuß-Knochen (Metatarsalia, fächern lateral zum Ballen,
+            //    der Rist wölbt sich) → Zehen (Phalangen, kurz, flach; der Grosszeh innen dicker). Die
+            //    Knochen-Kette ÜBERLAPPT durchgehend (Talus↔Calcaneus↔Fußwurzel↔Metatarsus↔Zehe) →
+            //    ein zusammenhängender Fuß, kein schwebendes Stäbchen-Büschel.
+            add("sphere", "knochen", ankleX, 0.42, -0.02, 0.21 * limbF, 0.2 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.5 }); // Talus (Sprungbein — nimmt die Tibia auf)
+            add("box", "knochen", ankleX, 0.19, -0.3, 0.21 * limbF, 0.21, 0.3, { x: 0.3, y: 0, z: 0 }, limbCol, { kScale: 0.46 }); // Calcaneus (Fersenbein — ragt nach hinten-unten, der Hebel der Achillessehne)
+            add("sphere", "knochen", ankleX, 0.27, 0.1, 0.22 * limbF, 0.17 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.5 }); // Fußwurzel (Naviculare/Cuneiforme — das gewölbte Rist)
+            // ── MITTELFUSS + ZEHEN: die Knochen zeigen nach VORN (in +z) — DARUM NICHT der limb-Helper
+            //    (der bildet die lokale +y-Achse nur auf die XY-FRONTALEBENE ab, ignoriert dz → ein
+            //    vorwärts-Bone wird als VERTIKALE Orgelpfeife gezeichnet; GEMESSEN die Wurzel des
+            //    „zehen falsch": die Mittelfuß-Knochen standen senkrecht statt flach nach vorn). Jetzt
+            //    Z-LANGE Ellipsoide mit expliziter rotation.x (vorn-unten geneigt für den Rist-Bogen).
+            //    Die Metatarsalia eng gefächert, die Zehen KURZE Stummel am Ballen, Grosszeh innen dick.
+            for (let t = 0; t < 5; t++) {
+                const sp = (t - 2) / 2; // -1 innen (Grosszeh) … +1 aussen (kleine Zehe)
+                const lat = ankleX + s * sp * 0.1 * limbF; // ENGER Fächer (Fuß-Strahlen dicht, keine Hand)
+                const isBig = t === 0; // Grosszeh (Hallux) innen
+                // Metatarsus: Z-langer Knochen, vorn-unten geneigt (Rist → Ballen), ~horizontal am Boden.
+                add("sphere", "knochen", lat, 0.2, 0.26 - Math.abs(sp) * 0.02, 0.052 * limbF, 0.052 * limbF, 0.26 * limbF, { x: 0.34, y: 0, z: 0 }, limbCol, { kScale: 0.5 });
+                // Zehe: kurzer Stummel am Ballen, FLACH nach vorn (kaum geneigt); Grosszeh dick + länger.
+                const toeW = isBig ? 0.06 : 0.044 - Math.abs(sp) * 0.005; // Grosszeh DICK, Aussenzehen dünn
+                const toeL = isBig ? 0.12 : 0.09 - Math.abs(sp) * 0.012; // KURZE Stummel, Aussenzehen kürzer
+                add("sphere", "knochen", lat, 0.095, 0.56 - Math.abs(sp) * 0.04, toeW * limbF, toeW * 0.85 * limbF, toeL * limbF, { x: 0.08, y: 0, z: 0 }, limbCol, { kScale: 0.45 });
             }
         }
         return parts;
