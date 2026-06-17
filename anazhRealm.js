@@ -14755,8 +14755,8 @@ class AnazhRealm {
         // statt RPMs festen Presets). build (schlank↔schwer) · muscle (Glied-Masse) · headRatio
         // (Alter/Heroik: <1 langgliedrig-heroisch, >1 jung-stilisiert). Jede Achse moduliert die
         // Proportionen physik-erhaltend (alle Stationen überlappen weiter → die Haut verschmilzt).
-        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.44)); // 0 schlank · 0.5 athlet. · 1 schwer
-        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : build)); // Glied-Masse (Default=build)
+        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.52)); // 0 schlank · 0.5 athlet. · 1 schwer — Default ATHLETISCH (Referenz-Match)
+        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : Math.min(1, build + 0.18))); // Glied-Masse > build → der „cut"-muskulöse Look der Referenz
         const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0));
         const limbF = 0.82 + muscle * 0.6; // Glied-Durchmesser-Faktor (schlank→dick; voller als dürr)
         const girthF = 0.92 + build * 0.34; // Rumpf-Girth (Breite + Tiefe)
@@ -14903,10 +14903,24 @@ class AnazhRealm {
                     kScale: 0.72,
                 }
             );
-        // RECTUS / BAUCH-BLOCK — eine zentrale vertikale Masse vorn (die Bauchdecke statt Schlauch).
-        add("box", bodyMat, 0, waistY - 0.34, 0.33 * girthF, waistHalf * 0.6 * mF, 1.15, 0.2, null, bodyCol, {
-            kScale: 0.86,
-        });
+        // RECTUS ABDOMINIS — der SIXPACK: zwei Säulen (links/rechts der Linea alba) × drei Reihen,
+        // jede eine vorgewölbte Masse mit knochig-tightem kScale → der Anatomie-Detail-Pass schnitzt
+        // die Linea-alba-Mittelrinne + die queren Sehnen-Furchen aus den SPALTEN dazwischen (die
+        // Furche emergiert aus der Anatomie, nicht gemalt). Protrudiert vorn über den Basis-Leib.
+        const absMF = 0.9 + muscle * 0.5;
+        for (const sx of [-1, 1])
+            for (let row = 0; row < 3; row++) {
+                const ay = 4.58 + row * 0.4; // drei Reihen vom Unterbauch zur Brust-Basis
+                const aw = (0.2 - row * 0.012) * absMF; // obere Päckchen leicht breiter
+                add("box", bodyMat, sx * 0.17, ay, 0.38 * girthF, aw, 0.18, 0.22 * girthF, null, bodyCol, {
+                    kScale: 0.44,
+                });
+            }
+        // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
+        for (const sx of [-1, 1])
+            add("box", bodyMat, sx * 0.42, 4.74, 0.3 * girthF, 0.2 * mF, 0.92, 0.24 * girthF, { x: 0, y: 0, z: sx * 0.12 }, bodyCol, {
+                kScale: 0.78,
+            });
         // LATISSIMUS / FLANKE — seitliche Massen unter den Achseln (der V-Taper, die Flanke).
         for (const s of [-1, 1])
             add(
@@ -14924,6 +14938,13 @@ class AnazhRealm {
                     kScale: 0.9,
                 }
             );
+        // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
+        // Detail-Pass schnitzt die RÜCKEN-RINNE = das Tal zwischen ihnen (die Wirbelsäulen-Furche),
+        // die Signatur des Rücken-Blicks deiner Referenz. Plus ein Trapez-Keil im oberen Rücken.
+        for (const s of [-1, 1])
+            add("box", bodyMat, s * 0.13, 5.05, -0.36 * girthF, 0.17 * mF, 1.95, 0.15 * girthF, null, bodyCol, {
+                kScale: 0.74,
+            });
         // ── (2) HALS + KOPF — der Kopf SITZT über den Schultern (kein Vorragen), als CLUSTER:
         //    Schädel (rund, zentriert) + Hinterkopf/Occiput (füllt die Nacken-Kerbe) + Kiefer
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
@@ -15680,7 +15701,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 96 }); // Avatar: hohe Auflösung (einmal gebaut → Muskel/Landmark-Detail überlebt)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 112, taubinPasses: 4 }); // Avatar: HOHE Auflösung + weniger Glättung (einmal gebaut → feines Muskel-Detail wie Sixpack/Linea-alba überlebt)
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -15814,6 +15835,26 @@ class AnazhRealm {
             this._addHumanoidFace(rig, kh, oy, skinCol, g.hairColor);
         } catch (_e) {
             /* Gesicht optional — kein Crash */
+        }
+        // SHORTS — eine weiße Unterwäsche-Masse über Becken + Leiste (deckt die Groin-Topologie
+        // elegant, genau wie die Referenz: niemand zeigt nackte Leiste). An den hips-Bone gehängt →
+        // bewegt mit dem Becken. Löst das Metaball-Groin-Problem durch Bekleidung statt Kampf.
+        try {
+            const shortsMat = this._buildPbrNodeMaterial
+                ? this._buildPbrNodeMaterial({ color: 0xedeff2, roughness: 0.8, metalness: 0 })
+                : new THREE.MeshStandardMaterial({ color: 0xedeff2, roughness: 0.8 });
+            // ein flacher ZYLINDER (Tube) UMWICKELT das Becken wie eine Boxer-Short (eine Ellipsoid-
+            // Masse beulte vor) — oben/unten offen, in z geflacht (Körper ist breiter als tief).
+            const sg = new THREE.CylinderGeometry(0.74 * kh, 0.82 * kh, 1.18 * kh, 26, 1, true);
+            sg.scale(1, 1, 0.66); // elliptischer Querschnitt (breiter als tief)
+            const shorts = new THREE.Mesh(sg, shortsMat);
+            shorts.material.side = THREE.DoubleSide; // offene Tube → beide Seiten
+            shorts.position.set(0, -0.34 * kh, 0); // hips-Bone-lokal (Bone bei 4.15·KH → Shorts sitzt auf Hüfte+Leiste)
+            shorts.castShadow = true;
+            shorts.receiveShadow = true;
+            if (byName.hips) byName.hips.add(shorts);
+        } catch (_e) {
+            /* Shorts optional */
         }
         return { mesh, skeleton, bones, rig, kh };
     }
