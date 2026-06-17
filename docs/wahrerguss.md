@@ -9,6 +9,16 @@
 > L-System · creature-Skelett+Metaball+Marching-Cubes · Catmull-Clark-Subdivision ·
 > prozedurales PBR/Triplanar · Skeletal-Skinning · Oakeshott/die klassischen Ordnungen).
 
+> **AKTIVER SUB-BOGEN (17.06.2026) → `docs/lebendiger-koerper-plan.md` (DER LEBENDIGE KÖRPER).**
+> Schöpfer: „schau dir die Körper, die Bewegungen, das Gesamtsystem an — vereine Form, AAA-Animation
+> und Werkstatt-Anpassung synergetisch; erfinde nicht alles neu, lerne von den Profis." Vier
+> Forschungs-Agenten + Code-Verifikation fanden: die VEREINHEITLICHUNGS-MASCHINERIE steht schon
+> (Seele=Bauplan · `forgeAvatar` · der `_animateCompoundMotion`-Kern · die Resonanz). Die Lücke
+> sind die QUALITÄTS-/ERLEBNIS-Schichten + Parallel-Pfade. Vier Säulen (Glied-Grammatik · der EINE
+> Motion-Kern mit Fuß-IK/Blend/Spring à la Overgrowth · die Werkstatt-Körper-Gebärmutter · Substanz)
+> auf dem gebauten Fundament. **Vor jeder Arbeit an Körper/Avatar/Kreatur/Animation/Werkstatt-
+> Anpassung ZUERST `docs/lebendiger-koerper-plan.md` lesen.**
+
 ---
 
 ## §0 — DIE WAHRHEIT (gemessen am Werk-Katalog, eigene Augen)
