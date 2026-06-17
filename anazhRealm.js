@@ -14997,9 +14997,16 @@ class AnazhRealm {
         // Wurzel des „kein Spalt zwischen den Oberschenkeln"). Ein natürlicher schmaler Stand.
         for (const s of [-1, 1]) {
             const hipX = s * (hipHalf * 0.72),
-                kneeX = s * 0.56,
-                ankleX = s * 0.52;
+                kneeX = s * 0.4, // Femur winkelt EINWÄRTS (breite Hüfte → Knie über dem Fuß): die echte Bein-Achse, schließt den Groin-Spalt zur natürlichen Leiste statt zweier Säulen
+                ankleX = s * 0.38;
             limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.66 * limbF, limbMat); // Oberschenkel (kräftig)
+            // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
+            // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
+            // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
+            if (s > 0)
+                add("box", bodyMat, 0, hipY - 0.42, 0.12 * girthF, hipHalf * 0.94 * girthF, 1.04, 0.4 * girthF, null, bodyCol, {
+                    kScale: 1.18,
+                });
             // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
             // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
             // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
@@ -15429,6 +15436,110 @@ class AnazhRealm {
                     occ[v] = src[v] * 0.35 + (a / nb.length) * 0.65; // in breite Höhlen streuen
                 }
             }
+            // ── ANATOMIE-DETAIL-PASS (die Synthese: die Muskel-FURCHE emergiert aus dem Feld) ──
+            // Taubin + smin glätten das Muskel-Relief flach (Pec/Lat/Sixpack/Schenkel · Hinterhand/
+            // Schulter beim Tier liegen begraben). Hier wird es GEOMETRISCH zurückgeholt: eine
+            // UNSCHÄRFE-MASKE verschiebt jeden Vertex entlang der Normale ∝ Konkavität — TAL tiefer,
+            // GRAT höher — also genau die Anatomie, die wirklich im Feld liegt, wird geschärft. Dann
+            // lesen die MESH-Normalen das Relief (das die glatte Feld-Normale verschluckt) → die
+            // Muskeln fangen Licht+Schatten unter JEDER Beleuchtung. occ ist geglättet → es schärft
+            // BREITE Anatomie, kein Facetten-Rauschen. Die Furche ist ECHT (im Feld, nicht gemalt).
+            // GETEILT: Avatar · jede Kreatur · jedes Tier fließen durch DENSELBEN Pass (die Synergie).
+            const sharpen = opts && Number.isFinite(opts.creaseSharpen) ? opts.creaseSharpen : 5.0;
+            if (sharpen > 0) {
+                // 1) UNSCHÄRFE-MASKE — Geometrie entlang der Feld-Normale ∝ Konkavität verschieben.
+                //    Der Betrag ist GRÖSSEN-/AUFLÖSUNGS-SKALIERT (≈2.2 % der Modell-Spanne): ein FESTER
+                //    Betrag zerriss die dünnen Glieder einer kleinen Kreatur bei res 64, während er den
+                //    Avatar bei res 96 gerade trug (GEMESSEN — die Kreatur schmolz). occ·sharpen ∈
+                //    [−1,1] ist der Anteil. Das Feld wird ZUERST geglättet (nur BREITE Anatomie, kein
+                //    Facetten-Rauschen → kein Lumpen-Look).
+                const dCap = span * 0.017;
+                const dispv = new Float32Array(VC);
+                for (let v = 0; v < VC; v++) dispv[v] = Math.max(-1, Math.min(1, occ[v] * sharpen)) * dCap;
+                for (let it = 0; it < 2; it++) {
+                    const src = dispv.slice();
+                    for (let v = 0; v < VC; v++) {
+                        const nb = nbr[v];
+                        if (!nb.length) continue;
+                        let a = 0;
+                        for (const k of nb) a += src[k];
+                        dispv[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
+                    }
+                }
+                for (let v = 0; v < VC; v++) {
+                    const d = dispv[v]; // occ>0 (Tal) → −n nach innen (tiefer) · occ<0 (Grat) → +n raus
+                    pA.setX(v, pA.getX(v) - nA.getX(v) * d);
+                    pA.setY(v, pA.getY(v) - nA.getY(v) * d);
+                    pA.setZ(v, pA.getZ(v) - nA.getZ(v) * d);
+                }
+                pA.needsUpdate = true;
+                // 2) MESH-NORMALEN aus der geschärften Geometrie (Flächen-Normalen akkumuliert),
+                //    1 Glättungspass gegen Facetten-Wobble, dann mit der sauberen Feld-Normale
+                //    gemischt (Feld = weiche Basis, Mesh = Furchen-Detail) → Relief OHNE Müll.
+                const nm = new Float32Array(VC * 3);
+                for (let t = 0; t + 2 < idx.length; t += 3) {
+                    const a = idx[t],
+                        b = idx[t + 1],
+                        c = idx[t + 2];
+                    const ax = pA.getX(a),
+                        ay = pA.getY(a),
+                        az = pA.getZ(a);
+                    const ex1 = pA.getX(b) - ax,
+                        ey1 = pA.getY(b) - ay,
+                        ez1 = pA.getZ(b) - az;
+                    const ex2 = pA.getX(c) - ax,
+                        ey2 = pA.getY(c) - ay,
+                        ez2 = pA.getZ(c) - az;
+                    const fx = ey1 * ez2 - ez1 * ey2,
+                        fy = ez1 * ex2 - ex1 * ez2,
+                        fz = ex1 * ey2 - ey1 * ex2;
+                    nm[a * 3] += fx;
+                    nm[a * 3 + 1] += fy;
+                    nm[a * 3 + 2] += fz;
+                    nm[b * 3] += fx;
+                    nm[b * 3 + 1] += fy;
+                    nm[b * 3 + 2] += fz;
+                    nm[c * 3] += fx;
+                    nm[c * 3 + 1] += fy;
+                    nm[c * 3 + 2] += fz;
+                }
+                for (let v = 0; v < VC * 3; v += 3) {
+                    const L = Math.hypot(nm[v], nm[v + 1], nm[v + 2]) || 1;
+                    nm[v] /= L;
+                    nm[v + 1] /= L;
+                    nm[v + 2] /= L;
+                }
+                let nmS = nm; // 3 Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
+                for (let it = 0; it < 3; it++) {
+                    const src = nmS;
+                    const dst = new Float32Array(VC * 3);
+                    for (let v = 0; v < VC; v++) {
+                        const nb = nbr[v];
+                        let ax = src[v * 3],
+                            ay = src[v * 3 + 1],
+                            az = src[v * 3 + 2];
+                        for (const k of nb) {
+                            ax += src[k * 3];
+                            ay += src[k * 3 + 1];
+                            az += src[k * 3 + 2];
+                        }
+                        const L = Math.hypot(ax, ay, az) || 1;
+                        dst[v * 3] = ax / L;
+                        dst[v * 3 + 1] = ay / L;
+                        dst[v * 3 + 2] = az / L;
+                    }
+                    nmS = dst;
+                }
+                const wMesh = opts && Number.isFinite(opts.creaseMix) ? opts.creaseMix : 0.62;
+                for (let v = 0; v < VC; v++) {
+                    let fx = nA.getX(v) * (1 - wMesh) + nmS[v * 3] * wMesh,
+                        fy = nA.getY(v) * (1 - wMesh) + nmS[v * 3 + 1] * wMesh,
+                        fz = nA.getZ(v) * (1 - wMesh) + nmS[v * 3 + 2] * wMesh;
+                    const L = Math.hypot(fx, fy, fz) || 1;
+                    nA.setXYZ(v, fx / L, fy / L, fz / L);
+                }
+                nA.needsUpdate = true;
+            }
             const colors = new Float32Array(VC * 3);
             for (let v = 0; v < VC; v++) {
                 // Boden 0.6 + moderate Stärke: ein sanftes Relief (Gelenk/Muskel lesen), das ein
@@ -15591,9 +15702,9 @@ class AnazhRealm {
                 ["shoulder" + f, "chest", [s * 0.92, 6.5, 0], [s * 1.5, 5.05, 0]],
                 ["elbow" + f, "shoulder" + f, [s * 1.5, 5.05, 0], [s * 1.64, 3.9, 0]],
                 ["wrist" + f, "elbow" + f, [s * 1.64, 3.9, 0], [s * 1.66, 3.55, 0.06]],
-                ["hip" + f, "hips", [s * 0.42, 4.15, 0], [s * 0.5, 2.3, 0]],
-                ["knee" + f, "hip" + f, [s * 0.5, 2.3, 0], [s * 0.46, 0.42, 0]],
-                ["ankle" + f, "knee" + f, [s * 0.46, 0.42, 0], [s * 0.46, 0.2, 0.85]]
+                ["hip" + f, "hips", [s * 0.42, 4.15, 0], [s * 0.4, 2.3, 0]],
+                ["knee" + f, "hip" + f, [s * 0.4, 2.3, 0], [s * 0.38, 0.42, 0]],
+                ["ankle" + f, "knee" + f, [s * 0.38, 0.42, 0], [s * 0.38, 0.2, 0.85]]
             );
         }
         const sc = (p) => [p[0] * kh, p[1] * kh + oy, p[2] * kh];
