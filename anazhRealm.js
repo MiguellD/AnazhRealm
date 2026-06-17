@@ -15463,7 +15463,8 @@ class AnazhRealm {
                 }
                 if (def1 || def2) gArr[v] = Math.max(0, 1 - (d2 - d1) / seamW); // 1 an der Naht, 0 weg
             }
-            // Adjazenz + 1 Glättungspass von g (saubere Furche)
+            // Adjazenz + mehrere Glättungspässe von g (SAUBERE, gleichmäßige Furche statt fleckiger
+            // Konvergenz-Patches — die Referenz ist glatt+definiert, nicht mottled).
             const adj = new Array(VC2);
             for (let v = 0; v < VC2; v++) adj[v] = [];
             for (let t = 0; t + 2 < idx.length; t += 3) {
@@ -15474,14 +15475,14 @@ class AnazhRealm {
                 adj[b].push(a, c);
                 adj[c].push(a, b);
             }
-            {
+            for (let it = 0; it < 3; it++) {
                 const src = gArr.slice();
                 for (let v = 0; v < VC2; v++) {
                     const nb = adj[v];
                     if (!nb.length) continue;
                     let a = 0;
                     for (const k of nb) a += src[k];
-                    gArr[v] = src[v] * 0.5 + (a / nb.length) * 0.5;
+                    gArr[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
                 }
             }
             // Normale entlang des tangentialen g-Gradienten ins Tal kippen (g scharf+analytisch →
