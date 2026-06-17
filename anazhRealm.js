@@ -15128,9 +15128,12 @@ class AnazhRealm {
             //    fächern nach vorn → die Knochen-Ansicht zeigt einen artikulierten Fuß, die Haut bleibt
             //    eine glatte Sohle. Plus Fersenbein (Calcaneus) als knochen-Landmarke.
             add("sphere", "knochen", ankleX, 0.16, -0.16, 0.18, 0.16, 0.2, null, limbCol, { kScale: 0.5 }); // Fersenbein (Calcaneus)
+            // MITTELFUSS (Metatarsals, längs IM Fuß) + kurze ZEHEN (Phalangen) vorn, FLACH am Boden →
+            //    ein artikulierter Fuß, KEINE langen nach-unten-ragenden Klauen (Schöpfer-Befund Seite).
             for (let t = 0; t < 4; t++) {
-                const tx = ankleX + (t - 1.5) * 0.08;
-                limb(tx, 0.09, 0.16, tx, 0.07, 0.16 + 0.42, 0.06, "knochen", limbCol); // Mittelfuß+Zehen-Knochen
+                const tx = ankleX + (t - 1.5) * 0.085;
+                limb(tx, 0.13, 0.12, tx, 0.085, 0.46, 0.055, "knochen", limbCol); // Mittelfuß-Knochen (gewölbter Rist → Ball)
+                limb(tx, 0.07, 0.5, tx, 0.072, 0.64, 0.045, "knochen", limbCol); // Zehe (KURZ, flach, vorn)
             }
         }
         return parts;
