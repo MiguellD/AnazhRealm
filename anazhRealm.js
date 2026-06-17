@@ -14779,21 +14779,48 @@ class AnazhRealm {
         // Achse auf (dx,dy) ab (xy-Frontalebene — aufrechte Glieder mit lateraler Auslenkung).
         // Die Länge schließt die runden Caps ein (+diam·0.8) → das Glied überlappt seine
         // Gelenke (die smin-Verschmelzung der Metaball-Haut).
+        // DAS VERBINDUNGS-GESETZ (3D): die lokale +y-Achse auf eine BELIEBIGE Richtung (dx,dy,dz)
+        //   abbilden — NICHT nur die Frontalebene (der alte `limb` ignorierte dz → vorwärts-Glieder
+        //   wurden als vertikale Stäbe gezeichnet, GEMESSEN die Wurzel des „zehen falsch"). Aus den
+        //   zwei Achsen-Gesetzen vereint: rotZ schwenkt in der XY-Ebene, rotX kippt nach vorn/hinten.
+        //   Reduziert korrekt auf den alten `limb` (dz=0) UND `segBetween` (dx=0). Jetzt KENNT jede
+        //   Verbindung ihre volle Richtung — ein Knochen/Muskel weiss, welche zwei Knoten er spannt.
+        const aimRot = (dx, dy, dz) => ({ x: Math.atan2(dz, dy), y: 0, z: Math.atan2(-dx, Math.hypot(dy, dz)) });
         const limb = (ax, ay, az, bx, by, bz, diam, mat, col) => {
             const dx = bx - ax,
-                dy = by - ay;
-            const len = Math.hypot(dx, dy, bz - az) || 0.01;
-            add(
-                "limb",
-                mat || limbMat,
-                (ax + bx) / 2,
-                (ay + by) / 2,
-                (az + bz) / 2,
-                diam,
-                len + diam * 0.8,
-                diam,
-                { x: 0, y: 0, z: Math.atan2(-dx, dy) },
-                typeof col === "number" ? col : limbCol
+                dy = by - ay,
+                dz = bz - az;
+            const len = Math.hypot(dx, dy, dz) || 0.01;
+            add("limb", mat || limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, diam, len + diam * 0.8, diam, aimRot(dx, dy, dz), typeof col === "number" ? col : limbCol);
+        };
+        // DAS MUSKEL-GESETZ („Fasern wie Federn über Knoten", Schöpfer-Vision): ein Muskel SPANNT zwei
+        //   Skelett-Knoten (Ursprung A → Ansatz B). Seine SPINDEL-Form (fusiform — dünn an den Sehnen-
+        //   Enden, dick am Bauch) + die volle 3D-Orientierung EMERGIEREN aus der Verbindung; die Masse
+        //   wird NICHT mehr gewürfelt. `bulge` = halbe Bauchdicke (Querschnitt), `belly` verschiebt den
+        //   dicksten Punkt (0.5 = Mitte; <0.5 = proximal). Ein Ellipsoid mit size.y=Länge/2 IST die
+        //   Spindel (spitz an den Polen = die Sehnen, dick am Äquator = der Bauch).
+        const musk = (ax, ay, az, bx, by, bz, bulge, opts) => {
+            opts = opts || {};
+            const dx = bx - ax,
+                dy = by - ay,
+                dz = bz - az;
+            const len = Math.hypot(dx, dy, dz) || 0.01;
+            const t = opts.belly != null ? opts.belly : 0.5; // Lage des Bauchs entlang A→B
+            const cx = ax + dx * t,
+                cy = ay + dy * t,
+                cz = az + dz * t;
+            return add(
+                "sphere",
+                opts.mat || bodyMat,
+                cx,
+                cy,
+                cz,
+                bulge,
+                len * 0.5 + bulge * 0.25,
+                bulge * (opts.depth || 1),
+                aimRot(dx, dy, dz),
+                opts.col != null ? opts.col : bodyCol,
+                Object.assign({ def: true, kScale: opts.kScale != null ? opts.kScale : 0.8 }, opts.extra || {})
             );
         };
         // ── PROPORTIONEN (8-Kopf, von unten gemessen, Sohle y=0) ──
@@ -14933,16 +14960,24 @@ class AnazhRealm {
         // jede eine vorgewölbte Masse mit knochig-tightem kScale → der Anatomie-Detail-Pass schnitzt
         // die Linea-alba-Mittelrinne + die queren Sehnen-Furchen aus den SPALTEN dazwischen (die
         // Furche emergiert aus der Anatomie, nicht gemalt). Protrudiert vorn über den Basis-Leib.
+        // RECTUS ABDOMINIS — das Sixpack EMERGIERT aus den zwei KNOTEN, die es spannt (Xiphoid/untere
+        //   Rippen → Schambein): die drei Sehnen-Päckchen INTERPOLIEREN über dem Nabel, nicht auf feste
+        //   y gewürfelt (Schöpfer: „die Dinge wissen nicht, was sie verbinden" — wie bei den Zehen).
+        //   Die kScale-Furchen schnitzen Linea alba + Querfurchen; ein unteres Segment Nabel→Schambein.
         const absMF = 0.9 + muscle * 0.5;
-        for (const sx of [-1, 1])
+        const xiphoidY = 5.0,
+            navelY = 4.32,
+            pubisY = 3.78; // die Knoten des Rectus
+        const absZ = 0.4 * girthF;
+        for (const sx of [-1, 1]) {
             for (let row = 0; row < 3; row++) {
-                const ay = 4.62 + row * 0.34; // drei Reihen vom Unterbauch zur Brust-Basis
+                const f = (row + 0.5) / 3; // 0..1 Nabel→Xiphoid
+                const ay = navelY + (xiphoidY - navelY) * f;
                 const aw = (0.22 - row * 0.01) * absMF; // obere Päckchen leicht breiter
-                add("box", bodyMat, sx * 0.19, ay, 0.4 * girthF, aw, 0.19, 0.16 * girthF, null, bodyCol, {
-                    kScale: 0.42,
-                    def: true,
-                }); // KLARES Sixpack: zwei Säulen × drei Reihen, mässig vorgewölbt (kScale-Furchen = Linea alba + Sehnen-Querfurchen) — die Mitte zwischen „zu extrem" (war z 0.86·girthF) und „zu klein/Punkte"
+                add("box", bodyMat, sx * 0.19, ay, absZ, aw, 0.19, 0.16 * girthF, null, bodyCol, { kScale: 0.42, def: true });
             }
+            add("box", bodyMat, sx * 0.17, (navelY + pubisY) * 0.5, absZ, 0.2 * absMF, 0.28, 0.15 * girthF, null, bodyCol, { kScale: 0.5, def: true }); // unteres Bauch-Segment (Nabel→Schambein)
+        }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
             add("box", bodyMat, sx * 0.42, 4.74, 0.3 * girthF, 0.2 * mF, 0.92, 0.24 * girthF, { x: 0, y: 0, z: sx * 0.12 }, bodyCol, {
@@ -15047,16 +15082,15 @@ class AnazhRealm {
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
             // BIZEPS (vorn) + TRIZEPS (hinten) am Oberarm — getrennte DEF-Massen → der Seam-Groove
             // zeichnet die Arm-Definition (war ein glattes Rohr). Der smin schmilzt sie in den Arm.
-            const uaMidX = (shX + elbowX) * 0.5,
-                uaMidY = (shY - 0.18 + elbowY) * 0.5;
-            add("sphere", limbMat, uaMidX, uaMidY + 0.12, 0.16 * limbF, 0.24 * limbF, 0.46 * limbF, 0.22 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Bizeps (schlanker Querschnitt → klare vordere Wölbung statt Klumpen)
-            add("sphere", limbMat, uaMidX, uaMidY, -0.16 * limbF, 0.24 * limbF, 0.5 * limbF, 0.22 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Trizeps (hinten)
-            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.3 * limbF, limbMat); // Unterarm (distal dünner)
-            // UNTERARM-MUSKULATUR (Brachioradialis/Flexoren) — eine Masse knapp UNTER dem Ellbogen, die
-            //    zum Handgelenk schlank tapert (der Referenz-Unterarm SCHWILLT oben, dünn am Gelenk).
-            const faMidX = elbowX + (wristX - elbowX) * 0.28,
-                faMidY = elbowY + (wristY - elbowY) * 0.28;
-            add("sphere", limbMat, faMidX, faMidY, 0.05 * limbF, 0.22 * limbF, 0.42 * limbF, 0.21 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Unterarm-Muskel
+            // BIZEPS/TRIZEPS/UNTERARM — als MUSKEL-SPINDELN, die ihre KNOTEN spannen (das Gesetz, kein
+            //   gewürfelter Klumpen): jede Spindel emergiert aus Ursprung→Ansatz, dünn an den Sehnen,
+            //   dick am Bauch, voll-3D orientiert entlang des Glieds.
+            musk(shX, shY - 0.3, 0.16 * limbF, elbowX, elbowY - 0.05, 0.14 * limbF, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.46 }); // Bizeps (Schulter-Front → Radius, vorn)
+            musk(shX, shY - 0.3, -0.16 * limbF, elbowX, elbowY, -0.13 * limbF, 0.22 * limbF, { mat: limbMat, col: limbCol, belly: 0.5 }); // Trizeps (Schulter-Rück → Olecranon, hinten, voller)
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.3 * limbF, limbMat); // Unterarm-Knochen-Glied (Radius/Ulna)
+            // UNTERARM-MUSKEL (Brachioradialis/Flexoren) — spannt Ellbogen → Handgelenk, Bauch PROXIMAL
+            //    (belly 0.3 → schwillt am Ellbogen, tapert zum schlanken Handgelenk), auf der Vorderseite.
+            musk(elbowX, elbowY, 0.06 * limbF, wristX, wristY + 0.05, 0.04 * limbF, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.32 }); // Unterarm-Muskel
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -15136,21 +15170,13 @@ class AnazhRealm {
                     kScale: 0.78,
                 });
             }
-            // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
-            // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
-            // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
-            add("sphere", limbMat, (hipX + kneeX) * 0.5 + s * 0.05, 2.92, 0.05, 0.36 * limbF, 1.08, 0.17 * limbF, null, limbCol, {
-                kScale: 0.84,
-                def: true,
-            }); // Quadrizeps (mittig am Schenkel, FLACH am Knochen, tief → der Groin bleibt sauber)
-            add("sphere", limbMat, (hipX + kneeX) * 0.5, 3.3, -0.18, 0.4 * limbF, 0.95, 0.28 * limbF, null, limbCol, {
-                kScale: 0.92,
-                def: true,
-            }); // Hamstring (hinten)
-            add("sphere", limbMat, kneeX - s * 0.06, 2.62, 0.12, 0.22 * limbF, 0.5 * limbF, 0.18 * limbF, null, limbCol, {
-                kScale: 0.58,
-                def: true,
-            }); // VASTUS MEDIALIS — der Tropfen über dem INNEREN Knie (die Referenz-Quad-Signatur)
+            // QUADRIZEPS / HAMSTRING / VASTUS — MUSKEL-SPINDELN, die ihre KNOTEN spannen (das Gesetz):
+            //   vorn Hüfte→Knie (Quad schwillt, tapert zur Patella), hinten Ischium→Unterknie (Hamstring),
+            //   der Vastus-Tropfen über dem inneren Knie. Die Spindeln überlappen das Glied → der smin
+            //   verschmilzt sie zu EINEM muskulösen Schenkel (kein gewürfelter Klumpen).
+            musk(hipX, 3.98, 0.12, kneeX, 2.42, 0.14, 0.34 * limbF, { mat: limbMat, col: limbCol, belly: 0.44, kScale: 0.84 }); // Quadrizeps (vorn)
+            musk(hipX, 3.98, -0.18, kneeX, 2.4, -0.2, 0.34 * limbF, { mat: limbMat, col: limbCol, belly: 0.46, kScale: 0.9 }); // Hamstring (hinten)
+            musk((hipX + kneeX) * 0.5, 2.95, 0.1, kneeX - s * 0.05, 2.46, 0.13, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.7, kScale: 0.58 }); // Vastus medialis (Tropfen über dem inneren Knie)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.46 * limbF, limbMat); // Unterschenkel (kräftiger → Wade liest)
             // ── BEIN-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones): dünne knochen-
             //    Schäfte IM Fleisch (Femur, Tibia) + Gelenk-Knöpfe an Hüfte/Knie/Knöchel (T-Knochen-
@@ -15161,9 +15187,12 @@ class AnazhRealm {
             add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
             add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.55 }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
-            add("sphere", limbMat, kneeX * 0.85, 1.72, -0.14, 0.42 * limbF, 0.78 * limbF, 0.46 * limbF, null, limbCol, { def: true }); // WADE (Gastrocnemius — VOLLER, hinten-oben, der kräftige Referenz-Bauch)
-            add("sphere", limbMat, ankleX, 1.3, -0.1, 0.26 * limbF, 0.5 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.82, def: true }); // SOLEUS (unterer Waden-Bauch → die Wade tapert zur Achillessehne)
-            add("sphere", limbMat, kneeX * 0.75, 1.7, 0.16, 0.2 * limbF, 0.62 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.8, def: true }); // TIBIALIS ANTERIOR (Schienbein-Muskel vorn-aussen → der Unterschenkel war vorn nackt)
+            // WADE / SOLEUS / TIBIALIS — Spindeln am Unterschenkel: Gastrocnemius Knie-Rück → Ferse
+            //   (Bauch proximal = der kräftige Waden-Bauch oben, tapert zur Achillessehne), Soleus tiefer,
+            //   Tibialis am Schienbein vorn-aussen.
+            musk(kneeX, 2.35, -0.16, ankleX, 0.55, -0.12, 0.42 * limbF, { mat: limbMat, col: limbCol, belly: 0.32, kScale: 0.86 }); // Gastrocnemius (Wade)
+            musk(kneeX * 0.95, 2.0, -0.12, ankleX, 0.6, -0.08, 0.24 * limbF, { mat: limbMat, col: limbCol, belly: 0.42, kScale: 0.82 }); // Soleus
+            musk(kneeX, 2.1, 0.14, ankleX, 0.6, 0.08, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.8 }); // Tibialis anterior
             // FUSS — DREI Fleisch-Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach):
             // eine gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; der Knöchel
             // ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung (glatte Sohle).

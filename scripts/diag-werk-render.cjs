@@ -284,7 +284,7 @@ async function renderWerk(page, bpName, view) {
                                 const mo = { color: col, roughness: 0.7, metalness: 0 };
                                 if (!isBone && !isMuscle) {
                                     mo.transparent = true;
-                                    mo.opacity = 0.16;
+                                    mo.opacity = 0.42; // Fleisch WENIGER transparent (Schöpfer) → die Körper-Oberfläche lesbar, Skelett/Muskeln scheinen durch
                                     mo.depthWrite = false;
                                 }
                                 const bind = new THREE.Vector3(p.position.x, p.position.y, p.position.z);
