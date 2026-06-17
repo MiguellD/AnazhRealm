@@ -275,6 +275,13 @@ async function renderWerk(page, bpName, view) {
                     const parts = r.constructor._humanoidSkeleton({ sex, bodyColor: skinCol, limbColor: skinCol });
                     window.__treeInfo = "humanoid sex=" + sex + " parts=" + parts.length;
                     if (window.__skel) {
+                        // ANATOMIE-ANSICHT: Knochen beige, Muskel rot, Basis-Fleisch hell — wie die
+                        // Referenz, damit Proportionen + Massen-Platzierung OHNE Haut auswertbar sind.
+                        for (const p of parts) {
+                            if (p.material === "knochen") p.color = 0xe6dcc4;
+                            else if (p.def) p.color = 0xcf4a3a;
+                            else p.color = 0xd9bca0;
+                        }
                         grp = r._buildFromBlueprint({ name: "_humanoid", parts }, 0, undefined, {});
                     } else {
                         const geom = r._buildCreatureSkinGeometry(parts);
