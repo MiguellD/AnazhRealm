@@ -14982,11 +14982,13 @@ class AnazhRealm {
             //    der V-TAPER als Fan: der iliakale Strang (Becken/untere Taille → Achsel) + der thorakale
             //    (untere Wirbelsäule → Achsel). Bauch zum Ursprung (breit am Rücken, Sehne an der Achsel),
             //    flach + auf dem RÜCKEN (z negativ → bleibt am Torso, reisst nicht mit dem Arm hoch).
-            const lix = s * shoulderHalf * 0.74,
-                liy = shoulderY - 0.55,
-                liz = -0.18 * girthF; // Insertion an der Achsel/Humerus
-            musk(s * shoulderHalf * 0.46, hipY + 0.2, -0.2 * girthF, lix, liy, liz, 0.3 * mF, { mat: bodyMat, col: bodyCol, belly: 0.4, depth: 0.55, kScale: 0.86 }); // iliakaler Strang (Becken → Achsel = die V-Linie)
-            musk(s * 0.32, 5.0, -0.34 * girthF, lix, liy, liz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.45, depth: 0.55, kScale: 0.86 }); // thorakaler Strang (Wirbelsäule → Achsel)
+            const lix = s * shoulderHalf * 0.76,
+                liy = shoulderY - 0.6,
+                liz = -0.2 * girthF; // Insertion an der Achsel/Humerus
+            // FLACH + auf dem RÜCKEN (z stark negativ) → ein glattes Blatt, kein Blob-Stapel auf der Flanke
+            //    (Schöpfer „latisimus komisch"). Zwei Stränge, die zur Achsel konvergieren = der V-Taper.
+            musk(s * shoulderHalf * 0.5, hipY + 0.25, -0.3 * girthF, lix, liy, liz, 0.32 * mF, { mat: bodyMat, col: bodyCol, belly: 0.42, depth: 0.38, kScale: 0.88 }); // iliakaler Strang (Becken → Achsel)
+            musk(s * 0.3, 5.1, -0.42 * girthF, lix, liy, liz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.46, depth: 0.38, kScale: 0.88 }); // thorakaler Strang (Wirbelsäule → Achsel)
             // TERES — füllt die Lücke Lat→Deltoid (Teres-major: Skapula-Rand → Humerus, bewegt sich MIT dem Arm).
             musk(s * shoulderHalf * 0.7, shoulderY - 0.75, -0.24 * girthF, s * shoulderHalf * 0.92, shoulderY - 0.35, -0.12 * girthF, 0.18 * mF, { mat: bodyMat, col: bodyCol, belly: 0.4, kScale: 0.8 });
         }
@@ -15013,20 +15015,16 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.16, -0.02, 0, 7.22, -0.02, 0.46 * (0.9 + muscle * 0.25), bodyMat, bodyCol); // Hals (DICKER → trägt den Kopf, kein schwebender Eindruck)
-        // STERNOCLEIDOMASTOIDEUS — die zwei vorderen Hals-Stränge (Ohr→Schlüsselbein): füllen den
-        //    Hals→Brust-Übergang, sodass der Kopf SITZT statt zu schweben (Schöpfer-Befund).
-        for (const s of [-1, 1])
-            add("sphere", bodyMat, s * 0.16, 6.7, 0.12, 0.16 * mF, 0.7, 0.18, { x: 0, y: 0, z: s * 0.12 }, bodyCol, {
-                kScale: 0.82,
-                def: true,
-            });
-        add("sphere", headMat, 0, 7.62, -0.02, 0.7 * hr, 0.76 * hr, 0.74 * hr, null, limbCol, {
-            bodyRole: "head",
-            eyeFront: 0.85,
-        }); // Schädel — KLEINER (war ~5 Kopf hoch = stämmig/kindlich; jetzt ~6 Kopf, erwachsene Proportion zur Referenz) + tiefer, sitzt auf dem Hals
-        add("sphere", headMat, 0, 7.3, -0.12, 0.4 * hr, 0.38 * hr, 0.36 * hr, null, limbCol); // Occiput
-        add("box", headMat, 0, 7.3, 0.16, 0.48 * hr, 0.4 * hr, 0.44 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
+        limb(0, shoulderY - 0.16, -0.02, 0, 7.25, -0.04, 0.5 * (0.92 + muscle * 0.25), bodyMat, bodyCol); // Hals (dicker, trägt den Kopf)
+        // STERNOCLEIDOMASTOIDEUS — als zwei MUSKEL-STRÄNGE (das Gesetz, kein gewürfeltes Kugel-Paar →
+        //    der Nacken war komisch): vom Warzenfortsatz hinter dem Ohr (hoch, hinten-lateral) hinab-vorn
+        //    zum Sternum/Schlüsselbein. Die saubere Hals-V-Linie, füllt den Hals→Brust-Übergang.
+        for (const s of [-1, 1]) musk(s * 0.2, 7.28, -0.04, s * 0.12, 6.42, 0.2, 0.12 * mF, { mat: bodyMat, col: bodyCol, belly: 0.5, kScale: 0.78 });
+        // SCHÄDEL — ein sauberes OVOID: EIN Cranium-Dome deckt Scheitel UND Hinterkopf (Occiput) in einer
+        //    glatten Form (war Kugel + separater Occiput-Bump = „Schädel komisch"); höher als breit + leicht
+        //    nach hinten (menschliche Kopf-Proportion). Der Kiefer hängt vorn-unten = die Gesichts-Ebene.
+        add("sphere", headMat, 0, 7.6, -0.08, 0.66 * hr, 0.8 * hr, 0.74 * hr, null, limbCol, { bodyRole: "head", eyeFront: 0.85 }); // Cranium (Scheitel + Occiput in EINEM Dome)
+        add("box", headMat, 0, 7.16, 0.14, 0.42 * hr, 0.36 * hr, 0.42 * hr, null, limbCol, { kScale: 0.72 }); // Kiefer/Kinn (definiert, vorn-unten)
         for (const s of [-1, 1])
             add("box", headMat, s * 0.3 * hr, 7.48, 0.2 * hr, 0.14 * hr, 0.16 * hr, 0.2 * hr, null, limbCol, {
                 kScale: 0.58,
@@ -15043,7 +15041,15 @@ class AnazhRealm {
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
                 shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
-            add("sphere", limbMat, shX, shY, 0, 0.46 * limbF, 0.5 * limbF, 0.46 * limbF, null, limbCol, { def: true, disp: true, amp: 0.2, reach: 1.7 }); // Deltoideus — schlanke Kappe (war ein Schulter-Ball, der mit Bizeps/Pec verklumpte; Schöpfer „arme nicht sauber"): als VERSCHIEBUNG migriert (Tropfen-Schwell statt Kugel)
+            // DELTOIDEUS — als DREI-Kopf-FAN auf dem Gesetz: vorderer (Schlüsselbein), seitlicher (Akromion)
+            //    und hinterer (Skapula) Kopf, alle konvergieren am Humerus-Mitte (Deltoid-Tuberosität) →
+            //    die Schulter-Kappe EMERGIERT aus den drei Strängen statt einer gewürfelten Kugel.
+            const dix = shX * 1.04,
+                diy = shY - 0.7,
+                diz = 0; // Insertion Humerus-Mitte (Deltoid-Tuberosität)
+            musk(shX * 0.6, shY + 0.04, 0.18 * limbF, dix, diy, diz, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78 }); // vorderer Kopf (Schlüsselbein → Humerus)
+            musk(shX * 1.02, shY + 0.1, 0, dix, diy, diz, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78, extra: { def: true, disp: true, amp: 0.18, reach: 1.6 } }); // seitlicher Kopf (Akromion → Humerus) — trägt den Verschiebungs-Schwell
+            musk(shX * 0.78, shY, -0.2 * limbF, dix, diy, diz, 0.17 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78 }); // hinterer Kopf (Skapula → Humerus)
             // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
@@ -15111,15 +15117,11 @@ class AnazhRealm {
             limb(wristX, wristY - 0.02, 0.06, thbX, thbY, 0.18, 0.06 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
             limb(thbX, thbY, 0.18, thbX - s * 0.05, thbY - 0.15, 0.26, 0.05 * limbF, "knochen", limbCol); // Daumen-Glied
         }
-        // GLUTEUS MAXIMUS — der HINTERN (z<0, HINTEN): zwei runde Massen am Becken-RÜCKEN. Er
-        // FEHLTE komplett im Skelett → der Rücken war flach und die nach vorn beulenden Schenkel-
-        // Köpfe lasen unter den Shorts als „Gesäß VORNE" (Schöpfer-Befund). Jetzt sitzt der Hintern
-        // hinten, wo er hingehört; die Vorderseite der Leiste wird dadurch ruhig.
+        // GLUTEUS MAXIMUS — als MUSKEL-STRANG auf dem Gesetz: vom Kreuzbein/Darmbein (medial-hoch-hinten)
+        //    schräg hinab-aussen zum Femur (Trochanter/Gesäßfalte). Der HINTERN (z<0) emergiert aus der
+        //    Verbindung, rund (depth 1), Bauch mittig → die volle Gesäß-Masse hinten, nicht vorn.
         for (const s of [-1, 1])
-            add("sphere", bodyMat, s * 0.28, 3.74, -0.4 * girthF, 0.44 * mF, 0.62, 0.42 * girthF, null, bodyCol, {
-                kScale: 0.92,
-                def: true,
-            });
+            musk(s * 0.18, hipY + 0.05, -0.34 * girthF, s * 0.42, hipY - 0.75, -0.32 * girthF, 0.42 * mF, { mat: bodyMat, col: bodyCol, belly: 0.5, depth: 0.9, kScale: 0.92 });
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
         // STAND-BREITE: die Beine weit genug AUSEINANDER, dass der innere Spalt > die smin-Blend-
         // breite k bleibt — sonst verschmilzt das Feld beide Beine zu EINER Säule (gemessen die
