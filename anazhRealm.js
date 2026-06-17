@@ -14503,42 +14503,48 @@ class AnazhRealm {
                 }
             return cps[cps.length - 1][1];
         };
+        // ANIMAL-ANATOMIE (Hunde-/ARAP-Referenz): ein Tier ist eine HÄNGEBRÜCKE — ein tiefer SCHMALER
+        // Brustkorb + ein hohes Becken, verbunden durch eine LEICHTE Lende mit scharfem Flanken-TUCK
+        // (der Bauch zieht sich HOCH). KEIN Barrel. Tiefe ≫ Breite. Widerrist + Kruppe als Anker.
         const toplineCP = af("topline", 0) || [
-            [0.5, 0.36],
-            [0.32, 0.46],
-            [0.08, 0.36],
-            [-0.16, 0.32],
-            [-0.32, 0.46],
-            [-0.5, 0.26],
+            [0.5, 0.46], // Brust-Ansatz
+            [0.34, 0.52], // WIDERRIST hoch (Schulterblatt)
+            [0.08, 0.4], // Rücken
+            [-0.16, 0.38], // Lende
+            [-0.32, 0.5], // KRUPPE hoch (Becken)
+            [-0.5, 0.4], // Schwanz-Ansatz (rund, nicht spitz)
         ];
         const depthCP = af("depthProfile", 0) || [
-            [0.5, 0.34],
-            [0.34, 0.96],
-            [0.12, 0.86],
-            [-0.06, 0.6],
-            [-0.3, 0.82],
-            [-0.5, 0.34],
+            [0.5, 0.5], // Brisket rund-blunt vorn (kein Raketen-Prow)
+            [0.34, 1.02], // tiefer BRUSTKORB — die dominante Masse, hängt tief
+            [0.12, 0.92], // Rippen
+            [-0.06, 0.4], // FLANKEN-TUCK — der Bauch zieht sich HOCH (die Taille des Tiers)
+            [-0.3, 0.74], // Becken/Schenkel-Masse
+            [-0.5, 0.44], // Heck rund (nicht spitz)
         ];
         const widthCP = af("widthProfile", 0) || [
-            [0.5, 0.42],
-            [0.3, 0.96],
-            [0.0, 0.78],
-            [-0.3, 0.92],
-            [-0.5, 0.4],
+            [0.5, 0.4], // schmale runde Brust vorn
+            [0.3, 0.6], // Brustkorb (breiteste Stelle — aber SCHMAL: ein Tier ist tief, nicht breit)
+            [0.0, 0.42], // schmale Lende
+            [-0.3, 0.6], // Kruppe/Hinterhand (etwas breiter)
+            [-0.5, 0.42], // Heck rund
         ];
         // der dichte Kern (verborgen) — trägt die dichte-Tags.
-        add(torsoShape, bodyMat, 0, 0, 0, torsoW * 0.5, torsoH * 0.4, torsoLen * 0.5, null, bodyCol);
+        // kleiner dichte-Kern im BRUSTKORB (trägt die dichte-Tags — Größe geht NICHT in die Tags ein);
+        // klein + vorn-oben → er füllt NICHT den Flanken-Tuck (der alte große Mittel-Kern war ein
+        // Haupt-Treiber des Barrel-Blobs, GEMESSEN am Render).
+        add(torsoShape, bodyMat, 0, torsoH * 0.12, torsoLen * 0.24, torsoW * 0.34, torsoH * 0.32, torsoLen * 0.34, null, bodyCol);
         let bellyShoulder = -torsoH * 0.3,
             bellyHip = -torsoH * 0.3;
         if (barrel) {
-            const NS = 9;
+            const NS = 13;
             for (let i = 0; i < NS; i++) {
                 const zf = 0.5 - (i / (NS - 1)) * 1.0; // +0.5 … −0.5 (Front → Heck)
                 const yTop = lerpCurve(toplineCP, zf) * torsoH;
                 const depth = Math.max(0.06, lerpCurve(depthCP, zf) * torsoH);
                 const width = Math.max(0.06, lerpCurve(widthCP, zf) * torsoW);
                 const cy = yTop - depth * 0.5; // Top ≈ Topline (Rücken), Bauch hängt um depth
-                const sliceZ = (bodyLen / (NS - 1)) * 2.6; // TIEF überlappende Scheiben → ein glatter Leib (kein Riffeln)
+                const sliceZ = (bodyLen / (NS - 1)) * 1.5; // leichter überlappend (feiner gesampelt) → der Flanken-TUCK überlebt statt verschmiert zu werden
                 add(torsoShape, bodyMat, 0, cy, zf * bodyLen, width, depth, sliceZ, null, bodyCol);
                 if (Math.abs(zf - 0.34) < 0.07) bellyShoulder = yTop - depth; // Bauch an der Schulter
                 if (Math.abs(zf + 0.28) < 0.07) bellyHip = yTop - depth; // Bauch an der Hüfte
@@ -14584,52 +14590,41 @@ class AnazhRealm {
         const hindMotor = af("hindMotor", 0.95); // Propulsions-Anteil der Hinterhand (Läufer hoch)
         const foreMotor = af("foreMotor", 0.5); // Vorderbein = Strebe (leichter)
         const muscleScale = af("limbMuscle", 1.0);
-        const buildLeg = (sgnX, belly, zPos, kneeFwd, footFwd, motor) => {
+        // DIGITIGRADE Z-FALTUNG (Hunde-/ARAP-Referenz, die Schöpfer-Tafel): ein Tier steht auf den
+        // ZEHEN — das Bein faltet Hüfte→Stifle(hoch,vorn)→SPRUNGGELENK(mittig, HOCH über dem Boden)→
+        // Zehen. Das HOHE Hock/Handwurzel-Gelenk + der lange ~vertikale Mittelfuß ist die Signatur,
+        // die das Tier vom plumpen Stelzen-Tisch trennt. fold = {stifleH, stifleZ, hockH, hockZ, toeZ}
+        // (H = Höhe als Anteil der Beinhöhe über Boden, Z = Versatz in legLen — aus der Referenz).
+        const buildLeg = (sgnX, belly, zPos, fold, motor) => {
             const x = sgnX * stanceX;
-            const topY = belly + embedY; // tief im Bauch verankert (glatte Emergenz)
-            const footTopY = groundY + legR * 0.95; // das Glied reicht tiefer (kein Schwebe-Spalt zum Fuß)
-            const kneeY = topY - (topY - footTopY) * 0.5;
+            const topY = belly + embedY; // Hüft-/Schulter-Gelenk, tief im Bauch verankert
+            const drop = topY - groundY; // ganze Beinhöhe
             const m = Math.max(0, motor || 0) * muscleScale;
-            const upperR = legR * (1.18 + m * 0.62); // PROXIMAL bemuskelt ∝ Motor (Hinterhand dicker als Front)
-            segBetween(x, topY, zPos, x, kneeY, zPos + kneeFwd, upperR); // oberes Glied (Ober-schenkel/-arm)
-            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, legR * 0.84); // unteres Glied (sehnig, übersteht die Glättung)
-            // MUSKEL-BAUCH — eine fusiforme limb-Kapsel am proximalen Glied, zum Leib + nach oben
-            // gebauscht: am Heck die Kruppe/der Schenkel, vorn die Schulter. Groß ∝ Motor; überlappt
-            // Leib + Oberglied → smin-Verschmelzung. Erst ab spürbarem Motor (kein Mikro-Stummel).
+            const stifleY = groundY + drop * fold.stifleH,
+                stifleZ = zPos + legLen * fold.stifleZ;
+            const hockY = groundY + drop * fold.hockH, // das HOHE Sprung-/Handwurzelgelenk
+                hockZ = zPos + legLen * fold.hockZ;
+            const toeZ = zPos + legLen * fold.toeZ;
+            const upperR = legR * (1.15 + m * 0.6); // Femur/Humerus proximal bemuskelt ∝ Motor
+            segBetween(x, topY, zPos, x, stifleY, stifleZ, upperR); // Femur/Humerus
+            segBetween(x, stifleY, stifleZ, x, hockY, hockZ, legR * 0.74); // Tibia/Radius (sehnig)
+            segBetween(x, hockY, hockZ, x, groundY + legR * 0.5, toeZ, legR * 0.56); // Mittelfuß (dünn, ~vertikal)
+            // MUSKEL-BAUCH — Kruppe/Schenkel (Heck) bzw. Schulter (vorn) am proximalen Glied.
             if (m > 0.12) {
-                const bz = zPos + (zPos < 0 ? -legLen * 0.05 : legLen * 0.04); // Heck leicht hinter · Schulter leicht vor
-                const by2 = topY + (kneeY - topY) * 0.55; // hinab bis zur Glied-Mitte
-                segBetween(
-                    x * 0.86,
-                    belly + embedY * 1.4,
-                    bz,
-                    x * 0.95,
-                    by2,
-                    zPos + kneeFwd * 0.4,
-                    legR * (0.92 + m * 1.45)
-                );
+                const bz = zPos + (zPos < 0 ? -legLen * 0.04 : legLen * 0.03);
+                const by2 = topY - drop * 0.16;
+                segBetween(x * 0.86, belly + embedY * 1.4, bz, x * 0.95, by2, stifleZ - legLen * 0.02, legR * (0.95 + m * 1.4));
             }
-            // FUSS/HUF — eine UMHÜLLTE Masse am Glied-Ende (überlappt das Bein → der smin VERBINDET
-            // sie, statt eines schwebenden Box-Stummels, den die Glättung vom dünnen Bein abschnürte).
-            // Klein, vorn, flach am Boden. KEIN feature:true → Teil der EINEN glatten Haut.
-            add(
-                "box",
-                limbMat,
-                x,
-                groundY + legR * 0.52,
-                zPos + footFwd + legR * 0.45,
-                legR * 1.3,
-                legR * 1.0,
-                legR * 2.0,
-                null,
-                hoofCol
-            );
+            // PFOTE — flach am Boden, die Zehen vorn (überlappt den Mittelfuß → smin verbindet).
+            add("box", limbMat, x, groundY + legR * 0.5, toeZ + legR * 0.55, legR * 1.2, legR * 0.85, legR * 2.1, null, hoofCol);
         };
-        const kf = af("kneeFwd", 0.05) * BL;
-        buildLeg(-1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1, foreMotor); // Vorderbein: Strebe, leichte Schulter
-        buildLeg(1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1, foreMotor);
-        buildLeg(-1, bellyHip, -hipZ, kf * 1.6, kf * 0.7, hindMotor); // Hinterbein: Motor + Stifle-Knick + Schenkel
-        buildLeg(1, bellyHip, -hipZ, kf * 1.6, kf * 0.7, hindMotor);
+        // Fore = straffer (Stütze), Hind = stärker gefaltet (Motor) — beide digitigrad, Hock HOCH.
+        const foreFold = { stifleH: 0.62, stifleZ: -0.03, hockH: 0.3, hockZ: 0.04, toeZ: 0.06 };
+        const hindFold = { stifleH: 0.64, stifleZ: 0.13, hockH: 0.33, hockZ: -0.05, toeZ: 0.03 };
+        buildLeg(-1, bellyShoulder, shoulderZ, foreFold, foreMotor); // Vorderbein
+        buildLeg(1, bellyShoulder, shoulderZ, foreFold, foreMotor);
+        buildLeg(-1, bellyHip, -hipZ, hindFold, hindMotor); // Hinterbein
+        buildLeg(1, bellyHip, -hipZ, hindFold, hindMotor);
 
         // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
         //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
@@ -14852,7 +14847,7 @@ class AnazhRealm {
                 y,
                 0,
                 lerpCP(widthCP, t) * 2,
-                0.6,
+                0.92, // höhere Überlappung der 9 Stationen → der smin verschmilzt sie (keine Riffel-Ringe bei res 96)
                 lerpCP(depthCP, t) * 2,
                 null,
                 bodyCol,
@@ -14867,18 +14862,18 @@ class AnazhRealm {
         // sich. Symmetrisch → das V18.209-Symmetrie-Template bleibt unverbogen; der smin rundet.
         for (const s of [-1, 1])
             add(
-                "box",
+                "sphere",
                 bodyMat,
                 s * hipHalf * 0.44,
-                hipY - 0.34,
-                -0.32 * girthF,
-                hipHalf * 0.6 * girthF,
-                1.05,
-                0.5 * girthF,
+                hipY - 0.44,
+                -0.56 * girthF, // klar HINTER dem Becken — die flache Tiefe (unten) hält die VorderKante hinter der Mitte (kein Groin-Wrap)
+                hipHalf * 0.62 * girthF,
+                0.76,
+                0.44 * girthF,
                 null,
                 bodyCol,
                 {
-                    kScale: 0.96,
+                    kScale: 0.92,
                 }
             );
         // ── MUSKEL-RELIEF + LANDMARK-SCHÄRFE (lebendiger-koerper §2½ — der Torso liest als KÖRPER,
@@ -14934,46 +14929,46 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.05, 0.0, 0, 6.9, 0.0, 0.46 * (0.85 + muscle * 0.3), bodyMat, bodyCol); // Hals (Muskel → dicker)
-        add("sphere", headMat, 0, 7.5, -0.02, 0.9 * hr, 0.92 * hr, 0.92 * hr, null, limbCol, {
+        limb(0, shoulderY - 0.16, -0.02, 0, 7.18, -0.02, 0.37 * (0.9 + muscle * 0.25), bodyMat, bodyCol); // Hals (länger + schlanker → liest als Hals, nicht verschluckt)
+        add("sphere", headMat, 0, 7.74, -0.02, 0.84 * hr, 0.87 * hr, 0.87 * hr, null, limbCol, {
             bodyRole: "head",
             eyeFront: 0.85,
-        }); // Schädel
-        add("sphere", headMat, 0, 7.14, -0.13, 0.5 * hr, 0.46 * hr, 0.44 * hr, null, limbCol); // Occiput
-        add("box", headMat, 0, 7.16, 0.17, 0.58 * hr, 0.46 * hr, 0.5 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
+        }); // Schädel (etwas kleiner + höher → klarer Hals + erwachsene Proportion)
+        add("sphere", headMat, 0, 7.38, -0.13, 0.46 * hr, 0.44 * hr, 0.42 * hr, null, limbCol); // Occiput
+        add("box", headMat, 0, 7.4, 0.17, 0.55 * hr, 0.44 * hr, 0.48 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
         for (const s of [-1, 1])
-            add("box", headMat, s * 0.36 * hr, 7.34, 0.22 * hr, 0.15 * hr, 0.18 * hr, 0.22 * hr, null, limbCol, {
+            add("box", headMat, s * 0.34 * hr, 7.58, 0.22 * hr, 0.15 * hr, 0.18 * hr, 0.22 * hr, null, limbCol, {
                 kScale: 0.58,
             }); // JOCHBEIN (Wangenknochen)
         // GESICHTS-RELIEF IM SCHÄDEL-FELD (der Profi-Weg: Nase/Brauen EMERGIEREN aus dem Metaball,
         // statt als Mr.-Potato-Head-Teile aufgeklebt zu werden — die verschmelzen nicht): ein
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
-        add("box", headMat, 0, 7.56, 0.32, 0.66 * hr, 0.11 * hr, 0.2 * hr, null, limbCol); // Brauen-Wulst (verschmolzen)
-        add("box", headMat, 0, 7.4, 0.4, 0.15 * hr, 0.4 * hr, 0.26 * hr, { x: -0.18, y: 0, z: 0 }, limbCol); // Nasen-Rücken (verschmolzen)
+        add("box", headMat, 0, 7.8, 0.32, 0.62 * hr, 0.11 * hr, 0.2 * hr, null, limbCol); // Brauen-Wulst (verschmolzen)
+        add("box", headMat, 0, 7.64, 0.4, 0.15 * hr, 0.4 * hr, 0.26 * hr, { x: -0.18, y: 0, z: 0 }, limbCol); // Nasen-Rücken (verschmolzen)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
-            const shX = s * shoulderHalf * 0.92,
-                shY = shoulderY + 0.02;
-            add("sphere", limbMat, shX, shY, 0, 0.56 * limbF, 0.56 * limbF, 0.56 * limbF, null, limbCol); // Deltoideus
+            const shX = s * shoulderHalf * 1.0,
+                shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
+            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol); // Deltoideus (definierte Schulter-Kugel)
             // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
             limb(
-                s * 0.14,
-                shoulderY + 0.66,
+                s * 0.16,
+                shoulderY + 0.24,
                 -0.07,
                 shX * 0.98,
-                shY + 0.06,
+                shY + 0.04,
                 -0.02,
-                0.42 * (0.92 + muscle * 0.28),
+                0.4 * (0.92 + muscle * 0.28),
                 bodyMat,
                 bodyCol
             );
-            const elbowX = s * (shoulderHalf + 0.5),
+            const elbowX = s * (shoulderHalf + 0.42),
                 elbowY = waistY + 0.05;
-            const wristX = s * (shoulderHalf + 0.62),
+            const wristX = s * (shoulderHalf + 0.56),
                 wristY = hipY - 0.05;
-            limb(shX, shY, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm
+            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
             add("box", limbMat, elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen)
             // HAND — eine RUHENDE HAND als ZUSAMMENHÄNGENDE Masse (Profi-Stilisierung: Handteller +
@@ -15004,16 +14999,25 @@ class AnazhRealm {
             const hipX = s * (hipHalf * 0.72),
                 kneeX = s * 0.56,
                 ankleX = s * 0.52;
-            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.6 * limbF, limbMat); // Oberschenkel (kräftig)
+            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.66 * limbF, limbMat); // Oberschenkel (kräftig)
+            // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
+            // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
+            // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
+            add("sphere", limbMat, (hipX + kneeX) * 0.5 + s * 0.05, 2.92, 0.05, 0.36 * limbF, 1.08, 0.17 * limbF, null, limbCol, {
+                kScale: 0.84,
+            }); // Quadrizeps (mittig am Schenkel, FLACH am Knochen, tief → der Groin bleibt sauber)
+            add("sphere", limbMat, (hipX + kneeX) * 0.5, 3.3, -0.18, 0.4 * limbF, 0.95, 0.28 * limbF, null, limbCol, {
+                kScale: 0.92,
+            }); // Hamstring (hinten)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.42 * limbF, limbMat); // Unterschenkel (Grund-Strebe → schlanker Knöchel)
             add("box", limbMat, kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn)
             add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
             // der Knöchel ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung.
-            add("box", limbMat, ankleX, 0.21, -0.12, 0.3, 0.38, 0.3, null, limbCol); // Ferse (hinten, erhöht — Achilles/Knöchel)
-            add("box", limbMat, ankleX, 0.13, 0.16, 0.32, 0.26, 0.36, null, limbCol); // Mittelfuß/Rist (Wölbung)
-            add("box", limbMat, ankleX, 0.07, 0.45, 0.34, 0.16, 0.26, null, limbCol); // Zehen (vorn, flach, kurz)
+            add("box", limbMat, ankleX, 0.2, -0.18, 0.3, 0.34, 0.34, null, limbCol); // Ferse (klar HINTEN — Achilles/Knöchel)
+            add("box", limbMat, ankleX, 0.11, 0.2, 0.32, 0.22, 0.46, null, limbCol); // Mittelfuß/Rist (länger, flacher → echte Sohle)
+            add("box", limbMat, ankleX, 0.06, 0.56, 0.34, 0.13, 0.36, null, limbCol); // Zehen (klar VORN, flach)
         }
         return parts;
     }
@@ -15711,6 +15715,9 @@ class AnazhRealm {
     _addHumanoidFace(rig, kh, oy, skinColor, hairColor) {
         if (typeof THREE === "undefined" || !rig || !rig.head) return;
         const headBoneY = 7.2; // KH (= die Bone-Spec head-Pos); LOKAL-Offsets relativ dazu
+        // skullY MUSS dem Schädel-Zentrum in _humanoidSkeleton folgen — sonst rutscht Haar/Gesicht
+        // gegen den Schädel (der „schwarze Scheitel über dem Gesicht"-Bug). Gesichts-Y relativ dazu.
+        const skullY = 7.74;
         const L = (xKH, yKH, zKH) => new THREE.Vector3(xKH * kh, (yKH - headBoneY) * kh, zKH * kh);
         const eyeMat = (col, emissive, ei, rough) => {
             let m;
@@ -15743,16 +15750,16 @@ class AnazhRealm {
         const sparkGeom = new THREE.SphereGeometry(0.016 * kh, 8, 6);
         for (const s of [-1, 1]) {
             const eye = new THREE.Mesh(eyeGeom, eyeMat(0x1b1512, false, 0, 0.16));
-            eye.position.copy(L(s * 0.18, 7.44, 0.34));
+            eye.position.copy(L(s * 0.18, skullY - 0.06, 0.34));
             eye.castShadow = false;
             rig.head.add(eye);
             // OBERLID — Hautmasse über der oberen Augen-Hälfte (von oben-vorn) → gedeckelter Blick.
             const lid = new THREE.Mesh(lidGeom, skinM);
-            lid.position.copy(L(s * 0.18, 7.5, 0.31));
+            lid.position.copy(L(s * 0.18, skullY, 0.31));
             lid.castShadow = false;
             rig.head.add(lid);
             const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 1.3, 0.3));
-            spark.position.copy(L(s * 0.18 + s * 0.025, 7.45, 0.41));
+            spark.position.copy(L(s * 0.18 + s * 0.025, skullY - 0.05, 0.41));
             spark.castShadow = false;
             rig.head.add(spark);
         }
@@ -15760,12 +15767,12 @@ class AnazhRealm {
         // darüber (gewölbte Scheiben statt Boxen → kein rechteckiger Stempel; liest als Lippe + Spalt).
         const lowerLip = new THREE.Mesh(new THREE.SphereGeometry(0.1 * kh, 12, 8), skinM);
         lowerLip.scale.set(1.7, 0.55, 0.7); // breit, flach, dezent vor
-        lowerLip.position.copy(L(0, 7.11, 0.44));
+        lowerLip.position.copy(L(0, skullY - 0.39, 0.44));
         lowerLip.castShadow = false;
         rig.head.add(lowerLip);
         const mouthSeam = new THREE.Mesh(new THREE.SphereGeometry(0.085 * kh, 12, 8), eyeMat(0x39201b, false, 0, 0.62));
         mouthSeam.scale.set(1.9, 0.3, 0.5); // sehr dünn, breit (die Lippen-Furche)
-        mouthSeam.position.copy(L(0, 7.16, 0.46));
+        mouthSeam.position.copy(L(0, skullY - 0.34, 0.46));
         mouthSeam.castShadow = false;
         rig.head.add(mouthSeam);
         // OHREN — kleine flache Muscheln an den Kopf-Seiten (auf Augen-/Nasen-Höhe, Hautton)
@@ -15773,7 +15780,7 @@ class AnazhRealm {
         earGeom.scale(0.45, 1.15, 0.8); // flach an den Kopf gelegt, hochkant
         for (const s of [-1, 1]) {
             const ear = new THREE.Mesh(earGeom, skinM);
-            ear.position.copy(L(s * 0.44, 7.4, 0.0));
+            ear.position.copy(L(s * 0.44, skullY - 0.1, 0.0));
             ear.castShadow = false;
             rig.head.add(ear);
         }
@@ -15784,7 +15791,7 @@ class AnazhRealm {
         const hairGeom = new THREE.SphereGeometry(0.4 * kh, 18, 14);
         hairGeom.scale(1.12, 0.8, 1.25); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, 7.78, -0.12)); // HOCH (Scheitel) + zurück → deckt nur Krone+Hinterkopf, Gesicht frei
+        hair.position.copy(L(0, skullY + 0.28, -0.12)); // HOCH (Scheitel) + zurück → deckt nur Krone+Hinterkopf, Gesicht frei
         hair.castShadow = true;
         rig.head.add(hair);
     }
