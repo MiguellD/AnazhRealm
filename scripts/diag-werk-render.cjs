@@ -275,14 +275,23 @@ async function renderWerk(page, bpName, view) {
                     const parts = r.constructor._humanoidSkeleton({ sex, bodyColor: skinCol, limbColor: skinCol });
                     window.__treeInfo = "humanoid sex=" + sex + " parts=" + parts.length;
                     if (window.__skel) {
-                        // ANATOMIE-ANSICHT: Knochen beige, Muskel rot, Basis-Fleisch hell — wie die
-                        // Referenz, damit Proportionen + Massen-Platzierung OHNE Haut auswertbar sind.
+                        // ANATOMIE-ANSICHT: jede Masse als ELLIPSOID (wie der Metaball sie behandelt,
+                        // size/2·1.06), gefärbt nach Material (knochen beige · def-Muskel rot · Basis
+                        // hell) — wie die Referenz, Proportionen + Platzierung OHNE Haut auswertbar.
+                        grp = new THREE.Group();
                         for (const p of parts) {
-                            if (p.material === "knochen") p.color = 0xe6dcc4;
-                            else if (p.def) p.color = 0xcf4a3a;
-                            else p.color = 0xd9bca0;
+                            if (!p.size || !p.position || p.feature) continue;
+                            const col = p.material === "knochen" ? 0xe6dcc4 : p.def ? 0xcf4a3a : 0xd9bca0;
+                            const m = new THREE.Mesh(
+                                new THREE.SphereGeometry(0.5, 18, 12),
+                                new THREE.MeshStandardMaterial({ color: col, roughness: 0.7, metalness: 0 })
+                            );
+                            m.scale.set(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
+                            m.position.set(p.position.x, p.position.y, p.position.z);
+                            if (p.rotation) m.rotation.set(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0);
+                            m.castShadow = true;
+                            grp.add(m);
                         }
-                        grp = r._buildFromBlueprint({ name: "_humanoid", parts }, 0, undefined, {});
                     } else {
                         const geom = r._buildCreatureSkinGeometry(parts);
                         if (geom) {
