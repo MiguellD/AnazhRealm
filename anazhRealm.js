@@ -14901,6 +14901,7 @@ class AnazhRealm {
                 bodyCol,
                 {
                     kScale: 0.72,
+                    def: true,
                 }
             );
         // RECTUS ABDOMINIS — der SIXPACK: zwei Säulen (links/rechts der Linea alba) × drei Reihen,
@@ -14911,15 +14912,17 @@ class AnazhRealm {
         for (const sx of [-1, 1])
             for (let row = 0; row < 3; row++) {
                 const ay = 4.58 + row * 0.4; // drei Reihen vom Unterbauch zur Brust-Basis
-                const aw = (0.2 - row * 0.012) * absMF; // obere Päckchen leicht breiter
-                add("box", bodyMat, sx * 0.17, ay, 0.38 * girthF, aw, 0.18, 0.22 * girthF, null, bodyCol, {
-                    kScale: 0.44,
-                });
+                const aw = (0.23 - row * 0.012) * absMF; // obere Päckchen leicht breiter
+                add("box", bodyMat, sx * 0.2, ay, 0.5 * girthF, aw, 0.22, 0.36 * girthF, null, bodyCol, {
+                    kScale: 0.34,
+                    def: true,
+                }); // protrudiert klar vorn → echte Wölbung, scharfe Furchen dazwischen
             }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
             add("box", bodyMat, sx * 0.42, 4.74, 0.3 * girthF, 0.2 * mF, 0.92, 0.24 * girthF, { x: 0, y: 0, z: sx * 0.12 }, bodyCol, {
                 kScale: 0.78,
+                def: true,
             });
         // LATISSIMUS / FLANKE — seitliche Massen unter den Achseln (der V-Taper, die Flanke).
         for (const s of [-1, 1])
@@ -14936,6 +14939,7 @@ class AnazhRealm {
                 bodyCol,
                 {
                     kScale: 0.9,
+                    def: true,
                 }
             );
         // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
@@ -14944,6 +14948,7 @@ class AnazhRealm {
         for (const s of [-1, 1])
             add("box", bodyMat, s * 0.13, 5.05, -0.36 * girthF, 0.17 * mF, 1.95, 0.15 * girthF, null, bodyCol, {
                 kScale: 0.74,
+                def: true,
             });
         // ── (2) HALS + KOPF — der Kopf SITZT über den Schultern (kein Vorragen), als CLUSTER:
         //    Schädel (rund, zentriert) + Hinterkopf/Occiput (füllt die Nacken-Kerbe) + Kiefer
@@ -14970,7 +14975,7 @@ class AnazhRealm {
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
                 shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
-            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol); // Deltoideus (definierte Schulter-Kugel)
+            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol, { def: true }); // Deltoideus (definierte Schulter-Kugel)
             // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
@@ -15033,13 +15038,15 @@ class AnazhRealm {
             // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
             add("sphere", limbMat, (hipX + kneeX) * 0.5 + s * 0.05, 2.92, 0.05, 0.36 * limbF, 1.08, 0.17 * limbF, null, limbCol, {
                 kScale: 0.84,
+                def: true,
             }); // Quadrizeps (mittig am Schenkel, FLACH am Knochen, tief → der Groin bleibt sauber)
             add("sphere", limbMat, (hipX + kneeX) * 0.5, 3.3, -0.18, 0.4 * limbF, 0.95, 0.28 * limbF, null, limbCol, {
                 kScale: 0.92,
+                def: true,
             }); // Hamstring (hinten)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.42 * limbF, limbMat); // Unterschenkel (Grund-Strebe → schlanker Knöchel)
             add("box", limbMat, kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn)
-            add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol); // WADE (Muskel-Bulge hinten-oben)
+            add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol, { def: true }); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
             // der Knöchel ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung.
@@ -15103,7 +15110,7 @@ class AnazhRealm {
                     ry = Math.max(0.03, (sy / 2) * 1.06),
                     rz = Math.max(0.03, (sz / 2) * 1.06);
                 const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1 });
+                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def });
                 const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
                 mnx = Math.min(mnx, c[0] - RR[0]);
                 mny = Math.min(mny, c[1] - RR[1]);
@@ -15142,7 +15149,7 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1 });
+            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -15205,6 +15212,7 @@ class AnazhRealm {
         // opt-parametrisiert (Default 0.12 = das vorige Verhalten), damit diag-koerper-tiefpass
         // den Tradeoff (definierte Kante vs. erodierende dünne Glieder) am Iso-Dump MISST.
         const kMax = opts && Number.isFinite(opts.kMax) ? opts.kMax : 0.12;
+        const kFloor = opts && Number.isFinite(opts.kFloor) ? opts.kFloor : 0.04; // Mindest-Blend; KLEINER → schärfere Muskel-Täler (Sixpack/Linea alba), die die reine Feld-Normale gestochen liest
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
@@ -15217,7 +15225,7 @@ class AnazhRealm {
                 // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
                 // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
                 // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
-                const k = Math.max(0.04, Math.min(kMax, Math.max(0.03, bn.rmin * 0.55)) * (bn.kScale || 1));
+                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1));
                 d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
@@ -15390,7 +15398,7 @@ class AnazhRealm {
         // eine butterweiche, saubere, links/rechts-symmetrische Oberfläche, unabhängig von der
         // Surface-Nets-Tesselierung. field>0 innen → ∇field zeigt nach INNEN → Außen-Normale = −∇field.
         {
-            const ge = h * 0.6; // Gradient-Schrittweite (~½ Zelle: lokal genug, rausch-frei)
+            const ge = h * (opts && Number.isFinite(opts.normalStep) ? opts.normalStep : 0.55); // Gradient-Schrittweite (kleiner = feinere Muskel-Täler in der Normale; das Feld ist analytisch glatt → bleibt sauber)
             const nrm = new Float32Array(verts.length);
             for (let v = 0; v < verts.length; v += 3) {
                 const x = verts[v],
@@ -15405,6 +15413,104 @@ class AnazhRealm {
                 nrm[v + 2] = nz / L;
             }
             geom.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+        }
+        // ── SEAM-GROOVE: die Muskel-Furche ANALYTISCH (die Antwort auf die Auflösungs-Wand) ──
+        // Das Skelett TRÄGT die Anatomie (Sixpack/Pec/Lat als getrennte DEF-Massen, im Skel-Render
+        // gestochen sichtbar) — aber das Gitter (h≈0.06) löst eine 0.16-Furche nicht auf, und die
+        // Glättung verschluckt sie. Hier wird die Furche dort, wo zwei DEF-Massen sich treffen
+        // (d1≈d2), DIREKT aus den SDFs gerechnet (gitter-/terrassen-UNABHÄNGIG im Wert) und die
+        // Shading-Normale ins Tal gekippt → der Sixpack/Pec/Lat fängt Licht unter JEDER Beleuchtung,
+        // auf der glatten Feld-Haut, ohne Lumpen. Das ist der Profi-„Detail-Normal"-Hebel, analytisch.
+        const seamAmp = opts && Number.isFinite(opts.seamGroove) ? opts.seamGroove : 0;
+        const hasDef = seamAmp > 0 && bones.some((b) => b.def);
+        let seamG = null;
+        if (hasDef) {
+            const seamW = opts && Number.isFinite(opts.seamWidth) ? opts.seamWidth : 0.085;
+            const pA2 = geom.attributes.position,
+                nA2 = geom.attributes.normal,
+                VC2 = pA2.count;
+            const sdAny = (bn, x, y, z) => (bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn));
+            const gArr = new Float32Array(VC2);
+            for (let v = 0; v < VC2; v++) {
+                const x = pA2.getX(v),
+                    y = pA2.getY(v),
+                    z = pA2.getZ(v);
+                let d1 = 1e9,
+                    d2 = 1e9,
+                    def1 = false,
+                    def2 = false; // nächste ZWEI Massen
+                for (const bn of bones) {
+                    const d = sdAny(bn, x, y, z);
+                    if (d < d1) {
+                        d2 = d1;
+                        def2 = def1;
+                        d1 = d;
+                        def1 = !!bn.def;
+                    } else if (d < d2) {
+                        d2 = d;
+                        def2 = !!bn.def;
+                    }
+                }
+                if (def1 || def2) gArr[v] = Math.max(0, 1 - (d2 - d1) / seamW); // 1 an der Naht, 0 weg
+            }
+            // Adjazenz + 1 Glättungspass von g (saubere Furche)
+            const adj = new Array(VC2);
+            for (let v = 0; v < VC2; v++) adj[v] = [];
+            for (let t = 0; t + 2 < idx.length; t += 3) {
+                const a = idx[t],
+                    b = idx[t + 1],
+                    c = idx[t + 2];
+                adj[a].push(b, c);
+                adj[b].push(a, c);
+                adj[c].push(a, b);
+            }
+            {
+                const src = gArr.slice();
+                for (let v = 0; v < VC2; v++) {
+                    const nb = adj[v];
+                    if (!nb.length) continue;
+                    let a = 0;
+                    for (const k of nb) a += src[k];
+                    gArr[v] = src[v] * 0.5 + (a / nb.length) * 0.5;
+                }
+            }
+            // Normale entlang des tangentialen g-Gradienten ins Tal kippen (g scharf+analytisch →
+            // starker, sauberer Kipp; beide Wände fächern zur Naht auf → die Furche poppt).
+            for (let v = 0; v < VC2; v++) {
+                const nb = adj[v];
+                if (!nb.length) continue;
+                const nx = nA2.getX(v),
+                    ny = nA2.getY(v),
+                    nz = nA2.getZ(v);
+                const px = pA2.getX(v),
+                    py = pA2.getY(v),
+                    pz = pA2.getZ(v);
+                let gx = 0,
+                    gy = 0,
+                    gz = 0;
+                for (const k of nb) {
+                    let dx = pA2.getX(k) - px,
+                        dy = pA2.getY(k) - py,
+                        dz = pA2.getZ(k) - pz;
+                    const dn = dx * nx + dy * ny + dz * nz;
+                    dx -= dn * nx;
+                    dy -= dn * ny;
+                    dz -= dn * nz;
+                    const L = Math.hypot(dx, dy, dz) || 1e-6;
+                    const w = gArr[k] - gArr[v];
+                    gx += (dx / L) * w;
+                    gy += (dy / L) * w;
+                    gz += (dz / L) * w;
+                }
+                const inv = 1 / nb.length;
+                let mx = nx + gx * inv * seamAmp,
+                    my = ny + gy * inv * seamAmp,
+                    mz = nz + gz * inv * seamAmp;
+                const L = Math.hypot(mx, my, mz) || 1;
+                nA2.setXYZ(v, mx / L, my / L, mz / L);
+            }
+            nA2.needsUpdate = true;
+            seamG = gArr; // an den AO-Pass weiterreichen (die Furche auch verschatten)
         }
         // wahrerguss System A×D — GEBACKENE AO (Substanz, der „flach-einfarbig"-Heiler): die
         // KRÜMMUNG pro Vertex (Konkavität = Mulde → verschattet · Konvexität = Grat → voll) wird
@@ -15467,7 +15573,13 @@ class AnazhRealm {
             // BREITE Anatomie, kein Facetten-Rauschen. Die Furche ist ECHT (im Feld, nicht gemalt).
             // GETEILT: Avatar · jede Kreatur · jedes Tier fließen durch DENSELBEN Pass (die Synergie).
             const sharpen = opts && Number.isFinite(opts.creaseSharpen) ? opts.creaseSharpen : 5.0;
-            if (sharpen > 0) {
+            const wMesh = opts && Number.isFinite(opts.creaseMix) ? opts.creaseMix : 0.62;
+            const nSmooth = opts && Number.isFinite(opts.normalSmooth) ? opts.normalSmooth : 3;
+            // ENTKOPPELT: die Verschiebung (sharpen, lumpen-anfällig) und der Mesh-Normal-Blend
+            // (liest das ECHTE Relief sauber) sind unabhängig. Avatar: sharpen 0 (kein Lumpen) +
+            // Mesh-Blend (Sixpack/Pec aus der echten Geometrie, viel geglättet) → sauber UND scharf.
+            if (sharpen > 0 || wMesh > 0) {
+              if (sharpen > 0) {
                 // 1) UNSCHÄRFE-MASKE — Geometrie entlang der Feld-Normale ∝ Konkavität verschieben.
                 //    Der Betrag ist GRÖSSEN-/AUFLÖSUNGS-SKALIERT (≈2.2 % der Modell-Spanne): ein FESTER
                 //    Betrag zerriss die dünnen Glieder einer kleinen Kreatur bei res 64, während er den
@@ -15494,6 +15606,8 @@ class AnazhRealm {
                     pA.setZ(v, pA.getZ(v) - nA.getZ(v) * d);
                 }
                 pA.needsUpdate = true;
+              }
+              if (wMesh > 0) {
                 // 2) MESH-NORMALEN aus der geschärften Geometrie (Flächen-Normalen akkumuliert),
                 //    1 Glättungspass gegen Facetten-Wobble, dann mit der sauberen Feld-Normale
                 //    gemischt (Feld = weiche Basis, Mesh = Furchen-Detail) → Relief OHNE Müll.
@@ -15530,8 +15644,8 @@ class AnazhRealm {
                     nm[v + 1] /= L;
                     nm[v + 2] /= L;
                 }
-                let nmS = nm; // 3 Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
-                for (let it = 0; it < 3; it++) {
+                let nmS = nm; // Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
+                for (let it = 0; it < nSmooth; it++) {
                     const src = nmS;
                     const dst = new Float32Array(VC * 3);
                     for (let v = 0; v < VC; v++) {
@@ -15551,7 +15665,6 @@ class AnazhRealm {
                     }
                     nmS = dst;
                 }
-                const wMesh = opts && Number.isFinite(opts.creaseMix) ? opts.creaseMix : 0.62;
                 for (let v = 0; v < VC; v++) {
                     let fx = nA.getX(v) * (1 - wMesh) + nmS[v * 3] * wMesh,
                         fy = nA.getY(v) * (1 - wMesh) + nmS[v * 3 + 1] * wMesh,
@@ -15560,6 +15673,7 @@ class AnazhRealm {
                     nA.setXYZ(v, fx / L, fy / L, fz / L);
                 }
                 nA.needsUpdate = true;
+              }
             }
             const colors = new Float32Array(VC * 3);
             for (let v = 0; v < VC; v++) {
@@ -15573,7 +15687,10 @@ class AnazhRealm {
                 // pechschwarzer Riss); der Grat-Boost ist gedeckelt (kein Über-Glanz).
                 const cav = Math.max(0, occ[v]);
                 const ridge = Math.max(0, -occ[v]); // konvex = Grat / Muskel-Bauch
-                const ao = Math.max(0.58, Math.min(1.12, 1 - cav * 1.7 + ridge * 0.5));
+                // SEAM-GROOVE verschattet die analytische Muskel-Naht zusätzlich (Schatten IM Tal →
+                // der Sixpack/Pec liest auch bei flachem Licht, nicht nur über die Normale).
+                const seam = seamG ? seamG[v] * seamG[v] : 0; // quadriert → nur das Naht-ZENTRUM verschattet (dünne Furche, kein breiter Fleck)
+                const ao = Math.max(0.5, Math.min(1.12, 1 - cav * 1.7 + ridge * 0.5 - seam * 0.3));
                 colors[v * 3] = ao;
                 colors[v * 3 + 1] = ao;
                 colors[v * 3 + 2] = ao;
@@ -15701,7 +15818,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 112, taubinPasses: 4 }); // Avatar: HOHE Auflösung + weniger Glättung (einmal gebaut → feines Muskel-Detail wie Sixpack/Linea-alba überlebt)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 10, seamWidth: 0.1 }); // Avatar: glatte Feld-Haut (terrassen-immun) + ANALYTISCHE Seam-Grooves → Sixpack/Pec/Lat/Rückenrinne aus den Muskel-Naht-SDFs (gitter-unabhängig, der Profi-Detail-Normal-Hebel)
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
