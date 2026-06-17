@@ -212,6 +212,66 @@ ein besserer Fuß-IK im Motion-Kern → der Spieler UND jedes Reh UND jeder Drac
 
 ---
 
+## §2½ — DIE KLINGE FÜR DEN ERSTEN GUSS (zwei gemessene Wurzeln — Schöpfer-Rückmeldung 17.06.)
+
+> **DAS IST DER SCHARF GESCHLIFFENE EINSTIEG DER NÄCHSTEN SESSION.** Eine Rückmeldung las den
+> ECHTEN Code (nicht ein Gefühl) und fand: das Reh ist eine horizontale Rakete mit Stummeln, der
+> Humanoid ein weicher Schlauch — OBWOHL `_creatureSkeleton` (14432) schon korrekt ist (zwei
+> lasttragende Blöcke · gekrümmte Topline/Tiefe/Breite an 9 Stationen 14506/14514/14522 · Beine mit
+> Stifle 14574). **Der Befund: die Korrektheit ist schon drin und kommt nicht durch.** Zwei Wurzeln,
+> beide physikalisch, beide MESSBAR. „Mehr Korrektheit reinschreiben" ist NICHT die Lücke.
+
+**WURZEL 1 — die Pipeline TIEFPASS-FILTERT die Korrektheit weg (Säule I, messbar).**
+Die Profile kodieren das Reh in der **Varianz ZWISCHEN den Stationen** (tiefe Brust · Flanken-Tuck ·
+hohe Kruppe). Dann jagen zwei starke Tiefpässe genau diese Varianz aus: smin mit großem `k` (für
+Körpermassen läuft k gegen 0.12, ~Z15076) zieht die Scheiben zu ihrem Mittel + 6× Taubin λ=0.46
+(~Z15225) mittelt weiter. Das Mittel verschmierter Reh-Scheiben **IST** ein horizontales Ellipsoid.
+Ich habe diese Session an k/Taubin/Auflösung geschraubt, ohne diese Signalverarbeitung zu sehen.
+- **MESSEN ZUERST (die Wand):** das Iso-Surface VOR/NACH Taubin dumpen → das Verschwinden von Kruppe
+  + Brustkorb sehen (eine ZAHL, kein Gefühl). NICHT blind halbieren.
+- **Fix:** k für Körpermassen runter + Taubin auf 1–2 Pässe (seit die Feld-Gradienten-Normale steht,
+  war die starke Glättung Über-Versicherung fürs Shading). ABER: die Glättung war auch der Grund, dass
+  dünne Beine nicht erodieren (→ die Kreatur-Fuß-Verbindung dieser Session) — den Tradeoff am Iso-Dump
+  ablesen, gezielt senken, nicht schlachten. Schärfen durch WEGLASSEN des Stumpfmachens.
+
+**WURZEL 2 — Muskel ist DYNAMIK, nicht Statik (die Brücke zwischen Säule I und II — der geniale Hebel).**
+Was ein Reh als Reh lesbar macht, ist die **Hinterhand** (Gluteus + Biceps femoris, der Galopp-Motor);
+Vorderbein = passive Strebe, Hinterbein = Maschine. Diese Front-Strebe/Heck-Motor-Asymmetrie IST die
+Signatur eines Lauftiers. Mein Code kennt sie nicht: alle vier Beine bekommen denselben `legR`, keine
+Muskel-Ellipsoide (anders als der Humanoid mit Deltoideus/Wade). **Ω-PHYSIS ist ein STATISCHER Richter
+— und Statik wächst NIE einen Muskel (ein Tisch steht ohne einen einzigen).** Muskel existiert für die
+SPITZENKRAFT der BEWEGUNG. Das Gesetz, das die Form unausweichlich erzwingt:
+> **Muskel-Querschnitt ∝ Spitzen-Gelenk-Drehmoment über den Gangzyklus / Hebelarm.**
+Das liegt in **Ω-CHRONOS (Dynamik)**, nicht Ω-PHYSIS (Statik). Füttere es → Hinterhand, Hals-Bemuskelung
+(Kragträger-Moment, den Kopf vorzuhalten), Front/Heck-Asymmetrie emergieren ZWANGSLÄUFIG. **Das ist das
+Bindeglied, das Säule I (Form) und Säule II (Bewegung) VEREINT** — dieselbe Gang-Wahrheit speist beide.
+- **Bau:** ein winziges Gangzyklus-Drehmoment-Modell → Muskel-Querschnitt pro Segment, gefüttert in
+  `buildLeg` + die Massen-Ableitung. Am MENSCHEN schärfen (der unbarmherzigere Fall — jeder kennt jeden
+  Muskel), der Vierbeiner ERBT die geteilte Grammatik.
+
+**BEDINGUNG (ii) — die Repräsentation muss das Ergebnis HALTEN können (Säule I).**
+Das Auge liest „korrekt" an den LANDMARKEN: Schulterblatt-Gräte · Patella · Olecranon · Sehnen-Linie am
+Sprunggelenk · Jochbein. Smin-Blobs + Taubin können eine knöcherne Kante STRUKTURELL nicht halten — sie
+sind gebaut, sie wegzuräumen. Kein Ruf nach Stilisierung, das Gegenteil: **anisotrope Formen + selektiv
+scharfe Features an den Landmarken** (weiche Muskelbäuche UND scharfe Knochen-Vorsprünge).
+
+**MEINE NACHSCHÄRFUNG (verifizieren, nicht blind übernehmen — die eigene Disziplin):**
+- Die Rückmeldung sagt „kein echter Drehmoment-Löser im Code". ZU SCHARF: `_swingDynamics().τ_potential`
+  + `_loadPath()` RECHNEN Drehmoment/Steifigkeit — aber sie speisen den Bauplan-RESONANZ-Readout, NICHT
+  die Kreatur-MASSE. Die Schlussfolgerung steht (Statik formt keinen Muskel; die Kreatur leitet keine
+  Muskel-Masse ab), nur die Grep-Behauptung ist überzogen → vor dem Bau die echte Quelle lesen.
+- **Der Baum BEWEIST die These + verurteilt die Körper-Pipeline:** er wurde gut, weil (a) die Regel
+  physik-wahr wurde (Verzweigung · da Vincis Rohr-Modell · Phyllotaxis · Taper) UND (b) die Ausgabe der
+  Regel ERHALTEN blieb (Taper in die Geometrie gebacken, nicht weggeglättet). Dem Körper fehlen BEIDE:
+  die Regel ist die falsche Physik (Statik) UND die Ausgabe wird weggeglättet.
+
+**DER ERSTE GUSS, NEU GESCHLIFFEN (ersetzt nicht die §4-Reihenfolge, schärft GUSS 1+2):**
+nicht „mehr Korrektheit reinschreiben", sondern (1) **aufhören, die vorhandene Korrektheit
+wegzuglätten** (Iso-Dump messen → k/Taubin gezielt) + (2) **das dynamische Muskel-Gesetz bauen**
+(Drehmoment→Querschnitt, am Menschen) + (3) **anisotrope/Landmark-Primitive**, die das Ergebnis halten.
+
+---
+
 ## §3 — DIE ARCHITEKTUR-ENTSCHEIDUNG (deine Wahl, ehrlich)
 
 Die Repräsentations-Decke ist real und gehört dem Schöpfer:
@@ -241,8 +301,11 @@ GUSS 1  SÄULE II-1  KONVERGENZ DES MOTION-KERNS    ← billig, „eine Quelle" 
         (der eine Kern)  + lokale Spieler-Animation     der eigene Avatar animiert endlich; Fundament
         ▼ [GATE: alle Körper durch _animateCompoundMotion, kein _animateHuman-Aufruf; Spieler bewegt sich]
 GUSS 2  SÄULE I     DIE REICHE GLIED-/MUSKEL-GRAMMATIK ← die schönen Körper (das, was du siehst);
-        (Schönheit)      (Avatar + Kreatur geteilt)        Muskel-Massing + Gesicht-aus-Feld + Detail-Pass
-        ▼ [GATE: liest als Körper mit Muskeln/Anatomie, nicht als Röhren-Blob; Augen jeder Winkel]
+        (Schönheit)      (Avatar + Kreatur geteilt)        die KLINGE §2½: (1) Iso-Dump messen → k/Taubin
+                         GREIFT §2½                        senken (Korrektheit nicht wegglätten) · (2) Muskel
+                                                           ∝ Gang-Drehmoment/Hebel (Ω-CHRONOS) · (3) anisotrope
+                                                           + Landmark-Primitive · Gesicht-aus-Feld · Detail-Pass
+        ▼ [GATE: liest als Körper mit Hinterhand/Muskeln/Landmarken, nicht als Röhren-Blob/Rakete; Augen jeder Winkel]
 GUSS 3  SÄULE II-2  AAA-SCHICHTEN IN DEN KERN         ← Fuß-IK/Foot-Lock + Blending + Spring-Sekundär
         (AAA-Motion)     (hebt Spieler + alle Kreaturen)   + Gangart aus Tempo + Hand-IK ans Gerät
         ▼ [GATE: kein Fuß-Sliding, keine Pose-Snaps, Schwanz/Haar schwingt nach; diag-motion + Auge]
