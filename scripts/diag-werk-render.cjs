@@ -376,6 +376,53 @@ async function renderWerk(page, bpName, view) {
                             m.castShadow = true;
                             grp.add(m);
                         }
+                    } else if (window.__smoothskel) {
+                        // GLATTER ÉCORCHÉ: die Metaball-Iso-Fläche (wie die Haut sie verschmilzt), aber
+                        // jeder Vertex nach dem NÄCHSTEN Part-Typ eingefärbt — Muskel(def)=rot, Knochen=
+                        // beige, sonst Haut. So sieht man den Muskel-Körper GLATT (fairer Referenz-Vergleich),
+                        // nicht als rohe Ellipsoide. (Muskel liegt aussen → die Oberfläche ist meist rot;
+                        // Knochen nur, wo er die Aussenfläche ist: Hände/Füße/Schädel.)
+                        const geom = r._buildCreatureSkinGeometry(parts, { res: 112, taubinPasses: 4 }); // höhere Auflösung → glatter, weniger Facetten
+                        if (geom) {
+                            const pos = geom.attributes.position;
+                            const col = new Float32Array(pos.count * 3);
+                            const RED = [0.78, 0.27, 0.21],
+                                BONE = [0.9, 0.86, 0.76],
+                                SKIN = [0.84, 0.72, 0.6];
+                            for (let i = 0; i < pos.count; i++) {
+                                const vx = pos.getX(i),
+                                    vy = pos.getY(i),
+                                    vz = pos.getZ(i);
+                                let best = 1e9,
+                                    bt = 2;
+                                for (const p of parts) {
+                                    if (!p.size || !p.position) continue;
+                                    const dx = vx - p.position.x,
+                                        dy = vy - p.position.y,
+                                        dz = vz - p.position.z;
+                                    const r0 = (Math.abs(p.size.x) + Math.abs(p.size.y) + Math.abs(p.size.z)) / 3 * 0.5;
+                                    // Muskel liegt AUSSEN → ein def-Bonus (−0.12 KH) lässt Muskel die Oberfläche
+                                    // gewinnen, wo er einen Knochen knapp deckt; Knochen gewinnt nur, wo er WIRKLICH
+                                    // die Aussenfläche ist (Hände/Füße/Schädel — dort ist kein Muskel nah).
+                                    const d = Math.hypot(dx, dy, dz) - r0 - (p.def ? 0.12 : 0);
+                                    if (d < best) {
+                                        best = d;
+                                        bt = p.def ? 0 : p.material === "knochen" ? 1 : 2;
+                                    }
+                                }
+                                const c = bt === 0 ? RED : bt === 1 ? BONE : SKIN;
+                                col[i * 3] = c[0];
+                                col[i * 3 + 1] = c[1];
+                                col[i * 3 + 2] = c[2];
+                            }
+                            geom.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+                            const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0 });
+                            const skin = new THREE.Mesh(geom, mat);
+                            skin.castShadow = true;
+                            grp.add(skin);
+                        } else {
+                            window.__treeInfo += " NO-GEOM";
+                        }
                     } else {
                         const geom = r._buildCreatureSkinGeometry(parts);
                         if (geom) {
@@ -578,7 +625,8 @@ async function renderWerk(page, bpName, view) {
                 await new Promise((r) => setTimeout(r, 100));
         });
         const FILTER = process.argv[2] || ""; // optionaler Substring-Filter (bp+file) für gezielte Werk-Renders
-        if (process.argv[3] === "skel") await page.evaluate(() => (window.__skel = true)); // DEBUG: Skelett statt Haut
+        if (process.argv[3] === "skel") await page.evaluate(() => (window.__skel = true)); // DEBUG: rohe Ellipsoide (Skelett+Muskel)
+        if (process.argv[3] === "smooth") await page.evaluate(() => (window.__smoothskel = true)); // GLATTER Écorché: Iso-Fläche, rot/beige nach Part-Typ eingefärbt (fairer Referenz-Vergleich)
         if (process.argv[3] === "norm") await page.evaluate(() => (window.__normskin = true)); // DEBUG: Normalen als RGB
         // COLD-START-FIX: den Spiel-Loop EINMAL einfrieren BEVOR der erste Werk-Render läuft —
         // sonst erwischte der erste Screenshot (front) das Welt-Frame statt des isolierten Werks
@@ -616,6 +664,12 @@ async function renderWerk(page, bpName, view) {
             ["humanoid:0", "werk-humanoid-front.png", "front"], // GUSS 1: anatomisches Skelett → Metaball-Haut
             ["humanoid:0", "werk-humanoid-seite.png", "side"], // Profil (A-Pose, V-Taper)
             ["humanoid:1", "werk-humanoid-frau.png", "front"], // Sanduhr (sex=1)
+            // ÉCORCHÉ-DETAILSHOTS (mit `skel`-Arg: Muskel rot + Knochen beige) — Fischer-Vergleich mit der Referenz
+            ["humanoid:0", "ecorche-head.png", "head"],
+            ["humanoid:0", "ecorche-torso.png", "torso"],
+            ["humanoid:0", "ecorche-back.png", "back"],
+            ["humanoid:0", "ecorche-front.png", "front"],
+            ["humanoid:0", "ecorche-side.png", "side"],
             ["humanoidrig:bind:0", "werk-rig-bind.png", "front"], // GUSS 2: SkinnedMesh Bind-Pose
             ["humanoidrig:rest:0", "werk-rig-rest.png", "front"], // Kontrapost-Ruhepose (S-Kurve)
             ["humanoidrig:rest:0", "werk-rig-rest-seite.png", "side"], // Kontrapost Profil

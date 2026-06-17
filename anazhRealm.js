@@ -15147,15 +15147,13 @@ class AnazhRealm {
         // ── GESICHTS-MUSKEL-SCHICHT (Écorché: rote Mienenmuskeln über dem beigen Schädel) ──
         //    Dünne, schädel-anliegende Fleisch-Blätter (def → rot), die der smin in die Gesichts-Ebene
         //    einschmilzt — KEINE aufgeklebten Tropfen, geringe z-Halbweite. Augen-Partie bleibt FREI.
-        add("box", limbMat, 0, 7.78, 0.24, 0.4 * hr, 0.16 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.74 }); // Frontalis (Stirn)
+        //    Befund (Fischer, Kopf-Detailshot): diskrete Pads = Googly-Blobs, kein Referenz-Gesicht.
+        //    Nur FLACHE, schädel-anliegende Blätter, die der smin in die Gesichts-Ebene einschmilzt;
+        //    die Augenhöhle bleibt eine MULDE aus der Schädel-Form (Brauen + Jochbein), kein Pad-Ring.
+        add("box", limbMat, 0, 7.74, 0.26, 0.42 * hr, 0.22 * hr, 0.08 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (breites flaches Stirn-Blatt)
         for (const s of [-1, 1]) {
-            add("box", limbMat, s * 0.5 * hr, 7.6, -0.02, 0.09 * hr, 0.22 * hr, 0.18 * hr, null, limbCol, { def: true, kScale: 0.7 }); // Temporalis — flach AN der Schläfe (war x0.6/z-tief0.24 → stand als „Ohrenmuffe" ab); hugt den Schädel
-            add("box", limbMat, s * 0.2 * hr, 7.66, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — oberer Bogen
-            add("box", limbMat, s * 0.2 * hr, 7.44, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — unterer Bogen
-            add("box", limbMat, s * 0.33 * hr, 7.55, 0.32, 0.045 * hr, 0.1 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — lateraler Schenkel
-            add("box", limbMat, s * 0.09 * hr, 7.55, 0.34, 0.04 * hr, 0.1 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — medialer Schenkel
-            limb(s * 0.3 * hr, 7.46, 0.22 * hr, s * 0.12 * hr, 7.18, 0.3 * hr, 0.09 * hr, limbMat, limbCol, { def: true, kScale: 0.7 }); // Zygomaticus (Wange → Mundwinkel)
-            add("box", limbMat, s * 0.08 * hr, 7.36, 0.36, 0.05 * hr, 0.08 * hr, 0.04 * hr, null, limbCol, { def: true, kScale: 0.62 }); // Nasalis (Nasenflügel)
+            add("box", limbMat, s * 0.5 * hr, 7.58, -0.02, 0.1 * hr, 0.28 * hr, 0.2 * hr, null, limbCol, { def: true, kScale: 0.74 }); // Temporalis (flacher Schläfen-Fächer, hugt den Schädel)
+            limb(s * 0.31 * hr, 7.47, 0.24 * hr, s * 0.14 * hr, 7.16, 0.32 * hr, 0.11 * hr, limbMat, limbCol, { def: true, kScale: 0.72 }); // Zygomaticus + Wangen-Masse (Jochbein → Mundwinkel, deckt die Wange)
         }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
