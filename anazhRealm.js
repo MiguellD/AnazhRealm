@@ -15050,6 +15050,7 @@ class AnazhRealm {
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
         add("box", "knochen", 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 1.5, 0.12, 0.2, null, limbCol, {
             kScale: 0.46,
+            struct: true,
         });
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
@@ -15327,9 +15328,10 @@ class AnazhRealm {
                 p.size.x *= COVER;
                 p.size.z *= COVER;
             } else if (p.material === "knochen" && p.struct) {
-                // innerer Struktur-Knochen: schmaler/flacher → verschwindet im Fleisch (kein nacktes Display).
-                p.size.x *= 0.74;
-                p.size.z *= 0.74;
+                // innerer Struktur-Knochen: deutlich schmaler/flacher → sitzt TIEF im Fleisch (der Muskel
+                //    deckt ihn, kein nackter Knochen-Fleck zwischen den Muskeln, Referenz-Écorché).
+                p.size.x *= 0.6;
+                p.size.z *= 0.6;
             }
         }
         return parts;
