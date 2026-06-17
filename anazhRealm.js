@@ -15066,6 +15066,12 @@ class AnazhRealm {
             const kl = Math.sqrt(ex * ex + ey * ey + ez * ez);
             return (kl - 1) * bn.rmin; // Iso (=0) EXAKT das Ellipsoid; Betrag ~ kleinste Achse (smin-Blend)
         };
+        // lebendiger-koerper §2½ WURZEL 1 — die smin-Blend-Breite k ist der erste TIEFPASS:
+        // ein grosses k an den Körper-Massen zieht die anatomischen Scheiben (tiefe Brust ·
+        // Flanken-Tuck · hohe Kruppe) zu ihrem Mittel = ein horizontales Ellipsoid. kMax ist
+        // opt-parametrisiert (Default 0.12 = das vorige Verhalten), damit diag-koerper-tiefpass
+        // den Tradeoff (definierte Kante vs. erodierende dünne Glieder) am Iso-Dump MISST.
+        const kMax = opts && Number.isFinite(opts.kMax) ? opts.kMax : 0.12;
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
@@ -15073,7 +15079,7 @@ class AnazhRealm {
                 // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
                 // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
                 // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
-                const k = Math.min(0.12, Math.max(0.03, bn.rmin * 0.55));
+                const k = Math.min(kMax, Math.max(0.03, bn.rmin * 0.55));
                 d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
@@ -15222,9 +15228,18 @@ class AnazhRealm {
                     verts[v * 3 + 2] += (az * inv - src[v * 3 + 2]) * factor;
                 }
             };
-            for (let pass = 0; pass < 6; pass++) {
-                relax(0.46); // λ glätten — mehr Pässe räumen die Stations-RINGE des Leibs weg (der
-                relax(-0.49); // konvexe Reh-Leib pincht nicht mehr); μ<−λ zurück-blähen → Taubin (kein Schrumpf)
+            // lebendiger-koerper §2½ WURZEL 1 — die Taubin-Pässe sind der zweite TIEFPASS: jeder
+            // λ-Pass mittelt die Nachbar-Vertices, viele Pässe räumen die Stations-RINGE (Kruppe/
+            // Brustkorb/Taille) weg, die _creatureSkeleton/_humanoidSkeleton in die VARIANZ zwischen
+            // den Stationen kodieren. Passes + λ/μ sind opt-parametrisiert (Default = das vorige
+            // Verhalten: 6× 0.46/−0.49), damit diag-koerper-tiefpass den Tradeoff (glatte Haut vs.
+            // wegerodierte Anatomie) am Iso-Dump MISST statt blind zu halbieren.
+            const tPasses = opts && Number.isFinite(opts.taubinPasses) ? opts.taubinPasses : 6;
+            const tLambda = opts && Number.isFinite(opts.taubinLambda) ? opts.taubinLambda : 0.46;
+            const tMu = opts && Number.isFinite(opts.taubinMu) ? opts.taubinMu : -0.49;
+            for (let pass = 0; pass < tPasses; pass++) {
+                relax(tLambda); // λ glätten
+                relax(tMu); // μ<−λ zurück-blähen → Taubin (volumen-erhaltend, kein Schrumpf)
             }
         }
         const geom = new THREE.BufferGeometry();

@@ -378,6 +378,28 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### lebendiger-koerper §2½ — DIE WAND MISST: WURZEL 1 REFUTIERT, WURZEL 2 IST DER HEBEL (17.06.2026)
+
+Der §2½-Auftrag der letzten Doc-Welle war scharf: „MESSEN ZUERST (die Wand) … NICHT blind
+halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat die eigene Hypothese
+(WURZEL 1) **überstimmt**. Das ist die Disziplin, die funktioniert, kein Fehlschlag.
+
+- **GEBAUT:** `scripts/diag-koerper-tiefpass.cjs` (die Wand) + die minimale, verhaltens-erhaltende
+  Parametrierung von `_buildCreatureSkinGeometry` (`opts.taubinPasses/taubinLambda/taubinMu/kMax`,
+  Defaults = das vorige Verhalten → bit-gleich, null Regression; die zwei WURZEL-1-Hebel sind jetzt
+  am Iso-Dump messbar).
+- **GEMESSEN (die ZAHL):** das Reh-Rücken-Relief überlebt 6× Taubin zu **~101 %** (std 0.0361→0.0363),
+  die Humanoid-Silhouetten-Taille zu **~100 %**, der k-Deckel (0.12→0.06) ändert **< 0.5 %**. → Taubin
+  + smin-k filtern die anatomische MAKRO-Korrektheit NICHT weg (sie räumen Hochfrequenz-Facetten, ihr
+  Job). **WURZEL 1 („die Pipeline glättet die Kruppe/Brust weg") ist REFUTIERT.** Ein blindes Halbieren
+  hätte die dünnen Beine erodiert + den „Rakete/Schlauch"-Look NICHT geheilt.
+- **HEBEL bestätigt (am Skelett):** `_creatureSkeleton.buildLeg` baut alle vier Beine aus EINEM `legR`
+  (Wand misst `frontR == rearR == 0.0736`, 8 Segmente). Keine Hinterhand-/Schulter-/Hals-Masse — die
+  Front-Strebe/Heck-Motor-Asymmetrie fehlt. **WURZEL 2 (Muskel als Dynamik) ist der echte erste Guss.**
+- **LEHRE (verallgemeinert):** ein plausibler, präzise benannter Fix-Pfad („senke k/Taubin") ist KEIN
+  Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
+  WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
+
 ### V18.256 — DER WAHRE WUCHS: DIE VOLLE TIEFE T1–T6 (in EINEM Schub, FORM × PHYSIK × ANBLICK-headless)
 
 Der V18.255-Selbst-Audit (`wahrerwuchs.md §9`) fand: das Genom-GERÜST steht (Headline-Achse je

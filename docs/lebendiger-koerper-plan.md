@@ -272,6 +272,46 @@ wegzuglätten** (Iso-Dump messen → k/Taubin gezielt) + (2) **das dynamische Mu
 
 ---
 
+### §2½-BEFUND — DIE WAND HAT GEMESSEN (17.06.2026, `scripts/diag-koerper-tiefpass.cjs`)
+
+> **WURZEL 1 IST REFUTIERT. Die Wand hat genau das getan, wozu „MESSEN ZUERST" da ist:
+> einen plausiblen Fix als Holzweg entlarvt, BEVOR er gebaut wurde.**
+
+Die Wand (`diag-koerper-tiefpass.cjs`) baut die ECHTE Skin-Geometrie (Reh = `CREATURE_SOULS.wesen` ·
+Humanoid = `_humanoidSkeleton`) bei 0–6 Taubin-Pässen und k-Deckeln 0.12/0.08/0.06 und liest das
+überlebende RELIEF ab (Reh-Rücken-Profil · Humanoid-Silhouetten-Taille). Die Pipeline ist dafür
+opt-parametrisiert (`opts.taubinPasses/taubinLambda/taubinMu/kMax`, Defaults = das vorige Verhalten,
+GEMESSEN bit-gleich → null Regression). Die Zahlen:
+
+- **Reh-Rücken-Relief 6× vs. roh: ~101 %** (std 0.0361 → 0.0363). Die Topline-Profile pre/post sind
+  bis auf ~0.002 identisch; die Kruppe steht in BEIDEN.
+- **Humanoid-Taille 6× vs. roh: ~100 %** (Schulter ~1.8 → Taille → Hüfte intakt pre und post).
+- **k-Deckel 0.12 → 0.06: < 0.5 % Änderung** am Relief.
+
+**Heißt: Taubin + smin-k filtern die anatomische MAKRO-Korrektheit NICHT weg** — sie räumen die
+Hochfrequenz-Facetten weg (ihr Job). Ein blindes Halbieren von Taubin/k hätte die Oberfläche
+rauer gemacht + die dünnen Beine erodiert (der §2½-Tradeoff) — OHNE den „Rakete/Schlauch"-Look zu
+heilen. Die Topline-Welle, die Taille: alle DA, alle bewahrt.
+
+**WURZEL 2 IST DER HEBEL (am Skelett bestätigt).** `_creatureSkeleton.buildLeg` baut alle vier Beine
+aus EINEM `legR` (`segBetween` r=legR·1.15/0.84) — die Wand misst `frontR == rearR == 0.0736`,
+8 Bein-Segmente, perfekt symmetrisch. Vorder- und Hinterbein unterscheiden sich NUR im Stifle-Knick
+(`kneeFwd`/`footFwd`), NIE in der MASSE. Keine Hinterhand (Gluteus/Biceps femoris), keine Schulter-,
+keine Hals-Bemuskelung. Der Leib selbst trägt schon anisotrope Stationen (Topline/Tiefe/Breite-Kurven,
+14506–14528) → die Brust/Flanke/Kruppe SIND geformt (deckt sich mit der Relief-Messung). **Was fehlt,
+ist die Front-Strebe/Heck-Motor-Asymmetrie + die Muskel-Bäuche — exakt WURZEL 2.** Das „Reh = Rakete"
+kommt NICHT vom Wegglätten, sondern vom fehlenden Muskel-Massing + der Stummel-Symmetrie der Beine.
+
+**DER GESCHÄRFTE ERSTE GUSS (post-Messung):** (1) ~~Taubin/k senken~~ → GESTRICHEN (kein Hebel,
+gemessen; die Wand bewacht das Halbieren jetzt als Invariante). (2) **WURZEL 2 bauen — das dynamische
+Muskel-Gesetz** (Gang-Drehmoment → Querschnitt → Hinterhand/Schulter/Hals-Bäuche + Front/Heck-
+Asymmetrie, am Menschen geschärft, der Vierbeiner erbt). (3) **anisotrope/Landmark-Primitive**
+(BEDINGUNG ii — Schulterblatt-Gräte/Patella/Olecranon scharf halten). Die Wand-Invariante „HEBEL
+WURZEL 2: Beine symmetrisch" FLIPPT, wenn der Bau landet (`rearR > frontR`) — der Test wandert mit
+dem Code.
+
+---
+
 ## §3 — DIE ARCHITEKTUR-ENTSCHEIDUNG (deine Wahl, ehrlich)
 
 Die Repräsentations-Decke ist real und gehört dem Schöpfer:
