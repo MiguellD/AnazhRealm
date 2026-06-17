@@ -14860,7 +14860,7 @@ class AnazhRealm {
         //    der Rücken curve, kein Brett. Drei Segmente, je z-versetzt.
         add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, { kScale: 0.58 }); // Lende (lumbar, vor)
         add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, { kScale: 0.58 }); // Brust (thoracic, zurück)
-        add("box", "knochen", 0, 6.66, -0.12 * girthF, 0.28, 0.55, 0.2 * girthF, null, limbCol, { kScale: 0.54 }); // Hals (cervical, vor)
+        add("box", "knochen", 0, 6.95, -0.07 * girthF, 0.3, 1.2, 0.22 * girthF, null, limbCol, { kScale: 0.54 }); // Halswirbelsäule (cervical) — REICHT JETZT bis zum Schädel (verband den schwebenden Kopf)
         // GESÄSS — ZWEI Glute-Massen hinter dem Becken (statt EINER brückenden Platte, die die
         // Oberschenkel zu einem Rock verschmolz, GEMESSEN am Avatar-Render): links/rechts mit
         // Mittel-Spalt → das Gesäß liest ALS Gesäß UND der Spalt zwischen den Schenkeln öffnet
@@ -14961,7 +14961,14 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.16, -0.02, 0, 7.18, -0.02, 0.37 * (0.9 + muscle * 0.25), bodyMat, bodyCol); // Hals (länger + schlanker → liest als Hals, nicht verschluckt)
+        limb(0, shoulderY - 0.16, -0.02, 0, 7.22, -0.02, 0.46 * (0.9 + muscle * 0.25), bodyMat, bodyCol); // Hals (DICKER → trägt den Kopf, kein schwebender Eindruck)
+        // STERNOCLEIDOMASTOIDEUS — die zwei vorderen Hals-Stränge (Ohr→Schlüsselbein): füllen den
+        //    Hals→Brust-Übergang, sodass der Kopf SITZT statt zu schweben (Schöpfer-Befund).
+        for (const s of [-1, 1])
+            add("sphere", bodyMat, s * 0.16, 6.7, 0.12, 0.16 * mF, 0.7, 0.18, { x: 0, y: 0, z: s * 0.12 }, bodyCol, {
+                kScale: 0.82,
+                def: true,
+            });
         add("sphere", headMat, 0, 7.74, -0.02, 0.84 * hr, 0.87 * hr, 0.87 * hr, null, limbCol, {
             bodyRole: "head",
             eyeFront: 0.85,
