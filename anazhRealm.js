@@ -15690,7 +15690,7 @@ class AnazhRealm {
                 // SEAM-GROOVE verschattet die analytische Muskel-Naht zusätzlich (Schatten IM Tal →
                 // der Sixpack/Pec liest auch bei flachem Licht, nicht nur über die Normale).
                 const seam = seamG ? seamG[v] * seamG[v] : 0; // quadriert → nur das Naht-ZENTRUM verschattet (dünne Furche, kein breiter Fleck)
-                const ao = Math.max(0.5, Math.min(1.12, 1 - cav * 1.7 + ridge * 0.5 - seam * 0.3));
+                const ao = Math.max(0.52, Math.min(1.1, 1 - cav * 1.35 + ridge * 0.45 - seam * 0.3)); // cav milder → weniger Brust-Flecken, die scharfe Naht trägt die Definition
                 colors[v * 3] = ao;
                 colors[v * 3 + 1] = ao;
                 colors[v * 3 + 2] = ao;
@@ -16012,13 +16012,13 @@ class AnazhRealm {
         // statt hier aufgeklebt; das war der Mr.-Potato-Head-Fehler. Hier nur Augen/Lippen/Ohren.)
         // AUGEN — mandelig, EINGESENKT, mit OBERLID (Hautton, deckt die obere Hälfte → halb-gedeckelter
         // Blick) + dunkle Iris + winziger Catchlight-Funke. Augenabstand ≈ eine Augenbreite.
-        const eyeGeom = new THREE.SphereGeometry(0.075 * kh, 14, 12);
-        eyeGeom.scale(1.5, 0.6, 0.5); // breit-flach (mandelig)
+        const eyeGeom = new THREE.SphereGeometry(0.068 * kh, 14, 12);
+        eyeGeom.scale(1.3, 0.58, 0.5); // mandelig, etwas schmaler (kein Weitstarr-Band)
         const lidGeom = new THREE.SphereGeometry(0.094 * kh, 12, 8);
         lidGeom.scale(1.5, 0.72, 0.72);
         const sparkGeom = new THREE.SphereGeometry(0.016 * kh, 8, 6);
         for (const s of [-1, 1]) {
-            const eye = new THREE.Mesh(eyeGeom, eyeMat(0x1b1512, false, 0, 0.16));
+            const eye = new THREE.Mesh(eyeGeom, eyeMat(0x2c2119, false, 0, 0.2)); // dunkelbraun statt fast-schwarz → kein hartes dunkles Band
             eye.position.copy(L(s * 0.18, skullY - 0.06, 0.34));
             eye.castShadow = false;
             rig.head.add(eye);
@@ -16058,9 +16058,9 @@ class AnazhRealm {
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
         const hairGeom = new THREE.SphereGeometry(0.4 * kh, 18, 14);
-        hairGeom.scale(1.12, 0.8, 1.25); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
+        hairGeom.scale(1.08, 0.72, 1.22); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY + 0.28, -0.12)); // HOCH (Scheitel) + zurück → deckt nur Krone+Hinterkopf, Gesicht frei
+        hair.position.copy(L(0, skullY + 0.34, -0.16)); // sitzt auf der Krone (nicht schwebend) + zurück → Stirn frei, kein dunkles Fransen-Band
         hair.castShadow = true;
         rig.head.add(hair);
     }
