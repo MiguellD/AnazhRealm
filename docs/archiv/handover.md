@@ -378,6 +378,32 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### lebendiger-koerper GUSS 1 — WURZEL 2 GEBAUT: MUSKEL ALS DYNAMIK (die Hinterhand wird der Motor, 17.06.2026)
+
+Direkt auf der Mess-Welle: der erste echte Guss am gemessenen Hebel. Mit eigenem Auge (`diag-werk-
+render`, swiftshader-treu) bestätigt: das Reh war ein glatter Tropfen auf vier IDENTISCHEN Nudel-Beinen
+— die Front-Strebe/Heck-Motor-Asymmetrie eines Lauftiers fehlte komplett (Befund der Mess-Welle).
+
+- **GEBAUT (`_creatureSkeleton.buildLeg`):** Muskel-Querschnitt ∝ Spitzen-Gang-Drehmoment (Ω-CHRONOS-
+  Dynamik, NICHT Ω-PHYSIS-Statik). Die Hinterhand (Gluteus/Biceps femoris = der Abstoß-Motor) trägt
+  jetzt eine große PROXIMALE Masse: ein verdicktes Oberglied (`upperR ∝ motor`) + einen fusiformen
+  Schenkel-Bauch an der Kruppe; das Vorderbein eine kleinere Schulter (Strebe); DISTAL bleibt sehnig-
+  dünn (distale Leichtigkeit echter Läufer). Die Muskel-Kapsel überlappt Leib + Glied → der smin
+  verschmilzt sie zu EINEM muskulösen Massiv (kein aufgeklebter Blob — die Mr.-Potato-Lehre).
+  `hindMotor`/`foreMotor`/`limbMuscle` sind Archetyp-Parameter (Default: Läufer).
+- **GEMESSEN (`diag-koerper-tiefpass`):** `rearR 0.147 > frontR 0.105` (×1.40), 12 Bein-Segmente — die
+  Wand-Invariante „WURZEL 2" ist GEFLIPPT (vorher front==rear). Das Makro-Relief bleibt bewahrt
+  (Regression-Anker grün). Mit dem AUGE: das Reh hat jetzt einen muskulösen Hinterschenkel + eine
+  schlanke Vorder-Strebe (ehrlich ~3→~4.5, kein Durchbruch — der Leib bleibt glatt/bulbös, die
+  Landmark-Schärfe [BEDINGUNG ii] ist der nächste Guss).
+- **DIE SYNERGIE (der geteilte Pass):** EINE Änderung an `buildLeg` hebt JEDE Kreatur aus dem Skelett-
+  Gesetz — der Glutwesen-Räuber (bigcat-Archetyp) bekam dieselbe muskulöse Hinterhand gratis (am Auge
+  bestätigt). „Verbessere einen geteilten Pass, und die ganze lebendige Welt hebt sich auf einmal."
+- **VERIFIZIERT:** `diag-genom` voll grün (Physik steht/knickt nicht · Affinität tag-frozen · Allometrie ·
+  Stat-Monotonie — die Muskel-Masse ist limb+limbMat, tag-neutral by construction + bleibt in der
+  Körper-AABB, sizeFactor-stabil V18.208) · Fast-Playtest 13/13. OFFEN (ehrlich): der Mensch (`_humanoid
+  Skeleton`, „am Menschen schärfen") + Landmark-Schärfe + der bulböse Leib — Folge-Güsse.
+
 ### lebendiger-koerper §2½ — DIE WAND MISST: WURZEL 1 REFUTIERT, WURZEL 2 IST DER HEBEL (17.06.2026)
 
 Der §2½-Auftrag der letzten Doc-Welle war scharf: „MESSEN ZUERST (die Wand) … NICHT blind

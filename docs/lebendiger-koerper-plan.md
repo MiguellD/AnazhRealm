@@ -310,6 +310,16 @@ Asymmetrie, am Menschen geschärft, der Vierbeiner erbt). (3) **anisotrope/Landm
 WURZEL 2: Beine symmetrisch" FLIPPT, wenn der Bau landet (`rearR > frontR`) — der Test wandert mit
 dem Code.
 
+**GEBAUT — WURZEL 2 (1. Teil), der VIERBEINER (17.06.):** `_creatureSkeleton.buildLeg` trägt jetzt das
+Muskel-Gesetz: die Hinterhand bekommt ein verdicktes Oberglied + einen fusiformen Schenkel-Bauch
+(Gluteus/Biceps femoris ∝ `hindMotor`), das Vorderbein eine leichtere Schulter (`foreMotor`), distal
+sehnig-dünn. Die Wand misst `rearR 0.147 > frontR 0.105 (×1.40)` (die Invariante GEFLIPPT) bei
+bewahrtem Makro-Relief; `diag-genom` voll grün (Physik/Affinität/Allometrie); am Auge (`diag-werk-
+render`): Reh + Glutwesen-Räuber tragen jetzt muskulöse Hinterhand + schlanke Vorder-Strebe (EINE
+`buildLeg`-Änderung, beide gehoben — die Synergie). Ehrlich ~3→~4.5, kein Durchbruch: der Leib bleibt
+glatt/bulbös. **OFFEN (Folge-Güsse):** der MENSCH (`_humanoidSkeleton` — Gluteus/Quad/Wade/Deltoid,
+„am Menschen schärfen") · BEDINGUNG ii Landmark-Schärfe · der bulböse Leib (Säule-I-Grammatik).
+
 ---
 
 ## §3 — DIE ARCHITEKTUR-ENTSCHEIDUNG (deine Wahl, ehrlich)

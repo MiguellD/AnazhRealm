@@ -286,14 +286,15 @@ function startSaveServer() {
             `deerKeep=${(deerKeep * 100).toFixed(0)}% humanKeep=${(humanKeep * 100).toFixed(0)}% kSwing=${(kSwing * 100).toFixed(0)}%`,
             deerKeep >= 0.9 && humanKeep >= 0.9 && kSwing < 0.1
         );
-        // 4. HEBEL (WURZEL 2, am Skelett bestaetigt): die vier Beine teilen HEUTE legR (front==rear),
-        //    die Hinterhand traegt keine Muskel-Masse — die fehlende Front-Strebe/Heck-Motor-Asymmetrie
-        //    ist der echte Hebel. DIESE Invariante FLIPPT, wenn WURZEL 2 landet (dann rearR > frontR,
-        //    „der Test wandert mit dem Code"). Heute bestaetigt sie die Diagnose.
+        // 4. WURZEL 2 GEBAUT (Muskel als Dynamik): die Hinterhand ist jetzt der Gang-MOTOR — der
+        //    proximale Heck-Querschnitt (Oberglied + Schenkel-Bauch) ist deutlich groesser als die
+        //    Vorder-Strebe (rearR > frontR·1.15). Das ist der Befund-Flip aus der Diagnose-Welle
+        //    („der Test wandert mit dem Code": die vorige Invariante prueefte front==rear).
+        const legRatio = d.legRearR / Math.max(1e-9, d.legFrontR);
         ck(
-            `HEBEL WURZEL 2: die Beine sind heute symmetrisch (legR geteilt) — die Heck-Motor-Masse fehlt`,
-            `frontR=${d.legFrontR} rearR=${d.legRearR}`,
-            d.legSegN >= 8 && d.legSymmetric === true
+            `WURZEL 2: die Hinterhand ist der Motor (rearR ${d.legRearR} > frontR ${d.legFrontR}, ×${legRatio.toFixed(2)})`,
+            `frontR=${d.legFrontR} rearR=${d.legRearR} ratio=${legRatio.toFixed(2)} segs=${d.legSegN}`,
+            d.legSegN >= 8 && legRatio > 1.15
         );
 
         console.log("\n── ERGEBNIS ──");

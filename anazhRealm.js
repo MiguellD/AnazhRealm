@@ -14571,13 +14571,44 @@ class AnazhRealm {
         const hoofCol = typeof limbCol === "number" ? (limbCol >> 1) & 0x7f7f7f : limbCol; // dunkler Huf (tag-neutral)
         const embedY = torsoH * 0.08;
         const groundY = Math.min(bellyShoulder, bellyHip) - legLen; // gemeinsamer Boden → Füße auf einer Ebene
-        const buildLeg = (sgnX, belly, zPos, kneeFwd, footFwd) => {
+        // WURZEL 2 (lebendiger-koerper §2½ — MUSKEL ALS DYNAMIK): die Hinterhand ist der Gang-MOTOR
+        // (Gluteus/Biceps femoris erzeugen das Spitzen-Hüft-Drehmoment beim Abstoß), das Vorderbein
+        // die passive STREBE/der Stoßdämpfer. Muskel-Querschnitt ∝ Spitzen-Gang-Drehmoment — das liegt
+        // in Ω-CHRONOS (DYNAMIK), nicht Ω-PHYSIS (STATIK: ein Tisch steht ohne einen einzigen Muskel).
+        // Darum trägt die Hinterhand eine große PROXIMALE Masse (verdicktes Oberglied + ein Schenkel-
+        // Bauch an der Kruppe), das Vorderbein eine kleinere Schulter; DISTAL bleibt sehnig-dünn (die
+        // distale Leichtigkeit echter Läufer = niedrige Glied-Trägheit). Die Muskel-Kapsel überlappt
+        // Leib + Oberglied → der smin verschmilzt sie zu EINEM muskulösen Massiv (kein aufgeklebter
+        // Blob — die Mr.-Potato-Lehre). TAG-NEUTRAL: limb + limbMat (im Compound-MAX schon da, Maße
+        // zählen nicht), die Masse bleibt INNERHALB der Körper-AABB (sizeFactor-stabil, V18.208).
+        const hindMotor = af("hindMotor", 0.95); // Propulsions-Anteil der Hinterhand (Läufer hoch)
+        const foreMotor = af("foreMotor", 0.5); // Vorderbein = Strebe (leichter)
+        const muscleScale = af("limbMuscle", 1.0);
+        const buildLeg = (sgnX, belly, zPos, kneeFwd, footFwd, motor) => {
             const x = sgnX * stanceX;
             const topY = belly + embedY; // tief im Bauch verankert (glatte Emergenz)
             const footTopY = groundY + legR * 0.95; // das Glied reicht tiefer (kein Schwebe-Spalt zum Fuß)
             const kneeY = topY - (topY - footTopY) * 0.5;
-            segBetween(x, topY, zPos, x, kneeY, zPos + kneeFwd, legR * 1.15); // oberes Glied
-            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, legR * 0.84); // unteres Glied (kräftiger → übersteht die Glättung)
+            const m = Math.max(0, motor || 0) * muscleScale;
+            const upperR = legR * (1.18 + m * 0.62); // PROXIMAL bemuskelt ∝ Motor (Hinterhand dicker als Front)
+            segBetween(x, topY, zPos, x, kneeY, zPos + kneeFwd, upperR); // oberes Glied (Ober-schenkel/-arm)
+            segBetween(x, kneeY, zPos + kneeFwd, x, footTopY, zPos + footFwd, legR * 0.84); // unteres Glied (sehnig, übersteht die Glättung)
+            // MUSKEL-BAUCH — eine fusiforme limb-Kapsel am proximalen Glied, zum Leib + nach oben
+            // gebauscht: am Heck die Kruppe/der Schenkel, vorn die Schulter. Groß ∝ Motor; überlappt
+            // Leib + Oberglied → smin-Verschmelzung. Erst ab spürbarem Motor (kein Mikro-Stummel).
+            if (m > 0.12) {
+                const bz = zPos + (zPos < 0 ? -legLen * 0.05 : legLen * 0.04); // Heck leicht hinter · Schulter leicht vor
+                const by2 = topY + (kneeY - topY) * 0.55; // hinab bis zur Glied-Mitte
+                segBetween(
+                    x * 0.86,
+                    belly + embedY * 1.4,
+                    bz,
+                    x * 0.95,
+                    by2,
+                    zPos + kneeFwd * 0.4,
+                    legR * (0.92 + m * 1.45)
+                );
+            }
             // FUSS/HUF — eine UMHÜLLTE Masse am Glied-Ende (überlappt das Bein → der smin VERBINDET
             // sie, statt eines schwebenden Box-Stummels, den die Glättung vom dünnen Bein abschnürte).
             // Klein, vorn, flach am Boden. KEIN feature:true → Teil der EINEN glatten Haut.
@@ -14595,10 +14626,10 @@ class AnazhRealm {
             );
         };
         const kf = af("kneeFwd", 0.05) * BL;
-        buildLeg(-1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1); // Vorderbein: fast gerade
-        buildLeg(1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1);
-        buildLeg(-1, bellyHip, -hipZ, kf * 1.6, kf * 0.7); // Hinterbein: Z-Knick (Stifle vor)
-        buildLeg(1, bellyHip, -hipZ, kf * 1.6, kf * 0.7);
+        buildLeg(-1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1, foreMotor); // Vorderbein: Strebe, leichte Schulter
+        buildLeg(1, bellyShoulder, shoulderZ, kf * 0.4, kf * 0.1, foreMotor);
+        buildLeg(-1, bellyHip, -hipZ, kf * 1.6, kf * 0.7, hindMotor); // Hinterbein: Motor + Stifle-Knick + Schenkel
+        buildLeg(1, bellyHip, -hipZ, kf * 1.6, kf * 0.7, hindMotor);
 
         // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
         //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
