@@ -15013,7 +15013,16 @@ class AnazhRealm {
             add("sphere", limbMat, uaMidX, uaMidY + 0.12, 0.15 * limbF, 0.25 * limbF, 0.46 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Bizeps
             add("sphere", limbMat, uaMidX, uaMidY, -0.15 * limbF, 0.25 * limbF, 0.52 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Trizeps
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
-            add("box", limbMat, elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen)
+            // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
+            //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
+            //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
+            //    an den Landmarken die Haut bony machen UND die Animations-Achse markieren).
+            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.17 * limbF, "knochen", limbCol); // Humerus-Schaft
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.15 * limbF, "knochen", limbCol); // Radius/Ulna-Schaft
+            add("sphere", "knochen", shX, shY - 0.06, 0, 0.3 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72 }); // Humeruskopf (Schulter-Gelenk)
+            add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.6 }); // Ellbogen-Kondylen
+            add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, { kScale: 0.6 }); // Handwurzel (Handgelenk)
+            add("box", "knochen", elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen, knochen)
             // HAND — eine RUHENDE HAND als ZUSAMMENHÄNGENDE Masse (Profi-Stilisierung: Handteller +
             // leicht eingekrümmtes Finger-PAKET + abgespreizter Daumen — KEINE dünnen Klauen-Streben,
             // die der scharfe smin als Spikes stehen lässt). Die Massen überlappen breit → der smin
@@ -15089,7 +15098,15 @@ class AnazhRealm {
                 def: true,
             }); // VASTUS MEDIALIS — der Tropfen über dem INNEREN Knie (die Referenz-Quad-Signatur)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.46 * limbF, limbMat); // Unterschenkel (kräftiger → Wade liest)
-            add("box", limbMat, kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn)
+            // ── BEIN-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones): dünne knochen-
+            //    Schäfte IM Fleisch (Femur, Tibia) + Gelenk-Knöpfe an Hüfte/Knie/Knöchel (T-Knochen-
+            //    Enden — bony an den Landmarken, die Animations-Achse Hüfte→Knie→Knöchel).
+            limb(hipX, hipY - 0.1, -0.12, kneeX, 2.3, 0, 0.18 * limbF, "knochen", limbCol); // Femur-Schaft
+            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.16 * limbF, "knochen", limbCol); // Tibia/Fibula-Schaft
+            add("sphere", "knochen", hipX, hipY - 0.06, -0.12, 0.32 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72 }); // Femurkopf (Hüft-Gelenk)
+            add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
+            add("sphere", "knochen", ankleX, 1.5, -0.04, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.6 }); // Knöchel (Malleolen)
+            add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
             add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol, { def: true }); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
