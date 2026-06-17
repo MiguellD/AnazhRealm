@@ -14935,24 +14935,19 @@ class AnazhRealm {
                 kScale: 0.78,
                 def: true,
             });
-        // LATISSIMUS / FLANKE — seitliche Massen unter den Achseln (der V-Taper, die Flanke).
-        for (const s of [-1, 1])
-            add(
-                "box",
-                bodyMat,
-                s * shoulderHalf * 0.84,
-                shoulderY - 0.98,
-                0.0,
-                0.3 * mF,
-                0.98,
-                0.42 * girthF,
-                null,
-                bodyCol,
-                {
-                    kScale: 0.9,
-                    def: true,
-                }
-            );
+        // LATISSIMUS / FLANKE — die breiten Flügel-Massen unter den Achseln: der V-TAPER. Breit+hoch
+        //    am Achsel-Ansatz, tapern zur Taille. Verstärkt (Referenz: ausgeprägtes Rücken-V).
+        for (const s of [-1, 1]) {
+            add("box", bodyMat, s * shoulderHalf * 0.86, shoulderY - 0.78, -0.05 * girthF, 0.4 * mF, 1.3, 0.56 * girthF, null, bodyCol, {
+                kScale: 0.88,
+                def: true,
+            });
+            // TERES / hintere Achsel-Falte — füllt die Lücke Lat→Deltoid (der „Flügel"-Ansatz).
+            add("sphere", bodyMat, s * shoulderHalf * 0.92, shoulderY - 0.32, -0.18 * girthF, 0.28 * mF, 0.42, 0.3 * girthF, null, bodyCol, {
+                kScale: 0.8,
+                def: true,
+            });
+        }
         // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
         // Detail-Pass schnitzt die RÜCKEN-RINNE = das Tal zwischen ihnen (die Wirbelsäulen-Furche),
         // die Signatur des Rücken-Blicks deiner Referenz. Plus ein Trapez-Keil im oberen Rücken.
@@ -15010,9 +15005,14 @@ class AnazhRealm {
             // zeichnet die Arm-Definition (war ein glattes Rohr). Der smin schmilzt sie in den Arm.
             const uaMidX = (shX + elbowX) * 0.5,
                 uaMidY = (shY - 0.18 + elbowY) * 0.5;
-            add("sphere", limbMat, uaMidX, uaMidY + 0.12, 0.15 * limbF, 0.25 * limbF, 0.46 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Bizeps
-            add("sphere", limbMat, uaMidX, uaMidY, -0.15 * limbF, 0.25 * limbF, 0.52 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Trizeps
+            add("sphere", limbMat, uaMidX, uaMidY + 0.14, 0.18 * limbF, 0.3 * limbF, 0.52 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Bizeps (voller)
+            add("sphere", limbMat, uaMidX, uaMidY, -0.18 * limbF, 0.3 * limbF, 0.58 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Trizeps (voller)
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
+            // UNTERARM-MUSKULATUR (Brachioradialis/Flexoren) — eine Masse am oberen Unterarm, die zum
+            //    Handgelenk schlank tapert (der Referenz-Unterarm SCHWILLT oben, war ein nacktes Rohr).
+            const faMidX = elbowX + (wristX - elbowX) * 0.32,
+                faMidY = elbowY + (wristY - elbowY) * 0.32;
+            add("sphere", limbMat, faMidX, faMidY, 0.06 * limbF, 0.28 * limbF, 0.5 * limbF, 0.26 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Unterarm-Muskel
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -15117,7 +15117,8 @@ class AnazhRealm {
             add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
             add("sphere", "knochen", ankleX, 1.5, -0.04, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.6 }); // Knöchel (Malleolen)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
-            add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol, { def: true }); // WADE (Muskel-Bulge hinten-oben)
+            add("sphere", limbMat, kneeX * 0.85, 1.72, -0.14, 0.42 * limbF, 0.78 * limbF, 0.46 * limbF, null, limbCol, { def: true }); // WADE (Gastrocnemius — VOLLER, hinten-oben, der kräftige Referenz-Bauch)
+            add("sphere", limbMat, ankleX, 1.3, -0.1, 0.26 * limbF, 0.5 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.82, def: true }); // SOLEUS (unterer Waden-Bauch → die Wade tapert zur Achillessehne)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
             // der Knöchel ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung.
