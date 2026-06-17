@@ -14909,21 +14909,23 @@ class AnazhRealm {
             add("box", "knochen", s * shoulderHalf * 0.6, shoulderY - 0.5, -0.4 * girthF, shoulderHalf * 0.66, 0.95, 0.32 * girthF, null, limbCol, {
                 kScale: 0.62,
             });
-        // PECTORALIS — zwei Brustplatten, vorn gewölbt, mit halb-scharfer UNTERKANTE (die Brust-Linie).
+        // PECTORALIS — zwei GROSSE Brustplatten, vorn gewölbt, mit halb-scharfer UNTERKANTE (die
+        //    Brust-Linie) + kleinem Mittel-Spalt (Sternum-Furche): die prominenten Pecs der Referenz
+        //    (waren zu klein/schmal). Sie decken die obere Brust, der smin verschmilzt sie zum Brust-Block.
         for (const s of [-1, 1])
             add(
                 "box",
                 bodyMat,
-                s * shoulderHalf * 0.4,
-                shoulderY - 0.62,
-                0.34 * girthF,
+                s * shoulderHalf * 0.46,
+                shoulderY - 0.7,
+                0.36 * girthF,
                 shoulderHalf * 0.46 * mF,
-                0.44,
-                0.26,
+                0.5,
+                0.3,
                 null,
                 bodyCol,
                 {
-                    kScale: 0.72,
+                    kScale: 0.66,
                     def: true,
                 }
             );
@@ -14934,12 +14936,12 @@ class AnazhRealm {
         const absMF = 0.9 + muscle * 0.5;
         for (const sx of [-1, 1])
             for (let row = 0; row < 3; row++) {
-                const ay = 4.6 + row * 0.36; // drei Reihen vom Unterbauch zur Brust-Basis
-                const aw = (0.19 - row * 0.012) * absMF; // obere Päckchen leicht breiter
-                add("box", bodyMat, sx * 0.17, ay, 0.34 * girthF, aw, 0.17, 0.15 * girthF, null, bodyCol, {
-                    kScale: 0.52,
+                const ay = 4.62 + row * 0.34; // drei Reihen vom Unterbauch zur Brust-Basis
+                const aw = (0.22 - row * 0.01) * absMF; // obere Päckchen leicht breiter
+                add("box", bodyMat, sx * 0.19, ay, 0.4 * girthF, aw, 0.19, 0.16 * girthF, null, bodyCol, {
+                    kScale: 0.42,
                     def: true,
-                }); // FLACHE Wölbung knapp über der Bauch-Front (Furchen dazwischen) — NICHT mehr extrem protrudierend (war z 0.86·girthF, weit vor der Brust; Schöpfer-Befund „viel zu extrem")
+                }); // KLARES Sixpack: zwei Säulen × drei Reihen, mässig vorgewölbt (kScale-Furchen = Linea alba + Sehnen-Querfurchen) — die Mitte zwischen „zu extrem" (war z 0.86·girthF) und „zu klein/Punkte"
             }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
@@ -14950,21 +14952,33 @@ class AnazhRealm {
         // LATISSIMUS / FLANKE — die breiten Flügel-Massen unter den Achseln: der V-TAPER. Breit+hoch
         //    am Achsel-Ansatz, tapern zur Taille. Verstärkt (Referenz: ausgeprägtes Rücken-V).
         for (const s of [-1, 1]) {
-            // Der Lat sweept vom unteren Rücken/der Taille (medial-tief) hoch-aussen zur Achsel — seine
-            //    MASSE liegt am RUMPF (er ist ein Rücken-Muskel), nur die Sehne läuft zum Arm. Darum
-            //    medialer + tiefer verankert (war x 0.86 direkt am Arm-Bone → riss in der T-Pose mit dem
-            //    Arm hoch, Schöpfer-Befund „muskeln gehen falsch mit"). Jetzt bleibt er am Torso.
-            add("box", bodyMat, s * shoulderHalf * 0.62, shoulderY - 1.05, -0.06 * girthF, 0.42 * mF, 1.34, 0.5 * girthF, null, bodyCol, {
-                kScale: 0.88,
+            // LATISSIMUS — ein BREITES Flügel-Blatt, das von der Achsel (hoch, LATERAL) zur Taille
+            //    (tief, MEDIAL) sweept = der V-TAPER der Referenz. GENEIGT (rotation.z = -s·0.28): die
+            //    Aussenkante läuft von breit-oben nach schmal-unten und ZEICHNET die V-Linie, statt als
+            //    vertikaler Klotz zu hängen (Schöpfer-Befund „latisimus noch nicht sauber"). Seine MASSE
+            //    liegt am RUMPF/Rücken (z negativ, ein Rücken-Muskel → bleibt am Torso, reisst nicht mit
+            //    dem Arm hoch). Breit (sheet) statt schmal-hoch.
+            add("box", bodyMat, s * shoulderHalf * 0.72, shoulderY - 0.98, -0.22 * girthF, 0.36 * mF, 1.05, 0.3 * girthF, { x: 0, y: 0, z: -s * 0.3 }, bodyCol, {
+                kScale: 0.86,
                 def: true,
-            });
+            }); // FLACHES Flügel-Blatt (dünn in der Tiefe → kein Rücken-Ball mehr, Schöpfer-Befund), auf der Flanke/dem Rücken, geneigt = der V-Taper
             // TERES / hintere Achsel-Falte — füllt die Lücke Lat→Deltoid (der „Flügel"-Ansatz; bewegt
             //    sich anatomisch korrekt MIT dem Arm, Teres-major-Insertion am Humerus).
-            add("sphere", bodyMat, s * shoulderHalf * 0.88, shoulderY - 0.42, -0.18 * girthF, 0.26 * mF, 0.4, 0.3 * girthF, null, bodyCol, {
+            add("sphere", bodyMat, s * shoulderHalf * 0.86, shoulderY - 0.44, -0.18 * girthF, 0.22 * mF, 0.36, 0.26 * girthF, null, bodyCol, {
                 kScale: 0.8,
                 def: true,
             });
         }
+        // SERRATUS ANTERIOR — die finger-artigen Muskel-Slips auf den unteren SEITLICHEN Rippen (unter
+        //    dem Pectoralis, verzahnt mit den Obliques): DIE Signatur eines definierten, schlanken
+        //    Rumpfes (Referenz-Front, fehlte mir komplett). Drei kleine schräge Massen je Seite, nach
+        //    vorn-unten gerichtet, progressiv tiefer + medialer (das Reissverschluss-Muster der Slips).
+        for (const s of [-1, 1])
+            for (let k = 0; k < 3; k++)
+                add("box", bodyMat, s * (shoulderHalf * 0.52 - k * 0.04), 5.42 - k * 0.2, 0.32 * girthF, 0.11 * mF, 0.14, 0.18 * girthF, { x: 0, y: 0, z: -s * 0.3 }, bodyCol, {
+                    kScale: 0.5,
+                    def: true,
+                });
         // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
         // Detail-Pass schnitzt die RÜCKEN-RINNE = das Tal zwischen ihnen (die Wirbelsäulen-Furche),
         // die Signatur des Rücken-Blicks deiner Referenz. Plus ein Trapez-Keil im oberen Rücken.
@@ -14986,26 +15000,26 @@ class AnazhRealm {
                 kScale: 0.82,
                 def: true,
             });
-        add("sphere", headMat, 0, 7.74, -0.02, 0.84 * hr, 0.87 * hr, 0.87 * hr, null, limbCol, {
+        add("sphere", headMat, 0, 7.62, -0.02, 0.7 * hr, 0.76 * hr, 0.74 * hr, null, limbCol, {
             bodyRole: "head",
             eyeFront: 0.85,
-        }); // Schädel (etwas kleiner + höher → klarer Hals + erwachsene Proportion)
-        add("sphere", headMat, 0, 7.38, -0.13, 0.46 * hr, 0.44 * hr, 0.42 * hr, null, limbCol); // Occiput
-        add("box", headMat, 0, 7.4, 0.17, 0.55 * hr, 0.44 * hr, 0.48 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
+        }); // Schädel — KLEINER (war ~5 Kopf hoch = stämmig/kindlich; jetzt ~6 Kopf, erwachsene Proportion zur Referenz) + tiefer, sitzt auf dem Hals
+        add("sphere", headMat, 0, 7.3, -0.12, 0.4 * hr, 0.38 * hr, 0.36 * hr, null, limbCol); // Occiput
+        add("box", headMat, 0, 7.3, 0.16, 0.48 * hr, 0.4 * hr, 0.44 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
         for (const s of [-1, 1])
-            add("box", headMat, s * 0.34 * hr, 7.58, 0.22 * hr, 0.15 * hr, 0.18 * hr, 0.22 * hr, null, limbCol, {
+            add("box", headMat, s * 0.3 * hr, 7.48, 0.2 * hr, 0.14 * hr, 0.16 * hr, 0.2 * hr, null, limbCol, {
                 kScale: 0.58,
             }); // JOCHBEIN (Wangenknochen)
         // GESICHTS-RELIEF IM SCHÄDEL-FELD (der Profi-Weg: Nase/Brauen EMERGIEREN aus dem Metaball,
         // statt als Mr.-Potato-Head-Teile aufgeklebt zu werden — die verschmelzen nicht): ein
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
-        add("box", headMat, 0, 7.8, 0.32, 0.62 * hr, 0.11 * hr, 0.2 * hr, null, limbCol); // Brauen-Wulst (verschmolzen)
-        add("box", headMat, 0, 7.64, 0.4, 0.15 * hr, 0.4 * hr, 0.26 * hr, { x: -0.18, y: 0, z: 0 }, limbCol); // Nasen-Rücken (verschmolzen)
+        add("box", headMat, 0, 7.68, 0.3, 0.54 * hr, 0.1 * hr, 0.18 * hr, null, limbCol); // Brauen-Wulst (verschmolzen)
+        add("box", headMat, 0, 7.5, 0.37, 0.14 * hr, 0.36 * hr, 0.24 * hr, { x: -0.18, y: 0, z: 0 }, limbCol); // Nasen-Rücken (verschmolzen)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
                 shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
-            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol, { def: true, disp: true, amp: 0.2, reach: 1.7 }); // Deltoideus — als VERSCHIEBUNG migriert (amp/reach explizit): authorierter Tropfen-Schwell statt Kugel-Kappe (kein Schulter-Ball)
+            add("sphere", limbMat, shX, shY, 0, 0.46 * limbF, 0.5 * limbF, 0.46 * limbF, null, limbCol, { def: true, disp: true, amp: 0.2, reach: 1.7 }); // Deltoideus — schlanke Kappe (war ein Schulter-Ball, der mit Bizeps/Pec verklumpte; Schöpfer „arme nicht sauber"): als VERSCHIEBUNG migriert (Tropfen-Schwell statt Kugel)
             // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
@@ -15026,23 +15040,23 @@ class AnazhRealm {
                 kScale: 0.84,
                 def: true,
             });
-            const elbowX = s * (shoulderHalf + 0.42),
-                elbowY = waistY + 0.05;
-            const wristX = s * (shoulderHalf + 0.56),
-                wristY = hipY - 0.05;
+            const elbowX = s * (shoulderHalf + 0.4),
+                elbowY = waistY + 0.1;
+            const wristX = s * (shoulderHalf + 0.6),
+                wristY = hipY - 0.3; // Handgelenk TIEFER → der Unterarm ~so lang wie der Oberarm (war 0.68× → stämmig/kurz, Schöpfer „arme nicht sauber")
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
             // BIZEPS (vorn) + TRIZEPS (hinten) am Oberarm — getrennte DEF-Massen → der Seam-Groove
             // zeichnet die Arm-Definition (war ein glattes Rohr). Der smin schmilzt sie in den Arm.
             const uaMidX = (shX + elbowX) * 0.5,
                 uaMidY = (shY - 0.18 + elbowY) * 0.5;
-            add("sphere", limbMat, uaMidX, uaMidY + 0.14, 0.18 * limbF, 0.3 * limbF, 0.52 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Bizeps (voller)
-            add("sphere", limbMat, uaMidX, uaMidY, -0.18 * limbF, 0.3 * limbF, 0.58 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Trizeps (voller)
-            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
-            // UNTERARM-MUSKULATUR (Brachioradialis/Flexoren) — eine Masse am oberen Unterarm, die zum
-            //    Handgelenk schlank tapert (der Referenz-Unterarm SCHWILLT oben, war ein nacktes Rohr).
-            const faMidX = elbowX + (wristX - elbowX) * 0.32,
-                faMidY = elbowY + (wristY - elbowY) * 0.32;
-            add("sphere", limbMat, faMidX, faMidY, 0.06 * limbF, 0.28 * limbF, 0.5 * limbF, 0.26 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Unterarm-Muskel
+            add("sphere", limbMat, uaMidX, uaMidY + 0.12, 0.16 * limbF, 0.24 * limbF, 0.46 * limbF, 0.22 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Bizeps (schlanker Querschnitt → klare vordere Wölbung statt Klumpen)
+            add("sphere", limbMat, uaMidX, uaMidY, -0.16 * limbF, 0.24 * limbF, 0.5 * limbF, 0.22 * limbF, null, limbCol, { kScale: 0.8, def: true }); // Trizeps (hinten)
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.3 * limbF, limbMat); // Unterarm (distal dünner)
+            // UNTERARM-MUSKULATUR (Brachioradialis/Flexoren) — eine Masse knapp UNTER dem Ellbogen, die
+            //    zum Handgelenk schlank tapert (der Referenz-Unterarm SCHWILLT oben, dünn am Gelenk).
+            const faMidX = elbowX + (wristX - elbowX) * 0.28,
+                faMidY = elbowY + (wristY - elbowY) * 0.28;
+            add("sphere", limbMat, faMidX, faMidY, 0.05 * limbF, 0.22 * limbF, 0.42 * limbF, 0.21 * limbF, null, limbCol, { kScale: 0.82, def: true }); // Unterarm-Muskel
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -16020,9 +16034,9 @@ class AnazhRealm {
         for (const s of [1, -1]) {
             const f = s > 0 ? "L" : "R";
             spec.push(
-                ["shoulder" + f, "chest", [s * 0.92, 6.5, 0], [s * 1.5, 5.05, 0]],
-                ["elbow" + f, "shoulder" + f, [s * 1.5, 5.05, 0], [s * 1.64, 3.9, 0]],
-                ["wrist" + f, "elbow" + f, [s * 1.64, 3.9, 0], [s * 1.66, 3.55, 0.06]],
+                ["shoulder" + f, "chest", [s * 0.92, 6.5, 0], [s * 1.52, 5.1, 0]],
+                ["elbow" + f, "shoulder" + f, [s * 1.52, 5.1, 0], [s * 1.72, 3.85, 0]],
+                ["wrist" + f, "elbow" + f, [s * 1.72, 3.85, 0], [s * 1.74, 3.5, 0.06]],
                 ["hip" + f, "hips", [s * 0.42, 4.15, 0], [s * 0.4, 2.3, 0]],
                 ["knee" + f, "hip" + f, [s * 0.4, 2.3, 0], [s * 0.38, 0.42, 0]],
                 ["ankle" + f, "knee" + f, [s * 0.38, 0.42, 0], [s * 0.38, 0.2, 0.85]]

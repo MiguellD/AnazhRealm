@@ -519,6 +519,24 @@ async function renderWerk(page, bpName, view) {
                 const footY = -sz.y / 2;
                 cam.position.set(maxd * 0.1, footY + maxd * 0.1, maxd * 0.17);
                 cam.lookAt(0, footY + maxd * 0.03, sz.z * 0.1);
+            } else if (view === "head") {
+                // KOPF-NAHAUFNAHME (frontal, AUF Kopf-Höhe, horizontal): Schädel/Gesicht/Kiefer/Hals
+                //    gross (das Modell ist zentriert → Kopf-Mitte liegt bei ~sz.y·0.41 = nahe der Spitze).
+                const hy = sz.y * 0.41;
+                cam.position.set(maxd * 0.04, hy, maxd * 0.2);
+                cam.lookAt(0, hy, 0);
+            } else if (view === "torso") {
+                // OBERKÖRPER-NAHAUFNAHME (frontal, auf Brust/Bauch-Höhe): Pecs/Abs/Serratus/Lat-Ansatz.
+                const ty = sz.y * 0.16;
+                cam.position.set(maxd * 0.06, ty, maxd * 0.34);
+                cam.lookAt(0, ty, 0);
+            } else if (view === "arm") {
+                // ARM+HAND-NAHAUFNAHME (rechter Arm, T-Pose horizontal → die Kamera auf Schulter-Höhe
+                //    seitlich versetzt, frontal): Deltoid→Bizeps→Unterarm→Hand über die ganze Spanne.
+                const ay = sz.y * 0.27; // Schulter-Höhe (zentriert)
+                const ax = sz.x * 0.28; // zur Arm-Mitte versetzt
+                cam.position.set(ax, ay, maxd * 0.5);
+                cam.lookAt(ax, ay, 0);
             }
             window.__rs = () => {
                 try {
@@ -617,6 +635,9 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:tpose:0", "eval-anat-tpose-front.png", "front"], // T-Pose FRONTAL — Proportionen/Abstände messen
             ["humanoidrig:tpose:0", "eval-anat-tpose-side.png", "side"], // T-Pose PROFIL
             ["humanoidrig:tpose:0", "eval-anat-foot.png", "foot"], // FUSS-NAHAUFNAHME — die Zehen/Ferse gross prüfen
+            ["humanoidrig:tpose:0", "eval-anat-head.png", "head"], // KOPF-NAHAUFNAHME
+            ["humanoidrig:tpose:0", "eval-anat-torso.png", "torso"], // OBERKÖRPER-NAHAUFNAHME
+            ["humanoidrig:tpose:0", "eval-anat-arm.png", "arm"], // ARM+HAND-NAHAUFNAHME
             ["humanoidrig:walk:0", "eval-anat-walk-iso.png", "iso"], // Anatomie Gehen isometrisch (skel)
             // GUSS 5 — die VIELFALT-GALERIE (RPM in den Schatten)
             ["humanoidlineup", "eval-lineup.png", "front"],
