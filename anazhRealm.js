@@ -14975,7 +14975,7 @@ class AnazhRealm {
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
                 shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
-            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol, { def: true }); // Deltoideus (definierte Schulter-Kugel)
+            add("sphere", limbMat, shX, shY, 0, 0.52 * limbF, 0.54 * limbF, 0.52 * limbF, null, limbCol, { def: true, disp: true, amp: 0.2, reach: 1.7 }); // Deltoideus — als VERSCHIEBUNG migriert (amp/reach explizit): authorierter Tropfen-Schwell statt Kugel-Kappe (kein Schulter-Ball)
             // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
@@ -15023,6 +15023,15 @@ class AnazhRealm {
                 limbCol
             ); // Daumen (vorn-innen, abgespreizt)
         }
+        // GLUTEUS MAXIMUS — der HINTERN (z<0, HINTEN): zwei runde Massen am Becken-RÜCKEN. Er
+        // FEHLTE komplett im Skelett → der Rücken war flach und die nach vorn beulenden Schenkel-
+        // Köpfe lasen unter den Shorts als „Gesäß VORNE" (Schöpfer-Befund). Jetzt sitzt der Hintern
+        // hinten, wo er hingehört; die Vorderseite der Leiste wird dadurch ruhig.
+        for (const s of [-1, 1])
+            add("sphere", bodyMat, s * 0.28, 3.74, -0.4 * girthF, 0.44 * mF, 0.62, 0.42 * girthF, null, bodyCol, {
+                kScale: 0.92,
+                def: true,
+            });
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
         // STAND-BREITE: die Beine weit genug AUSEINANDER, dass der innere Spalt > die smin-Blend-
         // breite k bleibt — sonst verschmilzt das Feld beide Beine zu EINER Säule (gemessen die
@@ -15031,14 +15040,14 @@ class AnazhRealm {
             const hipX = s * (hipHalf * 0.72),
                 kneeX = s * 0.4, // Femur winkelt EINWÄRTS (breite Hüfte → Knie über dem Fuß): die echte Bein-Achse, schließt den Groin-Spalt zur natürlichen Leiste statt zweier Säulen
                 ankleX = s * 0.38;
-            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG — dicke Quads wie die Referenz)
+            limb(hipX, hipY + 0.1, -0.1, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG); Femur-Kopf POSTERIOR (z−0.1) → der Schenkel-Kopf beult nicht nach VORN in die Leiste (war die „Gesäß-vorne"-Mit-Ursache)
             // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
             // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
             // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
             if (s > 0)
-                add("box", bodyMat, 0, hipY - 0.42, 0.12 * girthF, hipHalf * 0.94 * girthF, 1.04, 0.4 * girthF, null, bodyCol, {
-                    kScale: 1.18,
-                });
+                add("box", bodyMat, 0, hipY - 0.32, 0.24 * girthF, hipHalf * 1.3 * girthF, 0.92, 0.5 * girthF, null, bodyCol, {
+                    kScale: 0.85,
+                }); // WEIT VORN + tighter Blend → bildet EINE glatte Leisten-Front über beiden Schenkel-Fronten (kein Doppel-Beule)
             // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
             // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
             // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
@@ -15120,7 +15129,7 @@ class AnazhRealm {
                     ry = Math.max(0.03, (sy / 2) * 1.06),
                     rz = Math.max(0.03, (sz / 2) * 1.06);
                 const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def });
+                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def, disp: !!p.disp, amp: p.amp, reach: p.reach });
                 const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
                 mnx = Math.min(mnx, c[0] - RR[0]);
                 mny = Math.min(mny, c[1] - RR[1]);
@@ -15159,7 +15168,7 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def });
+            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def, amp: p.amp, reach: p.reach });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -15223,9 +15232,18 @@ class AnazhRealm {
         // den Tradeoff (definierte Kante vs. erodierende dünne Glieder) am Iso-Dump MISST.
         const kMax = opts && Number.isFinite(opts.kMax) ? opts.kMax : 0.12;
         const kFloor = opts && Number.isFinite(opts.kFloor) ? opts.kFloor : 0.04; // Mindest-Blend; KLEINER → schärfere Muskel-Täler (Sixpack/Linea alba), die die reine Feld-Normale gestochen liest
+        // ── VERSCHIEBUNGS-SUBSTRAT (SMPL-Architektur, feature-geflaggt parallel zur Union) ──
+        // Schöpfer-Wurzel: in der UNION (smin) sind Amplitude+Form+Blend an EINEM Primitiv gekoppelt
+        // → Random-Walk, der nie konvergiert (Schulter-Ball/Waffel/Leisten-Bälle = die Kugel-Kappe,
+        // die durchs min schlägt). DECOUPLING: die Basis-Fläche kommt aus den STRUKTUR-Knochen; jede
+        // DEF-Muskel-Masse HEBT sie um eine EXPLIZITE Amplitude über ein authoriertes Tropfen-Profil
+        // (smoothstep, anisotrop via die Ellipsoid-Extents) — amp/reach/Form einzeln einrastbar.
+        const DISPLACE = !!(opts && opts.displace);
+        const dispCap = opts && Number.isFinite(opts.dispCap) ? opts.dispCap : 0.45; // Validitäts-Deckel: zu viel Verschiebung bricht den ~Einheitsgradient (floating island/Pinch)
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
+                if (DISPLACE && bn.disp && bn.ell) continue; // disp-getaggte Massen sind Verschiebungen, NICHT Union (1:1-Migration, Masse für Masse)
                 // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
                 // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
                 // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
@@ -15238,7 +15256,24 @@ class AnazhRealm {
                 const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1));
                 d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
-            return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
+            let f = -d; // Basis-Feld: SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
+            if (DISPLACE) {
+                let disp = 0;
+                for (const bn of bones) {
+                    if (!bn.disp || !bn.ell) continue;
+                    const c = bn.c,
+                        r = bn.r;
+                    const ex = (x - c[0]) / r[0],
+                        ey = (y - c[1]) / r[1],
+                        ez = (z - c[2]) / r[2];
+                    const kl = Math.sqrt(ex * ex + ey * ey + ez * ez); // 0 Zentrum · 1 Ellipsoid-Oberfläche
+                    const reach = bn.reach || 1.7;
+                    const tt = Math.max(0, 1 - kl / reach);
+                    disp += (bn.amp || 0.12) * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
+                }
+                f += Math.min(dispCap, disp); // Validitäts-Deckel (Einheitsgradient bewahren)
+            }
+            return f;
         };
         // ── SURFACE NETS (naiv, dual): ein Vertex pro Vorzeichen-wechselnder Zelle, an die
         //    gemittelten Kanten-Kreuzungen gesetzt; Quads über kreuzende Gitter-Kanten. ──
@@ -15760,6 +15795,7 @@ class AnazhRealm {
             // Geometrie-lokal): perfekt anliegend, mit NATÜRLICHEN Bein-Öffnungen, weil der Körper
             // die Beine schon getrennt hat. Eine Tube-Geometrie beulte als Rock — das hier ist die
             // Referenz-Lösung. Übersteuert Hautton+Counter-Shading, bekommt aber die AO-Tiefe.
+            let shortsBand = null;
             if (opts.shortsY && T.smoothstep) {
                 const yb = opts.shortsY[0],
                     yt = opts.shortsY[1];
@@ -15768,6 +15804,7 @@ class AnazhRealm {
                 );
                 // X-Tor: nur das zentrale Becken bemalen, NICHT die Hände, die auf Hüfthöhe ruhen.
                 if (opts.shortsX) band = band.mul(T.smoothstep(T.float(opts.shortsX + 0.12), T.float(opts.shortsX - 0.05), pl.x.abs()));
+                shortsBand = band;
                 albedo = T.mix(albedo, T.vec3(0.92, 0.93, 0.96), band);
             }
             // GEBACKENE AO (System A) — die Vertex-Farbe trägt die GEOMETRISCHE Kavität (Mulden
@@ -15776,7 +15813,12 @@ class AnazhRealm {
             // einfarbig. attribute("color") ist auf WebGPU STRIKT — die Skin-Geometrie setzt sie IMMER.
             if (T.attribute) {
                 try {
-                    albedo = albedo.mul(T.attribute("color", "vec3"));
+                    let aoC = T.attribute("color", "vec3");
+                    // In der SHORTS-Zone die Muskel-AO DÄMPFEN — Stoff ist glatt, soll NICHT die
+                    // Leisten-/Innenschenkel-Furche zeigen (die teilte die weißen Briefs in „zwei
+                    // Backen vorne"). Briefs werden gleichmäßig weiß.
+                    if (shortsBand) aoC = T.mix(aoC, T.vec3(1, 1, 1), shortsBand.mul(0.85));
+                    albedo = albedo.mul(aoC);
                 } catch (_e) {
                     /* kein color-Attribut → unverschattet (kein Crash) */
                 }
@@ -15843,7 +15885,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085 }); // Avatar: glatte Feld-Haut (terrassen-immun) + ANALYTISCHE Seam-Grooves → Sixpack/Pec/Lat/Rückenrinne aus den Muskel-Naht-SDFs (gitter-unabhängig, der Profi-Detail-Normal-Hebel)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085, displace: true }); // Avatar: glatte Feld-Haut + Seam-Grooves + VERSCHIEBUNGS-SUBSTRAT (disp-getaggte Massen werden Tropfen-Schwell statt Union-Ball)
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -15956,7 +15998,7 @@ class AnazhRealm {
         const mat = this._buildCreatureHideMaterial(skinCol, {
             tags: g.tags || null,
             skin: true,
-            shortsY: [3.5 * kh + (g.oy || 0), 4.5 * kh + (g.oy || 0)],
+            shortsY: [3.66 * kh + (g.oy || 0), 4.5 * kh + (g.oy || 0)], // Saum HÖHER (über den Schenkel-Fronten) → die Briefs decken Becken/Leiste, nicht die Quad-Beulen
             shortsX: 0.95 * kh, // nur das zentrale Becken (Hände ruhen weiter aussen auf Hüfthöhe)
         });
         const mesh = new THREE.SkinnedMesh(geom, mat);

@@ -497,6 +497,9 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "eval-rest-front.png", "front"],
             ["humanoidrig:rest:0", "eval-rest-side.png", "side"],
             ["humanoidrig:rest:0", "eval-rest-back.png", "back"],
+            ["humanoidrig:bind:0", "eval-bind-front.png", "front"], // SYMMETRISCHE Neutral-Pose (Referenz-Stand) — Orientierung/Symmetrie isolieren
+            ["humanoidrig:bind:0", "eval-bind-side.png", "side"],
+            ["humanoidrig:bind:0", "eval-bind-back.png", "back"],
             ["humanoidrig:rest:0", "eval-rest-34.png", ""],
             ["humanoidrig:walk:0", "eval-walk-34.png", ""],
             // GUSS 5 — die VIELFALT-GALERIE (RPM in den Schatten)
