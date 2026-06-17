@@ -310,15 +310,26 @@ Asymmetrie, am Menschen geschärft, der Vierbeiner erbt). (3) **anisotrope/Landm
 WURZEL 2: Beine symmetrisch" FLIPPT, wenn der Bau landet (`rearR > frontR`) — der Test wandert mit
 dem Code.
 
-**GEBAUT — WURZEL 2 (1. Teil), der VIERBEINER (17.06.):** `_creatureSkeleton.buildLeg` trägt jetzt das
-Muskel-Gesetz: die Hinterhand bekommt ein verdicktes Oberglied + einen fusiformen Schenkel-Bauch
-(Gluteus/Biceps femoris ∝ `hindMotor`), das Vorderbein eine leichtere Schulter (`foreMotor`), distal
-sehnig-dünn. Die Wand misst `rearR 0.147 > frontR 0.105 (×1.40)` (die Invariante GEFLIPPT) bei
-bewahrtem Makro-Relief; `diag-genom` voll grün (Physik/Affinität/Allometrie); am Auge (`diag-werk-
-render`): Reh + Glutwesen-Räuber tragen jetzt muskulöse Hinterhand + schlanke Vorder-Strebe (EINE
-`buildLeg`-Änderung, beide gehoben — die Synergie). Ehrlich ~3→~4.5, kein Durchbruch: der Leib bleibt
-glatt/bulbös. **OFFEN (Folge-Güsse):** der MENSCH (`_humanoidSkeleton` — Gluteus/Quad/Wade/Deltoid,
-„am Menschen schärfen") · BEDINGUNG ii Landmark-Schärfe · der bulböse Leib (Säule-I-Grammatik).
+**GEBAUT — GUSS 1+2: DAS SYSTEM AUF DAS METABALL-MAXIMUM (17.06., „ein Riese, keine Ameise"):** kein
+Objekt-Tweak — die GETEILTEN Pässe auf ihr Maximum gegossen (eine Änderung je Pass hebt Avatar +
+jede Kreatur).
+- **Muskel-Gesetz auf ALLE:** Vierbeiner-Hinterhand (`buildLeg` `hindMotor`/`foreMotor`, Wand
+  `rearR 0.147 > frontR 0.105 ×1.40`) UND Mensch (`_humanoidSkeleton`: Pectoralis · Rectus/Bauch ·
+  Latissimus/Flanke · Klavikel + Gluteus in ZWEI geteilt → die Oberschenkel trennen sich, GEMESSEN
+  am Render). Patella/Olecranon/Jochbein/Kiefer als Landmark-Bumps.
+- **Landmark-Schärfe-Achse (BEDINGUNG ii):** `part.kScale` → smin pro Knochen tight (Knochen-Kante)
+  ODER weich (Muskel) in EINEM Feld. **Lehre: zu tighter k (kScale<~0.7 → k unter 0.04) RISST die
+  Haut** — das Fresnel-Warm-Rim leckt rot in den Spalt (der „Wund"-Look). Floor 0.04 = definierte
+  Bumps statt Cracks; die SICHTBARKEIT trägt die AO, nicht die scharfe Kante.
+- **AO-Relief verstärkt (der „flach-einfarbig"-Multiplikator):** tiefere Mulden (`1−cav·1.7`,
+  Floor 0.58) + Grat-Highlight (`+ridge·0.5`) → die Muskel-Geometrie POPPT. Warm-Rim 0.12→0.07
+  (räumt die Mulden-Röte). Avatar-Res 80→96.
+- **VERIFIZIERT:** `diag-genom` grün (Physik/Affinität/Allometrie) · `diag-koerper-tiefpass` 4/4 ·
+  Playtest grün. **EHRLICH (Fischer):** Avatar ~6.5→~7.5, Reh ~4.5→~5.5 — das METABALL-Maximum
+  (saubere stilisierte Körper), **KEINE 10**. Ein wahres AAA-10 braucht die §3-Entscheidung (Option b:
+  echte Mesh-Topologie + Normal-Maps) — Schöpfer-Sache.
+- **OFFEN:** das Gesicht (rote Augen-Partie · Identitäts-Hautton) · der bulböse Reh-Leib · der Hals-
+  Kragträger · der MENSCH-Motion-Pfad (Rig, GUSS-3-IK).
 
 ---
 

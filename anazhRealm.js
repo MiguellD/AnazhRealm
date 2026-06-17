@@ -14861,10 +14861,74 @@ class AnazhRealm {
                 }
             );
         }
-        // GESÄSS — eine Masse HINTER dem Becken (sonst ist die Rückseite ein Brett; das Profil
-        // bekommt Tiefe). Zentral-symmetrisch → das V18.209-Symmetrie-Template bleibt unverbogen;
-        // der smin rundet sie zum Gesäß. Leicht unterhalb der Becken-Mitte, nach −z projiziert.
-        add("box", bodyMat, 0, hipY - 0.32, -0.34 * girthF, hipHalf * 1.34 * girthF, 1.0, 0.5 * girthF, null, bodyCol);
+        // GESÄSS — ZWEI Glute-Massen hinter dem Becken (statt EINER brückenden Platte, die die
+        // Oberschenkel zu einem Rock verschmolz, GEMESSEN am Avatar-Render): links/rechts mit
+        // Mittel-Spalt → das Gesäß liest ALS Gesäß UND der Spalt zwischen den Schenkeln öffnet
+        // sich. Symmetrisch → das V18.209-Symmetrie-Template bleibt unverbogen; der smin rundet.
+        for (const s of [-1, 1])
+            add(
+                "box",
+                bodyMat,
+                s * hipHalf * 0.44,
+                hipY - 0.34,
+                -0.32 * girthF,
+                hipHalf * 0.6 * girthF,
+                1.05,
+                0.5 * girthF,
+                null,
+                bodyCol,
+                {
+                    kScale: 0.96,
+                }
+            );
+        // ── MUSKEL-RELIEF + LANDMARK-SCHÄRFE (lebendiger-koerper §2½ — der Torso liest als KÖRPER,
+        //    nicht als Schlauch): Muskel-Massen ∝ muscle-Achse, an den Landmarken knochen-scharf
+        //    (kScale<1) → das Feld trägt weiche Bäuche UND scharfe Kanten (BEDINGUNG ii). bodyMat
+        //    → Rumpf-/tag-treu (der Avatar-Tag liegt in der separaten Soul-bodyParts-Liste). ──
+        const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
+        // KLAVIKEL — eine SCHARFE horizontale Gräte am oberen Brustkorb (das Schlüsselbein-Regal,
+        // das den Hals→Brust-Übergang definiert; tötet das weiche Tonnen-Dekolleté).
+        add("box", bodyMat, 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 0.96, 0.1, 0.18, null, bodyCol, {
+            kScale: 0.46,
+        });
+        // PECTORALIS — zwei Brustplatten, vorn gewölbt, mit halb-scharfer UNTERKANTE (die Brust-Linie).
+        for (const s of [-1, 1])
+            add(
+                "box",
+                bodyMat,
+                s * shoulderHalf * 0.4,
+                shoulderY - 0.62,
+                0.34 * girthF,
+                shoulderHalf * 0.46 * mF,
+                0.44,
+                0.26,
+                null,
+                bodyCol,
+                {
+                    kScale: 0.72,
+                }
+            );
+        // RECTUS / BAUCH-BLOCK — eine zentrale vertikale Masse vorn (die Bauchdecke statt Schlauch).
+        add("box", bodyMat, 0, waistY - 0.34, 0.33 * girthF, waistHalf * 0.6 * mF, 1.15, 0.2, null, bodyCol, {
+            kScale: 0.86,
+        });
+        // LATISSIMUS / FLANKE — seitliche Massen unter den Achseln (der V-Taper, die Flanke).
+        for (const s of [-1, 1])
+            add(
+                "box",
+                bodyMat,
+                s * shoulderHalf * 0.84,
+                shoulderY - 0.98,
+                0.0,
+                0.3 * mF,
+                0.98,
+                0.42 * girthF,
+                null,
+                bodyCol,
+                {
+                    kScale: 0.9,
+                }
+            );
         // ── (2) HALS + KOPF — der Kopf SITZT über den Schultern (kein Vorragen), als CLUSTER:
         //    Schädel (rund, zentriert) + Hinterkopf/Occiput (füllt die Nacken-Kerbe) + Kiefer
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
@@ -14876,7 +14940,11 @@ class AnazhRealm {
             eyeFront: 0.85,
         }); // Schädel
         add("sphere", headMat, 0, 7.14, -0.13, 0.5 * hr, 0.46 * hr, 0.44 * hr, null, limbCol); // Occiput
-        add("box", headMat, 0, 7.16, 0.17, 0.58 * hr, 0.46 * hr, 0.5 * hr, null, limbCol); // Kiefer/Kinn
+        add("box", headMat, 0, 7.16, 0.17, 0.58 * hr, 0.46 * hr, 0.5 * hr, null, limbCol, { kScale: 0.74 }); // Kiefer/Kinn (definiert)
+        for (const s of [-1, 1])
+            add("box", headMat, s * 0.36 * hr, 7.34, 0.22 * hr, 0.15 * hr, 0.18 * hr, 0.22 * hr, null, limbCol, {
+                kScale: 0.58,
+            }); // JOCHBEIN (Wangenknochen)
         // GESICHTS-RELIEF IM SCHÄDEL-FELD (der Profi-Weg: Nase/Brauen EMERGIEREN aus dem Metaball,
         // statt als Mr.-Potato-Head-Teile aufgeklebt zu werden — die verschmelzen nicht): ein
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
@@ -14907,6 +14975,7 @@ class AnazhRealm {
                 wristY = hipY - 0.05;
             limb(shX, shY, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
+            add("box", limbMat, elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen)
             // HAND — eine RUHENDE HAND als ZUSAMMENHÄNGENDE Masse (Profi-Stilisierung: Handteller +
             // leicht eingekrümmtes Finger-PAKET + abgespreizter Daumen — KEINE dünnen Klauen-Streben,
             // die der scharfe smin als Spikes stehen lässt). Die Massen überlappen breit → der smin
@@ -14937,6 +15006,7 @@ class AnazhRealm {
                 ankleX = s * 0.52;
             limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.6 * limbF, limbMat); // Oberschenkel (kräftig)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.42 * limbF, limbMat); // Unterschenkel (Grund-Strebe → schlanker Knöchel)
+            add("box", limbMat, kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn)
             add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
@@ -15001,7 +15071,7 @@ class AnazhRealm {
                     ry = Math.max(0.03, (sy / 2) * 1.06),
                     rz = Math.max(0.03, (sz / 2) * 1.06);
                 const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz) });
+                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1 });
                 const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
                 mnx = Math.min(mnx, c[0] - RR[0]);
                 mny = Math.min(mny, c[1] - RR[1]);
@@ -15040,7 +15110,7 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb) });
+            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1 });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -15110,7 +15180,12 @@ class AnazhRealm {
                 // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
                 // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
                 // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
-                const k = Math.min(kMax, Math.max(0.03, bn.rmin * 0.55));
+                // BEDINGUNG ii (lebendiger-koerper §2½ — LANDMARK-SCHÄRFE): ein Knochen mit
+                // `kScale < 1` blendet TIGHT (knochige Kante: Schulterblatt-Gräte · Jochbein ·
+                // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
+                // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
+                // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
+                const k = Math.max(0.04, Math.min(kMax, Math.max(0.03, bn.rmin * 0.55)) * (bn.kScale || 1));
                 d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
             return -d; // SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
@@ -15355,7 +15430,14 @@ class AnazhRealm {
                 // Boden 0.6 + moderate Stärke: ein sanftes Relief (Gelenk/Muskel lesen), das ein
                 // DUNKLES Material (Glutwesen) nicht in Schwarz erdrückt (Counter-Shading + Basis
                 // stapeln sonst zu viel) — auf hellem Avatar trotzdem klar als Mulden-Schatten.
-                const ao = Math.max(0.66, 1 - Math.max(0, occ[v]) * 1.3); // Mulde dezent, Grat voll (kein pechschwarzer Falten-Riss)
+                // lebendiger-koerper §2½ — STÄRKERES Relief: tiefere Mulden (Muskel-/Gelenk-Furchen
+                // + die scharfen Landmark-Kanten lesen) UND ein milder Grat-Highlight (konvexe
+                // Muskel-Bäuche fangen Licht) → die Anatomie POPPT, statt im Flach-Einfarb zu
+                // ertrinken. Floor 0.58 hält ein DUNKLES Material (Glutwesen) lesbar (kein
+                // pechschwarzer Riss); der Grat-Boost ist gedeckelt (kein Über-Glanz).
+                const cav = Math.max(0, occ[v]);
+                const ridge = Math.max(0, -occ[v]); // konvex = Grat / Muskel-Bauch
+                const ao = Math.max(0.58, Math.min(1.12, 1 - cav * 1.7 + ridge * 0.5));
                 colors[v * 3] = ao;
                 colors[v * 3 + 1] = ao;
                 colors[v * 3 + 2] = ao;
@@ -15435,9 +15517,12 @@ class AnazhRealm {
             if (vd && nv && T.output) {
                 const fres = vd.dot(nv).clamp(0, 1).oneMinus().pow(2.6);
                 const warm = opts.predator ? T.vec3(1.0, 0.5, 0.25) : T.vec3(1.0, 0.72, 0.45);
-                // HAUT: das warme Rim DEZENT (0.12) — auf glatter Haut liest das volle Fell-Rim
-                // (0.36) als greller orangener Hotspot am Unterarm; Fell behält das volle Glühen.
-                const rimAmt = opts.skin ? 0.12 : 0.36;
+                // HAUT: das warme Rim SEHR DEZENT (0.07) — das Fresnel-Rim leuchtet nicht nur an
+                // der Silhouette, sondern LECKT in jede konkave Mulde (Augenhöhle · Achsel · Taille ·
+                // Muskel-Furche), wo es als roter „Wund"-Fleck liest (GEMESSEN am Avatar-Render, das
+                // mit dem Muskel-Relief schlimmer wurde). 0.07 hält den Silhouetten-Hauch, räumt die
+                // Mulden-Röte. Fell behält das volle Glühen (0.36).
+                const rimAmt = opts.skin ? 0.07 : 0.36;
                 const o = T.output;
                 mat.outputNode = T.vec4(o.xyz.add(warm.mul(fres.mul(rimAmt))), o.w);
             }
@@ -15480,7 +15565,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 80 }); // Avatar: höhere Auflösung (einmal gebaut)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 96 }); // Avatar: hohe Auflösung (einmal gebaut → Muskel/Landmark-Detail überlebt)
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -73864,7 +73949,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
                 // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
                 // ohnehin `_creatureBodySize`).
-                size: 0.64, // Tarierung des sizeFactor ins Tie-Band (V18.208-Monotonie); der LOOK ist
+                size: 0.6, // Tarierung des sizeFactor ins Tie-Band (V18.208-Monotonie; nach der Muskel-Masse GUSS 1+2 von 0.64 neu tariert); der LOOK ist
                 // size-invariant (uniform, kamera-gerahmt), die Welt-Größe trägt _creatureBodySize.
                 archetype: AnazhRealm.CREATURE_ARCHETYPES.deer, // sanfter Pflanzenfresser (leggy, seitliche Augen)
                 bodyMat: "stein",
@@ -73921,7 +74006,7 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         predator: true,
         bodyParts: Object.freeze(
             AnazhRealm._creatureSkeleton({
-                size: 0.57, // Tarierung: hält den sizeFactor im Tie-Band um sprite/wesen (V18.208-Monotonie)
+                size: 0.53, // Tarierung: hält den sizeFactor im Tie-Band um sprite/wesen (V18.208-Monotonie; nach Muskel-Masse von 0.57 neu tariert)
                 archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat, // Jäger (frontale Augen, langer Schwanz, Klauen)
                 bodyMat: "glut",
                 limbMat: "glut",

@@ -378,6 +378,37 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### lebendiger-koerper GUSS 2 — DAS SYSTEM AUF DAS METABALL-MAXIMUM (Muskel · Landmark · Relief, 17.06.2026)
+
+Schöpfer-Auftrag: „ein Riese, keine Ameise — giesse das System auf die 10." Antwort: KEIN Objekt-
+Tweak, sondern die GETEILTEN Pässe der Körper-Pipeline auf ihr Maximum gegossen — eine Änderung je
+Pass hebt Avatar + jede Kreatur auf einmal. Alles am eigenen Auge (`diag-werk-render`, swiftshader-
+treu) iteriert + verifiziert.
+
+- **LANDMARK-SCHÄRFE-ACHSE (BEDINGUNG ii, geteilt):** `_buildCreatureSkinGeometry` liest jetzt
+  `part.kScale` → der smin blendet pro Knochen TIGHT (`<1`, knochige Kante) oder weich (`>1`, Muskel-
+  Bauch). So tragen weiche Muskeln UND definierte Knochen-Landmarken in EINEM Feld. GEMESSEN-Lehre:
+  ein zu tighter k (kScale 0.5 → k≈0.012) RISST die Haut (Fresnel-Rim leckt rot in den Spalt) — die
+  Pipeline will sanfte Falten; Floor auf 0.04 angehoben → definierte Bumps statt Cracks.
+- **MENSCH bemuskelt (`_humanoidSkeleton`):** Pectoralis · Rectus/Bauch-Block · Latissimus/Flanke ·
+  Klavikel + die Glutealmasse in ZWEI geteilt (statt EINER brückenden Platte → die Oberschenkel
+  trennen sich, GEMESSEN am Render). Patella · Olecranon · Jochbein · Kiefer als Landmark-Bumps. Der
+  Torso liest als Körper, nicht als Schlauch. Rig-sicher (das Skinning ist SPATIAL, kein Part-Index).
+- **AO-RELIEF verstärkt (geteilt, der „flach-einfarbig"-Multiplikator):** die gebackene Kavitäts-AO
+  bekam tiefere Mulden (`1−cav·1.7`, Floor 0.58) UND einen Grat-Highlight (`+ridge·0.5`, ≤1.12) → die
+  Muskel-/Landmark-Geometrie POPPT, statt im Uniform-Ton zu ertrinken. Das ist, was die Muskel-Arbeit
+  überhaupt SICHTBAR macht.
+- **WARM-RIM gedämpft (geteilt):** das Fresnel-SSS-Rim der Haut (0.12→0.07) leckte rot in jede konkave
+  Mulde (Augenhöhle · Achsel · Muskel-Furche) = der „Wund"-Look (auch im Baseline schon). 0.07 hält den
+  Silhouetten-Hauch, räumt die Mulden-Röte.
+- **AVATAR-AUFLÖSUNG 80→96** (einmal gebaut → Muskel/Landmark-Detail überlebt die Tesselierung).
+- **VERIFIZIERT:** `diag-genom` voll grün (Physik steht/knickt nicht · Affinität tag-frozen ·
+  Allometrie) · `diag-koerper-tiefpass` 4/4 (Makro-Relief bewahrt · Haunch ×1.40) · Fast-Playtest 13/13
+  · voller Playtest [Merge-Gate]. EHRLICH (Fischer, kein Über-Claim): Avatar ~6.5→~7.5, Reh ~4.5→~5.5
+  — das METABALL-Maximum (saubere stilisierte Körper), KEINE 10. Ein wahres AAA-10 braucht die §3-
+  Architektur-Entscheidung (Option b: echte Mesh-Topologie + Normal-Maps) — Schöpfer-Sache. OFFEN:
+  das Gesicht (rote Augen-Partie · Identitäts-Hautton) · der bulböse Reh-Leib · der Hals-Kragträger.
+
 ### lebendiger-koerper GUSS 1 — WURZEL 2 GEBAUT: MUSKEL ALS DYNAMIK (die Hinterhand wird der Motor, 17.06.2026)
 
 Direkt auf der Mess-Welle: der erste echte Guss am gemessenen Hebel. Mit eigenem Auge (`diag-werk-

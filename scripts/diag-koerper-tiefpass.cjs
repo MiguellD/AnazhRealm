@@ -1,4 +1,11 @@
-// diag-koerper-tiefpass.cjs — DIE WAND fuer lebendiger-koerper §2½ WURZEL 1.
+// diag-koerper-tiefpass.cjs — DIE WAND fuer den LEBENDIGEN KOERPER (Form-Treue, §2½).
+// Baender: (1) WURZEL 1 — Taubin/smin bewahren das Makro-Relief (die „Glaettung filtert die
+// Anatomie weg"-These REFUTIERT, gemessen ~100%); (2) WURZEL 2 — die Hinterhand ist der Gang-
+// MOTOR (rearR > frontR, die Muskel-Dynamik); (3) V18.208 — die HP-Monotonie haelt (die Muskel-
+// Masse schiebt den sizeFactor nicht aus dem Tie-Band). Pipeline-Defaults unveraendert (Regression-
+// Anker). Reine CPU-Geometrie → headless verifizierbar; der LOOK bleibt augen-bound (diag-werk-render).
+//
+// HISTORIE — der urspruengliche WURZEL-1-Auftrag (die Diagnose-Welle):
 //
 // Der Schoepfer-Befund (17.06.): das Reh ist eine horizontale Rakete, der Humanoid ein
 // weicher Schlauch — OBWOHL _creatureSkeleton/_humanoidSkeleton die Anatomie schon korrekt
@@ -214,6 +221,24 @@ function startSaveServer() {
             o.human.p3 = measureHuman({ taubinPasses: 3 });
             o.human.p6 = measureHuman({ taubinPasses: 6 });
 
+            // ── SEELEN-SPEKTRUM (V18.208-Wand): sizeFactor + hpMax/speed je Soul, nach sizeFactor
+            //    sortiert → die HP-Monotonie (groesser ⇒ nicht weniger HP) muss halten. Die
+            //    Muskel-Masse darf den sizeFactor nicht aus dem Tie-Band schieben (Re-Tarierung). ──
+            o.souls = [];
+            for (const sn of Object.keys(C.CREATURE_SOULS)) {
+                const soul = C.CREATURE_SOULS[sn];
+                if (!soul || !Array.isArray(soul.bodyParts)) continue;
+                const sf = r._compoundSizeFactor({ parts: soul.bodyParts });
+                const cs = r.computeCreatureStats({ userData: { soul: sn, boosts: [] } });
+                o.souls.push({
+                    sn,
+                    sf: +sf.toFixed(4),
+                    hp: +cs.stats.hpMax.toFixed(2),
+                    speed: +cs.stats.speed.toFixed(2),
+                });
+            }
+            o.souls.sort((a, b) => a.sf - b.sf);
+
             return o;
         });
 
@@ -296,6 +321,16 @@ function startSaveServer() {
             `frontR=${d.legFrontR} rearR=${d.legRearR} ratio=${legRatio.toFixed(2)} segs=${d.legSegN}`,
             d.legSegN >= 8 && legRatio > 1.15
         );
+
+        console.log("\n══ SEELEN-SPEKTRUM (V18.208 HP-Monotonie: nach sizeFactor sortiert) ══");
+        for (const s of out.souls || []) console.log(`  ${s.sn.padEnd(10)} sf=${s.sf}  hp=${s.hp}  speed=${s.speed}`);
+        {
+            const sp = out.souls || [];
+            let mono = true;
+            for (let i = 1; i < sp.length; i++)
+                if (sp[i].sf - sp[i - 1].sf > 0.05 && sp[i].hp < sp[i - 1].hp - 0.5) mono = false;
+            ck("V18.208 HP-MONOTONIE: groesserer sizeFactor ⇒ nicht weniger HP", `mono=${mono}`, mono);
+        }
 
         console.log("\n── ERGEBNIS ──");
         for (const c of checks) console.log(`  ${c.ok ? "OK " : "XX "}${c.name}  [${c.val}]`);
