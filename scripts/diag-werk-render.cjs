@@ -168,6 +168,81 @@ async function renderWerk(page, bpName, view) {
                 } catch (_e) {
                     window.__treeInfo = "ERR:" + _e.message;
                 }
+            } else if (bpName === "humanoidlineup") {
+                // GUSS 5 — die VIELFALT-GALERIE: N Genom-Körper nebeneinander in EINEM Bild
+                // (der „RPM in den Schatten"-Beweis: distinkte Körper aus EINEM Gesetz).
+                grp = new THREE.Group();
+                const seeds = ["athlet", "schwer", "frau", "schlank", "huene"];
+                let i = 0;
+                for (const sd of seeds) {
+                    try {
+                        const gen = r._rollHumanoidGenome(sd);
+                        const rig = r._buildHumanoidRig(gen);
+                        if (rig && rig.mesh) {
+                            r._animateHumanoidRig(rig.rig, 0, 0, false, false); // Ruhe-Pose
+                            rig.mesh.position.x = (i - (seeds.length - 1) / 2) * 1.5;
+                            rig.mesh.updateMatrixWorld(true);
+                            grp.add(rig.mesh);
+                        }
+                    } catch (_e) {
+                        window.__treeInfo = "ERR:" + _e.message;
+                    }
+                    i++;
+                }
+                if (!window.__treeInfo) window.__treeInfo = "lineup " + seeds.length;
+            } else if (bpName === "humanoidbuild") {
+                // GUSS 5 — der BAU-ACHSEN-BEWEIS: schlank → mittel → schwer, EXPLIZITE build-Werte
+                // (gleiches Geschlecht/Größe/Kopf), nebeneinander. Isoliert die Statur-Achse.
+                grp = new THREE.Group();
+                const builds = [0.05, 0.5, 0.95];
+                let i = 0;
+                for (const b of builds) {
+                    try {
+                        const rig = r._buildHumanoidRig({
+                            build: b,
+                            muscle: b,
+                            sex: 0.12,
+                            headRatio: 1.0,
+                            kh: 0.21,
+                            skinColor: 0xc09060,
+                            hairColor: 0x241712,
+                        });
+                        if (rig && rig.mesh) {
+                            r._animateHumanoidRig(rig.rig, 0, 0, false, false);
+                            rig.mesh.position.x = (i - 1) * 1.7;
+                            rig.mesh.updateMatrixWorld(true);
+                            grp.add(rig.mesh);
+                        }
+                    } catch (_e) {
+                        window.__treeInfo = "ERR:" + _e.message;
+                    }
+                    i++;
+                }
+                if (!window.__treeInfo) window.__treeInfo = "build 0.05/0.5/0.95";
+            } else if (bpName.indexOf("humanoidvar:") === 0) {
+                // GUSS 5 — EIN Genom-Körper aus einem Seed (Detail).
+                const seed = bpName.split(":")[1] || "a";
+                grp = new THREE.Group();
+                try {
+                    const gen = r._rollHumanoidGenome(seed);
+                    const rig = r._buildHumanoidRig(gen);
+                    if (rig && rig.mesh) {
+                        grp.add(rig.mesh);
+                        r._animateHumanoidRig(rig.rig, 0, 0, false, false);
+                        rig.mesh.updateMatrixWorld(true);
+                        window.__treeInfo =
+                            "var " +
+                            seed +
+                            " sex=" +
+                            gen.sex.toFixed(2) +
+                            " build=" +
+                            gen.build.toFixed(2) +
+                            " hr=" +
+                            gen.headRatio.toFixed(2);
+                    } else window.__treeInfo = "NO-RIG";
+                } catch (_e) {
+                    window.__treeInfo = "ERR:" + _e.message;
+                }
             } else if (bpName.indexOf("humanoidrig:") === 0) {
                 // GUSS 2 — das RIG (SkinnedMesh + Bones): `humanoidrig:pose:sex` (bind/rest/walk).
                 const hk = bpName.split(":");
@@ -308,6 +383,8 @@ async function renderWerk(page, bpName, view) {
                 bpName.indexOf("creature:") === 0 ||
                 bpName.indexOf("humanoid:") === 0 ||
                 bpName.indexOf("humanoidrig:") === 0 ||
+                bpName.indexOf("humanoidvar:") === 0 ||
+                bpName === "humanoidlineup" ||
                 bpName.indexOf("playeravatar:") === 0;
             const isTall = isTree || isCreature; // braucht mehr Distanz (volle Höhe ins Bild)
             const cam = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
@@ -422,6 +499,11 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "eval-rest-back.png", "back"],
             ["humanoidrig:rest:0", "eval-rest-34.png", ""],
             ["humanoidrig:walk:0", "eval-walk-34.png", ""],
+            // GUSS 5 — die VIELFALT-GALERIE (RPM in den Schatten)
+            ["humanoidlineup", "eval-lineup.png", "front"],
+            ["humanoidbuild", "eval-build.png", "front"],
+            ["humanoidvar:schwer", "eval-var-schwer.png", "front"],
+            ["humanoidvar:athlet", "eval-var-athlet.png", "front"],
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)

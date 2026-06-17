@@ -14725,6 +14725,16 @@ class AnazhRealm {
         const bodyCol = g.bodyColor;
         const limbCol = typeof g.limbColor === "number" ? g.limbColor : bodyCol;
         const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask., 1 weibl.
+        // GENOM-ACHSEN (Ω-B5 — der RPM-übertreffende Hebel: UNENDLICHE Körper aus EINEM Gesetz,
+        // statt RPMs festen Presets). build (schlank↔schwer) · muscle (Glied-Masse) · headRatio
+        // (Alter/Heroik: <1 langgliedrig-heroisch, >1 jung-stilisiert). Jede Achse moduliert die
+        // Proportionen physik-erhaltend (alle Stationen überlappen weiter → die Haut verschmilzt).
+        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.4)); // 0 schlank · 0.5 athlet. · 1 schwer
+        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : build)); // Glied-Masse (Default=build)
+        const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0));
+        const limbF = 0.74 + muscle * 0.64; // Glied-Durchmesser-Faktor (schlank→dick)
+        const girthF = 0.88 + build * 0.34; // Rumpf-Girth (Breite + Tiefe)
+        const bellyF = build * build * 0.5; // Bauch-Vorwölbung (quadratisch → erst bei schwerem Build)
         const parts = [];
         const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
             const p = {
@@ -14782,19 +14792,20 @@ class AnazhRealm {
         };
         // Breite (Halbachse x): Hüfte → Taille (schmal) → Schulter (breit). t: 0=Becken … 1=Schulter
         const widthCP = [
-            [0, hipHalf * 0.84],
-            [0.16, hipHalf],
-            [0.42, waistHalf],
-            [0.66, shoulderHalf * 0.9],
-            [0.86, shoulderHalf],
-            [1, shoulderHalf * 0.95],
+            [0, hipHalf * 0.84 * girthF],
+            [0.16, hipHalf * girthF],
+            [0.42, waistHalf * girthF],
+            [0.66, shoulderHalf * 0.9 * girthF],
+            [0.86, shoulderHalf * (1 + muscle * 0.1)],
+            [1, shoulderHalf * 0.95 * (1 + muscle * 0.1)],
         ];
-        // Tiefe (Halbachse z): Becken tief → Taille schmaler → Brustkorb am TIEFSTEN → Schulter flach
+        // Tiefe (Halbachse z): Becken tief → Taille schmaler → Brustkorb am TIEFSTEN → Schulter flach;
+        // bellyF wölbt die Taille bei schwerem Build vor (der Bauch).
         const depthCP = [
-            [0, 0.44],
-            [0.42, 0.34],
-            [0.66, 0.5],
-            [1, 0.32],
+            [0, (0.44 + bellyF * 0.5) * girthF],
+            [0.42, (0.34 + bellyF) * girthF],
+            [0.66, 0.5 * girthF],
+            [1, 0.32 * girthF],
         ];
         const torsoBaseY = 3.8,
             torsoTopY = 6.62,
@@ -14811,35 +14822,38 @@ class AnazhRealm {
         //    Schädel (rund, zentriert) + Hinterkopf/Occiput (füllt die Nacken-Kerbe) + Kiefer
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
-        limb(0, shoulderY - 0.05, 0.0, 0, 6.9, 0.0, 0.46, bodyMat, bodyCol); // Hals (vertikal, schlank)
-        add("sphere", headMat, 0, 7.5, -0.02, 0.9, 0.92, 0.92, null, limbCol, { bodyRole: "head", eyeFront: 0.85 }); // Schädel
-        add("sphere", headMat, 0, 7.14, -0.13, 0.5, 0.46, 0.44, null, limbCol); // Occiput (Nacken-Kerbe füllen)
-        add("box", headMat, 0, 7.16, 0.17, 0.58, 0.46, 0.5, null, limbCol); // Kiefer/Kinn (Gesichts-Ebene vorn-unten)
+        const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
+        limb(0, shoulderY - 0.05, 0.0, 0, 6.9, 0.0, 0.46 * (0.85 + muscle * 0.3), bodyMat, bodyCol); // Hals (Muskel → dicker)
+        add("sphere", headMat, 0, 7.5, -0.02, 0.9 * hr, 0.92 * hr, 0.92 * hr, null, limbCol, { bodyRole: "head", eyeFront: 0.85 }); // Schädel
+        add("sphere", headMat, 0, 7.14, -0.13, 0.5 * hr, 0.46 * hr, 0.44 * hr, null, limbCol); // Occiput
+        add("box", headMat, 0, 7.16, 0.17, 0.58 * hr, 0.46 * hr, 0.5 * hr, null, limbCol); // Kiefer/Kinn
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 0.92,
                 shY = shoulderY + 0.02;
-            add("sphere", limbMat, shX, shY, 0, 0.56, 0.56, 0.56, null, limbCol); // Deltoideus (Arm↔Torso-Brücke)
+            add("sphere", limbMat, shX, shY, 0, 0.56 * limbF, 0.56 * limbF, 0.56 * limbF, null, limbCol); // Deltoideus
             const elbowX = s * (shoulderHalf + 0.5),
                 elbowY = waistY + 0.05;
             const wristX = s * (shoulderHalf + 0.62),
                 wristY = hipY - 0.05;
-            limb(shX, shY, 0, elbowX, elbowY, 0, 0.4, limbMat); // Oberarm
-            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32, limbMat); // Unterarm
-            // HAND — eine echte Hand statt einer Flossen-Knubbel: Handteller (flach) + Daumen-
-            // Stummel (innen-vorn) + Finger-Block (verjüngt darunter); der smin verschmilzt sie
-            // zu einem Fäustling-mit-Daumen (liest als Hand, kein Paddel).
-            add("box", limbMat, wristX + s * 0.02, wristY - 0.26, 0.04, 0.32, 0.3, 0.16, null, limbCol); // Handteller
-            add("box", limbMat, wristX - s * 0.16, wristY - 0.2, 0.1, 0.13, 0.2, 0.13, null, limbCol); // Daumen (innen-vorn)
-            add("box", limbMat, wristX + s * 0.03, wristY - 0.5, 0.04, 0.28, 0.26, 0.14, null, limbCol); // Finger-Block
+            limb(shX, shY, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32 * limbF, limbMat); // Unterarm (distal dünner)
+            // HAND — Handteller + Daumen + DREI Finger-Streben (kleine Lücken → der smin lässt
+            // Finger-Furchen ahnen, statt eines Paddels). Liest als Hand mit Fingern.
+            const hw = wristX + s * 0.02;
+            add("box", limbMat, hw, wristY - 0.24, 0.04, 0.3, 0.26, 0.15, null, limbCol); // Handteller
+            add("box", limbMat, wristX - s * 0.17, wristY - 0.18, 0.11, 0.12, 0.2, 0.12, { x: 0, y: 0, z: s * 0.5 }, limbCol); // Daumen (abgespreizt, vorn)
+            for (let f = -1; f <= 1; f++)
+                add("box", limbMat, hw + f * 0.09, wristY - 0.46, 0.04, 0.07, 0.26, 0.12, null, limbCol); // 3 Finger-Streben
         }
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
         for (const s of [-1, 1]) {
             const hipX = s * (hipHalf * 0.55),
                 kneeX = s * 0.5,
                 ankleX = s * 0.46;
-            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.62, limbMat); // Oberschenkel (kräftig)
-            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.44, limbMat); // Unterschenkel (sehnig)
+            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.62 * limbF, limbMat); // Oberschenkel (kräftig)
+            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.42 * limbF, limbMat); // Unterschenkel (Grund-Strebe → schlanker Knöchel)
+            add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — Ferse (hinten-unter dem Knöchel) + Spann/Vorfuß (vorn, niedriger, verjüngt):
             // der Knöchel sitzt ~¼ vom Heck → menschliche Proportion, keine flache Clown-Latsche.
             add("box", limbMat, ankleX, 0.14, -0.06, 0.34, 0.3, 0.36, null, limbCol); // Ferse + Knöchel
@@ -15235,6 +15249,25 @@ class AnazhRealm {
     // glatte Gestalt + bewegt sich. Auf WebGPU mit NodeMaterial automatisch geskinnt (kein
     // SkeletonUtils.clone — WebGPU-Crash #32236; kein positionNode-Override — umginge die
     // Skinning-Injektion). Liefert { mesh, skeleton, bones, rig, kh } oder null.
+    //
+    // wahrerguss System B (GUSS 5) — DER GENOM-ROLLER: aus EINEM Seed ein deterministisches
+    // Körper-Genom (Geschlecht · Statur · Muskel · Kopf-Verhältnis · Größe · Haut/Haar-Ton). DER
+    // RPM-übertreffende Hebel: unendliche distinkte Körper aus EINEM Gesetz — RPM hat feste Presets,
+    // wir haben ein kontinuierliches Form-Feld. Peer-deterministisch (gleicher Seed → gleicher Körper).
+    _rollHumanoidGenome(seed) {
+        const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
+        const skinTones = [0xc9a07a, 0xb07a52, 0x8a5a38, 0xe0b58e, 0x6b4429, 0xd9a878, 0x9c6b44];
+        const hairTones = [0x241712, 0x120d0a, 0x5a3a1e, 0x7a5a32, 0x3a3a3c, 0x2a1c12];
+        return {
+            sex: g.axis("sex"),
+            build: g.axis("build"),
+            muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
+            headRatio: g.range("head", 0.92, 1.16),
+            kh: g.range("height", 0.195, 0.235), // Welt-Höhe ~1.56–1.88 m
+            skinColor: g.pick("skin", skinTones),
+            hairColor: g.pick("hair", hairTones),
+        };
+    }
     _buildHumanoidRig(g) {
         if (typeof THREE === "undefined" || typeof THREE.SkinnedMesh !== "function") return null;
         g = g || {};
@@ -15366,7 +15399,7 @@ class AnazhRealm {
         // DAS GESICHT — Augen + Nase + Brauen als Kind des KOPF-Bones (folgen der Kopf-Bewegung).
         // Ein Humanoid ohne Augen liest als Schaufensterpuppe; das Gesicht macht ihn lebendig.
         try {
-            this._addHumanoidFace(rig, kh, oy, skinCol);
+            this._addHumanoidFace(rig, kh, oy, skinCol, g.hairColor);
         } catch (_e) {
             /* Gesicht optional — kein Crash */
         }
@@ -15378,7 +15411,7 @@ class AnazhRealm {
     // Kopf-Rotation, nicht skinned). Positionen in Kopf-Bone-LOKAL (der Bone sitzt bei 7.2·KH;
     // der Schädel-Mittelpunkt bei 7.5 → die Augen liegen leicht darüber, vorn auf der Gesichts-
     // Ebene). Macht aus dem blanken Ei eine Person.
-    _addHumanoidFace(rig, kh, oy, skinColor) {
+    _addHumanoidFace(rig, kh, oy, skinColor, hairColor) {
         if (typeof THREE === "undefined" || !rig || !rig.head) return;
         const headBoneY = 7.2; // KH (= die Bone-Spec head-Pos); LOKAL-Offsets relativ dazu
         const L = (xKH, yKH, zKH) => new THREE.Vector3(xKH * kh, (yKH - headBoneY) * kh, zKH * kh);
@@ -15442,7 +15475,7 @@ class AnazhRealm {
         // HAAR — eine Kappe, die Scheitel + Hinterkopf + Seiten bis zur Stirn-/Brauen-Linie deckt
         // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
-        const hairMat = eyeMat(0x241712, false, 0, 0.72);
+        const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
         const hairGeom = new THREE.SphereGeometry(0.4 * kh, 18, 14);
         hairGeom.scale(1.12, 0.8, 1.25); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
         const hair = new THREE.Mesh(hairGeom, hairMat);
