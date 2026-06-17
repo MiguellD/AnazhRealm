@@ -14909,12 +14909,12 @@ class AnazhRealm {
         //   Reduziert korrekt auf den alten `limb` (dz=0) UND `segBetween` (dx=0). Jetzt KENNT jede
         //   Verbindung ihre volle Richtung — ein Knochen/Muskel weiss, welche zwei Knoten er spannt.
         const aimRot = (dx, dy, dz) => ({ x: Math.atan2(dz, dy), y: 0, z: Math.atan2(-dx, Math.hypot(dy, dz)) });
-        const limb = (ax, ay, az, bx, by, bz, diam, mat, col) => {
+        const limb = (ax, ay, az, bx, by, bz, diam, mat, col, extra) => {
             const dx = bx - ax,
                 dy = by - ay,
                 dz = bz - az;
             const len = Math.hypot(dx, dy, dz) || 0.01;
-            add("limb", mat || limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, diam, len + diam * 0.8, diam, aimRot(dx, dy, dz), typeof col === "number" ? col : limbCol);
+            add("limb", mat || limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, diam, len + diam * 0.8, diam, aimRot(dx, dy, dz), typeof col === "number" ? col : limbCol, extra);
         };
         // DAS MUSKEL-GESETZ („Fasern wie Federn über Knoten", Schöpfer-Vision): ein Muskel SPANNT zwei
         //   Skelett-Knoten (Ursprung A → Ansatz B). Seine SPINDEL-Form (fusiform — dünn an den Sehnen-
@@ -15010,9 +15010,11 @@ class AnazhRealm {
         }
         // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
         add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66, struct: true });
-        // BAUCH (abdomen, fleisch WEICH): die viszerale Masse = die TAILLE (schmaler als Brustkorb+Becken).
+        // BAUCH (abdomen): die tiefe Rumpf-Muskel-/Viszeral-Masse = die TAILLE (Rectus/Obliques liegen
+        //    als Relief darüber). def → rendert als Muskel, kein halbtransparentes Fleisch (Parallelpfad).
         add("box", bodyMat, 0, 4.66, 0.05 * girthF, waistHalf * 1.66, 1.05, 0.84 * girthF, null, bodyCol, {
             kScale: 1.08,
+            def: true,
         });
         // WIRBELSÄULE (spine, knochen) — die Rücken-Säule mit S-KURVE (Lende VOR · Brust ZURÜCK · Hals VOR):
         //    der Rücken curve, kein Brett. Drei Segmente, je z-versetzt.
@@ -15111,7 +15113,7 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.16, -0.02, 0, 7.25, -0.04, 0.5 * (0.92 + muscle * 0.25), bodyMat, bodyCol); // Hals (dicker, trägt den Kopf)
+        limb(0, shoulderY - 0.16, -0.02, 0, 7.25, -0.04, 0.46 * (0.92 + muscle * 0.25), bodyMat, bodyCol, { def: true, kScale: 0.92 }); // Hals — tiefer Hals-Muskel-Kern (kein nacktes Fleisch), trägt den Kopf
         // (STERNOCLEIDOMASTOIDEUS → MUSKEL-ATLAS unten)
         // SCHÄDEL — ein sauberes OVOID: EIN Cranium-Dome deckt Scheitel UND Hinterkopf (Occiput) in einer
         //    glatten Form (war Kugel + separater Occiput-Bump = „Schädel komisch"); höher als breit + leicht
@@ -15137,9 +15139,9 @@ class AnazhRealm {
                 elbowY = waistY + 0.1;
             const wristX = s * (shoulderHalf + 0.6),
                 wristY = hipY - 0.3; // Handgelenk TIEFER → der Unterarm ~so lang wie der Oberarm (war 0.68× → stämmig/kurz, Schöpfer „arme nicht sauber")
-            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
+            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.32 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Oberarm — TIEFER Muskel-Kern (Brachialis-Bulk); Bizeps/Trizeps liegen als Relief darüber
             // (BIZEPS / TRIZEPS / UNTERARM-MUSKEL → MUSKEL-ATLAS unten — gelenk-verankert)
-            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.3 * limbF, limbMat); // Unterarm-Knochen-Glied (Radius/Ulna)
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.24 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Unterarm — tiefer Muskel-Kern (Flexoren/Extensoren-Bulk); der Radius/Ulna-Schaft liegt darunter
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -15182,7 +15184,7 @@ class AnazhRealm {
             const hipX = s * (hipHalf * 0.72),
                 kneeX = s * 0.4, // Femur winkelt EINWÄRTS (breite Hüfte → Knie über dem Fuß): die echte Bein-Achse, schließt den Groin-Spalt zur natürlichen Leiste statt zweier Säulen
                 ankleX = s * 0.38;
-            limb(hipX, hipY - 0.1, -0.12, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG); Femur-Kopf TIEFER (4.05) + POSTERIOR (z−0.12) → der Schenkel-Kopf sitzt unter der Leiste, beult nicht nach vorn in die Briefs
+            limb(hipX, hipY - 0.1, -0.12, kneeX, 2.3, 0, 0.58 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Oberschenkel — tiefer Muskel-Kern; Quad/Hamstring/Vastus/Adduktor liegen als Relief darüber (kein nacktes Fleisch)
             // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
             // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
             // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
@@ -15208,7 +15210,7 @@ class AnazhRealm {
                 });
             }
             // (QUADRIZEPS / HAMSTRING / SARTORIUS / ADDUKTOR → MUSKEL-ATLAS unten — gelenk-verankert)
-            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.46 * limbF, limbMat); // Unterschenkel (kräftiger → Wade liest)
+            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.36 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Unterschenkel — tiefer Muskel-Kern; Gastroc/Soleus/Tibialis liegen als Relief darüber
             // ── BEIN-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones): dünne knochen-
             //    Schäfte IM Fleisch (Femur, Tibia) + Gelenk-Knöpfe an Hüfte/Knie/Knöchel (T-Knochen-
             //    Enden — bony an den Landmarken, die Animations-Achse Hüfte→Knie→Knöchel).
