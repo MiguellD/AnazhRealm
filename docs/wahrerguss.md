@@ -642,3 +642,26 @@ ohne Mehr-Winkel-Prüfung ist die Beschönigungs-Falle.
   Gesichts-Topologie / Kleidung) — eine Architektur-Entscheidung, kein Tweak.
 - Phoenix/Dragon noch am alten Box-Pfad · Kreatur-Beine spindeldürr + Augen glubschig ·
   Selektions-Richter §11 (Quadruped-Vielfalt) · echte-WebGPU-Browser-Abnahme.
+
+### §12-GUSS 7 (17.06.2026) — DIE UNSAUBERKEITEN HEILEN, NICHT VERSTECKEN (Profi-recherchiert)
+
+> **STAND:** Schöpfer-Korrektur: „Kleider verstecken das, beheben aber nicht die Unsauberkeiten;
+> für eine 10/10 — forsche, recherchier, setze um, Fischer." RICHTIG: Kleidung wäre ein Cover-up
+> über einer wobbeligen, klumpigen Metaball-Oberfläche gewesen. Die Wurzel ist die Oberfläche selbst.
+
+**RECHERCHE → UMSETZUNG (die bewährte Profi-Technik, KEIN Neu-Erfinden):** SDF-/implizite-Flächen
+werden mit der **FELD-GRADIENTEN-NORMALE** geshadet (∇field via zentrale Differenzen), NICHT mit
+der vom Dreiecks-Mesh gemittelten Normale. Vorbild: **Media Molecule „Dreams"** (reine SDF-Welt,
+butterweich), **Clayxels**, **Inigo Quilez** (raymarched SDF). `computeVertexNormals()` mittelt die
+Surface-Nets-WOBBEL → sie werden als Lumpen/Risse im Shading sichtbar = die „Unsauberkeiten". Die
+Gradienten-Normale liest das GLATTE, symmetrische Feld → eine saubere, links/rechts-symmetrische
+Oberfläche, UNABHÄNGIG von der Tesselierung. GEMESSEN am Auge (Avatar + Kreatur, geteilt): die
+klumpige Ton-Haut → glatte Gestalt. Plus: AO-Boden 0.66/Stärke 1.3 + etwas Arm-LUFT zum Rumpf →
+keine pechschwarzen Kontakt-Falten-Risse mehr.
+
+**EHRLICHE BILANZ:** der Avatar ist jetzt ~6.5–7 (saubere, glatte stilisierte Gestalt). Die
+Oberflächen-Unsauberkeit ist mit einer recherchierten Technik geheilt, nicht versteckt. Was zur
+echten 10 bleibt (die Decke ehrlich): die NACKTHEIT/Material-Armut, das basale Gesicht (Mandel-
+Augen ohne Sklera/Iris), die Silhouette-Schlankheit, und letztlich die Repräsentations-Decke.
+Der nächste echte Hebel ist NICHT Kleidung-als-Versteck, sondern: das Gesicht aus dem Schädel-
+FELD weiter schärfen (Augen-Höhlen als Feld-Senke, statt aufgesetzt) + die Silhouette füllen.

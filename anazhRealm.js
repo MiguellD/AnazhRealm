@@ -15230,7 +15230,29 @@ class AnazhRealm {
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
         geom.setIndex(idx);
-        geom.computeVertexNormals();
+        // PROFI-TECHNIK (SDF-Rendering — Media Molecule „Dreams" · Clayxels · Inigo Quilez): die
+        // Shading-NORMALE kommt aus dem FELD-GRADIENTEN (∇field via zentrale Differenzen), NICHT
+        // aus dem wobbeligen Dreiecks-Mesh (computeVertexNormals mittelt die Mesh-Lumpen → sie
+        // werden im Shading sichtbar = die „Unsauberkeiten"). Das Feld ist GLATT + symmetrisch →
+        // eine butterweiche, saubere, links/rechts-symmetrische Oberfläche, unabhängig von der
+        // Surface-Nets-Tesselierung. field>0 innen → ∇field zeigt nach INNEN → Außen-Normale = −∇field.
+        {
+            const ge = h * 0.6; // Gradient-Schrittweite (~½ Zelle: lokal genug, rausch-frei)
+            const nrm = new Float32Array(verts.length);
+            for (let v = 0; v < verts.length; v += 3) {
+                const x = verts[v],
+                    y = verts[v + 1],
+                    z = verts[v + 2];
+                let nx = field(x - ge, y, z) - field(x + ge, y, z);
+                let ny = field(x, y - ge, z) - field(x, y + ge, z);
+                let nz = field(x, y, z - ge) - field(x, y, z + ge);
+                const L = Math.hypot(nx, ny, nz) || 1;
+                nrm[v] = nx / L;
+                nrm[v + 1] = ny / L;
+                nrm[v + 2] = nz / L;
+            }
+            geom.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+        }
         // wahrerguss System A×D — GEBACKENE AO (Substanz, der „flach-einfarbig"-Heiler): die
         // KRÜMMUNG pro Vertex (Konkavität = Mulde → verschattet · Konvexität = Grat → voll) wird
         // in eine Vertex-Farbe gebacken; das Hide-Material multipliziert sie. Das legt den
@@ -15287,7 +15309,7 @@ class AnazhRealm {
                 // Boden 0.6 + moderate Stärke: ein sanftes Relief (Gelenk/Muskel lesen), das ein
                 // DUNKLES Material (Glutwesen) nicht in Schwarz erdrückt (Counter-Shading + Basis
                 // stapeln sonst zu viel) — auf hellem Avatar trotzdem klar als Mulden-Schatten.
-                const ao = Math.max(0.6, 1 - Math.max(0, occ[v]) * 1.5); // Mulde gedämpft, Grat voll
+                const ao = Math.max(0.66, 1 - Math.max(0, occ[v]) * 1.3); // Mulde dezent, Grat voll (kein pechschwarzer Falten-Riss)
                 colors[v * 3] = ao;
                 colors[v * 3 + 1] = ao;
                 colors[v * 3 + 2] = ao;
@@ -15705,10 +15727,11 @@ class AnazhRealm {
         x(r.legL.hip, 0.08);
         x(r.legL.knee, 0.16); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
         x(r.legR.knee, 0.04);
-        // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper (entspannter Hang, ~8° statt
-        // ~22°; −z links / +z rechts zieht die A-Pose ein) + leichte Asymmetrie (lebendig).
-        z(r.armL.shoulder, -0.26);
-        z(r.armR.shoulder, 0.24);
+        // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper, aber mit etwas LUFT zum Rumpf
+        // (sonst presst der Arm eine pechschwarze Kontakt-FALTE in den Torso = ein „Riss"); ein
+        // entspannter Hang mit sichtbarer Lücke liest sauber als separater Arm.
+        z(r.armL.shoulder, -0.19);
+        z(r.armR.shoulder, 0.17);
         x(r.armL.elbow, -0.18); // sanfte Ellbogen-Beuge
         x(r.armR.elbow, -0.1);
     }
