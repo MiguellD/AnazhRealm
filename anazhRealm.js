@@ -14850,6 +14850,14 @@ class AnazhRealm {
             kScale: 0.96,
             bodyRole: "chest",
         });
+        // RIPPEN (costae, knochen, dünn, IM Brustkorb-Ovoid): horizontale Bänder, die das Ovoid als
+        //    echten RIPPENKORB lesen lassen (Referenz). Schmaler oben + unten (Ei-Form), breit Mitte.
+        for (let rb = 0; rb < 6; rb++) {
+            const ry = 5.15 + rb * 0.3; // sechs Rippen-Ebenen
+            const rw = shoulderHalf * (1.0 + 0.55 * Math.sin((rb + 0.5) / 6 * Math.PI)); // Ei: Mitte am breitesten
+            const rd = (0.85 + 0.35 * Math.sin((rb + 0.5) / 6 * Math.PI)) * girthF;
+            add("box", "knochen", 0, ry, 0.06 * girthF, rw, 0.12, rd, null, limbCol, { kScale: 0.5 });
+        }
         // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
         add("box", "knochen", 0, 5.66, 0.42 * girthF, shoulderHalf * 0.56, 1.1, 0.2, null, limbCol, { kScale: 0.66 });
         // BAUCH (abdomen, fleisch WEICH): die viszerale Masse = die TAILLE (schmaler als Brustkorb+Becken).
@@ -15126,6 +15134,7 @@ class AnazhRealm {
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
             add("sphere", limbMat, kneeX * 0.85, 1.72, -0.14, 0.42 * limbF, 0.78 * limbF, 0.46 * limbF, null, limbCol, { def: true }); // WADE (Gastrocnemius — VOLLER, hinten-oben, der kräftige Referenz-Bauch)
             add("sphere", limbMat, ankleX, 1.3, -0.1, 0.26 * limbF, 0.5 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.82, def: true }); // SOLEUS (unterer Waden-Bauch → die Wade tapert zur Achillessehne)
+            add("sphere", limbMat, kneeX * 0.75, 1.7, 0.16, 0.2 * limbF, 0.62 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.8, def: true }); // TIBIALIS ANTERIOR (Schienbein-Muskel vorn-aussen → der Unterschenkel war vorn nackt)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
             // gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; kürzer (~0.9 KH),
             // der Knöchel ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung.

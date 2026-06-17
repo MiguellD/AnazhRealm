@@ -252,11 +252,55 @@ async function renderWerk(page, bpName, view) {
                 try {
                     const rig = r._buildHumanoidRig({ sex, skinColor: 0xc98a63 });
                     if (rig && rig.mesh) {
-                        grp.add(rig.mesh);
                         if (pose === "rest") r._animateHumanoidRig(rig.rig, 0, 0, false, false);
                         else if (pose === "walk") r._animateHumanoidRig(rig.rig, 0, Math.PI * 0.32, true, false);
                         else if (pose === "walk2") r._animateHumanoidRig(rig.rig, 0, Math.PI * 1.15, true, false);
                         rig.mesh.updateMatrixWorld(true);
+                        if (window.__skel) {
+                            // ANATOMIE IN BEWEGUNG: die Knochen-/Muskel-Teile an die ANIMIERTEN Rig-Bones
+                            // skinnen (jeder Teil folgt seinem nächsten Bone) → das Skelett + die Muskeln
+                            // OHNE Haut, in Bewegung — prüft, ob alles richtig positioniert BLEIBT.
+                            const parts = r.constructor._humanoidSkeleton({ sex, bodyColor: 0xc98a63, limbColor: 0xc98a63 });
+                            const sk = rig.skeleton,
+                                bones = sk.bones,
+                                bInv = sk.boneInverses;
+                            const bbp = bones.map((b, i) =>
+                                new THREE.Vector3().setFromMatrixPosition(new THREE.Matrix4().copy(bInv[i]).invert())
+                            );
+                            for (const p of parts) {
+                                if (!p.size || !p.position || p.feature) continue;
+                                const isBone = p.material === "knochen";
+                                const isMuscle = !!p.def;
+                                const col = isBone ? 0xe6dcc4 : isMuscle ? 0xcf4a3a : 0xd9bca0;
+                                const mo = { color: col, roughness: 0.7, metalness: 0 };
+                                if (!isBone && !isMuscle) {
+                                    mo.transparent = true;
+                                    mo.opacity = 0.16;
+                                    mo.depthWrite = false;
+                                }
+                                const bind = new THREE.Vector3(p.position.x, p.position.y, p.position.z);
+                                let best = 0,
+                                    bd = 1e9;
+                                for (let i = 0; i < bones.length; i++) {
+                                    const d = bind.distanceToSquared(bbp[i]);
+                                    if (d < bd) {
+                                        bd = d;
+                                        best = i;
+                                    }
+                                }
+                                const skinM = new THREE.Matrix4().multiplyMatrices(bones[best].matrixWorld, bInv[best]);
+                                const q = new THREE.Quaternion();
+                                if (p.rotation) q.setFromEuler(new THREE.Euler(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0));
+                                const sc = new THREE.Vector3(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
+                                const partM = new THREE.Matrix4().compose(bind, q, sc);
+                                const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 10), new THREE.MeshStandardMaterial(mo));
+                                m.applyMatrix4(new THREE.Matrix4().multiplyMatrices(skinM, partM));
+                                m.castShadow = true;
+                                grp.add(m);
+                            }
+                        } else {
+                            grp.add(rig.mesh);
+                        }
                         window.__treeInfo = "humanoidrig " + pose + " bones=" + rig.bones.length;
                     } else {
                         window.__treeInfo = "NO-RIG";
