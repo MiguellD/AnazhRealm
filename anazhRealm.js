@@ -14836,26 +14836,31 @@ class AnazhRealm {
         const torsoBaseY = 3.8,
             torsoTopY = 6.62,
             NT = 9;
-        for (let i = 0; i < NT; i++) {
-            const t = i / (NT - 1);
-            const y = torsoBaseY + (torsoTopY - torsoBaseY) * t;
-            const role = i === 0 ? "pelvis" : i === NT - 1 ? "chest" : null;
-            add(
-                "box",
-                bodyMat,
-                0,
-                y,
-                0,
-                lerpCP(widthCP, t) * 2,
-                0.92, // höhere Überlappung der 9 Stationen → der smin verschmilzt sie (keine Riffel-Ringe bei res 96)
-                lerpCP(depthCP, t) * 2,
-                null,
-                bodyCol,
-                role && {
-                    bodyRole: role,
-                }
-            );
-        }
+        // ── (1) RUMPF-SKELETT (ANATOMISCH: Brustkorb + Bauch + Wirbelsäule statt flacher Stationen) —
+        //    die Silhouette EMERGIERT aus Knochen (Brustkorb/Becken) + Fleisch (Bauch/Muskeln):
+        //    breiter Ei-Brustkorb → schmale Lende → breites Becken = der V-/Sanduhr-Taper, anatomisch.
+        void lerpCP;
+        void widthCP;
+        void depthCP;
+        void NT;
+        void torsoBaseY;
+        void torsoTopY;
+        // BRUSTKORB (thorax, knochen): das Ei-Ovoid — gibt die Brust-Breite + -Tiefe.
+        add("box", "knochen", 0, 5.78, 0.05 * girthF, shoulderHalf * 1.62, 1.58, 1.12 * girthF, null, limbCol, {
+            kScale: 0.96,
+            bodyRole: "chest",
+        });
+        // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
+        add("box", "knochen", 0, 5.66, 0.42 * girthF, shoulderHalf * 0.56, 1.1, 0.2, null, limbCol, { kScale: 0.66 });
+        // BAUCH (abdomen, fleisch WEICH): die viszerale Masse = die TAILLE (schmaler als Brustkorb+Becken).
+        add("box", bodyMat, 0, 4.66, 0.05 * girthF, waistHalf * 1.66, 1.05, 0.84 * girthF, null, bodyCol, {
+            kScale: 1.08,
+        });
+        // WIRBELSÄULE (spine, knochen) — die Rücken-Säule mit S-KURVE (Lende VOR · Brust ZURÜCK · Hals VOR):
+        //    der Rücken curve, kein Brett. Drei Segmente, je z-versetzt.
+        add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, { kScale: 0.58 }); // Lende (lumbar, vor)
+        add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, { kScale: 0.58 }); // Brust (thoracic, zurück)
+        add("box", "knochen", 0, 6.66, -0.12 * girthF, 0.28, 0.55, 0.2 * girthF, null, limbCol, { kScale: 0.54 }); // Hals (cervical, vor)
         // GESÄSS — ZWEI Glute-Massen hinter dem Becken (statt EINER brückenden Platte, die die
         // Oberschenkel zu einem Rock verschmolz, GEMESSEN am Avatar-Render): links/rechts mit
         // Mittel-Spalt → das Gesäß liest ALS Gesäß UND der Spalt zwischen den Schenkeln öffnet
@@ -14881,11 +14886,17 @@ class AnazhRealm {
         //    (kScale<1) → das Feld trägt weiche Bäuche UND scharfe Kanten (BEDINGUNG ii). bodyMat
         //    → Rumpf-/tag-treu (der Avatar-Tag liegt in der separaten Soul-bodyParts-Liste). ──
         const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
-        // KLAVIKEL — eine SCHARFE horizontale Gräte am oberen Brustkorb (das Schlüsselbein-Regal,
-        // das den Hals→Brust-Übergang definiert; tötet das weiche Tonnen-Dekolleté).
-        add("box", bodyMat, 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 0.96, 0.1, 0.18, null, bodyCol, {
+        // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
+        //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
+        add("box", "knochen", 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 1.5, 0.12, 0.2, null, limbCol, {
             kScale: 0.46,
         });
+        // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
+        //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
+        for (const s of [-1, 1])
+            add("box", "knochen", s * shoulderHalf * 0.6, shoulderY - 0.5, -0.4 * girthF, shoulderHalf * 0.66, 0.95, 0.32 * girthF, null, limbCol, {
+                kScale: 0.62,
+            });
         // PECTORALIS — zwei Brustplatten, vorn gewölbt, mit halb-scharfer UNTERKANTE (die Brust-Linie).
         for (const s of [-1, 1])
             add(
