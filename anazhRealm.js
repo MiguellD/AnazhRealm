@@ -15243,7 +15243,7 @@ class AnazhRealm {
         const field = (x, y, z) => {
             let d = 1e9;
             for (const bn of bones) {
-                if (DISPLACE && bn.disp && bn.ell) continue; // disp-getaggte Massen sind Verschiebungen, NICHT Union (1:1-Migration, Masse für Masse)
+                if (DISPLACE && bn.def && bn.ell) continue; // FLEISCH-Muskel (def) = Verschiebung; KNOCHEN/Struktur (non-def) = scharfe Union. Das MATERIAL treibt das Substrat.
                 // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
                 // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
                 // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
@@ -15260,16 +15260,18 @@ class AnazhRealm {
             if (DISPLACE) {
                 let disp = 0;
                 for (const bn of bones) {
-                    if (!bn.disp || !bn.ell) continue;
+                    if (!bn.def || !bn.ell) continue;
                     const c = bn.c,
                         r = bn.r;
                     const ex = (x - c[0]) / r[0],
                         ey = (y - c[1]) / r[1],
                         ez = (z - c[2]) / r[2];
                     const kl = Math.sqrt(ex * ex + ey * ey + ez * ez); // 0 Zentrum · 1 Ellipsoid-Oberfläche
-                    const reach = bn.reach || 1.7;
+                    const reach = bn.reach || 1.6;
                     const tt = Math.max(0, 1 - kl / reach);
-                    disp += (bn.amp || 0.12) * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
+                    // AMP regel-getrieben: ∝ kleinster Halbachse (größerer Muskel schwillt mehr) — keine Hand-Zahl
+                    const amp = bn.amp != null ? bn.amp : bn.rmin * 0.85;
+                    disp += amp * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
                 }
                 f += Math.min(dispCap, disp); // Validitäts-Deckel (Einheitsgradient bewahren)
             }
