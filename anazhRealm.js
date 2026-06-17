@@ -15031,7 +15031,7 @@ class AnazhRealm {
             const hipX = s * (hipHalf * 0.72),
                 kneeX = s * 0.4, // Femur winkelt EINWÄRTS (breite Hüfte → Knie über dem Fuß): die echte Bein-Achse, schließt den Groin-Spalt zur natürlichen Leiste statt zweier Säulen
                 ankleX = s * 0.38;
-            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.66 * limbF, limbMat); // Oberschenkel (kräftig)
+            limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG — dicke Quads wie die Referenz)
             // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
             // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
             // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
@@ -15050,7 +15050,11 @@ class AnazhRealm {
                 kScale: 0.92,
                 def: true,
             }); // Hamstring (hinten)
-            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.42 * limbF, limbMat); // Unterschenkel (Grund-Strebe → schlanker Knöchel)
+            add("sphere", limbMat, kneeX - s * 0.06, 2.62, 0.12, 0.22 * limbF, 0.5 * limbF, 0.18 * limbF, null, limbCol, {
+                kScale: 0.58,
+                def: true,
+            }); // VASTUS MEDIALIS — der Tropfen über dem INNEREN Knie (die Referenz-Quad-Signatur)
+            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.46 * limbF, limbMat); // Unterschenkel (kräftiger → Wade liest)
             add("box", limbMat, kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn)
             add("sphere", limbMat, ankleX, 1.65, -0.07, 0.34 * limbF, 0.62 * limbF, 0.42 * limbF, null, limbCol, { def: true }); // WADE (Muskel-Bulge hinten-oben)
             // FUSS — DREI Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach): eine
@@ -15751,6 +15755,20 @@ class AnazhRealm {
             let curv = T.float(0);
             if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
             albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
+            // PAINTED-ON SHORTS — eine weiße Boxer-Brief-Zone auf der HAUT selbst (Y-Band in
+            // Geometrie-lokal): perfekt anliegend, mit NATÜRLICHEN Bein-Öffnungen, weil der Körper
+            // die Beine schon getrennt hat. Eine Tube-Geometrie beulte als Rock — das hier ist die
+            // Referenz-Lösung. Übersteuert Hautton+Counter-Shading, bekommt aber die AO-Tiefe.
+            if (opts.shortsY && T.smoothstep) {
+                const yb = opts.shortsY[0],
+                    yt = opts.shortsY[1];
+                let band = T.smoothstep(T.float(yb - 0.05), T.float(yb + 0.06), pl.y).mul(
+                    T.smoothstep(T.float(yt + 0.05), T.float(yt - 0.06), pl.y)
+                );
+                // X-Tor: nur das zentrale Becken bemalen, NICHT die Hände, die auf Hüfthöhe ruhen.
+                if (opts.shortsX) band = band.mul(T.smoothstep(T.float(opts.shortsX + 0.12), T.float(opts.shortsX - 0.05), pl.x.abs()));
+                albedo = T.mix(albedo, T.vec3(0.92, 0.93, 0.96), band);
+            }
             // GEBACKENE AO (System A) — die Vertex-Farbe trägt die GEOMETRISCHE Kavität (Mulden
             // verschattet, gerechnet aus der Form in _buildCreatureSkinGeometry, nicht der schwache
             // screen-space fwidth) → das Albedo bekommt Gelenk-/Achsel-/Muskel-Tiefe statt flach-
@@ -15932,7 +15950,14 @@ class AnazhRealm {
         }
         geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
         geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
-        const mat = this._buildCreatureHideMaterial(skinCol, { tags: g.tags || null, skin: true });
+        // Boxer-Brief-Zone in GEOMETRIE-lokal (Skelett in KH·kh, + oy-Translate): Bund auf der
+        // Taille (~4.45 KH), Saum am Leisten-/Oberschenkel-Übergang (~3.5 KH) → die Haut-Shorts.
+        const mat = this._buildCreatureHideMaterial(skinCol, {
+            tags: g.tags || null,
+            skin: true,
+            shortsY: [3.5 * kh + (g.oy || 0), 4.5 * kh + (g.oy || 0)],
+            shortsX: 0.95 * kh, // nur das zentrale Becken (Hände ruhen weiter aussen auf Hüfthöhe)
+        });
         const mesh = new THREE.SkinnedMesh(geom, mat);
         mesh.castShadow = true;
         mesh.userData._creatureSkin = true;
@@ -15959,26 +15984,8 @@ class AnazhRealm {
         } catch (_e) {
             /* Gesicht optional — kein Crash */
         }
-        // SHORTS — eine weiße Unterwäsche-Masse über Becken + Leiste (deckt die Groin-Topologie
-        // elegant, genau wie die Referenz: niemand zeigt nackte Leiste). An den hips-Bone gehängt →
-        // bewegt mit dem Becken. Löst das Metaball-Groin-Problem durch Bekleidung statt Kampf.
-        try {
-            const shortsMat = this._buildPbrNodeMaterial
-                ? this._buildPbrNodeMaterial({ color: 0xedeff2, roughness: 0.8, metalness: 0 })
-                : new THREE.MeshStandardMaterial({ color: 0xedeff2, roughness: 0.8 });
-            // ein flacher ZYLINDER (Tube) UMWICKELT das Becken wie eine Boxer-Short (eine Ellipsoid-
-            // Masse beulte vor) — oben/unten offen, in z geflacht (Körper ist breiter als tief).
-            const sg = new THREE.CylinderGeometry(0.74 * kh, 0.82 * kh, 1.18 * kh, 26, 1, true);
-            sg.scale(1, 1, 0.66); // elliptischer Querschnitt (breiter als tief)
-            const shorts = new THREE.Mesh(sg, shortsMat);
-            shorts.material.side = THREE.DoubleSide; // offene Tube → beide Seiten
-            shorts.position.set(0, -0.34 * kh, 0); // hips-Bone-lokal (Bone bei 4.15·KH → Shorts sitzt auf Hüfte+Leiste)
-            shorts.castShadow = true;
-            shorts.receiveShadow = true;
-            if (byName.hips) byName.hips.add(shorts);
-        } catch (_e) {
-            /* Shorts optional */
-        }
+        // SHORTS sind jetzt AUF DIE HAUT GEMALT (weiße Y-Band-Zone im Hide-Material, shortsY) —
+        // perfekt anliegend mit natürlichen Bein-Öffnungen; die alte Tube-Geometrie beulte als Rock.
         return { mesh, skeleton, bones, rig, kh };
     }
 
