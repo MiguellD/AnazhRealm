@@ -14863,6 +14863,19 @@ class AnazhRealm {
                     return [s * 0.38, 0.58, 0.1 * girthF]; // Knöchel vorn (Tibialis-Ansatz)
                 case "heel":
                     return [s * 0.38, 0.3, -0.22]; // Fersenbein (Achilles/Gastroc-Ansatz)
+                // ── Glied-Vollkachelung (Vastus/Brachialis/Extensoren/Peroneus) + Schulter-Kappe ──
+                case "kneeOut":
+                    return [s * (0.4 + 0.18 * limbF), 2.4, 0.06 * girthF]; // äußeres Knie (Vastus lateralis-Ansatz)
+                case "kneeIn":
+                    return [s * (0.4 - 0.14 * limbF), 2.5, 0.1 * girthF]; // inneres Knie / „Tropfen" (Vastus medialis)
+                case "shinOut":
+                    return [s * (0.38 + 0.16 * limbF), 1.2, 0.04 * girthF]; // äußerer Unterschenkel (Peroneus)
+                case "upperArmOut":
+                    return [s * (shoulderHalf + 0.46), 5.4, 0]; // außen-mittlerer Oberarm (Brachialis)
+                case "forearmBack":
+                    return [s * (shoulderHalf + 0.62), hipY - 0.32, -0.12 * limbF]; // dorsales Handgelenk (Extensoren)
+                case "humerusTop":
+                    return [s * shoulderHalf * 1.02, 6.42, 0]; // Humeruskopf-Scheitel (Schulter-Kappen-Brücke)
                 default:
                     return [0, 0, 0];
             }
@@ -15130,6 +15143,19 @@ class AnazhRealm {
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
         add("box", headMat, 0, 7.66, 0.28, 0.48 * hr, 0.09 * hr, 0.16 * hr, null, limbCol); // Brauen-Wulst (verschmolzen, schmaler)
         add("box", headMat, 0, 7.46, 0.3, 0.1 * hr, 0.24 * hr, 0.15 * hr, { x: -0.1, y: 0, z: 0 }, limbCol); // Nasen-Rücken (kürzer + weniger vorragend → kein Schnabel mehr, Schöpfer-Befund)
+        // ── GESICHTS-MUSKEL-SCHICHT (Écorché: rote Mienenmuskeln über dem beigen Schädel) ──
+        //    Dünne, schädel-anliegende Fleisch-Blätter (def → rot), die der smin in die Gesichts-Ebene
+        //    einschmilzt — KEINE aufgeklebten Tropfen, geringe z-Halbweite. Augen-Partie bleibt FREI.
+        add("box", limbMat, 0, 7.78, 0.24, 0.4 * hr, 0.16 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.74 }); // Frontalis (Stirn)
+        for (const s of [-1, 1]) {
+            add("box", limbMat, s * 0.6 * hr, 7.62, 0.02, 0.08 * hr, 0.26 * hr, 0.24 * hr, null, limbCol, { def: true, kScale: 0.7 }); // Temporalis (Schläfe-Fächer)
+            add("box", limbMat, s * 0.2 * hr, 7.66, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — oberer Bogen
+            add("box", limbMat, s * 0.2 * hr, 7.44, 0.34, 0.13 * hr, 0.045 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — unterer Bogen
+            add("box", limbMat, s * 0.33 * hr, 7.55, 0.32, 0.045 * hr, 0.1 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — lateraler Schenkel
+            add("box", limbMat, s * 0.09 * hr, 7.55, 0.34, 0.04 * hr, 0.1 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orb. oculi — medialer Schenkel
+            limb(s * 0.3 * hr, 7.46, 0.22 * hr, s * 0.12 * hr, 7.18, 0.3 * hr, 0.09 * hr, limbMat, limbCol, { def: true, kScale: 0.7 }); // Zygomaticus (Wange → Mundwinkel)
+            add("box", limbMat, s * 0.08 * hr, 7.36, 0.36, 0.05 * hr, 0.08 * hr, 0.04 * hr, null, limbCol, { def: true, kScale: 0.62 }); // Nasalis (Nasenflügel)
+        }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
@@ -15149,7 +15175,7 @@ class AnazhRealm {
             //    an den Landmarken die Haut bony machen UND die Animations-Achse markieren).
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.17 * limbF, "knochen", limbCol); // Humerus-Schaft
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.15 * limbF, "knochen", limbCol); // Radius/Ulna-Schaft
-            add("sphere", "knochen", shX, shY - 0.06, 0, 0.3 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72 }); // Humeruskopf (Schulter-Gelenk)
+            add("sphere", "knochen", shX, shY - 0.06, -0.04, 0.3 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72, struct: true }); // Humeruskopf — struct → tritt zurück (kein nackter Schulter-Knopf), die Schulter-Kappe deckt ihn
             add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.6 }); // Ellbogen-Kondylen
             add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, { kScale: 0.6 }); // Handwurzel (Handgelenk)
             add("box", "knochen", elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen, knochen)
@@ -15295,6 +15321,15 @@ class AnazhRealm {
             { o: "kneeBack", i: "heel", b: 0.4, sc: limbF, belly: 0.3, kS: 0.86, mat: limbMat, col: limbCol }, // Gastrocnemius (Wade)
             { o: "shinTop", i: "heel", b: 0.24, sc: limbF, belly: 0.42, kS: 0.82, mat: limbMat, col: limbCol }, // Soleus
             { o: "kneeFront", i: "ankleFront", b: 0.17, sc: limbF, belly: 0.4, kS: 0.8, mat: limbMat, col: limbCol }, // Tibialis anterior
+            // ── VOLLKACHELUNG (parallel-Welle): die fehlenden Köpfe → kein Knochen scheint zwischen den Muskeln ──
+            { o: "clavicleMed", i: "humerusTop", b: 0.2, sc: limbF, belly: 0.62, depth: 0.85, kS: 0.8, mat: limbMat, col: limbCol }, // Schulter-Kappe (deckt den Humeruskopf)
+            { o: "deltoidIns", i: "upperArmOut", b: 0.18, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Brachialis (Bizeps↔Trizeps-Lücke)
+            { o: "elbowBack", i: "forearmBack", b: 0.16, sc: limbF, belly: 0.36, kS: 0.84, mat: limbMat, col: limbCol }, // Unterarm-Extensoren (Rückseite)
+            { o: "iliac", i: "kneeOut", b: 0.3, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Vastus lateralis (Außenschenkel)
+            { o: "hipFront", i: "kneeIn", b: 0.26, sc: limbF, belly: 0.62, kS: 0.82, mat: limbMat, col: limbCol }, // Vastus medialis (Innen-Tropfen überm Knie)
+            { o: "shinTop", i: "shinOut", b: 0.13, sc: limbF, belly: 0.5, kS: 0.8, mat: limbMat, col: limbCol }, // Peroneus (Außen-Unterschenkel)
+            { o: "sternumTop", i: "xiphoid", b: 0.14, sc: mF, belly: 0.5, depth: 0.6, kS: 0.74 }, // Brust-Mittelfüllung (Sternum zwischen den Pecs)
+            { o: "pubis", i: "navel", b: 0.16, sc: mF, belly: 0.3, depth: 0.55, kS: 0.78 }, // untere Bauch-/Schoß-Füllung (Scham-Schild vorn)
         ];
         for (const m of MUSC) {
             for (const s of [-1, 1]) {
@@ -15330,8 +15365,8 @@ class AnazhRealm {
             } else if (p.material === "knochen" && p.struct) {
                 // innerer Struktur-Knochen: deutlich schmaler/flacher → sitzt TIEF im Fleisch (der Muskel
                 //    deckt ihn, kein nackter Knochen-Fleck zwischen den Muskeln, Referenz-Écorché).
-                p.size.x *= 0.6;
-                p.size.z *= 0.6;
+                p.size.x *= 0.54;
+                p.size.z *= 0.5; // tiefer Z-Recede → die Front-Flächen (Sternum/Becken) verschwinden hinter dem Muskel
             }
         }
         return parts;
