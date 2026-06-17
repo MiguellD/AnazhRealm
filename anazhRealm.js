@@ -14797,7 +14797,7 @@ class AnazhRealm {
             );
         };
         // ── PROPORTIONEN (8-Kopf, von unten gemessen, Sohle y=0) ──
-        const shoulderHalf = 1.0 - sex * 0.25; // Schulter 2 KH (mask.) → schmaler (weibl.)
+        const shoulderHalf = 1.12 - sex * 0.27; // Schulter ~2.2 KH (mask., Referenz-breit) → schmaler (weibl.)
         const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen, aber kein Wespen-Kink)
         const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl. Sanduhr)
         const hipY = 4.15,
@@ -15040,14 +15040,14 @@ class AnazhRealm {
             const hipX = s * (hipHalf * 0.72),
                 kneeX = s * 0.4, // Femur winkelt EINWÄRTS (breite Hüfte → Knie über dem Fuß): die echte Bein-Achse, schließt den Groin-Spalt zur natürlichen Leiste statt zweier Säulen
                 ankleX = s * 0.38;
-            limb(hipX, hipY + 0.1, -0.1, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG); Femur-Kopf POSTERIOR (z−0.1) → der Schenkel-Kopf beult nicht nach VORN in die Leiste (war die „Gesäß-vorne"-Mit-Ursache)
+            limb(hipX, hipY - 0.1, -0.12, kneeX, 2.3, 0, 0.76 * limbF, limbMat); // Oberschenkel (KRÄFTIG); Femur-Kopf TIEFER (4.05) + POSTERIOR (z−0.12) → der Schenkel-Kopf sitzt unter der Leiste, beult nicht nach vorn in die Briefs
             // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
             // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
             // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
             if (s > 0)
-                add("box", bodyMat, 0, hipY - 0.32, 0.24 * girthF, hipHalf * 1.3 * girthF, 0.92, 0.5 * girthF, null, bodyCol, {
-                    kScale: 0.85,
-                }); // WEIT VORN + tighter Blend → bildet EINE glatte Leisten-Front über beiden Schenkel-Fronten (kein Doppel-Beule)
+                add("box", bodyMat, 0, hipY - 0.18, 0.3 * girthF, hipHalf * 1.36 * girthF, 1.12, 0.54 * girthF, null, bodyCol, {
+                    kScale: 0.9,
+                }); // Becken-FRONT als EINE breite, weit-vorn-gewölbte Fleisch-Masse → glatte Leisten-Front (Unterbauch→Schoß) über den Schenkel-Köpfen, kein Doppel-Beule
             // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
             // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
             // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
