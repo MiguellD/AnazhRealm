@@ -227,6 +227,15 @@ async function renderWerk(page, bpName, view) {
             } else {
                 grp = r._buildFromBlueprint(st.blueprints[bpName], 0, undefined, {});
             }
+            // DIAGNOSE-ANSICHTEN (global, jeder Zweig): __normskin → Normalen als RGB (deckt
+            // invertierte Normalen/Risse/Nähte auf); __skel → die rohe Skelett-Geometrie.
+            if (window.__normskin && grp) {
+                grp.traverse((o) => {
+                    if (o.isMesh && (o.userData._creatureSkin || o.isSkinnedMesh)) {
+                        o.material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+                    }
+                });
+            }
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x9bb4d0);
             if (st.scene && st.scene.environment) scene.environment = st.scene.environment;
@@ -295,14 +304,18 @@ async function renderWerk(page, bpName, view) {
                 scene.background = bgTex;
             } catch (_e) {}
             const isTree = bpName.indexOf("tree:") === 0;
-            const isCreature = bpName.indexOf("creature:") === 0 || bpName.indexOf("humanoid:") === 0;
+            const isCreature =
+                bpName.indexOf("creature:") === 0 ||
+                bpName.indexOf("humanoid:") === 0 ||
+                bpName.indexOf("humanoidrig:") === 0 ||
+                bpName.indexOf("playeravatar:") === 0;
             const isTall = isTree || isCreature; // braucht mehr Distanz (volle Höhe ins Bild)
             const cam = new THREE.PerspectiveCamera(40, 1, 0.05, 500);
             const dist = isTall ? 2.0 : 1.5;
             const cy = isTall ? 0.3 : 0.26;
             // MULTI-ANGLE: "side" blickt ENTLANG -x (die Seiten-Silhouette — wo die
             // Gesetze sich zeigen: Profil, Glied-Anbindung, schwebende Teile); "front"
-            // frontal; sonst 3/4. (Die Front allein versteckt die fehlenden Gesetze.)
+            // frontal; "back" von hinten; sonst 3/4. (Die Front allein versteckt die Fehler.)
             let camX, camZ;
             if (view === "side") {
                 camX = maxd * dist;
@@ -310,6 +323,9 @@ async function renderWerk(page, bpName, view) {
             } else if (view === "front") {
                 camX = maxd * 0.18;
                 camZ = maxd * dist;
+            } else if (view === "back") {
+                camX = maxd * 0.18;
+                camZ = -maxd * dist;
             } else {
                 camX = maxd * 0.85;
                 camZ = maxd * dist;
@@ -390,6 +406,12 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:walk:0", "werk-rig-walk.png", "side"], // Walk-Pose (Profil zeigt den Schritt)
             ["playeravatar:rest", "werk-player-rest.png", "front"], // GUSS 2b: der ECHTE Spieler-Avatar
             ["playeravatar:walk", "werk-player-walk.png", "side"], // im Walk-Cycle
+            // KRITISCHE EVAL (Guss 3) — alle Winkel, deckt Fehler auf, die die Front versteckt
+            ["humanoidrig:rest:0", "eval-rest-front.png", "front"],
+            ["humanoidrig:rest:0", "eval-rest-side.png", "side"],
+            ["humanoidrig:rest:0", "eval-rest-back.png", "back"],
+            ["humanoidrig:rest:0", "eval-rest-34.png", ""],
+            ["humanoidrig:walk:0", "eval-walk-34.png", ""]
             ["avatar_waechter", "werk-avatar.png", "front"], // Seele/Körper
             ["creature:wesen:0.7", "werk-kreatur-zwerg.png", "front"], // T5: zart, zwerg
             ["creature:wesen:2.5", "werk-kreatur-koloss.png", "front"], // T5: STOCKIG (Allometrie)

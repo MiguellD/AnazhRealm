@@ -14807,31 +14807,43 @@ class AnazhRealm {
                 bodyRole: role,
             });
         }
-        // ── (2) HALS + KOPF (Hals dick + tief eingebettet → kein offener Ring; Kopf rund,
-        //    leicht in z vor → kein eiförmiger Spitz) ──
-        limb(0, shoulderY - 0.05, 0.02, 0, 7.05, 0.06, 0.52, bodyMat, bodyCol);
-        add("sphere", headMat, 0, 7.45, 0.05, 0.78, 0.92, 0.82, null, limbCol, { bodyRole: "head", eyeFront: 0.85 });
+        // ── (2) HALS + KOPF — der Kopf SITZT über den Schultern (kein Vorragen), als CLUSTER:
+        //    Schädel (rund, zentriert) + Hinterkopf/Occiput (füllt die Nacken-Kerbe) + Kiefer
+        //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
+        //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
+        limb(0, shoulderY - 0.05, 0.0, 0, 6.9, 0.0, 0.46, bodyMat, bodyCol); // Hals (vertikal, schlank)
+        add("sphere", headMat, 0, 7.5, -0.02, 0.9, 0.92, 0.92, null, limbCol, { bodyRole: "head", eyeFront: 0.85 }); // Schädel
+        add("sphere", headMat, 0, 7.14, -0.13, 0.5, 0.46, 0.44, null, limbCol); // Occiput (Nacken-Kerbe füllen)
+        add("box", headMat, 0, 7.16, 0.17, 0.58, 0.46, 0.5, null, limbCol); // Kiefer/Kinn (Gesichts-Ebene vorn-unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 0.92,
                 shY = shoulderY + 0.02;
-            add("sphere", limbMat, shX, shY, 0, 0.56, 0.56, 0.56, null, limbCol); // Deltoideus (Arm↔Torso-Brücke, eingebettet)
+            add("sphere", limbMat, shX, shY, 0, 0.56, 0.56, 0.56, null, limbCol); // Deltoideus (Arm↔Torso-Brücke)
             const elbowX = s * (shoulderHalf + 0.5),
                 elbowY = waistY + 0.05;
             const wristX = s * (shoulderHalf + 0.62),
                 wristY = hipY - 0.05;
             limb(shX, shY, 0, elbowX, elbowY, 0, 0.4, limbMat); // Oberarm
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.32, limbMat); // Unterarm
-            add("sphere", limbMat, wristX + s * 0.04, wristY - 0.2, 0.05, 0.32, 0.44, 0.22, null, limbCol); // Hand
+            // HAND — eine echte Hand statt einer Flossen-Knubbel: Handteller (flach) + Daumen-
+            // Stummel (innen-vorn) + Finger-Block (verjüngt darunter); der smin verschmilzt sie
+            // zu einem Fäustling-mit-Daumen (liest als Hand, kein Paddel).
+            add("box", limbMat, wristX + s * 0.02, wristY - 0.26, 0.04, 0.32, 0.3, 0.16, null, limbCol); // Handteller
+            add("box", limbMat, wristX - s * 0.16, wristY - 0.2, 0.1, 0.13, 0.2, 0.13, null, limbCol); // Daumen (innen-vorn)
+            add("box", limbMat, wristX + s * 0.03, wristY - 0.5, 0.04, 0.28, 0.26, 0.14, null, limbCol); // Finger-Block
         }
-        // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert, Fuß 1 KH lang nach vorn) ──
+        // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
         for (const s of [-1, 1]) {
             const hipX = s * (hipHalf * 0.55),
                 kneeX = s * 0.5,
                 ankleX = s * 0.46;
             limb(hipX, hipY + 0.1, 0, kneeX, 2.3, 0, 0.62, limbMat); // Oberschenkel (kräftig)
-            limb(kneeX, 2.3, 0, ankleX, 0.42, 0, 0.44, limbMat); // Unterschenkel (sehnig)
-            add("box", limbMat, ankleX, 0.16, 0.32, 0.44, 0.32, 1.05, null, limbCol); // Fuß
+            limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.44, limbMat); // Unterschenkel (sehnig)
+            // FUSS — Ferse (hinten-unter dem Knöchel) + Spann/Vorfuß (vorn, niedriger, verjüngt):
+            // der Knöchel sitzt ~¼ vom Heck → menschliche Proportion, keine flache Clown-Latsche.
+            add("box", limbMat, ankleX, 0.14, -0.06, 0.34, 0.3, 0.36, null, limbCol); // Ferse + Knöchel
+            add("box", limbMat, ankleX, 0.09, 0.34, 0.36, 0.22, 0.7, null, limbCol); // Vorfuß/Spann (vorn, flacher)
         }
         return parts;
     }
@@ -15180,15 +15192,21 @@ class AnazhRealm {
                   ? T.mx_noise_float(pl.mul(26.0))
                   : T.float(0);
             const broad = T.mx_noise_float ? T.mx_noise_float(pl.mul(3.2)) : T.float(0);
-            albedo = albedo.mul(T.float(1.0).add(fur.mul(0.13)).add(broad.mul(0.1)));
+            // HAUT vs FELL: ein Mensch (opts.skin) will glatte Haut — das Fell-Korn liest sonst
+            // als Dreck/Blutergüsse; nur ein Hauch Mottle bleibt. Ein Tier behält das volle Korn.
+            const grain = opts.skin ? 0.035 : 0.13;
+            const broadAmt = opts.skin ? 0.04 : 0.1;
+            albedo = albedo.mul(T.float(1.0).add(fur.mul(grain)).add(broad.mul(broadAmt)));
             // KAVITÄT (Krümmung → Gelenk-/Falten-Schatten)
             let curv = T.float(0);
             if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
             albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
             mat.colorNode = T.vec4(albedo, 1.0);
-            // ROUGHNESS-VARIATION (#1 Hebel)
+            // ROUGHNESS-VARIATION (#1 Hebel) — Haut etwas glatter (sanfter Glanz) als Fell.
             const furN = fur.mul(0.5).add(0.5);
-            mat.roughnessNode = T.float(0.8).add(furN.mul(0.18)).sub(curv.mul(0.12)).clamp(0.4, 1.0);
+            const rBase = opts.skin ? 0.62 : 0.8,
+                rVar = opts.skin ? 0.08 : 0.18;
+            mat.roughnessNode = T.float(rBase).add(furN.mul(rVar)).sub(curv.mul(0.12)).clamp(0.4, 1.0);
             // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
             const vd =
                 T.positionViewDirection ||
@@ -15322,7 +15340,7 @@ class AnazhRealm {
         }
         geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
         geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
-        const mat = this._buildCreatureHideMaterial(skinCol, { tags: g.tags || null });
+        const mat = this._buildCreatureHideMaterial(skinCol, { tags: g.tags || null, skin: true });
         const mesh = new THREE.SkinnedMesh(geom, mat);
         mesh.castShadow = true;
         mesh.userData._creatureSkin = true;
@@ -15342,7 +15360,68 @@ class AnazhRealm {
             legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
             kh,
         };
+        // DAS GESICHT — Augen + Nase + Brauen als Kind des KOPF-Bones (folgen der Kopf-Bewegung).
+        // Ein Humanoid ohne Augen liest als Schaufensterpuppe; das Gesicht macht ihn lebendig.
+        try {
+            this._addHumanoidFace(rig, kh, oy, skinCol);
+        } catch (_e) {
+            /* Gesicht optional — kein Crash */
+        }
         return { mesh, skeleton, bones, rig, kh };
+    }
+
+    // wahrerguss System B (GUSS 3) — DAS HUMANOIDE GESICHT: Augen (dunkel, glänzend, mit Catch-
+    // Light-Funke) + Nase (kleiner Keil) + Brauen, als Kinder des KOPF-Bones (sie folgen der
+    // Kopf-Rotation, nicht skinned). Positionen in Kopf-Bone-LOKAL (der Bone sitzt bei 7.2·KH;
+    // der Schädel-Mittelpunkt bei 7.5 → die Augen liegen leicht darüber, vorn auf der Gesichts-
+    // Ebene). Macht aus dem blanken Ei eine Person.
+    _addHumanoidFace(rig, kh, oy, skinColor) {
+        if (typeof THREE === "undefined" || !rig || !rig.head) return;
+        const headBoneY = 7.2; // KH (= die Bone-Spec head-Pos); LOKAL-Offsets relativ dazu
+        const L = (xKH, yKH, zKH) => new THREE.Vector3(xKH * kh, (yKH - headBoneY) * kh, zKH * kh);
+        const eyeMat = (col, emissive, ei, rough) => {
+            let m;
+            try {
+                m = this._buildPbrNodeMaterial
+                    ? this._buildPbrNodeMaterial({ color: col, roughness: rough, metalness: 0 })
+                    : new THREE.MeshStandardMaterial({ color: col });
+            } catch (_e) {
+                m = new THREE.MeshStandardMaterial({ color: col });
+            }
+            if (emissive && m.emissive) {
+                m.emissive.setHex(col);
+                m.emissiveIntensity = ei || 0.4;
+            }
+            return m;
+        };
+        const skinM = eyeMat(typeof skinColor === "number" ? skinColor : 0xc0392b, false, 0, 0.62);
+        // Augen KLEIN, auf der Kopf-MITTE (Loomis „Augen auf halber Kopfhöhe"), EINGESENKT in die
+        // Gesichts-Ebene (mandelig, breiter als hoch → kein proud-Kugel-Glubsch, der seitlich ragt)
+        // und nah zusammen (Augenabstand ≈ eine Augenbreite). Catchlight knapp davor.
+        const eyeGeom = new THREE.SphereGeometry(0.072 * kh, 14, 12);
+        eyeGeom.scale(1.25, 0.85, 0.7); // mandelig + flach (sitzt in der Höhle, ragt nicht)
+        const sparkGeom = new THREE.SphereGeometry(0.02 * kh, 8, 6);
+        const browGeom = new THREE.BoxGeometry(0.2 * kh, 0.035 * kh, 0.06 * kh);
+        for (const s of [-1, 1]) {
+            const eye = new THREE.Mesh(eyeGeom, eyeMat(0x171210, false, 0, 0.12));
+            eye.position.copy(L(s * 0.17, 7.46, 0.33)); // Kopf-Mitte, eingesenkt
+            eye.castShadow = false;
+            rig.head.add(eye);
+            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 1.3, 0.3));
+            spark.position.copy(L(s * 0.17 + s * 0.02, 7.48, 0.38));
+            spark.castShadow = false;
+            rig.head.add(spark);
+            const brow = new THREE.Mesh(browGeom, eyeMat(0x3a2a1c, false, 0, 0.7)); // subtiler, weicher
+            brow.position.copy(L(s * 0.17, 7.55, 0.34));
+            brow.castShadow = false;
+            rig.head.add(brow);
+        }
+        // NASE — ein kleiner Keil unter den Augen, vorn (Gesichts-Relief, dezent)
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.075 * kh, 0.2 * kh, 4), skinM);
+        nose.position.copy(L(0, 7.36, 0.42));
+        nose.rotation.x = Math.PI * 0.5;
+        nose.castShadow = false;
+        rig.head.add(nose);
     }
 
     // wahrerguss System B (GUSS 2) — die LEBENDIGE POSE: rotiert die Rig-Bones (absolute Werte
@@ -15414,11 +15493,12 @@ class AnazhRealm {
         x(r.legL.hip, 0.08);
         x(r.legL.knee, 0.16); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
         x(r.legR.knee, 0.04);
-        // Arme entspannt aus der A-Pose (leichte Asymmetrie → lebendig, nicht steif)
-        x(r.armL.elbow, -0.2);
-        x(r.armR.elbow, -0.12);
-        z(r.armL.shoulder, 0.04);
-        z(r.armR.shoulder, -0.04);
+        // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper (entspannter Hang, ~8° statt
+        // ~22°; −z links / +z rechts zieht die A-Pose ein) + leichte Asymmetrie (lebendig).
+        z(r.armL.shoulder, -0.26);
+        z(r.armR.shoulder, 0.24);
+        x(r.armL.elbow, -0.18); // sanfte Ellbogen-Beuge
+        x(r.armR.elbow, -0.1);
     }
 
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
