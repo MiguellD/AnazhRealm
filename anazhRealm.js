@@ -15044,10 +15044,24 @@ class AnazhRealm {
             // GROIN/ADDUKTOR — EINE zentrierte Masse (nur einmal) füllt die Leiste zu einem GLATTEN
             // Schoß: zwei symmetrische Massen erzeugen eine Mittellinien-Mulde, die der Schärfe-Pass
             // zur „Doppel-Beule" vertieft — eine einzige mittige Masse hat keine Mittel-Naht. Weich.
-            if (s > 0)
-                add("box", bodyMat, 0, hipY - 0.18, 0.3 * girthF, hipHalf * 1.36 * girthF, 1.12, 0.54 * girthF, null, bodyCol, {
-                    kScale: 0.9,
-                }); // Becken-FRONT als EINE breite, weit-vorn-gewölbte Fleisch-Masse → glatte Leisten-Front (Unterbauch→Schoß) über den Schenkel-Köpfen, kein Doppel-Beule
+            // ── BECKEN-KNOCHEN (knochen = scharfe Union, die STRUKTUR): die Schenkel sockeln daran,
+            //    das Gewebe drapiert darüber. FEHLTE komplett → die Schenkel-Köpfe WAREN die Leisten-
+            //    Form (die hartnäckige Doppel-Beule). Jetzt definiert der KNOCHEN die Hüft-/Schoß-Form.
+            // Darmbein-Schaufel je Seite (breit, oben-lateral) → die Hüft-Breite + die Sockel-Wand.
+            add("box", "knochen", s * hipHalf * 0.6, hipY + 0.06, -0.04 * girthF, hipHalf * 0.72, 0.6, 0.5 * girthF, null, limbCol, {
+                kScale: 0.72,
+            });
+            if (s > 0) {
+                // Scham-Schild (pubic) — EINE glatte, breite Front-Platte tief-mittig = die Leisten-Front,
+                //    weit genug vorn, dass sie ÜBER beide Schenkel-Köpfe drapiert (kein Doppel-Beule mehr).
+                add("box", "knochen", 0, hipY - 0.34, 0.27 * girthF, hipHalf * 1.02, 0.56, 0.4 * girthF, null, limbCol, {
+                    kScale: 0.82,
+                });
+                // Kreuzbein (sacrum) hinten-mittig — verbindet zur Wirbelsäule, formt den unteren Rücken.
+                add("box", "knochen", 0, hipY + 0.02, -0.3 * girthF, hipHalf * 0.5, 0.7, 0.34 * girthF, null, limbCol, {
+                    kScale: 0.78,
+                });
+            }
             // QUADRIZEPS — eine vordere Masse am oberen Oberschenkel: der Schenkel SCHWILLT (kein Rohr),
             // tapert zum Knie. HAMSTRING/Schenkel-Rückseite gibt die Tiefe. Beide überlappen das
             // Oberschenkel-Glied → der smin verschmilzt sie zu EINEM muskulösen Schenkel.
@@ -15129,7 +15143,7 @@ class AnazhRealm {
                     ry = Math.max(0.03, (sy / 2) * 1.06),
                     rz = Math.max(0.03, (sz / 2) * 1.06);
                 const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def, disp: !!p.disp, amp: p.amp, reach: p.reach });
+                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def, disp: !!p.disp, amp: p.amp, reach: p.reach, mat: p.material });
                 const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
                 mnx = Math.min(mnx, c[0] - RR[0]);
                 mny = Math.min(mny, c[1] - RR[1]);
@@ -15168,7 +15182,7 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def, amp: p.amp, reach: p.reach });
+            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def, amp: p.amp, reach: p.reach, mat: p.material });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -15253,7 +15267,10 @@ class AnazhRealm {
                 // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
                 // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
                 // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
-                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1));
+                // MATERIAL treibt die Schärfe: KNOCHEN blendet TIGHT (×0.66 → scharfe, FIXE Struktur),
+                // FLEISCH weich (×1.0). Das Material tut, was es soll — keine Hand-Zahl pro Masse.
+                const matK = bn.mat === "knochen" ? 0.66 : 1.0;
+                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1) * matK);
                 d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
             }
             let f = -d; // Basis-Feld: SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
