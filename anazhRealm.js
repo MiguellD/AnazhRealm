@@ -15696,7 +15696,7 @@ class AnazhRealm {
                 // SEAM-GROOVE verschattet die analytische Muskel-Naht zusätzlich (Schatten IM Tal →
                 // der Sixpack/Pec liest auch bei flachem Licht, nicht nur über die Normale).
                 const seam = seamG ? seamG[v] * seamG[v] : 0; // quadriert → nur das Naht-ZENTRUM verschattet (dünne Furche, kein breiter Fleck)
-                const ao = Math.max(0.52, Math.min(1.1, 1 - cav * 1.35 + ridge * 0.45 - seam * 0.3)); // cav milder → weniger Brust-Flecken, die scharfe Naht trägt die Definition
+                const ao = Math.max(0.56, Math.min(1.1, 1 - cav * 1.35 + ridge * 0.45 - seam * 0.26)); // cav milder + Naht-AO dezent (Normale trägt die Definition) → keine Konvergenz-Flecken
                 colors[v * 3] = ao;
                 colors[v * 3 + 1] = ao;
                 colors[v * 3 + 2] = ao;
@@ -15824,7 +15824,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 10, seamWidth: 0.1 }); // Avatar: glatte Feld-Haut (terrassen-immun) + ANALYTISCHE Seam-Grooves → Sixpack/Pec/Lat/Rückenrinne aus den Muskel-Naht-SDFs (gitter-unabhängig, der Profi-Detail-Normal-Hebel)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085 }); // Avatar: glatte Feld-Haut (terrassen-immun) + ANALYTISCHE Seam-Grooves → Sixpack/Pec/Lat/Rückenrinne aus den Muskel-Naht-SDFs (gitter-unabhängig, der Profi-Detail-Normal-Hebel)
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
