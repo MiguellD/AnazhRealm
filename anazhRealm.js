@@ -15001,16 +15001,22 @@ class AnazhRealm {
             // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
             // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
             limb(
-                s * 0.16,
-                shoulderY + 0.24,
-                -0.07,
-                shX * 0.98,
-                shY + 0.04,
-                -0.02,
-                0.4 * (0.92 + muscle * 0.28),
+                s * 0.12,
+                7.12, // HÖHER an die Schädel-Basis/C7 → der obere Trapez füllt das Hals→Schulter-JOCH (gegen den schwebenden Kopf)
+                -0.2,
+                shX * 0.94,
+                shY - 0.02,
+                -0.04,
+                0.46 * (0.92 + muscle * 0.28),
                 bodyMat,
                 bodyCol
             );
+            // OBERER TRAPEZIUS als sichtbare DEF-Masse (rot) — das Joch füllt den Hals→Schulter-Bereich
+            //    auch in der Anatomie-Ansicht, sodass der Kopf SITZT statt zu schweben.
+            add("sphere", bodyMat, s * 0.2, 6.98, -0.18, 0.24 * mF, 0.66, 0.26, { x: 0, y: 0, z: s * 0.42 }, bodyCol, {
+                kScale: 0.84,
+                def: true,
+            });
             const elbowX = s * (shoulderHalf + 0.42),
                 elbowY = waistY + 0.05;
             const wristX = s * (shoulderHalf + 0.56),

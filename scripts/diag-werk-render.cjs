@@ -255,6 +255,15 @@ async function renderWerk(page, bpName, view) {
                         if (pose === "rest") r._animateHumanoidRig(rig.rig, 0, 0, false, false);
                         else if (pose === "walk") r._animateHumanoidRig(rig.rig, 0, Math.PI * 0.32, true, false);
                         else if (pose === "walk2") r._animateHumanoidRig(rig.rig, 0, Math.PI * 1.15, true, false);
+                        else if (pose === "tpose") {
+                            // T-POSE: neutraler Körper, Arme waagerecht aus (die Referenz-Anatomie-Pose).
+                            const rr = rig.rig;
+                            for (const b of [rr.hips, rr.spine, rr.chest, rr.neck, rr.head]) if (b) b.rotation.set(0, 0, 0);
+                            for (const side of [rr.armL, rr.armR, rr.legL, rr.legR])
+                                for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
+                            if (rr.armL) rr.armL.shoulder.rotation.set(0, 0, 1.5);
+                            if (rr.armR) rr.armR.shoulder.rotation.set(0, 0, -1.5);
+                        }
                         rig.mesh.updateMatrixWorld(true);
                         if (window.__skel) {
                             // ANATOMIE IN BEWEGUNG: die Knochen-/Muskel-Teile an die ANIMIERTEN Rig-Bones
@@ -470,11 +479,15 @@ async function renderWerk(page, bpName, view) {
             } else if (view === "back") {
                 camX = maxd * 0.18;
                 camZ = -maxd * dist;
+            } else if (view === "iso") {
+                // ISOMETRISCH: 45° Azimut + erhöht → die klassische Anatomie-Auswert-Ansicht.
+                camX = maxd * dist * 0.74;
+                camZ = maxd * dist * 0.74;
             } else {
                 camX = maxd * 0.85;
                 camZ = maxd * dist;
             }
-            cam.position.set(camX, maxd * cy, camZ);
+            cam.position.set(camX, maxd * (view === "iso" ? cy + 0.62 : cy), camZ);
             cam.lookAt(0, isTree ? 0 : -sz.y * 0.02, 0);
             window.__rs = () => {
                 try {
@@ -569,6 +582,8 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:bind:0", "eval-bind-back.png", "back"],
             ["humanoidrig:rest:0", "eval-rest-34.png", ""],
             ["humanoidrig:walk:0", "eval-walk-34.png", ""],
+            ["humanoidrig:tpose:0", "eval-anat-tpose-iso.png", "iso"], // Anatomie T-Pose isometrisch (skel)
+            ["humanoidrig:walk:0", "eval-anat-walk-iso.png", "iso"], // Anatomie Gehen isometrisch (skel)
             // GUSS 5 — die VIELFALT-GALERIE (RPM in den Schatten)
             ["humanoidlineup", "eval-lineup.png", "front"],
             ["humanoidbuild", "eval-build.png", "front"],
