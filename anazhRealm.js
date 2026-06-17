@@ -14936,26 +14936,17 @@ class AnazhRealm {
             add("box", "knochen", s * shoulderHalf * 0.6, shoulderY - 0.5, -0.4 * girthF, shoulderHalf * 0.66, 0.95, 0.32 * girthF, null, limbCol, {
                 kScale: 0.62,
             });
-        // PECTORALIS — zwei GROSSE Brustplatten, vorn gewölbt, mit halb-scharfer UNTERKANTE (die
-        //    Brust-Linie) + kleinem Mittel-Spalt (Sternum-Furche): die prominenten Pecs der Referenz
-        //    (waren zu klein/schmal). Sie decken die obere Brust, der smin verschmilzt sie zum Brust-Block.
-        for (const s of [-1, 1])
-            add(
-                "box",
-                bodyMat,
-                s * shoulderHalf * 0.46,
-                shoulderY - 0.7,
-                0.36 * girthF,
-                shoulderHalf * 0.46 * mF,
-                0.5,
-                0.3,
-                null,
-                bodyCol,
-                {
-                    kScale: 0.66,
-                    def: true,
-                }
-            );
+        // PECTORALIS — als zwei MUSKEL-STRÄNGE, die ihre KNOTEN spannen (das Gesetz, ein Fan):
+        //    der klavikuläre Kopf (Schlüsselbein → Humerus) + der sternokostale Kopf (Sternum/Rippen →
+        //    Humerus). Beide KONVERGIEREN am Humerus → der Pec FÄCHERT, Bauch medial (dick an der Brust,
+        //    Sehne am Arm), flach (depth) = eine Brustplatte statt Ball. Sie decken die Brust, smin fügt.
+        for (const s of [-1, 1]) {
+            const pix = s * shoulderHalf * 0.74,
+                piy = shoulderY - 0.42,
+                piz = 0.12 * girthF; // Insertion am Humerus (beide Köpfe laufen hierher)
+            musk(s * 0.16, shoulderY - 0.12, 0.28 * girthF, pix, piy, piz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.34, depth: 0.72, kScale: 0.66 }); // klavikulärer Kopf (obere Brust)
+            musk(s * 0.1, shoulderY - 1.02, 0.34 * girthF, pix, piy, piz, 0.3 * mF, { mat: bodyMat, col: bodyCol, belly: 0.32, depth: 0.62, kScale: 0.66 }); // sternokostaler Kopf (untere Brust)
+        }
         // RECTUS ABDOMINIS — der SIXPACK: zwei Säulen (links/rechts der Linea alba) × drei Reihen,
         // jede eine vorgewölbte Masse mit knochig-tightem kScale → der Anatomie-Detail-Pass schnitzt
         // die Linea-alba-Mittelrinne + die queren Sehnen-Furchen aus den SPALTEN dazwischen (die
@@ -14987,22 +14978,17 @@ class AnazhRealm {
         // LATISSIMUS / FLANKE — die breiten Flügel-Massen unter den Achseln: der V-TAPER. Breit+hoch
         //    am Achsel-Ansatz, tapern zur Taille. Verstärkt (Referenz: ausgeprägtes Rücken-V).
         for (const s of [-1, 1]) {
-            // LATISSIMUS — ein BREITES Flügel-Blatt, das von der Achsel (hoch, LATERAL) zur Taille
-            //    (tief, MEDIAL) sweept = der V-TAPER der Referenz. GENEIGT (rotation.z = -s·0.28): die
-            //    Aussenkante läuft von breit-oben nach schmal-unten und ZEICHNET die V-Linie, statt als
-            //    vertikaler Klotz zu hängen (Schöpfer-Befund „latisimus noch nicht sauber"). Seine MASSE
-            //    liegt am RUMPF/Rücken (z negativ, ein Rücken-Muskel → bleibt am Torso, reisst nicht mit
-            //    dem Arm hoch). Breit (sheet) statt schmal-hoch.
-            add("box", bodyMat, s * shoulderHalf * 0.72, shoulderY - 0.98, -0.22 * girthF, 0.36 * mF, 1.05, 0.3 * girthF, { x: 0, y: 0, z: -s * 0.3 }, bodyCol, {
-                kScale: 0.86,
-                def: true,
-            }); // FLACHES Flügel-Blatt (dünn in der Tiefe → kein Rücken-Ball mehr, Schöpfer-Befund), auf der Flanke/dem Rücken, geneigt = der V-Taper
-            // TERES / hintere Achsel-Falte — füllt die Lücke Lat→Deltoid (der „Flügel"-Ansatz; bewegt
-            //    sich anatomisch korrekt MIT dem Arm, Teres-major-Insertion am Humerus).
-            add("sphere", bodyMat, s * shoulderHalf * 0.86, shoulderY - 0.44, -0.18 * girthF, 0.22 * mF, 0.36, 0.26 * girthF, null, bodyCol, {
-                kScale: 0.8,
-                def: true,
-            });
+            // LATISSIMUS — als zwei MUSKEL-STRÄNGE, die zur ACHSEL (Insertion am Humerus) konvergieren =
+            //    der V-TAPER als Fan: der iliakale Strang (Becken/untere Taille → Achsel) + der thorakale
+            //    (untere Wirbelsäule → Achsel). Bauch zum Ursprung (breit am Rücken, Sehne an der Achsel),
+            //    flach + auf dem RÜCKEN (z negativ → bleibt am Torso, reisst nicht mit dem Arm hoch).
+            const lix = s * shoulderHalf * 0.74,
+                liy = shoulderY - 0.55,
+                liz = -0.18 * girthF; // Insertion an der Achsel/Humerus
+            musk(s * shoulderHalf * 0.46, hipY + 0.2, -0.2 * girthF, lix, liy, liz, 0.3 * mF, { mat: bodyMat, col: bodyCol, belly: 0.4, depth: 0.55, kScale: 0.86 }); // iliakaler Strang (Becken → Achsel = die V-Linie)
+            musk(s * 0.32, 5.0, -0.34 * girthF, lix, liy, liz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.45, depth: 0.55, kScale: 0.86 }); // thorakaler Strang (Wirbelsäule → Achsel)
+            // TERES — füllt die Lücke Lat→Deltoid (Teres-major: Skapula-Rand → Humerus, bewegt sich MIT dem Arm).
+            musk(s * shoulderHalf * 0.7, shoulderY - 0.75, -0.24 * girthF, s * shoulderHalf * 0.92, shoulderY - 0.35, -0.12 * girthF, 0.18 * mF, { mat: bodyMat, col: bodyCol, belly: 0.4, kScale: 0.8 });
         }
         // SERRATUS ANTERIOR — die finger-artigen Muskel-Slips auf den unteren SEITLICHEN Rippen (unter
         //    dem Pectoralis, verzahnt mit den Obliques): DIE Signatur eines definierten, schlanken
@@ -15048,8 +15034,11 @@ class AnazhRealm {
         // GESICHTS-RELIEF IM SCHÄDEL-FELD (der Profi-Weg: Nase/Brauen EMERGIEREN aus dem Metaball,
         // statt als Mr.-Potato-Head-Teile aufgeklebt zu werden — die verschmelzen nicht): ein
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
-        add("box", headMat, 0, 7.68, 0.3, 0.54 * hr, 0.1 * hr, 0.18 * hr, null, limbCol); // Brauen-Wulst (verschmolzen)
-        add("box", headMat, 0, 7.5, 0.37, 0.14 * hr, 0.36 * hr, 0.24 * hr, { x: -0.18, y: 0, z: 0 }, limbCol); // Nasen-Rücken (verschmolzen)
+        add("box", headMat, 0, 7.66, 0.28, 0.48 * hr, 0.09 * hr, 0.16 * hr, null, limbCol); // Brauen-Wulst (verschmolzen, schmaler)
+        add("box", headMat, 0, 7.46, 0.3, 0.1 * hr, 0.24 * hr, 0.15 * hr, { x: -0.1, y: 0, z: 0 }, limbCol); // Nasen-Rücken (kürzer + weniger vorragend → kein Schnabel mehr, Schöpfer-Befund)
+        // MASSETER — der Kau-Muskel als Strang Jochbein → Kieferwinkel (das Gesetz auch im Gesicht):
+        //    gibt der unteren Gesichts-Ebene Struktur statt einer glatten Schädel-Kugel.
+        for (const s of [-1, 1]) musk(s * 0.32 * hr, 7.46, 0.16 * hr, s * 0.3 * hr, 7.14, 0.04 * hr, 0.1 * hr, { mat: headMat, col: limbCol, belly: 0.5, kScale: 0.55, extra: { def: false } });
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
@@ -15069,12 +15058,10 @@ class AnazhRealm {
                 bodyMat,
                 bodyCol
             );
-            // OBERER TRAPEZIUS als sichtbare DEF-Masse (rot) — das Joch füllt den Hals→Schulter-Bereich
-            //    auch in der Anatomie-Ansicht, sodass der Kopf SITZT statt zu schweben.
-            add("sphere", bodyMat, s * 0.2, 6.98, -0.18, 0.24 * mF, 0.66, 0.26, { x: 0, y: 0, z: s * 0.42 }, bodyCol, {
-                kScale: 0.84,
-                def: true,
-            });
+            // OBERER TRAPEZIUS — als MUSKEL-STRANG, der seine Knoten spannt (das Gesetz): von der
+            //    Schädelbasis/C7 (hoch, medial, hinten) hinab-aussen zum Akromion (Schulter). Das Joch
+            //    füllt den Hals→Schulter-Bereich → der Kopf SITZT. Bauch medial (dick am Nacken).
+            musk(s * 0.1, 7.0, -0.18, s * shoulderHalf * 0.8, shoulderY - 0.05, -0.06, 0.2 * mF, { mat: bodyMat, col: bodyCol, belly: 0.36, depth: 0.7, kScale: 0.84 });
             const elbowX = s * (shoulderHalf + 0.4),
                 elbowY = waistY + 0.1;
             const wristX = s * (shoulderHalf + 0.6),
@@ -15101,35 +15088,28 @@ class AnazhRealm {
             add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.6 }); // Ellbogen-Kondylen
             add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, { kScale: 0.6 }); // Handwurzel (Handgelenk)
             add("box", "knochen", elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen, knochen)
-            // HAND — eine RUHENDE HAND als ZUSAMMENHÄNGENDE Masse (Profi-Stilisierung: Handteller +
-            // leicht eingekrümmtes Finger-PAKET + abgespreizter Daumen — KEINE dünnen Klauen-Streben,
-            // die der scharfe smin als Spikes stehen lässt). Die Massen überlappen breit → der smin
-            // verschmilzt sie zu EINER Hand-Silhouette mit angedeuteten Fingern statt einer Kralle.
-            const hw = wristX + s * 0.03;
-            add("box", limbMat, hw, wristY - 0.2, 0.03, 0.34 * limbF, 0.24, 0.21, null, limbCol); // Handteller (breit + dick)
-            add("box", limbMat, hw, wristY - 0.45, 0.06, 0.32 * limbF, 0.3, 0.18, { x: 0.4, y: 0, z: 0 }, limbCol); // Finger-Paket (eingekrümmt, vorn)
-            add(
-                "box",
-                limbMat,
-                wristX - s * 0.16,
-                wristY - 0.2,
-                0.13,
-                0.14,
-                0.24,
-                0.14,
-                { x: 0.2, y: 0, z: s * 0.6 },
-                limbCol
-            ); // Daumen (vorn-innen, abgespreizt)
-            // FINGER-KNOCHEN (knochen, dünn, IM Fleisch-Handteller): die Knochen-Ansicht zeigt
-            //    artikulierte Finger mit KNÖCHELN (Gelenke), die HAUT bleibt eine glatte Hand (keine
-            //    Klauen — das Fleisch-Paket ist die Oberfläche, die Knochen sind das innere Gerüst).
+            // HAND — als artikuliertes SKELETT (das Gesetz: jeder Knochen spannt zwei Knoten, jetzt
+            //    voll-3D): Mittelhand-Knochen (Handgelenk → Knöchel-Reihe, fächern) + Knöchel-Gelenke +
+            //    Finger-Glieder (Knöchel → Spitze, fächern UND krümmen nach vorn — dank dem 3D-limb, der
+            //    den z-Anteil nicht mehr verschluckt). Ein schlanker Fleisch-Handteller drapiert darüber
+            //    (die Haut bleibt eine glatte Hand, die Knochen sind das innere Gerüst = die Referenz-Hand).
+            const hw = wristX + s * 0.02;
+            add("box", limbMat, hw, wristY - 0.16, 0.04, 0.3 * limbF, 0.18, 0.13, null, limbCol); // Handteller (Fleisch, schlanker)
+            const knuckY = wristY - 0.32; // Knöchel-Reihe (Metacarpalköpfe)
             for (let f = 0; f < 4; f++) {
-                const fx = hw + (f - 1.5) * 0.12 * limbF;
-                const fl = f === 1 || f === 2 ? 0.34 : 0.27; // Mittel-/Zeigefinger länger
-                limb(fx, wristY - 0.26, 0.03, fx, wristY - 0.26 - fl, 0.16, 0.055 * limbF, "knochen", limbCol); // Finger (Metacarpal→Phalangen)
-                add("sphere", "knochen", fx, wristY - 0.26 - fl * 0.5, 0.1, 0.06 * limbF, 0.06 * limbF, 0.06 * limbF, null, limbCol, { kScale: 0.4 }); // Knöchel-GELENK
+                const sp = f - 1.5; // -1.5 … 1.5 (vier Finger, fächern symmetrisch)
+                const kx = hw + sp * 0.1 * limbF;
+                const kz = 0.05 + Math.abs(sp) * 0.012; // die Knöchel-Reihe bogt leicht vor
+                limb(hw + sp * 0.05 * limbF, wristY - 0.04, 0.02, kx, knuckY, kz, 0.05 * limbF, "knochen", limbCol); // Mittelhand-Knochen (Handgelenk → Knöchel)
+                add("sphere", "knochen", kx, knuckY, kz, 0.055 * limbF, 0.055 * limbF, 0.055 * limbF, null, limbCol, { kScale: 0.4 }); // Knöchel-Gelenk
+                const fl = (f === 1 || f === 2 ? 0.3 : 0.24) * limbF; // Mittel-/Zeigefinger länger
+                limb(kx, knuckY, kz, kx + sp * 0.02 * limbF, knuckY - fl, kz + 0.12, 0.044 * limbF, "knochen", limbCol); // Finger-Glieder (Phalangen, krümmen nach vorn)
             }
-            limb(wristX - s * 0.13, wristY - 0.16, 0.06, wristX - s * 0.24, wristY - 0.32, 0.14, 0.06 * limbF, "knochen", limbCol); // Daumen-Knochen
+            // DAUMEN — Mittelhand-Knochen abduziert (zur Körpermitte + vorn) + Daumen-Glied (das Gesetz).
+            const thbX = hw - s * 0.15,
+                thbY = wristY - 0.1;
+            limb(wristX, wristY - 0.02, 0.06, thbX, thbY, 0.18, 0.06 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
+            limb(thbX, thbY, 0.18, thbX - s * 0.05, thbY - 0.15, 0.26, 0.05 * limbF, "knochen", limbCol); // Daumen-Glied
         }
         // GLUTEUS MAXIMUS — der HINTERN (z<0, HINTEN): zwei runde Massen am Becken-RÜCKEN. Er
         // FEHLTE komplett im Skelett → der Rücken war flach und die nach vorn beulenden Schenkel-
