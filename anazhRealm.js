@@ -14800,6 +14800,69 @@ class AnazhRealm {
                     return [s * 0.38, 0.4, 0];
                 case "foot":
                     return [s * 0.38, 0.2, 0.56]; // Zehen-Ballen (vorn)
+                // ── Muskel-Ansatz-Landmarken (Ursprung/Ansatz — „geführt über die Gelenke") ──
+                case "sternumTop":
+                    return [0, 6.0, 0.32 * girthF]; // Manubrium (obere Brust-Front)
+                case "sternumLow":
+                    return [0, 5.4, 0.34 * girthF];
+                case "xiphoid":
+                    return [0, 5.0, 0.34 * girthF];
+                case "navel":
+                    return [0, 4.32, 0.36 * girthF];
+                case "pubis":
+                    return [0, 3.85, 0.2 * girthF];
+                case "c7":
+                    return [0, 6.85, -0.16 * girthF]; // Nacken-Basis hinten
+                case "sacrum":
+                    return [s * 0.13, 4.15, -0.34 * girthF];
+                case "erectorTop":
+                    return [s * 0.13, 6.2, -0.34 * girthF];
+                case "mastoid":
+                    return [s * 0.19, 7.28, -0.05]; // Warzenfortsatz hinterm Ohr
+                case "cheek":
+                    return [s * 0.3 * headRatio, 7.46, 0.16 * headRatio];
+                case "jawAngle":
+                    return [s * 0.29 * headRatio, 7.12, 0.04 * headRatio];
+                case "clavicleMed":
+                    return [s * 0.12, 6.42, 0.2 * girthF];
+                case "acromion":
+                    return [s * shoulderHalf * 1.04, 6.62, 0]; // Schulter-Spitze
+                case "scapula":
+                    return [s * shoulderHalf * 0.64, 6.05, -0.34 * girthF];
+                case "axilla":
+                    return [s * shoulderHalf * 0.82, 5.95, -0.14 * girthF]; // Achsel (Lat/Teres-Ansatz)
+                case "deltoidIns":
+                    return [s * shoulderHalf * 1.06, 5.85, 0]; // Deltoid-Tuberositas (Humerus-Mitte)
+                case "pecIns":
+                    return [s * shoulderHalf * 0.88, 6.0, 0.12 * girthF]; // Pec-Ansatz (Humerus vorn)
+                case "shoulderFront":
+                    return [s * shoulderHalf, 6.3, 0.14 * limbF]; // Bizeps-Ursprung
+                case "shoulderBack":
+                    return [s * shoulderHalf, 6.3, -0.14 * limbF]; // Trizeps-Ursprung
+                case "elbowFront":
+                    return [s * (shoulderHalf + 0.4), 5.05, 0.12 * limbF];
+                case "elbowBack":
+                    return [s * (shoulderHalf + 0.4), 5.08, -0.13 * limbF]; // Olecranon (Trizeps-Ansatz)
+                case "iliac":
+                    return [s * hipHalf * 0.95, 4.42, 0.02 * girthF]; // Darmbeinkamm
+                case "iliacBack":
+                    return [s * hipHalf * 0.62, 4.3, -0.32 * girthF]; // Becken hinten (Glute/Lat-Ursprung)
+                case "ischium":
+                    return [s * hipHalf * 0.52, 3.9, -0.3 * girthF]; // Sitzbein (Hamstring-Ursprung)
+                case "hipFront":
+                    return [s * hipHalf * 0.66, 4.0, 0.12 * girthF]; // Quad-Ursprung (vorn)
+                case "thighInner":
+                    return [s * 0.22, 3.1, 0.02]; // innerer Oberschenkel (Adduktor-Ansatz)
+                case "kneeFront":
+                    return [s * 0.4, 2.36, 0.14 * girthF]; // Patella (Quad/Tibialis)
+                case "kneeBack":
+                    return [s * 0.4, 2.36, -0.16 * girthF]; // Kniekehle (Hamstring/Gastroc)
+                case "shinTop":
+                    return [s * 0.4, 2.05, -0.1 * girthF]; // oberer Schienbein hinten (Soleus)
+                case "ankleFront":
+                    return [s * 0.38, 0.58, 0.1 * girthF]; // Knöchel vorn (Tibialis-Ansatz)
+                case "heel":
+                    return [s * 0.38, 0.3, -0.22]; // Fersenbein (Achilles/Gastroc-Ansatz)
                 default:
                     return [0, 0, 0];
             }
@@ -14820,7 +14883,7 @@ class AnazhRealm {
         // build (schlank↔schwer) · muscle (Glied-Masse) · headRatio (Alter/Heroik). Die Stationen
         // überlappen physik-erhaltend (die Haut verschmilzt sie). shoulderHalf/waistHalf/hipHalf +
         // hipY/waistY/shoulderY + mF (Muskel-Fülle) sind hier mit-destrukturiert (eine Quelle).
-        const { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY } = AnazhRealm._humanoidLandmarks(g);
+        const { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY, joint: J } = AnazhRealm._humanoidLandmarks(g);
         const parts = [];
         const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
             const p = {
@@ -14933,6 +14996,7 @@ class AnazhRealm {
         add("box", "knochen", 0, 5.6, 0.04 * girthF, shoulderHalf * 1.32, 0.98, 0.76 * girthF, null, limbCol, {
             kScale: 0.96,
             bodyRole: "chest",
+            struct: true,
         });
         // RIPPEN (costae, knochen, dünn, IM Brustkorb-Ovoid): horizontale Bänder, die das Ovoid als
         //    echten RIPPENKORB lesen lassen (Referenz). Schmaler oben + unten (Ei-Form), breit Mitte,
@@ -14942,19 +15006,19 @@ class AnazhRealm {
             const tt = (rb + 0.5) / 6;
             const rw = shoulderHalf * (0.92 + 0.42 * Math.sin(tt * Math.PI)); // Ei: Mitte am breitesten
             const rd = (0.58 + 0.24 * Math.sin(tt * Math.PI)) * girthF; // flacher als breit
-            add("box", "knochen", 0, ry, 0.05 * girthF, rw, 0.11, rd, null, limbCol, { kScale: 0.5 });
+            add("box", "knochen", 0, ry, 0.05 * girthF, rw, 0.11, rd, null, limbCol, { kScale: 0.5, struct: true });
         }
         // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
-        add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66 });
+        add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66, struct: true });
         // BAUCH (abdomen, fleisch WEICH): die viszerale Masse = die TAILLE (schmaler als Brustkorb+Becken).
         add("box", bodyMat, 0, 4.66, 0.05 * girthF, waistHalf * 1.66, 1.05, 0.84 * girthF, null, bodyCol, {
             kScale: 1.08,
         });
         // WIRBELSÄULE (spine, knochen) — die Rücken-Säule mit S-KURVE (Lende VOR · Brust ZURÜCK · Hals VOR):
         //    der Rücken curve, kein Brett. Drei Segmente, je z-versetzt.
-        add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, { kScale: 0.58 }); // Lende (lumbar, vor)
-        add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, { kScale: 0.58 }); // Brust (thoracic, zurück)
-        add("box", "knochen", 0, 6.95, -0.07 * girthF, 0.3, 1.2, 0.22 * girthF, null, limbCol, { kScale: 0.54 }); // Halswirbelsäule (cervical) — REICHT JETZT bis zum Schädel (verband den schwebenden Kopf)
+        add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, { kScale: 0.58, struct: true }); // Lende (lumbar, vor)
+        add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, { kScale: 0.58, struct: true }); // Brust (thoracic, zurück)
+        add("box", "knochen", 0, 6.95, -0.07 * girthF, 0.3, 1.2, 0.22 * girthF, null, limbCol, { kScale: 0.54, struct: true }); // Halswirbelsäule (cervical) — REICHT JETZT bis zum Schädel (verband den schwebenden Kopf)
         // GESÄSS — ZWEI Glute-Massen hinter dem Becken (statt EINER brückenden Platte, die die
         // Oberschenkel zu einem Rock verschmolz, GEMESSEN am Avatar-Render): links/rechts mit
         // Mittel-Spalt → das Gesäß liest ALS Gesäß UND der Spalt zwischen den Schenkeln öffnet
@@ -14990,18 +15054,11 @@ class AnazhRealm {
         for (const s of [-1, 1])
             add("box", "knochen", s * shoulderHalf * 0.6, shoulderY - 0.5, -0.4 * girthF, shoulderHalf * 0.66, 0.95, 0.32 * girthF, null, limbCol, {
                 kScale: 0.62,
+                struct: true,
             });
-        // PECTORALIS — als zwei MUSKEL-STRÄNGE, die ihre KNOTEN spannen (das Gesetz, ein Fan):
-        //    der klavikuläre Kopf (Schlüsselbein → Humerus) + der sternokostale Kopf (Sternum/Rippen →
-        //    Humerus). Beide KONVERGIEREN am Humerus → der Pec FÄCHERT, Bauch medial (dick an der Brust,
-        //    Sehne am Arm), flach (depth) = eine Brustplatte statt Ball. Sie decken die Brust, smin fügt.
-        for (const s of [-1, 1]) {
-            const pix = s * shoulderHalf * 0.74,
-                piy = shoulderY - 0.42,
-                piz = 0.12 * girthF; // Insertion am Humerus (beide Köpfe laufen hierher)
-            musk(s * 0.16, shoulderY - 0.12, 0.28 * girthF, pix, piy, piz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.34, depth: 0.72, kScale: 0.66 }); // klavikulärer Kopf (obere Brust)
-            musk(s * 0.1, shoulderY - 1.02, 0.34 * girthF, pix, piy, piz, 0.3 * mF, { mat: bodyMat, col: bodyCol, belly: 0.32, depth: 0.62, kScale: 0.66 }); // sternokostaler Kopf (untere Brust)
-        }
+        // PECTORALIS / DELTOID / LAT / TRAPEZ / SCM / Arm- + Bein-Muskeln kommen jetzt aus dem
+        //    MUSKEL-ATLAS (unten, vor dem COVERAGE-PASS) — EINE gelenk-verankerte Baugruppe, kein
+        //    Streu-Tweak. RECTUS/OBLIQUES/SERRATUS/ERECTOR bleiben parametrische Loops (schon anchored).
         // RECTUS ABDOMINIS — der SIXPACK: zwei Säulen (links/rechts der Linea alba) × drei Reihen,
         // jede eine vorgewölbte Masse mit knochig-tightem kScale → der Anatomie-Detail-Pass schnitzt
         // die Linea-alba-Mittelrinne + die queren Sehnen-Furchen aus den SPALTEN dazwischen (die
@@ -15030,23 +15087,7 @@ class AnazhRealm {
                 kScale: 0.78,
                 def: true,
             });
-        // LATISSIMUS / FLANKE — die breiten Flügel-Massen unter den Achseln: der V-TAPER. Breit+hoch
-        //    am Achsel-Ansatz, tapern zur Taille. Verstärkt (Referenz: ausgeprägtes Rücken-V).
-        for (const s of [-1, 1]) {
-            // LATISSIMUS — als zwei MUSKEL-STRÄNGE, die zur ACHSEL (Insertion am Humerus) konvergieren =
-            //    der V-TAPER als Fan: der iliakale Strang (Becken/untere Taille → Achsel) + der thorakale
-            //    (untere Wirbelsäule → Achsel). Bauch zum Ursprung (breit am Rücken, Sehne an der Achsel),
-            //    flach + auf dem RÜCKEN (z negativ → bleibt am Torso, reisst nicht mit dem Arm hoch).
-            const lix = s * shoulderHalf * 0.76,
-                liy = shoulderY - 0.6,
-                liz = -0.2 * girthF; // Insertion an der Achsel/Humerus
-            // FLACH + auf dem RÜCKEN (z stark negativ) → ein glattes Blatt, kein Blob-Stapel auf der Flanke
-            //    (Schöpfer „latisimus komisch"). Zwei Stränge, die zur Achsel konvergieren = der V-Taper.
-            musk(s * shoulderHalf * 0.5, hipY + 0.25, -0.3 * girthF, lix, liy, liz, 0.32 * mF, { mat: bodyMat, col: bodyCol, belly: 0.42, depth: 0.38, kScale: 0.88 }); // iliakaler Strang (Becken → Achsel)
-            musk(s * 0.3, 5.1, -0.42 * girthF, lix, liy, liz, 0.26 * mF, { mat: bodyMat, col: bodyCol, belly: 0.46, depth: 0.38, kScale: 0.88 }); // thorakaler Strang (Wirbelsäule → Achsel)
-            // TERES — füllt die Lücke Lat→Deltoid (Teres-major: Skapula-Rand → Humerus, bewegt sich MIT dem Arm).
-            musk(s * shoulderHalf * 0.7, shoulderY - 0.75, -0.24 * girthF, s * shoulderHalf * 0.92, shoulderY - 0.35, -0.12 * girthF, 0.18 * mF, { mat: bodyMat, col: bodyCol, belly: 0.4, kScale: 0.8 });
-        }
+        // (LATISSIMUS / TERES → MUSKEL-ATLAS unten)
         // SERRATUS ANTERIOR — die finger-artigen Muskel-Slips auf den unteren SEITLICHEN Rippen (unter
         //    dem Pectoralis, verzahnt mit den Obliques): DIE Signatur eines definierten, schlanken
         //    Rumpfes (Referenz-Front, fehlte mir komplett). Drei kleine schräge Massen je Seite, nach
@@ -15071,10 +15112,7 @@ class AnazhRealm {
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
         limb(0, shoulderY - 0.16, -0.02, 0, 7.25, -0.04, 0.5 * (0.92 + muscle * 0.25), bodyMat, bodyCol); // Hals (dicker, trägt den Kopf)
-        // STERNOCLEIDOMASTOIDEUS — als zwei MUSKEL-STRÄNGE (das Gesetz, kein gewürfeltes Kugel-Paar →
-        //    der Nacken war komisch): vom Warzenfortsatz hinter dem Ohr (hoch, hinten-lateral) hinab-vorn
-        //    zum Sternum/Schlüsselbein. Die saubere Hals-V-Linie, füllt den Hals→Brust-Übergang.
-        for (const s of [-1, 1]) musk(s * 0.2, 7.28, -0.04, s * 0.12, 6.42, 0.2, 0.12 * mF, { mat: bodyMat, col: bodyCol, belly: 0.5, kScale: 0.78 });
+        // (STERNOCLEIDOMASTOIDEUS → MUSKEL-ATLAS unten)
         // SCHÄDEL — ein sauberes OVOID: EIN Cranium-Dome deckt Scheitel UND Hinterkopf (Occiput) in einer
         //    glatten Form (war Kugel + separater Occiput-Bump = „Schädel komisch"); höher als breit + leicht
         //    nach hinten (menschliche Kopf-Proportion). Der Kiefer hängt vorn-unten = die Gesichts-Ebene.
@@ -15089,56 +15127,19 @@ class AnazhRealm {
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
         add("box", headMat, 0, 7.66, 0.28, 0.48 * hr, 0.09 * hr, 0.16 * hr, null, limbCol); // Brauen-Wulst (verschmolzen, schmaler)
         add("box", headMat, 0, 7.46, 0.3, 0.1 * hr, 0.24 * hr, 0.15 * hr, { x: -0.1, y: 0, z: 0 }, limbCol); // Nasen-Rücken (kürzer + weniger vorragend → kein Schnabel mehr, Schöpfer-Befund)
-        // MASSETER — der Kau-Muskel als Strang Jochbein → Kieferwinkel (das Gesetz auch im Gesicht):
-        //    gibt der unteren Gesichts-Ebene Struktur statt einer glatten Schädel-Kugel.
-        for (const s of [-1, 1]) musk(s * 0.32 * hr, 7.46, 0.16 * hr, s * 0.3 * hr, 7.14, 0.04 * hr, 0.1 * hr, { mat: headMat, col: limbCol, belly: 0.5, kScale: 0.55, extra: { def: false } });
+        // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
             const shX = s * shoulderHalf * 1.0,
                 shY = shoulderY + 0.08; // Schulter höher + weiter aussen → das Glied fällt fast senkrecht, die ACHSEL öffnet sich unter dem Deltoideus
-            // DELTOIDEUS — als DREI-Kopf-FAN auf dem Gesetz: vorderer (Schlüsselbein), seitlicher (Akromion)
-            //    und hinterer (Skapula) Kopf, alle konvergieren am Humerus-Mitte (Deltoid-Tuberosität) →
-            //    die Schulter-Kappe EMERGIERT aus den drei Strängen statt einer gewürfelten Kugel.
-            const dix = shX * 1.04,
-                diy = shY - 0.7,
-                diz = 0; // Insertion Humerus-Mitte (Deltoid-Tuberosität)
-            musk(shX * 0.6, shY + 0.04, 0.18 * limbF, dix, diy, diz, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78 }); // vorderer Kopf (Schlüsselbein → Humerus)
-            musk(shX * 1.02, shY + 0.1, 0, dix, diy, diz, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78, extra: { def: true, disp: true, amp: 0.18, reach: 1.6 } }); // seitlicher Kopf (Akromion → Humerus) — trägt den Verschiebungs-Schwell
-            musk(shX * 0.78, shY, -0.2 * limbF, dix, diy, diz, 0.17 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.78 }); // hinterer Kopf (Skapula → Humerus)
-            // TRAPEZIUS — die Schräge Hals→Schulter (tötet das „Kleiderbügel"-Regal: die Schulterlinie
-            // fällt vom Hals-Ansatz hinab zur Schulter, statt flach abzubrechen). Eine Masse vom
-            // Hals-Ansatz (hoch, zentral, leicht hinten) hinab-aussen zum Deltoideus. bodyMat → Rumpf.
-            limb(
-                s * 0.12,
-                7.12, // HÖHER an die Schädel-Basis/C7 → der obere Trapez füllt das Hals→Schulter-JOCH (gegen den schwebenden Kopf)
-                -0.2,
-                shX * 0.94,
-                shY - 0.02,
-                -0.04,
-                0.46 * (0.92 + muscle * 0.28),
-                bodyMat,
-                bodyCol
-            );
-            // OBERER TRAPEZIUS — als MUSKEL-STRANG, der seine Knoten spannt (das Gesetz): von der
-            //    Schädelbasis/C7 (hoch, medial, hinten) hinab-aussen zum Akromion (Schulter). Das Joch
-            //    füllt den Hals→Schulter-Bereich → der Kopf SITZT. Bauch medial (dick am Nacken).
-            musk(s * 0.1, 7.0, -0.18, s * shoulderHalf * 0.8, shoulderY - 0.05, -0.06, 0.2 * mF, { mat: bodyMat, col: bodyCol, belly: 0.36, depth: 0.7, kScale: 0.84 });
+            // (DELTOIDEUS / TRAPEZIUS → MUSKEL-ATLAS unten — gelenk-verankert)
             const elbowX = s * (shoulderHalf + 0.4),
                 elbowY = waistY + 0.1;
             const wristX = s * (shoulderHalf + 0.6),
                 wristY = hipY - 0.3; // Handgelenk TIEFER → der Unterarm ~so lang wie der Oberarm (war 0.68× → stämmig/kurz, Schöpfer „arme nicht sauber")
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.4 * limbF, limbMat); // Oberarm (Ansatz unter dem Deltoideus → Achsel-Kerbe)
-            // BIZEPS (vorn) + TRIZEPS (hinten) am Oberarm — getrennte DEF-Massen → der Seam-Groove
-            // zeichnet die Arm-Definition (war ein glattes Rohr). Der smin schmilzt sie in den Arm.
-            // BIZEPS/TRIZEPS/UNTERARM — als MUSKEL-SPINDELN, die ihre KNOTEN spannen (das Gesetz, kein
-            //   gewürfelter Klumpen): jede Spindel emergiert aus Ursprung→Ansatz, dünn an den Sehnen,
-            //   dick am Bauch, voll-3D orientiert entlang des Glieds.
-            musk(shX, shY - 0.3, 0.16 * limbF, elbowX, elbowY - 0.05, 0.14 * limbF, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.46 }); // Bizeps (Schulter-Front → Radius, vorn)
-            musk(shX, shY - 0.3, -0.16 * limbF, elbowX, elbowY, -0.13 * limbF, 0.22 * limbF, { mat: limbMat, col: limbCol, belly: 0.5 }); // Trizeps (Schulter-Rück → Olecranon, hinten, voller)
+            // (BIZEPS / TRIZEPS / UNTERARM-MUSKEL → MUSKEL-ATLAS unten — gelenk-verankert)
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.3 * limbF, limbMat); // Unterarm-Knochen-Glied (Radius/Ulna)
-            // UNTERARM-MUSKEL (Brachioradialis/Flexoren) — spannt Ellbogen → Handgelenk, Bauch PROXIMAL
-            //    (belly 0.3 → schwillt am Ellbogen, tapert zum schlanken Handgelenk), auf der Vorderseite.
-            musk(elbowX, elbowY, 0.06 * limbF, wristX, wristY + 0.05, 0.04 * limbF, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.32 }); // Unterarm-Muskel
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -15172,11 +15173,7 @@ class AnazhRealm {
             limb(wristX, wristY - 0.02, 0.06, thbX, thbY, 0.18, 0.06 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
             limb(thbX, thbY, 0.18, thbX - s * 0.05, thbY - 0.15, 0.26, 0.05 * limbF, "knochen", limbCol); // Daumen-Glied
         }
-        // GLUTEUS MAXIMUS — als MUSKEL-STRANG auf dem Gesetz: vom Kreuzbein/Darmbein (medial-hoch-hinten)
-        //    schräg hinab-aussen zum Femur (Trochanter/Gesäßfalte). Der HINTERN (z<0) emergiert aus der
-        //    Verbindung, rund (depth 1), Bauch mittig → die volle Gesäß-Masse hinten, nicht vorn.
-        for (const s of [-1, 1])
-            musk(s * 0.18, hipY + 0.05, -0.34 * girthF, s * 0.42, hipY - 0.75, -0.32 * girthF, 0.42 * mF, { mat: bodyMat, col: bodyCol, belly: 0.5, depth: 0.9, kScale: 0.92 });
+        // (GLUTEUS MAXIMUS → MUSKEL-ATLAS unten — gelenk-verankert)
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
         // STAND-BREITE: die Beine weit genug AUSEINANDER, dass der innere Spalt > die smin-Blend-
         // breite k bleibt — sonst verschmilzt das Feld beide Beine zu EINER Säule (gemessen die
@@ -15195,25 +15192,22 @@ class AnazhRealm {
             // Darmbein-Schaufel je Seite (breit, oben-lateral) → die Hüft-Breite + die Sockel-Wand.
             add("box", "knochen", s * hipHalf * 0.6, hipY + 0.06, -0.04 * girthF, hipHalf * 0.72, 0.6, 0.5 * girthF, null, limbCol, {
                 kScale: 0.72,
+                struct: true,
             });
             if (s > 0) {
                 // Scham-Schild (pubic) — EINE glatte, breite Front-Platte tief-mittig = die Leisten-Front,
                 //    weit genug vorn, dass sie ÜBER beide Schenkel-Köpfe drapiert (kein Doppel-Beule mehr).
                 add("box", "knochen", 0, hipY - 0.34, 0.27 * girthF, hipHalf * 1.02, 0.56, 0.4 * girthF, null, limbCol, {
                     kScale: 0.82,
+                    struct: true,
                 });
                 // Kreuzbein (sacrum) hinten-mittig — verbindet zur Wirbelsäule, formt den unteren Rücken.
                 add("box", "knochen", 0, hipY + 0.02, -0.3 * girthF, hipHalf * 0.5, 0.7, 0.34 * girthF, null, limbCol, {
                     kScale: 0.78,
+                    struct: true,
                 });
             }
-            // QUADRIZEPS / HAMSTRING / VASTUS — MUSKEL-SPINDELN, die ihre KNOTEN spannen (das Gesetz):
-            //   vorn Hüfte→Knie (Quad schwillt, tapert zur Patella), hinten Ischium→Unterknie (Hamstring),
-            //   der Vastus-Tropfen über dem inneren Knie. Die Spindeln überlappen das Glied → der smin
-            //   verschmilzt sie zu EINEM muskulösen Schenkel (kein gewürfelter Klumpen).
-            musk(hipX, 3.98, 0.12, kneeX, 2.42, 0.14, 0.34 * limbF, { mat: limbMat, col: limbCol, belly: 0.44, kScale: 0.84 }); // Quadrizeps (vorn)
-            musk(hipX, 3.98, -0.18, kneeX, 2.4, -0.2, 0.34 * limbF, { mat: limbMat, col: limbCol, belly: 0.46, kScale: 0.9 }); // Hamstring (hinten)
-            musk((hipX + kneeX) * 0.5, 2.95, 0.1, kneeX - s * 0.05, 2.46, 0.13, 0.2 * limbF, { mat: limbMat, col: limbCol, belly: 0.7, kScale: 0.58 }); // Vastus medialis (Tropfen über dem inneren Knie)
+            // (QUADRIZEPS / HAMSTRING / SARTORIUS / ADDUKTOR → MUSKEL-ATLAS unten — gelenk-verankert)
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.46 * limbF, limbMat); // Unterschenkel (kräftiger → Wade liest)
             // ── BEIN-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones): dünne knochen-
             //    Schäfte IM Fleisch (Femur, Tibia) + Gelenk-Knöpfe an Hüfte/Knie/Knöchel (T-Knochen-
@@ -15224,12 +15218,7 @@ class AnazhRealm {
             add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
             add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.55 }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
-            // WADE / SOLEUS / TIBIALIS — Spindeln am Unterschenkel: Gastrocnemius Knie-Rück → Ferse
-            //   (Bauch proximal = der kräftige Waden-Bauch oben, tapert zur Achillessehne), Soleus tiefer,
-            //   Tibialis am Schienbein vorn-aussen.
-            musk(kneeX, 2.35, -0.16, ankleX, 0.55, -0.12, 0.42 * limbF, { mat: limbMat, col: limbCol, belly: 0.32, kScale: 0.86 }); // Gastrocnemius (Wade)
-            musk(kneeX * 0.95, 2.0, -0.12, ankleX, 0.6, -0.08, 0.24 * limbF, { mat: limbMat, col: limbCol, belly: 0.42, kScale: 0.82 }); // Soleus
-            musk(kneeX, 2.1, 0.14, ankleX, 0.6, 0.08, 0.18 * limbF, { mat: limbMat, col: limbCol, belly: 0.36, kScale: 0.8 }); // Tibialis anterior
+            // (GASTROCNEMIUS / SOLEUS / TIBIALIS → MUSKEL-ATLAS unten — gelenk-verankert)
             // FUSS — DREI Fleisch-Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach):
             // eine gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; der Knöchel
             // ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung (glatte Sohle).
@@ -15262,6 +15251,83 @@ class AnazhRealm {
                 const toeW = isBig ? 0.06 : 0.044 - Math.abs(sp) * 0.005; // Grosszeh DICK, Aussenzehen dünn
                 const toeL = isBig ? 0.12 : 0.09 - Math.abs(sp) * 0.012; // KURZE Stummel, Aussenzehen kürzer
                 add("sphere", "knochen", lat, 0.095, 0.56 - Math.abs(sp) * 0.04, toeW * limbF, toeW * 0.85 * limbF, toeL * limbF, { x: 0.08, y: 0, z: 0 }, limbCol, { kScale: 0.45 });
+            }
+        }
+        // ── DER MUSKEL-ATLAS (die Baugruppe, „gelernt von den Profis") — jeder Muskel SPANNT zwei
+        //    benannte Gelenk-Knoten (Ursprung→Ansatz auf L), genau wie ein echter Muskel zwei Knochen
+        //    spannt: „geführt über die Gelenke". EINE Tabelle, kein Streu-Tweak — in JEDER Pose sitzt
+        //    der Muskel richtig (die Landmarken reisen mit dem Skelett/Rig). Die Fasern überziehen den
+        //    ganzen Körper (Referenz-Écorché), der Knochen bleibt das innere Gerüst. b = Bauch-Dicke
+        //    (× mF Rumpf / limbF Glied), belly = Lage des dicksten Punkts, depth = Abplattung. ──
+        const MUSC = [
+            // HALS + KOPF
+            { o: "mastoid", i: "clavicleMed", b: 0.12, sc: mF, belly: 0.5, kS: 0.78 }, // Sternocleidomastoideus (Hals-V)
+            { o: "cheek", i: "jawAngle", b: 0.1, sc: mF, belly: 0.5, kS: 0.55, mat: headMat, col: limbCol, ndef: true }, // Masseter
+            { o: "c7", i: "acromion", b: 0.2, sc: mF, belly: 0.4, depth: 0.7, kS: 0.82 }, // Trapezius (oberer — das Hals→Schulter-Joch)
+            { o: "c7", i: "scapula", b: 0.18, sc: mF, belly: 0.5, depth: 0.5, kS: 0.8 }, // Trapezius (mittlerer — Rücken-Diamant)
+            // SCHULTER (Deltoideus-Fan)
+            { o: "clavicleMed", i: "deltoidIns", b: 0.18, sc: limbF, belly: 0.38, kS: 0.78, mat: limbMat, col: limbCol }, // vorderer Kopf
+            { o: "acromion", i: "deltoidIns", b: 0.21, sc: limbF, belly: 0.4, kS: 0.78, mat: limbMat, col: limbCol, extra: { def: true, disp: true, amp: 0.18, reach: 1.6 } }, // seitlicher Kopf (Schwell)
+            { o: "scapula", i: "deltoidIns", b: 0.17, sc: limbF, belly: 0.38, kS: 0.78, mat: limbMat, col: limbCol }, // hinterer Kopf
+            // BRUST (Pectoralis-Fan — deckt den Brustkorb, fächert zum Humerus)
+            { o: "clavicleMed", i: "pecIns", b: 0.27, sc: mF, belly: 0.4, depth: 0.55, kS: 0.66 }, // klavikulärer Kopf
+            { o: "sternumTop", i: "pecIns", b: 0.33, sc: mF, belly: 0.36, depth: 0.5, kS: 0.66 }, // sternaler Kopf
+            { o: "sternumLow", i: "pecIns", b: 0.3, sc: mF, belly: 0.34, depth: 0.46, kS: 0.66 }, // unterer Kopf
+            // RÜCKEN (Latissimus-V + Teres + Erector)
+            { o: "iliacBack", i: "axilla", b: 0.3, sc: mF, belly: 0.42, depth: 0.4, kS: 0.88 }, // Latissimus (iliakal)
+            { o: "erectorTop", i: "axilla", b: 0.26, sc: mF, belly: 0.46, depth: 0.4, kS: 0.88 }, // Latissimus (thorakal)
+            { o: "scapula", i: "axilla", b: 0.17, sc: mF, belly: 0.4, kS: 0.8 }, // Teres
+            { o: "sacrum", i: "erectorTop", b: 0.16, sc: mF, belly: 0.5, depth: 0.42, kS: 0.74 }, // Erector spinae (Rücken-Säule)
+            // ARM
+            { o: "shoulderFront", i: "elbowFront", b: 0.21, sc: limbF, belly: 0.46, kS: 0.85, mat: limbMat, col: limbCol }, // Bizeps
+            { o: "shoulderBack", i: "elbowBack", b: 0.23, sc: limbF, belly: 0.5, kS: 0.85, mat: limbMat, col: limbCol }, // Trizeps
+            { o: "elbowFront", i: "wrist", b: 0.18, sc: limbF, belly: 0.34, kS: 0.85, mat: limbMat, col: limbCol }, // Unterarm-Flexoren
+            // GESÄSS + OBERSCHENKEL
+            { o: "iliacBack", i: "hip", b: 0.42, sc: mF, belly: 0.5, depth: 0.9, kS: 0.92 }, // Gluteus maximus
+            { o: "hipFront", i: "kneeFront", b: 0.36, sc: limbF, belly: 0.44, kS: 0.84, mat: limbMat, col: limbCol }, // Quadrizeps
+            { o: "ischium", i: "kneeBack", b: 0.34, sc: limbF, belly: 0.46, kS: 0.9, mat: limbMat, col: limbCol }, // Hamstring
+            { o: "iliac", i: "kneeFront", b: 0.12, sc: limbF, belly: 0.55, kS: 0.7, mat: limbMat, col: limbCol }, // Sartorius (diagonal)
+            { o: "pubis", i: "thighInner", b: 0.18, sc: limbF, belly: 0.5, kS: 0.78, mat: limbMat, col: limbCol }, // Adduktor (Leiste)
+            // UNTERSCHENKEL
+            { o: "kneeBack", i: "heel", b: 0.4, sc: limbF, belly: 0.3, kS: 0.86, mat: limbMat, col: limbCol }, // Gastrocnemius (Wade)
+            { o: "shinTop", i: "heel", b: 0.24, sc: limbF, belly: 0.42, kS: 0.82, mat: limbMat, col: limbCol }, // Soleus
+            { o: "kneeFront", i: "ankleFront", b: 0.17, sc: limbF, belly: 0.4, kS: 0.8, mat: limbMat, col: limbCol }, // Tibialis anterior
+        ];
+        for (const m of MUSC) {
+            for (const s of [-1, 1]) {
+                const a = J(m.o, s),
+                    b = J(m.i, s);
+                musk(a[0], a[1], a[2], b[0], b[1], b[2], m.b * (m.sc || 1), {
+                    mat: m.mat || bodyMat,
+                    col: m.col != null ? m.col : bodyCol,
+                    belly: m.belly,
+                    depth: m.depth || 1,
+                    kScale: m.kS,
+                    extra: m.extra || (m.ndef ? { def: false } : undefined),
+                });
+            }
+        }
+        // ── COVERAGE-PASS (Referenz-Écorché: der MUSKEL deckt den Körper, der Knochen tritt zurück) ──
+        //    EINE Baugruppe-weite Operation, KEIN Muskel-für-Muskel-Tweak: die Befund war, dass das
+        //    Skelett (Brustkorb/Becken) den Leib bildet und die Muskeln schwebende Tropfen sind — die
+        //    UMKEHRUNG der Referenz, wo der Muskel den ganzen Körper überzieht. Dieser Pass dreht es um:
+        //    (1) die Muskel-Massen (`def`) werden im QUERSCHNITT voller (x/z, nicht die Länge y → sie
+        //    schießen nicht über ihre Gelenke), bis sie abutten + den Leib tragen; (2) die INNEREN
+        //    Struktur-Knochen (Brustkorb/Rippen/Sternum/Wirbel/Skapula/Becken) treten im Querschnitt
+        //    zurück, damit sie IM Fleisch sitzen statt nackt vorzustehen — sichtbar bleiben nur Hände,
+        //    Füße, Schädel + die scharfen Landmarken (Klavikel/Patella/Olecranon, kScale<0.5). Der
+        //    smin der Haut verschmilzt die volleren Massen → ein muskulöser Leib, kein Knochen-Display.
+        const COVER = 1.1 + muscle * 0.12; // Muskel-Deckungs-Marge (der Atlas trägt die Hauptmasse; dies lässt die Bäuche knapp abutten)
+        for (const p of parts) {
+            if (!p.size) continue;
+            if (p.def) {
+                // Muskel: voller im Querschnitt (deckt Breite + tritt vor das Skelett), Länge bleibt.
+                p.size.x *= COVER;
+                p.size.z *= COVER;
+            } else if (p.material === "knochen" && p.struct) {
+                // innerer Struktur-Knochen: schmaler/flacher → verschwindet im Fleisch (kein nacktes Display).
+                p.size.x *= 0.74;
+                p.size.z *= 0.74;
             }
         }
         return parts;
