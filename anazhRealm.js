@@ -14742,6 +14742,71 @@ class AnazhRealm {
     // (`_buildCreatureSkinGeometry`) verschmilzt sie zu EINER glatten Gestalt: der Strichmann
     // (lose schwebende Zylinder) verschwindet by construction. EINE Einheit = Kopfhöhe (KH);
     // `g.kh` skaliert auf Welt-Maß, `g.sex` ∈ [0..1] (0 = mask. V-Taper, 1 = weibl. Sanduhr).
+    // ── DIE GEMESSENE LANDMARK-WIRBELSÄULE (die EINE Quelle = „Baugruppe", V9.82): die 8-Kopf-
+    //    Proportionen (Referenz-vermessen aus den 5 Anatomie-Bildern) + die benannten Gelenk-
+    //    Knoten, genom-moduliert. Sowohl `_humanoidSkeleton` (die Haut-Parts) ALS AUCH
+    //    `_buildHumanoidRig` (die Skinning-Bones) lesen sie → Haut und Knochen sind sich PER
+    //    KONSTRUKTION einig, wo ein Gelenk sitzt (kein Parallel-Pfad: das Rig trug früher eine
+    //    zweite, leicht abweichende Magic-Number-Liste). Eine Landmarke verschieben hebt jeden
+    //    daran hängenden Muskel UND das Bone UND das Skinning auf einmal — kein Muskel von Hand.
+    //    `joint(name, s)` gibt die Knoten in KH (vor `kh`-Skala), s = Seite ±1; die Werte SIND
+    //    die Haut-Anker (das Glied beginnt/endet hier) → die Bones sitzen IM Fleisch.
+    static _humanoidLandmarks(g) {
+        g = g || {};
+        const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask. V-Taper, 1 weibl. Sanduhr
+        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.52)); // 0 schlank · 0.5 athlet. · 1 schwer
+        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : Math.min(1, build + 0.18))); // Glied-Masse
+        const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0)); // Alter/Heroik
+        const limbF = 0.82 + muscle * 0.6; // Glied-Durchmesser-Faktor
+        const girthF = 0.92 + build * 0.34; // Rumpf-Girth
+        const bellyF = build * build * 0.5; // Bauch-Vorwölbung (quadratisch)
+        const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
+        // 8-Kopf-Stationen (Sohle y=0) + Breiten (Halbachsen) — Referenz-vermessen:
+        const shoulderHalf = 1.12 - sex * 0.27; // Schulter ~2.2 KH (Referenz-breit) → schmaler (weibl.)
+        const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen)
+        const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl.)
+        const hipY = 4.15,
+            waistY = 5.0,
+            shoulderY = 6.5;
+        // benannte Gelenk-Knoten: die Mittellinien-Kette (Rig) + die paarigen Glied-Knoten (Haut+Rig).
+        const joint = (name, s) => {
+            s = s || 1;
+            switch (name) {
+                case "hips":
+                    return [0, hipY, 0];
+                case "spine":
+                    return [0, waistY, 0];
+                case "chest":
+                    return [0, shoulderY - 0.5, 0];
+                case "neck":
+                    return [0, shoulderY + 0.12, 0];
+                case "head":
+                    return [0, 7.2, 0];
+                case "headTop":
+                    return [0, 7.95, 0];
+                case "shoulder":
+                    return [s * shoulderHalf, shoulderY - 0.1, 0]; // Schulter-Gelenk (Arm-Ursprung, im Deltoid)
+                case "elbow":
+                    return [s * (shoulderHalf + 0.4), waistY + 0.1, 0];
+                case "wrist":
+                    return [s * (shoulderHalf + 0.6), hipY - 0.3, 0];
+                case "hand":
+                    return [s * (shoulderHalf + 0.6), hipY - 0.62, 0.05]; // Knöchel-Reihe (Skinning-Ende)
+                case "hip":
+                    return [s * hipHalf * 0.72, hipY - 0.1, -0.12]; // Hüft-Gelenk (Schenkel-Ursprung)
+                case "knee":
+                    return [s * 0.4, 2.3, 0];
+                case "ankle":
+                    return [s * 0.38, 0.4, 0];
+                case "foot":
+                    return [s * 0.38, 0.2, 0.56]; // Zehen-Ballen (vorn)
+                default:
+                    return [0, 0, 0];
+            }
+        };
+        return { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY, joint };
+    }
+
     static _humanoidSkeleton(g) {
         g = g || {};
         const kh = g.kh || 1; // Kopfhöhe als Einheit
@@ -14750,17 +14815,12 @@ class AnazhRealm {
         const headMat = g.headMat || "knochen";
         const bodyCol = g.bodyColor;
         const limbCol = typeof g.limbColor === "number" ? g.limbColor : bodyCol;
-        const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask., 1 weibl.
-        // GENOM-ACHSEN (Ω-B5 — der RPM-übertreffende Hebel: UNENDLICHE Körper aus EINEM Gesetz,
-        // statt RPMs festen Presets). build (schlank↔schwer) · muscle (Glied-Masse) · headRatio
-        // (Alter/Heroik: <1 langgliedrig-heroisch, >1 jung-stilisiert). Jede Achse moduliert die
-        // Proportionen physik-erhaltend (alle Stationen überlappen weiter → die Haut verschmilzt).
-        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.52)); // 0 schlank · 0.5 athlet. · 1 schwer — Default ATHLETISCH (Referenz-Match)
-        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : Math.min(1, build + 0.18))); // Glied-Masse > build → der „cut"-muskulöse Look der Referenz
-        const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0));
-        const limbF = 0.82 + muscle * 0.6; // Glied-Durchmesser-Faktor (schlank→dick; voller als dürr)
-        const girthF = 0.92 + build * 0.34; // Rumpf-Girth (Breite + Tiefe)
-        const bellyF = build * build * 0.5; // Bauch-Vorwölbung (quadratisch → erst bei schwerem Build)
+        // GENOM-ACHSEN + 8-Kopf-PROPORTIONEN kommen aus der EINEN gemessenen Landmark-Quelle
+        // (`_humanoidLandmarks`) — DIESELBE, die das Skinning-Rig liest (kein Parallel-Pfad, V9.82).
+        // build (schlank↔schwer) · muscle (Glied-Masse) · headRatio (Alter/Heroik). Die Stationen
+        // überlappen physik-erhaltend (die Haut verschmilzt sie). shoulderHalf/waistHalf/hipHalf +
+        // hipY/waistY/shoulderY + mF (Muskel-Fülle) sind hier mit-destrukturiert (eine Quelle).
+        const { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY } = AnazhRealm._humanoidLandmarks(g);
         const parts = [];
         const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
             const p = {
@@ -14823,13 +14883,8 @@ class AnazhRealm {
                 Object.assign({ def: true, kScale: opts.kScale != null ? opts.kScale : 0.8 }, opts.extra || {})
             );
         };
-        // ── PROPORTIONEN (8-Kopf, von unten gemessen, Sohle y=0) ──
-        const shoulderHalf = 1.12 - sex * 0.27; // Schulter ~2.2 KH (mask., Referenz-breit) → schmaler (weibl.)
-        const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen, aber kein Wespen-Kink)
-        const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl. Sanduhr)
-        const hipY = 4.15,
-            waistY = 5.0,
-            shoulderY = 6.5;
+        // ── PROPORTIONEN (8-Kopf, Sohle y=0): shoulderHalf/waistHalf/hipHalf + hipY/waistY/shoulderY
+        //    kommen aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle. ──
         // ── (1) RUMPF — eine vertikale Kette aus Stationen mit glatten BREITE- UND TIEFE-
         //    Profilen (wie der Kreatur-Leib): die V-/Sanduhr-Silhouette UND die Körper-TIEFE
         //    (Brustkorb tief, Taille schmaler) EMERGIEREN aus den Profilen — kein Wespentaillen-
@@ -14924,7 +14979,7 @@ class AnazhRealm {
         //    nicht als Schlauch): Muskel-Massen ∝ muscle-Achse, an den Landmarken knochen-scharf
         //    (kScale<1) → das Feld trägt weiche Bäuche UND scharfe Kanten (BEDINGUNG ii). bodyMat
         //    → Rumpf-/tag-treu (der Avatar-Tag liegt in der separaten Soul-bodyParts-Liste). ──
-        const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
+        // mF (Muskel-Fülle) kommt aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle.
         // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
         add("box", "knochen", 0, shoulderY - 0.04, 0.2 * girthF, shoulderHalf * 1.5, 0.12, 0.2, null, limbCol, {
@@ -16035,22 +16090,28 @@ class AnazhRealm {
         if (oy && typeof geom.translate === "function") geom.translate(0, oy, 0);
         // ── Bone-Spezifikation (Welt = Mesh-Lokal in Bind-Pose, in KH·kh): [name, parent,
         //    Gelenk-Pos, Segment-Ende (für die Skinning-Distanz, deckt das Glied ab)] ──
+        // Bone-Spezifikation aus der EINEN gemessenen Landmark-Quelle (`_humanoidLandmarks`) —
+        //    DIESELBE, die `_humanoidSkeleton` die Haut-Parts gibt. So sitzen die Skinning-Bones
+        //    per Konstruktion IM Fleisch (Schulter/Hüfte stimmen mit der Haut überein). Früher trug
+        //    das Rig eine zweite, leicht abweichende Magic-Number-Liste (Schulter 0.92 vs. Haut 1.12,
+        //    Hüfte 0.42 vs. 0.547) → ein Parallel-Pfad, der die Achsel-/Hand-Skinning-Risse nährte.
+        const J = AnazhRealm._humanoidLandmarks(g).joint;
         const spec = [
-            ["hips", null, [0, 4.15, 0], [0, 4.55, 0]],
-            ["spine", "hips", [0, 5.05, 0], [0, 5.55, 0]],
-            ["chest", "spine", [0, 6.0, 0], [0, 6.55, 0]],
-            ["neck", "chest", [0, 6.62, 0], [0, 7.0, 0]],
-            ["head", "neck", [0, 7.2, 0], [0, 7.95, 0]],
+            ["hips", null, J("hips"), [0, 4.55, 0]],
+            ["spine", "hips", J("spine"), [0, 5.55, 0]],
+            ["chest", "spine", J("chest"), [0, 6.55, 0]],
+            ["neck", "chest", J("neck"), [0, 7.0, 0]],
+            ["head", "neck", J("head"), J("headTop")],
         ];
         for (const s of [1, -1]) {
             const f = s > 0 ? "L" : "R";
             spec.push(
-                ["shoulder" + f, "chest", [s * 0.92, 6.5, 0], [s * 1.52, 5.1, 0]],
-                ["elbow" + f, "shoulder" + f, [s * 1.52, 5.1, 0], [s * 1.72, 3.85, 0]],
-                ["wrist" + f, "elbow" + f, [s * 1.72, 3.85, 0], [s * 1.74, 3.5, 0.06]],
-                ["hip" + f, "hips", [s * 0.42, 4.15, 0], [s * 0.4, 2.3, 0]],
-                ["knee" + f, "hip" + f, [s * 0.4, 2.3, 0], [s * 0.38, 0.42, 0]],
-                ["ankle" + f, "knee" + f, [s * 0.38, 0.42, 0], [s * 0.38, 0.2, 0.85]]
+                ["shoulder" + f, "chest", J("shoulder", s), J("elbow", s)],
+                ["elbow" + f, "shoulder" + f, J("elbow", s), J("wrist", s)],
+                ["wrist" + f, "elbow" + f, J("wrist", s), J("hand", s)],
+                ["hip" + f, "hips", J("hip", s), J("knee", s)],
+                ["knee" + f, "hip" + f, J("knee", s), J("ankle", s)],
+                ["ankle" + f, "knee" + f, J("ankle", s), J("foot", s)]
             );
         }
         const sc = (p) => [p[0] * kh, p[1] * kh + oy, p[2] * kh];
