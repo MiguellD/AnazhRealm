@@ -31210,19 +31210,11 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // 4 neue Baumarten als Baupläne.
-        const bps = r.state.blueprints;
-        out.fourNewSpecies = !!bps.baum_birke && !!bps.baum_erle && !!bps.baum_buche && !!bps.baum_tanne;
-        // Gestalt-Varianten je Art (jung/normal/alt) für die 4 neuen.
-        out.variantsExist =
-            !!bps.baum_birke_jung &&
-            !!bps.baum_birke_alt &&
-            !!bps.baum_erle_jung &&
-            !!bps.baum_erle_alt &&
-            !!bps.baum_buche_jung &&
-            !!bps.baum_buche_alt &&
-            !!bps.baum_tanne_jung &&
-            !!bps.baum_tanne_alt;
+        // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
+        // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + SPECIES_GRAMMAR (Form) +
+        // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
+        const ref = (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE) || {};
+        out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
         // candidates-Liste in _vegetationSampleSpawn trägt die 4 NEUEN, aber NICHT die Varianten.
         const src = r._vegetationSampleSpawn.toString();
         const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
@@ -31232,22 +31224,16 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         out.candidatesBuche = /["']baum_buche["']/.test(block);
         out.candidatesTanne = /["']baum_tanne["']/.test(block);
         out.candidatesNoVariants = !/baum_birke_(jung|alt)/.test(block) && !/baum_erle_(jung|alt)/.test(block);
-        // Tag-Neutralität: Birke-normal hat dieselben Compound-Tags wie Eiche-normal
-        // (beide nutzen holz+laub mit denselben Formen → MAX über laub gleich).
-        const eicheTags = r.computeCompoundTags(bps.baum_eiche);
-        const birkeTags = r.computeCompoundTags(bps.baum_birke);
+        // Tag-Neutralität: Birke hat dieselbe kanonische Laub-Signatur wie Eiche.
         out.tagNeutral =
-            Math.abs((eicheTags.lebendig || 0) - (birkeTags.lebendig || 0)) < 0.01 &&
-            Math.abs((eicheTags.brennbar || 0) - (birkeTags.brennbar || 0)) < 0.01;
+            !!(ref.baum_eiche && ref.baum_birke) &&
+            Math.abs((ref.baum_eiche.lebendig || 0) - (ref.baum_birke.lebendig || 0)) < 0.01 &&
+            Math.abs((ref.baum_eiche.brennbar || 0) - (ref.baum_birke.brennbar || 0)) < 0.01;
         return out;
     });
     check(
-        "Λ.5 Mischwald: 4 neue Baumarten existieren als Bauplan (birke/erle/buche/tanne)",
+        "Λ.5 Mischwald (V18.257): 4 neue Baumarten leben in SPECIES_TAG_REFERENCE (birke/erle/buche/tanne — Form via Grammatik, statische Baupläne geschnitten)",
         res.fourNewSpecies === true
-    );
-    check(
-        "Λ.5 Mischwald: Gestalt-Varianten jung/alt für ALLE 4 neuen Baumarten existieren",
-        res.variantsExist === true
     );
     check(
         "Λ.5 Mischwald: candidates enthält die 4 neuen Baumarten",
@@ -31257,7 +31243,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         "Λ.5 Mischwald: candidates trägt KEINE Varianten (Vielfalt nach dem Sieg, V17.16-Falle vermieden)",
         res.candidatesNoVariants === true
     );
-    check("Λ.5 Mischwald: Tag-Neutralität birke ↔ eiche (lebendig/brennbar gleich)", res.tagNeutral === true);
+    check("Λ.5 Mischwald: Tag-Neutralität birke ↔ eiche (Laub-Signatur gleich)", res.tagNeutral === true);
 }
 
 async function checkBandLambda6Detail(ctx) {
@@ -32131,22 +32117,12 @@ async function checkBandWHWald(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const bps = r.state.blueprints;
-        // (1) die Varianten existieren (instanced, keine connections → HISM).
-        const vars = ["baum_eiche_breit", "baum_eiche_jung", "baum_kiefer_schlank"];
-        out.variantsExist = vars.every((n) => bps[n] && bps[n].instanced === true && !bps[n].connections);
-        // (2) TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE
-        // Compound-Tags zu ihrer Basis (gleiche Materialien+Formen → MAX gleich).
-        const tagsEq = (a, b) => {
-            const ta = r.computeCompoundTags(bps[a]) || {};
-            const tb = r.computeCompoundTags(bps[b]) || {};
-            const keys = window.AnazhRealm ? window.AnazhRealm.MATERIAL_TAG_KEYS : r.constructor.MATERIAL_TAG_KEYS;
-            return keys.every((k) => Math.abs((ta[k] || 0) - (tb[k] || 0)) < 1e-9);
-        };
-        out.eicheBreitNeutral = tagsEq("baum_eiche", "baum_eiche_breit");
-        out.eicheJungNeutral = tagsEq("baum_eiche", "baum_eiche_jung");
-        out.kieferNeutral = tagsEq("baum_kiefer", "baum_kiefer_schlank");
-        // (3) die Varianten sind NICHT im Affinitäts-Wettstreit (candidates) —
+        // (1) V18.257 — die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
+        // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
+        // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
+        const refTbl = (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE) || {};
+        out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
+        // (2) die Bäume sind NICHT als Variante im Affinitäts-Wettstreit (candidates) —
         // der Spawn wählt die Gestalt NACH dem Sieg, mit dem kanonischen bestName.
         // wahrerwuchs §5 S2 (V9.56-i — die Probe WANDERT mit dem Code): die alte
         // `switch(bestName){…_jung/_alt/_breit…}`-Variantenwahl ist GESCHNITTEN.
@@ -32172,10 +32148,7 @@ async function checkBandWHWald(ctx) {
             !/baum_\w+_(jung|alt|breit|schlank)/.test(src);
         // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
         out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
-        // (5) die Varianten klassifizieren als ARCHITECTURE (kein Soul-Drift).
-        const role = r.computeBlueprintRole ? r.computeBlueprintRole(bps.baum_eiche_breit) : null;
-        out.staysArch = !role || (role !== "soul" && role !== "consumable" && role !== "vehicle");
-        // (6) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
+        // (5) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
         // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
         // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
         // verschiedener rotationY liefern verschiedene Welt-Matrizen.
@@ -32192,20 +32165,16 @@ async function checkBandWHWald(ctx) {
         return out;
     });
     check(
-        "W-H Wald: die GESTALT-VARIANTEN existieren (baum_eiche_breit/jung · baum_kiefer_schlank — instanced, keine connections → HISM bleibt)",
-        res.variantsExist
+        "W-H Wald (V18.257): die statischen Gestalt-Varianten sind GESCHNITTEN — die Tag-Wahrheit lebt in SPECIES_TAG_REFERENCE (eiche/kiefer), die Form-Vielfalt voll in der Grammatik",
+        res.refTableHat
     );
     check(
-        "W-H Wald TAG-NEUTRALITÄT (die V17.16-Wand): jede Variante hat IDENTISCHE Compound-Tags zur Basis (gleiche Materialien+Formen → die Spawn-Verteilung ist unberührt)",
-        res.eicheBreitNeutral && res.eicheJungNeutral && res.kieferNeutral
-    );
-    check(
-        "W-H Wald: die Varianten treten NICHT in den Affinitäts-Wettstreit (candidates kanonisch) — der Worldgen wählt die Gestalt NACH dem Sieg (bestName bleibt baum_eiche/baum_kiefer)",
+        "W-H Wald: die Bäume treten im Affinitäts-Wettstreit NUR als kanonische Art an — die Gestalt wächst NACH dem Sieg über die Grammatik (keine Variante im Pool, keine im Spawn-Code)",
         res.notInCandidates && res.variantPickAfterWin
     );
     check(
-        "W-H Wald: der GRÖSSEN-SPAN ±~40 % + die Variante reisen seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix) + die Variante bleibt ARCHITECTURE",
-        res.sizeSpan && res.staysArch
+        "W-H Wald: der GRÖSSEN-SPAN ±~40 % reist seed-deterministisch in den Spawn (scale über die HISM-Instanz-Matrix)",
+        res.sizeSpan
     );
     check(
         "W-H Wald DER KLON-KILLER: die Pro-Instanz-ROTATION wirkt (_archEntryWorldMatrix liest entry.rotationY · der Spawn setzt sie seed-deterministisch · verschiedene Yaw → verschiedene Welt-Matrix — ein Wald zeigt nicht mehr nach Norden)",

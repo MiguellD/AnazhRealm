@@ -54,42 +54,23 @@ function startSaveServer() {
             await new Promise((r) => setTimeout(r, 80));
         }
 
-        // (1) Baum-Baupläne: erwarte 12 (Eiche+Kiefer alt = 2 + 4×3 = 14 total)
+        // (1) V18.257 — die statischen Kugel-Baum-Baupläne sind GESCHNITTEN; die
+        // Arten leben jetzt in SPECIES_TAG_REFERENCE (Tags) + der Grammatik (Form).
         const baeume = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            const bps = r.state.blueprints || {};
-            const baumNames = Object.keys(bps).filter((n) => n.startsWith("baum_"));
-            return {
-                total: baumNames.length,
-                names: baumNames.sort(),
-            };
+            const ref = (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE) || {};
+            return { names: Object.keys(ref).sort(), total: Object.keys(ref).length };
         });
-        console.log("\n=== (1) BAUM-BAUPLÄNE ===");
+        console.log("\n=== (1) BAUM-ARTEN (SPECIES_TAG_REFERENCE) ===");
         console.log(`Total: ${baeume.total}`);
         for (const n of baeume.names) console.log(`  ${n}`);
 
-        const expectedBaum = [
-            "baum_eiche",
-            "baum_kiefer",
-            "baum_birke_jung",
-            "baum_birke",
-            "baum_birke_alt",
-            "baum_erle_jung",
-            "baum_erle",
-            "baum_erle_alt",
-            "baum_buche_jung",
-            "baum_buche",
-            "baum_buche_alt",
-            "baum_tanne_jung",
-            "baum_tanne",
-            "baum_tanne_alt",
-        ];
+        const expectedBaum = ["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"];
         const missingBaum = expectedBaum.filter((n) => !baeume.names.includes(n));
         if (missingBaum.length) {
             console.log(`FEHLEND: ${missingBaum.join(", ")}`);
             exitCode = 1;
         } else {
-            console.log("✓ alle 14 Baum-Baupläne registriert");
+            console.log("✓ alle 6 Baum-Arten in SPECIES_TAG_REFERENCE");
         }
 
         // (2) Streu-Arten: erwarte 15 in KLEIN_VEGETATION_SPECIES
