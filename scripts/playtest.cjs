@@ -54383,13 +54383,20 @@ async function checkBandRing6Workshop(ctx) {
         // (a) Direkter Spawn jeder Sorte
         const v = r.spawnArchitecture("village", { x: 10, y: 5, z: 10 }, { seed: 42 });
         out.villageBuilt = !!v && v.type === "village" && !!v.mesh;
-        out.villageHasChildren = v && v.mesh && v.mesh.children.length >= 5;
+        // V18.260 — der Render-Merge fasst die Teile per Material zu wenigen Meshes
+        // zusammen (Dorf = viele Hütten-/Plaza-Teile → ~2 gemergte Meshes). Die
+        // Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an der
+        // gerenderten Kind-Zahl: der Bauplan trägt weiter alle Hütten+Plaza-Teile.
+        out.villageHasChildren =
+            v && v.mesh && !!r.state.blueprints.village && (r.state.blueprints.village.parts || []).length >= 5;
         out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
 
         const t = r.spawnArchitecture("temple", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "temple" && !!t.mesh;
-        // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 children
-        out.templeHasPillars = t && t.mesh && t.mesh.children.length >= 8;
+        // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 Bauplan-Teile (V18.260: per Material
+        // zu ~2 Meshes gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
+        out.templeHasPillars =
+            t && t.mesh && !!r.state.blueprints.temple && (r.state.blueprints.temple.parts || []).length >= 8;
 
         const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
         out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
@@ -54513,10 +54520,10 @@ async function checkBandRing6Workshop(ctx) {
         );
     } else {
         check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
-        check("Ring 6: Dorf-Group hat ≥5 children (Hütten + Plaza)", ring6Results.villageHasChildren);
+        check("Ring 6: Dorf ist vollständig (≥5 Bauplan-Teile: Hütten + Plaza; Render gemergt)", ring6Results.villageHasChildren);
         check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
         check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
-        check("Ring 6: Tempel-Group hat ≥8 children (6 Pfeiler + Dach + Altar)", ring6Results.templeHasPillars);
+        check("Ring 6: Tempel ist vollständig (≥8 Bauplan-Teile: 6 Pfeiler + Dach + Altar; Render gemergt)", ring6Results.templeHasPillars);
         check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
         check("Ring 6: Wasserfall hat userData.animate Hook", ring6Results.waterfallHasAnimateHook);
         check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
