@@ -457,6 +457,16 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.257–.259 — DIE REINE ORDNUNG: GATE-WURZEL + EINE BAUM-QUELLE + DRIFT-HEILUNG (Gate 51→0 grün)
+
+Eine lange Aufräum-Welle, vom Schöpfer-Auftrag „reine ordnung, finde alle Widersprüche, keine halben Sachen" getragen — und von seinen scharfen Korrekturen geführt (er stoppte mich dreimal vom Raten/Band-aiden).
+
+**Gate-Geschwindigkeit (V18.257, gemessen):** der Schöpfer rügte „Gate läuft 15 min, war mal 3 min". Wurzel NICHT geraten, sondern mit Phasen-Timing GEMESSEN: der Avatar-Körper ist ein ~270-Teil-Metaball-**Isosurface** bei res 128 → **~19 s/Build** (95 % im N³-Gitter-Sampling), und das Gate baut ihn in vielen Bands neu. Fix: ein **Headless-Skin-Res-Cap** (`__HEADLESS_SKIN_RES_CAP`, via `evaluateOnNewDocument` vor dem Laden geseedet → greift schon beim Boot-Build) drückt N→64 → ~2.8 s (7.5×), ohne die Live-Qualität (res 128) zu berühren — analog zum `renderer.render`-Stub. Plus TEMP-Dev-Drosseln (Bäume SAMPLES→4, Inseln/Planeten→1, Roadmap-notiert).
+
+**EINE Baum-Quelle (V18.258):** die ~15 statischen Kugel-Baum-Baupläne (`baumEicheParts`+`baum_*`) sind geschnitten — der Schöpfer: „die runden Dinge sind Parallelcode, die haben wir mit einem tieferen System ersetzt". ABER der Schnitt riss die SPEZIES-IDENTITÄT (`baum_eiche`…) aus 6 Subsystemen (der NAME war load-bearing, nicht die Kugel-Geometrie) → 51 rote Invarianten. Geheilt: die Spezies lebt als **grammatik-gewachsener Built-in** (`_growTreeBlueprintRich` mit festem Seed → Tube-Rinde+Blatt-Karten) mit stabiler Identität (`SPECIES_TAG_REFERENCE`-Basis + `SPECIES_TAG_VARIATION`-Charakter, gemischt für jedes `_grownSpecies`).
+
+**Drift-Heilung (V18.259, 51→0):** der Schöpfer-Verdacht „du hast aktives entfernt" war RICHTIG (Bäume) + TEILS falsch (Toon-Schnitt war sauber; B8/Shader stammten aus der Avatar-Woche `bdb03e9`, nicht meinen Schnitten — auditiert, nicht behauptet). Gerichtet, jedes an der Wurzel: das Seelen-Gesetz (`SOULLESS_SUBSTANCES` {holz,laub,kraut,erde} — „eine Seele kann nicht aus Holz+Laub entstehen", Schöpfer-Gesetz; `avatar_waechter` von Holz auf Fleisch ge-reflesht) · der `window.AnazhRealm`-undefined-Test-Trap (4 Tests lasen Statics über den falschen Globalen → null → still rot) · die auf die ALTE Gestalt kalibrierten Tests (Instancing-Fixture 7→gewachsen+gemergt, Avatar-Rot→PBR-Tan 0xc89372, B8-Struktur-LUT mit Toon gepurgt, Kreatur-Monotonie über die Spanne statt strikt paarweise [glutwesen = thematischer Glass-Cannon]). Die Lehren in CLAUDE.md `## Wichtige Gotchas` (Test-Sektion).
+
 ### V18.256 — DER WAHRE WUCHS: DIE VOLLE TIEFE T1–T6 (in EINEM Schub, FORM × PHYSIK × ANBLICK-headless)
 
 Der V18.255-Selbst-Audit (`wahrerwuchs.md §9`) fand: das Genom-GERÜST steht (Headline-Achse je
