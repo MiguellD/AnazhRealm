@@ -15062,10 +15062,10 @@ class AnazhRealm {
         // mF (Muskel-Fülle) kommt aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle.
         // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
-        add("box", "knochen", 0, shoulderY + 0.04, 0.1 * girthF, shoulderHalf * 1.08, 0.09, 0.13, null, limbCol, {
-            kScale: 0.7,
+        add("box", "knochen", 0, shoulderY + 0.02, 0.03 * girthF, shoulderHalf * 1.0, 0.08, 0.09, null, limbCol, {
+            kScale: 0.9,
             struct: true,
-        }); // KLAVIKEL — WEICHER (kScale 0.46→0.7) + TIEFER (z 0.16→0.1) → ein subtiler Schlüsselbein-Grat unter der Haut statt einer poking Knochen-Bar am Brust-Top
+        }); // KLAVIKEL — TIEF (z 0.03) + WEICH (kScale 0.9) + dünn → nur ein sanfter Schlüsselbein-Grat, keine poking Bars am Hals-Boden
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
@@ -15326,10 +15326,10 @@ class AnazhRealm {
             // BRUST (Pectoralis — ein breiter gerundeter SCHILD je Seite, der die halbe Brust deckt: vier
             //    Köpfe fächern vom Sternum/Klavikel zum Humerus, BREIT (füllt die Brust) + FLACH (liegt als
             //    Schild, kein Ballen), Bulk zum Sternum (die fleischige Innenbrust), unterer Kopf = Pec-Shelf)
-            { o: "clavicleMed", i: "pecIns", b: 0.38, sc: mF, belly: 0.5, depth: 0.5, kS: 0.7 }, // klavikulärer Kopf (obere Fasern, voller)
-            { o: "sternumTop", i: "pecIns", b: 0.5, sc: mF, belly: 0.46, depth: 0.5, kS: 0.7 }, // oberer sternaler (Hauptmasse — VOLL, war zu mager)
-            { o: "sternumLow", i: "pecIns", b: 0.5, sc: mF, belly: 0.44, depth: 0.5, kS: 0.7 }, // mittlerer sternaler (VOLL)
-            { o: "xiphoid", i: "pecIns", b: 0.4, sc: mF, belly: 0.42, depth: 0.48, kS: 0.7 }, // unterer Kopf (Pec-Shelf — voller, klare Unterkante)
+            { o: "clavicleMed", i: "pecIns", b: 0.3, sc: mF, belly: 0.52, depth: 0.5, kS: 0.82 }, // klavikulärer Kopf (obere Fasern, schlanker oben → kein Knoten am Hals)
+            { o: "sternumTop", i: "pecIns", b: 0.5, sc: mF, belly: 0.46, depth: 0.5, kS: 0.82 }, // oberer sternaler (Hauptmasse, VOLL) — kScale 0.82 = glatter Merge (kein Krater)
+            { o: "sternumLow", i: "pecIns", b: 0.5, sc: mF, belly: 0.44, depth: 0.5, kS: 0.82 }, // mittlerer sternaler (VOLL)
+            { o: "xiphoid", i: "pecIns", b: 0.42, sc: mF, belly: 0.42, depth: 0.48, kS: 0.82 }, // unterer Kopf (Pec-Shelf, klare Unterkante)
             // RÜCKEN (Latissimus-V + Teres + Erector)
             { o: "iliacBack", i: "axilla", b: 0.38, sc: mF, belly: 0.42, depth: 0.38, kS: 0.88 }, // Latissimus (iliakal — das breite V-Blatt)
             { o: "sacrum", i: "axilla", b: 0.34, sc: mF, belly: 0.46, depth: 0.38, kS: 0.88 }, // Latissimus (lumbal — füllt das untere V, deckt den Rücken)
@@ -15357,7 +15357,7 @@ class AnazhRealm {
             { o: "iliac", i: "kneeOut", b: 0.3, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Vastus lateralis (Außenschenkel)
             { o: "hipFront", i: "kneeIn", b: 0.3, sc: limbF, belly: 0.68, kS: 0.82, mat: limbMat, col: limbCol }, // Vastus medialis (voller Innen-Tropfen direkt überm Knie)
             { o: "shinTop", i: "shinOut", b: 0.13, sc: limbF, belly: 0.5, kS: 0.8, mat: limbMat, col: limbCol }, // Peroneus (Außen-Unterschenkel)
-            { o: "sternumTop", i: "xiphoid", b: 0.26, sc: mF, belly: 0.5, depth: 0.55, kS: 0.74 }, // Brust-Mittelfüllung (deckt das Sternum zwischen den Pecs — schließt das Mittel-Loch)
+            { o: "sternumTop", i: "xiphoid", b: 0.17, sc: mF, belly: 0.5, depth: 0.55, kS: 0.85 }, // Brust-Mittelfüllung (schlank + weich → Sternum ist eine sanfte Rinne zwischen den Pecs, kein Bump/Loch)
             { o: "pubis", i: "navel", b: 0.16, sc: mF, belly: 0.3, depth: 0.55, kS: 0.78 }, // untere Bauch-/Schoß-Füllung (Scham-Schild vorn)
         ];
         for (const m of MUSC) {
