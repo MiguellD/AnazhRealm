@@ -2341,14 +2341,16 @@ class AnazhRealm {
                         ? Number(seed) >>> 0
                         : Math.floor(ctx.rng() * 0xffffffff);
                     const treeSeed = (baseSeed + i) >>> 0;
-                    // V18.257 — durch die Grammatik wachsen (die statische Kugel-
-                    // Baum-Quelle ist geschnitten); bei Tag-Drift-null still skippen.
-                    const grownKey = this._growTreeBlueprintForSpawn
-                        ? this._growTreeBlueprintForSpawn(treeKind, `spawn_tree|${treeSeed}`)
-                        : null;
-                    const entry = grownKey
-                        ? this.spawnArchitecture(grownKey, { x: pos.x + jx, y: pos.y, z: pos.z + jz }, { seed: treeSeed })
-                        : null;
+                    // V18.258 — die SPEZIES direkt spawnen (baum_eiche/baum_kiefer);
+                    // die FORM kommt aus den grammatik-gewachsenen Built-in-Parts (KEINE
+                    // Kugel mehr). arch.type = die Spezies (load-bearing Identität für
+                    // hasInitialTrees · Instancing · Crafting). Per-Baum-Varianz aus dem
+                    // Seed (scale/yaw werden in spawnArchitecture appliziert).
+                    const entry = this.spawnArchitecture(
+                        treeKind,
+                        { x: pos.x + jx, y: pos.y, z: pos.z + jz },
+                        { seed: treeSeed }
+                    );
                     if (entry) spawned++;
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
@@ -51831,8 +51833,63 @@ class AnazhRealm {
             };
         }
 
+        // V18.258 — DIE SECHS BAUM-ARTEN als Built-in-Identität (EINE Baum-Quelle).
+        // Die statischen Kugel-Baupläne sind geschnitten (V18.257); die SPEZIES bleibt
+        // aber load-bearing für ~6 Subsysteme, die auf den NAMEN keyen (Crafting-Kosten ·
+        // Archetyp-Bank · Instancing · R3-Form-Fallback · HISM-Tint · Tag-Stabilitäts-
+        // Wand · Worldgen-Detektion · spawn_tree). Die FORM kommt jetzt aus der GRAMMATIK
+        // (`_growTreeBlueprintRich` mit einem festen kanonischen Seed) — KEINE Kugeln mehr,
+        // sondern die Tube-Rinde + Blatt-Karten. Tag-neutral (nur holz+laub → identische
+        // Affinitäts-Achsen über alle Arten, V17.16-Wand strukturell). Das Skeleton +
+        // _isMerged-Flag tragen den Skeleton-Mesh-Renderpfad (2 Leaves: Rinde + Foliage) —
+        // wie die im Worldgen gewachsenen Bäume.
+        const treeSpeciesBlueprints = {};
+        const TREE_SPECIES = [
+            ["baum_eiche", "Eiche"],
+            ["baum_kiefer", "Kiefer"],
+            ["baum_birke", "Birke"],
+            ["baum_erle", "Erle"],
+            ["baum_buche", "Buche"],
+            ["baum_tanne", "Tanne"],
+        ];
+        for (const [species, label] of TREE_SPECIES) {
+            const grammar = AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
+            if (!grammar) continue;
+            let parts = null;
+            let skeleton = null;
+            try {
+                // Fester kanonischer Seed → die Art-Identität ist EINE feste Gestalt
+                // (deterministisch, welt-seed-unabhängig; die per-Instanz-Varianz reitet
+                // im Worldgen über scale/yaw/tint). _growTreeBlueprintRich liest nur
+                // SPECIES_GRAMMAR + _rollGenome + den lazy _growTreeNoise → konstruktor-sicher.
+                parts = this._growTreeBlueprintRich(species, `builtin-${species}-v1`, grammar);
+                skeleton =
+                    this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches)
+                        ? this._lastTreeSkeleton
+                        : null;
+                this._lastTreeSkeleton = null; // Side-Channel räumen (defensive)
+            } catch {
+                parts = null;
+            }
+            if (!Array.isArray(parts) || parts.length < 2) continue;
+            treeSpeciesBlueprints[species] = {
+                name: species,
+                label,
+                builtIn: true,
+                instanced: true,
+                // KEIN roleManual-Pflaster: das geschärfte Seelen-Gesetz (livingBody liest
+                // lebendig NUR über beseelte Substanz, nicht holz+laub) lässt den Baum
+                // emergent auf architecture fallen — die Rolle wächst aus der Wahrheit.
+                _grownSpecies: species,
+                _isMerged: true,
+                _skeleton: skeleton,
+                parts,
+            };
+        }
+
         return {
             ...landmarkVariants,
+            ...treeSpeciesBlueprints,
             village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
             temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
@@ -53769,9 +53826,20 @@ class AnazhRealm {
         // wie ein Metall-Panzer. Der Unterschied lebendig/tot liegt im MATERIAL (fleisch lebt, Metall nicht) →
         // wir lesen das UNMASKIERTE Material-lebendig (MAX über die Parts). So wird ein fleisch-Körper soul, ein
         // Metall-Panzer nicht — egal welche Form die Parts haben.
+        // V18.258 (Schöpfer-Gesetz „eine Seele kann nicht aus Holz und Laub entstehen"):
+        // lebendig ALLEIN trägt keine Seele. PFLANZE + ERDE LEBEN (holz/laub/kraut/erde,
+        // lebendig 0.55–1.0), sind aber UNBESEELT — ein Baum ist kein Wesen. Die Seele
+        // emergiert aus BESEELTER Substanz (fleisch/knochen/leder/federn/schuppen/glut/
+        // essenz — Tier·Geist), NIE aus vegetativer. Darum lesen wir das MAX-lebendig NUR
+        // über die nicht-vegetativen Materialien: ein Baum (rein holz+laub) bekommt
+        // livingBody 0 → fällt auf architecture; ein Wesen (fleisch…) behält die Seele.
+        // KEIN Form-Pflaster (roleManual) — das GESETZ der SUBSTANZ trennt Wesen von
+        // Pflanze an der Wurzel (Schöpfer-Korrektur 18.06.: „schärfe das Gesetz der Seele").
         let maxMatLebendig = 0;
         const _mats = this.state.materials || {};
+        const soulless = AnazhRealm.SOULLESS_SUBSTANCES;
         for (const p of bp.parts || []) {
+            if (soulless && soulless.has(p.material)) continue; // Pflanze/Erde: lebt, beseelt nicht
             const ml = (_mats[p.material] && _mats[p.material].tags && _mats[p.material].tags.lebendig) || 0;
             if (ml > maxMatLebendig) maxMatLebendig = ml;
         }
@@ -57946,25 +58014,25 @@ class AnazhRealm {
             if (this.state.blueprints && this.state.blueprints[key]) spawnName = key;
         }
         if (isTree) {
-            // V18.210 (§1-A1) — Γ7 WORLDGEN-HOOK: gen ≥ 4 baut prozedurale
-            // Baum-Bauplane via _growTreeBlueprintForSpawn (Cache-by-Region).
-            // REGION-basierter seed (256 m grid, plus Welt-Seed) sodass alle
-            // Bäume EINER ~256m-Region denselben gewachsenen Bauplan TEILEN —
-            // ein „Hain hat einen lokalen Stil" + das Instancing wirkt (sonst
-            // 1 InstancedMesh pro Spawn = Performance-Regression). Variation
-            // PRO Baum kommt aus scale/yaw (unten). Alte Welten (gen<4) bleiben
-            // bit-identisch (der gesamte switch-Pfad bleibt). Bei einem Tag-
-            // Verschiebungs-Fall (V17.16-Wand schlägt an, der Helper returnt
-            // null) ÜBERSPRINGEN wir den Spawn (kein statischer Rückfall mehr —
-            // die Kugel-Baum-Quelle ist geschnitten, V18.257). ALLE gen wachsen.
+            // V18.258 — DIE SPEZIES ist die Identität, die GRAMMATIK gibt die Form.
+            // Der Worldgen spawnt SPEZIES-getypt (`bestName` = baum_eiche/…); die FORM
+            // kommt aus den grammatik-gewachsenen Built-in-Parts (V18.258, KEINE Kugel
+            // mehr). Der `_growTreeBlueprintForSpawn`-Aufruf bleibt — er treibt die
+            // Varianten-Pool-/Promotion-Infra (V18.217/.221) + registriert die Scatter-
+            // Cell (species + variantIndex) für Ω-H, OHNE den Spawn-Typ zu sein. Per-
+            // Baum-Varianz aus scale/yaw (unten). arch.type = die Spezies (load-bearing
+            // für hasInitialTrees · Instancing `baum_kiefer#0` · HISM-Tint · Crafting).
             {
                 const regX = Math.floor(sampleX / 256);
                 const regZ = Math.floor(sampleZ / 256);
                 const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                 const regionSeed = `${worldSeed}|${bestName}|${regX},${regZ}`;
+                // Die Varianten-Pool-/Promotion-Infra (V18.217/.221) am Leben halten:
+                // der gewachsene Bauplan registriert die Scatter-Cell, ist aber NICHT
+                // der Spawn-Typ — die SPEZIES (bestName) trägt die Identität.
                 const grownKey = this._growTreeBlueprintForSpawn(bestName, regionSeed);
-                if (grownKey) {
-                    spawnName = grownKey;
+                {
+                    spawnName = bestName;
                     const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2;
                     spawnScale = 0.7 + sz * 0.66;
                     // Yaw weiter unten gemeinsam — kein doppelter Code.
@@ -57974,7 +58042,7 @@ class AnazhRealm {
                     // liest hierdurch die species + variantIndex der gescatterten
                     // Cell, ohne den Bauplan re-flatten zu müssen). Cap-Counter
                     // erhöhen — Schicht „tree".
-                    const grownBp = this.state.blueprints && this.state.blueprints[grownKey];
+                    const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
                     if (
                         grownBp &&
                         grownBp._isGrown &&
@@ -58030,13 +58098,6 @@ class AnazhRealm {
                     }
                     return 1;
                 }
-                // V18.257 (EINE Baum-Quelle, VOLLENDET): kein Baum spawnt mehr aus
-                // einem statischen Bauplan — die Grammatik trägt ALLE gen. Gibt der
-                // Helfer null (V17.16-Tag-Drift, selten), ÜBERSPRINGEN wir den Spawn
-                // (kein statischer Rückfall — die ~15 Kugel-Baum-Baupläne inkl.
-                // _jung/_alt/_breit sind geschnitten, „die Bäume von früher, schlecht
-                // aussehen"; die Tag-Wahrheit lebt in SPECIES_TAG_REFERENCE).
-                return 0;
             }
         }
         // Yaw aus eigenen Seed-Bits — Bäume UND Felsen (alle ~radial-symmetrisch
@@ -59234,11 +59295,11 @@ class AnazhRealm {
         // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
         // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
         // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
-        // V18.257 TEMP (Entwicklung, Schöpfer-Wunsch „vorübergehend weniger Bäume"):
-        // SAMPLES 10→6 — weniger Spawn-Versuche pro Chunk = weniger Bäume + schnellerer
-        // Cold-Start (mehr Chunks im Warmup-Budget, flotterer Test). REVERT auf 10 für
-        // die volle V18.215-Wald-Dichte, wenn die Entwicklungs-Phase durch ist.
-        const SAMPLES = 6;
+        // V18.258 — REVERT der V18.257-Entwicklungs-Drossel zurück auf die volle
+        // V18.215-Wald-Dichte (SAMPLES = 10). Die Gate-Cold-Start-Geschwindigkeit
+        // trägt jetzt der Headless-Skin-Res-Cap (Avatar-Build 19s→2.8s, V18.257),
+        // nicht eine reduzierte Baum-Dichte — der Wald bleibt dicht.
+        const SAMPLES = 10;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
@@ -74519,6 +74580,14 @@ AnazhRealm.WORKSHOP_DOMAIN_RESONANCE_FLOOR = 2.0;
 // das Holzross-soul (1.587) klar (2.03) und den Wagen-architecture (0.83 → 2.1). + `bulk` heilt
 // die Trank-Bäume (Befund 5, arithmetisch: Eiche bulk 0.83 → consumable 0.667−0.67≈0, architecture
 // 0.307+0.25=0.56 → Bauwerk; Trank + fleisch-Kugel: span < 2 m → bulk 0, unberührt).
+// V18.258 (Schöpfer-Gesetz „eine Seele kann nicht aus Holz und Laub entstehen") — die
+// UNBESEELTE lebendige Substanz: Pflanze + Erde LEBEN (lebendig 0.55–1.0), tragen aber
+// keine SEELE (ein Baum ist kein Wesen). `_blueprintProductVector.livingBody` liest
+// `lebendig` darum NUR über die NICHT in dieser Menge stehenden Materialien → ein Baum
+// (rein holz+laub) fällt emergent auf architecture, ein Wesen (fleisch/knochen/leder/
+// federn/schuppen/glut/essenz) behält die Seele. Das GESETZ der Substanz trennt Wesen
+// von Pflanze an der Wurzel (kein roleManual-Pflaster).
+AnazhRealm.SOULLESS_SUBSTANCES = Object.freeze(new Set(["holz", "laub", "kraut", "erde"]));
 AnazhRealm.FORM_ROLE_SIGNATURES = Object.freeze({
     soul: Object.freeze({ livingBody: 1.4, lebendig: 0.4 }),
     portal: Object.freeze({ portalShape: 1.6 }),
