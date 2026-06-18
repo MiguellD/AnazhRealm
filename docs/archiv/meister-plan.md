@@ -12,7 +12,7 @@
 > Entscheiden. `docs/archiv/archipel-plan.md` ist der Voll-Plan für Φ. `docs/archiv/genese-
 > plan.md` ist der Voll-Plan für Γ-Reste.
 
-**Status: AKTIV — der Plan nach dem Plan.** Der gigant-§5-Pfad ist gegangen; dieser Plan trägt
+**Status: ARCHIVIERT (§8/M1–M8 RUND, §8.8 Φ-Bogen RUND) — der Plan nach dem Plan.** Der gigant-§5-Pfad ist gegangen; dieser Plan trägt
 die ~30 Befunde des ersten großen Schöpfer-Browser-Audits NACH der Gesamt-Abnahme + die
 Aufstiegs-Leiter (R6-Vertiefung) als die Krone. Disziplin: jeder Befund ist ein SIGNAL für ein
 verletztes Prinzip (CLAUDE.md), keine isolierte TODO — darum gruppiert nach WURZELN, nicht nach

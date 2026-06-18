@@ -1,6 +1,6 @@
 # DER WAHRE ANBLICK — Ω-OPSIS
 
-> **STAND (15.06.2026 — DER AKTIVE BOGEN · Gesicht „ANBLICK / Optik"):** S-GATE 0
+> **STAND (15.06.2026 — ARCHIVIERT · ANBLICK-REFERENZ, absorbiert in `wahrerguss.md` System A; der aktive Bogen ist `wahrerguss` · Gesicht „ANBLICK / Optik"):** S-GATE 0
 > (Material-Pfad) ist ENTSCHIEDEN + gebaut — **PBR ist die EINE Wahrheit, toon RAUS**
 > (V18.237, −384 Z., der Toon-Zwilling gestrichen). Die **zu starke Aura**, die jeden
 > Anblick vergiftete (magenta Himmel `[0.65,0.35,0.86]`), ist SUBTIL (V18.236, EIN

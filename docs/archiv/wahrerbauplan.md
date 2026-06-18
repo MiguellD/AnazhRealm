@@ -4,12 +4,12 @@
 > Der RICHTER lebt im Code (`_stability`/`_failsUnderLoad`/`_swingDynamics`/`_loadPath`) + wird
 > fortlaufend KONSUMIERT (jede Genom-Variante wird gegen ihn gemessen). Offener Rest: Ω-B4 LOD-Swap
 > je Scatter-Variante (marginal → `docs/roadmap.md` §4). Der aktive Form-Bogen lebt in
-> `docs/wahrerwuchs.md` (§10 = der volle Vertikal-Bogen); der Anblick in `docs/wahreranblick.md`.
+> `docs/archiv/wahrerwuchs.md` (§10 = der volle Vertikal-Bogen); der Anblick in `docs/archiv/wahreranblick.md`.
 > Dieser Plan ist die NORMATIVE Physik-Referenz — vor Physik-Arbeit ZUERST hier.
 
 # DER WAHRE BAUPLAN — Ω-PHYSIS
 
-> **STAND (15.06.2026 — DER AKTIVE BOGEN · Gesicht „SEIN / Physik"):** SÄULE I (der
+> **STAND (15.06.2026 — NORMATIVE Physik-Referenz · Gesicht „SEIN / Physik"; der aktive Bogen ist `wahrerguss`):** SÄULE I (der
 > Schiedsrichter) + SÄULE II (der vertiefte Leser) sind GEBAUT + objektiv bewiesen
 > (V18.238–V18.239, headless-flake-frei — reine Berechnung). **Ω-Φ1** Schwerpunkt
 > (`_compoundCenterOfMass`) · **Ω-Φ2** Stützpolygon+Stabilität (`_supportPolygon`/

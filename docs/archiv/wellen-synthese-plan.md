@@ -1,6 +1,6 @@
 # Der Wellen-Synthese-Plan — die zwei werden eins (V18.172 → V18.180+)
 
-**Status: AKTIV — die nächste Session liest DIESEN Plan zuerst, dann baut.**
+**Status: ARCHIVIERT (V18.180 vollendet) — Chronik der Branch-Synthese; kein aktiver Plan mehr.**
 Zwei Schwestern sind am 13.06.2026 aus V18.172 entsprossen — `clever-gauss-nuh9lq`
 (Λ-Welle: die lebendige Welt, AAA-Atmosphäre, V18.173–V18.177 + Γ-Bogen
 V18.178–V18.181 [Boden-atmen · Welt-Komposition · Berg-Tiefe · Slope/Rock-

@@ -6,9 +6,12 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 15.06.2026 (V18.238):** DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen —
-> **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · das SEIN) + **`docs/wahreranblick.md`** (Ω-OPSIS ·
-> der ANBLICK), ein Prinzip (der Auslesewert der Wahrheit). Der Live-Stand + die Reflexion:
+> **Stand 18.06.2026 (V18.256):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
+> die Konvergenz von FORM·PHYSIK·ANBLICK in EIN Gesetz) + seine Sub-Bögen
+> (`docs/lebendiger-koerper-plan.md` · `docs/koerper-neuanlage-plan.md`). Die NORMATIVEN Referenzen
+> dazu liegen in der Bibliothek: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · der Physik-Richter im
+> Code) + **`docs/archiv/wahreranblick.md`** (Ω-OPSIS · Anblick-Tiefe, in wahrerguss System A absorbiert).
+> Der Live-Stand + die Reflexion:
 > der **„Aktueller Stand"-Kopf in `CLAUDE.md`**. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
 > Fäden, die NICHT im aktiven Bogen liegen, aber dem Schöpfer alle wichtig sind. (Die alten
 > „EINE-Plan"-Pläne `abschluss-plan` + `gigant-fortsetzung-plan` sind archiviert/abgelöst.)
@@ -107,15 +110,17 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 15.06.2026 (V18.238):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) liegt in
-> **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS) + **`docs/wahreranblick.md`** (Ω-OPSIS), der Live-
+> **Stand 18.06.2026 (V18.256):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
+> **`docs/wahrerguss.md`** (+ Sub-Bögen `lebendiger-koerper-plan.md` · `koerper-neuanlage-plan.md`);
+> die NORMATIVEN Referenzen `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS) + `docs/archiv/wahreranblick.md`
+> (Ω-OPSIS) liegen in der Bibliothek. Der Live-
 > Stand + die Reflexion (erledigt/offen/Chaos) im **`CLAUDE.md`-Stand**. **Dieser §4 ist die
 > EINE Quelle für die Fäden, die NICHT im aktiven Bogen liegen** — die gemerkten Fäden, die
 > dem Schöpfer alle wichtig sind („nie vergessen, nie still streichen").
 
 **Wo finde ich was offen ist:**
 
-- **`docs/archiv/wahrerbauplan.md` + `docs/wahreranblick.md`** — der aktive Bogen (Physik + Anblick), Welle für Welle
+- **`docs/wahrerguss.md`** (+ Sub-Bögen) — der aktive Bogen; **`docs/archiv/wahrerbauplan.md` + `docs/archiv/wahreranblick.md`** — die NORMATIVEN Referenzen (Physik + Anblick), Welle für Welle
 - **`CLAUDE.md` „Aktueller Stand"** — die auto-geladene Wahrheit: aktuelle Welle · Live-Stand · die Reflexion (Parallelcode/Chaos zu vereinheitlichen)
 - **`docs/archiv/handover.md`** — die volle Wellen-Chronik (jüngste oben) + das Schöpfer-Audit-Gedächtnis (der alte `rueckmeldung.md`-Korpus liegt als Snapshot in `archiv/`)
 - **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
@@ -189,7 +194,7 @@ das echte **V18→V19-Zeit-Portal** · **VR/WebXR** · **IndexedDB** · **Fahrze
   das ist die offene Vereinheitlichung) · DSL/Weltregeln (`dslRun`-Sandbox · `_tickWorldRules`).
 - **Schöpfung:** Crafting-Resonanz (`_blueprintProductVector` → Rolle/Domäne/Op/Stat) · Werkstatt
   (Mach-Akte über `_makeCostGate` + `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`).
-- **Render:** Toon/Cel (`_buildToonNodeMaterial`) · das FREQUENZBAND (`_applySubstanceResponse` — EIN Band-Empfänger, Antennen-Profile aus der Substanz; eye-relative Aerial) ·
+- **Render:** PBR (`_buildToonNodeMaterial` — der Name ist Umbenennungs-Schuld, baut IMMER PBR; Toon GESTRICHEN V18.237) · das FREQUENZBAND (`_applySubstanceResponse` — EIN Band-Empfänger, Antennen-Profile aus der Substanz; eye-relative Aerial) ·
   Schatten (Light-Space-Snap, EINE Map) · LOD-Kaskade (`DETAIL_CASCADE`, `_detailBand`) · Vegetation
   (Gras-HISM + Scatter).
 - **Welt/Sozial:** Portal/Sub-Welten (W12–17) · Vibe-Pass (ed25519) · Bibliothek/Feed (`feedRatings`

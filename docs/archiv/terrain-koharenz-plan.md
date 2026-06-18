@@ -1,6 +1,6 @@
 # Terrain-Kohärenz-Plan — DIE EINE GRENZE
 
-> **Status:** AKTIVER PLAN (09.06.2026, Schöpfer-Auftrag „ein Plan, der dem Terrain gerecht wird —
+> **Status:** ARCHIVIERT — Bogen vollendet (T0–T8); Referenz für Terrain-Naht/Kohärenz (09.06.2026, Schöpfer-Auftrag „ein Plan, der dem Terrain gerecht wird —
 > kein Pflaster, ans Eingemachte, alle Schnittstellen, hält die These stand"). Der Bogen, der die
 > Wasser-Spirale (V18.0–.31, 30 Wellen) an ihrer wahren Wurzel heilt.
 >

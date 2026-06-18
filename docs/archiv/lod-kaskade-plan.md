@@ -1,6 +1,6 @@
 # Die DETAIL-KASKADE — der vereinte LOD-Plan (eine Distanz, alle Gesichter)
 
-> **Status:** AKTIVER PLAN (04.06.2026, Schöpfer-Auftrag „plane wie ein Profi — man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie, klare Flüsse, Regelkreise die sich selbst stabilisieren").
+> **Status:** schlafender Plan — U1/U3/U4/U5 ✓, U2/U6 offen; ZUERST lesen für LOD/Streaming (04.06.2026, Schöpfer-Auftrag „plane wie ein Profi — man baut nicht 10 LOD-Systeme; ein Profi bringt Synergie, klare Flüsse, Regelkreise die sich selbst stabilisieren").
 >
 > **Stand V18.31: U1 ✅ GEBAUT (V17.114)** — `_detailBand` + die frozen `DETAIL_CASCADE`-Tabelle (Code); `_voxelChunkLodFor` liest sie byte-identisch, Aerial-`hazeFar` an die Ring-Kante gekoppelt. **U3 ✅ GEBAUT (V17.115)** — Kreaturen lesen die Kaskade (`aiDiv`, ferne KI seltener, glatt). **OFFEN: U2** (Wasser-LOD) + **U6** (echtes Clipmap); ~~U4~~ ✓ GEBAUT V18.131 (Band-getrieben + das EINE Fernfeld-Impostor-Mesh pro Art) · ~~U5~~ ✓ GEBAUT V18.130 (r184-CSMShadowNode an den Band-Kanten, Snap pro Kaskade eingebaut) — Look-Sign-offs → S-Liste (gigant-plan §6.3). Reihenfolge (roadmap Phase 2): erst das Wasser-System sauber (Phase 1.5), dann U2 darauf.
 >

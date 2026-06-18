@@ -1,6 +1,6 @@
 # DER WAHRE WUCHS — das Bauplan-Genom (Ω-GENESIS der Form)
 
-> **STAND (16.06.2026 — der verfeinerte Plan des aktiven Bogens, Schöpfer „wirklich
+> **STAND (16.06.2026 — ARCHIVIERT · FORM-GENOM-REFERENZ, absorbiert in `wahrerguss.md` System C; der aktive Bogen ist `wahrerguss`, Schöpfer „wirklich
 > die volle palette möglich, sogar mamutbäume, ohne hundert rezepte ... hast du
 > kritisch hinterfragt welche achsen formbar sein sollten ... wende es auf ALLE
 > baupläne an").** Der dritte Stand des Ω-PHYSIS-Säule-III-Bogens (Bauplan-Grammatik):

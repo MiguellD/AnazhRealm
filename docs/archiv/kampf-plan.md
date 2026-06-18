@@ -29,7 +29,7 @@ nie ein Aufräum, er zeigte auf die letzte Hardcode-Insel — die WORK-Seite eme
 PROZESS-Seite (Werkzeuge + Werkstätten) trug noch Hardcode (`roleManual`+`workshopDomain`). Erster Schnitt: die
 WERKSTATT-DOMÄNE EMERGIERT aus der Substanz (`_computeWorkshopDomain`, Vorbild `_isPortalShaped`; das `workshop­
 Domain`-Feld entfernt; eine Esse bedient forging, weil sie eine glühende dichte Masse IST), `checkBandV1767` 5 grün.
-**Der AKTIVE Plan (Schöpfer-Dialog 03.06., §11.10 NEU): die RESONANZ-VEREINHEITLICHUNG — „ein Produkt-Vektor, viele
+**Der Schöpfungs-Fluss §11.10 (GEBAUT V17.80–.85): die RESONANZ-VEREINHEITLICHUNG — „ein Produkt-Vektor, viele
 Leser".** Der Schöpfer-Befund: meine Klassifikatoren messen EINSEITIG (Einzel-Tag-Schwellen), aber das System denkt
 in Vektoren (die Aura ist ein Vektor, `spawnAffinityForBlueprint` ist ein SKALARPRODUKT, die Tags SIND der Substanz-
 Vektor). Die synergetische Form: Rolle/Domäne/Affordanz sind RESONANZEN des vollen Produkt-Vektors (Tags ⊕ räumliche

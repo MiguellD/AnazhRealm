@@ -1,8 +1,12 @@
 # DER AKTIVE TISCH — Stand + Reflexion
 
+> **SNAPSHOT (15.06.2026, historischer Beleg) — NICHT der Live-Stand.** Dieser Tisch wurde in den
+> „Aktueller Stand"-Kopf von `CLAUDE.md` zurückgefaltet; er liegt nur als Beleg in der Bibliothek.
+> Der echte Live-Stand steht in `CLAUDE.md`, der aktive Bogen ist `docs/wahrerguss.md`.
+
 > **DER AKTIVE BOGEN liegt in zwei fundamentalen Plänen** (ein Prinzip, zwei
 > Gesichter — der Auslesewert der Wahrheit): **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS ·
-> das SEIN · Physik-Schiedsrichter) + **`docs/wahreranblick.md`** (Ω-OPSIS · der
+> das SEIN · Physik-Schiedsrichter) + **`docs/archiv/wahreranblick.md`** (Ω-OPSIS · der
 > ANBLICK · lawful Oberflächen). Die Vision: `state-of-realm.md` + `das-lebendige-feld.md`.
 > Der Backlog + die gemerkten Fäden: `roadmap.md`. Hier: der Live-Stand + die Reflexion.
 

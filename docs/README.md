@@ -9,7 +9,12 @@ sind schlank: **Stand+Lehren** (`CLAUDE.md`) · **Chronik** (`archiv/handover.md
 
 ---
 
-## Die fundamentalen Texte (die EINE Wahrheit, immer aktuell)
+## Die tragenden Texte (immer konsultiert — der aktive Tisch + die NORMATIVEN Bibliotheks-Referenzen)
+
+> Die ersten Zeilen sind die Immer-aktuell-Texte in `docs/` (der schlanke Tisch). Die zwei
+> `docs/archiv/`-Zeilen (`wahrerbauplan.md` · `wahreranblick.md`) sind NORMATIVE Referenzen, die in
+> der Bibliothek liegen, aber wie Immer-aktuell-Texte konsultiert werden — „liegt in archiv" heißt
+> NICHT „veraltet".
 
 | Datei                               | Ebene                       | Was                                                                                                                                                                                                                                                                                 |
 | ----------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
