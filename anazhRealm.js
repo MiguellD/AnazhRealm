@@ -54613,7 +54613,10 @@ class AnazhRealm {
         const blueprints = this.state.blueprints || {};
         for (const name of Object.keys(blueprints)) {
             const bp = blueprints[name];
-            map[name] = () => this._buildFromBlueprint(bp);
+            // V18.260 — platzierte Strukturen durch den Render-Merge (wenige Meshes
+            // statt ein Mesh pro Part); _buildArchMeshMerged fällt für nested/animate/
+            // connections/kleine Baupläne automatisch auf _buildFromBlueprint zurück.
+            map[name] = () => this._buildArchMeshMerged(bp);
         }
         return map;
     }
@@ -54889,6 +54892,43 @@ class AnazhRealm {
         }
         if (leaves.length === 0) return null;
         return { leaves };
+    }
+
+    // V18.260 (DER RENDER-MERGE) — PLATZIERTE Strukturen (Dorf/Tempel/Genesis/
+    // große Spieler-Bauten) rendern bisher EIN Mesh PRO Part (54622-Diagnose:
+    // „eine THREE.Group mit einem Mesh pro Part → hunderte Draw-Calls"). GEMESSEN
+    // am Spawn: ~248 Teil-Meshes = ~248 Draw-Calls + derselbe Schatten-Pass nochmal.
+    // Heilung: dieselbe `_mergeBlueprintByMaterial`-Infra wie die Bäume — die Teile
+    // EINER Struktur werden per Material zu wenigen Meshes verschmolzen (Transform +
+    // Per-Vertex-Farbe gebacken) → ~248 → ~2–5 Draw-Calls (+ genauso wenig Schatten-
+    // Caster). KEINE Tiefe geschnitten: Geometrie/Farben bit-gleich, nur weniger Meshes.
+    // Kollision liest `bp.parts` SEPARAT (`_buildArchitectureCollision`) → unberührt.
+    // Sicherheits-Wände → Per-Teil-Fallback (`_buildFromBlueprint`): nested Baupläne ·
+    // water_wave-Animation · connections (Fahrzeug-Sitze/Gelenke) · kleine Strukturen
+    // (< 6 Teile, eh wenige Draw-Calls → bleiben bit-identisch).
+    _buildArchMeshMerged(bp) {
+        if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 6) return this._buildFromBlueprint(bp);
+        if (Array.isArray(bp.connections) && bp.connections.length > 0) return this._buildFromBlueprint(bp);
+        let merged = null;
+        try {
+            merged = this._mergeBlueprintByMaterial(bp);
+        } catch (_e) {
+            merged = null;
+        }
+        if (!merged || !Array.isArray(merged.leaves) || merged.leaves.length === 0) {
+            return this._buildFromBlueprint(bp); // nested/animate → Per-Teil-Wahrheit
+        }
+        const group = new THREE.Group();
+        for (const leaf of merged.leaves) {
+            if (!leaf || !leaf.geom || !leaf.mat) continue;
+            const m = new THREE.Mesh(leaf.geom, leaf.mat);
+            m.castShadow = true;
+            m.receiveShadow = true;
+            group.add(m);
+        }
+        if (group.children.length === 0) return this._buildFromBlueprint(bp); // defensive
+        group.userData.archMerged = true;
+        return group;
     }
 
     // V18.214 (DER LEBENDIGE GIGANT, Ω-G2 echte Tube-Geometrie) — baut aus
