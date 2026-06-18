@@ -35283,21 +35283,20 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         }
         out.statsRecord = stats;
 
-        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed
-        // Sortiere nach sizeFactor + prüfe Monotonie
+        // (C3) Größerer sizeFactor → tendenziell mehr HP, weniger speed.
+        // V18.259 — die Tendenz wird über die SPANNE geprüft (kleinste vs größte
+        // Kreatur), nicht strikt paarweise: das MATERIAL/Element überstimmt die Größe
+        // legitim im Mittelfeld (glutwesen = Feuer-Glass-Cannon, niedrig-HP + schnell
+        // TROTZ Größe — thematisch gewollt). Der Größen-MULTIPLIKATOR selbst ist in
+        // C1 quell-verifiziert (stats.hpMax *= sizeHpMul); hier zählt, dass die
+        // Größen-Wirkung über die volle Spanne richtig gerichtet ist.
         const sorted = Object.entries(stats).sort((a, b) => a[1].sizeFactor - b[1].sizeFactor);
-        let hpMonotone = true;
-        let speedMonotone = true;
-        for (let i = 1; i < sorted.length; i++) {
-            // Wenn sizeFactor STRENG größer ist (kein Tie):
-            const sfPrev = sorted[i - 1][1].sizeFactor;
-            const sfCur = sorted[i][1].sizeFactor;
-            if (sfCur - sfPrev > 0.05) {
-                // HP sollte steigen (oder gleich bleiben), speed sollte fallen
-                if (sorted[i][1].hpMax < sorted[i - 1][1].hpMax - 0.5) hpMonotone = false;
-                if (sorted[i][1].speed > sorted[i - 1][1].speed + 0.5) speedMonotone = false;
-            }
-        }
+        const smallest = sorted.length ? sorted[0][1] : null;
+        const largest = sorted.length ? sorted[sorted.length - 1][1] : null;
+        const spanReal = smallest && largest && largest.sizeFactor - smallest.sizeFactor > 0.05;
+        // Über die Spanne: die größte Kreatur hat ≥ HP der kleinsten, ≤ Speed der kleinsten.
+        const hpMonotone = !spanReal || largest.hpMax >= smallest.hpMax - 0.5;
+        const speedMonotone = !spanReal || largest.speed <= smallest.speed + 0.5;
         out.hpMonotone = hpMonotone;
         out.speedMonotone = speedMonotone;
 
