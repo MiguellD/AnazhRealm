@@ -14539,7 +14539,18 @@ class AnazhRealm {
         // kleiner dichte-Kern im BRUSTKORB (trägt die dichte-Tags — Größe geht NICHT in die Tags ein);
         // klein + vorn-oben → er füllt NICHT den Flanken-Tuck (der alte große Mittel-Kern war ein
         // Haupt-Treiber des Barrel-Blobs, GEMESSEN am Render).
-        add(torsoShape, bodyMat, 0, torsoH * 0.12, torsoLen * 0.24, torsoW * 0.34, torsoH * 0.32, torsoLen * 0.34, null, bodyCol);
+        add(
+            torsoShape,
+            bodyMat,
+            0,
+            torsoH * 0.12,
+            torsoLen * 0.24,
+            torsoW * 0.34,
+            torsoH * 0.32,
+            torsoLen * 0.34,
+            null,
+            bodyCol
+        );
         let bellyShoulder = -torsoH * 0.3,
             bellyHip = -torsoH * 0.3;
         if (barrel) {
@@ -14619,10 +14630,29 @@ class AnazhRealm {
             if (m > 0.12) {
                 const bz = zPos + (zPos < 0 ? -legLen * 0.04 : legLen * 0.03);
                 const by2 = topY - drop * 0.16;
-                segBetween(x * 0.86, belly + embedY * 1.4, bz, x * 0.95, by2, stifleZ - legLen * 0.02, legR * (0.95 + m * 1.4));
+                segBetween(
+                    x * 0.86,
+                    belly + embedY * 1.4,
+                    bz,
+                    x * 0.95,
+                    by2,
+                    stifleZ - legLen * 0.02,
+                    legR * (0.95 + m * 1.4)
+                );
             }
             // PFOTE — flach am Boden, die Zehen vorn (überlappt den Mittelfuß → smin verbindet).
-            add("box", limbMat, x, groundY + legR * 0.5, toeZ + legR * 0.55, legR * 1.2, legR * 0.85, legR * 2.1, null, hoofCol);
+            add(
+                "box",
+                limbMat,
+                x,
+                groundY + legR * 0.5,
+                toeZ + legR * 0.55,
+                legR * 1.2,
+                legR * 0.85,
+                legR * 2.1,
+                null,
+                hoofCol
+            );
         };
         // Fore = straffer (Stütze), Hind = stärker gefaltet (Motor) — beide digitigrad, Hock HOCH.
         const foreFold = { stifleH: 0.62, stifleZ: -0.03, hockH: 0.3, hockZ: 0.04, toeZ: 0.06 };
@@ -14886,7 +14916,23 @@ class AnazhRealm {
                     return [0, 0, 0];
             }
         };
-        return { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY, joint };
+        return {
+            sex,
+            build,
+            muscle,
+            headRatio,
+            limbF,
+            girthF,
+            bellyF,
+            mF,
+            shoulderHalf,
+            waistHalf,
+            hipHalf,
+            hipY,
+            waistY,
+            shoulderY,
+            joint,
+        };
     }
 
     static _humanoidSkeleton(g) {
@@ -14902,7 +14948,23 @@ class AnazhRealm {
         // build (schlank↔schwer) · muscle (Glied-Masse) · headRatio (Alter/Heroik). Die Stationen
         // überlappen physik-erhaltend (die Haut verschmilzt sie). shoulderHalf/waistHalf/hipHalf +
         // hipY/waistY/shoulderY + mF (Muskel-Fülle) sind hier mit-destrukturiert (eine Quelle).
-        const { sex, build, muscle, headRatio, limbF, girthF, bellyF, mF, shoulderHalf, waistHalf, hipHalf, hipY, waistY, shoulderY, joint: J } = AnazhRealm._humanoidLandmarks(g);
+        const {
+            sex,
+            build,
+            muscle,
+            headRatio,
+            limbF,
+            girthF,
+            bellyF,
+            mF,
+            shoulderHalf,
+            waistHalf,
+            hipHalf,
+            hipY,
+            waistY,
+            shoulderY,
+            joint: J,
+        } = AnazhRealm._humanoidLandmarks(g);
         const parts = [];
         const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
             const p = {
@@ -14933,7 +14995,19 @@ class AnazhRealm {
                 dy = by - ay,
                 dz = bz - az;
             const len = Math.hypot(dx, dy, dz) || 0.01;
-            add("limb", mat || limbMat, (ax + bx) / 2, (ay + by) / 2, (az + bz) / 2, diam, len + diam * 0.8, diam, aimRot(dx, dy, dz), typeof col === "number" ? col : limbCol, extra);
+            add(
+                "limb",
+                mat || limbMat,
+                (ax + bx) / 2,
+                (ay + by) / 2,
+                (az + bz) / 2,
+                diam,
+                len + diam * 0.8,
+                diam,
+                aimRot(dx, dy, dz),
+                typeof col === "number" ? col : limbCol,
+                extra
+            );
         };
         // DAS MUSKEL-GESETZ („Fasern wie Federn über Knoten", Schöpfer-Vision): ein Muskel SPANNT zwei
         //   Skelett-Knoten (Ursprung A → Ansatz B). Seine SPINDEL-Form (fusiform — dünn an den Sehnen-
@@ -15028,7 +15102,10 @@ class AnazhRealm {
             add("box", "knochen", 0, ry, 0.05 * girthF, rw, 0.11, rd, null, limbCol, { kScale: 0.5, struct: true });
         }
         // BRUSTBEIN (sternum, knochen): vordere Mittel-Platte → die Brust-Front + Sternum-Linie.
-        add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66, struct: true });
+        add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, {
+            kScale: 0.66,
+            struct: true,
+        });
         // BAUCH (abdomen): die tiefe Rumpf-Muskel-/Viszeral-Masse = die TAILLE (Rectus/Obliques liegen
         //    als Relief darüber). def → rendert als Muskel, kein halbtransparentes Fleisch (Parallelpfad).
         add("box", bodyMat, 0, 4.7, -0.02 * girthF, waistHalf * 1.5, 1.12, 0.58 * girthF, null, bodyCol, {
@@ -15037,9 +15114,18 @@ class AnazhRealm {
         });
         // WIRBELSÄULE (spine, knochen) — die Rücken-Säule mit S-KURVE (Lende VOR · Brust ZURÜCK · Hals VOR):
         //    der Rücken curve, kein Brett. Drei Segmente, je z-versetzt.
-        add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, { kScale: 0.58, struct: true }); // Lende (lumbar, vor)
-        add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, { kScale: 0.58, struct: true }); // Brust (thoracic, zurück)
-        add("box", "knochen", 0, 6.95, -0.07 * girthF, 0.3, 1.2, 0.22 * girthF, null, limbCol, { kScale: 0.54, struct: true }); // Halswirbelsäule (cervical) — REICHT JETZT bis zum Schädel (verband den schwebenden Kopf)
+        add("box", "knochen", 0, 4.5, -0.24 * girthF, 0.36, 1.05, 0.24 * girthF, null, limbCol, {
+            kScale: 0.58,
+            struct: true,
+        }); // Lende (lumbar, vor)
+        add("box", "knochen", 0, 5.72, -0.42 * girthF, 0.32, 1.4, 0.22 * girthF, null, limbCol, {
+            kScale: 0.58,
+            struct: true,
+        }); // Brust (thoracic, zurück)
+        add("box", "knochen", 0, 6.95, -0.07 * girthF, 0.3, 1.2, 0.22 * girthF, null, limbCol, {
+            kScale: 0.54,
+            struct: true,
+        }); // Halswirbelsäule (cervical) — REICHT JETZT bis zum Schädel (verband den schwebenden Kopf)
         // GESÄSS — ZWEI Glute-Massen hinter dem Becken (statt EINER brückenden Platte, die die
         // Oberschenkel zu einem Rock verschmolz, GEMESSEN am Avatar-Render): links/rechts mit
         // Mittel-Spalt → das Gesäß liest ALS Gesäß UND der Spalt zwischen den Schenkeln öffnet
@@ -15074,10 +15160,22 @@ class AnazhRealm {
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
-            add("box", "knochen", s * shoulderHalf * 0.58, shoulderY - 0.5, -0.24 * girthF, shoulderHalf * 0.56, 0.88, 0.24 * girthF, null, limbCol, {
-                kScale: 0.62,
-                struct: true, // Schulterblatt sitzt jetzt INNEN (z −0.24 statt −0.4) → Trapez/Lat bilden die Rücken-Oberfläche, der Knochen poked nicht mehr nackt vor
-            });
+            add(
+                "box",
+                "knochen",
+                s * shoulderHalf * 0.58,
+                shoulderY - 0.5,
+                -0.24 * girthF,
+                shoulderHalf * 0.56,
+                0.88,
+                0.24 * girthF,
+                null,
+                limbCol,
+                {
+                    kScale: 0.62,
+                    struct: true, // Schulterblatt sitzt jetzt INNEN (z −0.24 statt −0.4) → Trapez/Lat bilden die Rücken-Oberfläche, der Knochen poked nicht mehr nackt vor
+                }
+            );
         // PECTORALIS / DELTOID / LAT / TRAPEZ / SCM / Arm- + Bein-Muskeln kommen jetzt aus dem
         //    MUSKEL-ATLAS (unten, vor dem COVERAGE-PASS) — EINE gelenk-verankerte Baugruppe, kein
         //    Streu-Tweak. RECTUS/OBLIQUES/SERRATUS/ERECTOR bleiben parametrische Loops (schon anchored).
@@ -15099,16 +15197,43 @@ class AnazhRealm {
                 const f = (row + 0.5) / 3; // 0..1 Nabel→Xiphoid
                 const ay = navelY + (xiphoidY - navelY) * f;
                 const aw = (0.24 - row * 0.012) * absMF; // obere Päckchen leicht breiter; zwei klare Säulen (Linea alba in der Mitte)
-                add("box", bodyMat, sx * 0.21, ay, absZ, aw, 0.21, 0.14 * girthF, null, bodyCol, { kScale: 0.56, def: true }); // weicher (war 0.42 = scharfe Riss-Furche) → das Sixpack liest als sanfte Muskel-Schatten, kein Crack (PBR-Haut)
+                add("box", bodyMat, sx * 0.21, ay, absZ, aw, 0.21, 0.14 * girthF, null, bodyCol, {
+                    kScale: 0.56,
+                    def: true,
+                }); // weicher (war 0.42 = scharfe Riss-Furche) → das Sixpack liest als sanfte Muskel-Schatten, kein Crack (PBR-Haut)
             }
-            add("box", bodyMat, sx * 0.19, (navelY + pubisY) * 0.5, absZ, 0.22 * absMF, 0.3, 0.13 * girthF, null, bodyCol, { kScale: 0.6, def: true }); // unteres Bauch-Segment (Nabel→Schambein), weicher Merge
+            add(
+                "box",
+                bodyMat,
+                sx * 0.19,
+                (navelY + pubisY) * 0.5,
+                absZ,
+                0.22 * absMF,
+                0.3,
+                0.13 * girthF,
+                null,
+                bodyCol,
+                { kScale: 0.6, def: true }
+            ); // unteres Bauch-Segment (Nabel→Schambein), weicher Merge
         }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
-            add("box", bodyMat, sx * 0.42, 4.74, 0.3 * girthF, 0.2 * mF, 0.92, 0.24 * girthF, { x: 0, y: 0, z: sx * 0.12 }, bodyCol, {
-                kScale: 0.78,
-                def: true,
-            });
+            add(
+                "box",
+                bodyMat,
+                sx * 0.42,
+                4.74,
+                0.3 * girthF,
+                0.2 * mF,
+                0.92,
+                0.24 * girthF,
+                { x: 0, y: 0, z: sx * 0.12 },
+                bodyCol,
+                {
+                    kScale: 0.78,
+                    def: true,
+                }
+            );
         // (LATISSIMUS / TERES → MUSKEL-ATLAS unten)
         // SERRATUS ANTERIOR — die finger-artigen Muskel-Slips auf den unteren SEITLICHEN Rippen (unter
         //    dem Pectoralis, verzahnt mit den Obliques): DIE Signatur eines definierten, schlanken
@@ -15116,10 +15241,22 @@ class AnazhRealm {
         //    vorn-unten gerichtet, progressiv tiefer + medialer (das Reissverschluss-Muster der Slips).
         for (const s of [-1, 1])
             for (let k = 0; k < 3; k++)
-                add("box", bodyMat, s * (shoulderHalf * 0.52 - k * 0.04), 5.42 - k * 0.2, 0.32 * girthF, 0.11 * mF, 0.14, 0.18 * girthF, { x: 0, y: 0, z: -s * 0.3 }, bodyCol, {
-                    kScale: 0.62, // weicher (war 0.5) → Serratus-Slips als sanfte Wellen, kein scharfer Riss
-                    def: true,
-                });
+                add(
+                    "box",
+                    bodyMat,
+                    s * (shoulderHalf * 0.52 - k * 0.04),
+                    5.42 - k * 0.2,
+                    0.32 * girthF,
+                    0.11 * mF,
+                    0.14,
+                    0.18 * girthF,
+                    { x: 0, y: 0, z: -s * 0.3 },
+                    bodyCol,
+                    {
+                        kScale: 0.62, // weicher (war 0.5) → Serratus-Slips als sanfte Wellen, kein scharfer Riss
+                        def: true,
+                    }
+                );
         // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
         // Detail-Pass schnitzt die RÜCKEN-RINNE = das Tal zwischen ihnen (die Wirbelsäulen-Furche),
         // die Signatur des Rücken-Blicks deiner Referenz. Plus ein Trapez-Keil im oberen Rücken.
@@ -15133,12 +15270,18 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.12, -0.02, 0, 7.22, -0.04, 0.54 * (0.96 + muscle * 0.25), bodyMat, bodyCol, { def: true, kScale: 0.95 }); // Hals — KRÄFTIGER (war 0.46) + kürzer → sturdy, kein Giraffen-Hals; trägt den Kopf, verschmilzt glatt mit Trapez/Brust
+        limb(0, shoulderY - 0.12, -0.02, 0, 7.22, -0.04, 0.54 * (0.96 + muscle * 0.25), bodyMat, bodyCol, {
+            def: true,
+            kScale: 0.95,
+        }); // Hals — KRÄFTIGER (war 0.46) + kürzer → sturdy, kein Giraffen-Hals; trägt den Kopf, verschmilzt glatt mit Trapez/Brust
         // (STERNOCLEIDOMASTOIDEUS → MUSKEL-ATLAS unten)
         // SCHÄDEL — ein sauberes OVOID: EIN Cranium-Dome deckt Scheitel UND Hinterkopf (Occiput) in einer
         //    glatten Form (war Kugel + separater Occiput-Bump = „Schädel komisch"); höher als breit + leicht
         //    nach hinten (menschliche Kopf-Proportion). Der Kiefer hängt vorn-unten = die Gesichts-Ebene.
-        add("sphere", headMat, 0, 7.6, -0.08, 0.66 * hr, 0.8 * hr, 0.74 * hr, null, limbCol, { bodyRole: "head", eyeFront: 0.85 }); // Cranium (Scheitel + Occiput in EINEM Dome)
+        add("sphere", headMat, 0, 7.6, -0.08, 0.66 * hr, 0.8 * hr, 0.74 * hr, null, limbCol, {
+            bodyRole: "head",
+            eyeFront: 0.85,
+        }); // Cranium (Scheitel + Occiput in EINEM Dome)
         add("box", headMat, 0, 7.16, 0.14, 0.42 * hr, 0.36 * hr, 0.42 * hr, null, limbCol, { kScale: 0.72 }); // Kiefer/Kinn (definiert, vorn-unten)
         for (const s of [-1, 1])
             add("box", headMat, s * 0.3 * hr, 7.48, 0.2 * hr, 0.14 * hr, 0.16 * hr, 0.2 * hr, null, limbCol, {
@@ -15150,7 +15293,9 @@ class AnazhRealm {
         add("box", headMat, 0, 7.66, 0.28, 0.48 * hr, 0.09 * hr, 0.16 * hr, null, limbCol); // Brauen-Wulst (verschmolzen, schmaler)
         // NASE — eine DEFINIERTE Nase (war flach): schmaler Rücken (Brauen→Mitte, leicht vor) +
         //   vorspringende runde SPITZE + Flügel-Basis (Breite). Der smin schmilzt sie in die Gesichts-Ebene.
-        add("box", headMat, 0, 7.5, 0.34, 0.07 * hr, 0.22 * hr, 0.13 * hr, { x: -0.14, y: 0, z: 0 }, limbCol, { kScale: 0.58 }); // Nasen-Rücken (schmal, vorgeneigt)
+        add("box", headMat, 0, 7.5, 0.34, 0.07 * hr, 0.22 * hr, 0.13 * hr, { x: -0.14, y: 0, z: 0 }, limbCol, {
+            kScale: 0.58,
+        }); // Nasen-Rücken (schmal, vorgeneigt)
         add("sphere", headMat, 0, 7.37, 0.43, 0.1 * hr, 0.09 * hr, 0.12 * hr, null, limbCol, { kScale: 0.52 }); // Nasen-SPITZE (rundet klar vor)
         add("box", headMat, 0, 7.34, 0.36, 0.17 * hr, 0.08 * hr, 0.1 * hr, null, limbCol, { kScale: 0.58 }); // Nasen-Flügel/Basis (Breite)
         // ── GESICHTS-MUSKEL-SCHICHT (Écorché: rote Mienenmuskeln über dem beigen Schädel) ──
@@ -15174,8 +15319,12 @@ class AnazhRealm {
         add("box", limbMat, 0, 7.74, 0.3, 0.4 * hr, 0.12 * hr, 0.07 * hr, null, limbCol, { kScale: 0.92 }); // Stirn-Fülle (glatt)
         add("box", limbMat, 0, 7.12, 0.35, 0.14 * hr, 0.1 * hr, 0.09 * hr, null, limbCol, { kScale: 0.92 }); // Mund-/Lippen-Umgebung (glatt)
         for (const s of [-1, 1]) {
-            add("box", limbMat, s * 0.45 * hr, 7.58, 0.08, 0.07 * hr, 0.24 * hr, 0.24 * hr, null, limbCol, { kScale: 0.94 }); // Schläfe/Seitenkopf (füllt glatt, kein Loch)
-            add("box", limbMat, s * 0.31 * hr, 7.18, 0.2 * hr, 0.15 * hr, 0.24 * hr, 0.15 * hr, null, limbCol, { kScale: 0.92 }); // Wange (voll, glatt)
+            add("box", limbMat, s * 0.45 * hr, 7.58, 0.08, 0.07 * hr, 0.24 * hr, 0.24 * hr, null, limbCol, {
+                kScale: 0.94,
+            }); // Schläfe/Seitenkopf (füllt glatt, kein Loch)
+            add("box", limbMat, s * 0.31 * hr, 7.18, 0.2 * hr, 0.15 * hr, 0.24 * hr, 0.15 * hr, null, limbCol, {
+                kScale: 0.92,
+            }); // Wange (voll, glatt)
         }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
@@ -15196,17 +15345,29 @@ class AnazhRealm {
             //    an den Landmarken die Haut bony machen UND die Animations-Achse markieren).
             limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.17 * limbF, "knochen", limbCol); // Humerus-Schaft
             limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.15 * limbF, "knochen", limbCol); // Radius/Ulna-Schaft
-            add("sphere", "knochen", shX, shY - 0.06, -0.04, 0.3 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72, struct: true }); // Humeruskopf — struct → tritt zurück (kein nackter Schulter-Knopf), die Schulter-Kappe deckt ihn
-            add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.6 }); // Ellbogen-Kondylen
-            add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, { kScale: 0.6 }); // Handwurzel (Handgelenk)
+            add("sphere", "knochen", shX, shY - 0.06, -0.04, 0.3 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, {
+                kScale: 0.72,
+                struct: true,
+            }); // Humeruskopf — struct → tritt zurück (kein nackter Schulter-Knopf), die Schulter-Kappe deckt ihn
+            add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, {
+                kScale: 0.6,
+            }); // Ellbogen-Kondylen
+            add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, {
+                kScale: 0.6,
+            }); // Handwurzel (Handgelenk)
             add("box", "knochen", elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen, knochen)
             // HAND — sauberer KNOCHEN-FÄCHER nach der Referenz (blankes Skelett): Retinaculum-Band am
             //    Handgelenk → Karpus-Block → fächernde Mittelhand-Knochen → Finger mit ZWEI Phalangen
             //    (proximal+distal) und Gelenken, leicht nach vorn gekrümmt → Daumen opponiert. Ein
             //    SCHLANKER Fleisch-Handrücken gibt der geskinnten Hand Volumen ohne die Finger zu verweben.
             const hw = wristX + s * 0.02;
-            add("box", limbMat, wristX, wristY - 0.02, 0.02, 0.22 * limbF, 0.07, 0.2 * limbF, null, limbCol, { kScale: 0.72 }); // Retinaculum (Sehnen-Manschette am Handgelenk)
-            add("box", "knochen", hw, wristY - 0.17, 0.04, 0.24 * limbF, 0.13, 0.13 * limbF, null, limbCol, { kScale: 0.5, struct: true }); // Karpus (Handwurzel-Block — Basis des Fächers)
+            add("box", limbMat, wristX, wristY - 0.02, 0.02, 0.22 * limbF, 0.07, 0.2 * limbF, null, limbCol, {
+                kScale: 0.72,
+            }); // Retinaculum (Sehnen-Manschette am Handgelenk)
+            add("box", "knochen", hw, wristY - 0.17, 0.04, 0.24 * limbF, 0.13, 0.13 * limbF, null, limbCol, {
+                kScale: 0.5,
+                struct: true,
+            }); // Karpus (Handwurzel-Block — Basis des Fächers)
             add("box", limbMat, hw, wristY - 0.22, 0.03, 0.27 * limbF, 0.17, 0.1, null, limbCol, { kScale: 0.86 }); // Handrücken-Fleisch (dünn) — die Knochen-Finger bleiben als eigene Glieder (hohe Auflösung löst sie auf), kein Mitt
             const knuckY = wristY - 0.36; // Knöchel-Reihe (Metacarpalköpfe)
             for (let f = 0; f < 4; f++) {
@@ -15215,28 +15376,40 @@ class AnazhRealm {
                 const kx = hw + sp * 0.082 * limbF; // Knöchel-Reihe ENGER (kein Spinnen-Spreizen), Finger liegen natürlich beisammen
                 const kz = 0.06 + Math.abs(sp) * 0.014; // die Knöchel-Reihe bogt leicht vor
                 limb(baseX, wristY - 0.18, 0.03, kx, knuckY, kz, 0.05 * limbF, "knochen", limbCol); // Mittelhand-Knochen (Metacarpus, fächert)
-                add("sphere", "knochen", kx, knuckY, kz, 0.05 * limbF, 0.05 * limbF, 0.05 * limbF, null, limbCol, { kScale: 0.42 }); // Knöchel-Gelenk (Metacarpalkopf)
+                add("sphere", "knochen", kx, knuckY, kz, 0.05 * limbF, 0.05 * limbF, 0.05 * limbF, null, limbCol, {
+                    kScale: 0.42,
+                }); // Knöchel-Gelenk (Metacarpalkopf)
                 const fl = (f === 1 || f === 2 ? 0.34 : 0.28) * limbF; // Mittel-/Zeigefinger länger
                 const tipX = kx + sp * 0.025 * limbF;
                 const midY = knuckY - fl * 0.56,
                     midZ = kz + fl * 0.42; // Mittelgelenk (krümmt nach vorn)
                 limb(kx, knuckY, kz, tipX, midY, midZ, 0.042 * limbF, "knochen", limbCol); // Proximal-Phalange
-                add("sphere", "knochen", tipX, midY, midZ, 0.038 * limbF, 0.038 * limbF, 0.038 * limbF, null, limbCol, { kScale: 0.4 }); // Fingermittelgelenk
+                add("sphere", "knochen", tipX, midY, midZ, 0.038 * limbF, 0.038 * limbF, 0.038 * limbF, null, limbCol, {
+                    kScale: 0.4,
+                }); // Fingermittelgelenk
                 limb(tipX, midY, midZ, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.035 * limbF, "knochen", limbCol); // Distal-Phalange (Fingerspitze)
                 // FLEISCH-FINGER (der Profiweg): ein Fleisch-Sleeve über dem Knochen — Mittelhand-Strahl +
                 //   Finger (Knöchel→Spitze), dick genug, dass jeder Finger als EINZELNER fleischiger Finger
                 //   auflöst (kein dünner Knochen-Stab, kein zur Mitt verschmolzener Klumpen).
-                limb(baseX, wristY - 0.16, 0.03, kx, knuckY + 0.02, kz, 0.08 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Mittelhand gefleischt (VOLLER → deckt den Knochen, kein Klauen-Stab)
-                limb(kx, knuckY + 0.02, kz, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.078 * limbF, limbMat, limbCol, { kScale: 0.8 }); // Finger-Fleisch (deutlich voller → löst als fleischiger Finger auf statt Spike/Klaue)
+                limb(baseX, wristY - 0.16, 0.03, kx, knuckY + 0.02, kz, 0.08 * limbF, limbMat, limbCol, {
+                    kScale: 0.82,
+                }); // Mittelhand gefleischt (VOLLER → deckt den Knochen, kein Klauen-Stab)
+                limb(kx, knuckY + 0.02, kz, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.078 * limbF, limbMat, limbCol, {
+                    kScale: 0.8,
+                }); // Finger-Fleisch (deutlich voller → löst als fleischiger Finger auf statt Spike/Klaue)
             }
             // DAUMEN — opponiert: Mittelhand abduziert (zur Körpermitte + vorn) + zwei Glieder mit Gelenk.
             const thbBaseX = hw - s * 0.03,
                 thbX = hw - s * 0.17,
                 thbY = wristY - 0.13;
             limb(thbBaseX, wristY - 0.08, 0.08, thbX, thbY, 0.2, 0.055 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
-            add("sphere", "knochen", thbX, thbY, 0.2, 0.045 * limbF, 0.045 * limbF, 0.045 * limbF, null, limbCol, { kScale: 0.42 }); // Daumen-Grundgelenk
+            add("sphere", "knochen", thbX, thbY, 0.2, 0.045 * limbF, 0.045 * limbF, 0.045 * limbF, null, limbCol, {
+                kScale: 0.42,
+            }); // Daumen-Grundgelenk
             limb(thbX, thbY, 0.2, thbX - s * 0.04, thbY - 0.17, 0.31, 0.042 * limbF, "knochen", limbCol); // Daumen-Glied (distal)
-            limb(thbBaseX, wristY - 0.06, 0.08, thbX - s * 0.04, thbY - 0.17, 0.31, 0.068 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Daumen FLEISCH (Sleeve über dem Knochen)
+            limb(thbBaseX, wristY - 0.06, 0.08, thbX - s * 0.04, thbY - 0.17, 0.31, 0.068 * limbF, limbMat, limbCol, {
+                kScale: 0.82,
+            }); // Daumen FLEISCH (Sleeve über dem Knochen)
         }
         // (GLUTEUS MAXIMUS → MUSKEL-ATLAS unten — gelenk-verankert)
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
@@ -15255,17 +15428,41 @@ class AnazhRealm {
             //    das Gewebe drapiert darüber. FEHLTE komplett → die Schenkel-Köpfe WAREN die Leisten-
             //    Form (die hartnäckige Doppel-Beule). Jetzt definiert der KNOCHEN die Hüft-/Schoß-Form.
             // Darmbein-Schaufel je Seite (breit, oben-lateral) → die Hüft-Breite + die Sockel-Wand.
-            add("box", "knochen", s * hipHalf * 0.6, hipY + 0.06, -0.04 * girthF, hipHalf * 0.72, 0.6, 0.5 * girthF, null, limbCol, {
-                kScale: 0.72,
-                struct: true,
-            });
+            add(
+                "box",
+                "knochen",
+                s * hipHalf * 0.6,
+                hipY + 0.06,
+                -0.04 * girthF,
+                hipHalf * 0.72,
+                0.6,
+                0.5 * girthF,
+                null,
+                limbCol,
+                {
+                    kScale: 0.72,
+                    struct: true,
+                }
+            );
             if (s > 0) {
                 // Scham-Schild (pubic) — EINE glatte, breite Front-Platte tief-mittig = die Leisten-Front,
                 //    weit genug vorn, dass sie ÜBER beide Schenkel-Köpfe drapiert (kein Doppel-Beule mehr).
-                add("box", "knochen", 0, hipY - 0.34, 0.27 * girthF, hipHalf * 1.02, 0.56, 0.4 * girthF, null, limbCol, {
-                    kScale: 0.82,
-                    struct: true,
-                });
+                add(
+                    "box",
+                    "knochen",
+                    0,
+                    hipY - 0.34,
+                    0.27 * girthF,
+                    hipHalf * 1.02,
+                    0.56,
+                    0.4 * girthF,
+                    null,
+                    limbCol,
+                    {
+                        kScale: 0.82,
+                        struct: true,
+                    }
+                );
                 // Kreuzbein (sacrum) hinten-mittig — verbindet zur Wirbelsäule, formt den unteren Rücken.
                 add("box", "knochen", 0, hipY + 0.02, -0.3 * girthF, hipHalf * 0.5, 0.7, 0.34 * girthF, null, limbCol, {
                     kScale: 0.78,
@@ -15279,9 +15476,15 @@ class AnazhRealm {
             //    Enden — bony an den Landmarken, die Animations-Achse Hüfte→Knie→Knöchel).
             limb(hipX, hipY - 0.1, -0.12, kneeX, 2.3, 0, 0.18 * limbF, "knochen", limbCol); // Femur-Schaft
             limb(kneeX, 2.3, 0, ankleX, 0.4, 0, 0.16 * limbF, "knochen", limbCol); // Tibia/Fibula-Schaft
-            add("sphere", "knochen", hipX, hipY - 0.06, -0.12, 0.32 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, { kScale: 0.72 }); // Femurkopf (Hüft-Gelenk)
-            add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, { kScale: 0.6 }); // Knie-Kondylen
-            add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.55 }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
+            add("sphere", "knochen", hipX, hipY - 0.06, -0.12, 0.32 * limbF, 0.3 * limbF, 0.3 * limbF, null, limbCol, {
+                kScale: 0.72,
+            }); // Femurkopf (Hüft-Gelenk)
+            add("sphere", "knochen", kneeX, 2.32, 0, 0.3 * limbF, 0.3 * limbF, 0.28 * limbF, null, limbCol, {
+                kScale: 0.6,
+            }); // Knie-Kondylen
+            add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, {
+                kScale: 0.55,
+            }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
             // (GASTROCNEMIUS / SOLEUS / TIBIALIS → MUSKEL-ATLAS unten — gelenk-verankert)
             // FUSS — ein SAUBERER Fuß über die FORM (Schöpfer-Befund „Sohle von oben / Loch"): FLACHE
@@ -15297,19 +15500,61 @@ class AnazhRealm {
                 const isBig = t === 0;
                 const tx = ankleX + s * sp * 0.078 * limbF;
                 const tw = (isBig ? 0.072 : 0.052) * limbF;
-                add("box", limbMat, tx, 0.075, 0.66 - Math.abs(sp) * 0.05, tw, 0.055, isBig ? 0.12 : 0.095, null, limbCol, { kScale: 0.82 });
+                add(
+                    "box",
+                    limbMat,
+                    tx,
+                    0.075,
+                    0.66 - Math.abs(sp) * 0.05,
+                    tw,
+                    0.055,
+                    isBig ? 0.12 : 0.095,
+                    null,
+                    limbCol,
+                    { kScale: 0.82 }
+                );
             }
             // ── FUSS-SKELETT (knochen, KLEIN + INNEN — bildet NICHT die Haut-Oberfläche, nur écorché-sichtbar):
             //    Talus → Calcaneus → Fußwurzel → Metatarsus → Zehen-Knochen, alle schlank im Fleisch.
-            add("sphere", "knochen", ankleX, 0.4, -0.02, 0.17 * limbF, 0.17 * limbF, 0.19 * limbF, null, limbCol, { kScale: 0.5 }); // Talus
-            add("box", "knochen", ankleX, 0.17, -0.26, 0.16 * limbF, 0.17, 0.25, { x: 0.3, y: 0, z: 0 }, limbCol, { kScale: 0.46 }); // Calcaneus
-            add("sphere", "knochen", ankleX, 0.24, 0.1, 0.17 * limbF, 0.14 * limbF, 0.17 * limbF, null, limbCol, { kScale: 0.5 }); // Fußwurzel
+            add("sphere", "knochen", ankleX, 0.4, -0.02, 0.17 * limbF, 0.17 * limbF, 0.19 * limbF, null, limbCol, {
+                kScale: 0.5,
+            }); // Talus
+            add("box", "knochen", ankleX, 0.17, -0.26, 0.16 * limbF, 0.17, 0.25, { x: 0.3, y: 0, z: 0 }, limbCol, {
+                kScale: 0.46,
+            }); // Calcaneus
+            add("sphere", "knochen", ankleX, 0.24, 0.1, 0.17 * limbF, 0.14 * limbF, 0.17 * limbF, null, limbCol, {
+                kScale: 0.5,
+            }); // Fußwurzel
             for (let t = 0; t < 5; t++) {
                 const sp = (t - 2) / 2;
                 const lat = ankleX + s * sp * 0.078 * limbF;
                 const isBig = t === 0;
-                add("sphere", "knochen", lat, 0.19, 0.3 - Math.abs(sp) * 0.02, 0.038 * limbF, 0.038 * limbF, 0.2 * limbF, { x: 0.34, y: 0, z: 0 }, limbCol, { kScale: 0.4 }); // Metatarsus (klein, innen)
-                add("sphere", "knochen", lat, 0.085, 0.62 - Math.abs(sp) * 0.04, (isBig ? 0.046 : 0.032) * limbF, (isBig ? 0.04 : 0.028) * limbF, (isBig ? 0.095 : 0.07) * limbF, { x: 0.08, y: 0, z: 0 }, limbCol, { kScale: 0.4 }); // Zehen-Knochen (klein, innen)
+                add(
+                    "sphere",
+                    "knochen",
+                    lat,
+                    0.19,
+                    0.3 - Math.abs(sp) * 0.02,
+                    0.038 * limbF,
+                    0.038 * limbF,
+                    0.2 * limbF,
+                    { x: 0.34, y: 0, z: 0 },
+                    limbCol,
+                    { kScale: 0.4 }
+                ); // Metatarsus (klein, innen)
+                add(
+                    "sphere",
+                    "knochen",
+                    lat,
+                    0.085,
+                    0.62 - Math.abs(sp) * 0.04,
+                    (isBig ? 0.046 : 0.032) * limbF,
+                    (isBig ? 0.04 : 0.028) * limbF,
+                    (isBig ? 0.095 : 0.07) * limbF,
+                    { x: 0.08, y: 0, z: 0 },
+                    limbCol,
+                    { kScale: 0.4 }
+                ); // Zehen-Knochen (klein, innen)
             }
         }
         // ── DER MUSKEL-ATLAS (die Baugruppe, „gelernt von den Profis") — jeder Muskel SPANNT zwei
@@ -15327,9 +15572,40 @@ class AnazhRealm {
             { o: "erectorTop", i: "scapula", b: 0.3, sc: mF, belly: 0.5, depth: 0.45, kS: 0.82 }, // Trapezius (unterer Kopf — der Diamant reicht bis Mitte-Rücken)
             // SCHULTER (Deltoideus — eine gerundete KAPPE über dem Schultergelenk, drei Köpfe fächern
             //    vom Akromion/Klavikel/Skapula zur Humerus-Mitte; breit + voll = die Referenz-Kuppe, kein dünner Stab)
-            { o: "clavicleMed", i: "deltoidIns", b: 0.26, sc: limbF, belly: 0.34, depth: 0.95, kS: 0.78, mat: limbMat, col: limbCol }, // vorderer Kopf
-            { o: "acromion", i: "deltoidIns", b: 0.32, sc: limbF, belly: 0.32, depth: 1.0, kS: 0.78, mat: limbMat, col: limbCol, extra: { def: true, disp: true, amp: 0.2, reach: 1.7 } }, // seitlicher Kopf (die Haupt-Kappe)
-            { o: "scapula", i: "deltoidIns", b: 0.26, sc: limbF, belly: 0.34, depth: 0.95, kS: 0.78, mat: limbMat, col: limbCol }, // hinterer Kopf
+            {
+                o: "clavicleMed",
+                i: "deltoidIns",
+                b: 0.26,
+                sc: limbF,
+                belly: 0.34,
+                depth: 0.95,
+                kS: 0.78,
+                mat: limbMat,
+                col: limbCol,
+            }, // vorderer Kopf
+            {
+                o: "acromion",
+                i: "deltoidIns",
+                b: 0.32,
+                sc: limbF,
+                belly: 0.32,
+                depth: 1.0,
+                kS: 0.78,
+                mat: limbMat,
+                col: limbCol,
+                extra: { def: true, disp: true, amp: 0.2, reach: 1.7 },
+            }, // seitlicher Kopf (die Haupt-Kappe)
+            {
+                o: "scapula",
+                i: "deltoidIns",
+                b: 0.26,
+                sc: limbF,
+                belly: 0.34,
+                depth: 0.95,
+                kS: 0.78,
+                mat: limbMat,
+                col: limbCol,
+            }, // hinterer Kopf
             // BRUST (Pectoralis — ein breiter gerundeter SCHILD je Seite, der die halbe Brust deckt: vier
             //    Köpfe fächern vom Sternum/Klavikel zum Humerus, BREIT (füllt die Brust) + FLACH (liegt als
             //    Schild, kein Ballen), Bulk zum Sternum (die fleischige Innenbrust), unterer Kopf = Pec-Shelf)
@@ -15344,8 +15620,28 @@ class AnazhRealm {
             { o: "scapula", i: "axilla", b: 0.17, sc: mF, belly: 0.4, kS: 0.8 }, // Teres
             { o: "sacrum", i: "erectorTop", b: 0.16, sc: mF, belly: 0.5, depth: 0.42, kS: 0.74 }, // Erector spinae (Rücken-Säule)
             // ARM
-            { o: "shoulderFront", i: "elbowFront", b: 0.25, sc: limbF, belly: 0.46, depth: 0.92, kS: 0.85, mat: limbMat, col: limbCol }, // Bizeps (voller, fusiformer Bauch)
-            { o: "shoulderBack", i: "elbowBack", b: 0.27, sc: limbF, belly: 0.52, depth: 0.92, kS: 0.85, mat: limbMat, col: limbCol }, // Trizeps (voller, hinten getrennt)
+            {
+                o: "shoulderFront",
+                i: "elbowFront",
+                b: 0.25,
+                sc: limbF,
+                belly: 0.46,
+                depth: 0.92,
+                kS: 0.85,
+                mat: limbMat,
+                col: limbCol,
+            }, // Bizeps (voller, fusiformer Bauch)
+            {
+                o: "shoulderBack",
+                i: "elbowBack",
+                b: 0.27,
+                sc: limbF,
+                belly: 0.52,
+                depth: 0.92,
+                kS: 0.85,
+                mat: limbMat,
+                col: limbCol,
+            }, // Trizeps (voller, hinten getrennt)
             { o: "elbowFront", i: "wrist", b: 0.18, sc: limbF, belly: 0.34, kS: 0.85, mat: limbMat, col: limbCol }, // Unterarm-Flexoren
             // GESÄSS + OBERSCHENKEL
             { o: "iliacBack", i: "hip", b: 0.42, sc: mF, belly: 0.5, depth: 0.9, kS: 0.92 }, // Gluteus maximus
@@ -15358,7 +15654,17 @@ class AnazhRealm {
             { o: "shinTop", i: "heel", b: 0.24, sc: limbF, belly: 0.42, kS: 0.82, mat: limbMat, col: limbCol }, // Soleus
             { o: "kneeFront", i: "ankleFront", b: 0.17, sc: limbF, belly: 0.4, kS: 0.8, mat: limbMat, col: limbCol }, // Tibialis anterior
             // ── VOLLKACHELUNG (parallel-Welle): die fehlenden Köpfe → kein Knochen scheint zwischen den Muskeln ──
-            { o: "clavicleMed", i: "humerusTop", b: 0.2, sc: limbF, belly: 0.62, depth: 0.85, kS: 0.8, mat: limbMat, col: limbCol }, // Schulter-Kappe (deckt den Humeruskopf)
+            {
+                o: "clavicleMed",
+                i: "humerusTop",
+                b: 0.2,
+                sc: limbF,
+                belly: 0.62,
+                depth: 0.85,
+                kS: 0.8,
+                mat: limbMat,
+                col: limbCol,
+            }, // Schulter-Kappe (deckt den Humeruskopf)
             { o: "deltoidIns", i: "upperArmOut", b: 0.18, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Brachialis (Bizeps↔Trizeps-Lücke)
             { o: "elbowBack", i: "forearmBack", b: 0.16, sc: limbF, belly: 0.36, kS: 0.84, mat: limbMat, col: limbCol }, // Unterarm-Extensoren (Rückseite)
             { o: "iliac", i: "kneeOut", b: 0.3, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Vastus lateralis (Außenschenkel)
@@ -15461,7 +15767,18 @@ class AnazhRealm {
                     ry = Math.max(0.03, (sy / 2) * 1.06),
                     rz = Math.max(0.03, (sz / 2) * 1.06);
                 const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({ ell: true, c, r: [rx, ry, rz], rmin: Math.min(rx, ry, rz), kScale: p.kScale || 1, def: !!p.def, disp: !!p.disp, amp: p.amp, reach: p.reach, mat: p.material });
+                bones.push({
+                    ell: true,
+                    c,
+                    r: [rx, ry, rz],
+                    rmin: Math.min(rx, ry, rz),
+                    kScale: p.kScale || 1,
+                    def: !!p.def,
+                    disp: !!p.disp,
+                    amp: p.amp,
+                    reach: p.reach,
+                    mat: p.material,
+                });
                 const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
                 mnx = Math.min(mnx, c[0] - RR[0]);
                 mny = Math.min(mny, c[1] - RR[1]);
@@ -15500,7 +15817,18 @@ class AnazhRealm {
                 if (a[1] >= b[1]) rb = r * taper;
                 else ra = r * taper;
             }
-            bones.push({ a, b, ra, rb, rmin: Math.min(ra, rb), kScale: p.kScale || 1, def: !!p.def, amp: p.amp, reach: p.reach, mat: p.material });
+            bones.push({
+                a,
+                b,
+                ra,
+                rb,
+                rmin: Math.min(ra, rb),
+                kScale: p.kScale || 1,
+                def: !!p.def,
+                amp: p.amp,
+                reach: p.reach,
+                mat: p.material,
+            });
             const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
             for (const pt of [a, b]) {
                 mnx = Math.min(mnx, pt[0] - R);
@@ -16017,101 +16345,101 @@ class AnazhRealm {
             // (liest das ECHTE Relief sauber) sind unabhängig. Avatar: sharpen 0 (kein Lumpen) +
             // Mesh-Blend (Sixpack/Pec aus der echten Geometrie, viel geglättet) → sauber UND scharf.
             if (sharpen > 0 || wMesh > 0) {
-              if (sharpen > 0) {
-                // 1) UNSCHÄRFE-MASKE — Geometrie entlang der Feld-Normale ∝ Konkavität verschieben.
-                //    Der Betrag ist GRÖSSEN-/AUFLÖSUNGS-SKALIERT (≈2.2 % der Modell-Spanne): ein FESTER
-                //    Betrag zerriss die dünnen Glieder einer kleinen Kreatur bei res 64, während er den
-                //    Avatar bei res 96 gerade trug (GEMESSEN — die Kreatur schmolz). occ·sharpen ∈
-                //    [−1,1] ist der Anteil. Das Feld wird ZUERST geglättet (nur BREITE Anatomie, kein
-                //    Facetten-Rauschen → kein Lumpen-Look).
-                const dCap = span * 0.017;
-                const dispv = new Float32Array(VC);
-                for (let v = 0; v < VC; v++) dispv[v] = Math.max(-1, Math.min(1, occ[v] * sharpen)) * dCap;
-                for (let it = 0; it < 2; it++) {
-                    const src = dispv.slice();
-                    for (let v = 0; v < VC; v++) {
-                        const nb = nbr[v];
-                        if (!nb.length) continue;
-                        let a = 0;
-                        for (const k of nb) a += src[k];
-                        dispv[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
-                    }
-                }
-                for (let v = 0; v < VC; v++) {
-                    const d = dispv[v]; // occ>0 (Tal) → −n nach innen (tiefer) · occ<0 (Grat) → +n raus
-                    pA.setX(v, pA.getX(v) - nA.getX(v) * d);
-                    pA.setY(v, pA.getY(v) - nA.getY(v) * d);
-                    pA.setZ(v, pA.getZ(v) - nA.getZ(v) * d);
-                }
-                pA.needsUpdate = true;
-              }
-              if (wMesh > 0) {
-                // 2) MESH-NORMALEN aus der geschärften Geometrie (Flächen-Normalen akkumuliert),
-                //    1 Glättungspass gegen Facetten-Wobble, dann mit der sauberen Feld-Normale
-                //    gemischt (Feld = weiche Basis, Mesh = Furchen-Detail) → Relief OHNE Müll.
-                const nm = new Float32Array(VC * 3);
-                for (let t = 0; t + 2 < idx.length; t += 3) {
-                    const a = idx[t],
-                        b = idx[t + 1],
-                        c = idx[t + 2];
-                    const ax = pA.getX(a),
-                        ay = pA.getY(a),
-                        az = pA.getZ(a);
-                    const ex1 = pA.getX(b) - ax,
-                        ey1 = pA.getY(b) - ay,
-                        ez1 = pA.getZ(b) - az;
-                    const ex2 = pA.getX(c) - ax,
-                        ey2 = pA.getY(c) - ay,
-                        ez2 = pA.getZ(c) - az;
-                    const fx = ey1 * ez2 - ez1 * ey2,
-                        fy = ez1 * ex2 - ex1 * ez2,
-                        fz = ex1 * ey2 - ey1 * ex2;
-                    nm[a * 3] += fx;
-                    nm[a * 3 + 1] += fy;
-                    nm[a * 3 + 2] += fz;
-                    nm[b * 3] += fx;
-                    nm[b * 3 + 1] += fy;
-                    nm[b * 3 + 2] += fz;
-                    nm[c * 3] += fx;
-                    nm[c * 3 + 1] += fy;
-                    nm[c * 3 + 2] += fz;
-                }
-                for (let v = 0; v < VC * 3; v += 3) {
-                    const L = Math.hypot(nm[v], nm[v + 1], nm[v + 2]) || 1;
-                    nm[v] /= L;
-                    nm[v + 1] /= L;
-                    nm[v + 2] /= L;
-                }
-                let nmS = nm; // Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
-                for (let it = 0; it < nSmooth; it++) {
-                    const src = nmS;
-                    const dst = new Float32Array(VC * 3);
-                    for (let v = 0; v < VC; v++) {
-                        const nb = nbr[v];
-                        let ax = src[v * 3],
-                            ay = src[v * 3 + 1],
-                            az = src[v * 3 + 2];
-                        for (const k of nb) {
-                            ax += src[k * 3];
-                            ay += src[k * 3 + 1];
-                            az += src[k * 3 + 2];
+                if (sharpen > 0) {
+                    // 1) UNSCHÄRFE-MASKE — Geometrie entlang der Feld-Normale ∝ Konkavität verschieben.
+                    //    Der Betrag ist GRÖSSEN-/AUFLÖSUNGS-SKALIERT (≈2.2 % der Modell-Spanne): ein FESTER
+                    //    Betrag zerriss die dünnen Glieder einer kleinen Kreatur bei res 64, während er den
+                    //    Avatar bei res 96 gerade trug (GEMESSEN — die Kreatur schmolz). occ·sharpen ∈
+                    //    [−1,1] ist der Anteil. Das Feld wird ZUERST geglättet (nur BREITE Anatomie, kein
+                    //    Facetten-Rauschen → kein Lumpen-Look).
+                    const dCap = span * 0.017;
+                    const dispv = new Float32Array(VC);
+                    for (let v = 0; v < VC; v++) dispv[v] = Math.max(-1, Math.min(1, occ[v] * sharpen)) * dCap;
+                    for (let it = 0; it < 2; it++) {
+                        const src = dispv.slice();
+                        for (let v = 0; v < VC; v++) {
+                            const nb = nbr[v];
+                            if (!nb.length) continue;
+                            let a = 0;
+                            for (const k of nb) a += src[k];
+                            dispv[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
                         }
-                        const L = Math.hypot(ax, ay, az) || 1;
-                        dst[v * 3] = ax / L;
-                        dst[v * 3 + 1] = ay / L;
-                        dst[v * 3 + 2] = az / L;
                     }
-                    nmS = dst;
+                    for (let v = 0; v < VC; v++) {
+                        const d = dispv[v]; // occ>0 (Tal) → −n nach innen (tiefer) · occ<0 (Grat) → +n raus
+                        pA.setX(v, pA.getX(v) - nA.getX(v) * d);
+                        pA.setY(v, pA.getY(v) - nA.getY(v) * d);
+                        pA.setZ(v, pA.getZ(v) - nA.getZ(v) * d);
+                    }
+                    pA.needsUpdate = true;
                 }
-                for (let v = 0; v < VC; v++) {
-                    let fx = nA.getX(v) * (1 - wMesh) + nmS[v * 3] * wMesh,
-                        fy = nA.getY(v) * (1 - wMesh) + nmS[v * 3 + 1] * wMesh,
-                        fz = nA.getZ(v) * (1 - wMesh) + nmS[v * 3 + 2] * wMesh;
-                    const L = Math.hypot(fx, fy, fz) || 1;
-                    nA.setXYZ(v, fx / L, fy / L, fz / L);
+                if (wMesh > 0) {
+                    // 2) MESH-NORMALEN aus der geschärften Geometrie (Flächen-Normalen akkumuliert),
+                    //    1 Glättungspass gegen Facetten-Wobble, dann mit der sauberen Feld-Normale
+                    //    gemischt (Feld = weiche Basis, Mesh = Furchen-Detail) → Relief OHNE Müll.
+                    const nm = new Float32Array(VC * 3);
+                    for (let t = 0; t + 2 < idx.length; t += 3) {
+                        const a = idx[t],
+                            b = idx[t + 1],
+                            c = idx[t + 2];
+                        const ax = pA.getX(a),
+                            ay = pA.getY(a),
+                            az = pA.getZ(a);
+                        const ex1 = pA.getX(b) - ax,
+                            ey1 = pA.getY(b) - ay,
+                            ez1 = pA.getZ(b) - az;
+                        const ex2 = pA.getX(c) - ax,
+                            ey2 = pA.getY(c) - ay,
+                            ez2 = pA.getZ(c) - az;
+                        const fx = ey1 * ez2 - ez1 * ey2,
+                            fy = ez1 * ex2 - ex1 * ez2,
+                            fz = ex1 * ey2 - ey1 * ex2;
+                        nm[a * 3] += fx;
+                        nm[a * 3 + 1] += fy;
+                        nm[a * 3 + 2] += fz;
+                        nm[b * 3] += fx;
+                        nm[b * 3 + 1] += fy;
+                        nm[b * 3 + 2] += fz;
+                        nm[c * 3] += fx;
+                        nm[c * 3 + 1] += fy;
+                        nm[c * 3 + 2] += fz;
+                    }
+                    for (let v = 0; v < VC * 3; v += 3) {
+                        const L = Math.hypot(nm[v], nm[v + 1], nm[v + 2]) || 1;
+                        nm[v] /= L;
+                        nm[v + 1] /= L;
+                        nm[v + 2] /= L;
+                    }
+                    let nmS = nm; // Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
+                    for (let it = 0; it < nSmooth; it++) {
+                        const src = nmS;
+                        const dst = new Float32Array(VC * 3);
+                        for (let v = 0; v < VC; v++) {
+                            const nb = nbr[v];
+                            let ax = src[v * 3],
+                                ay = src[v * 3 + 1],
+                                az = src[v * 3 + 2];
+                            for (const k of nb) {
+                                ax += src[k * 3];
+                                ay += src[k * 3 + 1];
+                                az += src[k * 3 + 2];
+                            }
+                            const L = Math.hypot(ax, ay, az) || 1;
+                            dst[v * 3] = ax / L;
+                            dst[v * 3 + 1] = ay / L;
+                            dst[v * 3 + 2] = az / L;
+                        }
+                        nmS = dst;
+                    }
+                    for (let v = 0; v < VC; v++) {
+                        let fx = nA.getX(v) * (1 - wMesh) + nmS[v * 3] * wMesh,
+                            fy = nA.getY(v) * (1 - wMesh) + nmS[v * 3 + 1] * wMesh,
+                            fz = nA.getZ(v) * (1 - wMesh) + nmS[v * 3 + 2] * wMesh;
+                        const L = Math.hypot(fx, fy, fz) || 1;
+                        nA.setXYZ(v, fx / L, fy / L, fz / L);
+                    }
+                    nA.needsUpdate = true;
                 }
-                nA.needsUpdate = true;
-              }
             }
             const colors = new Float32Array(VC * 3);
             for (let v = 0; v < VC; v++) {
@@ -16199,7 +16527,10 @@ class AnazhRealm {
                     T.smoothstep(T.float(yt + 0.05), T.float(yt - 0.06), pl.y)
                 );
                 // X-Tor: nur das zentrale Becken bemalen, NICHT die Hände, die auf Hüfthöhe ruhen.
-                if (opts.shortsX) band = band.mul(T.smoothstep(T.float(opts.shortsX + 0.12), T.float(opts.shortsX - 0.05), pl.x.abs()));
+                if (opts.shortsX)
+                    band = band.mul(
+                        T.smoothstep(T.float(opts.shortsX + 0.12), T.float(opts.shortsX - 0.05), pl.x.abs())
+                    );
                 shortsBand = band;
                 albedo = T.mix(albedo, T.vec3(0.92, 0.93, 0.96), band);
             }
@@ -16233,7 +16564,10 @@ class AnazhRealm {
                 rVar = opts.skin ? 0.08 : 0.18;
             // Haut: KEIN curv-Roughness-Term (er liest dieselbe view-abhängige Normal-Diskontinuität →
             // glänzende Naht-Linien); Fell behält ihn. Haut variiert nur sanft mit dem Korn.
-            mat.roughnessNode = T.float(rBase).add(furN.mul(rVar)).sub(opts.skin ? T.float(0) : curv.mul(0.12)).clamp(0.4, 1.0);
+            mat.roughnessNode = T.float(rBase)
+                .add(furN.mul(rVar))
+                .sub(opts.skin ? T.float(0) : curv.mul(0.12))
+                .clamp(0.4, 1.0);
             // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
             const vd =
                 T.positionViewDirection ||
@@ -16290,7 +16624,19 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 3, seamWidth: 0.15, displace: true, dispCap: 0.34, normalRelax: 2 }); // Avatar HAUT: res 128 (176 löste Finger im Close-Up auf, riss aber dünne Brücken wie die Klavikel auf → die Hand braucht LOKALE Res, kein globaler Bump); taubin 8 = GLATTE Haut; seamGroove 3 + breit (0.15) = WEICHE Muskel-Schatten statt Risse; normalRelax 2 = beruhigt die Feld-Normale am dichten Schulter/Brust-Stapel (kein lumpiges Schattieren); dispCap 0.34 = sanfte Schwellung
+        const geom = this._buildCreatureSkinGeometry(parts, {
+            res: 128,
+            taubinPasses: 8,
+            creaseSharpen: 0,
+            creaseMix: 0,
+            normalStep: 0.4,
+            kFloor: 0.04,
+            seamGroove: 3,
+            seamWidth: 0.15,
+            displace: true,
+            dispCap: 0.34,
+            normalRelax: 2,
+        }); // Avatar HAUT: res 128 (176 löste Finger im Close-Up auf, riss aber dünne Brücken wie die Klavikel auf → die Hand braucht LOKALE Res, kein globaler Bump); taubin 8 = GLATTE Haut; seamGroove 3 + breit (0.15) = WEICHE Muskel-Schatten statt Risse; normalRelax 2 = beruhigt die Feld-Normale am dichten Schulter/Brust-Stapel (kein lumpiges Schattieren); dispCap 0.34 = sanfte Schwellung
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
