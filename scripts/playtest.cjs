@@ -30131,52 +30131,21 @@ async function checkBandNutzerBlickNachbau(ctx) {
 async function checkBandV18163DetailTiefe(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
         const out = {};
-        const savedLevels = (r.state.atmosphere && r.state.atmosphere.celLevels) || 8;
-        const savedContrast = (r.state.atmosphere && r.state.atmosphere.celContrast) || 1.0;
-        try {
-            // (1) die LUT SPREIZT messbar: bei 4 Plateaus rückt das 2/3-Band
-            // unter Kontrast 1.6 von ~170 auf ~195 (heller), das 1/3-Band wird
-            // dunkler — und neutral (1.0) ist bit-identisch zur alten Form.
-            const lutMid = () => {
-                const d = r.state.toonGradientMap.image.data;
-                return d[Math.floor(d.length / 2)];
-            };
-            r.setCelLevels(4);
-            r.setCelContrast(1.0);
-            const neutral = lutMid();
-            r.setCelContrast(1.6);
-            const hart = lutMid();
-            out.lutSpreizt = neutral === 170 && hart > neutral + 15;
-            // der Struktur-Boden hält NACH der Spreizung (kein Schwarz-Rückfall).
-            const sd = r.state.toonGradientMapStructures ? r.state.toonGradientMapStructures.image.data : null;
-            out.bodenHaelt = !sd || sd[0] >= Math.round(0.25 * 255) - 2;
-            // Setter + Slider leben.
-            out.setter = typeof r.setCelContrast === "function" && r.state.atmosphere.celContrast === 1.6;
-            out.slider = !!document.getElementById("slider-celcontrast");
-            // (2) die Konsole-über-Hotbar-Regel lebt im CSS (媒-Query — die
-            // behaviorale 1366-Probe lebt im diag; hier die Regel-Existenz).
-            const css = [...document.styleSheets]
-                .map((ss) => {
-                    try {
-                        return [...ss.cssRules].map((rr) => rr.cssText).join("");
-                    } catch {
-                        return "";
-                    }
-                })
-                .join("");
-            out.hudRegel = /max-width: 1440px/.test(css) && /bottom: 110px/.test(css);
-            return out;
-        } finally {
-            r.setCelContrast(savedContrast);
-            r.setCelLevels(savedLevels);
-        }
+        // die Konsole-über-Hotbar-Regel lebt im CSS (媒-Query — die
+        // behaviorale 1366-Probe lebt im diag; hier die Regel-Existenz).
+        const css = [...document.styleSheets]
+            .map((ss) => {
+                try {
+                    return [...ss.cssRules].map((rr) => rr.cssText).join("");
+                } catch {
+                    return "";
+                }
+            })
+            .join("");
+        out.hudRegel = /max-width: 1440px/.test(css) && /bottom: 110px/.test(css);
+        return out;
     });
-    check(
-        "V18.163 Cel-KONTRAST: die Stufen-Spreizung wirkt auf der LUT (neutral bit-gleich · 1.6 spreizt · der Struktur-Boden hält) + Setter/Slider leben",
-        res.lutSpreizt && res.bodenHaelt && res.setter && res.slider
-    );
     check(
         "V18.163 HUD: die Konsole weicht der Hotbar auf schmalen Schirmen (GEMESSEN: ab 1366px kollidierten sie — Chat über der Hotbar-Ebene)",
         res.hudRegel
@@ -41225,20 +41194,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.chunkHasFieldAttribute = chunkHasField;
 
-        // --- Phase C: Cel-Shading + Fog ---
-        out.celMethodsExist =
-            typeof r._refreshToonGradient === "function" &&
-            typeof r.setCelLevels === "function" &&
-            typeof r.setFogDistance === "function";
-        out.toonGradientExists = !!r.state.toonGradientMap;
-        out.terrainHasCelUniform = !!(tm && tm.uniforms && tm.uniforms.celLevels);
-        // setCelLevels ändert celLevels in state + terrainMaterial
-        r.setCelLevels(2);
-        const cel2 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
-        r.setCelLevels(6);
-        const cel6 = tm && tm.uniforms && tm.uniforms.celLevels ? tm.uniforms.celLevels.value : -1;
-        out.celSliderWorks = cel2 === 2 && cel6 === 6;
-        r.setCelLevels(4);
+        // --- Phase C: Fog ---
         // setFogDistance ändert fog.near/far. playerEyesUnderwater
         // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
         // den fogDistance-Effekt; hier deterministisch ausnullen.
@@ -41411,16 +41367,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.waterSystemOk = r.state.voxelChunkWaterIso instanceof Map;
 
         // --- Atmosphäre-Persistenz ---
-        r.setCelLevels(7);
         r.setFogDistance(1.5);
         const snap = r.buildStateSnapshot();
         out.atmospherePersisted = !!(
             snap &&
             snap.atmosphere &&
-            snap.atmosphere.celLevels === 7 &&
             Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01
         );
-        r.setCelLevels(4);
         r.setFogDistance(1.0);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
@@ -41479,15 +41432,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.28 A: Stern-Feld hat >1000 diskrete Sterne", v828Results.starFieldHasMany);
         check("V8.28 A: Stern-Feld hat Rotation (sidereal)", v828Results.starFieldRotates);
         check("V8.28 B: _attachFieldAttribute existiert", v828Results.attachFieldExists);
-        // V9.39 Phase 5c.2.c.3.b.iii — die Heightfield-Shader-spezifischen
-        // Checks (`tm.vertexShader contains aField`, `chunkHasField-
-        // Attribute` via ensureChunkAt, `terrainHasCelUniform`,
-        // `celSliderWorks` via tm.uniforms.celLevels) sind tot. Die
-        // Vision-Anker (Welt-Affinität pro Vertex, Cel-Shading-Stufen)
-        // leben im Voxel-Mesh + toonGradientMap weiter (V9.10
-        // `_attachVoxelFieldColors`, V8.42 LinearFilter-Gradient).
-        check("V8.28 C: _refreshToonGradient + setCelLevels + setFogDistance existieren", v828Results.celMethodsExist);
-        check("V8.28 C: state.toonGradientMap existiert (Cel-gradientMap)", v828Results.toonGradientExists);
+        // V9.39: die Heightfield-Shader-Checks (tm.vertexShader / terrainHasCelUniform)
+        // sind tot (terrainMaterial=null seit V9.39). Welt-Affinität pro Vertex lebt im
+        // Voxel-Mesh (V9.10 `_attachVoxelFieldColors`); die Cel-Shading-LUT ist
+        // GESCHNITTEN (V18.236 — PBR ist die EINE Material-Wahrheit).
         check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
         check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
@@ -41648,20 +41596,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Adaptives Wasser ---
         out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
 
-        // --- Cel-gradientMap 32 px ---
-        out.gradientMap32 = !!(
-            r.state.toonGradientMap &&
-            r.state.toonGradientMap.image &&
-            r.state.toonGradientMap.image.width === 32
-        );
-        // celLevels 2 vs 8 → unterschiedliche Gradient-Daten
-        r.setCelLevels(2);
-        const g2 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
-        r.setCelLevels(8);
-        const g8 = Array.from(r.state.toonGradientMap.image.data.slice(0, 32));
-        out.celGradientChanges = JSON.stringify(g2) !== JSON.stringify(g8);
-        r.setCelLevels(8);
-
         // --- Stern-Mindestgröße (kein Flacker-Aliasing) ---
         const sf = r.state.starField;
         let minSize = 999;
@@ -41691,8 +41625,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.29: Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("V8.29: _ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
         check("V8.29: state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-        check("V8.29: Cel-gradientMap ist 32 px breit (Smooth-Modus möglich)", v829Results.gradientMap32);
-        check("V8.29: setCelLevels 2↔8 ändert die gradientMap-Daten", v829Results.celGradientChanges);
         check("V8.29: Sterne haben Mindestgröße ≥3 px (flacker-sicher)", v829Results.starMinSize3);
     } else {
         check("V8.29: Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
@@ -46590,18 +46522,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Welle E (E2): der Sicht-Ring-Regler reicht jetzt 1–12 (war 1–8) — die
         // fernen Ringe 9–12 sind dank der LOD-Pyramide billig. Default bleibt 4.
         out.ringSliderRange = !!ring && ring.max === "12" && ring.value === "4";
-        const cel = document.getElementById("slider-cel");
-        // V8.41 — Cel-Regler 2–8. V17.109: Default-Wert 8→6 (Schöpfer-getunte Basis).
-        out.celSliderRange = !!cel && cel.max === "8" && cel.value === "6";
-
-        // Cel-Stufen 2–8: 8 = smooth, höhere Werte clampen auf 8.
-        const origCel = r.state.atmosphere ? r.state.atmosphere.celLevels : 8;
-        out.celClampsAt8 = r.setCelLevels(8) === 8 && r.setCelLevels(20) === 8;
-        out.celSmoothThreshold = /n >= 8 \? W/.test(r._refreshToonGradient.toString());
-        // V8.42 — Gradient-Textur mit LinearFilter (crawl-frei).
-        out.celGradientLinear =
-            !!r.state.toonGradientMap &&
-            r.state.toonGradientMap.magFilter === (window.THREE && window.THREE.LinearFilter);
         // V8.43 — Terrain-Detail-Noise per Vertex statt per Pixel.
         out.terrainJitterPerVertex =
             !!r.state.terrainMaterial &&
@@ -46621,7 +46541,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             !!r.state.terrainMaterial &&
             /vFogDepth = length\(mvPosition/.test(r.state.terrainMaterial.vertexShader || "") &&
             !/vFogDepth = -mvPosition\.z/.test(r.state.terrainMaterial.vertexShader || "");
-        r.setCelLevels(origCel);
 
         // Fog: Effekt-Bereich verdreifacht (0.9 .. 9.0, Default 3.0).
         const origFog = r.state.atmosphere ? r.state.atmosphere.fogDistance : 3.0;
@@ -46642,10 +46561,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
 
     if (v840Results && !v840Results.error) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
-        check("V8.41/V17.109: Cel-Stufen-Regler 2–8, Default 6 (Schöpfer-Basis)", v840Results.celSliderRange);
-        check("V8.41: Cel-Stufen clampt über 8 auf 8", v840Results.celClampsAt8);
-        check("V8.40: Cel ab 8 bleibt smooth (32-Stufen-Gradient)", v840Results.celSmoothThreshold);
-        check("V8.42: Cel-Gradient nutzt LinearFilter (crawl-frei)", v840Results.celGradientLinear);
         // V9.39 Phase 5c.2.c.3.b.iii — V8.43/V8.44/V8.45 prüften den
         // Heightfield-Terrain-Shader (per-Vertex-Noise, Welt-Raum-Normal,
         // radiale Fog-Distanz). `state.terrainMaterial` existiert nicht

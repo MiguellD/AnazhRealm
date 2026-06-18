@@ -360,7 +360,6 @@ class AnazhRealm {
             atmosphere: {
                 // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
                 // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
-                celLevels: 6,
                 // (terrainFlatten V18.106 gebacken → TERRAIN_NORMAL_FLATTEN)
                 cavityAO: 0.35,
                 edgeSharp: 0.46,
@@ -33018,7 +33017,6 @@ class AnazhRealm {
             // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
             // V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
-                celLevels: (this.state.atmosphere && this.state.atmosphere.celLevels) || 8,
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
                 waterCull:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
@@ -37364,9 +37362,7 @@ class AnazhRealm {
             }
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
-            if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-            const cl = Number(state.atmosphere.celLevels);
-            if (Number.isFinite(cl)) this.state.atmosphere.celLevels = Math.max(2, Math.min(8, Math.round(cl)));
+            if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
             const fd = Number(state.atmosphere.fogDistance);
             if (Number.isFinite(fd)) this.state.atmosphere.fogDistance = Math.max(0.9, Math.min(9.0, fd));
             const wc = Number(state.atmosphere.waterCull);
@@ -50405,7 +50401,6 @@ class AnazhRealm {
             // steuerbar: 2 Stufen = harte Cel-Linie, 8 ≈ smooth. Ambient +
             // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
             // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
-            if (!this.state.toonGradientMap) this._refreshToonGradient();
             // V10.0-g — Architektur-Part auf ToonNodeMaterial (WebGPU-kompatibel).
             // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
             const mat = this._buildToonNodeMaterial(matOpts);
@@ -55658,7 +55653,6 @@ class AnazhRealm {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
         }
-        if (!this.state.toonGradientMap) this._refreshToonGradient();
         return this._buildToonNodeMaterial(matOpts);
     }
 
@@ -55823,7 +55817,6 @@ class AnazhRealm {
                 const waerme = +refMatDef.tags.lebendig || 0;
                 if (waerme > 0.5) matOpts.useInstanceTint = true;
             }
-            if (!this.state.toonGradientMap) this._refreshToonGradient();
             const mat = this._buildToonNodeMaterial(matOpts);
             leaves.push({ geom: merged, mat, localMatrix: new THREE.Matrix4() });
         }
@@ -56551,7 +56544,6 @@ class AnazhRealm {
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
         if (barkGeom) {
-            if (!this.state.toonGradientMap) this._refreshToonGradient();
             const holzMat = this.state.materials && this.state.materials.holz;
             // useFlexAttr=true → der Wind-Sway-Block in _buildToonNodeMaterial
             // liest die gebackenen aFlex/aPhase-Attribute statt der crownLin-
@@ -58184,92 +58176,6 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §19 · LICHT/WASSER-REGLER — Cel-LUT · alle Render-Setter =====
-    // V8.29 — Cel-Shading gradientMap für MeshToonMaterial.
-    // Die gradientMap quantisiert das direkte Sonnen-Licht in Stufen.
-    // celLevels 2 = harte Cel-Linie, 8 = ECHT smooth (kein sichtbares Band).
-    //
-    // V8.28 hatte nur 8 px → selbst bei "Stufe 8" sah man Bänder, es gab
-    // keinen echten Smooth-Modus. Jetzt 32 px: bei celLevels>=8 bekommt
-    // jeder Pixel einen eigenen Wert → 32 Helligkeits-Stufen sehen für
-    // das Auge stufenlos aus. Bei celLevels<8 → genau celLevels Plateaus.
-    // Textur-Größe bleibt konstant 32 px → Slider-Wechsel updated nur die
-    // Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung.
-    _refreshToonGradient() {
-        if (typeof THREE === "undefined") return;
-        const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
-        // V8.41 — Regler-Bereich 2–8 (8 = smooth/32 Stufen, 2..7 harte
-        // Plateaus). Das V8.40-Reserve-Band 9–16 war eine Fehleinschätzung:
-        // eine tote Regler-Hälfte ist schlechtere UX (Schöpfer-Browser-Test).
-        const n = Math.max(2, Math.min(8, Math.round(levels)));
-        const W = 32;
-        if (!this.state.toonGradientMap) {
-            const data = new Uint8Array(W * 4);
-            const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
-            // V8.42 — LinearFilter statt NearestFilter: die GPU interpoliert
-            // den Gradient → echt stufenlos. NearestFilter gab 32 HARTE
-            // Stufen, deren Kanten beim Kamera-Schwenk über die Strukturen
-            // krochen (Sub-Pixel-Aliasing — dieselbe Klasse wie das alte
-            // Sternen-Flackern). Anti-Aliasing an der Wurzel, kein neues
-            // System: die Textur-Interpolation IST der Anti-Aliaser.
-            tex.minFilter = THREE.LinearFilter;
-            tex.magFilter = THREE.LinearFilter;
-            tex.generateMipmaps = false;
-            this.state.toonGradientMap = tex;
-        }
-        // celLevels>=8 → 32 distinkte Stufen (smooth). Sonst n Plateaus.
-        const plateaus = n >= 8 ? W : n;
-        // V18.163 (Schöpfer-Wunsch wörtlich: „im cel-stufen shader den KONTRAST
-        // selbst erhöhen — die bringen schwung, pinselstrichartige oberfläche"):
-        // die KONTRAST-Kurve spreizt die Plateau-WERTE um die Mitte (>1 = dunkle
-        // Bänder dunkler, helle heller — das malerische Pop; 1 = wie immer;
-        // <1 = weicher). Wirkt auf BEIDE LUTs (Haupt + Struktur, deren Boden
-        // NACH der Spreizung gilt — der B8-Schwarz-Schutz bleibt).
-        const celContrast =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.celContrast)
-                ? this.state.atmosphere.celContrast
-                : 1.0;
-        const spread = (t) => Math.max(0, Math.min(1, 0.5 + (t - 0.5) * celContrast));
-        const data = this.state.toonGradientMap.image.data;
-        for (let i = 0; i < W; i++) {
-            const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
-            const v = Math.round(spread(step / (plateaus - 1)) * 255);
-            data[i * 4] = v;
-            data[i * 4 + 1] = v;
-            data[i * 4 + 2] = v;
-            data[i * 4 + 3] = 255;
-        }
-        this.state.toonGradientMap.needsUpdate = true;
-        // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
-        // celLevels>=8 wird im Shader als "kein floor" interpretiert.
-        if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
-            const u = this.state.terrainMaterial.uniforms.celLevels;
-            if (u) u.value = n;
-        }
-    }
-
-    // V18.163 — der CEL-KONTRAST (die Stufen-Spreizung um die Mitte): 1 = neutral,
-    // >1 = das malerische Pop (Schöpfer: „pinselstrichartig"), <1 = weicher.
-    setCelContrast(v) {
-        const val = Math.max(0.5, Math.min(2, Number(v) || 1));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.celContrast = val;
-        this._refreshToonGradient();
-        if (typeof this.saveState === "function") this.saveState();
-        return val;
-    }
-
-    // V8.28 6.G4.b C — Mutations-Pfad für den Cel-Shading-Slider. Setzt
-    // state.atmosphere.celLevels, regeneriert die gradientMap, persistiert.
-    setCelLevels(levels) {
-        // V8.41 — Regler-Bereich 2–8 (8 = smooth). V8.40-Reserve 9–16 verworfen.
-        const n = Math.max(2, Math.min(8, Math.round(Number(levels) || 8)));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
-        this.state.atmosphere.celLevels = n;
-        this._refreshToonGradient();
-        if (typeof this.saveState === "function") this.saveState();
-        return n;
-    }
-
     // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
@@ -58277,7 +58183,7 @@ class AnazhRealm {
         // V8.40 — Effekt-Bereich verdreifacht: Label „100%" = mult 3.0 (=
         // heutiger 300%-Fog, neuer Default), Label „300%" = mult 9.0.
         const m = Math.max(0.9, Math.min(9.0, Number(mult) || 3.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.fogDistance = m;
         if (typeof this._applyDayNightToScene === "function") this._applyDayNightToScene();
         if (typeof this.saveState === "function") this.saveState();
@@ -58291,7 +58197,7 @@ class AnazhRealm {
     // dünne Wand-/Ufer-Bluten weg ist, tiefes Wasser bleibt. 0 = altes Bild.
     setWaterCull(minDepth) {
         const m = Math.max(0.0, Math.min(0.05, Number(minDepth) || 0.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterCull = m;
         // Das geteilte Hydro-Surface-Uniform live setzen (lazy initialisiert beim
         // ersten Material-Bau; nur setzen, wenn schon da).
@@ -58307,7 +58213,7 @@ class AnazhRealm {
     // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
     setWaterRenderMode(mode) {
         const m = mode === "iso" ? "iso" : "cells";
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterRenderMode = m;
         // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
         // greift (die Zellen/Physik bleiben unberührt — nur der Render-Pfad).
@@ -58327,7 +58233,7 @@ class AnazhRealm {
     setWaterShoreWidth(width) {
         // V18.17 — wieder in VIEWPORT-Lineardepth (Ufer-Alpha-Saum gegen waterThick, V18.14-Ufer).
         const m = Math.max(0.001, Math.min(0.05, Number(width) || 0.0045));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterShoreWidth = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.shoreWidth) {
             this.state.hydroSurfaceUniforms.shoreWidth.value = m;
@@ -58340,7 +58246,7 @@ class AnazhRealm {
     // schnell das Wasser mit der echten Tiefe ins Dunkle/Blaue kippt. Kleiner = schneller tief.
     setWaterDepthRange(range) {
         const m = Math.max(1.0, Math.min(15.0, Number(range) || 5.0));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterDepthRange = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthRange) {
             this.state.hydroSurfaceUniforms.depthRange.value = m;
@@ -58353,7 +58259,7 @@ class AnazhRealm {
     // kräuseln (0 = flach, 0.06 sanft, 1 = wie Ozean). Live an die Uniform.
     setLakeRipple(v) {
         const m = Math.max(0.0, Math.min(1.0, Number(v) || 0.06));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterLakeRipple = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.lakeRipple) {
             this.state.hydroSurfaceUniforms.lakeRipple.value = m;
@@ -58367,7 +58273,7 @@ class AnazhRealm {
     // flache Fluss schäumt weniger; grösser = mehr Schaum auch im flachen Wasser.
     setWaterDepthFoam(meters) {
         const m = Math.max(0.1, Math.min(6.0, Number(meters) || 1.2));
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.waterDepthFoam = m;
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.depthFoam) {
             this.state.hydroSurfaceUniforms.depthFoam.value = m;
@@ -58442,7 +58348,7 @@ class AnazhRealm {
         // Default; der aoCap im Shader bleibt der Sicherheits-Deckel.
         const v = Math.max(0, Math.min(2, Number(scale)));
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.cavityAO = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.aoScale) this.state.atmoUniforms.aoScale.value = m;
         if (typeof this.saveState === "function") this.saveState();
@@ -58458,7 +58364,7 @@ class AnazhRealm {
     setColorVariation(scale) {
         const v = Math.max(0, Math.min(2, Number(scale))); // V17.109 Headroom 0..2
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.colorVar = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.tintScale) this.state.atmoUniforms.tintScale.value = m;
         if (typeof this.saveState === "function") this.saveState();
@@ -58470,7 +58376,7 @@ class AnazhRealm {
     setSurfaceTexture(scale) {
         const v = Math.max(0, Math.min(4, Number(scale))); // V17.109 Headroom 0..4 (Schöpfer liebt die Striation, will >200%)
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.triplanar = m;
         if (this.state.atmoUniforms && this.state.atmoUniforms.triplanarScale)
             this.state.atmoUniforms.triplanarScale.value = m;
@@ -58484,7 +58390,7 @@ class AnazhRealm {
     setEdgeSharp(amount) {
         const v = Math.max(0, Math.min(1, Number(amount)));
         const m = Number.isFinite(v) ? v : 0.5;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.edgeSharp = m;
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.localContrast)
             this.state.postProcessingUniforms.localContrast.value = m;
@@ -58502,7 +58408,7 @@ class AnazhRealm {
     setShadowRange(meters) {
         const v = Math.max(80, Math.min(400, Number(meters)));
         const m = Number.isFinite(v) ? v : 300;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.shadowRange = m;
         const dl = this.state.directionalLight;
         if (dl && dl.shadow && dl.shadow.camera) {
@@ -58536,7 +58442,7 @@ class AnazhRealm {
     setShadowBias(bias) {
         const v = Math.max(0, Math.min(3, Number(bias)));
         const m = Number.isFinite(v) ? v : 1.0;
-        if (!this.state.atmosphere) this.state.atmosphere = { celLevels: 8, fogDistance: 3.0, waterCull: 0.0025 };
+        if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
         this.state.atmosphere.shadowBias = m;
         const dl = this.state.directionalLight;
         if (dl && dl.shadow) dl.shadow.normalBias = m;
@@ -70007,17 +69913,6 @@ class AnazhRealm {
         }
 
         // V8.28 6.G4.b C — Atmosphäre-Slider: Cel-Stufen + Fog-Distanz.
-        const cel = document.getElementById("slider-cel");
-        const celVal = document.getElementById("slider-cel-val");
-        if (cel) {
-            const c0 = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
-            cel.value = String(c0);
-            if (celVal) celVal.textContent = String(c0);
-            cel.addEventListener("input", () => {
-                const v = this.setCelLevels(parseInt(cel.value, 10));
-                if (celVal) celVal.textContent = String(v);
-            });
-        }
         const fogS = document.getElementById("slider-fog");
         const fogVal = document.getElementById("slider-fog-val");
         if (fogS) {
@@ -70140,21 +70035,6 @@ class AnazhRealm {
         }
         // V18.163 — der CEL-KONTRAST-Regler (die Stufen-Spreizung — das echte
         // Verständnis des Schöpfer-Wunsches; Mikro-Struktur unten ist die Textur).
-        const ccS = document.getElementById("slider-celcontrast");
-        const ccVal = document.getElementById("slider-celcontrast-val");
-        if (ccS) {
-            const c0 =
-                this.state.atmosphere && Number.isFinite(this.state.atmosphere.celContrast)
-                    ? this.state.atmosphere.celContrast
-                    : 1.0;
-            ccS.value = String(Math.round(c0 * 100));
-            if (ccVal) ccVal.textContent = `${Math.round(c0 * 100)} %`;
-            ccS.addEventListener("input", () => {
-                const pct = parseInt(ccS.value, 10);
-                this.setCelContrast(pct / 100);
-                if (ccVal) ccVal.textContent = `${pct} %`;
-            });
-        }
         // M7 (V18.160) — Mikro-Struktur (Befund 21: der lebendige Hebel) +
         // Terrain-Nacht-Boden (Befund 20: Licht-Parität) als Live-Regler.
         const mtS = document.getElementById("slider-microtex");
@@ -71000,9 +70880,6 @@ class AnazhRealm {
         // im colorNode crasht beim Build wenn state.toonGradientMap noch null
         // ist (ReferenceNode.update liest null). Pre-init garantiert: das
         // Material findet die Texture beim ersten render() vor.
-        if (typeof this._refreshToonGradient === "function" && !this.state.toonGradientMap) {
-            this._refreshToonGradient();
-        }
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
 
