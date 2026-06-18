@@ -457,6 +457,18 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.262 — DER KREATUR-RENDER-HEBEL: GESICHT GEMERGT + DISTANZ-LOD (gemessen 7→4 nah, 7→1 fern)
+
+Die direkte Fortsetzung von V18.260 (der explizit benannte „nächste gemessene Hebel"): der Kreatur-Render. **GEMESSEN zuerst** (`scripts/diag-creature-render.cjs`, der neue permanente Mess-/Regressions-Anker): eine Skin-Kreatur (`wesen`/`glutwesen`) rendert **7 Draw-Calls** = 1 Metaball-Haut + **6 statische Gesichts-Sub-Meshes** (2 Augen + 2 Funken + 2 Ohren). Der V18.260-Befund „~28 × ~8 Meshes" verfeinert: die Knochen-Teile sind `visible=false` (kosten KEINE Draw-Calls), der Aufwand sind die 6 Gesichts-Meshes, die **NICHT animieren** (sie hängen jenseits `parts.length` → kein Motion-Role; nur die unsichtbaren Knochen werden von `_animateCompoundMotion` getoggelt). Das macht den Hebel SAUBER (kein Bewegungs-Pfad berührt).
+
+**Die Heilung (zwei geteilte Schichten, V18.260-Form):**
+- **(a) MERGE** (`_addCreatureFace` umgebaut): die 6 Gesichts-Sub-Meshes werden pro Material-Typ zu DREI gemergten Meshes verschmolzen (2 Augen→1, 2 Funken→1, 2 Ohren→1) über denselben `_mergeGeometries`-Helper wie die Bäume/placed-Strukturen (EINE Quelle). Beide Seiten teilen exakt ihr Material → **kein Look-Verlust** (pixel-identisch nah; vorher 2 separate Materialien je Paar, jetzt 1 geteiltes mit identischen Params). `_mergeGeometries` lässt `uv` fallen — sicher, weil die solid-color-Gesichts-Materialien (kein `foliageLeaf`/`bark`) kein uv lesen (GEMESSEN `_buildPbrNodeMaterial`).
+- **(b) DISTANZ-LOD** (`updateCreatures`, im `inFrustum`-Block): die drei Meshes hängen in EINER Sub-Gruppe `_creatureFaceLOD`, die jenseits `CREATURE_FACE_LOD_DIST_SQ`·L² ausgeblendet wird (42 m für L=1; ein 3-cm-Auge ist dort < 1 px → sub-pixel, render-rein). `distSqToPlayer` ist im Loop schon berechnet (kein neuer Scan); die Schwelle skaliert mit der Körpergröße L (`group.scale`) → ein GIGANT zeigt seine Augen länger.
+
+**GEMESSEN nachher:** `wesen` NEAR **7→4**, FAR **7→1**; ein realistischer 28-Kreatur-Mix (ambient: sprite·wesen·geist) NEAR **101→74** (−27 %), FAR **101→47** (−53 %). `sprite`/`geist` (kein Skin/Gesicht) unverändert (2 Meshes). Da die meisten Kreaturen in einer verteilten Welt > 42 m vom Spieler sind, fällt die dominante `wesen` auf **1 Draw-Call** — der gemessene Rest der nicht-instanzierten Kreatur-Draw-Calls (V18.260) ist geheilt.
+
+**WÄNDE:** 9 neue Invarianten (`checkBandV18262CreatureRenderLOD`): Konstante · Struktur/Merge (6→≤3, Haut bleibt) · CONSUM (der LOD-Reader toggelt nach Distanz, frustum-gestubbt + kreatur-isoliert) · der Draw-Call-Win nah/fern. **LOOK:** keine Delta zu auditieren — nah pixel-identisch (Merge bewahrt Geometrie+Material), fern sub-pixel (das Gesicht war dort eh unsichtbar); der Schöpfer-Browser-FPS bleibt das Merge-Gate (Regel #0). **Tag-Neutralität:** unberührt (das Gesicht lag nie in `bodyParts`).
+
 ### V18.261 — DER SPAWN-FREEZE: GEMESSEN = WASSER-ISO, NICHT ANIMATION/WIND/KREATUREN (Zeit-Budget)
 
 Der Schöpfer aus dem Browser: „28 FPS aber freezt fast, kann mich kaum vom Start bewegen" + die Hypothesen „liegt's an den Kreaturen / dem neuen Avatar / dem Wind in den Bäumen / der Körper-Animation / dem Licht?". Statt zu raten: das **Frame-Profil GEMESSEN** (`diag-frame-profile`, render-gestubbt → reine CPU-Kosten pro Phase). Die Zahl widerlegt jede Hypothese:

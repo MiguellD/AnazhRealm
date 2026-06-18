@@ -34229,7 +34229,8 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
-            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE && window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
+                window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
@@ -35448,7 +35449,8 @@ async function checkBandV18210Verdrahtung(ctx) {
         // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
-            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE && window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE &&
+                window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         const grownBp = k1 && r.state.blueprints[k1];
         out.a1TagNeutral = false;
@@ -35809,7 +35811,10 @@ async function checkBandV18210Verdrahtung(ctx) {
         "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)",
         res.a1RingCap === true
     );
-    check("V18.210-A1h SOURCE: _vegetationSampleSpawn ruft _growTreeBlueprintForSpawn (alle gen wachsen)", res.a1SourceWired === true);
+    check(
+        "V18.210-A1h SOURCE: _vegetationSampleSpawn ruft _growTreeBlueprintForSpawn (alle gen wachsen)",
+        res.a1SourceWired === true
+    );
 
     // A2 — R5 Live-Slider
     check("V18.210-A2a R5_STRUCTURE_TEXTURE.microBoost Default = 1.3 (war 1.0)", res.a2DefaultIs13 === true);
@@ -38616,6 +38621,113 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
+// V18.262 (DER KREATUR-RENDER-HEBEL) — der nächste gemessene Draw-Call-Hebel nach
+// V18.260 (Render-Merge placed Strukturen): eine Skin-Kreatur (wesen/glutwesen) rendert
+// 1 Haut + 6 statische Gesichts-Sub-Meshes. Die Heilung: (a) das Gesicht pro Material-Typ
+// zu DREI gemergten Meshes verschmelzen (6 → 3) + (b) eine Distanz-LOD blendet die
+// `_creatureFaceLOD`-Gruppe jenseits ~CREATURE_FACE_LOD_DIST·L aus (cm-Skala-Augen
+// sub-pixel) → ferne Skin-Kreatur = nur Haut (7 → 1 Draw-Call). Vier Wände: (1) Konstante,
+// (2) Struktur/Merge, (3) CONSUM des LOD-Readers (frustum-gestubbt, kreatur-isoliert),
+// (4) der gemessene Draw-Call-Win nah/fern.
+async function checkBandV18262CreatureRenderLOD(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor; // window.AnazhRealm ist headless undefined (V18.259-Gotcha)
+        const out = {};
+
+        // (1) die LOD-Distanz-Konstante existiert + ist sinnvoll.
+        out.lodConst = typeof A.CREATURE_FACE_LOD_DIST_SQ === "number" && A.CREATURE_FACE_LOD_DIST_SQ > 0;
+
+        // (2) STRUKTUR: ein wesen trägt die gemergte Gesichts-LOD-Gruppe.
+        const g = r._buildCreatureGroup("wesen");
+        const faceLOD = g && g.userData && g.userData._creatureFaceLOD;
+        out.faceLODExists = !!(faceLOD && faceLOD.isGroup);
+        out.faceMergedCount = faceLOD ? faceLOD.children.length : -1; // 6 → ≤3
+        out.faceAllMeshes = !!faceLOD && faceLOD.children.every((c) => c.isMesh);
+        let skinMeshes = 0,
+            faceMeshes = 0;
+        g.traverse((n) => {
+            if (!n.isMesh) return;
+            if (n.userData && n.userData._creatureSkin) skinMeshes++;
+            if (n.userData && n.userData._creatureFace) faceMeshes++;
+        });
+        out.hasSkin = skinMeshes === 1; // die Metaball-Haut bleibt (Merge render-rein)
+        r._disposeSoulGroup(g);
+
+        // (3) CONSUM: der LOD-Reader in updateCreatures toggelt die Gruppe nach Distanz.
+        // Frustum stubben (kamera-unabhängig), Kreatur-Liste isolieren (Cap-Gotcha).
+        const pm = r.state.playerMesh;
+        const savedC = r.state.creatures,
+            savedE = r.state.creatureEmotions;
+        const origFrustum = r.isInFrustum;
+        let nearVis = null,
+            farVis = null,
+            testC = null;
+        try {
+            testC = r.spawnCreatureAt(pm.position.x + 2, pm.position.y, pm.position.z + 2, "happy", "wesen");
+            r.state.creatures = [testC];
+            r.state.creatureEmotions = ["happy"];
+            r.isInFrustum = () => true;
+            testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
+            r.updateCreatures(0.016);
+            nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+            testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
+            r.updateCreatures(0.016);
+            farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+        } finally {
+            r.isInFrustum = origFrustum;
+            r.state.creatures = savedC;
+            r.state.creatureEmotions = savedE;
+            if (testC) r.removeCreature(testC);
+        }
+        out.lodNearVisible = nearVis === true;
+        out.lodFarHidden = farVis === false;
+
+        // (4) DRAW-CALL-WIN: render-Meshes (own-visible mit visible-Vorfahren, Gruppe
+        // visible gezwungen → orthogonal zum Frustum) nah (≤4) vs fern (==1, nur Haut).
+        const renderMeshes = (grp) => {
+            const wv = grp.visible;
+            grp.visible = true;
+            let n = 0;
+            grp.traverse((node) => {
+                if (!node.isMesh) return;
+                let cur = node,
+                    ok = true;
+                while (cur && cur !== grp.parent) {
+                    if (!cur.visible) {
+                        ok = false;
+                        break;
+                    }
+                    cur = cur.parent;
+                }
+                if (ok) n++;
+            });
+            grp.visible = wv;
+            return n;
+        };
+        const g2 = r._buildCreatureGroup("wesen");
+        out.nearDrawCalls = renderMeshes(g2);
+        if (g2.userData._creatureFaceLOD) g2.userData._creatureFaceLOD.visible = false;
+        out.farDrawCalls = renderMeshes(g2);
+        r._disposeSoulGroup(g2);
+        return out;
+    });
+
+    check("V18.262 (1) CREATURE_FACE_LOD_DIST_SQ Konstante existiert (>0)", res.lodConst === true);
+    check("V18.262 (2) wesen trägt eine gemergte Gesichts-LOD-Gruppe (_creatureFaceLOD)", res.faceLODExists === true);
+    check(
+        `V18.262 (2) Gesicht gemergt 6→≤3 Meshes (gemessen ${res.faceMergedCount})`,
+        res.faceMergedCount >= 1 && res.faceMergedCount <= 3
+    );
+    check("V18.262 (2) die Gesichts-LOD-Kinder sind alle Meshes", res.faceAllMeshes === true);
+    check("V18.262 (2) die Metaball-Haut bleibt (der Merge ist render-rein)", res.hasSkin === true);
+    check("V18.262 (3) CONSUM: der LOD-Reader zeigt das Gesicht nah (visible)", res.lodNearVisible === true);
+    check("V18.262 (3) CONSUM: der LOD-Reader blendet das Gesicht fern aus (sub-pixel)", res.lodFarHidden === true);
+    check(`V18.262 (4) Draw-Call-Win nah: ≤4 (gemessen ${res.nearDrawCalls}, war 7)`, res.nearDrawCalls <= 4);
+    check(`V18.262 (4) Draw-Call-Win fern: 1 nur Haut (gemessen ${res.farDrawCalls}, war 7)`, res.farDrawCalls === 1);
+}
+
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
 // SICHTBARKEIT der existierenden Wahrheiten (computeMotionRoles · CONNECTION_TYPES).
 // (b) Achsen-Geister im Viewer · (d) Progressive Disclosure · (e) Lehr-Satz ·
@@ -41381,11 +41493,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Atmosphäre-Persistenz ---
         r.setFogDistance(1.5);
         const snap = r.buildStateSnapshot();
-        out.atmospherePersisted = !!(
-            snap &&
-            snap.atmosphere &&
-            Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01
-        );
+        out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.fogDistance - 1.5) < 0.01);
         r.setFogDistance(1.0);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
@@ -54144,10 +54252,7 @@ async function checkBandRing5Soul(ctx) {
             `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-        check(
-            "Ring 5/234: Mensch-Avatar ist lit NodeMaterial (PBR), Hautton 0xc89372",
-            ring5Results.defaultColorRed
-        );
+        check("Ring 5/234: Mensch-Avatar ist lit NodeMaterial (PBR), Hautton 0xc89372", ring5Results.defaultColorRed);
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
         check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
         check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
@@ -54520,10 +54625,16 @@ async function checkBandRing6Workshop(ctx) {
         );
     } else {
         check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
-        check("Ring 6: Dorf ist vollständig (≥5 Bauplan-Teile: Hütten + Plaza; Render gemergt)", ring6Results.villageHasChildren);
+        check(
+            "Ring 6: Dorf ist vollständig (≥5 Bauplan-Teile: Hütten + Plaza; Render gemergt)",
+            ring6Results.villageHasChildren
+        );
         check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
         check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
-        check("Ring 6: Tempel ist vollständig (≥8 Bauplan-Teile: 6 Pfeiler + Dach + Altar; Render gemergt)", ring6Results.templeHasPillars);
+        check(
+            "Ring 6: Tempel ist vollständig (≥8 Bauplan-Teile: 6 Pfeiler + Dach + Altar; Render gemergt)",
+            ring6Results.templeHasPillars
+        );
         check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
         check("Ring 6: Wasserfall hat userData.animate Hook", ring6Results.waterfallHasAnimateHook);
         check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
@@ -55838,6 +55949,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickLaub(ctx);
             await checkBandWahrerAnblickPfade(ctx);
             await checkBandWahrerAnblickAtmoBusch(ctx);
+            await checkBandV18262CreatureRenderLOD(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

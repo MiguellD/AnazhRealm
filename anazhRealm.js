@@ -17064,11 +17064,22 @@ class AnazhRealm {
         return group;
     }
 
-    // wahrerguss System B — DAS GESICHT: Augen (+ Ohren) als separate Deko-Meshes am
-    // Kopf-Anker (`bodyRole:"head"`). Sie liegen NICHT in bodyParts (kein Tag-Drift,
-    // keine Allometrie-/Index-Kopplung — sie hängen jenseits von parts.length) und werden
+    // wahrerguss System B — DAS GESICHT: Augen + Funken + Ohren am Kopf-Anker
+    // (`bodyRole:"head"`). Sie liegen NICHT in bodyParts (kein Tag-Drift, keine
+    // Allometrie-/Index-Kopplung — sie hängen jenseits von parts.length) und werden
     // NICHT von der Metaball-Haut umhüllt → sichtbar AUF der Haut. Augen = dunkle Kugeln
     // (Raubtier: glühende Glut-Augen, emissiv); Ohren = kleine Kegel in Haut-Farbe.
+    //
+    // V18.262 (DER KREATUR-RENDER-HEBEL, gemessen nach V18.260) — die sechs statischen
+    // Gesichts-Sub-Meshes (2 Augen + 2 Funken + 2 Ohren) werden pro Material-Typ zu DREI
+    // gemergten Meshes verschmolzen (6 → 3 Draw-Calls; beide Seiten teilen exakt ihr
+    // Material → kein Look-Verlust) und hängen in EINER Sub-Gruppe `_creatureFaceLOD`.
+    // updateCreatures blendet diese Gruppe jenseits ~CREATURE_FACE_LOD_DIST·L aus (die
+    // cm-Skala-Augen sind dann sub-pixel) → eine ferne Skin-Kreatur rendert nur noch die
+    // Haut (7 → 1 Draw-Call). Der Merge (`_mergeGeometries`) lässt `uv` fallen — sicher,
+    // weil die solid-color-Gesichts-Materialien (kein foliageLeaf/bark) kein uv lesen
+    // (GEMESSEN `_buildPbrNodeMaterial`). Das Gesicht animiert NICHT (jenseits parts.length,
+    // kein Motion-Role) → der Merge ist render-rein, kein Bewegungs-Pfad berührt.
     _addCreatureFace(group, soul) {
         if (typeof THREE === "undefined" || !group || !soul) return;
         const head = (soul.bodyParts || []).find((p) => p && p.bodyRole === "head");
@@ -17080,15 +17091,13 @@ class AnazhRealm {
         const predator = !!soul.predator;
         const eyeCol = predator ? 0xff5a1e : 0x0b0b0e;
         const skinCol = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-        const mkMesh = (geom, color, opts = {}) => {
+        const faceGroup = new THREE.Group();
+        faceGroup.userData._creatureFace = true;
+        const mkFaceMat = (color, opts = {}) => {
             let mat;
             try {
                 mat = this._buildPbrNodeMaterial
-                    ? this._buildPbrNodeMaterial({
-                          color,
-                          roughness: opts.roughness,
-                          metalness: opts.metalness,
-                      })
+                    ? this._buildPbrNodeMaterial({ color, roughness: opts.roughness, metalness: opts.metalness })
                     : new THREE.MeshStandardMaterial({ color });
             } catch (_e) {
                 mat = new THREE.MeshStandardMaterial({ color });
@@ -17097,45 +17106,86 @@ class AnazhRealm {
                 mat.emissive.setHex(color);
                 mat.emissiveIntensity = opts.emissiveIntensity || 0.85;
             }
-            const m = new THREE.Mesh(geom, mat);
+            return mat;
+        };
+        // mergt die zwei (gespiegelten) Geometrien EINER Gesichts-Sorte zu EINEM Mesh:
+        // jede Geom wird transform-gebacken (rotateZ DANN translate = die alte
+        // mesh.rotation+position-Reihenfolge), dann via _mergeGeometries vereint.
+        const addMergedPair = (sides, mat) => {
+            const geoms = [];
+            for (const s of sides) {
+                const g = s.geom();
+                if (s.rotZ) g.rotateZ(s.rotZ);
+                g.translate(s.x, s.y, s.z);
+                geoms.push(g);
+            }
+            const merged = this._mergeGeometries ? this._mergeGeometries(geoms) : null;
+            for (const g of geoms) if (g && typeof g.dispose === "function") g.dispose();
+            if (!merged) return;
+            const m = new THREE.Mesh(merged, mat);
             m.userData._creatureFace = true;
             m.castShadow = false;
-            return m;
+            faceGroup.add(m);
         };
         // AUGEN — kleiner, tiefer sitzend, GLÄNZEND (niedrige roughness → fängt ein
-        // Glanzlicht = das „lebendige" Auge) + ein winziger heller Catch-Light-Punkt
-        // (der Funke, der ein Auge lebendig macht). Raubtier → glühend.
-        // AUGEN-PLATZIERUNG aus der ROLLE (Biomechanik): Jäger frontal (eng+vorn, binokular),
-        // Pflanzenfresser lateral (weit+seitlich, Rundum-Sicht). eyeFront ∈ [0..1] vom Kopf-Anker.
+        // Glanzlicht = das „lebendige" Auge). AUGEN-PLATZIERUNG aus der ROLLE
+        // (Biomechanik): Jäger frontal (eng+vorn, binokular), Pflanzenfresser lateral
+        // (weit+seitlich, Rundum-Sicht). eyeFront ∈ [0..1] vom Kopf-Anker. Raubtier → glühend.
         const ef = head.eyeFront != null ? head.eyeFront : 0.4;
         const eyeR = hr * 0.16;
-        const eyeGeom = new THREE.SphereGeometry(eyeR, 12, 10);
-        const sparkGeom = new THREE.SphereGeometry(eyeR * 0.34, 8, 6);
-        for (const sgnX of [-1, 1]) {
-            const ex = hx + sgnX * hr * (0.82 - 0.5 * ef), // lateral weit → frontal eng
-                ey = hy + hr * 0.18,
-                ez = hz + hr * (0.26 + 0.58 * ef); // lateral hinten → frontal vorn
-            const e = mkMesh(eyeGeom, eyeCol, {
-                roughness: 0.12,
-                metalness: 0,
-                emissive: predator,
-                emissiveIntensity: 1.0,
-            });
-            e.position.set(ex, ey, ez);
-            group.add(e);
-            // der Catch-Light-Funke (oben-außen auf der Pupille), emissiv-weiß.
-            const spark = mkMesh(sparkGeom, 0xfff4e0, { emissive: true, emissiveIntensity: 1.3, roughness: 0.3 });
-            spark.position.set(ex + sgnX * eyeR * 0.3, ey + eyeR * 0.34, ez + eyeR * 0.74);
-            group.add(spark);
-        }
+        const exOff = hr * (0.82 - 0.5 * ef), // lateral weit → frontal eng
+            eyeY = hy + hr * 0.18,
+            eyeZ = hz + hr * (0.26 + 0.58 * ef); // lateral hinten → frontal vorn
+        addMergedPair(
+            [
+                { geom: () => new THREE.SphereGeometry(eyeR, 12, 10), x: hx - exOff, y: eyeY, z: eyeZ },
+                { geom: () => new THREE.SphereGeometry(eyeR, 12, 10), x: hx + exOff, y: eyeY, z: eyeZ },
+            ],
+            mkFaceMat(eyeCol, { roughness: 0.12, metalness: 0, emissive: predator, emissiveIntensity: 1.0 })
+        );
+        // die Catch-Light-Funken (oben-außen auf der Pupille), emissiv-weiß — der Funke,
+        // der ein Auge lebendig macht.
+        const sparkR = eyeR * 0.34;
+        addMergedPair(
+            [
+                {
+                    geom: () => new THREE.SphereGeometry(sparkR, 8, 6),
+                    x: hx - exOff - eyeR * 0.3,
+                    y: eyeY + eyeR * 0.34,
+                    z: eyeZ + eyeR * 0.74,
+                },
+                {
+                    geom: () => new THREE.SphereGeometry(sparkR, 8, 6),
+                    x: hx + exOff + eyeR * 0.3,
+                    y: eyeY + eyeR * 0.34,
+                    z: eyeZ + eyeR * 0.74,
+                },
+            ],
+            mkFaceMat(0xfff4e0, { emissive: true, emissiveIntensity: 1.3, roughness: 0.3 })
+        );
         // OHREN — zwei kleine Kegel oben am Kopf (Haut-Farbe), leicht nach außen geneigt.
-        const earGeom = new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8);
-        for (const sgnX of [-1, 1]) {
-            const ear = mkMesh(earGeom, skinCol, {});
-            ear.position.set(hx + sgnX * hr * 0.5, hy + hr * 0.7, hz - hr * 0.05);
-            ear.rotation.z = sgnX * -0.3;
-            group.add(ear);
-        }
+        addMergedPair(
+            [
+                {
+                    geom: () => new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8),
+                    rotZ: 0.3,
+                    x: hx - hr * 0.5,
+                    y: hy + hr * 0.7,
+                    z: hz - hr * 0.05,
+                },
+                {
+                    geom: () => new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8),
+                    rotZ: -0.3,
+                    x: hx + hr * 0.5,
+                    y: hy + hr * 0.7,
+                    z: hz - hr * 0.05,
+                },
+            ],
+            mkFaceMat(skinCol, {})
+        );
+        if (faceGroup.children.length === 0) return;
+        group.add(faceGroup);
+        group.userData._creatureFaceLOD = faceGroup;
     }
 
     // S7 (wahrerwuchs §4.7 / Ω-B5) — DIE KÖRPERGRÖSSE-ACHSE: aus einer Identitäts-Zeichenkette
@@ -20374,6 +20424,20 @@ class AnazhRealm {
             // bleiben aktiv für ALLE Kreaturen (das ist der V8.49-Anker:
             // off-screen-Kreaturen leben weiter, sie zeigen sich nur nicht).
             if (inFrustum) {
+                // V18.262 (DER KREATUR-RENDER-HEBEL) — die GESICHTS-LOD: die statischen
+                // Gesichts-Sub-Meshes (Augen/Funken/Ohren, cm-Skala, in `_creatureFaceLOD`
+                // gemergt) sind jenseits ~CREATURE_FACE_LOD_DIST·L sub-pixel → die Sub-
+                // Gruppe ausblenden spart pro ferner Skin-Kreatur 3 Draw-Calls (7 → 1;
+                // der gemessene nächste Hebel nach V18.260). distSqToPlayer ist schon
+                // berechnet (XZ); die Schwelle skaliert mit der Körpergröße L (group.scale)
+                // → ein GIGANT zeigt seine Augen länger. Nur im Frustum getoggelt (off-
+                // screen ist die ganze Gruppe `creature.visible=false`); beim Frustum-
+                // Eintritt setzt DIESELBE Frame den korrekten Zustand (kein Stale-Pop).
+                const faceLOD = creature.userData._creatureFaceLOD;
+                if (faceLOD) {
+                    const faceL = creature.scale.x || 1;
+                    faceLOD.visible = distSqToPlayer < AnazhRealm.CREATURE_FACE_LOD_DIST_SQ * faceL * faceL;
+                }
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
                 if (aura) {
@@ -72454,7 +72518,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.261.0";
+AnazhRealm.VERSION = "18.262.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -74092,6 +74156,13 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
+
+// V18.262 (DER KREATUR-RENDER-HEBEL) — die Distanz (Meter, für Körpergröße L=1),
+// jenseits derer die cm-Skala-Gesichts-Sub-Meshes (Augen/Funken/Ohren) sub-pixel
+// werden und die `_creatureFaceLOD`-Gruppe ausgeblendet wird (updateCreatures, ×L²).
+// 42 m: ein 3-cm-Auge subtendiert dort < 1 px (1080p/60°-FOV) → render-rein. Als
+// Quadrat gespeichert, weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
+AnazhRealm.CREATURE_FACE_LOD_DIST_SQ = 42 * 42;
 
 // Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen
 // aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf
