@@ -15196,7 +15196,7 @@ class AnazhRealm {
             const hw = wristX + s * 0.02;
             add("box", limbMat, wristX, wristY - 0.02, 0.02, 0.22 * limbF, 0.07, 0.2 * limbF, null, limbCol, { kScale: 0.72 }); // Retinaculum (Sehnen-Manschette am Handgelenk)
             add("box", "knochen", hw, wristY - 0.17, 0.04, 0.24 * limbF, 0.13, 0.13 * limbF, null, limbCol, { kScale: 0.5, struct: true }); // Karpus (Handwurzel-Block — Basis des Fächers)
-            add("box", limbMat, hw, wristY - 0.36, 0.04, 0.29 * limbF, 0.42, 0.12, null, limbCol, { kScale: 0.9 }); // FLEISCH-HAND (Palm+Finger-Paddle) — dick genug, dass die geskinnte Hand AUFLÖST (die finger-dünnen Knochen verschwinden sonst < Gitter); die Knochen lesen als Relief darin
+            add("box", limbMat, hw, wristY - 0.22, 0.03, 0.27 * limbF, 0.17, 0.1, null, limbCol, { kScale: 0.86 }); // Handrücken-Fleisch (dünn) — die Knochen-Finger bleiben als eigene Glieder (hohe Auflösung löst sie auf), kein Mitt
             const knuckY = wristY - 0.36; // Knöchel-Reihe (Metacarpalköpfe)
             for (let f = 0; f < 4; f++) {
                 const sp = f - 1.5; // -1.5 … 1.5 (vier Finger, fächern symmetrisch)
@@ -15212,6 +15212,11 @@ class AnazhRealm {
                 limb(kx, knuckY, kz, tipX, midY, midZ, 0.042 * limbF, "knochen", limbCol); // Proximal-Phalange
                 add("sphere", "knochen", tipX, midY, midZ, 0.038 * limbF, 0.038 * limbF, 0.038 * limbF, null, limbCol, { kScale: 0.4 }); // Fingermittelgelenk
                 limb(tipX, midY, midZ, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.035 * limbF, "knochen", limbCol); // Distal-Phalange (Fingerspitze)
+                // FLEISCH-FINGER (der Profiweg): ein Fleisch-Sleeve über dem Knochen — Mittelhand-Strahl +
+                //   Finger (Knöchel→Spitze), dick genug, dass jeder Finger als EINZELNER fleischiger Finger
+                //   auflöst (kein dünner Knochen-Stab, kein zur Mitt verschmolzener Klumpen).
+                limb(baseX, wristY - 0.16, 0.03, kx, knuckY + 0.02, kz, 0.062 * limbF, limbMat, limbCol, { kScale: 0.84 }); // Mittelhand gefleischt (Handrücken-Strahl)
+                limb(kx, knuckY + 0.02, kz, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.06 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Finger-Fleisch (Knöchel→Spitze)
             }
             // DAUMEN — opponiert: Mittelhand abduziert (zur Körpermitte + vorn) + zwei Glieder mit Gelenk.
             const thbBaseX = hw - s * 0.03,
@@ -15220,6 +15225,7 @@ class AnazhRealm {
             limb(thbBaseX, wristY - 0.08, 0.08, thbX, thbY, 0.2, 0.055 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
             add("sphere", "knochen", thbX, thbY, 0.2, 0.045 * limbF, 0.045 * limbF, 0.045 * limbF, null, limbCol, { kScale: 0.42 }); // Daumen-Grundgelenk
             limb(thbX, thbY, 0.2, thbX - s * 0.04, thbY - 0.17, 0.31, 0.042 * limbF, "knochen", limbCol); // Daumen-Glied (distal)
+            limb(thbBaseX, wristY - 0.06, 0.08, thbX - s * 0.04, thbY - 0.17, 0.31, 0.068 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Daumen FLEISCH (Sleeve über dem Knochen)
         }
         // (GLUTEUS MAXIMUS → MUSKEL-ATLAS unten — gelenk-verankert)
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──
@@ -15267,38 +15273,32 @@ class AnazhRealm {
             add("sphere", "knochen", ankleX, 0.55, -0.02, 0.2 * limbF, 0.24 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.55 }); // Knöchel (Malleolen — die seitlichen Knochen-Vorsprünge am UNTEREN Tibia/Fibula-Ende, am Knöchelgelenk, nicht mehr im Schienbein verirrt)
             add("box", "knochen", kneeX, 2.36, 0.14, 0.32 * limbF, 0.36, 0.18, null, limbCol, { kScale: 0.5 }); // PATELLA (scharfe Kniescheibe vorn, knochen)
             // (GASTROCNEMIUS / SOLEUS / TIBIALIS → MUSKEL-ATLAS unten — gelenk-verankert)
-            // FUSS — DREI Fleisch-Massen (Ferse erhöht · Mittelfuß/Rist gewölbt · Zehen vorn-flach):
-            // eine gewölbte FUSS-Form mit Knöchel + Rist statt einer flachen Ski-Latsche; der Knöchel
-            // ~¼ vom Heck (menschliche Proportion). Die Massen überlappen → smin-Wölbung (glatte Sohle).
-            add("box", limbMat, ankleX, 0.2, -0.18, 0.3, 0.34, 0.34, null, limbCol); // Ferse (klar HINTEN — Achilles/Knöchel)
-            add("box", limbMat, ankleX, 0.11, 0.2, 0.32, 0.22, 0.46, null, limbCol); // Mittelfuß/Rist (länger, flacher → echte Sohle)
-            add("box", limbMat, ankleX, 0.06, 0.56, 0.34, 0.13, 0.36, null, limbCol); // Zehen (klar VORN, flach)
-            // ── FUSS-SKELETT (knochen) — ein ARTIKULIERTER Fuß als L-Profil, der den Fleisch-Fuß FÜLLT
-            //    (kein Klauen-Büschel mehr, Schöpfer-Befund „fussknochen falsch"): Talus (sockelt die
-            //    Tibia) → Calcaneus (Fersenbein, ragt nach HINTEN-unten, trägt die Ferse) → Fußwurzel
-            //    (das Rist-Gewölbe) → fünf Mittelfuß-Knochen (Metatarsalia, fächern lateral zum Ballen,
-            //    der Rist wölbt sich) → Zehen (Phalangen, kurz, flach; der Grosszeh innen dicker). Die
-            //    Knochen-Kette ÜBERLAPPT durchgehend (Talus↔Calcaneus↔Fußwurzel↔Metatarsus↔Zehe) →
-            //    ein zusammenhängender Fuß, kein schwebendes Stäbchen-Büschel.
-            add("sphere", "knochen", ankleX, 0.42, -0.02, 0.21 * limbF, 0.2 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.5 }); // Talus (Sprungbein — nimmt die Tibia auf)
-            add("box", "knochen", ankleX, 0.19, -0.3, 0.21 * limbF, 0.21, 0.3, { x: 0.3, y: 0, z: 0 }, limbCol, { kScale: 0.46 }); // Calcaneus (Fersenbein — ragt nach hinten-unten, der Hebel der Achillessehne)
-            add("sphere", "knochen", ankleX, 0.27, 0.1, 0.22 * limbF, 0.17 * limbF, 0.2 * limbF, null, limbCol, { kScale: 0.5 }); // Fußwurzel (Naviculare/Cuneiforme — das gewölbte Rist)
-            // ── MITTELFUSS + ZEHEN: die Knochen zeigen nach VORN (in +z) — DARUM NICHT der limb-Helper
-            //    (der bildet die lokale +y-Achse nur auf die XY-FRONTALEBENE ab, ignoriert dz → ein
-            //    vorwärts-Bone wird als VERTIKALE Orgelpfeife gezeichnet; GEMESSEN die Wurzel des
-            //    „zehen falsch": die Mittelfuß-Knochen standen senkrecht statt flach nach vorn). Jetzt
-            //    Z-LANGE Ellipsoide mit expliziter rotation.x (vorn-unten geneigt für den Rist-Bogen).
-            //    Die Metatarsalia eng gefächert, die Zehen KURZE Stummel am Ballen, Grosszeh innen dick.
+            // FUSS — ein SAUBERER Fuß über die FORM (Schöpfer-Befund „Sohle von oben / Loch"): FLACHE
+            //    Sohle (alle Unterkanten y≈0) + Rist-Bogen oben + Ballen + fünf lesbare FLEISCH-Zehen.
+            //    Das FLEISCH bildet die Oberfläche; die Knochen sitzen KLEIN INNEN (zersplittern die Haut
+            //    nicht mehr → keine invertierte Normale). Die Massen überlappen → glatte Sohle.
+            add("box", limbMat, ankleX, 0.19, -0.13, 0.26, 0.19, 0.27, null, limbCol); // Ferse (hinten, Sohle y≈0, der Knöchel sitzt drauf)
+            add("box", limbMat, ankleX, 0.18, 0.16, 0.28, 0.18, 0.42, null, limbCol); // Mittelfuß (Rist-Bogen oben, Sohle flach, länger)
+            add("box", limbMat, ankleX, 0.1, 0.5, 0.3, 0.1, 0.3, null, limbCol); // Ballen (vorn-breit, flach)
+            // ZEHEN — fünf sanfte FLEISCH-Ridges am Ballen (lesbar; Grosszeh innen dicker), kScale weich:
             for (let t = 0; t < 5; t++) {
-                const sp = (t - 2) / 2; // -1 innen (Grosszeh) … +1 aussen (kleine Zehe)
-                const lat = ankleX + s * sp * 0.1 * limbF; // ENGER Fächer (Fuß-Strahlen dicht, keine Hand)
-                const isBig = t === 0; // Grosszeh (Hallux) innen
-                // Metatarsus: Z-langer Knochen, vorn-unten geneigt (Rist → Ballen), ~horizontal am Boden.
-                add("sphere", "knochen", lat, 0.2, 0.26 - Math.abs(sp) * 0.02, 0.052 * limbF, 0.052 * limbF, 0.26 * limbF, { x: 0.34, y: 0, z: 0 }, limbCol, { kScale: 0.5 });
-                // Zehe: kurzer Stummel am Ballen, FLACH nach vorn (kaum geneigt); Grosszeh dick + länger.
-                const toeW = isBig ? 0.06 : 0.044 - Math.abs(sp) * 0.005; // Grosszeh DICK, Aussenzehen dünn
-                const toeL = isBig ? 0.12 : 0.09 - Math.abs(sp) * 0.012; // KURZE Stummel, Aussenzehen kürzer
-                add("sphere", "knochen", lat, 0.095, 0.56 - Math.abs(sp) * 0.04, toeW * limbF, toeW * 0.85 * limbF, toeL * limbF, { x: 0.08, y: 0, z: 0 }, limbCol, { kScale: 0.45 });
+                const sp = (t - 2) / 2; // -1 innen (Grosszeh) … +1 aussen
+                const isBig = t === 0;
+                const tx = ankleX + s * sp * 0.078 * limbF;
+                const tw = (isBig ? 0.072 : 0.052) * limbF;
+                add("box", limbMat, tx, 0.075, 0.66 - Math.abs(sp) * 0.05, tw, 0.055, isBig ? 0.12 : 0.095, null, limbCol, { kScale: 0.82 });
+            }
+            // ── FUSS-SKELETT (knochen, KLEIN + INNEN — bildet NICHT die Haut-Oberfläche, nur écorché-sichtbar):
+            //    Talus → Calcaneus → Fußwurzel → Metatarsus → Zehen-Knochen, alle schlank im Fleisch.
+            add("sphere", "knochen", ankleX, 0.4, -0.02, 0.17 * limbF, 0.17 * limbF, 0.19 * limbF, null, limbCol, { kScale: 0.5 }); // Talus
+            add("box", "knochen", ankleX, 0.17, -0.26, 0.16 * limbF, 0.17, 0.25, { x: 0.3, y: 0, z: 0 }, limbCol, { kScale: 0.46 }); // Calcaneus
+            add("sphere", "knochen", ankleX, 0.24, 0.1, 0.17 * limbF, 0.14 * limbF, 0.17 * limbF, null, limbCol, { kScale: 0.5 }); // Fußwurzel
+            for (let t = 0; t < 5; t++) {
+                const sp = (t - 2) / 2;
+                const lat = ankleX + s * sp * 0.078 * limbF;
+                const isBig = t === 0;
+                add("sphere", "knochen", lat, 0.19, 0.3 - Math.abs(sp) * 0.02, 0.038 * limbF, 0.038 * limbF, 0.2 * limbF, { x: 0.34, y: 0, z: 0 }, limbCol, { kScale: 0.4 }); // Metatarsus (klein, innen)
+                add("sphere", "knochen", lat, 0.085, 0.62 - Math.abs(sp) * 0.04, (isBig ? 0.046 : 0.032) * limbF, (isBig ? 0.04 : 0.028) * limbF, (isBig ? 0.095 : 0.07) * limbF, { x: 0.08, y: 0, z: 0 }, limbCol, { kScale: 0.4 }); // Zehen-Knochen (klein, innen)
             }
         }
         // ── DER MUSKEL-ATLAS (die Baugruppe, „gelernt von den Profis") — jeder Muskel SPANNT zwei
@@ -15311,7 +15311,7 @@ class AnazhRealm {
             // HALS + KOPF
             { o: "mastoid", i: "clavicleMed", b: 0.085, sc: mF, belly: 0.5, depth: 0.85, kS: 0.82 }, // Sternocleidomastoideus (Hals-V — schlanker, hugt den Hals, kein Lump am Hals-Boden)
             { o: "cheek", i: "jawAngle", b: 0.1, sc: mF, belly: 0.5, kS: 0.55, mat: headMat, col: limbCol, ndef: true }, // Masseter
-            { o: "c7", i: "acromion", b: 0.22, sc: mF, belly: 0.46, depth: 0.55, kS: 0.84 }, // Trapezius (oberer — das Hals→Schulter-Joch, flacher/weicher → glatter Nacken-Schulter-Hang statt Lump)
+            { o: "c7", i: "acromion", b: 0.28, sc: mF, belly: 0.52, depth: 0.5, kS: 0.86 }, // Trapezius (oberer — BREITER Hals→Schulter-BRÜCKE: füllt die Lücke Nacken→Schulterknochen, glatt + flach, kein Loch, kein Lump)
             { o: "c7", i: "scapula", b: 0.34, sc: mF, belly: 0.5, depth: 0.45, kS: 0.8 }, // Trapezius (mittlerer — deckt das Schulterblatt = der Rücken-Diamant)
             { o: "erectorTop", i: "scapula", b: 0.3, sc: mF, belly: 0.5, depth: 0.45, kS: 0.82 }, // Trapezius (unterer Kopf — der Diamant reicht bis Mitte-Rücken)
             // SCHULTER (Deltoideus — eine gerundete KAPPE über dem Schultergelenk, drei Köpfe fächern
@@ -15322,10 +15322,10 @@ class AnazhRealm {
             // BRUST (Pectoralis — ein breiter gerundeter SCHILD je Seite, der die halbe Brust deckt: vier
             //    Köpfe fächern vom Sternum/Klavikel zum Humerus, BREIT (füllt die Brust) + FLACH (liegt als
             //    Schild, kein Ballen), Bulk zum Sternum (die fleischige Innenbrust), unterer Kopf = Pec-Shelf)
-            { o: "clavicleMed", i: "pecIns", b: 0.32, sc: mF, belly: 0.5, depth: 0.4, kS: 0.68 }, // klavikulärer Kopf (obere Fasern)
-            { o: "sternumTop", i: "pecIns", b: 0.42, sc: mF, belly: 0.46, depth: 0.38, kS: 0.68 }, // oberer sternaler (Hauptmasse)
-            { o: "sternumLow", i: "pecIns", b: 0.42, sc: mF, belly: 0.44, depth: 0.38, kS: 0.68 }, // mittlerer sternaler
-            { o: "xiphoid", i: "pecIns", b: 0.32, sc: mF, belly: 0.42, depth: 0.38, kS: 0.68 }, // unterer Kopf (die Pec-Shelf-Unterkante)
+            { o: "clavicleMed", i: "pecIns", b: 0.38, sc: mF, belly: 0.5, depth: 0.5, kS: 0.7 }, // klavikulärer Kopf (obere Fasern, voller)
+            { o: "sternumTop", i: "pecIns", b: 0.5, sc: mF, belly: 0.46, depth: 0.5, kS: 0.7 }, // oberer sternaler (Hauptmasse — VOLL, war zu mager)
+            { o: "sternumLow", i: "pecIns", b: 0.5, sc: mF, belly: 0.44, depth: 0.5, kS: 0.7 }, // mittlerer sternaler (VOLL)
+            { o: "xiphoid", i: "pecIns", b: 0.4, sc: mF, belly: 0.42, depth: 0.48, kS: 0.7 }, // unterer Kopf (Pec-Shelf — voller, klare Unterkante)
             // RÜCKEN (Latissimus-V + Teres + Erector)
             { o: "iliacBack", i: "axilla", b: 0.38, sc: mF, belly: 0.42, depth: 0.38, kS: 0.88 }, // Latissimus (iliakal — das breite V-Blatt)
             { o: "sacrum", i: "axilla", b: 0.34, sc: mF, belly: 0.46, depth: 0.38, kS: 0.88 }, // Latissimus (lumbal — füllt das untere V, deckt den Rücken)
@@ -16211,7 +16211,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 6, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: glatte Bäuche (taubin 6) + SUBTILE Furchen (seamGroove 6, breiter) — die Definition ist FORM, keine dunklen X-ray-Linien; VERSCHIEBUNGS-SUBSTRAT
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 6, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: res 128 (schnelles Werkstatt-Backen); die Extremitäten werden über die FORM geheilt (gefleischte Glieder), nicht über Auflösung; glatte Bäuche (taubin 6) + subtile Furchen; VERSCHIEBUNGS-SUBSTRAT
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -16400,14 +16400,14 @@ class AnazhRealm {
         // statt hier aufgeklebt; das war der Mr.-Potato-Head-Fehler. Hier nur Augen/Lippen/Ohren.)
         // AUGEN — mandelig, EINGESENKT, mit OBERLID (Hautton, deckt die obere Hälfte → halb-gedeckelter
         // Blick) + dunkle Iris + winziger Catchlight-Funke. Augenabstand ≈ eine Augenbreite.
-        const eyeGeom = new THREE.SphereGeometry(0.068 * kh, 14, 12);
-        eyeGeom.scale(1.3, 0.58, 0.5); // mandelig, etwas schmaler (kein Weitstarr-Band)
-        const lidGeom = new THREE.SphereGeometry(0.094 * kh, 12, 8);
-        lidGeom.scale(1.5, 0.72, 0.72);
-        const sparkGeom = new THREE.SphereGeometry(0.016 * kh, 8, 6);
+        const eyeGeom = new THREE.SphereGeometry(0.056 * kh, 14, 12);
+        eyeGeom.scale(1.22, 0.62, 0.5); // mandelig, KLEINER + schmaler (kein cartoonig-großes Auge)
+        const lidGeom = new THREE.SphereGeometry(0.088 * kh, 12, 8);
+        lidGeom.scale(1.5, 0.8, 0.74); // Oberlid deckt MEHR der oberen Augen-Hälfte → ruhiger, kein Starren
+        const sparkGeom = new THREE.SphereGeometry(0.008 * kh, 8, 6); // winziger Catchlight (kein cartoon-Funke)
         for (const s of [-1, 1]) {
             const eye = new THREE.Mesh(eyeGeom, eyeMat(0x2c2119, false, 0, 0.2)); // dunkelbraun statt fast-schwarz → kein hartes dunkles Band
-            eye.position.copy(L(s * 0.18, skullY - 0.06, 0.34));
+            eye.position.copy(L(s * 0.18, skullY - 0.07, 0.32));
             eye.castShadow = false;
             rig.head.add(eye);
             // OBERLID — Hautmasse über der oberen Augen-Hälfte (von oben-vorn) → gedeckelter Blick.
@@ -16415,8 +16415,8 @@ class AnazhRealm {
             lid.position.copy(L(s * 0.18, skullY, 0.31));
             lid.castShadow = false;
             rig.head.add(lid);
-            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 1.3, 0.3));
-            spark.position.copy(L(s * 0.18 + s * 0.025, skullY - 0.05, 0.41));
+            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 0.65, 0.3));
+            spark.position.copy(L(s * 0.18 + s * 0.02, skullY - 0.06, 0.38));
             spark.castShadow = false;
             rig.head.add(spark);
         }

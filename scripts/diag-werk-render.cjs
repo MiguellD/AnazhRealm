@@ -687,6 +687,8 @@ async function renderWerk(page, bpName, view) {
             ["humanoidrig:rest:0", "werk-rig-rest.png", "front"], // Kontrapost-Ruhepose (S-Kurve)
             ["humanoidrig:rest:0", "werk-rig-rest-seite.png", "side"], // Kontrapost Profil
             ["humanoidrig:rest:0", "werk-rig-rest-kopf.png", "head"], // geskinntes Gesicht nah
+            ["humanoidrig:rest:0", "werk-rig-rest-fuss.png", "foot"], // geskinnter Fuß nah (Loch/Normalen prüfen)
+            ["humanoidrig:rest:0", "werk-rig-rest-hand.png", "hand"], // geskinnte Hand nah (Finger auflösen?)
             ["humanoidrig:walk:0", "werk-rig-walk.png", "side"], // Walk-Pose (Profil zeigt den Schritt)
             ["playeravatar:rest", "werk-player-rest.png", "front"], // GUSS 2b: der ECHTE Spieler-Avatar
             ["playeravatar:walk", "werk-player-walk.png", "side"], // im Walk-Cycle
