@@ -382,7 +382,9 @@ async function renderWerk(page, bpName, view) {
                         // beige, sonst Haut. So sieht man den Muskel-Körper GLATT (fairer Referenz-Vergleich),
                         // nicht als rohe Ellipsoide. (Muskel liegt aussen → die Oberfläche ist meist rot;
                         // Knochen nur, wo er die Aussenfläche ist: Hände/Füße/Schädel.)
-                        const geom = r._buildCreatureSkinGeometry(parts, { res: 112, taubinPasses: 4 }); // höhere Auflösung → glatter, weniger Facetten
+                        // DIE ECHTE Avatar-Pipeline (displace + seamGroove) → die Muskel-Trenn-Furchen werden
+                        //    geschnitzt = definierte Muskeln wie die Referenz (NICHT die rohe Union, die kratert).
+                        const geom = r._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085, displace: true });
                         if (geom) {
                             const pos = geom.attributes.position;
                             const col = new Float32Array(pos.count * 3);

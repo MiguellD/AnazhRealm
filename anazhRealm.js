@@ -15025,8 +15025,8 @@ class AnazhRealm {
         add("box", "knochen", 0, 5.46, 0.32 * girthF, shoulderHalf * 0.5, 0.82, 0.16, null, limbCol, { kScale: 0.66, struct: true });
         // BAUCH (abdomen): die tiefe Rumpf-Muskel-/Viszeral-Masse = die TAILLE (Rectus/Obliques liegen
         //    als Relief darüber). def → rendert als Muskel, kein halbtransparentes Fleisch (Parallelpfad).
-        add("box", bodyMat, 0, 4.66, 0.05 * girthF, waistHalf * 1.66, 1.05, 0.84 * girthF, null, bodyCol, {
-            kScale: 1.08,
+        add("box", bodyMat, 0, 4.7, -0.02 * girthF, waistHalf * 1.5, 1.12, 0.58 * girthF, null, bodyCol, {
+            kScale: 0.92, // FLACHER Taillen-Sockel (war 0.84 tief/rund = ein Bauch-Ball, der das Sixpack schluckte) — jetzt liegt der Rectus als Relief darauf
             def: true,
         });
         // WIRBELSÄULE (spine, knochen) — die Rücken-Säule mit S-KURVE (Lende VOR · Brust ZURÜCK · Hals VOR):
@@ -15088,15 +15088,15 @@ class AnazhRealm {
         const xiphoidY = 5.45, // HÖHER (war 5.0): der Rectus reicht jetzt bis unter die Pecs (kein Bauch-Loch unter der Brust, Schöpfer-Befund „Bauchmuskelposition")
             navelY = 4.32,
             pubisY = 3.78; // die Knoten des Rectus
-        const absZ = 0.4 * girthF;
+        const absZ = 0.46 * girthF; // die Päckchen sitzen PROUD auf dem flachen Sockel (sichtbares Relief)
         for (const sx of [-1, 1]) {
             for (let row = 0; row < 3; row++) {
                 const f = (row + 0.5) / 3; // 0..1 Nabel→Xiphoid
                 const ay = navelY + (xiphoidY - navelY) * f;
-                const aw = (0.22 - row * 0.01) * absMF; // obere Päckchen leicht breiter
-                add("box", bodyMat, sx * 0.19, ay, absZ, aw, 0.19, 0.16 * girthF, null, bodyCol, { kScale: 0.42, def: true });
+                const aw = (0.24 - row * 0.012) * absMF; // obere Päckchen leicht breiter; zwei klare Säulen (Linea alba in der Mitte)
+                add("box", bodyMat, sx * 0.21, ay, absZ, aw, 0.21, 0.14 * girthF, null, bodyCol, { kScale: 0.42, def: true });
             }
-            add("box", bodyMat, sx * 0.17, (navelY + pubisY) * 0.5, absZ, 0.2 * absMF, 0.28, 0.15 * girthF, null, bodyCol, { kScale: 0.5, def: true }); // unteres Bauch-Segment (Nabel→Schambein)
+            add("box", bodyMat, sx * 0.19, (navelY + pubisY) * 0.5, absZ, 0.22 * absMF, 0.3, 0.13 * girthF, null, bodyCol, { kScale: 0.5, def: true }); // unteres Bauch-Segment (Nabel→Schambein)
         }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
@@ -15302,14 +15302,18 @@ class AnazhRealm {
             { o: "cheek", i: "jawAngle", b: 0.1, sc: mF, belly: 0.5, kS: 0.55, mat: headMat, col: limbCol, ndef: true }, // Masseter
             { o: "c7", i: "acromion", b: 0.2, sc: mF, belly: 0.4, depth: 0.7, kS: 0.82 }, // Trapezius (oberer — das Hals→Schulter-Joch)
             { o: "c7", i: "scapula", b: 0.18, sc: mF, belly: 0.5, depth: 0.5, kS: 0.8 }, // Trapezius (mittlerer — Rücken-Diamant)
-            // SCHULTER (Deltoideus-Fan)
-            { o: "clavicleMed", i: "deltoidIns", b: 0.18, sc: limbF, belly: 0.38, kS: 0.78, mat: limbMat, col: limbCol }, // vorderer Kopf
-            { o: "acromion", i: "deltoidIns", b: 0.21, sc: limbF, belly: 0.4, kS: 0.78, mat: limbMat, col: limbCol, extra: { def: true, disp: true, amp: 0.18, reach: 1.6 } }, // seitlicher Kopf (Schwell)
-            { o: "scapula", i: "deltoidIns", b: 0.17, sc: limbF, belly: 0.38, kS: 0.78, mat: limbMat, col: limbCol }, // hinterer Kopf
-            // BRUST (Pectoralis-Fan — deckt den Brustkorb, fächert zum Humerus)
-            { o: "clavicleMed", i: "pecIns", b: 0.27, sc: mF, belly: 0.4, depth: 0.55, kS: 0.66 }, // klavikulärer Kopf
-            { o: "sternumTop", i: "pecIns", b: 0.33, sc: mF, belly: 0.36, depth: 0.5, kS: 0.66 }, // sternaler Kopf
-            { o: "sternumLow", i: "pecIns", b: 0.3, sc: mF, belly: 0.34, depth: 0.46, kS: 0.66 }, // unterer Kopf
+            // SCHULTER (Deltoideus — eine gerundete KAPPE über dem Schultergelenk, drei Köpfe fächern
+            //    vom Akromion/Klavikel/Skapula zur Humerus-Mitte; breit + voll = die Referenz-Kuppe, kein dünner Stab)
+            { o: "clavicleMed", i: "deltoidIns", b: 0.26, sc: limbF, belly: 0.34, depth: 0.95, kS: 0.78, mat: limbMat, col: limbCol }, // vorderer Kopf
+            { o: "acromion", i: "deltoidIns", b: 0.32, sc: limbF, belly: 0.32, depth: 1.0, kS: 0.78, mat: limbMat, col: limbCol, extra: { def: true, disp: true, amp: 0.2, reach: 1.7 } }, // seitlicher Kopf (die Haupt-Kappe)
+            { o: "scapula", i: "deltoidIns", b: 0.26, sc: limbF, belly: 0.34, depth: 0.95, kS: 0.78, mat: limbMat, col: limbCol }, // hinterer Kopf
+            // BRUST (Pectoralis — ein breiter gerundeter SCHILD je Seite, der die halbe Brust deckt: vier
+            //    Köpfe fächern vom Sternum/Klavikel zum Humerus, BREIT (füllt die Brust) + FLACH (liegt als
+            //    Schild, kein Ballen), Bulk zum Sternum (die fleischige Innenbrust), unterer Kopf = Pec-Shelf)
+            { o: "clavicleMed", i: "pecIns", b: 0.32, sc: mF, belly: 0.5, depth: 0.4, kS: 0.68 }, // klavikulärer Kopf (obere Fasern)
+            { o: "sternumTop", i: "pecIns", b: 0.42, sc: mF, belly: 0.46, depth: 0.38, kS: 0.68 }, // oberer sternaler (Hauptmasse)
+            { o: "sternumLow", i: "pecIns", b: 0.42, sc: mF, belly: 0.44, depth: 0.38, kS: 0.68 }, // mittlerer sternaler
+            { o: "xiphoid", i: "pecIns", b: 0.32, sc: mF, belly: 0.42, depth: 0.38, kS: 0.68 }, // unterer Kopf (die Pec-Shelf-Unterkante)
             // RÜCKEN (Latissimus-V + Teres + Erector)
             { o: "iliacBack", i: "axilla", b: 0.3, sc: mF, belly: 0.42, depth: 0.4, kS: 0.88 }, // Latissimus (iliakal)
             { o: "erectorTop", i: "axilla", b: 0.26, sc: mF, belly: 0.46, depth: 0.4, kS: 0.88 }, // Latissimus (thorakal)
@@ -15336,7 +15340,7 @@ class AnazhRealm {
             { o: "iliac", i: "kneeOut", b: 0.3, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Vastus lateralis (Außenschenkel)
             { o: "hipFront", i: "kneeIn", b: 0.26, sc: limbF, belly: 0.62, kS: 0.82, mat: limbMat, col: limbCol }, // Vastus medialis (Innen-Tropfen überm Knie)
             { o: "shinTop", i: "shinOut", b: 0.13, sc: limbF, belly: 0.5, kS: 0.8, mat: limbMat, col: limbCol }, // Peroneus (Außen-Unterschenkel)
-            { o: "sternumTop", i: "xiphoid", b: 0.14, sc: mF, belly: 0.5, depth: 0.6, kS: 0.74 }, // Brust-Mittelfüllung (Sternum zwischen den Pecs)
+            { o: "sternumTop", i: "xiphoid", b: 0.26, sc: mF, belly: 0.5, depth: 0.55, kS: 0.74 }, // Brust-Mittelfüllung (deckt das Sternum zwischen den Pecs — schließt das Mittel-Loch)
             { o: "pubis", i: "navel", b: 0.16, sc: mF, belly: 0.3, depth: 0.55, kS: 0.78 }, // untere Bauch-/Schoß-Füllung (Scham-Schild vorn)
         ];
         for (const m of MUSC) {
