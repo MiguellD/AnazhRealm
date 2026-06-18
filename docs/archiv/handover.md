@@ -457,6 +457,18 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.260 — DER RENDER-MERGE: PLACED-STRUKTUREN FALTEN AUF (Draw-Calls runter, gemessene Perf-Wurzel)
+
+Der Schöpfer-Befund aus dem Browser (5 Screenshots): „28 FPS aber der Browser freezt fast, kann mich kaum vom Start bewegen, Bäume wunderschön aber zu viele" — und die scharfe Disziplin-Frage „was frisst die GESAMTE Leistung, hast du GEMESSEN, wie lange dauert ein Chunk-Build?". Die Bitte: die Tiefe (Bäume/PBR/Avatar) NICHT kürzen, sondern die Last heilen.
+
+**GEMESSEN, nicht geraten** (`diag`-Sonden im Spawn-Zustand): **493 Meshes / 441 davon nicht-instanziert / ~357k Dreiecke / tickMs 19.4 / Chunk-Build 189 ms / ~24 Bäume auf 81 Chunks** (0.3/Chunk bei SAMPLES=4 — die Bäume sind NICHT die Wurzel, die Drossel wirkt). Die Wurzel = die **Draw-Call-Flut** der nicht-instanzierten Welt-Objekte: ein platzierter Tempel war **109 separate Part-Meshes** (`_buildFromBlueprint` baut eine Group, ein Mesh pro Part).
+
+**DER FIX = der Material-Merge, der die instanzierten Bäume schon nutzten, auf PLACED-Strukturen ausgedehnt** (`_buildArchMeshMerged(bp)`, der EINE neue Render-Pfad in `_architectureBuilders`): verschmilzt die Parts pro Material zu einer gebackenen BufferGeometry (Transform eingebacken + per-Vertex-Farbe), Blatt-Materialien je als eigenes Mesh (Schatten heil). **Tempel 109 Parts → 2 Meshes** (verifiziert). Guards: Compounds mit `connections` ODER `< 6` Parts fallen auf `_buildFromBlueprint` zurück (Verschachtelung/Wasser-Welle bleiben unberührt). Gate grün.
+
+**DER NÄCHSTE GEMESSENE HEBEL (vertagt auf Schöpfer-Wunsch „stoppen hier, erst testen"):** der **Kreatur-Render** — die ~28 Kreaturen × ~8 Meshes dominieren den Rest der nicht-instanzierten Draw-Calls. Kreaturen ANIMIEREN (Compound-Motion), also kann man sie nicht blind mergen — der Pfad ist: die NICHT-animierenden Teile (Kopf/Gesicht-Sub-Parts) mergen + eine Distanz-LOD. Plus die 3 Browser-Konsolen-Fehler (instanceColor-Binding · ShaderMaterial/PostProcessing-Deprecation) — diagnostiziert als kosmetisch, NICHT die FPS-Ursache. (`maxCreatures` bleibt bei 120 — ein 60er-Cap brach die P2D.1-Kreatur-Tests + half dem Schöpfer-Spawn von 28 Kreaturen ohnehin nicht.)
+
+**LEHRE (Schöpfer-getragen):** der Reflex „weniger Bäume" war die falsche Spur — die Messung zeigte 0.3 Bäume/Chunk. Die GESAMTE Leistung fraß die Draw-Call-Zahl nicht-instanzierter Welt-Objekte, und die Heilung war NICHT Kürzen, sondern den schon existierenden Merge-Pfad (instanzierte Bäume) auf den parallelen Pfad (placed Strukturen) zu VERDICHTEN — eine Quelle, kein Pflaster. Miss zuerst (Chunk-Build-ms, Mesh-Count, Tris), dann hebe an der gemessenen Wurzel.
+
 ### V18.257–.259 — DIE REINE ORDNUNG: GATE-WURZEL + EINE BAUM-QUELLE + DRIFT-HEILUNG (Gate 51→0 grün)
 
 Eine lange Aufräum-Welle, vom Schöpfer-Auftrag „reine ordnung, finde alle Widersprüche, keine halben Sachen" getragen — und von seinen scharfen Korrekturen geführt (er stoppte mich dreimal vom Raten/Band-aiden).

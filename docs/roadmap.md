@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 18.06.2026 (V18.256):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
+> **Stand 18.06.2026 (V18.260):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
 > die Konvergenz von FORM·PHYSIK·ANBLICK in EIN Gesetz) + seine Sub-Bögen
 > (`docs/lebendiger-koerper-plan.md` · `docs/koerper-neuanlage-plan.md`). Die NORMATIVEN Referenzen
 > dazu liegen in der Bibliothek: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · der Physik-Richter im
@@ -18,14 +18,18 @@
 
 ---
 
-## ⚠️ TEMP-DEV-DROSSELN (V18.257 — REVERT vor dem nächsten Merge/v1.0)
+## ⚠️ TEMP-DEV-DROSSELN (V18.257/.259 — REVERT vor dem nächsten Merge/v1.0)
 
 Während der Entwicklung temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
-„weniger Bäume/Strukturen, schneller iterieren"). **Alle tragen den Code-Marker `V18.257 TEMP`.** Der
-echte BACKLOG ist nicht das Zurückdrehen, sondern den **Cold-Start effizient** zu machen (dann fällt die
-Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die per-Frame-swiftshader-Render-Kosten.
+„weniger Bäume/Strukturen, schneller iterieren"). **Sie tragen die Code-Marker `V18.257 TEMP` /
+`V18.259 DEV-DROSSEL`.** Der echte BACKLOG ist nicht das Zurückdrehen, sondern den **Cold-Start effizient**
+zu machen (dann fällt die Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die
+per-Frame-swiftshader-Render-Kosten. **V18.260 hob den Render-Hebel teilweise:** placed-Strukturen (Tempel
+109 Parts → 2 Meshes) fließen jetzt durch denselben Material-Merge wie die instanzierten Bäume
+(`_buildArchMeshMerged`), das senkt die Draw-Calls drastisch — der nächste gemessene Hebel ist der
+Kreatur-Render (s. handover V18.260).
 
-- **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→6`) — deckt Bäume UND alle
+- **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
   Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
 - **Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 3→1`). REVERT → 3.
 - **Planeten** (`createGalaxySkybox` `numPlanets 3→1`). REVERT → 3.
@@ -127,7 +131,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 18.06.2026 (V18.256):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
+> **Stand 18.06.2026 (V18.260):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
 > **`docs/wahrerguss.md`** (+ Sub-Bögen `lebendiger-koerper-plan.md` · `koerper-neuanlage-plan.md`);
 > die NORMATIVEN Referenzen `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS) + `docs/archiv/wahreranblick.md`
 > (Ω-OPSIS) liegen in der Bibliothek. Der Live-
