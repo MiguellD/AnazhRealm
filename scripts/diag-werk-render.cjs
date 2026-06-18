@@ -466,10 +466,10 @@ async function renderWerk(page, bpName, view) {
             // PRODUKT-SHOT-LICHT (repräsentiert die belichtete Spiel-Welt: Sonne + Schatten +
             // Sky-IBL + Rim, nicht flaches Grau): kräftiger warmer KEY (wirft Schatten) + kühler
             // FILL + ein warmer RIM von hinten-oben (hebt die Silhouette/das Fell aus dem Grund).
-            scene.add(new THREE.AmbientLight(0xffffff, 0.32));
-            const key = new THREE.DirectionalLight(0xfff1d8, 1.85);
+            scene.add(new THREE.AmbientLight(0xffffff, window.__noshadow ? 0.6 : 0.32));
+            const key = new THREE.DirectionalLight(0xfff1d8, window.__noshadow ? 1.35 : 1.85);
             key.position.set(7, 13, 9);
-            key.castShadow = true;
+            key.castShadow = !window.__noshadow; // __noshadow: keine Schlagschatten/Selbst-Schatten → die reine Form lesen
             scene.add(key);
             const fill = new THREE.DirectionalLight(0xaecbe8, 0.4);
             fill.position.set(-6, 3, -4);
@@ -491,7 +491,7 @@ async function renderWerk(page, bpName, view) {
             // BODEN + SCHATTEN — erdet das Werk (kein Schweben im Nichts) + Kontakt-Schatten,
             // die die FORM lesen lassen. Repräsentiert die Spiel-Welt (Sonne wirft Schatten).
             try {
-                if (st.renderer && st.renderer.shadowMap) st.renderer.shadowMap.enabled = true;
+                if (st.renderer && st.renderer.shadowMap) st.renderer.shadowMap.enabled = !window.__noshadow;
                 key.shadow.mapSize.set(1024, 1024);
                 const sc = key.shadow.camera;
                 sc.left = -maxd;
@@ -637,6 +637,7 @@ async function renderWerk(page, bpName, view) {
         if (process.argv[3] === "skel") await page.evaluate(() => (window.__skel = true)); // DEBUG: rohe Ellipsoide (Skelett+Muskel)
         if (process.argv[3] === "smooth") await page.evaluate(() => (window.__smoothskel = true)); // GLATTER Écorché: Iso-Fläche, rot/beige nach Part-Typ eingefärbt (fairer Referenz-Vergleich)
         if (process.argv[3] === "norm") await page.evaluate(() => (window.__normskin = true)); // DEBUG: Normalen als RGB
+        if (process.argv.includes("noshadow")) await page.evaluate(() => (window.__noshadow = true)); // ohne Schlagschatten/Selbst-Schatten → reine Form lesen
         // COLD-START-FIX: den Spiel-Loop EINMAL einfrieren BEVOR der erste Werk-Render läuft —
         // sonst erwischte der erste Screenshot (front) das Welt-Frame statt des isolierten Werks
         // (der Loop rendert die Welt-Szene noch, während renderWerk gerade erst die Iso-Szene baut).

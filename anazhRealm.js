@@ -16211,7 +16211,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085, displace: true }); // Avatar: glatte Feld-Haut + Seam-Grooves + VERSCHIEBUNGS-SUBSTRAT (disp-getaggte Massen werden Tropfen-Schwell statt Union-Ball)
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 5, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: glatte Bäuche (taubin 5) + SUBTILE Furchen (seamGroove 6, breiter) — die Definition ist FORM, keine dunklen X-ray-Linien, die "durch die Haut leuchten"; VERSCHIEBUNGS-SUBSTRAT
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -16445,10 +16445,10 @@ class AnazhRealm {
         // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
-        const hairGeom = new THREE.SphereGeometry(0.4 * kh, 18, 14);
-        hairGeom.scale(1.08, 0.72, 1.22); // FLACHE Kappe (y schmal) · breiter · nach hinten lang
+        const hairGeom = new THREE.SphereGeometry(0.6 * kh, 20, 16);
+        hairGeom.scale(1.04, 0.94, 1.12); // volle KAPPE, die die Schädel-Kuppe umschließt (kein flacher Beret-Disc)
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY + 0.34, -0.16)); // sitzt auf der Krone (nicht schwebend) + zurück → Stirn frei, kein dunkles Fransen-Band
+        hair.position.copy(L(0, skullY + 0.12, -0.12)); // hugt die Krone (tiefer + umschließend) → liest als Haar/Skalp, nicht als schwebende Scheibe; Stirn bleibt frei
         hair.castShadow = true;
         rig.head.add(hair);
     }
