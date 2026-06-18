@@ -38706,6 +38706,65 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
 // sub-pixel) → ferne Skin-Kreatur = nur Haut (7 → 1 Draw-Call). Vier Wände: (1) Konstante,
 // (2) Struktur/Merge, (3) CONSUM des LOD-Readers (frustum-gestubbt, kreatur-isoliert),
 // (4) der gemessene Draw-Call-Win nah/fern.
+// V18.264 (DER SCHATTEN-CACHE) — der Schatten-Pass ist ein zweiter Voll-Render
+// (gemessen 2.32M Dreiecke). Beim Umsehen (Maus = Rotation) bewegt sich die
+// Schatten-Kamera NICHT (folgt der Spieler-Position) → die Map ist identisch.
+// autoUpdate=false + `_loopShadowUpdate` rendert nur neu bei Bewegung/Sonne/Max-
+// Staleness → im Stand übersprungen. Das Intervall ist eine Regelkreis-Stellgröße.
+async function checkBandV18264ShadowCache(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const A = r.constructor;
+        const st = r.state;
+        const out = {};
+        out.hasMethod = typeof r._loopShadowUpdate === "function";
+        const sm = st.renderer && st.renderer.shadowMap;
+        out.autoUpdateOff = !!sm && sm.autoUpdate === false;
+        out.hasLever = Array.isArray(A.PERF_LEVERS && A.PERF_LEVERS.shadowMinInterval);
+        // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
+        out.actuatorDrives = /_shadowMinInterval/.test(r._nexusPerfActuate.toString());
+        if (!out.hasMethod || !sm) {
+            return out;
+        }
+        // BEHAVIORAL: statisch (Umsehen) → übersprungen; Bewegung → updated.
+        const pm = st.playerMesh;
+        const savedX = pm ? pm.position.x : 0;
+        st._shadowMinInterval = 1;
+        r._shadowLast = null; // sauberer Start
+        let staticUpdates = 0;
+        for (let i = 0; i < 30; i++) {
+            sm.needsUpdate = false;
+            r._loopShadowUpdate();
+            if (sm.needsUpdate) staticUpdates++;
+        }
+        let movingUpdates = 0;
+        for (let i = 0; i < 30; i++) {
+            if (pm) pm.position.x += 2;
+            sm.needsUpdate = false;
+            r._loopShadowUpdate();
+            if (sm.needsUpdate) movingUpdates++;
+        }
+        if (pm) pm.position.x = savedX;
+        r._shadowLast = null;
+        out.staticUpdates = staticUpdates; // ~1/30 (nur die hardStale-Sicherheit)
+        out.movingUpdates = movingUpdates; // ~30/30 bei minInterval=1
+        out.staticSkips = staticUpdates <= 2; // im Stand fast komplett übersprungen
+        out.movingRenders = movingUpdates >= 20; // Bewegung rendert den Schatten
+        return out;
+    });
+    check("V18.264: _loopShadowUpdate + autoUpdate=false (Schatten-Cache)", res.hasMethod && res.autoUpdateOff);
+    check("V18.264: shadowMinInterval ist eine Regelkreis-Stellgröße (CONSUM)", res.hasLever && res.actuatorDrives);
+    check(
+        `V18.264: STATISCH (Umsehen) überspringt den Schatten-Pass (${res.staticUpdates}/30 Updates)`,
+        res.staticSkips === true
+    );
+    check(
+        `V18.264: BEWEGUNG rendert den Schatten (${res.movingUpdates}/30) — kein Durchhängen`,
+        res.movingRenders === true
+    );
+}
+
 async function checkBandV18262CreatureRenderLOD(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -56027,6 +56086,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickPfade(ctx);
             await checkBandWahrerAnblickAtmoBusch(ctx);
             await checkBandV18262CreatureRenderLOD(ctx);
+            await checkBandV18264ShadowCache(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

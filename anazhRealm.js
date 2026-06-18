@@ -1079,6 +1079,7 @@ class AnazhRealm {
             perfSense: null,
             _voxelStreamBudgetMs: 5,
             _voxelStreamMaxPerFrame: 6,
+            _shadowMinInterval: 1, // V18.264 — Schatten-Cache-Intervall (Regler-gefahren)
             // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
             // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
             pendingWaterIso: null,
@@ -12934,6 +12935,10 @@ class AnazhRealm {
         // Wasser:
         if (!st.atmosphere) st.atmosphere = {};
         st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
+        // Schatten-Update-Intervall (V18.264): der Schatten-Pass ist ein zweiter
+        // Voll-Render → unter Render-/Architektur-Last seltener neu rendern (auch bei
+        // Bewegung). render zählt zur Architektur-Domäne → effArch trägt es.
+        st._shadowMinInterval = lerp(L.shadowMinInterval[1], L.shadowMinInterval[0], effArch);
     }
 
     // DIE PRODUKTIONS-KOSTEN-SCHÄTZUNG (der Payoff): aus dem Sense ableiten, was
@@ -21347,7 +21352,13 @@ class AnazhRealm {
         // Materials die Shadow-Map nativ; Three.js rendert sie pro Frame
         // automatisch aus directionalLight.shadow.camera. Der manuelle
         // _renderShadowMapPass (+ autoUpdate=false) ist gestrichen.
-        renderer.shadowMap.autoUpdate = true;
+        // V18.264 — DER SCHATTEN-CACHE: autoUpdate AUS. Der Schatten-Pass (gemessen
+        // 2.32M Dreiecke = ein zweiter Voll-Render) lief JEDEN Frame, auch wenn
+        // nichts sich ändert. `_loopShadowUpdate` setzt `needsUpdate` nur, wenn der
+        // Spieler sich bewegt / die Sonne wandert / eine Max-Staleness erreicht ist
+        // → beim UMSEHEN (statische Position) wird der ganze Pass übersprungen.
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = true; // der erste Frame baut die Map
     }
 
     creatureJump(creature, jumpHeight) {
@@ -71411,7 +71422,10 @@ class AnazhRealm {
             // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
             // ### Rendering ### (V9.44-f → _loopRender)
+            // V18.264 — VOR dem Render entscheiden, ob die Schatten-Map neu muss
+            // (Cache; im Stand/Umsehen übersprungen → der zweite Voll-Render entfällt).
             _pt = performance.now();
+            this._loopShadowUpdate();
             this._loopRender(currentTime);
             this._perfSenseLap("render", _pt);
 
@@ -72456,6 +72470,48 @@ class AnazhRealm {
         }
     }
 
+    // V18.264 — DER SCHATTEN-CACHE (der „kann mich nicht umsehen"-Hebel): der
+    // Schatten-Pass ist ein zweiter Voll-Render (GEMESSEN 2.32M Dreiecke). Beim
+    // Umsehen (Maus = Rotation) bewegt sich die Schatten-Kamera NICHT (sie folgt der
+    // Spieler-POSITION, nicht der Blickrichtung) → die Schatten-Map ist Frame für
+    // Frame identisch → ihn jeden Frame neu zu rendern ist reine Verschwendung. Mit
+    // autoUpdate=false rendern wir nur neu, wenn der Spieler sich bewegt / die Sonne
+    // wandert / eine Max-Staleness erreicht ist → im Stand wird der ganze Pass
+    // übersprungen (die AAA-Schatten-Cache-Technik). Das Update-Intervall bei
+    // Bewegung ist eine vom Perf-Regelkreis gefahrene Stellgröße (_shadowMinInterval,
+    // render-lastig → seltener) — KEIN zweiter Regler.
+    _loopShadowUpdate() {
+        const r = this.state.renderer;
+        if (!r || !r.shadowMap) return;
+        const dl = this.state.directionalLight;
+        const pm = this.state.playerMesh;
+        const frame = (this._shadowFrame = (this._shadowFrame || 0) + 1);
+        if (!this._shadowLast) this._shadowLast = { frame: -999, px: NaN, pz: NaN, sx: 0, sy: 0, sz: 0 };
+        const L = this._shadowLast;
+        const px = pm ? pm.position.x : 0,
+            pz = pm ? pm.position.z : 0;
+        const sx = dl ? dl.position.x : 0,
+            sy = dl ? dl.position.y : 0,
+            sz = dl ? dl.position.z : 0;
+        const moved = (px - L.px) ** 2 + (pz - L.pz) ** 2 > 0.01; // jede echte Bewegung
+        const sunMoved = (sx - L.sx) ** 2 + (sy - L.sy) ** 2 + (sz - L.sz) ** 2 > 1e-5;
+        const since = frame - L.frame;
+        // selbst bei Bewegung höchstens alle minInterval Frames (vom Regler gefahren);
+        // eine harte Staleness-Grenze garantiert, dass die Map nie veraltet (Sonne/Geo).
+        const minInterval = Math.max(1, Math.round(this.state._shadowMinInterval || 1));
+        const hardStale = 30;
+        const doUpdate = ((moved || sunMoved) && since >= minInterval) || since >= hardStale;
+        if (doUpdate) {
+            r.shadowMap.needsUpdate = true;
+            L.frame = frame;
+            L.px = px;
+            L.pz = pz;
+            L.sx = sx;
+            L.sy = sy;
+            L.sz = sz;
+        }
+    }
+
     _loopRender(currentTime) {
         // ### Rendering ###
         // V8.27 — Skybox-Position-Copy DIREKT vor dem Render verschoben.
@@ -72807,7 +72863,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.263.0";
+AnazhRealm.VERSION = "18.264.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -75691,6 +75747,7 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
     streamBudgetMs: [2.5, 5], // _loopVoxelStreaming Frame-Budget
     streamMaxPerFrame: [3, 6], // _loopVoxelStreaming max Chunks/Frame
     waterIsoBudgetMs: [3.5, 8], // _tickPendingWaterIso Zeit-Deadline (V18.261-Lever)
+    shadowMinInterval: [1, 5], // _loopShadowUpdate min Frames zwischen Schatten-Renders (V18.264)
 });
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
