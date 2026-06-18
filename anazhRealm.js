@@ -16141,9 +16141,16 @@ class AnazhRealm {
             // verschattet, gerechnet aus der Form in _buildCreatureSkinGeometry, nicht der schwache
             // screen-space fwidth) → das Albedo bekommt Gelenk-/Achsel-/Muskel-Tiefe statt flach-
             // einfarbig. attribute("color") ist auf WebGPU STRIKT — die Skin-Geometrie setzt sie IMMER.
+            // EXPOSURE aus der gebackenen AO (Default 1 = voll exponiert): gating für das warme Rim
+            // unten — in tiefen Mulden (niedrige AO) stirbt das Glühen, sonst leckt es als roter
+            // „Wund"-Fleck in jede Konkavität (Achsel/Leiste/Augenhöhle/Muskel-Furche, GEMESSEN am
+            // roten Spieler-Avatar). Eine Quelle: gilt für Haut UND Fell.
+            let aoExposure = T.float(1);
             if (T.attribute) {
                 try {
                     let aoC = T.attribute("color", "vec3");
+                    // die AO-Helligkeit (0.58 Mulde … ~1.12 Grat) → ein Exposure-Faktor 0..1.
+                    if (T.smoothstep) aoExposure = T.smoothstep(T.float(0.66), T.float(1.0), aoC.x);
                     // In der SHORTS-Zone die Muskel-AO DÄMPFEN — Stoff ist glatt, soll NICHT die
                     // Leisten-/Innenschenkel-Furche zeigen (die teilte die weißen Briefs in „zwei
                     // Backen vorne"). Briefs werden gleichmäßig weiß.
@@ -44492,9 +44499,10 @@ class AnazhRealm {
         // zurück, wenn SkinnedMesh fehlt.
         const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
             FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
-        // gedämpftes Avatar-Rot (wie der alte _buildHumanGroup; die Soul-Identitätsfarbe
-        // playerSoulDefs.human.color = 0xff0000 ist greller — für die Haut das gedämpfte 0xc0392b).
-        const skinTint = 0xc0392b;
+        // PBR-HAUTTON (Schöpfer-Korrektur 18.06.: KEIN Rot, KEIN Toon — die Vision ist PBR-
+        // realistische Haut wie die Referenzbilder). Ein warmer natürlicher Hautton; das alte rote
+        // 0xc0392b war ein Sediment-Bug, kein Identitäts-Wille.
+        const skinTint = 0xc89372;
         let rig = null;
         try {
             rig = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint });
