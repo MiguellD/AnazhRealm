@@ -15154,10 +15154,18 @@ class AnazhRealm {
         //    diskrete Massen als Blobs → die feine Gesichtsmuskel-Schicht der Referenz gehört in den
         //    Merge-Pass). Ein flacher Frontalis + eine dünne Wangen-/Schläfen-Fläche je Seite, schädel-
         //    anliegend (geringe z-Tiefe), Augenhöhle frei.
-        // EINE durchgehende GESICHTS-SCHALE: eine dünne rote Decke über der Schädel-FRONT (Stirn→Kiefer),
-        //    die als „rotes Gesicht" liest (Referenz) statt verstreuter Blobs; die Schädel-KUPPE oben bleibt
-        //    blank (beige). Dünn in z (hugt den Schädel), folgt der Gesichts-Ebene leicht vorgewölbt.
-        add("box", limbMat, 0, 7.46, 0.32 * hr, 0.44 * hr, 0.52 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.72 });
+        // GESICHTS-MUSKELN (Referenz: dünne Schicht über der Schädel-Front, dem Gesichts-Relief folgend) —
+        //    DETAIL statt flacher Schale: alle DÜNN + schädel-anliegend (kein vorstehender Blob), die
+        //    Augenhöhle bleibt als Mulde FREI (Brauen+Jochbein rahmen sie), die Schädel-KUPPE oben blank.
+        add("box", limbMat, 0, 7.74, 0.3, 0.4 * hr, 0.12 * hr, 0.06 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (Stirn)
+        add("box", limbMat, 0, 7.5, 0.37, 0.055 * hr, 0.18 * hr, 0.08 * hr, null, limbCol, { def: true, kScale: 0.68 }); // Procerus/Nasalis (Nasenrücken-Muskel, mittig)
+        add("box", limbMat, 0, 7.12, 0.35, 0.12 * hr, 0.09 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orbicularis oris (um den Mund)
+        for (const s of [-1, 1]) {
+            add("box", limbMat, s * 0.45 * hr, 7.6, 0.08, 0.05 * hr, 0.2 * hr, 0.2 * hr, null, limbCol, { def: true, kScale: 0.72 }); // Temporalis (Schläfe, dünn am Schädel)
+            limb(s * 0.34 * hr, 7.46, 0.28 * hr, s * 0.15 * hr, 7.12, 0.34 * hr, 0.065 * hr, limbMat, limbCol, { def: true, kScale: 0.68 }); // Zygomaticus (Jochbein → Mundwinkel, diagonal)
+            add("box", limbMat, s * 0.3 * hr, 7.2, 0.16 * hr, 0.07 * hr, 0.2 * hr, 0.12 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Masseter (Kiefer-Seite)
+            add("box", limbMat, s * 0.21 * hr, 7.34, 0.33 * hr, 0.1 * hr, 0.13 * hr, 0.06 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Buccinator/Wange (füllt die Wange dünn)
+        }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
@@ -15325,8 +15333,8 @@ class AnazhRealm {
             { o: "scapula", i: "axilla", b: 0.17, sc: mF, belly: 0.4, kS: 0.8 }, // Teres
             { o: "sacrum", i: "erectorTop", b: 0.16, sc: mF, belly: 0.5, depth: 0.42, kS: 0.74 }, // Erector spinae (Rücken-Säule)
             // ARM
-            { o: "shoulderFront", i: "elbowFront", b: 0.21, sc: limbF, belly: 0.46, kS: 0.85, mat: limbMat, col: limbCol }, // Bizeps
-            { o: "shoulderBack", i: "elbowBack", b: 0.23, sc: limbF, belly: 0.5, kS: 0.85, mat: limbMat, col: limbCol }, // Trizeps
+            { o: "shoulderFront", i: "elbowFront", b: 0.25, sc: limbF, belly: 0.46, depth: 0.92, kS: 0.85, mat: limbMat, col: limbCol }, // Bizeps (voller, fusiformer Bauch)
+            { o: "shoulderBack", i: "elbowBack", b: 0.27, sc: limbF, belly: 0.52, depth: 0.92, kS: 0.85, mat: limbMat, col: limbCol }, // Trizeps (voller, hinten getrennt)
             { o: "elbowFront", i: "wrist", b: 0.18, sc: limbF, belly: 0.34, kS: 0.85, mat: limbMat, col: limbCol }, // Unterarm-Flexoren
             // GESÄSS + OBERSCHENKEL
             { o: "iliacBack", i: "hip", b: 0.42, sc: mF, belly: 0.5, depth: 0.9, kS: 0.92 }, // Gluteus maximus
@@ -15343,7 +15351,7 @@ class AnazhRealm {
             { o: "deltoidIns", i: "upperArmOut", b: 0.18, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Brachialis (Bizeps↔Trizeps-Lücke)
             { o: "elbowBack", i: "forearmBack", b: 0.16, sc: limbF, belly: 0.36, kS: 0.84, mat: limbMat, col: limbCol }, // Unterarm-Extensoren (Rückseite)
             { o: "iliac", i: "kneeOut", b: 0.3, sc: limbF, belly: 0.5, kS: 0.84, mat: limbMat, col: limbCol }, // Vastus lateralis (Außenschenkel)
-            { o: "hipFront", i: "kneeIn", b: 0.26, sc: limbF, belly: 0.62, kS: 0.82, mat: limbMat, col: limbCol }, // Vastus medialis (Innen-Tropfen überm Knie)
+            { o: "hipFront", i: "kneeIn", b: 0.3, sc: limbF, belly: 0.68, kS: 0.82, mat: limbMat, col: limbCol }, // Vastus medialis (voller Innen-Tropfen direkt überm Knie)
             { o: "shinTop", i: "shinOut", b: 0.13, sc: limbF, belly: 0.5, kS: 0.8, mat: limbMat, col: limbCol }, // Peroneus (Außen-Unterschenkel)
             { o: "sternumTop", i: "xiphoid", b: 0.26, sc: mF, belly: 0.5, depth: 0.55, kS: 0.74 }, // Brust-Mittelfüllung (deckt das Sternum zwischen den Pecs — schließt das Mittel-Loch)
             { o: "pubis", i: "navel", b: 0.16, sc: mF, belly: 0.3, depth: 0.55, kS: 0.78 }, // untere Bauch-/Schoß-Füllung (Scham-Schild vorn)
