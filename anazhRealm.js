@@ -15062,10 +15062,9 @@ class AnazhRealm {
         // mF (Muskel-Fülle) kommt aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle.
         // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
-        add("box", "knochen", 0, shoulderY + 0.02, 0.03 * girthF, shoulderHalf * 1.0, 0.08, 0.09, null, limbCol, {
-            kScale: 0.9,
-            struct: true,
-        }); // KLAVIKEL — TIEF (z 0.03) + WEICH (kScale 0.9) + dünn → nur ein sanfter Schlüsselbein-Grat, keine poking Bars am Hals-Boden
+        add("box", "knochen", 0, shoulderY + 0.02, 0.04 * girthF, shoulderHalf * 1.04, 0.13, 0.16, null, limbCol, {
+            kScale: 0.94,
+        }); // KLAVIKEL — eine SOLIDE verbindende Gräte (Hals↔Schulter): kräftiger (0.13/0.16 statt 0.08/0.09) + breiter kScale 0.94 + NICHT MEHR `struct` → der COVERAGE-Shrink (×0.54/×0.5) machte sie so dünn, dass sie bei res 176 die Verbindung verlor („Schlüsselbein nicht verbunden", Schöpfer-Befund). Bridged jetzt robust + res-unabhängig; kScale 0.94 hält sie als sanften Grat (kein poking Bar)
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
@@ -15791,6 +15790,52 @@ class AnazhRealm {
             }
             geom.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
         }
+        // NORMAL-RELAX (opt `normalRelax` Pässe) — beruhigt die FELD-Gradienten-Normale über die Mesh-
+        //   Adjazenz, BEVOR die seamGroove die Muskel-Furche einkippt. An DICHTEN Part-Stapeln
+        //   (Schulter/Klavikel/Brust: Pec-Köpfe + Deltoid + Klavikel + Sternum + Trapez + SCM überlappen)
+        //   ist das smin-Feld bumpig → die Gradient-Normale WACKELT → lumpige Schattierung (Schöpfer-
+        //   Befund: „du schattierst die Normalen falsch"). Ein paar Laplace-Pässe glätten NUR die Normale
+        //   (nicht die Geometrie/Silhouette); die seamGroove legt die Definition danach sauber drauf.
+        const nRelax = opts && Number.isFinite(opts.normalRelax) ? opts.normalRelax : 0;
+        if (nRelax > 0 && idx.length) {
+            const nA0 = geom.attributes.normal,
+                VCn = nA0.count;
+            const adjN = new Array(VCn);
+            for (let v = 0; v < VCn; v++) adjN[v] = [];
+            for (let t = 0; t + 2 < idx.length; t += 3) {
+                const a = idx[t],
+                    b = idx[t + 1],
+                    c = idx[t + 2];
+                adjN[a].push(b, c);
+                adjN[b].push(a, c);
+                adjN[c].push(a, b);
+            }
+            for (let it = 0; it < nRelax; it++) {
+                const sx = new Float32Array(VCn),
+                    sy = new Float32Array(VCn),
+                    sz = new Float32Array(VCn);
+                for (let v = 0; v < VCn; v++) {
+                    sx[v] = nA0.getX(v);
+                    sy[v] = nA0.getY(v);
+                    sz[v] = nA0.getZ(v);
+                }
+                for (let v = 0; v < VCn; v++) {
+                    const nb = adjN[v];
+                    if (!nb.length) continue;
+                    let ax = sx[v],
+                        ay = sy[v],
+                        az = sz[v];
+                    for (const k of nb) {
+                        ax += sx[k];
+                        ay += sy[k];
+                        az += sz[k];
+                    }
+                    const L = Math.hypot(ax, ay, az) || 1;
+                    nA0.setXYZ(v, ax / L, ay / L, az / L);
+                }
+            }
+            nA0.needsUpdate = true;
+        }
         // ── SEAM-GROOVE: die Muskel-Furche ANALYTISCH (die Antwort auf die Auflösungs-Wand) ──
         // Das Skelett TRÄGT die Anatomie (Sixpack/Pec/Lat als getrennte DEF-Massen, im Skel-Render
         // gestochen sichtbar) — aber das Gitter (h≈0.06) löst eine 0.16-Furche nicht auf, und die
@@ -16119,10 +16164,14 @@ class AnazhRealm {
             const grain = opts.skin ? 0.035 : 0.13;
             const broadAmt = opts.skin ? 0.04 : 0.1;
             albedo = albedo.mul(T.float(1.0).add(fur.mul(grain)).add(broad.mul(broadAmt)));
-            // KAVITÄT (Krümmung → Gelenk-/Falten-Schatten)
+            // KAVITÄT (Krümmung → Gelenk-/Falten-Schatten). Auf HAUT (opts.skin) wird der screen-space
+            // fwidth-Term NICHT zur Albedo-Verdunklung genutzt: er verdunkelt JEDE Normal-Diskontinuität
+            // (Muskel-Naht / dichter Part-Stapel an Schulter/Klavikel/Brust) VIEW-ABHÄNGIG zu dunklen
+            // „Riss"-Gassen (Schöpfer-Befund: „du schattierst die Normalen falsch"). Die gebackene AO
+            // (occ, glatt) trägt den echten Kavitäts-Schatten. Fell behält den fwidth-Term (Mikro-Korn).
             let curv = T.float(0);
             if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
-            albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
+            if (!opts.skin) albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
             // PAINTED-ON SHORTS — eine weiße Boxer-Brief-Zone auf der HAUT selbst (Y-Band in
             // Geometrie-lokal): perfekt anliegend, mit NATÜRLICHEN Bein-Öffnungen, weil der Körper
             // die Beine schon getrennt hat. Eine Tube-Geometrie beulte als Rock — das hier ist die
@@ -16167,7 +16216,9 @@ class AnazhRealm {
             const furN = fur.mul(0.5).add(0.5);
             const rBase = opts.skin ? 0.62 : 0.8,
                 rVar = opts.skin ? 0.08 : 0.18;
-            mat.roughnessNode = T.float(rBase).add(furN.mul(rVar)).sub(curv.mul(0.12)).clamp(0.4, 1.0);
+            // Haut: KEIN curv-Roughness-Term (er liest dieselbe view-abhängige Normal-Diskontinuität →
+            // glänzende Naht-Linien); Fell behält ihn. Haut variiert nur sanft mit dem Korn.
+            mat.roughnessNode = T.float(rBase).add(furN.mul(rVar)).sub(opts.skin ? T.float(0) : curv.mul(0.12)).clamp(0.4, 1.0);
             // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
             const vd =
                 T.positionViewDirection ||
@@ -16224,7 +16275,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 176, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 3, seamWidth: 0.15, displace: true, dispCap: 0.34 }); // Avatar HAUT: res 176 (128 löste Finger nicht auf → Fäustlinge; höher = Finger/Detail kommen durch; einmaliger Build-Kost, kein per-Frame); taubin 8 = GLATTE Haut; seamGroove 3 + breiter (0.15) = WEICHE Muskel-Schatten statt scharfer Riss-Furchen (PBR-Haut, kein Écorché-Crack); dispCap 0.34 = sanfte Schwellung
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 3, seamWidth: 0.15, displace: true, dispCap: 0.34, normalRelax: 2 }); // Avatar HAUT: res 128 (176 löste Finger im Close-Up auf, riss aber dünne Brücken wie die Klavikel auf → die Hand braucht LOKALE Res, kein globaler Bump); taubin 8 = GLATTE Haut; seamGroove 3 + breit (0.15) = WEICHE Muskel-Schatten statt Risse; normalRelax 2 = beruhigt die Feld-Normale am dichten Schulter/Brust-Stapel (kein lumpiges Schattieren); dispCap 0.34 = sanfte Schwellung
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
