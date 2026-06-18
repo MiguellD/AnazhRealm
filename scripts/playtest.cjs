@@ -55344,6 +55344,12 @@ async function checkBandRing6Workshop(ctx) {
     });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
+    // [PERF] Skin-Res-Cap VOR dem Laden setzen (der Bootstrap seedet daraus den Static,
+    // bevor init() den ~270-Teil-Avatar baut) → schon der ALLERERSTE Build ist gedrosselt
+    // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
+    await page.evaluateOnNewDocument(() => {
+        window.__anazhHeadlessSkinResCap = 64;
+    });
 
     const logs = [];
     const errors = [];
@@ -55414,6 +55420,7 @@ async function checkBandRing6Workshop(ctx) {
             }
             // Post-Processing (falls aktiv) auf den nun-no-op renderer.render-Pfad zwingen.
             r.state.postProcessingFailed = true;
+            // (Skin-Res-Cap wird via evaluateOnNewDocument vor dem Laden geseedet — siehe oben.)
             // Phase 2 — Loop synchron pumpen, bis das Wall-Clock-Budget
             // verbraucht ist. setTimeout(0) yieldet zwischen Ticks für
             // Mikrotasks (Promise-Ketten, async Worldgen) — `setTimeout`

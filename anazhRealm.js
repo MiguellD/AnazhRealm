@@ -15618,7 +15618,16 @@ class AnazhRealm {
         // Gitter-Auflösung (wahrerguss System D: höher = weniger Facetten, glatter Leib + dünne
         // Spalten [Bein-Zwischenraum/Finger] werden aufgelöst). Der Avatar wird EINMAL gebaut →
         // er darf hoch auflösen (opts.res); Scatter-Kreaturen bleiben bei 64 (Perf, viele Spawns).
-        const N = (opts && opts.res) | 0 || 64;
+        let N = (opts && opts.res) | 0 || 64;
+        // [PERF/TEST] Headless-Gate-Drossel (analog zum renderer.render-Stub): der Isosurface-
+        // Build skaliert mit N³. Der res-128-Avatar (~70 Metaball-Teile) baut headless ~19 s —
+        // das Gate ruft ihn mehrfach (Warmup + jeder player_soul/forgeAvatar-Band). Die Bands
+        // prüfen LOGIK (baut · ist-Rig · Resonanz · Tags · count>0/Topologie), NIE die Isosurface-
+        // TREUE (das ist Augen-/Screenshot-Sache, der Live-Build bleibt res 128). Ein optionaler
+        // globaler Cap, NUR vom Playtest gesetzt, clampt N → der Gate-Avatar-Build fällt von
+        // ~19 s auf ~2 s, ohne die Live-Qualität zu berühren. Default 0 = aus (Produktion unberührt).
+        const skinResCap = this.constructor.__HEADLESS_SKIN_RES_CAP | 0;
+        if (skinResCap > 0 && N > skinResCap) N = skinResCap;
         const h = span / N;
         const off = [
             [0, 0, 0],
@@ -75659,7 +75668,14 @@ function _bootAnazhRealm() {
     }
     const anazhRealm = new AnazhRealm();
     // Globale Referenz für DevTools-Debug und automatisierten Playtest.
-    if (typeof window !== "undefined") window.anazhRealm = anazhRealm;
+    if (typeof window !== "undefined") {
+        window.anazhRealm = anazhRealm;
+        // [PERF/TEST] Headless-Skin-Res-Cap-Seed: setzt der Playtest vor dem Laden
+        // `window.__anazhHeadlessSkinResCap` (via evaluateOnNewDocument), greift der
+        // Cap schon beim ALLERERSTEN Avatar-Build in init() (der ~270-Teil-Isosurface
+        // baut sonst ~19 s). Produktion setzt das Flag nie → 0 → kein Effekt.
+        if (window.__anazhHeadlessSkinResCap) AnazhRealm.__HEADLESS_SKIN_RES_CAP = window.__anazhHeadlessSkinResCap | 0;
+    }
     anazhRealm.init();
 }
 _bootAnazhRealm();
