@@ -15150,13 +15150,14 @@ class AnazhRealm {
         //    Befund (Fischer, Kopf-Detailshot): diskrete Pads = Googly-Blobs, kein Referenz-Gesicht.
         //    Nur FLACHE, schädel-anliegende Blätter, die der smin in die Gesichts-Ebene einschmilzt;
         //    die Augenhöhle bleibt eine MULDE aus der Schädel-Form (Brauen + Jochbein), kein Pad-Ring.
-        add("box", limbMat, 0, 7.72, 0.28, 0.4 * hr, 0.18 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (dünnes flaches Stirn-Blatt, hugt die Schädel-Front)
-        for (const s of [-1, 1]) {
-            // Temporalis: ein FLACHES Schläfen-Blatt, das den Schädel oberhalb des Ohrs HUGT (kein vor-
-            //    stehender Disc): an die Schädel-Krümmung (x ~0.46, z 0.06 vorn-seitlich), dünn in der Tiefe.
-            add("box", limbMat, s * 0.46 * hr, 7.62, 0.06, 0.06 * hr, 0.2 * hr, 0.18 * hr, null, limbCol, { def: true, kScale: 0.74 });
-            limb(s * 0.28 * hr, 7.5, 0.28 * hr, s * 0.13 * hr, 7.18, 0.34 * hr, 0.085 * hr, limbMat, limbCol, { def: true, kScale: 0.72 }); // Zygomaticus + Wangen (Jochbein → Mundwinkel, dünner)
-        }
+        // KOPF-FUNDAMENT = sauberer SCHÄDEL (Knochen) mit nur einem DÜNNEN Gesichts-Hint (skel zeigt
+        //    diskrete Massen als Blobs → die feine Gesichtsmuskel-Schicht der Referenz gehört in den
+        //    Merge-Pass). Ein flacher Frontalis + eine dünne Wangen-/Schläfen-Fläche je Seite, schädel-
+        //    anliegend (geringe z-Tiefe), Augenhöhle frei.
+        // EINE durchgehende GESICHTS-SCHALE: eine dünne rote Decke über der Schädel-FRONT (Stirn→Kiefer),
+        //    die als „rotes Gesicht" liest (Referenz) statt verstreuter Blobs; die Schädel-KUPPE oben bleibt
+        //    blank (beige). Dünn in z (hugt den Schädel), folgt der Gesichts-Ebene leicht vorgewölbt.
+        add("box", limbMat, 0, 7.46, 0.32 * hr, 0.44 * hr, 0.52 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.72 });
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
         for (const s of [-1, 1]) {
