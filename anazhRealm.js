@@ -13117,7 +13117,9 @@ class AnazhRealm {
 
         // Planeten hinzufügen
         this.state.planets = [];
-        const numPlanets = 3;
+        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
+        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Planeten 3→1.
+        const numPlanets = 1;
         for (let i = 0; i < numPlanets; i++) {
             const planetSize = Math.random() * 20 + 10;
             const planetGeometry = new THREE.SphereGeometry(planetSize, 32, 32);
@@ -22140,7 +22142,9 @@ class AnazhRealm {
     _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        const numIslands = 3;
+        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
+        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Fliegende Inseln 3→1.
+        const numIslands = 1;
         // V18.180-FIX §6.2: Γ5 STREAM-GESETZ — Math.random in einem worldgen-
         // Pfad würfelt zwei Peers in unterschiedliche Welten (Multi-User-Drift).
         // Pro Insel ein eigener Stream-Suffix; das speist Größe/Höhe/Position
@@ -71968,7 +71972,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.256.0";
+AnazhRealm.VERSION = "18.257.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

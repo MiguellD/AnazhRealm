@@ -18,6 +18,22 @@
 
 ---
 
+## ⚠️ TEMP-DEV-DROSSELN (V18.257 — REVERT vor dem nächsten Merge/v1.0)
+
+Während der Entwicklung temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
+„weniger Bäume/Strukturen, schneller iterieren"). **Alle tragen den Code-Marker `V18.257 TEMP`.** Der
+echte BACKLOG ist nicht das Zurückdrehen, sondern den **Cold-Start effizient** zu machen (dann fällt die
+Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die per-Frame-swiftshader-Render-Kosten.
+
+- **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→6`) — deckt Bäume UND alle
+  Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
+- **Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 3→1`). REVERT → 3.
+- **Planeten** (`createGalaxySkybox` `numPlanets 3→1`). REVERT → 3.
+
+(Nicht gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
+
+---
+
 ## §1 · Regel #0 — die eine Wahrheit (über allem) · präzisiert 09.06.2026
 
 **Keine Proxy-METRIK entscheidet einen Look-Befund — AUGEN entscheiden.** Die alte Form („Render ist
