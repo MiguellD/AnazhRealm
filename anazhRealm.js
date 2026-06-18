@@ -15178,28 +15178,37 @@ class AnazhRealm {
             add("sphere", "knochen", elbowX, elbowY, 0, 0.26 * limbF, 0.27 * limbF, 0.24 * limbF, null, limbCol, { kScale: 0.6 }); // Ellbogen-Kondylen
             add("sphere", "knochen", wristX, wristY, 0, 0.21 * limbF, 0.19 * limbF, 0.18 * limbF, null, limbCol, { kScale: 0.6 }); // Handwurzel (Handgelenk)
             add("box", "knochen", elbowX, elbowY + 0.02, -0.1, 0.24 * limbF, 0.3, 0.2, null, limbCol, { kScale: 0.5 }); // OLECRANON (scharfer Ellbogen, knochen)
-            // HAND — als artikuliertes SKELETT (das Gesetz: jeder Knochen spannt zwei Knoten, jetzt
-            //    voll-3D): Mittelhand-Knochen (Handgelenk → Knöchel-Reihe, fächern) + Knöchel-Gelenke +
-            //    Finger-Glieder (Knöchel → Spitze, fächern UND krümmen nach vorn — dank dem 3D-limb, der
-            //    den z-Anteil nicht mehr verschluckt). Ein schlanker Fleisch-Handteller drapiert darüber
-            //    (die Haut bleibt eine glatte Hand, die Knochen sind das innere Gerüst = die Referenz-Hand).
+            // HAND — sauberer KNOCHEN-FÄCHER nach der Referenz (blankes Skelett): Retinaculum-Band am
+            //    Handgelenk → Karpus-Block → fächernde Mittelhand-Knochen → Finger mit ZWEI Phalangen
+            //    (proximal+distal) und Gelenken, leicht nach vorn gekrümmt → Daumen opponiert. Ein
+            //    SCHLANKER Fleisch-Handrücken gibt der geskinnten Hand Volumen ohne die Finger zu verweben.
             const hw = wristX + s * 0.02;
-            add("box", limbMat, hw, wristY - 0.16, 0.04, 0.3 * limbF, 0.18, 0.13, null, limbCol); // Handteller (Fleisch, schlanker)
-            const knuckY = wristY - 0.32; // Knöchel-Reihe (Metacarpalköpfe)
+            add("box", limbMat, wristX, wristY - 0.02, 0.02, 0.22 * limbF, 0.07, 0.2 * limbF, null, limbCol, { kScale: 0.72 }); // Retinaculum (Sehnen-Manschette am Handgelenk)
+            add("box", "knochen", hw, wristY - 0.17, 0.04, 0.24 * limbF, 0.13, 0.13 * limbF, null, limbCol, { kScale: 0.5, struct: true }); // Karpus (Handwurzel-Block — Basis des Fächers)
+            add("box", limbMat, hw, wristY - 0.21, 0.03, 0.27 * limbF, 0.15, 0.09, null, limbCol, { kScale: 0.86 }); // Handrücken-Fleisch (dünn → Knochen lesen durch)
+            const knuckY = wristY - 0.36; // Knöchel-Reihe (Metacarpalköpfe)
             for (let f = 0; f < 4; f++) {
                 const sp = f - 1.5; // -1.5 … 1.5 (vier Finger, fächern symmetrisch)
-                const kx = hw + sp * 0.1 * limbF;
-                const kz = 0.05 + Math.abs(sp) * 0.012; // die Knöchel-Reihe bogt leicht vor
-                limb(hw + sp * 0.05 * limbF, wristY - 0.04, 0.02, kx, knuckY, kz, 0.05 * limbF, "knochen", limbCol); // Mittelhand-Knochen (Handgelenk → Knöchel)
-                add("sphere", "knochen", kx, knuckY, kz, 0.055 * limbF, 0.055 * limbF, 0.055 * limbF, null, limbCol, { kScale: 0.4 }); // Knöchel-Gelenk
-                const fl = (f === 1 || f === 2 ? 0.3 : 0.24) * limbF; // Mittel-/Zeigefinger länger
-                limb(kx, knuckY, kz, kx + sp * 0.02 * limbF, knuckY - fl, kz + 0.12, 0.044 * limbF, "knochen", limbCol); // Finger-Glieder (Phalangen, krümmen nach vorn)
+                const baseX = hw + sp * 0.05 * limbF; // Mittelhand-Basis am Karpus (eng)
+                const kx = hw + sp * 0.115 * limbF; // Knöchel fächert breiter
+                const kz = 0.06 + Math.abs(sp) * 0.014; // die Knöchel-Reihe bogt leicht vor
+                limb(baseX, wristY - 0.18, 0.03, kx, knuckY, kz, 0.05 * limbF, "knochen", limbCol); // Mittelhand-Knochen (Metacarpus, fächert)
+                add("sphere", "knochen", kx, knuckY, kz, 0.05 * limbF, 0.05 * limbF, 0.05 * limbF, null, limbCol, { kScale: 0.42 }); // Knöchel-Gelenk (Metacarpalkopf)
+                const fl = (f === 1 || f === 2 ? 0.34 : 0.28) * limbF; // Mittel-/Zeigefinger länger
+                const tipX = kx + sp * 0.025 * limbF;
+                const midY = knuckY - fl * 0.56,
+                    midZ = kz + fl * 0.42; // Mittelgelenk (krümmt nach vorn)
+                limb(kx, knuckY, kz, tipX, midY, midZ, 0.042 * limbF, "knochen", limbCol); // Proximal-Phalange
+                add("sphere", "knochen", tipX, midY, midZ, 0.038 * limbF, 0.038 * limbF, 0.038 * limbF, null, limbCol, { kScale: 0.4 }); // Fingermittelgelenk
+                limb(tipX, midY, midZ, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.035 * limbF, "knochen", limbCol); // Distal-Phalange (Fingerspitze)
             }
-            // DAUMEN — Mittelhand-Knochen abduziert (zur Körpermitte + vorn) + Daumen-Glied (das Gesetz).
-            const thbX = hw - s * 0.15,
-                thbY = wristY - 0.1;
-            limb(wristX, wristY - 0.02, 0.06, thbX, thbY, 0.18, 0.06 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
-            limb(thbX, thbY, 0.18, thbX - s * 0.05, thbY - 0.15, 0.26, 0.05 * limbF, "knochen", limbCol); // Daumen-Glied
+            // DAUMEN — opponiert: Mittelhand abduziert (zur Körpermitte + vorn) + zwei Glieder mit Gelenk.
+            const thbBaseX = hw - s * 0.03,
+                thbX = hw - s * 0.17,
+                thbY = wristY - 0.13;
+            limb(thbBaseX, wristY - 0.08, 0.08, thbX, thbY, 0.2, 0.055 * limbF, "knochen", limbCol); // Daumen-Mittelhand (abduziert)
+            add("sphere", "knochen", thbX, thbY, 0.2, 0.045 * limbF, 0.045 * limbF, 0.045 * limbF, null, limbCol, { kScale: 0.42 }); // Daumen-Grundgelenk
+            limb(thbX, thbY, 0.2, thbX - s * 0.04, thbY - 0.17, 0.31, 0.042 * limbF, "knochen", limbCol); // Daumen-Glied (distal)
         }
         // (GLUTEUS MAXIMUS → MUSKEL-ATLAS unten — gelenk-verankert)
         // ── (4) BEINE (Oberschenkel/Unterschenkel gegliedert; Fuß mit FERSE + Spann, kein Latschen) ──

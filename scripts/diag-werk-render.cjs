@@ -584,6 +584,13 @@ async function renderWerk(page, bpName, view) {
                 const ax = sz.x * 0.28; // zur Arm-Mitte versetzt
                 cam.position.set(ax, ay, maxd * 0.5);
                 cam.lookAt(ax, ay, 0);
+            } else if (view === "hand") {
+                // HAND-NAHAUFNAHME (A-Pose: die rechte Hand hängt tief seitlich) — Kamera tief + seitlich,
+                //    nah + leicht von vorn, damit der Knochen-Fächer (Karpus/Mittelhand/Phalangen) gross liest.
+                const hx = sz.x * 0.44; // rechte Hand (Außenkante)
+                const hy = -sz.y * 0.085; // Hand-Höhe (Handgelenk→Finger, unter der Mitte)
+                cam.position.set(hx + maxd * 0.05, hy + maxd * 0.02, maxd * 0.14);
+                cam.lookAt(hx, hy, 0.06);
             }
             window.__rs = () => {
                 try {
@@ -670,6 +677,9 @@ async function renderWerk(page, bpName, view) {
             ["humanoid:0", "ecorche-back.png", "back"],
             ["humanoid:0", "ecorche-front.png", "front"],
             ["humanoid:0", "ecorche-side.png", "side"],
+            ["humanoid:0", "ecorche-arm.png", "arm"], // ARM-Nahaufnahme (Deltoid→Bizeps→Unterarm)
+            ["humanoid:0", "ecorche-hand.png", "hand"], // HAND-Nahaufnahme (Knochen-Fächer vs Referenz)
+            ["humanoid:0", "ecorche-foot.png", "foot"], // FUSS-Nahaufnahme (Knochen-Fächer vs Referenz)
             ["humanoidrig:bind:0", "werk-rig-bind.png", "front"], // GUSS 2: SkinnedMesh Bind-Pose
             ["humanoidrig:rest:0", "werk-rig-rest.png", "front"], // Kontrapost-Ruhepose (S-Kurve)
             ["humanoidrig:rest:0", "werk-rig-rest-seite.png", "side"], // Kontrapost Profil
