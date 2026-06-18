@@ -16449,10 +16449,13 @@ class AnazhRealm {
         // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
-        const hairGeom = new THREE.SphereGeometry(0.52 * kh, 20, 16);
-        hairGeom.scale(1.08, 0.46, 1.12); // FLACHE, kleinere Kronen-Kappe (kurzes Haar, hugt die Schädel-Kuppe), kein dominanter dunkler Helm
+        // HAAR als TEIL-KUGEL-CAP (nur die obere Kalotte, thetaLength 0.58π) → eine saubere Haarlinien-
+        //   KANTE statt eines vollen Blobs; nach HINTEN gekippt → Stirn frei, Nacken gedeckt.
+        const hairGeom = new THREE.SphereGeometry(0.66 * kh, 26, 18, 0, Math.PI * 2, 0, Math.PI * 0.46);
+        hairGeom.scale(1.05, 1.08, 1.08); // nur die obere KUPPE (flache Kalotte, stoppt über den Ohren)
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY + 0.32, -0.12)); // höher auf der Krone, flach → nur Oberseite/Hinterkopf, Stirn + Seiten frei
+        hair.position.copy(L(0, skullY - 0.16, -0.06)); // auf der Schädel-Kuppe
+        hair.rotation.x = -0.24; // leicht nach hinten → vorn an der Haarlinie, hinten Krone/Nacken
         hair.castShadow = true;
         rig.head.add(hair);
     }
