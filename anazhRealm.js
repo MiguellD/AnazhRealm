@@ -59221,7 +59221,11 @@ class AnazhRealm {
         // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
         // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
         // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
-        const SAMPLES = 10;
+        // V18.257 TEMP (Entwicklung, Schöpfer-Wunsch „vorübergehend weniger Bäume"):
+        // SAMPLES 10→6 — weniger Spawn-Versuche pro Chunk = weniger Bäume + schnellerer
+        // Cold-Start (mehr Chunks im Warmup-Budget, flotterer Test). REVERT auf 10 für
+        // die volle V18.215-Wald-Dichte, wenn die Entwicklungs-Phase durch ist.
+        const SAMPLES = 6;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
