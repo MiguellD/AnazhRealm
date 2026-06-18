@@ -218,8 +218,8 @@ gefaltete, überlappende Flächen. **Meine V18.25/.30/.31-Auslauf-Pflaster haben
   das Abwärts-Material bleibt als markierte Saat (Test materialKept).**
 
 **Dynamik (Ebene A):**
-- Wasser fliesst nicht nach (Minecraft) — die fundamentale Architektur-Lücke.
-- Ein umgegrabener Kanal füllt nur bis zum frozen `L`, sucht kein neues Niveau.
+- ~~Wasser fliesst nicht nach (Minecraft) — die fundamentale Architektur-Lücke.~~ **GELÖST V18.84–.94** (die CA-Flut `_tickWorldWaterCA` fließt + ruht; der Nachfolger `terrain-t4-wasser-ca-plan.md` ist VOLLENDET — dieser Eintrag ist überholt).
+- ~~Ein umgegrabener Kanal füllt nur bis zum frozen `L`, sucht kein neues Niveau.~~ **GELÖST** (Quellen-Pin: ein gegrabener Kanal füllt aus den gepinnten Quellen nach).
 
 **Fundament (älter, aus der roadmap):**
 - H3: Seen/Flüsse jenseits ±1024 m (Region mit dem Spieler mitwandern) — der Ozean ist global (V17.117), Binnengewässer nicht.

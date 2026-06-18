@@ -37,8 +37,9 @@ Küsten-Aquifer V18.125 · ferne Binnengewässer-Kacheln V18.132) · **PHASE A K
 Spawn · Fog · Kollision) · LOD-Kaskade U1–U5 (U4-Fernfeld V18.131 · U5-CSM V18.130) · das
 lebendige Feld + Emotion-Kern + Lebenszyklus · Crafting-Resonanz + Foraging (V18.133) ·
 Robustheit R0–R5 rund · Rekursion bootet · der soziale Bogen begonnen (Zeugnisse + Lesezeichen
-V18.134/.135). Was fehlt: die S-Browser-Sign-offs (gigant-plan §6.3) · F4-Rest (Folgen/
-Kommentare) · F2-Stern · W18 · Phase E · die Taille Ω0–Ω6.
+V18.134/.135). Was JETZT (Stand 18.06.) noch fehlt: die S-Browser-Sign-offs (gigant-plan §6.3) ·
+F2-Stern. (✓ seit dem 11.06.-Snapshot: ~~F4-Folgen/Kommentare~~ · ~~W18~~ V18.144–.146 ·
+~~Phase E~~ V18.148 · ~~Taille Ω0–Ω6~~ V18.137–.141.)
 
 ---
 
@@ -95,8 +96,8 @@ N3 stabiles LOD (grösserer LOD0-Ring + Hysterese).** (Subsumiert das alte „E4
 das Wasser-RENDER T7c/T7d (Fluss-Edit-Löcher + lake/river-Naht, burnte Zone, Schöpfer-Auge) · der Spawn
 liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan.md`.
 
-**Phase 3 — die Seele** Crafting-Schluss (~~S6-B~~ ✓ V18.133 · S9-Sign-off · S11 · ~~S7-C~~ ✓ V18.127) · **Phase E** (Bedrohung/Furcht — der
-letzte Emotion-Kern-Konsument) · Mana-Symmetrie · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
+**Phase 3 — die Seele** Crafting-Schluss (~~S6-B~~ ✓ V18.133 · S9-Sign-off · S11 · ~~S7-C~~ ✓ V18.127) · ~~**Phase E**~~ ✓ V18.148 (Bedrohung/Furcht — der
+letzte Emotion-Kern-Konsument) · ~~Mana-Symmetrie~~ ✓ V18.196 · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
 lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
 **Quer dazu (eigene Bögen):** ~~der **soziale Mesh-Bogen**~~ **✓ RUND V18.134–.147** (Bewerten ·
@@ -125,14 +126,22 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 - **`docs/archiv/handover.md`** — die volle Wellen-Chronik (jüngste oben) + das Schöpfer-Audit-Gedächtnis (der alte `rueckmeldung.md`-Korpus liegt als Snapshot in `archiv/`)
 - **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
 
-**DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen):
-**Phase E** Bedrohung/Furcht (`archiv/kampf-plan.md`; D4-Temperament ist die Vorstufe) ·
-**R6** Selbst-Erweiterung (R2+R4 stehen, `archiv/robustheit-plan.md`) ·
-**Mana-Symmetrie** (`magieleitung`→Äther, zweite Ausdauer-Achse) ·
-**KI als volle Co-Schöpferin** (LLM schreibt Regeln, aber opt-in) ·
-**Wasser-Nachfliessen** (das statische `L`-Höhenfeld → echtes Minecraft-Fluid) ·
-das echte **V18→V19-Zeit-Portal** · **VR/WebXR** · **IndexedDB** · **Fahrzeug-Fahr-Tiefe** ·
-**Statusbar-Tiefe** · B1 Wasser-Sheet→Worker.
+**DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen; Stand 18.06.2026, mit `handover.md` synchronisiert):
+
+**ERFÜLLT** (sichtbar behalten, NICHT gestrichen — `handover.md` markiert sie V18.148–.196):
+**Phase E** Bedrohung/Furcht ✓ V18.148 (HP→`threatened` · Raubtier-Trieb `_creatureHuntDrive` · `glutwesen`) ·
+**R6** Selbst-Erweiterung ✓ V18.152 (`_portalReceiveCapability`/`grantCapability` — Capability-Inversion durch die dslRun-Sandbox) ·
+**Mana-Symmetrie** ✓ V18.196 (`magieleitung`→Mana-Regen + Geste-Kosten ∝ Substanz) ·
+**IndexedDB** ✓ (die 5-MB-localStorage-Wand fällt; große Snapshots additiv+graceful) ·
+**Fahrzeug-Fahr-Tiefe** ✓ V18.150 (`_vehicleProfile` emergent: Räder→Tempo, Masse→Trägheit, Auftrieb) ·
+**Statusbar-Tiefe** ✓ V18.149 (auf Essenz geschlankt, F3-Muster).
+
+**NOCH OFFEN:**
+**KI als volle Co-Schöpferin** (LLM schlägt DSL-Regeln durch dieselbe Sandbox vor — Infra steht, ephemer+fitness-getestet; offen = die opt-in-Adoption als Politur) ·
+das echte **V18→V19-Zeit-Portal** (der Empfang ist gebaut+grün getestet via `smoke-zeitportal`; offen = ein ECHTER Alt-Build emittiert ein Artefakt, das ein Folge-Build isst) ·
+**VR/WebXR** (0 Code — echt offen) ·
+**Wasser-Zwei-Naturen-Vereinigung** (die CA-Flut IST gebaut V18.84–.94 — NICHT „Fluid bauen"; offen = das statische `L`-Substrat + die CA zu EINER Natur vereinen + Wasserfall-Render-Politur) ·
+B1 Wasser-Sheet→Worker (bewusst vertagt, V18.104-Entscheid).
 
 ---
 
