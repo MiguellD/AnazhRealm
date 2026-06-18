@@ -312,7 +312,7 @@ class AnazhRealm {
             knowledgeBase: [],
             versionHistory: [],
             maxVersionHistoryEntries: 50,
-            maxCreatures: 120,
+            maxCreatures: 60,
             maxLoadedChunks: 196,
             currentVersion: "7.71",
             terrainSteepness: 1.0,
