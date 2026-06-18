@@ -51525,13 +51525,13 @@ class AnazhRealm {
         const avatarWaechterParts = [
             {
                 shape: "box",
-                material: "holz",
+                material: "fleisch",
                 position: { x: 0, y: 1.25, z: 0 },
                 size: { x: 0.6, y: 0.9, z: 0.35 },
             },
             {
                 shape: "sphere",
-                material: "holz",
+                material: "fleisch",
                 position: { x: 0, y: 1.95, z: 0 },
                 size: { x: 0.42, y: 0.42, z: 0.42 },
             },
@@ -51544,28 +51544,28 @@ class AnazhRealm {
             // zu zählen. Arme ±0.8 / Beine ±0.34 → zwei echte Glied-Paare.
             {
                 shape: "cylinder",
-                material: "holz",
+                material: "fleisch",
                 position: { x: -0.8, y: 1.25, z: 0 },
                 size: { x: 0.16, y: 0.85, z: 0.16 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
-                material: "holz",
+                material: "fleisch",
                 position: { x: 0.8, y: 1.25, z: 0 },
                 size: { x: 0.16, y: 0.85, z: 0.16 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
-                material: "holz",
+                material: "fleisch",
                 position: { x: -0.34, y: 0.45, z: 0 },
                 size: { x: 0.2, y: 0.9, z: 0.2 },
                 segments: 6,
             },
             {
                 shape: "cylinder",
-                material: "holz",
+                material: "fleisch",
                 position: { x: 0.34, y: 0.45, z: 0 },
                 size: { x: 0.2, y: 0.9, z: 0.2 },
                 segments: 6,
@@ -59295,11 +59295,12 @@ class AnazhRealm {
         // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
         // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
         // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
-        // V18.258 — REVERT der V18.257-Entwicklungs-Drossel zurück auf die volle
-        // V18.215-Wald-Dichte (SAMPLES = 10). Die Gate-Cold-Start-Geschwindigkeit
-        // trägt jetzt der Headless-Skin-Res-Cap (Avatar-Build 19s→2.8s, V18.257),
-        // nicht eine reduzierte Baum-Dichte — der Wald bleibt dicht.
-        const SAMPLES = 10;
+        // V18.259 — DEV-DROSSEL (Schöpfer-Wunsch „unglaublich viele Bäume → weniger"):
+        // SAMPLES 10→4 temporär für die Entwicklung (weniger Spawn-Versuche/Chunk =
+        // deutlich weniger Bäume + schnellerer Cold-Start). Die forest-mask × clumpAt-
+        // Logik bleibt — der Wald clumpt weiter natürlich, nur dünner. REVERT auf 10
+        // für die volle V18.215-Dichte vor v1.0 (Roadmap TEMP-DEV-DROSSELN).
+        const SAMPLES = 4;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-

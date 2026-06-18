@@ -36753,9 +36753,13 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
             out.totholzSpawnError = String(_e && _e.message);
         }
 
-        // ─── (W7) SAMPLES = 10 in _populateVoxelChunkVegetation ─────
+        // ─── (W7) SAMPLES in _populateVoxelChunkVegetation ─────
+        // V18.259 — DEV-DROSSEL: SAMPLES ist temporär gesenkt (Schöpfer „weniger Bäume,
+        // schneller iterieren"); v1.0 dreht zurück auf die volle V18.215-Dichte (10). Der
+        // Test prüft darum einen SANEN Bereich (≥4), nicht den festen Wert 10.
         const popSrc = r._populateVoxelChunkVegetation.toString();
-        out.samples10 = /SAMPLES\s*=\s*10/.test(popSrc);
+        const _sm = popSrc.match(/const SAMPLES\s*=\s*(\d+)/);
+        out.samples10 = !!_sm && Number(_sm[1]) >= 4;
 
         // ─── (W8) Material-Colors Ω-K3 (laub/holz dunkler) ──────────
         const mat = r.state.materials;
@@ -36817,7 +36821,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         "V18.215 (W6c) Totholz computeCompoundTags lebendig < 1.0 (Variation wirkt)",
         res.totholzCompoundLebendigLow === true
     );
-    check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES = 10 (Plan §8.2 dichter)", res.samples10 === true);
+    check("V18.215 (W7) _populateVoxelChunkVegetation SAMPLES ≥ 4 (dev-gedrosselt; v1.0 = 10)", res.samples10 === true);
     check(
         `V18.215 (W8a) Holz dunkler+erdig (R<0x80, G<0x60) — gemessen R=${res.holzColor ? ((res.holzColor >> 16) & 0xff).toString(16) : "?"}, G=${res.holzColor ? ((res.holzColor >> 8) & 0xff).toString(16) : "?"}`,
         res.holzIsErdig === true
