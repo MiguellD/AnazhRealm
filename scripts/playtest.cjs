@@ -21995,61 +21995,138 @@ async function checkBandWellePerfDBudget(ctx) {
     );
 }
 
-// V12.0-perf.e (Wurzel D — Nexus-Governor): beweist, dass die Nexus-
-// Selbstanalyse bei FPS-Druck die WELT-QUALITÄT justiert (Render-Radius +
-// Build-Budget), NIE die Gravitation. Das alte Pflaster (`gravity *= 0.9`)
-// ließ die Welt schweben — die spürbare Disharmonie.
+// V18.263 (DER PERFORMANCE-REGELKREIS — vereinheitlicht aus V12.0-perf.e):
+// EIN PID-Regler (kein Parallel-System) misst die per-Subsystem-Last (perfSense)
+// und fährt ALLE Qualitäts-Stellgrößen (Architektur-Cull-Radius/Budget + Streaming-
+// Budget + Wasser-Iso-Budget) gewichtet nach der GEMESSENEN Last — das TEUERSTE
+// Subsystem gibt ZUERST nach (Synergie statt blindem Drosseln). Gravitation NIE.
+// Der alte fps-Bang-Bang ist im PID aufgegangen; `_nexusAdaptiveQuality(fps)`
+// bleibt nur als expliziter fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         if (!r || !r.state) return { error: "no realm" };
+        const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
         out.hasGovernor = typeof r._nexusAdaptiveQuality === "function";
-        if (!out.hasGovernor) return out;
-        out.noGravityPflaster = !/gravity\s*\*=/.test(r.selfAwarenessAnalyze.toString());
-        const sr = r.state.architectureCullingRadius;
-        const sb = r.state.architectureBuildBudgetPerFrame;
-        const sg = r.state.gravity;
-        r.state.architectureCullingRadius = 130;
-        r.state.architectureBuildBudgetPerFrame = 4;
-        const gBefore = r.state.gravity;
-        r._nexusAdaptiveQuality(30);
-        out.tightenedRadius = r.state.architectureCullingRadius < 130;
-        out.tightenedBudget = r.state.architectureBuildBudgetPerFrame < 4;
-        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(20);
-        out.radiusFloor = r.state.architectureCullingRadius >= 100 && r.state.architectureCullingRadius < 130;
-        out.budgetFloor = r.state.architectureBuildBudgetPerFrame >= 1;
-        out.gravityUntouchedLow = r.state.gravity === gBefore;
-        for (let i = 0; i < 50; i++) r._nexusAdaptiveQuality(60);
-        out.relaxedRadius = r.state.architectureCullingRadius === 150;
-        out.relaxedBudget = r.state.architectureBuildBudgetPerFrame === 6;
-        out.gravityUntouchedHigh = r.state.gravity === gBefore;
-        const rBefore = r.state.architectureCullingRadius;
+        out.hasRegulate = typeof r._nexusPerfRegulate === "function";
+        out.hasActuate = typeof r._nexusPerfActuate === "function";
+        out.hasSenseFold = typeof r._perfSenseFoldFrame === "function";
+        out.hasEstimate = typeof r._estimatePerfCost === "function";
+        if (!out.hasGovernor || !out.hasRegulate || !out.hasActuate) return out;
+        const saStr = r.selfAwarenessAnalyze.toString();
+        out.noGravityPflaster = !/gravity\s*\*=/.test(saStr);
+        // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
+        out.noParallelGovernor = !/_nexusAdaptiveQuality/.test(saStr);
+        // CONSUM (source-probe): der Regler liest die GEMESSENE frameMs + die Phasen.
+        out.regulateReadsSense = /sense\.frameMs/.test(r._nexusPerfRegulate.toString());
+        out.actuateReadsPhase = /sense\.phase/.test(r._nexusPerfActuate.toString());
+
+        const st = r.state;
+        const snap = {
+            sense: st.perfSense,
+            radius: st.architectureCullingRadius,
+            budget: st.architectureBuildBudgetPerFrame,
+            streamMs: st._voxelStreamBudgetMs,
+            waterMs: st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined,
+            gravity: st.gravity,
+            reg: st.perfRegulator,
+        };
+        st.perfRegulator = true;
+        st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
+        const gBefore = st.gravity;
+        const L = A.PERF_LEVERS;
+
+        // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen.
+        for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(15); // frameMs≈67 >> Soll
+        out.tightenedRadius = st.architectureCullingRadius < 130;
+        out.tightenedBudget = st.architectureBuildBudgetPerFrame < 4;
+        out.tightenedStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1];
+        out.radiusFloor =
+            st.architectureCullingRadius >= A.ARCH_QUALITY_RADIUS_MIN && st.architectureCullingRadius < 130;
+        out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
+        out.gravityUntouchedLow = st.gravity === gBefore;
+
+        // (2) FPS-LUFT (klare Reserve) → relax zum MAXIMUM (alle Stellgrößen).
+        for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(140); // frameMs≈7 << Soll
+        out.relaxedRadius = st.architectureCullingRadius === A.ARCH_QUALITY_RADIUS_MAX;
+        out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
+        out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
+        out.gravityUntouchedHigh = st.gravity === gBefore;
+
+        // (3) SYNERGIE (der Kern der Schöpfer-Forderung „optimal nutzen"): bei
+        // streaming-dominanter Last drosselt der EINE Regler das Stream-Budget
+        // STÄRKER (näher an min) als den Architektur-Radius — das teuerste zuerst.
+        r._nexusPerfActuate({
+            loadScale: 0.5,
+            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        const radiusPos =
+            (st.architectureCullingRadius - A.ARCH_QUALITY_RADIUS_MIN) /
+            (A.ARCH_QUALITY_RADIUS_MAX - A.ARCH_QUALITY_RADIUS_MIN);
+        out.synergyStreamThrottledMore = streamPos < radiusPos - 0.1;
+        out.synergyStreamPos = +streamPos.toFixed(2);
+        out.synergyRadiusPos = +radiusPos.toFixed(2);
+
+        // (4) ungültige FPS ändert nichts.
+        const rBefore = st.architectureCullingRadius;
         r._nexusAdaptiveQuality(0);
-        out.zeroFpsNoChange = r.state.architectureCullingRadius === rBefore;
-        r.state.architectureCullingRadius = sr;
-        r.state.architectureBuildBudgetPerFrame = sb;
-        r.state.gravity = sg;
+        out.zeroFpsNoChange = st.architectureCullingRadius === rBefore;
+
+        // (5) Kosten-Schätzung liest den Sense (der Produktions-Ökonomie-Keim).
+        st.perfSense.perCreatureMs = 0.05;
+        out.estimateScales =
+            r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
+            r._estimatePerfCost("creature", 10) === 0.5;
+
+        st.perfSense = snap.sense;
+        st.architectureCullingRadius = snap.radius;
+        st.architectureBuildBudgetPerFrame = snap.budget;
+        st._voxelStreamBudgetMs = snap.streamMs;
+        if (st.atmosphere && snap.waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = snap.waterMs;
+        st.gravity = snap.gravity;
+        st.perfRegulator = snap.reg;
         return out;
     });
     if (res.error) {
-        check("V12.0-perf.e: Nexus-Governor-Band (realm)", false, res.error);
+        check("V18.263: Perf-Regelkreis-Band (realm)", false, res.error);
         return;
     }
-    check("V12.0-perf.e: _nexusAdaptiveQuality existiert", res.hasGovernor);
-    check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster mehr in selfAwarenessAnalyze", res.noGravityPflaster);
-    check("V12.0-perf.e: FPS-Druck strafft Render-Radius + Build-Budget", res.tightenedRadius && res.tightenedBudget);
-    check("V12.0-perf.e: anhaltender Druck bounded (Radius ≥ MIN 100, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
+    check(
+        "V18.263: _nexusAdaptiveQuality (fps-Eingang) + _nexusPerfRegulate (PID) + _nexusPerfActuate existieren",
+        res.hasGovernor && res.hasRegulate && res.hasActuate
+    );
+    check("V18.263: Perf-Sense-Fold + Kosten-Schätzung existieren", res.hasSenseFold && res.hasEstimate);
+    check("V12.0-perf.e: kein `gravity *= 0.9`-Pflaster in selfAwarenessAnalyze", res.noGravityPflaster);
+    check(
+        "V18.263: KEIN Parallel-Governor — selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT (EIN Regler)",
+        res.noParallelGovernor
+    );
+    check(
+        "V18.263: CONSUM — der Regler liest die gemessene frameMs + die Subsystem-Phasen",
+        res.regulateReadsSense && res.actuateReadsPhase
+    );
+    check(
+        "V18.263: FPS-Druck strafft ALLE Stellgrößen (Radius + Budget + Stream-Budget)",
+        res.tightenedRadius && res.tightenedBudget && res.tightenedStream
+    );
+    check("V18.263: anhaltender Druck bounded (Radius ≥ MIN, Budget ≥ 1)", res.radiusFloor && res.budgetFloor);
     check(
         "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
         res.gravityUntouchedLow && res.gravityUntouchedHigh
     );
     check(
-        "V12.0-perf.e: FPS-Luft relaxt Qualität zurück zum Maximum (150 m / Budget 6)",
-        res.relaxedRadius && res.relaxedBudget
+        "V18.263: FPS-Luft relaxt ALLE Stellgrößen zum Maximum",
+        res.relaxedRadius && res.relaxedBudget && res.relaxedStream
     );
-    check("V12.0-perf.e: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
+    check(
+        `V18.263: SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < radiusPos ${res.synergyRadiusPos})`,
+        res.synergyStreamThrottledMore
+    );
+    check("V18.263: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
+    check("V18.263: Kosten-Schätzung skaliert mit n (Produktions-Ökonomie-Keim)", res.estimateScales);
 }
 
 // V12.0-perf.d.2 (Wurzel C — Lazy-Proxy-Collision): beweist, dass Architekturen

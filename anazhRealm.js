@@ -1070,6 +1070,15 @@ class AnazhRealm {
             // also immer < Render-Radius.
             architectureCollisionRadius: 90,
             architectureBuildBudgetPerFrame: 3,
+            // V18.263 — DER PERFORMANCE-REGELKREIS: der Sollwert + die vom PID-
+            // Regler gefahrenen Streaming-Stellgrößen (Default = volle Qualität;
+            // der Regler senkt sie unter Last). `perfRegulator:false` schaltet die
+            // Rückkopplung ab (der Sense misst weiter). perfSense lazy initialisiert.
+            perfTargetMs: 17,
+            perfRegulator: true,
+            perfSense: null,
+            _voxelStreamBudgetMs: 5,
+            _voxelStreamMaxPerFrame: 6,
             // V12.0-perf.h — deferred-Queue für den Wasser-Iso-Build (Set von
             // "cx,cz"-Keys), per-Frame budgetiert (Streaming-Hitch-Heilung).
             pendingWaterIso: null,
@@ -12755,6 +12764,257 @@ class AnazhRealm {
         }
     }
 
+    // ===== V18.263 — DER PERFORMANCE-REGELKREIS (der Nexus WERTET seine Last) ===
+    // Schöpfer-Auftrag (die tiefere Wurzel hinter dem Lauf-Freeze): „das System
+    // besteht aus Regelkreisen — wenn der Nexus nicht messen kann, was wieviel
+    // Leistung zieht, schätzt er nie Produktions-Kosten ab; das ist Basteln, kein
+    // sauberer PID-Regelkreis. Das System muss selbst erkennen, um die Leistung
+    // optimal zu nutzen." Das ist die WERTUNG-Vision (das-lebendige-feld.md) auf
+    // die EIGENE Last angewandt: EIN Feld (perfSense: pro-Subsystem ms/Frame),
+    // EINE Gleichung der Wertung (δ = Ist − Soll Frame-Zeit), EIN Regler (PID),
+    // der die Stellgrößen so verteilt, dass das TEUERSTE Subsystem zuerst nachgibt
+    // (kein blindes Architektur-Drosseln, wenn das Streaming der Engpass ist).
+    //
+    // EIN REGLER, KEIN PARALLEL-SYSTEM (Schöpfer-Korrektur „so entstehen Parallel-
+    // systeme"): der alte fps-Bang-Bang `_nexusAdaptiveQuality` ist HIER aufgegangen
+    // — DERSELBE PID fährt die Architektur- UND die Streaming-/Wasser-Stellgrößen,
+    // getrieben per Frame vom gemessenen Sense (`_perfSenseFoldFrame`). `_nexus
+    // AdaptiveQuality(fps)` bleibt nur als expliziter fps-Eingang (Test/extern) in
+    // denselben Regler. Stellgrößen: Cull-Radius/Build-Budget (Architektur) +
+    // Stream-Budget/MaxPerFrame (Streaming) + Wasser-Iso-Budget (Wasser).
+    //
+    // SENSE: das System nimmt seine Last wahr (immer an, ~µs/Frame). Eine Loop-
+    // Phase wird via `_perfSenseLap` gemessen, pro Frame akkumuliert; `_perfMark`
+    // trägt feinere Sub-Signale (der Player-Chunk-Sync-Build = die Freeze-Quelle,
+    // die Worker-Lieferung = die Gesundheit, die BVH-Kollision).
+    _perfSenseLap(label, since) {
+        const now = performance.now();
+        const s = this.state._perfFrame || (this.state._perfFrame = {});
+        s[label] = (s[label] || 0) + (now - since);
+        return now;
+    }
+
+    _perfMark(field, ms) {
+        const f = this.state._perfMarks || (this.state._perfMarks = {});
+        f[field] = (f[field] || 0) + 1;
+        if (ms != null) {
+            f[field + "Ms"] = (f[field + "Ms"] || 0) + ms;
+            if (ms > (f[field + "Max"] || 0)) f[field + "Max"] = ms;
+        }
+    }
+
+    // Die geteilte, zeit-gemessene Chunk-BVH-Wand (EINE Quelle für beide Caller:
+    // Worker-Mesh-Finalize + Lazy-Upgrade) — der Sense trägt den BVH-Posten.
+    _buildVoxelChunkBVH(mesh) {
+        const t0 = performance.now();
+        const body = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        this._perfMark("bvh", performance.now() - t0);
+        return body;
+    }
+
+    _perfSenseInit() {
+        const phase = {};
+        for (const k of AnazhRealm.PERF_PHASES) phase[k] = 0;
+        return {
+            phase, // EWMA ms/Frame je Subsystem — „was wieviel Leistung zieht"
+            frameMs: AnazhRealm.PERF_TARGET_MS,
+            frameMaxMs: AnazhRealm.PERF_TARGET_MS,
+            // PRO-EINHEIT-KOSTEN (der Keim der Produktions-Ökonomie):
+            perCreatureMs: 0,
+            perChunkBuildMs: 0,
+            // Streaming-Gesundheits-Sub-Signale (gemessen, nicht geraten):
+            syncBuildN: 0,
+            syncBuildMs: 0,
+            workerMeshN: 0,
+            bvhMs: 0,
+            // Regler-Zustand:
+            loadScale: 1, // 1 = volle Qualität, 0 = max gedrosselt
+            pidPrevErr: 0,
+        };
+    }
+
+    // FOLD: am Frame-Ende die Pro-Frame-Akkus in den geglätteten Sense falten
+    // (EWMA — eine ruhige, peer-konsistente Wahrnehmung) und den Regler treiben.
+    // frameMs = die echte Frame-Zeit (delta·1000; fängt den Block-Spike, weil der
+    // nächste rAF erst nach einem Sync-Build feuert).
+    _perfSenseFoldFrame(frameMs, dtSec) {
+        const st = this.state;
+        let sense = st.perfSense;
+        if (!sense) sense = st.perfSense = this._perfSenseInit();
+        const f = st._perfFrame || {};
+        const m = st._perfMarks || {};
+        const A = AnazhRealm.PERF_SENSE_ALPHA;
+        const ewma = (prev, x) => prev + A * (x - prev);
+        // "streaming" wrappt _loopVoxelStreaming (inkl. dem genesteten waterIso) →
+        // für DISJUNKTE Phasen das Wasser abziehen (sonst doppelt gezählt im Aktuator).
+        const streamingExcl = Math.max(0, (f.streaming || 0) - (f.waterIso || 0));
+        for (const k of AnazhRealm.PERF_PHASES) {
+            const v = k === "streaming" ? streamingExcl : f[k] || 0;
+            sense.phase[k] = ewma(sense.phase[k] || 0, v);
+        }
+        sense.frameMs = ewma(sense.frameMs, frameMs);
+        sense.frameMaxMs = Math.max(frameMs, sense.frameMaxMs * 0.92); // abklingende Spitze
+        const nCre = st.creatures ? st.creatures.length : 0;
+        sense.perCreatureMs = ewma(sense.perCreatureMs, nCre > 0 ? (f.creatures || 0) / nCre : 0);
+        // ein gebauter Chunk je Frame kostet ~syncBuildMs (sync) ODER ~bvhMs (worker+BVH)
+        sense.syncBuildN = ewma(sense.syncBuildN, m.syncBuild || 0);
+        sense.syncBuildMs = ewma(sense.syncBuildMs, m.syncBuildMs || 0);
+        sense.workerMeshN = ewma(sense.workerMeshN, m.workerMesh || 0);
+        sense.bvhMs = ewma(sense.bvhMs, m.bvhMs || 0);
+        sense.perChunkBuildMs = ewma(sense.perChunkBuildMs, (m.syncBuildMs || 0) + (m.bvhMs || 0));
+        st._perfFrame = {};
+        st._perfMarks = {};
+        this._nexusPerfRegulate(dtSec); // die RÜCKKOPPLUNG
+        if (st.perfOverlay) this._perfSenseRender();
+    }
+
+    // DER PID-REGLER (die saubere Rückkopplung, statt Bang-Bang). δ = Ist − Soll
+    // (Frame-Zeit). Velocity-Form auf `loadScale` ∈ [0..1]: loadScale TRÄGT den
+    // Zustand (Integral-Gedächtnis) → inhärent glatt (alles fadet, V17.23), die
+    // Sättigung [0,1] ist das Anti-Windup. err>0 (zu teuer) → loadScale fällt →
+    // die Stellgrößen drosseln; err<0 (Luft) → loadScale steigt → relax.
+    _nexusPerfRegulate(dtSec) {
+        const st = this.state;
+        const sense = st.perfSense;
+        if (!sense || st.perfRegulator === false) return;
+        const dt = Math.max(0.004, Math.min(0.1, dtSec || 0.016));
+        const targetMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+        const err = (sense.frameMs - targetMs) / targetMs; // skaleninvariant
+        const K = AnazhRealm.PERF_PID;
+        // velocity-PID: Δu = Kp·Δe + Ki·e·dt + Kd·(e−2e'+e'')/dt → loadScale −= Δu
+        const dErr = err - sense.pidPrevErr;
+        const du = K.p * dErr + K.i * err * dt + K.d * (dErr / dt) * 0; // D klein gehalten (Rauschen)
+        sense.pidPrevErr = err;
+        sense.loadScale = Math.max(0, Math.min(1, sense.loadScale - du));
+        this._nexusPerfActuate(sense);
+    }
+
+    // AKTUIEREN (die EINE Stelle, die ALLE Qualitäts-Stellgrößen fährt): loadScale
+    // × pro-Subsystem-Kosten-Anteil → jede Stellgröße. Das TEUERSTE regelbare
+    // Subsystem (Architektur vs Streaming vs Wasser, aus dem GEMESSENEN Sense)
+    // gibt ZUERST nach — so nutzt das System seine Selbst-Erkenntnis OPTIMAL,
+    // statt blind die Architektur zu drosseln, wenn das Streaming der Engpass ist.
+    // Bei loadScale=1 (Luft) stehen alle Stellgrößen auf Maximum (volle Qualität).
+    _nexusPerfActuate(sense) {
+        const st = this.state;
+        const ls = sense.loadScale;
+        const p = sense.phase;
+        // die drei regelbaren Domänen + ihre gemessene Last (render skaliert mit
+        // dem Cull-Radius → zählt zur Architektur-Domäne).
+        const cArch = (p.archCulling || 0) + (p.render || 0);
+        const cStream = p.streaming || 0;
+        const cWater = p.waterIso || 0;
+        const tot = cArch + cStream + cWater + 1e-6;
+        const maxShare = Math.max(cArch, cStream, cWater) / tot;
+        // eff(c): 1 = unangetastet, ls = voll gedrosselt. Das teuerste Subsystem
+        // (share == maxShare) trägt (1−ls) VOLL; billigere nur anteilig.
+        const eff = (c) => {
+            if (maxShare < 1e-6) return ls; // keine Last-Info → uniform drosseln
+            const rel = c / tot / maxShare; // ∈ [0..1], 1 = das teuerste
+            return Math.max(0, Math.min(1, 1 - (1 - ls) * rel));
+        };
+        const cl = (v) => Math.max(0, Math.min(1, v));
+        const lerp = (a, b, t) => a + (b - a) * cl(t);
+        const L = AnazhRealm.PERF_LEVERS;
+        const effArch = eff(cArch),
+            effStream = eff(cStream),
+            effWater = eff(cWater);
+        // Architektur (vormals der Bang-Bang-Governor — jetzt EINE Quelle):
+        st.architectureCullingRadius = lerp(
+            AnazhRealm.ARCH_QUALITY_RADIUS_MIN,
+            AnazhRealm.ARCH_QUALITY_RADIUS_MAX,
+            effArch
+        );
+        st.architectureBuildBudgetPerFrame = Math.round(
+            lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
+        );
+        // Streaming (die Lauf-Freeze-Domäne):
+        st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], effStream);
+        st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], effStream));
+        // Wasser:
+        if (!st.atmosphere) st.atmosphere = {};
+        st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
+    }
+
+    // DIE PRODUKTIONS-KOSTEN-SCHÄTZUNG (der Payoff): aus dem Sense ableiten, was
+    // das Erzeugen von n Einheiten an Frame-Zeit kostet — so kann der Nexus VOR
+    // dem Spawn/Bau entscheiden (statt blind zu produzieren + dann zu ruckeln).
+    // Gibt geschätzte ms/Frame zurück (gemessen, kein geratener Tarif).
+    _estimatePerfCost(kind, n = 1) {
+        const sense = this.state.perfSense;
+        if (!sense) return 0;
+        const per =
+            kind === "creature"
+                ? sense.perCreatureMs
+                : kind === "chunk"
+                  ? sense.perChunkBuildMs
+                  : kind === "frame"
+                    ? sense.frameMs
+                    : 0;
+        return Math.max(0, per) * Math.max(0, n);
+    }
+
+    // OBSERVABILITÄT (kein Regler, nur ein Fenster IN den Sense): der Schöpfer
+    // SIEHT, was das System misst + wie der Regelkreis steht. `perf` im Chat.
+    _ensurePerfOverlayDiv() {
+        if (typeof document === "undefined" || !document.body) return null;
+        let div = document.getElementById("perf-overlay");
+        if (!div) {
+            div = document.createElement("div");
+            div.id = "perf-overlay";
+            div.style.cssText =
+                "position:fixed;top:52px;left:8px;z-index:9999;background:rgba(0,0,0,0.74);" +
+                "color:#cfe6ff;font:11px/1.5 monospace;padding:7px 10px;border-radius:6px;" +
+                "pointer-events:none;white-space:pre;border:1px solid rgba(120,200,255,0.28)";
+            document.body.appendChild(div);
+        }
+        return div;
+    }
+
+    _togglePerfOverlay() {
+        this.state.perfOverlay = !this.state.perfOverlay;
+        const div = this._ensurePerfOverlayDiv();
+        if (div) div.style.display = this.state.perfOverlay ? "block" : "none";
+        this.log(
+            this.state.perfOverlay
+                ? "Perf-Sense AN (oben links) — der Nexus zeigt, was er misst: pro-Subsystem ms, der Regelkreis (loadScale/δ), die Stellgrößen."
+                : "Perf-Sense AUS.",
+            "INFO"
+        );
+        return this.state.perfOverlay;
+    }
+
+    _perfSenseRender() {
+        if (!this.state.perfOverlay) return;
+        const now = performance.now();
+        if (this._perfRenderLast && now - this._perfRenderLast < 400) return;
+        this._perfRenderLast = now;
+        const div = this._ensurePerfOverlayDiv();
+        if (!div) return;
+        const s = this.state.perfSense;
+        if (!s) return;
+        const p = s.phase;
+        const targetMs = Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+        const ph = (k) => (p[k] || 0).toFixed(1).padStart(5);
+        const fm = s.frameMaxMs;
+        const fmCol = fm > 33 ? "#ff6b6b" : fm > 22 ? "#ffd166" : "#8fe98f";
+        const lsCol = s.loadScale < 0.6 ? "#ff6b6b" : s.loadScale < 0.9 ? "#ffd166" : "#8fe98f";
+        const vc = this.state.voxelChunks ? this.state.voxelChunks.size : 0;
+        const arch = this.state.architectures ? this.state.architectures.length : 0;
+        let coll = 0;
+        if (this.state.architectures) for (const e of this.state.architectures) if (e && e.collision) coll++;
+        const wq = this.state.voxelMeshPending ? this.state.voxelMeshPending.size : 0;
+        div.innerHTML =
+            `PERF-SENSE (der Nexus misst seine Last)\n` +
+            `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
+            `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
+            `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms\n` +
+            `REGEL  loadScale <span style="color:${lsCol}">${(s.loadScale * 100).toFixed(0)}%</span>  δ ${(s.frameMs - targetMs).toFixed(1)} ms\n` +
+            `stellgr  streamBudget ${(this.state._voxelStreamBudgetMs || 0).toFixed(1)} ms  waterBudget ${((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1)} ms\n` +
+            `chunk SYNC ${s.syncBuildN.toFixed(2)}/f (${s.syncBuildMs.toFixed(0)} ms)  worker ${s.workerMeshN.toFixed(2)}/f  q${wq}\n` +
+            `kosten/kreatur ${s.perCreatureMs.toFixed(3)} ms · chunks ${vc} arch ${arch} coll ${coll}`;
+    }
+
     // ### Physik ### V7.42
     async initPhysics() {
         try {
@@ -20901,6 +21161,9 @@ class AnazhRealm {
     _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData, opts = {}) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod, hasBVH: false };
+        // V18.263 — der Worker LIEFERTE einen fertigen Mesh (der gesunde Pfad);
+        // das Perf-Overlay zählt die Rate (0/s beim Laufen ⇒ Worker kommt nicht nach).
+        this._perfMark("workerMesh");
         const geom = new THREE.BufferGeometry();
         geom.setAttribute("position", new THREE.Float32BufferAttribute(meshData.positions, 3));
         geom.setAttribute("normal", new THREE.Float32BufferAttribute(meshData.normals, 3));
@@ -20931,7 +21194,7 @@ class AnazhRealm {
         const wantBVH = opts.buildBVH !== false;
         let hasBVH = false;
         if (wantBVH) {
-            const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+            const collisionBody = this._buildVoxelChunkBVH(mesh);
             if (!collisionBody) {
                 this._queueDispose(geom);
                 return null;
@@ -20966,7 +21229,7 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         const entry = this.state.voxelChunks.get(key);
         if (!entry || !entry.mesh || entry.hasBVH || entry.empty) return false;
-        const body = this._buildStaticTriMeshCollision(entry.mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const body = this._buildVoxelChunkBVH(entry.mesh);
         if (!body) return false;
         entry.hasBVH = true;
         return true;
@@ -21465,26 +21728,20 @@ class AnazhRealm {
     // Luft (> high) lockert er beide zurück bis zum Maximum. Bounded, ±1 Schritt
     // pro Analyse (2-s-Debounce) → ruhige, hysterese-arme Selbst-Balance.
     // Gravitation bleibt UNANGETASTET. Rückgabe: ob sich etwas geändert hat.
+    // V18.263 — VEREINHEITLICHT: der alte fps-Bang-Bang ist im EINEN PID-Regel-
+    // kreis AUFGEGANGEN (kein Parallel-System — Schöpfer-Korrektur „so entstehen
+    // Parallelsysteme"). Die Architektur-Stellgrößen (Cull-Radius/Build-Budget)
+    // fährt jetzt DERSELBE Regler wie die Streaming-/Wasser-Stellgrößen, gewichtet
+    // nach der GEMESSENEN Subsystem-Last. Diese Signatur bleibt als expliziter
+    // fps-Eingang (Test/extern): sie speist eine fps-abgeleitete Frame-Zeit in
+    // DENSELBEN Regler, der live per Frame aus dem Sense (gemessen) läuft.
     _nexusAdaptiveQuality(fps) {
         if (!Number.isFinite(fps) || fps <= 0) return false;
-        const s = this.state;
-        const RMAX = AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
-        const RMIN = AnazhRealm.ARCH_QUALITY_RADIUS_MIN;
-        const BMAX = AnazhRealm.ARCH_QUALITY_BUDGET_MAX;
-        const BMIN = AnazhRealm.ARCH_QUALITY_BUDGET_MIN;
-        let radius = Number.isFinite(s.architectureCullingRadius) ? s.architectureCullingRadius : RMAX;
-        let budget = Number.isFinite(s.architectureBuildBudgetPerFrame) ? s.architectureBuildBudgetPerFrame : 3;
-        if (fps < AnazhRealm.ARCH_QUALITY_FPS_LOW) {
-            radius = Math.max(RMIN, radius - 10);
-            budget = Math.max(BMIN, budget - 1);
-        } else if (fps > AnazhRealm.ARCH_QUALITY_FPS_HIGH) {
-            radius = Math.min(RMAX, radius + 10);
-            budget = Math.min(BMAX, budget + 1);
-        }
-        if (radius === s.architectureCullingRadius && budget === s.architectureBuildBudgetPerFrame) return false;
-        s.architectureCullingRadius = radius;
-        s.architectureBuildBudgetPerFrame = budget;
-        return true;
+        const sense = this.state.perfSense || (this.state.perfSense = this._perfSenseInit());
+        const before = this.state.architectureCullingRadius;
+        sense.frameMs = 1000 / fps;
+        this._nexusPerfRegulate(1 / fps);
+        return this.state.architectureCullingRadius !== before;
     }
 
     selfAwarenessAnalyze() {
@@ -21506,13 +21763,10 @@ class AnazhRealm {
         // „Welt bei 60 FPS" verbunden. Läuft unconditional (tightent bei
         // Druck, relaxt bei Luft); recordWeakness bleibt für FPS<60.
         if (this.state.fps < 60) this.recordWeakness("Low FPS");
-        const qChanged = this._nexusAdaptiveQuality(this.state.fps);
-        if (qChanged) {
-            this.log(
-                `Selbstanalyse: FPS ${Math.round(this.state.fps)} — Welt-Qualität justiert (Render-Radius ${this.state.architectureCullingRadius} m, Build-Budget ${this.state.architectureBuildBudgetPerFrame})`,
-                "INFO"
-            );
-        }
+        // V18.263 — die Welt-Qualität fährt jetzt der EINE PID-Regelkreis pro Frame
+        // (aus dem gemessenen Perf-Sense, _perfSenseFoldFrame → _nexusPerfRegulate),
+        // NICHT mehr ein separater 2-s-fps-Governor (das war das Parallel-System).
+        // Die Selbstanalyse trägt hier nur noch die Schwäche-Erinnerung.
 
         // Tunneling-Erkennung
         if (this.state.errorLog.some((log) => log.includes("Tunneling"))) {
@@ -21707,6 +21961,12 @@ class AnazhRealm {
         const vc = command.toLowerCase().trim();
         if (vc === "voxel test") {
             this._spawnVoxelTestChunk();
+            return true;
+        }
+        // V18.263 — der Perf-Sense als Fenster: zeigt, was der Nexus an Last MISST
+        // (pro-Subsystem ms) + wie der Regelkreis steht (loadScale/δ/Stellgrößen).
+        if (vc === "perf" || vc === "perf sense" || vc === "debug perf") {
+            this._togglePerfOverlay();
             return true;
         }
         if (vc === "voxel carve" || vc === "voxel fill") {
@@ -28007,7 +28267,7 @@ class AnazhRealm {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        const collisionBody = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
+        const collisionBody = this._buildVoxelChunkBVH(mesh);
         if (!collisionBody) {
             this._queueDispose(geom);
             this._queueDispose(mat);
@@ -28110,7 +28370,13 @@ class AnazhRealm {
             this._ensureHydroTilesAround(cx * span + half, cz * span + half, half + 64);
         }
         if (opts.forceSync === true) {
-            return this._buildVoxelChunkData(cx, cz, lod);
+            // V18.263 — der Player-Chunk-Sync-Build ist der Freeze-Verdächtige
+            // (~239 ms, blockiert den Main-Thread). Der Perf-Sense misst ihn IMMER
+            // (µs-Tap), damit der Nexus die Streaming-Last kennt, nicht rät.
+            const _t0 = performance.now();
+            const _r = this._buildVoxelChunkData(cx, cz, lod);
+            this._perfMark("syncBuild", performance.now() - _t0);
+            return _r;
         }
         // Stufe 1: Worker-Mesh.
         let workerMesh;
@@ -32643,8 +32909,13 @@ class AnazhRealm {
         this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
         let built = 0;
-        const FRAME_BUDGET_MS = 4;
-        const MAX_PER_FRAME = 6;
+        // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
+        // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
+        // Frame → kleinerer Spike. `?? 4/6` = sicherer Default (alte Welten/Tests).
+        const FRAME_BUDGET_MS = Number.isFinite(this.state._voxelStreamBudgetMs) ? this.state._voxelStreamBudgetMs : 4;
+        const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
+            ? this.state._voxelStreamMaxPerFrame
+            : 6;
         const tStart = performance.now();
         outer: for (let r = 0; r <= ringRadius; r++) {
             for (let dz = -r; dz <= r; dz++) {
@@ -71067,7 +71338,10 @@ class AnazhRealm {
             // gesetzt — der Block war tote Schicht (System-Audit §2).
 
             // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
+            // V18.263 — der Perf-Sense misst jede schwere Phase (was wieviel zieht).
+            let _pt = performance.now();
             this._loopPhysicsSync(delta, currentTime);
+            this._perfSenseLap("physics", _pt);
 
             // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
             // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
@@ -71096,7 +71370,9 @@ class AnazhRealm {
             this._loopWeatherAndGrowth(delta, currentTime);
 
             // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
+            _pt = performance.now();
             this._loopVoxelStreaming();
+            this._perfSenseLap("streaming", _pt);
 
             // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
             this._loopSkyboxPlanets(currentTime);
@@ -71119,7 +71395,9 @@ class AnazhRealm {
 
             // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
             // Spieler-Distanz. Daten-Einträge bleiben immer.
+            _pt = performance.now();
             this.tickArchitectureCulling(currentTime);
+            this._perfSenseLap("archCulling", _pt);
             // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
             this.tickBuildMode();
             // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
@@ -71133,7 +71411,14 @@ class AnazhRealm {
             // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
             // ### Rendering ### (V9.44-f → _loopRender)
+            _pt = performance.now();
             this._loopRender(currentTime);
+            this._perfSenseLap("render", _pt);
+
+            // V18.263 — FRAME-ENDE: den Perf-Sense falten (EWMA) + den PID-Regler
+            // treiben (die Rückkopplung). frameMs = delta·1000 = die echte Frame-Zeit
+            // (fängt den Block-Spike eines Sync-Builds — der nächste rAF feuert erst danach).
+            this._perfSenseFoldFrame(delta * 1000, delta);
         };
         // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
         // einen Frame SYNCHRON treiben können statt auf das im Headless auf
@@ -71762,7 +72047,9 @@ class AnazhRealm {
 
     _loopWeatherAndGrowth(delta, currentTime) {
         // ### Kreaturen, Wetter, Wachstum ###
+        const _ct = performance.now();
         this.updateCreatures(delta);
+        this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
         // D5a (V18.128) — der Auto-Zug zieht POLYVALENT aus dem Vokabular
         // (nie zweimal dasselbe Wort) und geht SANFT über die Transition —
@@ -71837,7 +72124,9 @@ class AnazhRealm {
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterIsoBudgetMs)
                 ? this.state.atmosphere.waterIsoBudgetMs
                 : 7;
+        const _wt = performance.now();
         this._tickPendingWaterIso(4, _isoBudgetMs);
+        this._perfSenseLap("waterIso", _wt);
         // T4a-2 — der Wasser-Automat tickt die AKTIVEN Chunks (active-cell-only → kostenlos, wenn
         // kein Wasser perturbiert ist; ein Carve weckt seine Region → das Wasser strömt nach).
         this._tickWorldWaterCA();
@@ -72518,7 +72807,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.262.0";
+AnazhRealm.VERSION = "18.263.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -75389,6 +75678,20 @@ AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
 AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
+// V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
+// Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
+AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
+AnazhRealm.PERF_TARGET_MS = 17; // Soll-Frame-Zeit (≈59 fps) — der Regelkreis-Sollwert
+AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wahrnehmung
+// PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
+AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
+// Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der
+// Regler interpoliert je nach loadScale × gemessenem Subsystem-Kosten-Anteil.
+AnazhRealm.PERF_LEVERS = Object.freeze({
+    streamBudgetMs: [2.5, 5], // _loopVoxelStreaming Frame-Budget
+    streamMaxPerFrame: [3, 6], // _loopVoxelStreaming max Chunks/Frame
+    waterIsoBudgetMs: [3.5, 8], // _tickPendingWaterIso Zeit-Deadline (V18.261-Lever)
+});
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
