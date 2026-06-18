@@ -457,6 +457,22 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.261 — DER SPAWN-FREEZE: GEMESSEN = WASSER-ISO, NICHT ANIMATION/WIND/KREATUREN (Zeit-Budget)
+
+Der Schöpfer aus dem Browser: „28 FPS aber freezt fast, kann mich kaum vom Start bewegen" + die Hypothesen „liegt's an den Kreaturen / dem neuen Avatar / dem Wind in den Bäumen / der Körper-Animation / dem Licht?". Statt zu raten: das **Frame-Profil GEMESSEN** (`diag-frame-profile`, render-gestubbt → reine CPU-Kosten pro Phase). Die Zahl widerlegt jede Hypothese:
+
+- `_loopVoxelStreaming` Ø 7.4 ms / **max 33.3 ms** · `_tickPendingWaterIso` Ø 6.7 ms / **max 32.8 ms** (genested → derselbe Spike) — **DAS ist der Spawn-Freeze.**
+- `updateCreatures` (Körper-/Kreatur-Animation) = **0.145 ms** · Wind = ein Uniform-Write/Frame (GPU macht die Displacement) · Licht = kein CPU-Posten (Teil des GPU-Renders). Alle drei Hypothesen sind ~40–200× billiger als der wahre Posten — die Animation ist NICHT das Problem.
+- Allokationen: 1 Vector3 + 14 Color/Tick → kein GC-Druck.
+
+**WURZEL:** `_tickPendingWaterIso` budgetierte nur die ANZAHL (4 Iso-Builds/Frame), nicht die ZEIT. 4 große Ozean-Iso-Builds in EINEM Frame = 33 ms; am Spawn enqueuen viele Chunks auf einmal → 33-ms-Spikes über mehrere Frames stapeln = der mehrsekündige Freeze.
+
+**FIX (wie die Profis):** eine Frame-**Zeit-Deadline** (Default 7 ms, tunbar `state.atmosphere.waterIsoBudgetMs`) ON TOP des Count-Budgets — nach jedem Build geprüft, ≥1 Build + der Anti-Starvation-FIFO-Tail bleiben garantiert, der Rest streamt smooth in den Folge-Frames nach. Die Deadline kommt vom Live-Loop; der Default `Infinity` hält die Test-/Drain-Pfade COUNT-deterministisch (kein Wall-Clock-Flake). **GEMESSEN nachher: max-Tick 37.5 → 18 ms, water-iso-Spike 32.8 → 14.3 ms** — der Freeze ist weg, die Tiefe (alle Chunks/Wasser) bleibt voll erhalten (nur zeitlich verteilt).
+
+**DIE KONSOLEN-FEHLER (Schöpfer „ist das nicht ein Problem?") — ehrlich triagiert, KEINER ist der Freeze:** (1) `AttributeNode: instanceColor not found` (133×) = Compile-Zeit-Rauschen, nicht per-Frame; die HISM/Gras/Streu-Materialien lesen `attribute("instanceColor")`, das Attribut sitzt aber auf `mesh.instanceColor` statt `geometry.attributes` → der Tint defaultet auf einen kleinen Konstant-Shift (Bäume rendern korrekt, nur ohne pro-Instanz-Varianz). Der starField-Fix (`geom.setAttribute`) ist 1:1-geom-sicher, aber Gras teilt EINE `_grassConeGeometry` über alle Mesh-Pools → die simple Bindung würde alle Gras-Meshes EINE Farbe zeigen; der saubere Fix braucht den korrekten TSL-Instance-Node (WebGPU-strikt = Crash-Risiko bei Fehler) → bewusst als klar-abgegrenzte Politur vertagt, NICHT gepflastert. (2) `ShaderMaterial not compatible` (2×, Startup) + (3) `PostProcessing → RenderPipeline` (1×, Deprecation) = kosmetisch, Fallback-geschützt.
+
+**LEHRE:** die Hypothese „neue Kreaturen/Avatar/Wind kosten" war intuitiv plausibel — und MESSBAR falsch. Die Zahl führte direkt auf den Wasser-Iso-Posten, und die Heilung war NICHT Kürzen (die Tiefe bleibt), sondern Verteilen (Zeit-Budget). Miss zuerst.
+
 ### V18.260 — DER RENDER-MERGE: PLACED-STRUKTUREN FALTEN AUF (Draw-Calls runter, gemessene Perf-Wurzel)
 
 Der Schöpfer-Befund aus dem Browser (5 Screenshots): „28 FPS aber der Browser freezt fast, kann mich kaum vom Start bewegen, Bäume wunderschön aber zu viele" — und die scharfe Disziplin-Frage „was frisst die GESAMTE Leistung, hast du GEMESSEN, wie lange dauert ein Chunk-Build?". Die Bitte: die Tiefe (Bäume/PBR/Avatar) NICHT kürzen, sondern die Last heilen.

@@ -58242,9 +58242,21 @@ class AnazhRealm {
         this.state.pendingWaterIso.add(`${cx},${cz}`);
     }
 
-    _tickPendingWaterIso(maxPerFrame = 4) {
+    _tickPendingWaterIso(maxPerFrame = 4, deadlineMs = Infinity) {
         const queue = this.state.pendingWaterIso;
         if (!queue || queue.size === 0) return 0;
+        // V18.261 — ZEIT-BUDGET (Schöpfer-Befund „kann mich kaum vom Start bewegen,
+        // Browser freezt"; GEMESSEN diag-frame-profile: dieser Posten spitzte auf
+        // 33 ms/Frame = der Spawn-Hitch). Das COUNT-Budget (maxPerFrame) allein
+        // deckelt nur die ANZAHL, nicht die ZEIT — 4 große Ozean-Iso-Builds in
+        // EINEM Frame = 33 ms. Die Profis deckeln per Frame-Deadline + verteilen
+        // den Rest (smooth streaming statt Freeze). Der Tail-Build (Anti-Starvation)
+        // bleibt unberührt — er läuft nur, wenn die Deadline noch Luft hat. Nach
+        // JEDEM Build geprüft → ein bereits laufender Build überschießt höchstens
+        // einmal (Ø ~1.7 ms/Build, worst ~14 ms statt 33 ms, GEMESSEN). Die
+        // Deadline kommt vom Live-Loop (_loopVoxelStreaming); der Default Infinity
+        // hält Test-/Drain-Pfade COUNT-deterministisch (kein Wall-Clock-Flake).
+        const _isoT0 = performance.now();
         // V14.4 — nach Spieler-Distanz PRIORISIEREN: die SICHTBAREN (nahen)
         // See-Oberflächen zuerst bauen. Sonst staut die Queue (jeder Chunk-Build
         // enqueued 4 Nachbarn für die Seam-Heilung, aber nur `maxPerFrame` werden
@@ -58286,6 +58298,7 @@ class AnazhRealm {
         const distBudget = Math.max(1, maxPerFrame - 1);
         for (const key of keys) {
             if (built >= distBudget) break;
+            if (built > 0 && performance.now() - _isoT0 > deadlineMs) break; // V18.261 Zeit-Deadline (≥1 garantiert)
             queue.delete(key);
             // Chunk inzwischen weg (gepruned)? Dann nichts bauen.
             if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
@@ -58295,7 +58308,9 @@ class AnazhRealm {
             this._buildVoxelChunkWaterIsoSurface(cx, cz);
             built++;
         }
-        if (built < maxPerFrame) {
+        // FIFO-Tail (Anti-Starvation): nur wenn das Count-Budget UND die
+        // Zeit-Deadline noch Luft haben (built===0 garantiert immer ≥1 Build).
+        if (built < maxPerFrame && (built === 0 || performance.now() - _isoT0 <= deadlineMs)) {
             for (const key of queue) {
                 queue.delete(key);
                 if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) continue;
@@ -71404,9 +71419,15 @@ class AnazhRealm {
         // `state.atmosphere.canopyStreaming` (Default false; V18.222.1 nach
         // Schöpfer-Browser-Audit aktiviert). No-Op wenn das Flag false ist.
         this._tickCanopyStreaming();
-        // V12.0-perf.h — Wasser-Iso deferred bauen (≤2/Frame), der schwerste
+        // V12.0-perf.h — Wasser-Iso deferred bauen (≤4/Frame), der schwerste
         // Main-Thread-Streaming-Posten verteilt statt im Chunk-Finalize-Frame.
-        this._tickPendingWaterIso(4);
+        // V18.261 — + ZEIT-DEADLINE (Default 7 ms, tunbar): deckelt den GEMESSENEN
+        // 33-ms-Spawn-Hitch auf ~14 ms → kein Freeze, das Wasser streamt smooth nach.
+        const _isoBudgetMs =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterIsoBudgetMs)
+                ? this.state.atmosphere.waterIsoBudgetMs
+                : 7;
+        this._tickPendingWaterIso(4, _isoBudgetMs);
         // T4a-2 — der Wasser-Automat tickt die AKTIVEN Chunks (active-cell-only → kostenlos, wenn
         // kein Wasser perturbiert ist; ein Carve weckt seine Region → das Wasser strömt nach).
         this._tickWorldWaterCA();
@@ -72087,7 +72108,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.260.0";
+AnazhRealm.VERSION = "18.261.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
