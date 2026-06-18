@@ -116,6 +116,18 @@ function startSaveServer() {
         });
         console.log(`  Avatar bodyParts-Anzahl: ${avInfo.bodyParts}`);
 
+        // (D) _gameLoopTick-Kosten: viele Bands pumpen den Loop N× → per-Tick × N = die verteilten Gaps
+        const tick = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            // warm
+            for (let i = 0; i < 5; i++) r._gameLoopTick(performance.now());
+            const t0 = performance.now();
+            const N = 50;
+            for (let i = 0; i < N; i++) r._gameLoopTick(performance.now());
+            return { perTick: (performance.now() - t0) / N, creatures: (r.state.creatures || []).length };
+        });
+        console.log(`\n  _gameLoopTick: ${tick.perTick.toFixed(1)} ms/Tick · ${tick.creatures} Kreaturen · (Band pumpt ~30-50 → ${(tick.perTick * 40 / 1000).toFixed(1)}s/Band)`);
+
         const hEnd = await heap();
         console.log(`\nHEAP Ende: ${hEnd} MB (Δ seit Boot: ${hEnd - h0} MB über 6 Avatar-Builds + 1 Kreatur)`);
         const med = avTimes.filter((x) => x != null).sort((a, b) => a - b)[Math.floor(avTimes.length / 2)];
