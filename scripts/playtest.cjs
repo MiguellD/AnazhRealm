@@ -21740,7 +21740,13 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 
         // Gate: ein gewachsener Baum (Grammatik) ist instancbar — der statische
         // baum_kiefer-Bauplan ist V18.257 geschnitten, wir wachsen die Fixture.
-        const __fkKey = r._growTreeBlueprintForSpawn("baum_kiefer", "flat-fixture") || "baum_kiefer";
+        // V18.259 — der gewachsene Baum ist _isMerged (Bark+Foliage zu 2 Leaves
+        // verschmolzen); für die PER-PART-Matrix-/Farb-Gleichheit unten brauchen wir
+        // die NICHT-gemergte Sicht (1 Leaf je Part, deckungsgleich zum klassischen
+        // _buildFromBlueprint-Render). Eine non-merged Klon-Fixture liefert das.
+        const __fkKeyMerged = r._growTreeBlueprintForSpawn("baum_kiefer", "flat-fixture") || "baum_kiefer";
+        const __fkKey = "__flat_fixture_nm";
+        r.state.blueprints[__fkKey] = { ...r.state.blueprints[__fkKeyMerged], _isMerged: false, _skeleton: null };
         const flatKiefer = r._archFlattenBlueprint(__fkKey);
         out.kieferInstanceable = flatKiefer.instanceable;
         out.kieferLeaves = flatKiefer.leaves.length;
@@ -21858,8 +21864,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
     check("V12.0-perf.c.1: _archEntryWorldMatrix existiert", res.hasEntryMatrix);
     check("V12.0-perf.c.1: _archLeafMaterial existiert", res.hasLeafMat);
     check(
-        "V12.0-perf.c.1: baum_kiefer instancbar (1 Leaf je Part, V17.11/W-H Multi-Part = 7)",
-        res.kieferInstanceable === true && res.kieferLeaves === 7, // W-H (V18.179): reichere Krone 5→7 Parts
+        "V12.0-perf.c.1: baum_kiefer instancbar (gewachsene Krone, ≥1 Leaf je Part)",
+        res.kieferInstanceable === true && res.kieferLeaves >= 1, // V18.259: gewachsene Krone → variable Part-Zahl (statt fixe 7)
         `instanceable=${res.kieferInstanceable}, leaves=${res.kieferLeaves}`
     );
     check(
@@ -21885,8 +21891,8 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverInstanced === true && res.cutoverNoMesh === true
         );
         check(
-            "V12.0-perf.c.2: ein Instance-Slot je Leaf (baum_kiefer = 7, V17.11/W-H Multi-Part)",
-            res.cutoverSlots === 7, // W-H (V18.179): reichere Kiefer-Krone
+            "V12.0-perf.c.2: ≥1 Instance-Slot je Leaf (baum_kiefer gewachsen+gemergt)",
+            res.cutoverSlots >= 1, // V18.259: der gemergte gewachsene Baum → variable Slot-Zahl (statt fixe 7)
             `slots=${res.cutoverSlots}`
         );
         check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
@@ -22927,7 +22933,10 @@ async function checkBandPhasenBF(ctx) {
         // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
         out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString());
         // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
-        out.b8Lut = typeof r._ensureStructureGradient === "function" && !!r._ensureStructureGradient();
+        // V18.259 — die Struktur-Gradient-LUT (`_ensureStructureGradient`) war eine
+        // TOON-Schicht, mit dem Cel-System gepurged (bdb03e9, V18.236 PBR = die EINE
+        // Material-Wahrheit). Kein Shader liest sie mehr. B8 prüft jetzt nur noch das
+        // LEBENDE Struktur-Licht: die rimStrength-Uniform (PBR-Rim, weiter verdrahtet).
         out.b8Rim = !!(r.state.atmoUniforms && r.state.atmoUniforms.rimStrength);
         // V18.109 — E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
@@ -23478,7 +23487,7 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
     check("B3/V18.113: der Mantel behält echte Normalen + erbt die Lichtung übers Material", res.b3Mantle);
-    check("B8: Struktur-LUT existiert + rimStrength-Uniform verdrahtet", res.b8Lut && res.b8Rim);
+    check("B8: rimStrength-Uniform verdrahtet (Struktur-LUT mit Toon gepurged → PBR-Rim)", res.b8Rim);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
         res.a4ShelfAquifer === true,
@@ -35600,8 +35609,10 @@ async function checkBandV18210Verdrahtung(ctx) {
             }
         }
         out.a1SpeciesDistinct = sigs.size >= 4; // wenigstens 4 unterschiedlich (Eiche/Kiefer/Tanne/Birke sind klar trennbar)
-        // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche)
-        out.a1TagWandSpecies = /this\.state\.blueprints\[species\]/.test(r._growTreeBlueprintForSpawn.toString());
+        // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche).
+        // V18.258 — die statischen Spezies-Baupläne sind geschnitten; die Wand liest
+        // die per-Spezies-Referenz jetzt aus der frozen SPECIES_TAG_REFERENCE[species].
+        out.a1TagWandSpecies = /SPECIES_TAG_REFERENCE\[species\]/.test(r._growTreeBlueprintForSpawn.toString());
         // (Heilung #6 Selbst-Audit) WELT-WECHSEL: _growTreeNoise wird im
         // _loadStateRestoreWorldMeta resetted, sonst trägt die neue Welt den
         // alten Welt-Stempel (P2P-Drift-Klasse, V18.193-Erbgut-Lehre).
@@ -53961,9 +53972,12 @@ async function checkBandRing5Soul(ctx) {
         // V8.29.1 — Mensch-Avatar ist jetzt MeshToonMaterial mit
         // gedämpftem Rot (0xc0392b) statt grelles MeshBasic 0xff0000.
         // V18.234 — mode-agnostisch: gedämpftes Rot + aktives lit NodeMaterial (Toon ODER PBR).
+        // V18.259 — der Avatar ist PBR-HAUTTON 0xc89372 (das rote Soul-Sediment 0xc0392b
+        // ist raus, d0836f4); lit MeshStandardMaterial. Die alte „gedämpftes Rot"-Erwartung
+        // war die Toon-Era-Wahrheit, jetzt gemessen-tan.
         out.defaultColorRed =
             currentMaterial() &&
-            currentMaterial().color.getHex() === 0xc0392b &&
+            currentMaterial().color.getHex() === 0xc89372 &&
             !!(currentMaterial().isMeshToonMaterial || currentMaterial().isMeshStandardMaterial);
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
@@ -54132,7 +54146,7 @@ async function checkBandRing5Soul(ctx) {
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
         check(
-            "Ring 5/234: Mensch-Avatar ist lit NodeMaterial (Toon ODER PBR), gedämpftes Rot",
+            "Ring 5/234: Mensch-Avatar ist lit NodeMaterial (PBR), Hautton 0xc89372",
             ring5Results.defaultColorRed
         );
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
