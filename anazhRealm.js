@@ -15128,7 +15128,7 @@ class AnazhRealm {
         //    (gibt das Kinn + die Gesichts-Ebene). So eine echte Kopf-Form statt eines Eis;
         //    der Hals vertikal + schlank thront ihn (kein offener Ring im Nacken). ──
         const hr = headRatio; // Kopf-Cluster skaliert mit der Alter/Heroik-Achse
-        limb(0, shoulderY - 0.16, -0.02, 0, 7.25, -0.04, 0.46 * (0.92 + muscle * 0.25), bodyMat, bodyCol, { def: true, kScale: 0.92 }); // Hals — tiefer Hals-Muskel-Kern (kein nacktes Fleisch), trägt den Kopf
+        limb(0, shoulderY - 0.12, -0.02, 0, 7.22, -0.04, 0.54 * (0.96 + muscle * 0.25), bodyMat, bodyCol, { def: true, kScale: 0.95 }); // Hals — KRÄFTIGER (war 0.46) + kürzer → sturdy, kein Giraffen-Hals; trägt den Kopf, verschmilzt glatt mit Trapez/Brust
         // (STERNOCLEIDOMASTOIDEUS → MUSKEL-ATLAS unten)
         // SCHÄDEL — ein sauberes OVOID: EIN Cranium-Dome deckt Scheitel UND Hinterkopf (Occiput) in einer
         //    glatten Form (war Kugel + separater Occiput-Bump = „Schädel komisch"); höher als breit + leicht
@@ -15180,9 +15180,9 @@ class AnazhRealm {
                 elbowY = waistY + 0.1;
             const wristX = s * (shoulderHalf + 0.6),
                 wristY = hipY - 0.3; // Handgelenk TIEFER → der Unterarm ~so lang wie der Oberarm (war 0.68× → stämmig/kurz, Schöpfer „arme nicht sauber")
-            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.32 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Oberarm — TIEFER Muskel-Kern (Brachialis-Bulk); Bizeps/Trizeps liegen als Relief darüber
+            limb(shX, shY - 0.18, 0, elbowX, elbowY, 0, 0.37 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Oberarm — VOLLER Muskel-Kern (war 0.32, Arme zu dünn); Bizeps/Trizeps als Relief darüber
             // (BIZEPS / TRIZEPS / UNTERARM-MUSKEL → MUSKEL-ATLAS unten — gelenk-verankert)
-            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.24 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Unterarm — tiefer Muskel-Kern (Flexoren/Extensoren-Bulk); der Radius/Ulna-Schaft liegt darunter
+            limb(elbowX, elbowY, 0, wristX, wristY, 0, 0.29 * limbF, limbMat, limbCol, { def: true, kScale: 0.95 }); // Unterarm — VOLLER (war 0.24); taper zum Handgelenk via die Hand
             // ── ARM-KNOCHEN (das starre Gerüst + die GELENK-PUNKTE = die Rig-Bones, ein Gerüst zwei
             //    Zwecke: Form UND Animation): dünne knochen-Schäfte IM Fleisch (inneres Gerüst, unsichtbar
             //    in der Haut) + Gelenk-Knöpfe an Schulter/Ellbogen/Handgelenk (die T-Knochen-Enden, die
@@ -15205,7 +15205,7 @@ class AnazhRealm {
             for (let f = 0; f < 4; f++) {
                 const sp = f - 1.5; // -1.5 … 1.5 (vier Finger, fächern symmetrisch)
                 const baseX = hw + sp * 0.05 * limbF; // Mittelhand-Basis am Karpus (eng)
-                const kx = hw + sp * 0.115 * limbF; // Knöchel fächert breiter
+                const kx = hw + sp * 0.082 * limbF; // Knöchel-Reihe ENGER (kein Spinnen-Spreizen), Finger liegen natürlich beisammen
                 const kz = 0.06 + Math.abs(sp) * 0.014; // die Knöchel-Reihe bogt leicht vor
                 limb(baseX, wristY - 0.18, 0.03, kx, knuckY, kz, 0.05 * limbF, "knochen", limbCol); // Mittelhand-Knochen (Metacarpus, fächert)
                 add("sphere", "knochen", kx, knuckY, kz, 0.05 * limbF, 0.05 * limbF, 0.05 * limbF, null, limbCol, { kScale: 0.42 }); // Knöchel-Gelenk (Metacarpalkopf)
@@ -16215,7 +16215,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 6, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: res 128 (schnelles Werkstatt-Backen); die Extremitäten werden über die FORM geheilt (gefleischte Glieder), nicht über Auflösung; glatte Bäuche (taubin 6) + subtile Furchen; VERSCHIEBUNGS-SUBSTRAT
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.11, displace: true, dispCap: 0.34 }); // Avatar HAUT: res 128; taubin 8 = GLATTE Haut (gegen Lumpigkeit) + dispCap 0.34 = sanftere Muskel-Schwellung; subtile Furchen (seamGroove 6) tragen die Definition
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -16449,10 +16449,10 @@ class AnazhRealm {
         // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
-        const hairGeom = new THREE.SphereGeometry(0.56 * kh, 20, 16);
-        hairGeom.scale(1.12, 0.58, 1.2); // KURZE Kronen-Kappe (flach, hugt nur Oberseite+Hinterkopf), folgt der Schädel-Kuppe
+        const hairGeom = new THREE.SphereGeometry(0.52 * kh, 20, 16);
+        hairGeom.scale(1.08, 0.46, 1.12); // FLACHE, kleinere Kronen-Kappe (kurzes Haar, hugt die Schädel-Kuppe), kein dominanter dunkler Helm
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY + 0.28, -0.14)); // sitzt auf der KRONE, Unterkante an der Haarlinie (~Stirn-Oberkante) → Gesicht + Seiten frei, kein verschlingender Helm
+        hair.position.copy(L(0, skullY + 0.32, -0.12)); // höher auf der Krone, flach → nur Oberseite/Hinterkopf, Stirn + Seiten frei
         hair.castShadow = true;
         rig.head.add(hair);
     }
