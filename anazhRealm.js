@@ -15062,10 +15062,10 @@ class AnazhRealm {
         // mF (Muskel-Fülle) kommt aus _humanoidLandmarks (oben destrukturiert) — die EINE Quelle.
         // KLAVIKEL (Schlüsselbein, knochen) — die SCHARFE horizontale Gräte, die die Schulter-Breite
         //    VORN trägt (mit Skapula+Deltoid, da der Brustkorb schmaler ist) + den Hals→Brust-Übergang.
-        add("box", "knochen", 0, shoulderY + 0.06, 0.16 * girthF, shoulderHalf * 1.12, 0.1, 0.18, null, limbCol, {
-            kScale: 0.46,
+        add("box", "knochen", 0, shoulderY + 0.04, 0.1 * girthF, shoulderHalf * 1.08, 0.09, 0.13, null, limbCol, {
+            kScale: 0.7,
             struct: true,
-        }); // KLAVIKEL — endet an den Schultern (war shoulderHalf*1.5 = breiter ALS die Schultern), höher + schmaler = dezenter Grat
+        }); // KLAVIKEL — WEICHER (kScale 0.46→0.7) + TIEFER (z 0.16→0.1) → ein subtiler Schlüsselbein-Grat unter der Haut statt einer poking Knochen-Bar am Brust-Top
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
@@ -15196,7 +15196,7 @@ class AnazhRealm {
             const hw = wristX + s * 0.02;
             add("box", limbMat, wristX, wristY - 0.02, 0.02, 0.22 * limbF, 0.07, 0.2 * limbF, null, limbCol, { kScale: 0.72 }); // Retinaculum (Sehnen-Manschette am Handgelenk)
             add("box", "knochen", hw, wristY - 0.17, 0.04, 0.24 * limbF, 0.13, 0.13 * limbF, null, limbCol, { kScale: 0.5, struct: true }); // Karpus (Handwurzel-Block — Basis des Fächers)
-            add("box", limbMat, hw, wristY - 0.21, 0.03, 0.27 * limbF, 0.15, 0.09, null, limbCol, { kScale: 0.86 }); // Handrücken-Fleisch (dünn → Knochen lesen durch)
+            add("box", limbMat, hw, wristY - 0.36, 0.04, 0.29 * limbF, 0.42, 0.12, null, limbCol, { kScale: 0.9 }); // FLEISCH-HAND (Palm+Finger-Paddle) — dick genug, dass die geskinnte Hand AUFLÖST (die finger-dünnen Knochen verschwinden sonst < Gitter); die Knochen lesen als Relief darin
             const knuckY = wristY - 0.36; // Knöchel-Reihe (Metacarpalköpfe)
             for (let f = 0; f < 4; f++) {
                 const sp = f - 1.5; // -1.5 … 1.5 (vier Finger, fächern symmetrisch)
@@ -15309,9 +15309,9 @@ class AnazhRealm {
         //    (× mF Rumpf / limbF Glied), belly = Lage des dicksten Punkts, depth = Abplattung. ──
         const MUSC = [
             // HALS + KOPF
-            { o: "mastoid", i: "clavicleMed", b: 0.12, sc: mF, belly: 0.5, kS: 0.78 }, // Sternocleidomastoideus (Hals-V)
+            { o: "mastoid", i: "clavicleMed", b: 0.085, sc: mF, belly: 0.5, depth: 0.85, kS: 0.82 }, // Sternocleidomastoideus (Hals-V — schlanker, hugt den Hals, kein Lump am Hals-Boden)
             { o: "cheek", i: "jawAngle", b: 0.1, sc: mF, belly: 0.5, kS: 0.55, mat: headMat, col: limbCol, ndef: true }, // Masseter
-            { o: "c7", i: "acromion", b: 0.26, sc: mF, belly: 0.42, depth: 0.6, kS: 0.82 }, // Trapezius (oberer — das Hals→Schulter-Joch, breiter)
+            { o: "c7", i: "acromion", b: 0.22, sc: mF, belly: 0.46, depth: 0.55, kS: 0.84 }, // Trapezius (oberer — das Hals→Schulter-Joch, flacher/weicher → glatter Nacken-Schulter-Hang statt Lump)
             { o: "c7", i: "scapula", b: 0.34, sc: mF, belly: 0.5, depth: 0.45, kS: 0.8 }, // Trapezius (mittlerer — deckt das Schulterblatt = der Rücken-Diamant)
             { o: "erectorTop", i: "scapula", b: 0.3, sc: mF, belly: 0.5, depth: 0.45, kS: 0.82 }, // Trapezius (unterer Kopf — der Diamant reicht bis Mitte-Rücken)
             // SCHULTER (Deltoideus — eine gerundete KAPPE über dem Schultergelenk, drei Köpfe fächern
@@ -16211,7 +16211,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 5, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: glatte Bäuche (taubin 5) + SUBTILE Furchen (seamGroove 6, breiter) — die Definition ist FORM, keine dunklen X-ray-Linien, die "durch die Haut leuchten"; VERSCHIEBUNGS-SUBSTRAT
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 6, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.1, displace: true }); // Avatar HAUT: glatte Bäuche (taubin 6) + SUBTILE Furchen (seamGroove 6, breiter) — die Definition ist FORM, keine dunklen X-ray-Linien; VERSCHIEBUNGS-SUBSTRAT
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
@@ -16445,10 +16445,10 @@ class AnazhRealm {
         // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
         // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
-        const hairGeom = new THREE.SphereGeometry(0.6 * kh, 20, 16);
-        hairGeom.scale(1.04, 0.94, 1.12); // volle KAPPE, die die Schädel-Kuppe umschließt (kein flacher Beret-Disc)
+        const hairGeom = new THREE.SphereGeometry(0.56 * kh, 20, 16);
+        hairGeom.scale(1.12, 0.58, 1.2); // KURZE Kronen-Kappe (flach, hugt nur Oberseite+Hinterkopf), folgt der Schädel-Kuppe
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY + 0.12, -0.12)); // hugt die Krone (tiefer + umschließend) → liest als Haar/Skalp, nicht als schwebende Scheibe; Stirn bleibt frei
+        hair.position.copy(L(0, skullY + 0.28, -0.14)); // sitzt auf der KRONE, Unterkante an der Haarlinie (~Stirn-Oberkante) → Gesicht + Seiten frei, kein verschlingender Helm
         hair.castShadow = true;
         rig.head.add(hair);
     }
