@@ -16411,29 +16411,29 @@ class AnazhRealm {
         const sparkGeom = new THREE.SphereGeometry(0.008 * kh, 8, 6); // winziger Catchlight (kein cartoon-Funke)
         for (const s of [-1, 1]) {
             const eye = new THREE.Mesh(eyeGeom, eyeMat(0x2c2119, false, 0, 0.2)); // dunkelbraun statt fast-schwarz → kein hartes dunkles Band
-            eye.position.copy(L(s * 0.18, skullY - 0.07, 0.32));
+            eye.position.copy(L(s * 0.155, skullY - 0.2, 0.34)); // TIEFER (war auf Brauen-Höhe) + NÄHER (Augenabstand ≈ eine Augenbreite) + leicht vor
             eye.castShadow = false;
             rig.head.add(eye);
             // OBERLID — Hautmasse über der oberen Augen-Hälfte (von oben-vorn) → gedeckelter Blick.
             const lid = new THREE.Mesh(lidGeom, skinM);
-            lid.position.copy(L(s * 0.18, skullY, 0.31));
+            lid.position.copy(L(s * 0.155, skullY - 0.13, 0.33));
             lid.castShadow = false;
             rig.head.add(lid);
-            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 0.65, 0.3));
-            spark.position.copy(L(s * 0.18 + s * 0.02, skullY - 0.06, 0.38));
+            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 0.6, 0.3));
+            spark.position.copy(L(s * 0.155 + s * 0.018, skullY - 0.19, 0.4));
             spark.castShadow = false;
             rig.head.add(spark);
         }
         // MUND — eine RUNDE Unterlippe (flache, breite Hautkuppe) + eine dünne dunkle Mund-FURCHE
         // darüber (gewölbte Scheiben statt Boxen → kein rechteckiger Stempel; liest als Lippe + Spalt).
-        const lowerLip = new THREE.Mesh(new THREE.SphereGeometry(0.1 * kh, 12, 8), skinM);
-        lowerLip.scale.set(1.7, 0.55, 0.7); // breit, flach, dezent vor
-        lowerLip.position.copy(L(0, skullY - 0.39, 0.44));
+        const lowerLip = new THREE.Mesh(new THREE.SphereGeometry(0.092 * kh, 12, 8), skinM);
+        lowerLip.scale.set(1.55, 0.5, 0.66); // breit, flach, dezent vor
+        lowerLip.position.copy(L(0, skullY - 0.58, 0.42)); // TIEFER (war auf Nasen-Höhe) → unter die Nase
         lowerLip.castShadow = false;
         rig.head.add(lowerLip);
-        const mouthSeam = new THREE.Mesh(new THREE.SphereGeometry(0.085 * kh, 12, 8), eyeMat(0x39201b, false, 0, 0.62));
-        mouthSeam.scale.set(1.9, 0.3, 0.5); // sehr dünn, breit (die Lippen-Furche)
-        mouthSeam.position.copy(L(0, skullY - 0.34, 0.46));
+        const mouthSeam = new THREE.Mesh(new THREE.SphereGeometry(0.082 * kh, 12, 8), eyeMat(0x6a4332, false, 0, 0.6));
+        mouthSeam.scale.set(1.5, 0.22, 0.5); // dünn, schmaler + WEICHER getönt (lippen-braun, kein schwarzer Schlitz)
+        mouthSeam.position.copy(L(0, skullY - 0.53, 0.44));
         mouthSeam.castShadow = false;
         rig.head.add(mouthSeam);
         // OHREN — kleine flache Muscheln an den Kopf-Seiten (auf Augen-/Nasen-Höhe, Hautton)
