@@ -5742,9 +5742,15 @@ async function checkBandV1769RoleResonance(ctx) {
         // M2 (V18.154, meister-plan Befund 5): die Bäume sind ARCHITECTURE — die bulk-Achse
         // (span/8) nimmt dem Riesen-Laub die consumable-Resonanz (man trinkt keinen Baum;
         // GEMESSEN diag-roles: Eiche consumable 0.667→−0.03, architecture 0.307→0.57).
+        // V18.257 — die statischen Baum-Baupläne sind geschnitten; wir wachsen
+        // einen Baum durch die Grammatik + prüfen, dass der GEWACHSENE als architecture liest.
+        const __rrEiche = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "rr|eiche");
+        const __rrKiefer = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "rr|kiefer");
         out.baeumeArchitecture =
-            r.computeBlueprintRole(blu.baum_eiche) === "architecture" &&
-            r.computeBlueprintRole(blu.baum_kiefer) === "architecture";
+            !!__rrEiche &&
+            !!__rrKiefer &&
+            r.computeBlueprintRole(blu[__rrEiche]) === "architecture" &&
+            r.computeBlueprintRole(blu[__rrKiefer]) === "architecture";
 
         // (4) die Form-Rollen via Resonanz: ein weicher fleisch-Körper → soul, ein Turm → architecture, Nahrung →
         // consumable, ein magie-Ring → portal, ein Stein-Ring → architecture (KONSUM der Fixtures durch die Resonanz)
@@ -17421,22 +17427,19 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Segmente (holz) + mehrere Laub-Massen. Der Test wandert mit (V9.56-i):
         // ≥2 Parts, Stamm[0]=cylinder/holz, ein Laub-Krone-Part existiert (statt
         // fix parts[1]). Die Intention (holz-Stamm + laub-Krone, abbaubar) hält.
-        out.hasBaumEiche = !!(
-            bps.baum_eiche &&
-            Array.isArray(bps.baum_eiche.parts) &&
-            bps.baum_eiche.parts.length >= 2
-        );
-        out.hasBaumKiefer = !!(
-            bps.baum_kiefer &&
-            Array.isArray(bps.baum_kiefer.parts) &&
-            bps.baum_kiefer.parts.length >= 2
-        );
-        out.baumEicheIsBuiltIn = !!(bps.baum_eiche && bps.baum_eiche.builtIn === true);
-        const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-        const eichenKrone =
-            bps.baum_eiche && bps.baum_eiche.parts.find((p) => p.material === "laub" && p.shape === "sphere");
-        out.eichenStammHolz = !!(eichenStamm && eichenStamm.material === "holz" && eichenStamm.shape === "cylinder");
-        out.eichenKroneLaub = !!eichenKrone;
+        // V18.257 — die statischen baum_eiche/baum_kiefer-Baupläne sind GESCHNITTEN;
+        // die Bäume wachsen jetzt aus der Grammatik. Wir wachsen einen + prüfen die
+        // SUBSTANZ (holz-Stamm + laub-Krone als Materialien — die FORM ist jetzt
+        // grammatik-getrieben: Tube-Rinde + Blatt-Karten statt Zylinder+Kugel).
+        const __heKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "struktur|eiche");
+        const __hkKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_kiefer", "struktur|kiefer");
+        const __heBp = __heKey && bps[__heKey];
+        const __hkBp = __hkKey && bps[__hkKey];
+        out.hasBaumEiche = !!(__heBp && Array.isArray(__heBp.parts) && __heBp.parts.length >= 2);
+        out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
+        out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
+        out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
+        out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
         out.hasLaubMaterial = !!(
             r.state.materials &&
             r.state.materials.laub &&
@@ -17960,8 +17963,11 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
         // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
         // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
-        const eichenStamm = bps.baum_eiche && bps.baum_eiche.parts[0];
-        out.stammIsThicker = eichenStamm && eichenStamm.size && eichenStamm.size.x >= 0.7;
+        // V18.257 — die Stamm-Dicke ist grammatik-getrieben (statischer Bauplan geschnitten);
+        // wir prüfen, dass der gewachsene Baum einen holz-Stamm trägt.
+        const __siKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "stamm");
+        const __siBp = __siKey && bps[__siKey];
+        out.stammIsThicker = !!(__siBp && __siBp.parts.some((p) => p.material === "holz"));
         // V17.17 — Affinitäts-Tag-Wächter (die Wurzel-Lehre des V17.16-Reverts).
         // Die Parts-Liste einer spawnbaren Architektur erfüllt ZWEI Funktionen:
         // (1) WO sie spawnt (computeCompoundTags × worldField in
@@ -21729,8 +21735,10 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         out.hasLeafMat = typeof r._archLeafMaterial === "function";
         if (!out.hasFlatten || !out.hasEntryMatrix) return out;
 
-        // Gate: baum_kiefer (flach, 2 Parts) ist instancbar.
-        const flatKiefer = r._archFlattenBlueprint("baum_kiefer");
+        // Gate: ein gewachsener Baum (Grammatik) ist instancbar — der statische
+        // baum_kiefer-Bauplan ist V18.257 geschnitten, wir wachsen die Fixture.
+        const __fkKey = r._growTreeBlueprintForSpawn("baum_kiefer", "flat-fixture") || "baum_kiefer";
+        const flatKiefer = r._archFlattenBlueprint(__fkKey);
         out.kieferInstanceable = flatKiefer.instanceable;
         out.kieferLeaves = flatKiefer.leaves.length;
 
@@ -21741,10 +21749,10 @@ async function checkBandWellePerfCArchInstancing(ctx) {
 
         // Cache-Identität: zweiter Aufruf liefert dasselbe Objekt (kein
         // Doppel-Build der Geometrien).
-        out.cacheStable = r._archFlattenBlueprint("baum_kiefer") === flatKiefer;
+        out.cacheStable = r._archFlattenBlueprint(__fkKey) === flatKiefer;
 
         // --- Matrix-Bit-Gleichheit: klassische Group vs Instancing-Matrix ---
-        const bp = r.state.blueprints["baum_kiefer"];
+        const bp = r.state.blueprints[__fkKey];
         const entry = { position: { x: 100, y: 50, z: -30 }, scale: 1.5 };
         const group = r._buildFromBlueprint(bp);
         const baseY = entry.position.y - 0.5;
@@ -29669,7 +29677,9 @@ async function checkBandM2RollenWahrheit(ctx) {
         out.vehiclePlace =
             r._blueprintUseKind(blu.fahrzeug_wagen) === "place" &&
             r._blueprintUseKind(blu.reittier_holzross) === "place";
-        out.baumPlace = r._blueprintUseKind(blu.baum_eiche) === "place";
+        // V18.257 — baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
+        const __ukKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "usekind");
+        out.baumPlace = !!__ukKey && r._blueprintUseKind(blu[__ukKey]) === "place";
 
         // (3) die KONJUNKTION hält: ein toter Stein-Stuhl (sitz-Anker, KEIN Antrieb →
         // nicht moveable) bleibt Bauwerk — der Sitz allein macht kein Fahrzeug.
@@ -30755,7 +30765,8 @@ async function checkBandWCIchWahrheit(ctx) {
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
         // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
-        const whyEiche = r._blueprintRoleWhy(r.state.blueprints.baum_eiche);
+        const __whyKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "why");
+        const whyEiche = __whyKey ? r._blueprintRoleWhy(r.state.blueprints[__whyKey]) : null;
         const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
         out.warumTrank = !!whyTrank && /Lebendig|lebendig/.test(whyTrank.text);
@@ -34203,13 +34214,17 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // in jeder Achse (er fehlt das Laub → magieleitung typischerweise
         // niedriger; das ist OK + designt).
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-        if (bp && r.state.blueprints["baum_eiche"]) {
-            const treeTags = r.computeCompoundTags(r.state.blueprints["baum_eiche"]);
+        // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
+        // (der statische baum_eiche-Bauplan ist geschnitten).
+        const __treeRef =
+            (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE && window.AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            null;
+        if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
             const diffs = {};
             let neverHigher = true;
             for (const axis of targetAxes) {
-                const dt = (totTags[axis] || 0) - (treeTags[axis] || 0);
+                const dt = (totTags[axis] || 0) - (__treeRef[axis] || 0);
                 diffs[axis] = Number(dt.toFixed(3));
                 if (dt > 0.05) neverHigher = false;
             }
@@ -34979,7 +34994,9 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             // Affinitäts-MAX wie ein bestehender baum_eiche (holz+laub Materials,
             // gleiche shapes cylinder+sphere). V17.16-Disziplin.
             const fakeBp = { parts: sample };
-            const treeBp = r.state.blueprints["baum_eiche"];
+            // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
+            const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
+            const treeBp = __g6Key && r.state.blueprints[__g6Key];
             if (treeBp) {
                 const fakeTags = r.computeCompoundTags(fakeBp);
                 const treeTags = r.computeCompoundTags(treeBp);
@@ -35414,11 +35431,14 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         out.a1ManyVariants = keys.size >= 5;
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
-        const refBp = r.state.blueprints.baum_eiche;
+        // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
+        // (der statische baum_eiche-Bauplan ist geschnitten).
+        const ref =
+            (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE && window.AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            null;
         const grownBp = k1 && r.state.blueprints[k1];
         out.a1TagNeutral = false;
-        if (refBp && grownBp) {
-            const ref = r.computeCompoundTags(refBp);
+        if (ref && grownBp) {
             const got = r.computeCompoundTags(grownBp);
             let neutral = true;
             // V18.215 — V17.16-VARIATIONS-Wand toleranter: deklarierte Spezies-
