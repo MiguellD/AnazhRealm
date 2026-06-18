@@ -53072,16 +53072,20 @@ class AnazhRealm {
             }
         }
         // V18.215 (lebendiger-gigant Ω-R1 §7) — Spezies-Variation additiv
-        // DRAUFGEMISCHT für gewachsene Bäume. Plan §7: „Variation ist form-
+        // DRAUFGEMISCHT für Spezies-Bäume. Plan §7: „Variation ist form-
         // begründet, nicht RNG-Lottery." Eine Tanne hat brennbar↑+harz-
         // resoniert↑ (deklariert in SPECIES_TAG_VARIATION); ohne diesen
         // Schritt lesen alle 6 Arten identische holz+laub-Tags → die Spezies
         // sind in Spawn-Affinität + Werkstatt + Audio-Resonanz nicht
-        // unterscheidbar. Die V17.16-VARIATIONS-Wand in `_growTreeBlueprint
-        // ForSpawn` erlaubt diese deklarierten Δ; andere Achsen bleiben
-        // strikt (Δ < 0.05). Nur _isGrown-Bauplane betroffen — fixe Built-Ins
-        // (baum_eiche/baum_tanne/...) bleiben bit-identisch.
-        if (blueprint._isGrown && typeof blueprint._grownSpecies === "string") {
+        // unterscheidbar. V18.259 — die Bedingung prüft `_grownSpecies` (die
+        // SPEZIES-Identität), nicht `_isGrown` (das Laufzeit-Flag): so trägt
+        // AUCH der kanonische Built-in-Bauplan (baum_eiche/kiefer/…, V18.258)
+        // seine Art-Variation, nicht nur die zur Laufzeit gewachsene Variante —
+        // sonst sind die Mischwald-Arten als Built-in tag-identisch (Drift-Bug).
+        // Die V17.16-VARIATIONS-Wand erlaubt diese deklarierten Δ; andere Achsen
+        // bleiben strikt. Fixe Nicht-Spezies-Built-Ins (kein _grownSpecies)
+        // bleiben bit-identisch.
+        if (typeof blueprint._grownSpecies === "string") {
             const variation =
                 AnazhRealm.SPECIES_TAG_VARIATION && AnazhRealm.SPECIES_TAG_VARIATION[blueprint._grownSpecies];
             if (variation) {
@@ -73182,8 +73186,12 @@ AnazhRealm.SPECIES_TAG_REFERENCE = Object.freeze({
     baum_birke: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
     baum_erle: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
     baum_buche: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
-    baum_kiefer: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.85, magieleitung: 0.7 }),
-    baum_tanne: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.85, magieleitung: 0.7 }),
+    // V18.259 — die REFERENZ ist die geteilte BASIS (holz+laub, gleich für alle 6
+    // Arten); die Art-Flammbarkeit der Nadelbäume lebt in SPECIES_TAG_VARIATION
+    // (baum_kiefer/tanne brennbar +0.1), NICHT in der Basis. Sonst driftet der
+    // Built-in (Basis 0.8) gegen eine Referenz 0.85 (V17.16-Wand-Fehlauslösung).
+    baum_kiefer: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
+    baum_tanne: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
 });
 
 // V18.199 — Γ-M MULTI-CLASS-MATERIAL LICHEN: grüne Patina auf alten/feuchten

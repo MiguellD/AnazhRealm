@@ -18088,8 +18088,11 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // Tags (welcher Bauwerk singt/klingt). felsturm: dichte 1.7→1.8 + resoniert
         // 0.6→1.2 = der BEWUSSTE eisen-Mast-Shift (Antenne), Baseline nachgezogen.
         const AFF_BASELINE = {
-            baum_eiche: { lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
-            baum_kiefer: { lebendig: 1.4, dichte: 0.8, brennbar: 0.85, magieleitung: 0.7, resoniert: 1.0 },
+            // V18.259 — die Baseline trägt jetzt die GEWACHSENE Spezies-Wahrheit (gemessen):
+            // baum_eiche = Basis + Art-Variation (lebendig +0.05); baum_kiefer = Basis +
+            // (brennbar +0.1, resoniert +0.05). Die statische Kugel-Baum-Baseline ist tot.
+            baum_eiche: { lebendig: 1.45, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7, resoniert: 1.35 },
+            baum_kiefer: { lebendig: 1.4, dichte: 0.8, brennbar: 0.9, magieleitung: 0.7, resoniert: 1.4 },
             stein_block: { lebendig: 0, dichte: 2.55, brennbar: 0, magieleitung: 0, resoniert: 0 },
             kristall_geode: { lebendig: 0, dichte: 1.95, brennbar: 0, magieleitung: 2.55, resoniert: 2.7 },
             glutbrunnen: { lebendig: 1, dichte: 1.7, brennbar: 0, magieleitung: 1.5, resoniert: 1.95 },
@@ -31224,7 +31227,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         // V18.257 — die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + SPECIES_GRAMMAR (Form) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
-        const ref = (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE) || {};
+        const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
         // candidates-Liste in _vegetationSampleSpawn trägt die 4 NEUEN, aber NICHT die Varianten.
         const src = r._vegetationSampleSpawn.toString();
@@ -32131,7 +32134,7 @@ async function checkBandWHWald(ctx) {
         // (1) V18.257 — die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
-        const refTbl = (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE) || {};
+        const refTbl = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
         // (2) die Bäume sind NICHT als Variante im Affinitäts-Wettstreit (candidates) —
         // der Spawn wählt die Gestalt NACH dem Sieg, mit dem kanonischen bestName.
@@ -34217,7 +34220,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // V18.257 — die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const __treeRef =
-            (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE && window.AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE && window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
@@ -34993,7 +34996,10 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             // (G6) TAG-NEUTRALITÄT: ein generierter Baum hat dieselben
             // Affinitäts-MAX wie ein bestehender baum_eiche (holz+laub Materials,
             // gleiche shapes cylinder+sphere). V17.16-Disziplin.
-            const fakeBp = { parts: sample };
+            // V18.259 — fakeBp trägt die SPEZIES-Marke, damit computeCompoundTags ihm
+            // dieselbe Art-Variation gibt wie dem Vergleichsbaum (sonst liest die +0.05-
+            // Variation als „Drift"). Apples-to-apples: beide baum_eiche mit Variation.
+            const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
             // V18.257 — baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
             const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
             const treeBp = __g6Key && r.state.blueprints[__g6Key];
@@ -35434,7 +35440,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
         const ref =
-            (window.AnazhRealm && window.AnazhRealm.SPECIES_TAG_REFERENCE && window.AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) ||
+            (window.anazhRealm.constructor.SPECIES_TAG_REFERENCE && window.anazhRealm.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
             null;
         const grownBp = k1 && r.state.blueprints[k1];
         out.a1TagNeutral = false;
@@ -35508,7 +35514,10 @@ async function checkBandV18210Verdrahtung(ctx) {
         );
         // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
         const src = r._vegetationSampleSpawn.toString();
-        out.a1SourceWired = /_growTreeBlueprintForSpawn/.test(src) && /genVersion\s*>=\s*4/.test(src);
+        // V18.258 — die gen≥4-Schranke ist GESCHNITTEN (ALLE gen wachsen durch die
+        // Grammatik); der Worldgen ruft den Helper jetzt unbedingt für Bäume. Die Probe
+        // prüft darum nur noch, DASS der Helper im Spawn-Pfad lebt.
+        out.a1SourceWired = /_growTreeBlueprintForSpawn/.test(src);
 
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
@@ -35790,7 +35799,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)",
         res.a1RingCap === true
     );
-    check("V18.210-A1h SOURCE: _vegetationSampleSpawn ruft Helper an genVersion≥4", res.a1SourceWired === true);
+    check("V18.210-A1h SOURCE: _vegetationSampleSpawn ruft _growTreeBlueprintForSpawn (alle gen wachsen)", res.a1SourceWired === true);
 
     // A2 — R5 Live-Slider
     check("V18.210-A2a R5_STRUCTURE_TEXTURE.microBoost Default = 1.3 (war 1.0)", res.a2DefaultIs13 === true);
