@@ -15094,9 +15094,9 @@ class AnazhRealm {
                 const f = (row + 0.5) / 3; // 0..1 Nabel→Xiphoid
                 const ay = navelY + (xiphoidY - navelY) * f;
                 const aw = (0.24 - row * 0.012) * absMF; // obere Päckchen leicht breiter; zwei klare Säulen (Linea alba in der Mitte)
-                add("box", bodyMat, sx * 0.21, ay, absZ, aw, 0.21, 0.14 * girthF, null, bodyCol, { kScale: 0.42, def: true });
+                add("box", bodyMat, sx * 0.21, ay, absZ, aw, 0.21, 0.14 * girthF, null, bodyCol, { kScale: 0.56, def: true }); // weicher (war 0.42 = scharfe Riss-Furche) → das Sixpack liest als sanfte Muskel-Schatten, kein Crack (PBR-Haut)
             }
-            add("box", bodyMat, sx * 0.19, (navelY + pubisY) * 0.5, absZ, 0.22 * absMF, 0.3, 0.13 * girthF, null, bodyCol, { kScale: 0.5, def: true }); // unteres Bauch-Segment (Nabel→Schambein)
+            add("box", bodyMat, sx * 0.19, (navelY + pubisY) * 0.5, absZ, 0.22 * absMF, 0.3, 0.13 * girthF, null, bodyCol, { kScale: 0.6, def: true }); // unteres Bauch-Segment (Nabel→Schambein), weicher Merge
         }
         // OBLIQUES / „ADONIS"-V-LINIE — seitliche Bauch-Massen, die zur Leiste hin taper.
         for (const sx of [-1, 1])
@@ -15112,7 +15112,7 @@ class AnazhRealm {
         for (const s of [-1, 1])
             for (let k = 0; k < 3; k++)
                 add("box", bodyMat, s * (shoulderHalf * 0.52 - k * 0.04), 5.42 - k * 0.2, 0.32 * girthF, 0.11 * mF, 0.14, 0.18 * girthF, { x: 0, y: 0, z: -s * 0.3 }, bodyCol, {
-                    kScale: 0.5,
+                    kScale: 0.62, // weicher (war 0.5) → Serratus-Slips als sanfte Wellen, kein scharfer Riss
                     def: true,
                 });
         // ERECTOR SPINAE — zwei Rücken-Säulen entlang der Wirbelsäule (protrudieren am Rücken); der
@@ -16224,7 +16224,7 @@ class AnazhRealm {
         const kh = g.kh || 1;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, { res: 128, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 6, seamWidth: 0.11, displace: true, dispCap: 0.34 }); // Avatar HAUT: res 128; taubin 8 = GLATTE Haut (gegen Lumpigkeit) + dispCap 0.34 = sanftere Muskel-Schwellung; subtile Furchen (seamGroove 6) tragen die Definition
+        const geom = this._buildCreatureSkinGeometry(parts, { res: 176, taubinPasses: 8, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 3, seamWidth: 0.15, displace: true, dispCap: 0.34 }); // Avatar HAUT: res 176 (128 löste Finger nicht auf → Fäustlinge; höher = Finger/Detail kommen durch; einmaliger Build-Kost, kein per-Frame); taubin 8 = GLATTE Haut; seamGroove 3 + breiter (0.15) = WEICHE Muskel-Schatten statt scharfer Riss-Furchen (PBR-Haut, kein Écorché-Crack); dispCap 0.34 = sanfte Schwellung
         if (!geom) return null;
         // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
         // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
