@@ -15143,7 +15143,11 @@ class AnazhRealm {
         // statt als Mr.-Potato-Head-Teile aufgeklebt zu werden — die verschmelzen nicht): ein
         // Brauen-Wulst + ein Nasen-Rücken, die der smin in die Gesichts-Ebene einschmilzt.
         add("box", headMat, 0, 7.66, 0.28, 0.48 * hr, 0.09 * hr, 0.16 * hr, null, limbCol); // Brauen-Wulst (verschmolzen, schmaler)
-        add("box", headMat, 0, 7.46, 0.3, 0.1 * hr, 0.24 * hr, 0.15 * hr, { x: -0.1, y: 0, z: 0 }, limbCol); // Nasen-Rücken (kürzer + weniger vorragend → kein Schnabel mehr, Schöpfer-Befund)
+        // NASE — eine DEFINIERTE Nase (war flach): schmaler Rücken (Brauen→Mitte, leicht vor) +
+        //   vorspringende runde SPITZE + Flügel-Basis (Breite). Der smin schmilzt sie in die Gesichts-Ebene.
+        add("box", headMat, 0, 7.5, 0.34, 0.07 * hr, 0.22 * hr, 0.13 * hr, { x: -0.14, y: 0, z: 0 }, limbCol, { kScale: 0.58 }); // Nasen-Rücken (schmal, vorgeneigt)
+        add("sphere", headMat, 0, 7.37, 0.43, 0.1 * hr, 0.09 * hr, 0.12 * hr, null, limbCol, { kScale: 0.52 }); // Nasen-SPITZE (rundet klar vor)
+        add("box", headMat, 0, 7.34, 0.36, 0.17 * hr, 0.08 * hr, 0.1 * hr, null, limbCol, { kScale: 0.58 }); // Nasen-Flügel/Basis (Breite)
         // ── GESICHTS-MUSKEL-SCHICHT (Écorché: rote Mienenmuskeln über dem beigen Schädel) ──
         //    Dünne, schädel-anliegende Fleisch-Blätter (def → rot), die der smin in die Gesichts-Ebene
         //    einschmilzt — KEINE aufgeklebten Tropfen, geringe z-Halbweite. Augen-Partie bleibt FREI.
@@ -16402,8 +16406,8 @@ class AnazhRealm {
         // Blick) + dunkle Iris + winziger Catchlight-Funke. Augenabstand ≈ eine Augenbreite.
         const eyeGeom = new THREE.SphereGeometry(0.056 * kh, 14, 12);
         eyeGeom.scale(1.22, 0.62, 0.5); // mandelig, KLEINER + schmaler (kein cartoonig-großes Auge)
-        const lidGeom = new THREE.SphereGeometry(0.088 * kh, 12, 8);
-        lidGeom.scale(1.5, 0.8, 0.74); // Oberlid deckt MEHR der oberen Augen-Hälfte → ruhiger, kein Starren
+        const lidGeom = new THREE.SphereGeometry(0.084 * kh, 12, 8);
+        lidGeom.scale(1.45, 0.66, 0.72); // Oberlid deckt die obere Augen-Hälfte DEZENT (nicht schwer/droopy) → wacher, ruhiger Blick
         const sparkGeom = new THREE.SphereGeometry(0.008 * kh, 8, 6); // winziger Catchlight (kein cartoon-Funke)
         for (const s of [-1, 1]) {
             const eye = new THREE.Mesh(eyeGeom, eyeMat(0x2c2119, false, 0, 0.2)); // dunkelbraun statt fast-schwarz → kein hartes dunkles Band
