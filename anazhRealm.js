@@ -15069,9 +15069,9 @@ class AnazhRealm {
         // SCHULTERBLÄTTER (scapula, knochen) — zwei Platten am oberen Rücken: formen den oberen Rücken
         //    + die hintere Schulter UND geben der Achsel ihre Kante (fehlten → die Achsel verklebte).
         for (const s of [-1, 1])
-            add("box", "knochen", s * shoulderHalf * 0.6, shoulderY - 0.5, -0.4 * girthF, shoulderHalf * 0.66, 0.95, 0.32 * girthF, null, limbCol, {
+            add("box", "knochen", s * shoulderHalf * 0.58, shoulderY - 0.5, -0.24 * girthF, shoulderHalf * 0.56, 0.88, 0.24 * girthF, null, limbCol, {
                 kScale: 0.62,
-                struct: true,
+                struct: true, // Schulterblatt sitzt jetzt INNEN (z −0.24 statt −0.4) → Trapez/Lat bilden die Rücken-Oberfläche, der Knochen poked nicht mehr nackt vor
             });
         // PECTORALIS / DELTOID / LAT / TRAPEZ / SCM / Arm- + Bein-Muskeln kommen jetzt aus dem
         //    MUSKEL-ATLAS (unten, vor dem COVERAGE-PASS) — EINE gelenk-verankerte Baugruppe, kein
@@ -15150,10 +15150,12 @@ class AnazhRealm {
         //    Befund (Fischer, Kopf-Detailshot): diskrete Pads = Googly-Blobs, kein Referenz-Gesicht.
         //    Nur FLACHE, schädel-anliegende Blätter, die der smin in die Gesichts-Ebene einschmilzt;
         //    die Augenhöhle bleibt eine MULDE aus der Schädel-Form (Brauen + Jochbein), kein Pad-Ring.
-        add("box", limbMat, 0, 7.74, 0.26, 0.42 * hr, 0.22 * hr, 0.08 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (breites flaches Stirn-Blatt)
+        add("box", limbMat, 0, 7.72, 0.28, 0.4 * hr, 0.18 * hr, 0.05 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (dünnes flaches Stirn-Blatt, hugt die Schädel-Front)
         for (const s of [-1, 1]) {
-            add("box", limbMat, s * 0.5 * hr, 7.58, -0.02, 0.1 * hr, 0.28 * hr, 0.2 * hr, null, limbCol, { def: true, kScale: 0.74 }); // Temporalis (flacher Schläfen-Fächer, hugt den Schädel)
-            limb(s * 0.31 * hr, 7.47, 0.24 * hr, s * 0.14 * hr, 7.16, 0.32 * hr, 0.11 * hr, limbMat, limbCol, { def: true, kScale: 0.72 }); // Zygomaticus + Wangen-Masse (Jochbein → Mundwinkel, deckt die Wange)
+            // Temporalis: ein FLACHES Schläfen-Blatt, das den Schädel oberhalb des Ohrs HUGT (kein vor-
+            //    stehender Disc): an die Schädel-Krümmung (x ~0.46, z 0.06 vorn-seitlich), dünn in der Tiefe.
+            add("box", limbMat, s * 0.46 * hr, 7.62, 0.06, 0.06 * hr, 0.2 * hr, 0.18 * hr, null, limbCol, { def: true, kScale: 0.74 });
+            limb(s * 0.28 * hr, 7.5, 0.28 * hr, s * 0.13 * hr, 7.18, 0.34 * hr, 0.085 * hr, limbMat, limbCol, { def: true, kScale: 0.72 }); // Zygomaticus + Wangen (Jochbein → Mundwinkel, dünner)
         }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
@@ -15300,8 +15302,9 @@ class AnazhRealm {
             // HALS + KOPF
             { o: "mastoid", i: "clavicleMed", b: 0.12, sc: mF, belly: 0.5, kS: 0.78 }, // Sternocleidomastoideus (Hals-V)
             { o: "cheek", i: "jawAngle", b: 0.1, sc: mF, belly: 0.5, kS: 0.55, mat: headMat, col: limbCol, ndef: true }, // Masseter
-            { o: "c7", i: "acromion", b: 0.2, sc: mF, belly: 0.4, depth: 0.7, kS: 0.82 }, // Trapezius (oberer — das Hals→Schulter-Joch)
-            { o: "c7", i: "scapula", b: 0.18, sc: mF, belly: 0.5, depth: 0.5, kS: 0.8 }, // Trapezius (mittlerer — Rücken-Diamant)
+            { o: "c7", i: "acromion", b: 0.26, sc: mF, belly: 0.42, depth: 0.6, kS: 0.82 }, // Trapezius (oberer — das Hals→Schulter-Joch, breiter)
+            { o: "c7", i: "scapula", b: 0.34, sc: mF, belly: 0.5, depth: 0.45, kS: 0.8 }, // Trapezius (mittlerer — deckt das Schulterblatt = der Rücken-Diamant)
+            { o: "erectorTop", i: "scapula", b: 0.3, sc: mF, belly: 0.5, depth: 0.45, kS: 0.82 }, // Trapezius (unterer Kopf — der Diamant reicht bis Mitte-Rücken)
             // SCHULTER (Deltoideus — eine gerundete KAPPE über dem Schultergelenk, drei Köpfe fächern
             //    vom Akromion/Klavikel/Skapula zur Humerus-Mitte; breit + voll = die Referenz-Kuppe, kein dünner Stab)
             { o: "clavicleMed", i: "deltoidIns", b: 0.26, sc: limbF, belly: 0.34, depth: 0.95, kS: 0.78, mat: limbMat, col: limbCol }, // vorderer Kopf
@@ -15315,8 +15318,9 @@ class AnazhRealm {
             { o: "sternumLow", i: "pecIns", b: 0.42, sc: mF, belly: 0.44, depth: 0.38, kS: 0.68 }, // mittlerer sternaler
             { o: "xiphoid", i: "pecIns", b: 0.32, sc: mF, belly: 0.42, depth: 0.38, kS: 0.68 }, // unterer Kopf (die Pec-Shelf-Unterkante)
             // RÜCKEN (Latissimus-V + Teres + Erector)
-            { o: "iliacBack", i: "axilla", b: 0.3, sc: mF, belly: 0.42, depth: 0.4, kS: 0.88 }, // Latissimus (iliakal)
-            { o: "erectorTop", i: "axilla", b: 0.26, sc: mF, belly: 0.46, depth: 0.4, kS: 0.88 }, // Latissimus (thorakal)
+            { o: "iliacBack", i: "axilla", b: 0.38, sc: mF, belly: 0.42, depth: 0.38, kS: 0.88 }, // Latissimus (iliakal — das breite V-Blatt)
+            { o: "sacrum", i: "axilla", b: 0.34, sc: mF, belly: 0.46, depth: 0.38, kS: 0.88 }, // Latissimus (lumbal — füllt das untere V, deckt den Rücken)
+            { o: "erectorTop", i: "axilla", b: 0.3, sc: mF, belly: 0.46, depth: 0.4, kS: 0.88 }, // Latissimus (thorakal)
             { o: "scapula", i: "axilla", b: 0.17, sc: mF, belly: 0.4, kS: 0.8 }, // Teres
             { o: "sacrum", i: "erectorTop", b: 0.16, sc: mF, belly: 0.5, depth: 0.42, kS: 0.74 }, // Erector spinae (Rücken-Säule)
             // ARM
