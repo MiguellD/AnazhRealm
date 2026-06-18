@@ -15161,14 +15161,16 @@ class AnazhRealm {
         // GESICHTS-MUSKELN (Referenz: dünne Schicht über der Schädel-Front, dem Gesichts-Relief folgend) —
         //    DETAIL statt flacher Schale: alle DÜNN + schädel-anliegend (kein vorstehender Blob), die
         //    Augenhöhle bleibt als Mulde FREI (Brauen+Jochbein rahmen sie), die Schädel-KUPPE oben blank.
-        add("box", limbMat, 0, 7.74, 0.3, 0.4 * hr, 0.12 * hr, 0.06 * hr, null, limbCol, { def: true, kScale: 0.78 }); // Frontalis (Stirn)
-        add("box", limbMat, 0, 7.5, 0.37, 0.055 * hr, 0.18 * hr, 0.08 * hr, null, limbCol, { def: true, kScale: 0.68 }); // Procerus/Nasalis (Nasenrücken-Muskel, mittig)
-        add("box", limbMat, 0, 7.12, 0.35, 0.12 * hr, 0.09 * hr, 0.07 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Orbicularis oris (um den Mund)
+        // GESICHTS-WEICHTEIL (PBR-realistisch, KEIN Écorché-Striping): dünne schädel-anliegende
+        //   Fleisch-Füllungen, die der smin GLATT einschmilzt — non-def (kein seamGroove-Furchen-RISS
+        //   mehr → das war die „Krater"-Wurzel am Kiefer/Wange) + hoher kScale (weicher Merge). Wange/
+        //   Stirn/Schläfe runden das Gesicht zu glatter Haut; die Augenhöhle bleibt eine Mulde
+        //   (Brauen+Jochbein-Knochen rahmen sie). Ein Gesicht ist Haut, keine geflayte Muskel-Wand.
+        add("box", limbMat, 0, 7.74, 0.3, 0.4 * hr, 0.12 * hr, 0.07 * hr, null, limbCol, { kScale: 0.92 }); // Stirn-Fülle (glatt)
+        add("box", limbMat, 0, 7.12, 0.35, 0.14 * hr, 0.1 * hr, 0.09 * hr, null, limbCol, { kScale: 0.92 }); // Mund-/Lippen-Umgebung (glatt)
         for (const s of [-1, 1]) {
-            add("box", limbMat, s * 0.45 * hr, 7.6, 0.08, 0.05 * hr, 0.2 * hr, 0.2 * hr, null, limbCol, { def: true, kScale: 0.72 }); // Temporalis (Schläfe, dünn am Schädel)
-            limb(s * 0.34 * hr, 7.46, 0.28 * hr, s * 0.15 * hr, 7.12, 0.34 * hr, 0.065 * hr, limbMat, limbCol, { def: true, kScale: 0.68 }); // Zygomaticus (Jochbein → Mundwinkel, diagonal)
-            add("box", limbMat, s * 0.3 * hr, 7.2, 0.16 * hr, 0.07 * hr, 0.2 * hr, 0.12 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Masseter (Kiefer-Seite)
-            add("box", limbMat, s * 0.21 * hr, 7.34, 0.33 * hr, 0.1 * hr, 0.13 * hr, 0.06 * hr, null, limbCol, { def: true, kScale: 0.66 }); // Buccinator/Wange (füllt die Wange dünn)
+            add("box", limbMat, s * 0.45 * hr, 7.58, 0.08, 0.07 * hr, 0.24 * hr, 0.24 * hr, null, limbCol, { kScale: 0.94 }); // Schläfe/Seitenkopf (füllt glatt, kein Loch)
+            add("box", limbMat, s * 0.31 * hr, 7.18, 0.2 * hr, 0.15 * hr, 0.24 * hr, 0.15 * hr, null, limbCol, { kScale: 0.92 }); // Wange (voll, glatt)
         }
         // (MASSETER → MUSKEL-ATLAS unten)
         // ── (3) ARME (A-Pose: Ellbogen auf Nabel-, Handgelenk auf Schritthöhe; distal dünner) ──
@@ -15219,8 +15221,8 @@ class AnazhRealm {
                 // FLEISCH-FINGER (der Profiweg): ein Fleisch-Sleeve über dem Knochen — Mittelhand-Strahl +
                 //   Finger (Knöchel→Spitze), dick genug, dass jeder Finger als EINZELNER fleischiger Finger
                 //   auflöst (kein dünner Knochen-Stab, kein zur Mitt verschmolzener Klumpen).
-                limb(baseX, wristY - 0.16, 0.03, kx, knuckY + 0.02, kz, 0.062 * limbF, limbMat, limbCol, { kScale: 0.84 }); // Mittelhand gefleischt (Handrücken-Strahl)
-                limb(kx, knuckY + 0.02, kz, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.06 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Finger-Fleisch (Knöchel→Spitze)
+                limb(baseX, wristY - 0.16, 0.03, kx, knuckY + 0.02, kz, 0.08 * limbF, limbMat, limbCol, { kScale: 0.82 }); // Mittelhand gefleischt (VOLLER → deckt den Knochen, kein Klauen-Stab)
+                limb(kx, knuckY + 0.02, kz, tipX, midY - fl * 0.46, midZ + fl * 0.28, 0.078 * limbF, limbMat, limbCol, { kScale: 0.8 }); // Finger-Fleisch (deutlich voller → löst als fleischiger Finger auf statt Spike/Klaue)
             }
             // DAUMEN — opponiert: Mittelhand abduziert (zur Körpermitte + vorn) + zwei Glieder mit Gelenk.
             const thbBaseX = hw - s * 0.03,
@@ -16411,25 +16413,56 @@ class AnazhRealm {
         // statt hier aufgeklebt; das war der Mr.-Potato-Head-Fehler. Hier nur Augen/Lippen/Ohren.)
         // AUGEN — mandelig, EINGESENKT, mit OBERLID (Hautton, deckt die obere Hälfte → halb-gedeckelter
         // Blick) + dunkle Iris + winziger Catchlight-Funke. Augenabstand ≈ eine Augenbreite.
-        const eyeGeom = new THREE.SphereGeometry(0.056 * kh, 14, 12);
-        eyeGeom.scale(1.22, 0.62, 0.5); // mandelig, KLEINER + schmaler (kein cartoonig-großes Auge)
-        const lidGeom = new THREE.SphereGeometry(0.084 * kh, 12, 8);
-        lidGeom.scale(1.45, 0.66, 0.72); // Oberlid deckt die obere Augen-Hälfte DEZENT (nicht schwer/droopy) → wacher, ruhiger Blick
-        const sparkGeom = new THREE.SphereGeometry(0.008 * kh, 8, 6); // winziger Catchlight (kein cartoon-Funke)
+        // ECHTES AUGEN-ASSEMBLY (Profi-Methode, der #1 „Mannequin→lebendig"-Hebel): KEIN nackter
+        //   dunkler Ball (das „googly"-Tell), sondern Sklera (Augenweiss) + recessed Iris + Pupille
+        //   + EIN scharfer Catchlight-Funke (die Hornhaut-Reflexion) + Ober-/Unterlid, die den Ball
+        //   umschliessen (decken die obere Iris → wacher, gesetzter Blick statt Glupschen).
+        const scleraGeom = new THREE.SphereGeometry(0.058 * kh, 18, 14);
+        scleraGeom.scale(1.2, 0.74, 0.62); // mandelig, leicht abgeflacht (bulgt nicht aus der Gesichts-Ebene)
+        const irisGeom = new THREE.SphereGeometry(0.034 * kh, 16, 12);
+        irisGeom.scale(1, 1, 0.42); // flache Iris-Scheibe auf der Sklera-Front
+        const pupilGeom = new THREE.SphereGeometry(0.015 * kh, 12, 10);
+        pupilGeom.scale(1, 1, 0.42);
+        const upperLidGeom = new THREE.SphereGeometry(0.086 * kh, 16, 10);
+        upperLidGeom.scale(1.34, 0.8, 0.92); // Oberlid mit Dicke, deckt die obere ~15% des Balls
+        const lowerLidGeom = new THREE.SphereGeometry(0.072 * kh, 14, 8);
+        lowerLidGeom.scale(1.22, 0.52, 0.86); // Unterlid-Wulst (Tränen-Kante, weich)
+        const sparkGeom = new THREE.SphereGeometry(0.0072 * kh, 8, 6);
+        const eyeZ = 0.33; // Sklera-Zentrum, leicht in die Augenhöhle gesenkt
         for (const s of [-1, 1]) {
-            const eye = new THREE.Mesh(eyeGeom, eyeMat(0x2c2119, false, 0, 0.2)); // dunkelbraun statt fast-schwarz → kein hartes dunkles Band
-            eye.position.copy(L(s * 0.155, skullY - 0.2, 0.34)); // TIEFER (war auf Brauen-Höhe) + NÄHER (Augenabstand ≈ eine Augenbreite) + leicht vor
-            eye.castShadow = false;
-            rig.head.add(eye);
-            // OBERLID — Hautmasse über der oberen Augen-Hälfte (von oben-vorn) → gedeckelter Blick.
-            const lid = new THREE.Mesh(lidGeom, skinM);
-            lid.position.copy(L(s * 0.155, skullY - 0.13, 0.33));
-            lid.castShadow = false;
-            rig.head.add(lid);
-            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfff4e0, true, 0.6, 0.3));
-            spark.position.copy(L(s * 0.155 + s * 0.018, skullY - 0.19, 0.4));
+            const ex = s * 0.158,
+                ey = skullY - 0.205; // Augenabstand ≈ eine Augenbreite, auf der Gesichts-Mittellinie
+            // Sklera — glänzendes warmes Augenweiss (nicht reinweiss), niedrige Roughness → die
+            //   Sky-IBL gibt den feuchten Glanz.
+            const sclera = new THREE.Mesh(scleraGeom, eyeMat(0xe9e2d4, false, 0, 0.16));
+            sclera.position.copy(L(ex, ey, eyeZ));
+            sclera.castShadow = false;
+            rig.head.add(sclera);
+            // Iris — warmes Braun, flache Scheibe knapp auf der Sklera-Front (recessed-Look)
+            const iris = new THREE.Mesh(irisGeom, eyeMat(0x5a3a22, false, 0, 0.22));
+            iris.position.copy(L(ex, ey, eyeZ + 0.028));
+            iris.castShadow = false;
+            rig.head.add(iris);
+            // Pupille — dunkler Kern in der Iris
+            const pupil = new THREE.Mesh(pupilGeom, eyeMat(0x0c0907, false, 0, 0.3));
+            pupil.position.copy(L(ex, ey, eyeZ + 0.033));
+            pupil.castShadow = false;
+            rig.head.add(pupil);
+            // Catchlight — EIN scharfer kleiner Funke oben-aussen (die Hornhaut-Reflexion = „lebendig")
+            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfffaf0, true, 0.95, 0.1));
+            spark.position.copy(L(ex + s * 0.014, ey + 0.018, eyeZ + 0.045));
             spark.castShadow = false;
             rig.head.add(spark);
+            // OBERLID — Haut-Dicke über dem Ball (deckt die obere Iris → kein nackter Glupsch-Ball)
+            const upperLid = new THREE.Mesh(upperLidGeom, skinM);
+            upperLid.position.copy(L(ex, ey + 0.066, eyeZ - 0.012));
+            upperLid.castShadow = false;
+            rig.head.add(upperLid);
+            // UNTERLID — dünner Haut-Wulst unter dem Auge
+            const lowerLid = new THREE.Mesh(lowerLidGeom, skinM);
+            lowerLid.position.copy(L(ex, ey - 0.058, eyeZ - 0.004));
+            lowerLid.castShadow = false;
+            rig.head.add(lowerLid);
         }
         // MUND — eine RUNDE Unterlippe (flache, breite Hautkuppe) + eine dünne dunkle Mund-FURCHE
         // darüber (gewölbte Scheiben statt Boxen → kein rechteckiger Stempel; liest als Lippe + Spalt).
@@ -16458,11 +16491,14 @@ class AnazhRealm {
         const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
         // HAAR als TEIL-KUGEL-CAP (nur die obere Kalotte, thetaLength 0.58π) → eine saubere Haarlinien-
         //   KANTE statt eines vollen Blobs; nach HINTEN gekippt → Stirn frei, Nacken gedeckt.
-        const hairGeom = new THREE.SphereGeometry(0.66 * kh, 26, 18, 0, Math.PI * 2, 0, Math.PI * 0.46);
-        hairGeom.scale(1.05, 1.08, 1.08); // nur die obere KUPPE (flache Kalotte, stoppt über den Ohren)
+        // HAAR — eine schädel-hUGGENDE Kappe (kein Pilz/Helm-Überhang mehr): dünn proud auf dem
+        //   Schädel, Haarlinie vorn frei, Krone/Nacken gedeckt. (Echte Haar-Cards sind der nächste
+        //   Schritt für Qualität — diese schlanke Kappe ist die saubere Basis ohne Bowl-Rand.)
+        const hairGeom = new THREE.SphereGeometry(0.64 * kh, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        hairGeom.scale(1.05, 1.02, 1.07); // hugt den Schädel knapp (dünne Schicht), nahezu uniform → kein ausladendes Ei
         const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY - 0.16, -0.06)); // auf der Schädel-Kuppe
-        hair.rotation.x = -0.24; // leicht nach hinten → vorn an der Haarlinie, hinten Krone/Nacken
+        hair.position.copy(L(0, skullY - 0.12, -0.05)); // auf der Schädel-Kuppe, Haarlinie an der Stirn
+        hair.rotation.x = -0.18; // leicht nach hinten gekippt
         hair.castShadow = true;
         rig.head.add(hair);
     }
@@ -44525,32 +44561,9 @@ class AnazhRealm {
             };
             return group;
         }
-        // ── FALLBACK: der alte Box-Avatar (SkinnedMesh nicht verfügbar) ──
-        // V8.29.1 — MeshToonMaterial statt knallrotes MeshBasic. Reagiert
-        // auf Tag-Nacht-Licht wie der Rest der Welt (V8.28-Konsistenz),
-        // gedämpftes Rot statt grelles 0xff0000. gradientMap geteilt.
-        if (!this.state.toonGradientMap && typeof this._refreshToonGradient === "function") {
-            this._refreshToonGradient();
-        }
-        // V10.0-g — Avatar-Torso auf ToonNodeMaterial (WebGPU-kompatibel).
-        // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
-        const material = this._buildToonNodeMaterial({ color: 0xc0392b });
-        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.7, 0.3), material);
-        torso.position.y = 0.45;
-        torso.castShadow = true;
-        torso.receiveShadow = true;
-        group.add(torso);
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), material);
-        head.position.y = 1.0;
-        head.castShadow = true;
-        group.add(head);
-        const leftArm = this._buildLimb(material, -0.4, 0.8, 0, 0.6, 0.15, 0.15);
-        const rightArm = this._buildLimb(material, 0.4, 0.8, 0, 0.6, 0.15, 0.15);
-        const leftLeg = this._buildLimb(material, -0.15, 0.1, 0, 0.6, 0.2, 0.2);
-        const rightLeg = this._buildLimb(material, 0.15, 0.1, 0, 0.6, 0.2, 0.2);
-        group.add(leftArm, rightArm, leftLeg, rightLeg);
-        group.userData.material = material;
-        group.userData.parts = { torso, head, leftArm, rightArm, leftLeg, rightLeg };
+        // Kein SkinnedMesh (in der vendored r184/WebGPU nie der Fall) → leere Gruppe statt des
+        // alten Box-Toon-Avatars (rotes Sediment 0xc0392b + _refreshToonGradient, beides
+        // gestrichen — PBR ist die EINE Wahrheit). _buildHumanoidRig ist die EINE Quelle.
         return group;
     }
 
@@ -58130,21 +58143,6 @@ class AnazhRealm {
     // das Auge stufenlos aus. Bei celLevels<8 → genau celLevels Plateaus.
     // Textur-Größe bleibt konstant 32 px → Slider-Wechsel updated nur die
     // Pixel-Daten, KEINE neue Textur, KEINE Material-Neuzuweisung.
-    // B8 (gigant-plan §5) — die Struktur-Toon-LUT (Schatten-Boden 0.25): lazy
-    // erzeugt, vom Cel-Regler über `_refreshToonGradient` in-place mitgepflegt
-    // (geteilte DataTexture, NIE disposen — die V9.84-Singleton-Disziplin).
-    _ensureStructureGradient() {
-        if (this.state.toonGradientMapStructures) return this.state.toonGradientMapStructures;
-        const W = 32;
-        const tex = new THREE.DataTexture(new Uint8Array(W * 4), W, 1, THREE.RGBAFormat);
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.generateMipmaps = false;
-        this.state.toonGradientMapStructures = tex;
-        this._refreshToonGradient();
-        return tex;
-    }
-
     _refreshToonGradient() {
         if (typeof THREE === "undefined") return;
         const levels = (this.state.atmosphere && this.state.atmosphere.celLevels) || 8;
@@ -58190,26 +58188,6 @@ class AnazhRealm {
             data[i * 4 + 3] = 255;
         }
         this.state.toonGradientMap.needsUpdate = true;
-        // B8 (gigant-plan §5) — die STRUKTUR-LUT mit angehobenem Schatten-Boden
-        // folgt dem Cel-Regler mit (gleiche Plateaus, Boden 0.25 statt 0): die
-        // GEMESSENE „Schwarz-Silhouetten"-Wurzel war dunkles Material (eisen) ×
-        // Gegenlicht × Toon-Gradient-Boden ≈ 0 — Terrain trägt den Aerial-Boden,
-        // Flach-Farb-Strukturen fielen auf Schwarz. Kein Material-Lügen: nur das
-        // SCHATTEN-Band hebt sich, die Lichtseite bleibt identisch.
-        if (this.state.toonGradientMapStructures) {
-            const floor = (AnazhRealm.STRUCTURE_TOON && AnazhRealm.STRUCTURE_TOON.floor) || 0.25;
-            const sData = this.state.toonGradientMapStructures.image.data;
-            for (let i = 0; i < W; i++) {
-                const step = Math.min(plateaus - 1, Math.floor((i / W) * plateaus));
-                // V18.163 — Kontrast-Spreizung VOR dem Boden (der Schwarz-Schutz hält).
-                const v = Math.round((floor + (1 - floor) * spread(step / (plateaus - 1))) * 255);
-                sData[i * 4] = v;
-                sData[i * 4 + 1] = v;
-                sData[i * 4 + 2] = v;
-                sData[i * 4 + 3] = 255;
-            }
-            this.state.toonGradientMapStructures.needsUpdate = true;
-        }
         // Terrain-Shader (eigener Custom-Shader) parallel synchronisieren.
         // celLevels>=8 wird im Shader als "kein floor" interpretiert.
         if (this.state.terrainMaterial && this.state.terrainMaterial.uniforms) {
