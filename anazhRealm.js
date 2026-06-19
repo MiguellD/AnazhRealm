@@ -12957,6 +12957,22 @@ class AnazhRealm {
         st.architectureBuildBudgetPerFrame = Math.round(
             lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
         );
+        // V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT: der `foliageRadius` startet KLEIN und
+        // RAMPT zum perf-geregelten Ziel (`effArch` — dieselbe loadScale-PID-Quelle, KEIN
+        // Parallel-Regler). Spawn = nur die nächste Vegetation (leicht); dann wächst sie nach
+        // außen, so schnell die gemessene Render-Last (→ loadScale → effArch) sie trägt; steigt
+        // sie zu hoch, sinkt das Ziel → der Radius schrumpft. Headless (Null-Renderer, KEINE
+        // echte Render-Last) → sofort MAX, damit das Gate die volle Welt sieht (gate-treu).
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        } else {
+            const frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
+            const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
+            const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
+            // wachsen sanft (+step), schrumpfen schneller (−2·step) — die Sicherheit zuerst.
+            st.foliageRadius =
+                frCur < frTarget ? Math.min(frTarget, frCur + step) : Math.max(frTarget, frCur - step * 2);
+        }
         // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
         // Ladezeit, drosselt mit Mitteln die nichts ändern, der PID pendelt"): der Bau
         // ist RÜCKSTAU-getrieben, NICHT fps-getrieben. Solange ein Bau-Rückstau besteht
@@ -21379,6 +21395,39 @@ class AnazhRealm {
         this.state._playerChunkStallKey = null;
     }
 
+    // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
+    // KAPAZITÄTS-Wand für die Vegetation: nah → füllen, fern → warten bis der Radius wächst.)
+    _foliageChunkInRadius(cx, cz) {
+        const pm = this.state.playerMesh;
+        if (!pm) return true; // kein Spieler (Boot/Test) → nicht gaten
+        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const { span } = this._voxelChunkConfig();
+        const ccx = cx * span + span / 2,
+            ccz = cz * span + span / 2;
+        return Math.hypot(ccx - pm.position.x, ccz - pm.position.z) <= fr;
+    }
+
+    // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
+    // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
+    // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
+    _tickFoliageGrowth() {
+        const pending = this.state.pendingFoliageChunks;
+        if (!pending || pending.size === 0) return;
+        let budget = 2;
+        for (const key of pending) {
+            if (budget <= 0) break;
+            const ci = key.indexOf(",");
+            const cx = parseInt(key.slice(0, ci), 10),
+                cz = parseInt(key.slice(ci + 1), 10);
+            if (!this._foliageChunkInRadius(cx, cz)) continue; // noch zu fern → warten
+            pending.delete(key);
+            if (this.state.voxelChunks && this.state.voxelChunks.has(key)) {
+                this._populateVoxelChunkVegetation(cx, cz);
+                budget--;
+            }
+        }
+    }
+
     // V9.90 — Worker-State-Update bei voxelEdit (Spieler carvt/füllt). Sendet
     // nur den Delta-Edit, kein full state-set (Atlas/Erosion/Tarns sind
     // unverändert). Bumpt state-gen → stale Worker-Density-Results werden
@@ -28706,7 +28755,15 @@ class AnazhRealm {
             const nb = this.state.voxelChunks.get(`${nx},${nz}`);
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
         }
-        this._populateVoxelChunkVegetation(cx, cz);
+        // V18.275 — KAPAZITÄTS-GATE: nur füllen, wenn der Chunk im `foliageRadius` liegt;
+        // sonst wartet er in `pendingFoliageChunks`, bis der Radius (mit der gemessenen
+        // Render-Kapazität) zu ihm wächst (`_tickFoliageGrowth`). So bleibt der Spawn leicht.
+        if (this._foliageChunkInRadius(cx, cz)) {
+            this._populateVoxelChunkVegetation(cx, cz);
+        } else {
+            if (!this.state.pendingFoliageChunks) this.state.pendingFoliageChunks = new Set();
+            this.state.pendingFoliageChunks.add(`${cx},${cz}`);
+        }
         // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): diesen Chunk an seine GROBEN
         // Nachbarn anschmiegen + die 4 Achsen-Nachbarn neu morphen (ein FEINER Nachbar, der auf
         // DIESEN als groben Nachbarn wartete, schliesst jetzt seine Naht — das V13.13.2-Muster
@@ -29212,6 +29269,8 @@ class AnazhRealm {
     // Idempotent.
     _disposeVoxelChunk(key, keepGrass = false) {
         if (!this.state.voxelChunks) return;
+        // V18.275 — ein gepruneter Chunk verlässt auch die Foliage-Warteschlange (kein Leck).
+        if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
             this._disposeStaticCollision(entry.mesh);
@@ -33149,6 +33208,7 @@ class AnazhRealm {
         const pczNow = Math.floor(playerPos.z / span);
         this._ensurePlayerChunkBVH(pcx, pczNow);
         this._pumpVoxelChunkBVH(pcx, pczNow);
+        this._tickFoliageGrowth(); // V18.275 — die Vegetation wächst nach, wenn der Radius wächst
         // V17.1 — die Bau-Zahl dieses Frames zurückgeben, damit der Loop die
         // Klein-Vegetation NUR streut, wenn der Ring sich gesetzt hat (Terrain-
         // Priorität, wie ein Profi-Engine: erst das Gelände, dann die Deko).
@@ -73125,7 +73185,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.274.0";
+AnazhRealm.VERSION = "18.275.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76001,6 +76061,15 @@ AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
 AnazhRealm.ARCH_QUALITY_RADIUS_MIN = 100;
 AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
+// V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT (Schöpfer „nur der erste Chunk spawnen, dann
+// wächst die Welt je nach Kapazität"): die Vegetation eines Chunks füllt nur, wenn er im
+// `foliageRadius` liegt — der startet KLEIN (Spawn rendert nur die nächste Vegetation, kein
+// Freeze) und RAMPT zum perf-geregelten Ziel (`effArch` aus dem EINEN loadScale-PID). Steigt
+// die Render-Last, fällt loadScale → das Ziel sinkt → der Radius stoppt/schrumpft: die Welt
+// wächst exakt bis zur gemessenen Hardware-Kapazität. RMIN > maximaler Test-Spawn (~65 m).
+AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
+AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
+AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
 AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
 AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).

@@ -619,6 +619,9 @@ async function auditStateAndMethods() {
                 // V18.274 — Sync-Gating-Watchdog (beide undefined-sicher gelesen):
                 "_playerChunkStallKey", // `state.X !== key` (undefined !== key = true)
                 "_playerChunkStallSince", // `state.X || now`
+                // V18.275 — Kapazitäts-gewachsene Welt (beide undefined-sicher):
+                "foliageRadius", // `state.X != null ? state.X : MAX`
+                "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen

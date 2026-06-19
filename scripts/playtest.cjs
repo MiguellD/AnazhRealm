@@ -18589,6 +18589,66 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
     }
 }
 
+// V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT: die Vegetation füllt nur Chunks im
+// perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
+// Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
+async function checkBandV18275FoliageGrowth(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const st = r.state;
+        const out = {};
+        // Source: der Aktuator fährt foliageRadius; Gate + Wachstum existieren.
+        out.actuatorDrives = /foliageRadius/.test(r._nexusPerfActuate.toString());
+        out.hasGate = typeof r._foliageChunkInRadius === "function";
+        out.hasGrowth = typeof r._tickFoliageGrowth === "function";
+        // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
+        out.headlessFull =
+            !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r.constructor.PERF_FOLIAGE_RADIUS_MAX;
+        const pm = st.playerMesh;
+        if (!pm) {
+            out.skip = true;
+            return out;
+        }
+        const span = r._voxelChunkConfig().span;
+        const pcx = Math.floor(pm.position.x / span),
+            pcz = Math.floor(pm.position.z / span);
+        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon.
+        st.foliageRadius = 30;
+        out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
+        out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
+        // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
+        st.foliageRadius = 9999;
+        out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
+        // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key.
+        const tk = `${pcx + 1},${pcz + 1}`;
+        if (st.voxelChunks) st.voxelChunks.delete(tk); // nicht existent → nur entfernen, kein Re-Populate
+        st.pendingFoliageChunks = new Set([tk]);
+        r._tickFoliageGrowth();
+        out.growthDrains = !st.pendingFoliageChunks.has(tk);
+        return out;
+    });
+    if (res.error) {
+        check("V18.275: Foliage-Growth-Band (realm)", false, res.error);
+        return;
+    }
+    check("V18.275: der Perf-Aktuator fährt den foliageRadius (Source)", res.actuatorDrives);
+    check("V18.275: _foliageChunkInRadius + _tickFoliageGrowth existieren", res.hasGate && res.hasGrowth);
+    check("V18.275: headless (Null-Renderer) → foliageRadius = MAX (gate-treu)", res.headlessFull);
+    if (!res.skip) {
+        check(
+            "V18.275: kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt",
+            res.farDeferred && res.nearIncluded
+        );
+        check("V18.275: der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);
+        check(
+            "V18.275 CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)",
+            res.growthDrains
+        );
+    }
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
@@ -56312,6 +56372,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWelle6GHylomorphism, ctx);
             await timed(checkBandVoxelTerrainCore, ctx);
             await timed(checkBandV18271AsyncSoftFloor, ctx);
+            await timed(checkBandV18275FoliageGrowth, ctx);
             await timed(checkBandHydrosphere, ctx);
             await timed(checkBandVoxelP3AndInventory, ctx);
             await timed(checkBandWelle6Keybindings, ctx);
