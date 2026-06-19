@@ -22144,6 +22144,27 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.renderArchPos = +archPosR.toFixed(2);
         out.renderStreamPos = +streamPosR.toFixed(2);
 
+        // (8) V18.270 — DER LADE-RHYTHMUS (Schöpfer „der Regler hemmt die Ladezeit,
+        // pendelt mit Mitteln die nichts ändern"): bei Bau-Rückstau lädt die Welt mit
+        // MAX Streaming-Budget (rückstau-getrieben), AUCH unter starker Drosselung — der
+        // PID drosselt NICHT den Bau, der das hohe frameMs selbst erzeugt. Settled (kein
+        // Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration).
+        out.actuateReadsBacklog = /voxelMeshPending|streamBacklog/.test(r._nexusPerfActuate.toString());
+        const pendingSnap = st.voxelMeshPending;
+        st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
+        r._nexusPerfActuate({
+            loadScale: 0.2, // starke Drosselung
+            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        out.loadingPinsStreamMax = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
+        st.voxelMeshPending = new Set(); // settled (kein Rückstau)
+        r._nexusPerfActuate({
+            loadScale: 0.2,
+            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
+        st.voxelMeshPending = pendingSnap;
+
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
         st.architectureBuildBudgetPerFrame = snap.budget;
@@ -22217,6 +22238,18 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         "V18.269: die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
         res.renderLoadLengthensShadow
+    );
+    check(
+        "V18.270: DER LADE-RHYTHMUS — der Aktuator liest den Bau-Rückstau (voxelMeshPending), nicht nur fps",
+        res.actuateReadsBacklog
+    );
+    check(
+        "V18.270: bei Bau-Rückstau lädt die Welt mit MAX Streaming-Budget — der PID drosselt NICHT den Bau, der das frameMs erzeugt (kein Pendeln, keine Lade-Hemmung)",
+        res.loadingPinsStreamMax
+    );
+    check(
+        "V18.270: settled (kein Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration — der Hebel lebt, wo er sinnvoll ist)",
+        res.settledThrottlesStream
     );
 }
 

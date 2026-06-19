@@ -12960,9 +12960,20 @@ class AnazhRealm {
         st.architectureBuildBudgetPerFrame = Math.round(
             lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
         );
-        // Streaming (die Lauf-Freeze-Domäne):
-        st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], effStream);
-        st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], effStream));
+        // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
+        // Ladezeit, drosselt mit Mitteln die nichts ändern, der PID pendelt"): der Bau
+        // ist RÜCKSTAU-getrieben, NICHT fps-getrieben. Solange ein Bau-Rückstau besteht
+        // (Cold-Start / Lauf in neue Chunks), lädt die Welt mit MAX Budget — sonst
+        // drosselt der PID genau den Bau, der das hohe frameMs ERZEUGT: sein Stell-Hebel
+        // produziert seine eigene Messgrösse → er pendelt UND verlangsamt das Laden, ohne
+        // die Wurzel zu heilen ("ein Mittel das nichts ändert erzwingt Last"). Die
+        // QUALITÄT (Cull/Schatten/Wasser) regelt der PID weiter für die fps. Erst laden,
+        // dann regeln. Der per-Frame-Zeit-Deckel (max) schützt weiter vor einem Einzel-
+        // Spike (V18.261) — er BREMST nur nicht mehr den Durchsatz, wenn Arbeit ansteht.
+        const streamBacklog = st.voxelMeshPending ? st.voxelMeshPending.size : 0;
+        const streamEff = streamBacklog > 0 ? 1 : effStream;
+        st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], streamEff);
+        st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], streamEff));
         // Wasser:
         if (!st.atmosphere) st.atmosphere = {};
         st.atmosphere.waterIsoBudgetMs = lerp(L.waterIsoBudgetMs[0], L.waterIsoBudgetMs[1], effWater);
@@ -73017,7 +73028,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.269.0";
+AnazhRealm.VERSION = "18.270.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
