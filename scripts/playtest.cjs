@@ -56122,6 +56122,19 @@ async function checkBandRing6Workshop(ctx) {
             const WARMUP_MIN_MS = 3000; // zeit-getriebene Trigger (Grok 1.5 s) sehen echte Zeit
             const PLATEAU_MS = 2000; // Ring „voll", wenn die Chunk-Zahl so lange stabil ist
             const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
+            // V18.273 — DER WARMUP BAUT DETERMINISTISCH (worker-unabhängig): der
+            // Voxel-Worker wird für die Aufwärm-Phase ausgehängt → der Streaming-
+            // Tick baut jeden Ring-Chunk SYNC im Tick (das proven `voxelWorker=null`-
+            // Muster, s. die LOD-Bänder). WURZEL der Last-Fragilität: V18.271 nahm dem
+            // Spieler-Chunk den Sync-Anker (RICHTIG für den Lauf-Freeze in Produktion) —
+            // dadurch hing die WARMUP-Welt an der ASYNC-Worker-Lieferung, die unter CPU-
+            // Last (CI, mehrere Runner) ausgehungert wird → `voxelChunks=0` + 9 Folge-
+            // Fehler (gemessener Last-Flake: derselbe Commit rot↔grün je nach Last). Die
+            // ASYNC-Produktions-Wahrheit prüft `checkBandV18271AsyncSoftFloor` separat;
+            // der Warmup braucht nur eine WARME Welt, kein Async-Timing. Sync = load-
+            // unabhängig (kein Worker-Timing) + bit-identisch (Determinismus-Wand).
+            const _warmupSavedWorker = r.state.voxelWorker;
+            r.state.voxelWorker = null;
             let lastBuilt = -1;
             let lastGrowthAt = start;
             for (;;) {
@@ -56144,6 +56157,9 @@ async function checkBandRing6Workshop(ctx) {
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
+            // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
+            // (er re-synct seine Worldgen-Kachel lazy beim ersten Request, V18.132).
+            r.state.voxelWorker = _warmupSavedWorker;
         }, DURATION_MS);
 
         // ### Bericht (informativ) ###

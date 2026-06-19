@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.273 — DER GATE-ANKER: der Warmup baut worker-null/sync → die Last-Fragilität des Merge-Gates geheilt
+
+Schöpfer (Fortsetzung, „ziehe durch"): die wertvollste Audit-Fund-Heilung — der #1-Befund aus der Tiefen-Prüfung. **GEMESSEN in der Prüfung:** `npm run playtest` lief **2× ROT** (9 Invarianten, Wurzel `voxelChunks=0, groundChunks=0`) als der Container unter paralleler Last stand, und **grün solo** (5081 OK, 81 Chunks). Kein Regress — eine **Last-Fragilität**.
+
+**WURZEL (selbst gemessen):** V18.271 nahm dem Spieler-Chunk den `forceSync`-Anker (RICHTIG für den Produktions-Lauf-Freeze) — aber dadurch hing die WARMUP-Welt an der ASYNC-Worker-Lieferung. Unter CPU-Last (CI, mehrere Runner gleichzeitig) wird der Worker-Thread AUSGEHUNGERT → der Pump liefert in 90 s `voxelChunks=0`, und alle 9 terrain-abhängigen Invarianten (Skirt-Naht · Worldgen-Bäume · Vegetation · DSL-Boden) kaskadieren aus der EINEN Wurzel. Der `playtest.cjs`-Warmup-Kommentar (Z. 18-22) fürchtete genau diesen CI-Flake — V18.271 machte ihn schärfer.
+
+**GEBAUT (das proven Muster, kein Parallelcode):** beide Gate-Tiers hängen `r.state.voxelWorker = null` für die Aufwärm-Schleife aus → `_acquireVoxelChunkBuild` fällt auf Stufe-3-SYNC (bit-identisch via Determinismus-Wand), der Ring baut deterministisch IM Tick, restore nach der Schleife (die Folge-Bänder nutzen den echten async-Pfad, re-syncen die Worldgen-Kachel lazy). Das `voxelWorker=null`-Muster ist erprobt (die LOD-Bänder nutzen es). **Die ASYNC-Produktions-Wahrheit bleibt unberührt + separat geprüft** (`checkBandV18271AsyncSoftFloor` source-probt `_ensureVoxelChunkAt` → `forceSync: false`) — der Warmup braucht nur eine WARME, deterministische Welt, kein Async-Timing.
+
+**GEMESSEN:** voller Gate grün solo (5081, voxelChunks=81 via Sync) · Fast-Tier 13/13 + SCHNELLER (36→25 s, Sync spart die Worker-Round-Trip-Latenz für die ersten Chunks). Test-harness-only — der Produktions-Async-Pfad ist unverändert. **Die ~60 `diag-*`-Skripte teilen das Warmup-Muster, sind aber MANUELLE Werkzeuge (nicht CI-gated)** → keine CI-Flake-Quelle, bewusst nicht angefasst (Churn ohne Nutzen). **NÄCHSTE Tiefe (Schöpfer-deferred „nächste Session"):** der Produktions-Zwilling — „Sync-Gating, nur sync wenn wirklich kein Boden" (Watchdog: stallt der Worker + steht der Spieler auf dem weichen Boden → den einen Chunk sync bauen) im DETERMINISMUS-BOGEN.
+
 ### V18.272 — DIE HYGIENE-WELLE: totes Heightfield-Sediment gekehrt + die audit:strict-Wache wieder grün (Saat-geprüft)
 
 Schöpfer (nach der Tiefen-Prüfung, „los gehts champ, keine halben sachen, keine passagiere, kein parallelcode … prüfe ob es samen sind die übersetzt werden müssen oder wirklich raus können"): die zwei risikolosen Pflege-Schnitte aus dem Audit, jeder mit der **Saat-Prüfung** als Tor (ersetzt-durch-Tieferes → raus · verloren → retten · ruhender Vision-Faden → behalten).

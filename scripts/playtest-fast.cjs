@@ -111,6 +111,11 @@ function check(name, ok) {
             const MIN_MS = 3000;
             const PLATEAU_MS = 1500;
             const CAP_MS = 35000;
+            // V18.273 — wie der volle Gate: den Worker für den Warmup aushängen →
+            // der Ring baut SYNC + deterministisch (load-unabhängig), kein
+            // Async-Worker-Hunger unter CPU-Last (s. playtest.cjs-Warmup-Kommentar).
+            const _warmupSavedWorker = r.state.voxelWorker;
+            r.state.voxelWorker = null;
             let lastBuilt = -1,
                 lastGrowth = start;
             for (;;) {
@@ -127,6 +132,7 @@ function check(name, ok) {
                 if ((built >= TARGET && stable >= PLATEAU_MS && elapsed >= MIN_MS) || elapsed >= CAP_MS) break;
                 await new Promise((res) => setTimeout(res, 0));
             }
+            r.state.voxelWorker = _warmupSavedWorker;
         });
 
         // ── KERN-CHECKS (selbst-enthalten, defensiv) ──
