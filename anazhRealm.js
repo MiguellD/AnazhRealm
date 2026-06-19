@@ -12815,9 +12815,23 @@ class AnazhRealm {
 
     _perfSenseInit() {
         const phase = {};
-        for (const k of AnazhRealm.PERF_PHASES) phase[k] = 0;
+        const phaseMax = {};
+        for (const k of AnazhRealm.PERF_PHASES) {
+            phase[k] = 0;
+            phaseMax[k] = 0;
+        }
         return {
             phase, // EWMA ms/Frame je Subsystem — „was wieviel Leistung zieht"
+            // V18.268 — der SPIKE neben dem Mittel: abklingender Max je Subsystem. Die
+            // EWMA (α=0.12) glättet einen 157-ms-Einmal-Spike auf ~9 ms WEG → das System
+            // war blind für Hitches. phaseMax fängt den Worst-Case (die echte Stocker-Quelle).
+            phaseMax,
+            // V18.268 — die GPU-RENDER-LAST (vorher gar nicht gemessen — der dominante
+            // „kann mich nicht umsehen"-Posten). Draw-Calls + Dreiecke/Frame, EWMA + Max.
+            renderCalls: 0,
+            renderTris: 0,
+            renderCallsMax: 0,
+            renderTrisMax: 0,
             frameMs: AnazhRealm.PERF_TARGET_MS,
             frameMaxMs: AnazhRealm.PERF_TARGET_MS,
             // PRO-EINHEIT-KOSTEN (der Keim der Produktions-Ökonomie):
@@ -12849,10 +12863,19 @@ class AnazhRealm {
         // "streaming" wrappt _loopVoxelStreaming (inkl. dem genesteten waterIso) →
         // für DISJUNKTE Phasen das Wasser abziehen (sonst doppelt gezählt im Aktuator).
         const streamingExcl = Math.max(0, (f.streaming || 0) - (f.waterIso || 0));
+        if (!sense.phaseMax) sense.phaseMax = {};
         for (const k of AnazhRealm.PERF_PHASES) {
             const v = k === "streaming" ? streamingExcl : f[k] || 0;
             sense.phase[k] = ewma(sense.phase[k] || 0, v);
+            // V18.268 — der Spike neben dem Mittel (abklingender Max): die EWMA glättet
+            // einen Hitch weg, phaseMax behält ihn ~1 s sichtbar (0.92/Frame-Abkling).
+            sense.phaseMax[k] = Math.max(v, (sense.phaseMax[k] || 0) * 0.92);
         }
+        // V18.268 — die GPU-Render-Last (Draw-Calls + Dreiecke), EWMA + abklingender Max.
+        sense.renderCalls = ewma(sense.renderCalls || 0, f.renderCalls || 0);
+        sense.renderTris = ewma(sense.renderTris || 0, f.renderTris || 0);
+        sense.renderCallsMax = Math.max(f.renderCalls || 0, (sense.renderCallsMax || 0) * 0.92);
+        sense.renderTrisMax = Math.max(f.renderTris || 0, (sense.renderTrisMax || 0) * 0.92);
         sense.frameMs = ewma(sense.frameMs, frameMs);
         sense.frameMaxMs = Math.max(frameMs, sense.frameMaxMs * 0.92); // abklingende Spitze
         const nCre = st.creatures ? st.creatures.length : 0;
@@ -13004,6 +13027,18 @@ class AnazhRealm {
         const fm = s.frameMaxMs;
         const fmCol = fm > 33 ? "#ff6b6b" : fm > 22 ? "#ffd166" : "#8fe98f";
         const lsCol = s.loadScale < 0.6 ? "#ff6b6b" : s.loadScale < 0.9 ? "#ffd166" : "#8fe98f";
+        // V18.268 — die neuen Augen: die GPU-Render-Last + der schlimmste Subsystem-Spike.
+        const rc = s.renderCalls || 0;
+        const rcCol = rc > 1000 ? "#ff6b6b" : rc > 600 ? "#ffd166" : "#8fe98f";
+        const pm = s.phaseMax || {};
+        let spikeK = "—",
+            spikeV = 0;
+        for (const k of AnazhRealm.PERF_PHASES)
+            if ((pm[k] || 0) > spikeV) {
+                spikeV = pm[k];
+                spikeK = k;
+            }
+        const spCol = spikeV > 33 ? "#ff6b6b" : spikeV > 16 ? "#ffd166" : "#8fe98f";
         const vc = this.state.voxelChunks ? this.state.voxelChunks.size : 0;
         const arch = this.state.architectures ? this.state.architectures.length : 0;
         let coll = 0;
@@ -13014,6 +13049,8 @@ class AnazhRealm {
             `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
             `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
             `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms\n` +
+            `RLOAD  <span style="color:${rcCol}">${rc.toFixed(0)}</span> draw-calls · ${(s.renderTris / 1e6).toFixed(2)}M tris  (max ${(s.renderCallsMax || 0).toFixed(0)} / ${((s.renderTrisMax || 0) / 1e6).toFixed(2)}M)\n` +
+            `SPIKE  schlimmster ${spikeK} <span style="color:${spCol}">${spikeV.toFixed(0)}</span> ms · frame-max ${fm.toFixed(0)} ms\n` +
             `REGEL  loadScale <span style="color:${lsCol}">${(s.loadScale * 100).toFixed(0)}%</span>  δ ${(s.frameMs - targetMs).toFixed(1)} ms\n` +
             `stellgr  streamBudget ${(this.state._voxelStreamBudgetMs || 0).toFixed(1)} ms  waterBudget ${((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1)} ms\n` +
             `chunk SYNC ${s.syncBuildN.toFixed(2)}/f (${s.syncBuildMs.toFixed(0)} ms)  worker ${s.workerMeshN.toFixed(2)}/f  q${wq}\n` +
@@ -21371,6 +21408,12 @@ class AnazhRealm {
         // → beim UMSEHEN (statische Position) wird der ganze Pass übersprungen.
         renderer.shadowMap.autoUpdate = false;
         renderer.shadowMap.needsUpdate = true; // der erste Frame baut die Map
+        // V18.268 — perfSense bekommt Augen für die GPU-Last: autoReset AUS, damit
+        // `_loopRender` selbst pro Frame EINMAL `info.reset()` ruft und am Frame-Ende
+        // die VOLLE Per-Frame-Last (Schatten- + Haupt- + Post-FX-Pass zusammen) liest.
+        // Three.js würde sonst bei jedem render()-Aufruf zurücksetzen → nur der letzte
+        // (kleine Post-FX-)Pass wäre sichtbar. Der Render war perfSense bisher BLIND.
+        if (renderer.info) renderer.info.autoReset = false;
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer).
@@ -21397,7 +21440,7 @@ class AnazhRealm {
             stencil: false,
             outputColorSpace: "srgb",
             backend: null,
-            info: { render: {}, memory: {} },
+            info: { render: { calls: 0, triangles: 0 }, memory: {}, autoReset: false, reset: () => {} },
             init: resolved,
             // render() lässt die GPU-RASTERUNG weg, macht aber die billige CPU-
             // Buchhaltung, die der echte Renderer auch tut: die Welt-Matrizen
@@ -72670,6 +72713,10 @@ class AnazhRealm {
         // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
         // requestAdapter()-Latenz).
         if (!this.state.rendererReady) return;
+        // V18.268 — perfSense-Render-Tap: EINMAL pro Frame zurücksetzen, dann am Ende
+        // die akkumulierte Per-Frame-Last (alle render()-Pässe) lesen (autoReset=false).
+        const _rinfo = this.state.renderer.info;
+        if (_rinfo && typeof _rinfo.reset === "function") _rinfo.reset();
         // V12.0-f — kein manueller Shadow-Pass mehr. Three.js' WebGPU-Renderer
         // rendert die Shadow-Map nativ pro Frame (shadowMap.autoUpdate=true,
         // directionalLight.castShadow + die lights=true-MeshToonNodeMaterials
@@ -72696,6 +72743,14 @@ class AnazhRealm {
             }
         } else {
             this.state.renderer.render(this.state.scene, this.state.camera);
+        }
+        // V18.268 — die GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke
+        // dieses Frames, alle Pässe summiert). Das war der blinde Fleck: „freezt, kann
+        // mich nicht umsehen" ist reine Render-Last, die perfSense nie sah.
+        if (_rinfo && _rinfo.render) {
+            const f = this.state._perfFrame || (this.state._perfFrame = {});
+            f.renderCalls = _rinfo.render.calls || 0;
+            f.renderTris = _rinfo.render.triangles || 0;
         }
         // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
         // WorkDone()`. V10.0-j.e's 2-Frame-Age-Counter (`age >= 2`) war
@@ -72954,7 +73009,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.267.0";
+AnazhRealm.VERSION = "18.268.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

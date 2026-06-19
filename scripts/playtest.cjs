@@ -22095,6 +22095,25 @@ async function checkBandWellePerfENexusGovernor(ctx) {
             r._estimatePerfCost("creature", 10) > r._estimatePerfCost("creature", 2) &&
             r._estimatePerfCost("creature", 10) === 0.5;
 
+        // (6) V18.268 — die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die
+        // per-Subsystem-Spikes (vorher blind: Render gar nicht gemessen, Hitches
+        // EWMA-weggemittelt). CONSUM: der Fold füllt die Felder, Loop + Overlay lesen sie.
+        out.hasRenderFields =
+            typeof st.perfSense.renderCalls === "number" &&
+            typeof st.perfSense.renderTris === "number" &&
+            typeof st.perfSense.renderCallsMax === "number" &&
+            !!st.perfSense.phaseMax;
+        st._perfFrame = { renderCalls: 1000, renderTris: 500000, streaming: 50 };
+        st._perfMarks = {};
+        r._perfSenseFoldFrame(50, 0.05);
+        out.foldRenderLoad = st.perfSense.renderCalls > 0 && st.perfSense.renderTris > 0;
+        out.foldRenderMax = st.perfSense.renderCallsMax >= 1000 && st.perfSense.renderTrisMax >= 500000;
+        out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
+        out.loopRenderTaps =
+            /renderCalls/.test(r._loopRender.toString()) && /info\.reset/.test(r._loopRender.toString());
+        out.overlayShowsRenderLoad =
+            /renderCalls/.test(r._perfSenseRender.toString()) && /phaseMax|spike/i.test(r._perfSenseRender.toString());
+
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
         st.architectureBuildBudgetPerFrame = snap.budget;
@@ -22141,6 +22160,22 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     );
     check("V18.263: ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
     check("V18.263: Kosten-Schätzung skaliert mit n (Produktions-Ökonomie-Keim)", res.estimateScales);
+    check(
+        "V18.268: perfSense SIEHT die Render-Last + Spikes (renderCalls/renderTris/renderCallsMax/phaseMax)",
+        res.hasRenderFields
+    );
+    check(
+        "V18.268: CONSUM — der Fold füllt die GPU-Last (calls+tris EWMA) + den abklingenden Max",
+        res.foldRenderLoad && res.foldRenderMax
+    );
+    check(
+        "V18.268: CONSUM — der Fold fängt den Subsystem-Spike (phaseMax neben der wegmittelnden EWMA)",
+        res.foldPhaseSpike
+    );
+    check(
+        "V18.268: _loopRender tappt die GPU-Last (info.reset + renderCalls) + das Overlay zeigt sie",
+        res.loopRenderTaps && res.overlayShowsRenderLoad
+    );
 }
 
 // V12.0-perf.d.2 (Wurzel C — Lazy-Proxy-Collision): beweist, dass Architekturen

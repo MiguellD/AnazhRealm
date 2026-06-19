@@ -252,12 +252,14 @@ const server = http.createServer((req, res) => {
             try {
                 s.renderer.shadowMap.enabled = true;
                 let t0 = performance.now();
+                if (info && typeof info.reset === "function") info.reset(); // V18.268: autoReset=false in prod → explizit
                 real(scene, cam);
                 renderMsWith = +(performance.now() - t0).toFixed(0);
                 withShadow = { calls: info.render.calls, tris: info.render.triangles };
                 programs = info.programs ? info.programs.length : -1;
                 s.renderer.shadowMap.enabled = false;
                 t0 = performance.now();
+                if (info && typeof info.reset === "function") info.reset();
                 real(scene, cam);
                 renderMsNo = +(performance.now() - t0).toFixed(0);
                 noShadow = { calls: info.render.calls, tris: info.render.triangles };
