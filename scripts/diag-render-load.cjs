@@ -141,6 +141,7 @@ const server = http.createServer((req, res) => {
         // Dreiecke? Nach LOD-Stufe (aus dem archInstanceKey geparst: _lod1/_lod2 →
         // sonst LOD0) → sagt, ob Impostoren (ferne LOD2 schon billig?) oder die
         // NAHEN LOD0-Bäume der Hebel sind.
+        const hismByPrefix = {};
         const hismLOD = { lod0: { tris: 0, inst: 0, groups: 0 }, lod1: { tris: 0, inst: 0, groups: 0 }, lod2: { tris: 0, inst: 0, groups: 0 } };
         scene.traverse((node) => {
             if (!node.visible) return;
@@ -196,6 +197,11 @@ const server = http.createServer((req, res) => {
                 hismLOD[bucket].tris += tris;
                 hismLOD[bucket].inst += inst;
                 hismLOD[bucket].groups += 1;
+                // Prefix (Art ohne _v<idx>_lodN#leaf) → wo konzentriert sich die Last?
+                const pref = k.replace(/_v\d+.*$/, "").replace(/#\d+$/, "");
+                if (!hismByPrefix[pref]) hismByPrefix[pref] = { tris: 0, inst: 0 };
+                hismByPrefix[pref].tris += tris;
+                hismByPrefix[pref].inst += inst;
             }
         });
 
@@ -265,6 +271,7 @@ const server = http.createServer((req, res) => {
             totals: { tris: totalTris, calls: totalCalls, shadowTris, shadowCasters, visMeshes, noCullTris, noCullMeshes, cullTris },
             bySystem,
             hismLOD,
+            hismByPrefix,
             shadowCfg,
             shadowCache,
             realRender: { withShadow, noShadow, programs, renderMsWith, renderMsNo },
@@ -323,6 +330,11 @@ const server = http.createServer((req, res) => {
     if (out.hismLOD) {
         const h = out.hismLOD;
         const per = (b) => fmt(b.tris) + " tris / " + b.inst + " inst / " + b.groups + " grp (" + (b.inst ? Math.round(b.tris / b.inst) : 0) + " tris/inst)";
+if (out.hismByPrefix) {
+        const top = Object.entries(out.hismByPrefix).sort((a,b)=>b[1].tris-a[1].tris).slice(0,12);
+        console.log("  HISM Top-Arten (tris | inst):");
+        for (const [p,v] of top) console.log("    " + p.padEnd(28) + fmt(v.tris).padStart(8) + " | " + v.inst);
+    }
         console.log("  HISM nach LOD: LOD0 " + per(h.lod0) + " · LOD1 " + per(h.lod1) + " · LOD2 " + per(h.lod2));
     }
     console.log(

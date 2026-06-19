@@ -457,6 +457,38 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.266 — DER RENDER-QUICK-WIN: Kiesel-Detail skaliert mit Grösse (Deko kostete mehr als der Held)
+
+Schöpfer-Entscheid (nach dem Strategie-Gespräch über Flaschenhals + Ammo/Determinismus): „erst der
+Render-Quick-Win, dann der Determinismus-Bogen." Diese Welle ging den Quick-Win — gemessen, nicht geraten.
+
+- **DIE MESSUNG (miss zuerst):** ein neuer `hismByPrefix`-Aufschlüssel im `diag-render-load` (Render-Last
+  pro Art) deckte den Anti-Pattern auf — **`kiesel` (Geröll) war mit 589k Dreiecken der GRÖSSTE
+  view-unabhängige HISM-Posten, MEHR als jede Baum-Art.** Ein 0.5-m-Kiesel = 3 `noiserock`-Parts × 80
+  Dreiecke (IcosahedronGeometry det 1) = **240 Dreiecke**, ×~2453 Kiesel = 589k. Deko kostete mehr als der
+  Held-Content (Eiche 237k, Buche 226k).
+- **DER FIX (EINE synergetische Regel):** die `noiserock`-Detail-Stufe **skaliert mit der GRÖSSE** statt
+  fix det 1: `_maxDim < 0.7 m → det 0` (20-Flächen-Ikosaeder, noise-verschoben — liest glatt als kleiner
+  Stein), `≥ 0.7 m → det 1` (das alte Default — KEIN grosser Fels schrumpft/wächst). Explizites
+  `noiseDetail` bleibt Intent-Override (Ω-Muster). Physikalisch sinnvoll: kleine Steine wirken gerundet,
+  grosse zeigen Bruchkanten.
+- **GEMESSEN:** kiesel 589k→147k (−75 %), felsbrocken 55k→35k (Begleit-Part schrumpft mit), **HISM-LOD0
+  (der „Umsehen"-Posten, view-unabhängig) 1.00M→542k (−46 %), Schatten-Pass 1.30M→935k (−28 %, Bonus —
+  Kiesel werfen Schatten, jetzt 4× billiger).** Mit V18.265 zusammen: Schatten-Pass 2.32M→935k (−60 %).
+  Look-sicher (ein winziger Kiesel braucht keine 80 Facetten). 3 Wände (`checkBandV18266RockDetail`).
+- **LEHRE:** bei „freezt, kann nicht umsehen" die Render-Last NACH ART aufschlüsseln (`hismByPrefix`) —
+  der grösste Posten ist oft über-tesselliertes Klein-Deko, nicht der Held. Detail muss mit der Grösse
+  skalieren (eine Regel, kein Per-Bauplan-Pflaster).
+- **NÄCHSTE Render-Posten (gemessen, falls nötig — aber look-bound/delikat):** `grown_blume_gross`
+  252k/9674 (Blumen-DICHTE, look-bound) · `grown_baum_totholz` 240k/1548 (155 Dreiecke/Totholz, gewachsen).
+- **DANN (Schöpfer-Plan): der DETERMINISMUS-BOGEN** — die schmale voxel-native deterministische Kollision +
+  Character-Controller ersetzt Ammos enge Rolle (gemessen winzig: 1 World · ~4 Bodies · Box/TriMesh · 1
+  Raycast). Killt den BVH-Lauf-Freeze (`_buildVoxelChunkBVH` baut pro Spieler-Chunk synchron einen
+  btBvhTriangleMeshShape) UND öffnet Lockstep-Multiplayer/Replay/Rollback (die ganze Welt ist schon
+  deterministisch AUSSER Ammo). KEIN allgemeiner Engine (Stacking/Ragdoll = Sand-Weg) — nur die schmale
+  Voxel-Rolle. Verdient einen eigenen Plan-Doc + eine Bewegungs-Gefühl-Wand. Branch
+  `claude/confident-noether-yczn0c`.
+
 ### V18.265 — DIE SCHATTEN-DISTANZ + die gemessene Impostor-/Frustum-Korrektur (miss zuerst)
 
 Der Schöpfer nach V18.264: „die Fehlermeldung instanceColor ist immernoch da … die hunderttausende

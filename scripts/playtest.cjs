@@ -38817,6 +38817,54 @@ async function checkBandV18265ShadowDistance(ctx) {
     );
 }
 
+async function checkBandV18266RockDetail(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const out = {};
+        if (typeof r._makePartGeometry !== "function" || typeof THREE === "undefined") return out;
+        const triOf = (g) =>
+            g && g.attributes && g.attributes.position
+                ? g.index
+                    ? g.index.count / 3
+                    : g.attributes.position.count / 3
+                : 0;
+        // Kleiner Kiesel (<0.7 m) → det 0 (20-Flächen-Ikosaeder), grosser Brocken
+        // (≥0.7 m) → det 1 (80 Flächen). Explizites noiseDetail bleibt Override.
+        const small = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 0.5, y: 0.4, z: 0.5 } });
+        const big = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 1.5, y: 1.2, z: 1.4 } });
+        const override = r._makePartGeometry({
+            shape: "noiserock",
+            material: "stein",
+            size: { x: 0.5, y: 0.4, z: 0.5 },
+            noiseDetail: 1,
+        });
+        out.smallTris = triOf(small);
+        out.bigTris = triOf(big);
+        out.overrideTris = triOf(override);
+        // det 0 = 20 Dreiecke, det 1 = 80 Dreiecke (IcosahedronGeometry).
+        out.smallLow = out.smallTris > 0 && out.smallTris <= 24; // det 0
+        out.bigHigher = out.bigTris >= 60; // det 1 (≥ 60, behält Facetten)
+        out.smallCheaperThanBig = out.smallTris * 3 <= out.bigTris; // 4× billiger
+        out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
+        // CONSUM (source-probe): die Detail-Stufe leitet sich aus der Grösse ab.
+        out.sizeDriven = /_maxDim\s*<\s*0\.7/.test(r._makePartGeometry.toString());
+        return out;
+    });
+    check(
+        `V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`,
+        res.smallLow === true
+    );
+    check(
+        `V18.266: grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
+        res.bigHigher === true && res.smallCheaperThanBig === true
+    );
+    check(
+        "V18.266: explizites noiseDetail bleibt Intent-Override + Grösse treibt die Stufe (CONSUM)",
+        res.overrideHonored === true && res.sizeDriven === true
+    );
+}
+
 async function checkBandV18262CreatureRenderLOD(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -56140,6 +56188,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandV18262CreatureRenderLOD(ctx);
             await checkBandV18264ShadowCache(ctx);
             await checkBandV18265ShadowDistance(ctx);
+            await checkBandV18266RockDetail(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

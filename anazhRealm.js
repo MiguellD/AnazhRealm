@@ -49640,7 +49640,22 @@ class AnazhRealm {
                 // die Verschiebung als f(POSITION) hält geteilte Kanten verschweißt
                 // (zwei Vertices an derselben Stelle bekommen dieselbe Auslenkung);
                 // computeVertexNormals gibt danach flache Facetten-Normalen.
-                const det = Number.isFinite(part.noiseDetail) ? Math.max(0, Math.min(3, part.noiseDetail | 0)) : 1;
+                // V18.266 (Render-Hebel, GEMESSEN — `kiesel` war mit 589k Dreiecken
+                // der GRÖSSTE view-unabhängige HISM-Posten: 3 noiserock-Parts × 80
+                // Dreiecke = 240 Dreiecke für einen 0.5-m-Kiesel, ×2453 = absurd
+                // über-tesselliert). Die DETAIL-STUFE skaliert jetzt mit der GRÖSSE:
+                // ein winziger Kiesel (<0.7 m) liest auch mit det 0 (20-Flächen-
+                // Ikosaeder, noise-verschoben) glatt als Stein; ein Brocken/Landmark
+                // (≥0.7 m) behält die Facetten (det 1, das alte Default — KEIN grosser
+                // Fels schrumpft/wächst). Physikalisch sinnvoll (kleine Steine wirken
+                // gerundet, grosse zeigen Bruchkanten). Explizites `noiseDetail` bleibt
+                // Intent-Override (Ω-Muster). Spart ~440k Dreiecke, look-sicher.
+                const _maxDim = Math.max(sx, sy, sz);
+                const det = Number.isFinite(part.noiseDetail)
+                    ? Math.max(0, Math.min(3, part.noiseDetail | 0))
+                    : _maxDim < 0.7
+                      ? 0
+                      : 1;
                 const g = new THREE.IcosahedronGeometry(0.5, det);
                 const matDef = part.material && this.state.materials ? this.state.materials[part.material] : null;
                 const haerte = matDef && matDef.tags && Number.isFinite(+matDef.tags.härte) ? +matDef.tags.härte : 0.5;
@@ -72878,7 +72893,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.265.0";
+AnazhRealm.VERSION = "18.266.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
