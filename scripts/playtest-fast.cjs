@@ -60,22 +60,33 @@ function check(name, ok) {
     // die Checks prüfen „Avatar baut + ist Rig", nicht die Treue → verlustfrei. Siehe playtest.cjs.
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessSkinResCap = 64;
+        // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
+        // Pixel mit Augen aus). Der Null-Renderer macht den Lauf robust gegen
+        // swiftshader-Renderer-Crashes. Der LOOK lebt in diag-settled-view.
+        window.__anazhHeadlessNullRenderer = true;
     });
     const errors = [];
     page.on("pageerror", (e) => errors.push((e.stack || e.message || String(e)).split("\n")[0]));
     page.on("console", (m) => {
         const t = m.text();
-        if (/Chunk-Generation-Fehler|WASM-MIME|Vendor-Lib nicht geladen/.test(t)) errors.push("[console] " + t.slice(0, 120));
+        if (/Chunk-Generation-Fehler|WASM-MIME|Vendor-Lib nicht geladen/.test(t))
+            errors.push("[console] " + t.slice(0, 120));
     });
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
         // ── Init abwarten (wie der Voll-Playtest) ──
+        // Das echte „Welt bereit"-Signal ist `_gameLoopTick` als Funktion (startEternalLoop
+        // lief, der Boot ist durch) — NICHT `rendererReady` allein: das heißt nur „GPU-Device
+        // fertig" (renderer.init().then()). Beim echten Renderer fallen beide zeitlich zusammen
+        // (GPU-init ist langsam); beim Null-Renderer resolved init() sofort → rendererReady
+        // feuert VOR startEternalLoop → Race. Auf den Loop warten ist renderer-unabhängig korrekt.
         await page.evaluate(async () => {
             const dl = performance.now() + 20000;
             while (
                 (!window.anazhRealm ||
                     !window.anazhRealm.state ||
                     !window.anazhRealm.state.rendererReady ||
+                    typeof window.anazhRealm._gameLoopTick !== "function" ||
                     !window.anazhRealm.state.blueprints) &&
                 performance.now() < dl
             )

@@ -26,6 +26,11 @@ const puppeteer = require("puppeteer");
 const DURATION_MS = Number(process.env.PLAYTEST_SECONDS || 30) * 1000;
 const SERVER_URL = "http://127.0.0.1:4312/index.html";
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
+// GPU-frei (Default): der Mechanik-Gate läuft mit Null-Renderer — kein Band liest
+// Pixel, der echte GPU-Kontext ist reine Crash-Quelle (swiftshader unter Last).
+// PLAYTEST_REAL_RENDERER=1 schaltet den echten WebGPU-Renderer + End-Screenshot
+// zurück (für ein visuelles Artefakt; der LOOK lebt sonst in diag-settled-view).
+const REAL_RENDERER = process.env.PLAYTEST_REAL_RENDERER === "1";
 const ARTIFACT_DIR = path.join(__dirname, "..", "artifacts");
 const SCREENSHOT_PATH = path.join(ARTIFACT_DIR, "playtest.png");
 
@@ -18399,6 +18404,15 @@ async function checkBandWelle6GHylomorphism(ctx) {
             // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
             // ohne Mock.
             if (r.state.camera && r.state.playerMesh) {
+                // Robustheit (renderer-unabhängig): ein paar Loop-Ticks pumpen → der
+                // Spieler settled per Schwerkraft auf die Terrain-Oberfläche UND
+                // `_ensurePlayerChunkBVH` (im Loop) baut die Kollisions-BVH des
+                // Spieler-Chunks. Der ECHTE Ammo-Raycast hängt sonst vom konfundierten
+                // 238-Band-Welt-Zustand ab (mit dem GPU-freien Null-Renderer settelt der
+                // Spieler-Chunk anders als beim langsamen echten Renderer). Heilung auf
+                // INTENT (Raycast/Grabe-MECHANIK), nicht „Last-Flake".
+                for (let k = 0; k < 12; k++)
+                    if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
                 const cam = r.state.camera;
                 const pm = r.state.playerMesh;
                 const savedPos = cam.position.clone();
@@ -55747,8 +55761,15 @@ async function checkBandRing6Workshop(ctx) {
     // [PERF] Skin-Res-Cap VOR dem Laden setzen (der Bootstrap seedet daraus den Static,
     // bevor init() den ~270-Teil-Avatar baut) → schon der ALLERERSTE Build ist gedrosselt
     // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
-    await page.evaluateOnNewDocument(() => {
+    await page.evaluateOnNewDocument((realRenderer) => {
         window.__anazhHeadlessSkinResCap = 64;
+        // GPU-FREI: kein Band liest je ein Pixel (nur ein Wegwerf-Screenshot), die
+        // Rasterung war ohnehin schon gestubbt. Der Null-Renderer entfernt den GPU-
+        // Kontext ganz → der Mechanik-Gate ist effizient + ROBUST (kein swiftshader-
+        // Renderer-Crash unter kumulativer Last mehr). Der LOOK bleibt der echten
+        // WebGPU-Bahn (diag-settled-view · Schöpfer-Browser) — eine ZAHL hier, ein
+        // BILD dort. Opt-out via PLAYTEST_REAL_RENDERER=1 (echter Renderer + Screenshot).
+        if (!realRenderer) window.__anazhHeadlessNullRenderer = true;
         // EINE Quelle für „der CODE einer Funktion, ohne Kommentare". Jeder
         // Absenz-Grep gegen methode.toString() liest über diesen Helfer — sonst
         // stolpert er über erklärende Kommentare, die den entfernten Code zitieren
@@ -55759,7 +55780,7 @@ async function checkBandRing6Workshop(ctx) {
             String(fnOrSrc)
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
-    });
+    }, REAL_RENDERER);
 
     const logs = [];
     const errors = [];
@@ -55833,7 +55854,10 @@ async function checkBandRing6Workshop(ctx) {
             // `hydroSurfaceUniforms.time`/`.emotion`) weiter, die V17.31 + V9.42-b
             // lesen. Der Screenshot-Pfad stellt den echten Render wieder her.
             // GEMESSEN (diag-warmup-speed): Warmup 27.5 s → 5.6 s.
-            if (r.state.renderer) {
+            // Beim Null-Renderer NICHT stubben: sein render() ist schon GPU-frei +
+            // macht die nötige Matrix-Buchhaltung (sonst verfehlt der echte Raycast
+            // das Terrain). Nur den ECHTEN (swiftshader-)Renderer entschärfen.
+            if (r.state.renderer && !r.state.renderer._isHeadlessNull) {
                 window.__origRendererRender = r.state.renderer.render.bind(r.state.renderer);
                 r.state.renderer.render = function () {};
                 if (typeof r.state.renderer.renderAsync === "function") {
@@ -56274,28 +56298,38 @@ async function checkBandRing6Workshop(ctx) {
         const bodenFehltCount = logs.filter((l) => /Boden fehlt/.test(l.text)).length;
         check("Keine Welt-Regen-Death-Spiral", bodenFehltCount <= 2, `'Boden fehlt'-Logs=${bodenFehltCount}`);
 
-        // Screenshot als Beweis-Artefakt. Force-revealt die Dialog-Box, falls
-        // ihr 8 s-Fade-Out schon durch ist — der Text bleibt ja im DOM.
-        try {
-            await page.evaluate(() => {
-                const box = document.getElementById("dialogue-box");
-                if (box && box.textContent) box.classList.add("visible");
-                // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
-                // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
-                const r = window.anazhRealm;
-                if (r && r.state.renderer && window.__origRendererRender) {
-                    r.state.renderer.render = window.__origRendererRender;
-                    r.state.postProcessingFailed = false;
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                }
-            });
-            fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
-            await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
-            console.log(`\nScreenshot: ${SCREENSHOT_PATH}`);
-        } catch (e) {
-            console.log(`\nScreenshot fehlgeschlagen: ${e.message}`);
+        // Screenshot als Beweis-Artefakt — NUR im Real-Renderer-Modus (mit dem
+        // Null-Renderer wäre das Bild blank; der LOOK lebt in diag-settled-view,
+        // dem echten, settled, augenhöhen-WebGPU-Auge). Force-revealt die
+        // Dialog-Box, falls ihr 8 s-Fade-Out schon durch ist — der Text bleibt im DOM.
+        if (!REAL_RENDERER) {
+            console.log(
+                "\nScreenshot übersprungen (GPU-frei / Null-Renderer). Für ein BILD: " +
+                    "PLAYTEST_REAL_RENDERER=1 npm run playtest — oder das echte Augen-Tool " +
+                    "node scripts/diag-settled-view.cjs (settled, Augenhöhe, WebGPU)."
+            );
+        } else {
+            try {
+                await page.evaluate(() => {
+                    const box = document.getElementById("dialogue-box");
+                    if (box && box.textContent) box.classList.add("visible");
+                    // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
+                    // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
+                    const r = window.anazhRealm;
+                    if (r && r.state.renderer && window.__origRendererRender) {
+                        r.state.renderer.render = window.__origRendererRender;
+                        r.state.postProcessingFailed = false;
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                    }
+                });
+                fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
+                await page.screenshot({ path: SCREENSHOT_PATH, fullPage: false });
+                console.log(`\nScreenshot: ${SCREENSHOT_PATH}`);
+            } catch (e) {
+                console.log(`\nScreenshot fehlgeschlagen: ${e.message}`);
+            }
         }
     } finally {
         await browser.close();

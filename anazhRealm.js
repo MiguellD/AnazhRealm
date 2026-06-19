@@ -14212,6 +14212,15 @@ class AnazhRealm {
                 }
             }
             st._skyEnvTex.needsUpdate = true;
+            // Null-Renderer (headless, GPU-frei): kein PMREM (das braucht echte GPU-
+            // Render-Targets). Die schlichte Equirekt-DataTexture IST eine gültige Env
+            // (CPU) — die roughness-gefilterte IBL-Qualität ist ein LOOK-Detail, das nur
+            // die echte WebGPU-Bahn braucht. So steht der Headless-Sim eine Env, ohne GPU.
+            if (st.renderer._isHeadlessNull) {
+                st.scene.environment = st._skyEnvTex;
+                st._skyEnvLastColor = sky;
+                return true;
+            }
             // PMREM die Equirekt-Gradient-Env — GEMESSEN ist `fromEquirectangular` WebGPU-
             // tauglich (anders als das WebGL-interne `fromScene`). Das gibt ECHTE roughness-
             // gefilterte IBL: Metalle (eisen-Turm) SPIEGELN den Himmel statt schwarz, und die
@@ -21362,6 +21371,62 @@ class AnazhRealm {
         // → beim UMSEHEN (statische Position) wird der ganze Pass übersprungen.
         renderer.shadowMap.autoUpdate = false;
         renderer.shadowMap.needsUpdate = true; // der erste Frame baut die Map
+    }
+
+    // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer).
+    // Eine No-op-Render-Hülle OHNE GPU-Kontext: die Welt bootet + simuliert voll
+    // (Worldgen · Voxel · Kreaturen · Stats · DSL · Determinismus — alles CPU),
+    // nur die Rasterung entfällt. Zweck: der Mechanik-Playtest läuft GPU-frei →
+    // effizient + robust (kein swiftshader-Renderer-Crash unter kumulativer Last,
+    // niemand wertet die headless-Pixel je mit Augen aus). Der LOOK bleibt der
+    // ECHTEN WebGPU-Render-Bahn vorbehalten (diag-settled-view · Schöpfer-Browser):
+    // eine ZAHL hier, ein BILD dort (CLAUDE.md „MECHANIK braucht eine ZAHL, LOOK
+    // braucht ein BILD"). Zugleich das headless-Fundament des Determinismus-Bogens
+    // (Lockstep/Replay/Server-Sim). Deckt exakt die vom Code berührte Renderer-API
+    // ab; `init()` RESOLVT (→ rendererReady=true, derselbe Pfad wie der echte
+    // Renderer mit gestubbtem render). `backend=null` nimmt die defensive
+    // Sofort-Dispose-Bahn in _drainPools.
+    _makeHeadlessRenderer(canvas) {
+        const noop = () => {};
+        const resolved = () => Promise.resolve();
+        return {
+            domElement: canvas,
+            shadowMap: { enabled: false, type: 0, autoUpdate: false, needsUpdate: false },
+            toneMapping: 0,
+            toneMappingExposure: 1,
+            stencil: false,
+            outputColorSpace: "srgb",
+            backend: null,
+            info: { render: {}, memory: {} },
+            init: resolved,
+            // render() lässt die GPU-RASTERUNG weg, macht aber die billige CPU-
+            // Buchhaltung, die der echte Renderer auch tut: die Welt-Matrizen
+            // aktualisieren. Sonst veralten Mesh-matrixWorld → der echte Raycast
+            // (Graben/Picken — MECHANIK, kein Look) verfehlt das Terrain.
+            render: (scene, camera) => {
+                if (scene && scene.updateMatrixWorld) scene.updateMatrixWorld();
+                if (camera && camera.updateMatrixWorld) camera.updateMatrixWorld();
+            },
+            renderAsync: (scene, camera) => {
+                if (scene && scene.updateMatrixWorld) scene.updateMatrixWorld();
+                if (camera && camera.updateMatrixWorld) camera.updateMatrixWorld();
+                return Promise.resolve();
+            },
+            compute: noop,
+            computeAsync: resolved,
+            setAnimationLoop: noop,
+            setSize: noop,
+            setPixelRatio: noop,
+            setClearColor: noop,
+            getPixelRatio: () => 1,
+            getContext: () => null,
+            getDrawingBufferSize: (t) => t || { width: 1, height: 1 },
+            setRenderTarget: noop,
+            getRenderTarget: () => null,
+            clear: noop,
+            dispose: noop,
+            _isHeadlessNull: true,
+        };
     }
 
     creatureJump(creature, jumpHeight) {
@@ -70653,7 +70718,12 @@ class AnazhRealm {
             }
             throw new Error(msg);
         }
-        const renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+        // Opt-in Headless-Null-Renderer (GPU-frei) für den Mechanik-Playtest /
+        // Server-Sim; sonst der echte WebGPU-Renderer (Produktion + alle Look-Tools).
+        const renderer =
+            typeof window !== "undefined" && window.__anazhHeadlessNullRenderer
+                ? this._makeHeadlessRenderer(canvas)
+                : new THREE.WebGPURenderer({ canvas, antialias: true });
         // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR (Sonne 2.4
         // + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei 1.0 = ausgewaschen.
         // ACES rollt die HDR-Lichter filmisch ab. (NeutralToneMapping [Khronos] wäre

@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### DER GPU-FREIE GATE — der Null-Renderer (19.06.2026, direkte Fortsetzung)
+
+Schöpfer: „wir rendern im Playtest, aber niemand wertet mit den Augen aus — kann man das nicht effizienter prüfen, ohne zu rendern, aber sicher dass es läuft? keine halben Sachen, aber nicht dass du danach blind bist." Die Untersuchung deckte auf: **kein Band liest je ein Pixel** (nur ein Wegwerf-Screenshot), die Rasterung war während aller 238 Bänder schon gestubbt — der echte WebGPU-Kontext war reine Überlast + die Crash-Quelle (swiftshader-Renderer stirbt unter kumulativer Last → „detached Frame", SIEHT aus wie ein Hang).
+
+- **DER NULL-RENDERER (`_makeHeadlessRenderer`, opt-in `window.__anazhHeadlessNullRenderer`):** eine No-op-Hülle OHNE GPU-Kontext, deckt die schmale vom Code berührte Renderer-API (init·render·setAnimationLoop·shadowMap·toneMapping·…). Die Welt bootet + simuliert voll (Worldgen·Voxel·Kreaturen·Stats·DSL — alles CPU). Vision-konform: das headless-Fundament des Determinismus-Bogens (Lockstep/Replay/Server-Sim). Produktion + alle Look-Tools nutzen weiter den echten WebGPU-Renderer.
+- **DIE AUGEN BLEIBEN (Schöpfer-Bedingung „nicht blind"):** der LOOK lebt sauber getrennt in `diag-settled-view` (echtes WebGPU, settled, Augenhöhe — ein BESSERES Auge als der willkürliche End-Screenshot). „MECHANIK braucht eine ZAHL, LOOK braucht ein BILD." `PLAYTEST_REAL_RENDERER=1` schaltet den echten Renderer + Screenshot zurück, wenn ein visuelles Artefakt gewünscht ist.
+- **VIER ENTKOPPLUNGEN gefunden + an der Wurzel geheilt (statt blind Checks zu skippen):** (1) Race — die Tests warteten auf `rendererReady` (= „GPU fertig"), das beim Null-Renderer SOFORT feuert, vor `startEternalLoop` → halb-gebootete Welt; Fix: auf `_gameLoopTick` warten (= „Boot durch"), renderer-unabhängig korrekt. (2) Der echte Raycast/Grabe-Hieb (MECHANIK) verfehlte das Terrain, weil der echte `render` intern `scene.updateMatrixWorld()` ruft — der Null-`render` macht jetzt diese billige CPU-Buchhaltung. (3) Die PMREM-Env (LOOK, braucht echte GPU) fällt beim Null-Renderer auf die schlichte CPU-DataTexture zurück. (4) Der ECHTE Ammo-Raycast braucht die Spieler-Chunk-Kollisions-BVH + den gesetzten Spieler — ein kurzer `_gameLoopTick`-Pump VOR dem Raycast settelt + baut sie (Heilung auf INTENT).
+- **GEMESSEN:** voller Gate 684s→**442s**, **kein Crash** (kein swiftshader = kein „detached Frame"), 3500 Invarianten grün GPU-frei (zuerst 3 render-pfad-abhängig rot → nach den Entkopplungen grün).
+
 ### DER PLAYTEST SIEHT SICH SELBST — Gate-Heilung · Selbst-Timing · Tool-Pflege (19.06.2026)
 
 Schöpfer-Audit: „reibt der Code noch synergetisch (eine Quelle, viele Leser)? was hängt am Playtest,
