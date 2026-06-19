@@ -131,6 +131,17 @@ const server = http.createServer((req, res) => {
             shadowTris = 0,
             shadowCasters = 0,
             visMeshes = 0;
+        // V18.264 — der „kann nicht umsehen"-Schlüssel: wieviele Dreiecke rendern
+        // VIEW-UNABHÄNGIG (frustumCulled=false) vs frustum-cullbar?
+        let noCullTris = 0,
+            noCullMeshes = 0,
+            cullTris = 0;
+        const bySystem = { hism: { tris: 0, inst: 0, noCull: 0 }, scatter: { tris: 0, inst: 0, noCull: 0 }, rest: { tris: 0, inst: 0, noCull: 0 } };
+        // V18.265 — der HISM-Hebel-Schlüssel: WO konzentrieren sich die 2 M HISM-
+        // Dreiecke? Nach LOD-Stufe (aus dem archInstanceKey geparst: _lod1/_lod2 →
+        // sonst LOD0) → sagt, ob Impostoren (ferne LOD2 schon billig?) oder die
+        // NAHEN LOD0-Bäume der Hebel sind.
+        const hismLOD = { lod0: { tris: 0, inst: 0, groups: 0 }, lod1: { tris: 0, inst: 0, groups: 0 }, lod2: { tris: 0, inst: 0, groups: 0 } };
         scene.traverse((node) => {
             if (!node.visible) return;
             if (!node.isMesh && !node.isInstancedMesh) return;
@@ -168,6 +179,24 @@ const server = http.createServer((req, res) => {
             }
             bump(c, tris, 1, sc);
             if (node.isInstancedMesh) acc[c].instances += inst;
+            // frustumCulled-Aufschlüsselung
+            if (node.frustumCulled === false) {
+                noCullTris += tris;
+                noCullMeshes++;
+            } else cullTris += tris;
+            // System-Aufschlüsselung (HISM vs Scatter vs Rest)
+            const u2 = node.userData || {};
+            const sys = u2.archInstanceKey ? "hism" : node.isInstancedMesh ? "scatter" : "rest";
+            bySystem[sys].tris += tris;
+            bySystem[sys].inst += inst;
+            if (node.frustumCulled === false) bySystem[sys].noCull += tris;
+            if (sys === "hism") {
+                const k = String(u2.archInstanceKey || "");
+                const bucket = /_lod2#/.test(k) ? "lod2" : /_lod1#/.test(k) ? "lod1" : "lod0";
+                hismLOD[bucket].tris += tris;
+                hismLOD[bucket].inst += inst;
+                hismLOD[bucket].groups += 1;
+            }
         });
 
         // V18.264 — SCHATTEN-CACHE-VERIFIKATION: statisch (Umsehen) → übersprungen,
@@ -233,7 +262,9 @@ const server = http.createServer((req, res) => {
         }
         return {
             byCat: acc,
-            totals: { tris: totalTris, calls: totalCalls, shadowTris, shadowCasters, visMeshes },
+            totals: { tris: totalTris, calls: totalCalls, shadowTris, shadowCasters, visMeshes, noCullTris, noCullMeshes, cullTris },
+            bySystem,
+            hismLOD,
             shadowCfg,
             shadowCache,
             realRender: { withShadow, noShadow, programs, renderMsWith, renderMsNo },
@@ -282,6 +313,18 @@ const server = http.createServer((req, res) => {
     }
     const t = out.totals;
     console.log("\n  TOTAL: tris " + fmt(t.tris) + " · draw-calls " + t.calls + " · sichtbare Meshes " + t.visMeshes);
+    console.log(
+        "  VIEW-UNABHÄNGIG (frustumCulled=false): " + fmt(t.noCullTris) + " Dreiecke in " + t.noCullMeshes + " Meshes (= das, was Umsehen NICHT cullt) · cullbar " + fmt(t.cullTris)
+    );
+    if (out.bySystem) {
+        const bs = out.bySystem;
+        console.log("  SYSTEM: HISM " + fmt(bs.hism.tris) + " (noCull " + fmt(bs.hism.noCull) + ", inst " + bs.hism.inst + ") · Scatter " + fmt(bs.scatter.tris) + " (noCull " + fmt(bs.scatter.noCull) + ", inst " + bs.scatter.inst + ") · Rest " + fmt(bs.rest.tris) + " (noCull " + fmt(bs.rest.noCull) + ")");
+    }
+    if (out.hismLOD) {
+        const h = out.hismLOD;
+        const per = (b) => fmt(b.tris) + " tris / " + b.inst + " inst / " + b.groups + " grp (" + (b.inst ? Math.round(b.tris / b.inst) : 0) + " tris/inst)";
+        console.log("  HISM nach LOD: LOD0 " + per(h.lod0) + " · LOD1 " + per(h.lod1) + " · LOD2 " + per(h.lod2));
+    }
     console.log(
         "  SCHATTEN-PASS: " +
             t.shadowCasters +

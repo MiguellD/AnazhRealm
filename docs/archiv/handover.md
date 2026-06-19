@@ -457,6 +457,52 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.265 — DIE SCHATTEN-DISTANZ + die gemessene Impostor-/Frustum-Korrektur (miss zuerst)
+
+Der Schöpfer nach V18.264: „die Fehlermeldung instanceColor ist immernoch da … die hunderttausende
+Baumblätter / deren Schatten … synergetisch einweben: Impostoren für ferne Bäume + per-Region-Culling."
+Der V18.264-Schatten-CACHE half nur im STAND (Umsehen); beim LAUFEN lief der Schatten-Pass weiter jeden
+Frame (2.32M Dreiecke = ein zweiter Voll-Render). **Diese Welle ging an den Lauf-Schatten + maß die zwei
+zugesagten Hebel ehrlich nach.**
+
+- **GEBAUT = DIE SCHATTEN-DISTANZ** (der Profi-Standard „shadow distance limit", synergetisch in die
+  LOD-Stufen gewebt): ferne Bäume (LOD1/LOD2, >80 m) werfen KEINEN Boden-Schatten mehr. Die LOD-Stufe
+  steht IM Bauplan-Namen (`grown_<art>_v<idx>_lod1/_lod2`), `_archGroupCastsShadow` liest sie → EINE
+  Quelle; der LOD-Tick (`_switchArchitectureLOD`) trägt die Entscheidung automatisch mit (re-add in die
+  neue Gruppe), der Capacity-Grow führt das `castShadow`-Flag mit (sonst kippt ein wachsender Fern-Baum
+  zurück auf true). Echte Bauten (kein `_lodN`) + die nahen LOD0-Bäume werfen weiter Schatten. **GEMESSEN
+  (`diag-render-load`): Schatten-Pass 2.32M→1.31M Dreiecke (−44 %), Caster 823→425.** Look-sicher (fern +
+  fog). 4 Wände (`checkBandV18265ShadowDistance`).
+- **DIE „ZAHL FÜHRT"-KORREKTUR (miss zuerst, der Kern dieser Welle):** der zugesagte Plan war „Impostoren
+  für ferne Bäume". Ein neuer `hismLOD`-Aufschlüssel im diag maß aber: die HISM-Last verteilt sich LOD0
+  1.01M / LOD1 467k / LOD2 544k Dreiecke — die fernen LOD2-Bäume sind schon BILLIG (25 Dreiecke/Instanz =
+  ein dünner Stamm + 1 Foliage-Karte, de-facto ein Impostor). Den Stamm zu droppen (echter Billboard)
+  wäre NICHT look-sicher (ferne Bäume würden zu schwebenden Klecksen ohne vertikale Silhouette). Der echte
+  Hebel war NICHT die Geometrie der fernen Bäume, sondern ihr SCHATTEN. Die Messung lenkte den Fix um —
+  genau die eingeschärfte Disziplin.
+- **FRUSTUM-CULLING gemessen NICHT lohnend bei dieser Granularität:** die HISM-Gruppen sind global pro
+  (Art,Variante,LOD,Leaf). Per-REGION (256 m) gruppieren scheitert, weil im 768-m-Ring (ringRegions 1 =
+  3×3) JEDE Region-Bounding-Sphere bis zum Spieler reicht → nichts cullt; per-CHUNK (43 m) würde die
+  Draw-Calls explodieren (genau der V18.260-Feind). Verifiziert in der Vendor-Quelle, dass Three.js
+  `mesh.boundingSphere` für InstancedMesh-Culling ehrt — aber die Granularität trägt nicht. Der echte
+  nächste Hebel bleibt GPU-Culling/Indirect-Draw ODER Foliage-Dichte (look-bound) — eine eigene Welle.
+- **DER `instanceColor not found`-FEHLER analysiert, NICHT gepflastert:** Three.js' `setupDiffuseColor`
+  multipliziert JEDES NodeMaterial automatisch mit `vInstanceColor`, WENN `mesh.instanceColor` gesetzt ist
+  (`if(t.instanceColor){s=vInstanceColor.mul(s)}`, in der Vendor-Quelle verifiziert) → das manuelle
+  `albedo.mul(attribute("instanceColor"))` (Gras 14093 · Understory 31780) ist REDUNDANT (Doppel-Multiply)
+  UND die Fehlerquelle (die GETEILTE Geometrie trägt das Attribut nicht). ABER die Projekt-Konvention
+  kodiert die Tint-Werte als SHIFT um 0.5 (nicht als Multiplikator um 1.0) → ein blinder Schnitt würde
+  ALLE Vegetation (Gras·Understory·Laub) verdunkeln, headless unverifizierbar (WebGL-Fallback ≠ WebGPU).
+  **Der Fehler ist ein COMPILE-Warning** (Pipeline-Resolution, EINMAL pro Material/Geometrie-Kombo am
+  Welt-Bau — NICHT per-Frame → NICHT der Freeze; das widerlegt die Schöpfer-Hypothese „der Error stallt").
+  Saubere Heilung = eine koordinierte Tint-Konventions-Welle (0.5-Shift → 1.0-Multiplikator), look-
+  verifiziert im Schöpfer-WebGPU-Browser → `docs/roadmap.md` §4 (offener Faden, kein Pflaster).
+- **LEHRE:** der Schöpfer-Wunsch nannte zwei Hebel (Impostoren + Culling); die Messung zeigte, dass BEIDE
+  bei dieser Architektur weniger tragen als gedacht, und der eigentliche Lauf-Hebel der SCHATTEN war.
+  „Synergetisch einweben" hieß hier: NICHT ein neues Culling-Parallelsystem bauen, sondern die
+  Schatten-Entscheidung in die schon bestehende LOD-Namens-Quelle weben. FPS-Beweis = Schöpfer-Browser
+  (Regel #0). Branch `claude/confident-noether-yczn0c`.
+
 ### V18.264 — DIE RENDER-LAST GEMESSEN (der blinde Fleck): der Schatten-Cache + die frustumCulled-Wurzel
 
 Der Schöpfer, immer noch einfrierend nach V18.263: „**kann mich nicht umsehen** oder bewegen, freezt die ganze Zeit … hunderttausende Baumblätter oder deren Schatten? … muss was mit Shader/Bäume/Licht-Schatten sein. suche, messe, finde heraus, was tun die besten der besten, wo ist die Genialität?" — **das entscheidende Detail: schon UMSEHEN (Maus) freezt.** Umsehen löst KEIN Streaming aus, baut KEINE Chunks → die Wurzel ist die **per-Frame-RENDER-Last**, NICHT das Streaming. Und die hatte ich **NIE gemessen** (mein ganzes Headless-Profiling stubt den Render — der blinde Fleck der ganzen Session).

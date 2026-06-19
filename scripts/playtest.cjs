@@ -38765,6 +38765,58 @@ async function checkBandV18264ShadowCache(ctx) {
     );
 }
 
+async function checkBandV18265ShadowDistance(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const out = {};
+        out.hasMethod = typeof r._archGroupCastsShadow === "function";
+        if (!out.hasMethod) return out;
+        // UNIT: ferne LOD1/LOD2-Bäume werfen KEINEN Schatten; LOD0-Bäume +
+        // echte Bauten (kein _lodN) werfen weiter Schatten.
+        out.lod0Casts = r._archGroupCastsShadow("grown_baum_eiche_v3") === true;
+        out.lod1NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod1") === false;
+        out.lod2NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod2") === false;
+        out.structureCasts = r._archGroupCastsShadow("tempel") === true;
+        // CONSUM (source-probe): die Gruppen-Erzeugung liest die Methode, der
+        // Capacity-Grow trägt das Flag mit (sonst kippt ein wachsender Fern-Baum
+        // zurück auf castShadow=true).
+        out.groupForReads = /_archGroupCastsShadow/.test(r._archInstanceGroupFor.toString());
+        out.growCarries = /castShadow\s*=\s*g\.castShadow/.test(r._archInstanceGroupGrow.toString());
+        // BEHAVIORAL: echte Gruppen bauen + das gerenderte Flag prüfen.
+        if (typeof THREE !== "undefined") {
+            const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
+            const farG = r._archInstanceGroupFor("grown_probe_v0_lod2", 0, leaf);
+            const nearG = r._archInstanceGroupFor("grown_probe_v0", 0, leaf);
+            out.farMeshNoShadow = !!farG && farG.mesh.castShadow === false;
+            out.nearMeshShadow = !!nearG && nearG.mesh.castShadow === true;
+            // Grow trägt das Flag mit
+            r._archInstanceGroupGrow(farG);
+            out.farGrowNoShadow = farG.mesh.castShadow === false;
+            // Test-Gruppen wieder entfernen (Welt-State sauber halten)
+            for (const k of ["grown_probe_v0_lod2#0", "grown_probe_v0#0"]) {
+                const g = st.archInstanceGroups && st.archInstanceGroups.get(k);
+                if (g) {
+                    if (st.scene && g.mesh) st.scene.remove(g.mesh);
+                    st.archInstanceGroups.delete(k);
+                }
+            }
+        }
+        return out;
+    });
+    check("V18.265: _archGroupCastsShadow — LOD0 + Bauten werfen Schatten", res.lod0Casts && res.structureCasts);
+    check("V18.265: ferne LOD1/LOD2-Bäume werfen KEINEN Schatten (Schatten-Distanz)", res.lod1NoCast && res.lod2NoCast);
+    check(
+        "V18.265: Gruppen-Bau liest die Methode + Capacity-Grow trägt das Flag (CONSUM)",
+        res.groupForReads && res.growCarries
+    );
+    check(
+        "V18.265: echte Fern-Gruppe castShadow=false, Nah-Gruppe castShadow=true (auch nach Grow)",
+        res.farMeshNoShadow && res.nearMeshShadow && res.farGrowNoShadow
+    );
+}
+
 async function checkBandV18262CreatureRenderLOD(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -56087,6 +56139,7 @@ async function checkBandRing6Workshop(ctx) {
             await checkBandWahrerAnblickAtmoBusch(ctx);
             await checkBandV18262CreatureRenderLOD(ctx);
             await checkBandV18264ShadowCache(ctx);
+            await checkBandV18265ShadowDistance(ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

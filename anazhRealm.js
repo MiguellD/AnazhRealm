@@ -56562,6 +56562,20 @@ class AnazhRealm {
         return !!(entry && (entry.mesh || entry.instanced));
     }
 
+    // V18.265 — DIE SCHATTEN-DISTANZ (synergetisch in die LOD-Stufen gewebt, der
+    // Profi-Standard „shadow distance limit"). Der Schatten-Pass ist ein ZWEITER
+    // Voll-Render (gemessen 2.32M Dreiecke, JEDEN Frame beim Laufen — der Cache
+    // V18.264 hilft nur im Stand). Ein gewachsener Baum jenseits ~80 m (LOD1/LOD2)
+    // wirft einen winzigen, fog-verschleierten Boden-Schatten — der Render-Preis
+    // (gemessen ~1 M der 2.32 M Schatten-Dreiecke) lohnt ihn NICHT. Die LOD-Stufe
+    // steht IM Bauplan-Namen (`grown_<art>_v<idx>_lod1/_lod2`) → EINE Quelle, der
+    // LOD-Tick (_switchArchitectureLOD) trägt die Schatten-Entscheidung automatisch
+    // mit (re-add in die neue Gruppe). Echte Bauten (Tempel etc.: kein `_lodN`) +
+    // die nahen LOD0-Bäume werfen weiter Schatten.
+    _archGroupCastsShadow(name) {
+        return !/_lod[12]$/.test(String(name || ""));
+    }
+
     // Die InstancedMesh-Gruppe für (Bauplan, Leaf) lazy erzeugen/holen.
     _archInstanceGroupFor(name, leafIdx, leaf) {
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
@@ -56569,8 +56583,9 @@ class AnazhRealm {
         let g = this.state.archInstanceGroups.get(key);
         if (g) return g;
         const capacity = 16;
+        const castShadow = this._archGroupCastsShadow(name);
         const mesh = new THREE.InstancedMesh(leaf.geom, leaf.mat, capacity);
-        mesh.castShadow = true;
+        mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         mesh.count = 0; // noch keine Instanz sichtbar
         mesh.frustumCulled = false; // Instanzen verteilt → Group-BBox nutzlos
@@ -56578,7 +56593,7 @@ class AnazhRealm {
         if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
-        g = { key, mesh, geom: leaf.geom, mat: leaf.mat, capacity, next: 0, free: [], slotEntry: [] };
+        g = { key, mesh, geom: leaf.geom, mat: leaf.mat, capacity, next: 0, free: [], slotEntry: [], castShadow };
         this.state.archInstanceGroups.set(key, g);
         return g;
     }
@@ -56587,7 +56602,7 @@ class AnazhRealm {
     _archInstanceGroupGrow(g) {
         const newCap = g.capacity * 2;
         const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
-        next.castShadow = true;
+        next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
         next.receiveShadow = true;
         next.frustumCulled = false;
         next.userData.archInstanceKey = g.key;
@@ -72863,7 +72878,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.264.0";
+AnazhRealm.VERSION = "18.265.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

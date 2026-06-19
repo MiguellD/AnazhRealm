@@ -29,8 +29,21 @@ per-Frame-swiftshader-Render-Kosten. **V18.260 hob den Render-Hebel teilweise:**
 (`_buildArchMeshMerged`), das senkt die Draw-Calls drastisch. **V18.262 hob den Kreatur-Render** (der
 V18.260-Folge-Hebel): das statische Gesicht der Skin-Kreaturen (Augen/Funken/Ohren) pro Material gemergt
 6→3 + eine Distanz-LOD blendet es jenseits ~42 m·L aus → `wesen` 7→4 nah / 7→1 fern (gemessen
-`scripts/diag-creature-render.cjs`; s. handover V18.262). Offen bleibt der `instanceColor`-Binding-Fix
-(Gras/Streu-Tint-Varianz, korrekter TSL-Instance-Node) — falls der Schöpfer-Browser-FPS es zeigt.
+`scripts/diag-creature-render.cjs`; s. handover V18.262). **V18.264 maß die GANZE Render-Last** (der
+Session-blinde Fleck: 4.61M Dreiecke + ein 2.32M-Schatten-Pass) → der Schatten-CACHE (Stand) + **V18.265
+die SCHATTEN-DISTANZ** (ferne LOD1/LOD2-Bäume werfen keinen Schatten → −44 % Schatten-Pass, hilft beim
+LAUFEN). **OFFENE FÄDEN aus dem Render-Bogen (V18.264/.265):**
+- **`instanceColor not found`-Fehler + Tint-Konvention** (NICHT der Freeze — ein COMPILE-Warning, einmal
+  pro Pipeline): Three.js multipliziert `instanceColor` schon automatisch (`setupDiffuseColor`), das
+  manuelle `albedo.mul(attribute("instanceColor"))` (Gras·Understory) ist redundant + die Fehlerquelle.
+  ABER die Werte sind als SHIFT um 0.5 kodiert → ein blinder Schnitt verdunkelt ALLE Vegetation. Saubere
+  Heilung = eine koordinierte Tint-Konventions-Welle (0.5-Shift → 1.0-Multiplikator) + das manuelle
+  Attribut streichen, LOOK-verifiziert im WebGPU-Browser (headless ist WebGL-Fallback, pixel-blind dafür).
+- **Der 2.03M-Dreieck-Haupt-Pass rendert view-unabhängig** (`frustumCulled=false` auf den globalen
+  HISM-Gruppen): per-REGION-Culling lohnt NICHT (256-m-Regionen im 768-m-Ring → jede Bounding-Sphere
+  reicht zum Spieler), per-CHUNK explodiert die Draw-Calls (V18.260-Feind). Der echte Hebel ist
+  GPU-Culling/Indirect-Draw ODER Foliage-Dichte (look-bound) — eine eigene fokussierte Welle. FPS-Beweis
+  bleibt der Schöpfer-WebGPU-Browser (Regel #0).
 
 - **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
   Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
