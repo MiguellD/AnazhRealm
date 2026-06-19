@@ -48,7 +48,7 @@ function startSaveServer() {
 }
 
 // V9.52 Sub-Welle a/f — der `safeEvaluate`-Helfer + `ctx` für den Playtest-Pflege-
-// Bogen (`docs/playtest-hygiene.md`). Kapselt das `page.evaluate(fn).catch(...)`-
+// Bogen (`docs/archiv/playtest-hygiene.md`). Kapselt das `page.evaluate(fn).catch(...)`-
 // Boilerplate, das die alte IIFE ~200× wiederholte. Vertrag: liefert das Ergebnis
 // oder `null` bei evaluate-Wurf. Rückwärts-kompatibel zu allen drei Legacy-Catch-
 // Varianten — `() => null`, `(e) => ({error: String(e)})`, `(err) => ({error:
@@ -31272,7 +31272,7 @@ async function checkBandLambda4Streu(ctx) {
         // Erklär-Kommentar zitiert den entfernten `attribute("instanceColor")`-
         // Block —, der CODE darf es nicht. Ohne Strip stolpert der Test über
         // seine eigene Dokumentation (deterministisch rot).
-        const matCode = matSrc.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        const matCode = window.__codeOf(matSrc);
         out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matCode);
         // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
         const species = A.KLEIN_VEGETATION_SPECIES;
@@ -31416,9 +31416,7 @@ async function checkBandV18177AAA(ctx) {
         // überdecken). Comments mit dem Wort sind erlaubt — sie dokumentieren
         // die Heilung. Der Regex strippt Kommentar-Zeilen + sucht dann das
         // Pattern als echte Method-Definition.
-        const srcNoComments = A.toString()
-            .replace(/\/\/[^\n]*/g, "")
-            .replace(/\/\*[\s\S]*?\*\//g, "");
+        const srcNoComments = window.__codeOf(A);
         out.noGetterShadow = !/static\s+get\s+AERIAL\s*\(/.test(srcNoComments);
         return out;
     });
@@ -31579,7 +31577,7 @@ async function checkBandGammaGenese(ctx) {
             out.randHits = fns.filter((fn) => {
                 const f = r[fn];
                 if (typeof f !== "function") return true;
-                return /Math\.random/.test(f.toString().replace(/\/\/[^\n]*/g, ""));
+                return /Math\.random/.test(window.__codeOf(f));
             });
             // (7) genVersion REIST im Snapshot (V8.59-Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
@@ -34343,7 +34341,7 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // noise2D (kein Math.random-Aufruf) — Γ5-Wand strukturell gewahrt.
         // Strip Kommentare bevor wir auf Math.random-CODE prüfen (CLAUDE.md-
         // Lehre: der Code darf das Wort tragen, der Code darf es nicht).
-        const stripped = src.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        const stripped = window.__codeOf(src);
         out.usesDeterministicRng = /rng\.noise2D/.test(src) && !/Math\.random\s*\(/.test(stripped);
 
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
@@ -38477,7 +38475,7 @@ async function checkBandWahrerAnblickGras(ctx) {
         // Strip Kommentare bevor wir auf den manuellen Read prüfen (CLAUDE.md-
         // Lehre, Vorbild Z. ~34340: der Code darf das Wort tragen — der V18.267-
         // Erklär-Kommentar zitiert den entfernten Read —, der CODE darf es nicht.
-        const matCode = matSrc.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        const matCode = window.__codeOf(matSrc);
         out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
         const buildSrc = r._buildVoxelChunkGrass.toString();
         out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
@@ -55751,6 +55749,16 @@ async function checkBandRing6Workshop(ctx) {
     // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessSkinResCap = 64;
+        // EINE Quelle für „der CODE einer Funktion, ohne Kommentare". Jeder
+        // Absenz-Grep gegen methode.toString() liest über diesen Helfer — sonst
+        // stolpert er über erklärende Kommentare, die den entfernten Code zitieren
+        // (CLAUDE.md-Lehre „der Code darf das Wort tragen, der Code darf es nicht").
+        // Nimmt eine Funktion ODER einen schon gefangenen Quell-String. Verfügbar
+        // in jedem page.evaluate-Probe als window.__codeOf(r._method).
+        window.__codeOf = (fnOrSrc) =>
+            String(fnOrSrc)
+                .replace(/\/\/.*$/gm, "")
+                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
 
     const logs = [];
@@ -55762,6 +55770,20 @@ async function checkBandRing6Workshop(ctx) {
     );
 
     const failures = [];
+    // DER PLAYTEST SIEHT SICH SELBST: jedes Band läuft durch `timed` (eine Quelle,
+    // viele Leser) → der Bericht zeigt, WAS hängt (Pareto-Diagnose des „der Playtest
+    // hängt"-Befunds; löst die externe diag-gate-cost ab). Die thematische Gruppierung
+    // im Dispatch bleibt — nur die Call-Form wandert auf den Wrapper. `await fn(ctx)`
+    // trägt sync (checkInitialState/Ring1) wie async (alle checkBand*) gleich.
+    const bandTimes = [];
+    const timed = async (fn, c) => {
+        const t0 = Date.now();
+        try {
+            return await fn(c);
+        } finally {
+            bandTimes.push([fn.name, Date.now() - t0]);
+        }
+    };
     function check(name, ok, detail = "") {
         const status = ok ? "✅" : "❌";
         console.log(`  ${status} ${name}${detail ? " — " + detail : ""}`);
@@ -55915,7 +55937,7 @@ async function checkBandRing6Workshop(ctx) {
         // V9.52 Sub-Welle a — der Playtest-Pflege-Bogen hat begonnen. `ctx` ist die
         // geteilte Sammlung der Akkumulatoren (page, check, logs, errors, finalState);
         // jede benannte `checkX(ctx)`-Sektion liest daraus + ruft `ctx.check(...)`.
-        // Weitere Bänder ziehen Sub-Welle b-e nach (`docs/playtest-hygiene.md`).
+        // Weitere Bänder ziehen Sub-Welle b-e nach (`docs/archiv/playtest-hygiene.md`).
         const ctx = { page, check, logs, errors };
         ctx.finalState = await gatherInitialFinalState(page);
 
@@ -55925,171 +55947,171 @@ async function checkBandRing6Workshop(ctx) {
             console.log("  ❌ window.anazhRealm.state nicht erreichbar (Seite tot?)");
         } else {
             // V9.52-a: die ersten drei Sektionen als benannte Funktionen.
-            checkInitialState(ctx);
-            checkRing1Grok(ctx);
-            await checkRing2Dsl(ctx);
+            await timed(checkInitialState, ctx);
+            await timed(checkRing1Grok, ctx);
+            await timed(checkRing2Dsl, ctx);
 
             // V9.52-b: Band 1 (Ring 2 Phase 3 .. Ring 11.5) als 11 thematische Band-
-            // Funktionen, je 265-1260 Z. Plan-treu zu `docs/playtest-hygiene.md` §5
+            // Funktionen, je 265-1260 Z. Plan-treu zu `docs/archiv/playtest-hygiene.md` §5
             // (Ziel: ~25-35 Band-Funktionen total, NICHT per-Sektion).
-            await checkBandRing2Extended(ctx);
-            await checkBandWaves1to3(ctx);
-            await checkBandV1721LivingFieldAura(ctx);
-            await checkBandV1722NexusEyes(ctx);
-            await checkBandV1723Harmony(ctx);
-            await checkBandV1725FieldReaders(ctx);
-            await checkBandV1726FieldDirection(ctx);
-            await checkBandV1727WritableField(ctx);
-            await checkBandV1728SpawnClearance(ctx);
-            await checkBandV1729CreatureTrickle(ctx);
-            await checkBandV1730EmotionFromBeing(ctx);
-            await checkBandV1731EmotionDrivesWorld(ctx);
-            await checkBandV1732SpatialEmotion(ctx);
-            await checkBandV1733WorldRules(ctx);
-            await checkBandV1734FieldRules(ctx);
-            await checkBandV1735NexusEvolvesRules(ctx);
-            await checkBandV1736HumanRules(ctx);
-            await checkBandV1737RulesUI(ctx);
-            await checkBandV1738RulePersistence(ctx);
-            await checkBandV1739RulesUX(ctx);
-            await checkBandV1740LlmRules(ctx);
-            await checkBandV1741RuleThread(ctx);
-            await checkBandV1742Wohl(ctx);
-            await checkBandV1743RuleFitness(ctx);
-            await checkBandV1744Appraisal(ctx);
-            await checkBandV1745EmotionCore(ctx);
-            await checkBandV1746EmotionSubstance(ctx);
-            await checkBandV1747FastSlow(ctx);
-            await checkBandV1748Social(ctx);
-            await checkBandV1749Adventure(ctx);
-            await checkBandV1750Klammer(ctx);
-            await checkBandV1751CombatStats(ctx);
-            await checkBandV1757HeldSlot(ctx);
-            await checkBandV1753CreatureCombat(ctx);
-            await checkBandV1754PlayerAttack(ctx);
-            await checkBandV1755HarvestEffort(ctx);
-            await checkBandV1755W2Profile(ctx);
-            await checkBandV1758CreatureNature(ctx);
-            await checkBandV1759CapabilityReadout(ctx);
-            await checkBandV1761ForgeImplement(ctx);
-            await checkBandV1762ForgeMeaningful(ctx);
-            await checkBandV1763ForgeArmor(ctx);
-            await checkBandV1764ForgeAvatar(ctx);
-            await checkBandV1765BrewConsumable(ctx);
-            await checkBandV1766FertigenFlow(ctx);
-            await checkBandV1767WorkshopDomainEmergent(ctx);
-            await checkBandV1769RoleResonance(ctx);
-            await checkBandV1770WorkshopStationMark(ctx);
-            await checkBandV1771ToolOpFromForm(ctx);
-            await checkBandV1772Library(ctx);
-            await checkBandOmegaPhi1CoM(ctx);
-            await checkBandOmegaPhysisSaeuleI_II(ctx);
-            await checkBandOmegaWerkstattSpiegel(ctx);
-            await checkBandOmegaGrammatik(ctx);
-            await checkBandOmegaOpsisSkyEnv(ctx);
-            await checkBandV1773HeldMesh(ctx);
-            await checkBandV1774UseByRole(ctx);
-            await checkBandV1775MakeActCost(ctx);
-            await checkBandV1776WorkshopPrecision(ctx);
-            await checkBandV1777SteigerungVisible(ctx);
-            await checkBandV1778LadderCut(ctx);
-            await checkBandV1779RoleFitQuality(ctx);
-            await checkBandV1780FormAxes(ctx);
-            await checkBandV1781RoleRegister(ctx);
-            await checkBandV1782CatalystReadout(ctx);
-            await checkBandV1783ImplementClassification(ctx);
-            await checkBandV1784AvatarFormFit(ctx);
-            await checkBandV1785RoleDisplayAndUndo(ctx);
-            await checkBandV1786WorkshopCoherence(ctx);
-            await checkBandV1787UndoRedo(ctx);
-            await checkBandV1788WorkshopAsProcess(ctx);
-            await checkBandV1789WorkshopReadout(ctx);
-            await checkBandV1790Recalibration(ctx);
-            await checkBandWave4(ctx);
-            await checkBandWave5(ctx);
-            await checkBandRing8(ctx);
-            await checkBandRing9to10(ctx);
-            await checkBandRing11AndW7Mesh(ctx);
-            await checkBandW16Distribution(ctx);
-            await checkBandW17Multiplayer(ctx);
-            await checkBandW4LofiPad(ctx);
-            await checkBandLateMultiUser(ctx);
+            await timed(checkBandRing2Extended, ctx);
+            await timed(checkBandWaves1to3, ctx);
+            await timed(checkBandV1721LivingFieldAura, ctx);
+            await timed(checkBandV1722NexusEyes, ctx);
+            await timed(checkBandV1723Harmony, ctx);
+            await timed(checkBandV1725FieldReaders, ctx);
+            await timed(checkBandV1726FieldDirection, ctx);
+            await timed(checkBandV1727WritableField, ctx);
+            await timed(checkBandV1728SpawnClearance, ctx);
+            await timed(checkBandV1729CreatureTrickle, ctx);
+            await timed(checkBandV1730EmotionFromBeing, ctx);
+            await timed(checkBandV1731EmotionDrivesWorld, ctx);
+            await timed(checkBandV1732SpatialEmotion, ctx);
+            await timed(checkBandV1733WorldRules, ctx);
+            await timed(checkBandV1734FieldRules, ctx);
+            await timed(checkBandV1735NexusEvolvesRules, ctx);
+            await timed(checkBandV1736HumanRules, ctx);
+            await timed(checkBandV1737RulesUI, ctx);
+            await timed(checkBandV1738RulePersistence, ctx);
+            await timed(checkBandV1739RulesUX, ctx);
+            await timed(checkBandV1740LlmRules, ctx);
+            await timed(checkBandV1741RuleThread, ctx);
+            await timed(checkBandV1742Wohl, ctx);
+            await timed(checkBandV1743RuleFitness, ctx);
+            await timed(checkBandV1744Appraisal, ctx);
+            await timed(checkBandV1745EmotionCore, ctx);
+            await timed(checkBandV1746EmotionSubstance, ctx);
+            await timed(checkBandV1747FastSlow, ctx);
+            await timed(checkBandV1748Social, ctx);
+            await timed(checkBandV1749Adventure, ctx);
+            await timed(checkBandV1750Klammer, ctx);
+            await timed(checkBandV1751CombatStats, ctx);
+            await timed(checkBandV1757HeldSlot, ctx);
+            await timed(checkBandV1753CreatureCombat, ctx);
+            await timed(checkBandV1754PlayerAttack, ctx);
+            await timed(checkBandV1755HarvestEffort, ctx);
+            await timed(checkBandV1755W2Profile, ctx);
+            await timed(checkBandV1758CreatureNature, ctx);
+            await timed(checkBandV1759CapabilityReadout, ctx);
+            await timed(checkBandV1761ForgeImplement, ctx);
+            await timed(checkBandV1762ForgeMeaningful, ctx);
+            await timed(checkBandV1763ForgeArmor, ctx);
+            await timed(checkBandV1764ForgeAvatar, ctx);
+            await timed(checkBandV1765BrewConsumable, ctx);
+            await timed(checkBandV1766FertigenFlow, ctx);
+            await timed(checkBandV1767WorkshopDomainEmergent, ctx);
+            await timed(checkBandV1769RoleResonance, ctx);
+            await timed(checkBandV1770WorkshopStationMark, ctx);
+            await timed(checkBandV1771ToolOpFromForm, ctx);
+            await timed(checkBandV1772Library, ctx);
+            await timed(checkBandOmegaPhi1CoM, ctx);
+            await timed(checkBandOmegaPhysisSaeuleI_II, ctx);
+            await timed(checkBandOmegaWerkstattSpiegel, ctx);
+            await timed(checkBandOmegaGrammatik, ctx);
+            await timed(checkBandOmegaOpsisSkyEnv, ctx);
+            await timed(checkBandV1773HeldMesh, ctx);
+            await timed(checkBandV1774UseByRole, ctx);
+            await timed(checkBandV1775MakeActCost, ctx);
+            await timed(checkBandV1776WorkshopPrecision, ctx);
+            await timed(checkBandV1777SteigerungVisible, ctx);
+            await timed(checkBandV1778LadderCut, ctx);
+            await timed(checkBandV1779RoleFitQuality, ctx);
+            await timed(checkBandV1780FormAxes, ctx);
+            await timed(checkBandV1781RoleRegister, ctx);
+            await timed(checkBandV1782CatalystReadout, ctx);
+            await timed(checkBandV1783ImplementClassification, ctx);
+            await timed(checkBandV1784AvatarFormFit, ctx);
+            await timed(checkBandV1785RoleDisplayAndUndo, ctx);
+            await timed(checkBandV1786WorkshopCoherence, ctx);
+            await timed(checkBandV1787UndoRedo, ctx);
+            await timed(checkBandV1788WorkshopAsProcess, ctx);
+            await timed(checkBandV1789WorkshopReadout, ctx);
+            await timed(checkBandV1790Recalibration, ctx);
+            await timed(checkBandWave4, ctx);
+            await timed(checkBandWave5, ctx);
+            await timed(checkBandRing8, ctx);
+            await timed(checkBandRing9to10, ctx);
+            await timed(checkBandRing11AndW7Mesh, ctx);
+            await timed(checkBandW16Distribution, ctx);
+            await timed(checkBandW17Multiplayer, ctx);
+            await timed(checkBandW4LofiPad, ctx);
+            await timed(checkBandLateMultiUser, ctx);
 
             // V9.52-c: Band 2 (Welle 6.A .. Welle 6.H Phase 2C) als 8 thematische
             // Band-Funktionen, je 475-1567 Z.
-            await checkBandWelle6APolish(ctx);
-            await checkBandWelle6DSoul(ctx);
-            await checkBandWelle6GHylomorphism(ctx);
-            await checkBandVoxelTerrainCore(ctx);
-            await checkBandHydrosphere(ctx);
-            await checkBandVoxelP3AndInventory(ctx);
-            await checkBandWelle6Keybindings(ctx);
-            await checkBandWelle6HCreatures(ctx);
+            await timed(checkBandWelle6APolish, ctx);
+            await timed(checkBandWelle6DSoul, ctx);
+            await timed(checkBandWelle6GHylomorphism, ctx);
+            await timed(checkBandVoxelTerrainCore, ctx);
+            await timed(checkBandHydrosphere, ctx);
+            await timed(checkBandVoxelP3AndInventory, ctx);
+            await timed(checkBandWelle6Keybindings, ctx);
+            await timed(checkBandWelle6HCreatures, ctx);
             // V9.75 (Welle C.4+5) — Welle-A/B Test-Bänder gestrichen (alte
             // Maschinerie ist weg). Vision-Beweis lebt jetzt vollständig in
             // C.1-C.3 (Cell-Feld + Iso-Mesh + Stempel-Reaktion).
-            await checkBandWelleC1WaterCells(ctx);
-            await checkBandWelleC2WaterIsoSurface(ctx);
-            await checkBandWelleC3CellularReaction(ctx);
+            await timed(checkBandWelleC1WaterCells, ctx);
+            await timed(checkBandWelleC2WaterIsoSurface, ctx);
+            await timed(checkBandWelleC3CellularReaction, ctx);
             // V9.88 — Welle Perf-3.b Distance-LOD-Beweis.
-            await checkBandWellePerf3bDistanceLod(ctx);
+            await timed(checkBandWellePerf3bDistanceLod, ctx);
             // V12.0-perf.c.1 — Architektur-Instancing-Foundation (Matrix-Bit-Gleichheit).
-            await checkBandWellePerfCArchInstancing(ctx);
+            await timed(checkBandWellePerfCArchInstancing, ctx);
             // V12.0-perf.d — budgetierter Culling-Build (Wurzel B, kein Burst).
-            await checkBandWellePerfDBudget(ctx);
+            await timed(checkBandWellePerfDBudget, ctx);
             // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
-            await checkBandWellePerfENexusGovernor(ctx);
+            await timed(checkBandWellePerfENexusGovernor, ctx);
             // V12.0-perf.d.2 — Lazy-Proxy-Collision (Wurzel C).
-            await checkBandWellePerfD2LazyCollision(ctx);
+            await timed(checkBandWellePerfD2LazyCollision, ctx);
             // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
-            await checkBandWellePerfHWaterIsoQueue(ctx);
+            await timed(checkBandWellePerfHWaterIsoQueue, ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
-            await checkBandWellePerf3cWorkerFoundation(ctx);
+            await timed(checkBandWellePerf3cWorkerFoundation, ctx);
             // V9.90 — Welle Perf-3.c Phase 2 Async-Density-Cutover-Beweis.
-            await checkBandWellePerf3cPhase2Async(ctx);
+            await timed(checkBandWellePerf3cPhase2Async, ctx);
             // V9.91 — Welle Perf-3.c Phase 3 voller Worker-Mesh-Beweis (Iso+Cells+Colors).
-            await checkBandWellePerf3cPhase3FullMesh(ctx);
+            await timed(checkBandWellePerf3cPhase3FullMesh, ctx);
             // V17.117 — H3: der globale Ozean jenseits ±1024 m (Worker<->Main bit-identisch).
-            await checkBandV17117FarWater(ctx);
+            await timed(checkBandV17117FarWater, ctx);
             // V17.118 — E3: der Voxel-Worker engagiert (Mesh off-thread, Regressions-Wand).
-            await checkBandV17118WorkerEngaged(ctx);
+            await timed(checkBandV17118WorkerEngaged, ctx);
             // PHASE A (gigant-plan §5) — A1 Stitch-Band · A2 Edit-Lokalität · A5 Fog↔Ring · A6 Kollision.
-            await checkBandPhaseAFundament(ctx);
+            await timed(checkBandPhaseAFundament, ctx);
             // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
-            await checkBandPhasenBF(ctx);
+            await timed(checkBandPhasenBF, ctx);
             // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
-            await checkBandWellePerf3cPhase4LazyBVH(ctx);
+            await timed(checkBandWellePerf3cPhase4LazyBVH, ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
-            await checkBandWelle993WaterLodSeam(ctx);
+            await timed(checkBandWelle993WaterLodSeam, ctx);
             // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
-            await checkBandWelleV11D1WaterContext(ctx);
+            await timed(checkBandWelleV11D1WaterContext, ctx);
             // V11.0-d.2 — Pfeiler D: Tiefen-Scheue + Schwimm-Surface im wander-Loop.
-            await checkBandWelleV11D2WaterBias(ctx);
+            await timed(checkBandWelleV11D2WaterBias, ctx);
             // V11.0-d.3 — Pfeiler D: Trinken-Task (6. Task, Aura azur, Ping A5).
-            await checkBandWelleV11D3DrinkTask(ctx);
+            await timed(checkBandWelleV11D3DrinkTask, ctx);
             // V11.0-a — Mesh-Pool-Pattern Foundation (V10.0-j.j-Bogen-Schluss).
-            await checkBandWelleV11APoolFoundation(ctx);
+            await timed(checkBandWelleV11APoolFoundation, ctx);
             // V11.0-b — Mesh-Pool im Build-Pfad aktiv (Recycle wirkt).
-            await checkBandWelleV11BPoolBuild(ctx);
+            await timed(checkBandWelleV11BPoolBuild, ctx);
             // V11.0-c — Mesh-Pool im Dispose-Pfad aktiv, V10.0-j.j-Workaround entfernt.
-            await checkBandWelleV11CPoolDispose(ctx);
+            await timed(checkBandWelleV11CPoolDispose, ctx);
             // V11.0-d — Mesh-Pool-Stress-Test: 50 Zyklen, Pool bleibt klein, Map clean.
-            await checkBandWelleV11DPoolStress(ctx);
+            await timed(checkBandWelleV11DPoolStress, ctx);
             // V17.1 — FÜLLE/DICHTE: artenreiche GPU-instanzierte Klein-Vegetation.
-            await checkBandV171Scatter(ctx);
+            await timed(checkBandV171Scatter, ctx);
 
             // V9.52-d: Band 3 (Welle 6.X Audit + 6.G3/G4 Atmosphäre + V8.x Politur +
             // W12-W14 Welt-Portal/Vibe-Pass/Bibliothek + KI-Übersetzer +
             // V8.70-72 Untrusted-Tor/Vendor + späte 6.X.4-Fixes) als 8 Band-
             // Funktionen, je 498-1190 Z.
-            await checkBandWelle6XAudit(ctx);
-            await checkBandWelle6G3Lebendigkeit(ctx);
-            await checkBandWelle6G4Atmosphere(ctx);
-            await checkBandV8SoulRoleAndWorkshop(ctx);
-            await checkBandW12WorldPortal(ctx);
-            await checkBandW13W14VibePassLibrary(ctx);
-            await checkBandTranslatorAndUntrusted(ctx);
-            await checkBandV8LatePolishAnd6XContinued(ctx);
+            await timed(checkBandWelle6XAudit, ctx);
+            await timed(checkBandWelle6G3Lebendigkeit, ctx);
+            await timed(checkBandWelle6G4Atmosphere, ctx);
+            await timed(checkBandV8SoulRoleAndWorkshop, ctx);
+            await timed(checkBandW12WorldPortal, ctx);
+            await timed(checkBandW13W14VibePassLibrary, ctx);
+            await timed(checkBandTranslatorAndUntrusted, ctx);
+            await timed(checkBandV8LatePolishAnd6XContinued, ctx);
 
             // V9.52-e: Band 4 (die End-Sektionen — Welle 6.H 2B.2/2D/2E/2F + Welle 6.B
             // CAD + V8.00-V8.07 + Welle 9/10 + V7.x LLM + Ring 3-6 + UI V1/V2) als 10
@@ -56097,120 +56119,120 @@ async function checkBandRing6Workshop(ctx) {
             // GANZ als Band-Liste erschöpft — keine Inline-Sektionen mehr.
             // Sub-Welle f folgt nur noch für den Helfer-Durchzug (safeEvaluate-Roll-out
             // INNERHALB der Band-Funktionen).
-            await checkBandWelle6HBuildAndPersist(ctx);
-            await checkBandWelle6HCreatureStats(ctx);
-            await checkBandWelle6HCreatureLlm(ctx);
-            await checkBandCadWorkshop(ctx);
-            await checkBandWaves9And10a(ctx);
-            await checkBandWave10b(ctx);
-            await checkBandWorkshopPolishAndLlm(ctx);
-            await checkBandEarlyRingsAndUi(ctx);
-            await checkBandRing5Soul(ctx);
-            await checkBandRing6Workshop(ctx);
-            await checkBandG8R0Sovereign(ctx);
-            await checkBandG8R1DampedChannel(ctx);
-            await checkBandG8R2SovereignWall(ctx);
-            await checkBandG8R3Locality(ctx);
-            await checkBandG8R4Immunity(ctx);
-            await checkBandG8R5LivingImmune(ctx);
-            await checkBandV18129HochBecken(ctx);
-            await checkBandV18130CsmShadow(ctx);
-            await checkBandV18131DekoKaskade(ctx);
-            await checkBandV18132FerneSeen(ctx);
-            await checkBandV18133Forage(ctx);
-            await checkBandV18134Social(ctx);
-            await checkBandV18135Bookmarks(ctx);
-            await checkBandV18136Audit(ctx);
-            await checkBandTailleOmega2(ctx);
-            await checkBandTailleOmega3(ctx);
-            await checkBandTailleGolden(ctx);
-            await checkBandTailleOmega5(ctx);
-            await checkBandTailleOmega6(ctx);
-            await checkBandV18142Follow(ctx);
-            await checkBandV18143Comments(ctx);
-            await checkBandW18CoPresence(ctx);
-            await checkBandW18InputBridge(ctx);
-            await checkBandW18Dwell(ctx);
-            await checkBandV18147ForYou(ctx);
-            await checkBandPhaseEThreat(ctx);
-            await checkBandV18149Statusbar(ctx);
-            await checkBandV18150Ride(ctx);
-            await checkBandV18151Idb(ctx);
-            await checkBandR6Capability(ctx);
-            await checkBandM2RollenWahrheit(ctx);
-            await checkBandM3RittVollendet(ctx);
-            await checkBandM1VerbindungsWerkstatt(ctx);
-            await checkBandM5HudPolitur(ctx);
-            await checkBandM4SuchKern(ctx);
-            await checkBandM6ErnteSpawn(ctx);
-            await checkBandM7LichtFeinschliff(ctx);
-            await checkBandM8MakroFenster(ctx);
-            await checkBandNutzerBlickNachbau(ctx);
-            await checkBandV18163DetailTiefe(ctx);
-            await checkBandV18164AutoConnect(ctx);
-            await checkBandArchetypBank(ctx);
-            await checkBandV18164WarumLicht(ctx);
-            await checkBandPsi0Winkel(ctx);
-            await checkBandV18165KonsoleHeil(ctx);
-            await checkBandWBHofKarte(ctx);
-            await checkBandWCIchWahrheit(ctx);
-            await checkBandWDRittSpawn(ctx);
-            await checkBandLambda1LivingCenter(ctx);
-            await checkBandLambda2HismSynthese(ctx);
-            await checkBandLambda3Wind(ctx);
-            await checkBandLambda4Streu(ctx);
-            await checkBandLambda5MischwaldSynthese(ctx);
-            await checkBandLambda6Detail(ctx);
-            await checkBandV18177AAA(ctx);
-            await checkBandGammaGenese(ctx);
-            await checkBandWEFrequenzband(ctx);
-            await checkBandWFFluss(ctx);
-            await checkBandW3UiPuls(ctx);
-            await checkBandWGGelenke(ctx);
-            await checkBandWHWald(ctx);
-            await checkBandPhiArchipel(ctx);
-            await checkBandPhiArchipelV2(ctx);
-            await checkBandPhi7PortalHalls(ctx);
-            await checkBandPhi6ComputeSpende(ctx);
-            await checkBandW5Werkzeugabnutzung(ctx);
-            await checkBandV18193MakroErbgut(ctx);
-            await checkBandV18194Gamma6Befoerderung(ctx);
-            await checkBandV18195AvatarSizeHp(ctx);
-            await checkBandV18196ManaSymmetry(ctx);
-            await checkBandV18197GammaMStrata(ctx);
-            await checkBandV18198Gamma2Totholz(ctx);
-            await checkBandV18199GammaMLichen(ctx);
-            await checkBandV18200GammaMIronBands(ctx);
-            await checkBandV18201ManaKonsum(ctx);
-            await checkBandV18202GeruchFeld(ctx);
-            await checkBandV18203Gamma3FeldCharakter(ctx);
-            await checkBandV18205Gamma7Grammatik(ctx);
-            await checkBandV18206SpeedTrade(ctx);
-            await checkBandV18207R5StructureTexture(ctx);
-            await checkBandV18208CreatureSizeSymmetry(ctx);
-            await checkBandV18209Konsolidierung(ctx);
-            await checkBandV18210Verdrahtung(ctx);
-            await checkBandV18211SkeletonGrammar(ctx);
-            await checkBandV18212GigantRestsubschritte(ctx);
-            await checkBandV18213MeshMerge(ctx);
-            await checkBandV18214SkeletonMesh(ctx);
-            await checkBandV18215AtemberaubenderWald(ctx);
-            await checkBandV18216KarstUndUnderstory(ctx);
-            await checkBandV18217VariantenPool(ctx);
-            await checkBandV18218LODStufen(ctx);
-            await checkBandV18219bisVollendung(ctx);
-            await checkBandV18223PbrKohaerenz(ctx);
-            await checkBandV18224ScatterPromotion(ctx);
-            await checkBandWahrerAnblickSaeule1(ctx);
-            await checkBandWahrerAnblickFels(ctx);
-            await checkBandWahrerAnblickGras(ctx);
-            await checkBandWahrerAnblickLaub(ctx);
-            await checkBandWahrerAnblickPfade(ctx);
-            await checkBandWahrerAnblickAtmoBusch(ctx);
-            await checkBandV18262CreatureRenderLOD(ctx);
-            await checkBandV18264ShadowCache(ctx);
-            await checkBandV18265ShadowDistance(ctx);
-            await checkBandV18266RockDetail(ctx);
+            await timed(checkBandWelle6HBuildAndPersist, ctx);
+            await timed(checkBandWelle6HCreatureStats, ctx);
+            await timed(checkBandWelle6HCreatureLlm, ctx);
+            await timed(checkBandCadWorkshop, ctx);
+            await timed(checkBandWaves9And10a, ctx);
+            await timed(checkBandWave10b, ctx);
+            await timed(checkBandWorkshopPolishAndLlm, ctx);
+            await timed(checkBandEarlyRingsAndUi, ctx);
+            await timed(checkBandRing5Soul, ctx);
+            await timed(checkBandRing6Workshop, ctx);
+            await timed(checkBandG8R0Sovereign, ctx);
+            await timed(checkBandG8R1DampedChannel, ctx);
+            await timed(checkBandG8R2SovereignWall, ctx);
+            await timed(checkBandG8R3Locality, ctx);
+            await timed(checkBandG8R4Immunity, ctx);
+            await timed(checkBandG8R5LivingImmune, ctx);
+            await timed(checkBandV18129HochBecken, ctx);
+            await timed(checkBandV18130CsmShadow, ctx);
+            await timed(checkBandV18131DekoKaskade, ctx);
+            await timed(checkBandV18132FerneSeen, ctx);
+            await timed(checkBandV18133Forage, ctx);
+            await timed(checkBandV18134Social, ctx);
+            await timed(checkBandV18135Bookmarks, ctx);
+            await timed(checkBandV18136Audit, ctx);
+            await timed(checkBandTailleOmega2, ctx);
+            await timed(checkBandTailleOmega3, ctx);
+            await timed(checkBandTailleGolden, ctx);
+            await timed(checkBandTailleOmega5, ctx);
+            await timed(checkBandTailleOmega6, ctx);
+            await timed(checkBandV18142Follow, ctx);
+            await timed(checkBandV18143Comments, ctx);
+            await timed(checkBandW18CoPresence, ctx);
+            await timed(checkBandW18InputBridge, ctx);
+            await timed(checkBandW18Dwell, ctx);
+            await timed(checkBandV18147ForYou, ctx);
+            await timed(checkBandPhaseEThreat, ctx);
+            await timed(checkBandV18149Statusbar, ctx);
+            await timed(checkBandV18150Ride, ctx);
+            await timed(checkBandV18151Idb, ctx);
+            await timed(checkBandR6Capability, ctx);
+            await timed(checkBandM2RollenWahrheit, ctx);
+            await timed(checkBandM3RittVollendet, ctx);
+            await timed(checkBandM1VerbindungsWerkstatt, ctx);
+            await timed(checkBandM5HudPolitur, ctx);
+            await timed(checkBandM4SuchKern, ctx);
+            await timed(checkBandM6ErnteSpawn, ctx);
+            await timed(checkBandM7LichtFeinschliff, ctx);
+            await timed(checkBandM8MakroFenster, ctx);
+            await timed(checkBandNutzerBlickNachbau, ctx);
+            await timed(checkBandV18163DetailTiefe, ctx);
+            await timed(checkBandV18164AutoConnect, ctx);
+            await timed(checkBandArchetypBank, ctx);
+            await timed(checkBandV18164WarumLicht, ctx);
+            await timed(checkBandPsi0Winkel, ctx);
+            await timed(checkBandV18165KonsoleHeil, ctx);
+            await timed(checkBandWBHofKarte, ctx);
+            await timed(checkBandWCIchWahrheit, ctx);
+            await timed(checkBandWDRittSpawn, ctx);
+            await timed(checkBandLambda1LivingCenter, ctx);
+            await timed(checkBandLambda2HismSynthese, ctx);
+            await timed(checkBandLambda3Wind, ctx);
+            await timed(checkBandLambda4Streu, ctx);
+            await timed(checkBandLambda5MischwaldSynthese, ctx);
+            await timed(checkBandLambda6Detail, ctx);
+            await timed(checkBandV18177AAA, ctx);
+            await timed(checkBandGammaGenese, ctx);
+            await timed(checkBandWEFrequenzband, ctx);
+            await timed(checkBandWFFluss, ctx);
+            await timed(checkBandW3UiPuls, ctx);
+            await timed(checkBandWGGelenke, ctx);
+            await timed(checkBandWHWald, ctx);
+            await timed(checkBandPhiArchipel, ctx);
+            await timed(checkBandPhiArchipelV2, ctx);
+            await timed(checkBandPhi7PortalHalls, ctx);
+            await timed(checkBandPhi6ComputeSpende, ctx);
+            await timed(checkBandW5Werkzeugabnutzung, ctx);
+            await timed(checkBandV18193MakroErbgut, ctx);
+            await timed(checkBandV18194Gamma6Befoerderung, ctx);
+            await timed(checkBandV18195AvatarSizeHp, ctx);
+            await timed(checkBandV18196ManaSymmetry, ctx);
+            await timed(checkBandV18197GammaMStrata, ctx);
+            await timed(checkBandV18198Gamma2Totholz, ctx);
+            await timed(checkBandV18199GammaMLichen, ctx);
+            await timed(checkBandV18200GammaMIronBands, ctx);
+            await timed(checkBandV18201ManaKonsum, ctx);
+            await timed(checkBandV18202GeruchFeld, ctx);
+            await timed(checkBandV18203Gamma3FeldCharakter, ctx);
+            await timed(checkBandV18205Gamma7Grammatik, ctx);
+            await timed(checkBandV18206SpeedTrade, ctx);
+            await timed(checkBandV18207R5StructureTexture, ctx);
+            await timed(checkBandV18208CreatureSizeSymmetry, ctx);
+            await timed(checkBandV18209Konsolidierung, ctx);
+            await timed(checkBandV18210Verdrahtung, ctx);
+            await timed(checkBandV18211SkeletonGrammar, ctx);
+            await timed(checkBandV18212GigantRestsubschritte, ctx);
+            await timed(checkBandV18213MeshMerge, ctx);
+            await timed(checkBandV18214SkeletonMesh, ctx);
+            await timed(checkBandV18215AtemberaubenderWald, ctx);
+            await timed(checkBandV18216KarstUndUnderstory, ctx);
+            await timed(checkBandV18217VariantenPool, ctx);
+            await timed(checkBandV18218LODStufen, ctx);
+            await timed(checkBandV18219bisVollendung, ctx);
+            await timed(checkBandV18223PbrKohaerenz, ctx);
+            await timed(checkBandV18224ScatterPromotion, ctx);
+            await timed(checkBandWahrerAnblickSaeule1, ctx);
+            await timed(checkBandWahrerAnblickFels, ctx);
+            await timed(checkBandWahrerAnblickGras, ctx);
+            await timed(checkBandWahrerAnblickLaub, ctx);
+            await timed(checkBandWahrerAnblickPfade, ctx);
+            await timed(checkBandWahrerAnblickAtmoBusch, ctx);
+            await timed(checkBandV18262CreatureRenderLOD, ctx);
+            await timed(checkBandV18264ShadowCache, ctx);
+            await timed(checkBandV18265ShadowDistance, ctx);
+            await timed(checkBandV18266RockDetail, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.
@@ -56280,6 +56302,14 @@ async function checkBandRing6Workshop(ctx) {
         server.kill();
     }
 
+    if (bandTimes.length) {
+        const slow = [...bandTimes].sort((a, b) => b[1] - a[1]);
+        const tot = bandTimes.reduce((s, b) => s + b[1], 0);
+        console.log(
+            `\n=== Band-Timing (${(tot / 1000).toFixed(0)}s über ${bandTimes.length} Bänder · die 20 teuersten) ===`
+        );
+        for (const [nm, ms] of slow.slice(0, 20)) console.log(`  ${String(ms).padStart(6)} ms  ${nm}`);
+    }
     console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
     if (failures.length > 0) {
         console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);

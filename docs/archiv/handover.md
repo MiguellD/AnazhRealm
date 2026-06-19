@@ -378,6 +378,43 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### DER PLAYTEST SIEHT SICH SELBST — Gate-Heilung · Selbst-Timing · Tool-Pflege (19.06.2026)
+
+Schöpfer-Audit: „reibt der Code noch synergetisch (eine Quelle, viele Leser)? was hängt am Playtest,
+ist seine Struktur analog zum Stamm?" Drei Befunde, je an die Wurzel geheilt.
+
+- **BEFUND 1 — das volle Gate stand deterministisch ROT (2 Invarianten), unbemerkt:** der Fast-Tier ist
+  grün, das volle Gate läuft ~11 min STUMM, also sah es niemand. Wurzel: die V18.267-Checks
+  („`_scatterMaterial`/`_grassInstanceMat` trägt KEINEN manuellen `attribute("instanceColor")`-Read")
+  greppen `methode.toString()` auf die ABWESENHEIT des Strings — aber der erklärende V18.267-Kommentar
+  über der Entfernung ZITIERT den entfernten Read wörtlich. **Der Test stolperte über seine eigene
+  Dokumentation** (der Code war korrekt). Heilung = die im Playtest schon dreifach gelebte
+  Strip-Konvention auf EINE Quelle verdichtet: ein `window.__codeOf(fn|src)`-Helfer (in
+  `evaluateOnNewDocument` injiziert, strippt Kommentare) ersetzt die 5 verstreuten Inline-Strips. Ein
+  neuer Absenz-Grep fängt die Quelle mit `window.__codeOf(r._method)` — die ganze 59er-Bug-Klasse ist
+  jetzt mit EINEM Idiom immun.
+- **BEFUND 2 — „der Playtest hängt" = WAHRNEHMUNG, kein Deadlock (gemessen):** ich instrumentierte den
+  Lauf — 449s Band-Zeit, **Pareto-verteilt** (`checkBandVoxelP3AndInventory` allein 57s, Top 5 = 162s =
+  36%, Top 12 = 55%). Die schweren Bänder mutieren die Welt (Voxel-Chunk-Builds/BVH/Soul/Avatar in
+  swiftshader, ~5s/`page.evaluate`) und laufen bis zu 57s STUMM → es WIRKT eingefroren. Heilung = **der
+  Playtest timet sich selbst**: ein `timed(fn, ctx)`-Wrapper (EINE Quelle), durch den jeder der 241
+  Band-Calls läuft (die thematische Dispatch-Gruppierung BLEIBT — nur die Call-Form wandert), druckt am
+  Ende die 20 teuersten Bänder. Das ist die Atlas-Philosophie des Stamms (Sichtbarkeit der großen
+  Struktur) auf den gleich großen Playtest übertragen. Löst die externe `diag-gate-cost` ab.
+- **BEFUND 3 — der Stamm reibt NICHT, er ist diszipliniert:** kein `eval`, keine Duplikat-Methoden, Ammo
+  gesund (22/39), KEINE Kontrollfluss-Giganten (der „3775-Zeilen-`updateGrowth`"-Verdacht war ein
+  awk-Artefakt: letzte Methode + folgende Konstanten; real ~16 Z.). „Eine Quelle, viele Leser" hält
+  (`computeCompoundTags` 79 Leser · `_mergeGeometries` geteilt · der Perf-PID hat den Bang-Bang
+  absorbiert). Die einzigen Reibungen sind die schon in CLAUDE.md dokumentierten Parallel-Pfade + Sprawl.
+- **TOOL-PFLEGE (Drei-JA-Test je Skript):** mein erster Orphan-Befund (25) war zu grob — CLAUDE.md
+  referenziert Diag-Tools per bloßem Namen (ohne `.cjs`), korrekt sind es **11 echte Verwaiste**. Davon
+  4 echtes Sediment mit benanntem tieferen Nachfolger gekehrt (`diag-look`/`diag-look-measure` →
+  `diag-settled-view` · `diag-perf` → perfSense-Regelkreis/`perf`-Chat/`diag-walk-profile` ·
+  `diag-gate-cost` → das neue Per-Band-Timing). Die 7 wave-spezifischen (aquifer/bandskip/caverns/…)
+  **bewusst behalten** — kein tieferer Ersatz → behalte die Saat (158 → 154 Diags).
+- **VERIFIZIERT:** voller `npm run playtest` grün („Alle Invarianten OK"), beide vormals roten Checks
+  grün, Prettier sauber. Plus Doc-Hygiene: 3 stale `docs/playtest-hygiene.md`-Pfade → `docs/archiv/`.
+
 ### lebendiger-koerper GUSS 2 — DAS SYSTEM AUF DAS METABALL-MAXIMUM (Muskel · Landmark · Relief, 17.06.2026)
 
 Schöpfer-Auftrag: „ein Riese, keine Ameise — giesse das System auf die 10." Antwort: KEIN Objekt-
