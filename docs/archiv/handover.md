@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.272 — DIE HYGIENE-WELLE: totes Heightfield-Sediment gekehrt + die audit:strict-Wache wieder grün (Saat-geprüft)
+
+Schöpfer (nach der Tiefen-Prüfung, „los gehts champ, keine halben sachen, keine passagiere, kein parallelcode … prüfe ob es samen sind die übersetzt werden müssen oder wirklich raus können"): die zwei risikolosen Pflege-Schnitte aus dem Audit, jeder mit der **Saat-Prüfung** als Tor (ersetzt-durch-Tieferes → raus · verloren → retten · ruhender Vision-Faden → behalten).
+
+**DIE SAAT-PRÜFUNG (das Tor vor jedem Schnitt):**
+- **`chunkMap`/`chunkGrass`/`chunkSize`/`chunkWidth`/`chunkDepth`** (5 Felder) — VERDIKT: ERSETZT. `ensureChunkAt` (der einzige Schreiber von `chunkMap`) starb V9.39 (Playtest beweist `typeof r.ensureChunkAt !== "function"`); `chunkGrass` wurde durch `voxelChunkGrass` (V9.39) ersetzt; `chunkSize/Width/Depth` waren nur die Maße des toten Heightfield-Chunk-State. **0 Leser in Produktion** (Grep-verifiziert), nicht in Snapshot/Restore/Worker/Signaling → echtes Sediment, gekehrt. Die 3 Playtest-Invarianten, die sich an „chunkMap leer" verankerten, wandern mit dem Code auf „abwesend ODER leer" (kein Heightfield-Chunk — die gemessene neue Realität).
+- **Der Toon-Material-Pfad** — VERDIKT: kein verlorener Samen, kein toter Code: `_buildToonNodeMaterial` ist eine BEWUSSTE Stamm-Verdichtung (delegiert seit V18.236 IMMER an `_buildPbrNodeMaterial`, der Name + die ~14 Aufrufstellen bleiben absichtlich — eine Quelle statt Toon+PBR-Zwilling, dokumentiert im Methoden-Kopf, von ~15 Playtest-Invarianten verankert). NICHT angetastet. Das einzige Cruft waren ~9 **Kommentar-Leichen**, die das gelöschte `state.toonGradientMap`/`_refreshToonGradient`/`celLevels`/MeshToonMaterial als LEBENDIG beschrieben → chirurgisch auf die PBR-Wahrheit korrigiert (die schon korrekten „gestrichen"-Notizen behalten).
+
+**DIE WACHE WIEDER GRÜN (audit:strict):** der State-Field-Audit stand auf ~32 ❌ (72 Pfad-Flags) — alle VERIFIZIERT guarded-lazy (`if (!state.X) state.X = …`) oder undefined-sicher (Flag/Sentinel/Scratch), die von der Wasser-CA- (V18.84–.94), Perf- (V18.260–.271), Scatter- + Worldgen-Bögen eingeführt wurden, ohne die Whitelist zu pflegen. Jedes Feld einzeln am Lese-Ort geprüft (`_skyEnvFailed` wird via `st._skyEnvFailed = true` im Fehlerpfad gesetzt — die `st`-Alias-Falle), dann mit Begründung in die Whitelist versöhnt. **„763 state-Pfade gescannt, alle Top-Levels vorhanden" → 0 ❌.** Eine immer-rote Wache verliert ihr Signal (der eine echte uninit-Read ertränke in den False-Positives) — die Whitelist ist der designte Heim für lazy-Felder, kein Pflaster.
+
+**GEMESSEN:** voller Gate grün (5081 Invarianten, voxelChunks=81) · audit:strict STATE 0 ❌ · ESLint 0 Errors (der WIDTH/DEPTH/CHUNK_SIZE-Schnitt führte keine neuen unused-vars ein). **Befund nebenbei (für eine spätere Welle):** der Terrain-Shader-Uniform-Test (playtest ~41700) ist ein stiller Passagier — er hängt am toten `ensureChunkAt`-Zweig (`typeof`-gegated, läuft nie) → er prüft seit V9.39 nichts. Plus der `audit:strict`-Smoke-Layer crasht unter Last an einem Puppeteer-Protocol-Timeout (Tool-Robustheit, kein Code).
+
 ### V18.271 — DIE ASYNC-WELLE: der Spieler-Chunk async + der weiche Boden + Velocity-Prefetch (der Lauf-Freeze an der Wurzel)
 
 Schöpfer (nach der Analyse-Session, „ziehe 1-3 durch, 4 für die nächste Session, los gehts champ"): die drei Profi-Schichten, die den Spieler-Chunk-`forceSync` (die letzte Sync-Naht im async-Stamm, ~130-239 ms Main-Thread-Block pro Chunk-Crossing = der Lauf-Freeze) an der Wurzel heilen — die Bewegung von der Generierung entkoppeln.

@@ -19394,8 +19394,10 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
-        // V9.27 Phase 5c.1: chunkMap leer.
-        out.voxelChunkMapEmpty = r.state.chunkMap && r.state.chunkMap.size === 0;
+        // V9.27 Phase 5c.1: keine Heightfield-Chunks. V18.272 — `chunkMap` ist als
+        // totes Sediment gekehrt (ensureChunkAt starb V9.39); die Wahrheit ist
+        // jetzt „abwesend ODER leer" (beides = kein Heightfield-Chunk).
+        out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
         out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
         // V9.28: heightData/minHeight/maxHeight nicht allokiert/gesetzt.
         out.voxelGroundFieldNull = r.state.groundHeightField === null;
@@ -19446,7 +19448,8 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = false;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
-        out.heightfieldElseDead = r.state.chunkMap && r.state.chunkMap.size === 0;
+        // V18.272 — „abwesend ODER leer": kein Heightfield-Chunk gebaut.
+        out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
         r.state.worldMeta.voxelTerrain = true;

@@ -203,14 +203,11 @@ class AnazhRealm {
             planets: [],
             minHeight: 0,
             maxHeight: 0,
-            chunkSize: 16,
-            chunkWidth: 300,
-            chunkMap: new Map(),
-            chunkGrass: new Map(),
             // V9.39 — `terrainMaterial` ist seit V9.39 nicht mehr aktiv gesetzt
-            // (Heightfield-Chunks sind weg). Die zwei Leser (`_refreshToon-
-            // Gradient` Cel-Slider, V8.27/V8.28-Source-Tests) sind defensiv
-            // gegen null. Init als null hält audit-strict-STATE-Konsistenz.
+            // (Heightfield-Chunks sind weg). Seit V18.236 ist PBR die EINE
+            // Material-Wahrheit; der alte Cel-/Toon-Leser ist gestrichen, nur die
+            // V8.27/V8.28-Source-Tests lesen das Feld noch (defensiv gegen null).
+            // Init als null hält audit-strict-STATE-Konsistenz.
             terrainMaterial: null,
             creatures: [],
             creatureEmotions: [],
@@ -355,8 +352,8 @@ class AnazhRealm {
             // schon beim Waten/Schwimmen erscheint.
             playerEyesUnderwater: false,
             // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert).
-            // celLevels: Cel-Shading-Stufen (1=bold, 6≈smooth)
-            // fogDistance: Multiplikator auf Fog-near/far (klein=dichter)
+            // fogDistance: Multiplikator auf Fog-near/far (klein=dichter).
+            // (Cel-Stufen sind seit V18.236 gestrichen — PBR ist die EINE Wahrheit.)
             atmosphere: {
                 // V17.109 — Schöpfer-getunte Basis-Werte (Browser-Sign-off 04.06.):
                 // 2.5D-Lichtung 100 % killt die Facetten, der Rest sein bevorzugter Look.
@@ -22748,9 +22745,8 @@ class AnazhRealm {
 
     // ### Welten-Generierung ### V7.56
     generateTerrainWithParameters(steepness, baseHeight) {
-        const WIDTH = 256;
-        const DEPTH = 256;
-        const CHUNK_SIZE = 32;
+        // V18.272 — WIDTH/DEPTH/CHUNK_SIZE waren nur die Maße des toten
+        // Heightfield-Chunk-State (gekehrt); WORLD_SIZE lebt (Insel-Streuung).
         const WORLD_SIZE = 300;
 
         this._worldgenCleanupOldObjects();
@@ -22775,12 +22771,12 @@ class AnazhRealm {
         // ### Initiale Chunks-Setup ###
         // V9.30/V9.37/V9.39: die alte initiale Heightfield-Chunk-Generierung +
         // generateChunk + addTerrainPhysics + globale btHeightfieldTerrainShape
-        // sind als nachweislich tote Pfade entfernt. `chunkMap` bleibt leer
-        // (oder trägt nur Test-Chunks via `ensureChunkAt`).
-        this.state.chunkMap = new Map();
-        this.state.chunkSize = CHUNK_SIZE;
-        this.state.chunkWidth = WIDTH;
-        this.state.chunkDepth = DEPTH;
+        // sind als nachweislich tote Pfade entfernt; `ensureChunkAt` (der einzige
+        // Schreiber von `chunkMap`) starb mit V9.39. V18.272: das tote
+        // Heightfield-Geometrie-State (`chunkMap`/`chunkGrass`/`chunkSize`/
+        // `chunkWidth`/`chunkDepth`, 0 Leser) ist gekehrt — `voxelChunks` +
+        // `voxelChunkGrass` sind die EINE Wahrheit. `groundChunks` bleibt (in der
+        // Voxel-Welt leer, aber lebendig als ODER-Zweig der Terrain-Füll-Wand).
         this.state.groundChunks = [];
         if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
             this.state.scaleFactor = 1.0;
@@ -25436,7 +25432,7 @@ class AnazhRealm {
 
     // V9.10 — Welt-Feld-Farbe pro Voxel-Vertex. Mirrort die Farb-Logik des
     // Heightfield-Terrain-Shaders (stone/earth/lava/violet/snow/sediment),
-    // aber als per-Vertex `color`-Attribut (MeshToonMaterial vertexColors)
+    // aber als per-Vertex `color`-Attribut (PBR-Material mit vertexColors)
     // statt im Custom-Shader. Dieselbe fraktale Sprache (worldFieldAt) —
     // das Voxel-Terrain trägt damit dieselben Biom-Regionen wie der Boden.
     _attachVoxelFieldColors(geom) {
@@ -27416,14 +27412,13 @@ class AnazhRealm {
         this.state.voxelChunkWaterIso.delete(key);
     }
 
-    // V9.84 Perf-1.a — ein geteiltes `MeshToonMaterial` für alle Voxel-Chunks
-    // (vorher 81+ Instanzen im Streaming-Ring, jetzt ein einziges). Lazy
-    // initialisiert beim ersten Chunk-Build. `state.toonGradientMap` ist die
-    // geteilte Cel-Texture, die bei Regler-Wechsel via `.needsUpdate=true`
-    // re-uploaded wird (siehe `_refreshToonGradient`) — der Singleton sieht
-    // die Update automatisch. Geteiltes Material darf NIEMALS disposed werden
-    // (sonst sterben alle anderen Chunks mit) — `_disposeVoxelChunk` räumt
-    // entsprechend nur Geometrie, nicht Material.
+    // V9.84 Perf-1.a — ein geteiltes Material für alle Voxel-Chunks (vorher 81+
+    // Instanzen im Streaming-Ring, jetzt ein einziges). Lazy initialisiert beim
+    // ersten Chunk-Build. Seit V18.236 ist es ein PBR-Material (über
+    // `_buildToonNodeMaterial`, das immer an `_buildPbrNodeMaterial` delegiert);
+    // der alte Cel-/gradientMap-Pfad ist gestrichen. Geteiltes Material darf
+    // NIEMALS disposed werden (sonst sterben alle anderen Chunks mit) —
+    // `_disposeVoxelChunk` räumt entsprechend nur Geometrie, nicht Material.
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
         const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true });
@@ -27815,10 +27810,9 @@ class AnazhRealm {
         }
     }
 
-    // Quelle für die fünf Call-Sites — `vertexColors`/`color`/`opacity`/`side`
-    // sind native Material-Properties, `gradientMap` aus `state.toonGradientMap`
-    // wird geteilt (der `_refreshToonGradient`-Pfad via DataTexture.needsUpdate
-    // propagiert automatisch zu allen Materials).
+    // Quelle für die Call-Sites — `vertexColors`/`color`/`opacity`/`side` sind
+    // native Material-Properties. Seit V18.236 baut der Pfad PBR (kein
+    // geteilter gradientMap/Cel-Texture-Mechanismus mehr).
     // V18.223 (DER LEBENDIGE GIGANT §10 Ω-P, Plan §10) — der PHYSIK-WEG.
     // PBR (Physically-Based Rendering) ist kein Gefühls-Override, sondern die
     // Regel-Form: roughness + metalness aus den MATERIAL-TAGS hergeleitet, BRDF
@@ -28397,10 +28391,9 @@ class AnazhRealm {
         this._attachVoxelFieldColors(geom);
         // V9.84 Perf-1.a — Material-Singleton statt 81+ Instanzen im Streaming-
         // Ring. Vertex-Farben leben pro Geometrie (BufferAttribute), das
-        // Material wird von allen Chunks geteilt. `gradientMap` ist die geteilte
-        // DataTexture `state.toonGradientMap`, die bei `_refreshToonGradient`
-        // via `.needsUpdate=true` in-place re-uploaded wird → der Cel-Levels-
-        // Regler propagiert automatisch zu allen Chunks. Die V9.43-c-Welle-C-
+        // Material wird von allen Chunks geteilt. Seit V18.236 ist es ein
+        // PBR-Material (roughness/metalness aus den Tags); der alte
+        // gradientMap/Cel-Levels-Pfad ist gestrichen. Die V9.43-c-Welle-C-
         // Lehre vom `hydroSurfaceMaterial` ist hier angewandt: NIEMALS disposen,
         // sonst sterben alle anderen Chunks mit (siehe `_disposeVoxelChunk`).
         const mat = this._getVoxelChunkMaterial();
@@ -33869,8 +33862,8 @@ class AnazhRealm {
             // Reload soll mit stabilem Wetter starten).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
-            // V8.28 6.G4.b — Atmosphäre-Slider (celLevels + fogDistance).
-            // V13.9 — waterCull (uMinDepth) mit dabei.
+            // V8.28 6.G4.b — Atmosphäre-Slider (fogDistance; Cel-Stufen sind
+            // seit V18.236 gestrichen). V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
                 fogDistance: (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0,
                 waterCull:
@@ -51269,15 +51262,10 @@ class AnazhRealm {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
             }
-            // V8.28 6.G4.b C — MeshToonMaterial statt Lambert (V8.27 war
-            // Lambert). Reagiert auf dieselben Lichter (Directional +
-            // Ambient + Hemisphere), aber die gradientMap quantisiert das
-            // Sonnen-Licht in Cel-Stufen — Studio-Ghibli-Look. Slider-
-            // steuerbar: 2 Stufen = harte Cel-Linie, 8 ≈ smooth. Ambient +
-            // Hemisphere bleiben smooth → Cel-Gradient zur Sonne, weicher
-            // Himmel-Fill. gradientMap ist geteilt (state.toonGradientMap).
-            // V10.0-g — Architektur-Part auf ToonNodeMaterial (WebGPU-kompatibel).
-            // gradientMap wird vom Helper aus state.toonGradientMap gesetzt.
+            // Architektur-Part-Material über den EINEN Material-Helfer. Seit
+            // V18.236 baut `_buildToonNodeMaterial` immer PBR (roughness/metalness
+            // aus den Tags, echtes BRDF unter Directional + Ambient + Hemisphere);
+            // der alte Cel-/gradientMap-Pfad (Studio-Ghibli-Look) ist gestrichen.
             const mat = this._buildToonNodeMaterial(matOpts);
             materials.push(mat);
             const mesh = new THREE.Mesh(geom, mat);
@@ -58115,7 +58103,7 @@ class AnazhRealm {
     // Insel-Geometrie hat nur position+normal (kein aField/uv) — der Terrain-
     // ShaderMaterial-Pfad passt darum nicht (er rendert mit ungebundenen
     // Attributen kaputt → der Schöpfer-Befund „Oberfläche schliesst nicht").
-    // Stattdessen MeshToonMaterial + vertexColors (wie der Voxel-Boden,
+    // Stattdessen das PBR-Material + vertexColors (wie der Voxel-Boden,
     // Vision §1.3 fraktal). Die Farbe folgt der Vertex-Normale: nach oben
     // → Gras-Grün, seitlich → Erd-Hang, nach unten → Fels-Unterseite.
     _attachIslandColors(geom) {
@@ -69888,7 +69876,8 @@ class AnazhRealm {
             });
         }
 
-        // V8.28 6.G4.b C — Atmosphäre-Slider: Cel-Stufen + Fog-Distanz.
+        // V8.28 6.G4.b C — Atmosphäre-Slider: Fog-Distanz (die Cel-Stufen sind
+        // seit V18.236 gestrichen — PBR ist die EINE Material-Wahrheit).
         const fogS = document.getElementById("slider-fog");
         const fogVal = document.getElementById("slider-fog-val");
         if (fogS) {
@@ -70856,11 +70845,6 @@ class AnazhRealm {
         this.log("Szene initialisiert", "INFO");
         this.state.selfAwareness.components.push("scene");
 
-        // V10.0-g — gradientMap PRE-initialisieren bevor irgendein Toon-Material
-        // gebaut wird. Wurzel von V10.0-g.crash: `texture(gradientMap, ...)`
-        // im colorNode crasht beim Build wenn state.toonGradientMap noch null
-        // ist (ReferenceNode.update liest null). Pre-init garantiert: das
-        // Material findet die Texture beim ersten render() vor.
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
 
@@ -73108,7 +73092,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.271.0";
+AnazhRealm.VERSION = "18.272.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

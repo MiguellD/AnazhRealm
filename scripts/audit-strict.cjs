@@ -476,7 +476,6 @@ async function auditStateAndMethods() {
                 "maxWalkableSlopeY",
                 "uiActiveDrawer",
                 "weather",
-                "chunkMap",
                 "populatedChunks",
                 "abilities",
                 "keys",
@@ -557,6 +556,47 @@ async function auditStateAndMethods() {
                 // Tick-Memoization (-Infinity Sentinel)
                 "_lastDayNightApply",
                 "_jumpPressedAt",
+                // V18.272 — Versöhnung der Whitelist mit den lazy-Feldern, die
+                // die Wasser-CA- (V18.84–.94), Perf- (V18.260–.271), Scatter- und
+                // Worldgen-Bögen einführten. JEDES Feld unten ist VERIFIZIERT
+                // entweder `if (!state.X) state.X = …`-guarded ODER undefined-
+                // sicher (Flag/Sentinel/Scratch) — kein echter read-before-init.
+                // Wasser-CA (alle `if (!state.X) … = new Map()/Set()`):
+                "waterLevelCells",
+                "waterStauFields",
+                "waterCAActive",
+                "waterSourceCols",
+                "waterCABand",
+                "waterCapJ",
+                "waterCAScratch", // Float64Array, prev-if-realloc
+                "_caFpScratch", // Float32Array, `if (!fp || fp.length<…)`-realloc
+                // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
+                "erosionTiles",
+                "hydroTiles",
+                "tarns", // null-init, `if (state.tarns)`-Leser
+                "horizonMantle", // null-init, `if (state.horizonMantle)`-Leser
+                "canopyChunks",
+                "bakedRegionFields",
+                "scatterRegions",
+                "scatterPromoted",
+                "scatterCounters",
+                "scatterLookup",
+                "pendingVegSpawns",
+                "lastPlayerVoxelChunk", // `state.X ? state.X.cx : cx`-guarded
+                // Render-Lazy-Caches (`if (state.X) return state.X` Singleton-Getter):
+                "voxelChunkMaterial",
+                "auraSkinUniforms",
+                "postProcessingUniforms", // `if (state.X && state.X.localContrast)`-guarded
+                // Perf-Sense/Regelkreis (V18.263–.271):
+                "_perfFrame", // `state._perfFrame || (state._perfFrame = {})`
+                "_perfMarks",
+                "_lastMoveT", // Zeitstempel, `state._lastMoveT || …`-sicher
+                "_spaceWasDown", // Flag, undefined ist falsy
+                "perfOverlay", // Toggle, `!state.perfOverlay`-sicher
+                // Kreatur/Netz + Sky (Zähler/Flag, undefined-sicher):
+                "_creatureNetSeq", // `(state.X || 0) + 1`
+                "_herdContagionAcc", // `(state.X || 0) + delta`
+                "_skyEnvFailed", // gesetzt via `st._skyEnvFailed = true` im Fehlerpfad
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen
