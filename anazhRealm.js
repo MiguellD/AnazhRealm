@@ -12984,7 +12984,13 @@ class AnazhRealm {
         // dann regeln. Der per-Frame-Zeit-Deckel (max) schützt weiter vor einem Einzel-
         // Spike (V18.261) — er BREMST nur nicht mehr den Durchsatz, wenn Arbeit ansteht.
         const streamBacklog = st.voxelMeshPending ? st.voxelMeshPending.size : 0;
-        const streamEff = streamBacklog > 0 ? 1 : effStream;
+        // V18.276 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame RENDER-gebunden (die
+        // Render-Submission frisst ihn — du siehst dich um), gibt das Laden NACH, auch bei
+        // Rückstau → der Main-Thread bedient Input/Umsehen, die Welt lädt in den Lücken. KEIN
+        // Mitkopplung (V18.270-Wand): das Laden wird vom RENDER gedrosselt, NICHT von sich
+        // selbst (der Stream-Throttle senkt die Render-Last nicht — er gibt nur CPU frei).
+        st._frameRenderBound = renderLoadMs > AnazhRealm.PERF_RESPONSIVE_RENDER_MS;
+        const streamEff = st._frameRenderBound ? 0.12 : streamBacklog > 0 ? 1 : effStream;
         st._voxelStreamBudgetMs = lerp(L.streamBudgetMs[0], L.streamBudgetMs[1], streamEff);
         st._voxelStreamMaxPerFrame = Math.round(lerp(L.streamMaxPerFrame[0], L.streamMaxPerFrame[1], streamEff));
         // Wasser:
@@ -21413,6 +21419,10 @@ class AnazhRealm {
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
+        // V18.276 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame render-gebunden (du siehst dich
+        // um), PAUSIERT das Vegetations-Wachstum (reine Deko, kann warten) → der Main-Thread
+        // bleibt für Input frei. Es wächst weiter, sobald der Frame Luft hat (lichter Blick).
+        if (this.state._frameRenderBound) return;
         let budget = 2;
         for (const key of pending) {
             if (budget <= 0) break;
@@ -73185,7 +73195,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.275.0";
+AnazhRealm.VERSION = "18.276.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76082,6 +76092,11 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die render-senkenden
 // Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt. ~0.011 → 1092 Draw-Calls ≈ 12 ms.
 AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
+// V18.276 — RESPONSIVITÄT VOR DURCHSATZ (Schöpfer „sie würde besser warten und mich umsehen
+// lassen"): übersteigt die Render-Submission-Last (`renderCalls × PERF_RENDER_CALL_MS`) diese
+// Schwelle, ist der Frame RENDER-gebunden → das Laden (Chunk-Streaming + Vegetations-Wachstum)
+// gibt nach, damit der Main-Thread Input/Umsehen bedient. ~9 ms ≈ 820 Draw-Calls.
+AnazhRealm.PERF_RESPONSIVE_RENDER_MS = 9;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der

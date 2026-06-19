@@ -81,7 +81,12 @@ function check(name, ok) {
         // (GPU-init ist langsam); beim Null-Renderer resolved init() sofort → rendererReady
         // feuert VOR startEternalLoop → Race. Auf den Loop warten ist renderer-unabhängig korrekt.
         await page.evaluate(async () => {
-            const dl = performance.now() + 20000;
+            // V18.276 — die Boot-Readiness wartet großzügig (wie der volle Gate): auf einem
+            // gedrosselten Container dauert Worldgen+Loop-Boot >5 s (gemessen ~5-26 s); ein zu
+            // knapper Boot-Deckel → früher Fallback → leerer Warmup. 60 s ist ein reiner
+            // Sicherheits-Deckel gegen einen echten Hänger — die Schleife exitet, sobald
+            // `_gameLoopTick` da ist (normal ~Sekunden), also kostet er den Schnellfall nichts.
+            const dl = performance.now() + 60000;
             while (
                 (!window.anazhRealm ||
                     !window.anazhRealm.state ||

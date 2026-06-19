@@ -18627,6 +18627,17 @@ async function checkBandV18275FoliageGrowth(ctx) {
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
+        // (4) V18.276 — RESPONSIVITÄT: render-bound → das Wachstum PAUSIERT; Frame frei → es läuft.
+        const tk2 = `${pcx + 2},${pcz + 2}`;
+        if (st.voxelChunks) st.voxelChunks.delete(tk2);
+        st.foliageRadius = 9999;
+        st.pendingFoliageChunks = new Set([tk2]);
+        st._frameRenderBound = true;
+        r._tickFoliageGrowth();
+        out.growthPausesRenderBound = st.pendingFoliageChunks.has(tk2); // NICHT gedrainiert
+        st._frameRenderBound = false;
+        r._tickFoliageGrowth();
+        out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
         return out;
     });
     if (res.error) {
@@ -18646,6 +18657,11 @@ async function checkBandV18275FoliageGrowth(ctx) {
             "V18.275 CONSUM: _tickFoliageGrowth füllt wartende in-radius Chunks (sanftes Nachwachsen)",
             res.growthDrains
         );
+        check(
+            "V18.276 CONSUM: render-bound → das Vegetations-Wachstum PAUSIERT (Input vor Laden)",
+            res.growthPausesRenderBound
+        );
+        check("V18.276: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
 }
 
@@ -22316,10 +22332,16 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // + Cull-Radius), NICHT das Streaming. Vorher wog er die Architektur-Domäne als billig
         // (p.render=CPU≈0) → drosselte das Falsche, der Schatten-Pass lief ungebremst.
         out.actuateReadsRenderLoad = /renderCalls/.test(r._nexusPerfActuate.toString());
-        // (a) reine Render-Last (viele Draw-Calls): die Architektur-Domäne gibt nach.
+        // (a) MODERATE Render-Last (Draw-Calls UNTER dem Responsiv-Schwellwert): die
+        // Architektur-Domäne (Schatten/Cull = die render-VERURSACHENDEN Hebel) gibt MEHR
+        // nach als das Streaming — der Regler drosselt das RICHTIGE (NICHT blind das
+        // Streaming wie der alte Bang-Bang), die Welt LÄDT WEITER, während die Render-
+        // Qualität schrumpft (V18.269 — Durchsatz geschützt, solange noch Luft ist).
+        // 600 Calls × PERF_RENDER_CALL_MS(0.011) ≈ 6.6 ms < PERF_RESPONSIVE_RENDER_MS(9)
+        // → NICHT render-gebunden → Streaming bleibt geschützt.
         r._nexusPerfActuate({
             loadScale: 0.5,
-            renderCalls: 1100, // hohe GPU-Last
+            renderCalls: 600,
             phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
         });
         const archPosR =
@@ -22328,9 +22350,24 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         const streamPosR =
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
         const shadowLoaded = st._shadowMinInterval;
-        // unter Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach als Streaming
+        // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
-        // (b) dieselbe loadScale OHNE Render-Last: das Schatten-Intervall ist KÜRZER (= der
+        // (b) RENDER-GEBUNDEN (Draw-Calls ÜBER dem Schwellwert): jetzt gibt das Streaming
+        // AUCH nach (auf ~0.12) — V18.276 RESPONSIVITÄT VOR DURCHSATZ: siehst du dich um
+        // (die Render-Submission frisst den Frame), PAUSIERT das Laden, der Main-Thread
+        // bedient Input/Umsehen. 1100 Calls ≈ 12.1 ms > 9 → render-gebunden → streamEff 0.12.
+        // Die zwei Regime sind HARMONISCH: moderat → laden+Render-Qualität shaven (Durchsatz);
+        // render-gebunden → laden pausieren (Responsivität). Schwelle = PERF_RESPONSIVE_RENDER_MS.
+        r._nexusPerfActuate({
+            loadScale: 0.5,
+            renderCalls: 1100,
+            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        const streamPosBound =
+            (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        out.renderBoundYieldsStream = streamPosBound < 0.2 && streamPosBound < streamPosR - 0.3;
+        out.renderStreamPosBound = +streamPosBound.toFixed(2);
+        // (c) dieselbe loadScale OHNE Render-Last: das Schatten-Intervall ist KÜRZER (= der
         // Render-Load hat es verlängert → der Schatten-Pass läuft seltener unter GPU-Last).
         r._nexusPerfActuate({
             loadScale: 0.5,
@@ -22429,8 +22466,12 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         res.actuateReadsRenderLoad
     );
     check(
-        `V18.269: unter reiner Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos})`,
+        `V18.269: unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter`,
         res.renderLoadThrottlesArch
+    );
+    check(
+        `V18.276 CONSUM: RENDER-GEBUNDEN gibt das Streaming AUCH nach (streamPos ${res.renderStreamPosBound} ≪ moderat ${res.renderStreamPos}) — Umsehen pausiert das Laden (Responsivität vor Durchsatz)`,
+        res.renderBoundYieldsStream
     );
     check(
         "V18.269: die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
@@ -29681,13 +29722,19 @@ async function checkBandPhaseEThreat(ctx) {
             p.stats.defense = savedDef;
             out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
             // (4) die FURCHT: niedrige HP + Jagd-Schlag → sorrow steigt (threatened).
+            // sorrow ZUERST auf 0 (der Warmup kann es an die 1.0-Decke getrieben haben →
+            // ein Anstieg wäre nicht mehr messbar; die KONFUNDIERTE-Warmup-Lehre). So misst
+            // die Probe den INTENT (der Schlag HEBT sorrow) deterministisch, kein Last-Flake.
             p.hp = (p.stats.hpMax || 100) * 0.2;
+            p.emotions.sorrow = 0;
             const sor0 = p.emotions.sorrow || 0;
             wolf.userData.nextHuntStrikeAt = 0;
             r._tickCreatureHuntStrike(wolf);
             out.fearFelt = (p.emotions.sorrow || 0) > sor0;
             // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
+            // joy ebenso ZUERST auf 0 (dieselbe Decken-Konfundierung) → der Anstieg ist messbar.
             p.hp = p.stats.hpMax || 100;
+            p.emotions.joy = 0;
             const joy0 = p.emotions.joy || 0;
             r.damageCreature(wolf, 9999, { source: "player" });
             spawned[0] = null;
@@ -56116,10 +56163,25 @@ async function checkBandRing6Workshop(ctx) {
         await page.evaluate(async (durationMs) => {
             const start = performance.now();
             // Phase 1 — auf den Game-Loop warten. Der Konstruktor exponiert
-            // `_gameLoopTick` erst am Ende; im Headless dauert die Init
-            // 200–1500 ms (Worldgen + Materialien). Wir geben max 5 s,
-            // danach fallen wir auf den passiven Sleep zurück (defensiv).
-            const deadline = start + Math.min(5000, durationMs);
+            // `_gameLoopTick` erst am Ende; im Headless dauert die Init normal
+            // 200–1500 ms (Worldgen + Materialien), auf einem gedrosselten
+            // Container aber bis ~26 s. Bleibt er aus, fallen wir auf den
+            // passiven Sleep zurück (defensiv).
+            // V18.276 — DIE BOOT-READINESS WARTET GEDULDIG (CPU-last-unabhängig): das
+            // wahre Ready-Signal ist `_gameLoopTick` (exponiert von `startEternalLoop` am
+            // Boot-Ende), NICHT `rendererReady` (= nur „GPU-Device fertig", feuert beim
+            // Null-Renderer SOFORT, lange vor dem Loop — die dokumentierte Race). Auf einem
+            // gedrosselten Container dauert der Boot (Worldgen + Loop) >5 s; die alte 5-s-
+            // Magic-Number (`Math.min(5000, durationMs)`) traf zu früh → der ehrliche
+            // Fallback griff → der Warmup-Pump lief NIE → `voxelChunks=0` + 9 Folge-Fehler
+            // (GEMESSEN: bootElapsed=5066ms, hasTick=false, terrainGen läuft noch). Das ist
+            // derselbe Last-Flake wie V17.32/V18.273, nur eine Stufe FRÜHER (im Boot-Wait
+            // statt im Chunk-Build). Jetzt warten wir GROSSZÜGIG auf `_gameLoopTick` (bis
+            // BOOT_READY_CAP_MS, gegen einen echten Hänger gedeckelt), unabhängig von
+            // durationMs/CPU-Speed → load-unabhängig (mit dem 60-s-Boot baut der Pump 81
+            // Chunks). Der Chunk-Build-Loop hat seinen eigenen HARD_CAP (90 s).
+            const BOOT_READY_CAP_MS = 60000;
+            const deadline = start + BOOT_READY_CAP_MS;
             while (
                 (!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") &&
                 performance.now() < deadline
@@ -56128,7 +56190,8 @@ async function checkBandRing6Workshop(ctx) {
             }
             const r = window.anazhRealm;
             if (!r || typeof r._gameLoopTick !== "function") {
-                // Init nicht zeitig fertig → ehrlicher Fallback, kein Crash.
+                // Init nicht zeitig fertig (>BOOT_READY_CAP_MS = echter Hänger) →
+                // ehrlicher Fallback, kein Crash; die Folge-Invarianten fangen es.
                 await new Promise((resolve) => setTimeout(resolve, durationMs - (performance.now() - start)));
                 return;
             }

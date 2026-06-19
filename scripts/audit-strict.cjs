@@ -622,6 +622,7 @@ async function auditStateAndMethods() {
                 // V18.275 — Kapazitäts-gewachsene Welt (beide undefined-sicher):
                 "foliageRadius", // `state.X != null ? state.X : MAX`
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
+                "_frameRenderBound", // V18.276 — Flag, undefined ist falsy
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen
