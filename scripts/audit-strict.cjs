@@ -1,7 +1,7 @@
 // AnazhRealm — Strict-Audit-Suite (V8.23)
 //
 // Generische Audit-Tests die Bug-Klassen abdecken, die in V8.13-V8.22 mehrfach
-// durchgerutscht sind. Vier Schichten:
+// durchgerutscht sind. Drei Schichten (V18.274 — die vierte ist entfernt):
 //
 //   1. State-Field-Audit: scan source für this.state.X.Y.Z reads, prüft gegen
 //      live state-Initialisierung nach Init(). Fängt typos wie
@@ -15,12 +15,15 @@
 //      nur in DEFAULT_*-Konstanten oder state-init existieren, nicht hardcoded
 //      in mehreren Pfaden. Fängt Hardcoded-Refs (V8.13 Begleiter-Name).
 //
-//   4. Public-Method-Smoke-Test: jede public Methode (kein `_`-prefix) wird
-//      einmal aufgerufen mit dem Erwartung dass sie nicht crasht. Optional
-//      Side-Effect-Check. Fängt silent-no-ops (V8.20 resetWorkshopCamera).
+//   (entfernt V18.274) Public-Method-Smoke-Test — „jede public Methode blind
+//      ohne Args aufrufen": Prämisse unsound für diesen Codebase (Worldgen/
+//      Avatar/Worker-Methoden exekutieren beim Blind-Call schwere async-Arbeit →
+//      Event-Loop-Hunger/Page-Overload, in JEDER Variante flacky) + fand nur
+//      False-Positives (args-brauchende Methoden), NULL echte Bugs. Die echte
+//      Methoden-Wahrheit trägt der Playtest (5081 Invarianten).
 //
 // Lauf via `npm run audit:strict`. Strikter als playtest (auch warnings
-// werden zu exits), läuft schneller (~20s statt 60s).
+// werden zu exits).
 
 const { spawn } = require("child_process");
 const fs = require("fs");
@@ -127,10 +130,19 @@ function auditSoftDefaults() {
 }
 
 // ============================================================
-// 1. State-Field-Audit + 4. Public-Method-Smoke (browser-basiert)
+// 1. State-Field-Audit (browser-basiert)
+// V18.274 — der frühere 4. „Public-Method-Smoke" (jede public Methode blind ohne Args
+// aufrufen) ist ENTFERNT: seine Prämisse ist für diesen Codebase unsound — ~20 Methoden
+// (Worldgen/Avatar/Skybox/Worker) EXEKUTIEREN beim Blind-Call massive async-Arbeit →
+// Event-Loop-Hunger + Page-Overload („Target closed"), in JEDER Variante (await=Hang,
+// fire-and-forget=Overload, Isolation=last-empfindlich, Zeitbudget=Loop bricht nicht).
+// Und er fand über 8 Läufe NUR False-Positives (Methoden, die legitim Args brauchen:
+// logError/setVec/spawnCreatureAt …) — NULL echte Bugs. Ein nicht-CI-gated Passagier,
+// der Flakiness ZÜCHTETE. Die echte Methoden-Wahrheit trägt der Playtest (5081
+// Invarianten, der die Welt bootet + die Methoden in echten Szenarien übt).
 // ============================================================
 async function auditStateAndMethods() {
-    console.log("\n=== State-Field-Audit + Public-Method-Smoke (Headless) ===");
+    console.log("\n=== State-Field-Audit (Headless) ===");
     const server = spawn("node", ["save-server.js"], { cwd: ROOT, stdio: "pipe" });
     await new Promise((r, j) => {
         let resolved = false;
@@ -155,6 +167,13 @@ async function auditStateAndMethods() {
         const page = await browser.newPage();
         page.on("pageerror", (err) => {
             fail("PAGE-ERROR", "Script-Exception", err.message);
+        });
+        // V18.274 — GPU-FREI booten (Null-Renderer), wie das Mechanik-Gate: der State-Audit
+        // liest nie ein Pixel (nur State-Pfade) → der echte swiftshader-Renderer ist reine
+        // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
+        await page.evaluateOnNewDocument(() => {
+            window.__anazhHeadlessNullRenderer = true;
+            window.__anazhHeadlessSkinResCap = 64;
         });
         await page.goto("http://127.0.0.1:4312/", { waitUntil: "load" });
         await new Promise((r) => setTimeout(r, 12000));
@@ -597,6 +616,9 @@ async function auditStateAndMethods() {
                 "_creatureNetSeq", // `(state.X || 0) + 1`
                 "_herdContagionAcc", // `(state.X || 0) + delta`
                 "_skyEnvFailed", // gesetzt via `st._skyEnvFailed = true` im Fehlerpfad
+                // V18.274 — Sync-Gating-Watchdog (beide undefined-sicher gelesen):
+                "_playerChunkStallKey", // `state.X !== key` (undefined !== key = true)
+                "_playerChunkStallSince", // `state.X || now`
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen
@@ -623,57 +645,6 @@ async function auditStateAndMethods() {
                     `${usedPaths.size} state-Pfade gescannt, alle Top-Levels in init() vorhanden`
                 );
             }
-        }
-
-        // (b) Public-Method-Smoke: jede non-`_`-Method einmal aufrufen
-        const smokeResult = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            if (!r) return { err: "no realm" };
-            const methods = [];
-            // Sammle alle Method-Namen aus dem Prototype
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                if (typeof r[name] !== "function") continue;
-                if (name === "constructor") continue;
-                if (name.startsWith("_")) continue; // Private
-                methods.push(name);
-            }
-            const crashes = [];
-            const ok = [];
-            // Welche Methoden brauchen Args? Wir rufen sie OHNE Args auf —
-            // viele Methods sind defensive gegen undefined und no-op-en silent.
-            // Crash = thrown Error mit non-trivial message.
-            for (const name of methods) {
-                try {
-                    r[name]();
-                    ok.push(name);
-                } catch (e) {
-                    // Erwartete „missing arg"-Errors sind OK, echte Crashes
-                    // wie „cannot read property of undefined" sind verdächtig.
-                    const msg = String(e.message || e);
-                    if (/Cannot read|undefined.*is not|null.*is not/i.test(msg)) {
-                        crashes.push({ name, msg });
-                    } else {
-                        ok.push(name); // erwarteter Arg-Check-Fail
-                    }
-                }
-            }
-            return { total: methods.length, ok: ok.length, crashes };
-        });
-
-        if (smokeResult && !smokeResult.err) {
-            if (smokeResult.crashes.length > 0) {
-                for (const c of smokeResult.crashes) {
-                    warn("METHOD-SMOKE", `${c.name}() crasht ohne Args`, c.msg.slice(0, 80));
-                }
-            } else {
-                pass(
-                    "METHOD-SMOKE",
-                    `${smokeResult.ok}/${smokeResult.total} public methods OK (kein crash bei call-ohne-args)`
-                );
-            }
-        } else {
-            fail("METHOD-SMOKE", "Smoke-Test konnte nicht laufen", smokeResult?.err);
         }
     } finally {
         await browser.close();

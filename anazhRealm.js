@@ -21341,9 +21341,42 @@ class AnazhRealm {
         if (!this.state.voxelChunks) return;
         const key = `${pcx},${pcz}`;
         const entry = this.state.voxelChunks.get(key);
+        // (a) Mesh da, aber keine BVH → sync upgraden (Teleport-Schutz). Watchdog reset.
         if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
             this._upgradeChunkBVH(pcx, pcz);
+            this.state._playerChunkStallKey = null;
+            return;
         }
+        // (b) Chunk fertig (Mesh+BVH) ODER genuin leer (Void) → kein Bedarf. Watchdog reset.
+        if (entry) {
+            this.state._playerChunkStallKey = null;
+            return;
+        }
+        // (c) KEIN entry → der Spieler-Chunk lädt async (pending) ODER der Worker STALLT.
+        // V18.274 — SYNC-GATING (der Produktions-Zwilling des Warmup-Sync, der CLAUDE.md-
+        // benannte „nur sync, wenn wirklich kein Boden"): hat der Spieler-Chunk nach
+        // PLAYER_CHUNK_STALL_MS noch keinen Mesh (der Worker ausgehungert/fehlerhaft),
+        // baue ihn SYNC als letzten Anker — sonst hängt der Spieler ewig am weichen
+        // Boden ohne echte Kollision. Über das proven `voxelWorker=null`→Stufe-3-Sync-
+        // Muster durch DIE EINE Bau-Quelle `_ensureVoxelChunkAt` (kein Parallelcode).
+        // Eine späte Worker-Lieferung landet im `voxelMeshCache`, nicht in `voxelChunks`
+        // (race-sicher, kein Clobber). Normalbetrieb (Worker liefert ~71 ms) feuert den
+        // Watchdog NIE → kein per-Frame-Sync-Spike; nur der echte Stall zahlt den Build.
+        const now = performance.now();
+        if (this.state._playerChunkStallKey !== key) {
+            this.state._playerChunkStallKey = key;
+            this.state._playerChunkStallSince = now;
+            return;
+        }
+        if (now - (this.state._playerChunkStallSince || now) < AnazhRealm.PLAYER_CHUNK_STALL_MS) return;
+        const savedWorker = this.state.voxelWorker;
+        this.state.voxelWorker = null;
+        try {
+            this._ensureVoxelChunkAt(pcx, pcz, 0);
+        } finally {
+            this.state.voxelWorker = savedWorker;
+        }
+        this.state._playerChunkStallKey = null;
     }
 
     // V9.90 — Worker-State-Update bei voxelEdit (Spieler carvt/füllt). Sendet
@@ -73092,7 +73125,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.273.0";
+AnazhRealm.VERSION = "18.274.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76591,6 +76624,13 @@ AnazhRealm.PLAYER_VOID_Y = -120;
 // Spieler = btBoxShape(0.5) → Center 0.5 über den Füssen; +0.05 Marge = kein Clip in
 // den ladenden Boden. Löst den Spieler-Chunk-forceSync ab (nicht-blockierender Fall-Schutz).
 AnazhRealm.SOFT_FLOOR_REST_OFFSET = 0.55;
+
+// V18.274 — SYNC-GATING-Frist: liefert der Worker den Spieler-Chunk-Mesh nach so
+// vielen ms NICHT (echter Stall — ausgehungert/Fehler), baut `_ensurePlayerChunkBVH`
+// ihn SYNC als letzten Anker, damit der Spieler nicht ewig am weichen Boden hängt.
+// 1 s ist deutlich über jeder normalen Worker-Latenz (~71 ms Build + Queue, auch
+// unter Last < 500 ms) → der Watchdog feuert NUR im echten Stall, kein per-Frame-Spike.
+AnazhRealm.PLAYER_CHUNK_STALL_MS = 1000;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,

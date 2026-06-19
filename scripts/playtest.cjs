@@ -18489,6 +18489,8 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
         out.hasPrefetch = /getLinearVelocity/.test(tickSrc) && /ahead/.test(tickSrc);
         // Der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback = legitime Naht):
         out.editStillSync = /_voxelChunkIsPlayerChunk/.test(r._rebuildVoxelChunk.toString());
+        // V18.274 — Sync-Gating-Watchdog: Worker-Stall → der Spieler-Chunk baut sync (Source).
+        out.hasSyncGating = /PLAYER_CHUNK_STALL_MS|_playerChunkStallSince/.test(r._ensurePlayerChunkBVH.toString());
         // CONSUM behavioral: der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler.
         const st = r.state;
         const pm = st.playerMesh,
@@ -18528,6 +18530,27 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
         t.setIdentity();
         t.setOrigin(r.setVec(st.tmpVec1, sx, sy, sz2));
         body.setWorldTransform(t);
+        // (c) CONSUM — Sync-Gating-Watchdog: ein STALL (entry undefined > Frist) baut sync.
+        // Ein Test-Chunk WEIT ausserhalb des Rings → garantiert frisch, aber über Terrain.
+        const tcx = cx + 30,
+            tcz = cz + 30;
+        const tkey = `${tcx},${tcz}`;
+        st.voxelChunks.delete(tkey);
+        st._playerChunkStallKey = null;
+        r._ensurePlayerChunkBVH(tcx, tcz); // (1) erster Aufruf: nur der Stall-Timer, KEIN Sofort-Build
+        out.watchdogNoImmediateBuild = !st.voxelChunks.has(tkey) && st._playerChunkStallKey === tkey;
+        st._playerChunkStallSince = performance.now() - (r.constructor.PLAYER_CHUNK_STALL_MS + 500);
+        r._ensurePlayerChunkBVH(tcx, tcz); // (2) Frist überschritten → der Watchdog baut sync
+        const builtT = st.voxelChunks.get(tkey);
+        out.watchdogBuiltOnStall = !!builtT && (!!builtT.mesh || builtT.empty === true);
+        out.watchdogReset = st._playerChunkStallKey === null;
+        try {
+            r._disposeVoxelChunk(tkey);
+        } catch (_e) {
+            /* test-cleanup */
+        }
+        st.voxelChunks.delete(tkey);
+        st._playerChunkStallKey = null;
         return out;
     });
     if (res.error) {
@@ -18544,6 +18567,7 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
         "V18.271: der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback bleibt — die legitime Naht)",
         res.editStillSync
     );
+    check("V18.274: _ensurePlayerChunkBVH trägt den Sync-Gating-Watchdog (Source)", res.hasSyncGating);
     if (!res.behavioralSkipped) {
         check(
             "V18.271: CONSUM — der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler an die det. Höhe + erdet ihn (kein Durchfallen)",
@@ -18553,6 +18577,15 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
             "V18.271: bei BEREITER Kollision greift der weiche Boden NICHT (die echte BVH trägt, kein Doppel-Pin)",
             res.softFloorSkipsWhenReady
         );
+        check(
+            "V18.274: kein Sofort-Sync — erst der Stall-Timer wird gesetzt (kein Per-Frame-Spike)",
+            res.watchdogNoImmediateBuild
+        );
+        check(
+            "V18.274 CONSUM: Worker-Stall (kein Mesh > Frist) → der Spieler-Chunk baut SYNC (kein ewiges Hängen am weichen Boden)",
+            res.watchdogBuiltOnStall
+        );
+        check("V18.274: der Watchdog resettet nach dem Sync-Build (feuert nicht erneut)", res.watchdogReset);
     }
 }
 
@@ -41690,36 +41723,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         }
         out.architectureUsesLambert = hasToonMaterial;
 
-        // 5. Terrain-Shader hat lightIntensity + ambientIntensity-Uniforms.
-        // V9.35: die Voxel-Welt baut keine Heightfield-Chunks beim
-        // Init (V9.27-Skip); für den Shader-Test bauen wir uns einen
-        // via `ensureChunkAt` (die Heightfield-Chunk-Pipeline lebt
-        // noch — sie wird nur nicht mehr automatisch gerufen).
-        let shaderSample = null;
-        if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-            shaderSample = r.state.groundChunks[0];
-        } else if (typeof r.ensureChunkAt === "function") {
-            r.ensureChunkAt(50, 50);
-            const entry = r.state.chunkMap && r.state.chunkMap.get("50,50");
-            if (entry && entry.mesh) shaderSample = entry.mesh;
-        }
-        if (shaderSample && shaderSample.material && shaderSample.material.uniforms) {
-            out.terrainHasLightIntensityUniform = !!shaderSample.material.uniforms.lightIntensity;
-            out.terrainHasAmbientIntensityUniform = !!shaderSample.material.uniforms.ambientIntensity;
-            // Werte sollten von _applyDayNightToScene gesetzt sein
-            r.setTimeOfDay(0.5);
-            r._applyDayNightToScene();
-            const liNoon = shaderSample.material.uniforms.lightIntensity
-                ? shaderSample.material.uniforms.lightIntensity.value
-                : -1;
-            r.setTimeOfDay(0);
-            r._applyDayNightToScene();
-            const liNight = shaderSample.material.uniforms.lightIntensity
-                ? shaderSample.material.uniforms.lightIntensity.value
-                : -1;
-            out.terrainLightFollowsDayCycle = liNoon > liNight;
-        }
-        r.setTimeOfDay(0.5);
+        // V18.274 — der alte Heightfield-Shader-Uniform-Test (Terrain hat
+        // lightIntensity/ambientIntensity) ist als toter Passagier entfernt: er
+        // baute via `ensureChunkAt` (gelöscht V9.39) → `shaderSample` blieb IMMER
+        // null, der Block lief nie, und KEIN check() las seine out-Felder. Die
+        // Tag/Nacht-Antwort des Voxel-Terrains läuft über die geteilten PBR-Lichter
+        // (Sonne/Fog/Hemisphere) — abgedeckt von den `_applyDayNightToScene`-Bändern
+        // (Sonne hoch@Mittag/niedrig@Mitternacht · Fog-Color · C1-Stetigkeit).
 
         // 6. Stern-Feld (V8.28) hat per-Stern Hue + Größen-Variation.
         // V10.0-i.a: Sterne sind InstancedMesh mit Per-Instance Color
