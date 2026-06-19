@@ -31267,7 +31267,13 @@ async function checkBandLambda4Streu(ctx) {
         // NICHT mehr manuell `attribute("instanceColor")` (das war redundant +
         // die „instanceColor not found"-Fehlerquelle, da die geteilte Geometrie
         // das Per-Mesh-Attribut nicht trägt).
-        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matSrc);
+        // Strip Kommentare bevor wir auf den manuellen Read prüfen (CLAUDE.md-
+        // Lehre, Vorbild Z. ~34340: der Code darf das Wort tragen — der V18.267-
+        // Erklär-Kommentar zitiert den entfernten `attribute("instanceColor")`-
+        // Block —, der CODE darf es nicht. Ohne Strip stolpert der Test über
+        // seine eigene Dokumentation (deterministisch rot).
+        const matCode = matSrc.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matCode);
         // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
         const species = A.KLEIN_VEGETATION_SPECIES;
         const names = new Set(species.map((s) => s.name));
@@ -38468,7 +38474,11 @@ async function checkBandWahrerAnblickGras(ctx) {
         // liest instanceColor NICHT mehr manuell (das war redundant + die
         // „instanceColor not found"-Fehlerquelle). Der KONSUM ist via setColorAt
         // im Build (A2) bewiesen, nicht via manuellem Material-Read.
-        out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matSrc);
+        // Strip Kommentare bevor wir auf den manuellen Read prüfen (CLAUDE.md-
+        // Lehre, Vorbild Z. ~34340: der Code darf das Wort tragen — der V18.267-
+        // Erklär-Kommentar zitiert den entfernten Read —, der CODE darf es nicht.
+        const matCode = matSrc.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+        out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
         const buildSrc = r._buildVoxelChunkGrass.toString();
         out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
         out.buildComputesTint = /lushG/.test(buildSrc) && /tintR/.test(buildSrc) && /_feuchteAt/.test(buildSrc);
