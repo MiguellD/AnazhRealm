@@ -22114,6 +22114,36 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.overlayShowsRenderLoad =
             /renderCalls/.test(r._perfSenseRender.toString()) && /phaseMax|spike/i.test(r._perfSenseRender.toString());
 
+        // (7) V18.269 — die Augen FAHREN: bei reiner RENDER-Last (viele Draw-Calls, CPU-
+        // Phasen niedrig) drosselt der Regler die render-senkenden Hebel (Schatten-Intervall
+        // + Cull-Radius), NICHT das Streaming. Vorher wog er die Architektur-Domäne als billig
+        // (p.render=CPU≈0) → drosselte das Falsche, der Schatten-Pass lief ungebremst.
+        out.actuateReadsRenderLoad = /renderCalls/.test(r._nexusPerfActuate.toString());
+        // (a) reine Render-Last (viele Draw-Calls): die Architektur-Domäne gibt nach.
+        r._nexusPerfActuate({
+            loadScale: 0.5,
+            renderCalls: 1100, // hohe GPU-Last
+            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        const archPosR =
+            (st.architectureCullingRadius - A.ARCH_QUALITY_RADIUS_MIN) /
+            (A.ARCH_QUALITY_RADIUS_MAX - A.ARCH_QUALITY_RADIUS_MIN);
+        const streamPosR =
+            (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        const shadowLoaded = st._shadowMinInterval;
+        // unter Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach als Streaming
+        out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
+        // (b) dieselbe loadScale OHNE Render-Last: das Schatten-Intervall ist KÜRZER (= der
+        // Render-Load hat es verlängert → der Schatten-Pass läuft seltener unter GPU-Last).
+        r._nexusPerfActuate({
+            loadScale: 0.5,
+            renderCalls: 0,
+            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
+        });
+        out.renderLoadLengthensShadow = shadowLoaded > st._shadowMinInterval + 1e-6;
+        out.renderArchPos = +archPosR.toFixed(2);
+        out.renderStreamPos = +streamPosR.toFixed(2);
+
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
         st.architectureBuildBudgetPerFrame = snap.budget;
@@ -22175,6 +22205,18 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         "V18.268: _loopRender tappt die GPU-Last (info.reset + renderCalls) + das Overlay zeigt sie",
         res.loopRenderTaps && res.overlayShowsRenderLoad
+    );
+    check(
+        "V18.269: die Augen FAHREN — der Aktuator liest die Render-Last (renderCalls) in die Architektur-Domäne",
+        res.actuateReadsRenderLoad
+    );
+    check(
+        `V18.269: unter reiner Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos})`,
+        res.renderLoadThrottlesArch
+    );
+    check(
+        "V18.269: die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
+        res.renderLoadLengthensShadow
     );
 }
 

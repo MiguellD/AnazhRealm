@@ -12924,8 +12924,16 @@ class AnazhRealm {
         const ls = sense.loadScale;
         const p = sense.phase;
         // die drei regelbaren Domänen + ihre gemessene Last (render skaliert mit
-        // dem Cull-Radius → zählt zur Architektur-Domäne).
-        const cArch = (p.archCulling || 0) + (p.render || 0);
+        // dem Cull-Radius + Schatten-Intervall → zählt zur Architektur-Domäne).
+        // V18.269 — die GPU-RENDER-LAST (V18.268-Augen, `sense.renderCalls`) gehört IN
+        // diese Domäne: `p.render` ist nur die CPU-Zeit von _loopRender (winzig); die
+        // echte Last sind die Draw-Calls/Dreiecke (GPU). Ohne sie wog der Regler die
+        // Architektur-Domäne als billig → er drosselte das Streaming, während der
+        // Schatten-Pass (613k Dreiecke, ein zweiter Render) ungebremst lief. Der
+        // Draw-Call-ms-Proxy hebt sie ein → unter Render-Last gibt der Schatten-Pass +
+        // Cull-Radius ZUERST nach (die render-senkenden Hebel).
+        const renderLoadMs = (sense.renderCalls || 0) * AnazhRealm.PERF_RENDER_CALL_MS;
+        const cArch = (p.archCulling || 0) + (p.render || 0) + renderLoadMs;
         const cStream = p.streaming || 0;
         const cWater = p.waterIso || 0;
         const tot = cArch + cStream + cWater + 1e-6;
@@ -73009,7 +73017,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.268.0";
+AnazhRealm.VERSION = "18.269.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -75892,6 +75900,11 @@ AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
 AnazhRealm.PERF_TARGET_MS = 17; // Soll-Frame-Zeit (≈59 fps) — der Regelkreis-Sollwert
 AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wahrnehmung
+// V18.269 — GPU-Last-Proxy: ms-Äquivalent je Draw-Call. Die Render-Last (renderer.info,
+// die V18.268-Augen) ist GPU, nicht in p.render (CPU). Dieser Faktor hebt sie in die
+// Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die render-senkenden
+// Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt. ~0.011 → 1092 Draw-Calls ≈ 12 ms.
+AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der
