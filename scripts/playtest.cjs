@@ -31261,7 +31261,13 @@ async function checkBandLambda4Streu(ctx) {
         // V18.174 — instanceColor pro-Instanz (Hash-Stream, setColorAt).
         out.instanceColorCode = /hashInstanceTint/.test(src) && /setColorAt\(i,\s*tintColor\)/.test(src);
         const matSrc = r._scatterMaterial.toString();
-        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && /attribute\("instanceColor"/.test(matSrc);
+        // V18.267 — der pro-Instanz-Tint kommt jetzt über Three.js' nativen
+        // InstanceNode-Pfad (setupDiffuseColor multipliziert instanceColor
+        // automatisch): das Material setzt das useInstanceTint-Flag, liest aber
+        // NICHT mehr manuell `attribute("instanceColor")` (das war redundant +
+        // die „instanceColor not found"-Fehlerquelle, da die geteilte Geometrie
+        // das Per-Mesh-Attribut nicht trägt).
+        out.materialUseInstanceTint = /useInstanceTint/.test(matSrc) && !/attribute\("instanceColor"/.test(matSrc);
         // V18.176 — 12 Gestalt-Varianten (3 je Art: blume/farn/gestruepp/schilf).
         const species = A.KLEIN_VEGETATION_SPECIES;
         const names = new Set(species.map((s) => s.name));
@@ -31295,7 +31301,7 @@ async function checkBandLambda4Streu(ctx) {
         res.instanceColorCode === true
     );
     check(
-        'Λ.4 Streu (V18.174): _scatterMaterial trägt useInstanceTint + attribute("instanceColor")',
+        "Λ.4 Streu (V18.267): _scatterMaterial trägt useInstanceTint OHNE manuelles attribute(instanceColor) (nativer Auto-Multiply, kein Konsolen-Fehler)",
         res.materialUseInstanceTint === true
     );
     check(
@@ -38183,13 +38189,17 @@ async function checkBandV18224ScatterPromotion(ctx) {
             Number.isFinite(res.byLayer.under) &&
             Number.isFinite(res.byLayer.litter)
     );
+    // V18.267 (PROVISORISCHE ENTLASTUNG, Schöpfer „hunderte Bäume, sonst kaum was"):
+    // die Caps gesenkt (tree 900→300, under 800→250, litter 250→150) → ein offeneres
+    // Waldland, das Terrain/Fels/Blumen sichtbar macht. Die Dichte-Schwellen ziehen
+    // mit (der Test wandert mit dem Code) — die Welt ist BEWUSST sparsamer.
     check(
-        `V18.224/233 (M5) Design-Kapazität FPS-bewusst populiert ≥35/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`,
-        res.designPerChunk >= 35
+        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥18/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`,
+        res.designPerChunk >= 18
     );
     check(
-        `V18.224/233 (M6) ECHTE Dichte ≥12 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
-        res.perChunkActual >= 12
+        `V18.224/267 (M6) ECHTE Dichte ≥4 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
+        res.perChunkActual >= 4
     );
 
     // (D) Species-Determinismus
@@ -38453,7 +38463,12 @@ async function checkBandWahrerAnblickGras(ctx) {
 
         // (A) CONSUM Source-Probes
         const matSrc = r._grassInstanceMat.toString();
-        out.matReadsInstanceColor = /attribute\(["']instanceColor["']/.test(matSrc);
+        // V18.267 — der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad
+        // (setupDiffuseColor multipliziert instanceColor automatisch). Das Material
+        // liest instanceColor NICHT mehr manuell (das war redundant + die
+        // „instanceColor not found"-Fehlerquelle). Der KONSUM ist via setColorAt
+        // im Build (A2) bewiesen, nicht via manuellem Material-Read.
+        out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matSrc);
         const buildSrc = r._buildVoxelChunkGrass.toString();
         out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
         out.buildComputesTint = /lushG/.test(buildSrc) && /tintR/.test(buildSrc) && /_feuchteAt/.test(buildSrc);
@@ -38486,8 +38501,8 @@ async function checkBandWahrerAnblickGras(ctx) {
     });
 
     check(
-        "Ω-OPSIS S2-Gras (A1) CONSUM: Gras-Material liest instanceColor (Boden-Tint)",
-        res.matReadsInstanceColor === true
+        "Ω-OPSIS S2-Gras (A1, V18.267): Gras-Material OHNE manuelles attribute(instanceColor) — Boden-Tint via nativem Auto-Multiply (kein Konsolen-Fehler)",
+        res.matNoManualInstanceColor === true
     );
     check(
         "Ω-OPSIS S2-Gras (A2) CONSUM: _buildVoxelChunkGrass setzt setColorAt/instanceColor",
@@ -38851,10 +38866,7 @@ async function checkBandV18266RockDetail(ctx) {
         out.sizeDriven = /_maxDim\s*<\s*0\.7/.test(r._makePartGeometry.toString());
         return out;
     });
-    check(
-        `V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`,
-        res.smallLow === true
-    );
+    check(`V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
     check(
         `V18.266: grosser Brocken behält Facetten (${res.bigTris} Dreiecke) — nur kleine Steine schrumpfen`,
         res.bigHigher === true && res.smallCheaperThanBig === true

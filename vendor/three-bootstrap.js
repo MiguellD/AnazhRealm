@@ -88,14 +88,22 @@ THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
 THREE_GLOBAL.MeshToonNodeMaterial = MeshToonNodeMaterial;
 THREE_GLOBAL.MeshStandardNodeMaterial = MeshStandardNodeMaterial;
-// V18.98 — Post-Processing-Heilung (Schöpfer-Browser-Konsole: „Post-Processing
-// nicht verfuegbar (PostProcessing/pass fehlt)"): `PostProcessing` lebt im
-// three/webgpu-Bundle und wurde hier NIE in THREE_GLOBAL kopiert → der ganze
-// V17-Post-FX-Bogen (Bloom · Grading · Kanten-Schärfe · Entgrauen) war still
-// aus, in jedem Browser. SOFT-Lookup statt requireWebGPU-Throw: Post-FX ist
-// optional — fehlt das Symbol in einem künftigen Bundle, fällt
-// `_ensurePostProcessing` weiter sauber auf den direkten Render-Pfad.
-if (typeof WEBGPU.PostProcessing === "function") {
+// V18.98 — Post-Processing-Heilung: `PostProcessing`/`RenderPipeline` lebt im
+// three/webgpu-Bundle und wurde hier NIE kopiert → der ganze V17-Post-FX-Bogen
+// (Bloom · Grading · Kanten-Schärfe · Entgrauen) war still aus. SOFT-Lookup
+// (Post-FX ist optional → fehlt das Symbol, fällt `_ensurePostProcessing` sauber
+// auf den direkten Render-Pfad).
+// V18.267 — DIE KONSOLEN-WURZEL (Schöpfer „die Warnungen fluten die Konsole"):
+// r184 benannte `PostProcessing` → `RenderPipeline` um. Der alte Name lebt als
+// DEPRECATED Alias, der schon beim ZUGRIFF (`typeof WEBGPU.PostProcessing`) eine
+// Konsolen-Warnung feuert — UND er ist intern ShaderMaterial-basiert, das der
+// WebGPU-NodeBuilder ablehnt („ShaderMaterial is not compatible"). BEIDE Warnungen,
+// EINE Wurzel: wir kopierten nur den alten Namen → der Code fiel immer auf ihn
+// zurück. Jetzt RenderPipeline ZUERST (NodeMaterial-basiert, kein deprecated-
+// Zugriff → keine Warnung); nur wenn es fehlt (älteres Bundle) der alte Fallback.
+if (typeof WEBGPU.RenderPipeline === "function") {
+    THREE_GLOBAL.RenderPipeline = WEBGPU.RenderPipeline;
+} else if (typeof WEBGPU.PostProcessing === "function") {
     THREE_GLOBAL.PostProcessing = WEBGPU.PostProcessing;
 }
 THREE_GLOBAL.TSL = TSL;

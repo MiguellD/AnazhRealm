@@ -457,6 +457,47 @@ halbieren." Diese Welle hat genau das gebaut + gemessen — und die Messung hat 
   Beweis — die Wand zuerst, die Zahl führt. Die Wand-Invariante „Beine symmetrisch" FLIPPT, wenn
   WURZEL 2 landet (der Test wandert mit dem Code). Detail: `docs/lebendiger-koerper-plan.md §2½-BEFUND`.
 
+### V18.267 — Konsolen-Aufräumung (RenderPipeline + instanceColor) + provisorische Baum-Entlastung
+
+Zwei Schöpfer-Befunde, beide an die Wurzel: „die Warnungen/Fehler fluten die Konsole, immernoch die
+gleichen" + „ich sehe hunderte Bäume aber sonst kaum was — wir bauen auf Sand wenn wir das nicht
+korrigieren, vorerst provisorisch entlasten".
+
+- **DIE KONSOLEN-FLUT (drei Quellen, je an der Wurzel):**
+  - **(a) `PostProcessing → RenderPipeline`-Deprecation + `ShaderMaterial is not compatible` = EINE
+    Wurzel.** r184 benannte `PostProcessing` → `RenderPipeline` um. Der Bootstrap (`vendor/three-bootstrap.js`)
+    kopierte aber NUR den deprecated `PostProcessing` in `THREE`, NIE `RenderPipeline` → `_ensurePostProcessing`
+    fiel immer auf den alten Namen zurück (der schon beim `typeof`-Zugriff warnt + intern ShaderMaterial-
+    basiert ist → die zweite Warnung). FIX: `RenderPipeline` ZUERST kopieren (NodeMaterial-basiert, kein
+    deprecated-Zugriff). VERIFIZIERT headless: `THREE.RenderPipeline` true, `THREE.PostProcessing` false,
+    postProcessing baut mit RenderPipeline (ctor != PostProcessing), KEINE Deprecation-Warnung mehr.
+    **Plus der entscheidende Cache-Buster:** der Bootstrap-`<script>` in `index.html` hatte KEIN `?v=` →
+    der Browser hätte den stale Bootstrap weiter serviert (die „Fix verifiziert, Schöpfer sieht nichts"-
+    Falle, V8.41-Klasse). `?v=18.267.0` ergänzt.
+  - **(b) `instanceColor not found` (133×, DER Flut-Posten).** Three.js' `setupDiffuseColor` multipliziert
+    `instanceColor` schon AUTOMATISCH, sobald `mesh.instanceColor` gesetzt ist. Das manuelle
+    `albedo.mul(attribute("instanceColor"))` in `_grassInstanceMat` + `_scatterMaterial` (Understory) war
+    REDUNDANT (Doppel-Multiply) UND die Fehlerquelle (die GETEILTE Geometrie trägt das Per-Mesh-Attribut
+    nicht). ENTFERNT — der Tint kommt jetzt über den nativen InstanceNode-Pfad, DERSELBE wie das Laub (EINE
+    Konvention). Die Tests wandern mit dem Code: sie greppen jetzt auf die ABWESENHEIT des manuellen Reads
+    (`_scatterMaterial` V18.267, Gras A1 V18.267).
+  - **(c) der `Nexus entwickelt sich`-INFO-Log → DEBUG** (Dev-Info, kein User-Konsolen-Posten).
+  - **NOCH OFFEN (vendor-intern, KEIN Flut):** 2× `ShaderMaterial is not compatible` bleiben. Per Hook
+    bewiesen: sie kommen NICHT aus unserem Code (0 Konstruktionen via `THREE.ShaderMaterial`, kein App-
+    Stack-Frame — nur `needsRefresh → getMonitor → build → prebuild`), NICHT aus dem Post-FX (mit PP
+    deaktiviert bleiben sie), sondern aus den WebGPU-Renderer-Internals auf dem Main-Pfad. 2 Setup-Zeilen,
+    rendert mit Default-NodeMaterial-Fallback, harmlos. Tiefer = das minifizierte Bundle reverse-engineeren
+    → vertagt (kein Flut, 2 Zeilen).
+- **PROVISORISCHE BAUM-ENTLASTUNG.** Die Scatter-Caps gesenkt: tree 900→300, under 800→250, litter
+  250→150. Offenes Waldland statt dichter Forst → Terrain/Fels/Blumen werden sichtbar (Schöpfer „sonst
+  kaum was"). REVERSIBEL; tree bleibt > under (die Bäume die prominente Substanz, nicht das Gestrüpp). Die
+  Dichte-Schwellen-Tests ziehen mit (M5 ≥35→≥18, M6 ≥12→≥4 — der Test wandert mit dem Code, die Welt ist
+  BEWUSST sparsamer). Der echte Dichte-Regler bleibt der kommende Perf-Regelkreis-Render-Hebel; dies ist
+  die Sofort-Linderung.
+- **LEHRE:** eine „kosmetische" Warnung kann eine echte Wurzel haben (der fehlende Bootstrap-Export); und
+  eine separat geladene versionierte Datei (der Bootstrap) braucht IMMER den `?v=`-Cache-Buster, sonst ist
+  der Fix im Schöpfer-Browser unsichtbar. Branch `claude/confident-noether-yczn0c`.
+
 ### V18.266 — DER RENDER-QUICK-WIN: Kiesel-Detail skaliert mit Grösse (Deko kostete mehr als der Held)
 
 Schöpfer-Entscheid (nach dem Strategie-Gespräch über Flaschenhals + Ammo/Determinismus): „erst der

@@ -14084,14 +14084,17 @@ class AnazhRealm {
                 albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
                 // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-BEZUG: die Streu-Pass
                 // setzt `instanceColor` pro Halm aus lebendig+feuchte (lush-grün ↔
-                // dry-oliv) → das Gras liest den Boden darunter, kohärent mit der
-                // Geologie (nasse Senke = saftig, trockener Grat = strohig). Ein
-                // MULTIPLIKATOR um ~1 (jeder Halm trägt instanceColor → kein
-                // fehlendes Attribut, WebGPU-strikt-sicher). Vor dem Gegenlicht-
-                // glow (der ist additives Licht, nicht getönt).
-                if (TSL.attribute) {
-                    albedo = albedo.mul(TSL.attribute("instanceColor", "vec3"));
-                }
+                // dry-oliv, ein MULTIPLIKATOR um ~1) → das Gras liest den Boden
+                // darunter, kohärent mit der Geologie.
+                // V18.267 (KONSOLEN-HEILUNG, Schöpfer „instanceColor-Fehler fluten"):
+                // Three.js' `setupDiffuseColor` multipliziert den colorNode-Output
+                // AUTOMATISCH mit `instanceColor`, sobald `mesh.instanceColor` gesetzt
+                // ist (`if(t.instanceColor){s=vInstanceColor.mul(s)}`, in der Vendor-
+                // Quelle verifiziert). Das manuelle `albedo.mul(attribute("instanceColor"))`
+                // war REDUNDANT (Doppel-Multiply) UND die Fehlerquelle (die GETEILTE
+                // Gras-Geometrie trägt das Per-Mesh-Attribut nicht → „instanceColor not
+                // found"). Entfernt — der Boden-Tint kommt jetzt über den korrekten
+                // nativen InstanceNode-Pfad (instanceColor ~1 → Look praktisch identisch).
                 // V16.2 - Gegenlicht-Translucency (der Ghost-of-Tsushima-Magie-
                 // Moment): wenn die Sonne HINTER dem Gras steht (Blickrichtung
                 // ~entgegengesetzt zur Sonne), leuchten die Halme golden-grün
@@ -21862,7 +21865,7 @@ class AnazhRealm {
         this.state.nexusLastEvolution = currentTime;
         this.log(
             `Nexus entwickelt sich: Autonomie ${this.nexus.knightOfTime.autonomyLevel}, Vorschlag: ${evolution.name}`,
-            "INFO"
+            "DEBUG" // V18.267 — Konsolen-Entlastung: Dev-Info, kein User-Posten
         );
         this.state.knowledgeBase.push({
             type: "evolution",
@@ -31759,7 +31762,7 @@ class AnazhRealm {
                 mat = new THREE.MeshLambertNodeMaterial({
                     side: species.wind ? THREE.DoubleSide : THREE.FrontSide,
                 });
-                const { vec4, vec3, float, attribute, max, mix } = TSL;
+                const { vec4, vec3, float, attribute, max } = TSL;
                 const vcol = attribute("color", "vec3");
                 let albedo = vcol;
                 if (TSL.mx_noise_float && TSL.positionWorld) {
@@ -31767,31 +31770,19 @@ class AnazhRealm {
                     albedo = albedo.mul(float(1.0).add(bn.mul(float(0.16))));
                     albedo = max(albedo, vec3(0, 0, 0));
                 }
-                // Λ.4 (V18.174 — pro-Instanz-Tint für Streu-Vegetation): jede
-                // gespawnte Instanz lebender Streu-Arten (blume/farn/gestrüpp/
-                // schilf — wind=true && !emissive) bekommt einen seed-deterministischen
-                // HSL-Shift via setColorAt. Das Material liest `attribute("instanceColor")`
-                // analog Λ.2 — ein Feld voller Tulpen variiert in warm/kühl-Rot,
-                // ein Farn-Tuff hat verschiedene Grün-Nuancen → die GLEICHFÖRMIGE
-                // Wand fällt. Gate: nur weiche/lebende Arten — Fels/Spore/Pollen
-                // haben ihren eigenen Look. instanceColor 0.5 = neutrale Mitte.
-                const tintCfg = AnazhRealm.INSTANCE_TINT || { rangeH: 0.08, rangeS: 0.1, rangeV: 0.06 };
-                if (species.wind && !species.emissive && TSL.attribute) {
-                    const _ic = attribute("instanceColor", "vec3");
-                    const hueShift = _ic.x.sub(float(0.5)).mul(float(tintCfg.rangeH * 2));
-                    const satShift = _ic.y.sub(float(0.5)).mul(float(tintCfg.rangeS * 2));
-                    const valShift = _ic.z.sub(float(0.5)).mul(float(tintCfg.rangeV * 2));
-                    // HSL-light-touch: G± gegen R/B = kühl/warm-Grün-Shift
-                    const tintRGB = vec3(
-                        float(1.0).sub(hueShift.mul(float(0.3))),
-                        float(1.0).add(hueShift.mul(float(0.5))),
-                        float(1.0).sub(hueShift.mul(float(0.2)))
-                    );
-                    const _lum = albedo.x.mul(0.299).add(albedo.y.mul(0.587)).add(albedo.z.mul(0.114));
-                    const _gray = vec3(_lum, _lum, _lum);
-                    const _satF = float(1.0).add(satShift);
-                    albedo = mix(_gray, albedo, _satF).mul(tintRGB).mul(float(1.0).add(valShift));
-                    albedo = max(albedo, vec3(0, 0, 0));
+                // Λ.4 (V18.174) — pro-Instanz-Tint für lebende Streu-Vegetation
+                // (blume/farn/gestrüpp/schilf, wind=true && !emissive): jede Instanz
+                // trägt einen seed-deterministischen Tint via setColorAt → ein Feld
+                // variiert statt gleichförmig zu sein. V18.267 (KONSOLEN-HEILUNG,
+                // Schöpfer „instanceColor-Fehler fluten die Konsole"): den manuellen
+                // `attribute("instanceColor")`-HSL-Block entfernt — er war REDUNDANT
+                // (Three.js' `setupDiffuseColor` multipliziert instanceColor schon
+                // AUTOMATISCH, sobald `mesh.instanceColor` gesetzt ist) UND die
+                // Fehlerquelle (die GETEILTE Streu-Geometrie trägt das Per-Mesh-
+                // Attribut nicht → „instanceColor not found"). Jetzt nur das
+                // useInstanceTint-Flag setzen → der Tint kommt über den korrekten
+                // nativen InstanceNode-Pfad, DERSELBE wie beim Laub (EINE Konvention).
+                if (species.wind && !species.emissive) {
                     mat.userData = mat.userData || {};
                     mat.userData.useInstanceTint = true;
                 }
@@ -72893,7 +72884,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.266.0";
+AnazhRealm.VERSION = "18.267.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -73294,10 +73285,15 @@ AnazhRealm.SCATTER = Object.freeze({
         // WENIGE, GROSSE, varianz-reiche Bäume (cap 1700→900, scaleVar 0.66→1.5 =
         // Scale 0.6-2.1 → ragende Alte + junge) statt vieler sparse Stacheln. Die
         // Krone ist 1.7× lusher (FPS-neutral, s. _buildTreeFoliageCardGeometry).
+        // V18.267 (PROVISORISCHE ENTLASTUNG, Schöpfer „ich sehe hunderte Bäume aber
+        // sonst kaum was — vorerst provisorisch entlasten"): cap 900→300 (offenes
+        // Waldland statt dichter Forst → Terrain/Fels/Blumen werden sichtbar, FPS
+        // entlastet). REVERSIBEL — der echte Dichte-Regler ist der kommende
+        // Perf-Regelkreis-Render-Hebel; dies ist die Sofort-Linderung.
         Object.freeze({
             name: "tree",
             cellM: 3.4,
-            cap: 900,
+            cap: 300,
             floor: 0.1,
             scaleBase: 0.6,
             scaleVar: 1.5,
@@ -73307,12 +73303,13 @@ AnazhRealm.SCATTER = Object.freeze({
         }),
         // Understory: Strauch+Kraut+Bodenflora. WAR der Haupt-Dichte-Träger (4200)
         // = der FPS-Killer + visuelle Verstopfung (kleines Gestrüpp verdeckte die
-        // Bäume). V18.233: 4200→800 (die Bäume tragen jetzt die Sicht, nicht das
-        // Gestrüpp). Der grösste FPS-Hebel der Rebalance.
+        // Bäume). V18.233: 4200→800; V18.267: 800→250 (mit den Bäumen entlastet —
+        // weniger Gestrüpp, mehr Sicht auf die Substanz; bleibt < treeCap, damit
+        // die Bäume die prominente Substanz bleiben, nicht das Gestrüpp). REVERSIBEL.
         Object.freeze({
             name: "under",
             cellM: 2.4,
-            cap: 800,
+            cap: 250,
             floor: 0.06,
             scaleBase: 0.8,
             scaleVar: 0.5,
@@ -73320,11 +73317,12 @@ AnazhRealm.SCATTER = Object.freeze({
             kind: "under",
             promotable: false,
         }),
-        // Streu: Totholz am Boden (2.8m-Zelle, sparse). ~25/Chunk × 35 = ~900.
+        // Streu: Totholz am Boden (2.8m-Zelle, sparse). V18.267: 250→150 (mit-
+        // entlastet — Totholz war der 2.-grösste gewachsene Render-Posten).
         Object.freeze({
             name: "litter",
             cellM: 2.8,
-            cap: 250,
+            cap: 150,
             floor: 0.04,
             scaleBase: 0.8,
             scaleVar: 0.4,
