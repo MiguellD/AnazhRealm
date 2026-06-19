@@ -623,6 +623,7 @@ async function auditStateAndMethods() {
                 "foliageRadius", // `state.X != null ? state.X : MAX`
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameRenderBound", // V18.276 — Flag, undefined ist falsy
+                "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen

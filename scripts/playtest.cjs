@@ -18638,6 +18638,57 @@ async function checkBandV18275FoliageGrowth(ctx) {
         st._frameRenderBound = false;
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
+
+        // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"):
+        // der Aktuator fährt `_foliageDensityScale`; der NAHE Scatter (`_buildVoxelChunkScatter`)
+        // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
+        out.actuateDrivesDensity = /_foliageDensityScale/.test(r._nexusPerfActuate.toString());
+        out.scatterReadsDensity = /_foliageDensityScale/.test(r._buildVoxelChunkScatter.toString());
+        out.farScatterReadsDensity = /_foliageDensityScale/.test(r._scatterPass.toString());
+        const ppD = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        // CONSUM (behavioral): die FERNE Scatter-Region (der eigentliche Render-Last-Hebel,
+        // 2.2 M Dreiecke) bei voller vs gedrosselter Dichte neu bauen → `instanceCount` fällt
+        // DIREKT. Der Faktor lichtet BEIDES: die Platzierungs-Wahrscheinlichkeit UND den Pro-
+        // Region-Cap (sonst maskiert der Cap die Drosselung bei dichtem, cap-saturiertem Wald —
+        // genau den Freeze-Hotspots). Anders als die LOD-Schwelle (gemessen 0 %, gebackene
+        // Geometrie) senkt WENIGER Instanzen die Dreiecke wirklich. Die Spieler-Region selbst
+        // bauen (der Warmup baut den fernen Scatter nicht) → der CONSUM läuft IN-GATE.
+        try {
+            const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
+            if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
+                const frx = Math.floor(ppD.x / SCcfg.regionM),
+                    frz = Math.floor(ppD.z / SCcfg.regionM);
+                const fk = `${frx},${frz}`;
+                const existed = !!(st.scatterRegions && st.scatterRegions.has(fk));
+                const instAt = (scale) => {
+                    st._foliageDensityScale = scale;
+                    r._disposeScatterRegion(fk);
+                    const reg = r._scatterRegion(frx, frz, ppD);
+                    return reg ? reg.instanceCount : 0;
+                };
+                const dFull = instAt(1);
+                const dLow = instAt(0.4);
+                r._disposeScatterRegion(fk);
+                st._foliageDensityScale = 1;
+                if (existed) r._scatterRegion(frx, frz, ppD); // echte Region wiederherstellen
+                if (dFull > 5) {
+                    out.densFull = dFull;
+                    out.densLow = dLow;
+                    out.densityCutsInstances = dLow < dFull;
+                }
+            }
+        } catch (_eDens) {
+            out.densityProbeError = String((_eDens && _eDens.message) || _eDens);
+        }
+        // Headless (Null-Renderer): der Aktuator setzt die Dichte auf 1 (volle Welt fürs Gate).
+        r._nexusPerfActuate({
+            loadScale: 0.3,
+            renderCalls: 1500,
+            phase: { streaming: 1, render: 0, archCulling: 1, waterIso: 0, creatures: 0, physics: 0 },
+        });
+        out.densityHeadlessFull =
+            !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
+        st._foliageDensityScale = 1;
         return out;
     });
     if (res.error) {
@@ -18662,6 +18713,19 @@ async function checkBandV18275FoliageGrowth(ctx) {
             res.growthPausesRenderBound
         );
         check("V18.276: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
+    }
+    check(
+        "V18.277: der Aktuator fährt _foliageDensityScale; naher + ferner Scatter LESEN ihn (Source, der Bulk-Hebel)",
+        res.actuateDrivesDensity && res.scatterReadsDensity && res.farScatterReadsDensity
+    );
+    check("V18.277: headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)", res.densityHeadlessFull);
+    if (res.densityCutsInstances !== undefined) {
+        check(
+            `V18.277 CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
+            res.densityCutsInstances
+        );
+    } else if (res.densityProbeError) {
+        check("V18.277 CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
     }
 }
 

@@ -12973,6 +12973,25 @@ class AnazhRealm {
             st.foliageRadius =
                 frCur < frTarget ? Math.min(frTarget, frCur + step) : Math.max(frTarget, frCur - step * 2);
         }
+        // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
+        // Schwester des Radius. `_foliageDensityScale` skaliert die Instanz-Zahl pro Zelle
+        // (`dekoDensity` in `_buildVoxelChunkScatter`) → unter Last WENIGER Instanzen = direkt
+        // weniger Dreiecke (anders als die LOD-Schwelle, gemessen 0 %). Verdichtet (steigt) nur in
+        // den Lücken (nicht render-gebunden — dieselbe V18.276-Wand), lichtet (sinkt) sofort.
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st._foliageDensityScale = 1;
+        } else {
+            const fdTarget = lerp(AnazhRealm.PERF_FOLIAGE_DENSITY_MIN, 1, effArch);
+            const fdCur =
+                st._foliageDensityScale != null ? st._foliageDensityScale : AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
+            const fdStep = AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP;
+            st._foliageDensityScale =
+                fdTarget > fdCur
+                    ? st._frameRenderBound
+                        ? fdCur
+                        : Math.min(fdTarget, fdCur + fdStep)
+                    : Math.max(fdTarget, fdCur - fdStep * 2);
+        }
         // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
         // Ladezeit, drosselt mit Mitteln die nichts ändern, der PID pendelt"): der Bau
         // ist RÜCKSTAU-getrieben, NICHT fps-getrieben. Solange ein Bau-Rückstau besteht
@@ -32178,7 +32197,10 @@ class AnazhRealm {
             this.state.atmosphere && Number.isFinite(this.state.atmosphere.dekoDensity)
                 ? this.state.atmosphere.dekoDensity
                 : 1; // globaler Dichte-Faktor — Konsolen-tunbar (U4-Plan-Slider, UI = S-Entscheid)
-        const dekoDensity = (band.dekoDichte || 1) * atmoD;
+        // V18.277 — die kapazitäts-gewachsene Dichte: der perf-geregelte Faktor lichtet die
+        // Instanz-Zahl unter Last (weniger Dreiecke), füllt in den Lücken (undefined-sicher → 1).
+        const densityScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        const dekoDensity = (band.dekoDichte || 1) * atmoD * densityScale;
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
         const oz = cz * span;
@@ -32679,7 +32701,9 @@ class AnazhRealm {
             const ringDist = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
             const band = this._detailBand(ringDist);
             if (band.deko !== "impostor") continue;
-            const dekoDensity = (band.dekoDichte || 0) * atmoD;
+            // V18.277 — die kapazitäts-gewachsene Dichte auch im Fernfeld (undefined-sicher → 1).
+            const fdScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+            const dekoDensity = (band.dekoDichte || 0) * atmoD * fdScale;
             if (dekoDensity <= 0) continue;
             // Derselbe deterministische RNG-STROM wie der nahe Scatter (eine
             // Quelle, V9.82). EHRLICH (Audit V18.136): die POSITIONEN entsprechen
@@ -48068,9 +48092,16 @@ class AnazhRealm {
         // Salt pro Schicht (eigener Hash-Stream — kein Re-Roll der Baum-Schicht).
         let layerSalt = 0;
         for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
+        // V18.277 — die kapazitäts-gewachsene Dichte (Schöpfer „Deko steigt bei Kapazität"):
+        // der perf-geregelte Faktor lichtet BEIDES — die Platzierungs-Wahrscheinlichkeit UND den
+        // Pro-Region-Cap. Ohne die Cap-Skalierung blieben DICHTE Wälder (cap-saturiert) unter Last
+        // unverändert (der Cap maskiert die prob-Drosselung) — genau die Freeze-Hotspots. Mit ihr
+        // thinnen auch sie. Undefined-sicher → 1.
+        const fdScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        const cap = Math.max(1, Math.round(layer.cap * fdScale));
         let emitted = 0;
-        for (let cz = 0; cz < cellsPerRegion && emitted < layer.cap; cz++) {
-            for (let cx = 0; cx < cellsPerRegion && emitted < layer.cap; cx++) {
+        for (let cz = 0; cz < cellsPerRegion && emitted < cap; cz++) {
+            for (let cx = 0; cx < cellsPerRegion && emitted < cap; cx++) {
                 const cellX = baseCellX + cx;
                 const cellZ = baseCellZ + cz;
                 const h = this._pcg2d((cellX ^ seedHash ^ layerSalt) >>> 0, (cellZ * 2654435761) >>> 0);
@@ -48112,7 +48143,9 @@ class AnazhRealm {
                 } else {
                     prob = Math.min(0.95, floor + lebendig * SC.densityScale);
                 }
-                if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob) continue;
+                // V18.277 — die kapazitäts-gewachsene Dichte lichtet auch die Platzierungs-
+                // WAHRSCHEINLICHKEIT (zusätzlich zum Cap oben) → unter Last weniger Instanzen.
+                if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob * fdScale) continue;
                 const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
                 const variantIndex = h % N;
                 const lod = this._chooseLODForDistance(dist);
@@ -73195,7 +73228,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.276.0";
+AnazhRealm.VERSION = "18.277.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76080,6 +76113,16 @@ AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
+// V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
+// Schwester des `foliageRadius`. Wo der Radius die REICHWEITE der Vegetation nach Kapazität
+// fährt, fährt dieser Faktor ihre DICHTE (Instanz-Zahl pro Zelle, `dekoDensity`-Multiplikator
+// in `_buildVoxelChunkScatter`). Anders als ein LOD-Schwellen-Knopf (gemessen 0 % — gebackene
+// Geometrie) senkt WENIGER Instanzen die Dreiecke DIREKT: schwache Hardware (effArch klein) →
+// spärliche Welt, die nie dicht genug zum Freezen wird; in den Lücken wächst die Dichte zurück.
+// Build-zeit (greift beim Streamen/Spawn). Headless → 1 (volle Dichte fürs Gate). MIN 0.4 =
+// 40 % bei voller Last (spärlich, aber nicht kahl — der Schöpfer richtet den Look, Regel #0).
+AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.4;
+AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
 AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
 AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
