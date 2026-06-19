@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 18.06.2026 (V18.264):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
+> **Stand 19.06.2026 (V18.267):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
 > die Konvergenz von FORM·PHYSIK·ANBLICK in EIN Gesetz) + seine Sub-Bögen
 > (`docs/lebendiger-koerper-plan.md` · `docs/koerper-neuanlage-plan.md`). Die NORMATIVEN Referenzen
 > dazu liegen in der Bibliothek: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · der Physik-Richter im
@@ -31,19 +31,24 @@ V18.260-Folge-Hebel): das statische Gesicht der Skin-Kreaturen (Augen/Funken/Ohr
 6→3 + eine Distanz-LOD blendet es jenseits ~42 m·L aus → `wesen` 7→4 nah / 7→1 fern (gemessen
 `scripts/diag-creature-render.cjs`; s. handover V18.262). **V18.264 maß die GANZE Render-Last** (der
 Session-blinde Fleck: 4.61M Dreiecke + ein 2.32M-Schatten-Pass) → der Schatten-CACHE (Stand) + **V18.265
-die SCHATTEN-DISTANZ** (ferne LOD1/LOD2-Bäume werfen keinen Schatten → −44 % Schatten-Pass, hilft beim
-LAUFEN). **OFFENE FÄDEN aus dem Render-Bogen (V18.264/.265):**
-- **`instanceColor not found`-Fehler + Tint-Konvention** (NICHT der Freeze — ein COMPILE-Warning, einmal
-  pro Pipeline): Three.js multipliziert `instanceColor` schon automatisch (`setupDiffuseColor`), das
-  manuelle `albedo.mul(attribute("instanceColor"))` (Gras·Understory) ist redundant + die Fehlerquelle.
-  ABER die Werte sind als SHIFT um 0.5 kodiert → ein blinder Schnitt verdunkelt ALLE Vegetation. Saubere
-  Heilung = eine koordinierte Tint-Konventions-Welle (0.5-Shift → 1.0-Multiplikator) + das manuelle
-  Attribut streichen, LOOK-verifiziert im WebGPU-Browser (headless ist WebGL-Fallback, pixel-blind dafür).
-- **Der 2.03M-Dreieck-Haupt-Pass rendert view-unabhängig** (`frustumCulled=false` auf den globalen
-  HISM-Gruppen): per-REGION-Culling lohnt NICHT (256-m-Regionen im 768-m-Ring → jede Bounding-Sphere
-  reicht zum Spieler), per-CHUNK explodiert die Draw-Calls (V18.260-Feind). Der echte Hebel ist
-  GPU-Culling/Indirect-Draw ODER Foliage-Dichte (look-bound) — eine eigene fokussierte Welle. FPS-Beweis
-  bleibt der Schöpfer-WebGPU-Browser (Regel #0).
+die SCHATTEN-DISTANZ** (ferne LOD1/LOD2-Bäume werfen keinen Schatten → −44 % Schatten-Pass) → **V18.266
+der KIESEL-HEBEL** (noiserock-Detail skaliert mit Grösse: kiesel 589k→147k, der grösste view-unabhängige
+Posten war über-tesselliertes Klein-Deko) → **V18.267 KONSOLEN-AUFRÄUMUNG + Baum-Entlastung** (RenderPipeline
+statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter-Caps tree 900→300/under
+800→250/litter 250→150). **OFFENE FÄDEN aus dem Render-Bogen:**
+- **~~`instanceColor not found`~~ GEHEILT (V18.267):** das manuelle `albedo.mul(attribute("instanceColor"))`
+  in `_grassInstanceMat` + `_scatterMaterial` entfernt — der Tint kommt über Three.js' nativen
+  InstanceNode-Pfad (`setupDiffuseColor` multipliziert instanceColor automatisch), DERSELBE wie das Laub.
+- **~~PostProcessing/ShaderMaterial-Warnung~~ GEHEILT (V18.267):** der Bootstrap kopiert jetzt
+  `RenderPipeline` (NodeMaterial-basiert) statt des deprecated `PostProcessing` (ShaderMaterial-basiert).
+  Offen bleibt nur ein 2× vendor-interner `ShaderMaterial`-Hinweis (nicht aus unserem Code, harmlos).
+- **Der view-unabhängige Haupt-Pass** (`frustumCulled=false` auf den globalen HISM-Gruppen): per-REGION-
+  Culling lohnt NICHT (256-m-Regionen im 768-m-Ring → jede Bounding-Sphere reicht zum Spieler), per-CHUNK
+  explodiert die Draw-Calls (V18.260-Feind). Der echte Hebel ist GPU-Culling/Indirect-Draw ODER
+  Foliage-Dichte (V18.267 Caps provisorisch gesenkt) — eine eigene fokussierte Welle. **DANN: der
+  DETERMINISMUS-BOGEN** (voxel-native Kollision ersetzt Ammos enge Rolle → killt den BVH-Lauf-Freeze +
+  öffnet Lockstep/Replay; Schöpfer-Entscheid „Render-Quick-Win, dann der Bogen"). FPS-Beweis bleibt der
+  Schöpfer-WebGPU-Browser (Regel #0).
 
 - **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
   Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
