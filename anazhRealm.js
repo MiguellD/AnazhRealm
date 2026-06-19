@@ -29139,13 +29139,16 @@ class AnazhRealm {
         // KEIN re-dirty — der Streaming-Tick versucht via has(key)===false
         // erneut, inzwischen gibt `_pruneDistantVoxelChunks` Heap frei). Erfolg
         // → geteilter `_finalizeVoxelChunkBuild`.
-        // V17.118 (E3) — der SPIELER-Chunk baut SYNC (sofortige Kollision, kein
-        // Pop-in/Durchfallen unter dem Spieler — „kein Sync-Build außer Spieler-
-        // Chunk", die EINE Intent-Ausnahme); ALLE anderen async via Worker (der
-        // ~71-ms-Mesh-Bau off-thread). Derselbe `_voxelChunkIsPlayerChunk`-Helfer
-        // wie der Edit-Rebuild-Pfad (EINE Quelle).
-        const forceSyncPlayer = this._voxelChunkIsPlayerChunk(cx, cz);
-        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: forceSyncPlayer });
+        // V18.271 (Welle Async-1) — der SPIELER-Chunk baut jetzt AUCH async (Worker,
+        // ~71-ms-Mesh-Bau off-thread). V17.118 zwang ihn SYNC, damit der Spieler nicht
+        // durch den ungebauten Boden fällt (~130-239-ms-Main-Thread-Block pro Chunk-
+        // Crossing = der Lauf-Freeze). Der nicht-blockierende `_softFloorWhileChunkLoading`
+        // hält ihn stattdessen an der deterministischen Terrain-Höhe, bis die Kollision
+        // async lädt → kein Sync-Freeze, kein Durchfallen. Der EDIT-Rebuild
+        // (`_rebuildVoxelChunk`) baut den Spieler-Chunk WEITER sync (Instant-Carve-
+        // Feedback = ein kleiner, schneller Build, die legitime Sync-Naht). Ohne Worker
+        // (Browser-Fallback) fällt `_acquireVoxelChunkBuild` ohnehin auf Stage-3-Sync.
+        const fresh = this._acquireVoxelChunkBuild(cx, cz, lod, { forceSync: false });
         if (fresh === "pending") return null;
         if (fresh === null) {
             if (!this.state.voxelRebuildAttempts) this.state.voxelRebuildAttempts = new Map();
@@ -33037,6 +33040,30 @@ class AnazhRealm {
         // treffen kann (r ≤ 1 = sofort BVH, r ≥ 2 = lazy).
         this._setLastPlayerVoxelChunk(pcx, Math.floor(playerPos.z / span));
         const pcz = Math.floor(playerPos.z / span);
+        // V18.271 (Welle Async-1, Stufe 3) — VELOCITY-PREFETCH: die 1-2 Chunks in
+        // Laufrichtung ZUERST in die Worker-Queue (vor dem Ring, der innerhalb r in
+        // fester dz/dx-Reihenfolge läuft → der Laufrichtungs-Chunk käme sonst ~5.). So
+        // baut der Worker den kommenden Boden, BEVOR der Spieler ankommt → der weiche
+        // Boden greift seltener, die Bewegung bleibt flüssig. Async-Anfrage (billig); der
+        // Ring re-fragt sie als no-op (pending/has). Nur bei echter Bewegung (>1 m/s).
+        if (this.state.playerBody && typeof this.state.playerBody.getLinearVelocity === "function") {
+            const v = this.state.playerBody.getLinearVelocity();
+            const vx = v.x(),
+                vz = v.z();
+            const speedSq = vx * vx + vz * vz;
+            if (speedSq > 1) {
+                const inv = 1 / Math.sqrt(speedSq);
+                const dirX = vx * inv,
+                    dirZ = vz * inv;
+                for (let ahead = 1; ahead <= 2; ahead++) {
+                    const acx = pcx + Math.round(dirX * ahead);
+                    const acz = pcz + Math.round(dirZ * ahead);
+                    if (!this.state.voxelChunks.has(`${acx},${acz}`)) {
+                        this._ensureVoxelChunkAt(acx, acz, this._voxelChunkLodFor(acx, acz, pcx, pcz, null));
+                    }
+                }
+            }
+        }
         let built = 0;
         // V18.263 — der PID-Regelkreis fährt diese zwei Stellgrößen (statt fix 4/6):
         // unter gemessener Last sinkt das Streaming-Budget → weniger Chunk-Builds pro
@@ -71510,6 +71537,10 @@ class AnazhRealm {
             // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
             // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
             this._rescuePlayerFromVoid();
+            // V18.271 (Welle Async-1) — der weiche Boden: hält den Spieler an der
+            // deterministischen Terrain-Höhe, während sein Chunk async lädt (löst den
+            // blockierenden Spieler-Chunk-forceSync ab). Greift VOR der Void-Tiefe.
+            this._softFloorWhileChunkLoading();
 
             // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
             // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
@@ -71847,6 +71878,55 @@ class AnazhRealm {
             body.activate(true);
         }
         this.log(`Spieler fiel durch die Welt — zurück an die Oberfläche (y=${safeY.toFixed(1)})`, "WARNING");
+    }
+
+    // V18.271 (Welle Async-1) — DER WEICHE BODEN: der nicht-blockierende Fall-Schutz,
+    // der den Spieler-Chunk-forceSync (~130-239 ms Main-Thread-Block pro Chunk-Crossing)
+    // ablöst. Lädt der Chunk unter dem Spieler noch ASYNC (kein Mesh / keine BVH), fiele
+    // der Spieler heute durch → darum baute der forceSync ihn SYNC. Stattdessen hält die
+    // DETERMINISTISCHE Terrain-Höhe (`getTerrainHeightAt` — dieselbe Worldgen-Wahrheit,
+    // kennt den Boden BEVOR der Mesh baut) den Spieler an seinem Boden, bis die echte
+    // Kollision async lädt. Nicht-blockierend, kein Loch, exakt. Greift NUR bei nicht-
+    // bereiter Kollision + Fall unter den Boden — sonst no-op (echte BVH trägt).
+    _softFloorWhileChunkLoading() {
+        const st = this.state;
+        const pm = st.playerMesh,
+            body = st.playerBody;
+        if (!pm || !body || !st.lastPlayerVoxelChunk || !st.voxelChunks) return;
+        const { cx, cz } = st.lastPlayerVoxelChunk;
+        const entry = st.voxelChunks.get(`${cx},${cz}`);
+        // Kollision bereit (Mesh + BVH) → die echte BVH trägt, kein weicher Boden.
+        if (entry && entry.mesh && entry.hasBVH && !entry.empty) return;
+        // echt leer (kein Boden) → frei fallen lassen (die Void-Rettung fängt).
+        if (entry && entry.empty) return;
+        // Die Kollision lädt noch (async pending ODER Mesh-ohne-BVH): die deterministische
+        // Boden-Höhe trägt den Spieler. NUR wenn er unter den ladenden Boden sinkt.
+        const surf = this.getTerrainHeightAt(pm.position.x, pm.position.z);
+        if (!Number.isFinite(surf)) return;
+        const restY = surf + AnazhRealm.SOFT_FLOOR_REST_OFFSET;
+        if (pm.position.y >= restY) return; // über dem Boden (Sprung / hoher Fall) → bis restY frei
+        // unter den ladenden Boden gesunken → an die deterministische Höhe heben + Fall stoppen.
+        pm.position.y = restY;
+        const v = body.getLinearVelocity();
+        if (v.y() < 0) body.setLinearVelocity(this.setVec(st.tmpVec1, v.x(), 0, v.z()));
+        if (st.tmpTransform) {
+            const t = st.tmpTransform;
+            t.setIdentity();
+            t.setOrigin(
+                this.setVec(
+                    st.tmpVec2,
+                    pm.position.x / st.scaleFactor,
+                    restY / st.scaleFactor,
+                    pm.position.z / st.scaleFactor
+                )
+            );
+            body.setWorldTransform(t);
+        }
+        // Auf dem weichen Boden steht der Spieler → geerdet fühlen (Bewegung/Sprung normal),
+        // bis die echte BVH übernimmt. `isPlayerGrounded` liest den Cache die nächsten ~2 Frames.
+        st._groundedCache = true;
+        st._groundedCachedAt = performance.now();
+        st._softFloorActive = true;
     }
 
     _loopPhysicsSync(delta, currentTime) {
@@ -73028,7 +73108,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.270.0";
+AnazhRealm.VERSION = "18.271.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76522,6 +76602,11 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
 AnazhRealm.PLAYER_VOID_Y = -120;
+// V18.271 (Welle Async-1) — DER WEICHE BODEN: die Rest-Höhe des Spieler-Center über
+// der deterministischen Terrain-Oberfläche, wenn die echte Kollision noch async lädt.
+// Spieler = btBoxShape(0.5) → Center 0.5 über den Füssen; +0.05 Marge = kein Clip in
+// den ladenden Boden. Löst den Spieler-Chunk-forceSync ab (nicht-blockierender Fall-Schutz).
+AnazhRealm.SOFT_FLOOR_REST_OFFSET = 0.55;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,

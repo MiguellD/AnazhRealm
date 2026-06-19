@@ -378,6 +378,23 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.271 — DIE ASYNC-WELLE: der Spieler-Chunk async + der weiche Boden + Velocity-Prefetch (der Lauf-Freeze an der Wurzel)
+
+Schöpfer (nach der Analyse-Session, „ziehe 1-3 durch, 4 für die nächste Session, los gehts champ"): die drei Profi-Schichten, die den Spieler-Chunk-`forceSync` (die letzte Sync-Naht im async-Stamm, ~130-239 ms Main-Thread-Block pro Chunk-Crossing = der Lauf-Freeze) an der Wurzel heilen — die Bewegung von der Generierung entkoppeln.
+
+**DER BEFUND (aus der vorigen Analyse, selbst gemessen):** der async-Stamm war intakt (96 % der Cold-Start-Chunks async via Worker), AUSSER dem Spieler-`forceSync`: eine bewusste V17.118-Abwägung (Instant-Kollision, kein Durchfallen), die als Symptom-Fix die Bewegung an die Generierung koppelte. Die Profi-Lösung (CLAUDE.md kannte sie als offenen Plan): nie den Main-Thread für einen Chunk-Build blocken.
+
+**GEBAUT — die drei Schichten:**
+- **(3, das Sicherheitsnetz zuerst) DER WEICHE BODEN** (`_softFloorWhileChunkLoading`, im Loop nach `_rescuePlayerFromVoid`): lädt der Chunk unter dem Spieler noch async (Mesh-ohne-BVH ODER pending), hält die DETERMINISTISCHE Terrain-Höhe (`getTerrainHeightAt` → `_voxelSurfaceY` — dieselbe Worldgen-Wahrheit, kennt den Boden BEVOR der Mesh baut) den Spieler an seinem Boden (`restY = surf + 0.55`, der btBoxShape(0.5)-Halbhöhe + Marge), zerot den Abwärts-Fall, erdet ihn (`_groundedCache` → Bewegung/Sprung normal). Nicht-blockierend, kein Loch, exakt. Greift NUR bei nicht-bereiter Kollision + Sinken unter den Boden — sonst no-op (die echte BVH trägt).
+- **(2) DER SPIELER-CHUNK BAUT ASYNC** (`_ensureVoxelChunkAt` `forceSync: false` statt `forceSyncPlayer`): der Worker baut den Mesh off-thread, der weiche Boden fängt den Fall während der Latenz. Die implizite Priorität existierte schon (der Ring iteriert center-out → r=0 zuerst). Der EDIT-Rebuild (`_rebuildVoxelChunk`) baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback = ein kleiner schneller Build, die legitime Naht — NICHT angetastet).
+- **(1) VELOCITY-PREFETCH** (`_tickVoxelChunkStreaming`, vor dem Ring): bei Bewegung (>1 m/s) die 1-2 Chunks in Laufrichtung ZUERST in die Worker-Queue (der Ring läuft innerhalb r in fester dz/dx-Reihenfolge → der Laufrichtungs-Chunk käme sonst ~5.) → der Boden ist fertig, bevor der Spieler ankommt → der weiche Boden greift selten.
+
+**GEMESSEN (Probe `_probe-async`, selbst gebaut + gelöscht):** Cold-Start **3 → 0 Sync-Builds** (100 % async, 79 Worker) · 8-Chunk-Stress-Teleport-Lauf **5 → 1 Sync** (650 → 158 ms), **`fellThrough: false`, minY 11** (kein Durchfallen), weicher Boden fing 89 Frames. Headless kann die Velocity-Bewegung nicht messen (winzige Pump-Deltas → Physik steppt kaum) — der Prefetch-Nutzen ist real-Browser (flüssigere schnelle Bewegung).
+
+**6 Wände** (`checkBandV18271AsyncSoftFloor`): der weiche Boden existiert · Spieler-Chunk async (kein forceSyncPlayer) · Velocity-Prefetch · EDIT bleibt sync · CONSUM behavioral (der weiche Boden hebt den gesunkenen Spieler + erdet ihn) · bei bereiter Kollision no-op. Voller Gate grün.
+
+**(4) für die nächste Session (Schöpfer-Entscheid):** der DETERMINISMUS-BOGEN — die voxel-native deterministische Kollision ersetzt Ammos schmale Rolle → killt den sync BVH-Build pro Spieler-Chunk komplett (die echte Restlast) + öffnet Lockstep-Multiplayer/Replay/Rollback.
+
 ### V18.270 — DER LADE-RHYTHMUS: der Regler hört auf, den Cold-Start zu hemmen (Mitkopplung geheilt)
 
 Schöpfer (ein scharfer Befund, der meine Render-Last-These in Frage stellte): „ich habe das Gefühl, der Nexus hemmt aktuell die Ladezeit, er versucht die ganze Zeit die Physik-Reibung/CCD anzupassen, bevor das System überhaupt den Cold-Start durch hat. Bist du sicher, dass der Fehler nicht an unklugen logischen Schleifen liegt — der Lade-Rhythmus der Teilsysteme, die Regelung? Das System scheint nicht synergetisch. Ich glaube nicht, dass das Problem an der Umgebung selbst liegt, mehr wie das System regelt — ein PID-Regler der ausschlägt und pendelt, mit Mitteln die gar nichts ändern zusätzliche Last erzwingt. Das scheint mir alles nicht durchdacht, oder nicht mehr durchdacht wie es einmal war?"

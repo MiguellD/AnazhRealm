@@ -18470,6 +18470,92 @@ async function checkBandWelle6GHylomorphism(ctx) {
     }
 }
 
+// V18.271 (Welle Async-1) — der Spieler-Chunk baut ASYNC (kein forceSync-Freeze beim
+// Chunk-Crossing mehr); der nicht-blockierende WEICHE BODEN hält den Spieler an der
+// deterministischen Terrain-Höhe, bis die Kollision async lädt; Velocity-Prefetch baut
+// die Laufrichtung vor. Profi-Muster: nie den Main-Thread für einen Chunk-Build blocken.
+async function checkBandV18271AsyncSoftFloor(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || !r.state) return { error: "no realm" };
+        const out = {};
+        out.hasSoftFloor = typeof r._softFloorWhileChunkLoading === "function";
+        // Der Spieler-Chunk baut ASYNC im Streaming (kein forceSyncPlayer-Block mehr):
+        const ensureSrc = r._ensureVoxelChunkAt.toString();
+        out.streamingAsync = /forceSync:\s*false/.test(ensureSrc) && !/forceSyncPlayer/.test(ensureSrc);
+        // Velocity-Prefetch in _tickVoxelChunkStreaming (Laufrichtung zuerst):
+        const tickSrc = r._tickVoxelChunkStreaming.toString();
+        out.hasPrefetch = /getLinearVelocity/.test(tickSrc) && /ahead/.test(tickSrc);
+        // Der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback = legitime Naht):
+        out.editStillSync = /_voxelChunkIsPlayerChunk/.test(r._rebuildVoxelChunk.toString());
+        // CONSUM behavioral: der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler.
+        const st = r.state;
+        const pm = st.playerMesh,
+            body = st.playerBody;
+        if (!pm || !body || !st.lastPlayerVoxelChunk || !st.tmpTransform) {
+            out.behavioralSkipped = true;
+            return out;
+        }
+        const { cx, cz } = st.lastPlayerVoxelChunk;
+        const key = `${cx},${cz}`;
+        const savedEntry = st.voxelChunks.get(key);
+        const savedY = pm.position.y;
+        const tr0 = body.getWorldTransform().getOrigin();
+        const sx = tr0.x(),
+            sy = tr0.y(),
+            sz2 = tr0.z();
+        const surf = r.getTerrainHeightAt(pm.position.x, pm.position.z);
+        // (a) Kollision LÄDT (Mesh ohne BVH) + Spieler unter den Boden gesunken → weicher Boden hebt.
+        st.voxelChunks.set(key, { mesh: {}, hasBVH: false, empty: false });
+        pm.position.y = surf - 5;
+        st._softFloorActive = false;
+        r._softFloorWhileChunkLoading();
+        out.softFloorEngaged = st._softFloorActive === true;
+        out.softFloorLifted = pm.position.y > surf; // an die deterministische Höhe gehoben (kein Durchfallen)
+        out.softFloorGrounded = st._groundedCache === true; // erdet (Bewegung/Sprung normal)
+        // (b) Kollision BEREIT (BVH) → der weiche Boden greift NICHT (die echte BVH trägt).
+        st.voxelChunks.set(key, { mesh: {}, hasBVH: true, empty: false });
+        pm.position.y = surf - 5;
+        st._softFloorActive = false;
+        r._softFloorWhileChunkLoading();
+        out.softFloorSkipsWhenReady = st._softFloorActive === false && Math.abs(pm.position.y - (surf - 5)) < 0.01;
+        // restore
+        if (savedEntry !== undefined) st.voxelChunks.set(key, savedEntry);
+        else st.voxelChunks.delete(key);
+        pm.position.y = savedY;
+        const t = st.tmpTransform;
+        t.setIdentity();
+        t.setOrigin(r.setVec(st.tmpVec1, sx, sy, sz2));
+        body.setWorldTransform(t);
+        return out;
+    });
+    if (res.error) {
+        check("V18.271: Async-Soft-Floor-Band (realm)", false, res.error);
+        return;
+    }
+    check("V18.271: der weiche Boden `_softFloorWhileChunkLoading` existiert", res.hasSoftFloor);
+    check(
+        "V18.271: der Spieler-Chunk baut ASYNC im Streaming (kein forceSyncPlayer-Freeze beim Chunk-Crossing)",
+        res.streamingAsync
+    );
+    check("V18.271: Velocity-Prefetch fragt die Laufrichtungs-Chunks zuerst an (vor dem Ring)", res.hasPrefetch);
+    check(
+        "V18.271: der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback bleibt — die legitime Naht)",
+        res.editStillSync
+    );
+    if (!res.behavioralSkipped) {
+        check(
+            "V18.271: CONSUM — der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler an die det. Höhe + erdet ihn (kein Durchfallen)",
+            res.softFloorEngaged && res.softFloorLifted && res.softFloorGrounded
+        );
+        check(
+            "V18.271: bei BEREITER Kollision greift der weiche Boden NICHT (die echte BVH trägt, kein Doppel-Pin)",
+            res.softFloorSkipsWhenReady
+        );
+    }
+}
+
 // V9.52-c Sub-Welle c — Band-Funktion (Voxel-Terrain-Bogen P1+P2b + V9.x-Lösch-Beweise (V9.27-V9.35, V9.38-V9.39, V9.31)).
 // Mehrere ### -Sektionen als flache Liste; reines verhaltensneutrales Refactoring.
 async function checkBandVoxelTerrainCore(ctx) {
@@ -18845,8 +18931,16 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Spawn-Tests rot wurden — der explizite Drain heilt das
             // an der Test-Seite (im Spiel-Pfad läuft alles asynchron).
             const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            // V18.271 — der Spieler-Chunk baut jetzt ASYNC (Worker); der Worker-Callback
+            // feuert im SYNCHRONEN Test-Pump-Loop NICHT (kein event-loop-yield) → die Chunks
+            // blieben pending. Die Test-Naht baut den Ring EXPLIZIT SYNCHRON (Stage-3-
+            // Fallback), wie der Kommentar oben es schon fordert: Worker temporär „nicht
+            // synced" → `_acquireVoxelChunkBuild` überspringt den async-Worker → Sync-Build.
+            const _wgSynced = r.state.voxelWorkerWorldgenSynced;
+            r.state.voxelWorkerWorldgenSynced = false;
             if (typeof r._drainDirtyVoxelChunks === "function") r._drainDirtyVoxelChunks();
             for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
+            r.state.voxelWorkerWorldgenSynced = _wgSynced;
             // Welle A — das Gras ist seit Welle A deferred (enqueue im Finalize,
             // Build ≤1/Frame im Loop). Das Streaming oben enqueued es nur; die
             // Test-Naht drainet es sofort, sonst sieht der Grass-Check unten
@@ -18984,7 +19078,14 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Streaming: alles abräumen, ein Tick baut wieder auf.
             for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
             const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            // V18.271 — der Spieler-Chunk baut jetzt ASYNC (Worker); EIN Tick im synchronen
+            // Test (kein event-loop-yield) erzeugt nur pending-Requests, KEINE Chunk-Einträge
+            // → die Test-Naht baut SYNCHRON (Stage-3, Worker temporär „nicht synced"), wie
+            // schon der 50er-Pump oben. Im echten Spiel läuft der Tick async (eigene Wand).
+            const _wgSyncedTick = r.state.voxelWorkerWorldgenSynced;
+            r.state.voxelWorkerWorldgenSynced = false;
             r._tickVoxelChunkStreaming(pos);
+            r.state.voxelWorkerWorldgenSynced = _wgSyncedTick;
             out.tickBuilds = r.state.voxelChunks.size >= 1;
             // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
             r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
@@ -23036,8 +23137,12 @@ async function checkBandV17118WorkerEngaged(ctx) {
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
             bootstrapSrc: /_getVoxelWorker\(\)/.test(r._voxelWorkerSyncWorldgenState.toString()),
-            // Source: der Spieler-Chunk baut sync (die EINE Intent-Ausnahme).
-            playerSyncSrc: /_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()),
+            // Source: V18.271 — der Spieler-Chunk baut jetzt AUCH ASYNC (die V17.118-Sync-
+            // Ausnahme ist durch den nicht-blockierenden weichen Boden abgelöst). Kein
+            // `_voxelChunkIsPlayerChunk`-Sync-Trip mehr im Streaming + der weiche Boden lebt.
+            playerAsyncSrc:
+                !/_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()) &&
+                typeof r._softFloorWhileChunkLoading === "function",
         };
     });
     if (res.error) {
@@ -23054,8 +23159,8 @@ async function checkBandV17118WorkerEngaged(ctx) {
         res.bootstrapSrc === true
     );
     check(
-        "V17.118 E3: _ensureVoxelChunkAt baut den Spieler-Chunk sync (Source, die Intent-Ausnahme)",
-        res.playerSyncSrc === true
+        "V18.271: _ensureVoxelChunkAt baut den Spieler-Chunk ASYNC (die V17.118-Sync-Ausnahme abgelöst durch den nicht-blockierenden weichen Boden)",
+        res.playerAsyncSrc === true
     );
 }
 
@@ -56177,6 +56282,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWelle6DSoul, ctx);
             await timed(checkBandWelle6GHylomorphism, ctx);
             await timed(checkBandVoxelTerrainCore, ctx);
+            await timed(checkBandV18271AsyncSoftFloor, ctx);
             await timed(checkBandHydrosphere, ctx);
             await timed(checkBandVoxelP3AndInventory, ctx);
             await timed(checkBandWelle6Keybindings, ctx);
