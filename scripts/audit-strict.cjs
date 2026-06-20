@@ -622,7 +622,7 @@ async function auditStateAndMethods() {
                 // V18.275 — Kapazitäts-gewachsene Welt (beide undefined-sicher):
                 "foliageRadius", // `state.X != null ? state.X : MAX`
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
-                "_frameRenderBound", // V18.276 — Flag, undefined ist falsy
+                "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`

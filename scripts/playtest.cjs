@@ -18695,20 +18695,24 @@ async function checkBandV18275FoliageGrowth(ctx) {
         st.foliageRadius = 9999;
         out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
         // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key.
+        // V18.282 — die Drain-MECHANIK isoliert prüfen: der Frame-über-Budget-Zustand (der das
+        // Wachstum LEGITIM pausiert, getestet in (4)) muss hier AUS sein (die warme Gate-Welt hat
+        // hohe Warmup-frameMs → _frameOverBudget=true; vorher war der Draw-Call-Flag headless nie an).
+        st._frameOverBudget = false;
         const tk = `${pcx + 1},${pcz + 1}`;
         if (st.voxelChunks) st.voxelChunks.delete(tk); // nicht existent → nur entfernen, kein Re-Populate
         st.pendingFoliageChunks = new Set([tk]);
         r._tickFoliageGrowth();
         out.growthDrains = !st.pendingFoliageChunks.has(tk);
-        // (4) V18.276 — RESPONSIVITÄT: render-bound → das Wachstum PAUSIERT; Frame frei → es läuft.
+        // (4) V18.282 — RESPONSIVITÄT: Frame ÜBER BUDGET → das Wachstum PAUSIERT; Frame frei → es läuft.
         const tk2 = `${pcx + 2},${pcz + 2}`;
         if (st.voxelChunks) st.voxelChunks.delete(tk2);
         st.foliageRadius = 9999;
         st.pendingFoliageChunks = new Set([tk2]);
-        st._frameRenderBound = true;
+        st._frameOverBudget = true;
         r._tickFoliageGrowth();
-        out.growthPausesRenderBound = st.pendingFoliageChunks.has(tk2); // NICHT gedrainiert
-        st._frameRenderBound = false;
+        out.growthPausesOverBudget = st.pendingFoliageChunks.has(tk2); // NICHT gedrainiert
+        st._frameOverBudget = false;
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
 
@@ -18779,7 +18783,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
                 const prx = Math.floor(ppT.x / SCt.regionM),
                     prz = Math.floor(ppT.z / SCt.regionM);
                 st._foliageDensityScale = 1;
-                st._frameRenderBound = false;
+                st._frameOverBudget = false;
                 let tfk = null,
                     tFull = 0;
                 for (let dz = -1; dz <= 1 && tFull <= 5; dz++) {
@@ -18812,7 +18816,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
             out.thinProbeError = String((_eThin && _eThin.message) || _eThin);
         }
         st._foliageDensityScale = 1;
-        st._frameRenderBound = false;
+        st._frameOverBudget = false;
         return out;
     });
     if (res.error) {
@@ -18833,10 +18837,10 @@ async function checkBandV18275FoliageGrowth(ctx) {
             res.growthDrains
         );
         check(
-            "V18.276 CONSUM: render-bound → das Vegetations-Wachstum PAUSIERT (Input vor Laden)",
-            res.growthPausesRenderBound
+            "V18.282 CONSUM: Frame über Budget → das Vegetations-Wachstum PAUSIERT (Optik wartet, Bewegung nie)",
+            res.growthPausesOverBudget
         );
-        check("V18.276: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
+        check("V18.282: Frame frei → das Wachstum läuft weiter (lädt in den Lücken)", res.growthResumesWhenFree);
     }
     check(
         "V18.277: der Aktuator fährt _foliageDensityScale; naher + ferner Scatter LESEN ihn (Source, der Bulk-Hebel)",
@@ -22543,8 +22547,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // nach als das Streaming — der Regler drosselt das RICHTIGE (NICHT blind das
         // Streaming wie der alte Bang-Bang), die Welt LÄDT WEITER, während die Render-
         // Qualität schrumpft (V18.269 — Durchsatz geschützt, solange noch Luft ist).
-        // 600 Calls × PERF_RENDER_CALL_MS(0.011) ≈ 6.6 ms < PERF_RESPONSIVE_RENDER_MS(9)
-        // → NICHT render-gebunden → Streaming bleibt geschützt.
+        // Render-Last hebt die Architektur-Domäne (Schatten/Cull) → sie gibt zuerst nach,
+        // das Streaming bleibt geschützt (die render-VERURSACHENDEN Hebel drosseln, nicht das Laden).
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 600,
@@ -22558,12 +22562,15 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         const shadowLoaded = st._shadowMinInterval;
         // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
-        // (b) RENDER-GEBUNDEN (Draw-Calls ÜBER dem Schwellwert): jetzt gibt das Streaming
-        // AUCH nach (auf ~0.12) — V18.276 RESPONSIVITÄT VOR DURCHSATZ: siehst du dich um
-        // (die Render-Submission frisst den Frame), PAUSIERT das Laden, der Main-Thread
-        // bedient Input/Umsehen. 1100 Calls ≈ 12.1 ms > 9 → render-gebunden → streamEff 0.12.
-        // Die zwei Regime sind HARMONISCH: moderat → laden+Render-Qualität shaven (Durchsatz);
-        // render-gebunden → laden pausieren (Responsivität). Schwelle = PERF_RESPONSIVE_RENDER_MS.
+        // (b) V18.282 — STREAMING IST HEILIG: HOHE Render-Last (viele Draw-Calls) drosselt das
+        // Streaming NICHT mehr. Der alte V18.276-Render-Throttle (streamEff 0.12 bei renderCalls
+        // > 820) verhungerte die Bewegung an der Wurzel: sein Trigger war die Draw-Call-ZAHL =
+        // die Welt-GRÖSSE (konstant >820 in jeder geladenen Welt), nicht ein transienter Druck →
+        // dauerhaft an → Lauf-Freeze. Jetzt: bei Bau-Rückstau bleibt das Streaming auf MAX (die
+        // Bewegung lebt vom Terrain-Laden), egal wie hoch die Render-Last — Render-Druck drosselt
+        // nur die Optik (Schatten/Cull/Laub), nie die Bewegung.
+        const pendBSnap = st.voxelMeshPending;
+        st.voxelMeshPending = new Set(["0,0,0", "1,0,0"]); // Bau-Rückstau: die Welt lädt
         r._nexusPerfActuate({
             loadScale: 0.5,
             renderCalls: 1100,
@@ -22571,7 +22578,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         });
         const streamPosBound =
             (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
-        out.renderBoundYieldsStream = streamPosBound < 0.2 && streamPosBound < streamPosR - 0.3;
+        st.voxelMeshPending = pendBSnap;
+        out.renderLoadProtectsStreaming = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
         out.renderStreamPosBound = +streamPosBound.toFixed(2);
         // (c) dieselbe loadScale OHNE Render-Last: das Schatten-Intervall ist KÜRZER (= der
         // Render-Load hat es verlängert → der Schatten-Pass läuft seltener unter GPU-Last).
@@ -22711,8 +22719,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         res.renderLoadThrottlesArch
     );
     check(
-        `V18.276 CONSUM: RENDER-GEBUNDEN gibt das Streaming AUCH nach (streamPos ${res.renderStreamPosBound} ≪ moderat ${res.renderStreamPos}) — Umsehen pausiert das Laden (Responsivität vor Durchsatz)`,
-        res.renderBoundYieldsStream
+        `V18.282: STREAMING IST HEILIG — hohe Render-Last (1100 Calls) drosselt das Streaming bei Rückstau NICHT (streamPos ${res.renderStreamPosBound} = MAX) — die Bewegung verhungert NIE am Render-Druck (Heilung des V18.276-Lauf-Freeze)`,
+        res.renderLoadProtectsStreaming
     );
     check(
         "V18.269: die Render-Last verlängert das Schatten-Intervall (der 613k-Schatten-Pass läuft seltener unter GPU-Last)",
