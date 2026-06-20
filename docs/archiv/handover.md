@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.290 — DIE WAHRE WURZEL: der Schöpfer-Trace kippt die Render-These → ein Wasser-Iso-Rebuild PRO FRAME
+
+Der Schöpfer-DevTools-Trace (1.9 min) war der Wendepunkt: **Scripting 82.560 ms (74 %) · Rendering 130 ms (0,1 %)**. Der ganze Render-Bogen (V18.260–.289: Draw-Calls, BatchedMesh, Frustum) zielte aufs FALSCHE Ziel — der Hänge ist **JavaScript pro Frame**, nicht der Render. (Meine eigene Headless-Messung zeigte den 12-ms-Tick längst, ich hatte sie zugunsten der Render-These fehlgewichtet; der Browser des Schöpfers korrigierte das.)
+
+GEMESSEN (diag-frame-profile, Sub-Tick-Aufschlüsselung + Queue-Drainage, IM STAND/settled): Tick **12.1 ms**, davon `_tickPendingWaterIso` **6 ms** — obwohl `pendingWaterIso` 0→0 (leer an den Frame-Grenzen). Auflösung: `waterCAActive: 1` (eine Wasser-CA-Region dauerhaft aktiv) füllt + leert die Iso-Queue INNERHALB jedes Ticks. WURZEL im Code (`_caRoofChanged`, V18.121): der Re-Mesh ist gegated auf `maxAbs > 0.25 ODER sumAbs > 1.0` — und **`sumAbs` summierte den Quell-Pin-Jitter** (der Code nennt ihn selbst „~0.05-0.1 = unsichtbar") über ALLE nassen Spalten → bei einem breiten Wasserkörper > 1.0 JEDEN Tick → ein voller 6-ms-Wasser-Sheet-Rebuild pro Frame für ein UNVERÄNDERTES Bild, ewig, auch im Stand.
+
+FIX: nur SIGNIFIKANTE per-Spalten-Deltas (> 0.12) in `sumAbs` — der unsichtbare Jitter fällt raus, echte breite Drift (Carve-Flut, Spalten ≥ Floor) triggert weiter, der maxAbs-Pfad (0.25) fängt jede sichtbare Einzel-Änderung. **GEMESSEN: Tick 12.1 → 4.9 ms median (−60 %, 2,5× schneller), iso 6 → 3 ms.** Look-sicher (überspringt nur unsichtbare Re-Meshes). Headless-beweisbar (JS, kein GPU). Rest-3 ms (sichtbar fließendes Wasser) = optionaler Rate-Limit-Hebel, look-verändernd → Schöpfer-Browser.
+
+LEHRE: bei „freezt" ZUERST den Schöpfer-Trace lesen (Scripting-vs-Rendering-Split) — er sagt in 5 s, ob der Engpass JS oder GPU ist. Ich jagte Wellen lang den Render (0,1 %), weil ich „umsehen hängt" als Render statt als gesättigten Main-Thread las. Der BatchedMesh-Pfad (V18.289, flag-gated) bleibt korrekt liegen — kein Schaden —, aber er war nicht die Wurzel.
+
 ### V18.289 — RENDER-BOGEN Schritt 2: der BatchedMesh-Pfad gebaut — UND gemessen, warum er allein nicht reicht
 
 Schöpfer wählte „BatchedMesh bauen". GEBAUT (flag-gated `useBatchedFoliage`, Default AUS → Gate grün + normales Spiel unverändert; der ganze polymorphe Pfad: `_archBatchGroupFor` [ein Batch pro Material×Schatten-Klasse, addGeometry→geomId], `_archGroupAlloc/Free/Add/Remove/Update/Dispose` verzweigen auf `g.kind==="batch"`, Wachstum via setInstanceCount/setGeometrySize, Tint via setColorAt, `perObjectFrustumCulled=true`). Der Pfad läuft **fehlerfrei** (0 Page-Errors, Flag AN, Null-Renderer).

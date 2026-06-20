@@ -60397,7 +60397,17 @@ class AnazhRealm {
             const d = fp[c] - old[c];
             const ad = d < 0 ? -d : d;
             if (ad > maxAbs) maxAbs = ad;
-            sumAbs += ad;
+            // V18.290 — nur SIGNIFIKANTE per-Spalten-Deltas in die Summe: die Quell-
+            // Pin-Spalten jittern dauerhaft ~0.05-0.1 (unsichtbar, der Pin füllt auf
+            // Voll, die Lateral-Regel zieht minimal ab, repeat). OHNE diesen Floor
+            // summierte sich der Jitter über viele nasse Spalten auf > 1.0 → das
+            // Sheet re-meshte JEDEN Frame für ein UNVERÄNDERTES Bild. GEMESSEN
+            // (diag-frame-profile + Schöpfer-DevTools-Trace): das war ein 6-ms/Frame-
+            // Wasser-Iso-Rebuild IM STAND = die halbe Tick-Zeit = der „hängt beim
+            // Umsehen"-Befund (Scripting 74 %, Rendering 0.1 %). Eine echte breite
+            // Drift (Carve-Flut hebt viele Spalten ≥ Floor) triggert weiter; der
+            // maxAbs-Pfad (0.25) fängt jede sichtbare Einzel-Spalten-Änderung sofort.
+            if (ad > 0.12) sumAbs += ad;
         }
         if (maxAbs > 0.25 || sumAbs > 1.0) {
             old.set(fp.subarray(0, dimSq));
@@ -73395,7 +73405,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.289.0";
+AnazhRealm.VERSION = "18.290.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -52,7 +52,7 @@ Diese Datei wird bei jeder Session automatisch geladen. Sie trägt **nur, was JE
 - **Was:** „AnazhRealm" – ein als **Ultiversum** entworfenes Co-Creation-Werk Mensch + KI. Aktuell technisch eine 3D-Browser-Sandbox in einer Datei. Vision: emotion-getriebene, fraktal-wachsende, multisensorische Welt; Mensch (Schöpfer/Null) + KI (Grok/Eins) erschaffen gemeinsam durch Chat. Vollständige Vision in `docs/state-of-realm.md`.
 - **Stack:** Vanilla JS, Vendor-Libs in `vendor/` (Three.js r184 als 4 ESM-Bundles core/module/webgpu/tsl, **WebGPU-required** seit V12; Ammo.js WASM; simplex-noise 2.4). TF.js wurde im Mai 2026 entfernt (toter Code). Voxel-Density läuft optional in `voxel-worker.js`. Lokaler Node-Save-Server. ESLint v9 + Prettier + GitHub-Actions-CI mit Playtest-Gate.
 - **Branch:** Feature-Branch pro PR (`claude/<thema>`-Konvention, z. B. `claude/wave-6a-interaction-polish`). Niemals auf `main` pushen ohne explizite Anweisung.
-- **Architekturkern:** Eine `AnazhRealm`-Klasse in `anazhRealm.js` (~77 180 Zeilen, Stand V18.289 — die Versions-Wahrheit ist die `AnazhRealm.VERSION`-Konstante, an die `package.json` + `index.html?v=` synchron hängen). State in `localStorage` + optional `anazhRealmState.json` über save-server. Globale Referenz: `window.anazhRealm`.
+- **Architekturkern:** Eine `AnazhRealm`-Klasse in `anazhRealm.js` (~77 180 Zeilen, Stand V18.290 — die Versions-Wahrheit ist die `AnazhRealm.VERSION`-Konstante, an die `package.json` + `index.html?v=` synchron hängen). State in `localStorage` + optional `anazhRealmState.json` über save-server. Globale Referenz: `window.anazhRealm`.
 
 ## Die heilige Lektion (Versionslog 03/2025 — verfeinert 06.06.2026)
 
