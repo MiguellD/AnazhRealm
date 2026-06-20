@@ -13178,6 +13178,8 @@ class AnazhRealm {
             worst: [], // die schlimmsten N Frames (absteigend), mit vollem Kontext
             lastSaveAt: -Infinity,
             device: this._flightRecorderDevice(),
+            memSeries: [], // V18.294 — Leck-Detektor: Heap + Sammlungs-Größen über Zeit
+            _leakAnnounced: false,
             _announced: false,
         };
         // EINMAL: beim Verlassen/Verstecken der Seite einen letzten Auszug sichern
@@ -13355,11 +13357,17 @@ class AnazhRealm {
         const avgFrameMs = fr.frames ? fr.sumFrameMs / fr.frames : 0;
         const phaseMs = {};
         if (s && s.phase) for (const k of AnazhRealm.PERF_PHASES) phaseMs[k] = +(+(s.phase[k] || 0)).toFixed(2);
+        // V18.294 — DER LECK-DETEKTOR: einen Mess-Punkt nehmen (Heap + jede große
+        // Sammlung) und das Wachstum über das Fenster lesen. Die Speicher-Anzeige
+        // sagt „es leckt" — DAS sagt WAS. Genau die Attribution, die wir brauchen.
+        const memReport = this._flightRecorderMemoryReport();
         return {
             kind: "anazh-flight-recorder",
             version: AnazhRealm.VERSION,
             savedAt: new Date().toISOString(),
             verdict: this._flightRecorderVerdict(),
+            leakVerdict: memReport ? memReport.verdict : "noch zu wenig Mess-Punkte für ein Leck-Urteil.",
+            memory: memReport,
             device: fr.device,
             session: {
                 seconds: +dur.toFixed(1),
@@ -13389,6 +13397,93 @@ class AnazhRealm {
                   }
                 : null,
             worstFrames: fr.worst,
+        };
+    }
+
+    // V18.294 — einen Speicher-Mess-Punkt nehmen: Heap (Chrome `performance.memory`)
+    // + die Größe jeder großen Sammlung, die lecken KÖNNTE. Reine Lesungen
+    // (.size/.length) — vernachlässigbar billig.
+    _flightRecorderSampleSizes() {
+        const st = this.state;
+        const mem = typeof performance !== "undefined" && performance.memory ? performance.memory : null;
+        const sz = (x) => (x && typeof x.size === "number" ? x.size : x && typeof x.length === "number" ? x.length : 0);
+        return {
+            t: (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now()) / 1000,
+            heapMB: mem ? +(mem.usedJSHeapSize / 1048576).toFixed(1) : null,
+            sizes: {
+                sceneChildren: st.scene && st.scene.children ? st.scene.children.length : 0,
+                voxelChunks: sz(st.voxelChunks),
+                pendingDisposals: sz(st.pendingDisposals),
+                voxelMeshCache: sz(st.voxelMeshCache),
+                architectures: sz(st.architectures),
+                creatures: sz(st.creatures),
+                abilities: st.dsl ? sz(st.dsl.abilities) : 0,
+                dslHistory: st.dsl ? sz(st.dsl.history) : 0,
+                worldRules: sz(st.worldRules),
+                rigidBodies: sz(st.rigidBodies),
+                pendingWaterIso: sz(st.pendingWaterIso),
+                pendingScatter: sz(st.pendingScatter),
+                pendingGrass: sz(st.pendingGrass),
+                pendingFoliage: sz(st.pendingFoliageChunks),
+                logBuffer: sz(st.logBuffer),
+            },
+        };
+    }
+
+    // V18.294 — den Mess-Punkt in die Reihe schieben (Fenster ~160 s) und das
+    // Wachstum lesen: Heap-Rate (MB/s) + die am stärksten wachsende Sammlung. Das
+    // ist die ATTRIBUTION des Lecks — was die Speicher-Anzeige nur als „+2.8 MB/s"
+    // zeigt, wird hier zu einem NAMEN.
+    _flightRecorderMemoryReport() {
+        const fr = this.state.flightRecorder;
+        if (!fr) return null;
+        try {
+            fr.memSeries.push(this._flightRecorderSampleSizes());
+            if (fr.memSeries.length > 40) fr.memSeries.shift(); // ~160 s rollend (40 × 4 s)
+        } catch {
+            return null;
+        }
+        const series = fr.memSeries;
+        if (series.length < 2) return null;
+        const a = series[0],
+            b = series[series.length - 1];
+        const dt = Math.max(0.001, b.t - a.t);
+        const heapRate = a.heapMB != null && b.heapMB != null ? +((b.heapMB - a.heapMB) / dt).toFixed(2) : null;
+        const growth = {};
+        let topK = null,
+            topV = 0;
+        for (const k of Object.keys(b.sizes)) {
+            const d = (b.sizes[k] || 0) - (a.sizes[k] || 0);
+            growth[k] = d;
+            if (d > topV) {
+                topV = d;
+                topK = k;
+            }
+        }
+        const topGrower = topK
+            ? `${topK} ${a.sizes[topK]}→${b.sizes[topK]} (+${topV} über ${Math.round(dt)}s)`
+            : "keine Sammlung wächst";
+        let verdict;
+        if (heapRate != null && heapRate > 0.3) {
+            verdict = `LECK: Heap +${heapRate} MB/s über ${Math.round(dt)}s — der größte Wächst: ${topGrower}.`;
+        } else if (heapRate != null) {
+            verdict = `Heap stabil (+${heapRate} MB/s über ${Math.round(dt)}s). Größter Wächst: ${topGrower}.`;
+        } else {
+            verdict = `kein Heap-Messwert (performance.memory fehlt). Größter Wächst: ${topGrower}.`;
+        }
+        // EINMAL laut sagen, sobald ein klares Leck steht (sonst lebt es nur in der Datei).
+        if (!fr._leakAnnounced && ((heapRate != null && heapRate > 0.5) || topV > 200)) {
+            fr._leakAnnounced = true;
+            this.log(`Flugschreiber LECK-VERDACHT — ${verdict}`, "INFO");
+        }
+        return {
+            heapMB: b.heapMB,
+            heapGrowthMBPerSec: heapRate,
+            windowSec: +dt.toFixed(0),
+            verdict,
+            topGrower,
+            sizesNow: b.sizes,
+            growthOverWindow: growth,
         };
     }
 
@@ -73738,7 +73833,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.293.0";
+AnazhRealm.VERSION = "18.294.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
