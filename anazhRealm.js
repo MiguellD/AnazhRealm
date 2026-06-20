@@ -13425,9 +13425,42 @@ class AnazhRealm {
                 pendingScatter: sz(st.pendingScatter),
                 pendingGrass: sz(st.pendingGrass),
                 pendingFoliage: sz(st.pendingFoliageChunks),
+                floatingIslands: sz(st.floatingIslands),
+                ufos: sz(st.ufos),
+                archInstanceGroups: sz(st.archInstanceGroups),
+                scatterRegions: sz(st.scatterRegions),
                 logBuffer: sz(st.logBuffer),
             },
         };
+    }
+
+    // V18.295 — wenn `sceneChildren` leckt: WAS für Objekte? Gruppiert die scene.children
+    // nach einem stabilen Etikett (userData.sourceOp/kind → sonst Konstruktor + Geometrie)
+    // und gibt die häufigsten zurück → DER NAME des Lecks, ohne dass jemand einen Befehl
+    // tippt. Reine Iteration über ~Hunderte Kinder, alle paar Sekunden — vernachlässigbar.
+    _flightRecorderSceneBreakdown() {
+        const sc = this.state.scene && this.state.scene.children;
+        if (!sc || !sc.length) return null;
+        const counts = {};
+        for (const o of sc) {
+            if (!o) continue;
+            const ud = o.userData || {};
+            let label;
+            if (ud.archInstanceKey)
+                label = "archInstanceGroup"; // pro (Art,Variante,LOD) — Familie
+            else label = ud.sourceOp || ud.kind || ud.scatterKind || null;
+            if (!label) {
+                label = (o.constructor && o.constructor.name) || o.type || "Object3D";
+                if (o.isSprite) label = "Sprite";
+                else if (o.isInstancedMesh) label += "[instanced]";
+                else if (o.isMesh && o.geometry) label += ":" + (o.geometry.type || "geom");
+            }
+            counts[label] = (counts[label] || 0) + 1;
+        }
+        return Object.entries(counts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([k, v]) => `${k}×${v}`);
     }
 
     // V18.294 — den Mess-Punkt in die Reihe schieben (Fenster ~160 s) und das
@@ -13463,15 +13496,19 @@ class AnazhRealm {
         const topGrower = topK
             ? `${topK} ${a.sizes[topK]}→${b.sizes[topK]} (+${topV} über ${Math.round(dt)}s)`
             : "keine Sammlung wächst";
+        // V18.295 — wächst die SZENE, NENNE die Objekt-Art (der eigentliche Schuldige).
+        const sceneBreakdown = topK === "sceneChildren" ? this._flightRecorderSceneBreakdown() : null;
+        const breakdownStr = sceneBreakdown ? ` → Szene-Inhalt: ${sceneBreakdown.join(", ")}` : "";
         let verdict;
         if (heapRate != null && heapRate > 0.3) {
-            verdict = `LECK: Heap +${heapRate} MB/s über ${Math.round(dt)}s — der größte Wächst: ${topGrower}.`;
+            verdict = `LECK: Heap +${heapRate} MB/s über ${Math.round(dt)}s — der größte Wächst: ${topGrower}${breakdownStr}.`;
         } else if (heapRate != null) {
-            verdict = `Heap stabil (+${heapRate} MB/s über ${Math.round(dt)}s). Größter Wächst: ${topGrower}.`;
+            verdict = `Heap stabil (+${heapRate} MB/s über ${Math.round(dt)}s). Größter Wächst: ${topGrower}${breakdownStr}.`;
         } else {
-            verdict = `kein Heap-Messwert (performance.memory fehlt). Größter Wächst: ${topGrower}.`;
+            verdict = `kein Heap-Messwert (performance.memory fehlt). Größter Wächst: ${topGrower}${breakdownStr}.`;
         }
-        // EINMAL laut sagen, sobald ein klares Leck steht (sonst lebt es nur in der Datei).
+        // EINMAL laut sagen, sobald ein klares Leck steht — OHNE dass jemand einen Befehl
+        // tippt (genau das, was sich der Schöpfer wünscht: das System spuckt es selbst aus).
         if (!fr._leakAnnounced && ((heapRate != null && heapRate > 0.5) || topV > 200)) {
             fr._leakAnnounced = true;
             this.log(`Flugschreiber LECK-VERDACHT — ${verdict}`, "INFO");
@@ -13482,6 +13519,7 @@ class AnazhRealm {
             windowSec: +dt.toFixed(0),
             verdict,
             topGrower,
+            sceneBreakdown,
             sizesNow: b.sizes,
             growthOverWindow: growth,
         };
@@ -73833,7 +73871,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.294.0";
+AnazhRealm.VERSION = "18.295.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
