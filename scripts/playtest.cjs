@@ -24483,11 +24483,14 @@ async function checkBandPhaseAFundament(ctx) {
 
 // V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
 // Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
-// im 2-Ring (r ≤ 1, Spieler-Nähe) sofort gebaut wird. Ferne Chunks (r ≥ 2)
-// haben Mesh + Cells aber NOCH KEIN BVH (entry.hasBVH=false). Beim
-// Eintritt ins 2-Ring (Spieler-Bewegung) wird BVH nachgereicht
-// (_pumpVoxelChunkBVH, rate-limited). Sicherheits-Wand: der Player-Chunk
-// bekommt IMMER BVH via _ensurePlayerChunkBVH (sync-build wenn fehlend).
+// für den Spieler-Chunk SELBST (r === 0) inline beim Stream gebaut wird.
+// V18.291: die 8 Nachbarn (r === 1) UND alle fernen Chunks (r ≥ 2) bauen
+// NICHT mehr inline — sie wandern in den zeit-budgetierten `_pumpVoxelChunkBVH`
+// (budgetMs, ≥1/Frame), der die Kollision smooth über Frames nachreicht (der
+// `r <= 1`-Inline-Bau bis zu 9 BVH-Bäume = der ~294-ms-Lauf-Spike, gemessen).
+// Sicherheits-Wand: der Player-Chunk bekommt IMMER BVH via _ensurePlayerChunkBVH
+// (sync-build wenn fehlend); im Stand füllt der Pump die Nachbarn binnen weniger
+// Frames → die nahe Welt ist nach dem Settle kollisions-vollständig.
 async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(async () => {
@@ -24502,8 +24505,8 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
         out.hasSetLastPlayer = typeof r._setLastPlayerVoxelChunk === "function";
         // 2) Distance-Decision verifizieren
         if (out.hasLazyBVHFor) {
-            out.lazyR0 = r._voxelChunkLazyBVHFor(0, 0, 0, 0); // r=0 → true (sofort BVH)
-            out.lazyR1 = r._voxelChunkLazyBVHFor(1, 0, 0, 0); // r=1 → true (sofort BVH)
+            out.lazyR0 = r._voxelChunkLazyBVHFor(0, 0, 0, 0); // r=0 → true (Spieler-Chunk, inline)
+            out.lazyR1 = r._voxelChunkLazyBVHFor(1, 0, 0, 0); // r=1 → false (V18.291: Nachbar via Pump)
             out.lazyR2 = r._voxelChunkLazyBVHFor(2, 0, 0, 0); // r=2 → false (lazy)
             out.lazyR4 = r._voxelChunkLazyBVHFor(4, 0, 0, 0); // r=4 → false (lazy)
         }
@@ -24517,6 +24520,7 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
         let farWithBVH = 0;
         let farWithoutBVH = 0;
         let total = 0;
+        let playerChunkHasBVH = null; // V18.291: die harte Sicherheits-Wand (r=0)
         const lpc = r.state.lastPlayerVoxelChunk;
         if (lpc) {
             for (const [key, entry] of r.state.voxelChunks.entries()) {
@@ -24528,6 +24532,7 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
                 const dist = Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz));
                 const near = dist <= 1;
                 const hasBVH = !!entry.hasBVH;
+                if (dist === 0 && !entry.empty) playerChunkHasBVH = hasBVH;
                 if (near && hasBVH) nearWithBVH++;
                 else if (near && !hasBVH) nearWithoutBVH++;
                 else if (!near && hasBVH) farWithBVH++;
@@ -24540,13 +24545,16 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
         out.nearWithoutBVH = nearWithoutBVH;
         out.farWithBVH = farWithBVH;
         out.farWithoutBVH = farWithoutBVH;
-        // Akzeptanz: nahe Chunks haben BVH (Sicherheit), ferne haben in der
-        // Mehrheit keine BVH (Lazy-Effekt). Wegen `_pumpVoxelChunkBVH` mit
-        // rate-limit 2/Frame können wenige ferne Chunks bereits BVH haben
-        // (frisch ins 2-Ring gerückt + upgrade läuft) — wir verlangen
-        // NICHT 100% lazy, sondern dass MINDESTENS einige ferne Chunks
-        // BVH-los sind (= Lazy-Effekt empirisch vorhanden).
+        out.playerChunkHasBVH = playerChunkHasBVH;
+        // Akzeptanz: ferne Chunks haben in der Mehrheit keine BVH (Lazy-Effekt).
+        // Wegen `_pumpVoxelChunkBVH` (zeit-budgetiert, ≥1/Frame) können wenige
+        // ferne Chunks bereits BVH haben (frisch nahe gerückt + Pump läuft) —
+        // wir verlangen NICHT 100% lazy, sondern dass MINDESTENS einige ferne
+        // Chunks BVH-los sind (= Lazy-Effekt empirisch vorhanden).
         out.lazyEffectVisible = farWithoutBVH > 0;
+        // V18.291: die harte Wand ist der Spieler-Chunk (r=0); die Nachbarn (r=1)
+        // füllt der Pump im Stand binnen weniger Frames → nach dem Settle ist die
+        // nahe Welt kollisions-vollständig (steady-state, nicht inline-garantiert).
         out.allNearHaveBVH = nearWithoutBVH === 0;
         // 5) Mechanik-Probe: Worker-Mesh-Build mit {buildBVH:false} respektiert
         // Lazy-BVH. Empirie aus initialem Worldgen ist sync-build-bias (Worker
@@ -24618,12 +24626,17 @@ async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
     check("Welle Perf-3.c V9.92: _pumpVoxelChunkBVH existiert", res.hasPumpBVH);
     check("Welle Perf-3.c V9.92: _ensurePlayerChunkBVH existiert", res.hasEnsurePlayerBVH);
     check("Welle Perf-3.c V9.92: _setLastPlayerVoxelChunk existiert", res.hasSetLastPlayer);
-    check("Welle Perf-3.c V9.92: r=0 (Player-Chunk) → sofort BVH (true)", res.lazyR0 === true);
-    check("Welle Perf-3.c V9.92: r=1 (Nachbar) → sofort BVH (true)", res.lazyR1 === true);
+    check("Welle Perf-3.c V9.92: r=0 (Player-Chunk) → inline BVH (true)", res.lazyR0 === true);
+    check("Welle Perf-3.c V9.92 (V18.291): r=1 (Nachbar) → deferred via Pump (false)", res.lazyR1 === false);
     check("Welle Perf-3.c V9.92: r=2 (ferner Chunk) → lazy (false)", res.lazyR2 === false);
     check("Welle Perf-3.c V9.92: r=4 (sehr ferner Chunk) → lazy (false)", res.lazyR4 === false);
     check(
-        "Welle Perf-3.c V9.92: alle nahen Chunks (r ≤ 1) haben BVH (Sicherheits-Wand)",
+        "Welle Perf-3.c V9.92 (V18.291): Spieler-Chunk (r=0) hat BVH (die harte Sicherheits-Wand)",
+        res.playerChunkHasBVH === true,
+        `playerChunkHasBVH=${res.playerChunkHasBVH}`
+    );
+    check(
+        "Welle Perf-3.c V9.92: nahe Chunks (r ≤ 1) im Stand kollisions-vollständig (Pump füllt nach)",
         res.allNearHaveBVH,
         `nearWithBVH=${res.nearWithBVH}, nearWithoutBVH=${res.nearWithoutBVH}`
     );

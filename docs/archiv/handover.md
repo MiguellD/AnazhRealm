@@ -378,6 +378,14 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.291 — DER LAUF-SPIKE: die Nachbar-Chunk-Kollision aus dem Inline-Stream in ein Zeit-Budget verlegt
+
+Der zweite Schöpfer-Trace bestätigte den V18.290-Gewinn (Scripting 74 % → 28 %), zeigte aber beim LAUFEN noch p99-Spikes ~300 ms. GEMESSEN (`diag-walk-profile` + der neue `diag-collision-split`): der dominante Lauf-Posten ist der **Kollisions-BVH-Bau** — und der teure Teil ist NICHT die per-Dreieck-`addTriangle`-Schleife (Ø 2.14 ms), sondern der **`btBvhTriangleMeshShape`-KONSTRUKTOR** (Ø 9.74 ms, der O(n·log n)-Baum-Bau für 5–9k Dreiecke). Das rettete vor dem falschen Fix (`btTriangleIndexVertexArray`-Puffer-API hätte nur die billige Schleife beschleunigt).
+
+WURZEL: `_voxelChunkLazyBVHFor` gab `r <= 1` zurück → der Spieler-Chunk UND seine 8 Nachbarn bauten ihre Kollision INLINE beim Stream-In → bis zu **9 × ~10 ms = der ~294-ms-Lauf-Spike** in einem Frame (beim Chunk-Crossing kommen mehrere Nachbar-Meshes auf einmal). FIX (zwei Schichten, EINE Regel): **(1)** `_voxelChunkLazyBVHFor` → `r === 0` (nur der Spieler-Chunk baut inline — die Bewegungs-Garantie); **(2)** `_pumpVoxelChunkBVH` von count-2 (`maxPerFrame`) auf ein **ZEIT-Budget** (`budgetMs = 4`) umgestellt: baue ≥1 (Fortschritt garantiert), dann stoppe, sobald 4 ms verbraucht sind → die 8 Nachbar-BVHs wandern smooth über mehrere Frames statt als Burst. Der weiche Boden (V18.271) + die Spieler-Chunk-Sync-Garantie (`_ensurePlayerChunkBVH`) decken die Defer-Lücke (kein Durchfallen).
+
+GEMESSEN: **pumpBVH MAX 43 → 17 ms · p99 300 → 226 ms.** Der Rest-Spike (220 ms `voxelStreaming`, p50 nur 13.6 ms) ist die Mesh-EMPFANGS-Bürste beim Chunk-Crossing (mehrere fertige Worker-Meshes auf einmal angenommen) — der nächste Hebel (Empfang budgetieren) bzw. tiefer der DETERMINISMUS-BOGEN (voxel-native Kollision ohne den sync BVH-Baum). Fast-Gates grün. LEHRE: ein „lazy"-Schwellwert (`r <= 1`) ist trotzdem ein Burst, wenn N Items die Schwelle gleichzeitig überqueren — ein Zeit-Budget verteilt, ein Count nicht (ein Count-2 von 10-ms-Items ist ein 20-ms-Spike).
+
 ### V18.290 — DIE WAHRE WURZEL: der Schöpfer-Trace kippt die Render-These → ein Wasser-Iso-Rebuild PRO FRAME
 
 Der Schöpfer-DevTools-Trace (1.9 min) war der Wendepunkt: **Scripting 82.560 ms (74 %) · Rendering 130 ms (0,1 %)**. Der ganze Render-Bogen (V18.260–.289: Draw-Calls, BatchedMesh, Frustum) zielte aufs FALSCHE Ziel — der Hänge ist **JavaScript pro Frame**, nicht der Render. (Meine eigene Headless-Messung zeigte den 12-ms-Tick längst, ich hatte sie zugunsten der Render-These fehlgewichtet; der Browser des Schöpfers korrigierte das.)

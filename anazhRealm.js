@@ -21404,8 +21404,13 @@ class AnazhRealm {
     // mehrere BVH-Build-Spikes auf einmal triggert. Kommt der Spieler durch
     // viel Bewegung in viele neue Chunks, wird das über mehrere Frames
     // verteilt — keine Spike-Klumpen.
-    _pumpVoxelChunkBVH(pcx, pcz, maxPerFrame = 2) {
+    _pumpVoxelChunkBVH(pcx, pcz, budgetMs = 4) {
         if (!this.state.voxelChunks) return 0;
+        // V18.291 — ZEIT-BUDGET statt count: der BVH-Baum-Bau kostet ~10 ms/Chunk
+        // (GEMESSEN), ein count-2-Pump war ein ~20-ms-Spike. Baue ≥1 (Fortschritt
+        // garantiert), dann stoppe, sobald das Frame-Budget aufgebraucht ist →
+        // verteilt die 3×3-Nachbar-Kollision smooth über Frames (kein Burst).
+        const t0 = performance.now();
         let upgraded = 0;
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
@@ -21415,7 +21420,7 @@ class AnazhRealm {
                 const entry = this.state.voxelChunks.get(key);
                 if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
                     if (this._upgradeChunkBVH(cx, cz)) {
-                        if (++upgraded >= maxPerFrame) return upgraded;
+                        if (++upgraded >= 1 && performance.now() - t0 >= budgetMs) return upgraded;
                     }
                 }
             }
@@ -25898,7 +25903,13 @@ class AnazhRealm {
     // bekommt IMMER BVH (`_ensurePlayerChunkBVH` syncbuild jeden Frame).
     _voxelChunkLazyBVHFor(cx, cz, pcx, pcz) {
         const r = Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz));
-        return r <= 1;
+        // V18.291 — NUR der Spieler-Chunk (r===0) baut Kollision INLINE beim Stream;
+        // die 8 Nachbarn (r===1) wandern in den zeit-budgetierten `_pumpVoxelChunkBVH`.
+        // GEMESSEN (diag-walk-profile + diag-collision-split): der btBvhTriangleMeshShape-
+        // Baum-Bau kostet ~10 ms/Chunk (5-9k Dreiecke); r<=1 baute bis zu 9 inline in
+        // einem Frame = der 294-ms-Lauf-Spike. Der weiche Boden (V18.271) + die Spieler-
+        // Chunk-Sync-Garantie (`_ensurePlayerChunkBVH`) decken die Defer-Lücke.
+        return r === 0;
     }
 
     // V9.92 — letzter Spieler-Chunk-Index, zwischengespeichert für die
@@ -73405,7 +73416,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.290.0";
+AnazhRealm.VERSION = "18.291.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
