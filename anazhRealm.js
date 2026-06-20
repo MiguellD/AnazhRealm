@@ -2419,7 +2419,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("village", pos, { seed: s });
+                const entry = this.spawnArchitecture("village", pos, { seed: s, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_temple: ([positionNode, seed], ctx) => {
@@ -2430,7 +2430,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("temple", pos, { seed: s });
+                const entry = this.spawnArchitecture("temple", pos, { seed: s, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
@@ -2441,7 +2441,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("waterfall", pos, { seed: s });
+                const entry = this.spawnArchitecture("waterfall", pos, { seed: s, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
             },
             // Ring 6.4 — generischer Bauplan-Spawn. Funktioniert mit jedem
@@ -2982,7 +2982,11 @@ class AnazhRealm {
                     // M6 — die Fraktal-KINDER folgen der (an der Wurzel schon geklemmten)
                     // Struktur EXAKT (precise): das Hexagon-Muster bleibt ganz; das
                     // Fraktal als GANZES weicht dem Spieler über die Wurzel-Klemme aus.
-                    this.spawnArchitecture(t, { x: cx, y: pos.y, z: cz }, { seed: childSeed, scale, precise: true });
+                    this.spawnArchitecture(
+                        t,
+                        { x: cx, y: pos.y, z: cz },
+                        { seed: childSeed, scale, precise: true, autonomous: ctx.source === "nexus" }
+                    );
                     if (level >= d) return;
                     const childRadius = 14 * scale;
                     for (let i = 0; i < 6; i++) {
@@ -3265,6 +3269,23 @@ class AnazhRealm {
             random_position: ([range], ctx) => {
                 const r = c(range, 1, 500);
                 return { x: (ctx.rng() - 0.5) * 2 * r, y: 50, z: (ctx.rng() - 0.5) * 2 * r };
+            },
+            // V18.297 — eine FERNE Schale (minR..maxR) um den Spieler, JENSEITS des Cull-
+            // Radius. Der Nexus baut damit am HORIZONT (die Vision: die Welt wächst in der
+            // Ferne, ferne Dörfer/Tempel erscheinen, wenn man sich nähert) statt AUF dem
+            // Spieler — DAS war das sceneChildren-Leck (Bauten im Cull-Radius stapelten sich,
+            // wurden nie weggecullt). Auf die echte Terrain-Höhe gesetzt (getTerrainHeightAt
+            // kennt den Boden überall, auch ungestreamt).
+            far_player: ([minR, maxR], ctx) => {
+                const lo = c(minR, 1, 1000);
+                const hi = Math.max(lo + 1, c(maxR, 1, 1000));
+                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const angle = ctx.rng() * Math.PI * 2;
+                const dist = lo + ctx.rng() * (hi - lo);
+                const x = p.x + Math.cos(angle) * dist;
+                const z = p.z + Math.sin(angle) * dist;
+                const y = typeof this.getTerrainHeightAt === "function" ? this.getTerrainHeightAt(x, z) : p.y;
+                return { x, y, z };
             },
             at: ([x, y, z]) => ({
                 x: Number.isFinite(Number(x)) ? Number(x) : 0,
@@ -3590,18 +3611,32 @@ class AnazhRealm {
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
-            // V18.296 — DAS AUTONOME STRUKTUR-SPAWNEN IST ENTFERNT (Schöpfer-Befund,
-            // gemessen via Flugschreiber: `sceneChildren` leckte +859 Objekte/295s bei
-            // FAST STILLSTAND = der Heap-Tod + Browser-Freeze). WURZEL: der Nexus
-            // komponierte spawn_village/temple/waterfall/fractal und stellte sie über
-            // `dslComposePosition` IN SPIELER-NÄHE — innerhalb des Cull-Radius, also NIE
-            // weggecullt → sie stapelten sich für immer (uncapped, „kein Hard-Cap mehr"
-            // war der Fehler). Das war auch die endlose „Nexus-Evolution"-Churn, die der
-            // Schöpfer nie wollte (die Welt mutiert ungefragt + füllt sich zu Tode).
-            // Der Nexus behält seine SEELE (Wetter/Emotion/Farbe/Kreaturen[gecappt]/
-            // Regeln/say) — er stimmt die Welt, hortet aber keine Bauten mehr. Bauen
-            // bleibt dem Schöpfer + explizitem Chat/DSL (spawn_village etc. via Befehl).
-            // Rückkehr später NUR mit echtem Cap (die Welt ATMET, hortet nicht).
+            // V18.297 — DER NEXUS BAUT WIEDER — aber an der WURZEL geheilt, nicht amputiert
+            // (V18.296 trennte das Feature ab = falsch; Schöpfer „du hast die Wurzel getrennt").
+            // Das echte Leck war nie „der Nexus baut", sondern: er baute über `dslComposePosition`
+            // AUF/NAH dem Spieler (im 150-m-Cull-Radius) → die Bauten rendern, stapeln sich,
+            // werden nie weggecullt → sceneChildren-Leck (Flugschreiber: +859/295s bei Stillstand).
+            // HEILUNG: er baut jetzt via `far_player` in eine FERNE Schale (180-380 m, JENSEITS
+            // des Cull-Radius) → die Vision lebt (ferne Dörfer/Tempel am Horizont, die wachsen
+            // wenn man hingeht), aber im Stand rendert nichts davon → kein Pile. Plus ein echter
+            // Cap (`_capNexusStructures`, MAX_NEXUS_STRUCTURES) → die Welt ATMET (Fernstes verblasst),
+            // hortet nicht. Niedrigere Gewichte (2/2/2/1) → die Welt füllt sich GEMÄCHLICH.
+            { w: 2, build: () => ["spawn_village", ["far_player", 180, 380]] },
+            { w: 2, build: () => ["spawn_temple", ["far_player", 180, 380]] },
+            { w: 2, build: () => ["spawn_waterfall", ["far_player", 180, 380]] },
+            {
+                w: 1,
+                build: () => {
+                    const types = ["village", "temple", "waterfall"];
+                    return [
+                        "spawn_fractal",
+                        ["far_player", 220, 400],
+                        types[Math.floor(rng() * types.length)],
+                        1,
+                        Number((0.4 + rng() * 0.3).toFixed(2)),
+                    ];
+                },
+            },
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -58279,7 +58314,16 @@ class AnazhRealm {
         // umgingen sie). Präzisions-Opt-outs bleiben heilig: opts.silent (Worldgen —
         // Determinismus!), string-id (Multi-User-Sync/confirmBuild — bit-treu) und
         // opts.precise (Restore/Tests). Kleine Spawns (< 3 m Footprint) bleiben eh frei.
-        if (!opts.silent && !opts.precise && !(typeof opts.id === "string" && opts.id) && position) {
+        // V18.297 — DIE WIEDERKEHR GESTOPPT (Schöpfer „spawnt auf den Füßen, 3× gefixxt,
+        // jetzt weiss ich wie das immer wieder kommt"): die Klemme war BYPASSBAR (precise/
+        // silent/id), und jeder neue Pfad mit precise riss sie auf (genau die Regression).
+        // Heilung: AUTONOME (Nexus-)Spawns werden IMMER geklemmt — auch mit precise (der
+        // Fraktal-Pfad nutzt precise!). far_player hält sie ohnehin fern (Klemme = no-op),
+        // ABER falls je ein autonomer Pfad eine Spieler-nahe Position liefert, fängt der
+        // CHOKEPOINT sie — die Bug-Klasse kann für autonomen Inhalt nicht mehr wiederkehren.
+        const _playerClamp =
+            opts.autonomous === true || (!opts.silent && !opts.precise && !(typeof opts.id === "string" && opts.id));
+        if (_playerClamp && position) {
             position = this._structureSpawnPos(type, position, { state: this.state }, scale);
         }
         const entry = {
@@ -58322,6 +58366,9 @@ class AnazhRealm {
         // +14 Stein/Zyklus aus dem Nichts). Worldgen/Nexus-Spawns tragen die
         // Marke NICHT — die Welt selbst ist die legitime Quelle (Minecraft).
         if (opts.freeBorn === true) entry.freeBorn = true;
+        // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
+        // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
+        if (opts.autonomous === true) entry.autonomous = true;
         // Welle 10b — Affordances werden EINMAL beim Spawn berechnet (nicht
         // pro Frame). Welt-Reaktionen (Bewegung, Zoom, Brennglas) lesen das
         // Profil aus entry.affordances. Wenn der Bauplan später editiert
@@ -61224,6 +61271,45 @@ class AnazhRealm {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
         }
+        // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
+        // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
+        this._capNexusStructures(playerPos);
+    }
+
+    // V18.297 — der echte Leck-Fix (statt der V18.296-Amputation): die autonom
+    // gespawnten Bauten bounded halten. Sie spawnen fern (far_player, jenseits des
+    // Cull-Radius → kein Render-Pile im Stand) UND ihr Gesamt-Bestand ist gedeckelt
+    // → der Heap kann nicht über Stunden volllaufen. Über dem Cap wird das FERNSTE
+    // entfernt (graceful: am Horizont im Nebel, unsichtbar) → die Welt wächst voran,
+    // wo der Spieler ist, und verblasst hinter ihm. Bit-billig (ein Filter + Sort
+    // nur wenn über Cap), läuft im 1-pro-Frame-Culling-Tick.
+    _capNexusStructures(playerPos) {
+        const arches = this.state.architectures;
+        if (!arches || arches.length === 0) return;
+        const cap = AnazhRealm.MAX_NEXUS_STRUCTURES;
+        const autos = [];
+        for (const e of arches) if (e && e.autonomous) autos.push(e);
+        if (autos.length <= cap) return;
+        const pp = playerPos || (this.state.playerMesh ? this.state.playerMesh.position : null);
+        const distSq = (e) => {
+            if (!pp) return -(typeof e.id === "number" ? e.id : 0); // ohne Spieler: ältestes zuerst
+            const dx = e.position.x - pp.x;
+            const dz = e.position.z - pp.z;
+            return dx * dx + dz * dz;
+        };
+        autos.sort((a, b) => distSq(b) - distSq(a)); // das Fernste zuerst
+        const toEvict = autos.length - cap;
+        for (let i = 0; i < toEvict; i++) this._evictArchitecture(autos[i]);
+    }
+
+    // V18.297 — eine Architektur vollständig entfernen (Mesh+Geometrie+Kollision via
+    // _cullArchitectureMesh, dann der Eintrag). Die EINE Eviction-Quelle.
+    _evictArchitecture(entry) {
+        if (!entry) return;
+        if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+        const arches = this.state.architectures;
+        const idx = arches ? arches.indexOf(entry) : -1;
+        if (idx >= 0) arches.splice(idx, 1);
     }
 
     // ### Ring 6 V2 — Bau-Modus (Phantom-Cursor) ###
@@ -73860,7 +73946,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.296.0";
+AnazhRealm.VERSION = "18.297.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76793,6 +76879,10 @@ AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
 AnazhRealm.FLIGHT_RECORDER_WORST_CAP = 12;
 AnazhRealm.FLIGHT_RECORDER_SAVE_INTERVAL_MS = 4000;
 AnazhRealm.FLIGHT_RECORDER_FREEZE_MS = 50;
+// V18.297 — wie viele autonom (vom Nexus) gespawnte Bauten gleichzeitig leben dürfen.
+// Großzügig (eine reiche ferne Welt), aber gedeckelt → der Heap kann nicht über Stunden
+// volllaufen (das war das Leck). Über dem Cap verblasst das Fernste (_capNexusStructures).
+AnazhRealm.MAX_NEXUS_STRUCTURES = 48;
 // V18.283 — wie viele gebaute Skin-Geometrien (Avatar + Kreatur-Arten) memoisiert bleiben
 // (deterministischer Isosurface-Guss, ~1–4 MB/Eintrag). 16 deckt Mensch + alle Arten + Custom-Seelen.
 AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
