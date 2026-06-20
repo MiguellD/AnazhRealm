@@ -302,7 +302,7 @@ class AnazhRealm {
             knowledgeBase: [],
             versionHistory: [],
             maxVersionHistoryEntries: 50,
-            maxCreatures: 120,
+            maxCreatures: 20,
             currentVersion: "7.71",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
@@ -3590,29 +3590,18 @@ class AnazhRealm {
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
             { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
             { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
-            // Ring 6 — architectureTemplates. Niedrige Gewichtung (3 von
-            // ~80), damit der Nexus die Welt mit der Zeit füllt, ohne dass
-            // jeder zweite Trigger ein Dorf produziert. V2: kein Hard-Cap
-            // mehr — Distance-Culling hält die GPU-Last begrenzt.
-            { w: 3, build: () => ["spawn_village", this.dslComposePosition(rng)] },
-            { w: 3, build: () => ["spawn_temple", this.dslComposePosition(rng)] },
-            { w: 3, build: () => ["spawn_waterfall", this.dslComposePosition(rng)] },
-            // Ring 6 V2 — Fraktal als seltenes Nexus-Geschenk (Gewicht 1).
-            // depth=1 hält den Stil sichtbar (1 Wurzel + 6 Kinder = 7
-            // Strukturen), ratio variiert.
-            {
-                w: 1,
-                build: () => {
-                    const types = ["village", "temple", "waterfall"];
-                    return [
-                        "spawn_fractal",
-                        this.dslComposePosition(rng),
-                        types[Math.floor(rng() * types.length)],
-                        1,
-                        Number((0.4 + rng() * 0.3).toFixed(2)),
-                    ];
-                },
-            },
+            // V18.296 — DAS AUTONOME STRUKTUR-SPAWNEN IST ENTFERNT (Schöpfer-Befund,
+            // gemessen via Flugschreiber: `sceneChildren` leckte +859 Objekte/295s bei
+            // FAST STILLSTAND = der Heap-Tod + Browser-Freeze). WURZEL: der Nexus
+            // komponierte spawn_village/temple/waterfall/fractal und stellte sie über
+            // `dslComposePosition` IN SPIELER-NÄHE — innerhalb des Cull-Radius, also NIE
+            // weggecullt → sie stapelten sich für immer (uncapped, „kein Hard-Cap mehr"
+            // war der Fehler). Das war auch die endlose „Nexus-Evolution"-Churn, die der
+            // Schöpfer nie wollte (die Welt mutiert ungefragt + füllt sich zu Tode).
+            // Der Nexus behält seine SEELE (Wetter/Emotion/Farbe/Kreaturen[gecappt]/
+            // Regeln/say) — er stimmt die Welt, hortet aber keine Bauten mehr. Bauen
+            // bleibt dem Schöpfer + explizitem Chat/DSL (spawn_village etc. via Befehl).
+            // Rückkehr später NUR mit echtem Cap (die Welt ATMET, hortet nicht).
             // ~10 % `say`: Nexus kommentiert seine eigene Evolution. Per
             // §18 Q1 ("Ja, sparsam") gewählt.
             { w: 10, build: () => ["say", this.dslComposeSayMessage(rng)] },
@@ -73871,7 +73860,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.295.0";
+AnazhRealm.VERSION = "18.296.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -74291,7 +74280,10 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "tree",
             cellM: 3.4,
-            cap: 300,
+            // V18.296 (Schöpfer-Anordnung, 20+ Versionen überfällig: „sehe immernoch
+            // hunderte Bäume … wir gehen runter"): cap 300→90 (~2.6 Bäume/Chunk =
+            // offenes Waldland, freie Sicht auf Terrain/Fels/Substanz). REVERSIBEL.
+            cap: 90,
             floor: 0.1,
             scaleBase: 0.6,
             scaleVar: 1.5,
@@ -74307,7 +74299,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "under",
             cellM: 2.4,
-            cap: 250,
+            cap: 70, // V18.296 250→70 (mit den Bäumen entlastet — weniger Gestrüpp, mehr Sicht)
             floor: 0.06,
             scaleBase: 0.8,
             scaleVar: 0.5,
@@ -74320,7 +74312,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "litter",
             cellM: 2.8,
-            cap: 150,
+            cap: 40, // V18.296 150→40 (Totholz mit-entlastet)
             floor: 0.04,
             scaleBase: 0.8,
             scaleVar: 0.4,

@@ -237,11 +237,17 @@ async function checkRing2Dsl(ctx) {
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
 
         const creBefore = r.state.creatures.length;
+        // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
+        // damit dieser Band den spawn_creature-INTENT misst, nicht den Cap (der Warmup
+        // kann nahe 20 liegen). Der Test wandert mit dem Code (kein Revert der Senkung).
+        const _saveMaxPos = r.state.maxCreatures;
+        r.state.maxCreatures = creBefore + 2;
         const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
         out.positionEffect =
             res3.ok &&
             res3.log.some((e) => e.event === "spawned_creature") &&
             r.state.creatures.length === creBefore + 2;
+        r.state.maxCreatures = _saveMaxPos;
 
         const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
         out.conditionEffect = res4.ok && r.state.jumpPower === 22;
@@ -14431,7 +14437,13 @@ async function checkBandLateMultiUser(ctx) {
         ].every((m) => typeof r[m] === "function");
 
         // spawnCreatureAt vergibt eine netId.
+        // V18.296 — maxCreatures 120→20: Raum für die Test-Kreatur sichern (der Warmup
+        // kann nahe am Cap liegen → spawnCreatureAt gäbe sonst null → flaky). Misst die
+        // netId/Broadcast-Mechanik, nicht den Cap.
+        const _saveMaxNet = r.state.maxCreatures;
+        r.state.maxCreatures = r.state.creatures.length + 1;
         const testC = r.spawnCreatureAt(20, 6, 20, "happy");
+        r.state.maxCreatures = _saveMaxNet;
         out.creatureHasNetId = !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
 
         // _p2pBroadcastCreatures sendet creature-pos mit der Kreatur.
