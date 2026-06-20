@@ -245,9 +245,7 @@ async function auditStateAndMethods() {
                 "creatures.length",
                 "architectures.length",
                 "blueprints.length",
-                "groundChunks.length",
                 "selfAwareness.components",
-                "groundChunks.forEach",
                 // V8.57 — Lazy game-loop-Feld: die pitch-gesteuerte Wunsch-
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
@@ -518,7 +516,6 @@ async function auditStateAndMethods() {
                 "architectures",
                 "creatures",
                 "rigidBodies",
-                "groundChunks",
                 "groundHeightField",
                 "groundMesh",
                 "planets",

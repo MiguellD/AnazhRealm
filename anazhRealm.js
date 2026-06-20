@@ -100,7 +100,6 @@ class AnazhRealm {
             camera: null,
             playerMesh: null,
             groundMesh: null,
-            groundChunks: [],
             groundHeightField: null,
             // Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring. V9.35
             // Phase 5c.2.c.2: der `voxel terrain on/off`-Toggle ist tot,
@@ -22068,21 +22067,9 @@ class AnazhRealm {
             this.optimizeCollisions();
         }
 
-        // Boden- und Spielerprüfung
-        // Nur regenerieren, wenn wirklich KEIN Chunk existiert. chunk.visible ist
-        // Frustum-Culling und wechselt jeden Frame – früher führte das zu einer
-        // Death-Spiral, sobald der Spieler so guckte, dass alle Chunks off-screen
-        // waren: Welt regen → Spieler bei (0,50,0) → fällt → 1s Worldgen → wieder.
-        // V9.31: voxel-aware — in einer Voxel-Welt sind groundChunks LEGITIM leer
-        // (V9.27 überspringt den Heightfield-Chunk-Build), der Voxel-Streaming-
-        // Ring trägt den Boden. Der Boden-Fehlt-Pfad gilt nur für Heightfield-
-        // Welten (`voxelTerrainActive === false`).
-        const voxelActive = this.state.voxelTerrainActive === true;
-        if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
-            this.recordWeakness("Boden fehlt");
-            this.log("Selbstanalyse: Boden fehlt – Erzeuge neuen Boden...");
-            this.generateNewWorld();
-        }
+        // Spielerprüfung (der Boden-Fehlt-Selbstheil war ein Heightfield-Pfad,
+        // V18.287 entfernt — der Voxel-Streaming-Ring + _rescuePlayerFromVoid
+        // tragen den Boden).
         if (!this.state.playerMesh || !this.state.playerMesh.visible) {
             this.recordWeakness("Spieler unsichtbar");
             this.log("Selbstanalyse: Spieler unsichtbar – Setze Sichtbarkeit...");
@@ -22709,23 +22696,6 @@ class AnazhRealm {
                 },
             },
             {
-                example: "boden nicht sichtbar",
-                re: /^boden\s+nicht\s+sichtbar(?:\s.*)?$/i,
-                run: (m, append) => {
-                    if (
-                        !this.state.groundChunks ||
-                        this.state.groundChunks.length === 0 ||
-                        !this.state.groundChunks.some((chunk) => chunk.visible)
-                    ) {
-                        this.log("Boden nicht sichtbar – Erzeuge neuen Boden...", "INFO");
-                        this.generateNewWorld();
-                        append("Neuer Boden generiert");
-                    } else {
-                        append("Boden ist bereits sichtbar");
-                    }
-                },
-            },
-            {
                 example: "aktiviere anazh-symphonie",
                 re: /^aktiviere\s+anazh-symphonie(?:\s.*)?$/i,
                 run: (m, append) => {
@@ -22948,9 +22918,7 @@ class AnazhRealm {
         // Schreiber von `chunkMap`) starb mit V9.39. V18.272: das tote
         // Heightfield-Geometrie-State (`chunkMap`/`chunkGrass`/`chunkSize`/
         // `chunkWidth`/`chunkDepth`, 0 Leser) ist gekehrt — `voxelChunks` +
-        // `voxelChunkGrass` sind die EINE Wahrheit. `groundChunks` bleibt (in der
-        // Voxel-Welt leer, aber lebendig als ODER-Zweig der Terrain-Füll-Wand).
-        this.state.groundChunks = [];
+        // `voxelChunkGrass` sind die EINE Wahrheit.
         if (!this.state.scaleFactor || this.state.scaleFactor <= 0) {
             this.state.scaleFactor = 1.0;
             this.log("scaleFactor ungültig oder nicht gesetzt, Fallback auf 1.0", "WARNING");
@@ -68804,7 +68772,6 @@ class AnazhRealm {
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiAndFog(angle, tint);
-        this._dayNightApplyTerrainShaderUniforms(sunDir);
         this._dayNightApplyWaterMaterials(sunDir);
     }
 
@@ -69246,29 +69213,6 @@ class AnazhRealm {
             if (hsm) {
                 const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
                 if (hsm.side !== wantSide) hsm.side = wantSide;
-            }
-        }
-    }
-
-    // V8.27 6.G4.a / V8.31 / V8.46 / V8.48 — Terrain-Custom-Shader-Uniforms
-    // synchronisieren: lightDirection (sunDir), lightIntensity, ambientIntensity,
-    // weatherEffect (Cross-Fade), fog (Color/Near/Far).
-    _dayNightApplyTerrainShaderUniforms(sunDir) {
-        if (!this.state.groundChunks || !this.state.directionalLight) return;
-        const dl = this.state.directionalLight;
-        const al = this.state.ambientLight;
-        const fog = this.state.fog;
-        for (const chunk of this.state.groundChunks) {
-            if (!chunk.material || !chunk.material.uniforms) continue;
-            const cu = chunk.material.uniforms;
-            if (cu.lightDirection) cu.lightDirection.value.copy(sunDir);
-            if (cu.lightIntensity) cu.lightIntensity.value = dl.intensity;
-            if (cu.ambientIntensity) cu.ambientIntensity.value = al ? al.intensity : 0.45;
-            if (cu.weatherEffect) cu.weatherEffect.value = Math.min(1, this._weatherBlendedValue(0.0, 1.0)); // D5a: [0,1]-Clamp
-            if (fog) {
-                if (cu.fogColor) cu.fogColor.value.copy(fog.color);
-                if (cu.fogNear) cu.fogNear.value = fog.near;
-                if (cu.fogFar) cu.fogFar.value = fog.far;
             }
         }
     }
@@ -71974,11 +71918,6 @@ class AnazhRealm {
         // V9.31 voxel-aware: in einer Voxel-Welt sind groundChunks
         // LEGITIM leer (V9.27 überspringt den Heightfield-Build).
         if (currentTime - this.state.lastGroundCheck >= this.state.groundCheckInterval) {
-            const voxelActive = this.state.voxelTerrainActive === true;
-            if (!voxelActive && (!this.state.groundChunks || this.state.groundChunks.length === 0)) {
-                this.log("Boden fehlt – Erzeuge neuen Boden...", "ERROR");
-                this.generateNewWorld();
-            }
             this.state.lastGroundCheck = currentTime;
         }
     }
@@ -71997,13 +71936,6 @@ class AnazhRealm {
         );
         this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
         const frustum = this._frustumCache;
-        // Voxel-Terrain-Bogen Phase 2b — ruht das Heightfield, bleiben
-        // seine Chunks unsichtbar; sonst übernimmt das Frustum-Culling.
-        if (this.state.voxelTerrainActive) {
-            this.state.groundChunks.forEach((chunk) => (chunk.visible = false));
-        } else {
-            this.state.groundChunks.forEach((chunk) => (chunk.visible = this.isInFrustum(chunk, frustum)));
-        }
         if (this.state.floatingIslands)
             this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
         if (this.state.creatures)
@@ -73331,7 +73263,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.286.0";
+AnazhRealm.VERSION = "18.287.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

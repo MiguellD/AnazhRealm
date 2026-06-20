@@ -91,7 +91,6 @@ async function gatherInitialFinalState(page) {
         }
         return {
             terrainEverGenerated: r.state.terrainEverGenerated,
-            groundChunks: r.state.groundChunks?.length || 0,
             chunkMapSize: r.state.chunkMap?.size || 0,
             // V9.33 Phase 5c.2.b — die Eingangs-Welt ist jetzt voxel-
             // default; chunkMap/groundChunks sind dann legitim leer,
@@ -143,9 +142,9 @@ function checkInitialState(ctx) {
         // durch NodeMaterial-TSL-Migrationen) zwischen 17-21 Chunks im 30s-
         // Budget. Welt rendert ab 15 Chunks sichtbar gerendert; die strikte
         // voxelTerrainActive-Probe (Z124) bleibt als Vision-Invariante.
-        "Welt-Terrain ist gefüllt (Voxel-Chunks ODER Heightfield-Chunks)",
-        finalState.voxelChunksSize >= 15 || finalState.groundChunks >= 25,
-        `voxelChunks=${finalState.voxelChunksSize}, groundChunks=${finalState.groundChunks}`
+        "Welt-Terrain ist gefüllt (Voxel-Chunks)",
+        finalState.voxelChunksSize >= 15,
+        `voxelChunks=${finalState.voxelChunksSize}`
     );
     check(
         "Spieler nicht durch den Boden gefallen",
@@ -20103,9 +20102,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         const disposeSrc = r._disposeStaticCollision.toString();
         out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
         out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
-        // selfAwarenessAnalyze ist jetzt voxel-aware
-        const selfRefSrc = (r.selfAwarenessAnalyze || function () {}).toString();
-        out.selfReflectionVoxelAware = /voxelTerrainActive/.test(selfRefSrc);
         return out;
     });
 
@@ -20117,10 +20113,6 @@ async function checkBandVoxelTerrainCore(ctx) {
         check(
             "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
             voxelV931Results.disposeDestroysMotionState
-        );
-        check(
-            "Voxel V9.31: selfAwarenessAnalyze-Boden-Check ist voxel-aware (kein Death-Spiral in Voxel-Welt)",
-            voxelV931Results.selfReflectionVoxelAware
         );
     }
 }
@@ -42195,9 +42187,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Init — wir bauen einen für den Test via ensureChunkAt.
         let chunkHasField = false;
         let aFieldChunk = null;
-        if (r.state.groundChunks && r.state.groundChunks.length > 0) {
-            aFieldChunk = r.state.groundChunks[0];
-        } else if (typeof r.ensureChunkAt === "function") {
+        if (typeof r.ensureChunkAt === "function") {
             r.ensureChunkAt(60, 60);
             const entry = r.state.chunkMap && r.state.chunkMap.get("60,60");
             if (entry && entry.mesh) aFieldChunk = entry.mesh;
@@ -47603,11 +47593,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.blendMid = Math.abs(r._weatherBlendedValue(0, 1) - 0.5) < 0.001;
         r.state.weatherTransition = origTrans;
         r.state.weather = origWeather;
-        // weatherEffect + cloudCover faden jetzt über den Helper. V9.56-i:
-        // Terrain-Shader-Uniforms leben im _dayNightApplyTerrainShaderUniforms-
-        // Helfer, Skybox-Wolken im _dayNightApplySkybox-Helfer.
-        const terrainSrc = r._dayNightApplyTerrainShaderUniforms.toString();
-        out.weatherEffectFades = /cu\.weatherEffect.*_weatherBlendedValue/.test(terrainSrc);
+        // weatherEffect + cloudCover faden über den Helper (Skybox-Wolken im
+        // _dayNightApplySkybox-Helfer; der tote Heightfield-Terrain-Uniform-Pfad
+        // `_dayNightApplyTerrainShaderUniforms` ist V18.287 entfernt — Voxel-
+        // Terrain trägt Wetter/Fog über voxelChunkMaterial).
         // V10.0-f-1 Doku-Sync: _dayNightApplySkybox liest jetzt aus
         // state.skyboxUniforms. Der Cross-Fade-Helper-Aufruf hat dieselbe
         // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
@@ -47628,7 +47617,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         check("V8.46: Helper ohne Transition liefert Wetter-Wert (sunny)", v846Results.blendSunny);
         check("V8.46: Helper ohne Transition liefert Wetter-Wert (rainy)", v846Results.blendRainy);
         check("V8.46: Helper cross-fadet in der Transition (progress 0.5 → halb)", v846Results.blendMid);
-        check("V8.46: weatherEffect cross-fadet über den Helper", v846Results.weatherEffectFades);
         check("V8.46: cloudCover cross-fadet über den Helper", v846Results.cloudFades);
         check("V8.47: Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", v846Results.shadowAntiAcne);
     } else {
@@ -47709,12 +47697,6 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             r.setTimeOfDay(oTod);
             r._applyDayNightToScene();
         }
-        // _applyDayNightToScene leitet die Terrain-lightDirection aus
-        // der reinen Sonnen-Richtung sunDir ab (nicht position.normalize()).
-        // V9.56-i: lebt jetzt im _dayNightApplyTerrainShaderUniforms-Helfer;
-        // copy(sunDir) auf cu.lightDirection ist der Vertrag.
-        const adnSrc = r._dayNightApplyTerrainShaderUniforms.toString();
-        out.usesSunDir = /cu\.lightDirection\) cu\.lightDirection\.value\.copy\(sunDir\)/.test(adnSrc);
         return out;
     });
 
@@ -47722,17 +47704,16 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // V9.39 Phase 5c.2.c.3.b.iii — die V8.48-Terrain-Shader-
         // Schatten-Tests sind tot — `state.terrainMaterial` existiert
         // nicht mehr. Die V8.48-Vision (Schatten aufs Terrain) lebt
-        // im Voxel-Mesh weiter (`MeshToonMaterial` mit `receiveShadow`,
-        // die DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-
-        // Spieler-Mechanik lebt; die `usesSunDir`-Probe in
-        // `_applyDayNightToScene` lebt auch.
+        // im Voxel-Mesh weiter (PBR-Material mit `receiveShadow`, die
+        // DirectionalLight-Shadow-Map). Die Schatten-Frustum-folgt-Spieler-
+        // Mechanik lebt; die tote `usesSunDir`-Probe auf dem entfernten
+        // `_dayNightApplyTerrainShaderUniforms`-Helfer ist V18.287 gekehrt.
         check("V8.48: Light-Target im Szenengraph", v848Results.targetInScene);
         check("V8.48: Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
             "V9.85 Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
             v848Results.shadowSnapStable
         );
-        check("V8.48: _applyDayNightToScene leitet lightDir aus sunDir ab", v848Results.usesSunDir);
     } else {
         check("V8.48: Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
     }
