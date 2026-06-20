@@ -61237,7 +61237,15 @@ class AnazhRealm {
         // (Render bleibt). colRadius < RMIN(100) ≤ radius → immer < Render.
         const colRadius = this.state.architectureCollisionRadius || 90;
         const colRadiusSq = colRadius * colRadius;
-        const budget = Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
+        // V18.298 — DER PROFIWEG: der Nexus baut NUR in der freien Zeit des Spielers
+        // (Schöpfer „er konkurriert mit dem Spieler, das ist keine Synergie"). Das
+        // Laub wartet schon, wenn der Frame eng ist (_frameOverBudget, V18.282); das
+        // Bauen tat es NIE — es zwackte IMMER ≥1 Bau/Frame ab (ARCH_QUALITY_BUDGET_MIN=1),
+        // auch mitten in der Bewegung. Jetzt EINE konsistente Regel: über Budget → 0
+        // Bauten (der Nexus wartet), bei Kopfraum → der geregelte Durchsatz. Die Welt
+        // wächst in den LÜCKEN (wenn du stehst/dich umsiehst), nie auf deine Kosten.
+        // Das CULLEN (fern → frei) läuft weiter (billig, gibt Speicher frei).
+        const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
         // V18.150 — die Kollision des GERITTENEN Gefährts ruht (das Minecraft-
         // Boot-Muster): der Lazy-Pass würde sie sonst sofort zurückbauen
@@ -73946,7 +73954,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.297.0";
+AnazhRealm.VERSION = "18.298.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
