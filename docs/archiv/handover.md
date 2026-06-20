@@ -450,6 +450,8 @@ Schöpfer (auf die Render-Last-Frage): „Deko steigt bei Kapazität … das Sys
 
 ### V18.276 — RESPONSIVITÄT VOR DURCHSATZ: das Laden gibt nach, wenn du dich umsiehst
 
+> ⚠️ **SPÄTER ALS FEHLER ERKANNT + ENTFERNT — s. V18.282 (Chronik-Spitze).** Der hier gebaute Streaming-Throttle (`_frameRenderBound ? 0.12`) verhungerte die BEWEGUNG: sein Trigger (Draw-Call-ZAHL) maß die konstante Welt-GRÖSSE, nicht transienten Render-Druck → er klemmte dauerhaft an → Lauf-Freeze. Dieser Eintrag bleibt als Geschichte; das geltende Gesetz ist „STREAMING IST HEILIG" (V18.282): die Bewegung wird NIE vom Render gedrosselt, nur die Optik.
+
 Schöpfer (nach V18.275): „ich verstehe nicht warum das plötzlich den Rechner überfordert, wieso ist das CPU-Last? … laggt immernoch aber die Welt lädt weiter, sie würde besser warten und mich umsehen lassen". Die EINE richtige Beobachtung — die Wurzel.
 
 **WARUM CPU (die Antwort):** „WebGPU" ≠ „die GPU macht alles". Die CPU (EIN Main-Thread, JS) bereitet JEDEN der 1097 Draw-Calls vor (Bind-Groups/Uniforms/Scene-Traversal) UND baut die Chunks UND füllt die Vegetation UND rechnet Physik — alles auf einem Thread; die GPU malt nur das fertige Bild. „Plötzlich" = zwei Dinge treffen sich: die Welt rendert mehr Draw-Calls als die CPU pro Frame submitten kann, UND V18.275 ließ die Welt KONTINUIERLICH wachsen (sie lädt weiter) statt einmal beim Spawn zu freezen → Laden + Rendern konkurrieren um die eine CPU → Ruckeln.
