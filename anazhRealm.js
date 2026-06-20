@@ -17056,7 +17056,7 @@ class AnazhRealm {
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
         const geom = this._buildCreatureSkinGeometry(parts, {
-            res: Number.isFinite(g.res) ? g.res : AnazhRealm.AVATAR_SKIN_RES,
+            res: AnazhRealm.AVATAR_SKIN_RES,
             taubinPasses: 8,
             creaseSharpen: 0,
             creaseMix: 0,
@@ -22174,8 +22174,23 @@ class AnazhRealm {
         // auch mit Regelkreisen, nicht nur mit Pokes. Die Regel fließt durch
         // denselben dslRun-Pfad → der `rule`-Op registriert sie in state.worldRules.
         const rng = Math.random;
-        const program =
-            rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose();
+        // V18.284 — KEINE STRUKTUR-BATCH-BOMBEN (der synergetische #3-Schnitt): ein autonomes
+        // `repeat N × spawn_village/temple` ODER ein `chain` mehrerer Bauten lief synchron als
+        // N Footprint-Remeshes = der periodische Sekunden-Freeze (gemessen ~140 ms PRO Struktur).
+        // Der Mesh-Bau ist schon budgetiert (`tickArchitectureCulling`/Frame) + Kreaturen sind
+        // gecacht (V18.283) → es bleibt nur, dass EINE Evolution nicht mehrere synchrone Bauten
+        // stapelt. Post-compose begrenzt (fängt repeat UND chain, egal wie verschachtelt): ≤1
+        // schwerer Welt-Bau pro Evolution; sonst neu würfeln (wenige Versuche, ~3 %/Compose →
+        // Konvergenz). Der Nexus behält seine volle Op-Bandbreite (Wetter/Emotion/Farbe/Regeln/
+        // Kreaturen/EIN Bau), nur kein synchroner Batch. Eine einzelne ~140-ms-Struktur bleibt ein
+        // akzeptabler Einzel-Hitch; ihr Footprint-Remesh zu budgetieren ist der nächste Bogen.
+        const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
+        let program = null;
+        for (let tries = 0; tries < 4; tries++) {
+            program = rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose();
+            const heavyCount = (JSON.stringify(program).match(HEAVY) || []).length;
+            if (heavyCount <= 1) break; // frame-sicher → nehmen
+        }
         return {
             name: `evo_${this.state.dsl.nextEntryId++}`,
             program,
@@ -73378,7 +73393,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.283.0";
+AnazhRealm.VERSION = "18.284.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76297,7 +76312,8 @@ AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
 // V18.283 — die Avatar-Haut-Isosurface-Auflösung (Gitter pro Kante). 128 kostete ~29 s/Bau (N³, der
 // größte Spawn-Freeze). 96 ist im engen Close-up SELBST GEPRÜFT (Screenshot res 96 vs 128 ≈ identisch:
 // Brust/Sixpack/Klavikel-Definition bleibt) und baut in ~13 s (Container; ~0,5–1 s real), einmalig →
-// dann gecacht (instant). Tunable, EINE Quelle; `g.res` kann pro Bau übersteuern (Inspektor-Close-up).
+// dann gecacht (instant). EINE Quelle (kein Pro-Bau-Override-Passagier — wer Close-up-Detail will,
+// hebt diesen Wert; der Cache macht den Wiederbau ohnehin instant).
 AnazhRealm.AVATAR_SKIN_RES = 96;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });

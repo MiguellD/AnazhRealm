@@ -284,6 +284,21 @@ async function checkRing2Dsl(ctx) {
         });
         out.histBefore = histBefore;
 
+        // V18.284 — KEINE STRUKTUR-BATCH-BOMBEN: generateEvolution erzeugt nie >1 schweren
+        // Welt-Bau pro Evolution (ein `repeat N × spawn_village` / chain-Batch lief synchron
+        // als N Footprint-Remeshes = der periodische Nexus-Freeze; der Mesh-Bau ist budgetiert,
+        // Kreaturen gecacht → es bleibt nur, KEINEN synchronen Bau-Stapel zu erzeugen).
+        {
+            const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
+            let maxHeavy = 0;
+            for (let i = 0; i < 120; i++) {
+                const ev = r.generateEvolution();
+                const n = (JSON.stringify(ev.program).match(HEAVY) || []).length;
+                if (n > maxHeavy) maxHeavy = n;
+            }
+            out.evoMaxHeavy = maxHeavy;
+        }
+
         r.state.jumpPower = jpBefore;
         return out;
     });
@@ -313,6 +328,10 @@ async function checkRing2Dsl(ctx) {
         check("DSL-Budget: maxDepth greift bei tiefer Verschachtelung", dslResults.depthBudgetEnforced);
         check("DSL-Scheduler: delay reiht in pending ein", dslResults.delayScheduled);
         check("Nexus-Generator: dslCompose produziert Array", dslResults.composeIsArray);
+        check(
+            `V18.284: generateEvolution erzeugt keine Struktur-Batch-Bombe (max ${dslResults.evoMaxHeavy} schwerer Bau/Evolution ≤ 1, kein synchroner Footprint-Remesh-Stapel)`,
+            dslResults.evoMaxHeavy <= 1
+        );
         check(
             "Nexus-Generator: Komposition hat chain als Wurzel",
             dslResults.composeRootIsChain,

@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.284 — DIE SAUBERE SCHLIESSUNG: #3 Nexus geschlossen, Passagiere gekehrt, der Freeze-Bogen gegossen
+
+Schöpfer: „schliesse alles sauber ab, synergetisch implementiert, keine Passagiere mehr, die Perfektion auf welche wir hinarbeiten, gieße das Ergebnis." Die Finalisierung des Freeze-Bogens.
+
+**(1) #3 NEXUS GESCHLOSSEN (synergetisch, kein Parallel-System):** der periodische Sekunden-Freeze war die Nexus-Evolution, die Welt SYNCHRON baute (`_loopNexusUpdate` → `dslRun`). Mit V18.283 sind Kreaturen gecacht (frei) + der Architektur-MESH-Bau ist ohnehin budgetiert (`tickArchitectureCulling`/Frame); blieb der synchrone Footprint-Remesh, der bei einem `repeat N × spawn_village` / chain-Batch N-fach stapelte (~140 ms PRO Struktur). HEILUNG an der Quelle, post-compose: `generateEvolution` begrenzt ≤1 schweren Welt-Bau pro Evolution (regex über das serialisierte Programm fängt repeat UND chain, egal wie verschachtelt; neu würfeln, ≤4 Versuche → Konvergenz). Der Nexus behält seine volle Op-Bandbreite (Wetter/Emotion/Farbe/Regeln/Kreaturen/EIN Bau), nur kein synchroner Batch. **GEMESSEN + selbst verifiziert: 400 Samples → max 1 schwerer Bau/Evolution, 0 Batches.** Wächter-Band (`generateEvolution erzeugt keine Struktur-Batch-Bombe`) verankert die Invariante (CONSUM, kein Passagier ohne Leser). Der Einzel-Struktur-~140-ms-Hitch bleibt (Mesh budgetiert) — sein Footprint-Remesh zu budgetieren ist der bewusste nächste Bogen.
+
+**(2) KEINE PASSAGIERE:** der `g.res`-Pro-Bau-Override (den ICH in V18.283 einbaute) hatte KEINEN Aufrufer — ein stummer Haken (Passagier-Trugschluss). Gekehrt → `_buildHumanoidRig` liest nur `AVATAR_SKIN_RES` (EINE Quelle). `audit:strict` voll grün (0 Failures, 0 Warnings: State-Felder, CSS-Vars, Soft-Defaults, Atmosphäre, Skip-Gates) — der `_skinGeomCache` ist korrekt Instanz-Feld (nicht serialisiert), `_frameOverBudget` whitelisted.
+
+**DER FREEZE-BOGEN, GEGOSSEN (die EINE Bug-Klasse: schwere Arbeit synchron auf dem Main-Thread):** #1 Streaming-Throttle (V18.282, Bewegung heilig) · #4 Avatar-Guss (V18.283, Cache + res 96) · #3 Nexus-Welt-Bau (V18.284, kein Batch). Alle gemessen, selbst gesehen, Gate grün. OFFEN als bewusste nächste Bögen (KEINE Passagiere): async-inkrementeller Avatar-Bau für zero-hitch bei voller res · Einzel-Struktur-Footprint-Remesh budgetieren · #2 Render-Last (GPU-Culling, look-gebunden, Schöpfer-Auge). Die Perfektion ist die Richtung; der Stamm ist sauber.
+
 ### V18.283 — DER AVATAR-BAU FRIERT NICHT MEHR: der größte Freeze, vom Schöpfer erkannt, gemessen geheilt
 
 Schöpfer: „kreatur skin pipeline UND avatar berücksichtigt — haben wir die Wurzeln nun gefunden?" — und der Hinweis war GOLD: ich hatte die Kreatur-Pipeline gemessen, den AVATAR aber übersehen, obwohl mein eigener Grep `res: 128` (Avatar) direkt neben `res: 64` (Kreatur) zeigte. Der Bettler wartet, bis ihm der Fisch gereicht wird; der Fischer wirft das ganze Netz.
