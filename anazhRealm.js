@@ -16121,7 +16121,39 @@ class AnazhRealm {
     // Reine Geometrie (kein Material). `parts` = die Body-Masse-Knochen (Rumpf/Hals/Kopf);
     // die animierten Beine bleiben separate Teile (sie tragen die Bewegung). Liefert eine
     // BufferGeometry (Vertices in Kreatur-Lokal-Koords) oder null.
+    // V18.283 — CACHE (die Wurzel-Heilung des größten Freeze, vom Schöpfer erkannt): der
+    // Isosurface-Guss ist DETERMINISTISCH (gleiche parts+opts → bit-gleiche Geometrie), kostete
+    // aber den vollen Bau PRO Aufruf ohne Memo (gemessen ~29 s headless für den res-128-Avatar) →
+    // der Avatar fror den Spawn + JEDEN Seelen-Wechsel, jede Kreatur jeden Spawn. Memoisiert über
+    // eine Signatur aus parts+opts: gleiche Signatur → ein KLON der gebauten Geometrie (der Aufrufer
+    // translatet/skinnt darauf → Klon, nicht teilen). Heilt Avatar (#4) UND Kreaturen (#3) — EINE
+    // Pipeline, EINE Heilung, wie der Schöpfer es batete. Der ERST-Bau pro Signatur kostet weiter
+    // (→ res-Senkung/async der nächste Schritt); jeder Wiederbau ist instant.
     _buildCreatureSkinGeometry(parts, opts) {
+        if (typeof THREE === "undefined" || !Array.isArray(parts) || !parts.length) return null;
+        let sig = null;
+        try {
+            sig = JSON.stringify(parts) + "#" + JSON.stringify(opts || {});
+        } catch (_e) {
+            sig = null; // nicht-serialisierbar → ungecacht bauen (sicher, nur kein Memo)
+        }
+        const cache = this._skinGeomCache || (this._skinGeomCache = new Map());
+        if (sig && cache.has(sig)) {
+            const c = cache.get(sig);
+            cache.delete(sig);
+            cache.set(sig, c); // LRU-Berührung (jüngste hinten)
+            return c.clone();
+        }
+        const geom = this._buildCreatureSkinGeometryUncached(parts, opts);
+        if (sig && geom) {
+            cache.set(sig, geom.clone()); // pristinen Klon cachen, Original an den Aufrufer
+            const CAP = AnazhRealm.SKIN_GEOM_CACHE_CAP || 16;
+            while (cache.size > CAP) cache.delete(cache.keys().next().value); // ältesten räumen
+        }
+        return geom;
+    }
+
+    _buildCreatureSkinGeometryUncached(parts, opts) {
         if (typeof THREE === "undefined" || !Array.isArray(parts) || !parts.length) return null;
         const rotV = (v, rot) => {
             if (!rot || (!rot.x && !rot.y && !rot.z)) return v;
@@ -17024,7 +17056,7 @@ class AnazhRealm {
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
         const geom = this._buildCreatureSkinGeometry(parts, {
-            res: 128,
+            res: Number.isFinite(g.res) ? g.res : AnazhRealm.AVATAR_SKIN_RES,
             taubinPasses: 8,
             creaseSharpen: 0,
             creaseMix: 0,
@@ -73346,7 +73378,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.282.0";
+AnazhRealm.VERSION = "18.283.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76259,6 +76291,14 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die render-senkenden
 // Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt. ~0.011 → 1092 Draw-Calls ≈ 12 ms.
 AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
+// V18.283 — wie viele gebaute Skin-Geometrien (Avatar + Kreatur-Arten) memoisiert bleiben
+// (deterministischer Isosurface-Guss, ~1–4 MB/Eintrag). 16 deckt Mensch + alle Arten + Custom-Seelen.
+AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
+// V18.283 — die Avatar-Haut-Isosurface-Auflösung (Gitter pro Kante). 128 kostete ~29 s/Bau (N³, der
+// größte Spawn-Freeze). 96 ist im engen Close-up SELBST GEPRÜFT (Screenshot res 96 vs 128 ≈ identisch:
+// Brust/Sixpack/Klavikel-Definition bleibt) und baut in ~13 s (Container; ~0,5–1 s real), einmalig →
+// dann gecacht (instant). Tunable, EINE Quelle; `g.res` kann pro Bau übersteuern (Inspektor-Close-up).
+AnazhRealm.AVATAR_SKIN_RES = 96;
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der
