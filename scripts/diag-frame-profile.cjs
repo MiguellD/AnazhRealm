@@ -116,6 +116,15 @@ const server = http.createServer((req, res) => {
             "p2pTick",
             "_loopSkyboxPlanets",
             "_ensureHorizonMantle",
+            // V18.290 — die Sub-Ticks von _loopVoxelStreaming (im Stand: welcher ist heiß?)
+            "_tickVoxelChunkStreaming",
+            "_tickArchitectureLOD",
+            "_tickScatterStreaming",
+            "_tickCanopyStreaming",
+            "_tickWorldWaterCA",
+            "_tickPendingVegSpawns",
+            "_loopRender",
+            "_loopNexusUpdate",
         ];
         const stats = {};
         for (const name of phases) {
@@ -159,16 +168,32 @@ const server = http.createServer((req, res) => {
         };
         // Profil A: Stand am Spawn (settled).
         for (const k of Object.keys(stats)) ((stats[k].sum = 0), (stats[k].max = 0), (stats[k].n = 0));
+        const qBefore = {
+            iso: r.state.pendingWaterIso ? r.state.pendingWaterIso.size : 0,
+            mesh: r.state.voxelMeshPending ? r.state.voxelMeshPending.size : 0,
+            caActive: r.state.waterCAActive ? r.state.waterCAActive.size : -1,
+        };
         const profA = await runProfile(240);
+        const qAfter = {
+            iso: r.state.pendingWaterIso ? r.state.pendingWaterIso.size : 0,
+            mesh: r.state.voxelMeshPending ? r.state.voxelMeshPending.size : 0,
+            caActive: r.state.waterCAActive ? r.state.waterCAActive.size : -1,
+        };
         const phasesA = {};
         for (const k of Object.keys(stats))
             if (stats[k].n)
                 phasesA[k] = { avg: +(stats[k].sum / stats[k].n).toFixed(3), max: +stats[k].max.toFixed(2) };
         const nCreatures = r.state.creatures ? r.state.creatures.length : 0;
-        return { profA, phasesA, nCreatures, chunks: r.state.voxelChunks.size };
+        return { profA, phasesA, nCreatures, chunks: r.state.voxelChunks.size, qBefore, qAfter };
     });
 
     console.log(`Kreaturen=${rep.nCreatures}  Chunks=${rep.chunks}`);
+    console.log(
+        `\nQUEUE-DRAINAGE über 240 Stand-Ticks (leert sich = settled · bleibt = churnt ewig):\n` +
+            `  pendingWaterIso:  ${rep.qBefore.iso} → ${rep.qAfter.iso}\n` +
+            `  voxelMeshPending: ${rep.qBefore.mesh} → ${rep.qAfter.mesh}\n` +
+            `  waterCAActive:    ${rep.qBefore.caActive} → ${rep.qAfter.caActive}`
+    );
     console.log(
         `\nTICK gesamt: median=${rep.profA.tickMed} ms  max=${rep.profA.tickMax} ms\n` +
             `Allokationen/Tick: Vector3 med=${rep.profA.v3Med} max=${rep.profA.v3Max} · Color med=${rep.profA.colMed} max=${rep.profA.colMax}`
