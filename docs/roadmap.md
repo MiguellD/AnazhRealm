@@ -276,6 +276,12 @@ B1 Wasser-Sheet→Worker (bewusst vertagt, V18.104-Entscheid).
   anazhSymphony-Emotion→Tonalität-Lücke (Pfeiler 4 halb — das magieleitung-Shimmer :9658 ist das
   Vorbild → D5b) · `journal share/witness` (Typen ohne Schreiber — der Sozial-Bogen F4 schreibt
   sie; NICHT schneiden).
+- **Die gebaut-aber-unverdrahtete öffentliche API ganzer fertiger Subsysteme (V18.286-Messung `diag-sediment`):**
+  Archipel (`createPortalHall`/`signPortalHall`/`listPortalHalls`/…) · Robustheit (`setWorldVisibility`/
+  `banPeer`/`banVibePassKey`/`_robustnessCorpus`) · Compute-Sharing (`signComputeContribution`/
+  `recordPlaytestRun`/`listComputeContributions`) · `pinCurrentWorld`/`setRegionsActive`/`_portalForwardDsl`
+  — ~19 Methoden, funktionsfähig + teils smoke-getestet, aber ohne UI-Knopf (`index.html`=0). KEIN
+  Sediment — eine ruhende Fähigkeit, die UI-Verdrahtung verdient (eigener UX-Bogen), kein Schnitt.
 
 ---
 

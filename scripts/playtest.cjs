@@ -18002,8 +18002,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
                 out.populateIdempotent = secondReturn === 0 && after === before;
             }
         }
-        // Architecture-Culling-Rate ist jetzt 2 Hz (V7.75 Bugfix).
-        out.cullingRateIs2Hz = r.state.architectureCullingTickHz === 2.0;
         // Stamm-Radius der Bäume ist größer (V7.75 Bugfix):
         // baum_eiche Stamm size.x >= 0.7 (war 0.5 in V7.74).
         // V18.257 — die Stamm-Dicke ist grammatik-getrieben (statischer Bauplan geschnitten);
@@ -18119,7 +18117,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             "Welle 6.G P2: populateChunkVegetation idempotent (zweiter Aufruf → 0 spawns)",
             wave6gP2Results.populateIdempotent
         );
-        check("Welle 6.G P2: architectureCullingTickHz auf 2.0 angehoben (Bugfix)", wave6gP2Results.cullingRateIs2Hz);
         check("Welle 6.G P2: baum_eiche Stamm-Radius >= 0.7 (Bugfix V7.75)", wave6gP2Results.stammIsThicker);
         // V17.17 — Affinitäts-Tag-Stabilitäts-Wächter (siehe Block im evaluate
         // oben). Gefrorene, GEMESSENE V17.15-Baseline der 4 Affinitäts-Achsen je
@@ -56195,13 +56192,11 @@ async function checkBandRing6Workshop(ctx) {
         out.farIsCold = far.mesh === null;
         // Spieler weg vom near → cull-Tick muss near disposen
         r.state.playerMesh.position.set(400, 20, 400);
-        r.state.architectureCullingLastTick = -Infinity; // erzwingen
         r.tickArchitectureCulling(1.0);
         out.nearCulledAfterWalkAway = near.mesh === null;
         out.farRebuiltAfterApproach = !!far.mesh;
         // Zurück gehen → near baut sich wieder auf
         r.state.playerMesh.position.set(0, 20, 0);
-        r.state.architectureCullingLastTick = -Infinity;
         r.tickArchitectureCulling(2.0);
         out.nearRebuiltAfterReturn = !!near.mesh;
 

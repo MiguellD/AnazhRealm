@@ -196,7 +196,6 @@ class AnazhRealm {
             // oder allokiert neu wenn leer. Bei Welt-Wechsel räumt
             // `_drainGrassMeshPool` den Pool vollständig (echtes dispose).
             _grassMeshPool: null,
-            wallBoxes: [],
             floatingIslands: [],
             planets: [],
             minHeight: 0,
@@ -1037,11 +1036,6 @@ class AnazhRealm {
             //   seinen Bewohnern als Ledger-Fakt).
             playtestContributions: [],
             architectureCullingRadius: 150,
-            // V7.75: 1Hz war zu langsam — bei Lauf-Geschwindigkeit ~7m/s
-            // kam der Spieler in Bereiche bevor das Culling sie erweckte.
-            // 2Hz halbiert die Latenz auf 500ms.
-            architectureCullingTickHz: 2.0,
-            architectureCullingLastTick: -Infinity,
             // V12.0-perf.d (Wurzel B) — max. teure Architektur-Builds (Render +
             // Ammo-Collision) pro Frame im Culling-Scan. Deckelt den Build-Burst
             // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
@@ -23043,30 +23037,6 @@ class AnazhRealm {
             this.state.creatures = [];
             this.state.creatureEmotions = [];
             this.log("Alte Kreaturen entfernt");
-        }
-        if (this.state.wallBoxes) {
-            this.state.wallBoxes.forEach((wall) => {
-                this.state.scene.remove(wall);
-                // V8.26 Polish §6.2 — Geometrie + Material disposen sonst leakt
-                // jeder Welt-Regen die wall-BoxGeometry + MeshBasicMaterial.
-                // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
-                if (wall.geometry) this._queueDispose(wall.geometry);
-                if (wall.material) {
-                    if (Array.isArray(wall.material)) wall.material.forEach((m) => m && this._queueDispose(m));
-                    else this._queueDispose(wall.material);
-                }
-                const body = wall.userData.physicsBody;
-                if (body) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                    this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== wall);
-                }
-                // V8.26 Polish §6.4 — Shape + MotionState aus dem WASM-Heap.
-                if (wall.userData.physicsShape) Ammo.destroy(wall.userData.physicsShape);
-                if (wall.userData.physicsMotionState) Ammo.destroy(wall.userData.physicsMotionState);
-            });
-            this.state.wallBoxes = [];
-            this.log("Alte Wand-Kollisionsboxen entfernt");
         }
         if (this.state.vegetation) {
             this.state.vegetation.forEach((veg) => {
@@ -60636,7 +60606,7 @@ class AnazhRealm {
     // Die Daten-Einträge bleiben immer; nur die GPU-Last ist begrenzt.
     // Damit löst sich das alte Hard-Cap-Problem auf: der Spieler kann
     // unbegrenzt bauen, solange das nicht alles gleichzeitig in Sicht ist.
-    tickArchitectureCulling(currentTime) {
+    tickArchitectureCulling() {
         // V12.0-perf.d (Wurzel B) — der Scan läuft jetzt PRO FRAME (315
         // Distanz-Checks = trivial), aber die teuren Builds (Render +
         // Ammo-Collision) sind auf `architectureBuildBudgetPerFrame` gedeckelt.
@@ -60645,7 +60615,6 @@ class AnazhRealm {
         // 6-9 der perf.c.diag). Jetzt: ≤N Builds/Frame → über mehrere Frames
         // verteilt, sanftes Pop-In statt Freeze (V9.85/V9.96-Budget-Pattern).
         // Cull (out-of-range) ist billig (kein Build) → ungedeckelt.
-        this.state.architectureCullingLastTick = currentTime;
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
@@ -71819,7 +71788,7 @@ class AnazhRealm {
                 // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
                 // Spieler-Distanz. Daten-Einträge bleiben immer.
                 _pt = performance.now();
-                this.tickArchitectureCulling(currentTime);
+                this.tickArchitectureCulling();
                 this._perfSenseLap("archCulling", _pt);
                 // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
                 this.tickBuildMode();
@@ -73362,7 +73331,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.285.0";
+AnazhRealm.VERSION = "18.286.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
