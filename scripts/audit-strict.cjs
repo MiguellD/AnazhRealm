@@ -624,6 +624,8 @@ async function auditStateAndMethods() {
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameRenderBound", // V18.276 — Flag, undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
+                "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
+                "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen

@@ -71557,185 +71557,200 @@ class AnazhRealm {
             // gesetzt und bleibt frisch → kein Delta-Sprung beim Verlassen.
             if (this._portalOverlay) return;
 
-            // ### FPS aktualisieren ###
-            this.updateFps(delta);
+            // V18.278 — DIE ERROR-BOUNDARY DES EWIGEN LOOPS: der Loop war NICHT ewig — ein
+            // EINZIGER Throw in irgendeinem der ~40 Frame-Schritte (oder im Render) brach den
+            // setAnimationLoop-Callback → die Welt ERSTARRTE (Render nie aktualisiert, „die
+            // Wellen hängen, das Wasser fliesst nicht mehr"). Der Headless-Pump fing den Throw
+            // in SEINEM eigenen try/catch ab → er reproduzierte den Freeze NIE (der blinde
+            // Fleck, warum 3000 Pump-Ticks sauber liefen, der echte Browser aber erstarrte).
+            // Jetzt: ein Frame-Fehler wird abgefangen, gedrosselt mit Stack geloggt (die Wurzel
+            // wird SICHTBAR statt zu freezen), die Welt läuft weiter — ein schlechter Frame
+            // degradiert, er erstarrt nicht.
+            try {
+                // ### FPS aktualisieren ###
+                this.updateFps(delta);
 
-            // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
-            this._loopNexusUpdate();
+                // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
+                this._loopNexusUpdate();
 
-            // ### Grok-Stimme (Ring 1) ###
-            this.grokTick(currentTime);
+                // ### Grok-Stimme (Ring 1) ###
+                this.grokTick(currentTime);
 
-            // ### Nexus-DSL Scheduler (Ring 2) ###
-            this.dslTick(currentTime);
+                // ### Nexus-DSL Scheduler (Ring 2) ###
+                this.dslTick(currentTime);
 
-            // ### Welt-Regeln (V17.33 Phase A) ###
-            // Die stehenden Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet).
-            // Nach dslTick, damit eine soeben geplante Geste noch vor den Regeln
-            // läuft; die Welt ist hier zum ersten Mal regel-getrieben.
-            this._tickWorldRules(currentTime);
+                // ### Welt-Regeln (V17.33 Phase A) ###
+                // Die stehenden Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet).
+                // Nach dslTick, damit eine soeben geplante Geste noch vor den Regeln
+                // läuft; die Welt ist hier zum ersten Mal regel-getrieben.
+                this._tickWorldRules(currentTime);
 
-            // ### Region-Übergangs-Detection (Φ3, V18.189) ###
-            // 1×/s reicht — der Spieler überquert eine 345.6 m-Region nicht
-            // im selben Frame. Default OFF (regionsActive=false → no-op).
-            // Ein detektierter Übergang ruft _p2pRegionHandoff(oldKey,newKey)
-            // (der ECHTE Mesh-Switch — V2 hängt sich hier ein).
-            if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
-                this._regionTickLast = currentTime;
-                const crossing = this._regionTickDetectCrossing();
-                if (crossing && typeof this._p2pRegionHandoff === "function") {
-                    this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                // ### Region-Übergangs-Detection (Φ3, V18.189) ###
+                // 1×/s reicht — der Spieler überquert eine 345.6 m-Region nicht
+                // im selben Frame. Default OFF (regionsActive=false → no-op).
+                // Ein detektierter Übergang ruft _p2pRegionHandoff(oldKey,newKey)
+                // (der ECHTE Mesh-Switch — V2 hängt sich hier ein).
+                if (!this._regionTickLast || currentTime - this._regionTickLast >= 1000) {
+                    this._regionTickLast = currentTime;
+                    const crossing = this._regionTickDetectCrossing();
+                    if (crossing && typeof this._p2pRegionHandoff === "function") {
+                        this._p2pRegionHandoff(crossing.oldKey, crossing.newKey);
+                    }
                 }
+
+                // ### Player-Emotionen (Ring 3) ###
+                this.updatePlayerEmotions(currentTime);
+
+                // ### Player-Boosts (Welle 6.D Etappe 2) ###
+                // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
+                this.tickPlayerBoosts(currentTime);
+
+                // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
+                // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
+                this.tickCreatureBoosts(currentTime);
+
+                // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
+                // HP-Regen während aktiver Wandlung + Ablauf-Detection.
+                this.tickPhoenixDeath(currentTime);
+
+                // ### Player-Aura (Welle 6.D Etappe 3b) ###
+                // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
+                this.tickPlayerAura();
+
+                // ### Stats-HUD (Welle 6.X.4 B3) ###
+                // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
+                this.tickStatsHud(currentTime);
+
+                // ### Tag-Nacht-Zyklus (Welle 6.G3.a) ###
+                // timeOfDay läuft, Lights+Skybox folgen. _applyDayNightToScene
+                // throttled auf 10 Hz, Tick selbst feuert jeden Frame für
+                // smooth Position-Advance.
+                this.tickDayNight(currentTime);
+
+                // ### Wetter-Übergang (Welle 6.G3.b) ###
+                // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
+                this.tickWeatherTransition(currentTime);
+
+                // ### Fauna-Lifecycle (Welle 6.G3.c) ###
+                // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
+                this.tickFaunaLifecycle(currentTime);
+
+                // ### Symphonie-Wetter-Layer (Ring 4) ###
+                this.symphonyTick();
+
+                // ### Status-Panel (UI V1) ###
+                this.updateStatusPanel(currentTime);
+
+                // ### Ring 11 V1 — Multi-User Position-Sync ###
+                // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
+                // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
+                this.p2pTick(performance.now());
+
+                // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
+                this._loopGroundCheck(currentTime);
+                this._loopFrustumCulling();
+                this._loopAnimateUfos(currentTime);
+
+                // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
+                // floatingIslands ist hier gelöscht. Inseln bekommen ihre
+                // btBvhTriangleMeshShape-Kollision jetzt sofort beim Spawn
+                // (siehe `_buildIslandCollision`) statt erst beim ersten
+                // Player-Approach. `island.userData.needsPhysics` wurde nie
+                // gesetzt — der Block war tote Schicht (System-Audit §2).
+
+                // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
+                // V18.263 — der Perf-Sense misst jede schwere Phase (was wieviel zieht).
+                let _pt = performance.now();
+                this._loopPhysicsSync(delta, currentTime);
+                this._perfSenseLap("physics", _pt);
+
+                // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
+                // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
+                this._rescuePlayerFromVoid();
+                // V18.271 (Welle Async-1) — der weiche Boden: hält den Spieler an der
+                // deterministischen Terrain-Höhe, während sein Chunk async lädt (löst den
+                // blockierenden Spieler-Chunk-forceSync ab). Greift VOR der Void-Tiefe.
+                this._softFloorWhileChunkLoading();
+
+                // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
+                // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
+                this._tickHarvest();
+
+                // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
+                this._loopPlayerMovement(currentTime);
+
+                // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
+                this._loopSelfAnalysis(currentTime);
+
+                // ### Schicht 1 — IQ-Ticks ###
+                // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
+                // Keyword-Window-Cleanup (60 s Cutoff), pending Outcomes finalisieren
+                // (5 s nach Programm-Lauf liest der Finalizer Emotion/Activity-Delta).
+                this.samplePathBuckets(currentTime);
+                this.samplePlayerActivity(currentTime);
+                this.pruneRecentKeywords(currentTime);
+                this.finalizePendingOutcomes(currentTime);
+
+                // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
+                this._loopWeatherAndGrowth(delta, currentTime);
+
+                // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
+                _pt = performance.now();
+                this._loopVoxelStreaming();
+                this._perfSenseLap("streaming", _pt);
+
+                // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
+                this._loopSkyboxPlanets(currentTime);
+
+                // ### Fähigkeiten ###
+                Object.keys(this.state.abilities).forEach((ability) => {
+                    if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
+                });
+
+                // ### Speichern ### (V9.44-f → _loopAutoSave)
+                this._loopAutoSave(currentTime);
+
+                // ### Kamera ### (V9.44-f → _loopCamera)
+                this._loopCamera(currentTime);
+
+                // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
+                // jeden Frame über sin/cos relativ zum aktuellen walkPhase
+                // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
+                this.animatePlayerSoul(currentTime);
+
+                // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
+                // Spieler-Distanz. Daten-Einträge bleiben immer.
+                _pt = performance.now();
+                this.tickArchitectureCulling(currentTime);
+                this._perfSenseLap("archCulling", _pt);
+                // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
+                this.tickBuildMode();
+                // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
+                this.tickArchitectures(currentTime);
+                // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
+                // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
+                this.tickAffordances(delta);
+
+                // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
+                // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
+                // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
+
+                // ### Rendering ### (V9.44-f → _loopRender)
+                // V18.264 — VOR dem Render entscheiden, ob die Schatten-Map neu muss
+                // (Cache; im Stand/Umsehen übersprungen → der zweite Voll-Render entfällt).
+                _pt = performance.now();
+                this._loopShadowUpdate();
+                this._loopRender(currentTime);
+                this._perfSenseLap("render", _pt);
+            } catch (err) {
+                // Ein Frame-Fehler erstarrt die Welt NICHT mehr (V18.278) — abfangen, loggen, weiter.
+                this._loopErrorBoundary(err);
             }
-
-            // ### Player-Emotionen (Ring 3) ###
-            this.updatePlayerEmotions(currentTime);
-
-            // ### Player-Boosts (Welle 6.D Etappe 2) ###
-            // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
-            this.tickPlayerBoosts(currentTime);
-
-            // ### Kreatur-Boosts (Welle 6.H Phase 2F.3) ###
-            // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
-            this.tickCreatureBoosts(currentTime);
-
-            // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
-            // HP-Regen während aktiver Wandlung + Ablauf-Detection.
-            this.tickPhoenixDeath(currentTime);
-
-            // ### Player-Aura (Welle 6.D Etappe 3b) ###
-            // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
-            this.tickPlayerAura();
-
-            // ### Stats-HUD (Welle 6.X.4 B3) ###
-            // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
-            this.tickStatsHud(currentTime);
-
-            // ### Tag-Nacht-Zyklus (Welle 6.G3.a) ###
-            // timeOfDay läuft, Lights+Skybox folgen. _applyDayNightToScene
-            // throttled auf 10 Hz, Tick selbst feuert jeden Frame für
-            // smooth Position-Advance.
-            this.tickDayNight(currentTime);
-
-            // ### Wetter-Übergang (Welle 6.G3.b) ###
-            // Cross-Fade über 45 s. No-op wenn kein Übergang aktiv.
-            this.tickWeatherTransition(currentTime);
-
-            // ### Fauna-Lifecycle (Welle 6.G3.c) ###
-            // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
-            this.tickFaunaLifecycle(currentTime);
-
-            // ### Symphonie-Wetter-Layer (Ring 4) ###
-            this.symphonyTick();
-
-            // ### Status-Panel (UI V1) ###
-            this.updateStatusPanel(currentTime);
-
-            // ### Ring 11 V1 — Multi-User Position-Sync ###
-            // Broadcast (30 Hz Drosselung intern) + Peer-Mesh-Update + Idle-
-            // Purge. No-op wenn p2p.enabled === false oder nicht verbunden.
-            this.p2pTick(performance.now());
-
-            // ### Bodenprüfung / Frustum-Culling / UFOs ### (V9.44-f)
-            this._loopGroundCheck(currentTime);
-            this._loopFrustumCulling();
-            this._loopAnimateUfos(currentTime);
-
-            // Welle 6.G Phase 1: der frühere lazy-physics-Pfad für
-            // floatingIslands ist hier gelöscht. Inseln bekommen ihre
-            // btBvhTriangleMeshShape-Kollision jetzt sofort beim Spawn
-            // (siehe `_buildIslandCollision`) statt erst beim ersten
-            // Player-Approach. `island.userData.needsPhysics` wurde nie
-            // gesetzt — der Block war tote Schicht (System-Audit §2).
-
-            // ### Physik-Simulation ### (V9.44-f → _loopPhysicsSync)
-            // V18.263 — der Perf-Sense misst jede schwere Phase (was wieviel zieht).
-            let _pt = performance.now();
-            this._loopPhysicsSync(delta, currentTime);
-            this._perfSenseLap("physics", _pt);
-
-            // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
-            // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
-            this._rescuePlayerFromVoid();
-            // V18.271 (Welle Async-1) — der weiche Boden: hält den Spieler an der
-            // deterministischen Terrain-Höhe, während sein Chunk async lädt (löst den
-            // blockierenden Spieler-Chunk-forceSync ab). Greift VOR der Void-Tiefe.
-            this._softFloorWhileChunkLoading();
-
-            // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
-            // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
-            this._tickHarvest();
-
-            // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
-            this._loopPlayerMovement(currentTime);
-
-            // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
-            this._loopSelfAnalysis(currentTime);
-
-            // ### Schicht 1 — IQ-Ticks ###
-            // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame, billig),
-            // Keyword-Window-Cleanup (60 s Cutoff), pending Outcomes finalisieren
-            // (5 s nach Programm-Lauf liest der Finalizer Emotion/Activity-Delta).
-            this.samplePathBuckets(currentTime);
-            this.samplePlayerActivity(currentTime);
-            this.pruneRecentKeywords(currentTime);
-            this.finalizePendingOutcomes(currentTime);
-
-            // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-            this._loopWeatherAndGrowth(delta, currentTime);
-
-            // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
-            _pt = performance.now();
-            this._loopVoxelStreaming();
-            this._perfSenseLap("streaming", _pt);
-
-            // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
-            this._loopSkyboxPlanets(currentTime);
-
-            // ### Fähigkeiten ###
-            Object.keys(this.state.abilities).forEach((ability) => {
-                if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
-            });
-
-            // ### Speichern ### (V9.44-f → _loopAutoSave)
-            this._loopAutoSave(currentTime);
-
-            // ### Kamera ### (V9.44-f → _loopCamera)
-            this._loopCamera(currentTime);
-
-            // Ring 5 V2: Soul-Animation. Glieder/Flügel/Schweif werden
-            // jeden Frame über sin/cos relativ zum aktuellen walkPhase
-            // rotiert. Idle-Loop (atmen, hover) läuft auch im Stand.
-            this.animatePlayerSoul(currentTime);
-
-            // Ring 6 V2: Culling-Tick (1 Hz) — baut/disposed Meshes je nach
-            // Spieler-Distanz. Daten-Einträge bleiben immer.
-            _pt = performance.now();
-            this.tickArchitectureCulling(currentTime);
-            this._perfSenseLap("archCulling", _pt);
-            // Ring 6 V2: Bau-Modus — Phantom-Position nachziehen wenn aktiv.
-            this.tickBuildMode();
-            // Ring 6: Bau-Werke mit Animations-Hook (nur Wasserfälle aktuell).
-            this.tickArchitectures(currentTime);
-            // Welle 10b.3 — Affordance-Welt-Reaktionen: mounted-Movement +
-            // focusing-Hitze-Tick. Magnifying läuft asynchron via Tastendruck.
-            this.tickAffordances(delta);
-
-            // V9.75 (Welle C.4+5) — kein reaktiver Hydro-Tick mehr. Die
-            // Welle-A-Maschinerie ist weg; Cell-Feld ist DERIVED (V9.74),
-            // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
-
-            // ### Rendering ### (V9.44-f → _loopRender)
-            // V18.264 — VOR dem Render entscheiden, ob die Schatten-Map neu muss
-            // (Cache; im Stand/Umsehen übersprungen → der zweite Voll-Render entfällt).
-            _pt = performance.now();
-            this._loopShadowUpdate();
-            this._loopRender(currentTime);
-            this._perfSenseLap("render", _pt);
 
             // V18.263 — FRAME-ENDE: den Perf-Sense falten (EWMA) + den PID-Regler
             // treiben (die Rückkopplung). frameMs = delta·1000 = die echte Frame-Zeit
             // (fängt den Block-Spike eines Sync-Builds — der nächste rAF feuert erst danach).
+            // LÄUFT IMMER (auch nach einem abgefangenen Frame-Fehler) — der Regler bleibt am Leben.
             this._perfSenseFoldFrame(delta * 1000, delta);
         };
         // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
@@ -71746,6 +71761,24 @@ class AnazhRealm {
         // dies ist nur eine zusätzliche, frei aufrufbare Referenz.
         this._gameLoopTick = loop;
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // V18.278 — die EINE Fehler-Grenze des ewigen Loops (Schöpfer „das gesamte System crasht
+    // plötzlich, die Welt erstarrt"). Ein Frame-Throw landet HIER statt den Loop zu brechen:
+    // gezählt + GEDROSSELT geloggt (max 1×/2 s, mit Stack — sonst flutet ein per-Frame-Throw
+    // die Konsole + bremst weiter). Die Wurzel wird so SICHTBAR (im Schöpfer-Browser), ohne
+    // dass die Welt erstarrt. `_loopErrorCount`/`-LastLog` sind undefined-sichere Laufzeit-
+    // Felder (audit:strict-whitelisted). KEIN Verschlucken — der Fehler wird laut geloggt;
+    // die Heilung ist nur, dass EIN schlechter Frame nicht die ganze Welt mitreißt.
+    _loopErrorBoundary(err) {
+        const st = this.state;
+        st._loopErrorCount = (st._loopErrorCount || 0) + 1;
+        const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        if (!st._loopErrorLastLog || now - st._loopErrorLastLog > 2000) {
+            st._loopErrorLastLog = now;
+            const msg = (err && (err.stack || err.message)) || String(err);
+            this.log(`Loop-Frame-Fehler abgefangen (#${st._loopErrorCount}, die Welt läuft weiter): ${msg}`, "ERROR");
+        }
     }
 
     // V9.44-f — der Game-Loop bekommt Phasen-Struktur. Vor V9.44-f war der
@@ -73228,7 +73261,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.277.0";
+AnazhRealm.VERSION = "18.278.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

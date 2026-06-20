@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.278 — DER EWIGE LOOP IST JETZT EWIG: die Error-Boundary gegen den Welt-Freeze
+
+Schöpfer: „es freezed noch immer ein, warte über 3 min aber fängt sich nicht … das gesamte System crasht plötzlich, schaue zum Fluss und das Wasser fliesst nicht mehr, die Wellen hängen, die Welt erstarrt, was ist es?"
+
+**DIE WURZEL (gefunden, nicht geraten):** der Spiel-Loop (`startEternalLoop`, ~190 Zeilen, ~40 Frame-Schritte + Render) lief OHNE try/catch. Ein EINZIGER Throw in irgendeinem Schritt (oder im GPU-Render) brach den `setAnimationLoop`-Callback → die Welt ERSTARRTE (Render nie wieder aktualisiert → „die Wellen hängen, das Wasser fliesst nicht mehr"). Der „ewige" Loop war nicht ewig. **WARUM kein Diag ihn je fing — der blinde Fleck:** der Headless-Pump (playtest + alle diag-*) ruft `r._gameLoopTick()` in SEINEM EIGENEN `try { } catch {}` → er VERSCHLUCKT genau den Throw, der den echten Browser einfriert. Darum liefen 3000 Pump-Ticks mit Bewegung SAUBER (kein Runaway, keine Queue-Growth, `_loopErrorCount=0`), während der echte Browser erstarrte. Die ganze Render-Last-Jagd (V18.275–.277, alle gut + behalten) behandelte ein Symptom; der CRASH war diese fehlende Fehler-Grenze.
+
+**GEBAUT = DIE EINE FEHLER-GRENZE:** der Loop-Body ist jetzt in `try/catch` gewickelt; ein Frame-Throw landet in `_loopErrorBoundary(err)` — gezählt (`_loopErrorCount`) + GEDROSSELT mit Stack geloggt (max 1×/2 s, sonst flutet ein per-Frame-Throw die Konsole + bremst weiter). Die Welt läuft weiter: EIN schlechter Frame DEGRADIERT, er erstarrt nicht. `_perfSenseFoldFrame` läuft IMMER (auch nach einem Fehler) → der Regler bleibt am Leben. KEIN Verschlucken — der Fehler wird LAUT geloggt; die Heilung ist nur, dass ein Frame nicht die ganze Welt mitreißt. Der Body wurde dabei zur klaren benannten Naht (die V9.44-Stamm-Disziplin: ein ~190-Zeilen-Kontrollfluss ist ein Schnitt-Signal).
+
+**DER ROOT-CAUSE-THROW SELBST (ehrlich offen, vom Browser zu enthüllen):** mit der Boundary AKTIV warf der Headless-Pump in 2500 Bewegungs-Ticks NULL Mal (`_loopErrorCount=0`) → der Throw sitzt im RENDER/GPU-Pfad (den Headless stubt) oder in der echten Foliage-Rampe (die Headless auf MAX zwingt) — **headless nicht reproduzierbar.** Die Boundary macht ihn jetzt SICHTBAR: beim nächsten Schöpfer-Lauf zeigt die Konsole „Loop-Frame-Fehler abgefangen: [Stack]" → DANN heile ich die Wurzel. Verdacht: eine GPU-Submission, die unter der Render-Last (3.32 M Dreiecke, wachsend) ein WebGPU-Limit/Device-Loss wirft. Die V18.277-Dichte senkt die Last, die Boundary fängt den Rest — zusammen sollte die Welt nicht mehr erstarren.
+
+**LEHRE (für die Gotchas):** ein „ewiger" Loop BRAUCHT eine Fehler-Grenze — sonst ist ein einziger Frame-Throw ein Welt-Freeze. Und: wenn ein Test-Harness den Produktions-Pfad in try/catch wickelt (der Pump), ist er BLIND für genau die Throw-Klasse, die den echten Lauf killt — der Pump-Erfolg beweist „kein Runaway", NICHT „kein Crash". Verifiziert: playtest grün (Page-Errors=0) · check · lint · format · audit:strict clean. 3 Wände (`checkBandV18278LoopErrorBoundary`: Source try/catch+Boundary · CONSUM werfender Schritt erstarrt nicht · CONSUM Fehler gezählt).
+
 ### V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE: Deko steigt bei Kapazität (der gemessene Weg, nach einem verworfenen)
 
 Schöpfer (auf die Render-Last-Frage): „Deko steigt bei Kapazität … das System beginnt in niedriger Auflösung und iteriert hoch … ein Leistungs-/Zeit-LOD, macht das Sinn?" + „beides zusammen Champ" (Dichte UND GPU-Culling).

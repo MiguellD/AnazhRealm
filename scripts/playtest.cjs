@@ -18590,6 +18590,60 @@ async function checkBandV18271AsyncSoftFloor(ctx) {
 }
 
 // V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT: die Vegetation füllt nur Chunks im
+// V18.278 — DIE ERROR-BOUNDARY DES EWIGEN LOOPS: der Loop war nicht ewig — ein einziger
+// Frame-Throw brach den setAnimationLoop-Callback → die Welt erstarrte („die Wellen hängen").
+// Der Headless-Pump fing den Throw in SEINEM try/catch ab → er sah den Freeze NIE. Jetzt fängt
+// der Loop selbst ab (loggt gedrosselt mit Stack, läuft weiter). Diese Wand prüft die Grenze
+// strukturell (try/catch + _loopErrorBoundary) UND behavioral (ein werfender Schritt erstarrt
+// den Loop NICHT). DIE Wand gegen die „der ewige Loop ist nicht ewig"-Bug-Klasse.
+async function checkBandV18278LoopErrorBoundary(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        if (!r || typeof r._gameLoopTick !== "function") return { error: "kein _gameLoopTick" };
+        const src = r._gameLoopTick.toString();
+        const out = {};
+        out.loopHasTry = /try\s*\{/.test(src);
+        out.loopCallsBoundary = /_loopErrorBoundary/.test(src);
+        out.boundaryExists = typeof r._loopErrorBoundary === "function";
+        // CONSUM (behavioral): ein werfender Frame-Schritt (updateFps) darf den Loop NICHT
+        // mehr brechen — die Boundary fängt ihn, zählt ihn, der Tick kehrt normal zurück.
+        const st = r.state;
+        const before = st._loopErrorCount || 0;
+        const origFps = r.updateFps;
+        let threw = false;
+        try {
+            r.updateFps = () => {
+                throw new Error("V18278-test-throw");
+            };
+            r._gameLoopTick(performance.now()); // darf NICHT werfen
+        } catch (_e) {
+            threw = true;
+        } finally {
+            delete r.updateFps; // Prototyp-Methode wiederherstellen
+        }
+        out.loopSurvivesThrow = !threw;
+        out.errorCounted = (st._loopErrorCount || 0) > before;
+        return out;
+    });
+    if (res.error) {
+        check("V18.278: Loop-Error-Boundary (realm)", false, res.error);
+        return;
+    }
+    check(
+        "V18.278: der Loop wickelt seinen Body in try/catch + ruft _loopErrorBoundary (Source — der ewige Loop ist jetzt ewig)",
+        res.loopHasTry && res.loopCallsBoundary && res.boundaryExists
+    );
+    check(
+        "V18.278 CONSUM: ein werfender Frame-Schritt erstarrt den Loop NICHT (abgefangen, weiter — kein Welt-Freeze)",
+        res.loopSurvivesThrow
+    );
+    check(
+        "V18.278 CONSUM: der abgefangene Fehler wird gezählt (_loopErrorCount steigt, die Wurzel sichtbar)",
+        res.errorCounted
+    );
+}
+
 // perf-geregelten `foliageRadius`; ferne warten in `pendingFoliageChunks`, bis der
 // Radius (mit der gemessenen Render-Kapazität) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth(ctx) {
@@ -18686,8 +18740,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
             renderCalls: 1500,
             phase: { streaming: 1, render: 0, archCulling: 1, waterIso: 0, creatures: 0, physics: 0 },
         });
-        out.densityHeadlessFull =
-            !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
+        out.densityHeadlessFull = !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
         st._foliageDensityScale = 1;
         return out;
     });
@@ -18718,7 +18771,10 @@ async function checkBandV18275FoliageGrowth(ctx) {
         "V18.277: der Aktuator fährt _foliageDensityScale; naher + ferner Scatter LESEN ihn (Source, der Bulk-Hebel)",
         res.actuateDrivesDensity && res.scatterReadsDensity && res.farScatterReadsDensity
     );
-    check("V18.277: headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)", res.densityHeadlessFull);
+    check(
+        "V18.277: headless (Null-Renderer) → _foliageDensityScale = 1 (volle Dichte, gate-treu)",
+        res.densityHeadlessFull
+    );
     if (res.densityCutsInstances !== undefined) {
         check(
             `V18.277 CONSUM: gedrosselte Dichte baut WENIGER ferne Scatter-Instanzen (${res.densFull} → ${res.densLow}) — direkt weniger Geometrie (der Bulk-Hebel)`,
@@ -56500,6 +56556,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandVoxelTerrainCore, ctx);
             await timed(checkBandV18271AsyncSoftFloor, ctx);
             await timed(checkBandV18275FoliageGrowth, ctx);
+            await timed(checkBandV18278LoopErrorBoundary, ctx);
             await timed(checkBandHydrosphere, ctx);
             await timed(checkBandVoxelP3AndInventory, ctx);
             await timed(checkBandWelle6Keybindings, ctx);
