@@ -618,6 +618,8 @@ async function auditStateAndMethods() {
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
+                "archBatches", // V18.289 — BatchedMesh-Bewuchs-Pfad, `if (!state.X) state.X = new Map()` (in init() null)
+                "useBatchedFoliage", // V18.289 — Flag (in init() false)
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
             ]);

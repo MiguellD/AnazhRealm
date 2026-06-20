@@ -1093,6 +1093,15 @@ class AnazhRealm {
             //   Lazy initialisiert beim Cutover (perf.c.2).
             archFlattenCache: null,
             archInstanceGroups: null,
+            // V18.289 — der BatchedMesh-Bewuchs-Pfad (flag-gated, Default AUS →
+            // Gate grün + normales Spiel unverändert). Flag AN: die 534 InstancedMesh-
+            // Gruppen (alle frustumCulled=false → Umsehen cullt nie) werden zu wenigen
+            // THREE.BatchedMesh pro (geteiltem Material × Schatten-Klasse) gebündelt —
+            // viele Geometrien/ein Draw + Per-Instanz-Frustum-Culling (die Engine cullt
+            // → Umsehen senkt die Last). archBatches: Map<matKey, {mesh:BatchedMesh,
+            // geomIds, slotEntry}>; die archInstanceGroups-Wrapper zeigen darauf.
+            archBatches: null,
+            useBatchedFoliage: false,
             // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — pro Bauplan-Variante
             // EINE merged Geometry je (shape, material)-Gruppe (typisch: bark
             // + foliage). Reduziert die Per-Variante-Draw-Calls von 75-80
@@ -56934,7 +56943,73 @@ class AnazhRealm {
         return mat;
     }
 
+    // V18.289 — der BatchedMesh-Pfad: ein Batch pro (geteiltem Material × Schatten-
+    // Klasse). Mehrere Leaf-Geometrien teilen EINEN Batch (addGeometry → geomId);
+    // der pro-(name#leafIdx)-Wrapper zeigt auf den geteilten Batch + seine geomId.
+    // Per-Instanz-Frustum-Culling ist an → Umsehen senkt die Draw-Last (die Wurzel
+    // des „hängt beim Umsehen": die alten Gruppen waren frustumCulled=false).
+    _archBatchGroupFor(name, leafIdx, leaf) {
+        if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
+        if (!this.state.archBatches) this.state.archBatches = new Map();
+        const key = name + "#" + leafIdx;
+        const existing = this.state.archInstanceGroups.get(key);
+        if (existing) return existing;
+        const castShadow = this._archGroupCastsShadow(name);
+        const batchKey = (leaf.mat.uuid || "m") + "#" + (castShadow ? "s" : "n");
+        let batch = this.state.archBatches.get(batchKey);
+        if (!batch) {
+            // Großzügig dimensioniert (selten Wachstum); Überlauf wird in alloc/
+            // addGeometry abgefangen (setInstanceCount/setGeometrySize, V18.289-Probe).
+            const MAXV = 524288,
+                MAXI = 1572864,
+                MAXINST = 8192;
+            const mesh = new THREE.BatchedMesh(MAXINST, MAXV, MAXI, leaf.mat);
+            mesh.castShadow = castShadow;
+            mesh.receiveShadow = true;
+            mesh.perObjectFrustumCulled = true; // die Engine cullt pro Instanz → Umsehen senkt die Last
+            mesh.sortObjects = false;
+            mesh.userData.archBatchKey = batchKey;
+            if (this.state.scene) this.state.scene.add(mesh);
+            batch = { batchKey, mesh, mat: leaf.mat, castShadow, geomIds: new Map(), slotEntry: [] };
+            this.state.archBatches.set(batchKey, batch);
+        }
+        let geomId = batch.geomIds.get(leaf.geom);
+        if (geomId === undefined) {
+            geomId = this._archBatchAddGeometry(batch, leaf.geom);
+            batch.geomIds.set(leaf.geom, geomId);
+        }
+        const g = {
+            kind: "batch",
+            key,
+            batch,
+            mesh: batch.mesh,
+            geomId,
+            geom: leaf.geom,
+            mat: leaf.mat,
+            castShadow,
+            slotEntry: batch.slotEntry,
+        };
+        this.state.archInstanceGroups.set(key, g);
+        return g;
+    }
+
+    // addGeometry mit Puffer-Wachstum bei Überlauf (setGeometrySize, V18.289-Probe).
+    _archBatchAddGeometry(batch, geom) {
+        try {
+            return batch.mesh.addGeometry(geom);
+        } catch {
+            const pos = geom.attributes.position ? geom.attributes.position.count : 0;
+            const idx = geom.index ? geom.index.count : pos;
+            const bg = batch.mesh.geometry;
+            const curV = bg && bg.attributes.position ? bg.attributes.position.count : 0;
+            const curI = bg && bg.index ? bg.index.count : 0;
+            batch.mesh.setGeometrySize(curV + pos + 8192, curI + idx + 24576);
+            return batch.mesh.addGeometry(geom);
+        }
+    }
+
     _archInstanceGroupFor(name, leafIdx, leaf) {
+        if (this.state.useBatchedFoliage) return this._archBatchGroupFor(name, leafIdx, leaf);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const key = name + "#" + leafIdx;
         let g = this.state.archInstanceGroups.get(key);
@@ -56957,6 +57032,7 @@ class AnazhRealm {
 
     // Kapazität verdoppeln: neue InstancedMesh, alte Matrizen kopieren.
     _archInstanceGroupGrow(g) {
+        if (g.kind === "batch") return; // Batch wächst in _archGroupAlloc (setInstanceCount)
         const newCap = g.capacity * 2;
         const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
         next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
@@ -56994,6 +57070,15 @@ class AnazhRealm {
     // Einen Slot in der Gruppe belegen (Free-List zuerst, dann frischer Slot,
     // dann wachsen). Rückgabe: Slot-Index.
     _archGroupAlloc(g) {
+        if (g.kind === "batch") {
+            try {
+                return g.mesh.addInstance(g.geomId);
+            } catch {
+                // maxInstanceCount-Überlauf → Instanz-Kapazität verdoppeln (V18.289-Probe)
+                g.mesh.setInstanceCount((g.mesh.maxInstanceCount || 1024) * 2);
+                return g.mesh.addInstance(g.geomId);
+            }
+        }
         if (g.free.length > 0) return g.free.pop();
         if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
         return g.next++;
@@ -57004,6 +57089,11 @@ class AnazhRealm {
     // rendern kein Dreieck, sind aber im Draw-Loop — vernachlässigbar; reuse
     // füllt sie wieder).
     _archGroupFree(g, slot) {
+        if (g.kind === "batch") {
+            if (typeof g.mesh.deleteInstance === "function") g.mesh.deleteInstance(slot);
+            if (g.slotEntry) g.slotEntry[slot] = null;
+            return;
+        }
         const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
         g.mesh.setMatrixAt(slot, z);
         g.mesh.instanceMatrix.needsUpdate = true;
@@ -57042,17 +57132,25 @@ class AnazhRealm {
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
-            g.mesh.instanceMatrix.needsUpdate = true;
             // V18.181-merge-Λ Sub 3d: setColorAt nur für Materialien, die
             // useInstanceTint lesen — lazy Allocation des instanceColor-Buffers.
-            if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
-                g.mesh.setColorAt(slot, tintColor);
-                if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
+            if (g.kind === "batch") {
+                // BatchedMesh verwaltet Matrix-/Color-Buffer + boundingSphere intern;
+                // kein .count/.instanceMatrix/.boundingSphere (V18.289).
+                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
+                    g.mesh.setColorAt(slot, tintColor);
+                }
+            } else {
+                g.mesh.instanceMatrix.needsUpdate = true;
+                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
+                    g.mesh.setColorAt(slot, tintColor);
+                    if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
+                }
+                if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
+                // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
+                g.mesh.boundingSphere = null;
             }
-            if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
             if (g.slotEntry) g.slotEntry[slot] = entry;
-            // boundingSphere invalidieren (Raycast-Cull, s. _archGroupFree).
-            g.mesh.boundingSphere = null;
             slots.push({ key: g.key, slot });
         }
         entry.instanced = true;
@@ -57077,8 +57175,10 @@ class AnazhRealm {
             if (!g) continue;
             m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
             g.mesh.setMatrixAt(slot, m);
-            g.mesh.instanceMatrix.needsUpdate = true;
-            g.mesh.boundingSphere = null; // Raycast-Cull, s. _archGroupFree
+            if (g.kind !== "batch") {
+                g.mesh.instanceMatrix.needsUpdate = true;
+                g.mesh.boundingSphere = null; // Raycast-Cull, s. _archGroupFree
+            }
         }
     }
 
@@ -57100,8 +57200,18 @@ class AnazhRealm {
     // Material leben im archFlattenCache (geteilt) → NICHT disposen; nur die
     // InstancedMesh-Wrapper (instanceMatrix-Buffer) freigeben + Map leeren.
     _archDisposeAllInstanceGroups() {
+        // V18.289 — die geteilten BatchedMeshes EINMAL disposen (mehrere Wrapper
+        // zeigen auf denselben Batch); die Wrapper selbst überspringen.
+        if (this.state.archBatches) {
+            for (const b of this.state.archBatches.values()) {
+                if (this.state.scene && b.mesh) this.state.scene.remove(b.mesh);
+                if (b.mesh && typeof b.mesh.dispose === "function") b.mesh.dispose();
+            }
+            this.state.archBatches.clear();
+        }
         if (!this.state.archInstanceGroups) return;
         for (const g of this.state.archInstanceGroups.values()) {
+            if (g.kind === "batch") continue; // geteiltes mesh schon oben disposed
             if (this.state.scene && g.mesh) this.state.scene.remove(g.mesh);
             if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
         }
@@ -73285,7 +73395,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.288.0";
+AnazhRealm.VERSION = "18.289.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

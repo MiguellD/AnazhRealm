@@ -19,14 +19,18 @@ const server = http.createServer((req, res) => {
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 580000, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
+    const BATCHED = process.env.BATCHED === "1";
     const page = await browser.newPage();
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message).split("\n")[0]));
     await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; window.__anazhHeadlessSkinResCap = 64; });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "load", timeout: 30000 });
     // warmlaufen: Streaming pumpen bis Bewuchs-Gruppen existieren
-    await page.evaluate(async () => {
+    await page.evaluate(async (batched) => {
         const start = performance.now();
         const r0 = window.anazhRealm;
         if (r0 && r0.state) r0.state.voxelWorker = null; // sync-Streaming für deterministisches Warmup
+        if (r0 && r0.state && batched) r0.state.useBatchedFoliage = true; // V18.289 — BatchedMesh-Pfad an
         while (performance.now() - start < 60000) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
@@ -37,7 +41,7 @@ const server = http.createServer((req, res) => {
             }
             await new Promise((res) => setTimeout(res, 30));
         }
-    });
+    }, BATCHED);
     const topo = await page.evaluate(() => {
         const r = window.anazhRealm;
         const groups = r.state.archInstanceGroups ? [...r.state.archInstanceGroups.values()] : [];
@@ -69,6 +73,8 @@ const server = http.createServer((req, res) => {
             totalInstances: totalInst,
             totalTrisK: Math.round(totalTris / 100) / 10,
             foliageMatCacheSize: r.state._foliageMatCache ? r.state._foliageMatCache.size : -1,
+            archBatchCount: r.state.archBatches ? r.state.archBatches.size : 0,
+            useBatchedFoliage: r.state.useBatchedFoliage === true,
             treeGroups: treeGroups.length,
             treeDistinctMaterials: treeMats.size,
             groupsWithSharedMat: sharedMarked,
@@ -89,7 +95,15 @@ const server = http.createServer((req, res) => {
     console.log(`    _foliageMatCache.size:          ${topo.foliageMatCacheSize}   (distinkte geteilte Materialien gebaut)`);
     console.log(`    Gruppen mit sharedFoliage-Mat:  ${topo.groupsWithSharedMat} / ${topo.totalGroups}`);
     console.log(`    grown_baum-Gruppen:             ${topo.treeGroups}  →  ${topo.treeDistinctMaterials} distinkte Materialien  (Ziel: ≤ ~2-3)`);
-    console.log(`\n  → Merge-Potential: ${topo.totalGroups} Gruppen-Draws → ~${topo.distinctMaterials} BatchedMesh-Draws (×LOD)`);
+    console.log(`\n  BATCHEDMESH-PFAD (V18.289, useBatchedFoliage=${topo.useBatchedFoliage}):`);
+    console.log(`    archBatches (= echte Foliage-Draw-Calls):  ${topo.archBatchCount}`);
+    console.log(`    Page-Errors während des Laufs:             ${pageErrors.length}`);
+    if (pageErrors.length) pageErrors.slice(0, 6).forEach((e) => console.log(`      ✗ ${e}`));
+    if (topo.useBatchedFoliage) {
+        console.log(`\n  → GEMESSEN: ${topo.totalGroups} Wrapper → ${topo.archBatchCount} BatchedMesh-Draws (statt ${topo.totalGroups} InstancedMesh-Draws)`);
+    } else {
+        console.log(`\n  → Merge-Potential: ${topo.totalGroups} Gruppen-Draws → ~${topo.distinctMaterials} BatchedMesh-Draws (×LOD)`);
+    }
     await browser.close();
     server.close();
 })().catch((e) => { console.error("CRASH:", e); process.exit(2); });

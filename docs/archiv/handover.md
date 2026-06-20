@@ -378,6 +378,14 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.289 — RENDER-BOGEN Schritt 2: der BatchedMesh-Pfad gebaut — UND gemessen, warum er allein nicht reicht
+
+Schöpfer wählte „BatchedMesh bauen". GEBAUT (flag-gated `useBatchedFoliage`, Default AUS → Gate grün + normales Spiel unverändert; der ganze polymorphe Pfad: `_archBatchGroupFor` [ein Batch pro Material×Schatten-Klasse, addGeometry→geomId], `_archGroupAlloc/Free/Add/Remove/Update/Dispose` verzweigen auf `g.kind==="batch"`, Wachstum via setInstanceCount/setGeometrySize, Tint via setColorAt, `perObjectFrustumCulled=true`). Der Pfad läuft **fehlerfrei** (0 Page-Errors, Flag AN, Null-Renderer).
+
+**ABER GEMESSEN (`diag-foliage-batch BATCHED=1`): 44 Wrapper → 42 BatchedMesh-Draws = KEIN Gewinn.** Wurzel: BatchedMesh bündelt **pro Material**, und das Nahfeld hat **42 distinkte Materialien** (Pfad #2 `_archLeafMaterial`: kiesel/blumen/felsbrocken backen die Farbe PRO-TEIL ins Material → jedes unique). Der Draw-Call-Engpass ist also **die Material-Fragmentierung, nicht InstancedMesh-vs-BatchedMesh.** BatchedMesh zahlt sich erst aus, wenn viele Geometrien EIN Material teilen. Die Bäume (Pfad #1, V18.288) teilen; das Nahfeld (Pfad #2) nicht.
+
+**EHRLICHE LEHRE:** der echte Draw-Call-Gewinn braucht die Vereinheitlichung von **Pfad #2** (Fels/Blumen-Farbe von pro-Material → pro-Instanz-Tint), DANN BatchedMesh → wenige Draws. Diese Pfad-#2-Vereinheitlichung ist **look-verändernd** und headless NICHT verifizierbar → der Schöpfer-Browser ist ab hier unersetzlich. Das BatchedMesh-Gerüst steht korrekt + flag-gated bereit; es ist der Mechanismus, der nach der Material-Vereinheitlichung greift. Werkzeug-Erweiterung: `diag-foliage-batch BATCHED=1` misst den archBatch-Pfad + Fehler. Gate grün (Flag AUS).
+
 ### V18.288 — RENDER-BOGEN Schritt 1: geteilte Bewuchs-Materialien (der BatchedMesh-Enabler)
 
 Schöpfer „Performance bodenlos, andere Systeme mit mehr Detail hängen nicht — prüfe, vermesse, verstehe wirklich". GEMESSEN (hardware-unabhängig, code-belegt): die Render-Last ist **3.29M Dreiecke / 1099 Draw-Calls** (für eine GPU WENIG) — die Wurzel ist **534 global verteilte InstancedMesh-Bewuchs-Gruppen, alle `frustumCulled=false`** (Zeile 56926: „Instanzen verteilt → Group-BBox nutzlos"), also ~1099 Draws/Frame, die **Umsehen nicht senkt** → die Main-Thread-Submission sättigt = „Welt hängt beim Umsehen". Profi-Systeme rendern GPU-getrieben (die GPU cullt, der Main-Thread submittiert wenige Draws). PROBE (echtes swiftshader-WebGPU): `THREE.BatchedMesh` läuft auf unserem NodeMaterial-Stack (zwei verschiedene Geometrien/ein Batch, `perObjectFrustumCulled=true`) → der Umbau ist gangbar.
