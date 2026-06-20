@@ -138,8 +138,8 @@ das Wasser-RENDER T7c/T7d (Fluss-Edit-Löcher + lake/river-Naht, burnte Zone, Sc
 liegt in einer T6d-Kaverne (Spawn-Höhe heben). Detail: `archiv/lod-kaskade-plan.md`.
 
 **Phase 3 — die Seele** Crafting-Schluss (~~S6-B~~ ✓ V18.133 · S9-Sign-off · S11 · ~~S7-C~~ ✓ V18.127) · ~~**Phase E**~~ ✓ V18.148 (Bedrohung/Furcht — der
-letzte Emotion-Kern-Konsument) · ~~Mana-Symmetrie~~ ✓ V18.196 · Emotion→Regel-Emergenz · **Nexus-Lern-Vereinheit-
-lichung** (Geste→Gesetz). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
+letzte Emotion-Kern-Konsument) · ~~Mana-Symmetrie~~ ✓ V18.196 · Emotion→Regel-Emergenz · ~~**Nexus-Lern-Vereinheit-
+lichung** (Geste→Gesetz)~~ ✓ V18.112 (`_crystallizeGestureRule`, live im 5-s-Loop). Detail: `archiv/kampf-plan.md` · `docs/das-lebendige-feld.md`.
 
 **Quer dazu (eigene Bögen):** ~~der **soziale Mesh-Bogen**~~ **✓ RUND V18.134–.147** (Bewerten ·
 Lesezeichen · Folgen · Kommentare · „Für dich"; Kür-Vermerk nur die Portal-Ring-Vorschau) ·
@@ -240,8 +240,9 @@ B1 Wasser-Sheet→Worker (bewusst vertagt, V18.104-Entscheid).
   Ring + LOD-Kaskade + BVH + Worker).
 - **Lebendiges:** das Feld (`auraAt` lesen · `_deposit*` schreiben · Vorhersagefehler-δ werten) ·
   Emotion-Kern (W1–W5, dimensional) · Kreaturen (Compound + `computeCreatureStats` + KI-Tick-LOD) ·
-  der Nexus (ZWEI Lern-Pools: Gesten `dsl.history` + Gesetze `worldRules` — feeden nicht cross,
-  das ist die offene Vereinheitlichung) · DSL/Weltregeln (`dslRun`-Sandbox · `_tickWorldRules`).
+  der Nexus (ZWEI Lern-Pools: Gesten `dsl.history` + Gesetze `worldRules`; `_crystallizeGestureRule`
+  [V18.112] kristallisiert bewährte Gesten zu stehenden Regeln — der Cross-Feed IST gebaut + live) ·
+  DSL/Weltregeln (`dslRun`-Sandbox · `_tickWorldRules`).
 - **Schöpfung:** Crafting-Resonanz (`_blueprintProductVector` → Rolle/Domäne/Op/Stat) · Werkstatt
   (Mach-Akte über `_makeCostGate` + `fertigeBlueprint`) · Hylomorphismus (`FORM_TAG_ACTIVATION`).
 - **Render:** PBR (`_buildToonNodeMaterial` — der Name ist Umbenennungs-Schuld, baut IMMER PBR; Toon GESTRICHEN V18.237) · das FREQUENZBAND (`_applySubstanceResponse` — EIN Band-Empfänger, Antennen-Profile aus der Substanz; eye-relative Aerial) ·
@@ -259,11 +260,13 @@ B1 Wasser-Sheet→Worker (bewusst vertagt, V18.104-Entscheid).
 > Der „tot = raus"-Reflex ist falsch. Diese ruhen mit Begründung — schneide nur, was VERIFIZIERT
 > durch Tieferes ersetzt wurde (V17.20/V18-Lehre).
 
-- `_fieldWohlErlebt` · `_fieldWohlBaselineAt` · `_observeFieldWohl` — die WERTEN-Infrastruktur (das
-  dritte Verb); ein künftiger Konsument (Phase E) konsumiert sie. Gemessen kein Runaway.
+- `_fieldWohlErlebt` · `_fieldWohlBaselineAt` — die WERTEN-Infrastruktur (das dritte Verb),
+  test-verankert. `_observeFieldWohl` ist KEIN Samen — LIVE (2 Produktions-Aufrufer: Regel-Fitness +
+  Spieler-Baseline, V18.285-Messung). Gemessen kein Runaway.
 - `_archInstanceUpdate` + Instancing-Gating (`instanceable`/`breaksInstancing`) — für künftige
   bewegliche Instanzen + das Schloss gegen GPU-Memory-Bomben.
-- `_drainPools` — Leak-Schutz für künftige Wellen (unverdrahtet, weil Reload aufräumt).
+- `_drainGrassMeshPool` · `_drainScatterMeshPools` — Leak-Schutz (test-verankert, im Produktions-
+  Pfad nicht genutzt, weil Reload aufräumt; der frühere `_drainPools`-Name existierte nie, V18.285).
 - `_waterCellAt`-Inline (in `_playerWaterContext`) — bewusste Verdichtung, nie standalone.
 - Chat-DSL-Skeleton (Nexus-Parser) — ruhender Vision-Faden, Phase E / S7-C konsumiert ihn.
 - Die frozen Resonanz-Signaturen (`FORM_TAG_ACTIVATION` · `FORM_ROLE_SIGNATURES` · `computeBlueprintRole`)

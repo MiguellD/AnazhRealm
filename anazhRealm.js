@@ -96,7 +96,6 @@ class AnazhRealm {
             // NodeMaterials rendern nicht auf WebGLRenderer).
             rendererReady: false,
             // Aktives Canvas-DOM-Element. Initialisiert in createScene.
-            canvas: null,
             scene: null,
             camera: null,
             playerMesh: null,
@@ -135,7 +134,6 @@ class AnazhRealm {
             dirtyVoxelChunks: null,
             // V9.40-d — Retry-Counter für Rebuild-Versuche pro Chunk (max 3).
             voxelRebuildAttempts: null,
-            terrainPhysicsBody: null,
             skybox: null,
             // V10.0-f-1 — Live-Uniforms der TSL-Skybox (uniform-Knoten mit
             // .value-Setter): time, nebulaColor, cloudCover. Initialisiert in
@@ -212,7 +210,6 @@ class AnazhRealm {
             creatures: [],
             creatureEmotions: [],
             creatureAnimationTime: 0,
-            creatureUpdateIndex: 0,
             ufos: [],
             // V9.43-a/c — das geteilte Wasserfall-Material (lazy, in
             // `_ensureWaterfallMaterial`). V9.43-c löste den per-Chunk-Zufalls-
@@ -291,14 +288,12 @@ class AnazhRealm {
             maxWalkableSlopeY: 0.5,
             groundNormalY: 1.0,
             onSteepSlope: false,
-            frameCount: 0,
             _fpsFrames: 0,
             _fpsElapsed: 0,
             fps: 0,
             forward: new THREE.Vector3(),
             right: new THREE.Vector3(),
             moveDirection: new THREE.Vector3(),
-            lookDirection: new THREE.Vector3(),
             lastSaveUpdate: 0,
             saveInterval: 10.0,
             lastServerSaveUpdate: 0,
@@ -310,7 +305,6 @@ class AnazhRealm {
             versionHistory: [],
             maxVersionHistoryEntries: 50,
             maxCreatures: 120,
-            maxLoadedChunks: 196,
             currentVersion: "7.71",
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
@@ -440,9 +434,6 @@ class AnazhRealm {
             // (< TARGET) gebären sich Kreaturen langsam, bei Überpopulation
             // (> MAX) verabschieden sich die ältesten mit Trauer-Effekt.
             faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
-            noiseCache: new Map(),
-            nexusLayers: new Map(),
-            nexusCodeForge: {},
             nexusEvolutionQueue: [],
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 10.0,
@@ -479,7 +470,6 @@ class AnazhRealm {
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", stateGen> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
-            worldgenInFlight: false,
             // Sentinel: -Infinity heißt "noch nie generiert". Mit 0 würde der
             // Cooldown-Check ((performance.now()/1000) - 0 < 30) den allerersten
             // Worldgen blockieren, sodass das Spiel mit leerer Welt startete.
@@ -33703,12 +33693,7 @@ class AnazhRealm {
         // Heap; der Streaming-Ring + `_pruneDistantVoxelChunks` räumt sie
         // bei Spieler-Bewegung sauber.
         this.state.lastWorldgen = now;
-        this.state.worldgenInFlight = true;
-        try {
-            this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
-        } finally {
-            this.state.worldgenInFlight = false;
-        }
+        this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
         return true;
     }
 
@@ -43202,7 +43187,6 @@ class AnazhRealm {
     _setFeedTab(tab) {
         if (typeof document === "undefined") return;
         const which = tab === "mesh" ? "mesh" : "foryou";
-        this.state.feedTab = which;
         for (const b of document.querySelectorAll(".feed-tabs .feed-tab"))
             b.classList.toggle("active", b.dataset.feedTab === which);
         const foryou = document.getElementById("feed-foryou-panel");
@@ -70057,23 +70041,10 @@ class AnazhRealm {
         // Ring-Radius Slider
         const rs = document.getElementById("slider-ring");
         const rsv = document.getElementById("slider-ring-val");
-        // Welle 6.X.4 D2 V8.15 Bug-Fix — maxLoadedChunks aus Ring-Radius
-        // ableiten (Schöpfer-Beobachtung: Slider tat optisch nichts, weil
-        // pruneDistantChunks bei 196 statt bei (ring×2+1)² Chunks ansetzte).
-        // Bei Ring=2 → 5×5×1.2 = 30, bei Ring=4 → 9×9×1.2 = 97. Reduzieren
-        // des Rings pruned tatsächlich Chunks im nächsten Tick — sichtbar.
+        // Welle 6.X.4 — der Ring-Radius-Slider treibt chunkRingRadius, den
+        // Pruning-Radius (`_pruneDistantVoxelChunks` liest ihn direkt).
         const applyRingRadius = (v) => {
             this.state.chunkRingRadius = v;
-            const ringSize = v * 2 + 1;
-            // V8.17 — Faktor ×3 für sichtbaren Slider-Effekt. Schöpfer-Test:
-            // bei ×4 (V8.15) blieb fast nichts pruned (Initial 64 vs. max 100
-            // bei Ring=2), Spieler sah keine Änderung. Mit ×3 schrumpft die
-            // Welt sichtbar wenn der Ring reduziert wird.
-            //   Ring=1 → max 27 (von 64 Initial → 37 gepruned, sichtbar)
-            //   Ring=2 → max 75 (default, Initial-Worldgen passt)
-            //   Ring=3 → max 147 (Cache-Headroom für Bewegung)
-            //   Ring=4 → max 243 (große Welt-Sicht)
-            this.state.maxLoadedChunks = Math.max(15, Math.ceil(ringSize * ringSize * 3));
             if (rsv) rsv.textContent = ringText(v);
             // V17.114 U1 — der Sicht-Ring ist die Kaskaden-Kante: der Aerial-
             // Schleier wandert mit (§2-Synergie), die ferne LOD-Naht bleibt im Dunst.
@@ -71022,8 +70993,6 @@ class AnazhRealm {
         }
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        // state.canvas trägt die aktive Canvas-Referenz.
-        this.state.canvas = canvas;
 
         // V12.0-vendor.3 — ColorManagement re-aktiviert (default seit r142+).
         // Three.js wandelt sRGB-Color-Werte intern in linearen Space für
@@ -73393,7 +73362,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.284.0";
+AnazhRealm.VERSION = "18.285.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

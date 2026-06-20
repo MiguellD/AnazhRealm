@@ -378,6 +378,14 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.285 — DER SEDIMENT-SCHNITT: 11 verifiziert tote State-Felder gekehrt, das Mess-Werkzeug gebaut
+
+Auslöser: der Schöpfer prüfte zweimal nach (`chunkMap`/`chunkGrass`), und meine „alles sauber"-Übersicht zerbröselte — sie stand auf Doc-Zitaten + grünen Gates, nicht auf Messung. Heilung in drei Schritten: (1) `scripts/diag-sediment.cjs` — ein exhaustiver, kommentar-/string-bereinigter Sweep, der die Lücke schliesst, die `audit:strict` offen lässt (init-PRÄSENZ vs. Informations-KONSUM). (2) Vier Mess-Spuren (Doc-Drift · State-Sediment · Parallel-Pfade · Drosseln/Methoden/Grabsteine) gegen den echten Code, jede mit Beweis + Abdeckungs-Satz. (3) Der Schnitt — aber NUR die verifizierten: von 18 Kandidaten erwiesen sich **7 als KEINE Passagiere** (der Schöpfer-Hedge war richtig) — 6 sind Migrations-Wächter, deren Wert der Playtest asserted (`groundHeightField===null`, `minHeight===0`, `terrainMaterial===null`, `architectureCullingTickHz===2.0`), 1 (`_cameraDesiredY`) ist sogar LEBENDIG (Playtest liest `r.state._cameraDesiredY`; mein Tool übersah es wegen eines `r.state`-blinden-Flecks im Regex → behoben).
+
+**GESCHNITTEN** (verifiziert prod-tot + 0 Test-Leser): `terrainPhysicsBody · creatureUpdateIndex · frameCount · lookDirection · noiseCache · nexusLayers · nexusCodeForge · maxLoadedChunks · canvas · worldgenInFlight · feedTab` — inkl. ihrer Writes, dem `worldgenInFlight`-try/finally-Unwrap, den toten `maxLoadedChunks`-Slider-Kommentaren, und 4 audit-Whitelist-Einträgen. **Doc-Alignment:** roadmap §7 (`_observeFieldWohl` ist LIVE, kein Samen · `_drainPools` existierte nie → echte Namen `_drainGrassMeshPool`/`_drainScatterMeshPools`) · §6 (Nexus Geste→Gesetz IST gebaut V18.112) · CLAUDE.md (chunkMap gekehrt, Emotion-Nuance). Gate grün (audit:strict 0/0, playtest:fast 13/13, voller Playtest).
+
+**DIE LEHRE (Gotcha):** das Mess-Werkzeug ist ein Flagger, kein Orakel — die Verifikation VOR dem Schnitt (gegen `scripts/`, inkl. `r.state`-Alias) fing 7 Fehlschnitte. Bewusst HÄNGEND beim Schöpfer-Entscheid: die 6 Migrations-Wächter (Feld+Assertion zusammen schneiden?) · die 3 leeren Container (`groundChunks` berührt Kontrollfluss) · die ~19 gebaut-aber-unverdrahtete API (Archipel/Robustheit/Compute).
+
 ### V18.284 — DIE SAUBERE SCHLIESSUNG: #3 Nexus geschlossen, Passagiere gekehrt, der Freeze-Bogen gegossen
 
 Schöpfer: „schliesse alles sauber ab, synergetisch implementiert, keine Passagiere mehr, die Perfektion auf welche wir hinarbeiten, gieße das Ergebnis." Die Finalisierung des Freeze-Bogens.

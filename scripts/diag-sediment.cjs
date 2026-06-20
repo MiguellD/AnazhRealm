@@ -210,7 +210,7 @@ function parseInitFields() {
                     else if (/^(true|false)\b/.test(tail)) kind = "bool";
                     else if (/^-?\d/.test(tail)) kind = "number";
                     else if (tail[0] === " " || tail[0] === ")") kind = "empty";
-                    fields[name] = { kind, declLine: lineAt(anchor + i) };
+                    fields[name] = { kind, declLine: lineAt(i) };
                 }
                 expectKey = false;
                 i = j - 1;
@@ -228,7 +228,10 @@ const EMPTY_RHS =
 
 function classifyOccurrences(code) {
     // pro Feldname: Zähler
-    const fieldRe = /(?:this\.state|(?<![\w.$])state|(?<![\w.$])st)\.([A-Za-z_$][\w$]*)/g;
+    // `.state` fängt this.state UND r.state (Playtest-Alias) — der frühere
+    // `this.state`-only-Regex übersah `r.state.X`-Test-Leser (blinder Fleck,
+    // GEMESSEN: _cameraDesiredY wurde fälschlich als tot geflaggt).
+    const fieldRe = /(?:\.state|(?<![\w.$])state|(?<![\w.$])st)\.([A-Za-z_$][\w$]*)/g;
     const acc = {};
     let m;
     while ((m = fieldRe.exec(code))) {
