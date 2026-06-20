@@ -1057,6 +1057,12 @@ class AnazhRealm {
             perfTargetMs: 17,
             perfRegulator: true,
             perfSense: null,
+            // V18.293 — DER FLUGSCHREIBER (Blackbox): die echte Frame-Last wird
+            // schon gemessen (perfSense, aus dem rAF-Delta) — sie verließ nur nie
+            // den Browser, und niemand fing den SCHLIMMSTEN Frame. Lazy-init in
+            // `_flightRecorderTick`; sichert die N schlimmsten Frames nach
+            // anazhRealmPerf.json (dasselbe Rohr wie der State-Save). KEIN Regler.
+            flightRecorder: null,
             _voxelStreamBudgetMs: 5,
             _voxelStreamMaxPerFrame: 6,
             _shadowMinInterval: 1, // V18.264 — Schatten-Cache-Intervall (Regler-gefahren)
@@ -12875,6 +12881,10 @@ class AnazhRealm {
         sense.workerMeshN = ewma(sense.workerMeshN, m.workerMesh || 0);
         sense.bvhMs = ewma(sense.bvhMs, m.bvhMs || 0);
         sense.perChunkBuildMs = ewma(sense.perChunkBuildMs, (m.syncBuildMs || 0) + (m.bvhMs || 0));
+        // V18.293 — DER FLUGSCHREIBER: die ROHEN Frame-Werte (f/m) fangen, BEVOR sie
+        // zurückgesetzt werden. Bulletproof gekapselt — diese Fold-Funktion läuft
+        // außerhalb der Loop-Fehler-Grenze (V18.278), ein Wurf hier bräche den Loop.
+        this._flightRecorderTick(frameMs, dtSec, f);
         st._perfFrame = {};
         st._perfMarks = {};
         this._nexusPerfRegulate(dtSec); // die RÜCKKOPPLUNG
@@ -13132,6 +13142,288 @@ class AnazhRealm {
             `stellgr  streamBudget ${(this.state._voxelStreamBudgetMs || 0).toFixed(1)} ms  waterBudget ${((this.state.atmosphere && this.state.atmosphere.waterIsoBudgetMs) || 0).toFixed(1)} ms\n` +
             `chunk SYNC ${s.syncBuildN.toFixed(2)}/f (${s.syncBuildMs.toFixed(0)} ms)  worker ${s.workerMeshN.toFixed(2)}/f  q${wq}\n` +
             `kosten/kreatur ${s.perCreatureMs.toFixed(3)} ms · chunks ${vc} arch ${arch} coll ${coll}`;
+        // V18.293 — die Blackbox-Zeile: der schlimmste erfasste Frame + seine GPU-Lücke
+        // (frameMs − CPU-Phasen ≈ Present/GPU — die Zeit, für die der ganze Freeze-Bogen blind war).
+        const fr = this.state.flightRecorder;
+        if (fr && fr.worst && fr.worst.length) {
+            const w = fr.worst[0];
+            const wCol = w.frameMs > 100 ? "#ff6b6b" : w.frameMs > 50 ? "#ffd166" : "#8fe98f";
+            div.innerHTML +=
+                `\nBLACKBOX schlimmster <span style="color:${wCol}">${w.frameMs}</span> ms` +
+                ` (GPU-Lücke ${w.gpuGapMs} · CPU ${w.cpuSumMs}) · ${fr.frames}F → anazhRealmPerf.json`;
+        }
+    }
+
+    // V18.293 — DER FLUGSCHREIBER (die Blackbox). Flugzeuge raten nicht, warum sie
+    // abstürzten — sie lesen den Schreiber aus. AnazhRealm fror seit Versionen ein,
+    // und wir rieten (33 Wellen), WEIL jedes Werkzeug für die echte GPU-Last blind ist
+    // (headless stubt den Render, swiftshader ≠ die Hardware des Schöpfers). Der
+    // Flugschreiber schließt das Loch: er hält die N schlimmsten Frames der Sitzung mit
+    // vollem Kontext fest und reicht sie als anazhRealmPerf.json an den lokalen
+    // save-server (dasselbe Rohr wie der State-Save). EINE Messung, die der Schöpfer
+    // UND der Entwickler/die KI lesen — kein Raten mehr. KEIN Regler, KEINE
+    // Verhaltensänderung am Spiel. Der Schlüssel-Wert je Frame ist die LÜCKE:
+    // frameMs − Summe(CPU-Phasen) ≈ GPU/Present-Zeit — genau die unsichtbare Zeit,
+    // die der ganze Freeze-Bogen nie maß.
+    _flightRecorderInit() {
+        const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        const fr = {
+            startedAt: now,
+            frames: 0,
+            sumFrameMs: 0,
+            maxFrameMs: 0,
+            // grobe Frame-Zeit-Verteilung: <17 / 17-33 / 33-50 / 50-100 / 100-200 / >200 ms
+            buckets: [0, 0, 0, 0, 0, 0],
+            overBudget: 0,
+            worst: [], // die schlimmsten N Frames (absteigend), mit vollem Kontext
+            lastSaveAt: -Infinity,
+            device: this._flightRecorderDevice(),
+            _announced: false,
+        };
+        // EINMAL: beim Verlassen/Verstecken der Seite einen letzten Auszug sichern
+        // (sonst geht die Sitzung verloren, bevor der periodische Save feuert).
+        if (typeof window !== "undefined" && window.addEventListener) {
+            const flush = () => {
+                try {
+                    this._flightRecorderSave(true);
+                } catch {
+                    /* der Flugschreiber darf nie stören */
+                }
+            };
+            window.addEventListener("pagehide", flush);
+            if (typeof document !== "undefined" && document.addEventListener) {
+                document.addEventListener("visibilitychange", () => {
+                    if (document.visibilityState === "hidden") flush();
+                });
+            }
+        }
+        return fr;
+    }
+
+    // Das Geräte-Profil — einmal beim Init erfasst. Genau das, was die Champions
+    // zuerst messen, um das Gerät zu VERSTEHEN (das fehlende Modell des Reglers).
+    _flightRecorderDevice() {
+        const nav = typeof navigator !== "undefined" ? navigator : {};
+        const win = typeof window !== "undefined" ? window : {};
+        const r = this.state.renderer;
+        const dev = {
+            version: AnazhRealm.VERSION,
+            userAgent: nav.userAgent || "?",
+            cores: nav.hardwareConcurrency || 0,
+            deviceMemoryGb: nav.deviceMemory || 0,
+            screen: (win.innerWidth || 0) + "x" + (win.innerHeight || 0),
+            dpr: win.devicePixelRatio || 1,
+            rendererType: r ? (r._isHeadlessNull ? "headless-null" : r.isWebGPURenderer ? "webgpu" : "other") : "none",
+            webgpu: typeof nav.gpu !== "undefined",
+            avatarSkinRes: AnazhRealm.AVATAR_SKIN_RES || null,
+            foliageRadius: [AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX],
+        };
+        // GPU-Adapter-Name, WENN der WebGPU-Backend ihn freilegt (feature-detect, nie annehmen).
+        try {
+            const adapter = r && r.backend && r.backend.adapter;
+            const info = adapter && adapter.info;
+            if (info) dev.gpu = [info.vendor, info.architecture, info.description].filter(Boolean).join(" ").trim();
+        } catch {
+            /* Adapter-Info nicht freigelegt — kein Beinbruch */
+        }
+        return dev;
+    }
+
+    // Pro Frame (am Ende von _perfSenseFoldFrame, mit den ROHEN f/m vor dem Reset).
+    // Bulletproof gekapselt: ein Wurf hier dürfte NIE den Loop brechen (die Ironie
+    // eines Mess-Freeze) — der Aufruf-Ort liegt außerhalb der Loop-Fehler-Grenze.
+    _flightRecorderTick(frameMs, dtSec, f) {
+        try {
+            const st = this.state;
+            let fr = st.flightRecorder;
+            if (!fr) fr = st.flightRecorder = this._flightRecorderInit();
+            fr.frames++;
+            fr.sumFrameMs += frameMs;
+            if (frameMs > fr.maxFrameMs) fr.maxFrameMs = frameMs;
+            const b =
+                frameMs < 17 ? 0 : frameMs < 33 ? 1 : frameMs < 50 ? 2 : frameMs < 100 ? 3 : frameMs < 200 ? 4 : 5;
+            fr.buckets[b]++;
+            const targetMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+            if (frameMs > targetMs) fr.overBudget++;
+            // einen STOCKER fangen (über der spürbaren Schwelle) + nur die schlimmsten N halten
+            const FREEZE = AnazhRealm.FLIGHT_RECORDER_FREEZE_MS;
+            const cap = AnazhRealm.FLIGHT_RECORDER_WORST_CAP;
+            const smallest = fr.worst.length ? fr.worst[fr.worst.length - 1].frameMs : 0;
+            if (frameMs > FREEZE && (fr.worst.length < cap || frameMs > smallest)) {
+                fr.worst.push(this._flightRecorderSnapshot(frameMs, f));
+                fr.worst.sort((a, c) => c.frameMs - a.frameMs);
+                if (fr.worst.length > cap) fr.worst.length = cap;
+            }
+            // periodisch sichern (gedrosselt) — fire-and-forget
+            const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+            if (now - fr.lastSaveAt > AnazhRealm.FLIGHT_RECORDER_SAVE_INTERVAL_MS) {
+                fr.lastSaveAt = now;
+                this._flightRecorderSave(false);
+            }
+        } catch {
+            /* der Flugschreiber darf NIE den Loop stören */
+        }
+    }
+
+    // Die Momentaufnahme eines schlimmen Frames: die ROHEN CPU-Phasen DIESES Frames
+    // (nicht die EWMA), die LÜCKE (≈ GPU/Present) und der Welt-Kontext, in dem es stockte.
+    _flightRecorderSnapshot(frameMs, f) {
+        const st = this.state;
+        f = f || {};
+        const cpu = {};
+        let cpuSum = 0;
+        for (const k of AnazhRealm.PERF_PHASES) {
+            const v = +(f[k] || 0);
+            cpu[k] = +v.toFixed(2);
+            cpuSum += v;
+        }
+        const calls = Math.round(f.renderCalls || 0);
+        const tris = Math.round(f.renderTris || 0);
+        const gap = Math.max(0, frameMs - cpuSum); // frameMs − CPU ≈ GPU/Present — die unsichtbare Zeit
+        const pm = st.playerMesh;
+        const pos =
+            pm && pm.position
+                ? { x: +pm.position.x.toFixed(1), y: +pm.position.y.toFixed(1), z: +pm.position.z.toFixed(1) }
+                : null;
+        let activeKeys = [];
+        try {
+            if (st.keys)
+                activeKeys = Object.keys(st.keys)
+                    .filter((k) => st.keys[k] === true)
+                    .slice(0, 8);
+        } catch {
+            /* keys nicht lesbar */
+        }
+        return {
+            frameMs: +frameMs.toFixed(1),
+            cpuSumMs: +cpuSum.toFixed(1),
+            gpuGapMs: +gap.toFixed(1),
+            cpu,
+            drawCalls: calls,
+            triangles: tris,
+            ctx: {
+                foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
+                foliageDensity: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
+                creatures: st.creatures ? st.creatures.length : 0,
+                chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                chunkQueue: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
+                architectures: st.architectures ? st.architectures.length : 0,
+                timeOfDay: typeof st.timeOfDay === "number" ? +st.timeOfDay.toFixed(2) : null,
+                pos,
+                activeKeys,
+            },
+            atFrame: (st.flightRecorder && st.flightRecorder.frames) || 0,
+        };
+    }
+
+    // Eine kleine, EHRLICHE Selbst-Diagnose des schlimmsten Frames: GPU-gebunden
+    // (die LÜCKE dominiert → Render/Draw-Calls) oder CPU-gebunden (eine Phase
+    // dominiert)? Genau die Attribution, die der 33-Wellen-Bogen nie hatte.
+    _flightRecorderVerdict() {
+        const fr = this.state.flightRecorder;
+        if (!fr || !fr.worst.length) return "noch kein Stocker erfasst (die Welt lief flüssig).";
+        const w = fr.worst[0];
+        if (w.gpuGapMs > w.cpuSumMs) {
+            return (
+                `schlimmster Frame ${w.frameMs} ms ist GPU/Render-GEBUNDEN: ${w.gpuGapMs} ms Present/GPU ` +
+                `vs nur ${w.cpuSumMs} ms CPU — bei ${w.drawCalls} draw-calls / ${(w.triangles / 1e6).toFixed(1)}M Dreiecken. ` +
+                `Der Hebel ist die RENDER-Last (Culling/Draw-Calls), nicht die CPU.`
+            );
+        }
+        let topK = "?",
+            topV = 0;
+        for (const k of AnazhRealm.PERF_PHASES)
+            if ((w.cpu[k] || 0) > topV) {
+                topV = w.cpu[k];
+                topK = k;
+            }
+        return (
+            `schlimmster Frame ${w.frameMs} ms ist CPU-GEBUNDEN: Phase „${topK}" ${topV} ms ` +
+            `(GPU-Lücke nur ${w.gpuGapMs} ms). Der Hebel sitzt in „${topK}".`
+        );
+    }
+
+    // Die Spur zusammenbauen: Geräte-Profil + Sitzungs-Statistik + die schlimmsten
+    // Frames + der eingeschwungene Sense + das Verdikt. Klein + menschen-lesbar.
+    _flightRecorderBuildTrace() {
+        const st = this.state;
+        const fr = st.flightRecorder;
+        if (!fr) return null;
+        const s = st.perfSense;
+        const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        const dur = Math.max(0.001, (now - fr.startedAt) / 1000);
+        const avgFrameMs = fr.frames ? fr.sumFrameMs / fr.frames : 0;
+        const phaseMs = {};
+        if (s && s.phase) for (const k of AnazhRealm.PERF_PHASES) phaseMs[k] = +(+(s.phase[k] || 0)).toFixed(2);
+        return {
+            kind: "anazh-flight-recorder",
+            version: AnazhRealm.VERSION,
+            savedAt: new Date().toISOString(),
+            verdict: this._flightRecorderVerdict(),
+            device: fr.device,
+            session: {
+                seconds: +dur.toFixed(1),
+                frames: fr.frames,
+                avgFps: +(fr.frames / dur).toFixed(1),
+                avgFrameMs: +avgFrameMs.toFixed(1),
+                maxFrameMs: +fr.maxFrameMs.toFixed(1),
+                overBudgetPct: fr.frames ? +((fr.overBudget / fr.frames) * 100).toFixed(1) : 0,
+                distribution: {
+                    "<17ms (>59fps)": fr.buckets[0],
+                    "17-33ms (30-59fps)": fr.buckets[1],
+                    "33-50ms (20-30fps)": fr.buckets[2],
+                    "50-100ms (10-20fps)": fr.buckets[3],
+                    "100-200ms (5-10fps)": fr.buckets[4],
+                    ">200ms (<5fps)": fr.buckets[5],
+                },
+            },
+            steadyState: s
+                ? {
+                      frameMsEwma: +(+s.frameMs).toFixed(1),
+                      frameMaxMs: +(+s.frameMaxMs).toFixed(1),
+                      drawCalls: Math.round(s.renderCalls || 0),
+                      drawCallsMax: Math.round(s.renderCallsMax || 0),
+                      triangles: Math.round(s.renderTris || 0),
+                      loadScalePct: Math.round((s.loadScale || 0) * 100),
+                      phaseMsEwma: phaseMs,
+                  }
+                : null,
+            worstFrames: fr.worst,
+        };
+    }
+
+    // Sichern: immer auf window.__anazhPerf (devtools-lesbar), und — NUR wenn das
+    // Spiel auf dem lokalen save-server läuft — als anazhRealmPerf.json POSTen
+    // (stiller Skip sonst, wie der State-Save). Headless POSTet NIE (das Gate
+    // bleibt sauber). Fire-and-forget; ein Fehler stört den Flugschreiber nicht.
+    _flightRecorderSave(final) {
+        try {
+            const trace = this._flightRecorderBuildTrace();
+            if (!trace) return;
+            if (typeof window !== "undefined") window.__anazhPerf = trace;
+            const r = this.state.renderer;
+            if (r && r._isHeadlessNull) return; // Gate sauber halten — kein File im headless-Lauf
+            if (typeof fetch === "undefined" || !this.isSaveServerHost || !this.isSaveServerHost()) return;
+            fetch("http://localhost:4312/api/perf-trace", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ trace }),
+                keepalive: !!final, // beim pagehide den Request überleben lassen
+            })
+                .then(() => {
+                    const fr = this.state.flightRecorder;
+                    if (fr && !fr._announced) {
+                        fr._announced = true;
+                        this.log(
+                            "Flugschreiber aktiv — die echte Frame-Last fließt nach anazhRealmPerf.json (öffne `perf` für das Live-Fenster).",
+                            "INFO"
+                        );
+                    }
+                })
+                .catch(() => {});
+        } catch {
+            /* der Flugschreiber darf NIE stören */
+        }
     }
 
     // ### Physik ### V7.42
@@ -73446,7 +73738,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.292.0";
+AnazhRealm.VERSION = "18.293.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76370,6 +76662,12 @@ AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wa
 // Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die render-senkenden
 // Hebel (Schatten-Intervall + Cull-Radius) ZUERST drosselt. ~0.011 → 1092 Draw-Calls ≈ 12 ms.
 AnazhRealm.PERF_RENDER_CALL_MS = 0.011;
+// V18.293 — DER FLUGSCHREIBER (Blackbox): wie viele schlimmste Frames pro Sitzung behalten
+// (WORST_CAP), wie oft die Spur nach anazhRealmPerf.json gesichert wird (SAVE_INTERVAL_MS),
+// und ab welcher Frame-Zeit ein Frame als „Stocker" gilt (FREEZE_MS ≈ unter 20 fps = spürbar).
+AnazhRealm.FLIGHT_RECORDER_WORST_CAP = 12;
+AnazhRealm.FLIGHT_RECORDER_SAVE_INTERVAL_MS = 4000;
+AnazhRealm.FLIGHT_RECORDER_FREEZE_MS = 50;
 // V18.283 — wie viele gebaute Skin-Geometrien (Avatar + Kreatur-Arten) memoisiert bleiben
 // (deterministischer Isosurface-Guss, ~1–4 MB/Eintrag). 16 deckt Mensch + alle Arten + Custom-Seelen.
 AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;

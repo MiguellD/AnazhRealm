@@ -919,6 +919,59 @@ function handleSaveState(req, res) {
     });
 }
 
+// V18.293 — DER FLUGSCHREIBER (Blackbox): das Spiel POSTet die echte Frame-Last
+// (die N schlimmsten Frames + Sitzungs-Statistik + Geräte-Profil) hierher; der
+// Server schreibt EINE Datei `anazhRealmPerf.json` in den Projekt-Ordner — die
+// Autopsie des echten Freezes auf echter Hardware, lesbar für Schöpfer UND
+// Entwickler/KI. Eine eigene, schmale Naht (KEINE Generalisierung des State-Save):
+// nur dieser eine Dateiname, Body-Deckel, reines Schreiben (nie ausführen).
+const PERF_TRACE_FILE = "anazhRealmPerf.json";
+const PERF_TRACE_MAX_BODY_BYTES = 4 * 1024 * 1024; // 4 MiB Sicherheits-Deckel (die Spur ist ~10-80 KB)
+
+function handlePerfTrace(req, res) {
+    let rawBody = "";
+    let aborted = false;
+    req.on("data", (chunk) => {
+        if (aborted) return;
+        rawBody += chunk;
+        if (rawBody.length > PERF_TRACE_MAX_BODY_BYTES) {
+            aborted = true;
+            sendJson(res, 413, { error: "Perf trace too large" });
+            req.destroy();
+        }
+    });
+    req.on("end", () => {
+        if (aborted) return;
+        let parsed;
+        try {
+            parsed = JSON.parse(rawBody || "{}");
+        } catch (e) {
+            sendJson(res, 400, { error: "Invalid JSON", details: e.message });
+            return;
+        }
+        const trace = parsed.trace;
+        if (!trace || typeof trace !== "object") {
+            sendJson(res, 400, { error: "Missing trace object" });
+            return;
+        }
+        const targetPath = path.join(PROJECT_ROOT, PERF_TRACE_FILE);
+        if (path.dirname(targetPath) !== PROJECT_ROOT) {
+            sendJson(res, 403, { error: "Forbidden target path" });
+            return;
+        }
+        fs.writeFile(targetPath, JSON.stringify(trace, null, 2), "utf8", (err) => {
+            if (err) {
+                sendJson(res, 500, { error: "Write failed", details: err.message });
+                return;
+            }
+            sendJson(res, 200, { ok: true, path: targetPath });
+        });
+    });
+    req.on("error", (err) => {
+        if (!aborted) sendJson(res, 400, { error: "Request stream error", details: err.message });
+    });
+}
+
 const server = http.createServer((req, res) => {
     if (req.method === "OPTIONS") {
         res.writeHead(204, {
@@ -932,6 +985,12 @@ const server = http.createServer((req, res) => {
 
     if (req.method === "POST" && req.url === "/api/save-state") {
         handleSaveState(req, res);
+        return;
+    }
+
+    // V18.293 — DER FLUGSCHREIBER: die echte Frame-Last des Browsers → anazhRealmPerf.json.
+    if (req.method === "POST" && req.url === "/api/perf-trace") {
+        handlePerfTrace(req, res);
         return;
     }
 
