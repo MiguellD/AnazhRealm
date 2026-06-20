@@ -12899,8 +12899,27 @@ class AnazhRealm {
         const sense = st.perfSense;
         if (!sense || st.perfRegulator === false) return;
         const dt = Math.max(0.004, Math.min(0.1, dtSec || 0.016));
-        const targetMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
-        const err = (sense.frameMs - targetMs) / targetMs; // skaleninvariant
+        // V18.281 — DER ATEM-TOTBAND (Schöpfer „fps endlich über 60, das System nicht die
+        // ganze Zeit am Anschlag, die Schönheit offenbart sich LANGSAM ohne das System zu
+        // überfordern"): der Regler hatte EINEN Sollwert (17 ms) für BEIDES — wachsen UND
+        // drosseln → der Fixpunkt lag exakt bei frameMs = 17 ms = 59 fps. Der Kapazitäts-
+        // Regler ließ die Welt-Schönheit wachsen, BIS das Frame den Sollwert traf, und parkte
+        // dort: per Konstruktion „am Anschlag", jeder fps-Überschuss wurde sofort als Last
+        // gefressen → man kann nie komfortabel über 60. Heilung = ZWEI Schwellen mit einem
+        // TOTBAND dazwischen (EIN Regler, kein Parallel-System): drossle die Qualität erst
+        // über der DECKE (`throttleMs` = der geschützte fps-Boden, ≈59 fps); lass die
+        // Schönheit nur wachsen, wenn KLARER Kopfraum da ist (unter `growMs` = Decke −
+        // PERF_HEADROOM_MS, ≈77 fps); dazwischen err=0 → HALTE (das System atmet, kein
+        // Pendeln). Der Gleichgewichts-fps liegt jetzt im Totband [≈59..77] statt fest bei 59
+        // → die Welt wächst in echten Kopfraum und RUHT, statt am Anschlag zu hängen.
+        const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+        const growMs = Math.max(1, throttleMs - AnazhRealm.PERF_HEADROOM_MS);
+        let err; // skaleninvariant; 0 im Totband
+        if (sense.frameMs > throttleMs)
+            err = (sense.frameMs - throttleMs) / throttleMs; // zu langsam → drosseln (loadScale ↓)
+        else if (sense.frameMs < growMs)
+            err = (sense.frameMs - growMs) / growMs; // Kopfraum → wachsen (loadScale ↑)
+        else err = 0; // Totband → halten
         const K = AnazhRealm.PERF_PID;
         // velocity-PID: Δu = Kp·Δe + Ki·e·dt + Kd·(e−2e'+e'')/dt → loadScale −= Δu
         const dErr = err - sense.pidPrevErr;
@@ -73318,7 +73337,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.280.0";
+AnazhRealm.VERSION = "18.281.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76213,12 +76232,18 @@ AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach
 // 40 % bei voller Last (spärlich, aber nicht kahl — der Schöpfer richtet den Look, Regel #0).
 AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.4;
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
-AnazhRealm.ARCH_QUALITY_FPS_LOW = 50; // darunter: Qualität straffen
-AnazhRealm.ARCH_QUALITY_FPS_HIGH = 58; // darüber: Qualität lockern
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
+// (V18.281 — die toten ARCH_QUALITY_FPS_LOW/HIGH-Schwellen GEKEHRT: Reste des
+// im PID absorbierten Bang-Bang-Governors, 0 Leser = Passagiere.)
 AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", "creatures", "physics", "render"]);
-AnazhRealm.PERF_TARGET_MS = 17; // Soll-Frame-Zeit (≈59 fps) — der Regelkreis-Sollwert
+// Die DECKE: über dieser Frame-Zeit drosselt der Regler die Qualität (der geschützte
+// fps-Boden, ≈59 fps). Der WACHSTUMS-Boden liegt PERF_HEADROOM_MS darunter (V18.281).
+AnazhRealm.PERF_TARGET_MS = 17;
+// V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
+// Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die
+// Lunge des Systems: dazwischen hält der Regler → fps ruht über 60 statt am 59er-Anschlag.
+AnazhRealm.PERF_HEADROOM_MS = 4;
 AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wahrnehmung
 // V18.269 — GPU-Last-Proxy: ms-Äquivalent je Draw-Call. Die Render-Last (renderer.info,
 // die V18.268-Augen) ist GPU, nicht in p.render (CPU). Dieser Faktor hebt sie in die

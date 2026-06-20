@@ -22478,8 +22478,11 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
         out.gravityUntouchedLow = st.gravity === gBefore;
 
-        // (2) FPS-LUFT (klare Reserve) → relax zum MAXIMUM (alle Stellgrößen).
-        for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(140); // frameMs≈7 << Soll
+        // (2) FPS-LUFT (klare Reserve, frameMs≈7 ≪ growMs) → relax zum MAXIMUM (alle Stell-
+        // größen). V18.281: mehr Ticks bis zur Sättigung — der Atem-Totband macht den Kopfraum-
+        // err kleiner (7−13 statt 7−17), der Integral-Term braucht länger bis loadScale exakt
+        // 1.0 clampt (das Gleichgewicht bei 140 fps IST 1.0, da frameMs < growMs immer → err<0).
+        for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
         out.relaxedRadius = st.architectureCullingRadius === A.ARCH_QUALITY_RADIUS_MAX;
         out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
         out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
@@ -22602,6 +22605,41 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
         st.voxelMeshPending = pendingSnap;
 
+        // (9) V18.281 — DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
+        // Regler (er frisst den fps-Überschuss NICHT als Last → das System atmet über 60,
+        // statt am 59er-Anschlag zu parken). Drei Regime, EIN Regler:
+        st.perfSense = r._perfSenseInit();
+        st.perfSense.loadScale = 0.5;
+        st.perfSense.pidPrevErr = 0;
+        st.perfSense.phase = { streaming: 1, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 };
+        // (a) Frame IM Totband (15 ms ≈ 66 fps) → loadScale HÄLT (kein Wachsen, kein Pendeln).
+        for (let i = 0; i < 60; i++) {
+            st.perfSense.frameMs = 15;
+            r._nexusPerfRegulate(0.016);
+        }
+        out.deadbandHolds = Math.abs(st.perfSense.loadScale - 0.5) < 0.05;
+        out.deadbandLoadScale = +st.perfSense.loadScale.toFixed(3);
+        // (b) KLARER Kopfraum (10 ms ≈ 100 fps, unter growMs) → loadScale wächst zum Maximum
+        // (die Schönheit füllt die Reserve — langsam, das ist gewollt).
+        for (let i = 0; i < 300; i++) {
+            st.perfSense.frameMs = 10;
+            r._nexusPerfRegulate(0.016);
+        }
+        out.headroomGrows = st.perfSense.loadScale > 0.9;
+        out.headroomLoadScale = +st.perfSense.loadScale.toFixed(3);
+        // (c) ÜBER der Decke (25 ms ≈ 40 fps) → loadScale fällt wieder (der fps-Boden schützt).
+        for (let i = 0; i < 120; i++) {
+            st.perfSense.frameMs = 25;
+            r._nexusPerfRegulate(0.016);
+        }
+        out.ceilingThrottles = st.perfSense.loadScale < 0.5;
+        out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
+        // CONSUM (source-probe): der Regler trägt das Totband (growMs/throttleMs), nicht EINEN Sollwert.
+        out.regulateHasDeadband =
+            /throttleMs/.test(r._nexusPerfRegulate.toString()) && /growMs/.test(r._nexusPerfRegulate.toString());
+        // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
+        out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
+
         st.perfSense = snap.sense;
         st.architectureCullingRadius = snap.radius;
         st.architectureBuildBudgetPerFrame = snap.budget;
@@ -22691,6 +22729,26 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         "V18.270: settled (kein Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration — der Hebel lebt, wo er sinnvoll ist)",
         res.settledThrottlesStream
+    );
+    check(
+        "V18.281: DER ATEM-TOTBAND existiert — der Regler trägt growMs + throttleMs (zwei Schwellen), nicht EINEN Sollwert",
+        res.regulateHasDeadband
+    );
+    check(
+        `V18.281: im Totband HÄLT der Regler (loadScale ${res.deadbandLoadScale} bleibt ~0.5) — das System atmet über 60, kein 59er-Anschlag`,
+        res.deadbandHolds
+    );
+    check(
+        `V18.281: klarer Kopfraum lässt die Schönheit wachsen (loadScale ${res.headroomLoadScale} → Maximum)`,
+        res.headroomGrows
+    );
+    check(
+        `V18.281: über der Decke schützt der fps-Boden (loadScale ${res.ceilingLoadScale} fällt) — der Regler drosselt`,
+        res.ceilingThrottles
+    );
+    check(
+        "V18.281: die toten Bang-Bang-Schwellen (ARCH_QUALITY_FPS_LOW/HIGH) sind gekehrt — kein Passagier",
+        res.deadConstantsGone
     );
 }
 
