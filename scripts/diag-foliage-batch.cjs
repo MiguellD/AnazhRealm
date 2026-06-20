@@ -58,12 +58,20 @@ const server = http.createServer((req, res) => {
             matSet.set(key, e);
         }
         const mats = [...matSet.entries()].map(([uuid, e]) => ({ uuid: uuid.slice(0, 8), ...e })).sort((a, b) => b.groups - a.groups);
+        // V18.288 — Baum-spezifisch: teilen die grown_baum-Gruppen jetzt EIN Material?
+        const treeGroups = groups.filter((g) => /grown_baum/.test(g.key || ""));
+        const treeMats = new Set(treeGroups.map((g) => g.mat && g.mat.uuid));
+        const sharedMarked = groups.filter((g) => g.mat && g.mat.userData && g.mat.userData.sharedFoliage).length;
         return {
             totalGroups: groups.length,
             distinctMaterials: matSet.size,
             distinctGeometries: geomSet.size,
             totalInstances: totalInst,
             totalTrisK: Math.round(totalTris / 100) / 10,
+            foliageMatCacheSize: r.state._foliageMatCache ? r.state._foliageMatCache.size : -1,
+            treeGroups: treeGroups.length,
+            treeDistinctMaterials: treeMats.size,
+            groupsWithSharedMat: sharedMarked,
             materials: mats,
         };
     });
@@ -77,6 +85,10 @@ const server = http.createServer((req, res) => {
     for (const m of topo.materials.slice(0, 20)) {
         console.log(`    ${m.name.padEnd(34)} grp ${String(m.groups).padStart(4)} | inst ${String(m.instances).padStart(6)} | tris ${Math.round(m.tris / 100) / 10}k`);
     }
+    console.log(`\n  GETEILTE MATERIALIEN (V18.288):`);
+    console.log(`    _foliageMatCache.size:          ${topo.foliageMatCacheSize}   (distinkte geteilte Materialien gebaut)`);
+    console.log(`    Gruppen mit sharedFoliage-Mat:  ${topo.groupsWithSharedMat} / ${topo.totalGroups}`);
+    console.log(`    grown_baum-Gruppen:             ${topo.treeGroups}  →  ${topo.treeDistinctMaterials} distinkte Materialien  (Ziel: ≤ ~2-3)`);
     console.log(`\n  → Merge-Potential: ${topo.totalGroups} Gruppen-Draws → ~${topo.distinctMaterials} BatchedMesh-Draws (×LOD)`);
     await browser.close();
     server.close();

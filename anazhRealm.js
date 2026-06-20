@@ -56688,7 +56688,7 @@ class AnazhRealm {
             // holz-Tag): die Rinde erzählt ihr Holz, statt flacher Farbe.
             const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
-            const barkMat = this._buildToonNodeMaterial(barkMatOpts);
+            const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
         }
         // foliage-Geometrie (Cards)
@@ -56708,7 +56708,7 @@ class AnazhRealm {
                 side: THREE.DoubleSide,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
-            const foliageMat = this._buildToonNodeMaterial(foliageMatOpts);
+            const foliageMat = this._sharedFoliageMaterial(foliageMatOpts);
             leaves.push({ geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() });
         }
         if (leaves.length === 0) return null;
@@ -56912,6 +56912,28 @@ class AnazhRealm {
     }
 
     // Die InstancedMesh-Gruppe für (Bauplan, Leaf) lazy erzeugen/holen.
+    // V18.288 — GETEILTE Bewuchs-Materialien (der sichere erste Render-Hebel).
+    // Jeder grown-Baum baute bisher sein EIGENES Rinden-/Blatt-Material mit
+    // IDENTISCHEN Opts (globale holz/laub-Tags; die Art-Farbe läuft längst
+    // pro-Instanz via useInstanceTint + setColorAt) → 534 redundante
+    // MeshStandardNodeMaterial = 534 distinkte WebGPU-Pipelines (Compile-Stutter
+    // beim Streamen + Pipeline-Switch pro Draw). Hier per Opts-Signatur
+    // memoisiert → identische Configs teilen EIN Material (dasselbe Singleton-
+    // Muster wie `_getVoxelChunkMaterial`). NIE disposed: die geteilten
+    // Materialien folgen der archFlattenCache-Konvention (_archDisposeAllInstance-
+    // Groups lässt g.mat stehen; der grown-Baum-Pfad disposed seine Leaves nie).
+    _sharedFoliageMaterial(opts) {
+        if (!this.state._foliageMatCache) this.state._foliageMatCache = new Map();
+        const sig = JSON.stringify(opts);
+        let mat = this.state._foliageMatCache.get(sig);
+        if (!mat) {
+            mat = this._buildToonNodeMaterial(opts);
+            mat.userData.sharedFoliage = true;
+            this.state._foliageMatCache.set(sig, mat);
+        }
+        return mat;
+    }
+
     _archInstanceGroupFor(name, leafIdx, leaf) {
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const key = name + "#" + leafIdx;
@@ -73263,7 +73285,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.287.0";
+AnazhRealm.VERSION = "18.288.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
