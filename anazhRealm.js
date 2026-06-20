@@ -56405,19 +56405,36 @@ class AnazhRealm {
     _buildArchMeshMerged(bp) {
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length < 6) return this._buildFromBlueprint(bp);
         if (Array.isArray(bp.connections) && bp.connections.length > 0) return this._buildFromBlueprint(bp);
-        let merged = null;
-        try {
-            merged = this._mergeBlueprintByMaterial(bp);
-        } catch (_e) {
-            merged = null;
-        }
-        if (!merged || !Array.isArray(merged.leaves) || merged.leaves.length === 0) {
-            return this._buildFromBlueprint(bp); // nested/animate → Per-Teil-Wahrheit
+        // V18.299 — DER GEOMETRIE-CACHE (das V18.283-Avatar-Muster auf Strukturen):
+        // ein Bauplan ist GEOMETRISCH IDENTISCH je Spawn (der Builder ignoriert den
+        // Seed, s. _architectureBuilders Z.56124) — nur Position/Scale variieren.
+        // Der teure Merge (GEMESSEN: Tempel ~14 ms, Dorf ~5 ms) lief bei JEDEM Spawn
+        // neu = der Bau-Hitch, den der Schöpfer fühlt. Jetzt: EINMAL mergen, je Bauplan
+        // cachen (WeakMap → auto-GC), danach nur die Geometrie KLONEN (~0,5 ms). Sicher:
+        // _disposeSoulGroup disposed NUR Geometrie (nie Material, Z.10.0-j.h) → das
+        // Material wird GETEILT (nie disposed), die Geometrie pro Spawn GEKLONT (jeder
+        // Spawn besitzt seinen Klon, der Cache die un-disposte Vorlage). Per-Instanz-
+        // Varianz lebt in Position/Scale (Z.56128: „KEINE Per-Instance-Color nötig").
+        if (!this._archMergeCache) this._archMergeCache = new WeakMap();
+        let leaves = this._archMergeCache.get(bp);
+        if (!leaves) {
+            let merged = null;
+            try {
+                merged = this._mergeBlueprintByMaterial(bp);
+            } catch (_e) {
+                merged = null;
+            }
+            if (!merged || !Array.isArray(merged.leaves) || merged.leaves.length === 0) {
+                return this._buildFromBlueprint(bp); // nested/animate → Per-Teil-Wahrheit
+            }
+            leaves = merged.leaves;
+            this._archMergeCache.set(bp, leaves);
         }
         const group = new THREE.Group();
-        for (const leaf of merged.leaves) {
+        for (const leaf of leaves) {
             if (!leaf || !leaf.geom || !leaf.mat) continue;
-            const m = new THREE.Mesh(leaf.geom, leaf.mat);
+            // Geometrie KLONEN (disposal-sicher), Material TEILEN (Singleton, nie disposed).
+            const m = new THREE.Mesh(leaf.geom.clone(), leaf.mat);
             m.castShadow = true;
             m.receiveShadow = true;
             group.add(m);
@@ -73954,7 +73971,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.298.0";
+AnazhRealm.VERSION = "18.299.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
