@@ -18761,6 +18761,58 @@ async function checkBandV18275FoliageGrowth(ctx) {
         });
         out.densityHeadlessFull = !st.renderer || !st.renderer._isHeadlessNull || st._foliageDensityScale === 1;
         st._foliageDensityScale = 1;
+
+        // V18.280 — DAS NACH-DÜNNEN: eine STATIONÄRE, bei voller Dichte gebaute Region schrumpft,
+        // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
+        // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
+        out.thinExists = typeof r._tickFoliageThin === "function";
+        out.scatterReadsBuiltDensity = /builtDensity/.test(r._scatterRegion.toString());
+        out.streamingCallsThin = /_tickFoliageThin/.test(r._tickScatterStreaming.toString());
+        try {
+            const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+            const SCt = (window.AnazhRealm || r.constructor).SCATTER;
+            if (SCt && Number.isFinite(SCt.regionM) && typeof r._scatterRegion === "function" && st.scatterRegions) {
+                // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
+                // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
+                const snap = st.scatterRegions;
+                st.scatterRegions = new Map();
+                const prx = Math.floor(ppT.x / SCt.regionM),
+                    prz = Math.floor(ppT.z / SCt.regionM);
+                st._foliageDensityScale = 1;
+                st._frameRenderBound = false;
+                let tfk = null,
+                    tFull = 0;
+                for (let dz = -1; dz <= 1 && tFull <= 5; dz++) {
+                    for (let dx = -1; dx <= 1 && tFull <= 5; dx++) {
+                        const k = `${prx + dx},${prz + dz}`;
+                        const reg = r._scatterRegion(prx + dx, prz + dz, ppT);
+                        const n = reg ? reg.instanceCount : 0;
+                        if (n > 5) {
+                            tfk = k;
+                            tFull = n;
+                        } else {
+                            r._disposeScatterRegion(k); // leere Region wieder weg (nur die mit Scatter bleibt)
+                        }
+                    }
+                }
+                if (tfk) {
+                    st._foliageDensityScale = 0.4; // Kapazität sinkt → das Nach-Dünnen greift
+                    r._tickFoliageThin(ppT); // MEINE Region ist die einzige Kandidatin → wird gedünnt
+                    const regThin = st.scatterRegions.get(tfk);
+                    out.thinFull = tFull;
+                    out.thinAfter = regThin ? regThin.instanceCount : 0;
+                    out.thinReduces = out.thinAfter < tFull;
+                }
+                // alles disposen (HISM-Instanzen freigeben) + den echten SET wiederherstellen
+                for (const k of Array.from(st.scatterRegions.keys())) r._disposeScatterRegion(k);
+                st.scatterRegions = snap;
+                st._foliageDensityScale = 1;
+            }
+        } catch (_eThin) {
+            out.thinProbeError = String((_eThin && _eThin.message) || _eThin);
+        }
+        st._foliageDensityScale = 1;
+        st._frameRenderBound = false;
         return out;
     });
     if (res.error) {
@@ -18801,6 +18853,18 @@ async function checkBandV18275FoliageGrowth(ctx) {
         );
     } else if (res.densityProbeError) {
         check("V18.277 CONSUM: Dichte-Probe lief ohne Fehler", false, res.densityProbeError);
+    }
+    check(
+        "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Source)",
+        res.thinExists && res.scatterReadsBuiltDensity && res.streamingCallsThin
+    );
+    if (res.thinReduces !== undefined) {
+        check(
+            `V18.280 CONSUM: sinkt die Kapazität, schrumpft die STATIONÄRE Welt (Region ${res.thinFull} → ${res.thinAfter}) — die geladene Welt dünnt beim Drehen`,
+            res.thinReduces
+        );
+    } else if (res.thinProbeError) {
+        check("V18.280 CONSUM: Nach-Dünn-Probe lief ohne Fehler", false, res.thinProbeError);
     }
 }
 

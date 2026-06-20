@@ -48052,7 +48052,16 @@ class AnazhRealm {
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
-        const region = { regX, regZ, cells: [], instanceCount: 0, byLayer: {} };
+        // V18.280 — die Dichte, bei der diese Region gebaut wurde (für das Nach-Dünnen:
+        // sinkt die perf-geregelte Dichte unter diesen Wert, wird die Region re-gestreamt).
+        const region = {
+            regX,
+            regZ,
+            cells: [],
+            instanceCount: 0,
+            byLayer: {},
+            builtDensity: this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1,
+        };
         // V18.225 — die FÜNF Strata über drei Pässe (Canopy · Understory ·
         // Streu). Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
         // die gebackenen Felder + die Bitmask + die HISM-Gruppen.
@@ -48320,7 +48329,49 @@ class AnazhRealm {
                 }
             }
         }
+        // V18.280 — DAS NACH-DÜNNEN: die kapazitäts-gewachsene Dichte griff bisher nur beim
+        // ERST-Bau (V18.277) → eine schon geladene, dichte Welt blieb dicht, wenn man nur DREHT
+        // (kein Re-Stream). Jetzt schrumpft die Welt AKTIV auf die gemessene Kapazität: eine
+        // Region, die bei höherer Dichte gebaut wurde als jetzt gilt, wird re-gestreamt (dünner).
+        this._tickFoliageThin(playerPos);
         return work + promotions;
+    }
+
+    // V18.280 — DAS NACH-DÜNNEN (die fehlende Hälfte der Kapazitäts-Welt): wo V18.275/.277 die
+    // Vegetation WACHSEN ließen, lässt dies sie SCHRUMPFEN — eine Region, deren `builtDensity`
+    // deutlich über der jetzt geregelten Dichte liegt, wird re-gestreamt (dünner). So sinkt auch
+    // die schon GELADENE, dichte Welt beim reinen Drehen auf die Hardware-Kapazität (nicht nur
+    // beim Laufen, wo der Ring ohnehin re-streamt). Budgetiert (1 Region/Tick) + NUR in den
+    // Lücken (nicht render-gebunden — die V18.276-Wand: erst Input, dann nachregeln). Negative
+    // Rückkopplung: jedes Dünnen senkt die Last → schafft Lücken → dünnt weiter → konvergiert.
+    _tickFoliageThin(playerPos) {
+        const st = this.state;
+        if (st._frameRenderBound) return 0; // erst Input/Umsehen, dann dünnen (V18.276)
+        const map = st.scatterRegions;
+        if (!map || map.size === 0 || !playerPos) return 0;
+        const scale = st._foliageDensityScale != null ? st._foliageDensityScale : 1;
+        const SC = AnazhRealm.SCATTER;
+        // die NÄCHSTE deutlich-zu-dichte Region finden (Margin 0.12 → kein Thrash am Ziel).
+        let bestKey = null,
+            bestReg = null,
+            bestDist = Infinity;
+        for (const [key, region] of map) {
+            if (!region || region.builtDensity == null) continue;
+            if (region.builtDensity <= scale + 0.12) continue;
+            const rcx = (region.regX + 0.5) * SC.regionM,
+                rcz = (region.regZ + 0.5) * SC.regionM;
+            const d = (rcx - playerPos.x) ** 2 + (rcz - playerPos.z) ** 2;
+            if (d < bestDist) {
+                bestDist = d;
+                bestKey = key;
+                bestReg = region;
+            }
+        }
+        if (!bestReg) return 0;
+        const { regX, regZ } = bestReg;
+        this._disposeScatterRegion(bestKey);
+        this._scatterRegion(regX, regZ, playerPos); // baut bei der AKTUELLEN (geringeren) Dichte
+        return 1;
     }
 
     // V18.219 — Edit-Invalidation: ein voxel-Edit ändert die Surface in
@@ -73267,7 +73318,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.279.0";
+AnazhRealm.VERSION = "18.280.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
