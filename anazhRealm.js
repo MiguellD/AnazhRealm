@@ -22074,14 +22074,9 @@ class AnazhRealm {
                 voice: "Ich bin der Nexus, Schöpfer. Dein Wille formt mich, meine Macht erweitert das Ultiversum.",
                 autonomyLevel: 0,
             },
-            processOptimization: (data) => {
-                // FPS-Drop → direkt Self-Heal. Physik-Stabilisierung ist Self-Heal,
-                // kein Welt-Effekt, also bewusst nicht in der DSL.
-                if (data.fps < 50) {
-                    this.optimizePhysics();
-                    this.log("Nexus-Optimierung: Physik stabilisiert", "INFO");
-                }
-            },
+            // V18.279 — `processOptimization` (FPS-Drop → optimizePhysics) ENTFERNT: ein
+            // zweiter, kaputter fps-Regler (Physik heilt keinen Render-Freeze) — der eine
+            // Perf-Regelkreis (V18.263) regelt die fps. Der Loop-Trigger ist mit weg.
         };
         this.state.nexusLastEvolution = performance.now() / 1000;
         this.log("Nexus der Unendlichkeit erwacht – bereit für unendliche Evolution", "INFO");
@@ -22836,7 +22831,15 @@ class AnazhRealm {
 
     optimizePhysics() {
         this.state.gravity = -14.715; // Zurück auf Standard
-        this.state.physicsWorld.setGravity(new Ammo.btVector3(0, this.state.gravity, 0));
+        // V18.279 — den POOL nutzen (tmpVec1), nicht `new Ammo.btVector3` ohne destroy →
+        // sonst leckt jeder Aufruf WASM-Heap (die Ammo-Allok-Gotcha). Fallback mit destroy.
+        if (this.state.tmpVec1) {
+            this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, this.state.gravity, 0));
+        } else {
+            const g = new Ammo.btVector3(0, this.state.gravity, 0);
+            this.state.physicsWorld.setGravity(g);
+            Ammo.destroy(g);
+        }
         this.state.rigidBodies.forEach((rb) => {
             const body = rb.userData.physicsBody;
             if (!body) return;
@@ -72432,9 +72435,12 @@ class AnazhRealm {
                     p.mana = Math.min(p.manaMax, p.mana + 2 + 6 * (0.4 * lead + 0.6 * fieldLead));
                 }
             }
-            if (this.state.fps > 0 && this.state.fps < 50 && this.nexus) {
-                this.nexus.processOptimization({ fps: this.state.fps });
-            }
+            // V18.279 — DER PHYSIK-SELBSTHEIL-DOOM-LOOP ENTFERNT (Schöpfer-Konsole „Physik
+            // optimiert / stabilisiert" floss endlos): die alte `processOptimization`-Heuristik
+            // rief bei JEDEM fps < 50 `optimizePhysics()` — aber Physik-Re-Sets können einen
+            // RENDER-gebundenen fps-Drop NICHT heilen (der V18.270-Sünde: ein Mittel das nichts
+            // ändert), churnten die Player-CCD/Reibung, leckten WASM-Heap + fluteten die Konsole.
+            // Der EINE fps-Regler ist seit V18.263 der Perf-Regelkreis (kein zweiter daneben).
             this.journalTick(currentTime);
             // Welle 3 F — Welt-Info nur alle 5 s aktualisieren (gleicher
             // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
@@ -73261,7 +73267,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.278.0";
+AnazhRealm.VERSION = "18.279.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

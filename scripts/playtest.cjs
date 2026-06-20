@@ -15286,6 +15286,17 @@ async function checkBandWelle6APolish(ctx) {
         // Cleanup: gespawnte Architektur entfernen
         r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
 
+        // V18.279 — der Physik-Selbstheil-DOOM-LOOP ist entfernt: kein per-Frame-Pfad ruft mehr
+        // optimizePhysics/processOptimization (heilte einen Render-Freeze nicht, leckte WASM,
+        // flutete die Konsole); optimizePhysics nutzt den tmpVec1-Pool (kein btVector3-Leck).
+        out.optimizePhysicsUsesPool = /tmpVec1/.test(r.optimizePhysics.toString());
+        // __codeOf strippt Kommentare (sonst stolpert der Absenz-Grep über den erklärenden
+        // Kommentar, der den ENTFERNTEN Code zitiert — die dokumentierte .toString()-Falle).
+        out.noDoomLoopInSelfAnalysis = !/processOptimization|optimizePhysics/.test(
+            window.__codeOf ? window.__codeOf(r._loopSelfAnalysis) : r._loopSelfAnalysis.toString()
+        );
+        out.nexusProcessOptGone = !(r.nexus && typeof r.nexus.processOptimization === "function");
+
         return out;
     });
 
@@ -15294,6 +15305,14 @@ async function checkBandWelle6APolish(ctx) {
         check(
             "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
             wave6aResults.frictionPreservedAfterOptimize
+        );
+        check(
+            "V18.279: optimizePhysics nutzt den tmpVec1-Pool (kein btVector3-WASM-Leck)",
+            wave6aResults.optimizePhysicsUsesPool
+        );
+        check(
+            "V18.279: der Physik-Doom-Loop ist weg — _loopSelfAnalysis ruft nicht mehr optimizePhysics (kein churn/spam/leck bei niedriger fps)",
+            wave6aResults.noDoomLoopInSelfAnalysis && wave6aResults.nexusProcessOptGone
         );
         if (wave6aResults.hasOtherBody) {
             check(

@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.279 — DER PHYSIK-SELBSTHEIL-DOOM-LOOP ENTFERNT (die Schöpfer-Konsole enthüllte ihn)
+
+Schöpfer-Konsole (nach V18.278, beim Spielen): KEIN „Loop-Frame-Fehler abgefangen" (die Boundary heilte den Hard-Freeze — die Welt LÄUFT, fps 15–22 statt erstarrt) — aber endlos floss `Physik optimiert: Gravitation, Reibung, CCD angepasst` + `Nexus-Optimierung: Physik stabilisiert`. Plus der Schöpfer-Befund: „bei Drehen + Pointer-Lock fällt fps auf 3–5" (= reiner RENDER-Bound, das Umsehen baut nichts).
+
+**DIE WURZEL (aus der Konsole gelesen):** der Nexus rief `processOptimization({fps})` → bei JEDEM `fps < 50` `optimizePhysics()` (im per-Frame `_loopSelfAnalysis`). Da die fps render-bound bei 15–22 lagen (immer < 50), feuerte es ENDLOS — ein DOOM-LOOP: niedrige fps → „Physik optimieren" → was einen RENDER-Freeze NICHT heilt (die V18.270-Sünde: ein Mittel das nichts ändert) → churnt die Player-CCD/Reibung (re-`setCcd*` jeden Aufruf) + LECKT WASM-Heap (`new Ammo.btVector3` ohne destroy, die Ammo-Allok-Gotcha) + flutet die Konsole → fps bleibt low → wieder feuern. Ein zweiter, KAPUTTER fps-Regler neben dem einen Perf-Regelkreis (V18.263 „niemals einen zweiten Qualitäts-Regler daneben").
+
+**GEBAUT:** (1) der Doom-Loop-Trigger in `_loopSelfAnalysis` ENTFERNT — der eine Perf-Regelkreis (V18.263) regelt die fps. (2) `nexus.processOptimization` (toter Code danach) ENTFERNT. (3) `optimizePhysics` (bleibt für den Chat-Befehl „optimiere physik" + den Test) nutzt jetzt den `tmpVec1`-POOL statt `new Ammo.btVector3` → kein WASM-Leck mehr. 2 neue Wände (kein Doom-Loop in `_loopSelfAnalysis` · `optimizePhysics` pool-basiert). **WIRKUNG:** die Konsole ist still, der WASM-Leck-Tropf gestoppt, der CCD-Churn weg — ABER das ist NICHT der turning-fps-Killer (der ist render-bound, s. u.).
+
+**DER ECHTE turning-fps (3–5, render-bound) — ehrlich offen, der nächste Bogen:** das Umsehen rendert die volle Szene (1107 Draw-Calls / 3.32 M Dreiecke, 718 k `frustumCulled=false` = nie gecullt) jeden Frame neu → auf schwacher Hardware 3–5 fps. Die V18.277-Dichte ist BUILD-ZEIT → sie hilft dem FRISCHEN Spawn / dem Laufen (Re-Stream sparsamer), NICHT der schon geladenen dichten Welt beim reinen DREHEN (kein Re-Stream). Der eigentliche Fix ist das GPU-Culling (render nur, was im Blick ist — die „beides zusammen"-Part-2) ODER ein Re-Stream der geladenen Welt auf die geregelte Dichte. Verifiziert: playtest grün (Page-Errors=0) · check · lint · format · audit clean.
+
 ### V18.278 — DER EWIGE LOOP IST JETZT EWIG: die Error-Boundary gegen den Welt-Freeze
 
 Schöpfer: „es freezed noch immer ein, warte über 3 min aber fängt sich nicht … das gesamte System crasht plötzlich, schaue zum Fluss und das Wasser fliesst nicht mehr, die Wellen hängen, die Welt erstarrt, was ist es?"
