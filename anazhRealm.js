@@ -60134,6 +60134,9 @@ class AnazhRealm {
     _tickWorldWaterCA() {
         const activeSet = this.state.waterCAActive;
         if (!activeSet || activeSet.size === 0 || !this.state.voxelChunks) return 0;
+        // V18.292 — deterministischer Tick-Zähler für den Fluss-Re-Mesh-Throttle
+        // (frame-basiert, KEINE Wall-Clock → headless deterministisch + sichtbar).
+        this.state._caTickCount = (this.state._caTickCount || 0) + 1;
         if (!this.state.waterLevelCells) this.state.waterLevelCells = new Map();
         const cfg = this._voxelChunkConfig(0);
         const dim = cfg.dim,
@@ -60356,17 +60359,44 @@ class AnazhRealm {
         // sofort durch; der FP schreibt nur bei Überschreiten fort → leise
         // Drift akkumuliert und schlägt korrekt durch). Der SETTLE-Final-
         // Mesh bleibt unbedingt (der letzte Stand wird immer gezeichnet).
-        for (const a of active) if (a.moved > 0.5 && this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
+        // V18.292 — der Dauerfluss re-meshed gedrosselt (~15 Hz statt 60 Hz): pro
+        // Region nur alle CA_REMESH_TICK_INTERVAL Ticks das Dach prüfen + bei
+        // sichtbarer Änderung neu meshen. Der Throttle prüft VOR `_caRoofChanged`
+        // (das den FP mutiert) → über das Intervall akkumulierte Änderung schlägt
+        // korrekt durch; der schaum-getragene Look bleibt (die Höhe lagt ≤ 4 Frames).
+        const caTick = this.state._caTickCount;
+        const REMESH_INT = AnazhRealm.CA_REMESH_TICK_INTERVAL;
+        for (const a of active) {
+            if (a.moved <= 0.5) continue;
+            const e = this.state.voxelChunks.get(a.key);
+            const last = e && Number.isFinite(e._caRemeshTick) ? e._caRemeshTick : -Infinity;
+            if (caTick - last < REMESH_INT) continue;
+            if (this._caRoofChanged(a, dim, dimY)) {
+                if (e) e._caRemeshTick = caTick;
+                enqueueWithReaders(a.cx, a.cz);
+            }
+        }
         for (const a of active) {
             if (a.moved < SETTLE) {
+                // V18.292 — der SETTLE-Final-Mesh teilt den Fluss-Throttle: ein
+                // PERPETUELLER Fluss „settled" nie echt, er ping-pongt zwischen
+                // moved>0.5 (oben, gedrosselt) und moved<SETTLE (hier) → ohne den
+                // Throttle re-meshte dieser Zweig jeden Ping-Pong-Zyklus (= die
+                // halbe Rest-Last). Solange das Intervall NICHT um ist, BLEIBT die
+                // Region aktiv (kein delete) → der Final-Mesh ist binnen ≤ INT
+                // Frames garantiert (eine echt ruhende Region meshed dann final +
+                // verlässt active; eine fließende kehrt in den oberen Zweig zurück).
+                const e = this.state.voxelChunks.get(a.key);
+                const last = e && Number.isFinite(e._caRemeshTick) ? e._caRemeshTick : -Infinity;
+                if (caTick - last < REMESH_INT) continue;
                 activeSet.delete(a.key);
                 // das finale RUHE-Mesh — ABER auch hier durchs Dach-Gate
-                // (V18.121): im Wake/Settle-PING-PONG (Nachbar-xfer weckt →
-                // mini-moved → settle) feuerte der ungegatete Final-Mesh
-                // jeden Zyklus (GEMESSEN: nach dem moved-Gate blieben ~150
-                // Builds/Key/300 Ticks). Ist der FP unverändert, IST der
-                // letzte sichtbare Stand schon gezeichnet — nichts zu tun.
-                if (this._caRoofChanged(a, dim, dimY)) enqueueWithReaders(a.cx, a.cz);
+                // (V18.121): ist der FP unverändert, IST der letzte sichtbare
+                // Stand schon gezeichnet — nichts zu tun.
+                if (this._caRoofChanged(a, dim, dimY)) {
+                    if (e) e._caRemeshTick = caTick;
+                    enqueueWithReaders(a.cx, a.cz);
+                }
             }
         }
         return total;
@@ -73416,7 +73446,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.291.0";
+AnazhRealm.VERSION = "18.292.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -73427,6 +73457,17 @@ AnazhRealm.VERSION = "18.291.0";
 // Browser-justierbar: anazhRealm.constructor.CA_FLOW_KEEP = 0.97 (näher 1 =
 // weitere Ausbreitung, näher 0.9 = kürzere Fluss-Zungen).
 AnazhRealm.CA_FLOW_KEEP = 0.95;
+
+// V18.292 — der FLUSS-RE-MESH-THROTTLE: ein KONTINUIERLICH fließender Chunk
+// (Quelle speist ewig nach → die Sheet-Höhe ändert sich real > 5 cm) re-meshte
+// JEDEN Frame sein ganzes Wasser-Sheet (GEMESSEN diag-frame-profile: 2 aktive
+// Regionen = 3.8 ms/Frame · 12.8 ms Spitze IM STAND = der dominante stationäre
+// Tick-Posten = der „dreht sich kaum und hängt"-Befund). Die SICHTBARE Strömung
+// trägt der Schaum-Shader (aFlow, kontinuierlich); die Sheet-HÖHE bei ~15 Hz
+// statt 60 Hz nachzuziehen ist imperzeptibel. Gilt NUR dem Dauerfluss — der
+// SETTLE-Final-Mesh bleibt unbedingt (der Ruhe-Stand wird immer gezeichnet).
+// Browser-justierbar (1 = jeder Frame wie vor V18.292, 4 = 15 Hz).
+AnazhRealm.CA_REMESH_TICK_INTERVAL = 4;
 
 // V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): die STAU-Regel des
 // Wasser-Automaten — die vierte Gleichgewichts-Regel neben Decay·Kappe·

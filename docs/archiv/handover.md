@@ -378,6 +378,19 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.292 — DER FLUSS-RE-MESH-THROTTLE: das fließende Wasser hört auf, im STAND jeden Frame neu zu meshen
+
+Der Schöpfer am Bruchpunkt („ich drehe mich kaum und alles hängt … hat jedes Blatt eine Kollision … werden die Bäume anders gesetzt … messe, suche, finde endlich"). DREI seiner Verdächtigen GEMESSEN (`diag-turn-hang`, neu):
+- **Kollision (hat jedes Blatt Kollision?):** NEIN — nur 40 architectures + 9 Chunk-BVHs tragen Kollision, 11 Bodies gesamt. Laub/Scatter haben KEINE. Verdächtiger entlastet.
+- **Bäume unter dem Radar:** JA, bestätigt — 607 InstancedMeshes (= Draw-Calls) mit **73.547 Instanzen**, aber nur 111 zählen als `architectures`. Die sichtbaren „hunderte Bäume" sind Scatter-Instanzen (`_scatterInstanceAdd`), die erst bei Promotion (Touch) zählen.
+- **Wind:** rein GPU (TSL `positionNode`, kein per-Frame-CPU-Loop) — kein CPU-Hang.
+
+WURZEL des Stand-Hangs (`diag-frame-profile`, stationär): der Tick ist OHNE Render noch 5-10 ms mit 20-42-ms-Spitzen — dominant `_tickPendingWaterIso` **3.8 ms Ø / 12.8 ms max**, weil `waterCAActive: 2` (eine Fluss-/Wasserfall-Region) ihr ganzes Sheet JEDEN Frame neu meshte. V18.290 gatete den unsichtbaren Jitter weg, aber ECHT fließendes Wasser (Pegel ändert sich real > 5 cm) schlägt korrekt durch → re-mesht 60 Hz für ein im Detail unsichtbares Bild (die Strömung trägt der Schaum-Shader `aFlow` kontinuierlich).
+
+FIX = der FLUSS-RE-MESH-THROTTLE (`CA_REMESH_TICK_INTERVAL = 4`, deterministischer Frame-Zähler `_caTickCount`, KEINE Wall-Clock → headless deterministisch): eine fließende Region re-mesht ihr Sheet nur alle 4 Ticks (~15 Hz statt 60 Hz). BEIDE Pfade gedrosselt (der `moved>0.5`-Dauerfluss UND der SETTLE-Final-Mesh — ein perpetueller Fluss ping-pongt zwischen beiden); der Throttle hält eine settlende Region aktiv, bis das Intervall um ist → der Final-Mesh ist binnen ≤ 4 Frames garantiert (kein stale Sheet). **GEMESSEN (`diag-water-throttle`, A/B auf IDENTISCHER Welt, 2 aktive Regionen): Tick Ø 14.4 → 10.6 ms, −3.86 ms/Frame (27 % schneller im Stand).** Look-sicher (Höhe lagt ≤ 4 Frames, Schaum-Strömung kontinuierlich). Gate grün (3500 Invarianten — die CA-Simulation ist unverändert, nur das Mesh-Enqueue-Timing).
+
+OFFEN + EHRLICH (der Schöpfer-Browser unersetzlich): die ANDERE Hälfte des Hangs ist die **RENDER-Last** (1109 Draw-Calls, 73k Laub-Instanzen, 549 Meshes `frustumCulled=false` → Umsehen cullt nichts) — headless nicht messbar (Null-Renderer stubt den Render, swiftshader-Realrender timeout bei der schweren Szene). Der nächste Hebel = GPU-Culling / weniger Draw-Calls (look-gebunden). Werkzeug `diag-turn-hang` (Kollision/Tick/Heap) + `diag-water-throttle` (A/B) neu.
+
 ### V18.291 — DER LAUF-SPIKE: die Nachbar-Chunk-Kollision aus dem Inline-Stream in ein Zeit-Budget verlegt
 
 Der zweite Schöpfer-Trace bestätigte den V18.290-Gewinn (Scripting 74 % → 28 %), zeigte aber beim LAUFEN noch p99-Spikes ~300 ms. GEMESSEN (`diag-walk-profile` + der neue `diag-collision-split`): der dominante Lauf-Posten ist der **Kollisions-BVH-Bau** — und der teure Teil ist NICHT die per-Dreieck-`addTriangle`-Schleife (Ø 2.14 ms), sondern der **`btBvhTriangleMeshShape`-KONSTRUKTOR** (Ø 9.74 ms, der O(n·log n)-Baum-Bau für 5–9k Dreiecke). Das rettete vor dem falschen Fix (`btTriangleIndexVertexArray`-Puffer-API hätte nur die billige Schleife beschleunigt).

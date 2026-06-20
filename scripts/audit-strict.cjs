@@ -582,6 +582,7 @@ async function auditStateAndMethods() {
                 "waterCapJ",
                 "waterCAScratch", // Float64Array, prev-if-realloc
                 "_caFpScratch", // Float32Array, `if (!fp || fp.length<…)`-realloc
+                "_caTickCount", // V18.292 — Fluss-Re-Mesh-Throttle-Zähler, `(x||0)+1` lazy-init
                 // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
                 "erosionTiles",
                 "hydroTiles",
