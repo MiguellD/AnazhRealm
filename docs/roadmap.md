@@ -42,10 +42,13 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
 - **~~PostProcessing/ShaderMaterial-Warnung~~ GEHEILT (V18.267):** der Bootstrap kopiert jetzt
   `RenderPipeline` (NodeMaterial-basiert) statt des deprecated `PostProcessing` (ShaderMaterial-basiert).
   Offen bleibt nur ein 2× vendor-interner `ShaderMaterial`-Hinweis (nicht aus unserem Code, harmlos).
-- **Der view-unabhängige Haupt-Pass** (`frustumCulled=false` auf den globalen HISM-Gruppen): per-REGION-
-  Culling lohnt NICHT (256-m-Regionen im 768-m-Ring → jede Bounding-Sphere reicht zum Spieler), per-CHUNK
-  explodiert die Draw-Calls (V18.260-Feind). Der echte Hebel ist GPU-Culling/Indirect-Draw ODER
-  Foliage-Dichte (V18.267 Caps provisorisch gesenkt) — eine eigene fokussierte Welle. **DANN: der
+- **~~Der view-unabhängige Haupt-Pass~~ TEILS GEHEILT (V18.300):** die STREU-Laub-Gruppen sind jetzt
+  pro 256-m-Region gekeyt (`useRegionFoliageCull`) → lokale Bounding-Sphere → `frustumCulled=true` →
+  Umsehen cullt ~60 % der Laub-Last (die alte V18.265-These „per-Region lohnt nicht" verwechselte
+  DISTANZ- mit FRUSTUM-Culling: eine Region HINTER dem Blick fällt aus dem Frustum, egal wie nah).
+  OFFEN bleibt: die **globalen PLACED-Gruppen** (`_archInstanceAdd`, bewusst global) + der wahre
+  Hebel für sie = GPU-Culling/Indirect-Draw, look-bound (Schöpfer-Browser). Plus der **AVATAR-SKIN-
+  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **DANN: der
   DETERMINISMUS-BOGEN** (voxel-native Kollision ersetzt Ammos enge Rolle → killt den BVH-Lauf-Freeze +
   öffnet Lockstep/Replay; Schöpfer-Entscheid „Render-Quick-Win, dann der Bogen"). FPS-Beweis bleibt der
   Schöpfer-WebGPU-Browser (Regel #0).

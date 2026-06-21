@@ -400,6 +400,18 @@ Der Schöpfer, am Ende der Geduld nach zwei Tagen: „haha lol und wieder im sel
 
 **NEBENBEFUND (kein Loop, nur der ehrliche Stand):** das LECK ist gefixt — hart nachgemessen (`scripts/diag-leak-probe.cjs`, die 426-Gruppen/907-Objekt-Welt reproduziert): der Post-GC-Heap-Boden plateaut bei ~108 MB statt zu klettern, autonome Bauten kappen bei 48. Der katastrophale 8-s-Freeze war das Leck (GC-Pausen, vom Flugschreiber als „GPU" fehlgelesen). **LEHRE: bei „kann mich kaum DREHEN" ist es die GPU-Render-Last (Drehen = reine GPU), NICHT das JS — und genau die ist headless unsichtbar; eine global-gekeyte InstancedMesh-Gruppe (`frustumCulled=false`) ist eine permanente Voll-Render-Last, die per-Region-Keying frustum-cullbar macht.**
 
+### V18.294–.299 — DER LECK-BOGEN: der Flugschreiber NENNT, was wächst → der Nexus-Pile gedeckelt (Kurzfassung; volle Narrative in den git-Commits)
+
+Echte Daten aus dem Schöpfer-Browser (V18.293-Flugschreiber): schlimmster Frame **8143 ms**, Verdikt GPU/Render-gebunden, **+2.8 MB/s Heap-Wachstum = ein LECK**. Die sechs Wellen jagten + schlossen es:
+- **V18.294** — der Flugschreiber wird **Leck-Detektor**: `_flightRecorderMemoryReport` misst die Heap-Rate + die am stärksten WACHSENDE Sammlung (rollendes ~160-s-Fenster) → ein `leakVerdict` im Klartext.
+- **V18.295** — der Detektor NENNT die **Objekt-Art** selbst (`_flightRecorderSceneBreakdown`, gruppiert `scene.children` nach `userData.sourceOp/kind`). Schöpfer-Lauf: `sceneChildren 43→902 (+859/295s)` — die Szene sammelt ~3 Objekte/s, die nie entfernt werden.
+- **V18.296** — die WURZEL benannt: der autonome Nexus komponierte spawn_village/temple/waterfall/fractal IN SPIELER-NÄHE (via `dslComposePosition`) → innerhalb des Cull-Radius → NIE gecullt → uncapped gestapelt = Heap-Tod. (Erst-Reflex: `maxCreatures` 120→20 + Scatter-Caps runter + die Bauten ganz aus `dslComposeAtomic` entfernt.)
+- **V18.297** — die Korrektur (Schöpfer „du hast ein Vision-Feature amputiert"): der Nexus baut WIEDER, aber **fern** (`far_player` 180–380 m, jenseits Cull-Radius → kein Render-Pile im Stand) + **gedeckelt** (`_capNexusStructures`, `MAX_NEXUS_STRUCTURES`=48, das Fernste verblasst). Plus die **On-Feet-Klasse gestoppt**: autonome Spawns werden IMMER im Chokepoint geklemmt, auch mit `precise` (der Fraktal-Pfad nutzt precise).
+- **V18.298** — der Profiweg: der Nexus baut nur in der **freien Zeit des Spielers** (`tickArchitectureCulling`-Budget → 0 bei `_frameOverBudget`) → die Welt wächst in den Lücken, nie auf Kosten der Bewegung.
+- **V18.299** — der Bau-Hitch geheilt: die **Struktur-Geometrie gecacht** (das V18.283-Avatar-Muster — geometrisch identisch je Spawn → einmal mergen, je Bauplan WeakMap-cachen, danach klonen). GEMESSEN: Tempel 16,4→0,6 ms (27×), Dorf 5,4→0,1 ms (54×).
+
+Bestätigt von V18.300's `diag-leak-probe`: der Heap plateaut. **LEHRE: ein Invariant/eine Messung gehört IN den Chokepoint (`_capNexusStructures`/der Spawn-Klemme), nicht an die N Aufrufer — ein autonomer Spawn-Pfad, der die Klemme umgeht, bringt die Bug-Klasse zurück.**
+
 ### V18.293 — DER FLUGSCHREIBER: das Loch geschlossen, durch das wir 33 Wellen lang rieten
 
 Der Schöpfer, erschöpft nach „mehr als einem Tag" Einfrieren, am Bruch des Vertrauens: „wir diskutieren, ich vertraue dir nichtmehr … tue was du tun musst, base dich zuerst, produziere kein weiteres Pflaster sonst zünd ichs an." Davor die tiefere Frage: „wie machen das die Profis … wie kann das System sich SELBST messen, und du auch?"
