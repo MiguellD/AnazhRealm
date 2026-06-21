@@ -34090,10 +34090,20 @@ class AnazhRealm {
             // Erbgut). Das ehrt §2.5 (Welt-als-Programm): der Baum lebt als
             // Funktion, nicht als Datensatz.
             grownBlueprints: (() => {
+                // V18.317 — NUR die von einer Architektur REFERENZIERTEN gewachsenen
+                // Baupläne persistieren. Die FOLIAGE-Varianten (die große Masse —
+                // gemessen ~549 in einem Stand, davon nur wenige architektur-gehalten)
+                // sind PURE FUNKTION von (species, seed) + re-wachsen deterministisch beim
+                // nächsten Streaming-Pass; sie im Snapshot zu halten blähte ihn (77 KB) UND
+                // der Restore lädt sie unter Umgehung der 256er-Ring-Deckelung → Über-
+                // Sessions-Inflation (Schöpfer „zersetzen über 50 Runden"). Architektur-
+                // gehaltene MÜSSEN bleiben (sonst verliert ein platzierter Baum beim Restore
+                // seinen Bauplan, Audit-Heilung #2). Das ehrt §2.5: der Hain lebt als
+                // Funktion, nur was die Welt FESTHÄLT, reist als Datum.
                 const out = {};
                 const bps = this.state.blueprints || {};
                 for (const k in bps) {
-                    if (bps[k] && bps[k]._isGrown) {
+                    if (bps[k] && bps[k]._isGrown && this._isGrownBlueprintReferenced(k)) {
                         out[k] = {
                             label: bps[k].label,
                             _grownSpecies: bps[k]._grownSpecies,
