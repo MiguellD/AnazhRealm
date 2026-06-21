@@ -1107,6 +1107,11 @@ class AnazhRealm {
             // → Umsehen senkt die Last). archBatches: Map<matKey, {mesh:BatchedMesh,
             // geomIds, slotEntry}>; die archInstanceGroups-Wrapper zeigen darauf.
             archBatches: null,
+            // V18.289 — der BatchedMesh-Pfad (Per-Instanz-Frustum-Culling) bleibt AUS:
+            // V18.300 GEMESSEN, dass er die Geometrie pro Instanz EXPANDIERT (2,93M → 24,1M
+            // vorab-allozierte Dreiecke, ~1 GB Buffer) → er tauscht den Dreh-Freeze gegen
+            // ein OOM-Risiko. Kein gangbarer Fix as-is; der Dreh-Freeze wird über WENIGER
+            // Last (Dichte/Caps/LOD) geheilt, nicht über Buffer-Explosion.
             useBatchedFoliage: false,
             // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — pro Bauplan-Variante
             // EINE merged Geometry je (shape, material)-Gruppe (typisch: bark
