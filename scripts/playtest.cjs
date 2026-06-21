@@ -56385,6 +56385,12 @@ async function checkBandRing6Workshop(ctx) {
 
     const browser = await puppeteer.launch({
         headless: true,
+        // V18.309 — DER GATE HÄNGT NIE MEHR EWIG: ein toter/hängender page.evaluate
+        // (kumulativer Renderer-Tod im Schwanz, detached frame) wird nach diesem
+        // Timeout zu einer FANGBAREN Rejection statt einer Endlos-Blockade (der
+        // 50-min-Hänger). Generös (>> das teuerste legitime Band ~57 s), aber
+        // ENDLICH — so kommt die Wahrheit, statt dass der Lauf für immer schweigt.
+        protocolTimeout: 240000,
         args: [
             // ANGLE-Backend mit SwiftShader gibt unter headless die zuverlässigste
             // WebGL-Implementierung – plain --use-gl=swiftshader stürzt mit
@@ -56435,16 +56441,50 @@ async function checkBandRing6Workshop(ctx) {
     );
 
     const failures = [];
+    // V18.309 — DER ABBRUCH-ZUSTAND: ist die SEITE tot/abgehängt (kumulativer
+    // Renderer-Tod im Schwanz, protocolTimeout-Hänger), wird hier der erste tote
+    // Band vermerkt → alle Folgebänder überspringen + ein UNÜBERSEHBARES
+    // Schluss-Verdikt. So endet ein toter Lauf NIE mehr als rätselhafte ✅-Liste
+    // (das „ich las den Zähler statt des Verdikts") oder als 50-min-Schweigen.
+    let gateAborted = null;
     // DER PLAYTEST SIEHT SICH SELBST: jedes Band läuft durch `timed` (eine Quelle,
     // viele Leser) → der Bericht zeigt, WAS hängt (Pareto-Diagnose des „der Playtest
     // hängt"-Befunds; löst die externe diag-gate-cost ab). Die thematische Gruppierung
     // im Dispatch bleibt — nur die Call-Form wandert auf den Wrapper. `await fn(ctx)`
     // trägt sync (checkInitialState/Ring1) wie async (alle checkBand*) gleich.
     const bandTimes = [];
+    // V18.309 — DER CHOKEPOINT TRÄGT DIE FEHLER-GRENZE (die Parallelpfad-Heilung,
+    // wie auraAt/deposit: EIN Ort, durch den alle Bänder fliessen, statt N
+    // Try/Catch an den Aufruf-Orten). Drei Aufgaben in der EINEN Quelle:
+    //  (1) Timing (der Pareto-Bericht, wie bisher).
+    //  (2) Ein Band-Throw bricht den Lauf nicht mehr UNGEFANGEN ab — der alte
+    //      Pfad warf bis zum „Smoketest-Crash"-.catch durch, der das Verdikt UND
+    //      die Band-Timings verschluckte. Jetzt wird der Throw als Invariante-
+    //      Verletzung verbucht (erscheint im Schluss-Verdikt) + der Lauf läuft
+    //      weiter (alle Fehler werden sichtbar, nicht nur der erste).
+    //  (3) Ist die SEITE tot/abgehängt (kumulativer Renderer-Tod, protocolTimeout-
+    //      Hänger), scheitert auch jedes Folgeband → `gateAborted` setzen → den
+    //      Rest still überspringen (kein Folge-Fehler-Flut) → eine laute Verdikt-
+    //      Zeile. So wird der tote Lauf zu EINER Wahrheit, nicht Endlos-Schweigen.
     const timed = async (fn, c) => {
+        if (gateAborted) return; // Seite tot → Rest überspringen (Folge-Fehler unterdrücken)
         const t0 = Date.now();
         try {
             return await fn(c);
+        } catch (e) {
+            const msg = (e && e.message) || String(e);
+            check(fn.name, false, "Band-Fehler (geworfen): " + msg.slice(0, 200));
+            // Tote-Seite-Signatur: protocolTimeout, detached frame, geschlossener
+            // Target/Session, Runtime-Call gegen einen toten Kontext. Trifft sie zu,
+            // ist der Renderer-Prozess gestorben (swiftshader-Kumulativ-Last) → der
+            // Lauf ist ab hier wertlos, sauber abbrechen statt N-fach scheitern.
+            if (
+                /Execution context|Target closed|Session closed|detached|Protocol error|timed out|Runtime\.callFunctionOn|Connection closed/i.test(
+                    msg
+                )
+            ) {
+                gateAborted = { band: fn.name, reason: msg.slice(0, 240) };
+            }
         } finally {
             bandTimes.push([fn.name, Date.now() - t0]);
         }
@@ -57024,6 +57064,23 @@ async function checkBandRing6Workshop(ctx) {
         for (const [nm, ms] of slow.slice(0, 20)) console.log(`  ${String(ms).padStart(6)} ms  ${nm}`);
     }
     console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s`);
+    if (gateAborted) {
+        // V18.309 — UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
+        // rätselhafte ✅-Liste oder Endlos-Schweigen. Eine laute Zeile, Exit≠0,
+        // egal ob STRICT — ein unvollständiger Lauf ist nie ein grünes Gate.
+        console.log(
+            `\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`
+        );
+        console.log(`   Grund: ${gateAborted.reason}`);
+        console.log(
+            `   Die Bänder NACH dem Abbruch liefen nie → das ist KEIN grünes Gate. Das volle ~3500-` +
+                `Invarianten-Gate gehört auf die CI (frischer Renderer-Prozess pro Lauf), nicht in den` +
+                ` last-kumulierenden lokalen Container.`
+        );
+        if (failures.length > 0)
+            console.log(`   Bis zum Abbruch verletzt (${failures.length}): ${failures.join(", ")}`);
+        process.exit(1);
+    }
     if (failures.length > 0) {
         console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);
         if (STRICT) process.exit(1);
