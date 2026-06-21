@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.310 — RAPTOR 3, der erste Kollaps: die Wind-Sway-Mathematik ist EINE Quelle
+
+Der Schöpfer, mit Schwung: „fahre fort, kein zögern champ, raptor 3 ist im anmarsch :D" — die erste Anwendung von Gesetz #0 (V18.309) im Game-Code: einen echten Parallelpfad an seine kanonische Quelle kollabieren.
+
+**GELESEN (Gesetz #0: die kanonische Größe selbst prüfen, nicht der Zusammenfassung trauen):** die Feld-Wind-Sway-Mathematik lebte als ZWEI Kopien — `_grassInstanceMat` (das Gras-Wind-Material) und `_applyScatterMotion` (die weiche Streu-Vegetation). Beide trugen den **identischen** Mathe-Baum (`phase = uWindTime·1.7 + worldX·0.28 + worldZ·0.21`, dieselbe wandernde `gust`-Böen-Welle `sin(uWindTime·0.4 − worldX·0.03 − worldZ·0.024)·0.45+0.7`, dasselbe `offsetZ = cos(phase·0.7)·windEff·hf`) — und waren bereits **gedriftet**: Gras-Amplitude `1.5`, Streu `1.2`; Streu wandte `windScale` an, Gras nicht. Genau die Drift, die ein zweiter Mathe-Baum unweigerlich erzeugt.
+
+**DER KOLLAPS (Raptor — eine Turbine, die Schläuche sind Parameter):** eine neue kanonische Quelle `_windSwayOffset(TSL, { ampX, windScale })` trägt die EINE Sway-Mathematik; das Gras liest sie mit `ampX:1.5` (kein windScale → bit-identischer Baum wie zuvor), die Streu mit `ampX:1.2, windScale` (windScale-Default 1.0 → exakt der frühere Streu-Baum). Der per-System-Charakter (Amplitude, Wipfel-Dämpfen) reist als **Parameter**, nicht als Kopie. **Behavior-neutral by construction** (identische Konstanten, nur parametrisiert) — die geteilten `windUniforms` (Zeit/Stärke, schon EINE Welt-Quelle) bleiben, nur der Offset-Baum wird vereint.
+
+**BEWUSST NICHT verschmolzen:** `_applyVegetationResponse` trägt eine DRITTE Sway — aber ein ANDERES Modell (`phase·1.1`, crown-flex²-Gewichtung + Hochfrequenz-Flutter, KEIN gust). Das ist die deepened Tree-Crown-Bewegung (Plan §9 Ω-W), kein Klon der Feld-Sway. Sie zu kollabieren hieße zwei verschiedene Dinge zu verschmelzen — exakt was der Schöpfer ausschloss („ohne die einzelteile zu verschmelzen"). Sie teilt nur die kanonischen `windUniforms`, der Offset-Baum ist legitim eigen.
+
+**DIE LINSE (Gesetz #0: hinterlasse eine Linse, die den nächsten Fehler dieser Klasse laut macht):** der bestehende Source-Probe-Band (`gustWave`) wandert mit dem Refactor (CLAUDE.md „strukturelle Invarianten wandern mit") + wird verschärft zum Kollaps-Lens (kommentar-bereinigt via `__codeOf`): (a) `gustWave` — beide Reader rufen `_windSwayOffset`, der gust + die Pollen-drift sind präsent; (b) `windCollapsed` — der gust lebt NUR in der einen Quelle, nicht inline re-geforkt. So kann ein künftiger Edit den Wind nicht wieder still in zwei driftende Bäume spalten.
+
+**VERIFIZIERT:** `node --check` (anazhRealm.js + playtest.cjs) grün · `lint` 0 Fehler (die zwei nun ungenutzten Destructure-Vars `sin/cos` [Gras] + `max` [Streu] sauber entfernt) · `format` clean · Schnell-Gate 13/0 (Gras baut über 81 Chunks ohne Konsolen-Fehler = `_windSwayOffset` läuft) · die `gust`-Konstante lebt jetzt in EXAKT EINER Stelle (grep: 4 Treffer, alle in `_windSwayOffset`) · der Kollaps-Lens offline gegen den echten Source bewiesen (beide Bedingungen wahr). Wind-LOOK (bewegter Render) = Schöpfer-Browser-Wort, aber by construction unverändert.
+
 ### V18.309 — GESETZ #0 + DIE GATE-ROBUSTHEIT: baue die LINSE, verlass dich nicht auf Wachsamkeit
 
 Eine META-WELLE (kein Game-Substanz-Wechsel — nur Werkzeug + Disziplin), die Frucht eines tiefen Architektur-Dialogs. Der Schöpfer: „wie bringen wir die komplexität einfach erkennbar, übersichtlich und verständlich hin, was ist der wahre trick, den kaum profis der profis kennen?" — und, mit dem SpaceX-Raptor-Bild (drei Generationen, immer weniger Schläuche): „eine art metaregel finden, was verbindet die systeme, wie kann alles wieder in 1 leben, OHNE einfach die einzelteile zu verschmelzen — da ist ein schritt dazwischen, der sich über die systeme wiederholt."

@@ -25650,10 +25650,23 @@ async function checkBandV171Scatter(ctx) {
         // V17.4 — Pollen-Partikel-Art (emissive + drift, lebendig-gated).
         const pollen = out.registryArray ? species.find((s) => s.name === "pollen") : null;
         out.hasPollen = !!(pollen && pollen.emissive === true && pollen.drift === true && pollen.field === "lebendig");
-        // V17.4 — kohärente Böen-Welle (Source-Probe in Gras- + Scatter-Wind).
-        const grassSrc = r._grassInstanceMat ? r._grassInstanceMat.toString() : "";
-        const motionSrc = r._applyScatterMotion ? r._applyScatterMotion.toString() : "";
-        out.gustWave = grassSrc.includes("gust") && motionSrc.includes("gust") && motionSrc.includes("drift");
+        // V17.4/V18.310 — die kohärente Böen-Welle lebt jetzt in der EINEN Quelle
+        // `_windSwayOffset` (Gesetz #0 — Raptor): Gras + Streu-Vegetation LESEN sie,
+        // statt den gust-Mathe-Baum je selbst zu tragen. Der Lens prüft den Kollaps
+        // strukturell (kommentar-bereinigt via __codeOf, die V18.267-Disziplin):
+        // (a) beide Reader rufen `_windSwayOffset`, der gust + die Pollen-drift sind da,
+        // (b) der Kollaps ist ECHT — gust lebt NUR in der einen Quelle, nicht inline
+        // re-geforkt in den Readern (sonst driftet er wieder wie 1.5 vs 1.2).
+        const grassSrc = r._grassInstanceMat ? window.__codeOf(r._grassInstanceMat) : "";
+        const motionSrc = r._applyScatterMotion ? window.__codeOf(r._applyScatterMotion) : "";
+        const swaySrc = r._windSwayOffset ? window.__codeOf(r._windSwayOffset) : "";
+        out.gustWave =
+            swaySrc.includes("gust") &&
+            grassSrc.includes("_windSwayOffset") &&
+            motionSrc.includes("_windSwayOffset") &&
+            motionSrc.includes("drift");
+        out.windCollapsed =
+            swaySrc.includes("gust") && !grassSrc.includes("gust") && !motionSrc.includes("gust");
 
         // (2) Methoden existieren.
         out.buildExists = typeof r._buildVoxelChunkScatter === "function";
@@ -25804,7 +25817,14 @@ async function checkBandV171Scatter(ctx) {
     check("V17.1 Scatter: KLEIN_VEGETATION_SPECIES ist ein Array", res.registryArray === true);
     check("V17.1 Scatter: ≥5 Biom-Stimmen (Arten) registriert", res.speciesCount >= 5);
     check("V17.4: Pollen-Partikel-Art (emissive + drift, lebendig)", res.hasPollen === true);
-    check("V17.4: kohärente Böen-Welle im Gras + Scatter-Wind (gust + drift)", res.gustWave === true);
+    check(
+        "V18.310: kohärente Böen-Welle aus EINER Quelle — Gras + Scatter lesen _windSwayOffset (gust dort, drift erhalten)",
+        res.gustWave === true
+    );
+    check(
+        "V18.310: Wind-Kollaps ECHT — gust lebt NUR in _windSwayOffset, nicht inline re-geforkt",
+        res.windCollapsed === true
+    );
     check("V17.1 Scatter: jede Art hat gültiges Feld + konstanten Cap + Skala", res.allFieldsValid === true);
     check("V17.1 Scatter: alle vier worldFieldAt-Felder werden als Stimme genutzt", res.allFourVoices === true);
     check(

@@ -14678,7 +14678,7 @@ class AnazhRealm {
         // Lambert + handgebautes Shadow-Sampling) ist obsolet — Gras atmet
         // nativ mit dem Tag-Nacht-Zyklus. Kein Cel-LUT (kein gradientMap) — die
         // Halme bleiben smooth-Lambert, nicht Cel-quantisiert (gewollt).
-        const { uniform, vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
         if (!this.state.windUniforms) {
             this.state.windUniforms = {
                 uWindTime: uniform(0.0),
@@ -14691,34 +14691,13 @@ class AnazhRealm {
         const wu = this.state.windUniforms;
         const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
 
-        // Wind-positionNode: Welt-Position via positionWorld lesen (das ist
-        // modelMatrix × instanceMatrix × positionLocal, d.h. enthält die
-        // Instance-Translation für jeden Halm). Phase aus Welt-X+Z + Zeit.
-        // hf = Halm-Höhe (positionLocal.y, da Geometrie auf Wurzel
-        // zentriert ist via geo.translate(0, 0.425, 0)). KEIN onBeforeCompile.
-        const phase = wu.uWindTime
-            .mul(float(1.7))
-            .add(positionWorld.x.mul(float(0.28)))
-            .add(positionWorld.z.mul(float(0.21)));
-        const hf = max(positionLocal.y, float(0.0));
-        // V17.4 — kohärente Böen-Welle: eine nieder-frequente, übers Feld
-        // WANDERNDE Modulation der Wind-Stärke (`-worldX·k` über die Zeit = die
-        // Welle läuft) → ein sichtbares Wogen sweept durch die Wiese, statt nur
-        // per-Halm-Periodik. λ~210 m, Periode ~16 s. Faktor [0.25, 1.15].
-        const gust = sin(
-            wu.uWindTime
-                .mul(float(0.4))
-                .sub(positionWorld.x.mul(float(0.03)))
-                .sub(positionWorld.z.mul(float(0.024)))
-        )
-            .mul(float(0.45))
-            .add(float(0.7));
-        const windEff = wu.uWindStrength.mul(gust);
-        const offsetX = sin(phase).mul(windEff).mul(hf).mul(float(1.5));
-        const offsetZ = cos(phase.mul(float(0.7)))
-            .mul(windEff)
-            .mul(hf);
-        mat.positionNode = positionLocal.add(vec3(offsetX, float(0.0), offsetZ));
+        // Wind-positionNode: die kohärente Böen-Welle kommt aus der EINEN Quelle
+        // `_windSwayOffset` (V18.310 — Gesetz #0). Das Gras liest sie mit voller
+        // Amplitude 1.5 (kein windScale-Dämpfen → der frühere Halm-Baum bit-
+        // identisch); die hf-Höhengewichtung steckt in der Größe (Geometrie auf
+        // Wurzel zentriert via geo.translate(0, 0.425, 0)). KEIN onBeforeCompile.
+        const sway = this._windSwayOffset(TSL, { ampX: 1.5 });
+        mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
 
         // V15.3 - Gras-Albedo-Variation (render-only, der vierte Render-Bogen-
         // Schritt, erster "Leben"-Schritt): die flache uniforme Grün-Färbung
@@ -14796,6 +14775,49 @@ class AnazhRealm {
 
         this.state._grassMat = mat;
         return mat;
+    }
+
+    // V18.310 (Gesetz #0 — DIE KANONISCHE WIND-SWAY-GRÖSSE): die Böen-Welle als
+    // EINE Quelle, die alle Wind-Leser LESEN, statt sie neu herzuleiten. Das Gras
+    // (`_grassInstanceMat`) und die weiche Streu-Vegetation (`_applyScatterMotion`)
+    // wogen IM GLEICHTAKT (geteilte `windUniforms`) — aber beide trugen bis hierher
+    // den IDENTISCHEN Mathe-Baum (phase/gust/offset) als getrennte Kopie, die schon
+    // driftete (Amplitude 1.5 vs 1.2). Jetzt rechnet KEINER mehr selbst; der per-
+    // System-Charakter reist als Parameter (die Turbine ist EINE, die Schläuche sind
+    // Parameter): `ampX` = die horizontale Sway-Amplitude (Gras 1.5 voll, Streu 1.2
+    // zahmer), `windScale` = das per-Art-Wipfel-Dämpfen (Bäume ~0.2, Gras/Blüten 1.0;
+    // weggelassen → kein Multiply, bit-identisch zum früheren Gras-Baum).
+    //   phase = uWindTime·1.7 + worldX·0.28 + worldZ·0.21   (per-Halm-Periodik)
+    //   gust  = sin(uWindTime·0.4 − worldX·0.03 − worldZ·0.024)·0.45 + 0.7
+    //           (nieder-frequente, übers Feld WANDERNDE Böen-Welle, λ~210 m ~16 s)
+    //   hf    = max(positionLocal.y, 0)  (Höhengewichtung → der Stamm/die Wurzel steht)
+    // Render-rein (positionNode-Kontext, kein Worker/Buffer/Determinismus). Gibt den
+    // vec3-Versatz zurück (Aufrufer addiert ihn auf positionLocal) oder null ohne wu.
+    _windSwayOffset(TSL, opts = {}) {
+        const wu = this.state.windUniforms;
+        if (!wu) return null;
+        const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
+        const phase = wu.uWindTime
+            .mul(float(1.7))
+            .add(positionWorld.x.mul(float(0.28)))
+            .add(positionWorld.z.mul(float(0.21)));
+        const hf = max(positionLocal.y, float(0.0));
+        const gust = sin(
+            wu.uWindTime
+                .mul(float(0.4))
+                .sub(positionWorld.x.mul(float(0.03)))
+                .sub(positionWorld.z.mul(float(0.024)))
+        )
+            .mul(float(0.45))
+            .add(float(0.7));
+        let windEff = wu.uWindStrength.mul(gust);
+        if (typeof opts.windScale === "number") windEff = windEff.mul(float(opts.windScale));
+        const offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
+        const offZ = cos(phase.mul(float(0.7)))
+            .mul(windEff)
+            .mul(hf);
+        return vec3(offX, float(0.0), offZ);
     }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `_buildChunkGrass` + `_disposeChunkGrass`
@@ -32708,7 +32730,7 @@ class AnazhRealm {
         }
         const wu = this.state.windUniforms;
         if (!wu) return;
-        const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
+        const { vec3, float, sin, cos, positionLocal, positionWorld } = TSL;
         if (species.emissive) {
             if (species.drift) {
                 // V17.4 — Pollen schwebt: sanfter horizontaler + vertikaler Drift
@@ -32731,31 +32753,16 @@ class AnazhRealm {
             mat.positionNode = positionLocal.add(vec3(float(0.0), bob, float(0.0)));
             return;
         }
-        const phase = wu.uWindTime
-            .mul(float(1.7))
-            .add(positionWorld.x.mul(float(0.28)))
-            .add(positionWorld.z.mul(float(0.21)));
-        const hf = max(positionLocal.y, float(0.0));
-        // V17.4 — dieselbe kohärente Böen-Welle wie das Gras (geteilte
-        // windUniforms) → Gras + weiche Klein-Vegetation wogen IM GLEICHTAKT.
-        const gust = sin(
-            wu.uWindTime
-                .mul(float(0.4))
-                .sub(positionWorld.x.mul(float(0.03)))
-                .sub(positionWorld.z.mul(float(0.024)))
-        )
-            .mul(float(0.45))
-            .add(float(0.7));
-        // V17.6 — windScale dämpft pro Art: Bäume wiegen sanft im Wipfel
-        // (windScale ~0.2), Gras/Blüten voll (1.0). Die hf-Gewichtung (Höhe)
-        // bleibt → bei Bäumen wiegt nur das Laub (hohes y), der Stamm steht.
-        const windScale = float(typeof species.windScale === "number" ? species.windScale : 1.0);
-        const windEff = wu.uWindStrength.mul(gust).mul(windScale);
-        const offX = sin(phase).mul(windEff).mul(hf).mul(float(1.2));
-        const offZ = cos(phase.mul(float(0.7)))
-            .mul(windEff)
-            .mul(hf);
-        mat.positionNode = positionLocal.add(vec3(offX, float(0.0), offZ));
+        // V18.310 (Gesetz #0) — dieselbe kohärente Böen-Welle wie das Gras, jetzt
+        // aus der EINEN Quelle `_windSwayOffset` (geteilte windUniforms → Gleichtakt,
+        // kein zweiter driftender Mathe-Baum mehr). Der Art-Charakter reist als
+        // Parameter: Amplitude 1.2 (etwas zahmer als das Gras) + windScale dämpft pro
+        // Art (Bäume wiegen sanft im Wipfel ~0.2, Gras/Blüten voll 1.0; die hf-
+        // Höhengewichtung steckt in der Größe → bei Bäumen wiegt nur das Laub, der
+        // Stamm steht). Default windScale 1.0 = exakt der frühere Streu-Baum.
+        const windScale = typeof species.windScale === "number" ? species.windScale : 1.0;
+        const sway = this._windSwayOffset(TSL, { ampX: 1.2, windScale });
+        mat.positionNode = sway ? positionLocal.add(sway) : positionLocal;
     }
 
     // Pool-Recycling pro Art (mirror des Gras-Pools, V11.0-a-Pattern). Jede
@@ -74259,7 +74266,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.309.0";
+AnazhRealm.VERSION = "18.310.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
