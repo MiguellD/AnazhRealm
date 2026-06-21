@@ -73754,7 +73754,20 @@ class AnazhRealm {
             sy = dl ? dl.position.y : 0,
             sz = dl ? dl.position.z : 0;
         const moved = (px - L.px) ** 2 + (pz - L.pz) ** 2 > 0.01; // jede echte Bewegung
-        const sunMoved = (sx - L.sx) ** 2 + (sy - L.sy) ** 2 + (sz - L.sz) ** 2 > 1e-5;
+        // V18.305 — der Schatten-CACHE griff im STAND NIE: die Sonnen-Position ist
+        // focus + sunDir·200 (lightDist), trägt also BEIDES — den Spieler-focus (schon
+        // in `moved`) UND die kontinuierliche Tag-Nacht-Drift. Die alte Schwelle 1e-5
+        // sprach auf die per-Frame-Drift an (GEMESSEN Δ²≈1.15e-3/Frame → 119/119 Frames
+        // über der Schwelle) → `sunMoved` feuerte JEDEN Frame → der 518k-Dreieck-
+        // Schatten-Pass lief dauernd statt gecacht. Die langsame Drift gehört auf den
+        // Staleness-Pfad (hardStale): über das 30-Frame-Fenster akkumuliert sie nur
+        // Δ²≈1.0. `sunMoved` fängt jetzt NUR den DISKRETEN Sprung (manueller Tageszeit-
+        // Wechsel, Δ²≥10³) → Schwelle 4.0: weit über der 30-Frame-Akkumulation (Cache
+        // greift im Stand → ~97% übersprungen), weit unter jedem Sprung (Zeit-Wechsel
+        // aktualisiert sofort); in der schnellen Dämmerungs-Phase (Δ² bis 9.5e-2/Frame)
+        // trippt die Akkumulation alle ~7 Frame → mehr Updates, wenn der Schatten schnell
+        // wandert. EINE Schwelle, kein zweiter Regler.
+        const sunMoved = (sx - L.sx) ** 2 + (sy - L.sy) ** 2 + (sz - L.sz) ** 2 > 4.0;
         const since = frame - L.frame;
         // selbst bei Bewegung höchstens alle minInterval Frames (vom Regler gefahren);
         // eine harte Staleness-Grenze garantiert, dass die Map nie veraltet (Sonne/Geo).
@@ -74135,7 +74148,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.304.0";
+AnazhRealm.VERSION = "18.305.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

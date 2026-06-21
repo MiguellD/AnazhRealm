@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.305 — DER SCHATTEN-CACHE GREIFT ENDLICH: die Sonnen-Drift defeatete ihn
+
+Der Schöpfer, am Ende der Geduld („keine änderung mehr, du scheinst inkompetent … Miss endlich was wieviel kapazität braucht, was schluckt mir alle paar sekunden die gesamte leistung! miss endlich!"). RICHTIG — erst MESSEN. Drei Posten gemessen (Lauf-Chunk-Empfang-Spike 201 ms · Ring bleibt auf 4 · der Schatten-Cache 100 % defeated), der Schöpfer wählte **NUR den Schatten-Cache** zum Fixen.
+
+**GEMESSEN (`diag-shadow-sun`): der V18.264-Schatten-Cache griff im STAND NIE.** Der Cache (autoUpdate=false, nur neu rendern bei Spieler-/Sonnen-Bewegung) sollte den 518k-Dreieck-Schatten-Pass (ein zweiter Voll-Render) im Stand überspringen — aber die `sunMoved`-Schwelle war `1e-5`, und die Sonnen-Position (= focus + sunDir·200) driftet kontinuierlich mit der Tag-Nacht-Uhr: **Δ²≈1.15e-3/Frame → 119/119 Frames über der Schwelle** → `sunMoved` feuerte JEDEN Frame → der Schatten-Pass lief dauernd statt gecacht.
+
+**FIX (ein Zeilen-Schwellwert):** `sunMoved`-Schwelle `1e-5` → `4.0`. Die langsame kontinuierliche Drift gehört auf den Staleness-Pfad (`hardStale=30`): über das 30-Frame-Fenster akkumuliert sie nur Δ²≈1.0 — weit unter 4.0, also greift der Cache. `sunMoved` fängt jetzt NUR den DISKRETEN Sprung (manueller Tageszeit-Wechsel, Δ²≥10³ wegen lightDist=200) → der Schatten aktualisiert bei einem Zeit-Wechsel sofort. In der schnellen Dämmerungs-Phase (Δ² bis 9.5e-2/Frame) trippt die Akkumulation alle ~7 Frame → mehr Updates, wenn der Schatten schnell wandert (adaptiv, richtig). EINE Schwelle, kein zweiter Regler.
+
+**BEWIESEN (`diag-shadow-sun`, neu gemessen über `_loopShadowUpdate`-needsUpdate-Flips):** Schatten-Renders im Stand **100 % → 3 %** (4/120 Frames, grösste Lücke 30 = hardStale governt) → der 518k-Dreieck-Schatten-Pass ist im Stand ~97 % übersprungen → halbiert grob die steady GPU-Last, kein Look-Verlust (die Sonne wandert langsam, der Schatten aktualisiert weiter via Staleness). Schnell-Gate 13/0. Der FPS-Beweis bleibt der Schöpfer-Browser (Regel #0). **DISZIPLIN: ein Cache, der an einem kontinuierlich driftenden Signal hängt (Sonne), ist tot — die langsame Drift gehört auf den Staleness-Pfad, der Bewegungs-Trigger nur auf den diskreten Sprung.** Die zwei anderen gemessenen Posten (Lauf-Chunk-Spike · Ring auf 4) bleiben offen — der Schöpfer wählte sie bewusst nicht.
+
 ### V18.304 — DER AVATAR-BAU BLOCKT DEN BOOT NICHT MEHR: −res + deferiert
 
 Der Schöpfer (nach V18.303 „besser aber immernoch nicht top"): „optimiere noch den avatar, der wird sowieso noch geändert, optimiere die performance". Grünes Licht — der Avatar darf gröber werden (Redo kommt), also die zwei billigen, redo-überlebenden Hebel gezogen:
