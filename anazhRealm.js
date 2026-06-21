@@ -70087,7 +70087,14 @@ class AnazhRealm {
             // wird BOOT-ehrlich, der harte Min-Deckel garantiert ≤ Ziel).
             let visualEdge = visualEdgeTarget;
             const builtK = this._builtRingRadius();
-            if (builtK !== null && builtK < vCfg.ringRadius) {
+            if (builtK === null || builtK < 0) {
+                // V18.313 — DAS ERWACHEN: noch KEIN Boden-Chunk steht (nur die Plattform,
+                // builtK null/-1). Der Nebel umhüllt den Spieler ENG (Kokon) → die Welt + die
+                // fernen Spawns sind verborgen wie im Schlaf. Vorher griff hier der VOLLE
+                // Ziel-Rand (das „Start-Loch": ferne Geoden/Bauten durch klare Luft sichtbar).
+                visualEdge = Math.min(visualEdgeTarget, AnazhRealm.AWAKEN_FOG_FAR);
+            } else if (builtK < vCfg.ringRadius) {
+                // Boden erscheint → der Nebel WEITET zur gebauten Kante (exp-geglättet, kein Pop).
                 visualEdge = Math.min(visualEdgeTarget, Math.max(46, (builtK + 0.5) * vCfg.span + 18));
             }
             const smPrev = this.state._fogEdgeSmooth;
@@ -72056,7 +72063,10 @@ class AnazhRealm {
         // Berge im Hintergrund verschwinden im Sky-Color. Fog ist Welt-weit
         // (THREE.Fog statt FogExp2 für klarere Kontrolle). Color wird in
         // _applyDayNightToScene mit Sky-Color synchronisiert.
-        scene.fog = new THREE.Fog(0x88a0c8, 80, 320);
+        // V18.313 — der Nebel startet als ENGER Kokon (das Erwachen): Frame 0 zeigt nur die
+        // Plattform + dichten Dunst, nicht die fernen Spawns. _applyDayNightToScene weitet ihn
+        // ring-gekoppelt, sobald der Boden erscheint (AWAKEN_FOG_FAR → built-edge → Welt-Kante).
+        scene.fog = new THREE.Fog(0x88a0c8, AnazhRealm.AWAKEN_FOG_FAR * 0.45, AnazhRealm.AWAKEN_FOG_FAR);
         this.state.fog = scene.fog;
         this.log("Beleuchtung hinzugefügt: Ambient (0.6), Directional (1.0) mit Schatten", "INFO");
         // Welle 6.G3 — initialer Lichtstand aus timeOfDay (Default 0.5 = Mittag).
@@ -74249,7 +74259,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.312.0";
+AnazhRealm.VERSION = "18.313.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77156,6 +77166,11 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
+// V18.313 — DAS ERWACHEN: solange noch KEIN Boden-Chunk steht (nur die Spawn-Plattform,
+// `_builtRingRadius() < 0`), umhüllt der Lade-Nebel den Spieler ENG (Kokon, ~14 m Sicht) —
+// wie das Erwachen aus dem Schlaf: die Welt ist verborgen, die fernen Spawns unsichtbar; sie
+// enthüllt sich, sobald der Boden erscheint (der Nebel weitet ring-gekoppelt, exp-geglättet).
+AnazhRealm.AWAKEN_FOG_FAR = 14;
 // V18.306 — der Frame muss SO LANGE anhaltend über Budget sein, bevor der Ring eine Schale
 // zurückgibt: lang genug, dass ein transienter Bau-/Carve-Spike (< 200 ms) NICHT schrumpft,
 // kurz genug, dass echte Dauerlast (Freeze) den Ring zügig auf die haltbare Größe senkt.
