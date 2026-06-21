@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.314 — DER BÄCKER, STUFE 1: die Skin-Mathe als THREE-freie `bake-core.js` (byte-identisch bewiesen)
+
+Der Freeze-Fix beginnt. Schöpfer-Idee nach der gemessenen Diagnose: „macht es nicht Sinn, für den Bau aller Dinge einen gemeinsamen Worker zu erstellen? einen Bäcker quasi." Ja — das ist das Gesetz-#0-Prinzip auf den BAU angewandt: EINE off-thread Bau-Quelle statt N synchroner Pfade.
+
+**DIE WURZEL (gemessen `diag-startup-cost`):** jeder Kreatur-/Avatar-Skin-Bau (`_buildCreatureSkinGeometryUncached`, Metaball-Isosurface) blockt den Main-Thread **~4 s synchron** (`max 4146 ms`, 100× teurer als alles andere), deferiert nach der Kontrolle (V18.308) → die wiederkehrenden 3–8-s-Freezes (Schöpfer „stehe still, friert"). Das gemeldete „Leck +4 MB/s" war ein **Boot-Ramp-Fehlalarm** — `diag-scene-leak` (fixer Spieler) bewies die settled Welt flach (Heap 0.06 MB/s, Kristalle stabil); die Linse fing es, bevor ich wieder am Falschen fixte.
+
+**STUFE 1 (gebaut + verifiziert, Live-Pfad unangetastet):** die ganze Skin-Mathe (Knochen → SDF-Feld → res³-Gitter → Surface-Nets → Taubin → Gradient-Normalen → normalRelax → seamGroove → AO/crease → Farben) ist als **THREE-freie `bake-core.js`** extrahiert (`globalThis.__bakeSkinGeometry(parts, opts) → {positions, indices, normals, colors}`, 747 Zeilen, Arrays rein/raus). **EINE Quelle** für Main-Thread (headless-sync + BufferGeometry-Zusammenbau) UND künftigen Worker — KEIN bit-identischer Mirror nötig wie `voxel-worker.js`, weil Skin-Geometrie pro-Kreatur/standalone ist (nicht naht-/MP-kritisch).
+
+**DER BEWEIS (`diag-bake-ab.cjs`):** byte-identische Geometrie zum Live-Pfad — position/normal/color/index maxDiff = **0** über 3 Skin-Seelen × 3 opts-Varianten (default · displace+seam · normalRelax). Die einzige Subtilität: der Live-Pfad legt `verts` nach der Vorderhälfte in eine `Float32BufferAttribute` (→ float32), seine Rückhälfte rechnet auf float32; `bake-core` quantisiert `verts` an derselben Stelle zu `Float32Array` → exakt gleich (vorher war der Diff ~1e-7 = reine float32-vs-float64-Rundung, kein Logik-Fehler).
+
+**DISZIPLIN:** der Live-Pfad (`_buildCreatureSkinGeometryUncached`) ist NICHT umgestellt — `bake-core.js` ist inert (nichts in Produktion lädt es, nur das A/B via `addScriptTag` same-origin; die strikte CSP `script-src 'self'` blockt `{path}`-Inline-Injektion → `{url}` nutzen). Null Risiko am load-bearing Skin-Pipeline (Avatar + jede Kreatur), bis das A/B grün war.
+
+**OFFEN (Roadmap §4 — der Off-Thread-Bau-Bogen):** Stufe 2 (`bake-worker.js` + Async-Swap für Kreaturen, headless-sync = gate-treu) · Stufe 3 (Avatar-Rig, SkinnedMesh) · Stufe 4 (Bauplan-Merge + verdeckte-Flächen-Cull AUCH in den Bäcker). CPU, nicht GPU (die V17.20-GPU-Mirror-Narbe).
+
 ### V18.313 — DER ERWACHEN-NEBEL: ein Kokon auf der Plattform, der sich mit dem Boden weitet
 
 Schöpfer-Browser-Befund: „der Nebel sollte beim Start zuerst die Welt verstecken, ganz eng am Spieler, wie das Erwachen aus dem Schlaf; ich sehe aktuell ferne Dinge spawnen (Geoden, evtl. Essen), das Terrain rendert noch nicht, dann scheint Nebel zu kommen — krass wäre: auf der Steinplattform umhüllt der Nebel direkt, wenn der Boden erscheint weitet er." Plus der Nebenbefund: das Gate hat **~5340 Invarianten** (über 244 Bänder), nicht ~3500 — die Doku-Zahl war veraltet (über die V18-Wellen gewachsen), korrigiert.

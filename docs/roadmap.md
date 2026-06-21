@@ -187,6 +187,13 @@ das echte **V18→V19-Zeit-Portal** (der Empfang ist gebaut+grün getestet via `
 **Wasser-Zwei-Naturen-Vereinigung** (die CA-Flut IST gebaut V18.84–.94 — NICHT „Fluid bauen"; offen = das statische `L`-Substrat + die CA zu EINER Natur vereinen + Wasserfall-Render-Politur) ·
 B1 Wasser-Sheet→Worker (bewusst vertagt, V18.104-Entscheid).
 
+**DER OFF-THREAD-BAU-BOGEN — DER BÄCKER (AKTIV, der Freeze-Fix; V18.313-Diagnose, Schöpfer-Idee „ein baker für den bau aller dinge"):**
+GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurface in `_buildCreatureSkinGeometryUncached`) blockt den Main-Thread **~4 s synchron**, deferiert nach der Kontrolle (V18.308) → die wiederkehrenden 3–8-s-Freezes (Schöpfer-Browser „stehe still, friert"). Das ist der EINE synchrone Block, den die ganze Perf-Welle (V18.260–.313) übrig ließ — das gemeldete „Leck" war ein Boot-Ramp-Fehlalarm (`diag-scene-leak` flach, die Linse fing es). FIX = **EIN gemeinsamer Bäcker-Worker:** schwere Geometrie-Konstruktion läuft off-thread, der Main-Thread bleibt frei.
+- **Architektur:** `bake-core.js` = die Skin-Mathe THREE-frei (Arrays rein/raus, **EINE Quelle**, von Main+Worker geladen — KEIN bit-Mirror nötig wie `voxel-worker.js`, weil Skin-Geometrie pro-Kreatur/standalone ist, nicht naht-/MP-kritisch) · `bake-worker.js` = der Bäcker-Thread (`importScripts`).
+- **Stufen (jede einzeln verifiziert):** (1) `bake-core` extrahieren + **Determinismus-A/B** (byte-identisch zum Live-Pfad, BEVOR umgestellt wird — der Live-Pfad bleibt unangetastet bis A/B grün) · (2) **Async-Swap für KREATUREN** (Platzhalter-Teilgeo sofort, glatte Haut eingewechselt wenn der Bäcker liefert; headless SYNCHRON = gate-treu) · (3) der **AVATAR-RIG** (SkinnedMesh, kniffliger) · (4) später: Bauplan-Merge (`_buildArchMeshMerged`) + verdeckte-Flächen-Cull AUCH in den Bäcker = eine Off-Thread-Bau-Quelle für ALLE schweren Bauten.
+- **CPU, nicht GPU:** der Worker (CPU off-thread) nimmt die Last bei niedrigem Risiko; ein GPU-Compute-Rewrite ist VERWORFEN (§5-Narbe: der GPU-Density-Mirror driftete + wurde V17.20 geschnitten; „KEIN GPU-Compute-Rewrite des load-bearing Pipelines").
+- **Weitere Off-Thread-Kandidaten (dieselbe Bug-Klasse — schwere synchrone Main-Thread-Arbeit; NICHT ein Stamm-Thema-Split):** der **Worldgen-Monolith** (Erosion/Hydrosphäre ~5 s am Boot, deterministische Mathe → Worker) · das Wasser-CA-Sheet (B1, oben). **DISZIPLIN (Heilige Lektion, geschärft):** schwere Off-Thread-RECHNUNG an einer echten Grenze trennen — JA; den Stamm nach Thema zerteilen — NEIN (die 2025-Falle).
+
 ---
 
 ## §5 · Die Narben — probiert & VERWORFEN (nicht wiederholen)
