@@ -864,6 +864,11 @@ class AnazhRealm {
             // sichtbar, mehr GPU-Last beim Generieren neuer Chunks. Default
             // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
             chunkRingRadius: 4,
+            // V18.301 — der LADE-RHYTHMUS-RING: der beim Boot AKTIVE Ring (≤ chunkRingRadius).
+            // Startet klein, wächst monoton zum Ziel, wenn der aktuelle Ring settled + der Frame
+            // Luft hat (`_nexusPerfActuate`); Headless → sofort Ziel. null = lazy-init dort.
+            _activeRingRadius: null,
+            _ringRampLast: 0, // letzter Ring-Wachstums-Zeitstempel (der „Atem" zwischen Ringen)
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -13058,6 +13063,44 @@ class AnazhRealm {
                         ? fdCur
                         : Math.min(fdTarget, fdCur + fdStep)
                     : Math.max(fdTarget, fdCur - fdStep * 2);
+        }
+        // V18.301 — DER LADE-RHYTHMUS-RING (Schöpfer „erst den ersten Ring, Nebel nah,
+        // sauber ausschmücken, DANN wachsen, damit sich das System fängt; minimale Basis
+        // startklar, dann robust wachsen ohne die CPU am Limit"): der Ziel-Ring (User-
+        // Sicht-Regler) wird beim Boot durch `_activeRingRadius` gedeckelt — eine kleine,
+        // settled Basis statt 81 Chunks auf einmal. Er wächst NUR MONOTON (nie schrumpfen
+        // → kein Boden unter dem Spieler entfernen) und NUR, wenn der aktuelle Ring VOLL
+        // steht UND kein Bau-Rückstau UND der Frame Luft hat (effArch — dieselbe loadScale-
+        // PID-Quelle wie Laub, KEIN Parallel-Regler) UND ein kurzer Atem verging. So wächst
+        // die Welt exakt so schnell, wie die gemessene Last sie trägt; auf schwacher
+        // Hardware bleibt sie klein + responsiv. Headless (Null-Renderer) → sofort TARGET
+        // (das Gate sieht die volle Welt). Nebel + Laub folgen (Kopplung steht).
+        const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st._activeRingRadius = ringTarget;
+        } else {
+            if (st._activeRingRadius == null) st._activeRingRadius = Math.min(ringTarget, AnazhRealm.RING_RAMP_START);
+            if (st._activeRingRadius < ringTarget) {
+                // Wachsen NUR wenn: der aktuelle Ring VOLL steht (built ≥ aktiv) UND kein
+                // Bau-Rückstau UND der Frame seine Zeit hält (`!_frameOverBudget` = frameMs
+                // unter der Drossel-Decke ≈ 59 fps; KEIN effArch-Schwellwert → kann nicht
+                // unter 0.5 hängenbleiben) UND ein kurzer Atem verging. Das Ring-Wachstum
+                // ADDIERT Render-Last → kippt der Frame über Budget, stoppt es von selbst:
+                // die Welt wächst exakt bis zur Größe, die die Hardware bei ~59 fps hält
+                // (adaptive Sichtweite). Eine schwache Maschine settled bei einem kleineren
+                // Ring + bleibt responsiv; eine starke erreicht das Ziel.
+                const built = this._builtRingRadius();
+                const ringSettled = built !== null && built >= st._activeRingRadius;
+                const noBacklog = !st.voxelMeshPending || st.voxelMeshPending.size === 0;
+                const now = performance.now();
+                const breathed = !st._ringRampLast || now - st._ringRampLast > AnazhRealm.RING_RAMP_SETTLE_MS;
+                if (ringSettled && noBacklog && !st._frameOverBudget && breathed) {
+                    st._ringRampLast = now;
+                    st._activeRingRadius++;
+                }
+            } else {
+                st._activeRingRadius = ringTarget; // Target gesenkt? sofort folgen (nur runter sicher)
+            }
         }
         // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
         // Ladezeit, drosselt mit Mitteln die nichts ändern, der PID pendelt"): der Bau
@@ -26274,7 +26317,15 @@ class AnazhRealm {
     //   Geometrie-Maschinerie (`_voxelChunkGeometry`), zwei step-Varianten.
     _voxelChunkConfig(lod = 0) {
         // V9.24: ringRadius folgt dem Sicht-Ring-Regler (Default 4).
-        const ringRadius = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        // V18.301 — DER LADE-RHYTHMUS-RING (Schöpfer „erst den ersten Ring bauen, der
+        // Nebel noch nah, sauber ausschmücken, DANN wachsen, damit sich das System fängt"):
+        // der TARGET-Ring (User-Sicht-Regler) wird beim Boot durch den `_activeRingRadius`
+        // gedeckelt — der startet KLEIN und wächst nur, wenn der aktuelle Ring VOLL steht +
+        // der Frame Luft hat (`_nexusPerfActuate`). So baut der Boot eine kleine, settled
+        // Basis statt 81 Chunks auf einmal; Nebel + Laub folgen (Kopplung steht schon).
+        const targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        const activeRing = this.state._activeRingRadius != null ? this.state._activeRingRadius : targetRing;
+        const ringRadius = Math.max(1, Math.min(targetRing, activeRing));
         // Welle E (E1) — die LOD-PYRAMIDE: alle Stufen teilen denselben
         // Horizontal-Span (dim·step = 43.2 m) UND denselben Vertikal-Span
         // (dimY·step = 360 m, floorDrop 90 → Decke base+270) → LOD-invariant,
@@ -74034,7 +74085,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.300.0";
+AnazhRealm.VERSION = "18.301.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76933,6 +76984,10 @@ AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
+// V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
+// (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
+AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
+AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
 // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
 // Schwester des `foliageRadius`. Wo der Radius die REICHWEITE der Vegetation nach Kapazität
 // fährt, fährt dieser Faktor ihre DICHTE (Instanz-Zahl pro Zelle, `dekoDensity`-Multiplikator

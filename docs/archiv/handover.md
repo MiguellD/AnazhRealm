@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.301 — DER LADE-RHYTHMUS-RING: eine kleine settled Basis, dann wachsen
+
+Der Schöpfer (kollaborativ, der Profi-Instinkt): „der nebel geht schnell zurück und viele chunks werden schon von anfang an gebaut — macht es nicht sinn den ersten ring zu bauen, der nebel noch nah, alles sauber auszuschmücken und ERST DANN zu wachsen, damit sich das system fangen kann; direkt startklar mit einer minimalen basis und dann wächst, ohne die cpu am limit; ist das nicht der profiweg?" — JA, das ist progressive/adaptive Sichtweite.
+
+**Befund (gemessen):** das Fundament stand schon zur Hälfte — der LADE-NEBEL (V18.164) folgt dem GEBAUTEN Ring, das Laub wächst nach Kapazität (V18.275). Aber der TERRAIN-Chunk-Ring-TARGET war hart auf 4 fixiert → der Boot raste, alle 81 Chunks (9×9) auf einmal zu bauen, statt erst eine kleine Basis zu setzen + settlen.
+
+**FIX (V18.301):** ein `_activeRingRadius` deckelt den Ziel-Ring beim Boot. Er startet KLEIN (`RING_RAMP_START`=2 → 5×5=25 Chunks, Nebel nah) und wächst MONOTON (nie schrumpfen → kein Boden unter dem Spieler weg) zum `chunkRingRadius`-Ziel — NUR wenn (a) der aktuelle Ring VOLL steht (`_builtRingRadius ≥ aktiv`) UND (b) kein Bau-Rückstau (`voxelMeshPending` leer) UND (c) der Frame seine Zeit hält (`!_frameOverBudget` ≈ unter 59 fps — KEIN effArch-Schwellwert, der unter 0.5 hängenbliebe) UND (d) ein kurzer Atem verging (`RING_RAMP_SETTLE_MS`=350). Da Ring-Wachstum Render-Last ADDIERT, stoppt es sich selbst, kippt der Frame über Budget → die Welt wächst exakt bis zur Größe, die die Hardware bei ~59 fps hält (adaptive Sichtweite). Im EINEN Aktuator (`_nexusPerfActuate`, dieselbe loadScale-PID-Quelle wie Laub — KEIN Parallel-Regler). Nebel + Laub folgen automatisch (Kopplung steht). **Headless (Null-Renderer) → `_activeRingRadius = ringTarget` sofort** (das Gate sieht die volle 81-Chunk-Welt — dieselbe gate-Treue wie der foliageRadius V18.275).
+
+**BEWIESEN (`scripts/diag-ring-ramp.cjs`):** headless = volle Welt (81 Chunks); nicht-headless = der Ring startet bei 2 und wächst monoton 2→3→4 (settled-gegated), `cfgRing` folgt. Schnell-Gate 13/0 (81 Chunks unverändert). DISZIPLIN: eine welt-formende Boot-Last gehört kapazitäts-gepaced (kleine Basis, mit der gemessenen Frame-Zeit wachsen) — nicht voll auf einmal bauen; der Wachstums-Gate ist ein TRANSIENTER Frame-Zeit-Zustand (`!_frameOverBudget`), kein Schwellwert, der hängenbleibt.
+
 ### V18.300 — DER DREH-FREEZE AN DER WURZEL: das Laub cullt endlich beim Umsehen
 
 Der Schöpfer, am Ende der Geduld nach zwei Tagen: „haha lol und wieder im selben loop … habe das nun seit zwei tagen … das ist beides bullshit" (auf zwei Wasser-Drossel-Optionen — derselbe Symptom-Loop wie V18.290–292). Die Korrektur kam aus SEINEM Hinweis, ernst genommen: **„kann mich kaum DREHEN, in ALLEN Welten"** — Drehen ist reine GPU (kein Streaming, kein JS); hängt es, zeichnet die GPU die ganze Welt egal wohin man schaut.
