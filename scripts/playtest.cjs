@@ -4086,6 +4086,22 @@ async function checkBandV1751CombatStats(ctx) {
         const uiSrc = r._ichBuildSpecSheet.toString();
         out.uiShowsCombat = /damage/.test(uiSrc) && /defense/.test(uiSrc) && /precision/.test(uiSrc);
 
+        // (6) V18.312 (Gesetz #0) — die KANONISCHE Stat-Pipeline: beide Spezies LESEN dieselben drei
+        //     Post-Tag-Quellen (Boosts falten · Tags→Stats+Floor · Größen-Skalierung), kein Parallelpfad mehr
+        //     (§1.3 fraktal: eine Berechnung, zwei Anwendungen). __codeOf-bereinigt (die V18.267-Disziplin).
+        const psPipe = window.__codeOf(r.computePlayerStats);
+        const csPipe = window.__codeOf(r.computeCreatureStats);
+        const readsTrio = (s) =>
+            s.includes("_applyBoostsToStatTags") &&
+            s.includes("_statsFromTags") &&
+            s.includes("_applySizeMultipliersToStats");
+        out.pipelineShared =
+            readsTrio(psPipe) &&
+            readsTrio(csPipe) &&
+            typeof r._applyBoostsToStatTags === "function" &&
+            typeof r._statsFromTags === "function" &&
+            typeof r._applySizeMultipliersToStats === "function";
+
         return out;
     });
     check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
@@ -4116,6 +4132,10 @@ async function checkBandV1751CombatStats(ctx) {
     check(
         "V17.51 Kampf A: KONSUM — die Kreatur-Pipeline (computeCreatureStats) berechnet es symmetrisch (eine Pipeline)",
         res.creatureComputes
+    );
+    check(
+        "V18.312 (Gesetz #0): EINE kanonische Stat-Pipeline — Spieler + Kreatur lesen _applyBoostsToStatTags · _statsFromTags · _applySizeMultipliersToStats (§1.3 fraktal, kein Parallelpfad)",
+        res.pipelineShared
     );
     check(
         "V17.51 Kampf A: das Selbst-Spec-Sheet macht das Kampf-Profil sichtbar (Schaden/Abwehr/Präzision)",

@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.312 — RAPTOR, dritter Kollaps: die ganze Stat-Pipeline ist EINE Quelle (§1.3 vollendet)
+
+Der Schöpfer: „schliesse es in Perfektion ab, keine Passagiere, Gigant und Weitsicht, Klarheit." Also: die Synergie-Wiederherstellung systematisch zu Ende — ein Hintergrund-Agent durchforstet den Code nach echten Duplikaten (Finder), ich verifiziere jeden Kandidaten selbst am Code (die Wahrheit), kollabiere die sauberen, lasse Diversität in Ruhe.
+
+**DER PASSAGIER-BEFUND (klar + ehrlich):** `diag-sediment` flaggt 20 Felder + 82 Methoden — gegen den echten Code geprüft aber ganz überwiegend SAAT + Sentinels, kein totes Holz: `groundHeightField`/`terrainMaterial`/`minHeight` sind gate-asserte Migrations-Wächter, der `banPeer`/`createPortalHall`/`signComputeContribution`-Cluster ist die bewusst gebaute öffentliche Robustheit-/Archipel-API (0 interne Caller, weil Chat/UI/extern ruft), `_archInstanceUpdate`/`_fieldWohlErlebt` sind dokumentierte Saat. Ein Blind-Schnitt wäre die V17.20-Falle. „Keine Passagiere" gilt also der KOLLAPS-Arbeit — jede Vereinheitlichung lässt kein totes Remnant (ein V18.311-Duplikat-Kommentar wurde mit-gekehrt).
+
+**GELESEN + VERIFIZIERT (von 5 Agenten-Kandidaten):** der stärkste Cluster ist die **Stat-Pipeline** — die drei Post-Tag-Schritte waren in `computePlayerStats` UND `computeCreatureStats` byte-gleich ausgeschrieben: (a) Boost-Aggregation (identisch, nur die Boost-Quelle variiert), (b) die STAT_FROM_TAGS-Schleife + der Invers-dichte-Floor (identisch), (c) die Größen-Symmetrie-Anwendung (identisch, nur der `sizeHpMul`-Eingang variiert). Die Agenten-Kandidaten 1 (waterLevel-Ternär) + 4 (Field-Clamp) verworfen: triviale Guards mit VARIIERENDER Absicht (`0` vs `base+4`), keine kanonische Größe — Kollaps risikiert das Verschmelzen verschiedener Fallbacks.
+
+**DER KOLLAPS (zusammen mit V18.311 = die GANZE Pipeline geteilt):** drei neue kanonische Quellen `_applyBoostsToStatTags(finalTags, boosts)` · `_statsFromTags(finalTags)` · `_applySizeMultipliersToStats(stats, sizeHpMul)` (Geschwister von `_foldEquippedStatTags`). Beide Spezies LESEN sie; der per-Spezies-Unterschied (Boost-Quelle, Größen-Berechnung) reist als Parameter. Die spieler-eigene Tod-Wunde bleibt inline (player-spezifisch, kein Duplikat). §1.3 fraktal endlich vollendet: eine Berechnung, zwei Anwendungen.
+
+**LIVE-VERIFIZIERT (zwei Fokus-Proben, echter Boot):** der Behavior-Anker ist EXAKT — nackter Spieler-Schaden=22 + Equip-Schaden=42.344153846153844 byte-identisch zu V18.311 (die Pipeline ist beweisbar unverändert); der Boost-Helfer wirkt (härte 0.8 → Schaden 22→36.5, dichte 0.5 → HP 134→188); Größen-Faktor monoton (groß > klein); Kreatur-Stats finite; `pipelineShared`=true (beide lesen alle drei Helfer). `node --check` (beide) + lint 0 Fehler + Schnell-Gate 13/0.
+
+**DIE LINSE:** das V17.51-Kampf-Band (das schon Spieler+Kreatur-Symmetrie prüft) bekommt `pipelineShared` — ein `__codeOf`-bereinigter Source-Probe, dass beide Pfade alle drei kanonischen Helfer lesen → ein künftiger Edit kann die Stat-Pipeline nicht wieder still in zwei Pfade spalten.
+
 ### V18.311 — RAPTOR, zweiter Kollaps: der Equip-Fold ist EINE Quelle (+ Schöpfer-Balance „Spieler runter")
 
 Nach dem Wind-Kollaps (V18.310) der nächste Raptor — diesmal mit einer Schöpfer-Balance-Entscheidung mitten drin.

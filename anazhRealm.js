@@ -18727,34 +18727,12 @@ class AnazhRealm {
                 this._foldEquippedStatTags(finalTags, bp, AnazhRealm.ARMOR_STAT_WEIGHT, "armor");
             }
         }
-        // Welle 6.H Phase 2F.3 — Aktive Boosts addieren ihre tagDeltas.
-        // Selber Pfad wie computePlayerStats Etappe 2: jeder Boost trägt eine
-        // Tag-Map, die direkt in finalTags fließt. Konsumable-Tränke,
-        // perspektivisch Welt-Resonanz, Memory-Echo — alle gehen über diese
-        // EINE Schicht.
-        const boosts = (creature.userData && creature.userData.boosts) || [];
-        if (Array.isArray(boosts) && boosts.length > 0) {
-            for (const b of boosts) {
-                if (!b || !b.tagDelta) continue;
-                for (const tag of Object.keys(b.tagDelta)) {
-                    if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
-                    finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
-                }
-            }
-        }
-        // STAT_FROM_TAGS-Formeln auf finalTags. Selbe Map wie Spieler —
-        // Vision §1.3 fraktal: eine Sprache, eine Berechnung, zwei Anwendungen.
-        const stats = {};
-        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
-            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
-        }
-        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
-        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
-        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
-        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
-        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
-        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
-        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // Welle 6.H Phase 2F.3 / V18.312 — aktive Boosts (Konsum · Welt-Resonanz · Memory-Echo)
+        // addieren ihre Tag-Deltas über die kanonische Quelle (geteilt mit dem Spieler, §1.3).
+        this._applyBoostsToStatTags(finalTags, (creature.userData && creature.userData.boosts) || []);
+        // V18.312 (Gesetz #0) — Tags → Stats + Invers-dichte-Floor über die kanonische Quelle
+        // (DIESELBE wie der Spieler — §1.3 fraktal: eine Sprache, eine Berechnung, zwei Anwendungen).
+        const stats = this._statsFromTags(finalTags);
         // V18.208 — KREATUR-GRÖSSEN-STAT-SYMMETRIE: analog zu V18.195+V18.206
         // (Spieler). Größere Kreaturen sind robuster (mehr HP/Stamina/Mana)
         // aber langsamer (weniger speed/attackSpeed/jumpPower) — emergent aus
@@ -18774,15 +18752,9 @@ class AnazhRealm {
             const bodySize =
                 creature.userData && Number.isFinite(creature.userData.bodySize) ? creature.userData.bodySize : 1;
             const creatureSize = this._compoundSizeFactor({ parts: creatureSoul.bodyParts }) * Math.pow(bodySize, 0.5);
-            const sizeHpMul = Math.sqrt(creatureSize);
-            const sizeSpeedMul = 1 / sizeHpMul;
-            if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
-            if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
-            if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
-            if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
-            if (Number.isFinite(stats.attackSpeed))
-                stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
-            if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
+            // V18.312 (Gesetz #0) — die Größen-Anwendung über die kanonische Quelle (geteilt mit dem Spieler);
+            // HIER wird nur der kreatur-eigene Eingang berechnet (Substanz-Größe × bodySize^0.5).
+            this._applySizeMultipliersToStats(stats, Math.sqrt(creatureSize));
         }
         return { tags: finalTags, stats };
     }
@@ -47881,15 +47853,11 @@ class AnazhRealm {
         //                 + tool.compoundTags[t] × toolWeight × toolPrec + boost-Deltas
         // Welle 10a: Präzisions-Multiplier auch hier, pro Quelle.
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        // V17.57 W2-B — der HELD-Beitrag: das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen)
-        // faltet mit HELD_STAT_WEIGHT in den Spieler-Compound → Schaden/Rückschlag/Tempo spiegeln das
-        // Gerät (eine harte Klinge → mehr Schaden, eine schwere Keule → mehr Rückschlag). DAS gehaltene
-        // Ding bestimmt den ANGRIFF (alles-für-alles), wie es das ABBAUEN bestimmt (W1/W2) — eine
-        // Pipeline, kein Rollen-Schloss. `_heldImplementBlueprint` löst Werkzeug ODER Waffe auf.
         // V17.57 W2-B — der HELD-Beitrag: das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen) faltet mit
-        // HELD_STAT_WEIGHT in den Spieler-Compound → das gehaltene Ding bestimmt den ANGRIFF (alles-für-alles).
-        // V18.311 (Gesetz #0) — über den kanonischen `_foldEquippedStatTags` (geteilt mit der Kreatur); der
-        // V17.90-Größen-Faktor fällt mit der Vereinheitlichung (Spieler runter, Schöpfer-Entscheid, vorerst).
+        // HELD_STAT_WEIGHT in den Spieler-Compound → das gehaltene Ding bestimmt den ANGRIFF (alles-für-alles),
+        // wie es das ABBAUEN bestimmt (W1/W2) — eine Pipeline, kein Rollen-Schloss. `_heldImplementBlueprint`
+        // löst Werkzeug ODER Waffe auf. V18.311 (Gesetz #0) — über den kanonischen `_foldEquippedStatTags`
+        // (geteilt mit der Kreatur); der V17.90-Größen-Faktor fällt mit der Vereinheitlichung (Spieler runter).
         this._foldEquippedStatTags(finalTags, this._heldImplementBlueprint(), AnazhRealm.HELD_STAT_WEIGHT, "held");
         // Rüstung-Beitrag (ein eigener GETRAGENER Slot, aus Bauplan mit role:"armor")
         if (equipped.armor && this.state.blueprints[equipped.armor]) {
@@ -47898,19 +47866,9 @@ class AnazhRealm {
                 this._foldEquippedStatTags(finalTags, bp, AnazhRealm.ARMOR_STAT_WEIGHT, "armor");
             }
         }
-        // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas. Boosts
-        // kommen aus drei Quellen (Emotion, Welt-Resonanz, Konsum) und decken
-        // sich nicht; Summe ist konzeptionell korrekt.
-        const boosts = (this.state.player && this.state.player.boosts) || [];
-        if (Array.isArray(boosts) && boosts.length > 0) {
-            for (const b of boosts) {
-                if (!b || !b.tagDelta) continue;
-                for (const tag of Object.keys(b.tagDelta)) {
-                    if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
-                    finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
-                }
-            }
-        }
+        // Welle 6.D Etappe 2 / V18.312 — aktive Boosts (Emotion · Welt-Resonanz · Konsum)
+        // addieren ihre Tag-Deltas über die kanonische Quelle (geteilt mit der Kreatur).
+        this._applyBoostsToStatTags(finalTags, (this.state.player && this.state.player.boosts) || []);
         // Welle 6.D Etappe 3a+ — Tod-Wunde als negativer Tag-Delta. Wundens-
         // Intensität (0..1) skaliert WOUND_TAG_PENALTY; bei frischem Tod
         // voll, regeneriert linear über deathWoundRegenSeconds.
@@ -47920,17 +47878,8 @@ class AnazhRealm {
                 finalTags[tag] = (finalTags[tag] || 0) + AnazhRealm.WOUND_TAG_PENALTY[tag] * woundI;
             }
         }
-        const stats = {};
-        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
-            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
-        }
-        // V17.90 — die INVERS-dichte Stats (attackSpeed/speed = base + (1−dichte)·…) können NEGATIV werden, wenn
-        // ein schweres Gerät/eine schwere Rüstung die compound-dichte über 1 hebt (die equip-Additionen umgehen
-        // den [0,1]-Soul-Clamp). Ein positiver Floor verhindert den kaputten Negativ-/Null-Wert (ein Cooldown
-        // 1/attackSpeed darf nie negativ werden) — ein schweres Gerät ist TRÄGE (Floor), nicht kaputt. Der
-        // Trade-off „leicht = flink, schwer = träge" bleibt: leichte Geräte liegen klar über dem Floor.
-        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
-        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // V18.312 (Gesetz #0) — Tags → Stats + Invers-dichte-Floor über die kanonische Quelle (geteilt mit der Kreatur).
+        const stats = this._statsFromTags(finalTags);
         // V18.195 — die SOUL-GRÖSSE hebt HP + Stamina (Avatar-Robustheit
         // emergent aus der Substanz, statt uniform wie vor V18.195). Eine
         // sqrt-Skalierung ist genre-üblich (Genshin/MMOs: größer = robuster
@@ -47945,26 +47894,13 @@ class AnazhRealm {
         // Pipe getrieben (sonst wäre ein Großer auch flinker, das wäre nicht
         // intuitiv — größer = robuster + langsamer, nicht größer = stärker
         // in allem).
+        // V18.196/.206 — Mana folgt der HP/Stamina-Symmetrie, speed/attackSpeed/jumpPower invers (größer =
+        // robuster + langsamer). V18.312 (Gesetz #0): die Anwendung läuft über die kanonische `_applySize-
+        // MultipliersToStats` (geteilt mit der Kreatur); HIER wird nur der spieler-eigene Eingang berechnet —
+        // built-in Souls NEUTRAL (sizeFactor=1), Custom-Avatare bekommen den Größen-Hebel aus der Substanz.
         const soulBpForSize = { parts: (soul && soul.bodyParts) || [] };
         const soulSize = isBuiltinSoul ? 1 : this._compoundSizeFactor(soulBpForSize);
-        const sizeHpMul = Math.sqrt(soulSize);
-        if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
-        if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
-        // V18.196 — Mana folgt der HP/Stamina-Symmetrie auch bei Größe (ein
-        // großer Avatar hat tiefere Reserven in allen drei Lebens-Achsen).
-        if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
-        // V18.206 — AVATAR-GRÖSSE-SPEED-TRADE: die ehrliche Balance-Schließer
-        // zu V18.195. Größer = mehr HP/Stamina/Mana (V18.195/.196) ABER auch
-        // langsamer (mehr Masse zu bewegen). Inverse sqrt-Skalierung auf
-        // speed/attackSpeed/jumpPower → ein winziger Avatar (sizeFactor 0.7)
-        // wird ~19 % schneller, ein massiver (1.7) ~23 % langsamer. Built-in
-        // NEUTRAL (sizeFactor=1, mul=1). Nach den invers-dichte-Floors, sodass
-        // die Floors nicht durchbrochen werden (Floor-Disziplin V17.90: Tempo
-        // nie kaputt).
-        const sizeSpeedMul = 1 / sizeHpMul;
-        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
-        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
-        if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
+        this._applySizeMultipliersToStats(stats, Math.sqrt(soulSize));
         return { tags: finalTags, stats };
     }
 
@@ -54388,6 +54324,54 @@ class AnazhRealm {
         for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
             finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
         }
+    }
+
+    // V18.312 (Gesetz #0 — DIE KANONISCHE STAT-PIPELINE, §1.3 fraktal vollendet): die
+    // POST-Tag-Schritte (Boosts falten · Tags→Stats · Größen-Skalierung) waren in
+    // `computePlayerStats` UND `computeCreatureStats` byte-gleich ausgeschrieben (nur die
+    // Eingänge — Boost-Quelle, Größen-Berechnung — variierten). Jetzt LESEN beide diese
+    // drei Quellen; der per-Spezies-Unterschied reist als Parameter (die Turbine ist EINE,
+    // die Schläuche sind Parameter — wie `_foldEquippedStatTags` oben). Behavior-neutral.
+
+    // (1) Boosts (Emotion · Welt-Resonanz · Konsum) addieren ihre Tag-Deltas. Die Quelle
+    //     (player.boosts ODER creature.userData.boosts) reist als Parameter.
+    _applyBoostsToStatTags(finalTags, boosts) {
+        if (!finalTags || !Array.isArray(boosts) || boosts.length === 0) return;
+        for (const b of boosts) {
+            if (!b || !b.tagDelta) continue;
+            for (const tag of Object.keys(b.tagDelta)) {
+                if (!AnazhRealm.MATERIAL_TAG_KEYS.includes(tag)) continue;
+                finalTags[tag] = (finalTags[tag] || 0) + b.tagDelta[tag];
+            }
+        }
+    }
+
+    // (2) Die STAT_FROM_TAGS-Formeln + der Invers-dichte-Floor (V17.90: attackSpeed/speed
+    //     nie negativ/null — ein schweres Gerät ist TRÄGE, nicht kaputt). Die EINE Sprache,
+    //     EINE Berechnung für Spieler ≡ Kreatur (§1.3).
+    _statsFromTags(finalTags) {
+        const stats = {};
+        for (const stat of Object.keys(AnazhRealm.STAT_FROM_TAGS)) {
+            stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
+        }
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        return stats;
+    }
+
+    // (3) Die GRÖSSEN-SYMMETRIE (V18.195/.206/.208): größer = robuster (HP/Stamina/Mana ∝
+    //     sizeHpMul) ABER langsamer (speed/attackSpeed/jumpPower ∝ 1/sizeHpMul), mit den
+    //     gleichen Floors. Der `sizeHpMul` (= √Größen-Faktor) wird vom Aufrufer berechnet
+    //     (Spieler: soulSize · Kreatur: bodyParts × bodySize^0.5) und reist als Parameter.
+    _applySizeMultipliersToStats(stats, sizeHpMul) {
+        if (!stats || !Number.isFinite(sizeHpMul) || sizeHpMul <= 0) return;
+        const sizeSpeedMul = 1 / sizeHpMul;
+        if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
+        if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
+        if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
+        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+        if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
+        if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
     }
 
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
@@ -74265,7 +74249,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.311.0";
+AnazhRealm.VERSION = "18.312.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
