@@ -1113,6 +1113,16 @@ class AnazhRealm {
             // ein OOM-Risiko. Kein gangbarer Fix as-is; der Dreh-Freeze wird über WENIGER
             // Last (Dichte/Caps/LOD) geheilt, nicht über Buffer-Explosion.
             useBatchedFoliage: false,
+            // V18.300 — DIE WURZEL DES „KANN MICH KAUM DREHEN" (universell, in jeder Welt):
+            // Drehen ist reine GPU (kein Streaming, kein JS) — hängt es, zeichnet die GPU die
+            // GANZE Welt egal wohin man schaut. Die Streu-Laub-Gruppen waren GLOBAL pro
+            // (Art#Leaf) → ihre Instanzen spannen die ganze Welt → frustumCulled=false (Group-
+            // BBox nutzlos) → Umsehen cullt NIE. Der BatchedMesh-Versuch (V18.289) scheiterte am
+            // Speicher (1 GB). Die saubere Lösung: die Streu-Gruppen PRO 256m-REGION keyen → ihre
+            // instanz-bewusste Bounding-Sphere ist LOKAL → frustumCulled=true lässt die Engine die
+            // Regionen hinter dem Blick wegcullen (look-sicher: man sieht das Weggecullte nicht).
+            // Default an; `anazhRealm.state.useRegionFoliageCull=false` (+ umherlaufen) = A/B.
+            useRegionFoliageCull: true,
             // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — pro Bauplan-Variante
             // EINE merged Geometry je (shape, material)-Gruppe (typisch: bark
             // + foliage). Reduziert die Per-Variante-Draw-Calls von 75-80
@@ -48461,7 +48471,7 @@ class AnazhRealm {
     // `_archGroupAlloc`-Pfad wie echte Bäume → real + Scatter desselben Baums in
     // EINEM InstancedMesh = ein Draw-Call, identische Geometrie (kein Sprung bei
     // Promotion). Liefert die belegten {key, slot}-Paare für späteres Freigeben.
-    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint) {
+    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint, regionKey) {
         const flat = this._archFlattenBlueprint(blueprintName);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || flat.leaves.length === 0) return null;
         const ew = this._archTmpScatterEntryM || (this._archTmpScatterEntryM = new THREE.Matrix4());
@@ -48481,7 +48491,7 @@ class AnazhRealm {
         const slots = [];
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
-            const g = this._archInstanceGroupFor(blueprintName, i, leaf);
+            const g = this._archInstanceGroupFor(blueprintName, i, leaf, regionKey);
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -48532,6 +48542,10 @@ class AnazhRealm {
             instanceCount: 0,
             byLayer: {},
             builtDensity: this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1,
+            // V18.300 — Schnappschuss: in welchem Modus wurde diese Region gebaut?
+            // _disposeScatterRegion liest IHN (nicht das Live-Flag) → ein Laufzeit-
+            // Toggle bleibt sauber (alte Regionen entsorgen sich nach ihrer Bauweise).
+            regional: this.state.useRegionFoliageCull !== false,
         };
         // V18.225 — die FÜNF Strata über drei Pässe (Canopy · Understory ·
         // Streu). Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
@@ -48647,7 +48661,10 @@ class AnazhRealm {
                     tf.z,
                     tf.yaw,
                     tf.scale,
-                    tint
+                    tint,
+                    // V18.300 — der REGION-Key (regX,regZ) macht die Streu-Gruppe lokal +
+                    // frustum-cullbar; null wenn das Flag aus ist (globale Gruppe, alt).
+                    this.state.useRegionFoliageCull !== false ? regX + "," + regZ : null
                 );
                 if (!slots) continue;
                 region.cells.push({
@@ -48677,8 +48694,17 @@ class AnazhRealm {
         if (!map) return false;
         const region = map.get(key);
         if (!region) return false;
+        // V18.300 — regional gebaute Region: ihre Gruppen sind region-privat (Key
+        // endet auf @regX,regZ) → die GANZE Gruppe entsorgen (Mesh aus der Szene +
+        // instanceMatrix freigeben; geom/mat geteilt → bleiben), kein per-Slot-Free
+        // (das Null-Skalieren würde die Bounding-Sphere zum Ursprung aufblähen).
+        const regionGroupKeys = region.regional ? new Set() : null;
         for (const cell of region.cells) {
-            this._scatterFreeSlots(cell.slots);
+            if (regionGroupKeys) {
+                if (Array.isArray(cell.slots)) for (const s of cell.slots) regionGroupKeys.add(s.key);
+            } else {
+                this._scatterFreeSlots(cell.slots);
+            }
             // V18.225 — nur promotable (Baum-)Cells haben einen Lookup-Eintrag;
             // den NICHT löschen, wenn promoted (die Seele lebt); sonst räumen.
             const layerName = cell.layer || "tree";
@@ -48690,8 +48716,22 @@ class AnazhRealm {
                 this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, layerName));
             }
         }
+        if (regionGroupKeys) for (const gk of regionGroupKeys) this._disposeArchInstanceGroup(gk);
         map.delete(key);
         return true;
+    }
+
+    // V18.300 — eine REGIONALE Streu-Gruppe vollständig entsorgen (region-privat →
+    // kein anderer Konsument). Der Mesh verlässt die Szene + gibt seinen
+    // instanceMatrix-Buffer frei; geom/mat sind geteilt (archFlattenCache) → bleiben.
+    _disposeArchInstanceGroup(groupKey) {
+        const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
+        if (!g) return;
+        if (g.mesh) {
+            if (this.state.scene) this.state.scene.remove(g.mesh);
+            if (typeof g.mesh.dispose === "function") g.mesh.dispose();
+        }
+        this.state.archInstanceGroups.delete(groupKey);
     }
 
     _disposeAllScatterRegions() {
@@ -57490,10 +57530,16 @@ class AnazhRealm {
         }
     }
 
-    _archInstanceGroupFor(name, leafIdx, leaf) {
+    // V18.300 — `regionKey` (optional): eine REGION-gekeyte Gruppe trägt nur die
+    // Instanzen EINER 256m-Streu-Region → ihre instanz-bewusste Bounding-Sphere ist
+    // LOKAL → frustumCulled=true (die Engine cullt sie beim Wegschauen = die Heilung
+    // des „kann mich kaum drehen"). Ohne regionKey (placed Architektur) bleibt die
+    // Gruppe global + frustumCulled=false (welt-verteilte Instanzen, Group-BBox nutzlos).
+    _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         if (this.state.useBatchedFoliage) return this._archBatchGroupFor(name, leafIdx, leaf);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
-        const key = name + "#" + leafIdx;
+        const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
+        const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
         let g = this.state.archInstanceGroups.get(key);
         if (g) return g;
         const capacity = 16;
@@ -57502,12 +57548,24 @@ class AnazhRealm {
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         mesh.count = 0; // noch keine Instanz sichtbar
-        mesh.frustumCulled = false; // Instanzen verteilt → Group-BBox nutzlos
+        // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
+        mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
         if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
-        g = { key, mesh, geom: leaf.geom, mat: leaf.mat, capacity, next: 0, free: [], slotEntry: [], castShadow };
+        g = {
+            key,
+            mesh,
+            geom: leaf.geom,
+            mat: leaf.mat,
+            capacity,
+            next: 0,
+            free: [],
+            slotEntry: [],
+            castShadow,
+            regional,
+        };
         this.state.archInstanceGroups.set(key, g);
         return g;
     }
@@ -57519,7 +57577,7 @@ class AnazhRealm {
         const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
         next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
         next.receiveShadow = true;
-        next.frustumCulled = false;
+        next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
         for (let i = 0; i < g.next; i++) {
@@ -73976,7 +74034,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.299.0";
+AnazhRealm.VERSION = "18.300.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

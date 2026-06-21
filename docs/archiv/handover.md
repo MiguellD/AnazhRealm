@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.300 — DER DREH-FREEZE AN DER WURZEL: das Laub cullt endlich beim Umsehen
+
+Der Schöpfer, am Ende der Geduld nach zwei Tagen: „haha lol und wieder im selben loop … habe das nun seit zwei tagen … das ist beides bullshit" (auf zwei Wasser-Drossel-Optionen — derselbe Symptom-Loop wie V18.290–292). Die Korrektur kam aus SEINEM Hinweis, ernst genommen: **„kann mich kaum DREHEN, in ALLEN Welten"** — Drehen ist reine GPU (kein Streaming, kein JS); hängt es, zeichnet die GPU die ganze Welt egal wohin man schaut.
+
+**WURZEL (strukturell, nicht gemessen-geraten):** die Streu-Laub-Gruppen (`_archInstanceGroupFor`) waren GLOBAL pro (Art#Leaf) → ihre Instanzen spannen die ganze Welt → `frustumCulled = false` (Group-BBox nutzlos) → **Umsehen cullt NIE**. Das ist der Rest des Bauplan-Upgrades (grammatik-Laub, schwer, nie gecullt). Der eine Heilversuch (BatchedMesh V18.289) sprengte den Speicher (1 GB) und wurde aufgegeben → seitdem rannten ~10 Wellen ins JS (Wasser/Leck/BVH), weil das Headless-Gate den Renderer ausstubt und die GPU-Last NIE sieht (der V18.293-blinde-Fleck). Das war der Zwei-Tage-Loop.
+
+**FIX:** die Streu-Gruppen werden PRO 256-m-Region gekeyt (`name#leaf@regX,regZ`, Flag `state.useRegionFoliageCull` Default an) → jede Gruppe trägt nur EINE Region → ihre instanz-bewusste Bounding-Sphere ist LOKAL → `frustumCulled = true` lässt die Engine die Regionen hinter dem Blick wegcullen. Placed Architektur (`_archInstanceAdd`, kein regionKey) bleibt global/unverändert. Region-privat → `_disposeScatterRegion` entsorgt die Gruppen GANZ (kein Slot-Null-Skalieren, das die Sphere zum Ursprung aufbliese); `region.regional` ist ein Bau-Schnappschuss → Laufzeit-Toggle bleibt sauber.
+
+**BEWIESEN (`scripts/diag-turn-cull.cjs`, baut die Welt + testet das echte Frustum):** 1247 regionale Gruppen, Umsehen cullt **nach vorn 71 % · hinten 69 % · links 40 % = Ø 60 % der Laub-Last** (vorher 0 %), Laub erscheint in jeder Richtung korrekt. Schnell-Gate 13/0; Versions-Bump 18.300.0 (inkl. `?v=` Cache-Buster — sonst sieht der Schöpfer den Fix nie).
+
+**NEBENBEFUND (kein Loop, nur der ehrliche Stand):** das LECK ist gefixt — hart nachgemessen (`scripts/diag-leak-probe.cjs`, die 426-Gruppen/907-Objekt-Welt reproduziert): der Post-GC-Heap-Boden plateaut bei ~108 MB statt zu klettern, autonome Bauten kappen bei 48. Der katastrophale 8-s-Freeze war das Leck (GC-Pausen, vom Flugschreiber als „GPU" fehlgelesen). **LEHRE: bei „kann mich kaum DREHEN" ist es die GPU-Render-Last (Drehen = reine GPU), NICHT das JS — und genau die ist headless unsichtbar; eine global-gekeyte InstancedMesh-Gruppe (`frustumCulled=false`) ist eine permanente Voll-Render-Last, die per-Region-Keying frustum-cullbar macht.**
+
 ### V18.293 — DER FLUGSCHREIBER: das Loch geschlossen, durch das wir 33 Wellen lang rieten
 
 Der Schöpfer, erschöpft nach „mehr als einem Tag" Einfrieren, am Bruch des Vertrauens: „wir diskutieren, ich vertraue dir nichtmehr … tue was du tun musst, base dich zuerst, produziere kein weiteres Pflaster sonst zünd ichs an." Davor die tiefere Frage: „wie machen das die Profis … wie kann das System sich SELBST messen, und du auch?"
