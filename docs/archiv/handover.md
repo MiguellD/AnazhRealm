@@ -378,6 +378,22 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.311 — RAPTOR, zweiter Kollaps: der Equip-Fold ist EINE Quelle (+ Schöpfer-Balance „Spieler runter")
+
+Nach dem Wind-Kollaps (V18.310) der nächste Raptor — diesmal mit einer Schöpfer-Balance-Entscheidung mitten drin.
+
+**GELESEN (Gesetz #0):** wie ein ausgerüstetes Gerät/eine Rüstung in den Stat-Compound des Trägers faltet (→ HP·Schaden·Tempo·Verteidigung), war in `computePlayerStats` UND `computeCreatureStats` getrennt kodiert — und GEDRIFTET: der Spieler trug seit V17.90 zusätzlich den `_compoundSizeFactor` (größeres Gerät faltet schwerer), die Kreatur nie. Das wider die eigenen Kommentare („selber Pfad wie computePlayerStats", „dieselbe Stacking-Disziplin für beide Spezies") + §1.3 (Kreaturen ≡ Spieler ≡ Architektur). Die `computeBlueprintQuality(bp)` ist beweisbar `_compoundAvgPrecisionFromParts(bp.parts)` → die einzige echte Differenz war der Größen-Faktor.
+
+**DIE FRAGE AN DEN SCHÖPFER (AskUserQuestion):** unify — Kreatur HOCH (Größen-Faktor dazu) oder Spieler RUNTER (Größen-Faktor raus)? Klärung nötig, weil der Schöpfer es zuerst für eine „Mesh-Auflösung" hielt — es sind die **Stat-Werte**, nicht Geometrie. Entscheid: **„vereinen, aber Spieler runter, nicht hoch, vorerst — wir überarbeiten beide noch."**
+
+**DER KOLLAPS:** eine kanonische Quelle `_foldEquippedStatTags(finalTags, bp, slotWeight, roleKey)` (Slot-Charakter als Parameter: HELD/TOOL/ARMOR + held/armor). Vier Fold-Stellen (Spieler held+armor, Kreatur tool+armor) lesen sie. „Spieler runter" = der Größen-Faktor fällt aus dem Fold → beide Spezies falten size-neutral `w = slotWeight·(0.5 + 0.5·Qualität·RoleFit)`. **Die Kreatur ist byte-identisch** (sie trug nie den Größen-Faktor); **nur der Spieler kommt runter**. Der Readout `_blueprintAbilityStats` zieht mit (`size=1`), sonst LÖGE die Anzeige (sie skalierte „ehrlich, wo der Fold es auch tut" — die CLAUDE.md-Konsistenz-Gotcha). Die Größe lebt weiter in Körper/Mesh/Masse/Seele-HP (`soulSize`→`sizeHpMul`, NICHT angetastet) — „vorerst", die tiefere Überarbeitung beider Pfade kommt.
+
+**DIE LINSE:** die V17.90-Facette-3-Gate-Bänder (die den Größen-Effekt asserten) wandern mit dem Refactor (CLAUDE.md „strukturelle Invarianten wandern mit") → sie asserten jetzt die NEUE Wahrheit: size-NEUTRAL im Readout + im echten Kampf + `equipFoldShared` (beide Stat-Pfade lesen `_foldEquippedStatTags`, `__codeOf`-bereinigte Source-Probe = der Raptor-Lens). attackSpeed-positiv-Invariante bleibt.
+
+**LIVE-VERIFIZIERT (Fokus-Probe, echter Boot):** 3×-Klinge ≡ 1× im Readout (`d`=55.17 beide) UND im Equip-Fold (`eq`=42.34 beide) → size-neutral; Material zählt weiter (eisen 55.2 vs holz 20.5 = 2.7×); Equip wirkt weiter (eq 42.3 > nackt 22); `equipFoldShared`=true; Kreatur-Stats finite (unverändert). `node --check` (beide) + lint 0 Fehler + Schnell-Gate 13/0. Das volle Stat-Gate (calibriert auf die neue Facette 3) läuft auf der CI.
+
+**OFFEN (Schöpfer „wir überarbeiten beide noch", parallel am Lernen):** die tiefere Equip-/Größen-Balance beider Pfade — der `_compoundSizeFactor` ist als Saat erhalten (Körper/Masse/Seele), nur aus dem Equip-Fold gezogen. Gait (#1) bleibt bewusst getrennt (legitime Diversität: walkPhase schon kanonisch, Rig vs Compound = verschiedene Anatomien, intentionale Kadenzen).
+
 ### V18.310 — RAPTOR 3, der erste Kollaps: die Wind-Sway-Mathematik ist EINE Quelle
 
 Der Schöpfer, mit Schwung: „fahre fort, kein zögern champ, raptor 3 ist im anmarsch :D" — die erste Anwendung von Gesetz #0 (V18.309) im Game-Code: einen echten Parallelpfad an seine kanonische Quelle kollabieren.

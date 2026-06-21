@@ -8119,8 +8119,9 @@ async function checkBandV1789WorkshopReadout(ctx) {
 
 // V17.90 (resonanz-system.md — die Re-Kalibrierung): die vier „blass"-Facetten + zwei UI-Heilungen GEMESSEN.
 // (1) das Spektrum SPREIZT (nicht 1.0/1.0/1.0 — die A1-Vektor-Normalisierung) + führt mit der richtigen Rolle.
-// (2) MATERIAL dramatisch (Eisen-Klinge ≫ Holz-Klinge, ≥2×). (3) GRÖSSE wirkt (3× Klinge > 1×, träger).
-// (4) ROLLE scharf (Pickel→Werkzeug [Holzstiel], Schwert→Waffe [Metall-Klinge]). + Drehbank-Proximity + CSS.
+// (2) MATERIAL dramatisch (Eisen-Klinge ≫ Holz-Klinge, ≥2×). (3) V18.311 — der Equip-Fold ist EINE kanonische
+// Quelle (`_foldEquippedStatTags`, Spieler+Kreatur); der V17.90-Größen-Faktor ist VORERST raus (Schöpfer „Spieler
+// runter") → size-neutral. (4) ROLLE scharf (Pickel→Werkzeug, Schwert→Waffe). + Drehbank-Proximity + CSS.
 async function checkBandV1790Recalibration(ctx) {
     const { page, check } = ctx;
     const res = await page.evaluate(() => {
@@ -8151,13 +8152,13 @@ async function checkBandV1790Recalibration(ctx) {
         out.materialDramatic = dHolz > 0 && dEisen > dHolz * 1.8;
         out.materialVals = `eisen=${dEisen.toFixed(1)} holz=${dHolz.toFixed(1)} (${(dEisen / Math.max(0.01, dHolz)).toFixed(2)}×)`;
 
-        // (3) FACETTE 3 — GRÖSSE: eine 3× größere Klinge schlägt härter UND ist träger (Trade-off).
+        // (3) FACETTE 3 — V18.311 (Gesetz #0, Schöpfer „Spieler runter"): der Equip-Fold ist jetzt EINE
+        // kanonische Quelle (`_foldEquippedStatTags`), geteilt von Spieler + Kreatur; der V17.90-Größen-Faktor
+        // ist VORERST raus → eine 3× größere Klinge faltet GLEICH wie eine 1× (size-neutral, Readout UND Kampf).
         const ab1 = r._blueprintAbilityStats(blade("eisen", 1));
         const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
-        out.sizeRaisesDamage = dmg(ab3) > dmg(ab1) * 1.2;
-        out.sizeLowersTempo = tempo(ab3) < tempo(ab1) - 0.05;
+        out.sizeNeutralReadout = Math.abs(dmg(ab3) - dmg(ab1)) <= 0.02 * dmg(ab1) + 0.1;
         out.sizeVals = `1×=${dmg(ab1).toFixed(1)}/T${tempo(ab1).toFixed(2)} 3×=${dmg(ab3).toFixed(1)}/T${tempo(ab3).toFixed(2)}`;
-        // die Größe erreicht auch den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige
         const blu = r.state.blueprints;
         const eqDmg = (bp) => {
             blu._rceq = bp;
@@ -8170,8 +8171,15 @@ async function checkBandV1790Recalibration(ctx) {
         const eq1 = eqDmg(blade("eisen", 1));
         const eq3 = eqDmg(blade("eisen", 3));
         r.state.player.equipped = {};
-        out.sizeReachesEquip = eq3 > eq1 + 1;
+        out.sizeNeutralEquip = Math.abs(eq3 - eq1) <= 0.02 * Math.abs(eq1) + 0.1;
         out.equipVals = `equip 1×=${eq1.toFixed(1)} 3×=${eq3.toFixed(1)}`;
+        // der KANONISCHE Equip-Fold — Spieler + Kreatur lesen dieselbe Quelle (Raptor-Lens, __codeOf-bereinigt)
+        const psSrc = r.computePlayerStats ? window.__codeOf(r.computePlayerStats) : "";
+        const csSrc = r.computeCreatureStats ? window.__codeOf(r.computeCreatureStats) : "";
+        out.equipFoldShared =
+            psSrc.includes("_foldEquippedStatTags") &&
+            csSrc.includes("_foldEquippedStatTags") &&
+            typeof r._foldEquippedStatTags === "function";
         // attackSpeed bleibt POSITIV (kein negativer Cooldown trotz schwerem Gerät)
         blu._rcheavy = blade("eisen", 3);
         blu._rcheavy.name = "_rcheavy";
@@ -8236,14 +8244,18 @@ async function checkBandV1790Recalibration(ctx) {
         res.materialVals
     );
     check(
-        "V17.90 Facette 3: GRÖSSE hebt den Schaden + senkt das Tempo (mächtig + träge) — 3× Klinge vs 1×",
-        res.sizeRaisesDamage && res.sizeLowersTempo,
+        "V18.311 (Spieler runter): Equip-Fold size-NEUTRAL im Readout — 3× Klinge ≈ 1× (der V17.90-Größen-Faktor ist vorerst raus)",
+        res.sizeNeutralReadout,
         res.sizeVals
     );
     check(
-        "V17.90 Facette 3: die Größe erreicht den ECHTEN Kampf (Equip-Fold), nicht nur die Anzeige",
-        res.sizeReachesEquip,
+        "V18.311 (Spieler runter): size-neutral auch im ECHTEN Kampf (Equip-Fold) — eq 3× ≈ 1×",
+        res.sizeNeutralEquip,
         res.equipVals
+    );
+    check(
+        "V18.311 (Gesetz #0): EIN kanonischer Equip-Fold — Spieler + Kreatur lesen _foldEquippedStatTags",
+        res.equipFoldShared
     );
     check(
         "V17.90 Facette 3: attackSpeed bleibt POSITIV trotz schwerem Gerät (kein negativer Cooldown)",

@@ -18708,31 +18708,23 @@ class AnazhRealm {
         if (equipped.tool && this.state.tools && this.state.tools[equipped.tool]) {
             const tool = this.state.tools[equipped.tool];
             if (tool.sourceBlueprint && this.state.blueprints[tool.sourceBlueprint]) {
-                const toolBp = this.state.blueprints[tool.sourceBlueprint];
-                const tags = this.computeCompoundTags(toolBp) || {};
-                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
-                // computePlayerStats): ein grob gebautes Werkzeug wirkt halb.
-                const w =
-                    AnazhRealm.TOOL_STAT_WEIGHT *
-                    (0.5 + 0.5 * this.computeBlueprintQuality(toolBp) * this._blueprintRoleFit(toolBp, "held"));
-                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
-                }
+                // V18.311 (Gesetz #0) — der kanonische Equip-Fold, geteilt mit dem Spieler
+                // (eine Quelle, kein zweiter driftender Pfad). Verhalten unverändert: die
+                // Kreatur trug nie den Größen-Faktor, ihr Fold IST schon die einfachere Form.
+                this._foldEquippedStatTags(
+                    finalTags,
+                    this.state.blueprints[tool.sourceBlueprint],
+                    AnazhRealm.TOOL_STAT_WEIGHT,
+                    "held"
+                );
             }
         }
         // Rüstung-Beitrag (immer aus Bauplan mit role:"armor")
         if (equipped.armor && this.state.blueprints[equipped.armor]) {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
-                const tags = this.computeCompoundTags(bp) || {};
-                // V8.39 — Qualität skaliert das Stat-Gewicht (selber Pfad wie
-                // computePlayerStats): eine grob gebaute Rüstung wirkt halb.
-                const w =
-                    AnazhRealm.ARMOR_STAT_WEIGHT *
-                    (0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, "armor"));
-                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
-                }
+                // V18.311 (Gesetz #0) — der kanonische Equip-Fold, geteilt mit dem Spieler.
+                this._foldEquippedStatTags(finalTags, bp, AnazhRealm.ARMOR_STAT_WEIGHT, "armor");
             }
         }
         // Welle 6.H Phase 2F.3 — Aktive Boosts addieren ihre tagDeltas.
@@ -47894,32 +47886,16 @@ class AnazhRealm {
         // Gerät (eine harte Klinge → mehr Schaden, eine schwere Keule → mehr Rückschlag). DAS gehaltene
         // Ding bestimmt den ANGRIFF (alles-für-alles), wie es das ABBAUEN bestimmt (W1/W2) — eine
         // Pipeline, kein Rollen-Schloss. `_heldImplementBlueprint` löst Werkzeug ODER Waffe auf.
-        const heldBp = this._heldImplementBlueprint();
-        if (heldBp && Array.isArray(heldBp.parts)) {
-            const tags = this.computeCompoundTags(heldBp);
-            // V17.79 — die Rolle-Passung (Form-Fit): eine scharfe Klinge wirkt als Gerät stärker als ein
-            // form-fremder Klotz (die FORM-Achse, die STAT_FROM_TAGS nicht sieht). Handwerk × Design.
-            const heldMul =
-                0.5 + 0.5 * this._compoundAvgPrecisionFromParts(heldBp.parts) * this._blueprintRoleFit(heldBp, "held");
-            // V17.90 Facette 3 — die GRÖSSE trägt schwerer: ein größeres gehaltenes Gerät faltet seine Substanz
-            // stärker in den Spieler-Compound (mehr Schaden/Rückschlag) — konsistent mit der Werte-Anzeige.
-            const w = AnazhRealm.HELD_STAT_WEIGHT * heldMul * this._compoundSizeFactor(heldBp);
-            for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-                finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
-            }
-        }
+        // V17.57 W2-B — der HELD-Beitrag: das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen) faltet mit
+        // HELD_STAT_WEIGHT in den Spieler-Compound → das gehaltene Ding bestimmt den ANGRIFF (alles-für-alles).
+        // V18.311 (Gesetz #0) — über den kanonischen `_foldEquippedStatTags` (geteilt mit der Kreatur); der
+        // V17.90-Größen-Faktor fällt mit der Vereinheitlichung (Spieler runter, Schöpfer-Entscheid, vorerst).
+        this._foldEquippedStatTags(finalTags, this._heldImplementBlueprint(), AnazhRealm.HELD_STAT_WEIGHT, "held");
         // Rüstung-Beitrag (ein eigener GETRAGENER Slot, aus Bauplan mit role:"armor")
         if (equipped.armor && this.state.blueprints[equipped.armor]) {
             const bp = this.state.blueprints[equipped.armor];
             if (bp.role === "armor") {
-                const tags = this.computeCompoundTags(bp);
-                const armorPrec = this._compoundAvgPrecisionFromParts(bp.parts);
-                const armorMul = 0.5 + 0.5 * armorPrec * this._blueprintRoleFit(bp, "armor"); // V17.79 — Form-Fit
-                // V17.90 Facette 3 — größere Rüstung deckt mehr → trägt schwerer in den Compound (mehr Verteidigung).
-                const w = AnazhRealm.ARMOR_STAT_WEIGHT * armorMul * this._compoundSizeFactor(bp);
-                for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
-                    finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
-                }
+                this._foldEquippedStatTags(finalTags, bp, AnazhRealm.ARMOR_STAT_WEIGHT, "armor");
             }
         }
         // Welle 6.D Etappe 2 — aktive Boosts addieren ihre Tag-Deltas. Boosts
@@ -54391,6 +54367,27 @@ class AnazhRealm {
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
+    }
+
+    // V18.311 (Gesetz #0 — DER KANONISCHE EQUIP-FOLD): wie ein ausgerüstetes Gerät
+    // / eine Rüstung seine Substanz in den Stat-Compound des Trägers faltet, war in
+    // `computePlayerStats` UND `computeCreatureStats` getrennt kodiert — und gedriftet
+    // (der Spieler trug seit V17.90 zusätzlich den `_compoundSizeFactor`, die Kreatur
+    // nie), obwohl §1.3 (Kreaturen ≡ Spieler) + die eigenen Kommentare denselben Pfad
+    // verlangen. Jetzt rechnet KEINER mehr selbst: beide LESEN diese eine Quelle. Der
+    // Slot-Charakter reist als Parameter (`slotWeight` HELD/TOOL/ARMOR · `roleKey`
+    // held/armor). SCHÖPFER-ENTSCHEID V18.311: vereint auf die EINFACHERE Form
+    // (Spieler RUNTER — der V17.90-Größen-Faktor fällt VORERST raus, bis beide tiefer
+    // überarbeitet werden; die Größe lebt weiter in Körper/Mesh/Masse/Seele-HP, nur
+    // der Equip-Fold ist size-neutral). w = slotWeight·(0.5 + 0.5·Qualität·RoleFit);
+    // Qualität = mittlere Part-Präzision (`computeBlueprintQuality`). Mutiert `finalTags`.
+    _foldEquippedStatTags(finalTags, bp, slotWeight, roleKey) {
+        if (!finalTags || !bp || !Array.isArray(bp.parts)) return;
+        const tags = this.computeCompoundTags(bp) || {};
+        const w = slotWeight * (0.5 + 0.5 * this.computeBlueprintQuality(bp) * this._blueprintRoleFit(bp, roleKey));
+        for (const tag of AnazhRealm.MATERIAL_TAG_KEYS) {
+            finalTags[tag] = (finalTags[tag] || 0) + (tags[tag] || 0) * w;
+        }
     }
 
     // Mutationspfad: Werkzeug auf Part anwenden. Validiert Tool-Besitz +
@@ -67973,10 +67970,12 @@ class AnazhRealm {
         const q = this.computeBlueprintQuality(bp);
         const fit = this._blueprintRoleFit(bp, servedRole);
         const mul = 0.5 + 0.5 * q * fit;
-        // V17.90 Facette 3 (Größe): der MASSE-Faktor verstärkt die Wucht + bremst das Tempo — ein größeres Gerät
-        // schlägt härter, aber träger (vision-treuer Trade-off). Nur für Geräte/Rüstung (wo er auch im
-        // Ausrüstungs-Fold wirkt → ehrlich); die Seele liest ihn NICHT (der Avatar-Körper-Pfad bekäme ihn nicht).
-        const size = role === "soul" ? 1 : this._compoundSizeFactor(bp);
+        // V17.90 Facette 3 (Größe): der MASSE-Faktor verstärkte die Wucht + bremste das Tempo — der Readout zeigte
+        // ihn NUR, „wo er auch im Ausrüstungs-Fold wirkt → ehrlich". V18.311 (Gesetz #0, Schöpfer „Spieler runter"):
+        // der Größen-Faktor ist VORERST aus dem kanonischen Equip-Fold (`_foldEquippedStatTags`) raus → der Readout
+        // zieht mit (size = 1), sonst LÖGE die Anzeige (die Größe lebt weiter in Körper/Mesh/Masse/Seele-HP). Die
+        // dir/sf-Mechanik bleibt als Saat für die kommende Überarbeitung beider Pfade.
+        const size = 1;
         const S = AnazhRealm.STAT_FROM_TAGS;
         const INV = AnazhRealm.INVERSE_DICHTE_STATS;
         // dir: +1 = schwer (Größe verstärkt), −1 = agil (Größe bremst), 0 = neutral.
@@ -74266,7 +74265,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.310.0";
+AnazhRealm.VERSION = "18.311.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
