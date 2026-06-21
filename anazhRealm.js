@@ -71986,7 +71986,18 @@ class AnazhRealm {
         this.state.playerMesh = initialGroup;
         const initialSoul =
             this.state.player.soul && this.playerSoulDefs[this.state.player.soul] ? this.state.player.soul : "human";
-        this.applyPlayerSoul(initialSoul);
+        // V18.304 — DER AVATAR-BAU BLOCKT DEN BOOT NICHT MEHR (Schöpfer „das bild freezt, kann
+        // mich nicht bewegen … optimiere den avatar"): die Skin-Isosurface ist die EINE große
+        // synchrone Boot-Blockade (gemessen ~1.9 s bei res 56). HEADLESS baut synchron (das Gate
+        // braucht den Avatar sofort). NON-HEADLESS deferiert: die UI/Welt erscheint + ist bedienbar,
+        // der Avatar baut wenige Frames später (der Spieler ist bis dahin die leere Anker-Group —
+        // unsichtbar, aber Physik [Box-Shape] / Kamera / Bewegung laufen ohne ihn). Der Soul-Swap
+        // in applyPlayerSoul trägt den Physik-Body auf das fertige Mesh über (carries physicsBody).
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) {
+            this.applyPlayerSoul(initialSoul);
+        } else {
+            this.state._deferredAvatarSoul = initialSoul;
+        }
         this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
         this.state.selfAwareness.components.push("playerMesh");
 
@@ -72597,6 +72608,24 @@ class AnazhRealm {
             // (fängt den Block-Spike eines Sync-Builds — der nächste rAF feuert erst danach).
             // LÄUFT IMMER (auch nach einem abgefangenen Frame-Fehler) — der Regler bleibt am Leben.
             this._perfSenseFoldFrame(delta * 1000, delta);
+
+            // V18.304 — der DEFERIERTE Avatar-Bau: nach ein paar gerenderten Frames (die Welt/UI
+            // ist sichtbar + ein paar Frames bedienbar) den Avatar EINMAL bauen. Der ~1.9-s-Skin-
+            // Bau hängt dann einen Frame, aber NICHT den Boot — die Welt war schon da. Eigene
+            // try/catch (der schwere Bau darf den ewigen Loop nicht reißen). Headless setzt
+            // `_deferredAvatarSoul` nie (baut synchron) → das Gate unberührt.
+            if (this.state._deferredAvatarSoul) {
+                this.state._bootAvatarDelay = (this.state._bootAvatarDelay || 0) + 1;
+                if (this.state._bootAvatarDelay >= 6) {
+                    const soul = this.state._deferredAvatarSoul;
+                    this.state._deferredAvatarSoul = null;
+                    try {
+                        this.applyPlayerSoul(soul);
+                    } catch (err) {
+                        this._loopErrorBoundary(err);
+                    }
+                }
+            }
         };
         // V8.50 — die Loop-Funktion exponieren, damit Tests (playtest.cjs)
         // einen Frame SYNCHRON treiben können statt auf das im Headless auf
@@ -74106,7 +74135,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.303.0";
+AnazhRealm.VERSION = "18.304.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77055,7 +77084,7 @@ AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
 // Brust/Sixpack/Klavikel-Definition bleibt) und baut in ~13 s (Container; ~0,5–1 s real), einmalig →
 // dann gecacht (instant). EINE Quelle (kein Pro-Bau-Override-Passagier — wer Close-up-Detail will,
 // hebt diesen Wert; der Cache macht den Wiederbau ohnehin instant).
-AnazhRealm.AVATAR_SKIN_RES = 96;
+AnazhRealm.AVATAR_SKIN_RES = 56; // V18.304 96→56: der Skin-Bau skaliert ~res³ → ~9.6s → ~1.9s headless (Schöpfer „der Avatar wird sowieso geändert, optimiere die Performance"); der gröbere Guss ist temporär bis zum Avatar-Redo
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der

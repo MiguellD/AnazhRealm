@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.304 — DER AVATAR-BAU BLOCKT DEN BOOT NICHT MEHR: −res + deferiert
+
+Der Schöpfer (nach V18.303 „besser aber immernoch nicht top"): „optimiere noch den avatar, der wird sowieso noch geändert, optimiere die performance". Grünes Licht — der Avatar darf gröber werden (Redo kommt), also die zwei billigen, redo-überlebenden Hebel gezogen:
+
+1. **`AVATAR_SKIN_RES` 96 → 56:** der Skin-Bau (Metaball-Isosurface) skaliert ~res³ → **gemessen 9670 → 2698 ms (3.6×, `diag-startup-cost`).** Der gröbere Guss ist temporär bis zum Avatar-Redo.
+2. **DER BAU IST DEFERIERT (non-headless):** die Skin-Isosurface war die EINE große synchrone Boot-Blockade. Jetzt baut sie NICHT mehr im Boot — `_deferredAvatarSoul` wird am Loop-Ende nach 6 gerenderten Frames EINMAL gebaut (die Welt/UI ist schon da + bedienbar; der Spieler ist bis dahin die leere Anker-Group, Physik [Box-Shape] / Kamera / Bewegung laufen ohne das Mesh; der Soul-Swap trägt den `physicsBody` aufs fertige Mesh über). **GEMESSEN: Zeit bis „UI lebt" 27682 → 3562 ms (7.8×)** — der Avatar ist aus der „bis startklar"-Liste VERSCHWUNDEN. **Headless baut synchron** (`_isHeadlessNull` → `applyPlayerSoul` sofort) → das Gate sieht den Avatar (AVATAR baut + ist ein Rig, 13/0).
+
+DISZIPLIN: schwere Boot-Arbeit, die NICHT die erste Interaktion braucht, gehört von der synchronen Boot-Kette deferiert (die UI lebt sofort, das Werk fällt einen Frame später) — der billige Bruder des Workers (der zero-hitch käme erst, wenn der Avatar fix ist; bei einem changierenden Avatar lohnt der Worker-Aufwand nicht). Der nächste FPS-Hebel bleibt die steady GPU-Last (Laub, V18.303 lief, weiter look-bound) — Schöpfer-Browser.
+
 ### V18.303 — DAS LAUB IST 90 % DER GPU-LAST: der Kaltstart-Freeze an der Wurzel
 
 Der Schöpfer, am Ende der Geduld („das bild freezt und ich kann mich nicht bewegen, gar nichts behoben bisher … wenn es nichtmehr die cpu ist dann muss es ja die gpu sein, und dort erkennst du ja was wieviel zieht oder willst du mich hobs nehmen"). RECHT — die GPU-Render-Last (was wieviel zieht) IST headless messbar (`diag-render-load`), ich hätte gleich messen statt Konsolen-Tests verlangen sollen.
