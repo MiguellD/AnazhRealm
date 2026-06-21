@@ -19331,9 +19331,16 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.hasVoxelVegPopulator = typeof r._populateVoxelChunkVegetation === "function";
             // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
             const ringBefore = r.state.chunkRingRadius;
+            const activeBefore = r.state._activeRingRadius;
             r.state.chunkRingRadius = 6;
+            // V18.301 — der Lade-Rhythmus-Ramp (`_activeRingRadius`) sitzt zwischen Slider
+            // + ringRadius (`min(target, active)`). Der Test prüft den STEADY-STATE (folgt
+            // der Ring dem Slider?) → den Ramp aufs Ziel setzen, statt am Warmup-Leftover zu
+            // hängen (sonst last-flaky: ein langsamer Warmup lässt active < 6).
+            r.state._activeRingRadius = 6;
             out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
             r.state.chunkRingRadius = ringBefore;
+            r.state._activeRingRadius = activeBefore;
             // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
             // Aufruf für denselben Chunk spawnt nichts mehr.
             r._populateVoxelChunkVegetation(777, 777);
@@ -19519,15 +19526,19 @@ async function checkBandVoxelTerrainCore(ctx) {
                 // Ring 4 → 350 (Floor = geliebte Sicht unverändert).
                 r._ensureAtmoUniforms();
                 const ringBefore = r.state.chunkRingRadius;
+                const activeBefore = r.state._activeRingRadius;
                 r.state.chunkRingRadius = 12;
+                r.state._activeRingRadius = 12; // V18.301-Ramp aufs Ziel (Steady-State-Kopplung testen, nicht den Warmup-Leftover)
                 r._syncAtmoToViewDistance();
                 const haze12 =
                     r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
                 r.state.chunkRingRadius = 4;
+                r.state._activeRingRadius = 4;
                 r._syncAtmoToViewDistance();
                 const haze4 =
                     r.state.atmoUniforms && r.state.atmoUniforms.hazeFar ? r.state.atmoUniforms.hazeFar.value : 0;
                 r.state.chunkRingRadius = ringBefore;
+                r.state._activeRingRadius = activeBefore;
                 r._syncAtmoToViewDistance();
                 out.hazeCouplesRing = Math.abs(haze12 - 12 * 43.2) < 1 && Math.abs(haze4 - 350) < 1;
                 // V17.115 U3 — die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
@@ -22399,6 +22410,11 @@ async function checkBandWellePerfDBudget(ctx) {
             if (e) ids.push(e.id);
         }
         r.state.architectureCullingRadius = Math.max(origRadius, 300);
+        // V18.298 — tickArchitectureCulling baut 0 bei `_frameOverBudget` (der Nexus baut
+        // nur in der freien Zeit). Der Test prüft den BAU-Pfad (baut die Kaskade über
+        // Ticks?) → Kopfraum erzwingen, statt am Warmup-Leftover zu hängen (last-flaky:
+        // ein langsamer Warmup lässt frameMs > Budget → _frameOverBudget bleibt true).
+        r.state._frameOverBudget = false;
         const idSet = new Set(ids);
         const renderedCount = () => r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
         out.coldBefore = ids.length - renderedCount();
@@ -22798,6 +22814,10 @@ async function checkBandWellePerfD2LazyCollision(ctx) {
         const origRadius = r.state.architectureCullingRadius;
         const colR = r.state.architectureCollisionRadius || 90;
         r.state.architectureCullingRadius = 400; // Render deckt fern
+        // V18.298 — der Lazy-Collision-Pass (tickArchitectureCulling) baut 0 bei
+        // `_frameOverBudget`; der Test prüft den Collision-Pfad → Kopfraum erzwingen
+        // (sonst last-flaky am Warmup-Leftover).
+        r.state._frameOverBudget = false;
         // FERN (jenseits colRadius, im Render-Radius): gerendert, KEINE Collision.
         const far = r.spawnArchitecture(
             "baum_kiefer",

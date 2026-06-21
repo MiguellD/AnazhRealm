@@ -623,6 +623,7 @@ async function auditStateAndMethods() {
                 "useBatchedFoliage", // V18.289 — Flag (in init() false)
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
+                "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen

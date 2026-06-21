@@ -21025,30 +21025,81 @@ class AnazhRealm {
         }
         const spawnRadius = 50;
         for (let i = 0; i < safeCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * spawnRadius;
-            const x = Math.cos(angle) * radius;
-            const z = Math.sin(angle) * radius;
-            // V9.25 Phase 5b — getTerrainHeightAt ist voxel-aware: in einer
-            // Voxel-Welt liefert es die Voxel-Oberfläche, die Kreatur spawnt
-            // auf dem echten Boden statt auf der schlafenden Heightfield-Höhe.
-            const terrainHeight = this.getTerrainHeightAt(x, z);
-            const emotion = this._weatherIsWet()
-                ? Math.random() < 0.7
-                    ? "sad"
-                    : "happy"
-                : Math.random() < 0.7
-                  ? "happy"
-                  : "sad";
-            // playCreaturePing in spawnCreatureAt mute-temporär, sonst 10 Pings.
-            const symBefore = this.state.symphony && this.state.symphony.enabled;
-            if (this.state.symphony) this.state.symphony.enabled = false;
-            this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
-            if (this.state.symphony) this.state.symphony.enabled = symBefore;
+            this._spawnOneInitialCreature(soulName, spawnRadius);
         }
         this.log(`Kreaturen gespawnt: ${safeCount} Kreaturen`);
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
+    }
+
+    // Eine einzelne Initial-Kreatur an zufälliger offener Position — die EINE Quelle
+    // für den synchronen Boot-Spawn (`spawnCreatures`-Schleife) UND die deferierte
+    // P3-Progression (`_tickBootPhase3`). getTerrainHeightAt ist voxel-aware (echter
+    // Boden, nicht das schlafende Heightfield). Symphonie kurz stumm (sonst N Pings).
+    _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * spawnRadius;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        const terrainHeight = this.getTerrainHeightAt(x, z);
+        const emotion = this._weatherIsWet()
+            ? Math.random() < 0.7
+                ? "sad"
+                : "happy"
+            : Math.random() < 0.7
+              ? "happy"
+              : "sad";
+        const symBefore = this.state.symphony && this.state.symphony.enabled;
+        if (this.state.symphony) this.state.symphony.enabled = false;
+        this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
+        if (this.state.symphony) this.state.symphony.enabled = symBefore;
+    }
+
+    // ===== DAS BOOT-PHASEN-GERÜST (V18.308, P0–P3) =====
+    // Profi-Prinzip „erst handeln, dann laden": der Boot baut nur den KRITISCHEN
+    // Pfad (Terrain + Grund + Plattform), übergibt die Kontrolle, und streamt das
+    // Schwere DANACH progressiv. P0 = Kontrolle+Grund (frame 0) · P1 = echte
+    // Kollision (async, V18.271) · P2 = Ring+Laub nach Kapazität (V18.275/.301) ·
+    // P3 = das Deferierte (Kreaturen — die 3,1-s-Skin-Builds). Headless (Null-
+    // Renderer) → alles sofort (gate-treu, das Gate sieht die volle Welt).
+
+    // P3-Einrichtung: die Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless
+    // ODER ein Save-Restore (_pendingCreatureSnapshots) → sofort über `spawnCreatures`
+    // (das Gate + die Identitäts-Wiederherstellung brauchen die volle Welt synchron);
+    // echte Hardware → leeren + die Progression scharf schalten (`_tickBootPhase3`).
+    _bootDeferCreatures(count = 10) {
+        const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
+        const hasPending =
+            Array.isArray(this.state._pendingCreatureSnapshots) && this.state._pendingCreatureSnapshots.length > 0;
+        if (headless || hasPending) {
+            this.spawnCreatures(count);
+            return;
+        }
+        this.clearCreatures();
+        const safe = Math.max(0, Math.min(count, this.state.maxCreatures));
+        this.state._bootPhase3 = { creaturesLeft: safe, lastAt: 0, announced: false };
+    }
+
+    // P3-Progression: pro „Atem" eine Kreatur spawnen, NACHDEM die Kontrolle steht —
+    // nur wenn der Frame Luft hat (`_frameOverBudget` falsy) → die Bewegung/das Laden
+    // gehen vor. So erscheinen die Wesen sanft über ~Sekunden, statt 10 Skin-Builds
+    // synchron in den Boot zu pressen. Im Loop aufgerufen; no-op ohne offene P3-Arbeit.
+    _tickBootPhase3(now) {
+        const p3 = this.state._bootPhase3;
+        if (!p3) return;
+        if (this.state._frameOverBudget) return; // Kontrolle + Streaming zuerst
+        if (now - (p3.lastAt || 0) < AnazhRealm.BOOT_PHASE3_SPAWN_MS) return;
+        p3.lastAt = now;
+        if (p3.creaturesLeft > 0) {
+            this._spawnOneInitialCreature(null, 50);
+            p3.creaturesLeft--;
+        }
+        if (p3.creaturesLeft <= 0) {
+            if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
+            this._uiDirty("hof");
+            this.log("Boot-Phase 3 (Kreaturen) progressiv vollendet.", "INFO");
+            this.state._bootPhase3 = null;
+        }
     }
 
     updateCreatures(delta) {
@@ -23507,7 +23558,13 @@ class AnazhRealm {
         this._worldgenBuildVoxelChunkCache();
         this._worldgenComputeAndBuildHydrosphere();
 
-        this.spawnCreatures();
+        // P3 (V18.308 — DAS BOOT-PHASEN-GERÜST): die Kreaturen sind DEFERIERTE
+        // Boot-Arbeit. `spawnCreatures(10)` baut 10 Skin-Isoflächen (~3,1 s gemessen,
+        // `diag-startup-cost`) — der teuerste Sync-Posten vor der Kontrolle. Sie gehören
+        // NICHT auf den kritischen Pfad: die erste Geste des Spielers braucht keine
+        // Kreatur. `_bootDeferCreatures` spawnt sie progressiv NACH der Kontrolle
+        // (`_tickBootPhase3`), headless sofort (gate-treu). „Erst handeln, dann laden."
+        this._bootDeferCreatures(10);
 
         // V8.29 — Genesis-Plattform: beim ERSTEN Spawn einer Welt eine
         // erhöhte Stein-Scheibe am Zentrum, der Spieler startet darauf
@@ -72540,6 +72597,11 @@ class AnazhRealm {
                 // Alle 10 s: Geburt bei < TARGET, Tod bei > MAX mit Trauer.
                 this.tickFaunaLifecycle(currentTime);
 
+                // ### Boot-Phase 3 (V18.308) — die deferierte Boot-Arbeit progressiv ###
+                // Spawnt die Initial-Kreaturen NACH der Kontrolle, einen Atem pro Wesen,
+                // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
+                this._tickBootPhase3(performance.now());
+
                 // ### Symphonie-Wetter-Layer (Ring 4) ###
                 this.symphonyTick();
 
@@ -74197,7 +74259,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.307.0";
+AnazhRealm.VERSION = "18.308.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77096,6 +77158,10 @@ AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
+// V18.308 — DAS BOOT-PHASEN-GERÜST: der Atem zwischen zwei deferierten P3-Kreatur-Spawns.
+// 280 ms → ~10 Wesen erscheinen sanft über ~2,8 s NACH der Kontrolle (statt 3,1 s Skin-Builds
+// synchron im Boot). Headless ist davon unberührt (dort spawnt P3 sofort, gate-treu).
+AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
