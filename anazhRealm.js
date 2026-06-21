@@ -16716,753 +16716,135 @@ class AnazhRealm {
     }
 
     _buildCreatureSkinGeometryUncached(parts, opts) {
-        if (typeof THREE === "undefined" || !Array.isArray(parts) || !parts.length) return null;
-        const rotV = (v, rot) => {
-            if (!rot || (!rot.x && !rot.y && !rot.z)) return v;
-            const cx = Math.cos(rot.x || 0),
-                sx = Math.sin(rot.x || 0),
-                cy = Math.cos(rot.y || 0),
-                sy = Math.sin(rot.y || 0),
-                cz = Math.cos(rot.z || 0),
-                sz = Math.sin(rot.z || 0);
-            const [x, y, z] = v; // Euler XYZ: R = Rx·Ry·Rz
-            const x1 = cz * x - sz * y,
-                y1 = sz * x + cz * y,
-                z1 = z;
-            const x2 = cy * x1 + sy * z1,
-                y2 = y1,
-                z2 = -sy * x1 + cy * z1;
-            return [x2, cx * y2 - sx * z2, sx * y2 + cx * z2];
-        };
-        const bones = [];
-        let mnx = 1e9,
-            mny = 1e9,
-            mnz = 1e9,
-            mxx = -1e9,
-            mxy = -1e9,
-            mxz = -1e9;
-        for (const p of parts) {
-            if (!p.size || !p.position) continue;
-            if (p.feature) continue; // Gesichts-Features (Augen/Ohren) werden NICHT umhüllt
-            const sx = Math.abs(p.size.x) || 0.1,
-                sy = Math.abs(p.size.y) || 0.1,
-                sz = Math.abs(p.size.z) || 0.1;
-            const rot = p.rotation;
-            const rotated = !!(rot && (rot.x || rot.y || rot.z));
-            if (!rotated) {
-                // ANISOTROPES ELLIPSOID (achsen-ausgerichtete Körper-Masse; Schöpfer „kein fetter
-                // Ball — schärfe die Regel"): die BOX-MASSE SIND die Halbachsen → eine TIEFE, SCHMALE
-                // Brust (y groß, x klein, z lang) EMERGIERT aus den Maßen, statt zur runden Kugel
-                // gezwungen zu werden (die runde Kapsel war die Wurzel des „fetten Balls"). Die Iso
-                // (field=0) ist EXAKT das Ellipsoid; nur der Betrag fern davon skaliert mit der
-                // kleinsten Achse (= die smin-Blendbreite).
-                const rx = Math.max(0.03, (sx / 2) * 1.06),
-                    ry = Math.max(0.03, (sy / 2) * 1.06),
-                    rz = Math.max(0.03, (sz / 2) * 1.06);
-                const c = [p.position.x, p.position.y, p.position.z];
-                bones.push({
-                    ell: true,
-                    c,
-                    r: [rx, ry, rz],
-                    rmin: Math.min(rx, ry, rz),
-                    kScale: p.kScale || 1,
-                    def: !!p.def,
-                    disp: !!p.disp,
-                    amp: p.amp,
-                    reach: p.reach,
-                    mat: p.material,
-                });
-                const RR = [rx + 0.1, ry + 0.1, rz + 0.1];
-                mnx = Math.min(mnx, c[0] - RR[0]);
-                mny = Math.min(mny, c[1] - RR[1]);
-                mnz = Math.min(mnz, c[2] - RR[2]);
-                mxx = Math.max(mxx, c[0] + RR[0]);
-                mxy = Math.max(mxy, c[1] + RR[1]);
-                mxz = Math.max(mxz, c[2] + RR[2]);
-                continue;
+        // V18.315 — DER BÄCKER (Stufe 2): die Skin-Isosurface-Mathe lebt jetzt in bake-core.js
+        // (`__bakeSkinGeometry`, EINE Quelle — auch der bake-worker liest sie). Hier bleibt nur der
+        // THREE-Zusammenbau der Arrays. Byte-identisch zur alten Inline-Mathe (diag-bake-ab:
+        // position/normal/color/index maxDiff=0). Der Live-Pfad (Avatar/headless) ruft das SYNCHRON,
+        // der Kreatur-Pfad in der echten Welt über den Worker ASYNC — beide durch dieselbe Mathe.
+        const bake = typeof globalThis !== "undefined" && globalThis.__bakeSkinGeometry;
+        if (typeof bake !== "function") return null; // bake-core nicht geladen → graceful (Knochen-Fallback)
+        const baked = bake(
+            parts,
+            Object.assign({ headlessResCap: this.constructor.__HEADLESS_SKIN_RES_CAP | 0 }, opts || {})
+        );
+        return this._assembleSkinGeometry(baked);
+    }
+
+    // V18.315 — der THREE-Zusammenbau der gebackenen Arrays. GETEILTE Naht: der sync-Pfad UND der
+    // async Worker-Pfad gehen hierdurch (Arrays → BufferGeometry), damit es nur EINE Stelle gibt,
+    // die die Bäcker-Ausgabe in THREE-Geometrie übersetzt.
+    _assembleSkinGeometry(baked) {
+        if (typeof THREE === "undefined" || !baked || !baked.positions || !baked.indices) return null;
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(baked.positions, 3));
+        if (Array.isArray(baked.indices)) geom.setIndex(baked.indices);
+        else geom.setIndex(new THREE.BufferAttribute(baked.indices, 1));
+        geom.setAttribute("normal", new THREE.Float32BufferAttribute(baked.normals, 3));
+        const cols = baked.colors || new Float32Array((baked.positions.length / 3) * 3).fill(1);
+        geom.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+        return geom;
+    }
+
+    // V18.315 — DER BÄCKER-WORKER (lazy): EIN Off-Thread-Worker für den schweren Skin-Bau (der
+    // ~4-s-Isosurface-Block, der bisher pro Spawn den Main-Thread einfror). Gibt den Worker zurück
+    // oder null (kein Worker-Support / Sandbox-iframe / Fehler → der Aufrufer baut synchron). State
+    // lazy: `_bakeWorker` undefined=noch nicht versucht · null=versucht+gescheitert · Worker=ok.
+    _ensureBakeWorker() {
+        if (this.state._bakeWorker !== undefined) return this.state._bakeWorker;
+        try {
+            if (typeof Worker === "undefined") {
+                this.state._bakeWorker = null;
+                return null;
             }
-            // RUNDE getaperte Kapsel (rotierte Glieder/Hals/Schwanz): Segment entlang der längsten
-            // Achse, runder Querschnitt. WOLFF/Round-Cone: das tiefere Ende distal-dünn.
-            const half = [sx / 2, sy / 2, sz / 2];
-            let ax = 0;
-            if (sy >= sx && sy >= sz) ax = 1;
-            else if (sz >= sx && sz >= sy) ax = 2;
-            const r = Math.max(0.025, (Math.min(sx, sy, sz) / 2) * 1.08);
-            let dir = [0, 0, 0];
-            dir[ax] = 1;
-            dir = rotV(dir, p.rotation);
-            const segHalf = Math.max(0, half[ax] - r * 0.8);
-            const a = [
-                p.position.x - dir[0] * segHalf,
-                p.position.y - dir[1] * segHalf,
-                p.position.z - dir[2] * segHalf,
-            ];
-            const b = [
-                p.position.x + dir[0] * segHalf,
-                p.position.y + dir[1] * segHalf,
-                p.position.z + dir[2] * segHalf,
-            ];
-            const segLen = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
-            let ra = r,
-                rb = r;
-            if (segLen > r * 1.6) {
-                const taper = 0.6;
-                if (a[1] >= b[1]) rb = r * taper;
-                else ra = r * taper;
-            }
-            bones.push({
-                a,
-                b,
-                ra,
-                rb,
-                rmin: Math.min(ra, rb),
-                kScale: p.kScale || 1,
-                def: !!p.def,
-                amp: p.amp,
-                reach: p.reach,
-                mat: p.material,
-            });
-            const R = r + 0.12; // SDF-Oberfläche + smin-Fillet-Marge für die BBox
-            for (const pt of [a, b]) {
-                mnx = Math.min(mnx, pt[0] - R);
-                mny = Math.min(mny, pt[1] - R);
-                mnz = Math.min(mnz, pt[2] - R);
-                mxx = Math.max(mxx, pt[0] + R);
-                mxy = Math.max(mxy, pt[1] + R);
-                mxz = Math.max(mxz, pt[2] + R);
-            }
-        }
-        if (!bones.length) return null;
-        const distSeg = (px, py, pz, a, b) => {
-            const abx = b[0] - a[0],
-                aby = b[1] - a[1],
-                abz = b[2] - a[2];
-            const ab2 = abx * abx + aby * aby + abz * abz;
-            let t = ab2 > 1e-9 ? ((px - a[0]) * abx + (py - a[1]) * aby + (pz - a[2]) * abz) / ab2 : 0;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const cx = a[0] + abx * t,
-                cy = a[1] + aby * t,
-                cz = a[2] + abz * t;
-            return Math.hypot(px - cx, py - cy, pz - cz);
-        };
-        // wahrerguss System B — SDF + SMOOTH-MINIMUM (Inigo Quilez, der Profi-Kern, Schöpfer-
-        // Recherche): jeder Knochen ist eine KAPSEL-SDF (signierte Distanz, <0 innen); smin
-        // verschmilzt sie WEICH zu EINER Masse „wie aus Ton" — statt eines additiven Kugel-
-        // BEUTELS (der die Klumpen + harten Schulter/Hüft-Nähte erzeugte). K = die Blend-Breite
-        // (klein genug, dass das Feld ein gültiges SDF bleibt, sonst „floating island"-Artefakte).
-        const smin = (a, b, k) => {
-            const h = Math.max(0, Math.min(1, 0.5 + (0.5 * (b - a)) / k));
-            return b * (1 - h) + a * h - k * h * (1 - h);
-        };
-        // getaperte Kapsel (interpolierter Radius entlang des Segments) — die Round-Cone-Form.
-        const sdTaper = (px, py, pz, bn) => {
-            const a = bn.a,
-                b = bn.b;
-            const abx = b[0] - a[0],
-                aby = b[1] - a[1],
-                abz = b[2] - a[2];
-            const ab2 = abx * abx + aby * aby + abz * abz;
-            let t = ab2 > 1e-9 ? ((px - a[0]) * abx + (py - a[1]) * aby + (pz - a[2]) * abz) / ab2 : 0;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const dx = px - (a[0] + abx * t),
-                dy = py - (a[1] + aby * t),
-                dz = pz - (a[2] + abz * t);
-            return Math.hypot(dx, dy, dz) - (bn.ra + (bn.rb - bn.ra) * t);
-        };
-        const sdEllipsoid = (px, py, pz, bn) => {
-            const c = bn.c,
-                r = bn.r;
-            const ex = (px - c[0]) / r[0],
-                ey = (py - c[1]) / r[1],
-                ez = (pz - c[2]) / r[2];
-            const kl = Math.sqrt(ex * ex + ey * ey + ez * ez);
-            return (kl - 1) * bn.rmin; // Iso (=0) EXAKT das Ellipsoid; Betrag ~ kleinste Achse (smin-Blend)
-        };
-        // lebendiger-koerper §2½ WURZEL 1 — die smin-Blend-Breite k ist der erste TIEFPASS:
-        // ein grosses k an den Körper-Massen zieht die anatomischen Scheiben (tiefe Brust ·
-        // Flanken-Tuck · hohe Kruppe) zu ihrem Mittel = ein horizontales Ellipsoid. kMax ist
-        // opt-parametrisiert (Default 0.12 = das vorige Verhalten), damit diag-koerper-tiefpass
-        // den Tradeoff (definierte Kante vs. erodierende dünne Glieder) am Iso-Dump MISST.
-        const kMax = opts && Number.isFinite(opts.kMax) ? opts.kMax : 0.12;
-        const kFloor = opts && Number.isFinite(opts.kFloor) ? opts.kFloor : 0.04; // Mindest-Blend; KLEINER → schärfere Muskel-Täler (Sixpack/Linea alba), die die reine Feld-Normale gestochen liest
-        // ── VERSCHIEBUNGS-SUBSTRAT (SMPL-Architektur, feature-geflaggt parallel zur Union) ──
-        // Schöpfer-Wurzel: in der UNION (smin) sind Amplitude+Form+Blend an EINEM Primitiv gekoppelt
-        // → Random-Walk, der nie konvergiert (Schulter-Ball/Waffel/Leisten-Bälle = die Kugel-Kappe,
-        // die durchs min schlägt). DECOUPLING: die Basis-Fläche kommt aus den STRUKTUR-Knochen; jede
-        // DEF-Muskel-Masse HEBT sie um eine EXPLIZITE Amplitude über ein authoriertes Tropfen-Profil
-        // (smoothstep, anisotrop via die Ellipsoid-Extents) — amp/reach/Form einzeln einrastbar.
-        const DISPLACE = !!(opts && opts.displace);
-        const dispCap = opts && Number.isFinite(opts.dispCap) ? opts.dispCap : 0.45; // Validitäts-Deckel: zu viel Verschiebung bricht den ~Einheitsgradient (floating island/Pinch)
-        const field = (x, y, z) => {
-            let d = 1e9;
-            for (const bn of bones) {
-                if (DISPLACE && bn.def && bn.ell) continue; // FLEISCH-Muskel (def) = Verschiebung; KNOCHEN/Struktur (non-def) = scharfe Union. Das MATERIAL treibt das Substrat.
-                // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
-                // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
-                // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
-                // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
-                // BEDINGUNG ii (lebendiger-koerper §2½ — LANDMARK-SCHÄRFE): ein Knochen mit
-                // `kScale < 1` blendet TIGHT (knochige Kante: Schulterblatt-Gräte · Jochbein ·
-                // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
-                // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
-                // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
-                // MATERIAL treibt die Schärfe: KNOCHEN blendet TIGHT (×0.66 → scharfe, FIXE Struktur),
-                // FLEISCH weich (×1.0). Das Material tut, was es soll — keine Hand-Zahl pro Masse.
-                const matK = bn.mat === "knochen" ? 0.66 : 1.0;
-                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1) * matK);
-                d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
-            }
-            let f = -d; // Basis-Feld: SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
-            if (DISPLACE) {
-                let disp = 0;
-                for (const bn of bones) {
-                    if (!bn.def || !bn.ell) continue;
-                    const c = bn.c,
-                        r = bn.r;
-                    const ex = (x - c[0]) / r[0],
-                        ey = (y - c[1]) / r[1],
-                        ez = (z - c[2]) / r[2];
-                    const kl = Math.sqrt(ex * ex + ey * ey + ez * ez); // 0 Zentrum · 1 Ellipsoid-Oberfläche
-                    const reach = bn.reach || 1.6;
-                    const tt = Math.max(0, 1 - kl / reach);
-                    // AMP regel-getrieben: ∝ kleinster Halbachse (größerer Muskel schwillt mehr) — keine Hand-Zahl
-                    const amp = bn.amp != null ? bn.amp : bn.rmin * 0.85;
-                    disp += amp * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
-                }
-                f += Math.min(dispCap, disp); // Validitäts-Deckel (Einheitsgradient bewahren)
-            }
-            return f;
-        };
-        // ── SURFACE NETS (naiv, dual): ein Vertex pro Vorzeichen-wechselnder Zelle, an die
-        //    gemittelten Kanten-Kreuzungen gesetzt; Quads über kreuzende Gitter-Kanten. ──
-        const PAD = 0.02;
-        const min = { x: mnx - PAD, y: mny - PAD, z: mnz - PAD };
-        const span = Math.max(0.2, Math.max(mxx - mnx, mxy - mny, mxz - mnz) + 2 * PAD);
-        // Gitter-Auflösung (wahrerguss System D: höher = weniger Facetten, glatter Leib + dünne
-        // Spalten [Bein-Zwischenraum/Finger] werden aufgelöst). Der Avatar wird EINMAL gebaut →
-        // er darf hoch auflösen (opts.res); Scatter-Kreaturen bleiben bei 64 (Perf, viele Spawns).
-        let N = (opts && opts.res) | 0 || 64;
-        // [PERF/TEST] Headless-Gate-Drossel (analog zum renderer.render-Stub): der Isosurface-
-        // Build skaliert mit N³. Der res-128-Avatar (~70 Metaball-Teile) baut headless ~19 s —
-        // das Gate ruft ihn mehrfach (Warmup + jeder player_soul/forgeAvatar-Band). Die Bands
-        // prüfen LOGIK (baut · ist-Rig · Resonanz · Tags · count>0/Topologie), NIE die Isosurface-
-        // TREUE (das ist Augen-/Screenshot-Sache, der Live-Build bleibt res 128). Ein optionaler
-        // globaler Cap, NUR vom Playtest gesetzt, clampt N → der Gate-Avatar-Build fällt von
-        // ~19 s auf ~2 s, ohne die Live-Qualität zu berühren. Default 0 = aus (Produktion unberührt).
-        const skinResCap = this.constructor.__HEADLESS_SKIN_RES_CAP | 0;
-        if (skinResCap > 0 && N > skinResCap) N = skinResCap;
-        const h = span / N;
-        const off = [
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [1, 1, 0],
-            [0, 0, 1],
-            [1, 0, 1],
-            [0, 1, 1],
-            [1, 1, 1],
-        ];
-        const edges = [
-            [0, 1],
-            [0, 2],
-            [0, 4],
-            [1, 3],
-            [1, 5],
-            [2, 3],
-            [2, 6],
-            [3, 7],
-            [4, 5],
-            [4, 6],
-            [5, 7],
-            [6, 7],
-        ];
-        const G = N + 1;
-        const grid = new Float32Array(G * G * G);
-        const gi = (i, j, k) => i + G * (j + G * k);
-        for (let k = 0; k < G; k++)
-            for (let j = 0; j < G; j++)
-                for (let i = 0; i < G; i++) grid[gi(i, j, k)] = field(min.x + i * h, min.y + j * h, min.z + k * h);
-        const cellVert = new Int32Array(N * N * N).fill(-1);
-        const ci = (i, j, k) => i + N * (j + N * k);
-        const verts = [];
-        for (let k = 0; k < N; k++)
-            for (let j = 0; j < N; j++)
-                for (let i = 0; i < N; i++) {
-                    let inside = 0;
-                    const c = [];
-                    for (let n = 0; n < 8; n++) {
-                        const v = grid[gi(i + off[n][0], j + off[n][1], k + off[n][2])];
-                        c.push(v);
-                        if (v > 0) inside++;
+            const w = new Worker(`bake-worker.js?v=${AnazhRealm.VERSION}`);
+            this.state._bakeReqMap = new Map();
+            this.state._bakeReqId = 0;
+            w.onmessage = (e) => {
+                const m = e.data || {};
+                if (m.type === "bake-skin-result") {
+                    const resolve = this.state._bakeReqMap.get(m.requestId);
+                    if (resolve) {
+                        this.state._bakeReqMap.delete(m.requestId);
+                        resolve(m);
                     }
-                    if (inside === 0 || inside === 8) continue;
-                    let vx = 0,
-                        vy = 0,
-                        vz = 0,
-                        cnt = 0;
-                    for (const [a, b] of edges) {
-                        if (c[a] > 0 !== c[b] > 0) {
-                            const t = c[a] / (c[a] - c[b]);
-                            vx += off[a][0] + (off[b][0] - off[a][0]) * t;
-                            vy += off[a][1] + (off[b][1] - off[a][1]) * t;
-                            vz += off[a][2] + (off[b][2] - off[a][2]) * t;
-                            cnt++;
-                        }
-                    }
-                    cellVert[ci(i, j, k)] = verts.length / 3;
-                    verts.push(min.x + (i + vx / cnt) * h, min.y + (j + vy / cnt) * h, min.z + (k + vz / cnt) * h);
-                }
-        const idx = [];
-        const quad = (a, b, cc, d, flip) => {
-            if (a < 0 || b < 0 || cc < 0 || d < 0) return;
-            if (flip) idx.push(a, d, cc, a, cc, b);
-            else idx.push(a, b, cc, a, cc, d);
-        };
-        for (let k = 0; k < N; k++)
-            for (let j = 0; j < N; j++)
-                for (let i = 0; i < N; i++) {
-                    const g0 = grid[gi(i, j, k)] > 0;
-                    if (i + 1 < G && j > 0 && k > 0 && g0 !== grid[gi(i + 1, j, k)] > 0)
-                        quad(
-                            cellVert[ci(i, j - 1, k - 1)],
-                            cellVert[ci(i, j, k - 1)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i, j - 1, k)],
-                            g0
-                        );
-                    if (j + 1 < G && i > 0 && k > 0 && g0 !== grid[gi(i, j + 1, k)] > 0)
-                        quad(
-                            cellVert[ci(i - 1, j, k - 1)],
-                            cellVert[ci(i - 1, j, k)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i, j, k - 1)],
-                            g0
-                        );
-                    if (k + 1 < G && i > 0 && j > 0 && g0 !== grid[gi(i, j, k + 1)] > 0)
-                        quad(
-                            cellVert[ci(i - 1, j - 1, k)],
-                            cellVert[ci(i, j - 1, k)],
-                            cellVert[ci(i, j, k)],
-                            cellVert[ci(i - 1, j, k)],
-                            g0
-                        );
-                }
-        if (!verts.length || !idx.length) return null;
-        // wahrerguss System D — SUBDIVISION/GLÄTTUNG: der rohe Surface-Nets-Leib ist
-        // facettig/klumpig (klay-Look). TAUBIN-Glättung (λ schrumpft, μ bläht zurück →
-        // volumen-erhaltend, kein Schrumpf-Bug der reinen Laplace-Glättung) rundet die
-        // Haut zu einer glatten organischen Oberfläche. Adjazenz aus dem Dreiecks-Index.
-        const VN = verts.length / 3;
-        if (VN > 3) {
-            const adj = new Array(VN);
-            for (let v = 0; v < VN; v++) adj[v] = new Set();
-            for (let t = 0; t + 2 < idx.length; t += 3) {
-                const a = idx[t],
-                    b = idx[t + 1],
-                    c = idx[t + 2];
-                adj[a].add(b);
-                adj[a].add(c);
-                adj[b].add(a);
-                adj[b].add(c);
-                adj[c].add(a);
-                adj[c].add(b);
-            }
-            const relax = (factor) => {
-                const src = verts.slice();
-                for (let v = 0; v < VN; v++) {
-                    const nb = adj[v];
-                    if (!nb || !nb.size) continue;
-                    let ax = 0,
-                        ay = 0,
-                        az = 0;
-                    for (const n of nb) {
-                        ax += src[n * 3];
-                        ay += src[n * 3 + 1];
-                        az += src[n * 3 + 2];
-                    }
-                    const inv = 1 / nb.size;
-                    verts[v * 3] += (ax * inv - src[v * 3]) * factor;
-                    verts[v * 3 + 1] += (ay * inv - src[v * 3 + 1]) * factor;
-                    verts[v * 3 + 2] += (az * inv - src[v * 3 + 2]) * factor;
                 }
             };
-            // lebendiger-koerper §2½ WURZEL 1 — die Taubin-Pässe sind der zweite TIEFPASS: jeder
-            // λ-Pass mittelt die Nachbar-Vertices, viele Pässe räumen die Stations-RINGE (Kruppe/
-            // Brustkorb/Taille) weg, die _creatureSkeleton/_humanoidSkeleton in die VARIANZ zwischen
-            // den Stationen kodieren. Passes + λ/μ sind opt-parametrisiert (Default = das vorige
-            // Verhalten: 6× 0.46/−0.49), damit diag-koerper-tiefpass den Tradeoff (glatte Haut vs.
-            // wegerodierte Anatomie) am Iso-Dump MISST statt blind zu halbieren.
-            const tPasses = opts && Number.isFinite(opts.taubinPasses) ? opts.taubinPasses : 6;
-            const tLambda = opts && Number.isFinite(opts.taubinLambda) ? opts.taubinLambda : 0.46;
-            const tMu = opts && Number.isFinite(opts.taubinMu) ? opts.taubinMu : -0.49;
-            for (let pass = 0; pass < tPasses; pass++) {
-                relax(tLambda); // λ glätten
-                relax(tMu); // μ<−λ zurück-blähen → Taubin (volumen-erhaltend, kein Schrumpf)
-            }
-        }
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
-        geom.setIndex(idx);
-        // PROFI-TECHNIK (SDF-Rendering — Media Molecule „Dreams" · Clayxels · Inigo Quilez): die
-        // Shading-NORMALE kommt aus dem FELD-GRADIENTEN (∇field via zentrale Differenzen), NICHT
-        // aus dem wobbeligen Dreiecks-Mesh (computeVertexNormals mittelt die Mesh-Lumpen → sie
-        // werden im Shading sichtbar = die „Unsauberkeiten"). Das Feld ist GLATT + symmetrisch →
-        // eine butterweiche, saubere, links/rechts-symmetrische Oberfläche, unabhängig von der
-        // Surface-Nets-Tesselierung. field>0 innen → ∇field zeigt nach INNEN → Außen-Normale = −∇field.
-        {
-            const ge = h * (opts && Number.isFinite(opts.normalStep) ? opts.normalStep : 0.55); // Gradient-Schrittweite (kleiner = feinere Muskel-Täler in der Normale; das Feld ist analytisch glatt → bleibt sauber)
-            const nrm = new Float32Array(verts.length);
-            for (let v = 0; v < verts.length; v += 3) {
-                const x = verts[v],
-                    y = verts[v + 1],
-                    z = verts[v + 2];
-                let nx = field(x - ge, y, z) - field(x + ge, y, z);
-                let ny = field(x, y - ge, z) - field(x, y + ge, z);
-                let nz = field(x, y, z - ge) - field(x, y, z + ge);
-                const L = Math.hypot(nx, ny, nz) || 1;
-                nrm[v] = nx / L;
-                nrm[v + 1] = ny / L;
-                nrm[v + 2] = nz / L;
-            }
-            geom.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
-        }
-        // NORMAL-RELAX (opt `normalRelax` Pässe) — beruhigt die FELD-Gradienten-Normale über die Mesh-
-        //   Adjazenz, BEVOR die seamGroove die Muskel-Furche einkippt. An DICHTEN Part-Stapeln
-        //   (Schulter/Klavikel/Brust: Pec-Köpfe + Deltoid + Klavikel + Sternum + Trapez + SCM überlappen)
-        //   ist das smin-Feld bumpig → die Gradient-Normale WACKELT → lumpige Schattierung (Schöpfer-
-        //   Befund: „du schattierst die Normalen falsch"). Ein paar Laplace-Pässe glätten NUR die Normale
-        //   (nicht die Geometrie/Silhouette); die seamGroove legt die Definition danach sauber drauf.
-        const nRelax = opts && Number.isFinite(opts.normalRelax) ? opts.normalRelax : 0;
-        if (nRelax > 0 && idx.length) {
-            const nA0 = geom.attributes.normal,
-                VCn = nA0.count;
-            const adjN = new Array(VCn);
-            for (let v = 0; v < VCn; v++) adjN[v] = [];
-            for (let t = 0; t + 2 < idx.length; t += 3) {
-                const a = idx[t],
-                    b = idx[t + 1],
-                    c = idx[t + 2];
-                adjN[a].push(b, c);
-                adjN[b].push(a, c);
-                adjN[c].push(a, b);
-            }
-            for (let it = 0; it < nRelax; it++) {
-                const sx = new Float32Array(VCn),
-                    sy = new Float32Array(VCn),
-                    sz = new Float32Array(VCn);
-                for (let v = 0; v < VCn; v++) {
-                    sx[v] = nA0.getX(v);
-                    sy[v] = nA0.getY(v);
-                    sz[v] = nA0.getZ(v);
-                }
-                for (let v = 0; v < VCn; v++) {
-                    const nb = adjN[v];
-                    if (!nb.length) continue;
-                    let ax = sx[v],
-                        ay = sy[v],
-                        az = sz[v];
-                    for (const k of nb) {
-                        ax += sx[k];
-                        ay += sy[k];
-                        az += sz[k];
-                    }
-                    const L = Math.hypot(ax, ay, az) || 1;
-                    nA0.setXYZ(v, ax / L, ay / L, az / L);
-                }
-            }
-            nA0.needsUpdate = true;
-        }
-        // ── SEAM-GROOVE: die Muskel-Furche ANALYTISCH (die Antwort auf die Auflösungs-Wand) ──
-        // Das Skelett TRÄGT die Anatomie (Sixpack/Pec/Lat als getrennte DEF-Massen, im Skel-Render
-        // gestochen sichtbar) — aber das Gitter (h≈0.06) löst eine 0.16-Furche nicht auf, und die
-        // Glättung verschluckt sie. Hier wird die Furche dort, wo zwei DEF-Massen sich treffen
-        // (d1≈d2), DIREKT aus den SDFs gerechnet (gitter-/terrassen-UNABHÄNGIG im Wert) und die
-        // Shading-Normale ins Tal gekippt → der Sixpack/Pec/Lat fängt Licht unter JEDER Beleuchtung,
-        // auf der glatten Feld-Haut, ohne Lumpen. Das ist der Profi-„Detail-Normal"-Hebel, analytisch.
-        const seamAmp = opts && Number.isFinite(opts.seamGroove) ? opts.seamGroove : 0;
-        const hasDef = seamAmp > 0 && bones.some((b) => b.def);
-        let seamG = null;
-        if (hasDef) {
-            const seamW = opts && Number.isFinite(opts.seamWidth) ? opts.seamWidth : 0.085;
-            const pA2 = geom.attributes.position,
-                nA2 = geom.attributes.normal,
-                VC2 = pA2.count;
-            const sdAny = (bn, x, y, z) => (bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn));
-            const gArr = new Float32Array(VC2);
-            for (let v = 0; v < VC2; v++) {
-                const x = pA2.getX(v),
-                    y = pA2.getY(v),
-                    z = pA2.getZ(v);
-                let d1 = 1e9,
-                    d2 = 1e9,
-                    def1 = false,
-                    def2 = false; // nächste ZWEI Massen
-                for (const bn of bones) {
-                    const d = sdAny(bn, x, y, z);
-                    if (d < d1) {
-                        d2 = d1;
-                        def2 = def1;
-                        d1 = d;
-                        def1 = !!bn.def;
-                    } else if (d < d2) {
-                        d2 = d;
-                        def2 = !!bn.def;
-                    }
-                }
-                if (def1 || def2) gArr[v] = Math.max(0, 1 - (d2 - d1) / seamW); // 1 an der Naht, 0 weg
-            }
-            // Adjazenz + mehrere Glättungspässe von g (SAUBERE, gleichmäßige Furche statt fleckiger
-            // Konvergenz-Patches — die Referenz ist glatt+definiert, nicht mottled).
-            const adj = new Array(VC2);
-            for (let v = 0; v < VC2; v++) adj[v] = [];
-            for (let t = 0; t + 2 < idx.length; t += 3) {
-                const a = idx[t],
-                    b = idx[t + 1],
-                    c = idx[t + 2];
-                adj[a].push(b, c);
-                adj[b].push(a, c);
-                adj[c].push(a, b);
-            }
-            for (let it = 0; it < 3; it++) {
-                const src = gArr.slice();
-                for (let v = 0; v < VC2; v++) {
-                    const nb = adj[v];
-                    if (!nb.length) continue;
-                    let a = 0;
-                    for (const k of nb) a += src[k];
-                    gArr[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
-                }
-            }
-            // Normale entlang des tangentialen g-Gradienten ins Tal kippen (g scharf+analytisch →
-            // starker, sauberer Kipp; beide Wände fächern zur Naht auf → die Furche poppt).
-            for (let v = 0; v < VC2; v++) {
-                const nb = adj[v];
-                if (!nb.length) continue;
-                const nx = nA2.getX(v),
-                    ny = nA2.getY(v),
-                    nz = nA2.getZ(v);
-                const px = pA2.getX(v),
-                    py = pA2.getY(v),
-                    pz = pA2.getZ(v);
-                let gx = 0,
-                    gy = 0,
-                    gz = 0;
-                for (const k of nb) {
-                    let dx = pA2.getX(k) - px,
-                        dy = pA2.getY(k) - py,
-                        dz = pA2.getZ(k) - pz;
-                    const dn = dx * nx + dy * ny + dz * nz;
-                    dx -= dn * nx;
-                    dy -= dn * ny;
-                    dz -= dn * nz;
-                    const L = Math.hypot(dx, dy, dz) || 1e-6;
-                    const w = gArr[k] - gArr[v];
-                    gx += (dx / L) * w;
-                    gy += (dy / L) * w;
-                    gz += (dz / L) * w;
-                }
-                const inv = 1 / nb.length;
-                let mx = nx + gx * inv * seamAmp,
-                    my = ny + gy * inv * seamAmp,
-                    mz = nz + gz * inv * seamAmp;
-                const L = Math.hypot(mx, my, mz) || 1;
-                nA2.setXYZ(v, mx / L, my / L, mz / L);
-            }
-            nA2.needsUpdate = true;
-            seamG = gArr; // an den AO-Pass weiterreichen (die Furche auch verschatten)
-        }
-        // wahrerguss System A×D — GEBACKENE AO (Substanz, der „flach-einfarbig"-Heiler): die
-        // KRÜMMUNG pro Vertex (Konkavität = Mulde → verschattet · Konvexität = Grat → voll) wird
-        // in eine Vertex-Farbe gebacken; das Hide-Material multipliziert sie. Das legt den
-        // Gelenk-/Achsel-/Schritt-/Falten-Schatten + das Muskel-Relief, das eine glatte Metaball-
-        // Haut sonst uniform-plastik lässt — gerechnet aus der Form, nicht gemalt. Geteilt:
-        // Avatar + jede Kreatur fließen durch denselben Pass. Konkavität wird über ein paar
-        // Pässe in breite Höhlen gestreut (die Achsel ist kein Mikro-Knick — eine weite Mulde).
-        try {
-            const pA = geom.attributes.position,
-                nA = geom.attributes.normal,
-                VC = pA.count;
-            const nbr = new Array(VC);
-            for (let v = 0; v < VC; v++) nbr[v] = [];
-            for (let t = 0; t + 2 < idx.length; t += 3) {
-                const a = idx[t],
-                    b = idx[t + 1],
-                    c = idx[t + 2];
-                nbr[a].push(b, c);
-                nbr[b].push(a, c);
-                nbr[c].push(a, b);
-            }
-            let occ = new Float32Array(VC);
-            for (let v = 0; v < VC; v++) {
-                const nb = nbr[v];
-                if (!nb.length) continue;
-                const px = pA.getX(v),
-                    py = pA.getY(v),
-                    pz = pA.getZ(v),
-                    nx = nA.getX(v),
-                    ny = nA.getY(v),
-                    nz = nA.getZ(v);
-                let s = 0;
-                for (const k of nb) {
-                    let dx = pA.getX(k) - px,
-                        dy = pA.getY(k) - py,
-                        dz = pA.getZ(k) - pz;
-                    const L = Math.hypot(dx, dy, dz) || 1e-6;
-                    s += (dx * nx + dy * ny + dz * nz) / L; // >0 = Nachbar VOR der Normale = konkav (Mulde)
-                }
-                occ[v] = s / nb.length;
-            }
-            for (let it = 0; it < 4; it++) {
-                const src = occ.slice();
-                for (let v = 0; v < VC; v++) {
-                    const nb = nbr[v];
-                    if (!nb.length) continue;
-                    let a = 0;
-                    for (const k of nb) a += src[k];
-                    occ[v] = src[v] * 0.35 + (a / nb.length) * 0.65; // in breite Höhlen streuen
-                }
-            }
-            // ── ANATOMIE-DETAIL-PASS (die Synthese: die Muskel-FURCHE emergiert aus dem Feld) ──
-            // Taubin + smin glätten das Muskel-Relief flach (Pec/Lat/Sixpack/Schenkel · Hinterhand/
-            // Schulter beim Tier liegen begraben). Hier wird es GEOMETRISCH zurückgeholt: eine
-            // UNSCHÄRFE-MASKE verschiebt jeden Vertex entlang der Normale ∝ Konkavität — TAL tiefer,
-            // GRAT höher — also genau die Anatomie, die wirklich im Feld liegt, wird geschärft. Dann
-            // lesen die MESH-Normalen das Relief (das die glatte Feld-Normale verschluckt) → die
-            // Muskeln fangen Licht+Schatten unter JEDER Beleuchtung. occ ist geglättet → es schärft
-            // BREITE Anatomie, kein Facetten-Rauschen. Die Furche ist ECHT (im Feld, nicht gemalt).
-            // GETEILT: Avatar · jede Kreatur · jedes Tier fließen durch DENSELBEN Pass (die Synergie).
-            const sharpen = opts && Number.isFinite(opts.creaseSharpen) ? opts.creaseSharpen : 5.0;
-            const wMesh = opts && Number.isFinite(opts.creaseMix) ? opts.creaseMix : 0.62;
-            const nSmooth = opts && Number.isFinite(opts.normalSmooth) ? opts.normalSmooth : 3;
-            // ENTKOPPELT: die Verschiebung (sharpen, lumpen-anfällig) und der Mesh-Normal-Blend
-            // (liest das ECHTE Relief sauber) sind unabhängig. Avatar: sharpen 0 (kein Lumpen) +
-            // Mesh-Blend (Sixpack/Pec aus der echten Geometrie, viel geglättet) → sauber UND scharf.
-            if (sharpen > 0 || wMesh > 0) {
-                if (sharpen > 0) {
-                    // 1) UNSCHÄRFE-MASKE — Geometrie entlang der Feld-Normale ∝ Konkavität verschieben.
-                    //    Der Betrag ist GRÖSSEN-/AUFLÖSUNGS-SKALIERT (≈2.2 % der Modell-Spanne): ein FESTER
-                    //    Betrag zerriss die dünnen Glieder einer kleinen Kreatur bei res 64, während er den
-                    //    Avatar bei res 96 gerade trug (GEMESSEN — die Kreatur schmolz). occ·sharpen ∈
-                    //    [−1,1] ist der Anteil. Das Feld wird ZUERST geglättet (nur BREITE Anatomie, kein
-                    //    Facetten-Rauschen → kein Lumpen-Look).
-                    const dCap = span * 0.017;
-                    const dispv = new Float32Array(VC);
-                    for (let v = 0; v < VC; v++) dispv[v] = Math.max(-1, Math.min(1, occ[v] * sharpen)) * dCap;
-                    for (let it = 0; it < 2; it++) {
-                        const src = dispv.slice();
-                        for (let v = 0; v < VC; v++) {
-                            const nb = nbr[v];
-                            if (!nb.length) continue;
-                            let a = 0;
-                            for (const k of nb) a += src[k];
-                            dispv[v] = src[v] * 0.4 + (a / nb.length) * 0.6;
-                        }
-                    }
-                    for (let v = 0; v < VC; v++) {
-                        const d = dispv[v]; // occ>0 (Tal) → −n nach innen (tiefer) · occ<0 (Grat) → +n raus
-                        pA.setX(v, pA.getX(v) - nA.getX(v) * d);
-                        pA.setY(v, pA.getY(v) - nA.getY(v) * d);
-                        pA.setZ(v, pA.getZ(v) - nA.getZ(v) * d);
-                    }
-                    pA.needsUpdate = true;
-                }
-                if (wMesh > 0) {
-                    // 2) MESH-NORMALEN aus der geschärften Geometrie (Flächen-Normalen akkumuliert),
-                    //    1 Glättungspass gegen Facetten-Wobble, dann mit der sauberen Feld-Normale
-                    //    gemischt (Feld = weiche Basis, Mesh = Furchen-Detail) → Relief OHNE Müll.
-                    const nm = new Float32Array(VC * 3);
-                    for (let t = 0; t + 2 < idx.length; t += 3) {
-                        const a = idx[t],
-                            b = idx[t + 1],
-                            c = idx[t + 2];
-                        const ax = pA.getX(a),
-                            ay = pA.getY(a),
-                            az = pA.getZ(a);
-                        const ex1 = pA.getX(b) - ax,
-                            ey1 = pA.getY(b) - ay,
-                            ez1 = pA.getZ(b) - az;
-                        const ex2 = pA.getX(c) - ax,
-                            ey2 = pA.getY(c) - ay,
-                            ez2 = pA.getZ(c) - az;
-                        const fx = ey1 * ez2 - ez1 * ey2,
-                            fy = ez1 * ex2 - ex1 * ez2,
-                            fz = ex1 * ey2 - ey1 * ex2;
-                        nm[a * 3] += fx;
-                        nm[a * 3 + 1] += fy;
-                        nm[a * 3 + 2] += fz;
-                        nm[b * 3] += fx;
-                        nm[b * 3 + 1] += fy;
-                        nm[b * 3 + 2] += fz;
-                        nm[c * 3] += fx;
-                        nm[c * 3 + 1] += fy;
-                        nm[c * 3 + 2] += fz;
-                    }
-                    for (let v = 0; v < VC * 3; v += 3) {
-                        const L = Math.hypot(nm[v], nm[v + 1], nm[v + 2]) || 1;
-                        nm[v] /= L;
-                        nm[v + 1] /= L;
-                        nm[v + 2] /= L;
-                    }
-                    let nmS = nm; // Glättungspässe (Nachbar-Mittel) gegen Facetten-Wobble
-                    for (let it = 0; it < nSmooth; it++) {
-                        const src = nmS;
-                        const dst = new Float32Array(VC * 3);
-                        for (let v = 0; v < VC; v++) {
-                            const nb = nbr[v];
-                            let ax = src[v * 3],
-                                ay = src[v * 3 + 1],
-                                az = src[v * 3 + 2];
-                            for (const k of nb) {
-                                ax += src[k * 3];
-                                ay += src[k * 3 + 1];
-                                az += src[k * 3 + 2];
-                            }
-                            const L = Math.hypot(ax, ay, az) || 1;
-                            dst[v * 3] = ax / L;
-                            dst[v * 3 + 1] = ay / L;
-                            dst[v * 3 + 2] = az / L;
-                        }
-                        nmS = dst;
-                    }
-                    for (let v = 0; v < VC; v++) {
-                        let fx = nA.getX(v) * (1 - wMesh) + nmS[v * 3] * wMesh,
-                            fy = nA.getY(v) * (1 - wMesh) + nmS[v * 3 + 1] * wMesh,
-                            fz = nA.getZ(v) * (1 - wMesh) + nmS[v * 3 + 2] * wMesh;
-                        const L = Math.hypot(fx, fy, fz) || 1;
-                        nA.setXYZ(v, fx / L, fy / L, fz / L);
-                    }
-                    nA.needsUpdate = true;
-                }
-            }
-            const colors = new Float32Array(VC * 3);
-            for (let v = 0; v < VC; v++) {
-                // Boden 0.6 + moderate Stärke: ein sanftes Relief (Gelenk/Muskel lesen), das ein
-                // DUNKLES Material (Glutwesen) nicht in Schwarz erdrückt (Counter-Shading + Basis
-                // stapeln sonst zu viel) — auf hellem Avatar trotzdem klar als Mulden-Schatten.
-                // lebendiger-koerper §2½ — STÄRKERES Relief: tiefere Mulden (Muskel-/Gelenk-Furchen
-                // + die scharfen Landmark-Kanten lesen) UND ein milder Grat-Highlight (konvexe
-                // Muskel-Bäuche fangen Licht) → die Anatomie POPPT, statt im Flach-Einfarb zu
-                // ertrinken. Floor 0.58 hält ein DUNKLES Material (Glutwesen) lesbar (kein
-                // pechschwarzer Riss); der Grat-Boost ist gedeckelt (kein Über-Glanz).
-                const cav = Math.max(0, occ[v]);
-                const ridge = Math.max(0, -occ[v]); // konvex = Grat / Muskel-Bauch
-                // SEAM-GROOVE verschattet die analytische Muskel-Naht zusätzlich (Schatten IM Tal →
-                // der Sixpack/Pec liest auch bei flachem Licht, nicht nur über die Normale).
-                const seam = seamG ? seamG[v] * seamG[v] : 0; // quadriert → nur das Naht-ZENTRUM verschattet (dünne Furche, kein breiter Fleck)
-                const ao = Math.max(0.56, Math.min(1.1, 1 - cav * 1.35 + ridge * 0.45 - seam * 0.26)); // cav milder + Naht-AO dezent (Normale trägt die Definition) → keine Konvergenz-Flecken
-                colors[v * 3] = ao;
-                colors[v * 3 + 1] = ao;
-                colors[v * 3 + 2] = ao;
-            }
-            geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+            w.onerror = () => {
+                /* Worker gebrochen → künftige Anfragen fallen über _bakeSkinRequest auf sync zurück */
+            };
+            this.state._bakeWorker = w;
+            return w;
         } catch (_e) {
-            // Bake fehlgeschlagen → eine neutrale weiße AO setzen, damit das Material-attribute("color")
-            // (WebGPU-STRIKT) nie fehlt (Crash-Schutz) und die Haut einfach unverschattet bleibt.
-            const VC = geom.attributes.position.count;
-            const w = new Float32Array(VC * 3).fill(1);
-            geom.setAttribute("color", new THREE.Float32BufferAttribute(w, 3));
+            this.state._bakeWorker = null;
+            return null;
         }
-        return geom;
+    }
+
+    // → Promise<BufferGeometry|null>: backt die Skin-Geometrie OFF-THREAD über den Bäcker; ohne
+    // Worker synchron (graceful). EINE Mathe-Quelle (bake-core.js) für beide Wege; der Zusammenbau
+    // läuft durch _assembleSkinGeometry (auch eine Quelle).
+    _bakeSkinRequest(parts, opts) {
+        const w = this._ensureBakeWorker();
+        if (!w) {
+            try {
+                return Promise.resolve(this._buildCreatureSkinGeometry(parts, opts));
+            } catch (_e) {
+                return Promise.resolve(null);
+            }
+        }
+        return new Promise((resolve) => {
+            const id = ++this.state._bakeReqId;
+            this.state._bakeReqMap.set(id, (m) => {
+                if (!m || m.empty || m.error || !m.positions) {
+                    resolve(null);
+                    return;
+                }
+                resolve(this._assembleSkinGeometry(m));
+            });
+            w.postMessage({
+                type: "bake-skin",
+                requestId: id,
+                parts,
+                opts: Object.assign({ headlessResCap: this.constructor.__HEADLESS_SKIN_RES_CAP | 0 }, opts || {}),
+            });
+        });
+    }
+
+    // V18.315 — die gebackene Haut an die Kreatur-Gruppe hängen (Material + Knochen verbergen +
+    // Gesicht). GETEILT vom sync-Pfad UND dem async Worker-Callback → EINE Anhäng-Naht.
+    _attachCreatureSkin(group, soul, geom) {
+        if (!group || !soul || !geom || typeof THREE === "undefined") return;
+        try {
+            const col = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
+            let tags = null;
+            try {
+                tags = this.computeCompoundTags ? this.computeCompoundTags({ parts: soul.bodyParts }) : null;
+            } catch (_e) {
+                tags = null;
+            }
+            const mat =
+                typeof this._buildCreatureHideMaterial === "function"
+                    ? this._buildCreatureHideMaterial(col, { predator: !!soul.predator, tags })
+                    : this._buildPbrNodeMaterial
+                      ? this._buildPbrNodeMaterial({ color: col, tags })
+                      : new THREE.MeshStandardMaterial({ color: col });
+            const skin = new THREE.Mesh(geom, mat);
+            skin.userData._creatureSkin = true;
+            skin.castShadow = true;
+            // die Knochen-Teile verbergen (die Haut IST die Gestalt); ein Feature-Teil bliebe sichtbar.
+            (soul.bodyParts || []).forEach((p, i) => {
+                const ch = group.children[i];
+                if (ch) ch.visible = !!p.feature;
+            });
+            group.add(skin);
+            try {
+                this._addCreatureFace(group, soul);
+            } catch (_e) {
+                /* Gesicht optional */
+            }
+        } catch (_e) {
+            /* Anhängen fehlgeschlagen → Knochen bleiben sichtbar (kein Crash) */
+        }
     }
 
     // wahrerguss System A×B — DAS FELL/HIDE-MATERIAL (Profi-Rezept, Material-Agent): macht aus
@@ -18011,47 +17393,31 @@ class AnazhRealm {
         // alle Gesetze unberührt); die Haut ist die sichtbare Gestalt. So liest die Kreatur
         // als gewachsenes Tier statt als Kapsel-Stapel — das Detail emergiert aus dem Gesetz.
         if (soul.skin && this._buildCreatureSkinGeometry) {
-            try {
-                const geom = this._buildCreatureSkinGeometry(soul.bodyParts);
-                if (geom) {
-                    const col = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-                    // wahrerguss System B — die Haut trägt die SUBSTANZ (PBR-Pass, System A):
-                    // ein tag-getriebenes Hide-Material (fleischige Mottle/Kavität aus den
-                    // Seele-Tags) statt eines flachen Toon-Kleckses. So liest die Haut als
-                    // lebendiges Gewebe, nicht als Plastik-Lump.
-                    let tags = null;
-                    try {
-                        tags = this.computeCompoundTags ? this.computeCompoundTags({ parts: soul.bodyParts }) : null;
-                    } catch (_e) {
-                        tags = null;
-                    }
-                    const mat =
-                        typeof this._buildCreatureHideMaterial === "function"
-                            ? this._buildCreatureHideMaterial(col, { predator: !!soul.predator, tags })
-                            : this._buildPbrNodeMaterial
-                              ? this._buildPbrNodeMaterial({ color: col, tags })
-                              : new THREE.MeshStandardMaterial({ color: col });
-                    const skin = new THREE.Mesh(geom, mat);
-                    skin.userData._creatureSkin = true;
-                    skin.castShadow = true;
-                    // die Knochen-Teile verbergen (die Haut IST die Gestalt); ein Feature-Teil
-                    // (falls je eins in bodyParts wandert) bliebe sichtbar.
-                    soul.bodyParts.forEach((p, i) => {
-                        const ch = group.children[i];
-                        if (ch) ch.visible = !!p.feature;
-                    });
-                    group.add(skin); // die Haut (vor dem Gesicht eingefügt)
-                    // DAS GESICHT (wahrerguss System B) — Augen + Ohren als separate Deko-Meshes
-                    // am Kopf-Anker: NICHT in bodyParts (kein Tag-Drift), NICHT umhüllt (sichtbar).
-                    // Ein Wesen mit Augen liest sofort als lebendig.
-                    try {
-                        this._addCreatureFace(group, soul);
-                    } catch (_e) {
-                        /* Gesicht optional — kein Crash */
-                    }
+            // V18.315 — DER BÄCKER: der ~4-s-Skin-Bau lief bisher SYNCHRON pro Spawn = der Freeze.
+            // Jetzt: headless (Gate) → synchron (gate-treu, das Band sieht die Haut sofort); echte
+            // Welt → OFF-THREAD über den bake-worker (der Main-Thread bleibt frei). Die Kreatur spawnt
+            // fern im Nebel (_spawnOneInitialCreature) → ihre Haut backt unsichtbar, während sie noch
+            // fern ist; sie taucht schon-fertig aus der Distanz auf (kein Pop, kein Platzhalter).
+            const headless = !!(this.state.renderer && this.state.renderer._isHeadlessNull);
+            const worker = headless ? null : this._ensureBakeWorker();
+            if (worker) {
+                // die Knochen SOFORT verbergen (die Haut IST die Gestalt) → kein Strichmann sichtbar,
+                // während der Bäcker arbeitet; fern + im Nebel ist die Lücke ohnehin unsichtbar.
+                soul.bodyParts.forEach((p, i) => {
+                    const ch = group.children[i];
+                    if (ch) ch.visible = !!p.feature;
+                });
+                this._bakeSkinRequest(soul.bodyParts, {}).then((geom) => {
+                    if (geom && group) this._attachCreatureSkin(group, soul, geom);
+                    else if (geom && geom.dispose) geom.dispose();
+                });
+            } else {
+                try {
+                    const geom = this._buildCreatureSkinGeometry(soul.bodyParts);
+                    if (geom) this._attachCreatureSkin(group, soul, geom);
+                } catch (_e) {
+                    /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
                 }
-            } catch (_e) {
-                /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
             }
         }
         return group;
@@ -21024,7 +20390,11 @@ class AnazhRealm {
     // Boden, nicht das schlafende Heightfield). Symphonie kurz stumm (sonst N Pings).
     _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
         const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * spawnRadius;
+        // V18.315 — FERN spawnen (im Nebel, jenseits der klaren Sicht): die Haut backt off-thread,
+        // während das Wesen noch fern ist → es taucht schon-FERTIG aus der Distanz auf (wie in echt:
+        // man sieht sie nicht kommen), statt dir vor die Füße zu ploppen + dort die Haut zu bauen.
+        // (spawnRadius bleibt die Streu-Spanne oben drauf.)
+        const radius = AnazhRealm.CREATURE_SPAWN_FAR_MIN + Math.random() * Math.max(80, spawnRadius * 1.6);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
         const terrainHeight = this.getTerrainHeightAt(x, z);
@@ -74259,7 +73629,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.314.0";
+AnazhRealm.VERSION = "18.315.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77164,6 +76534,7 @@ AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach
 AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
+AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)
 AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
 // V18.313 — DAS ERWACHEN: solange noch KEIN Boden-Chunk steht (nur die Spawn-Plattform,

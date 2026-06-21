@@ -121,18 +121,8 @@
             }
         }
         if (!bones.length) return null;
-        const distSeg = (px, py, pz, a, b) => {
-            const abx = b[0] - a[0],
-                aby = b[1] - a[1],
-                abz = b[2] - a[2];
-            const ab2 = abx * abx + aby * aby + abz * abz;
-            let t = ab2 > 1e-9 ? ((px - a[0]) * abx + (py - a[1]) * aby + (pz - a[2]) * abz) / ab2 : 0;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const cx = a[0] + abx * t,
-                cy = a[1] + aby * t,
-                cz = a[2] + abz * t;
-            return Math.hypot(px - cx, py - cy, pz - cz);
-        };
+        // (V18.315: das ungenutzte `distSeg` aus dem Original wurde beim Extrahieren gekehrt —
+        // es war nie aufgerufen [die Distanz läuft über sdTaper]; keine Passagiere.)
         // wahrerguss System B — SDF + SMOOTH-MINIMUM (Inigo Quilez, der Profi-Kern, Schöpfer-
         // Recherche): jeder Knochen ist eine KAPSEL-SDF (signierte Distanz, <0 innen); smin
         // verschmilzt sie WEICH zu EINER Masse „wie aus Ton" — statt eines additiven Kugel-

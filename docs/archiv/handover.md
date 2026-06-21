@@ -378,6 +378,23 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.315 — DER BÄCKER, STUFE 2: der Freeze-Killer (Skin-Bau off-thread + Kreaturen spawnen fern)
+
+Stufe 2 schließt den Freeze-Fix ab. Der ~4-s-Skin-Bau (V18.314 gemessen) läuft jetzt OFF-THREAD; die Kreaturen tauchen aus der Distanz auf, statt dir vor die Füße zu ploppen.
+
+**DER SCHÖPFER-DIALOG, der das Design schärfte:** meine zwei ersten Optionen (Platzhalter→Haut · Pop-in) lehnte der Schöpfer ab — „Platzhalter wirkt nach erzwungenem Parallelcode; in der Realität tauchen Kreaturen aus der Ferne auf, man sieht sie nicht kommen — was machen die Besten?". Antwort (Open-World-Handwerk): **spawn fern + bau während der Anreise (off-thread) + LOD/Nebel-Enthüllung** → die Distanz+Nebel+Reisezeit IST die natürliche Tarnung, kein Darstellungs-Gewürge. Genau das wurde gebaut.
+
+**DREI HÄLFTEN (alle verifiziert):**
+1. **EINE QUELLE:** das alte 750-Zeilen-Inline `_buildCreatureSkinGeometryUncached` ist GESCHNITTEN, ersetzt durch `__bakeSkinGeometry` (bake-core, V18.314) + `_assembleSkinGeometry` (der THREE-Zusammenbau der Arrays — GETEILT von sync- UND async-Pfad). A/B-bewiesen byte-identisch (V18.314), also der Schnitt ist sicher. anazhRealm.js −~720 Zeilen.
+2. **OFF-THREAD:** `_ensureBakeWorker` (lazy, null=kein Support→sync) + `_bakeSkinRequest`→Promise (Worker-Round-Trip, transferierbare Arrays; sync-Fallback ohne Worker). `_buildCreatureGroup`: headless (Gate) → SYNCHRON (gate-treu, das „KREATUR baut"-Band sieht die Haut sofort); echte Welt → Worker (Knochen sofort verbergen → `_attachCreatureSkin` hängt die Haut ein, wenn der Bäcker liefert). `bake-worker.js` = `importScripts("bake-core.js")` → DIESELBE Mathe (kein Mirror).
+3. **SPAWN-FERN:** `_spawnOneInitialCreature` spawnt ≥`CREATURE_SPAWN_FAR_MIN`=130 m im Nebel: die Haut backt unsichtbar während das Wesen fern ist; es taucht schon-fertig aus der Distanz auf (kein Pop, kein Platzhalter — „man sieht sie nicht kommen").
+
+**LIVE-VERIFIZIERT (Fokus-Proben):** der Worker round-trippt + liefert byte-identische Geometrie zum sync-Pfad (position maxDiff=0, valide position/normal/color/index, kein Hänger, keine Page-Errors); fast-gate 13/0 (sync-Pfad baut Avatar+Kreatur via bake-core). CSP grün (`worker-src 'self'` + `script-src 'self'` decken Worker + importScripts). bake-core/bake-worker sind jetzt VOLLE Toolchain-Bürger (in lint/format/check; eslint-Worker-env erweitert; der ungenutzte `distSeg` aus dem Original gekehrt — keine Passagiere).
+
+**GATE-TREUE-DISZIPLIN:** der Worker wird in headless NIE erstellt (`_buildCreatureGroup` geht bei `_isHeadlessNull` synchron) → das Gate baut die volle Welt sofort, kein Async-Timing-Flake. **DAS FEEL (Freeze weg, ruhiges Erwachen, Kreaturen aus der Ferne) ist Schöpfer-Browser — nur die echte Hardware zeigt den GPU/Bau-Stall.**
+
+**OFFEN (Roadmap §4):** Stufe 3 (Avatar-Rig off-thread — der Boot-Build hinter dem Erwachen-Nebel, ein SkinnedMesh = kniffliger) · Stufe 4 (Bauplan-Merge `_buildArchMeshMerged` + verdeckte-Flächen-Cull AUCH in den Bäcker = eine Off-Thread-Bau-Quelle für alles).
+
 ### V18.314 — DER BÄCKER, STUFE 1: die Skin-Mathe als THREE-freie `bake-core.js` (byte-identisch bewiesen)
 
 Der Freeze-Fix beginnt. Schöpfer-Idee nach der gemessenen Diagnose: „macht es nicht Sinn, für den Bau aller Dinge einen gemeinsamen Worker zu erstellen? einen Bäcker quasi." Ja — das ist das Gesetz-#0-Prinzip auf den BAU angewandt: EINE off-thread Bau-Quelle statt N synchroner Pfade.

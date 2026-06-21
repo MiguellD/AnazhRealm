@@ -65,23 +65,26 @@ export default [
         },
     },
     {
-        files: ["voxel-worker.js"],
+        files: ["voxel-worker.js", "bake-worker.js", "bake-core.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
             globals: {
-                // Web-Worker scope
+                // Web-Worker scope (voxel-worker, bake-worker) + bake-core (geteilt: Worker + Main)
                 self: "readonly",
+                globalThis: "readonly",
                 importScripts: "readonly",
                 postMessage: "readonly",
                 onmessage: "writable",
+                URLSearchParams: "readonly",
                 SimplexNoise: "readonly",
                 Float32Array: "readonly",
                 Uint8Array: "readonly",
+                Uint32Array: "readonly",
             },
         },
         rules: {
-            "no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
         },
     },
     {
