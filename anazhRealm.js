@@ -13057,9 +13057,17 @@ class AnazhRealm {
             const fdCur =
                 st._foliageDensityScale != null ? st._foliageDensityScale : AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
             const fdStep = AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP;
+            // V18.303 — DER KALTSTART-FREEZE: das Laub ist 90 % der GPU-Last (gemessen, near
+            // mesh-scatter `_buildVoxelChunkScatter` = 2.21M Tris). Die Dichte wuchs aber, solange
+            // der Frame Luft hatte — und beim KALTSTART hat die LEERE Welt Luft → die Dichte rampte
+            // auf 1.0 BEVOR die GPU-Last da war → die ersten Chunks buken DICHT → die Startfläche
+            // ist die 2.21M-Wand → „das Bild freezt, kann mich nicht bewegen". FIX: nicht wachsen,
+            // solange die Welt noch STREAMT (Rückstau) — die Start-Chunks buken am dünnen Boden
+            // (0.22), die Dichte steigt erst, wenn die GEBAUTE Welt Kopffreiheit beweist.
+            const streamBusy = !!(st.voxelMeshPending && st.voxelMeshPending.size > 0);
             st._foliageDensityScale =
                 fdTarget > fdCur
-                    ? st._frameOverBudget
+                    ? st._frameOverBudget || streamBusy
                         ? fdCur
                         : Math.min(fdTarget, fdCur + fdStep)
                     : Math.max(fdTarget, fdCur - fdStep * 2);
@@ -48714,8 +48722,12 @@ class AnazhRealm {
                     tf.scale,
                     tint,
                     // V18.300 — der REGION-Key (regX,regZ) macht die Streu-Gruppe lokal +
-                    // frustum-cullbar; null wenn das Flag aus ist (globale Gruppe, alt).
-                    this.state.useRegionFoliageCull !== false ? regX + "," + regZ : null
+                    // frustum-cullbar. V18.303 — NUR für NAHES Laub (LOD0): das Per-Region-
+                    // Keying half beim Drehen, aber es sprengte die Draw-Calls (426→1693, allein
+                    // ~1000 winzige LOD2-Fern-Gruppen mit ~2 Instanzen, GEMESSEN). Das FERNE
+                    // Laub (LOD1/2) bleibt GLOBAL (wenige Gruppen, frustumCulled=false) — es ist
+                    // ohnehin meist im Blick + winzig, der Cull lohnt den Draw-Call-Preis nicht.
+                    this.state.useRegionFoliageCull !== false && lod === 0 ? regX + "," + regZ : null
                 );
                 if (!slots) continue;
                 region.cells.push({
@@ -74094,7 +74106,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.302.0";
+AnazhRealm.VERSION = "18.303.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -74517,7 +74529,7 @@ AnazhRealm.SCATTER = Object.freeze({
             // V18.296 (Schöpfer-Anordnung, 20+ Versionen überfällig: „sehe immernoch
             // hunderte Bäume … wir gehen runter"): cap 300→90 (~2.6 Bäume/Chunk =
             // offenes Waldland, freie Sicht auf Terrain/Fels/Substanz). REVERSIBEL.
-            cap: 90,
+            cap: 55, // V18.303 90→55: das Laub war 90 % der GPU-Last (gemessen) + Schöpfer „zu viele Bäume, sonst kaum was"
             floor: 0.1,
             scaleBase: 0.6,
             scaleVar: 1.5,
@@ -74533,7 +74545,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "under",
             cellM: 2.4,
-            cap: 70, // V18.296 250→70 (mit den Bäumen entlastet — weniger Gestrüpp, mehr Sicht)
+            cap: 40, // V18.303 70→40 (das Laub = 90 % der GPU-Last); V18.296 250→70
             floor: 0.06,
             scaleBase: 0.8,
             scaleVar: 0.5,
@@ -74546,7 +74558,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "litter",
             cellM: 2.8,
-            cap: 40, // V18.296 150→40 (Totholz mit-entlastet)
+            cap: 22, // V18.303 40→22 (das Laub = 90 % der GPU-Last); V18.296 150→40
             floor: 0.04,
             scaleBase: 0.8,
             scaleVar: 0.4,
@@ -74561,7 +74573,7 @@ AnazhRealm.SCATTER = Object.freeze({
         Object.freeze({
             name: "rock",
             cellM: 2.6,
-            cap: 350,
+            cap: 110, // V18.303 350→110: 350 Kiesel/Region = absurd viele Instanzen für winzigen Look-Wert (der größte Instanz-Posten nach den Bäumen)
             floor: 0.02,
             scaleBase: 0.6,
             scaleVar: 1.0,
@@ -77005,7 +77017,7 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // spärliche Welt, die nie dicht genug zum Freezen wird; in den Lücken wächst die Dichte zurück.
 // Build-zeit (greift beim Streamen/Spawn). Headless → 1 (volle Dichte fürs Gate). MIN 0.4 =
 // 40 % bei voller Last (spärlich, aber nicht kahl — der Schöpfer richtet den Look, Regel #0).
-AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.4;
+AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 90 % der GPU-Last (gemessen 2.21M Tris) → eine kämpfende GPU darf es weiter ausdünnen (perf-gated: starke Hardware bleibt voll)
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).

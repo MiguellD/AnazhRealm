@@ -378,6 +378,19 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.303 — DAS LAUB IST 90 % DER GPU-LAST: der Kaltstart-Freeze an der Wurzel
+
+Der Schöpfer, am Ende der Geduld („das bild freezt und ich kann mich nicht bewegen, gar nichts behoben bisher … wenn es nichtmehr die cpu ist dann muss es ja die gpu sein, und dort erkennst du ja was wieviel zieht oder willst du mich hobs nehmen"). RECHT — die GPU-Render-Last (was wieviel zieht) IST headless messbar (`diag-render-load`), ich hätte gleich messen statt Konsolen-Tests verlangen sollen.
+
+**GEMESSEN (`diag-render-load`, volle 81-Chunk-Welt): das Laub ist 90 % der GPU-Last** — 2.91M Dreiecke / 1822 Draw-Calls/Frame, davon **2.21M Tris / 61k Instanzen = das near mesh-scatter (`_buildVoxelChunkScatter`)**. NICHT das Terrain (0.27M), nicht der Nexus, nicht die Kreaturen. Plus: **mein V18.300 hatte es teils verschlimmert** — das Per-Region-Keying machte aus ~426 Gruppen 1263 (allein ~1000 winzige LOD2-Fern-Gruppen) → Draw-Calls 426→1693.
+
+**DREI gemessene Fixes:**
+1. **Per-Region-Split NUR für NAHES Laub (LOD0):** das ferne Laub (LOD1/2, winzig + meist im Blick) bleibt global → **Draw-Calls 1822→940 (−48 %), archInstanceGroups 1263→383 (GEMESSEN).** V18.300s Draw-Call-Explosion rückgängig, der Nah-Cull bleibt.
+2. **DER KALTSTART-FREEZE (die Wurzel):** das near-scatter wuchs auf VOLLE Dichte, weil die LEERE Boot-Welt Frame-Luft hat → die Dichte rampte auf 1.0 BEVOR die GPU-Last da war → die ersten Chunks buken DICHT (2.21M) → die Startfläche ist die Wand → „kann mich nicht bewegen". FIX: `_foliageDensityScale` wächst NICHT mehr, solange die Welt noch STREAMT (`voxelMeshPending > 0`) — die Start-Chunks buken am dünnen Boden, die Dichte steigt erst, wenn die GEBAUTE Welt Kopffreiheit beweist. BEWIESEN (`diag-foliage-density.cjs`, Szenario B+C). Plus Boden `PERF_FOLIAGE_DENSITY_MIN` 0.4→0.22 (eine kämpfende GPU darf weiter ausdünnen).
+3. **Scatter-Caps gesenkt** (tree 90→55, under 70→40, litter 22, rock 350→110) — die `_scatterPass`/HISM-Hälfte (345.9k→164k); die Caps waren NICHT der 2.21M-Hebel (das ist die Dichte), aber harmlos + Schöpfer-Befund „zu viele Bäume".
+
+**MESS-LEHRE (zentral): das Laub ist in MEHRERE Instanz-Systeme fragmentiert** — `_scatterPass`→`_archInstanceGroupFor` (HISM, `archInstanceKey`, region-keyed) UND `_buildVoxelChunkScatter`→`_acquireScatterMesh` (kein `archInstanceKey`, per-Chunk) UND `_tickDekoFernfeld` (Impostor, 4 Tris). Der diag-Kategorie-Split ist `archInstanceKey ? "hism" : isInstancedMesh ? "scatter" : "rest"`. Die 2.21M sind die „scatter"-Kategorie (`_buildVoxelChunkScatter`) — meine ersten Cap-Cuts trafen die FALSCHE Hälfte (HISM), erst die Dichte trifft den 2.21M-Posten. Schnell-Gate 13/0. FPS-Beweis bleibt der Schöpfer-Browser.
+
 ### V18.302 — DER NEXUS ATMET MIT DER LAST: die endlose Evolution-Churn beruhigt
 
 Der Schöpfer-Browser-Log (V18.301.0 live): **FPS 34 → 10 → 37** + eine Flut von `Nexus-Evolution (Regel/DSL)`-Zeilen (`evo_28` … `evo_48` in kurzer Folge) + Grok-Geplapper „Ich habe etwas verschoben". Das ist die „endlose Nexus-Churn", die der Schöpfer schon in V18.296 nie wollte.
