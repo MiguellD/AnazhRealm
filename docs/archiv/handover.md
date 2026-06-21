@@ -378,6 +378,27 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.316 — DER BÄCKER, STUFE 3: der Avatar off-thread (der letzte Skin-Freeze ist tot)
+
+Stufe 3 schließt den Freeze-Bogen. Der Avatar-Skin war der EINE Bau, der V18.315 noch übrig liess — er backt jetzt auch off-thread, durch dieselbe Bäcker-Quelle.
+
+**DIE WURZEL:** der Avatar ist kein einfaches Mesh wie die Kreatur, sondern ein **SkinnedMesh-Rig** (`_buildHumanoidRig`) — Bones + Skeleton + per-Vertex-skinIndex/skinWeight. Der ~4-s-Haut-Isosurface-Bau lief synchron am Boot (hinter dem Erwachen-Nebel V18.313 verborgen, aber er fror den ersten Frame). Die async-Umstellung ist kniffliger als bei der Kreatur (das Skeleton-Binding hängt an der gebauten Geometrie).
+
+**DIE TEILUNG (`_buildHumanoidRig`):**
+1. **SOFORT, mesh-unabhängig:** Parts/Bones/byName/Segs/Rig + `_addHumanoidFace` (auf den Kopf-Bone — braucht keine Haut). Das ist billig.
+2. **OFF-THREAD:** die ~4-s-Haut via `_bakeSkinRequest(parts, avatarOpts)` (DERSELBE Bäcker wie die Kreatur — eine Quelle).
+3. **`finishSkin(geom)`-Closure:** oy-Translate · skinIndex/skinWeight per-Vertex (Top-4-Bones, inverse-quadratisch) · SkinnedMesh · `mesh.add(bones[0])` · `mesh.bind(skeleton)` — läuft, wenn der Bäcker liefert.
+
+**DER CALLER (`_buildHumanGroup`):** `if (built.mesh) attachMesh(built.mesh)` (sync/headless) `else { group.add(built.bones[0]); built.skinPromise.then(attachMesh); }` — die Bones+das Gesicht hängen sofort an der Gruppe, die SkinnedMesh wird eingewechselt, wenn sie fertig backt.
+
+**WARUM DAS UNSICHTBAR IST:** in First-Person sieht man den eigenen Körper nicht → die kurze Haut-Verzögerung am Boot ist für den Schöpfer unsichtbar, der 4-s-Frame-Freeze verschwindet.
+
+**LIVE-VERIFIZIERT (Fokus-Probe, Worker-Pfad erzwungen):** Bones+Rig sofort (17 Bones), Haut async als geriggte SkinnedMesh (skinWeight/skinIndex/skeleton vorhanden, bones unter der Mesh re-parentet), byte-identisch zum sync-Pfad (maxDiff=0), kein Hänger, keine Page-Errors; fast-gate 13/0 (der sync-Avatar baut). **GATE-TREUE:** headless → `built.mesh` synchron (kein Worker), das Gate baut den Avatar sofort.
+
+**DAMIT SIND ALLE SKIN-BAUTEN OFF-THREAD** (Kreaturen V18.315 + Avatar V18.316) — der ~4-s-Freeze-pro-Skin ist überall weg, **der Freeze-Bogen ist geschlossen.** **DAS FEEL (Freeze tot, ruhiges Erwachen) ist Schöpfer-Browser — nur deine Hardware zeigt den echten GPU/Bau-Stall.**
+
+**OFFEN (Roadmap §4):** Stufe 4 (Bauplan-Merge `_buildArchMeshMerged` + verdeckte-Flächen-Cull AUCH in den Bäcker = eine Off-Thread-Bau-Quelle für ALLE schweren Bauten — eine Optimierung, kein Freeze-Fix mehr).
+
 ### V18.315 — DER BÄCKER, STUFE 2: der Freeze-Killer (Skin-Bau off-thread + Kreaturen spawnen fern)
 
 Stufe 2 schließt den Freeze-Fix ab. Der ~4-s-Skin-Bau (V18.314 gemessen) läuft jetzt OFF-THREAD; die Kreaturen tauchen aus der Distanz auf, statt dir vor die Füße zu ploppen.

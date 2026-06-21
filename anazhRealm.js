@@ -16997,9 +16997,16 @@ class AnazhRealm {
         if (typeof THREE === "undefined" || typeof THREE.SkinnedMesh !== "function") return null;
         g = g || {};
         const kh = g.kh || 1;
+        const oy = g.oy || 0;
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
         const parts = AnazhRealm._humanoidSkeleton(g);
-        const geom = this._buildCreatureSkinGeometry(parts, {
+        // V18.316 — DER BÄCKER (Stufe 3): die Avatar-HAUT (res ~AVATAR_SKIN_RES, ~4-s-Isosurface) war
+        // der letzte synchrone Boot-Block. Jetzt bauen die Bones + das Gesicht SOFORT (billig); die
+        // Haut backt OFF-THREAD (echte Welt, über den bake-worker) bzw. SYNCHRON (headless = gate-treu).
+        // In First-Person sieht man den eigenen Körper ohnehin nicht → die kurze Haut-Verzögerung ist
+        // unsichtbar, der 4-s-Frame-Freeze verschwindet. (HAUT-opts: res 128-Klasse, taubin 8 = glatt,
+        // seamGroove 3 breit = weiche Muskel-Schatten, normalRelax 2 = ruhige Schulter/Brust-Normale.)
+        const avatarOpts = {
             res: AnazhRealm.AVATAR_SKIN_RES,
             taubinPasses: 8,
             creaseSharpen: 0,
@@ -17011,20 +17018,9 @@ class AnazhRealm {
             displace: true,
             dispCap: 0.34,
             normalRelax: 2,
-        }); // Avatar HAUT: res 128 (176 löste Finger im Close-Up auf, riss aber dünne Brücken wie die Klavikel auf → die Hand braucht LOKALE Res, kein globaler Bump); taubin 8 = GLATTE Haut; seamGroove 3 + breit (0.15) = WEICHE Muskel-Schatten statt Risse; normalRelax 2 = beruhigt die Feld-Normale am dichten Schulter/Brust-Stapel (kein lumpiges Schattieren); dispCap 0.34 = sanfte Schwellung
-        if (!geom) return null;
-        // oy = Welt-Versatz (Sohle an die richtige Höhe; der Spieler-Avatar braucht die
-        // Füße ~−0.5 unter dem Mesh-Ursprung). Geometrie UND Bone-Spec gleich verschieben
-        // → die Skinning-Distanzen bleiben konsistent.
-        const oy = g.oy || 0;
-        if (oy && typeof geom.translate === "function") geom.translate(0, oy, 0);
-        // ── Bone-Spezifikation (Welt = Mesh-Lokal in Bind-Pose, in KH·kh): [name, parent,
-        //    Gelenk-Pos, Segment-Ende (für die Skinning-Distanz, deckt das Glied ab)] ──
-        // Bone-Spezifikation aus der EINEN gemessenen Landmark-Quelle (`_humanoidLandmarks`) —
-        //    DIESELBE, die `_humanoidSkeleton` die Haut-Parts gibt. So sitzen die Skinning-Bones
-        //    per Konstruktion IM Fleisch (Schulter/Hüfte stimmen mit der Haut überein). Früher trug
-        //    das Rig eine zweite, leicht abweichende Magic-Number-Liste (Schulter 0.92 vs. Haut 1.12,
-        //    Hüfte 0.42 vs. 0.547) → ein Parallel-Pfad, der die Achsel-/Hand-Skinning-Risse nährte.
+        };
+        // ── Bone-Spezifikation aus der EINEN Landmark-Quelle (_humanoidLandmarks) — dieselbe, die
+        //    _humanoidSkeleton die Haut-Parts gibt (Skinning-Bones sitzen per Konstruktion im Fleisch).
         const J = AnazhRealm._humanoidLandmarks(g).joint;
         const spec = [
             ["hips", null, J("hips"), [0, 4.55, 0]],
@@ -17064,17 +17060,26 @@ class AnazhRealm {
             bones.push(b);
             segs.push({ a: wp, b: sc(se) });
         }
-        // ── SKINNING — pro Vertex die 2 nächsten Bone-Segmente, invers-quadratisch gewichtet
-        //    (weiche Gelenk-Mischung; smin hat das Feld dort schon glatt geblendet) ──
-        const pos = geom.attributes.position;
-        const VN = pos.count;
-        const skinIndex = new Uint16Array(VN * 4);
-        const skinWeight = new Float32Array(VN * 4);
-        // wahrerguss System B — der GELENK-BLEND (eps): ein invers-quadratisches Gewicht mit
-        // WINZIGEM eps macht die Mischung an Gelenken fast binär (der nächste Bone dominiert) →
-        // unter Animation REISST die dünne Haut am Knie/Ellbogen (das Schienbein „löst sich"). Ein
-        // eps ∝ Glied-Maß (≈ ein Glied-Radius²) verbreitert das Mischband über das Gelenk → die
-        // Haut biegt glatt mit, statt zu scheren. DER Fix gegen den Strichmann-in-Bewegung.
+        const rig = {
+            hips: byName.hips,
+            spine: byName.spine,
+            chest: byName.chest,
+            neck: byName.neck,
+            head: byName.head,
+            armL: { shoulder: byName.shoulderL, elbow: byName.elbowL, wrist: byName.wristL },
+            armR: { shoulder: byName.shoulderR, elbow: byName.elbowR, wrist: byName.wristR },
+            legL: { hip: byName.hipL, knee: byName.kneeL, ankle: byName.ankleL },
+            legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
+            kh,
+        };
+        // DAS GESICHT — als Kind des KOPF-Bones (mesh-unabhängig → SOFORT, billig; folgt der Kopf-Pose).
+        try {
+            this._addHumanoidFace(rig, kh, oy, skinCol, g.hairColor);
+        } catch (_e) {
+            /* Gesicht optional — kein Crash */
+        }
+        // ── SKINNING-Helfer: pro Vertex die 4 nächsten Bone-Segmente, invers-quadratisch (weicher
+        //    Gelenk-Blend; eps ∝ Glied-Maß verbreitert das Mischband → die Haut biegt glatt mit). ──
         const wEps = 0.27 * kh * (0.27 * kh);
         const dSeg2 = (px, py, pz, s) => {
             const ax = s.a[0],
@@ -17091,77 +17096,75 @@ class AnazhRealm {
                 dz = pz - (az + abz * t);
             return dx * dx + dy * dy + dz * dz;
         };
-        for (let i = 0; i < VN; i++) {
-            const px = pos.getX(i),
-                py = pos.getY(i),
-                pz = pos.getZ(i);
-            // die 4 NÄCHSTEN Bone-Segmente (top-4 → weiche Gelenk-Mischung, kein Schulter-Riss)
-            const bd = [-1, -1, -1, -1],
-                bv = [1e18, 1e18, 1e18, 1e18];
-            for (let b = 0; b < segs.length; b++) {
-                const d = dSeg2(px, py, pz, segs[b]);
-                if (d < bv[3]) {
-                    let p = 3;
-                    while (p > 0 && d < bv[p - 1]) {
-                        bv[p] = bv[p - 1];
-                        bd[p] = bd[p - 1];
-                        p--;
+        // ── finishSkin: gegeben die GEBACKENE Geometrie → skinWeights + SkinnedMesh + bind. Geteilt
+        //    vom sync- UND async-Pfad (der oy-Translate sitzt hier, damit Haut + Bone-Segs in EINEM
+        //    Raum [KH·kh + oy] liegen). ──
+        const finishSkin = (geom) => {
+            if (!geom) return null;
+            if (oy && typeof geom.translate === "function") geom.translate(0, oy, 0);
+            const pos = geom.attributes.position;
+            const VN = pos.count;
+            const skinIndex = new Uint16Array(VN * 4);
+            const skinWeight = new Float32Array(VN * 4);
+            for (let i = 0; i < VN; i++) {
+                const px = pos.getX(i),
+                    py = pos.getY(i),
+                    pz = pos.getZ(i);
+                const bd = [-1, -1, -1, -1],
+                    bv = [1e18, 1e18, 1e18, 1e18];
+                for (let b = 0; b < segs.length; b++) {
+                    const d = dSeg2(px, py, pz, segs[b]);
+                    if (d < bv[3]) {
+                        let p = 3;
+                        while (p > 0 && d < bv[p - 1]) {
+                            bv[p] = bv[p - 1];
+                            bd[p] = bd[p - 1];
+                            p--;
+                        }
+                        bv[p] = d;
+                        bd[p] = b;
                     }
-                    bv[p] = d;
-                    bd[p] = b;
+                }
+                let sum = 0;
+                const w = [0, 0, 0, 0];
+                for (let k = 0; k < 4; k++)
+                    if (bd[k] >= 0) {
+                        w[k] = 1 / (bv[k] + wEps);
+                        sum += w[k];
+                    }
+                for (let k = 0; k < 4; k++) {
+                    skinIndex[i * 4 + k] = bd[k] >= 0 ? bd[k] : 0;
+                    skinWeight[i * 4 + k] = sum > 0 ? w[k] / sum : k === 0 ? 1 : 0;
                 }
             }
-            let sum = 0;
-            const w = [0, 0, 0, 0];
-            for (let k = 0; k < 4; k++)
-                if (bd[k] >= 0) {
-                    w[k] = 1 / (bv[k] + wEps); // invers-quadratisch (bv ist schon d²); eps ∝ Glied-Maß → weicher Gelenk-Blend
-                    sum += w[k];
-                }
-            for (let k = 0; k < 4; k++) {
-                skinIndex[i * 4 + k] = bd[k] >= 0 ? bd[k] : 0;
-                skinWeight[i * 4 + k] = sum > 0 ? w[k] / sum : k === 0 ? 1 : 0;
-            }
-        }
-        geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
-        geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
-        // Boxer-Brief-Zone in GEOMETRIE-lokal (Skelett in KH·kh, + oy-Translate): Bund auf der
-        // Taille (~4.45 KH), Saum am Leisten-/Oberschenkel-Übergang (~3.5 KH) → die Haut-Shorts.
-        const mat = this._buildCreatureHideMaterial(skinCol, {
-            tags: g.tags || null,
-            skin: true,
-            shortsY: [3.66 * kh + (g.oy || 0), 4.5 * kh + (g.oy || 0)], // Saum HÖHER (über den Schenkel-Fronten) → die Briefs decken Becken/Leiste, nicht die Quad-Beulen
-            shortsX: 0.95 * kh, // nur das zentrale Becken (Hände ruhen weiter aussen auf Hüfthöhe)
-        });
-        const mesh = new THREE.SkinnedMesh(geom, mat);
-        mesh.castShadow = true;
-        mesh.userData._creatureSkin = true;
-        mesh.add(bones[0]); // root (hips) als Kind der Mesh — Pflicht
-        mesh.updateMatrixWorld(true); // Bone-Welt-Matrizen VOR Skeleton/bind berechnen
-        const skeleton = new THREE.Skeleton(bones);
-        mesh.bind(skeleton);
-        const rig = {
-            hips: byName.hips,
-            spine: byName.spine,
-            chest: byName.chest,
-            neck: byName.neck,
-            head: byName.head,
-            armL: { shoulder: byName.shoulderL, elbow: byName.elbowL, wrist: byName.wristL },
-            armR: { shoulder: byName.shoulderR, elbow: byName.elbowR, wrist: byName.wristR },
-            legL: { hip: byName.hipL, knee: byName.kneeL, ankle: byName.ankleL },
-            legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
-            kh,
+            geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
+            geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
+            const mat = this._buildCreatureHideMaterial(skinCol, {
+                tags: g.tags || null,
+                skin: true,
+                shortsY: [3.66 * kh + oy, 4.5 * kh + oy],
+                shortsX: 0.95 * kh,
+            });
+            const mesh = new THREE.SkinnedMesh(geom, mat);
+            mesh.castShadow = true;
+            mesh.userData._creatureSkin = true;
+            mesh.add(bones[0]); // root (hips) als Kind der Mesh — Pflicht
+            mesh.updateMatrixWorld(true); // Bone-Welt-Matrizen VOR Skeleton/bind
+            const skeleton = new THREE.Skeleton(bones);
+            mesh.bind(skeleton);
+            rig._skeleton = skeleton;
+            return mesh;
         };
-        // DAS GESICHT — Augen + Nase + Brauen als Kind des KOPF-Bones (folgen der Kopf-Bewegung).
-        // Ein Humanoid ohne Augen liest als Schaufensterpuppe; das Gesicht macht ihn lebendig.
-        try {
-            this._addHumanoidFace(rig, kh, oy, skinCol, g.hairColor);
-        } catch (_e) {
-            /* Gesicht optional — kein Crash */
+        // ── sync (headless / kein Worker) ODER async (echte Welt + Worker) ──
+        const headless = !!(this.state.renderer && this.state.renderer._isHeadlessNull);
+        const worker = headless ? null : this._ensureBakeWorker();
+        if (worker) {
+            const skinPromise = this._bakeSkinRequest(parts, avatarOpts).then((geom) => finishSkin(geom));
+            return { mesh: null, bones, rig, kh, skinPromise };
         }
-        // SHORTS sind jetzt AUF DIE HAUT GEMALT (weiße Y-Band-Zone im Hide-Material, shortsY) —
-        // perfekt anliegend mit natürlichen Bein-Öffnungen; die alte Tube-Geometrie beulte als Rock.
-        return { mesh, skeleton, bones, rig, kh };
+        const geomSync = this._buildCreatureSkinGeometry(parts, avatarOpts);
+        const meshSync = finishSkin(geomSync);
+        return { mesh: meshSync, skeleton: rig._skeleton, bones, rig, kh };
     }
 
     // wahrerguss System B (GUSS 3) — DAS HUMANOIDE GESICHT: Augen (dunkel, glänzend, mit Catch-
@@ -45551,29 +45554,43 @@ class AnazhRealm {
         // realistische Haut wie die Referenzbilder). Ein warmer natürlicher Hautton; das alte rote
         // 0xc0392b war ein Sediment-Bug, kein Identitäts-Wille.
         const skinTint = 0xc89372;
-        let rig = null;
+        let built = null;
         try {
-            rig = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint });
+            built = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint });
         } catch (_e) {
-            rig = null;
+            built = null;
         }
-        if (rig && rig.mesh) {
-            rig.mesh.receiveShadow = true;
-            group.add(rig.mesh);
-            group.userData.skinnedMesh = rig.mesh;
-            group.userData.rig = rig.rig;
-            group.userData.material = rig.mesh.material;
+        if (built && built.rig) {
+            // V18.316 — die Bones + das Gesicht stehen SOFORT (animierbar, equip-fähig); die Haut
+            // (SkinnedMesh) kommt synchron (headless) ODER off-thread (echte Welt, der Bäcker).
+            group.userData.rig = built.rig;
             group.userData.parts = {
-                torso: rig.rig.chest,
-                head: rig.rig.head,
-                leftArm: rig.rig.armL.wrist,
-                rightArm: rig.rig.armR.wrist,
-                leftLeg: rig.rig.legL.hip,
-                rightLeg: rig.rig.legR.hip,
+                torso: built.rig.chest,
+                head: built.rig.head,
+                leftArm: built.rig.armL.wrist,
+                rightArm: built.rig.armR.wrist,
+                leftLeg: built.rig.legL.hip,
+                rightLeg: built.rig.legR.hip,
             };
+            const attachMesh = (mesh) => {
+                if (!mesh) return;
+                mesh.receiveShadow = true;
+                group.add(mesh); // finishSkin hat bones[0] schon unter die Mesh gehängt + gebunden
+                group.userData.skinnedMesh = mesh;
+                group.userData.material = mesh.material;
+            };
+            if (built.mesh) {
+                attachMesh(built.mesh); // sync (headless): die Haut steht sofort
+            } else {
+                // async: die Bones/Gesicht SOFORT in die Gruppe (sichtbar + animierbar, in
+                // First-Person ohnehin unsichtbar); der Bäcker liefert die Haut → attachMesh
+                // re-parentet bones[0] unter die Mesh (in finishSkin) + hängt die Mesh ein.
+                if (built.bones && built.bones[0]) group.add(built.bones[0]);
+                if (built.skinPromise && built.skinPromise.then) built.skinPromise.then(attachMesh);
+            }
             return group;
         }
-        // Kein SkinnedMesh (in der vendored r184/WebGPU nie der Fall) → leere Gruppe statt des
+        // Kein Rig (in der vendored r184/WebGPU nie der Fall) → leere Gruppe statt des
         // alten Box-Toon-Avatars (rotes Sediment 0xc0392b + _refreshToonGradient, beides
         // gestrichen — PBR ist die EINE Wahrheit). _buildHumanoidRig ist die EINE Quelle.
         return group;
@@ -73629,7 +73646,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.315.0";
+AnazhRealm.VERSION = "18.316.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
