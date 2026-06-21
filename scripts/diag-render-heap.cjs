@@ -1,8 +1,13 @@
 // V18.317 — Diag: WIE VIEL HEAP/ARRAYBUFFER FRISST DER ECHTE RENDERER? (Schöpfer-Heap-Snapshot
 // 19.558 ArrayBuffer/322 MB, aber die JS-Geometrie ist nur ~32 MB/4081 Buffer [diag-buffer-census]
 // → die 5×-Lücke muss renderer-seitig sein [WebGPU uniform/bind-group/staging buffer]). Beweis:
-// Heap + ArrayBuffer-Zahl GESTUBBT (kein Render) vs nach N ECHTEN swiftshader-Frames messen.
+// Heap + ArrayBuffer-Zahl GESTUBBT (kein Render) vs nach N ECHTEN Frames messen.
 // ArrayBuffer-Zahl via CDP Runtime.queryObjects (zählt LEBENDE ArrayBuffer-Instanzen).
+//
+// ⚠️ ECHTE-GPU-WERKZEUG: swiftshader im CI-Container braucht >2 min/Frame für die ~2,5-M-Dreieck-
+// Szene → das CDP-protocolTimeout reißt (gemessen V18.317). Auf einer ECHTEN GPU (Schöpfer-
+// Maschine) läuft es flüssig + zeigt den renderer-seitigen ArrayBuffer-Sprung direkt. Im
+// Container ist die JS-Wahrheit `diag-buffer-census` (render-frei, gate-treu) maßgeblich.
 const puppeteer = require("puppeteer"),
     http = require("http"),
     fs = require("fs"),
@@ -31,7 +36,7 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,
-        protocolTimeout: 360000,
+        protocolTimeout: Number(process.env.DIAG_PROTO_MS) || 900000,
         args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--no-sandbox", "--disable-setuid-sandbox", "--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
@@ -91,36 +96,52 @@ const server = http.createServer((req, res) => {
     const h0 = await heap();
     console.log(`\n  GESTUBBT (kein echter Render): Heap ${h0} MB · ArrayBuffer ${ab0.n} (${ab0.mb} MB)`);
 
-    // Echte swiftshader-Frames rendern (lazy WebGPU-Backend allokiert uniform/bind-group buffer)
-    const N = Number(process.env.DIAG_FRAMES) || 8;
-    const frameMs = await page.evaluate(async (N) => {
-        const r = window.anazhRealm,
-            s = r.state;
-        const real = window.__realRender;
-        if (!real || !s.scene || !s.camera) return -1;
-        s.renderer.render = real; // un-stub
-        const ts = [];
-        for (let i = 0; i < N; i++) {
-            const t = performance.now();
-            try {
-                r._gameLoopTick(performance.now());
-            } catch (_e) {}
-            ts.push(+(performance.now() - t).toFixed(0));
-            await new Promise((res) => setTimeout(res, 2));
-        }
-        return ts.join(",");
-    }, N);
-    console.log(`  ${N} echte Frames gerendert (ms je Frame): ${frameMs}`);
+    // Echte Frames rendern (lazy WebGPU-Backend allokiert uniform/bind-group buffer). Auf
+    // swiftshader extrem langsam (>2 min/Frame für ~2,5 M Dreiecke) → graceful, nicht crashen.
+    const N = Number(process.env.DIAG_FRAMES) || 3;
+    let frameMs = "-1",
+        renderOk = false;
+    try {
+        frameMs = await page.evaluate(async (N) => {
+            const r = window.anazhRealm,
+                s = r.state;
+            const real = window.__realRender;
+            if (!real || !s.scene || !s.camera) return -1;
+            s.renderer.render = real; // un-stub
+            const ts = [];
+            for (let i = 0; i < N; i++) {
+                const t = performance.now();
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                ts.push(+(performance.now() - t).toFixed(0));
+                await new Promise((res) => setTimeout(res, 2));
+            }
+            return ts.join(",");
+        }, N);
+        renderOk = frameMs !== "-1";
+        console.log(`  ${N} echte Frames gerendert (ms je Frame): ${frameMs}`);
+    } catch (e) {
+        console.log(`  ⚠️ ECHTER RENDER abgebrochen (${String(e).split("\n")[0]}).`);
+        console.log(`     swiftshader ist für diese Szene zu langsam → auf einer ECHTEN GPU laufen lassen`);
+        console.log(`     (oder DIAG_PROTO_MS höher). Die JS-Wahrheit liefert diag-buffer-census (render-frei).`);
+    }
 
-    const ab1 = await countArrayBuffers();
-    const h1 = await heap();
-    console.log(`  NACH ECHTEM RENDER: Heap ${h1} MB · ArrayBuffer ${ab1.n} (${ab1.mb} MB)`);
-    console.log(`\n  ===== VERDIKT =====`);
-    console.log(`  Δ ArrayBuffer durch den Renderer: +${ab1.n - ab0.n} (+${(ab1.mb - ab0.mb).toFixed(1)} MB) · Δ Heap +${h1 - h0} MB`);
-    console.log(
-        `  → ${ab1.n - ab0.n > 2000 ? "RENDERER-SEITIG bestätigt: der echte WebGPU-Renderer allokiert tausende ArrayBuffer (uniform/bind-group/staging) — die JS-Geometrie ist nur ~4081." : "Renderer fügt wenig hinzu — die Buffer leben anderswo."}`
-    );
-    console.log(`\n  (Schöpfer-Snapshot: 19.558 ArrayBuffer / 322 MB. Hier swiftshader ≈ relativ, nicht absolut.)\n`);
+    if (renderOk) {
+        try {
+            const ab1 = await countArrayBuffers();
+            const h1 = await heap();
+            console.log(`  NACH ECHTEM RENDER: Heap ${h1} MB · ArrayBuffer ${ab1.n} (${ab1.mb} MB)`);
+            console.log(`\n  ===== VERDIKT =====`);
+            console.log(`  Δ ArrayBuffer durch den Renderer: +${ab1.n - ab0.n} (+${(ab1.mb - ab0.mb).toFixed(1)} MB) · Δ Heap +${h1 - h0} MB`);
+            console.log(
+                `  → ${ab1.n - ab0.n > 2000 ? "RENDERER-SEITIG bestätigt: der echte WebGPU-Renderer allokiert tausende ArrayBuffer (uniform/bind-group/staging) — die JS-Geometrie ist nur ~4081." : "Renderer fügt wenig hinzu — die Buffer leben anderswo."}`
+            );
+            console.log(`\n  (Schöpfer-Snapshot: 19.558 ArrayBuffer / 322 MB. Hier swiftshader ≈ relativ, nicht absolut.)\n`);
+        } catch (e) {
+            console.log(`  ⚠️ Nachmessung fehlgeschlagen (${String(e).split("\n")[0]}).`);
+        }
+    }
 
     await browser.close();
     server.close();
