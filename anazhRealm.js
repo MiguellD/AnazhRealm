@@ -65201,7 +65201,13 @@ class AnazhRealm {
     }
 
     _workshopRenderBlueprintList(list, ws) {
-        const blueprintNames = Object.keys(this.state.blueprints);
+        // V18.317 — die auto-gewachsenen Streaming-VARIANTEN (`grown_<art>_v<N>`,
+        // V18.258/259) sind RENDER-Details des Worldgen, KEINE editierbaren Baupläne;
+        // sie verstopften die Werkstatt (gemessen: ~585 Einträge in einem geladenen
+        // Stand) und begruben die ~15 sauberen SPEZIES (`baum_eiche` …). Sie hier
+        // ausblenden → die Werkstatt zeigt wieder die manipulierbaren Arten + eigenen
+        // Baupläne. Die Spezies (kein `grown_`-Präfix) + alle User-Baupläne bleiben.
+        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => !String(n).startsWith("grown_"));
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {
