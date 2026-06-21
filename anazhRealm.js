@@ -31992,13 +31992,19 @@ class AnazhRealm {
     // V16.2 — Grasblatt-Büschel-Geometrie (ersetzt den Spitzkegel-"Stachel").
     // Mehrere schmale, leicht gebogene Blätter, fächerförmig rotiert → liest
     // sich als Gras-Tuff, nicht als Bartstoppel. Singleton (einmal pro Realm,
-    // von allen InstancedMeshes geteilt). Jedes Blatt: 4 Höhen-Segmente, zur
+    // von allen InstancedMeshes geteilt). Jedes Blatt: 2 Höhen-Segmente, zur
     // Spitze schmaler + nach vorn gebogen. Wurzel bei y=0 (die Wind-positionNode-
     // Math nutzt positionLocal.y als Höhen-Faktor). KEINE Physik, reine Deko.
+    // V18.307 — DAS GRAS WAR 83 % DER GPU-LAST (gemessen diag-scatter-species:
+    // 2.12M Tris / 53.007 Halm-Büschel = 40 Tris/Büschel). Die WURZEL: 5 Blätter ×
+    // SEG 4 × 2 Tris. SEG 4→2 halbiert die Büschel-Geometrie (40→20 Tris) ohne den
+    // Tuff-Look zu verlieren — der eine Bend-Punkt (t=0.5) trägt die Biegung weiter,
+    // das 5-Blatt-Fächer-Silhouette bleibt. Die fehlende Hälfte (Dichte unter den
+    // Regler) steht in `_buildVoxelChunkGrass`. Look = Schöpfer-Browser (Regel #0).
     _grassBladeTuftGeometry() {
         const positions = [];
         const normals = [];
-        const SEG = 4;
+        const SEG = 2;
         const H = 0.85;
         const blade = (rot, lean, w0) => {
             const cr = Math.cos(rot);
@@ -32070,6 +32076,14 @@ class AnazhRealm {
             return;
         }
         const farFactor = entryLod >= 1 ? 0.35 : 1;
+        // V18.307 — DAS GRAS KOMMT UNTER DEN EINEN REGLER (die Synergie-Hälfte):
+        // das Gras war 83 % der GPU-Last, las aber NIE `_foliageDensityScale` → der
+        // Perf-PID drosselte die kleine Streu (→ drab) + den Ring (→ klein), konnte
+        // aber den eigentlichen Last-Träger (Gras) NICHT anfassen — der Hebel reichte
+        // nicht an die Wurzel. Jetzt skaliert die Halm-Zahl beim Bau mit demselben
+        // perf-geregelten Faktor wie die Streu (`_nexusPerfActuate`, KEIN Parallel-
+        // Regler). Headless (Null-Renderer) → 1 (das Gate sieht die volle Wiese).
+        const grassDensityScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
         const surfAt = (x, z) => {
             if (chunkEntry && chunkEntry.surfMap) {
                 const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
@@ -32120,7 +32134,9 @@ class AnazhRealm {
                 // Fluss-Bank) wächst kein Gras: der gepackte Boden trägt den Trampel-
                 // pfad, die Halme weichen → die bare Erd-Linie wird sichtbar.
                 const pathSuppress = this._pathFieldAt ? 1 - this._pathFieldAt(baseX, baseZ, surfY) * 0.92 : 1;
-                const count = Math.floor((lebendig * 16 + rnd() * 2) * farFactor * clump * pathSuppress);
+                const count = Math.floor(
+                    (lebendig * 16 + rnd() * 2) * farFactor * clump * pathSuppress * grassDensityScale
+                );
                 // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
                 // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
                 // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
@@ -74181,7 +74197,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.306.0";
+AnazhRealm.VERSION = "18.307.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
