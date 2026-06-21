@@ -865,10 +865,12 @@ class AnazhRealm {
             // 2 (5×5, historisches Verhalten). Persistiert in localStorage.
             chunkRingRadius: 4,
             // V18.301 — der LADE-RHYTHMUS-RING: der beim Boot AKTIVE Ring (≤ chunkRingRadius).
-            // Startet klein, wächst monoton zum Ziel, wenn der aktuelle Ring settled + der Frame
-            // Luft hat (`_nexusPerfActuate`); Headless → sofort Ziel. null = lazy-init dort.
+            // Startet klein, wächst zum Ziel wenn der Frame Kopfraum hat, SCHRUMPFT wieder, wenn
+            // der Frame anhaltend über Budget ist (`_nexusPerfActuate`); Headless → sofort Ziel.
+            // null = lazy-init dort.
             _activeRingRadius: null,
-            _ringRampLast: 0, // letzter Ring-Wachstums-Zeitstempel (der „Atem" zwischen Ringen)
+            _ringRampLast: 0, // letzter Ring-Wachstums-/Schrumpf-Zeitstempel (der „Atem" zwischen Ringen)
+            _ringOverBudgetSince: 0, // V18.306 — seit wann der Frame anhaltend über Budget ist (Schrumpf-Hysterese)
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -2494,7 +2496,11 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const opts = { seed: s };
+                // V18.306 — autonom (Nexus) gespawnte Baupläne unterliegen dem `_capNexusStructures`-
+                // Cap (wie spawn_village/temple/waterfall) → kein unbeschränktes Horten, falls eine
+                // Nexus-Regel/Geste je `spawn_blueprint` komponiert. Mensch-/Remote-Bauten bleiben
+                // ungedeckelt (autonomous=false) — sie sind gewollt + permanent.
+                const opts = { seed: s, autonomous: ctx.source === "nexus" };
                 if (sharedId) opts.id = sharedId;
                 const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
@@ -13088,26 +13094,53 @@ class AnazhRealm {
             st._activeRingRadius = ringTarget;
         } else {
             if (st._activeRingRadius == null) st._activeRingRadius = Math.min(ringTarget, AnazhRealm.RING_RAMP_START);
-            if (st._activeRingRadius < ringTarget) {
-                // Wachsen NUR wenn: der aktuelle Ring VOLL steht (built ≥ aktiv) UND kein
-                // Bau-Rückstau UND der Frame seine Zeit hält (`!_frameOverBudget` = frameMs
-                // unter der Drossel-Decke ≈ 59 fps; KEIN effArch-Schwellwert → kann nicht
-                // unter 0.5 hängenbleiben) UND ein kurzer Atem verging. Das Ring-Wachstum
-                // ADDIERT Render-Last → kippt der Frame über Budget, stoppt es von selbst:
-                // die Welt wächst exakt bis zur Größe, die die Hardware bei ~59 fps hält
-                // (adaptive Sichtweite). Eine schwache Maschine settled bei einem kleineren
-                // Ring + bleibt responsiv; eine starke erreicht das Ziel.
-                const built = this._builtRingRadius();
-                const ringSettled = built !== null && built >= st._activeRingRadius;
-                const noBacklog = !st.voxelMeshPending || st.voxelMeshPending.size === 0;
-                const now = performance.now();
-                const breathed = !st._ringRampLast || now - st._ringRampLast > AnazhRealm.RING_RAMP_SETTLE_MS;
-                if (ringSettled && noBacklog && !st._frameOverBudget && breathed) {
-                    st._ringRampLast = now;
-                    st._activeRingRadius++;
-                }
+            // V18.306 — DER RING ATMET IN BEIDE RICHTUNGEN (Schöpfer „siehe immernoch 100
+            // Chunks statt dass es mal STABIL lädt"): der V18.301-Ring wuchs nur MONOTON →
+            // er OVERSHOOTET. Auf einer Maschine, deren leerer Boot-Frame schnell ist, wächst
+            // er bis zum Ziel (Ring 4 = 81 Chunks), DANN lädt das Laub, der Frame kippt über
+            // Budget — und die Monotonie-Regel klemmte ihn DORT fest (81 Chunks, Freeze, nie
+            // zurückgegeben) = „100 Chunks, wird nie stabil". Heilung: er SCHRUMPFT wieder,
+            // wenn der Frame ANHALTEND über Budget ist. Das Schrumpfen prunt NUR die äußerste
+            // Schale (Distanz = aktiverRing, weit vom Spieler — `_pruneDistantVoxelChunks` mit
+            // +1-Hysterese), NIE den Boden unter dem Spieler (ring 0) → die alte Monotonie-
+            // Angst („Boden entfernen") trifft die Fern-Schale nicht zu. So settled die Welt
+            // exakt bei der Größe, die die Hardware bei ~59 fps HÄLT — die V18.280-Bidirektion
+            // (Laub) endlich auch für den Ring. EIN Aktuator, kein Parallel-Regler.
+            const built = this._builtRingRadius();
+            const ringSettled = built !== null && built >= st._activeRingRadius;
+            const noBacklog = !st.voxelMeshPending || st.voxelMeshPending.size === 0;
+            const now = performance.now();
+            const breathed = !st._ringRampLast || now - st._ringRampLast > AnazhRealm.RING_RAMP_SETTLE_MS;
+            // Wachsen verlangt KLAREN Kopfraum (frameMs unter dem WACHS-Boden growMs ≈ 77 fps,
+            // dieselbe Schwelle wie der PID-Atem-Totband V18.281), NICHT bloß „nicht über der
+            // Decke" — sonst wächst er bis an den Anschlag (59 fps) und overshootet. So hält
+            // er einen Puffer: er wächst nur, wenn die Hardware den nächsten Ring sicher trägt.
+            const growMs = Math.max(
+                1,
+                (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS) -
+                    AnazhRealm.PERF_HEADROOM_MS
+            );
+            const hasHeadroom = sense.frameMs < growMs;
+            // Schrumpf-Hysterese: der Frame muss ANHALTEND über Budget sein (nicht ein einzelner
+            // Bau-/Carve-Spike < 200 ms) → ein Sustain-Timer. So schrumpft die Welt nur bei
+            // echter Dauerlast, nicht bei einem transienten Hitch (kein Pendeln gegen das Wachsen).
+            if (st._frameOverBudget) {
+                if (!st._ringOverBudgetSince) st._ringOverBudgetSince = now;
             } else {
-                st._activeRingRadius = ringTarget; // Target gesenkt? sofort folgen (nur runter sicher)
+                st._ringOverBudgetSince = 0;
+            }
+            const sustainedOver =
+                st._ringOverBudgetSince && now - st._ringOverBudgetSince > AnazhRealm.RING_SHRINK_SUSTAIN_MS;
+            if (st._activeRingRadius > ringTarget) {
+                st._activeRingRadius = ringTarget; // Target gesenkt (User-Slider)? sofort folgen
+            } else if (st._activeRingRadius < ringTarget && ringSettled && noBacklog && hasHeadroom && breathed) {
+                st._ringRampLast = now;
+                st._activeRingRadius++;
+            } else if (st._activeRingRadius > AnazhRealm.RING_RAMP_START && sustainedOver && breathed) {
+                // anhaltend über Budget → die äußerste Schale zurückgeben (Fern-Prune, sicher)
+                st._ringRampLast = now;
+                st._ringOverBudgetSince = 0; // der nächste Schrumpf wartet einen frischen Sustain
+                st._activeRingRadius--;
             }
         }
         // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
@@ -74148,7 +74181,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.305.0";
+AnazhRealm.VERSION = "18.306.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77051,6 +77084,10 @@ AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
+// V18.306 — der Frame muss SO LANGE anhaltend über Budget sein, bevor der Ring eine Schale
+// zurückgibt: lang genug, dass ein transienter Bau-/Carve-Spike (< 200 ms) NICHT schrumpft,
+// kurz genug, dass echte Dauerlast (Freeze) den Ring zügig auf die haltbare Größe senkt.
+AnazhRealm.RING_SHRINK_SUSTAIN_MS = 1200;
 // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
 // Schwester des `foliageRadius`. Wo der Radius die REICHWEITE der Vegetation nach Kapazität
 // fährt, fährt dieser Faktor ihre DICHTE (Instanz-Zahl pro Zelle, `dekoDensity`-Multiplikator
