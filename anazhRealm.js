@@ -434,7 +434,7 @@ class AnazhRealm {
             faunaLifecycle: { lastTick: 0, lastBirthAt: 0, lastDeathAt: 0 },
             nexusEvolutionQueue: [],
             nexusLastEvolution: 0,
-            nexusEvolutionInterval: 10.0,
+            nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last
             nexusAutonomyLimit: 100,
             lastGrowthUpdate: 0,
             lastSelfAnalysis: 0,
@@ -73264,8 +73264,17 @@ class AnazhRealm {
             // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
             this.updateWorldInfo();
         }
-        if (this.nexus && currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
-            this.evolveNexus(currentTime);
+        // V18.302 — DER NEXUS ATMET MIT DER LAST (Schöpfer-Browser-Log: ~alle 10 s eine
+        // Evolution + Grok-Geplapper = die „endlose Churn", die der Schöpfer nie wollte, plus
+        // ein Tribut, wenn die fps eh schon eng sind). Basis 24 s; ist der Frame über Budget
+        // (`_frameOverBudget` — derselbe Zeit-Zustand wie der Laub-/Ring-Regler, KEIN Parallel-
+        // System), STRECKT sich das Intervall (×2 → 48 s) → der Nexus wird still, wenn der Spieler
+        // kämpft, lebt voll, wenn Luft ist. Nie tot (×2 gedeckelt), nur ruhig.
+        if (this.nexus) {
+            const evoInterval = this.state.nexusEvolutionInterval * (this.state._frameOverBudget ? 2.0 : 1.0);
+            if (currentTime - this.state.nexusLastEvolution >= evoInterval) {
+                this.evolveNexus(currentTime);
+            }
         }
     }
 
@@ -74085,7 +74094,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.301.0";
+AnazhRealm.VERSION = "18.302.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

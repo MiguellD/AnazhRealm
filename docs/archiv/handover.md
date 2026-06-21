@@ -378,6 +378,14 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.302 — DER NEXUS ATMET MIT DER LAST: die endlose Evolution-Churn beruhigt
+
+Der Schöpfer-Browser-Log (V18.301.0 live): **FPS 34 → 10 → 37** + eine Flut von `Nexus-Evolution (Regel/DSL)`-Zeilen (`evo_28` … `evo_48` in kurzer Folge) + Grok-Geplapper „Ich habe etwas verschoben". Das ist die „endlose Nexus-Churn", die der Schöpfer schon in V18.296 nie wollte.
+
+**Ehrliche Analyse (gemessen am Code, nicht geraten):** der Nexus evolviert alle **10 s** (`nexusEvolutionInterval`), 35 % davon registrieren eine stehende Regel (`composeRuleProb`). Die Regeln sind aber **budgetiert + gecappt + TTL-evicted** (`_tickWorldRules`, `WORLD_RULES.budgetPerFrame/cap`) → KEINE Runaway-Per-Frame-Last; Grok ist cooldown-gegated (`grokSpeak`). Also: die Churn ist primär UX-Lärm, nicht der FPS-Killer. Der **FPS=10-Dip** fällt mit `Gegraben: 5× erde` zusammen = der SYNCHRONE Carve-Rebuild des gegrabenen Chunks (Edits bleiben sync = Instant-Feedback) → Determinismus-Bogen, separat. Die **steady 34–37** = die Render-Last (V18.300 cullt beim DREHEN, nicht im Stand).
+
+**FIX (klein, sicher, vision-treu):** `nexusEvolutionInterval` 10 → **24 s** (ruhiger), UND das Intervall STRECKT sich unter Frame-Druck: `evoInterval = base × (_frameOverBudget ? 2 : 1)` → bei niedriger fps (genau die 34, die der Schöpfer sah) evolviert der Nexus alle 48 s, bei Luft alle 24 s. Derselbe `_frameOverBudget`-Zeit-Zustand wie der Laub-/Ring-Regler (KEIN Parallel-System), ×2 gedeckelt → der Nexus wird RUHIG, nie TOT. Schnell-Gate grün (die Tests treiben die `nexusEvolutionQueue` direkt, nicht das Intervall → unberührt). Die größeren FPS-Hebel bleiben die nächsten Bögen: der Avatar-Skin-Worker (Boot) · GPU-Culling/Dichte (steady, look-bound) · der Determinismus-Bogen (der Carve-/Lauf-Dip).
+
 ### V18.301 — DER LADE-RHYTHMUS-RING: eine kleine settled Basis, dann wachsen
 
 Der Schöpfer (kollaborativ, der Profi-Instinkt): „der nebel geht schnell zurück und viele chunks werden schon von anfang an gebaut — macht es nicht sinn den ersten ring zu bauen, der nebel noch nah, alles sauber auszuschmücken und ERST DANN zu wachsen, damit sich das system fangen kann; direkt startklar mit einer minimalen basis und dann wächst, ohne die cpu am limit; ist das nicht der profiweg?" — JA, das ist progressive/adaptive Sichtweite.
