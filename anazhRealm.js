@@ -271,6 +271,8 @@ class AnazhRealm {
             fieldPhysics: true,
             _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
             _fieldGravityZeroed: false, // ob die Ammo-Body-Schwerkraft im Feld-Modus genullt ist
+            _smoothBodyY: null, // geglättete Körper-Y für das View-Height-Smoothing (Stair-Smoothing)
+            _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
             abilities: {},
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
@@ -73221,11 +73223,14 @@ class AnazhRealm {
                 // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
                 // zurück, sobald man stehen bleibt.
             } else if (!this.state.onSteepSlope) {
-                // C5 — BREMS-Kurve statt Hard-Stop: am Boden zackig (k=18),
-                // in der Luft bleibt das Momentum (k=1.5, ballistischer Bogen).
+                // C5 — BREMS-Kurve statt Hard-Stop: in der Luft bleibt das Momentum (k=1.5,
+                // ballistischer Bogen). Am Boden: TRÄGHEIT statt trägheitslosem Stopp — der
+                // alte k=18 (~165 ms) fühlte sich masselos an (Schöpfer-Befund „keine Trägheit
+                // beim Bremsen"); k=9 gibt einen kurzen, spürbaren Schlitter (~110 ms), wie ein
+                // Körper mit Masse abbremst (Quake/Source-Ground-Friction-Feel).
                 // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
                 const v = playerBody.getLinearVelocity();
-                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 18;
+                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 9;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 playerBody.setLinearVelocity(
                     this.setVec(this.state.tmpVec1, v.x() * (1 - fb), v.y(), v.z() * (1 - fb))
@@ -73554,12 +73559,33 @@ class AnazhRealm {
                 camera.position.set(finalX, finalY, finalZ);
                 camera.lookAt(tx, ty, tz);
             } else {
+                // PROFI-VIEW-HEIGHT-SMOOTHING (Stair-Smoothing à la Source `SmoothViewOnStairs`):
+                // die Füße/Kollision rasten hart auf den Boden (korrekte Physik, `_stepCharacter`),
+                // aber das AUGE gleitet gedämpft auf die neue Höhe nach → der Körper „federt"
+                // Stufen/Buckel/Hänge ab, statt sie hart durchzureichen (das „der Körper gleicht
+                // Höhe aus"-Gefühl, gemessen erbeten). NUR am Boden glätten; in der LUFT (Sprung/
+                // Fall) das Auge EXAKT tracken (die ballistische Kurve soll 1:1 sein), und bei
+                // großem Versatz (großer Fall/Teleport) snappen (kein Gummiband).
+                const camDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._camSmoothT || currentTime)));
+                this.state._camSmoothT = currentTime;
+                let smoothBodyY = this.state._smoothBodyY;
+                const bodyY = player.position.y;
+                if (
+                    typeof smoothBodyY !== "number" ||
+                    this.state.isInAir ||
+                    Math.abs(bodyY - smoothBodyY) > AnazhRealm.CAMERA_STEP_MAX_LAG
+                ) {
+                    smoothBodyY = bodyY;
+                } else {
+                    smoothBodyY += (bodyY - smoothBodyY) * (1 - Math.exp(-AnazhRealm.CAMERA_STEP_SMOOTH_K * camDt));
+                }
+                this.state._smoothBodyY = smoothBodyY;
                 // A6b — die KAMERA-CLIP-WAND: das Ego-Auge sitzt 1.6 m über dem
                 // Body-Zentrum (Box-halfExtent nur 0.5) — unter einer niedrigen
                 // Höhlendecke ragte es IN den Fels (Durchsehen von innen). Die
                 // Decken-Probe klemmt das Auge unter die Decke (0.12 m Marge);
                 // die Seitenwände hielt schon die Physik-Box.
-                let eyeY = player.position.y + 1.6;
+                let eyeY = smoothBodyY + 1.6;
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
@@ -74141,7 +74167,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.325.0";
+AnazhRealm.VERSION = "18.326.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77772,6 +77798,14 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.4;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// VIEW-HEIGHT-SMOOTHING (Stair-Smoothing, à la Source `SmoothViewOnStairs`/Quake): die Füße
+// rasten hart auf den Boden (korrekte Kollision), aber das AUGE gleitet gedämpft nach → der
+// Körper „federt" Stufen/Buckel ab, statt zu rucken (das „der Körper gleicht Höhe aus"-Gefühl).
+// K = Glättungs-Rate (≈90 ms Zeitkonstante); MAX_LAG = darüber snappt das Auge (großer Fall/
+// Teleport → kein Gummiband). In der LUFT (Sprung/Fall) wird NICHT geglättet (die ballistische
+// Kurve soll 1:1 sein).
+AnazhRealm.CAMERA_STEP_SMOOTH_K = 11;
+AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
