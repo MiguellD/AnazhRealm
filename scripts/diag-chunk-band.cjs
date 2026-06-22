@@ -86,9 +86,10 @@ const server = http.createServer((req, res) => {
             const Nx = sdx + 1,
                 Ny = sdy + 1,
                 Nz = sdz + 1;
-            // BAND density (die Produktions-Methode des Main-Mesh-Pfads).
+            // BAND+HOIST density (die Produktions-Methode: Band-Skip + Spalten-Kontext-Hoist via colVoxel).
+            const colVoxel = (x, y, z, ctx) => r._terrainBaseDensityAtCol(x, y, z, ctx);
             const tB0 = performance.now();
-            const bandD = r._voxelSampleDensityGrid(sampleOx, oy, sampleOz, sdx, sdy, sdz, step, fullSample);
+            const bandD = r._voxelSampleDensityGrid(sampleOx, oy, sampleOz, sdx, sdy, sdz, step, fullSample, colVoxel);
             const tBand = performance.now() - tB0;
             // FULL density (die Worker-buildChunkMesh-Methode: jeder Punkt terrainDensityAt).
             const tF0 = performance.now();

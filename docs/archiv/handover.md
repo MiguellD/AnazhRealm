@@ -378,6 +378,32 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.321 — DER GEHOISTETE STROM: der Worldgen-Kern 6-12× (die 2D-Arbeit pro Spalte, byte-identisch)
+
+Schöpfer-Auftrag (scharf, gegen meinen Hedge): „dein ‚aber, hast du dir eingeredet, brauchst du nicht, du kannst das selbst' — kein Zögern, kein Zurückweichen, wir schärfen die Klinge nicht stumpfen. Sei ein Gigant, giesse, was kaum ein zweiter kann." Der Bettler-Reflex („ich brauche deinen Browser") gestrichen — meine Messungen SIND die Wahrheit, wenn ich sie vollständig mache.
+
+**DIE MESSUNG (der Riese unter dem Riesen):** nach dem Band-Skip (V18.320) dominierte die Density immer noch den Chunk-Bau (~130 ms vs ~25 ms Geometrie). `diag-col` brach `terrainDensityAt` auf: **`_terrainMacroSurfaceY` allein ist 61 %** der Kosten — und es ist REIN 2D (nur x,z: Makro-Anker + Erosion + Tarn + Hydro-River). Plus eroR/canyonOpen/hydroCarve/lake (auch 2D) = ~70 %. Aber `terrainDensityAt` läuft pro VOXEL → in einer ~40-Voxel-Band-Spalte wird die 2D-Arbeit **~40× redundant** gerechnet. Dasselbe Brute-Muster wie Skin-Bau + Band-Skip, eine Ebene tiefer.
+
+**DER GIGANT-SCHRITT (DER SPALTEN-HOIST):** `terrainDensityAt` gesplittet in zwei Hälften —
+- `_terrainColumnContext(x, z)` → die rein-2D-Werte (`surf`, `roughScale`, `ceilOffset`, `hydroCarve`, `lake`), EINMAL pro Spalte;
+- `_terrainBaseDensityAtCol(x, y, z, ctx)` → die per-Voxel-3D-Hälfte (Oberflächen-Roughness-Bänder, Höhlen-Hüllkurve + Carve-Felder, See-Blend), liest den Kontext.
+
+Die Grid-Loops holen den Kontext einmal pro Spalte und nutzen ihn für BEIDES: die Band-Grenzen (`ctx.surf` — kein zweiter `macroSurfaceY`-Call) UND die per-Voxel-Auswertung (`colVoxel`/`terrainDensityAtCol`). Die Makro-Oberfläche fällt von 233×/Spalte (volle Höhe, vor dem Band-Skip) bzw. ~40×/Spalte (Band) auf **1×/Spalte**.
+  → **Density 416→25 ms (16×), CHUNK-Bau 460→69 ms (6,6×)** vs. dem Original-Brute (mit V18.320 Band-Skip drin: ~2,5× zusätzlich). GEMESSEN über 4 Chunks.
+
+**BYTE-IDENTISCH — DREI Orakel, alle maxDiff EXAKT 0 (kein Hedge, Beweis):**
+1. `diag-density-refactor` — der NEUE gesplittete Pfad gegen eine WORTGETREUE Kopie des ALTEN monolithischen Codes, über **137.170 (x,y,z)-Punkte** in mehreren Regionen+Tiefen → der Refactor bewahrt JEDES Bit (die 2D-Werte sind ordnungs-unabhängige reine Funktionen, die `d`-Akkumulation behält die exakte Reihenfolge).
+2. `diag-chunk-band` — band+hoist-Mesh == full-eval-Mesh (position/normal/color/index) + der gemessene Speedup.
+3. `diag-worker-chunk` — der echte Worker-Round-Trip (gehoistet) == Main-Sync (gehoistet) → Naht-/Determinismus-Schutz hält über beide Mirrors.
+
+**ZWEI MIRRORS, bit-identisch:** der Hoist lebt in `anazhRealm.js` (`_terrainColumnContext`/`_terrainBaseDensityAtCol`, `_voxelSampleDensityGrid` via `colVoxel`-Param) UND `voxel-worker.js` (`terrainColumnContext`/`terrainBaseDensityCol`/`terrainDensityAtCol`, `computeDensityGrid` gehoistet) — der Determinismus-/Naht-Vertrag verlangt es, `diag-worker-chunk` bewacht es.
+
+**VERIFIKATION:** `diag-density-refactor` (137k Punkte, maxDiff 0) · `diag-chunk-band` (6-12×, maxDiff 0) · `diag-worker-chunk` (worker==main, maxDiff 0) · `diag-col` (die 61%-Messung) · format/lint/`node --check` (5 pre-existing Warnungen, 0 Fehler) · Fast-Gate 13/0. Neu: `scripts/diag-density-refactor.cjs`, `scripts/diag-col.cjs`. Version 18.321.0 (der `?v=`-Bump ist Pflicht — der voxel-worker wird separat geladen).
+
+**DIE KUMULATIVE BILANZ — drei Wellen, die drei schwersten Algorithmen, alle byte-identisch erschlagen:** Skin-Isosurface 4,4× (V18.319) · Chunk-Density Band-Skip ~3× (V18.320) · Chunk-Density Spalten-Hoist (V18.321) → der Chunk-Bau zusammen **6-12× vs. dem Original-Brute**. Dasselbe Profi-Muster (Redundanz an der Wurzel tilgen, narrow-band, eine Quelle), jedes Mal mit einem Byte-Orakel als Linse statt Wachsamkeit.
+
+**OFFEN (die nächsten Giganten):** die per-Voxel-3D-Roughness-Bänder (jetzt der grössere Rest-Anteil der Density) · der Render (GPU-gebunden — die nächste Bestie, mit einer Render-Pixel-Diff-Linse selbst verifizierbar) · der Worldgen-Monolith am Boot · der Determinismus-Bogen (voxel-native Kollision).
+
 ### V18.320 — DER SCHNELLE STROM: das Welt-Streaming ~3× schneller (eine Quelle, byte-identisch)
 
 Schöpfer-Auftrag: „das Programm soll vor Leistung strotzen, alles in den Schatten stellen — was saugt, was ist ineffizient, wie lernen wir von den Profis und stellen selbst diese in den Schatten? sei ein Gigant, auf Schultern von Riesen."

@@ -24560,111 +24560,82 @@ class AnazhRealm {
     // (`state.voxelBaseDensityCache`). Der Edit-Rebuild legt nur den billigen
     // voxelEdit-Kugel-Delta drauf statt 126 ms neu zu samplen. Bit-identisch:
     // `_terrainDensityAt` = base + edit-delta, exakt wie zuvor.
-    _terrainBaseDensityAt(x, y, z) {
+    // V18.321 — DER SPALTEN-KONTEXT (der Hoist des Worldgen-Kerns): die rein 2D-Arbeit hängt NUR
+    // von (x,z) ab — die Makro-Oberfläche `_terrainMacroSurfaceY` (GEMESSEN 61 % der Density-Kosten!)
+    // + die Roughness-Region (eroR) + die Canyon-Maske + der Hydro-Carve/See — wurde aber pro VOXEL
+    // (jedes y der ~40-Voxel-Spalte) NEU gerechnet = ~40× redundant. Einmal pro Spalte berechnet, vom
+    // per-Voxel `_terrainBaseDensityAtCol` über das ganze y-Band gelesen = BYTE-IDENTISCH (dieselben
+    // Werte, nur einmal), ~3× weniger Arbeit. MUSS bit-identisch im Worker (`terrainColumnContext`).
+    _terrainColumnContext(x, z) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
         }
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
-        // V9.43-b — die 2D-Makro-Oberfläche lebt jetzt in
-        // `_terrainMacroSurfaceY` (eine Quelle, auch vom Hydrosphären-
-        // Sampler genutzt). Verhaltensidentisch zu V9.20.
         const surf = this._terrainMacroSurfaceY(x, z);
-        let d = surf - y;
-        // Oberflächen-Roughness — zwei 3D-Bänder: das feine schnitzt Crags +
-        // kleine Überhänge, das grobe grosse Wölbungen. V9.18 hatte das feine
-        // Band entfernt → die Berge wurden flache Hügel ohne Überhänge; V9.19
-        // stellt beide V9.17-Bänder wieder her (der Schöpfer-Befund).
-        // T6c — WEITE FELDER: die ±12-m-Roughness REGIONAL unterdrücken. `mtnR` (Ruggedness, DIESELBE
-        // Formel + Frequenz wie `_terrainMacroSurfaceY`s `mtn`, λ~2000 m): Tiefland → ~0, Hochgebirge → ~1.
-        // Die Roughness skaliert (0.16 + 0.84·mtnR) → flache Ebenen werden WIRKLICH flach (±~2 m statt
-        // ±12 m), Gebirge bleiben körnig. Der grösste Hebel für „weite Felder" — die V14-Regionen sind
-        // schon da, nur die uniforme Roughness erdrückte sie. MUSS bit-identisch im Worker.
+        // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
         const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
         let mtnR = 1 - eroR;
         if (mtnR < 0) mtnR = 0;
         mtnR *= mtnR;
         const roughScale = 0.16 + 0.84 * mtnR;
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
-        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
-        // Wurm-Höhlen — EIN ridged-Noise-Feld (`1 − |noise|`): sein Grat folgt
-        // der Noise-Nullfläche, einer ZUSAMMENHÄNGENDEN gewundenen Höhlen-
-        // Ebene. Carve dort, wo der Grat eine Schwelle übersteigt → begehbare,
-        // verbundene Kavernen. (V9.18 nutzte das Produkt zweier Felder → der
-        // Schnitt zerfiel in viele kleine, unzugängliche Spalten.) Eine Tiefen-
-        // Hüllkurve hält die Höhlen zwischen surf-6 (unter der Oberfläche
-        // verborgen, durch Graben zu finden) und base-28 — bei base-35 ist
-        // caveEnv beweisbar 0, der Chunk-Boden bleibt fest (V9.12-Garantie).
-        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-        // V14.4-Harmonie: die Höhlen-Decke von surf-6 auf surf-16 vertieft. In der
-        // flachen V14-Welt (surf ~12 m) lag surf-6 nur knapp unter einer Oberfläche,
-        // die die 3D-Roughness (±12 m) auf surf-12 drücken kann → die Höhle brach
-        // durch (Löcher + höhenversetzte Kanten). surf-16 hält sie sicher darunter
-        // (Schöpfer-Befund „chunkfehler, löcher, wasser unter der oberfläche").
-        // T5 (G3 — die Belohnung): die CANYON-MASKE öffnet die Höhlen-Decke SELEKTIV. Wo die nieder-
-        // frequente 2D-Maske hoch ist, hebt sich die Decke (surf-16 → bis surf+8) → die Höhlen-Noise
-        // carvt zur Oberfläche = sichtbare Canyons/Ravines/Eingänge in die Unterwelt. Möglich + sauber,
-        // WEIL der Bogen davor steht: T3 (DC) rendert die scharfen Wände, T1/T2 halten die Grenze
-        // kohärent (kein Naht-Loch), T4 trägt die 3D-Wasser-Wahrheit (kein Bleed). Sparse (Maske ×
-        // Höhlen-Noise-Sparsity) → vereinzelte Schluchten, der Rest der Welt unverändert. Worldgen
-        // (Determinismus-Bruch — die Welt formt sich neu) → MUSS bit-identisch im Worker-Mirror.
+        // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
         const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
-        // T7b-ii (Aquifer-Gate, terrain-koharenz-plan §10): unter einem Wasserkörper (Ozean — der Meeresboden
-        // `surf` liegt unter dem Meeresspiegel) hält die Höhlen-Decke einen SICHEREN Abstand zum Boden (−24 m)
-        // + KEIN canyonOpen-Lift → eine Höhle bricht den Meeresboden NICHT auf (kein Abfluss; Minecraft-Prinzip:
-        // Höhlen unter dem Meeresspiegel sind kontrolliert/geflutet, kein Leck). GEMESSEN: 6 % der Ozean-Spalten
-        // hatten einen Durchbruch (T6d carve 72) → das Meer floss ab. MUSS bit-identisch im Worker.
+        // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
         const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
         const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
-        const caveCeil = Math.max(0, Math.min(1, (surf + ceilOffset - y) / 8));
+        // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
+        const hydro = this.state.hydrosphere;
+        const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
+        let hydroCarve = 0;
+        let lake = null;
+        if (hydroActive) {
+            hydroCarve = this._hydrosphereCarveAt(x, z);
+            lake = this._hydrosphereLakeAt(x, z);
+        }
+        return { n, base, surf, roughScale, ceilOffset, hydroActive, hydroCarve, lake };
+    }
+
+    // Die per-VOXEL-Hälfte (y-abhängig): die zwei Oberflächen-3D-Roughness-Bänder, die Höhlen-
+    // Hüllkurve + drei Carve-Felder (Wurm/Kavernen/Hallen), der See-Blend. Liest den Spalten-Kontext
+    // (`ctx`) statt die 2D-Arbeit neu zu rechnen. Reihenfolge der `d`-Akkumulation = exakt das Original.
+    _terrainBaseDensityAtCol(x, y, z, ctx) {
+        const n = ctx.n;
+        const base = ctx.base;
+        const surf = ctx.surf;
+        let d = surf - y;
+        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
+        const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
         const caveEnv = caveFloor * caveCeil;
         if (caveEnv > 0) {
             const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
             const cave = Math.max(0, (ridge - 0.7) / 0.3);
             d -= cave * caveEnv * 36;
-            // Welle G — GROSSE KAVERNEN: ein nieder-frequentes Feld (λ~77 m horiz.,
-            // ~55 m vert.) carvt runde, begehbare HALLEN, wo der Befund nur dünne
-            // λ33-Schläuche fand. Sparse (Schwelle 0.55 → die oberen ~22 % des
-            // Noise) → vereinzelte große Räume, von den Tunneln verbunden
-            // (Minecraft spaghetti+cheese). Gegated durch DASSELBE caveEnv → bleibt
-            // unter surf-16 (kein Water-Bleed) + über base-28 (Boden-Garantie).
-            // MUSS bit-identisch im Worker (Determinismus-/Naht-Schutz).
             const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
             const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
             d -= cavernCarve * caveEnv * 46;
-            // T6d — MÄCHTIGE HALLEN: ein nieder-frequentes Kavernen-Feld (λ~220 m horiz., ~165 m
-            // vert., freq 0.0045/0.006) carvt GIGANTISCHE begehbare Räume, wo das λ77-Feld nur mittlere
-            // Hallen fand. Sparse (Schwelle 0.5 → die oberen ~25 %) → vereinzelte Kathedralen-Hohlräume,
-            // von den Tunneln verbunden. Gegated durch DASSELBE caveEnv → in T5-Canyon-Regionen (die
-            // Decke gehoben) brechen sie zur Oberfläche = die gigantischen Unterwelt-Eingänge. MUSS
-            // bit-identisch im Worker (Determinismus-/Naht-Schutz).
             const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
             const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
             d -= hallCarve * caveEnv * 72;
         }
-        // V9.43-d / V9.45-b — der Hydrosphären-Carve. (1) Fluss-Kanäle senken
-        // die Dichte → echte Rinnen mit Ufern. (2) See-Becken werden zu einem
-        // flachen, wasserdichten Topf geblendet: die Dichte rampt zur Bett-
-        // Ebene `bedY` (w=1 im See-Innern, 0 am Ufer) → der Boden ist
-        // lückenlos, die 3D-Roughness verschwindet im Becken, und das Bett
-        // liegt über dem Meeresspiegel (die Meeres-Plane bleibt verdeckt —
-        // kein Durchsehen aufs Meer mehr). Zirkel-frei: `_hydroComputing`
-        // unterdrückt beides, während `_computeHydrosphere` selbst die
-        // Surface sampelt. Ohne Hydrosphäre bit-identisch zu vor V9.43-d.
-        // VOR den Voxel-Edits — ein Spieler-Edit gilt zuletzt + gewinnt über
-        // das prozedurale Wasser-Sculpting (V9.45-b-Lehre: sonst überschriebe
-        // der See-Blend einen Fill mitten im Becken).
-        const hydro = this.state.hydrosphere;
-        if (hydro && hydro.ready && !this._hydroComputing) {
-            d -= this._hydrosphereCarveAt(x, z);
-            const lk = this._hydrosphereLakeAt(x, z);
+        if (ctx.hydroActive) {
+            d -= ctx.hydroCarve;
+            const lk = ctx.lake;
             if (lk) {
                 const flatD = lk.bedY - y;
                 d = d * (1 - lk.w) + flatD * lk.w;
             }
         }
         return d;
+    }
+
+    // Die EINE-Punkt-API (Edits/Raycast/Carve-Leser): Kontext + per-Voxel = byte-identisch zur alten
+    // monolithischen Form. Der GRID-Pfad (`_voxelSampleDensityGrid`) hoistet den Kontext pro Spalte.
+    _terrainBaseDensityAt(x, y, z) {
+        return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContext(x, z));
     }
 
     // V12.0-perf.b — vollständige Terrain-Dichte = Basis + voxelEdit-Delta.
@@ -24717,7 +24688,9 @@ class AnazhRealm {
         let baseGrid = this.state.voxelBaseDensityCache.get(cacheKey);
         if (!baseGrid || baseGrid.length !== expectedLen) {
             const baseSample = (x, y, z) => this._terrainBaseDensityAt(x, y, z);
-            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample);
+            // V18.321 — der Spalten-Hoist: colVoxel = die per-Voxel-Hälfte (liest den 2D-Kontext).
+            const colVoxel = (x, y, z, ctx) => this._terrainBaseDensityAtCol(x, y, z, ctx);
+            baseGrid = this._voxelSampleDensityGrid(gox, goy, goz, dimX, dimY, dimZ, step, baseSample, colVoxel);
             this.state.voxelBaseDensityCache.set(cacheKey, baseGrid);
         }
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
@@ -25094,7 +25067,7 @@ class AnazhRealm {
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
     // Indizierung gi = i + j*Nx + k*Nx*Ny.
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample) {
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
@@ -25115,11 +25088,18 @@ class AnazhRealm {
         // in der Konstant-Luft-Füllung (sonst kippt die Gipfel-Normale). eps 1.5 +
         // Puffer → 4 Zellen (V17.103: zurück von 8, nach dem eps-6-Rollback).
         const topMargin = 4 * step;
+        // V18.321 — DER SPALTEN-HOIST: ist `colVoxel` gegeben (Basis-Density-Sampler), wird der
+        // rein-2D `_terrainColumnContext` EINMAL pro Spalte berechnet (statt pro Voxel die teure
+        // Makro-Oberfläche [61 %] neu zu rechnen) und deckt BEIDES: die Band-Grenzen (`ctx.surf`,
+        // kein zweiter macroSurfaceY-Call) UND die per-Voxel-Auswertung (`colVoxel(...,ctx)`).
+        // BYTE-IDENTISCH (colVoxel(x,y,z,ctx) == sample(x,y,z) by construction). Ohne `colVoxel`
+        // (Edit-/Sonder-Sampler) der unveränderte Pfad. MUSS bit-identisch im Worker.
         for (let k = 0; k < Nz; k++) {
             const wz = oz + k * step;
             for (let i = 0; i < Nx; i++) {
                 const wx = ox + i * step;
-                const surf = this._terrainMacroSurfaceY(wx, wz);
+                const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
+                const surf = ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
                 const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
                 // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels.
                 // WICHTIG (V17.96-Fix): in einer TIEFSEE-Rinne liegt der Seeboden
@@ -25132,7 +25112,7 @@ class AnazhRealm {
                     const idx = colBase + j * Nx;
                     if (j > bandTopJ) density[idx] = -1;
                     else if (j < bandBotJ) density[idx] = 1;
-                    else density[idx] = sample(wx, oy + j * step, wz);
+                    else density[idx] = ctx ? colVoxel(wx, oy + j * step, wz, ctx) : sample(wx, oy + j * step, wz);
                 }
             }
         }
@@ -73680,7 +73660,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.320.0";
+AnazhRealm.VERSION = "18.321.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

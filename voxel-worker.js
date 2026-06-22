@@ -189,11 +189,16 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const ROUGH = 12;
     // V17.103 (mirror): Band-Top-Margin deckt den Normalen-eps (1.5 Zellen) + Puffer.
     const topMargin = 4 * step;
+    // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
+    // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
+    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainDensityAtCol`).
+    // BYTE-IDENTISCH (terrainDensityAtCol(x,y,z,ctx) == terrainDensityAt(x,y,z)). Bit-identisch zur Main.
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
             const wx = ox + i * step;
-            const surf = terrainMacroSurfaceY(wx, wz, true);
+            const ctx = state.noise ? terrainColumnContext(wx, wz) : null;
+            const surf = ctx ? ctx.surf : terrainMacroSurfaceY(wx, wz, true);
             const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
             // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
             const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
@@ -202,7 +207,7 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
                 const idx = colBase + j * Nx;
                 if (j > bandTopJ) density[idx] = -1;
                 else if (j < bandBotJ) density[idx] = 1;
-                else density[idx] = terrainDensityAt(wx, oy + j * step, wz);
+                else density[idx] = ctx ? terrainDensityAtCol(wx, oy + j * step, wz, ctx) : 0;
             }
         }
     }
@@ -214,54 +219,66 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
 // Bei jeder Anpassung dort: hier mit-wandern (Determinismus-Test fängt Drift).
 // =============================================================================
 
-function terrainDensityAt(x, y, z) {
-    if (!state.noise) return 0;
+// V18.321 (mirror von `_terrainColumnContext`) — DER SPALTEN-KONTEXT: die rein-2D-Arbeit
+// (Makro-Oberfläche [61 %] + Roughness-Region + Canyon-Maske + Hydro-Carve/See) hängt NUR von
+// (x,z) ab; einmal pro Spalte berechnet, vom per-Voxel `terrainBaseDensityCol` über das ganze
+// y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
+function terrainColumnContext(x, z) {
     const surf = terrainMacroSurfaceY(x, z, true);
-    let d = surf - y;
-    // T6c (mirror) — WEITE FELDER: Roughness regional unterdrücken (mtnR, λ~2000 m). Bit-identisch zur Main.
     const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
     let mtnR = 1 - eroR;
     if (mtnR < 0) mtnR = 0;
     mtnR *= mtnR;
     const roughScale = 0.16 + 0.84 * mtnR;
-    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * roughScale;
-    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * roughScale;
-    // Höhlen-Ridged-Hülle.
     const base = state.baseHeight || 0;
-    const caveFloor = clamp01((y - (base - 28)) / 8);
-    // T5 (G3, mirror) — die CANYON-MASKE öffnet die Höhlen-Decke selektiv → Canyons zur Oberfläche.
-    // Bit-identisch zur Main (Determinismus-/Naht-Wand): n.noise2D, freq 0.0065, Offset 41.7/-18.3.
     const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
-    // T7b-ii (mirror) — Aquifer-Gate: unter dem Meeresspiegel hält die Höhlen-Decke −24 m Abstand zum Boden
-    // + kein canyonOpen → kein Meeres-Abfluss. Bit-identisch zur Main.
     const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
     const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
-    const caveCeil = clamp01((surf + ceilOffset - y) / 8);
+    const hydro = state.hydrosphere;
+    const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
+    let hydroCarve = 0;
+    let lake = null;
+    if (hydroActive) {
+        hydroCarve = hydrosphereCarveAt(x, z);
+        lake = hydrosphereLakeAt(x, z);
+    }
+    return { surf, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
+}
+
+// Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
+function terrainBaseDensityCol(x, y, z, ctx) {
+    const surf = ctx.surf;
+    let d = surf - y;
+    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+    const base = ctx.base;
+    const caveFloor = clamp01((y - (base - 28)) / 8);
+    const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
     const caveEnv = caveFloor * caveCeil;
     if (caveEnv > 0) {
         const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
         const cave = Math.max(0, (ridge - 0.7) / 0.3);
         d -= cave * caveEnv * 36;
-        // Welle G (mirror): große Kavernen (λ~77 m), Schwelle 0.55, carve 46.
         const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
         const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
         d -= cavernCarve * caveEnv * 46;
-        // T6d (mirror) — MÄCHTIGE HALLEN (λ~220 m, Schwelle 0.5, carve 72). Bit-identisch zur Main.
         const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
         const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
         d -= hallCarve * caveEnv * 72;
     }
-    // Hydrosphäre-Carve + See-Becken (nur wenn ready + nicht hydroComputing).
-    const hydro = state.hydrosphere;
-    if (hydro && hydro.ready && !state.hydroComputing) {
-        d -= hydrosphereCarveAt(x, z);
-        const lk = hydrosphereLakeAt(x, z);
+    if (ctx.hydroActive) {
+        d -= ctx.hydroCarve;
+        const lk = ctx.lake;
         if (lk) {
             const flatD = lk.bedY - y;
             d = d * (1 - lk.w) + flatD * lk.w;
         }
     }
-    // Voxel-Edits — Spieler-Wille gewinnt zuletzt.
+    return d;
+}
+
+// Voxel-Edits (Spieler-Wille gewinnt zuletzt) — per-Voxel, der Edit-Satz ist klein.
+function applyVoxelEdits(d, x, y, z) {
     const edits = state.voxelEdits;
     if (edits && edits.length) {
         for (let e = 0; e < edits.length; e++) {
@@ -281,6 +298,17 @@ function terrainDensityAt(x, y, z) {
         }
     }
     return d;
+}
+
+// Volle Density an EINEM Punkt mit gegebenem Spalten-Kontext (base-col + edits) — der Hoist-Pfad.
+function terrainDensityAtCol(x, y, z, ctx) {
+    return applyVoxelEdits(terrainBaseDensityCol(x, y, z, ctx), x, y, z);
+}
+
+// Die EINE-Punkt-API (mirror von `_terrainDensityAt`): Kontext + per-Voxel + Edits, byte-identisch.
+function terrainDensityAt(x, y, z) {
+    if (!state.noise) return 0;
+    return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
 }
 
 // Γ4 (genese-plan §4) — DER MAKRO-ANKER Worker-Spiegel. Bit-identisch zur
