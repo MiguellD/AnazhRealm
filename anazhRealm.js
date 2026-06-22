@@ -270,6 +270,7 @@ class AnazhRealm {
             // im Chat schaltet auf Ammo zurück (A/B bleibt für den direkten Vergleich).
             fieldPhysics: true,
             _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
+            _fieldWasGrounded: false, // war der Spieler im Vorframe geerdet (Boden-Haftung nur dann)
             _fieldGravityZeroed: false, // ob die Ammo-Body-Schwerkraft im Feld-Modus genullt ist
             _smoothBodyY: null, // geschwindigkeits-begrenzt nachgezogene Körper-Y des Auges (View-Smoothing)
             _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
@@ -29559,12 +29560,35 @@ class AnazhRealm {
     }
 
     // Die LOKALE Kurz-Boden-Probe (der P0-Befund: NICHT der volle `_voxelSurfaceY`-
-    // Spalten-Scan = 43,7 µs). Vom Start-y abwärts bis maxDist die erste Luft→Solid-
-    // Grenze, mit EINEM Spalten-Kontext für die ganze vertikale Probe + Bisektion auf
-    // Sub-Voxel. Liefert die solide Oberkante (Welt-y) oder null (kein Boden in Reichweite).
+    // Spalten-Scan = 43,7 µs). Liefert die solide Oberkante nahe dem Start-y, mit EINEM
+    // Spalten-Kontext + Bisektion auf Sub-Voxel. ZWEI Fälle (robust gegen Penetration):
+    //  • Start in LUFT (Normalfall) → ABWÄRTS bis zur ersten Luft→Solid-Grenze = die Oberkante.
+    //  • Start im SOLIDEN (der Spieler steckt im Terrain) → AUFWÄRTS bis zur ersten Solid→Luft-
+    //    Grenze = die Oberkante ÜBER den Füßen. Ohne diesen Zweig fand die Probe beim Stecken
+    //    fälschlich den Start selbst (sub-surface) → der Spieler clippte durch den Boden auf
+    //    eine Höhlen-Schicht (Schöpfer-Befund am steilen Berg). Liefert null (keine Grenze in
+    //    Reichweite).
     _fieldSurfaceBelow(x, y, z, maxDist) {
         const ctx = this._terrainColumnContext(x, z);
         const step = 0.5;
+        if (this._fieldSolid(x, y, z, ctx)) {
+            // Start IM Soliden → aufwärts die Oberkante suchen (Penetrations-Heilung).
+            const top = y + maxDist;
+            for (let yy = y; yy <= top; yy += step) {
+                if (!this._fieldSolid(x, yy, z, ctx)) {
+                    // Grenze zwischen yy−step (solid) und yy (Luft) → Bisektion auf die Oberkante.
+                    let lo = Math.max(y, yy - step),
+                        hi = yy;
+                    for (let b = 0; b < 6; b++) {
+                        const mid = (lo + hi) / 2;
+                        if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
+                        else hi = mid;
+                    }
+                    return lo;
+                }
+            }
+            return null;
+        }
         const end = y - maxDist;
         for (let yy = y; yy >= end; yy -= step) {
             if (this._fieldSolid(x, yy, z, ctx)) {
@@ -72963,62 +72987,26 @@ class AnazhRealm {
         let ny = mesh.position.y + vy * dt;
         let nz = mesh.position.z + vz * dt;
 
+        const feetY = ny - footDrop;
+        const headY = ny + footDrop;
+
         // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden
         //    Part-AABBs naher Bauwerke (`entry.blockerAABBs` — dichte ≥ 0.3, EINE Quelle mit
         //    dem Wasser-Blocker). Wände BLOCKEN horizontal (mutiert nx/nz = gleiten), Dächer/
         //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
         //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
-        const feetY = ny - footDrop;
-        const headY = ny + footDrop;
         const structPos = { x: nx, z: nz };
         const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
 
-        // 7. BODEN-SNAP (lokale DDA, der P1a-6×-Hebel) — er BESITZT die Vertikale (exakt,
-        //    deterministisch). Die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur-
-        //    Auflage. Schnappt beim Landen/Stehen, hebt über kleine Stufen (STEP_UP) UND
-        //    klebt bergab (GROUND_SNAP) — alles EIN Mechanismus, läuft VOR der Terrain-Wand.
-        const terrSurf = this._fieldSurfaceBelow(
-            nx,
-            feetY + AnazhRealm.PLAYER_STEP_UP,
-            nz,
-            footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 2
-        );
-        const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, structTop);
-        let grounded = false;
-        let groundNormalY = 1.0;
-        if (effSurf > -Infinity) {
-            const restY = effSurf + footDrop;
-            const gap = ny - restY; // > 0: über der Ruhe (in der Luft/bergab) · < 0: darunter (Stufe)
-            // grounded, wenn die Oberfläche im HAFT-BAND liegt [−STEP_UP .. +GROUND_SNAP] UND
-            // wir nicht aktiv AUFsteigen (ein Sprung-Impuls vy ≫ 0 verlässt den Boden). Höher
-            // als das Band = echte Wand/Klippe (Snap aus → fallen/blocken).
-            if (vy <= 0.5 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && gap >= -AnazhRealm.PLAYER_STEP_UP) {
-                // Landungs-Absorption: war der Spieler in der Luft und kommt mit Tempo auf,
-                // merkt sich die Kamera den Aufprall (View-Punch). vy ist hier noch das
-                // Aufprall-Tempo (vor dem Nullen).
-                if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
-                    s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
-                }
-                ny = restY;
-                vy = 0;
-                grounded = true;
-                // Normale: Terrain aus dem Gradient; eine Struktur-Oberkante zählt als flach.
-                groundNormalY =
-                    structTop >= (terrSurf === null ? -Infinity : terrSurf)
-                        ? 1.0
-                        : this._fieldGradient(nx, terrSurf, nz, {}).y;
-            }
-        }
-
-        // 8. TERRAIN-WAND-KOLLISION — nur HORIZONTAL (der Boden-Snap besitzt die Vertikale,
-        //    sonst fechten beide → der Spieler schwebt). Die Wand-Kugeln beginnen ERST über
-        //    der Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte
-        //    Wände blocken (kein Hängenbleiben am Stufen-Riser). Die obere Kugel klemmt
-        //    zusätzlich den Aufstieg an einer Decke.
+        // 7. TERRAIN-WAND-KOLLISION — nur HORIZONTAL, und VOR dem Boden-Snap (so wird der Spieler
+        //    erst aus der Wand geschoben, bevor Schritt 8 vertikal entscheidet → der Anti-Clip
+        //    feuert nicht beim bloßen Wand-Berühren). Die Wand-Kugeln beginnen ERST über der
+        //    Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte Wände
+        //    blocken (kein Hängenbleiben am Riser). Die obere Kugel klemmt den Aufstieg an Decken.
         const wR = AnazhRealm.PLAYER_WALL_RADIUS;
-        const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR; // Boden der untersten Wand-Kugel = feetY + STEP_UP
+        const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR;
         const p = { x: 0, y: 0, z: 0 };
         const wallYs = [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf
         for (let k = 0; k < wallYs.length; k++) {
@@ -73030,6 +73018,79 @@ class AnazhRealm {
                 nx = p.x; // nur die horizontale Korrektur übernehmen (an Wänden gleiten)
                 nz = p.z;
                 if (k === wallYs.length - 1 && p.y < oy - 0.001 && vy > 0) vy = 0; // Decke
+            }
+        }
+
+        // 8. BODEN (vertikal). Die Probe startet bei feetY+STEP_UP. ZWEI Pfade:
+        let grounded = false;
+        let groundNormalY = 1.0;
+        const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
+        const buriedDeep = this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
+        if (buriedDeep) {
+            // 8a. ANTI-CLIP (das Sicherheitsnetz, das sonst die BVH war): die Füße stecken TIEF
+            //     im Terrain → die Probe scannt AUFWÄRTS zur Oberkante (großzügige 30 m, nur im
+            //     seltenen Penetrations-Fall), der Spieler wird BEDINGUNGSLOS hoch-gesetzt. Er
+            //     darf NIE im Soliden stecken → kein Clip-durch-den-Boden auf eine Höhlen-Schicht.
+            const top = this._fieldSurfaceBelow(nx, probeStart, nz, 30);
+            if (top !== null) {
+                ny = top + footDrop;
+                if (vy < 0) vy = 0;
+                grounded = true;
+                groundNormalY = this._fieldGradient(nx, top, nz, {}).y;
+            }
+        } else {
+            let terrSurf = this._fieldSurfaceBelow(
+                nx,
+                probeStart,
+                nz,
+                footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
+            );
+            // 8b. FORWARD-BLOCK: läuft der Spieler horizontal in eine WAND (Oberfläche voraus
+            //     höher als feetY + STEP_UP = nicht erklimmbar)? → die horizontale Bewegung
+            //     ZURÜCKNEHMEN (am Wandfuß stehen, nicht eindringen → kein Clip am steilen Berg).
+            //     Die obere Wand-Kugel gleitet schon; dies ist der Fuß-Stopp gegen das Eindringen.
+            if (
+                terrSurf !== null &&
+                terrSurf > feetY + AnazhRealm.PLAYER_STEP_UP + 0.05 &&
+                (nx !== mesh.position.x || nz !== mesh.position.z)
+            ) {
+                nx = mesh.position.x;
+                nz = mesh.position.z;
+                terrSurf = this._fieldSurfaceBelow(
+                    nx,
+                    feetY + AnazhRealm.PLAYER_STEP_UP,
+                    nz,
+                    footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
+                );
+            }
+            // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
+            const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, structTop);
+            const wasGrounded = s._fieldWasGrounded === true;
+            if (vy <= 0.5) {
+                if (effSurf > -Infinity) {
+                    const restY = effSurf + footDrop;
+                    const gap = ny - restY; // > 0: Oberfläche UNTER den Füßen (Luft/bergab) · ≤ 0: AUF/ÜBER
+                    // ZWEI getrennte Fälle (sonst zieht die Haftung den Fallenden wie ein Magnet an):
+                    //  (a) AT/ÜBER den Füßen [−STEP_UP .. 0] → Landung ODER Stufe-hoch: rauf-snappen.
+                    //      Der Fall landet NATÜRLICH (Füße erreichen den Boden), KEIN Vorab-Sog.
+                    //  (b) knapp UNTER den Füßen (0 .. GROUND_SNAP] → Boden-Haftung bergab, NUR wenn
+                    //      vorher geerdet (sanft bergab); im Fall NICHT → kein Magnet. Größerer gap
+                    //      (Kamm/Klippe) → kein Snap → natürlicher Sprung-Bogen.
+                    const catchOrStep = gap <= 0 && gap >= -AnazhRealm.PLAYER_STEP_UP;
+                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded;
+                    if (catchOrStep || gentleDownhill) {
+                        if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
+                            s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
+                        }
+                        ny = restY;
+                        vy = 0;
+                        grounded = true;
+                        groundNormalY =
+                            structTop >= (terrSurf === null ? -Infinity : terrSurf)
+                                ? 1.0
+                                : this._fieldGradient(nx, terrSurf, nz, {}).y;
+                    }
+                }
             }
         }
 
@@ -73058,6 +73119,7 @@ class AnazhRealm {
         s.onSteepSlope = grounded && groundNormalY < s.maxWalkableSlopeY;
         s._groundedCache = grounded;
         s._groundedCachedAt = performance.now();
+        s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
         if (grounded) {
             s.lastGroundedTime = currentTime;
             s.isInAir = false;
@@ -74190,7 +74252,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.328.0";
+AnazhRealm.VERSION = "18.329.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77813,9 +77875,11 @@ AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
 AnazhRealm.PLAYER_STEP_UP = 0.6;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden (snap-
-// down), statt den Hang hinab zu hüpfen — die fehlende Hälfte, ohne die der Spieler nie
-// erdet, wenn die Oberfläche unter ihm wegfällt (gemessen mit diag-walk-feel).
-AnazhRealm.PLAYER_GROUND_SNAP = 0.4;
+// down) — ABER nur, wenn er VORHER schon geerdet war (sanft bergab), NIE im Fall (sonst
+// zieht es ihn die letzten cm wie ein Magnet an, „fallgeschwindigkeit aus dem nichts" —
+// Schöpfer-Befund). Kleiner als STEP_UP: am Kamm löst die Haftung → natürlicher Sprung-Bogen
+// (der Läufer fliegt über die Kuppe), statt zu kleben.
+AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // Wand-Kollisions-Radius — schlanker als die Boden-Kapsel, und die Wand-Kugeln beginnen ERST
 // über der Stufe-hoch-Linie (feetY + STEP_UP): so trifft keine Kugel einen Stufen-Riser ≤
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —

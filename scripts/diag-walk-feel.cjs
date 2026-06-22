@@ -167,6 +167,7 @@ const server = http.createServer((req, res) => {
         s.keys["w"] = true;
         let maxSink = 0,
             maxFloat = 0,
+            maxGroundedFloat = 0,
             sumAbsClear = 0,
             nClear = 0,
             groundedTicks = 0,
@@ -182,7 +183,9 @@ const server = http.createServer((req, res) => {
                 sumAbsClear += Math.abs(clear);
                 nClear++;
                 if (clear < -maxSink) maxSink = -clear; // wie weit unter die Oberfläche (Tunnel)
-                if (clear > maxFloat) maxFloat = clear; // wie weit darüber (Levitation)
+                if (clear > maxFloat) maxFloat = clear; // wie weit darüber (gesamt; Absprünge erlaubt)
+                // Schweben WÄHREND geerdet = Bug (Levitation); Schweben in der Luft = Absprung (ok)
+                if (s._groundedCache && clear > maxGroundedFloat) maxGroundedFloat = clear;
             }
             if (s._groundedCache) groundedTicks++;
         }
@@ -269,6 +272,7 @@ const server = http.createServer((req, res) => {
                 medAbsClear: +medAbsClear.toFixed(3),
                 maxSink: +maxSink.toFixed(3),
                 maxFloat: +maxFloat.toFixed(3),
+                maxGroundedFloat: +maxGroundedFloat.toFixed(3),
                 groundedFrac: +groundedFrac.toFixed(2),
                 minY: +minY.toFixed(2),
                 floorRef: +spot.h.toFixed(2),
@@ -304,12 +308,12 @@ const server = http.createServer((req, res) => {
         "der Spieler ruht aus der Luft sauber auf der Oberfläche (Füße ≈ Oberkante, grounded)"
     );
     console.log(
-        `  (B) LAUF: dist ${out.lauf.dist} m (dz ${out.lauf.dz}) · med|clear| ${out.lauf.medAbsClear} · maxSink ${out.lauf.maxSink} · maxFloat ${out.lauf.maxFloat} · grounded ${(out.lauf.groundedFrac * 100).toFixed(0)}% · minY ${out.lauf.minY} (floor ${out.lauf.floorRef})`
+        `  (B) LAUF: dist ${out.lauf.dist} m (dz ${out.lauf.dz}) · med|clear| ${out.lauf.medAbsClear} · maxSink ${out.lauf.maxSink} · float(geerdet) ${out.lauf.maxGroundedFloat}/(gesamt ${out.lauf.maxFloat}) · grounded ${(out.lauf.groundedFrac * 100).toFixed(0)}% · minY ${out.lauf.minY}`
     );
     ok(out.lauf.dist > 4 && out.lauf.dz > 3, "W trägt den Spieler vorwärts (> 4 m, in Laufrichtung +Z)");
     ok(
-        out.lauf.maxSink < 0.2 && out.lauf.maxFloat < 0.8 && out.lauf.groundedFrac > 0.7,
-        "er bleibt dabei AUF dem Boden (kein Versinken < 0,2 m, keine Levitation < 0,8 m, > 70 % geerdet)"
+        out.lauf.maxSink < 0.2 && out.lauf.maxGroundedFloat < 0.2 && out.lauf.groundedFrac > 0.7,
+        "er bleibt dabei AUF dem Boden (kein Versinken, kein Schweben WÄHREND geerdet < 0,2 m, > 70 % geerdet; Absprünge über Kämme sind ok)"
     );
     console.log(`  (C) STUFE: erklommen ${out.stufe.climbedY} m (Kante ~${out.stufe.ledgeAbove} m über Start)`);
     ok(out.stufe.climbedY > 0.25, "eine kleine Kante (≤ STEP_UP) wird ohne Sprung erklommen");
