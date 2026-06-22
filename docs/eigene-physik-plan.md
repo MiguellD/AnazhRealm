@@ -170,6 +170,19 @@ P1–P3 brauchen NUR Stufe 1. Stufe 2/3 sind bewusste Folge-Entscheide.
 
 **P1 = Löwenanteil des Werts.** P3 = die Heilige-Lektion-Belohnung (256-MB-Heap + ~81 BVH-Bäume + die `Ammo.destroy`-Cascade-Klasse + der `optimizePhysics`-Doom-Loop-Erbe — alle weg). P4 = die Krone.
 
+### P0-ERGEBNIS — die Vorher-Zahl (GEMESSEN, `scripts/diag-physics-cost.cjs`, headless/swiftshader)
+
+| Größe | Wert | Lehre |
+|---|---|---|
+| **sync BVH-Build** | **Ø 9,18 ms/Chunk · MAX 12,3 ms** (Ø 6920 Dreiecke) | **DER FREEZE BESTÄTIGT** — exakt die dokumentierten ~10 ms. Jeder Chunk-Cross = ein synchroner ~9-ms-Spike. **Feld-nativ = 0 Build.** |
+| **stepSimulation** | Ø 0,028 ms/Frame (11 Bodies) | **Ehrlicher Befund: der laufende Ammo-Schritt ist FAST GRATIS.** Der Gewinn ist NICHT „Schritt schneller" — es ist „der Build-Spike verschwindet" + Heap + Determinismus. |
+| `_terrainDensityAt` | 2,46 µs/call | die kanonische Quelle; teurer als gehofft (voller Spalten-Kontext + 3D-Noise pro Call) → der Kollisions-Query MUSS den Spalten-Kontext über die y-/Gradient-Samples HOISTEN (V18.321-Muster). |
+| `_voxelSurfaceY` (Boden) | **43,7 µs/call** | **DER VERSTECKTE BOTTLENECK.** Der volle Spalten-Scan dominiert die Projektion (43,7 von 53,5 µs/Entität). Der Feld-Controller braucht eine LOKALE Kurz-DDA-Boden-Probe (~3-5 Samples an den Füßen), NICHT `_voxelSurfaceY`. |
+| **Projektion feld-nativ/Frame** | **typisch ~0,59 ms · worst ~2,19 ms** (Spieler + 10 Kreaturen, naiv) | Höher als der Ammo-Schritt, aber SMOOTH + winzig vs. 16,7-ms-Budget (3,5 %). **Mit der lokalen Boden-Probe + Kontext-Hoist sinkt das deutlich** (P1-Optimierung). |
+| WASM-Heap | 256 MB reserviert + 9 BVH-Bäume (bei Ring-Wachstum ~81) | fällt mit Ammo ganz weg. |
+
+**Das ehrliche Urteil:** Ammo tauscht einen **9-ms-Build-Spike pro Chunk-Cross** (= der Freeze) gegen ~0 laufende Kosten. Feld-nativ tauscht das gegen **0 Spike + ~0,6 ms smooth/Frame**. Das tötet den Freeze an der Wurzel, kostet Speicher 0 und öffnet Determinismus — der Spike-gegen-Smooth-Tausch IST der Gewinn, nicht eine schnellere Mathe. **ZWEI gemessene P1-Pflichten:** (a) die Boden-Probe als lokale Kurz-DDA (nicht `_voxelSurfaceY`), (b) der Kollisions-Query hoistet `_terrainColumnContext` über seine y-/Gradient-Samples. Ohne beide wäre der Feld-Pfad unnötig teuer.
+
 ---
 
 ## 9. Die Bewegungs-Gefühl-Wand (das Schöpfer-Auge)
