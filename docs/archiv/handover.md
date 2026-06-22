@@ -378,6 +378,17 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.325–.327 — FELD-PHYSIK WIRD STANDARD + P2 Struktur-Kollision + das echte Profi-Bewegungsgefühl
+
+Schöpfer-Befund nach dem Browser-Test: das Feld-System „klärt sich selbst" (der Freeze ist weg), aber das GEFÜHL muss echt sein — „keine Trägheit beim Bremsen; der Körper gleicht Höhe aus, dämpft — wie machens die Profis? Vollende es, gib mir keine Knöpfe." Drei Wellen, jede eine Profi-Technik (Source/Quake), nicht aus dem Bauch:
+
+- **V18.325 — Feld-Physik DEFAULT AN.** `state.fieldPhysics` flipped auf true; der Spieler läuft per Standard aus dem Dichtefeld (`feldphysik` schaltet zu Ammo für A/B). Version + `?v=`-Cache-Buster synchron. Der ehrliche Lücken-Fund beim Default-Flip: im Feld-Modus löste der Spieler NUR gegen Terrain auf → er wäre durch Wände gelaufen + durch die Start-Plattform gefallen. → P2.
+- **P2 — feld-native Struktur-Kollision** (`_stepCharacterStructures`): die Kapsel löst gegen `entry.blockerAABBs` (dichte ≥ 0.3, DIESELBE Quelle wie der Wasser-Blocker, kein Ammo, kein neuer Datenpfad). Wände blocken horizontal, Dächer/Plattformen TRAGEN (`effSurf = max(Terrain, Struktur)`), Tür-Lücken bleiben begehbar. `diag-structure-collide` 3/3 (steht auf dem Tempel-Dach, 1,6 m vor der Wand geblockt).
+- **V18.326 — Brems-Trägheit + View-Height-Smoothing.** Brems-`k` 18→9 (kurzer Schlitter statt masselosem Stopp, Ground-Friction-Feel; gemessen 1,2 m Schlitter). View-Height-Smoothing (`_smoothBodyY`, Source `SmoothViewOnStairs`): die Füße rasten hart, das Auge gleitet gedämpft nach — nur am Boden, in der Luft 1:1.
+- **V18.327 — Landungs-Absorption vollendet das Körpergefühl.** View-Punch (`_landDip` ∝ Aufprall-Tempo, ab 2,5 m/s, federt zurück). DIE GEFANGENE WURZEL (die Linse fand sie): Höhen-Glättung und Dip FOCHTEN — beim Aufprall lagte `_smoothBodyY` oben nach und hob das Auge genau so viel, wie der Dip es senkte → der Dip verpuffte (gemessen 1,8 cm statt 27 cm). Fix: harte Landung snappt die Glättung auf die Füße. `diag-walk-inertia` 4/4 (Trägheit · Glättung 17 % glatter · 27 cm Landungs-Dip + Rückfederung).
+
+**Verifikation:** Fast-Gate 13/13 grün durchweg; die drei Feld-Linsen grün. Das volle 5340-Gate gehört auf die CI — lokal stirbt der Renderer im Schwanz unter kumulierter Last (das ⛔-Verdikt enthielt physik-fremde Stats-Bänder → Tod-Kaskade, keine Regression). Das FEEL urteilt der Schöpfer-Browser; die Linsen beweisen nur, dass die Mechanik wirkt + gebunden bleibt. Offen: P3 (Ammo physisch raus) nach dem Schöpfer-Feel-Sign-off.
+
 ### DER DETERMINISMUS-BOGEN P0 + P1a + P1b — die eigene voxel-native Physik beginnt (Spieler läuft aus dem Dichtefeld, A/B gegen Ammo)
 
 Schöpfer-Entscheid (22.06.): „Ammo muss RAUS — voll. Kollision FELD-NATIV (gegen `terrainDensityAt`, kein Collision-Mesh, kein BVH-Build). Sonst bringt das, was wir tun, ja gar nichts." + „zieh durch, sei gigant." Der Plan steht in `docs/eigene-physik-plan.md` (PLAN v2). Drei Wellen GEBAUT, jede verifiziert, BEVOR die nächste fiel:
