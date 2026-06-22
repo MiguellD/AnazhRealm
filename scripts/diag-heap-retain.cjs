@@ -1,0 +1,34 @@
+// diag-heap-retain.cjs — echtes LECK vs Churn: erzwingt GC (--expose-gc) + misst den BEHALTENEN Heap
+// nach Settle vs nach langem Idle. Wächst der behaltene Heap → echtes Leck (→ GC-Freeze). Stabil → Churn.
+const puppeteer=require("puppeteer"),http=require("http"),fs=require("fs"),path=require("path");
+const PORT=4384,root=path.resolve(__dirname,"..");
+const mime={".html":"text/html",".js":"application/javascript",".wasm":"application/wasm",".json":"application/json",".woff2":"font/woff2",".css":"text/css",".png":"image/png"};
+const server=http.createServer((req,res)=>{let p=req.url.split("?")[0];if(p==="/")p="/index.html";const fp=path.join(root,p);if(!fp.startsWith(root)){res.statusCode=403;return res.end();}fs.readFile(fp,(e,d)=>{if(e){res.statusCode=404;return res.end();}res.setHeader("Content-Type",mime[path.extname(fp)]||"application/octet-stream");res.end(d);});});
+(async()=>{await new Promise(r=>server.listen(PORT,r));
+const browser=await puppeteer.launch({headless:true,protocolTimeout:300000,args:["--use-angle=swiftshader","--enable-unsafe-swiftshader","--no-sandbox","--disable-setuid-sandbox","--js-flags=--expose-gc"]});
+const page=await browser.newPage();
+const cdp=await page.target().createCDPSession(); await cdp.send("HeapProfiler.enable");
+const gc=async()=>{ try{await cdp.send("HeapProfiler.collectGarbage");}catch(e){} };
+await page.evaluateOnNewDocument(()=>{window.__anazhHeadlessNullRenderer=true;});
+await page.goto(`http://127.0.0.1:${PORT}/index.html`,{waitUntil:"domcontentloaded",timeout:30000});
+await page.evaluate(async()=>{const dl=performance.now()+90000;while((!window.anazhRealm||!window.anazhRealm.state||typeof window.anazhRealm._gameLoopTick!=="function"||!window.anazhRealm.state.blueprints)&&performance.now()<dl)await new Promise(r=>setTimeout(r,100));});
+const pump=async(n)=>{await page.evaluate(async(n)=>{const r=window.anazhRealm,pm=r.state.playerMesh;const fx=pm?pm.position.x:0,fy=pm?pm.position.y:0,fz=pm?pm.position.z:0;for(let i=0;i<n;i++){if(pm)pm.position.set(fx,fy,fz);try{r._gameLoopTick(performance.now());}catch(e){}if(i%50===0)await new Promise(x=>setTimeout(x,1));}},n);};
+const heap=async()=>page.evaluate(()=>performance.memory?+(performance.memory.usedJSHeapSize/1048576).toFixed(1):0);
+const counts=async()=>page.evaluate(()=>{const s=window.anazhRealm.state;return{scene:s.scene?s.scene.children.length:0,arch:(s.architectures||[]).length,cr:(s.creatures||[]).length,aig:s.archInstanceGroups?s.archInstanceGroups.size:0,vox:s.voxelChunks?s.voxelChunks.size:0};});
+await pump(2500); await gc(); await gc();
+const h1=await heap(), c1=await counts();
+await pump(3000); await gc(); await gc();
+const h2=await heap(), c2=await counts();
+await pump(3000); await gc(); await gc();
+const h3=await heap(), c3=await counts();
+await browser.close();server.close();
+console.log("===== BEHALTENER HEAP (erzwungenes GC) — echtes Leck? =====\n");
+console.log(`  nach Settle:      ${h1} MB  · ${JSON.stringify(c1)}`);
+console.log(`  +3000 Idle-Ticks: ${h2} MB  (${h2-h1>=0?"+":""}${(h2-h1).toFixed(1)})  · ${JSON.stringify(c2)}`);
+console.log(`  +3000 Idle-Ticks: ${h3} MB  (${h3-h2>=0?"+":""}${(h3-h2).toFixed(1)})  · ${JSON.stringify(c3)}`);
+const rate=(h3-h1)/2;
+console.log("");
+if(h3-h1>8) console.log(`  ⚠ BEHALTENER HEAP WÄCHST nach GC: +${(h3-h1).toFixed(1)} MB über 6000 Ticks (~${rate.toFixed(1)} MB/3000 Ticks) = ECHTES LECK → akkumuliert bis GC-Stop-the-World-Freeze.`);
+else console.log(`  ✅ behaltener Heap stabil nach GC (${(h3-h1).toFixed(1)} MB) → KEIN Retentions-Leck; der Idle-Heap-Anstieg war Churn (GC räumt ihn). Der Freeze ist GPU-seitig (Flugschreiber).`);
+process.exit(0);
+})().catch(e=>{console.error("Crash:",e);process.exit(1);});

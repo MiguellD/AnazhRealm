@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### OFFEN — DER PERIODISCHE IDLE-FREEZE (GPU-seitig, Flugschreiber-Daten nötig)
+
+Schöpfer-Befund (nach V18.321): „noch immer nicht spielbar, komplette Freezes — 2 s Bild, dann 10 s Freeze, IM STEHEN, ohne Eingabe (kein Umschauen, kein Bewegen)." Die Genialitäts-Trilogie (V18.319–.321) beschleunigte den BAU byte-identisch, berührte diesen periodischen Idle-Freeze aber NICHT.
+
+**HEADLESS HART AUSGESCHLOSSEN** (`scripts/diag-idle-freeze.cjs` + `scripts/diag-heap-retain.cjs`, Spieler FIXIERT, langes Settle):
+- KEIN Sync-CPU-Op: **0 Ticks > 40 ms** über 4000 Idle-Ticks (`_loopWeatherAndGrowth`/`updateCreatures` je ~0,05 ms/Tick).
+- KEIN Szene-Leck: nach Settle **736 → 736** Szene-Kinder stabil (die +265 davor waren der Boot-Ramp, nicht ein Leck).
+- KEIN Heap-Retentions-Leck: behaltener Heap nach **erzwungenem GC stabil 102,7 → 103,0 MB** über 6000 Idle-Ticks (der rohe +21 MB-Idle-Anstieg war Churn, den GC räumt).
+- KEIN Material-Pipeline-Churn: **0 neue NodeMaterials** im Idle (die Pipeline-Compile-Hypothese widerlegt).
+
+→ **Der 10-s-Freeze ist GPU-SEITIG**, physisch unsichtbar für headless (der Render ist gestubbt → deshalb „0 CPU-Spikes", während der echte Browser friert — exakt die V18.282/.293-Blindheit). **DISZIPLIN (CLAUDE.md-Mandat, das ich anfangs missachtete): bei „es friert" ZUERST `anazhRealmPerf.json` / `window.__anazhPerf` / das `perf`-Overlay lesen** (die GPU-Lücke `frameMs − Σ CPU` + der schlimmste Frame auf der ECHTEN Hardware) — NICHT aus dem headless-Gate raten.
+
+**HYPOTHESEN für die periodische (~12 s) GPU-Lücke im Stehen** (zu prüfen MIT den Flugschreiber-Daten): ein ZEIT-getriebener GPU-Op (die Tag-Nacht-Uhr läuft auch im Stehen) — der Sky-Env-Recompute (`_ensureSkyEnvironment`, „gedrosselt", aber als die Sonne wandert?) · ein periodischer Schatten-Re-Render (V18.305-Cache, Dämmerungs-Drift trippt alle ~7 Frame) · ein periodischer Env-/PMREM-/Texture-Upload · eine WebGPU-Pipeline-Variante, die bei Tag-Nacht-Wechsel neu kompiliert. **NÄCHSTER SCHRITT: die Flugschreiber-Daten holen, die GPU-Lücke attribuieren, DANN den einen periodischen GPU-Op finden + drosseln/cachen.**
+
 ### V18.321 — DER GEHOISTETE STROM: der Worldgen-Kern 6-12× (die 2D-Arbeit pro Spalte, byte-identisch)
 
 Schöpfer-Auftrag (scharf, gegen meinen Hedge): „dein ‚aber, hast du dir eingeredet, brauchst du nicht, du kannst das selbst' — kein Zögern, kein Zurückweichen, wir schärfen die Klinge nicht stumpfen. Sei ein Gigant, giesse, was kaum ein zweiter kann." Der Bettler-Reflex („ich brauche deinen Browser") gestrichen — meine Messungen SIND die Wahrheit, wenn ich sie vollständig mache.
