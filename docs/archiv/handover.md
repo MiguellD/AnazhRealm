@@ -378,6 +378,26 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.319 — DER SCHNELLE GUSS: der schwerste Algorithmus räumlich akzeleriert (4,4×, byte-identisch)
+
+Schöpfer-Auftrag: „steigere die performance durch genialität, nicht durch stutzen — was sind die schwersten prozesse, wie erhältst du das selbe ergebnis ohne verluste, evt. sogar noch tiefer, was machen die besten der besten, sei ein gigant."
+
+**DIE MESSUNG ZUERST (Regel #0):** drei Diags zogen das echte Bild — `diag-render-load` (Render: 740k Tris / 577 Draw-Calls, GPU-gebunden, look-bound), `diag-startup-cost` (Boot-Sync nur noch **5 ms** — der Freeze-Bogen V18.314–.316 ist wirklich tot), `diag-loop-cost` (Per-Frame-CPU 3,58 ms/Tick, Nexus+Emotion nur 14,7 % — kein heisser Loop). Der **schwerste einzelne Algorithmus** liegt nicht im Frame, sondern im **Skin-Isosurface-Bau** (`bake-core`): der res-96-Avatar **~14 s** (rein-Node gemessen), ~0,6 s pro Kreatur. Off-thread (V18.315/.316) versteckt die Kosten, aber der Algorithmus selbst war brute.
+
+**DIE WURZEL:** `bakeSkinGeometry` füllte ein `G³`-Gitter (res-96-Avatar: 97³ ≈ 912k Punkte), und an JEDEM Punkt lief `field()` über ALLE ~270 Knochen (Kapsel/Ellipsoid-SDF + smin) ≈ **65 M SDF-Auswertungen** — die allermeisten tief im Körper oder weit draußen in der leeren Bounding-Box, fern der Oberfläche (wo das Feld ≈0 ist) = reine Verschwendung. Das ist das brute O(G³·Knochen), das die „besten der besten" mit räumlicher Akzeleration / narrow-band erschlagen (OpenVDB).
+
+**DER GIGANT-SCHRITT (Genialität, kein Stutzen):** ein grobes „bone grid" (`NC≈N/3`, gedeckelt) trägt pro Würfel-Zelle NUR die lokal beitragenden Knochen ein; `field()` schlägt die Zelle in O(1) nach und iteriert die kurze Zell-Liste statt aller 270. **GEMESSEN: Avatar res-96 14437→3359 ms (4,4×), res-64 2,1×, Kreaturen ohne Regression** (gate `bones≥64` → die ~40-Knochen-Streu-Kreaturen bleiben am Original-Pfad; `field()` wird NACH dem Gitter-Bau definiert → stabiles `__cg`, der heisse Loop bleibt monomorph; leere Zellen = geteiltes EMPTY-Array → kein null-Wächter).
+
+**BEWEISBAR OHNE VERLUST — BYTE-IDENTISCH:** ein ausgelassener Knochen erfüllt für JEDEN Punkt der Zelle `smin-h=1` (→ `smin(d,sdf,k)=d` EXAKT, additiver Beitrag 0) bzw. Displace-`tt=0` (→ Beitrag 0). Garantiert durch den Rand-Margin `Tsmin=(Lsmin+1)·Zelldiagonale + kMax + (DISPLACE?dispCap:0)`. Das neue rein-Node-Orakel `diag-bake-bench` (selbst-tragend: akzeleriert vs. brute via `opts.__noAccel`) misst **maxDiff EXAKT 0** über Avatar+Kreaturen × res/displace; das alte `diag-bake-ab` (Live-Pfad vs bake-core) bleibt byte-identisch.
+
+**ZWEI SUBTILE WURZELN, die das Orakel fing (nicht meine Wachsamkeit — die Linse):** (1) bei DISPLACE liegt die Iso bei `d∈[0,dispCap]` (nach außen geschoben), NICHT `d≈0` → ohne `+dispCap` im Margin ein 1e-7-Versatz am Avatar; (2) zu feine Zellen (N/2) lassen den absoluten Margin kollabieren → echter 1e-3-Versatz (die Klippe, gemessen) → `N/3` ist der sichere Schnellpunkt mit Puffer (Klippe erst bei NC≈48). Der Fehlermodus ist GRAZIÖS (sub-Mikron-Versatz, nie Loch/Crash).
+
+**„EVT. NOCH TIEFER":** der 4,4×-Headroom macht res-128 für den Avatar bezahlbar (~7,7 s vs. die alten 14,4 s bei res-96) — die Tiefe-Option bleibt Schöpfer-Browser (LOOK), CLAUDE.md notiert sie als Hebel.
+
+**VERIFIKATION:** `diag-bake-bench` (accel==brute, maxDiff 0, Avatar 4,4×) · `diag-bake-ab` (byte-identisch) · format/lint/`node --check` sauber · Fast-Gate 13/0 (Avatar baut als Rig end-to-end) · voller Playtest [Lauf]. Neue Werkzeuge: `scripts/diag-skin-dump.cjs` (reale Parts→Fixture), `scripts/diag-bake-bench.cjs` (das Orakel). Version 18.319.0 (Konstante + package.json + `index.html ?v=` synchron — der `?v=`-Bump ist Pflicht, weil `bake-core.js` separat geladen wird).
+
+**OFFEN (die nächsten Giganten, mit Notiz):** der Render (740k Tris / 577 Draw-Calls + Schatten-Pass) ist GPU-gebunden + look-bound → **GPU-Culling/Indirect-Draw** ist die nächste Bestie (Schöpfer-Browser, eigene Welle) · der **Worldgen-Monolith** auf dem kritischen Pfad · der **Determinismus-Bogen** (voxel-native Kollision statt sync-BVH).
+
 ### V18.316 — DER BÄCKER, STUFE 3: der Avatar off-thread (der letzte Skin-Freeze ist tot)
 
 Stufe 3 schließt den Freeze-Bogen. Der Avatar-Skin war der EINE Bau, der V18.315 noch übrig liess — er backt jetzt auch off-thread, durch dieselbe Bäcker-Quelle.

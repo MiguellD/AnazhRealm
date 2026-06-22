@@ -121,6 +121,25 @@
             }
         }
         if (!bones.length) return null;
+        // Per-Knochen SOLIDEN-AABB (tight, kein Margin) — die räumliche Akzeleration unten liest sie.
+        for (const bn of bones) {
+            if (bn.ell) {
+                bn.bx0 = bn.c[0] - bn.r[0];
+                bn.bx1 = bn.c[0] + bn.r[0];
+                bn.by0 = bn.c[1] - bn.r[1];
+                bn.by1 = bn.c[1] + bn.r[1];
+                bn.bz0 = bn.c[2] - bn.r[2];
+                bn.bz1 = bn.c[2] + bn.r[2];
+            } else {
+                const mr = Math.max(bn.ra, bn.rb);
+                bn.bx0 = Math.min(bn.a[0], bn.b[0]) - mr;
+                bn.bx1 = Math.max(bn.a[0], bn.b[0]) + mr;
+                bn.by0 = Math.min(bn.a[1], bn.b[1]) - mr;
+                bn.by1 = Math.max(bn.a[1], bn.b[1]) + mr;
+                bn.bz0 = Math.min(bn.a[2], bn.b[2]) - mr;
+                bn.bz1 = Math.max(bn.a[2], bn.b[2]) + mr;
+            }
+        }
         // (V18.315: das ungenutzte `distSeg` aus dem Original wurde beim Extrahieren gekehrt —
         // es war nie aufgerufen [die Distanz läuft über sdTaper]; keine Passagiere.)
         // wahrerguss System B — SDF + SMOOTH-MINIMUM (Inigo Quilez, der Profi-Kern, Schöpfer-
@@ -171,46 +190,14 @@
         // (smoothstep, anisotrop via die Ellipsoid-Extents) — amp/reach/Form einzeln einrastbar.
         const DISPLACE = !!(opts && opts.displace);
         const dispCap = opts && Number.isFinite(opts.dispCap) ? opts.dispCap : 0.45; // Validitäts-Deckel: zu viel Verschiebung bricht den ~Einheitsgradient (floating island/Pinch)
-        const field = (x, y, z) => {
-            let d = 1e9;
-            for (const bn of bones) {
-                if (DISPLACE && bn.def && bn.ell) continue; // FLEISCH-Muskel (def) = Verschiebung; KNOCHEN/Struktur (non-def) = scharfe Union. Das MATERIAL treibt das Substrat.
-                // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
-                // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
-                // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
-                // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
-                // BEDINGUNG ii (lebendiger-koerper §2½ — LANDMARK-SCHÄRFE): ein Knochen mit
-                // `kScale < 1` blendet TIGHT (knochige Kante: Schulterblatt-Gräte · Jochbein ·
-                // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
-                // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
-                // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
-                // MATERIAL treibt die Schärfe: KNOCHEN blendet TIGHT (×0.66 → scharfe, FIXE Struktur),
-                // FLEISCH weich (×1.0). Das Material tut, was es soll — keine Hand-Zahl pro Masse.
-                const matK = bn.mat === "knochen" ? 0.66 : 1.0;
-                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1) * matK);
-                d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
-            }
-            let f = -d; // Basis-Feld: SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
-            if (DISPLACE) {
-                let disp = 0;
-                for (const bn of bones) {
-                    if (!bn.def || !bn.ell) continue;
-                    const c = bn.c,
-                        r = bn.r;
-                    const ex = (x - c[0]) / r[0],
-                        ey = (y - c[1]) / r[1],
-                        ez = (z - c[2]) / r[2];
-                    const kl = Math.sqrt(ex * ex + ey * ey + ez * ez); // 0 Zentrum · 1 Ellipsoid-Oberfläche
-                    const reach = bn.reach || 1.6;
-                    const tt = Math.max(0, 1 - kl / reach);
-                    // AMP regel-getrieben: ∝ kleinster Halbachse (größerer Muskel schwillt mehr) — keine Hand-Zahl
-                    const amp = bn.amp != null ? bn.amp : bn.rmin * 0.85;
-                    disp += amp * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
-                }
-                f += Math.min(dispCap, disp); // Validitäts-Deckel (Einheitsgradient bewahren)
-            }
-            return f;
-        };
+        // __cg = das grobe Knochen-Gitter (unten gefüllt, sobald min/span/N feststehen). field()
+        // liest die LOKALE Knochen-Liste der Zelle statt aller Knochen (räumliche Akzeleration).
+        // Eine leere Zelle (fern jeder Masse) → list undefined → d bleibt 1e9 → f=-1e9 (korrekt
+        // negativ = außen; der Mesher sieht keinen Vorzeichenwechsel → byte-identisch zur Vollsumme).
+        // __cg = das grobe Knochen-Gitter; field() wird ERST NACH dem Bau definiert (s.u.), damit
+        // die Closure ein STABILES __cg sieht (kein per-Call-Branch auf eine veränderliche Variable
+        // → der heisse Loop bleibt monomorph/optimiert, auch der nicht-akzelerierte Kreatur-Pfad).
+        let __cg = null;
         // ── SURFACE NETS (naiv, dual): ein Vertex pro Vorzeichen-wechselnder Zelle, an die
         //    gemittelten Kanten-Kreuzungen gesetzt; Quads über kreuzende Gitter-Kanten. ──
         const PAD = 0.02;
@@ -230,6 +217,137 @@
         const skinResCap = (opts && opts.headlessResCap) | 0;
         if (skinResCap > 0 && N > skinResCap) N = skinResCap;
         const h = span / N;
+        // ── RÄUMLICHE AKZELERATION (OpenVDB-Stil „bone grid", der Profi-Kern gegen O(G³·bones)):
+        //    ein grobes Würfel-Zell-Gitter über [min, min+span] trägt pro Zelle NUR die Knochen
+        //    ein, die dort etwas beitragen können. field() iteriert dann die lokale Liste statt
+        //    aller ~270 Knochen. BYTE-EXAKT: ein ausgelassener Knochen erfüllt für JEDEN Punkt der
+        //    Zelle smin-h=1 (smin=d, additiver Beitrag 0) bzw. Displace-tt=0 — garantiert durch den
+        //    Rand-Margin (Lipschitz·Zelldiagonale + kMax bzw. die reach-Ellipsoid-Hülle). Das
+        //    Byte-Orakel (diag-bake-bench / diag-bake-ab) bewacht den Margin: zu eng → der Test
+        //    schlägt aus (Loch/Diff), nie ein stiller Fehler. Aktive (Oberflächen-)Zellen liegen
+        //    immer dicht an ihren Knochen → ihre Liste ist vollständig → identische Feldwerte.
+        // GATE: nur bauen, wenn es sich lohnt — bei wenigen Knochen (Streu-Kreaturen ~40) ist der
+        // Gitter-Bau + Zell-Lookup teurer als der direkte Loop (GEMESSEN: kleine Körper −5 %). Der
+        // Gewinn lebt bei der KNOCHEN-REICHEN Avatar-Klasse (~270 Teile → 4×). Darunter bleibt __cg
+        // null → field() iteriert alle Knochen direkt (Original-Pfad, null Overhead, null Regression).
+        if (bones.length >= 64 || (opts && opts.accelNC)) {
+            // Zell-Auflösung: feiner = kürzere Listen = schneller, ABER der Margin (∝ Zelldiagonale)
+            // darf nicht unter das physisch nötige Maß kollabieren (GEMESSEN: bei N/2 reißt der
+            // displace-Avatar mit 1e-3 — ein echter, wenn auch winziger Versatz). N/3 ist der
+            // gemessene sichere Schnellpunkt (Avatar 4×, byte-identisch); gedeckelt gegen Kollaps.
+            const NC = (opts && opts.accelNC) | 0 || Math.max(8, Math.min(36, Math.round(N / 3)));
+            const cs = span / NC; // Zell-Kantenlänge (Würfel-Domäne)
+            const cellDiag = cs * 1.7320508; // √3 · Kantenlänge = Raumdiagonale
+            const Lsmin = opts && Number.isFinite(opts.accelL) ? opts.accelL : 4; // Sicherheits-Lipschitz des smin-Feldes (GEMESSEN diag-bake-bench: byte-identisch ab L=3 über Avatar+Kreaturen; 4 = Puffer; der Fehlermodus ist graziös = sub-Mikron-Versatz, nie Loch/Crash; Orakel bewacht)
+            // Margin deckt: die d-Variation über die Zelle (Lipschitz·Diagonale) + die Blendbreite k
+            // + bei DISPLACE den Oberflächen-Versatz (die Iso liegt dann bei d∈[0,dispCap], nicht d≈0).
+            const Tsmin = (Lsmin + 1) * cellDiag + kMax + (DISPLACE ? dispCap : 0);
+            // Leere Zellen tragen EIN geteiltes leeres Array → field() braucht keinen null-Wächter
+            // (cells[ci] ist IMMER iterierbar; length 0 = ferne Zelle → d bleibt 1e9 = außen).
+            const EMPTY = [];
+            const cells = new Array(NC * NC * NC).fill(EMPTY);
+            const ox = min.x,
+                oy = min.y,
+                oz = min.z,
+                invcs = 1 / cs;
+            const clampi = (v) => (v < 0 ? 0 : v >= NC ? NC - 1 : v);
+            const scatter = (bn, ax0, ay0, az0, ax1, ay1, az1) => {
+                const i0 = clampi(((ax0 - ox) * invcs) | 0),
+                    i1 = clampi(((ax1 - ox) * invcs) | 0);
+                const j0 = clampi(((ay0 - oy) * invcs) | 0),
+                    j1 = clampi(((ay1 - oy) * invcs) | 0);
+                const k0 = clampi(((az0 - oz) * invcs) | 0),
+                    k1 = clampi(((az1 - oz) * invcs) | 0);
+                for (let kk = k0; kk <= k1; kk++)
+                    for (let jj = j0; jj <= j1; jj++)
+                        for (let ii = i0; ii <= i1; ii++) {
+                            const ci = ii + NC * (jj + NC * kk);
+                            if (cells[ci] === EMPTY) cells[ci] = [];
+                            cells[ci].push(bn);
+                        }
+            };
+            for (const bn of bones) {
+                if (DISPLACE && bn.def && bn.ell) {
+                    // Displace-Knochen: tt>0 nur innerhalb der reach-Ellipsoid-Hülle → diese AABB (+Zelldiag).
+                    const reach = bn.reach || 1.6,
+                        m = cellDiag;
+                    scatter(
+                        bn,
+                        bn.c[0] - reach * bn.r[0] - m,
+                        bn.c[1] - reach * bn.r[1] - m,
+                        bn.c[2] - reach * bn.r[2] - m,
+                        bn.c[0] + reach * bn.r[0] + m,
+                        bn.c[1] + reach * bn.r[1] + m,
+                        bn.c[2] + reach * bn.r[2] + m
+                    );
+                } else {
+                    // smin-Knochen: jenseits Soliden-AABB+Tsmin ist smin-h=1 (Beitrag 0).
+                    scatter(
+                        bn,
+                        bn.bx0 - Tsmin,
+                        bn.by0 - Tsmin,
+                        bn.bz0 - Tsmin,
+                        bn.bx1 + Tsmin,
+                        bn.by1 + Tsmin,
+                        bn.bz1 + Tsmin
+                    );
+                }
+            }
+            __cg = { cells, nc: NC, ox, oy, oz, inv: invcs };
+        }
+        if (opts && opts.__noAccel) __cg = null; // Diagnose-Schalter: brute-force (alle Knochen) — der Byte-Maßstab
+        // field() — JETZT definiert (stabiles __cg): liest die lokale Zell-Knochen-Liste (akzeleriert)
+        // bzw. alle Knochen (kleiner Körper / Diagnose). Byte-identisch zur Vollsumme (Margin oben).
+        const field = (x, y, z) => {
+            let list;
+            if (__cg) {
+                let cx = ((x - __cg.ox) * __cg.inv) | 0;
+                cx = cx < 0 ? 0 : cx >= __cg.nc ? __cg.nc - 1 : cx;
+                let cy = ((y - __cg.oy) * __cg.inv) | 0;
+                cy = cy < 0 ? 0 : cy >= __cg.nc ? __cg.nc - 1 : cy;
+                let cz = ((z - __cg.oz) * __cg.inv) | 0;
+                cz = cz < 0 ? 0 : cz >= __cg.nc ? __cg.nc - 1 : cz;
+                list = __cg.cells[cx + __cg.nc * (cy + __cg.nc * cz)];
+            } else list = bones;
+            let d = 1e9;
+            for (const bn of list) {
+                if (DISPLACE && bn.def && bn.ell) continue; // FLEISCH-Muskel (def) = Verschiebung; KNOCHEN/Struktur (non-def) = scharfe Union. Das MATERIAL treibt das Substrat.
+                // PRO-GELENK-k (Schöpfer-Brief „grosses k an der Schulter = kontinuierliches
+                // Fleisch"): k skaliert mit dem kleinsten Radius des Knochens → dicke Körper-Massen
+                // blenden mit GROSSEM k (glatte Schulter), schlanke Glieder mit kleinem k →
+                // definierte Kante. Gedeckelt, damit das Feld ein gültiges SDF bleibt.
+                // BEDINGUNG ii (lebendiger-koerper §2½ — LANDMARK-SCHÄRFE): ein Knochen mit
+                // `kScale < 1` blendet TIGHT (knochige Kante: Schulterblatt-Gräte · Jochbein ·
+                // Knie · Ellbogen · Hüfthöcker), einer mit `kScale > 1` weich (Muskel-Bauch). So
+                // tragen weiche Muskeln UND scharfe Knochen-Vorsprünge in EINEM Feld (das Auge
+                // liest „echt" an den Landmarken). Floor 0.012 hält das Feld ein gültiges SDF.
+                // MATERIAL treibt die Schärfe: KNOCHEN blendet TIGHT (×0.66 → scharfe, FIXE Struktur),
+                // FLEISCH weich (×1.0). Das Material tut, was es soll — keine Hand-Zahl pro Masse.
+                const matK = bn.mat === "knochen" ? 0.66 : 1.0;
+                const k = Math.max(kFloor, Math.min(kMax, Math.max(0.022, bn.rmin * 0.52)) * (bn.kScale || 1) * matK);
+                d = smin(d, bn.ell ? sdEllipsoid(x, y, z, bn) : sdTaper(x, y, z, bn), k);
+            }
+            let f = -d; // Basis-Feld: SDF<0 (innen) → >0 für den Mesher (Konvention: >0 = innen)
+            if (DISPLACE) {
+                let disp = 0;
+                for (const bn of list) {
+                    if (!bn.def || !bn.ell) continue;
+                    const c = bn.c,
+                        r = bn.r;
+                    const ex = (x - c[0]) / r[0],
+                        ey = (y - c[1]) / r[1],
+                        ez = (z - c[2]) / r[2];
+                    const kl = Math.sqrt(ex * ex + ey * ey + ez * ez); // 0 Zentrum · 1 Ellipsoid-Oberfläche
+                    const reach = bn.reach || 1.6;
+                    const tt = Math.max(0, 1 - kl / reach);
+                    // AMP regel-getrieben: ∝ kleinster Halbachse (größerer Muskel schwillt mehr) — keine Hand-Zahl
+                    const amp = bn.amp != null ? bn.amp : bn.rmin * 0.85;
+                    disp += amp * tt * tt * (3 - 2 * tt); // smoothstep-Tropfen (kein Ball, kein Erbse)
+                }
+                f += Math.min(dispCap, disp); // Validitäts-Deckel (Einheitsgradient bewahren)
+            }
+            return f;
+        };
         const off = [
             [0, 0, 0],
             [1, 0, 0],
