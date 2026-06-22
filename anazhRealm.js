@@ -14900,12 +14900,17 @@ class AnazhRealm {
         // jede feuerte einen vollen PMREM-Render PLUS ein NEUES scene.environment-Texture-
         // Objekt → WebGPU rekompilierte die Pipelines ALLER env-samplenden PBR-Materialien
         // (synchroner Multi-Sekunden-GPU-Stall = der Freeze). Zwei Hälften der Heilung:
-        // (a) ein Wall-Clock-Mindestabstand deckelt die RATE (die Env-Reflexion ~2 s nach-
-        // laufen zu lassen ist unmerklich); (b) der Render-Target wird WIEDERVERWENDET (unten)
+        // (a) ein Wall-Clock-Mindestabstand (SKY_ENV_REGEN_MIN_MS) deckelt die RATE (die Env-
+        // Reflexion ein paar Sekunden nachlaufen zu lassen ist unmerklich); (b) der Render-Target
+        // wird WIEDERVERWENDET (unten)
         // → stabile Texture-Identität → kein Pipeline-Cascade.
         const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
         const drift = last ? Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) : Infinity;
-        if (!force && last && (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < 2000)) {
+        if (
+            !force &&
+            last &&
+            (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS)
+        ) {
             return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
@@ -73731,7 +73736,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.323.0";
+AnazhRealm.VERSION = "18.324.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -76652,6 +76657,14 @@ AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstu
 // wie das Erwachen aus dem Schlaf: die Welt ist verborgen, die fernen Spawns unsichtbar; sie
 // enthüllt sich, sobald der Boden erscheint (der Nebel weitet ring-gekoppelt, exp-geglättet).
 AnazhRealm.AWAKEN_FOG_FAR = 14;
+// V18.324 — der Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock). Die
+// Tag-Nacht-Uhr + eine Emotion (skybox_color → skyTint-Cross-Fade über ~45 s) driften die
+// Himmelsfarbe → die Env regeneriert (V18.322 identitäts-stabil, kein Recompile-Cascade mehr,
+// ABER jede Regenerierung rendert einen PMREM-Pass). Bei 2 s feuerte das ~22× über den 45-s-
+// Cross-Fade = die wahrscheinlichste Wurzel des „kurzen Freeze bei Emotion" (der PMREM-Render
+// kostet auf schwacher GPU). 6 s deckelt das auf ~7× — die IBL-Reflexion auf Metallen ein paar
+// Sekunden nachlaufen zu lassen ist unmerklich (sie ist ein weicher Sekundär-Effekt).
+AnazhRealm.SKY_ENV_REGEN_MIN_MS = 6000;
 // V18.306 — der Frame muss SO LANGE anhaltend über Budget sein, bevor der Ring eine Schale
 // zurückgibt: lang genug, dass ein transienter Bau-/Carve-Spike (< 200 ms) NICHT schrumpft,
 // kurz genug, dass echte Dauerlast (Freeze) den Ring zügig auf die haltbare Größe senkt.

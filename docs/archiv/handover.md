@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.324 — DER EMOTIONS-FREEZE GEMESSEN + die Sky-Env-Regen-Rate gedrosselt (die wahrscheinliche Wurzel; Rest = Flugschreiber)
+
+Schöpfer-Befund (nach V18.322): „Emotionen triggert noch neben dem Welt-Effekt einen kurzen Freeze, das ist noch nicht sauber." Eine Emotion feuert DSL-Welt-Effekte (`updatePlayerEmotions` → `trigger`): joy/awe → `skybox_color`, sorrow/hope → `weather`.
+
+GEMESSEN (zwei neue Linsen, beide am ECHTEN bzw. Null-Renderer):
+- `diag-emotion-freeze` (GPU-(Re)Kompilierungen je Effekt, echter Renderer/WebGL2-Proxy): joy→skybox_color = **11 recompiles BEIM 1. MAL, 0 danach**; awe = 2; weather rainy/sunny ≈ 0. → KEIN grosser Recompile-Cascade (die 270-Cascade-Klasse war die Sky-Env-Identität, V18.322 gefixt); nur ein kleiner EINMALIGER Erst-Compile.
+- `diag-emotion-time` (reine CPU/JS-Zeit, Null-Renderer): `dslRun` ≈ **0–0,6 ms**, die Folge-Ticks = exakt die Baseline. → KEIN CPU-Spike (kein Partikel-Spawn/Geometrie-Bau). `_setWeather` ist billig (setzt nur die Transition + `updateCreatureEmotions`).
+
+WURZEL (die wahrscheinlichste, proxy-begrenzt): der `skybox_color`-Effekt setzt `skyTint` → ein ~45-s-Cross-Fade driftet `nebulaColor` → die Sky-Env regeneriert. V18.322 machte jede Regenerierung identitäts-stabil (kein Recompile-Cascade), ABER jede rendert einen PMREM-Pass; bei 2 s Mindestabstand feuerte das ~22× über den Cross-Fade. Auf schwacher GPU kostet der PMREM-Render → ~22 kleine Hitches nach jeder Emotion = der „kurze Freeze".
+
+FIX: `SKY_ENV_REGEN_MIN_MS` 2 s → **6 s** (die IBL-Reflexion ein paar Sekunden nachlaufen zu lassen ist unmerklich — sie ist ein weicher Sekundär-Effekt) → ~22× → ~7× über den Cross-Fade (und gleichermassen weniger Regen über die normale Tag-Nacht-Drift). Low-risk, kann nur HELFEN (weniger Renders).
+
+EHRLICHE GRENZE: die PMREM-Render-Kosten auf der ECHTEN GPU des Schöpfers konnte ich auf dem swiftshader/WebGL2-Proxy NICHT messen — das ist eine begründete Hypothese, kein Beweis. Bleibt der Freeze, ist der `anazhRealmPerf.json`-Flugschreiber (die reale Per-Frame-GPU-Lücke während einer Emotion) die maßgebliche Quelle (CLAUDE.md-Mandat). Der einmalige 11-Recompile (erster skybox_color) bleibt als kleiner Erst-Compile offen (vorwärmbar, falls nötig). Werkzeuge: `diag-emotion-freeze` · `diag-emotion-time`.
+
 ### V18.323 — DER NEBEL FOLGT DER WIESE: der Lade-Rhythmus an die Gras-Front gekoppelt (Schöpfer „der Nebel verschwindet bevor die Wiese da ist")
 
 Schöpfer-Befund (nach dem V18.322-Freeze-Fix, „wir sind zurück!"): „der Nebel verschwindet bevor die Wiese da ist, und hinter den leeren See — wirklich meinen Bereich sauber laden, DANN den Ring erst wachsen lassen, oder?" Der Instinkt war exakt richtig + deckte eine echte Desync auf.
