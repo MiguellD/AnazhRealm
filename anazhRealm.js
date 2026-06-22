@@ -263,6 +263,13 @@ class AnazhRealm {
             tmpTransform: null,
             scaleFactor: 1,
             gravity: -14.715,
+            // Determinismus-Bogen P1b — A/B-Schalter: ist `fieldPhysics` an, treibt der
+            // feld-native Kapsel-Controller (`_stepCharacter`) den Spieler statt Ammo
+            // (kein BVH-Build, deterministisch, der gecarvte Tunnel sofort begehbar).
+            // Default AUS → Ammo treibt alles, das Gate ist unverändert.
+            fieldPhysics: false,
+            _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
+            _fieldGravityZeroed: false, // ob die Ammo-Body-Schwerkraft im Feld-Modus genullt ist
             abilities: {},
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
@@ -22283,6 +22290,15 @@ class AnazhRealm {
         // (pro-Subsystem ms) + wie der Regelkreis steht (loadScale/δ/Stellgrößen).
         if (vc === "perf" || vc === "perf sense" || vc === "debug perf") {
             this._togglePerfOverlay();
+            return true;
+        }
+        // Determinismus-Bogen P1b — der A/B-Schalter für die feld-native Kapsel-Physik.
+        if (vc === "feldphysik" || vc === "field physics" || vc === "fieldphysics") {
+            const on = this.setFieldPhysics(!this.state.fieldPhysics);
+            this.log(
+                `Feld-Physik ${on ? "AN — der Spieler läuft jetzt aus dem Dichtefeld." : "AUS — zurück auf Ammo."}`,
+                "INFO"
+            );
             return true;
         }
         if (vc === "voxel carve" || vc === "voxel fill") {
@@ -72656,6 +72672,10 @@ class AnazhRealm {
             this.state.physicsWorld.stepSimulation(delta, 5, 1 / 60);
             for (let i = 0; i < this.state.rigidBodies.length; i++) {
                 const mesh = this.state.rigidBodies[i];
+                // P1b — im Feld-Modus treibt `_stepCharacter` den Spieler (nach der
+                // Schleife); Ammo integriert hier nur die ANDEREN Körper. Der Player-
+                // Body wird übersprungen, seine Ammo-Transform NICHT ins Mesh gelesen.
+                if (mesh === this.state.playerMesh && this.state.fieldPhysics) continue;
                 const body = mesh.userData.physicsBody;
                 const motionState = body.getMotionState();
                 if (motionState) {
@@ -72854,7 +72874,197 @@ class AnazhRealm {
                     }
                 }
             }
+            // P1b — der feld-native Spieler-Schritt (A/B; läuft NACH den Ammo-Körpern,
+            // damit Sattel/Plattform-Transforms schon aktuell sind).
+            if (this.state.fieldPhysics) this._stepCharacter(delta, currentTime);
         }
+    }
+
+    // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER (Determinismus-Bogen P1b) =====
+    // Treibt den Spieler aus dem Dichtefeld (`_field*`-Helfer, P1a) statt aus der Ammo-
+    // BVH — deterministisch, kein per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel),
+    // ein gecarvter Tunnel ist SOFORT begehbar. Die Bewegungs-LOGIK bleibt EINE Quelle:
+    // `_loopPlayerMovement` schreibt die horizontale Intent-Velocity weiter in den Ammo-
+    // Body (die exp-Lerp-Kurven, Slope-Penalty, Sattel — alles unberührt), dieser
+    // Controller LIEST sie + integriert vertikal/Kollision selbst. vy lebt feld-eigen
+    // (`_fieldVy`), die Ammo-Body-Schwerkraft ist genullt (kein Doppel-Gravity), der Body
+    // wird auf die Feld-Position teleportiert (Raycasts/Wasser-Kontext lesen ihn weiter).
+    _stepCharacter(delta, currentTime) {
+        const s = this.state;
+        const mesh = s.playerMesh;
+        const body = s.playerBody;
+        if (!mesh || !body) return;
+        const dt = Math.min(0.1, Math.max(0.0001, delta));
+        const footDrop = AnazhRealm.PLAYER_FOOT_OFFSET; // Füße = position.y − footDrop (Box-Unterkante)
+
+        // 1. Den Player-Body EINMAL aus Ammos Dynamik nehmen: Schwerkraft nullen (kein
+        //    Doppel-Gravity) UND CF_NO_CONTACT_RESPONSE (4) — Ammo erkennt Kollisionen
+        //    weiter (Raycasts), gibt der teleportierten Box aber KEINE Kontakt-Impulse
+        //    mehr (sonst schiebt der Solver sie aus dem Terrain → vergiftet `_fieldVy`,
+        //    fehlgedeutet als Sprung → Oszillation/Schweben). Der Body bleibt reiner
+        //    Velocity-Speicher (Handshake mit `_loopPlayerMovement`) + Raycast-Proxy.
+        if (!s._fieldGravityZeroed) {
+            body.activate(true);
+            body.setGravity(this.setVec(s.tmpVec1, 0, 0, 0));
+            body.setCollisionFlags(body.getCollisionFlags() | 4);
+            s._fieldGravityZeroed = true;
+        }
+
+        // 2. Velocity lesen: horizontal = die Intent-Velocity aus `_loopPlayerMovement`
+        //    (Ammo lässt x/z unberührt, da teleportiert). vy = feld-eigen; ein frischer
+        //    Sprung (handleJump schrieb body.vy = jumpPower) wird übernommen.
+        const vBody = body.getLinearVelocity();
+        let vx = vBody.x();
+        let vz = vBody.z();
+        const bvy = vBody.y();
+        if (bvy > s._fieldVy + 0.5) s._fieldVy = bvy; // frischer Sprung-Impuls
+        let vy = s._fieldVy;
+
+        // 3. Wasser-Kontext (dieselbe EINE Quelle wie der Ammo-Pfad) → Auftrieb/Schwimmen.
+        const wctx = this._playerWaterContext(mesh.position.x, mesh.position.y, mesh.position.z);
+        let submerged = false;
+        let waterY = -Infinity;
+        if (wctx !== null) {
+            submerged = wctx.submerged;
+            waterY = submerged ? wctx.surfaceY : -Infinity;
+        } else if (typeof s.waterLevel === "number") {
+            const eff = this._waterLevelAt(mesh.position.x, mesh.position.z);
+            waterY = typeof eff === "number" ? eff : s.waterLevel;
+            submerged = mesh.position.y < waterY;
+        }
+        s.playerUnderwater = submerged;
+        if (submerged) {
+            let eyeWaterY = waterY;
+            const runSurf = this._waterRunSurfaceAt(mesh.position.x, mesh.position.z);
+            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) eyeWaterY = runSurf;
+            s.playerEyesUnderwater = mesh.position.y + 1.6 < eyeWaterY;
+        } else {
+            s.playerEyesUnderwater = false;
+        }
+
+        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion);
+        //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
+        if (submerged) {
+            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, !!s.keys["shift"], !!s.keys[" "]);
+            vx *= 0.7;
+            vz *= 0.7;
+        } else {
+            vy += (s.gravity || -14.715) * dt;
+            if (vy < -25) vy = -25;
+        }
+
+        // 5. Position vorintegrieren (world units, scaleFactor = 1).
+        let nx = mesh.position.x + vx * dt;
+        let ny = mesh.position.y + vy * dt;
+        let nz = mesh.position.z + vz * dt;
+
+        // 6. BODEN-SNAP (lokale DDA, der P1a-6×-Hebel) — er BESITZT die Vertikale (exakt,
+        //    deterministisch). Füße ruhen auf der Oberkante → ny = surf + footDrop. Schnappt
+        //    beim Landen/Stehen UND hebt über kleine Stufen: der Snap IST die Stufe-hoch-
+        //    Mechanik (er läuft VOR der Wand-Kollision, damit die Füße nicht an Kanten hängen).
+        const feetY = ny - footDrop;
+        const surf = this._fieldSurfaceBelow(
+            nx,
+            feetY + AnazhRealm.PLAYER_STEP_UP,
+            nz,
+            footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 2
+        );
+        let grounded = false;
+        let groundNormalY = 1.0;
+        if (surf !== null) {
+            const restY = surf + footDrop;
+            const gap = ny - restY; // > 0: über der Ruhe (in der Luft/bergab) · < 0: darunter (Stufe)
+            // grounded, wenn die Oberfläche im HAFT-BAND liegt [−STEP_UP .. +GROUND_SNAP] UND
+            // wir nicht aktiv AUFsteigen (ein Sprung-Impuls vy ≫ 0 verlässt den Boden). Das
+            // +GROUND_SNAP ist die Boden-HAFTUNG bergab — ohne sie „hüpft" der Läufer den Hang
+            // hinab (die gemessene Wurzel: ny blieb konstant über der fallenden Oberfläche, nie
+            // geerdet). Höher als das Band = echte Wand/Klippe (Snap aus → fallen/blocken).
+            if (vy <= 0.5 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && gap >= -AnazhRealm.PLAYER_STEP_UP) {
+                ny = restY;
+                vy = 0;
+                grounded = true;
+                const g = this._fieldGradient(nx, surf, nz, {});
+                groundNormalY = g.y;
+            }
+        }
+
+        // 7. WAND-KOLLISION — nur HORIZONTAL (der Boden-Snap besitzt die Vertikale, sonst
+        //    fechten beide → der Spieler schwebt). Die Wand-Kugeln beginnen ERST über der
+        //    Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte
+        //    Wände blocken (kein Hängenbleiben am Stufen-Riser). Die obere Kugel klemmt
+        //    zusätzlich den Aufstieg an einer Decke.
+        const wR = AnazhRealm.PLAYER_WALL_RADIUS;
+        const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR; // Boden der untersten Wand-Kugel = feetY + STEP_UP
+        const p = { x: 0, y: 0, z: 0 };
+        const wallYs = [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf
+        for (let k = 0; k < wallYs.length; k++) {
+            p.x = nx;
+            p.y = wallYs[k];
+            p.z = nz;
+            const oy = p.y;
+            if (this._fieldResolveSphere(p, wR, null)) {
+                nx = p.x; // nur die horizontale Korrektur übernehmen (an Wänden gleiten)
+                nz = p.z;
+                if (k === wallYs.length - 1 && p.y < oy - 0.001 && vy > 0) vy = 0; // Decke
+            }
+        }
+
+        // 8. Killplane (wie der Ammo-Pfad): tief unter dem Welt-Boden → auf die Oberfläche.
+        const killPlaneY =
+            s.worldMeta && s.worldMeta.voxelTerrain ? (s.terrainBaseHeight || 0) - 88 : (s.minHeight || -50) - 30;
+        if (ny < killPlaneY) {
+            const above = this.findSurfaceAbove(nx, ny, nz);
+            ny = above + 0.5 + footDrop;
+            vy = 0;
+            grounded = false;
+        }
+
+        // 9. Ergebnis schreiben: Mesh + Body teleportieren + vy speichern. Die Grounded-
+        //    Wahrheit in den State (die EINEN Leser: isPlayerGrounded-Cache, Slope-Penalty,
+        //    handleJump-Coyote) → KEIN Ammo-Raycast nötig.
+        mesh.position.set(nx, ny, nz);
+        s._fieldVy = vy;
+        const tr = s.tmpTransform;
+        tr.setIdentity();
+        tr.setOrigin(this.setVec(s.tmpVec1, nx, ny, nz));
+        body.setWorldTransform(tr);
+        body.setLinearVelocity(this.setVec(s.tmpVec2, vx, vy, vz));
+
+        s.groundNormalY = grounded ? groundNormalY : 1.0;
+        s.onSteepSlope = grounded && groundNormalY < s.maxWalkableSlopeY;
+        s._groundedCache = grounded;
+        s._groundedCachedAt = performance.now();
+        if (grounded) {
+            s.lastGroundedTime = currentTime;
+            s.isInAir = false;
+            s.isJumping = false;
+        } else {
+            s.isInAir = true;
+        }
+    }
+
+    // Schaltet den feld-nativen Controller an/aus (A/B). Stellt die Ammo-Schwerkraft des
+    // Player-Bodys wieder her, wenn zurück auf Ammo gewechselt wird (sonst schwebt er).
+    setFieldPhysics(on) {
+        const s = this.state;
+        s.fieldPhysics = !!on;
+        if (s.playerBody) {
+            if (s.fieldPhysics) {
+                s.playerBody.activate(true);
+                s.playerBody.setGravity(this.setVec(s.tmpVec1, 0, 0, 0));
+                s.playerBody.setCollisionFlags(s.playerBody.getCollisionFlags() | 4); // CF_NO_CONTACT_RESPONSE
+                s._fieldGravityZeroed = true;
+                s._fieldVy = 0;
+            } else {
+                // zurück auf Ammo: Schwerkraft + Kontakt-Antwort wiederherstellen.
+                s.playerBody.setGravity(this.setVec(s.tmpVec1, 0, s.gravity || -14.715, 0));
+                s.playerBody.setCollisionFlags(s.playerBody.getCollisionFlags() & ~4);
+                s.playerBody.activate(true);
+                s._fieldGravityZeroed = false;
+            }
+        }
+        this.log(`Feld-Physik (Determinismus-Controller) ${s.fieldPhysics ? "AN" : "AUS"}`, "INFO");
+        return s.fieldPhysics;
     }
 
     _loopPlayerMovement(currentTime) {
@@ -77464,6 +77674,22 @@ AnazhRealm.FIELD_GRAD_EPS = 0.6;
 // 4 trägt auch eine gekrümmte/tiefere Penetration robust an die Oberfläche. Mehr lohnt
 // nicht — der gesweepte Schritt (P1b) hält die Penetration ohnehin radius-beschränkt.
 AnazhRealm.FIELD_RESOLVE_ITERS = 4;
+
+// Determinismus-Bogen P1b — die Kapsel-Maße des Spielers, am bestehenden 1-m-Box-Collider
+// (btBoxShape 0.5) geeicht: footDrop = halbe Box-Höhe (Füße = position.y − 0.5, die
+// Box-Unterkante = die Grounded-Raycast-Annahme), Stufe-hoch-Toleranz = wie hoch der
+// Spieler ohne Sprung aufsteigt.
+AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
+AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden (snap-
+// down), statt den Hang hinab zu hüpfen — die fehlende Hälfte, ohne die der Spieler nie
+// erdet, wenn die Oberfläche unter ihm wegfällt (gemessen mit diag-walk-feel).
+AnazhRealm.PLAYER_GROUND_SNAP = 0.4;
+// Wand-Kollisions-Radius — schlanker als die Boden-Kapsel, und die Wand-Kugeln beginnen ERST
+// über der Stufe-hoch-Linie (feetY + STEP_UP): so trifft keine Kugel einen Stufen-Riser ≤
+// STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
+// der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
+AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
