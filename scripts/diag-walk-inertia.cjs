@@ -167,11 +167,14 @@ const server = http.createServer((req, res) => {
         const baseFeet = s.playerMesh.position.y - footDrop;
         if (!s.worldMeta.voxelEdits) s.worldMeta.voxelEdits = [];
         const editN = s.worldMeta.voxelEdits.length;
-        for (let b = 0; b < 3; b++) {
+        // GENTLE, breite Buckel (~0.2 m Anstieg über ~4 m): der Läufer bleibt GEERDET
+        // (GROUND_SNAP hält ihn bergab) → reiner Stufen-Smoothing-Test, KEINE Mini-Landungen
+        // (die mischten sonst Dips in die Glättungs-Messung; die Landung prüft (C) separat).
+        for (let b = 0; b < 4; b++) {
             s.worldMeta.voxelEdits.push({
                 x: spot.x,
-                y: baseFeet - 1.55,
-                z: spot.z + 2 + b * 2.2,
+                y: baseFeet - 1.8,
+                z: spot.z + 2 + b * 2.0,
                 r: 2.0,
                 mode: "fill",
                 strength: 220,
@@ -202,6 +205,30 @@ const server = http.createServer((req, res) => {
         s.worldMeta.voxelEdits.length = editN;
         const smoothRatio = feetVar > 1e-6 ? eyeVar / feetVar : 1;
 
+        // ===== (C) LANDUNGS-ABSORPTION — aus der Höhe fallen, Auge federt ein + zurück =====
+        clearKeys();
+        s.playerMesh.position.set(spot.x, spot.h + 8, spot.z); // hoher Fall → klarer Aufprall
+        zeroVel();
+        s._landDip = 0;
+        s._landImpactPending = 0;
+        let dipDepth = 0,
+            landed = false,
+            recovered = 0,
+            minVy = 0,
+            minStateDip = 0;
+        for (let i = 0; i < 120; i++) {
+            tick();
+            if (typeof s._fieldVy === "number" && s._fieldVy < minVy) minVy = s._fieldVy;
+            if (typeof s._landDip === "number" && s._landDip < minStateDip) minStateDip = s._landDip;
+            const rigidEye = s.playerMesh.position.y + 1.6;
+            const dipNow = s.camera.position.y - rigidEye; // < 0 = eingefedert
+            if (!s.isInAir) {
+                landed = true;
+                if (dipNow < dipDepth) dipDepth = dipNow; // tiefster Einfeder-Punkt
+                recovered = dipNow; // letzter Wert → sollte zur Ruhe (~0)
+            }
+        }
+
         return {
             slide: { dist: +slide.toFixed(3), stopMs },
             smooth: {
@@ -211,6 +238,13 @@ const server = http.createServer((req, res) => {
                 maxEyeLag: +maxEyeLag.toFixed(3),
                 maxLagConst: maxLag,
                 samples,
+            },
+            land: {
+                landed,
+                dipDepth: +dipDepth.toFixed(3),
+                recovered: +recovered.toFixed(3),
+                minVy: +minVy.toFixed(2),
+                minStateDip: +minStateDip.toFixed(3),
             },
         };
     });
@@ -241,6 +275,14 @@ const server = http.createServer((req, res) => {
         out.smooth.maxEyeLag <= out.smooth.maxLagConst + 0.12,
         "die Augen-Glättung bleibt gebunden (kein Gummiband/Abkoppeln)"
     );
+    console.log(
+        `  (C) LANDUNG: gelandet ${out.land.landed} · minVy ${out.land.minVy} · stateDip ${out.land.minStateDip} · Einfeder(Kamera) ${out.land.dipDepth} m · zurück bei ${out.land.recovered} m`
+    );
+    ok(
+        out.land.landed && out.land.dipDepth < -0.05,
+        "beim Aufkommen federt das Auge spürbar ein (View-Punch, der Körper fängt den Stoß)"
+    );
+    ok(Math.abs(out.land.recovered) < 0.03, "und federt danach sauber zur Ruhe zurück (kein hängender Versatz)");
     console.log(
         `\n  ${pass ? "✅ ALLE PRÜFUNGEN GRÜN — die Profi-Mechanik wirkt; das GEFÜHL urteilt der Schöpfer-Browser" : "❌ MINDESTENS EINE PRÜFUNG ROT"}\n`
     );
