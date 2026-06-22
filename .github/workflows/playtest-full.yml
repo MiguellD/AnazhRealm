@@ -1,0 +1,44 @@
+name: Playtest-Full (volle Invarianten-Deckung)
+
+# DER VOLLE PLAYTEST — die ~5340 Invarianten über 244 Bänder. NICHT per-Push, weil er für einen
+# geteilten CI-Runner zu schwer ist (gemessen: 3,5 h dann Fehlschlag, sogar bei einem reinen Docs-
+# Commit → Death-by-tausend-langsamen-Bändern, kein Code-Bug). Der per-Push-MERGE-GATE ist der
+# Fast-Tier + die GPU-Churn-Linse in check.yml (reliable, Minuten). Diese volle Deckung läuft hier
+# ZEIT-gebudgetet: manuell (workflow_dispatch) wenn jemand die volle Wand will + nächtlich als
+# best-effort-Sicherheitsnetz. timeout-minutes deckelt den Lauf hart → er hängt NIE mehr 3,5 h.
+on:
+  workflow_dispatch:
+  schedule:
+    # nächtlich 03:30 UTC — best-effort, blockt keinen Merge
+    - cron: "30 3 * * *"
+
+jobs:
+  playtest-full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: System-Libs für headless Chromium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+          sudo apt-get install -y --no-install-recommends \
+            libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+            libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+            libgbm1 libpango-1.0-0 libcairo2 libasound2
+
+      - name: Dependencies installieren (inkl. puppeteer)
+        run: npm install --no-audit --no-fund
+
+      - name: Voller Headless-Playtest (~5340 Invarianten)
+        env:
+          PLAYTEST_SECONDS: "30"
+        run: npm run playtest

@@ -9,6 +9,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -89,12 +90,18 @@ jobs:
           grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
 
   playtest:
-    # Lädt das Spiel in headless Chromium, läuft 20 s, prüft Invarianten
-    # (Welt generiert? 60+ Chunks? Spieler nicht abgestürzt? keine TF-Race?
-    # keine Death-Spiral?). Bricht ab, wenn irgendeine Invariante verletzt
-    # ist – fängt also genau die Klasse von Bug, die per statischem Check
-    # nicht sichtbar ist (Cooldown-Self-Block, Frustum-Bug, …).
+    # PER-PUSH-MERGE-GATE — der RELIABLE, schnelle Tier: der Fast-Playtest (Kern-Gesundheit,
+    # ~13 Checks: Crash · Welt/Terrain · Avatar-Rig · Kreatur · Bauplan · Resonanz · Stats) +
+    # die GPU-Churn-Linse. Beide laufen in Minuten + schliessen zuverlässig ab.
+    # WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten über 244 Bänder sind für einen
+    # geteilten CI-Runner zu schwer — sie brauchen STUNDEN (gemessen: 3,5 h dann Fehlschlag, sogar
+    # bei einem reinen Docs-Commit → ein Infrastruktur-Hang, kein Code-Bug). Death-by-tausend-
+    # langsamen-Bändern, nicht ein einzelner Hänger (ein hängender page.evaluate würde vom
+    # protocolTimeout=240s gefangen). Die volle Deckung lebt jetzt in `playtest-full.yml`
+    # (manuell + nächtlich, timeout-bounded), wo Stunden in Ordnung sind. Der Fast-Tier fängt
+    # ~80 % der Regressionen SOFORT (CLAUDE.md: „Nicht jede Änderung durch den 10-min-Gate zwingen").
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -117,17 +124,12 @@ jobs:
       - name: Dependencies installieren (inkl. puppeteer)
         run: npm install --no-audit --no-fund
 
-      - name: Headless-Playtest (30 s)
-        # V9.83 — von 20 s auf 30 s erhöht: die V9.79–V9.82-Iso-Mesh-Welle hat
-        # den Chunk-Build verteuert (Iso-Surface + Wasser-Cells + BVH-Collision).
-        # Unter CI-CPU-Last (geteilte Runner) brauchte der Streaming-Ring mehr
-        # Zeit als 20 s, um das `voxelChunks ≥ 20`-Akzeptanz-Niveau zu erreichen
-        # — der Test flackerte zwischen 15 und 25 Chunks. 30 s gibt 50 % Puffer.
-        # Kombiniert mit der synchronen `_gameLoopTick`-Pumpe im Test-Warmup
-        # (CLAUDE.md V8.50-Lehre) ist der Playtest jetzt CPU-Last-robust.
-        env:
-          PLAYTEST_SECONDS: "30"
-        run: npm run playtest
+      - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
+        # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
+        # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
+        # Schliesst zuverlässig in Minuten ab — der reliable per-Push-Gate. Der volle Playtest
+        # läuft in playtest-full.yml.
+        run: npm run playtest:fast
 
       - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
         # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
