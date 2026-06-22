@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.330 — der FELD-RAYCAST: die letzte funktionale Ammo-Abhängigkeit feld-nativ (P3-Vorbereitung)
+
+Der Spieler läuft seit V18.325 feld-nativ (Default), Struktur-Kollision feld-nativ (V18.327) — die letzte Stelle, an der der Code noch ECHTE Ammo-Mathematik brauchte, war der Raycast (`_runRaycast`: Grabe-Hieb, Platzierungs-Pick, Spawn-Boden-Suche, 7 Aufrufer). Jetzt feld-nativ:
+
+- **`_fieldRaycast(sx,sy,sz,ex,ey,ez)`** — ein DDA-Marsch (Amanatides-Woo-Stil, Schritt 0,2 m) durch das Dichte-Feld bis zum ersten Soliden, dann 8 Bisektions-Iterationen auf die exakte Iso + die Gradienten-Normale (`_fieldGradient`). Bauwerke trifft er über `_segmentAABB` (Slab-Methode) gegen die vorberechneten `entry.blockerAABBs` (dieselbe Quelle wie die Struktur-Kollision) — der nähere von beiden Treffern gewinnt. Gibt `{hit,x,y,z,nx,ny,nz,t}`.
+- **`_runRaycast`** bekommt einen Feld-Zweig zuoberst: bei `state.fieldPhysics` ruft er `_fieldRaycast` (×sf rein, ÷sf raus) und synthetisiert ein `cb`-Objekt mit `get_m_hitPointWorld/get_m_hitNormalWorld/hasHit` → die 7 Aufrufer bleiben unberührt (die schmale stabile Naht). Ammo-Zweig bleibt für den A/B-Fall.
+- **Linse `diag-field-raycast.cjs` (4/4 grün):** (A) jeder Treffer auf echter Luft/Solid-Grenze (Solid drunter, Luft drüber — keine erfundene Oberfläche; razor-dünne Roughness-Spitzen via Ammo-Bestätigung legitim) · (B) vs Ammo max |Δ| 0,911 m < 1,2 m (Rest = Mesh-/Feld-Quantelung an dünnen Kanten) · (C) Struktur-Box an der Vorderkante · (D) ins Leere kein Falsch-Treffer.
+
+MESS-LEHRE: der Feld-Strahl (Schritt 0,2) ist GENAUER als die alte `_fieldSurfaceBelow` (Schritt 0,5) an dünnen Überhang-Lippen — ein „Test schlägt fehl" war zuerst eine zu grobe Vergleichs-Probe, nicht ein Raycast-Bug (die Probe startet jetzt am Feld-Surface + vergleicht gegen Ammo).
+
+**Stand:** alle Feld-Linsen grün (walk-feel · structure · inertia · edge · raycast); Fast-Gate 13/13. Der Spieler läuft, kollidiert, springt, landet, gräbt + platziert REIN feld-nativ. Ammo läuft nur noch als A/B-Schatten — der letzte Schritt P3 (Ammo physisch raus) ist jetzt ein reiner Schnitt, kein Funktions-Verlust mehr.
+
 ### V18.328–.329 — der Feld-Controller gehärtet: View-Smoothing-Reflexion + zwei Rand-Bugs gefischt
 
 Schöpfer im Browser, coachend („werde zum Fischer, das ist messbar, dafür brauchst du mich nicht"): drei Befunde, alle selbst gemessen + gefixt.
