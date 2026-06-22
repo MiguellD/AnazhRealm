@@ -13110,6 +13110,12 @@ class AnazhRealm {
             const built = this._builtRingRadius();
             const ringSettled = built !== null && built >= st._activeRingRadius;
             const noBacklog = !st.voxelMeshPending || st.voxelMeshPending.size === 0;
+            // V18.323 — der Ring wächst erst, wenn die WIESE des aktuellen Rings steht (Schöpfer
+            // „erst meinen Bereich sauber laden, DANN den Ring wachsen lassen"): so eilt das Terrain
+            // der Wiese nicht voraus. `pendingGrass` hält nur nahe (Gras-LOD ≤4) gebaute Chunks,
+            // deren Gras noch ≤1/Frame nachzieht → leert sich, sobald die Wiese steht (kein Dead-
+            // lock: das Gras drainiert jeden Frame). Headless wächst ohnehin sofort (oben).
+            const grassCaughtUp = !st.pendingGrass || st.pendingGrass.size === 0;
             const now = performance.now();
             const breathed = !st._ringRampLast || now - st._ringRampLast > AnazhRealm.RING_RAMP_SETTLE_MS;
             // Wachsen verlangt KLAREN Kopfraum (frameMs unter dem WACHS-Boden growMs ≈ 77 fps,
@@ -13150,7 +13156,14 @@ class AnazhRealm {
                 st._ringOverBudgetSince && now - st._ringOverBudgetSince > AnazhRealm.RING_SHRINK_SUSTAIN_MS;
             if (st._activeRingRadius > ringTarget) {
                 st._activeRingRadius = ringTarget; // Target gesenkt (User-Slider)? sofort folgen
-            } else if (st._activeRingRadius < ringTarget && ringSettled && noBacklog && sustainedHeadroom && breathed) {
+            } else if (
+                st._activeRingRadius < ringTarget &&
+                ringSettled &&
+                noBacklog &&
+                grassCaughtUp &&
+                sustainedHeadroom &&
+                breathed
+            ) {
                 st._ringRampLast = now;
                 st._ringHeadroomSince = 0; // der nächste Wachs-Schritt verlangt einen frischen Sustain
                 st._activeRingRadius++;
@@ -25952,6 +25965,38 @@ class AnazhRealm {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
                     const e = st.voxelChunks.get(`${cx + dx},${cz + dz}`);
                     if (!e || (!e.mesh && !e.empty)) break outer;
+                }
+            }
+            k = ring;
+        }
+        return k;
+    }
+
+    // V18.323 — die GRAS-FRONT (die „Wiese"): der grösste Ring, in dem JEDER Chunk
+    // terrain-gebaut UND begrast ist. Das Gras baut ≤1 Chunk/Frame NACH dem Terrain-
+    // Chunk (`_drainPendingGrass`, ungated vom `foliageRadius`) → es hinkt dem Terrain
+    // beim Boot/Ring-Wachstum hinterher. Der Lade-Nebel folgt dieser Front (statt nur
+    // `_builtRingRadius` = Terrain) → er enthüllt nur BEPFLANZTEN Boden, nie bare Erde +
+    // den leeren See (Schöpfer „der Nebel verschwindet bevor die Wiese da ist"). Ein Chunk
+    // gilt als begrast, wenn er NICHT mehr in `pendingGrass` wartet (gebaut/begrast ODER
+    // jenseits der Gras-LOD ≤4 = kein Gras erwartet → trivial bereit). Headless (Null-
+    // Renderer) → die Terrain-Front (das Gate sieht die volle Welt, wie foliageRadius).
+    _builtGrassRingRadius() {
+        const st = this.state;
+        if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
+        if (st.renderer && st.renderer._isHeadlessNull) return this._builtRingRadius();
+        const cfg = this._voxelChunkConfig();
+        const { cx, cz } = st.lastPlayerVoxelChunk;
+        const pend = st.pendingGrass;
+        let k = -1;
+        outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
+            for (let dx = -ring; dx <= ring; dx++) {
+                for (let dz = -ring; dz <= ring; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+                    const key = `${cx + dx},${cz + dz}`;
+                    const e = st.voxelChunks.get(key);
+                    if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
+                    if (pend && pend.has(key)) break outer; // Gras noch ausstehend → die Wiese fehlt
                 }
             }
             k = ring;
@@ -69506,15 +69551,23 @@ class AnazhRealm {
             // wird BOOT-ehrlich, der harte Min-Deckel garantiert ≤ Ziel).
             let visualEdge = visualEdgeTarget;
             const builtK = this._builtRingRadius();
-            if (builtK === null || builtK < 0) {
+            // V18.323 — der Nebel folgt der WIESE, nicht nur dem Terrain (Schöpfer „der Nebel
+            // verschwindet bevor die Wiese da ist, und hinter den leeren See"): das Gras baut
+            // ≤1 Chunk/Frame NACH dem Terrain → der alte Reveal (nur builtK) gab bare Erde + den
+            // leeren See frei, bevor die Wiese da war. Den Reveal-Ring auf die GRAS-Front deckeln
+            // (min terrain·gras) → der Nebel weicht nur über bepflanztem Boden. Jenseits der Gras-
+            // LOD ≤4 wartet kein Gras → grassK == builtK dort (ferne LOD-Sicht bleibt unberührt).
+            const grassK = this._builtGrassRingRadius();
+            const revealK = grassK === null ? builtK : builtK === null ? grassK : Math.min(builtK, grassK);
+            if (revealK === null || revealK < 0) {
                 // V18.313 — DAS ERWACHEN: noch KEIN Boden-Chunk steht (nur die Plattform,
                 // builtK null/-1). Der Nebel umhüllt den Spieler ENG (Kokon) → die Welt + die
                 // fernen Spawns sind verborgen wie im Schlaf. Vorher griff hier der VOLLE
                 // Ziel-Rand (das „Start-Loch": ferne Geoden/Bauten durch klare Luft sichtbar).
                 visualEdge = Math.min(visualEdgeTarget, AnazhRealm.AWAKEN_FOG_FAR);
-            } else if (builtK < vCfg.ringRadius) {
-                // Boden erscheint → der Nebel WEITET zur gebauten Kante (exp-geglättet, kein Pop).
-                visualEdge = Math.min(visualEdgeTarget, Math.max(46, (builtK + 0.5) * vCfg.span + 18));
+            } else if (revealK < vCfg.ringRadius) {
+                // Boden + Wiese erscheinen → der Nebel WEITET zur bepflanzten Kante (exp-geglättet).
+                visualEdge = Math.min(visualEdgeTarget, Math.max(46, (revealK + 0.5) * vCfg.span + 18));
             }
             const smPrev = this.state._fogEdgeSmooth;
             const sm = smPrev == null ? visualEdge : smPrev + (visualEdge - smPrev) * 0.08;
@@ -73678,7 +73731,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.322.0";
+AnazhRealm.VERSION = "18.323.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.323 — DER NEBEL FOLGT DER WIESE: der Lade-Rhythmus an die Gras-Front gekoppelt (Schöpfer „der Nebel verschwindet bevor die Wiese da ist")
+
+Schöpfer-Befund (nach dem V18.322-Freeze-Fix, „wir sind zurück!"): „der Nebel verschwindet bevor die Wiese da ist, und hinter den leeren See — wirklich meinen Bereich sauber laden, DANN den Ring erst wachsen lassen, oder?" Der Instinkt war exakt richtig + deckte eine echte Desync auf.
+
+WURZEL (Code-gemessen): der Lade-Nebel (V18.164) folgte `_builtRingRadius()` = der TERRAIN-Front. Aber die WIESE (das Gras, `_buildVoxelChunkGrass`) baut über die Gras-Queue ≤1 Chunk/Frame NACH dem Terrain-Chunk (ungated vom `foliageRadius`) → beim Boot/Ring-Wachstum hinkt das Gras dem Terrain weit hinterher. Der Nebel (an der Terrain-Front) gab bare Erde + den leeren See-Grund frei, BEVOR die Wiese da war. Die V18.301-Absicht („erst den ersten Ring sauber ausschmücken, DANN wachsen") war nur halb gebaut — sie gatete auf terrain-gebaut, nicht wiesen-bepflanzt.
+
+HEILUNG (zwei gekoppelte Hälften, beide gate-neutral — headless → Terrain-Front sofort, das Gate sieht die volle Welt):
+- **A — der Nebel folgt der Gras-Front:** `_builtGrassRingRadius()` (Spiegel von `_builtRingRadius`, ein Chunk zählt, wenn terrain-gebaut UND nicht mehr in `pendingGrass`). Der Reveal-Ring = `min(Terrain, Gras)` → der Nebel weicht nur über bepflanztem Boden. Jenseits der Gras-LOD ≤4 wartet kein Gras → `grassK == builtK` dort → die ferne LOD-Sicht bleibt unberührt (kein Über-Klammern beim grossen Sicht-Regler).
+- **B — der Ring wächst erst, wenn die Wiese steht:** der Ring-Wachstums-Gate (`_activeRingRadius++`) bekommt `grassCaughtUp` (kein `pendingGrass`-Rückstau) als zusätzliche Bedingung → das Terrain eilt der Wiese nicht mehr voraus. Kein Deadlock (das Gras drainiert jeden Frame; headless wächst ohnehin sofort).
+
+STAND: die MECHANIK ist headless-verifiziert (`playtest:fast` 13/13, fog-Logik in `_applyDayNightToScene` + Ring-Gate). Der LOOK/das FEEL (löst sich der „leere See"-Befund?) ist Schöpfer-Browser (Regel #0) — committet auf den Feature-Branch zum Nachspielen. DISZIPLIN: der Lade-Nebel ist ein Versprechen („was du siehst, ist fertig") — er gehört an die FERTIGSTE sichtbare Schicht (die Wiese), nicht an die erste (das Terrain-Mesh).
+
 ### V18.322 — DER IDLE-FREEZE GEHEILT: das Sky-Env identitäts-stabil + rate-gedeckelt (die periodische GPU-Pipeline-Recompile-Cascade getilgt)
 
 Schöpfer-Befund (nach V18.321): „noch immer nicht spielbar, komplette Freezes — 2 s Bild, dann 10 s Freeze, IM STEHEN, ohne Eingabe (kein Umschauen, kein Bewegen)." Die Genialitäts-Trilogie (V18.319–.321) beschleunigte den BAU byte-identisch, berührte diesen periodischen Idle-Freeze aber NICHT.
