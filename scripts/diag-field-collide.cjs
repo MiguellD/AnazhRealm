@@ -219,7 +219,12 @@ const server = http.createServer((req, res) => {
 
         return {
             oneSource: { maxDiffNoEdit: +maxDiffNoEdit.toFixed(8), maxDiffEdit: +maxDiffEdit.toFixed(8) },
-            ground: { samples: surfDiffs.length, misses: surfMisses, medianDiff: +surfMed.toFixed(3), maxDiff: +surfMax.toFixed(3) },
+            ground: {
+                samples: surfDiffs.length,
+                misses: surfMisses,
+                medianDiff: +surfMed.toFixed(3),
+                maxDiff: +surfMax.toFixed(3),
+            },
             resolve: {
                 shallowTested,
                 shallowCleared,
@@ -249,21 +254,47 @@ const server = http.createServer((req, res) => {
         if (!cond) pass = false;
     };
     console.log("\n===== FELD-COLLIDER-VERIFIKATION P1a =====\n");
-    console.log(`  (A) EINE QUELLE: maxDiff ohne Edit ${out.oneSource.maxDiffNoEdit} · mit Edit ${out.oneSource.maxDiffEdit}`);
-    ok(out.oneSource.maxDiffNoEdit === 0 && out.oneSource.maxDiffEdit === 0, "_fieldDensityAt === _terrainDensityAt (bit-gleich, mit + ohne Edits)");
-    console.log(`  (B) BODEN: n=${out.ground.samples} misses=${out.ground.misses} · median Δ ${out.ground.medianDiff} m · max Δ ${out.ground.maxDiff} m`);
+    console.log(
+        `  (A) EINE QUELLE: maxDiff ohne Edit ${out.oneSource.maxDiffNoEdit} · mit Edit ${out.oneSource.maxDiffEdit}`
+    );
+    ok(
+        out.oneSource.maxDiffNoEdit === 0 && out.oneSource.maxDiffEdit === 0,
+        "_fieldDensityAt === _terrainDensityAt (bit-gleich, mit + ohne Edits)"
+    );
+    console.log(
+        `  (B) BODEN: n=${out.ground.samples} misses=${out.ground.misses} · median Δ ${out.ground.medianDiff} m · max Δ ${out.ground.maxDiff} m`
+    );
     // _voxelSurfaceY ist auf das 1,2-m-Raster gequantelt (Spalten-Scan in 1,2er-Schritten);
     // die Bisektions-Probe ist sub-voxel-fein → die erwartete Δ ist ~halbe Quantelung (≤ 1,3 m).
-    ok(out.ground.misses === 0 && out.ground.maxDiff < 1.3, "_fieldSurfaceBelow ≈ getTerrainHeightAt (≤ 1,3 m = die 1,2-m-Quantelung der Referenz, keine Misses)");
+    ok(
+        out.ground.misses === 0 && out.ground.maxDiff < 1.3,
+        "_fieldSurfaceBelow ≈ getTerrainHeightAt (≤ 1,3 m = die 1,2-m-Quantelung der Referenz, keine Misses)"
+    );
     console.log(
         `  (C) AUSWURF: flach ${out.resolve.shallowCleared}/${out.resolve.shallowTested} geräumt (worst ${out.resolve.worstShallow}) · tief ${out.resolve.deepReduced}/${out.resolve.deepTested} reduziert`
     );
-    ok(out.resolve.shallowTested > 0 && out.resolve.shallowCleared === out.resolve.shallowTested, "_fieldResolveSphere räumt JEDE flache Penetration (~0,4 m, der echte Frame-Fall) ganz");
-    ok(out.resolve.deepTested === 0 || out.resolve.deepReduced === out.resolve.deepTested, "tiefe Penetration (2 m, künstlich) wird substanziell (>50 %) reduziert");
-    console.log(`  (D) NORMALE: ${out.normal.pointUp}/${out.normal.tested} zeigen nach oben · min ny ${out.normal.minNy}`);
-    ok(out.normal.tested > 0 && out.normal.pointUp === out.normal.tested, "Gradient-Normale zeigt an Boden-Punkten nach OBEN (ny > 0)");
-    console.log(`  (E) KOSTEN: naiv ${out.cost.naiveSurfaceYUsPerCall} µs · gehoistet ${out.cost.hoistedCapsuleUsPerQuery} µs/Query · ${out.cost.speedup}× schneller`);
-    ok(out.cost.hoistedCapsuleUsPerQuery < out.cost.naiveSurfaceYUsPerCall, "die gehoistete Kapsel-Probe ist billiger als der naive _voxelSurfaceY-Scan");
+    ok(
+        out.resolve.shallowTested > 0 && out.resolve.shallowCleared === out.resolve.shallowTested,
+        "_fieldResolveSphere räumt JEDE flache Penetration (~0,4 m, der echte Frame-Fall) ganz"
+    );
+    ok(
+        out.resolve.deepTested === 0 || out.resolve.deepReduced === out.resolve.deepTested,
+        "tiefe Penetration (2 m, künstlich) wird substanziell (>50 %) reduziert"
+    );
+    console.log(
+        `  (D) NORMALE: ${out.normal.pointUp}/${out.normal.tested} zeigen nach oben · min ny ${out.normal.minNy}`
+    );
+    ok(
+        out.normal.tested > 0 && out.normal.pointUp === out.normal.tested,
+        "Gradient-Normale zeigt an Boden-Punkten nach OBEN (ny > 0)"
+    );
+    console.log(
+        `  (E) KOSTEN: naiv ${out.cost.naiveSurfaceYUsPerCall} µs · gehoistet ${out.cost.hoistedCapsuleUsPerQuery} µs/Query · ${out.cost.speedup}× schneller`
+    );
+    ok(
+        out.cost.hoistedCapsuleUsPerQuery < out.cost.naiveSurfaceYUsPerCall,
+        "die gehoistete Kapsel-Probe ist billiger als der naive _voxelSurfaceY-Scan"
+    );
     console.log(`\n  ${pass ? "✅ ALLE PRÜFUNGEN GRÜN" : "❌ MINDESTENS EINE PRÜFUNG ROT"}\n`);
     console.log("==========================================\n");
     try {
