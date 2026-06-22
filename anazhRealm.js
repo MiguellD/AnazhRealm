@@ -14881,8 +14881,19 @@ class AnazhRealm {
         const nc = st.skyboxUniforms && st.skyboxUniforms.nebulaColor && st.skyboxUniforms.nebulaColor.value;
         const sky = nc ? { r: nc.r, g: nc.g, b: nc.b } : { r: 0.19, g: 0.21, b: 0.61 };
         const last = st._skyEnvLastColor;
-        if (!force && last && Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) < 0.04) {
-            return true; // env steht + Farbe stabil → nichts regenerieren (Drift-Drossel)
+        // V18.322 — DIE WURZEL DES PERIODISCHEN IDLE-FREEZES: die Tag-Nacht-Uhr driftet die
+        // Himmelsfarbe auch im Stehen (GEMESSEN diag-skyenv-freq: ~18 Neugenerierungen über
+        // ~1 min idle, alle paar Sekunden). Die alte Drossel ließ jede Drift >0.04 durch →
+        // jede feuerte einen vollen PMREM-Render PLUS ein NEUES scene.environment-Texture-
+        // Objekt → WebGPU rekompilierte die Pipelines ALLER env-samplenden PBR-Materialien
+        // (synchroner Multi-Sekunden-GPU-Stall = der Freeze). Zwei Hälften der Heilung:
+        // (a) ein Wall-Clock-Mindestabstand deckelt die RATE (die Env-Reflexion ~2 s nach-
+        // laufen zu lassen ist unmerklich); (b) der Render-Target wird WIEDERVERWENDET (unten)
+        // → stabile Texture-Identität → kein Pipeline-Cascade.
+        const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        const drift = last ? Math.abs(last.r - sky.r) + Math.abs(last.g - sky.g) + Math.abs(last.b - sky.b) : Infinity;
+        if (!force && last && (drift < 0.04 || nowMs - (st._skyEnvLastRegenMs || -Infinity) < 2000)) {
+            return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
             const W = 64,
@@ -14921,6 +14932,7 @@ class AnazhRealm {
             if (st.renderer._isHeadlessNull) {
                 st.scene.environment = st._skyEnvTex;
                 st._skyEnvLastColor = sky;
+                st._skyEnvLastRegenMs = nowMs;
                 return true;
             }
             // PMREM die Equirekt-Gradient-Env — GEMESSEN ist `fromEquirectangular` WebGPU-
@@ -14929,11 +14941,17 @@ class AnazhRealm {
             // PBR-Schatten bekommen indirektes Himmels-Licht (nicht pur schwarz — die Wurzel
             // des „alles schwarz im Schatten"-Befunds nach dem PBR-Default).
             if (!st._skyPmrem) st._skyPmrem = new THREE.PMREMGenerator(st.renderer);
-            const rt = st._skyPmrem.fromEquirectangular(st._skyEnvTex);
-            if (st._skyEnvRT && st._skyEnvRT.dispose) st._skyEnvRT.dispose(); // altes Target räumen (kein Leck)
+            // V18.322 — in das BESTEHENDE Target rendern (zweiter Arg) statt jedesmal ein neues
+            // zu allokieren + das alte zu disposen: fromEquirectangular(equirekt, rt) gibt
+            // `rt || _allocateTarget()` zurück → bei Wiederverwendung bleibt die Texture-
+            // IDENTITÄT stabil → scene.environment ändert sich NIE wieder → kein WebGPU-
+            // Pipeline-Recompile-Cascade (der Multi-Sekunden-Stall). Der Erst-Aufruf allokiert
+            // das Target + setzt scene.environment EINMAL; danach wird nur sein Inhalt erneuert.
+            const rt = st._skyPmrem.fromEquirectangular(st._skyEnvTex, st._skyEnvRT || null);
             st._skyEnvRT = rt;
-            st.scene.environment = rt.texture;
+            if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
             st._skyEnvLastColor = sky;
+            st._skyEnvLastRegenMs = nowMs;
             return true;
         } catch (err) {
             this.log(
@@ -73660,7 +73678,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.321.0";
+AnazhRealm.VERSION = "18.322.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
