@@ -263,11 +263,12 @@ class AnazhRealm {
             tmpTransform: null,
             scaleFactor: 1,
             gravity: -14.715,
-            // Determinismus-Bogen P1b — A/B-Schalter: ist `fieldPhysics` an, treibt der
-            // feld-native Kapsel-Controller (`_stepCharacter`) den Spieler statt Ammo
-            // (kein BVH-Build, deterministisch, der gecarvte Tunnel sofort begehbar).
-            // Default AUS → Ammo treibt alles, das Gate ist unverändert.
-            fieldPhysics: false,
+            // Determinismus-Bogen — der feld-native Kapsel-Controller (`_stepCharacter`)
+            // treibt den Spieler aus dem Dichtefeld statt aus der Ammo-BVH: kein per-Chunk-
+            // BVH-Build (der Lauf-Freeze an der Wurzel), deterministisch, ein gecarvter
+            // Tunnel SOFORT begehbar. DEFAULT AN — das ist jetzt der Spieler-Pfad; `feldphysik`
+            // im Chat schaltet auf Ammo zurück (A/B bleibt für den direkten Vergleich).
+            fieldPhysics: true,
             _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
             _fieldGravityZeroed: false, // ob die Ammo-Body-Schwerkraft im Feld-Modus genullt ist
             abilities: {},
@@ -74059,7 +74060,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.324.0";
+AnazhRealm.VERSION = "18.325.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
