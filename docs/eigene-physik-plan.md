@@ -1,177 +1,217 @@
 # DER DETERMINISMUS-BOGEN — die eigene voxel-native Physik
 
-> **Status:** PLAN (noch kein Code). Geschrieben damit das Schöpfer-Auge die SCOPE prüft, bevor Code fällt.
+> **Status:** PLAN v2 (Implementierungs-Spezifikation, noch kein Code). Geschrieben damit das Schöpfer-Auge die SCOPE + die Algorithmik prüft, bevor Code fällt.
 > **Branch (reserviert):** `claude/confident-noether-yczn0c` (Noether — die Erhaltungsgröße; Determinismus).
+> **ENTSCHIEDEN (Schöpfer, 22.06.):** Ammo muss RAUS — voll. Kollision FELD-NATIV (gegen `terrainDensityAt`, kein Collision-Mesh, kein BVH-Build). „Sonst bringt das, was wir tun, ja gar nichts."
 > **Trigger — ZUERST lesen bei:** Physik · Kollision · Character-Controller · Bewegung · BVH · Ammo · Determinismus · Lockstep · Replay · Rollback · „der Spieler fällt/hängt/tunnelt".
-> **Flankiert von:** `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS — der Stabilitäts-/Lastpfad-Richter, BLEIBT die Autorität für Bauplan-Statik; dieser Plan ist die BEWEGUNGS-/Kollisions-Schicht, nicht die Bauplan-Statik).
+> **Flankiert von:** `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS — der Stabilitäts-/Lastpfad-Richter für Bauplan-Statik, BLEIBT die Autorität dafür; DIESER Plan ist die BEWEGUNGS-/Kollisions-Schicht, nicht die Bauplan-Statik). `docs/das-lebendige-feld.md` (der wahre Norden — die Physik tritt dem Feld bei).
 
 ---
 
-## 0. Die eine Frage, die dieser Plan beantwortet
+## 0. Die Frage + die entschiedene Antwort
 
 > „Eigene Physik scheint der nächste Gigantenschritt, oder? Die Performance soll spriessen, selbst Profis in den Schatten stellen."
 
-**Ja — aber nur in EINER der zwei Lesarten von „eigene Physik".** Die andere ist die Heilige-Lektion-Falle (Sand ohne Fundament). Dieser Plan trennt sie scharf und legt den Genie-Pfad.
+**Ja — in der EINEN richtigen Lesart.**
 
-- **Die FALLE (Sand-Weg):** Bullets Rigid-Body-/Constraint-Solver nachbauen (Stacking, Ragdoll, Gelenke, Reibungskegel, Stoß-Impulse). Jahrzehnte Arbeit. Am Ende wären wir ein *schlechteres* Bullet — das stellt niemanden in den Schatten, es re-komplexifiziert (genau die 2025-Sünde).
-- **Der GIGANTENSCHRITT (Gesetz #0 — Raptor):** Die Kollision **LIEST die EINE kanonische Wahrheit der Welt — das Dichtefeld** — statt eine redundante Dreiecks-BVH daraus abzuleiten. Das kann eine General-Engine NICHT: für Ammo ist die Welt undurchsichtige Dreiecke; für uns ist sie eine **reine, deterministische analytische Funktion** (`terrainDensityAt(x,y,z)`). **Hier lebt „forge was kaum ein zweiter kann" — der Vorteil ist STRUKTURELL, kein Tuning-Knopf.** Und weil die ganze Welt schon deterministisch ist AUSSER Ammo, öffnet der Schritt zugleich **Lockstep-MP · Replay · Rollback** — eine Fähigkeit, die die meisten Browser-Sandboxes nicht haben, weil sie auf einer undeterministischen Engine sitzen.
-
----
-
-## 1. Der Befund — wie die Physik HEUTE liegt (gemessen, file:line)
-
-### 1.1 Ammos Rolle ist winzig und schwach
-- **Ein** `btDiscreteDynamicsWorld` (`:13758`). Solver: SequentialImpulse, Broadphase: Dbvt.
-- **Spieler:** `btBoxShape(0.5, 0.5, 0.5)`, `mass=1`, `lockRotation=true` (`:71588`, `:71592`). KEIN `btKinematicCharacterController` — die Bewegung wird per `setLinearVelocity` jeden Frame gesetzt, die Erdung per Raycasts geprüft.
-- **Kreaturen:** `btBoxShape` skaliert mit Körpergröße, `mass=0.5` (`:15137`). Max 20 (`maxCreatures`).
-- **Statische Bodies (`mass=0`):** Terrain-Chunks (`btBvhTriangleMeshShape`, ~81 bei Ring 4), Architektur (`btCompoundShape` aus Box-Kindern, Cap 48 `MAX_NEXUS_STRUCTURES`), Inseln (`btBvhTriangleMeshShape`).
-- **Schritt:** `stepSimulation(delta, 5, 1/60)` (`:72543`, Substep-Cap 5 gegen die Todesspirale).
-- **Kein** Stacking, **kein** Ragdoll, **keine** Constraints/Gelenke. Dynamisch sind nur Spieler + Kreaturen, und beide bewegen sich character-controller-artig (gesetzte Velocity, kein Impuls-Stacking).
-
-### 1.2 Der Rest-Freeze ist der sync BVH
-- `_buildVoxelChunkBVH` (`:12855`) → `_buildStaticTriMeshCollision` (`:57644`) baut pro Chunk einen `btBvhTriangleMeshShape` aus den Mesh-Dreiecken — **synchron auf dem Main-Thread**.
-- **GEMESSEN:** ~10 ms/Chunk (5–9k Dreiecke, `:25914`); bis zu 9 inline in einem Frame = der **294-ms-Lauf-Spike** vor V18.291.
-- Der Spieler-Chunk baut die BVH inline beim Stream (`_voxelChunkLazyBVHFor` → `r===0`, `:25910`); die 8 Nachbarn wandern in den zeit-budgetierten `_pumpVoxelChunkBVH`.
-- **V18.271 hat den Hauptschlag entschärft** (async Mesh + weicher Boden), die sync-BVH-WURZEL steht noch — sie ist der dokumentierte „Lauf-Freeze an der Wurzel".
-
-### 1.3 Das Fundament für voxel-native Stützung LIEGT SCHON
-- **`getTerrainHeightAt(x,z)` ist heute schon voxel-nativ** (`:73691`): es ruft `_voxelSurfaceY` direkt — der Ammo-Heightfield-Raycast-Fallback wurde V9.38 als toter Pfad geschnitten.
-- **`_softFloorWhileChunkLoading` (`:72494`) beweist es:** während die BVH lädt, hält die deterministische Höhe `getTerrainHeightAt` den Spieler exakt (kein Durchfallen). **Das ist voxel-native Stützung — heute als FALLBACK; der Plan macht sie zum PRIMÄRPFAD.**
-- `_voxelSurfaceY` (`:29415`) ist aber 2.5D (top-solid pro Spalte). Der echte Collider braucht **volle 3D** (`terrainDensityAt(x,y,z)` direkt) — für Höhlen, Überhänge, Decken.
-
-### 1.4 Die kanonische Welt-Wahrheit (rein, deterministisch)
-- `_terrainColumnContext(x,z)` (`:24605`) — die 2D-Spalten-Arbeit (surf/rough/ceil/hydro), EINMAL pro Spalte.
-- `_terrainBaseDensityAtCol(x,y,z,ctx)` (`:24639`) — die per-Voxel-3D-Hälfte.
-- `_terrainDensityAt(x,y,z)` (`:24681`) = base + Voxel-Edit-Deltas (carve/fill).
-- **Alles reine Funktionen von (Seed, Voxel-Edits).** Bit-identisch in Main + Worker (Determinismus-Wand). `> 0` = solide, `≤ 0` = Luft/Wasser.
-
-### 1.5 Was Ammo NOCH trägt (muss mit-portiert werden)
-- **Raycasts** über `_runRaycast` (`:69957`) — 5 Call-Sites: 9-Ray-Erdung (`isPlayerGrounded` `:73585`), Kreatur-Wand-Detection, `_resolvePhantomTarget` (Greifen/Ziel), Lupen-Affordanz, `getTerrainHeightAt`-Fallback. **Plus** Abbau/Graben (`spawn`/Hieb-Raycast).
-- **Wasser-/Auftriebs-Physik** lebt in `_loopPhysicsSync` (`:72573`) und liest schon die Welt-Wahrheit (`_playerWaterContext`/`_waterLevelAt`) — kein Ammo nötig, nur die Velocity-Integration.
-
-### 1.6 Die Ammo-Schmerzen, die der Schritt tilgt
-- 256-MB-WASM-Heap (`patch-ammo-memory.cjs`), `ALLOW_MEMORY_GROWTH` fehlt.
-- `Ammo.destroy()` cascadiert NICHT → jede Allok-Welle muss Shape/MotionState/TMesh separat tracken (die Heap-Snowball-Gotcha).
-- Der `optimizePhysics`-Doom-Loop (V18.279) — eine ganze Bug-Klasse aus dem WASM-Lifecycle.
-- ~81 BVH-Bäume im Heap, nur um zu wissen, was das Dichtefeld schon weiß.
+- **Die FALLE (Sand-Weg, Heilige Lektion):** Bullets Rigid-Body-/Constraint-Solver nachbauen (Stacking, Ragdoll, Gelenke, Stoß-Impulse). Jahrzehnte Arbeit, am Ende ein *schlechteres* Bullet. Stellt niemanden in den Schatten.
+- **Der GIGANTENSCHRITT (entschieden):** Die Kollision **LIEST die kanonische Welt-Wahrheit — das Dichtefeld** `terrainDensityAt(x,y,z)` — direkt, statt eine redundante Dreiecks-BVH daraus abzuleiten. **Ammo fällt ganz weg.** Das kann eine General-Engine NICHT, weil sie die Welt nur als undurchsichtige Dreiecke kennt. Wir kennen die reine Funktion → wir zahlen weder Mesh-Bau noch BVH noch WASM-Heap, sind deterministisch by construction, und Edits sind sofort begehbar.
 
 ---
 
-## 2. Die These — der EINE Trick (Gesetz #0)
+## 1. Stand der Technik — was die Besten der Besten tun (geerdet, mit Quellen)
 
-**Die kanonische Größe dieser Domäne ist `terrainDensityAt`. Die Kollision soll sie LESEN, nicht eine BVH daraus ableiten.**
+| Wer | Was | Lehre für uns |
+|---|---|---|
+| **Astroneer** | Dichtefeld pro Voxel + Marching Cubes → *glatte* Oberfläche (nicht blockig). Verformen = Dichte ändern + Chunk re-polygonisieren. | **Unser exaktes Pendant** — ABER Astroneer kollidiert gegen das MESH, nicht das Feld. Selbst der nächste Verwandte machte den Feld-nativen Sprung NICHT → unser Schritt ist kühner als der Industrie-Standard. Das ist die „kaum ein zweiter kann"-Marke. |
+| **Quake / Fauerby / PhysX CCT** | *Collide-and-slide* Character-Controller: bewege → Kontakt finden → Velocity auf die Kontakt-Ebene projizieren (gleiten) → 2-3× iterieren. „Wenig Physik, viel getuntes Gefühl." | Der bewährte FEEL-Kern. Wir übernehmen collide-and-slide, nur die Kontakt-Ebene kommt aus dem Feld-Gradient statt aus Dreiecken. |
+| **NVIDIA / Macklin — „Local Optimization for Robust SDF Collision"** | SDF-Kontakt: der Gradient ∇ϕ ist die Auswurf-Richtung, innen negativ, außen positiv. | Der Gradient des Feldes gibt die Kontakt-Normale. ABER: unser Feld ist KEIN echtes SDF (Wert ≠ Distanz) — das ist die zentrale Subtilität, gelöst in §5.1. |
+| **StarCraft** (Fixed-Point) vs **AoE2 HD** (strikte Float-Flags) | Determinismus für Lockstep: entweder Integer-Fixed-Point ODER strenge Float-Disziplin + Per-Plattform-Tests. Cross-Plattform (verschiedene FPUs) ist die Bruchstelle. | Bestätigt die 3 Determinismus-Stufen (§7): Replay (trivial) → Gleich-Browser-Lockstep (Float-Disziplin, AoE2-Stil) → Bit-Lockstep heterogen (Fixed-Point, StarCraft-Stil, eigener Bogen). |
 
-Heute: `Dichtefeld → Mesh (Worker) → Dreiecke → btBvhTriangleMeshShape (sync) → rayTest/Kontakt`. Vier Schichten, eine davon ein synchroner Block, alle redundant zur ersten.
-
-Morgen: `Dichtefeld → analytische Abfrage`. Der Collider fragt das Feld direkt — „ist (x,y,z) solide?", „wo ist die Oberfläche unter mir?", „kollidiert meine Kapsel mit dem Feld?". Das ist der Raptor: die Teile (Mesh-zu-Collision-Pfad, BVH-Bäume, WASM-Heap, sync-Block) fallen weg, weil keiner mehr eine zweite Welt-Repräsentation herleitet.
-
-**Warum das Profis in den Schatten stellt:** eine General-Engine MUSS die Welt als Dreiecke behandeln (sie kennt deine Funktion nicht). Sie zahlt Mesh-Bau + BVH + Speicher, und sie kann nicht bit-deterministisch über Plattformen sein. Wir kennen die Funktion → wir zahlen nichts davon und sind deterministisch by construction.
+Quellen: [NVIDIA/Macklin SDF Collision](https://mmacklin.com/sdfcontact.pdf) · [iquilezles SDF distfunctions](https://iquilezles.org/articles/distfunctions/) · [Astroneer voxel terrain (Game Developer)](https://www.gamedeveloper.com/design/what-i-astroneer-i-s-devs-learned-while-leaving-early-access) · [Gaffer On Games — Floating Point Determinism](https://gafferongames.com/post/floating_point_determinism/) · [Cross-platform RTS & float indeterminism (Game Developer)](https://www.gamedeveloper.com/programming/cross-platform-rts-synchronization-and-floating-point-indeterminism) · [Lockstep RTS gold standard](https://www.socratopia.app/library/math-for-game-devs-en/chapter-30) · [PhysX Character Controllers](https://nvidia-omniverse.github.io/PhysX/physx/5.4.1/docs/CharacterControllers.html).
 
 ---
 
-## 3. Die SCOPE-Grenzen (verbindlich — die Anti-Sand-Wand)
+## 2. Der Befund heute (gemessen, file:line)
+
+### 2.1 Ammos Rolle ist winzig — aber überall verzweigt
+- **Ein** `btDiscreteDynamicsWorld` (`:13758`), SequentialImpulse-Solver, Dbvt-Broadphase.
+- **Spieler:** `btBoxShape(0.5,0.5,0.5)`, `mass=1`, `lockRotation` (`:71588`). KEIN `btKinematicCharacterController` — Bewegung per `setLinearVelocity` jeden Frame, Erdung per 9 Raycasts.
+- **Kreaturen:** `btBoxShape`, `mass=0.5` (`:15137`), max 20.
+- **Statisch (`mass=0`):** Terrain-Chunks (`btBvhTriangleMeshShape`, ~81), Architektur (`btCompoundShape`, Cap 48), Inseln (`btBvhTriangleMeshShape`).
+- **Schritt:** `stepSimulation(delta, 5, 1/60)` (`:72543`).
+- **Kein** Stacking/Ragdoll/Constraints. Nur character-controller-artige Bewegung.
+
+### 2.2 Der Rest-Freeze ist der sync BVH
+- `_buildVoxelChunkBVH` (`:12855`) → `_buildStaticTriMeshCollision` (`:57644`, `btBvhTriangleMeshShape` `:57707`), **synchron Main-Thread**, ~10 ms/Chunk; bis 9 inline = der 294-ms-Lauf-Spike (`:25914`). V18.271 entschärfte den Hauptschlag — die Wurzel steht.
+
+### 2.3 Das halbe Fundament STEHT SCHON (feld-nativ)
+- **`getTerrainHeightAt(x,z)` ist feld-nativ** (`:73691`) → `_voxelSurfaceY` (`:29415`) → `_terrainDensityAt`. Der Ammo-Heightfield-Fallback wurde V9.38 geschnitten.
+- **`_softFloorWhileChunkLoading` (`:72494`) beweist die voxel-native Stützung** — hält den Spieler heute schon an der deterministischen Höhe, wenn die BVH lädt. Der Plan macht das vom Fallback zum **Primärpfad**.
+- **`_runRaycast` (`:69957`) ist der EINE Chokepoint für ALLE Raycasts** — 5 Aufrufer. Sein Inneres tauschen = alle Aufrufer geerbt heilen (Gesetz #0).
+
+### 2.4 Die kanonische Welt-Wahrheit (rein, deterministisch)
+- `_terrainColumnContext(x,z)` (`:24605`) — 2D-Spalten-Arbeit, einmal/Spalte. `_terrainBaseDensityAtCol(x,y,z,ctx)` (`:24639`) — per-Voxel-3D. `_terrainDensityAt(x,y,z)` = base + Voxel-Edit-Deltas. `> 0` solide, `≤ 0` Luft/Wasser. Bit-identisch Main+Worker.
+
+---
+
+## 3. Die These — Gesetz #0 + der wahre Norden
+
+**Die kanonische Größe dieser Domäne ist `terrainDensityAt`. Die Kollision LIEST sie.** Heute: `Feld → Mesh → Dreiecke → BVH (sync) → rayTest` (vier Schichten, eine ein Block, alle redundant). Morgen: `Feld → analytische Abfrage`.
+
+**Vision-Ausrichtung (nicht nur Perf):** der wahre Norden ist *das lebendige Feld* — die Welt als EIN Feld, das alle **lesen · schreiben · werten**. Feld-native Physik ist die Physik, die dem Feld **BEITRITT**: die Kollision wird ein weiterer *Leser* der kanonischen Größe — wie `auraAt`/`deposit`. „Der Spieler steht auf dem Boden" = „der Spieler liest das Feld". Ammo war eine fremde WASM-Blackbox, drangeschraubt; danach ist die Physik Teil der Welt, die die Welt schon IST. Und Determinismus ist die Brücke zur Co-Schöpfungs-Vision (Mensch + KI, Lockstep/Replay).
+
+---
+
+## 4. Die SCOPE-Grenzen (verbindlich — die Anti-Sand-Wand)
 
 **IN (die schmale Voxel-Rolle):**
-1. Spieler-Character-Controller gegen das Dichtefeld (3D — Höhlen/Überhänge/Decken).
-2. Kreatur-Kollision gegen Feld + gegeneinander-Vermeidung (sie weichen heute auch nur aus, kein echter Kontakt-Solver).
-3. Analytische Box-Kollision gegen platzierte Architektur + Inseln (broad-phase + AABB/Kapsel-Sweep).
-4. Schwerkraft + Velocity-Integration + Fall-Cap + Auftrieb (alles schon da, nur ohne Ammo).
-5. Raycast-Ersatz (voxel-native DDA-Ray + analytischer Box-Ray) für Erdung/Greifen/Abbau/Affordanz.
+1. Spieler-Character-Controller gegen das Feld (volle 3D — Höhlen/Überhänge/Decken).
+2. Kreatur-Kollision gegen Feld (sie steuern heute auch nur, kein Kontakt-Solver).
+3. Analytische Box-Kollision gegen Architektur + Inseln.
+4. Schwerkraft + Velocity-Integration + Fall-Cap + Auftrieb (Logik existiert, nur ohne Ammo).
+5. Raycast-Ersatz (Feld-DDA + Box-Ray) im EINEN `_runRaycast`-Chokepoint.
 
-**OUT (der Sand-Weg — NICHT bauen):**
-- Genereller Rigid-Body-Solver, Impuls-Stacking, Türme aus Kisten.
-- Ragdoll, Gelenke, Constraints, Federn als Physik (Bewegungs-Federn im Skinning sind ANIMATION, nicht hier).
-- Reibungskegel, Rest-Kontakt-Mannigfaltigkeiten, Schlaf-Inseln.
-- Allgemeine konvexe-Konvex-Kollision. (Wir haben Kapseln gegen Feld + Boxen — fertig.)
-
-**Wenn ein Feature außerhalb dieser Liste „nötig" scheint → ZUERST fragen (Schöpfer-Entscheid), nicht heimlich erweitern.** Genau so kollabierte die 19-Modul-Phase.
+**OUT (der Sand-Weg — NICHT bauen):** genereller Rigid-Body-Solver, Impuls-Stacking, Kisten-Türme, Ragdoll, Gelenke, Constraints, Reibungskegel, Rest-Kontakt-Mannigfaltigkeiten, allgemeine Konvex-Konvex-Kollision. **Außerhalb dieser Liste „nötig"? ZUERST fragen (Schöpfer-Entscheid), nie heimlich erweitern.**
 
 ---
 
-## 4. Die Architektur — vier kleine, kohärente Bausteine
+## 5. Die Algorithmik (die spezifische Implementierung)
 
-### 4.1 Der Feld-Collider (`_fieldSolid` / `_fieldSurfaceBelow` / `_fieldRayDDA`)
-- `_fieldSolid(x,y,z)` = `terrainDensityAt(x,y,z) > 0` (liest die Edits mit → ein gecarvter Tunnel ist SOFORT begehbar, **kein BVH-Rebuild** — heute der teure Edit-Pfad).
-- `_fieldSurfaceBelow(x,y,z)` = der nächste Oberflächen-Übergang nach unten (für Bodensnap) — eine kurze 3D-Variante von `_voxelSurfaceY`, aber bei beliebigem Start-y (Höhlen-Boden, nicht nur Top-Solid).
-- `_fieldRayDDA(start, dir, maxDist)` = Amanatides-Woo-Voxel-Traversal über das Feld (für Erdung/Abbau/Greifen). Deterministisch, allokationsfrei.
+### 5.1 Der Feld-Collider — und das „kein-echtes-SDF"-Problem
+**Wurzel:** `terrainDensityAt > 0` sagt innen/außen, aber der *Wert* ist KEINE euklidische Distanz. Naive „push out um density" wäre falsch skaliert.
 
-### 4.2 Der Character-Controller (`_stepCharacter(body, dt)`)
-- Eine **Kapsel** (Radius ~0.45, Höhe ~1.8 — die heutige Box war zu grob für Stufen/Hänge) gegen das Feld.
-- Bewegung = die HEUTIGEN exp-Lerp-Kurven (`:72782` — `k=14` Boden / `4.5` Luft, Brems-k, Luftkontrolle, Slope-Penalty `:72781`) BEWAHRT — nur die Auflösung wechselt von Ammo-Velocity zu eigener Integration + Feld-Penetrations-Korrektur.
-- Bodensnap + Stufen-Schwelle (`step-up`, ~0.5 m), Wall-Slide (tangentiale Projektion am Feld-Gradient), Fall-Cap (−25 m/s), Auftrieb (der bestehende `_loopPhysicsSync`-Block, unverändert übernommen).
-- Erdung = wenige Feld-Abfragen unter der Kapsel-Basis statt 9 Ammo-Raycasts → **billiger UND deterministisch**.
+**Lösung (Macklin-Gradient + Robustheit gegen Nicht-SDF):**
+```
+_fieldSolid(x,y,z)       = terrainDensityAt(x,y,z) > 0          // liest Edits mit
+_fieldGradient(x,y,z)    = Zentral-Differenzen über 6 Samples
+                           (±eps in x,y,z) → ∇density
+_fieldResolve(p, radius) = bei _fieldSolid(p):
+                             n = normalize(-∇density)           // Auswurf-Richtung
+                             schritt = clamp(density / |∇density|, 0, radius)  // 1.-Ordnung-Distanz, GEKLAMMERT
+                             p += n * schritt                   // Dichte nur als Schritt-HINWEIS
+                           iteriere 2-3×
+```
+- Die Dichte ist nur **Schritt-Hinweis** (geklammert), nicht präzise Distanz → robust gegen die Nicht-SDF-Ungenauigkeit. AnazhRealms Terrain ist glattes differenzierbares Noise → der Gradient ist sauber.
+- `eps` ≈ halbe Voxel-Schrittweite (an die Roughness-Wellenlänge gekoppelt — die `diag-normals`-Lehre).
 
-### 4.3 Die analytische Box-Schicht (`_boxesNear` / `_capsuleVsBoxes`)
-- Architektur + Inseln tragen schon Box-Kinder (Compound) bzw. eine bekannte AABB. Eine **Grid-Hash-Broadphase** (Welt in Zellen, Bodies eingetragen) + Kapsel-gegen-AABB-Sweep löst Kontakt deterministisch.
-- Inseln mit echter Tri-Geometrie: als grobe AABB-Hülle ODER ein eigenes kleines Feld — Entscheid offen (§9), wahrscheinlich AABB-Hülle reicht (sie sind selten und grob).
+### 5.2 Der Character-Controller `_stepCharacter(body, dt)` — collide-and-slide
+- **Form:** Kapsel (Radius ~0.45, Höhe ~1.8) = 2-3 Kugeln entlang der Achse (Schöpfer-Entscheid Kapsel vs Box, §13).
+- **Schritt:** bewege um `v·dt`; für jede Kugel `_fieldResolve`; bei Auswurf die Velocity auf die Kontakt-Ebene projizieren (`v -= n·(v·n)`) = gleiten; 2-3× iterieren (collide-and-slide).
+- **FEEL — exakt erhalten (die Gefühl-Wand, §9):** die exp-Lerp-Kurven `f = 1−e^(−k·dt)` (`:72782`), `k=14` Boden / `4.5` Luft / Brems `18`/`1.5`, Slope-Penalty `0.2` (`:72781`), Coyote-Time, `jumpPower`, der Decken-Klammer (`_ceilingHeadroom`). **Die Bewegungs-LOGIK bleibt 1:1 — nur die AUFLÖSUNG wechselt von Ammo-Velocity zu eigener Integration + `_fieldResolve`.**
+- **Bodensnap + Stufen-Schwelle:** Abwärts-DDA-Probe (`_fieldSurfaceBelow`) statt 9 Raycasts; `step-up` ~0.5 m (über kleine Kanten — hier wird der Controller SAUBERER als die heutige Box). Erdung + `groundNormalY` + `onSteepSlope` aus dem Boden-Gradient.
+- **Fall-Cap (−25 m/s), Auftrieb:** der bestehende `_loopPhysicsSync`-Wasser-Block (`:72573`) wandert 1:1 herüber (er liest schon das Feld via `_playerWaterContext`/`_waterLevelAt`).
+- **Anti-Tunneling:** der Schritt wird SWEPT abgetastet (Sub-Steps ≤ Kapsel-Radius) → deterministisch, kein CCD-Tuning mehr nötig.
 
-### 4.4 Der deterministische Schritt (`_physicsTick(dt)`)
-- Festes `dt = 1/60`, Akkumulator + max N Substeps (wie heute Cap 5), **fixe Iterationsreihenfolge** (sortiert nach stabiler ID, kein `Map`-Iterations-Zufall).
-- Integriert Spieler + Kreaturen, löst gegen Feld + Boxen, schreibt Mesh-Positionen.
+### 5.3 Die analytische Box-Schicht (Architektur + Inseln)
+- Architektur trägt schon Box-Kinder (`btCompoundShape` `:57514`), Inseln eine bekannte Hülle.
+- **Grid-Hash-Broadphase:** Welt in Zellen, Bodies eingetragen; `_boxesNear(p)` liefert die Kandidaten.
+- **`_capsuleVsBoxes(capsule)`:** Kapsel-gegen-AABB-Sweep, Auswurf + Slide wie 5.2.
+- **Begehbar/hohl bleibt EMERGENT:** per-Part-Box, eine Tür-Lücke = kein Part = man geht hindurch (die heutige Wahrheit `:57514` erhalten).
+- Inseln: AABB-Hülle zuerst (Schöpfer-Empfehlung §13).
+
+### 5.4 Der Raycast-Ersatz — EIN Chokepoint
+- **`_runRaycast(start, end, extractor)` (`:69957`) behält die Signatur** — sein Inneres wechselt von Ammo-`btClosestRayResultCallback` zu:
+  - **Feld-DDA** (Amanatides-Woo Voxel-Traversal über `_fieldSolid`) für Terrain-Treffer (Punkt + Gradient-Normale).
+  - **Box-Ray** gegen `_boxesNear` für Architektur.
+  - das nähere Ergebnis gewinnt; `extractor(cb-shim, hit)` mit denselben Feldern (`m_hitPointWorld`, `m_hitNormalWorld`).
+- **Alle 5 Aufrufer unberührt:** 9-Ray-Erdung (`isPlayerGrounded` `:73585` — wird später durch die billigere Feld-Probe ersetzt, aber funktioniert sofort), Decken-Headroom, `_resolvePhantomTarget` (Ziel/Greifen), Lupen-Affordanz, Kreatur-Wand. **Das ist der Raptor: ein Ort tauschen, alle Leser erben.**
+
+### 5.5 Der deterministische Schritt `_physicsTick(dt)`
+- Festes `dt = 1/60`, Akkumulator + max N Substeps (wie heute Cap 5).
+- **Fixe Iterationsreihenfolge:** Entitäten nach stabiler ID sortiert (kein `Map`-Iterations-Zufall), keine `performance.now`-Abhängigkeit in der Sim-Logik, kein `Math.random` (im Welt-Pfad eh verboten — Γ5).
 
 ---
 
-## 5. Determinismus — der Preis (ehrlich)
+## 6. Die Integrations-Karte (jede Kopplung, die mit-portiert werden MUSS)
 
-Die Welt ist deterministisch (Seed + Edits). Eigene Integer-/sorgfältige-Float-Integration macht den GANZEN Sim deterministisch → **Lockstep, Replay, Rollback**.
+Aus dem Stamm-Audit — was der neue Pfad replizieren/erhalten muss:
 
-**Die ehrliche Hürde:** echte BIT-Gleichheit über verschiedene CPUs/Browser ist mit `Math.*`-Floats nicht garantiert (transzendente Funktionen driften im letzten Bit). Drei Stufen, von billig zu teuer:
-1. **Replay/Rollback auf DERSELBEN Maschine** (Undo, „spule zurück", Geister-Aufnahme) — braucht nur seed-deterministischen Sim. **Sofort erreichbar, hoher Wert.**
-2. **Lockstep-MP zwischen GLEICHEN Browsern** (alle Chrome/WebGPU) — meist stabil mit Float-Disziplin (keine `Map`-Ordnung, feste Reihenfolge, keine `performance.now`-Abhängigkeit im Sim). **Erreichbar mit Vorsicht.**
-3. **BIT-Lockstep über HETEROGENE Plattformen** — braucht ggf. Fixed-Point-Math im Kern. **Eigener, späterer Entscheid (P4) — kein Free Lunch, nicht für P1 versprechen.**
+| # | System | Kopplung (file:line / Methode) | Was der Feld-Pfad tun muss |
+|---|---|---|---|
+| 1 | **Bewegungs-Feel** | `_loopPlayerMovement` (`:72747`), exp-Lerp k=14/4.5/18/1.5, Slope `0.2` (`:72781`), Coyote, `jumpPower`, `_ceilingHeadroom` | Logik 1:1; nur Auflösung wechselt |
+| 2 | **Gefährt/Sattel** | `_mountedVehicleProfile` → überschreibt `kAcc/kBrake/topSpeedMul` (`:72796`); Gefährt folgt Spieler VISUELL (kein Constraint) | Mount-überschreibt-Kurven-Pfad behalten; Gefährt-Mesh-Follow bleibt rein visuell |
+| 3 | **Wasser/Auftrieb** | `_loopPhysicsSync`-Wasser-Block (`:72573`), `_playerWaterContext` (3D-Zellen) + `_waterLevelAt`-Fallback, `_swimVerticalVelocity`, `liftingField`, Augen-Wasser | Velocity-Integration 1:1 übernehmen; die READ-Funktionen lesen schon das Feld → unverändert |
+| 4 | **Raycasts** | `_runRaycast` (`:69957`) — EINE Quelle, 5 Aufrufer | Inneres tauschen (DDA + Box-Ray), Signatur + Aufrufer unverändert |
+| 5 | **Architektur/Inseln** | `_buildArchitectureCollision` (`btCompoundShape` `:57514`), `_buildIslandCollision` (TriMesh), per-Part = begehbare Tür-Lücken | analytische Box-Schicht; per-Part-Emergenz erhalten; Insel = AABB-Hülle |
+| 6 | **Voxel-Edits** | `_addVoxelEdit` → `_rebuildVoxelChunk` (Mesh+BVH); `_voxelEditsFillTop` | **BONUS: Kollision braucht KEINEN Rebuild** (Feld liest Edits). Mesh-Rebuild bleibt nur fürs RENDER; `_voxelEditsFillTop` bleibt für die Render-Skip-Band-Grenze |
+| 7 | **Kreaturen** | `spawnCreatureAt` (`:15045`), `tickFaunaLifecycle`, `_creatureWaterContextAt`, Erdung via `getTerrainHeightAt` | gleicher `_stepCharacter`; gleiche Feld-Boden-Wahrheit (schon feld-nativ) |
+| 8 | **State-Save** | `buildStateSnapshot` speichert Position, NICHT Velocity; `loadState` re-positioniert | ohne Ammo-Body: Position setzen + Velocity 0 → einfacher |
+| 9 | **Multiplayer/Peers** | Peer-Avatare network-kinematisch (keine Kollision); `NON_BROADCASTABLE_OPS` Position | Peers bleiben Geister (keine Feld-Kollision); Determinismus → Lockstep-Tür (§7) |
+| 10 | **Perf-Regler** | `_perfMark("bvh"...)` (`:12858`) → `perfSense.bvhMs`; Physik sonst INDIREKT | `bvh`-Mark entfällt; neuer `_perfMark("physics",...)` (Feld-DDA-Kosten, headless messbar — kein GPU!) |
+| 11 | **Void-Rettung** | `_rescuePlayerFromVoid` (y<−120), Kill-Plane (`base−88`), `_ensurePlayerChunkBVH`-Watchdog | Kill-Plane + Rettung bleiben; der weiche Boden wird der EINE Boden; der BVH-Watchdog entfällt (kein BVH) |
+| 12 | **Scale-Factor** | `scaleFactor` (=1) in ALLEN Ammo-Koords (`:73641`, `:57713`, …) | feld-nativ rechnet in Welt-Koords → die `/scaleFactor`-Konversionen können VEREINFACHT/entfernt werden (Cleanup-Gewinn; vorsichtig, viele Stellen) |
+| 13 | **Controller-State** | `isInAir`/`isJumping`/`onSteepSlope`/`groundNormalY`/`_groundedCache`/`_softFloorActive` | als Controller-State erhalten (Feel + UI lesen sie) |
 
-**P1–P3 brauchen NUR Stufe 1.** Stufe 3 ist ein bewusster Folge-Entscheid, kein Versprechen, das den ersten Schritt belastet.
+**Subtile Fallen (vom Audit geflaggt):** (a) `physicsWorld`-null-Guard bei Welt-Regen → der Feld-Collider muss vor Welt-Aufbau graziös leer-treffen; (b) Wasser hat ZWEI Wahrheiten (3D-Zellen + `_waterLevelAt`-Fallback) — beide bleiben; (c) Decken-Headroom liest `mesh.position`, nicht den Body — mit eigenem Controller ist das EINE Position (Vereinfachung); (d) Kreaturen MÜSSEN dieselbe Feld-Boden-Wahrheit lesen wie der Spieler, sonst Drift.
 
 ---
 
-## 6. Die Sequenz — Wellen, jede verifizierbar
+## 7. Determinismus — die 3 Stufen (ehrlich)
+
+JS-Zahlen sind alle f64 (kein x87-80-bit-Drift wie C++). Innerhalb EINER Engine (V8) sind `Math.*` deterministisch; über Engines (V8/SpiderMonkey/JSC) driften Transzendente im letzten ULP.
+1. **Replay/Rollback auf DERSELBEN Maschine** (Undo, „spule zurück", Geist-Aufnahme) — nur seed-deterministischer Sim. **Sofort, hoher Wert.**
+2. **Lockstep zwischen GLEICHEN Browsern** (alle Chrome/WebGPU) — Float-Disziplin (keine `Map`-Ordnung, fixe Reihenfolge, kein `performance.now` in der Sim). **Erreichbar mit Vorsicht (AoE2-Stil).**
+3. **BIT-Lockstep über HETEROGENE Plattformen** — braucht Fixed-Point-Math im Kern (StarCraft-Stil). **Eigener, späterer Bogen — kein Versprechen für P1.**
+
+P1–P3 brauchen NUR Stufe 1. Stufe 2/3 sind bewusste Folge-Entscheide.
+
+---
+
+## 8. Die Sequenz — Wellen, jede verifizierbar
 
 | Welle | Was | Verifikation | Risiko |
 |---|---|---|---|
-| **P0 — Die Linse** | Mess-Skripte BAUEN (echter Renderer): sync-BVH-Last + `stepSimulation`-Kosten + Heap heute; eine Bewegungs-Trace-Linse (Position/Velocity/grounded über Zeit) | Zahlen vor/nachher hart belegbar | — |
-| **P1 — Spieler-Feld-Controller** | `_fieldSolid/_fieldSurfaceBelow/_fieldRayDDA` + `_stepCharacter` für den SPIELER. Ammo trägt den Spieler weiter PARALLEL (A/B-Schalter) bis der Feel sitzt | sync-BVH-Spieler-Freeze messbar 0; Bewegungs-Trace == Ammo-Trace im Rahmen; **Schöpfer-Browser-Feel** | **Feel** (die eine echte Gefahr) |
-| **P2 — Kreaturen + Boxen + Raycast** | Kreaturen auf `_stepCharacter`; analytische Box-Schicht für Architektur/Inseln; alle 5 `_runRaycast`-Konsumenten + Abbau auf `_fieldRayDDA`/`_capsuleVsBoxes` | Erdung/Greifen/Abbau treffen wie heute; Kreatur-Bewegung settled | mittel |
-| **P3 — Ammo zurückziehen** | `physicsWorld`, alle `new Ammo.*`, der 256-MB-Patch, die BVH-Bauten, `_buildVoxelChunkBVH` GESCHNITTEN. Der weiche Boden wird der EINE Boden | Welt baut/läuft ohne Ammo; Heap-Sturz messbar; Gate grün | mittel (gründlicher Schnitt) |
-| **P4 — Der Preis** | Replay/Rollback (Stufe 1) → ggf. Lockstep (Stufe 2). Fixed-Point-Entscheid (Stufe 3) als eigener Bogen | deterministischer Replay bit-gleich auf einer Maschine | eigener Plan |
+| **P0 — Die Linse** | `diag-physics-cost` (echter Renderer): sync-BVH-ms + `stepSimulation`-ms + WASM-Heap + Feld-Sample-Kosten — die Vorher-Zahl | harte Vorher/Nachher-Daten | — |
+| **P1 — Spieler-Feld-Controller** | `_fieldSolid/Gradient/Resolve/SurfaceBelow` + `_stepCharacter` für den SPIELER; Ammo trägt PARALLEL (A/B-Schalter) bis der Feel sitzt | sync-BVH-Spieler-Freeze messbar 0; Bewegungs-Trace ≈ Ammo; **Schöpfer-Browser-Feel** | **Feel** (die eine echte Gefahr) |
+| **P2 — Kreaturen + Boxen + Raycast** | Kreaturen auf `_stepCharacter`; Box-Schicht (Grid-Hash); `_runRaycast`-Inneres → DDA+Box-Ray | Erdung/Greifen/Abbau treffen wie heute; Kreatur settled | mittel |
+| **P3 — Ammo RAUS** | `physicsWorld`, alle `new Ammo.*`, der 256-MB-Patch, `_buildVoxelChunkBVH`, der BVH-Watchdog GESCHNITTEN; der weiche Boden wird der EINE Boden; scaleFactor-Cleanup | Welt baut/läuft ohne Ammo; Heap-Sturz messbar; Gate grün; `grep 'new Ammo'` = 0 | mittel (gründlicher Schnitt — die V17.20-sed-Disziplin) |
+| **P4 — Der Preis** | Replay/Rollback (Stufe 1) → ggf. Lockstep (Stufe 2). Fixed-Point (Stufe 3) eigener Bogen | deterministischer Replay bit-gleich (eine Maschine) | eigener Plan |
 
-**P1 ist der Löwenanteil des Werts** (killt den Freeze, beweist den Pfad). P3 ist die Vereinfachung, die die Heilige Lektion belohnt (weniger Kopplung, eine Welt-Wahrheit). P4 ist die Krone.
-
----
-
-## 7. Die Bewegungs-Gefühl-Wand (das Schöpfer-Auge)
-
-Mechanik braucht eine ZAHL, **FEEL braucht ein BILD/eine Bewegung**. Was vom heutigen Gefühl ZWINGEND erhalten bleibt (sonst fühlt sich der Controller „billig" an — das einzige echte Risiko):
-- die exp-Lerp-Beschleunigungs-/Brems-Kurven (`:72782`) — snappy am Boden, ballistisch in der Luft.
-- Luftkontrolle (schwächerer Input in der Luft, Momentum bleibt).
-- Slope-Penalty (steile Hänge drosseln + schieben ab, `:72781`).
-- Wall-Slide (entlang Wänden rutschen, nicht kleben).
-- Sprung-Bogen, Tauchen/Auftauchen/Auftrieb (`_swimVerticalVelocity`).
-- Stufen-Schwelle (über kleine Kanten gehen, nicht hängenbleiben — HIER kann der Feld-Controller sogar BESSER werden als die heutige Box).
-
-**P1 merged NICHT, bevor du im Browser bestätigst, dass sich das Laufen mindestens so gut anfühlt wie heute.** Ammo bleibt in P1 als A/B-Vergleich live.
+**P1 = Löwenanteil des Werts.** P3 = die Heilige-Lektion-Belohnung (256-MB-Heap + ~81 BVH-Bäume + die `Ammo.destroy`-Cascade-Klasse + der `optimizePhysics`-Doom-Loop-Erbe — alle weg). P4 = die Krone.
 
 ---
 
-## 8. Die Linsen (Gesetz #0 — baue die Linse, verlass dich nicht auf Wachsamkeit)
+## 9. Die Bewegungs-Gefühl-Wand (das Schöpfer-Auge)
 
-Drei neue `scripts/diag-*`, weil der Playtest GPU-/Render-blind ist und der Feel nur im echten Renderer lebt:
-- **`diag-physics-cost`** (echter Renderer): heutige sync-BVH-ms + `stepSimulation`-ms + WASM-Heap — die Vorher-Zahl, gegen die P3 misst.
-- **`diag-physics-determinism`**: zwei identische Eingabe-Sequenzen → bit-gleiche Positions-Traces (die Replay-Wand; macht eine Determinismus-Regression LAUT).
-- **`diag-walk-feel`** (erweitert das bestehende `diag-walk-profile`): Bewegungs-Trace + settled Augenhöhen-Screenshot über Hang/Stufe/Höhle/Wasser — der A/B-Vergleich Ammo vs. Feld.
-
-Plus ein Playtest-Band `checkBandVoxelPhysics` (Feld-Collider liest die kanonische Quelle, Erdung deterministisch, kein `new Ammo.*` nach P3).
+Mechanik braucht eine ZAHL, **FEEL braucht ein BILD/eine Bewegung.** Zwingend erhalten (sonst „billig"): die exp-Lerp-Kurven, Luftkontrolle, Slope-Penalty, Wall-Slide, Sprung-Bogen, Tauchen/Auftrieb, Stufen-Schwelle (hier sogar besser). **P1 merged NICHT, bevor du im Browser bestätigst, dass Laufen/Hänge/Stufen sich mindestens so gut anfühlen wie heute.** Ammo bleibt in P1 als A/B live.
 
 ---
 
-## 9. Offene Entscheide für dich (vor/während P1)
+## 10. Die Linsen (Gesetz #0 — baue die Linse)
 
-1. **Kapsel vs. Box** für den Spieler — ich empfehle Kapsel (Stufen/Hänge sauberer). OK?
-2. **Inseln:** grobe AABB-Hülle (billig, leicht ungenau an den Rändern) ODER eigenes kleines Feld pro Insel (genau, mehr Code). Empfehlung: AABB-Hülle zuerst.
-3. **Determinismus-Tiefe:** P4 nur Stufe 1+2 (Replay + Gleich-Browser-Lockstep) — Stufe 3 (Fixed-Point, Heterogen) als separater Bogen? Empfehlung: ja.
-4. **Ammo-Schnitt-Zeitpunkt:** hart nach P2 (mutig) oder erst nach einer Schöpfer-Browser-Bestätigungsrunde über mehrere Welten? Empfehlung: erst Bestätigung, dann P3.
+- **`diag-physics-cost`** (echter Renderer): die Vorher-Zahl, gegen die P3 misst.
+- **`diag-physics-determinism`**: zwei identische Eingabe-Sequenzen → bit-gleiche Positions-Traces (die Replay-Wand).
+- **`diag-walk-feel`** (erweitert `diag-walk-profile`): Bewegungs-Trace + settled Augenhöhen-Screenshot über Hang/Stufe/Höhle/Wasser — A/B Ammo vs Feld.
+- Playtest-Band `checkBandVoxelPhysics`: Feld-Collider liest die kanonische Quelle, Erdung deterministisch, `grep 'new Ammo'`=0 nach P3.
 
 ---
 
-## 10. Warum das die Heilige Lektion EHRT (nicht verletzt)
+## 11. Selbst-Kritik — wo ich (noch) NICHT zufrieden bin (ehrlich)
 
-Der Schnitt von Ammo ist KEIN neuer Datei-Split und KEine Re-Komplexifizierung — er ist das Gegenteil: **eine zweite Welt-Repräsentation (Dreiecks-BVH) und eine ganze Fremd-Laufzeit (WASM) fallen weg, ersetzt durch Lesen der EINEN Quelle, die die Welt schon ist.** Niedrigere Kopplung, höhere Kohäsion, eine schmale stehende Schnittstelle (`_fieldSolid`/`_fieldRayDDA`). Das ist der Stamm, der einen abgelösten Ring abwirft — kein neues Modul-Wirrwarr. Die Anti-Sand-Wand (§3) hält den Schritt schmal: wir bauen NICHT die generische Engine, nur die Voxel-Rolle, die unsere deterministische Welt uns geschenkt hat.
+1. **Der Feel ist die echte Unbekannte.** Collide-and-slide ist bewährt, aber das *Gefühl* eines hand-gerollten Controllers entscheidet sich im Browser, nicht in der Zahl. Der A/B-Schalter (Ammo parallel in P1) ist das Sicherheitsnetz — ich verspreche kein „besser" vor deinem Auge.
+2. **Nicht-SDF-Genauigkeit.** Der `density/|∇density|`-Schritt ist 1.-Ordnung; an dünnen Features/hoher Krümmung kann er mis-schätzen. Mitigation: geklammerter Schritt + Iteration + boolescher Feld-Fallback. Muss in P1 an scharfen Kanten (Canyon-Wand, Höhlen-Decke) verifiziert werden — eine eigene `diag`-Probe.
+3. **Kreatur-Vielfalt.** 20 Kreaturen × `_stepCharacter` + Feld-Samples — Kosten messen (P0). Wahrscheinlich billiger als 20 Ammo-Boxen + stepSimulation, aber GEMESSEN, nicht geraten.
+4. **Inseln als AABB-Hülle** sind an den Rändern ungenau (fliegende Inseln mit Noise-Kante). Akzeptabel? Schöpfer-Browser. Sonst eigenes kleines Insel-Feld (mehr Code).
+5. **Der scaleFactor-Cleanup (P3)** berührt VIELE Stellen — die V17.20-sed-Chirurgie-Disziplin (Backup, awk-Methoden-Liste, `diag-page-error` vor Playtest) gilt strikt.
+6. **Determinismus Stufe 2/3** ist noch nicht ausgemessen (welche `Math.*`/Noise-Pfade driften über Engines). Erst relevant für echtes Lockstep — P4.
+
+---
+
+## 12. Warum das die Heilige Lektion EHRT
+
+Der Ammo-Schnitt ist KEIN neuer Datei-Split und KEINE Re-Komplexifizierung — das Gegenteil: **eine zweite Welt-Repräsentation (Dreiecks-BVH) UND eine ganze Fremd-Laufzeit (WASM, 256 MB Heap, die destroy-Cascade-Bug-Klasse) fallen weg, ersetzt durch das Lesen der EINEN Quelle, die die Welt schon ist.** Niedrigere Kopplung, höhere Kohäsion, eine schmale stehende Schnittstelle (`_fieldSolid`/`_fieldResolve`/`_fieldRayDDA`). Der Stamm wirft einen abgelösten Ring ab. Die Anti-Sand-Wand (§4) hält den Schritt schmal: nur die Voxel-Rolle, die unsere deterministische Welt uns schenkt.
+
+---
+
+## 13. Offene Entscheide (Fork entschieden: feld-nativ, Ammo raus)
+
+| # | Frage | Meine Empfehlung | Status |
+|---|---|---|---|
+| ✓ | Kollisions-Kern | **Feld-nativ, Ammo voll raus** | **ENTSCHIEDEN (Schöpfer)** |
+| 1 | Spieler-Form: Kapsel vs Box | **Kapsel** (Stufen/Hänge sauberer) | offen |
+| 2 | Inseln: AABB-Hülle vs eigenes Feld | **AABB-Hülle zuerst** | offen |
+| 3 | Determinismus-Tiefe P4 | Replay + Gleich-Browser-Lockstep; Fixed-Point eigener Bogen | offen |
+| 4 | Ammo-Schnitt (P3)-Zeitpunkt | Erst Schöpfer-Browser-Bestätigung über mehrere Welten, dann schneiden | offen |
+
+**Nächster Schritt:** P0 — die Mess-Linse bauen, die Vorher-Zahl sehen.
