@@ -402,7 +402,18 @@ Die Grid-Loops holen den Kontext einmal pro Spalte und nutzen ihn für BEIDES: d
 
 **DIE KUMULATIVE BILANZ — drei Wellen, die drei schwersten Algorithmen, alle byte-identisch erschlagen:** Skin-Isosurface 4,4× (V18.319) · Chunk-Density Band-Skip ~3× (V18.320) · Chunk-Density Spalten-Hoist (V18.321) → der Chunk-Bau zusammen **6-12× vs. dem Original-Brute**. Dasselbe Profi-Muster (Redundanz an der Wurzel tilgen, narrow-band, eine Quelle), jedes Mal mit einem Byte-Orakel als Linse statt Wachsamkeit.
 
-**OFFEN (die nächsten Giganten):** die per-Voxel-3D-Roughness-Bänder (jetzt der grössere Rest-Anteil der Density) · der Render (GPU-gebunden — die nächste Bestie, mit einer Render-Pixel-Diff-Linse selbst verifizierbar) · der Worldgen-Monolith am Boot · der Determinismus-Bogen (voxel-native Kollision).
+**OFFEN (die nächsten Giganten):** die per-Voxel-3D-Roughness-Bänder (jetzt der grössere Rest-Anteil der Density) · der Render (s. die Sondierung unten) · der Worldgen-Monolith am Boot · der Determinismus-Bogen (voxel-native Kollision).
+
+#### Render-Sondierung (V18.321-Anhang, Schöpfer „du brauchst nicht meinen browser, du kannst das selbst — kein Zurückweichen, sei ein Gigant"):
+
+Ich habe den Render mit meiner EIGENEN Linse zur Wand gejagt (kein Browser-Betteln) — neu: `scripts/diag-shadow-pixel.cjs` (echter WebGPU, Canvas→2D→getImageData → Pixel-Diff vor/nach einer Szenen-Mutation). Die gemessene Wahrheit:
+
+- **Render-Last (`diag-render-load`):** ~748k Tris / 580 Draws + ein SCHATTEN-PASS (~287k Tris, zweiter Render, Terrain ~210k davon). Die „kann mich kaum drehen"-Wurzel ist schon geheilt (V18.300 Region-Cull = 60 % Dreh-Cull, V18.305 Schatten-Cache, V18.307 Gras −50 %).
+- **HYPOTHESE „Terrain-Selbstschatten weglassen = −210k-Schatten-Tri-Gigant" → mit der Pixel-Linse WIDERLEGT:** mean 3,9/Kanal, **~7 % der Pixel spürbar geändert** (mittag UND tief) → die Tal-/Spalten-Schatten sind look-essenziell. BEHALTEN. (Die Linse hat mir das Betteln erspart + die Avenue mit DATEN geschlossen, nicht mit Bauchgefühl.)
+- **BatchedMesh-GPU-Pfad (V18.289, `useBatchedFoliage`):** ist ein Speicher-Sackgasse — BatchedMesh DUPLIZIERT Geometrie pro Instanz (nicht instanced) → 2,93M→24,1M Tris, ~1 GB → OOM. Das Team hat ihn korrekt verworfen (Region-Keying V18.300 statt dessen). Kein gangbarer Fix.
+- **Das `frustumCulled=false`-Residuum (70k Tris / 190 Meshes = placed Architektur + fernes Laub LOD1/2):** klein; der saubere Fix (placed region-keyen) berührt die Slot-/Raycast-/Dispose-Verwaltung — V18.300 hat placed BEWUSST global gelassen (Regressions-Risiko > Gewinn).
+
+**VERDIKT (ehrlich, gemessen):** der Render ist NAHE-optimal für seine Constraints. Der EINE echte verbliebene Render-Gigant ist **GPU-driven instanced Culling** (Compute-Frustum-Cull + Indirect-Draw auf InstancedMesh, NICHT BatchedMesh) — die AAA-Technik, aber ein grosser, riskanter From-Scratch-Bau in TSL/r184 mit nur MARGINALEM Mehrwert über das existierende Region-Cull (60 %). Bewusst KEIN Ein-Wellen-Schnellschuss; wenn, dann ein gestufter Bau MIT der Pixel-Linse als Sicherheitsnetz. Die schwere CPU-Arbeit (die 3 schwersten Algorithmen, byte-identisch erschlagen) ist die Substanz dieses Bogens.
 
 ### V18.320 — DER SCHNELLE STROM: das Welt-Streaming ~3× schneller (eine Quelle, byte-identisch)
 
