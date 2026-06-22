@@ -43781,7 +43781,15 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         }
 
         // Qualität skaliert Creature-Stats + Konsumable (Source-Check).
-        out.creatureStatsQuality = /computeBlueprintQuality/.test(r.computeCreatureStats.toString());
+        // V18.312 — die Equip-Qualität-Skalierung wanderte in die GETEILTE Quelle
+        // `_foldEquippedStatTags` (Gesetz #0: computeCreatureStats + computePlayerStats LESEN sie,
+        // statt jede inline `computeBlueprintQuality` zu rufen). Der Test wandert mit dem Code an
+        // die Wurzel (CLAUDE.md V9.56-i „der Test wandert mit dem Code"): die Kreatur-Stats erben
+        // die Qualität, WEIL computeCreatureStats den Equip-Fold liest UND der Fold die Qualität
+        // multipliziert. `__codeOf` strippt Kommentare → der Presence-Grep trifft nur echten Code.
+        out.creatureStatsQuality =
+            /_foldEquippedStatTags/.test(window.__codeOf(r.computeCreatureStats)) &&
+            /computeBlueprintQuality/.test(window.__codeOf(r._foldEquippedStatTags));
         out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
 
         // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
