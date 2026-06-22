@@ -1,6 +1,6 @@
 # DER DETERMINISMUS-BOGEN — die eigene voxel-native Physik
 
-> **Status:** PLAN v2 (Implementierungs-Spezifikation, noch kein Code). Geschrieben damit das Schöpfer-Auge die SCOPE + die Algorithmik prüft, bevor Code fällt.
+> **Status:** P0 + P1a + P1b **GEBAUT** (Feld-Collider-Helfer + Kapsel-Character-Controller, A/B hinter `state.fieldPhysics`, Default AUS). Die Mechanik trägt (Linsen grün); **das FEEL wartet auf den Schöpfer-Browser** (§9 — Chat-Befehl `feldphysik` umschalten, A/B vs Ammo). Nächster Code: P2 (Kreaturen + Boxen + Raycast) NACH dem Feel-Sign-off. Der Rest (§5.3/§5.5/§6 Box-Schicht-Details) bleibt Spezifikation.
 > **Branch (reserviert):** `claude/confident-noether-yczn0c` (Noether — die Erhaltungsgröße; Determinismus).
 > **ENTSCHIEDEN (Schöpfer, 22.06.):** Ammo muss RAUS — voll. Kollision FELD-NATIV (gegen `terrainDensityAt`, kein Collision-Mesh, kein BVH-Build). „Sonst bringt das, was wir tun, ja gar nichts."
 > **Trigger — ZUERST lesen bei:** Physik · Kollision · Character-Controller · Bewegung · BVH · Ammo · Determinismus · Lockstep · Replay · Rollback · „der Spieler fällt/hängt/tunnelt".
@@ -162,8 +162,9 @@ P1–P3 brauchen NUR Stufe 1. Stufe 2/3 sind bewusste Folge-Entscheide.
 
 | Welle | Was | Verifikation | Risiko |
 |---|---|---|---|
-| **P0 — Die Linse** | `diag-physics-cost` (echter Renderer): sync-BVH-ms + `stepSimulation`-ms + WASM-Heap + Feld-Sample-Kosten — die Vorher-Zahl | harte Vorher/Nachher-Daten | — |
-| **P1 — Spieler-Feld-Controller** | `_fieldSolid/Gradient/Resolve/SurfaceBelow` + `_stepCharacter` für den SPIELER; Ammo trägt PARALLEL (A/B-Schalter) bis der Feel sitzt | sync-BVH-Spieler-Freeze messbar 0; Bewegungs-Trace ≈ Ammo; **Schöpfer-Browser-Feel** | **Feel** (die eine echte Gefahr) |
+| **P0 ✅ GEBAUT** | `diag-physics-cost` (echter Renderer): sync-BVH-ms + `stepSimulation`-ms + WASM-Heap + Feld-Sample-Kosten — die Vorher-Zahl | GEMESSEN (§P0-ERGEBNIS): BVH-Build 9,18 ms/Chunk = der Freeze; Schritt ~0 → Spike-gegen-Smooth ist der Gewinn | — |
+| **P1a ✅ GEBAUT** | `_fieldDensityAt/Solid/Gradient/ResolveSphere/SurfaceBelow` (rein, gehoistet) + `_voxelEditDeltaAt` (EINE Quelle) | `diag-field-collide` 5/5: bit-gleich zu `_terrainDensityAt`, Boden ≈ Wahrheit, Auswurf, Normale, **gehoistete Probe 6× schneller** als `_voxelSurfaceY` | — |
+| **P1b ✅ GEBAUT (Feel offen)** | `_stepCharacter` (Kapsel) für den SPIELER; A/B hinter `state.fieldPhysics` (Default AUS, Chat `feldphysik`); Ammo trägt PARALLEL | `diag-walk-feel` 4/4: Erdung (restClear 0) · Lauf (10 m, kein Sink/Float, 100 % geerdet) · Stufe-hoch (0,49 m) · Sprung+Landung. **Schöpfer-Browser-Feel = das Merge-Gate** | **Feel** (die eine echte Gefahr) |
 | **P2 — Kreaturen + Boxen + Raycast** | Kreaturen auf `_stepCharacter`; Box-Schicht (Grid-Hash); `_runRaycast`-Inneres → DDA+Box-Ray | Erdung/Greifen/Abbau treffen wie heute; Kreatur settled | mittel |
 | **P3 — Ammo RAUS** | `physicsWorld`, alle `new Ammo.*`, der 256-MB-Patch, `_buildVoxelChunkBVH`, der BVH-Watchdog GESCHNITTEN; der weiche Boden wird der EINE Boden; scaleFactor-Cleanup | Welt baut/läuft ohne Ammo; Heap-Sturz messbar; Gate grün; `grep 'new Ammo'` = 0 | mittel (gründlicher Schnitt — die V17.20-sed-Disziplin) |
 | **P4 — Der Preis** | Replay/Rollback (Stufe 1) → ggf. Lockstep (Stufe 2). Fixed-Point (Stufe 3) eigener Bogen | deterministischer Replay bit-gleich (eine Maschine) | eigener Plan |
@@ -222,9 +223,9 @@ Der Ammo-Schnitt ist KEIN neuer Datei-Split und KEINE Re-Komplexifizierung — d
 | # | Frage | Meine Empfehlung | Status |
 |---|---|---|---|
 | ✓ | Kollisions-Kern | **Feld-nativ, Ammo voll raus** | **ENTSCHIEDEN (Schöpfer)** |
-| 1 | Spieler-Form: Kapsel vs Box | **Kapsel** (Stufen/Hänge sauberer) | offen |
+| 1 | Spieler-Form: Kapsel vs Box | **Kapsel** (Stufen/Hänge sauberer) | ENTSCHIEDEN (Schöpfer 22.06.) — Kapsel, GEBAUT in P1b |
 | 2 | Inseln: AABB-Hülle vs eigenes Feld | **AABB-Hülle zuerst** | offen |
 | 3 | Determinismus-Tiefe P4 | Replay + Gleich-Browser-Lockstep; Fixed-Point eigener Bogen | offen |
 | 4 | Ammo-Schnitt (P3)-Zeitpunkt | Erst Schöpfer-Browser-Bestätigung über mehrere Welten, dann schneiden | offen |
 
-**Nächster Schritt:** P0 — die Mess-Linse bauen, die Vorher-Zahl sehen.
+**Nächster Schritt:** P0/P1a/P1b sind GEBAUT (alle Linsen grün). **Der Ball liegt beim Schöpfer-Browser** — `feldphysik` im Chat schalten, Laufen/Hänge/Stufen/Sprung A/B gegen Ammo fühlen (§9 die Gefühl-Wand). Nach dem Feel-Sign-off: P2 (Kreaturen + Box-Schicht + Raycast-DDA), dann P3 (Ammo RAUS).
