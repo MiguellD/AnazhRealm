@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.328–.329 — der Feld-Controller gehärtet: View-Smoothing-Reflexion + zwei Rand-Bugs gefischt
+
+Schöpfer im Browser, coachend („werde zum Fischer, das ist messbar, dafür brauchst du mich nicht"): drei Befunde, alle selbst gemessen + gefixt.
+
+- **V18.328 — View-Smoothing reflektiert.** Aufforderung „lies den Code, reflektiere, tut es WIRKLICH was du behauptest". Tat ich + korrigierte meine eigene Annahme: ich hielt den Tiefpass-Lag auf Hängen für einen Bug, baute zwei Alternativen (Step-Offset, geschwindigkeits-begrenzt), MASS dabei dass das Voxel-Terrain auf Frame-Skala roh ist (~0,23 m/Frame) — und erkannte: dieser Lag IST die „höhe dämpfen"-Bitte, ich hatte gegen die eigenen Schöpfer-Worte „gefixt". Zurück zum Tiefpass (CAMERA_SMOOTH_K=14). Ehrliche Linse (flach-rau, ohne Steigungs-Trend): Auge 16 % glatter, Lag gebunden.
+- **V18.329 — zwei Rand-Physik-Bugs (`diag-walk-edge`).** (1) MAGNET/KLEBEN: die Boden-Haftung snappte abwärts AUCH im Fall → Sog vor der Landung; + klebte über Kämme. Fix: snap-down NUR wenn vorher geerdet (`_fieldWasGrounded`), NIE im Fall (maxFrameDrop 0,196 m, schwerkraft-konform); GROUND_SNAP 0.4→0.25 → Kamm-Absprung statt Kleben (sawAir ✅). (2) CLIP-DURCH-BODEN am steilen Berg: `_fieldSurfaceBelow` scannt jetzt AUFWÄRTS bei Penetration (echte Oberkante), Anti-Clip setzt bedingungslos hoch (das Sicherheitsnetz statt BVH), Terrain-Wand VOR dem Boden-Snap + Forward-Block (kein Eindringen in Wände > STEP_UP). GEMESSEN: maxBuried 0, kein Durchfallen. MESS-LEHRE: „clippt durch" misst man mit `_fieldSolid` (Füße im Soliden), nicht `getTerrainHeightAt` (meldet am Überhang die Wand-Oberkante → 12-m-Artefakt).
+
+**Stand:** alle Feld-Linsen grün (walk-feel · structure · inertia · edge); Fast-Gate 13/13. Der Controller ist gehärtet — auf dem Pfad zu P3 (Ammo physisch raus), das nächste Tor. Performance/Freeze ist getrennt + gewonnen.
+
 ### V18.325–.327 — FELD-PHYSIK WIRD STANDARD + P2 Struktur-Kollision + das echte Profi-Bewegungsgefühl
 
 Schöpfer-Befund nach dem Browser-Test: das Feld-System „klärt sich selbst" (der Freeze ist weg), aber das GEFÜHL muss echt sein — „keine Trägheit beim Bremsen; der Körper gleicht Höhe aus, dämpft — wie machens die Profis? Vollende es, gib mir keine Knöpfe." Drei Wellen, jede eine Profi-Technik (Source/Quake), nicht aus dem Bauch:
