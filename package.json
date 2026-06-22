@@ -15,6 +15,7 @@
         "atlas": "node scripts/diag-atlas.cjs",
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",
+        "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",

@@ -128,3 +128,12 @@ jobs:
         env:
           PLAYTEST_SECONDS: "30"
         run: npm run playtest
+
+      - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
+        # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
+        # Steady-State" (scene.environment-Identitäts-Churn → Recompile-Cascade = der Idle-Freeze,
+        # der 50+ Versionen überlebte). Der Null-Renderer-Playtest oben ist dafür STRUKTURELL
+        # blind (er stubt den GPU-Pfad); diese Linse fährt den ECHTEN Renderer (swiftshader) und
+        # zählt createRenderPipeline/linkProgram. Nach Warmup MUSS eine Env-Regenerierung 0
+        # Pipelines neu kompilieren — sonst exit≠0 und der Build wird ROT, bevor jemand friert.
+        run: npm run gpu-lens

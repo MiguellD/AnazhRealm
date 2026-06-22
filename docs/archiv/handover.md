@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### Die STEHENDE LINSE + die Reflexion: warum der V18.322-Bug 50+ Versionen überlebte (Gesetz #0, strukturell)
+
+Schöpfer-Frage: „wie konnten wir den Fehler über 50 Versionen übersehen, wie in Zukunft verhindern — merkst du es in Zukunft selbst?" Die ehrliche Reflexion (voll im Chat-Verlauf) + die strukturelle Antwort.
+
+**Warum 50+ Versionen blind (fünf Schichten):** (1) das Gate ist STRUKTURELL GPU-blind — der Null-Renderer stubt den Render UND `_ensureSkyEnvironment` hat ein `if (_isHeadlessNull) return` VOR dem PMREM → der Test konnte den Bug NIE sehen; (2) die Kosten waren kontraintuitiv + zweiter Ordnung (eine 64×32-Textur → ein Identitäts-Wechsel → N Pipeline-Recompiles — nicht-lokal, unsichtbar im lokalen Lesen); (3) er lebte im „sicheren" Zustand IDLE (der Firefight jagte Lauf-/Dreh-Freeze; „im Stehen" galt als billige Baseline — aber die Tag-Nacht-Uhr driftet die Farbe auch im Stehen); (4) ein beruhigender Kommentar („intern gedrosselt") maskierte die Kosten (wahr formuliert, falsch impliziert); (5) der Bug entstand an einer NAHT (Pro-Frame-Tag-Nacht × WebGPU-PMREM × Dispose-Neu) — jedes Stück vernünftig, die Kosten emergierten aus der Kombination, kein Subsystem-Autor las über die Naht.
+
+**Die Meta-Wurzel:** der Bug lebte exakt im Loch der Linsen — und das Loch war BEKANNT (das CLAUDE.md dokumentiert „Gate ist GPU-blind" 5×, der Flugschreiber wurde dafür gebaut). Trotzdem überlebte er, weil keine Linse auf dem ECHTEN Renderer lief, die „scene.environment churnt → Recompile" sehen konnte. Das Projekt deckte eine bekannte Blindheit mit WACHSAMKEIT statt einer Linse — und Wachsamkeit brach unter dem 33-Wellen-Firefight.
+
+**Die strukturelle Heilung (statt „nächstes Mal aufpassen"):** `scripts/diag-idle-gpu-churn.cjs` (`npm run gpu-lens`, in der CI nach dem Playtest) — die STEHENDE Linse: echter Renderer (swiftshader→WebGL2), wrappt `createRenderPipeline`/`linkProgram`, Warmup, dann MUSS eine Env-Regenerierung **0** Pipelines neu kompilieren (alt ~270/Regen → ❌; gefixt → ✅) + reines Idle ≤8. Der `warmupCompiles>0`-Guard verhindert blind-grün. GEMESSEN grün auf der gefixten Welt (Warmup 403 Compiles, Env-Regen 0, Idle 2). → **der Idle-Freeze KANN nicht zurückkehren, ohne die CI rot zu machen.** Antwort auf „merkst du es selbst": ja — die Struktur trägt die Disziplin, nicht das Gedächtnis.
+
+**Die drei DAUERHAFTEN Folgerungen (in den Gotchas):** (a) ein neuer per-Frame/periodischer GPU-Op gehört gegen `gpu-lens` geprüft; (b) eine BEKANNTE Gate-Blindheit ist eine stehende Schuld → schließe sie mit einer stehenden Linse auf dem echten Renderer, nicht mit Wachsamkeit; (c) überlebt dasselbe Symptom N Fixes, ist das Problem die LINSE, nicht der nächste Fix — wechsle von fixen zu linse-bauen-außerhalb-des-blinden-Gates.
+
 ### V18.324 — DER EMOTIONS-FREEZE GEMESSEN + die Sky-Env-Regen-Rate gedrosselt (die wahrscheinliche Wurzel; Rest = Flugschreiber)
 
 Schöpfer-Befund (nach V18.322): „Emotionen triggert noch neben dem Welt-Effekt einen kurzen Freeze, das ist noch nicht sauber." Eine Emotion feuert DSL-Welt-Effekte (`updatePlayerEmotions` → `trigger`): joy/awe → `skybox_color`, sorrow/hope → `weather`.
