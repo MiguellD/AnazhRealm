@@ -24679,29 +24679,37 @@ class AnazhRealm {
     // alle direkten Aufrufer). Der Chunk-Grid-Pfad in `_buildVoxelChunkData`
     // nutzt stattdessen `_voxelEditedDensityGrid` (base-gecacht + Delta).
     _terrainDensityAt(x, y, z) {
-        let d = this._terrainBaseDensityAt(x, y, z);
-        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
-        // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
-        // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
-        // überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
+        // Determinismus-Bogen P1a — die Voxel-Edit-Deltas sind in `_voxelEditDeltaAt`
+        // extrahiert, damit der feld-native Kollisions-Pfad (`_fieldDensityAt`, mit
+        // gehoistetem Spalten-Kontext) DIESELBE Edit-Wahrheit liest, statt die Schleife
+        // zu duplizieren (Verdichte-zu-EINER-Quelle). base + Σ delta ist bit-identisch
+        // zur alten Inline-Schleife (diag-density-refactor / diag-worker-chunk: maxDiff 0).
+        return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+    }
+
+    // Die Voxel-Edit-Deltas (EINE Quelle, aus `_terrainDensityAt` extrahiert): jede
+    // Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf (fill). Die Edits leben in
+    // worldMeta.voxelEdits (persistiert mit der Welt) und gelten ZULETZT — der Spieler-
+    // Wille überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
+    _voxelEditDeltaAt(x, y, z) {
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (edits && edits.length) {
-            for (let e = 0; e < edits.length; e++) {
-                const ed = edits[e];
-                if (!ed) continue;
-                const dx = x - ed.x;
-                const dy = y - ed.y;
-                const dz = z - ed.z;
-                const dist2 = dx * dx + dy * dy + dz * dz;
-                const r = ed.r;
-                if (dist2 < r * r) {
-                    const fall = 1 - Math.sqrt(dist2) / r;
-                    const amt = fall * (ed.strength || 48);
-                    // `fill` addiert Dichte (Boden aufschütten), `carve`
-                    // (Default, auch mode-lose Alt-Edits) zieht ab.
-                    if (ed.mode === "fill") d += amt;
-                    else d -= amt;
-                }
+        if (!edits || !edits.length) return 0;
+        let d = 0;
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const dx = x - ed.x;
+            const dy = y - ed.y;
+            const dz = z - ed.z;
+            const dist2 = dx * dx + dy * dy + dz * dz;
+            const r = ed.r;
+            if (dist2 < r * r) {
+                const fall = 1 - Math.sqrt(dist2) / r;
+                const amt = fall * (ed.strength || 48);
+                // `fill` addiert Dichte (Boden aufschütten), `carve` (Default,
+                // auch mode-lose Alt-Edits) zieht ab.
+                if (ed.mode === "fill") d += amt;
+                else d -= amt;
             }
         }
         return d;
@@ -29444,6 +29452,111 @@ class AnazhRealm {
             const solid = this._terrainDensityAt(x, y, z) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
+        }
+        return null;
+    }
+
+    // ===== FELD-NATIVE KOLLISION (Determinismus-Bogen P1a, docs/eigene-physik-plan.md §5) =====
+    // Die Kollision LIEST die kanonische Welt-Wahrheit (das Dichtefeld) direkt, statt eine
+    // Dreiecks-BVH abzuleiten (Gesetz #0 — wie auraAt/deposit). Reine, seiteneffekt-freie
+    // Helfer; der Kapsel-Character-Controller (`_stepCharacter`) baut darauf (P1b). Das Feld
+    // ist KEIN echtes SDF (Wert ≠ Distanz) → die Dichte ist nur ein GEKLAMMERTER Schritt-
+    // Hinweis, der Gradient gibt die Richtung (NVIDIA/Macklin), 2-3× iteriert (Quake/Fauerby
+    // collide-and-slide). `ctx` = `_terrainColumnContext(x,z)` gehoistet (V18.321) — eine
+    // vertikale Kapsel/Probe teilt EINEN Spalten-Kontext über alle y-Samples.
+
+    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) + Edit-Delta.
+    // > 0 solide, ≤ 0 Luft/Wasser. Liest die Edits → ein gecarvter Tunnel ist SOFORT
+    // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
+    _fieldDensityAt(x, y, z, ctx) {
+        const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
+        return base + this._voxelEditDeltaAt(x, y, z);
+    }
+
+    _fieldSolid(x, y, z, ctx) {
+        return this._fieldDensityAt(x, y, z, ctx) > 0;
+    }
+
+    // Die nach AUSSEN (in die Luft) zeigende Oberflächen-Normale = −∇density/|∇density|
+    // (die Dichte wächst INS Solide, also zeigt −∇ heraus → auf einem Boden ny > 0).
+    // Zentral-Differenzen; das y±e-Paar teilt den Spalten-Kontext. out = {x,y,z,mag}
+    // (mag = roher Gradient-Betrag über 2e, für den Distanz-Hinweis). Verschwindender
+    // Gradient (dichte-flaches Inneres): Default nach oben.
+    _fieldGradient(x, y, z, out) {
+        const e = AnazhRealm.FIELD_GRAD_EPS;
+        const ctx = this._terrainColumnContext(x, z);
+        const gx = this._fieldDensityAt(x + e, y, z) - this._fieldDensityAt(x - e, y, z);
+        const gy = this._fieldDensityAt(x, y + e, z, ctx) - this._fieldDensityAt(x, y - e, z, ctx);
+        const gz = this._fieldDensityAt(x, y, z + e) - this._fieldDensityAt(x, y, z - e);
+        const nx = -gx,
+            ny = -gy,
+            nz = -gz;
+        const mag = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        out = out || {};
+        if (mag > 1e-6) {
+            out.x = nx / mag;
+            out.y = ny / mag;
+            out.z = nz / mag;
+        } else {
+            out.x = 0;
+            out.y = 1;
+            out.z = 0;
+        }
+        out.mag = mag;
+        return out;
+    }
+
+    // Drücke EINE Kugel (Mittelpunkt p, Radius) so heraus, dass sie AUF der Oberfläche RUHT
+    // (Zentrum ≥ radius außerhalb), nicht halb vergraben. Die 1.-Ordnung-Signed-Distance
+    // (positiv außerhalb) ist sd ≈ −density·2e/|∇|; die Kugel überlappt um gap = radius − sd.
+    // Solange gap > 0, schiebe entlang der Außen-Normale (−∇/|∇|) um min(gap, radius) (pro
+    // Iteration gedeckelt = stabil, robust gegen das Nicht-SDF-Problem), max FIELD_RESOLVE_ITERS
+    // (collide-and-slide). Mutiert p. Liefert true, wenn bewegt; die letzte Normale → normalOut.
+    _fieldResolveSphere(p, radius, normalOut) {
+        const e = AnazhRealm.FIELD_GRAD_EPS;
+        const g = {};
+        let moved = false;
+        for (let it = 0; it < AnazhRealm.FIELD_RESOLVE_ITERS; it++) {
+            const dens = this._fieldDensityAt(p.x, p.y, p.z);
+            this._fieldGradient(p.x, p.y, p.z, g);
+            if (g.mag < 1e-6) break;
+            const sd = (-dens * 2 * e) / g.mag; // signed distance, positiv = außerhalb
+            const gap = radius - sd;
+            if (gap <= 0) break; // Kugel ruht frei (≥ radius außerhalb) — fertig
+            const step = Math.min(gap, radius);
+            p.x += g.x * step;
+            p.y += g.y * step;
+            p.z += g.z * step;
+            moved = true;
+            if (normalOut) {
+                normalOut.x = g.x;
+                normalOut.y = g.y;
+                normalOut.z = g.z;
+            }
+        }
+        return moved;
+    }
+
+    // Die LOKALE Kurz-Boden-Probe (der P0-Befund: NICHT der volle `_voxelSurfaceY`-
+    // Spalten-Scan = 43,7 µs). Vom Start-y abwärts bis maxDist die erste Luft→Solid-
+    // Grenze, mit EINEM Spalten-Kontext für die ganze vertikale Probe + Bisektion auf
+    // Sub-Voxel. Liefert die solide Oberkante (Welt-y) oder null (kein Boden in Reichweite).
+    _fieldSurfaceBelow(x, y, z, maxDist) {
+        const ctx = this._terrainColumnContext(x, z);
+        const step = 0.5;
+        const end = y - maxDist;
+        for (let yy = y; yy >= end; yy -= step) {
+            if (this._fieldSolid(x, yy, z, ctx)) {
+                // Grenze zwischen yy (solid) und yy+step (Luft) → Bisektion verfeinern.
+                let lo = yy,
+                    hi = Math.min(y, yy + step);
+                for (let b = 0; b < 6; b++) {
+                    const mid = (lo + hi) / 2;
+                    if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
+                    else hi = mid;
+                }
+                return lo;
+            }
         }
         return null;
     }
@@ -77339,6 +77452,18 @@ AnazhRealm.SOFT_FLOOR_REST_OFFSET = 0.55;
 // 1 s ist deutlich über jeder normalen Worker-Latenz (~71 ms Build + Queue, auch
 // unter Last < 500 ms) → der Watchdog feuert NUR im echten Stall, kein per-Frame-Spike.
 AnazhRealm.PLAYER_CHUNK_STALL_MS = 1000;
+
+// Determinismus-Bogen P1a — die Schrittweite der Zentral-Differenzen im Feld-Gradient
+// (`_fieldGradient`/`_fieldResolveSphere`). ≈ halbe Voxel-Schrittweite, an die Roughness-
+// Wellenlänge gekoppelt (die diag-normals-Lehre: eps ≈ λ/2) — fein genug für die echte
+// Oberflächen-Normale, grob genug um nicht im Hochfrequenz-Noise zu zittern.
+AnazhRealm.FIELD_GRAD_EPS = 0.6;
+
+// Determinismus-Bogen P1a — max Auswurf-Iterationen pro Kugel (collide-and-slide). Der
+// typische Frame penetriert gar nicht (1 Dichte-Call, sofort break) oder flach (1-2 Iter);
+// 4 trägt auch eine gekrümmte/tiefere Penetration robust an die Oberfläche. Mehr lohnt
+// nicht — der gesweepte Schritt (P1b) hält die Penetration ohnehin radius-beschränkt.
+AnazhRealm.FIELD_RESOLVE_ITERS = 4;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
