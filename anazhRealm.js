@@ -871,6 +871,7 @@ class AnazhRealm {
             _activeRingRadius: null,
             _ringRampLast: 0, // letzter Ring-Wachstums-/Schrumpf-Zeitstempel (der „Atem" zwischen Ringen)
             _ringOverBudgetSince: 0, // V18.306 — seit wann der Frame anhaltend über Budget ist (Schrumpf-Hysterese)
+            _ringHeadroomSince: 0, // V18.318 — seit wann der Frame anhaltend Kopfraum hat (Wachs-Hysterese, symmetrisch)
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -13115,12 +13116,28 @@ class AnazhRealm {
             // dieselbe Schwelle wie der PID-Atem-Totband V18.281), NICHT bloß „nicht über der
             // Decke" — sonst wächst er bis an den Anschlag (59 fps) und overshootet. So hält
             // er einen Puffer: er wächst nur, wenn die Hardware den nächsten Ring sicher trägt.
-            const growMs = Math.max(
-                1,
-                (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS) -
-                    AnazhRealm.PERF_HEADROOM_MS
-            );
+            const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+            const growMs = Math.max(1, throttleMs - AnazhRealm.PERF_HEADROOM_MS);
             const hasHeadroom = sense.frameMs < growMs;
+            // V18.318 — DER RING WÄCHST NICHT MEHR AUF EINEN TRANSIENTEN LEICHTEN FRAME
+            // (Schöpfer, mehrfach: „der Kreis soll NICHT bei Überlast ausweiten"): die
+            // V18.306-Atmung war ASYMMETRISCH — Wachsen verlangte EINEN Kopfraum-Frame,
+            // Schrumpfen aber 1200 ms ANHALTENDE Überlast. So ratschte der Ring beim Boot
+            // (leerer Frame schnell, BEVOR das Laub lädt) sofort auf den Ziel-Ring hoch und
+            // konnte erst zäh wieder runter → „expandiert unter Last". Heilung: Wachsen
+            // braucht jetzt ANHALTENDEN Kopfraum (eine Wachs-Hysterese, symmetrisch zur
+            // Schrumpf-Hysterese, GRÖSSER → Bias zur stabilen kleineren Welt). Robust gegen
+            // einen einzelnen Bau-/GC-Spike: der Timer STARTET bei klarem Kopfraum (< growMs)
+            // und RESETET nur bei ECHTER Überlast (> throttleMs); ein Frame im Atem-Totband
+            // dazwischen HÄLT ihn (sonst stallte ein periodischer Chunk-Bau auf guter Hardware
+            // das Wachsen für immer). Bei Überlast → Reset → der Ring wächst NIE unter Last.
+            if (hasHeadroom) {
+                if (!st._ringHeadroomSince) st._ringHeadroomSince = now;
+            } else if (sense.frameMs > throttleMs) {
+                st._ringHeadroomSince = 0;
+            }
+            const sustainedHeadroom =
+                st._ringHeadroomSince && now - st._ringHeadroomSince > AnazhRealm.RING_GROW_SUSTAIN_MS;
             // Schrumpf-Hysterese: der Frame muss ANHALTEND über Budget sein (nicht ein einzelner
             // Bau-/Carve-Spike < 200 ms) → ein Sustain-Timer. So schrumpft die Welt nur bei
             // echter Dauerlast, nicht bei einem transienten Hitch (kein Pendeln gegen das Wachsen).
@@ -13133,8 +13150,9 @@ class AnazhRealm {
                 st._ringOverBudgetSince && now - st._ringOverBudgetSince > AnazhRealm.RING_SHRINK_SUSTAIN_MS;
             if (st._activeRingRadius > ringTarget) {
                 st._activeRingRadius = ringTarget; // Target gesenkt (User-Slider)? sofort folgen
-            } else if (st._activeRingRadius < ringTarget && ringSettled && noBacklog && hasHeadroom && breathed) {
+            } else if (st._activeRingRadius < ringTarget && ringSettled && noBacklog && sustainedHeadroom && breathed) {
                 st._ringRampLast = now;
+                st._ringHeadroomSince = 0; // der nächste Wachs-Schritt verlangt einen frischen Sustain
                 st._activeRingRadius++;
             } else if (st._activeRingRadius > AnazhRealm.RING_RAMP_START && sustainedOver && breathed) {
                 // anhaltend über Budget → die äußerste Schale zurückgeben (Fern-Prune, sicher)
@@ -73994,11 +74012,19 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // V18.217 (DER LEBENDIGE GIGANT §2, Plan §2.5 + §6) — die ANZAHL der
 // Varianten PRO SPEZIES im gefrorenen Welt-Pool. „N ≈ 8-32" (Plan §2.5).
 // Höher → mehr Vielfalt, mehr Speicher (jeder grown_<species>_v<idx>-Bauplan
-// ist ~5 KB Skeleton-Polylinien + die nicht-persistierten parts). 16 trifft
-// das Profi-Mittel (Genshin nutzt ~8-12 Baum-Varianten pro Spezies). Browser-
-// justierbar; eine Änderung erfordert KEINEN Welt-Reset (die Pool-Aufstellung
-// ist lazy, alte Welten ohne variantSeed migrieren still).
-AnazhRealm.VARIANTS_PER_SPECIES = 16;
+// ist ~5 KB Skeleton-Polylinien + die nicht-persistierten parts).
+// V18.318 — DIE SMARTE KONSOLIDIERUNG (Schöpfer „wie kann das Laub so ineffizient
+// geladen sein, mach es SCHLAU, statt alles zu entfernen"): JEDE Variante ist eine
+// EIGENE Geometrie → eine eigene InstancedMesh → eine eigene Draw-Call. 16 Varianten
+// → bis zu 16 Draw-Calls für EINE Spezies in EINER Region. Aber die Vielfalt liegt
+// schon PRO INSTANZ (jeder Baum trägt eigene Rotation, Skalierung UND HSV-Tönung,
+// `_scatterInstanceAdd`) — 16 distinkte Formen sind redundante Geometrie-Vielfalt
+// ABOVE der Instanz-Vielfalt, teuer bezahlt in Draw-Calls. 8 Basis-Formen + die
+// Pro-Instanz-Variation = derselbe dichte, vielfältige Wald, ~halb so viele Draw-Calls
+// (KEINE Dichte/Bäume entfernt — nur die redundanten Geometrien konsolidiert; der
+// Profi-Weg: wenige Basis-Meshes, reiche Pro-Instanz-Variation). Browser-justierbar;
+// kein Welt-Reset (Pool-Aufstellung lazy, alte Welten migrieren still).
+AnazhRealm.VARIANTS_PER_SPECIES = 8;
 // wahrerwuchs §4.2-4.4 S3+S4 — die Zahl der Genom-gewürfelten Landmark-Formationen
 // (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut:
 // Becken/Flamme/Intensität), die der Scatter NACH dem Affinitäts-Sieg wählt.
@@ -76579,6 +76605,11 @@ AnazhRealm.AWAKEN_FOG_FAR = 14;
 // zurückgibt: lang genug, dass ein transienter Bau-/Carve-Spike (< 200 ms) NICHT schrumpft,
 // kurz genug, dass echte Dauerlast (Freeze) den Ring zügig auf die haltbare Größe senkt.
 AnazhRealm.RING_SHRINK_SUSTAIN_MS = 1200;
+// V18.318 — DIE WACHS-HYSTERESE (Schöpfer „der Kreis soll NICHT bei Überlast ausweiten"): der
+// Ring wächst erst, wenn der Frame ANHALTEND Kopfraum hat — länger als die Schrumpf-Hysterese,
+// damit die Welt im Zweifel KLEIN + stabil bleibt (Wachsen ist zaghaft, Schrumpfen beherzt). So
+// ratscht ein transienter leichter Boot-Frame den Ring NICHT mehr hoch, bevor das Laub lädt.
+AnazhRealm.RING_GROW_SUSTAIN_MS = 1500;
 // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
 // Schwester des `foliageRadius`. Wo der Radius die REICHWEITE der Vegetation nach Kapazität
 // fährt, fährt dieser Faktor ihre DICHTE (Instanz-Zahl pro Zelle, `dekoDensity`-Multiplikator

@@ -88,22 +88,22 @@ const server = http.createServer((q, s) => {
         if (s.renderer) s.renderer._isHeadlessNull = false;
     });
 
-    // helper: pumpe Frames mit einem ERZWUNGENEN Budget-Zustand + lasse echte Zeit vergehen
+    // helper: ERZWINGE einen Budget-Zustand + fahre den Aktuator DIREKT (umgeht den Fold,
+    // der sonst die reale 200-ms-Sleep-Zeit als 200-ms-Frame-Spike einspeist und meine
+    // V18.318-Wachs-Hysterese fälschlich zurücksetzt). Die Ring-Hysterese liest
+    // `performance.now()` → die echten 200-ms-Sleeps unten treiben die Sustain-Timer korrekt.
     const drive = async (over, steps) => {
         const traj = [];
         for (let i = 0; i < steps; i++) {
             await page.evaluate((isOver) => {
                 const r = window.anazhRealm,
                     s = r.state;
-                for (let k = 0; k < 8; k++) {
-                    // den Frame-Zustand erzwingen NACH dem Tick (der Aktuator liest sense.frameMs
-                    // + _frameOverBudget; wir setzen beide so, dass der Pfad deterministisch ist)
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch (_e) {}
-                    if (s.perfSense) s.perfSense.frameMs = isOver ? 40 : 5; // über Decke / klarer Kopfraum
-                    s._frameOverBudget = isOver;
-                }
+                if (!s.perfSense) return;
+                s.perfSense.frameMs = isOver ? 40 : 5; // über Decke (40 > throttle) / klarer Kopfraum (5 < grow)
+                s._frameOverBudget = isOver;
+                try {
+                    r._nexusPerfActuate(s.perfSense);
+                } catch (_e) {}
             }, over);
             const snap = await page.evaluate(() => {
                 const s = window.anazhRealm.state;
@@ -116,15 +116,24 @@ const server = http.createServer((q, s) => {
     };
 
     const target = await page.evaluate(() => window.anazhRealm.state.chunkRingRadius);
-    // Start sauber am Boden
+    // (A) Start sauber am BODEN → anhaltender Kopfraum soll bis zum Ziel WACHSEN
     await page.evaluate(() => {
         const s = window.anazhRealm.state;
         s._activeRingRadius = window.anazhRealm.constructor.RING_RAMP_START;
         s._ringRampLast = 0;
         s._ringOverBudgetSince = 0;
+        s._ringHeadroomSince = 0;
     });
-    const grow = await drive(false, 20); // Kopfraum → wachsen
-    const shrink = await drive(true, 20); // anhaltend über Budget → schrumpfen
+    const grow = await drive(false, 24); // Kopfraum → wachsen (24×200 ms = 4,8 s > 2× GROW_SUSTAIN)
+    // (B) Start am ZIEL → anhaltende Überlast soll SCHRUMPFEN (die Fern-Schale zurückgeben)
+    await page.evaluate(() => {
+        const s = window.anazhRealm.state;
+        s._activeRingRadius = s.chunkRingRadius;
+        s._ringRampLast = 0;
+        s._ringOverBudgetSince = 0;
+        s._ringHeadroomSince = 0;
+    });
+    const shrink = await drive(true, 24); // anhaltend über Budget → schrumpfen
 
     const growStart = grow[0].active,
         growEnd = grow[grow.length - 1].active;
