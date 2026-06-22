@@ -72959,39 +72959,52 @@ class AnazhRealm {
         let ny = mesh.position.y + vy * dt;
         let nz = mesh.position.z + vz * dt;
 
-        // 6. BODEN-SNAP (lokale DDA, der P1a-6×-Hebel) — er BESITZT die Vertikale (exakt,
-        //    deterministisch). Füße ruhen auf der Oberkante → ny = surf + footDrop. Schnappt
-        //    beim Landen/Stehen UND hebt über kleine Stufen: der Snap IST die Stufe-hoch-
-        //    Mechanik (er läuft VOR der Wand-Kollision, damit die Füße nicht an Kanten hängen).
+        // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden
+        //    Part-AABBs naher Bauwerke (`entry.blockerAABBs` — dichte ≥ 0.3, EINE Quelle mit
+        //    dem Wasser-Blocker). Wände BLOCKEN horizontal (mutiert nx/nz = gleiten), Dächer/
+        //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
+        //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
         const feetY = ny - footDrop;
-        const surf = this._fieldSurfaceBelow(
+        const headY = ny + footDrop;
+        const structPos = { x: nx, z: nz };
+        const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        nx = structPos.x;
+        nz = structPos.z;
+
+        // 7. BODEN-SNAP (lokale DDA, der P1a-6×-Hebel) — er BESITZT die Vertikale (exakt,
+        //    deterministisch). Die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur-
+        //    Auflage. Schnappt beim Landen/Stehen, hebt über kleine Stufen (STEP_UP) UND
+        //    klebt bergab (GROUND_SNAP) — alles EIN Mechanismus, läuft VOR der Terrain-Wand.
+        const terrSurf = this._fieldSurfaceBelow(
             nx,
             feetY + AnazhRealm.PLAYER_STEP_UP,
             nz,
             footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 2
         );
+        const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, structTop);
         let grounded = false;
         let groundNormalY = 1.0;
-        if (surf !== null) {
-            const restY = surf + footDrop;
+        if (effSurf > -Infinity) {
+            const restY = effSurf + footDrop;
             const gap = ny - restY; // > 0: über der Ruhe (in der Luft/bergab) · < 0: darunter (Stufe)
             // grounded, wenn die Oberfläche im HAFT-BAND liegt [−STEP_UP .. +GROUND_SNAP] UND
-            // wir nicht aktiv AUFsteigen (ein Sprung-Impuls vy ≫ 0 verlässt den Boden). Das
-            // +GROUND_SNAP ist die Boden-HAFTUNG bergab — ohne sie „hüpft" der Läufer den Hang
-            // hinab (die gemessene Wurzel: ny blieb konstant über der fallenden Oberfläche, nie
-            // geerdet). Höher als das Band = echte Wand/Klippe (Snap aus → fallen/blocken).
+            // wir nicht aktiv AUFsteigen (ein Sprung-Impuls vy ≫ 0 verlässt den Boden). Höher
+            // als das Band = echte Wand/Klippe (Snap aus → fallen/blocken).
             if (vy <= 0.5 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && gap >= -AnazhRealm.PLAYER_STEP_UP) {
                 ny = restY;
                 vy = 0;
                 grounded = true;
-                const g = this._fieldGradient(nx, surf, nz, {});
-                groundNormalY = g.y;
+                // Normale: Terrain aus dem Gradient; eine Struktur-Oberkante zählt als flach.
+                groundNormalY =
+                    structTop >= (terrSurf === null ? -Infinity : terrSurf)
+                        ? 1.0
+                        : this._fieldGradient(nx, terrSurf, nz, {}).y;
             }
         }
 
-        // 7. WAND-KOLLISION — nur HORIZONTAL (der Boden-Snap besitzt die Vertikale, sonst
-        //    fechten beide → der Spieler schwebt). Die Wand-Kugeln beginnen ERST über der
-        //    Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte
+        // 8. TERRAIN-WAND-KOLLISION — nur HORIZONTAL (der Boden-Snap besitzt die Vertikale,
+        //    sonst fechten beide → der Spieler schwebt). Die Wand-Kugeln beginnen ERST über
+        //    der Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte
         //    Wände blocken (kein Hängenbleiben am Stufen-Riser). Die obere Kugel klemmt
         //    zusätzlich den Aufstieg an einer Decke.
         const wR = AnazhRealm.PLAYER_WALL_RADIUS;
@@ -73010,7 +73023,7 @@ class AnazhRealm {
             }
         }
 
-        // 8. Killplane (wie der Ammo-Pfad): tief unter dem Welt-Boden → auf die Oberfläche.
+        // 9. Killplane (wie der Ammo-Pfad): tief unter dem Welt-Boden → auf die Oberfläche.
         const killPlaneY =
             s.worldMeta && s.worldMeta.voxelTerrain ? (s.terrainBaseHeight || 0) - 88 : (s.minHeight || -50) - 30;
         if (ny < killPlaneY) {
@@ -73020,7 +73033,7 @@ class AnazhRealm {
             grounded = false;
         }
 
-        // 9. Ergebnis schreiben: Mesh + Body teleportieren + vy speichern. Die Grounded-
+        // 10. Ergebnis schreiben: Mesh + Body teleportieren + vy speichern. Die Grounded-
         //    Wahrheit in den State (die EINEN Leser: isPlayerGrounded-Cache, Slope-Penalty,
         //    handleJump-Coyote) → KEIN Ammo-Raycast nötig.
         mesh.position.set(nx, ny, nz);
@@ -73066,6 +73079,74 @@ class AnazhRealm {
         }
         this.log(`Feld-Physik (Determinismus-Controller) ${s.fieldPhysics ? "AN" : "AUS"}`, "INFO");
         return s.fieldPhysics;
+    }
+
+    // Feld-native Struktur-Kollision (P2, kein Ammo): löst die Spieler-Kapsel-Achse (pos.x/z,
+    // vertikal feetY..headY) gegen die soliden Part-AABBs naher Bauwerke (`entry.blockerAABBs`
+    // — dichte ≥ 0.3, DIESELBE Quelle wie der Wasser-Blocker, also ist eine Tür-Lücke/Glas
+    // begehbar). Zwei Wirkungen: (1) AUFLAGE — eine Box-Oberkante im Snap-Band trägt den
+    // Spieler (Dach/Plattform, inkl. der Start-Plattform); liefert die höchste als Rückgabe.
+    // (2) WAND — eine Box, deren Oberkante höher als die Stufe-hoch-Linie liegt, schiebt die
+    // Achse horizontal heraus (gleiten). Mutiert pos.x/z. O(nahe Bauwerke × Parts).
+    _stepCharacterStructures(pos, feetY, headY, radius) {
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return -Infinity;
+        const STEP = AnazhRealm.PLAYER_STEP_UP;
+        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
+        const bodyLo = feetY + STEP; // alles darunter ist begehbar (Stufe), keine Wand
+        let supportTop = -Infinity;
+        for (let a = 0; a < arches.length; a++) {
+            const e = arches[a];
+            if (!e || !e.blockerAABBs || !e.position) continue;
+            // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler
+            if (Math.abs(e.position.x - pos.x) > 60 || Math.abs(e.position.z - pos.z) > 60) continue;
+            const boxes = e.blockerAABBs;
+            for (let b = 0; b < boxes.length; b++) {
+                const box = boxes[b];
+                // (1) AUFLAGE: steht der Fuß-Fußabdruck über der Box UND liegt ihre Oberkante
+                //     im Haft-Band [feetY − SNAP .. feetY + STEP] → Kandidat zum Draufstehen.
+                if (
+                    pos.x >= box.minX - radius &&
+                    pos.x <= box.maxX + radius &&
+                    pos.z >= box.minZ - radius &&
+                    pos.z <= box.maxZ + radius &&
+                    box.topY <= feetY + STEP &&
+                    box.topY >= feetY - SNAP &&
+                    box.topY > supportTop
+                ) {
+                    supportTop = box.topY;
+                }
+                // (2) WAND: nur Boxen, deren Oberkante ÜBER der Stufe-hoch-Linie liegt (echte
+                //     Wand, kein Schritt) UND die vertikal mit dem Körper überlappen.
+                if (box.topY > bodyLo && box.botY < headY) {
+                    const cx = Math.max(box.minX, Math.min(pos.x, box.maxX));
+                    const cz = Math.max(box.minZ, Math.min(pos.z, box.maxZ));
+                    const dx = pos.x - cx;
+                    const dz = pos.z - cz;
+                    const d2 = dx * dx + dz * dz;
+                    if (d2 < radius * radius) {
+                        if (d2 > 1e-8) {
+                            const d = Math.sqrt(d2);
+                            const push = radius - d;
+                            pos.x += (dx / d) * push;
+                            pos.z += (dz / d) * push;
+                        } else {
+                            // Achse genau in der Box → zur nächsten Seite hinausschieben
+                            const toMinX = pos.x - box.minX + radius;
+                            const toMaxX = box.maxX - pos.x + radius;
+                            const toMinZ = pos.z - box.minZ + radius;
+                            const toMaxZ = box.maxZ - pos.z + radius;
+                            const m = Math.min(toMinX, toMaxX, toMinZ, toMaxZ);
+                            if (m === toMinX) pos.x = box.minX - radius;
+                            else if (m === toMaxX) pos.x = box.maxX + radius;
+                            else if (m === toMinZ) pos.z = box.minZ - radius;
+                            else pos.z = box.maxZ + radius;
+                        }
+                    }
+                }
+            }
+        }
+        return supportTop;
     }
 
     _loopPlayerMovement(currentTime) {
