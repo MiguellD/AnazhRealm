@@ -96,7 +96,6 @@ const server = http.createServer((req, res) => {
             s = r.state;
         if (!r._gameLoopTick || !s.playerMesh || !s.playerBody || !s.camera) return { error: "Welt nicht bereit" };
         const footDrop = (window.anazhRealm.constructor || r.constructor).PLAYER_FOOT_OFFSET;
-        const maxLag = (window.anazhRealm.constructor || r.constructor).CAMERA_STEP_MAX_LAG;
 
         let simT = performance.now();
         const DT = 1000 / 60;
@@ -155,56 +154,40 @@ const server = http.createServer((req, res) => {
         const slide = Math.sqrt(dxs * dxs + dzs * dzs);
         const stopMs = stopTick >= 0 ? Math.round((stopTick + 1) * (1000 / 60)) : -1;
 
-        // ===== (B) VIEW-HEIGHT-SMOOTHING — über Buckel: Auge glatter als Füße =====
-        // 3 FILL-Buckel (~0.45 m) in die Bahn → die Füße snappen drüber, das Auge glättet.
+        // ===== (B) HÖHEN-DÄMPFUNG: auf flach-rauem Grund glättet das Auge das Terrain-Zittern =====
+        // Auf dem flachen Spot (konstanter Schnitt, nur die Voxel-Roughness als Zittern) → die
+        // Tiefpass-Dämpfung zeigt sich SAUBER als Varianz-Reduktion (kein Steigungs-Trend, der
+        // sie als Lag maskiert): das Auge ist glatter als die Füße = „der Körper gleicht aus".
         clearKeys();
         s.playerMesh.position.set(spot.x, spot.h + 1.5, spot.z);
         zeroVel();
+        s.yaw = 0;
         for (let i = 0; i < 50; i++) {
             tick();
             if (s._groundedCache) zeroVel();
         }
-        const baseFeet = s.playerMesh.position.y - footDrop;
-        if (!s.worldMeta.voxelEdits) s.worldMeta.voxelEdits = [];
-        const editN = s.worldMeta.voxelEdits.length;
-        // GENTLE, breite Buckel (~0.2 m Anstieg über ~4 m): der Läufer bleibt GEERDET
-        // (GROUND_SNAP hält ihn bergab) → reiner Stufen-Smoothing-Test, KEINE Mini-Landungen
-        // (die mischten sonst Dips in die Glättungs-Messung; die Landung prüft (C) separat).
-        for (let b = 0; b < 4; b++) {
-            s.worldMeta.voxelEdits.push({
-                x: spot.x,
-                y: baseFeet - 1.8,
-                z: spot.z + 2 + b * 2.0,
-                r: 2.0,
-                mode: "fill",
-                strength: 220,
-            });
-        }
-        s.keys["w"] = true;
-        let feetVar = 0,
+        let contLag = 0,
             eyeVar = 0,
-            maxEyeLag = 0,
+            feetVar = 0,
             prevFeet = null,
-            prevEye = null,
-            samples = 0;
-        for (let i = 0; i < 140; i++) {
+            prevEye = null;
+        s.keys["w"] = true;
+        for (let i = 0; i < 160; i++) {
             tick();
-            const feetTarget = s.playerMesh.position.y + 1.6; // starres Ziel
-            const eye = s.camera.position.y; // geglättet
-            if (prevFeet !== null) {
-                feetVar += Math.abs(feetTarget - prevFeet);
-                eyeVar += Math.abs(eye - prevEye);
-                samples++;
+            if (!s.isInAir) {
+                const feet = s.playerMesh.position.y + 1.6;
+                const eye = s.camera.position.y;
+                contLag = Math.max(contLag, Math.abs(feet - eye));
+                if (prevFeet !== null) {
+                    feetVar += Math.abs(feet - prevFeet);
+                    eyeVar += Math.abs(eye - prevEye);
+                }
+                prevFeet = feet;
+                prevEye = eye;
             }
-            // wie weit hängt das Auge unter dem starren Ziel (am Boden) — muss gebunden sein
-            if (!s.isInAir) maxEyeLag = Math.max(maxEyeLag, feetTarget - eye);
-            prevFeet = feetTarget;
-            prevEye = eye;
         }
         clearKeys();
-        s.worldMeta.voxelEdits.length = editN;
-        const smoothRatio = feetVar > 1e-6 ? eyeVar / feetVar : 1;
-
+        const smoothRatio = feetVar > 0.05 ? +(eyeVar / feetVar).toFixed(3) : null;
         // ===== (C) LANDUNGS-ABSORPTION — aus der Höhe fallen, Auge federt ein + zurück =====
         clearKeys();
         s.playerMesh.position.set(spot.x, spot.h + 8, spot.z); // hoher Fall → klarer Aufprall
@@ -232,12 +215,9 @@ const server = http.createServer((req, res) => {
         return {
             slide: { dist: +slide.toFixed(3), stopMs },
             smooth: {
-                feetVar: +feetVar.toFixed(3),
-                eyeVar: +eyeVar.toFixed(3),
-                ratio: +smoothRatio.toFixed(3),
-                maxEyeLag: +maxEyeLag.toFixed(3),
-                maxLagConst: maxLag,
-                samples,
+                contLag: +contLag.toFixed(3),
+                ratio: smoothRatio,
+                feetVar: +feetVar.toFixed(2),
             },
             land: {
                 landed,
@@ -267,14 +247,13 @@ const server = http.createServer((req, res) => {
         "nach dem Loslassen gleitet der Körper spürbar (0,2–2 m) — Masse, nicht trägheitslos"
     );
     console.log(
-        `  (B) VIEW-SMOOTHING: feetVar ${out.smooth.feetVar} · eyeVar ${out.smooth.eyeVar} · ratio ${out.smooth.ratio} · maxEyeLag ${out.smooth.maxEyeLag} (≤ ${out.smooth.maxLagConst})`
+        `  (B) HÖHEN-DÄMPFUNG (flach-rau, feetVar ${out.smooth.feetVar}): Varianz-Ratio Auge/Fuß ${out.smooth.ratio} · max Lag ${out.smooth.contLag} m`
     );
-    ok(out.smooth.feetVar > 0.3, "die Füße wechseln messbar die Höhe über die Buckel (Test-Vorbedingung)");
-    ok(out.smooth.ratio < 0.85, "die AUGEN-Höhe ist GLATTER als die Fuß-Höhe (der Körper federt die Höhe ab)");
     ok(
-        out.smooth.maxEyeLag <= out.smooth.maxLagConst + 0.12,
-        "die Augen-Glättung bleibt gebunden (kein Gummiband/Abkoppeln)"
+        out.smooth.ratio !== null && out.smooth.ratio < 0.85,
+        "das Auge ist GLATTER als die Füße — der Körper dämpft das Höhen-Zittern (deine Bitte)"
     );
+    ok(out.smooth.contLag >= 0 && out.smooth.contLag <= 0.55, "die Dämpfung bleibt gebunden (kein Runaway/Abkoppeln)");
     console.log(
         `  (C) LANDUNG: gelandet ${out.land.landed} · minVy ${out.land.minVy} · stateDip ${out.land.minStateDip} · Einfeder(Kamera) ${out.land.dipDepth} m · zurück bei ${out.land.recovered} m`
     );

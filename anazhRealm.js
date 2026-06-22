@@ -271,7 +271,7 @@ class AnazhRealm {
             fieldPhysics: true,
             _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
             _fieldGravityZeroed: false, // ob die Ammo-Body-Schwerkraft im Feld-Modus genullt ist
-            _smoothBodyY: null, // geglättete Körper-Y für das View-Height-Smoothing (Stair-Smoothing)
+            _smoothBodyY: null, // geschwindigkeits-begrenzt nachgezogene Körper-Y des Auges (View-Smoothing)
             _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
             _landDip: 0, // aktueller Landungs-Absorption-Versatz des Auges (m, ≤ 0)
             _landImpactPending: 0, // beim Landen erfasstes Aufprall-Tempo (m/s), von der Kamera konsumiert
@@ -73578,27 +73578,26 @@ class AnazhRealm {
                 this.state._camSmoothT = currentTime;
                 const bodyY = player.position.y;
                 let smoothBodyY = this.state._smoothBodyY;
-                // LANDUNGS-ABSORPTION (View-Punch): ein erfasster Aufprall kickt das Auge nach
-                // unten (∝ Tempo, gedeckelt), dann federt es exponentiell zur Ruhe → der Körper
-                // „fängt" den Stoß. WICHTIG: bei einer harten Landung snappt die Höhen-Glättung
-                // auf die Füße (Lag-Reset) — sonst hebt der Glättungs-Lag (er trackte die höhere
-                // Fall-Position) das Auge genau so viel an, wie der Dip es senkt → sie fechten,
-                // der Dip verpufft (gemessen). Geh-Buckel (< MIN_SPEED) lösen keinen Dip aus.
                 let landDip = this.state._landDip || 0;
                 const pendingImpact = this.state._landImpactPending || 0;
+                // LANDUNG zuerst: der Dip absorbiert den Aufprall (∝ Tempo, gedeckelt); die Glättung
+                // snappt auf die Füße (sonst hebt ihr Lag das Auge genau so viel an, wie der Dip es
+                // senkt → sie fechten, der Dip verpufft, gemessen).
                 if (pendingImpact > 0) {
-                    smoothBodyY = bodyY; // Lag-Reset: das Auge sitzt am Fuß, nur der Dip wirkt
+                    smoothBodyY = bodyY;
                     const kick = -Math.min(AnazhRealm.LAND_DIP_MAX, pendingImpact * AnazhRealm.LAND_DIP_SCALE);
-                    if (kick < landDip) landDip = kick; // der tiefste Punkt des Einfederns
+                    if (kick < landDip) landDip = kick;
                     this.state._landImpactPending = 0;
                 } else if (
                     typeof smoothBodyY !== "number" ||
                     this.state.isInAir ||
                     Math.abs(bodyY - smoothBodyY) > AnazhRealm.CAMERA_STEP_MAX_LAG
                 ) {
-                    smoothBodyY = bodyY;
+                    smoothBodyY = bodyY; // erster Frame / Luft (Flugkurve 1:1) / großer Versatz → snap
                 } else {
-                    smoothBodyY += (bodyY - smoothBodyY) * (1 - Math.exp(-AnazhRealm.CAMERA_STEP_SMOOTH_K * camDt));
+                    // Tiefpass: das Auge folgt dem Fuß gedämpft → das Höhen-Zittern des rauen
+                    // Terrains wird geglättet (der Körper gleicht aus). Ein leichter Lag IST die Dämpfung.
+                    smoothBodyY += (bodyY - smoothBodyY) * (1 - Math.exp(-AnazhRealm.CAMERA_SMOOTH_K * camDt));
                 }
                 this.state._smoothBodyY = smoothBodyY;
                 landDip += (0 - landDip) * (1 - Math.exp(-AnazhRealm.LAND_DIP_RECOVER_K * camDt));
@@ -74191,7 +74190,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.327.0";
+AnazhRealm.VERSION = "18.328.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77822,13 +77821,15 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.4;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
-// VIEW-HEIGHT-SMOOTHING (Stair-Smoothing, à la Source `SmoothViewOnStairs`/Quake): die Füße
-// rasten hart auf den Boden (korrekte Kollision), aber das AUGE gleitet gedämpft nach → der
-// Körper „federt" Stufen/Buckel ab, statt zu rucken (das „der Körper gleicht Höhe aus"-Gefühl).
-// K = Glättungs-Rate (≈90 ms Zeitkonstante); MAX_LAG = darüber snappt das Auge (großer Fall/
-// Teleport → kein Gummiband). In der LUFT (Sprung/Fall) wird NICHT geglättet (die ballistische
-// Kurve soll 1:1 sein).
-AnazhRealm.CAMERA_STEP_SMOOTH_K = 11;
+// VIEW-HEIGHT-SMOOTHING: die Füße rasten hart auf den Boden (korrekte Kollision), das AUGE
+// folgt geglättet (Tiefpass, exp-Lerp) → genau die „höhe etwas dämpfen, der Körper gleicht
+// aus"-Bitte. Das Voxel-Terrain ist auf Frame-Skala RAU (gemessen ~0,23 m/Frame); der Tiefpass
+// dämpft dieses Zittern → das Auge gleitet, statt zu rucken. K = Dämpfungs-Rate (höher = weniger
+// Lag/responsiver, tiefer = weicher); ein BEWUSSTER, leichter Lag auf rauem/steilem Grund IST
+// die Dämpfung (kein Bug). MAX_LAG = darüber snappt das Auge (Teleport/Respawn → kein Gummiband).
+// In der LUFT (Sprung/Fall) trackt es 1:1 (die ballistische Kurve), bei harter Landung führt der
+// View-Punch-Dip (Glättung snappt dann auf die Füße, sonst fechten Lag + Dip).
+AnazhRealm.CAMERA_SMOOTH_K = 14;
 AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
 // LANDUNGS-ABSORPTION (View-Punch à la Source `m_flFallVelocity`): beim Aufkommen federt
 // das Auge kurz ein und zurück — der Körper fängt den Stoß ab (die andere Hälfte von „der
