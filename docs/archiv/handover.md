@@ -378,6 +378,25 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.320 — DER SCHNELLE STROM: das Welt-Streaming ~3× schneller (eine Quelle, byte-identisch)
+
+Schöpfer-Auftrag: „das Programm soll vor Leistung strotzen, alles in den Schatten stellen — was saugt, was ist ineffizient, wie lernen wir von den Profis und stellen selbst diese in den Schatten? sei ein Gigant, auf Schultern von Riesen."
+
+**DIE MESSUNG ZUERST:** nach dem Skin-Bau (V18.319) zog ich die nächste Last. `diag-stream-perf` zeigte: das Main-Thread-Streaming ist nur **0,5 ms/Frame** (der Chunk-Bau läuft seit V18.271 off-thread). Der verbliebene CPU-Fresser ist die **Worker-Mesh-Zeit** (wie schnell die Welt streamt). Im Worker-Mesher (`buildChunkMesh`): eine VOLLE `k·j·i`-Schleife ruft `terrainDensityAt` an JEDEM Gitterpunkt (~91k Noise-Calls/Chunk bei dimY=232) — die allermeisten tief im Fels oder hoch in der Luft, fern der Iso = **dasselbe Brute-Muster wie der Skin-Bau**.
+
+**DER BEFUND (auf Schultern von Riesen):** der MAIN-Mesh-Pfad (`_buildVoxelChunkData`→`_voxelSampleDensityGrid`) BAND-SKIPPT längst — er wertet `terrainDensityAt` nur im Oberflächen-Band aus (`surf+ROUGH+topMargin` bis `min(surf,base)−40`), fern davon konstant ±1 (kein Sign-Change → kein Iso → byte-identisch). Der Worker hatte den Band-Skip schon als `computeDensityGrid` (für die Density-Grid-Anfragen), nutzte ihn aber im MESH nicht — `buildChunkMesh` war der EINZIGE divergente Voll-Eval-Pfad. (Beweis, dass Band == Voll: Main band-skippt in Produktion + baut Chunks NEBEN den Worker-Voll-Chunks OHNE Naht.)
+
+**DER GIGANT-SCHRITT (Verdichtung zu EINER Quelle + freier Speedup):** `buildChunkMesh` liest jetzt `computeDensityGrid` (die existierende Band-Skip-Quelle) statt der duplizierten Voll-Schleife — sowohl die Haupt-Density als auch die lod0-Wasser-Density. Kein neuer Code, nur die Konsolidierung des divergenten Pfads.
+  → CHUNK-Bau **437→175 ms (2,5×)**, Density-Anteil ~3× (391→130 ms), Geometrie-Anteil (Surface-Nets+Smooth+Normalen+Colors, ~17-45 ms) unverändert.
+
+**BYTE-IDENTISCH — ZWEI Orakel (die Linse vor dem Schritt):** (1) `diag-chunk-band` baut auf dem Main-Thread das Mesh mit Band-Skip-Density vs. Voll-Eval-Density und vergleicht position/normal/color/index → **maxDiff EXAKT 0** über 4 Chunks (die Rechtfertigung, in den Worker zu portieren). (2) `diag-worker-chunk` baut einen Chunk über den ECHTEN voxel-worker (Round-Trip) und vergleicht gegen den Main-Sync-Bau → **maxDiff 0** über 3 Chunks (die Verdrahtung ist korrekt, Worker == Main, Naht-/Determinismus-Schutz hält).
+
+**WARUM SICHER (geringes Risiko):** der Main-Mesh-Pfad nutzt den Band-Skip schon in Produktion (keine Löcher/Nähte gemeldet); der Worker übernimmt EXAKT denselben (via `computeDensityGrid`, dem bit-identischen Mirror von `_voxelSampleDensityGrid`). Der frühere Zustand (Main band, Worker voll) war strikt RISKANTER — eine Divergenz hätte schon eine Naht erzeugt. Die Konsolidierung reduziert Divergenz.
+
+**VERIFIKATION:** `diag-chunk-band` (band==voll, maxDiff 0, Chunk 2,5×) · `diag-worker-chunk` (worker==main, maxDiff 0) · `diag-stream-perf` (die Last-Messung) · format/lint/`node --check` sauber (5 pre-existing Warnungen, 0 Fehler) · Fast-Gate 13/0 (Chunks bauen mit gültiger surfMap). Neu: `scripts/diag-chunk-band.cjs`, `scripts/diag-worker-chunk.cjs`. Version 18.320.0 (der `?v=`-Bump ist Pflicht — der voxel-worker wird separat via `new Worker(voxel-worker.js?v=VERSION)` geladen).
+
+**OFFEN (die nächsten Giganten):** der Render (GPU-gebunden, look-bound → GPU-Culling/Indirect-Draw) · der Worldgen-Monolith auf dem kritischen Boot-Pfad · der Determinismus-Bogen (voxel-native Kollision statt sync-BVH).
+
 ### V18.319 — DER SCHNELLE GUSS: der schwerste Algorithmus räumlich akzeleriert (4,4×, byte-identisch)
 
 Schöpfer-Auftrag: „steigere die performance durch genialität, nicht durch stutzen — was sind die schwersten prozesse, wie erhältst du das selbe ergebnis ohne verluste, evt. sogar noch tiefer, was machen die besten der besten, sei ein gigant."

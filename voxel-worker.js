@@ -1830,19 +1830,14 @@ function buildChunkMesh(cx, cz, lod) {
     const Nx = sampleDimX + 1;
     const Ny = sampleDimY + 1;
     const Nz = sampleDimZ + 1;
-    // Density-Grid einmal samplen (~91k Calls bei LOD 0, ~14k bei LOD 1).
-    const density = new Float32Array(Nx * Ny * Nz);
-    for (let k = 0; k < Nz; k++) {
-        for (let j = 0; j < Ny; j++) {
-            for (let i = 0; i < Nx; i++) {
-                density[i + j * Nx + k * Nx * Ny] = terrainDensityAt(
-                    sampleOx + i * step,
-                    oy + j * step,
-                    sampleOz + k * step
-                );
-            }
-        }
-    }
+    // Density-Grid einmal samplen — über die EINE Band-Skip-Quelle `computeDensityGrid`
+    // (Mirror von `_voxelSampleDensityGrid`): nur das Oberflächen-Band ruft terrainDensityAt,
+    // fern davon konstant ±1 (keine Iso → kein Sign-Change). BYTE-IDENTISCH zur Vollauswertung
+    // (diag-chunk-band: maxDiff 0 über position/normal/color/index), aber ~3× weniger Noise-Calls
+    // (der teure Posten). VORHER duplizierte buildChunkMesh die volle k·j·i-Schleife, während der
+    // Main-Mesh-Pfad (_buildVoxelChunkData) längst band-skippt — das schliesst die Worker-Divergenz
+    // (eine Quelle, kein Parallelpfad; identische Indizierung i + j·Nx + k·Nx·Ny).
+    const density = computeDensityGrid(sampleOx, oy, sampleOz, sampleDimX, sampleDimY, sampleDimZ, step);
     // V18.97 — die Oberflächen-Karte als Grid-Nebenprodukt (s. gridSurfaceMap).
     const surfMap = gridSurfaceMap(density, Nx, Ny, Nz, oy, step);
     // Surface-Nets-Mesh aufbauen.
@@ -1884,23 +1879,18 @@ function buildChunkMesh(cx, cz, lod) {
             const lod0SampleDimX = lod0Cfg.dim + 3;
             const lod0SampleDimY = lod0Cfg.dimY;
             const lod0SampleDimZ = lod0Cfg.dim + 3;
-            const lod0Nx = lod0SampleDimX + 1;
-            const lod0Ny = lod0SampleDimY + 1;
-            const lod0Nz = lod0SampleDimZ + 1;
-            const lod0Density = new Float32Array(lod0Nx * lod0Ny * lod0Nz);
             const lod0Ox = ox - lod0Cfg.step;
             const lod0Oz = oz - lod0Cfg.step;
-            for (let k = 0; k < lod0Nz; k++) {
-                for (let j = 0; j < lod0Ny; j++) {
-                    for (let i = 0; i < lod0Nx; i++) {
-                        lod0Density[i + j * lod0Nx + k * lod0Nx * lod0Ny] = terrainDensityAt(
-                            lod0Ox + i * lod0Cfg.step,
-                            oy + j * lod0Cfg.step,
-                            lod0Oz + k * lod0Cfg.step
-                        );
-                    }
-                }
-            }
+            // Dieselbe Band-Skip-Quelle (s.o.) — byte-identisch, ~3× weniger Noise-Calls.
+            const lod0Density = computeDensityGrid(
+                lod0Ox,
+                oy,
+                lod0Oz,
+                lod0SampleDimX,
+                lod0SampleDimY,
+                lod0SampleDimZ,
+                lod0Cfg.step
+            );
             waterCells = buildChunkWaterCells(ox, oy, oz, lod0Cfg.step, 0, lod0Density);
         }
     } else {
