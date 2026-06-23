@@ -28010,7 +28010,11 @@ class AnazhRealm {
                             //      taugliche Hebel (Variation aus POSITION, nicht aus Krümmung, die auf
                             //      flachen Facetten ≈0 ist → fwidth-Verschleiß half den Werken nicht).
                             const _strata = _Ta.mx_noise_float(
-                                _Ta.vec3(_pl.x.mul(_Ta.float(0.5)), _pl.y.mul(_Ta.float(3.4)), _pl.z.mul(_Ta.float(0.5)))
+                                _Ta.vec3(
+                                    _pl.x.mul(_Ta.float(0.5)),
+                                    _pl.y.mul(_Ta.float(3.4)),
+                                    _pl.z.mul(_Ta.float(0.5))
+                                )
                             );
                             // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/Holz
                             //   körnig). DEUTLICHER als zuvor (V18.332): ±7 % verschwand auf der flachen
