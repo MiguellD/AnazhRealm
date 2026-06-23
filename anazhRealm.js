@@ -28146,19 +28146,30 @@ class AnazhRealm {
                 : _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
             const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
+            // V18.339 — DIE STRUKTUR LERNT DIE HÄRTE (Schöpfer „die Struktur scheint nicht zu wissen …
+            // gestein steinige/karsche Regionen"): harte, nicht-hölzerne, nicht-metallene Materialien
+            // (Fels · Stein · Kristall · Basalt) BRECHEN KANTIG — ridged noise (scharfe Grate + dunkle
+            // Bruch-Linien) + verstärkte Schichtung, statt weichem isotropem Korn. Getrieben von der
+            // EXISTIERENDEN härte-Achse (kein fragiles Klassen-Raten); weich (Lehm/Holz) bleibt weich,
+            // Metall behält seinen Schliff (hardF=0 via 1−metal). So WEISS der Fels, dass er steinig ist.
+            const hardF = ht * ht * (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
+            const frN = _T.mx_noise_float(pos.mul(f(3.0 + ht * 6.0)));
+            const ridge = f(1.0).sub(frN.abs()).sub(f(0.5)).mul(f(2.0)); // [-1..1] scharfe Grate/Täler
             // V18.337 — die RINDE bekommt stärkeren Kontrast: die Längs-Faser (mottle, vertikale
             // Streifen) + die Risse (cavity) sind das definierende Rinden-Detail (§0 „kaum Rinde-
             // Kontrast") → für bark verstärkt; Terrain/Werke unberührt (Faktor 1.0).
             const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0) * (opts.bark ? 1.7 : 1.0);
             const broadAmp = 0.12 + di * 0.12;
-            const cavityAmp = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
-            const strataAmp = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
+            const cavityAmp = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0) * (1.0 + hardF * 1.3);
+            const strataAmp =
+                (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0) * (1.0 + hardF * 1.8);
             const mod = f(1.0)
-                .add(mottle.mul(fineFade).mul(f(mottleAmp)))
+                .add(mottle.mul(fineFade).mul(f(mottleAmp * (1.0 - 0.5 * hardF)))) // weiches Korn weicht dem Bruch
+                .add(ridge.mul(fineFade).mul(f(0.3 * hardF))) // angulärer Bruch — nur harte Materialien
                 .add(broad.mul(f(broadAmp)))
                 .add(strata.mul(f(strataAmp)))
                 .sub(cavity.mul(fineFade).mul(f(cavityAmp)));
-            albedo = albedo.mul(mod.clamp(0.55, 1.45));
+            albedo = albedo.mul(mod.clamp(0.5, 1.5));
             // Höhen-Gradient [0..1] (EINE Quelle für Verwitterung + Moos + Counter-Shading).
             const yLow = pos.y.mul(f(0.7)).add(f(0.5)).clamp(0, 1);
             // (2) TON warm↔kühl — ein Hue-Shift LIEST, wo Helligkeit auf Dunkel verschwindet.
@@ -28287,6 +28298,25 @@ class AnazhRealm {
             // das Moos selbst bleibt matt (im Substanz-Kern). Lawful aus DEMSELBEN Feld, das schon
             // das Moos treibt → der Boden erzählt seine Hydrologie auch im Glanz, kein neuer Pfad.
             const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
+            // V18.339 — TROCKENE BRAUN-GELBE FLECKEN (Schöpfer „trockene fast braun-gelbe stellen"):
+            // wo der Boden NICHT feucht ist (inverse damp) UND flach (kein Fels) UND nicht grün, moduliert
+            // von einem großen Patch-Noise → DISTINKTE Dürre-Flecken (Hue nach Gelb-Braun), nicht ein
+            // uniformer Boden. Der Boden erzählt seine Hydrologie als Flecken, lawful aus DEMSELBEN damp-Feld.
+            const _dryPatch = _T.mx_noise_float
+                ? _T
+                      .mx_noise_float(_T.vec3(wp.x.mul(0.085), wp.z.mul(0.085), _T.float(0.0)))
+                      .mul(0.5)
+                      .add(0.5)
+                : _T.float(0.5);
+            const _dryW = _T
+                .float(1.0)
+                .sub(_damp)
+                .mul(_T.float(1.0).sub(_green))
+                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
+                .mul(_dryPatch)
+                .mul(_T.float(0.62))
+                .clamp(0.0, 1.0);
+            _out = _T.mix(_out, _out.mul(_T.vec3(1.32, 1.12, 0.6)), _dryW);
             const _r = this._substanceCharacter(_T, _out, {
                 pos: wp.mul(_T.float(0.16)),
                 worldPos: wp,
@@ -73644,7 +73674,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.338.0";
+AnazhRealm.VERSION = "18.339.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
