@@ -39143,6 +39143,66 @@ async function checkBandV18266RockDetail(ctx) {
     );
 }
 
+// DETERMINISMUS-BOGEN P4 (Stufe 1) — DIE ERNTE: der deterministische Input-Replay.
+// Die feld-native Simulation ist eine reine Funktion (Position × Dichtefeld × Input × dt) →
+// derselbe Start + dieselbe Input-Folge ⇒ bit-identisches Ergebnis. Diese Invariante schützt
+// das Lockstep/Replay-Fundament; bricht sie, lauert eine versteckte Nicht-Determinismus-Quelle
+// (Math.random/Zeit/Float-Drift) im Schritt-Pfad. (Volle Linse: `scripts/diag-replay-determinism.cjs`.)
+async function checkBandV18331ReplayDeterminism(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const out = {};
+        if (typeof r.replayRun !== "function" || typeof r._replaySnapshotState !== "function" || !s.playerMesh || !s.playerVel)
+            return out;
+        const DT = 1 / 60;
+        const mkFrames = (seq) => {
+            const fr = [];
+            for (const [count, k] of seq)
+                for (let i = 0; i < count; i++)
+                    fr.push({ dt: DT, yaw: 0, w: !!k.w, a: !!k.a, s: !!k.s, d: !!k.d, shift: !!k.shift, space: !!k.space });
+            return fr;
+        };
+        const sy = r.getTerrainHeightAt(0, 0);
+        const startY = (Number.isFinite(sy) ? sy : 5) + 2;
+        s.playerMesh.position.set(0, startY, 0);
+        s.playerVel.setValue(0, 0, 0);
+        s._fieldVy = 0;
+        s.yaw = 0;
+        const start = r._replaySnapshotState();
+        const framesA = mkFrames([
+            [40, { w: true }],
+            [1, { w: true, space: true }],
+            [40, { w: true }],
+            [30, { w: true, d: true }],
+            [20, {}],
+        ]);
+        const framesB = mkFrames([[80, { s: true }]]);
+        const recA = { start, frames: framesA };
+        const eqBit = (p, q) =>
+            p && q && p.x === q.x && p.y === q.y && p.z === q.z && p.vx === q.vx && p.vy === q.vy && p.vz === q.vz && p.fieldVy === q.fieldVy;
+        const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z);
+        const a1 = r.replayRun(recA);
+        const a2 = r.replayRun(recA);
+        const a3 = r.replayRun(recA);
+        const b = r.replayRun({ start, frames: framesB });
+        out.bitEqual = eqBit(a1, a2) && eqBit(a1, a3); // (A) + (D) repeatable
+        out.moved = dist(start, a1); // (B) non-trivial
+        out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
+        // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
+        out.usesStep = /_stepCharacter\(/.test(r.replayRun.toString()) && /_loopPlayerMovement\(/.test(r.replayRun.toString());
+        return out;
+    });
+    check(
+        `P4 (Determinismus-Ernte): zwei+drei Replays derselben Aufnahme sind BIT-IDENTISCH (Determinismus bewiesen)`,
+        res.bitEqual === true
+    );
+    check(`P4: der Replay bewegt den Spieler spürbar (${(res.moved || 0).toFixed(2)} m, kein No-op)`, (res.moved || 0) > 2.0);
+    check("P4: ein anderer Input liefert ein anderes Ergebnis (input-sensitiv, kein Fixpunkt)", res.inputSensitive === true);
+    check("P4: der Replay läuft durch DENSELBEN Schritt-Pfad (_stepCharacter + _loopPlayerMovement, CONSUM)", res.usesStep === true);
+}
+
 async function checkBandV18262CreatureRenderLOD(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -56525,6 +56585,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandV18264ShadowCache, ctx);
             await timed(checkBandV18265ShadowDistance, ctx);
             await timed(checkBandV18266RockDetail, ctx);
+            await timed(checkBandV18331ReplayDeterminism, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

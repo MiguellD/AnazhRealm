@@ -274,6 +274,7 @@ class AnazhRealm {
             fieldPhysics: true,
             _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
             _fieldWasGrounded: false, // war der Spieler im Vorframe geerdet (Boden-Haftung nur dann)
+            _replayRec: null, // P4 (Stufe 1) — die laufende Input-Aufnahme (deterministischer Replay)
             _smoothBodyY: null, // geschwindigkeits-begrenzt nachgezogene Körper-Y des Auges (View-Smoothing)
             _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
             _landDip: 0, // aktueller Landungs-Absorption-Versatz des Auges (m, ≤ 0)
@@ -22065,11 +22066,35 @@ class AnazhRealm {
             this._togglePerfOverlay();
             return true;
         }
-        // Determinismus-Bogen P1b — der A/B-Schalter für die feld-native Kapsel-Physik.
+        // Determinismus-Bogen P3 — die Feld-Physik ist die einzige Physik (Ammo ist raus).
         if (vc === "feldphysik" || vc === "field physics" || vc === "fieldphysics") {
-            const on = this.setFieldPhysics(!this.state.fieldPhysics);
+            this.setFieldPhysics();
             this.log(
-                `Feld-Physik ${on ? "AN — der Spieler läuft jetzt aus dem Dichtefeld." : "AUS — zurück auf Ammo."}`,
+                "Feld-Physik ist die einzige Physik — der Spieler läuft aus dem Dichtefeld (Ammo ist raus).",
+                "INFO"
+            );
+            return true;
+        }
+        // Determinismus-Bogen P4 (Stufe 1) — die Ernte: deterministischer Input-Replay.
+        // „replay record" zeichnet ab jetzt jeden Frame-Input auf · „replay stop" hält an
+        // + spielt die Aufnahme sofort deterministisch zurück (der Spieler läuft sie nach).
+        if (vc === "replay record" || vc === "replay aufnahme") {
+            const ok = this.startReplayRecording();
+            this.log(
+                ok ? "Replay: Aufnahme laeuft — beweg dich, dann: replay stop" : "Replay: kein Spieler bereit.",
+                "INFO"
+            );
+            return true;
+        }
+        if (vc === "replay stop" || vc === "replay play" || vc === "replay abspielen") {
+            const rec = this.stopReplayRecording();
+            if (!rec || !rec.frames.length) {
+                this.log("Replay: keine Aufnahme — zuerst: replay record", "INFO");
+                return true;
+            }
+            const end = this.replayRun(rec);
+            this.log(
+                `Replay: ${rec.frames.length} Frames deterministisch abgespielt → (${end.x.toFixed(1)}, ${end.y.toFixed(1)}, ${end.z.toFixed(1)}).`,
                 "INFO"
             );
             return true;
@@ -71661,6 +71686,9 @@ class AnazhRealm {
 
                 // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
                 this._loopPlayerMovement(currentTime);
+                // DETERMINISMUS-BOGEN P4 (Stufe 1) — die Ernte: läuft eine Aufnahme, wird der
+                // Input dieses Frames festgehalten (deterministischer Replay, s. _replayCaptureFrame).
+                if (this.state._replayRec) this._replayCaptureFrame(delta);
 
                 // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
                 this._loopSelfAnalysis(currentTime);
@@ -72381,6 +72409,112 @@ class AnazhRealm {
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
             }
         }
+    }
+
+    // ===== DETERMINISMUS-BOGEN P4 (Stufe 1) — DIE ERNTE: deterministischer Input-Replay =====
+    // Der Lohn des feld-nativen Schnitts: die Spieler-Simulation ist jetzt eine REINE Funktion
+    // (Position × Dichtefeld × Input × dt) — kein Ammo-Float-Drift, kein verstecktes Math.random,
+    // keine ungemessene Zeit. Darum gilt: DERSELBE Start + DIESELBE Input-Folge ⇒ bit-identisches
+    // Ergebnis. Diese Ernte beweist den Determinismus (der ganze Zweck des Bogens) UND ist die
+    // self-suffiziente Verifikation — die bit-Gleichheit zweier Läufe IST der Beweis, kein Browser
+    // nötig. Stufe 2 (Lockstep-MP: nur Inputs übers Netz, jeder rechnet dieselbe Welt) + Stufe 3
+    // (Fixed-Point für Cross-Maschine) bauen darauf auf.
+
+    // Hält den Input dieses Frames fest (im Loop nach `_loopPlayerMovement`). Genau die
+    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die WASD/Shift/Space-Tasten,
+    // der Blick-Yaw und das Zeit-Delta.
+    _replayCaptureFrame(delta) {
+        const rec = this.state._replayRec;
+        if (!rec) return;
+        if (rec.frames.length >= AnazhRealm.REPLAY_MAX_FRAMES) {
+            this.state._replayRec = null; // Sicherheits-Cap gegen unbegrenztes Wachstum
+            return;
+        }
+        const k = this.state.keys || {};
+        rec.frames.push({
+            dt: delta,
+            yaw: this.state.yaw,
+            w: !!k["w"],
+            a: !!k["a"],
+            s: !!k["s"],
+            d: !!k["d"],
+            shift: !!k["shift"],
+            space: !!k[" "],
+        });
+    }
+
+    // Beginnt eine Aufnahme: friert den Start-Zustand ein (Position + die feld-eigene
+    // Velocity + `_fieldVy` + Yaw) und öffnet den Frame-Puffer.
+    startReplayRecording() {
+        const s = this.state,
+            pm = s.playerMesh;
+        if (!pm || !s.playerVel) return false;
+        s._replayRec = {
+            start: this._replaySnapshotState(),
+            frames: [],
+        };
+        return true;
+    }
+
+    stopReplayRecording() {
+        const rec = this.state._replayRec;
+        this.state._replayRec = null;
+        return rec;
+    }
+
+    // Der vollständige deterministische Zustand des Spieler-Schritts.
+    _replaySnapshotState() {
+        const s = this.state,
+            pm = s.playerMesh;
+        return {
+            x: pm.position.x,
+            y: pm.position.y,
+            z: pm.position.z,
+            vx: s.playerVel.x(),
+            vy: s.playerVel.y(),
+            vz: s.playerVel.z(),
+            fieldVy: s._fieldVy || 0,
+            yaw: s.yaw,
+        };
+    }
+
+    // Spielt eine Aufnahme DETERMINISTISCH ab: setzt den Start zurück und füttert jede
+    // Input-Frame durch DENSELBEN Pfad wie der Loop (`_stepCharacter` dann
+    // `_loopPlayerMovement`, in der Loop-Reihenfolge). Gibt den End-Zustand zurück.
+    // Reiner Replay (keine Welt-Mutation außer dem Spieler) → mehrfach aufrufbar.
+    replayRun(rec) {
+        if (!rec || !Array.isArray(rec.frames)) return null;
+        const s = this.state,
+            pm = s.playerMesh;
+        if (!pm || !s.playerVel) return null;
+        // Start restaurieren.
+        pm.position.set(rec.start.x, rec.start.y, rec.start.z);
+        s.playerVel.setValue(rec.start.vx, rec.start.vy, rec.start.vz);
+        s._fieldVy = rec.start.fieldVy;
+        s.yaw = rec.start.yaw;
+        // Die Bewegungs-/Erdungs-Hilfszustände auf einen sauberen Start setzen, damit
+        // zwei Replays vom selben Start wirklich bit-gleich laufen (kein Carry-over).
+        const savedKeys = s.keys;
+        const savedLastMove = s._lastMoveT;
+        const savedWasGrounded = s._fieldWasGrounded;
+        s._fieldWasGrounded = false;
+        let t = 0;
+        s._lastMoveT = 0;
+        for (let i = 0; i < rec.frames.length; i++) {
+            const f = rec.frames[i];
+            s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
+            s.yaw = f.yaw;
+            t += f.dt;
+            // Loop-Reihenfolge: erst der Feld-Schritt (integriert die Velocity des
+            // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
+            this._stepCharacter(f.dt, t);
+            this._loopPlayerMovement(t);
+        }
+        const end = this._replaySnapshotState();
+        s.keys = savedKeys;
+        s._lastMoveT = savedLastMove;
+        s._fieldWasGrounded = savedWasGrounded;
+        return end;
     }
 
     _loopSelfAnalysis(currentTime) {
@@ -76958,6 +77092,10 @@ AnazhRealm.LAND_DIP_SCALE = 0.022; // m Dip pro m/s Aufprall
 AnazhRealm.LAND_DIP_MAX = 0.32; // maximaler Dip (harter Sturz)
 AnazhRealm.LAND_DIP_MIN_SPEED = 2.5; // m/s — darunter kein spürbarer Aufprall
 AnazhRealm.LAND_DIP_RECOVER_K = 8; // Rückfederungs-Rate (~300 ms zurück zur Ruhe)
+
+// Determinismus-Bogen P4 (Stufe 1) — Sicherheits-Cap für die Replay-Aufnahme (Frames).
+// 18000 ≈ 5 min bei 60 fps — genug für eine echte Spiel-Sequenz, gedeckelt gegen Runaway.
+AnazhRealm.REPLAY_MAX_FRAMES = 18000;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,
