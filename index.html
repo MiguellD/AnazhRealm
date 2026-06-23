@@ -9324,13 +9324,10 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.330.0"></script>
-        <!-- V9.40-f: ammo-bootstrap.js setzt window.Module mit instantiateWasm-
-         Hook (pre-grow Memory auf 256 MB). MUSS vor ammo.js geladen werden.
-         Inline-Variante wäre kompakter, ist aber CSP-blockiert (script-src
-         'self'). Doku in vendor/ammo-bootstrap.js + CLAUDE.md. -->
-        <script src="vendor/ammo-bootstrap.js"></script>
-        <script src="vendor/ammo.js"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.331.0"></script>
+        <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
+             feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
+             Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
         <script src="vendor/simplex-noise.js"></script>
         <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
@@ -9341,7 +9338,7 @@
         <!-- V18.315 DER BÄCKER: die THREE-freie Skin-Isosurface-Mathe. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Avatar-Bau im init liest das globale
              __bakeSkinGeometry. Derselbe Code läuft auch im bake-worker (importScripts). -->
-        <script src="bake-core.js?v=18.330.0" defer></script>
-        <script src="anazhRealm.js?v=18.330.0" defer></script>
+        <script src="bake-core.js?v=18.331.0" defer></script>
+        <script src="anazhRealm.js?v=18.331.0" defer></script>
     </body>
 </html>

@@ -94,7 +94,7 @@ const server = http.createServer((req, res) => {
 
         const r = window.anazhRealm,
             s = r.state;
-        if (!r._gameLoopTick || !s.playerMesh || !s.playerBody || !s.camera) return { error: "Welt nicht bereit" };
+        if (!r._gameLoopTick || !s.playerMesh || !s.playerVel || !s.camera) return { error: "Welt nicht bereit" };
         const footDrop = (window.anazhRealm.constructor || r.constructor).PLAYER_FOOT_OFFSET;
 
         let simT = performance.now();
@@ -107,7 +107,7 @@ const server = http.createServer((req, res) => {
             s.keys = {};
         };
         const zeroVel = () => {
-            if (s.playerBody) s.playerBody.setLinearVelocity(r.setVec(s.tmpVec2, 0, 0, 0));
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
             s._fieldVy = 0;
         };
         r.setFieldPhysics(true);
@@ -145,7 +145,7 @@ const server = http.createServer((req, res) => {
         let stopTick = -1;
         for (let i = 0; i < 60; i++) {
             tick();
-            const v = s.playerBody.getLinearVelocity();
+            const v = s.playerVel;
             const sp = Math.sqrt(v.x() * v.x() + v.z() * v.z());
             if (stopTick < 0 && sp < 0.15) stopTick = i;
         }

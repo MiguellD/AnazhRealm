@@ -98,7 +98,7 @@ const server = http.createServer((req, res) => {
 
         const r = window.anazhRealm,
             s = r.state;
-        if (!r._gameLoopTick || !s.playerMesh || !s.playerBody) return { error: "Welt nicht bereit" };
+        if (!r._gameLoopTick || !s.playerMesh || !s.playerVel) return { error: "Welt nicht bereit" };
 
         const footDrop = (window.anazhRealm.constructor || r.constructor).PLAYER_FOOT_OFFSET;
         const stepUp = (window.anazhRealm.constructor || r.constructor).PLAYER_STEP_UP;
@@ -138,7 +138,7 @@ const server = http.createServer((req, res) => {
         // Geste, die der echte Spieler-Spawn auch hat: kein Rest-Impuls. Body-Velocity
         // nullen, sonst driftet der Avatar in der Luft über den Hang (Test-Artefakt).
         const zeroVel = () => {
-            if (s.playerBody) s.playerBody.setLinearVelocity(r.setVec(s.tmpVec2, 0, 0, 0));
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
             s._fieldVy = 0;
         };
 
