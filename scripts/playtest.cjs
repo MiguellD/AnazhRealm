@@ -20440,8 +20440,10 @@ async function checkBandHydrosphere(ctx) {
         }
         // Die Schwimm-Physik (in _loopPhysicsSync) speist den
         // effektiven Wasserspiegel aus _waterLevelAt.
+        // P3 — die Schwimm-/Wasser-Physik wanderte aus `_loopPhysicsSync` (jetzt nur noch
+        // `_stepCharacter`-Dispatch) in den feld-nativen Controller `_stepCharacter`.
         out.physicsUsesEffWater =
-            typeof r._loopPhysicsSync === "function" && /_waterLevelAt/.test(r._loopPhysicsSync.toString());
+            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(r._stepCharacter.toString());
         return out;
     });
 
@@ -25720,19 +25722,19 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r._disposeVoxelChunk("99,99");
         out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
 
-        // (3) _ensureVoxelChunkAt Retry-Pfad: ein WEIT entfernter Chunk
-        // (degenerierte Iso / kein Oberflächen-Band) → der Mesh-Build liefert
-        // null → der Retry-Counter steigt; nach 2 Fails steht KEIN empty-Eintrag
-        // (Retry pending), nach 3 ein empty. DETERMINISMUS-BOGEN P3: der frühere
-        // Kollisions-Builder-Stub (`_buildStaticTriMeshCollision`) ist weg — der
-        // Chunk-Build geht gar nicht mehr durch Ammo, der Fail kommt aus dem
-        // degenerierten Iso-Mesh selbst.
+        // (3) _ensureVoxelChunkAt Retry-Pfad: ein Build-Fail (bare null) → der Retry-
+        // Counter steigt; nach <3 Fails steht KEIN empty-Eintrag (Retry pending), nach 3
+        // ein empty + der Counter ist geräumt. DETERMINISMUS-BOGEN P3: der Fail wird
+        // DETERMINISTISCH erzwungen, indem `_acquireVoxelChunkBuild` kurz auf `()=>null`
+        // gestubbt wird. (Früher hing der Test an einem „degenerierten Fern-Chunk", dessen
+        // Build bei Ammo-Heap-Druck null lieferte — ohne Ammo baut der Fern-Chunk sauber
+        // einen Mesh, der Fail-Pfad würde nie getriggert. Der Mechanismus selbst lebt
+        // unverändert in `_ensureVoxelChunkAt`; wir testen ihn jetzt an seiner Wurzel.)
         const fakeKey = "0,-999"; // weit weg, ungebraucht
-        // V17.118 (E3-Migration, V9.56-i): den Sync-Fail-Retry-Pfad von
-        // `_ensureVoxelChunkAt` prüfen → den Worker deaktivieren, sonst geht der
-        // Build async (pending → kein Fail, kein Counter). Restore nach dem Test.
-        const _savedWorkerE = r.state.voxelWorker;
-        r.state.voxelWorker = null;
+        const _savedAcquire = r._acquireVoxelChunkBuild;
+        r._acquireVoxelChunkBuild = () => null; // Build-Fail erzwingen (bare null)
+        r.state.voxelChunks.delete(fakeKey);
+        if (r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts.delete(fakeKey);
         r._ensureVoxelChunkAt(0, -999);
         out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
         out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
@@ -25743,7 +25745,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
         out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
         // Restore + Cleanup.
-        r.state.voxelWorker = _savedWorkerE; // V17.118 — den Worker wieder engagieren
+        r._acquireVoxelChunkBuild = _savedAcquire;
         r._disposeVoxelChunk(fakeKey);
         return out;
     });
@@ -42417,11 +42419,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Getrennte Flags: playerUnderwater (Körper) vs.
         // playerEyesUnderwater (Augen/Tauchen).
         out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-        // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
-        // Welle B (V9.56-i): seit der 3D-Zellen-Heilung ist die Augen-Höhe auf
-        // `submerged` gegated (`= submerged && scaledY + 1.6 < waterY`) — die
-        // Augen-Höhen-Quelle (scaledY+1.6) bleibt, die Probe akzeptiert beide
-        // Formen (das Verhalten wanderte, der Test wandert mit).
+        // Der Controller berechnet playerEyesUnderwater aus der Augen-Höhe (Körper-Y + 1.6).
+        // P3: die Logik wanderte aus `_loopPhysicsSync` (Quelle `scaledY + 1.6`) in
+        // `_stepCharacter` (Quelle `mesh.position.y + 1.6`, im `if(submerged)`-Block) — die
+        // Probe akzeptiert beide Formen (das Verhalten wanderte, der Test wandert mit).
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -42429,7 +42430,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    if (/playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?scaledY \+ 1\.6/.test(fn.toString()))
+                    if (
+                        /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
+                            fn.toString()
+                        )
+                    )
                         found = true;
                 } catch {
                     /* skip */
@@ -42895,10 +42900,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             return m ? m.src : "";
         };
 
-        // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
-        //    der forceActivationState(1) im Geh-Block ist entfernt.
-        out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
-        out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
+        // 1. (P3 — der Ammo-Player-Body + sein DISABLE_DEACTIVATION/forceActivationState
+        //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
+        //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
 
         // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
         //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
@@ -42919,11 +42923,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
-        // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
-        //    V9.44-f — die Physik-Phase lebt in _loopPhysicsSync.
+        // 4. Wasser-/Boden-Durchfall — P3: die Schutz-Logik wanderte in den feld-nativen
+        //    `_stepCharacter`: der Spieler kann nicht durch den Boden schwimmen, weil der
+        //    Boden-Snap ihn auf die Feld-Oberfläche setzt (kein „Auftrieb unter Terrain"),
+        //    und die KILLPLANE fängt einen echten Durchfall. Beide Stücke müssen da sein.
         {
-            const src = srcOf("_loopPhysicsSync");
-            out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
+            const src = srcOf("_stepCharacter");
+            out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
         }
 
         // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
@@ -42954,11 +42960,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v836Results && !v836Results.error) {
-        check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
-        check(
-            "V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)",
-            v836Results.jumpNoActivate1
-        );
+        // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
+        // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
         check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
         check(
             "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
