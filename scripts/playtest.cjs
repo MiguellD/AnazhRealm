@@ -17453,10 +17453,13 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
+        // V7.74 Erwartung: Spawn-Pfade für Inseln + UFOs leben weiter,
         // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
-        out.hasIslandHelper = typeof r._buildIslandCollision === "function";
-        out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
+        // DETERMINISMUS-BOGEN P3: die Ammo-Kollisions-Builder/Disposer
+        // (`_buildIslandCollision`/`_disposeStaticCollision`) sind GESCHNITTEN —
+        // die Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
+        out.islandCollisionHelpersRemoved =
+            typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
         out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
         out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
         out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
@@ -17650,8 +17653,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gResults && !wave6gResults.error) {
-        check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-        check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
+        check(
+            "Welle 6.G P1.5 → P3: die Ammo-Insel-Kollisions-Helfer sind feld-nativ ersetzt (geschnitten)",
+            wave6gResults.islandCollisionHelpersRemoved
+        );
         check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
         // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
         // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
@@ -19013,9 +19018,9 @@ async function checkBandVoxelTerrainCore(ctx) {
             out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
             // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
             out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
-            // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
+            // Aufräumen — der Test-Chunk bleibt nicht in der Welt. (P3: keine Ammo-Kollision
+            // mehr freizugeben — feld-nativ.)
             if (r._voxelTestMesh) {
-                r._disposeStaticCollision(r._voxelTestMesh);
                 r.state.scene.remove(r._voxelTestMesh);
                 r._voxelTestMesh = null;
             }
@@ -29716,20 +29721,20 @@ async function checkBandV18150Ride(ctx) {
             out.profile =
                 !!prof && prof.radCount === 4 && prof.topSpeedMul > 1.3 && prof.kBrake < prof.kAcc && prof.mass > 1;
             // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil.
-            // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ (blockerAABBs +
-            // `_stepCharacterStructures` skippt das GERITTENE Gefährt via riddenId,
-            // s. brennglasSafe/lazyPassSkips unten); `mountArchitecture` ruft weiter
-            // den Kollisions-Reset-Pfad (`_disposeArchitectureCollision`, Source).
+            // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ: das GERITTENE Gefährt
+            // blockt seinen Reiter NICHT, weil `_stepCharacterStructures` den `riddenId`
+            // (= player.mountedArch) überspringt (der Ersatz für den alten Ammo-Dispose).
             r.mountArchitecture(entry);
             out.collisionRests =
-                !entry.collision && /_disposeArchitectureCollision/.test(r.mountArchitecture.toString());
+                r.state.player.mountedArch === entry.id && /riddenId/.test(r._stepCharacterStructures.toString());
             out.profileConsumed = r._mountedVehicleProfile() === prof;
             // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
             // brennglas-fest (Quelle), solange geritten.
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
             out.brennglasSafe = /riddenId/.test(r._tickFocusingAffordances.toString());
-            out.lazyPassSkips = /riddenId/.test(r.tickArchitectureCulling.toString());
+            // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
+            out.lazyPassSkips = /riddenId/.test(r._stepCharacterStructures.toString());
             // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
             // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
             r.state.playerVel.setValue(5, 0, 0);

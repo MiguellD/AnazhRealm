@@ -1063,15 +1063,9 @@ class AnazhRealm {
             // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
             // ungedeckelt (billig). 3/Frame × 60 fps = 180 Builds/s → eine dichte
             // Region füllt sich in <1 s sanft, ohne Frame-Spike.
-            // V12.0-perf.d.2 (Wurzel C) — Lazy-Proxy-Collision: Architekturen
-            // RENDERN bis architectureCullingRadius (150 m), bekommen aber einen
-            // Ammo-Body nur innerhalb dieses kleineren Radius. Ferne Deko ist
-            // sichtbar (instanced) aber physik-frei bis der Spieler herankommt.
-            // 90 m > maximaler collision-prüfender Test-Spawn (~56 m) → test-
-            // sicher; (90/150)² ≈ 36 % der Bodies. AAA-Pattern: Collision für
-            // Interaktion, nicht Dekoration. Bleibt < RMIN (100) des Governors,
-            // also immer < Render-Radius.
-            architectureCollisionRadius: 90,
+            // (P3: der frühere `architectureCollisionRadius`/Lazy-Proxy-Collision ist
+            // entfallen — die Architektur-Kollision ist feld-nativ via `entry.blockerAABBs`,
+            // render-unabhängig ab Spawn.)
             architectureBuildBudgetPerFrame: 3,
             // V18.263 — DER PERFORMANCE-REGELKREIS: der Sollwert + die vom PID-
             // Regler gefahrenen Streaming-Stellgrößen (Default = volle Qualität;
@@ -22784,7 +22778,6 @@ class AnazhRealm {
         // entfernt (Voxel ist permanent seit V9.35, beide Sammlungen leer).
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
-                this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
             });
             this.state.floatingIslands = [];
@@ -22807,7 +22800,6 @@ class AnazhRealm {
         }
         if (this.state.vegetation) {
             this.state.vegetation.forEach((veg) => {
-                this._disposeStaticCollision(veg);
                 this.state.scene.remove(veg);
             });
             this.state.vegetation = [];
@@ -25494,7 +25486,6 @@ class AnazhRealm {
     _spawnVoxelTestChunk() {
         if (!this.state.scene) return null;
         if (this._voxelTestMesh) {
-            this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
             // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
             if (this._voxelTestMesh.geometry) this._queueDispose(this._voxelTestMesh.geometry);
@@ -29118,7 +29109,6 @@ class AnazhRealm {
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
-            this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
@@ -46657,7 +46647,6 @@ class AnazhRealm {
         // Fahrt als Bordstein (er folgt der gezogenen Position nie). Beim
         // Aufsteigen fällt er; der Lazy-Builder (_archWithinCollisionRadius-
         // Tick) überspringt das gerittene Gefährt; Absteigen baut lazy neu.
-        if (entry.collision) this._disposeArchitectureCollision(entry);
         // V18.150 — das Fahr-Profil LESBAR beim Aufsteigen (der V18.119-Kreis:
         // bauen → ablesen → lernen): der Spieler erfährt, WAS er reitet.
         const prof = this._vehicleProfile(entry);
@@ -57360,40 +57349,6 @@ class AnazhRealm {
         this.state.archInstanceGroups.clear();
     }
 
-    // V12.0-perf.d.2 — ist der Eintrag innerhalb des Lazy-Collision-Radius?
-    // Ohne Spieler (Worldgen/headless) → true (Collision bauen, Sicherheit).
-    _archWithinCollisionRadius(entry) {
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm || !entry || !entry.position) return true;
-        const dx = entry.position.x - pm.x;
-        const dz = entry.position.z - pm.z;
-        const r = this.state.architectureCollisionRadius || 90;
-        return dx * dx + dz * dz <= r * r;
-    }
-
-    // V12.0-perf.d.2 — Collision für einen gerenderten Eintrag sicherstellen
-    // (idempotent). Instanced → aus Leaf-AABBs, klassisch → aus entry.mesh.
-    _archEnsureCollision(entry) {
-        if (!entry || entry.collision) return;
-        if (entry.instanced) {
-            this._buildArchitectureCollisionFromLeaves(entry, this._archFlattenBlueprint(entry.type));
-        } else if (entry.mesh) {
-            this._buildArchitectureCollision(entry);
-        }
-    }
-
-    // Statische Compound-Kollision aus den Leaf-AABBs (für instanced
-    // Einträge, die kein entry.mesh haben). Spiegelt `_buildArchitectureCollision`:
-    // pro Leaf eine btBoxShape aus der Welt-AABB, Offset relativ zum
-    // Group-Origin (= entry-World-Translation). perf.d.2 baut das lazy (nur nah).
-    // DETERMINISMUS-BOGEN P3 — kein Ammo-Kollisions-Body mehr. Die Architektur-Kollision
-    // ist feld-nativ: `_populateBlockerAABBs` (im Spawn) füllt `entry.blockerAABBs`, und
-    // `_stepCharacterStructures` löst die Spieler-Kapsel dagegen. Dieser frühere
-    // Ammo-Compound-Builder ist ein No-op (Stub bis zum Sediment-Schnitt).
-    _buildArchitectureCollisionFromLeaves() {
-        return null;
-    }
-
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
     // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
     // existieren (gepruned, weil zu weit weg) und später wieder einen
@@ -57404,14 +57359,11 @@ class AnazhRealm {
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
         const flat = this._archFlattenBlueprint(entry.type);
-        // V12.0-perf.d.2 — Collision nur bauen, wenn der Spieler nah genug ist
-        // (Lazy-Proxy-Collision, Wurzel C). Render passiert bis 150 m, Physik
-        // erst ab ~90 m. Der Culling-Tick-Collision-Pass fügt sie hinzu, wenn
-        // der Spieler herankommt, und gibt sie frei, wenn er sich entfernt.
-        const wantCollision = this._archWithinCollisionRadius(entry);
+        // DETERMINISMUS-BOGEN P3 — die Architektur-Kollision ist feld-nativ
+        // (`entry.blockerAABBs` aus dem Spawn + `_stepCharacterStructures`); kein
+        // lazy Ammo-Collision-Build/Radius mehr.
         if (flat.instanceable) {
             this._archInstanceAdd(entry, flat);
-            if (wantCollision) this._buildArchitectureCollisionFromLeaves(entry, flat);
             return null;
         }
         const builders = this._architectureBuilders();
@@ -57430,74 +57382,18 @@ class AnazhRealm {
         }
         this.state.scene.add(group);
         entry.mesh = group;
-        // Ring 6.3 — Kollisions-Body für die Struktur. Statisch (mass=0),
-        // eine umschließende Box rund um die Group. Wir pushen NICHT in
-        // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
-        // anhand des Body-Origin überschreibt — die Position kommt aus
-        // entry.position, der Body ist nur Hitbox. V12.0-perf.d.2 — nur nah.
-        if (wantCollision) this._buildArchitectureCollision(entry);
         return group;
     }
 
-    // Statischer Kollisions-Body um die Architecture-Group als **Compound-
-    // Shape** aus einer btBoxShape pro Sub-Mesh. Eine einzelne umschließende
-    // AABB wäre einfacher, ist aber zu grob: ein Dorf mit Hütten auf
-    // Radius 10 hätte eine 24×4×24-AABB, in deren Mitte der Spieler steht —
-    // er wird beim Spawn aus der Box gepresst, oft durch den Boden. Mit
-    // Compound-Shape ist nur jede einzelne Hütte solide, der Weg zwischen
-    // Hütten frei.
-    // DETERMINISMUS-BOGEN P3 — Stub (kein Ammo). Architektur-Kollision ist feld-nativ
-    // über `entry.blockerAABBs` + `_stepCharacterStructures`.
-    _buildArchitectureCollision() {
-        return null;
-    }
-
-    // P3 — `entry.collision` wird nie mehr gesetzt; der Stub hält die Cleanup-Aufrufer
-    // (idempotent) ohne Ammo am Leben.
-    _disposeArchitectureCollision(entry) {
-        if (entry) entry.collision = null;
-    }
-
-    // === Welle 6.G Phase 1 — Welt-Sinne (Inseln + Bäume + UFOs) ===
-    // Bisher waren state.floatingIslands + state.vegetation-Bäume rein
-    // kosmetisch (kein physicsBody). Spieler fiel durch jede Insel, ging
-    // durch jeden Stamm. Hier die Kollisions-Schicht: btBvhTriangleMeshShape
-    // für Inseln (Visual = Kollision per Konstruktion wie bei Chunks),
-    // btCylinderShape nur für Baum-Stämme (Krone bleibt durchlässig — der
-    // Spieler kann durchs Laub gehen). UFOs bleiben bewusst kollisionsfrei,
-    // sie sind fliegende Beobachter, kein Hindernis.
-    //
-    // Beide werden als statische Bodies (mass=0) gebaut und NICHT in
-    // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
-    // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
-    _buildIslandCollision(islandMesh) {
-        return this._buildStaticTriMeshCollision(islandMesh, { kind: "island", friction: 0.8 });
-    }
-
-    // Generischer statischer Tri-Mesh-Kollisions-Builder. Nimmt ein Mesh mit
-    // indizierter Geometrie, baut ein btBvhTriangleMeshShape aus genau seinen
-    // Triangles (Visual = Kollision per Konstruktion) als statischen Body
-    // (mass=0). Eine Sprache für Inseln UND Voxel-Chunks — die Kollision
-    // lebt in mesh.userData.collision, _disposeStaticCollision räumt sie.
-    // DETERMINISMUS-BOGEN P3 — Stub (kein Ammo). Inseln/Voxel-Test trugen früher eine
-    // btBvhTriangleMeshShape; jetzt ist die gesamte Boden-/Struktur-Kollision feld-nativ
-    // (das Dichtefeld + `entry.blockerAABBs`). No-op bis zum Sediment-Schnitt.
-    _buildStaticTriMeshCollision() {
-        return null;
-    }
+    // DETERMINISMUS-BOGEN P3 — die Architektur-/Insel-/Chunk-Kollision ist feld-nativ
+    // (das Dichtefeld + `entry.blockerAABBs` + `_stepCharacterStructures`); die früheren
+    // Ammo-Builder/Disposer (`_buildArchitectureCollision[FromLeaves]`, `_buildIslandCollision`,
+    // `_buildStaticTriMeshCollision`, `_dispose*Collision`) + der Lazy-Radius sind GESCHNITTEN.
 
     // (V7.74) _buildTreeCollision wurde entfernt — Bäume sind jetzt Compound-
     // Architekturen über baum_eiche/baum_kiefer-Baupläne. _buildArchitecture-
     // Collision erzeugt Compound-Box pro Sub-Mesh (Stamm + Krone) durch
     // denselben Pfad wie alle anderen Strukturen.
-
-    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (jetzt nur noch Inseln).
-    // Idempotent: zweimal aufrufen ist safe (collision wird auf null gesetzt).
-    // P3 — `userData.collision` wird nie mehr gesetzt; der Stub hält die Cleanup-Aufrufer
-    // (Chunk-/Insel-Dispose) ohne Ammo am Leben.
-    _disposeStaticCollision(obj) {
-        if (obj && obj.userData) obj.userData.collision = null;
-    }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `_disposeChunkPhysics` ist als toter
     // Heightfield-Chunk-Cleanup-Helper entfernt. Seine drei Aufrufer
@@ -57588,7 +57484,8 @@ class AnazhRealm {
         this.state.scene.add(island);
         if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
         this.state.floatingIslands.push(island);
-        this._buildIslandCollision(island);
+        // DETERMINISMUS-BOGEN P3 — Inseln tragen (wie schon vor P3 im Feld-Modus) keine
+        // eigene Feld-Kollision; die AABB-Hülle ist ein offener Folgeschritt (Plan-Entscheid #2).
         return island;
     }
 
@@ -57618,16 +57515,14 @@ class AnazhRealm {
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
         if (!entry) return;
-        // V12.0-perf.c.2 — instancierter Eintrag: Collision freigeben + Slots
-        // zurück in die Registry (Matrix auf Null-Scale, Free-List).
+        // V12.0-perf.c.2 — instancierter Eintrag: Slots zurück in die Registry
+        // (Matrix auf Null-Scale, Free-List). P3: keine Ammo-Kollision mehr freizugeben
+        // (die Feld-Kollision lebt in `entry.blockerAABBs`, render-unabhängig).
         if (entry.instanced) {
-            this._disposeArchitectureCollision(entry);
             this._archInstanceRemove(entry);
             return;
         }
         if (!entry.mesh) return;
-        // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
-        this._disposeArchitectureCollision(entry);
         if (this.state.scene) this.state.scene.remove(entry.mesh);
         this._disposeSoulGroup(entry.mesh);
         entry.mesh = null;
@@ -60622,12 +60517,9 @@ class AnazhRealm {
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
-        // V12.0-perf.d.2 — Lazy-Collision-Radius (Wurzel C): Render bis radius,
-        // Physik-Body nur bis colRadius. Der Pass fügt Collision hinzu, wenn der
-        // Spieler in colRadius kommt, und gibt sie frei, wenn er sich entfernt
-        // (Render bleibt). colRadius < RMIN(100) ≤ radius → immer < Render.
-        const colRadius = this.state.architectureCollisionRadius || 90;
-        const colRadiusSq = colRadius * colRadius;
+        // DETERMINISMUS-BOGEN P3 — kein Lazy-Collision-Radius mehr: die Architektur-Kollision
+        // ist feld-nativ (`entry.blockerAABBs`, immer da ab Spawn) → der Cull-Tick steuert
+        // NUR noch das Rendern (rebuild nah / cull fern), keine Ammo-Body-Verwaltung.
         // V18.298 — DER PROFIWEG: der Nexus baut NUR in der freien Zeit des Spielers
         // (Schöpfer „er konkurriert mit dem Spieler, das ist keine Synergie"). Das
         // Laub wartet schon, wenn der Frame eng ist (_frameOverBudget, V18.282); das
@@ -60638,33 +60530,16 @@ class AnazhRealm {
         // Das CULLEN (fern → frei) läuft weiter (billig, gibt Speicher frei).
         const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
-        // V18.150 — die Kollision des GERITTENEN Gefährts ruht (das Minecraft-
-        // Boot-Muster): der Lazy-Pass würde sie sonst sofort zurückbauen
-        // (der Reiter ist per Definition IM Collision-Radius).
-        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!this._archIsRendered(entry)) {
-                    if (built < budget) {
-                        this._rebuildArchitectureMesh(entry); // gated Collision intern
-                        built++;
-                    }
-                    // Budget erschöpft → baut in einem der nächsten Frames.
-                } else if (distSq <= colRadiusSq) {
-                    // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
-                    if (riddenId !== null && riddenId !== undefined && entry.id === riddenId) {
-                        if (entry.collision) this._disposeArchitectureCollision(entry);
-                    } else if (!entry.collision && built < budget) {
-                        this._archEnsureCollision(entry);
-                        built++;
-                    }
-                } else if (entry.collision) {
-                    // Gerendert aber außerhalb Collision-Radius: Body freigeben
-                    // (Render bleibt). Billig (kein Build) → ungedeckelt.
-                    this._disposeArchitectureCollision(entry);
+                // Nah + noch nicht gerendert → bauen (budgetiert; die Feld-Kollision
+                // liegt schon in `entry.blockerAABBs` ab Spawn, kein Body-Schritt).
+                if (!this._archIsRendered(entry) && built < budget) {
+                    this._rebuildArchitectureMesh(entry);
+                    built++;
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
@@ -72357,9 +72232,15 @@ class AnazhRealm {
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
         const bodyLo = feetY + STEP; // alles darunter ist begehbar (Stufe), keine Wand
         let supportTop = -Infinity;
+        // DETERMINISMUS-BOGEN P3 — das GERITTENE Gefährt blockt seinen Reiter NICHT (der
+        // feld-native Ersatz für den alten riddenId-Kollisions-Dispose): der Reiter sitzt
+        // per Definition IN den blockerAABBs des Gefährts → sonst würde es ihn beim Aufsteigen
+        // herausdrücken.
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (let a = 0; a < arches.length; a++) {
             const e = arches[a];
             if (!e || !e.blockerAABBs || !e.position) continue;
+            if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
             // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler
             if (Math.abs(e.position.x - pos.x) > 60 || Math.abs(e.position.z - pos.z) > 60) continue;
             const boxes = e.blockerAABBs;
@@ -77026,18 +76907,9 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
 AnazhRealm.PLAYER_VOID_Y = -120;
-// V18.271 (Welle Async-1) — DER WEICHE BODEN: die Rest-Höhe des Spieler-Center über
-// der deterministischen Terrain-Oberfläche, wenn die echte Kollision noch async lädt.
-// Spieler = btBoxShape(0.5) → Center 0.5 über den Füssen; +0.05 Marge = kein Clip in
-// den ladenden Boden. Löst den Spieler-Chunk-forceSync ab (nicht-blockierender Fall-Schutz).
-AnazhRealm.SOFT_FLOOR_REST_OFFSET = 0.55;
-
-// V18.274 — SYNC-GATING-Frist: liefert der Worker den Spieler-Chunk-Mesh nach so
-// vielen ms NICHT (echter Stall — ausgehungert/Fehler), baut `_ensurePlayerChunkBVH`
-// ihn SYNC als letzten Anker, damit der Spieler nicht ewig am weichen Boden hängt.
-// 1 s ist deutlich über jeder normalen Worker-Latenz (~71 ms Build + Queue, auch
-// unter Last < 500 ms) → der Watchdog feuert NUR im echten Stall, kein per-Frame-Spike.
-AnazhRealm.PLAYER_CHUNK_STALL_MS = 1000;
+// (P3: SOFT_FLOOR_REST_OFFSET + PLAYER_CHUNK_STALL_MS entfallen — der „weiche Boden"
+// + der Sync-BVH-Watchdog sind weg; der Feld-Controller erdet den Spieler direkt aus
+// dem Dichtefeld, das überall definiert ist, auch unter ungebauten Chunks.)
 
 // Determinismus-Bogen P1a — die Schrittweite der Zentral-Differenzen im Feld-Gradient
 // (`_fieldGradient`/`_fieldResolveSphere`). ≈ halbe Voxel-Schrittweite, an die Roughness-
