@@ -25887,6 +25887,24 @@ class AnazhRealm {
         });
     }
 
+    // V18.336 — TERRAIN-MIKRO-RELIEF (Bump): der transformative Hebel für die FLACHE Low-Poly-
+    // Bodenfläche (Schöpfer „lasse den boden leben — ein gigant"). Ein Noise-Höhengradient kippt
+    // die geflattete Terrain-Normale fein → der Boden fängt Licht als echte Mikro-Struktur
+    // (Klumpen/Kiesel/Erd-Korn) statt als toter glatter Hang. NUR die PBR-Lichtung liest diese
+    // Normale (Audit: die Substanz-Response liest die GEOMETRIE-normalWorld separat → kein
+    // Schatten-/AO-Konflikt). LOD-gegated (nur nah → Perf + kein Aliasing). Browser-Balance-Knöpfe.
+    static get TERRAIN_BUMP() {
+        return Object.freeze({
+            freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
+            freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
+            eps: 0.45, // Gradient-Sample-Abstand (Welt-m, vor freq-Skalierung)
+            strength: 0.42, // Kipp-Stärke der Normale (subtil-sichtbar; der Haupt-Balance-Knopf)
+            strength2: 0.18, // Stärke der zweiten Oktave
+            lodNear: 14, // voll bis 14 m
+            lodFar: 52, // aus ab 52 m (fern = glatt, kein Schimmer/Aliasing)
+        });
+    }
+
     // Welle J — die EINE geteilte Aerial-Perspektive (heute `_applySubstanceResponse`), die
     // ALLE opaken Ebenen identisch post-lighting aufrufen. heightWeight/heightCap =
     // der Höhen-Melt zur Himmelsfarbe (scene.fog trägt die Distanz); microStrength/
@@ -27995,7 +28013,41 @@ class AnazhRealm {
                         _aun && _aun.terrainFlatten
                             ? _aun.terrainFlatten
                             : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
-                    mat.normalNode = _Tn.normalize(_Tn.mix(_Tn.normalWorld, _up, _flat));
+                    let _baseN = _Tn.mix(_Tn.normalWorld, _up, _flat);
+                    // V18.336 — MIKRO-RELIEF (Bump, s. TERRAIN_BUMP): ein Noise-Höhengradient kippt
+                    // die geflattete Normale fein (zwei Oktaven: Klumpen + Korn), LOD-gegated (nur nah).
+                    // Heightfield-Normale: die Fläche kippt entgegen dem Höhen-Gradient → der flache
+                    // Boden fängt Licht als echte Mikro-Struktur. Render-only, try/catch-umhüllt.
+                    if (_Tn.mx_noise_float && _Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
+                        const _B = AnazhRealm.TERRAIN_BUMP;
+                        const _wp = _Tn.positionWorld;
+                        const _lod = _Tn
+                            .float(1.0)
+                            .sub(
+                                _Tn.smoothstep(
+                                    _Tn.float(_B.lodNear),
+                                    _Tn.float(_B.lodFar),
+                                    _wp.sub(_Tn.cameraPosition).length()
+                                )
+                            )
+                            .clamp(0.0, 1.0);
+                        const _grad = (freq, strength) => {
+                            const _f = _Tn.float(freq);
+                            const _h = (dx, dz) =>
+                                _Tn.mx_noise_float(
+                                    _Tn.vec3(
+                                        _wp.x.add(_Tn.float(dx)).mul(_f),
+                                        _Tn.float(0.0),
+                                        _wp.z.add(_Tn.float(dz)).mul(_f)
+                                    )
+                                );
+                            const _hX = _h(_B.eps, 0).sub(_h(-_B.eps, 0));
+                            const _hZ = _h(0, _B.eps).sub(_h(0, -_B.eps));
+                            return _Tn.vec3(_hX, _Tn.float(0.0), _hZ).mul(_Tn.float(-strength)).mul(_lod);
+                        };
+                        _baseN = _baseN.add(_grad(_B.freq, _B.strength)).add(_grad(_B.freq2, _B.strength2));
+                    }
+                    mat.normalNode = _Tn.normalize(_baseN);
                 }
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
@@ -73577,7 +73629,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.335.0";
+AnazhRealm.VERSION = "18.336.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
