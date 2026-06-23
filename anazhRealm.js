@@ -27959,16 +27959,23 @@ class AnazhRealm {
                         // positionLocal hält die Maserung instanz-stabil (jeder Stamm dieselbe
                         // Faser, nicht welt-kontinuierlich gesmeared). Marker bei TSL-Fehler.
                         if (opts.bark) {
-                            // RINDE — durch den EINEN Substanz-Charakter-Kern (bark-Modus: Längs-Faser
-                            // + Riss-Kavität + Ton + leichtes Moos), statt eigenem Korn-Pfad (Gesetz #0).
+                            // RINDE — durch den EINEN Substanz-Charakter-Kern, jetzt VOLL (V18.337,
+                            // „keine halben Sachen"): Längs-Faser + Riss-Kavität + Ton + Moos (Albedo,
+                            // verstärkt) PLUS Roughness-Variation (raue Furchen) PLUS Mikro-Relief-BUMP
+                            // — die Risse/Faser fangen Licht als echte Rinden-Furchen, der flache Stamm-
+                            // Zylinder bekommt Tiefe (derselbe transformative Hebel wie der Boden V18.336).
                             const _rb = this._substanceCharacter(_Ta, albedoNode, {
                                 pos: _Ta.positionLocal,
                                 worldPos: _Ta.positionWorld,
                                 tags: opts.tags || {},
                                 metal: 0,
                                 bark: true,
+                                roughBase: params.roughness,
+                                bump: true,
                             });
                             albedoNode = _rb.albedo;
+                            if (_rb.roughNode) mat.roughnessNode = _rb.roughNode;
+                            if (_rb.normalNode) mat.normalNode = _rb.normalNode;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
@@ -28134,9 +28141,12 @@ class AnazhRealm {
             const crN = _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
             const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
-            const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0);
+            // V18.337 — die RINDE bekommt stärkeren Kontrast: die Längs-Faser (mottle, vertikale
+            // Streifen) + die Risse (cavity) sind das definierende Rinden-Detail (§0 „kaum Rinde-
+            // Kontrast") → für bark verstärkt; Terrain/Werke unberührt (Faktor 1.0).
+            const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0) * (opts.bark ? 1.7 : 1.0);
             const broadAmp = 0.12 + di * 0.12;
-            const cavityAmp = 0.08 + ht * 0.16;
+            const cavityAmp = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
             const strataAmp = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
             const mod = f(1.0)
                 .add(mottle.mul(fineFade).mul(f(mottleAmp)))
@@ -73629,7 +73639,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.336.0";
+AnazhRealm.VERSION = "18.337.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

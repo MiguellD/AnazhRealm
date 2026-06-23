@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.337 — DIE RINDE VOLLENDET: bark bekommt die volle Substanz (Kontrast + Roughness + Bump)
+
+Schöpfer „keine halben sachen, vieles noch offen, vollende es gemeinsam, alles die selbe thematik, du kannst das champ". Die lebendige Oberfläche ist EINE Thematik (gras · boden · rinde · alles) — bisher war nur der BODEN vollendet (V18.335/.336). Der Eichen-Render bestätigte §0 „kaum Rinde-Kontrast": der Stamm war ein flacher, uniformer tan Zylinder (Albedo-Charakter zu subtil, KEIN Relief). GEBAUT — die Rinde durch DENSELBEN `bark`-Modus des `_substanceCharacter`-Kerns vollendet (Gesetz #0, kein Parallelpfad):
+
+- **Albedo-Kontrast verstärkt:** die Längs-Faser (mottle, vertikale Streifen) `mottleAmp ×1.7` + die Risse (cavity) `cavityAmp ×2.2` — NUR für `opts.bark` (Terrain/Werke Faktor 1.0, unberührt). Der Stamm zeigt jetzt vertikales Holz-Korn statt einer flachen Fläche.
+- **Roughness-Variation + BUMP:** die Rinde bekommt `roughBase: params.roughness` (raue Furchen) + `bump: true` → `_substanceCharacter` gibt `roughNode` + `normalNode` zurück, der bark-Block hängt sie ans Material (`mat.roughnessNode`/`mat.normalNode`). Die Risse/Faser fangen Licht als echte Rinden-Furchen — der flache Zylinder bekommt Tiefe, DERSELBE transformative Hebel wie der Boden (V18.336), jetzt auf den `useFlexAttr`-Vegetations-Zweig (der die Terrain-Flatten-Normale NICHT durchläuft → der Bump-normalNode ist der einzige Normal-Override, sauber).
+- **VERIFIZIERT:** A/B (Eiche before/after, eigenes Auge) — flacher tan Tube → sichtbares vertikales Korn; Capstone-Render (alle Objekt-Typen auf nachgewiesenem Trockenland) kein Regress + kein Artefakt; CONSUM grün (`terrainHasRoughNode`/`flatScalarRough 0.85` unberührt, `substErr` null). Fast-Gate 13/13 + check/format/lint grün; CI (fast + GPU-Lens) + nächtlich voll.
+- **STAND der Substanz-Thematik:** die Nah-Oberfläche lebt jetzt durch EINEN Kern — BODEN (Roughness + Bump) · RINDE (Kontrast + Roughness + Bump) · GRAS (Feld-Dichte + Lush/Dry-Tint + Backlight, lebte schon) · FLACH-WERKE/FELS (Substanz + Bump, V18.334). OFFEN, aber EIGENE Systeme (nicht die Substanz-Thematik): Krone-Dichte (System C/Grammatik — die Blätter, nicht die Oberfläche) · Wasser-Oberfläche.
+
 ### V18.336 — DER BODEN HAT MIKRO-RELIEF: der transformative Bump-Hebel (Schöpfer „ein gigant, volle Tiefe?")
 
 Schöpfer-Challenge nach V18.335: „hast du ein kleinen chunk mit allen objekten drin geprüft? ein gigant, vision und ziel verstanden, die volle tiefe erreicht, performance und passagiere berücksichtigt, aus der vergangenheit gelernt und alle ziele erreicht?". EHRLICHE Antwort: NEIN, noch nicht — ich war in ZWEI Fallen getappt (vor denen CLAUDE.md warnt): (a) BESCHÖNIGUNG (ich behauptete „in feucht/moosig dramatischer", ohne einen feuchten Spot je gesehen zu haben); (b) nicht das GANZE Netz geworfen (nur Terrain am Auge, die anderen `_substanceCharacter`-Leser nur im Code). NACHGEHOLT als Gigant:
