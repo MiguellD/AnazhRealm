@@ -27959,11 +27959,12 @@ class AnazhRealm {
                         // positionLocal hält die Maserung instanz-stabil (jeder Stamm dieselbe
                         // Faser, nicht welt-kontinuierlich gesmeared). Marker bei TSL-Fehler.
                         if (opts.bark) {
-                            // RINDE — durch den EINEN Substanz-Charakter-Kern, jetzt VOLL (V18.337,
-                            // „keine halben Sachen"): Längs-Faser + Riss-Kavität + Ton + Moos (Albedo,
-                            // verstärkt) PLUS Roughness-Variation (raue Furchen) PLUS Mikro-Relief-BUMP
-                            // — die Risse/Faser fangen Licht als echte Rinden-Furchen, der flache Stamm-
-                            // Zylinder bekommt Tiefe (derselbe transformative Hebel wie der Boden V18.336).
+                            // RINDE — durch den EINEN Substanz-Charakter-Kern (bark-Modus): verstärkte
+                            // Längs-Faser + Riss-Kavität + Ton + Moos (Albedo) + Roughness-Variation
+                            // (raue Furchen). V18.338 — der BUMP wieder ENTFERNT: `bumpMap` (screen-space,
+                            // ohne UVs) auf dem DÜNNEN, GEKRÜMMTEN Stamm-Zylinder kann die Normale kippen
+                            // → der Stamm las „von innen / konkav" (Schöpfer-Befund). Der Bump bleibt dem
+                            // FLACHEN Boden (V18.336); die Rinde lebt über Albedo-Kontrast + Roughness.
                             const _rb = this._substanceCharacter(_Ta, albedoNode, {
                                 pos: _Ta.positionLocal,
                                 worldPos: _Ta.positionWorld,
@@ -27971,11 +27972,9 @@ class AnazhRealm {
                                 metal: 0,
                                 bark: true,
                                 roughBase: params.roughness,
-                                bump: true,
                             });
                             albedoNode = _rb.albedo;
                             if (_rb.roughNode) mat.roughnessNode = _rb.roughNode;
-                            if (_rb.normalNode) mat.normalNode = _rb.normalNode;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
@@ -28132,13 +28131,19 @@ class AnazhRealm {
             //     Rinde: Längs-Faser (bark); sonst körnig. `pos` trägt die Domänen-Skala.
             const grainF = 2.2 + ht * 3.4;
             let gPos;
-            if (opts.bark) gPos = _T.vec3(pos.x.mul(9 + ht * 8), pos.y.mul(1.35), pos.z.mul(9 + ht * 8));
+            // RINDE — KOHÄRENTE LÄNGS-FASER (V18.338, „holz hat fasern, wachstumsrichtung"): das Korn
+            // wird STARK längs der Wachstumsachse (y) gestreckt → lange vertikale Furchen statt
+            // isotropem Rauschen; fein um den Stamm (x/z hoch). So WEISS das Holz seine Richtung.
+            if (opts.bark) gPos = _T.vec3(pos.x.mul(13 + ht * 11), pos.y.mul(0.42), pos.z.mul(13 + ht * 11));
             else if (metal > 0.5)
                 gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
             else gPos = pos.mul(f(grainF));
             const mottle = _T.mx_noise_float(gPos);
             const broad = _T.mx_noise_float(pos.mul(f(0.85)));
-            const crN = _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
+            // RINDE — die Risse FOLGEN der Faser (vertikale Furchen/Platten), kein isotroper Krater.
+            const crN = opts.bark
+                ? _T.mx_noise_float(_T.vec3(pos.x.mul(19 + ht * 12), pos.y.mul(0.7), pos.z.mul(19 + ht * 12)))
+                : _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
             const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
             // V18.337 — die RINDE bekommt stärkeren Kontrast: die Längs-Faser (mottle, vertikale
@@ -73639,7 +73644,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.337.0";
+AnazhRealm.VERSION = "18.338.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
