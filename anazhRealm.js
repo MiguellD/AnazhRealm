@@ -27928,199 +27928,38 @@ class AnazhRealm {
                         // erzählt ihr Holz (das Anti-Attrappe-Gesetz auf der Material-Ebene).
                         // positionLocal hält die Maserung instanz-stabil (jeder Stamm dieselbe
                         // Faser, nicht welt-kontinuierlich gesmeared). Marker bei TSL-Fehler.
-                        if (opts.bark && _Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow) {
-                            try {
-                                const _pl = _Ta.positionLocal;
-                                const _ht =
-                                    opts.tags && Number.isFinite(+opts.tags.härte)
-                                        ? Math.max(0, Math.min(1, +opts.tags.härte))
-                                        : 0.4;
-                                const _hiF = 9.0 + _ht * 8.0; // quer-Frequenz (härter = feiner)
-                                const _loF = 1.35; // längs-Frequenz (langgezogene Faser)
-                                const _grain = _Ta.mx_noise_float(
-                                    _Ta.vec3(_pl.x.mul(_hiF), _pl.y.mul(_loF), _pl.z.mul(_hiF))
-                                );
-                                const _crackN = _Ta.mx_noise_float(
-                                    _Ta.vec3(_pl.x.mul(_hiF * 0.5), _pl.y.mul(_loF * 2.4), _pl.z.mul(_hiF * 0.5))
-                                );
-                                // ridged: (1 − noise²) peakt an der Faser-Mitte → pow vertieft die
-                                // Risse zu scharfen Schatten-Rinnen (kein abs nötig).
-                                const _ridge = _crackN.mul(_crackN);
-                                const _crack = _Ta.pow(_Ta.float(1.0).sub(_ridge), _Ta.float(2.6));
-                                const _grainAmp = 0.13;
-                                const _crackAmp = 0.09 + _ht * 0.13;
-                                const _mod = _Ta
-                                    .float(1.0)
-                                    .add(_grain.mul(_Ta.float(_grainAmp)))
-                                    .sub(_crack.mul(_Ta.float(_crackAmp)));
-                                albedoNode = albedoNode.mul(_mod.clamp(0.5, 1.3));
-                            } catch (_e) {
-                                if (typeof window !== "undefined")
-                                    window.__barkGrainError = String((_e && _e.message) || _e);
-                            }
+                        if (opts.bark) {
+                            // RINDE — durch den EINEN Substanz-Charakter-Kern (bark-Modus: Längs-Faser
+                            // + Riss-Kavität + Ton + leichtes Moos), statt eigenem Korn-Pfad (Gesetz #0).
+                            const _rb = this._substanceCharacter(_Ta, albedoNode, {
+                                pos: _Ta.positionLocal,
+                                worldPos: _Ta.positionWorld,
+                                tags: opts.tags || {},
+                                metal: 0,
+                                bark: true,
+                            });
+                            albedoNode = _rb.albedo;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
+                    // FLACH-FARB-WERKE (Tempel · Schwert · Rüstung · Esse · Glut · …): die flache
+                    // Plastik-Farbe fließt durch den EINEN Substanz-Charakter-Kern (Korn · Kavität ·
+                    // Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump) — instanz-stabil
+                    // (positionLocal) + tag-getrieben, LOD-gegated. KEIN eigener Pfad mehr (Gesetz #0).
                     const _c = new THREE.Color(opts.color);
-                    albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
-                    // SUBSTANZ-PASS (wahrerguss System A) — der UNIVERSELLE prozedurale
-                    // Material-Auslesewert für FLACH-FARB-WERKE (Tempel · Schwert · Rüstung ·
-                    // Kreatur · Kristall · Werkstatt · …): er bricht die flache Plastik-Farbe
-                    // in echte Substanz — KEINE Bitmap, aus den Material-Tags GERECHNET (das
-                    // Anti-Attrappe-Gesetz auf JEDE Oberfläche, nicht nur Terrain/Rinde). Bis
-                    // hierher trugen nur Terrain (Geologie-Albedo) + Vegetation (Rinde Ω-O7)
-                    // einen reichen colorNode; die Werke blieben flach-einfarbig = der „Blob"-
-                    // Look des Schöpfer-Katalogs (16.06.). positionLocal hält es INSTANZ-STABIL
-                    // (jedes Werk dieselbe Maserung, nicht welt-gesmeared). Render-only →
-                    // tag-NEUTRAL (die Compound-Tags ändern sich nie; Affinität/Scatter unberührt).
-                    if (_Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow && _Ta.float) {
-                        try {
-                            const _t = opts.tags || {};
-                            const _ht = Math.max(0, Math.min(1, Number(_t["härte"]) || 0.4));
-                            const _di = Math.max(0, Math.min(1, (Number(_t.dichte) || 0) / 3));
-                            const _leb = Math.max(0, Math.min(1, (Number(_t.lebendig) || 0) / 3));
-                            const _metal = Math.max(0, Math.min(1, params.metalness || 0));
-                            const _pl = _Ta.positionLocal;
-                            // (1) MOTTLE — grobe Material-Variation (Stein-Flecken · Holz-Ton ·
-                            //     Leder-Narbe): dichte → stärker (steiniger), härte → feiner.
-                            //     Bei Metall ist die Mottle ANISOTROP (längs y gestreckt → der
-                            //     geschmiedete/gebürstete Schliff statt körniger Stein-Fleck).
-                            const _mottleF = 2.2 + _ht * 3.4;
-                            const _mPos =
-                                _metal > 0.5
-                                    ? _Ta.vec3(
-                                          _pl.x.mul(_mottleF * 2.6),
-                                          _pl.y.mul(_mottleF * 0.4),
-                                          _pl.z.mul(_mottleF * 2.6)
-                                      )
-                                    : _pl.mul(_Ta.float(_mottleF));
-                            const _mottle = _Ta.mx_noise_float(_mPos);
-                            // (1b) BREITE Ton-Zonen (niedrige Frequenz) — große, weiche Material-
-                            //      Flecken (verwitterte Patina · ungleiche Brennung · Adern), die
-                            //      der flachen Farbe Tiefe geben, bevor das feine Korn greift.
-                            const _broad = _Ta.mx_noise_float(_pl.mul(_Ta.float(0.85)));
-                            // (2) KAVITÄT/RINNE — ridged Hochfrequenz-Noise = Mikro-Relief /
-                            //     Verschleiß-Schatten (wie die Rinde-Risse Ω-O7, generalisiert).
-                            const _crF = 6.5 + _ht * 9.0;
-                            const _crN = _Ta.mx_noise_float(_pl.mul(_Ta.float(_crF)));
-                            const _cavity = _Ta.pow(_Ta.float(1.0).sub(_crN.mul(_crN)), _Ta.float(2.4));
-                            // (1c) STRATA — Sediment-Schichtbänder (Stein/Fels, dichte-getrieben):
-                            //      horizontale Bänder über die lokale Höhe, die auf einer FLACHEN
-                            //      Säulen-/Block-Fläche als geschichteter Fels lesen — der low-poly-
-                            //      taugliche Hebel (Variation aus POSITION, nicht aus Krümmung, die auf
-                            //      flachen Facetten ≈0 ist → fwidth-Verschleiß half den Werken nicht).
-                            const _strata = _Ta.mx_noise_float(
-                                _Ta.vec3(
-                                    _pl.x.mul(_Ta.float(0.5)),
-                                    _pl.y.mul(_Ta.float(3.4)),
-                                    _pl.z.mul(_Ta.float(0.5))
-                                )
-                            );
-                            // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/Holz
-                            //   körnig). DEUTLICHER als zuvor (V18.332): ±7 % verschwand auf der flachen
-                            //   Fläche (gemessen am Tempel-/Schwert-Katalog) → die Plastik blieb flach.
-                            //   Glut (emissiv) bleibt subtil — es glüht ohnehin.
-                            const _mottleAmp = (0.12 + _di * 0.18) * (_metal > 0.5 ? 0.7 : 1.0);
-                            const _broadAmp = (0.12 + _di * 0.12) * (_metal > 0.5 ? 0.6 : 1.0);
-                            const _cavityAmp = 0.08 + _ht * 0.16;
-                            const _strataAmp = (1.0 - _metal) * (0.07 + _di * 0.17); // nur nicht-Metall
-                            const _mod = _Ta
-                                .float(1.0)
-                                .add(_mottle.mul(_Ta.float(_mottleAmp)))
-                                .add(_broad.mul(_Ta.float(_broadAmp)))
-                                .add(_strata.mul(_Ta.float(_strataAmp)))
-                                .sub(_cavity.mul(_Ta.float(_cavityAmp)));
-                            albedoNode = albedoNode.mul(_mod.clamp(0.55, 1.45));
-                            // Höhen-Gradient [0..1] (unten→oben) — EINE Quelle für Verwitterung, Moos
-                            // UND Counter-Shading (kein dreifaches Neu-Rechnen).
-                            const _yLow = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
-                            // ── DIE STRUKTUR LEBT: drei Charakter-Hebel, die auf JEDER Basis lesen
-                            //    (Farb-Verschiebungen, nicht bloß ±Helligkeit, die auf Dunkel verschwand). ──
-                            // (4) TON-VARIATION (warm↔kühl): echtes Material trägt nie EINEN Ton. Die
-                            //     broad/mottle-Zonen verschieben die FARB-TEMPERATUR (warme Patina-/Sediment-
-                            //     Zonen vs kühle) — ein Hue-Shift LIEST, wo ein Helligkeits-Shift auf dunklem
-                            //     Basalt verschwindet. Metall subtiler (es lebt vom Glanz).
-                            const _toneMix = _broad
-                                .mul(_Ta.float(0.6))
-                                .add(_mottle.mul(_Ta.float(0.4)))
-                                .mul(_Ta.float(0.5))
-                                .add(_Ta.float(0.5))
-                                .clamp(0, 1);
-                            const _toneTint = _Ta.mix(_Ta.vec3(0.9, 0.97, 1.12), _Ta.vec3(1.12, 1.0, 0.86), _toneMix);
-                            albedoNode = albedoNode.mul(
-                                _Ta.mix(_Ta.vec3(1, 1, 1), _toneTint, _Ta.float(_metal > 0.5 ? 0.28 : 0.5))
-                            );
-                            // (5) VERWITTERUNG/SCHMUTZ: Mulden (cavity) + untere Zonen sammeln Schmutz —
-                            //     dunkler + entsättigt zu einem Erd-Ton. Der Realismus, der „gebaut UND
-                            //     gealtert" sagt (eine frische Plastik altert nie).
-                            const _grime = _cavity
-                                .mul(_Ta.float(0.55))
-                                .add(_Ta.float(1.0).sub(_yLow).mul(_Ta.float(0.45)))
-                                .clamp(0, 1);
-                            const _lumA = albedoNode.x
-                                .mul(_Ta.float(0.3))
-                                .add(albedoNode.y.mul(_Ta.float(0.59)))
-                                .add(albedoNode.z.mul(_Ta.float(0.11)));
-                            const _dirt = _Ta.vec3(
-                                _lumA.mul(_Ta.float(0.52)).add(_Ta.float(0.045)),
-                                _lumA.mul(_Ta.float(0.46)).add(_Ta.float(0.032)),
-                                _lumA.mul(_Ta.float(0.38)).add(_Ta.float(0.022))
-                            );
-                            albedoNode = _Ta.mix(albedoNode, _dirt, _grime.mul(_Ta.float(0.32)));
-                            // (6) FLECHTEN/MOOS (lebendig-Tag > 0): grün-stichige Flecken auf den flachen/
-                            //     unteren Zonen — wie die Geologie-Moos-Schicht (Ω-O2), generalisiert auf
-                            //     flach-farbene Werke. Ein lebendiger Holz-/Stein-Bau bewächst sich.
-                            if (_leb > 0.05) {
-                                const _mossPatch = _Ta
-                                    .mx_noise_float(_pl.mul(_Ta.float(1.6)))
-                                    .mul(_Ta.float(0.5))
-                                    .add(_Ta.float(0.5));
-                                const _mossW = _mossPatch
-                                    .mul(_Ta.float(1.0).sub(_yLow))
-                                    .mul(_Ta.float(_leb))
-                                    .clamp(0, 1);
-                                albedoNode = _Ta.mix(albedoNode, _Ta.vec3(0.3, 0.4, 0.19), _mossW.mul(_Ta.float(0.42)));
-                            }
-                            // COUNTER-SHADING (2-Ton-Höhen-Gradient) — unten dunkler, oben heller:
-                            // real bei Tieren (heller Bauch wirkt der Eigen-Schattierung entgegen) UND
-                            // Stein/Metall (Staub unten, Licht oben). DEUTLICHER (V18.332) → hebt die
-                            // flache Einfarbigkeit klar.
-                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.74), _Ta.float(1.2), _yLow));
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
-                            // ROUGHNESS-VARIATION (der #1 Profi-Hebel, Material-Agent): NIE konstant —
-                            // flach-uniforme roughness IST der Plastik-Tell. Das Korn hebt, die Kavität
-                            // senkt → das Licht liest echte Mikro-Struktur statt einer Plastikfläche.
-                            mat.roughnessNode = _Ta
-                                .float(params.roughness)
-                                .add(_mottle.mul(_Ta.float(0.3)))
-                                .add(_broad.mul(_Ta.float(0.14)))
-                                .sub(_cavity.mul(_Ta.float(0.18)))
-                                .clamp(0.05, 1.0);
-                            // (7) MIKRO-RELIEF (Bump) — der TRANSFORMATIVE Hebel für flache Low-Poly-
-                            //     Facetten: die Korn-/Kavität-/Strata-Höhe perturbiert die NORMALE → die
-                            //     flache Fläche fängt das Licht (Schlüssel + Sky-IBL) als echte Stein-/Holz-/
-                            //     Metall-Mikro-Struktur. DAS ist „lebendig": die Facette reagiert aufs Licht
-                            //     in 3D, nicht nur über die Albedo (die auf Dunkel verschwand). Feature-
-                            //     detected + try/catch (nie ein kaputtes Material).
-                            try {
-                                if (_Ta.bumpMap && _Ta.float) {
-                                    const _bumpH = _mottle
-                                        .mul(_Ta.float(0.5))
-                                        .add(_crN.mul(_Ta.float(0.5)))
-                                        .add(_strata.mul(_Ta.float(0.35)));
-                                    const _bumpScale = _Ta.float((0.6 + _ht * 0.8) * (_metal > 0.5 ? 0.6 : 1.0));
-                                    mat.normalNode = _Ta.bumpMap(_bumpH, _bumpScale);
-                                }
-                            } catch (_eb) {
-                                if (typeof window !== "undefined")
-                                    window.__substanceBumpError = String((_eb && _eb.message) || _eb);
-                            }
-                        } catch (_e) {
-                            if (typeof window !== "undefined")
-                                window.__substanceFlatError = String((_e && _e.message) || _e);
-                        }
-                    }
+                    const _r = this._substanceCharacter(_Ta, _Ta.vec3(_c.r, _c.g, _c.b), {
+                        pos: _Ta.positionLocal,
+                        worldPos: _Ta.positionWorld,
+                        tags: opts.tags || {},
+                        metal: params.metalness || 0,
+                        roughBase: params.roughness,
+                        bump: true,
+                    });
+                    albedoNode = _r.albedo;
+                    if (_Ta.vec4) mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
+                    if (_r.roughNode) mat.roughnessNode = _r.roughNode;
+                    if (_r.normalNode) mat.normalNode = _r.normalNode;
                 }
             } catch (_e) {
                 /* ohne Albedo-Quelle fällt nur das Füll-Licht */
@@ -28179,6 +28018,135 @@ class AnazhRealm {
         return mat;
     }
 
+    // ── DER EINE SUBSTANZ-CHARAKTER-KERN (wahrerguss System A · Gesetz #0 — der Raptor) ──
+    // Terrain · Vegetation · Flach-Werke LESEN ALLE diese eine Quelle: die universellen
+    // Charakter-Hebel (Mehr-Oktav-Korn · Kavität · Ton warm↔kühl · Verwitterung · Moos ·
+    // Counter-Shading · Roughness-Variation · Mikro-Relief-Bump), LOD-gegated. Der Domänen-
+    // Unterschied REIST ALS PARAMETER (`pos`-Skala · tags · metal · mossDrive · bark · bump) —
+    // KEIN Parallelpfad mehr (vorher lebte Moos/Strata dreifach: Geologie + Rinde + Flach).
+    // Render-only, tag-neutral; try/catch → bei Fehler der unveränderte Albedo (nie kaputt).
+    // Gibt { albedo, roughNode|null, normalNode|null } — der Aufrufer hängt sie ans Material.
+    _substanceCharacter(_T, baseAlbedo, opts = {}) {
+        const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        try {
+            if (!_T || !_T.mx_noise_float || !_T.float || !_T.vec3 || !_T.mix) return out;
+            const f = (v) => _T.float(v);
+            const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
+            const pos = opts.pos || _T.positionLocal;
+            const wp = opts.worldPos || _T.positionWorld || pos;
+            const t = opts.tags || {};
+            const ht = Math.max(0, Math.min(1, Number(t["härte"]) || 0.4));
+            const di = Math.max(0, Math.min(1, (Number(t.dichte) || 0) / 3));
+            const metal = Math.max(0, Math.min(1, Number(opts.metal) || 0));
+            // OBJEKT-LOKAL (Default): die HÖHEN-basierten Hebel (Strata-Y · Verwitterung-unten ·
+            // Counter-Shading · Bump) lesen object-lokales y ∈ [−1..1]. Terrain hat KEIN object-y
+            // (absolute Welt-Höhe sättigt) → `objectLocal:false` schaltet sie ab; die universellen
+            // Hebel (Korn · Ton · Kavität · Moos-nach-Flachheit) tragen Terrain weiter.
+            const objLocal = opts.objectLocal !== false;
+            // LOD-FADE: feines Korn + Bump verblassen mit der Distanz (fern simpler = Perf +
+            //   kein Aliasing); die breiten Ton-/Moos-Zonen bleiben (sie lesen auch fern).
+            let fineFade = f(1.0);
+            let bumpFade = f(1.0);
+            if (_T.cameraPosition && wp && _T.smoothstep) {
+                const dist = wp.sub(_T.cameraPosition).length();
+                fineFade = f(1.0)
+                    .sub(_T.smoothstep(f(30), f(95), dist))
+                    .clamp(0, 1);
+                bumpFade = f(1.0)
+                    .sub(_T.smoothstep(f(14), f(48), dist))
+                    .clamp(0, 1);
+            }
+            let albedo = baseAlbedo;
+            // (1) KORN — Mehr-Oktav-Noise. Metall: anisotrop längs y (geschmiedeter Schliff);
+            //     Rinde: Längs-Faser (bark); sonst körnig. `pos` trägt die Domänen-Skala.
+            const grainF = 2.2 + ht * 3.4;
+            let gPos;
+            if (opts.bark) gPos = _T.vec3(pos.x.mul(9 + ht * 8), pos.y.mul(1.35), pos.z.mul(9 + ht * 8));
+            else if (metal > 0.5)
+                gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
+            else gPos = pos.mul(f(grainF));
+            const mottle = _T.mx_noise_float(gPos);
+            const broad = _T.mx_noise_float(pos.mul(f(0.85)));
+            const crN = _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
+            const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
+            const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
+            const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0);
+            const broadAmp = 0.12 + di * 0.12;
+            const cavityAmp = 0.08 + ht * 0.16;
+            const strataAmp = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
+            const mod = f(1.0)
+                .add(mottle.mul(fineFade).mul(f(mottleAmp)))
+                .add(broad.mul(f(broadAmp)))
+                .add(strata.mul(f(strataAmp)))
+                .sub(cavity.mul(fineFade).mul(f(cavityAmp)));
+            albedo = albedo.mul(mod.clamp(0.55, 1.45));
+            // Höhen-Gradient [0..1] (EINE Quelle für Verwitterung + Moos + Counter-Shading).
+            const yLow = pos.y.mul(f(0.7)).add(f(0.5)).clamp(0, 1);
+            // (2) TON warm↔kühl — ein Hue-Shift LIEST, wo Helligkeit auf Dunkel verschwindet.
+            const toneMix = broad
+                .mul(f(0.6))
+                .add(mottle.mul(f(0.4)))
+                .mul(f(0.5))
+                .add(f(0.5))
+                .clamp(0, 1);
+            const toneTint = _T.mix(_T.vec3(0.9, 0.97, 1.12), _T.vec3(1.12, 1.0, 0.86), toneMix);
+            albedo = albedo.mul(_T.mix(_T.vec3(1, 1, 1), toneTint, f(metal > 0.5 ? 0.28 : 0.46)));
+            // (3) VERWITTERUNG/SCHMUTZ — Mulden + untere Zonen sammeln Schmutz (dunkler, entsättigt).
+            const grime = cavity
+                .mul(f(0.5))
+                .add(objLocal ? f(1.0).sub(yLow).mul(f(0.45)) : f(0.0))
+                .clamp(0, 1);
+            const lumA = albedo.x
+                .mul(f(0.3))
+                .add(albedo.y.mul(f(0.59)))
+                .add(albedo.z.mul(f(0.11)));
+            const dirt = _T.vec3(
+                lumA.mul(f(0.52)).add(f(0.045)),
+                lumA.mul(f(0.46)).add(f(0.032)),
+                lumA.mul(f(0.38)).add(f(0.022))
+            );
+            albedo = _T.mix(albedo, dirt, grime.mul(f(opts.bark ? 0.18 : 0.3)));
+            // (4) MOOS/FLECHTEN — DIE EINE Quelle. Treiber als Param: Werke = lebendig-Tag,
+            //     Terrain = Feucht/Grün-Knoten, Rinde = klein. Geometrie (Patch × flach × tief) geteilt.
+            const lebTag = Math.max(0, Math.min(1, (Number(t.lebendig) || 0) / 3));
+            const mossDrive = asNode(opts.mossDrive, opts.bark ? 0.12 : lebTag);
+            const flatN = asNode(opts.flatness, 1.0);
+            const mossPatch = _T
+                .mx_noise_float(wp.mul(f(0.55)))
+                .mul(f(0.5))
+                .add(f(0.5));
+            const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
+            const mossW = mossDrive.mul(mossPatch).mul(mossLow).mul(flatN).clamp(0, 1);
+            albedo = _T.mix(albedo, _T.vec3(0.26, 0.38, 0.18), mossW.mul(f(0.4)));
+            // (5) COUNTER-SHADING (unten dunkler, oben heller) — nur object-lokal (Terrain: kein object-y).
+            if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
+            out.albedo = albedo;
+            // (6) ROUGHNESS-VARIATION (der #1 Profi-Hebel) — nur wenn der Aufrufer eine Basis gibt.
+            if (opts.roughBase != null) {
+                out.roughNode = f(opts.roughBase)
+                    .add(mottle.mul(fineFade).mul(f(0.3)))
+                    .add(broad.mul(f(0.14)))
+                    .sub(cavity.mul(fineFade).mul(f(0.18)))
+                    .clamp(0.05, 1.0);
+            }
+            // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
+            //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
+            //     LOD-gegated (fern aus). Nur wo angefragt (Werke; Terrain/Rinde haben echtes Relief).
+            if (opts.bump && _T.bumpMap) {
+                const h = mottle
+                    .mul(f(0.5))
+                    .add(crN.mul(f(0.5)))
+                    .add(strata.mul(f(0.35)));
+                const scale = bumpFade.mul(f((0.6 + ht * 0.8) * (metal > 0.5 ? 0.6 : 1.0)));
+                out.normalNode = _T.bumpMap(h, scale);
+            }
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__substanceCharError = String((_e && _e.message) || _e);
+            return { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        }
+        return out;
+    }
+
     // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
     // KLASSEN-GEOLOGIE als EIN geteilter Auslesewert (Toon UND PBR rufen identisch
     // → S-Gate 0 „Terrain MITeinander", kein divergenter Pfad). Die Albedo erzählt
@@ -28215,23 +28183,30 @@ class AnazhRealm {
             // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
             let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
-            // MOOS (Ω-O2): flach + feucht (dunkle Basis-Luminanz) + grün-stichig.
+            // MOOS + universeller SUBSTANZ-CHARAKTER aus dem EINEN Kern (Gesetz #0 — der Raptor):
+            // die Geologie-BASIS (Fels/Geröll/Steile) bleibt terrain-eigen, aber Ton/Korn/Kavität/MOOS
+            // lesen jetzt DIESELBE Quelle wie Werke + Rinde (vorher lebte Moos hier separat = Parallelcode).
+            // Terrain ist NICHT object-lokal (absolute Welt-Höhe) → objectLocal:false (Counter-Shading/
+            // Verwitterung-unten/Strata-Y/Bump aus). Der Feucht-/Grün-Treiber + die Flachheit (×nicht-Fels)
+            // speisen das Moos; `wp·0.16` = die welt-kohärente Feature-Skala (naht-frei).
             const _flat = _T.float(1.0).sub(_steep);
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
             const _green = _T.smoothstep(_T.float(0.0), _T.float(0.1), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
-            const _mossW = _green.mul(_damp).mul(_flat).mul(_T.float(1.0).sub(_rockW));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
-            const _moss = _T.vec3(G.mossTint[0], G.mossTint[1], G.mossTint[2]);
-            const _patch = _T.mx_noise_float ? _T.mx_noise_float(wp.mul(0.16)).mul(0.5).add(0.5) : _T.float(0.7);
-            _out = _T.mix(
-                _out,
-                _moss.mul(_T.float(0.8).add(_patch.mul(0.4))),
-                _mossW.mul(_gMoss).mul(_T.float(G.mossMax))
-            );
-            return _out;
+            const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
+            const _r = this._substanceCharacter(_T, _out, {
+                pos: wp.mul(_T.float(0.16)),
+                worldPos: wp,
+                tags: { härte: 0.5, dichte: 0.5 },
+                metal: 0,
+                objectLocal: false,
+                flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
+                mossDrive: _mossDrive,
+            });
+            return _r.albedo;
         } catch (_e) {
             if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
             return albedo;
@@ -73576,7 +73551,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.333.0";
+AnazhRealm.VERSION = "18.334.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

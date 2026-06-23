@@ -378,6 +378,16 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.334 — SUBSTANZ-RAPTOR: EIN Charakter-Kern, den Terrain + Vegetation + Werke ALLE lesen (die Synergie)
+
+Schöpfer-Probe „hast du Strukturen hardcoded, oder die Synergie verstanden — Terrain, Bäume, die ganze Welt, ein Riese?" → die ehrliche Messung zeigte: NEIN, noch nicht. Die Substanz lebte in DREI parallelen Zweigen (`_terrainGeologyAlbedo` · Rinde · Flach-Werke), Moos/Strata DOPPELT (Gesetz-#0-Verletzung), die V18.333-Charakter-Hebel erreichten Terrain/Bäume NICHT, kein LOD-Gate. Schöpfer „giesse es in einem Guss, habe Mut, wir korrigieren". GEBAUT — der Raptor:
+
+- **`_substanceCharacter(_T, baseAlbedo, opts)` — DIE EINE Quelle:** die universellen Charakter-Hebel (Mehr-Oktav-Korn · Kavität · Ton warm↔kühl · Verwitterung · MOOS · Counter-Shading · Roughness-Variation · Mikro-Relief-Bump) leben jetzt EINMAL. Der Domänen-Unterschied REIST ALS PARAMETER (`pos`-Skala · tags · metal · `mossDrive` · `bark` · `bump` · `objectLocal` · `flatness`). Render-only, tag-neutral, try/catch je Aufruf.
+- **Drei Pfade lesen ihn:** (1) Flach-Werke (`objectLocal:true`, bump:true — voll); (2) Terrain `_terrainGeologyAlbedo` (Geologie-Basis bleibt, dann der Kern mit `objectLocal:false` → die Höhen-Hebel [Counter-Shading/Verwitterung-unten/Strata-Y/Bump] aus [absolute Welt-Höhe sättigt object-y]; das Moos vereint, getrieben vom Feucht-/Grün-Knoten); (3) Rinde (`bark:true` — Längs-Faser + Riss + Ton + leichtes Moos), ihr eigener Korn-Pfad entfällt.
+- **MOOS jetzt EINE Quelle** (vorher Geologie + Flach getrennt). **LOD-Gate** gebaut: feines Korn + Bump verblassen mit der Kamera-Distanz (`fineFade`/`bumpFade` via `cameraPosition`) → fern simpler = Perf + kein Aliasing; die breiten Ton-/Moos-Zonen bleiben (lesen auch fern).
+- **VERIFIZIERT (eigenes Auge):** Flach-Werke (Tempel/Esse/Schwert/Glut) unverändert-lebendig durch den Kern (keine Regression); Rinde (Eiche) bewahrt (Holz-Ton + Korn + Blatt-Karten). **OFFEN/EHRLICH:** der Terrain-LOOK ist von MIR noch unbestätigt — die `diag-settled-view` starb am swiftshader-Kumulativ-Last-Tod dieses Containers (bekannter Flake, NICHT der Code: der Katalog rendert sauber, der Terrain-Pfad ist try/catch-geschützt). Fängt ein Bruch: die Fresh-Prozess-CI-`gpu-lens` (echter Renderer). Der LOOK: Schöpfer-Browser (Regel #0). Voller lokaler Audit grün (Format/ESLint-0-errors/check/Fast-Gate 13/13).
+- **DISZIPLIN/KORRIGIERBAR:** die Terrain-Tags (`härte:0.5, dichte:0.5`) + die Kern-Amplituden sind die Balance-Knöpfe — falls Terrain über-texturiert, hier dämpfen (der Schöpfer-Auftrag „5 Schritte, dann Balance").
+
 ### V18.333 — SUBSTANZ: die Strukturen LEBEN — Ton-Variation · Verwitterung · Flechten · Mikro-Relief (Bump)
 
 Schöpfer-Wort „vollende es, bringe die Strukturen zum Leben". Aufbauend auf V18.332 (die Amplituden-Verstärkung + Strata), die vier Charakter-Hebel in den Flach-Farb-Substanz-Pass (`_buildPbrNodeMaterial`, `isFlatStructure`-Zweig) — gemessen am `diag-werk-render`-Katalog (eigenes Auge, vorher/nachher):
