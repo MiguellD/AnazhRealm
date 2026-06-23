@@ -28152,7 +28152,18 @@ class AnazhRealm {
             // Bruch-Linien) + verstärkte Schichtung, statt weichem isotropem Korn. Getrieben von der
             // EXISTIERENDEN härte-Achse (kein fragiles Klassen-Raten); weich (Lehm/Holz) bleibt weich,
             // Metall behält seinen Schliff (hardF=0 via 1−metal). So WEISS der Fels, dass er steinig ist.
-            const hardF = ht * ht * (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
+            // V18.339/.340 — DIE STRUKTUR LERNT DIE HÄRTE … jetzt PER-FRAGMENT (Schöpfer „synergie,
+            // gestein am boden steinige/karsche regionen"): `hardF` ist ein NODE — Basis aus den Tags
+            // (JS), per-Fragment moduliert durch `opts.hardDrive` (Terrain reicht die Geologie-`rockW`
+            // herein → der steinige/steile Boden bricht karsch, die Wiese bleibt weich). DIESELBE
+            // `härte`-Quelle treibt Fels-Farbe UND Bruch-Struktur (der Raptor); Werke: konstant gefaltet.
+            const hardBase = ht * ht * (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
+            const hardDriveOk = (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
+            let hardF = f(hardBase);
+            if (opts.hardDrive != null)
+                hardF = f(hardBase)
+                    .add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk)))
+                    .clamp(0.0, 1.0);
             const frN = _T.mx_noise_float(pos.mul(f(3.0 + ht * 6.0)));
             const ridge = f(1.0).sub(frN.abs()).sub(f(0.5)).mul(f(2.0)); // [-1..1] scharfe Grate/Täler
             // V18.337 — die RINDE bekommt stärkeren Kontrast: die Längs-Faser (mottle, vertikale
@@ -28160,15 +28171,24 @@ class AnazhRealm {
             // Kontrast") → für bark verstärkt; Terrain/Werke unberührt (Faktor 1.0).
             const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0) * (opts.bark ? 1.7 : 1.0);
             const broadAmp = 0.12 + di * 0.12;
-            const cavityAmp = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0) * (1.0 + hardF * 1.3);
-            const strataAmp =
-                (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0) * (1.0 + hardF * 1.8);
+            const cavityAmpJs = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
+            const strataAmpJs = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
             const mod = f(1.0)
-                .add(mottle.mul(fineFade).mul(f(mottleAmp * (1.0 - 0.5 * hardF)))) // weiches Korn weicht dem Bruch
-                .add(ridge.mul(fineFade).mul(f(0.3 * hardF))) // angulärer Bruch — nur harte Materialien
+                .add(
+                    mottle
+                        .mul(fineFade)
+                        .mul(f(mottleAmp))
+                        .mul(f(1.0).sub(hardF.mul(f(0.5))))
+                ) // weiches Korn weicht dem Bruch
+                .add(ridge.mul(fineFade).mul(hardF.mul(f(0.3)))) // angulärer Bruch — skaliert mit hardF
                 .add(broad.mul(f(broadAmp)))
-                .add(strata.mul(f(strataAmp)))
-                .sub(cavity.mul(fineFade).mul(f(cavityAmp)));
+                .add(strata.mul(f(strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))) // Schichtung ∝ Härte
+                .sub(
+                    cavity
+                        .mul(fineFade)
+                        .mul(f(cavityAmpJs))
+                        .mul(f(1.0).add(hardF.mul(f(1.3))))
+                ); // Risse ∝ Härte
             albedo = albedo.mul(mod.clamp(0.5, 1.5));
             // Höhen-Gradient [0..1] (EINE Quelle für Verwitterung + Moos + Counter-Shading).
             const yLow = pos.y.mul(f(0.7)).add(f(0.5)).clamp(0, 1);
@@ -28317,16 +28337,22 @@ class AnazhRealm {
                 .mul(_T.float(0.62))
                 .clamp(0.0, 1.0);
             _out = _T.mix(_out, _out.mul(_T.vec3(1.32, 1.12, 0.6)), _dryW);
+            // V18.340 — die GEOLOGIE treibt die BRUCH-STRUKTUR (Synergie, EINE Quelle): wo Fels/Geröll
+            // durchbricht (`rockW`+`screeW`), bricht der Boden KARSCH (hardDrive → ridged Bruch im Kern);
+            // die flache Wiese bleibt weich (niedrige Basis-härte 0.36). So weiss der steinige Boden, dass
+            // er steinig ist — in Farbe (oben) UND Struktur. Kein neuer Noise: `rockW`/`screeW` leben schon.
+            const _hardDrive = _rockW.add(_screeW).clamp(0.0, 1.0);
             const _r = this._substanceCharacter(_T, _out, {
                 pos: wp.mul(_T.float(0.16)),
                 worldPos: wp,
-                tags: { härte: 0.5, dichte: 0.5 },
+                tags: { härte: 0.36, dichte: 0.5 },
                 metal: 0,
                 objectLocal: false,
                 flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
                 mossDrive: _mossDrive,
                 roughBase: G.roughBase,
                 wetDrive: _wetDrive,
+                hardDrive: _hardDrive,
             });
             if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
             return _r.albedo;
@@ -73674,7 +73700,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.339.0";
+AnazhRealm.VERSION = "18.340.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

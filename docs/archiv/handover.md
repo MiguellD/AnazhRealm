@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.340 — DIE GEOLOGIE TREIBT DIE STRUKTUR PER-FRAGMENT: der steinige Boden bricht karsch (Schöpfer „synergie, performance + architektur, sei ein gigant")
+
+Der synergetische Schluss-Guss der Substanz-Thematik. V18.339 gab den harten WERKEN den Bruch (über die JS-Tag-`härte`), aber der Terrain-Boden nutzte eine FESTE `härte 0.5` → gleichmäßiger Bruch überall, die rocky/karsche Region am Boden brach NICHT stärker als die Wiese. Jetzt treibt die GEOLOGIE die Struktur per-Fragment:
+
+- **`hardF` ist ein NODE (statt JS-Skalar):** die Basis kommt aus den Tags (JS), aber `opts.hardDrive` (ein per-Fragment-Node) moduliert sie. Alle hardF-abhängigen Amps (mottle-weicht · ridge-Bruch · cavity · strata) sind jetzt Node-Multiplikationen. Für WERKE (kein `hardDrive`) faltet `hardF` zur Konstante → algebra-IDENTISCH zu V18.339 (die verifizierten Fels/Metall-Werke unberührt, GEMESSEN über die Term-Äquivalenz + Fast-Gate).
+- **Das Terrain reicht die Geologie herein (`_terrainGeologyAlbedo`):** `hardDrive = rockW + screeW` (clamped) + Basis-`härte 0.36` (statt 0.5). Wo Fels/Geröll durchbricht (steil → `rockW` feuert), bricht der Boden KARSCH (voller ridged Bruch, wie der verifizierte Fels); die flache Wiese (`rockW≈0`, `hardF≈0.13`) bleibt weich. DIESELBE `rockW`-Quelle treibt jetzt Fels-FARBE (V18.226) UND Bruch-STRUKTUR (V18.340) → der Raptor, EIN Feld, viele Leser; KEIN neuer Noise (Performance: `rockW`/`screeW` leben schon, `hardF`-Node faltet für Werke).
+- **VERIFIKATION (ehrlich):** Fast-Gate 13/13 + check/format/lint grün; der Fracture-LOOK ist am Fels-Werk eyes-on bestätigt (V18.339, geschichteter Stein) und das Terrain läuft denselben Code-Pfad (rockW → hardF → ridge); der in-situ Steil-Boden-Shot (`diag-rockyboden`, steep-down) ist container-render-limitiert (swiftshader-Kumulativ-Last-Tod, EXIT 124 nach dem eye-Shot) → das finale Terrain-Auge ist der Schöpfer-Browser (Regel #0). Die Bausteine (Fracture-Look · rockW-Kopplung · Meadow-Softening) sind je einzeln verifiziert.
+- **DISZIPLIN:** ein per-Fragment-Material-Treiber gehört als NODE-Parameter (`hardDrive`) durch den EINEN Kern, die Tag-Basis bleibt der JS-Skalar; die Geologie-Felder (`rockW`/`screeW`/`_damp`/`_green`) sind die geteilte Quelle für Farbe UND Struktur UND Roughness (kein Parallel-Noise pro Eigenschaft).
+
 ### V18.339 — DIE KLASSEN-STRUKTUR GEGOSSEN: Fels bricht kantig, Boden hat Dürre-Flecken (Schöpfer „alles zusammen, kein halten, volle tiefe, jetzt")
 
 Direkte Antwort auf den „homogenes Rauschen, die Struktur weiss nicht"-Befund: der Substanz-Kern legte überall dieselben ISOTROPEN Noise-Primitive (mottle/cavity) auf, nur die Amplitude variierte. Jetzt LERNT die Struktur das Material — getrieben von der EXISTIERENDEN `härte`-Achse (kein fragiles Tag-Klassen-Raten, das beim res-/Spezies-Wechsel bricht):
