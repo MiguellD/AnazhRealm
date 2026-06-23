@@ -18,7 +18,55 @@
 
 ---
 
-## ✅ TEMP-DEV-DROSSELN — REVERTIERT (V18.331 Backlog)
+## 🎨 NÄCHSTE SESSION — SUBSTANZ-FEINSCHLIFF (der LOOK sitzt) · Schöpfer-Befunde 23.06.2026
+
+**Stand:** der Substanz-Raptor (V18.334, gemerged) gab EINEN `_substanceCharacter`-Kern für Terrain +
+Vegetation + Werke. Die ARCHITEKTUR steht; der **LOOK** braucht eine Schöpfer-Browser-Runde. Schöpfer-
+Befunde aus dem echten Browser (v18.334, sunny, Augenhöhe) — die Punch-Liste, NACH Wirkung geordnet:
+
+1. **EINIGE MATERIALIEN OHNE SUBSTANZ (der dunkle Turm):** ein großer schwarzer Säulen-/Turm-Bau (Felsturm?
+   `welt_portal`-Sockel? eine Struktur) ist tot-flach schwarz — der Kern erreicht ihn NICHT. WURZEL prüfen:
+   (a) geht das Werk durch `_buildPbrNodeMaterial`-`isFlatStructure`, oder einen ANDEREN Material-Pfad (eigener
+   `colorNode`/`MeshStandardMaterial` ohne den Kern)? (b) near-schwarze Basis schluckt die multiplikative
+   Modulation → der Kern braucht für sehr dunkle Basen einen ADDITIVEN Anteil ODER eine Basis-Anhebung.
+   → ALLE Material-Bau-Pfade greppen (`new THREE.Mesh...Material`, `colorNode =`, `MeshStandard*`), die den
+   Kern UMGEHEN; sie auf `_buildPbrNodeMaterial`+`_substanceCharacter` ziehen (Gesetz #0).
+2. **NEBELWAND SPRINGT HINTER DEN GELADENEN SEE:** der Schöpfer sieht teils LEERE Seebecken, die dann laden —
+   der Lade-Nebel/Ring deckt das Wasser nicht synchron. „Noch nicht professionell + synergetisch." → den
+   Wasser-/Hydrosphäre-Stream an den `_activeRingRadius`/Lade-Nebel koppeln (das Wasser eines Chunks lädt
+   MIT seinem Terrain, nicht danach; der Nebel verdeckt das ungeladene Becken bis es steht). Vgl. V18.164
+   (Nebel folgt dem gebauten Ring) — das Wasser-Becken muss demselben Gate folgen.
+3. **BAUM — SHEET-INNENSEITE sichtbar + Stamm konkav statt konvex:** am Stamm liest die Blatt-/Rinden-Karte
+   die INNENseite des Sheets (Backface), und der Stamm-Sockel wirkt konkav (eingedellt) statt konvex
+   (ausgebaucht). → die Sheet-Normalen/`side` (FrontSide vs DoubleSide) + die Stamm-Tube-Geometrie unten
+   prüfen (Brettwurzel-Ansatz konvex ausstellen). Vgl. `_growTreeBlueprintRich`/Tube-Rinde.
+4. **FELSTURM komisch · RINGE kaum sichtbar:** der Felsturm-Bau liest nicht als Fels; die „Ringe" (Sediment-
+   Strata? Wachstums-Ringe?) sind kaum erkennbar → die Strata-Amplitude/Frequenz für große vertikale
+   Stein-Bauten heben (der Kern-`strataAmp` ist works-getunt; ein hoher Turm braucht sichtbare Schicht-Bänder).
+5. **GRÄSER SEHR BASIC:** die Halme sind flache gelb-grüne Klingen ohne Substanz/Variation → Gras-Material
+   in den Kern (oder eine Gras-Variante davon): Farb-/Höhen-Variation, Spitzen-Tönung, weniger uniform.
+6. **TERRAIN-LOOK insgesamt** (vom Schöpfer noch nicht final beurteilt): die Raptor-Balance prüfen — die
+   Terrain-Tags (`härte:0.5,dichte:0.5` in `_terrainGeologyAlbedo`) + die Kern-Amplituden sind die Knöpfe,
+   falls über-/unter-texturiert.
+
+**DAS INSTRUMENT (Schöpfer-Vorschlag, GEBAUT diese Session, v1):** `scripts/diag-diorama.cjs` — EINE Szene mit
+ALLEN Komponenten nebeneinander (Tempel · Fels · Schwert · Rüstung · Esse · Portal · Baum, auf ~4,2 m normiert
+für den Material-Vergleich + Boden-Platte), eine Kamera, EIN Render → man sieht alles auf einen Blick (statt
+langsamer settled-view + isoliertem Katalog). **OFFEN (kleiner Fix zuerst, nächste Session): der Present-Pfad
+zeigt noch den WELT-Frame statt der isolierten Szene** — der Bau ALLER Komponenten funktioniert (Log:
+`tempel/fels/schwert/ruestung/esse/portal/baum` alle gebaut), aber `st.renderer.render(myScene,myCam)`
+präsentiert nicht (zwei verschiedene Szenen-Configs gaben das IDENTISCHE Bild = stale/Welt-Frame). Der Fix:
+das Zwei-Phasen-Muster von `diag-werk-render` spiegeln (Loop-Freeze + HUD-Hide + 200 ms Settle in einem
+SEPARATEN `page.evaluate` VOR dem Bau, dann bauen+rendern) — `diag-werk-render` rendert isolierte Werke damit
+korrekt, also ist es ein bekannter, kleiner Timing-Fix. Danach: Boden mit echtem Terrain-Material + Wasser +
+Gras ergänzen. (Falls der Container-swiftshader unter kumulativer Last stirbt: frischer Prozess / Schöpfer-Browser.)
+
+**METHODE:** EIN Befund pro kleiner Welle, am Diorama vorher/nachher mit eigenem Auge, dann Schöpfer-Browser
+für das Schluss-Urteil (Regel #0). „5 Schritte, dann Balance" — kein Halb-Fix-Streuen.
+
+---
+
+
 
 **ERLEDIGT (V18.331, Schöpfer-Wahl „erst Backlog räumen"):** die drei temporären Dev-Drosseln sind
 zurückgedreht — Bäume `SAMPLES` 4→10, fliegende Inseln `numIslands` 1→3, Planeten `numPlanets` 1→3.
