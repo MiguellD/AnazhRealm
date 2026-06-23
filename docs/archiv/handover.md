@@ -378,6 +378,18 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.333 — SUBSTANZ: die Strukturen LEBEN — Ton-Variation · Verwitterung · Flechten · Mikro-Relief (Bump)
+
+Schöpfer-Wort „vollende es, bringe die Strukturen zum Leben". Aufbauend auf V18.332 (die Amplituden-Verstärkung + Strata), die vier Charakter-Hebel in den Flach-Farb-Substanz-Pass (`_buildPbrNodeMaterial`, `isFlatStructure`-Zweig) — gemessen am `diag-werk-render`-Katalog (eigenes Auge, vorher/nachher):
+
+- **WURZEL (gemessen):** reine Helligkeits-Modulation (±%) VERSCHWINDET auf dunklen/uniformen Low-Poly-Facetten (der Tempel blieb tot-flach). Was auf JEDER Basis liest, sind FARB-/STRUKTUR-Verschiebungen, nicht Helligkeit.
+- **(4) TON-VARIATION (warm↔kühl):** die broad/mottle-Zonen verschieben die FARB-TEMPERATUR (ein Hue-Shift liest, wo ein Helligkeits-Shift verschwindet); Metall subtiler (lebt vom Glanz).
+- **(5) VERWITTERUNG/SCHMUTZ:** Mulden (cavity) + untere Zonen sammeln Schmutz → dunkler + entsättigt zum Erd-Ton („gebaut UND gealtert"). Eine geteilte Höhen-Quelle `_yLow` (Verwitterung + Moos + Counter-Shading).
+- **(6) FLECHTEN/MOOS (lebendig-Tag > 0):** grün-stichige Flecken auf flachen/unteren Zonen — die Geologie-Moos-Schicht (Ω-O2), generalisiert auf flach-farbene Werke.
+- **(7) MIKRO-RELIEF (Bump) — der TRANSFORMATIVE Hebel:** die Korn-/Kavität-/Strata-Höhe perturbiert die NORMALE (`mat.normalNode = _Ta.bumpMap(height, scale)`, feature-detected + try/catch) → die FLACHE Facette fängt das Licht (Schlüssel + Sky-IBL) als echte Stein-/Holz-/Metall-Mikro-Struktur. DAS bringt die Low-Poly-Fläche zum Leben (3D-Reaktion aufs Licht statt nur Albedo).
+- **GEMESSEN (eigenes Auge, voller Katalog):** Forge (Metall+Stein gealtert), Tempel (texturierter Basalt statt tot-flach), Dorf (verwitterte Dächer/Wände), Schwert (geschmiedeter Schliff), Glut (verkohltes Stein-Becken). KEINE Regression (Kristall transparent → überspringt; Fels vertex-farbig → unberührt; Glut-Flamme emissiv unberührt). Real-Renderer kompiliert den Bump-Shader ohne Page-Error (esse/tempel). Fast-Gate 13/13, Format grün.
+- **DISZIPLIN:** der Bump ist NUR im echten Renderer prüfbar (der Null-Renderer-Gate stubt ihn) → die CI-`gpu-lens` (echter Renderer) + der `diag-werk-render`-Katalog sind die Linsen, nicht der Playtest. Der Hebel bleibt render-only + tag-neutral (Affinität unberührt).
+
 ### V18.332 — DER WAHRE GUSS beginnt: System A (SUBSTANZ) — die Flach-Werk-Substanz verstärkt (gemessen)
 
 Schöpfer-Wahl „Substanz zuerst" (der breiteste Hebel, hebt JEDES Werk ohne Form-Änderung). Der Einstieg in den WAHRE-GUSS-Bogen, gemessen am `diag-werk-render`-Katalog (vorher/nachher, eigenes Auge):

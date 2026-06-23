@@ -27979,6 +27979,7 @@ class AnazhRealm {
                             const _t = opts.tags || {};
                             const _ht = Math.max(0, Math.min(1, Number(_t["härte"]) || 0.4));
                             const _di = Math.max(0, Math.min(1, (Number(_t.dichte) || 0) / 3));
+                            const _leb = Math.max(0, Math.min(1, (Number(_t.lebendig) || 0) / 3));
                             const _metal = Math.max(0, Math.min(1, params.metalness || 0));
                             const _pl = _Ta.positionLocal;
                             // (1) MOTTLE — grobe Material-Variation (Stein-Flecken · Holz-Ton ·
@@ -28031,12 +28032,61 @@ class AnazhRealm {
                                 .add(_strata.mul(_Ta.float(_strataAmp)))
                                 .sub(_cavity.mul(_Ta.float(_cavityAmp)));
                             albedoNode = albedoNode.mul(_mod.clamp(0.55, 1.45));
+                            // Höhen-Gradient [0..1] (unten→oben) — EINE Quelle für Verwitterung, Moos
+                            // UND Counter-Shading (kein dreifaches Neu-Rechnen).
+                            const _yLow = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
+                            // ── DIE STRUKTUR LEBT: drei Charakter-Hebel, die auf JEDER Basis lesen
+                            //    (Farb-Verschiebungen, nicht bloß ±Helligkeit, die auf Dunkel verschwand). ──
+                            // (4) TON-VARIATION (warm↔kühl): echtes Material trägt nie EINEN Ton. Die
+                            //     broad/mottle-Zonen verschieben die FARB-TEMPERATUR (warme Patina-/Sediment-
+                            //     Zonen vs kühle) — ein Hue-Shift LIEST, wo ein Helligkeits-Shift auf dunklem
+                            //     Basalt verschwindet. Metall subtiler (es lebt vom Glanz).
+                            const _toneMix = _broad
+                                .mul(_Ta.float(0.6))
+                                .add(_mottle.mul(_Ta.float(0.4)))
+                                .mul(_Ta.float(0.5))
+                                .add(_Ta.float(0.5))
+                                .clamp(0, 1);
+                            const _toneTint = _Ta.mix(_Ta.vec3(0.9, 0.97, 1.12), _Ta.vec3(1.12, 1.0, 0.86), _toneMix);
+                            albedoNode = albedoNode.mul(
+                                _Ta.mix(_Ta.vec3(1, 1, 1), _toneTint, _Ta.float(_metal > 0.5 ? 0.28 : 0.5))
+                            );
+                            // (5) VERWITTERUNG/SCHMUTZ: Mulden (cavity) + untere Zonen sammeln Schmutz —
+                            //     dunkler + entsättigt zu einem Erd-Ton. Der Realismus, der „gebaut UND
+                            //     gealtert" sagt (eine frische Plastik altert nie).
+                            const _grime = _cavity
+                                .mul(_Ta.float(0.55))
+                                .add(_Ta.float(1.0).sub(_yLow).mul(_Ta.float(0.45)))
+                                .clamp(0, 1);
+                            const _lumA = albedoNode.x
+                                .mul(_Ta.float(0.3))
+                                .add(albedoNode.y.mul(_Ta.float(0.59)))
+                                .add(albedoNode.z.mul(_Ta.float(0.11)));
+                            const _dirt = _Ta.vec3(
+                                _lumA.mul(_Ta.float(0.52)).add(_Ta.float(0.045)),
+                                _lumA.mul(_Ta.float(0.46)).add(_Ta.float(0.032)),
+                                _lumA.mul(_Ta.float(0.38)).add(_Ta.float(0.022))
+                            );
+                            albedoNode = _Ta.mix(albedoNode, _dirt, _grime.mul(_Ta.float(0.32)));
+                            // (6) FLECHTEN/MOOS (lebendig-Tag > 0): grün-stichige Flecken auf den flachen/
+                            //     unteren Zonen — wie die Geologie-Moos-Schicht (Ω-O2), generalisiert auf
+                            //     flach-farbene Werke. Ein lebendiger Holz-/Stein-Bau bewächst sich.
+                            if (_leb > 0.05) {
+                                const _mossPatch = _Ta
+                                    .mx_noise_float(_pl.mul(_Ta.float(1.6)))
+                                    .mul(_Ta.float(0.5))
+                                    .add(_Ta.float(0.5));
+                                const _mossW = _mossPatch
+                                    .mul(_Ta.float(1.0).sub(_yLow))
+                                    .mul(_Ta.float(_leb))
+                                    .clamp(0, 1);
+                                albedoNode = _Ta.mix(albedoNode, _Ta.vec3(0.3, 0.4, 0.19), _mossW.mul(_Ta.float(0.42)));
+                            }
                             // COUNTER-SHADING (2-Ton-Höhen-Gradient) — unten dunkler, oben heller:
                             // real bei Tieren (heller Bauch wirkt der Eigen-Schattierung entgegen) UND
                             // Stein/Metall (Staub unten, Licht oben). DEUTLICHER (V18.332) → hebt die
                             // flache Einfarbigkeit klar.
-                            const _yN = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
-                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.74), _Ta.float(1.2), _yN));
+                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.74), _Ta.float(1.2), _yLow));
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                             // ROUGHNESS-VARIATION (der #1 Profi-Hebel, Material-Agent): NIE konstant —
                             // flach-uniforme roughness IST der Plastik-Tell. Das Korn hebt, die Kavität
@@ -28047,6 +28097,25 @@ class AnazhRealm {
                                 .add(_broad.mul(_Ta.float(0.14)))
                                 .sub(_cavity.mul(_Ta.float(0.18)))
                                 .clamp(0.05, 1.0);
+                            // (7) MIKRO-RELIEF (Bump) — der TRANSFORMATIVE Hebel für flache Low-Poly-
+                            //     Facetten: die Korn-/Kavität-/Strata-Höhe perturbiert die NORMALE → die
+                            //     flache Fläche fängt das Licht (Schlüssel + Sky-IBL) als echte Stein-/Holz-/
+                            //     Metall-Mikro-Struktur. DAS ist „lebendig": die Facette reagiert aufs Licht
+                            //     in 3D, nicht nur über die Albedo (die auf Dunkel verschwand). Feature-
+                            //     detected + try/catch (nie ein kaputtes Material).
+                            try {
+                                if (_Ta.bumpMap && _Ta.float) {
+                                    const _bumpH = _mottle
+                                        .mul(_Ta.float(0.5))
+                                        .add(_crN.mul(_Ta.float(0.5)))
+                                        .add(_strata.mul(_Ta.float(0.35)));
+                                    const _bumpScale = _Ta.float((0.6 + _ht * 0.8) * (_metal > 0.5 ? 0.6 : 1.0));
+                                    mat.normalNode = _Ta.bumpMap(_bumpH, _bumpScale);
+                                }
+                            } catch (_eb) {
+                                if (typeof window !== "undefined")
+                                    window.__substanceBumpError = String((_eb && _eb.message) || _eb);
+                            }
                         } catch (_e) {
                             if (typeof window !== "undefined")
                                 window.__substanceFlatError = String((_e && _e.message) || _e);
@@ -73507,7 +73576,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.332.0";
+AnazhRealm.VERSION = "18.333.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
