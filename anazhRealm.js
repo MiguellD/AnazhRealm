@@ -13995,9 +13995,9 @@ class AnazhRealm {
 
         // Planeten hinzufügen
         this.state.planets = [];
-        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
-        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Planeten 3→1.
-        const numPlanets = 1;
+        // V18.331 — Dev-Drossel revertiert (Cold-Start ist nach dem Perf-/Worldgen-/
+        // Determinismus-Bogen schnell): Planeten zurück auf 3.
+        const numPlanets = 3;
         for (let i = 0; i < numPlanets; i++) {
             const planetSize = Math.random() * 20 + 10;
             const planetGeometry = new THREE.SphereGeometry(planetSize, 32, 32);
@@ -22889,9 +22889,8 @@ class AnazhRealm {
     _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
-        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Fliegende Inseln 3→1.
-        const numIslands = 1;
+        // V18.331 — Dev-Drossel revertiert (schneller Cold-Start): fliegende Inseln zurück auf 3.
+        const numIslands = 3;
         // V18.180-FIX §6.2: Γ5 STREAM-GESETZ — Math.random in einem worldgen-
         // Pfad würfelt zwei Peers in unterschiedliche Welten (Multi-User-Drift).
         // Pro Insel ein eigener Stream-Suffix; das speist Größe/Höhe/Position
@@ -57509,8 +57508,21 @@ class AnazhRealm {
         this.state.scene.add(island);
         if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
         this.state.floatingIslands.push(island);
-        // DETERMINISMUS-BOGEN P3 — Inseln tragen (wie schon vor P3 im Feld-Modus) keine
-        // eigene Feld-Kollision; die AABB-Hülle ist ein offener Folgeschritt (Plan-Entscheid #2).
+        // DETERMINISMUS-BOGEN (Entscheid #2) — die AABB-Hülle für die feld-native Kollision:
+        // der Spieler kann auf einer fliegenden Insel STEHEN (Auflage auf der Oberkante) +
+        // wird an ihren Flanken geblockt. Die Hülle kommt exakt aus der gebauten Geometrie.
+        geometry.computeBoundingBox();
+        const bb = geometry.boundingBox;
+        if (bb) {
+            island.userData.fieldAABB = {
+                minX: x + bb.min.x,
+                maxX: x + bb.max.x,
+                minZ: z + bb.min.z,
+                maxZ: z + bb.max.z,
+                topY: y + bb.max.y,
+                botY: y + bb.min.y,
+            };
+        }
         return island;
     }
 
@@ -60351,12 +60363,11 @@ class AnazhRealm {
         // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
         // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
         // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
-        // V18.259 — DEV-DROSSEL (Schöpfer-Wunsch „unglaublich viele Bäume → weniger"):
-        // SAMPLES 10→4 temporär für die Entwicklung (weniger Spawn-Versuche/Chunk =
-        // deutlich weniger Bäume + schnellerer Cold-Start). Die forest-mask × clumpAt-
-        // Logik bleibt — der Wald clumpt weiter natürlich, nur dünner. REVERT auf 10
-        // für die volle V18.215-Dichte vor v1.0 (Roadmap TEMP-DEV-DROSSELN).
-        const SAMPLES = 4;
+        // V18.331 — Dev-Drossel revertiert: SAMPLES zurück auf 10 (die volle V18.215-Dichte).
+        // Der Cold-Start trägt sie jetzt (Perf-Bogen + Worldgen 6-12× + BVH-Freeze tot); die
+        // forest-mask × clumpAt-Logik clumpt den Wald natürlich, der `foliageRadius`-Regler
+        // (V18.275) wächst die Dichte kapazitäts-gemessen.
+        const SAMPLES = 10;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
@@ -72108,8 +72119,13 @@ class AnazhRealm {
         //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
         const structPos = { x: nx, z: nz };
         const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
+        // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
+        const islandTop = this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
+        // Die höhere der beiden begehbaren Auflagen (Bauwerk ODER Insel) trägt den Spieler.
+        const supTop = Math.max(structTop, islandTop);
 
         // 7. TERRAIN-WAND-KOLLISION — nur HORIZONTAL, und VOR dem Boden-Snap (so wird der Spieler
         //    erst aus der Wand geschoben, bevor Schritt 8 vertikal entscheidet → der Anti-Clip
@@ -72175,7 +72191,7 @@ class AnazhRealm {
                 );
             }
             // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
-            const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, structTop);
+            const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, supTop);
             const wasGrounded = s._fieldWasGrounded === true;
             if (vy <= 0.5) {
                 if (effSurf > -Infinity) {
@@ -72197,7 +72213,7 @@ class AnazhRealm {
                         vy = 0;
                         grounded = true;
                         groundNormalY =
-                            structTop >= (terrSurf === null ? -Infinity : terrSurf)
+                            supTop >= (terrSurf === null ? -Infinity : terrSurf)
                                 ? 1.0
                                 : this._fieldGradient(nx, terrSurf, nz, {}).y;
                     }
@@ -72256,9 +72272,6 @@ class AnazhRealm {
     _stepCharacterStructures(pos, feetY, headY, radius) {
         const arches = this.state.architectures;
         if (!arches || !arches.length) return -Infinity;
-        const STEP = AnazhRealm.PLAYER_STEP_UP;
-        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
-        const bodyLo = feetY + STEP; // alles darunter ist begehbar (Stufe), keine Wand
         let supportTop = -Infinity;
         // DETERMINISMUS-BOGEN P3 — das GERITTENE Gefährt blockt seinen Reiter NICHT (der
         // feld-native Ersatz für den alten riddenId-Kollisions-Dispose): der Reiter sitzt
@@ -72273,47 +72286,74 @@ class AnazhRealm {
             if (Math.abs(e.position.x - pos.x) > 60 || Math.abs(e.position.z - pos.z) > 60) continue;
             const boxes = e.blockerAABBs;
             for (let b = 0; b < boxes.length; b++) {
-                const box = boxes[b];
-                // (1) AUFLAGE: steht der Fuß-Fußabdruck über der Box UND liegt ihre Oberkante
-                //     im Haft-Band [feetY − SNAP .. feetY + STEP] → Kandidat zum Draufstehen.
-                if (
-                    pos.x >= box.minX - radius &&
-                    pos.x <= box.maxX + radius &&
-                    pos.z >= box.minZ - radius &&
-                    pos.z <= box.maxZ + radius &&
-                    box.topY <= feetY + STEP &&
-                    box.topY >= feetY - SNAP &&
-                    box.topY > supportTop
-                ) {
-                    supportTop = box.topY;
-                }
-                // (2) WAND: nur Boxen, deren Oberkante ÜBER der Stufe-hoch-Linie liegt (echte
-                //     Wand, kein Schritt) UND die vertikal mit dem Körper überlappen.
-                if (box.topY > bodyLo && box.botY < headY) {
-                    const cx = Math.max(box.minX, Math.min(pos.x, box.maxX));
-                    const cz = Math.max(box.minZ, Math.min(pos.z, box.maxZ));
-                    const dx = pos.x - cx;
-                    const dz = pos.z - cz;
-                    const d2 = dx * dx + dz * dz;
-                    if (d2 < radius * radius) {
-                        if (d2 > 1e-8) {
-                            const d = Math.sqrt(d2);
-                            const push = radius - d;
-                            pos.x += (dx / d) * push;
-                            pos.z += (dz / d) * push;
-                        } else {
-                            // Achse genau in der Box → zur nächsten Seite hinausschieben
-                            const toMinX = pos.x - box.minX + radius;
-                            const toMaxX = box.maxX - pos.x + radius;
-                            const toMinZ = pos.z - box.minZ + radius;
-                            const toMaxZ = box.maxZ - pos.z + radius;
-                            const m = Math.min(toMinX, toMaxX, toMinZ, toMaxZ);
-                            if (m === toMinX) pos.x = box.minX - radius;
-                            else if (m === toMaxX) pos.x = box.maxX + radius;
-                            else if (m === toMinZ) pos.z = box.minZ - radius;
-                            else pos.z = box.maxZ + radius;
-                        }
-                    }
+                supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
+            }
+        }
+        return supportTop;
+    }
+
+    // Feld-native Insel-Kollision (Entscheid #2 — die AABB-Hülle): der Spieler kann auf einer
+    // fliegenden Insel STEHEN (Auflage auf der Oberkante im Haft-Band) + wird an ihren Flanken
+    // geblockt. Eine Hülle pro Insel (`island.userData.fieldAABB`, aus der Geometrie), dieselbe
+    // Auflage-/Wand-Quelle wie die Bauwerke (`_resolveCapsuleVsAABB`).
+    _stepCharacterIslands(pos, feetY, headY, radius) {
+        const isls = this.state.floatingIslands;
+        if (!isls || !isls.length) return -Infinity;
+        let supportTop = -Infinity;
+        for (let i = 0; i < isls.length; i++) {
+            const box = isls[i] && isls[i].userData ? isls[i].userData.fieldAABB : null;
+            if (!box) continue;
+            const mx = (box.minX + box.maxX) * 0.5,
+                mz = (box.minZ + box.maxZ) * 0.5;
+            if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
+            supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
+        }
+        return supportTop;
+    }
+
+    // Die EINE Quelle für „Kapsel gegen eine AABB": (1) AUFLAGE — liegt die Box-Oberkante im
+    // Haft-Band [feetY − SNAP .. feetY + STEP] über dem Fuß-Fußabdruck → Kandidat zum Draufstehen
+    // (gibt die höchste als neuen supportTop). (2) WAND — eine Box, deren Oberkante über der
+    // Stufe-hoch-Linie liegt + vertikal mit dem Körper überlappt, schiebt die Achse horizontal
+    // heraus (gleiten). Mutiert pos.x/z. Bauwerke + Inseln teilen diese Mathematik.
+    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop) {
+        const STEP = AnazhRealm.PLAYER_STEP_UP;
+        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
+        const bodyLo = feetY + STEP;
+        if (
+            pos.x >= box.minX - radius &&
+            pos.x <= box.maxX + radius &&
+            pos.z >= box.minZ - radius &&
+            pos.z <= box.maxZ + radius &&
+            box.topY <= feetY + STEP &&
+            box.topY >= feetY - SNAP &&
+            box.topY > supportTop
+        ) {
+            supportTop = box.topY;
+        }
+        if (box.topY > bodyLo && box.botY < headY) {
+            const cx = Math.max(box.minX, Math.min(pos.x, box.maxX));
+            const cz = Math.max(box.minZ, Math.min(pos.z, box.maxZ));
+            const dx = pos.x - cx;
+            const dz = pos.z - cz;
+            const d2 = dx * dx + dz * dz;
+            if (d2 < radius * radius) {
+                if (d2 > 1e-8) {
+                    const d = Math.sqrt(d2);
+                    const push = radius - d;
+                    pos.x += (dx / d) * push;
+                    pos.z += (dz / d) * push;
+                } else {
+                    // Achse genau in der Box → zur nächsten Seite hinausschieben
+                    const toMinX = pos.x - box.minX + radius;
+                    const toMaxX = box.maxX - pos.x + radius;
+                    const toMinZ = pos.z - box.minZ + radius;
+                    const toMaxZ = box.maxZ - pos.z + radius;
+                    const m = Math.min(toMinX, toMaxX, toMinZ, toMaxZ);
+                    if (m === toMinX) pos.x = box.minX - radius;
+                    else if (m === toMaxX) pos.x = box.maxX + radius;
+                    else if (m === toMinZ) pos.z = box.minZ - radius;
+                    else pos.z = box.maxZ + radius;
                 }
             }
         }

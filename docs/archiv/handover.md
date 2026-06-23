@@ -378,6 +378,14 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.331 (Backlog) — die Reste geräumt: volle Welt-Dichte wieder · Inseln in die Feld-Kollision (Entscheid #2)
+
+Schöpfer-Wahl auf „was ist noch offen?": **„Erst Backlog räumen"** (die Dev-Drosseln revertieren für volle Dichte + die kleinen Determinismus-Reste), DANN der wahre Guss. In einem Zug:
+
+- **Dev-Drosseln REVERTIERT — die volle V18.215-Dichte wieder:** `numPlanets` 1→3, `numIslands` 1→3, Baum-`SAMPLES` 4→10. Die temporären Drosseln (V18.257/.259 „Strukturen drosseln, schneller iterieren") sind überflüssig — der Cold-Start trägt die volle Welt nach dem Perf-Bogen (V18.260–.308) + dem Worldgen-6-12×-Hoist (V18.319–.321) + dem toten BVH-Freeze (V18.331 P3); der `foliageRadius`-Regler (V18.275) wächst die Laub-Dichte ohnehin kapazitäts-gemessen. Fast-Gate 13/13 grün mit voller Dichte, Boot sauber.
+- **Inseln in die Feld-Kollision GEBAUT (Plan-Entscheid #2 — die AABB-Hülle):** seit dem Ammo-Schnitt (P3) trugen fliegende Inseln keine Kollision mehr (vorher ein `btBvhTriangleMeshShape`). Jetzt feld-nativ: `spawnIslandAt` legt `island.userData.fieldAABB` aus der gebauten Surface-Nets-Geometrie an (`geometry.computeBoundingBox()` + Welt-Position); `_stepCharacterIslands` löst die Spieler-Kapsel dagegen (XZ-Cull 80 m), gefaltet in `effSurf = max(Terrain, Struktur, Insel)`. **Gesetz #0 — EINE Quelle:** die Auflage-/Wand-Mathe ist aus `_stepCharacterStructures` in den geteilten Helfer `_resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop)` gehoben, den Bauwerke UND Inseln lesen (kein Parallelpfad — der Refactor ließ die Struktur-Kollision bit-gleich). VERIFIZIERT mit einer Stand-Probe: Spieler über eine Insel-`topY` gesetzt, 90 Schritte fallen lassen → Füße rasten EXAKT auf `topY` (`finalY − PLAYER_FOOT_OFFSET = topY`), `grounded=true`, kein Durchfallen.
+- **DISZIPLIN:** eine AABB-Hülle ist die grobe erste Stufe (Entscheid #2 „AABB-Hülle zuerst") — eine echte Insel-Silhouette (Überhänge/Höhlen in der Insel) bräuchte das volle Dichtefeld der Insel-Geometrie; das ist ein sauberer Folgeschritt, falls der Schöpfer ihn je sieht. Für „auf der Insel stehen + an der Flanke geblockt werden" trägt die Hülle.
+
 ### V18.331 (Nachschlag) — die ERNTE eingefahren: Sediment geschnitten · Gate-Flakes gefischt · P4 Stufe 1 (deterministischer Replay) gebaut
 
 Schöpfer-Korrektur (scharf, berechtigt): „bewusst getrennt, nicht erledigt" IST die Geburt von Parallelcode/Passagieren; „nicht von mir behoben" ist die Ausrede, die nie repariert; „vollende es" hieß den ganzen Plan (bis P4), nicht Ameisenschritte; und „prüf im Browser" ist der KO, den ich mir selbst stelle — schärfe das Werkzeug, nicht die Abhängigkeit. Daraufhin, in EINEM Zug zu Ende gefahren:

@@ -18,11 +18,18 @@
 
 ---
 
-## ⚠️ TEMP-DEV-DROSSELN (V18.257/.259 — REVERT vor dem nächsten Merge/v1.0)
+## ✅ TEMP-DEV-DROSSELN — REVERTIERT (V18.331 Backlog)
 
-Während der Entwicklung temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
-„weniger Bäume/Strukturen, schneller iterieren"). **Sie tragen die Code-Marker `V18.257 TEMP` /
-`V18.259 DEV-DROSSEL`.** Der echte BACKLOG ist nicht das Zurückdrehen, sondern den **Cold-Start effizient**
+**ERLEDIGT (V18.331, Schöpfer-Wahl „erst Backlog räumen"):** die drei temporären Dev-Drosseln sind
+zurückgedreht — Bäume `SAMPLES` 4→10, fliegende Inseln `numIslands` 1→3, Planeten `numPlanets` 1→3.
+Die volle V18.215-Dichte ist wieder da; der Cold-Start trägt sie, weil der echte BACKLOG (den Cold-Start
+effizient machen) inzwischen erledigt ist — der Perf-Bogen (V18.260–.308) + der Worldgen-6-12×-Hoist
+(V18.319–.321) + der tote per-Chunk-BVH-Freeze (V18.331 P3) + der kapazitäts-gemessene `foliageRadius`-Regler
+(V18.275). Fast-Gate 13/13 grün mit voller Dichte, Boot sauber. Die Historie des Render-Bogens, der das
+möglich machte (zur Referenz aufbewahrt):
+
+Während der Entwicklung waren sie temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
+„weniger Bäume/Strukturen, schneller iterieren"). Der echte BACKLOG war nicht das Zurückdrehen, sondern den **Cold-Start effizient**
 zu machen (dann fällt die Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die
 per-Frame-swiftshader-Render-Kosten. **V18.260 hob den Render-Hebel teilweise:** placed-Strukturen (Tempel
 109 Parts → 2 Meshes) fließen jetzt durch denselben Material-Merge wie die instanzierten Bäume
@@ -54,12 +61,11 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
   deterministisch (öffnet P4 Lockstep/Replay als eigenen Bogen). Voll-Stand in
   `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser (Regel #0).
 
-- **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
-  Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
-- **Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 3→1`). REVERT → 3.
-- **Planeten** (`createGalaxySkybox` `numPlanets 3→1`). REVERT → 3.
+- ~~**Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 4`)~~ — REVERTIERT → 10 (V18.331).
+- ~~**Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 1`)~~ — REVERTIERT → 3 (V18.331).
+- ~~**Planeten** (`createGalaxySkybox` `numPlanets 1`)~~ — REVERTIERT → 3 (V18.331).
 
-(Nicht gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
+(Nie gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
 
 ---
 
