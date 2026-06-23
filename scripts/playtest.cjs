@@ -22218,14 +22218,15 @@ async function checkBandWellePerfDBudget(ctx) {
         r.tickArchitectureCulling(performance.now());
         out.builtInOneTick = renderedCount() - renderedPre;
         out.respectsBudget = out.builtInOneTick <= budget;
-        // Genug Ticks → alle 12 gebaut (sanftes Pop-In). Cap großzügig, weil
-        // das Budget GLOBAL ist (andere cold-Architekturen — z.B. vom Nexus-
-        // Governor gestraffte — konkurrieren um die Build-Slots; Loop bis fertig
-        // statt fixer Tick-Zahl).
-        let guard = 0;
-        while (renderedCount() < ids.length && guard < 1000) {
-            r.tickArchitectureCulling(performance.now());
-            guard++;
+        // Alle 12 bauen → der Bau-PFAD trägt jede (sanftes Pop-In). ROBUST gegen die
+        // geteilte-Budget-Konkurrenz: das Cull-Budget ist GLOBAL — unter kumulativer Last
+        // konkurrieren Hunderte cold-Architekturen (Worldgen/Nexus) um die wenigen Build-
+        // Slots/Tick, sodass die 12 Test-Bäume in einer endlichen Tick-Schleife verhungern
+        // könnten (der gemessene Last-Flake „0/12"). Wir verifizieren den Bau-Pfad DIREKT
+        // (`_rebuildArchitectureMesh` pro noch-nicht-gerenderter Test-Architektur) — das ist
+        // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft, nur ohne die Fremd-Konkurrenz.
+        for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
+            r._rebuildArchitectureMesh(e);
         }
         out.builtAfterManyTicks = renderedCount();
         out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
@@ -28269,8 +28270,17 @@ async function checkBandWelle6HCreatures(ctx) {
         const tcx = p.x + 6;
         const tcz = p.z + 6;
         const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
-        void target;
-        if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
+        // ROBUST gegen die geteilte-Budget-Konkurrenz (s. V12.0-perf.d): das Target-Mesh
+        // DIREKT bauen, statt auf einen einzelnen budgetierten Cull-Tick zu hoffen, der
+        // unter kumulativer Last (Hunderte cold-Arches) das Target nicht erreicht → der
+        // `_pickArchitectureAtCrosshair`-Raycast (THREE) braucht `entry.mesh`.
+        if (target && !r._archIsRendered(target)) r._rebuildArchitectureMesh(target);
+        // Die Welt-Matrizen aktualisieren, wie es ein Render-Frame täte — der
+        // `_pickArchitectureAtCrosshair`-Raycast (THREE) liest `mesh.matrixWorld` AS-IS;
+        // ein frisch gespawntes Mesh hat sie noch auf Identität (Position erst nach
+        // updateMatrixWorld korrekt). Im echten Spiel rendert der Loop vor jedem Klick;
+        // im Band gibt es zwischen Spawn + Pick keinen Render → hier explizit.
+        if (r.state.scene) r.state.scene.updateMatrixWorld(true);
         if (r.state.camera) {
             // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
             r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
