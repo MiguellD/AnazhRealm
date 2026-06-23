@@ -20498,10 +20498,9 @@ class AnazhRealm {
 
             // Prüfe, ob die Kreatur im Sichtfeld ist (nur für Rendering)
             const inFrustum = this.isInFrustum(creature);
-            const body = creature.userData.physicsBody;
 
-            // Physik bleibt immer aktiv, nur Rendering wird optimiert
-            creature.visible = inFrustum; // Sichtbarkeit basierend auf Frustum
+            // Rendering wird optimiert (Sichtbarkeit basierend auf Frustum)
+            creature.visible = inFrustum;
 
             // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
             // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
@@ -20759,7 +20758,22 @@ class AnazhRealm {
             // Terrain (V8.49-Floating-Animation-Anker).
             const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
-            creature.position.y = baseY + floatOffset;
+            // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
+            // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
+            let hopOffset = 0;
+            if (creature.userData._hopV > 0) {
+                hopOffset = creature.userData._hopH || 0;
+                creature.userData._hopH = hopOffset + creature.userData._hopV * 0.05;
+                creature.userData._hopV -= 9.0 * 0.05; // Schwerkraft-Decay auf den Hüpf-Impuls
+                if (creature.userData._hopV <= 0 && creature.userData._hopH <= 0) {
+                    creature.userData._hopV = 0;
+                    creature.userData._hopH = 0;
+                } else if (creature.userData._hopH < 0) {
+                    creature.userData._hopH = 0;
+                    creature.userData._hopV = 0;
+                }
+            }
+            creature.position.y = baseY + floatOffset + hopOffset;
             // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
             // Position, Color-Lerp) gated auf `inFrustum`. Eine Kreatur, die
             // nicht zu sehen ist, braucht keine Sprite-Positionen pro Frame
@@ -20832,20 +20846,8 @@ class AnazhRealm {
                 this.log(`Kreatur ${i} zu tief gefallen, zurückgesetzt zu y=${terrainHeight + 1.0}`);
             }
 
-            // Physik-Update (immer aktiv) – nutzt gepoolte Transform + Vec
-            if (body) {
-                const transform = this.state.tmpTransform;
-                transform.setIdentity();
-                transform.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        creature.position.x / this.state.scaleFactor,
-                        creature.position.y / this.state.scaleFactor,
-                        creature.position.z / this.state.scaleFactor
-                    )
-                );
-                body.setWorldTransform(transform);
-            }
+            // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Shadow mehr: die Kreatur-Position IST
+            // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
     }
 
@@ -21474,15 +21476,11 @@ class AnazhRealm {
     }
 
     creatureJump(creature, jumpHeight) {
-        const body = creature.userData.physicsBody;
-        if (body) {
-            const velocity = body.getLinearVelocity();
-            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), jumpHeight * 5, velocity.z()));
-            if (Math.random() < 0.1) {
-                // Nur 10% Chance, den Sprung zu loggen
-                this.log(`Kreatur springt mit Höhe ${jumpHeight}`, "DEBUG");
-            }
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Impuls mehr. Ein transienter Hüpf-Versatz
+        // (decay), der im `updateCreatures`-Loop ON TOP der feld-geerdeten baseY addiert wird —
+        // die Erdung (`_creatureGroundY`) bleibt die Wahrheit, der Hüpfer reitet darauf.
+        if (!creature || !creature.userData) return;
+        creature.userData._hopV = Math.max(creature.userData._hopV || 0, (jumpHeight || 0.8) * 2.2);
     }
 
     isInFrustum(object, providedFrustum = null) {

@@ -378,6 +378,17 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.331 — P3: AMMO PHYSISCH RAUS. Die Feld-Physik ist die einzige Physik (der Determinismus-Bogen vollendet)
+
+Schöpfer-Wort „es passt champ, vollende es" → Entscheid #4 bestätigt, der irreversible Schnitt gezogen. Ammo.js ist physisch entfernt; Kollision/Physik ist vollständig feld-nativ (Dichtefeld + `_stepCharacter` · `_fieldRaycast` · `_stepCharacterStructures` · `entry.blockerAABBs`). **Der per-Chunk-BVH-Build — der Lauf-Freeze AN DER WURZEL — ist weg; der 256-MB-WASM-Heap ist weg; der Boden ist deterministisch.** Netto −969 Zeilen.
+
+- **Was raus ist:** `initPhysics` baut keine Bullet-Welt mehr (kein `Ammo()`-Load, kein btDiscreteDynamicsWorld/Solver/Dispatcher/Broadphase) — `physicsWorld` bleibt null. `addRigidBody`, `_buildVoxelChunkBVH`, `_ensurePlayerChunkBVH`, `_pumpVoxelChunkBVH`, `_upgradeChunkBVH`, `_softFloorWhileChunkLoading` GELÖSCHT. Die Kollisions-Builder (`_buildStaticTriMeshCollision`, `_buildArchitectureCollision[FromLeaves]`, `_disposeStaticCollision`, `_disposeArchitectureCollision`) auf Ammo-freie Stubs reduziert. `index.html` lädt kein ammo.js/-bootstrap mehr; der `postinstall`-Ammo-Heap-Patch ist entfernt. **`new Ammo` = 0.**
+- **Der Spieler ohne Body:** die horizontale Intent-Velocity lebt in `state.playerVel` (Plain-Vektor mit `.x()/.y()/.z()/.setValue()` — dieselbe Schnittstelle, die der Raycast liest), die Vertikale in `_fieldVy`, die Erdung in `_groundedCache`. `_loopPlayerMovement` schreibt `playerVel`, `_stepCharacter` liest sie. handleJump/Teleports/Void-Rescue/Fill-Rise/Kamera-Kollision/Decken-Probe alle feld-nativ. `isPlayerGrounded` liest den Feld-Cache.
+- **Kreaturen ohne Body:** erden über `_creatureGroundY` (war schon so — der Ammo-Body war ein Schatten); Knockback ist jetzt ein feld-nativer Positions-Stoß (`damageCreature`). `toggleCreatures` togglet nur Sichtbarkeit.
+- **Der Skalar-Vektor-Pool** (`tmpVec1/2`) ist Plain-JS (`_makeFieldVec`) statt `Ammo.btVector3` — alle `setVec`-Aufrufer + der Raycast-Ursprung unberührt (die schmale stabile Naht, wie das `cb`-Synthese-Muster bei `_runRaycast`).
+- **Verifikation:** Fast-Gate 13/13 grün (Welt bootet, kein Crash, 81 Chunks). `diag-walk-feel` (Lauf 10 m, 97 % geerdet, Stufe 0,49 m, Sprung 2,1 m + Landung) · `diag-field-raycast` 4/4 · `diag-structure-collide` (Wand blockt) — alle grün: der Controller läuft/springt/landet/kollidiert/strahlt REIN feld-nativ, ohne Ammo. Das volle Merge-Gate (mit den nachgezogenen Ammo-Bändern) läuft auf der CI.
+- **OFFEN (Sediment-Sweep, klein):** die Kollisions-Stubs + ein paar tote State-Felder (`_fieldGravityZeroed`, `_playerChunkStall*`, `SOFT_FLOOR_REST_OFFSET`, `PLAYER_CHUNK_STALL_MS`) wegkehren · die CSP kann `wasm-unsafe-eval` droppen (war Ammo-only, WASM-Konsumenten-Audit zuerst) · die freie Wurf-Box-Schicht (§5.3/§5.5/§6 des Plans) bleibt Spezifikation.
+
 ### V18.330 — der FELD-RAYCAST: die letzte funktionale Ammo-Abhängigkeit feld-nativ (P3-Vorbereitung)
 
 Der Spieler läuft seit V18.325 feld-nativ (Default), Struktur-Kollision feld-nativ (V18.327) — die letzte Stelle, an der der Code noch ECHTE Ammo-Mathematik brauchte, war der Raycast (`_runRaycast`: Grabe-Hieb, Platzierungs-Pick, Spawn-Boden-Suche, 7 Aufrufer). Jetzt feld-nativ:
