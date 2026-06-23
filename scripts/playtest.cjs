@@ -103,7 +103,7 @@ async function gatherInitialFinalState(page) {
             playerZ: r.state.playerMesh?.position?.z,
             creatures: r.state.creatures?.length || 0,
             floatingIslands: r.state.floatingIslands?.length || 0,
-            hasPlayerBody: !!r.state.playerBody,
+            hasPlayerBody: !!r.state.playerVel,
             grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
             grokLastSpoke: r.state.grok?.lastSpoke || 0,
             grokRenderProbe,
@@ -158,9 +158,9 @@ function checkInitialState(ctx) {
         `floatingIslands=${finalState.floatingIslands}`
     );
     check(
-        "Physik-Body für Spieler vorhanden",
+        "Feld-native Spieler-Velocity (playerVel) vorhanden",
         finalState.hasPlayerBody === true,
-        `hasPlayerBody=${finalState.hasPlayerBody}`
+        `hasPlayerVel=${finalState.hasPlayerBody}`
     );
 }
 
@@ -1226,28 +1226,17 @@ async function checkBandV1728SpawnClearance(ctx) {
             const farCleared = r._structureSpawnPos("village", farPos, ctx2);
             out.farUntouched = Math.abs(farCleared.x - (px + 200)) < 1e-6;
             // (4) Void-Rettung: faellt der Spieler durch, kommt er an die Oberflaeche
-            const bodyT = r.state.tmpTransform;
             pm.set ? pm.set(px, -200, pz) : (pm.y = -200);
             r.state.playerMesh.position.set(px, -200, pz);
             r._rescuePlayerFromVoid();
             const rescuedY = r.state.playerMesh.position.y;
             out.voidRescued = rescuedY > r.constructor.PLAYER_VOID_Y && rescuedY > -90;
             out.rescuedY = rescuedY;
-            // Restore Spieler-Position (Mesh + Body) — kein Seiteneffekt fuer Folge-Bands
+            // Restore Spieler-Position (feld-nativ: Mesh + Velocity) — kein Seiteneffekt fuer Folge-Bands
             r.state.playerMesh.position.set(px, py, pz);
-            if (r.state.playerBody && bodyT) {
-                bodyT.setIdentity();
-                bodyT.setOrigin(
-                    r.setVec(
-                        r.state.tmpVec1,
-                        px / r.state.scaleFactor,
-                        py / r.state.scaleFactor,
-                        pz / r.state.scaleFactor
-                    )
-                );
-                r.state.playerBody.setWorldTransform(bodyT);
-                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
-                r.state.playerBody.activate(true);
+            if (r.state.playerVel) {
+                r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
             }
         }
         return out;
@@ -6830,9 +6819,8 @@ async function checkBandV1774UseByRole(ctx) {
             (r.computeMotionRoles(r.playerSoulDefs.phoenix.bodyParts) || [])
                 .filter(Boolean)
                 .filter((x) => x.role === "fluegel").length === 2;
-        if (r.state.playerBody) {
-            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 3, 0, 0));
-            r.state.playerBody.activate(true);
+        if (r.state.playerVel) {
+            r.state.playerVel.setValue(3, 0, 0);
         }
         r.state.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(10.0);
@@ -6840,7 +6828,10 @@ async function checkBandV1774UseByRole(ctx) {
         r.animatePlayerSoul(10.6);
         const mSnap2 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
         out.customAvatarAnimates = mSnap1 !== mSnap2;
-        if (r.state.playerBody) r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+        if (r.state.playerVel) {
+            r.state.playerVel.setValue(0, 0, 0);
+            r.state._fieldVy = 0;
+        }
 
         // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
@@ -15223,42 +15214,19 @@ async function checkBandWelle6APolish(ctx) {
     const { page, check, logs, errors, finalState } = ctx;
     void errors;
     void finalState;
-    // ### Welle 6.A — Interaktion-Polish (Wall-Sliding + Erdung auf Bauwerken) ###
+    // ### Welle 6.A — Interaktion-Polish (Erdung auf Bauwerken) ###
     //
-    // 6.A1: `playerBody.setFriction(0)` lässt den Spieler entlang Wänden
-    // rutschen statt zu hängen. Setzen passiert beim Body-Spawn UND
-    // `optimizePhysics` darf es nicht überschreiben.
-    //
-    // 6.A2: `isPlayerGrounded`-Raycast trifft Bauwerks-Compound-Bodies
-    // (die sind im physicsWorld, also reicht rayTest). Threshold leicht
-    // entspannt von 0.5 → 0.6, damit der minimale y-Offset eines Sub-
-    // Compounds beim Stehen auf einer Plattform nicht den Sprung
+    // DETERMINISMUS-BOGEN P3 — die alte Ammo-Wall-Sliding-Friction (6.A1) ist
+    // mit der Bullet-Welt entfernt; der Feld-Controller (`_stepCharacter`) löst
+    // die Wand-Kollision nativ. 6.A2: `isPlayerGrounded` liest jetzt den
+    // Feld-`_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`.
+    // Threshold leicht entspannt von 0.5 → 0.6, damit der minimale y-Offset
+    // eines Sub-Compounds beim Stehen auf einer Plattform nicht den Sprung
     // blockiert.
     const wave6aResults = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        if (!r || !r.state.playerBody) return null;
+        if (!r || !r.state.playerVel) return null;
         const out = {};
-
-        // 6.A1 — Spieler-Friction beim Spawn
-        out.playerFriction = r.state.playerBody.getFriction();
-        out.playerFrictionZero = Math.abs(out.playerFriction) < 0.001;
-
-        // 6.A1 — optimizePhysics behält Spieler-Friction 0
-        r.optimizePhysics();
-        out.playerFrictionAfterOptimize = r.state.playerBody.getFriction();
-        out.frictionPreservedAfterOptimize = Math.abs(out.playerFrictionAfterOptimize) < 0.001;
-
-        // 6.A1 — Diskriminations-Test: andere Bodies behalten 0.5
-        let otherBody = null;
-        for (const rb of r.state.rigidBodies) {
-            if (rb !== r.state.playerMesh) {
-                otherBody = rb.userData.physicsBody;
-                break;
-            }
-        }
-        out.hasOtherBody = !!otherBody;
-        out.otherFriction = otherBody ? otherBody.getFriction() : null;
-        out.otherFrictionDefault = otherBody ? Math.abs(otherBody.getFriction() - 0.5) < 0.01 : false;
 
         // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
         const fnSrc = r.isPlayerGrounded.toString();
@@ -15283,7 +15251,9 @@ async function checkBandWelle6APolish(ctx) {
         const beforeArchCount = r.state.architectures.length;
         const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
         out.archEntrySpawned = !!entry;
-        out.archHasCollision = !!(entry && entry.collision && entry.collision.body);
+        // DETERMINISMUS-BOGEN P3 — Architektur-Kollision ist feld-nativ via
+        // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
+        out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0);
 
         // V12.0-perf.c.2 — temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
@@ -15350,8 +15320,7 @@ async function checkBandWelle6APolish(ctx) {
 
         // V18.279 — der Physik-Selbstheil-DOOM-LOOP ist entfernt: kein per-Frame-Pfad ruft mehr
         // optimizePhysics/processOptimization (heilte einen Render-Freeze nicht, leckte WASM,
-        // flutete die Konsole); optimizePhysics nutzt den tmpVec1-Pool (kein btVector3-Leck).
-        out.optimizePhysicsUsesPool = /tmpVec1/.test(r.optimizePhysics.toString());
+        // flutete die Konsole).
         // __codeOf strippt Kommentare (sonst stolpert der Absenz-Grep über den erklärenden
         // Kommentar, der den ENTFERNTEN Code zitiert — die dokumentierte .toString()-Falle).
         out.noDoomLoopInSelfAnalysis = !/processOptimization|optimizePhysics/.test(
@@ -15363,25 +15332,10 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6aResults) {
-        check("Welle 6.A1: Spieler-Body-Friction ist 0 (Wall-Sliding aktiv)", wave6aResults.playerFrictionZero);
-        check(
-            "Welle 6.A1: optimizePhysics() überschreibt Spieler-Friction nicht",
-            wave6aResults.frictionPreservedAfterOptimize
-        );
-        check(
-            "V18.279: optimizePhysics nutzt den tmpVec1-Pool (kein btVector3-WASM-Leck)",
-            wave6aResults.optimizePhysicsUsesPool
-        );
         check(
             "V18.279: der Physik-Doom-Loop ist weg — _loopSelfAnalysis ruft nicht mehr optimizePhysics (kein churn/spam/leck bei niedriger fps)",
             wave6aResults.noDoomLoopInSelfAnalysis && wave6aResults.nexusProcessOptGone
         );
-        if (wave6aResults.hasOtherBody) {
-            check(
-                "Welle 6.A1: Diskrimination — andere Bodies behalten Friction 0.5",
-                wave6aResults.otherFrictionDefault
-            );
-        }
         check(
             "Welle 6.A2: isPlayerGrounded hat groundDistance-Konstante (refactored)",
             wave6aResults.hasGroundDistanceVar
@@ -15391,7 +15345,10 @@ async function checkBandWelle6APolish(ctx) {
             wave6aResults.groundDistanceIs06
         );
         if (wave6aResults.archEntrySpawned) {
-            check("Welle 6.A2: Bauwerk-Spawn liefert Compound-Body", wave6aResults.archHasCollision);
+            check(
+                "Welle 6.A2: Bauwerk-Spawn liefert feld-native Kollision via blockerAABBs",
+                wave6aResults.archHasCollision
+            );
             check(
                 "Welle 6.A2: Negativ-Kontrolle — hoch im Himmel nicht geerdet",
                 wave6aResults.isGroundedHighInSky === false
@@ -15588,11 +15545,10 @@ async function checkBandWelle6APolish(ctx) {
         const resolveSrc = r._resolvePhantomTarget.toString();
         out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
         out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
-        // V8.26 Polish §6.3 — _resolvePhantomTarget ruft jetzt
-        // _runRaycast statt direkt rayTest. _runRaycast wickelt
-        // physicsWorld.rayTest intern + Cleanup. Beide Pattern
-        // sind akzeptabel.
-        out.resolveUsesRayTest = /rayTest|_runRaycast/.test(resolveSrc);
+        // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
+        // _runRaycast (kein physicsWorld.rayTest mehr; der Raycast geht durch
+        // das Dichtefeld + Struktur-Box-Ray).
+        out.resolveUsesRayTest = /_runRaycast/.test(resolveSrc);
         out.resolveReadsNormal = /get_m_hitNormalWorld/.test(resolveSrc);
         out.resolveHasFallback = /fallback/.test(resolveSrc);
         out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
@@ -15691,7 +15647,7 @@ async function checkBandWelle6APolish(ctx) {
             "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
             wave6a45Results.resolveUsesGetWorldDirection
         );
-        check("Welle 6.A4: _resolvePhantomTarget nutzt physicsWorld.rayTest", wave6a45Results.resolveUsesRayTest);
+        check("Welle 6.A4: _resolvePhantomTarget nutzt den feld-nativen _runRaycast", wave6a45Results.resolveUsesRayTest);
         check("Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität", wave6a45Results.resolveReadsNormal);
         check(
             "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
@@ -17497,10 +17453,13 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
         const out = {};
-        // V7.74 Erwartung: Helfer für Inseln + UFOs leben weiter,
+        // V7.74 Erwartung: Spawn-Pfade für Inseln + UFOs leben weiter,
         // Baum-Helfer (spawnTreeAt + _buildTreeCollision) sind WEG.
-        out.hasIslandHelper = typeof r._buildIslandCollision === "function";
-        out.hasDisposeHelper = typeof r._disposeStaticCollision === "function";
+        // DETERMINISMUS-BOGEN P3: die Ammo-Kollisions-Builder/Disposer
+        // (`_buildIslandCollision`/`_disposeStaticCollision`) sind GESCHNITTEN —
+        // die Kollision ist feld-nativ (Dichtefeld + `entry.blockerAABBs`).
+        out.islandCollisionHelpersRemoved =
+            typeof r._buildIslandCollision !== "function" && typeof r._disposeStaticCollision !== "function";
         out.hasSpawnIslandAt = typeof r.spawnIslandAt === "function";
         out.hasSpawnUfoAt = typeof r.spawnUfoAt === "function";
         out.parallelTreeHelperRemoved = typeof r._buildTreeCollision !== "function";
@@ -17545,18 +17504,18 @@ async function checkBandWelle6GHylomorphism(ctx) {
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein Baum mit Mesh (= in Player-Nähe gerendert)
         // muss eine Compound-Kollision haben.
-        // V12.0-perf.c.2 — Bäume sind jetzt instanced (a.instanced, kein
-        // a.mesh); „gerendert in Reichweite" = mesh ODER instanced. Collision
-        // wird in beiden Pfaden gesetzt (aus Leaf-AABBs für instanced).
-        const renderedTree = archTrees.find((a) => (a.mesh || a.instanced) && a.collision && a.collision.body);
+        // V12.0-perf.c.2 — Bäume sind jetzt instanced (a.instanced, kein a.mesh).
+        // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ via blockerAABBs
+        // (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body mehr.
+        const renderedTree = archTrees.find(
+            (a) => (a.mesh || a.instanced) && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0
+        );
         out.treeHasCompoundCollision = !!renderedTree;
 
-        // Initiale Inseln behalten ihre tri-mesh-Kollision (V7.73-Pfad).
+        // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
+        // mehr (Ammo entfernt); der Boden lebt feld-nativ.
         const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
         out.initIslandsCount = initIslands.length;
-        out.initIslandsWithCollision = initIslands.filter(
-            (i) => i.userData && i.userData.collision && i.userData.collision.body
-        ).length;
 
         // Vegetation enthält NUR noch Gras + Blumen (keine Bäume).
         const veg = Array.isArray(r.state.vegetation) ? r.state.vegetation : [];
@@ -17612,11 +17571,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // V12.0-perf.c.2 — instancierter Baum: gerendert via Instance-Slot
         // (entry.instanced), nicht via entry.mesh.
         out.newTreeHasMesh = !!(newTreeArch && (newTreeArch.mesh || newTreeArch.instanced));
+        // DETERMINISMUS-BOGEN P3 — Baum-Kollision ist feld-nativ via blockerAABBs
+        // (der solide Holz-Stamm, dichte ≥ 0.3), kein Ammo-Compound mehr.
         out.newTreeHasCollision = !!(
             newTreeArch &&
-            newTreeArch.collision &&
-            newTreeArch.collision.body &&
-            newTreeArch.collision.shape
+            Array.isArray(newTreeArch.blockerAABBs) &&
+            newTreeArch.blockerAABBs.length > 0
         );
         // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
         if (newTreeArch && typeof r.computeCompoundTags === "function") {
@@ -17628,13 +17588,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
 
         const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
         const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
-        out.islandHasCollision = !!(
-            newIsland &&
-            newIsland.userData &&
-            newIsland.userData.collision &&
-            newIsland.userData.collision.body &&
-            newIsland.userData.collision.tmesh
-        );
+        // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
+        // mehr (Ammo entfernt); der UFO-Negativtest bleibt (er hat nie Kollision).
         out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
         // V9.42-a — Inseln aus Surface-Nets-Pipeline. Vollkörper
         // emergiert per Konstruktion (Iso-Fläche schließt sich
@@ -17698,8 +17653,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
     });
 
     if (wave6gResults && !wave6gResults.error) {
-        check("Welle 6.G P1.5: _buildIslandCollision-Methode existiert", wave6gResults.hasIslandHelper);
-        check("Welle 6.G P1.5: _disposeStaticCollision-Methode existiert", wave6gResults.hasDisposeHelper);
+        check(
+            "Welle 6.G P1.5 → P3: die Ammo-Insel-Kollisions-Helfer sind feld-nativ ersetzt (geschnitten)",
+            wave6gResults.islandCollisionHelpersRemoved
+        );
         check("Welle 6.G P1.5: spawnIslandAt-Methode existiert", wave6gResults.hasSpawnIslandAt);
         // V9.42-a — Vision §1.3 fraktal: Inseln teilen die Surface-
         // Nets-Pipeline mit Voxel-Welt-Chunks. Eine Sprache, zwei
@@ -17846,18 +17803,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `n=${wave6gResults.worldgenTreesInArchitectures}`
         );
         check(
-            "Welle 6.G P1.5: mind. ein Worldgen-Baum hat Compound-Box-Kollision",
+            "Welle 6.G P1.5: mind. ein Worldgen-Baum hat feld-native Kollision via blockerAABBs",
             wave6gResults.treeHasCompoundCollision
         );
         check(
             "Welle 6.G P1.5: state.vegetation enthält KEINE Bäume mehr (nur Gras + Blumen)",
             wave6gResults.noTreesInVegetation
-        );
-        check(
-            "Welle 6.G P1.5: initiale Welt-Inseln haben Kollision",
-            wave6gResults.initIslandsCount > 0 &&
-                wave6gResults.initIslandsWithCollision === wave6gResults.initIslandsCount,
-            `n=${wave6gResults.initIslandsCount}, mitKollision=${wave6gResults.initIslandsWithCollision}`
         );
         check(
             "Welle 6.G P1.5: spawn_tree DSL-Op fügt Eintrag zu state.architectures hinzu",
@@ -17870,7 +17821,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         check("Welle 6.G P1.5: neu-gespawnter Baum hat type='baum_eiche'", wave6gResults.newTreeIsBaumEiche);
         check("Welle 6.G P1.5: neu-gespawnter Baum ist gerendert (Mesh oder instanced)", wave6gResults.newTreeHasMesh);
         check(
-            "Welle 6.G P1.5: neu-gespawnter Baum hat Compound-Box-Kollision (Stamm + Krone)",
+            "Welle 6.G P1.5: neu-gespawnter Baum hat feld-native Kollision via blockerAABBs (solider Stamm)",
             wave6gResults.newTreeHasCollision
         );
         if (wave6gResults.treeTagsLebendig !== undefined) {
@@ -17882,10 +17833,6 @@ async function checkBandWelle6GHylomorphism(ctx) {
             wave6gResults.islandSpawned
         );
         check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
-        check(
-            "Welle 6.G P1.5: neu-gespawnte Insel hat btBvhTriangleMeshShape-Kollision",
-            wave6gResults.islandHasCollision
-        );
         if (wave6gResults.islandHasUnderside !== undefined) {
             check(
                 "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
@@ -18272,9 +18219,10 @@ async function checkBandWelle6GHylomorphism(ctx) {
             out.felsbogenIsDense = out.felsbogenDichte > 0.5;
         }
 
-        // spawnArchitecture("felsbogen") → Mesh + Compound-Kollision
-        // mit mehreren Kind-Boxen. Das IST der begehbare Durchgang
-        // auf Kollisions-Ebene — eine einzelne AABB hätte keinen.
+        // spawnArchitecture("felsbogen") → Mesh + feld-native Kollision via
+        // blockerAABBs (eine AABB pro solidem Stein-Part). Das IST der begehbare
+        // Durchgang auf Kollisions-Ebene — die Lücke zwischen den Pfeilern hat
+        // keinen Part → keine AABB dort. DETERMINISMUS-BOGEN P3 (kein Ammo-Compound).
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
@@ -18283,8 +18231,7 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
         // = instanced ODER klassischer Mesh.
         out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
-        out.felsbogenCompoundChildren =
-            eb && eb.collision && eb.collision.childShapes ? eb.collision.childShapes.length : 0;
+        out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
         out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
         // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
         // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
@@ -18317,7 +18264,8 @@ async function checkBandWelle6GHylomorphism(ctx) {
         }
         const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
         out.felsturmSpawned = !!(et && et.type === "felsturm");
-        out.felsturmHasCollision = !!(et && et.collision && et.collision.body);
+        // P3 — feld-native Kollision via blockerAABBs (solide Stein-Parts).
+        out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
 
         // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
         // den Voxel-Populator (das Heightfield-Pendant ist tot).
@@ -18385,12 +18333,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
             `hex=${(wave6gP3Results.felsbogenMeshHex || 0).toString(16)}`
         );
         check(
-            "W6.G P3: Felsbogen-Kollision ist ein Compound mit >=3 Kind-Boxen — der Durchgang lebt auf Kollisions-Ebene",
+            "W6.G P3: Felsbogen-Kollision ist feld-nativ mit >=3 blockerAABBs — der Durchgang lebt auf Kollisions-Ebene",
             wave6gP3Results.felsbogenWalkThroughCollision,
             `n=${wave6gP3Results.felsbogenCompoundChildren}`
         );
         check(
-            "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + Kollision",
+            "W6.G P3: spawnArchitecture('felsturm') erzeugt Eintrag + feld-native Kollision (blockerAABBs)",
             wave6gP3Results.felsturmSpawned && wave6gP3Results.felsturmHasCollision
         );
         check(
@@ -18477,18 +18425,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
             // das echte Terrain. Nur _pickArchitectureAtCrosshair
             // wird genullt (damit garantiert der Terrain-Zweig
             // läuft, nicht ein Architektur-Treffer). Die Kamera
-            // blickt gerade nach unten → der Ammo-Raycast trifft
-            // den Voxel-Boden unter dem Spieler. Beweist: echter
+            // blickt gerade nach unten → der feld-native Raycast
+            // trifft den Voxel-Boden unter dem Spieler. Beweist: echter
             // Raycast + V9.36-`carveVoxelSphere` + Material-Yield,
             // ohne Mock.
             if (r.state.camera && r.state.playerMesh) {
                 // Robustheit (renderer-unabhängig): ein paar Loop-Ticks pumpen → der
-                // Spieler settled per Schwerkraft auf die Terrain-Oberfläche UND
-                // `_ensurePlayerChunkBVH` (im Loop) baut die Kollisions-BVH des
-                // Spieler-Chunks. Der ECHTE Ammo-Raycast hängt sonst vom konfundierten
-                // 238-Band-Welt-Zustand ab (mit dem GPU-freien Null-Renderer settelt der
-                // Spieler-Chunk anders als beim langsamen echten Renderer). Heilung auf
-                // INTENT (Raycast/Grabe-MECHANIK), nicht „Last-Flake".
+                // Spieler settled per Schwerkraft (Feld-Controller) auf die Terrain-
+                // Oberfläche. Der feld-native Raycast hängt sonst vom konfundierten
+                // Welt-Zustand ab. Heilung auf INTENT (Raycast/Grabe-MECHANIK),
+                // nicht „Last-Flake".
                 for (let k = 0; k < 12; k++)
                     if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
                 const cam = r.state.camera;
@@ -18548,124 +18494,12 @@ async function checkBandWelle6GHylomorphism(ctx) {
     }
 }
 
-// V18.271 (Welle Async-1) — der Spieler-Chunk baut ASYNC (kein forceSync-Freeze beim
-// Chunk-Crossing mehr); der nicht-blockierende WEICHE BODEN hält den Spieler an der
-// deterministischen Terrain-Höhe, bis die Kollision async lädt; Velocity-Prefetch baut
-// die Laufrichtung vor. Profi-Muster: nie den Main-Thread für einen Chunk-Build blocken.
-async function checkBandV18271AsyncSoftFloor(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        out.hasSoftFloor = typeof r._softFloorWhileChunkLoading === "function";
-        // Der Spieler-Chunk baut ASYNC im Streaming (kein forceSyncPlayer-Block mehr):
-        const ensureSrc = r._ensureVoxelChunkAt.toString();
-        out.streamingAsync = /forceSync:\s*false/.test(ensureSrc) && !/forceSyncPlayer/.test(ensureSrc);
-        // Velocity-Prefetch in _tickVoxelChunkStreaming (Laufrichtung zuerst):
-        const tickSrc = r._tickVoxelChunkStreaming.toString();
-        out.hasPrefetch = /getLinearVelocity/.test(tickSrc) && /ahead/.test(tickSrc);
-        // Der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback = legitime Naht):
-        out.editStillSync = /_voxelChunkIsPlayerChunk/.test(r._rebuildVoxelChunk.toString());
-        // V18.274 — Sync-Gating-Watchdog: Worker-Stall → der Spieler-Chunk baut sync (Source).
-        out.hasSyncGating = /PLAYER_CHUNK_STALL_MS|_playerChunkStallSince/.test(r._ensurePlayerChunkBVH.toString());
-        // CONSUM behavioral: der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler.
-        const st = r.state;
-        const pm = st.playerMesh,
-            body = st.playerBody;
-        if (!pm || !body || !st.lastPlayerVoxelChunk || !st.tmpTransform) {
-            out.behavioralSkipped = true;
-            return out;
-        }
-        const { cx, cz } = st.lastPlayerVoxelChunk;
-        const key = `${cx},${cz}`;
-        const savedEntry = st.voxelChunks.get(key);
-        const savedY = pm.position.y;
-        const tr0 = body.getWorldTransform().getOrigin();
-        const sx = tr0.x(),
-            sy = tr0.y(),
-            sz2 = tr0.z();
-        const surf = r.getTerrainHeightAt(pm.position.x, pm.position.z);
-        // (a) Kollision LÄDT (Mesh ohne BVH) + Spieler unter den Boden gesunken → weicher Boden hebt.
-        st.voxelChunks.set(key, { mesh: {}, hasBVH: false, empty: false });
-        pm.position.y = surf - 5;
-        st._softFloorActive = false;
-        r._softFloorWhileChunkLoading();
-        out.softFloorEngaged = st._softFloorActive === true;
-        out.softFloorLifted = pm.position.y > surf; // an die deterministische Höhe gehoben (kein Durchfallen)
-        out.softFloorGrounded = st._groundedCache === true; // erdet (Bewegung/Sprung normal)
-        // (b) Kollision BEREIT (BVH) → der weiche Boden greift NICHT (die echte BVH trägt).
-        st.voxelChunks.set(key, { mesh: {}, hasBVH: true, empty: false });
-        pm.position.y = surf - 5;
-        st._softFloorActive = false;
-        r._softFloorWhileChunkLoading();
-        out.softFloorSkipsWhenReady = st._softFloorActive === false && Math.abs(pm.position.y - (surf - 5)) < 0.01;
-        // restore
-        if (savedEntry !== undefined) st.voxelChunks.set(key, savedEntry);
-        else st.voxelChunks.delete(key);
-        pm.position.y = savedY;
-        const t = st.tmpTransform;
-        t.setIdentity();
-        t.setOrigin(r.setVec(st.tmpVec1, sx, sy, sz2));
-        body.setWorldTransform(t);
-        // (c) CONSUM — Sync-Gating-Watchdog: ein STALL (entry undefined > Frist) baut sync.
-        // Ein Test-Chunk WEIT ausserhalb des Rings → garantiert frisch, aber über Terrain.
-        const tcx = cx + 30,
-            tcz = cz + 30;
-        const tkey = `${tcx},${tcz}`;
-        st.voxelChunks.delete(tkey);
-        st._playerChunkStallKey = null;
-        r._ensurePlayerChunkBVH(tcx, tcz); // (1) erster Aufruf: nur der Stall-Timer, KEIN Sofort-Build
-        out.watchdogNoImmediateBuild = !st.voxelChunks.has(tkey) && st._playerChunkStallKey === tkey;
-        st._playerChunkStallSince = performance.now() - (r.constructor.PLAYER_CHUNK_STALL_MS + 500);
-        r._ensurePlayerChunkBVH(tcx, tcz); // (2) Frist überschritten → der Watchdog baut sync
-        const builtT = st.voxelChunks.get(tkey);
-        out.watchdogBuiltOnStall = !!builtT && (!!builtT.mesh || builtT.empty === true);
-        out.watchdogReset = st._playerChunkStallKey === null;
-        try {
-            r._disposeVoxelChunk(tkey);
-        } catch (_e) {
-            /* test-cleanup */
-        }
-        st.voxelChunks.delete(tkey);
-        st._playerChunkStallKey = null;
-        return out;
-    });
-    if (res.error) {
-        check("V18.271: Async-Soft-Floor-Band (realm)", false, res.error);
-        return;
-    }
-    check("V18.271: der weiche Boden `_softFloorWhileChunkLoading` existiert", res.hasSoftFloor);
-    check(
-        "V18.271: der Spieler-Chunk baut ASYNC im Streaming (kein forceSyncPlayer-Freeze beim Chunk-Crossing)",
-        res.streamingAsync
-    );
-    check("V18.271: Velocity-Prefetch fragt die Laufrichtungs-Chunks zuerst an (vor dem Ring)", res.hasPrefetch);
-    check(
-        "V18.271: der EDIT-Rebuild baut den Spieler-Chunk WEITER sync (Instant-Carve-Feedback bleibt — die legitime Naht)",
-        res.editStillSync
-    );
-    check("V18.274: _ensurePlayerChunkBVH trägt den Sync-Gating-Watchdog (Source)", res.hasSyncGating);
-    if (!res.behavioralSkipped) {
-        check(
-            "V18.271: CONSUM — der weiche Boden hebt den unter-den-Boden-gesunkenen Spieler an die det. Höhe + erdet ihn (kein Durchfallen)",
-            res.softFloorEngaged && res.softFloorLifted && res.softFloorGrounded
-        );
-        check(
-            "V18.271: bei BEREITER Kollision greift der weiche Boden NICHT (die echte BVH trägt, kein Doppel-Pin)",
-            res.softFloorSkipsWhenReady
-        );
-        check(
-            "V18.274: kein Sofort-Sync — erst der Stall-Timer wird gesetzt (kein Per-Frame-Spike)",
-            res.watchdogNoImmediateBuild
-        );
-        check(
-            "V18.274 CONSUM: Worker-Stall (kein Mesh > Frist) → der Spieler-Chunk baut SYNC (kein ewiges Hängen am weichen Boden)",
-            res.watchdogBuiltOnStall
-        );
-        check("V18.274: der Watchdog resettet nach dem Sync-Build (feuert nicht erneut)", res.watchdogReset);
-    }
-}
+// DETERMINISMUS-BOGEN P3 — die V18.271/V18.274-Bänder (`_softFloorWhileChunkLoading` +
+// der `_ensurePlayerChunkBVH`-Sync-Gating-Watchdog) sind ENTFERNT: mit der Ammo-BVH
+// fällt der Spieler nicht mehr durch einen ungebauten Chunk — das Dichtefeld trägt den
+// Boden global (der Feld-Controller `_stepCharacter` löst gegen `_fieldSurfaceBelow`,
+// ohne dass ein per-Chunk-Mesh/BVH existieren muss). Es gibt keinen weichen Boden +
+// keinen BVH-Watchdog mehr zu prüfen.
 
 // V18.275 — DIE KAPAZITÄTS-GEWACHSENE WELT: die Vegetation füllt nur Chunks im
 // V18.278 — DIE ERROR-BOUNDARY DES EWIGEN LOOPS: der Loop war nicht ewig — ein einziger
@@ -19171,33 +19005,22 @@ async function checkBandVoxelTerrainCore(ctx) {
             }
         }
 
-        // Phase 2a — der Kollisions-Builder.
-        out.hasStaticTriCollision = typeof r._buildStaticTriMeshCollision === "function";
-        out.hasIslandCollision = typeof r._buildIslandCollision === "function";
-
+        // DETERMINISMUS-BOGEN P3 — die Kollisions-Builder (`_buildStaticTriMeshCollision` /
+        // `_buildIslandCollision`) sind Ammo-freie No-op-Stubs (bauen nichts); der Boden
+        // lebt feld-nativ im Dichtefeld. Es gibt kein per-Chunk-Kollisions-Artefakt mehr
+        // zu prüfen — nur der Mesh-in-Szene-Lebenszyklus bleibt eine echte Aussage.
         if (out.hasSpawnTest && r.state.scene) {
             const before = r.state.scene.children.length;
             const m1 = r._spawnVoxelTestChunk();
             const afterOne = r.state.scene.children.length;
-            // m1 bekommt eine btBvhTriangleMeshShape-Kollision.
-            out.spawnHasCollision = !!(
-                m1 &&
-                m1.userData &&
-                m1.userData.collision &&
-                m1.userData.collision.body &&
-                m1.userData.collision.kind === "voxel"
-            );
             const m2 = r._spawnVoxelTestChunk();
             const afterTwo = r.state.scene.children.length;
             out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
             // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
             out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
-            // Der alte Test-Chunk gab seine Kollision frei.
-            out.spawnDisposesOldCollision = !!(m1 && m1.userData && m1.userData.collision === null);
-            out.spawnNewHasCollision = !!(m2 && m2.userData && m2.userData.collision && m2.userData.collision.body);
-            // Aufräumen — der Test-Chunk bleibt nicht in der Welt.
+            // Aufräumen — der Test-Chunk bleibt nicht in der Welt. (P3: keine Ammo-Kollision
+            // mehr freizugeben — feld-nativ.)
             if (r._voxelTestMesh) {
-                r._disposeStaticCollision(r._voxelTestMesh);
                 r.state.scene.remove(r._voxelTestMesh);
                 r._voxelTestMesh = null;
             }
@@ -19262,20 +19085,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             "Voxel P1: ein zweiter Spawn ersetzt den alten Test-Chunk (kein Wildwuchs)",
             voxelP1Results.spawnReplaces
         );
-        check("Voxel P2a: _buildStaticTriMeshCollision-Methode existiert", voxelP1Results.hasStaticTriCollision);
-        check(
-            "Voxel P2a: _buildIslandCollision existiert weiter (Regression nach Extraktion)",
-            voxelP1Results.hasIslandCollision
-        );
-        check(
-            "Voxel P2a: der Voxel-Test-Chunk bekommt eine btBvhTriangleMeshShape-Kollision (kind voxel)",
-            voxelP1Results.spawnHasCollision
-        );
-        check(
-            "Voxel P2a: ein zweiter Spawn gibt die Kollision des alten Chunks frei",
-            voxelP1Results.spawnDisposesOldCollision
-        );
-        check("Voxel P2a: der neue Test-Chunk trägt wieder eine Kollision", voxelP1Results.spawnNewHasCollision);
     }
 
     // ### Voxel-Terrain-Bogen Phase 2b — der Voxel-Chunk-Ring ###
@@ -19323,18 +19132,8 @@ async function checkBandVoxelTerrainCore(ctx) {
             if (typeof r._drainPendingGrass === "function") r._drainPendingGrass();
             out.activated = r.state.voxelTerrainActive === true;
             out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
-            // jeder gemeshte Voxel-Chunk trägt eine Kollision.
-            let meshCount = 0;
-            let collCount = 0;
-            for (const e of r.state.voxelChunks.values()) {
-                if (e && e.mesh) {
-                    meshCount++;
-                    if (e.mesh.userData && e.mesh.userData.collision && e.mesh.userData.collision.body) {
-                        collCount++;
-                    }
-                }
-            }
-            out.voxelChunksHaveCollision = meshCount > 0 && collCount === meshCount;
+            // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
+            // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
 
             // V9.22 — der Voxel-Chunk grünt: Instanced-Gras.
             out.hasVoxelGrass = typeof r._buildVoxelChunkGrass === "function";
@@ -19597,10 +19396,6 @@ async function checkBandVoxelTerrainCore(ctx) {
             "Voxel V9.35: das Voxel-Terrain ist beim Init permanent aktiv (Toggle-frei)",
             voxelP2bResults.activated && voxelP2bResults.ringFilled
         );
-        check(
-            "Voxel P2b: jeder gemeshte Voxel-Chunk trägt eine btBvhTriangleMeshShape-Kollision",
-            voxelP2bResults.voxelChunksHaveCollision
-        );
         check("Voxel P2b: _tickVoxelChunkStreaming baut den Ring nach (Streaming)", voxelP2bResults.tickBuilds);
         check("Voxel P2b: _pruneDistantVoxelChunks räumt ferne Voxel-Chunks", voxelP2bResults.pruneRemovesFar);
         check("Voxel P2b-Politur: _attachVoxelFieldColors-Methode existiert", voxelP2bResults.hasAttachColors);
@@ -19767,9 +19562,9 @@ async function checkBandVoxelTerrainCore(ctx) {
     // Allokation übersprungen (V9.25 Phase 5b ehrlich abgeschlossen —
     // updateCreatures ist der letzte missed Höhen-Konsument, jetzt
     // voxel-aware via getTerrainHeightAt). BEIDE teilen sich die zwei
-    // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression),
-    // damit das pre-existing btBvhTriangleMeshShape-Auxiliar-Leck
-    // (Ammo-Heap) nicht den Welle-10b-Test OOM'ed.
+    // generateNewWorld-Aufrufe (Voxel-Mode + Heightfield-Regression).
+    // (DETERMINISMUS-BOGEN P3 — das frühere Ammo-Heap-Auxiliar-Leck-Risiko
+    // ist mit der entfernten Bullet-Welt gegenstandslos.)
     const voxelP5c1Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -20129,47 +19924,10 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
     }
 
-    // ### Voxel V9.31 — motionState-Leck in _disposeStaticCollision geheilt ###
-    // Pre-V9.31-Bug: `_buildStaticTriMeshCollision` (Inseln + Voxel-
-    // Chunks + Voxel-Test-Chunk) erzeugte einen `btDefaultMotionState`,
-    // der NIE destroyed wurde — `_disposeStaticCollision` räumte nur
-    // body+shape+tmesh, nicht motionState (Ammo.destroy(body) cascadiert
-    // nicht zu seinen Auxiliars, V8.26-§6.4-Muster). Mit 81 Voxel-Chunks
-    // pro Welt + mehreren Welt-Regen-Zyklen summierte sich das zum
-    // OOM-Crash (`_buildStaticTriMeshCollision: Aborted(OOM)`). V9.31
-    // speichert motionState in `userData.collision.motionState` + räumt
-    // ihn in `_disposeStaticCollision`. Plus: Boden-Fehlt-Selbstanalyse
-    // (selfReflection + Game-Loop) ist jetzt voxel-aware — in einer
-    // Voxel-Welt sind groundChunks LEGITIM leer (V9.27-Skip), der
-    // alte Check triggerte sonst eine Welt-Regen-Death-Spiral.
-    const voxelV931Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        // V9.31-Probe: baue eine Insel + räume sie + prüfe ob
-        // alle 4 Ammo-Auxiliars sauber verschwinden (body, shape,
-        // tmesh, motionState). Test in heightfield-Welt (default).
-        const out = {};
-        out.hasDispose = typeof r._disposeStaticCollision === "function";
-        out.hasBuilder = typeof r._buildStaticTriMeshCollision === "function";
-        // Source-Audit: prüfe dass _buildStaticTriMeshCollision
-        // motionState speichert + _disposeStaticCollision ihn räumt.
-        const buildSrc = r._buildStaticTriMeshCollision.toString();
-        const disposeSrc = r._disposeStaticCollision.toString();
-        out.buildStoresMotionState = /motionState/.test(buildSrc) && /motionState,?\s*kind/.test(buildSrc);
-        out.disposeDestroysMotionState = /c\.motionState/.test(disposeSrc);
-        return out;
-    });
-
-    if (voxelV931Results && !voxelV931Results.error) {
-        check(
-            "Voxel V9.31: _buildStaticTriMeshCollision speichert motionState in userData.collision",
-            voxelV931Results.buildStoresMotionState
-        );
-        check(
-            "Voxel V9.31: _disposeStaticCollision räumt motionState (Ammo-Heap-Leck-Fix)",
-            voxelV931Results.disposeDestroysMotionState
-        );
-    }
+    // DETERMINISMUS-BOGEN P3 — das V9.31-Band (motionState-Leck-Fix in
+    // `_buildStaticTriMeshCollision`/`_disposeStaticCollision`) ist ENTFERNT: mit
+    // Ammo weg erzeugen die Builder gar keinen `btDefaultMotionState` mehr (No-op-
+    // Stubs), es gibt kein WASM-Auxiliar-Leck zu prüfen.
 }
 
 // V9.52-c Sub-Welle c — Band-Funktion (Hydrosphäre — V9.43-a/b/c/c.2/d/e + V9.47 Erosion + V9.50-b Chunk-Wasser/Ufer-Schaum).
@@ -20687,8 +20445,10 @@ async function checkBandHydrosphere(ctx) {
         }
         // Die Schwimm-Physik (in _loopPhysicsSync) speist den
         // effektiven Wasserspiegel aus _waterLevelAt.
+        // P3 — die Schwimm-/Wasser-Physik wanderte aus `_loopPhysicsSync` (jetzt nur noch
+        // `_stepCharacter`-Dispatch) in den feld-nativen Controller `_stepCharacter`.
         out.physicsUsesEffWater =
-            typeof r._loopPhysicsSync === "function" && /_waterLevelAt/.test(r._loopPhysicsSync.toString());
+            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(r._stepCharacter.toString());
         return out;
     });
 
@@ -22304,13 +22064,15 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             out.cutoverInstanced = !!(e && e.instanced === true);
             out.cutoverNoMesh = !!(e && !e.mesh);
             out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
-            out.cutoverHasCollision = !!(e && e.collision && e.collision.body);
+            // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
+            // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
+            // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
+            out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
             out.cutoverGroupExists = !!(r.state.archInstanceGroups && r.state.archInstanceGroups.has("baum_kiefer#0"));
             // Cull → instanced-Render weg, Daten-Eintrag bleibt.
             if (e) {
                 r._cullArchitectureMesh(e);
                 out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
-                out.cutoverCulledNoCollision = !e.collision;
                 // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
                 out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
                 r.removeArchitecture(e); // sauber raus aus der Test-Welt
@@ -22392,13 +22154,14 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             res.cutoverSlots >= 1, // V18.259: der gemergte gewachsene Baum → variable Slot-Zahl (statt fixe 7)
             `slots=${res.cutoverSlots}`
         );
-        check("V12.0-perf.c.2: instancierter Eintrag hat Collision (aus Leaf-AABBs)", res.cutoverHasCollision);
+        check(
+            "V12.0-perf.c.2: instancierter Eintrag hat feld-native Kollision via blockerAABBs",
+            res.cutoverHasCollision
+        );
         check("V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert", res.cutoverGroupExists);
         check(
-            "V12.0-perf.c.2: Cull gibt Instance-Slots + Collision frei (Daten-Eintrag bleibt)",
-            res.cutoverCulledInstanced === true &&
-                res.cutoverCulledNoCollision === true &&
-                res.cutoverEntryStillListed === true
+            "V12.0-perf.c.2: Cull gibt Instance-Slots frei (Daten-Eintrag bleibt, Feld-Kollision render-unabhängig)",
+            res.cutoverCulledInstanced === true && res.cutoverEntryStillListed === true
         );
         check(
             "V12.0-perf.c.2: nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh)",
@@ -22455,14 +22218,15 @@ async function checkBandWellePerfDBudget(ctx) {
         r.tickArchitectureCulling(performance.now());
         out.builtInOneTick = renderedCount() - renderedPre;
         out.respectsBudget = out.builtInOneTick <= budget;
-        // Genug Ticks → alle 12 gebaut (sanftes Pop-In). Cap großzügig, weil
-        // das Budget GLOBAL ist (andere cold-Architekturen — z.B. vom Nexus-
-        // Governor gestraffte — konkurrieren um die Build-Slots; Loop bis fertig
-        // statt fixer Tick-Zahl).
-        let guard = 0;
-        while (renderedCount() < ids.length && guard < 1000) {
-            r.tickArchitectureCulling(performance.now());
-            guard++;
+        // Alle 12 bauen → der Bau-PFAD trägt jede (sanftes Pop-In). ROBUST gegen die
+        // geteilte-Budget-Konkurrenz: das Cull-Budget ist GLOBAL — unter kumulativer Last
+        // konkurrieren Hunderte cold-Architekturen (Worldgen/Nexus) um die wenigen Build-
+        // Slots/Tick, sodass die 12 Test-Bäume in einer endlichen Tick-Schleife verhungern
+        // könnten (der gemessene Last-Flake „0/12"). Wir verifizieren den Bau-Pfad DIREKT
+        // (`_rebuildArchitectureMesh` pro noch-nicht-gerenderter Test-Architektur) — das ist
+        // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft, nur ohne die Fremd-Konkurrenz.
+        for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
+            r._rebuildArchitectureMesh(e);
         }
         out.builtAfterManyTicks = renderedCount();
         out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
@@ -22828,86 +22592,12 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     );
 }
 
-// V12.0-perf.d.2 (Wurzel C — Lazy-Proxy-Collision): beweist, dass Architekturen
-// RENDERN bis zum Render-Radius (150 m), aber einen Ammo-Body nur innerhalb des
-// kleineren Collision-Radius (~90 m) bekommen — ferne Deko ist sichtbar aber
-// physik-frei, bis der Spieler herankommt (AAA-Pattern, die 183 Eager-Bodies
-// auf ~36 % reduziert). Der Culling-Pass fügt Collision hinzu/gibt sie frei je
-// Spieler-Distanz.
-async function checkBandWellePerfD2LazyCollision(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
-        const out = {};
-        out.hasColRadius = Number.isFinite(r.state.architectureCollisionRadius);
-        out.colLtRender = r.state.architectureCollisionRadius < 150;
-        const pp = r.state.playerMesh.position;
-        const origRadius = r.state.architectureCullingRadius;
-        const colR = r.state.architectureCollisionRadius || 90;
-        r.state.architectureCullingRadius = 400; // Render deckt fern
-        // V18.298 — der Lazy-Collision-Pass (tickArchitectureCulling) baut 0 bei
-        // `_frameOverBudget`; der Test prüft den Collision-Pfad → Kopfraum erzwingen
-        // (sonst last-flaky am Warmup-Leftover).
-        r.state._frameOverBudget = false;
-        // FERN (jenseits colRadius, im Render-Radius): gerendert, KEINE Collision.
-        const far = r.spawnArchitecture(
-            "baum_kiefer",
-            { x: pp.x + colR + 40, y: pp.y, z: pp.z },
-            { seed: 41000, silent: true }
-        );
-        out.farRendered = !!(far && r._archIsRendered(far));
-        out.farNoCollision = !!(far && !far.collision);
-        // NAH (innerhalb colRadius): gerendert + Collision.
-        const near = r.spawnArchitecture(
-            "baum_kiefer",
-            { x: pp.x + 10, y: pp.y, z: pp.z },
-            { seed: 41001, silent: true }
-        );
-        out.nearRendered = !!(near && r._archIsRendered(near));
-        out.nearHasCollision = !!(near && near.collision && near.collision.body);
-        // Pass fügt Collision hinzu, wenn der ferne Eintrag in den colRadius rückt.
-        if (far) {
-            far.position.x = pp.x + 10;
-            far.position.z = pp.z + 2;
-            let guard = 0;
-            while (!far.collision && guard < 1000) {
-                r.tickArchitectureCulling(performance.now());
-                guard++;
-            }
-            out.farGotCollisionWhenNear = !!(far.collision && far.collision.body);
-        }
-        // Pass gibt Collision frei, wenn der nahe Eintrag hinaus rückt (Render bleibt).
-        if (near) {
-            near.position.x = pp.x + colR + 40;
-            r.tickArchitectureCulling(performance.now());
-            out.nearLostCollisionWhenFar = !near.collision && r._archIsRendered(near);
-        }
-        // Cleanup.
-        if (far) r.removeArchitecture(far);
-        if (near) r.removeArchitecture(near);
-        r.state.architectureCullingRadius = origRadius;
-        return out;
-    });
-    if (res.error) {
-        check("V12.0-perf.d.2: Lazy-Collision-Band (realm)", false, res.error);
-        return;
-    }
-    check(
-        "V12.0-perf.d.2: architectureCollisionRadius existiert + < Render-Radius",
-        res.hasColRadius && res.colLtRender
-    );
-    check(
-        "V12.0-perf.d.2: ferne Architektur gerendert, aber OHNE Collision (lazy)",
-        res.farRendered && res.farNoCollision
-    );
-    check("V12.0-perf.d.2: nahe Architektur gerendert + MIT Collision", res.nearRendered && res.nearHasCollision);
-    check("V12.0-perf.d.2: Pass fügt Collision hinzu, wenn Spieler herankommt", res.farGotCollisionWhenNear);
-    check(
-        "V12.0-perf.d.2: Pass gibt Collision frei, wenn Spieler sich entfernt (Render bleibt)",
-        res.nearLostCollisionWhenFar
-    );
-}
+// DETERMINISMUS-BOGEN P3 — das Lazy-Proxy-Collision-Band (V12.0-perf.d.2) ist
+// ENTFERNT: die Ammo-Ära baute einen Kollisions-Body nur innerhalb eines kleinen
+// Collision-Radius (~90 m, lazy add/free je Spieler-Distanz). Mit Ammo weg ist die
+// Architektur-Kollision feld-nativ (`entry.blockerAABBs`, beim Spawn unbedingt
+// gefüllt, render-/distanz-unabhängig) — es gibt keinen lazy hinzugefügten/
+// freigegebenen Ammo-Body mehr zu prüfen.
 
 // V12.0-perf.h (Streaming-Hitch — Wasser-Iso deferred-Queue): beweist, dass der
 // schwerste Main-Thread-Streaming-Posten (Wasser-Iso ~78 ms) aus dem synchronen
@@ -23615,12 +23305,11 @@ async function checkBandV17118WorkerEngaged(ctx) {
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
             bootstrapSrc: /_getVoxelWorker\(\)/.test(r._voxelWorkerSyncWorldgenState.toString()),
-            // Source: V18.271 — der Spieler-Chunk baut jetzt AUCH ASYNC (die V17.118-Sync-
-            // Ausnahme ist durch den nicht-blockierenden weichen Boden abgelöst). Kein
-            // `_voxelChunkIsPlayerChunk`-Sync-Trip mehr im Streaming + der weiche Boden lebt.
-            playerAsyncSrc:
-                !/_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()) &&
-                typeof r._softFloorWhileChunkLoading === "function",
+            // Source: V18.271 — der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-
+            // Sync-Trip mehr im Streaming). DETERMINISMUS-BOGEN P3: der weiche Boden ist mit
+            // Ammo entfallen (der Spieler fällt nicht mehr durch einen ungebauten Chunk — das
+            // Dichtefeld trägt den Boden global) → nur noch die Async-Quelle wird geprüft.
+            playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()),
         };
     });
     if (res.error) {
@@ -24469,17 +24158,11 @@ async function checkBandPhaseAFundament(ctx) {
                 r._rescuePlayerFromEditSolid(bx, bs - 3, bz, 2);
                 out.a6Rescue = { liftedY: pm.position.y, surf: bs, lifted: pm.position.y > bs - 1.6 };
             }
-            // Spieler zurücksetzen (Body + Mesh — zustands-neutral für Folge-Bands).
+            // Spieler zurücksetzen (feld-nativ: Mesh + Velocity — zustands-neutral für Folge-Bands).
             pm.position.set(saved.x, saved.y, saved.z);
-            const body = r.state.playerBody;
-            if (body && r.state.tmpTransform) {
-                const sf = r.state.scaleFactor || 1;
-                const t = r.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(r.setVec(r.state.tmpVec1, saved.x / sf, saved.y / sf, saved.z / sf));
-                body.setWorldTransform(t);
-                body.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
-                body.activate(true);
+            if (r.state.playerVel) {
+                r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
             }
         }
         return out;
@@ -24545,196 +24228,12 @@ async function checkBandPhaseAFundament(ctx) {
     );
 }
 
-// V9.92 (Welle Perf-3.c Phase 4 — Lazy-BVH für ferne Chunks): empirischer
-// Beweis dass die BVH-Collision (Ammo, ~25-30ms pro Chunk) jetzt nur noch
-// für den Spieler-Chunk SELBST (r === 0) inline beim Stream gebaut wird.
-// V18.291: die 8 Nachbarn (r === 1) UND alle fernen Chunks (r ≥ 2) bauen
-// NICHT mehr inline — sie wandern in den zeit-budgetierten `_pumpVoxelChunkBVH`
-// (budgetMs, ≥1/Frame), der die Kollision smooth über Frames nachreicht (der
-// `r <= 1`-Inline-Bau bis zu 9 BVH-Bäume = der ~294-ms-Lauf-Spike, gemessen).
-// Sicherheits-Wand: der Player-Chunk bekommt IMMER BVH via _ensurePlayerChunkBVH
-// (sync-build wenn fehlend); im Stand füllt der Pump die Nachbarn binnen weniger
-// Frames → die nahe Welt ist nach dem Settle kollisions-vollständig.
-async function checkBandWellePerf3cPhase4LazyBVH(ctx) {
-    const { page, check } = ctx;
-    const res = await page.evaluate(async () => {
-        const r = window.anazhRealm;
-        if (!r || !r.state) return { error: "no realm" };
-        const out = {};
-        // 1) Helper + Methoden existieren
-        out.hasLazyBVHFor = typeof r._voxelChunkLazyBVHFor === "function";
-        out.hasUpgradeBVH = typeof r._upgradeChunkBVH === "function";
-        out.hasPumpBVH = typeof r._pumpVoxelChunkBVH === "function";
-        out.hasEnsurePlayerBVH = typeof r._ensurePlayerChunkBVH === "function";
-        out.hasSetLastPlayer = typeof r._setLastPlayerVoxelChunk === "function";
-        // 2) Distance-Decision verifizieren
-        if (out.hasLazyBVHFor) {
-            out.lazyR0 = r._voxelChunkLazyBVHFor(0, 0, 0, 0); // r=0 → true (Spieler-Chunk, inline)
-            out.lazyR1 = r._voxelChunkLazyBVHFor(1, 0, 0, 0); // r=1 → false (V18.291: Nachbar via Pump)
-            out.lazyR2 = r._voxelChunkLazyBVHFor(2, 0, 0, 0); // r=2 → false (lazy)
-            out.lazyR4 = r._voxelChunkLazyBVHFor(4, 0, 0, 0); // r=4 → false (lazy)
-        }
-        // 3) State sync: nach Streaming-Tick liegen voxelChunks mit hasBVH-Flag
-        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
-            return { ...out, error: "no chunks streamed" };
-        }
-        // 4) Empirisch: zähle Chunks mit/ohne BVH pro Distance-Class
-        let nearWithBVH = 0;
-        let nearWithoutBVH = 0;
-        let farWithBVH = 0;
-        let farWithoutBVH = 0;
-        let total = 0;
-        let playerChunkHasBVH = null; // V18.291: die harte Sicherheits-Wand (r=0)
-        const lpc = r.state.lastPlayerVoxelChunk;
-        if (lpc) {
-            for (const [key, entry] of r.state.voxelChunks.entries()) {
-                if (!entry || !entry.mesh) continue;
-                total++;
-                const parts = key.split(",");
-                const cx = Number(parts[0]);
-                const cz = Number(parts[1]);
-                const dist = Math.max(Math.abs(cx - lpc.cx), Math.abs(cz - lpc.cz));
-                const near = dist <= 1;
-                const hasBVH = !!entry.hasBVH;
-                if (dist === 0 && !entry.empty) playerChunkHasBVH = hasBVH;
-                if (near && hasBVH) nearWithBVH++;
-                else if (near && !hasBVH) nearWithoutBVH++;
-                else if (!near && hasBVH) farWithBVH++;
-                else farWithoutBVH++;
-            }
-        }
-        out.lastPlayerVoxelChunk = lpc;
-        out.totalChunks = total;
-        out.nearWithBVH = nearWithBVH;
-        out.nearWithoutBVH = nearWithoutBVH;
-        out.farWithBVH = farWithBVH;
-        out.farWithoutBVH = farWithoutBVH;
-        out.playerChunkHasBVH = playerChunkHasBVH;
-        // Akzeptanz: ferne Chunks haben in der Mehrheit keine BVH (Lazy-Effekt).
-        // Wegen `_pumpVoxelChunkBVH` (zeit-budgetiert, ≥1/Frame) können wenige
-        // ferne Chunks bereits BVH haben (frisch nahe gerückt + Pump läuft) —
-        // wir verlangen NICHT 100% lazy, sondern dass MINDESTENS einige ferne
-        // Chunks BVH-los sind (= Lazy-Effekt empirisch vorhanden).
-        out.lazyEffectVisible = farWithoutBVH > 0;
-        // V18.291: die harte Wand ist der Spieler-Chunk (r=0); die Nachbarn (r=1)
-        // füllt der Pump im Stand binnen weniger Frames → nach dem Settle ist die
-        // nahe Welt kollisions-vollständig (steady-state, nicht inline-garantiert).
-        out.allNearHaveBVH = nearWithoutBVH === 0;
-        // 5) Mechanik-Probe: Worker-Mesh-Build mit {buildBVH:false} respektiert
-        // Lazy-BVH. Empirie aus initialem Worldgen ist sync-build-bias (Worker
-        // wird erst MITTEN im Worldgen synced → frühe Chunks sync-built → mit
-        // BVH). Mechanik-Probe ist die ehrliche Aussage über Code-Korrektheit.
-        // Wir holen frisches Worker-Mesh-Data + bauen mit buildBVH=false +
-        // verifizieren entry.hasBVH === false.
-        try {
-            const meshData = await r._voxelWorkerComputeChunkMesh(0, 0, 0);
-            if (meshData && !meshData.empty) {
-                const fresh = r._buildVoxelChunkDataFromWorkerMesh(0, 0, 0, meshData, { buildBVH: false });
-                out.lazyBuildOk = !!(fresh && fresh.mesh && fresh.hasBVH === false);
-                out.lazyBuildHasBVH = fresh ? fresh.hasBVH : null;
-                // Clean up — disposal damit kein Mesh-Geister-Leak in der Szene
-                if (fresh && fresh.mesh && fresh.mesh.geometry) {
-                    if (r.state.scene) r.state.scene.remove(fresh.mesh);
-                    fresh.mesh.geometry.dispose();
-                }
-            }
-        } catch (e) {
-            out.lazyBuildError = e.message;
-        }
-        // 6) Upgrade-Mechanik: nimm einen existing chunk (hat BVH), simuliere
-        // Lazy-Zustand durch hasBVH=false + dispose-collision, ruf upgrade,
-        // verifiziere hasBVH=true. Plus: ruf upgrade nochmal → muss false
-        // zurückgeben (schon BVH'd) — Idempotenz.
-        let testKey = null;
-        let testCx = null;
-        let testCz = null;
-        for (const [key, entry] of r.state.voxelChunks.entries()) {
-            if (entry && entry.mesh && entry.hasBVH && !entry.empty) {
-                testKey = key;
-                const parts = key.split(",");
-                testCx = Number(parts[0]);
-                testCz = Number(parts[1]);
-                break;
-            }
-        }
-        out.foundLazyChunkForTest = !!testKey;
-        if (testKey) {
-            const entry = r.state.voxelChunks.get(testKey);
-            // Simuliere Lazy-Zustand: dispose collision + hasBVH=false setzen
-            r._disposeStaticCollision(entry.mesh);
-            entry.hasBVH = false;
-            const beforeUpgrade = entry.hasBVH;
-            const upgradeOk = r._upgradeChunkBVH(testCx, testCz);
-            const afterUpgrade = r.state.voxelChunks.get(testKey).hasBVH;
-            const upgradeAgain = r._upgradeChunkBVH(testCx, testCz); // sollte false (idempotent)
-            out.upgradeBefore = beforeUpgrade;
-            out.upgradeReturned = upgradeOk;
-            out.upgradeAfter = afterUpgrade;
-            out.upgradeAgainReturned = upgradeAgain;
-            out.upgradeSucceeded = beforeUpgrade === false && upgradeOk === true && afterUpgrade === true;
-            out.upgradeIdempotent = upgradeAgain === false; // schon BVH'd
-        }
-        // 6) Source-Probes
-        // V12.0-perf.a — Lazy-BVH-Decision lebt in `_acquireVoxelChunkBuild`.
-        out.ensureUsesLazyBVH = /_voxelChunkLazyBVHFor\(/.test(r._acquireVoxelChunkBuild.toString());
-        out.streamingCallsPump = /_pumpVoxelChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
-        out.streamingCallsEnsurePlayer = /_ensurePlayerChunkBVH\(/.test(r._tickVoxelChunkStreaming.toString());
-        return out;
-    });
-    if (res.error) {
-        check("Welle Perf-3.c V9.92: Phase-4-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle Perf-3.c V9.92: _voxelChunkLazyBVHFor existiert", res.hasLazyBVHFor);
-    check("Welle Perf-3.c V9.92: _upgradeChunkBVH existiert", res.hasUpgradeBVH);
-    check("Welle Perf-3.c V9.92: _pumpVoxelChunkBVH existiert", res.hasPumpBVH);
-    check("Welle Perf-3.c V9.92: _ensurePlayerChunkBVH existiert", res.hasEnsurePlayerBVH);
-    check("Welle Perf-3.c V9.92: _setLastPlayerVoxelChunk existiert", res.hasSetLastPlayer);
-    check("Welle Perf-3.c V9.92: r=0 (Player-Chunk) → inline BVH (true)", res.lazyR0 === true);
-    check("Welle Perf-3.c V9.92 (V18.291): r=1 (Nachbar) → deferred via Pump (false)", res.lazyR1 === false);
-    check("Welle Perf-3.c V9.92: r=2 (ferner Chunk) → lazy (false)", res.lazyR2 === false);
-    check("Welle Perf-3.c V9.92: r=4 (sehr ferner Chunk) → lazy (false)", res.lazyR4 === false);
-    check(
-        "Welle Perf-3.c V9.92 (V18.291): Spieler-Chunk (r=0) hat BVH (die harte Sicherheits-Wand)",
-        res.playerChunkHasBVH === true,
-        `playerChunkHasBVH=${res.playerChunkHasBVH}`
-    );
-    check(
-        "Welle Perf-3.c V9.92: nahe Chunks (r ≤ 1) im Stand kollisions-vollständig (Pump füllt nach)",
-        res.allNearHaveBVH,
-        `nearWithBVH=${res.nearWithBVH}, nearWithoutBVH=${res.nearWithoutBVH}`
-    );
-    check(
-        "Welle Perf-3.c V9.92: Mechanik-Probe — _buildVoxelChunkDataFromWorkerMesh respektiert buildBVH=false",
-        res.lazyBuildOk,
-        `hasBVH=${res.lazyBuildHasBVH}, error=${res.lazyBuildError || "none"}`
-    );
-    check("Welle Perf-3.c V9.92: Chunk für Upgrade-Test gefunden (Vorbedingung)", res.foundLazyChunkForTest);
-    if (res.foundLazyChunkForTest) {
-        check(
-            "Welle Perf-3.c V9.92: _upgradeChunkBVH funktioniert (false → true)",
-            res.upgradeSucceeded,
-            `before=${res.upgradeBefore}, returned=${res.upgradeReturned}, after=${res.upgradeAfter}`
-        );
-        check(
-            "Welle Perf-3.c V9.92: _upgradeChunkBVH ist idempotent (zweiter Ruf → false, schon BVH'd)",
-            res.upgradeIdempotent,
-            `upgradeAgain=${res.upgradeAgainReturned}`
-        );
-    }
-    check(
-        "Welle Perf-3.c V9.92: _ensureVoxelChunkAt nutzt _voxelChunkLazyBVHFor (Source-Probe)",
-        res.ensureUsesLazyBVH
-    );
-    check(
-        "Welle Perf-3.c V9.92: _tickVoxelChunkStreaming ruft _pumpVoxelChunkBVH (Source-Probe)",
-        res.streamingCallsPump
-    );
-    check(
-        "Welle Perf-3.c V9.92: _tickVoxelChunkStreaming ruft _ensurePlayerChunkBVH (Source-Probe)",
-        res.streamingCallsEnsurePlayer
-    );
-}
+// DETERMINISMUS-BOGEN P3 — das Lazy-BVH-Band (`_voxelChunkLazyBVHFor` /
+// `_upgradeChunkBVH` / `_pumpVoxelChunkBVH` / `_ensurePlayerChunkBVH` / das
+// per-Chunk-`hasBVH`-Flag) ist ENTFERNT: mit der Ammo-Welt fällt die ganze
+// per-Chunk-Kollisions-BVH weg — der Spieler läuft feld-nativ aus dem
+// Dichtefeld (`_stepCharacter` → `_fieldSurfaceBelow`), kein Chunk trägt mehr
+// ein BVH-Artefakt. Es gibt keine Lazy-BVH-Mechanik mehr zu prüfen.
 
 // V9.93 (Wasser-LOD-Naht-Heilung): empirischer Beweis dass Wasser-Cells
 // jetzt IMMER auf LOD 0 leben, unabhängig vom Terrain-LOD des Chunks.
@@ -26229,17 +25728,19 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r._disposeVoxelChunk("99,99");
         out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
 
-        // (3) _ensureVoxelChunkAt Retry-Pfad: stub den
-        // Kollisions-Builder, sehe dass nach 2 Fails KEIN
-        // empty-Eintrag steht (Retry pending), nach 3 ein empty.
+        // (3) _ensureVoxelChunkAt Retry-Pfad: ein Build-Fail (bare null) → der Retry-
+        // Counter steigt; nach <3 Fails steht KEIN empty-Eintrag (Retry pending), nach 3
+        // ein empty + der Counter ist geräumt. DETERMINISMUS-BOGEN P3: der Fail wird
+        // DETERMINISTISCH erzwungen, indem `_acquireVoxelChunkBuild` kurz auf `()=>null`
+        // gestubbt wird. (Früher hing der Test an einem „degenerierten Fern-Chunk", dessen
+        // Build bei Ammo-Heap-Druck null lieferte — ohne Ammo baut der Fern-Chunk sauber
+        // einen Mesh, der Fail-Pfad würde nie getriggert. Der Mechanismus selbst lebt
+        // unverändert in `_ensureVoxelChunkAt`; wir testen ihn jetzt an seiner Wurzel.)
         const fakeKey = "0,-999"; // weit weg, ungebraucht
-        // V17.118 (E3-Migration, V9.56-i): den Sync-Fail-Retry-Pfad von
-        // `_ensureVoxelChunkAt` prüfen → den Worker deaktivieren, sonst geht der
-        // Build async (pending → kein Fail, kein Counter). Restore nach dem Test.
-        const _savedWorkerE = r.state.voxelWorker;
-        r.state.voxelWorker = null;
-        const origBuildColl = r._buildStaticTriMeshCollision;
-        r._buildStaticTriMeshCollision = () => null;
+        const _savedAcquire = r._acquireVoxelChunkBuild;
+        r._acquireVoxelChunkBuild = () => null; // Build-Fail erzwingen (bare null)
+        r.state.voxelChunks.delete(fakeKey);
+        if (r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts.delete(fakeKey);
         r._ensureVoxelChunkAt(0, -999);
         out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
         out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
@@ -26250,8 +25751,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
         out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
         // Restore + Cleanup.
-        r._buildStaticTriMeshCollision = origBuildColl;
-        r.state.voxelWorker = _savedWorkerE; // V17.118 — den Worker wieder engagieren
+        r._acquireVoxelChunkBuild = _savedAcquire;
         r._disposeVoxelChunk(fakeKey);
         return out;
     });
@@ -27391,8 +26891,8 @@ async function checkBandWelle6Keybindings(ctx) {
         const placeResult = r.tryMousePlace();
         out.placeReturnsBoolean = placeResult === true || placeResult === false;
 
-        // tryMouseBreak ohne hit & ohne Architektur → false (kein crash)
-        // (kein physicsWorld in den meisten Tests, also fallback gilt)
+        // tryMouseBreak ohne hit & ohne Architektur → false (kein crash);
+        // der Raycast ist feld-nativ (kein Treffer → false).
         const breakResult = r.tryMouseBreak();
         out.breakSafeWithoutHit = breakResult === false || breakResult === true;
 
@@ -28770,8 +28270,17 @@ async function checkBandWelle6HCreatures(ctx) {
         const tcx = p.x + 6;
         const tcz = p.z + 6;
         const target = r.spawnArchitecture("stein_block", { x: tcx, y: p.y, z: tcz });
-        void target;
-        if (typeof r.tickArchitectureCulling === "function") r.tickArchitectureCulling();
+        // ROBUST gegen die geteilte-Budget-Konkurrenz (s. V12.0-perf.d): das Target-Mesh
+        // DIREKT bauen, statt auf einen einzelnen budgetierten Cull-Tick zu hoffen, der
+        // unter kumulativer Last (Hunderte cold-Arches) das Target nicht erreicht → der
+        // `_pickArchitectureAtCrosshair`-Raycast (THREE) braucht `entry.mesh`.
+        if (target && !r._archIsRendered(target)) r._rebuildArchitectureMesh(target);
+        // Die Welt-Matrizen aktualisieren, wie es ein Render-Frame täte — der
+        // `_pickArchitectureAtCrosshair`-Raycast (THREE) liest `mesh.matrixWorld` AS-IS;
+        // ein frisch gespawntes Mesh hat sie noch auf Identität (Position erst nach
+        // updateMatrixWorld korrekt). Im echten Spiel rendert der Loop vor jedem Klick;
+        // im Band gibt es zwischen Spawn + Pick keinen Render → hier explizit.
+        if (r.state.scene) r.state.scene.updateMatrixWorld(true);
         if (r.state.camera) {
             // Kamera 6 m vor dem Target, leicht erhöht, schaut drauf.
             r.state.camera.position.set(tcx, p.y + 1.5, tcz - 6);
@@ -30222,18 +29731,23 @@ async function checkBandV18150Ride(ctx) {
             out.profile =
                 !!prof && prof.radCount === 4 && prof.topSpeedMul > 1.3 && prof.kBrake < prof.kAcc && prof.mass > 1;
             // (2) der Sattel: Aufsteigen ruht die Kollision + liest das Profil.
+            // DETERMINISMUS-BOGEN P3 — die Kollision ist feld-nativ: das GERITTENE Gefährt
+            // blockt seinen Reiter NICHT, weil `_stepCharacterStructures` den `riddenId`
+            // (= player.mountedArch) überspringt (der Ersatz für den alten Ammo-Dispose).
             r.mountArchitecture(entry);
-            out.collisionRests = !entry.collision;
+            out.collisionRests =
+                r.state.player.mountedArch === entry.id && /riddenId/.test(r._stepCharacterStructures.toString());
             out.profileConsumed = r._mountedVehicleProfile() === prof;
             // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
             // brennglas-fest (Quelle), solange geritten.
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
             out.brennglasSafe = /riddenId/.test(r._tickFocusingAffordances.toString());
-            out.lazyPassSkips = /riddenId/.test(r.tickArchitectureCulling.toString());
+            // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
+            out.lazyPassSkips = /riddenId/.test(r._stepCharacterStructures.toString());
             // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
-            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 5, 0, 0));
-            r.state.playerBody.activate(true);
+            // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
+            r.state.playerVel.setValue(5, 0, 0);
             r._tickMountedMovement(0.05);
             r._tickMountedMovement(0.05);
             r._tickMountedMovement(0.05);
@@ -30244,7 +29758,8 @@ async function checkBandV18150Ride(ctx) {
                 entry.mesh &&
                 Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
             out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
-            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
+            r.state.playerVel.setValue(0, 0, 0);
+            r.state._fieldVy = 0;
             // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
             const moveSrc = r._loopHandleMovement
                 ? r._loopHandleMovement.toString()
@@ -30643,8 +30158,8 @@ async function checkBandM3RittVollendet(ctx) {
             // Gefährt-Unterkante auf dem Terrain (±0.35 — die exp-Glättung settlet),
             // der Reiter sitzt auf entry.y + sitz, und vy ist genullt (kein Versinken).
             r.mountArchitecture(entry);
-            const body = r.state.playerBody;
-            body.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, -8, 0)); // simulierter Fall
+            // Feld-nativ: die Vertikale lebt in state._fieldVy (kein Ammo-Body).
+            r.state._fieldVy = -8; // simulierter Fall
             for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             const bottom = entry.position.y + r._compoundBottomY(bp) * (entry.scale || 1);
@@ -30658,8 +30173,7 @@ async function checkBandM3RittVollendet(ctx) {
             const sollY = expectFloat ? runSurf - 0.25 : terr;
             out.standsOnTerrain = Number.isFinite(terr) && Math.abs(bottom - sollY) < 0.35;
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
-            const v = body.getLinearVelocity();
-            out.vyZeroed = Math.abs(v.y()) < 1e-6;
+            out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
             // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), KEIN gefrorenes
             // Maß — so re-verankert sich JEDE Fahrzeug-Variante (auch grosse Räder, wahrerwuchs
             // T4 _vehicleVariant) korrekt auf dem Terrain. Der Test prüft die ABLEITUNG, nicht
@@ -30691,12 +30205,10 @@ async function checkBandM3RittVollendet(ctx) {
             if (entry) r.removeArchitecture(entry);
             r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
             pm.set(savedPos.x, savedPos.y, savedPos.z);
-            if (r.state.playerBody) {
-                const tr = r.state.playerBody.getWorldTransform();
-                tr.getOrigin().setValue(savedPos.x, savedPos.y, savedPos.z);
-                r.state.playerBody.setWorldTransform(tr);
-                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec1, 0, 0, 0));
-                r.state.playerBody.activate(true);
+            // Feld-nativ: Position über das Mesh, Velocity über playerVel + _fieldVy.
+            if (r.state.playerVel) {
+                r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
             }
         }
     });
@@ -39631,6 +39143,66 @@ async function checkBandV18266RockDetail(ctx) {
     );
 }
 
+// DETERMINISMUS-BOGEN P4 (Stufe 1) — DIE ERNTE: der deterministische Input-Replay.
+// Die feld-native Simulation ist eine reine Funktion (Position × Dichtefeld × Input × dt) →
+// derselbe Start + dieselbe Input-Folge ⇒ bit-identisches Ergebnis. Diese Invariante schützt
+// das Lockstep/Replay-Fundament; bricht sie, lauert eine versteckte Nicht-Determinismus-Quelle
+// (Math.random/Zeit/Float-Drift) im Schritt-Pfad. (Volle Linse: `scripts/diag-replay-determinism.cjs`.)
+async function checkBandV18331ReplayDeterminism(ctx) {
+    const { page, check } = ctx;
+    const res = await safeEvaluate(page, () => {
+        const r = window.anazhRealm;
+        const s = r.state;
+        const out = {};
+        if (typeof r.replayRun !== "function" || typeof r._replaySnapshotState !== "function" || !s.playerMesh || !s.playerVel)
+            return out;
+        const DT = 1 / 60;
+        const mkFrames = (seq) => {
+            const fr = [];
+            for (const [count, k] of seq)
+                for (let i = 0; i < count; i++)
+                    fr.push({ dt: DT, yaw: 0, w: !!k.w, a: !!k.a, s: !!k.s, d: !!k.d, shift: !!k.shift, space: !!k.space });
+            return fr;
+        };
+        const sy = r.getTerrainHeightAt(0, 0);
+        const startY = (Number.isFinite(sy) ? sy : 5) + 2;
+        s.playerMesh.position.set(0, startY, 0);
+        s.playerVel.setValue(0, 0, 0);
+        s._fieldVy = 0;
+        s.yaw = 0;
+        const start = r._replaySnapshotState();
+        const framesA = mkFrames([
+            [40, { w: true }],
+            [1, { w: true, space: true }],
+            [40, { w: true }],
+            [30, { w: true, d: true }],
+            [20, {}],
+        ]);
+        const framesB = mkFrames([[80, { s: true }]]);
+        const recA = { start, frames: framesA };
+        const eqBit = (p, q) =>
+            p && q && p.x === q.x && p.y === q.y && p.z === q.z && p.vx === q.vx && p.vy === q.vy && p.vz === q.vz && p.fieldVy === q.fieldVy;
+        const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z);
+        const a1 = r.replayRun(recA);
+        const a2 = r.replayRun(recA);
+        const a3 = r.replayRun(recA);
+        const b = r.replayRun({ start, frames: framesB });
+        out.bitEqual = eqBit(a1, a2) && eqBit(a1, a3); // (A) + (D) repeatable
+        out.moved = dist(start, a1); // (B) non-trivial
+        out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
+        // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
+        out.usesStep = /_stepCharacter\(/.test(r.replayRun.toString()) && /_loopPlayerMovement\(/.test(r.replayRun.toString());
+        return out;
+    });
+    check(
+        `P4 (Determinismus-Ernte): zwei+drei Replays derselben Aufnahme sind BIT-IDENTISCH (Determinismus bewiesen)`,
+        res.bitEqual === true
+    );
+    check(`P4: der Replay bewegt den Spieler spürbar (${(res.moved || 0).toFixed(2)} m, kein No-op)`, (res.moved || 0) > 2.0);
+    check("P4: ein anderer Input liefert ein anderes Ergebnis (input-sensitiv, kein Fixpunkt)", res.inputSensitive === true);
+    check("P4: der Replay läuft durch DENSELBEN Schritt-Pfad (_stepCharacter + _loopPlayerMovement, CONSUM)", res.usesStep === true);
+}
+
 async function checkBandV18262CreatureRenderLOD(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
@@ -40800,16 +40372,11 @@ async function checkBandWelle6XAudit(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // --- A1: Code-Strukturtest — activate(true) im handleJump-Pfad
-        // (Quelltext-Inspektion: das ist die einzige zuverlässige Art
-        // den Ammo-Sleep-Wakeup zu prüfen ohne echte Physik-Sim).
-        // Wichtig: nicht den ersten setLinearVelocity-Match nehmen
-        // (der könnte in einem Kommentar stehen), sondern den ECHTEN
-        // Method-Call mit `playerBody.setLinearVelocity(`.
+        // --- A1: DETERMINISMUS-BOGEN P3 — der Sprung ist feld-nativ: handleJump
+        // schreibt den Impuls in `state.playerVel.y` (kein Ammo-Body/Sleep-Wakeup
+        // mehr). Quelltext-Inspektion + behavioral: ein Sprung am Boden hebt _fieldVy.
         const jumpSrc = r.handleJump.toString();
-        const activatePos = jumpSrc.indexOf(".activate(true)");
-        const setVelPos = jumpSrc.indexOf("playerBody.setLinearVelocity(");
-        out.handleJumpActivatesBody = activatePos > -1 && setVelPos > -1 && activatePos < setVelPos;
+        out.handleJumpWritesVel = /playerVel/.test(jumpSrc) && /setValue/.test(jumpSrc) && !/playerBody/.test(jumpSrc);
 
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
         r.setGameMode("pfad");
@@ -40926,8 +40493,8 @@ async function checkBandWelle6XAudit(ctx) {
 
     if (wave6x1Results && !wave6x1Results.error) {
         check(
-            "Welle 6.X.1 A1: handleJump ruft activate(true) vor setLinearVelocity",
-            wave6x1Results.handleJumpActivatesBody
+            "Welle 6.X.1 A1: handleJump schreibt den Sprung-Impuls feld-nativ in playerVel (kein Ammo-Body)",
+            wave6x1Results.handleJumpWritesVel
         );
         check("Welle 6.X.1 A2: pfad + Phantom-instabil → confirmBuild blockt", wave6x1Results.pfadBlocksUnstable);
         check("Welle 6.X.1 A2: pfad-Block → keine Architektur entsteht", wave6x1Results.pfadBlocksNoArch);
@@ -42927,11 +42494,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // Getrennte Flags: playerUnderwater (Körper) vs.
         // playerEyesUnderwater (Augen/Tauchen).
         out.eyesFlagExists = typeof r.state.playerEyesUnderwater === "boolean";
-        // Physik-Loop berechnet playerEyesUnderwater aus scaledY+1.6.
-        // Welle B (V9.56-i): seit der 3D-Zellen-Heilung ist die Augen-Höhe auf
-        // `submerged` gegated (`= submerged && scaledY + 1.6 < waterY`) — die
-        // Augen-Höhen-Quelle (scaledY+1.6) bleibt, die Probe akzeptiert beide
-        // Formen (das Verhalten wanderte, der Test wandert mit).
+        // Der Controller berechnet playerEyesUnderwater aus der Augen-Höhe (Körper-Y + 1.6).
+        // P3: die Logik wanderte aus `_loopPhysicsSync` (Quelle `scaledY + 1.6`) in
+        // `_stepCharacter` (Quelle `mesh.position.y + 1.6`, im `if(submerged)`-Block) — die
+        // Probe akzeptiert beide Formen (das Verhalten wanderte, der Test wandert mit).
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -42939,7 +42505,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    if (/playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?scaledY \+ 1\.6/.test(fn.toString()))
+                    if (
+                        /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
+                            fn.toString()
+                        )
+                    )
                         found = true;
                 } catch {
                     /* skip */
@@ -43405,10 +42975,9 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             return m ? m.src : "";
         };
 
-        // 1. Jump — Player-Body schläft nie (DISABLE_DEACTIVATION=4);
-        //    der forceActivationState(1) im Geh-Block ist entfernt.
-        out.jumpNeverSleeps = anySrc(/\.forceActivationState\(4\)/);
-        out.jumpNoActivate1 = !anySrc(/\.forceActivationState\(1\)/);
+        // 1. (P3 — der Ammo-Player-Body + sein DISABLE_DEACTIVATION/forceActivationState
+        //    sind entfernt; es gibt keinen Body mehr, der „schlafen" könnte. Der Spieler
+        //    läuft feld-nativ aus `_stepCharacter`. Die Sleep-Probe ist gestrichen.)
 
         // 2. 3rd-Person-Kamera — Kollisions-Raycast in der Kamera-
         //    Phase. V9.44-f — die Kamera-Logik lebt in _loopCamera.
@@ -43429,11 +42998,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.digRadiusVoxel = /const carveRadius = 3\.5;/.test(srcOf("tryMouseBreak"));
         out.digHeightClampObsolete = typeof r._applyModifyOpToChunk !== "function";
 
-        // 4. Wasser-Durchfall — Auftrieb-Gate über getTerrainHeightAt.
-        //    V9.44-f — die Physik-Phase lebt in _loopPhysicsSync.
+        // 4. Wasser-/Boden-Durchfall — P3: die Schutz-Logik wanderte in den feld-nativen
+        //    `_stepCharacter`: der Spieler kann nicht durch den Boden schwimmen, weil der
+        //    Boden-Snap ihn auf die Feld-Oberfläche setzt (kein „Auftrieb unter Terrain"),
+        //    und die KILLPLANE fängt einen echten Durchfall. Beide Stücke müssen da sein.
         {
-            const src = srcOf("_loopPhysicsSync");
-            out.waterGate = /getTerrainHeightAt/.test(src) && /wTerrainY - 22/.test(src);
+            const src = srcOf("_stepCharacter");
+            out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
         }
 
         // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
@@ -43464,11 +43035,8 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v836Results && !v836Results.error) {
-        check("V8.36: Player-Body schläft nie (DISABLE_DEACTIVATION)", v836Results.jumpNeverSleeps);
-        check(
-            "V8.36: forceActivationState(1)-Call im Geh-Block entfernt (kein Sleep-Downgrade)",
-            v836Results.jumpNoActivate1
-        );
+        // P3 — die Player-Body-Sleep-Checks (DISABLE_DEACTIVATION / forceActivationState)
+        // sind gestrichen: es gibt keinen Ammo-Body mehr (feld-nativer Controller).
         check("V8.36: 3rd-Person-Kamera macht Kollisions-Raycast", v836Results.cameraRaycast);
         check(
             "V8.36 + V9.36: Grabe-Radius 3.5 im Voxel-Feld (Mulde statt Nadel, V9.36 ersetzt 3.0-Heightfield-Marker)",
@@ -45993,17 +45561,17 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         out.obtainCustomReachable = r.obtainPortalForWorld("void-zwei").ok === true;
         const obUn = r.obtainPortalForWorld("void-fern");
         out.obtainCustomUnreachable = obUn.ok === false && obUn.reason === "world_unreachable";
-        // V8.61-Härtung — _runRaycast verzweigt defensiv bei
-        // null-physicsWorld (sonst flakte ein rayTest-on-null im
-        // rAF-Loop während eines Welt-Regens).
-        const savedPW = r.state.physicsWorld;
-        r.state.physicsWorld = null;
+        // DETERMINISMUS-BOGEN P3 — _runRaycast ist jetzt feld-nativ (DDA durch das
+        // Dichtefeld + Struktur-Box-Ray, kein physicsWorld/rayTest mehr). Es darf
+        // NIE crashen und liefert den Extractor-Wert (hier den hit-Bool) zurück.
         try {
-            out.raycastNullSafe = r._runRaycast(null, null, (_cb, hit) => hit) === false;
+            const rsA = r.setVec(r.state.tmpVec1, 0, 1000, 0);
+            const reA = r.setVec(r.state.tmpVec2, 0, -1000, 0);
+            const hit = r._runRaycast(rsA, reA, (_cb, h) => h);
+            out.raycastNullSafe = typeof hit === "boolean";
         } catch (e) {
             out.raycastNullSafe = false;
         }
-        r.state.physicsWorld = savedPW;
         // localStorage-Rundlauf.
         const reloaded = r._loadCustomWorlds();
         out.customWorldsRoundtrip =
@@ -46079,7 +45647,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
         );
         check("W14 P3: 'Welt empfangen'-Knopf + Datei-Picker im DOM", w14p3Results.uiImportButton);
         check(
-            "W14 P3: _runRaycast ist defensiv gegen ein null-physicsWorld (kein rayTest-Crash)",
+            "W14 P3: _runRaycast ist feld-nativ + crash-frei (liefert den Extractor-Wert, kein rayTest)",
             w14p3Results.raycastNullSafe
         );
     } else {
@@ -55369,10 +54937,11 @@ async function checkBandRing5Soul(ctx) {
             r.setCameraMode("third");
             r.state.yaw = 0;
             r.state.pitch = p;
-            // Player-Velocity nullen, damit der Spieler während der
+            // Player-Velocity nullen (feld-nativ), damit der Spieler während der
             // drei Messungen nicht driftet.
-            if (r.state.playerBody && r.state.tmpVec2) {
-                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+            if (r.state.playerVel) {
+                r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
             }
             if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
             return r.state._cameraDesiredY - r.state.playerMesh.position.y;
@@ -55638,10 +55207,11 @@ async function checkBandRing6Workshop(ctx) {
         );
     }
 
-    // ### Ring 6.3 — Kollisions-Body für Strukturen ###
-    // Jede Architektur bekommt einen statischen Ammo-Body. Body wird
-    // beim Cullen freigegeben. Bei Wieder-Aufbau (Spieler kommt
-    // zurück) entsteht ein neuer Body.
+    // ### Ring 6.3 — Feld-native Kollision für Strukturen ###
+    // DETERMINISMUS-BOGEN P3 — jede Architektur mit soliden Parts (dichte ≥ 0.3)
+    // bekommt beim Spawn `entry.blockerAABBs` (kein Ammo-Body mehr). Die Kollision
+    // ist render-/distanz-unabhängig (Daten, kein per-Distanz lazy gebauter Body):
+    // `_stepCharacterStructures` löst die Spieler-Kapsel gegen die AABBs.
     const ring63Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -55654,8 +55224,7 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
 
-        // Struktur nahe spawnen (innerhalb cullingRadius) →
-        // Mesh + Body sollten gleich da sein.
+        // Struktur nahe spawnen → Mesh + feld-native blockerAABBs gleich da.
         const px = r.state.playerMesh.position.x;
         const pz = r.state.playerMesh.position.z;
         const entry = r.spawnArchitecture(
@@ -55664,11 +55233,9 @@ async function checkBandRing6Workshop(ctx) {
             { seed: 11 }
         );
         out.entryHasMesh = !!entry && !!entry.mesh;
-        out.entryHasCollision = !!entry && !!entry.collision && !!entry.collision.body && !!entry.collision.shape;
-        // Body sollte in der physicsWorld registriert sein —
-        // wir prüfen indirekt: tests later that culling removes it.
-        // Kollisions-Box-Größe indirekt via Three-Bounding-Box
-        // verifizieren (entry.mesh hat die echte Geometrie).
+        out.entryHasCollision = !!entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0;
+        // Kollisions-Box-Größe indirekt via Three-Bounding-Box verifizieren
+        // (entry.mesh hat die echte Geometrie).
         if (entry && entry.mesh) {
             const bbox = new THREE.Box3().setFromObject(entry.mesh);
             const size = new THREE.Vector3();
@@ -55681,36 +55248,22 @@ async function checkBandRing6Workshop(ctx) {
             out.collisionSizePlausible =
                 size.x > 2.0 && size.y > 2.0 && size.z > 2.0 && size.x < 100 && size.y < 100 && size.z < 100;
         }
-        // Body ist statisch — Body.mass entspricht 0, Body
-        // ist getCollisionFlags & CF_STATIC_OBJECT bit oder einfach
-        // testen via isStaticObject (Ammo Bindings: getCollisionFlags).
-        if (entry && entry.collision && entry.collision.body) {
-            const flags = entry.collision.body.getCollisionFlags();
-            // CF_STATIC_OBJECT = 1 in Bullet, aber: ein Body mit mass=0 ist
-            // automatisch statisch in Bullet — getCollisionFlags & 1 prüft das.
-            out.bodyIsStatic = (flags & 1) === 1 || flags === 0;
-            // Wenn flags=0, ist's kein statisches Flag gesetzt, aber
-            // mass=0 macht's trotzdem effektiv statisch. Wir akzeptieren
-            // beides als pass.
-        }
 
-        // Distanz-Cullen: Spieler weg, Body sollte verschwinden.
-        // Wir schieben entry.position so weit weg, dass es jenseits
-        // des cullingRadius ist (~150). spawnArchitecture-Pfad ist nicht
-        // ideal; einfacher direkter Cull-Test:
+        // Cullen entfernt das RENDER-Mesh; die feld-native Kollision (blockerAABBs)
+        // bleibt — sie ist Daten, render-unabhängig (kein lazy gebauter Ammo-Body).
         r._cullArchitectureMesh(entry);
         out.afterCullMeshNull = entry.mesh === null;
-        out.afterCullCollisionNull = entry.collision === null;
+        out.afterCullCollisionKept = Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0;
 
-        // Wiederaufbau: rebuild macht Mesh + Body wieder.
+        // Wiederaufbau bringt das Mesh zurück (die Kollision war ohnehin da).
         r._rebuildArchitectureMesh(entry);
         out.afterRebuildMeshExists = !!entry.mesh;
-        out.afterRebuildCollisionExists = !!entry.collision && !!entry.collision.body;
 
-        // Strukturen ohne Mesh haben kein collision.body (cold)
+        // Eine ferne (cold) Struktur wird NICHT gerendert (kein Mesh), trägt aber
+        // dieselbe feld-native Kollision (blockerAABBs beim Spawn, distanz-unabhängig).
         const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
         out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
-        out.coldHasNoCollision = coldEntry && !coldEntry.collision;
+        out.coldHasCollision = !!(coldEntry && Array.isArray(coldEntry.blockerAABBs) && coldEntry.blockerAABBs.length > 0);
 
         // Cleanup
         for (const a of r.state.architectures.slice()) {
@@ -55728,7 +55281,7 @@ async function checkBandRing6Workshop(ctx) {
         );
     } else {
         check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
-        check("Ring 6.3: Architektur hat collision-body + shape", ring63Results.entryHasCollision);
+        check("Ring 6.3: Architektur hat feld-native Kollision via blockerAABBs", ring63Results.entryHasCollision);
         check(
             "Ring 6.3: Kollisions-Box-Größe plausibel (Tempel, via Mesh-BBox)",
             ring63Results.collisionSizePlausible,
@@ -55740,27 +55293,23 @@ async function checkBandRing6Workshop(ctx) {
                   })}`
                 : ""
         );
-        check("Ring 6.3: Body ist statisch (mass=0)", ring63Results.bodyIsStatic);
         check(
-            "Ring 6.3: Cullen entfernt Mesh + Kollisions-Body",
-            ring63Results.afterCullMeshNull && ring63Results.afterCullCollisionNull
+            "Ring 6.3: Cullen entfernt das Render-Mesh, behält die feld-native Kollision (render-unabhängig)",
+            ring63Results.afterCullMeshNull && ring63Results.afterCullCollisionKept
         );
+        check("Ring 6.3: Wiederaufbau bringt das Render-Mesh zurück", ring63Results.afterRebuildMeshExists);
         check(
-            "Ring 6.3: Wiederaufbau bringt Mesh + Body zurück",
-            ring63Results.afterRebuildMeshExists && ring63Results.afterRebuildCollisionExists
-        );
-        check(
-            "Ring 6.3: Cold-Strukturen (außerhalb Radius) haben weder Mesh noch Kollision",
-            ring63Results.coldHasNoMesh && ring63Results.coldHasNoCollision
+            "Ring 6.3: Cold-Strukturen (außerhalb Render-Radius) haben kein Mesh, aber feld-native Kollision (distanz-unabhängig)",
+            ring63Results.coldHasNoMesh && ring63Results.coldHasCollision
         );
     }
 
-    // Live-Kollisions-Test: Spieler wird gegen eine Tempel-Säule
-    // geschoben, sollte aufgehalten werden. Wir setzen den Spieler
-    // 4m vor den Tempel-Mittelpunkt und feuern ihm Velocity, dann
-    // lassen wir die Physik 0.5s laufen und prüfen ob er stehen
-    // geblieben oder reflektiert wurde.
-    await page.evaluate(() => {
+    // Live-Kollisions-Test (feld-nativ, DETERMINISMUS-BOGEN P3): der Spieler läuft
+    // gegen eine Tempel-Säule, `_stepCharacterStructures` (gegen entry.blockerAABBs)
+    // muss ihn aufhalten. Wir setzen ihn 2 m vor den Tempel + lassen ihn via
+    // gedrückter W-Taste (yaw=0 → forward=+Z) durch synchrone _gameLoopTick-Pumps
+    // (headless-rAF ~1 Hz → synchron treiben) auf ihn zu laufen.
+    const collisionLive = await page.evaluate(() => {
         const r = window.anazhRealm;
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
@@ -55768,32 +55317,38 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
         // Tempel direkt vor Welt-Ursprung platzieren
         r.spawnArchitecture("temple", { x: 0, y: 5, z: 5 }, { seed: 11 });
-        // Player nach (0, terrainY+2, 0) — Tempel liegt in +Z, Player soll
-        // in +Z auf ihn zu rennen.
-        if (r.state.playerBody && r.state.tmpTransform && r.state.tmpVec1) {
-            const t = r.state.tmpTransform;
-            t.setIdentity();
-            t.setOrigin(r.setVec(r.state.tmpVec1, 0, 5, -2));
-            r.state.playerBody.setWorldTransform(t);
-            r.state.playerBody.activate(true);
-            // Velocity +Z = vorwärts in Richtung Tempel
-            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 6));
+        // Player nach (0, 5, −2) — Tempel liegt in +Z, Spieler läuft in +Z auf ihn zu.
+        r.state.playerMesh.position.set(0, 5, -2);
+        if (r.state.playerVel) {
+            r.state.playerVel.setValue(0, 0, 0);
+            r.state._fieldVy = 0;
         }
-    });
-    await new Promise((r) => setTimeout(r, 800));
-    const collisionLive = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        return {
-            playerZ: r.state.playerMesh.position.z,
-            playerY: r.state.playerMesh.position.y,
-        };
+        // yaw=0 → forward = (sin0,0,cos0) = +Z; W drückt vorwärts.
+        const savedYaw = r.state.yaw;
+        const savedKeys = { ...r.state.keys };
+        r.state.yaw = 0;
+        r.state.keys = { w: true };
+        // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
+        for (let i = 0; i < 48; i++) {
+            if (typeof r._gameLoopTick === "function") r._gameLoopTick(performance.now());
+        }
+        const playerZ = r.state.playerMesh.position.z;
+        const playerY = r.state.playerMesh.position.y;
+        // restore Eingabe-Zustand (zustands-neutral für Folge-Bands)
+        r.state.yaw = savedYaw;
+        r.state.keys = savedKeys;
+        if (r.state.playerVel) {
+            r.state.playerVel.setValue(0, 0, 0);
+            r.state._fieldVy = 0;
+        }
+        return { playerZ, playerY };
     });
     // Tempel sitzt bei z=5, Pillar-Radius ~3.5, also Pillar-Vorderkante
     // bei z=1.5. Player startete bei z=-2, hätte ohne Kollision in
-    // 0.8s × 6 m/s = 4.8m gemacht und wäre bei z=2.8. Mit Kollision
-    // sollte er VOR der Pillar-Vorderkante stehen (z < ~2).
+    // 0.8s mehr als 4 m gemacht. Mit Kollision (blockerAABBs) sollte er
+    // VOR der Pillar-Vorderkante stehen (z < ~2).
     check(
-        "Ring 6.3: Kollision stoppt Spieler vor dem Tempel",
+        "Ring 6.3: feld-native Kollision (blockerAABBs) stoppt den Spieler vor dem Tempel",
         collisionLive.playerZ < 2.0,
         `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
     );
@@ -56671,9 +56226,8 @@ async function checkBandRing6Workshop(ctx) {
             // Spieler-Chunk den Sync-Anker (RICHTIG für den Lauf-Freeze in Produktion) —
             // dadurch hing die WARMUP-Welt an der ASYNC-Worker-Lieferung, die unter CPU-
             // Last (CI, mehrere Runner) ausgehungert wird → `voxelChunks=0` + 9 Folge-
-            // Fehler (gemessener Last-Flake: derselbe Commit rot↔grün je nach Last). Die
-            // ASYNC-Produktions-Wahrheit prüft `checkBandV18271AsyncSoftFloor` separat;
-            // der Warmup braucht nur eine WARME Welt, kein Async-Timing. Sync = load-
+            // Fehler (gemessener Last-Flake: derselbe Commit rot↔grün je nach Last).
+            // Der Warmup braucht nur eine WARME Welt, kein Async-Timing. Sync = load-
             // unabhängig (kein Worker-Timing) + bit-identisch (Determinismus-Wand).
             const _warmupSavedWorker = r.state.voxelWorker;
             r.state.voxelWorker = null;
@@ -56843,7 +56397,6 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWelle6DSoul, ctx);
             await timed(checkBandWelle6GHylomorphism, ctx);
             await timed(checkBandVoxelTerrainCore, ctx);
-            await timed(checkBandV18271AsyncSoftFloor, ctx);
             await timed(checkBandV18275FoliageGrowth, ctx);
             await timed(checkBandV18278LoopErrorBoundary, ctx);
             await timed(checkBandHydrosphere, ctx);
@@ -56864,8 +56417,6 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWellePerfDBudget, ctx);
             // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(checkBandWellePerfENexusGovernor, ctx);
-            // V12.0-perf.d.2 — Lazy-Proxy-Collision (Wurzel C).
-            await timed(checkBandWellePerfD2LazyCollision, ctx);
             // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(checkBandWellePerfHWaterIsoQueue, ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.
@@ -56882,8 +56433,6 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandPhaseAFundament, ctx);
             // PHASEN B–F (V18.104) — die Kern-KONSUM-Beweise des Phasen-Zugs.
             await timed(checkBandPhasenBF, ctx);
-            // V9.92 — Welle Perf-3.c Phase 4 Lazy-BVH-Beweis (ferne Chunks BVH-los).
-            await timed(checkBandWellePerf3cPhase4LazyBVH, ctx);
             // V9.93 — Wasser-LOD-Naht-Heilung (waterCells immer LOD 0).
             await timed(checkBandWelle993WaterLodSeam, ctx);
             // V11.0-d.1 — Pfeiler D Foundation: Wasser-Kontext für Kreaturen.
@@ -57036,6 +56585,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandV18264ShadowCache, ctx);
             await timed(checkBandV18265ShadowDistance, ctx);
             await timed(checkBandV18266RockDetail, ctx);
+            await timed(checkBandV18331ReplayDeterminism, ctx);
         }
 
         // Echte Page-Errors (Script-Exceptions) sind immer Bugs.

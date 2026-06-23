@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.324.0",
+    "version": "18.334.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "scripts": {
@@ -24,8 +24,6 @@
         "smoke:sandbox": "node scripts/smoke-sandbox.cjs",
         "smoke:vendor": "node scripts/smoke-vendor.cjs",
         "smoke:shim": "node scripts/smoke-shim.cjs",
-        "patch:ammo": "node scripts/patch-ammo-memory.cjs",
-        "postinstall": "node scripts/patch-ammo-memory.cjs",
         "smoke:selfboot": "node scripts/smoke-selfboot.cjs",
         "smoke:zeitportal": "node scripts/smoke-zeitportal.cjs",
         "smoke:copresence": "node scripts/smoke-copresence.cjs"

@@ -257,12 +257,28 @@ class AnazhRealm {
             cameraMode: "first",
             cameraThirdDistance: 6,
             cameraThirdHeight: 2.0,
+            // DETERMINISMUS-BOGEN P3 — Ammo ist RAUS. `physicsWorld` bleibt null (kein
+            // Bullet-World), `rigidBodies` leer; die Kollision ist feld-nativ. `playerVel`
+            // (in `initPhysics` als Skalar-Vektor angelegt) ist der EINE Velocity-Speicher,
+            // den `_loopPlayerMovement` schreibt und `_stepCharacter` liest.
             physicsWorld: null,
             rigidBodies: [],
-            playerBody: null,
+            playerVel: null,
             tmpTransform: null,
             scaleFactor: 1,
             gravity: -14.715,
+            // Determinismus-Bogen — der feld-native Kapsel-Controller (`_stepCharacter`)
+            // treibt den Spieler aus dem Dichtefeld: kein per-Chunk-BVH-Build (der Lauf-Freeze
+            // an der Wurzel), deterministisch, ein gecarvter Tunnel SOFORT begehbar. Die
+            // Feld-Physik ist die EINZIGE Physik (Ammo physisch entfernt, P3).
+            fieldPhysics: true,
+            _fieldVy: 0, // die feld-eigene vertikale Geschwindigkeit (world m/s)
+            _fieldWasGrounded: false, // war der Spieler im Vorframe geerdet (Boden-Haftung nur dann)
+            _replayRec: null, // P4 (Stufe 1) — die laufende Input-Aufnahme (deterministischer Replay)
+            _smoothBodyY: null, // geschwindigkeits-begrenzt nachgezogene Körper-Y des Auges (View-Smoothing)
+            _camSmoothT: 0, // Zeitstempel des letzten Kamera-Glättungs-Schritts
+            _landDip: 0, // aktueller Landungs-Absorption-Versatz des Auges (m, ≤ 0)
+            _landImpactPending: 0, // beim Landen erfasstes Aufprall-Tempo (m/s), von der Kamera konsumiert
             abilities: {},
             selfAwareness: { components: [], weaknesses: [] },
             logBuffer: [],
@@ -1048,15 +1064,9 @@ class AnazhRealm {
             // beim Eintritt in dichte Regionen (FPS-Sturm-Heilung). Cull bleibt
             // ungedeckelt (billig). 3/Frame × 60 fps = 180 Builds/s → eine dichte
             // Region füllt sich in <1 s sanft, ohne Frame-Spike.
-            // V12.0-perf.d.2 (Wurzel C) — Lazy-Proxy-Collision: Architekturen
-            // RENDERN bis architectureCullingRadius (150 m), bekommen aber einen
-            // Ammo-Body nur innerhalb dieses kleineren Radius. Ferne Deko ist
-            // sichtbar (instanced) aber physik-frei bis der Spieler herankommt.
-            // 90 m > maximaler collision-prüfender Test-Spawn (~56 m) → test-
-            // sicher; (90/150)² ≈ 36 % der Bodies. AAA-Pattern: Collision für
-            // Interaktion, nicht Dekoration. Bleibt < RMIN (100) des Governors,
-            // also immer < Render-Radius.
-            architectureCollisionRadius: 90,
+            // (P3: der frühere `architectureCollisionRadius`/Lazy-Proxy-Collision ist
+            // entfallen — die Architektur-Kollision ist feld-nativ via `entry.blockerAABBs`,
+            // render-unabhängig ab Spawn.)
             architectureBuildBudgetPerFrame: 3,
             // V18.263 — DER PERFORMANCE-REGELKREIS: der Sollwert + die vom PID-
             // Regler gefahrenen Streaming-Stellgrößen (Default = volle Qualität;
@@ -2214,11 +2224,9 @@ class AnazhRealm {
                 this.setTimeOfDay(Number(t));
             },
             gravity: ([value]) => {
-                const v = c(value, -30, 0);
-                this.state.gravity = v;
-                if (this.state.physicsWorld && this.state.tmpVec1) {
-                    this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, v, 0));
-                }
+                // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
+                // (keine Ammo-Welt mehr, die ein setGravity bräuchte).
+                this.state.gravity = c(value, -30, 0);
             },
             terrain_steepness: ([value]) => {
                 this.state.terrainSteepness = c(value, 0.1, 2.0);
@@ -4043,8 +4051,8 @@ class AnazhRealm {
     // Activity-Dimension der Fitness zu speisen.
     samplePlayerActivity(currentTime) {
         const p = this.state.player;
-        if (!p || !this.state.playerBody) return;
-        const v = this.state.playerBody.getLinearVelocity();
+        if (!p || !this.state.playerVel) return;
+        const v = this.state.playerVel;
         const speed2 = v.x() * v.x() + v.z() * v.z();
         if (speed2 > 0.16) p.recentActivity.moves++;
         if (this.state.isJumping && !p.recentActivity._prevJumping) p.recentActivity.jumps++;
@@ -12850,15 +12858,6 @@ class AnazhRealm {
         }
     }
 
-    // Die geteilte, zeit-gemessene Chunk-BVH-Wand (EINE Quelle für beide Caller:
-    // Worker-Mesh-Finalize + Lazy-Upgrade) — der Sense trägt den BVH-Posten.
-    _buildVoxelChunkBVH(mesh) {
-        const t0 = performance.now();
-        const body = this._buildStaticTriMeshCollision(mesh, { kind: "voxel-chunk", friction: 0.85 });
-        this._perfMark("bvh", performance.now() - t0);
-        return body;
-    }
-
     _perfSenseInit() {
         const phase = {};
         const phaseMax = {};
@@ -13714,136 +13713,55 @@ class AnazhRealm {
     }
 
     // ### Physik ### V7.42
-    async initPhysics() {
-        try {
-            if (typeof Ammo === "undefined") {
-                throw new Error("Ammo.js fehlt – index.html prüfen, ob Ammo.js-Skript geladen wurde");
-            }
-            // V9.40-f: Ammo wird mit `window.Module` als moduleArg gerufen —
-            // `ammo-bootstrap.js` setzte den `instantiateWasm`-Hook dort ab.
-            // Ammo's IIFE-Header (`function(moduleArg = {})`) liest NUR sein
-            // Argument, NICHT `window.Module` automatisch — wer das nicht
-            // übergibt, verliert den Pre-Grow-Hook und Ammo OOMt bei großen
-            // Voxel-Welten. `typeof window`-Check für Node-Headless-Pfade.
-            const ammoModule = typeof window !== "undefined" ? window.Module || {} : {};
-            await Ammo(ammoModule);
-            // V9.40-f: der vendored ammo.wasm.wasm wurde via
-            // `scripts/patch-ammo-memory.cjs` von max=64 MB auf max=256 MB
-            // (growable) gepatcht — eine Voxel-Welt mit Ring 4-8 (81-289
-            // Chunks × btBvhTriangleMeshShape + BVH-Baum) braucht mehr Heap.
-            // `ArrayBuffer.maxByteLength` ist ein Snapshot-Wert; der wahre
-            // Grow-Test ist `wasmMemory.grow(0)` (return = aktuelle Pages)
-            // + die Tatsache, dass Ammo bei OOM jetzt selbst grow() rufen
-            // kann. Diagnose-Log zeigt die aktuelle Heap-Größe — bei einem
-            // späteren OOM-Befund kann der Schöpfer hier den Wachstums-Lauf
-            // sehen (50 → 90 → 160 → …; bleibt er bei 64 MB stehen + OOM
-            // tritt auf, fehlt der Patch).
-            try {
-                const mem = Ammo.HEAPU8 && Ammo.HEAPU8.buffer;
-                if (mem) {
-                    const curMb = (mem.byteLength / 1024 / 1024).toFixed(0);
-                    this.log(`Ammo.js geladen – Physik initialisiert (Heap: ${curMb} MB initial, growable bis 256 MB)`);
-                } else {
-                    this.log("Ammo.js geladen – Physik initialisiert");
-                }
-            } catch {
-                this.log("Ammo.js geladen – Physik initialisiert");
-            }
+    // DETERMINISMUS-BOGEN P3 — Ammo ist RAUS. Die Kollision ist feld-nativ
+    // (`_stepCharacter` aus dem Dichtefeld, `_fieldRaycast`, `_stepCharacterStructures`).
+    // `initPhysics` baut keine Bullet-Welt mehr: kein `Ammo()`-Load, kein
+    // btDiscreteDynamicsWorld, kein per-Chunk-BVH-Baum (der Lauf-Freeze an der Wurzel),
+    // kein 256-MB-WASM-Heap. Nur der wiederverwendbare Skalar-Vektor-Pool bleibt — ein
+    // schlankes Plain-JS-Objekt mit DERSELBEN `.x()/.y()/.z()/.setValue()`-Schnittstelle
+    // (die `setVec`-Aufrufer + der Raycast lesen sie unverändert), und die Spieler-
+    // Velocity lebt jetzt feld-eigen in `state.playerVel`.
+    initPhysics() {
+        this.state.physicsWorld = null;
+        this.state.tmpTransform = null;
+        this.state.tmpVec1 = this._makeFieldVec();
+        this.state.tmpVec2 = this._makeFieldVec();
+        this.state.playerVel = this._makeFieldVec();
+        this.log("Feld-Physik (Determinismus-Controller) — keine Ammo-Welt, Kollision aus dem Dichtefeld.");
+    }
 
-            // Physik-Welt initialisieren
-            const collisionConfiguration = new Ammo.btDefaultCollisionConfiguration();
-            const dispatcher = new Ammo.btCollisionDispatcher(collisionConfiguration);
-            const broadphase = new Ammo.btDbvtBroadphase();
-            const solver = new Ammo.btSequentialImpulseConstraintSolver();
-            this.state.physicsWorld = new Ammo.btDiscreteDynamicsWorld(
-                dispatcher,
-                broadphase,
-                solver,
-                collisionConfiguration
-            );
-            this.state.tmpTransform = new Ammo.btTransform();
-            // Wiederverwendbarer Pool für Hot-Path-Allokationen. Ammo kopiert Werte
-            // beim Übergeben in Bullet, daher dürfen diese Vektoren überschrieben
-            // werden, sobald die Aufrufkette zurückkehrt.
-            this.state.tmpVec1 = new Ammo.btVector3(0, 0, 0);
-            this.state.tmpVec2 = new Ammo.btVector3(0, 0, 0);
-            this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, -9.81 * 1.5, 0));
-            this.log("Physik-Welt initialisiert, Gravitation: 1.5G (-14.715 m/s²)");
-
-            // Selbstbewusstsein aktualisieren
-            this.state.selfAwareness.components.push("physicsWorld");
-        } catch (error) {
-            this.logError(error);
-            throw error;
-        }
+    // Plain-JS-Skalar-Vektor mit der schmalen Schnittstelle, die der Hot-Path nutzt
+    // (`setValue` + die `.x()/.y()/.z()`-Akzessoren — der Raycast-Ursprung + der
+    // Velocity-Speicher lesen so). KEIN Ammo, kein WASM-Heap.
+    _makeFieldVec(x = 0, y = 0, z = 0) {
+        return {
+            _x: x,
+            _y: y,
+            _z: z,
+            setValue(a, b, c) {
+                this._x = a;
+                this._y = b;
+                this._z = c;
+                return this;
+            },
+            x() {
+                return this._x;
+            },
+            y() {
+                return this._y;
+            },
+            z() {
+                return this._z;
+            },
+        };
     }
 
     setVec(v, x, y, z) {
-        // Schreibt Werte in einen vorhandenen Ammo.btVector3 statt einen neuen
-        // zu allokieren. Ammo.js / Bullet kopieren beim Übergeben den Inhalt,
-        // d. h. der Vektor kann anschließend sofort wiederverwendet werden.
+        // Schreibt Werte in den wiederverwendbaren Skalar-Vektor (Feld-Pool), statt
+        // einen neuen zu allokieren — der Vektor darf überschrieben werden, sobald die
+        // Aufrufkette zurückkehrt.
         v.setValue(x, y, z);
         return v;
-    }
-
-    addRigidBody(mesh, mass, shape, lockRotation = false) {
-        try {
-            if (!this.state.physicsWorld) {
-                throw new Error("Physik-Welt nicht initialisiert – initPhysics() muss zuerst aufgerufen werden");
-            }
-            if (!mesh || !mesh.position) {
-                throw new Error("Mesh oder Position nicht definiert");
-            }
-            if (!shape) {
-                throw new Error("Physik-Shape nicht definiert");
-            }
-
-            // Transform für den Physik-Körper erstellen
-            const transform = new Ammo.btTransform();
-            transform.setIdentity();
-            const position = mesh.position;
-            const scaledPosition = new Ammo.btVector3(
-                position.x / this.state.scaleFactor,
-                position.y / this.state.scaleFactor,
-                position.z / this.state.scaleFactor
-            );
-            transform.setOrigin(scaledPosition);
-
-            // Rotation anwenden
-            const rotation = mesh.quaternion || new THREE.Quaternion();
-            const ammoQuat = new Ammo.btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w);
-            transform.setRotation(ammoQuat);
-
-            // Physik-Körper erstellen
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            const localInertia = new Ammo.btVector3(0, 0, 0);
-            if (mass > 0) {
-                shape.calculateLocalInertia(mass, localInertia);
-            }
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, localInertia);
-            const body = new Ammo.btRigidBody(rbInfo);
-
-            // Rotation sperren, falls gewünscht
-            if (lockRotation) {
-                body.setAngularFactor(new Ammo.btVector3(0, 0, 0));
-            }
-
-            // Physik-Körper zur Welt hinzufügen
-            this.state.physicsWorld.addRigidBody(body);
-            mesh.userData.physicsBody = body;
-            this.state.rigidBodies.push(mesh);
-
-            // Speicher freigeben
-            Ammo.destroy(ammoQuat);
-            this.log(
-                `RigidBody hinzugefügt: Position (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)}), Masse: ${mass}`,
-                "DEBUG"
-            );
-            return body;
-        } catch (error) {
-            this.logError(error);
-            throw error;
-        }
     }
 
     // ### Skybox ###
@@ -14077,9 +13995,9 @@ class AnazhRealm {
 
         // Planeten hinzufügen
         this.state.planets = [];
-        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
-        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Planeten 3→1.
-        const numPlanets = 1;
+        // V18.331 — Dev-Drossel revertiert (Cold-Start ist nach dem Perf-/Worldgen-/
+        // Determinismus-Bogen schnell): Planeten zurück auf 3.
+        const numPlanets = 3;
         for (let i = 0; i < numPlanets; i++) {
             const planetSize = Math.random() * 20 + 10;
             const planetGeometry = new THREE.SphereGeometry(planetSize, 32, 32);
@@ -15008,16 +14926,9 @@ class AnazhRealm {
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Group; tiefes Disposal
         // wie bei Soul-Wechsel, sonst leakt jede Sub-Mesh-Geometrie.
         this._disposeSoulGroup(creature);
-        const body = creature.userData?.physicsBody;
-        if (body && this.state.physicsWorld) {
-            this.state.physicsWorld.removeRigidBody(body);
-            Ammo.destroy(body);
-            // Welle 6.H Phase 2D.1 — body-Ref nullen damit ein zweiter
-            // removeCreature-Call (z. B. aus clearCreatures + paralleler
-            // Test-Mutation) nicht erneut Ammo.destroy auf einen bereits
-            // freigegebenen Pointer wirft (WASM RuntimeError: null function).
-            creature.userData.physicsBody = null;
-        }
+        // DETERMINISMUS-BOGEN P3 — Kreaturen tragen keinen Ammo-Body mehr (sie erden
+        // feld-nativ über `_creatureGroundY`); nur die Mesh-Referenz aus `rigidBodies` lösen.
+        creature.userData.physicsBody = null;
         this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
         // Welle 6.H Phase 2D.1 — removeCreature splict jetzt auch aus
         // state.creatures + state.creatureEmotions (parallel-Arrays). Vor V7.86
@@ -15129,14 +15040,9 @@ class AnazhRealm {
             emotion === "sad"
                 ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
                 : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
-        if (this.state.physicsWorld) {
-            // Hitbox ~kompakt (0.5er Basis wie pre-V7.82), aber S7 skaliert sie mit der
-            // Körpergröße (ein Koloss ist auch ein größeres Ziel — das Visual + die Kollision
-            // bleiben kohärent); bounded durch die bodySize-Bänder (~0.6-2.7).
-            const _hb = 0.25 * (group.userData.bodySize || 1);
-            const creatureShape = new Ammo.btBoxShape(new Ammo.btVector3(_hb, _hb, _hb));
-            this.addRigidBody(group, 0.5, creatureShape);
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Ammo-Body für Kreaturen mehr: sie erden feld-nativ
+        // (`_creatureGroundY` → `_voxelSurfaceY`) und bewegen sich kinematisch im
+        // `updateCreatures`-Loop. Knockback ist feld-nativ (`creature.userData.knockVel`).
         // Ring 4 — Spawn-Klang. DSL-getriggert pingt, initial-spawn (über
         // spawnCreatures mit `silent`) bleibt still, sonst hagelt es 10 Pings.
         this.playCreaturePing(emotion === "sad" ? "sad" : "happy");
@@ -18216,15 +18122,16 @@ class AnazhRealm {
         // knockback-Stat (NUR wenn der Angreifer Ort + Wucht liefert — der LMB-Angriff;
         // der DSL-Op gibt keinen). Setzt die Body-Velocity (wie Sprung/Kreatur-Bewegung —
         // es gibt keinen additiven Impuls-Pfad im Code). Die Wucht ist Browser-Feel.
-        if (opts.fromPos && (opts.knockback || 0) > 0 && creature.userData.physicsBody && this.state.tmpVec1) {
+        if (opts.fromPos && (opts.knockback || 0) > 0) {
+            // DETERMINISMUS-BOGEN P3 — feld-nativer Knockback (kein Ammo-Impuls): ein
+            // direkter Positions-Stoß weg vom Angreifer; `_creatureGroundY` erdet die
+            // Kreatur im nächsten `updateCreatures`-Frame wieder.
             const dx = creature.position.x - opts.fromPos.x;
             const dz = creature.position.z - opts.fromPos.z;
             const len = Math.hypot(dx, dz) || 1;
             const push = Math.min(18, opts.knockback * 1.4);
-            creature.userData.physicsBody.setLinearVelocity(
-                this.setVec(this.state.tmpVec1, (dx / len) * push, push * 0.4, (dz / len) * push)
-            );
-            creature.userData.physicsBody.activate(true);
+            creature.position.x += (dx / len) * push * 0.12;
+            creature.position.z += (dz / len) * push * 0.12;
         }
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
@@ -20586,10 +20493,9 @@ class AnazhRealm {
 
             // Prüfe, ob die Kreatur im Sichtfeld ist (nur für Rendering)
             const inFrustum = this.isInFrustum(creature);
-            const body = creature.userData.physicsBody;
 
-            // Physik bleibt immer aktiv, nur Rendering wird optimiert
-            creature.visible = inFrustum; // Sichtbarkeit basierend auf Frustum
+            // Rendering wird optimiert (Sichtbarkeit basierend auf Frustum)
+            creature.visible = inFrustum;
 
             // V8.49 — Hindernis-Raycast nur für sichtbare, nahe Kreaturen.
             // Off-Screen-Sparsamkeit + Distanz-LOD: die Hindernis-Vermeidung
@@ -20847,7 +20753,22 @@ class AnazhRealm {
             // Terrain (V8.49-Floating-Animation-Anker).
             const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
             const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
-            creature.position.y = baseY + floatOffset;
+            // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
+            // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
+            let hopOffset = 0;
+            if (creature.userData._hopV > 0) {
+                hopOffset = creature.userData._hopH || 0;
+                creature.userData._hopH = hopOffset + creature.userData._hopV * 0.05;
+                creature.userData._hopV -= 9.0 * 0.05; // Schwerkraft-Decay auf den Hüpf-Impuls
+                if (creature.userData._hopV <= 0 && creature.userData._hopH <= 0) {
+                    creature.userData._hopV = 0;
+                    creature.userData._hopH = 0;
+                } else if (creature.userData._hopH < 0) {
+                    creature.userData._hopH = 0;
+                    creature.userData._hopV = 0;
+                }
+            }
+            creature.position.y = baseY + floatOffset + hopOffset;
             // V9.84 Perf-1.e — Visual-Updates (Aura-Position, Carrying-Sprite-
             // Position, Color-Lerp) gated auf `inFrustum`. Eine Kreatur, die
             // nicht zu sehen ist, braucht keine Sprite-Positionen pro Frame
@@ -20920,20 +20841,8 @@ class AnazhRealm {
                 this.log(`Kreatur ${i} zu tief gefallen, zurückgesetzt zu y=${terrainHeight + 1.0}`);
             }
 
-            // Physik-Update (immer aktiv) – nutzt gepoolte Transform + Vec
-            if (body) {
-                const transform = this.state.tmpTransform;
-                transform.setIdentity();
-                transform.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        creature.position.x / this.state.scaleFactor,
-                        creature.position.y / this.state.scaleFactor,
-                        creature.position.z / this.state.scaleFactor
-                    )
-                );
-                body.setWorldTransform(transform);
-            }
+            // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Shadow mehr: die Kreatur-Position IST
+            // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
     }
 
@@ -21333,7 +21242,7 @@ class AnazhRealm {
     //   (5) Scene.add(mesh)
     // Returns `{mesh, kind, waterCells, lod}` wie `_buildVoxelChunkData`,
     // oder null bei Collision-OOM.
-    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData, opts = {}) {
+    _buildVoxelChunkDataFromWorkerMesh(cx, cz, lod, meshData, _opts = {}) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (meshData.empty) return { mesh: null, kind: "empty", waterCells: null, lod, hasBVH: false };
         // V18.263 — der Worker LIEFERTE einen fertigen Mesh (der gesunde Pfad);
@@ -21360,22 +21269,11 @@ class AnazhRealm {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        // V9.92 (Phase 4 — Lazy-BVH): wenn `opts.buildBVH === false`, wird
-        // die teure Ammo-Collision-Allokation (~25-30 ms pro Chunk) übersprungen.
-        // Ferne Chunks (r ≥ 2 vom Spieler) sehen das Mesh ohne Collision —
-        // der Spieler kann sie nicht erreichen ohne Movement. Wenn sie ins
-        // 2-Ring kommen (`_pumpVoxelChunkBVH`) oder der Spieler hineinspringt
-        // (`_ensurePlayerChunkBVH`), wird die BVH nachgereicht.
-        const wantBVH = opts.buildBVH !== false;
-        let hasBVH = false;
-        if (wantBVH) {
-            const collisionBody = this._buildVoxelChunkBVH(mesh);
-            if (!collisionBody) {
-                this._queueDispose(geom);
-                return null;
-            }
-            hasBVH = true;
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Chunk-BVH mehr (das war der Lauf-Freeze, ~9 ms/Chunk).
+        // Die Spieler-/Kreatur-Kollision liest das Dichtefeld direkt (`_stepCharacter`,
+        // `_creatureGroundY`) — der Mesh trägt nur noch das Visual. `hasBVH` bleibt als
+        // Flag (false), bis die letzten Leser entfallen.
+        const hasBVH = false;
         // Architektur-Stempel auf waterCells (Main-only — der Worker kennt
         // keine Architekturen). Nur wenn Cells überhaupt da sind (chunk hat
         // Wasser laut Atlas-Strict-Gate). V9.93 — Cells sind IMMER LOD 0,
@@ -21391,102 +21289,6 @@ class AnazhRealm {
             this._stampArchitectureSolidCellsInto(waterCells, ox, oy, oz, 0);
         }
         return { mesh, kind: "filled", waterCells, lod, hasBVH, surfMap: meshData.surfMap || null };
-    }
-
-    // V9.92 (Phase 4 — Lazy-BVH): hängt einem Existing-Chunk-Entry seine
-    // BVH-Collision nach. Wird vom `_pumpVoxelChunkBVH`-Helper gerufen
-    // wenn ein ferner (BVH-loser) Chunk ins 2-Ring rückt, ODER vom
-    // `_ensurePlayerChunkBVH`-Safety-Hook wenn der Spieler in einen
-    // BVH-losen Chunk teleportiert. Returns true bei Erfolg, false bei
-    // OOM oder wenn der Chunk schon eine BVH hat / keine Mesh trägt.
-    _upgradeChunkBVH(cx, cz) {
-        if (!this.state.voxelChunks) return false;
-        const key = `${cx},${cz}`;
-        const entry = this.state.voxelChunks.get(key);
-        if (!entry || !entry.mesh || entry.hasBVH || entry.empty) return false;
-        const body = this._buildVoxelChunkBVH(entry.mesh);
-        if (!body) return false;
-        entry.hasBVH = true;
-        return true;
-    }
-
-    // V9.92 — pro Streaming-Tick: scant 3×3-Spieler-Nähe + upgraded BVH
-    // für Chunks die zwar im 2-Ring liegen aber noch keine Collision haben.
-    // Rate-limited (max 2 upgrades pro Frame) damit Player-Movement nicht
-    // mehrere BVH-Build-Spikes auf einmal triggert. Kommt der Spieler durch
-    // viel Bewegung in viele neue Chunks, wird das über mehrere Frames
-    // verteilt — keine Spike-Klumpen.
-    _pumpVoxelChunkBVH(pcx, pcz, budgetMs = 4) {
-        if (!this.state.voxelChunks) return 0;
-        // V18.291 — ZEIT-BUDGET statt count: der BVH-Baum-Bau kostet ~10 ms/Chunk
-        // (GEMESSEN), ein count-2-Pump war ein ~20-ms-Spike. Baue ≥1 (Fortschritt
-        // garantiert), dann stoppe, sobald das Frame-Budget aufgebraucht ist →
-        // verteilt die 3×3-Nachbar-Kollision smooth über Frames (kein Burst).
-        const t0 = performance.now();
-        let upgraded = 0;
-        for (let dz = -1; dz <= 1; dz++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                const cx = pcx + dx;
-                const cz = pcz + dz;
-                const key = `${cx},${cz}`;
-                const entry = this.state.voxelChunks.get(key);
-                if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
-                    if (this._upgradeChunkBVH(cx, cz)) {
-                        if (++upgraded >= 1 && performance.now() - t0 >= budgetMs) return upgraded;
-                    }
-                }
-            }
-        }
-        return upgraded;
-    }
-
-    // V9.92 — Sicherheits-Wand: stellt sicher dass der Chunk DIREKT UNTER
-    // dem Spieler IMMER eine BVH hat. Wird jeden Frame im Streaming-Tick
-    // gerufen. Wenn der Spieler in einen BVH-losen Chunk teleportiert/
-    // fällt (z.B. via DSL-Op, Welt-Wechsel, Mehrfach-Sprung), würde er
-    // ohne Collision durch den Boden fallen. Sync-Upgrade ist hier
-    // gerechtfertigt — ein einzelner ~25 ms-Spike ist akzeptabel gegen
-    // Spieler-Durchfallen.
-    _ensurePlayerChunkBVH(pcx, pcz) {
-        if (!this.state.voxelChunks) return;
-        const key = `${pcx},${pcz}`;
-        const entry = this.state.voxelChunks.get(key);
-        // (a) Mesh da, aber keine BVH → sync upgraden (Teleport-Schutz). Watchdog reset.
-        if (entry && entry.mesh && !entry.hasBVH && !entry.empty) {
-            this._upgradeChunkBVH(pcx, pcz);
-            this.state._playerChunkStallKey = null;
-            return;
-        }
-        // (b) Chunk fertig (Mesh+BVH) ODER genuin leer (Void) → kein Bedarf. Watchdog reset.
-        if (entry) {
-            this.state._playerChunkStallKey = null;
-            return;
-        }
-        // (c) KEIN entry → der Spieler-Chunk lädt async (pending) ODER der Worker STALLT.
-        // V18.274 — SYNC-GATING (der Produktions-Zwilling des Warmup-Sync, der CLAUDE.md-
-        // benannte „nur sync, wenn wirklich kein Boden"): hat der Spieler-Chunk nach
-        // PLAYER_CHUNK_STALL_MS noch keinen Mesh (der Worker ausgehungert/fehlerhaft),
-        // baue ihn SYNC als letzten Anker — sonst hängt der Spieler ewig am weichen
-        // Boden ohne echte Kollision. Über das proven `voxelWorker=null`→Stufe-3-Sync-
-        // Muster durch DIE EINE Bau-Quelle `_ensureVoxelChunkAt` (kein Parallelcode).
-        // Eine späte Worker-Lieferung landet im `voxelMeshCache`, nicht in `voxelChunks`
-        // (race-sicher, kein Clobber). Normalbetrieb (Worker liefert ~71 ms) feuert den
-        // Watchdog NIE → kein per-Frame-Sync-Spike; nur der echte Stall zahlt den Build.
-        const now = performance.now();
-        if (this.state._playerChunkStallKey !== key) {
-            this.state._playerChunkStallKey = key;
-            this.state._playerChunkStallSince = now;
-            return;
-        }
-        if (now - (this.state._playerChunkStallSince || now) < AnazhRealm.PLAYER_CHUNK_STALL_MS) return;
-        const savedWorker = this.state.voxelWorker;
-        this.state.voxelWorker = null;
-        try {
-            this._ensureVoxelChunkAt(pcx, pcz, 0);
-        } finally {
-            this.state.voxelWorker = savedWorker;
-        }
-        this.state._playerChunkStallKey = null;
     }
 
     // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
@@ -21669,15 +21471,11 @@ class AnazhRealm {
     }
 
     creatureJump(creature, jumpHeight) {
-        const body = creature.userData.physicsBody;
-        if (body) {
-            const velocity = body.getLinearVelocity();
-            body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), jumpHeight * 5, velocity.z()));
-            if (Math.random() < 0.1) {
-                // Nur 10% Chance, den Sprung zu loggen
-                this.log(`Kreatur springt mit Höhe ${jumpHeight}`, "DEBUG");
-            }
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Impuls mehr. Ein transienter Hüpf-Versatz
+        // (decay), der im `updateCreatures`-Loop ON TOP der feld-geerdeten baseY addiert wird —
+        // die Erdung (`_creatureGroundY`) bleibt die Wahrheit, der Hüpfer reitet darauf.
+        if (!creature || !creature.userData) return;
+        creature.userData._hopV = Math.max(creature.userData._hopV || 0, (jumpHeight || 0.8) * 2.2);
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -21787,26 +21585,9 @@ class AnazhRealm {
     }
 
     toggleCreatures(visible) {
+        // DETERMINISMUS-BOGEN P3 — Kreaturen tragen keinen Ammo-Body mehr; nur Sichtbarkeit.
         this.state.creatures.forEach((creature) => {
             creature.visible = visible;
-            const body = creature.userData.physicsBody;
-            if (body) {
-                if (visible) {
-                    this.state.physicsWorld.addRigidBody(body);
-                    const transform = new Ammo.btTransform();
-                    transform.setIdentity();
-                    transform.setOrigin(
-                        new Ammo.btVector3(
-                            creature.position.x / this.state.scaleFactor,
-                            creature.position.y / this.state.scaleFactor,
-                            creature.position.z / this.state.scaleFactor
-                        )
-                    );
-                    body.setWorldTransform(transform);
-                } else {
-                    this.state.physicsWorld.removeRigidBody(body);
-                }
-            }
         });
         this.log(`Kreaturen ${visible ? "aktiviert" : "deaktiviert"}`);
     }
@@ -22283,6 +22064,39 @@ class AnazhRealm {
         // (pro-Subsystem ms) + wie der Regelkreis steht (loadScale/δ/Stellgrößen).
         if (vc === "perf" || vc === "perf sense" || vc === "debug perf") {
             this._togglePerfOverlay();
+            return true;
+        }
+        // Determinismus-Bogen P3 — die Feld-Physik ist die einzige Physik (Ammo ist raus).
+        if (vc === "feldphysik" || vc === "field physics" || vc === "fieldphysics") {
+            this.setFieldPhysics();
+            this.log(
+                "Feld-Physik ist die einzige Physik — der Spieler läuft aus dem Dichtefeld (Ammo ist raus).",
+                "INFO"
+            );
+            return true;
+        }
+        // Determinismus-Bogen P4 (Stufe 1) — die Ernte: deterministischer Input-Replay.
+        // „replay record" zeichnet ab jetzt jeden Frame-Input auf · „replay stop" hält an
+        // + spielt die Aufnahme sofort deterministisch zurück (der Spieler läuft sie nach).
+        if (vc === "replay record" || vc === "replay aufnahme") {
+            const ok = this.startReplayRecording();
+            this.log(
+                ok ? "Replay: Aufnahme laeuft — beweg dich, dann: replay stop" : "Replay: kein Spieler bereit.",
+                "INFO"
+            );
+            return true;
+        }
+        if (vc === "replay stop" || vc === "replay play" || vc === "replay abspielen") {
+            const rec = this.stopReplayRecording();
+            if (!rec || !rec.frames.length) {
+                this.log("Replay: keine Aufnahme — zuerst: replay record", "INFO");
+                return true;
+            }
+            const end = this.replayRun(rec);
+            this.log(
+                `Replay: ${rec.frames.length} Frames deterministisch abgespielt → (${end.x.toFixed(1)}, ${end.y.toFixed(1)}, ${end.z.toFixed(1)}).`,
+                "INFO"
+            );
             return true;
         }
         if (vc === "voxel carve" || vc === "voxel fill") {
@@ -22885,31 +22699,11 @@ class AnazhRealm {
     }
 
     optimizePhysics() {
-        this.state.gravity = -14.715; // Zurück auf Standard
-        // V18.279 — den POOL nutzen (tmpVec1), nicht `new Ammo.btVector3` ohne destroy →
-        // sonst leckt jeder Aufruf WASM-Heap (die Ammo-Allok-Gotcha). Fallback mit destroy.
-        if (this.state.tmpVec1) {
-            this.state.physicsWorld.setGravity(this.setVec(this.state.tmpVec1, 0, this.state.gravity, 0));
-        } else {
-            const g = new Ammo.btVector3(0, this.state.gravity, 0);
-            this.state.physicsWorld.setGravity(g);
-            Ammo.destroy(g);
-        }
-        this.state.rigidBodies.forEach((rb) => {
-            const body = rb.userData.physicsBody;
-            if (!body) return;
-            // Welle 6.A1 — Spieler-Body bekommt Reibung 0 (Wall-Sliding),
-            // alle anderen behalten 0.5 wie zuvor. Sonst würde dieser Re-Apply
-            // (Chat-Befehl „optimiere physik") die Sliding-Eigenschaft zerstören.
-            if (rb === this.state.playerMesh) {
-                body.setFriction(0);
-            } else {
-                body.setFriction(0.5);
-            }
-            body.setCcdMotionThreshold(0.03);
-            body.setCcdSweptSphereRadius(0.4);
-        });
-        this.log("Physik optimiert: Gravitation, Reibung, CCD angepasst");
+        // DETERMINISMUS-BOGEN P3 — keine Ammo-Welt/Reibung/CCD mehr zu „optimieren".
+        // Der Chat-Befehl setzt nur noch die Schwerkraft-Konstante zurück (die
+        // `_stepCharacter` als Skalar liest).
+        this.state.gravity = -14.715;
+        this.log("Schwerkraft auf Standard zurückgesetzt (Feld-Physik — kein Ammo).");
     }
 
     // ### Welten-Generierung ### V7.56
@@ -22999,12 +22793,8 @@ class AnazhRealm {
     _worldgenCleanupOldObjects() {
         if (this.state.groundMesh) {
             this.state.scene.remove(this.state.groundMesh);
-            const body = this.state.groundMesh.userData.physicsBody;
-            if (body) {
-                this.state.physicsWorld.removeRigidBody(body);
-                Ammo.destroy(body);
-                this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== this.state.groundMesh);
-            }
+            // P3 — kein Ammo-Body mehr am Boden-Mesh.
+            this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== this.state.groundMesh);
             this.state.groundMesh = null;
             this.state.groundHeightField = null;
             this.log("Alter Boden entfernt");
@@ -23013,7 +22803,6 @@ class AnazhRealm {
         // entfernt (Voxel ist permanent seit V9.35, beide Sammlungen leer).
         if (this.state.floatingIslands) {
             this.state.floatingIslands.forEach((island) => {
-                this._disposeStaticCollision(island);
                 this.state.scene.remove(island);
             });
             this.state.floatingIslands = [];
@@ -23027,12 +22816,8 @@ class AnazhRealm {
         if (this.state.creatures) {
             this.state.creatures.forEach((creature) => {
                 this.state.scene.remove(creature);
-                const body = creature.userData.physicsBody;
-                if (body) {
-                    this.state.physicsWorld.removeRigidBody(body);
-                    Ammo.destroy(body);
-                    this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
-                }
+                // P3 — Kreaturen tragen keinen Ammo-Body mehr; nur die rigidBodies-Ref lösen.
+                this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
             });
             this.state.creatures = [];
             this.state.creatureEmotions = [];
@@ -23040,7 +22825,6 @@ class AnazhRealm {
         }
         if (this.state.vegetation) {
             this.state.vegetation.forEach((veg) => {
-                this._disposeStaticCollision(veg);
                 this.state.scene.remove(veg);
             });
             this.state.vegetation = [];
@@ -23065,13 +22849,9 @@ class AnazhRealm {
         this.state.playerMesh.visible = true;
         if (isFirstSpawn) {
             this.state.playerMesh.position.set(0, 50, 0);
-            if (this.state.playerBody) {
-                const t = this.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(this.setVec(this.state.tmpVec1, 0, 50 / this.state.scaleFactor, 0));
-                this.state.playerBody.setWorldTransform(t);
-                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-            }
+            // Feld-nativ: die Velocity nullen, der vertikale Feld-Zustand zurück (kein Ammo-Body).
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.state._fieldVy = 0;
             this.log("Welt erstmals gespawnt: Spieler bei (0, 50, 0)");
         } else {
             this.log("Welt regeneriert – Spieler-Position bleibt erhalten", "DEBUG");
@@ -23109,9 +22889,8 @@ class AnazhRealm {
     _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        // V18.257 TEMP-DEV-DROSSEL (Schöpfer-Wunsch „Strukturen drosseln, schneller iterieren";
-        // Backlog: Cold-Start effizienter machen, dann REVERT auf 3): Fliegende Inseln 3→1.
-        const numIslands = 1;
+        // V18.331 — Dev-Drossel revertiert (schneller Cold-Start): fliegende Inseln zurück auf 3.
+        const numIslands = 3;
         // V18.180-FIX §6.2: Γ5 STREAM-GESETZ — Math.random in einem worldgen-
         // Pfad würfelt zwei Peers in unterschiedliche Welten (Multi-User-Drift).
         // Pro Insel ein eigener Stream-Suffix; das speist Größe/Höhe/Position
@@ -23334,21 +23113,9 @@ class AnazhRealm {
         const spawnY = platCenterY + 2.2;
         if (this.state.playerMesh) {
             this.state.playerMesh.position.set(spot.x, spawnY, spot.z);
-            if (this.state.playerBody) {
-                const t = this.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        spot.x / this.state.scaleFactor,
-                        spawnY / this.state.scaleFactor,
-                        spot.z / this.state.scaleFactor
-                    )
-                );
-                this.state.playerBody.setWorldTransform(t);
-                this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-                this.state.playerBody.activate(true);
-            }
+            // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.state._fieldVy = 0;
         }
         this.log(
             `Genesis-Plattform erstellt bei (${spot.x}, ${spot.z}), y=${platCenterY.toFixed(1)}, Spieler auf y=${spawnY.toFixed(1)}`
@@ -24679,29 +24446,37 @@ class AnazhRealm {
     // alle direkten Aufrufer). Der Chunk-Grid-Pfad in `_buildVoxelChunkData`
     // nutzt stattdessen `_voxelEditedDensityGrid` (base-gecacht + Delta).
     _terrainDensityAt(x, y, z) {
-        let d = this._terrainBaseDensityAt(x, y, z);
-        // Phase 3 — Voxel-Edits: jede Schnitz-Kugel zieht Dichte ab (carve)
-        // oder schüttet auf (fill). Die Edits leben in worldMeta.voxelEdits
-        // (persistiert mit der Welt) und gelten ZULETZT — der Spieler-Wille
-        // überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
+        // Determinismus-Bogen P1a — die Voxel-Edit-Deltas sind in `_voxelEditDeltaAt`
+        // extrahiert, damit der feld-native Kollisions-Pfad (`_fieldDensityAt`, mit
+        // gehoistetem Spalten-Kontext) DIESELBE Edit-Wahrheit liest, statt die Schleife
+        // zu duplizieren (Verdichte-zu-EINER-Quelle). base + Σ delta ist bit-identisch
+        // zur alten Inline-Schleife (diag-density-refactor / diag-worker-chunk: maxDiff 0).
+        return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
+    }
+
+    // Die Voxel-Edit-Deltas (EINE Quelle, aus `_terrainDensityAt` extrahiert): jede
+    // Schnitz-Kugel zieht Dichte ab (carve) oder schüttet auf (fill). Die Edits leben in
+    // worldMeta.voxelEdits (persistiert mit der Welt) und gelten ZULETZT — der Spieler-
+    // Wille überschreibt Terrain UND Hydrosphäre-Sculpting an seiner Kugel.
+    _voxelEditDeltaAt(x, y, z) {
         const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
-        if (edits && edits.length) {
-            for (let e = 0; e < edits.length; e++) {
-                const ed = edits[e];
-                if (!ed) continue;
-                const dx = x - ed.x;
-                const dy = y - ed.y;
-                const dz = z - ed.z;
-                const dist2 = dx * dx + dy * dy + dz * dz;
-                const r = ed.r;
-                if (dist2 < r * r) {
-                    const fall = 1 - Math.sqrt(dist2) / r;
-                    const amt = fall * (ed.strength || 48);
-                    // `fill` addiert Dichte (Boden aufschütten), `carve`
-                    // (Default, auch mode-lose Alt-Edits) zieht ab.
-                    if (ed.mode === "fill") d += amt;
-                    else d -= amt;
-                }
+        if (!edits || !edits.length) return 0;
+        let d = 0;
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (!ed) continue;
+            const dx = x - ed.x;
+            const dy = y - ed.y;
+            const dz = z - ed.z;
+            const dist2 = dx * dx + dy * dy + dz * dz;
+            const r = ed.r;
+            if (dist2 < r * r) {
+                const fall = 1 - Math.sqrt(dist2) / r;
+                const amt = fall * (ed.strength || 48);
+                // `fill` addiert Dichte (Boden aufschütten), `carve` (Default,
+                // auch mode-lose Alt-Edits) zieht ab.
+                if (ed.mode === "fill") d += amt;
+                else d -= amt;
             }
         }
         return d;
@@ -25735,7 +25510,6 @@ class AnazhRealm {
     _spawnVoxelTestChunk() {
         if (!this.state.scene) return null;
         if (this._voxelTestMesh) {
-            this._disposeStaticCollision(this._voxelTestMesh);
             this.state.scene.remove(this._voxelTestMesh);
             // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
             if (this._voxelTestMesh.geometry) this._queueDispose(this._voxelTestMesh.geometry);
@@ -25766,11 +25540,9 @@ class AnazhRealm {
         mesh.receiveShadow = true;
         this.state.scene.add(mesh);
         this._voxelTestMesh = mesh;
-        const body = this._buildStaticTriMeshCollision(mesh, { kind: "voxel", friction: 0.85 });
         const vCount = geom.getAttribute("position").count;
         this.log(
-            `Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets)` +
-                (body ? " — begehbar (btBvhTriangleMeshShape)." : " — ohne Kollision (kein Index)."),
+            `Voxel-Test-Chunk gemesht: ${vCount} Vertices (Surface Nets) — begehbar (feld-native Kollision).`,
             "INFO"
         );
         return mesh;
@@ -28156,113 +27928,38 @@ class AnazhRealm {
                         // erzählt ihr Holz (das Anti-Attrappe-Gesetz auf der Material-Ebene).
                         // positionLocal hält die Maserung instanz-stabil (jeder Stamm dieselbe
                         // Faser, nicht welt-kontinuierlich gesmeared). Marker bei TSL-Fehler.
-                        if (opts.bark && _Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow) {
-                            try {
-                                const _pl = _Ta.positionLocal;
-                                const _ht =
-                                    opts.tags && Number.isFinite(+opts.tags.härte)
-                                        ? Math.max(0, Math.min(1, +opts.tags.härte))
-                                        : 0.4;
-                                const _hiF = 9.0 + _ht * 8.0; // quer-Frequenz (härter = feiner)
-                                const _loF = 1.35; // längs-Frequenz (langgezogene Faser)
-                                const _grain = _Ta.mx_noise_float(
-                                    _Ta.vec3(_pl.x.mul(_hiF), _pl.y.mul(_loF), _pl.z.mul(_hiF))
-                                );
-                                const _crackN = _Ta.mx_noise_float(
-                                    _Ta.vec3(_pl.x.mul(_hiF * 0.5), _pl.y.mul(_loF * 2.4), _pl.z.mul(_hiF * 0.5))
-                                );
-                                // ridged: (1 − noise²) peakt an der Faser-Mitte → pow vertieft die
-                                // Risse zu scharfen Schatten-Rinnen (kein abs nötig).
-                                const _ridge = _crackN.mul(_crackN);
-                                const _crack = _Ta.pow(_Ta.float(1.0).sub(_ridge), _Ta.float(2.6));
-                                const _grainAmp = 0.13;
-                                const _crackAmp = 0.09 + _ht * 0.13;
-                                const _mod = _Ta
-                                    .float(1.0)
-                                    .add(_grain.mul(_Ta.float(_grainAmp)))
-                                    .sub(_crack.mul(_Ta.float(_crackAmp)));
-                                albedoNode = albedoNode.mul(_mod.clamp(0.5, 1.3));
-                            } catch (_e) {
-                                if (typeof window !== "undefined")
-                                    window.__barkGrainError = String((_e && _e.message) || _e);
-                            }
+                        if (opts.bark) {
+                            // RINDE — durch den EINEN Substanz-Charakter-Kern (bark-Modus: Längs-Faser
+                            // + Riss-Kavität + Ton + leichtes Moos), statt eigenem Korn-Pfad (Gesetz #0).
+                            const _rb = this._substanceCharacter(_Ta, albedoNode, {
+                                pos: _Ta.positionLocal,
+                                worldPos: _Ta.positionWorld,
+                                tags: opts.tags || {},
+                                metal: 0,
+                                bark: true,
+                            });
+                            albedoNode = _rb.albedo;
                         }
                         mat.colorNode = _Ta.vec4(albedoNode, _alpha);
                     }
                 } else if (isFlatStructure && _Ta && _Ta.vec3) {
+                    // FLACH-FARB-WERKE (Tempel · Schwert · Rüstung · Esse · Glut · …): die flache
+                    // Plastik-Farbe fließt durch den EINEN Substanz-Charakter-Kern (Korn · Kavität ·
+                    // Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump) — instanz-stabil
+                    // (positionLocal) + tag-getrieben, LOD-gegated. KEIN eigener Pfad mehr (Gesetz #0).
                     const _c = new THREE.Color(opts.color);
-                    albedoNode = _Ta.vec3(_c.r, _c.g, _c.b);
-                    // SUBSTANZ-PASS (wahrerguss System A) — der UNIVERSELLE prozedurale
-                    // Material-Auslesewert für FLACH-FARB-WERKE (Tempel · Schwert · Rüstung ·
-                    // Kreatur · Kristall · Werkstatt · …): er bricht die flache Plastik-Farbe
-                    // in echte Substanz — KEINE Bitmap, aus den Material-Tags GERECHNET (das
-                    // Anti-Attrappe-Gesetz auf JEDE Oberfläche, nicht nur Terrain/Rinde). Bis
-                    // hierher trugen nur Terrain (Geologie-Albedo) + Vegetation (Rinde Ω-O7)
-                    // einen reichen colorNode; die Werke blieben flach-einfarbig = der „Blob"-
-                    // Look des Schöpfer-Katalogs (16.06.). positionLocal hält es INSTANZ-STABIL
-                    // (jedes Werk dieselbe Maserung, nicht welt-gesmeared). Render-only →
-                    // tag-NEUTRAL (die Compound-Tags ändern sich nie; Affinität/Scatter unberührt).
-                    if (_Ta.mx_noise_float && _Ta.positionLocal && _Ta.pow && _Ta.float) {
-                        try {
-                            const _t = opts.tags || {};
-                            const _ht = Math.max(0, Math.min(1, Number(_t["härte"]) || 0.4));
-                            const _di = Math.max(0, Math.min(1, (Number(_t.dichte) || 0) / 3));
-                            const _metal = Math.max(0, Math.min(1, params.metalness || 0));
-                            const _pl = _Ta.positionLocal;
-                            // (1) MOTTLE — grobe Material-Variation (Stein-Flecken · Holz-Ton ·
-                            //     Leder-Narbe): dichte → stärker (steiniger), härte → feiner.
-                            //     Bei Metall ist die Mottle ANISOTROP (längs y gestreckt → der
-                            //     geschmiedete/gebürstete Schliff statt körniger Stein-Fleck).
-                            const _mottleF = 2.2 + _ht * 3.4;
-                            const _mPos =
-                                _metal > 0.5
-                                    ? _Ta.vec3(
-                                          _pl.x.mul(_mottleF * 2.6),
-                                          _pl.y.mul(_mottleF * 0.4),
-                                          _pl.z.mul(_mottleF * 2.6)
-                                      )
-                                    : _pl.mul(_Ta.float(_mottleF));
-                            const _mottle = _Ta.mx_noise_float(_mPos);
-                            // (1b) BREITE Ton-Zonen (niedrige Frequenz) — große, weiche Material-
-                            //      Flecken (verwitterte Patina · ungleiche Brennung · Adern), die
-                            //      der flachen Farbe Tiefe geben, bevor das feine Korn greift.
-                            const _broad = _Ta.mx_noise_float(_pl.mul(_Ta.float(0.85)));
-                            // (2) KAVITÄT/RINNE — ridged Hochfrequenz-Noise = Mikro-Relief /
-                            //     Verschleiß-Schatten (wie die Rinde-Risse Ω-O7, generalisiert).
-                            const _crF = 6.5 + _ht * 9.0;
-                            const _crN = _Ta.mx_noise_float(_pl.mul(_Ta.float(_crF)));
-                            const _cavity = _Ta.pow(_Ta.float(1.0).sub(_crN.mul(_crN)), _Ta.float(2.4));
-                            // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/
-                            //   Holz körnig). Glut (emissiv) bleibt subtil — es glüht ohnehin.
-                            const _mottleAmp = (0.07 + _di * 0.13) * (_metal > 0.5 ? 0.65 : 1.0);
-                            const _broadAmp = (0.05 + _di * 0.07) * (_metal > 0.5 ? 0.5 : 1.0);
-                            const _cavityAmp = 0.06 + _ht * 0.14;
-                            const _mod = _Ta
-                                .float(1.0)
-                                .add(_mottle.mul(_Ta.float(_mottleAmp)))
-                                .add(_broad.mul(_Ta.float(_broadAmp)))
-                                .sub(_cavity.mul(_Ta.float(_cavityAmp)));
-                            albedoNode = albedoNode.mul(_mod.clamp(0.66, 1.3));
-                            // COUNTER-SHADING (2-Ton-Höhen-Gradient) — unten dunkler, oben heller:
-                            // real bei Tieren (heller Bauch wirkt der Eigen-Schattierung entgegen) UND
-                            // Stein/Metall (Staub unten, Licht oben). Hebt die flache Einfarbigkeit.
-                            const _yN = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
-                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.82), _Ta.float(1.14), _yN));
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
-                            // ROUGHNESS-VARIATION (der #1 Profi-Hebel, Material-Agent): NIE konstant —
-                            // flach-uniforme roughness IST der Plastik-Tell. Das Korn hebt, die Kavität
-                            // senkt → das Licht liest echte Mikro-Struktur statt einer Plastikfläche.
-                            mat.roughnessNode = _Ta
-                                .float(params.roughness)
-                                .add(_mottle.mul(_Ta.float(0.22)))
-                                .add(_broad.mul(_Ta.float(0.1)))
-                                .sub(_cavity.mul(_Ta.float(0.15)))
-                                .clamp(0.05, 1.0);
-                        } catch (_e) {
-                            if (typeof window !== "undefined")
-                                window.__substanceFlatError = String((_e && _e.message) || _e);
-                        }
-                    }
+                    const _r = this._substanceCharacter(_Ta, _Ta.vec3(_c.r, _c.g, _c.b), {
+                        pos: _Ta.positionLocal,
+                        worldPos: _Ta.positionWorld,
+                        tags: opts.tags || {},
+                        metal: params.metalness || 0,
+                        roughBase: params.roughness,
+                        bump: true,
+                    });
+                    albedoNode = _r.albedo;
+                    if (_Ta.vec4) mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
+                    if (_r.roughNode) mat.roughnessNode = _r.roughNode;
+                    if (_r.normalNode) mat.normalNode = _r.normalNode;
                 }
             } catch (_e) {
                 /* ohne Albedo-Quelle fällt nur das Füll-Licht */
@@ -28321,6 +28018,135 @@ class AnazhRealm {
         return mat;
     }
 
+    // ── DER EINE SUBSTANZ-CHARAKTER-KERN (wahrerguss System A · Gesetz #0 — der Raptor) ──
+    // Terrain · Vegetation · Flach-Werke LESEN ALLE diese eine Quelle: die universellen
+    // Charakter-Hebel (Mehr-Oktav-Korn · Kavität · Ton warm↔kühl · Verwitterung · Moos ·
+    // Counter-Shading · Roughness-Variation · Mikro-Relief-Bump), LOD-gegated. Der Domänen-
+    // Unterschied REIST ALS PARAMETER (`pos`-Skala · tags · metal · mossDrive · bark · bump) —
+    // KEIN Parallelpfad mehr (vorher lebte Moos/Strata dreifach: Geologie + Rinde + Flach).
+    // Render-only, tag-neutral; try/catch → bei Fehler der unveränderte Albedo (nie kaputt).
+    // Gibt { albedo, roughNode|null, normalNode|null } — der Aufrufer hängt sie ans Material.
+    _substanceCharacter(_T, baseAlbedo, opts = {}) {
+        const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        try {
+            if (!_T || !_T.mx_noise_float || !_T.float || !_T.vec3 || !_T.mix) return out;
+            const f = (v) => _T.float(v);
+            const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
+            const pos = opts.pos || _T.positionLocal;
+            const wp = opts.worldPos || _T.positionWorld || pos;
+            const t = opts.tags || {};
+            const ht = Math.max(0, Math.min(1, Number(t["härte"]) || 0.4));
+            const di = Math.max(0, Math.min(1, (Number(t.dichte) || 0) / 3));
+            const metal = Math.max(0, Math.min(1, Number(opts.metal) || 0));
+            // OBJEKT-LOKAL (Default): die HÖHEN-basierten Hebel (Strata-Y · Verwitterung-unten ·
+            // Counter-Shading · Bump) lesen object-lokales y ∈ [−1..1]. Terrain hat KEIN object-y
+            // (absolute Welt-Höhe sättigt) → `objectLocal:false` schaltet sie ab; die universellen
+            // Hebel (Korn · Ton · Kavität · Moos-nach-Flachheit) tragen Terrain weiter.
+            const objLocal = opts.objectLocal !== false;
+            // LOD-FADE: feines Korn + Bump verblassen mit der Distanz (fern simpler = Perf +
+            //   kein Aliasing); die breiten Ton-/Moos-Zonen bleiben (sie lesen auch fern).
+            let fineFade = f(1.0);
+            let bumpFade = f(1.0);
+            if (_T.cameraPosition && wp && _T.smoothstep) {
+                const dist = wp.sub(_T.cameraPosition).length();
+                fineFade = f(1.0)
+                    .sub(_T.smoothstep(f(30), f(95), dist))
+                    .clamp(0, 1);
+                bumpFade = f(1.0)
+                    .sub(_T.smoothstep(f(14), f(48), dist))
+                    .clamp(0, 1);
+            }
+            let albedo = baseAlbedo;
+            // (1) KORN — Mehr-Oktav-Noise. Metall: anisotrop längs y (geschmiedeter Schliff);
+            //     Rinde: Längs-Faser (bark); sonst körnig. `pos` trägt die Domänen-Skala.
+            const grainF = 2.2 + ht * 3.4;
+            let gPos;
+            if (opts.bark) gPos = _T.vec3(pos.x.mul(9 + ht * 8), pos.y.mul(1.35), pos.z.mul(9 + ht * 8));
+            else if (metal > 0.5)
+                gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
+            else gPos = pos.mul(f(grainF));
+            const mottle = _T.mx_noise_float(gPos);
+            const broad = _T.mx_noise_float(pos.mul(f(0.85)));
+            const crN = _T.mx_noise_float(pos.mul(f(6.5 + ht * 9)));
+            const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
+            const strata = _T.mx_noise_float(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)));
+            const mottleAmp = (0.12 + di * 0.18) * (metal > 0.5 ? 0.7 : 1.0);
+            const broadAmp = 0.12 + di * 0.12;
+            const cavityAmp = 0.08 + ht * 0.16;
+            const strataAmp = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
+            const mod = f(1.0)
+                .add(mottle.mul(fineFade).mul(f(mottleAmp)))
+                .add(broad.mul(f(broadAmp)))
+                .add(strata.mul(f(strataAmp)))
+                .sub(cavity.mul(fineFade).mul(f(cavityAmp)));
+            albedo = albedo.mul(mod.clamp(0.55, 1.45));
+            // Höhen-Gradient [0..1] (EINE Quelle für Verwitterung + Moos + Counter-Shading).
+            const yLow = pos.y.mul(f(0.7)).add(f(0.5)).clamp(0, 1);
+            // (2) TON warm↔kühl — ein Hue-Shift LIEST, wo Helligkeit auf Dunkel verschwindet.
+            const toneMix = broad
+                .mul(f(0.6))
+                .add(mottle.mul(f(0.4)))
+                .mul(f(0.5))
+                .add(f(0.5))
+                .clamp(0, 1);
+            const toneTint = _T.mix(_T.vec3(0.9, 0.97, 1.12), _T.vec3(1.12, 1.0, 0.86), toneMix);
+            albedo = albedo.mul(_T.mix(_T.vec3(1, 1, 1), toneTint, f(metal > 0.5 ? 0.28 : 0.46)));
+            // (3) VERWITTERUNG/SCHMUTZ — Mulden + untere Zonen sammeln Schmutz (dunkler, entsättigt).
+            const grime = cavity
+                .mul(f(0.5))
+                .add(objLocal ? f(1.0).sub(yLow).mul(f(0.45)) : f(0.0))
+                .clamp(0, 1);
+            const lumA = albedo.x
+                .mul(f(0.3))
+                .add(albedo.y.mul(f(0.59)))
+                .add(albedo.z.mul(f(0.11)));
+            const dirt = _T.vec3(
+                lumA.mul(f(0.52)).add(f(0.045)),
+                lumA.mul(f(0.46)).add(f(0.032)),
+                lumA.mul(f(0.38)).add(f(0.022))
+            );
+            albedo = _T.mix(albedo, dirt, grime.mul(f(opts.bark ? 0.18 : 0.3)));
+            // (4) MOOS/FLECHTEN — DIE EINE Quelle. Treiber als Param: Werke = lebendig-Tag,
+            //     Terrain = Feucht/Grün-Knoten, Rinde = klein. Geometrie (Patch × flach × tief) geteilt.
+            const lebTag = Math.max(0, Math.min(1, (Number(t.lebendig) || 0) / 3));
+            const mossDrive = asNode(opts.mossDrive, opts.bark ? 0.12 : lebTag);
+            const flatN = asNode(opts.flatness, 1.0);
+            const mossPatch = _T
+                .mx_noise_float(wp.mul(f(0.55)))
+                .mul(f(0.5))
+                .add(f(0.5));
+            const mossLow = objLocal ? f(1.0).sub(yLow) : f(1.0); // Terrain: Flachheit treibt, kein object-y
+            const mossW = mossDrive.mul(mossPatch).mul(mossLow).mul(flatN).clamp(0, 1);
+            albedo = _T.mix(albedo, _T.vec3(0.26, 0.38, 0.18), mossW.mul(f(0.4)));
+            // (5) COUNTER-SHADING (unten dunkler, oben heller) — nur object-lokal (Terrain: kein object-y).
+            if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
+            out.albedo = albedo;
+            // (6) ROUGHNESS-VARIATION (der #1 Profi-Hebel) — nur wenn der Aufrufer eine Basis gibt.
+            if (opts.roughBase != null) {
+                out.roughNode = f(opts.roughBase)
+                    .add(mottle.mul(fineFade).mul(f(0.3)))
+                    .add(broad.mul(f(0.14)))
+                    .sub(cavity.mul(fineFade).mul(f(0.18)))
+                    .clamp(0.05, 1.0);
+            }
+            // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
+            //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
+            //     LOD-gegated (fern aus). Nur wo angefragt (Werke; Terrain/Rinde haben echtes Relief).
+            if (opts.bump && _T.bumpMap) {
+                const h = mottle
+                    .mul(f(0.5))
+                    .add(crN.mul(f(0.5)))
+                    .add(strata.mul(f(0.35)));
+                const scale = bumpFade.mul(f((0.6 + ht * 0.8) * (metal > 0.5 ? 0.6 : 1.0)));
+                out.normalNode = _T.bumpMap(h, scale);
+            }
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__substanceCharError = String((_e && _e.message) || _e);
+            return { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        }
+        return out;
+    }
+
     // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
     // KLASSEN-GEOLOGIE als EIN geteilter Auslesewert (Toon UND PBR rufen identisch
     // → S-Gate 0 „Terrain MITeinander", kein divergenter Pfad). Die Albedo erzählt
@@ -28357,23 +28183,30 @@ class AnazhRealm {
             // Konkurrenz: erst Geröll, dann Fels (Fels dominiert die Mischung).
             let _out = _T.mix(albedo, _screeCol, _screeW.mul(_gRock));
             _out = _T.mix(_out, _rockCol, _rockW.mul(_gRock));
-            // MOOS (Ω-O2): flach + feucht (dunkle Basis-Luminanz) + grün-stichig.
+            // MOOS + universeller SUBSTANZ-CHARAKTER aus dem EINEN Kern (Gesetz #0 — der Raptor):
+            // die Geologie-BASIS (Fels/Geröll/Steile) bleibt terrain-eigen, aber Ton/Korn/Kavität/MOOS
+            // lesen jetzt DIESELBE Quelle wie Werke + Rinde (vorher lebte Moos hier separat = Parallelcode).
+            // Terrain ist NICHT object-lokal (absolute Welt-Höhe) → objectLocal:false (Counter-Shading/
+            // Verwitterung-unten/Strata-Y/Bump aus). Der Feucht-/Grün-Treiber + die Flachheit (×nicht-Fels)
+            // speisen das Moos; `wp·0.16` = die welt-kohärente Feature-Skala (naht-frei).
             const _flat = _T.float(1.0).sub(_steep);
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
             const _green = _T.smoothstep(_T.float(0.0), _T.float(0.1), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
-            const _mossW = _green.mul(_damp).mul(_flat).mul(_T.float(1.0).sub(_rockW));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
-            const _moss = _T.vec3(G.mossTint[0], G.mossTint[1], G.mossTint[2]);
-            const _patch = _T.mx_noise_float ? _T.mx_noise_float(wp.mul(0.16)).mul(0.5).add(0.5) : _T.float(0.7);
-            _out = _T.mix(
-                _out,
-                _moss.mul(_T.float(0.8).add(_patch.mul(0.4))),
-                _mossW.mul(_gMoss).mul(_T.float(G.mossMax))
-            );
-            return _out;
+            const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
+            const _r = this._substanceCharacter(_T, _out, {
+                pos: wp.mul(_T.float(0.16)),
+                worldPos: wp,
+                tags: { härte: 0.5, dichte: 0.5 },
+                metal: 0,
+                objectLocal: false,
+                flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
+                mossDrive: _mossDrive,
+            });
+            return _r.albedo;
         } catch (_e) {
             if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
             return albedo;
@@ -28576,12 +28409,7 @@ class AnazhRealm {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.userData = { voxelChunkX: cx, voxelChunkZ: cz };
-        const collisionBody = this._buildVoxelChunkBVH(mesh);
-        if (!collisionBody) {
-            this._queueDispose(geom);
-            this._queueDispose(mat);
-            return null;
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Chunk-BVH (Kollision feld-nativ aus dem Dichtefeld).
         // V9.71 (Welle C.1) / V9.75 (Welle C.4+5) / V9.76 (Welle C.6 — Gate):
         // das Wasser-Cell-Feld ist die EINZIGE Wasser-Wahrheit pro Chunk.
         // Lebt im entry, nicht im globalen state. **Trocken-Gate** vor dem
@@ -29366,7 +29194,6 @@ class AnazhRealm {
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
-            this._disposeStaticCollision(entry.mesh);
             if (this.state.scene) this.state.scene.remove(entry.mesh);
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
@@ -29446,6 +29273,261 @@ class AnazhRealm {
             prevAir = !solid;
         }
         return null;
+    }
+
+    // ===== FELD-NATIVE KOLLISION (Determinismus-Bogen P1a, docs/archiv/eigene-physik-plan.md §5) =====
+    // Die Kollision LIEST die kanonische Welt-Wahrheit (das Dichtefeld) direkt, statt eine
+    // Dreiecks-BVH abzuleiten (Gesetz #0 — wie auraAt/deposit). Reine, seiteneffekt-freie
+    // Helfer; der Kapsel-Character-Controller (`_stepCharacter`) baut darauf (P1b). Das Feld
+    // ist KEIN echtes SDF (Wert ≠ Distanz) → die Dichte ist nur ein GEKLAMMERTER Schritt-
+    // Hinweis, der Gradient gibt die Richtung (NVIDIA/Macklin), 2-3× iteriert (Quake/Fauerby
+    // collide-and-slide). `ctx` = `_terrainColumnContext(x,z)` gehoistet (V18.321) — eine
+    // vertikale Kapsel/Probe teilt EINEN Spalten-Kontext über alle y-Samples.
+
+    // Die kanonische Feld-Dichte für die Kollision: base (optional gehoistet) + Edit-Delta.
+    // > 0 solide, ≤ 0 Luft/Wasser. Liest die Edits → ein gecarvter Tunnel ist SOFORT
+    // begehbar (kein BVH-Rebuild, der heute teure Edit-Pfad).
+    _fieldDensityAt(x, y, z, ctx) {
+        const base = ctx ? this._terrainBaseDensityAtCol(x, y, z, ctx) : this._terrainBaseDensityAt(x, y, z);
+        return base + this._voxelEditDeltaAt(x, y, z);
+    }
+
+    _fieldSolid(x, y, z, ctx) {
+        return this._fieldDensityAt(x, y, z, ctx) > 0;
+    }
+
+    // Die nach AUSSEN (in die Luft) zeigende Oberflächen-Normale = −∇density/|∇density|
+    // (die Dichte wächst INS Solide, also zeigt −∇ heraus → auf einem Boden ny > 0).
+    // Zentral-Differenzen; das y±e-Paar teilt den Spalten-Kontext. out = {x,y,z,mag}
+    // (mag = roher Gradient-Betrag über 2e, für den Distanz-Hinweis). Verschwindender
+    // Gradient (dichte-flaches Inneres): Default nach oben.
+    _fieldGradient(x, y, z, out) {
+        const e = AnazhRealm.FIELD_GRAD_EPS;
+        const ctx = this._terrainColumnContext(x, z);
+        const gx = this._fieldDensityAt(x + e, y, z) - this._fieldDensityAt(x - e, y, z);
+        const gy = this._fieldDensityAt(x, y + e, z, ctx) - this._fieldDensityAt(x, y - e, z, ctx);
+        const gz = this._fieldDensityAt(x, y, z + e) - this._fieldDensityAt(x, y, z - e);
+        const nx = -gx,
+            ny = -gy,
+            nz = -gz;
+        const mag = Math.sqrt(nx * nx + ny * ny + nz * nz);
+        out = out || {};
+        if (mag > 1e-6) {
+            out.x = nx / mag;
+            out.y = ny / mag;
+            out.z = nz / mag;
+        } else {
+            out.x = 0;
+            out.y = 1;
+            out.z = 0;
+        }
+        out.mag = mag;
+        return out;
+    }
+
+    // Drücke EINE Kugel (Mittelpunkt p, Radius) so heraus, dass sie AUF der Oberfläche RUHT
+    // (Zentrum ≥ radius außerhalb), nicht halb vergraben. Die 1.-Ordnung-Signed-Distance
+    // (positiv außerhalb) ist sd ≈ −density·2e/|∇|; die Kugel überlappt um gap = radius − sd.
+    // Solange gap > 0, schiebe entlang der Außen-Normale (−∇/|∇|) um min(gap, radius) (pro
+    // Iteration gedeckelt = stabil, robust gegen das Nicht-SDF-Problem), max FIELD_RESOLVE_ITERS
+    // (collide-and-slide). Mutiert p. Liefert true, wenn bewegt; die letzte Normale → normalOut.
+    _fieldResolveSphere(p, radius, normalOut) {
+        const e = AnazhRealm.FIELD_GRAD_EPS;
+        const g = {};
+        let moved = false;
+        for (let it = 0; it < AnazhRealm.FIELD_RESOLVE_ITERS; it++) {
+            const dens = this._fieldDensityAt(p.x, p.y, p.z);
+            this._fieldGradient(p.x, p.y, p.z, g);
+            if (g.mag < 1e-6) break;
+            const sd = (-dens * 2 * e) / g.mag; // signed distance, positiv = außerhalb
+            const gap = radius - sd;
+            if (gap <= 0) break; // Kugel ruht frei (≥ radius außerhalb) — fertig
+            const step = Math.min(gap, radius);
+            p.x += g.x * step;
+            p.y += g.y * step;
+            p.z += g.z * step;
+            moved = true;
+            if (normalOut) {
+                normalOut.x = g.x;
+                normalOut.y = g.y;
+                normalOut.z = g.z;
+            }
+        }
+        return moved;
+    }
+
+    // Die LOKALE Kurz-Boden-Probe (der P0-Befund: NICHT der volle `_voxelSurfaceY`-
+    // Spalten-Scan = 43,7 µs). Liefert die solide Oberkante nahe dem Start-y, mit EINEM
+    // Spalten-Kontext + Bisektion auf Sub-Voxel. ZWEI Fälle (robust gegen Penetration):
+    //  • Start in LUFT (Normalfall) → ABWÄRTS bis zur ersten Luft→Solid-Grenze = die Oberkante.
+    //  • Start im SOLIDEN (der Spieler steckt im Terrain) → AUFWÄRTS bis zur ersten Solid→Luft-
+    //    Grenze = die Oberkante ÜBER den Füßen. Ohne diesen Zweig fand die Probe beim Stecken
+    //    fälschlich den Start selbst (sub-surface) → der Spieler clippte durch den Boden auf
+    //    eine Höhlen-Schicht (Schöpfer-Befund am steilen Berg). Liefert null (keine Grenze in
+    //    Reichweite).
+    _fieldSurfaceBelow(x, y, z, maxDist) {
+        const ctx = this._terrainColumnContext(x, z);
+        const step = 0.5;
+        if (this._fieldSolid(x, y, z, ctx)) {
+            // Start IM Soliden → aufwärts die Oberkante suchen (Penetrations-Heilung).
+            const top = y + maxDist;
+            for (let yy = y; yy <= top; yy += step) {
+                if (!this._fieldSolid(x, yy, z, ctx)) {
+                    // Grenze zwischen yy−step (solid) und yy (Luft) → Bisektion auf die Oberkante.
+                    let lo = Math.max(y, yy - step),
+                        hi = yy;
+                    for (let b = 0; b < 6; b++) {
+                        const mid = (lo + hi) / 2;
+                        if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
+                        else hi = mid;
+                    }
+                    return lo;
+                }
+            }
+            return null;
+        }
+        const end = y - maxDist;
+        for (let yy = y; yy >= end; yy -= step) {
+            if (this._fieldSolid(x, yy, z, ctx)) {
+                // Grenze zwischen yy (solid) und yy+step (Luft) → Bisektion verfeinern.
+                let lo = yy,
+                    hi = Math.min(y, yy + step);
+                for (let b = 0; b < 6; b++) {
+                    const mid = (lo + hi) / 2;
+                    if (this._fieldSolid(x, mid, z, ctx)) lo = mid;
+                    else hi = mid;
+                }
+                return lo;
+            }
+        }
+        return null;
+    }
+
+    // Feld-nativer Raycast (P3-Vorbereitung, kein Ammo): marschiert den Strahl durchs Dichtefeld
+    // (DDA, fester Schritt) + prüft die soliden Struktur-AABBs (`entry.blockerAABBs`) per Segment-
+    // AABB-Test, und liefert den NÄHESTEN Treffer als { hit, x, y, z, nx, ny, nz } (Welt-Koords +
+    // Außen-Normale). Ersetzt den Ammo-`rayTest` für Grab/Graben/Platzieren/Decke/Kamera. Der
+    // Schritt 0.2 m ist fein genug für die Bau-Präzision; der Gradient gibt die Terrain-Normale.
+    _fieldRaycast(sx, sy, sz, ex, ey, ez) {
+        const dx = ex - sx,
+            dy = ey - sy,
+            dz = ez - sz;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const out = { hit: false, x: ex, y: ey, z: ez, nx: 0, ny: 1, nz: 0, t: 1 };
+        if (len < 1e-6) return out;
+        const ux = dx / len,
+            uy = dy / len,
+            uz = dz / len;
+        // (1) TERRAIN — DDA durchs Dichtefeld: erster solider Punkt, dann Bisektion + Gradient.
+        const step = 0.2;
+        let bestT = Infinity;
+        let prevSolid = this._fieldSolid(sx, sy, sz);
+        if (!prevSolid) {
+            for (let d = step; d <= len; d += step) {
+                const px = sx + ux * d,
+                    py = sy + uy * d,
+                    pz = sz + uz * d;
+                if (this._fieldSolid(px, py, pz)) {
+                    // Grenze zwischen d−step (Luft) und d (Solid) → bisektion auf die Oberfläche.
+                    let lo = d - step,
+                        hi = d;
+                    for (let b = 0; b < 8; b++) {
+                        const mid = (lo + hi) / 2;
+                        if (this._fieldSolid(sx + ux * mid, sy + uy * mid, sz + uz * mid)) hi = mid;
+                        else lo = mid;
+                    }
+                    bestT = hi / len;
+                    break;
+                }
+            }
+        } else {
+            bestT = 0; // Start schon im Soliden
+        }
+        // (2) STRUKTUREN — Segment vs solide Part-AABBs (Slab-Methode), nähester Treffer.
+        let structHitT = Infinity,
+            sFace = null;
+        const arches = this.state.architectures;
+        if (arches && arches.length) {
+            for (let a = 0; a < arches.length; a++) {
+                const e = arches[a];
+                if (!e || !e.blockerAABBs || !e.position) continue;
+                if (Math.abs(e.position.x - sx) > 80 || Math.abs(e.position.z - sz) > 80) continue;
+                const boxes = e.blockerAABBs;
+                for (let bi = 0; bi < boxes.length; bi++) {
+                    const bx = boxes[bi];
+                    const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
+                    if (hitInfo && hitInfo.t < structHitT) {
+                        structHitT = hitInfo.t;
+                        sFace = hitInfo;
+                    }
+                }
+            }
+        }
+        // (3) der nähere von Terrain vs Struktur gewinnt.
+        if (structHitT < bestT) {
+            out.hit = true;
+            out.t = structHitT;
+            out.x = sx + dx * structHitT;
+            out.y = sy + dy * structHitT;
+            out.z = sz + dz * structHitT;
+            out.nx = sFace.nx;
+            out.ny = sFace.ny;
+            out.nz = sFace.nz;
+        } else if (bestT < Infinity) {
+            out.hit = true;
+            out.t = bestT;
+            out.x = sx + dx * bestT;
+            out.y = sy + dy * bestT;
+            out.z = sz + dz * bestT;
+            const g = this._fieldGradient(out.x, out.y, out.z, {});
+            out.nx = g.x;
+            out.ny = g.y;
+            out.nz = g.z;
+        }
+        return out;
+    }
+
+    // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].
+    // Liefert { t, nx, ny, nz } (Eintritts-t + Außen-Normale der getroffenen Fläche) oder null.
+    _segmentAABB(sx, sy, sz, dx, dy, dz, b) {
+        const inv = (v) => (Math.abs(v) < 1e-9 ? 1e9 : 1 / v);
+        const ix = inv(dx),
+            iy = inv(dy),
+            iz = inv(dz);
+        let t1 = (b.minX - sx) * ix,
+            t2 = (b.maxX - sx) * ix;
+        let tmin = Math.min(t1, t2),
+            tmax = Math.max(t1, t2);
+        let axis = 0,
+            sign = t1 < t2 ? -1 : 1;
+        t1 = (b.botY - sy) * iy;
+        t2 = (b.topY - sy) * iy;
+        const ymin = Math.min(t1, t2),
+            ymax = Math.max(t1, t2);
+        if (ymin > tmin) {
+            tmin = ymin;
+            axis = 1;
+            sign = t1 < t2 ? -1 : 1;
+        }
+        tmax = Math.min(tmax, ymax);
+        t1 = (b.minZ - sz) * iz;
+        t2 = (b.maxZ - sz) * iz;
+        const zmin = Math.min(t1, t2),
+            zmax = Math.max(t1, t2);
+        if (zmin > tmin) {
+            tmin = zmin;
+            axis = 2;
+            sign = t1 < t2 ? -1 : 1;
+        }
+        tmax = Math.min(tmax, zmax);
+        if (tmax < Math.max(0, tmin) || tmin > 1) return null; // kein Schnitt im Segment
+        const t = tmin < 0 ? 0 : tmin;
+        return {
+            t,
+            nx: axis === 0 ? sign : 0,
+            ny: axis === 1 ? sign : 0,
+            nz: axis === 2 ? sign : 0,
+        };
     }
 
     // V18.96 — die höchste Oberkante aller FILL-Edits (y + r), längen-gecacht:
@@ -33230,8 +33312,8 @@ class AnazhRealm {
         // baut der Worker den kommenden Boden, BEVOR der Spieler ankommt → der weiche
         // Boden greift seltener, die Bewegung bleibt flüssig. Async-Anfrage (billig); der
         // Ring re-fragt sie als no-op (pending/has). Nur bei echter Bewegung (>1 m/s).
-        if (this.state.playerBody && typeof this.state.playerBody.getLinearVelocity === "function") {
-            const v = this.state.playerBody.getLinearVelocity();
+        if (this.state.playerVel) {
+            const v = this.state.playerVel;
             const vx = v.x(),
                 vz = v.z();
             const speedSq = vx * vx + vz * vz;
@@ -33298,15 +33380,9 @@ class AnazhRealm {
             }
         }
         this._pruneDistantVoxelChunks(playerPos);
-        // V9.92 (Phase 4 — Lazy-BVH): Sicherheits-Wand + BVH-Pump.
-        // (a) `_ensurePlayerChunkBVH` baut sync BVH falls der Spieler-Chunk
-        //     noch keine hat (Teleport-Schutz, ~25 ms 1× wenn nötig).
-        // (b) `_pumpVoxelChunkBVH` upgraded BVH für andere 2-Ring-Chunks
-        //     rate-limited (max 2 pro Frame, über mehrere Frames verteilt
-        //     → kein Spike-Klumpen bei Spieler-Bewegung).
-        const pczNow = Math.floor(playerPos.z / span);
-        this._ensurePlayerChunkBVH(pcx, pczNow);
-        this._pumpVoxelChunkBVH(pcx, pczNow);
+        // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
+        // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
+        // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
         this._tickFoliageGrowth(); // V18.275 — die Vegetation wächst nach, wenn der Radius wächst
         // V17.1 — die Bau-Zahl dieses Frames zurückgeben, damit der Loop die
         // Klein-Vegetation NUR streut, wenn der Ring sich gesetzt hat (Terrain-
@@ -38225,20 +38301,9 @@ class AnazhRealm {
         if (!this.state.playerMesh) return;
         this.state.playerMesh.position.set(safeX, safeY, safeZ);
         this.state.playerMesh.visible = true;
-        if (this.state.playerBody && this.state.tmpTransform && this.state.tmpVec1) {
-            const t = this.state.tmpTransform;
-            t.setIdentity();
-            t.setOrigin(
-                this.setVec(
-                    this.state.tmpVec1,
-                    safeX / this.state.scaleFactor,
-                    safeY / this.state.scaleFactor,
-                    safeZ / this.state.scaleFactor
-                )
-            );
-            this.state.playerBody.setWorldTransform(t);
-            this.state.playerBody.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-        }
+        // Feld-nativ: Velocity nullen + vertikalen Feld-Zustand zurück (kein Ammo-Body).
+        if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+        this.state._fieldVy = 0;
         this.log(`Spielerposition geladen: (${safeX}, ${safeY}, ${safeZ})`);
     }
 
@@ -46667,7 +46732,6 @@ class AnazhRealm {
         // Fahrt als Bordstein (er folgt der gezogenen Position nie). Beim
         // Aufsteigen fällt er; der Lazy-Builder (_archWithinCollisionRadius-
         // Tick) überspringt das gerittene Gefährt; Absteigen baut lazy neu.
-        if (entry.collision) this._disposeArchitectureCollision(entry);
         // V18.150 — das Fahr-Profil LESBAR beim Aufsteigen (der V18.119-Kreis:
         // bauen → ablesen → lernen): der Spieler erfährt, WAS er reitet.
         const prof = this._vehicleProfile(entry);
@@ -46784,16 +46848,9 @@ class AnazhRealm {
             entry._rideY = entry.position.y;
             const riderY = entry.position.y + sitz;
             pm.y = riderY;
-            const body = this.state.playerBody;
-            if (body) {
-                const tr = body.getWorldTransform();
-                const o = tr.getOrigin();
-                o.setValue(o.x(), riderY, o.z());
-                body.setWorldTransform(tr);
-                const v = body.getLinearVelocity();
-                body.setLinearVelocity(this.setVec(this.state.tmpVec1, v.x(), 0, v.z()));
-                body.activate(true);
-            }
+            // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen
+            // (kein Ammo-Body, der synchronisiert werden müsste).
+            this.state._fieldVy = 0;
         } else {
             // Fallback (ungebauter Chunk): der alte Reiter-führt-Pfad.
             entry.position.y = pm.y - sitz;
@@ -46802,8 +46859,7 @@ class AnazhRealm {
         // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
-            const body = this.state.playerBody;
-            const v = body ? body.getLinearVelocity() : null;
+            const v = this.state.playerVel;
             const vx = v ? v.x() : 0;
             const vz = v ? v.z() : 0;
             const sp = Math.hypot(vx, vz);
@@ -49622,8 +49678,8 @@ class AnazhRealm {
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
         let isMoving = false;
-        if (this.state.playerBody && typeof this.state.playerBody.getLinearVelocity === "function") {
-            const v = this.state.playerBody.getLinearVelocity();
+        if (this.state.playerVel) {
+            const v = this.state.playerVel;
             const speed = Math.hypot(v.x(), v.z());
             isMoving = speed > 0.4;
         }
@@ -57378,87 +57434,6 @@ class AnazhRealm {
         this.state.archInstanceGroups.clear();
     }
 
-    // V12.0-perf.d.2 — ist der Eintrag innerhalb des Lazy-Collision-Radius?
-    // Ohne Spieler (Worldgen/headless) → true (Collision bauen, Sicherheit).
-    _archWithinCollisionRadius(entry) {
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm || !entry || !entry.position) return true;
-        const dx = entry.position.x - pm.x;
-        const dz = entry.position.z - pm.z;
-        const r = this.state.architectureCollisionRadius || 90;
-        return dx * dx + dz * dz <= r * r;
-    }
-
-    // V12.0-perf.d.2 — Collision für einen gerenderten Eintrag sicherstellen
-    // (idempotent). Instanced → aus Leaf-AABBs, klassisch → aus entry.mesh.
-    _archEnsureCollision(entry) {
-        if (!entry || entry.collision) return;
-        if (entry.instanced) {
-            this._buildArchitectureCollisionFromLeaves(entry, this._archFlattenBlueprint(entry.type));
-        } else if (entry.mesh) {
-            this._buildArchitectureCollision(entry);
-        }
-    }
-
-    // Statische Compound-Kollision aus den Leaf-AABBs (für instanced
-    // Einträge, die kein entry.mesh haben). Spiegelt `_buildArchitectureCollision`:
-    // pro Leaf eine btBoxShape aus der Welt-AABB, Offset relativ zum
-    // Group-Origin (= entry-World-Translation). perf.d.2 baut das lazy (nur nah).
-    _buildArchitectureCollisionFromLeaves(entry, flat) {
-        if (!entry || !this.state.physicsWorld || !flat || flat.leaves.length === 0) return null;
-        const ew = this._archEntryWorldMatrix(entry, new THREE.Matrix4());
-        const groupX = entry.position.x || 0;
-        const groupY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
-        const groupZ = entry.position.z || 0;
-        const compound = new Ammo.btCompoundShape();
-        const childShapes = [];
-        const lw = new THREE.Matrix4();
-        const wbox = new THREE.Box3();
-        const size = new THREE.Vector3();
-        const center = new THREE.Vector3();
-        let added = 0;
-        for (const leaf of flat.leaves) {
-            if (!leaf.geom || !leaf.geom.boundingBox) continue;
-            lw.multiplyMatrices(ew, leaf.localMatrix);
-            wbox.copy(leaf.geom.boundingBox).applyMatrix4(lw);
-            if (wbox.isEmpty()) continue;
-            wbox.getSize(size);
-            wbox.getCenter(center);
-            const hx = Math.max(0.05, size.x / 2);
-            const hy = Math.max(0.05, size.y / 2);
-            const hz = Math.max(0.05, size.z / 2);
-            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
-            const childTransform = new Ammo.btTransform();
-            childTransform.setIdentity();
-            const offset = new Ammo.btVector3(center.x - groupX, center.y - groupY, center.z - groupZ);
-            childTransform.setOrigin(offset);
-            compound.addChildShape(childTransform, childShape);
-            childShapes.push(childShape);
-            Ammo.destroy(offset);
-            Ammo.destroy(childTransform);
-            added++;
-        }
-        if (added === 0) {
-            Ammo.destroy(compound);
-            return null;
-        }
-        const transform = new Ammo.btTransform();
-        transform.setIdentity();
-        const origin = new Ammo.btVector3(groupX, groupY, groupZ);
-        transform.setOrigin(origin);
-        const motionState = new Ammo.btDefaultMotionState(transform);
-        const localInertia = new Ammo.btVector3(0, 0, 0);
-        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
-        const body = new Ammo.btRigidBody(rbInfo);
-        body.setFriction(0.8);
-        this.state.physicsWorld.addRigidBody(body);
-        entry.collision = { body, shape: compound, childShapes, motionState, rbInfo };
-        Ammo.destroy(origin);
-        Ammo.destroy(transform);
-        Ammo.destroy(localInertia);
-        return body;
-    }
-
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
     // Sicht: ein Eintrag in `state.architectures` kann jederzeit ohne Mesh
     // existieren (gepruned, weil zu weit weg) und später wieder einen
@@ -57469,14 +57444,11 @@ class AnazhRealm {
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
         const flat = this._archFlattenBlueprint(entry.type);
-        // V12.0-perf.d.2 — Collision nur bauen, wenn der Spieler nah genug ist
-        // (Lazy-Proxy-Collision, Wurzel C). Render passiert bis 150 m, Physik
-        // erst ab ~90 m. Der Culling-Tick-Collision-Pass fügt sie hinzu, wenn
-        // der Spieler herankommt, und gibt sie frei, wenn er sich entfernt.
-        const wantCollision = this._archWithinCollisionRadius(entry);
+        // DETERMINISMUS-BOGEN P3 — die Architektur-Kollision ist feld-nativ
+        // (`entry.blockerAABBs` aus dem Spawn + `_stepCharacterStructures`); kein
+        // lazy Ammo-Collision-Build/Radius mehr.
         if (flat.instanceable) {
             this._archInstanceAdd(entry, flat);
-            if (wantCollision) this._buildArchitectureCollisionFromLeaves(entry, flat);
             return null;
         }
         const builders = this._architectureBuilders();
@@ -57495,318 +57467,18 @@ class AnazhRealm {
         }
         this.state.scene.add(group);
         entry.mesh = group;
-        // Ring 6.3 — Kollisions-Body für die Struktur. Statisch (mass=0),
-        // eine umschließende Box rund um die Group. Wir pushen NICHT in
-        // state.rigidBodies, damit der Sync-Loop die Group-Position nicht
-        // anhand des Body-Origin überschreibt — die Position kommt aus
-        // entry.position, der Body ist nur Hitbox. V12.0-perf.d.2 — nur nah.
-        if (wantCollision) this._buildArchitectureCollision(entry);
         return group;
     }
 
-    // Statischer Kollisions-Body um die Architecture-Group als **Compound-
-    // Shape** aus einer btBoxShape pro Sub-Mesh. Eine einzelne umschließende
-    // AABB wäre einfacher, ist aber zu grob: ein Dorf mit Hütten auf
-    // Radius 10 hätte eine 24×4×24-AABB, in deren Mitte der Spieler steht —
-    // er wird beim Spawn aus der Box gepresst, oft durch den Boden. Mit
-    // Compound-Shape ist nur jede einzelne Hütte solide, der Weg zwischen
-    // Hütten frei.
-    _buildArchitectureCollision(entry) {
-        if (!entry || !entry.mesh || !this.state.physicsWorld) return null;
-        entry.mesh.updateMatrixWorld(true);
-        const groupPos = entry.mesh.position;
-        const compound = new Ammo.btCompoundShape();
-        const childShapes = [];
-        let added = 0;
-        entry.mesh.traverse((node) => {
-            if (!node.isMesh || !node.geometry) return;
-            // Welt-BBox des einzelnen Mesh-Child. setFromObject berücksichtigt
-            // alle verschachtelten Group-Transforms.
-            const childBox = new THREE.Box3().setFromObject(node);
-            if (childBox.isEmpty()) return;
-            const size = new THREE.Vector3();
-            childBox.getSize(size);
-            const center = new THREE.Vector3();
-            childBox.getCenter(center);
-            const hx = Math.max(0.05, size.x / 2);
-            const hy = Math.max(0.05, size.y / 2);
-            const hz = Math.max(0.05, size.z / 2);
-            const childShape = new Ammo.btBoxShape(new Ammo.btVector3(hx, hy, hz));
-            const childTransform = new Ammo.btTransform();
-            childTransform.setIdentity();
-            const offset = new Ammo.btVector3(center.x - groupPos.x, center.y - groupPos.y, center.z - groupPos.z);
-            childTransform.setOrigin(offset);
-            compound.addChildShape(childTransform, childShape);
-            childShapes.push(childShape);
-            Ammo.destroy(offset);
-            Ammo.destroy(childTransform);
-            added++;
-        });
-        if (added === 0) {
-            Ammo.destroy(compound);
-            return null;
-        }
-        const transform = new Ammo.btTransform();
-        transform.setIdentity();
-        const origin = new Ammo.btVector3(groupPos.x, groupPos.y, groupPos.z);
-        transform.setOrigin(origin);
-        const motionState = new Ammo.btDefaultMotionState(transform);
-        const localInertia = new Ammo.btVector3(0, 0, 0);
-        const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, compound, localInertia);
-        const body = new Ammo.btRigidBody(rbInfo);
-        body.setFriction(0.8);
-        this.state.physicsWorld.addRigidBody(body);
-        entry.collision = {
-            body,
-            shape: compound,
-            childShapes,
-            motionState,
-            rbInfo,
-            transform,
-            origin,
-            localInertia,
-        };
-        return body;
-    }
-
-    _disposeArchitectureCollision(entry) {
-        if (!entry || !entry.collision) return;
-        const c = entry.collision;
-        if (this.state.physicsWorld) this.state.physicsWorld.removeRigidBody(c.body);
-        try {
-            Ammo.destroy(c.body);
-        } catch {
-            /* ignore */
-        }
-        try {
-            Ammo.destroy(c.rbInfo);
-        } catch {
-            /* ignore */
-        }
-        try {
-            Ammo.destroy(c.motionState);
-        } catch {
-            /* ignore */
-        }
-        try {
-            Ammo.destroy(c.shape);
-        } catch {
-            /* ignore */
-        }
-        if (Array.isArray(c.childShapes)) {
-            for (const cs of c.childShapes) {
-                try {
-                    Ammo.destroy(cs);
-                } catch {
-                    /* ignore */
-                }
-            }
-        }
-        try {
-            Ammo.destroy(c.transform);
-        } catch {
-            /* ignore */
-        }
-        try {
-            Ammo.destroy(c.origin);
-        } catch {
-            /* ignore */
-        }
-        try {
-            Ammo.destroy(c.localInertia);
-        } catch {
-            /* ignore */
-        }
-        entry.collision = null;
-    }
-
-    // === Welle 6.G Phase 1 — Welt-Sinne (Inseln + Bäume + UFOs) ===
-    // Bisher waren state.floatingIslands + state.vegetation-Bäume rein
-    // kosmetisch (kein physicsBody). Spieler fiel durch jede Insel, ging
-    // durch jeden Stamm. Hier die Kollisions-Schicht: btBvhTriangleMeshShape
-    // für Inseln (Visual = Kollision per Konstruktion wie bei Chunks),
-    // btCylinderShape nur für Baum-Stämme (Krone bleibt durchlässig — der
-    // Spieler kann durchs Laub gehen). UFOs bleiben bewusst kollisionsfrei,
-    // sie sind fliegende Beobachter, kein Hindernis.
-    //
-    // Beide werden als statische Bodies (mass=0) gebaut und NICHT in
-    // state.rigidBodies gepusht — der Sync-Loop würde sonst mesh.position
-    // aus dem Body-Origin überschreiben. Body lebt in obj.userData.collision.
-    _buildIslandCollision(islandMesh) {
-        return this._buildStaticTriMeshCollision(islandMesh, { kind: "island", friction: 0.8 });
-    }
-
-    // Generischer statischer Tri-Mesh-Kollisions-Builder. Nimmt ein Mesh mit
-    // indizierter Geometrie, baut ein btBvhTriangleMeshShape aus genau seinen
-    // Triangles (Visual = Kollision per Konstruktion) als statischen Body
-    // (mass=0). Eine Sprache für Inseln UND Voxel-Chunks — die Kollision
-    // lebt in mesh.userData.collision, _disposeStaticCollision räumt sie.
-    _buildStaticTriMeshCollision(mesh, opts = {}) {
-        if (!mesh || !mesh.geometry || !this.state.physicsWorld) return null;
-        const geo = mesh.geometry;
-        const posAttr = geo.attributes && geo.attributes.position;
-        const idx = geo.index;
-        if (!posAttr || !idx) return null;
-        const kind = opts.kind || "static";
-        const friction = Number.isFinite(opts.friction) ? opts.friction : 0.8;
-        const sf = this.state.scaleFactor || 1;
-        const verts = posAttr.array;
-        const indices = idx.array;
-        // V9.33 — Partial-Build-Leak-Heilung: jede Ammo-Allokation wird in
-        // `partial` getrackt, bei einer OOM auf halbem Weg werden ALLE
-        // schon-allokierten Objekte sauber destroyed. Vor V9.33 leakte
-        // jeder catch-Pfad seine bis-dahin allokierten Objekte (tmesh,
-        // shape, transform, origin, motionState, inertia, rbInfo) —
-        // jeder partial-Fehler füllte den Ammo-Heap weiter → der nächste
-        // Build noch wahrscheinlicher OOM → Snowball-Effekt. V9.33-Fix:
-        // ein lokales Array trackt alles, ein finally-Block räumt bei
-        // Erfolg ODER Fehlschlag mit klarer Semantik (im Erfolgsfall
-        // bleiben body/shape/tmesh/motionState — sie wandern in userData).
-        const partial = [];
-        let body = null;
-        try {
-            const tmesh = new Ammo.btTriangleMesh(true, true);
-            partial.push(tmesh);
-            const v0 = new Ammo.btVector3(0, 0, 0);
-            partial.push(v0);
-            const v1 = new Ammo.btVector3(0, 0, 0);
-            partial.push(v1);
-            const v2 = new Ammo.btVector3(0, 0, 0);
-            partial.push(v2);
-            let added = 0;
-            for (let i = 0; i + 2 < indices.length; i += 3) {
-                const ai = indices[i] * 3;
-                const bi = indices[i + 1] * 3;
-                const ci = indices[i + 2] * 3;
-                if (!Number.isFinite(verts[ai]) || !Number.isFinite(verts[bi]) || !Number.isFinite(verts[ci])) continue;
-                v0.setValue(verts[ai] / sf, verts[ai + 1] / sf, verts[ai + 2] / sf);
-                v1.setValue(verts[bi] / sf, verts[bi + 1] / sf, verts[bi + 2] / sf);
-                v2.setValue(verts[ci] / sf, verts[ci + 1] / sf, verts[ci + 2] / sf);
-                tmesh.addTriangle(v0, v1, v2);
-                added++;
-            }
-            // v0/v1/v2 werden HIER aus dem partial-Array genommen (manuell
-            // destroyed). Sonst räumt sie das finally bei Erfolg — was zu
-            // doppel-destroy führen würde.
-            const i0 = partial.indexOf(v0);
-            if (i0 >= 0) partial.splice(i0, 1);
-            const i1 = partial.indexOf(v1);
-            if (i1 >= 0) partial.splice(i1, 1);
-            const i2 = partial.indexOf(v2);
-            if (i2 >= 0) partial.splice(i2, 1);
-            Ammo.destroy(v0);
-            Ammo.destroy(v1);
-            Ammo.destroy(v2);
-            if (added === 0) {
-                // tmesh aus partial nehmen + destroy
-                const it = partial.indexOf(tmesh);
-                if (it >= 0) partial.splice(it, 1);
-                Ammo.destroy(tmesh);
-                return null;
-            }
-            const shape = new Ammo.btBvhTriangleMeshShape(tmesh, true, true);
-            partial.push(shape);
-            const transform = new Ammo.btTransform();
-            partial.push(transform);
-            transform.setIdentity();
-            const p = mesh.position;
-            const origin = new Ammo.btVector3(p.x / sf, p.y / sf, p.z / sf);
-            partial.push(origin);
-            transform.setOrigin(origin);
-            const motionState = new Ammo.btDefaultMotionState(transform);
-            partial.push(motionState);
-            const inertia = new Ammo.btVector3(0, 0, 0);
-            partial.push(inertia);
-            const rbInfo = new Ammo.btRigidBodyConstructionInfo(0, motionState, shape, inertia);
-            partial.push(rbInfo);
-            body = new Ammo.btRigidBody(rbInfo);
-            partial.push(body);
-            body.setFriction(friction);
-            this.state.physicsWorld.addRigidBody(body);
-            // Erfolg — die behaltenen Objekte (body, shape, tmesh, motionState)
-            // landen in userData; die transienten (rbInfo, inertia, origin,
-            // transform) werden hier destroyed. partial.splice räumt sie aus
-            // der Cleanup-Liste damit das finally sie nicht nochmal destroyed.
-            const keep = new Set([body, shape, tmesh, motionState]);
-            for (let i = partial.length - 1; i >= 0; i--) {
-                const obj = partial[i];
-                if (!keep.has(obj)) {
-                    partial.splice(i, 1);
-                    try {
-                        Ammo.destroy(obj);
-                    } catch {
-                        /* defensive */
-                    }
-                }
-            }
-            // partial enthält jetzt NUR die zu behaltenden Objekte — sie
-            // werden im finally NICHT destroyed (siehe `body !== null`-Gate).
-            // V9.31 — motionState mitspeichern, sonst leakt er bei
-            // _disposeStaticCollision (Ammo.destroy(body) cascadiert nicht
-            // zu seinen Auxiliars, V8.26-§6.4-Muster).
-            mesh.userData.collision = { body, shape, tmesh, motionState, kind };
-            return body;
-        } catch (err) {
-            this.log(`_buildStaticTriMeshCollision: ${err.message}`, "ERROR");
-            return null;
-        } finally {
-            // V9.33 — Partial-Build-Cleanup: bei Erfolg ist `partial` leer
-            // (alles wandert in userData oder wurde transient destroyed);
-            // bei OOM/Fehler räumt das finally alle bis-dahin allokierten
-            // Ammo-Objekte. Jeder Destroy in try/catch (doppel-destroy darf
-            // nicht werfen, der Loop muss weiterlaufen).
-            if (body === null) {
-                for (const obj of partial) {
-                    try {
-                        Ammo.destroy(obj);
-                    } catch {
-                        /* defensive */
-                    }
-                }
-            }
-        }
-    }
+    // DETERMINISMUS-BOGEN P3 — die Architektur-/Insel-/Chunk-Kollision ist feld-nativ
+    // (das Dichtefeld + `entry.blockerAABBs` + `_stepCharacterStructures`); die früheren
+    // Ammo-Builder/Disposer (`_buildArchitectureCollision[FromLeaves]`, `_buildIslandCollision`,
+    // `_buildStaticTriMeshCollision`, `_dispose*Collision`) + der Lazy-Radius sind GESCHNITTEN.
 
     // (V7.74) _buildTreeCollision wurde entfernt — Bäume sind jetzt Compound-
     // Architekturen über baum_eiche/baum_kiefer-Baupläne. _buildArchitecture-
     // Collision erzeugt Compound-Box pro Sub-Mesh (Stamm + Krone) durch
     // denselben Pfad wie alle anderen Strukturen.
-
-    // Generischer Dispose-Pfad für statische 6.G-Kollisionen (jetzt nur noch Inseln).
-    // Idempotent: zweimal aufrufen ist safe (collision wird auf null gesetzt).
-    _disposeStaticCollision(obj) {
-        if (!obj || !obj.userData || !obj.userData.collision) return;
-        const c = obj.userData.collision;
-        try {
-            if (this.state.physicsWorld && c.body) this.state.physicsWorld.removeRigidBody(c.body);
-        } catch {
-            /* ignore */
-        }
-        try {
-            if (c.body) Ammo.destroy(c.body);
-        } catch {
-            /* ignore */
-        }
-        try {
-            if (c.shape) Ammo.destroy(c.shape);
-        } catch {
-            /* ignore */
-        }
-        try {
-            if (c.tmesh) Ammo.destroy(c.tmesh);
-        } catch {
-            /* ignore */
-        }
-        // V9.31 — motionState muss explizit destroyed werden; Ammo.destroy(body)
-        // cascadiert nicht (V8.26-§6.4-Muster). Pre-V9.31-Bug: 81 voxel-chunks
-        // × Test-Welt-Regens haben den Ammo-Heap ausgeschöpft.
-        try {
-            if (c.motionState) Ammo.destroy(c.motionState);
-        } catch {
-            /* ignore */
-        }
-        obj.userData.collision = null;
-    }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `_disposeChunkPhysics` ist als toter
     // Heightfield-Chunk-Cleanup-Helper entfernt. Seine drei Aufrufer
@@ -57897,7 +57569,21 @@ class AnazhRealm {
         this.state.scene.add(island);
         if (!Array.isArray(this.state.floatingIslands)) this.state.floatingIslands = [];
         this.state.floatingIslands.push(island);
-        this._buildIslandCollision(island);
+        // DETERMINISMUS-BOGEN (Entscheid #2) — die AABB-Hülle für die feld-native Kollision:
+        // der Spieler kann auf einer fliegenden Insel STEHEN (Auflage auf der Oberkante) +
+        // wird an ihren Flanken geblockt. Die Hülle kommt exakt aus der gebauten Geometrie.
+        geometry.computeBoundingBox();
+        const bb = geometry.boundingBox;
+        if (bb) {
+            island.userData.fieldAABB = {
+                minX: x + bb.min.x,
+                maxX: x + bb.max.x,
+                minZ: z + bb.min.z,
+                maxZ: z + bb.max.z,
+                topY: y + bb.max.y,
+                botY: y + bb.min.y,
+            };
+        }
         return island;
     }
 
@@ -57927,16 +57613,14 @@ class AnazhRealm {
     // späteren Wieder-Aufbau wenn der Spieler zurückkehrt.
     _cullArchitectureMesh(entry) {
         if (!entry) return;
-        // V12.0-perf.c.2 — instancierter Eintrag: Collision freigeben + Slots
-        // zurück in die Registry (Matrix auf Null-Scale, Free-List).
+        // V12.0-perf.c.2 — instancierter Eintrag: Slots zurück in die Registry
+        // (Matrix auf Null-Scale, Free-List). P3: keine Ammo-Kollision mehr freizugeben
+        // (die Feld-Kollision lebt in `entry.blockerAABBs`, render-unabhängig).
         if (entry.instanced) {
-            this._disposeArchitectureCollision(entry);
             this._archInstanceRemove(entry);
             return;
         }
         if (!entry.mesh) return;
-        // Erst Kollision freigeben, dann Mesh aus der Szene + Geometrien.
-        this._disposeArchitectureCollision(entry);
         if (this.state.scene) this.state.scene.remove(entry.mesh);
         this._disposeSoulGroup(entry.mesh);
         entry.mesh = null;
@@ -60740,12 +60424,11 @@ class AnazhRealm {
         // Topf zu zerbrechen. Mehr Sample-Stellen × dieselbe chance-Formel =
         // mehr Bäume in dichten Wald-Regionen, mehr Lücken in Gras-Regionen
         // (die forest-mask × clumpAt-Logik bleibt — der Wald clumpt natürlich).
-        // V18.259 — DEV-DROSSEL (Schöpfer-Wunsch „unglaublich viele Bäume → weniger"):
-        // SAMPLES 10→4 temporär für die Entwicklung (weniger Spawn-Versuche/Chunk =
-        // deutlich weniger Bäume + schnellerer Cold-Start). Die forest-mask × clumpAt-
-        // Logik bleibt — der Wald clumpt weiter natürlich, nur dünner. REVERT auf 10
-        // für die volle V18.215-Dichte vor v1.0 (Roadmap TEMP-DEV-DROSSELN).
-        const SAMPLES = 4;
+        // V18.331 — Dev-Drossel revertiert: SAMPLES zurück auf 10 (die volle V18.215-Dichte).
+        // Der Cold-Start trägt sie jetzt (Perf-Bogen + Worldgen 6-12× + BVH-Freeze tot); die
+        // forest-mask × clumpAt-Logik clumpt den Wald natürlich, der `foliageRadius`-Regler
+        // (V18.275) wächst die Dichte kapazitäts-gemessen.
+        const SAMPLES = 10;
         const step = span / SAMPLES;
         // V9.96 — `opts.immediate === true` umgeht die Spawn-Queue
         // (Test-/Worldgen-Pfade die synchrone Spawns brauchen). Streaming-
@@ -60931,12 +60614,9 @@ class AnazhRealm {
         if (!playerPos) return;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
-        // V12.0-perf.d.2 — Lazy-Collision-Radius (Wurzel C): Render bis radius,
-        // Physik-Body nur bis colRadius. Der Pass fügt Collision hinzu, wenn der
-        // Spieler in colRadius kommt, und gibt sie frei, wenn er sich entfernt
-        // (Render bleibt). colRadius < RMIN(100) ≤ radius → immer < Render.
-        const colRadius = this.state.architectureCollisionRadius || 90;
-        const colRadiusSq = colRadius * colRadius;
+        // DETERMINISMUS-BOGEN P3 — kein Lazy-Collision-Radius mehr: die Architektur-Kollision
+        // ist feld-nativ (`entry.blockerAABBs`, immer da ab Spawn) → der Cull-Tick steuert
+        // NUR noch das Rendern (rebuild nah / cull fern), keine Ammo-Body-Verwaltung.
         // V18.298 — DER PROFIWEG: der Nexus baut NUR in der freien Zeit des Spielers
         // (Schöpfer „er konkurriert mit dem Spieler, das ist keine Synergie"). Das
         // Laub wartet schon, wenn der Frame eng ist (_frameOverBudget, V18.282); das
@@ -60947,33 +60627,16 @@ class AnazhRealm {
         // Das CULLEN (fern → frei) läuft weiter (billig, gibt Speicher frei).
         const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
         let built = 0;
-        // V18.150 — die Kollision des GERITTENEN Gefährts ruht (das Minecraft-
-        // Boot-Muster): der Lazy-Pass würde sie sonst sofort zurückbauen
-        // (der Reiter ist per Definition IM Collision-Radius).
-        const riddenId = this.state.player ? this.state.player.mountedArch : null;
         for (const entry of this.state.architectures) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
             if (distSq <= radiusSq) {
-                if (!this._archIsRendered(entry)) {
-                    if (built < budget) {
-                        this._rebuildArchitectureMesh(entry); // gated Collision intern
-                        built++;
-                    }
-                    // Budget erschöpft → baut in einem der nächsten Frames.
-                } else if (distSq <= colRadiusSq) {
-                    // Gerendert + im Collision-Radius: Body sicherstellen (budgetiert).
-                    if (riddenId !== null && riddenId !== undefined && entry.id === riddenId) {
-                        if (entry.collision) this._disposeArchitectureCollision(entry);
-                    } else if (!entry.collision && built < budget) {
-                        this._archEnsureCollision(entry);
-                        built++;
-                    }
-                } else if (entry.collision) {
-                    // Gerendert aber außerhalb Collision-Radius: Body freigeben
-                    // (Render bleibt). Billig (kein Build) → ungedeckelt.
-                    this._disposeArchitectureCollision(entry);
+                // Nah + noch nicht gerendert → bauen (budgetiert; die Feld-Kollision
+                // liegt schon in `entry.blockerAABBs` ab Spawn, kein Body-Schritt).
+                if (!this._archIsRendered(entry) && built < budget) {
+                    this._rebuildArchitectureMesh(entry);
+                    built++;
                 }
             } else {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
@@ -61449,7 +61112,8 @@ class AnazhRealm {
         const fallbackY = p.y - 0.5;
         const fallbackZ = p.z + Math.cos(this.state.yaw) * bm.phantomDistance;
         const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
-        if (!this.state.physicsWorld || !this.state.camera || typeof Ammo === "undefined") {
+        // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
+        if (!this.state.camera) {
             return fallback;
         }
         const cam = this.state.camera;
@@ -61825,7 +61489,8 @@ class AnazhRealm {
     _raycastWorldHit(maxDist = 30) {
         const sf = this.state.scaleFactor || 1;
         const fallback = { hit: false, x: 0, y: 0, z: 0 };
-        if (!this.state.physicsWorld || !this.state.camera || typeof Ammo === "undefined") {
+        // P3 — feld-nativer Raycast (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
+        if (!this.state.camera) {
             return fallback;
         }
         if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
@@ -69955,22 +69620,26 @@ class AnazhRealm {
     // Der einfachere Pfad: _runRaycast bekommt einen Extractor-Callback.
     // Lifecycle bleibt komplett in einer Funktion, Caller ist 1 Zeile.
     _runRaycast(rayStart, rayEnd, extractor) {
-        // V8.61-Härtung — während eines Welt-Regens ist physicsWorld kurz null
-        // (Teardown vor Rebuild). Ein Raycast aus dem rAF-Loop in diesem
-        // Fenster liefe sonst auf null.rayTest. „Kein Treffer" IST hier das
-        // ehrliche Ergebnis: kein Physics-World → nichts zu treffen. Alle
-        // Extraktoren verzweigen auf `hit`, bevor sie `cb` anfassen, also ist
-        // extractor(null, false) sicher.
-        if (!this.state.physicsWorld) return extractor(null, false);
-        const cb = new Ammo.ClosestRayResultCallback(rayStart, rayEnd);
-        this.state.physicsWorld.rayTest(rayStart, rayEnd, cb);
-        let result = null;
-        try {
-            result = extractor(cb, cb.hasHit());
-        } finally {
-            Ammo.destroy(cb);
-        }
-        return result;
+        // DETERMINISMUS-BOGEN P3 — der Raycast ist feld-nativ (DDA durch das Dichtefeld +
+        // Struktur-Box-Ray, kein Ammo). Ein synthetisches `cb` mit derselben Schnittstelle
+        // (get_m_hitPointWorld/get_m_hitNormalWorld/hasHit) hält alle 7 Aufrufer unverändert.
+        // rayStart/rayEnd kommen in skalierten Einheiten (÷ sf); `_fieldRaycast` rechnet in
+        // Welt-Koords → × sf rein, ÷ sf im cb wieder raus (sf = 1, neutral).
+        const sf = this.state.scaleFactor || 1;
+        const rc = this._fieldRaycast(
+            rayStart.x() * sf,
+            rayStart.y() * sf,
+            rayStart.z() * sf,
+            rayEnd.x() * sf,
+            rayEnd.y() * sf,
+            rayEnd.z() * sf
+        );
+        const cb = {
+            get_m_hitPointWorld: () => ({ x: () => rc.x / sf, y: () => rc.y / sf, z: () => rc.z / sf }),
+            get_m_hitNormalWorld: () => ({ x: () => rc.nx, y: () => rc.ny, z: () => rc.nz }),
+            hasHit: () => rc.hit,
+        };
+        return extractor(cb, rc.hit);
     }
 
     // [ATMOSPHERE] Compound-Tags einer Soul (ohne Kreatur-Instanz zu brauchen).
@@ -71584,40 +71253,13 @@ class AnazhRealm {
         this.log("Spieler erstellt: Position (0, 20, 0), Soul + Schatten aktiviert", "INFO");
         this.state.selfAwareness.components.push("playerMesh");
 
-        if (this.state.physicsWorld) {
-            const playerShape = new Ammo.btBoxShape(new Ammo.btVector3(0.5, 0.5, 0.5));
-            // WICHTIG: state.playerMesh, nicht der lokale `playerMesh` —
-            // applyPlayerSoul oben hat den initialen Group durch das fertige
-            // Soul-Group ersetzt. Local-var wäre stale.
-            this.state.playerBody = this.addRigidBody(this.state.playerMesh, 1, playerShape, true);
-            // CCD direkt aktivieren: schützt vor Tunneling durch dünne
-            // Heightfield-Cell-Ränder oder Sprung-Landungen genau auf einer
-            // Chunk-Naht. Bisher nur per optimizeCollisions nachträglich
-            // gesetzt — der Spieler fiel deshalb in den ersten Sekunden öfter
-            // durch den Boden.
-            if (this.state.playerBody) {
-                // Aggressive CCD-Parameter: kleiner threshold = mehr Sweep-
-                // Checks pro Frame, größerer Radius = robusterer Catch durch
-                // dünne Triangles bei steilen Hängen oder Wänden.
-                this.state.playerBody.setCcdMotionThreshold(0.01);
-                this.state.playerBody.setCcdSweptSphereRadius(0.45);
-                // Welle 6.A1 — Wall-Sliding. Spieler-Friction auf 0 setzt die
-                // tangentiale Reibung an Bauwerks-Wänden auf null: der Spieler
-                // bleibt nicht hängen, sondern rutscht entlang. Stoppen
-                // funktioniert weiterhin, weil setLinearVelocity die Geschwindigkeit
-                // jeden Frame explizit nullt (siehe Spielerbewegung im Game-Loop),
-                // statt sich auf Reibung zu verlassen.
-                this.state.playerBody.setFriction(0);
-                // V8.36 — Player-Body schläft NIE. Ammo deaktiviert still-
-                // stehende Bodies (ISLAND_SLEEPING); ein schlafender Body nahm
-                // Eingaben (Stand-Sprung!) nicht zuverlässig an, auch mit
-                // activate(true). DISABLE_DEACTIVATION (4) hält ihn dauerhaft
-                // wach — der Spieler reagiert immer sofort, ob er geht oder steht.
-                this.state.playerBody.forceActivationState(4);
-            }
-            this.log("Physik-Körper für Spieler hinzugefügt", "INFO");
-            this.state.selfAwareness.components.push("playerBody");
-        }
+        // DETERMINISMUS-BOGEN P3 — kein Ammo-Spieler-Body mehr. Der Spieler läuft
+        // feld-nativ (`_stepCharacter`): die horizontale Intent-Velocity lebt in
+        // `state.playerVel` (in `initPhysics` angelegt), die Vertikale in `_fieldVy`,
+        // die Kollision liest das Dichtefeld. Kein btBoxShape, kein CCD, kein BVH.
+        this.state.playerVel.setValue(0, 0, 0);
+        this.state._fieldVy = 0;
+        this.state.selfAwareness.components.push("fieldController");
 
         // V18.151 (Faden #6) — den IndexedDB-Stand der aktiven Welt laden
         // (gewinnt nur, wenn frischer als der localStorage-Spiegel).
@@ -71878,12 +71520,12 @@ class AnazhRealm {
     }
 
     // A6b (gigant-plan §5 PHASE A) — die DECKEN-PROBE: freie Höhe über dem Body-Top
-    // (Ammo-Raycast → trifft Terrain-BVH UND Architektur-Bodies, z. B. ein Haus-Dach).
-    // Infinity = freier Himmel. Start knapp ÜBER der Body-Box (halfExtent 0.5),
+    // (P3: feld-nativer Raycast → trifft Terrain-Dichtefeld UND Struktur-AABBs, z. B. ein
+    // Haus-Dach). Infinity = freier Himmel. Start knapp ÜBER der Body-Box (halfExtent 0.5),
     // damit der Strahl nicht den eigenen Körper trifft.
     _ceilingHeadroom() {
         const pm = this.state.playerMesh;
-        if (!pm || !this.state.physicsWorld || typeof Ammo === "undefined") return Infinity;
+        if (!pm) return Infinity;
         const sf = this.state.scaleFactor || 1;
         const x = pm.position.x,
             y0 = pm.position.y + 0.55,
@@ -71900,7 +71542,7 @@ class AnazhRealm {
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
-        if (this.state.physicsWorld && this.state.playerBody) {
+        if (this.state.playerVel) {
             const isGrounded = this.isPlayerGrounded();
             const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
@@ -71920,16 +71562,11 @@ class AnazhRealm {
                     jumpV = Math.min(jumpV, Math.sqrt(2 * g * rise));
                     if (jumpV < 1.2) return; // keine Kopffreiheit — kein Sprung
                 }
-                // Welle 6.X.1 A1 — Ammo deaktiviert „still stehende" Bodies. Ohne
-                // explizites activate(true) verpufft setLinearVelocity, weil der
-                // Body in der Island schläft. forceActivationState im Bewegungs-
-                // Pfad weckt nur bei Lauf — beim Stand-Sprung musste der Body
-                // sonst erst durch einen Mikro-Move geweckt werden.
-                this.state.playerBody.activate(true);
-                const velocity = this.state.playerBody.getLinearVelocity();
-                this.state.playerBody.setLinearVelocity(
-                    this.setVec(this.state.tmpVec1, velocity.x(), jumpV, velocity.z())
-                );
+                // Feld-nativ: der Sprung-Impuls schreibt die vertikale Velocity in
+                // `state.playerVel.y` — `_stepCharacter` übernimmt sie als frischen Sprung
+                // (`bvy > _fieldVy`). Die Horizontale bleibt unberührt.
+                const velocity = this.state.playerVel;
+                this.state.playerVel.setValue(velocity.x(), jumpV, velocity.z());
                 this.state.isJumping = true;
                 this.state.isInAir = true;
                 // Ring 5 V2: keine Material-Tint mehr beim Sprung — der
@@ -72111,10 +71748,9 @@ class AnazhRealm {
                 // V17.28 — Boden unter dem Boden: fällt der Spieler durch (Struktur-
                 // Remesh-Timing, Teleport in ungebauten Chunk, …), fängt ihn das ab.
                 this._rescuePlayerFromVoid();
-                // V18.271 (Welle Async-1) — der weiche Boden: hält den Spieler an der
-                // deterministischen Terrain-Höhe, während sein Chunk async lädt (löst den
-                // blockierenden Spieler-Chunk-forceSync ab). Greift VOR der Void-Tiefe.
-                this._softFloorWhileChunkLoading();
+                // DETERMINISMUS-BOGEN P3 — der „weiche Boden" (V18.271) ist entfallen: der
+                // Feld-Controller (`_stepCharacter`) erdet den Spieler direkt aus dem Dichtefeld,
+                // das überall definiert ist (auch unter ungebauten Chunks) → kein Durchfallen.
 
                 // V17.55 W1 — Halten-zum-Abbauen: der Auto-Hieb-Tick (gegated durch breakHeld +
                 // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
@@ -72122,6 +71758,9 @@ class AnazhRealm {
 
                 // ### Spielerbewegung + Sprung ### (V9.44-f → _loopPlayerMovement)
                 this._loopPlayerMovement(currentTime);
+                // DETERMINISMUS-BOGEN P4 (Stufe 1) — die Ernte: läuft eine Aufnahme, wird der
+                // Input dieses Frames festgehalten (deterministischer Replay, s. _replayCaptureFrame).
+                if (this.state._replayRec) this._replayCaptureFrame(delta);
 
                 // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
                 this._loopSelfAnalysis(currentTime);
@@ -72437,22 +72076,9 @@ class AnazhRealm {
             if (solidAt(cy - 0.3) || solidAt(cy + 1.2)) continue;
             const safeY = cy + 0.25;
             pm.position.set(px, safeY, pz);
-            const body = this.state.playerBody;
-            if (body && this.state.tmpTransform) {
-                const t = this.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(
-                    this.setVec(
-                        this.state.tmpVec1,
-                        px / this.state.scaleFactor,
-                        safeY / this.state.scaleFactor,
-                        pz / this.state.scaleFactor
-                    )
-                );
-                body.setWorldTransform(t);
-                body.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-                body.activate(true);
-            }
+            // P3 — feld-nativ: Velocity nullen, vertikalen Feld-Zustand zurück (kein Ammo-Body).
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.state._fieldVy = 0;
             this.log(`Aufschütten hob dich auf die neue Oberfläche (y=${safeY.toFixed(1)})`, "INFO");
             return;
         }
@@ -72464,291 +72090,341 @@ class AnazhRealm {
         const surf = this.getTerrainHeightAt(pm.position.x, pm.position.z);
         const safeY = (Number.isFinite(surf) ? surf : this.state.terrainBaseHeight || 0) + 2.0;
         pm.position.set(pm.position.x, safeY, pm.position.z);
-        const body = this.state.playerBody;
-        if (body && this.state.tmpTransform) {
-            const t = this.state.tmpTransform;
-            t.setIdentity();
-            t.setOrigin(
-                this.setVec(
-                    this.state.tmpVec1,
-                    pm.position.x / this.state.scaleFactor,
-                    safeY / this.state.scaleFactor,
-                    pm.position.z / this.state.scaleFactor
-                )
-            );
-            body.setWorldTransform(t);
-            body.setLinearVelocity(this.setVec(this.state.tmpVec2, 0, 0, 0));
-            body.activate(true);
-        }
+        // P3 — feld-nativ: Velocity nullen, vertikalen Feld-Zustand zurück (kein Ammo-Body).
+        if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+        this.state._fieldVy = 0;
         this.log(`Spieler fiel durch die Welt — zurück an die Oberfläche (y=${safeY.toFixed(1)})`, "WARNING");
     }
 
-    // V18.271 (Welle Async-1) — DER WEICHE BODEN: der nicht-blockierende Fall-Schutz,
-    // der den Spieler-Chunk-forceSync (~130-239 ms Main-Thread-Block pro Chunk-Crossing)
-    // ablöst. Lädt der Chunk unter dem Spieler noch ASYNC (kein Mesh / keine BVH), fiele
-    // der Spieler heute durch → darum baute der forceSync ihn SYNC. Stattdessen hält die
-    // DETERMINISTISCHE Terrain-Höhe (`getTerrainHeightAt` — dieselbe Worldgen-Wahrheit,
-    // kennt den Boden BEVOR der Mesh baut) den Spieler an seinem Boden, bis die echte
-    // Kollision async lädt. Nicht-blockierend, kein Loch, exakt. Greift NUR bei nicht-
-    // bereiter Kollision + Fall unter den Boden — sonst no-op (echte BVH trägt).
-    _softFloorWhileChunkLoading() {
-        const st = this.state;
-        const pm = st.playerMesh,
-            body = st.playerBody;
-        if (!pm || !body || !st.lastPlayerVoxelChunk || !st.voxelChunks) return;
-        const { cx, cz } = st.lastPlayerVoxelChunk;
-        const entry = st.voxelChunks.get(`${cx},${cz}`);
-        // Kollision bereit (Mesh + BVH) → die echte BVH trägt, kein weicher Boden.
-        if (entry && entry.mesh && entry.hasBVH && !entry.empty) return;
-        // echt leer (kein Boden) → frei fallen lassen (die Void-Rettung fängt).
-        if (entry && entry.empty) return;
-        // Die Kollision lädt noch (async pending ODER Mesh-ohne-BVH): die deterministische
-        // Boden-Höhe trägt den Spieler. NUR wenn er unter den ladenden Boden sinkt.
-        const surf = this.getTerrainHeightAt(pm.position.x, pm.position.z);
-        if (!Number.isFinite(surf)) return;
-        const restY = surf + AnazhRealm.SOFT_FLOOR_REST_OFFSET;
-        if (pm.position.y >= restY) return; // über dem Boden (Sprung / hoher Fall) → bis restY frei
-        // unter den ladenden Boden gesunken → an die deterministische Höhe heben + Fall stoppen.
-        pm.position.y = restY;
-        const v = body.getLinearVelocity();
-        if (v.y() < 0) body.setLinearVelocity(this.setVec(st.tmpVec1, v.x(), 0, v.z()));
-        if (st.tmpTransform) {
-            const t = st.tmpTransform;
-            t.setIdentity();
-            t.setOrigin(
-                this.setVec(
-                    st.tmpVec2,
-                    pm.position.x / st.scaleFactor,
-                    restY / st.scaleFactor,
-                    pm.position.z / st.scaleFactor
-                )
-            );
-            body.setWorldTransform(t);
-        }
-        // Auf dem weichen Boden steht der Spieler → geerdet fühlen (Bewegung/Sprung normal),
-        // bis die echte BVH übernimmt. `isPlayerGrounded` liest den Cache die nächsten ~2 Frames.
-        st._groundedCache = true;
-        st._groundedCachedAt = performance.now();
-        st._softFloorActive = true;
+    // DETERMINISMUS-BOGEN P3 — Ammo ist RAUS. Es gibt keine Bullet-Welt mehr und keine
+    // Rigid-Bodies, die integriert/zurückgelesen werden müssten: der Spieler läuft
+    // feld-nativ (`_stepCharacter` aus dem Dichtefeld), die Kreaturen erden aus
+    // `_creatureGroundY`, die Fahrzeuge aus `getTerrainHeightAt`. Dieser Schritt fährt
+    // nur noch den Feld-Controller. (Wasser-Auftrieb/Killplane des Spielers leben jetzt
+    // IN `_stepCharacter`.)
+    _loopPhysicsSync(delta, currentTime) {
+        this._stepCharacter(delta, currentTime);
     }
 
-    _loopPhysicsSync(delta, currentTime) {
-        if (this.state.physicsWorld) {
-            // B6 (gigant-plan §5 — G7): Substep-Cap 20 → 5. Mit Cap 20 erlaubte ein
-            // FPS-Einbruch (Frame 333 ms) bis zu 20 Physik-Substeps im NÄCHSTEN
-            // Frame → der Frame wird noch langsamer = die Physik-Todesspirale.
-            // Der Industrie-Standard ist 3–5: bei Einbruch verlangsamt die Physik
-            // GLEICHMÄSSIG (Zeit dehnt sich), statt den Main-Thread zu würgen.
-            // CCD (Spieler) + der -25-m/s-Fall-Cap tragen das Anti-Tunneling.
-            this.state.physicsWorld.stepSimulation(delta, 5, 1 / 60);
-            for (let i = 0; i < this.state.rigidBodies.length; i++) {
-                const mesh = this.state.rigidBodies[i];
-                const body = mesh.userData.physicsBody;
-                const motionState = body.getMotionState();
-                if (motionState) {
-                    motionState.getWorldTransform(this.state.tmpTransform);
-                    const pos = this.state.tmpTransform.getOrigin();
-                    let scaledY = pos.y() * this.state.scaleFactor;
-                    const velocity = body.getLinearVelocity();
+    // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER (Determinismus-Bogen P1b) =====
+    // Treibt den Spieler aus dem Dichtefeld (`_field*`-Helfer, P1a) statt aus der Ammo-
+    // BVH — deterministisch, kein per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel),
+    // ein gecarvter Tunnel ist SOFORT begehbar. Die Bewegungs-LOGIK bleibt EINE Quelle:
+    // `_loopPlayerMovement` schreibt die horizontale Intent-Velocity weiter in den Ammo-
+    // Body (die exp-Lerp-Kurven, Slope-Penalty, Sattel — alles unberührt), dieser
+    // Controller LIEST sie + integriert vertikal/Kollision selbst. vy lebt feld-eigen
+    // (`_fieldVy`), die Ammo-Body-Schwerkraft ist genullt (kein Doppel-Gravity), der Body
+    // wird auf die Feld-Position teleportiert (Raycasts/Wasser-Kontext lesen ihn weiter).
+    _stepCharacter(delta, currentTime) {
+        const s = this.state;
+        const mesh = s.playerMesh;
+        if (!mesh || !s.playerVel) return;
+        const dt = Math.min(0.1, Math.max(0.0001, delta));
+        const footDrop = AnazhRealm.PLAYER_FOOT_OFFSET; // Füße = position.y − footDrop (Box-Unterkante)
 
-                    // Fall-Geschwindigkeit cappen: ohne Cap zog die
-                    // Schwerkraft den Spieler in eine sehr hohe vy, sodass
-                    // er pro Frame eine ganze Heightfield-Cell (~1.17 m)
-                    // überspringen konnte — Tunneling durch steile Hänge.
-                    // -25 m/s ist eine plausible Terminal Velocity und
-                    // bleibt unter Cell-Breite × 60 fps.
-                    if (mesh === this.state.playerMesh && velocity.y() < -25) {
-                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), -25, velocity.z()));
-                    }
+        // 1. Velocity lesen: horizontal = die Intent-Velocity aus `_loopPlayerMovement`
+        //    (feld-eigen in `state.playerVel`). vy = feld-eigen (`_fieldVy`); ein frischer
+        //    Sprung (handleJump schrieb playerVel.y = jumpPower) wird übernommen.
+        const vBody = s.playerVel;
+        let vx = vBody.x();
+        let vz = vBody.z();
+        const bvy = vBody.y();
+        if (bvy > s._fieldVy + 0.5) s._fieldVy = bvy; // frischer Sprung-Impuls
+        let vy = s._fieldVy;
 
-                    // V8.29.1 — Wasser-Physik. Ist der Spieler unter dem
-                    // Wasser-Niveau, wirkt Auftrieb: die Fall-Geschwindig-
-                    // keit wird stark gedämpft, ein sanfter Aufwärts-Drift
-                    // hebt ihn — er schwimmt, statt auf den Grund zu sinken.
-                    // V8.32 — zwei getrennte Flags: playerUnderwater
-                    // (Körper-Mitte im Wasser → Auftrieb + Bremse) und
-                    // playerEyesUnderwater (Augen/Kamera unter Wasser →
-                    // blauer Tint). Sonst sprang der Tint schon beim
-                    // Waten/Schwimmen an, obwohl der Kopf über Wasser war.
-                    if (mesh === this.state.playerMesh && typeof this.state.waterLevel === "number") {
-                        // V9.43-c.2 — der effektive Wasserspiegel: steht der
-                        // Spieler über einem See, dessen Füll-Level; sonst der
-                        // Meeresspiegel. So schwimmt/taucht er im See wie im
-                        // Meer — die Hydrosphäre ist EIN Wasser-System mit dem
-                        // Meer (Schöpfer-Befund: „nicht synergetisch").
-                        // Welle B + H1 (Tiefe-Fundament) — der Auftrieb liest die
-                        // 3D-Wasser-WAHRHEIT (Cells), nicht die 2.5D-Spalte. Die
-                        // GEMESSENE Wurzel (diag-swim-repro): `_hydroWaterLevelAt`
-                        // gibt für einen BERGSEE (Wasser-Cells/Iso bei y=+8) den
-                        // MEERES-Spiegel (−3) zurück — die V9.69-Zwei-Skalen-Lücke
-                        // (Spalten-Atlas ≠ Flood-Cells). Folge: `waterY−scaledY`
-                        // wurde NEGATIV → der Auftrieb drückte im See nach UNTEN →
-                        // „ich sehe Wasser, aber keine Schwimmphysik". `_player
-                        // WaterContext` liest aus den Cells den ECHTEN Spiegel
-                        // DIESES Wasserkörpers (aufwärts-Scan bis zur Nicht-Wasser-
-                        // Zelle) + ob der Körper (Füße..Kopf) wirklich in Wasser ist
-                        // → KEIN Falsch-Schwimmen über Lufthöhlen UND korrektes
-                        // Schwimmen in Bergseen. Fallback auf die 2.5D-Spalte nur
-                        // am ungestreamten Streaming-Rand (Backward-Compat).
-                        const wcx = pos.x() * this.state.scaleFactor;
-                        const wcz = pos.z() * this.state.scaleFactor;
-                        const wctx = this._playerWaterContext(wcx, scaledY, wcz);
-                        let submerged;
-                        let waterY;
-                        if (wctx !== null) {
-                            submerged = wctx.submerged;
-                            waterY = submerged ? wctx.surfaceY : scaledY;
-                        } else {
-                            // V18.180-FIX §6.4: `_waterLevelAt` statt `_hydroWaterLevelAt` —
-                            // letzteres trug die V9.69-Zwei-Skalen-Lücke (Spalten-Atlas vs
-                            // Flood-Cells: gab Meeresspiegel −3 zurück, wo ein Bergsee bei
-                            // +8 stand → Auftrieb druckte NACH UNTEN). Plus O(n)-`BBox`+
-                            // `Array.includes`-Lookup. `_waterLevelAt` ist die EINE Wahrheit:
-                            // O(1) Ozean + O(9) See/Fluss, BERGsee-bewusst.
-                            const effWater = this._waterLevelAt(wcx, wcz);
-                            waterY = typeof effWater === "number" ? effWater : this.state.waterLevel;
-                            submerged = scaledY < waterY;
+        // 3. Wasser-Kontext (dieselbe EINE Quelle wie der Ammo-Pfad) → Auftrieb/Schwimmen.
+        const wctx = this._playerWaterContext(mesh.position.x, mesh.position.y, mesh.position.z);
+        let submerged = false;
+        let waterY = -Infinity;
+        if (wctx !== null) {
+            submerged = wctx.submerged;
+            waterY = submerged ? wctx.surfaceY : -Infinity;
+        } else if (typeof s.waterLevel === "number") {
+            const eff = this._waterLevelAt(mesh.position.x, mesh.position.z);
+            waterY = typeof eff === "number" ? eff : s.waterLevel;
+            submerged = mesh.position.y < waterY;
+        }
+        s.playerUnderwater = submerged;
+        if (submerged) {
+            let eyeWaterY = waterY;
+            const runSurf = this._waterRunSurfaceAt(mesh.position.x, mesh.position.z);
+            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) eyeWaterY = runSurf;
+            s.playerEyesUnderwater = mesh.position.y + 1.6 < eyeWaterY;
+        } else {
+            s.playerEyesUnderwater = false;
+        }
+
+        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion);
+        //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
+        if (submerged) {
+            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, !!s.keys["shift"], !!s.keys[" "]);
+            vx *= 0.7;
+            vz *= 0.7;
+        } else {
+            vy += (s.gravity || -14.715) * dt;
+            if (vy < -25) vy = -25;
+        }
+
+        // 5. Position vorintegrieren (world units, scaleFactor = 1).
+        let nx = mesh.position.x + vx * dt;
+        let ny = mesh.position.y + vy * dt;
+        let nz = mesh.position.z + vz * dt;
+
+        const feetY = ny - footDrop;
+        const headY = ny + footDrop;
+
+        // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden
+        //    Part-AABBs naher Bauwerke (`entry.blockerAABBs` — dichte ≥ 0.3, EINE Quelle mit
+        //    dem Wasser-Blocker). Wände BLOCKEN horizontal (mutiert nx/nz = gleiten), Dächer/
+        //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
+        //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
+        const structPos = { x: nx, z: nz };
+        const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
+        // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
+        const islandTop = this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        nx = structPos.x;
+        nz = structPos.z;
+        // Die höhere der beiden begehbaren Auflagen (Bauwerk ODER Insel) trägt den Spieler.
+        const supTop = Math.max(structTop, islandTop);
+
+        // 7. TERRAIN-WAND-KOLLISION — nur HORIZONTAL, und VOR dem Boden-Snap (so wird der Spieler
+        //    erst aus der Wand geschoben, bevor Schritt 8 vertikal entscheidet → der Anti-Clip
+        //    feuert nicht beim bloßen Wand-Berühren). Die Wand-Kugeln beginnen ERST über der
+        //    Stufe-hoch-Linie (feetY + STEP_UP): Stufen ≤ STEP_UP fängt der Snap, nur echte Wände
+        //    blocken (kein Hängenbleiben am Riser). Die obere Kugel klemmt den Aufstieg an Decken.
+        const wR = AnazhRealm.PLAYER_WALL_RADIUS;
+        const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR;
+        const p = { x: 0, y: 0, z: 0 };
+        const wallYs = [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf
+        for (let k = 0; k < wallYs.length; k++) {
+            p.x = nx;
+            p.y = wallYs[k];
+            p.z = nz;
+            const oy = p.y;
+            if (this._fieldResolveSphere(p, wR, null)) {
+                nx = p.x; // nur die horizontale Korrektur übernehmen (an Wänden gleiten)
+                nz = p.z;
+                if (k === wallYs.length - 1 && p.y < oy - 0.001 && vy > 0) vy = 0; // Decke
+            }
+        }
+
+        // 8. BODEN (vertikal). Die Probe startet bei feetY+STEP_UP. ZWEI Pfade:
+        let grounded = false;
+        let groundNormalY = 1.0;
+        const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
+        const buriedDeep = this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
+        if (buriedDeep) {
+            // 8a. ANTI-CLIP (das Sicherheitsnetz, das sonst die BVH war): die Füße stecken TIEF
+            //     im Terrain → die Probe scannt AUFWÄRTS zur Oberkante (großzügige 30 m, nur im
+            //     seltenen Penetrations-Fall), der Spieler wird BEDINGUNGSLOS hoch-gesetzt. Er
+            //     darf NIE im Soliden stecken → kein Clip-durch-den-Boden auf eine Höhlen-Schicht.
+            const top = this._fieldSurfaceBelow(nx, probeStart, nz, 30);
+            if (top !== null) {
+                ny = top + footDrop;
+                if (vy < 0) vy = 0;
+                grounded = true;
+                groundNormalY = this._fieldGradient(nx, top, nz, {}).y;
+            }
+        } else {
+            let terrSurf = this._fieldSurfaceBelow(
+                nx,
+                probeStart,
+                nz,
+                footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
+            );
+            // 8b. FORWARD-BLOCK: läuft der Spieler horizontal in eine WAND (Oberfläche voraus
+            //     höher als feetY + STEP_UP = nicht erklimmbar)? → die horizontale Bewegung
+            //     ZURÜCKNEHMEN (am Wandfuß stehen, nicht eindringen → kein Clip am steilen Berg).
+            //     Die obere Wand-Kugel gleitet schon; dies ist der Fuß-Stopp gegen das Eindringen.
+            if (
+                terrSurf !== null &&
+                terrSurf > feetY + AnazhRealm.PLAYER_STEP_UP + 0.05 &&
+                (nx !== mesh.position.x || nz !== mesh.position.z)
+            ) {
+                nx = mesh.position.x;
+                nz = mesh.position.z;
+                terrSurf = this._fieldSurfaceBelow(
+                    nx,
+                    feetY + AnazhRealm.PLAYER_STEP_UP,
+                    nz,
+                    footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
+                );
+            }
+            // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
+            const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, supTop);
+            const wasGrounded = s._fieldWasGrounded === true;
+            if (vy <= 0.5) {
+                if (effSurf > -Infinity) {
+                    const restY = effSurf + footDrop;
+                    const gap = ny - restY; // > 0: Oberfläche UNTER den Füßen (Luft/bergab) · ≤ 0: AUF/ÜBER
+                    // ZWEI getrennte Fälle (sonst zieht die Haftung den Fallenden wie ein Magnet an):
+                    //  (a) AT/ÜBER den Füßen [−STEP_UP .. 0] → Landung ODER Stufe-hoch: rauf-snappen.
+                    //      Der Fall landet NATÜRLICH (Füße erreichen den Boden), KEIN Vorab-Sog.
+                    //  (b) knapp UNTER den Füßen (0 .. GROUND_SNAP] → Boden-Haftung bergab, NUR wenn
+                    //      vorher geerdet (sanft bergab); im Fall NICHT → kein Magnet. Größerer gap
+                    //      (Kamm/Klippe) → kein Snap → natürlicher Sprung-Bogen.
+                    const catchOrStep = gap <= 0 && gap >= -AnazhRealm.PLAYER_STEP_UP;
+                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded;
+                    if (catchOrStep || gentleDownhill) {
+                        if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
+                            s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
                         }
-                        this.state.playerUnderwater = submerged;
-                        // Augen sitzen auf Kamera-Höhe (scaledY + 1.6); nur unter
-                        // Wasser, wenn der Körper submerged ist UND die Augen unter
-                        // dem Spiegel liegen (kein blauer Tint über Luft).
-                        // W-F (V18.175, R-014 „Tauchhöhe versetzt" + §8.8e): die
-                        // AUGEN-Grenze liest die GEGLÄTTETE Lauf-Fläche — dieselbe,
-                        // die das Sheet RENDERT — statt des 1.8-m-quantisierten
-                        // Zell-Dachs (wctx.surfaceY): der Tint flippt, wo das Auge
-                        // die Fläche DURCHSTÖSST. Live-CA-Wasser jenseits ±1 Zelle
-                        // vom statischen Spiegel führt weiter (Carve-Nachfluss).
-                        let eyeWaterY = waterY;
-                        if (submerged) {
-                            const runSurf = this._waterRunSurfaceAt(wcx, wcz);
-                            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) {
-                                eyeWaterY = runSurf;
-                            }
-                        }
-                        this.state.playerEyesUnderwater = submerged && scaledY + 1.6 < eyeWaterY;
-                        if (submerged) {
-                            // V8.36 — Auftrieb wirkt NUR über dem Terrain.
-                            // Fällt der Spieler durch die Welt (weit unter
-                            // die Terrain-Oberfläche), fing ihn der Auftrieb
-                            // sonst ab — er „schwamm" unter dem Boden statt
-                            // von der Killplane resettet zu werden. Wasser
-                            // sitzt immer auf festem Grund; ist man weit
-                            // darunter, trägt nichts → die Killplane greift.
-                            const wTerrainY = this.getTerrainHeightAt(
-                                pos.x() * this.state.scaleFactor,
-                                pos.z() * this.state.scaleFactor
-                            );
-                            if (scaledY >= wTerrainY - 22) {
-                                // V8.33 — Tauchen + Auftauchen. Shift taucht
-                                // ab (Minecraft-Konvention), Space hebt; ohne
-                                // Eingabe wirkt der natürliche Auftrieb.
-                                const swimVy = this._swimVerticalVelocity(
-                                    velocity.y(),
-                                    waterY - scaledY,
-                                    !!this.state.keys["shift"],
-                                    !!this.state.keys[" "]
-                                );
-                                body.setLinearVelocity(
-                                    this.setVec(this.state.tmpVec1, velocity.x() * 0.7, swimVy, velocity.z() * 0.7)
-                                );
-                            }
-                        }
-                    }
-
-                    // W10 ext. — lifting-Auftriebs-Feld. Steht der Spieler
-                    // in Reichweite eines lifting-Compounds (Flag aus
-                    // _tickLiftingAffordances), trägt ihn das Feld: der Fall
-                    // wird gedämpft + ein sanfter Aufwärts-Drift hebt ihn
-                    // (analog zum Wasser-Auftrieb, hier in der Luft). NICHT
-                    // unter Wasser — dort hat der Schwimm-Auftrieb Vorrang.
-                    if (
-                        mesh === this.state.playerMesh &&
-                        !this.state.playerUnderwater &&
-                        this.state.player &&
-                        this.state.player.liftingField &&
-                        this.state.player.liftingField.active
-                    ) {
-                        const liftVy = this._liftVerticalVelocity(
-                            velocity.y(),
-                            this.state.player.liftingField.strength
-                        );
-                        body.setLinearVelocity(this.setVec(this.state.tmpVec1, velocity.x(), liftVy, velocity.z()));
-                    }
-
-                    // Kill-Plane näher an den Welt-Boden gerückt: vorher
-                    // erst nach 1000 m freiem Fall — der Spieler war
-                    // gefühlt "verloren". 30 m unter dem tiefsten Welt-
-                    // Punkt ist nah genug, dass Resets sofort spürbar
-                    // sind, aber tief genug, dass eine legitime Schlucht
-                    // (heights -100..+100) den Spieler nicht reset.
-                    // V9.25 Phase 5b — der Killplane folgt der Welt. In
-                    // einer Voxel-Welt liegt der Chunk-Boden bei base-66
-                    // (V9.45-a); der Killplane gehört DARUNTER (base-88),
-                    // sonst würde ein Spieler in einem tiefen Voxel-Tal
-                    // resettet. Das heightfield-abgeleitete `minHeight`
-                    // kennt das Voxel-Band nicht.
-                    const killPlaneY =
-                        this.state.worldMeta && this.state.worldMeta.voxelTerrain
-                            ? (this.state.terrainBaseHeight || 0) - 88
-                            : (this.state.minHeight || -50) - 30;
-                    if (scaledY < killPlaneY) {
-                        const currentX = pos.x() * this.state.scaleFactor;
-                        const currentZ = pos.z() * this.state.scaleFactor;
-
-                        // Funktion zum Finden der Oberfläche über dem Spieler
-                        const surfaceHeight = this.findSurfaceAbove(currentX, scaledY, currentZ);
-                        scaledY = surfaceHeight + 0.5; // Spieler wird knapp über die Oberfläche gesetzt
-
-                        const transform = this.state.tmpTransform;
-                        transform.setIdentity();
-                        transform.setOrigin(
-                            this.setVec(
-                                this.state.tmpVec1,
-                                currentX / this.state.scaleFactor,
-                                scaledY / this.state.scaleFactor,
-                                currentZ / this.state.scaleFactor
-                            )
-                        );
-                        body.setWorldTransform(transform);
-                        body.setLinearVelocity(this.setVec(this.state.tmpVec2, velocity.x(), 0, velocity.z()));
-                        this.state.isJumping = false;
-                        this.state.isInAir = false;
-                        mesh.position.set(currentX, scaledY, currentZ);
-                        this.log(
-                            `Spieler auf Oberfläche zurückgesetzt: (${currentX.toFixed(2)}, ${scaledY.toFixed(2)}, ${currentZ.toFixed(2)})`,
-                            "INFO"
-                        );
-                    }
-
-                    if (mesh === this.state.playerMesh) {
-                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
-                        const isGrounded = this.isPlayerGrounded();
-                        if (isGrounded) {
-                            this.state.lastGroundedTime = currentTime;
-                            this.state.isInAir = false;
-                            this.state.isJumping = false;
-                            // Ring 5 V2: Material-Tint entfernt (siehe handleJump).
-                            if (currentTime - this.state.lastGroundedLog >= this.state.groundedLogInterval) {
-                                this.log("Spieler geerdet!", "DEBUG");
-                                this.state.lastGroundedLog = currentTime;
-                            }
-                        } else {
-                            this.state.isInAir = true;
-                        }
-                    } else {
-                        mesh.position.set(pos.x() * this.state.scaleFactor, scaledY, pos.z() * this.state.scaleFactor);
+                        ny = restY;
+                        vy = 0;
+                        grounded = true;
+                        groundNormalY =
+                            supTop >= (terrSurf === null ? -Infinity : terrSurf)
+                                ? 1.0
+                                : this._fieldGradient(nx, terrSurf, nz, {}).y;
                     }
                 }
             }
         }
+
+        // 9. Killplane (wie der Ammo-Pfad): tief unter dem Welt-Boden → auf die Oberfläche.
+        const killPlaneY =
+            s.worldMeta && s.worldMeta.voxelTerrain ? (s.terrainBaseHeight || 0) - 88 : (s.minHeight || -50) - 30;
+        if (ny < killPlaneY) {
+            const above = this.findSurfaceAbove(nx, ny, nz);
+            ny = above + 0.5 + footDrop;
+            vy = 0;
+            grounded = false;
+        }
+
+        // 10. Ergebnis schreiben: Mesh-Position + die feld-eigene Velocity (vx/vy/vz) +
+        //    vy in `_fieldVy`. Die Grounded-Wahrheit in den State (die EINEN Leser:
+        //    isPlayerGrounded-Cache, Slope-Penalty, handleJump-Coyote). Kein Ammo-Body.
+        mesh.position.set(nx, ny, nz);
+        s._fieldVy = vy;
+        s.playerVel.setValue(vx, vy, vz);
+
+        s.groundNormalY = grounded ? groundNormalY : 1.0;
+        s.onSteepSlope = grounded && groundNormalY < s.maxWalkableSlopeY;
+        s._groundedCache = grounded;
+        s._groundedCachedAt = performance.now();
+        s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
+        if (grounded) {
+            s.lastGroundedTime = currentTime;
+            s.isInAir = false;
+            s.isJumping = false;
+        } else {
+            s.isInAir = true;
+        }
+    }
+
+    // DETERMINISMUS-BOGEN P3 — Ammo ist RAUS, die Feld-Physik ist die EINZIGE Physik
+    // (kein A/B mehr). `state.fieldPhysics` bleibt als stehendes true-Flag (die Leser
+    // im Schritt-/Raycast-Pfad lesen es), der frühere Ammo-Rückweg ist entfallen.
+    setFieldPhysics() {
+        const s = this.state;
+        s.fieldPhysics = true;
+        this.log("Feld-Physik (Determinismus-Controller) — die einzige Physik (Ammo ist raus).", "INFO");
+        return true;
+    }
+
+    // Feld-native Struktur-Kollision (P2, kein Ammo): löst die Spieler-Kapsel-Achse (pos.x/z,
+    // vertikal feetY..headY) gegen die soliden Part-AABBs naher Bauwerke (`entry.blockerAABBs`
+    // — dichte ≥ 0.3, DIESELBE Quelle wie der Wasser-Blocker, also ist eine Tür-Lücke/Glas
+    // begehbar). Zwei Wirkungen: (1) AUFLAGE — eine Box-Oberkante im Snap-Band trägt den
+    // Spieler (Dach/Plattform, inkl. der Start-Plattform); liefert die höchste als Rückgabe.
+    // (2) WAND — eine Box, deren Oberkante höher als die Stufe-hoch-Linie liegt, schiebt die
+    // Achse horizontal heraus (gleiten). Mutiert pos.x/z. O(nahe Bauwerke × Parts).
+    _stepCharacterStructures(pos, feetY, headY, radius) {
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return -Infinity;
+        let supportTop = -Infinity;
+        // DETERMINISMUS-BOGEN P3 — das GERITTENE Gefährt blockt seinen Reiter NICHT (der
+        // feld-native Ersatz für den alten riddenId-Kollisions-Dispose): der Reiter sitzt
+        // per Definition IN den blockerAABBs des Gefährts → sonst würde es ihn beim Aufsteigen
+        // herausdrücken.
+        const riddenId = this.state.player ? this.state.player.mountedArch : null;
+        for (let a = 0; a < arches.length; a++) {
+            const e = arches[a];
+            if (!e || !e.blockerAABBs || !e.position) continue;
+            if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
+            // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler
+            if (Math.abs(e.position.x - pos.x) > 60 || Math.abs(e.position.z - pos.z) > 60) continue;
+            const boxes = e.blockerAABBs;
+            for (let b = 0; b < boxes.length; b++) {
+                supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
+            }
+        }
+        return supportTop;
+    }
+
+    // Feld-native Insel-Kollision (Entscheid #2 — die AABB-Hülle): der Spieler kann auf einer
+    // fliegenden Insel STEHEN (Auflage auf der Oberkante im Haft-Band) + wird an ihren Flanken
+    // geblockt. Eine Hülle pro Insel (`island.userData.fieldAABB`, aus der Geometrie), dieselbe
+    // Auflage-/Wand-Quelle wie die Bauwerke (`_resolveCapsuleVsAABB`).
+    _stepCharacterIslands(pos, feetY, headY, radius) {
+        const isls = this.state.floatingIslands;
+        if (!isls || !isls.length) return -Infinity;
+        let supportTop = -Infinity;
+        for (let i = 0; i < isls.length; i++) {
+            const box = isls[i] && isls[i].userData ? isls[i].userData.fieldAABB : null;
+            if (!box) continue;
+            const mx = (box.minX + box.maxX) * 0.5,
+                mz = (box.minZ + box.maxZ) * 0.5;
+            if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
+            supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
+        }
+        return supportTop;
+    }
+
+    // Die EINE Quelle für „Kapsel gegen eine AABB": (1) AUFLAGE — liegt die Box-Oberkante im
+    // Haft-Band [feetY − SNAP .. feetY + STEP] über dem Fuß-Fußabdruck → Kandidat zum Draufstehen
+    // (gibt die höchste als neuen supportTop). (2) WAND — eine Box, deren Oberkante über der
+    // Stufe-hoch-Linie liegt + vertikal mit dem Körper überlappt, schiebt die Achse horizontal
+    // heraus (gleiten). Mutiert pos.x/z. Bauwerke + Inseln teilen diese Mathematik.
+    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop) {
+        const STEP = AnazhRealm.PLAYER_STEP_UP;
+        const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
+        const bodyLo = feetY + STEP;
+        if (
+            pos.x >= box.minX - radius &&
+            pos.x <= box.maxX + radius &&
+            pos.z >= box.minZ - radius &&
+            pos.z <= box.maxZ + radius &&
+            box.topY <= feetY + STEP &&
+            box.topY >= feetY - SNAP &&
+            box.topY > supportTop
+        ) {
+            supportTop = box.topY;
+        }
+        if (box.topY > bodyLo && box.botY < headY) {
+            const cx = Math.max(box.minX, Math.min(pos.x, box.maxX));
+            const cz = Math.max(box.minZ, Math.min(pos.z, box.maxZ));
+            const dx = pos.x - cx;
+            const dz = pos.z - cz;
+            const d2 = dx * dx + dz * dz;
+            if (d2 < radius * radius) {
+                if (d2 > 1e-8) {
+                    const d = Math.sqrt(d2);
+                    const push = radius - d;
+                    pos.x += (dx / d) * push;
+                    pos.z += (dz / d) * push;
+                } else {
+                    // Achse genau in der Box → zur nächsten Seite hinausschieben
+                    const toMinX = pos.x - box.minX + radius;
+                    const toMaxX = box.maxX - pos.x + radius;
+                    const toMinZ = pos.z - box.minZ + radius;
+                    const toMaxZ = box.maxZ - pos.z + radius;
+                    const m = Math.min(toMinX, toMaxX, toMinZ, toMaxZ);
+                    if (m === toMinX) pos.x = box.minX - radius;
+                    else if (m === toMaxX) pos.x = box.maxX + radius;
+                    else if (m === toMinZ) pos.z = box.minZ - radius;
+                    else pos.z = box.maxZ + radius;
+                }
+            }
+        }
+        return supportTop;
     }
 
     _loopPlayerMovement(currentTime) {
         // ### Spielerbewegung ###
-        // V9.44-f — player/camera werden hier nicht mehr gelesen (die
-        // Kamera-Phase liest sie selbst); nur playerBody bleibt.
-        const playerBody = this.state.playerBody;
+        // DETERMINISMUS-BOGEN P3 — die horizontale Intent-Velocity lebt feld-eigen in
+        // `state.playerVel` (kein Ammo-Body mehr); `_stepCharacter` liest sie + integriert.
         // V8.33 — Unter Wasser ist Shift die Tauch-Geste (nach unten),
         // nicht Sprint. An Land bleibt Shift der Sprint-Modifikator.
         let currentSpeed =
@@ -72772,7 +72448,7 @@ class AnazhRealm {
         if (this.state.keys["a"]) this.state.moveDirection.addScaledVector(this.state.right, 1);
         if (this.state.keys["d"]) this.state.moveDirection.addScaledVector(this.state.right, -1);
 
-        if (this.state.physicsWorld && playerBody) {
+        if (this.state.playerVel) {
             // Welle 6.A3 — auf zu steilem Slope (onSteepSlope=true via
             // isPlayerGrounded) wird der Bewegungs-Input auf 20 % gedrosselt.
             // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
@@ -72802,29 +72478,23 @@ class AnazhRealm {
             if (ride) currentSpeed *= ride.topSpeedMul;
             if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
-                const v = playerBody.getLinearVelocity();
+                const v = this.state.playerVel;
                 const kAcc = ride ? ride.kAcc : this.state.isInAir ? 4.5 : 14;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
                 const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
-                playerBody.setLinearVelocity(
-                    this.setVec(this.state.tmpVec1, v.x() + (tx - v.x()) * f, v.y(), v.z() + (tz - v.z()) * f)
-                );
-                // V8.36 — kein forceActivationState mehr nötig: der
-                // Player-Body trägt seit der Erschaffung DISABLE_DEACTIVATION
-                // (schläft nie). Ein forceActivationState(1) HIER würde ihn
-                // auf ACTIVE_TAG zurückstufen → der Stand-Sleep-Bug käme
-                // zurück, sobald man stehen bleibt.
+                this.state.playerVel.setValue(v.x() + (tx - v.x()) * f, v.y(), v.z() + (tz - v.z()) * f);
             } else if (!this.state.onSteepSlope) {
-                // C5 — BREMS-Kurve statt Hard-Stop: am Boden zackig (k=18),
-                // in der Luft bleibt das Momentum (k=1.5, ballistischer Bogen).
+                // C5 — BREMS-Kurve statt Hard-Stop: in der Luft bleibt das Momentum (k=1.5,
+                // ballistischer Bogen). Am Boden: TRÄGHEIT statt trägheitslosem Stopp — der
+                // alte k=18 (~165 ms) fühlte sich masselos an (Schöpfer-Befund „keine Trägheit
+                // beim Bremsen"); k=9 gibt einen kurzen, spürbaren Schlitter (~110 ms), wie ein
+                // Körper mit Masse abbremst (Quake/Source-Ground-Friction-Feel).
                 // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
-                const v = playerBody.getLinearVelocity();
-                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 18;
+                const v = this.state.playerVel;
+                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 9;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
-                playerBody.setLinearVelocity(
-                    this.setVec(this.state.tmpVec1, v.x() * (1 - fb), v.y(), v.z() * (1 - fb))
-                );
+                this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
             }
 
             // C5 — JUMP-BUFFER: ein Space-Tipp kurz VOR der Landung wird gemerkt
@@ -72840,6 +72510,112 @@ class AnazhRealm {
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
             }
         }
+    }
+
+    // ===== DETERMINISMUS-BOGEN P4 (Stufe 1) — DIE ERNTE: deterministischer Input-Replay =====
+    // Der Lohn des feld-nativen Schnitts: die Spieler-Simulation ist jetzt eine REINE Funktion
+    // (Position × Dichtefeld × Input × dt) — kein Ammo-Float-Drift, kein verstecktes Math.random,
+    // keine ungemessene Zeit. Darum gilt: DERSELBE Start + DIESELBE Input-Folge ⇒ bit-identisches
+    // Ergebnis. Diese Ernte beweist den Determinismus (der ganze Zweck des Bogens) UND ist die
+    // self-suffiziente Verifikation — die bit-Gleichheit zweier Läufe IST der Beweis, kein Browser
+    // nötig. Stufe 2 (Lockstep-MP: nur Inputs übers Netz, jeder rechnet dieselbe Welt) + Stufe 3
+    // (Fixed-Point für Cross-Maschine) bauen darauf auf.
+
+    // Hält den Input dieses Frames fest (im Loop nach `_loopPlayerMovement`). Genau die
+    // Größen, die Bewegung + Feld-Schritt deterministisch treiben: die WASD/Shift/Space-Tasten,
+    // der Blick-Yaw und das Zeit-Delta.
+    _replayCaptureFrame(delta) {
+        const rec = this.state._replayRec;
+        if (!rec) return;
+        if (rec.frames.length >= AnazhRealm.REPLAY_MAX_FRAMES) {
+            this.state._replayRec = null; // Sicherheits-Cap gegen unbegrenztes Wachstum
+            return;
+        }
+        const k = this.state.keys || {};
+        rec.frames.push({
+            dt: delta,
+            yaw: this.state.yaw,
+            w: !!k["w"],
+            a: !!k["a"],
+            s: !!k["s"],
+            d: !!k["d"],
+            shift: !!k["shift"],
+            space: !!k[" "],
+        });
+    }
+
+    // Beginnt eine Aufnahme: friert den Start-Zustand ein (Position + die feld-eigene
+    // Velocity + `_fieldVy` + Yaw) und öffnet den Frame-Puffer.
+    startReplayRecording() {
+        const s = this.state,
+            pm = s.playerMesh;
+        if (!pm || !s.playerVel) return false;
+        s._replayRec = {
+            start: this._replaySnapshotState(),
+            frames: [],
+        };
+        return true;
+    }
+
+    stopReplayRecording() {
+        const rec = this.state._replayRec;
+        this.state._replayRec = null;
+        return rec;
+    }
+
+    // Der vollständige deterministische Zustand des Spieler-Schritts.
+    _replaySnapshotState() {
+        const s = this.state,
+            pm = s.playerMesh;
+        return {
+            x: pm.position.x,
+            y: pm.position.y,
+            z: pm.position.z,
+            vx: s.playerVel.x(),
+            vy: s.playerVel.y(),
+            vz: s.playerVel.z(),
+            fieldVy: s._fieldVy || 0,
+            yaw: s.yaw,
+        };
+    }
+
+    // Spielt eine Aufnahme DETERMINISTISCH ab: setzt den Start zurück und füttert jede
+    // Input-Frame durch DENSELBEN Pfad wie der Loop (`_stepCharacter` dann
+    // `_loopPlayerMovement`, in der Loop-Reihenfolge). Gibt den End-Zustand zurück.
+    // Reiner Replay (keine Welt-Mutation außer dem Spieler) → mehrfach aufrufbar.
+    replayRun(rec) {
+        if (!rec || !Array.isArray(rec.frames)) return null;
+        const s = this.state,
+            pm = s.playerMesh;
+        if (!pm || !s.playerVel) return null;
+        // Start restaurieren.
+        pm.position.set(rec.start.x, rec.start.y, rec.start.z);
+        s.playerVel.setValue(rec.start.vx, rec.start.vy, rec.start.vz);
+        s._fieldVy = rec.start.fieldVy;
+        s.yaw = rec.start.yaw;
+        // Die Bewegungs-/Erdungs-Hilfszustände auf einen sauberen Start setzen, damit
+        // zwei Replays vom selben Start wirklich bit-gleich laufen (kein Carry-over).
+        const savedKeys = s.keys;
+        const savedLastMove = s._lastMoveT;
+        const savedWasGrounded = s._fieldWasGrounded;
+        s._fieldWasGrounded = false;
+        let t = 0;
+        s._lastMoveT = 0;
+        for (let i = 0; i < rec.frames.length; i++) {
+            const f = rec.frames[i];
+            s.keys = { w: f.w, a: f.a, s: f.s, d: f.d, shift: f.shift, " ": f.space };
+            s.yaw = f.yaw;
+            t += f.dt;
+            // Loop-Reihenfolge: erst der Feld-Schritt (integriert die Velocity des
+            // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
+            this._stepCharacter(f.dt, t);
+            this._loopPlayerMovement(t);
+        }
+        const end = this._replaySnapshotState();
+        s.keys = savedKeys;
+        s._lastMoveT = savedLastMove;
+        s._fieldWasGrounded = savedWasGrounded;
+        return end;
     }
 
     _loopSelfAnalysis(currentTime) {
@@ -73131,7 +72907,7 @@ class AnazhRealm {
                 let finalX = camX;
                 let finalY = camY;
                 let finalZ = camZ;
-                if (this.state.physicsWorld && typeof Ammo !== "undefined") {
+                if (this.state.tmpVec1) {
                     const sf = this.state.scaleFactor || 1;
                     const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
                     const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
@@ -73149,12 +72925,48 @@ class AnazhRealm {
                 camera.position.set(finalX, finalY, finalZ);
                 camera.lookAt(tx, ty, tz);
             } else {
+                // PROFI-VIEW-HEIGHT-SMOOTHING (Stair-Smoothing à la Source `SmoothViewOnStairs`):
+                // die Füße/Kollision rasten hart auf den Boden (korrekte Physik, `_stepCharacter`),
+                // aber das AUGE gleitet gedämpft auf die neue Höhe nach → der Körper „federt"
+                // Stufen/Buckel/Hänge ab, statt sie hart durchzureichen (das „der Körper gleicht
+                // Höhe aus"-Gefühl, gemessen erbeten). NUR am Boden glätten; in der LUFT (Sprung/
+                // Fall) das Auge EXAKT tracken (die ballistische Kurve soll 1:1 sein), und bei
+                // großem Versatz (großer Fall/Teleport) snappen (kein Gummiband).
+                const camDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._camSmoothT || currentTime)));
+                this.state._camSmoothT = currentTime;
+                const bodyY = player.position.y;
+                let smoothBodyY = this.state._smoothBodyY;
+                let landDip = this.state._landDip || 0;
+                const pendingImpact = this.state._landImpactPending || 0;
+                // LANDUNG zuerst: der Dip absorbiert den Aufprall (∝ Tempo, gedeckelt); die Glättung
+                // snappt auf die Füße (sonst hebt ihr Lag das Auge genau so viel an, wie der Dip es
+                // senkt → sie fechten, der Dip verpufft, gemessen).
+                if (pendingImpact > 0) {
+                    smoothBodyY = bodyY;
+                    const kick = -Math.min(AnazhRealm.LAND_DIP_MAX, pendingImpact * AnazhRealm.LAND_DIP_SCALE);
+                    if (kick < landDip) landDip = kick;
+                    this.state._landImpactPending = 0;
+                } else if (
+                    typeof smoothBodyY !== "number" ||
+                    this.state.isInAir ||
+                    Math.abs(bodyY - smoothBodyY) > AnazhRealm.CAMERA_STEP_MAX_LAG
+                ) {
+                    smoothBodyY = bodyY; // erster Frame / Luft (Flugkurve 1:1) / großer Versatz → snap
+                } else {
+                    // Tiefpass: das Auge folgt dem Fuß gedämpft → das Höhen-Zittern des rauen
+                    // Terrains wird geglättet (der Körper gleicht aus). Ein leichter Lag IST die Dämpfung.
+                    smoothBodyY += (bodyY - smoothBodyY) * (1 - Math.exp(-AnazhRealm.CAMERA_SMOOTH_K * camDt));
+                }
+                this.state._smoothBodyY = smoothBodyY;
+                landDip += (0 - landDip) * (1 - Math.exp(-AnazhRealm.LAND_DIP_RECOVER_K * camDt));
+                if (landDip > -0.001) landDip = 0;
+                this.state._landDip = landDip;
                 // A6b — die KAMERA-CLIP-WAND: das Ego-Auge sitzt 1.6 m über dem
                 // Body-Zentrum (Box-halfExtent nur 0.5) — unter einer niedrigen
                 // Höhlendecke ragte es IN den Fels (Durchsehen von innen). Die
                 // Decken-Probe klemmt das Auge unter die Decke (0.12 m Marge);
                 // die Seitenwände hielt schon die Physik-Box.
-                let eyeY = player.position.y + 1.6;
+                let eyeY = smoothBodyY + 1.6 + landDip;
                 const headroomFP = this._ceilingHeadroom();
                 if (Number.isFinite(headroomFP)) {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
@@ -73583,7 +73395,10 @@ class AnazhRealm {
 
     // ### Hilfsfunktionen ### V7.56
     isPlayerGrounded() {
-        if (!this.state.playerBody || !this.state.physicsWorld) return false;
+        // DETERMINISMUS-BOGEN P3 — die Erdungs-Wahrheit kommt aus `_stepCharacter` (es setzt
+        // `_groundedCache` jeden Frame aus dem Dichtefeld). Der Cache-Hit unten serviert sie;
+        // der 9-Ray-Fallback (jetzt feld-nativer `_runRaycast`) greift nur, falls der Cache fehlt.
+        if (!this.state.playerMesh) return false;
 
         // Welle 6.X.5 D1 (Audit 17.05.2026) — Cache für 2 Frames. Im Loop
         // wird isPlayerGrounded bis zu drei Mal pro Frame gerufen (Bewegung,
@@ -73736,7 +73551,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.324.0";
+AnazhRealm.VERSION = "18.334.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -77327,18 +77142,61 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
 AnazhRealm.PLAYER_VOID_Y = -120;
-// V18.271 (Welle Async-1) — DER WEICHE BODEN: die Rest-Höhe des Spieler-Center über
-// der deterministischen Terrain-Oberfläche, wenn die echte Kollision noch async lädt.
-// Spieler = btBoxShape(0.5) → Center 0.5 über den Füssen; +0.05 Marge = kein Clip in
-// den ladenden Boden. Löst den Spieler-Chunk-forceSync ab (nicht-blockierender Fall-Schutz).
-AnazhRealm.SOFT_FLOOR_REST_OFFSET = 0.55;
+// (P3: SOFT_FLOOR_REST_OFFSET + PLAYER_CHUNK_STALL_MS entfallen — der „weiche Boden"
+// + der Sync-BVH-Watchdog sind weg; der Feld-Controller erdet den Spieler direkt aus
+// dem Dichtefeld, das überall definiert ist, auch unter ungebauten Chunks.)
 
-// V18.274 — SYNC-GATING-Frist: liefert der Worker den Spieler-Chunk-Mesh nach so
-// vielen ms NICHT (echter Stall — ausgehungert/Fehler), baut `_ensurePlayerChunkBVH`
-// ihn SYNC als letzten Anker, damit der Spieler nicht ewig am weichen Boden hängt.
-// 1 s ist deutlich über jeder normalen Worker-Latenz (~71 ms Build + Queue, auch
-// unter Last < 500 ms) → der Watchdog feuert NUR im echten Stall, kein per-Frame-Spike.
-AnazhRealm.PLAYER_CHUNK_STALL_MS = 1000;
+// Determinismus-Bogen P1a — die Schrittweite der Zentral-Differenzen im Feld-Gradient
+// (`_fieldGradient`/`_fieldResolveSphere`). ≈ halbe Voxel-Schrittweite, an die Roughness-
+// Wellenlänge gekoppelt (die diag-normals-Lehre: eps ≈ λ/2) — fein genug für die echte
+// Oberflächen-Normale, grob genug um nicht im Hochfrequenz-Noise zu zittern.
+AnazhRealm.FIELD_GRAD_EPS = 0.6;
+
+// Determinismus-Bogen P1a — max Auswurf-Iterationen pro Kugel (collide-and-slide). Der
+// typische Frame penetriert gar nicht (1 Dichte-Call, sofort break) oder flach (1-2 Iter);
+// 4 trägt auch eine gekrümmte/tiefere Penetration robust an die Oberfläche. Mehr lohnt
+// nicht — der gesweepte Schritt (P1b) hält die Penetration ohnehin radius-beschränkt.
+AnazhRealm.FIELD_RESOLVE_ITERS = 4;
+
+// Determinismus-Bogen P1b — die Kapsel-Maße des Spielers, am bestehenden 1-m-Box-Collider
+// (btBoxShape 0.5) geeicht: footDrop = halbe Box-Höhe (Füße = position.y − 0.5, die
+// Box-Unterkante = die Grounded-Raycast-Annahme), Stufe-hoch-Toleranz = wie hoch der
+// Spieler ohne Sprung aufsteigt.
+AnazhRealm.PLAYER_FOOT_OFFSET = 0.5;
+AnazhRealm.PLAYER_STEP_UP = 0.6;
+// Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden (snap-
+// down) — ABER nur, wenn er VORHER schon geerdet war (sanft bergab), NIE im Fall (sonst
+// zieht es ihn die letzten cm wie ein Magnet an, „fallgeschwindigkeit aus dem nichts" —
+// Schöpfer-Befund). Kleiner als STEP_UP: am Kamm löst die Haftung → natürlicher Sprung-Bogen
+// (der Läufer fliegt über die Kuppe), statt zu kleben.
+AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
+// Wand-Kollisions-Radius — schlanker als die Boden-Kapsel, und die Wand-Kugeln beginnen ERST
+// über der Stufe-hoch-Linie (feetY + STEP_UP): so trifft keine Kugel einen Stufen-Riser ≤
+// STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
+// der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
+AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// VIEW-HEIGHT-SMOOTHING: die Füße rasten hart auf den Boden (korrekte Kollision), das AUGE
+// folgt geglättet (Tiefpass, exp-Lerp) → genau die „höhe etwas dämpfen, der Körper gleicht
+// aus"-Bitte. Das Voxel-Terrain ist auf Frame-Skala RAU (gemessen ~0,23 m/Frame); der Tiefpass
+// dämpft dieses Zittern → das Auge gleitet, statt zu rucken. K = Dämpfungs-Rate (höher = weniger
+// Lag/responsiver, tiefer = weicher); ein BEWUSSTER, leichter Lag auf rauem/steilem Grund IST
+// die Dämpfung (kein Bug). MAX_LAG = darüber snappt das Auge (Teleport/Respawn → kein Gummiband).
+// In der LUFT (Sprung/Fall) trackt es 1:1 (die ballistische Kurve), bei harter Landung führt der
+// View-Punch-Dip (Glättung snappt dann auf die Füße, sonst fechten Lag + Dip).
+AnazhRealm.CAMERA_SMOOTH_K = 14;
+AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
+// LANDUNGS-ABSORPTION (View-Punch à la Source `m_flFallVelocity`): beim Aufkommen federt
+// das Auge kurz ein und zurück — der Körper fängt den Stoß ab (die andere Hälfte von „der
+// Körper gleicht Höhe aus": Stufen-Smoothing oben + Landungs-Dämpfung hier). Tiefe ∝ Aufprall-
+// Tempo, gedeckelt; unter MIN_SPEED kein Dip (Geh-Buckel federt das Stufen-Smoothing schon ab).
+AnazhRealm.LAND_DIP_SCALE = 0.022; // m Dip pro m/s Aufprall
+AnazhRealm.LAND_DIP_MAX = 0.32; // maximaler Dip (harter Sturz)
+AnazhRealm.LAND_DIP_MIN_SPEED = 2.5; // m/s — darunter kein spürbarer Aufprall
+AnazhRealm.LAND_DIP_RECOVER_K = 8; // Rückfederungs-Rate (~300 ms zurück zur Ruhe)
+
+// Determinismus-Bogen P4 (Stufe 1) — Sicherheits-Cap für die Replay-Aufnahme (Frames).
+// 18000 ≈ 5 min bei 60 fps — genug für eine echte Spiel-Sequenz, gedeckelt gegen Runaway.
+AnazhRealm.REPLAY_MAX_FRAMES = 18000;
 
 AnazhRealm.WORLD_EFFECT_THRESHOLDS = Object.freeze({
     resonance_mild: 0.7,

@@ -7,29 +7,28 @@
       CSP nach Schicht-1-Cleanup (Mai 2026). Verbleibende Konzessionen, alle
       mit klarem Konsumenten:
 
-        1. 'wasm-unsafe-eval' im script-src: Ammo.js (Bullet via WebAssembly).
-           Unvermeidbar, solange Ammo im Bundle ist; kein eval auf User-Strings.
-        2. 'unsafe-inline' im style-src: Three.js setzt inline-Styles aufs
+        1. 'unsafe-inline' im style-src: Three.js setzt inline-Styles aufs
            <canvas> für Größe + Position. Risiko gering, weil kein User-
            kontrolliertes CSS injizierbar ist.
-        3. worker-src 'self' blob:: der eigene `movementWorker` läuft als Blob-
+        2. worker-src 'self' blob:: der eigene Worker läuft als Blob-
            Worker (off-screen Kreatur-Bewegung im Hintergrund-Thread). Code
-           steht inline in `getMovementWorker()` als String-Konstante — kein
-           User-Input fließt rein.
-        4. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
+           steht inline als String-Konstante — kein User-Input fließt rein.
+        3. connect-src: vier LLM-Provider als Schicht-2-Stimme. Browser-Anfrage
            geht direkt vom Spieler-Browser an den jeweiligen Endpoint, Key liegt
            im localStorage — Single-User-Localhost-Spiel. Inklusive Ollama auf
            localhost:11434 für offline-Setups. `stun:`/`turn:` (W7 Phase 1):
            ICE-Server-URLs der WebRTC-Mesh-Verbindung — `connect-src` regelt
            per Spec auch RTCPeerConnection-ICE-Server.
 
-      `'unsafe-eval'` ist nach dem TF.js-Cleanup weg — unser eigener Code nutzt
-      KEIN eval, das CI-Gate „Verbotenes dynamisches Auswerten" schützt diesen
-      Pfad hart. object-src 'none' und base-uri 'self' bleiben strict.
+      `'unsafe-eval'` ist nach dem TF.js-Cleanup weg, und `'wasm-unsafe-eval'`
+      ist mit Ammo.js entfallen (V18.331 — die Physik ist feld-nativ, kein WASM
+      mehr im Bundle). Unser eigener Code nutzt KEIN eval, das CI-Gate
+      „Verbotenes dynamisches Auswerten" schützt diesen Pfad hart. object-src
+      'none' und base-uri 'self' bleiben strict.
     -->
         <meta
             http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
+            content="default-src 'self'; script-src 'self' 'sha256-0Uxx8GfPSERurkq9sL6uAmur5cQSOlBXJPyZmEpXMVA='; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:4312 http://localhost:4312 http://127.0.0.1:11434 http://localhost:11434 ws: wss: https: stun: turn: https://api.anthropic.com https://generativelanguage.googleapis.com https://openrouter.ai; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; frame-src 'self'; object-src 'none'; base-uri 'self';"
         />
         <title>Anazh Realm v18.271.0 – Das Ultiversum</title>
         <!-- Inline-Favicon (1×1 transparent) — verhindert /favicon.ico 404 ohne
@@ -9324,13 +9323,10 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.324.0"></script>
-        <!-- V9.40-f: ammo-bootstrap.js setzt window.Module mit instantiateWasm-
-         Hook (pre-grow Memory auf 256 MB). MUSS vor ammo.js geladen werden.
-         Inline-Variante wäre kompakter, ist aber CSP-blockiert (script-src
-         'self'). Doku in vendor/ammo-bootstrap.js + CLAUDE.md. -->
-        <script src="vendor/ammo-bootstrap.js"></script>
-        <script src="vendor/ammo.js"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.334.0"></script>
+        <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
+             feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
+             Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
         <script src="vendor/simplex-noise.js"></script>
         <!-- Phase 6: kein Inline-Bootstrap mehr — direkte Skript-Einbindung, defer
          garantiert die Reihenfolge nach den Vendor-Libs und das Warten auf
@@ -9341,7 +9337,7 @@
         <!-- V18.315 DER BÄCKER: die THREE-freie Skin-Isosurface-Mathe. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Avatar-Bau im init liest das globale
              __bakeSkinGeometry. Derselbe Code läuft auch im bake-worker (importScripts). -->
-        <script src="bake-core.js?v=18.324.0" defer></script>
-        <script src="anazhRealm.js?v=18.324.0" defer></script>
+        <script src="bake-core.js?v=18.334.0" defer></script>
+        <script src="anazhRealm.js?v=18.334.0" defer></script>
     </body>
 </html>

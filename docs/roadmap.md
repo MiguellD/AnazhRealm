@@ -18,11 +18,18 @@
 
 ---
 
-## ⚠️ TEMP-DEV-DROSSELN (V18.257/.259 — REVERT vor dem nächsten Merge/v1.0)
+## ✅ TEMP-DEV-DROSSELN — REVERTIERT (V18.331 Backlog)
 
-Während der Entwicklung temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
-„weniger Bäume/Strukturen, schneller iterieren"). **Sie tragen die Code-Marker `V18.257 TEMP` /
-`V18.259 DEV-DROSSEL`.** Der echte BACKLOG ist nicht das Zurückdrehen, sondern den **Cold-Start effizient**
+**ERLEDIGT (V18.331, Schöpfer-Wahl „erst Backlog räumen"):** die drei temporären Dev-Drosseln sind
+zurückgedreht — Bäume `SAMPLES` 4→10, fliegende Inseln `numIslands` 1→3, Planeten `numPlanets` 1→3.
+Die volle V18.215-Dichte ist wieder da; der Cold-Start trägt sie, weil der echte BACKLOG (den Cold-Start
+effizient machen) inzwischen erledigt ist — der Perf-Bogen (V18.260–.308) + der Worldgen-6-12×-Hoist
+(V18.319–.321) + der tote per-Chunk-BVH-Freeze (V18.331 P3) + der kapazitäts-gemessene `foliageRadius`-Regler
+(V18.275). Fast-Gate 13/13 grün mit voller Dichte, Boot sauber. Die Historie des Render-Bogens, der das
+möglich machte (zur Referenz aufbewahrt):
+
+Während der Entwicklung waren sie temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
+„weniger Bäume/Strukturen, schneller iterieren"). Der echte BACKLOG war nicht das Zurückdrehen, sondern den **Cold-Start effizient**
 zu machen (dann fällt die Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die
 per-Frame-swiftshader-Render-Kosten. **V18.260 hob den Render-Hebel teilweise:** placed-Strukturen (Tempel
 109 Parts → 2 Meshes) fließen jetzt durch denselben Material-Merge wie die instanzierten Bäume
@@ -48,17 +55,17 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
   DISTANZ- mit FRUSTUM-Culling: eine Region HINTER dem Blick fällt aus dem Frustum, egal wie nah).
   OFFEN bleibt: die **globalen PLACED-Gruppen** (`_archInstanceAdd`, bewusst global) + der wahre
   Hebel für sie = GPU-Culling/Indirect-Draw, look-bound (Schöpfer-Browser). Plus der **AVATAR-SKIN-
-  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **DANN: der
-  DETERMINISMUS-BOGEN** (voxel-native Kollision ersetzt Ammos enge Rolle → killt den BVH-Lauf-Freeze +
-  öffnet Lockstep/Replay; Schöpfer-Entscheid „Render-Quick-Win, dann der Bogen"). FPS-Beweis bleibt der
-  Schöpfer-WebGPU-Browser (Regel #0).
+  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **Der
+  DETERMINISMUS-BOGEN ist VOLLENDET (V18.331):** Ammo ist physisch raus, die Kollision feld-nativ aus
+  dem Dichtefeld → der per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel) ist WEG, der Boden
+  deterministisch (öffnet P4 Lockstep/Replay als eigenen Bogen). Voll-Stand in
+  `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser (Regel #0).
 
-- **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
-  Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
-- **Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 3→1`). REVERT → 3.
-- **Planeten** (`createGalaxySkybox` `numPlanets 3→1`). REVERT → 3.
+- ~~**Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 4`)~~ — REVERTIERT → 10 (V18.331).
+- ~~**Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 1`)~~ — REVERTIERT → 3 (V18.331).
+- ~~**Planeten** (`createGalaxySkybox` `numPlanets 1`)~~ — REVERTIERT → 3 (V18.331).
 
-(Nicht gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
+(Nie gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
 
 ---
 
@@ -200,7 +207,7 @@ GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurf
 - **V18.319 — Skin-Isosurface 4,4×:** das brute O(G³·Knochen)-Metaball-Backen (`bake-core`) räumlich akzeleriert (OpenVDB-„bone grid": pro Zelle nur die lokal beitragenden Knochen, `field()` liest die kurze Liste statt aller ~270). accel==brute (`diag-bake-bench`). res-128 wird damit bezahlbar.
 - **V18.320 — Chunk-Density-Band-Skip ~3×:** der Worker-Mesher (`buildChunkMesh`) liest die EINE Band-Skip-Quelle `computeDensityGrid` (Mirror von `_voxelSampleDensityGrid`) statt der duplizierten Voll-Schleife. band==full (`diag-chunk-band`) · worker==main (`diag-worker-chunk`).
 - **V18.321 — Chunk-Density-Spalten-Hoist:** die GEMESSENE 61 % rein-2D-Makro-Arbeit (`_terrainMacroSurfaceY` + Roughness/Canyon/Hydro) EINMAL pro Spalte statt pro Voxel (`_terrainColumnContext` + `_terrainBaseDensityAtCol`, beide Mirrors). alt==neu über **137k Punkte** (`diag-density-refactor`). → Chunk-Bau zusammen **6-12× vs. Brute**, der Lauf-Freeze an der Wurzel.
-- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Die verbliebenen „Giganten" (GPU-Dichte-Ceiling · der Determinismus-Bogen oben) sind ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz.
+- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Der Determinismus-Bogen ist seither VOLLENDET (V18.331 — Ammo raus, der BVH-Lauf-Freeze tot); der verbliebene „Gigant" (GPU-Dichte-Ceiling) ist ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz, und P4 (Replay/Lockstep) ist der eigene Folge-Bogen, den der deterministische Boden erst öffnet.
 
 ---
 
