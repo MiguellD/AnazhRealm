@@ -25880,6 +25880,10 @@ class AnazhRealm {
             mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
             mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
+            roughBase: 0.8, // V18.335 — Boden-Grundrauheit (Erde/Fels matt). Der Substanz-Kern
+            //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
+            //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
+            //                  statt eines toten uniformen Sheens unterm Sky-IBL.
         });
     }
 
@@ -27875,10 +27879,18 @@ class AnazhRealm {
                     // Licht-Albedo + als sichtbarer colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
                     if (!opts.useFlexAttr && typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
-                        const _geo = this._terrainGeologyAlbedo(_Ta, albedoNode, _Ta.positionWorld);
+                        // V18.335 — der Boden bekommt die ROUGHNESS-VARIATION (der #1 Profi-Hebel,
+                        // bisher terrain-blind: uniforme Rauheit 0.7 → ein toter Plastik-Sheen unterm
+                        // Sky-IBL). Sie kommt aus DEMSELBEN Substanz-Kern, den die Geologie schon liest
+                        // (`_terrainGeologyAlbedo` → `_substanceCharacter`) → Gesetz #0, kein Parallel-
+                        // pfad. Out-Param statt neuem Rückgabe-Typ → die `_terrainGeologyAlbedo`-Tests
+                        // (Knoten-Rückgabe + Sentinel-Fallback) bleiben unberührt.
+                        const _terrRough = {};
+                        const _geo = this._terrainGeologyAlbedo(_Ta, albedoNode, _Ta.positionWorld, _terrRough);
                         if (_geo) {
                             albedoNode = _geo;
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                            if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
                         // V18.235 (§5 Ω-O9) — VEGETATION (Bäume: Rinde + Laub) trägt die
@@ -28122,12 +28134,18 @@ class AnazhRealm {
             if (objLocal) albedo = albedo.mul(_T.mix(f(0.8), f(1.16), yLow));
             out.albedo = albedo;
             // (6) ROUGHNESS-VARIATION (der #1 Profi-Hebel) — nur wenn der Aufrufer eine Basis gibt.
+            // Das Korn variiert die Rauheit fein (Erhebung rau, Mulde glänzt); MOOS ist matt (+Rauheit),
+            // eine feuchte kahle Niederung GLÄNZT (−Rauheit via `wetDrive`, Terrain) → das Licht fängt
+            // die Oberfläche lebendig statt eines toten uniformen Sheens. mossW/wetDrive sind für Werke
+            // ~0/null (kein Effekt → die verifizierten Flach-Werke bleiben unberührt).
             if (opts.roughBase != null) {
-                out.roughNode = f(opts.roughBase)
+                let _rN = f(opts.roughBase)
                     .add(mottle.mul(fineFade).mul(f(0.3)))
                     .add(broad.mul(f(0.14)))
                     .sub(cavity.mul(fineFade).mul(f(0.18)))
-                    .clamp(0.05, 1.0);
+                    .add(mossW.mul(f(0.22)));
+                if (opts.wetDrive != null) _rN = _rN.sub(asNode(opts.wetDrive, 0).mul(f(0.4)));
+                out.roughNode = _rN.clamp(0.05, 1.0);
             }
             // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
             //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
@@ -28156,7 +28174,7 @@ class AnazhRealm {
     // Konkurrenz (kein hartes Band), per-Fragment (kein interpoliertes Vertex-
     // Trapez). Render-only (kein Geometrie-/Determinismus-/Worker-Eingriff);
     // try/catch → der unveränderte Albedo zurück (nie ein kaputtes Material).
-    _terrainGeologyAlbedo(_T, albedo, wp) {
+    _terrainGeologyAlbedo(_T, albedo, wp, roughOut) {
         try {
             if (!_T || !_T.smoothstep || !_T.normalWorld || !_T.vec3 || !_T.mix || !_T.float) return albedo;
             const G = AnazhRealm.TERRAIN_GEOLOGY;
@@ -28197,6 +28215,11 @@ class AnazhRealm {
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
+            // V18.335 — FEUCHTE-GLANZ: eine nasse, KAHLE Niederung (damp hoch, aber NICHT grün →
+            // kein Moos) glänzt (niedrigere Rauheit, Sky-Highlight pop't auf dem dunklen Boden);
+            // das Moos selbst bleibt matt (im Substanz-Kern). Lawful aus DEMSELBEN Feld, das schon
+            // das Moos treibt → der Boden erzählt seine Hydrologie auch im Glanz, kein neuer Pfad.
+            const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
             const _r = this._substanceCharacter(_T, _out, {
                 pos: wp.mul(_T.float(0.16)),
                 worldPos: wp,
@@ -28205,7 +28228,10 @@ class AnazhRealm {
                 objectLocal: false,
                 flatness: _flat.mul(_T.float(1.0).sub(_rockW)),
                 mossDrive: _mossDrive,
+                roughBase: G.roughBase,
+                wetDrive: _wetDrive,
             });
+            if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
             return _r.albedo;
         } catch (_e) {
             if (typeof window !== "undefined") window.__terrainGeologyError = (_e && _e.message) || String(_e);
@@ -73551,7 +73577,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.334.0";
+AnazhRealm.VERSION = "18.335.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
