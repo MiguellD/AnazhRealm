@@ -28004,31 +28004,44 @@ class AnazhRealm {
                             const _crF = 6.5 + _ht * 9.0;
                             const _crN = _Ta.mx_noise_float(_pl.mul(_Ta.float(_crF)));
                             const _cavity = _Ta.pow(_Ta.float(1.0).sub(_crN.mul(_crN)), _Ta.float(2.4));
-                            // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/
-                            //   Holz körnig). Glut (emissiv) bleibt subtil — es glüht ohnehin.
-                            const _mottleAmp = (0.07 + _di * 0.13) * (_metal > 0.5 ? 0.65 : 1.0);
-                            const _broadAmp = (0.05 + _di * 0.07) * (_metal > 0.5 ? 0.5 : 1.0);
-                            const _cavityAmp = 0.06 + _ht * 0.14;
+                            // (1c) STRATA — Sediment-Schichtbänder (Stein/Fels, dichte-getrieben):
+                            //      horizontale Bänder über die lokale Höhe, die auf einer FLACHEN
+                            //      Säulen-/Block-Fläche als geschichteter Fels lesen — der low-poly-
+                            //      taugliche Hebel (Variation aus POSITION, nicht aus Krümmung, die auf
+                            //      flachen Facetten ≈0 ist → fwidth-Verschleiß half den Werken nicht).
+                            const _strata = _Ta.mx_noise_float(
+                                _Ta.vec3(_pl.x.mul(_Ta.float(0.5)), _pl.y.mul(_Ta.float(3.4)), _pl.z.mul(_Ta.float(0.5)))
+                            );
+                            // Amplituden aus der Material-Klasse (Metall glatt-streifig, Stein/Holz
+                            //   körnig). DEUTLICHER als zuvor (V18.332): ±7 % verschwand auf der flachen
+                            //   Fläche (gemessen am Tempel-/Schwert-Katalog) → die Plastik blieb flach.
+                            //   Glut (emissiv) bleibt subtil — es glüht ohnehin.
+                            const _mottleAmp = (0.12 + _di * 0.18) * (_metal > 0.5 ? 0.7 : 1.0);
+                            const _broadAmp = (0.12 + _di * 0.12) * (_metal > 0.5 ? 0.6 : 1.0);
+                            const _cavityAmp = 0.08 + _ht * 0.16;
+                            const _strataAmp = (1.0 - _metal) * (0.07 + _di * 0.17); // nur nicht-Metall
                             const _mod = _Ta
                                 .float(1.0)
                                 .add(_mottle.mul(_Ta.float(_mottleAmp)))
                                 .add(_broad.mul(_Ta.float(_broadAmp)))
+                                .add(_strata.mul(_Ta.float(_strataAmp)))
                                 .sub(_cavity.mul(_Ta.float(_cavityAmp)));
-                            albedoNode = albedoNode.mul(_mod.clamp(0.66, 1.3));
+                            albedoNode = albedoNode.mul(_mod.clamp(0.55, 1.45));
                             // COUNTER-SHADING (2-Ton-Höhen-Gradient) — unten dunkler, oben heller:
                             // real bei Tieren (heller Bauch wirkt der Eigen-Schattierung entgegen) UND
-                            // Stein/Metall (Staub unten, Licht oben). Hebt die flache Einfarbigkeit.
+                            // Stein/Metall (Staub unten, Licht oben). DEUTLICHER (V18.332) → hebt die
+                            // flache Einfarbigkeit klar.
                             const _yN = _pl.y.mul(_Ta.float(0.7)).add(_Ta.float(0.5)).clamp(0, 1);
-                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.82), _Ta.float(1.14), _yN));
+                            albedoNode = albedoNode.mul(_Ta.mix(_Ta.float(0.74), _Ta.float(1.2), _yN));
                             if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
                             // ROUGHNESS-VARIATION (der #1 Profi-Hebel, Material-Agent): NIE konstant —
                             // flach-uniforme roughness IST der Plastik-Tell. Das Korn hebt, die Kavität
                             // senkt → das Licht liest echte Mikro-Struktur statt einer Plastikfläche.
                             mat.roughnessNode = _Ta
                                 .float(params.roughness)
-                                .add(_mottle.mul(_Ta.float(0.22)))
-                                .add(_broad.mul(_Ta.float(0.1)))
-                                .sub(_cavity.mul(_Ta.float(0.15)))
+                                .add(_mottle.mul(_Ta.float(0.3)))
+                                .add(_broad.mul(_Ta.float(0.14)))
+                                .sub(_cavity.mul(_Ta.float(0.18)))
                                 .clamp(0.05, 1.0);
                         } catch (_e) {
                             if (typeof window !== "undefined")
@@ -73490,7 +73503,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.331.0";
+AnazhRealm.VERSION = "18.332.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

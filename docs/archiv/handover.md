@@ -378,6 +378,15 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.332 — DER WAHRE GUSS beginnt: System A (SUBSTANZ) — die Flach-Werk-Substanz verstärkt (gemessen)
+
+Schöpfer-Wahl „Substanz zuerst" (der breiteste Hebel, hebt JEDES Werk ohne Form-Änderung). Der Einstieg in den WAHRE-GUSS-Bogen, gemessen am `diag-werk-render`-Katalog (vorher/nachher, eigenes Auge):
+
+- **BEFUND (gemessen):** der Substanz-Pass für FLACH-FARB-Werke existierte schon (`_buildPbrNodeMaterial`, der `isFlatStructure`-Zweig: Mottle/Broad/Kavität/Counter-Shading/Roughness-Var) — aber die Amplituden (±7 %) verschwanden auf großen flachen Low-Poly-Facetten + dunklen Basis-Farben → die Werke blieben „flach-einfarbig". Die Werke, die schon REICH aussehen (Fels/Terrain/Vegetation), tragen ihre Substanz über die VERTEX-FARB-Pfade (`_terrainGeologyAlbedo`/Rinde), NICHT den Flach-Zweig.
+- **VERWORFEN (gemessen, kein Passagier):** ein erster Versuch, die `fwidth(normal)`-KRÜMMUNG (der Plan-§3-Hebel) in den Flach-Zweig zu legen — sie ist auf flachen Low-Poly-Facetten ≈0 (Krümmung spikt nur an den wenigen Hart-Kanten) → KEIN sichtbarer Effekt am Tempel/Schwert → revertiert (verifiziere KONSUM, nicht Existenz).
+- **GEBAUT:** der POSITION-basierte Hebel (der auf flachen Facetten LIEST): ein STRATA-Band (`positionLocal.y`-Noise, dichte-getrieben, nur Nicht-Metall) + deutlich verstärkte Broad-Ton-Zonen + Counter-Shading + Roughness-Variation. GEMESSEN am Katalog: klarer Gewinn auf Mittel-Ton-Metall (Rüstung-Patina), subtiler Schliff am Schwert, marginal am dunklen Basalt-Tempel; KEINE Regression (Kristall transparent → überspringt den Pass; Fels vertex-farbig → unberührt). Fast-Gate 13/13.
+- **OFFEN (der nächste, GRÖSSERE Substanz-Hebel):** die flach-farbenen Hart-Werke sind substanz-LIMITIERT, weil sie keine Vertex-Farb-/Triplanar-Variation tragen wie die Felsen. Der echte „flach→echt"-Sprung für sie braucht eine bewusste Entscheidung: Vertex-Farb-/Triplanar-Substanz beim Bau einweben (wie die Geologie) ODER hellere/variierte Basis-Farben. Schöpfer-Fork.
+
 ### V18.331 (Backlog) — die Reste geräumt: volle Welt-Dichte wieder · Inseln in die Feld-Kollision (Entscheid #2)
 
 Schöpfer-Wahl auf „was ist noch offen?": **„Erst Backlog räumen"** (die Dev-Drosseln revertieren für volle Dichte + die kleinen Determinismus-Reste), DANN der wahre Guss. In einem Zug:
