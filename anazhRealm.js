@@ -29200,7 +29200,7 @@ class AnazhRealm {
         return null;
     }
 
-    // ===== FELD-NATIVE KOLLISION (Determinismus-Bogen P1a, docs/eigene-physik-plan.md §5) =====
+    // ===== FELD-NATIVE KOLLISION (Determinismus-Bogen P1a, docs/archiv/eigene-physik-plan.md §5) =====
     // Die Kollision LIEST die kanonische Welt-Wahrheit (das Dichtefeld) direkt, statt eine
     // Dreiecks-BVH abzuleiten (Gesetz #0 — wie auraAt/deposit). Reine, seiteneffekt-freie
     // Helfer; der Kapsel-Character-Controller (`_stepCharacter`) baut darauf (P1b). Das Feld

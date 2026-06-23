@@ -1,4 +1,4 @@
-// P0 — DIE PHYSIK-KOSTEN-LINSE (Determinismus-Bogen, docs/eigene-physik-plan.md §8/§10).
+// P0 — DIE PHYSIK-KOSTEN-LINSE (Determinismus-Bogen, docs/archiv/eigene-physik-plan.md §8/§10).
 // Die VORHER-Zahl, gegen die der ganze Ammo-raus/feld-nativ-Bogen misst — und der erste
 // Beweis VOR jeder Zeile Produktions-Code, dass ein Feld-Sample billiger ist als der
 // btBvhTriangleMeshShape-Build. Vier Messungen, alle CPU/WASM (kein GPU → headless treu,

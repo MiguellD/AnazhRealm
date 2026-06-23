@@ -1,4 +1,4 @@
-// P1a — DIE FELD-COLLIDER-VERIFIKATIONS-LINSE (Determinismus-Bogen, docs/eigene-physik-plan.md §5/§10).
+// P1a — DIE FELD-COLLIDER-VERIFIKATIONS-LINSE (Determinismus-Bogen, docs/archiv/eigene-physik-plan.md §5/§10).
 // Beweist, dass die reinen Feld-Helfer KORREKT die kanonische Welt-Wahrheit lesen, BEVOR der
 // Character-Controller (P1b) darauf baut. Fünf Prüfungen:
 //   (A) EINE QUELLE: _fieldDensityAt(.,null) === _terrainDensityAt (der Edit-Refactor + der

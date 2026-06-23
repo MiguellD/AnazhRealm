@@ -48,10 +48,11 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
   DISTANZ- mit FRUSTUM-Culling: eine Region HINTER dem Blick fällt aus dem Frustum, egal wie nah).
   OFFEN bleibt: die **globalen PLACED-Gruppen** (`_archInstanceAdd`, bewusst global) + der wahre
   Hebel für sie = GPU-Culling/Indirect-Draw, look-bound (Schöpfer-Browser). Plus der **AVATAR-SKIN-
-  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **DANN: der
-  DETERMINISMUS-BOGEN** (voxel-native Kollision ersetzt Ammos enge Rolle → killt den BVH-Lauf-Freeze +
-  öffnet Lockstep/Replay; Schöpfer-Entscheid „Render-Quick-Win, dann der Bogen"). FPS-Beweis bleibt der
-  Schöpfer-WebGPU-Browser (Regel #0).
+  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **Der
+  DETERMINISMUS-BOGEN ist VOLLENDET (V18.331):** Ammo ist physisch raus, die Kollision feld-nativ aus
+  dem Dichtefeld → der per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel) ist WEG, der Boden
+  deterministisch (öffnet P4 Lockstep/Replay als eigenen Bogen). Voll-Stand in
+  `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser (Regel #0).
 
 - **Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 10→4`) — deckt Bäume UND alle
   Streu-Strukturen ab (Felsen/Kristalle/Glut/Landmark-Formationen teilen `_vegetationSampleSpawn`). REVERT → 10.
@@ -200,7 +201,7 @@ GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurf
 - **V18.319 — Skin-Isosurface 4,4×:** das brute O(G³·Knochen)-Metaball-Backen (`bake-core`) räumlich akzeleriert (OpenVDB-„bone grid": pro Zelle nur die lokal beitragenden Knochen, `field()` liest die kurze Liste statt aller ~270). accel==brute (`diag-bake-bench`). res-128 wird damit bezahlbar.
 - **V18.320 — Chunk-Density-Band-Skip ~3×:** der Worker-Mesher (`buildChunkMesh`) liest die EINE Band-Skip-Quelle `computeDensityGrid` (Mirror von `_voxelSampleDensityGrid`) statt der duplizierten Voll-Schleife. band==full (`diag-chunk-band`) · worker==main (`diag-worker-chunk`).
 - **V18.321 — Chunk-Density-Spalten-Hoist:** die GEMESSENE 61 % rein-2D-Makro-Arbeit (`_terrainMacroSurfaceY` + Roughness/Canyon/Hydro) EINMAL pro Spalte statt pro Voxel (`_terrainColumnContext` + `_terrainBaseDensityAtCol`, beide Mirrors). alt==neu über **137k Punkte** (`diag-density-refactor`). → Chunk-Bau zusammen **6-12× vs. Brute**, der Lauf-Freeze an der Wurzel.
-- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Die verbliebenen „Giganten" (GPU-Dichte-Ceiling · der Determinismus-Bogen oben) sind ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz.
+- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Der Determinismus-Bogen ist seither VOLLENDET (V18.331 — Ammo raus, der BVH-Lauf-Freeze tot); der verbliebene „Gigant" (GPU-Dichte-Ceiling) ist ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz, und P4 (Replay/Lockstep) ist der eigene Folge-Bogen, den der deterministische Boden erst öffnet.
 
 ---
 

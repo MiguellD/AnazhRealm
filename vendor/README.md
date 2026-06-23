@@ -20,10 +20,12 @@ Drei reasons we host these instead of using a CDN:
 | `three.tsl.min.js` | `three@0.184.0` (`build/three.tsl.min.js`) | TSL-Helpers (texture, vec2/3/4, float, attribute, uniform, positionLocal, normalWorld, `Fn` (war `tslFn`), `select` (war `cond`)). Via `three/tsl` Import-Map-Pfad geladen |
 | `three-bootstrap.js` | own | V12.0-vendor.1 — importiert THREE + WebGPU-Bundle + TSL-Bundle via neue `three/webgpu` + `three/tsl` Pfade, hängt an `window.THREE` (CSP-konform, kein eval). `webgl-legacy/WebGLNodes.js`-Side-Effect-Import gestrichen (in r164 strukturell entfernt — V12-Bogen-Konsequenz: WebGPU-required, kein WebGL-Fallback für NodeMaterials) |
 | `three-importmap.json` | own | Fallback-Variante der Inline-Importmap (V10.0-b, aktuell nicht referenziert) |
-| `ammo.js` | `ammojs3@0.0.11` (`dist/ammo.wasm.js`) | WASM loader; needs `ammo.wasm.wasm` next to it |
-| `ammo.wasm.wasm` | `ammojs3@0.0.11` (`dist/ammo.wasm.wasm`) | Bullet physics WASM binary, V9.40-f-gepatcht (max 64→256 MB) |
-| `ammo-bootstrap.js` | own | V9.40-f pre-grow-Hook — MUSS vor `ammo.js` geladen werden |
 | `simplex-noise.js` | `simplex-noise@2.4.0` | Not minified upstream (only ~17 KB) |
+
+> **Ammo.js wurde V18.331 entfernt** (Determinismus-Bogen, P3): die Physik ist
+> feld-nativ (Kollision aus dem Dichtefeld, kein Bullet/WASM). `vendor/ammo.js`,
+> `vendor/ammo.wasm.wasm`, `vendor/ammo-bootstrap.js` + `scripts/patch-ammo-memory.cjs`
+> sind gelöscht. Historie: git-log ≤ V18.330 + `docs/archiv/eigene-physik-plan.md`.
 | `CSMShadowNode.js` | `three@0.184.0` (`examples/jsm/csm/CSMShadowNode.js`) | B4/V18.130 — Cascaded Shadow Maps fuer den WebGPURenderer, verbatim (importiert `three/webgpu` + `three/tsl` via Import-Map + `./CSMFrustum.js` relativ). Traegt den Light-Space-Texel-Snap PRO Kaskade eingebaut (`updateBefore`) |
 | `CSMFrustum.js` | `three@0.184.0` (`examples/jsm/csm/CSMFrustum.js`) | Frustum-Split-Helfer von CSMShadowNode (importiert nur `three`) |
 
@@ -86,15 +88,13 @@ curl -s -A "Mozilla/5.0" \
 ```sh
 # Pull a fresh copy of each library:
 mkdir -p /tmp/lib-fetch && cd /tmp/lib-fetch && npm init -y
-npm install three@0.184.0 ammojs3@0.0.11 simplex-noise@2.4.0
+npm install three@0.184.0 simplex-noise@2.4.0
 
 # Copy into the project (V12.0-vendor — r184 ESM Build-Split):
 cp node_modules/three/build/three.core.min.js         <repo>/vendor/
 cp node_modules/three/build/three.module.min.js       <repo>/vendor/
 cp node_modules/three/build/three.webgpu.min.js       <repo>/vendor/
 cp node_modules/three/build/three.tsl.min.js          <repo>/vendor/
-cp node_modules/ammojs3/dist/ammo.wasm.js             <repo>/vendor/ammo.js
-cp node_modules/ammojs3/dist/ammo.wasm.wasm           <repo>/vendor/
 cp node_modules/simplex-noise/simplex-noise.js        <repo>/vendor/
 
 # Bei Vendor-Updates die CSP-SHA256-Hash der Inline-Importmap in
@@ -104,31 +104,10 @@ python3 -c "import hashlib,base64; print('sha256-' + base64.b64encode(hashlib.sh
 
 Bump the versions above when you update.
 
-## V9.40-f — Ammo-Heap-Patch (256 MB statt 64 MB)
+## Ammo.js — ENTFERNT (V18.331, Determinismus-Bogen P3)
 
-Der vendored `ammo.wasm.wasm` von `ammojs3@0.0.11` ist mit Emscripten ohne
-`-s ALLOW_MEMORY_GROWTH=1` gebaut — der C-Allocator ruft `memory.grow()` NIE,
-ein OOM aborted das WASM-Modul direkt. Default-Heap ist fix 64 MB. Eine
-Voxel-Welt mit Sicht-Ring 4-8 (81-289 `btBvhTriangleMeshShape`-Chunks)
-braucht mehr.
-
-Zwei Stellen heilen das:
-
-1. **`scripts/patch-ammo-memory.cjs`** patcht den WASM-Memory-Header
-   (Section 5) von `max=1024 pages` (64 MB) auf `max=4096 pages` (256 MB).
-   Memory wird damit growable. Läuft automatisch bei `npm install` via
-   `postinstall`-Hook + manuell via `npm run patch:ammo`. Idempotent.
-
-2. **`vendor/ammo-bootstrap.js`** setzt `window.Module.instantiateWasm`
-   mit einem Hook, der die Memory direkt nach `WebAssembly.instantiate`
-   auf 256 MB pre-grow't. Ohne diesen Hook würde der C-Allocator auch
-   bei growable Memory NIE `grow()` rufen — Emscripten muss zur Build-
-   Zeit den Flag haben oder die Memory muss von Anfang an groß sein.
-   MUSS in `index.html` VOR `<script src="vendor/ammo.js">` geladen
-   werden. `anazhRealm.js` ruft `Ammo(window.Module)`, sonst greift der
-   Hook nicht (Ammo's IIFE `function(moduleArg = {})` liest NUR sein
-   Argument, nicht `window.Module` automatisch).
-
-Bei einem Vendor-Update (`ammojs3` neue Version): nach `cp ammo.wasm.wasm`
-einmal `npm run patch:ammo` rufen. Der Patcher prüft den aktuellen Stand
-und ist idempotent.
+Die Physik ist feld-nativ (Kollision/Raycast aus dem Dichtefeld, kein Bullet,
+kein WASM-Heap). Der frühere `ammojs3@0.0.11`-Vendor + der V9.40-f-Heap-Patch
+(`scripts/patch-ammo-memory.cjs` + `vendor/ammo-bootstrap.js`) sind gelöscht.
+Der ganze Bogen lebt in `docs/archiv/eigene-physik-plan.md`; die Ammo-Historie
+(WASM-Heap-Patch, BVH, Lifecycle) in git-log ≤ V18.330.

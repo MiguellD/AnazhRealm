@@ -88,7 +88,7 @@ gemessene Bild der neun Säulen; der §5-Pfad GESCHLOSSEN seit V18.147).
 | Datei                         | Was                                                                                                                                |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `spec/golden/v1/`             | Die vier goldenen Draht-Artefakte der Taille (Ω0) — **EINGEFROREN, NIE regenerieren**; `scripts/diag-taille.cjs` prüft Konformanz. |
-| `vendor/README.md`            | Vendor-Libs (Three.js r184 / Ammo / simplex-noise) — Versionen + Update-Befehl.                                                    |
+| `vendor/README.md`            | Vendor-Libs (Three.js r184 / simplex-noise; Ammo V18.331 entfernt) — Versionen + Update-Befehl.                                    |
 | `.claude/commands/audit.md`   | Der `/audit`-Slash-Befehl.                                                                                                         |
 | `.github/workflows/check.yml` | CI — zwei Jobs (statische Checks + Playtest-Gate).                                                                                 |
 
