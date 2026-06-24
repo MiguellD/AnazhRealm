@@ -30984,7 +30984,12 @@ async function checkBandWBHofKarte(ctx) {
             /_buildEmotionRows/.test(r._hofBuildSpecSheet.toString());
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
+        // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
+        // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
+        const _saveMaxWB = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        r.state.maxCreatures = _saveMaxWB;
         if (!c) return { ...out, fehler: "kein Spawn" };
         c.userData.emotions = { joy: 0.8, awe: 0.1, sorrow: 0, hope: 0.2, peace: 0.1, chaos: 0 };
         const sheet = r._hofBuildSpecSheet(r._creatureProfile(c));
@@ -32256,7 +32261,11 @@ async function checkBandM5HudPolitur(ctx) {
             /_refreshIchIfOpen/.test(r.addMaterialToInventory.toString());
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
+        // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
+        const _saveMaxM5 = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        r.state.maxCreatures = _saveMaxM5;
         let sheet = null;
         if (c) {
             c.userData.emotions = { joy: 0.8, sorrow: 0, awe: 0.1, fear: 0, curiosity: 0.2, calm: 0.1 };
@@ -39260,16 +39269,23 @@ async function checkBandV18262CreatureRenderLOD(ctx) {
             farVis = null,
             testC = null;
         try {
+            // V18.347 (Cap-Gotcha, dieselbe Klasse wie V8.49): die Liste VOR dem Spawn leeren —
+            // sonst gibt spawnCreatureAt bei vollem maxCreatures-Cap (20) null → testC.position.set
+            // wirft → die ganze evaluate wirft → "reading lodConst on null". Die Isolation kam zu spät.
+            r.state.creatures = [];
+            r.state.creatureEmotions = [];
             testC = r.spawnCreatureAt(pm.position.x + 2, pm.position.y, pm.position.z + 2, "happy", "wesen");
-            r.state.creatures = [testC];
-            r.state.creatureEmotions = ["happy"];
-            r.isInFrustum = () => true;
-            testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
-            r.updateCreatures(0.016);
-            nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
-            testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
-            r.updateCreatures(0.016);
-            farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+            if (testC) {
+                r.state.creatures = [testC];
+                r.state.creatureEmotions = ["happy"];
+                r.isInFrustum = () => true;
+                testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
+                r.updateCreatures(0.016);
+                nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+                testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
+                r.updateCreatures(0.016);
+                farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+            }
         } finally {
             r.isInFrustum = origFrustum;
             r.state.creatures = savedC;
@@ -55859,6 +55875,11 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
         r._clearBuildMode();
+        // V18.298/.347 — der Cull-Tick BAUT nur bei Kopfraum (`_frameOverBudget ? 0 : budget`);
+        // im last-gestreckten Warmup steht das Flag auf true → 0 Bauten → der Rebuild-Test schlüge
+        // fehl. Für den deterministischen Test den Frame-Budget-Druck nullen (wir messen die
+        // Rebuild-MECHANIK, nicht die Perf-Drossel).
+        r.state._frameOverBudget = false;
 
         // === A) Distance-Culling ===
         // Setze Spieler auf (0,0,0), spawne weit + nah.
