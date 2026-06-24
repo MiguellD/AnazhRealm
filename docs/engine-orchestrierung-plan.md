@@ -1,7 +1,7 @@
 # DER ENGINE-ORCHESTRIERUNGS-BOGEN — der Dirigent zum Giganten
 
-> **Status: PHASE A + B GEBAUT (V18.353/.354) · Phase C offen.** Geschrieben nach einer
-> gemessenen Kartierung des echten Codes (zwei Explore-Agenten + eigene Verifikation — KEINE Annahmen).
+> **Status: ✅ VOLLENDET (V18.353–.355) — Phase A + B + C GEBAUT.** Geschrieben nach einer
+> gemessenen Kartierung des echten Codes (vier Explore-Agenten + eigene Verifikation — KEINE Annahmen).
 >
 > **FORTSCHRITT:** **Phase A ✅ (V18.353)** — A.1 die platzierte Architektur region-gecullt
 > (`_archPlacedRegionKey`, `p:`-Namensraum, Toggle `useRegionArchCull` Default an, `diag-arch-cull`
@@ -10,7 +10,12 @@
 > `diag-arch-batch` grün). **Phase B ✅ (V18.354)** — der Frame-Budget-Scheduler (`_makeFrameBudget`
 > + der pure `_dispatchFrameJobs` + `_buildDeferrableJobs` + `_runFrameScheduler`, Toggle
 > `useFrameScheduler` Default AUS bis Schöpfer-Browser, das `!chunksBuilt`-Gate bewahrt, Streaming
-> heilig prio 0, `diag-frame-scheduler` grün). **Phase C (Fixed-Timestep) ist die letzte Welle.**
+> heilig prio 0, `diag-frame-scheduler` grün). **Phase C ✅ (V18.355)** — der Fixed-Timestep Sim/
+> Render-Split (`_loopPlayerMovement`-dt-Override + `_stepFixedSim` + `_loopFixedStep`-Akkumulator +
+> `_applyFixedInterpolation`, Toggle `fixedTimestep` Default AUS bis Schöpfer-Browser, **30/60/120 fps
+> → BIT-IDENTISCHER Sim-State** = das Lockstep-Fundament, `diag-fixed-timestep` + `diag-walk-feel` +
+> `diag-replay-determinism` grün). **DER DIRIGENT STEHT.** Offen: die Toggles am Schöpfer-Auge
+> default-an drehen (der echte FPS-/Feel-Gewinn) + Lockstep-MP Stufe 2/3 (auf Phase C aufbauend).
 > Schöpfer-Auftrag: „lerne tief von den besten der besten · wie die Last verteilt wird, die Logik der
 > Reihenfolge · der Nutzer das ultimative Gefühl · eine Engine die alles in den Schatten stellt, damit
 > wir darauf aufbauen können · ihr Wissen verbunden und einen Giganten geschaffen."
