@@ -39803,8 +39803,12 @@ async function checkBandV18136Audit(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf).
-        out.rangeSrc = /csm\.maxFar/.test(r.setShadowRange.toString());
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). V18.352 — der
+        // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
+        // setShadowRange UND der Perf-Regler rufen); die Sonde folgt dem Refactor (V9.56-i).
+        out.rangeSrc =
+            /csm\.maxFar/.test(r._applyEffectiveShadowRange.toString()) &&
+            /_applyEffectiveShadowRange/.test(r.setShadowRange.toString());
         const savedCsm = r.state.csmNode;
         const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
         r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
