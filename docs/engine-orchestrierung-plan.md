@@ -1,7 +1,13 @@
 # DER ENGINE-ORCHESTRIERUNGS-BOGEN — der Dirigent zum Giganten
 
-> **Status: PLAN (Stand V18.352, geschrieben für den nächsten Agenten).** Geschrieben nach einer
+> **Status: PHASE A GEBAUT (V18.353) · Phase B + C offen.** Geschrieben nach einer
 > gemessenen Kartierung des echten Codes (zwei Explore-Agenten + eigene Verifikation — KEINE Annahmen).
+>
+> **FORTSCHRITT:** **Phase A ✅ (V18.353)** — A.1 die platzierte Architektur region-gecullt
+> (`_archPlacedRegionKey`, `p:`-Namensraum, Toggle `useRegionArchCull` Default an, `diag-arch-cull`
+> grün) + A.2 die Region-BatchedMesh (`_archBatchGroupFor` region-gekeyt + refcountet, Toggle
+> `useBatchedArch` Default AUS bis Schöpfer-Browser, **3,31× Draw-Call-Kollaps headless bewiesen**,
+> `diag-arch-batch` grün). **Phase B (Scheduler) + Phase C (Fixed-Timestep) sind die nächsten Wellen.**
 > Schöpfer-Auftrag: „lerne tief von den besten der besten · wie die Last verteilt wird, die Logik der
 > Reihenfolge · der Nutzer das ultimative Gefühl · eine Engine die alles in den Schatten stellt, damit
 > wir darauf aufbauen können · ihr Wissen verbunden und einen Giganten geschaffen."

@@ -22068,7 +22068,13 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
             // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
             out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-            out.cutoverGroupExists = !!(r.state.archInstanceGroups && r.state.archInstanceGroups.has("baum_kiefer#0"));
+            // V18.353 PHASE A.1 — die platzierte Architektur ist jetzt region-gekeyt
+            // (`baum_kiefer#0@p:regX,regZ`, frustum-cullbar) statt global (`baum_kiefer#0`);
+            // der Test folgt dem Refactor: eine baum_kiefer#0-Gruppe (region-gekeyt ODER global).
+            out.cutoverGroupExists = !!(
+                r.state.archInstanceGroups &&
+                [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
+            );
             // Cull → instanced-Render weg, Daten-Eintrag bleibt.
             if (e) {
                 r._cullArchitectureMesh(e);
@@ -22158,7 +22164,10 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             "V12.0-perf.c.2: instancierter Eintrag hat feld-native Kollision via blockerAABBs",
             res.cutoverHasCollision
         );
-        check("V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert", res.cutoverGroupExists);
+        check(
+            "V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert (V18.353: region-gekeyt @p:)",
+            res.cutoverGroupExists
+        );
         check(
             "V12.0-perf.c.2: Cull gibt Instance-Slots frei (Daten-Eintrag bleibt, Feld-Kollision render-unabhängig)",
             res.cutoverCulledInstanced === true && res.cutoverEntryStillListed === true
