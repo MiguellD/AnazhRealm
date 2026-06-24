@@ -1,7 +1,10 @@
 # DER ENGINE-ORCHESTRIERUNGS-BOGEN — der Dirigent zum Giganten
 
-> **Status: ✅ VOLLENDET (V18.353–.355) — Phase A + B + C GEBAUT.** Geschrieben nach einer
-> gemessenen Kartierung des echten Codes (vier Explore-Agenten + eigene Verifikation — KEINE Annahmen).
+> **Status: ✅ VOLLENDET + DEFAULT-AN (V18.353–.356) — Phase A + B + C GEBAUT, alle Toggles default-an,
+> das Neue IST das System.** Geschrieben nach einer gemessenen Kartierung des echten Codes (vier
+> Explore-Agenten + eigene Verifikation — KEINE Annahmen). V18.356: die drei Toggles default-an gedreht
+> (Schöpfer „regel 0 muss raus, sei der fischer nicht der bettler"), die zwei Anschalt-Nähte geheilt
+> (batch-bewusstes Picking · exakte Fixed-Teleport-Erkennung), „Regel #0" aus dem Stamm gestrichen.
 >
 > **FORTSCHRITT:** **Phase A ✅ (V18.353)** — A.1 die platzierte Architektur region-gecullt
 > (`_archPlacedRegionKey`, `p:`-Namensraum, Toggle `useRegionArchCull` Default an, `diag-arch-cull`
