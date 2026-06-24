@@ -14669,7 +14669,10 @@ class AnazhRealm {
                 // V18.342 — GRÜNER (Schöpfer „die Halme blass-gelb, die Wiese soll leben"): die Spitze
                 // war zu gelb (R0.58) → der Halm las blass über dem grünen Grund. Jetzt sattes Grün
                 // (Wurzel dunkel-grün → Spitze hell-grün, NICHT gelb) → die Halme matchen die Wiese.
-                const baseCol = vec3(0.22, 0.46, 0.15);
+                // V18.346 — die WURZEL liest das geteilte MEADOW_GREEN (= der Meadow-Grund-Boden-Tint) →
+                // der Halm wächst aus der EXAKTEN Boden-Wiesenfarbe (grass-root=ground, kein Farb-Bruch).
+                const _mg = AnazhRealm.MEADOW_GREEN;
+                const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
                 const tipCol = vec3(0.42, 0.74, 0.26);
                 let albedo = TSL.mix(baseCol, tipCol, hfN);
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
@@ -25873,6 +25876,37 @@ class AnazhRealm {
         return k;
     }
 
+    // V18.346 — die WASSER-FRONT (Schöpfer-HAUPTPROBLEM „der Nebel geht in die Ferne, das Wasser
+    // noch nicht geladen → der Nebelring müsste warten, erst weiter nach aussen sofern das Wasser
+    // sauber geladen"): das Wasser-Iso/-Sheet baut budgetiert NACH dem Terrain (`pendingWaterIso`-
+    // Queue, ≤16/Frame) → es hinkt dem Terrain-Ring hinterher (genau die B1-Lade-Linie). Der Lade-
+    // Nebel folgte bisher nur min(Terrain, Gras) → er enthüllte den LEEREN See, bevor seine Fläche
+    // stand. Diese Front deckelt den Reveal zusätzlich auf den grössten Ring, in dem JEDER Chunk
+    // terrain-gebaut UND wasser-fertig ist (= NICHT mehr in `pendingWaterIso`; ein wasserloser
+    // Chunk wird nie enqueued → trivial fertig). Headless → die Terrain-Front (volle Welt, wie Gras).
+    _builtWaterRingRadius() {
+        const st = this.state;
+        if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
+        if (st.renderer && st.renderer._isHeadlessNull) return this._builtRingRadius();
+        const cfg = this._voxelChunkConfig();
+        const { cx, cz } = st.lastPlayerVoxelChunk;
+        const pend = st.pendingWaterIso;
+        let k = -1;
+        outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
+            for (let dx = -ring; dx <= ring; dx++) {
+                for (let dz = -ring; dz <= ring; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) !== ring) continue;
+                    const key = `${cx + dx},${cz + dz}`;
+                    const e = st.voxelChunks.get(key);
+                    if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
+                    if (pend && pend.has(key)) break outer; // Wasser-Fläche noch ausstehend → der See fehlt
+                }
+            }
+            k = ring;
+        }
+        return k;
+    }
+
     _setLastPlayerVoxelChunk(pcx, pcz) {
         if (!this.state) return;
         // V17.30/V17.49 — Erkundung: betritt der Spieler einen ANDEREN Chunk, hebt das
@@ -25949,6 +25983,18 @@ class AnazhRealm {
         return 1.0;
     }
 
+    // V18.346 — DAS WIESEN-GRÜN: EINE Quelle (Gesetz #0 — der Raptor) für die Verschmelzung Gras↔Boden
+    // (Schöpfer „die Wiese verschmilzt nicht mit der Basis auf der sie wächst, hier fehlt Synergie"):
+    // der Gras-Halm-WURZEL-Ton (`_grassInstanceMat` baseCol) UND der Meadow-Grund-Boden-Tint (V18.341,
+    // `_terrainGeologyAlbedo`) lasen vorher zwei eigene, leicht verschiedene Grüns → der Halm sass als
+    // Fremdfarbe AUF dem Boden statt aus ihm zu wachsen. Jetzt lesen BEIDE diesen einen Wert → die
+    // Halm-Wurzel IST exakt die Boden-Wiesenfarbe (das Profi-„grass root = ground"-Merge, nahtloser
+    // Übergang an der Halm-Basis); die Halm-SPITZE bleibt heller (das Leben des Halms), die lush/dry-
+    // instanceColor moduliert Halm UND Boden ko-variant (dieselben ~1-Multiplikatoren). Browser-Knopf.
+    static get MEADOW_GREEN() {
+        return [0.28, 0.46, 0.19];
+    }
+
     // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
     // KLASSEN-GEOLOGIE. KEINE gewählte Ästhetik, KEIN gemaltes Asset: die Klassen
     // EMERGIEREN aus der Welt-Wahrheit. Die STEILE-Schwellen sind Physik — ein
@@ -25990,8 +26036,16 @@ class AnazhRealm {
             freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
             freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
             eps: 0.45, // Gradient-Sample-Abstand (Welt-m, vor freq-Skalierung)
-            strength: 0.42, // Kipp-Stärke der Normale (subtil-sichtbar; der Haupt-Balance-Knopf)
-            strength2: 0.18, // Stärke der zweiten Oktave
+            // V18.346 — DIE KIPP-STÄRKE WAR ZU BOLD (Schöpfer-Befund „Trapeze nebeneinander, mehr/
+            // weniger Mikrostruktur" — die Trapez-Loop-Warnung). WURZEL gemessen: das Terrain-Shading
+            // flacht VOLL zur up (TERRAIN_NORMAL_FLATTEN=1.0) → der Bump ist die EINZIGE Normal-Variation;
+            // strength 0.42 = atan(0.42)=23° Kipp = die dokumentierte FACETTEN-Lichtung (directional Sonne
+            // × hochfreq Normale → bimodales dot(N,L)) als BOLDE Hell/Dunkel-Patches, deren Sichtbarkeit
+            // pro Makro-Facette (Hang grazing↔head-on) variiert = das „Trapez mehr/weniger". FIX: subtil
+            // (0.24 = 13°, 0.10) → echte Mikro-RELIEF-Modulation statt directional Patches; das sun-
+            // unabhängige Albedo-Korn (Substanz-Kern, kein Trapez) trägt die feine Textur weiter.
+            strength: 0.24, // Kipp-Stärke der Normale (subtil — 13° statt 23°; der Haupt-Balance-Knopf)
+            strength2: 0.1, // Stärke der zweiten Oktave
             lodNear: 14, // voll bis 14 m
             lodFar: 52, // aus ab 52 m (fern = glatt, kein Schimmer/Aliasing)
         });
@@ -28167,9 +28221,14 @@ class AnazhRealm {
                         const _wp = _Tn.positionWorld;
                         // V18.341 — der Bump NUR auf FLACHEM Boden (Schöpfer „an der Felswand bewegt sich
                         // die Mikrostruktur mit hoch"): der xz-Höhen-Noise ist auf einer STEILEN Wand
-                        // sinnlos (x,z konstant über die Höhe) + die Distanz-LOD-Kante wandert über den
-                        // Schirm = das „bewegt sich mit dem Blick". `normalWorld.y` (1 flach, 0 senkrecht)
-                        // blendet den Bump an Hängen/Wänden aus → die Wand bleibt glatt, nur die Wiese federt.
+                        // sinnlos. DER SCHWELLWERT (0.55, 0.85) IST KORREKT (gemessen `diag-bump-flatdist`,
+                        // top-surface-gefiltert): die GRADIENTEN-Normale (V9.16, glatt — NICHT facettiert)
+                        // auf GENUINE makro-flacher Wiese clustert eng bei ny 0.90–0.98 (99,2 % > 0.62, 90 %
+                        // > 0.90) → das Gate gibt VOLLEN Bump nur dem echt flachen Boden (>0.85) und fadet
+                        // ihn über die Hänge aus, aus unter 0.55 (echte Wände). Ein TIEFERER Schwellwert
+                        // (Versuch 0.3,0.62) schöbe den Bump auf 32–52°-HÄNGE zurück = die V18.341-Regression.
+                        // Die frühere „39 % Patchwork"-Messung (diag-bump-gate) zählte HÄNGE als „flach"
+                        // (kein Top-Surface-Filter) → kontaminiert; die Wiese war NIE gate-gepatchworkt.
                         const _flatGate = _Tn
                             .smoothstep(_Tn.float(0.55), _Tn.float(0.85), _Tn.normalWorld.y)
                             .clamp(0.0, 1.0);
@@ -28501,7 +28560,10 @@ class AnazhRealm {
                 .mul(_meadowPatch)
                 .mul(_T.float(0.55))
                 .clamp(0.0, 1.0);
-            _out = _T.mix(_out, _T.vec3(0.28, 0.46, 0.19), _meadowW);
+            // V18.346 — der Meadow-Grund liest dasselbe geteilte MEADOW_GREEN wie die Gras-Halm-Wurzel
+            // (Gesetz #0) → Boden + Gras verschmelzen by construction (Schöpfer „Synergie fehlt").
+            const _mg = AnazhRealm.MEADOW_GREEN;
+            _out = _T.mix(_out, _T.vec3(_mg[0], _mg[1], _mg[2]), _meadowW);
             // V18.340 — die GEOLOGIE treibt die BRUCH-STRUKTUR (Synergie, EINE Quelle): wo Fels/Geröll
             // durchbricht (`rockW`+`screeW`), bricht der Boden KARSCH (hardDrive → ridged Bruch im Kern);
             // die flache Wiese bleibt weich (niedrige Basis-härte 0.36). So weiss der steinige Boden, dass
@@ -56913,11 +56975,25 @@ class AnazhRealm {
         // (skeleton.foliageScale): ein Mammutbaum trägt proportional große Büschel,
         // ein junger Strauch kleine. Default 1 (für Alt-Skelette ohne das Feld).
         const fScale = Math.max(0.4, skeleton.foliageScale || 1);
+        // V18.235 (§5 Ω-O9) — fd/lod/K hier gehoistet (vor cardW/cardH), damit der LOD-Karten-
+        // Boost die Karten-Größe trifft. cardsPerAnchor dünnt LOD1/2 aus (5→2→1), das trägt die FPS.
+        const fd = (this.state.atmosphere && this.state.atmosphere.foliageDensity) || AnazhRealm.FOLIAGE_DENSITY;
+        const lod = skeleton.lodLevel | 0;
+        const K = Math.max(1, (fd.cardsPerAnchor[lod] != null ? fd.cardsPerAnchor[lod] : fd.cardsPerAnchor[0]) | 0);
+        // V18.346 — WENIGER ABER GRÖSSERE KARTEN IN DER FERNE (Schöpfer „die fernen Bäume fast kahl,
+        // müsste man nicht weniger Laub in der Ferne, dafür grösser, damit der Baum trotzdem voll
+        // wirkt?"): der LOD dünnt die Karten (5→2→1) bei GLEICHER Karten-Größe → LOD2 deckt 1/5 der
+        // Krone von LOD0 = kahl. Das Profi-Impostor-Gesetz: die Karten-FLÄCHE ∝ 1/K → die Kronen-
+        // Deckung bleibt KONSTANT über die LODs. sizeBoost = sqrt(K0/K) → LOD1 ×1.58, LOD2 ×2.24:
+        // wenige grosse Karten füllen dieselbe Krone wie viele kleine. Da der ferne Baum klein im
+        // Screen ist, liest die grosse Karte als volle Krone (kein Riesen-Blatt). K0 = LOD0-Referenz.
+        const _K0 = Math.max(1, fd.cardsPerAnchor[0] | 0 || 1);
+        const _lodCardBoost = Math.sqrt(_K0 / K);
         // je-Kind-Aspekt: Nadel lang-schmal, Palme große breite Wedel, Schuppe feine Sprays.
         const _wByKind = kindCol === 1 ? 2.4 : kindCol === 2 ? 3.0 : kindCol === 3 ? 1.7 : 2.1;
         const _hByKind = kindCol === 1 ? 3.4 : kindCol === 2 ? 3.4 : kindCol === 3 ? 1.7 : 1.85;
-        const cardW = baseSize * _wByKind * fScale;
-        const cardH = baseSize * _hByKind * fScale;
+        const cardW = baseSize * _wByKind * fScale * _lodCardBoost;
+        const cardH = baseSize * _hByKind * fScale * _lodCardBoost;
         const totalH = Math.max(1, skeleton.totalH || 10);
         // Krone-Sphere-Zentrum für normalBend (Plan §3.4): die Mitte der
         // Anchor-Wolke + leicht nach oben. Vertex-Normalen mischen in diese
@@ -56948,10 +57024,7 @@ class AnazhRealm {
         // Varianz + Kreuz-Drehung um y (kein Gitter-Look). LOD1/2 dünnen via
         // cardsPerAnchor stark aus (der LOD-Pfad trägt die FPS, KEIN Cap-Schnitt).
         const N = skeleton.anchors.length;
-        const fd = (this.state.atmosphere && this.state.atmosphere.foliageDensity) || AnazhRealm.FOLIAGE_DENSITY;
-        const lod = skeleton.lodLevel | 0;
-        const K = Math.max(1, (fd.cardsPerAnchor[lod] != null ? fd.cardsPerAnchor[lod] : fd.cardsPerAnchor[0]) | 0);
-        const M = N * K; // Gesamt-Karten in der Krone
+        const M = N * K; // Gesamt-Karten in der Krone (fd/lod/K oben gehoistet)
         const positions = new Float32Array(M * 8 * 3);
         const normals = new Float32Array(M * 8 * 3);
         const colors = new Float32Array(M * 8 * 3);
@@ -69621,7 +69694,14 @@ class AnazhRealm {
             // (min terrain·gras) → der Nebel weicht nur über bepflanztem Boden. Jenseits der Gras-
             // LOD ≤4 wartet kein Gras → grassK == builtK dort (ferne LOD-Sicht bleibt unberührt).
             const grassK = this._builtGrassRingRadius();
-            const revealK = grassK === null ? builtK : builtK === null ? grassK : Math.min(builtK, grassK);
+            // V18.346 — der Reveal wartet AUCH auf die WASSER-Front (Schöpfer-HAUPTPROBLEM: der Nebel
+            // gab den leeren See frei, bevor seine Fläche stand). min(Terrain, Gras, Wasser) → der
+            // Nebel weicht erst, wenn der Boden bepflanzt UND der See gefüllt ist.
+            const waterK = this._builtWaterRingRadius();
+            const revealK = [builtK, grassK, waterK].reduce(
+                (acc, v) => (v === null ? acc : acc === null ? v : Math.min(acc, v)),
+                null
+            );
             if (revealK === null || revealK < 0) {
                 // V18.313 — DAS ERWACHEN: noch KEIN Boden-Chunk steht (nur die Plattform,
                 // builtK null/-1). Der Nebel umhüllt den Spieler ENG (Kokon) → die Welt + die
@@ -73952,7 +74032,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.345.0";
+AnazhRealm.VERSION = "18.346.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
