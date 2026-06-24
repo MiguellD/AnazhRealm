@@ -35798,12 +35798,13 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
         out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
-        // (A1e) Verschiedene seeds → mind. 5 unique cache keys. V18.347 — 12 statt 6 Versuche:
-        // der Key ist `grown_<art>_v<hash(seed)%N>` mit N=VARIANTS_PER_SPECIES=8; 6 KONSEKUTIVE
-        // Seeds (50000–50005) konnten mod 8 in <5 Buckets clustern (Borderline-Flake). 12 distinkte
-        // Seeds über 8 Buckets → ≥5 unique robust (die Varianten-DIVERSITÄT ist der eigentliche Test).
+        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche. V18.347 — dieser
+        // Test FING einen ECHTEN Worldgen-Bug (kein stale Test): der Key war `grown_<art>_v<hash%8>`,
+        // aber die fnv-1a-LOW-Bits sind mod 8 degeneriert (gemessen: nur {0,2,4,6}, Bucket 0+4=75 %
+        // → von 8 designten Baum-Varianten lebten effektiv ~2). Geheilt in `_growTreeBlueprintForSpawn`
+        // (die HOHEN Bits `hash >>> 24` wählen jetzt, gleichverteilt) → 6 Seeds geben 6 unique.
         const keys = new Set();
-        for (let s = 0; s < 12; s++) {
+        for (let s = 0; s < 6; s++) {
             const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
             if (k) keys.add(k);
         }

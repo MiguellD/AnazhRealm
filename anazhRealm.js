@@ -48966,7 +48966,13 @@ class AnazhRealm {
         const sKey = String(seed || species || "g7-default");
         let hash = 2166136261 >>> 0;
         for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
-        const variantIndex = hash % N;
+        // V18.347 — DIE HOHEN BITS WÄHLEN DIE VARIANTE, nicht `hash % N` (= die NIEDRIGEN Bits):
+        // die fnv-1a-Low-Bits sind mod kleiner 2er-Potenzen DEGENERIERT (gemessen über 1000 Seeds:
+        // `hash % 8` traf nur {0,2,4,6}, Bucket 0+4 = 75 % → von 8 designten Baum-Varianten lebten
+        // effektiv ~2; die ungeraden Varianten waren TOT). Die hohen Bits (`hash >>> 24`) sind
+        // gleichverteilt (gemessen ~125/Bucket) → alle 8 Varianten leben. DETERMINISTISCH bewahrt
+        // (gleicher Seed → gleiche Variante, nur die VERTEILUNG geheilt); main-only, kein Worker-Mirror.
+        const variantIndex = (hash >>> 24) % N;
         const cacheKey = `grown_${species}_v${variantIndex}`;
         // Cache-Hit?
         const cached = this.state.blueprints[cacheKey];
@@ -74032,7 +74038,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.346.0";
+AnazhRealm.VERSION = "18.347.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
