@@ -72950,7 +72950,15 @@ class AnazhRealm {
                 ? this.state.atmosphere.waterIsoBudgetMs
                 : 7;
         const _wt = performance.now();
-        this._tickPendingWaterIso(4, _isoBudgetMs);
+        // V18.343 — DAS WASSER STREAMT MIT DEM TERRAIN (Schöpfer „in der Ferne entsteht die See-
+        // Oberfläche nachträglich, obwohl Terrain/Ring dort schon geladen"): das Wasser-Iso ist
+        // WELT-Streaming, keine throttle-bare Deko (das V18.282-Gesetz). Bei RÜCKSTAU (viele Chunks
+        // warten = der Ring wuchs) zieht es kräftig nach (16 statt 4 Builds/Frame, Budget ≥12 ms),
+        // damit die Wasser-Fläche ~mit dem Terrain erscheint statt sichtbar reinzupoppen. Die Zeit-
+        // Deadline (V18.261, nach JEDEM Build geprüft) bleibt die Hitch-Wand → kein Freeze, nur mehr
+        // KLEINE Builds im selben Zeitfenster (Ø 1.7 ms/Build). Ruhe-Betrieb (kein Stau) unverändert.
+        const _isoBacklog = this.state.pendingWaterIso && this.state.pendingWaterIso.size > 8;
+        this._tickPendingWaterIso(_isoBacklog ? 16 : 4, _isoBacklog ? Math.max(_isoBudgetMs, 12) : _isoBudgetMs);
         this._perfSenseLap("waterIso", _wt);
         // T4a-2 — der Wasser-Automat tickt die AKTIVEN Chunks (active-cell-only → kostenlos, wenn
         // kein Wasser perturbiert ist; ein Carve weckt seine Region → das Wasser strömt nach).
@@ -73738,7 +73746,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.342.0";
+AnazhRealm.VERSION = "18.343.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
