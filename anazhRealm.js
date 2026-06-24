@@ -31889,9 +31889,14 @@ class AnazhRealm {
                 // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
                 const feuchteG = this._feuchteAt ? this._feuchteAt(baseX, baseZ, surfY) : 0;
                 const lushG = Math.max(0, Math.min(1, lebendig * 0.7 + feuchteG * 0.5 - 0.1));
-                const tintR = 1.22 - 0.42 * lushG;
-                const tintG = 0.95 + 0.13 * lushG;
-                const tintB = 0.62 + 0.26 * lushG;
+                // V18.344 — STÄRKERE REGIONALE FARBPRÄGUNG (Schöpfer „die Halme farblich überall gleich,
+                // verschmelzen nicht mit dem Boden — gib eine Farbprägung durch die Region wie beim Boden"):
+                // die Tint-Spanne deutlich geweitet, damit das Gras die Geologie spiegelt — TROCKEN →
+                // gelb-braun-oliv (matcht die Dürre-Flecken V18.339), LUSH → sattes Grün (matcht den
+                // Meadow-Grund V18.341). So liest jede Region ihr eigenes Gras, kohärent mit dem Boden.
+                const tintR = 1.34 - 0.64 * lushG; // dry 1.34 (gelb) → lush 0.70 (grün)
+                const tintG = 0.9 + 0.24 * lushG; // dry 0.90 → lush 1.14
+                const tintB = 0.46 + 0.36 * lushG; // dry 0.46 (wenig Blau = strohig) → lush 0.82
                 for (let k = 0; k < count; k++) {
                     const gx = baseX + (rnd() - 0.5) * step;
                     const gz = baseZ + (rnd() - 0.5) * step;
@@ -31907,8 +31912,8 @@ class AnazhRealm {
                     // wiegt sie zusätzlich (V16.2).
                     const r1 = rnd();
                     const r2 = rnd();
-                    const sXZ = 0.65 + r2 * 0.6; // Breite [0.65, 1.25]
-                    const sY = 0.5 + r1 * r1 * 1.3; // Höhe [0.5, 1.8], kurze häufiger
+                    const sXZ = 0.78 + r2 * 0.66; // V18.344 Breite [0.78, 1.44] — breiter = voller (free)
+                    const sY = 0.6 + r1 * r1 * 1.7; // V18.344 Höhe [0.6, 2.3] — höher füllt den Raum (free)
                     const tj = 0.9 + r2 * 0.2; // ±10 % per-Halm-Helligkeits-Jitter
                     blades.push({
                         x: gx,
@@ -73746,7 +73751,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.343.0";
+AnazhRealm.VERSION = "18.344.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
