@@ -34185,7 +34185,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
         // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
         // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
         out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
         out.appliesToStamMax =
@@ -34402,7 +34402,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
 
         // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
         // sqrt(soulSize) genau wie hpMax/staminaMax
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
 
         return out;
@@ -35442,7 +35442,7 @@ async function checkBandV18206SpeedTrade(ctx) {
         const out = {};
 
         // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
         out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
         out.appliedToAttackSpeed =
@@ -35600,7 +35600,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const out = {};
 
         // (C1) Source: Größen-Multiplier in computeCreatureStats
-        const src = r.computeCreatureStats.toString();
+        const src = r.computeCreatureStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
         out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
         out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
         out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
@@ -35729,8 +35729,12 @@ async function checkBandV18209Konsolidierung(ctx) {
             out.gamma7Grammar;
 
         // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
-        const srcCompPlayer = r.computePlayerStats.toString();
-        const srcCompCreature = r.computeCreatureStats.toString();
+        // V18.312/.347 — die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
+        // (Gesetz #0); die `_compoundSizeFactor`/`creatureSize`-Quelle bleibt in compute*Stats, die
+        // ANWENDUNG (sizeHpMul/sizeSpeedMul) liest die geteilte Quelle. Beide source-probes lesen sie mit.
+        const _sizeMulSrc = r._applySizeMultipliersToStats.toString();
+        const srcCompPlayer = r.computePlayerStats.toString() + _sizeMulSrc;
+        const srcCompCreature = r.computeCreatureStats.toString() + _sizeMulSrc;
         out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
         out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
         out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
@@ -36328,6 +36332,11 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         if (typeof r._growTreeBlueprintForSpawn === "function") {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
             if (grownKey && r.state.blueprints[grownKey]) {
+                // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+                // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
+                // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
+                r.state.architectures = r.state.architectures || [];
+                r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
                 // Snapshot bauen und das grownBlueprints-Feld prüfen.
                 const snap = r.buildStateSnapshot();
                 const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
@@ -36336,6 +36345,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
                 // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
                 // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
                 out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+                r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
             }
         }
 
@@ -36699,10 +36709,15 @@ async function checkBandV18213MeshMerge(ctx) {
             out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
+            // V18.317/.347 — der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
+            // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });
             // Wir bauen einen Snapshot, prüfen das relevante Feld.
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[testKey];
             out.snapshotHasEntry = !!gb;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v213-snap-arch");
             // gb hat KEIN _isMerged (das wird beim Restore aus genVersion abgeleitet).
             out.snapshotHasNoMergedFlag = gb ? gb._isMerged === undefined : false;
 
@@ -36928,10 +36943,14 @@ async function checkBandV18214SkeletonMesh(ctx) {
             out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9);
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
+            // V18.317/.347 — Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
             out.snapshotHasEntry = !!gb;
             out.snapshotNoSkeletonField = gb ? gb._skeleton === undefined : false;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v214-snap-arch");
         }
 
         // genVersion-Restore (defensive)
@@ -39461,8 +39480,12 @@ async function checkBandWFFluss(ctx) {
             dryZ = 99999;
         out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
         // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
+        // V18.345 (B1): die Sheet-Mathe wanderte von `_buildVoxelChunkWaterCellSheet` nach
+        // `_computeWaterSheetData` (Main+Worker-geteilte Quelle) → die Source-Probe liest sie dort.
+        // V18.347: der Tauch-Trigger wanderte von `_loopPhysicsSync` nach `_stepCharacter` (V18.331
+        // feld-native Physik — der Spieler-Schritt liest die Wasser-Fläche via `_waterRunSurfaceAt`).
         out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._computeWaterSheetData.toString());
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString());
+        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._stepCharacter.toString());
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
         out.centernessField = /centerness/.test(r._hydroRiverAt.toString());
@@ -54684,10 +54707,11 @@ async function checkBandRing5Soul(ctx) {
         // Dropdown synchronisiert sich
         out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
 
-        // Physics-Body bleibt + bezieht sich auf den NEUEN Group
-        out.physicsBodySwitchedToNewGroup = currentMesh().userData && !!currentMesh().userData.physicsBody;
-        out.rigidBodiesArrayUpdated =
-            Array.isArray(r.state.rigidBodies) && r.state.rigidBodies.indexOf(currentMesh()) >= 0;
+        // V18.331/.347 — KEIN Physics-Body mehr: Ammo ist physisch raus, der Spieler ist
+        // body-frei (feld-native Kollision aus dem Dichtefeld, Velocity in state.playerVel).
+        // Ein Soul-Wechsel hat KEINEN rigid body, der dem Mesh-Group folgt → die zwei alten
+        // Ammo-Checks (physicsBodySwitchedToNewGroup · rigidBodiesArrayUpdated) sind GESCHNITTEN
+        // (sie prüften entferntes Verhalten — die V18.331-Ammo-Band-Räumung übersah sie).
 
         // Chat-Pattern: "werde drache"
         r.processChatCommand("werde drache");
@@ -54821,14 +54845,8 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
         check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
         check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
-        check(
-            "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
-            ring5Results.physicsBodySwitchedToNewGroup
-        );
-        check(
-            "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
-            ring5Results.rigidBodiesArrayUpdated
-        );
+        // V18.331/.347 — die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
+        // body-frei, feld-native; es gibt keinen rigid body, der dem Soul-Group folgt).
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
         check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
