@@ -378,6 +378,11 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.342 — DIE WIESE LEBT: grünere + vollere Halme + die WASSER-DIAGNOSE (Schöpfer „wiese + wasser sollen leben, sauber vorher/nachher aus guter Distanz")
+
+- **GRAS GRÜNER + VOLLER (verifiziert A/B, lush-Spot lebendig 0.93):** die Halm-Spitze war zu gelb (`tipCol R0.58`) → die Halme lasen blass/gelb über dem grünen Grund (V18.341-Meadow-Tint). Jetzt sattes Grün (`baseCol 0.22,0.46,0.15` → `tipCol 0.42,0.74,0.26`) → die Halme MATCHEN die Wiese. PLUS vollerer Tuff (`_grassBladeTuftGeometry`: 6 statt 5 Blätter, rund gefächert + breiter → kleiner Busch statt Stachel-Fächer; nur +20 % Tris/Tuff — der Grund-Tint trägt die Haupt-Fülle). A/B (gute-Distanz, eigenes Auge): vorher gelbe Stäbchen auf grünem Grund → nachher ein zusammenhängendes grünes Feld. Die Wiese lebt.
+- **WASSER-DIAGNOSE (ehrlich, kein blinder Eingriff):** Schöpfer „wasser siehts dumm aus, braucht LOD0 oder so, oder was machen die profis?". GEFISCHT (2 Winkel + Code), NICHT geraten: (a) Grazing-Blick aus guter Distanz = DECENT (Tiefen-Gradient Türkis→Blau, Uferlinie, Himmel-Reflexion); (b) Steil-nach-unten = dunkelblau + ein weicher, verwaschener Sonnen-Glint-Fleck (das EINZIGE leicht Unschöne); (c) der Code: das Wasser ist BEREITS „eine Skala LOD0" (`_buildVoxelChunkWaterIsoSurface`, EIN Wasser-Mesh) + ein REICHER animierter Shader (6-Oktav-Gerstner-Wellen + Domain-Warp + `aDepth`-Tiefenfarbe + Schaum + Flow + Slope-Wildwasser). FAZIT: kein reproduzierbarer „dumm"/LOD-Naht-Befund von mir; das Wasser ist ein funktionierendes, getuntes System (im statischen Render sieht man nur EINEN Wellen-Frame — im Browser animiert es). Ein blinder Eingriff in die getunte Gerstner-/Tiefen-/Schaum-Balance ist riskant → **die spezifische „dumm"-Situation vom Schöpfer (welcher Spot/Winkel/Tageszeit/Naht) ist der nächste Schritt**, nicht ein Raten. Der EINE Kandidat, den ICH sehe: der überblendete Sonnen-Glint (tighten = schärfere Funkel statt Fleck) — ein konservativer Folge-Tweak, wenn bestätigt.
+
 ### V18.341 — DREI BROWSER-HEILUNGEN: Stamm-Innenseite · Bump-an-Wänden · magere Wiese (Schöpfer-Befund aus dem echten Spiel)
 
 Der Schöpfer spielte im Browser + meldete drei konkrete Befunde, alle geheilt:
