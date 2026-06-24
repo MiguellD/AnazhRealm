@@ -28027,6 +28027,14 @@ class AnazhRealm {
                     if (_Tn.mx_noise_float && _Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
                         const _B = AnazhRealm.TERRAIN_BUMP;
                         const _wp = _Tn.positionWorld;
+                        // V18.341 — der Bump NUR auf FLACHEM Boden (Schöpfer „an der Felswand bewegt sich
+                        // die Mikrostruktur mit hoch"): der xz-Höhen-Noise ist auf einer STEILEN Wand
+                        // sinnlos (x,z konstant über die Höhe) + die Distanz-LOD-Kante wandert über den
+                        // Schirm = das „bewegt sich mit dem Blick". `normalWorld.y` (1 flach, 0 senkrecht)
+                        // blendet den Bump an Hängen/Wänden aus → die Wand bleibt glatt, nur die Wiese federt.
+                        const _flatGate = _Tn
+                            .smoothstep(_Tn.float(0.55), _Tn.float(0.85), _Tn.normalWorld.y)
+                            .clamp(0.0, 1.0);
                         const _lod = _Tn
                             .float(1.0)
                             .sub(
@@ -28036,7 +28044,8 @@ class AnazhRealm {
                                     _wp.sub(_Tn.cameraPosition).length()
                                 )
                             )
-                            .clamp(0.0, 1.0);
+                            .clamp(0.0, 1.0)
+                            .mul(_flatGate);
                         const _grad = (freq, strength) => {
                             const _f = _Tn.float(freq);
                             const _h = (dx, dz) =>
@@ -28337,6 +28346,24 @@ class AnazhRealm {
                 .mul(_T.float(0.62))
                 .clamp(0.0, 1.0);
             _out = _T.mix(_out, _out.mul(_T.vec3(1.32, 1.12, 0.6)), _dryW);
+            // V18.341 — MEADOW-GRUND (Schöpfer „die Wiese wirkt mager, einzelne Halme statt Büsche —
+            // der geniale Trick mit kaum Performance?"): der Profi-Trick — das Gras ist meist GRUND-
+            // FARBE + wenige Halme. Wo flach + grün (Gras-Zone) tönt der Boden selbst zu vollem Wiesen-
+            // Grün → die spärlichen Halme über grünem Grund LESEN als dichte Wiese (≈0 Perf: eine Albedo-
+            // Tönung, kein Geometrie). Patch-Noise (`wp·0.13`) → bewusst karge Stellen emergieren.
+            const _meadowPatch = _T.mx_noise_float
+                ? _T
+                      .mx_noise_float(_T.vec3(wp.x.mul(0.13), wp.z.mul(0.13), _T.float(7.0)))
+                      .mul(_T.float(0.5))
+                      .add(_T.float(0.5))
+                : _T.float(0.6);
+            const _meadowW = _green
+                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
+                .mul(_T.float(1.0).sub(_dryW))
+                .mul(_meadowPatch)
+                .mul(_T.float(0.55))
+                .clamp(0.0, 1.0);
+            _out = _T.mix(_out, _T.vec3(0.28, 0.46, 0.19), _meadowW);
             // V18.340 — die GEOLOGIE treibt die BRUCH-STRUKTUR (Synergie, EINE Quelle): wo Fels/Geröll
             // durchbricht (`rockW`+`screeW`), bricht der Boden KARSCH (hardDrive → ridged Bruch im Kern);
             // die flache Wiese bleibt weich (niedrige Basis-härte 0.36). So weiss der steinige Boden, dass
@@ -57042,7 +57069,11 @@ class AnazhRealm {
             // Ω-O7 (wahreranblick §6) — `bark:true` weckt die prozedurale RINDE-
             // MASERUNG in _buildPbrNodeMaterial (Längs-Faser + härte-Risse aus dem
             // holz-Tag): die Rinde erzählt ihr Holz, statt flacher Farbe.
-            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true };
+            // V18.341 — `side: DoubleSide` (Schöpfer „sehe noch immer die Innenseite des Baums —
+            // hatten wir bei Avatar-/Tierhaut auch"): die Tube-Wicklung macht die Stamm-Außenflächen
+            // back-facing → FrontSide cullt sie → der Stamm las von INNEN/konkav. DIESELBE Heilung wie
+            // die Blätter unten (DoubleSide rendert die Außenfläche korrekt, der Stamm ist konvex).
+            const barkMatOpts = { vertexColors: true, useFlexAttr: true, bark: true, side: THREE.DoubleSide };
             if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
@@ -73700,7 +73731,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.340.0";
+AnazhRealm.VERSION = "18.341.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
