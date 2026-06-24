@@ -14666,8 +14666,11 @@ class AnazhRealm {
         try {
             if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
                 const hfN = TSL.clamp(positionLocal.y.div(float(0.85)), float(0.0), float(1.0));
-                const baseCol = vec3(0.31, 0.55, 0.22);
-                const tipCol = vec3(0.58, 0.8, 0.34);
+                // V18.342 — GRÜNER (Schöpfer „die Halme blass-gelb, die Wiese soll leben"): die Spitze
+                // war zu gelb (R0.58) → der Halm las blass über dem grünen Grund. Jetzt sattes Grün
+                // (Wurzel dunkel-grün → Spitze hell-grün, NICHT gelb) → die Halme matchen die Wiese.
+                const baseCol = vec3(0.22, 0.46, 0.15);
+                const tipCol = vec3(0.42, 0.74, 0.26);
                 let albedo = TSL.mix(baseCol, tipCol, hfN);
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
@@ -31781,11 +31784,15 @@ class AnazhRealm {
                 push(b0);
             }
         };
-        blade(0.0, 0.12, 0.085);
-        blade(1.05, 0.16, 0.07);
-        blade(2.1, 0.1, 0.075);
-        blade(3.4, 0.18, 0.065);
-        blade(4.7, 0.13, 0.08);
+        // V18.342 — VOLLERER TUFF (Schöpfer „einzelne Halme, keine Büsche"): 6 statt 5 Blätter,
+        // rund um den Kreis gefächert + etwas breiter → liest als kleiner Busch statt Stachel-Fächer.
+        // Nur +20 % Tris/Tuff (der GRUND-Tint V18.341 trägt die Haupt-Fülle, ≈0 Perf).
+        blade(0.0, 0.12, 0.11);
+        blade(1.0, 0.16, 0.095);
+        blade(2.1, 0.1, 0.1);
+        blade(3.1, 0.18, 0.088);
+        blade(4.2, 0.13, 0.105);
+        blade(5.2, 0.14, 0.092);
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
@@ -73731,7 +73738,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.341.0";
+AnazhRealm.VERSION = "18.342.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
