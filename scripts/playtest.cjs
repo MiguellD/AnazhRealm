@@ -47405,7 +47405,18 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
         // Bewegung erhalten, alle Positionen endlich.
-        while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function") {
+        // V18.347 — DER CAP-SCHUTZ (ein ECHTER, vom Container-Tod verdeckter Bug, gefangen als
+        // das Gate GPU-frei DURCHlief): V18.296 senkte `maxCreatures` 120→20. Der alte
+        // `while (length < 60)`-Spawn-Loop lief damit ENDLOS (bei 20 Kreaturen fügt
+        // `spawnCreatureAt` nichts mehr hinzu → length bleibt 20 < 60 → Schleife dreht ewig →
+        // protocolTimeout → "no result"). Fix: den Cap für den Stress-Test temporär heben +
+        // Guard-Zähler (belt-and-suspenders) + danach SAUBER abräumen (kein Kreatur-Leck in die
+        // Folge-Bänder, die ihren eigenen Cap messen).
+        const _saveMax849 = r.state.maxCreatures;
+        const _baseN849 = r.state.creatures.length;
+        r.state.maxCreatures = 70;
+        let _g849 = 0;
+        while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function" && _g849++ < 120) {
             const p = r.state.playerMesh.position;
             r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
         }
@@ -47427,6 +47438,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.allFinite = r.state.creatures.every(
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
+        // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
+        while (r.state.creatures.length > _baseN849 && typeof r.removeCreature === "function") {
+            r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
+        }
+        r.state.maxCreatures = _saveMax849;
         return out;
     });
 
@@ -56009,13 +56025,17 @@ async function checkBandRing6Workshop(ctx) {
         // ENDLICH — so kommt die Wahrheit, statt dass der Lauf für immer schweigt.
         protocolTimeout: 240000,
         args: [
-            // ANGLE-Backend mit SwiftShader gibt unter headless die zuverlässigste
-            // WebGL-Implementierung – plain --use-gl=swiftshader stürzt mit
-            // „Could not get context for WebGL version 1" ab.
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
+            // V18.347 — DER GATE LÄUFT GPU-FREI (die WURZEL des "detached Frame"-Tail-Todes
+            // bei ~Band 136 endlich GEMESSEN, nicht geraten): es ist NICHT Speicher (diag-gate-heap:
+            // 16 GB frei, kein cgroup-Limit, JS-Heap nur 82 MB Basis / 124 MB unter Last) und NICHT
+            // Welt-Gewicht (0.13 M Tris) — es ist der UNNÖTIGE swiftshader-GPU-Prozess, der unter der
+            // kumulativen Last im Schwanz crasht. Der Null-Renderer (Default) braucht KEINEN GPU
+            // (diag-gate-nogpu: Welt+Avatar+Architektur+Baupläne bauen OHNE GPU, 0 page-errors). GPU
+            // AUS → der GPU-Prozess existiert nicht → kann nicht crashen → das Gate läuft DURCH.
+            // PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur fürs visuelle Screenshot-Artefakt).
+            ...(REAL_RENDERER
+                ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
+                : ["--disable-gpu", "--disable-software-rasterizer"]),
             "--no-sandbox",
             "--disable-setuid-sandbox",
             // Ring 4: erlaubt AudioContext im Headless-Modus ohne User-Geste,
