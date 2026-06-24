@@ -23498,16 +23498,18 @@ async function checkBandPhasenBF(ctx) {
             typeof r._waterfallIsRealWall === "undefined" &&
             typeof r._ensureWaterfallMaterial === "function" &&
             typeof r.setWaterfallSteep === "undefined";
+        // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
+        // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
         out.a4Curtain =
-            /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
-            /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
+            /VERT_SPLIT/.test(r._computeWaterSheetData.toString()) &&
+            /dupVert/.test(r._computeWaterSheetData.toString());
         // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
         // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
         // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
         // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
         out.a4MouthWave = (() => {
-            const src = r._buildVoxelChunkWaterCellSheet.toString();
+            const src = r._computeWaterSheetData.toString();
             return (
                 /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
             );
@@ -39459,7 +39461,7 @@ async function checkBandWFFluss(ctx) {
             dryZ = 99999;
         out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
         // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._buildVoxelChunkWaterCellSheet.toString());
+        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._computeWaterSheetData.toString());
         out.diveReadsRun = /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString());
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).

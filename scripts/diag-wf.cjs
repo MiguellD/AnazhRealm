@@ -193,7 +193,7 @@ function startSaveServer() {
 
             // --- Teilwelle 2 + 3: Source-Proben (die Verdrahtung) ---
             o.teil2 = {
-                sheetReadsRun: /_waterRunSurfaceAt/.test(r._buildVoxelChunkWaterCellSheet.toString()),
+                sheetReadsRun: /_waterRunSurfaceAt/.test(r._computeWaterSheetData.toString()),
                 diveReadsRun: /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString()),
                 flowRippleInShader: /flowRipple|nFlow/.test(r._ensureHydroSurfaceMaterial.toString()),
             };

@@ -112,6 +112,48 @@ self.onmessage = function (e) {
                     ]
                 );
             }
+        } else if (msg.type === "water-sheet") {
+            // B1 (V18.345) — der Wasser-Sheet OFF-THREAD (Streaming, CA-frei). Der Main
+            // sendet den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je Uint8Array oder
+            // null), der Worker baut das Sheet (byte-identisch zu `_computeWaterSheetData`)
+            // + transferiert die Geometrie-Arrays zurück. Main macht nur BufferGeometry +
+            // Mesh (`_applyWorkerWaterSheet`). `getLevel` undefined → CA-frei.
+            const { cx, cz, requestId, smoothPasses, cells } = msg;
+            const ctx = {
+                smoothPasses: smoothPasses | 0,
+                getCells: (ncx, ncz) => {
+                    const dx = ncx - cx;
+                    const dz = ncz - cz;
+                    if (dx < -1 || dx > 1 || dz < -1 || dz > 1) return null;
+                    return cells[(dz + 1) * 3 + (dx + 1)] || null;
+                },
+                getLevel: () => undefined,
+            };
+            const data = buildWaterSheetGeometry(cx, cz, ctx);
+            if (!data) {
+                self.postMessage({ type: "water-sheet-result", requestId, empty: true });
+            } else {
+                const positions = new Float32Array(data.positions);
+                const indices = new Uint32Array(data.indices);
+                const aFlow = new Float32Array(data.aFlow);
+                const aWave = new Float32Array(data.aWave);
+                const aDepth = new Float32Array(data.aDepth);
+                const aSlope = new Float32Array(data.aSlope);
+                self.postMessage(
+                    {
+                        type: "water-sheet-result",
+                        requestId,
+                        empty: false,
+                        positions: positions.buffer,
+                        indices: indices.buffer,
+                        aFlow: aFlow.buffer,
+                        aWave: aWave.buffer,
+                        aDepth: aDepth.buffer,
+                        aSlope: aSlope.buffer,
+                    },
+                    [positions.buffer, indices.buffer, aFlow.buffer, aWave.buffer, aDepth.buffer, aSlope.buffer]
+                );
+            }
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -860,6 +902,8 @@ function hydroRiverAt(x, z) {
     if (!list) return null;
     const bankSlope = state.carveBankSlope;
     let bestD = Infinity;
+    let dirX = 0;
+    let dirZ = 0;
     let depth = 0;
     let bestHalfW = 1;
     for (let s = 0; s < list.length; s++) {
@@ -878,6 +922,9 @@ function hydroRiverAt(x, z) {
         const bankW = Math.max(2, D * bankSlope);
         if (dist <= halfW + bankW && dist < bestD) {
             bestD = dist;
+            const len = Math.sqrt(len2);
+            dirX = ex / len;
+            dirZ = ez / len;
             depth = D;
             bestHalfW = halfW;
         }
@@ -885,8 +932,17 @@ function hydroRiverAt(x, z) {
     if (bestD === Infinity) return null;
     // V18.27 — laterale Makro (Leben) + KONVEXE Mitten-Aufwölbung (0.45·D·(1−(dist/halfW)²)) →
     // konvexer Querschnitt (Mitte höher, fällt zu den Ufern). MUSS bit-identisch zum Main sein.
+    // B1 (V18.345) — flowX/flowZ/centerness ergänzt (Mirror von Main `_hydroRiverAt`): der
+    // Wasser-Sheet-Worker-Mirror liest sie (aFlow + centerness via `waterRunSurfaceAt`). Bestehende
+    // Leser (waterLevelAt/atlasWaterLevelAt/feuchte) lesen nur depth/surfaceY → unverändert.
     const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
-    return { depth, surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge };
+    return {
+        flowX: dirX,
+        flowZ: dirZ,
+        depth,
+        surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge,
+        centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+    };
 }
 
 // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): DAS FEUCHTE-
@@ -1057,6 +1113,405 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
     const river = hydroRiverAt(x, z);
     if (river && river.surfaceY > level) level = river.surfaceY;
     return level;
+}
+
+// B1 (V18.345) — Mirror von `_waterRunSurfaceAt`: die GEGLÄTTETE Fluss-Lauf-Fläche
+// (Along-Flow-Tiefpass NUR auf den Kanal-KERN via centerness; NARBEN-WAND am Ufer bleibt
+// roh). Deps `atlasWaterLevelAt` + `hydroRiverAt` (mit flowX/flowZ/centerness) sind
+// gespiegelt. MUSS bit-identisch zum Main bleiben (diag-worker-watersheet).
+function waterRunSurfaceAt(x, z) {
+    const L = atlasWaterLevelAt(x, z, -Infinity);
+    if (!(L > -Infinity)) return L;
+    const river = hydroRiverAt(x, z);
+    if (!river) return L;
+    const center = Number.isFinite(river.centerness) ? river.centerness : 1;
+    if (center <= 0.001) return L;
+    const fx = river.flowX;
+    const fz = river.flowZ;
+    let acc = L * 4;
+    let wsum = 4;
+    for (let k = 1; k <= 3; k++) {
+        const w = 4 - k;
+        const d = 6 * k;
+        const la = atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
+        const lb = atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
+        if (la > -Infinity) {
+            acc += la * w;
+            wsum += w;
+        }
+        if (lb > -Infinity) {
+            acc += lb * w;
+            wsum += w;
+        }
+    }
+    const smoothed = acc / wsum;
+    return L + (smoothed - L) * center;
+}
+
+// B1 (V18.345) — Mirror von `_caColumnScan`: scannt eine Zell-Spalte top-down nach
+// Flood-/Live-/Solid-Dach. `level` ist im Worker-Streaming-Pfad immer null (CA-frei =
+// nur Flood + Solid) — der wantLive-Zweig läuft nie, bleibt aber 1:1 für die bit-Parität.
+function caColumnScan(cells, level, colBase, dimSq, dimY) {
+    const WATER = CELL_STATE.WATER;
+    const SOLID = CELL_STATE.SOLID;
+    const wantLive = !!level;
+    let floodTopJ = -1,
+        liveTopJ = -1,
+        liveFrac = 0,
+        solidTopJ = -1;
+    for (let j = dimY - 1; j >= 0; j--) {
+        const idx = colBase + j * dimSq;
+        const c = cells[idx];
+        if (floodTopJ < 0 && c === WATER) floodTopJ = j;
+        if (solidTopJ < 0 && c === SOLID) solidTopJ = j;
+        if (wantLive && liveTopJ < 0 && c !== SOLID && level[idx] > 0.5) {
+            liveTopJ = j;
+            liveFrac = level[idx];
+        }
+        if (floodTopJ >= 0 && solidTopJ >= 0 && (!wantLive || liveTopJ >= 0)) break;
+    }
+    return { floodTopJ, liveTopJ, liveFrac, solidTopJ };
+}
+
+// B1 (V18.345) — DER WASSER-SHEET-WORKER-MIRROR: bit-identischer Spiegel von Main
+// `_computeWaterSheetData` (anazhRealm.js). Die EINE pure-typed-array-Mathematik des
+// Zell-Oberkanten-Sheets — `ctx.getCells(ncx,ncz)` liest den gesendeten 3×3-Zell-Block,
+// `ctx.getLevel` ist im Streaming-Pfad immer undefined (CA-frei → nur Flood). Liefert
+// plain Arrays {positions, indices, aFlow, aWave, aDepth, aSlope} oder null. MUSS Zeile
+// für Zeile mit dem Main wandern (diag-worker-watersheet, maxDiff 0). Substitutionen vs
+// Main: this._voxelChunkConfig→voxelChunkConfig, this.state.terrainBaseHeight→state.baseHeight,
+// this._caColumnScan→caColumnScan, this._waterRunSurfaceAt→waterRunSurfaceAt,
+// this._hydroRiverAt→hydroRiverAt, this._hydrosphereLakeAt→hydrosphereLakeAt,
+// AnazhRealm.CELL_STATE→CELL_STATE. Die Mathe ist character-identisch.
+function buildWaterSheetGeometry(cx, cz, ctx) {
+    const cfg0 = voxelChunkConfig(0);
+    const dim = cfg0.dim,
+        dimY = cfg0.dimY,
+        step = cfg0.step,
+        span = cfg0.span;
+    const ox = cx * span;
+    const oz = cz * span;
+    const oy = (state.baseHeight || 0) - cfg0.floorDrop;
+    const dimSq = dim * dim;
+    const waterLevel = typeof state.waterLevel === "number" ? state.waterLevel : 0;
+    const SMOOTH_PASSES = ctx.smoothPasses;
+    const PAD = SMOOTH_PASSES + 1;
+    const GW = dim + 2 * PAD;
+    const topG = new Float64Array(GW * GW).fill(NaN);
+    const solidG = new Float64Array(GW * GW);
+    const depthG = new Float64Array(GW * GW);
+    for (let ck = -PAD; ck < dim + PAD; ck++) {
+        for (let ci = -PAD; ci < dim + PAD; ci++) {
+            const gi = ci + PAD + (ck + PAD) * GW;
+            let ncx = cx,
+                ncz = cz,
+                li = ci,
+                lk = ck;
+            if (li < 0) {
+                ncx -= 1;
+                li += dim;
+            } else if (li >= dim) {
+                ncx += 1;
+                li -= dim;
+            }
+            if (lk < 0) {
+                ncz -= 1;
+                lk += dim;
+            } else if (lk >= dim) {
+                ncz += 1;
+                lk -= dim;
+            }
+            let src = ctx.getCells(cx, cz);
+            let srcCX = cx,
+                srcCZ = cz;
+            let dryFallback = false;
+            if (ncx !== cx || ncz !== cz) {
+                const nb = ctx.getCells(ncx, ncz);
+                if (nb) {
+                    src = nb;
+                    srcCX = ncx;
+                    srcCZ = ncz;
+                } else {
+                    li = Math.max(0, Math.min(dim - 1, ci));
+                    lk = Math.max(0, Math.min(dim - 1, ck));
+                    src = ctx.getCells(cx, cz);
+                    srcCX = cx;
+                    srcCZ = cz;
+                    dryFallback = true;
+                }
+            }
+            const level = ctx.getLevel(srcCX, srcCZ);
+            const sc = caColumnScan(src, level, li + lk * dim, dimSq, dimY);
+            solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
+            if (dryFallback) continue;
+            if (sc.floodTopJ < 0) {
+                if (level && sc.liveTopJ >= 0) {
+                    topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
+                    depthG[gi] = Math.max(0, (sc.liveTopJ - sc.solidTopJ) * step);
+                }
+                continue;
+            }
+            const faceY = oy + (sc.floodTopJ + 1) * step;
+            const wx = ox + (ci + 0.5) * step;
+            const wz = oz + (ck + 0.5) * step;
+            const L = waterRunSurfaceAt(wx, wz);
+            let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
+            if (level) {
+                const floodRel = (sc.floodTopJ + 1) * step;
+                const liveRel = sc.liveTopJ < 0 ? 0 : (sc.liveTopJ + sc.liveFrac) * step;
+                let d = liveRel - floodRel;
+                if (d > -0.05 && d < 0.05) d = 0;
+                top += Math.max(-14, Math.min(4, d));
+            }
+            topG[gi] = top;
+            depthG[gi] = Math.max(0, (sc.floodTopJ - sc.solidTopJ) * step);
+        }
+    }
+    const SOLID_CS = CELL_STATE.SOLID;
+    for (let ck = -PAD; ck < dim + PAD; ck++) {
+        for (let ci = -PAD; ci < dim + PAD; ci++) {
+            const gi = ci + PAD + (ck + PAD) * GW;
+            if (!Number.isNaN(topG[gi])) continue;
+            let nbTop = -Infinity;
+            if (ci + 1 < dim + PAD) {
+                const v = topG[gi + 1];
+                if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+            }
+            if (ci - 1 >= -PAD) {
+                const v = topG[gi - 1];
+                if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+            }
+            if (ck + 1 < dim + PAD) {
+                const v = topG[gi + GW];
+                if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+            }
+            if (ck - 1 >= -PAD) {
+                const v = topG[gi - GW];
+                if (!Number.isNaN(v) && v > nbTop) nbTop = v;
+            }
+            if (nbTop === -Infinity) continue;
+            let ncx = cx,
+                ncz = cz,
+                li = ci,
+                lk = ck;
+            if (li < 0) {
+                ncx -= 1;
+                li += dim;
+            } else if (li >= dim) {
+                ncx += 1;
+                li -= dim;
+            }
+            if (lk < 0) {
+                ncz -= 1;
+                lk += dim;
+            } else if (lk >= dim) {
+                ncz += 1;
+                lk -= dim;
+            }
+            let src = ctx.getCells(cx, cz);
+            if (ncx !== cx || ncz !== cz) {
+                const nb = ctx.getCells(ncx, ncz);
+                if (nb) src = nb;
+                else {
+                    li = Math.max(0, Math.min(dim - 1, ci));
+                    lk = Math.max(0, Math.min(dim - 1, ck));
+                    src = ctx.getCells(cx, cz);
+                }
+            }
+            const colBase = li + lk * dim;
+            const fromJ = Math.min(dimY - 1, Math.floor((nbTop - oy) / step) + 1);
+            let gj = -1;
+            for (let j = fromJ; j >= 0; j--) {
+                if (src[colBase + j * dimSq] === SOLID_CS) {
+                    gj = j;
+                    break;
+                }
+            }
+            solidG[gi] = gj >= 0 ? oy + gj * step : oy;
+        }
+    }
+    let cur = topG;
+    let buf = new Float64Array(GW * GW);
+    for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
+        buf.fill(NaN);
+        for (let g = 0; g < GW * GW; g++) {
+            if (Number.isNaN(cur[g])) continue;
+            const gx = g % GW;
+            const gz = (g / GW) | 0;
+            let sum = 0;
+            let n = 0;
+            for (let dz2 = -1; dz2 <= 1; dz2++) {
+                for (let dx2 = -1; dx2 <= 1; dx2++) {
+                    const nx = gx + dx2;
+                    const nz = gz + dz2;
+                    if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
+                    const v = cur[nx + nz * GW];
+                    if (!Number.isNaN(v)) {
+                        sum += v;
+                        n++;
+                    }
+                }
+            }
+            buf[g] = sum / n;
+        }
+        const t = cur;
+        cur = buf;
+        buf = t;
+    }
+    const tops = cur;
+    const colTop = (ci, ck) => tops[ci + PAD + (ck + PAD) * GW];
+    const colWet = (ci, ck) => !Number.isNaN(colTop(ci, ck));
+    const slopeG = new Float32Array(GW * GW);
+    for (let gz = 1; gz < GW - 1; gz++) {
+        for (let gx = 1; gx < GW - 1; gx++) {
+            const g = gx + gz * GW;
+            const t0 = tops[g];
+            if (Number.isNaN(t0)) continue;
+            let mx = 0;
+            for (const nb of [g - 1, g + 1, g - GW, g + GW]) {
+                const tn = tops[nb];
+                let d = 0;
+                if (!Number.isNaN(tn)) d = Math.abs(t0 - tn) / step;
+                else if (solidG[nb] < t0 - 3) d = Math.min(4, (t0 - solidG[nb]) / step);
+                if (d > mx) mx = d;
+            }
+            slopeG[g] = mx;
+        }
+    }
+    const NV = dim + 1;
+    const positions = [];
+    const indices = [];
+    const aFlow = [];
+    const aWave = [];
+    const aDepth = [];
+    const aSlope = [];
+    const vmap = new Int32Array(NV * NV).fill(-1);
+    const vertIsAnchor = [];
+    const addVert = (i, k) => {
+        const vi = i + k * NV;
+        if (vmap[vi] >= 0) return vmap[vi];
+        const wx = ox + i * step;
+        const wz = oz + k * step;
+        let sum = 0;
+        let n = 0;
+        let dsum = 0;
+        let slopeMax = 0;
+        let anchor = Infinity;
+        for (const [aci, ack] of [
+            [i - 1, k - 1],
+            [i, k - 1],
+            [i - 1, k],
+            [i, k],
+        ]) {
+            const gi2 = aci + PAD + (ack + PAD) * GW;
+            const v = colTop(aci, ack);
+            if (!Number.isNaN(v)) {
+                sum += v;
+                n++;
+                dsum += depthG[gi2];
+                if (slopeG[gi2] > slopeMax) slopeMax = slopeG[gi2];
+            }
+            const sv = solidG[gi2];
+            if (sv < anchor) anchor = sv;
+        }
+        const surfY = n > 0 ? sum / n : anchor - 0.5;
+        const depthM = n > 0 ? dsum / n : 0;
+        const id = positions.length / 3;
+        vertIsAnchor[id] = n === 0;
+        positions.push(wx, surfY, wz);
+        let sfx = 0;
+        let sfz = 0;
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const rv = hydroRiverAt(wx + dx * 9, wz + dz * 9);
+                if (rv && (rv.flowX || rv.flowZ)) {
+                    const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
+                    sfx += rv.flowX / m;
+                    sfz += rv.flowZ / m;
+                }
+            }
+        }
+        const heightRamp = Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0));
+        const rt = Math.max(0, Math.min(1, (Math.hypot(sfx, sfz) / 9 - 0.04) / 0.46));
+        const riverness = rt * rt * (3 - 2 * rt);
+        const isLake = n > 0 && heightRamp > 0 && hydrosphereLakeAt(wx, wz);
+        aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
+        aDepth.push(depthM);
+        aSlope.push(n > 0 ? slopeMax : 0);
+        aFlow.push(sfx / 9, sfz / 9);
+        vmap[vi] = id;
+        return id;
+    };
+    const VERT_SPLIT = step * 3;
+    const dupVert = (srcId, nx, ny, nz, slopeOverride) => {
+        const id = positions.length / 3;
+        positions.push(nx, ny, nz);
+        aWave.push(aWave[srcId]);
+        aDepth.push(aDepth[srcId]);
+        aSlope.push(slopeOverride !== undefined ? slopeOverride : aSlope[srcId]);
+        aFlow.push(aFlow[srcId * 2], aFlow[srcId * 2 + 1]);
+        return id;
+    };
+    for (let k = 0; k < dim; k++) {
+        for (let i = 0; i < dim; i++) {
+            if (!(colWet(i, k) || colWet(i - 1, k) || colWet(i + 1, k) || colWet(i, k - 1) || colWet(i, k + 1)))
+                continue;
+            const v00 = addVert(i, k);
+            const v10 = addVert(i + 1, k);
+            const v01 = addVert(i, k + 1);
+            const v11 = addVert(i + 1, k + 1);
+            const y00 = positions[v00 * 3 + 1];
+            const y10 = positions[v10 * 3 + 1];
+            const y01 = positions[v01 * 3 + 1];
+            const y11 = positions[v11 * 3 + 1];
+            const hi = Math.max(y00, y10, y01, y11);
+            const lo = Math.min(y00, y10, y01, y11);
+            const anyAnchor = vertIsAnchor[v00] || vertIsAnchor[v10] || vertIsAnchor[v01] || vertIsAnchor[v11];
+            if (anyAnchor || hi - lo <= VERT_SPLIT) {
+                indices.push(v00, v10, v01, v11, v01, v10);
+                continue;
+            }
+            const dX = Math.abs((y00 + y01) / 2 - (y10 + y11) / 2);
+            const dZ = Math.abs((y00 + y10) / 2 - (y01 + y11) / 2);
+            let hiA, hiB, loA, loB;
+            if (dX >= dZ) {
+                if ((y00 + y01) / 2 >= (y10 + y11) / 2) {
+                    hiA = v00;
+                    hiB = v01;
+                    loA = v10;
+                    loB = v11;
+                } else {
+                    hiA = v10;
+                    hiB = v11;
+                    loA = v00;
+                    loB = v01;
+                }
+            } else if ((y00 + y10) / 2 >= (y01 + y11) / 2) {
+                hiA = v00;
+                hiB = v10;
+                loA = v01;
+                loB = v11;
+            } else {
+                hiA = v01;
+                hiB = v11;
+                loA = v00;
+                loB = v10;
+            }
+            const lipY = (positions[hiA * 3 + 1] + positions[hiB * 3 + 1]) / 2;
+            const dA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2]);
+            const dB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2]);
+            const rep = (v) => (v === loA ? dA : v === loB ? dB : v);
+            indices.push(rep(v00), rep(v10), rep(v01), rep(v11), rep(v01), rep(v10));
+            const cA = dupVert(loA, positions[loA * 3], lipY, positions[loA * 3 + 2], 4);
+            const cB = dupVert(loB, positions[loB * 3], lipY, positions[loB * 3 + 2], 4);
+            const fA = dupVert(loA, positions[loA * 3], positions[loA * 3 + 1], positions[loA * 3 + 2], 4);
+            const fB = dupVert(loB, positions[loB * 3], positions[loB * 3 + 1], positions[loB * 3 + 2], 4);
+            indices.push(cA, fA, cB, fB, cB, fA);
+            indices.push(cB, fB, cA, fA, cA, fB);
+        }
+    }
+    if (indices.length === 0) return null;
+    return { positions, indices, aFlow, aWave, aDepth, aSlope };
 }
 
 // =============================================================================

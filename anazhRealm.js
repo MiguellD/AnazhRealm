@@ -20931,6 +20931,27 @@ class AnazhRealm {
                             });
                         }
                     }
+                } else if (msg.type === "water-sheet-result" && msg.requestId) {
+                    // B1 (V18.345) — der OFF-THREAD-Wasser-Sheet (Streaming, CA-frei).
+                    // Die rohen Geometrie-Arrays kommen zero-copy via Transferable;
+                    // `_applyWorkerWaterSheet` macht daraus die BufferGeometry + Mesh.
+                    const pending = this.state.voxelWorkerPending.get(msg.requestId);
+                    if (pending) {
+                        this.state.voxelWorkerPending.delete(msg.requestId);
+                        if (msg.empty) {
+                            pending.resolve({ empty: true });
+                        } else {
+                            pending.resolve({
+                                empty: false,
+                                positions: new Float32Array(msg.positions),
+                                indices: new Uint32Array(msg.indices),
+                                aFlow: new Float32Array(msg.aFlow),
+                                aWave: new Float32Array(msg.aWave),
+                                aDepth: new Float32Array(msg.aDepth),
+                                aSlope: new Float32Array(msg.aSlope),
+                            });
+                        }
+                    }
                 } else if (msg.type === "ack" && msg.requestId) {
                     const pending = this.state.voxelWorkerPending.get(msg.requestId);
                     if (pending) {
@@ -21141,6 +21162,74 @@ class AnazhRealm {
             worker.postMessage({ type: "chunk-mesh", cx, cz, lod: lod | 0, requestId });
             return promise;
         });
+    }
+
+    // B1 (V18.345) — den Wasser-Sheet OFF-THREAD bauen (der Streaming-Haupt-Fix, FPS-frei).
+    // Sammelt den 3×3-Zell-Block (eigener Chunk + 8 Nachbarn, je `entry.waterCells`), sendet
+    // ihn an den Worker, der das Sheet byte-identisch zu `_computeWaterSheetData` rechnet +
+    // die rohen Geometrie-Arrays zero-copy zurück-transferiert. Resolve: {empty:true} ODER
+    // {positions, indices, aFlow, aWave, aDepth, aSlope}. Die Zellen werden KOPIERT (structured
+    // clone, KEIN Transfer — der Main braucht seine Zellen weiter für Physik/Re-Mesh). Der
+    // Worker-Pfad ist NUR für CA-freie Nachbarschaften gültig (`_waterSheetCaFree`) — sonst
+    // baut der Main sync (die reaktive CA-Schicht ist nicht worker-gespiegelt). smoothPasses
+    // MUSS exakt `_mainWaterSheetCtx` entsprechen, sonst bricht die byte-Parität.
+    _workerBuildWaterSheet(cx, cz) {
+        const worker = this._getVoxelWorker();
+        if (!worker) return Promise.reject(new Error("voxel-worker not available"));
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(`${cx},${cz}`) : null;
+        if (!entry || !entry.waterCells) return Promise.resolve({ empty: true });
+        const cells = new Array(9).fill(null);
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx === 0 && dz === 0) {
+                    cells[4] = entry.waterCells;
+                    continue;
+                }
+                const nb = this.state.voxelChunks.get(`${cx + dx},${cz + dz}`);
+                if (nb && nb.waterCells) cells[(dz + 1) * 3 + (dx + 1)] = nb.waterCells;
+            }
+        }
+        const smoothRaw =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
+                ? Math.round(this.state.atmosphere.waterSheetSmooth)
+                : 4;
+        const smoothPasses = Math.max(0, Math.min(6, smoothRaw));
+        const ensureReady = this.state.voxelWorkerReady ? Promise.resolve(true) : this._voxelWorkerSyncState();
+        return ensureReady.then(() => {
+            const requestId = this.state.voxelWorkerNextRequestId++;
+            const promise = new Promise((resolve, reject) => {
+                this.state.voxelWorkerPending.set(requestId, { resolve, reject });
+            });
+            worker.postMessage({ type: "water-sheet", cx, cz, requestId, smoothPasses, cells });
+            return promise;
+        });
+    }
+
+    // B1 — ein Wasser-Sheet darf off-thread (Worker, statischer Flood-Sheet) gebaut werden,
+    // wenn der Chunk + seine 8 Nachbarn NICHT AKTIV-FLIESSEND sind (`waterCAActive`) UND kein
+    // STAU (`waterStauFields`) im 3×3 liegt. WARUM byte-identisch: ein vom CA SETTLED Chunk
+    // ruht am FLOOD-Spiegel (der CA kappt am Atlas-Spiegel, V18.92/V18.129 — kein Zufluss über
+    // rim-L) → `_seedWaterLevel` setzt WATER-Zellen auf 1 → im `_caColumnScan` ist
+    // liveTopJ == floodTopJ, liveFrac == 1 → der CA-Delta d == 0 (clamp |d|<0.05 → 0) → der
+    // Main-CA-Sheet ist IDENTISCH zum Worker-STATIC-Sheet (bewiesen `diag-worker-watersheet`,
+    // der den Flood-Level seedet). AKTIV-fliessende Chunks (mid-fill/-drain, in `waterCAActive`)
+    // tragen ein echtes Delta → sie bauen SYNC (die Live-CA-Wahrheit). STAU-Spiegel (über Flood)
+    // bauen SYNC (der Worker-Static-Flood würde den Stau verlieren). Carve/Edit gehen ohnehin
+    // sync (der `syncWater`-Pfad). Streaming-Wasser fern vom Fluss/Edit ist settled → Worker.
+    _waterSheetCaFree(cx, cz) {
+        const active = this.state.waterCAActive;
+        const stau = this.state.waterStauFields;
+        const hasActive = active && active.size > 0;
+        const hasStau = stau && stau.size > 0;
+        if (!hasActive && !hasStau) return true;
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const k = `${cx + dx},${cz + dz}`;
+                if (hasActive && active.has(k)) return false;
+                if (hasStau && stau.has(k)) return false;
+            }
+        }
+        return true;
     }
 
     // V9.90 (Welle Perf-3.c Phase 2): Cache-First-Density-Lookup für den
@@ -26898,6 +26987,16 @@ class AnazhRealm {
     // naht-symmetrisch per Konstruktion. Fehlender Nachbar → eigene Rand-Spalte
     // (Fallback, heilt beim 8-Nachbar-Re-Enqueue der Finalize/des CA, V18.0).
     // Main-only (kein Worker/Determinismus); dieselbe Map + derselbe Dispose.
+    // B1 (V18.345) — der Wasser-Sheet-Bau ist OFF-THREAD-FÄHIG. Der Zell-Oberkanten-
+    // Sheet (W-A, der Default-Render) läuft über eine ZELL-KONTEXT-Abstraktion:
+    // `_computeWaterSheetData(cx,cz,ctx)` ist die EINE pure-typed-array-Mathematik
+    // (positions/indices/aFlow/aWave/aDepth/aSlope), die Zellen + Level NUR via
+    // `ctx.getCells`/`ctx.getLevel` liest. Auf dem Main liest der Kontext
+    // `state.voxelChunks` + `waterLevelCells`; im Worker den gesendeten 3×3-Zell-Block
+    // (CA-frei = Streaming). Die Mathe ist GETEILT → der Worker-Mirror
+    // (`buildWaterSheetGeometry`) ist byte-identisch per Konstruktion
+    // (diag-worker-watersheet, maxDiff 0). Carve + CA-aktiv bleiben sync auf dem Main
+    // (Schöpfer-Entscheid „nur der Streaming-Pfad").
     _buildVoxelChunkWaterCellSheet(cx, cz, key) {
         const entry = this.state.voxelChunks.get(key);
         if (!entry || !entry.waterCells) {
@@ -26913,6 +27012,77 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
+        const data = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
+        if (!data) {
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        return this._finalizeWaterSheetMesh(cx, cz, key, data);
+    }
+
+    // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + den CA-Level-Spiegel.
+    // Der Worker-Pendant (im `water-sheet`-Handler) liest stattdessen den gesendeten Block.
+    _mainWaterSheetCtx(cx, cz, entry) {
+        const voxelChunks = this.state.voxelChunks;
+        const levelMap = this.state.waterLevelCells;
+        // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie"): die
+        // Glätt-Pässe (browser-justierbar 0..6). PAD = Pässe + 1 (naht-symmetrisch).
+        const smoothRaw =
+            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
+                ? Math.round(this.state.atmosphere.waterSheetSmooth)
+                : 4;
+        return {
+            smoothPasses: Math.max(0, Math.min(6, smoothRaw)),
+            getCells: (ncx, ncz) => {
+                if (ncx === cx && ncz === cz) return entry.waterCells;
+                const nb = voxelChunks.get(`${ncx},${ncz}`);
+                return nb && nb.waterCells ? nb.waterCells : null;
+            },
+            getLevel: (ncx, ncz) => (levelMap ? levelMap.get(`${ncx},${ncz}`) : undefined),
+        };
+    }
+
+    // B1 — die THREE-Hülle des Wasser-Sheets (Main-only): die rohen Arrays (Main-sync
+    // ODER vom Worker geliefert) → BufferGeometry + geteiltes Hydro-Material + Mesh.
+    // Geteilt vom Sync-Pfad UND dem async Worker-Pfad (`_applyWorkerWaterSheet`).
+    _finalizeWaterSheetMesh(cx, cz, key, data) {
+        if (!this.state.scene || typeof THREE === "undefined") return null;
+        if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
+        this._disposeVoxelChunkWaterIso(key);
+        const positions = data.positions;
+        const geom = new THREE.BufferGeometry();
+        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(data.aFlow, 2));
+        geom.setAttribute("aWave", new THREE.Float32BufferAttribute(data.aWave, 1));
+        geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(data.aDepth, 1));
+        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(data.aSlope, 1));
+        // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
+        geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        geom.setIndex(Array.from(data.indices));
+        const mat = this._ensureHydroSurfaceMaterial();
+        if (!mat) {
+            this._queueGeometryDispose(geom);
+            this.state.voxelChunkWaterIso.set(key, null);
+            return null;
+        }
+        const mesh = new THREE.Mesh(geom, mat);
+        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
+        mesh.userData = {
+            isHydrosphere: true,
+            hydroKind: "chunk-water-cellsheet",
+            voxelChunkX: cx,
+            voxelChunkZ: cz,
+        };
+        this.state.scene.add(mesh);
+        this.state.voxelChunkWaterIso.set(key, mesh);
+        return mesh;
+    }
+
+    // B1 — die EINE pure-typed-array-Mathematik des Zell-Oberkanten-Sheets. KEINE THREE-
+    // Objekte, KEIN state-Zugriff auf Zellen/Level (nur via ctx) → der Worker-Mirror
+    // `buildWaterSheetGeometry` ist byte-identisch. Liefert
+    // {positions, indices, aFlow, aWave, aDepth, aSlope} (plain Arrays) oder null.
+    _computeWaterSheetData(cx, cz, ctx) {
         // Wie die Zellen + die Fläche: IMMER LOD0 (V9.93/V18.22 — eine Skala).
         const cfg0 = this._voxelChunkConfig(0);
         const dim = cfg0.dim,
@@ -26924,17 +27094,7 @@ class AnazhRealm {
         const oy = (this.state.terrainBaseHeight || 0) - cfg0.floorDrop;
         const dimSq = dim * dim;
         const waterLevel = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        // V18.91 — OBERFLÄCHENSPANNUNG (Schöpfer: „nicht geknäulte Alufolie — das
-        // Terrain-Sheet ist deutlich glatter"): VIER Glätt-Pässe (Radius 1) statt zwei,
-        // browser-justierbar (0..6, der Schöpfer dirigiert die Spannung live):
-        //   anazhRealm.state.atmosphere.waterSheetSmooth = 6  (+ Modus neu wählen → re-mesh)
-        // PAD = Pässe + 1 (die Abhängigkeits-Kegel der konsumierten Spalten −1..dim
-        // bleiben voll im Grid → naht-symmetrisch EXAKT, wie GEMESSEN Δy=0).
-        const smoothRaw =
-            this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterSheetSmooth)
-                ? Math.round(this.state.atmosphere.waterSheetSmooth)
-                : 4;
-        const SMOOTH_PASSES = Math.max(0, Math.min(6, smoothRaw));
+        const SMOOTH_PASSES = ctx.smoothPasses;
         const PAD = SMOOTH_PASSES + 1;
         const GW = dim + 2 * PAD;
         const topG = new Float64Array(GW * GW).fill(NaN); // NaN = trocken
@@ -26962,14 +27122,16 @@ class AnazhRealm {
                     ncz += 1;
                     lk -= dim;
                 }
-                let src = entry.waterCells;
-                let srcKey = key;
+                let src = ctx.getCells(cx, cz);
+                let srcCX = cx,
+                    srcCZ = cz;
                 let dryFallback = false;
                 if (ncx !== cx || ncz !== cz) {
-                    const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-                    if (nb && nb.waterCells) {
-                        src = nb.waterCells;
-                        srcKey = `${ncx},${ncz}`;
+                    const nb = ctx.getCells(ncx, ncz);
+                    if (nb) {
+                        src = nb;
+                        srcCX = ncx;
+                        srcCZ = ncz;
                     } else {
                         // V18.93 — SYMMETRIE-Fallback: ein fehlender/trockener Nachbar zählt
                         // TROCKEN (reader-UNABHÄNGIG — GEMESSEN: der alte Clamp auf die eigene
@@ -26978,12 +27140,13 @@ class AnazhRealm {
                         // Rand-Spalte. Ein UNGELADENER Nass-Nachbar heilt beim Re-Enqueue.
                         li = Math.max(0, Math.min(dim - 1, ci));
                         lk = Math.max(0, Math.min(dim - 1, ck));
-                        src = entry.waterCells;
-                        srcKey = key;
+                        src = ctx.getCells(cx, cz);
+                        srcCX = cx;
+                        srcCZ = cz;
                         dryFallback = true;
                     }
                 }
-                const level = levelMap ? levelMap.get(srcKey) : undefined;
+                const level = ctx.getLevel(srcCX, srcCZ);
                 const sc = this._caColumnScan(src, level, li + lk * dim, dimSq, dimY);
                 solidG[gi] = sc.solidTopJ >= 0 ? oy + sc.solidTopJ * step : oy;
                 if (dryFallback) continue; // trocken — topG bleibt NaN (symmetrisch)
@@ -27073,14 +27236,14 @@ class AnazhRealm {
                     ncz += 1;
                     lk -= dim;
                 }
-                let src = entry.waterCells;
+                let src = ctx.getCells(cx, cz);
                 if (ncx !== cx || ncz !== cz) {
-                    const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-                    if (nb && nb.waterCells) src = nb.waterCells;
+                    const nb = ctx.getCells(ncx, ncz);
+                    if (nb) src = nb;
                     else {
                         li = Math.max(0, Math.min(dim - 1, ci));
                         lk = Math.max(0, Math.min(dim - 1, ck));
-                        src = entry.waterCells;
+                        src = ctx.getCells(cx, cz);
                     }
                 }
                 const colBase = li + lk * dim;
@@ -27339,36 +27502,8 @@ class AnazhRealm {
                 indices.push(cB, fB, cA, fA, cA, fB);
             }
         }
-        if (indices.length === 0) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(aFlow, 2));
-        geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
-        geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
-        geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(aSlope, 1));
-        // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
-        geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
-        geom.setIndex(indices);
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            this._queueGeometryDispose(geom);
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.renderOrder = 1; // transparent — nach den opaken Objekten
-        mesh.userData = {
-            isHydrosphere: true,
-            hydroKind: "chunk-water-cellsheet",
-            voxelChunkX: cx,
-            voxelChunkZ: cz,
-        };
-        this.state.scene.add(mesh);
-        this.state.voxelChunkWaterIso.set(key, mesh);
-        return mesh;
+        if (indices.length === 0) return null;
+        return { positions, indices, aFlow, aWave, aDepth, aSlope };
     }
 
     // V9.72 (Welle C.2) — Iso-Wasser-Mesh disposen. Geometry wird disposed,
@@ -28815,7 +28950,12 @@ class AnazhRealm {
         // Queue ihn rebuildet → sichtbares Flackern der „fliegenden Ebene" am
         // Edit-Punkt. Streaming (ferne neue Chunks) deferred weiter.
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        else this._enqueueWaterIso(cx, cz);
+        // B1 (V18.345) — ERST-PAINT OFF-THREAD: HIER (vor dem `_wakeWaterCA` unten) ist der
+        // Chunk garantiert CA-frei → der Worker baut das Sheet sofort off-thread (FPS-frei,
+        // byte-identisch). Nur wenn nicht eligible (Worker weg · aktiv-fliessende Nachbarn ·
+        // kein Wasser) → die deferred Queue (Sync-Fallback im Tick). Die 8-Nachbar-Naht-Heilung
+        // unten läuft weiter über die Queue → `_buildWaterSheetStreaming` (Worker/Sync).
+        else if (!this._tryWorkerWaterSheet(cx, cz)) this._enqueueWaterIso(cx, cz);
         // V18.93 — WAKE-ON-STREAM, JETZT GEBÄNDIGT (T4-Plan §7 ENTSCHIEDEN + GEMESSEN):
         // jeder einstreamende Wasser-Chunk weckt den CA einmal → die Welt-Wasser-Substanz
         // LEBT von allein (Fluss-Skins breiten sich aus, Schelf-Lücken füllen, dann Settle).
@@ -59464,6 +59604,63 @@ class AnazhRealm {
         this.state.pendingWaterIso.add(`${cx},${cz}`);
     }
 
+    // B1 (V18.345) — DER STREAMING-WASSER-SHEET, OFF-THREAD (der Haupt-Fix, FPS-frei):
+    // baut das Zell-Oberkanten-Sheet im WORKER (CA-frei, "cells"-Default, Worker bereit),
+    // sonst SYNC. Der Worker-Pfad ist BUILD-BEFORE-DISPOSE (das alte Sheet bleibt, bis das
+    // Ergebnis ankommt → kein 1-Frame-Loch) + STALE-geschützt: ein geprunter Chunk wird
+    // verworfen, ein State-Bump (Carve/Regen zwischen Request + Antwort → die gesendeten
+    // Zellen sind stale) baut SYNC neu (die EINE Quelle `_buildVoxelChunkWaterIsoSurface`,
+    // kein Parallelpfad). NUR der Streaming-Tick (`_tickPendingWaterIso`) ruft das; Carve/
+    // Edit/Test bleiben sync (Schöpfer-Entscheid „nur der Streaming-Pfad"). So streamt das
+    // Wasser MIT dem Terrain, ohne den Main-Thread zu belasten (die „ferne Lade-Linie" weg).
+    // B1 (V18.345) — VERSUCHT den Wasser-Sheet OFF-THREAD im Worker zu bauen. Liefert true,
+    // wenn die Anfrage abgesetzt wurde (eligible: Worker bereit · "cells"-Default · der 3×3
+    // ist NICHT aktiv-fliessend [`_waterSheetCaFree`] · der Chunk trägt Wasser), sonst false
+    // → der Aufrufer baut SYNC. BUILD-BEFORE-DISPOSE (das alte Sheet bleibt, bis das Ergebnis
+    // ankommt) + STALE-Schutz (geprunt → verworfen · State-Bump zwischen Request+Antwort →
+    // die Zellen sind stale → sync neu). Aufrufer: der Finalize (Erst-Paint, VOR dem CA-Wake →
+    // CA-frei = byte-identisch) UND der Streaming-Tick (Naht-Heilung). Carve/Edit/Test bleiben
+    // sync (Schöpfer-Entscheid „nur der Streaming-Pfad").
+    _tryWorkerWaterSheet(cx, cz) {
+        if (
+            !this.state.voxelWorker ||
+            !this.state.voxelWorkerReady ||
+            this._waterRenderMode() !== "cells" ||
+            !this._waterSheetCaFree(cx, cz)
+        )
+            return false;
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        if (!entry || !entry.waterCells) return false; // kein Wasser → der Aufrufer baut sync (Map null)
+        const genAtRequest = this.state.voxelWorkerStateGen;
+        this._workerBuildWaterSheet(cx, cz)
+            .then((data) => {
+                if (!this.state.voxelChunks || !this.state.voxelChunks.has(key)) return; // gepruned
+                if (this.state.voxelWorkerStateGen !== genAtRequest) {
+                    // Welt-State driftete (Carve/Regen) → die gesendeten Zellen sind stale → sync neu.
+                    this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                    return;
+                }
+                if (!data || data.empty) {
+                    this._disposeVoxelChunkWaterIso(key);
+                    if (this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso.set(key, null);
+                    return;
+                }
+                this._finalizeWaterSheetMesh(cx, cz, key, data);
+            })
+            .catch(() => {
+                // Worker-Fehler → sync-Fallback (kein verlorenes Wasser).
+                if (this.state.voxelChunks && this.state.voxelChunks.has(key))
+                    this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            });
+        return true;
+    }
+
+    // Der Streaming-Tick-Pfad: Worker (off-thread) ODER sync-Fallback.
+    _buildWaterSheetStreaming(cx, cz) {
+        if (!this._tryWorkerWaterSheet(cx, cz)) this._buildVoxelChunkWaterIsoSurface(cx, cz);
+    }
+
     _tickPendingWaterIso(maxPerFrame = 4, deadlineMs = Infinity) {
         const queue = this.state.pendingWaterIso;
         if (!queue || queue.size === 0) return 0;
@@ -59527,7 +59724,11 @@ class AnazhRealm {
             const comma = key.indexOf(",");
             const cx = parseInt(key.slice(0, comma), 10);
             const cz = parseInt(key.slice(comma + 1), 10);
-            this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            // B1 (V18.345) — OFF-THREAD: der Streaming-Sheet baut im Worker (CA-frei),
+            // sonst sync. Der Bau ist jetzt fast gratis auf dem Main (nur der Zell-Block-
+            // Copy + postMessage) → die Zeit-Deadline deckelt ihn weiterhin, der Worker
+            // trägt die ~8-ms-Geometrie off-thread (die „ferne Lade-Linie" weg, FPS-frei).
+            this._buildWaterSheetStreaming(cx, cz);
             built++;
         }
         // FIFO-Tail (Anti-Starvation): nur wenn das Count-Budget UND die
@@ -59539,7 +59740,7 @@ class AnazhRealm {
                 const comma = key.indexOf(",");
                 const cx = parseInt(key.slice(0, comma), 10);
                 const cz = parseInt(key.slice(comma + 1), 10);
-                this._buildVoxelChunkWaterIsoSurface(cx, cz);
+                this._buildWaterSheetStreaming(cx, cz);
                 built++;
                 break;
             }
@@ -73751,7 +73952,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.344.0";
+AnazhRealm.VERSION = "18.345.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

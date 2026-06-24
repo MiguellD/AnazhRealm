@@ -97,6 +97,8 @@ const server = http.createServer((req, res) => {
             "_voxelSampleDensityGrid",
             "_buildStaticTriMeshCollision",
             "_buildVoxelChunkWaterIsoSurface",
+            "_buildWaterSheetStreaming",
+            "_workerBuildWaterSheet",
             "_buildVoxelChunkGrass",
             "_populateVoxelChunkVegetation",
             "_tickPendingVegSpawns",
