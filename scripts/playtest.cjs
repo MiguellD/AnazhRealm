@@ -35798,9 +35798,12 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
         out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
-        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche
+        // (A1e) Verschiedene seeds → mind. 5 unique cache keys. V18.347 — 12 statt 6 Versuche:
+        // der Key ist `grown_<art>_v<hash(seed)%N>` mit N=VARIANTS_PER_SPECIES=8; 6 KONSEKUTIVE
+        // Seeds (50000–50005) konnten mod 8 in <5 Buckets clustern (Borderline-Flake). 12 distinkte
+        // Seeds über 8 Buckets → ≥5 unique robust (die Varianten-DIVERSITÄT ist der eigentliche Test).
         const keys = new Set();
-        for (let s = 0; s < 6; s++) {
+        for (let s = 0; s < 12; s++) {
             const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
             if (k) keys.add(k);
         }
@@ -38486,8 +38489,12 @@ async function checkBandV18224ScatterPromotion(ctx) {
     // Waldland, das Terrain/Fels/Blumen sichtbar macht. Die Dichte-Schwellen ziehen
     // mit (der Test wandert mit dem Code) — die Welt ist BEWUSST sparsamer.
     check(
-        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥18/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`,
-        res.designPerChunk >= 18
+        // V18.347 — die Schwelle 18→2.5 nachgezogen: die SCATTER-Caps wurden SCHÖPFER-GETRIEBEN für
+        // FPS gesenkt (V18.303 tree 90→55 „Laub war 90 % der GPU-Last, zu viele Bäume"; under 250→70→40)
+        // → die Kapazität fiel von ~18 auf ~3/Chunk. Die ≥18-Schwelle war von VOR diesen Schnitten; der
+        // Test prüft jetzt den aktuellen FPS-bewussten Floor (>0, drei Strata bleiben via M3 geprüft).
+        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥2.5/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(1) : "?"})`,
+        res.designPerChunk >= 2.5
     );
     check(
         `V18.224/267 (M6) ECHTE Dichte ≥4 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
@@ -55723,10 +55730,13 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
-        // Liste hat einen Eintrag pro Bauplan
+        // Liste hat einen Eintrag pro Bauplan. V18.317/.347 — die Liste filtert die auto-gewachsenen
+        // Streaming-Varianten (`grown_<art>_v<N>`, re-wachsen f(seed)) HERAUS; der Test zählt darum
+        // auch nur die NICHT-grown-Baupläne (sonst Mismatch, sobald die Welt grown_-Varianten streamt).
         const list = document.getElementById("workshop-list");
+        const listableCount = Object.keys(r.state.blueprints).filter((n) => !String(n).startsWith("grown_")).length;
         out.listShowsAllBlueprints =
-            list && list.querySelectorAll(".workshop-list-row").length === Object.keys(r.state.blueprints).length;
+            list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 
         // createBlueprint
         const beforeCount = Object.keys(r.state.blueprints).length;
