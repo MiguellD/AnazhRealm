@@ -25884,6 +25884,13 @@ class AnazhRealm {
     // stand. Diese Front deckelt den Reveal zusätzlich auf den grössten Ring, in dem JEDER Chunk
     // terrain-gebaut UND wasser-fertig ist (= NICHT mehr in `pendingWaterIso`; ein wasserloser
     // Chunk wird nie enqueued → trivial fertig). Headless → die Terrain-Front (volle Welt, wie Gras).
+    // V18.348 — DIE FRONT IST MONOTON pro Chunk (Schöpfer „der Nebel reist nach aussen und
+    // flackert dann nach vorne und zurück"): die V18.346-Front prüfte `pendingWaterIso`-Mitglied-
+    // schaft — die OSZILLIERT, weil die Wasser-CA settled Chunks RE-ENQUEUED (Wasser fliesst/setzt
+    // sich → Dach ändert → Re-Mesh, `enqueueWithReaders`) → die Front zog 3→2→3 zurück → der Nebel
+    // flackerte. FIX: die Front wartet NUR auf Wasser, das NIE gebaut wurde (die Streaming-Front);
+    // ein Chunk mit EXISTIERENDEM Wasser-Mesh (`voxelChunkWaterIso`, build-before-dispose) gilt als
+    // fertig, AUCH wenn die CA ihn gerade re-enqueued hat → die Front retracted nicht → kein Flackern.
     _builtWaterRingRadius() {
         const st = this.state;
         if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
@@ -25891,6 +25898,7 @@ class AnazhRealm {
         const cfg = this._voxelChunkConfig();
         const { cx, cz } = st.lastPlayerVoxelChunk;
         const pend = st.pendingWaterIso;
+        const wi = st.voxelChunkWaterIso;
         let k = -1;
         outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
             for (let dx = -ring; dx <= ring; dx++) {
@@ -25899,7 +25907,11 @@ class AnazhRealm {
                     const key = `${cx + dx},${cz + dz}`;
                     const e = st.voxelChunks.get(key);
                     if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
-                    if (pend && pend.has(key)) break outer; // Wasser-Fläche noch ausstehend → der See fehlt
+                    // Wasser-Mesh existiert schon (gebaut, ggf. von der CA re-enqueued zum Re-Mesh) →
+                    // fertig (die Front retracted NICHT). Nur ein NIE-gebauter, ausstehender Chunk
+                    // (Streaming-Front: kein Mesh + in pending) lässt die Front hier stoppen.
+                    const hasWaterMesh = wi && wi.get(key);
+                    if (!hasWaterMesh && pend && pend.has(key)) break outer;
                 }
             }
             k = ring;
@@ -31585,17 +31597,49 @@ class AnazhRealm {
         // smoothstep(0.3→2.0 m) → unter ~0.3 m ruhig, ab ~2 m volle Wellen. Ozean (aWaveV=1)
         // unverändert (max). Browser-justierbar über uLakeRipple.
         const aWaveEff = max(aWaveV, uLakeRipple.mul(smoothstep(float(0.3), float(2.0), aDepthV)));
-        const disp = waveDisplace(p.xz).mul(aWaveEff);
+        // V18.348 — FLIESSENDES Wasser kräuselt STROMAB, nicht im fixed-direction-Ozean-Gerstner
+        // (Schöpfer „die Flussoberfläche noch immer gleich" = das „Alufolie/Chevron"-Raster). GEMESSEN
+        // am Schöpfer-Spot (71.5,-73.6, seed anazh-realm-seed): der Fluss trägt aWave=0 (heightRamp=0,
+        // hoch über Sea-Level), die Oberfläche bewegt NUR der uLakeRipple-Floor — und der nutzt das
+        // OMNIDIREKTIONALE 6-Oktav-Gerstner, dessen FIXES Welt-Interferenz-Muster auf flachem Fluss-
+        // Wasser als Raster liest. FIX: wo Flow präsent ist (`aFlow`), ERSETZT eine stromab-wandernde
+        // Welle (entlang `aFlow`, KEIN fixes Gitter) das Omni-Gerstner → der Fluss fliesst sichtbar.
+        // Die stille See / der Ozean (aFlow≈0 → flowMix=0) behält das Omni-Gerstner BYTE-UNVERÄNDERT.
+        // SHADER-ONLY: die `aFlow`-Sheet-Daten sind unberührt → kein Worker-Mirror, kein Determinismus-
+        // Eingriff (der Wert lebt schon im Vertex-Attribut, nur seine Nutzung im Displace ändert sich).
+        const flowMag = aFlowV.length();
+        const flowMix = smoothstep(float(0.05), float(0.16), flowMag); // 0 still (See/Ozean) → 1 Fluss
+        const flowDir = aFlowV.div(flowMag.max(float(0.0001)));
+        const flowPerp = vec2(flowDir.y.mul(-1.0), flowDir.x);
+        const flowAmp = uLakeRipple.mul(smoothstep(float(0.3), float(2.0), aDepthV)).mul(float(0.8));
+        // EINE Displace-Quelle (omni ⊗ stromab, per-Vertex geblendet) für alle 3 Normal-Samples.
+        const surfDisp = Fn(([xz]) => {
+            const omni = waveDisplace(xz).mul(aWaveEff);
+            const ph1 = dot(xz, flowDir)
+                .mul(float(0.9))
+                .sub(uTime.mul(float(1.3)));
+            const ph2 = dot(xz, flowDir)
+                .mul(float(2.1))
+                .sub(uTime.mul(float(2.3)))
+                .add(dot(xz, flowPerp).mul(float(1.2)));
+            const fh = sin(ph1)
+                .mul(float(0.62))
+                .add(sin(ph2).mul(float(0.26)));
+            const flowD = vec3(float(0.0), fh.mul(flowAmp), float(0.0));
+            return mix(omni, flowD, flowMix);
+        });
+        const disp = surfDisp(p.xz);
         const pd = p.add(disp);
         const vWave = disp.y;
 
-        // Normale aus Tangenten-Kreuzprodukt (3 Samples: pd, px, pz).
-        // Bei aWaveEff=0 degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
+        // Normale aus Tangenten-Kreuzprodukt (3 Samples: pd, px, pz) — alle durch surfDisp,
+        // damit die stromab-Welle die Normale (Sonnen-Glitzer) korrekt trägt.
+        // Bei aWaveEff=0 + kein Flow degeneriert das Kreuzprodukt sauber zu (0, 1, 0).
         const e = float(1.4);
         const pxBase = vec3(p.x.add(e), p.y, p.z);
         const pzBase = vec3(p.x, p.y, p.z.add(e));
-        const pxPos = pxBase.add(waveDisplace(vec2(p.x.add(e), p.z)).mul(aWaveEff));
-        const pzPos = pzBase.add(waveDisplace(vec2(p.x, p.z.add(e))).mul(aWaveEff));
+        const pxPos = pxBase.add(surfDisp(vec2(p.x.add(e), p.z)));
+        const pzPos = pzBase.add(surfDisp(vec2(p.x, p.z.add(e))));
         const nrmRaw = normalize(cross(pzPos.sub(pd), pxPos.sub(pd)));
         // n.y < 0 → flip (sicherer Up-Vektor) via cond-Knoten.
         const nrmFlipped = cond(nrmRaw.y.lessThan(0.0), nrmRaw.mul(-1.0), nrmRaw);
@@ -74038,7 +74082,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.347.0";
+AnazhRealm.VERSION = "18.348.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
