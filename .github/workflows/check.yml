@@ -144,6 +144,14 @@ jobs:
         # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
         run: npm run gate:carve
 
+      - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
+        # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
+        # `_foliageDensityScale`-Regler NICHT nur beim Erst-Bau folgt, sondern auch im Stand/Drehen:
+        # gesunkene Dichte → die GELADENE Gras-Last sinkt (−60% bei 0.4); Default-Dichte (scale=1) →
+        # KEIN Dünnen (volle Wiese, gate-treu); über Budget → kein Dünnen (V18.282). Die V18.280-Hälfte
+        # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
+        run: npm run gate:grass-thin
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

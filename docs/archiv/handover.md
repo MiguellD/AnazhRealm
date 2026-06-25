@@ -378,6 +378,26 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.363 — DAS GRAS FOLGT DEM REGLER IM STAND (Schöpfer „du willst gras schneiden statt es zu genialisieren, als ob man den halben Raptor entfernt; tue beides champ, inventor!")
+
+**Der Auftrag (die zweite Hälfte von „tue beides"): den FPS-Render-Sockel genialisieren — die Profilösung finden, NICHT die Qualität schneiden (der halbe-Raptor-Befund).**
+
+**ZUERST gemessen (die Disziplin, nicht headless raten — drei neue schnelle Null-Renderer-Linsen):**
+- `diag-grass-load` (die echte Gras-Geometrie, CPU, ~9 s): 906 k–1,13 M Gras-Tris · 37–47 k Büschel · **ALLE frustum-cullbar** (0 view-unabhängig — die per-Chunk-Cullung wirkt).
+- `diag-scene-cull` (Last × Cull-Status, „other" nach Quelle aufgebrochen — die V18.266/.307-Disziplin): die Szene ist ~7,45 M Tris, **96 % sind Laub+Gras, davon nur 14,8 k view-unabhängig (0 %)** → die Cullung (Region-Keying V18.300/.353 + `perObjectFrustumCulled`) IST gebaut, es gibt KEINE view-unabhängige Verschwendung. Der Render-Sockel ist genuin GPU-gebunden durch SICHTBARE Dichte (Laub 79 %, Gras 15 %) — eine Look-Wahl, kein Cull-Leck.
+
+**Der GENIALE Hebel (nicht schneiden — die fehlende Regel-Hälfte schließen):** das Gras ist die dominante kapazitäts-geregelte Last (V18.307, 83 %), las aber `_foliageDensityScale` NUR beim ERST-Bau (`_buildVoxelChunkGrass`). Eine schon GELADENE, dichte Welt behielt ihr volles Gras beim reinen DREHEN/STEHEN (kein Re-Stream) → senkte der Regler die Dichte unter Last, dünnte er Streu (V18.280) + Ring, aber das Gras pinnte die GPU weiter → der Regler musste alles ANDERE über-drosseln (drab) ohne die fps zu heilen (langsam) = der gemessene Synergie-Verlust, den der Schöpfer fühlt. Das war die offene V18.307-Hälfte (`Offen: Gras in _tickFoliageThin`).
+
+**Gebaut (die exakte Schwester zu `_tickFoliageThin`/Streu, V18.280, auf das Gras):**
+- `voxelChunkGrassDensity` (init-Feld): pro Gras-Chunk die Bau-Dichte gemerkt.
+- `_tickGrassThin(playerPos)` (gerufen aus `_tickScatterStreaming`, neben `_tickFoliageThin`): die NÄCHSTE Gras-Chunk, deren Bau-Dichte deutlich über der jetzt geregelten liegt (`built > scale + 0.12`), wird dünner neu gebaut (`_disposeVoxelChunkGrass`→`_buildVoxelChunkGrass` liest `_foliageDensityScale` LIVE). Budgetiert (1 Chunk/Tick) + NUR in den Lücken (`!_frameOverBudget` — die V18.282-Wand: erst die Frame-Zeit, dann nachregeln). EIN Regler, kein Parallel-System.
+
+**Warum das KEIN Schnitt der Qualität ist (die Antwort auf den halben-Raptor-Befund):** starke HW hält `_foliageDensityScale ≈ 1` → `built ≈ scale` → KEIN Dünnen → die volle Wiese. Nur die KÄMPFENDE HW lichtet das Gras genau so weit, wie sie es nicht tragen kann (adaptiv, bidirektional — der Spawn-Ring re-baut es dichter, wenn die Kapazität zurückkehrt). Das ist die V18.275-Vision „die Welt wächst nach Kapazität" — jetzt auch SCHRUMPFEND für die dominante Last im Stand. Der Regler erreicht endlich seinen größten Hebel → er muss die Reste NICHT mehr über-drosseln → weniger drab UND smoother (die Synergie wiederhergestellt).
+
+**Bewiesen `scripts/diag-grass-thin.cjs` (`npm run gate:grass-thin`, 4/4, im CI):** scale 0.4 → die geladene Wiese **43626→17378 Büschel (−60 %, 64 Chunks)** — exakt das V18.280-Streu-Resultat; scale=1 (headless-default) → KEIN Dünnen (volle Wiese, gate-treu, `_foliageDensityScale=1` ist headless-erzwungen); über Budget → KEIN Dünnen (V18.282). GPU-frei, hardware-unabhängig.
+
+**Die DISZIPLIN-Lehre (vertieft V18.307):** ein kapazitäts-geregeltes Subsystem muss den Regler-Faktor an BEIDEN Enden lesen — beim Erst-Bau UND beim Nach-Regeln im Stand (`_tickFoliageThin`/`_tickGrassThin`); sonst erreicht der Regler die geladene Welt nur beim Laufen, und der dominante Last-Träger entzieht sich der Schleife, sobald der Spieler steht. **Das echte FPS-Feel + die Dichte-Schönheit sind Schöpfer-Browser** (der Mechanismus + der −60 %-Effekt sind headless bewiesen; ob die Wiese auf SEINER HW „voll genug" bleibt, richtet sein Auge — die `PERF_FOLIAGE_DENSITY_MIN`-Untergrenze ist der Knopf).
+
 ### V18.362 — DER GRAB-STALL AN DER WURZEL (Schöpfer-Hardware-Log: `Gegraben: 5× erde` → `FPS: 4`; „tue beides champ, inventor!")
 
 **Der Befund kam aus dem ECHTEN Browser-Log der Schöpfer-Hardware, nicht aus einem Diag:** zwei FPS-Muster. Das eine ein stetiger Render-gebundener Sockel (~17-22, der GPU-gebundene Kern, schon adressiert via Culling/Dichte/Schatten). Das ANDERE ein scharfer STALL auf FPS 4 — und er korrelierte sauber mit den `Gegraben`-Zeilen. Das Graben fror.**
