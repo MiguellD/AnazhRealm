@@ -131,6 +131,12 @@ jobs:
         # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
         run: npm run gate:page-error
 
+      - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
+        # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
+        # vernichtet: saveState rotiert einen .bak-Backup, der Load fällt bei korruptem Haupt-
+        # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
+        run: npm run gate:persistence
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

@@ -378,6 +378,25 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.361 — DIE AUDIT-LISTE GESCHLOSSEN, soweit headless ehrlich möglich (Schöpfer „bring die ganze Liste auf voll erledigt, sei kein Senior-Engineer der Angst hat, sei ein junger Steve Jobs")
+
+**Der Auftrag: die offenen Punkte meiner Ursprungs-Analyse schliessen — mit Mut, aber Jobs war ein Perfektionist, kein Reckless-Shipper. Also: jeden Punkt ehrlich nach „baubar-mit-Qualität" vs „strukturell/physisch gebunden" sortiert.**
+
+**GESCHLOSSEN (gebaut + headless bewiesen):**
+- **Persistenz-Härtung (HOCH).** Der Riss: ein korrupter/partieller localStorage-Write überschrieb den letzten guten Stand UND der Load verlor die Welt bei einem Parse-Fehler (`return null`). FIX (V18.361): `saveState` rotiert einen `.bak`-Backup (rettet den bisherigen Stand BEVOR es überschreibt; best-effort, Quota geschluckt — IndexedDB + Haupt-Write tragen weiter), `_loadStateLoadFromStorage` fällt bei korruptem Haupt-Stand auf den `.bak` zurück (beide korrupt → ehrliches null, kein stiller Müll). Bewiesen `scripts/diag-persistence.cjs` (`npm run gate:persistence`, 6/6, im CI). IndexedDB stand schon (V18.151, die 5-MB-Wand); dies schliesst die Backup-/Korruptions-Lücke.
+- **Stat-Governance (NIEDRIG-MITTEL).** Der Re-Bifurkations-Wand-Kommentar an `recomputePlayerStats` (die EINE Invalidierungs-Quelle), der alle Mutations-Aufrufer listet → ein neuer Stat-Pfad weiss, wohin er gehört.
+
+**GEMESSEN, NICHT GEBAUT (die ehrliche Wertung — Jobs killt die Mühe am falschen Ziel):**
+- **FPS / Performance (HOCH).** Die Last ist GPU-render-gebunden. GEMESSEN (die eigenen Doku-Zahlen + render-load): Gras = 83 % der Szene (2,12 M Tris) UND schon kapazitäts-geregelt (`_foliageDensityScale` + Ring-Ramp + die Regler-Bidirektion), Terrain nur ~10 % (207 k). Ein coarse-TERRAIN-fill (die naheliegende „low-res first"-Idee) träfe also 10 % der Last, während die 83 % schon geregelt sind — Mühe am falschen Ziel, plus Seam-/Kollisions-Risiko an der Chunk-Pipeline. Der echte Rest-Gewinn ist look-sensitiv (Gras-Dichte/Schatten = Schöpfer-Auge, KEIN headless-verifizierbarer Hebel). FPS ist KEIN unbearbeiteter Audit-Punkt — es ist der strukturell-gebundene Kern des V18.260–358-Firefights + des Engine-Bogens. Einen risikoreichen Low-Value-Umbau zu rammen wäre das Gegenteil von Jobs.
+
+**EHRLICH OFFEN (Physik/Scope, nicht Feigheit):**
+- Das gerenderte LOOK-Golden (`look-golden --render`): braucht eine echte GPU (der Container kann den WebGPU-Welt-Frame nicht capturen, V18.359 GEMESSEN). Ein `npm run look-golden --mint` auf der Schöpfer-Maschine schliesst es — die Linse wartet.
+- Die volle TypeScript-Migration: echte Mehr-Wochen-Arbeit an 78k Zeilen, kein Ein-Guss; ein `// @ts-check` würde tausende Fehler werfen. Ein sauberer erster Schritt (typisiertes state-`@typedef`) wäre ein eigener Bogen.
+- Der look-sensitive coarse-fill/Gras-Pass: Schöpfer-Auge.
+- Negative Sprache + die ~9 unkommentierten 0-Caller-Methoden: bewusst der organische „Sprach-Decay beim Berühren" (die eigene Regel), kein Marathon — neue Inhalte werden positiv geschrieben.
+
+**Verifikation:** `gate:persistence` 6/6 · voller Merge-Gate grün · check/lint(0)/format. Version 18.360 → 18.361.
+
 ### V18.360 — DER NEBEL-PUFFER + DIE SCHNELLE STREAMING-WERKBANK (Schöpfer „der Nebel pendelt, das Wasser kommt nicht hinterher, keine Dämpfung/Puffer" + „ist der Prozess genial?")
 
 **Drei Schöpfer-Befunde, an der Wurzel — gemessen, nicht geraten.**
