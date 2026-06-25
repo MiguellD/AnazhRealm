@@ -136,13 +136,22 @@ const server = http.createServer((req, res) => {
         let noCullTris = 0,
             noCullMeshes = 0,
             cullTris = 0;
-        const bySystem = { hism: { tris: 0, inst: 0, noCull: 0 }, scatter: { tris: 0, inst: 0, noCull: 0 }, rest: { tris: 0, inst: 0, noCull: 0 } };
+        const noCullByName = {}; // V18.362 — WELCHE Meshes cullen nie? (der Raptor-Ziel-Finder)
+        const bySystem = {
+            hism: { tris: 0, inst: 0, noCull: 0 },
+            scatter: { tris: 0, inst: 0, noCull: 0 },
+            rest: { tris: 0, inst: 0, noCull: 0 },
+        };
         // V18.265 — der HISM-Hebel-Schlüssel: WO konzentrieren sich die 2 M HISM-
         // Dreiecke? Nach LOD-Stufe (aus dem archInstanceKey geparst: _lod1/_lod2 →
         // sonst LOD0) → sagt, ob Impostoren (ferne LOD2 schon billig?) oder die
         // NAHEN LOD0-Bäume der Hebel sind.
         const hismByPrefix = {};
-        const hismLOD = { lod0: { tris: 0, inst: 0, groups: 0 }, lod1: { tris: 0, inst: 0, groups: 0 }, lod2: { tris: 0, inst: 0, groups: 0 } };
+        const hismLOD = {
+            lod0: { tris: 0, inst: 0, groups: 0 },
+            lod1: { tris: 0, inst: 0, groups: 0 },
+            lod2: { tris: 0, inst: 0, groups: 0 },
+        };
         scene.traverse((node) => {
             if (!node.visible) return;
             if (!node.isMesh && !node.isInstancedMesh) return;
@@ -180,17 +189,42 @@ const server = http.createServer((req, res) => {
             }
             bump(c, tris, 1, sc);
             if (node.isInstancedMesh) acc[c].instances += inst;
-            // frustumCulled-Aufschlüsselung
-            if (node.frustumCulled === false) {
+            // frustumCulled-Aufschlüsselung. WICHTIG (V18.362): eine BatchedMesh mit
+            // `perObjectFrustumCulled=true` cullt PRO INSTANZ auf der GPU, auch wenn die
+            // Mesh selbst `frustumCulled=false` ist (sie spannt die Welt, kann nicht als
+            // EINE Einheit cullen) — sie ist also NICHT „noCull". Ohne diese Korrektur log
+            // der Finder die per-Objekt-gecullten Arch-Batches als 1,59M-Phantom-Last.
+            const trulyNoCull = node.frustumCulled === false && node.perObjectFrustumCulled !== true;
+            if (trulyNoCull) {
                 noCullTris += tris;
                 noCullMeshes++;
+                const ud = node.userData || {};
+                const ident =
+                    (ud._creatureSkin && "creatureSkin") ||
+                    (node.isSkinnedMesh && "skinnedMesh") ||
+                    ud.hydroKind ||
+                    ud.kind ||
+                    ud.isHydrosphere ||
+                    ud.archInstanceKey ||
+                    ud.sourceOp ||
+                    node.name ||
+                    (node.material && node.material.type) ||
+                    node.type ||
+                    "?";
+                const nm =
+                    String(ident).replace(/[0-9]+/g, "#") +
+                    (node.isInstancedMesh ? "(inst)" : "") +
+                    "·" +
+                    Math.round(tris / 1000) +
+                    "k/mesh";
+                noCullByName[nm] = (noCullByName[nm] || 0) + tris;
             } else cullTris += tris;
             // System-Aufschlüsselung (HISM vs Scatter vs Rest)
             const u2 = node.userData || {};
             const sys = u2.archInstanceKey ? "hism" : node.isInstancedMesh ? "scatter" : "rest";
             bySystem[sys].tris += tris;
             bySystem[sys].inst += inst;
-            if (node.frustumCulled === false) bySystem[sys].noCull += tris;
+            if (trulyNoCull) bySystem[sys].noCull += tris;
             if (sys === "hism") {
                 const k = String(u2.archInstanceKey || "");
                 const bucket = /_lod2#/.test(k) ? "lod2" : /_lod1#/.test(k) ? "lod1" : "lod0";
@@ -270,7 +304,17 @@ const server = http.createServer((req, res) => {
         }
         return {
             byCat: acc,
-            totals: { tris: totalTris, calls: totalCalls, shadowTris, shadowCasters, visMeshes, noCullTris, noCullMeshes, cullTris },
+            totals: {
+                tris: totalTris,
+                calls: totalCalls,
+                shadowTris,
+                shadowCasters,
+                visMeshes,
+                noCullTris,
+                noCullMeshes,
+                cullTris,
+            },
+            noCullByName,
             bySystem,
             hismLOD,
             hismByPrefix,
@@ -323,20 +367,61 @@ const server = http.createServer((req, res) => {
     const t = out.totals;
     console.log("\n  TOTAL: tris " + fmt(t.tris) + " · draw-calls " + t.calls + " · sichtbare Meshes " + t.visMeshes);
     console.log(
-        "  VIEW-UNABHÄNGIG (frustumCulled=false): " + fmt(t.noCullTris) + " Dreiecke in " + t.noCullMeshes + " Meshes (= das, was Umsehen NICHT cullt) · cullbar " + fmt(t.cullTris)
+        "  VIEW-UNABHÄNGIG (frustumCulled=false): " +
+            fmt(t.noCullTris) +
+            " Dreiecke in " +
+            t.noCullMeshes +
+            " Meshes (= das, was Umsehen NICHT cullt) · cullbar " +
+            fmt(t.cullTris)
+    );
+    console.log(
+        "  noCull-TOP (der Raptor-Ziel-Finder): " +
+            Object.entries(out.noCullByName || {})
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([k, v]) => k + " " + fmt(v))
+                .join(" · ")
     );
     if (out.bySystem) {
         const bs = out.bySystem;
-        console.log("  SYSTEM: HISM " + fmt(bs.hism.tris) + " (noCull " + fmt(bs.hism.noCull) + ", inst " + bs.hism.inst + ") · Scatter " + fmt(bs.scatter.tris) + " (noCull " + fmt(bs.scatter.noCull) + ", inst " + bs.scatter.inst + ") · Rest " + fmt(bs.rest.tris) + " (noCull " + fmt(bs.rest.noCull) + ")");
+        console.log(
+            "  SYSTEM: HISM " +
+                fmt(bs.hism.tris) +
+                " (noCull " +
+                fmt(bs.hism.noCull) +
+                ", inst " +
+                bs.hism.inst +
+                ") · Scatter " +
+                fmt(bs.scatter.tris) +
+                " (noCull " +
+                fmt(bs.scatter.noCull) +
+                ", inst " +
+                bs.scatter.inst +
+                ") · Rest " +
+                fmt(bs.rest.tris) +
+                " (noCull " +
+                fmt(bs.rest.noCull) +
+                ")"
+        );
     }
     if (out.hismLOD) {
         const h = out.hismLOD;
-        const per = (b) => fmt(b.tris) + " tris / " + b.inst + " inst / " + b.groups + " grp (" + (b.inst ? Math.round(b.tris / b.inst) : 0) + " tris/inst)";
-if (out.hismByPrefix) {
-        const top = Object.entries(out.hismByPrefix).sort((a,b)=>b[1].tris-a[1].tris).slice(0,12);
-        console.log("  HISM Top-Arten (tris | inst):");
-        for (const [p,v] of top) console.log("    " + p.padEnd(28) + fmt(v.tris).padStart(8) + " | " + v.inst);
-    }
+        const per = (b) =>
+            fmt(b.tris) +
+            " tris / " +
+            b.inst +
+            " inst / " +
+            b.groups +
+            " grp (" +
+            (b.inst ? Math.round(b.tris / b.inst) : 0) +
+            " tris/inst)";
+        if (out.hismByPrefix) {
+            const top = Object.entries(out.hismByPrefix)
+                .sort((a, b) => b[1].tris - a[1].tris)
+                .slice(0, 12);
+            console.log("  HISM Top-Arten (tris | inst):");
+            for (const [p, v] of top) console.log("    " + p.padEnd(28) + fmt(v.tris).padStart(8) + " | " + v.inst);
+        }
         console.log("  HISM nach LOD: LOD0 " + per(h.lod0) + " · LOD1 " + per(h.lod1) + " · LOD2 " + per(h.lod2));
     }
     console.log(
