@@ -31711,8 +31711,8 @@ async function checkBandV18177AAA(ctx) {
         res.frozen === true && res.noGetterShadow === true
     );
     check(
-        `V18.177 AAA: heightWeight === 0.75 (war 0.6 — GEMESSEN ${res.heightWeight})`,
-        Math.abs(res.heightWeight - 0.75) < 1e-9
+        `V18.366: AERIAL heightWeight === 0.55 (Höhen-Melt sanfter gegen „völlig bleich", war 0.75 — GEMESSEN ${res.heightWeight})`,
+        Math.abs(res.heightWeight - 0.55) < 1e-9
     );
     check(
         `V18.177 AAA: microStrength === 0.14 (war 0.1 — GEMESSEN ${res.microStrength})`,
