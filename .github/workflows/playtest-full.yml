@@ -1,6 +1,6 @@
 name: Playtest-Full (volle Invarianten-Deckung)
 
-# DER VOLLE PLAYTEST — die ~5340 Invarianten über 244 Bänder. NICHT per-Push, weil er für einen
+# DER VOLLE PLAYTEST — die ~5340 Invarianten über 242 Bänder. NICHT per-Push, weil er für einen
 # geteilten CI-Runner zu schwer ist (gemessen: 3,5 h dann Fehlschlag, sogar bei einem reinen Docs-
 # Commit → Death-by-tausend-langsamen-Bändern, kein Code-Bug). Der per-Push-MERGE-GATE ist der
 # Fast-Tier + die GPU-Churn-Linse in check.yml (reliable, Minuten). Diese volle Deckung läuft hier

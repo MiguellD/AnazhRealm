@@ -93,7 +93,7 @@ jobs:
     # PER-PUSH-MERGE-GATE — der RELIABLE, schnelle Tier: der Fast-Playtest (Kern-Gesundheit,
     # ~13 Checks: Crash · Welt/Terrain · Avatar-Rig · Kreatur · Bauplan · Resonanz · Stats) +
     # die GPU-Churn-Linse. Beide laufen in Minuten + schliessen zuverlässig ab.
-    # WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten über 244 Bänder sind für einen
+    # WARUM NICHT DER VOLLE PLAYTEST HIER: die ~5340 Invarianten über 242 Bänder sind für einen
     # geteilten CI-Runner zu schwer — sie brauchen STUNDEN (gemessen: 3,5 h dann Fehlschlag, sogar
     # bei einem reinen Docs-Commit → ein Infrastruktur-Hang, kein Code-Bug). Death-by-tausend-
     # langsamen-Bändern, nicht ein einzelner Hänger (ein hängender page.evaluate würde vom
@@ -124,6 +124,13 @@ jobs:
       - name: Dependencies installieren (inkl. puppeteer)
         run: npm install --no-audit --no-fund
 
+      - name: Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)
+        # Bootet die Seite GPU-frei + sammelt jeden Runtime-Throw / echten Console-Error und
+        # exitet non-zero an der WURZEL (mit Stack) — BEVOR der Playtest in Folge-Fehlern
+        # ertrinkt. Fängt einen `is not a function`-Boot-Tod (ein verrutschter Methoden-Schnitt),
+        # den `node --check` nicht sieht (Syntax bleibt valide). Die Schwester zu cut-method.cjs.
+        run: npm run gate:page-error
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
@@ -139,3 +146,17 @@ jobs:
         # zählt createRenderPipeline/linkProgram. Nach Warmup MUSS eine Env-Regenerierung 0
         # Pipelines neu kompilieren — sonst exit≠0 und der Build wird ROT, bevor jemand friert.
         run: npm run gpu-lens
+
+      - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
+        # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
+        # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
+        # Atmosphäre-Trägheit · HDR-Tone-Mapping · lineare Farbe), gibt es eine publizierte
+        # physikalische Wahrheit. Diese Linse assertiert die CPU-lesbaren Look-Konstanten gegen
+        # reale Bereiche — GPU-frei, kein Schöpfer-Auge, eine ZAHL gegen die Realität.
+        run: npm run look-lens
+
+      - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
+        # Beweist die perzeptuelle Linse SELBST (MSSIM: identisch→1 · degradiert→<1), GPU-frei.
+        # Der gerenderte Golden-Vergleich (--render/--mint) gehört auf echte GPU + einen
+        # Schöpfer-Sign-off — hier läuft nur der gate-taugliche Linsen-Selbst-Test.
+        run: npm run look-golden

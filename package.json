@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.358.0",
+    "version": "18.359.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "scripts": {
@@ -16,6 +16,10 @@
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",
         "gpu-lens": "node scripts/diag-idle-gpu-churn.cjs",
+        "look-lens": "node scripts/diag-look-physics.cjs",
+        "look-golden": "node scripts/diag-look-golden.cjs",
+        "gate:page-error": "node scripts/diag-page-error.cjs",
+        "cut-method": "node scripts/cut-method.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
