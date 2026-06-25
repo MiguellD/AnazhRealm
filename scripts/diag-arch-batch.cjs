@@ -153,12 +153,17 @@ const server = http.createServer((req, res) => {
         s.useBatchedArch = true;
         const batchTotalInst = reScatter();
         const batchM = countScene();
-        const batchesAfter = s.archBatches ? s.archBatches.size : 0;
+        // V18.356 — NUR die SCATTER-Batches zählen (@regX,regZ, nicht @p:): mit useBatchedArch
+        // default-an trägt die Warmup-Welt schon LIVE platzierte Batches (@p:) — die sind legitim
+        // (lebende Strukturen), kein Leck. Der No-Leak-Test prüft, dass die SCATTER-Batches gehen.
+        const scatterBatchCount = () =>
+            s.archBatches ? [...s.archBatches.values()].filter((b) => isScatterKey(b.batchKey)).length : 0;
+        const batchesAfter = scatterBatchCount();
 
-        // ---- NO-LEAK: alle Regionen entsorgen → Batches müssen weg ----
+        // ---- NO-LEAK: alle Regionen entsorgen → die SCATTER-Batches müssen weg ----
         disposeAllRegions();
         const batchM2 = countScene();
-        const batchesAfterDispose = s.archBatches ? s.archBatches.size : 0;
+        const batchesAfterDispose = scatterBatchCount();
 
         // restore default + die Welt sauber neu streamen lassen
         s.useBatchedArch = false;
