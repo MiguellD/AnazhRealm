@@ -119,7 +119,8 @@ const server = http.createServer((req, res) => {
         }
 
         const resetSim = () => {
-            s.fixedTimestep = true;
+            // V18.358 — Fixed-Timestep ist der EINE Sim-Pfad (kein Toggle mehr); der Loop ruft
+            // `_loopFixedStep` unbedingt, dieser Diag fährt ihn direkt.
             mesh.position.set(spot.x, spot.y, spot.z);
             s.playerVel.setValue(0, 0, 0);
             s._fieldVy = 0;
@@ -178,7 +179,7 @@ const server = http.createServer((req, res) => {
         resetSim();
         const spiralSteps = r._loopFixedStep(100, 0);
 
-        // (d) Produktions-Pfad: fixedTimestep=true, ein paar echte Loop-Ticks
+        // (d) Produktions-Pfad: der Loop ruft `_loopFixedStep` unbedingt (V18.358, kein Toggle).
         const routesToFixed = /_loopFixedStep/.test(r.startEternalLoop.toString());
         const chunksBefore = s.voxelChunks ? s.voxelChunks.size : 0;
         resetSim();
@@ -191,7 +192,6 @@ const server = http.createServer((req, res) => {
         const chunksAfter = s.voxelChunks ? s.voxelChunks.size : 0;
         const finite =
             Number.isFinite(mesh.position.x) && Number.isFinite(mesh.position.y) && Number.isFinite(mesh.position.z);
-        s.fixedTimestep = false; // restore default
 
         return {
             sA,

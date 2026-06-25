@@ -141,12 +141,11 @@ const server = http.createServer((req, res) => {
         const headlessBudget = r._deferrableBudgetMs();
         if (s.renderer) s.renderer._isHeadlessNull = prevHN;
 
-        // (6) PRODUKTION: Scheduler-Pfad treiben
+        // (6) PRODUKTION: der Scheduler ist seit V18.358 der EINE Pfad (kein Toggle mehr) —
+        // `_loopVoxelStreaming` ruft `_runFrameScheduler` unbedingt. Ein paar echte Loop-Ticks.
         const routesToScheduler = /_runFrameScheduler/.test(r._loopVoxelStreaming.toString());
         const hasRun = typeof r._runFrameScheduler === "function";
         const chunksBefore = s.voxelChunks ? s.voxelChunks.size : 0;
-        const prevToggle = s.useFrameScheduler;
-        s.useFrameScheduler = true;
         let prodErr = null;
         try {
             for (let i = 0; i < 120; i++) r._gameLoopTick(performance.now());
@@ -154,7 +153,6 @@ const server = http.createServer((req, res) => {
             prodErr = String(e && (e.message || e));
         }
         const chunksAfter = s.voxelChunks ? s.voxelChunks.size : 0;
-        s.useFrameScheduler = prevToggle;
 
         return {
             A,

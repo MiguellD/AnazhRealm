@@ -22642,10 +22642,12 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.spawnSyncsWaterFootprint =
             /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
-        // Loop ruft den per-Frame-Tick (lebt in _loopVoxelStreaming).
+        // Loop ruft den per-Frame-Tick. V18.358 — der Wasser-Iso-Tick wanderte aus dem
+        // (abgelösten) festen `_loopVoxelStreaming`-Pfad in die Scheduler-Job-Registry
+        // `_buildDeferrableJobs` (waterIso-Job, prio 1); der Test folgt dem Refactor.
         out.loopTicksQueue =
-            typeof r._loopVoxelStreaming === "function" &&
-            /_tickPendingWaterIso\(/.test(r._loopVoxelStreaming.toString());
+            typeof r._buildDeferrableJobs === "function" &&
+            /_tickPendingWaterIso\(/.test(r._buildDeferrableJobs.toString());
         // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
         if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
         r.state.pendingWaterIso.clear();
@@ -28636,7 +28638,8 @@ async function checkBandV18131DekoKaskade(ctx) {
         // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
         // Fernfeld terrain-nachrangig.
         out.scatterReadsBand = /_detailBand\(ringDist\)/.test(r._buildVoxelChunkScatter.toString());
-        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._loopVoxelStreaming.toString());
+        // V18.358 — der Fernfeld-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
+        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._buildDeferrableJobs.toString());
         // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
         // Attribut, das das geteilte Art-Material liest.
         const geo = r._scatterImpostorGeometry(species[0]);
@@ -28804,7 +28807,8 @@ async function checkBandV18133Forage(ctx) {
         // Ernte, der Streaming-Slot tickt den Regrow.
         out.gestureRoutes = /_pickScatterAtCrosshair/.test(r.tryMouseBreak.toString());
         out.buildFilters = /scatterHarvested/.test(r._buildVoxelChunkScatter.toString());
-        out.loopRegrows = /_tickScatterRegrow/.test(r._loopVoxelStreaming.toString());
+        // V18.358 — der Regrow-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
+        out.loopRegrows = /_tickScatterRegrow/.test(r._buildDeferrableJobs.toString());
         // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
         // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
         out.trankKraut =
@@ -37894,7 +37898,15 @@ async function checkBandV18219bisVollendung(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
+            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
+            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
+            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            if (
+                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
+                typeof r[k] === "function"
+            )
+                loopSources.push(r[k].toString());
         }
         const loopBody = loopSources.join("\n");
         out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
@@ -38274,7 +38286,15 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
+            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
+            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
+            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            if (
+                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
+                typeof r[k] === "function"
+            )
+                loopSources.push(r[k].toString());
         }
         out.tickInLoop = /_tickScatterStreaming/.test(loopSources.join("\n"));
 
