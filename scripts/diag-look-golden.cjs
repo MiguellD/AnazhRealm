@@ -15,6 +15,14 @@
 // degradiert→<1). Das GOLDEN gehört dir (echte GPU + ein Sign-off), darum ist
 // der Render-Pfad opt-in (--render/--mint). Der Default beweist die Linse.
 //
+// GEMESSEN (V18.359, 3 Wege probiert, NICHT angenommen): dieser CI-/Agent-
+// Container kann den WebGPU-WELT-Frame headless NICHT capturen — die DOM-UI +
+// die Engine rendern sauber, aber der WebGPU-Backbuffer komponiert nicht in den
+// puppeteer-Screenshot (naiver Shot → weiß · diag-settled-view → Timeout unter
+// swiftshader-Kumulativ-Last · _loopRender×3-Trick → schwarz). Das Golden braucht
+// also ECHTE GPU, kein Container-Workaround — nicht aus Vorsicht behauptet,
+// sondern gemessen. `--mint` läuft auf deiner Maschine sauber durch.
+//
 // NUTZUNG:
 //   node scripts/diag-look-golden.cjs            → Selbst-Test der MSSIM-Linse (gate)
 //   node scripts/diag-look-golden.cjs --render   → rendert den Spot, vergleicht gegen Golden
