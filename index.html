@@ -507,20 +507,6 @@
                 border-color: var(--brass-1);
                 box-shadow: 0 0 6px rgba(180, 108, 255, 0.3);
             }
-            /* FP-sichtbares Emotion-Feedback (UI-Putz): ein Bildschirmrand-Schimmer in der
-               Farbe der dominanten Emotion + ein dezentes Label. box-shadow/Farbe/Opazität
-               setzt updateStatusPanel via _emotionState; die lange Transition glättet den
-               Stimmungs-Wechsel. Trägt die Stimmung in JEDER Kamera (die 3D-Aura nicht). */
-            #emotion-vignette {
-                position: fixed;
-                inset: 0;
-                pointer-events: none;
-                z-index: 2;
-                opacity: 0;
-                transition:
-                    opacity 1.4s ease,
-                    box-shadow 1.4s ease;
-            }
             /* W-C(g)/R-009 — das Emotions-Wort IN der Statusbar (das fixe
                #emotion-label-Overlay unter der Leiste fiel): dieselbe Farbe/
                derselbe Fade, jetzt als Leisten-Wert. */
@@ -7643,10 +7629,6 @@
     </head>
     <body>
         <canvas id="world-canvas"></canvas>
-        <!-- FP-sichtbares Emotion-Feedback: ein Bildschirmrand-Schimmer in der Farbe der
-             dominanten Emotion. Das WORT lebt seit W-C(g)/R-009 IN der Statusbar
-             (#status-emotion) — das fixe Overlay unter der Leiste fiel. -->
-        <div id="emotion-vignette" aria-hidden="true"></div>
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
@@ -9323,7 +9305,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.363.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.364.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9337,7 +9319,7 @@
         <!-- V18.315 DER BÄCKER: die THREE-freie Skin-Isosurface-Mathe. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Avatar-Bau im init liest das globale
              __bakeSkinGeometry. Derselbe Code läuft auch im bake-worker (importScripts). -->
-        <script src="bake-core.js?v=18.363.0" defer></script>
-        <script src="anazhRealm.js?v=18.363.0" defer></script>
+        <script src="bake-core.js?v=18.364.0" defer></script>
+        <script src="anazhRealm.js?v=18.364.0" defer></script>
     </body>
 </html>

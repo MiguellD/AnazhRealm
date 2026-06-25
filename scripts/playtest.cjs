@@ -21646,6 +21646,11 @@ async function checkBandWelleC3CellularReaction(ctx) {
         out.t1SyncUsesForceSync =
             typeof r._syncRebuildEditFootprint === "function" &&
             /forceSync:\s*true/.test(r._syncRebuildEditFootprint.toString());
+        // V18.364 — der Footprint-Rebuild ist adaptiv: bei Über-Budget (schwache HW) baut er
+        // NICHT sync, sondern lässt die Chunks async heilen (kein Grab-Stall, Kollision feld-nativ).
+        out.t1FootprintAdaptive =
+            typeof r._syncRebuildEditFootprint === "function" &&
+            /_frameOverBudget/.test(r._syncRebuildEditFootprint.toString());
 
         // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die feinen Boundary-Vertices an
         // einer LOD0↔LOD1-Grenze auf die GROBE Nachbar-Oberfläche ziehen → die T-junction
@@ -21798,6 +21803,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
     check(
         "T1 (Terrain-Kohärenz): _syncRebuildEditFootprint baut den Footprint forceSync (Source-Probe)",
         res.t1SyncUsesForceSync
+    );
+    check(
+        "V18.364 (Grab-Stall): _syncRebuildEditFootprint ist adaptiv (Über-Budget → async, Source-Probe)",
+        res.t1FootprintAdaptive
     );
     // T2 (Terrain-Kohärenz-Plan §4): der Cross-LOD-Geomorph — die räumliche Naht.
     check("T2 (Cross-LOD-Geomorph): kein Material-Morph-Fehler (positionNode kompiliert)", res.t2NoMorphError);
@@ -54235,25 +54244,23 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.germanName = !!joyName && joyName.textContent === "Freude";
         out.rowHasWirkungTooltip = !!joyRow && /wärmt/i.test(joyRow.getAttribute("title") || "");
 
-        // (b) Das FP-Feedback existiert — W-C(g)/R-009 (V18.169): das WORT lebt
-        // IN der Statusbar (#status-emotion), das fixe Overlay #emotion-label FIEL
-        // („in die Leiste oder gar nicht"). Test wandert mit (V9.56-i).
-        const vig = document.getElementById("emotion-vignette");
+        // (b) Das FP-Feedback lebt als WORT — W-C(g)/R-009 (V18.169): das WORT lebt
+        // IN der Statusbar (#status-emotion). Die FP-Vignette (Bildschirmrand-Ring) FIEL
+        // (V18.364, Schöpfer „doppelt + wirkt nicht real"). Test wandert mit (V9.56-i).
         const lab = document.getElementById("status-emotion");
-        out.vignetteInDom = !!vig;
+        out.vignetteGone = !document.getElementById("emotion-vignette");
         out.labelInDom = !!lab && !document.getElementById("emotion-label") && !!lab.closest("#statusbar");
 
-        // (c) Eine starke Emotion entzündet Vignette + Leisten-Wort (dominante = Freude).
+        // (c) Eine starke Emotion entzündet das Leisten-Wort (dominante = Freude).
         for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
         r.state.player.emotions.joy = 0.9;
         r._updateEmotionFeedback();
-        out.vignetteLit = !!vig && parseFloat(vig.style.opacity || "0") > 0.2;
         out.labelShowsDominant = !!lab && lab.textContent === "Freude";
 
-        // (d) Ruhe (alle ~0) verblasst das Feedback wieder.
+        // (d) Ruhe (alle ~0) verblasst das Leisten-Wort wieder.
         for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
         r._updateEmotionFeedback();
-        out.vignetteFadesWhenCalm = !!vig && parseFloat(vig.style.opacity || "0") === 0;
+        out.labelFadesWhenCalm = !!lab && parseFloat(lab.style.opacity || "0") === 0;
 
         for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
         return out;
@@ -54262,17 +54269,19 @@ async function checkBandEarlyRingsAndUi(ctx) {
     if (emoClarityResults) {
         check("UI-Putz Emotion: Balken zeigen deutschen Namen (Freude statt joy)", emoClarityResults.germanName);
         check("UI-Putz Emotion: Row trägt Wirkung-Tooltip (Legende)", emoClarityResults.rowHasWirkungTooltip);
-        check("UI-Putz Emotion: FP-Vignette im DOM", emoClarityResults.vignetteInDom);
+        check(
+            "UI-Putz Emotion: die FP-Vignette ist entfernt (Emotion lebt als Wort, nicht als Ring)",
+            emoClarityResults.vignetteGone
+        );
         check(
             "W-C(g)/R-009: das Emotions-Wort lebt IN der Statusbar (#status-emotion) — das fixe Overlay fiel",
             emoClarityResults.labelInDom
         );
-        check("UI-Putz Emotion: starke Emotion entzündet die Vignette", emoClarityResults.vignetteLit);
         check(
             "UI-Putz Emotion: Leisten-Wort zeigt die dominante Emotion (Freude)",
             emoClarityResults.labelShowsDominant
         );
-        check("UI-Putz Emotion: Ruhe verblasst das Feedback", emoClarityResults.vignetteFadesWhenCalm);
+        check("UI-Putz Emotion: Ruhe verblasst das Leisten-Wort", emoClarityResults.labelFadesWhenCalm);
     }
 
     // ### UI-Putz — der freie Bildschirm (H blendet das HUD aus) ###
