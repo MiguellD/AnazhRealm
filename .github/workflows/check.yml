@@ -137,6 +137,13 @@ jobs:
         # Stand darauf zurück (beide korrupt → ehrliches null). Schliesst den Datenverlust-Riss.
         run: npm run gate:persistence
 
+      - name: Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)
+        # Beweist headless die adaptive Sync/Async-Entscheidung des Edit-/Spieler-Chunk-Rebuilds:
+        # gesunder Frame → SYNC (instant-Carve-Feedback auf starker HW), Frame über Budget →
+        # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
+        # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
+        run: npm run gate:carve
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

@@ -25564,6 +25564,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
         // Game-Loop-Tick rebuildet pro Frame max 1.
+        // V18.362 (V17.32-Disziplin — den INTENT deterministisch testen): der Edit-/Spieler-
+        // Chunk-Rebuild ist seit V18.362 FRAME-BUDGET-ADAPTIV (`_rebuildVoxelChunk`: sync nur
+        // bei `!_frameOverBudget`, sonst async via Worker → kein ~200-ms-Grab-Stall auf schwacher
+        // HW). HEADLESS hat ein ~1-Hz-rAF → `_perfSenseFoldFrame` setzt `_frameOverBudget=true`
+        // (riesiges frameMs) → der Tick ginge async (Worker → „pending" → Chunk RE-ENQUEUED →
+        // size unverändert) statt der hier geprüften deterministischen 1/Frame-SYNC-Verteilung.
+        // Dieser Test prüft den DISTRIBUTIONS-Mechanismus (≤1 pro Frame), nicht die adaptive
+        // Sync/Async-Wahl (die `diag-carve-adaptive` separat beweist) → den gesunden Frame setzen.
+        r.state._frameOverBudget = false;
         r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {

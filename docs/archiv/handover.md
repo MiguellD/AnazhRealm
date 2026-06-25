@@ -378,6 +378,30 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.362 — DER GRAB-STALL AN DER WURZEL (Schöpfer-Hardware-Log: `Gegraben: 5× erde` → `FPS: 4`; „tue beides champ, inventor!")
+
+**Der Befund kam aus dem ECHTEN Browser-Log der Schöpfer-Hardware, nicht aus einem Diag:** zwei FPS-Muster. Das eine ein stetiger Render-gebundener Sockel (~17-22, der GPU-gebundene Kern, schon adressiert via Culling/Dichte/Schatten). Das ANDERE ein scharfer STALL auf FPS 4 — und er korrelierte sauber mit den `Gegraben`-Zeilen. Das Graben fror.**
+
+**Die Wurzel (gemessen am Code-Pfad, nicht geraten): der per-Frame-Verteiler `_tickDirtyVoxelChunks` (1 Chunk/Frame) UND der LOD-Streaming-Rebuild riefen für JEDEN Edit-/Spieler-/Carve-Region-Chunk den SYNC-Pfad von `_rebuildVoxelChunk`.** Der Carve markiert die Footprint- + Skirt-Chunks dirty; der Footprint heilt sofort sync (`_syncRebuildEditFootprint`, 1-4 kleine gecachte Chunks — der legitime Instant-Krater), aber die SKIRT-Nachbarn + Folge-Chunks drainen über `_tickDirtyVoxelChunks` 1/Frame — und JEDER dieser Tick-Rebuilds war (alt) sync, weil die alte Regel `forceSync = isPlayerChunk || regionHasCarve` JEDEN Carve-Region-Chunk sync zwang. Beim Halten von LMB drainte die Dirty-Queue über viele Frames je EINEN ~126-ms-Density-Sync-Rebuild (das volle Density-Sampling auf kaltem Cache, schwache HW) → SUSTAINED FPS 4. Dieselbe Bug-Klasse wie der ganze Perf-Bogen (schwere Arbeit synchron auf dem Main-Thread), nur auf dem EDIT-Verteil-Pfad — der V18.271-Async-Fix deckte das STREAMING, aber der Edit-Verteiler blieb bewusst sync.
+
+**Die Heilung (adaptiv — die V18.275-„nach Kapazität"-Vision, jetzt auf den Edit-Pfad):** die Sync-Pflicht wird FRAME-BUDGET-ADAPTIV statt absolut. Vorher: `forceSync = opts.forceSync || isPlayerChunk || regionHasCarve`. Jetzt:
+```js
+const editPressure = this._voxelChunkIsPlayerChunk(cx, cz) || this._chunkRegionHasCarve(cx, cz);
+const forceSync = opts.forceSync === true || (editPressure && !this.state._frameOverBudget);
+```
+- **Starke HW** (`!_frameOverBudget`) behält das instant-Carve-Feedback — der Sync-Build ist dort billig, kein Stall, der LOOK ist sofort.
+- **Schwache HW** (`_frameOverBudget`, der Frame ist eng) baut den Carve ASYNC über den bestehenden build-before-dispose-Pfad: der alte Mesh bleibt SICHTBAR, der Worker baut den neuen, der Swap kommt 1-2 Frames später. **KEIN Stall.**
+- **Was den async-Pfad RISIKOFREI macht: die Kollision ist feld-nativ (V18.331).** Der Carve liegt sofort in `worldMeta.voxelEdits` → das Dichte-Feld kennt das Loch im selben Frame → die Kollision ist sofort aktuell, GANZ unabhängig vom Mesh. Der einzige async-Effekt ist, dass der VISUELLE Hole-Mesh 1-2 Frames später erscheint — auf schwacher HW der absolut richtige Tausch (kein Durchfallen, kein Loch-Frame, nur ein imperzeptibler Visual-Lag statt eines 200-ms-Freeze).
+- **Die explizite `opts.forceSync`-Intent-Ausnahme (Test/Naht) bleibt ABSOLUT** — sie gewinnt immer, auch über Budget (der Determinismus-Warmup + die Carve-Naht-Heilung brauchen den garantierten Sync).
+
+**Bewiesen `scripts/diag-carve-adaptive.cjs` (`npm run gate:carve`, 4/4, im CI):** die Linse bespitzelt `_acquireVoxelChunkBuild` und liest die forceSync-ENTSCHEIDUNG ab (unabhängig vom headless-no-worker-Sync-Fallback) — gesunder Frame → `syncWhenHealthy===true`, über Budget → `syncWhenStruggling===false`, explizit → `explicitForceSyncWins===true`. GPU-frei, hardware-unabhängig.
+
+**Der Gate-Befund (V9.40-c rot → die V17.32-Disziplin):** der erste volle Playtest fing GENAU EINE Verletzung — `V9.40-c: der Game-Loop-Tick rebuildet pro Frame max 1 Chunk`. WURZEL: headless hat ein ~1-Hz-rAF → `_perfSenseFoldFrame` setzt `_frameOverBudget=true` (riesiges frameMs) → der adaptive Tick ging async (Worker → „pending" → Chunk RE-ENQUEUED → dirty-size unverändert) statt der vom Test erwarteten deterministischen 1/Frame-SYNC-Verteilung. Der Test prüft den DISTRIBUTIONS-Mechanismus (≤1 pro Frame), NICHT die adaptive Sync/Async-Wahl (die `diag-carve-adaptive` separat beweist) → die Heilung ist die etablierte V17.32-Disziplin: `r.state._frameOverBudget = false` VOR der Assertion setzen (den gesunden Frame deterministisch herstellen, wie der Playtest es schon an 5 Stellen tut), NICHT die Invariante aufweichen. KEIN Pflaster — der Test prüft jetzt SEINEN Intent (1/Frame-Verteilung) deterministisch, die adaptive Wahl prüft das Carve-Gate.
+
+**Die DISZIPLIN-Lehre (in die Gotchas):** eine schwere, deterministische Bau-Op auf einem WIEDERHOLTEN Interaktions-Pfad (Carve/Place/Drag) gehört frame-budget-adaptiv — sync nur, solange der Frame Zeit hat; die feld-native Kollision (bzw. ein anderer sofort-aktueller State) ist es, was den async-Pfad risikofrei macht. Das ist die Schwester zum V18.358-`_scheduleEditSave` (der debouncte Save derselben Carve-Geste) und zum V18.350-Bäcker-Prebake.
+
+**Das echte FPS-Feel beim Graben ist Schöpfer-Browser** (der Mechanismus ist headless bewiesen, der Stall-vs-kein-Stall-Unterschied ist hardware-gebunden — er feuert nur, wenn der Frame auf der echten HW eng ist). Der Schöpfer git-pullt + hard-refresht (er lief auf cached V18.359, `?v=18.361` — die Cache-Desync; die `ShaderMaterial`-Warnung in seinem Log war der alte cached Bootstrap, HEAD trägt die RenderPipeline-Heilung schon).
+
 ### V18.361 — DIE AUDIT-LISTE GESCHLOSSEN, soweit headless ehrlich möglich (Schöpfer „bring die ganze Liste auf voll erledigt, sei kein Senior-Engineer der Angst hat, sei ein junger Steve Jobs")
 
 **Der Auftrag: die offenen Punkte meiner Ursprungs-Analyse schliessen — mit Mut, aber Jobs war ein Perfektionist, kein Reckless-Shipper. Also: jeden Punkt ehrlich nach „baubar-mit-Qualität" vs „strukturell/physisch gebunden" sortiert.**
