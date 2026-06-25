@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.360 — DER NEBEL-PUFFER + DIE SCHNELLE STREAMING-WERKBANK (Schöpfer „der Nebel pendelt, das Wasser kommt nicht hinterher, keine Dämpfung/Puffer" + „ist der Prozess genial?")
+
+**Drei Schöpfer-Befunde, an der Wurzel — gemessen, nicht geraten.**
+
+**(1) Das Nebel-Pendeln — die Wurzel war eine oszillierende QUELLE, nicht zu wenig Dämpfung.** Trotz V18.350-Trägheit + V18.358-Wasser-Kappe pendelte der Nebel weiter. GEMESSEN (die neue `stream-lab`): die Wasser-Front (`_builtWaterRingRadius`, das Reveal-Ziel) ist beim Streamen NICHT-MONOTON — 13 Rückzüge um bis 2 Ringe (Chunks treten in/aus `pendingWaterIso`). Ein gedämpfter Lerp FOLGT der Oszillation (dämpft die Amplitude, eliminiert sie nicht) → das sichtbare Pendeln. FIX = der PUFFER (Schöpfer-Wort „Dämpfung, Puffer"): `_smoothFogEdge` retreatet nur nach ANHALTEND niedrigerem Ziel (`FOG_EDGE.shrinkSustainFrames`=45, das V18.306-Ring-Atem-Pattern auf die Nebel-Kante; der Zähler reset bei jedem Aufwärts-Frame → ein oszillierendes Ziel erreicht die Schwelle NIE → die Kante HÄLT), Weiten bleibt sofort. Der Puffer auf dem KONSUMENTEN macht den Nebel immun gegen JEDEN Streaming-Jitter der Quelle. BEWIESEN: 13 reale Wasser-Rückzüge → 0 Nebel-Richtungswechsel (Phase B) + die deterministische Puffer-Probe (jitterndes Ziel→0 Wechsel/gehalten · anhaltendes→löst, Phase C). `_fogEdgeLowFrames` = Instanz-Feld (wie `_editSaveTimer`).
+
+**(2) Die Testumgebung (mehrfach erbeten) GEBAUT — `npm run stream-lab`.** Eine schnelle, isolierte Lade-/Streaming-Werkbank: misst Start-Chunk-Erscheinen, Wasser-/Nebel-Front-Trajektorien (Rückzüge + Pendeln), die Puffer-Probe. Sie WAR der Hebel, der das Nebel-Pendeln messbar machte. KORREKTUR der V18.358-Annahme „headless == Terrain-Front, nicht reproduzierbar": die Wasser-vs-Terrain-Divergenz IST headless messbar — der `_builtWaterRingRadius`-Null-Kurzschluss (Zeile ~25939) ist nur gate-treu-Bequemlichkeit, die Wasser-Iso-GEOMETRIE ist CPU + baut im Null-Renderer; `stream-lab` umgeht den Kurzschluss lokal.
+
+**(3) „Ist der Prozess genial?" — ehrlich NEIN, behoben.** Die ERSTE Werkbank bootete den schweren swiftshader-Renderer (~40–60 s, fragil) NUR um ZAHLEN zu lesen — ein Vorschlaghammer für ein Thermometer. Ein Null-Renderer-Probe bewies: die Wasser-Iso baut im SCHNELLEN Null-Renderer genauso (`voxelChunkWaterIso.size=11`, Boot 8,9 s). Umbau → `stream-lab` bootet ~9 s, kein swiftshader. „Nicht rendern ist der intelligenteste Rasterizer." Plus zu swiftshader-Alternativen: alle Software-Rasterizer (lavapipe/llvmpipe/ANGLE-Vulkan) sind CPU-lahm; nur eine echte GPU ist schneller+treu (für den LOOK), aber für Mechanik-Zahlen ist gar kein Renderer das Schnellste.
+
+**Nebenbefund — der Start-Chunk (#1) gemessen:** erscheint INSTANT (5 Ticks, LOD 0). Die gefühlten 15 s sind der FILL (async-Stream + GPU-render-gebunden), NICHT der Start-Chunk. Der coarse-fill-first (nahe Ringe grob→scharf via dem LOD-gekeyten `voxelMeshCache`) ist der nächste eigene, look-sensitive Bogen (Schöpfer-Auge), bewusst NICHT halb in diese Welle gebündelt.
+
+**Verifikation:** `stream-lab` (Quelle oszilliert + Puffer hält + Puffer-Probe) · voller Merge-Gate grün (Alle Invarianten OK, 131 s) · check/lint(0 Warnings)/format/audit:strict. Version 18.359 → 18.360.
+
 ### V18.359 — DREI LINSEN STATT WACHSAMKEIT + der würdevolle WebGPU-Gate (Schöpfer „giesse alles zusammen, ziehe durch, voll und ganz")
 
 **Der Schöpfer-Auftrag:** die drei Bögen aus der letzten Antwort in EINEM Guss bauen (Playtest erst am Ende, rerollbar, „wir weichen nicht, wir haben Mut"). Plus zwei Vorläufer-Aufräumungen (siehe Commit `15b5401`): die CLAUDE.md-Dichte (der duplizierte Wellen-Bericht aus dem JETZT raus, 224→177 KB), totes Sediment gekehrt (toter `physicsWorld`-Zweig in `toggleTerrain`, der superseded `aoExposure`, 5→0 lint-Warnings), Band-Zahl korrigiert (242). DANN der Drei-Linsen-Guss:
