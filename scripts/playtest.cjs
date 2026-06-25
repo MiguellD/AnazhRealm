@@ -22068,7 +22068,13 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
             // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
             out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-            out.cutoverGroupExists = !!(r.state.archInstanceGroups && r.state.archInstanceGroups.has("baum_kiefer#0"));
+            // V18.353 PHASE A.1 — die platzierte Architektur ist jetzt region-gekeyt
+            // (`baum_kiefer#0@p:regX,regZ`, frustum-cullbar) statt global (`baum_kiefer#0`);
+            // der Test folgt dem Refactor: eine baum_kiefer#0-Gruppe (region-gekeyt ODER global).
+            out.cutoverGroupExists = !!(
+                r.state.archInstanceGroups &&
+                [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
+            );
             // Cull → instanced-Render weg, Daten-Eintrag bleibt.
             if (e) {
                 r._cullArchitectureMesh(e);
@@ -22158,7 +22164,10 @@ async function checkBandWellePerfCArchInstancing(ctx) {
             "V12.0-perf.c.2: instancierter Eintrag hat feld-native Kollision via blockerAABBs",
             res.cutoverHasCollision
         );
-        check("V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert", res.cutoverGroupExists);
+        check(
+            "V12.0-perf.c.2: InstancedMesh-Gruppe 'baum_kiefer#0' existiert (V18.353: region-gekeyt @p:)",
+            res.cutoverGroupExists
+        );
         check(
             "V12.0-perf.c.2: Cull gibt Instance-Slots frei (Daten-Eintrag bleibt, Feld-Kollision render-unabhängig)",
             res.cutoverCulledInstanced === true && res.cutoverEntryStillListed === true
@@ -22633,10 +22642,12 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.spawnSyncsWaterFootprint =
             /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
-        // Loop ruft den per-Frame-Tick (lebt in _loopVoxelStreaming).
+        // Loop ruft den per-Frame-Tick. V18.358 — der Wasser-Iso-Tick wanderte aus dem
+        // (abgelösten) festen `_loopVoxelStreaming`-Pfad in die Scheduler-Job-Registry
+        // `_buildDeferrableJobs` (waterIso-Job, prio 1); der Test folgt dem Refactor.
         out.loopTicksQueue =
-            typeof r._loopVoxelStreaming === "function" &&
-            /_tickPendingWaterIso\(/.test(r._loopVoxelStreaming.toString());
+            typeof r._buildDeferrableJobs === "function" &&
+            /_tickPendingWaterIso\(/.test(r._buildDeferrableJobs.toString());
         // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
         if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
         r.state.pendingWaterIso.clear();
@@ -23498,16 +23509,18 @@ async function checkBandPhasenBF(ctx) {
             typeof r._waterfallIsRealWall === "undefined" &&
             typeof r._ensureWaterfallMaterial === "function" &&
             typeof r.setWaterfallSteep === "undefined";
+        // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
+        // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
         out.a4Curtain =
-            /VERT_SPLIT/.test(r._buildVoxelChunkWaterCellSheet.toString()) &&
-            /dupVert/.test(r._buildVoxelChunkWaterCellSheet.toString());
+            /VERT_SPLIT/.test(r._computeWaterSheetData.toString()) &&
+            /dupVert/.test(r._computeWaterSheetData.toString());
         // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
         // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
         // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
         // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
         out.a4MouthWave = (() => {
-            const src = r._buildVoxelChunkWaterCellSheet.toString();
+            const src = r._computeWaterSheetData.toString();
             return (
                 /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
             );
@@ -25551,6 +25564,15 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
         // Game-Loop-Tick rebuildet pro Frame max 1.
+        // V18.362 (V17.32-Disziplin — den INTENT deterministisch testen): der Edit-/Spieler-
+        // Chunk-Rebuild ist seit V18.362 FRAME-BUDGET-ADAPTIV (`_rebuildVoxelChunk`: sync nur
+        // bei `!_frameOverBudget`, sonst async via Worker → kein ~200-ms-Grab-Stall auf schwacher
+        // HW). HEADLESS hat ein ~1-Hz-rAF → `_perfSenseFoldFrame` setzt `_frameOverBudget=true`
+        // (riesiges frameMs) → der Tick ginge async (Worker → „pending" → Chunk RE-ENQUEUED →
+        // size unverändert) statt der hier geprüften deterministischen 1/Frame-SYNC-Verteilung.
+        // Dieser Test prüft den DISTRIBUTIONS-Mechanismus (≤1 pro Frame), nicht die adaptive
+        // Sync/Async-Wahl (die `diag-carve-adaptive` separat beweist) → den gesunden Frame setzen.
+        r.state._frameOverBudget = false;
         r.carveVoxelSphere(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
@@ -28625,7 +28647,8 @@ async function checkBandV18131DekoKaskade(ctx) {
         // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
         // Fernfeld terrain-nachrangig.
         out.scatterReadsBand = /_detailBand\(ringDist\)/.test(r._buildVoxelChunkScatter.toString());
-        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._loopVoxelStreaming.toString());
+        // V18.358 — der Fernfeld-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
+        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._buildDeferrableJobs.toString());
         // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
         // Attribut, das das geteilte Art-Material liest.
         const geo = r._scatterImpostorGeometry(species[0]);
@@ -28793,7 +28816,8 @@ async function checkBandV18133Forage(ctx) {
         // Ernte, der Streaming-Slot tickt den Regrow.
         out.gestureRoutes = /_pickScatterAtCrosshair/.test(r.tryMouseBreak.toString());
         out.buildFilters = /scatterHarvested/.test(r._buildVoxelChunkScatter.toString());
-        out.loopRegrows = /_tickScatterRegrow/.test(r._loopVoxelStreaming.toString());
+        // V18.358 — der Regrow-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
+        out.loopRegrows = /_tickScatterRegrow/.test(r._buildDeferrableJobs.toString());
         // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
         // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
         out.trankKraut =
@@ -30982,7 +31006,12 @@ async function checkBandWBHofKarte(ctx) {
             /_buildEmotionRows/.test(r._hofBuildSpecSheet.toString());
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
+        // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
+        // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
+        const _saveMaxWB = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        r.state.maxCreatures = _saveMaxWB;
         if (!c) return { ...out, fehler: "kein Spawn" };
         c.userData.emotions = { joy: 0.8, awe: 0.1, sorrow: 0, hope: 0.2, peace: 0.1, chaos: 0 };
         const sheet = r._hofBuildSpecSheet(r._creatureProfile(c));
@@ -32254,7 +32283,11 @@ async function checkBandM5HudPolitur(ctx) {
             /_refreshIchIfOpen/.test(r.addMaterialToInventory.toString());
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
+        // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
+        const _saveMaxM5 = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
+        r.state.maxCreatures = _saveMaxM5;
         let sheet = null;
         if (c) {
             c.userData.emotions = { joy: 0.8, sorrow: 0, awe: 0.1, fear: 0, curiosity: 0.2, calm: 0.1 };
@@ -34183,7 +34216,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
         // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
         // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
         out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
         out.appliesToStamMax =
@@ -34400,7 +34433,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
 
         // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
         // sqrt(soulSize) genau wie hpMax/staminaMax
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
 
         return out;
@@ -35440,7 +35473,7 @@ async function checkBandV18206SpeedTrade(ctx) {
         const out = {};
 
         // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
-        const src = r.computePlayerStats.toString();
+        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
         out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
         out.appliedToAttackSpeed =
@@ -35598,7 +35631,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const out = {};
 
         // (C1) Source: Größen-Multiplier in computeCreatureStats
-        const src = r.computeCreatureStats.toString();
+        const src = r.computeCreatureStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
         out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
         out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
         out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
@@ -35727,8 +35760,12 @@ async function checkBandV18209Konsolidierung(ctx) {
             out.gamma7Grammar;
 
         // (K4) AVATAR-GRÖSSEN-Familie komplett (V18.195+196+206+208):
-        const srcCompPlayer = r.computePlayerStats.toString();
-        const srcCompCreature = r.computeCreatureStats.toString();
+        // V18.312/.347 — die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
+        // (Gesetz #0); die `_compoundSizeFactor`/`creatureSize`-Quelle bleibt in compute*Stats, die
+        // ANWENDUNG (sizeHpMul/sizeSpeedMul) liest die geteilte Quelle. Beide source-probes lesen sie mit.
+        const _sizeMulSrc = r._applySizeMultipliersToStats.toString();
+        const srcCompPlayer = r.computePlayerStats.toString() + _sizeMulSrc;
+        const srcCompCreature = r.computeCreatureStats.toString() + _sizeMulSrc;
         out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
         out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
         out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
@@ -35783,7 +35820,11 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
         out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
-        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche
+        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche. V18.347 — dieser
+        // Test FING einen ECHTEN Worldgen-Bug (kein stale Test): der Key war `grown_<art>_v<hash%8>`,
+        // aber die fnv-1a-LOW-Bits sind mod 8 degeneriert (gemessen: nur {0,2,4,6}, Bucket 0+4=75 %
+        // → von 8 designten Baum-Varianten lebten effektiv ~2). Geheilt in `_growTreeBlueprintForSpawn`
+        // (die HOHEN Bits `hash >>> 24` wählen jetzt, gleichverteilt) → 6 Seeds geben 6 unique.
         const keys = new Set();
         for (let s = 0; s < 6; s++) {
             const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
@@ -36326,6 +36367,11 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         if (typeof r._growTreeBlueprintForSpawn === "function") {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
             if (grownKey && r.state.blueprints[grownKey]) {
+                // V18.317/.347 — der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
+                // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
+                // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
+                r.state.architectures = r.state.architectures || [];
+                r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
                 // Snapshot bauen und das grownBlueprints-Feld prüfen.
                 const snap = r.buildStateSnapshot();
                 const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
@@ -36334,6 +36380,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
                 // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
                 // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
                 out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
+                r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
             }
         }
 
@@ -36697,10 +36744,15 @@ async function checkBandV18213MeshMerge(ctx) {
             out.cacheHitFast = t1 - t0 < 50; // 50 Lookups in <50ms
 
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
+            // V18.317/.347 — der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
+            // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });
             // Wir bauen einen Snapshot, prüfen das relevante Feld.
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[testKey];
             out.snapshotHasEntry = !!gb;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v213-snap-arch");
             // gb hat KEIN _isMerged (das wird beim Restore aus genVersion abgeleitet).
             out.snapshotHasNoMergedFlag = gb ? gb._isMerged === undefined : false;
 
@@ -36926,10 +36978,14 @@ async function checkBandV18214SkeletonMesh(ctx) {
             out.tagsNeutral = tagKeys.every((k) => Math.abs((tagsSkel[k] || 0) - (tagsClone[k] || 0)) < 1e-9);
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
+            // V18.317/.347 — Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
+            r.state.architectures = r.state.architectures || [];
+            r.state.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
             out.snapshotHasEntry = !!gb;
             out.snapshotNoSkeletonField = gb ? gb._skeleton === undefined : false;
+            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v214-snap-arch");
         }
 
         // genVersion-Restore (defensive)
@@ -37851,7 +37907,15 @@ async function checkBandV18219bisVollendung(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
+            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
+            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
+            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            if (
+                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
+                typeof r[k] === "function"
+            )
+                loopSources.push(r[k].toString());
         }
         const loopBody = loopSources.join("\n");
         out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
@@ -38231,7 +38295,15 @@ async function checkBandV18224ScatterPromotion(ctx) {
         const loopSources = [];
         if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
-            if (/^_loop[A-Z]/.test(k) && typeof r[k] === "function") loopSources.push(r[k].toString());
+            // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
+            // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
+            // Frame-Budget-Scheduler (`_runFrameScheduler` + die Job-Registry `_buildDeferrableJobs`).
+            // Beide in die Loop-Verdrahtungs-Quellen aufnehmen (der Test folgt dem Refactor, V9.56-i).
+            if (
+                (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
+                typeof r[k] === "function"
+            )
+                loopSources.push(r[k].toString());
         }
         out.tickInLoop = /_tickScatterStreaming/.test(loopSources.join("\n"));
 
@@ -38456,8 +38528,12 @@ async function checkBandV18224ScatterPromotion(ctx) {
     // Waldland, das Terrain/Fels/Blumen sichtbar macht. Die Dichte-Schwellen ziehen
     // mit (der Test wandert mit dem Code) — die Welt ist BEWUSST sparsamer.
     check(
-        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥18/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(0) : "?"})`,
-        res.designPerChunk >= 18
+        // V18.347 — die Schwelle 18→2.5 nachgezogen: die SCATTER-Caps wurden SCHÖPFER-GETRIEBEN für
+        // FPS gesenkt (V18.303 tree 90→55 „Laub war 90 % der GPU-Last, zu viele Bäume"; under 250→70→40)
+        // → die Kapazität fiel von ~18 auf ~3/Chunk. Die ≥18-Schwelle war von VOR diesen Schnitten; der
+        // Test prüft jetzt den aktuellen FPS-bewussten Floor (>0, drei Strata bleiben via M3 geprüft).
+        `V18.224/267 (M5) Design-Kapazität FPS-bewusst populiert ≥2.5/Chunk (gemessen ${res.designPerChunk ? res.designPerChunk.toFixed(1) : "?"})`,
+        res.designPerChunk >= 2.5
     );
     check(
         `V18.224/267 (M6) ECHTE Dichte ≥4 Instanzen/Chunk in der Spieler-Region (gemessen ${res.perChunkActual ? res.perChunkActual.toFixed(0) : "?"})`,
@@ -39239,16 +39315,23 @@ async function checkBandV18262CreatureRenderLOD(ctx) {
             farVis = null,
             testC = null;
         try {
+            // V18.347 (Cap-Gotcha, dieselbe Klasse wie V8.49): die Liste VOR dem Spawn leeren —
+            // sonst gibt spawnCreatureAt bei vollem maxCreatures-Cap (20) null → testC.position.set
+            // wirft → die ganze evaluate wirft → "reading lodConst on null". Die Isolation kam zu spät.
+            r.state.creatures = [];
+            r.state.creatureEmotions = [];
             testC = r.spawnCreatureAt(pm.position.x + 2, pm.position.y, pm.position.z + 2, "happy", "wesen");
-            r.state.creatures = [testC];
-            r.state.creatureEmotions = ["happy"];
-            r.isInFrustum = () => true;
-            testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
-            r.updateCreatures(0.016);
-            nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
-            testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
-            r.updateCreatures(0.016);
-            farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+            if (testC) {
+                r.state.creatures = [testC];
+                r.state.creatureEmotions = ["happy"];
+                r.isInFrustum = () => true;
+                testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
+                r.updateCreatures(0.016);
+                nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+                testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
+                r.updateCreatures(0.016);
+                farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
+            }
         } finally {
             r.isInFrustum = origFrustum;
             r.state.creatures = savedC;
@@ -39459,8 +39542,12 @@ async function checkBandWFFluss(ctx) {
             dryZ = 99999;
         out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
         // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe).
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._buildVoxelChunkWaterCellSheet.toString());
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._loopPhysicsSync.toString());
+        // V18.345 (B1): die Sheet-Mathe wanderte von `_buildVoxelChunkWaterCellSheet` nach
+        // `_computeWaterSheetData` (Main+Worker-geteilte Quelle) → die Source-Probe liest sie dort.
+        // V18.347: der Tauch-Trigger wanderte von `_loopPhysicsSync` nach `_stepCharacter` (V18.331
+        // feld-native Physik — der Spieler-Schritt liest die Wasser-Fläche via `_waterRunSurfaceAt`).
+        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._computeWaterSheetData.toString());
+        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._stepCharacter.toString());
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
         out.centernessField = /centerness/.test(r._hydroRiverAt.toString());
@@ -39754,8 +39841,12 @@ async function checkBandV18136Audit(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf).
-        out.rangeSrc = /csm\.maxFar/.test(r.setShadowRange.toString());
+        // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). V18.352 — der
+        // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
+        // setShadowRange UND der Perf-Regler rufen); die Sonde folgt dem Refactor (V9.56-i).
+        out.rangeSrc =
+            /csm\.maxFar/.test(r._applyEffectiveShadowRange.toString()) &&
+            /_applyEffectiveShadowRange/.test(r.setShadowRange.toString());
         const savedCsm = r.state.csmNode;
         const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
         r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
@@ -47403,7 +47494,18 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash,
         // Bewegung erhalten, alle Positionen endlich.
-        while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function") {
+        // V18.347 — DER CAP-SCHUTZ (ein ECHTER, vom Container-Tod verdeckter Bug, gefangen als
+        // das Gate GPU-frei DURCHlief): V18.296 senkte `maxCreatures` 120→20. Der alte
+        // `while (length < 60)`-Spawn-Loop lief damit ENDLOS (bei 20 Kreaturen fügt
+        // `spawnCreatureAt` nichts mehr hinzu → length bleibt 20 < 60 → Schleife dreht ewig →
+        // protocolTimeout → "no result"). Fix: den Cap für den Stress-Test temporär heben +
+        // Guard-Zähler (belt-and-suspenders) + danach SAUBER abräumen (kein Kreatur-Leck in die
+        // Folge-Bänder, die ihren eigenen Cap messen).
+        const _saveMax849 = r.state.maxCreatures;
+        const _baseN849 = r.state.creatures.length;
+        r.state.maxCreatures = 70;
+        let _g849 = 0;
+        while (r.state.creatures.length < 60 && typeof r.spawnCreatureAt === "function" && _g849++ < 120) {
             const p = r.state.playerMesh.position;
             r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
         }
@@ -47425,6 +47527,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         out.allFinite = r.state.creatures.every(
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
+        // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
+        while (r.state.creatures.length > _baseN849 && typeof r.removeCreature === "function") {
+            r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
+        }
+        r.state.maxCreatures = _saveMax849;
         return out;
     });
 
@@ -54666,10 +54773,11 @@ async function checkBandRing5Soul(ctx) {
         // Dropdown synchronisiert sich
         out.dropdownSyncsToPhoenix = select && select.value === "phoenix";
 
-        // Physics-Body bleibt + bezieht sich auf den NEUEN Group
-        out.physicsBodySwitchedToNewGroup = currentMesh().userData && !!currentMesh().userData.physicsBody;
-        out.rigidBodiesArrayUpdated =
-            Array.isArray(r.state.rigidBodies) && r.state.rigidBodies.indexOf(currentMesh()) >= 0;
+        // V18.331/.347 — KEIN Physics-Body mehr: Ammo ist physisch raus, der Spieler ist
+        // body-frei (feld-native Kollision aus dem Dichtefeld, Velocity in state.playerVel).
+        // Ein Soul-Wechsel hat KEINEN rigid body, der dem Mesh-Group folgt → die zwei alten
+        // Ammo-Checks (physicsBodySwitchedToNewGroup · rigidBodiesArrayUpdated) sind GESCHNITTEN
+        // (sie prüften entferntes Verhalten — die V18.331-Ammo-Band-Räumung übersah sie).
 
         // Chat-Pattern: "werde drache"
         r.processChatCommand("werde drache");
@@ -54803,14 +54911,8 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
         check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
         check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
-        check(
-            "Ring 5 V2: Physics-Body wandert mit dem neuen Soul-Group mit",
-            ring5Results.physicsBodySwitchedToNewGroup
-        );
-        check(
-            "Ring 5 V2: rigidBodies-Array enthält den neuen Group (nicht den alten)",
-            ring5Results.rigidBodiesArrayUpdated
-        );
+        // V18.331/.347 — die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
+        // body-frei, feld-native; es gibt keinen rigid body, der dem Soul-Group folgt).
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
         check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
@@ -55671,10 +55773,13 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
-        // Liste hat einen Eintrag pro Bauplan
+        // Liste hat einen Eintrag pro Bauplan. V18.317/.347 — die Liste filtert die auto-gewachsenen
+        // Streaming-Varianten (`grown_<art>_v<N>`, re-wachsen f(seed)) HERAUS; der Test zählt darum
+        // auch nur die NICHT-grown-Baupläne (sonst Mismatch, sobald die Welt grown_-Varianten streamt).
         const list = document.getElementById("workshop-list");
+        const listableCount = Object.keys(r.state.blueprints).filter((n) => !String(n).startsWith("grown_")).length;
         out.listShowsAllBlueprints =
-            list && list.querySelectorAll(".workshop-list-row").length === Object.keys(r.state.blueprints).length;
+            list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 
         // createBlueprint
         const beforeCount = Object.keys(r.state.blueprints).length;
@@ -55823,6 +55928,11 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
         r._clearBuildMode();
+        // V18.298/.347 — der Cull-Tick BAUT nur bei Kopfraum (`_frameOverBudget ? 0 : budget`);
+        // im last-gestreckten Warmup steht das Flag auf true → 0 Bauten → der Rebuild-Test schlüge
+        // fehl. Für den deterministischen Test den Frame-Budget-Druck nullen (wir messen die
+        // Rebuild-MECHANIK, nicht die Perf-Drossel).
+        r.state._frameOverBudget = false;
 
         // === A) Distance-Culling ===
         // Setze Spieler auf (0,0,0), spawne weit + nah.
@@ -56007,13 +56117,17 @@ async function checkBandRing6Workshop(ctx) {
         // ENDLICH — so kommt die Wahrheit, statt dass der Lauf für immer schweigt.
         protocolTimeout: 240000,
         args: [
-            // ANGLE-Backend mit SwiftShader gibt unter headless die zuverlässigste
-            // WebGL-Implementierung – plain --use-gl=swiftshader stürzt mit
-            // „Could not get context for WebGL version 1" ab.
-            "--use-angle=swiftshader",
-            "--enable-unsafe-swiftshader",
-            "--enable-webgl",
-            "--ignore-gpu-blocklist",
+            // V18.347 — DER GATE LÄUFT GPU-FREI (die WURZEL des "detached Frame"-Tail-Todes
+            // bei ~Band 136 endlich GEMESSEN, nicht geraten): es ist NICHT Speicher (diag-gate-heap:
+            // 16 GB frei, kein cgroup-Limit, JS-Heap nur 82 MB Basis / 124 MB unter Last) und NICHT
+            // Welt-Gewicht (0.13 M Tris) — es ist der UNNÖTIGE swiftshader-GPU-Prozess, der unter der
+            // kumulativen Last im Schwanz crasht. Der Null-Renderer (Default) braucht KEINEN GPU
+            // (diag-gate-nogpu: Welt+Avatar+Architektur+Baupläne bauen OHNE GPU, 0 page-errors). GPU
+            // AUS → der GPU-Prozess existiert nicht → kann nicht crashen → das Gate läuft DURCH.
+            // PLAYTEST_REAL_RENDERER=1 schaltet swiftshader zurück (nur fürs visuelle Screenshot-Artefakt).
+            ...(REAL_RENDERER
+                ? ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--enable-webgl", "--ignore-gpu-blocklist"]
+                : ["--disable-gpu", "--disable-software-rasterizer"]),
             "--no-sandbox",
             "--disable-setuid-sandbox",
             // Ring 4: erlaubt AudioContext im Headless-Modus ohne User-Geste,
