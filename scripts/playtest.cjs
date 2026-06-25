@@ -29785,17 +29785,7 @@ async function checkBandV18150Ride(ctx) {
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
             // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
-            const moveSrc = r._loopHandleMovement
-                ? r._loopHandleMovement.toString()
-                : Object.getOwnPropertyNames(Object.getPrototypeOf(r))
-                      .map((n) => {
-                          try {
-                              return typeof r[n] === "function" ? r[n].toString() : "";
-                          } catch {
-                              return "";
-                          }
-                      })
-                      .find((s) => /_mountedVehicleProfile/.test(s) && /kBrake/.test(s)) || "";
+            const moveSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
             out.movementConsumes =
                 /ride\.kAcc/.test(moveSrc) && /ride\.kBrake/.test(moveSrc) && /ride\.topSpeedMul/.test(moveSrc);
             // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
@@ -54302,7 +54292,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.hudReturns = getComputedStyle(topbar).pointerEvents !== "none";
         // (c) die H-Taste ist im Keydown-Pfad verdrahtet (Source-Probe)
         const r = window.anazhRealm;
-        const src = typeof r._installInputHandlers === "function" ? r._installInputHandlers.toString() : "";
+        const src = typeof r.init === "function" ? r.init.toString() : "";
         out.keyWired = /KeyH/.test(src) && /hud-hidden/.test(src);
         return out;
     });
@@ -54310,6 +54300,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     if (freeScreenResults && !freeScreenResults.error) {
         check("UI-Putz freier Bildschirm: body.hud-hidden blendet das HUD aus", freeScreenResults.hudHides);
         check("UI-Putz freier Bildschirm: erneutes Umschalten zeigt das HUD wieder", freeScreenResults.hudReturns);
+        check("UI-Putz freier Bildschirm: die H-Taste ist im Keydown-Pfad verdrahtet", freeScreenResults.keyWired);
     }
 
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###

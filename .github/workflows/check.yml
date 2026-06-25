@@ -46,6 +46,9 @@ jobs:
           fi
           echo "✅ Keine Duplikate"
 
+      - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
+        run: npm run gate:source-probes
+
       - name: Single-Quote-Template-Strings (B2-Pattern)
         run: |
           # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
