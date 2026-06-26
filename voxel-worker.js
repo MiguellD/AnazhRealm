@@ -1246,8 +1246,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             if (dryFallback) continue;
             if (sc.floodTopJ < 0) {
                 if (level && sc.liveTopJ >= 0) {
+                    // V18.377 — depthG global als kontinuierliche Tiefe (tops − geglättetes Bett).
                     topG[gi] = oy + (sc.liveTopJ + sc.liveFrac) * step;
-                    depthG[gi] = Math.max(0, (sc.liveTopJ - sc.solidTopJ) * step);
                 }
                 continue;
             }
@@ -1264,7 +1264,7 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 top += Math.max(-14, Math.min(4, d));
             }
             topG[gi] = top;
-            depthG[gi] = Math.max(0, (sc.floodTopJ - sc.solidTopJ) * step);
+            // depthG (aDepth) wird GLOBAL als kontinuierliche Tiefe gesetzt (V18.377, s.u.).
         }
     }
     const SOLID_CS = CELL_STATE.SOLID;
@@ -1410,6 +1410,14 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             for (let g = 0; g < GW * GW; g++) arr[g] = out[g];
         }
     };
+    // V18.377 — KONTINUIERLICHE TIEFE (Mirror zu _computeWaterSheetData): depth = kontinuierliche
+    // Oberfläche (tops) − kontinuierliches Bett (solidG mit demselben wet-only Box-Blur geglättet)
+    // statt der zell-quantisierten (floodTopJ−solidTopJ)·step → der Shader blendet die Tiefen-Farbe
+    // weich über die ganze Breite statt in „drei Linien". Byte-identisch zum Main.
+    const bedG = new Float64Array(GW * GW);
+    for (let g = 0; g < GW * GW; g++) bedG[g] = solidG[g];
+    _smoothWetAttr(bedG);
+    for (let g = 0; g < GW * GW; g++) depthG[g] = Number.isNaN(tops[g]) ? 0 : Math.max(0, tops[g] - bedG[g]);
     _smoothWetAttr(depthG);
     const slopeGS = new Float64Array(GW * GW);
     for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];

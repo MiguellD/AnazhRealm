@@ -41087,12 +41087,20 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.timeOfDaySliderInDom = !!document.getElementById("slider-timeofday");
         out.dayNightSectionInDom = !!document.getElementById("day-night-section");
 
-        // _applyDayNightToScene setzt DirectionalLight-Position
+        // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität.
+        // V18.377 — DAS ECHTE MONDLICHT: das Richtlicht ist tags die SONNE (oben, hell,
+        // warm), nachts der MOND (gegenüber der Sonne → AUCH über dem Horizont, aber
+        // gedämpft + kühl). Die alte Invariante „Mitternacht unten" galt dem Sonnen-Licht-
+        // von-unten-Füllen (das die Nacht auswusch); jetzt steht der Mond oben + spricht.
         r.setTimeOfDay(0.5); // Mittag
         const noonY = r.state.directionalLight.position.y;
+        const noonInt = r.state.directionalLight.intensity;
         r.setTimeOfDay(0); // Mitternacht
-        const midnightY = r.state.directionalLight.position.y;
-        out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY < noonY;
+        const dlN = r.state.directionalLight;
+        const midnightY = dlN.position.y;
+        const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
+        out.lightPosFollowsTimeOfDay =
+            noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
 
         // --- b) Sanfte Wetter-Übergänge
         out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
@@ -41245,7 +41253,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.a: #slider-timeofday im DOM", wave6g3Results.timeOfDaySliderInDom);
         check("Welle 6.G3.a: #day-night-section im DOM", wave6g3Results.dayNightSectionInDom);
         check(
-            "Welle 6.G3.a: DirectionalLight.position.y folgt timeOfDay (Mittag oben, Mitternacht unten)",
+            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
             wave6g3Results.lightPosFollowsTimeOfDay
         );
 
