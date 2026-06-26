@@ -155,6 +155,16 @@ const server = http.createServer((req, res) => {
     await shoot("look-water-level.png", true, -8);
     await shoot("look-water-down.png", true, -28);
 
+    // ZENIT-PROBE: Overcast erzwingen + GERADE HOCH schauen → füllt die Zenit-Kappe Wolken
+    // (kein „Radierer"-Loch in der Mitte)? (V18.369-Verifikation)
+    await page.evaluate(() => {
+        const r = window.anazhRealm; const s = r.state;
+        try { s.weather = "rainy"; s.weatherTransition = null; } catch (_e) {}
+        try { if (r._applyDayNightToScene) r._applyDayNightToScene(); } catch (_e) {}
+        try { if (s.skyboxUniforms && s.skyboxUniforms.cloudCover) s.skyboxUniforms.cloudCover.value = 0.92; } catch (_e) {}
+    });
+    await shoot("look-sky-up.png", true, 80);
+
     await browser.close();
     await new Promise((r) => server.close(r));
     console.log("\nScreenshots: artifacts/look-water-{level,down}.png");

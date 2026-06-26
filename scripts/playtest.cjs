@@ -1397,6 +1397,12 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
+        // V18.369 — der Default `auraTintStrength` ist jetzt 0 (Schöpfer „Emotion aus dem Himmel,
+        // wir gehen in die Realität — die Emotion oben im UI [Text] reicht"). Der MECHANISMUS lebt
+        // weiter (Slider hebt ihn) → diese KONSUM-Probe forciert ihn auf 1 (deterministisch, das
+        // V18.236-Muster), um zu beweisen DASS die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
+        const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         const THREE = window.THREE;
         if (THREE && THREE.Color) {
             const mkStop = () => ({
@@ -1416,6 +1422,7 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
             out.joyWarmsWorld = true; // THREE nicht erreichbar — Source-Probe traegt
         }
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
         return out;
     });
     check(
@@ -1477,6 +1484,11 @@ async function checkBandV1732SpatialEmotion(ctx) {
         const THREE = window.THREE;
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (THREE && THREE.Color && pm) {
+            // V18.369 — Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
+            // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
+            // (deterministisch, V18.236-Muster), dann den Default (0) wiederherstellen.
+            const _origAuraK1732 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
+            if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
             for (const k of Object.keys(e)) e[k] = 0;
             r.state.emotionField.clear();
             const mkStop = () => ({
@@ -1491,6 +1503,7 @@ async function checkBandV1732SpatialEmotion(ctx) {
             out.tintColors = sat(imprinted.skyColor) < sat(fresh.skyColor) - 1e-4;
             out.freshSat = sat(fresh.skyColor);
             out.imprintedSat = sat(imprinted.skyColor);
+            if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1732; // restore Default (0)
         }
         r.state.emotionField.clear();
         for (const k of Object.keys(e)) e[k] = saved[k] || 0;

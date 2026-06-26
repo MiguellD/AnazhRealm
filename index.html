@@ -1339,7 +1339,14 @@
                 justify-content: center;
                 gap: 24px;
                 padding: 8px 14px;
-                width: 636px; /* gleiche Breite wie Hotbar (9*64 + 8*6 + 12 padding) */
+                /* V18.369 — die wahre Hotbar-Breite: 10 Slots (offhand + 9) =
+                   padding(12) + 10*64 + gap(9*6) + offhand-margin(10) = 716px. Die alte
+                   636px-Annahme (9 Slots, kein offhand) war stale → die Stat-Leiste war 80px
+                   schmaler als die Hotbar (Kanten-Versatz) UND zu schmal für ihre drei 170px-
+                   SVG-Balken (Überlauf nach rechts). max-width klemmt sie auf schmalen Schirmen
+                   in den Viewport. */
+                width: 716px;
+                max-width: calc(100vw - 24px);
                 box-sizing: border-box;
                 background: linear-gradient(
                     180deg,
@@ -9305,7 +9312,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.368.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.369.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9319,7 +9326,7 @@
         <!-- V18.315 DER BÄCKER: die THREE-freie Skin-Isosurface-Mathe. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Avatar-Bau im init liest das globale
              __bakeSkinGeometry. Derselbe Code läuft auch im bake-worker (importScripts). -->
-        <script src="bake-core.js?v=18.368.0" defer></script>
-        <script src="anazhRealm.js?v=18.368.0" defer></script>
+        <script src="bake-core.js?v=18.369.0" defer></script>
+        <script src="anazhRealm.js?v=18.369.0" defer></script>
     </body>
 </html>
