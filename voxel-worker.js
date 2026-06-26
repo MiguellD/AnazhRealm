@@ -1378,6 +1378,43 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             slopeG[g] = mx;
         }
     }
+    // V18.375 — DIE NAHT-WURZEL: aDepth + aSlope geglättet (Mirror zu `_computeWaterSheetData`).
+    // `tops` (Position) war geglättet, aber depthG/slopeG (die Amplituden-Treiber rippleAmt/
+    // whitewater) blieben roh per-Zelle → sprangen am steilen Lauf + an der Chunk-Grenze = das
+    // konzentrische Naht-Muster. Wet-only Box-Blur über das padded GW-Grid (reicht über die Grenze
+    // → beide Nachbarn rechnen am Rand denselben Wert = naht-frei). Byte-identisch zum Main.
+    const _smoothWetAttr = (arr) => {
+        const out = new Float64Array(GW * GW);
+        for (let pass = 0; pass < SMOOTH_PASSES + 1; pass++) {
+            for (let g = 0; g < GW * GW; g++) {
+                if (Number.isNaN(tops[g])) {
+                    out[g] = arr[g];
+                    continue;
+                }
+                const gx = g % GW;
+                const gz = (g / GW) | 0;
+                let sum = 0;
+                let nn = 0;
+                for (let dz2 = -1; dz2 <= 1; dz2++) {
+                    for (let dx2 = -1; dx2 <= 1; dx2++) {
+                        const nx = gx + dx2;
+                        const nz = gz + dz2;
+                        if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
+                        if (Number.isNaN(tops[nx + nz * GW])) continue;
+                        sum += arr[nx + nz * GW];
+                        nn++;
+                    }
+                }
+                out[g] = nn > 0 ? sum / nn : arr[g];
+            }
+            for (let g = 0; g < GW * GW; g++) arr[g] = out[g];
+        }
+    };
+    _smoothWetAttr(depthG);
+    const slopeGS = new Float64Array(GW * GW);
+    for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];
+    _smoothWetAttr(slopeGS);
+    for (let g = 0; g < GW * GW; g++) slopeG[g] = slopeGS[g];
     const NV = dim + 1;
     const positions = [];
     const indices = [];
@@ -1387,6 +1424,16 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     const aSlope = [];
     const vmap = new Int32Array(NV * NV).fill(-1);
     const vertIsAnchor = [];
+    // V18.375 — Vertex-Jitter gegen das Gitter-Moiré (Mirror zu `_computeWaterSheetData`): das
+    // regelmäßige Wasser-Vertex-Gitter aliast am grazing-Blick; ein welt-deterministischer, steigungs-
+    // skalierter horizontaler Versatz bricht das Raster (kein Moiré mehr). Naht-sicher (globaler Index),
+    // byte-identisch zum Main (Math.imul/>>>0).
+    const _jhash = (a, b) => {
+        let h = (Math.imul(a | 0, 374761393) + Math.imul(b | 0, 668265263)) | 0;
+        h = Math.imul(h ^ (h >>> 13), 1274126177) | 0;
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296 - 0.5;
+    };
+    const _jitAmp = step * 0.6;
     const addVert = (i, k) => {
         const vi = i + k * NV;
         if (vmap[vi] >= 0) return vmap[vi];
@@ -1418,7 +1465,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const depthM = n > 0 ? dsum / n : 0;
         const id = positions.length / 3;
         vertIsAnchor[id] = n === 0;
-        positions.push(wx, surfY, wz);
+        const js = Math.max(0, Math.min(1, (slopeMax - 0.15) / 0.5)) * _jitAmp;
+        positions.push(
+            wx + _jhash(cx * dim + i, cz * dim + k) * js,
+            surfY,
+            wz + _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * js
+        );
         let sfx = 0;
         let sfz = 0;
         for (let dz = -1; dz <= 1; dz++) {
