@@ -4077,6 +4077,12 @@ async function checkBandV1751CombatStats(ctx) {
 
         // (4) Kreatur-Pipeline-KONSUM (symmetrisch — DIESELBE Pipeline, kein Parallelpfad)
         const pm = r.state.playerMesh.position;
+        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake an der Wurzel): der last-
+        // gestreckte Warmup füllt `creatures` bis maxCreatures (20) → ein Test-Spawn ON TOP gäbe
+        // null → .stats-Crash → die GANZE Band fällt. Lokal raise/restore (kein Pump dazwischen →
+        // tickFaunaLifecycle kann die Lücke nicht füllen), die proven V18.296-Form.
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
         const cs = r.computeCreatureStats(c).stats;
         out.creatureComputes =
@@ -4104,6 +4110,7 @@ async function checkBandV1751CombatStats(ctx) {
             typeof r._statsFromTags === "function" &&
             typeof r._applySizeMultipliersToStats === "function";
 
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
     check("V17.51 Kampf A: die Kombat-Stats existieren als Formeln (knockback/attackSpeed/defense)", res.formulasExist);
@@ -4295,6 +4302,9 @@ async function checkBandV1753CreatureCombat(ctx) {
             !!(r.dslEffects && r.dslEffects.damage_creature);
 
         // (1) hp wird bei spawn auf hpMax initialisiert (DIESELBE Pipeline wie der Spieler)
+        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 260, pm.y, pm.z + 260, "happy", "wesen");
         const stats1 = r.computeCreatureStats(c1).stats;
         out.hpInit =
@@ -4346,6 +4356,7 @@ async function checkBandV1753CreatureCombat(ctx) {
         // cleanup (c1/c2 fielen im Kampf; c3 entfernen; Inventar restaurieren)
         if (r.state.creatures.indexOf(c3) !== -1) r.removeCreature(c3);
         for (let i = 0; i < invBefore.length; i++) p.inventory[i] = invBefore[i];
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
     check(
@@ -4405,6 +4416,9 @@ async function checkBandV1754PlayerAttack(ctx) {
             r.constructor.COMBAT_REACH_M > 0;
 
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
+        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
         p.lastAttackAt = -Infinity;
         setEmo({});
@@ -4458,6 +4472,7 @@ async function checkBandV1754PlayerAttack(ctx) {
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.state.lifeField = savedLife;
         r.state.emotionField = savedEmoField;
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
     check(
@@ -4778,6 +4793,9 @@ async function checkBandV1758CreatureNature(ctx) {
         out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
+        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const near = (soul) => r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", soul);
         const timid = near("geist"); // laub → hoch lebendig → scheu
         const bold = near("sprite"); // quarz → hart/mineral → kühn
@@ -4836,6 +4854,7 @@ async function checkBandV1758CreatureNature(ctx) {
         for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
         setEmo(savedEmo);
         r.setGameMode(savedMode);
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
     check("V17.58 W3: _creatureWariness + CREATURE_NATURE existieren", res.exists);
@@ -19599,6 +19618,12 @@ async function checkBandVoxelTerrainCore(ctx) {
         out.voxelMaxHeightZero = r.state.maxHeight === 0;
         out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
 
+        // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): sonst gibt der Test-Spawn
+        // bei vollem Warmup-Cap null → die `if (creature)`-Positionierung wird übersprungen → die
+        // Assertion bleibt undefined → rot. Lokal raise/restore (vor return).
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
+
         // V9.28: updateCreatures ist voxel-aware. Spawne eine
         // Kreatur an bekannter Position, lasse einen Frame laufen,
         // verifiziere y ≈ _voxelSurfaceY + 0.5 (± floatOffset 0.3).
@@ -19649,6 +19674,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         r.state.worldMeta.voxelTerrain = true;
         r.state.lastWorldgen = 0;
         r.generateNewWorld({ force: true });
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
 
