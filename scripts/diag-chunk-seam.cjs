@@ -892,5 +892,32 @@ const server = http.createServer((req, res) => {
         console.log("ROT — A1: sichtbare Cross-LOD-Spalten ohne Stitch-Band-Deckung.");
         process.exit(1);
     }
+    // G0 (goldstandard-mesh-plan) — `--gate`: das echte Naht-Gate. Es schützt gegen den
+    // VAKUÖSEN Pass (0 Cross-LOD-Paare = die Messung lief gar nicht → grün ohne Beweis;
+    // die V18.370-Ring-4-Forcierung erzwingt LOD1, also MÜSSEN Paare da sein) + verankert
+    // die same-LOD-Baseline. Jeder G-Schritt misst sich an diesem Gate.
+    if (process.argv.includes("--gate")) {
+        // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.
+        const sharedPct = spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
+        const crossPairs = spatial.cross ? spatial.cross.pairs : 0;
+        const SAME_BASELINE = 45; // V18.371-Baseline ~50% (G1 hebt das auf ~100%)
+        let bad = false;
+        if (crossPairs <= 0) {
+            console.log(
+                "⛔ GATE — keine Cross-LOD-Paare gestreamt (vakuöser Pass): die Ring-4-Forcierung muss LOD1 erzeugen."
+            );
+            bad = true;
+        }
+        if (sharedPct < SAME_BASELINE) {
+            console.log(
+                `⛔ GATE — same-LOD geteilte Vertices ${sharedPct}% < Baseline ${SAME_BASELINE}% (Regression der Naht-Kohärenz).`
+            );
+            bad = true;
+        }
+        if (bad) process.exit(1);
+        console.log(
+            `✅ SEAM-GATE: same-LOD ${sharedPct}% geteilt (≥${SAME_BASELINE}) · cross-LOD ${crossPairs} Paare · 0 ungedeckte Spalten.`
+        );
+    }
     process.exit(0);
 })();

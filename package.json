@@ -23,6 +23,7 @@
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
+        "gate:seam": "node scripts/diag-chunk-seam.cjs --gate",
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "grass-load": "node scripts/diag-grass-load.cjs",
         "scene-cull": "node scripts/diag-scene-cull.cjs",
