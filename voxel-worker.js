@@ -1833,13 +1833,25 @@ function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
         const d1 = d01 * (1 - ty) + d11 * ty;
         return d0 * (1 - tz) + d1 * tz;
     };
+    // G1 (Goldstandard-Mesh, V18.372) — Worker-Mirror der konformen Rand-Normale (s. anazhRealm.js
+    // `_voxelGradientNormals`): in der Rand-Schale (≤3 Zellen vom Grid-Rand) den Gradienten via
+    // terrainDensityAt (reine Funktion der Welt-Position) → beide Nachbarn rechnen identische
+    // Normale → keine Lichtungs-Naht. Innen: schneller Trilinear. Determinismus-Byte-Test: identisch.
+    const gx0 = ox;
+    const gx1 = ox + (Nx - 1) * step;
+    const gz0 = oz;
+    const gz1 = oz + (Nz - 1) * step;
+    const boundMargin = 3 * step;
     for (let v = 0; v < positions.length; v += 3) {
         const px = positions[v];
         const py = positions[v + 1];
         const pz = positions[v + 2];
-        const gx = lookup(px + eps, py, pz) - lookup(px - eps, py, pz);
-        const gy = lookup(px, py + eps, pz) - lookup(px, py - eps, pz);
-        const gz = lookup(px, py, pz + eps) - lookup(px, py, pz - eps);
+        const useSample =
+            px - gx0 < boundMargin || gx1 - px < boundMargin || pz - gz0 < boundMargin || gz1 - pz < boundMargin;
+        const L = useSample ? terrainDensityAt : lookup;
+        const gx = L(px + eps, py, pz) - L(px - eps, py, pz);
+        const gy = L(px, py + eps, pz) - L(px, py - eps, pz);
+        const gz = L(px, py, pz + eps) - L(px, py, pz - eps);
         const len = Math.hypot(gx, gy, gz);
         if (len < 1e-6) {
             normals[v] = 0;

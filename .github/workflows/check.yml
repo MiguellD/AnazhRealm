@@ -155,6 +155,14 @@ jobs:
         # für Gras — adaptiv, nicht geschnitten (starke HW behält die volle Wiese).
         run: npm run gate:grass-thin
 
+      - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
+        # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
+        # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
+        # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
+        # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
+        # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
+        run: npm run gate:seam-normal
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
