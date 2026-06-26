@@ -1465,12 +1465,13 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const depthM = n > 0 ? dsum / n : 0;
         const id = positions.length / 3;
         vertIsAnchor[id] = n === 0;
-        const js = Math.max(0, Math.min(1, (slopeMax - 0.15) / 0.5)) * _jitAmp;
-        positions.push(
-            wx + _jhash(cx * dim + i, cz * dim + k) * js,
-            surfY,
-            wz + _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * js
-        );
+        // V18.375 — UNIFORMER Jitter (keine Steigungs-Skala, Mirror zu _computeWaterSheetData): die
+        // per-Chunk-`slopeMax`-Skala wich am Rand minimal ab → horizontaler Riss = der vertikale
+        // Streifen. Uniform → Rand-Vertices fallen exakt zusammen; horizontaler Jitter auf flachem
+        // Wasser unsichtbar, nur steiles Wasser wird ent-gittert.
+        const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
+        const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
+        positions.push(wx + _jdir, surfY, wz + _jdir2);
         let sfx = 0;
         let sfz = 0;
         for (let dz = -1; dz <= 1; dz++) {
