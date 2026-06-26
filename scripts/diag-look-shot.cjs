@@ -67,9 +67,26 @@ const server = http.createServer((req, res) => {
     });
 
     // Ein Wasser-Spot finden + den Spieler an die Land-Kante stellen, aufs Wasser blickend.
-    const spot = await page.evaluate(() => {
+    const FIXED = process.env.ANAZH_POS ? process.env.ANAZH_POS.split(",").map(Number) : null;
+    const spot = await page.evaluate((FIXED) => {
         const r = window.anazhRealm; const s = r.state; const pm = s.playerMesh;
         if (!pm) return { err: "no player" };
+        if (FIXED && FIXED.length >= 2) {
+            // exakte Schöpfer-Position reproduzieren (ANAZH_POS="x,z")
+            const fx = FIXED[0], fz = FIXED[1];
+            const fy = (typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(fx, fz) : 0);
+            pm.position.set(fx, fy + 1.7, fz);
+            if (s.camera) s.camera.position.copy(pm.position);
+            // Wasser in der Nähe als Blickziel
+            const wlF = (x, z) => (typeof r._waterLevelAt === "function" ? r._waterLevelAt(x, z) : -Infinity);
+            const thF = (x, z) => (typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(x, z) : 0);
+            let wt = null;
+            for (let rad = 4; rad <= 60 && !wt; rad += 4) for (let a = 0; a < 360; a += 20) {
+                const x = fx + Math.cos(a * Math.PI / 180) * rad, z = fz + Math.sin(a * Math.PI / 180) * rad;
+                if (wlF(x, z) > thF(x, z) + 0.4) { wt = { x, z }; break; }
+            }
+            return { fixed: true, wx: wt ? +wt.x.toFixed(1) : fx, wz: wt ? +wt.z.toFixed(1) : fz + 10, px: +fx.toFixed(1), pz: +fz.toFixed(1), eyeY: +(fy + 1.7).toFixed(1) };
+        }
         const cx = pm.position.x, cz = pm.position.z;
         const wl = (x, z) => (typeof r._waterLevelAt === "function" ? r._waterLevelAt(x, z) : -Infinity);
         const th = (x, z) => (typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(x, z) : 0);
@@ -102,7 +119,7 @@ const server = http.createServer((req, res) => {
         pm.position.set(lx, groundY + 1.7, lz);
         if (s.camera) s.camera.position.copy(pm.position);
         return { lx: +lx.toFixed(1), lz: +lz.toFixed(1), wx: +best.x.toFixed(1), wz: +best.z.toFixed(1), waterY: +best.w.toFixed(1), groundY: +groundY.toFixed(1), eyeAboveWater: +(groundY + 1.7 - best.w).toFixed(1), ang: best.ang };
-    });
+    }, FIXED);
     console.log("Wasser-Spot:", JSON.stringify(spot));
 
     const shoot = async (file, lookAtWater, pitchDeg) => {

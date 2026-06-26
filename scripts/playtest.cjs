@@ -42408,8 +42408,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterMinDepthCull = false;
         if (wMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // Gerstner-Welle als TSL-Fn-Closure (r184: tslFn→Fn) + dot(xz, d) im Vertex-Pfad.
-            waterDiagonal = /gerstnerWave\s*=\s*Fn/.test(builderSrc) && /dot\(xz,\s*d\)/.test(builderSrc);
+            // V18.368 — die WELLEN-VERSCHIEBUNG ist organische Dünung (`oceanSwell`), KEIN
+            // Gerstner mehr (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Befund):
+            // mehrere dekorrelierte value-noise-Oktaven (`vnoise`) statt `dot(xz,d)`-Wellenfronten
+            // → runde, ungerichtete Hügel (kein Schachbrett, keine parallelen Kämme).
+            waterDiagonal =
+                /oceanSwell\s*=\s*Fn/.test(builderSrc) &&
+                (builderSrc.match(/vnoise\(/g) || []).length >= 3 &&
+                !/gerstnerWave/.test(builderSrc);
             // Blinn-Phong-Spec via TSL-pow + uSunDir-Uniform-Lookup. W-F (V18.175,
             // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
             // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
@@ -42536,7 +42542,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.hydroSurfaceUniforms.fogNear
             );
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            out.waterDomainWarp = /waveDisplace\s*=\s*Fn/.test(builderSrc) && /warp/.test(builderSrc);
+            // V18.368 — Heterogenität kommt jetzt aus der MEHR-SKALEN organischen Dünung
+            // (`oceanSwell`: drei value-noise-Oktaven bei 0.05/0.12/0.23 mit eigenen Drift-
+            // Richtungen), NICHT mehr aus dem Gerstner-Domain-Warp → kein periodisches Raster,
+            // keine parallelen Kämme.
+            out.waterHeteroSwell =
+                /oceanSwell\s*=\s*Fn/.test(builderSrc) && /0\.05/.test(builderSrc) && /0\.23/.test(builderSrc);
             // Fog-Mix via TSL: smoothstep(uFogNear, uFogFar, vFogDepth) + mix.
             out.waterFogInShader = /smoothstep\(uFogNear,\s*uFogFar/.test(builderSrc);
         }
@@ -42571,7 +42582,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // weiter (voxel-aware seit V9.39).
         check("V8.31: Wasser-Shader hat Fog-Uniforms", v831Results.waterFogUniforms);
         check("V8.31: Wasser-Shader hat fog-mix", v831Results.waterFogInShader);
-        check("V8.31: Wasser-Wellen nutzen Domain-Warp (heterogener)", v831Results.waterDomainWarp);
+        check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
     } else {
         check("V8.31: Fog-Custom-Shader Tests laufen", false, v831Results ? v831Results.error : "no result");
     }
@@ -42714,15 +42725,22 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
             const builderSrc = r._ensureHydroSurfaceMaterial.toString();
-            // TSL-Fn-Closures statt GLSL-Funktionen (r167+ Vendor-Rename: tslFn→Fn).
-            out.gerstnerFn = /gerstnerWave\s*=\s*Fn/.test(builderSrc);
-            out.waveDisplaceVec3 = /waveDisplace\s*=\s*Fn/.test(builderSrc);
-            // Horizontale Stauchung: q.mul(a).mul(d.x).mul(cos(phase)) — spitze Kämme.
-            out.gerstnerHorizontal = /q\.mul\(a\)\.mul\(d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
-            // Normale aus Kreuzprodukt der Tangenten.
+            // V18.368 — die Wellen-Verschiebung ist organische Dünung (`oceanSwell`), NICHT mehr
+            // Gerstner (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Browser-Befund).
+            out.swellFn = /oceanSwell\s*=\s*Fn/.test(builderSrc) && !/gerstnerWave/.test(builderSrc);
+            // Die Dünung sitzt im `ocean`-Term des surfDisp (vec3-Verschiebung).
+            out.swellVec3 = /const\s+ocean\s*=\s*oceanSwell\(/.test(builderSrc);
+            // RUND statt spitz: die Dünung verschiebt NUR vertikal (vec3(0, h, 0)) — keine
+            // horizontale Stauchung mehr (die spitze Gerstner-Kämme/Chevron machte).
+            out.swellRounded =
+                /return\s+vec3\(float\(0\.0\),\s*h,\s*float\(0\.0\)\)/.test(builderSrc) &&
+                !/d\.x\)\.mul\(cos\(phase\)\)/.test(builderSrc);
+            // Normale aus Kreuzprodukt der Tangenten (unverändert).
             out.gerstnerCrossNormal = /cross\(pzPos\.sub\(pd\),\s*pxPos\.sub\(pd\)\)/.test(builderSrc);
-            // Domain-Warp gegen Periodizität (V8.31-Erbe).
-            out.gerstnerKeepsWarp = /const\s+warp\s*=\s*vec2/.test(builderSrc);
+            // Heterogenität aus dekorrelierten Oktaven-Drift-Richtungen statt Domain-Warp:
+            // jede Oktave driftet anders (gemischte Vorzeichen in den vec2-Offsets).
+            out.swellDecorrelated =
+                /vnoise\(xz\.mul\(0\.05\)/.test(builderSrc) && /vnoise\(xz\.mul\(0\.23\)/.test(builderSrc);
         }
 
         return out;
@@ -42744,11 +42762,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.33: Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
         check("V8.33: Phönix neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
         check("V8.33: Drache neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-        check("V8.33: Wasser-Shader hat gerstnerWave-Funktion (vec3)", v833Results.gerstnerFn);
-        check("V8.33: Wasser-Shader hat waveDisplace (vec3-Verschiebung)", v833Results.waveDisplaceVec3);
-        check("V8.33: Gerstner-Wellen verschieben horizontal (spitze Kämme)", v833Results.gerstnerHorizontal);
+        check("V8.33: Wasser-Shader hat oceanSwell-Funktion, kein Gerstner (V18.368)", v833Results.swellFn);
+        check("V8.33: Wellen-Verschiebung ist oceanSwell (vec3, im ocean-Term)", v833Results.swellVec3);
+        check("V8.33: Dünung verschiebt nur vertikal — rund statt spitz (V18.368)", v833Results.swellRounded);
         check("V8.33: Wasser-Normale aus Kreuzprodukt der Tangenten", v833Results.gerstnerCrossNormal);
-        check("V8.33: Gerstner-Wellen behalten den Domain-Warp (V8.31-Erbe)", v833Results.gerstnerKeepsWarp);
+        check("V8.33: Dünung aus dekorrelierten Oktaven (0.05/0.23, V18.368)", v833Results.swellDecorrelated);
     } else {
         check("V8.33: Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
     }
