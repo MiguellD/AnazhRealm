@@ -85,13 +85,22 @@ const server = http.createServer((req, res) => {
                 if (typeof r.state.renderer.renderAsync === "function")
                     r.state.renderer.renderAsync = () => Promise.resolve();
                 r.state.postProcessingFailed = true;
+                // V18.370 — den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
+                // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
+                // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).
+                r.state.voxelWorker = null;
+                r.state.chunkRingRadius = 4;
+                r.state._activeRingRadius = 4;
                 stubbed = true;
             }
             if (r && typeof r._gameLoopTick === "function") {
+                if (r.state) r.state._activeRingRadius = 4; // gegen den Ramp halten
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
-                if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size > 26) break;
+                // V18.370 — bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
+                // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
+                if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
             }
             await new Promise((res) => setTimeout(res, 4));
         }
