@@ -380,6 +380,10 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 > **Doc-Sync-Notiz (V18.373):** die Chronik-Einträge V18.364–V18.372 leben (noch) nur im `CLAUDE.md`-Kopf + in den git-Commits, nicht hier — eine vorbestehende Drift aus dem Schöpfer-Browser-Befund-Bogen. Wer die volle V18.364–.372-Geschichte sucht: der CLAUDE.md-„Aktueller Stand"-Absatz trägt sie ausführlich.
 
+### V18.379 — DAS REGIME-PATCHWORK AUF DEM WASSER (Schöpfer „sehe ja immernoch diese shaderunterschiede auf der oberfläche mit harten linien, dafür muss ich das spiel nicht öffnen")
+
+**Der Befund am eigenen Render war echt: die Oberfläche zerfiel in Patches (dicht-gesprenkelt vs glatt) mit dreiecks-harten Kanten.** GEMESSEN (Wegwerf-Vertex-Dump der echten Sheet-Attribute am Foto-Spot, Nachbar-Sprung-Zählung pro Attribut): **aFlow** sprang an 23 % der Nachbar-Paare hart (>0.25) — aWave: 0 (die See-Binär-Hypothese widerlegt, erst messen). aFlow war das EINZIGE Attribut, das nie durch die V18.375-Glättung lief: pro VERTEX wurden 9 binäre `_hydroRiverAt`-Treffer (±9 m) gemittelt = ein flatterndes Zufalls-Feld — und `riverness` (Foam-Regime) + `flowMix` (Kräusel-Regime) lasen das Rauschen → Nachbar-Dreiecke wechselten das REGIME. HEILUNG (beide Mirrors): die Strömung wird ein GEGLÄTTETES SPALTEN-FELD (flowXG/flowZG) wie tops/depth/slope — ein Sample pro Spalte (billiger: ~1156 statt ~5625 Calls), wet-only Box-Blur (naht-exakt per PAD-Mathe), der Vertex mittelt die 4 geglätteten Nachbar-Spalten. NACHHER: 1 harter Sprung von 1173 nass-nass-Paaren (Rest = Ufer-Anker, unsichtbar); das Render zeigt EINEN Wasser-Körper. `diag-worker-watersheet` maxDiff 0 · full playtest grün.
+
 ### V18.378 — DER SELBST-AUDIT AUF V18.377 (Schöpfer „kannst du prüfen ob es nun professionell gelöst ist? sauber?" — vier echte Befunde gefunden, alle gemessen + geheilt)
 
 **Die Lehre der Welle: ein „prüfen ob sauber" ist ein MESS-Auftrag, kein Nick-Auftrag.** Der Audit auf die frische V18.377 fand vier echte Mängel:

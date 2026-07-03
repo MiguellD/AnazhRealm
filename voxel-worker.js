@@ -1427,6 +1427,27 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];
     _smoothWetAttr(slopeGS, Math.max(0, SMOOTH_PASSES - 1));
     for (let g = 0; g < GW * GW; g++) slopeG[g] = slopeGS[g];
+    // V18.379 — die Strömung als geglättetes Spalten-Feld (Mirror zu _computeWaterSheetData):
+    // ein Feld-Sample pro Spalte + wet-only Box-Blur statt 9 roher Samples pro Vertex → kein
+    // Regime-Patchwork (riverness/flowMix lasen das Rauschen), naht-exakt per PAD-Mathe.
+    const flowXG = new Float64Array(GW * GW);
+    const flowZG = new Float64Array(GW * GW);
+    for (let gz = 0; gz < GW; gz++) {
+        for (let gx = 0; gx < GW; gx++) {
+            const g = gx + gz * GW;
+            if (Number.isNaN(tops[g])) continue; // Strömung lebt auf dem WASSER (Anker 0)
+            const wxc = ox + (gx - PAD + 0.5) * step;
+            const wzc = oz + (gz - PAD + 0.5) * step;
+            const rv = hydroRiverAt(wxc, wzc);
+            if (rv && (rv.flowX || rv.flowZ)) {
+                const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
+                flowXG[g] = rv.flowX / m;
+                flowZG[g] = rv.flowZ / m;
+            }
+        }
+    }
+    _smoothWetAttr(flowXG);
+    _smoothWetAttr(flowZG);
     const NV = dim + 1;
     const positions = [];
     const indices = [];
@@ -1454,6 +1475,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         let sum = 0;
         let n = 0;
         let dsum = 0;
+        let sfx = 0;
+        let sfz = 0;
         let slopeMax = 0;
         let anchor = Infinity;
         for (const [aci, ack] of [
@@ -1468,6 +1491,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                 sum += v;
                 n++;
                 dsum += depthG[gi2];
+                sfx += flowXG[gi2];
+                sfz += flowZG[gi2];
                 if (slopeG[gi2] > slopeMax) slopeMax = slopeG[gi2];
             }
             const sv = solidG[gi2];
@@ -1484,26 +1509,18 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
         const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
         positions.push(wx + _jdir, surfY, wz + _jdir2);
-        let sfx = 0;
-        let sfz = 0;
-        for (let dz = -1; dz <= 1; dz++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                const rv = hydroRiverAt(wx + dx * 9, wz + dz * 9);
-                if (rv && (rv.flowX || rv.flowZ)) {
-                    const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
-                    sfx += rv.flowX / m;
-                    sfz += rv.flowZ / m;
-                }
-            }
-        }
+        // aFlow (V18.379) — Mittel der 4 geglätteten Nachbar-Spalten (sfx/sfz im wet-Loop).
+        const flowN = n > 0 ? n : 1;
+        const avFx = sfx / flowN;
+        const avFz = sfz / flowN;
         const heightRamp = Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0));
-        const rt = Math.max(0, Math.min(1, (Math.hypot(sfx, sfz) / 9 - 0.04) / 0.46));
+        const rt = Math.max(0, Math.min(1, (Math.hypot(avFx, avFz) - 0.04) / 0.46));
         const riverness = rt * rt * (3 - 2 * rt);
         const isLake = n > 0 && heightRamp > 0 && hydrosphereLakeAt(wx, wz);
         aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
         aDepth.push(depthM);
         aSlope.push(n > 0 ? slopeMax : 0);
-        aFlow.push(sfx / 9, sfz / 9);
+        aFlow.push(avFx, avFz);
         vmap[vi] = id;
         return id;
     };

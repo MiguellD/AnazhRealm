@@ -27563,6 +27563,34 @@ class AnazhRealm {
         for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];
         _smoothWetAttr(slopeGS, Math.max(0, SMOOTH_PASSES - 1));
         for (let g = 0; g < GW * GW; g++) slopeG[g] = slopeGS[g];
+        // V18.379 — DIE STRÖMUNG WIRD EIN GEGLÄTTETES SPALTEN-FELD (Schöpfer „immernoch diese
+        // Shader-Unterschiede auf der Oberfläche mit harten Linien"; GEMESSEN: 23 % der Nachbar-
+        // Vertices sprangen |aFlow| um >0.25 — aFlow war das EINZIGE Attribut, das NIE durch die
+        // Glättung lief): der alte Pfad mittelte pro VERTEX 9 binäre `_hydroRiverAt`-Treffer
+        // (±9 m) → ein flatterndes Zufalls-Feld, und `riverness`/`flowMix` (die FOAM-/KRÄUSEL-
+        // REGIME-Blender) lasen das Rauschen → Nachbar-Dreiecke wechselten das Regime = das
+        // Patchwork mit dreiecks-harten Kanten. Jetzt: EIN Feld-Sample pro Spalte (billiger:
+        // GW² ≈ 1156 statt ~5625 Calls) → derselbe wet-only Box-Blur wie depth (naht-exakt per
+        // PAD-Mathe) → der Vertex mittelt die 4 GEGLÄTTETEN Nachbar-Spalten. Regime-Übergänge
+        // werden weiche Gradienten („verschmelzen"), die Fluss-Kerne behalten fmag≈1.
+        const flowXG = new Float64Array(GW * GW);
+        const flowZG = new Float64Array(GW * GW);
+        for (let gz = 0; gz < GW; gz++) {
+            for (let gx = 0; gx < GW; gx++) {
+                const g = gx + gz * GW;
+                if (Number.isNaN(tops[g])) continue; // Strömung lebt auf dem WASSER (Anker 0)
+                const wxc = ox + (gx - PAD + 0.5) * step;
+                const wzc = oz + (gz - PAD + 0.5) * step;
+                const rv = this._hydroRiverAt(wxc, wzc);
+                if (rv && (rv.flowX || rv.flowZ)) {
+                    const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
+                    flowXG[g] = rv.flowX / m;
+                    flowZG[g] = rv.flowZ / m;
+                }
+            }
+        }
+        _smoothWetAttr(flowXG);
+        _smoothWetAttr(flowZG);
         // Vertex-Grid (dim+1)²: Vertex (i,k) = Ecke der Spalten (i−1,k−1)…(i,k).
         const NV = dim + 1;
         const positions = [];
@@ -27599,6 +27627,8 @@ class AnazhRealm {
             let sum = 0;
             let n = 0;
             let dsum = 0;
+            let sfx = 0;
+            let sfz = 0;
             let slopeMax = 0;
             let anchor = Infinity;
             for (const [aci, ack] of [
@@ -27613,6 +27643,8 @@ class AnazhRealm {
                     sum += v;
                     n++;
                     dsum += depthG[gi2];
+                    sfx += flowXG[gi2];
+                    sfz += flowZG[gi2];
                     if (slopeG[gi2] > slopeMax) slopeMax = slopeG[gi2];
                 }
                 const sv = solidG[gi2];
@@ -27641,20 +27673,13 @@ class AnazhRealm {
             const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
             const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
             positions.push(wx + _jdir, surfY, wz + _jdir2);
-            // aFlow — identisch zur Fläche (V18.11/.24): 3×3-geglättete Fluss-Strömung,
-            // Magnitude tapert zur Mündung/Bank. (Vor aWave berechnet — der liest sie.)
-            let sfx = 0;
-            let sfz = 0;
-            for (let dz = -1; dz <= 1; dz++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    const rv = this._hydroRiverAt(wx + dx * 9, wz + dz * 9);
-                    if (rv && (rv.flowX || rv.flowZ)) {
-                        const m = Math.hypot(rv.flowX, rv.flowZ) || 1;
-                        sfx += rv.flowX / m;
-                        sfz += rv.flowZ / m;
-                    }
-                }
-            }
+            // aFlow (V18.379) — der Vertex mittelt die 4 GEGLÄTTETEN Nachbar-Spalten des
+            // flowXG/flowZG-Feldes (oben; sfx/sfz im wet-Loop akkumuliert) statt 9 roher
+            // Feld-Samples → kein Regime-Patchwork, naht-exakt. Magnitude tapert weiter
+            // zur Mündung/Bank (der Blur trägt das Tapern).
+            const flowN = n > 0 ? n : 1;
+            const avFx = sfx / flowN;
+            const avFz = sfz / flowN;
             // aWave (V18.116 — A4-Mündungs-Synergie): Höhen-Rampe (V18.14, Nähe zum
             // Meeresspiegel) × ART-Dämpfung. Die reine Höhen-Rampe ließ jeden Fluss-
             // Lauf nahe Meereshöhe (jede Mündung!) voll wogen — Gerstner + Gischt
@@ -27666,13 +27691,13 @@ class AnazhRealm {
             // SEE ist still, auch nahe Meereshöhe (der tiefen-skalierte
             // uLakeRipple-Floor V18.19 trägt sein Kräuseln).
             const heightRamp = Math.max(0, Math.min(1, 1 - (Math.abs(surfY - waterLevel) - 0.8) / 2.0));
-            const rt = Math.max(0, Math.min(1, (Math.hypot(sfx, sfz) / 9 - 0.04) / 0.46));
+            const rt = Math.max(0, Math.min(1, (Math.hypot(avFx, avFz) - 0.04) / 0.46));
             const riverness = rt * rt * (3 - 2 * rt);
             const isLake = n > 0 && heightRamp > 0 && this._hydrosphereLakeAt(wx, wz);
             aWave.push(isLake ? 0 : heightRamp * (1 - riverness));
             aDepth.push(depthM);
             aSlope.push(n > 0 ? slopeMax : 0);
-            aFlow.push(sfx / 9, sfz / 9);
+            aFlow.push(avFx, avFz);
             vmap[vi] = id;
             return id;
         };
@@ -75343,7 +75368,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.378.0";
+AnazhRealm.VERSION = "18.379.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
