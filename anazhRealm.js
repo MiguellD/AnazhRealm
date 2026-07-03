@@ -45305,7 +45305,13 @@ class AnazhRealm {
     // NIE allow-same-origin für eine sandboxed Welt (die Lokalitäts-Invariante).
     _portalSandboxAttr(meta) {
         const sandboxed = meta && meta.trust === "sandboxed";
-        return sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin";
+        // V18.384 — trusted Welten (unser eigener Code) dürfen den Zeiger
+        // fangen: JEDES sandbox-Attribut blockt Pointer-Lock, solange der
+        // allow-pointer-lock-Token fehlt — die begehbare Phytogenesis-Welt
+        // (PointerLock + WASD) war deshalb im Portal steuerungs-tot. Die
+        // sandboxed null-origin-Wand bleibt UNBERÜHRT (allow-scripts ALLEIN:
+        // eine fremde Engine fängt weder Origin noch Maus).
+        return sandboxed ? "allow-scripts" : "allow-scripts allow-same-origin allow-pointer-lock";
     }
 
     // G8 R3 (Robustheits-Bogen, M1 — Lokalität) — der Lokalitäts-BEWEIS (mutiert
@@ -45465,7 +45471,14 @@ class AnazhRealm {
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
         };
         window.addEventListener("message", onMessage);
-        iframe.addEventListener("load", () => this._portalSendEnter());
+        iframe.addEventListener("load", () => {
+            this._portalSendEnter();
+            // V18.384 — die Tastatur gehört der Sub-Welt: ohne expliziten
+            // Fokus landen keydown-Events weiter auf der Heimat-Welt, bis
+            // der Reisende ins iframe klickt (die begehbare Welt läse WASD
+            // nie). focus() wirft nicht; Esc-Heimkehr meldet die Welt selbst.
+            iframe.focus();
+        });
         this._portalOverlay = {
             overlayEl: overlay,
             iframe,
@@ -75964,7 +75977,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.383.0";
+AnazhRealm.VERSION = "18.384.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

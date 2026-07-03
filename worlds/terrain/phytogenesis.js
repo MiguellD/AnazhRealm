@@ -1300,6 +1300,7 @@ function init(){
    Ego-Steuerung (PointerLock + WASD), Terrain mit Hoehe + Nebel.
  * ============================================================== */
 let forestMode=false, forestGroup=null, plControls=null, lastFrameT=0, flyMode=false, lastSpace=0;
+let plFallback=false;   // PORTAL-FIX V18.384: verweigert der Browser den Pointer-Lock (iframe ohne Gesture/Policy), traegt Drag-Umsehen + WASD den Wald trotzdem
 let eyeY=1.7, bobPhase=0, velF=0, velR=0, eyeVel=0;
 const _fwd=new THREE.Vector3(), _rgt=new THREE.Vector3();
 const move={fwd:false,back:false,left:false,right:false,run:false,up:false};
@@ -1897,7 +1898,7 @@ function buildForest(){
   __forest={trees,light,C,paths,R};
   console.log('[WALD] R='+R+' Baeume='+nT+' Steine='+nR+' Gras='+nG+' Kies='+nP+' Blumen='+nF+' Straeucher='+nS+' | DRAW-MESHES='+drawMeshes+' | Lichtung('+C.x.toFixed(0)+','+C.z.toFixed(0)+') Pfade='+paths.length);
 }
-function updateForestHint(){const fh=document.getElementById('forestHint');if(!fh)return;fh.textContent=flyMode?'FLIEGEN | WASD + Maus | Space = hoch | Shift = runter | Space x2 = gehen':'Klick = Umsehen | WASD = Gehen | Shift = Rennen | Space x2 = Fliegen | ESC = Maus frei';}
+function updateForestHint(){const fh=document.getElementById('forestHint');if(!fh)return;const look=plFallback?'Ziehen = Umsehen':'Klick = Umsehen';fh.textContent=flyMode?'FLIEGEN | WASD + Maus | Space = hoch | Shift = runter | Space x2 = gehen':look+' | WASD = Gehen | Shift = Rennen | Space x2 = Fliegen | ESC = Maus frei';}
 function updateTreeLOD(){
   if(!_treeLOD.length)return;
   const cx=camera.position.x,cz=camera.position.z;
@@ -2003,7 +2004,19 @@ addEventListener('keyup',e=>{const k=e.code;
   else if(k==='Space')move.up=false;});
 function wireForest(){
   if(THREE.PointerLockControls)plControls=new THREE.PointerLockControls(camera,renderer.domElement);
-  renderer.domElement.addEventListener('click',()=>{if(forestMode&&plControls&&!plControls.isLocked)plControls.lock();});
+  renderer.domElement.addEventListener('click',()=>{if(forestMode&&plControls&&!plControls.isLocked&&!plFallback)plControls.lock();});
+  // PORTAL-FIX V18.384: scheitert der Lock (Browser/iframe-Policy), faellt die Steuerung
+  // graziös auf Drag-Umsehen + freie WASD (statt eines toten Waldes). Kein PointerLockControls
+  // vorhanden (sehr alte Engine-Reste) -> derselbe Fallback von Anfang an.
+  if(!plControls)plFallback=true;
+  document.addEventListener('pointerlockerror',()=>{plFallback=true;updateForestHint();});
+  const _dragE=new THREE.Euler(0,0,0,'YXZ');
+  renderer.domElement.addEventListener('mousemove',e=>{
+    if(!forestMode||!plFallback||!(e.buttons&1))return;
+    _dragE.setFromQuaternion(camera.quaternion);
+    _dragE.y-=(e.movementX||0)*0.0024; _dragE.x-=(e.movementY||0)*0.0024;
+    _dragE.x=Math.max(-1.45,Math.min(1.45,_dragE.x)); _dragE.z=0;
+    camera.quaternion.setFromEuler(_dragE);});
   const wb=document.getElementById('waldBtn');if(wb)wb.addEventListener('click',enterForest);
   const eb=document.getElementById('exitForest');if(eb)eb.addEventListener('click',exitForest);
 }
@@ -2361,7 +2374,7 @@ function animate(){
     _lodT+=dt; {const dx=camera.position.x-_lodCx,dz=camera.position.z-_lodCz; if(_lodT>0.25||dx*dx+dz*dz>1.0){_lodT=0;_lodCx=camera.position.x;_lodCz=camera.position.z;updateTreeLOD();}}   // Baum-LOD nach Distanz (reagiert ab 1m Bewegung -> begrenzt die Drift < Hysterese-Rand M, auch im Flug/Orbit)
   }
   if(forestMode){
-    if(plControls&&plControls.isLocked){
+    if(plControls&&(plControls.isLocked||plFallback)){   // PORTAL-FIX V18.384: im Fallback laufen WASD/Fliegen ohne Lock (Umsehen = Ziehen)
       if(flyMode){const f=24*dt;camera.getWorldDirection(_fwd);_rgt.crossVectors(_fwd,camera.up).normalize();
         if(move.fwd)camera.position.addScaledVector(_fwd,f);if(move.back)camera.position.addScaledVector(_fwd,-f);
         if(move.left)camera.position.addScaledVector(_rgt,-f);if(move.right)camera.position.addScaledVector(_rgt,f);

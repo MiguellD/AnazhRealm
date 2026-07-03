@@ -44171,7 +44171,8 @@ async function checkBandW12WorldPortal(ctx) {
                 /function applyDsl/.test(jsBody) &&
                 /"ready"/.test(jsBody) &&
                 /"enter"/.test(jsBody) &&
-                /"exit"/.test(jsBody);
+                /"exit"/.test(jsBody) &&
+                /pointerlockerror/.test(jsBody);
             const threeRes = await fetch("worlds/terrain/lib/three-r128.min.js");
             const terrRes = await fetch("worlds/terrain/lib/UnrealBloomPass.js");
             out.terrainEngineVendored = threeRes.ok && terrRes.ok;
@@ -46293,9 +46294,11 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.overlaySandboxAttr = r._portalOverlay.iframe.getAttribute("sandbox") === "allow-scripts";
         out.overlayTrustField = r._portalOverlay.trust === "sandboxed";
         r._disposePortalOverlay();
-        // trusted → mit allow-same-origin.
+        // trusted → mit allow-same-origin + allow-pointer-lock (V18.384: die
+        // begehbare Welt fängt den Zeiger; sandboxed bleibt OHNE beides).
         r._buildPortalOverlay({ world: "worlds/skeleton/index.html", label: "T", dsl: null });
         out.overlayTrustedAttr = /allow-same-origin/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
+        out.overlayTrustedPointerLock = /allow-pointer-lock/.test(r._portalOverlay.iframe.getAttribute("sandbox"));
         r._disposePortalOverlay();
         // _portalSendEnter / _portalForwardDsl: targetOrigin "*" für null-origin.
         const savedPo = r._portalOverlay;
@@ -46380,6 +46383,10 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         check(
             "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-same-origin",
             sandboxResults.overlayTrustedAttr
+        );
+        check(
+            "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-pointer-lock (V18.384)",
+            sandboxResults.overlayTrustedPointerLock
         );
         check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);
         check(
@@ -46969,9 +46976,10 @@ async function checkBandG8R3Locality(ctx) {
         const out = {};
         out.methods = typeof r._portalSandboxAttr === "function" && typeof r._localityAudit === "function";
         // (1) das Sandbox-Attribut: sandboxed → allow-scripts allein (null-origin),
-        // trusted → + allow-same-origin (unser eigener Code).
+        // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
+        // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
         out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
-        out.trustedAttr = r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin";
+        out.trustedAttr = r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin allow-pointer-lock";
         // (2) _sanitizePortalMeta: trust:"sandboxed" bleibt sandboxed, Default = trusted.
         const m1 = r._sanitizePortalMeta({ world: "worlds/x/i.html", trust: "sandboxed" }, "X");
         const m2 = r._sanitizePortalMeta({ world: "worlds/x/i.html" }, "X");
