@@ -58,8 +58,10 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
   WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **Der
   DETERMINISMUS-BOGEN ist VOLLENDET (V18.331):** Ammo ist physisch raus, die Kollision feld-nativ aus
   dem Dichtefeld → der per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel) ist WEG, der Boden
-  deterministisch (öffnet P4 Lockstep/Replay als eigenen Bogen). Voll-Stand in
-  `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser (Regel #0).
+  deterministisch. **P4 GEERNTET: Stufe 1 Replay (V18.331, `diag-replay-determinism`) · Stufe 2
+  Lockstep-MP (V18.382, `smoke:lockstep` — nur Inputs übers Netz, Zwei-Browser bit-exakt 284/284);
+  offen nur Stufe 3 Fixed-Point/cross-Maschine.** Voll-Stand in
+  `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser.
 
 - ~~**Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 4`)~~ — REVERTIERT → 10 (V18.331).
 - ~~**Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 1`)~~ — REVERTIERT → 3 (V18.331).
@@ -69,18 +71,23 @@ statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter
 
 ---
 
-## §1 · Regel #0 — die eine Wahrheit (über allem) · präzisiert 09.06.2026
+## §1 · Das Fischer-Prinzip — die eine Wahrheit (über allem) · „Regel #0" GESTRICHEN V18.356
 
-**Keine Proxy-METRIK entscheidet einen Look-Befund — AUGEN entscheiden.** Die alte Form („Render ist
-pixel-blind headless") war FALSCH (Schöpfer-Korrektur 09.06., dreimal bestätigt): meine
-swiftshader-Screenshots sind TREU — mit der richtigen Methodik (settled · Augenhöhe · nah · A/B
-alt-vs-neu, `diag-settled-view`) prüft MEIN Auge jede Welle selbst. Was lügen kann, ist eine
-headless-ZAHL (Falten-%, Neigung — V18.87: Glätte gemessen, Füllung verloren). Das SCHÖPFER-Auge
-bleibt das MERGE-Gate (echtes WebGPU-FPS/Feel; er ist der Schöpfer): nie 2+ Look-Wellen stapeln
-ohne sein Auge, ein bestätigter Bogen wird gemergt, bevor der nächste beginnt. Mein Auge pro
-Welle, sein Auge pro Merge — Regel #0 ist ein Werkzeug, keine Bremse.
+**„Regel #0 = der Schöpfer-Browser ist die letzte Wahrheit" ist auf Schöpfer-Anweisung aus dem
+System gestrichen (20.06. + 24.06.: „woher nimmst du das Schöpfer-Auge … verstosse die regel 0
+und streiche sie aus dem system, sei der fischer nicht der bettler").** Was gilt: ich MESSE
+(Gate · Diag · hardware-unabhängiger Proxy), ich SEHE (mein eigener settled Augenhöhen-Shot —
+die swiftshader-Screenshots sind TREU, Schöpfer-Korrektur 09.06. dreimal bestätigt; die Methodik
+zählt: settled · Augenhöhe · nah · A/B), ich URTEILE, ich VOLLENDE — das Neue wird DER Pfad
+(default-an), kein Hedge. Der Schöpfer wertet das ERGEBNIS (ein vollendetes, selbst-verifiziertes
+Werk) und bleibt das Merge-Gate für den LOOK — er ist NIE die Ausrede, etwas halb/AUS zu lassen.
+Was lügen kann, ist eine headless-ZAHL als Look-Beweis (V18.87: Glätte gemessen, Füllung
+verloren): MECHANIK braucht eine ZAHL, LOOK braucht ein BILD.
 
 ## §2 · Wo wir stehen
+
+> **Der LIVE-Stand lebt im `CLAUDE.md`-Kopf („Aktueller Stand", heute V18.382) + der Chronik
+> `docs/archiv/handover.md` — dieser Absatz ist der 11./18.06.-Snapshot (Fundament-Wertung, gültig).**
 
 Das **Fundament steht und ist RUND** (Stand 11.06.2026): Voxel-Terrain mit Höhlen/Canyons ·
 Erosion · **das Wasser VOLLENDET** (CA fließt + ruht V18.84–.94 · Stau-Spiegel V18.129 ·
@@ -218,7 +225,7 @@ GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurf
 - **V18.319 — Skin-Isosurface 4,4×:** das brute O(G³·Knochen)-Metaball-Backen (`bake-core`) räumlich akzeleriert (OpenVDB-„bone grid": pro Zelle nur die lokal beitragenden Knochen, `field()` liest die kurze Liste statt aller ~270). accel==brute (`diag-bake-bench`). res-128 wird damit bezahlbar.
 - **V18.320 — Chunk-Density-Band-Skip ~3×:** der Worker-Mesher (`buildChunkMesh`) liest die EINE Band-Skip-Quelle `computeDensityGrid` (Mirror von `_voxelSampleDensityGrid`) statt der duplizierten Voll-Schleife. band==full (`diag-chunk-band`) · worker==main (`diag-worker-chunk`).
 - **V18.321 — Chunk-Density-Spalten-Hoist:** die GEMESSENE 61 % rein-2D-Makro-Arbeit (`_terrainMacroSurfaceY` + Roughness/Canyon/Hydro) EINMAL pro Spalte statt pro Voxel (`_terrainColumnContext` + `_terrainBaseDensityAtCol`, beide Mirrors). alt==neu über **137k Punkte** (`diag-density-refactor`). → Chunk-Bau zusammen **6-12× vs. Brute**, der Lauf-Freeze an der Wurzel.
-- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Der Determinismus-Bogen ist seither VOLLENDET (V18.331 — Ammo raus, der BVH-Lauf-Freeze tot); der verbliebene „Gigant" (GPU-Dichte-Ceiling) ist ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz, und P4 (Replay/Lockstep) ist der eigene Folge-Bogen, den der deterministische Boden erst öffnet.
+- **DIE RENDER-SONDIERUNG (zur Wand geprobt, nicht gehand-wavt — Schöpfer „du brauchst nicht meinen browser, du kannst das selbst"):** der „GPU-driven-Culling-Gigant" ist KEINER — die GPU CLIPPT off-frustum-Geometrie schon vor der Rasterung (ein Vertex-Degenerate-Cull spart NICHTS), `THREE.TSL.instanceMatrix` ist `undefined` (Instanz-Zentrum nicht greifbar), der Compute+Indirect-Weg ist high-risk mit nur marginalem Mehrwert über das schon-gebaute 60%-Region-Cull (V18.300). Der Render ist NAHE-OPTIMAL; die Fragment/Overdraw-Last senkt nur WENIGER/feiner-LOD-Geometrie (look-bound, Schöpfer-Auge) — kein Genialität-ohne-Verlust-Hebel mehr. Der Terrain-Selbstschatten ist look-essenziell (Pixel-Linse `diag-shadow-pixel`: ~7 % der Pixel). **Volle Befunde in `docs/archiv/handover.md` (Render-Sondierung).** Der Determinismus-Bogen ist seither VOLLENDET (V18.331 — Ammo raus, der BVH-Lauf-Freeze tot); der verbliebene „Gigant" (GPU-Dichte-Ceiling) ist ZUKUNFTS-ARCHITEKTUR/Vision-Enabler, kein aktueller Perf-Schmerz, und P4 (Replay/Lockstep) ist inzwischen GEERNTET (Stufe 1 V18.331 · Stufe 2 V18.382; offen Stufe 3 Fixed-Point).
 
 ---
 
@@ -334,7 +341,9 @@ GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurf
 
 ## §9 · Die operative Disziplin
 
-1. **Regel #0** — pixel-blinde Arbeit browser-validiert, bevor die nächste Welle stapelt.
+1. **Das Fischer-Prinzip (§1; „Regel #0" gestrichen V18.356)** — selbst messen + sehen + urteilen +
+   VOLLENDEN; Look-Wellen nicht stapeln, ohne dass ein Auge (meines pro Welle, des Schöpfers pro
+   Merge) sie sah.
 2. **Miss, rate nicht** — die 73 diag-Skripte; der Reproducer mit Output-Lesen _vor_ dem Fix.
 3. **Verdichte, baue nie parallel** (V17.9, §6) · **Harmonie statt Revert** (V17.23) · **verifiziere
    KONSUM, nicht Existenz** (V17.31).

@@ -14,6 +14,18 @@ Der aktuelle Stand + die Route: die kanonische Landkarte in **`docs/README.md`**
 `docs/das-lebendige-feld.md` (der wahre Norden), **`docs/wahrerguss.md`** (der aktive
 Bogen — der Master-Plan; Richter: `docs/archiv/wahrerbauplan.md`), `docs/roadmap.md` (der Weg).
 
+**Frisch archiviert (03.07.2026 — Doc-Ordnung V18.382):**
+
+- `engine-orchestrierung-plan.md` — DER ENGINE-ORCHESTRIERUNGS-BOGEN, VOLLENDET V18.353–.356
+  (Phase A Draw-Call-Kollaps · B Frame-Budget-Scheduler · C Fixed-Timestep Sim/Render-Split —
+  alle default-an, der EINE Pfad seit V18.358). Referenz für Loop-/Scheduler-/Batching-Arbeit;
+  die Linsen (`diag-arch-cull`/`-arch-batch` · `diag-frame-scheduler` · `diag-fixed-timestep`) stehen.
+- `goldstandard-mesh-plan.md` — die NAHT-ENTSCHEIDUNG, GESCHLOSSEN V18.372 (gemessen, kein
+  Aufschub-Plan): same-LOD war die Rand-NORMALE (69°→0.022°, `gate:seam-normal`), cross-LOD
+  konformieren wäre für-nichts (Shading liest `up+bump`), intrinsisches Transvoxel = falsches
+  Werkzeug für Streaming. ZUERST lesen vor Iso-Mesher-/Naht-Arbeit — damit die Frage nicht
+  neu aufgerollt wird.
+
 **Frisch archiviert (15.06.2026 — die Doc-Ordnung wiederhergestellt: die vier ewigen Heimaten
 [Stand `CLAUDE.md` · Chronik `handover.md` · Plan `roadmap.md` · Vision `state-of-realm.md` +
 `das-lebendige-feld.md`] + der aktive Bogen [zwei Pläne], die Prozess-Docs zurückgefaltet):**
