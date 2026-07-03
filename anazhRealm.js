@@ -133,6 +133,9 @@ class AnazhRealm {
             // sind gestrichen. Eine Wasser-Sprache, eine Skala, eine Geometrie-
             // Quelle. `docs/hydrosphere.md` §16.
             voxelChunkWaterIso: null,
+            // V18.381 — das FERN-WASSER-Sheet (Atlas-Kulisse jenseits des Chunk-Rings):
+            // { mesh, anchorX/Z, builtRing, builtOutR, quads, builtMs } | null.
+            farWater: null,
             voxelPopulatedChunks: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
@@ -34118,6 +34121,162 @@ class AnazhRealm {
             this._queueGeometryDispose(m.mesh.geometry);
         }
         this.state.horizonMantle = null;
+    }
+
+    // ===== V18.381 — DAS FERN-WASSER (die Wasser-LOD-Kaskade, roadmap §4) =====
+    // Schöpfer-Befund „Wasserkanten / leere Seen in der Ferne": das ECHTE Wasser endet am
+    // Voxel-Chunk-Ring (~194 m bei Ring 4), die Sicht reicht weiter (fog.far sunny ~450 m,
+    // max ~1350 m) → der Mantel zeigte dort erhöhte See-/Fluss-BECKEN trocken (seine Sea-
+    // Kulisse kennt nur das GLOBALE Sea-Level, nicht den Atlas). HEILUNG: EIN grobes, welt-
+    // verankertes FERN-WASSER-SHEET aus dem deterministischen Hydro-ATLAS — dieselbe Wasser-
+    // Wahrheit, die die Zellen baut (`_atlasWaterLevelAt`, O(1) pro Spalte, KEIN CA, KEINE
+    // Zellen nötig) — gerendert mit dem EINEN geteilten Hydro-Material (kein zweiter Wasser-
+    // Shader; Tag/Nacht/Mond/Nebel-Sync automatisch, der per-Pixel-Ufer-Fade liest das
+    // Mantel-/LOD-Terrain als Bett). Die Geometrie: ein Zell-Grid (step = span/4 = 10,8 m,
+    // Grid-Linien fallen exakt auf Chunk-Grenzen), Quads NUR wo der Atlas nass ist UND die
+    // Spalte in einer GEBAUTEN Hydro-Region liegt (OOB → der globale Ozean lebt schon als
+    // Mantel-Kulisse, fog-gedeckt); das LOCH innen folgt exakt dem Chunk-Ring (dieselbe
+    // floor(x/span)-Chebyshev-Mathe wie das Streaming → naht-genau an der echten Wasser-
+    // Kante, KEIN Überlapp = kein Doppel-Alpha). Anker-Vertices (atlas-trocken) tauchen
+    // `dip` unter den Spiegel → das Ufer schliesst per-Pixel (edgeFade), wie beim Nah-Sheet.
+    // RENDER-ONLY Kulisse (kein Worker-Mirror, kein Determinismus-Eingriff, kein State im
+    // Snapshot); Lifecycle wie der Mantel (Re-Anker bei Spieler-Crossing, build-before-
+    // dispose, `atmosphere.farWater === false` schaltet ab). Linse: `diag-far-water`.
+    _ensureFarWaterSheet() {
+        const s = this.state;
+        if (!s.scene || typeof THREE === "undefined") return;
+        if (s.atmosphere && s.atmosphere.farWater === false) {
+            if (s.farWater) this._disposeFarWaterSheet();
+            return;
+        }
+        const pmesh = s.playerMesh;
+        if (!pmesh) return;
+        const pm = pmesh.position;
+        const cfg0 = this._voxelChunkConfig(0);
+        const span = cfg0.span;
+        const ringR = this._voxelChunkConfig().ringRadius;
+        const F = AnazhRealm.FAR_WATER;
+        const fogFar = s.fog && Number.isFinite(s.fog.far) ? s.fog.far : 450;
+        // Aussenradius: bis knapp hinter die Sicht (Nebel deckt dahinter), gedeckelt; nie
+        // enger als 2 Chunks hinter der Ring-Kante (sonst Null-Band bei engem Boot-Nebel).
+        const outR = Math.max((ringR + 2.5) * span, Math.min(F.maxRadius, fogFar + F.margin));
+        const m = s.farWater;
+        if (m && m.builtRing === ringR && Math.abs(m.builtOutR - outR) < F.rebuildDelta) {
+            const dx = pm.x - m.anchorX,
+                dz = pm.z - m.anchorZ;
+            if (dx * dx + dz * dz < F.reanchorDist * F.reanchorDist) return; // steady: No-op
+        }
+        if (s._frameOverBudget && m) return; // der Rebuild wartet auf einen gesunden Frame
+        const t0 = performance.now();
+        // Kachel-Atlanten fürs Sicht-Fenster (lazy, deterministisch, einmalig pro Kachel).
+        if (typeof this._ensureHydroTilesAround === "function") this._ensureHydroTilesAround(pm.x, pm.z, outR);
+        const waterLevel = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
+        const step = span / 4;
+        const pcx = Math.floor(pm.x / span);
+        const pcz = Math.floor(pm.z / span);
+        const inRegion = (x, z) => {
+            const rg = this._hydroFor(x, z);
+            if (!rg || !rg.ready) return false;
+            const sz = rg.dim * rg.cell;
+            return x >= rg.originX && z >= rg.originZ && x < rg.originX + sz && z < rg.originZ + sz;
+        };
+        // Vertex-Grid, welt-snapped (Grid-Linien auf step-Vielfachen → Chunk-Grenzen exakt).
+        const ox = Math.floor((pm.x - outR) / step) * step;
+        const oz = Math.floor((pm.z - outR) / step) * step;
+        const N = Math.ceil((outR * 2) / step) + 1; // Zellen pro Achse
+        const NV = N + 1;
+        const vmap = new Int32Array(NV * NV).fill(-1);
+        const positions = [];
+        const aWave = [];
+        const aDepth = [];
+        const indices = [];
+        const outR2 = outR * outR;
+        const addVert = (ix, iz, cellL) => {
+            const vi = ix + iz * NV;
+            if (vmap[vi] >= 0) return vmap[vi];
+            const vx = ox + ix * step;
+            const vz = oz + iz * step;
+            const Lv = inRegion(vx, vz) ? this._atlasWaterLevelAt(vx, vz, -Infinity) : -Infinity;
+            const wet = Lv > -Infinity && Number.isFinite(Lv);
+            const L = wet ? Lv : cellL;
+            const id = positions.length / 3;
+            // Nass: knapp unter den Spiegel (unter der Nah-Sheet-Kräusel-Zone, kein Z-Fight
+            // mit der Mantel-Sea-Ebene [waterLevel−3]); trocken (Ufer-Anker): tief eintauchen
+            // → das ansteigende Ufer-Terrain okkludiert die Kante per Pixel (edgeFade).
+            positions.push(vx, wet ? L - F.drop : L - F.dip, vz);
+            // aWave wie das Nah-Sheet (Höhen-Rampe zur Meereshöhe): ferner Ozean wogt, der
+            // erhöhte See liegt still; aDepth konstant „tief" (die Tiefen-Farbe der Ferne —
+            // der per-Pixel-Ufer-Fade trägt die Kante, kein Makro-Sample nötig = O(1)).
+            const ramp = Math.max(0, Math.min(1, 1 - (Math.abs(L - waterLevel) - 0.8) / 2.0));
+            aWave.push(wet ? ramp : 0);
+            aDepth.push(wet ? F.depth : 0);
+            vmap[vi] = id;
+            return id;
+        };
+        for (let ck = 0; ck < N; ck++) {
+            for (let ci = 0; ci < N; ci++) {
+                const cx = ox + (ci + 0.5) * step;
+                const cz = oz + (ck + 0.5) * step;
+                const ddx = cx - pm.x,
+                    ddz = cz - pm.z;
+                if (ddx * ddx + ddz * ddz > outR2) continue; // Kreis-Aussengrenze
+                // das LOCH: Zellen im Voxel-Chunk-Ring trägt das ECHTE Wasser (kein Überlapp).
+                const ccx = Math.floor(cx / span);
+                const ccz = Math.floor(cz / span);
+                if (Math.max(Math.abs(ccx - pcx), Math.abs(ccz - pcz)) <= ringR) continue;
+                if (!inRegion(cx, cz)) continue; // OOB → Mantel-Ozean-Kulisse deckt
+                const L = this._atlasWaterLevelAt(cx, cz, -Infinity);
+                if (!(L > -Infinity) || !Number.isFinite(L)) continue; // trocken
+                const v00 = addVert(ci, ck, L);
+                const v10 = addVert(ci + 1, ck, L);
+                const v01 = addVert(ci, ck + 1, L);
+                const v11 = addVert(ci + 1, ck + 1, L);
+                indices.push(v00, v10, v01, v11, v01, v10); // -Y-Wicklung (BackSide-Oberseite)
+            }
+        }
+        const oldMesh = m && m.mesh ? m.mesh : null;
+        let mesh = null;
+        if (indices.length > 0) {
+            const geom = new THREE.BufferGeometry();
+            const vCount = positions.length / 3;
+            geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+            // der VOLLE Material-Vertrag (WebGPU strikt — jedes gelesene Attribut MUSS da sein):
+            geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(new Float32Array(vCount * 2), 2));
+            geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
+            geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
+            geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
+            geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
+            geom.setIndex(indices);
+            mesh = new THREE.Mesh(geom, this._ensureHydroSurfaceMaterial());
+            mesh.renderOrder = 1;
+            mesh.frustumCulled = false; // der Ring umgibt die Kamera (wie der Mantel)
+            mesh.userData.hydroKind = "farWater";
+            s.scene.add(mesh); // build-before-dispose: erst das Neue, dann das Alte weg
+        }
+        if (oldMesh) {
+            s.scene.remove(oldMesh);
+            this._queueGeometryDispose(oldMesh.geometry);
+        }
+        s.farWater = {
+            mesh,
+            anchorX: pm.x,
+            anchorZ: pm.z,
+            builtRing: ringR,
+            builtOutR: outR,
+            quads: indices.length / 6,
+            builtMs: +(performance.now() - t0).toFixed(1),
+        };
+    }
+
+    _disposeFarWaterSheet() {
+        const m = this.state.farWater;
+        if (!m) return;
+        if (m.mesh) {
+            if (this.state.scene) this.state.scene.remove(m.mesh);
+            this._queueGeometryDispose(m.mesh.geometry);
+            // das Material ist das GETEILTE Hydro-Material — NIE mit-disposen.
+        }
+        this.state.farWater = null;
     }
 
     _tickVoxelChunkStreaming(playerPos) {
@@ -74601,6 +74760,7 @@ class AnazhRealm {
     _runFrameScheduler(playerPos) {
         const st = this.state;
         this._ensureHorizonMantle();
+        this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
         const B = st._frameBudget || (st._frameBudget = this._makeFrameBudget());
         B.totalMs = this._deferrableBudgetMs();
         B.startFrame();
@@ -75380,7 +75540,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.380.0";
+AnazhRealm.VERSION = "18.381.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -75478,6 +75638,24 @@ AnazhRealm.HORIZON_MANTLE = Object.freeze({
     segments: 72,
     drop: 2.5,
     reanchorDist: 120,
+});
+
+// V18.381 — DAS FERN-WASSER (die Wasser-LOD-Kaskade): das grobe Atlas-Wasser-Sheet jenseits
+// des Voxel-Chunk-Rings, bis knapp hinter die Sicht (`fog.far + margin`, gedeckelt). `step` =
+// span/4 = 10,8 m (Grid-Linien exakt auf Chunk-Grenzen); `drop` legt den Fern-Spiegel knapp
+// unter die Nah-Kräusel-Zone (und klar ÜBER die Mantel-Sea-Ebene waterLevel−3); `dip` taucht
+// die Ufer-Anker unters Terrain (per-Pixel-Kante via edgeFade); `depth` = die konstante Fern-
+// Tiefen-Farbe (kein Makro-Sample → O(1)-Bau); `reanchorDist`/`rebuildDelta` = die Rebuild-
+// Hysterese (Spieler-Crossing bzw. Sicht-/Ring-Änderung). Feel-Knöpfe (Schöpfer-Browser).
+AnazhRealm.FAR_WATER = Object.freeze({
+    step: 10.8,
+    margin: 60,
+    maxRadius: 720,
+    drop: 0.35,
+    dip: 3.5,
+    depth: 3.5,
+    reanchorDist: 86.4,
+    rebuildDelta: 80,
 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
