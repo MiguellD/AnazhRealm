@@ -674,6 +674,15 @@ class AnazhRealm {
                 lastBroadcastAt: 0,
                 lastError: null,
                 connected: false,
+                // V18.382 — LOCKSTEP-MP Stufe 2 (nur Inputs übers Netz, default AN):
+                // der Sender batcht pro Fixed-Step (seq · yaw · Tasten-Bitmask), der
+                // Empfänger simuliert den Fremd-Charakter durch DENSELBEN Schritt-Pfad.
+                lockstep: true,
+                lockstepDebug: false, // Smoke-/Diag-Haken: zeichnet Sende-/Ghost-Traces auf
+                _lockstepSeq: -1,
+                _lockstepOut: null,
+                _lockstepLastFlush: 0,
+                _lockstepTrace: null,
                 // Ring 11.5: Rolle in dieser Welt. "solo" = lokale Welt,
                 // p2p nicht gestartet. "host" = ich habe die Welt
                 // erschaffen, andere joinen zu mir. "guest" = ich bin zu
@@ -6261,6 +6270,7 @@ class AnazhRealm {
         }
         const ALLOWED = [
             "pos",
+            "input", // V18.382 — Lockstep-Input-Strom (kanal-gestempelte peerId, unfälschbar)
             "dsl",
             "soul",
             "aura",
@@ -7414,6 +7424,18 @@ class AnazhRealm {
         const z = Number(msg.z);
         const yaw = Number(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
+        // V18.382 — LOCKSTEP: treibt der Ghost diesen Peer (frisch gesteppt), wird die
+        // pos-Nachricht zur AUTORITÄT für den Drift-Wächter umgeleitet (statt die glatte
+        // Ghost-Bewegung mit 30-Hz-Snaps zu überschreiben). Ohne frischen Ghost (kein
+        // Lockstep/entseedet) exakt das alte Verhalten — graziöser Fallback.
+        const ls = entry.lockstep;
+        if (ls && ls.seeded && performance.now() - ls.lastStepAt < 1200) {
+            ls.authX = x;
+            ls.authY = y;
+            ls.authZ = z;
+            entry.lastSeen = performance.now() / 1000;
+            return;
+        }
         // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
         // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
         // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
@@ -8208,6 +8230,401 @@ class AnazhRealm {
         this._p2pTickRemoteCreatures(t, dt);
         // W16-Politur — einen hängenden Welt-Bündel-Pull weich abbrechen.
         this._p2pCheckBundlePullTimeout();
+        // V18.382 — LOCKSTEP: den Input-Batch flushen + die Fremd-Charaktere aus ihren
+        // Input-Strömen simulieren (VOR _p2pUpdatePeer im NÄCHSTEN Tick gerendert).
+        this._lockstepFlushOut(currentTimeMs);
+        this._lockstepTickPeers(currentTimeMs);
+    }
+
+    // ===== V18.382 — LOCKSTEP-MP STUFE 2: NUR INPUTS ÜBERS NETZ =====
+    // Das Replay-Prinzip (P4/V18.331) übers Mesh: statt 30-Hz-Positions-Snaps reist der
+    // INPUT jedes Fixed-Steps (seq · yaw · 6-Tasten-Bitmask, gebatcht ~15 msg/s, ~1,5 KB/s),
+    // und der Empfänger treibt den Fremd-Charakter durch WÖRTLICH DENSELBEN deterministischen
+    // Schritt-Pfad (`_stepCharacter` + `_loopPlayerMovement(FIXED_DT)`) — der GHOST-SWAP tauscht
+    // pro Schritt die Charakter-Felder (Spieler ↔ Ghost) und stellt sie exakt wieder her: der
+    // heilige Sim-Pfad bleibt UNBERÜHRT (kein Refactor, keine zweite Sim — EINE Quelle), die
+    // vier Wände (Replay-Determinismus · Walk-Feel · Walk-Edge · Fixed-Timestep) gelten weiter.
+    // Der WebRTC-DataChannel ist reliable+ordered → der Input-Strom ist ein verlustfreies Band
+    // (Replay-Qualität). SELBST-HEILUNG: ein 1-Hz-ANKER (der exakte Sim-Zustand nach Schritt N)
+    // re-seedet den Ghost bei Divergenz (fremde Welt-Differenzen: ungeladene Struktur-AABBs,
+    // Edits, Teleports/Rescues des Senders — alles ausserhalb des Input-Bands); driftet der
+    // Ghost > LOCKSTEP.driftMax gegen die weiter eintreffenden pos-Nachrichten, wird er
+    // ent-seedet → die Anzeige fällt graziös auf die heutigen pos-Snaps zurück, bis der
+    // nächste Anker greift. `p2p.lockstep = false` schaltet ab (dann exakt das alte Verhalten).
+    _lockstepNewGhost() {
+        return {
+            seeded: false,
+            x: 0,
+            y: 0,
+            z: 0,
+            vel: this._makeFieldVec(),
+            fieldVy: 0,
+            wasGrounded: false,
+            groundedCache: false,
+            groundedCachedAt: 0,
+            isInAir: false,
+            isJumping: false,
+            lastGroundedTime: 0,
+            groundNormalY: 1,
+            onSteepSlope: false,
+            underwater: false,
+            eyesUnder: false,
+            lastMoveT: 0,
+            spaceWasDown: false,
+            jumpPressedAt: -Infinity,
+            simT: 0,
+            yaw: 0,
+            keys: { w: false, a: false, s: false, d: false, shift: false, " ": false },
+            fwd: new THREE.Vector3(),
+            rgt: new THREE.Vector3(),
+            mdir: new THREE.Vector3(),
+            speed: NaN,
+            sprintSpeed: NaN,
+            jumpPower: NaN,
+            buf: [],
+            bufStart: 0,
+            doneSeq: -1,
+            anchor: null,
+            authX: NaN,
+            authY: NaN,
+            authZ: NaN,
+            lastStepAt: 0,
+            trace: null,
+        };
+    }
+
+    // Der SENDER: pro Fixed-Step den Input einreihen (im EINEN Sim-Schritt gerufen). Anker
+    // = der KOMPLETTE Sim-Zustand NACH Schritt seq (alle 60 Schritte = 1 Hz) INKLUSIVE
+    // meiner simTime: der Ghost übernimmt meine Zeitachse, damit alle Timestamp-Vergleiche
+    // (Coyote/Grounded-Cache/Jump-Cooldown) bit-identisch entscheiden — ein Positions-
+    // Anker allein liesse die zeit-verankerten Branches divergieren (gemessen im Smoke).
+    // Nicht-finite Timestamps (-Infinity by design) werden ausgelassen (JSON macht sie
+    // sonst zu null); der Empfänger defaultet sie zurück auf -Infinity. Ohne offene
+    // Kanäle reset (Peers seeden beim Wieder-Erscheinen über den seq-0-Anker neu).
+    _lockstepCaptureFrame(simTime) {
+        const st = this.state;
+        const p2p = st.p2p;
+        if (!p2p || !p2p.enabled || !p2p.connected || p2p.lockstep === false) return;
+        if (!p2p.rtcPeers || p2p.rtcPeers.size === 0) {
+            p2p._lockstepSeq = -1;
+            p2p._lockstepOut = null;
+            return;
+        }
+        const k = st.keys || {};
+        const b =
+            (k.w ? 1 : 0) | (k.a ? 2 : 0) | (k.s ? 4 : 0) | (k.d ? 8 : 0) | (k.shift ? 16 : 0) | (k[" "] ? 32 : 0);
+        const seq = (p2p._lockstepSeq = (Number.isFinite(p2p._lockstepSeq) ? p2p._lockstepSeq : -1) + 1);
+        const out = p2p._lockstepOut || (p2p._lockstepOut = { s0: seq, f: [] });
+        out.f.push([st.yaw || 0, b]);
+        const m = st.playerMesh;
+        if (seq % 60 === 0 && m && st.playerVel) {
+            const a = {
+                s: seq,
+                t: simTime,
+                x: m.position.x,
+                y: m.position.y,
+                z: m.position.z,
+                vx: st.playerVel.x(),
+                vy: st.playerVel.y(),
+                vz: st.playerVel.z(),
+                fy: st._fieldVy || 0,
+                wg: st._fieldWasGrounded ? 1 : 0,
+                gc: st._groundedCache ? 1 : 0,
+                ia: st.isInAir ? 1 : 0,
+                ij: st.isJumping ? 1 : 0,
+                ny: st.groundNormalY,
+                ss: st.onSteepSlope ? 1 : 0,
+                uw: st.playerUnderwater ? 1 : 0,
+                eu: st.playerEyesUnderwater ? 1 : 0,
+                sw: st._spaceWasDown ? 1 : 0,
+                sp: st.speed,
+                ssp: st.sprintSpeed,
+                jp: st.jumpPower,
+            };
+            if (Number.isFinite(st._groundedCachedAt)) a.gt = st._groundedCachedAt;
+            if (Number.isFinite(st.lastGroundedTime)) a.lg = st.lastGroundedTime;
+            if (Number.isFinite(st._lastMoveT)) a.lm = st._lastMoveT;
+            if (Number.isFinite(st._jumpPressedAt)) a.jpa = st._jumpPressedAt;
+            out.a = a;
+        }
+        if (p2p.lockstepDebug && m) {
+            const tr = p2p._lockstepTrace || (p2p._lockstepTrace = []);
+            tr.push({ q: seq, x: m.position.x, y: m.position.y, z: m.position.z });
+            if (tr.length > 2400) tr.shift();
+        }
+    }
+
+    _lockstepFlushOut(nowMs) {
+        const p2p = this.state.p2p;
+        const out = p2p ? p2p._lockstepOut : null;
+        if (!out || out.f.length === 0) return;
+        if (out.f.length < 4 && nowMs - (p2p._lockstepLastFlush || 0) <= 120) return;
+        p2p._lockstepLastFlush = nowMs;
+        p2p._lockstepOut = null;
+        if (this._p2pMeshReady && this._p2pMeshReady()) {
+            const msg = { type: "input", s0: out.s0, f: out.f };
+            if (out.a) msg.a = out.a;
+            this.p2pSend(msg);
+        }
+        // Mesh nicht bereit → Batch verworfen: der Empfänger sieht die seq-Lücke, leert den
+        // Puffer und wartet auf den nächsten Anker (≤ 1 s) — selbst-heilend, kein Stau.
+    }
+
+    // Der EMPFÄNGER: Input-Batches puffern (reliable+ordered ⇒ anschlussfähig; eine Lücke
+    // [Flush-Drop/Neustart] setzt den Puffer neu auf — der Anker re-seedet).
+    _p2pMsgInput(msg) {
+        const p2p = this.state.p2p;
+        if (!p2p || !msg || !msg.peerId || msg.peerId === p2p.peerId) return;
+        if (p2p.lockstep === false) return;
+        if (!Array.isArray(msg.f) || msg.f.length === 0 || msg.f.length > 240 || !Number.isFinite(msg.s0)) return;
+        const entry = this._p2pEnsurePeerEntry(msg.peerId);
+        entry.lastSeen = performance.now() / 1000;
+        const ls = entry.lockstep || (entry.lockstep = this._lockstepNewGhost());
+        if (p2p.lockstepDebug && !ls.trace) ls.trace = [];
+        const expected = ls.bufStart + ls.buf.length;
+        if (ls.buf.length === 0 || msg.s0 !== expected) {
+            // Lücke oder Neustart → Puffer neu ab s0 (verbrauchte doneSeq bleibt; der
+            // Consume wartet auf Anschluss bzw. den Anker).
+            ls.buf = [];
+            ls.bufStart = msg.s0;
+        }
+        for (let i = 0; i < msg.f.length; i++) {
+            const f = msg.f[i];
+            if (!Array.isArray(f) || !Number.isFinite(f[0]) || !Number.isFinite(f[1])) continue;
+            ls.buf.push(f);
+        }
+        if (ls.buf.length > 900) {
+            // Flut-/Rückstau-Wand: älteste verwerfen (der Anker holt den Ghost wieder ein).
+            const drop = ls.buf.length - 900;
+            ls.buf.splice(0, drop);
+            ls.bufStart += drop;
+        }
+        if (msg.a && Number.isFinite(msg.a.s) && Number.isFinite(msg.a.x)) ls.anchor = msg.a;
+    }
+
+    // Der GHOST-SWAP: tauscht die KOMPLETTE Charakter-Sim-Oberfläche (die V18.382-Recon-Liste)
+    // Spieler↔Ghost, fährt den EINEN Schritt-Pfad, tauscht exakt zurück. View-Seeds
+    // (_landImpactPending) werden restauriert (der Ghost dippt nie die lokale Kamera);
+    // mountedArch ist für den Ghost null (Fahrzeug-Lockstep = eigener Faden).
+    _lockstepStepGhost(ls, yaw, bits) {
+        const st = this.state;
+        const mesh = st.playerMesh;
+        if (!mesh || !st.playerVel) return;
+        const FIXED_DT = AnazhRealm.FIXED_DT;
+        const s = ls._scratch || (ls._scratch = {});
+        s.px = mesh.position.x;
+        s.py = mesh.position.y;
+        s.pz = mesh.position.z;
+        s.vel = st.playerVel;
+        s.fieldVy = st._fieldVy;
+        s.wasG = st._fieldWasGrounded;
+        s.gCache = st._groundedCache;
+        s.gAt = st._groundedCachedAt;
+        s.inAir = st.isInAir;
+        s.jump = st.isJumping;
+        s.lastG = st.lastGroundedTime;
+        s.gNy = st.groundNormalY;
+        s.steep = st.onSteepSlope;
+        s.uw = st.playerUnderwater;
+        s.euw = st.playerEyesUnderwater;
+        s.lastMoveT = st._lastMoveT;
+        s.spaceWas = st._spaceWasDown;
+        s.jpAt = st._jumpPressedAt;
+        s.keys = st.keys;
+        s.yaw = st.yaw;
+        s.fwd = st.forward;
+        s.rgt = st.right;
+        s.mdir = st.moveDirection;
+        s.mounted = st.player ? st.player.mountedArch : null;
+        s.landPend = st._landImpactPending;
+        s.speed = st.speed;
+        s.sprint = st.sprintSpeed;
+        s.jp = st.jumpPower;
+        // --- Ghost laden ---
+        mesh.position.set(ls.x, ls.y, ls.z);
+        st.playerVel = ls.vel;
+        st._fieldVy = ls.fieldVy;
+        st._fieldWasGrounded = ls.wasGrounded;
+        st._groundedCache = ls.groundedCache;
+        st._groundedCachedAt = ls.groundedCachedAt;
+        st.isInAir = ls.isInAir;
+        st.isJumping = ls.isJumping;
+        st.lastGroundedTime = ls.lastGroundedTime;
+        st.groundNormalY = ls.groundNormalY;
+        st.onSteepSlope = ls.onSteepSlope;
+        st.playerUnderwater = ls.underwater;
+        st.playerEyesUnderwater = ls.eyesUnder;
+        st._lastMoveT = ls.lastMoveT;
+        st._spaceWasDown = ls.spaceWasDown;
+        st._jumpPressedAt = ls.jumpPressedAt;
+        const k = ls.keys;
+        k.w = !!(bits & 1);
+        k.a = !!(bits & 2);
+        k.s = !!(bits & 4);
+        k.d = !!(bits & 8);
+        k.shift = !!(bits & 16);
+        k[" "] = !!(bits & 32);
+        st.keys = k;
+        st.yaw = yaw;
+        st.forward = ls.fwd;
+        st.right = ls.rgt;
+        st.moveDirection = ls.mdir;
+        if (st.player) st.player.mountedArch = null;
+        if (Number.isFinite(ls.speed)) st.speed = ls.speed;
+        if (Number.isFinite(ls.sprintSpeed)) st.sprintSpeed = ls.sprintSpeed;
+        if (Number.isFinite(ls.jumpPower)) st.jumpPower = ls.jumpPower;
+        // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
+        this._stepCharacter(FIXED_DT, ls.simT);
+        this._loopPlayerMovement(ls.simT, FIXED_DT);
+        ls.simT += FIXED_DT;
+        // --- Ghost sichern ---
+        ls.x = mesh.position.x;
+        ls.y = mesh.position.y;
+        ls.z = mesh.position.z;
+        ls.vel = st.playerVel;
+        ls.fieldVy = st._fieldVy;
+        ls.wasGrounded = st._fieldWasGrounded;
+        ls.groundedCache = st._groundedCache;
+        ls.groundedCachedAt = st._groundedCachedAt;
+        ls.isInAir = st.isInAir;
+        ls.isJumping = st.isJumping;
+        ls.lastGroundedTime = st.lastGroundedTime;
+        ls.groundNormalY = st.groundNormalY;
+        ls.onSteepSlope = st.onSteepSlope;
+        ls.underwater = st.playerUnderwater;
+        ls.eyesUnder = st.playerEyesUnderwater;
+        ls.lastMoveT = st._lastMoveT;
+        ls.spaceWasDown = st._spaceWasDown;
+        ls.jumpPressedAt = st._jumpPressedAt;
+        ls.yaw = yaw;
+        // --- Spieler exakt wiederherstellen ---
+        mesh.position.set(s.px, s.py, s.pz);
+        st.playerVel = s.vel;
+        st._fieldVy = s.fieldVy;
+        st._fieldWasGrounded = s.wasG;
+        st._groundedCache = s.gCache;
+        st._groundedCachedAt = s.gAt;
+        st.isInAir = s.inAir;
+        st.isJumping = s.jump;
+        st.lastGroundedTime = s.lastG;
+        st.groundNormalY = s.gNy;
+        st.onSteepSlope = s.steep;
+        st.playerUnderwater = s.uw;
+        st.playerEyesUnderwater = s.euw;
+        st._lastMoveT = s.lastMoveT;
+        st._spaceWasDown = s.spaceWas;
+        st._jumpPressedAt = s.jpAt;
+        st.keys = s.keys;
+        st.yaw = s.yaw;
+        st.forward = s.fwd;
+        st.right = s.rgt;
+        st.moveDirection = s.mdir;
+        if (st.player) st.player.mountedArch = s.mounted;
+        st._landImpactPending = s.landPend;
+        st.speed = s.speed;
+        st.sprintSpeed = s.sprint;
+        st.jumpPower = s.jp;
+    }
+
+    // Der GHOST-TICK: Anker anwenden (seed/re-seed), anschlussfähige Frames verbrauchen
+    // (2-Frame-Reserve gegen Netz-Jitter, max 10/Render-Frame), Drift-Wächter gegen die
+    // weiter eintreffenden pos-Nachrichten. Schreibt die Ghost-Position in den Peer-Entry
+    // (dieselben Felder, die _p2pUpdatePeer rendert — kein zweiter Render-Pfad).
+    _lockstepTickPeers(nowMs) {
+        const p2p = this.state.p2p;
+        if (!p2p || p2p.lockstep === false || !p2p.peers || p2p.peers.size === 0) return;
+        for (const [, entry] of p2p.peers) {
+            const ls = entry.lockstep;
+            if (!ls) continue;
+            // Anker: seedet einen frischen/ent-seedeten Ghost bzw. überbrückt eine seq-Lücke —
+            // mit dem KOMPLETTEN Sim-Zustand auf des SENDERS Zeitachse (ls.simT = a.t + dt:
+            // der Zustand ist post-Schritt seq, der nächste Schritt läuft bei t+dt). Nicht-
+            // finite Timestamps wurden ausgelassen → default -Infinity (wie der Sender sie
+            // trug). Die pos-Autorität wird zurückgesetzt (der Anker IST die frischere
+            // Autorität — eine stale authX darf den frischen Seed nicht sofort ent-seeden).
+            const a = ls.anchor;
+            if (a && (!ls.seeded || ls.bufStart > ls.doneSeq + 1)) {
+                if (a.s >= ls.bufStart - 1 && a.s < ls.bufStart + ls.buf.length) {
+                    const fin = (v, d) => (Number.isFinite(v) ? v : d);
+                    ls.x = a.x;
+                    ls.y = a.y;
+                    ls.z = a.z;
+                    ls.vel.setValue(a.vx || 0, a.vy || 0, a.vz || 0);
+                    ls.fieldVy = a.fy || 0;
+                    ls.wasGrounded = !!a.wg;
+                    ls.groundedCache = !!a.gc;
+                    ls.groundedCachedAt = fin(a.gt, -Infinity);
+                    ls.isInAir = !!a.ia;
+                    ls.isJumping = !!a.ij;
+                    ls.lastGroundedTime = fin(a.lg, -Infinity);
+                    ls.groundNormalY = fin(a.ny, 1);
+                    ls.onSteepSlope = !!a.ss;
+                    ls.underwater = !!a.uw;
+                    ls.eyesUnder = !!a.eu;
+                    ls.lastMoveT = fin(a.lm, -Infinity);
+                    ls.spaceWasDown = !!a.sw;
+                    ls.jumpPressedAt = fin(a.jpa, -Infinity);
+                    ls.simT = fin(a.t, ls.simT) + AnazhRealm.FIXED_DT;
+                    ls.speed = fin(a.sp, ls.speed);
+                    ls.sprintSpeed = fin(a.ssp, ls.sprintSpeed);
+                    ls.jumpPower = fin(a.jp, ls.jumpPower);
+                    ls.authX = ls.authY = ls.authZ = NaN;
+                    if (ls.trace) ls.trace.length = 0; // Debug-Trace = nur der aktuell geseedete Lauf
+                    const drop = a.s - ls.bufStart + 1;
+                    if (drop > 0) {
+                        ls.buf.splice(0, drop);
+                        ls.bufStart += drop;
+                    }
+                    ls.doneSeq = a.s;
+                    ls.seeded = true;
+                    ls.anchor = null;
+                }
+            }
+            // Drift-Wächter: der Ghost gegen die pos-Autorität (Welt-Differenzen beim Peer:
+            // Teleport/Rescue/ungeladene Struktur) → ent-seeden, der nächste Anker heilt.
+            if (ls.seeded && Number.isFinite(ls.authX)) {
+                const dx = ls.x - ls.authX,
+                    dy = ls.y - ls.authY,
+                    dz = ls.z - ls.authZ;
+                if (dx * dx + dy * dy + dz * dz > AnazhRealm.LOCKSTEP.driftMax * AnazhRealm.LOCKSTEP.driftMax) {
+                    ls.seeded = false;
+                    entry.x = ls.authX;
+                    entry.y = ls.authY;
+                    entry.z = ls.authZ;
+                    // Autorität mit-verwerfen: sie ist ab jetzt stale und darf den
+                    // NÄCHSTEN Anker-Seed nicht sofort wieder töten (der Deadlock-Zyklus).
+                    ls.authX = ls.authY = ls.authZ = NaN;
+                    continue;
+                }
+            }
+            if (!ls.seeded) continue;
+            // Verbrauch: anschlussfähig (bufStart == doneSeq+1 per Konstruktion nach dem Anker),
+            // mit 2-Frame-Reserve (Netz-Jitter) und Frame-Kappe (Aufhol-Burst gedeckelt).
+            let n = 0;
+            const px = ls.x,
+                pz = ls.z;
+            while (ls.buf.length > AnazhRealm.LOCKSTEP.jitterReserve && n < AnazhRealm.LOCKSTEP.maxStepsPerTick) {
+                if (ls.bufStart !== ls.doneSeq + 1) break; // nicht anschlussfähig → Anker abwarten
+                const f = ls.buf.shift();
+                ls.bufStart++;
+                this._lockstepStepGhost(ls, f[0], f[1]);
+                ls.doneSeq++;
+                n++;
+                if (ls.trace) {
+                    ls.trace.push({ q: ls.doneSeq, x: ls.x, y: ls.y, z: ls.z });
+                    if (ls.trace.length > 2400) ls.trace.shift();
+                }
+            }
+            if (n > 0) {
+                ls.lastStepAt = nowMs;
+                entry.x = ls.x;
+                entry.y = ls.y;
+                entry.z = ls.z;
+                entry.yaw = ls.yaw;
+                const movedSq = (ls.x - px) * (ls.x - px) + (ls.z - pz) * (ls.z - pz);
+                if (movedSq > 0.00022) entry.lastMovedAt = nowMs / 1000;
+            }
+        }
     }
 
     initP2PUI() {
@@ -73949,6 +74366,11 @@ class AnazhRealm {
         this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
         if (this.state._replayRec) this._replayCaptureFrame(dt);
+        // V18.382 — LOCKSTEP-MP Stufe 2: der Input dieses Fixed-Steps geht (gebatcht) übers
+        // P2P-Mesh; Peers simulieren den Charakter aus denselben Inputs durch DENSELBEN
+        // Schritt-Pfad (Replay-Prinzip übers Netz). simTime reist im 1-Hz-Anker mit — der
+        // Ghost läuft auf MEINER Sim-Zeitachse (Timestamp-Vergleiche bit-identisch).
+        this._lockstepCaptureFrame(simTime);
     }
 
     // Der AKKUMULATOR (Fiedler): sammelt die echte Frame-Zeit, steppt die Sim in FIXED_DT-Häppchen,
@@ -75540,7 +75962,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.381.0";
+AnazhRealm.VERSION = "18.382.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -75657,6 +76079,12 @@ AnazhRealm.FAR_WATER = Object.freeze({
     reanchorDist: 86.4,
     rebuildDelta: 80,
 });
+
+// V18.382 — LOCKSTEP-MP Stufe 2 (nur Inputs übers Netz): `jitterReserve` = die Frame-Reserve
+// gegen Netz-Jitter (2 Frames ≈ 33 ms Anzeige-Latenz des Fremd-Charakters), `maxStepsPerTick`
+// = die Aufhol-Burst-Kappe pro Render-Frame, `driftMax` (m) = die Ghost-vs-pos-Autorität-
+// Schwelle, ab der ent-seedet wird (der 1-Hz-Anker heilt danach).
+AnazhRealm.LOCKSTEP = Object.freeze({ jitterReserve: 2, maxStepsPerTick: 10, driftMax: 2.5 });
 
 AnazhRealm.DETAIL_CASCADE = Object.freeze([
     // N3 (Naht §12) — der LOD0-Ring war 3×3 (maxRing 1) → die Cross-LOD-Grenze
@@ -78780,6 +79208,7 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     "subworld-pose": "_p2pMsgSubworldPose",
     "portal-invite": "_p2pMsgPortalInvite",
     pos: "_p2pMsgPos",
+    input: "_p2pMsgInput", // V18.382 — Lockstep-MP Stufe 2: der Input-Strom (seq · yaw · Bitmask)
     dsl: "_p2pMsgDsl",
     soul: "_p2pMsgSoul",
     aura: "_p2pMsgAura",
