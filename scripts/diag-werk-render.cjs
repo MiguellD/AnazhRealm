@@ -258,7 +258,8 @@ async function renderWerk(page, bpName, view) {
                         else if (pose === "tpose") {
                             // T-POSE: neutraler Körper, Arme waagerecht aus (die Referenz-Anatomie-Pose).
                             const rr = rig.rig;
-                            for (const b of [rr.hips, rr.spine, rr.chest, rr.neck, rr.head]) if (b) b.rotation.set(0, 0, 0);
+                            for (const b of [rr.hips, rr.spine, rr.chest, rr.neck, rr.head])
+                                if (b) b.rotation.set(0, 0, 0);
                             for (const side of [rr.armL, rr.armR, rr.legL, rr.legR])
                                 for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
                             if (rr.armL) rr.armL.shoulder.rotation.set(0, 0, 1.5);
@@ -269,7 +270,11 @@ async function renderWerk(page, bpName, view) {
                             // ANATOMIE IN BEWEGUNG: die Knochen-/Muskel-Teile an die ANIMIERTEN Rig-Bones
                             // skinnen (jeder Teil folgt seinem nächsten Bone) → das Skelett + die Muskeln
                             // OHNE Haut, in Bewegung — prüft, ob alles richtig positioniert BLEIBT.
-                            const parts = r.constructor._humanoidSkeleton({ sex, bodyColor: 0xc98a63, limbColor: 0xc98a63 });
+                            const parts = r.constructor._humanoidSkeleton({
+                                sex,
+                                bodyColor: 0xc98a63,
+                                limbColor: 0xc98a63,
+                            });
                             const sk = rig.skeleton,
                                 bones = sk.bones,
                                 bInv = sk.boneInverses;
@@ -311,22 +316,44 @@ async function renderWerk(page, bpName, view) {
                                 }
                                 let wsum = 0;
                                 const wt = [0, 0, 0, 0];
-                                for (let k = 0; k < 4; k++) if (idx[k] >= 0) (wt[k] = 1 / (dv[k] + eps)), (wsum += wt[k]);
+                                for (let k = 0; k < 4; k++)
+                                    if (idx[k] >= 0) ((wt[k] = 1 / (dv[k] + eps)), (wsum += wt[k]));
                                 const skinnedC = new THREE.Vector3(),
                                     tmp = new THREE.Vector3();
                                 for (let k = 0; k < 4; k++)
                                     if (idx[k] >= 0) {
-                                        const M = new THREE.Matrix4().multiplyMatrices(bones[idx[k]].matrixWorld, bInv[idx[k]]);
-                                        skinnedC.add(tmp.copy(bind).applyMatrix4(M).multiplyScalar(wt[k] / wsum));
+                                        const M = new THREE.Matrix4().multiplyMatrices(
+                                            bones[idx[k]].matrixWorld,
+                                            bInv[idx[k]]
+                                        );
+                                        skinnedC.add(
+                                            tmp
+                                                .copy(bind)
+                                                .applyMatrix4(M)
+                                                .multiplyScalar(wt[k] / wsum)
+                                        );
                                     }
                                 // Orientierung: der dominante Bone (höchstes Gewicht = idx[0]) dreht den Teil
-                                const domM = new THREE.Matrix4().multiplyMatrices(bones[idx[0]].matrixWorld, bInv[idx[0]]);
+                                const domM = new THREE.Matrix4().multiplyMatrices(
+                                    bones[idx[0]].matrixWorld,
+                                    bInv[idx[0]]
+                                );
                                 const domRot = new THREE.Quaternion().setFromRotationMatrix(domM);
                                 const q = new THREE.Quaternion();
-                                if (p.rotation) q.setFromEuler(new THREE.Euler(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0));
+                                if (p.rotation)
+                                    q.setFromEuler(
+                                        new THREE.Euler(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0)
+                                    );
                                 domRot.multiply(q);
-                                const sc = new THREE.Vector3(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
-                                const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 10), new THREE.MeshStandardMaterial(mo));
+                                const sc = new THREE.Vector3(
+                                    Math.abs(p.size.x) * 1.06,
+                                    Math.abs(p.size.y) * 1.06,
+                                    Math.abs(p.size.z) * 1.06
+                                );
+                                const m = new THREE.Mesh(
+                                    new THREE.SphereGeometry(0.5, 16, 10),
+                                    new THREE.MeshStandardMaterial(mo)
+                                );
                                 m.applyMatrix4(new THREE.Matrix4().compose(skinnedC, domRot, sc));
                                 m.castShadow = true;
                                 grp.add(m);
@@ -369,8 +396,15 @@ async function renderWerk(page, bpName, view) {
                                 mo.opacity = 0.16;
                                 mo.depthWrite = false;
                             }
-                            const m = new THREE.Mesh(new THREE.SphereGeometry(0.5, 18, 12), new THREE.MeshStandardMaterial(mo));
-                            m.scale.set(Math.abs(p.size.x) * 1.06, Math.abs(p.size.y) * 1.06, Math.abs(p.size.z) * 1.06);
+                            const m = new THREE.Mesh(
+                                new THREE.SphereGeometry(0.5, 18, 12),
+                                new THREE.MeshStandardMaterial(mo)
+                            );
+                            m.scale.set(
+                                Math.abs(p.size.x) * 1.06,
+                                Math.abs(p.size.y) * 1.06,
+                                Math.abs(p.size.z) * 1.06
+                            );
                             m.position.set(p.position.x, p.position.y, p.position.z);
                             if (p.rotation) m.rotation.set(p.rotation.x || 0, p.rotation.y || 0, p.rotation.z || 0);
                             m.castShadow = true;
@@ -384,7 +418,17 @@ async function renderWerk(page, bpName, view) {
                         // Knochen nur, wo er die Aussenfläche ist: Hände/Füße/Schädel.)
                         // DIE ECHTE Avatar-Pipeline (displace + seamGroove) → die Muskel-Trenn-Furchen werden
                         //    geschnitzt = definierte Muskeln wie die Referenz (NICHT die rohe Union, die kratert).
-                        const geom = r._buildCreatureSkinGeometry(parts, { res: 120, taubinPasses: 3, creaseSharpen: 0, creaseMix: 0, normalStep: 0.4, kFloor: 0.04, seamGroove: 13, seamWidth: 0.085, displace: true });
+                        const geom = r._buildCreatureSkinGeometry(parts, {
+                            res: 120,
+                            taubinPasses: 3,
+                            creaseSharpen: 0,
+                            creaseMix: 0,
+                            normalStep: 0.4,
+                            kFloor: 0.04,
+                            seamGroove: 13,
+                            seamWidth: 0.085,
+                            displace: true,
+                        });
                         if (geom) {
                             const pos = geom.attributes.position;
                             const col = new Float32Array(pos.count * 3);
@@ -402,7 +446,8 @@ async function renderWerk(page, bpName, view) {
                                     const dx = vx - p.position.x,
                                         dy = vy - p.position.y,
                                         dz = vz - p.position.z;
-                                    const r0 = (Math.abs(p.size.x) + Math.abs(p.size.y) + Math.abs(p.size.z)) / 3 * 0.5;
+                                    const r0 =
+                                        ((Math.abs(p.size.x) + Math.abs(p.size.y) + Math.abs(p.size.z)) / 3) * 0.5;
                                     // Muskel liegt AUSSEN → ein def-Bonus (−0.12 KH) lässt Muskel die Oberfläche
                                     // gewinnen, wo er einen Knochen knapp deckt; Knochen gewinnt nur, wo er WIRKLICH
                                     // die Aussenfläche ist (Hände/Füße/Schädel — dort ist kein Muskel nah).
@@ -418,7 +463,11 @@ async function renderWerk(page, bpName, view) {
                                 col[i * 3 + 2] = c[2];
                             }
                             geom.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-                            const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.62, metalness: 0 });
+                            const mat = new THREE.MeshStandardMaterial({
+                                vertexColors: true,
+                                roughness: 0.62,
+                                metalness: 0,
+                            });
                             const skin = new THREE.Mesh(geom, mat);
                             skin.castShadow = true;
                             grp.add(skin);
@@ -651,6 +700,7 @@ async function renderWerk(page, bpName, view) {
         for (const [bp, file, view] of [
             // ── BÄUME (T1/T6) ──
             ["tree:baum_eiche:0", "werk-baum-eiche.png", "front"], // Breitblatt + Rinde-Maserung
+            ["tree:baum_birke:0", "werk-baum-birke.png", "front"], // K1: weiße Phyto-Birken-Rinde
             ["tree:baum_palme:0", "werk-baum-palme.png", "front"], // T1 NEU: Palme (palm-Atlas)
             ["tree:baum_zypresse:0", "werk-baum-zypresse.png", "front"], // T1 NEU: Säulen-Zypresse (scale)
             ["tree:baum_tanne:0", "werk-baum-tanne.png", "front"], // Nadel-Kegel

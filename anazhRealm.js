@@ -51094,10 +51094,20 @@ class AnazhRealm {
         }
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
         const fo = grammar.foliage;
+        // DAS NEUE KLEID K1 (V18.385) — die FARB-WURZELN aus der Vorlage: die Blatt-Farbe
+        // kommt aus der SPECIES_PALETTE (phyto leafCol), nicht mehr aus dem approximierten
+        // grammar-Wert. Der Gigant trägt den Sequoia-Ton. Die barkA/barkB reisen ins Skeleton
+        // → der Tube-Builder liest sie (die eine Palette, viele Leser, Gesetz #0).
+        const palette =
+            (sizeClass === "gigant" && AnazhRealm.SPECIES_PALETTE_GIGANT) ||
+            AnazhRealm.SPECIES_PALETTE[speciesKey] ||
+            AnazhRealm.SPECIES_PALETTE_DEFAULT;
+        skeleton.barkA = palette.barkA;
+        skeleton.barkB = palette.barkB;
         // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
         // ein Teil der LAUB-Bäume (nicht Nadel) färbt herbstlich (gold/orange/rot/braun)
         // → ein gemischter Wald statt monochrom-grün. Deterministisch je Baum.
-        let baseColor = fo.color;
+        let baseColor = palette.leaf;
         if (fo.kind === "leafCluster" && genome.chance("autumn", 0.24)) {
             baseColor = genome.pick("autumnTint", [0xc89a3a, 0xbf7a2a, 0xa84e22, 0x9a7a30, 0xb5532a]);
         }
@@ -58137,6 +58147,18 @@ class AnazhRealm {
         if (!skeleton || !Array.isArray(skeleton.branches) || skeleton.branches.length === 0) return null;
         const radialSegs = (opts && opts.radialSegs) || 6;
         const totalH = Math.max(1, skeleton.totalH || 10);
+        // DAS NEUE KLEID K1 (V18.385) — die RINDEN-FARBE aus der Phyto-Palette: barkA (Fuß-
+        // dunkel) → barkB (Wipfel-hell), ein Höhen-Gradient wie in der Vorlage (buildTube
+        // barkBase→barkTip). Die Birke trägt so ihre weiße Rinde, der Mammut sein Rot-Braun.
+        const _pal = AnazhRealm.SPECIES_PALETTE_DEFAULT;
+        const _bA = skeleton.barkA != null ? skeleton.barkA : _pal.barkA;
+        const _bB = skeleton.barkB != null ? skeleton.barkB : _pal.barkB;
+        const bAr = ((_bA >> 16) & 0xff) / 255,
+            bAg = ((_bA >> 8) & 0xff) / 255,
+            bAb = (_bA & 0xff) / 255;
+        const bBr = ((_bB >> 16) & 0xff) / 255,
+            bBg = ((_bB >> 8) & 0xff) / 255,
+            bBb = (_bB & 0xff) / 255;
         // pcg-Hash für aperiodische Phase pro Vertex (deterministisch aus
         // (branchIdx, pointIdx, radialIdx)) → benachbarte Vertices flattern
         // verschieden im Wind-Shader (Plan Ω-W „aperiodisches Flattern").
@@ -58245,10 +58267,6 @@ class AnazhRealm {
                     normals[vIdx] = vnx;
                     normals[vIdx + 1] = vny;
                     normals[vIdx + 2] = vnz;
-                    // Bark-Farbe: holz-tint, leicht gedämpft (~0.7 brightness)
-                    // — V18.211/V18.213-Brightness-Spiegel. Per-Vertex-Color
-                    // erlaubt subtile Variation entlang der Polylinie.
-                    const tintT = 0.6 + 0.15 * (1 - flexVal); // unten dunkler
                     // V18.229 (Ω-OPSIS Säule III Ω-O7) — RINDEN-MASERUNG: axiale
                     // Borke-Bänder (sin über den Polylinien-Index i) + ein radialer
                     // Streifen (über j) → die Rinde liest nicht mehr als flache
@@ -58259,14 +58277,14 @@ class AnazhRealm {
                         1 -
                         0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
                         0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
-                    // DAS NEUE KLEID K1 (V18.385) — RINDEN-FARBE auf den Phyto-Braun-Verlauf: die
-                    // Schöpfer-Vorlage (phytogenesis eiche) geht von barkA 0x3a2c1e (dunkel-braun am
-                    // Fuß) → barkB 0x6a5a44 (wärmer/grauer am Wipfel). Das alte 0.36/0.22/0.12 war zu
-                    // rot-gesättigt (las als blasses Tan unter der ACES-Beleuchtung). Ein Höhen-Lerp
-                    // (tintT trägt schon base-dunkel→tip-hell) mit einem WÄRMEREN, GRAUEREN Braun.
-                    colors[vIdx] = 0.42 * tintT * grain;
-                    colors[vIdx + 1] = 0.32 * tintT * grain;
-                    colors[vIdx + 2] = 0.22 * tintT * grain;
+                    // DAS NEUE KLEID K1 (V18.385) — die exakte Phyto-Rinden-Farbe: barkA (Fuß) →
+                    // barkB (Wipfel) über die Vertex-Höhe gelerpt (wie buildTube barkBase→barkTip),
+                    // × grain (die Maserung). tintT NICHT mehr als Helligkeits-Skala (der Gradient
+                    // trägt die Fuß-dunkel→Wipfel-hell-Wahrheit jetzt selbst über barkA→barkB).
+                    const hMix = Math.max(0, Math.min(1, p.y / totalH));
+                    colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
+                    colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
+                    colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
                     // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
                     const vF = i * radialSegs + j;
                     flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
@@ -76844,6 +76862,33 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
 // Tag-NEUTRALITÄT: alle Arten lesen NUR `holz` (Stamm/Äste) und `laub`
 // (Foliage) — keine neuen Materialien, KEIN Spawn-Affinitäts-Shift
 // (V17.16-Wand strukturell gehalten).
+//
+// DAS NEUE KLEID K1 (V18.385) — DIE FARB-WURZELN direkt aus der Schöpfer-Vorlage
+// (phytogenesis v38 PRESETS): barkA (Fuß-dunkel) → barkB (Wipfel-hell) je Art +
+// leaf (das Kronen-Grün). Diese EINE Palette ist die kanonische Quelle (Gesetz #0):
+// der Rinden-Tube-Builder liest barkA/barkB, der Wuchs die Blatt-Farbe. Kein
+// approximiertes Braun/Grün mehr — die exakten Werte der Vorlage. Die Birke trägt
+// ihre WEISSE Rinde (0xe6e6dc→0xf2f2ea), der Mammut/Sequoia sein Rot-Braun. Nur
+// Render-Farbe (KEIN Tag — Tags kommen aus `holz`/`laub`, die V17.16-Wand hält).
+AnazhRealm.SPECIES_PALETTE = Object.freeze({
+    baum_eiche: Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c }), // phyto eiche
+    baum_tanne: Object.freeze({ barkA: 0x4a3a2a, barkB: 0x6a5a42, leaf: 0x2e5a30 }), // phyto tanne
+    baum_kiefer: Object.freeze({ barkA: 0x4a2c1a, barkB: 0x6a4a30, leaf: 0x2e5526 }), // phyto fichte
+    baum_birke: Object.freeze({ barkA: 0xe6e6dc, barkB: 0xf2f2ea, leaf: 0x8ab84a }), // phyto birke (weiße Rinde)
+    baum_buche: Object.freeze({ barkA: 0x6a5a4a, barkB: 0x9a8a76, leaf: 0x6a9a3a }), // Buche (glatt-grau, hellgrün)
+    baum_erle: Object.freeze({ barkA: 0x3a2c22, barkB: 0x5a4a3a, leaf: 0x5a8a3a }), // Erle
+    baum_karst: Object.freeze({ barkA: 0x3a3028, barkB: 0x5a4e40, leaf: 0x5a7a3a }), // Karst (knorrig)
+    baum_totholz: Object.freeze({ barkA: 0x5a4a3a, barkB: 0x8a7a66, leaf: 0x6a6a4a }), // Totholz (grau-tot)
+    baum_palme: Object.freeze({ barkA: 0x6a5030, barkB: 0x8a6a44, leaf: 0x4a8a3a }), // Palme
+    baum_zypresse: Object.freeze({ barkA: 0x4a3a2a, barkB: 0x6a5a42, leaf: 0x2e5a34 }), // Zypresse (wie tanne)
+    busch_hazel: Object.freeze({ barkA: 0x3a2c1e, barkB: 0x5a4a34, leaf: 0x4a7a2c }), // phyto strauch
+    farn_busch: Object.freeze({ barkA: 0x3a3a26, barkB: 0x4a4a30, leaf: 0x4a8a3a }), // Farn
+    blume_gross: Object.freeze({ barkA: 0x3a5a2a, barkB: 0x4a6a34, leaf: 0x6a9a3a }), // Blume
+});
+// Der Sequoia/Mammut-Ton für die GIGANT-Größenklasse (phyto mammut) — die gigant-
+// gewachsene Eiche/Art trägt die rot-braune Riesen-Rinde.
+AnazhRealm.SPECIES_PALETTE_GIGANT = Object.freeze({ barkA: 0x7a3b22, barkB: 0x9a5a38, leaf: 0x3a5a30 });
+AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
 AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
     baum_tanne: Object.freeze({
         // Fichte/Tanne: konisch, dichte Whorls, needleSpray
