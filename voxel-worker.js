@@ -37,6 +37,19 @@ self.window = self;
 // (absolute App-Basis); der normale Worker läuft mit "" relativ wie eh.
 importScripts((self.__anazhBase || "") + "vendor/simplex-noise.js");
 
+// DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern (phyto-core.js) — DIESELBE Quelle
+// wie der Main-Thread (`__phytoCore.growSkeleton`) + das Terrain-Portal, kein Mirror. Der
+// Chunk-Mesh-Bau kann so Vegetation worker-seitig wachsen lassen (künftige Wellen), bit-
+// identisch zum Main. `?v=` mitziehen → derselbe Cache-Bust wie der Worker.
+const __phytoV = (function () {
+    try {
+        return new URLSearchParams(self.location.search).get("v") || "";
+    } catch (_e) {
+        return "";
+    }
+})();
+importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
     seed: null,

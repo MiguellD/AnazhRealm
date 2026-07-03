@@ -1,48 +1,20 @@
 // DAS NEUE KLEID K0/K1-BEWEIS (`docs/neues-kleid-plan.md`) — die Phyto-Wuchs-Linse.
-// Der Kern `_phytoGrowSkeleton` ist REIN + THREE-frei → headless in node beweisbar, OHNE
-// Browser: (1) Determinismus (gleicher Seed ⇒ byte-identisch), (2) McMahon (Stammradius aus
-// H/slim nachgerechnet), (3) da Vinci (Flächenerhaltung an den Gabeln, r^Δ), (4) Varianz
-// (N Seeds ⇒ vaste Streuung, nie identisch), (5) Apikaldominanz (exkurrent hoch → schlanker
-// Kegel · dekurrent niedrig → breite Krone). Wir laden die Klasse THREE-frei über einen
-// minimalen Stub (die Methode braucht kein THREE — sie gibt reine Arrays).
+// Der Kern `growSkeleton` (phyto-core.js, DIE EINE geteilte Quelle seit Welle 0) ist REIN +
+// THREE-frei → headless in node beweisbar, OHNE Browser: (1) Determinismus (gleicher Seed ⇒
+// byte-identisch), (2) McMahon (Stammradius aus H/slim nachgerechnet), (3) da Vinci
+// (Flächenerhaltung an den Gabeln, r^Δ), (4) Varianz (N Seeds ⇒ vaste Streuung, nie
+// identisch), (5) Apikaldominanz (exkurrent hoch → schlanker Kegel · dekurrent niedrig →
+// breite Krone). Wir laden phyto-core.js direkt (es exportiert auf globalThis.__phytoCore).
 "use strict";
-const fs = require("fs");
-const path = require("path");
 
-// Die Methode aus der Klasse ziehen, ohne die ganze Engine zu booten: wir extrahieren die
-// zwei reinen Methoden per Function-Konstruktor aus dem Quelltext (sie referenzieren kein
-// `this`-State ausser den Argumenten → als freistehende Funktionen lauffähig).
-const src = fs.readFileSync(path.join(__dirname, "..", "anazhRealm.js"), "utf8");
-
-function extractMethod(name) {
-    const marker = "    " + name + "(";
-    const start = src.indexOf(marker);
-    if (start < 0) throw new Error("Methode nicht gefunden: " + name);
-    // Balancierte Klammern ab der öffnenden { des Methoden-Körpers.
-    let i = src.indexOf("{", start);
-    let depth = 0,
-        end = -1;
-    for (let j = i; j < src.length; j++) {
-        const ch = src[j];
-        if (ch === "{") depth++;
-        else if (ch === "}") {
-            depth--;
-            if (depth === 0) {
-                end = j + 1;
-                break;
-            }
-        }
-    }
-    const body = src.slice(i + 1, end - 1);
-    const sig = src.slice(start + 4 + name.length, i); // "(args) "
-    const args = sig
-        .replace(/[()\s]/g, "")
-        .split(",")
-        .filter(Boolean);
-    return new Function(...args, body);
+// Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
+// node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
+// aber der IIFE-Seiteneffekt setzt globalThis.__phytoCore).
+require("../phyto-core.js");
+if (!globalThis.__phytoCore || typeof globalThis.__phytoCore.growSkeleton !== "function") {
+    throw new Error("phyto-core.js hat __phytoCore.growSkeleton nicht exportiert");
 }
-
-const _phytoGrowSkeleton = extractMethod("_phytoGrowSkeleton");
+const _phytoGrowSkeleton = globalThis.__phytoCore.growSkeleton;
 
 // Ein einfacher deterministischer Stream (mulberry32) für die Tests.
 function mulberry32(a) {

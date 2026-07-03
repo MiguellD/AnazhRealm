@@ -1,6 +1,7 @@
 # DAS NEUE KLEID — die Phytogenese der Hauptwelt (AKTIVER SUB-BOGEN)
 
-> **STAND (03.07.2026 — REINER PLAN, gemessen fundiert).** Schöpfer: „nun nutzen wir all das
+> **STAND (03.07.2026 — WELLE 0 GEBAUT, der PHYTO-CORE-Bogen läuft; §1.5 ist der Visionsweg).**
+> Schöpfer: „nun nutzen wir all das
 > Wissen aus dieser Welt und wenden es auf unsere Voxelwelt an — AnazhRealm wird im neuen Kleid
 > erwachen. Wir haben das Skelett in AnazhRealm und die Haut im Portal (performancetechnisch
 > deutlich optimierter). Ich habe die perfekte Vorlage geschaffen." Die Vorlage: **phytogenesis
@@ -86,97 +87,117 @@ deformiert ein subdividiertes Ikosaeder — EXAKT die Topologie-Quelle unseres `
 
 ---
 
-## §2 — DIE WELLEN (risiko- und hebel-geordnet)
+## §1.5 — DER VISIONSWEG: PHYTO-CORE (die Naht am geteilten Generator, Schöpfer 03.07.)
 
-> **STAND: K0+K1 GEBAUT ✓ (V18.385, 03.07.2026).** Der Herz-Tausch ist vollzogen: `_phytoGrowSkeleton`
-> und `_phytoDialsFor` tragen die Gesetze, `_growTreeBlueprintRich` speist Stamm+Äste daraus, die zwei
-> Ausgänge (parts+skeleton) bleiben byte-kompatibel, Tags frozen, voller Playtest grün, Eiche/Tanne/Gigant
-> am Auge bestätigt (Eiche dekurrent-spreizend · Tanne exkurrent-Kegel · Gigant McMahon-dick). Beweis-Linse
-> `diag-phyto-tree` (im `check`-Gate). **NÄCHSTES: K2** (Rinde + Blatt — die Nadel-/Blatt-Appearance +
-> Kronen-Dichte). Die Details unten sind der ursprüngliche Plan (zur Referenz).
+**Der Schöpfer stoppte das Stück-für-Stück-Portieren mit der richtigen Frage:** „müssten wir
+die Pipeline integrieren, den Code gar nicht duplizieren, sondern die Bäume direkt durch die
+Pipeline ziehen? AnazhRealm eigentlich nur der Richter, der es nun so einfach hat wie nie
+zuvor — was ist der Visionsweg, der professionelle, der beste Weg?" **Er hat recht: ein
+Parameter-für-Parameter-Abgleich zwischen zwei Codebasen IST das Neubauen.** Der professionelle
+Weg (ein Ultracode-Workflow aus 30 Agenten hat ihn gegen 4 Alternativen bewiesen, Ø 36.7, 0
+Blocker) ist **PHYTO-CORE — der Richter-Kern + zwei Schalen, die Naht am Float32-Attribut:**
 
-### K0 — DER KERN-EXTRAKT (das Fundament, headless-beweisbar) ✓
+- **EINE geteilte Quelle `phyto-core.js`** (IIFE wie `bake-core.js`) trägt die gesetz-wahre
+  Wuchs-Mathematik als reine Funktion `growSkeleton(P, seq)` → reine Arrays raus (`{segs,
+  leaves, trunkR, height, runMeta}`). KEIN THREE, kein `this`, keine Zeit, kein `Math.random`
+  — der injizierte `seq` trägt den Determinismus.
+- **Drei Leser derselben Datei** (kein Mirror, der driften kann — Gesetz #0): der Main-Thread
+  (`<script>` → `__phytoCore`), der voxel-worker (`importScripts`), das Terrain-Portal (später,
+  über die Sandbox-Wand). Der **Stamm ist der RICHTER**: er reicht Dials rein (`_phytoDialsFor`),
+  bekommt Arrays raus, faltet sie in seine ZWEI kanonischen Ausgänge (parts+skeleton) und
+  urteilt (Tags · Ω-PHYSIS · Perf). Die Wuchs-Mathematik SELBST lebt nur EINMAL.
+- **Die Naht ist der Float32-Attribut-Vertrag** (positions/color/aWind/aCenter/aType/uv) — an
+  dieser einen Kante fließen die Assets (Skelett heute, Bake/Atlas/Fels/Kristall in den
+  Wellen). Der Stamm optimiert die Perf-/Biom-/LOD-LOGIK (er ist der Dirigent), die ASSETS
+  saugt er durch die eine Pipeline. So wird der Stamm robuster UND simpler zugleich.
 
-Die portablen Phytogenesis-Kerne in den Stamm holen, an die AnazhRealm-Ströme angeschlossen:
+Das ist exakt die Schöpfer-Vision: „wir optimieren die Performancelogik aus dem File in den
+Stamm … saugen dann aber alle Assets aus der Pipeline, von Kristall über Steine bis zum letzten
+Kern, der Stamm wird robuster und simpler, das System kommt näher an die Zukunft."
 
-- `growTreeNodes`-Mathematik (da Vinci Δ · McMahon · Apikaldominanz · Gravitropismus ·
-  Phyllotaxis · Konifere-Whorls/Droop · basalStems · Blatt-Budget) als
-  `_phytoGrowSkeleton(dials, rng)` — Eingabe: ein Dial-Vektor (die `__dials`-Naht der
-  Vorlage) + ein seeded RNG; Ausgabe: `{segs, leaves}` (reine Arrays).
-- Die Phänotyp-META-REGEL (`phenotype`/`rockPhenotype`) als `_phytoPhenotype(dials)` —
-  Reglervektor → Art als Region im Morphospace (die Brücke SPECIES_GRAMMAR → Dials).
-- mulberry32 + die Vektor-Helfer (nur was `_rollGenome`/Simplex nicht schon deckt — messen,
-  nicht doppeln).
-- **Beweis:** `diag-phyto-tree` — (a) gleicher Seed ⇒ byte-identisch, (b) N Seeds ⇒ vaste
-  Varianz (Spannweiten-Band wie `diag-genom`), (c) McMahon/da-Vinci nachgerechnet
-  (H/D-Verhältnis, Radius-Erhaltung an Gabeln — die Vorlage loggt ihre Beweise schon selbst).
+---
 
-### K1 — DER HERZ-TAUSCH (eine Art zuerst, dann alle)
+## §2 — DIE WELLEN (der PHYTO-CORE-Migrations-Bogen)
 
-- `_growTreeBlueprintRich` speist sein Skelett aus `_phytoGrowSkeleton` (Dials aus
-  SPECIES_GRAMMAR + `_rollGenome`-Achsen gemappt) — emittiert weiter die ZWEI Ausgänge
-  (parts[] mit denselben Material-Belegungen · `_lastTreeSkeleton` fürs Render).
-- ZUERST `baum_eiche` (A/B: Konstanten-Toggle, settled Shot alt/neu am IDENTISCHEN Spot),
-  Tags-frozen-Beweis, Richter, dann ALLE 13 Arten + weide/mammutbaum als Zuwachs.
-- LOD-Keys (`grown_*_v*_lod{1,2}`) + Foliage-Caps bleiben; `_buildVariantLODs` unverändert.
-- **Beweis:** `diag-arch-tags` byte-gleich · Richter-Band · `diag-tree-spawn` ·
-  voller Playtest · Katalog-Auge (`diag-werk-render`).
+> **STAND: Welle 0 GEBAUT ✓ (V18.386, 03.07.2026).** Die geteilte Quelle steht: `phyto-core.js`
+> trägt `growSkeleton` (byte-identisch aus dem alten `_phytoGrowSkeleton` extrahiert), der Trunk
+> ist ein dünner Delegator (die 334-Zeilen-Referenz AST-präzise geschnitten — KEIN Duplikat mehr),
+> Main (index.html) + Worker (voxel-worker.js importScripts) lesen dieselbe Datei. Beweis-Linsen:
+> `diag-phyto-tree` (die Gesetze aus der neuen Quelle · im `check`-Gate) + NEU `diag-phyto-core-parity`
+> (Main==Worker byte-identisch, 48 Läufe 0 divergent · im `check`-Gate). Voll grün: check · lint ·
+> format · page-error 0 · fast 13/13. **VORHER (V18.385): K0+K1** — der Herz-Tausch (gesetz-wahrer
+> Wuchs) war schon vollzogen; Welle 0 hob ihn auf das geteilte Fundament. **NÄCHSTES: Welle 1**
+> (die Farb-/Atlas-Rezepte als zweite Schale auf phyto-core).
 
-### K2 — RINDE + BLATT (System A/D am Baum)
+### Welle 0 — DIE GETEILTE QUELLE (das Fundament) ✓
 
-- barkProfile-Tabelle → `_buildTreeTubeGeometry`: Furchen (vSharp/hFreq) · Birken-Papyrus/
-  Lentizellen · Astnarben (Phyllotaxis-Dellen+Wulst) · Wurzelanlauf-Kanneluren (flare
-  vertiefen) · Flechten/AO in Vertex-Farben (die Substanz-Antenne liest sie schon).
-- Blatt-Silhouetten: superR (Superformel) in die LAAS-Atlas-Zeichner
-  (`_ensureFoliageClusterAtlas` — drawLeaf/drawNeedle werden superR-getrieben).
-- Astachsel-Füllung (`pushJointSphere`-Prinzip) gegen die Gabel-Löcher.
-- **Beweis:** LOOK-Bild (settled, nah, Rinden-Close-up) + Tags frozen + Vertex-Budget gemessen.
+Die gesetz-wahre Wuchs-Mathematik von einer Trunk-Methode zur EINEN geteilten Datei heben:
 
-### K3 — DER FELS (Zingg/Wadell im noiserock)
+- `phyto-core.js` im `bake-core.js`-IIFE-Muster: `growSkeleton(P, seq)` — byte-identische
+  Extraktion aus `_phytoGrowSkeleton` (da Vinci Δ · McMahon · Apikaldominanz · Gravitropismus ·
+  Phyllotaxis · Konifere-Whorls/Droop · basalStems · Blatt-Terminierung · Blatt-Budget).
+- Der Trunk `_phytoGrowSkeleton` wird ein Delegator (`globalThis.__phytoCore.growSkeleton`
+  mit graceful-null-Fallback); die alte 334-Zeilen-Referenz ist GESCHNITTEN (`cut-method`,
+  AST-präzise) — kein Parallelpfad. `_phytoDialsFor` (die Dial-Brücke) + der Herz-Tausch in
+  `_growTreeBlueprintRich` bleiben unberührt (sie rufen dieselbe Trunk-Methode).
+- Main lädt phyto-core.js VOR anazhRealm.js (defer, wie bake-core); der voxel-worker
+  `importScripts` sie mit dem `?v=`-Cache-Bust (bereit für worker-seitigen Wuchs künftiger Wellen).
+- **Beweis:** `diag-phyto-tree` (Gesetze aus der neuen Quelle, byte-identische Signatur) +
+  `diag-phyto-core-parity` (Main-`require` == Worker-`vm`-`self`-Scope, byte-identisch über
+  4 Arten × 12 Seeds) — beide im `check`-Gate; page-error 0; fast 13/13.
+- **OFFEN als eigener Faden:** das Terrain-Portal (`worlds/terrain/phytogenesis.js`) auf
+  `__phytoCore.growSkeleton` umschalten — eine ECHTE Sandbox-/CSP-Runtime-Grenze (ein CSP-Miss
+  blankt das Portal, V18.383-Lehre); das Portal rendert heute byte-treu als Referenz, der
+  Tausch bringt wenig und riskiert viel → eigene Welle mit sauberer CSP-Verifikation.
 
-- `buildBoulder`-Verformung in den `noiserock`-Case: Zingg-Skalierung · ridged-fBm ·
-  Sediment-Bänke + Differenzialerosion · Wadell-Facetten-Clipping + Laplace-Rundung ·
-  Kurvatur-AO in Vertex-Farben. Parameter aus den EXISTIERENDEN Tags (härte→Angularität
-  lebt schon :51683) + `rockPhenotype`-Genese-Achse.
-- Basalt-Säulen (Voronoi/Lloyd) + Schuttkegel + Kristall-Schulter-Prismen als NEUE
-  fels_var-Charaktere (Zuwachs im `SCATTER_VARIANT_POOL`, tag-frozen vermessen).
-- **Beweis:** `diag-arch-tags` + `diag-werk-render fels_var*` + Perf-Probe (det-Skalierung
-  V18.266 bleibt: Kiesel klein = billig).
+### Welle 1 — DIE FARB-/ATLAS-REZEPTE (die zweite Schale auf phyto-core)
 
-### K4 — DIE ÖKOLOGIE (die headless-Engine an unsere Felder)
+- Die Bake-/Farb-/Silhouetten-Rezepte der Vorlage als REINE, THREE-freie Funktionen NEBEN
+  `growSkeleton` in phyto-core.js (dieselbe Datei, dieselbe Naht): barkProfile-Tabelle
+  (oak/birch/sequoia — Furchen · Birken-Lentizellen · Astnarben) → Vertex-Farb-/Furchen-Rezept;
+  Blatt-Silhouette (superR/Superformel) → Atlas-Zeichen-Rezept; die Palette-Wurzeln
+  (`SPECIES_PALETTE`, schon aus der Vorlage übernommen V18.385) ziehen mit in die Quelle.
+- Der Trunk (`_buildTreeTubeGeometry`/`_ensureFoliageClusterAtlas`) LIEST die Rezepte statt
+  eigener Konstanten — der Richter formt THREE-Geometrie aus den reinen Rezept-Arrays.
+- **Beweis:** LOOK-Bild (settled, nah, Rinden-Close-up + Blatt-Atlas) + Tags frozen +
+  Vertex-Budget gemessen; die Rezepte headless in einer Linse nachgerechnet (wie phyto-tree).
 
-- Die Ökologie-Gesetze (variabler-Radius-Poisson · reverse-J · Verjüngungs-Cluster ·
-  canopyLight Beer-Lambert · placeRocks-Geologie · groundCover) vertiefen
-  `_vegetationSampleSpawn`/`_scatterPass` — sie LESEN die existierenden Felder
-  (`worldFieldAt` · `_feuchteAt` · `_slopeAt` · `_kronenMult`), ersetzen sie NICHT.
-  Die Affinitäts-Sieg-Logik bleibt der Arten-WÄHLER; die Ökologie wird der DICHTE-/
-  GRÖSSEN-/NACHBARSCHAFTS-Former (Poisson-Abstände ∝ Kronenradius, Größe reverse-J).
-- Welt-Regen-Wand: jede Änderung ist worldgen-formend → Γ5-Streams, Determinismus-Band,
-  bewusster Sign-off (die Welt sieht danach ANDERS aus — gewollt, aber benannt).
-- **Beweis:** `diag-genese`-Klasse (Dichte-Verteilungen, Clark-Evans-Index) + Schöpfer-Auge.
+### Welle 2 — FELS + KRISTALL (die dritte Asset-Klasse durch die Pipeline)
 
-### K5 — DIE FERNE (der Render-Schatz, GPU-Hebel)
+- `buildBoulder`/Kristall-Verformung (Zingg/Wadell · ridged-fBm · Sediment-Bänke ·
+  Wadell-Facetten · Voronoi-Basalt · Kristall-Schulter-Prismen) als reine Geometrie-Funktion
+  in phyto-core.js; der `noiserock`/Kristall-Case in `_makePartGeometry` LIEST sie.
+- **TAG/AFFINITÄT-WAND (der EINE Major-Befund des Workflows):** die parts[] behalten ihre
+  EXAKTEN Form-Strings (`computeCompoundTags` ist Winner-take-all über Shape×Material) — ein
+  gesetz-wahrer Fels bleibt tag-technisch ein `noiserock`/Stein; harte Gates `diag-arch-tags`
+  (4 Achsen byte-gleich) + `diag-genom` + `diag-tree-spawn` VOR/NACH.
+- Neue fels_var/kristall_var-Charaktere als Zuwachs im `SCATTER_VARIANT_POOL` (eigene Identität).
+- **Beweis:** `diag-arch-tags` byte-gleich · `diag-werk-render fels_var*/kristall_var*` ·
+  Perf-Probe (det-Skalierung V18.266 bleibt).
 
-- **8-Winkel-Impostor-Atlas für Bäume** (TSL/WebGPU-Port des GL-Bakes): schließt die
-  gemessene Lücke „kein echtes Billboard für Bäume"; Atlas einmal je Seed-Signatur,
-  saisoninvariant; Anker = Stammachse; Dilation gegen Halos. Der ferne Baum wird EIN Quad
-  statt Karten-Geometrie → der 90 %-Laub-Posten fällt in der Ferne strukturell.
-- **Komplementäres Dither-Crossfade** an den LOD-Grenzen (die V18.346-Karten behalten LOD0/1,
-  LOD2 wird Impostor) + Screen-Space-Error-Metrik (PHYTO_LODREF-Prinzip) in
-  `_chooseLODForDistance`.
-- **Occlusion-Demotion** (Kronen-Dichtegitter, portabel) als Streaming-Tick-Leser.
-- Alles durch den EINEN Regler (`effArch`); WebGPU-Pipeline-Warm (V18.322/.367-Klasse) für
-  neue Materialien.
-- **Beweis:** Draw-Call-/Tri-Kollaps hardware-unabhängig gemessen (`diag-render-load`
-  vorher/nachher) + Schöpfer-FPS-Wort; LOOK-A/B an der LOD-Grenze (kein Pop).
+### Welle 3 — DIE ÖKOLOGIE (die Platzierungs-Gesetze an unsere Felder)
 
-### K6 — DIE JAHRESZEIT (eigener Faden, harmonisch)
+- Die headless-designte Ökologie-Engine (variabler-Radius-Poisson · reverse-J-Selbstausdünnung ·
+  Verjüngungs-Cluster · Beer-Lambert-canopyLight · geologische Fels-Platzierung · groundCover)
+  vertieft `_vegetationSampleSpawn`/`_scatterPass` — sie LESEN die existierenden Felder
+  (`worldFieldAt`/`_feuchteAt`/`_slopeAt`/`_kronenMult`), ersetzen sie NICHT. Der Affinitäts-Sieg
+  bleibt der Arten-WÄHLER; die Ökologie wird der DICHTE-/GRÖSSEN-/NACHBARSCHAFTS-Former.
+- Welt-Regen-Wand: worldgen-formend → Γ5-Streams, Determinismus-Band, bewusster Sign-off.
+- **Beweis:** `diag-genese`-Klasse (Clark-Evans-Index, Dichte-Verteilung) + Schöpfer-Auge.
 
-- Saison als kontinuierliche Welt-Achse (uSeasonMul-Prinzip: Präsenz/Tint als Uniform-
-  Verhältnis, KEIN Rebuild) — harmonisch verschmolzen mit Tag/Nacht + Emotion→Welt
-  (V17.23-Disziplin: nichts snappt, alles fadet; die DSL bekommt fruehling…winter wie im
-  Portal). Der eingefrorene Herbst-Würfel (:50839) geht darin auf.
-- **Beweis:** Uniform-Konsum-Probe + LOOK; Peer-Konsistenz (Saison reist im Snapshot).
+### Welle 4 — DIE PERF-/FERNE-LOGIK IN DEN DIRIGENTEN
+
+- Die Performance-/Biom-Optimierungs-LOGIK der Vorlage (8-Winkel-Impostor-Prinzip ·
+  Screen-Space-Error-Metrik · Occlusion-Demotion · kontinuierliche Saison ohne Rebuild) wandert
+  als LOGIK in den EINEN Regler (`_nexusPerfActuate`/`effArch`/`_foliageDensityScale`) — kein
+  zweiter Qualitäts-Regler (V18.263-Wand). Der ferne Baum wird EIN Impostor-Quad statt
+  Karten-Geometrie → der 90 %-Laub-Posten (V18.303) fällt in der Ferne strukturell.
+- Ein `bake-tree`-Worker-Typ (bake-worker-Muster, phyto-core ist ja schon worker-geladen) ist
+  die benannte Eskalation, FALLS der Wuchs/Bake gemessen stallt.
+- Saison als kontinuierliche Welt-Achse (uSeasonMul, harmonisch mit Tag/Nacht+Emotion, V17.23) —
+  der eingefrorene Herbst-Würfel geht darin auf.
+- **Beweis:** Draw-Call-/Tri-Kollaps (`diag-render-load` vorher/nachher, hardware-unabhängig) +
+  Schöpfer-FPS-Wort; LOOK-A/B an der LOD-Grenze (kein Pop); Uniform-Konsum-Probe (Saison).
 
 ---
 
@@ -193,10 +214,13 @@ Die portablen Phytogenesis-Kerne in den Stamm holen, an die AnazhRealm-Ströme a
   portieren (unser WebGPU-Post-FX/MSAA-Kontext ist anders); nur falls eine GEMESSENE
   Lücke sie ruft, als eigener Faden.
 
-## §4 — DIE REIHENFOLGE + DER ERSTE SCHNITT
+## §4 — DIE REIHENFOLGE + DER STAND
 
-**K0+K1 sind EIN Guss** (Kern + Herz-Tausch an der Eiche — verifizierbare Arbeit, das ganze
-Subsystem in einer Welle, V17.30). Dann K2 (Rinde/Blatt — der breiteste LOOK-Hebel), K3
-(Fels), K4 (Ökologie, mit Welt-Regen-Sign-off), K5 (die Ferne — der FPS-Hebel), K6 (Saison).
-Nach jedem Guss: Tags-frozen-Zahl + settled Bild + volles Gate; die Schöpfer-Bestätigung
-zwischen den GROSSEN Güssen (§6.9 wahrerguss).
+**Welle 0 (geteilte Quelle) + der V18.385-Herz-Tausch stehen** — das Fundament trägt: EINE
+gesetz-wahre Wuchs-Quelle, der Trunk als dünner Richter, kein Duplikat. Dann Welle 1 (Farb-/
+Atlas-Rezepte als zweite Schale — der breiteste LOOK-Hebel), Welle 2 (Fels/Kristall — die
+dritte Asset-Klasse, tag-frozen), Welle 3 (Ökologie, mit Welt-Regen-Sign-off), Welle 4 (Perf/
+Ferne/Saison — der FPS-Hebel im Dirigenten). Nach jedem Guss: die Diag-Zahl (Determinismus/
+Parität/Tags) + settled Bild + volles Gate; die Schöpfer-Bestätigung zwischen den GROSSEN
+Güssen (§6.9 wahrerguss). Der Portal-Umschalt-Faden (Welle 0 OFFEN) wartet auf seine eigene
+CSP-saubere Welle.
