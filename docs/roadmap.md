@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 19.06.2026 (V18.267):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
+> **Stand 03.07.2026 (V18.382):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
 > die Konvergenz von FORM·PHYSIK·ANBLICK in EIN Gesetz) + seine Sub-Bögen
 > (`docs/lebendiger-koerper-plan.md` · `docs/koerper-neuanlage-plan.md`). Die NORMATIVEN Referenzen
 > dazu liegen in der Bibliothek: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · der Physik-Richter im
@@ -18,56 +18,47 @@
 
 ---
 
-## ✅ TEMP-DEV-DROSSELN — REVERTIERT (V18.331 Backlog)
+## §0 · DER TISCH IST FREI — die Übersicht (Stand V18.382, Doc-Ordnung 03.07.2026)
 
-**ERLEDIGT (V18.331, Schöpfer-Wahl „erst Backlog räumen"):** die drei temporären Dev-Drosseln sind
-zurückgedreht — Bäume `SAMPLES` 4→10, fliegende Inseln `numIslands` 1→3, Planeten `numPlanets` 1→3.
-Die volle V18.215-Dichte ist wieder da; der Cold-Start trägt sie, weil der echte BACKLOG (den Cold-Start
-effizient machen) inzwischen erledigt ist — der Perf-Bogen (V18.260–.308) + der Worldgen-6-12×-Hoist
-(V18.319–.321) + der tote per-Chunk-BVH-Freeze (V18.331 P3) + der kapazitäts-gemessene `foliageRadius`-Regler
-(V18.275). Fast-Gate 13/13 grün mit voller Dichte, Boot sauber. Die Historie des Render-Bogens, der das
-möglich machte (zur Referenz aufbewahrt):
+**Die eine Seite, die alles Offene trägt — bevor der nächste GROSSE Bogen beginnt.** Alles
+Erledigte lebt in der Chronik (`docs/archiv/handover.md`); hier steht NUR, was offen ist, mit dem
+Zeiger auf sein Detail. Nichts geht verloren, nichts hält auf.
 
-Während der Entwicklung waren sie temporär gedrosselt, damit Cold-Start + Iteration schnell sind (Schöpfer-Wunsch
-„weniger Bäume/Strukturen, schneller iterieren"). Der echte BACKLOG war nicht das Zurückdrehen, sondern den **Cold-Start effizient**
-zu machen (dann fällt die Drossel von selbst): Chunk-Mesh-Streaming + Vegetation-Spawn-Budget + die
-per-Frame-swiftshader-Render-Kosten. **V18.260 hob den Render-Hebel teilweise:** placed-Strukturen (Tempel
-109 Parts → 2 Meshes) fließen jetzt durch denselben Material-Merge wie die instanzierten Bäume
-(`_buildArchMeshMerged`), das senkt die Draw-Calls drastisch. **V18.262 hob den Kreatur-Render** (der
-V18.260-Folge-Hebel): das statische Gesicht der Skin-Kreaturen (Augen/Funken/Ohren) pro Material gemergt
-6→3 + eine Distanz-LOD blendet es jenseits ~42 m·L aus → `wesen` 7→4 nah / 7→1 fern (gemessen
-`scripts/diag-creature-render.cjs`; s. handover V18.262). **V18.264 maß die GANZE Render-Last** (der
-Session-blinde Fleck: 4.61M Dreiecke + ein 2.32M-Schatten-Pass) → der Schatten-CACHE (Stand) + **V18.265
-die SCHATTEN-DISTANZ** (ferne LOD1/LOD2-Bäume werfen keinen Schatten → −44 % Schatten-Pass) → **V18.266
-der KIESEL-HEBEL** (noiserock-Detail skaliert mit Grösse: kiesel 589k→147k, der grösste view-unabhängige
-Posten war über-tesselliertes Klein-Deko) → **V18.267 KONSOLEN-AUFRÄUMUNG + Baum-Entlastung** (RenderPipeline
-statt deprecated PostProcessing · der `instanceColor`-Fehler GEHEILT · Scatter-Caps tree 900→300/under
-800→250/litter 250→150). **OFFENE FÄDEN aus dem Render-Bogen:**
-- **~~`instanceColor not found`~~ GEHEILT (V18.267):** das manuelle `albedo.mul(attribute("instanceColor"))`
-  in `_grassInstanceMat` + `_scatterMaterial` entfernt — der Tint kommt über Three.js' nativen
-  InstanceNode-Pfad (`setupDiffuseColor` multipliziert instanceColor automatisch), DERSELBE wie das Laub.
-- **~~PostProcessing/ShaderMaterial-Warnung~~ GEHEILT (V18.267):** der Bootstrap kopiert jetzt
-  `RenderPipeline` (NodeMaterial-basiert) statt des deprecated `PostProcessing` (ShaderMaterial-basiert).
-  Offen bleibt nur ein 2× vendor-interner `ShaderMaterial`-Hinweis (nicht aus unserem Code, harmlos).
-- **~~Der view-unabhängige Haupt-Pass~~ TEILS GEHEILT (V18.300):** die STREU-Laub-Gruppen sind jetzt
-  pro 256-m-Region gekeyt (`useRegionFoliageCull`) → lokale Bounding-Sphere → `frustumCulled=true` →
-  Umsehen cullt ~60 % der Laub-Last (die alte V18.265-These „per-Region lohnt nicht" verwechselte
-  DISTANZ- mit FRUSTUM-Culling: eine Region HINTER dem Blick fällt aus dem Frustum, egal wie nah).
-  OFFEN bleibt: die **globalen PLACED-Gruppen** (`_archInstanceAdd`, bewusst global) + der wahre
-  Hebel für sie = GPU-Culling/Indirect-Draw, look-bound (Schöpfer-Browser). Plus der **AVATAR-SKIN-
-  WORKER** (die ~9.6-s-Boot-Blockade, `diag-startup-cost`) — die Mathe ist THREE-frei → Worker. **Der
-  DETERMINISMUS-BOGEN ist VOLLENDET (V18.331):** Ammo ist physisch raus, die Kollision feld-nativ aus
-  dem Dichtefeld → der per-Chunk-BVH-Build (der Lauf-Freeze an der Wurzel) ist WEG, der Boden
-  deterministisch. **P4 GEERNTET: Stufe 1 Replay (V18.331, `diag-replay-determinism`) · Stufe 2
-  Lockstep-MP (V18.382, `smoke:lockstep` — nur Inputs übers Netz, Zwei-Browser bit-exakt 284/284);
-  offen nur Stufe 3 Fixed-Point/cross-Maschine.** Voll-Stand in
-  `docs/archiv/eigene-physik-plan.md`. FPS-Beweis bleibt der Schöpfer-WebGPU-Browser.
+**Die großen GESCHLOSSENEN Bögen (nur der Beweis-Zeiger — kein Wiedereröffnen):**
+Determinismus/Feld-Physik ✓ V18.331 (Ammo raus, Replay bit-identisch) · Performance-Regelkreis ✓
+V18.260–.331 (EIN PID, kapazitäts-gewachsene Welt, Flugschreiber) · Genialität ✓ V18.319–.321
+(Chunk-Bau 6–12×, byte-identisch) · Engine-Orchestrierung ✓ V18.353–.358 (Phasen A/B/C default-an) ·
+Naht-Entscheidung ✓ V18.372 (`archiv/goldstandard-mesh-plan.md` GESCHLOSSEN) · Wasser-Finish ✓
+V18.373–.381 (Moiré-Wurzel Vertex-Jitter · kontinuierliche Tiefe · Mondlicht · Wahrheits-Front ·
+Fern-Wasser) · Lockstep-MP Stufe 2 ✓ V18.382 (`smoke:lockstep` 284/284 bit-exakt).
 
-- ~~**Vegetation/Scatter-Dichte** (`_populateVoxelChunkVegetation` `SAMPLES 4`)~~ — REVERTIERT → 10 (V18.331).
-- ~~**Fliegende Inseln** (`_worldgenSpawnFloatingIslands` `numIslands 1`)~~ — REVERTIERT → 3 (V18.331).
-- ~~**Planeten** (`createGalaxySkybox` `numPlanets 1`)~~ — REVERTIERT → 3 (V18.331).
+**WAS OFFEN IST (die vollständige Liste — jede Zeile hat ihr Detail-Zuhause):**
 
-(Nie gedrosselt, weil Einzel-Platzierung, kein Dichte-Effekt: village/temple/genesis-Plattform.)
+1. **Der AKTIVE schöpferische Bogen:** `wahrerguss.md` (4 Systeme) + Körper-Neuanlage
+   (`koerper-neuanlage-plan.md` — regel-basiert statt geratener per-Teil-`k`) + lebendiger Körper
+   (`lebendiger-koerper-plan.md` — Motion-Konvergenz/IK/Blend). → die Sub-Bögen selbst.
+2. **DIE EINE SCHÖPFER-RUNDE** (Verifikations-Asymmetrie): `anazhRealmPerf.json` einmal auf echter
+   GPU einfangen + `npm run look-golden --mint` — „dein Auge einmal, die Maschine für immer". → §4 ★.
+3. **Lockstep-MP Stufe 3:** Fixed-Point/cross-Maschine (zwei CPUs können in libm abweichen) —
+   eigener Faden auf dem V18.382-Fundament. → `archiv/eigene-physik-plan.md`.
+4. **Der GPU-render-gebundene FPS-Sockel** (Schatten/Draw-Calls/Gras-Dichte sind render-gebunden) +
+   Look-Fäden fürs Schöpfer-Auge: Fern-Wasser-Handoff-LOOK an der Ring-Kante (V18.381) ·
+   steiler-Fluss-Fresnel-Tradeoff (V18.373) · Gras-Tiefen-Verschmelzung/echte Dichte. → §4.
+5. **Wasser-Zwei-Naturen-Vereinigung:** statisches `L` + CA zu EINER Natur + Wasserfall-Politur
+   (die CA-Flut IST gebaut V18.84–.94). → `archiv/wasser-render-architektur-plan.md`.
+6. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
+   V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · KI als volle Co-Schöpferin
+   (Infra steht, opt-in-Politur). → §4 GEMERKTE FÄDEN.
+7. **Nicht-mehr-synergetische Parallelpfade** (keine Eile, bewusst benannt): built-in
+   Avatar-Anim-Pfade vs `_animateCompoundMotion` · Emotion→Farbe-Konstanten in
+   `dslComposeFieldColor` · die ~19 gebauten-aber-UI-losen Subsystem-APIs (§7). → CLAUDE.md-Stand + §7.
+8. **Schlafende Pläne mit Rest-Wellen** (erwachen, wenn ihr Thema dran ist): Γ-Reste
+   (Γ7/Γ3/Γ-M/Γ8/Totholz, `archiv/genese-plan.md`) · Aufstiegs-Leiter Sprossen 4–7 + S-Dialog
+   (`archiv/meister-plan.md`) · U2/U6 LOD-Reste (`archiv/lod-kaskade-plan.md`) · Hof/Ich/Bibliothek/
+   Einstellungen-Rest-Wellen (die vier Raum-Pläne im Archiv).
+
+(Die V18.331-Backlog-Räumung — TEMP-Dev-Drosseln revertiert, volle Dichte zurück — ist Chronik;
+Detail in `archiv/handover.md`.)
 
 ---
 
@@ -141,13 +132,13 @@ kohärente Grenze (T1 zeitlich · T2 Cross-LOD-Geomorph · T3 Dual-Contouring-QE
 Felder · Mesa-Terrassen slope-gated · Hallen) · T7b-ii+T8 das weite Band + die Löcher geheilt (Boden 0 ·
 Meer-Aquifer 0 · Mesa-Treppe 0 %).
 
-**⭐ AKTIV — die LOD/Naht-VOLLENDUNG (derselbe Kohärenz-Bogen, §11):** der Schöpfer-Browser zeigt nach
-T0–T8: Chunks resetten/höhenversetzt/Spalt-durchsehen (das Wasser nur das Symptom). GEMESSEN
-(`diag-chunk-seam`): die **Cross-LOD-T-junction ist der Riss** (LOD0-Ring nur 3×3 → Grenze ~50 m · 0 %
-geteilt · ~14.2 % sichtbare >1-m-Spalten); der Geomorph (T2) ist ein RENDER-ONLY-Halbfix (schliesst nur
-die Grenz-Zeile, Kollision gappt) + Edit/LOD re-meshet den GANZEN Chunk (das „Reset"). **Der Plan:
-N1 Cross-LOD watertight (Transvoxel [Lengyel] ODER Geomorph→Kollision+volle Zone) · N2 Sub-Region-Edit ·
-N3 stabiles LOD (grösserer LOD0-Ring + Hysterese).** (Subsumiert das alte „E4-Stitching".)
+**~~⭐ AKTIV — die LOD/Naht-VOLLENDUNG~~ ✓ GESCHLOSSEN V18.372 (gemessen entschieden — `docs/archiv/goldstandard-mesh-plan.md`):**
+die echte same-LOD-Naht war die NORMALE (Rand-Schalen-Gradient konform, 69°→0.022°, `gate:seam-normal`);
+cross-LOD-Normalen GEMESSEN für-nichts (Shading liest `up+bump`, nicht die Geometrie-Normale);
+Transvoxel = falsches Werkzeug für Streaming (Nachbar-LOD-Kopplung → Rebuild-Churn). Der EINZIGE
+offene Auslöser: ein echter Schöpfer-Browser-Befund „Sterne durch Berge" an tiefen LODs
+(Skirt-Territorium) — kein Prinzip. Vor jeder Naht-Arbeit den geschlossenen Plan ZUERST lesen,
+damit die Frage nicht neu aufgerollt wird.
 
 **Phase 2 — das Fundament sauber schließen (nach der Naht-Vollendung)** ~~H3~~ ✓ V18.132 (Kacheln) → G3
 (weitere Höhleneingänge) → LOD-Kaskade-Rest (U2 Wasser-LOD · ~~U4~~ ✓ V18.131 · ~~U5~~ ✓ V18.130 · U6) → Render-Sign-offs (R1/R2/R3/R5) ·
@@ -169,7 +160,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 18.06.2026 (V18.264):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
+> **Stand 03.07.2026 (V18.382):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
 > **`docs/wahrerguss.md`** (+ Sub-Bögen `lebendiger-koerper-plan.md` · `koerper-neuanlage-plan.md`);
 > die NORMATIVEN Referenzen `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS) + `docs/archiv/wahreranblick.md`
 > (Ω-OPSIS) liegen in der Bibliothek. Der Live-
@@ -179,11 +170,25 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 **★ DIE EINE SCHÖPFER-RUNDE — die Verifikations-Asymmetrie schliessen (die grösste gemessene Reibung, 25.06.):** der FPS-/Look-Sockel ist GPU-render-gebunden + look-sensitiv → headless nicht messbar; die zwei Linsen, die ihn messbar machen, sind GEBAUT, aber nie mit echten GPU-Daten gefüttert (`anazhRealmPerf.json` fehlt im Repo · das gerenderte Look-Golden ist nie gemintet). EINE Browser-Runde schliesst das dauerhaft: (1) `npm run leuchtturm` → ~30 s an Augenhöhe spielen → der Flugschreiber (`_flightRecorderTick`) fängt die N schlimmsten Frames + POSTet `anazhRealmPerf.json` automatisch an den save-server → committen → ab da liest jede Perf-Welle die ECHTE GPU/GC-Frame-Lücke statt zu raten; (2) `npm run look-golden --mint` (settled, Augenhöhe, echte GPU) → das Golden in `spec/golden/render/` → ab da bewacht die MSSIM-Linse jede Look-Welle headless. „Dein Auge einmal, die Maschine für immer." Bis dahin bleiben FPS-/Look-Wellen human-gated (Schöpfer-Browser-A/B). (Die Refactor-Drift-Hälfte der Verifikations-Reibung ist headless GESCHLOSSEN: `npm run gate:source-probes` bewacht die ~455 Gate-Source-Proben per-push statisch — die c1c1271-Klasse kann nicht mehr durch einen per-push-Merge schlüpfen.)
 
-**★ DER NÄCHSTE BOGEN — DER WASSER-/RENDER-ABSCHLUSS (V18.344, Schöpfer „die nächste Session schließt es in voller Tiefe ab"; die Maschine läuft bei FPS 25 → perf-Kosten sind TABU, der Weg zu „mehr" ist OFF-THREAD/Worker, nicht mehr Main-Thread-Last):**
+**~~★ DER NÄCHSTE BOGEN — DER WASSER-/RENDER-ABSCHLUSS~~ ✓ IM KERN GESCHLOSSEN (V18.345–.381; die Chronik trägt jede Welle):**
 
-1. **B1 — DAS WASSER-ISO IN DEN WORKER (der Haupt-Fix, FPS-frei) — INFRASTRUKTUR ✅ GEBAUT + BYTE-IDENTISCH BEWIESEN (V18.345); der letzte CA-Wake-Schritt offen.** GEBAUT: die Sheet-Mathe ist EINE Quelle `_computeWaterSheetData(cx,cz,ctx)` (Main+Worker teilen sie via ctx-Abstraktion), der Worker-Mirror `buildWaterSheetGeometry` + `caColumnScan`/`waterRunSurfaceAt`-Mirrors + `hydroRiverAt`-Erweiterung + das `water-sheet`-Message-Protokoll, `_tryWorkerWaterSheet` (Finalize-Erst-Paint VOR dem Wake + Tick-Naht-Heilung, BUILD-BEFORE-DISPOSE + Stale-Schutz). **`diag-worker-watersheet` beweist maxDiff 0 ZWEIFACH** (CA-frei + flood-geseedeter settled-CA = Worker-static). Der Gate `_waterSheetCaFree` prüft `waterCAActive`+`waterStauFields` (settled=Flood → Worker byte-identisch). **OFFEN (gemessen `diag-b1-watersheet-perf`): der `_wakeWaterCA`-on-stream weckt JEDEN frischen Wasser-Chunk → beim schnellen Streamen bleibt der Leading-Edge-ERST-PAINT noch sync (~2 %); der volle Win (ferne See SOFORT off-thread) braucht den Wake auf NAHE Chunks zu gaten ODER den CA-Level mit-zu-senden — beide berühren die lokal-reaktive CA-Schicht (V18.92/.93) → SCHÖPFER-AUGE, kein Blind-Eingriff.** — Der Original-Befund (Browser, v18.343 → also POST-Fix): die ferne See-Oberfläche entsteht sichtbar NACHTRÄGLICH, obwohl Terrain + Ring + Nebel dort schon geladen sind. WURZEL: der Wasser-Iso-Bau ist Main-Thread (`_buildVoxelChunkWaterIsoSurface`, Ø ~1.7 ms, eine perf-gedrosselte Queue `pendingWaterIso` + `_tickPendingWaterIso`); der V18.343-Durchsatz-Boost (Rückstau → 4→16 Builds/Frame, GEMESSEN `diag-waterstream`) HALF, reichte aber nicht — und auf FPS 25 ist MEHR Main-Thread-Wasser keine Option (es senkt die FPS weiter). FIX: das Wasser-Iso OFF-THREAD bauen, MIT dem Terrain → null FPS-Kosten, die Lade-Linie strukturell weg. PFAD: anders als der Skin-Bäcker (`bake-core.js`, naht-/MP-unkritisch) ist Wasser NAHT-/DETERMINISMUS-kritisch → es gehört in `voxel-worker.js` (wo die Terrain-Density schon bit-gespiegelt off-thread läuft) ODER einen eigenen bit-treuen Wasser-Worker: den Wasser-Zell-Flood (`_buildVoxelChunkWaterCells`) + den Iso-Mesher portieren, Determinismus gegen den Main-Pfad BEWEISEN (das `diag-worker-chunk`-Muster: Worker == Main, maxDiff 0). DISZIPLIN: das CARVEN (Edit) bleibt SYNC (Instant-Feedback, kein Loch) — NUR der STREAMING-Bau geht in den Worker (Schöpfer-Frage „wegen dem Abbauen?" → nein, nur der Streaming-Pfad). Der Schöpfer-Nebel-Insight (der Nebel sollte nicht hinter den wasser-geladenen Bereich) ist V18.346 GEBAUT als KORREKTE Reveal-Disziplin (nicht bloß Band-Aid): `_builtWaterRingRadius()` → `revealK = min(Terrain, Gras, Wasser)`, der Nebel weicht erst über gefülltem See (`diag-fog-water` verifiziert). Selbst mit B1 voll off-thread braucht das Wasser SOME Bau-Zeit → der Nebel soll der Wasser-Front folgen; B1 (CA-Wake) + die Nebel-Front sind komplementär, kein Entweder-Oder.
-2. **DIE FLUSS-6ECKE / CHEVRON (die Wasser-Oberfläche zerknittert auf flachem/Fluss-Wasser) — V18.346 PRÄZISE DIAGNOSTIZIERT, der sichere Fix offen (Browser-A/B).** Schöpfer-Screenshot, Spot **71.5, 31.0, −73.6**; Schöpfer-Befund „Uferbänder hardcoded, die bei Teilung/Zusammenfliessen ein Rastermuster ergeben". GEMESSEN-diagnostiziert (V18.346): das „Uferband" ist `aWave = heightRamp × (1 − riverness)` (V18.116, in `_computeWaterSheetData`), wo `riverness` aus dem 3×3-geglätteten Flow-VEKTOR kommt — der an Konfluenzen/Teilungen (gegenläufige Flows) CANCELT → die Stelle liest als „Stillwasser" → die heightRamp-Höhen-Kontur-Bänder der omnidirektionalen 6-Oktav-Ozean-Gerstner (`waveDisplace × aWaveEff`) zeigen sich als Raster. **WARUM die naheliegende Heilung (riverness aus `centerness` = richtungs-unabhängige Fluss-Präsenz, die der Worker schon trägt) NICHT geht: sie BRICHT die V18.116-Mündungs-Wellen** — eine Konfluenz nahe der Küste hat dieselbe niedrige Flow-riverness wie eine Mündung (Flow spreizt/fadet ins Meer), `centerness` würde BEIDE beruhigen → die Ozean-Schwell in die Mündung stirbt. Das unterscheidende Signal (Mündung-WILL-Wellen vs Konfluenz-WILL-keine) ist SEE-NÄHE, nicht centerness; `heightRamp` kodiert sie schon (nur nahe Sea-Level), aber Mündung + Küsten-Konfluenz liegen BEIDE nahe Sea-Level. FIX braucht den EXAKT-SPOT-Render (settled, Augenhöhe, am Spot — `diag-substanz-near`/`diag-wasser`-Muster) + ein Signal, das die beiden trennt (z. B. Distanz-zum-offenen-Meer-Feld), oder ein flow-ausgerichtetes Fluss-Wellen-Modell statt der omnidirektionalen Ozean-Gerstner auf Fluss-Wasser. KEIN Blind-Tweak (ein Amplitude-/Gate-Tweak dimmt nur das Muster, ändert nicht die Chevron-FORM). **DETERMINISMUS-WAND: jede Änderung an `_computeWaterSheetData` MUSS im Worker-Mirror `buildWaterSheetGeometry` gespiegelt + gegen `diag-worker-watersheet` (maxDiff 0) geprüft werden.**
-3. **GRAS-DICHTE + ECHTES VERSCHMELZEN (perf-gebunden) — V18.346 die WURZEL-Verschmelzung gegossen.** V18.346 gab die EINE Quelle `AnazhRealm.MEADOW_GREEN` (Gesetz #0): die Gras-Halm-WURZEL + der Meadow-Grund-Boden lesen denselben Grün-Wert → die Halm-Wurzel IST exakt die Boden-Wiesenfarbe (grass-root=ground, nahtloser Übergang an der Basis). OFFEN: (a) noch tieferes „Verschmelzen" = der Halm liest die VOLLE Geologie-Albedo an seinem Ort (statt der lebendig/feuchte-Approximation für die Spitze + dem MEADOW_GREEN für die Wurzel); (b) echte DICHTE (Büsche statt Akzente) = mehr Halme = perf → entweder Perf-Budget ODER das Gras-Streamen off-thread (dieselbe Worker-Klasse wie B1). Heute trägt der GRUND-Tint die Fülle, die Halme sind Akzente — der ehrliche Stand.
+1. ~~**B1 — Wasser-Iso in den Worker**~~ ✓ GESCHLOSSEN V18.345/.373: die Sheet-Mathe ist EINE Quelle
+   `_computeWaterSheetData` (Main+Worker, `diag-worker-watersheet` maxDiff 0 zweifach), der
+   on-stream-CA-Wake ist nah-ring-gegated (`WAKE_CA_RADIUS=3`) → die ferne See baut OFF-THREAD.
+   Carven bleibt bewusst sync. **DETERMINISMUS-WAND bleibt stehen:** jede Sheet-Mathe-Änderung wandert
+   in BEIDE Mirrors + gegen `diag-worker-watersheet` (maxDiff 0).
+2. ~~**Fluss-6ecke / Chevron / Moiré**~~ ✓ GEFIXT V18.375 (die Wurzel war die GEOMETRIE — das regelmäßige
+   Wasser-Vertex-Gitter, geheilt durch welt-deterministischen Vertex-Jitter, naht-exakt; NICHT der
+   Shader — 9 Null-Effekt-Experimente); die Tiefe ist kontinuierlich V18.377–.378, aFlow ein
+   geglättetes Feld V18.379, das Fern-Wasser gebaut V18.381 (`gate:fern-wasser`). **OFFEN (Schöpfer-Auge,
+   render-gebunden):** der Fern-Wasser-Handoff-LOOK an der Ring-Kante · der steile-Fluss-Fresnel-Tradeoff
+   (Opazität vs Glätte am grazing-Blick, V18.373) · Fern-Kräusel-Stärke · outR-Zone B (>720 m) als
+   benannte Erweiterung.
+3. **GRAS-DICHTE + ECHTES VERSCHMELZEN (perf-gebunden) — OFFEN.** V18.346 goss die WURZEL-Verschmelzung
+   (`AnazhRealm.MEADOW_GREEN`, Gesetz #0: Halm-Wurzel = Boden-Wiesenfarbe). OFFEN: (a) der Halm liest
+   die VOLLE Geologie-Albedo an seinem Ort (statt Approximation für die Spitze); (b) echte DICHTE
+   (Büsche statt Akzente) = mehr Halme = perf → Perf-Budget ODER Gras-Streamen off-thread (dieselbe
+   Worker-Klasse wie B1). Heute trägt der GRUND-Tint die Fülle — der ehrliche Stand.
 
 **Werkzeug-Muster für die nächste Session** (die Scratch-Diags dieser Session leben NICHT weiter — das MUSTER schon, in den Gotchas „Um das TERRAIN zu SEHEN"): einen settled Render an einem NACHGEWIESEN passenden Spot (über Wasser für Boden · am Wasser-Ufer für die Oberfläche · grünster Spot via `worldFieldAt.lebendig` für Gras) bauen wie `diag-substanz-near`/`diag-werk-render`; den B1-Durchsatz/Determinismus messen wie `diag-waterstream`/`diag-worker-chunk`.
 
@@ -194,7 +199,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 - **`docs/archiv/handover.md`** — die volle Wellen-Chronik (jüngste oben) + das Schöpfer-Audit-Gedächtnis (der alte `rueckmeldung.md`-Korpus liegt als Snapshot in `archiv/`)
 - **`docs/archiv/gigant-plan.md` §5** — der historische Master-Blick der neun Säulen (Karte über den Detail-Plänen)
 
-**DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen; Stand 18.06.2026, mit `handover.md` synchronisiert):
+**DIE GEMERKTEN FÄDEN** (Schöpfer-Weck-Moment — alle wichtig, nie still streichen; Stand 03.07.2026, mit `handover.md` synchronisiert):
 
 **ERFÜLLT** (sichtbar behalten, NICHT gestrichen — `handover.md` markiert sie V18.148–.196):
 **Phase E** Bedrohung/Furcht ✓ V18.148 (HP→`threatened` · Raubtier-Trieb `_creatureHuntDrive` · `glutwesen`) ·
@@ -205,6 +210,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 **Statusbar-Tiefe** ✓ V18.149 (auf Essenz geschlankt, F3-Muster).
 
 **NOCH OFFEN:**
+**Lockstep-MP Stufe 3** (Fixed-Point/cross-Maschine — zwei verschiedene CPUs können in libm abweichen; eigener Faden auf dem V18.382-Stufe-2-Fundament, `archiv/eigene-physik-plan.md`) ·
 **KI als volle Co-Schöpferin** (LLM schlägt DSL-Regeln durch dieselbe Sandbox vor — Infra steht, ephemer+fitness-getestet; offen = die opt-in-Adoption als Politur) ·
 das echte **V18→V19-Zeit-Portal** (der Empfang ist gebaut+grün getestet via `smoke-zeitportal`; offen = ein ECHTER Alt-Build emittiert ein Artefakt, das ein Folge-Build isst) ·
 **VR/WebXR** (0 Code — echt offen) ·
@@ -214,6 +220,7 @@ das echte **V18→V19-Zeit-Portal** (der Empfang ist gebaut+grün getestet via `
 
 **DER OFF-THREAD-BAU-BOGEN — DER BÄCKER (FREEZE-FIX GESCHLOSSEN V18.314–.316; V18.313-Diagnose, Schöpfer-Idee „ein baker für den bau aller dinge"):**
 GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurface in `_buildCreatureSkinGeometryUncached`) blockt den Main-Thread **~4 s synchron**, deferiert nach der Kontrolle (V18.308) → die wiederkehrenden 3–8-s-Freezes (Schöpfer-Browser „stehe still, friert"). Das war der EINE synchrone Block, den die ganze Perf-Welle (V18.260–.313) übrig ließ — das gemeldete „Leck" war ein Boot-Ramp-Fehlalarm (`diag-scene-leak` flach, die Linse fing es). FIX = **EIN gemeinsamer Bäcker-Worker:** schwere Geometrie-Konstruktion läuft off-thread, der Main-Thread bleibt frei.
+
 - **Architektur:** `bake-core.js` = die Skin-Mathe THREE-frei (Arrays rein/raus, **EINE Quelle**, von Main+Worker geladen — KEIN bit-Mirror nötig wie `voxel-worker.js`, weil Skin-Geometrie pro-Kreatur/standalone ist, nicht naht-/MP-kritisch) · `bake-worker.js` = der Bäcker-Thread (`importScripts`).
 - **Stufen 1–3 GEBAUT + verifiziert (der Freeze ist tot):** (1) **V18.314** `bake-core` extrahiert + **Determinismus-A/B** (byte-identisch zum Live-Pfad, maxDiff=0 über 3 Seelen × 3 opts) · (2) **V18.315** Async-Swap für KREATUREN (off-thread + spawn-fern ≥130 m: die Haut backt während der Anreise, das Wesen taucht schon-fertig aus der Distanz auf — der Profi-Weg statt Platzhalter; headless SYNCHRON = gate-treu) · (3) **V18.316** der AVATAR-RIG off-thread (Bones+Gesicht sofort, Haut via `skinPromise.then(attachMesh)`; First-Person verbirgt den eigenen Körper → die Verzögerung ist unsichtbar). **DAMIT SIND ALLE SKIN-BAUTEN OFF-THREAD.**
 - **Stufe 4 (`_buildArchMeshMerged` off-thread) — GEMESSEN VERWORFEN als Freeze-Fix:** der Bauplan-Merge ist seit **V18.299 schon gecacht** (WeakMap, EINMAL pro Bauplan mergen, danach nur klonen) → `diag-startup-cost` misst **3–4 ms max / 19 ms total über 15 Spawns**, drei Größenordnungen unter den ~4 s Skin-Builds. Off-thread zu schieben würde eine bereits-gecachte, vernachlässigbare Op async machen + die load-bearing Architektur-Spawn-Pipeline (Platzhalter/Swap/A/B für eine zweite Geometrie-Mathe) verkomplizieren — für ~3 ms einmal pro Bauplan-Typ. „Miss zuerst, die Zahl führt" + „erzwungener Parallelcode" → **NICHT bauen**, bis eine Messung einen echten Architektur-Bau-Freeze zeigt. (Die verdeckte-Flächen-Cull bliebe ein reiner Render-/Look-Gewinn, kein Freeze — eigener Faden, Schöpfer-Auge.)
@@ -338,6 +345,11 @@ GEMESSEN (`diag-startup-cost`): jeder Kreatur-/Avatar-Skin-Bau (Metaball-Isosurf
 - **Wasser-Render** (V18.0–.31) — die Fläche-auf-`L` (statisch) · **Wasser-CA T4** (V18.84–.86,
   Modell+Welt+Render-Hybrid; die VEREINIGUNG W-A/B/C ist Phase 1)
 - **UI-Putz-Bogen** (V18.32–.83) — 8 Tabs → 6 Räume · Omnibox · der freie Bildschirm
+- **Determinismus/Feld-Physik** (V18.331) — Ammo raus · Replay bit-identisch · **Perf-Regelkreis +
+  kapazitäts-gewachsene Welt** (V18.260–.331) · **Genialität** (V18.319–.321, Chunk-Bau 6–12×
+  byte-identisch) · **Engine-Orchestrierung A/B/C** (V18.353–.358, default-an)
+- **Wasser-Finish** (V18.373–.381) — Moiré-Wurzel · kontinuierliche Tiefe · Mondlicht ·
+  Wahrheits-Front · Fern-Wasser · **Lockstep-MP Stufe 1+2** (V18.331/.382, bit-exakt übers Netz)
 
 ## §9 · Die operative Disziplin
 
