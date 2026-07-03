@@ -88,7 +88,14 @@ deformiert ein subdividiertes Ikosaeder — EXAKT die Topologie-Quelle unseres `
 
 ## §2 — DIE WELLEN (risiko- und hebel-geordnet)
 
-### K0 — DER KERN-EXTRAKT (das Fundament, headless-beweisbar)
+> **STAND: K0+K1 GEBAUT ✓ (V18.385, 03.07.2026).** Der Herz-Tausch ist vollzogen: `_phytoGrowSkeleton`
+> und `_phytoDialsFor` tragen die Gesetze, `_growTreeBlueprintRich` speist Stamm+Äste daraus, die zwei
+> Ausgänge (parts+skeleton) bleiben byte-kompatibel, Tags frozen, voller Playtest grün, Eiche/Tanne/Gigant
+> am Auge bestätigt (Eiche dekurrent-spreizend · Tanne exkurrent-Kegel · Gigant McMahon-dick). Beweis-Linse
+> `diag-phyto-tree` (im `check`-Gate). **NÄCHSTES: K2** (Rinde + Blatt — die Nadel-/Blatt-Appearance +
+> Kronen-Dichte). Die Details unten sind der ursprüngliche Plan (zur Referenz).
+
+### K0 — DER KERN-EXTRAKT (das Fundament, headless-beweisbar) ✓
 
 Die portablen Phytogenesis-Kerne in den Stamm holen, an die AnazhRealm-Ströme angeschlossen:
 

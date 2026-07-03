@@ -1186,11 +1186,13 @@ class AnazhRealm {
             // Default an; `anazhRealm.state.useRegionFoliageCull=false` (+ umherlaufen) = A/B.
             useRegionFoliageCull: true,
             // V18.349 — DER OPAKE KRONEN-KERN (Gigant-Perf, das Tierfell-Prinzip): eine kleine opake
-            // Icosphere INNERHALB der Karten-Wolke jeder LOD0-Krone füllt die Durchscheine-Löcher
-            // (dichter) UND schreibt Tiefe → early-Z verwirft verdeckte Hinter-Karten (Overdraw-Senke,
-            // die 90 %-Laub-Last-Wurzel). Default an; `anazhRealm.state.foliageOpaqueCore=false` = A/B
-            // (der Look ist Schöpfer-Browser, der Mechanismus headless-gemessen).
-            foliageOpaqueCore: true,
+            // Icosphere INNERHALB der Karten-Wolke füllt die Durchscheine-Löcher + senkt Overdraw.
+            // DAS NEUE KLEID K1 (V18.385) — DEFAULT AUS: der Kern machte die Krone zu einer soliden
+            // dunklen KUPPEL (Lolli); die Schöpfer-Vorlage (phytogenesis) hat KEINEN Kern — sie füllt
+            // die Krone mit echten, durchscheinenden Blatt-Clustern (man sieht durch Lücken die Äste).
+            // Der Kern war ANTI der Phyto-Erscheinung. Die Overdraw-Last trägt die Phyto-LOD/Impostor-
+            // Ferne (K5), nicht ein solider Dome. `state.foliageOpaqueCore=true` = A/B (der alte Look).
+            foliageOpaqueCore: false,
             // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die GLOBAL
             // PLATZIERTE Architektur (`_archInstanceAdd`) war frustumCulled=false → NIE
             // gecullt, die ganze Welt rendert egal wohin man schaut. Das V18.300-Muster
@@ -47674,6 +47676,16 @@ class AnazhRealm {
     // emergent NIE moveable — kein Bauplan-Flag, die Logik wird für ALLE
     // Compounds korrekter (ein echtes Fahrzeug spreizt seine Stütze).
     _isMoveable(bp) {
+        // DAS NEUE KLEID K1 — ein GEWACHSENER Baum/Busch ist VERWURZELT, definitionsgemäß nie
+        // ein Fahrzeug. Das ist die robuste Form der bestehenden Absicht: die `supportSpreadMin`-
+        // Heuristik existiert genau, um „eine schmale Säule (Baum-Stamm-Stapel) ist KEIN Fahrzeug"
+        // auszuschließen — aber der gesetz-wahre Wuchs (McMahon/da-Vinci, breit spreizende
+        // dekurrente Krone + tiefe Konifere-Whorls) spreizt die tiefen Äste über die 0.35-Schwelle
+        // (GEMESSEN: spread 0.76–1.0). Der `_grownSpecies`-Marker ist die definitive „das ist eine
+        // gewachsene Pflanze"-Wahrheit (Vehicle sind User/Library-Baupläne ohne ihn) → der eine
+        // saubere Guard, der den Instancing-Pfad (+ rideable/Mount) restauriert, ohne den Wuchs zu
+        // verzerren oder den Klassifikator für echte Fahrzeuge zu ändern.
+        if (bp && bp._grownSpecies) return false;
         const T = AnazhRealm.AFFORDANCE_THRESHOLDS.moveable;
         const support = this._partsBelowMidline(bp, T.midlineFactor);
         if (support.length < T.minSupportParts) return false;
@@ -50312,10 +50324,414 @@ class AnazhRealm {
     // Geometry`) zu EINER bark-Tube + EINER foliage-cards-Geometrie verbaut —
     // statt N nackten cylinder/sphere-Parts. `bp.parts` bleibt unverändert
     // (V17.16-Wand strukturell), der Skeleton-Pfad ist eine reine Render-
-    // Vertiefung. `_lastTreeSkeleton` ist KEIN Cache (wird pro Aufruf neu
-    // gesetzt) — die Aufrufer (`_growTreeBlueprintForSpawn`,
-    // `_loadStateRestoreGrownBlueprints`) lesen ihn direkt nach dem Aufruf
-    // und speichern ihn am bp._skeleton.
+    // DAS NEUE KLEID K0 (03.07.2026, `docs/neues-kleid-plan.md`) — DER PHYTO-WUCHS-KERN:
+    // die gesetz-wahre Baum-Skelett-Mathematik, byte-treu portiert aus dem Schöpfer-Werk
+    // phytogenesis v38 (`worlds/terrain/phytogenesis.js:growTreeNodes`). REIN + THREE-FREI +
+    // seed-deterministisch (der Zufall kommt AUSSCHLIESSLICH aus `seq()`, einem übergebenen
+    // Stream — kein Math.random, kein DOM, kein THREE). Die drei Gesetze, die dem alten
+    // `_growTreeBlueprintRich`-Wuchs GEMESSEN fehlten (Radien/Verzweigung waren PRO SPEZIES
+    // GERATEN, nicht abgeleitet):
+    //   McMahon        H = k·D^(2/3) ⇒ D=(H/k·2)^1.5 — der Stammradius FOLGT aus Höhe+Schlankheit
+    //                  (der Knick-Richter Ω-Φ3-b wird dadurch automatisch wahr, statt kalibriert)
+    //   da Vinci / Pipe an JEDER Gabel: parentArea = tipR^Δ, auf die Kinder verteilt,
+    //                  cr = area^(1/Δ) — die Querschnittsfläche bleibt erhalten (statt radRatio 0.4)
+    //   Apikaldominanz api>0.62 ⇒ exkurrent (Leittrieb + Whorls, Nadelbaum-Kegel) ·
+    //                  api<0.62 ⇒ dekurrent (Leittrieb verliert sich, 2-3 laterale spreizen —
+    //                  die breit-runde Laubkrone, Eiche)
+    // Plus Gravitropismus (Trop biegt zu ±y), Phyllotaxis (GOLDEN-Winkel je Seiten-Ast),
+    // Konifere-Whorls+Droop, basalStems (Strauch), Blatt-Terminierung (Nadel/Peitsche/Laub).
+    // Ausgabe: das ROHE Wuchs-Ergebnis `{segs, leaves, trunkR, height, runMeta}` (segs =
+    // konische Segmente mit runId; runMeta = parentRun/isLead je Lauf) — der Aufrufer (K1)
+    // gruppiert die segs nach runId zu Polylinien (die zwei kanonischen Ausgänge parts+skeleton).
+    // Die THREE-freien Helfer sind lokal (kein Vendor-Import nötig; die Mathe ist portabel —
+    // headless beweisbar in `diag-phyto-tree`). `count`/`leafBudget` decken die Perf-Wand.
+    _phytoGrowSkeleton(P, seq) {
+        const rnd = seq;
+        const rrange = (a, b) => a + (b - a) * rnd();
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const GOLDEN = Math.PI * (3 - Math.sqrt(5)); // 137.50776° Phyllotaxis
+        // Vektor-Helfer (THREE-frei, aus phytogenesis portiert).
+        const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+        const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+        const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        const vlen = (a) => Math.hypot(a[0], a[1], a[2]);
+        const vnorm = (a) => {
+            const l = vlen(a) || 1e-9;
+            return [a[0] / l, a[1] / l, a[2] / l];
+        };
+        const vcross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        const vlerp = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+        const vrot = (vec, axis, ang) => {
+            const k = vnorm(axis),
+                c = Math.cos(ang),
+                s = Math.sin(ang),
+                d = vdot(k, vec);
+            const cr = vcross(k, vec);
+            return [
+                vec[0] * c + cr[0] * s + k[0] * d * (1 - c),
+                vec[1] * c + cr[1] * s + k[1] * d * (1 - c),
+                vec[2] * c + cr[2] * s + k[2] * d * (1 - c),
+            ];
+        };
+        const perp = (d) => {
+            const a = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+            return vnorm(vcross(d, a));
+        };
+        // 2D-Value-Noise (deterministischer Hash, seedfrei — für den Gnarl-Dick-Modulator).
+        const vn2 = (x, y) => {
+            const xi = Math.floor(x),
+                yi = Math.floor(y),
+                xf = x - xi,
+                yf = y - yi;
+            const h = (a, b) => {
+                let nH = (Math.imul(a, 1597) + Math.imul(b, 51749)) | 0;
+                nH = (nH << 13) ^ nH;
+                const nn = Math.imul(nH, nH);
+                const t = (Math.imul(nn, 15731) + 789221) | 0;
+                const m = (Math.imul(nH, t) + 1376312589) | 0;
+                return 1 - (m & 0x7fffffff) / 1073741824;
+            };
+            const u = xf * xf * (3 - 2 * xf),
+                v = yf * yf * (3 - 2 * yf);
+            const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
+                x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+            return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
+        };
+
+        const segs = [],
+            leaves = [];
+        let maxSway = 1e-6,
+            count = 0,
+            runId = 0;
+        const azim = { v: 0 },
+            runMeta = {};
+        const countCap = Number.isFinite(P.countCap) ? P.countCap : 8800;
+        // McMahon: der Stammradius FOLGT aus Höhe/Schlankheit (Sicherheitsfaktor ~4 gegen
+        // die Euler-Knickgrenze — echte Bäume sind viel dicker als kritisch).
+        const k = lerp(13, 22, P.slim);
+        const D = Math.pow((P.height / k) * 2, 1.5);
+        const trunkR = clamp(D * 0.5, 0.07, 1.25) * (P.trunkMul || 1);
+
+        const grow = (pos, dir, radius, length, depth, accSway, parentRun, isLead) => {
+            if (count > countCap) return;
+            const myRun = runId++;
+            runMeta[myRun] = { parentRun: parentRun == null ? -1 : parentRun, isLead: !!isLead };
+            const rMin = trunkR * 0.045,
+                lMin = P.height * 0.012;
+            const NSEG = depth < 2 ? 5 : 3;
+            let p = pos.slice(),
+                d = vnorm(dir.slice()),
+                aSw = accSway;
+            const rEnd = radius * (P.conifer && isLead ? 0.975 : depth < 2 ? 0.93 : 0.86);
+            const distal = clamp(1 - radius / trunkR, 0, 1);
+            // Gravitropismus: der Ast biegt zur Vertikalen (aufrecht bei trop<0, hängend bei trop>0).
+            const tropW = clamp(Math.abs(P.trop) * Math.pow(distal, 1.2) * 0.7, 0, 0.85);
+            const tgt = [0, P.trop > 0 ? -1 : 1, 0];
+            for (let i = 0; i < NSEG; i++) {
+                const segLen = length / NSEG;
+                d = vnorm(vlerp(d, tgt, tropW / NSEG));
+                const wob = perp(d);
+                d = vnorm(vadd(d, vscl(wob, (rnd() - 0.5) * 0.08 * (0.2 + 0.8 * distal))));
+                if (!isLead) {
+                    d = vnorm(vadd(d, [0, -0.016 * (0.3 + 0.7 * (i / NSEG)) * Math.pow(distal, 0.9), 0]));
+                }
+                const p2 = vadd(p, vscl(d, segLen));
+                // Gnarl: dicke/ältere Äste knorrig, Zweige + Stammfuß glatt (kein Poolnudel-Look).
+                const gnA = 0.05 + 0.1 * (1 - distal) * clamp(p[1] / (P.height * 0.5), 0.25, 1);
+                const gnf = (pp) =>
+                    1 +
+                    gnA *
+                        ((vn2(pp[0] * 2.1 + pp[1] * 1.3, pp[2] * 2.1 - pp[1] * 0.9) - 0.5) * 1.5 +
+                            Math.sin(pp[1] * 2.7 + pp[0] * 1.8 + depth) * 0.3);
+                const r0 = lerp(radius, rEnd, i / NSEG) * gnf(p),
+                    r1 = lerp(radius, rEnd, (i + 1) / NSEG) * gnf(p2);
+                const dSw = segLen * Math.pow(trunkR / Math.max(r0, rMin), 1.05) * 0.9;
+                const sw0 = aSw,
+                    sw1 = aSw + dSw;
+                aSw = sw1;
+                if (sw1 > maxSway) maxSway = sw1;
+                const omega = clamp(0.18 + 1.7 * (r0 / trunkR), 0.18, 2.4); // f ~ r/L²
+                const phase = depth * 1.7 + i * 0.6 + azim.v * 0.3;
+                // Konifere-Whorls: der Leittrieb setzt in Intervallen Quirle aus Seitenästen.
+                if (
+                    isLead &&
+                    P.conifer &&
+                    P.apical > 0.62 &&
+                    count < countCap - 300 &&
+                    p2[1] > (P.crownBase || 0) * P.height
+                ) {
+                    const intn = P.height * (P.whorlSpacing || 0.12);
+                    if (Math.floor(p2[1] / intn) > Math.floor(p[1] / intn)) {
+                        const nWh = Math.round(lerp(5, 7, P.apical)),
+                            uy = clamp(p2[1] / P.height, 0, 1);
+                        const wShare = clamp(0.42 - 0.37 * clamp(trunkR / 1.2, 0, 1), 0.05, 0.42);
+                        const brad = r1 * Math.pow(wShare / nWh, 1 / P.delta);
+                        for (let w = 0; w < nWh; w++) {
+                            azim.v += GOLDEN;
+                            const sd = vrot(perp(d), d, azim.v);
+                            const wb = lerp(1.18, 0.62, uy);
+                            let cd = vnorm(vadd(vscl(d, Math.cos(wb)), vscl(sd, Math.sin(wb))));
+                            cd = vnorm(vadd(cd, [0, -(P.coniferDroop == null ? 0.22 : P.coniferDroop), 0]));
+                            grow(
+                                p2,
+                                cd,
+                                brad,
+                                P.height * lerp(0.15, 0.06, uy) * (P.barkType === "sequoia" ? 0.95 : 1.0),
+                                depth + 1,
+                                sw1,
+                                myRun,
+                                false
+                            );
+                        }
+                    }
+                }
+                segs.push({ p0: p, p1: p2, r0, r1, depth, sway0: sw0, sway1: sw1, phase, omega, runId: myRun });
+                count++;
+                p = p2;
+            }
+            const tip = p,
+                tipDir = d,
+                tipR = rEnd,
+                tipSway = aSw;
+            if (tipR < rMin * 1.4 || length < lMin || depth >= P.maxDepth) {
+                // Blatt-Terminierung: Nadel-Büschel (Konifere) · Weiden-Peitsche (trop>0.6) · Laub-Cluster.
+                if (P.conifer) {
+                    const nN = Math.round(lerp(18, 32, P.leafD));
+                    for (let i = 0; i < nN; i++) {
+                        azim.v += GOLDEN;
+                        const sd = vrot(perp(tipDir), tipDir, azim.v);
+                        const ndir = vnorm(vadd(vscl(tipDir, 0.4), vscl(sd, 0.9)));
+                        const bp = vadd(tip, vscl(tipDir, -length * 0.5 * rnd()));
+                        leaves.push({
+                            pos: bp,
+                            dir: ndir,
+                            up: perp(ndir),
+                            scale: lerp(0.1, 0.2, P.leafD),
+                            sway: tipSway,
+                            phase: rnd() * 6.28,
+                            omega: clamp(0.18 + 1.7 * (tipR / trunkR), 0.18, 2.4),
+                            needle: true,
+                        });
+                    }
+                } else if (P.trop > 0.6) {
+                    let wp = tip.slice(),
+                        wd = tipDir.slice();
+                    const whipLen = P.height * rrange(0.2, 0.38),
+                        wseg = 9,
+                        wr = tipR * 0.6;
+                    const wRun = runId++;
+                    runMeta[wRun] = { parentRun: myRun, isLead: false };
+                    for (let s = 0; s < wseg; s++) {
+                        wd = vnorm(vadd(wd, [0, -0.7, 0]));
+                        const np = vadd(wp, vscl(wd, whipLen / wseg));
+                        const sw0 = tipSway + s * 0.2,
+                            sw1 = tipSway + (s + 1) * 0.2;
+                        if (sw1 > maxSway) maxSway = sw1;
+                        segs.push({
+                            p0: wp,
+                            p1: np,
+                            r0: wr * (1 - s / wseg),
+                            r1: wr * (1 - (s + 1) / wseg),
+                            depth: depth + 1,
+                            sway0: sw0,
+                            sway1: sw1,
+                            phase: s * 0.5 + azim.v * 0.2,
+                            omega: 0.45,
+                            runId: wRun,
+                        });
+                        if (s > 0) {
+                            azim.v += GOLDEN;
+                            const lp = vlerp(wp, np, 0.5);
+                            leaves.push({
+                                pos: lp,
+                                dir: [0, -1, 0.0001],
+                                up: [0.0001, 0, 1],
+                                scale: P.leafSize * rrange(0.55, 0.8),
+                                sway: sw1,
+                                phase: rnd() * 6.28,
+                                omega: 0.45,
+                                needle: false,
+                            });
+                        }
+                        wp = np;
+                    }
+                } else {
+                    const nL = Math.round(lerp(8, 16, P.leafD));
+                    for (let i = 0; i < nL; i++) {
+                        azim.v += GOLDEN;
+                        const sd = vrot(perp(tipDir), tipDir, azim.v);
+                        let ldir = vnorm(vadd(vscl(tipDir, 0.5), vscl(sd, 0.85)));
+                        if (P.trop > 0.5) ldir = vnorm(vadd(ldir, [0, -0.9, 0]));
+                        const bp = vadd(tip, vscl(tipDir, -length * (0.2 + 0.6 * rnd())));
+                        leaves.push({
+                            pos: bp,
+                            dir: ldir,
+                            up: vnorm(vadd(perp(ldir), vscl(tipDir, 0.3))),
+                            scale: P.leafSize * rrange(0.8, 1.15),
+                            sway: tipSway,
+                            phase: rnd() * 6.28,
+                            omega: clamp(0.18 + 1.7 * (tipR / trunkR), 0.18, 2.4),
+                            needle: false,
+                        });
+                    }
+                }
+                return;
+            }
+            // da Vinci / Pipe-Modell: die Querschnittsfläche (r^Δ) wird an der Gabel erhalten.
+            const parentArea = Math.pow(tipR, P.delta);
+            let children = [];
+            const lift = tip[1] < (P.crownBase || 0) * P.height; // Selbst-Astung: Schattenäste unten sterben
+            if (P.apical > 0.62) {
+                // EXKURRENT: starker Leittrieb + laterale Whorls (Nadelbaum-Kegel).
+                const f = P.conifer
+                    ? isLead
+                        ? 0.94
+                        : lerp(0.5, 0.72, P.apical)
+                    : lerp(0.55, 0.9, (P.apical - 0.62) / 0.38);
+                const nW = lift ? 0 : P.conifer ? (isLead ? 0 : Math.round(lerp(2, 4, P.apical))) : 3;
+                children.push({
+                    area: (lift ? 1 : f) * parentArea,
+                    bend: lerp(0.04, 0.16, 1 - P.apical),
+                    len: length * lerp(0.72, 0.8, P.apical),
+                    lead: true,
+                });
+                for (let i = 0; i < nW; i++)
+                    children.push({
+                        area: ((1 - f) * parentArea) / nW,
+                        bend: P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal),
+                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical)),
+                        lead: false,
+                    });
+            } else if (lift) {
+                children.push({ area: parentArea, bend: 0.08, len: length * 0.82, lead: true });
+            } else {
+                // DEKURRENT: der Leittrieb verliert sich, breit spreizende Arme bilden die Kuppel
+                // (breiter als hoch — die Eiche). Die Spreizung skaliert mit der Apikaldominanz.
+                children.push({
+                    area: parentArea * 0.3,
+                    bend: lerp(0.12, 0.3, 1 - P.apical),
+                    len: length * 0.6,
+                    lead: true,
+                });
+                const nLat = rnd() < 0.55 ? 3 : 2;
+                const spread = lerp(0.55, 1.05, 1 - P.apical);
+                for (let i = 0; i < nLat; i++)
+                    children.push({
+                        area: (parentArea * 0.7) / nLat,
+                        bend: spread * rrange(0.85, 1.12),
+                        len: length * lerp(0.82, 0.96, P.apical),
+                        lead: false,
+                    });
+            }
+            for (const ch of children) {
+                const cr = Math.pow(ch.area, 1 / P.delta);
+                let cdir;
+                if (!ch.lead) {
+                    azim.v += GOLDEN;
+                    const side = vrot(perp(tipDir), tipDir, azim.v);
+                    cdir = vnorm(vadd(vscl(tipDir, Math.cos(ch.bend)), vscl(side, Math.sin(ch.bend))));
+                    if (P.conifer) cdir = vnorm(vadd(cdir, [0, -(P.coniferDroop == null ? 0.22 : P.coniferDroop), 0]));
+                } else {
+                    const side = vrot(perp(tipDir), tipDir, rnd() * 6.28);
+                    cdir = vnorm(vadd(vscl(tipDir, Math.cos(ch.bend)), vscl(side, Math.sin(ch.bend))));
+                }
+                grow(tip, cdir, cr, ch.len, depth + 1, tipSway, myRun, ch.lead);
+            }
+        };
+
+        if (P.basalStems > 1) {
+            // Strauch: mehrere basale Triebe statt eines Stamms.
+            for (let i = 0; i < P.basalStems; i++) {
+                const a = (i / P.basalStems) * 6.28 + rnd();
+                const lean = rrange(0.12, 0.3);
+                const dir = vnorm([Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean)]);
+                grow(
+                    [Math.cos(a) * trunkR * 1.5, 0, Math.sin(a) * trunkR * 1.5],
+                    dir,
+                    trunkR * rrange(0.6, 0.85),
+                    P.height * 0.5,
+                    0,
+                    0,
+                    -1,
+                    false
+                );
+            }
+        } else {
+            grow([0, 0, 0], [0, 1, 0], trunkR, P.height * (P.conifer ? 0.2 : 0.3), 0, 0, -1, false);
+        }
+        // Wind-Schwung normieren (der Card-Builder liest sway0/sway1 als aFlex).
+        const gain = Number.isFinite(P.windGain) ? P.windGain : 1;
+        for (const s of segs) {
+            s.sway0 = (s.sway0 / maxSway) * gain;
+            s.sway1 = (s.sway1 / maxSway) * gain;
+        }
+        for (const l of leaves) l.sway = (l.sway / maxSway) * gain;
+        // Blatt-Budget (SpeedTree-Praxis): die Terminal-Zahl wächst ~Δ^Tiefe + explodiert; ein
+        // gleichmäßiges Subsampling deckelt die Card-Zahl, die Silhouette bleibt. Per LOD gesetzt.
+        const budget = Number.isFinite(P.leafBudget) ? P.leafBudget : 20000;
+        if (leaves.length > budget) {
+            const st = leaves.length / budget,
+                kp = [];
+            for (let t = 0; t < budget; t++) kp.push(leaves[Math.floor(t * st)]);
+            leaves.length = 0;
+            for (const _k of kp) leaves.push(_k);
+        }
+        return { segs, leaves, trunkR, height: P.height, runMeta };
+    }
+
+    // DAS NEUE KLEID K1 — DIE DIAL-BRÜCKE: SPECIES_GRAMMAR + die Genom-Achsen → der
+    // Phänotyp-Regler-Vektor `P`, den `_phytoGrowSkeleton` liest (die META-REGEL der Vorlage:
+    // ein Reglervektor benennt die Art als Region im Morphospace). Der Zufall bleibt
+    // deterministisch (`r01` ist der bestehende SimplexNoise-Stream). Die vier Genom-Achsen
+    // (sizeClass/age/crownForm/…) MODULIEREN die Dials, statt eine Parallel-Logik zu sein.
+    _phytoDialsFor(speciesKey, grammar, genome, r01, ctx) {
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const c = ctx || {};
+        const crown = c.crownForm || grammar.crown;
+        const conifer = crown === "cone" || grammar.foliage.kind === "needleSpray";
+        // Apikaldominanz: Nadelbaum-Kegel exkurrent (hoch), Laubkrone dekurrent (niedrig).
+        // Aus der Kronen-Form abgeleitet — die eine Achse, die Eiche von Tanne trennt. Der
+        // Feldname `apical` trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
+        let apical;
+        if (conifer || crown === "cone") apical = lerp(0.82, 0.95, r01());
+        else if (crown === "column") apical = lerp(0.66, 0.78, r01());
+        else if (crown === "vase" || crown === "schirm") apical = lerp(0.3, 0.46, r01());
+        else apical = lerp(0.24, 0.52, r01()); // dome/ellipsoid/irregular/weeping — breite Laubkrone
+        // Schlankheit (McMahon-k): Nadelbäume + Säulen schlank, breite Kronen gedrungen.
+        const slim = conifer
+            ? lerp(0.62, 0.82, r01())
+            : crown === "column"
+              ? lerp(0.7, 0.82, r01())
+              : lerp(0.32, 0.55, r01());
+        // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
+        const trop =
+            crown === "weeping" ? lerp(0.7, 0.95, r01()) : conifer ? lerp(0.0, 0.14, r01()) : lerp(-0.2, 0.05, r01());
+        // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
+        const delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
+        const leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
+        return {
+            height: c.height,
+            slim,
+            apical,
+            trop,
+            delta,
+            leafD,
+            leafSize: (grammar.foliage.size || 0.5) * (c.foliageScale || 1) * 1.3,
+            conifer,
+            barkType: c.barkType || (conifer ? "conifer" : "smooth"),
+            maxDepth: c.maxDepth != null ? c.maxDepth : conifer ? 4 : 5,
+            crownBase: crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24,
+            whorlSpacing: 0.1 + r01() * 0.05,
+            coniferDroop: crown === "cone" ? 0.22 : 0.05,
+            basalStems: c.basalStems || 0,
+            windGain: 1,
+            trunkMul: c.trunkMul || 1,
+            countCap: c.countCap,
+            leafBudget: c.leafBudget,
+        };
+    }
+
     _growTreeBlueprintRich(speciesKey, seed, grammar, opts) {
         // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-STUFEN. Die
         // Grammatik bleibt EINE Quelle (die volle Spec); der `opts.lod`-Schalter
@@ -50451,38 +50867,8 @@ class AnazhRealm {
         const flareDef = (sParams && sParams.flare) || AnazhRealm.DEFAULT_TREE_FLARE;
         skeleton.flareAmp = flareDef.amp;
         skeleton.flareLobes = flareDef.lobes;
-        const trunkSegs = grammar.trunk.segs;
-        // V18.247 (LAAS-Tiefe) — substanziellerer Stamm: ein dickerer Stamm + Haupt-
-        // Limbs lesen als sichtbares Ast-GERÜST (wie LAAS), statt unter dem Laub zu
-        // verschwinden. Der radRatio trägt die Dicke in die Äste weiter.
-        const trunkBaseR = grammar.trunk.baseR * 1.32 * lerp(0.92, 1.1, r01()) * allometry * (0.85 + ageMul * 0.35);
-        const trunkTaper = grammar.trunk.taper;
-        // Alter: ein uralter Baum windet sich stärker (knorrig); modest gehalten, damit
-        // der Schwerpunkt über dem Stützpolygon bleibt (Ω-Φ2, GEMESSEN in diag-genom).
-        const trunkWander = grammar.trunk.wander * (0.8 + ageMul * 0.6);
-        const segH = totalH / trunkSegs;
-        // Build trunk points (polyline).
-        const trunkPts = [{ x: 0, y: 0, z: 0, r: trunkBaseR }];
-        let cx = 0,
-            cz = 0;
-        for (let i = 1; i <= trunkSegs; i++) {
-            const t = i / trunkSegs;
-            cx += (r01() - 0.5) * trunkWander * segH + leanX * segH; // T6: + konsistente Neigung (Lean)
-            cz += (r01() - 0.5) * trunkWander * segH + leanZ * segH;
-            const y = i * segH;
-            // Trunk-Top-Floor ∝ Segment-Höhe (wahrerwuchs §4.1 — der Euler-Knick-Constraint
-            // STRUKTURELL: ein langes vertikales Glied muss dicker sein, sonst knickt es im
-            // Richter, Ω-Φ3-b). Der verjüngte Wipfel bleibt damit knick-sicher (GEMESSEN).
-            const r = Math.max(segH * 0.06, trunkBaseR * Math.pow(Math.max(0, 1 - t), trunkTaper));
-            trunkPts.push({ x: cx, y: y, z: cz, r: r });
-        }
-        // V18.214 — Stamm-Polylinie als Skeleton-Branch (level 0, isTrunk).
-        skeleton.branches.push({
-            points: trunkPts.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
-            level: 0,
-            isTrunk: true,
-        });
-        // Generate trunk cylinder parts (each segment → cylinder between i-1 and i).
+        // emitCylinderBetween: die EINE Stelle, die eine Segment-Kante zu einem holz-Zylinder-
+        // Part macht (Trunk/Äste/Foot-Flare/Buttress teilen sie). Tag-neutral (material "holz").
         const emitCylinderBetween = (a, b, segments) => {
             const mx = (a.x + b.x) * 0.5;
             const my = (a.y + b.y) * 0.5;
@@ -50493,9 +50879,6 @@ class AnazhRealm {
             const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (!(len > 0.001)) return;
             const r = Math.max(0.04, (a.r + b.r) * 0.5);
-            // Three.js CylinderGeometry y-Achse → rotation um so anpassen, dass die
-            // y-Achse entlang (dx,dy,dz) zeigt. (yaw, pitch) entkoppelt: pitch
-            // ist Winkel zur y-Achse, yaw die Rotation um y.
             const horizLen = Math.sqrt(dx * dx + dz * dz);
             const pitch = Math.atan2(horizLen, dy); // 0 = aufrecht, π/2 = waagrecht
             const yaw = Math.atan2(dx, dz);
@@ -50508,8 +50891,102 @@ class AnazhRealm {
                 segments: segments || 5,
             });
         };
+        // DAS NEUE KLEID K1 (03.07.2026) — DER HERZ-TAUSCH: Stamm + Äste wachsen jetzt aus
+        // den GESETZEN (McMahon H→D · da Vinci r^Δ · Apikaldominanz), nicht aus geratenen
+        // Radien. Der Phyto-Kern (`_phytoGrowSkeleton`, K0) ist die EINE Wuchs-Quelle; die
+        // Genom-Achsen (sizeClass/age/crownForm/lean/multiStem) MODULIEREN seine Dials über
+        // `_phytoDialsFor`. Der Wuchs zieht aus einem eigenen deterministischen Sub-Strom
+        // (`genome.seq`) → unabhängig von der r01-Sequenz drumherum. Die zwei kanonischen
+        // Ausgänge bleiben byte-kompatibel: parts[] (cylinder holz + sphere laub, Tags frozen)
+        // + `_lastTreeSkeleton` (Polylinien + Anchors für Tube/Cards).
+        const conifer = grammar.crown === "cone" || grammar.foliage.kind === "needleSpray";
+        const phytoSeq = genome.seq("phyto-growth");
+        const P = this._phytoDialsFor(speciesKey, grammar, genome, r01, {
+            height: totalH,
+            crownForm,
+            foliageScale,
+            barkType: conifer ? "conifer" : "smooth",
+            // maxDepth VOLL (der Lead-Kette-Stamm erreicht die volle Höhe); der countCap ist
+            // der LOD-Hebel (er schneidet Seiten-Äste, NIE die tiefen-zuerst gewachsene Höhe).
+            maxDepth: conifer ? 4 : 5,
+            basalStems: multiStem > 0 ? multiStem + 1 : 0,
+            trunkMul: allometry * (0.85 + ageMul * 0.35),
+            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+            leafBudget: lodLevel === 0 ? 64 : lodLevel === 1 ? 12 : 3,
+            phylloDiv,
+        });
+        const phyto = this._phytoGrowSkeleton(P, phytoSeq);
+        const trunkBaseR = phyto.trunkR;
+        // Konsistente Neigung (Lean, die T6-Genom-Achse): ein y-proportionaler Shear auf ALLE
+        // Phyto-Punkte → Stamm + Krone neigen sich zusammen (Wind/Hang). Verwurzelt → kein
+        // Kipp-Risiko (Ω-Φ2, der Richter prüft den Schwerpunkt).
+        const _lean = (p) => ({ x: p.x + leanX * p.y, y: p.y, z: p.z + leanZ * p.y, r: p.r });
+        // Trunk-Kette = run 0 + die durchgehende Lead-Nachkommen-Kette (der Hauptstamm bis zur
+        // Spitze); Seiten-Äste sind alle übrigen Runs. Der Wuchs ist tiefen-zuerst mit dem Lead
+        // als children[0] → die Trunk-Kette entsteht IMMER zuerst; ein countCap beschneidet die
+        // Seiten-Äste, NIE die Stammhöhe (der LOD-Hebel).
+        const runMeta = phyto.runMeta;
+        const isTrunkRun = {};
+        for (const rid in runMeta) {
+            const m = runMeta[rid];
+            isTrunkRun[rid] = m.parentRun < 0 || (m.isLead && isTrunkRun[m.parentRun] === true);
+        }
+        // Segmente nach runId zu Polylinien gruppieren (der Card-/Tube-Builder liest Polylinien).
+        const runPolys = {};
+        for (const s of phyto.segs) {
+            let poly = runPolys[s.runId];
+            if (!poly) {
+                poly = runPolys[s.runId] = {
+                    points: [_lean({ x: s.p0[0], y: s.p0[1], z: s.p0[2], r: s.r0 })],
+                    depth: s.depth,
+                };
+            }
+            poly.points.push(_lean({ x: s.p1[0], y: s.p1[1], z: s.p1[2], r: s.r1 }));
+        }
+        // Die Trunk-Kette als EINE Skeleton-Branch (wie der alte Stamm) + trunkPts für die
+        // Downstream-Leser (Foot-Flare/Buttress).
+        const trunkPts = [];
+        const trunkRunIds = Object.keys(runPolys)
+            .filter((rid) => isTrunkRun[rid])
+            .map(Number)
+            .sort((a, b) => a - b);
+        for (const rid of trunkRunIds) {
+            const pts = runPolys[rid].points;
+            for (let i = 0; i < pts.length; i++) {
+                if (trunkPts.length && i === 0) continue; // der geteilte Naht-Punkt nicht doppeln
+                trunkPts.push(pts[i]);
+            }
+        }
+        if (trunkPts.length < 2) {
+            trunkPts.length = 0;
+            trunkPts.push(
+                { x: 0, y: 0, z: 0, r: trunkBaseR },
+                { x: leanX * totalH, y: totalH, z: leanZ * totalH, r: trunkBaseR * 0.2 }
+            );
+        }
+        // LOD-Dezimierung der Stamm-Polylinie: der Phyto-Stamm ist reich (~20+ Punkte); bei LOD1/2
+        // braucht die Fern-Silhouette das nicht, und die Part-Zahl (ein Zylinder-Part je Kante)
+        // muss unter die LOD-Budgets (LOD1 ≤20 · LOD2 ≤10 Parts). Erster + letzter Punkt bleiben
+        // (volle Höhe/Verjüngung), dazwischen jeden n-ten behalten.
+        if (lodLevel > 0 && trunkPts.length > 3) {
+            const stride = lodLevel === 1 ? 3 : Math.max(2, Math.ceil((trunkPts.length - 1) / 3));
+            const dec = [trunkPts[0]];
+            for (let i = stride; i < trunkPts.length - 1; i += stride) dec.push(trunkPts[i]);
+            dec.push(trunkPts[trunkPts.length - 1]);
+            trunkPts.length = 0;
+            for (const pt of dec) trunkPts.push(pt);
+        }
+        skeleton.branches.push({
+            points: trunkPts.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
+            level: 0,
+            isTrunk: true,
+        });
+        // Trunk-Zylinder-Parts (immer voll — der Stamm ist die tragende Form). branchPartCount
+        // trägt über in die Ast-Konvertierung (Span 2), damit MAX_BRANCH_PARTS gesamt cappt.
+        let branchPartCount = 0;
         for (let i = 1; i < trunkPts.length; i++) {
             emitCylinderBetween(trunkPts[i - 1], trunkPts[i], 6);
+            branchPartCount++;
         }
 
         // ─── Ω-K2 BAUM-FUSS / WURZELANLAUF (Plan §4.K2) ────────────────
@@ -50562,274 +51039,59 @@ class AnazhRealm {
             }
         }
 
-        // ─── TIP-COLLECTION (Childen-Punkte pro Eltern-Ebene) ─────────
-        const collectTips = (parentPts, levelGrammar) => {
-            const tips = [];
-            const startT = levelGrammar.childStart;
-            const endT = levelGrammar.childEnd;
-            const density = levelGrammar.density;
-            const whorl = levelGrammar.whorl || 0;
-            const segs = parentPts.length - 1;
-            // Ast-Anzahl: density × Eltern-Länge × Jitter.
-            const span = Math.max(0.01, endT - startT);
-            const branchCount = Math.max(1, Math.round(density * span * segs * lerp(0.85, 1.15, r01())));
-            for (let i = 0; i < branchCount; i++) {
-                const tBase = (i + 0.5) / branchCount;
-                const t = startT + span * tBase + (r01() - 0.5) * span * 0.15;
-                const tClamp = Math.max(0, Math.min(0.999, t));
-                const segIdx = Math.min(segs - 1, Math.floor(tClamp * segs));
-                const segT = tClamp * segs - segIdx;
-                const p0 = parentPts[segIdx];
-                const p1 = parentPts[segIdx + 1];
-                const pos = {
-                    x: lerp(p0.x, p1.x, segT),
-                    y: lerp(p0.y, p1.y, segT),
-                    z: lerp(p0.z, p1.z, segT),
-                    r: lerp(p0.r, p1.r, segT),
-                };
-                let phi;
-                if (whorl > 0) {
-                    const whorlIdx = Math.floor(i / whorl);
-                    const inWhorl = i % whorl;
-                    phi = (inWhorl / whorl) * Math.PI * 2 + whorlIdx * 0.7 + r01() * 0.25;
-                } else {
-                    // Golden-angle spiral (LAAS-Konstante 2.39996323).
-                    phi = i * phylloDiv + r01() * 0.3; // T6: Phyllotaxis-Divergenz (golden ± Varianz)
-                }
-                tips.push({ pos: pos, phi: phi, t: tClamp });
-            }
-            return tips;
-        };
-
-        // V18.247 (LAAS-METHODE, Skeleton.ts „crown envelope") — DIE KRONEN-HÜLLE:
-        // die Ast-Länge wird mit der Kronen-FORM moduliert (dome/ellipsoid/cone/column),
-        // sodass die Ast-Spitzen auf einer VOLLEN, gerundeten Hülle liegen statt formlos
-        // zu streuen. DAS ist die LAAS-Tiefe (eine volle gerundete Krone mit Gestalt),
-        // nicht der flache Klecks. hFrac = Höhe in der Krone (0 Basis .. 1 Spitze).
-        const crownEnvelope = (hFrac) => {
-            const u = Math.max(0, Math.min(1, hFrac));
-            switch (crownForm) {
-                case "cone": // Tanne/Fichte: lang unten, spitz nach oben
-                    return 1.0 - 0.72 * u;
-                case "column": // Erle: schmal, fast konstant
-                    return 0.74 + 0.16 * Math.sin(Math.PI * u);
-                case "ellipsoid": // Kiefer/Birke: voll in der Mitte
-                    return 0.5 + 0.56 * Math.sqrt(Math.max(0, 1 - ((u - 0.5) / 0.5) ** 2));
-                // T6 — die drei neuen Kronen-Formen (über die Spezies-Default hinaus):
-                case "weeping": // Trauerweide: volle Krone, der DROOP macht das Hängen (s. growBranch)
-                    return 0.6 + 0.5 * Math.sqrt(Math.max(0, 1 - u * u));
-                case "vase": // Akazie/Vase: schmal unten, weit ausladend oben
-                    return 0.38 + 0.62 * u;
-                case "schirm": // Schirm/Pinie: Krone NUR oben (flacher Schirm)
-                    return u < 0.62 ? 0.28 : 0.46 + 1.25 * (u - 0.62);
-                case "dome":
-                case "irregular": // Eiche/Buche: gerundete Kuppel (voll, sanft zur Spitze)
-                default:
-                    return 0.52 + 0.56 * Math.sqrt(Math.max(0, 1 - u * u));
-            }
-        };
-        // ─── BRANCH GROWTH (rekursiv via Segment-Lauf) ────────────────
-        // §3.1-Plan: perpBasis + Wander + Tropismus + Droop + TipCurl.
-        const growBranch = (start, phi, parentR, levelGrammar, level, foliageAnchors) => {
-            const angleBase = levelGrammar.angleBase || 1.0;
-            // V18.247 (LAAS-Tiefe) — die Limbs streben mehr AUFWÄRTS (×0.82): eine VOLLE,
-            // gerundete, aufstrebende Krone (wie LAAS' Eiche) statt einer flach-breiten
-            // Scheibe. Die Konifere (cone, große angleBase) bleibt whorl-horizontal genug.
-            const angle = angleBase * 0.82 * lerp(0.85, 1.15, r01());
-            const lenRatio = levelGrammar.lenRatio || 0.3;
-            // KRONEN-HÜLLE auf die Ast-Länge (LAAS): die Höhe der Ast-Basis bestimmt die
-            // Reichweite → die Krone bekommt ihre volle, gerundete Gestalt.
-            const hFrac = (start.y / Math.max(1, totalH) - 0.28) / 0.72;
-            const branchLen = Math.max(0.4, totalH * lenRatio * lerp(0.8, 1.2, r01()) * crownEnvelope(hFrac));
-            const droop = (levelGrammar.droop || 0.2) * (isWeeping ? 2.1 : 1); // T6: Trauerweide hängt
-            const tipCurl = levelGrammar.tipCurl || 0.1;
-            const radRatio = levelGrammar.radRatio || 0.4;
-            // Segment-Länge skaliert mit der Größe (wahrerwuchs §4.1 lock #2): ein normaler
-            // Baum ~0.55 m/Segment (2m-Ast = 4 Segmente), ein Gigant baut LANGE Segmente
-            // (kein Tausend-Mikro-Zylinder-Ast) → die Part-Zahl bleibt unterm Cap bezahlbar.
-            const branchSegs = Math.max(3, Math.round(branchLen / segLenBase));
-            const segLen = branchLen / branchSegs;
-            // Initial direction: tilted by `angle` from up, rotated around y by phi.
-            const sinA = Math.sin(angle);
-            const cosA = Math.cos(angle);
-            let dir = {
-                x: sinA * Math.cos(phi),
-                y: cosA,
-                z: sinA * Math.sin(phi),
-            };
-            const baseR = Math.max(0.04, parentR * radRatio);
-            const points = [{ x: start.x, y: start.y, z: start.z, r: baseR }];
-            for (let i = 1; i <= branchSegs; i++) {
-                const t = i / branchSegs;
-                // Droop: gravitäres Absenken am Ast.
-                dir.y -= droop * (1 / branchSegs) * 1.8;
-                // TipCurl: am Ende leicht wieder anheben (§3.1 tip-curl).
-                if (t > 0.6) {
-                    dir.y += tipCurl * (t - 0.6) * (1 / branchSegs) * 5;
-                }
-                // Wander (laterales Rauschen).
-                const wob = 0.07 + level * 0.02;
-                dir.x += (r01() - 0.5) * wob;
-                dir.z += (r01() - 0.5) * wob;
-                // Normalize.
-                const dl = Math.sqrt(dir.x * dir.x + dir.y * dir.y + dir.z * dir.z) || 1;
-                dir.x /= dl;
-                dir.y /= dl;
-                dir.z /= dl;
-                const prev = points[i - 1];
-                // Radius-Floor ∝ Segment-Länge (wahrerwuchs §4.1 — der Euler-Knick-Constraint
-                // STRUKTURELL: ein langes Glied MUSS dicker sein, sonst knickt es). Hält die
-                // Schlankheit JEDER Spitze size-invariant ~7 < crit (holz 10.1, GEMESSEN) —
-                // die Allometrie greift bis in die Zweige, der Gigant-Ast ist nicht haar-dünn.
-                const rFloor = Math.max(0.022, segLen * 0.072);
-                const r = Math.max(rFloor, baseR * Math.pow(Math.max(0, 1 - t), 1.0));
-                points.push({
-                    x: prev.x + dir.x * segLen,
-                    y: prev.y + dir.y * segLen,
-                    z: prev.z + dir.z * segLen,
-                    r: r,
-                });
-            }
-            // Emit cylinder parts pro Segment.
-            for (let i = 1; i < points.length; i++) {
-                emitCylinderBetween(points[i - 1], points[i], 4);
-            }
-            // V18.214 — Branch-Polylinie ins Skeleton (Plan Ω-G2 lest die
-            // Polylinien zu echten Tubes, nicht zu N cylinder-Parts).
+        // DAS NEUE KLEID K1 — die SEITEN-ÄSTE + FOLIAGE-ANKER aus dem Phyto-Wuchs (Span 2).
+        // Die alte collectTips/growBranch/crownEnvelope-Rekursion ist der Phyto-Kern (K0)
+        // geworden; hier wird sein Ergebnis in die zwei kanonischen Ausgänge konvertiert.
+        const sizeCapBoost = sizeClass === "gigant" ? 1.5 : sizeClass === "gross" ? 1.2 : 1;
+        const MAX_BRANCH_PARTS = Math.round((lodLevel === 0 ? 44 : lodLevel === 1 ? 8 : 2) * sizeCapBoost);
+        // Der Phyto-Wuchs ist RICH (Hunderte feiner Zweige). Die Foliage-Cards (billige Quads)
+        // tragen die Krone; die BARK-TUBES (teuer, gemergt pro Template) werden nach DICKE
+        // gecappt — die tragende Struktur (Stamm + Haupt-Limbs, McMahon/da-Vinci-korrekt) bleibt,
+        // die haardünnen Terminal-Zweige fallen (unsichtbar unterm Laub). Perf-Wand (V18.303:
+        // Geometrie budgetiert), skalen-gerecht (Gigant trägt mehr Limbs).
+        const MAX_SKELETON_BRANCHES = Math.round((lodLevel === 0 ? 72 : lodLevel === 1 ? 22 : 0) * sizeCapBoost);
+        const foliageAnchors = [];
+        // LOD-Pruning der Seiten-Äste: lod0 alle · lod1 flachere (depth ≤ 2) · lod2 nur Stamm.
+        const maxBranchDepth = lodLevel === 0 ? 99 : lodLevel === 1 ? 2 : 0;
+        // Seiten-Äste nach START-DICKE sortiert (die dicksten = die tragende Struktur zuerst),
+        // dann bis MAX_SKELETON_BRANCHES cappen.
+        const nonTrunk = Object.keys(runPolys)
+            .filter((rid) => !isTrunkRun[rid] && runPolys[rid].depth <= maxBranchDepth)
+            .map((rid) => runPolys[rid])
+            .sort((a, b) => (b.points[0] ? b.points[0].r : 0) - (a.points[0] ? a.points[0].r : 0));
+        for (let bi = 0; bi < nonTrunk.length && bi < MAX_SKELETON_BRANCHES; bi++) {
+            const poly = nonTrunk[bi];
+            // Skeleton-Branch (Tube-Builder liest die volle Polylinie; die Tubes mergen zu
+            // EINER Geometrie pro Template → kein Draw-Call-Sprung, V18.214-Muster).
             skeleton.branches.push({
-                points: points.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
-                level: level,
+                points: poly.points.map((pt) => ({ x: pt.x, y: pt.y, z: pt.z, r: pt.r })),
+                level: Math.max(1, Math.min(3, poly.depth)),
                 isTrunk: false,
             });
-            // Foliage anchors: nur wenn dieses Level der anchorLevel ist (§3.3 Regel
-            // — Laub sitzt DORT, nie auf Primärästen). Anker entlang der letzten 50%
-            // des Asts → dichte Spitzen-Krone.
-            if (level === grammar.foliage.anchorLevel) {
-                const startIdx = Math.max(1, Math.floor(points.length * 0.45));
-                for (let i = startIdx; i < points.length; i++) {
-                    foliageAnchors.push({ x: points[i].x, y: points[i].y, z: points[i].z });
-                }
+            // Zylinder-Parts (die Tag-tragende + fallback-Geometrie) — separat gecappt.
+            for (let i = 1; i < poly.points.length && branchPartCount < MAX_BRANCH_PARTS; i++) {
+                emitCylinderBetween(poly.points[i - 1], poly.points[i], 4);
+                branchPartCount++;
             }
-            return points;
-        };
-
-        // ─── REKURSIVE Ast-Generierung (L1 → L2 → L3) ────────────────
-        // HARD CAP: maximal MAX_BRANCH_PARTS Stamm/Ast-Parts. Schutz gegen
-        // explosive Dichte-Kombinationen (eine Spezies-Justierung darf das
-        // Instancing nie kippen). Pro Baum-Variante baut das System je Part
-        // einen InstancedMesh — 6 Arten × ~9 Regionen × N Parts = Gesamt-
-        // Draw-Calls. Bei ~40 Wood + ~35 Foliage = ~75 Parts ist die Welt
-        // im 9-Regionen-Ring bei ~4000 InstancedMesh-Draws (bezahlbar).
-        // V18.218 — die LOD-Stufe beschneidet die Branch-Hierarchie:
-        //   lod 0 = volle Tiefe (L1+L2+L3)
-        //   lod 1 = nur L1 (keine L2/L3-Verzweigung)
-        //   lod 2 = keine Äste (nur Stamm — die Krone trägt 1 Foliage-Karte)
-        // Plan §3.6 sagt: „LOD2-Cards single, LOD1-Cards 4". Der Foliage-Block
-        // unten cappt zusätzlich `MAX_FOLIAGE_PARTS` per LOD.
-        // Dynamischer Cap pro Größenklasse (wahrerwuchs §4.1 lock #3): der Gigant darf
-        // mehr Glieder tragen (die segLen-Skalierung hält die Zahl pro Ast niedrig; der
-        // Skeleton-Render merged sie zu EINER Tube → kein Draw-Call-Sprung).
-        const sizeCapBoost = sizeClass === "gigant" ? 1.5 : sizeClass === "gross" ? 1.2 : 1;
-        const MAX_BRANCH_PARTS = Math.round((lodLevel === 0 ? 40 : lodLevel === 1 ? 14 : 0) * sizeCapBoost);
-        const foliageAnchors = [];
-        if (lodLevel < 2) {
-            // Mind. L1 erlaubt (LOD 0 und 1). TIEFENZUERST (L1[0] + seine L2/L3, dann L1[1]…)
-            // — die Foliage-Anker (anchorLevel L2/L3) werden interleaved gesammelt, damit jeder
-            // Baum Laub trägt (eine breitenzuerst-Variante hungerte L2 aus → leere Krone, V18.245).
-            const l1Tips = collectTips(trunkPts, grammar.L1);
-            for (let li = 0; li < l1Tips.length && parts.length < MAX_BRANCH_PARTS; li++) {
-                const tip1 = l1Tips[li];
-                const l1Pts = growBranch(tip1.pos, tip1.phi, tip1.pos.r, grammar.L1, 1, foliageAnchors);
-                if (lodLevel === 0 && grammar.L2 && parts.length < MAX_BRANCH_PARTS) {
-                    const l2Tips = collectTips(l1Pts, grammar.L2);
-                    for (let lj = 0; lj < l2Tips.length && parts.length < MAX_BRANCH_PARTS; lj++) {
-                        const tip2 = l2Tips[lj];
-                        // L2-phi relative zur L1-Richtung — bricht das Whorl-Muster, vermeidet Klone.
-                        const childPhi = tip2.phi + tip1.phi * 0.3;
-                        const l2Pts = growBranch(tip2.pos, childPhi, tip2.pos.r, grammar.L2, 2, foliageAnchors);
-                        if (grammar.L3 && parts.length < MAX_BRANCH_PARTS) {
-                            const l3Tips = collectTips(l2Pts, grammar.L3);
-                            for (let lk = 0; lk < l3Tips.length && parts.length < MAX_BRANCH_PARTS; lk++) {
-                                const tip3 = l3Tips[lk];
-                                growBranch(
-                                    tip3.pos,
-                                    tip3.phi + childPhi * 0.2,
-                                    tip3.pos.r,
-                                    grammar.L3,
-                                    3,
-                                    foliageAnchors
-                                );
-                            }
-                        }
-                    }
+        }
+        // Foliage-Anker aus den PHYTO-BLÄTTERN — ihre Positionen (aus der gesetz-wahren
+        // Verzweigung) treiben die Cards; das IST der K1-Gewinn (Laub sitzt, wo das Gesetz es
+        // wachsen ließ, nicht auf geratenen Ankern). lod2: ein zentraler Krone-Anker.
+        if (grammar.foliage && grammar.foliage.kind !== "none") {
+            if (lodLevel === 2) {
+                const top = trunkPts[trunkPts.length - 1];
+                foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
+            } else {
+                for (const l of phyto.leaves) {
+                    const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
+                    foliageAnchors.push({ x: lp.x, y: lp.y, z: lp.z });
+                }
+                if (!foliageAnchors.length) {
+                    const top = trunkPts[trunkPts.length - 1];
+                    foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
                 }
             }
         }
-        // T6 — MEHRSTÄMMIG (Birken-Klumpen): 1-2 Nebenstämme aus dem Fuß, je nach AUSSEN geneigt,
-        // jeder mit einer kleinen Klumpen-Krone am Top (Foliage-Anker). NUR holz+laub (tag-neutral),
-        // gegated durch MAX_BRANCH_PARTS. Verwurzelt → kein Kipp-Risiko (Ω-Φ2); die Glieder dick
-        // genug (Knick-Floor) → kein Knicken (Ω-Φ3-b, GEMESSEN in diag-genom).
-        if (multiStem > 0 && lodLevel < 2 && grammar.foliage.kind !== "none" && parts.length < MAX_BRANCH_PARTS) {
-            for (let m = 0; m < multiStem && parts.length < MAX_BRANCH_PARTS; m++) {
-                const ang = (m / multiStem) * 6.283 + genome.axis("stemDir" + m) * 1.5;
-                const off = trunkBaseR * (1.4 + genome.axis("stemOff" + m) * 1.0);
-                const stemH = totalH * (0.55 + r01() * 0.25); // kürzer als der Hauptstamm
-                const lx = Math.cos(ang) * 0.16,
-                    lz = Math.sin(ang) * 0.16; // nach außen geneigt (Klumpen spreizt)
-                const sSegs = Math.max(3, Math.round(stemH / Math.max(0.5, segLenBase) / 2));
-                const sPts = [{ x: Math.cos(ang) * off, y: 0, z: Math.sin(ang) * off, r: trunkBaseR * 0.62 }];
-                let scx = sPts[0].x,
-                    scz = sPts[0].z;
-                const sSegH = stemH / sSegs;
-                for (let i = 1; i <= sSegs; i++) {
-                    const t = i / sSegs;
-                    scx += (r01() - 0.5) * trunkWander * sSegH + lx * sSegH;
-                    scz += (r01() - 0.5) * trunkWander * sSegH + lz * sSegH;
-                    const rr = Math.max(sSegH * 0.06, trunkBaseR * 0.62 * Math.pow(Math.max(0, 1 - t), trunkTaper));
-                    sPts.push({ x: scx, y: t * stemH, z: scz, r: rr });
-                }
-                for (let i = 1; i < sPts.length; i++) emitCylinderBetween(sPts[i - 1], sPts[i], 5);
-                skeleton.branches.push({
-                    points: sPts.map((p) => ({ x: p.x, y: p.y, z: p.z, r: p.r })),
-                    level: 0,
-                    isTrunk: true,
-                });
-                const topN = Math.max(1, Math.floor(sPts.length * 0.4));
-                for (let i = sPts.length - topN; i < sPts.length; i++)
-                    foliageAnchors.push({ x: sPts[i].x, y: sPts[i].y, z: sPts[i].z });
-            }
-        }
-        // LOD 2: keine Äste, aber die Foliage soll trotzdem an EINEM zentralen
-        // Anchor in der Krone-Mitte sitzen. Wir synthetisieren EINEN Anchor an
-        // 0.85·totalH (Plan §3.4 „LOD2-card single, im Krone-Zentrum"). EIN
-        // foliage.kind === "none" (Totholz/Snags) bekommt KEINEN Anchor — der
-        // Snag hat keine Krone, auch nicht im Fern-LOD (Plan §3.3 Totholz).
-        if (lodLevel === 2 && grammar.foliage && grammar.foliage.kind !== "none") {
-            foliageAnchors.push({
-                x: trunkPts[trunkPts.length - 1].x,
-                y: totalH * 0.85,
-                z: trunkPts[trunkPts.length - 1].z,
-            });
-        }
-        // V18.245 — die KEGEL-SÄULE: ein Nadelbaum (crown "cone") trägt Nadeln am GANZEN
-        // Stamm bis zur SPITZE (die echte Tanne hat keinen kahlen Stamm/Leader — der Schöpfer-
-        // Referenz-Befund). Foliage-Anker DIREKT am Stamm (18–95 %), unabhängig von der Ast-
-        // Generierung → der konische Nadel-Mantel füllt sich robust, kein kahler Spike. Die
-        // Karten-Größe verjüngt nach oben (über die Anker-Höhe/flexBase) → die Kegel-Silhouette.
-        if (
-            grammar.crown === "cone" &&
-            lodLevel < 2 &&
-            grammar.foliage &&
-            grammar.foliage.kind !== "none" &&
-            trunkPts.length > 1
-        ) {
-            const leaderTs = lodLevel === 0 ? [0.18, 0.28, 0.38, 0.48, 0.58, 0.68, 0.78, 0.88, 0.95] : [0.4, 0.7, 0.92];
-            for (const ft of leaderTs) {
-                const idx = Math.min(trunkPts.length - 1, Math.max(0, Math.round(ft * (trunkPts.length - 1))));
-                foliageAnchors.push({ x: trunkPts[idx].x, y: trunkPts[idx].y, z: trunkPts[idx].z });
-            }
-        }
-
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
         const fo = grammar.foliage;
         // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
@@ -57997,9 +58259,14 @@ class AnazhRealm {
                         1 -
                         0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
                         0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
-                    colors[vIdx] = 0.36 * tintT * grain;
-                    colors[vIdx + 1] = 0.22 * tintT * grain;
-                    colors[vIdx + 2] = 0.12 * tintT * grain;
+                    // DAS NEUE KLEID K1 (V18.385) — RINDEN-FARBE auf den Phyto-Braun-Verlauf: die
+                    // Schöpfer-Vorlage (phytogenesis eiche) geht von barkA 0x3a2c1e (dunkel-braun am
+                    // Fuß) → barkB 0x6a5a44 (wärmer/grauer am Wipfel). Das alte 0.36/0.22/0.12 war zu
+                    // rot-gesättigt (las als blasses Tan unter der ACES-Beleuchtung). Ein Höhen-Lerp
+                    // (tintT trägt schon base-dunkel→tip-hell) mit einem WÄRMEREN, GRAUEREN Braun.
+                    colors[vIdx] = 0.42 * tintT * grain;
+                    colors[vIdx + 1] = 0.32 * tintT * grain;
+                    colors[vIdx + 2] = 0.22 * tintT * grain;
                     // flex + phase: pro Vertex (höher → mehr flex, Hash-Phase)
                     const vF = i * radialSegs + j;
                     flex[vF] = flexVal * (br.isTrunk ? 0.45 : 0.85); // Stamm flext weniger, Äste mehr
@@ -58111,7 +58378,12 @@ class AnazhRealm {
             ctx.save();
             ctx.translate(bx, by);
             ctx.rotate(ang);
-            ctx.strokeStyle = `rgb(${Math.round(70 * lum)},${Math.round(120 * lum)},${Math.round(70 * lum)})`;
+            // DAS NEUE KLEID K1 (V18.385) — HELLE Luminanz (wie drawLeaf 190–238), NICHT ein
+            // dunkles Grün. Das Material rechnet albedo = Vertex-Grün × Atlas-Luminanz; ein
+            // dunkler Nadel-Atlas (das alte 70,120,70) verdoppelte die Verdunklung → die Kegel
+            // lasen fast SCHWARZ. Der Atlas trägt die SILHOUETTE/Luminanz, die Vertex-Farbe das
+            // Grün (wie beim Laub) → die Nadeln lesen grün wie in der phytogenesis-Vorlage.
+            ctx.strokeStyle = `rgb(${Math.round(180 * lum)},${Math.round(214 * lum)},${Math.round(150 * lum)})`;
             ctx.lineWidth = Math.max(1, len * 0.05);
             ctx.lineCap = "round";
             ctx.beginPath();
@@ -58531,6 +58803,13 @@ class AnazhRealm {
         const grammar = skeleton.grammar;
         const fo = grammar && grammar.foliage;
         if (!fo) return null;
+        // DAS NEUE KLEID K1 — der opake Kern ist NUR für DICHTE RUNDE Kronen (dome/ellipsoid/
+        // irregular/vase — die Laubbäume, wo die überlappenden Karten die 90 %-Overdraw-Last
+        // tragen). Bei einem KEGEL/einer SÄULE/einem SCHIRM (Nadelbaum, dünne konische Karten-
+        // Hülle) gibt es kaum Overdraw ZU sparen, und die runde Ellipsoid-Mitte pokt durch die
+        // dünne Silhouette (der gesetz-wahre Kegel-Wuchs machte das sichtbar) → dort KEIN Kern.
+        const cf = skeleton.crownForm || (grammar && grammar.crown);
+        if (cf === "cone" || cf === "column" || cf === "schirm" || fo.kind === "needleSpray") return null;
         const anchors = skeleton.anchors;
         // Kronen-Schwerpunkt + Bounding-Box (die Kron-Form, damit der Kern Tanne tall-schmal vs Eiche
         // rund-breit folgt statt einer generischen Kugel).
@@ -75977,7 +76256,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.384.0";
+AnazhRealm.VERSION = "18.385.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

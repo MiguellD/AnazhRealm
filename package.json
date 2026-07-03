@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.384.0",
+    "version": "18.385.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "scripts": {
@@ -11,7 +11,7 @@
         "lint:fix": "eslint --fix anazhRealm.js bake-core.js bake-worker.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write anazhRealm.js bake-core.js bake-worker.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "prettier --check anazhRealm.js bake-core.js bake-worker.js voxel-worker.js save-server.js signaling-server.js",
-        "check": "node --check anazhRealm.js && node --check bake-core.js && node --check bake-worker.js && node --check save-server.js && node --check signaling-server.js && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs",
+        "check": "node --check anazhRealm.js && node --check bake-core.js && node --check bake-worker.js && node --check save-server.js && node --check signaling-server.js && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs",
         "atlas": "node scripts/diag-atlas.cjs",
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",
@@ -23,6 +23,7 @@
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
+        "gate:phyto-tree": "node scripts/diag-phyto-tree.cjs",
         "gate:seam": "node scripts/diag-chunk-seam.cjs --gate",
         "gate:seam-normal": "node scripts/diag-seam-normal.cjs",
         "gate:fern-wasser": "node scripts/diag-fern-wasser.cjs",
