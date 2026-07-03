@@ -347,5 +347,202 @@
         return { segs, leaves, trunkR, height: P.height, runMeta };
     }
 
-    root.__phytoCore = { growSkeleton: growSkeleton };
+    // ── MODUL-HELFER (für die Asset-Montage, geteilt von den Bau-Funktionen unten) ──
+    function _vnorm(a) {
+        const l = Math.hypot(a[0], a[1], a[2]) || 1e-9;
+        return [a[0] / l, a[1] / l, a[2] / l];
+    }
+    function _vcross(a, b) {
+        return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    }
+    function _atlasRnd(a) {
+        return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // DAS NEUE KLEID Welle 1 — DER BLATT-ATLAS aus der Vorlage (`bakeLeafAtlas`, byte-treu).
+    // Der Atlas trägt NUR den WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-
+    // Farbe (albedo = Vertex-Blatt × Atlas-Wert) — kein Doppel-Tönen. 4 Zellen: 0..2 =
+    // Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Wert-only, für Koniferen). Der
+    // Aufrufer übergibt `doc` (document) — Canvas ist eine Main-Thread-Ressource; im Worker
+    // wird der Atlas NICHT gemalt (nur die Geometrie), darum kein `doc` → null.
+    function bakeLeafAtlasCanvas(doc) {
+        if (!doc || typeof doc.createElement !== "function") return null;
+        const cv = doc.createElement("canvas");
+        cv.width = 1024;
+        cv.height = 256;
+        const x = cv.getContext("2d");
+        if (!x) return null;
+        const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG)
+        // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
+        for (let c = 0; c < 3; c++) {
+            const ox = c * 256 + 128,
+                oy = 150;
+            const n = 8 + (c & 1);
+            for (let i = 0; i < n; i++) {
+                const a = (i / n) * 6.2831 + rg() * 0.9,
+                    R = i === 0 ? 0 : 22 + rg() * 38;
+                const lx = ox + Math.cos(a) * R,
+                    ly = oy + Math.sin(a) * R * 0.72 - 18;
+                const rot = a + 1.5708 + (rg() - 0.5) * 0.8,
+                    L = 76 + rg() * 30,
+                    W = L * (0.46 + rg() * 0.16);
+                const v = 0.88 + rg() * 0.34;
+                x.save();
+                x.translate(lx, ly);
+                x.rotate(rot);
+                const g = x.createLinearGradient(0, -L * 0.5, 0, L * 0.5);
+                const cs = (r, gg, bb) =>
+                    "rgba(" +
+                    Math.min(255, Math.round(r * v)) +
+                    "," +
+                    Math.min(255, Math.round(gg * v)) +
+                    "," +
+                    Math.min(255, Math.round(bb * v)) +
+                    ",1)";
+                g.addColorStop(0, cs(250, 255, 238));
+                g.addColorStop(1, cs(206, 220, 186));
+                x.fillStyle = g;
+                x.beginPath();
+                x.moveTo(0, -L * 0.5);
+                x.quadraticCurveTo(W * 0.62, -L * 0.14, 0, L * 0.5);
+                x.quadraticCurveTo(-W * 0.62, -L * 0.14, 0, -L * 0.5);
+                x.closePath();
+                x.fill();
+                x.strokeStyle = "rgba(90,104,78,0.40)"; // Mittelrippe (Wert-Detail, entsättigt)
+                x.lineWidth = 2;
+                x.beginPath();
+                x.moveTo(0, -L * 0.42);
+                x.lineTo(0, L * 0.42);
+                x.stroke();
+                x.restore();
+            }
+        }
+        // Zelle 3 — Nadel-Spray (Wert-only) für Koniferen (die Vorlage macht Nadeln als
+        // Geometrie; AnazhRealm rendert einatlasig → eine Nadel-Zelle hält das eine Material).
+        {
+            const ox = 3 * 256 + 128,
+                oy = 128;
+            const nn = 70;
+            for (let i = 0; i < nn; i++) {
+                const a = (i / nn) * 6.2831 * 3.2 + rg() * 0.5,
+                    R = 4 + Math.sqrt(rg()) * 78;
+                const lx = ox + Math.cos(a) * R,
+                    ly = oy + Math.sin(a) * R;
+                const rot = Math.atan2(ly - oy, lx - ox) + 1.5708;
+                const L = 40 + rg() * 54,
+                    v = 0.82 + rg() * 0.32;
+                x.save();
+                x.translate(lx, ly);
+                x.rotate(rot);
+                x.strokeStyle =
+                    "rgba(" + Math.round(236 * v) + "," + Math.round(244 * v) + "," + Math.round(224 * v) + ",0.96)";
+                x.lineWidth = 4;
+                x.lineCap = "round";
+                x.beginPath();
+                x.moveTo(0, 0);
+                x.lineTo(0, -L);
+                x.stroke();
+                x.restore();
+            }
+        }
+        return cv;
+    }
+
+    // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE aus der Vorlage (`pushLeafClusterQuad`, byte-
+    // treu): ein Quad je Blatt (2 Dreiecke), die Achsen aus dir/up + Roll aus phase, die UV in
+    // die Atlas-Zelle geroutet. REIN (plain Arrays raus) — der Aufrufer (Main + Portal) wickelt
+    // sie in eine BufferGeometry + hängt sein Material an (das dieselben Attribute liest). Die
+    // Attribut-Namen matchen AnazhRealms Laub-Material: position/normal/color/aFlex/aPhase/uv.
+    // `leaves`: [{pos:[x,y,z], dir:[..], up:[..], scale, needle, sway, phase}] (aus growSkeleton).
+    // `opts`: { leafColor:[r,g,b] 0..1, scale (Breitblatt ~2.35), needleScale (~1.3) }.
+    function buildFoliageQuads(leaves, opts) {
+        opts = opts || {};
+        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const bScale = opts.scale != null ? opts.scale : 2.35;
+        const nScale = opts.needleScale != null ? opts.needleScale : 1.3;
+        const list = leaves || [];
+        const M = list.length;
+        const positions = new Float32Array(M * 4 * 3);
+        const normals = new Float32Array(M * 4 * 3);
+        const colors = new Float32Array(M * 4 * 3);
+        const aFlex = new Float32Array(M * 4);
+        const aPhase = new Float32Array(M * 4);
+        const uvs = new Float32Array(M * 4 * 2);
+        const indices = new Uint32Array(M * 6);
+        const corner = [
+            [-1, -1],
+            [1, -1],
+            [1, 1],
+            [-1, 1],
+        ];
+        let vw = 0,
+            iw = 0,
+            qi = 0;
+        for (let li = 0; li < M; li++) {
+            const l = list[li];
+            if (!l || !l.pos || !l.dir) continue;
+            const e1 = _vnorm([l.dir[0], l.dir[1], l.dir[2]]);
+            const up = l.up && Math.abs(l.up[0]) + Math.abs(l.up[1]) + Math.abs(l.up[2]) > 1e-4 ? l.up : [0, 1, 0];
+            let r = _vcross(up, e1);
+            let rl = Math.hypot(r[0], r[1], r[2]);
+            if (rl < 1e-4) {
+                r = _vcross([1, 0, 0], e1);
+                rl = Math.hypot(r[0], r[1], r[2]) || 1e-9;
+            }
+            r = [r[0] / rl, r[1] / rl, r[2] / rl];
+            const ph = l.phase || 0;
+            const roll = Math.sin(ph * 3.7) * 0.45,
+                ca = Math.cos(roll),
+                sa = Math.sin(roll);
+            const r1 = [e1[0] * ca + r[0] * sa, e1[1] * ca + r[1] * sa, e1[2] * ca + r[2] * sa];
+            const r2 = [r[0] * ca - e1[0] * sa, r[1] * ca - e1[1] * sa, r[2] * ca - e1[2] * sa];
+            const nrm = _vnorm(_vcross(r1, r2));
+            const needle = !!l.needle;
+            const cell = needle ? 3 : li % 3;
+            const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5;
+            const u0 = cell * 0.25,
+                u1 = u0 + 0.25;
+            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
+            const base = qi * 4;
+            for (let i = 0; i < 4; i++) {
+                const cx = corner[i][0] * s,
+                    cy = corner[i][1] * s;
+                const v3 = vw * 3;
+                positions[v3] = l.pos[0] + r1[0] * cx + r2[0] * cy;
+                positions[v3 + 1] = l.pos[1] + r1[1] * cx + r2[1] * cy;
+                positions[v3 + 2] = l.pos[2] + r1[2] * cx + r2[2] * cy;
+                normals[v3] = nrm[0];
+                normals[v3 + 1] = nrm[1];
+                normals[v3 + 2] = nrm[2];
+                colors[v3] = col[0];
+                colors[v3 + 1] = col[1];
+                colors[v3 + 2] = col[2];
+                aFlex[vw] = fx;
+                aPhase[vw] = ph + i * 0.3;
+                uvs[vw * 2] = i === 0 || i === 3 ? u0 : u1;
+                uvs[vw * 2 + 1] = i < 2 ? 0 : 1;
+                vw++;
+            }
+            indices[iw++] = base;
+            indices[iw++] = base + 1;
+            indices[iw++] = base + 2;
+            indices[iw++] = base;
+            indices[iw++] = base + 2;
+            indices[iw++] = base + 3;
+            qi++;
+        }
+        return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
+    }
+
+    root.__phytoCore = {
+        growSkeleton: growSkeleton,
+        bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
+        buildFoliageQuads: buildFoliageQuads,
+    };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

@@ -50588,7 +50588,13 @@ class AnazhRealm {
             basalStems: multiStem > 0 ? multiStem + 1 : 0,
             trunkMul: allometry * (0.85 + ageMul * 0.35),
             countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-            leafBudget: lodLevel === 0 ? 64 : lodLevel === 1 ? 12 : 3,
+            // DAS NEUE KLEID Welle 1 — die Krone füllt jetzt aus dem VOLLEN Blatt-Satz (die
+            // Vorlage rendert Hunderte Blätter bei L0): jedes Blatt = EIN Cluster-Quad (4 Verts)
+            // via `__phytoCore.buildFoliageQuads`, statt der alten N-Anker × K-Kreuz-Karten
+            // (8 Verts/Karte). 480 Quads (1920 Verts) sind DICHTER UND LEICHTER als die alten
+            // ~64 Anker × 5 Karten (2560 Verts). Der Baum ist instanziert (HISM) → EINE Geometrie
+            // je Template, die Instanz-Zahl multipliziert die Geometrie NICHT.
+            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
             phylloDiv,
         });
         const phyto = this._phytoGrowSkeleton(P, phytoSeq);
@@ -50758,10 +50764,25 @@ class AnazhRealm {
                 const top = trunkPts[trunkPts.length - 1];
                 foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
             } else {
+                // DAS NEUE KLEID Welle 1 — die VOLLEN Phyto-Blätter tragen (pos/dir/up/scale/
+                // needle/sway/phase), nicht nur die Position: die geteilte Laub-Geometrie
+                // (`__phytoCore.buildFoliageQuads`, die Vorlagen-Cluster-Quads) baut daraus die
+                // Krone. Der `_lean`-Shear trifft die POSITION (die Card-Achse folgt dir/up).
+                const phytoLeaves = [];
                 for (const l of phyto.leaves) {
                     const lp = _lean({ x: l.pos[0], y: l.pos[1], z: l.pos[2], r: 0 });
                     foliageAnchors.push({ x: lp.x, y: lp.y, z: lp.z });
+                    phytoLeaves.push({
+                        pos: [lp.x, lp.y, lp.z],
+                        dir: [l.dir[0], l.dir[1], l.dir[2]],
+                        up: l.up ? [l.up[0], l.up[1], l.up[2]] : [0, 1, 0],
+                        scale: l.scale,
+                        needle: !!l.needle,
+                        sway: l.sway,
+                        phase: l.phase,
+                    });
                 }
+                skeleton.phytoLeaves = phytoLeaves;
                 if (!foliageAnchors.length) {
                     const top = trunkPts[trunkPts.length - 1];
                     foliageAnchors.push({ x: top.x, y: totalH * 0.85, z: top.z });
@@ -58000,212 +58021,18 @@ class AnazhRealm {
         return this._mergeAttributedGeometries(geomList, ["aFlex", "aPhase"]);
     }
 
-    // V18.214 (Ω-G3 echte Foliage-Cards) — baut aus den Anchors EINE foliage-
-    // V18.247 (wahreranblick §8.5 — DIE LAAS-METHODE GELERNT + ANGEWANDT, Schöpfer
-    // „siehst du nicht wie es bei laas erstellt wird, lerne daraus"): LAAS' Krone ist
-    // KEINE flache Farb-Karte — sie ist eine KARTE, die ein aus ECHTER Blatt-Geometrie
-    // GEBACKENES Laub-Büschel zeigt (FoliageCards.ts: 14-20 parametrische Blätter im
-    // Fächer → ein Alpha-Atlas). Das ist der Unterschied zwischen „grüner Klecks" und
-    // „Laub": die Karte trägt die SILHOUETTE echter Blätter (Lücken, Spitzen, Adern),
-    // nicht eine runde Maske. Hier bake ich denselben Atlas PROZEDURAL (kein Bitmap-Download,
-    // §3.7-konform — ein Auslesewert der Blatt-Grammatik): ein 2×2-Varianten-Atlas, jede
-    // Kachel ein Fächer aus ~16 parametrischen Blatt-Silhouetten (getapert + gewölbt + Ader).
-    // RGB = helle Blatt-Detail-Luminanz (die Vertex-Dapple-Farbe trägt das Grün), ALPHA =
-    // die Büschel-Silhouette (der Schlüssel: die Karte liest als Blätter mit Lücken). Einmal
-    // gebacken, von ALLEN Bäumen geteilt (eine Textur, Karten bleiben 2 Tris — LAAS-billig).
+    // DAS NEUE KLEID Welle 1 — DER BLATT-ATLAS KOMMT AUS DER GETEILTEN QUELLE (phyto-core,
+    // die Vorlagen-`bakeLeafAtlas`): kein Parallel-Painter mehr im Stamm. Der Atlas trägt nur
+    // den WERT (grau-warm, Mittel ~1), die Artfarbe kommt aus der Vertex-Farbe. 4 Zellen:
+    // 0..2 Breitblatt-Cluster (die Vorlage), 3 Nadel-Spray. Das Material sampelt EINE Textur;
+    // die Card-UVs (aus `__phytoCore.buildFoliageQuads`) routen die Zelle. Canvas ist eine
+    // Main-Thread-Ressource → `document` reingereicht; der Worker malt keinen Atlas.
     _ensureFoliageClusterAtlas() {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const TILE = 256;
-        // T1 (wahrerwuchs §4.1 + wahreranblick Ω-O14) — DIE BLATT-TYP-ACHSE: vier
-        // KIND-Spalten (breitblatt · nadel · palme · schuppe) × zwei Varianten-Reihen.
-        // Jede Spalte trägt eine GEBACKENE Blatt-Silhouette ihres Typs (echte Geometrie,
-        // §3.7 — kein gemaltes Bitmap): das Material sampelt EINE Textur, die Karten-UVs
-        // routen je `foliage.kind` in die richtige Spalte (kein per-Kind-Material nötig →
-        // beide Material-Builder unberührt). Distinkt: Nadel ≠ Breitblatt ≠ Palme ≠ Schuppe.
-        const COLS = 4; // Kind-Spalten: 0 breitblatt · 1 nadel · 2 palme · 3 schuppe
-        const ROWS = 2; // Varianten je Kind (kein Wiederholungs-Muster)
-        const SZW = TILE * COLS;
-        const SZH = TILE * ROWS;
-        const canvas = document.createElement("canvas");
-        canvas.width = SZW;
-        canvas.height = SZH;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return null;
-        ctx.clearRect(0, 0, SZW, SZH);
-        let seed = 0x9e3779b9 >>> 0;
-        const rnd = () => {
-            seed = (Math.imul(seed ^ (seed >>> 15), 0x2c1b3c6d) + 0x6e) >>> 0;
-            return (seed >>> 8) / 16777216;
-        };
-        // DAS NEUE KLEID Welle 1 — DER ATLAS TRÄGT NUR DEN WERT (grau-warm, Mittel ~1), NICHT
-        // eine gesättigte Farbe: die Artfarbe kommt aus der Vertex-Blattfarbe (das Material
-        // rechnet albedo = Vertex-Grün × Atlas-WERT). Ein GEFÄRBTER Atlas (das alte gesättigte
-        // Oliv 0.84:1.0:0.62) DOPPEL-TÖNT das Vertex-Grün → das muddy Tan-Grün, das der Schöpfer
-        // sah. Die Vorlage (`bakeLeafAtlas` FIX v37) bäckt nahe-weiß-warm (rgba(250,255,238)→
-        // (206,220,186), Wert um 1) → das Vertex-Grün scheint sauber durch. `_valW` ist die EINE
-        // Wert-Quelle für ALLE Blatt-Typ-Zeichner (Breitblatt/Nadel/Palme/Schuppe).
-        const _valW = (lum, f) => {
-            const s = lum * (f == null ? 1 : f);
-            return `rgb(${Math.min(255, Math.round(236 * s))},${Math.min(255, Math.round(244 * s))},${Math.min(255, Math.round(224 * s))})`;
-        };
-        // ein parametrisches Blatt (getapert, gewölbt, mit Mittelrippe), Basis am (bx,by),
-        // um `ang` von der Senkrechten gedreht. NUR Wert-Schattierung (grau-warm); das Grün
-        // kommt aus der Vertex-Dapple-Farbe → albedo = Vertex-Grün × Atlas-Wert.
-        const drawLeaf = (bx, by, ang, len, wid, lum) => {
-            ctx.save();
-            ctx.translate(bx, by);
-            ctx.rotate(ang);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(wid, -len * 0.34, wid * 0.52, -len * 0.72);
-            ctx.quadraticCurveTo(wid * 0.2, -len * 0.93, 0, -len);
-            ctx.quadraticCurveTo(-wid * 0.2, -len * 0.93, -wid * 0.52, -len * 0.72);
-            ctx.quadraticCurveTo(-wid, -len * 0.34, 0, 0);
-            ctx.closePath();
-            const g = ctx.createLinearGradient(0, 0, 0, -len);
-            g.addColorStop(0, _valW(lum, 0.84)); // Basis: leicht dunkler warm-grau (Wert-Tiefe)
-            g.addColorStop(1, _valW(lum, 1.02)); // Spitze: nahe weiß warm
-            ctx.fillStyle = g;
-            ctx.fill();
-            ctx.strokeStyle = "rgba(96,104,86,0.42)"; // Mittelrippe (dunkler WERT → Detail, entsättigt)
-            ctx.lineWidth = Math.max(1, len * 0.025);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -len * 0.95);
-            ctx.stroke();
-            ctx.restore();
-        };
-        // eine NADEL — ein dünner, gerader Strich (Konifere); viele bilden den Spray.
-        const drawNeedle = (bx, by, ang, len, lum) => {
-            ctx.save();
-            ctx.translate(bx, by);
-            ctx.rotate(ang);
-            // DAS NEUE KLEID Welle 1 — NUR WERT (grau-warm), wie alle Blatt-Typen: das Material
-            // rechnet albedo = Vertex-Nadelfarbe × Atlas-Wert; ein GEFÄRBTER Nadel-Atlas (das alte
-            // Grün) doppel-tönte die dunkle Nadel-Vertex-Farbe → fast schwarz/muddy. Der Atlas
-            // trägt die SILHOUETTE + den Wert, die Vertex-Farbe das (dunkle) Konifer-Grün.
-            ctx.strokeStyle = _valW(lum, 0.9);
-            ctx.lineWidth = Math.max(1, len * 0.05);
-            ctx.lineCap = "round";
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -len);
-            ctx.stroke();
-            ctx.restore();
-        };
-        // eine PALMEN-FROND — eine lange gekrümmte Rachis mit fiedrigen Blättchen (pinnat).
-        const drawFrond = (bx, by, ang, len, lum, curve) => {
-            ctx.save();
-            ctx.translate(bx, by);
-            ctx.rotate(ang);
-            const tipX = curve * len * 0.5;
-            // Rachis (Mittelstiel, gebogen) — nur WERT (Welle 1), Artfarbe aus Vertex.
-            ctx.strokeStyle = _valW(lum, 0.72);
-            ctx.lineWidth = Math.max(1.5, len * 0.03);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(tipX * 0.5, -len * 0.55, tipX, -len);
-            ctx.stroke();
-            // Fiedern (Blättchen) entlang der Rachis, paarig
-            const leaflets = 9 + Math.floor(rnd() * 5);
-            for (let k = 1; k <= leaflets; k++) {
-                const t = k / (leaflets + 1);
-                const rx = tipX * t * (1.5 - t);
-                const ry = -len * t;
-                const ll = len * 0.26 * (1 - t * 0.55);
-                const spread = 0.7 + t * 0.5;
-                for (const sgn of [-1, 1]) {
-                    ctx.save();
-                    ctx.translate(rx, ry);
-                    ctx.rotate(sgn * spread + curve * 0.4);
-                    ctx.strokeStyle = _valW(lum, 0.82); // Fiedern — nur WERT (Welle 1)
-                    ctx.lineWidth = Math.max(1, ll * 0.12);
-                    ctx.lineCap = "round";
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.lineTo(0, -ll);
-                    ctx.stroke();
-                    ctx.restore();
-                }
-            }
-            ctx.restore();
-        };
-        // eine SCHUPPEN-Spray (Zypresse) — eine flache, verzweigte Spray winziger
-        // Schuppenblätter (überlappende Tröpfchen entlang feiner Zweige).
-        const drawScaleSpray = (bx, by, ang, len, lum) => {
-            ctx.save();
-            ctx.translate(bx, by);
-            ctx.rotate(ang);
-            ctx.fillStyle = _valW(lum, 0.8); // Schuppen-Spray — nur WERT (Welle 1)
-            const branches = 3 + Math.floor(rnd() * 3);
-            for (let b = 0; b < branches; b++) {
-                const bAng = (b / branches - 0.5) * 0.9;
-                const bl = len * (0.55 + rnd() * 0.45);
-                const scales = 5 + Math.floor(rnd() * 4);
-                for (let s = 1; s <= scales; s++) {
-                    const t = s / scales;
-                    const sx = Math.sin(bAng) * bl * t;
-                    const sy = -bl * t;
-                    const sr = len * 0.06 * (1 - t * 0.4);
-                    ctx.beginPath();
-                    ctx.ellipse(sx, sy, sr, sr * 1.6, bAng, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-            ctx.restore();
-        };
-        // pro KIND-Spalte × Varianten-Reihe ein gebackenes Büschel des jeweiligen Typs.
-        for (let ty = 0; ty < ROWS; ty++) {
-            for (let tx = 0; tx < COLS; tx++) {
-                const ox = tx * TILE;
-                const oy = ty * TILE;
-                const cx = ox + TILE * 0.5;
-                const cy = oy + TILE * 0.5; // Zentrum (RADIAL-Büschel)
-                if (tx === 0) {
-                    // BREITBLATT — viele feine ovale Blätter radial (V18.249-Methode).
-                    const N = 28 + Math.floor(rnd() * 9);
-                    for (let i = 0; i < N; i++) {
-                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4;
-                        const rad = TILE * 0.5 * (0.1 + Math.sqrt(rnd()) * 0.4);
-                        const len = TILE * (0.18 + rnd() * 0.22);
-                        const wid = len * (0.32 + rnd() * 0.12);
-                        const lum = 0.74 + rnd() * 0.34;
-                        drawLeaf(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, wid, lum);
-                    }
-                } else if (tx === 1) {
-                    // NADEL — ein dichter Spray vieler dünner Striche (Konifere).
-                    const N = 54 + Math.floor(rnd() * 18);
-                    for (let i = 0; i < N; i++) {
-                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.3;
-                        const rad = TILE * 0.5 * (0.05 + Math.sqrt(rnd()) * 0.32);
-                        const len = TILE * (0.26 + rnd() * 0.2);
-                        const lum = 0.72 + rnd() * 0.32;
-                        drawNeedle(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, lum);
-                    }
-                } else if (tx === 2) {
-                    // PALME — wenige lange fiedrige Fronds radial (das Palmen-Kronen-Lesen).
-                    const N = 6 + Math.floor(rnd() * 4);
-                    for (let i = 0; i < N; i++) {
-                        const dir = (i / N) * Math.PI * 2 + (rnd() - 0.5) * 0.3;
-                        const len = TILE * (0.42 + rnd() * 0.12);
-                        const lum = 0.74 + rnd() * 0.26;
-                        const curve = (rnd() - 0.5) * 1.2;
-                        drawFrond(cx, cy, dir + Math.PI / 2, len, lum, curve);
-                    }
-                } else {
-                    // SCHUPPE — dichte flache Sprays winziger Schuppenblätter (Zypresse).
-                    const N = 12 + Math.floor(rnd() * 6);
-                    for (let i = 0; i < N; i++) {
-                        const dir = i * 2.39996323 + (rnd() - 0.5) * 0.4;
-                        const rad = TILE * 0.5 * (0.06 + Math.sqrt(rnd()) * 0.36);
-                        const len = TILE * (0.2 + rnd() * 0.16);
-                        const lum = 0.7 + rnd() * 0.3;
-                        drawScaleSpray(cx + Math.cos(dir) * rad, cy + Math.sin(dir) * rad, dir + Math.PI / 2, len, lum);
-                    }
-                }
-            }
-        }
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const canvas = core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
+        if (!canvas) return null;
         const tex = new THREE.CanvasTexture(canvas);
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.generateMipmaps = true;
@@ -58235,6 +58062,46 @@ class AnazhRealm {
         const grammar = skeleton.grammar;
         const fo = grammar && grammar.foliage;
         if (!fo) return null;
+        // DAS NEUE KLEID Welle 1 — DIE LAUB-GEOMETRIE KOMMT AUS DER GETEILTEN QUELLE (phyto-core,
+        // die Vorlagen-Cluster-Quads `buildFoliageQuads`): ein Quad je gewachsenem Blatt, die
+        // Achse aus dir/up + Roll aus phase, die UV in die Atlas-Zelle geroutet. Der Stamm baut
+        // NICHT mehr eine eigene card{cross}-Krone — er wickelt die geteilten Arrays in eine
+        // BufferGeometry (die RICHTER-Rolle) + hängt sein WebGPU-Material an (das dieselben
+        // Attribute liest: position/normal/color/aFlex/aPhase/uv). Fallback (kein phyto-Blatt,
+        // z.B. lod2 oder Alt-Skelett) → der Anker-basierte Pfad unten.
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (
+            core &&
+            typeof core.buildFoliageQuads === "function" &&
+            Array.isArray(skeleton.phytoLeaves) &&
+            skeleton.phytoLeaves.length &&
+            typeof THREE !== "undefined"
+        ) {
+            const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
+            const leafColor = [((c0 >> 16) & 0xff) / 255, ((c0 >> 8) & 0xff) / 255, (c0 & 0xff) / 255];
+            const fScaleQ = Math.max(0.4, skeleton.foliageScale || 1);
+            const q = core.buildFoliageQuads(skeleton.phytoLeaves, {
+                leafColor,
+                scale: 2.35 * fScaleQ,
+                // Nadeln: das gewachsene Blatt IST eine EINZELNE Nadel (scale ~0.15) — als
+                // Spray-Quad braucht es einen grossen Faktor, damit die Zelle-3-Nadel-Silhouette
+                // sichtbar wird + die Kegel-Krone füllt (sonst unsichtbare 7-cm-Punkte).
+                needleScale: 5.5 * fScaleQ,
+            });
+            if (q && q.count > 0) {
+                const g = new THREE.BufferGeometry();
+                g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
+                g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
+                g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
+                g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
+                g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
+                g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
+                g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+                g.computeBoundingBox();
+                g.computeBoundingSphere();
+                return g;
+            }
+        }
         // T1 (wahrerwuchs §4.1 + Ω-O14) — die KIND-Spalte im 4×2-Atlas + die je-Kind-
         // Karten-Proportion: Breitblatt(0) breit-gedrungen, Nadel(1) lang-schmal, Palme(2)
         // große lange Wedel-Karten, Schuppe(3) feine dichte Sprays. Das Material sampelt
