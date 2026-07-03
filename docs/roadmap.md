@@ -34,9 +34,12 @@ Fern-Wasser) · Lockstep-MP Stufe 2 ✓ V18.382 (`smoke:lockstep` 284/284 bit-ex
 
 **WAS OFFEN IST (die vollständige Liste — jede Zeile hat ihr Detail-Zuhause):**
 
-1. **Der AKTIVE schöpferische Bogen:** `wahrerguss.md` (4 Systeme) + Körper-Neuanlage
-   (`koerper-neuanlage-plan.md` — regel-basiert statt geratener per-Teil-`k`) + lebendiger Körper
-   (`lebendiger-koerper-plan.md` — Motion-Konvergenz/IK/Blend). → die Sub-Bögen selbst.
+1. **Der AKTIVE schöpferische Bogen:** `wahrerguss.md` (4 Systeme) + **DAS NEUE KLEID
+   (`neues-kleid-plan.md`, NEU 03.07. — die Phytogenese der Hauptwelt: gesetz-wahre
+   Morphologie/Ökologie/Wald-Ferne aus der Schöpfer-Vorlage phytogenesis v38, Wellen K0–K6)**
+    - Körper-Neuanlage (`koerper-neuanlage-plan.md` — regel-basiert statt geratener
+      per-Teil-`k`) + lebendiger Körper (`lebendiger-koerper-plan.md` — Motion-Konvergenz/IK/
+      Blend). → die Sub-Bögen selbst.
 2. **DIE EINE SCHÖPFER-RUNDE** (Verifikations-Asymmetrie): `anazhRealmPerf.json` einmal auf echter
    GPU einfangen + `npm run look-golden --mint` — „dein Auge einmal, die Maschine für immer". → §4 ★.
 3. **Lockstep-MP Stufe 3:** Fixed-Point/cross-Maschine (zwei CPUs können in libm abweichen) —
