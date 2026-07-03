@@ -1,9 +1,12 @@
-// Diagnose — DER NEBEL WARTET AUF DAS WASSER (V18.346, Schöpfer-HAUPTPROBLEM).
+// Diagnose — DER NEBEL WARTET AUF DAS WASSER (V18.346 → V18.380 DIE WAHRHEITS-FRONT).
 //
 // Die Mechanik (hardware-unabhängig, reine Logik): `_builtWaterRingRadius()` deckelt den Lade-
-// Nebel-Reveal auf den grössten Ring, in dem JEDER Chunk terrain-gebaut UND wasser-fertig ist
-// (NICHT in `pendingWaterIso`). Ist ein NAHER Chunk wasser-pending, MUSS die Wasser-Front DAVOR
-// stoppen (kleiner als die Terrain-Front) → der Nebel weicht nicht über den leeren See.
+// Nebel-Reveal auf den grössten Ring, in dem JEDER Chunk terrain-gebaut UND wasser-FERTIG ist.
+// V18.380: „fertig" = KEINE Wasser-Zellen ODER das Sheet ist RESOLVED (`voxelChunkWaterIso.has`
+// — Mesh ODER bewusst-leer[null]). Die transiente Arbeits-Queue (`pendingWaterIso`) ist
+// IRRELEVANT (die alte pending-Front log in beide Richtungen: das B1-Async-Fenster zählte
+// fertig [Nebel überm leeren See], resolved-NULL + Re-Enqueue zählte unfertig [Front-Kollaps
+// auf 0 → Kappe griff nie → der Nebel folgte dem Terrain]).
 //
 // Ich teste die LOGIK direkt am State (der Headless-Null-Pfad gibt sonst die Terrain-Front zurück
 // = gate-treu, aber ungated → für DIESEN Test umgehe ich den Headless-Kurzschluss kontrolliert).
@@ -101,36 +104,62 @@ const server = http.createServer((req, res) => {
         const builtK = r._builtRingRadius();
         out.builtK = builtK;
 
-        // V18.348 — die Front liest jetzt voxelChunkWaterIso (Mesh existiert?) statt nur pending:
-        // ein gebauter, von der CA re-enqueuter Chunk (Mesh da + in pending) gilt als FERTIG → die
-        // Front retracted NICHT → kein Flackern. Nur ein NIE-gebauter pending-Chunk (kein Mesh) wartet.
+        // V18.380 — die WAHRHEITS-Front: relevant sind (entry.waterCells, wi.has(key)); die
+        // pendingWaterIso-Queue ist irrelevant. Szenarien über die wi-Map + einen echten
+        // WASSER-Chunk der warmen Welt (der Front-Scan liest entry.waterCells real).
         const fakeMesh = { isMesh: true };
-        const setup = (pendKeys, meshKeys) => {
-            st.pendingWaterIso = new Set(pendKeys);
-            st.voxelChunkWaterIso = new Map(meshKeys.map((k) => [k, fakeMesh]));
-        };
-
-        // 2) KEIN Wasser pending → Front == Terrain-Front (alle ready).
-        setup([], []);
-        out.waterK_noPending = r._builtWaterRingRadius();
-
+        const cfg = r._voxelChunkConfig();
+        // alle Wasser-Chunks im Front-Ring + der nächste (fürs Unresolved-Szenario)
+        const watery = [];
         if (pc) {
-            const r1 = `${pc.cx + 1},${pc.cz}`,
-                r3 = `${pc.cx + 3},${pc.cz}`,
-                self = `${pc.cx},${pc.cz}`;
-            // 3) ring1 pending + KEIN Mesh (Streaming-Front, nie gebaut) → Front stoppt bei 0.
-            setup([r1], []);
-            out.waterK_ring1NoMesh = r._builtWaterRingRadius();
-            // 4) ring1 pending ABER Mesh EXISTIERT (CA re-enqueued) → MONOTON: Front retracted NICHT == builtK.
-            setup([r1], [r1]);
-            out.waterK_ring1HasMesh = r._builtWaterRingRadius();
-            // 5) ring3 pending + kein Mesh → Front bei 2.
-            setup([r3], []);
-            out.waterK_ring3NoMesh = r._builtWaterRingRadius();
-            // 6) Spieler-Chunk pending + kein Mesh → -1 (Kokon).
-            setup([self], []);
-            out.waterK_selfNoMesh = r._builtWaterRingRadius();
+            for (const [key, e] of st.voxelChunks) {
+                if (!e || !e.waterCells) continue;
+                const ci = key.indexOf(",");
+                const kx = parseInt(key.slice(0, ci), 10),
+                    kz = parseInt(key.slice(ci + 1), 10);
+                const ring = Math.max(Math.abs(kx - pc.cx), Math.abs(kz - pc.cz));
+                if (ring <= cfg.ringRadius) watery.push({ key, ring });
+            }
+            watery.sort((a, b) => a.ring - b.ring);
         }
+        out.wateryCount = watery.length;
+        const allResolved = () => new Map(watery.map((w) => [w.key, fakeMesh]));
+
+        // 2) ALLE Wasser-Chunks resolved (Mesh) → Front == Terrain-Front; Queue-Inhalt EGAL
+        //    (der ganze Ring in pending = CA-Re-Enqueue-Sturm → MONOTON, kein Kollaps).
+        st.voxelChunkWaterIso = allResolved();
+        st.pendingWaterIso = new Set(watery.map((w) => w.key));
+        out.waterK_allResolved_queueFull = r._builtWaterRingRadius();
+
+        // 3) resolved-LEER (null) zählt FERTIG (der V18.380-Kern — die alte Front las
+        //    `wi.get` [null=falsy] und kollabierte auf solchen Chunks).
+        const wiNull = allResolved();
+        for (const w of watery) wiNull.set(w.key, null);
+        st.voxelChunkWaterIso = wiNull;
+        out.waterK_allResolvedNull = r._builtWaterRingRadius();
+
+        const target = watery.find((w) => w.ring > 0) || null;
+        out.targetRing = target ? target.ring : null;
+        if (target) {
+            // 4) EIN Wasser-Chunk (Ring d>0) UNRESOLVED (kein wi-Eintrag) — egal ob in der Queue
+            //    (in-flight!) oder nicht → die Front wartet bei d−1 (das B1-Async-Fenster gedeckt).
+            const wi4 = allResolved();
+            wi4.delete(target.key);
+            st.voxelChunkWaterIso = wi4;
+            st.pendingWaterIso = new Set(); // NICHT pending = das in-flight-Fenster
+            out.waterK_unresolvedInFlight = r._builtWaterRingRadius();
+            st.pendingWaterIso = new Set([target.key]); // pending (normal enqueued)
+            out.waterK_unresolvedPending = r._builtWaterRingRadius();
+        }
+        const selfWatery = watery.find((w) => w.ring === 0) || null;
+        if (selfWatery) {
+            // 5) der SPIELER-Chunk unresolved → −1 (Kokon).
+            const wi5 = allResolved();
+            wi5.delete(selfWatery.key);
+            st.voxelChunkWaterIso = wi5;
+            out.waterK_selfUnresolved = r._builtWaterRingRadius();
+        }
+        out.selfWatery = !!selfWatery;
 
         // 7) revealK = min(terrain, gras, wasser) — die all-null-Reduktion bewahren.
         const reduce3 = (a, b, c) =>
@@ -151,15 +180,23 @@ const server = http.createServer((req, res) => {
     console.log("\n===== NEBEL WARTET AUF WASSER — LOGIK-MESSUNG =====\n");
     if (pageErr) console.log("PAGE-ERROR:", pageErr);
     const o = report;
-    console.log(`  Spieler-Chunk: ${JSON.stringify(o.pc)}`);
+    console.log(`  Spieler-Chunk: ${JSON.stringify(o.pc)} · Wasser-Chunks im Ring: ${o.wateryCount}`);
     console.log(`  Terrain-Front builtK: ${o.builtK}`);
-    console.log(`  kein Pending:                 ${o.waterK_noPending}   (erwartet == builtK ${o.builtK})`);
-    console.log(`  ring1 pending, KEIN Mesh:     ${o.waterK_ring1NoMesh}   (erwartet 0 — Streaming-Front wartet)`);
     console.log(
-        `  ring1 pending, Mesh DA (CA):  ${o.waterK_ring1HasMesh}   (erwartet ${o.builtK} — MONOTON, kein Flackern)`
+        `  alle resolved + Queue VOLL:   ${o.waterK_allResolved_queueFull}   (erwartet == builtK ${o.builtK} — Queue irrelevant, MONOTON)`
     );
-    console.log(`  ring3 pending, kein Mesh:     ${o.waterK_ring3NoMesh}   (erwartet 2)`);
-    console.log(`  Spieler-Chunk pending:        ${o.waterK_selfNoMesh}   (erwartet -1 — Kokon)`);
+    console.log(
+        `  alle resolved-LEER (null):    ${o.waterK_allResolvedNull}   (erwartet == builtK ${o.builtK} — null IST resolved, kein Kollaps)`
+    );
+    if (o.targetRing != null) {
+        console.log(
+            `  Ring-${o.targetRing}-Chunk UNRESOLVED, in-flight (nicht pending): ${o.waterK_unresolvedInFlight}   (erwartet ${o.targetRing - 1} — das B1-Async-Fenster gedeckt)`
+        );
+        console.log(
+            `  Ring-${o.targetRing}-Chunk UNRESOLVED, pending:                  ${o.waterK_unresolvedPending}   (erwartet ${o.targetRing - 1})`
+        );
+    }
+    if (o.selfWatery) console.log(`  Spieler-Chunk unresolved:     ${o.waterK_selfUnresolved}   (erwartet -1 — Kokon)`);
     console.log(`  Headless (gate-treu):         ${o.waterK_headless}   (erwartet == builtK ${o.builtK})`);
     console.log(
         `  reduce(null,null,null)=${o.reduce_allNull} (erw null) · reduce(4,3,2)=${o.reduce_min} (erw 2) · reduce(4,null,2)=${o.reduce_someNull} (erw 2)`
@@ -167,17 +204,18 @@ const server = http.createServer((req, res) => {
 
     const ok =
         o.builtK != null &&
-        o.waterK_noPending === o.builtK &&
-        o.waterK_ring1NoMesh === 0 &&
-        o.waterK_ring1HasMesh === o.builtK &&
-        o.waterK_ring3NoMesh === 2 &&
-        o.waterK_selfNoMesh === -1 &&
+        o.wateryCount > 0 &&
+        o.waterK_allResolved_queueFull === o.builtK &&
+        o.waterK_allResolvedNull === o.builtK &&
+        (o.targetRing == null ||
+            (o.waterK_unresolvedInFlight === o.targetRing - 1 && o.waterK_unresolvedPending === o.targetRing - 1)) &&
+        (!o.selfWatery || o.waterK_selfUnresolved === -1) &&
         o.waterK_headless === o.builtK &&
         o.reduce_allNull === null &&
         o.reduce_min === 2 &&
         o.reduce_someNull === 2;
     console.log(
-        `\n  ${ok ? "✅ Front wartet auf NIE-gebautes Wasser (Streaming-Front), retracted NICHT bei CA-Re-Enqueue (Mesh da) → kein Flackern." : "⚠️ Die Gating-Logik weicht ab — prüfen."}\n`
+        `\n  ${ok ? "✅ Die WAHRHEITS-Front: wartet auf unresolved Wasser (auch in-flight), zählt resolved-LEER als fertig, ignoriert die Queue → monoton, kein Kollaps, kein Async-Leck." : "⚠️ Die Gating-Logik weicht ab — prüfen."}\n`
     );
     await browser.close();
     server.close();

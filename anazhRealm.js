@@ -25983,13 +25983,28 @@ class AnazhRealm {
     // flackerte. FIX: die Front wartet NUR auf Wasser, das NIE gebaut wurde (die Streaming-Front);
     // ein Chunk mit EXISTIERENDEM Wasser-Mesh (`voxelChunkWaterIso`, build-before-dispose) gilt als
     // fertig, AUCH wenn die CA ihn gerade re-enqueued hat → die Front retracted nicht → kein Flackern.
+    // V18.380 — DIE WAHRHEITS-FRONT (Schöpfer „das Terrain lädt schneller als das Wasser und der
+    // Nebel folgt dem Terrain?" — GEMESSEN mit einer lie-vs-truth-Probe über 170 Fill-Frames): die
+    // alte pending-basierte Front LOG in BEIDE Richtungen. (a) NACH OBEN: B1 baut async — der Tick
+    // löscht den Key aus `pendingWaterIso` und POSTet dann den Worker-Request → während des Round-
+    // Trips ist der Chunk „weder pending noch Mesh" = zählte FERTIG → der Schleier hob sich überm
+    // leeren Seebett. (b) NACH UNTEN: `wi.get(key)` ist falsy für ein RESOLVED-LEERES Sheet (die
+    // Map trägt bewusst `null`) — und die 8-Nachbar-Naht-Heilung re-enqueued gebaute Chunks dauernd
+    // → die Front KOLLABIERTE wiederholt auf 0 (gemessen: 0↔4-Oszillation), die den V18.360-
+    // Sustain-Puffer defeatete (nie 45 Frames anhaltend) → die V18.358-Wasser-Kappe griff NIE →
+    // der Nebel folgte faktisch dem Terrain. HEILUNG (Gesetz #0 — der Chokepoint liest den
+    // kanonischen ZUSTAND, nie die transiente Arbeits-Queue): ein Chunk ist wasser-fertig gdw. er
+    // KEINE Wasser-Zellen trägt ODER sein Sheet RESOLVED ist (`wi.has(key)` — Mesh ODER bewusst-
+    // leer[null]; jeder Wasser-Chunk wird im Finalize garantiert geplant [sync/Worker/Queue] und
+    // JEDER Ausgang setzt den Map-Eintrag → kein Deadlock). Monoton bis zum Prune (has bleibt bei
+    // CA-Re-Mesh true, build-before-dispose) → der Puffer + die Kappe arbeiten mit einem stabilen
+    // Signal. GEMESSEN NACHHER: 0 Rückzüge über den ganzen Fill (vorher kollabierend).
     _builtWaterRingRadius() {
         const st = this.state;
         if (!st || !st.voxelChunks || !st.lastPlayerVoxelChunk) return null;
         if (st.renderer && st.renderer._isHeadlessNull) return this._builtRingRadius();
         const cfg = this._voxelChunkConfig();
         const { cx, cz } = st.lastPlayerVoxelChunk;
-        const pend = st.pendingWaterIso;
         const wi = st.voxelChunkWaterIso;
         let k = -1;
         outer: for (let ring = 0; ring <= cfg.ringRadius; ring++) {
@@ -25999,11 +26014,8 @@ class AnazhRealm {
                     const key = `${cx + dx},${cz + dz}`;
                     const e = st.voxelChunks.get(key);
                     if (!e || (!e.mesh && !e.empty)) break outer; // Terrain noch nicht gebaut
-                    // Wasser-Mesh existiert schon (gebaut, ggf. von der CA re-enqueued zum Re-Mesh) →
-                    // fertig (die Front retracted NICHT). Nur ein NIE-gebauter, ausstehender Chunk
-                    // (Streaming-Front: kein Mesh + in pending) lässt die Front hier stoppen.
-                    const hasWaterMesh = wi && wi.get(key);
-                    if (!hasWaterMesh && pend && pend.has(key)) break outer;
+                    // Wasser-Zellen ohne resolved Sheet = die echte Streaming-Front → warten.
+                    if (e.waterCells && !(wi && wi.has(key))) break outer;
                 }
             }
             k = ring;
@@ -75368,7 +75380,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.379.0";
+AnazhRealm.VERSION = "18.380.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

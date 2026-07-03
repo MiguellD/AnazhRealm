@@ -249,8 +249,15 @@ const server = http.createServer((req, res) => {
 
     const pendelt = edgeReversals >= 4 && edgeAmp >= 3;
     console.log(
-        `\n${pendelt ? "⛔ NEBEL PENDELT" : "✅ Nebel-Kante ruhig"} (Schwelle: ≥4 Wechsel & ≥3 m Amplitude).` +
-            (waterRetreats > 0 ? `  Quelle (Wasser-Front) oszilliert: ${waterRetreats} Rückzüge (real, GEMESSEN).` : "")
+        `\n${pendelt ? "⛔ NEBEL PENDELT" : "✅ Nebel-Kante ruhig"} (Schwelle: ≥4 Wechsel & ≥3 m Amplitude).`
+    );
+    // V18.380 — DIE WAHRHEITS-FRONT IST MONOTON (hartes Kriterium): die Front liest den
+    // kanonischen Zustand (waterCells vs resolved Sheet `wi.has`) statt der transienten
+    // Arbeits-Queue → sie kann während des Fills NICHT mehr zurückfallen (die alte pending-
+    // basierte Front kollabierte wiederholt auf 0 [Lüge nach unten: resolved-NULL + Re-Enqueue]
+    // und übersprang das B1-Async-Fenster [Lüge nach oben] → der Nebel folgte dem Terrain).
+    console.log(
+        `  ${waterRetreats === 0 ? "✅ WASSER-FRONT MONOTON (die Wahrheits-Front, V18.380)" : `⛔ WASSER-FRONT FÄLLT ZURÜCK: ${waterRetreats} Rückzüge, max ${maxWaterDrop} Ringe — die Front liest wieder transienten Queue-Zustand?`}`
     );
 
     console.log("\n— PHASE C: der PUFFER (das jitternde Ziel gegen die Nebel-Kante) —");
@@ -263,5 +270,5 @@ const server = http.createServer((req, res) => {
     console.log(
         `  ${bufOk ? "✅ DER PUFFER WIRKT" : "❌ Puffer defekt"}: die Kante hält gegen Streaming-Jitter UND löst bei echtem Rückzug.`
     );
-    process.exit(bufOk ? 0 : 1);
+    process.exit(bufOk && waterRetreats === 0 ? 0 : 1);
 })();
