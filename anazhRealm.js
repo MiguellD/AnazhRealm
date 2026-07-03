@@ -51647,19 +51647,55 @@ class AnazhRealm {
                     : _maxDim < 0.7
                       ? 0
                       : 1;
-                const g = new THREE.IcosahedronGeometry(0.5, det);
                 const matDef = part.material && this.state.materials ? this.state.materials[part.material] : null;
                 const haerte = matDef && matDef.tags && Number.isFinite(+matDef.tags.härte) ? +matDef.tags.härte : 0.5;
+                if (!this._archRockNoise) this._archRockNoise = new SimplexNoise("anazh-arch-rock");
+                // DAS NEUE KLEID Welle 2 — DER STEIN AUS DER GETEILTEN QUELLE (phyto-core,
+                // die Vorlagen-`buildBoulder`, Zingg/Wadell): mehr-oktavige Bruch-Struktur +
+                // Sediment-Bänke + Wadell-Facetten statt der alten ein-oktavigen Noise-Kugel.
+                // Die härte treibt die Angularität (hart → weniger Rundung = mehr Facetten +
+                // rauer). Die Form ist deterministisch (fixe noise3 + seed aus den Maßen). Der
+                // Part bleibt shape `noiserock` → Tags frozen (der Geometrie-Tausch ändert nur
+                // die Vertex-Positionen, nie die Form-/Material-Strings).
+                const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+                if (core && typeof core.buildBoulderGeometry === "function") {
+                    const noise3 = (x, y, z) => this._archRockNoise.noise3D(x, y, z);
+                    let hs = ((Math.round(sx * 97) * 131 + Math.round(sy * 89) * 71 + Math.round(sz * 83) * 53) & 0x7fffffff) || 1;
+                    const seq = () => {
+                        hs = (hs * 1664525 + 1013904223) & 0x7fffffff;
+                        return hs / 0x7fffffff;
+                    };
+                    const g = core.buildBoulderGeometry(
+                        THREE,
+                        noise3,
+                        {
+                            size: 1,
+                            elong: 0.2 + 0.2 * (1 - haerte),
+                            sph: 0.62,
+                            round: Math.max(0.05, Math.min(0.9, 0.62 - 0.5 * haerte)),
+                            rough: 0.34 + 0.4 * haerte,
+                            strat: 0.12,
+                            detail: det + 2,
+                            seed: (hs % 9973) + 1,
+                        },
+                        seq
+                    );
+                    if (g) {
+                        g.scale(0.5 * sx, 0.5 * sy, 0.5 * sz);
+                        g.computeVertexNormals();
+                        return g;
+                    }
+                }
+                // Fallback (kein phyto-core): die alte ein-oktavige Noise-Kugel.
                 const strength = Number.isFinite(part.noiseStrength) ? part.noiseStrength : 0.16 + 0.18 * (1 - haerte);
                 const freq = 1.5 + haerte * 2.2;
-                if (!this._archRockNoise) this._archRockNoise = new SimplexNoise("anazh-arch-rock");
-                const noise = this._archRockNoise;
+                const g = new THREE.IcosahedronGeometry(0.5, det);
                 const ap = g.attributes.position;
                 for (let i = 0; i < ap.count; i++) {
                     const vx = ap.getX(i);
                     const vy = ap.getY(i);
                     const vz = ap.getZ(i);
-                    const n = noise.noise3D(vx * freq + 11.2, vy * freq - 7.4, vz * freq + 3.1);
+                    const n = this._archRockNoise.noise3D(vx * freq + 11.2, vy * freq - 7.4, vz * freq + 3.1);
                     const d = 1 + n * strength;
                     ap.setXYZ(i, vx * d * sx, vy * d * sy, vz * d * sz);
                 }

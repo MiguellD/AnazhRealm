@@ -119,15 +119,36 @@ Kern, der Stamm wird robuster und simpler, das System kommt näher an die Zukunf
 
 ## §2 — DIE WELLEN (der PHYTO-CORE-Migrations-Bogen)
 
-> **STAND: Welle 0 GEBAUT ✓ (V18.386, 03.07.2026).** Die geteilte Quelle steht: `phyto-core.js`
-> trägt `growSkeleton` (byte-identisch aus dem alten `_phytoGrowSkeleton` extrahiert), der Trunk
-> ist ein dünner Delegator (die 334-Zeilen-Referenz AST-präzise geschnitten — KEIN Duplikat mehr),
-> Main (index.html) + Worker (voxel-worker.js importScripts) lesen dieselbe Datei. Beweis-Linsen:
-> `diag-phyto-tree` (die Gesetze aus der neuen Quelle · im `check`-Gate) + NEU `diag-phyto-core-parity`
-> (Main==Worker byte-identisch, 48 Läufe 0 divergent · im `check`-Gate). Voll grün: check · lint ·
-> format · page-error 0 · fast 13/13. **VORHER (V18.385): K0+K1** — der Herz-Tausch (gesetz-wahrer
-> Wuchs) war schon vollzogen; Welle 0 hob ihn auf das geteilte Fundament. **NÄCHSTES: Welle 1**
-> (die Farb-/Atlas-Rezepte als zweite Schale auf phyto-core).
+> **STAND: Welle 0+1+2(Fels) GEBAUT ✓ (V18.386, 03.07.2026).** DER SCHÖPFER-AUFTRAG (03.07.,
+> scharf): „keine halben Sachen — AnazhRealm ist NICHT auf dem Niveau der Vorlage-Welt. Jede
+> Baumsorte, die Steine, die Kristalle, die Terrain-Oberfläche, die Gräser, das LOD-Laden, das
+> Wetter, der Nebel — ALLES durch die eine Pipeline, keine Shortcuts, präzise, die Pipeline der
+> Zukunft." → der Bogen ist NICHT „ein paar Assets", sondern **die GANZE Welt-Präsentation auf
+> das Portal-Niveau** (der Vorlage-Look als Qualitäts-Messlatte für jede Ebene). GEBAUT:
+> **Welle 0** die geteilte Quelle (`phyto-core.js`: `growSkeleton` byte-identisch extrahiert,
+> Trunk-Delegator, Main+Worker lesen eine Datei; `diag-phyto-tree` + `diag-phyto-core-parity`).
+> **Welle 1** die echten Laub-Assets durchgezogen (`bakeLeafAtlasCanvas` = die Vorlagen-
+> `bakeLeafAtlas` byte-treu + `buildFoliageQuads` = die Vorlagen-`pushLeafClusterQuad`; AnazhRealms
+> 209-Zeilen-Atlas-Painter + card{cross}-Montage GELÖSCHT → dünne Wrapper; die Eiche trägt sauberes
+> grünes Cluster-Laub [Tan weg], die Tanne Nadel-Sprays; `leafBudget` L0 64→480). **Welle 2 (Fels)**
+> `buildBoulderGeometry` = die Vorlagen-`buildBoulder` (Zingg/Wadell · fbm3+ridged · Sediment-Bänke ·
+> Wadell-Facetten; THREE+noise3 injiziert) → AnazhRealms noiserock trägt jetzt echte geologische
+> Bruch-Form statt der ein-oktavigen Kugel. Voll grün: check · page-error 0 · fast 13/13.
+>
+> **DER RESTBOGEN — jede Ebene auf Portal-Niveau (die Schöpfer-Liste, präzise, keine Shortcuts):**
+> **W2b Kristalle** (die Vorlagen-`emitCrystals`/`pushCrystal` prüfen gegen AnazhRealms `crystalPoint`
+> — die reichere Quelle gewinnt, gemessen am Auge) · **W2c Fels-Geologie-FARBE** (die `withColor`-
+> Vertex-Geologie an ein rock-Material, das vertexColors liest — Granit-Speckle/Eisen/Moos) ·
+> **W3 Rinde** (die Vorlagen-`buildTube`/`pushSegment` + barkNormal → AnazhRealms `_buildTreeTubeGeometry`
+> ablösen; der Tan-Stamm bekommt die Furchen-Tube) · **W4 alle Baumsorten getunt** (jede Art an die
+> Vorlagen-Dials [`SPECIES_GRAMMAR`/`SPECIES_PALETTE`] — Birke/Weide/Palme/Zypresse/Mammut am Auge)
+> · **W5 Terrain-Oberfläche + Gräser** (der Vorlage-Boden-/Gras-LOOK als Messlatte — die
+> `_substanceCharacter`-Oberfläche + `_grassInstanceMat` an die Vorlage angleichen; die VOXEL-Tech
+> bleibt [tiefer als das Portal-Heightfield, CLAUDE.md], nur der LOOK zieht nach) · **W6 LOD-Laden +
+> Nebel + Wetter** (der Vorlage-Lade-/Nebel-/Wetter-Rhythmus als Messlatte für den Reveal/die
+> Atmosphäre; die AnazhRealm-Systeme [Ring-Atem · Nebel-Trägheit · Wetter-Dimm] existieren tief —
+> der Feinschliff bringt sie auf das Vorlage-Gefühl). Jede Welle: die Diag-Zahl (Tags frozen ·
+> Determinismus) UND der settled Augenhöhen-Shot; keine Ebene gilt als „fertig" ohne das Auge.
 
 ### Welle 0 — DIE GETEILTE QUELLE (das Fundament) ✓
 

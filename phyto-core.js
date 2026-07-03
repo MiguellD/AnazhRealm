@@ -540,9 +540,206 @@
         return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
     }
 
+    // DAS NEUE KLEID Welle 2 — DER STEIN aus der Vorlage (`buildBoulder`, Zingg/Wadell). Ein
+    // subdividiertes Ikosaeder, radial per fbm3 + ridged verschoben (Bruch-Struktur), Zingg-
+    // Formraum (elong/sph), Sediment-Bänke (strat), Wadell-Facetten-Clipping (round) + Laplace-
+    // Rundung. THREE + eine noise3-Funktion werden INJIZIERT (kein Perm-Tabellen-Port; Main gibt
+    // seine SimplexNoise, das Portal seine simplex3 — die Form ist gesetz-gleich, nicht byte-
+    // gleich, was für Fels genügt [kein Lockstep]). Optional geologische Vertex-Farben
+    // (opts.withColor + THREE.Color) für Materialien, die vertexColors lesen. `seq` (0..1) treibt
+    // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
+    function buildBoulderGeometry(THREE, noise3, P, seq) {
+        if (!THREE || !THREE.IcosahedronGeometry) return null;
+        const rnd = typeof seq === "function" ? seq : Math.random;
+        const rrange = (a, b) => a + (b - a) * rnd();
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+        const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+        const vsub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+        const vdot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        const n3 = typeof noise3 === "function" ? noise3 : (x, y, z) => Math.sin(x * 1.7 + y * 2.3 + z * 3.1) * 0.5;
+        const fbm3 = (p, oct, off) => {
+            let f = 1,
+                a = 0.5,
+                sum = 0,
+                nrm = 0;
+            for (let i = 0; i < oct; i++) {
+                sum += a * n3(p[0] * f + off, p[1] * f + off * 1.7, p[2] * f + off * 2.3);
+                nrm += a;
+                a *= 0.5;
+                f *= 2.0;
+            }
+            return sum / nrm;
+        };
+        const ridged = (p, oct, off) => {
+            let f = 1,
+                a = 0.5,
+                s = 0,
+                nrm = 0;
+            for (let i = 0; i < oct; i++) {
+                const v = 1 - Math.abs(n3(p[0] * f + off, p[1] * f + off * 1.7, p[2] * f + off * 2.3));
+                s += a * v * v;
+                nrm += a;
+                a *= 0.5;
+                f *= 2.0;
+            }
+            return s / nrm;
+        };
+        const elong = P.elong != null ? P.elong : 0.3,
+            sph = P.sph != null ? P.sph : 0.6,
+            round = P.round != null ? P.round : 0.42,
+            rough = P.rough != null ? P.rough : 0.55,
+            strat = P.strat != null ? P.strat : 0.1,
+            off = (P.seed || 0) * 13.7;
+        const detail = Math.max(1, (P.detail || 4) - 1);
+        let geo = THREE.IcosahedronGeometry ? new THREE.IcosahedronGeometry(1, detail) : null;
+        if (THREE.BufferGeometryUtils && THREE.BufferGeometryUtils.mergeVertices) {
+            geo = THREE.BufferGeometryUtils.mergeVertices(geo);
+        }
+        const pos = geo.attributes.position,
+            n = pos.count;
+        const idxAttr = geo.index;
+        const adj = Array.from({ length: n }, () => new Set());
+        if (idxAttr) {
+            const idx = idxAttr.array;
+            for (let i = 0; i < idx.length; i += 3) {
+                const a = idx[i],
+                    b = idx[i + 1],
+                    c = idx[i + 2];
+                adj[a].add(b);
+                adj[a].add(c);
+                adj[b].add(a);
+                adj[b].add(c);
+                adj[c].add(a);
+                adj[c].add(b);
+            }
+        }
+        const sx = 1 + 0.75 * elong,
+            sz = 1 - 0.35 * elong,
+            sy = 1 - 0.62 * (1 - sph);
+        const V = [],
+            dn = [];
+        const vn = (a) => {
+            const l = Math.hypot(a[0], a[1], a[2]) || 1e-9;
+            return [a[0] / l, a[1] / l, a[2] / l];
+        };
+        for (let i = 0; i < n; i++) {
+            const x = pos.getX(i),
+                y = pos.getY(i),
+                z = pos.getZ(i);
+            dn.push(vn([x, y, z]));
+            V.push([x * sx, y * sy, z * sz]);
+        }
+        const ampF = 0.12 + rough * 0.34,
+            ridgeW = 1 - round * 0.6;
+        for (let i = 0; i < n; i++) {
+            const p = V[i];
+            const base = fbm3([p[0] * 1.05, p[1] * 1.05, p[2] * 1.05], 4, off);
+            const base2 = fbm3([p[0] * 2.2, p[1] * 2.2, p[2] * 2.2], 3, off + 2.2);
+            const rg = ridged([p[0] * 1.8, p[1] * 1.8, p[2] * 1.8], 4, off + 5.1);
+            const grain = fbm3([p[0] * 7.0, p[1] * 7.0, p[2] * 7.0], 3, off + 11.3);
+            const sDamp = strat > 0.5 ? 0.55 : 1.0;
+            let disp =
+                ampF * sDamp * (0.62 * base + 0.16 * base2 + 0.6 * (rg - 0.5) * ridgeW) + grain * ampF * 0.42 * sDamp;
+            if (strat > 0.02) {
+                const step = Math.sin(V[i][1] * 7.6 + off);
+                disp += (step > 0.22 ? 0.16 : step < -0.22 ? -0.12 : step * 0.22) * strat;
+            }
+            V[i] = vadd(V[i], vscl(dn[i], disp));
+        }
+        const K = round < 0.55 ? Math.round(((0.55 - round) / 0.55) * 6) : 0;
+        for (let pl = 0; pl < K; pl++) {
+            let pn;
+            if (strat > 0.5) pn = vn([rrange(-0.3, 0.3), (rnd() < 0.5 ? 1 : -1) * rrange(0.7, 1), rrange(-0.3, 0.3)]);
+            else pn = vn([rrange(-1, 1), rrange(-1, 0.6), rrange(-1, 1)]);
+            const d0 = rrange(0.58, 0.86);
+            for (let i = 0; i < n; i++) {
+                const dd = vdot(V[i], pn) - d0;
+                if (dd > 0) V[i] = vsub(V[i], vscl(pn, dd * 0.95));
+            }
+        }
+        if (round > 0.78) {
+            const NV = V.map((v, i) => {
+                let a = vscl(v, 3),
+                    c = 3;
+                adj[i].forEach((j) => {
+                    a = vadd(a, V[j]);
+                    c++;
+                });
+                return vscl(a, 1 / c);
+            });
+            for (let i = 0; i < n; i++) V[i] = NV[i];
+        }
+        for (let i = 0; i < n; i++) pos.setXYZ(i, V[i][0], V[i][1], V[i][2]);
+        pos.needsUpdate = true;
+        geo.computeVertexNormals();
+        // Optional: geologische Vertex-Farben (AO in Mulden · Sediment-Bänke · Eisen-Schlieren).
+        if (P.withColor && THREE.Color) {
+            const nor = geo.attributes.normal;
+            const ao = new Float32Array(n);
+            for (let i = 0; i < n; i++) {
+                let mean = [0, 0, 0],
+                    c = 0;
+                adj[i].forEach((j) => {
+                    mean = vadd(mean, V[j]);
+                    c++;
+                });
+                mean = vscl(mean, 1 / Math.max(1, c));
+                const toMean = vsub(mean, V[i]),
+                    nv = [nor.getX(i), nor.getY(i), nor.getZ(i)];
+                ao[i] = clamp(0.5 + vdot(vn(toMean), nv) * 1.2, 0.12, 1);
+            }
+            const cols = new Float32Array(n * 3);
+            const base = new THREE.Color(P.rockA || 0x8a8278),
+                dark = new THREE.Color(P.rockB || 0x4a463e),
+                acc = new THREE.Color(P.rockC || 0x9a9286);
+            const quartz = new THREE.Color(0xe8e0d2),
+                feld = new THREE.Color(0xc69a86),
+                mica = new THREE.Color(0x2c2a26),
+                bleach = new THREE.Color(0xccc7b6),
+                iron = new THREE.Color(0x7a4a26);
+            let s2 = 0;
+            const sr = () => {
+                s2 = (s2 * 1664525 + 1013904223) & 0x7fffffff;
+                return s2 / 0x7fffffff;
+            };
+            s2 = Math.floor((P.seed || 1) * 9973) & 0x7fffffff;
+            for (let i = 0; i < n; i++) {
+                let c = base.clone();
+                const up = nor.getY(i);
+                if (P.speckle) {
+                    const m = sr();
+                    if (m < 0.14) c.lerp(quartz, 0.6);
+                    else if (m < 0.26) c.lerp(feld, 0.45);
+                    else if (m < 0.34) c.lerp(mica, 0.65);
+                }
+                c.lerp(dark, ao[i] * 0.7);
+                if (ao[i] < 0.42 && up > 0.1) c.lerp(bleach, ((0.42 - ao[i]) / 0.42) * 0.4 * clamp(up, 0, 1));
+                if (strat > 0.02) {
+                    const band = Math.sin(V[i][1] * 7.0 + off);
+                    if (band > 0.4) c.lerp(acc, 0.55 * strat);
+                    else if (band < -0.4) c.lerp(dark, 0.6 * strat);
+                }
+                const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, off + 21.0);
+                if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6);
+                const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, off + 7.7);
+                c.multiplyScalar(1 + mott * 0.22);
+                c.multiplyScalar(0.88 + sr() * 0.22);
+                cols[i * 3] = c.r;
+                cols[i * 3 + 1] = c.g;
+                cols[i * 3 + 2] = c.b;
+            }
+            geo.setAttribute("color", new THREE.BufferAttribute(cols, 3));
+        }
+        const size = P.size != null ? P.size : 0.5;
+        geo.scale(size, size, size);
+        return geo;
+    }
+
     root.__phytoCore = {
         growSkeleton: growSkeleton,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
+        buildBoulderGeometry: buildBoulderGeometry,
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);
