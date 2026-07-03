@@ -54167,8 +54167,8 @@ class AnazhRealm {
             },
         ];
 
-        // W12 Phase 2 — Terrain-Welt-Portal: ein Quarz-Ring zur zweiten
-        // fremden Welt (three.terrain.js, worlds/terrain/).
+        // Terrain-Portal (heute: Phytogenesis & Lithos) — ein Quarz-Ring
+        // zur fremden Morphologie-Labor-Welt (worlds/terrain/).
         const weltTerrainParts = [
             {
                 shape: "torus",
@@ -54744,13 +54744,15 @@ class AnazhRealm {
                 portalMeta: portalTo("fluid"),
                 parts: this._stationVariant(weltStromParts, felsWorldSeed + "-portal2"),
             },
-            // W12 Phase 2 — Terrain-Welt-Portal: die zweite fremde Welt.
-            // three.terrain.js (klassisches Global-Skript) — eine 3D-Land-
-            // schaft. Beweist: dieselbe Brücke trägt eine strukturell andere
-            // Engine. dsl-Manifest: skybox_color (Kern) + gebirge/ebene/neu.
+            // Terrain-Portal, dritte Gestalt — PHYTOGENESIS & LITHOS: das
+            // Morphologie-Labor (Bäume/Blumen/Felsen aus Gesetzen, begeh-
+            // barer Wald, vendored Three r128). Der Bauplan-NAME welt_terrain
+            // + die Registry-id "terrain" bleiben (load-bearing: Saves,
+            // Katalog, Tests — V18.259: stabile Identität, variable Gestalt).
+            // dsl-Manifest: Presets + wald/neu + Wetter/Jahreszeit/Tageszeit.
             welt_terrain: {
                 name: "welt_terrain",
-                label: "Terrain-Welt",
+                label: "Phytogenesis & Lithos",
                 builtIn: true,
                 role: "portal",
                 roleManual: true,
@@ -75962,7 +75964,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.382.0";
+AnazhRealm.VERSION = "18.383.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -78269,10 +78271,44 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
     }),
     terrain: Object.freeze({
         id: "terrain",
-        label: "Terrain-Welt",
+        label: "Phytogenesis & Lithos",
         world: "worlds/terrain/index.html",
-        dsl: Object.freeze(["skybox_color", "gebirge", "ebene", "neu"]),
-        desc: "Eine prozedurale 3D-Landschaft, von einer umkreisenden Kamera als Diorama gezeigt.",
+        // Dritte Gestalt (03.07.2026): das Morphologie-Labor (phytogenesis
+        // v38). Die id "terrain" bleibt — load-bearing für Saves/Bauplan/
+        // Tests (V18.259: stabile Identität, variable Gestalt). Die DSL
+        // spricht die eigene Sprache der Welt: Presets + wald/neu + Wetter/
+        // Jahreszeit/Tageszeit (kein skybox_color-Fake — den Himmel führt
+        // dort das Tag/Nacht-System).
+        dsl: Object.freeze([
+            "eiche",
+            "fichte",
+            "birke",
+            "weide",
+            "mammut",
+            "tanne",
+            "strauch",
+            "blume",
+            "gras",
+            "findling",
+            "basalt",
+            "sediment",
+            "zacken",
+            "geroell",
+            "kristalle",
+            "wald",
+            "neu",
+            "klar",
+            "bewoelkt",
+            "nebel",
+            "sturm",
+            "fruehling",
+            "sommer",
+            "herbst",
+            "winter",
+            "tag",
+            "nacht",
+        ]),
+        desc: "Das Morphologie-Labor: Bäume, Blumen und Felsen wachsen aus Gesetzen — mit begehbarem Wald, Tag/Nacht, Wetter und Jahreszeiten.",
     }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
     // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),

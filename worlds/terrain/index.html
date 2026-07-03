@@ -1,54 +1,120 @@
 <!doctype html>
 <html lang="de">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <!-- W12 Phase 2 — die Terrain-Welt: eigenes Document, eigene strikte
-             CSP. Skript nur same-origin (terrain.js + lib/), keine fremden
-             Origins. Die iframe-Sandbox trägt die Isolation. -->
-        <meta
-            http-equiv="Content-Security-Policy"
-            content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
-        />
-        <title>Terrain-Welt — AnazhRealm-Portal</title>
-        <style>
-            html,
-            body {
-                margin: 0;
-                height: 100%;
-                background: #121a2b;
-                overflow: hidden;
-                font-family: "Courier New", monospace;
-            }
-            canvas {
-                display: block;
-            }
-            #hud {
-                position: fixed;
-                left: 0;
-                right: 0;
-                bottom: 16px;
-                text-align: center;
-                font-size: 13px;
-                line-height: 1.7;
-                color: #b8c4d8;
-                text-shadow: 0 0 8px #000;
-                pointer-events: none;
-            }
-            #hud b {
-                color: #43c98a;
-            }
-        </style>
-    </head>
-    <body>
-        <div id="hud">
-            <div id="hud-line">Terrain-Welt — eine prozedurale Landschaft, von three.terrain.js geformt.</div>
-            <div>Reisender: <b id="avatar-name">…</b> · Esc — zurück zur Heimat-Welt</div>
-        </div>
-        <!-- Klassische Global-Skripte: erst Three.js (r130-Ära, three.terrain.js'
-             getesteter Pair), dann THREE.Terrain, dann der Welt-Adapter. -->
-        <script src="lib/three.min.js"></script>
-        <script src="lib/THREE.Terrain.min.js"></script>
-        <script src="terrain.js?v=3"></script>
-    </body>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Terrain-Portal, dritte Gestalt (03.07.2026) — PHYTOGENESIS & LITHOS:
+     das Morphologie-Labor des Schöpfers. Eigenes Document, eigene strikte
+     CSP: Skript nur same-origin (phytogenesis.js + lib/ — Three.js r128
+     vendored, kein CDN). Die iframe-Sandbox trägt die Isolation. Die
+     Portal-IDENTITÄT bleibt "terrain" (load-bearing), die GESTALT ist neu. -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/>
+<title>Phytogenesis &amp; Lithos — AnazhRealm-Portal</title>
+<style>
+body{margin:0;overflow:hidden;background:#070908}canvas{display:block}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#6a9a5a;font-family:monospace;font-size:14px;z-index:200;letter-spacing:2px}
+#ui{position:absolute;top:10px;left:10px;z-index:300;background:rgba(8,12,9,0.92);padding:14px;border:1px solid #2a3a26;border-radius:6px;font-family:monospace;font-size:11px;color:#7aaa66;max-width:300px;max-height:94vh;overflow:auto}
+.row{display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.row .lbl{width:100%;font-size:9px;color:#4a6a40;letter-spacing:1px;margin-bottom:2px}
+#ui button{background:#13200f;color:#9aca86;border:1px solid #2f4a26;padding:4px 9px;font-family:monospace;font-size:11px;cursor:pointer;border-radius:3px}
+#ui button:hover{background:#1c2e15}
+#ui button.active{background:#2f4a26;color:#caffaa}
+.slider-row{margin:4px 0;display:flex;align-items:center;gap:8px}
+.slider-row label{width:88px;font-size:10px;color:#6a8a56}
+.slider-row input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:#13200f;border-radius:2px;outline:none}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;background:#9aca66;border-radius:50%;cursor:pointer}
+.slider-row .val{width:48px;text-align:right;font-size:10px;color:#9aca66}
+.law{font-size:9px;color:#3f5a36;margin:1px 0 6px 0;padding-left:96px;line-height:1.3}
+.sep{height:1px;background:#1f3019;margin:8px 0}
+.hidden{display:none}
+#title{font-size:10px;color:#5a7a4a;letter-spacing:2px;margin-bottom:8px;border-bottom:1px solid #2a3a26;padding-bottom:6px}
+#waldBtn{display:block;width:100%;margin-top:9px;padding:10px;background:linear-gradient(135deg,#2e5a2a,#16320f);color:#d4ecb4;border:1px solid #4a7a3a;border-radius:7px;font-weight:bold;cursor:pointer;letter-spacing:.5px;font-size:13px;}
+#waldBtn:hover{background:linear-gradient(135deg,#3a6a34,#214a1c);}
+#forestHint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(8,14,8,.8);color:#d4ecb4;padding:9px 18px;border-radius:9px;font:13px system-ui,sans-serif;letter-spacing:.4px;display:none;z-index:60;border:1px solid #3a5a30;pointer-events:none;}
+#exitForest{position:fixed;top:14px;right:14px;background:rgba(8,14,8,.85);color:#ecc0a0;border:1px solid #6a4a3a;border-radius:7px;padding:8px 14px;cursor:pointer;font-weight:bold;display:none;z-index:60;}
+#exitForest:hover{background:rgba(44,22,14,.92);}
+#portal-hud{font-size:9px;color:#4a6a40;letter-spacing:1px;margin-bottom:8px;border-bottom:1px solid #2a3a26;padding-bottom:6px}
+#portal-hud b{color:#9aca86}
+</style>
+</head>
+<body>
+<div id="loading">Keimt im Gruen...</div>
+<div id="ui">
+<div id="title">PHYTOGENESIS &amp; LITHOS &nbsp;·&nbsp; Morphraum vollständig &nbsp;<span style="color:#9ece5a">⬡ v38</span></div>
+<div id="portal-hud">Reisender: <b id="avatar-name">…</b> · Esc = Heimat-Welt</div>
+<div class="row"><div class="lbl">REGNUM PLANTAE</div>
+<button data-p="eiche" class="active">Eiche</button><button data-p="fichte">Fichte</button><button data-p="birke">Birke</button><button data-p="weide">Trauerweide</button><button data-p="mammut">Mammutbaum</button><button data-p="tanne">Tanne</button><button data-p="strauch">Strauch</button><button data-p="blume">Wildblume</button><button data-p="gras">Grasbüschel</button></div>
+<div class="row"><div class="lbl">REGNUM LITHOS</div>
+<button data-p="findling">Findling</button><button data-p="basalt">Basaltsäulen</button><button data-p="sediment">Schichtfels</button><button data-p="zacken">Felszacken</button><button data-p="geroell">Geröllhalde</button><button data-p="kristalle">Kristalle</button></div>
+<div class="row"><button id="waldBtn">🌲 WALD BETRETEN — begehbar</button></div>
+<div class="sep"></div>
+<div id="panelPlant">
+<div class="slider-row"><label>Apikaldominanz</label><input type="range" id="sApi" min="0" max="1" step="0.01" value="0.30"><span class="val" id="vApi">0.30</span></div>
+<div class="law">→ Leittrieb vs. Verzweigung — Nadelbaum(hoch)→Laubkrone(tief)</div>
+<div class="slider-row"><label>Verästelung Δ</label><input type="range" id="sDelta" min="1.8" max="3.0" step="0.05" value="2.30"><span class="val" id="vDelta">2.30</span></div>
+<div class="law">→ r_Stamm^Δ = Σ r_Ast^Δ — da Vinci / Pipe-Modell (2 mech · 3 hydr)</div>
+<div class="slider-row"><label>Schlankheit</label><input type="range" id="sSlim" min="0" max="1" step="0.01" value="0.45"><span class="val" id="vSlim">0.45</span></div>
+<div class="law">→ H = k·D^(2/3) — McMahon elastische Knickgrenze</div>
+<div class="slider-row"><label>Gravitropismus</label><input type="range" id="sTrop" min="-1" max="1" step="0.02" value="-0.15"><span class="val" id="vTrop">-0.15</span></div>
+<div class="law">→ Sollwinkel z. Vertikalen — aufrecht(−) bis Trauerwuchs(+)</div>
+<div class="slider-row"><label>Belaubung</label><input type="range" id="sLeaf" min="0" max="1" step="0.01" value="0.6"><span class="val" id="vLeaf">0.60</span></div>
+<div class="law">→ Blattdichte + Blattgröße (Corner-Regel: Axialkonformität)</div>
+</div>
+<div id="panelRock" class="hidden">
+<div class="slider-row"><label>Genese</label><input type="range" id="rGen" min="0" max="1" step="0.01" value="0.55"><span class="val" id="vGen">0.55</span></div>
+<div class="law">→ kristallin → vulkanisch-säulig → massiv → klastisch (Genese-Achse leitet die Sorte ab)</div>
+<div class="slider-row"><label>Sphärizität</label><input type="range" id="rSph" min="0" max="1" step="0.01" value="0.30"><span class="val" id="vSph">0.30</span></div>
+<div class="law">→ Zingg c/b — kugelig(hoch) bis plattig/scheibig(tief)</div>
+<div class="slider-row"><label>Streckung</label><input type="range" id="rElo" min="0" max="1" step="0.01" value="0.20"><span class="val" id="vElo">0.20</span></div>
+<div class="law">→ Zingg b/a — gedrungen bis stängelig/säulig</div>
+<div class="slider-row"><label>Rundung</label><input type="range" id="rRnd" min="0" max="1" step="0.01" value="0.35"><span class="val" id="vRnd">0.35</span></div>
+<div class="law">→ Wadell-Rundung — eckig(gebrochen) bis gerundet(transportiert)</div>
+<div class="slider-row"><label>Rauheit D</label><input type="range" id="rRgh" min="0" max="1" step="0.01" value="0.55"><span class="val" id="vRgh">0.55</span></div>
+<div class="law">→ fraktale Oberfläche (fBm-Oktaven) — Verwitterungsgrad</div>
+<div class="slider-row"><label>Schichtung</label><input type="range" id="rStr" min="0" max="1" step="0.01" value="0.15"><span class="val" id="vStr">0.15</span></div>
+<div class="law">→ Sediment-Bänderung + differentielle Erosion (Simse)</div>
+</div>
+<div class="sep"></div>
+<div class="row"><div class="lbl">WIND (Eigenfrequenz f ∝ r/L²)</div>
+<button data-w="0" class="active">Windstill</button><button data-w="1">Brise</button><button data-w="2">Sturm</button></div>
+<div class="row"><div class="lbl">SAISON (Phänologie)</div>
+<button data-s="spring">Frühling</button><button data-s="summer" class="active">Sommer</button><button data-s="autumn">Herbst</button><button data-s="winter">Winter</button></div>
+<div class="sep"></div>
+<div class="row"><div class="lbl">WELT · Tag &amp; Nacht</div></div>
+<div class="slider-row"><label>Tageszeit</label><input type="range" id="wTime" min="0" max="24" step="0.05" value="10"><span class="val" id="wTimeV">10:00</span></div>
+<div class="row"><button id="wPlay">▶ Zeit</button><button data-spd="0.4">langsam</button><button data-spd="1.2" class="active">normal</button><button data-spd="5">schnell</button></div>
+<div class="row"><div class="lbl">WETTER</div></div>
+<div class="row"><button data-wx="klar" class="active">☀ Klar</button><button data-wx="bewoelkt">☁ Bewölkt</button><button data-wx="nebel">🌫 Nebel</button><button data-wx="sturm">⛈ Sturm</button></div>
+<div class="row"><button id="wxPlay">▶ Wetterspiel</button></div>
+<div class="slider-row"><label>Jahr</label><input type="range" id="wSeason" min="0" max="1" step="0.005" value="0.28"><span class="val" id="wSeasonV">Sommer</span></div>
+<div class="row"><button id="wSeasonPlay">▶ Jahreszeit</button></div>
+<div class="row"><button id="wShafts" title="Froxel-Transmittanz-Volumen: gerichtetes Streulicht. Am staerksten im Gegenlicht — Sonne tief stellen, Kamera zur Sonne drehen.">🌅 Lichtschäfte</button></div>
+<div class="row"><div class="lbl">LOD · gröbere Regeneration</div></div>
+<div class="row"><button data-l="0" class="active">L0 fein</button><button data-l="1">L1 mittel</button><button data-l="2">L2 grob</button></div>
+<div class="row"><button data-x="seed">↻ Neue Saat</button><button data-x="dice">🎲 Würfeln</button><button data-x="show">◎ Showcase</button></div>
+</div>
+<div id="forestHint">Klick = Umsehen · WASD = Gehen · Shift = Rennen · ESC = Maus frei</div>
+<button id="exitForest">✕ Wald verlassen</button>
+<!-- Klassische Global-Skripte: Three.js r128 + seine examples/js (der
+     getestete Verbund von phytogenesis v38), dann die Welt selbst. Die
+     Elemente oben stehen VOR den Skripten, damit wireForest/wireUI sie
+     beim Verdrahten findet (im Original stand der ✕-Knopf hinter dem
+     Skript → sein Click-Listener wurde nie gebunden). -->
+<script src="lib/three-r128.min.js"></script>
+<script src="lib/OrbitControls.js"></script>
+<script src="lib/PointerLockControls.js"></script>
+<script src="lib/BufferGeometryUtils.js"></script>
+<script src="lib/CopyShader.js"></script>
+<script src="lib/LuminosityHighPassShader.js"></script>
+<script src="lib/FXAAShader.js"></script>
+<script src="lib/EffectComposer.js"></script>
+<script src="lib/RenderPass.js"></script>
+<script src="lib/MaskPass.js"></script>
+<script src="lib/ShaderPass.js"></script>
+<script src="lib/UnrealBloomPass.js"></script>
+<script src="phytogenesis.js"></script>
+</body>
 </html>

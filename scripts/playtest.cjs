@@ -44148,32 +44148,32 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
 
-    // ### W12 Phase 2 — zweite fremde Welt: Terrain-Welt ###
+    // ### W12 Phase 2 — zweite fremde Welt (dritte Gestalt: Phytogenesis & Lithos) ###
     const w12terrainResults = await safeEvaluate(page, async () => {
         const r = window.anazhRealm;
         const out = {};
 
-        // Terrain-Welt-Dateien + vendored Engine werden ausgeliefert.
+        // Phytogenesis-Welt-Dateien + vendored Engine werden ausgeliefert.
         try {
             const htmlRes = await fetch("worlds/terrain/index.html");
             const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
             out.terrainHtmlServed =
                 htmlRes.ok &&
-                /Terrain-Welt/.test(htmlBody) &&
+                /Phytogenesis/.test(htmlBody) &&
                 /id="avatar-name"/.test(htmlBody) &&
-                /THREE\.Terrain\.min\.js/.test(htmlBody) &&
-                /terrain\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/terrain/terrain.js");
+                /three-r128\.min\.js/.test(htmlBody) &&
+                /phytogenesis\.js/.test(htmlBody);
+            const jsRes = await fetch("worlds/terrain/phytogenesis.js");
             const jsBody = jsRes.ok ? await jsRes.text() : "";
             out.terrainJsServed =
                 jsRes.ok &&
-                /THREE\.Terrain/.test(jsBody) &&
+                /PRESETS/.test(jsBody) &&
                 /function applyDsl/.test(jsBody) &&
                 /"ready"/.test(jsBody) &&
                 /"enter"/.test(jsBody) &&
                 /"exit"/.test(jsBody);
-            const threeRes = await fetch("worlds/terrain/lib/three.min.js");
-            const terrRes = await fetch("worlds/terrain/lib/THREE.Terrain.min.js");
+            const threeRes = await fetch("worlds/terrain/lib/three-r128.min.js");
+            const terrRes = await fetch("worlds/terrain/lib/UnrealBloomPass.js");
             out.terrainEngineVendored = threeRes.ok && terrRes.ok;
         } catch (e) {
             out.terrainHtmlServed = false;
@@ -44189,8 +44189,8 @@ async function checkBandW12WorldPortal(ctx) {
         out.terrainManifest =
             !!wt &&
             !!wt.portalMeta.dsl &&
-            wt.portalMeta.dsl.includes("gebirge") &&
-            wt.portalMeta.dsl.includes("ebene") &&
+            wt.portalMeta.dsl.includes("eiche") &&
+            wt.portalMeta.dsl.includes("wald") &&
             wt.portalMeta.dsl.includes("neu");
 
         const wtAff = r.computeBlueprintAffordances(wt);
@@ -44204,7 +44204,7 @@ async function checkBandW12WorldPortal(ctx) {
         const enterRes = entry ? r.enterPortal(entry) : { ok: false };
         const frame = document.querySelector("#portal-overlay iframe.portal-frame");
         out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
-        const rt = r._portalRouteDsl(["gebirge"], "Gebirge", null);
+        const rt = r._portalRouteDsl(["wald"], "Wald", null);
         out.terrainBridge = rt.forwarded === true;
         r.exitPortal();
         if (entry) r.removeArchitecture(entry);
@@ -44213,19 +44213,19 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Terrain-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
-        check("W12 P2: terrain.js (THREE.Terrain + Handshake) wird ausgeliefert", w12terrainResults.terrainJsServed);
-        check("W12 P2: Terrain-Engine vendored (three + THREE.Terrain)", w12terrainResults.terrainEngineVendored);
+        check("W12 P2: Phytogenesis-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
+        check("W12 P2: phytogenesis.js (PRESETS + Handshake) wird ausgeliefert", w12terrainResults.terrainJsServed);
+        check("W12 P2: Phytogenesis-Engine vendored (three r128 + Bloom)", w12terrainResults.terrainEngineVendored);
         check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
-        check("W12 P2: welt_terrain portalMeta zeigt auf die Terrain-Welt", w12terrainResults.terrainMeta);
-        check("W12 P2: welt_terrain trägt ein DSL-Manifest (gebirge/ebene/neu)", w12terrainResults.terrainManifest);
+        check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
+        check("W12 P2: welt_terrain trägt ein DSL-Manifest (eiche/wald/neu)", w12terrainResults.terrainManifest);
         check("W12 P2: welt_terrain trägt die isPortal-Affordance", w12terrainResults.terrainAffordance);
         check("W12 P2: welt_terrain ist _isPortalShaped", w12terrainResults.terrainPortalShaped);
-        check("W12 P2: enterPortal(welt_terrain) lädt die Terrain-Welt", w12terrainResults.enterTerrainWorld);
-        check("W12 P2: die Brücke trägt einen Terrain-Manifest-Op", w12terrainResults.terrainBridge);
+        check("W12 P2: enterPortal(welt_terrain) lädt die Phytogenesis-Welt", w12terrainResults.enterTerrainWorld);
+        check("W12 P2: die Brücke trägt einen Phytogenesis-Manifest-Op", w12terrainResults.terrainBridge);
     } else {
-        check("W12 P2: Terrain-Welt Tests laufen", false, w12terrainResults ? w12terrainResults.error : "no result");
+        check("W12 P2: Phytogenesis-Welt Tests laufen", false, w12terrainResults ? w12terrainResults.error : "no result");
     }
 
     // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
@@ -44251,7 +44251,7 @@ async function checkBandW12WorldPortal(ctx) {
             wt.portalMeta.world === REG.terrain.world &&
             wp.portalMeta.world === REG.skeleton.world &&
             ws.portalMeta.dsl.includes("sturm") &&
-            wt.portalMeta.dsl.includes("gebirge");
+            wt.portalMeta.dsl.includes("wald");
 
         out.aimExists = typeof r.aimBlueprintAtWorld === "function";
 
@@ -44275,7 +44275,7 @@ async function checkBandW12WorldPortal(ctx) {
             r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
 
         // aimBlueprintAtWorld per Label (case-insensitive).
-        const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Terrain-Welt");
+        const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Phytogenesis & Lithos");
         out.aimByLabel =
             aimLabel.ok === true &&
             r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
@@ -44539,7 +44539,7 @@ async function checkBandW12WorldPortal(ctx) {
         for (const [w, file] of [
             ["Skelett", "skeleton/skeleton.js"],
             ["Strom", "fluid/fluid.js"],
-            ["Terrain", "terrain/terrain.js"],
+            ["Phytogenesis", "terrain/phytogenesis.js"],
         ]) {
             const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
             check(
@@ -44660,7 +44660,7 @@ async function checkBandW12WorldPortal(ctx) {
         for (const [w, file] of [
             ["Skelett", "skeleton/skeleton.js"],
             ["Strom", "fluid/fluid.js"],
-            ["Terrain", "terrain/terrain.js"],
+            ["Phytogenesis", "terrain/phytogenesis.js"],
         ]) {
             const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
             check(
@@ -45596,9 +45596,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
         );
         const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
-        const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "terrain.js"), "utf8");
+        const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "phytogenesis.js"), "utf8");
         check(
-            "W13 V2: fluid + terrain zeigen den Vibe-Pass-Fingerprint des Reisenden",
+            "W13 V2: fluid + phytogenesis zeigen den Vibe-Pass-Fingerprint des Reisenden",
             /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
         );
     } catch (err) {
