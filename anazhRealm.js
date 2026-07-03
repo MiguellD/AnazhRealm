@@ -27499,9 +27499,14 @@ class AnazhRealm {
         // reicht über die Chunk-Grenze, beide Nachbarn rechnen am geteilten Rand denselben Wert =
         // naht-frei per Konstruktion). Pure Mathematik auf den typed arrays → byte-identisch im
         // Worker-Mirror (`buildWaterSheetGeometry` zieht 1:1 mit, s.u.), Determinismus unangetastet.
-        const _smoothWetAttr = (arr) => {
+        // V18.378 (Audit, GEMESSEN 8,4-cm-aDepth-Naht am geteilten Grenz-Vertex): die Pass-Zahl
+        // MUSS ≤ SMOOTH_PASSES sein — der Grenz-Vertex liest die Spalten −1..0, deren Glättungs-
+        // Radius k passt in den PAD (=SMOOTH_PASSES+1) gdw. k ≤ SMOOTH_PASSES (exakt wie `tops`,
+        // dessen Naht 7e-15 misst). Der alte `SMOOTH_PASSES+1` reichte 1 Zelle ÜBER den Pad → die
+        // Grid-Rand-Trunkierung der Box-Blur ist zwischen Nachbarn ASYMMETRISCH → eine Attribut-Naht.
+        const _smoothWetAttr = (arr, passes = SMOOTH_PASSES) => {
             const out = new Float64Array(GW * GW);
-            for (let pass = 0; pass < SMOOTH_PASSES + 1; pass++) {
+            for (let pass = 0; pass < passes; pass++) {
                 for (let g = 0; g < GW * GW; g++) {
                     if (Number.isNaN(tops[g])) {
                         out[g] = arr[g];
@@ -27538,14 +27543,25 @@ class AnazhRealm {
         // STETIGER Tiefen-Verlauf über die ganze Breite (flach am Ufer, tief in der Mitte, ohne
         // Sprung) → der Shader blendet die Farbe weich statt in Bändern. Pure Mathematik auf den
         // typed arrays (tops + solidG sind beide mirror-identisch) → byte-identisch im Worker.
+        // V18.378 (Audit-Korrektur, zwei Punkte): (a) die WAHRE Dicke — `solidG` ist die UNTERKANTE
+        // der höchsten SOLID-Zelle, die Bett-OBERFLÄCHE (wo das Wasser aufliegt) ist `solidG + step`;
+        // ohne +step wäre die Tiefe systematisch 1 Zelle (1,8 m) zu tief. (b) KEINE zweite Glättung
+        // der Differenz — depth = smooth(tops) − smooth(bed) ist als Differenz zweier naht-exakter
+        // Felder selbst naht-exakt UND stetig; ein weiterer Blur darüber verdoppelte den Radius
+        // über den Pad hinaus (die gemessene 8,4-cm-Naht).
         const bedG = new Float64Array(GW * GW);
-        for (let g = 0; g < GW * GW; g++) bedG[g] = solidG[g];
+        for (let g = 0; g < GW * GW; g++) bedG[g] = solidG[g] + step;
         _smoothWetAttr(bedG);
         for (let g = 0; g < GW * GW; g++) depthG[g] = Number.isNaN(tops[g]) ? 0 : Math.max(0, tops[g] - bedG[g]);
-        _smoothWetAttr(depthG);
+        // V18.378 — slope ist eine ABLEITUNG (liest tops ±1) → ihr Grenz-Vertex-Kegel reicht eine
+        // Zelle weiter als der eines Wertes; ein Pass weniger hält ihn im PAD. GEMESSENER Rest-
+        // Diff am geteilten Vertex: 0.0037 (die geglätteten tops sind an den Pad-RAND-Zellen ≤−2
+        // selbst rand-kontaminiert, die die slope-Ableitung dort liest) = 0.1–0.4 % Schaum-
+        // Amplitude, unsichtbar; exakt 0 bräuchte PAD+4 (~50 % teurerer Spalten-Scan) — bewusst
+        // NICHT (aDepth, die sichtbare Farb-Größe, ist exakt: 5e-15).
         const slopeGS = new Float64Array(GW * GW);
         for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];
-        _smoothWetAttr(slopeGS);
+        _smoothWetAttr(slopeGS, Math.max(0, SMOOTH_PASSES - 1));
         for (let g = 0; g < GW * GW; g++) slopeG[g] = slopeGS[g];
         // Vertex-Grid (dim+1)²: Vertex (i,k) = Ecke der Spalten (i−1,k−1)…(i,k).
         const NV = dim + 1;
@@ -70248,13 +70264,22 @@ class AnazhRealm {
         const tint = this._dayNightComputeTint(stop);
         const angle = t * Math.PI * 2 - Math.PI / 2;
         const sunDir = this._dayNightSunDirection(angle);
+        // V18.378 — der MOND aus der EINEN Richtungs-Quelle: `_dayNightSunDirection(angle+π)` ist
+        // EXAKT die Formel, mit der `_updateCelestialBodies` das sichtbare Mond-Mesh positioniert
+        // (cos/sin(moonAngle) + der z-Bogen sin(moonAngle·0.5)·0.4). Ein simples −sunDir hätte eine
+        // ANDERE z-Komponente → Schatten/Glitzer zeigten nicht exakt vom sichtbaren Mond weg.
+        // `lightDir` = der AKTIVE Himmelskörper (Sonne über dem Horizont, sonst der Mond) — er
+        // speist das Richtlicht, den Wasser-Glitzer und die Gras-Translucency (der Mond „spricht"
+        // auch auf dem Wasser); die Skybox behält den echten sunDir (der Wolken-Glow ist Sonne).
+        const moonDir = this._dayNightSunDirection(angle + Math.PI);
+        const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(t, tint.skyMul);
-        this._dayNightApplyDirectionalLight(sunDir, tint);
+        this._dayNightApplyDirectionalLight(sunDir, tint, moonDir);
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiAndFog(angle, tint);
-        this._dayNightApplyWaterMaterials(sunDir);
+        this._dayNightApplyWaterMaterials(lightDir);
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor /
@@ -70466,7 +70491,7 @@ class AnazhRealm {
     // Azimut) liess er bis ~1 Texel (~0.29 m) Rest-Swimming → die Rasterlinie
     // „wandert beim Laufen" an vertikalen Wänden. Geheilt durch den LIGHT-SPACE-
     // Snap im Block unten (Snap in der Ebene ⟂ sunDir statt Welt-X/Z) → 0.
-    _dayNightApplyDirectionalLight(sunDir, tint) {
+    _dayNightApplyDirectionalLight(sunDir, tint, moonDir) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
@@ -70476,8 +70501,12 @@ class AnazhRealm {
         // UNTEN (sunDir.y < 0) mit dem flachen 0,28-Stop-„Füllen" = die flache, ausgewaschene
         // Nacht. Jetzt cast der Mond gerichtet von oben. Der Wechsel passiert am Horizont (y=0),
         // wo BEIDE Körper auf 0 gedimmt sind (`_celestialHorizonFade`) → kein Pop/Schatten-Sprung.
+        // V18.378 — `moonDir` kommt vom EINEN Aufrufer (_applyDayNightToScene) aus derselben
+        // Formel wie das sichtbare Mond-Mesh (Schatten zeigen exakt vom Mond weg); der −sunDir-
+        // Guard deckt nur einen direkten Diag-Aufruf ohne dritten Parameter.
         const sunUp = sunDir.y >= 0;
-        const lightDir = sunUp ? sunDir : { x: -sunDir.x, y: -sunDir.y, z: -sunDir.z };
+        const md = moonDir || { x: -sunDir.x, y: -sunDir.y, z: -sunDir.z };
+        const lightDir = sunUp ? sunDir : md;
         let focusX = pm ? pm.position.x : 0;
         let focusY = 0;
         let focusZ = pm ? pm.position.z : 0;
@@ -70554,7 +70583,9 @@ class AnazhRealm {
         } else {
             const M = AnazhRealm.MOONLIGHT;
             dl.color.setRGB(M.r, M.g, M.b);
-            dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(-sunDir.y);
+            // V18.378 — der Fade liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
+            // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
+            dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(md.y);
         }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
@@ -70565,11 +70596,12 @@ class AnazhRealm {
         // V12.0-f — kein toonLightUniforms-Sync mehr. Die nativen
         // MeshToonNodeMaterials (lights=true) konsumieren dl.color/intensity/
         // position direkt über Three.js' WebGPU-Lighting-Pipeline.
-        // V16.2 — Gras-Translucency braucht die Sonnen-Richtung als eigene
+        // V16.2 — Gras-Translucency braucht die Licht-Richtung als eigene
         // Uniform (das Gras-colorNode rechnet Gegenlicht-Durchscheinen). EINE
-        // Quelle: derselbe sunDir, der die DirectionalLight-Position speist.
+        // Quelle: derselbe Vektor, der die DirectionalLight-Position speist —
+        // V18.378: der AKTIVE Himmelskörper (nachts scheint der Mond durchs Gras).
         if (this.state.windUniforms && this.state.windUniforms.uSunDir) {
-            this.state.windUniforms.uSunDir.value.copy(sunDir).normalize();
+            this.state.windUniforms.uSunDir.value.set(lightDir.x, lightDir.y, lightDir.z).normalize();
         }
         // V17.2 — derselbe sunDir speist den Wolken-Glow im Skybox-Shader
         // (golden-hour-Rand zur Sonne hin). EINE Quelle, drei Konsumenten.
@@ -70832,7 +70864,11 @@ class AnazhRealm {
     // Tag-Nacht-Wasser-Sprache: uSunDir + uLight + fog. Der ursprüngliche
     // Pfad rief das Hydro-Material zweimal (Duplikat aus V8.29.1 + V9.43-c);
     // die Writes sind idempotent → eine Anwendung ist verhaltensneutral.
-    _dayNightApplyWaterMaterials(sunDir) {
+    // V18.378 — `lightDir` ist der AKTIVE Himmelskörper (Sonne tags, Mond nachts, vom EINEN
+    // Aufrufer _applyDayNightToScene): der Wasser-Glitzer/Specular folgt dem Körper, der
+    // wirklich leuchtet — der Mond „spricht" auch auf dem Wasser (der klassische Mond-
+    // Glitzerpfad), statt nachts auf die Unter-Horizont-Sonne zu zeigen.
+    _dayNightApplyWaterMaterials(lightDir) {
         if (!this.state.directionalLight) return;
         const dl = this.state.directionalLight;
         const fog = this.state.fog;
@@ -70844,7 +70880,7 @@ class AnazhRealm {
         // ist gestrichen — der V10.0-f-Bogen ist vollendet.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
-            if (uniforms.sunDir) uniforms.sunDir.value.copy(sunDir);
+            if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
             if (fog) {
                 if (uniforms.fogColor) uniforms.fogColor.value.copy(fog.color);
@@ -75307,7 +75343,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.377.0";
+AnazhRealm.VERSION = "18.378.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim

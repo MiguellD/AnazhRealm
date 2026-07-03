@@ -1383,9 +1383,11 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     // whitewater) blieben roh per-Zelle → sprangen am steilen Lauf + an der Chunk-Grenze = das
     // konzentrische Naht-Muster. Wet-only Box-Blur über das padded GW-Grid (reicht über die Grenze
     // → beide Nachbarn rechnen am Rand denselben Wert = naht-frei). Byte-identisch zum Main.
-    const _smoothWetAttr = (arr) => {
+    // V18.378 — Pass-Zahl ≤ SMOOTH_PASSES (passt exakt in den PAD wie `tops`; +1 reichte 1 Zelle
+    // über den Pad → asymmetrische Rand-Trunkierung → die gemessene 8,4-cm-aDepth-Naht).
+    const _smoothWetAttr = (arr, passes = SMOOTH_PASSES) => {
         const out = new Float64Array(GW * GW);
-        for (let pass = 0; pass < SMOOTH_PASSES + 1; pass++) {
+        for (let pass = 0; pass < passes; pass++) {
             for (let g = 0; g < GW * GW; g++) {
                 if (Number.isNaN(tops[g])) {
                     out[g] = arr[g];
@@ -1414,14 +1416,16 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     // Oberfläche (tops) − kontinuierliches Bett (solidG mit demselben wet-only Box-Blur geglättet)
     // statt der zell-quantisierten (floodTopJ−solidTopJ)·step → der Shader blendet die Tiefen-Farbe
     // weich über die ganze Breite statt in „drei Linien". Byte-identisch zum Main.
+    // V18.378 — die WAHRE Dicke: Bett-OBERFLÄCHE = solidG + step; KEINE zweite Glättung der
+    // Differenz (smooth−smooth ist naht-exakt; ein Blur darüber überschritte den Pad — die Naht).
     const bedG = new Float64Array(GW * GW);
-    for (let g = 0; g < GW * GW; g++) bedG[g] = solidG[g];
+    for (let g = 0; g < GW * GW; g++) bedG[g] = solidG[g] + step;
     _smoothWetAttr(bedG);
     for (let g = 0; g < GW * GW; g++) depthG[g] = Number.isNaN(tops[g]) ? 0 : Math.max(0, tops[g] - bedG[g]);
-    _smoothWetAttr(depthG);
+    // V18.378 — slope ist eine ABLEITUNG (tops ±1) → ein Pass weniger hält den Kegel im PAD.
     const slopeGS = new Float64Array(GW * GW);
     for (let g = 0; g < GW * GW; g++) slopeGS[g] = slopeG[g];
-    _smoothWetAttr(slopeGS);
+    _smoothWetAttr(slopeGS, Math.max(0, SMOOTH_PASSES - 1));
     for (let g = 0; g < GW * GW; g++) slopeG[g] = slopeGS[g];
     const NV = dim + 1;
     const positions = [];

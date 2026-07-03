@@ -380,6 +380,17 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 > **Doc-Sync-Notiz (V18.373):** die Chronik-Einträge V18.364–V18.372 leben (noch) nur im `CLAUDE.md`-Kopf + in den git-Commits, nicht hier — eine vorbestehende Drift aus dem Schöpfer-Browser-Befund-Bogen. Wer die volle V18.364–.372-Geschichte sucht: der CLAUDE.md-„Aktueller Stand"-Absatz trägt sie ausführlich.
 
+### V18.378 — DER SELBST-AUDIT AUF V18.377 (Schöpfer „kannst du prüfen ob es nun professionell gelöst ist? sauber?" — vier echte Befunde gefunden, alle gemessen + geheilt)
+
+**Die Lehre der Welle: ein „prüfen ob sauber" ist ein MESS-Auftrag, kein Nick-Auftrag.** Der Audit auf die frische V18.377 fand vier echte Mängel:
+
+1. **Die Tiefe war stetig, aber +1,8 m ZU TIEF:** `solidG` ist die Zell-UNTERKANTE der höchsten SOLID-Zelle; die Bett-OBERFLÄCHE (wo Wasser aufliegt) ist `solidG + step`. depth = tops − (bedG+step) = die WAHRE Dicke (das Ufer-Flachwasser liest jetzt korrekt hell).
+2. **Die aDepth-NAHT am Chunk-Rand, GEMESSEN 8,4 cm** am geteilten Grenz-Vertex (eine Wegwerf-Messung `diag-adepth-seam` verglich beide Nachbar-Sheets vertex-genau): die Box-Blur-Pass-Zahl MUSS ≤ SMOOTH_PASSES sein (der Grenz-Vertex-Kegel passt in den PAD gdw. k ≤ SMOOTH_PASSES — exakt wie `tops`, das 7e-15 misst); der V18.375-`SMOOTH_PASSES+1` reichte 1 Zelle über den Pad, und die V18.377-KETTE (Bett glätten → Tiefe NOCHMAL glätten) verdoppelte den Radius → Rand-Trunkierung asymmetrisch → die sichtbare Haar-Linie im Tag-Render. HEILUNG: Pass-Zahl = SMOOTH_PASSES + KEINE zweite Glättung der Differenz (smooth−smooth ist naht-exakt) → **aDepth-Naht 0,0837 → 5e-15**. slope (Ableitung, Kegel +1) einen Pass weniger → 0,0037 Rest (0,1–0,4 % Schaum-Amplitude, unsichtbar; exakt 0 bräuchte PAD+4 = ~50 % teurerer Scan — bewusst NICHT, ehrlich dokumentiert).
+3. **Das Mond-LICHT zeigte nicht exakt vom sichtbaren Mond-MESH weg:** `−sunDir` hat eine andere z-Bogen-Komponente als die Mesh-Formel. Die EINE Quelle: `_dayNightSunDirection(angle+π)` (exakt die `_updateCelestialBodies`-Formel), einmal in `_applyDayNightToScene` gerechnet.
+4. **Der Wasser-Glitzer + die Gras-Translucency folgten nachts der Unter-Horizont-SONNE:** `_dayNightApplyWaterMaterials(lightDir)` + `windUniforms.uSunDir` lesen jetzt den AKTIVEN Himmelskörper — der Mond „spricht" auch auf dem Wasser; NUR die Skybox behält den echten `sunDir` (Wolken-Glow ist Sonne). Plus: der Mond-Horizont-Fade liest die echte Mond-Höhe (`md.y`).
+
+**Doc-Code-Drift geheilt:** die von den Gotchas referenzierte `diag-night-probe` war als Wegwerf gelöscht → als STEHENDE Linse wiederhergestellt (nebula/fog/ambient/hemi/directional als Zahlen + vier ✅-Invarianten: Mond kühl b>r · Mond oben · Nebel kühl · Wasser-Glitzer y>0 — alle grün). VERIFIZIERT: `diag-worker-watersheet` maxDiff 0 · aDepth-Naht 5e-15 · eigenes Auge (Haar-Linie weg, Ufer-Säume hell, Nacht kühl) · full playtest grün.
+
 ### V18.377 — DIE KONTINUIERLICHE WASSER-TIEFE + DAS ECHTE MONDLICHT (Schöpfer „wasserbänder müssen über die ganze Breite verschmelzen, nicht diese drei Linien … die Tiefe würde sich ÜBER die Tiefe anpassen … Profis lassen wie in der Realität den MOND sprechen, die Sonne geht, der Mond steht, gibt Licht")
 
 **Zwei Schöpfer-Befunde an der Wurzel, mit eigenem Auge verifiziert (`diag-look-v18377`), full playtest grün.**
