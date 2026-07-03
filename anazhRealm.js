@@ -58038,9 +58038,20 @@ class AnazhRealm {
             seed = (Math.imul(seed ^ (seed >>> 15), 0x2c1b3c6d) + 0x6e) >>> 0;
             return (seed >>> 8) / 16777216;
         };
+        // DAS NEUE KLEID Welle 1 — DER ATLAS TRÄGT NUR DEN WERT (grau-warm, Mittel ~1), NICHT
+        // eine gesättigte Farbe: die Artfarbe kommt aus der Vertex-Blattfarbe (das Material
+        // rechnet albedo = Vertex-Grün × Atlas-WERT). Ein GEFÄRBTER Atlas (das alte gesättigte
+        // Oliv 0.84:1.0:0.62) DOPPEL-TÖNT das Vertex-Grün → das muddy Tan-Grün, das der Schöpfer
+        // sah. Die Vorlage (`bakeLeafAtlas` FIX v37) bäckt nahe-weiß-warm (rgba(250,255,238)→
+        // (206,220,186), Wert um 1) → das Vertex-Grün scheint sauber durch. `_valW` ist die EINE
+        // Wert-Quelle für ALLE Blatt-Typ-Zeichner (Breitblatt/Nadel/Palme/Schuppe).
+        const _valW = (lum, f) => {
+            const s = lum * (f == null ? 1 : f);
+            return `rgb(${Math.min(255, Math.round(236 * s))},${Math.min(255, Math.round(244 * s))},${Math.min(255, Math.round(224 * s))})`;
+        };
         // ein parametrisches Blatt (getapert, gewölbt, mit Mittelrippe), Basis am (bx,by),
-        // um `ang` von der Senkrechten gedreht. Helle Luminanz (Detail), das Grün kommt
-        // aus der Vertex-Dapple-Farbe → albedo = Vertex-Grün × Atlas-Luminanz.
+        // um `ang` von der Senkrechten gedreht. NUR Wert-Schattierung (grau-warm); das Grün
+        // kommt aus der Vertex-Dapple-Farbe → albedo = Vertex-Grün × Atlas-Wert.
         const drawLeaf = (bx, by, ang, len, wid, lum) => {
             ctx.save();
             ctx.translate(bx, by);
@@ -58053,13 +58064,11 @@ class AnazhRealm {
             ctx.quadraticCurveTo(-wid, -len * 0.34, 0, 0);
             ctx.closePath();
             const g = ctx.createLinearGradient(0, 0, 0, -len);
-            const b = Math.round(190 * lum);
-            const t = Math.round(238 * lum);
-            g.addColorStop(0, `rgb(${Math.round(b * 0.84)},${b},${Math.round(b * 0.62)})`);
-            g.addColorStop(1, `rgb(${Math.round(t * 0.88)},${t},${Math.round(t * 0.68)})`);
+            g.addColorStop(0, _valW(lum, 0.84)); // Basis: leicht dunkler warm-grau (Wert-Tiefe)
+            g.addColorStop(1, _valW(lum, 1.02)); // Spitze: nahe weiß warm
             ctx.fillStyle = g;
             ctx.fill();
-            ctx.strokeStyle = "rgba(64,92,48,0.45)"; // Mittelrippe (dunkler → Detail)
+            ctx.strokeStyle = "rgba(96,104,86,0.42)"; // Mittelrippe (dunkler WERT → Detail, entsättigt)
             ctx.lineWidth = Math.max(1, len * 0.025);
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -58072,12 +58081,11 @@ class AnazhRealm {
             ctx.save();
             ctx.translate(bx, by);
             ctx.rotate(ang);
-            // DAS NEUE KLEID K1 (V18.385) — HELLE Luminanz (wie drawLeaf 190–238), NICHT ein
-            // dunkles Grün. Das Material rechnet albedo = Vertex-Grün × Atlas-Luminanz; ein
-            // dunkler Nadel-Atlas (das alte 70,120,70) verdoppelte die Verdunklung → die Kegel
-            // lasen fast SCHWARZ. Der Atlas trägt die SILHOUETTE/Luminanz, die Vertex-Farbe das
-            // Grün (wie beim Laub) → die Nadeln lesen grün wie in der phytogenesis-Vorlage.
-            ctx.strokeStyle = `rgb(${Math.round(180 * lum)},${Math.round(214 * lum)},${Math.round(150 * lum)})`;
+            // DAS NEUE KLEID Welle 1 — NUR WERT (grau-warm), wie alle Blatt-Typen: das Material
+            // rechnet albedo = Vertex-Nadelfarbe × Atlas-Wert; ein GEFÄRBTER Nadel-Atlas (das alte
+            // Grün) doppel-tönte die dunkle Nadel-Vertex-Farbe → fast schwarz/muddy. Der Atlas
+            // trägt die SILHOUETTE + den Wert, die Vertex-Farbe das (dunkle) Konifer-Grün.
+            ctx.strokeStyle = _valW(lum, 0.9);
             ctx.lineWidth = Math.max(1, len * 0.05);
             ctx.lineCap = "round";
             ctx.beginPath();
@@ -58092,8 +58100,8 @@ class AnazhRealm {
             ctx.translate(bx, by);
             ctx.rotate(ang);
             const tipX = curve * len * 0.5;
-            // Rachis (Mittelstiel, gebogen)
-            ctx.strokeStyle = `rgb(${Math.round(150 * lum)},${Math.round(170 * lum)},${Math.round(90 * lum)})`;
+            // Rachis (Mittelstiel, gebogen) — nur WERT (Welle 1), Artfarbe aus Vertex.
+            ctx.strokeStyle = _valW(lum, 0.72);
             ctx.lineWidth = Math.max(1.5, len * 0.03);
             ctx.beginPath();
             ctx.moveTo(0, 0);
@@ -58111,7 +58119,7 @@ class AnazhRealm {
                     ctx.save();
                     ctx.translate(rx, ry);
                     ctx.rotate(sgn * spread + curve * 0.4);
-                    ctx.strokeStyle = `rgb(${Math.round(90 * lum)},${Math.round(150 * lum)},${Math.round(70 * lum)})`;
+                    ctx.strokeStyle = _valW(lum, 0.82); // Fiedern — nur WERT (Welle 1)
                     ctx.lineWidth = Math.max(1, ll * 0.12);
                     ctx.lineCap = "round";
                     ctx.beginPath();
@@ -58129,7 +58137,7 @@ class AnazhRealm {
             ctx.save();
             ctx.translate(bx, by);
             ctx.rotate(ang);
-            ctx.fillStyle = `rgb(${Math.round(70 * lum)},${Math.round(115 * lum)},${Math.round(80 * lum)})`;
+            ctx.fillStyle = _valW(lum, 0.8); // Schuppen-Spray — nur WERT (Welle 1)
             const branches = 3 + Math.floor(rnd() * 3);
             for (let b = 0; b < branches; b++) {
                 const bAng = (b / branches - 0.5) * 0.9;
@@ -58365,10 +58373,16 @@ class AnazhRealm {
                 // dunkel + kühl) + per-Karte-Jitter → die Krone liest als geschichtetes
                 // Laub mit Tiefe, nicht als flache grüne Masse (der Schöpfer-Befund).
                 const hf = ay / totalH < 0 ? 0 : ay / totalH > 1 ? 1 : ay / totalH;
-                const dap = 0.58 + hf * 0.52 + (h01(ai, kk, 9) - 0.5) * 0.34; // ~0.41..1.27
-                const cr = Math.min(1, fr * dap * (0.9 + hf * 0.2)); // Spitze wärmer
+                // DAS NEUE KLEID Welle 1 — DIE DAPPLE IST NUR WERT, KEIN HUE-SKEW: der alte
+                // warm-rote Spitzen-Boost (`·(0.9+hf·0.2)` auf R) + `dap` bis 1.27 wusch die
+                // besonnten Blätter zu TAN (der Schöpfer-Befund „muddy Tan-Grün"). Die Vorlage
+                // variiert nur die HELLIGKEIT (per-Instanz-Luma), nie den Farbton → das Grün
+                // bleibt satt. Alle drei Kanäle skalieren GLEICH mit `dap` (Tiefe bleibt: dunkles
+                // Inneres, helle Spitze), der Ton bleibt exakt das Art-Grün.
+                const dap = 0.6 + hf * 0.34 + (h01(ai, kk, 9) - 0.5) * 0.26; // ~0.47..1.07, Wert-only
+                const cr = Math.min(1, fr * dap);
                 const cg = Math.min(1, fg * dap);
-                const cb = Math.min(1, fb * dap * (1.06 - hf * 0.14)); // Inneres kühler
+                const cb = Math.min(1, fb * dap);
                 // Größen-Varianz + Kreuz-Drehung um y (organisch, kein Gitter).
                 const szJ = 1 + (h01(ai, kk, 4) - 0.5) * 2 * sizeVar;
                 const hw = cardW * 0.5 * szJ;

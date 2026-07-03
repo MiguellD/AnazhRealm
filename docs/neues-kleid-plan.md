@@ -150,17 +150,45 @@ Die gesetz-wahre Wuchs-Mathematik von einer Trunk-Methode zur EINEN geteilten Da
   blankt das Portal, V18.383-Lehre); das Portal rendert heute byte-treu als Referenz, der
   Tausch bringt wenig und riskiert viel → eigene Welle mit sauberer CSP-Verifikation.
 
-### Welle 1 — DIE FARB-/ATLAS-REZEPTE (die zweite Schale auf phyto-core)
+### Welle 1 — DEN ASSET-GENERATOR DURCHZIEHEN, NICHT NACHBAUEN (Schöpfer-Kurskorrektur 03.07.)
 
-- Die Bake-/Farb-/Silhouetten-Rezepte der Vorlage als REINE, THREE-freie Funktionen NEBEN
-  `growSkeleton` in phyto-core.js (dieselbe Datei, dieselbe Naht): barkProfile-Tabelle
-  (oak/birch/sequoia — Furchen · Birken-Lentizellen · Astnarben) → Vertex-Farb-/Furchen-Rezept;
-  Blatt-Silhouette (superR/Superformel) → Atlas-Zeichen-Rezept; die Palette-Wurzeln
-  (`SPECIES_PALETTE`, schon aus der Vorlage übernommen V18.385) ziehen mit in die Quelle.
-- Der Trunk (`_buildTreeTubeGeometry`/`_ensureFoliageClusterAtlas`) LIEST die Rezepte statt
-  eigener Konstanten — der Richter formt THREE-Geometrie aus den reinen Rezept-Arrays.
-- **Beweis:** LOOK-Bild (settled, nah, Rinden-Close-up + Blatt-Atlas) + Tags frozen +
-  Vertex-Budget gemessen; die Rezepte headless in einer Linse nachgerechnet (wie phyto-tree).
+**Der Schöpfer hielt den Finger auf den Fehler:** „du baust die Systeme immer noch nach —
+im Portalfile sind die gesamten Bäume erzeugt, du musst nur wie dort die Assets platzieren,
+jede LOD-Stufe, jedes Asset direkt aus der Pipeline, unser eigener Asset-Generator. Wieso
+machst du es so kompliziert?" **Er hat recht.** Ich hatte AnazhRealms EIGENE Reimplementierungen
+(`_buildTreeFoliageCardGeometry`, `_ensureFoliageClusterAtlas`) getunt — Parallel-Nachbauten
+der Portal-Funktionen `buildTree`/`bakeLeafAtlas`. Das ist genau das Nachbauen, das der
+Visionsweg beenden soll.
+
+**DIE KORREKTUR — der Asset-Generator ist geteilt (der Float32-Attribut-Faden von Welle 0
+reicht bis zur fertigen Geometrie):** die ECHTEN Portal-Asset-Funktionen wandern als reine
+Quelle in phyto-core.js:
+
+- `pushSegment` (Rinden-Tube) · `pushLeaf`/`pushLeafClusterQuad` (Blatt-Karten) · `pushNeedle`
+  (Nadel) · `buildTube` · `bakeLeafAtlas` (der Blatt-Atlas, main-guarded Canvas) · die
+  `buildTree`-Montage pro LOD → produzieren PLAIN Arrays (`position/normal/uv/color/aWind/
+  aCenter/aType/idx`) + eine Canvas-Textur. Byte-treu aus der Vorlage, kein Neuerfinden.
+- **AnazhRealms Parallel-Builder werden GELÖSCHT** — `_buildTreeTubeGeometry`,
+  `_buildTreeFoliageCardGeometry`, `_ensureFoliageClusterAtlas` werden dünne Wrapper, die die
+  geteilte Quelle rufen + die Arrays in `THREE.BufferGeometry` wickeln. Die RICHTER-Rolle
+  bleibt (Tags/Ω-PHYSIS/Placement), die ASSET-Erzeugung ist geteilt.
+- **DIE EINE ECHTE GRENZE — das Material (WebGPU vs WebGL):** die Portal-`onBeforeCompile`-
+  Wind-Injektion (GLSL) läuft auf AnazhRealms WebGPU-Renderer nicht → der Wind lebt als
+  TSL-Node (`_windSwayOffset` existiert bereits) + das Atlas-Sampling als TSL (existiert). Ein
+  DÜNNER Adapter über DIESELBEN Attribute, KEIN Nachbau — der Shader liest `aWind`/`uv`/`color`,
+  egal wer die Geometrie baute. Das Portal behält seine WebGL-`MeshStandard`-Materialien.
+- **DIE KOPPLUNG (warum es EIN Guss ist, nicht piecemeal):** Atlas-UV-Layout ↔ Karten-Geometrie
+  ↔ Nadel-als-Geometrie ↔ LOD hängen zusammen (das Portal trennt `foliageMat` [Geometrie-Blatt/
+  Nadel] von `foliageMatTex` [Cluster-Quad + Atlas]). Der Swap zieht Atlas + Karten-Geometrie +
+  Nadel-Handling + die zwei Laub-Submeshes GEMEINSAM durch — ein verifizierter Guss, kein
+  halber Hybrid.
+- **ZWISCHENSCHRITT (V18.386, gebaut):** AnazhRealms Blatt-Atlas + Krone-Dapple auf das
+  Vorlagen-Prinzip angeglichen — der Atlas trägt nur den WERT (grau-warm, `_valW`), die Artfarbe
+  kommt aus der Vertex-Farbe (kein Hue-Skew mehr, der die besonnten Blätter zu Tan wusch). Das
+  ist die RICHTUNG der Vorlage (FIX v37), wird vom vollen Durchzug aber ABGELÖST.
+- **Beweis:** der gerenderte Baum (settled, world-lighting via `diag-look-forest`) liest wie
+  die Portal-Krone · Tags frozen (`diag-arch-tags`) · das geteilte Asset headless nachgerechnet
+  (Attribut-Arrays deterministisch, wie `diag-phyto-tree`) · Determinismus · voller Playtest.
 
 ### Welle 2 — FELS + KRISTALL (die dritte Asset-Klasse durch die Pipeline)
 
