@@ -28859,16 +28859,22 @@ class AnazhRealm {
                         // rendert teal). Mit dem expliziten colorNode liegt das Laub-Grün
                         // garantiert in der Lichtung → die Krone liest GRÜN.
                         let _alpha = _Ta.float(1.0);
-                        if (opts.foliageLeaf && _Ta.attribute) {
+                        if ((opts.foliageLeaf || opts.impostorKey) && _Ta.attribute) {
                             // Ω-O14 (LAAS-METHODE, V18.247) — die Karte SAMPELT den prozedural
                             // gebackenen Laub-Büschel-ATLAS (echte Blatt-Silhouetten + Adern,
                             // §8.5): die ALPHA trägt die Büschel-Silhouette (Lücken + Spitzen →
                             // liest als Laub, nicht als runder Klecks), die RGB die Blatt-Detail-
                             // Luminanz, die die Vertex-Dapple-Farbe TÖNT (albedo = Grün × Detail).
-                            // Fallback: die alte weiche runde Maske, falls texture/Atlas fehlt.
+                            // V18.388 — der IMPOSTOR-Pfad (opts.impostorKey) sampelt STATT des
+                            // Blatt-Clusters den Tree-Silhouetten-Atlas je (Art,Variante): der
+                            // ferne LOD2-Baum liest als ganze Baum-Silhouette (Stamm+Krone), Wind-
+                            // Sway/useInstanceTint/Atmosphäre/AlphaTest kommen aus DIESER einen
+                            // Quelle (Gesetz #0 — kein Parallel-Material). Fallback: weiche Maske.
                             let _wired = false;
                             try {
-                                const _atlas = this._ensureFoliageClusterAtlas();
+                                const _atlas = opts.impostorKey
+                                    ? this._ensureImpostorAtlas(opts.impostorKey)
+                                    : this._ensureFoliageClusterAtlas();
                                 if (_atlas && _Ta.texture && _Ta.attribute) {
                                     const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
                                     _alpha = _samp.a;
@@ -28877,10 +28883,17 @@ class AnazhRealm {
                                     _wired = true;
                                 }
                             } catch (_e) {
-                                if (typeof window !== "undefined")
-                                    window.__foliageAtlasError = String((_e && _e.message) || _e);
+                                if (typeof window !== "undefined") {
+                                    if (opts.impostorKey)
+                                        window.__impostorAtlasError = String((_e && _e.message) || _e);
+                                    else window.__foliageAtlasError = String((_e && _e.message) || _e);
+                                }
                             }
-                            if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
+                            if (!_wired && opts.impostorKey) {
+                                // Impostor ohne Atlas (z.B. Bake schlug fehl) — volle Silhouette,
+                                // aber alphaTest bleibt 0.5 (die Cross-Quads lesen als solide Krone).
+                                mat.alphaTest = 0.5;
+                            } else if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
                                 try {
                                     const _uv = _Ta.attribute("uv", "vec2");
                                     const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
@@ -58935,6 +58948,19 @@ class AnazhRealm {
     _buildTreeSkeletonLeaves(bp) {
         if (!bp || !bp._skeleton) return null;
         const skel = bp._skeleton;
+        // V18.388 — DIE KRONE (K5-IMPOSTOR): der ferne Baum (LOD2) baut als EIN
+        // gekreuztes Silhouetten-Billboard (3 Quads = 18 Verts) statt Rinde +
+        // hunderte Blatt-Karten (LOD0 ~10704 Verts). Fließt UNVERÄNDERT durch den
+        // EINEN Skeleton-Leaf/HISM-Pfad (Gesetz #0 — KEIN Parallel-System): dasselbe
+        // useInstanceTint (konstante Kronenfarbe über die LODs), dasselbe Wind-Sway/
+        // Atmosphäre/AlphaTest aus der EINEN geteilten Material-Quelle. Graceful:
+        // kein Atlas/Skeleton (z.B. headless ohne document) → fällt auf die normale
+        // Karten-LOD2 unten zurück. Toggle `state.treeImpostors` (Default an, wie die
+        // Schwester-Toggles foliageOpaqueCore/useOcclusionDemotion via `!== false`).
+        if ((skel.lodLevel | 0) === 2 && this.state.treeImpostors !== false) {
+            const imp = this._buildImpostorLeaf(bp, skel);
+            if (imp) return { leaves: [imp] };
+        }
         const leaves = [];
         // bark-Geometrie (Tubes)
         const barkGeom = this._buildTreeTubeGeometry(skel);
@@ -59020,6 +59046,214 @@ class AnazhRealm {
         }
         if (leaves.length === 0) return null;
         return { leaves };
+    }
+
+    // V18.388 — DER TREE-SILHOUETTEN-ATLAS (K5-Impostor): bäckt EINMAL je
+    // (Art,Variante) eine Canvas-Silhouette des Baums (Stamm braun + kind-
+    // abhängige Krone: Konifere=Kegel, Laubbaum=Ellipsoid, aus Blatt-Dabs mit
+    // Alpha-Löchern → liest als Laub, nicht als Klecks). Canvas-basiert (headless-
+    // sicher, kein WebGPU-RTT-Timing → gate-treu, wie `_ensureFoliageClusterAtlas`),
+    // deterministisch aus dem Key-Hash. Gecacht in `this._impostorAtlasMap` (INSTANZ-
+    // Map, nicht serialisiert/audit-relevant) → idempotent (EINE Instanz je Key).
+    _ensureImpostorAtlas(key, skeleton) {
+        if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
+        if (this._impostorAtlasMap.has(key)) return this._impostorAtlasMap.get(key);
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        const canvas = this._bakeImpostorSilhouetteCanvas(key, skeleton);
+        if (!canvas) return null;
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.generateMipmaps = true;
+        tex.minFilter = THREE.LinearMipmapLinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        try {
+            tex.anisotropy = 4;
+        } catch (_e) {
+            /* anisotropy optional */
+        }
+        tex.needsUpdate = true;
+        this._impostorAtlasMap.set(key, tex);
+        return tex;
+    }
+
+    // Die deterministische Silhouetten-Zeichnung (aus Key-Hash + skeleton.kind).
+    // v=0 (uv unten, Geometrie y=0) → Canvas UNTEN (Stamm-Fuß); v=1 (uv oben,
+    // Geometrie y=H) → Canvas OBEN (Kronenspitze). Blatt-Dabs füllen die Kronen-
+    // Hülle (Kegel für Nadelbaum, Ellipsoid für Laubbaum) mit Alpha-Löchern.
+    _bakeImpostorSilhouetteCanvas(key, skeleton) {
+        if (typeof document === "undefined") return null;
+        const W = 128,
+            H = 128;
+        const canvas = document.createElement("canvas");
+        canvas.width = W;
+        canvas.height = H;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return null;
+        ctx.clearRect(0, 0, W, H);
+        // deterministischer Hash-PRNG aus dem Key (FNV-1a → xorshift).
+        let hh = 2166136261 >>> 0;
+        const ks = String(key);
+        for (let i = 0; i < ks.length; i++) {
+            hh ^= ks.charCodeAt(i);
+            hh = Math.imul(hh, 16777619) >>> 0;
+        }
+        const rand = () => {
+            hh = Math.imul(hh ^ (hh >>> 15), 2246822507) >>> 0;
+            hh = (hh ^ (hh >>> 13)) >>> 0;
+            return (hh >>> 0) / 4294967296;
+        };
+        const c0 = (skeleton && skeleton.foliageColor) || 0x4a8a3a;
+        const cr = (c0 >> 16) & 0xff,
+            cg = (c0 >> 8) & 0xff,
+            cb = c0 & 0xff;
+        const conifer = !!(
+            skeleton &&
+            skeleton.grammar &&
+            skeleton.grammar.foliage &&
+            skeleton.grammar.foliage.kind === "needleSpray"
+        );
+        // STAMM (braun) — unteres Band der Canvas (Kronen-Überlappung nach oben).
+        const trunkTopY = H * 0.62;
+        const trunkW = W * 0.1;
+        ctx.fillStyle = "rgb(84,58,36)";
+        ctx.fillRect(W / 2 - trunkW / 2, trunkTopY, trunkW, H - trunkTopY);
+        // KRONE — Blatt-Dabs innerhalb der Kegel-/Ellipsoid-Hülle (t=0 unten .. 1 Spitze).
+        const cxp = W / 2;
+        const crownBottom = trunkTopY + H * 0.08;
+        const crownTop = H * 0.04;
+        const crownH = crownBottom - crownTop;
+        const maxHalfW = W * 0.45;
+        const dabs = 96;
+        for (let i = 0; i < dabs; i++) {
+            const t = rand();
+            const yy = crownBottom - t * crownH;
+            let halfW;
+            if (conifer) halfW = maxHalfW * (1 - t * 0.92);
+            else halfW = maxHalfW * Math.sqrt(Math.max(0.02, 1 - ((t - 0.45) / 0.58) * ((t - 0.45) / 0.58)));
+            const off = (rand() * 2 - 1) * halfW;
+            const xx = cxp + off;
+            const rad = W * (0.045 + rand() * 0.05);
+            const v = 0.62 + t * 0.34 + (rand() - 0.5) * 0.22; // heller zur besonnten Spitze
+            const vr = Math.min(255, cr * v * 0.9) | 0,
+                vg = Math.min(255, cg * v) | 0,
+                vb = Math.min(255, cb * v * 0.8) | 0;
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "rgb(" + vr + "," + vg + "," + vb + ")";
+            ctx.beginPath();
+            ctx.arc(xx, yy, rad, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        return canvas;
+    }
+
+    // V18.388 — DIE IMPOSTOR-CROSS-GEOMETRIE: 3 Quads (0/60/120°) = 18 Verts
+    // (non-indexed, 2 Tris/Quad). Real-metrisch: Höhe = skeleton.totalH, halbe
+    // Breite aus der Kronen-Radial-Spanne (Anker). Basis y=0; uv 0..1 routet die
+    // Silhouette; `aFlex = (y/H)²` → nur die Kronenspitze wiegt (dieselbe Wind-
+    // Quelle wie die 3D-Karten; aPhase konstant für den Flutter-Term).
+    _buildImpostorCrossGeometry(skeleton) {
+        if (typeof THREE === "undefined" || !skeleton) return null;
+        const totalH = Math.max(1, skeleton.totalH || 10);
+        let maxR = 0;
+        if (Array.isArray(skeleton.anchors)) {
+            for (const a of skeleton.anchors) {
+                const rr = Math.sqrt(a.x * a.x + a.z * a.z);
+                if (rr > maxR) maxR = rr;
+            }
+        }
+        const hw = Math.max(totalH * 0.22, maxR * 1.05); // halbe Kronen-Breite
+        const NQ = 3;
+        const VC = NQ * 6; // 18 Verts
+        const positions = new Float32Array(VC * 3);
+        const normals = new Float32Array(VC * 3);
+        const colors = new Float32Array(VC * 3);
+        const uvs = new Float32Array(VC * 2);
+        const flex = new Float32Array(VC);
+        const phase = new Float32Array(VC); // aPhase (konstant) — der Wind-Flutter liest es
+        // Kronen-Grün als Vertex-Basis (auf WebGPU STRIKT: vertexColors braucht das
+        // color-Attribut, sonst Crash) — der Per-Baum-Tint kommt über instanceColor.
+        const c0 = skeleton.foliageColor || 0x4a8a3a;
+        const fr = ((c0 >> 16) & 0xff) / 255,
+            fg = ((c0 >> 8) & 0xff) / 255,
+            fb = (c0 & 0xff) / 255;
+        // Ecken: bl,br,tr,tl (lokales x-Vorzeichen, y, u, v) → 2 Tris [bl,br,tr],[bl,tr,tl].
+        const corners = [
+            [-hw, 0, 0, 0],
+            [hw, 0, 1, 0],
+            [hw, totalH, 1, 1],
+            [-hw, totalH, 0, 1],
+        ];
+        const tri = [0, 1, 2, 0, 2, 3];
+        let vw = 0,
+            uw = 0,
+            fw = 0;
+        for (let q = 0; q < NQ; q++) {
+            const ang = (q / NQ) * Math.PI; // 0°, 60°, 120°
+            const ca = Math.cos(ang),
+                sa = Math.sin(ang);
+            const nx = -sa,
+                nz = ca; // Normale ⟂ zur Quad-Ebene
+            for (let ti = 0; ti < 6; ti++) {
+                const c = corners[tri[ti]];
+                const lx = c[0];
+                positions[vw] = lx * ca;
+                positions[vw + 1] = c[1];
+                positions[vw + 2] = lx * sa;
+                normals[vw] = nx;
+                normals[vw + 1] = 0;
+                normals[vw + 2] = nz;
+                colors[vw] = fr;
+                colors[vw + 1] = fg;
+                colors[vw + 2] = fb;
+                vw += 3;
+                uvs[uw] = c[2];
+                uvs[uw + 1] = c[3];
+                uw += 2;
+                const fy = c[1] / totalH;
+                flex[fw] = fy * fy; // (y/H)² → Basis 0, Spitze 1
+                fw++;
+            }
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+        g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+        g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+        g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
+        g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        return g;
+    }
+
+    // V18.388 — DAS IMPOSTOR-LEAF: bindet Cross-Geometrie + Silhouetten-Atlas + das
+    // GETEILTE Foliage-PBR-Material (impostorKey → der Atlas-Sample-Pfad in
+    // `_buildPbrNodeMaterial`; Wind-Sway/useInstanceTint/Atmosphäre/AlphaTest kommen
+    // aus der EINEN Quelle). Graceful: Geometrie null → null (Aufrufer fällt auf
+    // die Karten-LOD2 zurück). Der Atlas wird VOR dem Material gebacken, damit die
+    // Material-Quelle ihn gecacht findet (alphaTest 0.5).
+    _buildImpostorLeaf(bp, skel) {
+        if (!skel) return null;
+        const geom = this._buildImpostorCrossGeometry(skel);
+        if (!geom) return null;
+        const species = bp && bp._grownSpecies ? bp._grownSpecies : "baum";
+        const variant = bp && Number.isFinite(bp._variantIndex) ? bp._variantIndex : 0;
+        const key = species + "|" + variant;
+        this._ensureImpostorAtlas(key, skel); // zuerst backen → Material findet ihn gecacht
+        const laubMat = this.state.materials && this.state.materials.laub;
+        const matOpts = {
+            vertexColors: true,
+            useInstanceTint: true, // konstante Kronenfarbe je Baum über die LODs
+            useFlexAttr: true, // Wind-Sway liest aFlex (Kronenspitze wiegt)
+            impostorKey: key,
+            side: THREE.DoubleSide,
+        };
+        if (laubMat && laubMat.tags) matOpts.tags = laubMat.tags;
+        const mat = this._sharedFoliageMaterial(matOpts);
+        return { geom, mat, localMatrix: new THREE.Matrix4() };
     }
 
     // Einen Bauplan flach in Leaf-Primitive auflösen (cached). Nested
