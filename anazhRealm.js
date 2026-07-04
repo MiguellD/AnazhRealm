@@ -1118,7 +1118,7 @@ class AnazhRealm {
             // `perfSense` synergetisch (kein Parallel-Zähler) — NICHT der PERF-SENSE-Debug-Dump
             // (der bleibt Entwickler-Werkzeug hinter `perfOverlay`, `perf`-Chatbefehl). Default AN;
             // Toggle im Einstellungen-Drawer. Persistiert via Snapshot (V8.59-Klasse).
-            perfPanel: true,
+            perfPanel: false, // V18.390 — das zweite Panel retiret: die Trias lebt jetzt SYNERGETISCH in der Status-Bar (Schöpfer-Befund). Toggle in Einstellungen bringt das Standalone-Panel zurück, falls gewünscht.
             // V18.293 — DER FLUGSCHREIBER (Blackbox): die echte Frame-Last wird
             // schon gemessen (perfSense, aus dem rAF-Delta) — sie verließ nur nie
             // den Browser, und niemand fing den SCHLIMMSTEN Frame. Lazy-init in
@@ -12251,7 +12251,19 @@ class AnazhRealm {
             const p = this.state.playerMesh.position;
             r.position.textContent = `${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}`;
         }
-        if (r.fps) r.fps.textContent = String(this.state.fps || 0);
+        if (r.fps) {
+            // V18.390 — die Trias SYNERGETISCH in die bestehende Status-Bar (FPS · Bauten · Position),
+            // statt eines zweiten Panels (Schöpfer-Befund „wieso nicht dort wo wir schon fps/Bauten haben").
+            const s = this.state.perfSense;
+            let extra = "";
+            if (s) {
+                const dc = Math.round(s.renderCalls || 0);
+                const trisK = Math.round((s.renderTris || 0) / 1000);
+                const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+                extra = ` · ${dc}dc · ${trisK}k▲ · Laub ${folResPct}%`;
+            }
+            r.fps.textContent = String(this.state.fps || 0) + extra;
+        }
         if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
         if (r.soul) {
             const def = this.playerSoulDefs[this.state.player.soul || "human"];
@@ -77577,7 +77589,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.389.0";
+AnazhRealm.VERSION = "18.390.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
@@ -80930,7 +80942,7 @@ AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Z
 // wächst sie zurück; zielsuchend auf die Ziel-FPS über dieselbe effArch-Quelle (KEIN Parallel-Regler,
 // Gesetz #0). Diskrete 0.05-Rast-Stufen (Vorlage) + Dead-Band (in `_applyRenderScale`) → kein
 // Framebuffer-Re-Alloc-Churn.
-AnazhRealm.PERF_RENDER_SCALE_MIN = 0.6; // unter Last: 60 % Pixel-Ratio (Vorlage-Floor 0.6); der Kapazitäts-Boden der adaptiven Auflösung
+AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
