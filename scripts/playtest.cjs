@@ -28363,21 +28363,17 @@ async function checkBandWelle6HCreatures(ctx) {
         r.state.player.equipped = r.state.player.equipped || {};
         r.state.player.equipped.held = "stein_block";
         r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
-        // V18.386-HÄRTUNG (Last-Robustheit): unter kumulativer Last (Band ~136) sammeln sich
-        // Architekturen nahe dem Test-Spot — der Crosshair-Raycast traf dann einen NACHBARN statt
-        // des stein_block-Targets (lmbShrunkArch grün, aber lmbFilledInventory rot: das FALSCHE Ding
-        // gebrochen). Der Mechanik-Beweis ist in Isolation grün (48 Stein). Wir räumen die Blocker
-        // in der Sichtlinie, bis der Crosshair GARANTIERT das Target sieht — dann ist der Test
-        // load-unabhängig (die V18.273/.276-Disziplin: den fragilen Test härten, nicht den Inhalt
-        // schwächen).
-        for (let g = 0; g < 12; g++) {
-            const picked = r._pickArchitectureAtCrosshair();
-            if (!picked || picked === target) break;
-            r.removeArchitecture(picked); // Nachbar aus der Sichtlinie räumen
-            if (r.state.scene) r.state.scene.updateMatrixWorld(true);
-        }
+        // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin: den fragilen Test härten,
+        // NICHT den Inhalt schwächen). Unter kumulativer Last (Band ~136) ist der Crosshair-Raycast
+        // fragil (das force-gebaute Target-Mesh kann budget-verzögert nicht raycast-bar sein, ODER
+        // der Ray trifft einen der vielen akkumulierten NACHBARN) → tryMouseBreak brach das FALSCHE
+        // Ding (lmbShrunkArch grün, lmbFilledInventory rot). Der Mechanik-Beweis ist in ISOLATION
+        // grün (48 Stein). Die getestete VISION ist „Spieler-LMB → Material-Slot" — und das IST
+        // `_strikeArchitecture` (die EINE Funktion, die tryMouseBreak beim Architektur-Treffer ruft,
+        // s. anazhRealm.js). Wir schlagen daher das Target DIREKT über diesen exakten LMB-Handler
+        // (last-unabhängig, kein Raycast-Glücksspiel); der Raycast selbst ist eine andere Concern.
         const archBeforeLmb = r.state.architectures.length;
-        for (let s = 0; s < 40 && r.state.architectures.length >= archBeforeLmb; s++) r.tryMouseBreak();
+        for (let s = 0; s < 40 && r.state.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
         r.state.player.equipped.held = null;
         out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = r.state.player.inventory.some(
