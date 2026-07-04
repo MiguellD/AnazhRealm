@@ -37820,10 +37820,15 @@ async function checkBandV18218LODStufen(ctx) {
         out.richHasLodLevel = /lodLevel/.test(richSrc);
 
         // ─── (B) Distanz-Chooser ──────────────────────────────────────
+        // V18.390 (Eins W3) — SCHWELLEN-RELATIV statt absoluter Meter (die Probe
+        // wandert mit dem Code, V9.56-i): thresh01/12 zogen von 80/160 auf die
+        // Vorlagen-Proportion 32/64 — die Stufenfunktion selbst ist unverändert.
         if (out.chooseLODExists) {
-            out.choose50 = r._chooseLODForDistance(50) === 0;
-            out.choose100 = r._chooseLODForDistance(100) === 1;
-            out.choose200 = r._chooseLODForDistance(200) === 2;
+            const t01r = A.LOD_DISTANCES.thresh01;
+            const t12r = A.LOD_DISTANCES.thresh12;
+            out.choose50 = r._chooseLODForDistance(t01r * 0.6) === 0; // klar unter thresh01 → LOD0
+            out.choose100 = r._chooseLODForDistance((t01r + t12r) / 2) === 1; // zwischen den Schwellen → LOD1
+            out.choose200 = r._chooseLODForDistance(t12r * 1.25) === 2; // klar über thresh12 → LOD2
             out.choose0 = r._chooseLODForDistance(0) === 0;
             const t01 = A.LOD_DISTANCES.thresh01;
             const h = A.LOD_DISTANCES.hysteresis;
@@ -37938,14 +37943,14 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (A5) _growTreeBlueprintRich nutzt lodLevel intern (Source)", res.richHasLodLevel === true);
 
     // (B) Distanz-Chooser
-    check(`V18.218 (B1) chooseLOD(50)=0 (Hero-Nähe)`, res.choose50 === true);
-    check(`V18.218 (B2) chooseLOD(100)=1 (Mittel)`, res.choose100 === true);
-    check(`V18.218 (B3) chooseLOD(200)=2 (Far)`, res.choose200 === true);
+    check(`V18.218 (B1) chooseLOD(0.6·t01)=0 (Hero-Nähe)`, res.choose50 === true);
+    check(`V18.218 (B2) chooseLOD((t01+t12)/2)=1 (Mittel)`, res.choose100 === true);
+    check(`V18.218 (B3) chooseLOD(1.25·t12)=2 (Far)`, res.choose200 === true);
     check(`V18.218 (B4) chooseLOD(0)=0 (Spieler-Position)`, res.choose0 === true);
-    check("V18.218 (B5) Hysterese cur=0 + dist=85m → bleibt 0 (kein Flackern)", res.hyst0to1Below === true);
-    check("V18.218 (B6) Hysterese cur=0 + dist=100m → wechselt 1", res.hyst0to1Above === true);
-    check("V18.218 (B7) Hysterese cur=1 + dist=60m → kehrt zu 0", res.hyst1to0Below === true);
-    check("V18.218 (B8) Hysterese cur=1 + dist=75m → bleibt 1", res.hyst1to0Above === true);
+    check("V18.218 (B5) Hysterese cur=0 + dist=t01+h/2 → bleibt 0 (kein Flackern)", res.hyst0to1Below === true);
+    check("V18.218 (B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
+    check("V18.218 (B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
+    check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
 
     // (C) Variant-LOD-Bauplane
     check("V18.218 (C1) _buildVariantLODs liefert 3 Bauplan-Keys", res.lodKeysReturned === true);

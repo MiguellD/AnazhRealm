@@ -29040,22 +29040,148 @@ class AnazhRealm {
                         // rendert teal). Mit dem expliziten colorNode liegt das Laub-Grün
                         // garantiert in der Lichtung → die Krone liest GRÜN.
                         let _alpha = _Ta.float(1.0);
-                        if ((opts.foliageLeaf || opts.impostorKey) && _Ta.attribute) {
+                        if (opts.impostorKey && _Ta.attribute) {
+                            // V18.390 (Eins W3 — DER 8-VIEW-IMPOSTOR, Vorlagen-Shader Z.1820/1821
+                            // in TSL übersetzt): der ferne LOD2-Baum ist EIN camera-facing Quad,
+                            // das aus dem 8-View-RTT-Atlas die ZWEI angrenzenden Peilungs-Zellen
+                            // sampelt (Blend über fract) — die Silhouette DREHT mit der Kamera
+                            // (SpeedTree-Multi-View) und respektiert die INSTANZ-Rotation (aRot).
+                            // Instanz-Dekodierung OHNE Instanz-Matrix-Zugriff: die Geometrie-
+                            // Normale ist ein PROBE (1,0,0) → der InstanceNode transformiert sie
+                            // zu (cos r, 0, −sin r)/s → normalLocal trägt aRot + Skala s.
+                            // Per-Fragment-LICHT: der NORMAL-Atlas wird in den Billboard-Rahmen
+                            // (right/up/look) dekodiert und als mat.normalNode (VIEW-space) an die
+                            // EINE PBR-Lichtung gereicht (W1-Rig: key/hemi/fill — kein uSunDir-
+                            // Parallelpfad). Per-Baum-Tint: instanceColor (konstant über L0/L1/L2).
+                            let _wired = false;
+                            try {
+                                const _rec = this._ensureImpostorAtlas(opts.impostorKey);
+                                if (
+                                    _rec &&
+                                    _rec.map &&
+                                    _rec.nmap &&
+                                    _Ta.texture &&
+                                    _Ta.normalLocal &&
+                                    _Ta.positionLocal &&
+                                    _Ta.positionWorld &&
+                                    _Ta.cameraPosition &&
+                                    _Ta.cameraViewMatrix &&
+                                    _Ta.atan &&
+                                    _Ta.sqrt &&
+                                    _Ta.fract &&
+                                    _Ta.floor &&
+                                    _Ta.mod
+                                ) {
+                                    const _V = _Ta.float(_rec.views);
+                                    const _aImpX = _Ta.attribute("aImpX", "float");
+                                    // ── Instanz-Dekodierung (der Normal-Probe) ──
+                                    const _probe = _Ta.normalLocal;
+                                    const _invS = _Ta.length(_probe).max(_Ta.float(1e-5));
+                                    const _sInst = _Ta.float(1.0).div(_invS);
+                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
+                                    // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
+                                    //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
+                                    //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
+                                    const _k = _aImpX.mul(_sInst);
+                                    const _hx = _Ta.positionWorld.x.sub(_Ta.cameraPosition.x);
+                                    const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
+                                    const _hl2 = _hx.mul(_hx).add(_hz.mul(_hz));
+                                    const _dA = _Ta.sqrt(_hl2.sub(_k.mul(_k)).max(_Ta.float(1e-4)));
+                                    const _ang = _Ta.atan(_hx.negate(), _hz.negate()).add(_Ta.atan(_k, _dA));
+                                    // ── View-Zellen-Wahl + Blend (Vorlage: vView=fract((ang−aRot)/2π)) ──
+                                    const _vView = _Ta.fract(
+                                        _ang.sub(_aRot).div(_Ta.float(6.283185307179586)).add(_Ta.float(2.0))
+                                    );
+                                    const _fV = _vView.mul(_V);
+                                    const _v0 = _Ta.floor(_fV);
+                                    const _fb = _Ta.fract(_fV);
+                                    const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
+                                    const _uv = _Ta.attribute("uv", "vec2");
+                                    const _uvA = _Ta.vec2(_uv.x.add(_v0).div(_V), _uv.y);
+                                    const _uvB = _Ta.vec2(_uv.x.add(_v1).div(_V), _uv.y);
+                                    const _samp = _Ta.mix(
+                                        _Ta.texture(_rec.map, _uvA),
+                                        _Ta.texture(_rec.map, _uvB),
+                                        _fb
+                                    );
+                                    _alpha = _samp.a;
+                                    // der Atlas trägt die VOLLE Baumfarbe (RTT des echten Baums);
+                                    // vertex-color = weiß (Identität), Tint via instanceColor.
+                                    albedoNode = _samp.rgb;
+                                    mat.alphaTest = 0.34; // Vorlagen-ath (weiche Kronen-Ränder bleiben)
+                                    // ── Normal-Atlas → Billboard-Rahmen → per-Fragment-Licht ──
+                                    const _nc = _Ta
+                                        .mix(_Ta.texture(_rec.nmap, _uvA), _Ta.texture(_rec.nmap, _uvB), _fb)
+                                        .xyz.mul(_Ta.float(2.0))
+                                        .sub(_Ta.float(1.0));
+                                    const _sinA = _Ta.sin(_ang);
+                                    const _cosA = _Ta.cos(_ang);
+                                    const _look3 = _Ta.vec3(_sinA, _Ta.float(0.0), _cosA);
+                                    const _right3 = _Ta.vec3(_cosA, _Ta.float(0.0), _sinA.negate());
+                                    const _nW = _Ta.normalize(
+                                        _right3
+                                            .mul(_nc.x)
+                                            .add(_Ta.vec3(0.0, 1.0, 0.0).mul(_nc.y))
+                                            .add(_look3.mul(_nc.z))
+                                    );
+                                    // normalNode ist VIEW-space (NodeMaterial.setupNormal → normalView):
+                                    // die Welt-Normale über die Kamera-Matrix transformieren.
+                                    mat.normalNode = _Ta.normalize(_nW.transformDirection(_Ta.cameraViewMatrix));
+                                    // ── CAMERA-FACING (Vertex): Anker = instanz-transformierte
+                                    //    Achsen-Position (alle Verts auf der Stammachse) ──
+                                    const _axis = _Ta.positionLocal;
+                                    const _lkX = _Ta.cameraPosition.x.sub(_axis.x);
+                                    const _lkZ = _Ta.cameraPosition.z.sub(_axis.z);
+                                    const _ll = _Ta.sqrt(_lkX.mul(_lkX).add(_lkZ.mul(_lkZ))).max(_Ta.float(1e-4));
+                                    const _lx = _lkX.div(_ll);
+                                    const _lz = _lkZ.div(_ll);
+                                    // right = cross(up, look) = (look.z, 0, −look.x)
+                                    const _off = _aImpX.mul(_sInst);
+                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, y²=aFlex)
+                                    let _swayX = _Ta.float(0.0);
+                                    let _swayZ = _Ta.float(0.0);
+                                    if (!this.state.windUniforms && typeof this._grassInstanceMat === "function")
+                                        this._grassInstanceMat();
+                                    const _wu = this.state.windUniforms;
+                                    if (_wu && _wu.uWindTime && opts.useFlexAttr) {
+                                        const _fx = _Ta.attribute("aFlex", "float").clamp(0.0, 1.0);
+                                        const _ph = _wu.uWindTime
+                                            .mul(_Ta.float(1.1))
+                                            .add(_axis.x.mul(_Ta.float(0.18)))
+                                            .add(_axis.z.mul(_Ta.float(0.14)));
+                                        _swayX = _Ta.sin(_ph).mul(_fx).mul(_Ta.float(0.22));
+                                        _swayZ = _Ta
+                                            .cos(_ph.mul(_Ta.float(0.7)))
+                                            .mul(_fx)
+                                            .mul(_Ta.float(0.13));
+                                    }
+                                    mat.positionNode = _Ta.vec3(
+                                        _axis.x.add(_lz.mul(_off)).add(_swayX),
+                                        _axis.y,
+                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayZ)
+                                    );
+                                    mat.userData = mat.userData || {};
+                                    mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
+                                    _wired = true;
+                                }
+                            } catch (_e) {
+                                if (typeof window !== "undefined")
+                                    window.__impostorAtlasError = String((_e && _e.message) || _e);
+                            }
+                            if (!_wired) {
+                                // Impostor ohne Atlas/TSL (z.B. Bake schlug fehl) — volle Silhouette,
+                                // alphaTest bleibt gesetzt (das Quad liest als solide Krone).
+                                mat.alphaTest = 0.5;
+                            }
+                        } else if (opts.foliageLeaf && _Ta.attribute) {
                             // Ω-O14 (LAAS-METHODE, V18.247) — die Karte SAMPELT den prozedural
                             // gebackenen Laub-Büschel-ATLAS (echte Blatt-Silhouetten + Adern,
                             // §8.5): die ALPHA trägt die Büschel-Silhouette (Lücken + Spitzen →
                             // liest als Laub, nicht als runder Klecks), die RGB die Blatt-Detail-
                             // Luminanz, die die Vertex-Dapple-Farbe TÖNT (albedo = Grün × Detail).
-                            // V18.388 — der IMPOSTOR-Pfad (opts.impostorKey) sampelt STATT des
-                            // Blatt-Clusters den Tree-Silhouetten-Atlas je (Art,Variante): der
-                            // ferne LOD2-Baum liest als ganze Baum-Silhouette (Stamm+Krone), Wind-
-                            // Sway/useInstanceTint/Atmosphäre/AlphaTest kommen aus DIESER einen
-                            // Quelle (Gesetz #0 — kein Parallel-Material). Fallback: weiche Maske.
                             let _wired = false;
                             try {
-                                const _atlas = opts.impostorKey
-                                    ? this._ensureImpostorAtlas(opts.impostorKey)
-                                    : this._ensureFoliageClusterAtlas();
+                                const _atlas = this._ensureFoliageClusterAtlas();
                                 if (_atlas && _Ta.texture && _Ta.attribute) {
                                     const _samp = _Ta.texture(_atlas, _Ta.attribute("uv", "vec2"));
                                     _alpha = _samp.a;
@@ -29064,17 +29190,10 @@ class AnazhRealm {
                                     _wired = true;
                                 }
                             } catch (_e) {
-                                if (typeof window !== "undefined") {
-                                    if (opts.impostorKey)
-                                        window.__impostorAtlasError = String((_e && _e.message) || _e);
-                                    else window.__foliageAtlasError = String((_e && _e.message) || _e);
-                                }
+                                if (typeof window !== "undefined")
+                                    window.__foliageAtlasError = String((_e && _e.message) || _e);
                             }
-                            if (!_wired && opts.impostorKey) {
-                                // Impostor ohne Atlas (z.B. Bake schlug fehl) — volle Silhouette,
-                                // aber alphaTest bleibt 0.5 (die Cross-Quads lesen als solide Krone).
-                                mat.alphaTest = 0.5;
-                            } else if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
+                            if (!_wired && _Ta.vec2 && _Ta.smoothstep) {
                                 try {
                                     const _uv = _Ta.attribute("uv", "vec2");
                                     const _d = _uv.sub(_Ta.vec2(0.5, 0.5)).mul(_Ta.vec2(1.22, 1.0)).length();
@@ -29606,7 +29725,10 @@ class AnazhRealm {
         // WIND-SWAY (wiegen > 0.05, laub-typisch): positionNode-Sway, geteilte
         // windUniforms.uWindTime (Gras-Quelle, EINE Welt-Quelle). Krone wiegt mehr
         // (aFlex²/crownLin); aperiodisches Flattern obendrauf (Plan §9 Ω-W).
-        if (responseProfile && responseProfile.wiegen > 0.05) {
+        // V18.390 (Eins W3): der IMPOSTOR trägt seinen EIGENEN positionNode
+        // (camera-facing Billboard + Vorlagen-sway in _buildPbrNodeMaterial) —
+        // der Standard-Sway würde ihn ÜBERSCHREIBEN (positionNode-Clobber) → Gate.
+        if (responseProfile && responseProfile.wiegen > 0.05 && !opts.impostorKey) {
             try {
                 const _Tw = THREE.TSL;
                 if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") {
@@ -50579,6 +50701,10 @@ class AnazhRealm {
         // das Chunk-Streaming nichts baut), warm die Merge-Cache der Hotbar-Baupläne → Auswahl/Ghost/
         // Platzieren ohne Hänger. Budgetiert (eins/Tick, nur unter Budget).
         this._tickBlueprintPrebake();
+        // V18.390 (Eins W3) — der budgetierte 8-View-RTT-Impostor-Bake (einer/Tick,
+        // lazy beim ersten LOD2-Bedarf enqueued; headless/Null-Renderer = No-op —
+        // der Canvas-Fallback trägt, gate-treu).
+        this._tickImpostorBake();
         return work + promotions;
     }
 
@@ -59554,9 +59680,10 @@ class AnazhRealm {
     _buildTreeSkeletonLeaves(bp) {
         if (!bp || !bp._skeleton) return null;
         const skel = bp._skeleton;
-        // V18.388 — DIE KRONE (K5-IMPOSTOR): der ferne Baum (LOD2) baut als EIN
-        // gekreuztes Silhouetten-Billboard (3 Quads = 18 Verts) statt Rinde +
-        // hunderte Blatt-Karten (LOD0 ~10704 Verts). Fließt UNVERÄNDERT durch den
+        // V18.388/.390 — DIE KRONE (K5-IMPOSTOR → Eins W3 8-VIEW): der ferne Baum
+        // (LOD2) baut als EIN camera-facing Billboard-Quad (6 Verts) mit 8-View-
+        // RTT-Atlas + Normal-Atlas statt Rinde + hunderte Blatt-Karten
+        // (LOD0 ~10704 Verts). Fließt UNVERÄNDERT durch den
         // EINEN Skeleton-Leaf/HISM-Pfad (Gesetz #0 — KEIN Parallel-System): dasselbe
         // useInstanceTint (konstante Kronenfarbe über die LODs), dasselbe Wind-Sway/
         // Atmosphäre/AlphaTest aus der EINEN geteilten Material-Quelle. Graceful:
@@ -59674,44 +59801,342 @@ class AnazhRealm {
         return { leaves };
     }
 
-    // V18.388 — DER TREE-SILHOUETTEN-ATLAS (K5-Impostor): bäckt EINMAL je
-    // (Art,Variante) eine Canvas-Silhouette des Baums (Stamm braun + kind-
-    // abhängige Krone: Konifere=Kegel, Laubbaum=Ellipsoid, aus Blatt-Dabs mit
-    // Alpha-Löchern → liest als Laub, nicht als Klecks). Canvas-basiert (headless-
-    // sicher, kein WebGPU-RTT-Timing → gate-treu, wie `_ensureFoliageClusterAtlas`),
-    // deterministisch aus dem Key-Hash. Gecacht in `this._impostorAtlasMap` (INSTANZ-
-    // Map, nicht serialisiert/audit-relevant) → idempotent (EINE Instanz je Key).
+    // V18.390 (Eins W3 — DER 8-VIEW-IMPOSTOR, Vorlage `bakeImpostorAtlas` Z.1607) —
+    // der Atlas-RECORD je (Art,Variante): { map, nmap, views:8, cellW:128, cellH:256 }.
+    // ZWEI Schichten (build-before-swap):
+    //   (1) SOFORT: der deterministische Canvas-Fallback (die V18.388-Silhouette, in
+    //       alle 8 Zellen repliziert) + ein NEUTRALER Normal-Atlas (0x8080ff = zur
+    //       Kamera) → das Material ist ab dem ersten Frame vollständig verdrahtet,
+    //       headless/Null-Renderer bleibt dies der EINZIGE Pfad (gate-treu).
+    //   (2) LAZY + BUDGETIERT (echter Renderer): `_tickImpostorBake` bäckt per RTT
+    //       den ECHTEN LOD1-Baum aus 8 Y-Peilungen (128×256/Zelle) + Normal-Atlas +
+    //       2px-Dilation, dann ATOMIC `tex.image`-Swap — die Textur-IDENTITÄT bleibt
+    //       stabil (gleiche Dimensionen, nur Re-Upload → kein Pipeline-Recompile,
+    //       die gpu-lens-Wand V18.322/.324).
+    // Gecacht in `this._impostorAtlasMap` (INSTANZ-Map, nicht serialisiert/audit-
+    // relevant) → idempotent (EIN Record je Key). Mit W2 (3 Varianten × 6 Arten)
+    // sind es maximal 18 Atlanten.
     _ensureImpostorAtlas(key, skeleton) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         if (this._impostorAtlasMap.has(key)) return this._impostorAtlasMap.get(key);
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const canvas = this._bakeImpostorSilhouetteCanvas(key, skeleton);
-        if (!canvas) return null;
-        const tex = new THREE.CanvasTexture(canvas);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.generateMipmaps = true;
-        tex.minFilter = THREE.LinearMipmapLinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.wrapS = THREE.ClampToEdgeWrapping;
-        tex.wrapT = THREE.ClampToEdgeWrapping;
-        try {
-            tex.anisotropy = 4;
-        } catch (_e) {
-            /* anisotropy optional */
+        const V = 8,
+            cw = 128,
+            ch = 256;
+        // (1) Fallback: die deterministische Silhouette in alle 8 Zellen (bis der
+        // RTT-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
+        const cell = this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
+        if (!cell) return null;
+        const atlasCanvas = document.createElement("canvas");
+        atlasCanvas.width = cw * V;
+        atlasCanvas.height = ch;
+        const actx = atlasCanvas.getContext("2d");
+        if (!actx) return null;
+        for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
+        // Neutraler Normal-Atlas: (0.5,0.5,1) = Normale ZUR Kamera (Vorlage Z.1622,
+        // Hintergrund-Clear) → per-Fragment-Licht degradiert graziös zur Fläche.
+        const nrmCanvas = document.createElement("canvas");
+        nrmCanvas.width = cw * V;
+        nrmCanvas.height = ch;
+        const nctx = nrmCanvas.getContext("2d");
+        if (nctx) {
+            nctx.fillStyle = "rgb(128,128,255)";
+            nctx.fillRect(0, 0, cw * V, ch);
         }
-        tex.needsUpdate = true;
-        this._impostorAtlasMap.set(key, tex);
-        return tex;
+        const mkTex = (cv, srgb) => {
+            const t = new THREE.CanvasTexture(cv);
+            if (srgb) t.colorSpace = THREE.SRGBColorSpace; // nmap bleibt linear (Normalen sind DATEN)
+            t.generateMipmaps = true;
+            t.minFilter = THREE.LinearMipmapLinearFilter;
+            t.magFilter = THREE.LinearFilter;
+            t.wrapS = THREE.ClampToEdgeWrapping;
+            t.wrapT = THREE.ClampToEdgeWrapping;
+            try {
+                t.anisotropy = 4;
+            } catch (_e) {
+                /* anisotropy optional */
+            }
+            t.needsUpdate = true;
+            return t;
+        };
+        const pi = key.lastIndexOf("|");
+        const rec = {
+            key,
+            map: mkTex(atlasCanvas, true),
+            nmap: nctx ? mkTex(nrmCanvas, false) : null,
+            views: V,
+            cellW: cw,
+            cellH: ch,
+            rttBaked: false,
+            rttFailed: false,
+            species: pi > 0 ? key.slice(0, pi) : key,
+            variantIndex: pi > 0 ? parseInt(key.slice(pi + 1), 10) || 0 : 0,
+            frame: skeleton ? this._impostorFrame(skeleton) : null,
+        };
+        this._impostorAtlasMap.set(key, rec);
+        // (2) den echten RTT-Bake einreihen — NUR mit echtem Renderer (headless/
+        // Null-Renderer → der Canvas-Fallback trägt, gate-treu).
+        const rend = this.state && this.state.renderer;
+        if (rend && !rend._isHeadlessNull && rec.frame) {
+            if (!this._impostorBakeQueue) this._impostorBakeQueue = [];
+            this._impostorBakeQueue.push(key);
+        }
+        return rec;
+    }
+
+    // V18.390 (Eins W3) — der EINE Bake-/Quad-Rahmen (Bake-Kamera UND Billboard-
+    // Geometrie lesen DIESELBE Formel → die Textur sitzt unverzerrt auf dem Quad;
+    // die Vorlagen-`_impWR`-Idee als geteilte Quelle statt persistiertem Ratio).
+    // halfH deckt die volle Baumhöhe (+2 % Luft), halfW mindestens die Zell-
+    // Proportion (cw/ch = 0.5) bzw. die echte radiale Kronen-Spanne (+4 %).
+    _impostorFrame(skeleton) {
+        const totalH = Math.max(1, (skeleton && skeleton.totalH) || 10);
+        let maxR = 0;
+        if (skeleton && Array.isArray(skeleton.anchors)) {
+            for (const a of skeleton.anchors) {
+                const rr = Math.sqrt(a.x * a.x + a.z * a.z);
+                if (rr > maxR) maxR = rr;
+            }
+        }
+        const halfH = totalH * 0.51;
+        const halfW = Math.max(halfH * 0.5, maxR * 1.04);
+        return { totalH, maxR, halfH, halfW };
+    }
+
+    // V18.390 (Eins W3) — der budgetierte RTT-Bake-Tick (EINER pro Tick, läuft im
+    // Idle-Pass neben `_tickBlueprintPrebake` — der Bäcker plant voraus, V18.350).
+    // Headless/Null-Renderer/vor rendererReady → No-op (der Fallback trägt).
+    _tickImpostorBake() {
+        const st = this.state;
+        if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
+        if (this._impostorBakePending) return 0; // ein Bake zur Zeit (async, mehrere Frames)
+        if (st._frameOverBudget) return 0; // erst die Frame-Zeit (V18.282)
+        const rend = st.renderer;
+        if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
+        const key = this._impostorBakeQueue.shift();
+        const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
+        if (!rec || rec.rttBaked || rec.rttFailed) return 0;
+        this._impostorBakePending = true;
+        this._bakeImpostorAtlasRTT(key, rec)
+            .catch((e) => {
+                rec.rttFailed = true; // graziös: der Canvas-Fallback bleibt sichtbar
+                if (typeof window !== "undefined") window.__impostorRttError = String((e && e.message) || e);
+            })
+            .finally(() => {
+                this._impostorBakePending = false;
+            });
+        return 1;
+    }
+
+    // V18.390 (Eins W3 — die Vorlagen-`bakeImpostorAtlas` Z.1607-1664 übersetzt) —
+    // der ECHTE Offscreen-RTT-Bake: der LOD1-Baum (dieselbe Quelle, aus der die
+    // Vorlage rastert — poolL[1]) wird aus 8 Y-Peilungen orthografisch in den
+    // 8-Zellen-Atlas gerendert (128×256/Zelle) + ein NORMAL-Atlas (MeshNormal-
+    // Override, view-space wie die Vorlage r128-packNormalToRGB) + 2px-CPU-Dilation
+    // (Kronenfarbe in transparente Randtexel → Mips mischen Blattfarbe statt
+    // Clear-Grün, kein dunkler Halo). WebGPU-Wand: der MAIN-Renderer bäckt (EIN
+    // GPUDevice — ein zweiter Offscreen-WebGPURenderer hätte ein FREMDES Device,
+    // dessen Texturen der Haupt-Renderer nicht sampeln kann); der Transfer läuft
+    // über `readRenderTargetPixelsAsync` → 2D-Canvas → ATOMIC `tex.image`-Swap
+    // (Textur-Identität stabil → kein Pipeline-Recompile, gpu-lens-Wand). FLACH
+    // gebacken (neutrales Hemisphere-Licht, Vorlage Z.1618): der Atlas ist Albedo —
+    // die LICHTRICHTUNG kommt zur Laufzeit per-Fragment aus der EINEN PBR-Lichtung.
+    async _bakeImpostorAtlasRTT(key, rec) {
+        const st = this.state;
+        const rend = st.renderer;
+        if (!rend || rend._isHeadlessNull || !rec || !rec.frame) return;
+        const V = rec.views,
+            cw = rec.cellW,
+            ch = rec.cellH;
+        // Der LOD1-Baum als Bake-Subjekt (Leaves aus der EINEN Flatten-Quelle;
+        // geteilte Geometrien/Materialien — NICHT disposen).
+        const keys = this._buildVariantLODs(rec.species, rec.variantIndex);
+        const lod1Key = keys && keys[1];
+        if (!lod1Key) throw new Error("kein LOD1-Bauplan für " + key);
+        const flat = this._archFlattenBlueprint(lod1Key);
+        if (!flat || !Array.isArray(flat.leaves) || flat.leaves.length === 0)
+            throw new Error("LOD1 ohne Leaves für " + key);
+        const group = new THREE.Group();
+        for (const leaf of flat.leaves) {
+            if (leaf.shadowTwin) continue; // der Schatten-Zwilling gehört nicht ins Bild
+            const mesh = new THREE.Mesh(leaf.geom, leaf.mat);
+            if (leaf.localMatrix) {
+                mesh.matrixAutoUpdate = false;
+                mesh.matrix.copy(leaf.localMatrix);
+            }
+            group.add(mesh);
+        }
+        const bs = new THREE.Scene();
+        bs.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05)); // FLACH backen (Vorlage Z.1618)
+        bs.add(group);
+        const halfW = rec.frame.halfW,
+            halfH = rec.frame.halfH;
+        // Die Kamera steht NAH (ortho braucht keine Distanz für die Größe, nur
+        // Clearance vor der Krone): GEMESSEN bräunte die geteilte Aerial-Perspektive
+        // des Foliage-Materials die Krone bei ~55 m Bake-Distanz (distanz-basierter
+        // outputNode) — nah gebacken bleibt die Krone farbtreu (wie diag-werk-render).
+        const cam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, 500);
+        cam.position.set(0, halfH, Math.max(halfW * 1.5 + 3, 8));
+        cam.lookAt(0, halfH, 0);
+        cam.updateProjectionMatrix();
+        // Ruhiger Bake mit voller Krone (Vorlage Z.1621): Wind 0 + LOD-Dither-Maske
+        // AUS (sonst dithert das V18.387-Crossfade die Karten am Bake-Abstand weg).
+        const wu = st.windUniforms;
+        const pWind = wu && wu.uWindTime ? wu.uWindTime.value : null;
+        if (pWind != null) wu.uWindTime.value = 0;
+        const lu = st.lodUniforms;
+        const pMask = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        if (pMask != null) lu.uLodMaskOn.value = 0;
+        const prevRT = typeof rend.getRenderTarget === "function" ? rend.getRenderTarget() : null;
+        const prevClear = new THREE.Color();
+        let prevAlpha = 1;
+        try {
+            rend.getClearColor(prevClear);
+            prevAlpha = rend.getClearAlpha();
+        } catch (_e) {
+            /* Clear-State optional */
+        }
+        const rtCol = new THREE.RenderTarget(cw, ch, { depthBuffer: true });
+        rtCol.texture.colorSpace = THREE.SRGBColorSpace; // sRGB-kodiert wie der Canvas-Fallback
+        const rtNrm = new THREE.RenderTarget(cw, ch, { depthBuffer: true }); // Normalen linear
+        const colCanvas = document.createElement("canvas");
+        colCanvas.width = cw * V;
+        colCanvas.height = ch;
+        const colCtx = colCanvas.getContext("2d");
+        const nrmCanvas = document.createElement("canvas");
+        nrmCanvas.width = cw * V;
+        nrmCanvas.height = ch;
+        const nrmCtx = nrmCanvas.getContext("2d");
+        if (!colCtx || !nrmCtx) throw new Error("2D-Kontext für den Atlas-Blit fehlt");
+        // MeshNormalMaterial (Core-Klasse — der WebGPURenderer konvertiert sie nativ
+        // zur Node-Variante; exakt der Vorlagen-Override Z.1616, KEIN Bootstrap-Edit
+        // nötig): packt die view-space-Normale als RGB (n·0.5+0.5).
+        if (!this._impostorNormalOverride)
+            this._impostorNormalOverride = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+        const _stage = (s) => {
+            if (typeof window !== "undefined") window.__impostorBakeStage = key + ":" + s;
+        };
+        try {
+            for (let v = 0; v < V; v++) {
+                // Ansicht v = der Baum aus Peilung v·45° (Kamera fix, Baum gegenrotiert — Vorlage Z.1640).
+                group.rotation.y = -v * ((Math.PI * 2) / V);
+                group.updateMatrixWorld(true);
+                rend.setRenderTarget(rtCol);
+                rend.setClearColor(0x2f4a22, 0); // Clear = Laubgrün(alpha 0): Mips bluten Blattfarbe statt Schwarz
+                _stage("col-render-" + v);
+                rend.render(bs, cam);
+                _stage("col-read-" + v);
+                let buf = await rend.readRenderTargetPixelsAsync(rtCol, 0, 0, cw, ch);
+                this._impostorBlitPixels(colCtx, buf, v * cw, cw, ch);
+                bs.overrideMaterial = this._impostorNormalOverride;
+                rend.setRenderTarget(rtNrm);
+                rend.setClearColor(0x8080ff, 1); // Hintergrund-Normale = zur Kamera (neutral)
+                _stage("nrm-render-" + v);
+                rend.render(bs, cam);
+                _stage("nrm-read-" + v);
+                buf = await rend.readRenderTargetPixelsAsync(rtNrm, 0, 0, cw, ch);
+                bs.overrideMaterial = null;
+                this._impostorBlitPixels(nrmCtx, buf, v * cw, cw, ch);
+            }
+            _stage("views-done");
+        } finally {
+            bs.overrideMaterial = null;
+            rend.setRenderTarget(prevRT || null);
+            try {
+                rend.setClearColor(prevClear, prevAlpha);
+            } catch (_e) {
+                /* Clear-State optional */
+            }
+            if (pWind != null) wu.uWindTime.value = pWind;
+            if (pMask != null) lu.uLodMaskOn.value = pMask;
+            rtCol.dispose();
+            rtNrm.dispose();
+        }
+        this._impostorDilate(colCtx, cw * V, ch, 2); // 2px-Dilation gegen den dunklen Mip-Halo (Vorlage Z.1653)
+        // ATOMIC SWAP: DIESELBEN Textur-Objekte (Identität stabil → kein Recompile),
+        // nur das Bild wechselt (gleiche Dimensionen → reiner Re-Upload).
+        rec.map.image = colCanvas;
+        rec.map.needsUpdate = true;
+        if (rec.nmap) {
+            rec.nmap.image = nrmCanvas;
+            rec.nmap.needsUpdate = true;
+        }
+        rec.rttBaked = true;
+        if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
+    }
+
+    // V18.390 (Eins W3) — RTT-Readback → Atlas-Zelle. GEMESSEN (Atlas-Dump): der
+    // r184-WebGPU-RT-Readback liefert die Zeilen BOTTOM-UP (WebGL-RT-Konvention —
+    // row 0 = Bild-UNTERKANTE/Stammfuß) → Zeilen FLIPPEN: canvas-row 0 (oben) =
+    // buffer-row h−1 = Kronenspitze = uv v=1 (CanvasTexture flipY default).
+    _impostorBlitPixels(ctx, buf, dx, w, h) {
+        const img = ctx.createImageData(w, h);
+        const row = w * 4;
+        for (let y = 0; y < h; y++) {
+            const src = (h - 1 - y) * row;
+            const dst = y * row;
+            for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
+        }
+        ctx.putImageData(img, dx, 0);
+    }
+
+    // V18.390 (Eins W3) — die 2px-CPU-Dilation (Vorlagen-Shader Z.1656 als Canvas-
+    // Pass): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 → die
+    // Mips mischen Blattfarbe statt Clear-Grün (kein dunkler Halo an fernen Karten).
+    _impostorDilate(ctx, w, h, radiusPx) {
+        const passes = Math.max(1, radiusPx | 0);
+        for (let p = 0; p < passes; p++) {
+            const src = ctx.getImageData(0, 0, w, h);
+            const out = ctx.createImageData(w, h);
+            out.data.set(src.data);
+            const d = src.data,
+                o = out.data;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = (y * w + x) * 4;
+                    if (d[idx + 3] > 12) continue; // opak genug — bleibt
+                    let bestA = 0,
+                        br = d[idx],
+                        bg = d[idx + 1],
+                        bb = d[idx + 2];
+                    for (let dy = -1; dy <= 1; dy++) {
+                        const yy = y + dy;
+                        if (yy < 0 || yy >= h) continue;
+                        for (let dxp = -1; dxp <= 1; dxp++) {
+                            if (dxp === 0 && dy === 0) continue;
+                            const xx = x + dxp;
+                            if (xx < 0 || xx >= w) continue;
+                            const ni = (yy * w + xx) * 4;
+                            if (d[ni + 3] > bestA) {
+                                bestA = d[ni + 3];
+                                br = d[ni];
+                                bg = d[ni + 1];
+                                bb = d[ni + 2];
+                            }
+                        }
+                    }
+                    if (bestA > 12) {
+                        o[idx] = br;
+                        o[idx + 1] = bg;
+                        o[idx + 2] = bb;
+                        // Alpha bleibt 0 (nur die FARBE flutet)
+                    }
+                }
+            }
+            ctx.putImageData(out, 0, 0);
+        }
     }
 
     // Die deterministische Silhouetten-Zeichnung (aus Key-Hash + skeleton.kind).
     // v=0 (uv unten, Geometrie y=0) → Canvas UNTEN (Stamm-Fuß); v=1 (uv oben,
     // Geometrie y=H) → Canvas OBEN (Kronenspitze). Blatt-Dabs füllen die Kronen-
     // Hülle (Kegel für Nadelbaum, Ellipsoid für Laubbaum) mit Alpha-Löchern.
-    _bakeImpostorSilhouetteCanvas(key, skeleton) {
+    // V18.390 (Eins W3): Zellgröße parametrisiert (Default die alte 128×128) —
+    // der 8-View-Fallback zeichnet direkt in Zell-Proportion 128×256.
+    _bakeImpostorSilhouetteCanvas(key, skeleton, cellW, cellH) {
         if (typeof document === "undefined") return null;
-        const W = 128,
-            H = 128;
+        const W = cellW || 128,
+            H = cellH || 128;
         const canvas = document.createElement("canvas");
         canvas.width = W;
         canvas.height = H;
@@ -59775,92 +60200,92 @@ class AnazhRealm {
         return canvas;
     }
 
-    // V18.388 — DIE IMPOSTOR-CROSS-GEOMETRIE: 3 Quads (0/60/120°) = 18 Verts
-    // (non-indexed, 2 Tris/Quad). Real-metrisch: Höhe = skeleton.totalH, halbe
-    // Breite aus der Kronen-Radial-Spanne (Anker). Basis y=0; uv 0..1 routet die
-    // Silhouette; `aFlex = (y/H)²` → nur die Kronenspitze wiegt (dieselbe Wind-
-    // Quelle wie die 3D-Karten; aPhase konstant für den Flutter-Term).
+    // V18.390 (Eins W3 — camera-facing, Vorlagen-Billboard Z.1817/1820) — EIN QUAD
+    // (6 Verts non-indexed), dessen Vertices ALLE auf der STAMMACHSE liegen
+    // (position = (0, y, 0), y ∈ {0, H}): nach der Instanz-Transform ist
+    // `positionLocal` exakt der Welt-ANKER + (0, y·s, 0) — der Shader legt die
+    // horizontale Ecke camera-facing per `right·aImpX·s` an (positionNode).
+    //   • `aImpX` = signierter halber Quad-Offset (±halfW, der EINE Bake-Rahmen
+    //     `_impostorFrame` → Textur unverzerrt).
+    //   • Die GEOMETRIE-NORMALE ist der PROBE (1,0,0): der InstanceNode
+    //     transformiert sie mit M/diag(col²) → (cos r, 0, −sin r)/s — der Shader
+    //     dekodiert daraus die Instanz-Rotation aRot UND die Skala s (die
+    //     Vorlagen-`aRot=atan(-instanceMatrix[0].z, instanceMatrix[0].x)`-Dekodierung,
+    //     ohne Instanz-Matrix-Zugriff im TSL). Die Shading-Normale kommt aus dem
+    //     NORMAL-ATLAS (mat.normalNode) — die Geometrie-Normale ist frei als Träger.
+    //   • color = WEISS (der Atlas trägt die volle Baumfarbe; der Per-Baum-Tint
+    //     multipliziert über instanceColor — konstant über L0/L1/L2).
+    //   • `aFlex = (y/H)²` → nur die Kronenspitze wiegt (Vorlagen-sway y²).
+    //   • BoundingBox/Sphere um ±halfW aufgeblasen (die Achsen-Verts allein wären
+    //     eine Linie → ein frustumCulled-Leser würde sichtbare Billboards cullen).
     _buildImpostorCrossGeometry(skeleton) {
         if (typeof THREE === "undefined" || !skeleton) return null;
-        const totalH = Math.max(1, skeleton.totalH || 10);
-        let maxR = 0;
-        if (Array.isArray(skeleton.anchors)) {
-            for (const a of skeleton.anchors) {
-                const rr = Math.sqrt(a.x * a.x + a.z * a.z);
-                if (rr > maxR) maxR = rr;
-            }
-        }
-        const hw = Math.max(totalH * 0.22, maxR * 1.05); // halbe Kronen-Breite
-        const NQ = 3;
-        const VC = NQ * 6; // 18 Verts
+        const frame = this._impostorFrame(skeleton);
+        const H = frame.halfH * 2; // = totalH·1.02 — EXAKT der Bake-Rahmen
+        const hw = frame.halfW;
+        const VC = 6; // 1 Quad = 2 Tris, non-indexed
         const positions = new Float32Array(VC * 3);
         const normals = new Float32Array(VC * 3);
         const colors = new Float32Array(VC * 3);
         const uvs = new Float32Array(VC * 2);
+        const impX = new Float32Array(VC);
         const flex = new Float32Array(VC);
-        const phase = new Float32Array(VC); // aPhase (konstant) — der Wind-Flutter liest es
-        // Kronen-Grün als Vertex-Basis (auf WebGPU STRIKT: vertexColors braucht das
-        // color-Attribut, sonst Crash) — der Per-Baum-Tint kommt über instanceColor.
-        const c0 = skeleton.foliageColor || 0x4a8a3a;
-        const fr = ((c0 >> 16) & 0xff) / 255,
-            fg = ((c0 >> 8) & 0xff) / 255,
-            fb = (c0 & 0xff) / 255;
-        // Ecken: bl,br,tr,tl (lokales x-Vorzeichen, y, u, v) → 2 Tris [bl,br,tr],[bl,tr,tl].
+        const phase = new Float32Array(VC); // aPhase (konstant, useFlexAttr-Vertrag)
+        // Ecken: bl,br,tr,tl → (xOffset, y, u, v); u=1 liegt bei +aImpX = entlang
+        // `right = cross(up, look)` — exakt die Bake-Kamera-Rechtsachse (+x).
         const corners = [
             [-hw, 0, 0, 0],
             [hw, 0, 1, 0],
-            [hw, totalH, 1, 1],
-            [-hw, totalH, 0, 1],
+            [hw, H, 1, 1],
+            [-hw, H, 0, 1],
         ];
         const tri = [0, 1, 2, 0, 2, 3];
-        let vw = 0,
-            uw = 0,
-            fw = 0;
-        for (let q = 0; q < NQ; q++) {
-            const ang = (q / NQ) * Math.PI; // 0°, 60°, 120°
-            const ca = Math.cos(ang),
-                sa = Math.sin(ang);
-            const nx = -sa,
-                nz = ca; // Normale ⟂ zur Quad-Ebene
-            for (let ti = 0; ti < 6; ti++) {
-                const c = corners[tri[ti]];
-                const lx = c[0];
-                positions[vw] = lx * ca;
-                positions[vw + 1] = c[1];
-                positions[vw + 2] = lx * sa;
-                normals[vw] = nx;
-                normals[vw + 1] = 0;
-                normals[vw + 2] = nz;
-                colors[vw] = fr;
-                colors[vw + 1] = fg;
-                colors[vw + 2] = fb;
-                vw += 3;
-                uvs[uw] = c[2];
-                uvs[uw + 1] = c[3];
-                uw += 2;
-                const fy = c[1] / totalH;
-                flex[fw] = fy * fy; // (y/H)² → Basis 0, Spitze 1
-                fw++;
-            }
+        for (let ti = 0; ti < 6; ti++) {
+            const c = corners[tri[ti]];
+            const v3 = ti * 3,
+                v2 = ti * 2;
+            positions[v3] = 0; // AUF der Achse — die Ecke legt der Shader an
+            positions[v3 + 1] = c[1];
+            positions[v3 + 2] = 0;
+            normals[v3] = 1; // der Rotations-/Skalen-PROBE (1,0,0)
+            normals[v3 + 1] = 0;
+            normals[v3 + 2] = 0;
+            colors[v3] = 1; // weiß — der Atlas trägt die Farbe
+            colors[v3 + 1] = 1;
+            colors[v3 + 2] = 1;
+            uvs[v2] = c[2];
+            uvs[v2 + 1] = c[3];
+            impX[ti] = c[0];
+            const fy = c[1] / H;
+            flex[ti] = fy * fy; // (y/H)² → Basis 0, Spitze 1
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+        g.setAttribute("aImpX", new THREE.BufferAttribute(impX, 1));
         g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.computeBoundingBox();
         g.computeBoundingSphere();
+        // die camera-facing Ecke kann in JEDE horizontale Richtung zeigen → Hülle weiten.
+        if (g.boundingBox) {
+            g.boundingBox.min.x -= hw;
+            g.boundingBox.min.z -= hw;
+            g.boundingBox.max.x += hw;
+            g.boundingBox.max.z += hw;
+        }
+        if (g.boundingSphere) g.boundingSphere.radius += hw;
         return g;
     }
 
-    // V18.388 — DAS IMPOSTOR-LEAF: bindet Cross-Geometrie + Silhouetten-Atlas + das
-    // GETEILTE Foliage-PBR-Material (impostorKey → der Atlas-Sample-Pfad in
-    // `_buildPbrNodeMaterial`; Wind-Sway/useInstanceTint/Atmosphäre/AlphaTest kommen
-    // aus der EINEN Quelle). Graceful: Geometrie null → null (Aufrufer fällt auf
-    // die Karten-LOD2 zurück). Der Atlas wird VOR dem Material gebacken, damit die
-    // Material-Quelle ihn gecacht findet (alphaTest 0.5).
+    // V18.388/.390 — DAS IMPOSTOR-LEAF: bindet das camera-facing Quad + den
+    // 8-View-Atlas-Record + das GETEILTE Foliage-PBR-Material (impostorKey → der
+    // Billboard-/Atlas-Pfad in `_buildPbrNodeMaterial`; useInstanceTint/Atmosphäre/
+    // AlphaTest kommen aus der EINEN Quelle). Graceful: Geometrie null → null
+    // (Aufrufer fällt auf die Karten-LOD2 zurück). Der Atlas-Record wird VOR dem
+    // Material erzeugt, damit die Material-Quelle ihn gecacht findet.
     _buildImpostorLeaf(bp, skel) {
         if (!skel) return null;
         const geom = this._buildImpostorCrossGeometry(skel);
@@ -78137,9 +78562,10 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-DISTANZEN. Die
 // Schwellen lesen alle Konsumenten (`_chooseLODForDistance`, `_tickArchitectureLOD`
 // V18.218.1 wenn enabled). Hysterese verhindert Flackern an der Grenze: ein
-// Baum auf 80 m wechselt zu LOD1, kehrt aber erst bei 70 m zurück zu LOD0.
-// Werte sind browser-justierbar (`AnazhRealm.LOD_DISTANCES`-Override via
-// state.atmosphere möglich); Plan-Erstwurf: 80 m (Hero→Mittel), 160 m (Mittel→Fern).
+// Baum an der thresh01-Schwelle wechselt zu LOD1, kehrt aber erst `hysteresis`
+// darunter zurück zu LOD0. Werte sind browser-justierbar (`AnazhRealm.LOD_DISTANCES`-
+// Override via state.atmosphere möglich); V18.218-Erstwurf war 80/160 — V18.390 (W3)
+// zieht auf die Vorlagen-Proportion 32/64 (s. Block-Kommentar unten).
 // V18.387 (DAS NEUE KLEID — SUBSYSTEM WAHRNEHMUNGS-LOD, phytogenesis v38 portiert):
 // `lodRef` = Referenz-Sichthöhe (die EINE uLodRef-Quelle, Vorlage Z.2029 uLodRef=12,
 // hier 14 als browser-tunbarer Erstwurf) → die Screen-Space-Error-Formel skaliert die
@@ -78148,19 +78574,25 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // der EINE Perf-Regler (`_foliageDensityScale`, V18.277) die Wahrnehmungs-Distanz unter
 // Last nach oben skaliert → alle Bäume schalten bis 1.5× früher auf die billigere Stufe
 // (KEIN zweiter LOD-Regler — Gesetz #0). Beide via `_lodPerceptionDistance` gelesen.
+// V18.390 (Eins W3 — diff-A1 §3b/§5B, DIE VORLAGEN-LOD-DISTANZEN): die alten 80/160 m
+// trugen volle/mittlere 3D-Geometrie über 16× die Grundfläche der Vorlage (L0<20,
+// Billboard>40 — der gerechnete Dreiecks-Kollaps §0-#3). Jetzt 32/64 (die Vorlagen-
+// Proportion auf AnazhRealms Wahrnehmungs-Skala): Voll-3D-Fläche 16×→~1× = der größte
+// Dreiecks-Hebel. LOOK-SICHER erst durch den 8-View-Impostor DIESER Welle (Wand §2-3:
+// die Distanz-Senkung NIE vor der Impostor-Qualität — sonst poppt sichtbare Pappe näher).
 AnazhRealm.LOD_DISTANCES = Object.freeze({
-    thresh01: 80, // dist > 80 m → LOD1
-    thresh12: 160, // dist > 160 m → LOD2
+    thresh01: 32, // dist > 32 m → LOD1 (Vorlage L0<20 m, per lodRef-SSE gestreckt)
+    thresh12: 64, // dist > 64 m → LOD2/Impostor (Vorlage Billboard >40 m)
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
     lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar) — die EINE uLodRef-Quelle (CPU+Shader)
-    perfDistMulMax: 1.5, // max. Distanz-Multiplikator unter voller Last (früheres Schalten)
+    perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (die engeren Schwellen brauchen weniger Not-Hebel)
     // V18.387 — DAS NEUE KLEID S1-SHADER: die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0).
     // Die Übergangs-Bänder, über die das Dither-Crossfade die Laub-Karten weich ausblendet, BEVOR
     // die nächste LOD-Stufe greift: fade0 = das nahe L0→L1-Band (fast identische Meshes → schmales
     // Feld ohne spürbaren Pop), fade = das ferne L1→L2/Impostor-Band (3D → Karte → breiter). Auf
-    // AnazhRealms Meter-Skala (thresh 80/160) proportional zur Vorlage (D0/D1 20/40, FADE0/FADE 4/8).
-    fade: 20, // L1→L2-Band: das Crossfade blendet in [thresh12 − fade, thresh12] = [140,160] aus
-    fade0: 10, // L0→L1-Band: das Crossfade blendet in [thresh01 − fade0, thresh01] = [70,80] aus
+    // AnazhRealms Meter-Skala (thresh 32/64) proportional zur Vorlage (D0/D1 20/40, FADE0/FADE 4/8).
+    fade: 13, // L1→L2-Band: das Crossfade blendet in [thresh12 − fade, thresh12] = [51,64] aus
+    fade0: 6, // L0→L1-Band: das Crossfade blendet in [thresh01 − fade0, thresh01] = [26,32] aus
     // leafVisCap: die Kappung der BLATT-Sichthöhe (aH0L). Ein Blatt bleibt absolut klein, egal wie
     // gross sein Baum ist → das Laub-Crossfade folgt der ABSOLUTEN Distanz (phytogenesis FIX v30);
     // aH0 (Skelett) behält Detail nach Baumhöhe, aH0L (Laub) nicht. = die lodRef-Default-Höhe.
