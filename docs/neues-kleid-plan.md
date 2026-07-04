@@ -303,6 +303,10 @@ Die Peripherie (Regen/Wind/Blumen) war 10 %. Die **wahre Tiefe** ist die ganze *
 - **Sichtweite** (`_sightDist=120`): Nebel-Nah/Fern + `camera.far` + Cull. **`uLodRef`** (SSE-Referenz).
 - Panel (Z.2407): Readout `{fps} fps · {rScale}% · Laub {folRes}% · {dc}dc · {tri}k▲` + 3 Slider (Ziel-FPS 30-60 · Laub-Auflösung 25-100% · Sichtweite 40-120). `_dbgView` (V): Composite/Struktur/Laub.
 
+### Die Adaption — GEBAUT ✓ (V18.388, 04.07.2026)
+
+Alle drei Reviere gebaut + einzeln verifiziert + committet (`ac718ee` A · `6af77c9` B · `0e64712` C), voller Gate 5032✅/0❌, drei Diag-Linsen grün. **A** LOD-SSE-Shader (aH0/aH0L · vLodD · Dither-Crossfade · `state.lodRef` EINE Quelle CPU+Shader). **B** Platzierungs-Dichte (`_placementDensityFactor`, moisture×slope×clump). **C** Leistungsregler (4 Slider) + pos·trias·perf-Readout + adaptive Render-Skala im EINEN Regler. Lehre: worktree-Isolation zweigt von `main` → bei einem voraus-liegenden Feature-Branch seriell im Haupt-Baum bauen (CLAUDE.md-Gotcha). OFFEN (Schöpfer-Auge): Zwei-LOD-Partition + TAA (A) · der Slider-LOOK (C).
+
 ### Die Adaption (AnazhRealm hat viel schon — die Naht ist der letzte Schritt)
 
 AnazhRealm trägt schon: **`state.perfSense.renderCalls/renderTris`** (V18.268 = die TRIAS-Daten!), den **EINEN Perf-Regler** `_nexusPerfActuate` (PID mit FPS-Band `throttleMs/growMs`), `_foliageDensityScale`/`_foliageResScale` (S5), `chunkRingRadius`/`_activeRingRadius` (Sicht/Ring), die S1-CPU-Wahrnehmungs-Distanz (`_lodPerceptionDistance`), S2-Impostor, S3-Occlusion. **Die drei Adaptions-Reviere (je ein Agent, isolierter Worktree, serielle Integration = die Wald-Lehre angewandt):**
