@@ -280,3 +280,35 @@ Ferne/Saison — der FPS-Hebel im Dirigenten). Nach jedem Guss: die Diag-Zahl (D
 Parität/Tags) + settled Bild + volles Gate; die Schöpfer-Bestätigung zwischen den GROSSEN
 Güssen (§6.9 wahrerguss). Der Portal-Umschalt-Faden (Welle 0 OFFEN) wartet auf seine eigene
 CSP-saubere Welle.
+
+## §5 — DIE WAHRE TIEFE: DIE VORLAGEN-WALD-PIPELINE ADAPTIEREN (Schöpfer 04.07., „dein Plan ist 10% — die richtigen Assets, die Dichte, die Terrainstruktur, die Platzierung, die Leistungsregler, L0/L1/L2, die Übergänge, verstehst du die Vorlage?")
+
+Die Peripherie (Regen/Wind/Blumen) war 10 %. Die **wahre Tiefe** ist die ganze **Wald-Pipeline** der Vorlage (`worlds/terrain/phytogenesis.js`, 2666 Z., vom Schöpfer auf Perfektion geschliffen) in AnazhRealms Renderer — nicht nachgebaut, ADAPTIERT: die Performance- + Platzierungs-Logik gelernt und für unseren Renderer verwendet. **Die Vorlage genau vermessen (die Zahlen, damit kein Kreis mehr):**
+
+### Die drei Systeme der Vorlage (gemessen)
+
+**1. LOD (L0<20m · L1 20-40m · L2>40m Impostor) — der SSE-Kern:**
+- `LOD_D0=20, LOD_D1=40, LOD_FADE=8, LOD_FADE0=4` (Z.2029) — das Band; `_lodU.uLodRef=12` (Z.2030) = **EINE Screen-Space-Error-Quelle für CPU-Mitgliedschaft UND Shader-Blende** (`PHYTO_LODREF`-Ventil, live ohne Rebuild).
+- Die Metrik (Z.121): `vLodD = length(cam.xz − worldPos) · min(uLodRef/(aH0·instScaleY), 1)` → **grössere Bäume schalten später** (Screen-Space-Error, nicht rohe Distanz). **ZWEI Metriken**: `aH0` (Skelett-Sichthöhe, Baumgröße) + `aH0L` (Blatt-Sichthöhe, bei grossen Bäumen GEKAPPT → Laub-LOD folgt der ABSOLUTEN Distanz; ein 30-cm-Blatt ist bei 80m unsichtbar, egal wie gross sein Baum).
+- **Die Übergänge** (Z.127-135): komplementäres **golden-ratio-Dither-Crossfade** (`uDitherT`) — dieselbe Maske teilt die Pixel exakt (kein Pop, keine Lücke) + **TAA-3×3-Neighborhood-Clamp** (Z.1250) mittelt die Blenden über ~6-8 Frames zu glatten Übergängen. CPU-Hysterese `M=3.4` (Z.1905) + Occlusion-Gitter (3m, `_occG`).
+- Impostor L2: `bakeImpostorAtlas` (Z.1607) — 8-View-Atlas + Normal-Atlas aus L1; Billboard an der Baumposition; per-Baum-Tint aus Positions-Hash (konstant über alle LODs).
+
+**2. Platzierung + Dichte (`plantForest`, Z.1380-1520):**
+- `standDensity × moisture(x,z) × slope-Gate × Klumpen`; `moisture = clamp(0.55 − groundH/14, 0, 1) +` Wasser-Nähe (Z.1541); `slopeAt` (Z.1374); Slope-Gate `slope<0.155 || groundH<2 → continue` (Z.1513).
+- Der Streu-Loop (Z.1880-1895): `gc.grass/gc.pebble/gc.flower/gc.shrub`-Wahrscheinlichkeiten pro Zelle; `moW>0.8` → dichter/grösser. `TILE=12` (Z.1794) — Streu in 12m-Kacheln mit engen Welt-Sphären (`frustumCulled` pro Kachel).
+
+**3. Leistungsregler + Readout (Z.2402-2415):**
+- **Zieleffizienz** (adaptive Render-Skala): `_frMs`-EWMA; `frMs>ziel·1.10 → rScale−0.10`, `<0.92 → rScale+0.05` — **zielsuchend auf `_fpsTarget`** (nicht Ratsche; tieferes FPS-Ziel kauft aktiv Schärfe).
+- **Auflösung** (`_folRes=0.5`): Zwei-Pass-Laub — Struktur voll aufgelöst nach `rtS`, Laub (Layer 1) bei `_folRes` reduziert nach `rtF`, Composite (Z.78-105).
+- **Sichtweite** (`_sightDist=120`): Nebel-Nah/Fern + `camera.far` + Cull. **`uLodRef`** (SSE-Referenz).
+- Panel (Z.2407): Readout `{fps} fps · {rScale}% · Laub {folRes}% · {dc}dc · {tri}k▲` + 3 Slider (Ziel-FPS 30-60 · Laub-Auflösung 25-100% · Sichtweite 40-120). `_dbgView` (V): Composite/Struktur/Laub.
+
+### Die Adaption (AnazhRealm hat viel schon — die Naht ist der letzte Schritt)
+
+AnazhRealm trägt schon: **`state.perfSense.renderCalls/renderTris`** (V18.268 = die TRIAS-Daten!), den **EINEN Perf-Regler** `_nexusPerfActuate` (PID mit FPS-Band `throttleMs/growMs`), `_foliageDensityScale`/`_foliageResScale` (S5), `chunkRingRadius`/`_activeRingRadius` (Sicht/Ring), die S1-CPU-Wahrnehmungs-Distanz (`_lodPerceptionDistance`), S2-Impostor, S3-Occlusion. **Die drei Adaptions-Reviere (je ein Agent, isolierter Worktree, serielle Integration = die Wald-Lehre angewandt):**
+
+- **A — LOD-SSE + Dither-Übergänge (TSL):** die SHADER-Hälfte von S1 — `aH0`/`aH0L`-Attribute + `uLodRef`-Uniform (EINE Quelle, `state.lodRef`, die auch die CPU liest) + die `vLodD`-Metrik + das komplementäre Dither-Crossfade im Laub-Material. Die L0→L1→L2 blenden weich (die „übergänge"). Macht den LOD-Ref-Regler echt.
+- **B — Platzierungs-Dichte:** die `plantForest`-Logik (moisture × slope-Gate × clump) in `_populateVoxelChunkVegetation`/Scatter — der Wald in Vorlagen-Dichte, dicht wo feucht+flach, licht auf Hang/Höhe; über `_slopeAt` gegated, `_foliageDensityScale`-gekoppelt, Γ5-deterministisch; die bestehenden Baupläne (kein neues Mesh).
+- **C — Leistungsregler + Readout:** die 4 Slider in Einstellungen (Auflösung/foliage-res · Ziel-FPS/Zieleffizienz · Sichtweite · LOD-Ref) + der Readout (pos + trias `dc`/`k▲` + perf-params `fps`/`rScale%`/`folRes%`) im perf-Overlay; die adaptive Render-Skala als weitere Stellgröße des EINEN Reglers (kein Parallel-Regler). Verdrahtet an die echte Pipeline.
+
+**Disziplin:** kein Parallel-Regler (Gesetz #0 — die Slider setzen Sollwerte, der EINE `_nexusPerfActuate` regelt); die Zwei-Pass-`FoliagePass`-GL-Architektur wird NICHT verbatim portiert (WebGPU-Kontext) — der Auflösungs-Regler wird AnazhRealm-nativ (`_foliageResScale`); jede Ebene: die Diag-Zahl + das settled Bild + das volle Gate.
