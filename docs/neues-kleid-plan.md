@@ -119,7 +119,14 @@ Kern, der Stamm wird robuster und simpler, das System kommt näher an die Zukunf
 
 ## §2 — DIE WELLEN (der PHYTO-CORE-Migrations-Bogen)
 
-> **STAND: Welle 0+1+2(Fels) GEBAUT ✓ (V18.386, 03.07.2026).** DER SCHÖPFER-AUFTRAG (03.07.,
+> **STAND: WELLE 1 VOLL GEBAUT ✓ (V18.387, 04.07.2026) — die Portal-Asset-Pipeline (6 Rezepte:
+> Laub · Rinde · Kristall · Fels+Geologie · Boden · Gras) + DAS WALDSYSTEM (S1 SSE-LOD ·
+> S2 Impostor-Billboard-Krone · S3 Occlusion · S4 Schatten-Zwilling/opaker Kronen-Kern ·
+> S5 Laub-Res). Voller Gate 5032✅/0❌ grün, sechs Wald-/Phyto-Diag-Linsen grün. Details unten +
+> in `docs/archiv/handover.md` V18.387. OFFEN als eigene Wellen (Schöpfer-Auge/echte GPU):
+> die TSL-Hälfte von S1 (aH0/aH0L + Dither-Crossfade) · 8-Winkel-Multi-View-Impostor ·
+> Zwei-Pass-Laub-COMPOSITE · Separate-Layer-Schatten; W4 Baumsorten-Feintuning am Auge;
+> W6-Rest (Nebel/Wetter-Feel); Peripherie (Regen · sichtbarer Baum-Wind · Wiesen-Blumen).** DER SCHÖPFER-AUFTRAG (03.07.,
 > scharf): „keine halben Sachen — AnazhRealm ist NICHT auf dem Niveau der Vorlage-Welt. Jede
 > Baumsorte, die Steine, die Kristalle, die Terrain-Oberfläche, die Gräser, das LOD-Laden, das
 > Wetter, der Nebel — ALLES durch die eine Pipeline, keine Shortcuts, präzise, die Pipeline der
