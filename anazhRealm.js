@@ -49281,7 +49281,10 @@ class AnazhRealm {
             const dx = entry.position.x - pm.x;
             const dz = entry.position.z - pm.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            let newLOD = this._chooseLODForDistance(dist, entry._lodLevel);
+            // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
+            // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
+            const visH = this._lodTreeVisHeight(entry);
+            let newLOD = this._chooseLODForDistance(dist, entry._lodLevel, visH);
             // V18.389 (SUBSYSTEM 3) — OCCLUSION-DEMOTION: ein ferner Baum, der als 3D-Stufe
             // (LOD0/1) gewählt wurde, aber hinter dichter Kronen-Masse steht, fällt auf seine
             // ferne LOD2-Stufe zurück. `entry._occluded` trägt die Hysterese (thrLo, wenn schon
@@ -49908,7 +49911,10 @@ class AnazhRealm {
                 if (this._pcgFloat(cellX ^ layerSalt, cellZ, 9) >= prob * fdScale) continue;
                 const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
                 const variantIndex = h % N;
-                const lod = this._chooseLODForDistance(dist);
+                // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
+                // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
+                const visH = layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
+                const lod = this._chooseLODForDistance(dist, undefined, visH);
                 const keys = this._buildVariantLODs(species, variantIndex);
                 if (!keys) continue;
                 const bpName = keys[lod] || keys[0];
@@ -50247,16 +50253,84 @@ class AnazhRealm {
         }
     }
 
-    _chooseLODForDistance(distance, currentLOD) {
+    // V18.387 (DAS NEUE KLEID — SCREEN-SPACE-ERROR-LOD, phytogenesis v38 Z.121
+    // `vLodD = camDist·min(uLodRef/(aH0·instScale),1)` portiert) — die EINE
+    // Wahrnehmungs-Distanz-Quelle. Die rohe Distanz wird zur effektiven Distanz
+    // gefaltet: (a) der Sichthöhen-Faktor `min(lodRef/visHeight, 1)` — ein
+    // GRÖSSERER Baum liefert eine KLEINERE effektive Distanz → er muss weiter
+    // weg sein, um dieselbe LOD-Stufe zu erreichen (schaltet SPÄTER); ein kleiner
+    // Baum wird auf 1 gekappt → schaltet NIE früher als nominal. (b) der EINE
+    // Perf-Regler (`_foliageDensityScale`, V18.277 — KEIN zweiter LOD-Regler,
+    // Gesetz #0): sinkt die Dichte unter Last, wächst die effektive Distanz bis
+    // `perfDistMulMax`× → ALLE Bäume schalten früher auf die billigere Stufe.
+    // Der Multiplikator erreicht sein Maximum genau bei voller Last
+    // (`fd == PERF_FOLIAGE_DENSITY_MIN`), ist 1 bei voller Kapazität (`fd == 1`).
+    _lodPerceptionDistance(rawDist, visHeight) {
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        if (!cfg) return rawDist;
+        const lodRef = Number.isFinite(cfg.lodRef) && cfg.lodRef > 0 ? cfg.lodRef : 14;
+        const h = Number.isFinite(visHeight) && visHeight > 0 ? visHeight : lodRef;
+        // Sichthöhen-Faktor auf 1 gekappt (kleine Bäume nie früher).
+        const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
+        // Perf-Multiplikator aus der EINEN Regler-Quelle.
+        const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN != null ? AnazhRealm.PERF_FOLIAGE_DENSITY_MIN : 0.4;
+        const mulMax = Number.isFinite(cfg.perfDistMulMax) && cfg.perfDistMulMax >= 1 ? cfg.perfDistMulMax : 1.5;
+        let perfMul = 1;
+        if (fd < 1 && fdMin < 1) {
+            const frac = Math.max(0, Math.min(1, (1 - fd) / (1 - fdMin)));
+            perfMul = 1 + (mulMax - 1) * frac;
+        }
+        return rawDist * heightFactor * perfMul;
+    }
+
+    // V18.387 — die Sichthöhe eines gespawnten Baum-Eintrags: die y-Ausdehnung
+    // des LOD0-Bauplans × entry.scale. Gecacht pro (species, variantIndex) im
+    // INSTANZ-Feld `this._treeVisHeightCache` (frozen variantSeed → die Geometrie
+    // ist stabil, einmal berechnet bei scale 1; die Skala reitet auf dem Read).
+    // KEIN state-Feld → nicht serialisiert, nicht audit:strict-geflaggt.
+    _lodTreeVisHeightFor(species, variantIndex, scale) {
+        if (!this._treeVisHeightCache) this._treeVisHeightCache = new Map();
+        const key = species + "#" + variantIndex;
+        let baseH = this._treeVisHeightCache.get(key);
+        if (baseH === undefined) {
+            baseH = 0;
+            const keys = this._buildVariantLODs(species, variantIndex);
+            const bpName = keys && keys[0];
+            const bp = bpName && this.state.blueprints ? this.state.blueprints[bpName] : null;
+            if (bp) {
+                const ext = this._compoundVisualExtent(bp);
+                baseH = ext && ext.dy > 0 ? ext.dy : 0;
+            }
+            this._treeVisHeightCache.set(key, baseH);
+        }
+        const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        return baseH * s;
+    }
+
+    // V18.387 — die Sichthöhe eines bereits gespawnten Architektur-Eintrags
+    // (Baum-HISM). Nicht-Baum-Einträge → 0 (der Chooser läuft dann roh).
+    _lodTreeVisHeight(entry) {
+        if (!entry || !entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
+    }
+
+    _chooseLODForDistance(distance, currentLOD, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return 0;
+        // V18.387 — MIT visHeight läuft die rohe Distanz durch die Wahrnehmungs-
+        // Distanz (Screen-Space-Error + Perf-Regler); OHNE (nicht-Baum-Architektur)
+        // bleibt der rohe Pfad BYTE-IDENTISCH.
+        const d =
+            Number.isFinite(visHeight) && visHeight > 0 ? this._lodPerceptionDistance(distance, visHeight) : distance;
         const t01 = cfg.thresh01;
         const t12 = cfg.thresh12;
         const h = cfg.hysteresis || 0;
         // Ohne Hysterese-Zustand: einfache Stufenfunktion (Spawn/erstes Setup).
         if (!Number.isFinite(currentLOD)) {
-            if (distance > t12) return 2;
-            if (distance > t01) return 1;
+            if (d > t12) return 2;
+            if (d > t01) return 1;
             return 0;
         }
         const cur = Math.max(0, Math.min(2, currentLOD | 0));
@@ -50264,16 +50338,16 @@ class AnazhRealm {
         // PLUS hysteresis überschreitet, oder die vorige MINUS hysteresis
         // unterschreitet.
         if (cur === 0) {
-            if (distance > t01 + h) return 1;
+            if (d > t01 + h) return 1;
             return 0;
         }
         if (cur === 1) {
-            if (distance > t12 + h) return 2;
-            if (distance < t01 - h) return 0;
+            if (d > t12 + h) return 2;
+            if (d < t01 - h) return 0;
             return 1;
         }
         // cur === 2
-        if (distance < t12 - h) return 1;
+        if (d < t12 - h) return 1;
         return 2;
     }
 
@@ -76578,10 +76652,20 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Baum auf 80 m wechselt zu LOD1, kehrt aber erst bei 70 m zurück zu LOD0.
 // Werte sind browser-justierbar (`AnazhRealm.LOD_DISTANCES`-Override via
 // state.atmosphere möglich); Plan-Erstwurf: 80 m (Hero→Mittel), 160 m (Mittel→Fern).
+// V18.387 (DAS NEUE KLEID — SUBSYSTEM WAHRNEHMUNGS-LOD, phytogenesis v38 portiert):
+// `lodRef` = Referenz-Sichthöhe (die EINE uLodRef-Quelle, Vorlage Z.2029 uLodRef=12,
+// hier 14 als browser-tunbarer Erstwurf) → die Screen-Space-Error-Formel skaliert die
+// LOD-Distanz mit `min(lodRef/visHeight, 1)`: ein GRÖSSERER Baum schaltet SPÄTER, ein
+// kleiner NIE früher (Faktor auf 1 gekappt). `perfDistMulMax` = die Obergrenze, um die
+// der EINE Perf-Regler (`_foliageDensityScale`, V18.277) die Wahrnehmungs-Distanz unter
+// Last nach oben skaliert → alle Bäume schalten bis 1.5× früher auf die billigere Stufe
+// (KEIN zweiter LOD-Regler — Gesetz #0). Beide via `_lodPerceptionDistance` gelesen.
 AnazhRealm.LOD_DISTANCES = Object.freeze({
     thresh01: 80, // dist > 80 m → LOD1
     thresh12: 160, // dist > 160 m → LOD2
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
+    lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar)
+    perfDistMulMax: 1.5, // max. Distanz-Multiplikator unter voller Last (früheres Schalten)
 });
 
 // V18.389 (DAS NEUE KLEID — SUBSYSTEM 3, phytogenesis v38 `_occG`/`updateTreeLOD`
