@@ -8,9 +8,9 @@
 // LOOK [füllt es die Krone schön? pokt es heraus?] bleibt das Schöpfer-Browser-A/B). Sie beweist:
 //   (1) der Kern WIRD gebaut (LOD0-Skelett: 2 Leaves → 3, der dritte ist der Kern);
 //   (2) der Kern ist OPAK (kein transparent/alphaTest), schreibt also Tiefe (early-Z);
-//   (3) V18.387 SCHATTEN-ZWILLING — der Kern IST der Schatten-Caster (castShadow:true) und die
-//       Anzeige-KARTEN casten nicht mehr (castShadow:false): der billige opake Kern trägt den
-//       Kronen-Schatten statt der teuren, mit dem LOD mutierenden Alpha-Test-Karten;
+//   (3) V18.389 — der Kern ist REINE ANZEIGE (castShadow:false): den Kronen-Schatten trägt jetzt der
+//       DEDIZIERTE, richere, layer-getrennte Schatten-Zwilling (diag-shadow-twin.cjs), nicht mehr der
+//       vereinfachte 80-Tri-Kern; hier isoliert getestet mit foliageShadowTwin=false;
 //   (4) der Kern SITZT IM Karten-Wolken-BBox (kein Heraus-Poken — die mechanische No-Poke-Wand);
 //   (5) der Kern ist BILLIG (80 Tris ≪ die Karten-Hunderte);
 //   (6) der Toggle `state.foliageOpaqueCore=false` schaltet ihn ab (2 Leaves);
@@ -122,16 +122,22 @@ const server = http.createServer((req, res) => {
             );
         };
 
-        // (1) Kern AN: 3 Leaves (bark, foliage, core).
+        // (1) Kern AN, Schatten-Zwilling AUS → isoliert den Kern: 3 Leaves (bark, foliage, core).
+        // V18.389 — der Kern trägt den Schatten NICHT mehr (das war die vereinfachte V18.387-Form);
+        // der dedizierte Zwilling castet (diag-shadow-twin.cjs). Hier prüfen wir den Kern isoliert als
+        // reinen SICHTBAREN Füller (early-Z), also den Zwilling ausschalten (sonst 4 Leaves).
         st.foliageOpaqueCore = true;
+        st.foliageShadowTwin = false;
         const onEntry = r._buildTreeSkeletonLeaves(bp);
         const onLeaves = (onEntry && onEntry.leaves) || [];
         out.leafCountOn = onLeaves.length;
         if (onLeaves.length >= 3) {
             const foliage = onLeaves[1];
             const core = onLeaves[2];
-            out.coreCastShadow = core.castShadow; // V18.387 — erwartet true (der Kern IST der Zwilling)
-            out.cardCastShadow = foliage.castShadow; // V18.387 — erwartet false (Karte castet nicht mehr)
+            out.coreCastShadow = core.castShadow; // V18.389 — erwartet false (reine Anzeige; der twin castet)
+            // Ohne twin trägt die Karte KEIN explizites castShadow=false → sie erbt den Namen-Default
+            // (castet, kein Regress). Die leaf-Ebene ist undefined; wir prüfen „nicht explizit false".
+            out.cardExplicitNoShadow = foliage.castShadow === false; // V18.389 — erwartet false
             out.coreVerts = core.geom.attributes.position.count; // 240 (≥100-Wand)
             out.coreTris = core.geom.index ? core.geom.index.count / 3 : core.geom.attributes.position.count / 3;
             out.foliageTris = foliage.geom.index
@@ -155,7 +161,7 @@ const server = http.createServer((req, res) => {
             out.coreMatDistinct = core.mat !== foliage.mat;
         }
 
-        // (6) Toggle AUS → 2 Leaves.
+        // (6) Toggle AUS → 2 Leaves (Zwilling weiterhin aus).
         st.foliageOpaqueCore = false;
         const offEntry = r._buildTreeSkeletonLeaves(bp);
         out.leafCountOff = ((offEntry && offEntry.leaves) || []).length;
@@ -167,6 +173,7 @@ const server = http.createServer((req, res) => {
         const lod1Entry = r._buildTreeSkeletonLeaves(bp);
         out.leafCountLod1 = ((lod1Entry && lod1Entry.leaves) || []).length;
         bp._skeleton.lodLevel = savedLod;
+        st.foliageShadowTwin = true; // Default wiederherstellen
 
         return out;
     });
@@ -178,8 +185,8 @@ const server = http.createServer((req, res) => {
     console.log(`  Leaves (Kern AN):   ${o.leafCountOn}   (erwartet 3 — bark, foliage, core)`);
     console.log(`  Leaves (Kern AUS):  ${o.leafCountOff}   (erwartet 2)`);
     console.log(`  Leaves (LOD1):      ${o.leafCountLod1}   (erwartet 2 — fern, kein Kern)`);
-    console.log(`  core castShadow:    ${o.coreCastShadow}   (V18.387 — erwartet true, der Kern IST der Zwilling)`);
-    console.log(`  card castShadow:    ${o.cardCastShadow}   (V18.387 — erwartet false, Karte castet nicht mehr)`);
+    console.log(`  core castShadow:    ${o.coreCastShadow}   (V18.389 — erwartet false, reine Anzeige; der twin castet)`);
+    console.log(`  card explizit-schattenfrei: ${o.cardExplicitNoShadow}   (V18.389 — erwartet false; ohne twin erbt die Karte den Caster-Default)`);
     console.log(`  core verts:         ${o.coreVerts}   (erwartet 240 — ≥100-Wand)`);
     console.log(
         `  core tris:          ${o.coreTris} vs foliage tris ${o.foliageTris}   (Anteil ${o.coreTriFraction != null ? (o.coreTriFraction * 100).toFixed(1) + "%" : "?"} — billig)`
@@ -196,8 +203,8 @@ const server = http.createServer((req, res) => {
         o.leafCountOn === 3 &&
         o.leafCountOff === 2 &&
         o.leafCountLod1 === 2 &&
-        o.coreCastShadow === true &&
-        o.cardCastShadow === false &&
+        o.coreCastShadow === false &&
+        o.cardExplicitNoShadow === false &&
         o.coreVerts >= 100 &&
         o.coreOpaque === true &&
         o.coreVertexColors === true &&
@@ -211,7 +218,7 @@ const server = http.createServer((req, res) => {
         // aber der ABSOLUTE Kosten-Deckel (80 Tris) ist die Wand, nicht der Bruch.
         o.coreTris === 80;
     console.log(
-        `\n  ${ok ? "✅ Der opake Kern wird gebaut (LOD0), ist opak+billig, IST der Schatten-Zwilling (Kern castet, Karte nicht), sitzt IM Karten-Wolken-BBox, Toggle+LOD-Gate wirken." : "⚠️ Der Kern-Mechanismus weicht ab — prüfen."}\n`
+        `\n  ${ok ? "✅ Der opake Kern wird gebaut (LOD0), ist opak+billig, reine Anzeige (V18.389 — der dedizierte Zwilling castet, s. diag-shadow-twin), sitzt IM Karten-Wolken-BBox, Toggle+LOD-Gate wirken." : "⚠️ Der Kern-Mechanismus weicht ab — prüfen."}\n`
     );
     await browser.close();
     server.close();

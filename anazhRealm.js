@@ -1213,6 +1213,12 @@ class AnazhRealm {
             // Der Kern war ANTI der Phyto-Erscheinung. Die Overdraw-Last trägt die Phyto-LOD/Impostor-
             // Ferne (K5), nicht ein solider Dome. `state.foliageOpaqueCore=true` = A/B (der alte Look).
             foliageOpaqueCore: false,
+            // V18.389 — DAS NEUE KLEID P4 (DER SCHATTEN-ZWILLING): das Anzeige-Laub castet nicht, ein
+            // dedizierter opaker Kronen-Caster (`_buildTreeShadowTwinGeometry`, SHADOW_TWIN_LAYER) trägt
+            // den Schatten — die volle Layer-getrennte Vorlagen-Technik (phytogenesis Z.1844-1852). Default
+            // an (wie treeImpostors/useOcclusionDemotion via `!== false`); `foliageShadowTwin=false` = A/B
+            // (die cards casten dann selbst — der alte Alpha-Test-Karten-Schatten).
+            foliageShadowTwin: true,
             // V18.387 — DAS NEUE KLEID S1-SHADER: die LOD-PIPELINE (SSE-Metrik + Dither-Crossfade,
             // phytogenesis v38 `_lodU` Z.2030 portiert). Der Wald-Renderer der Vorlage blendet die
             // LOD-Stufen (L0 fein → L1 mittel → L2 Impostor) über ein KOMPLEMENTÄRES golden-ratio-
@@ -59216,6 +59222,126 @@ class AnazhRealm {
         return g;
     }
 
+    // V18.389 — DAS NEUE KLEID P4: DER SCHATTEN-ZWILLING (Vorlage phytogenesis.js Z.1846-1852 — der
+    // separate „shadowProxy": ein statischer Voll-Caster, der NUR im Schatten-Pass zählt, während das
+    // Anzeige-Laub selbst NIE castet → kein Alpha-Test-Schatten-Rauschen der Karten, ein sauberer,
+    // solider Kronen-Schatten). Das ist die VOLLE Übersetzung der Vorlagen-Technik, NICHT der
+    // vereinfachte 80-Tri-Kern (V18.387): eine RICHERE, form-folgende Kronen-Hülle, aus der L1-
+    // Silhouette (der Anker-Wolke) gebacken.
+    //
+    // WARUM RICHER + FORM-FOLGEND: der 80-Tri-Kern (_buildTreeFoliageCoreGeometry, IcoDetail 1) ist
+    // eine glatte Mini-Ellipse tief IM Karten-BBox (CORE_FILL 0.6) — als Schatten wirft er einen zu
+    // kleinen, form-blinden Klecks. Der Zwilling ist (a) SUBDIVIDIERT (IcoDetail 2 = 320 Faces = 960
+    // non-indexed Verts, „volle Tiefe"), (b) FÜLLT bis nahe die Karten-Spitzen (TWIN_FILL 0.9 → sein
+    // Schatten deckt die ganze sichtbare Krone), (c) FORM-FOLGEND: der Radius je Richtung mischt die
+    // glatte Ellipsoid-Hülle mit der ECHTEN Anker-Reichweite in dieser Richtung (die Kronen-Lobung
+    // der L1-Silhouette) → der Schatten trägt die Kronen-Form, keine generische Kugel. Unsichtbar für
+    // die Kamera (SHADOW_TWIN_LAYER, s. _archInstanceGroupFor) → er darf JEDE Kronenform tragen (der
+    // Kern schloss Kegel/Säule aus, weil er SICHTBAR durchpokte; der unsichtbare Zwilling kann das
+    // nicht → volle Deckung inkl. Konifere). Deterministisch, kein Math.random.
+    _buildTreeShadowTwinGeometry(skeleton) {
+        if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length < 3) return null;
+        if (typeof THREE === "undefined" || !THREE.IcosahedronGeometry) return null;
+        const grammar = skeleton.grammar;
+        const fo = grammar && grammar.foliage;
+        if (!fo) return null;
+        const anchors = skeleton.anchors;
+        let cx = 0,
+            cy = 0,
+            cz = 0,
+            minX = Infinity,
+            minY = Infinity,
+            minZ = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity,
+            maxZ = -Infinity;
+        for (const a of anchors) {
+            cx += a.x;
+            cy += a.y;
+            cz += a.z;
+            if (a.x < minX) minX = a.x;
+            if (a.y < minY) minY = a.y;
+            if (a.z < minZ) minZ = a.z;
+            if (a.x > maxX) maxX = a.x;
+            if (a.y > maxY) maxY = a.y;
+            if (a.z > maxZ) maxZ = a.z;
+        }
+        const n = anchors.length;
+        cx /= n;
+        cy /= n;
+        cz /= n;
+        const fScale = Math.max(0.4, skeleton.foliageScale || 1);
+        const baseSize = (fo.size || 0.5) * 2.0 * fScale; // ~Karten-Halb-Reichweite
+        // TWIN_FILL 0.9 (> der Kern-CORE_FILL 0.6): der Zwilling füllt bis nahe die Karten-Spitzen →
+        // sein Schatten deckt die volle sichtbare Krone (er ist unsichtbar, darf also groß sein).
+        const TWIN_FILL = 0.9;
+        const rx = Math.max(baseSize * 0.6, (maxX - minX) * 0.5 + baseSize) * TWIN_FILL;
+        const ry = Math.max(baseSize * 0.6, (maxY - minY) * 0.5 + baseSize) * TWIN_FILL;
+        const rz = Math.max(baseSize * 0.6, (maxZ - minZ) * 0.5 + baseSize) * TWIN_FILL;
+        // IcoDetail 3 = 320 Faces (PolyhedronGeometry subdividiert je Face (detail+1)² = 16 → 20·16 =
+        // 320) → non-indexed 960 Verts (≫ die 100-Verts-Wand, „volle Tiefe" = 4× der 80-Tri-Kern).
+        let ico = new THREE.IcosahedronGeometry(1, 3);
+        if (ico.getIndex()) {
+            const ni = ico.toNonIndexed();
+            ico.dispose();
+            ico = ni;
+        }
+        const ip = ico.attributes.position;
+        const vCount = ip.count;
+        const positions = new Float32Array(vCount * 3);
+        const normals = new Float32Array(vCount * 3);
+        for (let i = 0; i < vCount; i++) {
+            let ux = ip.getX(i),
+                uy = ip.getY(i),
+                uz = ip.getZ(i);
+            const ul = Math.hypot(ux, uy, uz) || 1;
+            ux /= ul;
+            uy /= ul; // Einheits-Richtung d
+            uz /= ul;
+            // (a) glatte Ellipsoid-Reichweite in Richtung d: 1/|d/r|.
+            const ellK = Math.hypot(ux / rx, uy / ry, uz / rz) || 1;
+            const ellReach = 1 / ellK;
+            // (b) ECHTE Anker-Reichweite in Richtung d (die L1-Silhouette): max_a (a-center)·d, ≥0.
+            let anchReach = 0;
+            for (const a of anchors) {
+                const p = (a.x - cx) * ux + (a.y - cy) * uy + (a.z - cz) * uz;
+                if (p > anchReach) anchReach = p;
+            }
+            anchReach = (anchReach + baseSize) * TWIN_FILL; // Karten reichen ~baseSize über die Anker
+            // FORM-FOLGEND: die glatte Hülle mit der Kronen-Lobung mischen (0.5/0.5 → weder klecksig-
+            // rund noch zackig-lokal). Der Radius bleibt ≥ einer Mindest-Kugel (kein Kollaps in Löchern).
+            const radius = Math.max(baseSize * 0.5, ellReach * 0.5 + anchReach * 0.5);
+            positions[i * 3] = cx + ux * radius;
+            positions[i * 3 + 1] = cy + uy * radius;
+            positions[i * 3 + 2] = cz + uz * radius;
+            // Radiale Normale (konvexe Hülle → gute Näherung; nur der Schatten-normalBias liest sie).
+            normals[i * 3] = ux;
+            normals[i * 3 + 1] = uy;
+            normals[i * 3 + 2] = uz;
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+        g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+        ico.dispose();
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        return g;
+    }
+
+    // V18.389 — das EINE geteilte, OPAKE Schatten-Zwilling-Material (kein Alpha-Test, kein
+    // vertexColors/useInstanceTint → braucht nur position+normal; ein Instanz-Feld wie
+    // _impostorAtlasMap, nicht serialisiert/audit-relevant). Der Zwilling rendert NIE im Farb-Pass
+    // (SHADOW_TWIN_LAYER); dies ist nur seine opake Signatur, damit der Schatten solide ist (kein
+    // Alpha-Test-Schimmer) — der Schatten-Pass nutzt ohnehin sein eigenes Tiefen-Material.
+    _treeShadowTwinMaterial() {
+        if (this._treeShadowTwinMat) return this._treeShadowTwinMat;
+        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
+        const m = new THREE.MeshStandardNodeMaterial({ color: 0x2c4a22, roughness: 1, metalness: 0 });
+        m.userData.shadowTwin = true;
+        this._treeShadowTwinMat = m;
+        return m;
+    }
+
     // V18.214 — Mergeshe N Geometries inklusive Custom-Attribute (z.B. aFlex
     // + aPhase aus _buildTreeTubeGeometry). Spiegel zu _mergeGeometries
     // (V18.213) aber attribute-aware. Erwartet identische Attribute-Sets in
@@ -59349,18 +59475,22 @@ class AnazhRealm {
             // klein → kein Kern), OPAK (kein Alpha-Test/DoubleSide). A/B-Toggle `state.foliageOpaqueCore`;
             // das Material ist EIN geteiltes Singleton (eigene Opts-Signatur → eigenes Batch).
             //
-            // V18.387 — DER SCHATTEN-ZWILLING (Subsystem 4 des Wald-Systems, das Vorlagen-Prinzip
-            // „die Anzeige-Bäume casten NIE, ein separater billiger Caster trägt den Schatten"):
-            // die Anzeige-KARTEN casten nicht mehr (teurer DoubleSide-Alpha-Test-Overdraw im 2.
-            // Voll-Render, der mit dem LOD mutiert), und der opake Kern IST der Schatten-Zwilling —
-            // 80 Tris statt der Karten-Hunderte, OPAK (saubere Tiefe, kein Alpha-Test-Schimmer),
-            // sitzt IM Kronen-BBox → wirft einen soliden Kronen-Schatten. KEIN neuer, unsichtbarer
-            // Layer-Zwilling (Gesetz #0 — der Kern EXISTIERT schon als sichtbarer Kronen-Füller,
-            // er wird zum Caster wiederverwendet statt parallel gebaut); er streamt/despawnt
-            // ohnehin mit dem Baum-Eintrag (Chunk-Streaming) mit. Die Karten verlieren den Schatten
-            // NUR, wenn der Kern wirklich gebaut wird (LOD0 + Toggle an + coreGeom vorhanden) —
-            // sonst bleibt der Karten-Schatten (kein Regress). Der Stamm (bark) castet weiter
-            // (billige, solide Tubes). LOD1/2 casten ohnehin nichts (_archGroupCastsShadow, V18.265).
+            // V18.389 — DER SCHATTEN-ZWILLING, VOLL LAYER-GETRENNT (P4, Vorlage phytogenesis.js
+            // Z.1844-1852/1895 — die VOLLE Übersetzung, NICHT mehr der vereinfachte 80-Tri-Kern):
+            // die Vorlage trennt SICHTBAR (Laub → Layer 1) und SCHATTEN (opaker Zwilling → Layer 2,
+            // castet, aber die Kamera sieht ihn nie). AnazhReal-Übersetzung → DREI Rollen statt der
+            // V18.387-Doppelrolle:
+            //   • cards (Anzeige-Laub): castShadow=FALSE — kein Alpha-Test-Overdraw-Schatten;
+            //   • core (sichtbarer Kronen-Füller, das V18.349-early-Z): BLEIBT im Farb-Pass (Layer 0),
+            //     castShadow=FALSE — er ist jetzt REINE Anzeige (der Zwilling trägt den Schatten);
+            //   • twin (NEU): der DEDIZIERTE opake Schatten-Caster — eine RICHERE, form-folgende
+            //     Kronen-Hülle (960 Verts, füllt die volle Krone), OPAK (sauberer solider Schatten),
+            //     auf SHADOW_TWIN_LAYER → unsichtbar für die Kamera, zählt NUR im Schatten-Pass.
+            // Der Zwilling ist der Vorlagen-`shadowProxy`; der sichtbare Kern verliert nur seine
+            // Caster-Rolle (kein Parallel-System — die drei Rollen fließen durch DENSELBEN Leaf-/HISM-
+            // Pfad, castShadow/shadowTwin sind Leaf-Felder). LOD1/2 casten ohnehin nichts
+            // (_archGroupCastsShadow, V18.265) → dort kein Zwilling. Toggle `state.foliageShadowTwin`
+            // (Default an, wie foliageOpaqueCore/treeImpostors via `!== false`).
             let coreLeaf = null;
             if (this.state.foliageOpaqueCore !== false && (skel.lodLevel | 0) === 0) {
                 const coreGeom = this._buildTreeFoliageCoreGeometry(skel);
@@ -59374,16 +59504,32 @@ class AnazhRealm {
                         geom: coreGeom,
                         mat: coreMat,
                         localMatrix: new THREE.Matrix4(),
-                        castShadow: true, // V18.387 — der Kern IST der Schatten-Zwilling
+                        castShadow: false, // V18.389 — reine Anzeige (der twin castet); early-Z bleibt
                     };
                 }
             }
-            // V18.387 — die Karten casten nur, wenn KEIN Zwilling da ist (sonst trägt der Kern
-            // den Schatten). Reihenfolge bleibt bark → foliage-card → core (Leaf-Index-Stabilität
-            // für _archInstanceGroupFor/instSlots).
-            if (coreLeaf) cardLeaf.castShadow = false;
+            // V18.389 — der dedizierte Schatten-Zwilling (aus der L1-Silhouette/Anker-Wolke).
+            let twinLeaf = null;
+            if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) === 0) {
+                const twinGeom = this._buildTreeShadowTwinGeometry(skel);
+                const twinMat = twinGeom && this._treeShadowTwinMaterial();
+                if (twinGeom && twinMat) {
+                    twinLeaf = {
+                        geom: twinGeom,
+                        mat: twinMat,
+                        localMatrix: new THREE.Matrix4(),
+                        castShadow: true, // der EINZIGE Kronen-Caster
+                        shadowTwin: true, // → _archInstanceGroupFor legt ihn auf SHADOW_TWIN_LAYER
+                    };
+                }
+            }
+            // V18.389 — die Karten casten nur, wenn KEIN Zwilling sie trägt (sonst bleibt der
+            // Karten-Schatten = kein Regress bei Toggle aus). Reihenfolge bark → card → core → twin
+            // (Leaf-Index-Stabilität für _archInstanceGroupFor/instSlots — nur am Ende angehängt).
+            if (twinLeaf) cardLeaf.castShadow = false;
             leaves.push(cardLeaf);
             if (coreLeaf) leaves.push(coreLeaf);
+            if (twinLeaf) leaves.push(twinLeaf);
         }
         if (leaves.length === 0) return null;
         return { leaves };
@@ -59852,7 +59998,12 @@ class AnazhRealm {
             mesh.frustumCulled = regional; // region-lokale Sphere → die ganze Region cullt beim Wegschauen
             mesh.sortObjects = false;
             mesh.userData.archBatchKey = batchKey;
-            this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub-Batch → FOLIAGE_LAYER
+            // V18.389 — der Schatten-Zwilling liegt auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus
+            // Layer 0 entfernt → Kamera sieht ihn nie; der Schatten-Pass zählt ihn, s. Licht-Setup).
+            // Der Batch ist twin-rein (twin-Material = eigenes Singleton → eigener batchKey), also
+            // trägt der ganze Batch die Layer. Kein FOLIAGE_LAYER (der Zwilling ist kein Laub-Pass).
+            if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+            else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub-Batch → FOLIAGE_LAYER
             if (this.state.scene) this.state.scene.add(mesh);
             batch = {
                 batchKey,
@@ -59944,7 +60095,11 @@ class AnazhRealm {
         // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
-        this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
+        // V18.389 — der Schatten-Zwilling auf SHADOW_TWIN_LAYER (set = NUR Layer 2 → aus Layer 0 raus
+        // → unsichtbar für die Kamera; einzig der Schatten-Pass zählt ihn, s. Licht-Setup). Kein
+        // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
+        if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+        else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
@@ -59959,6 +60114,7 @@ class AnazhRealm {
             slotEntry: [],
             castShadow,
             regional,
+            shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
         };
         this.state.archInstanceGroups.set(key, g);
         return g;
@@ -59973,6 +60129,10 @@ class AnazhRealm {
         next.receiveShadow = true;
         next.frustumCulled = g.regional === true; // V18.300 — regionale Gruppen cullen weiter
         next.userData.archInstanceKey = g.key;
+        // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
+        // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
+        // Layer bleibt wie im bestehenden Growth-Pfad (unberührt).
+        if (g.shadowTwin) next.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
         const tmp = this._archTmpCopyM || (this._archTmpCopyM = new THREE.Matrix4());
         for (let i = 0; i < g.next; i++) {
             g.mesh.getMatrixAt(i, tmp);
@@ -74668,6 +74828,14 @@ class AnazhRealm {
         // V8.47-Shadow-Bias konnte gegen ein degeneriertes Frustum nichts
         // ausrichten — das war die wahre Wurzel der „Schatten-Linien".
         directionalLight.shadow.camera.updateProjectionMatrix();
+        // V18.389 — DER SCHATTEN-ZWILLING (P4, Vorlage phytogenesis.js Z.2061 `camera.layers.enableAll()`
+        // vor dem Schatten-Bake): der Schatten-Pass MUSS den Kronen-Zwilling auf SHADOW_TWIN_LAYER sehen,
+        // die Haupt-Kamera (Default nur Layer 0) NIE. Layer 2 auf der Schatten-Kamera aktivieren — der
+        // WebGPU-Schatten-Render testet `object.layers.test(shadow.camera.layers)` (nicht die Haupt-Kamera),
+        // und lässt den shadow.camera-Mask stehen, sobald ein Layer > 0 gesetzt ist. VOR der CSM-Konstruktion:
+        // `light.shadow.clone()` kopiert den Layer-Mask in jede Kaskaden-Kamera → alle Kaskaden casten den
+        // Zwilling. Der Fallback (eine Map, keine CSM) nutzt dieselbe shadow.camera → gleicher Effekt.
+        directionalLight.shadow.camera.layers.enable(AnazhRealm.SHADOW_TWIN_LAYER);
         scene.add(directionalLight);
         // V8.48 — das Light-Target in den Szenengraph hängen, damit sein
         // matrixWorld pro Frame aktualisiert wird. _applyDayNightToScene
@@ -80593,6 +80761,14 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanf
 // (Layer 0 bleibt → Render/Schatten heute byte-identisch), ist damit aber für den Laub-Pass
 // (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1 (volle Auflösung, gate-treu).
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
+// V18.389 (DAS NEUE KLEID P4 — DER SCHATTEN-ZWILLING, Vorlage phytogenesis.js Z.1851/1895: der
+// opake Kronen-Caster liegt auf einer EIGENEN Layer, die die Haupt-Kamera NIE sieht — nur der
+// Schatten-Pass zählt ihn). Layer 2 (0 = Welt, 1 = Laub-Pass) trägt den dedizierten Kronen-Schatten-
+// Zwilling: `mesh.layers.set(2)` nimmt ihn AUS Layer 0 → die Haupt-Kamera (Default nur Layer 0)
+// rendert ihn nie; `directionalLight.shadow.camera.layers.enable(2)` (vor der CSM-Konstruktion → die
+// Kaskaden-Klone erben ihn) lässt einzig den Schatten-Render ihn als Caster zählen. Das exakte
+// Gegenstück zum Vorlagen-`layers.set(2)` + `camera.layers.enableAll()`-vor-dem-Schatten-Bake.
+AnazhRealm.SHADOW_TWIN_LAYER = 2;
 AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // unter Last: halbe Laub-Auflösung (Vorlage-Slider 25–100 %, 0.5 = sicherer Floor)
 AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Zurück-auf-volle-Auflösung
 // V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
