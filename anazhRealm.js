@@ -61476,6 +61476,249 @@ class AnazhRealm {
         return f < 0 ? 0 : f;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — die phytogenesis-`plantForest`-
+    // Ökologie (worlds/terrain/phytogenesis.js Z.1370-1470) auf AnazhRealms Voxel-Saat,
+    // ÜBERSETZT (nicht vereinfacht, kein gepfropfter Faktor): variabel-radius Poisson-Disc
+    // (Kronen-Schüchternheit) + Arten-Nische (wF/wT/wE/wB/wW aus Klima/Patch/Feuchte/Höhe)
+    // + reverse-J-Größe (Selbstausdünnung + seltene Überhälter) + bimodaler Dichte-Gradient
+    // (Lichtungen leer, Kerne dicht) + Mammut-Nische. Die globale Poisson der Vorlage wird
+    // ZELL-DETERMINISTISCH: die Welt liegt in `FOREST.cell`-m-Zellen, jede Zelle trägt
+    // deterministische Kandidaten-Darts (Hash aus Zelle × Welt-Seed, mulberry32); ein Dart
+    // steht per Kronen-Schüchternheit gegen die Darts der ±2-Nachbarzellen — die Wahl ist
+    // eine reine Funktion (prio-Maximum im Konflikt-Radius, Positions-Tiebreak) → REIHENFOLGE-
+    // UNABHÄNGIG (Chunk A→B == B→A, jeder Dart gehört genau EINEM Chunk = seiner Position).
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Die geteilte Wald-Noise (this._x, wie `_clumpNoise` — seed-gebunden, main-only,
+    // kein Worker-Mirror, kein Snapshot). EIN Instanz, an verschiedenen Frequenzen/Offsets
+    // gelesen (die Vorlage sampelt ihre `fbm2` genauso mehrkanalig). 2-Oktav-fbm → [0,1].
+    _forestFbm(px, pz) {
+        if (!this._forestNoise) {
+            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + ":forest";
+            this._forestNoise = new SimplexNoise(seed);
+        }
+        const n = this._forestNoise;
+        const a = (n.noise2D(px, pz) + 1) * 0.5;
+        const b = (n.noise2D(px * 2.7 + 11.3, pz * 2.7 - 5.9) + 1) * 0.5;
+        return a * 0.65 + b * 0.35;
+    }
+
+    // Vorlagen-`standDensity`: glatter, NICHT übersättigter Wald-↔-Lichtung-Gradient [0,1].
+    _forestStandDensity(x, z) {
+        const d = this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + this._forestFbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
+        const v = (d - 0.5) * 1.9 + 0.5;
+        return v < 0 ? 0 : v > 1 ? 1 : v;
+    }
+
+    // Der Welt-Seed als 32-bit-Int (fnv-1a, gecacht) — treibt die Zell-Hashes → alle
+    // Peers/Reloads sehen denselben Wald (Γ5: seed-deterministisch, nie Math.random).
+    _forestSeedInt() {
+        const s = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        if (this._forestSeedStr === s && this._forestSeedVal != null) return this._forestSeedVal;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+        this._forestSeedStr = s;
+        this._forestSeedVal = h >>> 0;
+        return this._forestSeedVal;
+    }
+
+    // Ein deterministischer mulberry32 pro Zelle (Hash aus Zell-Koord × Welt-Seed).
+    _forestCellRng(cx, cz, seedInt) {
+        let a = (Math.imul(cx | 0, 73856093) ^ Math.imul(cz | 0, 19349663) ^ seedInt) >>> 0;
+        return function () {
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // Die BORN-Darts einer Zelle — reine Funktion von (cx,cz,seed). Jeder Roh-Dart läuft
+    // die Vorlagen-Kette: bimodaler standDensity-Wurf → Boden/Wasser → Slope-Grundierung →
+    // Arten-Nische → reverse-J-Größe → Mammut-Promotion. Nur überlebende („geborene") Darts
+    // treten in die Kronen-Schüchternheit ein (genau wie die Vorlage nur `trees` pusht).
+    _forestCellDarts(cx, cz, seedInt) {
+        const F = AnazhRealm.FOREST;
+        const CELL = F.cell;
+        const rng = this._forestCellRng(cx, cz, seedInt);
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const baseH = (this.state && this.state.terrainBaseHeight) || 0;
+        const out = [];
+        for (let i = 0; i < F.dartsPerCell; i++) {
+            const x = (cx + rng()) * CELL;
+            const z = (cz + rng()) * CELL;
+            const sd = this._forestStandDensity(x, z);
+            // BIMODAL (Vorlage): Lichtungen wirklich leer, Kerne wirklich dicht.
+            if (rng() > 0.04 + 0.96 * ss(0.18, 0.8, sd)) continue;
+            // Boden + Wasser: EIN _voxelSurfaceY-Scan, die Wasser-Marge selbst hergeleitet
+            // (spart den zweiten Scan von _isAboveWaterAt).
+            const surfaceY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : null;
+            if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+            const waterY = typeof this._waterLevelAt === "function" ? this._waterLevelAt(x, z) : -Infinity;
+            const above = surfaceY - waterY;
+            if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
+            // SLOPE-Grundierung (AnazhRealm-Boden-Tauglichkeit — die Vorlage plantet auf
+            // tauglichem Grund; die Voxelwelt hat Klippen, die die Vorlage nicht kennt).
+            // getTerrainHeightAt ±2 m = derselbe billige Sampler wie der Alt-Sample-Pfad.
+            const slope =
+                typeof this._slopeAt === "function"
+                    ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
+                    : 0;
+            if (rng() > 1 - ss(F.slopeLo, F.slopeHi, slope)) continue;
+            // ARTEN-NISCHE (Vorlage wF/wT/wE/wB/wW) — Klima-Gradient × Patch-Mosaik ×
+            // Feuchte × Höhen-Trockenheit × Offenheit. 1:1 übersetzt, nur die Achsen aus
+            // AnazhRealms echten Feldern gegründet (_feuchteAt, relH über terrainBaseHeight).
+            const relH = surfaceY - baseH;
+            const feu = typeof this._feuchteAt === "function" ? clamp01(this._feuchteAt(x, z, surfaceY)) : 0;
+            const dry = clamp01((relH + 6) / F.dryScale);
+            const wet = feu;
+            const open = 1 - sd;
+            const clim = this._forestFbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
+            const patch = this._forestFbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
+            const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
+            const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
+            const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
+            const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
+            const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
+            const wW = wet * wet * (1 - dry) * 0.8 + feu * feu * 6.0 + 0.01; // Weide→erle: nur nass/tief
+            const wsum = wF + wT + wE + wB + wW;
+            let pick = rng() * wsum;
+            let sp;
+            if ((pick -= wF) < 0) sp = "baum_kiefer";
+            else if ((pick -= wT) < 0) sp = "baum_tanne";
+            else if ((pick -= wE) < 0) sp = "baum_eiche";
+            else if ((pick -= wB) < 0) sp = "baum_birke";
+            else sp = "baum_erle";
+            // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
+            if (sp !== "baum_erle" && above <= 1.2) continue;
+            // GRÖSSE: reverse-J + Selbstausdünnung (dichter Stand → kleinere Lose) + seltene
+            // Überhälter (Altbestand). 1:1 aus der Vorlage.
+            let ue = clamp01(rng() * (1 - 0.52 * sd));
+            let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
+            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
+            s = s < 0.5 ? 0.5 : s > 1.95 ? 1.95 : s;
+            let T = F.crown[sp] * s;
+            // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
+            if (sp !== "baum_erle" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+                sp = "baum_buche";
+                s = 0.85 + rng() * 0.4;
+                T = F.crown.baum_buche * s;
+            }
+            const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt
+            const keep = rng(); // Perf-Kappung (separat von prio → die Form bleibt beim Dünnen)
+            const totRoll = rng(); // Totholz-Sub-Spawn (Wald-Boden-Debris)
+            const rotY = rng() * 6.283185307;
+            const seed = (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
+            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
+        }
+        return out;
+    }
+
+    // Der WALD-GENERATOR pro Voxel-Chunk: platziert die akzeptierten Darts, deren Position
+    // in DIESEN Chunk fällt (disjunkt → jeder Baum genau einmal, egal welcher Chunk zuerst
+    // lädt). Kronen-Schüchternheit gegen die ±2-Nachbarzellen. Perf-gedünnt am Ende.
+    _forestPlantChunk(cx, cz) {
+        if (!this.state.scene || !this.state.blueprints) return 0;
+        const F = AnazhRealm.FOREST;
+        const CELL = F.cell;
+        const { span } = this._voxelChunkConfig();
+        const ox = cx * span;
+        const oz = cz * span;
+        const seedInt = this._forestSeedInt();
+        // Perf-Kappung: der EINE Regler (headless/Null-Renderer → 1 = voll, gate-treu).
+        const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        const c0x = Math.floor(ox / CELL);
+        const c1x = Math.floor((ox + span) / CELL);
+        const c0z = Math.floor(oz / CELL);
+        const c1z = Math.floor((oz + span) / CELL);
+        // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
+        // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
+        const memo = new Map();
+        const cellDarts = (gx, gz) => {
+            const k = gx + "," + gz;
+            let d = memo.get(k);
+            if (!d) {
+                d = this._forestCellDarts(gx, gz, seedInt);
+                memo.set(k, d);
+            }
+            return d;
+        };
+        let planted = 0;
+        for (let gz = c0z; gz <= c1z; gz++) {
+            for (let gx = c0x; gx <= c1x; gx++) {
+                const own = cellDarts(gx, gz);
+                for (const d of own) {
+                    // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
+                    if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
+                    // KRONEN-SCHÜCHTERNHEIT: der Dart steht, wenn KEIN „besserer" Dart (prio,
+                    // Positions-Tiebreak) in ±2 Nachbarzellen mit ihm konkurriert. Rein →
+                    // reihenfolge-unabhängig; strikte Total-Ordnung → kein Paar akzeptierter
+                    // Zentren < pack*(Ti+Tj) (die Vorlagen-Lichtkonkurrenz).
+                    let accepted = true;
+                    for (let ax = -2; ax <= 2 && accepted; ax++) {
+                        for (let az = -2; az <= 2 && accepted; az++) {
+                            const nb = cellDarts(gx + ax, gz + az);
+                            for (let k = 0; k < nb.length; k++) {
+                                const o = nb[k];
+                                if (o === d) continue; // sich selbst (eigene Zelle) überspringen
+                                const dx = d.x - o.x;
+                                const dz = d.z - o.z;
+                                const md = F.pack * (d.T + o.T);
+                                if (dx * dx + dz * dz >= md * md) continue; // kein Konflikt
+                                // Konflikt: „besser" = höhere prio (Tiebreak x dann z = einzigartig).
+                                const better = o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                                if (better) {
+                                    accepted = false;
+                                    break;
+                                }
+                            }
+                            if (!accepted) break;
+                        }
+                    }
+                    if (!accepted) continue;
+                    // PERF-Kappung: am Ende gedünnt (die Krone reservierte weiter Platz →
+                    // die Wald-FORM bleibt, nur weniger gerendert; keepRoll ≠ prio).
+                    if (fd < 1 && d.keep >= fd) continue;
+                    this._enqueueVegetationSpawn(
+                        d.sp,
+                        { x: d.x, y: d.surfaceY + 0.5, z: d.z },
+                        { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }
+                    );
+                    planted++;
+                    // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
+                    // gefallenen Stamm in 3–5 m Abstand (Vorlagen-Wald atmet: Snags in den
+                    // Lücken). Wanderte aus dem alten Baum-Sample-Zweig hierher.
+                    if (d.totRoll < AnazhRealm.TOTHOLZ_RATE) {
+                        const ang = d.rotY * 2.0;
+                        const dist = 3 + d.keep * 2;
+                        const tx = d.x + Math.cos(ang) * dist;
+                        const tz = d.z + Math.sin(ang) * dist;
+                        if (typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(tx, tz, 0.4)) {
+                            const tsy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(tx, tz) : d.surfaceY;
+                            this._enqueueVegetationSpawn(
+                                "stamm_gefallen",
+                                { x: tx, y: (Number.isFinite(tsy) ? tsy : d.surfaceY) + 0.5, z: tz },
+                                {
+                                    seed: (d.seed ^ 0x7c2b1a93) >>> 0,
+                                    silent: true,
+                                    scale: 0.85 + d.totRoll * 3,
+                                    rotationY: ang,
+                                }
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        return planted;
+    }
+
     // Γ2 (genese-plan) — die KRONEN-Lesart: EIN Klump-Feld (dasselbe c wie der
     // Baum-Leser, λ~167 m), von jeder KLEIN-Art ANDERS gelesen — Farne sammeln
     // sich UNTER den Wald-Clustern, Blumen in den LICHTUNGEN, Gestrüpp am RAND
@@ -61836,91 +62079,17 @@ class AnazhRealm {
             if (this.state.blueprints && this.state.blueprints[key]) spawnName = key;
         }
         if (isTree) {
-            // V18.258 — DIE SPEZIES ist die Identität, die GRAMMATIK gibt die Form.
-            // Der Worldgen spawnt SPEZIES-getypt (`bestName` = baum_eiche/…); die FORM
-            // kommt aus den grammatik-gewachsenen Built-in-Parts (V18.258, KEINE Kugel
-            // mehr). Der `_growTreeBlueprintForSpawn`-Aufruf bleibt — er treibt die
-            // Varianten-Pool-/Promotion-Infra (V18.217/.221) + registriert die Scatter-
-            // Cell (species + variantIndex) für Ω-H, OHNE den Spawn-Typ zu sein. Per-
-            // Baum-Varianz aus scale/yaw (unten). arch.type = die Spezies (load-bearing
-            // für hasInitialTrees · Instancing `baum_kiefer#0` · HISM-Tint · Crafting).
-            {
-                const regX = Math.floor(sampleX / 256);
-                const regZ = Math.floor(sampleZ / 256);
-                const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-                const regionSeed = `${worldSeed}|${bestName}|${regX},${regZ}`;
-                // Die Varianten-Pool-/Promotion-Infra (V18.217/.221) am Leben halten:
-                // der gewachsene Bauplan registriert die Scatter-Cell, ist aber NICHT
-                // der Spawn-Typ — die SPEZIES (bestName) trägt die Identität.
-                const grownKey = this._growTreeBlueprintForSpawn(bestName, regionSeed);
-                {
-                    spawnName = bestName;
-                    const sz = (rng.noise2D(sampleX * 0.53 + 11.3, sampleZ * 0.53 - 7.1) + 1) / 2;
-                    spawnScale = 0.7 + sz * 0.66;
-                    // Yaw weiter unten gemeinsam — kein doppelter Code.
-                    const yawRoll = (rng.noise2D(sampleX * 0.71 - 5.2, sampleZ * 0.71 + 3.9) + 1) / 2;
-                    spawnYaw = yawRoll * Math.PI * 2;
-                    // V18.220 — die SCATTER-Cell registrieren (V18.221 Ω-H
-                    // liest hierdurch die species + variantIndex der gescatterten
-                    // Cell, ohne den Bauplan re-flatten zu müssen). Cap-Counter
-                    // erhöhen — Schicht „tree".
-                    const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
-                    if (
-                        grownBp &&
-                        grownBp._isGrown &&
-                        Number.isFinite(grownBp._variantIndex) &&
-                        this._scatterRegisterCell
-                    ) {
-                        this._scatterRegisterCell(
-                            sampleX,
-                            sampleZ,
-                            "tree",
-                            grownBp._grownSpecies,
-                            grownBp._variantIndex
-                        );
-                    }
-                    if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
-                    this._enqueueVegetationSpawn(
-                        spawnName,
-                        { x: sampleX, y: surfaceY + 0.5, z: sampleZ },
-                        {
-                            seed: seedForSpawn,
-                            silent: true,
-                            scale: spawnScale,
-                            rotationY: spawnYaw,
-                        }
-                    );
-                    // V18.198-Sub-Spawn Totholz wandert MIT (selber Pfad wie
-                    // unten — siehe der Tot-Holz-Block am Funktions-Ende).
-                    const totProbe = (rng.noise2D(sampleX * 0.41 - 3.7, sampleZ * 0.41 + 8.2) + 1) / 2;
-                    if (totProbe < AnazhRealm.TOTHOLZ_RATE) {
-                        const offsetAng = (rng.noise2D(sampleX * 0.61 + 17.3, sampleZ * 0.61 - 4.7) + 1) * Math.PI;
-                        const offsetDist = 3 + ((rng.noise2D(sampleX * 0.83 - 9.1, sampleZ * 0.83 + 2.5) + 1) / 2) * 2;
-                        const totX = sampleX + Math.cos(offsetAng) * offsetDist;
-                        const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
-                        if (this._isAboveWaterAt(totX, totZ, 0.4)) {
-                            const totSurfY =
-                                typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(totX, totZ) : surfaceY;
-                            const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
-                            this._enqueueVegetationSpawn(
-                                "stamm_gefallen",
-                                {
-                                    x: totX,
-                                    y: (Number.isFinite(totSurfY) ? totSurfY : surfaceY) + 0.5,
-                                    z: totZ,
-                                },
-                                {
-                                    seed: seedForSpawn ^ 0x7c2b1a93,
-                                    silent: true,
-                                    scale: 0.85 + ((rng.noise2D(totX * 0.31, totZ * 0.31) + 1) / 2) * 0.3,
-                                    rotationY: totYawRoll * Math.PI * 2,
-                                }
-                            );
-                        }
-                    }
-                    return 1;
-                }
-            }
+            // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — die BÄUME kommen NICHT
+            // mehr aus diesem per-Sample-Affinitäts-Einzelsieger (`bestName` + `chance =
+            // min(0.4,…)` war die SPÄRLICHE Wurzel: EIN Baum je 10×10-Sample-Slot). Der
+            // Wald wächst jetzt aus der zell-deterministischen `plantForest`-Ökologie
+            // (`_forestPlantChunk`, Poisson-Disc + Arten-Nische + reverse-J-Größe +
+            // bimodaler Dichte-Gradient), aufgerufen aus `_populateVoxelChunkVegetation`.
+            // HIER: der Baum-Slot ist der Wald-Zone-Marker — er gibt den Slot an den
+            // Generator ab (kein zweiter Baum-Spawn-Pfad — EINE Quelle, Gesetz #0). Der
+            // Unterwuchs (probe-fail-Zweig oben) bleibt an DIESEM Sample-Raster hängen
+            // (er füllt „die Lücken, wo der Wald nicht steht").
+            return 0;
         }
         // Yaw aus eigenen Seed-Bits — Bäume UND Felsen (alle ~radial-symmetrisch
         // im Footprint → der Quadrat-AABB der Kollision über-deckt; Gotcha).
@@ -61937,39 +62106,10 @@ class AnazhRealm {
                 rotationY: spawnYaw,
             }
         );
-        // V18.198 — Γ2 TOTHOLZ Sub-Spawn: nach einem Baum, mit ~10 % Chance
-        // spawnt ein gefallener Stamm in 3–5 m Abstand. KEIN Affinitäts-Wett-
-        // streit (würde Bäume verdrängen, V17.16-Falle); statt dessen ein
-        // SUB-SPAWN auf dem schon gewonnenen Baum-Slot. Tag-neutral (stamm_
-        // gefallen ist holz+cylinder, dieselben Achsen wie der Baumstamm).
-        // Seed-deterministisch via eigener Suffix-Stream (Γ5-Disziplin: re-
-        // rollt keinen anderen Stream).
-        if (isTree) {
-            const totProbe = (rng.noise2D(sampleX * 0.41 - 3.7, sampleZ * 0.41 + 8.2) + 1) / 2;
-            if (totProbe < AnazhRealm.TOTHOLZ_RATE) {
-                // Offset-Position: 3-5 m vom Baum entfernt, zufällige Richtung.
-                const offsetAng = (rng.noise2D(sampleX * 0.61 + 17.3, sampleZ * 0.61 - 4.7) + 1) * Math.PI;
-                const offsetDist = 3 + ((rng.noise2D(sampleX * 0.83 - 9.1, sampleZ * 0.83 + 2.5) + 1) / 2) * 2;
-                const totX = sampleX + Math.cos(offsetAng) * offsetDist;
-                const totZ = sampleZ + Math.sin(offsetAng) * offsetDist;
-                // Sicherheits-Wand: nicht im Wasser landen.
-                if (this._isAboveWaterAt(totX, totZ, 0.4)) {
-                    const totSurfY =
-                        typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(totX, totZ) : surfaceY;
-                    const totYawRoll = (rng.noise2D(totX * 0.71 - 5.2, totZ * 0.71 + 3.9) + 1) / 2;
-                    this._enqueueVegetationSpawn(
-                        "stamm_gefallen",
-                        { x: totX, y: (Number.isFinite(totSurfY) ? totSurfY : surfaceY) + 0.5, z: totZ },
-                        {
-                            seed: seedForSpawn ^ 0x7c2b1a93, // eigener Suffix-Stream (Γ5)
-                            silent: true,
-                            scale: 0.85 + ((rng.noise2D(totX * 0.31, totZ * 0.31) + 1) / 2) * 0.3, // [0.85..1.15]
-                            rotationY: totYawRoll * Math.PI * 2,
-                        }
-                    );
-                }
-            }
-        }
+        // V18.389 (P1) — der TOTHOLZ-Sub-Spawn (gefallener Stamm) wanderte MIT dem
+        // Baum-Zweig in den Wald-Generator (`_forestPlantChunk`): das Totholz ist
+        // Wald-Boden-Debris, es gehört zur Wald-Ökologie, nicht zum Fels-/Landmark-
+        // Sample-Raster. Hier (Fels-/Kristall-/Glut-Zweig) steht kein Baum → kein Snag.
         return 1;
     }
 
@@ -63302,6 +63442,12 @@ class AnazhRealm {
                     spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
                 }
             }
+            // V18.389 (DAS NEUE KLEID P1) — DER WALD-GENERATOR: die Bäume kommen NICHT
+            // mehr aus dem 10×10-Sample-Raster (der Affinitäts-Einzelsieger war spärlich),
+            // sondern aus der zell-deterministischen `plantForest`-Ökologie über diesen
+            // Chunk (Poisson-Disc + Nische + reverse-J + Dichte-Gradient). Reihenfolge-
+            // unabhängig: jeder Baum gehört genau dem Chunk seiner Position → einmal.
+            spawned += this._forestPlantChunk(cx, cz);
         } finally {
             this._vegSpawnImmediate = prevImmediate;
         }
@@ -79148,6 +79294,36 @@ AnazhRealm.PLACEMENT_DENSITY = Object.freeze({
     highAmp: 0.75, // Höhen-Lichtung-Stärke
     highLo: 12, // ab so hoch über Terrain-Basis beginnt das Lichten
     highHi: 45, // ab so hoch = kahler Grat (nur Rest-Dichte ×0.25)
+});
+
+// V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — die phytogenesis-`plantForest`-
+// Konstanten (worlds/terrain/phytogenesis.js Z.1377-1417), ÜBERSETZT auf AnazhRealms
+// Voxel-Saat: variabel-radius Poisson-Disc mit Kronen-Schüchternheit + Arten-Nische.
+// `crown` = arttypischer Beästungsradius (m) bei Größe 1 (Vorlagen-CROWN, Waldwuchs);
+// die AnazhRealm-Baum-Bauplan-Namen tragen die Vorlagen-Nischen: kiefer←Fichte (trocken/
+// hoch), tanne←Tanne, eiche←Eiche (tief/feucht), birke←Birke (Pionier), erle←Weide (nass),
+// buche←Mammut (selten/riesig). `pack` = Zentren ≥ pack·(Ti+Tj) (Lichtkonkurrenz, Vorlage
+// PACK). `dartsPerCell` = Kandidaten-Darts je Zelle (die Vorlage streut R²·1.20 über die
+// Scheibe ≈ 0.38/m²; die Zell-Übersetzung braucht nur genug für Kronen-Sättigung — der
+// Rest stirbt am bimodalen standDensity-Wurf + der Schüchternheit). `slope*` = die AnazhRealm-
+// Boden-Grundierung (die Voxelwelt hat Klippen, die die Vorlagen-Ebene nicht kennt).
+// Browser-justierbar (LOOK/FPS). Gelesen NUR vom Wald-Generator (`_forestCellDarts`/
+// `_forestPlantChunk`) — die EINE Quelle für „wo steht welcher Baum, wie groß".
+AnazhRealm.FOREST = Object.freeze({
+    cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
+    pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)
+    dartsPerCell: 14, // Kandidaten-Darts/Zelle (genug für Kronen-Sättigung im dichten Kern)
+    slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
+    slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
+    dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
+    crown: Object.freeze({
+        baum_kiefer: 2.75, // Fichte-Nische — schmale Lichtkrone (trockene Höhen)
+        baum_tanne: 2.95, // Tanne (höher/feuchter)
+        baum_eiche: 5.2, // Eiche — breiter Beästungsradius (tiefe, feuchte Lagen)
+        baum_birke: 3.2, // Birke — Pionier
+        baum_erle: 4.5, // Weide-Nische — nasser Saum
+        baum_buche: 9.2, // Mammut-Nische — selten, riesig (dichte trockene Kerne)
+    }),
 });
 
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
