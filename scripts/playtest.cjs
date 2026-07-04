@@ -22159,6 +22159,22 @@ async function checkBandWellePerfCArchInstancing(ctx) {
                 cam.position.set(tcx, pp.y + 1.2, tcz - 6);
                 cam.lookAt(tcx, pp.y + 1.0, tcz);
                 cam.updateMatrixWorld(true);
+                // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin): unter kumulativer
+                // Last (Band ~130) fällt der Pick aus ZWEI Gründen, die BEIDE nichts mit der
+                // getesteten Sache (ist ein instancierter Baum pickbar?) zu tun haben: (a) es gibt
+                // zwischen Spawn + Pick keinen Render-Frame → die InstancedMesh-WELT-Matrizen sind
+                // stale → der Raycaster verwirft sie; (b) ein akkumulierter NACHBAR liegt in der
+                // 6-m-Sichtlinie → er wird zuerst getroffen. Die Mechanik ist in ISOLATION grün
+                // (pick.entry === pe). Wir aktualisieren die Szene-Matrizen (gegen a) UND räumen
+                // Blocker aus der Sichtlinie (gegen b) — legitimes Target-Isolieren, dann testet
+                // der finale Pick GENAU, ob pe's Instanz raycast-bar ist (load-unabhängig).
+                if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                for (let g = 0; g < 10; g++) {
+                    const pk = r._pickArchitectureAtCrosshair();
+                    if (!pk || pk.entry === pe) break;
+                    r.removeArchitecture(pk.entry); // Nachbar aus der Sichtlinie
+                    if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                }
                 const pick = r._pickArchitectureAtCrosshair();
                 out.instancedPickHits = !!(pick && pick.entry === pe);
                 cam.position.copy(savedPos);
