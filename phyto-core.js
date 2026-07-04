@@ -736,10 +736,251 @@
         return geo;
     }
 
+    // DAS NEUE KLEID Welle „RINDE" — DIE STAMM-RINDE aus der Vorlage (`buildTube`
+    // barkBase→barkTip). Ein Ring-Tube entlang jeder Skelett-Polylinie (branch.points
+    // [{x,y,z,r}]): Frenet-freie Up-Referenz-Basis, radiale Ringe, Fuß-Flare mit Lobes
+    // (Strebepfeiler), axiale Borke-Maserung (grain) + der barkA→barkB-Höhen-Gradient
+    // (Fuß-dunkel → Wipfel-hell, wie die Vorlage `col=barkBase.lerp(barkTip, sun*..)`).
+    // REIN + THREE-FREI: gibt pro Branch plain-Arrays zurück (der Consumer wickelt sie in
+    // BufferGeometry + merged). ATTRIBUT-VERTRAG des Consumers EXAKT: position/normal/color/
+    // aFlex/aPhase + index (kein uv — das Rinden-Material liest keins). Der Part bleibt
+    // holz/cylinder → Tags unberührt (nur Vertex-Positionen/Farben ändern sich).
+    // `branches`: [{ points:[{x,y,z,r}], isTrunk }]. `opts`: { radialSegs=6, totalH,
+    //   barkColorA:[r,g,b] 0..1 (Fuß), barkColorB:[r,g,b] (Wipfel), flareAmp=0.45,
+    //   flareLobes=5 }. Rückgabe: [{ positions,normals,colors,aFlex,aPhase,indices }, ...].
+    function _barkHashPhase(a, b, c) {
+        let h = (a * 73856093) ^ (b * 19349663) ^ (c * 83492791);
+        h = (h ^ (h >>> 13)) >>> 0;
+        return ((h * 0.00000000023283) % 1) * Math.PI * 2;
+    }
+    function buildBarkTubeArrays(branches, opts) {
+        opts = opts || {};
+        const radialSegs = opts.radialSegs || 6;
+        const totalH = Math.max(1, opts.totalH || 10);
+        const bA = opts.barkColorA || [0.23, 0.17, 0.12];
+        const bB = opts.barkColorB || [0.42, 0.35, 0.27];
+        const bAr = bA[0],
+            bAg = bA[1],
+            bAb = bA[2];
+        const bBr = bB[0],
+            bBg = bB[1],
+            bBb = bB[2];
+        const dFlareAmp = opts.flareAmp != null ? opts.flareAmp : 0.45;
+        const dFlareLobes = opts.flareLobes != null ? opts.flareLobes : 5;
+        const out = [];
+        const list = branches || [];
+        for (let bi = 0; bi < list.length; bi++) {
+            const br = list[bi];
+            const pts = br && br.points;
+            if (!Array.isArray(pts) || pts.length < 2) continue;
+            const isTrunk = !!br.isTrunk;
+            const nP = pts.length;
+            const nV = nP * radialSegs;
+            const positions = new Float32Array(nV * 3);
+            const normals = new Float32Array(nV * 3);
+            const colors = new Float32Array(nV * 3);
+            const flex = new Float32Array(nV);
+            const phase = new Float32Array(nV);
+            const indices = new Uint32Array((nP - 1) * radialSegs * 6);
+            for (let i = 0; i < nP; i++) {
+                const p = pts[i];
+                let tx, ty, tz;
+                if (i === 0) {
+                    tx = pts[1].x - p.x;
+                    ty = pts[1].y - p.y;
+                    tz = pts[1].z - p.z;
+                } else if (i === nP - 1) {
+                    tx = p.x - pts[i - 1].x;
+                    ty = p.y - pts[i - 1].y;
+                    tz = p.z - pts[i - 1].z;
+                } else {
+                    tx = pts[i + 1].x - pts[i - 1].x;
+                    ty = pts[i + 1].y - pts[i - 1].y;
+                    tz = pts[i + 1].z - pts[i - 1].z;
+                }
+                const tlen = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
+                tx /= tlen;
+                ty /= tlen;
+                tz /= tlen;
+                let upX = 0,
+                    upY = 1,
+                    upZ = 0;
+                if (Math.abs(ty) > 0.99) {
+                    upX = 1;
+                    upY = 0;
+                    upZ = 0;
+                }
+                let bx = ty * upZ - tz * upY;
+                let by = tz * upX - tx * upZ;
+                let bz = tx * upY - ty * upX;
+                const blen = Math.sqrt(bx * bx + by * by + bz * bz) || 1;
+                bx /= blen;
+                by /= blen;
+                bz /= blen;
+                const nx = by * tz - bz * ty;
+                const ny = bz * tx - bx * tz;
+                const nz = bx * ty - by * tx;
+                let radius = p.r;
+                if (isTrunk && i < Math.max(2, Math.floor(nP * 0.18))) {
+                    const flareT = 1 - i / Math.max(1, Math.floor(nP * 0.18));
+                    const ease = flareT * flareT * (3 - 2 * flareT);
+                    radius = p.r * (1 + dFlareAmp * ease * 0.4);
+                }
+                const lobes = dFlareLobes;
+                const flareActive = isTrunk && i < Math.max(2, Math.floor(nP * 0.18));
+                const flareT = flareActive ? 1 - i / Math.max(1, Math.floor(nP * 0.18)) : 0;
+                const flareEase = flareT * flareT * (3 - 2 * flareT);
+                const flareAmp = dFlareAmp * flareEase;
+                const flexVal = Math.max(0, Math.min(1, p.y / totalH));
+                for (let j = 0; j < radialSegs; j++) {
+                    const a = (j / radialSegs) * Math.PI * 2;
+                    const ca = Math.cos(a);
+                    const sa = Math.sin(a);
+                    const lobedMul = 1 + flareAmp * Math.sin((j * lobes * 2 * Math.PI) / radialSegs);
+                    const rEff = radius * (flareActive ? lobedMul : 1.0);
+                    const vx = p.x + (nx * ca + bx * sa) * rEff;
+                    const vy = p.y + (ny * ca + by * sa) * rEff;
+                    const vz = p.z + (nz * ca + bz * sa) * rEff;
+                    const vnx = nx * ca + bx * sa;
+                    const vny = ny * ca + by * sa;
+                    const vnz = nz * ca + bz * sa;
+                    const vIdx = (i * radialSegs + j) * 3;
+                    positions[vIdx] = vx;
+                    positions[vIdx + 1] = vy;
+                    positions[vIdx + 2] = vz;
+                    normals[vIdx] = vnx;
+                    normals[vIdx + 1] = vny;
+                    normals[vIdx + 2] = vnz;
+                    const grainFreq = isTrunk ? 2.1 : 3.6;
+                    const grain =
+                        1 -
+                        0.15 * (Math.sin(i * grainFreq) * 0.5 + 0.5) -
+                        0.08 * (Math.sin(j * 1.9 + i * 0.5) * 0.5 + 0.5);
+                    const hMix = Math.max(0, Math.min(1, p.y / totalH));
+                    colors[vIdx] = (bAr + (bBr - bAr) * hMix) * grain;
+                    colors[vIdx + 1] = (bAg + (bBg - bAg) * hMix) * grain;
+                    colors[vIdx + 2] = (bAb + (bBb - bAb) * hMix) * grain;
+                    const vF = i * radialSegs + j;
+                    flex[vF] = flexVal * (isTrunk ? 0.45 : 0.85);
+                    phase[vF] = _barkHashPhase(bi, i, j);
+                }
+            }
+            let triIdx = 0;
+            for (let i = 0; i < nP - 1; i++) {
+                for (let j = 0; j < radialSegs; j++) {
+                    const j1 = (j + 1) % radialSegs;
+                    const a = i * radialSegs + j;
+                    const b = i * radialSegs + j1;
+                    const c = (i + 1) * radialSegs + j;
+                    const d = (i + 1) * radialSegs + j1;
+                    indices[triIdx++] = a;
+                    indices[triIdx++] = c;
+                    indices[triIdx++] = b;
+                    indices[triIdx++] = b;
+                    indices[triIdx++] = c;
+                    indices[triIdx++] = d;
+                }
+            }
+            out.push({ positions, normals, colors, aFlex: flex, aPhase: phase, indices });
+        }
+        return out;
+    }
+
+    // DAS NEUE KLEID Welle (KRISTALL) — DER KRISTALL aus der Vorlage (`pushCrystal`/`emitCrystals`,
+    // phytogenesis v38, Schöpfer-justiert). Ein M-seitiges PRISMA (M=6 → Quarz hexagonal) mit
+    // SCHULTER (Radius-Verjüngung shoulderScale=0.9 bei shF=1−termFrac der Länge) + pyramidaler
+    // TERMINATION (Apex-Spitze) — die charakteristische Quarz-Silhouette, NIE eine Kugel. Die
+    // Facetten sind SCHARF (jede Wand eigene 4 Verts → per-Face-Normalen, wie die Vorlage). THREE
+    // wird INJIZIERT (kein Import). Geometrie zentriert um den Ursprung (yBot=−L/2..yTop=+L/2), damit
+    // der Consumer sie 1:1 als crystalPoint-Part-Geometrie nutzt (position/normal indexed; der
+    // Consumer liest KEINE Vertex-Farbe → withColor ist optional für den Standalone-/Portal-Pfad).
+    // Rückgabe: eine THREE.BufferGeometry. opts: {facets, rX, rZ, length, termFrac, shoulderScale,
+    // angleOffset, withColor, colBase, colTip}.
+    function buildCrystalPointGeometry(THREE, opts) {
+        if (!THREE || !THREE.BufferGeometry) return null;
+        const o = opts || {};
+        const M = Math.max(3, Math.min(12, o.facets | 0 || 6));
+        const rX = Math.max(0.01, o.rX != null ? o.rX : 0.5);
+        const rZ = Math.max(0.01, o.rZ != null ? o.rZ : 0.5);
+        const L = Math.max(0.05, o.length != null ? o.length : 1);
+        const termFrac = Number.isFinite(o.termFrac) ? Math.max(0.05, Math.min(0.9, o.termFrac)) : 0.32;
+        // Vorlage pushCrystal: Schulter bei shF=0.70 (= 1−termFrac der Länge), Radius ×0.9, Apex.
+        const shF = 1 - termFrac;
+        const shoulderScale = Number.isFinite(o.shoulderScale) ? o.shoulderScale : 0.9;
+        const angOff = Number.isFinite(o.angleOffset) ? o.angleOffset : 0.26;
+        const yBot = -L / 2,
+            yTop = L / 2,
+            yShoulder = yBot + shF * L;
+        const ringB = [],
+            ringS = [];
+        for (let k = 0; k < M; k++) {
+            const a = (k / M) * Math.PI * 2 + angOff;
+            ringB.push([Math.cos(a) * rX, yBot, Math.sin(a) * rZ]);
+            ringS.push([Math.cos(a) * rX * shoulderScale, yShoulder, Math.sin(a) * rZ * shoulderScale]);
+        }
+        const withColor = !!(o.withColor && THREE.Color && o.colBase != null && o.colTip != null);
+        let cB = null,
+            cT = null;
+        if (withColor) {
+            cB = new THREE.Color(o.colBase);
+            cT = new THREE.Color(o.colTip);
+        }
+        const pos = [],
+            idx = [],
+            cols = [];
+        let vb = 0;
+        // Prisma-Wände — je Facette eigene 4 Verts (scharfe Facetten, wie die Vorlage).
+        for (let k = 0; k < M; k++) {
+            const k2 = (k + 1) % M;
+            const b0 = ringB[k],
+                b1 = ringB[k2],
+                s1 = ringS[k2],
+                s0 = ringS[k];
+            pos.push(b0[0], b0[1], b0[2], b1[0], b1[1], b1[2], s1[0], s1[1], s1[2], s0[0], s0[1], s0[2]);
+            idx.push(vb, vb + 1, vb + 2, vb, vb + 2, vb + 3);
+            if (withColor) for (let q = 0; q < 4; q++) cols.push(cB.r, cB.g, cB.b);
+            vb += 4;
+        }
+        // Termination — Apex + eigene Schulter-Ring-Kopie (die Spitze), Farbe cT.
+        const apex = vb;
+        pos.push(0, yTop, 0);
+        if (withColor) cols.push(cT.r, cT.g, cT.b);
+        vb++;
+        const ss = vb;
+        for (let k = 0; k < M; k++) {
+            const s = ringS[k];
+            pos.push(s[0], s[1], s[2]);
+            if (withColor) cols.push(cT.r, cT.g, cT.b);
+            vb++;
+        }
+        for (let k = 0; k < M; k++) idx.push(apex, ss + k, ss + ((k + 1) % M));
+        // Boden-Kappe — eigenes Zentrum + Boden-Ring-Kopie (schließt die Silhouette, unten weisend).
+        const botC = vb;
+        pos.push(0, yBot, 0);
+        if (withColor) cols.push(cB.r, cB.g, cB.b);
+        vb++;
+        const bs = vb;
+        for (let k = 0; k < M; k++) {
+            const b = ringB[k];
+            pos.push(b[0], b[1], b[2]);
+            if (withColor) cols.push(cB.r, cB.g, cB.b);
+            vb++;
+        }
+        for (let k = 0; k < M; k++) idx.push(botC, bs + ((k + 1) % M), bs + k);
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        if (withColor) g.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+        return g;
+    }
+
     root.__phytoCore = {
         growSkeleton: growSkeleton,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
         buildBoulderGeometry: buildBoulderGeometry,
+        buildCrystalPointGeometry: buildCrystalPointGeometry,
+        buildBarkTubeArrays: buildBarkTubeArrays,
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

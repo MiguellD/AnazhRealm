@@ -15172,7 +15172,13 @@ class AnazhRealm {
                 // der Halm wächst aus der EXAKTEN Boden-Wiesenfarbe (grass-root=ground, kein Farb-Bruch).
                 const _mg = AnazhRealm.MEADOW_GREEN;
                 const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
-                const tipCol = vec3(0.42, 0.74, 0.26);
+                // V18.386 — PHYTO-KLEID (Gras-Halm-LOOK-Port): die Spitze liest jetzt den vom Schöpfer
+                // im Portal-Labor (worlds/terrain/phytogenesis.js) justierten Sommer-Grasakzent
+                // `seasonAccent` (0x6f9a3a) × 1.08 (die emitGrass-tipCol-Formel), sRGB→linear konvertiert
+                // — DERSELBE Konvention wie der Boden/die Wurzel (MEADOW_GREEN). Ersetzt das hellere,
+                // gelbstichige [0.42,0.74,0.26] durch das sattere olive-grüne Sommer-Gras der Vorlage;
+                // die Wurzel bleibt der Boden-Ton (grass-root=ground), die Spitze das Halm-Leben.
+                const tipCol = vec3(0.1874, 0.383, 0.0492);
                 let albedo = TSL.mix(baseCol, tipCol, hfN);
                 const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
                 albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
@@ -15221,7 +15227,9 @@ class AnazhRealm {
             this._ensureAtmoUniforms();
             const _SRg = AnazhRealm.SUBSTANCE_RESPONSE;
             this._applySubstanceResponse(mat, _SRg.defaults.gras, {
-                albedoNode: TSL.vec3 ? TSL.vec3(0.37, 0.55, 0.26) : null,
+                // V18.386 — PHYTO-KLEID: die mittlere Wiesen-Farbe fürs Band-Füll-Licht folgt dem
+                // Vorlagen-Gras (Mittel aus Wurzel-Boden-Ton und Sommer-Akzent-Spitze, sRGB→linear).
+                albedoNode: TSL.vec3 ? TSL.vec3(0.108, 0.225, 0.031) : null,
             });
         } catch {
             /* Band optional — Gras bleibt pures Lambert */
@@ -26530,7 +26538,10 @@ class AnazhRealm {
     // Übergang an der Halm-Basis); die Halm-SPITZE bleibt heller (das Leben des Halms), die lush/dry-
     // instanceColor moduliert Halm UND Boden ko-variant (dieselben ~1-Multiplikatoren). Browser-Knopf.
     static get MEADOW_GREEN() {
-        return [0.28, 0.46, 0.19];
+        // V18.386 — PHYTO-KLEID (Boden-LOOK-Port): der Wiesen-Grund liest jetzt die vom Schöpfer im
+        // Portal-Labor (worlds/terrain/phytogenesis.js) justierte Boden-Farbe `cMead` (0x55632f, das
+        // satte Wald-Olivgrün), sRGB→linear konvertiert. Ersetzt das hellere [0.28,0.46,0.19].
+        return [0.0908, 0.1248, 0.0284];
     }
 
     // V18.226 (DER WAHRE ANBLICK — Ω-OPSIS Säule I) — die per-Fragment MULTI-
@@ -26547,16 +26558,16 @@ class AnazhRealm {
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
             screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
             screeHi: 0.48,
-            rockTint: [0.4, 0.4, 0.44], // kühler nackter Stein
+            rockTint: [0.147, 0.1221, 0.0976], // V18.386 — Portal-`cRock` (0x6b6258, warmer Fels-Grau-Braun) sRGB→linear
             rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
             //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
             rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
             screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
-            mossTint: [0.2, 0.42, 0.17], // sattes Niederungs-Moos
+            mossTint: [0.0331, 0.0513, 0.0232], // V18.386 — Portal-`cWet` (0x33402a, nasses Niederungs-Grün) sRGB→linear
             mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
             mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
-            roughBase: 0.8, // V18.335 — Boden-Grundrauheit (Erde/Fels matt). Der Substanz-Kern
+            roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
             //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
             //                  statt eines toten uniformen Sheens unterm Sky-IBL.
@@ -28771,7 +28782,28 @@ class AnazhRealm {
                     // → die per-Fragment Multi-Klassen-Geologie; dasselbe als Füll-
                     // Licht-Albedo + als sichtbarer colorNode.
                     albedoNode = _Ta.attribute("color", "vec3");
-                    if (!opts.useFlexAttr && typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
+                    if (opts.vertexColorAlbedo) {
+                        // DAS NEUE KLEID — DER FELS: die per-Vertex-Geologie (phyto-core
+                        // `withColor` — Granit-Speckle · AO · Sediment · Eisen · Moos) IST die
+                        // Albedo. Der EINE Substanz-Kern legt Korn + Kavität + Roughness-Variation
+                        // drauf (instanz-stabil via positionLocal). KEIN Terrain-Geologie-Overlay
+                        // (das world-continuous positionWorld liest → smeared über einen
+                        // instanzierten Fels) + KEIN Terrain-Normal-Flatten/Bump (das die
+                        // gekrümmte Fels-Normale zur UP-Achse plättete). Gesetz #0: derselbe
+                        // Charakter-Kern wie die Flach-Werke, nur die Vertex-Farbe als Basis.
+                        if (typeof this._substanceCharacter === "function") {
+                            const _rk = this._substanceCharacter(_Ta, albedoNode, {
+                                pos: _Ta.positionLocal,
+                                worldPos: _Ta.positionWorld,
+                                tags: opts.tags || {},
+                                metal: 0,
+                                roughBase: params.roughness,
+                            });
+                            albedoNode = _rk.albedo || albedoNode;
+                            if (_rk.roughNode) mat.roughnessNode = _rk.roughNode;
+                        }
+                        if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
+                    } else if (!opts.useFlexAttr && typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
                         // V18.335 — der Boden bekommt die ROUGHNESS-VARIATION (der #1 Profi-Hebel,
                         // bisher terrain-blind: uniforme Rauheit 0.7 → ein toter Plastik-Sheen unterm
                         // Sky-IBL). Sie kommt aus DEMSELBEN Substanz-Kern, den die Geologie schon liest
@@ -28884,7 +28916,7 @@ class AnazhRealm {
         // Vegetation (Rinde + Laub tragen useFlexAttr) BEHÄLT ihre echte Normale:
         // die Terrain-Flachung zur UP-Achse hätte ALLE Laub-Karten nach oben
         // gerichtet → bei Mittag voll sonnen-lit → ACES wäscht die Krone teal/weiss.
-        if (opts.vertexColors && !opts.useFlexAttr) {
+        if (opts.vertexColors && !opts.useFlexAttr && !opts.vertexColorAlbedo) {
             try {
                 const _Tn = THREE.TSL;
                 const _aun = this.state.atmoUniforms;
@@ -32798,7 +32830,7 @@ class AnazhRealm {
             const ring = [];
             for (let s = 0; s <= SEG; s++) {
                 const t = s / SEG;
-                ring.push({ w: w0 * (1 - t * 0.85), y: t * H, bend: lean * t * t });
+                ring.push({ w: w0 * (1 - t * 0.86), y: t * H, bend: lean * t * t }); // V18.386 Phyto-Kleid: Halm-Verjüngung 0.86 wie die Vorlage (emitGrass halfW=w*(1-f*0.86))
             }
             const nx = sr * 0.3;
             const nz = -cr * 0.3;
@@ -50363,29 +50395,52 @@ class AnazhRealm {
     // (sizeClass/age/crownForm/…) MODULIEREN die Dials, statt eine Parallel-Logik zu sein.
     _phytoDialsFor(speciesKey, grammar, genome, r01, ctx) {
         const lerp = (a, b, t) => a + (b - a) * t;
+        const clamp01 = (v) => Math.max(0, Math.min(1, v));
         const c = ctx || {};
         const crown = c.crownForm || grammar.crown;
-        const conifer = crown === "cone" || grammar.foliage.kind === "needleSpray";
-        // Apikaldominanz: Nadelbaum-Kegel exkurrent (hoch), Laubkrone dekurrent (niedrig).
-        // Aus der Kronen-Form abgeleitet — die eine Achse, die Eiche von Tanne trennt. Der
-        // Feldname `apical` trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
-        let apical;
-        if (conifer || crown === "cone") apical = lerp(0.82, 0.95, r01());
-        else if (crown === "column") apical = lerp(0.66, 0.78, r01());
-        else if (crown === "vase" || crown === "schirm") apical = lerp(0.3, 0.46, r01());
-        else apical = lerp(0.24, 0.52, r01()); // dome/ellipsoid/irregular/weeping — breite Laubkrone
-        // Schlankheit (McMahon-k): Nadelbäume + Säulen schlank, breite Kronen gedrungen.
-        const slim = conifer
-            ? lerp(0.62, 0.82, r01())
-            : crown === "column"
-              ? lerp(0.7, 0.82, r01())
-              : lerp(0.32, 0.55, r01());
-        // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
-        const trop =
-            crown === "weeping" ? lerp(0.7, 0.95, r01()) : conifer ? lerp(0.0, 0.14, r01()) : lerp(-0.2, 0.05, r01());
-        // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
-        const delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
-        const leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
+        const specialCrown = crown === "weeping" || crown === "vase" || crown === "schirm";
+        // DAS NEUE KLEID (Bäume an die Vorlagen-Dials, 04.07.2026) — die per-Art Basis-Regler
+        // EXAKT aus der Schöpfer-Vorlage (SPECIES_PHYTO_DIALS = phytogenesis v38 PRESETS), sofern
+        // die Art einen Eintrag trägt UND das Genom keine Sonder-Krone (weeping/vase/schirm)
+        // gewürfelt hat. Sonst der crown-abgeleitete Fallback (alte Arten + die Sonder-Kronen).
+        const preset = !specialCrown && AnazhRealm.SPECIES_PHYTO_DIALS && AnazhRealm.SPECIES_PHYTO_DIALS[speciesKey];
+        const conifer = preset ? preset.conifer : crown === "cone" || grammar.foliage.kind === "needleSpray";
+        let apical, slim, trop, delta, leafD;
+        if (preset) {
+            // Vorlagen-Werte als Zentrum + kleiner deterministischer Jitter (Natur-Varianz).
+            // apical trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
+            apical = clamp01(preset.api + (r01() - 0.5) * 0.06);
+            slim = clamp01(preset.slim + (r01() - 0.5) * 0.08);
+            trop = preset.trop + (r01() - 0.5) * 0.08;
+            delta = Math.max(1.9, Math.min(2.9, preset.delta + (r01() - 0.5) * 0.1));
+            leafD = grammar.foliage.kind === "none" ? 0 : clamp01(preset.leaf + (r01() - 0.5) * 0.08);
+        } else {
+            // Apikaldominanz: Nadelbaum-Kegel exkurrent (hoch), Laubkrone dekurrent (niedrig).
+            // Aus der Kronen-Form abgeleitet — die eine Achse, die Eiche von Tanne trennt. Der
+            // Feldname `apical` trifft den Phytogenesis-Kern (`_phytoGrowSkeleton` liest `P.apical`).
+            if (conifer || crown === "cone") apical = lerp(0.82, 0.95, r01());
+            else if (crown === "column") apical = lerp(0.66, 0.78, r01());
+            else if (crown === "vase" || crown === "schirm") apical = lerp(0.3, 0.46, r01());
+            else apical = lerp(0.24, 0.52, r01()); // dome/ellipsoid/irregular/weeping — breite Laubkrone
+            // Schlankheit (McMahon-k): Nadelbäume + Säulen schlank, breite Kronen gedrungen.
+            slim = conifer
+                ? lerp(0.62, 0.82, r01())
+                : crown === "column"
+                  ? lerp(0.7, 0.82, r01())
+                  : lerp(0.32, 0.55, r01());
+            // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
+            trop =
+                crown === "weeping" ? lerp(0.7, 0.95, r01()) : conifer ? lerp(0.0, 0.14, r01()) : lerp(-0.2, 0.05, r01());
+            // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
+            delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
+            leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
+        }
+        // Kronen-Charakter: aus der Vorlage, sonst crown-abgeleitet. maxDepth bleibt der
+        // AnazhRealm-Part-Budget-Wert (c.maxDepth, via countCap/leafBudget als LOD-Hebel) —
+        // die Vorlagen-L-System-Tiefe (9/10) gehört NICHT in dieses Budget-System.
+        const dialCrownBase = preset ? preset.crownBase : crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24;
+        const dialConiferDroop = preset ? preset.coniferDroop : crown === "cone" ? 0.22 : 0.05;
+        const dialWindGain = preset ? preset.windGain : 1;
         return {
             height: c.height,
             slim,
@@ -50397,11 +50452,11 @@ class AnazhRealm {
             conifer,
             barkType: c.barkType || (conifer ? "conifer" : "smooth"),
             maxDepth: c.maxDepth != null ? c.maxDepth : conifer ? 4 : 5,
-            crownBase: crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24,
+            crownBase: dialCrownBase,
             whorlSpacing: 0.1 + r01() * 0.05,
-            coniferDroop: crown === "cone" ? 0.22 : 0.05,
+            coniferDroop: dialConiferDroop,
             basalStems: c.basalStems || 0,
-            windGain: 1,
+            windGain: dialWindGain,
             trunkMul: c.trunkMul || 1,
             countCap: c.countCap,
             leafBudget: c.leafBudget,
@@ -51398,6 +51453,24 @@ class AnazhRealm {
                 const rZ = Math.max(0.01, sz / 2);
                 const L = Math.max(0.05, sy);
                 const termFrac = Number.isFinite(part.termFrac) ? Math.max(0.05, Math.min(0.9, part.termFrac)) : 0.32;
+                // DAS NEUE KLEID (KRISTALL) — die Prisma-Form aus der GETEILTEN Quelle (phyto-core,
+                // die Vorlagen-`pushCrystal`): M-seitiges Prisma + SCHULTER (Radius-Verjüngung 0.9)
+                // + Apex-Termination, scharfe Facetten. Der shape-String bleibt EXAKT `crystalPoint`
+                // → Tags frozen (nur die Vertex-Positionen/Normalen ändern). Graceful-Fallback auf
+                // den alten Inline-Pfad, falls __phytoCore fehlt.
+                {
+                    const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+                    if (core && typeof core.buildCrystalPointGeometry === "function") {
+                        const g = core.buildCrystalPointGeometry(THREE, {
+                            facets: n,
+                            rX,
+                            rZ,
+                            length: L,
+                            termFrac,
+                        });
+                        if (g) return g;
+                    }
+                }
                 const yBot = -L / 2,
                     yTop = L / 2,
                     yShoulder = yTop - termFrac * L;
@@ -51665,6 +51738,22 @@ class AnazhRealm {
                         hs = (hs * 1664525 + 1013904223) & 0x7fffffff;
                         return hs / 0x7fffffff;
                     };
+                    // DAS NEUE KLEID — DIE GEOLOGIE-FARBE (phyto-core `withColor`, die Vorlagen-
+                    // Granit-Geologie: Speckle [Quarz/Feldspat/Glimmer] · Kavitäts-AO · Sediment-
+                    // Bänke · Eisen-Schlieren · Moss-Bleach). Die per-Part-Farbe (`part.color` =
+                    // Strata-Höhen-Ton + Fuß-Moos aus `_rockVariant`) trägt als BASIS-Ton (rockA);
+                    // rockB (AO-/Strata-dunkel) + rockC (Strata-hell-Akzent) leiten deterministisch
+                    // aus ihr ab → der Fels behält seinen Sediment-Charakter UND bekommt die reiche
+                    // Vertex-Geologie. Tag-NEUTRAL (nur das color-Attribut wächst; shape/material
+                    // frozen). Das Fels-Material liest die Vertex-Farbe (matOpts.vertexColorAlbedo,
+                    // s. _buildFromBlueprint + _buildPbrNodeMaterial).
+                    const _shadeRock = (c, f) => {
+                        const _r = Math.max(0, Math.min(255, Math.round(((c >> 16) & 0xff) * f)));
+                        const _g = Math.max(0, Math.min(255, Math.round(((c >> 8) & 0xff) * f)));
+                        const _b = Math.max(0, Math.min(255, Math.round((c & 0xff) * f)));
+                        return (_r << 16) | (_g << 8) | _b;
+                    };
+                    const _rockBase = Number.isFinite(part.color) ? part.color : 0x8a8278;
                     const g = core.buildBoulderGeometry(
                         THREE,
                         noise3,
@@ -51677,6 +51766,11 @@ class AnazhRealm {
                             strat: 0.12,
                             detail: det + 2,
                             seed: (hs % 9973) + 1,
+                            withColor: true,
+                            speckle: true,
+                            rockA: _rockBase,
+                            rockB: _shadeRock(_rockBase, 0.52),
+                            rockC: _shadeRock(_rockBase, 1.14),
                         },
                         seq
                     );
@@ -53144,6 +53238,16 @@ class AnazhRealm {
             // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
             // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
             if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
+            // DAS NEUE KLEID — DIE VERTEX-GEOLOGIE LESEN: trägt die Part-Geometrie ein
+            // `color`-Attribut (der phyto-core `withColor`-Fels/Boulder), liest das Material
+            // die per-Vertex-Farbe als Albedo (`vertexColorAlbedo` = der Fels-Pfad in
+            // _buildPbrNodeMaterial: Vertex-Geologie durch den Substanz-Kern, OHNE das
+            // world-continuous Terrain-Geologie-/Bump-Overlay). Rein geometrie-getrieben →
+            // KEIN Tag-/Form-String berührt; Parts ohne color-Attribut bleiben unverändert.
+            if (geom && geom.attributes && geom.attributes.color) {
+                matOpts.vertexColors = true;
+                matOpts.vertexColorAlbedo = true;
+            }
             // T3 — der per-Teil GLANZ-Boost (Kristall/Glut-Genom): skaliert den tag-getragenen
             // Emissiv-Glimmen je Variante (tag-neutral; das SEIN bleibt der Material-Tag).
             if (Number.isFinite(part.emissiveBoost)) matOpts.emissiveBoost = part.emissiveBoost;
@@ -57892,6 +57996,38 @@ class AnazhRealm {
         const bBr = ((_bB >> 16) & 0xff) / 255,
             bBg = ((_bB >> 8) & 0xff) / 255,
             bBb = (_bB & 0xff) / 255;
+        // DAS NEUE KLEID Welle „RINDE" (Visionsweg) — die Ring-Tube-Mathematik lebt jetzt in der
+        // GETEILTEN Quelle `phyto-core.js` (`globalThis.__phytoCore.buildBarkTubeArrays`), damit
+        // Main + Worker + Portal EINE Formel lesen (Gesetz #0 — kein driftender Mirror). Sie gibt
+        // plain-Arrays pro Branch zurück; hier in BufferGeometry gewickelt (Attribut-Vertrag
+        // EXAKT: position/normal/color/aFlex/aPhase + index) + gemerged. Graceful-Fallback auf
+        // den alten Inline-Pfad, falls phyto-core fehlt.
+        const _core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (_core && typeof _core.buildBarkTubeArrays === "function") {
+            const snippets = _core.buildBarkTubeArrays(skeleton.branches, {
+                radialSegs,
+                totalH,
+                barkColorA: [bAr, bAg, bAb],
+                barkColorB: [bBr, bBg, bBb],
+                flareAmp: skeleton.flareAmp || 0.45,
+                flareLobes: skeleton.flareLobes || 5,
+            });
+            if (Array.isArray(snippets) && snippets.length > 0) {
+                const geomListCore = [];
+                for (let si = 0; si < snippets.length; si++) {
+                    const s = snippets[si];
+                    const g = new THREE.BufferGeometry();
+                    g.setAttribute("position", new THREE.BufferAttribute(s.positions, 3));
+                    g.setAttribute("normal", new THREE.BufferAttribute(s.normals, 3));
+                    g.setAttribute("color", new THREE.BufferAttribute(s.colors, 3));
+                    g.setAttribute("aFlex", new THREE.BufferAttribute(s.aFlex, 1));
+                    g.setAttribute("aPhase", new THREE.BufferAttribute(s.aPhase, 1));
+                    g.setIndex(new THREE.BufferAttribute(s.indices, 1));
+                    geomListCore.push(g);
+                }
+                if (geomListCore.length > 0) return this._mergeAttributedGeometries(geomListCore, ["aFlex", "aPhase"]);
+            }
+        }
         // pcg-Hash für aperiodische Phase pro Vertex (deterministisch aus
         // (branchIdx, pointIdx, radialIdx)) → benachbarte Vertices flattern
         // verschieden im Wind-Shader (Plan Ω-W „aperiodisches Flattern").
@@ -76482,6 +76618,28 @@ AnazhRealm.SPECIES_PALETTE = Object.freeze({
 // gewachsene Eiche/Art trägt die rot-braune Riesen-Rinde.
 AnazhRealm.SPECIES_PALETTE_GIGANT = Object.freeze({ barkA: 0x7a3b22, barkB: 0x9a5a38, leaf: 0x3a5a30 });
 AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
+// DAS NEUE KLEID (Bäume an die Vorlagen-Dials, 04.07.2026) — die per-Art Phänotyp-Regler
+// EXAKT aus der Schöpfer-Vorlage (phytogenesis v38 PRESETS). Diese Zahlen sind vom
+// Schöpfer-Auge nach den Regeln der Natur justiert (KEIN Neu-Design, Copy-Adapt):
+//   api   — Apikaldominanz (exkurrent Nadel ↔ dekurrent Laub) → P.apical
+//   delta — da-Vinci-Δ (Flächenerhaltung an den Gabeln, r^Δ)
+//   slim  — McMahon-k (schlank ↔ gedrungen)
+//   trop  — Gravitropismus (aufrecht − ↔ hängend +)
+//   leaf  — Blattdichte
+//   conifer/coniferDroop/crownBase/windGain — Kronen-Charakter
+// `_phytoDialsFor` liest sie als BASIS-Vektor (kleiner deterministischer Jitter für
+// Natur-Varianz); die Genom-Achsen (age/size/crownForm) modulieren darauf. Nur Wuchs-
+// Zahlen — KEIN Tag, die Identität (Namen/holz+laub-Tags) bleibt unberührt (V17.16-Wand).
+// Zuordnung: baum_eiche←eiche · baum_tanne←tanne · baum_kiefer←fichte · baum_birke←birke ·
+// baum_buche/baum_erle←eiche (nächste breite Laub-Art).
+AnazhRealm.SPECIES_PHYTO_DIALS = Object.freeze({
+    baum_eiche: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // phyto eiche
+    baum_tanne: Object.freeze({ api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78, conifer: true, coniferDroop: -0.05, crownBase: 0.12, maxDepth: 9, windGain: 0.5 }), // phyto tanne
+    baum_kiefer: Object.freeze({ api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7, conifer: true, coniferDroop: 0.22, crownBase: 0.12, maxDepth: 9, windGain: 0.5 }), // phyto fichte
+    baum_birke: Object.freeze({ api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 10, windGain: 1.2 }), // phyto birke
+    baum_buche: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // ← eiche (breite Laub-Art)
+    baum_erle: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // ← eiche (breite Laub-Art)
+});
 AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
     baum_tanne: Object.freeze({
         // Fichte/Tanne: konisch, dichte Whorls, needleSpray
