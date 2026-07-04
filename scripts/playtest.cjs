@@ -32189,8 +32189,15 @@ async function checkBandV18164WarumLicht(ctx) {
         // Material(color) → isFlatStructure → Aerial-Chain (outputNode lebt).
         const flat = r._archFlattenBlueprint("baum_eiche");
         out.baumInstanced = !!flat && flat.instanceable === true;
+        // V18.389 (DAS NEUE KLEID P4) — der SCHATTEN-ZWILLING (`l.shadowTwin`) ist ein
+        // OPAKER, kamera-unsichtbarer Schatten-Caster (SHADOW_TWIN_LAYER) — er läuft
+        // bewusst NICHT durch den microTexture-/Aerial-Anzeige-Zweig (kein outputNode).
+        // Die §7.5(b)-Invariante gilt den ANZEIGE-Leaves (bark/card/core); der Zwilling
+        // wird gefiltert (die gemessene neue Realität, kein Pflaster — er trägt keinen
+        // Anzeige-Node, er trägt nur die solide Silhouette für den Schatten-Pass).
+        const displayLeavesE = flat ? flat.leaves.filter((l) => !l.shadowTwin) : [];
         out.baumMicro =
-            !!flat && flat.leaves.length > 0 && flat.leaves.every((l) => !!l.mat && l.mat.outputNode != null);
+            !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
 
         // (4) §7.5(a) das MOND-RIM: Uniform existiert + wird im Output-Chain
         // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
@@ -32606,12 +32613,27 @@ async function checkBandWHWald(ctx) {
         // der Sieger (bestName) wird NACH dem Affinitäts-Sieg durch die Grammatik
         // gestaltet (gen≥4) bzw. als kanonische Basis gespawnt (gen<4) — und die
         // Funktion trägt KEINE _jung/_alt/_breit-Variante mehr (der Legacy-Schnitt).
+        // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — der Baum-Zweig delegiert aus
+        // `_vegetationSampleSpawn` an `_forestPlantChunk` (return 0, EINE Baum-Quelle). Die
+        // Gestalt-Wahl + Größe wanderten MIT dem Code (V9.56-i — die Probe wandert mit) →
+        // die Beweise lesen jetzt den Wald-Generator. Das STRUKTURELLE Gesetz bleibt heil
+        // (die kanonische Art tritt an, die Variante wird NACH der Nischen-Entscheidung
+        // GEWACHSEN — keine statische _jung/_alt-Variante im Pool NOCH im Generator).
+        const forestSrc = r._forestPlantChunk.toString();
+        const cellDartsSrc = r._forestCellDarts.toString();
+        // Die Variante wächst region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`)
+        // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
+        // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
+        // statische _jung/_alt/_breit-Variante mehr (der V18.257-Legacy-Schnitt bleibt).
         out.variantPickAfterWin =
-            /_growTreeBlueprintForSpawn\(bestName/.test(src) &&
-            /spawnName = bestName/.test(src) &&
-            !/baum_\w+_(jung|alt|breit|schlank)/.test(src);
-        // (4) GRÖSSEN-SPAN ±~40 %: der Spawn reicht eine seed-deterministische scale.
-        out.sizeSpan = /spawnScale = 0\.7 \+ sz \* 0\.66/.test(src) && /scale: spawnScale/.test(src);
+            /_growTreeBlueprintForSpawn\(d\.sp/.test(forestSrc) &&
+            /_enqueueVegetationSpawn\(\s*d\.sp/.test(forestSrc) &&
+            !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
+        // (4) GRÖSSEN-SPAN: die Größe wurde REICHER (reverse-J statt linear ±40 %) und
+        // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:
+        // Selbstausdünnung + seltene Überhälter → `0.55 + 1.45·ue^1.45`) reist als
+        // `scale: d.s` in die HISM-Instanz-Matrix. Der Kern der Invariante bleibt.
+        out.sizeSpan = /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(cellDartsSrc) && /scale: d\.s\b/.test(forestSrc);
         // (5) DER KLON-KILLER — die PRO-INSTANZ-ROTATION: _archEntryWorldMatrix
         // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
         // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
@@ -34686,10 +34708,15 @@ async function checkBandV18198Gamma2Totholz(ctx) {
             out.tagNeverHigherThanTree = neverHigher;
         }
 
-        // (T5) Sub-Spawn-Pfad in _vegetationSampleSpawn: Source-Probe für
-        // den isTree-Branch mit TOTHOLZ_RATE.
+        // (T5) Sub-Spawn-Pfad: V18.389 (DAS NEUE KLEID P1) — der Totholz-Sub-Spawn
+        // (Wald-Boden-Debris) ist Teil der Wald-Ökologie und wanderte MIT dem Baum-Zweig
+        // aus `_vegetationSampleSpawn` in `_forestPlantChunk` (V9.56-i — die Probe wandert
+        // mit dem Code). Dort leben jetzt TOTHOLZ_RATE + stamm_gefallen. `src` bleibt
+        // `_vegetationSampleSpawn` für die T6-Determinismus-Probe unten (dort lebt der
+        // rng.noise2D-Unterwuchs weiter).
         const src = r._vegetationSampleSpawn.toString();
-        out.hasSubSpawn = /TOTHOLZ_RATE/.test(src) && /stamm_gefallen/.test(src);
+        const forestSrc = r._forestPlantChunk.toString();
+        out.hasSubSpawn = /TOTHOLZ_RATE/.test(forestSrc) && /stamm_gefallen/.test(forestSrc);
 
         // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt ein DETERMINISTISCHES
         // noise2D (kein Math.random-Aufruf) — Γ5-Wand strukturell gewahrt.
@@ -36778,10 +36805,20 @@ async function checkBandV18213MeshMerge(ctx) {
                         Math.abs(elems[14]) < 1e-6
                     );
                 });
-                // M-Color: jede merged geom trägt vertexColors-Attribut.
-                out.mergedHasColors = flat.leaves.every((l) => l.geom && l.geom.attributes && l.geom.attributes.color);
+                // M-Color: jede ANZEIGE-geom trägt vertexColors-Attribut. V18.389 (DAS
+                // NEUE KLEID P4) — der Schatten-Zwilling (`l.shadowTwin`) ist ein OPAKER,
+                // kamera-unsichtbarer Schatten-Caster (SHADOW_TWIN_LAYER) → bewusst KEIN
+                // color-Attribut / vertexColors (er trägt keine Farbe, nur die solide
+                // Silhouette für den Schatten-Pass). Die Vertex-Color-Invariante gilt den
+                // ANZEIGE-Leaves (bark/card/core); der Zwilling wird gefiltert (die gemessene
+                // neue Realität, kein Pflaster — er ist ein neuer, distinkter Leaf-Typ).
+                const displayLeaves = flat.leaves.filter((l) => !l.shadowTwin);
+                out.mergedHasColors =
+                    displayLeaves.length > 0 &&
+                    displayLeaves.every((l) => l.geom && l.geom.attributes && l.geom.attributes.color);
                 // M-Material: das Material hat vertexColors=true (NodeMaterial-Pfad).
-                out.mergedMatVertexColors = flat.leaves.every((l) => l.mat && l.mat.vertexColors === true);
+                out.mergedMatVertexColors =
+                    displayLeaves.length > 0 && displayLeaves.every((l) => l.mat && l.mat.vertexColors === true);
             }
 
             // ─── (M7) Tag-Neutralität (V17.16-Wand): bp.parts unverändert ─
@@ -38067,9 +38104,15 @@ async function checkBandV18219bisVollendung(ctx) {
             out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
         }
         const sampleSrc = r._vegetationSampleSpawn ? r._vegetationSampleSpawn.toString() : "";
+        // S12/S13: `_vegetationSampleSpawn` LIEST weiter die Promotion-Bitmask + den Cap
+        // (für den Unterwuchs-/Landmark-Pfad — bleibt unberührt).
         out.spawnReadsBitmask = /_scatterIsCellPromoted/.test(sampleSrc);
         out.spawnCheckCap = /_scatterCounterAtCap/.test(sampleSrc);
-        out.spawnRegistersCell = /_scatterRegisterCell/.test(sampleSrc);
+        // S14: V18.389 (DAS NEUE KLEID P1) — die SCHREIB-Seite (Scatter-Cell im Ω-H-Lookup
+        // registrieren: species + variantIndex → der V18.221-Resolver mappt die Cell auf die
+        // reale gewachsene Form) wanderte MIT dem Baum-Spawn in `_forestPlantChunk` (V9.56-i).
+        const forestSpawnSrc = r._forestPlantChunk ? r._forestPlantChunk.toString() : "";
+        out.spawnRegistersCell = /_scatterRegisterCell/.test(forestSpawnSrc);
 
         // ─── V18.221 Ω-H PROMOTION ───────────────────────────────────
         const spawnSrc2 = r.spawnArchitecture ? r.spawnArchitecture.toString() : "";

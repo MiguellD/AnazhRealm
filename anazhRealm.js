@@ -62118,6 +62118,37 @@ class AnazhRealm {
                         { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }
                     );
                     planted++;
+                    // V18.389 (DAS NEUE KLEID P1-Heilung) — die drei Ω-H-Nebeneffekte, die
+                    // MIT dem alten Baum-Zweig aus `_vegetationSampleSpawn` wanderten (V18.217/
+                    // .220/.221): (a) die VARIANTE region-deterministisch WACHSEN (`_growTree
+                    // BlueprintForSpawn` hält den bounded Varianten-Pool am Leben — die Voraus-
+                    // setzung der Promotion §2: ein berührter/geernteter Wald-Baum re-wächst
+                    // BIT-GENAU aus `variantSeed[index]`); der Spawn bleibt die kanonische Art
+                    // (tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint) → EINE
+                    // Baum-Quelle. (b) die Scatter-Cell im Lookup REGISTRIEREN (species +
+                    // variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die reale
+                    // Form). (c) den „tree"-Zähler ERHÖHEN (die V18.220-Cap-Wand, die
+                    // `_vegetationSampleSpawn` weiter liest). Region-Seed 1:1 aus dem alten Pfad.
+                    {
+                        const regX = Math.floor(d.x / 256);
+                        const regZ = Math.floor(d.z / 256);
+                        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                        const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
+                        const grownKey =
+                            typeof this._growTreeBlueprintForSpawn === "function"
+                                ? this._growTreeBlueprintForSpawn(d.sp, regionSeed)
+                                : null;
+                        const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
+                        if (
+                            grownBp &&
+                            grownBp._isGrown &&
+                            Number.isFinite(grownBp._variantIndex) &&
+                            this._scatterRegisterCell
+                        ) {
+                            this._scatterRegisterCell(d.x, d.z, "tree", grownBp._grownSpecies, grownBp._variantIndex);
+                        }
+                        if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
+                    }
                     // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
                     // gefallenen Stamm in 3–5 m Abstand (Vorlagen-Wald atmet: Snags in den
                     // Lücken). Wanderte aus dem alten Baum-Sample-Zweig hierher.
