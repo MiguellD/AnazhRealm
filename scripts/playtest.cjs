@@ -28357,13 +28357,26 @@ async function checkBandWelle6HCreatures(ctx) {
             r.state.camera.lookAt(tcx, p.y, tcz);
             r.state.camera.updateMatrixWorld(true);
         }
-        const archBeforeLmb = r.state.architectures.length;
         // V17.55 W1 — Abbauen kostet jetzt MÜHE + braucht ein taugliches Werkzeug (kein Instant
         // mehr). Wir rüsten ein hartes Werkzeug aus (stein als harte Substanz) + hieben bis zum
         // Bruch; der Ertrag fließt nur mit tauglichem Werkzeug (die bloße Faust gäbe ~nichts).
         r.state.player.equipped = r.state.player.equipped || {};
         r.state.player.equipped.held = "stein_block";
         r.state.player.stamina = 1e6; // V17.55 — der Stamina-Gate soll diese Mess-Schleife nicht stören
+        // V18.386-HÄRTUNG (Last-Robustheit): unter kumulativer Last (Band ~136) sammeln sich
+        // Architekturen nahe dem Test-Spot — der Crosshair-Raycast traf dann einen NACHBARN statt
+        // des stein_block-Targets (lmbShrunkArch grün, aber lmbFilledInventory rot: das FALSCHE Ding
+        // gebrochen). Der Mechanik-Beweis ist in Isolation grün (48 Stein). Wir räumen die Blocker
+        // in der Sichtlinie, bis der Crosshair GARANTIERT das Target sieht — dann ist der Test
+        // load-unabhängig (die V18.273/.276-Disziplin: den fragilen Test härten, nicht den Inhalt
+        // schwächen).
+        for (let g = 0; g < 12; g++) {
+            const picked = r._pickArchitectureAtCrosshair();
+            if (!picked || picked === target) break;
+            r.removeArchitecture(picked); // Nachbar aus der Sichtlinie räumen
+            if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+        }
+        const archBeforeLmb = r.state.architectures.length;
         for (let s = 0; s < 40 && r.state.architectures.length >= archBeforeLmb; s++) r.tryMouseBreak();
         r.state.player.equipped.held = null;
         out.lmbShrunkArch = r.state.architectures.length < archBeforeLmb;
@@ -36990,15 +37003,13 @@ async function checkBandV18214SkeletonMesh(ctx) {
                     out.foliageHasFlex = !!fol.geom.attributes.aFlex;
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
-                    // V18.235 (§3 lushe Krone): Anchors × K Karten × 8 Verts pro card{cross}
-                    // (K = cardsPerAnchor[LOD0] — der Cluster-Füll-Faktor; war 1, jetzt 12).
-                    const _K0 =
-                        (r.constructor.FOLIAGE_DENSITY &&
-                            r.constructor.FOLIAGE_DENSITY.cardsPerAnchor &&
-                            r.constructor.FOLIAGE_DENSITY.cardsPerAnchor[0]) ||
-                        1;
-                    out.foliageCardsPerAnchor = _K0;
-                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * _K0 * 8;
+                    // DAS NEUE KLEID Welle 1 (V18.386): die Krone ist jetzt die VORLAGEN-Cluster-
+                    // Quad-Geometrie (`__phytoCore.buildFoliageQuads`) — EIN Quad (4 Verts) je
+                    // gewachsenem Phyto-Blatt, nicht mehr die alten N-Anker × K-Kreuz-Karten
+                    // (8 Verts). Die Anker kommen aus DENSELBEN Phyto-Blättern → foliageVerts =
+                    // anchorCount × 4. (Leichter UND dichter als die alte K×8-Krone.)
+                    out.foliageCardsPerAnchor = 1;
+                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * 4;
                 }
             }
 
@@ -37079,7 +37090,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
-        `V18.214 (T8c) foliage-Vertex-Count = anchors·K·8 (lushe Krone K=${res.foliageCardsPerAnchor}: ${res.foliageVerts}/${res.skelAnchorCount}·${res.foliageCardsPerAnchor}·8)`,
+        `V18.386 Neues Kleid: foliage-Vertex-Count = anchors·4 (EIN Cluster-Quad/Blatt: ${res.foliageVerts}/${res.skelAnchorCount}·4)`,
         res.foliageVertsMatchAnchors === true
     );
     check(
@@ -38933,15 +38944,14 @@ async function checkBandWahrerAnblickLaub(ctx) {
                 if (tube && tube.dispose) tube.dispose();
                 const card = r._buildTreeFoliageCardGeometry(skel);
                 cardOk = !!(card && card.attributes && card.attributes.position && card.attributes.position.count > 0);
-                // Taper-Beweis: pro Card (8 Verts) ist die obere Halbbreite (k=2,3)
-                // < der unteren (k=0,1) in Quad 1 (xy). Prüfe das erste Card.
+                // DAS NEUE KLEID Welle 1 (V18.386): die Blatt-FORM lebt jetzt in der Atlas-
+                // Silhouette (die Vorlagen-Cluster-Quad-Karte `buildFoliageQuads`), NICHT in
+                // der Geometrie-Verjüngung. Die Karte ist ein Cluster-Quad (4 Verts/Blatt,
+                // uv-geroutet in die Atlas-Zelle) — der Beweis ist das uv-Attribut + die
+                // Quad-Vertex-Zahl (Vielfaches von 4), nicht mehr die getaperte card{cross}.
                 if (card && card.attributes.position && card.attributes.position.count >= 4) {
-                    const p = card.attributes.position;
-                    // Quad1: v0=(-hw,-hh), v1=(hw,-hh), v2=(tw,hh), v3=(-tw,hh) relativ zum Anker.
-                    // |x(v1)-x(v0)| (unten) vs |x(v2)-x(v3)| (oben) → oben schmaler.
-                    const botW = Math.abs(p.getX(1) - p.getX(0));
-                    const topW = Math.abs(p.getX(2) - p.getX(3));
-                    taperProven = topW < botW * 0.7;
+                    const cnt = card.attributes.position.count;
+                    taperProven = !!card.attributes.uv && cnt % 4 === 0;
                 }
                 if (card && card.dispose) card.dispose();
             } else {
@@ -38968,7 +38978,10 @@ async function checkBandWahrerAnblickLaub(ctx) {
     check("Ω-OPSIS S6-Laub (A3) CONSUM: Card-Spitze krümmt zur Krone (curl)", res.cardCurl === true);
     check("Ω-OPSIS S3-Laub (B1) gewachsener Baum baut die Rinden-Tube", res.tubeOk === true);
     check("Ω-OPSIS S6-Laub (B2) gewachsener Baum baut die Foliage-Card", res.cardOk === true);
-    check("Ω-OPSIS S6-Laub (B3) die Card ist oben schmaler als unten (Blatt-Form)", res.taperProven === true);
+    check(
+        "V18.386 Neues Kleid (B3) die Blatt-Form lebt in der Atlas-Silhouette (Cluster-Quad, uv-geroutet)",
+        res.taperProven === true
+    );
     check(`Ω-OPSIS S3/S6-Laub (V1) VERSION floor ≥ 18.229.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 

@@ -51730,8 +51730,13 @@ class AnazhRealm {
                 // rauer). Die Form ist deterministisch (fixe noise3 + seed aus den Maßen). Der
                 // Part bleibt shape `noiserock` → Tags frozen (der Geometrie-Tausch ändert nur
                 // die Vertex-Positionen, nie die Form-/Material-Strings).
+                // V18.266-WAND BEWAHRT: der reiche Vorlagen-`buildBoulder` (subdivid. Iko +
+                // fbm3/ridged/Facetten) ist nur für die GRÖSSEREN Steine (det≥1, ≥0.7 m —
+                // Brocken/Landmarks, wo die Zingg/Wadell-Facetten zählen); ein winziger Kiesel
+                // (det 0) bleibt auf dem BILLIGEN 20-Flächen-Pfad (der V18.266-Perf-Fix: kleines
+                // Deko war der grösste HISM-Posten — kein 4×-Poly-Sprung für Tausende Kiesel).
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-                if (core && typeof core.buildBoulderGeometry === "function") {
+                if (det >= 1 && core && typeof core.buildBoulderGeometry === "function") {
                     const noise3 = (x, y, z) => this._archRockNoise.noise3D(x, y, z);
                     let hs = ((Math.round(sx * 97) * 131 + Math.round(sy * 89) * 71 + Math.round(sz * 83) * 53) & 0x7fffffff) || 1;
                     const seq = () => {
