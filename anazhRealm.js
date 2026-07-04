@@ -1112,6 +1112,13 @@ class AnazhRealm {
             foliageResCeiling: 1, // die User-Obergrenze der Laub-Auflösung (0.25..1); der Regler skaliert darunter
             _renderScale: 1, // adaptive Render-Auflösung (Pixel-Ratio-Faktor), effArch-gefahren; Headless → 1
             _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter Wert (Dead-Band gegen Churn)
+            // V18.389 (DAS NEUE KLEID P5) — DAS SAUBERE STANDALONE-PERF-PANEL (Vorlage
+            // phytogenesis.js Z.2407-2415): das kleine, IMMER sichtbare top-right Panel mit der
+            // EINEN klaren Zeile `{fps} · {rScale}% · Laub {folRes}% · {dc}dc · {tri}k▲`. Liest
+            // `perfSense` synergetisch (kein Parallel-Zähler) — NICHT der PERF-SENSE-Debug-Dump
+            // (der bleibt Entwickler-Werkzeug hinter `perfOverlay`, `perf`-Chatbefehl). Default AN;
+            // Toggle im Einstellungen-Drawer. Persistiert via Snapshot (V8.59-Klasse).
+            perfPanel: true,
             // V18.293 — DER FLUGSCHREIBER (Blackbox): die echte Frame-Last wird
             // schon gemessen (perfSense, aus dem rAF-Delta) — sie verließ nur nie
             // den Browser, und niemand fing den SCHLIMMSTEN Frame. Lazy-init in
@@ -13442,7 +13449,8 @@ class AnazhRealm {
         st._perfFrame = {};
         st._perfMarks = {};
         this._nexusPerfRegulate(dtSec); // die RÜCKKOPPLUNG
-        if (st.perfOverlay) this._perfSenseRender();
+        if (st.perfOverlay) this._perfSenseRender(); // der Debug-Dump (Entwickler, `perf`-Chatbefehl)
+        this._perfPanelRender(); // V18.389 — das saubere Standalone-Panel (default sichtbar)
     }
 
     // DER PID-REGLER (die saubere Rückkopplung, statt Bang-Bang). δ = Ist − Soll
@@ -13904,6 +13912,62 @@ class AnazhRealm {
                 `\nBLACKBOX schlimmster <span style="color:${wCol}">${w.frameMs}</span> ms` +
                 ` (GPU-Lücke ${w.gpuGapMs} · CPU ${w.cpuSumMs}) · ${fr.frames}F → anazhRealmPerf.json`;
         }
+    }
+
+    // V18.389 (DAS NEUE KLEID P5) — DAS SAUBERE STANDALONE-PERF-PANEL (Vorlage phytogenesis.js
+    // Z.2407-2415). Ein eigenes kleines top-right Panel, DEFAULT sichtbar, mit NUR der EINEN klaren
+    // Zeile — kein Debug-Dump. Es liest DIESELBE `perfSense`-Quelle wie der Regler (synergetisch,
+    // KEIN Parallel-Zähler, kein eigener `renderer.info`-Tap — Gesetz #0): `frameMs`/`renderCalls`/
+    // `renderTris` + die zwei Zieleffizienz-Stellgrößen `_renderScale`/`_foliageResScale`. Der
+    // PERF-SENSE-Debug-Overlay (`_perfSenseRender`, hinter `perfOverlay`) bleibt Entwickler-Werkzeug.
+    _ensurePerfPanelDiv() {
+        if (typeof document === "undefined" || !document.body) return null;
+        let div = document.getElementById("perf-panel");
+        if (!div) {
+            div = document.createElement("div");
+            div.id = "perf-panel";
+            div.style.cssText =
+                "position:fixed;top:10px;right:12px;z-index:50;font:600 11px/1.5 ui-monospace,SFMono-Regular,monospace;" +
+                "color:#cfe6ff;background:rgba(8,16,26,0.5);padding:6px 10px;border-radius:8px;pointer-events:none;" +
+                "user-select:none;white-space:nowrap;border:1px solid rgba(120,200,255,0.22)";
+            document.body.appendChild(div);
+        }
+        return div;
+    }
+
+    _togglePerfPanel() {
+        this.state.perfPanel = !this.state.perfPanel;
+        const div = this._ensurePerfPanelDiv();
+        if (div) div.style.display = this.state.perfPanel ? "block" : "none";
+        return this.state.perfPanel;
+    }
+
+    _perfPanelRender() {
+        if (this.state.perfPanel === false) return;
+        const div = this._ensurePerfPanelDiv();
+        if (!div) return;
+        // leicht gedrosselt (die perfSense-Werte sind schon EWMA-geglättet) — die EINE Zeile.
+        const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+        if (this._perfPanelLast && now - this._perfPanelLast < 200) return;
+        this._perfPanelLast = now;
+        const s = this.state.perfSense;
+        if (!s) {
+            div.textContent = "— fps";
+            return;
+        }
+        // DIE EINE QUELLE (synergetisch): perfSense trägt frameMs/renderCalls/renderTris (V18.268);
+        // die Zieleffizienz-Stellgrößen liest der Panel als reine Anzeige (kein zweiter Zähler).
+        const fps = s.frameMs > 0 ? Math.round(1000 / s.frameMs) : 0;
+        const fpsCol = fps < 30 ? "#ff8a8a" : fps < 55 ? "#ffd166" : "#8fe98f";
+        const rScalePct = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
+        const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+        const dc = Math.round(s.renderCalls || 0);
+        const trisK = Math.round((s.renderTris || 0) / 1000);
+        const pmesh = this.state.playerMesh && this.state.playerMesh.position;
+        const posStr = pmesh ? `  ·  ${pmesh.x.toFixed(0)}, ${pmesh.y.toFixed(0)}, ${pmesh.z.toFixed(0)}` : "";
+        div.innerHTML =
+            `<span style="color:${fpsCol}">${fps}</span> fps · ${rScalePct}% · ` +
+            `Laub ${folResPct}% · ${dc}dc · ${trisK}k▲${posStr}`;
     }
 
     // V18.293 — DER FLUGSCHREIBER (die Blackbox). Flugzeuge raten nicht, warum sie
@@ -35900,6 +35964,8 @@ class AnazhRealm {
             lodRef: Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14,
             foliageResCeiling: Number.isFinite(this.state.foliageResCeiling) ? this.state.foliageResCeiling : 1,
             chunkRingRadius: Number.isFinite(this.state.chunkRingRadius) ? this.state.chunkRingRadius : 4,
+            // V18.389 (P5) — die Sichtbarkeit des sauberen Perf-Panels (default an).
+            perfPanel: this.state.perfPanel !== false,
             // V8.28 6.G4.b — Atmosphäre-Slider (fogDistance; Cel-Stufen sind
             // seit V18.236 gestrichen). V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
@@ -40301,6 +40367,9 @@ class AnazhRealm {
             if (Number.isFinite(fc)) this.state.foliageResCeiling = Math.max(0.25, Math.min(1, fc));
             const rr = Number(state.chunkRingRadius);
             if (Number.isFinite(rr)) this.state.chunkRingRadius = Math.max(1, Math.min(12, rr));
+            // V18.389 (P5) — die Perf-Panel-Sichtbarkeit überlebt den Reload (nur ein expliziter
+            // Boolean übersteuert; fehlt das Feld [Alt-Snapshot], bleibt der Default an).
+            if (typeof state.perfPanel === "boolean") this.state.perfPanel = state.perfPanel;
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
@@ -73683,6 +73752,17 @@ class AnazhRealm {
                 const v = Math.max(4, Math.min(30, parseInt(lodS.value, 10) || 14));
                 this.state.lodRef = v;
                 if (lodSv) lodSv.textContent = `${v} m`;
+            });
+        }
+        // (4) V18.389 (P5) — der Perf-Panel-Toggle: schaltet das saubere Standalone-Panel
+        // (default an). Setzt `state.perfPanel` (persistiert) + spiegelt die Sichtbarkeit sofort.
+        const panelCb = document.getElementById("perf-panel-toggle");
+        if (panelCb) {
+            panelCb.checked = this.state.perfPanel !== false;
+            panelCb.addEventListener("change", () => {
+                this.state.perfPanel = !!panelCb.checked;
+                const div = this._ensurePerfPanelDiv();
+                if (div) div.style.display = this.state.perfPanel ? "block" : "none";
             });
         }
 
