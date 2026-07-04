@@ -1185,6 +1185,14 @@ class AnazhRealm {
             // Regionen hinter dem Blick wegcullen (look-sicher: man sieht das Weggecullte nicht).
             // Default an; `anazhRealm.state.useRegionFoliageCull=false` (+ umherlaufen) = A/B.
             useRegionFoliageCull: true,
+            // V18.389 — DAS NEUE KLEID SUBSYSTEM 3 (OCCLUSION-DEMOTION): ein ferner 3D-Baum
+            // hinter dichter Kronen-Masse fällt auf seine LOD2-Stufe zurück (das Kronen-Dichte-
+            // Gitter `AnazhRealm.OCCLUSION` + `_tickArchitectureLOD`-Hook). KEIN zweiter LOD-
+            // Regler — die Demotion hebt nur die Distanz-Stufe auf LOD2, die Schwelle liest
+            // `_foliageDensityScale` (der EINE Qualitäts-Regler). Headless (Null-Renderer) → aus
+            // (gate-treu: das Gate sieht die reine Distanz-LOD, unperturbiert).
+            // `anazhRealm.state.useOcclusionDemotion=false` (+ umherlaufen) = A/B.
+            useOcclusionDemotion: true,
             // V18.349 — DER OPAKE KRONEN-KERN (Gigant-Perf, das Tierfell-Prinzip): eine kleine opake
             // Icosphere INNERHALB der Karten-Wolke füllt die Durchscheine-Löcher + senkt Overdraw.
             // DAS NEUE KLEID K1 (V18.385) — DEFAULT AUS: der Kern machte die Krone zu einer soliden
@@ -13540,6 +13548,27 @@ class AnazhRealm {
                         : Math.min(fdTarget, fdCur + fdStep)
                     : Math.max(fdTarget, fdCur - fdStep * 2);
         }
+        // SUBSYSTEM 5 — DER LAUB-AUFLÖSUNGS-FAKTOR (Vorlage `_folRes`, die dritte Foliage-Schwester):
+        // dieselbe `effArch`-Quelle wie Radius/Dichte (KEIN zweiter Regler) fährt den Auflösungs-Faktor
+        // des künftigen reduziert-aufgelösten Laub-Passes. Unter Last sinkt er → das Laub (90 % der Fill-
+        // Last) rendert in einen kleineren RT → grosse Fill-Ersparnis; mit Kopfraum wächst er zurück auf 1
+        // (volle Auflösung). Er sinkt SOFORT (Optik-Notbremse, wie die Dichte) und wächst nur in den Lücken
+        // (nicht über Budget). Headless (Null-Renderer) → 1 (gate-treu). Der Konsument ist der Zwei-Pass-
+        // Composite (pass.setPixelRatio(dpr·scale)); bis dahin lebt der Faktor in der EINEN Regelschleife +
+        // im Flugschreiber (die etablierte Stellgrößen-Surface, wie foliageDensity).
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st._foliageResScale = 1;
+        } else {
+            const rsTarget = lerp(AnazhRealm.PERF_FOLIAGE_RES_MIN, 1, effArch);
+            const rsCur = st._foliageResScale != null ? st._foliageResScale : AnazhRealm.PERF_FOLIAGE_RES_MIN;
+            const rsStep = AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP;
+            st._foliageResScale =
+                rsTarget > rsCur
+                    ? st._frameOverBudget
+                        ? rsCur
+                        : Math.min(rsTarget, rsCur + rsStep)
+                    : Math.max(rsTarget, rsCur - rsStep * 2);
+        }
         // V18.352 — DER SCHATTEN-PASS KOMMT UNTER DEN EINEN REGLER (Schöpfer „tue es endlich, alles, wie
         // es die Vision will"). Der Schatten-Pass (ein zweiter Voll-Render) war die FIXE Boden-Last, die
         // der Laub-Regler NIE erreichte → eine kämpfende GPU blieb darum unter dem fps-Ziel, auch wenn
@@ -13939,6 +13968,7 @@ class AnazhRealm {
             ctx: {
                 foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
                 foliageDensity: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
+                foliageRes: st._foliageResScale != null ? +(+st._foliageResScale).toFixed(2) : null,
                 creatures: st.creatures ? st.creatures.length : 0,
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 chunkQueue: st.voxelMeshPending ? st.voxelMeshPending.size : 0,
@@ -28803,7 +28833,11 @@ class AnazhRealm {
                             if (_rk.roughNode) mat.roughnessNode = _rk.roughNode;
                         }
                         if (_Ta.vec4) mat.colorNode = _Ta.vec4(albedoNode, _Ta.float(1.0));
-                    } else if (!opts.useFlexAttr && typeof this._terrainGeologyAlbedo === "function" && _Ta.positionWorld) {
+                    } else if (
+                        !opts.useFlexAttr &&
+                        typeof this._terrainGeologyAlbedo === "function" &&
+                        _Ta.positionWorld
+                    ) {
                         // V18.335 — der Boden bekommt die ROUGHNESS-VARIATION (der #1 Profi-Hebel,
                         // bisher terrain-blind: uniforme Rauheit 0.7 → ein toter Plastik-Sheen unterm
                         // Sky-IBL). Sie kommt aus DEMSELBEN Substanz-Kern, den die Geologie schon liest
@@ -32748,6 +32782,7 @@ class AnazhRealm {
         inst.count = 0;
         inst.castShadow = false;
         inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
+        inst.layers.enable(AnazhRealm.FOLIAGE_LAYER); // Subsystem 5: Gras ist Laub → eigene Layer (Layer 0 bleibt)
         return inst;
     }
 
@@ -33065,6 +33100,7 @@ class AnazhRealm {
             inst = new THREE.InstancedMesh(this.state._grassConeGeometry, this._grassInstanceMat(), GRASS_MAX_BLADES);
             inst.castShadow = false;
             inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
+            inst.layers.enable(AnazhRealm.FOLIAGE_LAYER); // Subsystem 5: Gras ist Laub → eigene Layer
         }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als
@@ -49150,6 +49186,74 @@ class AnazhRealm {
     // wandern in den Ring → 5/frame × 10 Frames = 50 ms Verteilung). blockerAABBs
     // bleiben unangetastet (Welt-Substanz aus LOD0 gestempelt). Activation-Flag:
     // `state.atmosphere.treeLOD` (Default true; Browser-tunbar an/aus).
+    // V18.389 (SUBSYSTEM 3 — phytogenesis `_occG`-Füllung portiert) — das Kronen-Dichte-
+    // Gitter aus den aktuellen Baum-Architekturen neu bauen. Jede Krone trägt ihr Gewicht
+    // (∝ scale·nominalH, geklammert wie die Vorlage) in IHRE 3m-Zelle; `_occlusionOccludes`
+    // marschiert später die Sichtlinie hindurch. Die Vorlage baut das Gitter einmal
+    // (statischer Wald) — AnazhRealm streamt Bäume, also periodisch (throttled). Die
+    // `architectures`-Liste ist streaming-bounded (foliageRadius) → der Loop bleibt klein.
+    _rebuildOcclusionGrid() {
+        const O = AnazhRealm.OCCLUSION;
+        let grid = this._occlGrid;
+        if (!grid) grid = this._occlGrid = new Map();
+        else grid.clear();
+        const archs = this.state.architectures;
+        if (!Array.isArray(archs)) return grid;
+        const cellM = O.cellM;
+        for (let i = 0; i < archs.length; i++) {
+            const e = archs[i];
+            if (!e || !e.instanced || !e._lodSpecies || !e.position) continue;
+            const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const w = Math.max(O.weightMin, Math.min(O.weightMax, s * O.nominalH * O.weightPerM));
+            const gx = Math.floor(e.position.x / cellM);
+            const gz = Math.floor(e.position.z / cellM);
+            const k = gx + "," + gz;
+            grid.set(k, (grid.get(k) || 0) + w);
+        }
+        return grid;
+    }
+
+    // Throttled: alle OCCLUSION.rebuildInterval Frames (~3×/s) neu bauen — die Bäume
+    // sind quasi-statisch, ein leicht veraltetes Gitter fängt die Hysterese ab.
+    _maybeRebuildOcclusionGrid() {
+        const O = AnazhRealm.OCCLUSION;
+        this._occlFrameCounter = (this._occlFrameCounter || 0) + 1;
+        if (!this._occlGrid || this._occlFrameCounter >= O.rebuildInterval) {
+            this._occlFrameCounter = 0;
+            this._rebuildOcclusionGrid();
+        }
+    }
+
+    // V18.389 (SUBSYSTEM 3 — phytogenesis `updateTreeLOD`-Occlusion-Marsch portiert) —
+    // marschiert die Sichtlinie Kamera→Baum durch das Kronen-Dichte-Gitter. Überschreitet
+    // die kumulierte Dichte die Schwelle, ist der Baum verdeckt → LOD2-Demotion. Hysterese
+    // (thrLo für bereits-verdeckte) gegen Flattern. PERF-INTEGRATION (Gesetz #0 — EIN
+    // Regler): die Schwelle skaliert mit `_foliageDensityScale` (dieselbe Quelle wie der
+    // Perf-Regler) → unter Last sinkt sie → mehr Bäume werden LOD2.
+    _occlusionOccludes(camX, camZ, tx, tz, dr, wasOccluded) {
+        const grid = this._occlGrid;
+        if (!grid || grid.size === 0 || !(dr > 0)) return false;
+        const O = AnazhRealm.OCCLUSION;
+        const cellM = O.cellM;
+        const ix = (tx - camX) / dr;
+        const iz = (tz - camZ) / dr;
+        const tEnd = dr - O.endMargin;
+        let thr = wasOccluded ? O.thrLo : O.thrHi;
+        const fd = this.state._foliageDensityScale;
+        if (Number.isFinite(fd) && fd < 1) thr *= O.perfThrMin + (1 - O.perfThrMin) * fd;
+        let s = 0;
+        for (let t = O.startM; t < tEnd; t += O.stepM) {
+            const gx = Math.floor((camX + ix * t) / cellM);
+            const gz = Math.floor((camZ + iz * t) / cellM);
+            const d = grid.get(gx + "," + gz);
+            if (d) {
+                s += d;
+                if (s > thr) return true;
+            }
+        }
+        return false;
+    }
+
     _tickArchitectureLOD(maxSwitchesPerFrame = 5) {
         const atmo = this.state.atmosphere;
         if (atmo && atmo.treeLOD === false) return 0;
@@ -49161,6 +49265,12 @@ class AnazhRealm {
         // grossen Welten (10k+ Architekturen) bleibt der Tick bounded. Den
         // Cursor speichern wir an state — er reist nicht im Snapshot.
         if (!Number.isFinite(this._archLODCursor)) this._archLODCursor = 0;
+        // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
+        // (gate-treu: das Gate sieht die reine Distanz-LOD, unperturbiert). Bei aktiv das
+        // Kronen-Gitter throttled neu bauen (einmal je Tick eingehängt).
+        const st = this.state;
+        const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
+        if (occlOn) this._maybeRebuildOcclusionGrid();
         let switches = 0;
         const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
         for (let i = 0; i < sliceLen && switches < maxSwitchesPerFrame; i++) {
@@ -49171,7 +49281,25 @@ class AnazhRealm {
             const dx = entry.position.x - pm.x;
             const dz = entry.position.z - pm.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            const newLOD = this._chooseLODForDistance(dist, entry._lodLevel);
+            let newLOD = this._chooseLODForDistance(dist, entry._lodLevel);
+            // V18.389 (SUBSYSTEM 3) — OCCLUSION-DEMOTION: ein ferner Baum, der als 3D-Stufe
+            // (LOD0/1) gewählt wurde, aber hinter dichter Kronen-Masse steht, fällt auf seine
+            // ferne LOD2-Stufe zurück. `entry._occluded` trägt die Hysterese (thrLo, wenn schon
+            // verdeckt) — transient (NICHT im Snapshot, default undefined → false).
+            if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
+                const occ = this._occlusionOccludes(
+                    pm.x,
+                    pm.z,
+                    entry.position.x,
+                    entry.position.z,
+                    dist,
+                    entry._occluded === true
+                );
+                entry._occluded = occ;
+                if (occ) newLOD = 2;
+            } else if (entry._occluded) {
+                entry._occluded = false;
+            }
             if (newLOD === entry._lodLevel) continue;
             // LOD-Switch — re-allocate
             const success = this._switchArchitectureLOD(entry, newLOD);
@@ -50430,7 +50558,11 @@ class AnazhRealm {
                   : lerp(0.32, 0.55, r01());
             // Gravitropismus: aufrecht (−), Trauerweide hängend (+).
             trop =
-                crown === "weeping" ? lerp(0.7, 0.95, r01()) : conifer ? lerp(0.0, 0.14, r01()) : lerp(-0.2, 0.05, r01());
+                crown === "weeping"
+                    ? lerp(0.7, 0.95, r01())
+                    : conifer
+                      ? lerp(0.0, 0.14, r01())
+                      : lerp(-0.2, 0.05, r01());
             // da-Vinci-Δ: 2 (mechanisch) .. 3 (hydraulisch); die phyllo-Achse trägt die Varianz.
             delta = c.phylloDiv ? Math.max(1.9, Math.min(2.9, c.phylloDiv)) : lerp(2.1, 2.5, r01());
             leafD = grammar.foliage.kind === "none" ? 0 : lerp(0.45, 0.8, r01());
@@ -51738,7 +51870,9 @@ class AnazhRealm {
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
                 if (det >= 1 && core && typeof core.buildBoulderGeometry === "function") {
                     const noise3 = (x, y, z) => this._archRockNoise.noise3D(x, y, z);
-                    let hs = ((Math.round(sx * 97) * 131 + Math.round(sy * 89) * 71 + Math.round(sz * 83) * 53) & 0x7fffffff) || 1;
+                    let hs =
+                        (Math.round(sx * 97) * 131 + Math.round(sy * 89) * 71 + Math.round(sz * 83) * 53) &
+                            0x7fffffff || 1;
                     const seq = () => {
                         hs = (hs * 1664525 + 1013904223) & 0x7fffffff;
                         return hs / 0x7fffffff;
@@ -58208,7 +58342,8 @@ class AnazhRealm {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const canvas = core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
+        const canvas =
+            core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document) : null;
         if (!canvas) return null;
         const tex = new THREE.CanvasTexture(canvas);
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -58765,14 +58900,27 @@ class AnazhRealm {
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
             const foliageMat = this._sharedFoliageMaterial(foliageMatOpts);
-            leaves.push({ geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() });
+            const cardLeaf = { geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() };
             // V18.349 — DER OPAKE KRONEN-KERN (das Tierfell-Prinzip): eine kleine OPAKE Icosphere
             // INNERHALB der Karten-Wolke. Sie füllt die Durchscheine-Löcher (dichter) UND schreibt
             // Tiefe → early-Z verwirft verdeckte Hinter-Karten (weniger Overdraw, die 90 %-Laub-Last-
             // Wurzel). NUR LOD0 (die dichte Karten-Wolke verdeckt den Kern; ferne LODs sind dünn +
-            // klein → kein Kern), OPAK (kein Alpha-Test/DoubleSide), KEIN Schatten (kein Look-Eingriff
-            // in v1). A/B-Toggle `state.foliageOpaqueCore`; das Material ist EIN geteiltes Singleton
-            // (eigene Opts-Signatur → eigenes Batch, nicht mit den Karten gemischt).
+            // klein → kein Kern), OPAK (kein Alpha-Test/DoubleSide). A/B-Toggle `state.foliageOpaqueCore`;
+            // das Material ist EIN geteiltes Singleton (eigene Opts-Signatur → eigenes Batch).
+            //
+            // V18.387 — DER SCHATTEN-ZWILLING (Subsystem 4 des Wald-Systems, das Vorlagen-Prinzip
+            // „die Anzeige-Bäume casten NIE, ein separater billiger Caster trägt den Schatten"):
+            // die Anzeige-KARTEN casten nicht mehr (teurer DoubleSide-Alpha-Test-Overdraw im 2.
+            // Voll-Render, der mit dem LOD mutiert), und der opake Kern IST der Schatten-Zwilling —
+            // 80 Tris statt der Karten-Hunderte, OPAK (saubere Tiefe, kein Alpha-Test-Schimmer),
+            // sitzt IM Kronen-BBox → wirft einen soliden Kronen-Schatten. KEIN neuer, unsichtbarer
+            // Layer-Zwilling (Gesetz #0 — der Kern EXISTIERT schon als sichtbarer Kronen-Füller,
+            // er wird zum Caster wiederverwendet statt parallel gebaut); er streamt/despawnt
+            // ohnehin mit dem Baum-Eintrag (Chunk-Streaming) mit. Die Karten verlieren den Schatten
+            // NUR, wenn der Kern wirklich gebaut wird (LOD0 + Toggle an + coreGeom vorhanden) —
+            // sonst bleibt der Karten-Schatten (kein Regress). Der Stamm (bark) castet weiter
+            // (billige, solide Tubes). LOD1/2 casten ohnehin nichts (_archGroupCastsShadow, V18.265).
+            let coreLeaf = null;
             if (this.state.foliageOpaqueCore !== false && (skel.lodLevel | 0) === 0) {
                 const coreGeom = this._buildTreeFoliageCoreGeometry(skel);
                 if (coreGeom) {
@@ -58781,14 +58929,20 @@ class AnazhRealm {
                         useInstanceTint: true,
                         useFlexAttr: true,
                     });
-                    leaves.push({
+                    coreLeaf = {
                         geom: coreGeom,
                         mat: coreMat,
                         localMatrix: new THREE.Matrix4(),
-                        castShadow: false,
-                    });
+                        castShadow: true, // V18.387 — der Kern IST der Schatten-Zwilling
+                    };
                 }
             }
+            // V18.387 — die Karten casten nur, wenn KEIN Zwilling da ist (sonst trägt der Kern
+            // den Schatten). Reihenfolge bleibt bark → foliage-card → core (Leaf-Index-Stabilität
+            // für _archInstanceGroupFor/instSlots).
+            if (coreLeaf) cardLeaf.castShadow = false;
+            leaves.push(cardLeaf);
+            if (coreLeaf) leaves.push(coreLeaf);
         }
         if (leaves.length === 0) return null;
         return { leaves };
@@ -59049,6 +59203,7 @@ class AnazhRealm {
             mesh.frustumCulled = regional; // region-lokale Sphere → die ganze Region cullt beim Wegschauen
             mesh.sortObjects = false;
             mesh.userData.archBatchKey = batchKey;
+            this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub-Batch → FOLIAGE_LAYER
             if (this.state.scene) this.state.scene.add(mesh);
             batch = {
                 batchKey,
@@ -59106,6 +59261,19 @@ class AnazhRealm {
     // LOKAL → frustumCulled=true (die Engine cullt sie beim Wegschauen = die Heilung
     // des „kann mich kaum drehen"). Ohne regionKey (placed Architektur) bleibt die
     // Gruppe global + frustumCulled=false (welt-verteilte Instanzen, Group-BBox nutzlos).
+    // SUBSYSTEM 5 (Vorlage: `forestGroup.traverse(...o.layers.set(1))`) — die non-breaking
+    // Laub-Layer-Trennung: eine Vegetations-Instanz-/Gras-Gruppe bekommt die FOLIAGE_LAYER
+    // ZUSÄTZLICH (`enable`, Layer 0 bleibt) → Render + Schatten sind heute byte-identisch (die
+    // Haupt-Kamera + der Schatten-Pass sehen sie weiter über Layer 0), aber der künftige
+    // reduziert-aufgelöste Laub-Pass kann sie über `pass.setLayers(FOLIAGE_LAYER)` ISOLIERT
+    // wählen. Placed Architektur (`p:`-Region-Key ODER global) bleibt Layer-0-only (kein Laub).
+    _markFoliageLayer(mesh, regionKey, regional) {
+        if (!mesh || !mesh.layers || typeof mesh.layers.enable !== "function") return;
+        // Foliage = region-gestreute Vegetation; die platzierte Architektur trägt den `p:`-Präfix.
+        const isFoliage = regional !== false && !(typeof regionKey === "string" && regionKey.startsWith("p:"));
+        if (isFoliage) mesh.layers.enable(AnazhRealm.FOLIAGE_LAYER);
+    }
+
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // V18.353/.356 PHASE A.2 — der Batch-Pfad (region-gekeyt, Default an). Der alte
         // `useBatchedFoliage` (der gescheiterte V18.289-1-GB-Global-Batch) ist GESTRICHEN —
@@ -59127,6 +59295,7 @@ class AnazhRealm {
         // regional → lokale BBox → die Engine cullt beim Umsehen; global → nutzlos (verteilt).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
+        this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
         if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
@@ -76415,6 +76584,35 @@ AnazhRealm.LOD_DISTANCES = Object.freeze({
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
 });
 
+// V18.389 (DAS NEUE KLEID — SUBSYSTEM 3, phytogenesis v38 `_occG`/`updateTreeLOD`
+// OCCLUSION-DEMOTION portiert) — DAS KRONEN-DICHTE-GITTER. Ein ferner 3D-Baum, der
+// hinter dichter Kronen-Masse steht, muss nicht mehr in voller 3D-Geometrie rendern:
+// die Sichtlinie Kamera→Baum marschiert durch ein Kronen-Dichte-Gitter; überschreitet
+// die kumulierte Dichte eine Schwelle, fällt der Baum auf seine ferne LOD2-Stufe
+// (`grown_*_lod2`) zurück — die 3D-Dreiecke verschwinden, die Silhouette bleibt an
+// ihrer Position (öffnet sich eine Lücke, steht dort sofort die richtige LOD → Pop-in
+// konstruktiv unmöglich). Die Vorlage baut das Gitter EINMAL (flacher, statischer Wald);
+// AnazhRealm STREAMT Bäume → das Gitter wird periodisch aus den Baum-Architekturen neu
+// gebaut (`_rebuildOcclusionGrid`). KEIN zweiter LOD-Regler: die Demotion hebt nur die
+// vom Distanz-Chooser gewählte Stufe auf LOD2 an, und die Schwelle skaliert mit
+// `_foliageDensityScale` (der EINE Qualitäts-Regler, V18.277) — unter Last sinkt die
+// Schwelle → aggressivere Demotion. Werte browser-justierbar.
+AnazhRealm.OCCLUSION = Object.freeze({
+    cellM: 3, // Kronen-Dichte-Gitter (3m-Zelle, wie phytogenesis _occG)
+    occDist: 30, // erst JENSEITS dieser Distanz occlusion-marschieren (nahe Bäume bleiben voll-3D)
+    startM: 7, // Marsch-Start (überspringt die eigene + direkte Nachbar-Krone)
+    endMargin: 8, // Marsch-Ende = dr − 8 m (die Zielbaum-eigene Krone zählt NICHT mit)
+    stepM: 3, // Schrittweite = Zellgröße
+    thrHi: 3.6, // Demotions-Schwelle (Hysterese OBEN: klarer Baum → LOD2 erst hier)
+    thrLo: 2.8, // Re-Promotions-Schwelle (Hysterese UNTEN: demotierter Baum bleibt es länger → kein Flattern)
+    perfThrMin: 0.6, // unter voller Last (fdScale=MIN) sinkt die Schwelle auf 60 % → mehr Bäume werden LOD2
+    weightMin: 0.35, // Kronen-Gewicht-Klammer (phytogenesis clamp)
+    weightMax: 1.6,
+    nominalH: 14, // nominale Baum-Sichthöhe (m) für das skalen-basierte Kronen-Gewicht
+    weightPerM: 0.045, // Kronen-Gewicht ∝ (scale·nominalH) (scale 1 → 0.63, scale 2 → 1.26)
+    rebuildInterval: 20, // Gitter-Neubau alle N Frames (Bäume streamen → periodisch, nicht statisch wie die Vorlage)
+});
+
 // V18.224 (DER LEBENDIGE GIGANT §5+§8+§2 Ω-S+Ω-H — DAS HERZ) — der ECHTE
 // COMPUTE-SCATTER + die ECHTE PROMOTION. Die zwei Seelen vereint:
 //   - die FERNE Projektion (Renderer-Seele): dichter Wald als InstancedMesh-
@@ -76638,12 +76836,78 @@ AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6
 // Zuordnung: baum_eiche←eiche · baum_tanne←tanne · baum_kiefer←fichte · baum_birke←birke ·
 // baum_buche/baum_erle←eiche (nächste breite Laub-Art).
 AnazhRealm.SPECIES_PHYTO_DIALS = Object.freeze({
-    baum_eiche: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // phyto eiche
-    baum_tanne: Object.freeze({ api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78, conifer: true, coniferDroop: -0.05, crownBase: 0.12, maxDepth: 9, windGain: 0.5 }), // phyto tanne
-    baum_kiefer: Object.freeze({ api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7, conifer: true, coniferDroop: 0.22, crownBase: 0.12, maxDepth: 9, windGain: 0.5 }), // phyto fichte
-    baum_birke: Object.freeze({ api: 0.55, delta: 2.2, slim: 0.78, trop: 0.42, leaf: 0.42, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 10, windGain: 1.2 }), // phyto birke
-    baum_buche: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // ← eiche (breite Laub-Art)
-    baum_erle: Object.freeze({ api: 0.3, delta: 2.3, slim: 0.45, trop: -0.15, leaf: 0.6, conifer: false, coniferDroop: 0.05, crownBase: 0.24, maxDepth: 9, windGain: 0.9 }), // ← eiche (breite Laub-Art)
+    baum_eiche: Object.freeze({
+        api: 0.3,
+        delta: 2.3,
+        slim: 0.45,
+        trop: -0.15,
+        leaf: 0.6,
+        conifer: false,
+        coniferDroop: 0.05,
+        crownBase: 0.24,
+        maxDepth: 9,
+        windGain: 0.9,
+    }), // phyto eiche
+    baum_tanne: Object.freeze({
+        api: 0.9,
+        delta: 2.1,
+        slim: 0.74,
+        trop: 0.05,
+        leaf: 0.78,
+        conifer: true,
+        coniferDroop: -0.05,
+        crownBase: 0.12,
+        maxDepth: 9,
+        windGain: 0.5,
+    }), // phyto tanne
+    baum_kiefer: Object.freeze({
+        api: 0.92,
+        delta: 2.05,
+        slim: 0.72,
+        trop: 0.1,
+        leaf: 0.7,
+        conifer: true,
+        coniferDroop: 0.22,
+        crownBase: 0.12,
+        maxDepth: 9,
+        windGain: 0.5,
+    }), // phyto fichte
+    baum_birke: Object.freeze({
+        api: 0.55,
+        delta: 2.2,
+        slim: 0.78,
+        trop: 0.42,
+        leaf: 0.42,
+        conifer: false,
+        coniferDroop: 0.05,
+        crownBase: 0.24,
+        maxDepth: 10,
+        windGain: 1.2,
+    }), // phyto birke
+    baum_buche: Object.freeze({
+        api: 0.3,
+        delta: 2.3,
+        slim: 0.45,
+        trop: -0.15,
+        leaf: 0.6,
+        conifer: false,
+        coniferDroop: 0.05,
+        crownBase: 0.24,
+        maxDepth: 9,
+        windGain: 0.9,
+    }), // ← eiche (breite Laub-Art)
+    baum_erle: Object.freeze({
+        api: 0.3,
+        delta: 2.3,
+        slim: 0.45,
+        trop: -0.15,
+        leaf: 0.6,
+        conifer: false,
+        coniferDroop: 0.05,
+        crownBase: 0.24,
+        maxDepth: 9,
+        windGain: 0.9,
+    }), // ← eiche (breite Laub-Art)
 });
 AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
     baum_tanne: Object.freeze({
@@ -79114,6 +79378,19 @@ AnazhRealm.RING_GROW_SUSTAIN_MS = 1500;
 // 40 % bei voller Last (spärlich, aber nicht kahl — der Schöpfer richtet den Look, Regel #0).
 AnazhRealm.PERF_FOLIAGE_DENSITY_MIN = 0.22; // V18.303 0.4→0.22: das Laub ist 90 % der GPU-Last (gemessen 2.21M Tris) → eine kämpfende GPU darf es weiter ausdünnen (perf-gated: starke Hardware bleibt voll)
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
+// SUBSYSTEM 5 (Portal-Vorlage FoliagePass / _folRes) — DER LAUB-AUFLÖSUNGS-REGLER: eine
+// dritte Schwester zu foliageRadius/-density, gefahren vom EINEN Perf-Regler (effArch, KEIN
+// zweiter Regler). Das Laub (dichte Karten-Wolke) ist 90 % der Fill-Last (V18.303); es in einen
+// eigenen, REDUZIERT aufgelösten Pass zu rendern (dann tiefenkorrekt hochskaliert compositen) ist
+// der grosse Fill-Hebel der Vorlage. `_foliageResScale` ∈ [MIN..1] ist der Auflösungs-Faktor (=
+// das Vorlage-`_folRes`), den ein künftiger Zwei-Pass-Composite als `pass.setPixelRatio(dpr·scale)`
+// liest — er lebt schon in der EINEN Regelschleife + im Flugschreiber. Die Laub-LAYER-Trennung
+// (FOLIAGE_LAYER) ist die non-breaking Vorbedingung: das Laub bekommt die eigene Layer ZUSÄTZLICH
+// (Layer 0 bleibt → Render/Schatten heute byte-identisch), ist damit aber für den Laub-Pass
+// (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1 (volle Auflösung, gate-treu).
+AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
+AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // unter Last: halbe Laub-Auflösung (Vorlage-Slider 25–100 %, 0.5 = sicherer Floor)
+AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Zurück-auf-volle-Auflösung
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 // (V18.281 — die toten ARCH_QUALITY_FPS_LOW/HIGH-Schwellen GEKEHRT: Reste des

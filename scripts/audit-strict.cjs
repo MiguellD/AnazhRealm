@@ -88,10 +88,7 @@ function auditCssVariables() {
     }
     if (undefinedCount === 0) {
         const totalUses = usesNoFallback.size + usesWithFallback.size;
-        pass(
-            "CSS-VAR",
-            `${totalUses} verwendete CSS-Variablen, alle ohne-Fallback definiert (${defs.size} defs)`
-        );
+        pass("CSS-VAR", `${totalUses} verwendete CSS-Variablen, alle ohne-Fallback definiert (${defs.size} defs)`);
     }
 }
 
@@ -118,11 +115,7 @@ function auditSoftDefaults() {
         const matches = src.match(re) || [];
         const count = matches.length;
         if (count > c.max) {
-            warn(
-                "SOFT-DEFAULT",
-                `"${c.literal}" hardcoded ${count}× (Limit ${c.max})`,
-                c.note
-            );
+            warn("SOFT-DEFAULT", `"${c.literal}" hardcoded ${count}× (Limit ${c.max})`, c.note);
         } else {
             pass("SOFT-DEFAULT", `"${c.literal}" hardcoded ${count}× (Limit ${c.max} OK)`);
         }
@@ -618,6 +611,7 @@ async function auditStateAndMethods() {
                 "pendingFoliageChunks", // `if (!state.X) … new Set()` / `if (state.X)`
                 "_frameOverBudget", // V18.282 — Frame-über-Budget-Flag (steuert nur Optik), undefined ist falsy
                 "_foliageDensityScale", // V18.277 — Dichte-Faktor, `state.X != null ? : 1`
+                "_foliageResScale", // Subsystem 5 — Laub-Auflösungs-Faktor, `state.X != null ? : MIN`
                 "_foliageMatCache", // V18.288 — geteilte Bewuchs-Materialien, `if (!state.X) state.X = new Map()`
                 "archBatches", // V18.289/.356 — Region-BatchedMesh-Pfad, `if (!state.X) state.X = new Map()` (in init() null)
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
@@ -641,19 +635,12 @@ async function auditStateAndMethods() {
                 const topLevel = used.split(".")[0];
                 if (!liveSet.has(topLevel) && !whitelist.has(topLevel)) {
                     // Hier scheinen wir einen nicht-existenten Top-Level zu lesen
-                    fail(
-                        "STATE",
-                        `Lese state.${used} aber Top-Level "state.${topLevel}" nicht in init()`,
-                        ""
-                    );
+                    fail("STATE", `Lese state.${used} aber Top-Level "state.${topLevel}" nicht in init()`, "");
                     missingCount++;
                 }
             }
             if (missingCount === 0) {
-                pass(
-                    "STATE",
-                    `${usedPaths.size} state-Pfade gescannt, alle Top-Levels in init() vorhanden`
-                );
+                pass("STATE", `${usedPaths.size} state-Pfade gescannt, alle Top-Levels in init() vorhanden`);
             }
         }
     } finally {
@@ -723,9 +710,7 @@ function auditAtmosphereHardcode() {
         const { name, body } = m;
         // A) Soul-Type-Maps: zähle `=== "..."`-Vergleiche mit "soul", "sprite",
         //    "wesen", "geist", "human", "phoenix", "dragon" als Vergleichs-Wert
-        const soulCompares = body.match(
-            /=== ?["'](sprite|wesen|geist|human|phoenix|dragon|sunny|rainy)["']/g
-        );
+        const soulCompares = body.match(/=== ?["'](sprite|wesen|geist|human|phoenix|dragon|sunny|rainy)["']/g);
         if (soulCompares && soulCompares.length >= 3) {
             warn(
                 "ATMOSPHERE",
@@ -749,8 +734,7 @@ function auditAtmosphereHardcode() {
         }
         // C) Hz-Frequenz-ternary (60..2000 Hz)
         const ternaryFreq =
-            body.match(/[?:]\s*\d{2,4}(?:\.\d+)?\s*:/g) ||
-            body.match(/\d{2,4}\s*:\s*\d{2,4}\s*:\s*\d{2,4}/g);
+            body.match(/[?:]\s*\d{2,4}(?:\.\d+)?\s*:/g) || body.match(/\d{2,4}\s*:\s*\d{2,4}\s*:\s*\d{2,4}/g);
         if (ternaryFreq && ternaryFreq.length >= 2) {
             // Tiefere Prüfung: liegen die Zahlen im Hz-Range UND in derselben
             // Zeile wie "freq" oder "Hz"?
@@ -768,10 +752,7 @@ function auditAtmosphereHardcode() {
         cleanCount++;
     }
     if (warnCount === 0) {
-        pass(
-            "ATMOSPHERE",
-            `${cleanCount}/${atmosphereMethods.length} [ATMOSPHERE]-Methoden frei von Hardcode-Mustern`
-        );
+        pass("ATMOSPHERE", `${cleanCount}/${atmosphereMethods.length} [ATMOSPHERE]-Methoden frei von Hardcode-Mustern`);
     }
 }
 

@@ -23,6 +23,7 @@
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
+        "gate:foliage-res": "node scripts/diag-foliage-res.cjs",
         "gate:phyto-tree": "node scripts/diag-phyto-tree.cjs",
         "gate:phyto-core": "node scripts/diag-phyto-core-parity.cjs",
         "gate:seam": "node scripts/diag-chunk-seam.cjs --gate",
