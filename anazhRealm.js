@@ -26751,6 +26751,14 @@ class AnazhRealm {
             mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
             mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
+            // V18.389 — WALDBODEN-KERN (Neues Kleid P6): der schattige, feuchte Unterwuchs unter dem
+            // Kronendach ist DUNKLER (Vorlagen-`cLit` 0x2c3621 → sRGB→linear). Die Vorlage senkt die
+            // Wiese zum satten Wald-Kern via `cMead.lerp(cLit, standDensity)`; hier steht die Feuchte-
+            // im-Schatten (`_damp`, aus dem `_feuchteAt`-gebackenen Albedo) für die Standdichte → die
+            // beschattete Niederung (wo die Bäume stehen, P5-Platzierung) wird dunkel-waldig, die
+            // helle/trockene Lichtung behält die Wiese. Der Waldboden-Look über dem Voxel.
+            litTint: [0.0252, 0.0369, 0.0152],
+            floorMax: 0.55, // Deckel der Wald-Kern-Übernahme (komplementär zu mossMax/meadowW)
             roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
             //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
             //                  feuchte kahle Niederung glänzt → das Licht fängt den Boden lebendig
@@ -29484,6 +29492,31 @@ class AnazhRealm {
             // (Gesetz #0) → Boden + Gras verschmelzen by construction (Schöpfer „Synergie fehlt").
             const _mg = AnazhRealm.MEADOW_GREEN;
             _out = _T.mix(_out, _T.vec3(_mg[0], _mg[1], _mg[2]), _meadowW);
+            // V18.389 — DER WALDBODEN-KERN (Neues Kleid P6, Schöpfer „ziehe die 2.5D-Welt über unser
+            // Voxelterrain, die Terrain-STRUKTUR ... der Boden-LOOK auf Vorlagen-Niveau"): der schattige,
+            // feuchte Unterwuchs unter dem Kronendach senkt sich zum dunklen Wald-Kern-Ton (Vorlagen-
+            // `cLit`, TERRAIN_GEOLOGY.litTint) — Vorlagen-treu `cMead.lerp(cLit, standDensity)`, wobei
+            // hier die FEUCHTE-im-Schatten (`_damp`, aus dem `_feuchteAt`-gebackenen Basis-Albedo) für
+            // die Standdichte steht (dichter Wald wächst in der feuchten, flachen Niederung — dieselbe
+            // P5-Platzierungs-Logik, die die Bäume dorthin setzt). So bleibt die helle/trockene Lichtung
+            // Wiese, die beschattete Niederung wird dunkel-waldig = der Waldboden-Look. Getrieben aus
+            // DENSELBEN Feldern (`_green`, `_flat` = Slope aus normalWorld, `_damp` = Feuchte, `1−_dryW`)
+            // — kein neues Feld, kein Parallel-Zweig, EINE Quelle. Patch-Noise → kein uniformer Teppich.
+            const _lit = G.litTint;
+            const _forestPatch = _T.mx_noise_float
+                ? _T
+                      .mx_noise_float(_T.vec3(wp.x.mul(0.09), wp.z.mul(0.09), _T.float(19.0)))
+                      .mul(_T.float(0.5))
+                      .add(_T.float(0.5))
+                : _T.float(0.6);
+            const _floorW = _green
+                .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
+                .mul(_damp) // NUR die feuchte/beschattete Niederung — die helle Lichtung bleibt Wiese
+                .mul(_T.float(1.0).sub(_dryW)) // die trockene Dürre bleibt bräunlich
+                .mul(_forestPatch)
+                .mul(_T.float(G.floorMax))
+                .clamp(0.0, 1.0);
+            _out = _T.mix(_out, _T.vec3(_lit[0], _lit[1], _lit[2]), _floorW);
             // V18.340 — die GEOLOGIE treibt die BRUCH-STRUKTUR (Synergie, EINE Quelle): wo Fels/Geröll
             // durchbricht (`rockW`+`screeW`), bricht der Boden KARSCH (hardDrive → ridged Bruch im Kern);
             // die flache Wiese bleibt weich (niedrige Basis-härte 0.36). So weiss der steinige Boden, dass
@@ -61854,9 +61887,12 @@ class AnazhRealm {
         const U = AnazhRealm.UNDERGROWTH;
         const GS = AnazhRealm.GRASS_SLOPE;
         let f;
-        if (sp.kronen === "lichtung") f = U.blumeFloor + niche.blume; // Blume: Saum/Sonne
-        else if (sp.kronen === "unter") f = U.farnFloor + niche.farn; // Farn: Schatten unterm Dach
-        else if (sp.kronen === "rand") f = U.blumeFloor + niche.blume * 0.7; // Strauch: Halbschatten-nah
+        if (sp.kronen === "lichtung")
+            f = U.blumeFloor + niche.blume; // Blume: Saum/Sonne
+        else if (sp.kronen === "unter")
+            f = U.farnFloor + niche.farn; // Farn: Schatten unterm Dach
+        else if (sp.kronen === "rand")
+            f = U.blumeFloor + niche.blume * 0.7; // Strauch: Halbschatten-nah
         else return 1;
         // Slope-Gate: Bodendecker meiden die Felswand (die EINE GRASS_SLOPE-Quelle, V18.351).
         const slopeF = Math.max(0, Math.min(1, 1 - (slope - GS.lo) / (GS.hi - GS.lo)));
@@ -61893,7 +61929,9 @@ class AnazhRealm {
 
     // Vorlagen-`standDensity`: glatter, NICHT übersättigter Wald-↔-Lichtung-Gradient [0,1].
     _forestStandDensity(x, z) {
-        const d = this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + this._forestFbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
+        const d =
+            this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 +
+            this._forestFbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
         const v = (d - 0.5) * 1.9 + 0.5;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
@@ -62001,7 +62039,8 @@ class AnazhRealm {
             const keep = rng(); // Perf-Kappung (separat von prio → die Form bleibt beim Dünnen)
             const totRoll = rng(); // Totholz-Sub-Spawn (Wald-Boden-Debris)
             const rotY = rng() * 6.283185307;
-            const seed = (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
+            const seed =
+                (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
             out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
         }
         return out;
@@ -62059,7 +62098,8 @@ class AnazhRealm {
                                 const md = F.pack * (d.T + o.T);
                                 if (dx * dx + dz * dz >= md * md) continue; // kein Konflikt
                                 // Konflikt: „besser" = höhere prio (Tiebreak x dann z = einzigartig).
-                                const better = o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                                const better =
+                                    o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
                                 if (better) {
                                     accepted = false;
                                     break;
@@ -62087,7 +62127,8 @@ class AnazhRealm {
                         const tx = d.x + Math.cos(ang) * dist;
                         const tz = d.z + Math.sin(ang) * dist;
                         if (typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(tx, tz, 0.4)) {
-                            const tsy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(tx, tz) : d.surfaceY;
+                            const tsy =
+                                typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(tx, tz) : d.surfaceY;
                             this._enqueueVegetationSpawn(
                                 "stamm_gefallen",
                                 { x: tx, y: (Number.isFinite(tsy) ? tsy : d.surfaceY) + 0.5, z: tz },
@@ -62178,7 +62219,8 @@ class AnazhRealm {
             lo = G.aufschlussScaleLo;
             hi = G.aufschlussScaleHi;
         }
-        const t = rng && typeof rng.noise2D === "function" ? (rng.noise2D(x * 0.83 + 11.3, z * 0.83 - 7.1) + 1) / 2 : 0.5;
+        const t =
+            rng && typeof rng.noise2D === "function" ? (rng.noise2D(x * 0.83 + 11.3, z * 0.83 - 7.1) + 1) / 2 : 0.5;
         return lo + (hi - lo) * (t < 0 ? 0 : t > 1 ? 1 : t);
     }
 
