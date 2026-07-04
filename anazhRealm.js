@@ -1100,6 +1100,18 @@ class AnazhRealm {
             perfTargetMs: 17,
             perfRegulator: true,
             perfSense: null,
+            // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER, Vorlage phytogenesis.js
+            // Z.2401-2415): die USER-Regler des Wald-Renderers als kanonische State-
+            // Felder, die der EINE Perf-Regler (`_nexusPerfActuate`) liest — KEIN
+            // Parallel-Regler (Gesetz #0). `foliageResCeiling` = die vom User gewählte
+            // Laub-Auflösungs-OBERGRENZE, unter der der Regler `_foliageResScale`
+            // adaptiv skaliert (Vorlage `_folRes`); `_renderScale` = die adaptive
+            // Render-Auflösung (Vorlage `_rScale` + `setRenderScale`), zielsuchend auf
+            // die Ziel-FPS (via effArch, dieselbe loadScale-PID-Quelle). `lodRef` +
+            // `_foliageResScale` leben schon (Subsystem A / S5) — hier NICHT dupliziert.
+            foliageResCeiling: 1, // die User-Obergrenze der Laub-Auflösung (0.25..1); der Regler skaliert darunter
+            _renderScale: 1, // adaptive Render-Auflösung (Pixel-Ratio-Faktor), effArch-gefahren; Headless → 1
+            _renderScaleApplied: null, // zuletzt via setPixelRatio angewandter Wert (Dead-Band gegen Churn)
             // V18.293 — DER FLUGSCHREIBER (Blackbox): die echte Frame-Last wird
             // schon gemessen (perfSense, aus dem rAF-Delta) — sie verließ nur nie
             // den Browser, und niemand fing den SCHLIMMSTEN Frame. Lazy-init in
@@ -13566,24 +13578,47 @@ class AnazhRealm {
         }
         // SUBSYSTEM 5 — DER LAUB-AUFLÖSUNGS-FAKTOR (Vorlage `_folRes`, die dritte Foliage-Schwester):
         // dieselbe `effArch`-Quelle wie Radius/Dichte (KEIN zweiter Regler) fährt den Auflösungs-Faktor
-        // des künftigen reduziert-aufgelösten Laub-Passes. Unter Last sinkt er → das Laub (90 % der Fill-
-        // Last) rendert in einen kleineren RT → grosse Fill-Ersparnis; mit Kopfraum wächst er zurück auf 1
-        // (volle Auflösung). Er sinkt SOFORT (Optik-Notbremse, wie die Dichte) und wächst nur in den Lücken
-        // (nicht über Budget). Headless (Null-Renderer) → 1 (gate-treu). Der Konsument ist der Zwei-Pass-
-        // Composite (pass.setPixelRatio(dpr·scale)); bis dahin lebt der Faktor in der EINEN Regelschleife +
-        // im Flugschreiber (die etablierte Stellgrößen-Surface, wie foliageDensity).
-        if (st.renderer && st.renderer._isHeadlessNull) {
-            st._foliageResScale = 1;
-        } else {
-            const rsTarget = lerp(AnazhRealm.PERF_FOLIAGE_RES_MIN, 1, effArch);
-            const rsCur = st._foliageResScale != null ? st._foliageResScale : AnazhRealm.PERF_FOLIAGE_RES_MIN;
-            const rsStep = AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP;
-            st._foliageResScale =
-                rsTarget > rsCur
-                    ? st._frameOverBudget
-                        ? rsCur
-                        : Math.min(rsTarget, rsCur + rsStep)
-                    : Math.max(rsTarget, rsCur - rsStep * 2);
+        // des künftigen reduziert-aufgelösten Laub-Passes — gedeckelt durch die User-OBERGRENZE
+        // (`state.foliageResCeiling`, der Einstellungen-Slider „Laub-Auflösung", V18.387): der Regler
+        // skaliert NUR DARUNTER. Unter Last sinkt er → das Laub (90 % der Fill-Last) rendert in einen
+        // kleineren RT → grosse Fill-Ersparnis; mit Kopfraum wächst er zurück bis zum User-Ceiling. Er
+        // sinkt SOFORT (Optik-Notbremse, wie die Dichte) und wächst nur in den Lücken (nicht über Budget).
+        // Headless (Null-Renderer) → das Ceiling (gate-treu). Der Konsument ist der Zwei-Pass-Composite
+        // (pass.setPixelRatio(dpr·scale)); bis dahin lebt der Faktor in der EINEN Regelschleife + im
+        // Flugschreiber (die etablierte Stellgrößen-Surface, wie foliageDensity).
+        {
+            const rsCeil = Number.isFinite(st.foliageResCeiling)
+                ? Math.max(AnazhRealm.PERF_FOLIAGE_RES_MIN, Math.min(1, st.foliageResCeiling))
+                : 1;
+            if (st.renderer && st.renderer._isHeadlessNull) {
+                st._foliageResScale = rsCeil;
+            } else {
+                const rsTarget = lerp(AnazhRealm.PERF_FOLIAGE_RES_MIN, rsCeil, effArch);
+                const rsCur = st._foliageResScale != null ? st._foliageResScale : AnazhRealm.PERF_FOLIAGE_RES_MIN;
+                const rsStep = AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP;
+                st._foliageResScale =
+                    rsTarget > rsCur
+                        ? st._frameOverBudget
+                            ? rsCur
+                            : Math.min(rsTarget, rsCur + rsStep)
+                        : Math.max(rsTarget, rsCur - rsStep * 2);
+            }
+        }
+        // V18.387 — DIE ZIELEFFIZIENZ: DIE ADAPTIVE RENDER-AUFLÖSUNG (Vorlage `_rScale` + `setRenderScale`,
+        // Z.2401-2405 „hält die per Schieber gewählte Ziel-fps, indem NUR die Render-Auflösung nachgibt").
+        // Der Perf-Regler hatte bisher KEINE Pixel-Ratio-Stellgröße — die adaptive Auflösung ist das
+        // billigste Look-Opfer (die halbe Auflösung kostet ~4× weniger Fill). Sie folgt DERSELBEN effArch-
+        // PID-Quelle wie Laub/Schatten (KEIN Parallel-Regler, Gesetz #0 — die Ziel-FPS lebt in `perfTargetMs`,
+        // das der PID → loadScale → effArch treibt): unter Last sinkt `_renderScale` zum Floor, mit Kopfraum
+        // wächst er zurück auf 1. Diskrete 0.05-Rast-Stufen (Vorlage) + Dead-Band (in `_applyRenderScale`)
+        // → kein ständiges Framebuffer-Neu-Allozieren. Angewandt NUR non-headless (der Null-Renderer stubt
+        // setPixelRatio ohnehin → gate-treu: die volle Auflösung, kein Pixel).
+        {
+            const drTarget = lerp(AnazhRealm.PERF_RENDER_SCALE_MIN, 1, effArch);
+            const step = AnazhRealm.PERF_RENDER_SCALE_STEP;
+            const drSnap = Math.round(drTarget / step) * step;
+            st._renderScale = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, drSnap));
+            if (!(st.renderer && st.renderer._isHeadlessNull)) this._applyRenderScale(st._renderScale);
         }
         // V18.352 — DER SCHATTEN-PASS KOMMT UNTER DEN EINEN REGLER (Schöpfer „tue es endlich, alles, wie
         // es die Vision will"). Der Schatten-Pass (ein zweiter Voll-Render) war die FIXE Boden-Last, die
@@ -13747,6 +13782,26 @@ class AnazhRealm {
         return Math.max(0, per) * Math.max(0, n);
     }
 
+    // V18.387 — DIE ZIELEFFIZIENZ-ANWENDUNG (Vorlage `setRenderScale`, Z.2034-2038): die vom
+    // EINEN Regler bestimmte adaptive Render-Auflösung an die GPU legen (renderer.setPixelRatio).
+    // Dead-Band gegen Churn — ein setPixelRatio realloziert die Framebuffer, gehört NUR auf eine
+    // echte Stufen-Änderung, nie pro Frame. `_renderScaleApplied` merkt den zuletzt angewandten
+    // (dpr-multiplizierten) Wert. Non-headless-only (der Null-Renderer stubt setPixelRatio).
+    _applyRenderScale(scale) {
+        const st = this.state;
+        const renderer = st.renderer;
+        if (!renderer || renderer._isHeadlessNull || typeof renderer.setPixelRatio !== "function") return;
+        const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+        const target = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, scale)) * dpr;
+        if (st._renderScaleApplied != null && Math.abs(target - st._renderScaleApplied) < 0.001) return;
+        st._renderScaleApplied = target;
+        try {
+            renderer.setPixelRatio(target);
+        } catch {
+            /* setPixelRatio kann bei manchen Backends throwen — der Regler bleibt am Leben */
+        }
+    }
+
     // OBSERVABILITÄT (kein Regler, nur ein Fenster IN den Sense): der Schöpfer
     // SIEHT, was das System misst + wie der Regelkreis steht. `perf` im Chat.
     _ensurePerfOverlayDiv() {
@@ -13809,8 +13864,21 @@ class AnazhRealm {
         let coll = 0;
         if (this.state.architectures) for (const e of this.state.architectures) if (e && e.collision) coll++;
         const wq = this.state.voxelMeshPending ? this.state.voxelMeshPending.size : 0;
+        // V18.387 — DER ERWEITERTE READOUT (Vorlage-Kontrollpanel Z.2415 `{fps} fps · {rScale}% ·
+        // Laub {folRes}% · {dc}dc · {tri}k▲` + die SPIELER-POS): die zwei Trias-Werte (dc/tris) + die
+        // drei Leistungs-Parameter (fps · Render-Skala% · Laub-Auflösung%) + die Position, damit der
+        // Schöpfer beim Umsehen weiss, WO er steht (Vorlage-Anforderung „damit man die pos sieht").
+        const fps = s.frameMs > 0 ? Math.round(1000 / s.frameMs) : 0;
+        const fpsCol = fps < 30 ? "#ff6b6b" : fps < 55 ? "#ffd166" : "#8fe98f";
+        const rScalePct = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
+        const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+        const trisK = Math.round((s.renderTris || 0) / 1000);
+        const pmesh = this.state.playerMesh && this.state.playerMesh.position;
+        const posStr = pmesh ? `${pmesh.x.toFixed(0)}, ${pmesh.y.toFixed(0)}, ${pmesh.z.toFixed(0)}` : "—";
         div.innerHTML =
             `PERF-SENSE (der Nexus misst seine Last)\n` +
+            `HUD  <span style="color:${fpsCol}">${fps}</span> fps · ${rScalePct}% · Laub ${folResPct}% · ${rc.toFixed(0)}dc · ${trisK}k▲\n` +
+            `POS  ${posStr}  (x,y,z)\n` +
             `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
             `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
             `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms\n` +
@@ -35764,6 +35832,15 @@ class AnazhRealm {
             // Reload soll mit stabilem Wetter starten).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler des
+            // Einstellungen-Drawers reisen im Snapshot (V8.59-Klasse — ein Regler, der nur in der
+            // Session lebt, wird bei jedem Reload still zurückgesetzt). Ziel-FPS (perfTargetMs) ·
+            // LOD-Referenz (lodRef, Subsystem A's Quelle) · Laub-Auflösungs-Obergrenze
+            // (foliageResCeiling) · Sichtweite (chunkRingRadius).
+            perfTargetMs: Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : 17,
+            lodRef: Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14,
+            foliageResCeiling: Number.isFinite(this.state.foliageResCeiling) ? this.state.foliageResCeiling : 1,
+            chunkRingRadius: Number.isFinite(this.state.chunkRingRadius) ? this.state.chunkRingRadius : 4,
             // V8.28 6.G4.b — Atmosphäre-Slider (fogDistance; Cel-Stufen sind
             // seit V18.236 gestrichen). V13.9 — waterCull (uMinDepth) mit dabei.
             atmosphere: {
@@ -40152,6 +40229,19 @@ class AnazhRealm {
             if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
                 this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
+        }
+        // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler überleben den
+        // Reload (V8.59-Klasse — sonst setzt jeder Welt-Wechsel sie still auf Default zurück).
+        // Jeder Wert geclampt auf seinen Slider-Bereich; die Slider-DOM liest den State beim Init.
+        {
+            const pt = Number(state.perfTargetMs);
+            if (Number.isFinite(pt)) this.state.perfTargetMs = Math.max(16, Math.min(34, pt)); // Ziel-FPS 30..60 → 33..16 ms
+            const lr = Number(state.lodRef);
+            if (Number.isFinite(lr)) this.state.lodRef = Math.max(4, Math.min(30, lr));
+            const fc = Number(state.foliageResCeiling);
+            if (Number.isFinite(fc)) this.state.foliageResCeiling = Math.max(0.25, Math.min(1, fc));
+            const rr = Number(state.chunkRingRadius);
+            if (Number.isFinite(rr)) this.state.chunkRingRadius = Math.max(1, Math.min(12, rr));
         }
         if (state.atmosphere && typeof state.atmosphere === "object") {
             if (!this.state.atmosphere) this.state.atmosphere = { fogDistance: 3.0, waterCull: 0.0025 };
@@ -73003,6 +73093,56 @@ class AnazhRealm {
             });
         }
 
+        // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER, Vorlage phytogenesis.js Z.2410-2412):
+        // die drei neuen Wald-Perf-Regler. Jeder setzt ein kanonisches State-Feld, das der EINE
+        // Perf-Regler (`_nexusPerfActuate`) bzw. der SSE-LOD-Leser (`_lodPerceptionDistance`) liest
+        // — KEIN Parallel-Regler. Persistiert via Snapshot (buildStateSnapshot/loadState). Die
+        // Sichtweite ist der Sicht-Ring-Slider oben (chunkRingRadius).
+        // (1) Ziel-FPS (Vorlage `_fpsTarget`): der PID-Sollwert `perfTargetMs = 1000/fps`.
+        const fpsS = document.getElementById("slider-fpstarget");
+        const fpsSv = document.getElementById("slider-fpstarget-val");
+        if (fpsS) {
+            const pt0 = Number.isFinite(this.state.perfTargetMs) ? this.state.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
+            const fps0 = Math.max(30, Math.min(60, Math.round(1000 / pt0 / 5) * 5));
+            fpsS.value = String(fps0);
+            if (fpsSv) fpsSv.textContent = `${fps0} fps`;
+            fpsS.addEventListener("input", () => {
+                const fps = Math.max(30, Math.min(60, parseInt(fpsS.value, 10) || 60));
+                this.state.perfTargetMs = Math.round(1000 / fps);
+                if (fpsSv) fpsSv.textContent = `${fps} fps`;
+            });
+        }
+        // (2) Laub-Auflösung (Vorlage `_folRes`): die OBERGRENZE `foliageResCeiling` (0.25..1);
+        // der Perf-Regler skaliert `_foliageResScale` NUR darunter (KEIN direkter Uniform-Write).
+        const folS = document.getElementById("slider-foliageres");
+        const folSv = document.getElementById("slider-foliageres-val");
+        if (folS) {
+            const fc0 = Number.isFinite(this.state.foliageResCeiling) ? this.state.foliageResCeiling : 1;
+            const pct0 = Math.max(25, Math.min(100, Math.round(fc0 * 100)));
+            folS.value = String(pct0);
+            if (folSv) folSv.textContent = `${pct0} %`;
+            folS.addEventListener("input", () => {
+                const pct = Math.max(25, Math.min(100, parseInt(folS.value, 10) || 100));
+                this.state.foliageResCeiling = pct / 100;
+                if (folSv) folSv.textContent = `${pct} %`;
+            });
+        }
+        // (3) LOD-Referenz (Vorlage `_lodU.uLodRef`): die Screen-Space-Error-Bezugshöhe
+        // `state.lodRef` (Subsystem A's EINE Quelle), die der SSE-LOD-Leser LIVE liest.
+        const lodS = document.getElementById("slider-lodref");
+        const lodSv = document.getElementById("slider-lodref-val");
+        if (lodS) {
+            const lr0 = Number.isFinite(this.state.lodRef) ? this.state.lodRef : 14;
+            const lv0 = Math.max(4, Math.min(30, Math.round(lr0)));
+            lodS.value = String(lv0);
+            if (lodSv) lodSv.textContent = `${lv0} m`;
+            lodS.addEventListener("input", () => {
+                const v = Math.max(4, Math.min(30, parseInt(lodS.value, 10) || 14));
+                this.state.lodRef = v;
+                if (lodSv) lodSv.textContent = `${v} m`;
+            });
+        }
+
         // Welle 6.G3 (V8.24) — Tag-Nacht-Slider + Tageszeit-Slider.
         // Tag-Länge: 1-60 Min. Tageszeit: 0-1000 (skaliert auf 0..1, drei
         // Nachkomma-Stellen-Präzision damit Drag smooth fühlt).
@@ -79989,6 +80129,14 @@ AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanf
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
 AnazhRealm.PERF_FOLIAGE_RES_MIN = 0.5; // unter Last: halbe Laub-Auflösung (Vorlage-Slider 25–100 %, 0.5 = sicherer Floor)
 AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Zurück-auf-volle-Auflösung
+// V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
+// `setRenderScale`): die adaptive Render-Auflösung — die Zieleffizienz. Unter Last gibt die Pixel-
+// Ratio nach (das billigste Look-Opfer, ~4× Fill-Ersparnis bei halber Auflösung), mit Kopfraum
+// wächst sie zurück; zielsuchend auf die Ziel-FPS über dieselbe effArch-Quelle (KEIN Parallel-Regler,
+// Gesetz #0). Diskrete 0.05-Rast-Stufen (Vorlage) + Dead-Band (in `_applyRenderScale`) → kein
+// Framebuffer-Re-Alloc-Churn.
+AnazhRealm.PERF_RENDER_SCALE_MIN = 0.6; // unter Last: 60 % Pixel-Ratio (Vorlage-Floor 0.6); der Kapazitäts-Boden der adaptiven Auflösung
+AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 // (V18.281 — die toten ARCH_QUALITY_FPS_LOW/HIGH-Schwellen GEKEHRT: Reste des

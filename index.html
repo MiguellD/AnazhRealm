@@ -8622,6 +8622,42 @@
                             <span class="slider-value" id="slider-ring-val">5×5</span>
                         </div>
                     </section>
+                    <!-- V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER, Vorlage phytogenesis.js
+                         Z.2407-2415): die Wald-Performance-Regler. Ziel-FPS steuert den PID-Sollwert
+                         (scharf↔flüssig); die adaptive Render-Auflösung + der Laub-Auflösungs-Faktor
+                         folgen ihm über den EINEN Perf-Regler. LOD-Referenz = die Screen-Space-Error-
+                         Bezugshöhe. Der Sicht-Ring oben ist die Sichtweite (Dunst wandert mit). -->
+                    <section class="section" id="performance-section">
+                        <h3>
+                            Leistung (Wald)
+                            <span class="help-dot" tabindex="0" aria-label="Hilfe"
+                                >?<span class="help-pop"
+                                    ><b>Ziel-FPS</b> wählt scharf (60, mehr Bild) ↔ flüssig (30, das System
+                                    darf schwerer laden); der Perf-Regler pendelt darauf ein, indem er die
+                                    Render-Auflösung + das Laub nachgeben lässt. <b>Laub-Auflösung</b> ist die
+                                    Obergrenze, unter der der Regler das Laub reduziert rendert.
+                                    <b>LOD-Referenz</b> = ab welcher Baumhöhe der Detail-Wechsel greift (grösser
+                                    = Bäume behalten Detail länger). Die <b>Sichtweite</b> ist der Sicht-Ring
+                                    oben.</span
+                                ></span
+                            >
+                        </h3>
+                        <div class="slider-row">
+                            <label for="slider-fpstarget">Ziel-FPS (scharf ↔ flüssig)</label>
+                            <input type="range" id="slider-fpstarget" min="30" max="60" step="5" value="59" />
+                            <span class="slider-value" id="slider-fpstarget-val">59 fps</span>
+                        </div>
+                        <div class="slider-row">
+                            <label for="slider-foliageres">Laub-Auflösung</label>
+                            <input type="range" id="slider-foliageres" min="25" max="100" step="5" value="100" />
+                            <span class="slider-value" id="slider-foliageres-val">100 %</span>
+                        </div>
+                        <div class="slider-row">
+                            <label for="slider-lodref">LOD-Referenz</label>
+                            <input type="range" id="slider-lodref" min="4" max="30" step="1" value="14" />
+                            <span class="slider-value" id="slider-lodref-val">14 m</span>
+                        </div>
+                    </section>
                     <!-- Welle 6.G3 — Tag-Nacht-Zyklus. Die Welt atmet. -->
                     <section class="section" id="day-night-section">
                         <h3>
