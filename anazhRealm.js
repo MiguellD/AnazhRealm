@@ -61161,6 +61161,63 @@ class AnazhRealm {
         return this._clumpNoise.noise2D(x * freq, z * freq);
     }
 
+    // V18.388 (DAS NEUE KLEID W1-B — DIE PLATZIERUNGS-DICHTE DER VORLAGE) — die
+    // phytogenesis-`standDensity` auf AnazhRealms Voxel-Saat: EINE seed-determi-
+    // nistische STAND-Klumpung je Zweck (Γ5-Suffix ':forest' für Bäume λ~170 m ·
+    // ':meadow' für Unterwuchs λ~40 m). main-only Deko-Schicht, seed-gebunden →
+    // alle Peers sehen dieselben Wälder/Dickichte (die `_clumpAt`-Klasse). Tag-
+    // neutral (reiner chance-Skalar, die V17.9/B5+-Wand — diag-arch-tags bleibt).
+    _placementStandAt(x, z, purpose) {
+        const P = AnazhRealm.PLACEMENT_DENSITY;
+        const suffix = purpose === "meadow" ? ":meadow" : ":forest";
+        if (!this._placementNoise) this._placementNoise = {};
+        if (!this._placementNoise[suffix]) {
+            const seed = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + suffix;
+            this._placementNoise[suffix] = new SimplexNoise(seed);
+        }
+        const freq = purpose === "meadow" ? P.meadowFreq : P.forestFreq;
+        return this._placementNoise[suffix].noise2D(x * freq, z * freq);
+    }
+
+    // V18.388 — DER PLATZIERUNGS-DICHTE-MULTIPLIKATOR (Gesetz #0, die EINE Quelle
+    // für „wo wächst wie viel"): dicht wo FEUCHT + FLACH + NIEDRIG, licht auf
+    // STEIL-Hang + HÖHE — genau die Vorlagen-Ökologie (plantForest: standDensity ·
+    // moisture=clamp(0.55−groundH/14)+Wasser · flach-favorisiert · dry=Höhe). Vier
+    // lawful Achsen, jede aus einer EXISTIERENDEN Quelle (kein neues Feld):
+    //   (1) STAND-Klump (Γ5 ':forest'/':meadow') — mittelwert-neutral (B5+-Regel).
+    //   (2) SLOPE — `_slopeAt` (die V18.351-Slope-Quelle), flach favorisiert wie
+    //       die Vorlagen-0.155-Schwelle (auf AnazhRealms |∇h|-Skala kalibriert).
+    //   (3) FEUCHTE — `_feuchteAt` (nass → dichter, der moW>0.8-Antrieb).
+    //   (4) HÖHE über Terrain-Basis — hoch → licht (die Vorlagen-`dry`-Achse).
+    // Perf: × `_foliageDensityScale` (der EINE Regler; headless → 1 = voll, gate-treu).
+    _placementDensityFactor(x, z, surfaceY, purpose) {
+        const P = AnazhRealm.PLACEMENT_DENSITY;
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        // (1) STAND-Klumpung — Wald ↔ Lichtung / Dickicht ↔ magere Stelle.
+        const stand = this._placementStandAt(x, z, purpose); // [-1,1]
+        const clump = Math.max(P.clumpLo, Math.min(P.clumpHi, 1 + P.clumpAmp * stand));
+        // (2) SLOPE-Gate — flach dicht, Steilwand kahl (die Vorlagen-Flach-Präferenz).
+        const slope = typeof this._slopeAt === "function" ? this._slopeAt(x, z) : 0;
+        const slopeF = 1 - ss(P.slopeLo, P.slopeHi, slope);
+        // (3) FEUCHTE-Antrieb — nass → dichter, trocken → licht.
+        let wet = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, surfaceY) : 0;
+        wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+        const wetF = P.wetBase + P.wetGain * wet;
+        // (4) HÖHE über Terrain-Basis — die Höhe lichtet (Vorlagen-`dry`).
+        const baseH = (this.state && this.state.terrainBaseHeight) || 0;
+        const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
+        const highF = 1 - P.highAmp * ss(P.highLo, P.highHi, relH);
+        let f = clump * slopeF * wetF * highF;
+        // (5) PERF — der EINE Qualitäts-Regler; headless (Null-Renderer) → 1 (voll).
+        const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        f *= fd;
+        return f < 0 ? 0 : f;
+    }
+
     // Γ2 (genese-plan) — die KRONEN-Lesart: EIN Klump-Feld (dasselbe c wie der
     // Baum-Leser, λ~167 m), von jeder KLEIN-Art ANDERS gelesen — Farne sammeln
     // sich UNTER den Wald-Clustern, Blumen in den LICHTUNGEN, Gestrüpp am RAND
@@ -61384,7 +61441,12 @@ class AnazhRealm {
             // ist mittelwert-neutral (Gesamt-Baumzahl ≈ gleich), aber im
             // Masken-Hoch ×~2.6 (geschlossener Wald), im Tief ×0.25 (offenes
             // Land) → echte Wälder + Lichtungen aus den BESTEHENDEN Bäumen.
-            const forest = Math.max(0.25, Math.min(2.6, 1 + 1.6 * this._clumpAt(sampleX, sampleZ, 0.006)));
+            // V18.388 (DAS NEUE KLEID W1-B) — die reine `_clumpAt`-Wald-Maske
+            // wird zur VOLLEN Platzierungs-Ökologie der Vorlage (Stand-Klump ×
+            // Slope-flach × Feuchte × Höhe × Perf) durch die EINE Quelle
+            // `_placementDensityFactor`: dicht wo feucht+flach+niedrig, licht auf
+            // Hang+Höhe (phytogenesis plantForest). Tag-neutral (chance-Skalar).
+            const forest = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "forest");
             chance = Math.min(0.5, chance * forest);
         }
         if (probe >= chance) {
@@ -61403,7 +61465,12 @@ class AnazhRealm {
                 const bushProbe = (rng.noise2D(sampleX * 0.47 - 2.1, sampleZ * 0.47 + 6.3) + 1) / 2;
                 const f2 = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
                 const lebendig2 = f2 ? f2.lebendig : 0;
-                const bushChance = BUSH_RATE * (0.4 + lebendig2 * 0.9);
+                // V18.388 (DAS NEUE KLEID W1-B) — der Unterwuchs (Farn/Blume/Strauch)
+                // folgt derselben Platzierungs-Ökologie wie der Wald, aber über den
+                // ':meadow'-Stand (λ~40 m Dickicht) + Feuchte/Slope/Höhe/Perf → dicht
+                // in feuchten flachen Lücken, licht am Hang (Vorlagen-Streu-Loop).
+                const meadowF = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "meadow");
+                const bushChance = BUSH_RATE * (0.4 + lebendig2 * 0.9) * meadowF;
                 if (bushProbe < bushChance) {
                     // Spezies-Wahl: Feuchte > 0.55 → Farn; sonst lebendig >
                     // 0.5 → Blume; sonst Hazel. Deterministisch über noise2D.
@@ -78728,6 +78795,27 @@ AnazhRealm.KRONEN = Object.freeze({
     unterNorm: 3.35, // 1 / E[smoothstep(0.05,0.55,c)] — diag-genese GEMESSEN (E=0.2981)
     lichtungNorm: 3.37, // E=0.2967
     randNorm: 4.65, // 1 / E[exp(−(c/0.18)²)] — E=0.2149
+});
+
+// V18.388 (DAS NEUE KLEID W1-B) — DIE PLATZIERUNGS-DICHTE-KONSTANTEN (phytogenesis
+// plantForest/moisture/slopeAt adaptiert): der Wald ist dicht wo feucht+flach+niedrig,
+// licht auf Hang+Höhe. Alle Achsen mittelwert-nah (die Gesamt-Baumzahl bleibt ~stabil,
+// die VERTEILUNG wird Ökologie — B5+-Regel V18.102). Browser-justierbar (LOOK/FPS).
+// Gelesen von `_placementStandAt` + `_placementDensityFactor` (die EINE Quelle,
+// Bäume + Unterwuchs teilen sie; der per-Zweck-Unterschied reist als Parameter).
+AnazhRealm.PLACEMENT_DENSITY = Object.freeze({
+    forestFreq: 0.006, // λ~170 m Wald-Stand (wie der Baum-Klump-Leser _clumpAt 0.006)
+    meadowFreq: 0.025, // λ~40 m Unterwuchs: Dickicht ↔ magere Stelle
+    clumpAmp: 1.6, // Stand-Amplitude (mittelwert-neutral um 1)
+    clumpLo: 0.25, // offenes Land (Lichtung)
+    clumpHi: 2.6, // geschlossener Wald-Kern
+    slopeLo: 0.35, // ≤ so flach = voll (Wiese/Niederung); die Vorlagen-Flach-Präferenz
+    slopeHi: 1.1, // ab so steil (|∇h|, AnazhRealm-Skala) = kahle Felswand
+    wetBase: 0.7, // trockener Grund → licht
+    wetGain: 0.9, // nass (moW→1) → ×1.6 (die Vorlagen-moW>0.8-Verdichtung)
+    highAmp: 0.75, // Höhen-Lichtung-Stärke
+    highLo: 12, // ab so hoch über Terrain-Basis beginnt das Lichten
+    highHi: 45, // ab so hoch = kahler Grat (nur Rest-Dichte ×0.25)
 });
 
 AnazhRealm.SPATIAL_HOLLOW_BONUS = 0.3; // +30 % auf resoniert für beide Parts
