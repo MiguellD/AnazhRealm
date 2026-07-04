@@ -1201,6 +1201,22 @@ class AnazhRealm {
             // Der Kern war ANTI der Phyto-Erscheinung. Die Overdraw-Last trägt die Phyto-LOD/Impostor-
             // Ferne (K5), nicht ein solider Dome. `state.foliageOpaqueCore=true` = A/B (der alte Look).
             foliageOpaqueCore: false,
+            // V18.387 — DAS NEUE KLEID S1-SHADER: die LOD-PIPELINE (SSE-Metrik + Dither-Crossfade,
+            // phytogenesis v38 `_lodU` Z.2030 portiert). Der Wald-Renderer der Vorlage blendet die
+            // LOD-Stufen (L0 fein → L1 mittel → L2 Impostor) über ein KOMPLEMENTÄRES golden-ratio-
+            // Dither-Crossfade WEICH ineinander (kein Pop). `lodRef` ist die EINE LIVE-Quelle (Gesetz
+            // #0): sie treibt SOWOHL die CPU-Wahrnehmungs-Distanz (`_lodPerceptionDistance`, die S1-
+            // Mitgliedschafts-Wahl) ALS AUCH die Shader-Blende (`state.lodUniforms.uLodRef` spiegelt
+            // sie pro Frame) → live justierbar OHNE Mesh-Rebuild. Der Default seedet aus der frozen
+            // `AnazhRealm.LOD_DISTANCES.lodRef` (Referenz-Sichthöhe; ein Baum DIESER Höhe schaltet
+            // exakt bei den LOD-Schwellen, grössere später, kleinere früher = Screen-Space-Error) —
+            // KEINE zweite divergierende Zahl. `lodMaskOn` togglet das Crossfade (false → harte Kanten,
+            // altes Verhalten = A/B).
+            lodRef:
+                AnazhRealm.LOD_DISTANCES && Number.isFinite(AnazhRealm.LOD_DISTANCES.lodRef)
+                    ? AnazhRealm.LOD_DISTANCES.lodRef
+                    : 14,
+            lodMaskOn: true,
             // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die GLOBAL
             // PLATZIERTE Architektur (`_archInstanceAdd`) war frustumCulled=false → NIE
             // gecullt, die ganze Welt rendert egal wohin man schaut. Das V18.300-Muster
@@ -29361,6 +29377,37 @@ class AnazhRealm {
     // Quelle, kein Parallelpfad — die eingeschärfte Lehre) → in BEIDEN Lichtmodellen
     // wiegen die Bäume, tönt das Laub per-Instanz, glüht das Gegenlicht. Render-only;
     // jeder Block try/catch (nie ein kaputtes Material).
+    // V18.387 — DAS NEUE KLEID S1-SHADER — die EINE LOD-UNIFORM-QUELLE (phytogenesis `_lodU`).
+    // Drei geteilte TSL-Uniform-Knoten, die JEDES Laub-Karten-Material liest (Gesetz #0 — eine
+    // Quelle, kein Parallelpfad): `uLodRef` (die Wahrnehmungs-Referenzhöhe, pro Frame aus
+    // `state.lodRef` gespiegelt — DIESELBE Zahl, die die CPU-`_lodPerceptionDistance` liest → CPU-
+    // Mitgliedschaft UND Shader-Blende teilen die eine Quelle, live ohne Rebuild), `uLodMaskOn`
+    // (0 → harte Kanten/altes Verhalten = A/B) und `uDitherT` (golden-ratio-Rotation pro Frame →
+    // die Dither-Maske wandert, TAA-artige zeitliche Streuung glättet den Übergang). Lazy gebaut
+    // wie `windUniforms`; ohne TSL/uniform → null (gate-treu, der Null-Renderer baut kein Uniform).
+    // Das Feld `state.lodUniforms` ist lazy (nicht in init) — gehört in die audit:strict-Whitelist
+    // wie `windUniforms` (nicht CI-gated, aber sauber halten).
+    _ensureLodUniforms() {
+        const st = this.state;
+        if (st.lodUniforms) return st.lodUniforms;
+        let u = null;
+        try {
+            const _T = typeof THREE !== "undefined" && THREE.TSL;
+            if (_T && typeof _T.uniform === "function") {
+                const _ref = Number.isFinite(st.lodRef) && st.lodRef > 0 ? +st.lodRef : 14;
+                u = {
+                    uLodRef: _T.uniform(_ref),
+                    uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
+                    uDitherT: _T.uniform(0),
+                };
+            }
+        } catch (_e) {
+            u = null;
+        }
+        st.lodUniforms = u;
+        return u;
+    }
+
     _applyVegetationResponse(mat, opts, responseProfile) {
         if (opts.useInstanceTint) {
             if (!mat.userData) mat.userData = {};
@@ -29444,6 +29491,95 @@ class AnazhRealm {
                 }
             } catch (_e) {
                 if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
+            }
+        }
+        // V18.387 — DAS NEUE KLEID S1-SHADER — die SSE-METRIK + das DITHER-CROSSFADE (phytogenesis
+        // `injectWind` Z.121-135). NUR die Laub-KARTEN (`opts.foliageLeaf` → sie tragen die aH0/aH0L-
+        // Attribute aus `_buildTreeFoliageCardGeometry`; Rinde/Impostor/Terrain unberührt → kein
+        // TSL-`attribute()`-Crash auf Geometrie ohne sie). Die Karte bekommt eine WAHRNEHMUNGS-Distanz
+        // (Screen-Space-Error) + ein komplementäres golden-ratio-Dither, das die LOD-Übergänge WEICH
+        // ausblendet, statt zu poppen — dieselbe `uLodRef`-Quelle wie die CPU-`_lodPerceptionDistance`:
+        //   vLodD  = |cam.xz − posWorld.xz| · min(uLodRef/aH0, 1)   → Skelett-SSE (grosser Baum =
+        //            kleiner Faktor = behält Detail länger). posWorld schliesst die Instanz-Transform
+        //            ein (kein modelWorldMatrix-Instanz-Ursprung nötig → korrekt für InstancedMesh).
+        //   vLodDL = dasselbe mit aH0L (Blatt-Sichthöhe, gekappt) → das Laub folgt der ABSOLUTEN Distanz.
+        // Der Discard faltet in die Karten-ALPHA (TSL-idiom statt GLSL-discard → alphaTest cullt).
+        // uLodMaskOn=0 → keep=1 (a·1, numerisch identisch = die harte alte Kante, A/B); im NAH-Band
+        // ist _fadeOut=0 → keep=1 → die LOD0-Eiche bleibt byte-unverändert.
+        if (opts.foliageLeaf === true) {
+            try {
+                const _Tl = THREE.TSL;
+                const _lu = this._ensureLodUniforms();
+                if (
+                    _Tl &&
+                    _lu &&
+                    _lu.uLodRef &&
+                    _Tl.attribute &&
+                    _Tl.positionWorld &&
+                    _Tl.cameraPosition &&
+                    _Tl.vec2 &&
+                    _Tl.vec4 &&
+                    _Tl.float &&
+                    _Tl.length &&
+                    _Tl.screenCoordinate &&
+                    _Tl.fract &&
+                    _Tl.step &&
+                    _Tl.mix &&
+                    mat.colorNode &&
+                    mat.colorNode.rgb !== undefined &&
+                    mat.colorNode.a !== undefined
+                ) {
+                    const _aH0 = _Tl.attribute("aH0", "float");
+                    const _aH0L = _Tl.attribute("aH0L", "float");
+                    const _pw = _Tl.positionWorld;
+                    const _cam = _Tl.cameraPosition;
+                    // xz-Distanz Kamera → Vertex-Weltposition (die Instanz-Transform steckt in
+                    // positionWorld → per-Instanz korrekt, ohne den modelWorldMatrix-Ursprung).
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_pw.x), _cam.z.sub(_pw.z)));
+                    const _ref = _lu.uLodRef;
+                    const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
+                    const _lkL = _ref.div(_aH0L.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
+                    const _vLodD = _cd.mul(_lk); // Skelett-SSE
+                    const _vLodDL = _cd.mul(_lkL); // Blatt-SSE (absolut-nah)
+                    // golden-ratio Screen-Space-Dither (phytogenesis Fragment): wandert mit uDitherT →
+                    // über ~6-8 Frames glättet die zeitliche Streuung den Übergang (TAA-Idee).
+                    const _fc = _Tl.screenCoordinate;
+                    const _dh = _Tl.fract(
+                        _Tl
+                            .float(52.9829189)
+                            .mul(_Tl.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
+                            .add(_lu.uDitherT)
+                    );
+                    const _cfg = AnazhRealm.LOD_DISTANCES;
+                    const _D0 = _cfg.thresh01,
+                        _D1 = _cfg.thresh12,
+                        _FADE = _cfg.fade || 20,
+                        _FADE0 = _cfg.fade0 || 10;
+                    // Übergangs-Rampen: _f0 = L0→L1-Band (Blatt-Distanz), _f1 = L1→L2/Impostor-Band
+                    // (Skelett-Distanz). Laub = ÜBERLAPPENDE Rampen (phytogenesis FIX v37): die Karte
+                    // weicht erst in der oberen Bandhälfte (2f−1) → Deckung bleibt ≥ Maximum, kein Loch.
+                    const _f0 = _vLodDL
+                        .sub(_Tl.float(_D0 - _FADE0))
+                        .div(_Tl.float(_FADE0))
+                        .clamp(0.0, 1.0);
+                    const _f1 = _vLodD
+                        .sub(_Tl.float(_D1 - _FADE))
+                        .div(_Tl.float(_FADE))
+                        .clamp(0.0, 1.0);
+                    const _fadeOut = _f0.mul(2.0).sub(1.0).clamp(0.0, 1.0).max(_f1);
+                    // Dither-Discard: die Karte verschwindet dithered, wo _fadeOut ≥ _dh. Als reine
+                    // Arithmetik (kein bool/select): keepRaw = step(fadeOut, dh) → 1 wo dh ≥ fadeOut
+                    // (behalten), 0 sonst. uLodMaskOn faltet als mix → 0 hebt das Crossfade auf (keep=1,
+                    // harte Kante = A/B), und im NAH-Band ist fadeOut=0 → step(0,dh)=1 → keep=1 → alpha
+                    // byte-unverändert (LOD0-Eiche).
+                    const _keepRaw = _Tl.step(_fadeOut, _dh);
+                    const _keep = _Tl.mix(_Tl.float(1.0), _keepRaw, _lu.uLodMaskOn);
+                    mat.colorNode = _Tl.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keep));
+                    mat.userData = mat.userData || {};
+                    mat.userData.lodCrossfade = true; // Marker für das Test-Band (kein Verhalten)
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__lodCrossfadeError = String((_e && _e.message) || _e);
             }
         }
         return mat;
@@ -50281,7 +50417,12 @@ class AnazhRealm {
     _lodPerceptionDistance(rawDist, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return rawDist;
-        const lodRef = Number.isFinite(cfg.lodRef) && cfg.lodRef > 0 ? cfg.lodRef : 14;
+        // V18.387 — die EINE LIVE-Quelle `state.lodRef` (Gesetz #0): dieselbe Zahl, die die Shader-
+        // Blende (`state.lodUniforms.uLodRef`) liest → CPU-LOD-Mitgliedschaft UND das Dither-
+        // Crossfade teilen den Referenz-Wert, live ohne Rebuild. Default seedet aus `cfg.lodRef`.
+        const cfgRef = Number.isFinite(cfg.lodRef) && cfg.lodRef > 0 ? cfg.lodRef : 14;
+        const lodRef =
+            this.state && Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? this.state.lodRef : cfgRef;
         const h = Number.isFinite(visHeight) && visHeight > 0 ? visHeight : lodRef;
         // Sichthöhen-Faktor auf 1 gekappt (kleine Bäume nie früher).
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
@@ -58456,6 +58597,29 @@ class AnazhRealm {
     // freie Sprites." Per-Vertex flex (outer-Vertices flexen stärker) +
     // phase (aperiodisches Hash-Phasen-Versatz). Statt N sphere-Parts
     // (V18.211) eine einzige cards-Geometrie pro Variante.
+    // V18.387 — DAS NEUE KLEID S1-SHADER — stempelt die pro-Baum-konstanten Wahrnehmungs-Höhen
+    // (phytogenesis aH0/aH0L) auf eine Laub-Karten-Geometrie (Gesetz #0 — EINE Quelle für beide
+    // Bau-Pfade: phyto-core-Quads + Anker-Fallback). aH0 = die SKELETT-Sichthöhe (volle Baum-Höhe)
+    // → die SSE-Metrik lässt grosse Bäume ihr Detail LÄNGER behalten. aH0L = die BLATT-Sichthöhe,
+    // auf `leafVisCap` gekappt → das Laub-Crossfade folgt der ABSOLUTEN Distanz. Beide pro-Baum
+    // konstant (alle Karten-Verts teilen den Wert) → billig als gefüllte Float32-Attribute.
+    _stampFoliageVisHeights(g, totalH) {
+        if (!g || !g.attributes || !g.attributes.position || typeof THREE === "undefined") return g;
+        const vc = g.attributes.position.count;
+        if (!(vc > 0)) return g;
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        const cap = cfg && Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 14;
+        const h0 = Number.isFinite(totalH) && totalH > 0 ? totalH : 10;
+        const h0l = Math.min(h0, cap);
+        const aH0 = new Float32Array(vc);
+        const aH0L = new Float32Array(vc);
+        aH0.fill(h0);
+        aH0L.fill(h0l);
+        g.setAttribute("aH0", new THREE.BufferAttribute(aH0, 1));
+        g.setAttribute("aH0L", new THREE.BufferAttribute(aH0L, 1));
+        return g;
+    }
+
     _buildTreeFoliageCardGeometry(skeleton, _opts) {
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
         const grammar = skeleton.grammar;
@@ -58496,6 +58660,8 @@ class AnazhRealm {
                 g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
                 g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
                 g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+                // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
+                this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
                 g.computeBoundingBox();
                 g.computeBoundingSphere();
                 return g;
@@ -58755,6 +58921,8 @@ class AnazhRealm {
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2)); // Ω-O14: weiche Blatt-Alpha
         g.setIndex(new THREE.BufferAttribute(indices, 1));
+        // S1-SHADER — die Wahrnehmungs-Höhen (aH0/aH0L) für die SSE-LOD-Crossfade-Metrik.
+        this._stampFoliageVisHeights(g, totalH);
         g.computeBoundingBox();
         g.computeBoundingSphere();
         return g;
@@ -76248,6 +76416,19 @@ class AnazhRealm {
             this.state.windUniforms.uWindTime.value = currentTime;
             this.state.windUniforms.uWindStrength.value = this._weatherBlendedValue(0.12, 0.26); // D5a: stormy bläst kräftiger
         }
+        // V18.387 — DAS NEUE KLEID S1-SHADER — die LOD-Dither-Maske wandert golden-ratio pro Frame
+        // (phytogenesis: uDitherT rotiert → die zeitliche Streuung glättet den Crossfade-Übergang
+        // über ~6-8 Frames, TAA-Idee). uLodRef spiegelt live die EINE Quelle `state.lodRef` (ein
+        // Slider wirkt ohne Mesh-Rebuild — dieselbe Zahl liest die CPU-`_lodPerceptionDistance`);
+        // uLodMaskOn spiegelt den A/B-Toggle. Co-located mit dem Wind-Uniform-Tick.
+        if (this.state.lodUniforms) {
+            const _lu = this.state.lodUniforms;
+            if (_lu.uDitherT) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            if (_lu.uLodRef)
+                _lu.uLodRef.value =
+                    Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
+            if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
+        }
         // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
         // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
         // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
@@ -76965,8 +77146,19 @@ AnazhRealm.LOD_DISTANCES = Object.freeze({
     thresh01: 80, // dist > 80 m → LOD1
     thresh12: 160, // dist > 160 m → LOD2
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
-    lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar)
+    lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar) — die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.5, // max. Distanz-Multiplikator unter voller Last (früheres Schalten)
+    // V18.387 — DAS NEUE KLEID S1-SHADER: die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0).
+    // Die Übergangs-Bänder, über die das Dither-Crossfade die Laub-Karten weich ausblendet, BEVOR
+    // die nächste LOD-Stufe greift: fade0 = das nahe L0→L1-Band (fast identische Meshes → schmales
+    // Feld ohne spürbaren Pop), fade = das ferne L1→L2/Impostor-Band (3D → Karte → breiter). Auf
+    // AnazhRealms Meter-Skala (thresh 80/160) proportional zur Vorlage (D0/D1 20/40, FADE0/FADE 4/8).
+    fade: 20, // L1→L2-Band: das Crossfade blendet in [thresh12 − fade, thresh12] = [140,160] aus
+    fade0: 10, // L0→L1-Band: das Crossfade blendet in [thresh01 − fade0, thresh01] = [70,80] aus
+    // leafVisCap: die Kappung der BLATT-Sichthöhe (aH0L). Ein Blatt bleibt absolut klein, egal wie
+    // gross sein Baum ist → das Laub-Crossfade folgt der ABSOLUTEN Distanz (phytogenesis FIX v30);
+    // aH0 (Skelett) behält Detail nach Baumhöhe, aH0L (Laub) nicht. = die lodRef-Default-Höhe.
+    leafVisCap: 14,
 });
 
 // V18.389 (DAS NEUE KLEID — SUBSYSTEM 3, phytogenesis v38 `_occG`/`updateTreeLOD`
