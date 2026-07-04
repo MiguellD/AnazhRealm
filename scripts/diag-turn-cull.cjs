@@ -4,6 +4,14 @@
 // −Z (180° gedreht) schaut. Cullt das Wegschauen einen anderen, signifikanten
 // Anteil → die Wurzel des „kann mich kaum drehen" ist strukturell geheilt.
 // (Kein echter GPU-Render nötig — der Frustum-Test IST die Engine-Logik.)
+// V18.390 (Eins W2, V9.56-i — die Probe wandert mit dem Code): seit V18.356 ist
+// `useBatchedArch` DEFAULT AN → das Laub lebt in BatchedMesh (archBatchKey), nicht
+// mehr in InstancedMesh (archInstanceKey) — der alte isInstancedMesh-Filter fand 0
+// Gruppen (vakuöses Grün, GEMESSEN auch am pre-W2-Stand). Die Traverse liest jetzt
+// BEIDE Mesh-Arten; BatchedMesh-Tris = merged-Buffer-Extent (Näherung — der Cull-
+// ANTEIL ist die Messgröße, nicht die absolute Tri-Zahl). Die Bäume sind seit W2-D
+// bewusst GLOBAL (Vorlagen-Weisheit; per-Instanz-Cull via perObjectFrustumCulled
+// bleibt) — die Region-Cull-Rate tragen die Boden-Schichten (under/litter/rock).
 const puppeteer = require("puppeteer"),
     http = require("http"),
     fs = require("fs"),
@@ -99,27 +107,25 @@ const server = http.createServer((req, res) => {
         if (!scene || !cam) return { error: "no scene/cam" };
         const pp = s.playerMesh ? s.playerMesh.position : { x: 0, y: 30, z: 0 };
 
-        // alle region-gekeyten Laub-Gruppen (Key enthält '@') vs globale
+        // alle region-gekeyten Laub-Gruppen (Key enthält '@') vs globale —
+        // V18.390: InstancedMesh (archInstanceKey) UND BatchedMesh (archBatchKey)
+        const triOfGroup = (m) => {
+            const geoTris =
+                m.geometry && m.geometry.index
+                    ? m.geometry.index.count / 3
+                    : m.geometry && m.geometry.attributes.position
+                      ? m.geometry.attributes.position.count / 3
+                      : 0;
+            // InstancedMesh: Geometrie × Instanzen; BatchedMesh: merged-Buffer-Extent (Näherung)
+            return m.isInstancedMesh ? geoTris * (m.count || 0) : geoTris;
+        };
         const regional = [],
             global = [];
         scene.traverse((o) => {
-            const k = o.userData && o.userData.archInstanceKey;
-            if (!k || !o.isInstancedMesh) return;
-            const tris =
-                (o.geometry && o.geometry.index
-                    ? o.geometry.index.count / 3
-                    : o.geometry
-                      ? o.geometry.attributes.position.count / 3
-                      : 0) * (o.count || 0);
-            (k.includes("@") ? regional : global).push({ mesh: o, tris });
+            const k = o.userData && (o.userData.archInstanceKey || o.userData.archBatchKey);
+            if (!k || (!o.isInstancedMesh && !o.isBatchedMesh)) return;
+            (k.includes("@") ? regional : global).push({ mesh: o, tris: triOfGroup(o) });
         });
-
-        const triOfGroup = (m) =>
-            (m.geometry && m.geometry.index
-                ? m.geometry.index.count / 3
-                : m.geometry
-                  ? m.geometry.attributes.position.count / 3
-                  : 0) * (m.count || 0);
 
         // ein Frustum bauen, das von der Spieler-Augenhöhe in Richtung dir schaut
         const probe = (dirX, dirZ) => {

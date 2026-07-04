@@ -50351,12 +50351,18 @@ class AnazhRealm {
                     tf.scale,
                     tint,
                     // V18.300 — der REGION-Key (regX,regZ) macht die Streu-Gruppe lokal +
-                    // frustum-cullbar. V18.303 — NUR für NAHES Laub (LOD0): das Per-Region-
-                    // Keying half beim Drehen, aber es sprengte die Draw-Calls (426→1693, allein
-                    // ~1000 winzige LOD2-Fern-Gruppen mit ~2 Instanzen, GEMESSEN). Das FERNE
-                    // Laub (LOD1/2) bleibt GLOBAL (wenige Gruppen, frustumCulled=false) — es ist
-                    // ohnehin meist im Blick + winzig, der Cull lohnt den Draw-Call-Preis nicht.
-                    this.state.useRegionFoliageCull !== false && lod === 0 ? regX + "," + regZ : null
+                    // frustum-cullbar. V18.303 — das Per-Region-Keying half beim Drehen, aber
+                    // es sprengte die Draw-Calls (426→1693, allein ~1000 winzige LOD2-Fern-
+                    // Gruppen mit ~2 Instanzen, GEMESSEN) → LOD1/2 wurden GLOBAL.
+                    // V18.390 (Eins W2 — der Wald-Kollaps, diff-A1 §5D): die VORLAGEN-WEISHEIT
+                    // „Bäume GLOBAL instanziert, NUR der Boden gekachelt" — die tree-Schicht
+                    // geht auf ALLEN LODs global (wenige große Batches statt N Regionen ×
+                    // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
+                    // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
+                    // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
+                    this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree"
+                        ? regX + "," + regZ
+                        : null
                 );
                 if (!slots) continue;
                 region.cells.push({
@@ -50393,7 +50399,19 @@ class AnazhRealm {
         const regionGroupKeys = region.regional ? new Set() : null;
         for (const cell of region.cells) {
             if (regionGroupKeys) {
-                if (Array.isArray(cell.slots)) for (const s of cell.slots) regionGroupKeys.add(s.key);
+                // V18.390 (Eins W2) — NUR region-PRIVATE Gruppen (Key trägt @regX,regZ) als
+                // Ganzes entsorgen. GLOBALE Gruppen (Bäume alle LODs seit W2-D; LOD1/2-Fern-
+                // Laub seit V18.303) werden über REGIONEN geteilt — ein Ganz-Dispose würde
+                // die Bäume ALLER anderen Regionen mitreißen → dort per-Slot freigeben.
+                if (Array.isArray(cell.slots)) {
+                    for (const s of cell.slots) {
+                        if (typeof s.key === "string" && s.key.includes("@")) regionGroupKeys.add(s.key);
+                        else {
+                            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(s.key);
+                            if (g) this._archGroupFree(g, s.slot);
+                        }
+                    }
+                }
             } else {
                 this._scatterFreeSlots(cell.slots);
             }
@@ -60334,6 +60352,16 @@ class AnazhRealm {
         if (this.state.useRegionArchCull === false || this.state.useRegionFoliageCull === false) return null;
         if (!entry || !entry.position) return null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        // V18.390 (Eins W2 — der Wald-Kollaps, diff-A1 §5D): BÄUME sind GLOBAL instanziert
+        // (die Vorlagen-Weisheit „Bäume global, Boden kacheln"). Der Wald-Generator spawnt
+        // die 6 Wald-Arten als echte Architektur-Einträge (kanonisch `baum_*` + die grown_-
+        // LOD-Varianten) — region-gekeyt zersplitterten sie in N Regionen × Leaf-Gruppen
+        // (~768-1728 Baum-Draw-Calls, GERECHNET; Vorlage ~60). Erkannt über die EINE
+        // Wald-Quelle FOREST.crown (die 6 Arten; Totholz/Karst/Büsche bleiben regional —
+        // sie sind Boden und tragen die Cull-Rate). Tragbar, weil W2-A+C die Batch-Zahl
+        // gesenkt haben (3 Varianten); der Draw-Call-Preis des Region-Splits war GRÖSSER
+        // als der Cull-Gewinn (V18.303 gestand das für LOD1/2 schon ein).
+        if (bp && typeof bp._grownSpecies === "string" && AnazhRealm.FOREST.crown[bp._grownSpecies]) return null;
         const ext = this._compoundVisualExtent(bp);
         const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const span = Math.max(ext.dx || 0, ext.dz || 0) * scale;
@@ -61983,6 +62011,22 @@ class AnazhRealm {
     // Arten-Nische → reverse-J-Größe → Mammut-Promotion. Nur überlebende („geborene") Darts
     // treten in die Kronen-Schüchternheit ein (genau wie die Vorlage nur `trees` pusht).
     _forestCellDarts(cx, cz, seedInt) {
+        // V18.390 (Eins W2) — DER ZELL-MEMO ÜBER AUFRUFE: die Darts sind eine REINE Funktion
+        // von (cx,cz,seed), aber jeder Chunk-Plant liest ±2 Rand-Zellen seiner Nachbarn (~4×
+        // Redundanz über die Streaming-Front — der alte Memo lebte nur je Aufruf). GEMESSEN
+        // dominiert die Dart-GENERIERUNG die Plant-Zeit (~100 %: jede Born-Kandidatin zahlt
+        // den `_voxelSurfaceY`-Scan + Slope + Feuchte), NICHT der Schüchternheits-Loop → bei
+        // dartsPerCell 36 (Poisson-Sättigung, s. FOREST) hält der Memo die Chunk-Plant-Zeit
+        // ≈ auf dem 14-Dart-Baseline. Seed-gebunden (Welt-Wechsel leert), bounded (voll →
+        // clear; die Streaming-Front ist lokal). Instanz-Feld (kein state, kein Snapshot).
+        let memo = this._forestDartMemo;
+        if (!memo || this._forestDartMemoSeed !== seedInt) {
+            memo = this._forestDartMemo = new Map();
+            this._forestDartMemoSeed = seedInt;
+        }
+        const memoKey = cx + "," + cz;
+        const hit = memo.get(memoKey);
+        if (hit) return hit;
         const F = AnazhRealm.FOREST;
         const CELL = F.cell;
         const rng = this._forestCellRng(cx, cz, seedInt);
@@ -62062,6 +62106,8 @@ class AnazhRealm {
                 (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
             out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
         }
+        if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
+        memo.set(memoKey, out);
         return out;
     }
 
@@ -78055,7 +78101,13 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // (KEINE Dichte/Bäume entfernt — nur die redundanten Geometrien konsolidiert; der
 // Profi-Weg: wenige Basis-Meshes, reiche Pro-Instanz-Variation). Browser-justierbar;
 // kein Welt-Reset (Pool-Aufstellung lazy, alte Welten migrieren still).
-AnazhRealm.VARIANTS_PER_SPECIES = 8;
+// V18.390 (Eins W2 — der Draw-Call-Kollaps, diff-A1 §3d/§5C): 8 → 3. JEDE Variante ist eine
+// eigene Geometrie → eigene InstancedMesh-Gruppe → eigene Draw-Calls (× Leaf-Gruppen × LODs).
+// Die Vorlage trägt ~2 Templates/Art und die Vielfalt PRO INSTANZ (scale/rotationY/HSV-Tint,
+// `_scatterInstanceAdd`/`_archInstanceAdd` — steht längst). 3 Basis-Formen × 6 Arten ≈ −62 %
+// Baum-Batches bei gleicher gefühlter Vielfalt. Der (hash>>>24)%N-Pick bleibt bei N=3
+// gleichverteilt (V18.347-Heilung: die hohen fnv-1a-Bits; mod 3 ist nicht 2er-Potenz-degeneriert).
+AnazhRealm.VARIANTS_PER_SPECIES = 3;
 // wahrerwuchs §4.2-4.4 S3+S4 — die Zahl der Genom-gewürfelten Landmark-Formationen
 // (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut:
 // Becken/Flamme/Intensität), die der Scatter NACH dem Affinitäts-Sieg wählt.
@@ -80033,7 +80085,17 @@ AnazhRealm.UNDERGROWTH = Object.freeze({
 AnazhRealm.FOREST = Object.freeze({
     cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
     pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)
-    dartsPerCell: 14, // Kandidaten-Darts/Zelle (genug für Kronen-Sättigung im dichten Kern)
+    // V18.390 (Eins W2 — die gerechnete Dichte-Wurzel, diff-A1 §3a): 14 Darts/Zelle = 0.097/m²
+    // war 3.9× UNTER der Vorlage (R²·1.20/π = 0.382/m² ≈ 55/Zelle) → der Poisson-Kandidaten-
+    // Vorrat sättigte den Kern nie. 36/Zelle = 0.25/m² → GEMESSEN ~15 Born-Kandidaten/Zelle im
+    // dichten Kern (sd>0.72) = exakt die Sättigungs-Schwelle (diff-A1 §3a „Sättigung braucht
+    // ~15"); der Überschuss stirbt an der Kronen-Schüchternheit — genau die Genialität. EHRLICH
+    // benannt: 48 (die Vorlagen-Analogie) kostete +30 % Plant-Zeit für +1 % Bäume (die AKZEPTIERTE
+    // Dichte ist ab ~15 Kandidaten gesättigt — die prio-max-Schüchternheit ist das Ceiling) →
+    // 36 ist der gemessene Schnellpunkt. Die Plant-Zeit trägt der Zell-Memo in `_forestCellDarts`
+    // (GEMESSEN dominiert die Dart-GENERIERUNG [Terrain-Gates ~100 %], nicht der Schüchternheits-
+    // Loop; kalte Front ≈ 82 ms/Chunk = 14-Dart-Baseline-Parität 79.5, warm ~20 ms).
+    dartsPerCell: 36, // Kandidaten-Darts/Zelle (Poisson-Sättigung im dichten Kern, Vorlage ~55)
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)

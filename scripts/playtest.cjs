@@ -35910,17 +35910,21 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
         out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
-        // (A1e) Verschiedene seeds → mind. 5 unique cache keys über 6 Versuche. V18.347 — dieser
-        // Test FING einen ECHTEN Worldgen-Bug (kein stale Test): der Key war `grown_<art>_v<hash%8>`,
-        // aber die fnv-1a-LOW-Bits sind mod 8 degeneriert (gemessen: nur {0,2,4,6}, Bucket 0+4=75 %
-        // → von 8 designten Baum-Varianten lebten effektiv ~2). Geheilt in `_growTreeBlueprintForSpawn`
-        // (die HOHEN Bits `hash >>> 24` wählen jetzt, gleichverteilt) → 6 Seeds geben 6 unique.
+        // (A1e) ALLE N Varianten leben. V18.347 — dieser Test FING einen ECHTEN Worldgen-Bug
+        // (kein stale Test): der Key war `grown_<art>_v<hash%8>`, aber die fnv-1a-LOW-Bits sind
+        // mod 8 degeneriert (gemessen: nur {0,2,4,6}, Bucket 0+4=75 % → von 8 designten Baum-
+        // Varianten lebten effektiv ~2). Geheilt in `_growTreeBlueprintForSpawn` (die HOHEN Bits
+        // `hash >>> 24` wählen, gleichverteilt). V18.390 (Eins W2-C, REAL nachgezogen): N ist
+        // jetzt 3 (der Draw-Call-Kollaps) → die INTENT-treue Form der Wand: über 8·N Seeds
+        // müssen ALLE N Varianten-Buckets getroffen werden (keine degenerierten Buckets) —
+        // dieselbe Degenerierung, die V18.347 fing, würde hier weiter feuern.
+        const NVar = A.VARIANTS_PER_SPECIES;
         const keys = new Set();
-        for (let s = 0; s < 6; s++) {
+        for (let s = 0; s < 8 * NVar; s++) {
             const k = r._growTreeBlueprintForSpawn("baum_eiche", 50000 + s);
             if (k) keys.add(k);
         }
-        out.a1ManyVariants = keys.size >= 5;
+        out.a1ManyVariants = keys.size >= NVar;
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
         // V18.257 — die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
@@ -37599,7 +37603,12 @@ async function checkBandV18217VariantenPool(ctx) {
         const out = {};
 
         // ─── (A) Source-Probes ────────────────────────────────────────
-        out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 8;
+        // V18.390 (Eins W2-C, REAL nachgezogen — kein stale-Pflaster): die Schwelle war ≥8
+        // (V18.217 „N ≈ 8-32"); der Wald-Kollaps senkte auf 3 BY DESIGN (diff-A1 §5C: jede
+        // Variante = eigene Geometrie = eigene Draw-Calls; die Vielfalt reitet pro Instanz
+        // über scale/rotationY/tint wie die Vorlage mit ~2 Templates/Art). Der Pool-Mechanismus
+        // (das Geprüfte dieses Bands) ist N-unabhängig → die Wand ist jetzt N ≥ 2.
+        out.constantExists = Number.isFinite(A.VARIANTS_PER_SPECIES) && A.VARIANTS_PER_SPECIES >= 2;
         out.constantValue = A.VARIANTS_PER_SPECIES;
         out.ensureHelperExists = typeof r._ensureVariantSeedPool === "function";
         out.generateHelperExists = typeof r._generateVariantSeedPool === "function";
