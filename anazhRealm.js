@@ -54381,33 +54381,63 @@ class AnazhRealm {
                 opacity: 0.9,
             },
         ];
+        // V18.389 (DAS NEUE KLEID P3 — DIE ECHTE KRISTALL-GEOMETRIE) — der statische
+        // `kristall_geode`-Bauplan trug bis hierher die ALTE kugelige Form (eine große
+        // `sphere`-Matrix + glatte `octahedron`-Spitzen = der §11-Befund „Kristall = Ball";
+        // Schöpfer „die Kristalle sind auch noch die alten"). Jetzt: ein KLEINER, tief-
+        // sitzender quarz-Matrix-NUB (trägt nur die Tags + den Fuß) + N facettierte PRISMA-
+        // SPITZEN mit pyramidaler Termination (`crystalPoint` → die geteilte Vorlagen-Geometrie
+        // `phyto-core.buildCrystalPointGeometry`, scharfe Facetten statt glatter Kugel). Die
+        // Spitzen dominieren die Silhouette + wurzeln im Nub (Ω-Φ5). Der handgeplatzte /
+        // gecraftete Kristall liest jetzt wie der worldgen-`kristall_var*`-Pool (`_crystalVariant`,
+        // dieselbe crystalPoint-Quelle) — EINE Kristall-Form, kein Parallelbauer mehr.
+        // TAG-NEUTRAL: `crystalPoint`-Aktivierung ist BIT-IDENTISCH zu `octahedron`
+        // (FORM_TAG_ACTIVATION, V17.16/§11.5#6) → Compound-Tags bleiben frozen
+        // { dichte 1.95, magieleitung 2.55, resoniert 2.7 } (checkBandArchAffinityStability).
         const kristallGeodeParts = [
+            // das quarz-BETT: ein kleiner, flacher Matrix-Nub (sphere nutzt nur size.x → immer
+            // rund, darum KLEIN halten, sonst dominiert der Ball [§11]); trägt Fuß + Tags.
             {
                 shape: "sphere",
                 material: "quarz",
-                position: { x: 0, y: 0.8, z: 0 },
-                size: { x: 1.6, y: 1.6, z: 1.6 },
-                opacity: 0.85,
+                color: 0x86bccf,
+                position: { x: 0, y: 0.22, z: 0 },
+                size: { x: 1.5, y: 0.9, z: 1.5 },
+                opacity: 0.78,
+            },
+            // die dominante Zepter-Spitze (mittig, aufragend).
+            {
+                shape: "crystalPoint",
+                material: "quarz",
+                color: 0x9fd6e8,
+                position: { x: 0, y: 1.55, z: 0 },
+                size: { x: 0.5, y: 2.7, z: 0.5 },
+                facets: 6,
+                termFrac: 0.34,
+                opacity: 0.86,
+            },
+            // wurzelnde Begleiter-Prismen (leicht geneigt, verschiedene Höhen → Druse).
+            {
+                shape: "crystalPoint",
+                material: "quarz",
+                color: 0x9fd6e8,
+                position: { x: 0.62, y: 0.95, z: 0.28 },
+                size: { x: 0.34, y: 1.5, z: 0.34 },
+                rotation: { x: 0.26, y: 0.5, z: 0.16 },
+                facets: 6,
+                termFrac: 0.36,
+                opacity: 0.86,
             },
             {
-                shape: "octahedron",
+                shape: "crystalPoint",
                 material: "quarz",
-                position: { x: 0, y: 2.2, z: 0 },
-                size: { x: 0.8, y: 0.8, z: 0.8 },
-            },
-            {
-                shape: "octahedron",
-                material: "quarz",
-                position: { x: 0.7, y: 1.8, z: 0.3 },
-                size: { x: 0.5, y: 0.5, z: 0.5 },
-                rotation: { x: 0.3, y: 0.4, z: 0.2 },
-            },
-            {
-                shape: "octahedron",
-                material: "quarz",
-                position: { x: -0.5, y: 1.6, z: -0.6 },
-                size: { x: 0.6, y: 0.6, z: 0.6 },
-                rotation: { x: -0.2, y: -0.3, z: 0.1 },
+                color: 0x9fd6e8,
+                position: { x: -0.5, y: 0.85, z: -0.55 },
+                size: { x: 0.3, y: 1.25, z: 0.3 },
+                rotation: { x: -0.22, y: -0.35, z: -0.14 },
+                facets: 6,
+                termFrac: 0.38,
+                opacity: 0.86,
             },
         ];
         const glutbrunnenParts = [
@@ -61884,6 +61914,64 @@ class AnazhRealm {
         return choices ? choices[g.int("pick", 0, choices.length - 1)] : g.int("pick", 0, n - 1);
     }
 
+    // V18.389 (DAS NEUE KLEID P3) — DIE STEIN-GEOLOGIE-KLASSE: der Fels folgt dem HANG.
+    // Übersetzt die phytogenesis-`placeRocks`-Nischen (worlds/terrain/phytogenesis.js
+    // Z.1479-1518) auf AnazhRealms per-Sample-Saat: FLACH → Findling, steiler GRAT (steil
+    // UND hoch) → Aufschluss, steiler HANG-FUSS (steil, nicht hoch) → Talus, dazwischen
+    // (Mittelhang) → kein Fels (die Slope-Nische ist messbar, nicht „Fels überall").
+    // Reine Funktion von (slope, relH) → Γ5-deterministisch (slope ist geometrie-abgeleitet).
+    // Reihenfolge: Findling (flach) zuerst, dann Aufschluss (hoher Grat), dann Talus (steiler
+    // Fuß) → hoch+steil = Aufschluss, tief+steil = Talus (die geologische Wahrheit).
+    _rockGeologyClass(slope, relH) {
+        const G = AnazhRealm.ROCK_GEOLOGY;
+        const s = Number.isFinite(slope) ? slope : 0;
+        const h = Number.isFinite(relH) ? relH : 0;
+        if (s <= G.findlingSlopeMax) return "findling"; // flacher Grund
+        if (s > G.aufschlussSlopeMin && h > G.aufschlussHeightMin) return "aufschluss"; // Fels bricht auf dem Grat durch
+        if (s > G.talusSlopeMin) return "talus"; // Blockschutt am Steilhang-Fuß
+        return null; // Mittelhang → kein Fels (die Nische trägt hier keinen Stein)
+    }
+
+    // V18.389 (P3) — die GRÖSSE folgt der Nische: Findling groß (Erratiker), Talus klein
+    // (Schutt), Aufschluss mittel-groß. Deterministischer Wurf aus der Position (Γ5, kein
+    // Math.random). `rng` = worldField.rngNoise (seed-gebunden).
+    _rockGeologyScale(cls, rng, x, z) {
+        const G = AnazhRealm.ROCK_GEOLOGY;
+        let lo = 1,
+            hi = 1;
+        if (cls === "findling") {
+            lo = G.findlingScaleLo;
+            hi = G.findlingScaleHi;
+        } else if (cls === "talus") {
+            lo = G.talusScaleLo;
+            hi = G.talusScaleHi;
+        } else if (cls === "aufschluss") {
+            lo = G.aufschlussScaleLo;
+            hi = G.aufschlussScaleHi;
+        }
+        const t = rng && typeof rng.noise2D === "function" ? (rng.noise2D(x * 0.83 + 11.3, z * 0.83 - 7.1) + 1) / 2 : 0.5;
+        return lo + (hi - lo) * (t < 0 ? 0 : t > 1 ? 1 : t);
+    }
+
+    // V18.389 (P3) — die Fels-VARIANTE, deren `_formClass` zur geologischen Nische passt
+    // (region-deterministisch, HISM-kohärent: ein Feld trägt EINEN Stil). Die Schwester zu
+    // `_landmarkVariantIdx`, aber form-getrieben statt tall/squat: die Nische bestimmt die
+    // Form-Klasse (Findling→brocken, Talus→geroell, Aufschluss→nadel/stapel). Fallback: passt
+    // keine Variante zur Nische (unwahrscheinlich — der Pool trägt alle Formen), reiner Region-Pick.
+    _rockVariantForGeology(cls, regX, regZ, worldSeed) {
+        const n = AnazhRealm.ROCK_VARIANTS;
+        const forms = (AnazhRealm.ROCK_GEOLOGY_FORMS && AnazhRealm.ROCK_GEOLOGY_FORMS[cls]) || null;
+        const g = this._rollGenome(`${worldSeed}|${regX},${regZ}`, `geology-${cls}`);
+        const fit = [];
+        for (let vi = 0; vi < n; vi++) {
+            const vbp = this.state.blueprints && this.state.blueprints[`fels_var${vi}`];
+            if (vbp && (!forms || forms.includes(vbp._formClass))) fit.push(vi);
+        }
+        const choices = fit.length ? fit : null;
+        const idx = choices ? choices[g.int("pick", 0, choices.length - 1)] : g.int("pick", 0, n - 1);
+        return `fels_var${idx}`;
+    }
+
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
         // V9.59-b — Wasser-Awareness: Bäume/Felsen/Geoden/Glutbrunnen wachsen
         // NICHT im Wasser. 0.4 m Marge, damit eine Architektur nicht knöcheltief
@@ -62185,7 +62273,28 @@ class AnazhRealm {
         // NACH dem Sieg, der Wahrzeichen-Name bleibt der kanonische Affinitäts-Träger
         // (tag-frozen, V17.17). Variation PRO Stück aus scale/yaw (unten). Geteilter Roller (S0).
         const landmarkPool = AnazhRealm.SCATTER_VARIANT_POOL && AnazhRealm.SCATTER_VARIANT_POOL[bestName];
-        if (landmarkPool && landmarkPool.n > 0) {
+        if (bestName === "stein_block") {
+            // V18.389 (DAS NEUE KLEID P3 — DIE GEOLOGIE-REGEL) — der Fels folgt dem HANG,
+            // nicht dem Zufall (phytogenesis `placeRocks`, Z.1479-1518): FLACH → Findling
+            // (gedrungener Brocken, GROSS + isoliert), steiler GRAT → Aufschluss (aufragend),
+            // steiler HANG-FUSS → Talus (kantiger Schutt, KLEIN); der Mittelhang trägt keinen
+            // Fels (die Slope-Nische ist messbar). Ersetzt den alten reinen Affinitäts-Region-
+            // Pick (`_landmarkVariantIdx`) — der Fels-Charakter kommt jetzt aus der GEOLOGIE
+            // (die Form-Klasse UND die Größe), nicht aus einem blinden Region-Hash. EINE Quelle:
+            // `_slopeAt` (die V18.351-Slope-Quelle) speist Nische, Form UND Skala.
+            const slopeR = typeof this._slopeAt === "function" ? this._slopeAt(sampleX, sampleZ) : 0;
+            const baseHr = (this.state && this.state.terrainBaseHeight) || 0;
+            const relHr = surfaceY - baseHr;
+            const geoCls = this._rockGeologyClass(slopeR, relHr);
+            if (!geoCls) return 0; // die Slope-Nische trägt hier keinen Stein (Mittelhang)
+            const regX = Math.floor(sampleX / 256);
+            const regZ = Math.floor(sampleZ / 256);
+            const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+            const key = this._rockVariantForGeology(geoCls, regX, regZ, worldSeed);
+            if (key && this.state.blueprints && this.state.blueprints[key]) spawnName = key;
+            // GRÖSSE nach Nische: Findling groß, Talus klein, Aufschluss aufragend.
+            spawnScale = this._rockGeologyScale(geoCls, rng, sampleX, sampleZ);
+        } else if (landmarkPool && landmarkPool.n > 0) {
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
             const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -79422,6 +79531,40 @@ AnazhRealm.PLACEMENT_DENSITY = Object.freeze({
     highAmp: 0.75, // Höhen-Lichtung-Stärke
     highLo: 12, // ab so hoch über Terrain-Basis beginnt das Lichten
     highHi: 45, // ab so hoch = kahler Grat (nur Rest-Dichte ×0.25)
+});
+
+// V18.389 (DAS NEUE KLEID P3 — DIE STEIN-GEOLOGIE) — die phytogenesis-`placeRocks`-Regel
+// (worlds/terrain/phytogenesis.js Z.1479-1528): Steine folgen dem HANG, nicht dem Zufall.
+// Drei geologische Nischen, jede an ihrer Slope+Höhen-Signatur (die Vorlagen-Schwellen
+// 0.10/0.155/0.185 sind auf AnazhRealms |∇h|-Skala kalibriert, dieselbe wie PLACEMENT_DENSITY
+// slopeLo 0.35 / slopeHi 1.1):
+//   FINDLING  — Eiszeit-Erratiker: flacher Grund (sl ≤ findlingSlopeMax), gedrungener
+//               `brocken`, GROSS + isoliert (die Vorlagen-„nur flach, isoliert, gross").
+//   AUFSCHLUSS — Fels bricht auf GRATEN durch: steil (sl > aufschlussSlopeMin) UND hoch
+//               (relH > aufschlussHeightMin), aufragend `nadel`/`stapel` (Vorlage „steil UND hoch").
+//   TALUS     — Blockschutt am Steilhang-Fuß: steil (sl > talusSlopeMin), aber NICHT hoch,
+//               kantiger `geroell`-Schutt, KLEIN (Vorlage „am Steilhang-Fuß, kleiner Schutt").
+// Der Mittelhang (nicht flach, nicht steil, nicht Grat) trägt KEINEN Fels → die Slope-Nische
+// ist messbar (kein Fels auf jedem beliebigen Hang). Größe folgt der Nische (Findling groß,
+// Talus klein). Browser-justierbar (LOOK). Gelesen von `_rockGeologyClass`/`_rockGeologyScale`.
+AnazhRealm.ROCK_GEOLOGY = Object.freeze({
+    findlingSlopeMax: 0.45, // ≤ so flach = Findling (die Vorlagen-sl<0.10, AnazhRealm-Skala)
+    aufschlussSlopeMin: 0.7, // > so steil + hoch = Aufschluss/Grat (Vorlage sl>0.155)
+    aufschlussHeightMin: 18, // relH über Terrain-Basis: erst hoch genug = Grat (Vorlage forestGroundH>2)
+    talusSlopeMin: 0.85, // > so steil (nicht Grat) = Blockschutt/Talus (Vorlage sl>0.185)
+    findlingScaleLo: 1.3, // Findling groß (Eiszeit-Erratiker)
+    findlingScaleHi: 2.0,
+    aufschlussScaleLo: 1.0, // Aufschluss aufragend (mittel-groß)
+    aufschlussScaleHi: 1.7,
+    talusScaleLo: 0.5, // Talus/Geröll klein (kantiger Schutt)
+    talusScaleHi: 0.95,
+});
+// Die geologische FORM-Nische: welche `_rockVariant`-Form-Klassen passen zu jeder Nische
+// (die Platzierung reicht BIS ZUR FORM — Findling gedrungen, Talus Streu, Aufschluss aufragend).
+AnazhRealm.ROCK_GEOLOGY_FORMS = Object.freeze({
+    findling: Object.freeze(["brocken"]), // gedrungener Fels-Brocken
+    talus: Object.freeze(["geroell"]), // kantiger Schutt-Fächer
+    aufschluss: Object.freeze(["nadel", "stapel"]), // aufragender Grat-Aufschluss
 });
 
 // V18.389 (DAS NEUE KLEID P2 — DER UNTERWUCHS) — die phytogenesis-`canopyLight`/
