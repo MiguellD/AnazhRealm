@@ -33217,13 +33217,29 @@ class AnazhRealm {
                 const GS = AnazhRealm.GRASS_SLOPE;
                 const slopeFactor = Math.max(0, Math.min(1, 1 - (slope - GS.lo) / (GS.hi - GS.lo)));
                 if (slopeFactor <= 0) continue; // steile Felswand → gar kein Gras (früh raus, spart den Halm-Loop)
+                // V18.389 (P2 UNTERWUCHS) — das Gras REAGIERT aufs Kronendach: die EINE
+                // Bodenlicht-Quelle `_canopyLightAt` (P1-Wald-aligned — dicht bepflanzt =
+                // dunkler Boden) → in der Lichtung DICHT, unterm dichten Dach LICHT; der
+                // Feuchte-Antrieb weitet die Vorlagen-meadow-Regel (m verdichtet die Wiese).
+                // `feuchteG` wird hier EINMAL gelesen (der Boden-Tint unten teilt ihn).
+                const feuchteG = this._feuchteAt ? this._feuchteAt(baseX, baseZ, surfY) : 0;
+                const canopyLG = this._canopyLightAt(baseX, baseZ, surfY, feuchteG);
+                const U389 = AnazhRealm.UNDERGROWTH;
+                const understoryG =
+                    (U389.grassFloor + U389.grassGain * this._understoryNiche(canopyLG).gras) *
+                    (0.85 + U389.grassWet * feuchteG);
                 const count = Math.floor(
-                    (lebendig * 16 + rnd() * 2) * farFactor * clump * pathSuppress * grassDensityScale * slopeFactor
+                    (lebendig * 16 + rnd() * 2) *
+                        farFactor *
+                        clump *
+                        pathSuppress *
+                        grassDensityScale *
+                        slopeFactor *
+                        understoryG
                 );
                 // V18.228 (Ω-OPSIS Säule II Ω-O4) — der BODEN-TINT pro Sample (das
                 // Gras liest den Boden): lush-grün wo lebendig+feuchte hoch, dry-
                 // oliv/strohig wo trocken. Multiplikatoren um ~1 auf die Halm-Albedo.
-                const feuchteG = this._feuchteAt ? this._feuchteAt(baseX, baseZ, surfY) : 0;
                 const lushG = Math.max(0, Math.min(1, lebendig * 0.7 + feuchteG * 0.5 - 0.1));
                 // V18.344 — STÄRKERE REGIONALE FARBPRÄGUNG (Schöpfer „die Halme farblich überall gleich,
                 // verschmelzen nicht mit dem Boden — gib eine Farbprägung durch die Region wie beim Boden"):
@@ -33860,6 +33876,16 @@ class AnazhRealm {
         if (!this.state.voxelChunkScatter) this.state.voxelChunkScatter = new Map();
         const key = `${cx},${cz}`;
         if (this.state.voxelChunkScatter.has(key)) return;
+        // V18.389 (P2) — der billige Oberflächen-Sampler (surfMap → `_chunkSurfaceAt`,
+        // sonst `_voxelSurfaceY`) für die Zell-Slope des Unterwuchses (wie das Gras).
+        const chunkEntryS = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
+        const surfSampler = (x, z) => {
+            if (chunkEntryS && chunkEntryS.surfMap) {
+                const v = this._chunkSurfaceAt(chunkEntryS, cx, cz, x, z);
+                if (v !== null) return v;
+            }
+            return this._voxelSurfaceY(x, z);
+        };
         // Ring-Distanz zum Spieler (wie das Gras) — gated den Distanz-LOD.
         const lpc = this.state.lastPlayerVoxelChunk;
         const pcx = lpc ? lpc.cx : cx;
@@ -33912,6 +33938,11 @@ class AnazhRealm {
                 // Γ1 — die Feuchte EINMAL pro Zelle (surfY liegt vor; Legacy → 0).
                 const gen2 = this._genVersion() >= 2;
                 const feuchteCell = gen2 ? this._feuchteAt(bx, bz, surfY) : 0;
+                // V18.389 (P2 UNTERWUCHS) — EINMAL pro Zelle: das Bodenlicht (Kronendach-
+                // Nische) + die Slope. Die Bodendecker (Blume/Farn/Strauch) reagieren darauf
+                // (`_undergrowthGroundFactor`), Steinchen/Sporen bleiben unberührt (Faktor 1).
+                const nicheC = this._understoryNiche(this._canopyLightAt(bx, bz, surfY, feuchteCell));
+                const slopeC = this._slopeAt(bx, bz, surfSampler);
                 for (let si = 0; si < species.length; si++) {
                     const sp = species[si];
                     if (sp.minGen && this._genVersion() < sp.minGen) continue; // Γ1 — schilf nur Genese ≥ 2
@@ -33927,7 +33958,12 @@ class AnazhRealm {
                     const rnd = rngs[si];
                     // Γ2 — die Kronen-Lesart formt die Verteilung (mittelwert-neutral).
                     const kron = this._kronenMult(sp, bx, bz);
-                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron + rnd() * 0.8);
+                    // V18.389 (P2) — die Kronendach×Slope-Reaktion der Bodendecker (der
+                    // P1-Wald-aligned Faktor; neutral 1 für Nicht-Bodendecker).
+                    const undergrowthF = this._undergrowthGroundFactor(sp, nicheC, slopeC);
+                    const count = Math.floor(
+                        sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron * undergrowthF + rnd() * 0.8
+                    );
                     const sMin = sp.scale[0];
                     const sMax = sp.scale[1];
                     for (let k = 0; k < count && buckets[si].length < sp.cap; k++) {
@@ -34344,6 +34380,7 @@ class AnazhRealm {
         const sp = species[si];
         if (!sp || typeof THREE === "undefined") return;
         if (sp.minGen && this._genVersion() < sp.minGen) return; // Γ1 — schilf nur Genese ≥ 2
+        const isGround389 = !!sp.kronen; // V18.389 (P2) — nur Bodendecker tragen die Kronendach-Reaktion
         const FF = AnazhRealm.DEKO_FERNFELD;
         const ff = this.state.dekoFernfeld;
         let inst = ff.meshes.get(sp.name);
@@ -34416,7 +34453,23 @@ class AnazhRealm {
                     if (fv < floorV) continue;
                     const norm = (fv - floorV) / Math.max(0.001, 1 - floorV);
                     const kron = this._kronenMult(sp, bx, bz);
-                    const count = Math.floor(sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron + rnd() * 0.8);
+                    // V18.389 (P2 UNTERWUCHS) — DIESELBE Bodendecker-Reaktion wie der Nah-Pass
+                    // (die Doppel-Gating-WAND: sonst ploppt die Dichte am Band-Übergang). Nur für
+                    // Bodendecker (isGround389) → kein Slope-/Feuchte-Scan für Steinchen/Sporen.
+                    let undergrowthF = 1;
+                    if (isGround389) {
+                        const surfCellFF = this._chunkSurfaceAt(entry, cx, cz, bx, bz);
+                        const wetCellFF = gen2ff ? this._feuchteAt(bx, bz, surfCellFF) : 0;
+                        const nicheFF = this._understoryNiche(this._canopyLightAt(bx, bz, surfCellFF, wetCellFF));
+                        const slopeFF = this._slopeAt(bx, bz, (x, z) => {
+                            const v = this._chunkSurfaceAt(entry, cx, cz, x, z);
+                            return v !== null ? v : this._voxelSurfaceY(x, z);
+                        });
+                        undergrowthF = this._undergrowthGroundFactor(sp, nicheFF, slopeFF);
+                    }
+                    const count = Math.floor(
+                        sp.perCell * dekoDensity * (0.4 + 0.6 * norm) * kron * undergrowthF + rnd() * 0.8
+                    );
                     for (let k = 0; k < count && n < FF.cap; k++) {
                         const gx = bx + (rnd() - 0.5) * stepXZ;
                         const gz = bz + (rnd() - 0.5) * stepXZ;
@@ -61476,6 +61529,81 @@ class AnazhRealm {
         return f < 0 ? 0 : f;
     }
 
+    // V18.389 (DAS NEUE KLEID P2 — DAS KRONENDACH-LICHT, die EINE Quelle) — die Vorlagen-
+    // `canopyLight(trees)` (Z.1466-1474: cover aus den GESETZTEN Kronen → exp(-cover)) auf
+    // AnazhRealms Voxel-Saat. Statt jede Baum-Position abzufragen (die Vorlage kann das, weil
+    // sie EINEN Wald baut; AnazhRealm streamt ihn chunkweise), liest das Bodenlicht die SELBEN
+    // Treiber, aus denen P1 den Wald PFLANZT (`_placementStandAt("forest")` × wet × Höhe) —
+    // ohne Slope (die Leser gaten Slope selbst) und ohne Perf (Ökologie ist perf-unabhängig).
+    // Ergebnis: wo P1 dicht pflanzt, ist der Boden dunkel; die Lichtung liegt in vollem Licht.
+    // Reine Funktion (SimplexNoise seed-gebunden + `_feuchteAt`) → Γ5-deterministisch, kein
+    // Math.random. `wetHint` überspringt den `_feuchteAt`-Zweitaufruf (der Leser hat ihn schon).
+    // Rückgabe [0,1]: 1 = volle Lichtung, →0 geschlossenes Kronendach.
+    _canopyLightAt(x, z, surfaceY, wetHint) {
+        const P = AnazhRealm.PLACEMENT_DENSITY;
+        const U = AnazhRealm.UNDERGROWTH;
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        // Kronen-Deckung ≈ die P1-Wald-Dichte (DERSELBE forestStand × wet × Höhe wie
+        // `_placementDensityFactor("forest")`, aber ohne Slope/Perf).
+        const stand = typeof this._placementStandAt === "function" ? this._placementStandAt(x, z, "forest") : 0; // [-1,1]
+        const clump = Math.max(P.clumpLo, Math.min(P.clumpHi, 1 + P.clumpAmp * stand));
+        let wet = Number.isFinite(wetHint)
+            ? wetHint
+            : typeof this._feuchteAt === "function"
+              ? this._feuchteAt(x, z, surfaceY)
+              : 0;
+        wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+        const wetF = P.wetBase + P.wetGain * wet;
+        const baseH = (this.state && this.state.terrainBaseHeight) || 0;
+        const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
+        const highF = 1 - P.highAmp * ss(P.highLo, P.highHi, relH); // hoch → weniger Kronen → mehr Bodenlicht
+        let cover = clump * wetF * highF;
+        if (cover < 0) cover = 0;
+        const L = Math.exp(-cover * U.canopyK);
+        return L < 0 ? 0 : L > 1 ? 1 : L;
+    }
+
+    // V18.389 (P2) — die Vorlagen-`understoryNiche(L)` (Z.1531-1535): aus dem Bodenlicht L die
+    // drei Nischen-Wahrscheinlichkeiten. Gras drängt überlinear in die hellsten Flecken (Lichtung),
+    // Blume sitzt im Saum/Halbschatten (mittleres Licht), Farn im Schatten unterm Dach. Byte-treu
+    // aus der Vorlage übernommen (reine Funktion von L → Γ5-deterministisch).
+    _understoryNiche(L) {
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const cl = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        return {
+            gras: cl(Math.pow(L, 1.5) * 1.05), // überlinear: Gras in die hellsten Flecken
+            blume: ss(0.35, 0.62, L) * (1 - ss(0.72, 0.95, L)) * 0.7, // Saum/Sonne
+            farn: (1 - ss(0.28, 0.6, L)) * ss(0.08, 0.25, L) * 0.8, // Schatten unter Dach
+        };
+    }
+
+    // V18.389 (P2) — der EINE Bodendecker-Reaktions-Faktor (Kronendach × Slope), den BEIDE
+    // Streu-Pfade lesen (Nah-Mesh `_buildVoxelChunkScatter` + Fernfeld `_buildDekoFernfeldSpecies`
+    // — die Doppel-Gating-WAND, sonst ploppt die Dichte am Band-Übergang). `niche` + `slope` sind
+    // vom Aufrufer EINMAL pro Zelle berechnet (billig über die surfMap) → diese Funktion ist pur.
+    // Nur Arten mit `kronen` (Blume/Farn/Strauch) reagieren; Steinchen/Sporen bleiben neutral (1).
+    _undergrowthGroundFactor(sp, niche, slope) {
+        if (!sp || !sp.kronen) return 1;
+        const U = AnazhRealm.UNDERGROWTH;
+        const GS = AnazhRealm.GRASS_SLOPE;
+        let f;
+        if (sp.kronen === "lichtung") f = U.blumeFloor + niche.blume; // Blume: Saum/Sonne
+        else if (sp.kronen === "unter") f = U.farnFloor + niche.farn; // Farn: Schatten unterm Dach
+        else if (sp.kronen === "rand") f = U.blumeFloor + niche.blume * 0.7; // Strauch: Halbschatten-nah
+        else return 1;
+        // Slope-Gate: Bodendecker meiden die Felswand (die EINE GRASS_SLOPE-Quelle, V18.351).
+        const slopeF = Math.max(0, Math.min(1, 1 - (slope - GS.lo) / (GS.hi - GS.lo)));
+        return f * slopeF;
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — die phytogenesis-`plantForest`-
     // Ökologie (worlds/terrain/phytogenesis.js Z.1370-1470) auf AnazhRealms Voxel-Saat,
@@ -79294,6 +79422,25 @@ AnazhRealm.PLACEMENT_DENSITY = Object.freeze({
     highAmp: 0.75, // Höhen-Lichtung-Stärke
     highLo: 12, // ab so hoch über Terrain-Basis beginnt das Lichten
     highHi: 45, // ab so hoch = kahler Grat (nur Rest-Dichte ×0.25)
+});
+
+// V18.389 (DAS NEUE KLEID P2 — DER UNTERWUCHS) — die phytogenesis-`canopyLight`/
+// `understoryNiche`/`groundCover`-Konstanten (worlds/terrain/phytogenesis.js Z.1466-1576),
+// ÜBERSETZT auf AnazhRealms Voxel-Saat. Das Kronendach-Licht ist die EINE Quelle für „wie
+// viel Boden-Grün wächst hier": dicht bepflanzter Wald (P1) = dunkler Boden = licht; die
+// Lichtung = volles Licht = Wiese. Die Kronen-Deckung reist über DIESELBEN Treiber wie die
+// Baum-Platzierung (`_placementStandAt("forest")` × wet × Höhe aus PLACEMENT_DENSITY, ohne
+// Slope/Perf) → by construction konsistent mit dem echten Wald. `canopyK` = die exp-Dämpfung
+// des Bodenlichts (Vorlagen-`canopyLight`-Kern exp(-cover)). Die *Floor-Werte halten den
+// Unterwuchs nie ganz bei null (der dunkle Waldboden trägt spärliches Grün, kein hartes Loch).
+// Browser-justierbar (LOOK/Dichte = Schöpfer-Auge, V13-Lehre).
+AnazhRealm.UNDERGROWTH = Object.freeze({
+    canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
+    grassFloor: 0.12, // Gras wächst am dunklen Waldboden spärlich weiter (nie ganz null)
+    grassGain: 0.95, // die Lichtungs-Verdichtung (× understory-`gras` = pow(L,1.5))
+    grassWet: 0.35, // Feuchte-Antrieb aufs Gras (Vorlagen-meadow += m·0.22, geweitet)
+    blumeFloor: 0.3, // Blume: Saum/Sonne — die Nische fügt hinzu, der Floor hält Rest-Präsenz
+    farnFloor: 0.3, // Farn: Schatten unterm Dach — Floor + Schatten-Nische
 });
 
 // V18.389 (DAS NEUE KLEID P1 — DER WALD-GENERATOR) — die phytogenesis-`plantForest`-
