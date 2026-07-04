@@ -343,6 +343,11 @@ class AnazhRealm {
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
+            // V18.390 — Eins W1: das gerichtete GRÜNE Bounce-Fill (die Vorlagen-Weisheit
+            // phytogenesis fillL): sonnen-ABGEWANDT, grün·atm.col, formt die Schattenseite
+            // mit Laub-Farbe statt richtungslosem Ambient-Wash. In initThreeJS gesetzt,
+            // von _dayNightApplyDirectionalLight pro Frame geführt.
+            fillLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
@@ -12259,7 +12264,9 @@ class AnazhRealm {
             if (s) {
                 const dc = Math.round(s.renderCalls || 0);
                 const trisK = Math.round((s.renderTris || 0) / 1000);
-                const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+                const folResPct = Math.round(
+                    (this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100
+                );
                 extra = ` · ${dc}dc · ${trisK}k▲ · Laub ${folResPct}%`;
             }
             r.fps.textContent = String(this.state.fps || 0) + extra;
@@ -72431,9 +72438,13 @@ class AnazhRealm {
         // auch auf dem Wasser); die Skybox behält den echten sunDir (der Wolken-Glow ist Sonne).
         const moonDir = this._dayNightSunDirection(angle + Math.PI);
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
+        // V18.390 — Eins W1: die Rayleigh-Atmosphäre EINMAL pro Anwendung gerechnet
+        // (reine Funktion der Sonnenhöhe) und an das Licht-Rig durchgereicht — die
+        // EINE Licht-Quelle (Gesetz #0), kein Leser leitet die Sonnenfarbe selbst her.
+        const atm = this._atmosphere(sunDir.y);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(t, tint.skyMul);
-        this._dayNightApplyDirectionalLight(sunDir, tint, moonDir);
+        this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm);
         this._dayNightApplyAmbient(angle);
         this._updateCelestialBodies(angle, tint.lightMul);
         this._dayNightApplyHemiAndFog(angle, tint);
@@ -72567,6 +72578,39 @@ class AnazhRealm {
         return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
     }
 
+    // V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111,
+    // byte-treu in der Mathematik). Sonnenhöhe e=sin(Elevation) → Luftmasse →
+    // spektrale Beer-Lambert-Transmission (Rayleigh ~1/λ⁴, Bucholtz 1995: blau
+    // streut ~5× rot). DIE EINE LICHT-QUELLE (Gesetz #0): `atm.col` (Sonnen-Hue)
+    // + `atm.lum` (Lichtmenge) speisen Key-, Fill- und künftige Leser; Sonnen-
+    // untergang (tiefes Orange) und Mond-Nacht (Purkinje-Blau, MOONLIGHT-Hue)
+    // ENTSTEHEN aus der Physik statt aus Hand-Lerps. Die DAY_NIGHT_STOPS-LUT
+    // bleibt als Tint-TRÄGER (Wetter/Aura/Emotion reiten multiplikativ oben),
+    // sie leitet die Licht-Farbe nicht mehr her. REIN: nur Funktion von e —
+    // deterministisch, headless voll verifizierbar (diag-atmosphere.cjs).
+    _atmosphere(e) {
+        const B = AnazhRealm.RAYLEIGH_BETA;
+        const m = 1.0 / (Math.max(e, 0.0) + 0.06); // Luftmasse: ~1 im Zenit, groß am Horizont
+        const tr = Math.exp(-B.r * m);
+        const tg = Math.exp(-B.g * m);
+        const tb = Math.exp(-B.b * m); // durchgelassenes Sonnenspektrum (Beer-Lambert)
+        const lum = 0.21 * tr + 0.72 * tg + 0.07 * tb; // Lichtmenge der direkten Sonne
+        const mx = Math.max(tr, tg, tb, 1e-4);
+        let cr = tr / mx;
+        let cg = tg / mx;
+        let cb = tb / mx; // Sonnenfarbe = Hue des Spektrums (Sonnenuntergang → rot)
+        const night = Math.max(0, Math.min(1, -e / 0.16)); // unter Horizont → Mond (Purkinje)
+        const M = AnazhRealm.MOONLIGHT;
+        cr += (M.r - cr) * night;
+        cg += (M.g - cg) * night;
+        cb += (M.b - cb) * night;
+        return {
+            col: { r: cr, g: cg, b: cb },
+            lum: lum * (1.0 - night) + 0.06 * night,
+            day: Math.max(0, Math.min(1, e)),
+        };
+    }
+
     // V18.377 — die Helligkeit eines Himmelskörpers fadet smooth auf 0, sobald er den Horizont
     // erreicht (`h` = seine Höhe = sunDir.y für die Sonne, −sunDir.y für den Mond). So ist der
     // Sonne↔Mond-Richtungswechsel bei y=0 unsichtbar (beide dort dunkel) — kein Schatten-Pop.
@@ -72649,7 +72693,7 @@ class AnazhRealm {
     // Azimut) liess er bis ~1 Texel (~0.29 m) Rest-Swimming → die Rasterlinie
     // „wandert beim Laufen" an vertikalen Wänden. Geheilt durch den LIGHT-SPACE-
     // Snap im Block unten (Snap in der Ebene ⟂ sunDir statt Welt-X/Z) → 0.
-    _dayNightApplyDirectionalLight(sunDir, tint, moonDir) {
+    _dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm) {
         const dl = this.state.directionalLight;
         const pm = this.state.playerMesh;
         const lightDist = 200;
@@ -72731,19 +72775,53 @@ class AnazhRealm {
         // Wechsel bei y=0 ist unsichtbar (beide dort dunkel). Tag bleibt exakt erhalten (sunUp +
         // hoher Stand → fade=1 → tint.lightIntensity unverändert). Nacht: der Mond gibt gerichtetes,
         // gedämpftes, kühles Licht (Wetter dimmt ihn via lightMul) statt des flachen Unten-Füllens.
+        // V18.390 — Eins W1: DIE RAYLEIGH-ATMOSPHÄRE IST DIE EINE LICHT-QUELLE (Gesetz #0).
+        // `atm.col` (spektral-korrekte Sonnenfarbe: Zenit warm-weiß, Horizont tiefes Orange,
+        // unter Horizont Purkinje-Mond) ist die BASIS-Farbe; die LUT-getragene `tint.lightColor`
+        // (DAY_NIGHT_STOPS + Aura/Emotion-Deltas) reitet MULTIPLIKATIV oben = der Tint-TRÄGER
+        // (mittags (1,1,1) → pure Physik; Aura/Wetter/Emotion färben weiter — kein Parallel-Pfad,
+        // keine tote Schicht). Die Intensität ist KEY_BASE·atm.lum·tint.lightIntensity: die
+        // Physik trägt die Tages-Kurve (lum 0.913 Zenit → 0.44 Horizont), die LUT-Intensität
+        // (⊇ Wetter-lightMul + Emotion) moduliert. Die gemessene Wurzel des „flach"-Befunds:
+        // dir/(amb+hemi) war 0.83:1 (Füll-Licht wusch NdotL aus) → jetzt ≥3:1 wie die Vorlage.
+        const a = atm || this._atmosphere(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(
-                tint.lightColor.r * tint.lightMul,
-                tint.lightColor.g * tint.lightMul,
-                tint.lightColor.b * tint.lightMul
+                a.col.r * tint.lightColor.r * tint.lightMul,
+                a.col.g * tint.lightColor.g * tint.lightMul,
+                a.col.b * tint.lightColor.b * tint.lightMul
             );
-            dl.intensity = tint.lightIntensity * this._celestialHorizonFade(sunDir.y);
+            dl.intensity = AnazhRealm.KEY_BASE * a.lum * tint.lightIntensity * this._celestialHorizonFade(sunDir.y);
         } else {
             const M = AnazhRealm.MOONLIGHT;
-            dl.color.setRGB(M.r, M.g, M.b);
+            // V18.390 — der Mond-Pfad BLEIBT (V18.377/.378: Richtung aus der EINEN Quelle,
+            // Intensität MOONLIGHT·Wetter·Horizont-Fade); die Atmosphäre FÄRBT ihn nur —
+            // `atm.col` lerpt unter dem Horizont zum MOONLIGHT-Hue (tiefe Nacht = exakt
+            // der Purkinje-Mond, Dämmerung = physikalischer Glut→Mond-Übergang).
+            dl.color.setRGB(a.col.r, a.col.g, a.col.b);
             // V18.378 — der Fade liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
             dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(md.y);
+        }
+        // V18.390 — Eins W1: das GRÜNE BOUNCE-FILL (Vorlage fillL, Z.1177): gerichtetes,
+        // grün-getöntes Licht von der sonnen-ABGEWANDTEN Seite (Laub-/Boden-Bounce) formt
+        // die Schattenseite, wo vorher das richtungslose Ambient sie flach wusch. Farbe =
+        // grün·atm.col (folgt der Tageszeit-Physik), Intensität 0.62·atm.lum·Wetter →
+        // nachts fällt es mit lum auf ~0.04 (der Mond dominiert, diag-night-probe-Wand).
+        const fl = this.state.fillLight;
+        if (fl) {
+            const F = AnazhRealm.FILL_LIGHT;
+            fl.position.set(
+                focusX - lightDir.x * F.dist,
+                focusY - lightDir.y * F.dist + F.lift,
+                focusZ - lightDir.z * F.dist
+            );
+            if (fl.target) {
+                fl.target.position.set(focusX, focusY, focusZ);
+                fl.target.updateMatrixWorld();
+            }
+            fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
+            fl.intensity = F.base * a.lum * tint.lightMul;
         }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
@@ -72779,9 +72857,14 @@ class AnazhRealm {
         // OBSOLETER Workaround — die Strukturen tragen ihre EIGENE tiefere
         // Heilung (LUT-Schatten-Boden 0.25 + warmes Rim). Der hohe Floor hielt
         // stattdessen den BODEN nachts hell (S-Befund: „der Terrain-Boden
-        // reagiert nicht aufs Nachtlicht"). Zurück auf den Ursprung: Mittag
-        // bleibt per Konstruktion gleich (0.18+0.42=0.60), die Nacht fällt.
-        const baseAmb = 0.18 + 0.42 * sunHeight;
+        // reagiert nicht aufs Nachtlicht").
+        // V18.390 — Eins W1: das richtungslose Ambient fällt fast auf null (die
+        // gemessene „flach"-Wurzel: 0.60 mittags wusch mit Hemi 0.60 jede NdotL-
+        // Schattierung aus — Vorlage hat GAR KEIN AmbientLight; die Form gibt jetzt
+        // das gerichtete Key- + grüne Fill-Licht). Mittag 0.16, Nacht 0.04 — die
+        // Nacht-Kalibrierung hält Mond/(amb+hemi) ≥ 1.5 (der Mond dominiert = Form;
+        // 0.22/(0.04+0.10) ≈ 1.57, mit 0.06 Nacht-Ambient wäre es 1.38 = zu flach).
+        const baseAmb = 0.04 + 0.12 * sunHeight;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -72852,8 +72935,12 @@ class AnazhRealm {
             // V18.111 — B9 (GEMESSEN): der V17.7-Hemi-Nacht-Floor (0.25→0.32)
             // fällt zurück — B8 heilte die Struktur-Schwärze tiefer (LUT+Rim),
             // und der up-gebackene Boden (B3) bekam den VOLLEN Sky-Term → der
-            // Boden blieb nachts hell. Mittag unverändert (0.25+0.35=0.60).
-            hl.intensity = (0.25 + 0.35 * sunHeight) * tint.lightMul;
+            // Boden blieb nachts hell.
+            // V18.390 — Eins W1: Hemi halbiert (Mittag 0.60→0.30, Nacht 0.25→0.10;
+            // Vorlage: 0.18 tags / 0.03 nachts). Zusammen mit dem fast-null-Ambient
+            // kippt das Licht-Verhältnis von 0.83:1 (Füll-Wash) auf ≥3:1 (Key führt,
+            // Vorlagen-Prinzip) — der Himmel-Boden-Farbverlauf bleibt, nur leiser.
+            hl.intensity = (0.1 + 0.2 * sunHeight) * tint.lightMul;
         }
         if (fog) {
             // V18.367 — die Nebel-/Aerial-Farbe ETWAS GEERDETER (Schöpfer „ich sehe die Sonne
@@ -75045,10 +75132,21 @@ class AnazhRealm {
                 this.log(`Schatten-CSM nicht verfügbar (${e && e.message}) — eine Map wie bisher`, "WARN");
             }
         }
+        // V18.390 — Eins W1: das GRÜNE BOUNCE-FILL (Vorlagen-fillL, phytogenesis Z.1177):
+        // ein gerichtetes DirectionalLight von der sonnen-abgewandten Seite, grün getönt
+        // (Laub-/Boden-Bounce), OHNE Schatten (reines Form-Licht). Es ersetzt die Form-
+        // Arbeit, die vorher das (jetzt fast-null) richtungslose Ambient NICHT leistete.
+        // Farbe/Intensität/Position führt _dayNightApplyDirectionalLight pro Frame aus
+        // der EINEN Atmosphäre-Quelle (grün·atm.col, 0.62·atm.lum).
+        const fillLight = new THREE.DirectionalLight(0x557a4a, 0.6);
+        fillLight.castShadow = false;
+        scene.add(fillLight);
+        scene.add(fillLight.target);
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
+        this.state.fillLight = fillLight;
         // V8.27 6.G4.a — HemisphereLight: skyColor oben + groundColor unten,
         // mixt automatisch über mesh.normal.y. Stein-Wand-Oberseite bekommt
         // Himmel-Tint, Unterseite Erden-Tint — gibt sofort Tiefe ohne
@@ -80866,7 +80964,22 @@ AnazhRealm.FOG_EDGE = Object.freeze({ expandRate: 0.05, contractRate: 0.02, maxS
 // HUE (≈1 hellster Kanal, die Helligkeit trägt `intensity`); `intensity` ist dimmer als das alte
 // 0,28-von-unten-„Füllen", damit die Nacht Kontrast bekommt. Wetter dimmt den Mond (Wolken).
 // Browser-justierbar (kühler/dunkler = Schöpfer-Auge).
-AnazhRealm.MOONLIGHT = Object.freeze({ r: 0.62, g: 0.7, b: 0.95, intensity: 0.22 });
+// V18.390 — Eins W1: der HUE ist jetzt der Purkinje-Mond der Vorlage (0x9fb8dc — die EINE
+// Mond-Farb-Quelle; `_atmosphere(e)` lerpt unter dem Horizont exakt hierher, das Richtlicht
+// liest nachts `atm.col` → per Konstruktion identisch). b>r bleibt (kühl, diag-night-probe).
+AnazhRealm.MOONLIGHT = Object.freeze({ r: 0x9f / 255, g: 0xb8 / 255, b: 0xdc / 255, intensity: 0.22 });
+// V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111). Rayleigh
+// optische Tiefe auf Meereshöhe/Zenit (Bucholtz 1995): blau streut ~5× rot → Beer-Lambert
+// über die Luftmasse gibt Sonnenfarbe+Lichtmenge für JEDEN Winkel spektral-korrekt.
+AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
+// V18.390 — Eins W1: DAS LICHT-RIG (die gemessene Wurzel des „flach/Pappe"-Befunds: Vorlage
+// dir/(amb+hemi) ≈ 15:1, AnazhRealm war 0.83:1 — das richtungslose Füll-Licht wusch jede
+// NdotL-Schattierung aus). KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht
+// (Mittag ≈ 2.6·0.913 ≈ 2.37 unter ACES); FILL_LIGHT ist das grüne, sonnen-ABGEWANDTE
+// Bounce-Licht der Vorlage (Z.1177: Farbe grün·atm.col, int 0.62·lum, von der Schattenseite
+// +22 m Hebung — formt die Schattenseite mit Laub-Farbe statt Ambient-Wash).
+AnazhRealm.KEY_BASE = 2.6;
+AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62, dist: 60, lift: 22 });
 // V18.351 — DIE SLOPE-SCHWELLEN DES GRAS-GATES (Schöpfer „noch nie eine Felswand mit Gras gesehen").
 // Gras voll bis `lo` (≈35°), verschwindet bis `hi` (≈52°) — sanfter Übergang, kein harter Schnitt.
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
