@@ -61064,7 +61064,10 @@ class AnazhRealm {
         const regionKey = this._archPlacedRegionKey(entry);
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
-            const g = this._archInstanceGroupFor(entry.type, i, leaf, regionKey);
+            // Der Leaf-Schluessel ist normal der Array-Index; ein Leaf DARF ihn ueberschreiben
+            // (leaf.leafKey) — so bekommt Foundry-Geometrie je Art:Variante:LOD:Teil eine EIGENE
+            // InstancedMesh-Gruppe im BESTEHENDEN HISM (Vielfalt + LOD + Instancing, kein Parallelpfad).
+            const g = this._archInstanceGroupFor(entry.type, leaf.leafKey != null ? leaf.leafKey : i, leaf, regionKey);
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
@@ -61177,6 +61180,20 @@ class AnazhRealm {
     // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
     _rebuildArchitectureMesh(entry) {
         if (!this.state.scene || !entry) return null;
+        // FOUNDRY: ein Vorlagen-Baum-Eintrag rendert die ECHTE Vorlagen-Geometrie (buildInstance),
+        // in AnazhRealms BESTEHENDEM HISM instanziert (harvest/collision/cull/LOD kommen vom
+        // Eintrag). Nur im Browser (headless -> _foundryEnabled false -> der normale AnazhRealm-Pfad).
+        const _fpreset = this._foundryEnabled() ? this._foundryPresetFor(entry.type) : null;
+        if (_fpreset) {
+            const fflat = this._foundryFlattenFor(entry, _fpreset);
+            if (fflat) {
+                this._archInstanceAdd(entry, fflat);
+                return null;
+            }
+            // Foundry aktiv, Asset noch nicht geladen -> Eintrag bleibt cold (der Culling-Tick baut
+            // ihn nach, sobald die Bibliothek steht) -> KEIN AnazhRealm-Baum dazwischen (sauber 1:1).
+            return null;
+        }
         // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
@@ -62917,7 +62934,7 @@ class AnazhRealm {
         return group && group.children.length ? group : null;
     }
     _foundryLibrarySpec() {
-        return { species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut"], seeds: [1, 2, 3, 4], lods: [0] };
+        return { species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut"], seeds: [1, 2, 3, 4], lods: [0, 1, 2] };
     }
     async _foundryPrefetchLibrary() {
         const f = this._foundry;
@@ -62941,45 +62958,78 @@ class AnazhRealm {
             }
         }
         f._prefetching = false;
-        const retry = f.retry;
-        f.retry = [];
-        for (const r of retry) this._foundryPlantTree(r.species, r.position, r.opts);
+        // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
+        // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
+        // hoffen (unter Last baut der NICHTS -> die Baeume blieben cold).
+        this._foundryRewarmColdTrees();
     }
-    // Der EINE Redirect: der Wald ruft dies statt _enqueueVegetationSpawn fuer Baeume.
-    _foundryPlantTree(species, position, opts) {
-        const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
-        if (!preset) return this._enqueueVegetationSpawn(species, position, opts);
-        const f = this._ensureAssetFoundry();
-        if (!f) return this._enqueueVegetationSpawn(species, position, opts);
-        const seedInt = (opts && Number.isFinite(opts.seed) ? opts.seed : 0) >>> 0;
-        const variant = (seedInt % 4) + 1;
-        const key = preset + "|" + variant + "|0";
-        const cached = f.cache.get(key);
-        if (cached === undefined) {
-            // Noch nicht geladen (Foundry startet/prefetcht): aufstauen, spaeter 1:1 pflanzen.
-            if (f.retry.length < 4000) f.retry.push({ species, position, opts });
-            return;
-        }
-        if (cached === null) return; // Asset fehlgeschlagen -> still, KEIN Alt-Baum dazwischen (sauber 1:1)
-        try {
-            const group = new THREE.Group();
-            for (const child of cached.children) {
-                const mesh = new THREE.Mesh(child.geometry, child.material);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                group.add(mesh);
+    // Cold-gebliebene Foundry-Baum-Eintraege in Reichweite neu bauen (die Bibliothek ist bereit).
+    // Budgetiert (300/Aufruf) gegen einen Burst; der Rest folgt beim naechsten Aufruf / Culling.
+    _foundryRewarmColdTrees() {
+        if (!this._foundryEnabled()) return;
+        const archs = this.state.architectures;
+        if (!Array.isArray(archs)) return;
+        const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
+        const rad = this.state.architectureCullingRadius || 200;
+        const radiusSq = rad * rad;
+        let n = 0;
+        for (const entry of archs) {
+            if (n >= 300) break;
+            if (!entry || entry.instanced || entry.mesh) continue;
+            if (typeof entry.type !== "string" || !this._foundryPresetFor(entry.type)) continue;
+            if (pm) {
+                const dx = entry.position.x - pm.x;
+                const dz = entry.position.z - pm.z;
+                if (dx * dx + dz * dz > radiusSq) continue;
             }
-            const s = opts && Number.isFinite(opts.scale) ? opts.scale : 1;
-            group.scale.setScalar(s);
-            group.rotation.y = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
-            group.position.set(position.x, position.y, position.z);
-            group.frustumCulled = true;
-            this.state.scene.add(group);
-            if (!this._foundryTrees) this._foundryTrees = [];
-            this._foundryTrees.push(group);
-        } catch (_e) {
-            this._enqueueVegetationSpawn(species, position, opts);
+            this._rebuildArchitectureMesh(entry);
+            n++;
         }
+    }
+    // Die Foundry-„Flatten": ein Vorlagen-Baum-Eintrag -> Instancing-Leaves aus der ECHTEN
+    // Vorlagen-Geometrie (buildInstance), je Art:Variante:LOD:Teil ein eigener leafKey (eigene
+    // InstancedMesh im BESTEHENDEN HISM -> Vielfalt + LOD + Instancing + Cull, kein Parallelpfad).
+    // Null, wenn das Asset noch nicht geladen ist (Eintrag bleibt cold, der Culling-Tick baut nach).
+    _foundryFlattenFor(entry, preset) {
+        const f = this._ensureAssetFoundry();
+        if (!f) return null;
+        const variant = ((entry.seed >>> 0) % 4) + 1;
+        const lod = this._foundryLodForEntry(entry);
+        const key = preset + "|" + variant + "|" + lod;
+        const group = f.cache.get(key);
+        if (group === undefined) {
+            if (!f.requested) f.requested = new Set();
+            if (!f.requested.has(key)) {
+                f.requested.add(key);
+                this._foundryRequest(preset, variant, lod).then((meshes) => {
+                    f.cache.set(key, meshes ? this._foundryBuildGroup(meshes) : null);
+                    this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
+                });
+            }
+            return null;
+        }
+        if (group === null || !group.children || !group.children.length) return null;
+        if (!group._foundryFlat) {
+            const leaves = [];
+            const I = new THREE.Matrix4();
+            for (let p = 0; p < group.children.length; p++) {
+                const child = group.children[p];
+                if (!child.geometry || !child.material) continue;
+                leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I, leafKey: "f:" + key + ":" + p });
+            }
+            group._foundryFlat = { instanceable: true, reason: "foundry", leaves };
+        }
+        return group._foundryFlat;
+    }
+    // Distanz-LOD (die Vorlagen-LODs 0/1/2): nah = voll (LOD 0 < 25 m), mittel = LOD 1, fern = LOD 2.
+    // Perf-bewusst — die meisten Wald-Baeume sind mittel -> das leichte LOD 1.
+    _foundryLodForEntry(entry) {
+        const p = this.state.playerMesh ? this.state.playerMesh.position : null;
+        if (!p || !entry || !entry.position) return 1;
+        const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
+        if (d < 25) return 0;
+        if (d < 70) return 1;
+        return 2;
     }
 
     _forestPlantChunk(cx, cz) {
@@ -63045,9 +63095,11 @@ class AnazhRealm {
                     // PERF-Kappung: am Ende gedünnt (die Krone reservierte weiter Platz →
                     // die Wald-FORM bleibt, nur weniger gerendert; keepRoll ≠ prio).
                     if (fd < 1 && d.keep >= fd) continue;
-                    // Der Baum kommt 1:1 aus der Vorlage (Asset-Foundry) — faellt in headless/
-                    // ohne Foundry sauber auf den AnazhRealm-Waldpfad zurueck.
-                    this._foundryPlantTree(
+                    // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture ueber
+                    // _enqueueVegetationSpawn) -> harvestbar + kollidierbar + getaggt + LOD.
+                    // Seine VISUELLE Geometrie kommt 1:1 aus der Vorlage (Asset-Foundry), in
+                    // AnazhRealms Instancing-Maschinerie gefuettert (_rebuildArchitectureMesh).
+                    this._enqueueVegetationSpawn(
                         d.sp,
                         { x: d.x, y: d.surfaceY + 0.5, z: d.z },
                         { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }
