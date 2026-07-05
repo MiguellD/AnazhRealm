@@ -61190,9 +61190,14 @@ class AnazhRealm {
                 this._archInstanceAdd(entry, fflat);
                 return null;
             }
-            // Foundry aktiv, Asset noch nicht geladen -> Eintrag bleibt cold (der Culling-Tick baut
-            // ihn nach, sobald die Bibliothek steht) -> KEIN AnazhRealm-Baum dazwischen (sauber 1:1).
-            return null;
+            if (fflat === false) {
+                // Foundry-Asset fehlgeschlagen/leer (z.B. Kristall-Merge) -> AnazhRealm-Pfad, damit
+                // IMMER etwas rendert (Fall-through unten) statt unsichtbar zu bleiben.
+            } else {
+                // fflat === null = Asset noch nicht geladen -> Eintrag bleibt cold (der Culling-Tick
+                // baut ihn nach, sobald die Bibliothek steht) -> KEIN AnazhRealm-Ding dazwischen.
+                return null;
+            }
         }
         // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
@@ -62867,6 +62872,7 @@ class AnazhRealm {
     }
     _foundryPresetFor(species) {
         const map = {
+            // Baeume
             baum_eiche: "eiche",
             baum_fichte: "fichte",
             baum_tanne: "tanne",
@@ -62874,6 +62880,30 @@ class AnazhRealm {
             baum_weide: "weide",
             baum_mammut: "mammut",
             baum_kiefer: "fichte",
+            // Fels: rund -> findling, kantig/Saeule -> basalt (die Vorlagen-Rezepte via emitRock)
+            noiserock: "findling",
+            findling: "findling",
+            kiesel: "findling",
+            fels: "findling",
+            fels_var: "findling",
+            felsbrocken: "findling",
+            stein_block: "basalt",
+            felsturm: "basalt",
+            felsbogen: "basalt",
+            // Kristall (emitCrystals)
+            kristall_geode: "kristalle",
+            geode: "kristalle",
+            kristall: "kristalle",
+            kristalle: "kristalle",
+            kristall_var: "kristalle",
+            // Blume (emitFlower) + Strauch
+            blume_tulpe: "blume",
+            blume_klee: "blume",
+            blume_mohn: "blume",
+            blume_gross: "blume",
+            blume: "blume",
+            // Straeucher/Farne bleiben AnazhRealm-nativ (der Vorlagen-strauch ist ~208k Verts =
+            // zu schwer fuer den dichten Unterwuchs; AnazhRealms Busch ist dort richtig).
         };
         return map[species] || null;
     }
@@ -62915,6 +62945,9 @@ class AnazhRealm {
             group = new T.Group();
             for (const m of meshes) {
                 if (!m || !m.position || !m.position.array) continue;
+                // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
+                // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
+                if (m.position.array.length > 600000) continue;
                 const geo = new T.BufferGeometry();
                 geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
                 if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
@@ -62934,7 +62967,13 @@ class AnazhRealm {
         return group && group.children.length ? group : null;
     }
     _foundryLibrarySpec() {
-        return { species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut"], seeds: [1, 2, 3, 4], lods: [0, 1, 2] };
+        // Alle Vorlagen-Presets: Baeume (LOD 0-2) + Fels/Kristall/Blume/Strauch. Der Rest laedt
+        // on-demand (_foundryFlattenFor fragt fehlende Art:Variante:LOD nach).
+        return {
+            species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "blume"],
+            seeds: [1, 2, 3, 4],
+            lods: [0, 1, 2],
+        };
     }
     async _foundryPrefetchLibrary() {
         const f = this._foundry;
@@ -63008,7 +63047,9 @@ class AnazhRealm {
             }
             return null;
         }
-        if (group === null || !group.children || !group.children.length) return null;
+        // null (Anfrage fehlgeschlagen) ODER leere Geometrie (z.B. Kristall-Merge gab nichts) ->
+        // `false` = „Foundry kann das nicht", der Aufrufer faellt auf den AnazhRealm-Pfad zurueck.
+        if (group === null || !group.children || !group.children.length) return false;
         if (!group._foundryFlat) {
             const leaves = [];
             const I = new THREE.Matrix4();
@@ -63017,7 +63058,7 @@ class AnazhRealm {
                 if (!child.geometry || !child.material) continue;
                 leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I, leafKey: "f:" + key + ":" + p });
             }
-            group._foundryFlat = { instanceable: true, reason: "foundry", leaves };
+            group._foundryFlat = leaves.length ? { instanceable: true, reason: "foundry", leaves } : false;
         }
         return group._foundryFlat;
     }
