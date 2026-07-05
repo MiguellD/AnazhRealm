@@ -52729,18 +52729,27 @@ class AnazhRealm {
                         return (_r << 16) | (_g << 8) | _b;
                     };
                     const _rockBase = Number.isFinite(part.color) ? part.color : 0x8a8278;
+                    // DAS NEUE KLEID — DER REZEPT-REGLER (Fels): die Werkstatt kann die Geologie-Dials
+                    // (Rundheit/Rauheit/Streckung/Schichtung) + den Same pro Part überschreiben
+                    // (`part.rockDials`/`part.rockSeed`) → der Fels-Regler füttert dieselbe geteilte
+                    // `buildBoulderGeometry`-Quelle live. Ohne Override: das haerte-abgeleitete Default
+                    // (byte-gleich zu vorher). Der Same-Override wirft eine andere Fels-Variante.
+                    const _rk = part.rockDials || null;
                     const g = core.buildBoulderGeometry(
                         THREE,
                         noise3,
                         {
                             size: 1,
-                            elong: 0.2 + 0.2 * (1 - haerte),
-                            sph: 0.62,
-                            round: Math.max(0.05, Math.min(0.9, 0.62 - 0.5 * haerte)),
-                            rough: 0.34 + 0.4 * haerte,
-                            strat: 0.12,
+                            elong: _rk && Number.isFinite(_rk.elong) ? _rk.elong : 0.2 + 0.2 * (1 - haerte),
+                            sph: _rk && Number.isFinite(_rk.sph) ? _rk.sph : 0.62,
+                            round:
+                                _rk && Number.isFinite(_rk.round)
+                                    ? _rk.round
+                                    : Math.max(0.05, Math.min(0.9, 0.62 - 0.5 * haerte)),
+                            rough: _rk && Number.isFinite(_rk.rough) ? _rk.rough : 0.34 + 0.4 * haerte,
+                            strat: _rk && Number.isFinite(_rk.strat) ? _rk.strat : 0.12,
                             detail: det + 2,
-                            seed: (hs % 9973) + 1,
+                            seed: Number.isFinite(part.rockSeed) ? (part.rockSeed % 9973) + 1 : (hs % 9973) + 1,
                             withColor: true,
                             speckle: true,
                             rockA: _rockBase,
@@ -72575,60 +72584,74 @@ class AnazhRealm {
         }
     }
 
-    // DAS NEUE KLEID — DER REZEPT-REGLER (die Pipeline SICHTBAR + PRÜFBAR): bei einem gewachsenen
-    // Baum (bp._grownSpecies) zeigt die Werkstatt unter den Farben die 5 STUDIO-Regler
-    // (api/slim/trop/delta/leaf = das Rezept) + einen SAAT-WÜRFEL. Jede Regler-/Würfel-Änderung
-    // füttert die EINE geteilte Pipeline (phyto-core treeParams → growSkeleton) live neu → die
-    // Vorschau ändert sich. Das beweist: (a) die Pipeline läuft, (b) AnazhRealm kann die Baupläne
-    // anpassen. Für eine Art ohne Rezept (Nicht-Baum / Fels-Kristall ohne Dial-Pipeline) versteckt.
+    // DAS NEUE KLEID — DER REZEPT-REGLER (die Pipeline SICHTBAR + PRÜFBAR für BAUM · FELS · KRISTALL):
+    // die Werkstatt zeigt unter den Farben die STUDIO-Regler des geladenen Bauplans + einen SAAT-
+    // WÜRFEL. Jede Änderung füttert die EINE geteilte phyto-core-Quelle live neu (Baum: treeParams →
+    // growSkeleton · Fels: buildBoulderGeometry · Kristall: buildCrystalPointGeometry) → die Vorschau
+    // ändert sich. Das beweist: (a) die Pipeline läuft, (b) AnazhRealm kann die Baupläne anpassen.
+    // Für einen Bauplan ohne Rezept-Kern (Bauwerk/Werkzeug) versteckt.
+    _workshopRecipeKind(bp) {
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
+        const species = bp._grownSpecies;
+        if (
+            species &&
+            String(species).startsWith("baum_") &&
+            AnazhRealm.SPECIES_GRAMMAR &&
+            AnazhRealm.SPECIES_GRAMMAR[species]
+        )
+            return "tree";
+        let rock = false,
+            crystal = false;
+        for (const p of bp.parts) {
+            if (!p) continue;
+            if (p.shape === "crystalPoint") crystal = true;
+            else if (p.shape === "noiserock") rock = true;
+        }
+        if (crystal) return "crystal";
+        if (rock) return "rock";
+        return null;
+    }
+
     _workshopRenderRecipePanel(bp) {
         if (typeof document === "undefined") return;
         const panel = document.getElementById("workshop-recipe-panel");
         if (!panel) return;
-        const species = bp && bp._grownSpecies;
-        const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
-        const isRecipeTree = !!(species && grammar && String(species).startsWith("baum_"));
-        if (!isRecipeTree) {
+        const kind = this._workshopRecipeKind(bp);
+        if (!kind) {
             panel.hidden = true;
             panel.innerHTML = "";
             return;
         }
         panel.hidden = false;
         panel.innerHTML = "";
-        const dials = bp._recipeDials || this._treeRecipeDials(species, grammar);
         const head = document.createElement("h4");
-        head.textContent = "Rezept (Studio-Regler)";
         head.className = "workshop-recipe-head";
+        head.textContent =
+            "Rezept (Studio-Regler · " + (kind === "tree" ? "Baum" : kind === "rock" ? "Fels" : "Kristall") + ")";
         panel.appendChild(head);
-        const SLIDERS = [
-            { key: "api", label: "Apikaldominanz", min: 0, max: 1, hint: "Nadel-Kegel (1) ↔ Laub-Krone (0)" },
-            { key: "slim", label: "Schlankheit", min: 0, max: 1, hint: "gedrungen (0) ↔ schlank (1)" },
-            { key: "trop", label: "Gravitropismus", min: -0.3, max: 1, hint: "aufrecht (−) ↔ hängend (+)" },
-            { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, hint: "Astdicke-Erhalt an den Gabeln" },
-            { key: "leaf", label: "Blattdichte", min: 0, max: 1, hint: "kahl (0) ↔ voll (1)" },
-        ];
-        for (const s of SLIDERS) {
+        const spec = this._workshopRecipeSpec(bp, kind);
+        for (const d of spec.dials) {
             const row = document.createElement("div");
             row.className = "workshop-recipe-row";
             const lab = document.createElement("label");
-            lab.textContent = s.label;
-            lab.title = s.hint;
+            lab.textContent = d.label;
+            lab.title = d.hint;
             const inp = document.createElement("input");
             inp.type = "range";
-            inp.min = String(s.min);
-            inp.max = String(s.max);
-            inp.step = "0.01";
-            inp.value = String(dials[s.key] != null ? dials[s.key] : 0);
+            inp.min = String(d.min);
+            inp.max = String(d.max);
+            inp.step = String(d.step);
+            inp.value = String(spec.cur[d.key] != null ? spec.cur[d.key] : d.min);
             const val = document.createElement("span");
             val.className = "workshop-recipe-val";
-            val.textContent = (+inp.value).toFixed(2);
+            const fmt = (v) => (d.step >= 1 ? String(Math.round(v)) : (+v).toFixed(2));
+            val.textContent = fmt(+inp.value);
             inp.addEventListener("input", () => {
-                val.textContent = (+inp.value).toFixed(2);
-                const nd = Object.assign({}, bp._recipeDials || this._treeRecipeDials(species, grammar));
-                nd[s.key] = +inp.value;
-                // conifer-Hinweis (LOD-Faktor) folgt der Apikaldominanz.
-                nd.conifer = nd.api >= 0.72;
-                this._workshopRegrowRecipe(bp, nd, bp._grownSeed || `${species}-studio`);
+                val.textContent = fmt(+inp.value);
+                const nd = Object.assign({}, spec.cur);
+                nd[d.key] = +inp.value;
+                spec.cur = nd; // weitere Regler bauen auf dem aktualisierten Satz auf
+                spec.apply(nd);
             });
             row.appendChild(lab);
             row.appendChild(inp);
@@ -72641,12 +72664,8 @@ class AnazhRealm {
         dice.type = "button";
         dice.className = "workshop-recipe-dice";
         dice.textContent = "🎲 Neue Saat";
-        dice.title = "Wirf eine andere Variante dieser Art (gleiches Rezept, anderer Same) — wie im Studio";
-        dice.addEventListener("click", () => {
-            // Math.random lebt in der UI (Γ5) — der Same ist eine Werkstatt-Geste, kein Worldgen.
-            const newSeed = `${species}-studio-${Math.floor(Math.random() * 1e9).toString(36)}`;
-            this._workshopRegrowRecipe(bp, bp._recipeDials || this._treeRecipeDials(species, grammar), newSeed);
-        });
+        dice.title = "Wirf eine andere Variante (gleiches Rezept, anderer Same) — wie im Studio";
+        dice.addEventListener("click", () => spec.dice());
         btnRow.appendChild(dice);
         const reset = document.createElement("button");
         reset.type = "button";
@@ -72654,18 +72673,89 @@ class AnazhRealm {
         reset.textContent = "↺ Vorlage";
         reset.title = "Regler + Same auf das Vorlagen-Rezept zurücksetzen";
         reset.addEventListener("click", () => {
-            delete bp._recipeDials;
-            this._workshopRegrowRecipe(bp, this._treeRecipeDials(species, grammar), `${species}-studio`);
+            spec.reset();
             this._workshopRenderRecipePanel(bp); // Regler-Positionen zurückstellen
         });
         btnRow.appendChild(reset);
         panel.appendChild(btnRow);
     }
 
-    // Regrow: die aktuellen Dials + Same durch die EINE Pipeline (`_growTreeBlueprintRich` →
-    // treeParams → growSkeleton) → neue parts + skeleton → in den Bauplan schreiben + Vorschau neu
-    // bauen. KEIN Panel-Neubau (der Slider-Drag behält seinen Fokus). Cache-Invalidierung, damit
-    // eine schon in der Welt platzierte Instanz beim nächsten Rebuild die neue Gestalt erbt.
+    // Die Dial-Spezifikation + aktuellen Werte + apply/dice/reset je Art. EINE Struktur, drei Rezept-
+    // Kerne — der Panel-Renderer bleibt art-neutral.
+    _workshopRecipeSpec(bp, kind) {
+        if (kind === "tree") {
+            const grammar = AnazhRealm.SPECIES_GRAMMAR[bp._grownSpecies];
+            const cur = bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar);
+            return {
+                cur: Object.assign({}, cur),
+                dials: [
+                    { key: "api", label: "Apikaldominanz", min: 0, max: 1, step: 0.01, hint: "Nadel-Kegel (1) ↔ Laub (0)" },
+                    { key: "slim", label: "Schlankheit", min: 0, max: 1, step: 0.01, hint: "gedrungen (0) ↔ schlank (1)" },
+                    { key: "trop", label: "Gravitropismus", min: -0.3, max: 1, step: 0.01, hint: "aufrecht (−) ↔ hängend (+)" },
+                    { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, step: 0.01, hint: "Astdicke-Erhalt" },
+                    { key: "leaf", label: "Blattdichte", min: 0, max: 1, step: 0.01, hint: "kahl (0) ↔ voll (1)" },
+                ],
+                apply: (nd) => {
+                    nd.conifer = nd.api >= 0.72;
+                    this._workshopRegrowRecipe(bp, nd, bp._grownSeed || `${bp._grownSpecies}-studio`);
+                },
+                dice: () =>
+                    this._workshopRegrowRecipe(
+                        bp,
+                        bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar),
+                        `${bp._grownSpecies}-studio-${Math.floor(Math.random() * 1e9).toString(36)}`
+                    ),
+                reset: () => {
+                    delete bp._recipeDials;
+                    this._workshopRegrowRecipe(bp, this._treeRecipeDials(bp._grownSpecies, grammar), `${bp._grownSpecies}-studio`);
+                },
+            };
+        }
+        if (kind === "rock") {
+            const cur = bp._rockRecipe || { round: 0.4, rough: 0.5, elong: 0.25, strat: 0.12 };
+            return {
+                cur: Object.assign({}, cur),
+                dials: [
+                    { key: "round", label: "Rundheit", min: 0.05, max: 0.9, step: 0.01, hint: "kantig ↔ gerundet" },
+                    { key: "rough", label: "Rauheit", min: 0.05, max: 1, step: 0.01, hint: "glatt ↔ bruchig" },
+                    { key: "elong", label: "Streckung", min: 0.05, max: 0.8, step: 0.01, hint: "gedrungen ↔ länglich" },
+                    { key: "strat", label: "Schichtung", min: 0, max: 0.5, step: 0.01, hint: "massiv ↔ sedimentär" },
+                ],
+                apply: (nd) => this._workshopRegrowRock(bp, nd, bp._rockSeedBase),
+                dice: () =>
+                    this._workshopRegrowRock(bp, bp._rockRecipe || cur, (Math.floor(Math.random() * 1e8) + 1) >>> 0),
+                reset: () => this._workshopRegrowRock(bp, null, null),
+            };
+        }
+        // crystal
+        const first = bp.parts.find((p) => p && p.shape === "crystalPoint") || {};
+        const cur = bp._crystalRecipe || {
+            facets: Number.isFinite(first.facets) ? first.facets : 6,
+            termFrac: Number.isFinite(first.termFrac) ? first.termFrac : 0.32,
+        };
+        return {
+            cur: Object.assign({}, cur),
+            dials: [
+                { key: "facets", label: "Facetten", min: 3, max: 12, step: 1, hint: "Prisma-Seiten (Quarz = 6)" },
+                { key: "termFrac", label: "Spitze", min: 0.05, max: 0.9, step: 0.01, hint: "kurze ↔ lange Termination" },
+            ],
+            apply: (nd) => this._workshopRegrowCrystal(bp, nd, bp._crystalSeedBase),
+            dice: () =>
+                this._workshopRegrowCrystal(bp, bp._crystalRecipe || cur, (Math.floor(Math.random() * 1e8) + 1) >>> 0),
+            reset: () => this._workshopRegrowCrystal(bp, null, null),
+        };
+    }
+
+    // Cache leeren + Vorschau neu bauen (KEIN Panel-Neubau → der Slider-Drag behält seinen Fokus).
+    _workshopInvalidateAndRebuild(bp) {
+        if (this.state.archFlattenCache && this.state.archFlattenCache.delete) this.state.archFlattenCache.delete(bp.name);
+        if (this.state.archMergedGeomCache && this.state.archMergedGeomCache.delete)
+            this.state.archMergedGeomCache.delete(bp.name);
+        if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+    }
+
+    // BAUM-Regrow: die Dials + Same durch die EINE Pipeline (`_growTreeBlueprintRich` → treeParams →
+    // growSkeleton) → neue parts + skeleton in den Bauplan schreiben + Vorschau neu bauen.
     _workshopRegrowRecipe(bp, dials, seedStr) {
         const species = bp && bp._grownSpecies;
         const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
@@ -72685,10 +72775,80 @@ class AnazhRealm {
         bp._skeleton = skeleton;
         bp._recipeDials = dials;
         bp._grownSeed = seedStr;
-        if (this.state.archFlattenCache && this.state.archFlattenCache.delete) this.state.archFlattenCache.delete(bp.name);
-        if (this.state.archMergedGeomCache && this.state.archMergedGeomCache.delete)
-            this.state.archMergedGeomCache.delete(bp.name);
-        if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+        this._workshopInvalidateAndRebuild(bp);
+    }
+
+    // FELS-Regrow: schreibt die Geologie-Dials + Same als Override auf JEDE noiserock-Part (die
+    // geteilte `buildBoulderGeometry` liest sie). null = Reset (Overrides entfernen → haerte-Default).
+    _workshopRegrowRock(bp, dials, seedBase) {
+        if (!bp || !Array.isArray(bp.parts)) return;
+        const reset = !dials;
+        let idx = 0;
+        for (const p of bp.parts) {
+            if (!p || p.shape !== "noiserock") continue;
+            if (reset) {
+                delete p.rockDials;
+                delete p.rockSeed;
+            } else {
+                p.rockDials = { round: dials.round, rough: dials.rough, elong: dials.elong, strat: dials.strat };
+                if (Number.isFinite(seedBase)) p.rockSeed = (seedBase + idx * 7919) >>> 0;
+            }
+            idx++;
+        }
+        if (reset) {
+            delete bp._rockRecipe;
+            delete bp._rockSeedBase;
+        } else {
+            bp._rockRecipe = Object.assign({}, dials);
+            if (Number.isFinite(seedBase)) bp._rockSeedBase = seedBase;
+        }
+        this._workshopInvalidateAndRebuild(bp);
+    }
+
+    // KRISTALL-Regrow: schreibt Facetten/Termination auf JEDE crystalPoint-Part (die geteilte
+    // `buildCrystalPointGeometry` liest sie schon). Der Same jittert je Part → ein Kristall-CLUSTER
+    // variiert (nicht alle identisch). null = Reset (die beim ersten Edit gesicherten Originale).
+    _workshopRegrowCrystal(bp, dials, seedBase) {
+        if (!bp || !Array.isArray(bp.parts)) return;
+        if (!dials) {
+            if (bp._crystalOrig) {
+                let i = 0;
+                for (const p of bp.parts) {
+                    if (!p || p.shape !== "crystalPoint") continue;
+                    const o = bp._crystalOrig[i++];
+                    if (o) {
+                        p.facets = o.facets;
+                        p.termFrac = o.termFrac;
+                    }
+                }
+            }
+            delete bp._crystalRecipe;
+            delete bp._crystalSeedBase;
+            this._workshopInvalidateAndRebuild(bp);
+            return;
+        }
+        if (!bp._crystalOrig) {
+            bp._crystalOrig = bp.parts
+                .filter((p) => p && p.shape === "crystalPoint")
+                .map((p) => ({ facets: p.facets, termFrac: p.termFrac }));
+        }
+        let idx = 0;
+        for (const p of bp.parts) {
+            if (!p || p.shape !== "crystalPoint") continue;
+            let fac = Math.round(dials.facets),
+                term = dials.termFrac;
+            if (Number.isFinite(seedBase)) {
+                const h = (seedBase + idx * 2654435761) >>> 0;
+                fac = Math.max(3, Math.min(12, Math.round(dials.facets) + ((h % 3) - 1)));
+                term = Math.max(0.05, Math.min(0.9, dials.termFrac + (((h >>> 8) % 100) / 100 - 0.5) * 0.2));
+            }
+            p.facets = fac;
+            p.termFrac = term;
+            idx++;
+        }
+        bp._crystalRecipe = { facets: Math.round(dials.facets), termFrac: dials.termFrac };
+        if (Number.isFinite(seedBase)) bp._crystalSeedBase = seedBase;
+        this._workshopInvalidateAndRebuild(bp);
     }
 
     // V8.03 — Material-Drop: identifiziert den getroffenen Part via Raycaster

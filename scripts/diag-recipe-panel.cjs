@@ -147,23 +147,72 @@ const server = http.createServer((req, res) => {
         r._workshopRegrowRecipe(eiche, r._treeRecipeDials("baum_eiche", null), "baum_eiche-studio");
         out.reset = bbox(eiche);
 
+        // Geometrie-Signatur (Fels/Kristall bauen prozedural beim Render → parts unveraendert,
+        // Vertices aendern sich). Baue via _buildFromBlueprint + summiere Vertex-Positionen.
+        const meshSig = (bp) => {
+            try {
+                const grp = r._buildFromBlueprint(bp, 0, undefined, {});
+                if (!grp) return { err: "no mesh" };
+                let sum = 0, verts = 0;
+                grp.traverse((o) => {
+                    if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
+                        const p = o.geometry.attributes.position; verts += p.count;
+                        for (let i = 0; i < p.count; i++) sum += p.getX(i) * 1.1 + p.getY(i) * 1.3 + p.getZ(i) * 1.7;
+                    }
+                });
+                try { r._disposeSoulGroup && r._disposeSoulGroup(grp); } catch (_e) {}
+                return { sig: Math.round(sum * 1000) / 1000, verts };
+            } catch (e) { return { err: String(e && e.message || e) }; }
+        };
+
+        // 6) FELS (felsbrocken): Panel + 4 Regler? Dial (Rundheit) + Saat aendern die Geometrie?
+        const fels = s.blueprints.felsbrocken;
+        if (fels) {
+            r._ensureWorkshopState().selectedBlueprint = "felsbrocken";
+            r._workshopRenderRecipePanel(fels);
+            const fReg = panel ? panel.querySelectorAll('input[type="range"]').length : 0;
+            const fSichtbar = !!(panel && !panel.hidden);
+            const g0 = meshSig(fels);
+            r._workshopRegrowRock(fels, { round: 0.85, rough: 0.9, elong: 0.6, strat: 0.4 }, null);
+            const g1 = meshSig(fels);
+            r._workshopRegrowRock(fels, { round: 0.85, rough: 0.9, elong: 0.6, strat: 0.4 }, 111);
+            const gA = meshSig(fels);
+            r._workshopRegrowRock(fels, { round: 0.85, rough: 0.9, elong: 0.6, strat: 0.4 }, 222);
+            const gB = meshSig(fels);
+            out.fels = { sichtbar: fSichtbar, regler: fReg, dialGeaendert: g0.sig !== g1.sig, saatGeaendert: gA.sig !== gB.sig, sigs: [g0.sig, g1.sig, gA.sig, gB.sig] };
+        }
+
+        // 7) KRISTALL (kristall_geode): Panel + 2 Regler? Facetten + Saat aendern die Geometrie?
+        const kris = s.blueprints.kristall_geode;
+        if (kris) {
+            r._ensureWorkshopState().selectedBlueprint = "kristall_geode";
+            r._workshopRenderRecipePanel(kris);
+            const kReg = panel ? panel.querySelectorAll('input[type="range"]').length : 0;
+            const kSichtbar = !!(panel && !panel.hidden);
+            const c0 = meshSig(kris);
+            r._workshopRegrowCrystal(kris, { facets: 12, termFrac: 0.8 }, null);
+            const c1 = meshSig(kris);
+            r._workshopRegrowCrystal(kris, { facets: 6, termFrac: 0.3 }, 111);
+            const cA = meshSig(kris);
+            r._workshopRegrowCrystal(kris, { facets: 6, termFrac: 0.3 }, 222);
+            const cB = meshSig(kris);
+            out.kristall = { sichtbar: kSichtbar, regler: kReg, dialGeaendert: c0.sig !== c1.sig, saatGeaendert: cA.sig !== cB.sig, sigs: [c0.sig, c1.sig, cA.sig, cB.sig] };
+        }
+
         return out;
     });
     console.log(JSON.stringify(D, null, 1));
-    const ok =
-        D.panel &&
-        D.panel.sichtbar &&
-        D.panel.regler === 5 &&
-        D.panel.wuerfel &&
-        D.nichtBaum_versteckt &&
-        D.dialZug &&
-        D.dialZug.geaendert &&
-        D.saatWuerfel &&
-        D.saatWuerfel.andereGestalt;
+    const treeOK =
+        D.panel && D.panel.sichtbar && D.panel.regler === 5 && D.panel.wuerfel && D.nichtBaum_versteckt &&
+        D.dialZug && D.dialZug.geaendert && D.saatWuerfel && D.saatWuerfel.andereGestalt;
+    const felsOK = D.fels && D.fels.sichtbar && D.fels.regler === 4 && D.fels.dialGeaendert && D.fels.saatGeaendert;
+    const krisOK = D.kristall && D.kristall.sichtbar && D.kristall.regler === 2 && D.kristall.dialGeaendert && D.kristall.saatGeaendert;
+    console.log(`\nBAUM: ${treeOK ? "✅" : "❌"}  FELS: ${felsOK ? "✅" : "❌"}  KRISTALL: ${krisOK ? "✅" : "❌"}`);
+    const ok = treeOK && felsOK && krisOK;
     console.log(
         ok
-            ? "\n✅ REZEPT-REGLER PRUEFBAR: Panel + 5 Regler + Wuerfel, Dial+Saat aendern die Geometrie live."
-            : "\n❌ Etwas fehlt — siehe oben."
+            ? "✅ REZEPT-REGLER PRUEFBAR fuer BAUM · FELS · KRISTALL: Regler + Saat-Wuerfel aendern die Geometrie live."
+            : "❌ Etwas fehlt — siehe oben."
     );
     await browser.close();
     server.close();
