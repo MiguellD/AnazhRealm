@@ -63148,6 +63148,60 @@ class AnazhRealm {
         }
         this._foundryRewarmColdTrees();
     }
+    // ==================== WETTER: sichtbarer Regen ====================
+    // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
+    // sichtbare Niederschlag: eine Punktwolke, die dem Spieler folgt + faellt, bei rainy/stormy.
+    _ensureRainSystem() {
+        if (this._rainSystem) return this._rainSystem;
+        if (!this.state.scene) return null;
+        try {
+            const T = THREE;
+            const N = 1800;
+            const geo = new T.BufferGeometry();
+            const pos = new Float32Array(N * 3);
+            for (let i = 0; i < N; i++) {
+                pos[i * 3] = (Math.random() - 0.5) * 70;
+                pos[i * 3 + 1] = Math.random() * 42 - 6;
+                pos[i * 3 + 2] = (Math.random() - 0.5) * 70;
+            }
+            geo.setAttribute("position", new T.BufferAttribute(pos, 3));
+            const MatCtor = T.PointsNodeMaterial || T.PointsMaterial;
+            const mat = new MatCtor({ color: 0x9fb0c8, size: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
+            const mesh = new T.Points(geo, mat);
+            mesh.frustumCulled = false;
+            mesh.renderOrder = 5;
+            this.state.scene.add(mesh);
+            this._rainSystem = { mesh, lastT: null };
+        } catch (_e) {
+            this._rainSystem = null;
+        }
+        return this._rainSystem;
+    }
+    _tickRain(currentTime) {
+        const st = this.state;
+        const wet = st.weather === "rainy" || st.weather === "stormy";
+        if (!wet) {
+            if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
+            return;
+        }
+        const sys = this._ensureRainSystem();
+        if (!sys || !sys.mesh) return;
+        sys.mesh.visible = true;
+        const p = st.playerMesh ? st.playerMesh.position : null;
+        if (p) sys.mesh.position.set(p.x, p.y, p.z);
+        if (sys.mesh.material) sys.mesh.material.opacity = st.weather === "stormy" ? 0.62 : 0.42;
+        const now = currentTime || 0;
+        if (sys.lastT == null) sys.lastT = now;
+        const dt = Math.min(0.1, Math.max(0, (now - sys.lastT) / 1000));
+        sys.lastT = now;
+        const speed = st.weather === "stormy" ? 36 : 24;
+        const arr = sys.mesh.geometry.attributes.position.array;
+        for (let i = 1; i < arr.length; i += 3) {
+            arr[i] -= speed * dt;
+            if (arr[i] < -6) arr[i] += 42;
+        }
+        sys.mesh.geometry.attributes.position.needsUpdate = true;
+    }
 
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
@@ -77989,6 +78043,7 @@ class AnazhRealm {
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
+        this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);
