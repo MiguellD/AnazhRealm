@@ -984,7 +984,9 @@ function pushCrystal(geos,base,dir,len,rad,cB,cT){
     const geo=_core.buildCrystalPointGeometry(THREE,{facets:6,rX:rad,rZ:rad,length:len,termFrac:0.30,shoulderScale:0.9,angleOffset:0.26,bottomCap:false,withColor:true,colBase:_hx(cB),colTip:_hx(cT)});
     if(geo){
       const _d=new THREE.Vector3(dir[0],dir[1],dir[2]).normalize();
-      geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),_d));
+      // r128-BufferGeometry hat KEIN applyQuaternion (nur applyMatrix4) — die Rotation als
+      // Matrix4 anwenden (sonst TypeError -> 0 Kristall-Geometrie, im Portal UND im Foundry).
+      geo.applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),_d)));
       geo.translate(base[0]+_d.x*len*0.5, base[1]+_d.y*len*0.5, base[2]+_d.z*len*0.5);
       geos.push(geo);
       return;

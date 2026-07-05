@@ -62902,8 +62902,10 @@ class AnazhRealm {
             blume_mohn: "blume",
             blume_gross: "blume",
             blume: "blume",
-            // Straeucher/Farne bleiben AnazhRealm-nativ (der Vorlagen-strauch ist ~208k Verts =
-            // zu schwer fuer den dichten Unterwuchs; AnazhRealms Busch ist dort richtig).
+            // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
+            // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
+            busch_hazel: "strauch",
+            busch: "strauch",
         };
         return map[species] || null;
     }
@@ -62970,7 +62972,7 @@ class AnazhRealm {
         // Alle Vorlagen-Presets: Baeume (LOD 0-2) + Fels/Kristall/Blume/Strauch. Der Rest laedt
         // on-demand (_foundryFlattenFor fragt fehlende Art:Variante:LOD nach).
         return {
-            species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "blume"],
+            species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "kristalle", "blume", "strauch"],
             seeds: [1, 2, 3, 4],
             lods: [0, 1, 2],
         };
@@ -63033,7 +63035,10 @@ class AnazhRealm {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
         const variant = ((entry.seed >>> 0) % 4) + 1;
-        const lod = this._foundryLodForEntry(entry);
+        let lod = this._foundryLodForEntry(entry);
+        // Der Vorlagen-strauch ist bei lod0 ~208k Verts -> fuer den dichten Unterwuchs auf die
+        // leichteren Stufen (>=1, ~77k/16k) zwingen. Baeume/Fels/Blume bleiben distanz-frei.
+        if (preset === "strauch") lod = Math.max(1, lod);
         const key = preset + "|" + variant + "|" + lod;
         const group = f.cache.get(key);
         if (group === undefined) {
