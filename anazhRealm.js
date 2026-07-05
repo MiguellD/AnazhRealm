@@ -22125,11 +22125,6 @@ class AnazhRealm {
     // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
     _tickFoliageGrowth() {
-        // Foundry-Baeume budget-gedrosselt nachbauen (die schwere Vorlagen-Geometrie gehoert
-        // frame-budgetiert, nicht in einen 300-Burst): ein kleiner Batch je Frame, NUR wenn der
-        // Frame Luft hat (_foundryRewarmColdTrees prueft _frameOverBudget selbst). So aecht
-        // AnazhRealm nicht mehr unter der Foundry-Last waehrend die Perf schon tief ist.
-        this._foundryRewarmColdTrees();
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
         // V18.282 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame über Budget (gemessene Frame-ZEIT
@@ -61201,25 +61196,11 @@ class AnazhRealm {
     // bekommen. Determinismus garantiert: gleiches Seed → gleicher Mesh.
     _rebuildArchitectureMesh(entry) {
         if (!this.state.scene || !entry) return null;
-        // FOUNDRY: ein Vorlagen-Baum-Eintrag rendert die ECHTE Vorlagen-Geometrie (buildInstance),
-        // in AnazhRealms BESTEHENDEM HISM instanziert (harvest/collision/cull/LOD kommen vom
-        // Eintrag). Nur im Browser (headless -> _foundryEnabled false -> der normale AnazhRealm-Pfad).
-        const _fpreset = this._foundryEnabled() ? this._foundryPresetFor(entry.type) : null;
-        if (_fpreset) {
-            const fflat = this._foundryFlattenFor(entry, _fpreset);
-            if (fflat) {
-                this._archInstanceAdd(entry, fflat);
-                return null;
-            }
-            if (fflat === false) {
-                // Foundry-Asset fehlgeschlagen/leer (z.B. Kristall-Merge) -> AnazhRealm-Pfad, damit
-                // IMMER etwas rendert (Fall-through unten) statt unsichtbar zu bleiben.
-            } else {
-                // fflat === null = Asset noch nicht geladen -> Eintrag bleibt cold (der Culling-Tick
-                // baut ihn nach, sobald die Bibliothek steht) -> KEIN AnazhRealm-Ding dazwischen.
-                return null;
-            }
-        }
+        // DIE SAUBERE PIPELINE (in-process): der Baum wird aus dem exakten Vorlagen-Rezept
+        // GEWACHSEN (`_archFlattenBlueprint` -> `_growTreeBlueprintRich` -> phyto-core; die per-Art
+        // Dials `SPECIES_PHYTO_DIALS` sind byte-exakt die Vorlagen-PRESETS). Kein iframe-Geometrie-
+        // Transfer, kein zweiter GPU-Kontext, kein Crash. AnazhRealms EIGENES LOD/Impostor/
+        // Crossfade greift automatisch (es ist AnazhRealms Geometrie). Portal bleibt das Studio.
         // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
@@ -62833,14 +62814,12 @@ class AnazhRealm {
     // aendert die Baeume in AnazhRealm. GRACEFUL: ohne echten Browser (headless Gate) faellt der
     // Wald auf den AnazhRealm-Pfad zurueck (Engine-Grenze, wie der Null-Renderer den GPU stubt).
     _foundryEnabled() {
-        if (typeof window !== "undefined" && window.__anazhHeadlessNullRenderer) return false;
-        if (this._useAssetFoundry === false) return false;
-        // NOT-AUS-Schalter (Absturz-Rettung): in der Konsole `localStorage.anazhNoFoundry='1'`
-        // + Reload -> die Foundry bleibt aus, die Welt laeuft auf den eigenen Baeumen (stabil).
-        try {
-            if (typeof localStorage !== "undefined" && localStorage.getItem("anazhNoFoundry")) return false;
-        } catch (_e) {}
-        return typeof document !== "undefined" && typeof window !== "undefined" && !!(this.state && this.state.scene);
+        // RETIRED — der iframe-Geometrie-Foundry (zweiter GPU-Kontext) war der Crash + die
+        // Attrappe. Die Baeume wachsen jetzt IN-PROCESS aus dem exakten Vorlagen-Rezept
+        // (`_growTreeBlueprintRich` + phyto-core; `SPECIES_PHYTO_DIALS` = byte-exakt die PRESETS)
+        // -> kein zweiter Kontext, kein Crash, und AnazhRealms LOD/Impostor/Crossfade greift.
+        // Das Portal bleibt das begehbare Studio.
+        return false;
     }
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
