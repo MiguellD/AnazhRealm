@@ -32800,8 +32800,8 @@ class AnazhRealm {
         // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
         const uTime = uniform(0.0);
         const uFlowSpeed = uniform(0.5);
-        const uDeep = uniform(new THREE.Color(0x16364f));
-        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uDeep = uniform(new THREE.Color(0x0d2e4f)); // Vorlage: Beer-Lambert deepC (exp(-wK*0.85))
+        const uShallow = uniform(new THREE.Color(0x5aacc6)); // Vorlage: Beer-Lambert shallowC, heller/cyaner
         const uFoam = uniform(new THREE.Color(0xdff1ff));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
@@ -34977,8 +34977,8 @@ class AnazhRealm {
         const uTime = uniform(0.0);
         const uFlowDir = uniform(new THREE.Vector2(0, -1));
         const uFlowSpeed = uniform(0.62);
-        const uDeep = uniform(new THREE.Color(0x16364f));
-        const uShallow = uniform(new THREE.Color(0x3f88a8));
+        const uDeep = uniform(new THREE.Color(0x0d2e4f)); // Vorlage: Beer-Lambert deepC (exp(-wK*0.85))
+        const uShallow = uniform(new THREE.Color(0x5aacc6)); // Vorlage: Beer-Lambert shallowC, heller/cyaner
         const uFoam = uniform(new THREE.Color(0xdff1ff));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
