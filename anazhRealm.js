@@ -60016,9 +60016,7 @@ class AnazhRealm {
             // alphaTest bleibt fürs Dither-Crossfade am L0→L1-Band).
             let bladeLeaf = null;
             if (bladeGeom) {
-                const bladeMat = this._sharedFoliageMaterial(
-                    Object.assign({}, foliageMatOpts, { foliageBlade: true })
-                );
+                const bladeMat = this._sharedFoliageMaterial(Object.assign({}, foliageMatOpts, { foliageBlade: true }));
                 bladeLeaf = { geom: bladeGeom, mat: bladeMat, localMatrix: new THREE.Matrix4() };
             }
             const foliageMat = foliageGeom ? this._sharedFoliageMaterial(foliageMatOpts) : null;
@@ -62861,7 +62859,16 @@ class AnazhRealm {
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
         if (this._foundry) return this._foundry;
-        const f = { iframe: null, ready: false, pending: new Map(), reqSeq: 1, cache: new Map(), retry: [], _prefetching: false, recipes: null };
+        const f = {
+            iframe: null,
+            ready: false,
+            pending: new Map(),
+            reqSeq: 1,
+            cache: new Map(),
+            retry: [],
+            _prefetching: false,
+            recipes: null,
+        };
         this._foundry = f;
         try {
             const iframe = document.createElement("iframe");
@@ -63030,7 +63037,9 @@ class AnazhRealm {
                 // RGB × Vertex-Farbe (die Vorlagen-Blattfarbe faerbt den Atlas).
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
                 const canvas =
-                    core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document, { cell3: "needle" }) : null;
+                    core && typeof core.bakeLeafAtlasCanvas === "function"
+                        ? core.bakeLeafAtlasCanvas(document, { cell3: "needle" })
+                        : null;
                 if (canvas && TSL.texture) {
                     const tex = new T.CanvasTexture(canvas);
                     tex.colorSpace = T.SRGBColorSpace;
@@ -63068,14 +63077,24 @@ class AnazhRealm {
                 if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
                 const vcount = m.position.array.length / 3;
                 if (m.color && m.color.array && m.color.array.length >= vcount * 3)
-                    geo.setAttribute("color", new T.BufferAttribute(m.color.array, m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3));
+                    geo.setAttribute(
+                        "color",
+                        new T.BufferAttribute(
+                            m.color.array,
+                            m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3
+                        )
+                    );
                 else {
                     // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER
                     // (fehlt es -> schwarz/Crash, die schwarze Konifere). Fehlt die Vorlagen-Farbe,
                     // ein kind-Default (bark braun, laub gruen) fuellen statt schwarz.
                     const def = m.kind === "bark" || m.kind === "stem" ? [0.32, 0.22, 0.13] : [0.2, 0.34, 0.13];
                     const carr = new Float32Array(vcount * 3);
-                    for (let v = 0; v < vcount; v++) { carr[v * 3] = def[0]; carr[v * 3 + 1] = def[1]; carr[v * 3 + 2] = def[2]; }
+                    for (let v = 0; v < vcount; v++) {
+                        carr[v * 3] = def[0];
+                        carr[v * 3 + 1] = def[1];
+                        carr[v * 3 + 2] = def[2];
+                    }
                     geo.setAttribute("color", new T.BufferAttribute(carr, 3));
                 }
                 if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
@@ -63104,7 +63123,9 @@ class AnazhRealm {
                 }
             }
             if (needsWarm) {
-                try { this._warmCompilePipeline(group, false); } catch (_e2) {}
+                try {
+                    this._warmCompilePipeline(group, false);
+                } catch (_e2) {}
             }
             return group;
         }
@@ -63116,7 +63137,19 @@ class AnazhRealm {
         // waren die Wurzel). lod0/lod1 laedt on-demand NUR fuer die naechsten Baeume
         // (_foundryFlattenFor + _foundryLodForEntry) -> leicht + fluessig (Vorlagen-LOD-Philosophie).
         return {
-            species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "kristalle", "blume", "strauch"],
+            species: [
+                "eiche",
+                "fichte",
+                "tanne",
+                "birke",
+                "weide",
+                "mammut",
+                "findling",
+                "basalt",
+                "kristalle",
+                "blume",
+                "strauch",
+            ],
             // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
             // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
             // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..16.
@@ -63195,7 +63228,7 @@ class AnazhRealm {
         return 16;
     }
     _foundryVariantFor(seed) {
-        const h = Math.imul((seed >>> 0) || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
+        const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
         return (h % this._foundryVariantCount()) + 1;
     }
     // Der Foundry-Cache ist eine LRU (nicht ein ewiger Hort): ein Treffer wandert nach hinten
@@ -63261,7 +63294,12 @@ class AnazhRealm {
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
-                leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I, leafKey: "f:" + key + ":" + p });
+                leaves.push({
+                    geom: child.geometry,
+                    mat: child.material,
+                    localMatrix: I,
+                    leafKey: "f:" + key + ":" + p,
+                });
             }
             group._foundryFlat = leaves.length ? { instanceable: true, reason: "foundry", leaves } : false;
         }
@@ -63309,7 +63347,16 @@ class AnazhRealm {
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter".
     setSeason(name) {
-        const map = { fruehling: "spring", frühling: "spring", spring: "spring", sommer: "summer", summer: "summer", herbst: "autumn", autumn: "autumn", winter: "winter" };
+        const map = {
+            fruehling: "spring",
+            frühling: "spring",
+            spring: "spring",
+            sommer: "summer",
+            summer: "summer",
+            herbst: "autumn",
+            autumn: "autumn",
+            winter: "winter",
+        };
         const key = map[String(name || "").toLowerCase()];
         if (!key) return false;
         const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
@@ -72689,9 +72736,30 @@ class AnazhRealm {
             return {
                 cur: Object.assign({}, cur),
                 dials: [
-                    { key: "api", label: "Apikaldominanz", min: 0, max: 1, step: 0.01, hint: "Nadel-Kegel (1) ↔ Laub (0)" },
-                    { key: "slim", label: "Schlankheit", min: 0, max: 1, step: 0.01, hint: "gedrungen (0) ↔ schlank (1)" },
-                    { key: "trop", label: "Gravitropismus", min: -0.3, max: 1, step: 0.01, hint: "aufrecht (−) ↔ hängend (+)" },
+                    {
+                        key: "api",
+                        label: "Apikaldominanz",
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        hint: "Nadel-Kegel (1) ↔ Laub (0)",
+                    },
+                    {
+                        key: "slim",
+                        label: "Schlankheit",
+                        min: 0,
+                        max: 1,
+                        step: 0.01,
+                        hint: "gedrungen (0) ↔ schlank (1)",
+                    },
+                    {
+                        key: "trop",
+                        label: "Gravitropismus",
+                        min: -0.3,
+                        max: 1,
+                        step: 0.01,
+                        hint: "aufrecht (−) ↔ hängend (+)",
+                    },
                     { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, step: 0.01, hint: "Astdicke-Erhalt" },
                     { key: "leaf", label: "Blattdichte", min: 0, max: 1, step: 0.01, hint: "kahl (0) ↔ voll (1)" },
                 ],
@@ -72707,7 +72775,11 @@ class AnazhRealm {
                     ),
                 reset: () => {
                     delete bp._recipeDials;
-                    this._workshopRegrowRecipe(bp, this._treeRecipeDials(bp._grownSpecies, grammar), `${bp._grownSpecies}-studio`);
+                    this._workshopRegrowRecipe(
+                        bp,
+                        this._treeRecipeDials(bp._grownSpecies, grammar),
+                        `${bp._grownSpecies}-studio`
+                    );
                 },
             };
         }
@@ -72737,7 +72809,14 @@ class AnazhRealm {
             cur: Object.assign({}, cur),
             dials: [
                 { key: "facets", label: "Facetten", min: 3, max: 12, step: 1, hint: "Prisma-Seiten (Quarz = 6)" },
-                { key: "termFrac", label: "Spitze", min: 0.05, max: 0.9, step: 0.01, hint: "kurze ↔ lange Termination" },
+                {
+                    key: "termFrac",
+                    label: "Spitze",
+                    min: 0.05,
+                    max: 0.9,
+                    step: 0.01,
+                    hint: "kurze ↔ lange Termination",
+                },
             ],
             apply: (nd) => this._workshopRegrowCrystal(bp, nd, bp._crystalSeedBase),
             dice: () =>
@@ -72748,7 +72827,8 @@ class AnazhRealm {
 
     // Cache leeren + Vorschau neu bauen (KEIN Panel-Neubau → der Slider-Drag behält seinen Fokus).
     _workshopInvalidateAndRebuild(bp) {
-        if (this.state.archFlattenCache && this.state.archFlattenCache.delete) this.state.archFlattenCache.delete(bp.name);
+        if (this.state.archFlattenCache && this.state.archFlattenCache.delete)
+            this.state.archFlattenCache.delete(bp.name);
         if (this.state.archMergedGeomCache && this.state.archMergedGeomCache.delete)
             this.state.archMergedGeomCache.delete(bp.name);
         if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
