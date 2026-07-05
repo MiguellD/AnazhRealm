@@ -245,6 +245,34 @@ function superR(phi,m,n1,n2,n3,a,b){
 }
 /* ---------- Blatt / Bluetenblatt als gefaechertes Kaertchen (Weltframe) ---- */
 function pushLeaf(arr,center,dirOut,up,scale,lp,color,type,sway,phase,omega,cup){
+  // DER GETEILTE SAMEN: die 30-Vert-Superformel-Blatt-KLINGE (Kontur + Quer-Mulde) lebt in
+  // phyto-core.js (buildLeafBlades) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie-
+  // REZEPTUR ist geteilt (identische superR-Kontur, cup, 14 Segmente, Basis). Divergenzen: das
+  // Wind-Attribut-Schema (AnazhRealm aFlex/aPhase — Vorlage aWind/aCenter/aType, HIER angehängt)
+  // und eine sub-mikron Float-Noise (≤1 ULP, ~1e-6 m; buildLeafBlades' Additions-Reihenfolge +
+  // Math.hypot = AnazhRealms eingefrorene Arithmetik) → pixel-identisch, kein Look-Change. Alle
+  // gewachsenen dir sind unit → das dir-Normalisieren ist ein No-op. Fallback → Inline.
+  const __core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(__core&&typeof __core.buildLeafBlades==='function'){
+    const _r=__core.buildLeafBlades([{pos:center,dir:dirOut,up:up,scale:scale,needle:false,sway:sway,phase:phase}],{leafColor:[color.r,color.g,color.b],scale:1,cup:cup,leafShape:lp});
+    if(_r&&_r.count){
+      const g=new THREE.BufferGeometry();
+      const nV=_r.positions.length/3;
+      g.setAttribute('position',new THREE.Float32BufferAttribute(_r.positions,3));
+      g.setAttribute('normal',new THREE.Float32BufferAttribute(_r.normals,3));
+      g.setAttribute('uv',new THREE.Float32BufferAttribute(_r.uvs,2));
+      g.setAttribute('color',new THREE.Float32BufferAttribute(_r.colors,3));
+      const aw=new Float32Array(nV*3),ac=new Float32Array(nV*3),at=new Float32Array(nV);
+      const _lph=sway*1.5+center[0]*0.6+center[2]*0.6,_lom=clamp(2.6-sway*1.6,0.5,2.6);
+      for(let i=0;i<nV;i++){aw[i*3]=sway;aw[i*3+1]=_lph;aw[i*3+2]=_lom;ac[i*3]=center[0];ac[i*3+1]=center[1];ac[i*3+2]=center[2];at[i]=type;}
+      g.setAttribute('aWind',new THREE.BufferAttribute(aw,3));
+      g.setAttribute('aCenter',new THREE.BufferAttribute(ac,3));
+      g.setAttribute('aType',new THREE.BufferAttribute(at,1));
+      g.setIndex(Array.from(_r.indices));
+      arr.push(g);
+      return;
+    }
+  }
   const right=vnorm(vcross(dirOut,up));
   const u2=vnorm(vcross(right,dirOut));
   const seg=14,positions=[],idx=[],uvs=[];
