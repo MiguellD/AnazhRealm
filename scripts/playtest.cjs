@@ -32625,13 +32625,17 @@ async function checkBandWHWald(ctx) {
         // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
         // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
         // statische _jung/_alt/_breit-Variante mehr (der V18.257-Legacy-Schnitt bleibt).
-        // V9.56-i — die Probe wandert mit dem Code: der Baum-Spawn zieht jetzt durch die
-        // Asset-Foundry (`_foundryPlantTree(d.sp,…)`, die 1:1 die Vorlagen-Bäume pflanzt und
-        // headless sauber auf `_enqueueVegetationSpawn` zurückfällt). Gespawnt wird weiter die
-        // KANONISCHE Art `d.sp` (tag-neutral, keine statische Variante) — die Invariante hält.
+        // V9.56-i — die Probe wandert mit dem Code (V18.390 DIE LOD-WURZEL): der Wald wächst die
+        // Variante region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`) NACH dem Nischen-
+        // Sieg und spawnt sie als `spawnType` — den GEWACHSENEN Bauplan `grown_<sp>_v<idx>` (er
+        // trägt `_lodSpecies` → L0/L1/L2 + Impostor), mit der kanonischen Art `d.sp` als Fallback.
+        // Das STRUKTURELLE Gesetz hält: die Variante wächst NACH dem Sieg (kein statischer _jung/
+        // _alt/_breit-Bauplan im Generator, keine im Pool) — nur die kanonische Basis ODER der
+        // grammatik-gewachsene grown-Schlüssel tritt an.
         out.variantPickAfterWin =
-            /_growTreeBlueprintForSpawn\(d\.sp/.test(forestSrc) &&
-            /(_enqueueVegetationSpawn|_foundryPlantTree)\(\s*d\.sp/.test(forestSrc) &&
+            /_growTreeBlueprintForSpawn\(\s*d\.sp/.test(forestSrc) &&
+            /spawnType\s*=\s*grownBp[\s\S]{0,80}?grownKey\s*:\s*d\.sp/.test(forestSrc) &&
+            /_enqueueVegetationSpawn\(\s*spawnType\b/.test(forestSrc) &&
             !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
         // (4) GRÖSSEN-SPAN: die Größe wurde REICHER (reverse-J statt linear ±40 %) und
         // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:

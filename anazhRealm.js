@@ -66502,6 +66502,7 @@ class AnazhRealm {
         const freeBorn = entry.freeBorn === true;
         if (bp && Array.isArray(bp.parts) && !freeBorn) {
             const k = AnazhRealm.HARVEST_VOLUME_TO_UNITS || 4;
+            const volByMat = {};
             for (const part of bp.parts) {
                 if (!part || typeof part.material !== "string") continue;
                 const sx = Math.abs((part.size && part.size.x) || 1);
@@ -66514,7 +66515,21 @@ class AnazhRealm {
                 // Verhalten (min 1 Einheit/Part).
                 const units = Math.max(yieldMult >= 0.999 ? 1 : 0, Math.round(volume * k * yieldMult));
                 materials[part.material] = (materials[part.material] || 0) + units;
+                volByMat[part.material] = (volByMat[part.material] || 0) + volume;
                 totalParts++;
+            }
+            // M6 — DER ERTRAGS-SOCKEL: wer den Bruch erarbeitet (yieldMult > 0), erntet von JEDEM
+            // vorhandenen Material mindestens 1 Einheit. Seit die Bäume aus der GRAMMATIK wachsen
+            // (V18.258 — der Stamm ist ~40 dünne Tube-Segmente à ~0.01 m³ statt EIN dicker Zylinder),
+            // rundet bei reduziertem yieldMult (Faust an Hartholz, 0.34) jedes Segment einzeln auf 0
+            // → die Faust fällt die Eiche, bekommt aber KEIN Holz (holz-Volumen 0.35 m³ · round = 0).
+            // Der Sockel ist die WURZEL-Heilung (das Material lebt im Baum, die Ernte muss es geben);
+            // er greift nur, wo alles auf 0 rundet (bei yieldMult ≥ 0.999 gibt der Per-Part-max-1
+            // schon ≥ 1) → minimaler Eingriff, kein Voll-Ertrags-Drift.
+            if (yieldMult > 0) {
+                for (const mat in volByMat) {
+                    if (volByMat[mat] > 0 && !(materials[mat] > 0)) materials[mat] = 1;
+                }
             }
         }
         const blueprintName = entry.type;
