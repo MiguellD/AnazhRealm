@@ -74128,6 +74128,25 @@ class AnazhRealm {
             fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
             fl.intensity = F.base * a.lum * tint.lightMul;
         }
+        // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht von der sonnen-abgewandten Seite,
+        // SEITLICH versetzt (⟂ zur Sonne) → eine Gegenlicht-Kante, die Laub/Stamm gegen den Himmel
+        // abhebt. Farbe konstant kühl-blau (Himmels-Bounce, nicht sonnen-getönt); Intensität folgt
+        // dem Tageslicht (nachts mit lum ab → der Mond führt). Das 5. Vorlagen-Licht, das fehlte.
+        const rl = this.state.rimLight;
+        if (rl) {
+            const R = AnazhRealm.RIM_LIGHT;
+            rl.position.set(
+                focusX - lightDir.x * R.dist + lightDir.z * 24,
+                focusY - lightDir.y * R.dist + R.lift,
+                focusZ - lightDir.z * R.dist - lightDir.x * 24
+            );
+            if (rl.target) {
+                rl.target.position.set(focusX, focusY, focusZ);
+                rl.target.updateMatrixWorld();
+            }
+            rl.color.setRGB(R.r, R.g, R.b);
+            rl.intensity = R.base * a.lum * tint.lightMul;
+        }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
         // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
@@ -76450,6 +76469,13 @@ class AnazhRealm {
         fillLight.castShadow = false;
         scene.add(fillLight);
         scene.add(fillLight.target);
+        // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht (0xaaccff), OHNE Schatten, von der
+        // sonnen-abgewandten Seite — hebt Laub/Stamm-Kanten gegen den Himmel ab. Tag/Nacht-geführt.
+        const rimLight = new THREE.DirectionalLight(0xaaccff, 1.2);
+        rimLight.castShadow = false;
+        scene.add(rimLight);
+        scene.add(rimLight.target);
+        this.state.rimLight = rimLight;
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
@@ -82321,6 +82347,10 @@ AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
 // +22 m Hebung — formt die Schattenseite mit Laub-Farbe statt Ambient-Wash).
 AnazhRealm.KEY_BASE = 2.6;
 AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62, dist: 60, lift: 22 });
+// Vorlagen-RIM (phytogenesis Z.1294: DirectionalLight(0xaaccff, 1.2), von der sonnen-abgewandten
+// Seite): das kühle Gegenlicht, das die Laub-/Stamm-Kanten gegen den Himmel abhebt — das 5.
+// Licht der Vorlagen-Rig, das AnazhRealm fehlte (Schöpfer-Befund „Vorlage sculptet reicher").
+AnazhRealm.RIM_LIGHT = Object.freeze({ r: 0.667, g: 0.8, b: 1.0, base: 1.2, dist: 70, lift: 30 });
 // V18.351 — DIE SLOPE-SCHWELLEN DES GRAS-GATES (Schöpfer „noch nie eine Felswand mit Gras gesehen").
 // Gras voll bis `lo` (≈35°), verschwindet bis `hi` (≈52°) — sanfter Übergang, kein harter Schnitt.
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
