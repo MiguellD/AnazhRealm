@@ -63033,7 +63033,10 @@ class AnazhRealm {
         // (_foundryFlattenFor + _foundryLodForEntry) -> leicht + fluessig (Vorlagen-LOD-Philosophie).
         return {
             species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "kristalle", "blume", "strauch"],
-            seeds: [1, 2, 3, 4],
+            // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
+            // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
+            // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..12.
+            seeds: [1, 2, 3, 4, 5, 6, 7, 8],
             lods: [2],
         };
     }
@@ -63090,10 +63093,23 @@ class AnazhRealm {
     // Vorlagen-Geometrie (buildInstance), je Art:Variante:LOD:Teil ein eigener leafKey (eigene
     // InstancedMesh im BESTEHENDEN HISM -> Vielfalt + LOD + Instancing + Cull, kein Parallelpfad).
     // Null, wenn das Asset noch nicht geladen ist (Eintrag bleibt cold, der Culling-Tick baut nach).
+    // Die EINE Varianten-Quelle: aus dem region+positions-deterministischen Baum-Seed
+    // (_forestCellDarts) eine von N Vorlagen-Gestalten. N=12 (statt 4) bricht das Klon-Muster —
+    // jede Region würfelt ihren eigenen Wald (gleicher Seed == gleicher Baum, andere Region ==
+    // andere Mischung); + per-Instanz scale/yaw/tint. Der Preis: N distinkte Geometrien je
+    // Art/LOD leben im Speicher (das HISM referenziert sie -> kein LRU-Freigeben), also ist N
+    // die bewusste Balance Vielfalt<->Speicher (der Dichte-Regler dünnt das Gerenderte).
+    _foundryVariantCount() {
+        return 12;
+    }
+    _foundryVariantFor(seed) {
+        const h = Math.imul((seed >>> 0) || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
+        return (h % this._foundryVariantCount()) + 1;
+    }
     _foundryFlattenFor(entry, preset) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const variant = ((entry.seed >>> 0) % 4) + 1;
+        const variant = this._foundryVariantFor(entry.seed);
         let lod = this._foundryLodForEntry(entry);
         // Der Vorlagen-strauch ist bei lod0 ~208k Verts -> fuer den dichten Unterwuchs auf die
         // leichteren Stufen (>=1, ~77k/16k) zwingen. Baeume/Fels/Blume bleiben distanz-frei.
