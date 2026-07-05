@@ -970,6 +970,26 @@ function emitScree(P){
   return {bbox:true};
 }
 function pushCrystal(geos,base,dir,len,rad,cB,cT){
+  // DER GETEILTE SAMEN: das Kristall-Prisma lebt in phyto-core.js (buildCrystalPointGeometry) —
+  // dieselbe EINE Quelle, die AnazhRealm liest. Das kanonische y-aufrechte Prisma (bottomCap:false
+  // = Vorlage-treu, kein Boden-Deckel) wird von y-up nach `dir` orientiert (Quaternion) + so
+  // verschoben, dass der Fuss bei `base` liegt (Apex bei base+len·dir). Prisma-FORM (Länge/Schulter
+  // shF=0.70/Radius/Facetten/Farbe Fuss→Spitze) ist identisch zur Vorlage; nur die azimutale
+  // Facetten-Ausrichtung um die Achse folgt dem Quaternion statt perp(d) — ein 6-zähliger Spin
+  // um die Eigenachse = derselbe Kristall (jeder ist ohnehin zufällig gedreht). cB/cT sind
+  // [r,g,b] 0..1 → hex. Fallback → Inline.
+  const _core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(_core&&typeof _core.buildCrystalPointGeometry==='function'){
+    const _hx=(c)=>((Math.round(c[0]*255)<<16)|(Math.round(c[1]*255)<<8)|Math.round(c[2]*255));
+    const geo=_core.buildCrystalPointGeometry(THREE,{facets:6,rX:rad,rZ:rad,length:len,termFrac:0.30,shoulderScale:0.9,angleOffset:0.26,bottomCap:false,withColor:true,colBase:_hx(cB),colTip:_hx(cT)});
+    if(geo){
+      const _d=new THREE.Vector3(dir[0],dir[1],dir[2]).normalize();
+      geo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),_d));
+      geo.translate(base[0]+_d.x*len*0.5, base[1]+_d.y*len*0.5, base[2]+_d.z*len*0.5);
+      geos.push(geo);
+      return;
+    }
+  }
   const d=vnorm(dir),u=perp(d),v=vnorm(vcross(d,u)),M=6,shF=0.70;
   const ringAt=(t,rr)=>{const c=vadd(base,vscl(d,len*t)),a=[];for(let k=0;k<M;k++){const an=k/M*6.2831+0.26;a.push(vadd(vadd(c,vscl(u,Math.cos(an)*rr)),vscl(v,Math.sin(an)*rr)));}return a;};
   const b=ringAt(0,rad),sh=ringAt(shF,rad*0.9),apex=vadd(base,vscl(d,len));

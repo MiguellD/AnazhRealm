@@ -1117,6 +1117,10 @@
         const shF = 1 - termFrac;
         const shoulderScale = Number.isFinite(o.shoulderScale) ? o.shoulderScale : 0.9;
         const angOff = Number.isFinite(o.angleOffset) ? o.angleOffset : 0.26;
+        // opts.bottomCap: default TRUE (AnazhRealm schließt die Silhouette unten). Die Vorlage
+        // pushCrystal hat KEINEN Boden-Deckel (der Kristall sitzt in einem Basis-Klumpen) → sie
+        // reicht bottomCap:false → byte-treu zu ihrem Prisma; AnazhRealm bleibt unverändert.
+        const bottomCap = o.bottomCap !== false;
         const yBot = -L / 2,
             yTop = L / 2,
             yShoulder = yBot + shF * L;
@@ -1164,18 +1168,20 @@
         }
         for (let k = 0; k < M; k++) idx.push(apex, ss + k, ss + ((k + 1) % M));
         // Boden-Kappe — eigenes Zentrum + Boden-Ring-Kopie (schließt die Silhouette, unten weisend).
-        const botC = vb;
-        pos.push(0, yBot, 0);
-        if (withColor) cols.push(cB.r, cB.g, cB.b);
-        vb++;
-        const bs = vb;
-        for (let k = 0; k < M; k++) {
-            const b = ringB[k];
-            pos.push(b[0], b[1], b[2]);
+        if (bottomCap) {
+            const botC = vb;
+            pos.push(0, yBot, 0);
             if (withColor) cols.push(cB.r, cB.g, cB.b);
             vb++;
+            const bs = vb;
+            for (let k = 0; k < M; k++) {
+                const b = ringB[k];
+                pos.push(b[0], b[1], b[2]);
+                if (withColor) cols.push(cB.r, cB.g, cB.b);
+                vb++;
+            }
+            for (let k = 0; k < M; k++) idx.push(botC, bs + ((k + 1) % M), bs + k);
         }
-        for (let k = 0; k < M; k++) idx.push(botC, bs + ((k + 1) % M), bs + k);
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
         g.setIndex(idx);
