@@ -348,6 +348,21 @@ function pushLeafClusterQuad(arr,pos,dir,up,scale,color,sway,phase,omega,cell){
    da Vinci (Delta) · Apikaldominanz · Gravitropismus · Phyllotaxis (137.5)
  * ========================================================================== */
 function growTreeNodes(P){
+  // DER GETEILTE SAMEN: die Baum-Wuchs-Mathematik (da Vinci Δ · McMahon · Apikaldominanz ·
+  // Gravitropismus · Phyllotaxis · Whorls) lebt in phyto-core.js (growSkeleton) — DIESELBE
+  // Quelle, die AnazhRealm (Main + Voxel-Worker) liest. Ein Edit am Wuchs-Gesetz fliesst hier
+  // UND in AnazhRealm. Byte-treue Delegation: growSkeleton ist die reine Form dieser Funktion
+  // (seq statt Modul-rnd), gleiche Rückgabe {segs,leaves,trunkR,height,runMeta}, gleiches
+  // Blatt-Budget/count-Cap. Das LOD-Budget (__lod × window.PHYTO_LEAFBUDGET) reist als
+  // P.leafBudget hinein; die zwei Seiteneffekte (P._trunkR/_D, downstream von Wurzel/Rinde
+  // gelesen) werden aus dem Ergebnis gesetzt. Fallback auf den Inline-Bau, falls der Samen fehlt.
+  var __core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(__core&&typeof __core.growSkeleton==='function'){
+    const __gsLBl=(typeof __lod==='undefined')?0:__lod;
+    const __gsLB=(window.PHYTO_LEAFBUDGET&&window.PHYTO_LEAFBUDGET[__gsLBl])||((P.kind==='shrub')?[4000,1500,1400]:[20000,9000,7000])[__gsLBl];
+    const __gsR=__core.growSkeleton(Object.assign({},P,{leafBudget:__gsLB}),rnd);
+    if(__gsR&&__gsR.segs&&__gsR.segs.length){P._trunkR=__gsR.trunkR;P._D=2*__gsR.trunkR;return __gsR;}
+  }
   const segs=[],leaves=[];let maxSway=1e-6,count=0,runId=0;const azim={v:0},runMeta={};
   // McMahon: H = k·D^(2/3)  ->  D=(H/k)^1.5  (Stammdurchmesser aus Hoehe/Schlankheit)
   const k=lerp(13,22,P.slim);                                     // McMahon mit Sicherheitsfaktor ~4: echte Baeume sind viel dicker als die Knickgrenze
