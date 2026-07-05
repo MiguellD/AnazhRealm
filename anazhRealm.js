@@ -62781,6 +62781,207 @@ class AnazhRealm {
     // Der WALD-GENERATOR pro Voxel-Chunk: platziert die akzeptierten Darts, deren Position
     // in DIESEN Chunk fällt (disjunkt → jeder Baum genau einmal, egal welcher Chunk zuerst
     // lädt). Kronen-Schüchternheit gegen die ±2-Nachbarzellen. Perf-gedünnt am Ende.
+    // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Baeume ====================
+    // Der Schoepfer-Wunsch: die Vorlage-Datei (worlds/terrain/phytogenesis.js) IST der Samen.
+    // Sie laeuft versteckt als reiner Asset-Motor (?asset-foundry=1) und liefert ihre ECHTEN
+    // Baum-Instanzen (buildInstance: Skelett+Rinde+Blaetter+Wurzeln + ihr eigenes LOD) als
+    // Geometrie-Puffer ueber die Portal-Bruecke. AnazhRealm baut daraus WebGPU-Meshes + pflanzt
+    // sie 1:1 ueber das Waldsystem — kein Nachbau, kein Sezieren. Ein Edit an der Vorlage-Datei
+    // aendert die Baeume in AnazhRealm. GRACEFUL: ohne echten Browser (headless Gate) faellt der
+    // Wald auf den AnazhRealm-Pfad zurueck (Engine-Grenze, wie der Null-Renderer den GPU stubt).
+    _foundryEnabled() {
+        if (typeof window !== "undefined" && window.__anazhHeadlessNullRenderer) return false;
+        if (this._useAssetFoundry === false) return false;
+        return typeof document !== "undefined" && typeof window !== "undefined" && !!(this.state && this.state.scene);
+    }
+    _ensureAssetFoundry() {
+        if (!this._foundryEnabled()) return null;
+        if (this._foundry) return this._foundry;
+        const f = { iframe: null, ready: false, pending: new Map(), reqSeq: 1, cache: new Map(), retry: [], _prefetching: false };
+        this._foundry = f;
+        try {
+            const iframe = document.createElement("iframe");
+            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+            iframe.style.cssText =
+                "position:absolute;width:8px;height:8px;left:-9999px;top:-9999px;border:0;visibility:hidden;pointer-events:none;";
+            iframe.src = "worlds/terrain/index.html?asset-foundry=1&v=" + (AnazhRealm.VERSION || "");
+            f.iframe = iframe;
+            window.addEventListener("message", (ev) => {
+                if (!f.iframe || ev.source !== f.iframe.contentWindow) return;
+                const m = ev.data;
+                if (!m || typeof m !== "object") return;
+                if (m.type === "ready" && m.world === "terrain") {
+                    f.ready = true;
+                    this._foundryPrefetchLibrary();
+                } else if (m.type === "asset") {
+                    const p = f.pending.get(m.reqId);
+                    if (p) {
+                        f.pending.delete(m.reqId);
+                        p(m.meshes || []);
+                    }
+                }
+            });
+            document.body.appendChild(iframe);
+        } catch (_e) {
+            this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
+        }
+        return f;
+    }
+    _foundryRequest(presetId, seed, lod) {
+        const f = this._foundry;
+        if (!f || !f.ready || !f.iframe || !f.iframe.contentWindow) return Promise.resolve(null);
+        const reqId = "r" + f.reqSeq++;
+        return new Promise((resolve) => {
+            f.pending.set(reqId, resolve);
+            try {
+                f.iframe.contentWindow.postMessage({ type: "build-asset", reqId, presetId, seed, lod }, "*");
+            } catch (_e) {
+                f.pending.delete(reqId);
+                resolve(null);
+                return;
+            }
+            setTimeout(() => {
+                if (f.pending.has(reqId)) {
+                    f.pending.delete(reqId);
+                    resolve(null);
+                }
+            }, 10000);
+        });
+    }
+    _foundryPresetFor(species) {
+        const map = {
+            baum_eiche: "eiche",
+            baum_fichte: "fichte",
+            baum_tanne: "tanne",
+            baum_birke: "birke",
+            baum_weide: "weide",
+            baum_mammut: "mammut",
+            baum_kiefer: "fichte",
+        };
+        return map[species] || null;
+    }
+    _foundryTreeMaterial(kind) {
+        if (!this._foundryMats) this._foundryMats = {};
+        if (this._foundryMats[kind]) return this._foundryMats[kind];
+        const T = THREE;
+        const double = kind === "foliage" || kind === "foliageTex" || kind === "grass";
+        let mat;
+        try {
+            mat = new T.MeshStandardNodeMaterial({
+                vertexColors: true,
+                roughness: kind === "bark" ? 0.9 : 0.62,
+                metalness: 0,
+                side: double ? T.DoubleSide : T.FrontSide,
+            });
+            if (kind === "foliageTex") {
+                const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+                const canvas =
+                    core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document, { cell3: "needle" }) : null;
+                if (canvas) {
+                    const tex = new T.CanvasTexture(canvas);
+                    tex.colorSpace = T.SRGBColorSpace;
+                    mat.map = tex;
+                    mat.alphaTest = 0.5;
+                }
+            }
+        } catch (_e) {
+            mat = new T.MeshStandardMaterial({ vertexColors: true, side: double ? T.DoubleSide : T.FrontSide });
+        }
+        this._foundryMats[kind] = mat;
+        return mat;
+    }
+    _foundryBuildGroup(meshes) {
+        if (!Array.isArray(meshes) || !meshes.length) return null;
+        const T = THREE;
+        let group = null;
+        try {
+            group = new T.Group();
+            for (const m of meshes) {
+                if (!m || !m.position || !m.position.array) continue;
+                const geo = new T.BufferGeometry();
+                geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
+                if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
+                if (m.color && m.color.array)
+                    geo.setAttribute("color", new T.BufferAttribute(m.color.array, m.color.itemSize || 3));
+                if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+                if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
+                if (!m.normal || !m.normal.array) geo.computeVertexNormals();
+                const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark"));
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+            }
+        } catch (_e) {
+            return null;
+        }
+        return group && group.children.length ? group : null;
+    }
+    _foundryLibrarySpec() {
+        return { species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut"], seeds: [1, 2, 3, 4], lods: [0] };
+    }
+    async _foundryPrefetchLibrary() {
+        const f = this._foundry;
+        if (!f || !f.ready || f._prefetching) return;
+        f._prefetching = true;
+        const spec = this._foundryLibrarySpec();
+        for (const sp of spec.species) {
+            for (const sd of spec.seeds) {
+                for (const lod of spec.lods) {
+                    const key = sp + "|" + sd + "|" + lod;
+                    if (f.cache.has(key)) continue;
+                    let group = null;
+                    try {
+                        const meshes = await this._foundryRequest(sp, sd, lod);
+                        group = meshes ? this._foundryBuildGroup(meshes) : null;
+                    } catch (_e) {
+                        group = null;
+                    }
+                    f.cache.set(key, group);
+                }
+            }
+        }
+        f._prefetching = false;
+        const retry = f.retry;
+        f.retry = [];
+        for (const r of retry) this._foundryPlantTree(r.species, r.position, r.opts);
+    }
+    // Der EINE Redirect: der Wald ruft dies statt _enqueueVegetationSpawn fuer Baeume.
+    _foundryPlantTree(species, position, opts) {
+        const preset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+        if (!preset) return this._enqueueVegetationSpawn(species, position, opts);
+        const f = this._ensureAssetFoundry();
+        if (!f) return this._enqueueVegetationSpawn(species, position, opts);
+        const seedInt = (opts && Number.isFinite(opts.seed) ? opts.seed : 0) >>> 0;
+        const variant = (seedInt % 4) + 1;
+        const key = preset + "|" + variant + "|0";
+        const cached = f.cache.get(key);
+        if (cached === undefined) {
+            // Noch nicht geladen (Foundry startet/prefetcht): aufstauen, spaeter 1:1 pflanzen.
+            if (f.retry.length < 4000) f.retry.push({ species, position, opts });
+            return;
+        }
+        if (cached === null) return; // Asset fehlgeschlagen -> still, KEIN Alt-Baum dazwischen (sauber 1:1)
+        try {
+            const group = new THREE.Group();
+            for (const child of cached.children) {
+                const mesh = new THREE.Mesh(child.geometry, child.material);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                group.add(mesh);
+            }
+            const s = opts && Number.isFinite(opts.scale) ? opts.scale : 1;
+            group.scale.setScalar(s);
+            group.rotation.y = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
+            group.position.set(position.x, position.y, position.z);
+            group.frustumCulled = true;
+            this.state.scene.add(group);
+            if (!this._foundryTrees) this._foundryTrees = [];
+            this._foundryTrees.push(group);
+        } catch (_e) {
+            this._enqueueVegetationSpawn(species, position, opts);
+        }
+    }
+
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -62844,7 +63045,9 @@ class AnazhRealm {
                     // PERF-Kappung: am Ende gedünnt (die Krone reservierte weiter Platz →
                     // die Wald-FORM bleibt, nur weniger gerendert; keepRoll ≠ prio).
                     if (fd < 1 && d.keep >= fd) continue;
-                    this._enqueueVegetationSpawn(
+                    // Der Baum kommt 1:1 aus der Vorlage (Asset-Foundry) — faellt in headless/
+                    // ohne Foundry sauber auf den AnazhRealm-Waldpfad zurueck.
+                    this._foundryPlantTree(
                         d.sp,
                         { x: d.x, y: d.surfaceY + 0.5, z: d.z },
                         { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }

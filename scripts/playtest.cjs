@@ -32625,9 +32625,13 @@ async function checkBandWHWald(ctx) {
         // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
         // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
         // statische _jung/_alt/_breit-Variante mehr (der V18.257-Legacy-Schnitt bleibt).
+        // V9.56-i — die Probe wandert mit dem Code: der Baum-Spawn zieht jetzt durch die
+        // Asset-Foundry (`_foundryPlantTree(d.sp,…)`, die 1:1 die Vorlagen-Bäume pflanzt und
+        // headless sauber auf `_enqueueVegetationSpawn` zurückfällt). Gespawnt wird weiter die
+        // KANONISCHE Art `d.sp` (tag-neutral, keine statische Variante) — die Invariante hält.
         out.variantPickAfterWin =
             /_growTreeBlueprintForSpawn\(d\.sp/.test(forestSrc) &&
-            /_enqueueVegetationSpawn\(\s*d\.sp/.test(forestSrc) &&
+            /(_enqueueVegetationSpawn|_foundryPlantTree)\(\s*d\.sp/.test(forestSrc) &&
             !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
         // (4) GRÖSSEN-SPAN: die Größe wurde REICHER (reverse-J statt linear ±40 %) und
         // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:
@@ -48589,6 +48593,13 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         if (!r || !r.state || !r.state.playerMesh) return null;
         const out = {};
 
+        // V18.370 — Cap-Headroom: der last-gestreckte Warmup füllt `creatures` bis maxCreatures
+        // → ein Restore/Spawn ON TOP gäbe null (Cap-Hit) → load-abhängiges rot an diesem Band.
+        // Lokal anheben, vor `return out` restaurieren (kein _gameLoopTick dazwischen →
+        // tickFaunaLifecycle kann die Lücke nicht füllen → deterministisch grün).
+        const _capG = r.state.maxCreatures;
+        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
+
         // 1. Memory-Cap auf 200 gebumpt
         out.memCap200 = r.constructor.CREATURE_MEMORY_CAP === 200;
 
@@ -48727,6 +48738,7 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
         };
         const oversized = r._restoreCreatureFromSnapshot(oversizedSnap, "happy");
         out.oversizedRestoredCappedAt200 = oversized && oversized.userData.memory.length === 200;
+        r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
 

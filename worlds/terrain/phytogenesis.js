@@ -1231,6 +1231,15 @@ function build(){
    PMREM-Env · Hemi+Key+Rim+Fill · Boden · Kontaktschatten · Bloom+FXAA+Cine
  * ========================================================================== */
 function init(){
+  // FOUNDRY-MODUS: AnazhRealm laedt diese Datei versteckt als reinen Asset-Motor
+  // (?asset-foundry=1). Kein Renderer, kein eigener Wald, kein Render-Loop — nur die
+  // Materialien + Saison + PRESETS, damit buildInstance echte Baum-Assets liefert.
+  if(typeof location!=='undefined' && /[?&]asset-foundry/.test(location.search)){
+    window.__PHYTO_FOUNDRY=true;
+    try{buildMaterials();}catch(_e){}
+    try{setSeasonColors('summer');}catch(_e){}
+    return;   // die Portal-Bruecke (IIFE am Datei-Ende) meldet ready + bedient build-asset
+  }
   scene=new THREE.Scene();scene.background=new THREE.Color(0x070b08);
   {  // GRADIENT-HIMMEL + ECHTE WOLKEN: prozedurales Dichtefeld mit Parallaxe, von der Sonne beleuchtet, Deckung vom Wetter
     const skyGeo=new THREE.SphereGeometry(1,32,20);
