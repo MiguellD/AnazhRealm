@@ -540,6 +540,183 @@
         return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
     }
 
+    // EINS W4 (P1) — DIE SUPERFORMEL (Gielis, Vorlage `superR` Z.240): EIN Gesetz, riesige
+    // Blatt-Morphologie. r(phi) = (|cos(m·phi/4)/a|^n2 + |sin(m·phi/4)/b|^n3)^(-1/n1).
+    function superR(phi, m, n1, n2, n3, a, b) {
+        const t = (m * phi) / 4;
+        const p1 = Math.pow(Math.abs(Math.cos(t) / a), n2);
+        const p2 = Math.pow(Math.abs(Math.sin(t) / b), n3);
+        return Math.pow(p1 + p2, -1 / n1);
+    }
+    // Die Vorlagen-Blatt-Formen (phytogenesis Z.923-926) + die Nadel aus dem Grown-Pfad
+    // (Z.964: lwsc=0.085 für Koniferen — lanzettlich-schmal).
+    const LEAF_SHAPES = {
+        oak: { m: 9, n1: 0.7, n2: 0.6, n3: 0.6, a: 1, b: 1, wsc: 0.42 }, // gelappt
+        ovate: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.4 }, // eiförmig
+        lance: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.18 }, // lanzettlich (Weide)
+        petal: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.28 },
+        needle: { m: 2, n1: 1.0, n2: 1.0, n3: 1.0, a: 1, b: 1, wsc: 0.085 },
+    };
+
+    // EINS W4 (P1) — DIE 30-VERT-BLATT-KLINGE (der `pushLeaf`-Port, Vorlage Z.247-275): das
+    // L0-Blatt ist echte 3D-GEOMETRIE — eine Superformel-Kontur über 14 Segmente (30 Verts,
+    // 28 Tris je Blatt), QUER-GEMULDET (cupZ = −cup·(s−s²)·scale, cup 0.5) → die Klinge fängt
+    // Licht als gekrümmte Fläche, nicht als bemalte Karte. Die Vorlage nimmt Karten NUR für
+    // L1 (`useTexL = __lod===1`, Z.647); L0 sind Klingen — exakt diese Teilung stellt W4 her.
+    // REIN (plain Arrays raus, kein THREE); die Attribute im SELBEN Layout wie
+    // `buildFoliageQuads` (position/normal/color/aFlex/aPhase/uv + indices — die Float32-Naht,
+    // der Aufrufer wickelt sie identisch in eine BufferGeometry). Normalen = Face-Akkumulation
+    // pro Blatt (das THREE-`computeVertexNormals`-Gesetz, ohne THREE).
+    // `leaves`: [{pos, dir, up, scale, needle, sway, phase}] (aus growSkeleton).
+    // `opts`: { leafColor:[r,g,b], scale (Multiplikator, Vorlage roh=1), cup (~0.5),
+    //           leafShape: Key in LEAF_SHAPES ODER {m,n1,n2,n3,a,b,wsc} }.
+    function buildLeafBlades(leaves, opts) {
+        opts = opts || {};
+        const col = opts.leafColor || [0.29, 0.48, 0.17];
+        const sMul = opts.scale != null ? opts.scale : 1.0;
+        const cup = opts.cup != null ? opts.cup : 0.5;
+        const shape =
+            opts.leafShape && typeof opts.leafShape === "object"
+                ? opts.leafShape
+                : LEAF_SHAPES[opts.leafShape] || LEAF_SHAPES.ovate;
+        const SEG = 14; // (SEG+1)·2 = 30 Verts, SEG·2 = 28 Tris je Blatt (Vorlage pushLeaf)
+        const VPL = (SEG + 1) * 2;
+        const IPL = SEG * 6;
+        const list = leaves || [];
+        const M = list.length;
+        const positions = new Float32Array(M * VPL * 3);
+        const normals = new Float32Array(M * VPL * 3);
+        const colors = new Float32Array(M * VPL * 3);
+        const aFlex = new Float32Array(M * VPL);
+        const aPhase = new Float32Array(M * VPL);
+        const uvs = new Float32Array(M * VPL * 2);
+        const indices = new Uint32Array(M * IPL);
+        let vw = 0,
+            iw = 0,
+            bladeCount = 0;
+        for (let li = 0; li < M; li++) {
+            const l = list[li];
+            if (!l || !l.pos || !l.dir) continue;
+            const dirOut = _vnorm([l.dir[0], l.dir[1], l.dir[2]]);
+            const up = l.up && Math.abs(l.up[0]) + Math.abs(l.up[1]) + Math.abs(l.up[2]) > 1e-4 ? l.up : [0, 1, 0];
+            let right = _vcross(dirOut, up);
+            let rl = Math.hypot(right[0], right[1], right[2]);
+            if (rl < 1e-4) {
+                right = _vcross(dirOut, [1, 0, 0]);
+                rl = Math.hypot(right[0], right[1], right[2]) || 1e-9;
+            }
+            right = [right[0] / rl, right[1] / rl, right[2] / rl];
+            const u2 = _vnorm(_vcross(right, dirOut));
+            const sh = l.needle ? LEAF_SHAPES.needle : shape;
+            const scale = (l.scale || 0.5) * sMul;
+            const cx = l.pos[0],
+                cy = l.pos[1],
+                cz = l.pos[2];
+            const fx = Math.max(0, Math.min(1, l.sway != null ? l.sway : 0.7));
+            const ph = l.phase || 0;
+            const base = vw;
+            for (let i = 0; i <= SEG; i++) {
+                const s = i / SEG;
+                const phi = Math.PI * s; // halber Umlauf → Tropfen
+                const w = superR(phi, sh.m, sh.n1, sh.n2, sh.n3, sh.a, sh.b) * sh.wsc;
+                const along = s * scale;
+                const cupZ = -cup * (s - s * s) * scale; // die Quer-MULDE (Vorlage cupZ)
+                const mx = cx + dirOut[0] * along + u2[0] * cupZ;
+                const my = cy + dirOut[1] * along + u2[1] * cupZ;
+                const mz = cz + dirOut[2] * along + u2[2] * cupZ;
+                const ox = right[0] * w * scale,
+                    oy = right[1] * w * scale,
+                    oz = right[2] * w * scale;
+                // linke + rechte Konturspalte (2 Verts je Segment-Reihe)
+                let v3 = vw * 3;
+                positions[v3] = mx - ox;
+                positions[v3 + 1] = my - oy;
+                positions[v3 + 2] = mz - oz;
+                colors[v3] = col[0];
+                colors[v3 + 1] = col[1];
+                colors[v3 + 2] = col[2];
+                aFlex[vw] = fx;
+                aPhase[vw] = ph;
+                uvs[vw * 2] = 0;
+                uvs[vw * 2 + 1] = s;
+                vw++;
+                v3 = vw * 3;
+                positions[v3] = mx + ox;
+                positions[v3 + 1] = my + oy;
+                positions[v3 + 2] = mz + oz;
+                colors[v3] = col[0];
+                colors[v3 + 1] = col[1];
+                colors[v3 + 2] = col[2];
+                aFlex[vw] = fx;
+                aPhase[vw] = ph;
+                uvs[vw * 2] = 1;
+                uvs[vw * 2 + 1] = s;
+                vw++;
+            }
+            for (let i = 0; i < SEG; i++) {
+                const a0 = base + i * 2,
+                    b0 = a0 + 1,
+                    a1 = a0 + 2,
+                    b1 = a0 + 3;
+                indices[iw++] = a0;
+                indices[iw++] = b0;
+                indices[iw++] = a1;
+                indices[iw++] = b0;
+                indices[iw++] = b1;
+                indices[iw++] = a1;
+            }
+            // Normalen: Face-Akkumulation über die 28 Tris DIESES Blatts (computeVertexNormals-
+            // Gesetz: n += (pC−pB)×(pA−pB) je Face, dann normalisieren) → die Mulde schattiert.
+            for (let t = iw - IPL; t < iw; t += 3) {
+                const A = indices[t] * 3,
+                    B = indices[t + 1] * 3,
+                    C = indices[t + 2] * 3;
+                const cbx = positions[C] - positions[B],
+                    cby = positions[C + 1] - positions[B + 1],
+                    cbz = positions[C + 2] - positions[B + 2];
+                const abx = positions[A] - positions[B],
+                    aby = positions[A + 1] - positions[B + 1],
+                    abz = positions[A + 2] - positions[B + 2];
+                const nx = cby * abz - cbz * aby,
+                    ny = cbz * abx - cbx * abz,
+                    nz = cbx * aby - cby * abx;
+                normals[A] += nx;
+                normals[A + 1] += ny;
+                normals[A + 2] += nz;
+                normals[B] += nx;
+                normals[B + 1] += ny;
+                normals[B + 2] += nz;
+                normals[C] += nx;
+                normals[C + 1] += ny;
+                normals[C + 2] += nz;
+            }
+            for (let v = base; v < vw; v++) {
+                const v3 = v * 3;
+                const nl = Math.hypot(normals[v3], normals[v3 + 1], normals[v3 + 2]) || 1e-9;
+                normals[v3] /= nl;
+                normals[v3 + 1] /= nl;
+                normals[v3 + 2] /= nl;
+            }
+            bladeCount++;
+        }
+        // kompaktieren, falls Blätter übersprungen wurden (leere pos/dir)
+        const out =
+            bladeCount === M
+                ? { positions, normals, colors, aFlex, aPhase, uvs, indices }
+                : {
+                      positions: positions.subarray(0, vw * 3).slice(),
+                      normals: normals.subarray(0, vw * 3).slice(),
+                      colors: colors.subarray(0, vw * 3).slice(),
+                      aFlex: aFlex.subarray(0, vw).slice(),
+                      aPhase: aPhase.subarray(0, vw).slice(),
+                      uvs: uvs.subarray(0, vw * 2).slice(),
+                      indices: indices.subarray(0, iw).slice(),
+                  };
+        out.count = bladeCount;
+        out.vertsPerLeaf = VPL;
+        return out;
+    }
+
     // DAS NEUE KLEID Welle 2 — DER STEIN aus der Vorlage (`buildBoulder`, Zingg/Wadell). Ein
     // subdividiertes Ikosaeder, radial per fbm3 + ridged verschoben (Bruch-Struktur), Zingg-
     // Formraum (elong/sph), Sediment-Bänke (strat), Wadell-Facetten-Clipping (round) + Laplace-
@@ -979,6 +1156,9 @@
         growSkeleton: growSkeleton,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
+        buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
+        superR: superR,
+        LEAF_SHAPES: LEAF_SHAPES,
         buildBoulderGeometry: buildBoulderGeometry,
         buildCrystalPointGeometry: buildCrystalPointGeometry,
         buildBarkTubeArrays: buildBarkTubeArrays,

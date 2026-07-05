@@ -37056,13 +37056,16 @@ async function checkBandV18214SkeletonMesh(ctx) {
                     out.foliageHasFlex = !!fol.geom.attributes.aFlex;
                     out.foliageVerts = fol.geom.attributes.position.count;
                     out.foliageHasColor = !!fol.geom.attributes.color;
-                    // DAS NEUE KLEID Welle 1 (V18.386): die Krone ist jetzt die VORLAGEN-Cluster-
-                    // Quad-Geometrie (`__phytoCore.buildFoliageQuads`) — EIN Quad (4 Verts) je
-                    // gewachsenem Phyto-Blatt, nicht mehr die alten N-Anker × K-Kreuz-Karten
-                    // (8 Verts). Die Anker kommen aus DENSELBEN Phyto-Blättern → foliageVerts =
-                    // anchorCount × 4. (Leichter UND dichter als die alte K×8-Krone.)
+                    // DAS NEUE KLEID Welle 1 (V18.386): die Krone ist die VORLAGEN-Geometrie aus
+                    // der EINEN phyto-core-Quelle — EIN Element je gewachsenem Phyto-Blatt. Die
+                    // Anker kommen aus DENSELBEN Phyto-Blättern → foliageVerts = anchorCount ×
+                    // Verts/Blatt. V18.390 (Eins W4): bei LOD0-Laubbäumen ist das Blatt die
+                    // 30-Vert-SUPERFORMEL-KLINGE (`buildLeafBlades`, der pushLeaf-Port); Nadel-
+                    // Sprays (Konifere) bleiben das 4-Vert-Cluster-Quad (`buildFoliageQuads`).
                     out.foliageCardsPerAnchor = 1;
-                    out.foliageVertsMatchAnchors = fol.geom.attributes.position.count === out.skelAnchorCount * 4;
+                    const _fvc = fol.geom.attributes.position.count;
+                    out.foliageVertsMatchAnchors =
+                        _fvc === out.skelAnchorCount * 4 || _fvc === out.skelAnchorCount * 30;
                 }
             }
 
@@ -37143,7 +37146,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
     check(`V18.214 (T8a) foliage-Geom trägt aFlex (verts=${res.foliageVerts})`, res.foliageHasFlex === true);
     check("V18.214 (T8b) foliage-Geom trägt color", res.foliageHasColor === true);
     check(
-        `V18.386 Neues Kleid: foliage-Vertex-Count = anchors·4 (EIN Cluster-Quad/Blatt: ${res.foliageVerts}/${res.skelAnchorCount}·4)`,
+        `V18.386/.390 Neues Kleid/Eins W4: foliage-Vertex-Count = anchors·4 (Quad) oder anchors·30 (L0-Klinge): ${res.foliageVerts}/${res.skelAnchorCount}`,
         res.foliageVertsMatchAnchors === true
     );
     check(

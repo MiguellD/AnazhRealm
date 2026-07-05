@@ -29173,6 +29173,13 @@ class AnazhRealm {
                                 // alphaTest bleibt gesetzt (das Quad liest als solide Krone).
                                 mat.alphaTest = 0.5;
                             }
+                        } else if (opts.foliageLeaf && opts.foliageBlade) {
+                            // EINS W4 (P1) — DIE KLINGE IST GEOMETRIE: das L0-Blatt (30-Vert-
+                            // Superformel, phyto-core `buildLeafBlades`) braucht KEINEN Atlas —
+                            // die Silhouette IST die Kontur, alpha bleibt 1 (Vorlage: foliageMat
+                            // OHNE map, Z.176). alphaTest bleibt gesetzt, damit das S1-Dither-
+                            // Crossfade (alpha·keep) die Klingen am L0→L1-Band weich ausblendet.
+                            mat.alphaTest = 0.5;
                         } else if (opts.foliageLeaf && _Ta.attribute) {
                             // Ω-O14 (LAAS-METHODE, V18.247) — die Karte SAMPELT den prozedural
                             // gebackenen Laub-Büschel-ATLAS (echte Blatt-Silhouetten + Adern,
@@ -29803,6 +29810,47 @@ class AnazhRealm {
                 }
             } catch (_e) {
                 if (typeof window !== "undefined") window.__translucencyError = String((_e && _e.message) || _e);
+            }
+        }
+        // EINS W4 (P2) — DER UNLIT-SILHOUETTEN-FLOOR + das KANTEN-GRÜN (Vorlage `injectWind`
+        // Fragment Z.146): `output += albedo·pow(1−ndv,2.5)·0.55 + vec3(0.09,0.15,0.04)·
+        // pow(1−ndv,4)·0.5`. Das ist UNBELICHTETE Albedo an der Silhouette — bewusst SONNEN-
+        // UNABHÄNGIG (kein uSunDir: der Floor lebt auch im Schatten + nachts) → die Krone
+        // glimmt an den Kanten satt, statt ins Schwarze zu fallen (der A3-Befund #3; der
+        // V18.230-Backlit oben ist sonnen-gegated und ersetzt ihn NICHT). NUR Laub
+        // (opts.foliageLeaf — Karten UND Klingen; der Impostor trägt kein foliageLeaf →
+        // sein Licht kommt aus dem Normal-Atlas). Post-lighting auf outputNode (CLAUDE.md-
+        // Gotcha: Mikro-Terme output-seitig, nie colorNode).
+        if (opts.foliageLeaf === true) {
+            try {
+                const _Tf = THREE.TSL;
+                if (
+                    _Tf &&
+                    _Tf.normalWorld &&
+                    _Tf.cameraPosition &&
+                    _Tf.positionWorld &&
+                    _Tf.pow &&
+                    _Tf.abs &&
+                    mat.colorNode &&
+                    mat.colorNode.rgb !== undefined
+                ) {
+                    const _vdF = _Tf.normalize(_Tf.cameraPosition.sub(_Tf.positionWorld));
+                    const _ndv = _Tf.abs(_Tf.normalWorld.dot(_vdF)).clamp(0.0, 1.0);
+                    const _inv = _Tf.float(1.0).sub(_ndv);
+                    // Subsurface-Rim: die eigene Albedo, unbelichtet, an der Silhouette.
+                    const _rim = mat.colorNode.rgb.mul(_Tf.pow(_inv, _Tf.float(2.5))).mul(_Tf.float(0.55));
+                    // grünes Kanten-Glimmen (die zweite Vorlagen-Zeile).
+                    const _edge = _Tf
+                        .vec3(0.09, 0.15, 0.04)
+                        .mul(_Tf.pow(_inv, _Tf.float(4.0)))
+                        .mul(_Tf.float(0.5));
+                    const _outF = mat.outputNode || _Tf.output;
+                    mat.outputNode = _outF.add(_Tf.vec4(_rim.add(_edge), _Tf.float(0.0)));
+                    mat.userData = mat.userData || {};
+                    mat.userData.unlitSilhouetteFloor = true; // Linsen-Marker (diag-leaf-blades)
+                }
+            } catch (_e) {
+                if (typeof window !== "undefined") window.__unlitFloorError = String((_e && _e.message) || _e);
             }
         }
         // V18.387 — DAS NEUE KLEID S1-SHADER — die SSE-METRIK + das DITHER-CROSSFADE (phytogenesis
@@ -59064,6 +59112,65 @@ class AnazhRealm {
         return g;
     }
 
+    // EINS W4 (P3) — DIE EINE BLATT-FARB-QUELLE: Phyto-Pfad UND Anker-Fallback lasen die
+    // Art-Farbe bisher DIVERGENT (der Fallback ·0.72/0.95/0.55 → 28-45 % dunkler/röter je
+    // nach Bau-Pfad). Jetzt lesen BEIDE diese eine Quelle (roh — der Phyto-Pfad gewinnt);
+    // die Sättigung trägt die Lichtung (W1-Rig), keine Pfad-Konstante (Gesetz #0).
+    _treeLeafBaseColor(skeleton, fo) {
+        const c0 = (skeleton && skeleton.foliageColor) || (fo && fo.color) || 0x4a8a3a;
+        return [((c0 >> 16) & 0xff) / 255, ((c0 >> 8) & 0xff) / 255, (c0 & 0xff) / 255];
+    }
+
+    // EINS W4 (P1) — DER NAHE BAUM: die 30-VERT-BLATT-KLINGE für LOD0 (die Vorlagen-Teilung
+    // phytogenesis Z.647/660 — L0 = echte 3D-Klingen via `pushLeaf`+`superR`, Karten NUR L1).
+    // Baut aus den NICHT-Nadel-Phyto-Blättern die Superformel-Klingen-Geometrie über die EINE
+    // geteilte Quelle `__phytoCore.buildLeafBlades` (Float32-Naht, dieselben Attribute wie die
+    // Karten: position/normal/color/aFlex/aPhase/uv + aH0/aH0L). Nadeln bleiben beim Spray-
+    // Quad-Atlas (die Vorlagen-Nadel ist `pushNeedle`-Geometrie in Tausender-Zahl — bei
+    // AnazhRealms 480er-Blatt-Budget trüge eine Einzel-Nadel-Klinge die Kegel-Deckung nicht).
+    // Rückgabe null (kein Kern/Blätter/THREE) → der Aufrufer bleibt beim Karten-Pfad.
+    _buildTreeFoliageBladeGeometry(skeleton) {
+        if (!skeleton || !Array.isArray(skeleton.phytoLeaves) || !skeleton.phytoLeaves.length) return null;
+        const grammar = skeleton.grammar;
+        const fo = grammar && grammar.foliage;
+        if (!fo || fo.kind === "none") return null;
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (!core || typeof core.buildLeafBlades !== "function" || typeof THREE === "undefined") return null;
+        const blades = skeleton.phytoLeaves.filter((l) => l && !l.needle);
+        if (!blades.length) return null;
+        // Blatt-Form je Art (die Vorlagen-Zuordnung Z.929-935: eiche→oak · weide→lance ·
+        // birke/übrige Laub-Arten→ovate; eine hängende Sonder-Krone liest lanzettlich).
+        const sp = String(skeleton.species || "");
+        const shapeKey = /eiche/.test(sp)
+            ? "oak"
+            : /weide/.test(sp) || (grammar && grammar.crown === "weeping")
+              ? "lance"
+              : "ovate";
+        const q = core.buildLeafBlades(blades, {
+            leafColor: this._treeLeafBaseColor(skeleton, fo),
+            // Vorlagen-roh (pushLeaf bekommt l.scale unskaliert): AnazhRealms leafSize trägt
+            // schon den ×1.3-Dial → die Klinge liest als Blatt-Büschel-Größe, kein Mega-Blatt.
+            scale: 1.0,
+            cup: 0.5, // die Quer-Mulde (Vorlagen-Aufruf Z.660)
+            leafShape: shapeKey,
+        });
+        if (!q || !(q.count > 0)) return null;
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(q.positions, 3));
+        g.setAttribute("normal", new THREE.BufferAttribute(q.normals, 3));
+        g.setAttribute("color", new THREE.BufferAttribute(q.colors, 3));
+        g.setAttribute("aFlex", new THREE.BufferAttribute(q.aFlex, 1));
+        g.setAttribute("aPhase", new THREE.BufferAttribute(q.aPhase, 1));
+        g.setAttribute("uv", new THREE.BufferAttribute(q.uvs, 2));
+        g.setIndex(new THREE.BufferAttribute(q.indices, 1));
+        // S1-SHADER — dieselben Wahrnehmungs-Höhen wie die Karten → das Dither-Crossfade
+        // blendet die Klingen am L0→L1-Band weich aus (kein Pop auf die Karten-Krone).
+        this._stampFoliageVisHeights(g, Math.max(1, skeleton.totalH || 10));
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        return g;
+    }
+
     _buildTreeFoliageCardGeometry(skeleton, _opts) {
         if (!skeleton || !Array.isArray(skeleton.anchors) || skeleton.anchors.length === 0) return null;
         const grammar = skeleton.grammar;
@@ -59084,10 +59191,16 @@ class AnazhRealm {
             skeleton.phytoLeaves.length &&
             typeof THREE !== "undefined"
         ) {
-            const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-            const leafColor = [((c0 >> 16) & 0xff) / 255, ((c0 >> 8) & 0xff) / 255, (c0 & 0xff) / 255];
+            // EINS W4 (P1) — skipBroadleaf: bei LOD0 tragen die KLINGEN (`_buildTreeFoliage-
+            // BladeGeometry`) die Laub-Blätter; hier bauen dann NUR noch die Nadel-Sprays als
+            // Quads. Trägt die Klinge die GANZE Krone (reiner Laubbaum) → null, KEIN Fall auf
+            // den Anker-Fallback (der eine zweite Karten-Krone über die Klingen legte).
+            const _skipB = _opts && _opts.skipBroadleaf === true;
+            const _quadLeaves = _skipB ? skeleton.phytoLeaves.filter((l) => l && l.needle) : skeleton.phytoLeaves;
+            if (_skipB && !_quadLeaves.length) return null;
+            const leafColor = this._treeLeafBaseColor(skeleton, fo);
             const fScaleQ = Math.max(0.4, skeleton.foliageScale || 1);
-            const q = core.buildFoliageQuads(skeleton.phytoLeaves, {
+            const q = core.buildFoliageQuads(_quadLeaves, {
                 leafColor,
                 scale: 2.35 * fScaleQ,
                 // Nadeln: das gewachsene Blatt IST eine EINZELNE Nadel (scale ~0.15) — als
@@ -59193,13 +59306,14 @@ class AnazhRealm {
         const indices = new Uint32Array(M * 12);
         // foliageColor aus skeleton (gemischt aus grammar.color + Jitter im
         // _growTreeBlueprintRich).
-        // V18.235 (§5 Ω-O9) — tieferes, satteres Wald-Grün: das helle Medium-Grün
-        // wusch unter der hellen Mittag-Beleuchtung (ACES) teal/weiss. R+B gedämpft,
-        // G gehalten → ein sattes Forst-Grün, das die Beleuchtungs-Wäsche überlebt.
-        const c0 = skeleton.foliageColor || fo.color || 0x4a8a3a;
-        const fr = (((c0 >> 16) & 0xff) / 255) * 0.72;
-        const fg = (((c0 >> 8) & 0xff) / 255) * 0.95;
-        const fb = ((c0 & 0xff) / 255) * 0.55;
+        // EINS W4 (P3) — EINE Blatt-Farb-Quelle: der alte V18.235-Dämpfer (R·0.72/G·0.95/
+        // B·0.55) machte den Fallback 28-45 % dunkler/röter als den Phyto-Pfad → zwei
+        // divergente Blatt-Farben je Bau-Pfad. Beide lesen jetzt `_treeLeafBaseColor` (roh);
+        // die Sättigung unter Licht trägt das W1-Rig (Key 15:1), keine Pfad-Konstante.
+        const _lc = this._treeLeafBaseColor(skeleton, fo);
+        const fr = _lc[0];
+        const fg = _lc[1];
+        const fb = _lc[2];
         const jitterR = cardW * (fd.jitterFrac || 1.0);
         const sizeVar = fd.sizeVar || 0;
         const innerFill = fd.innerFill || 0;
@@ -59715,9 +59829,19 @@ class AnazhRealm {
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
         }
-        // foliage-Geometrie (Cards)
-        const foliageGeom = this._buildTreeFoliageCardGeometry(skel);
-        if (foliageGeom) {
+        // EINS W4 (P1) — DER NAHE BAUM: bei LOD0 tragen 30-Vert-SUPERFORMEL-KLINGEN
+        // (`_buildTreeFoliageBladeGeometry`, phyto-core `buildLeafBlades` = der Vorlagen-
+        // `pushLeaf`-Port) die Laub-Blätter — echte gemuldete 3D-Geometrie statt Atlas-Quad
+        // (die Vorlagen-Teilung Z.647: Karten NUR L1). Nadel-Sprays bleiben Quads (Zelle 3).
+        // Toggle `state.foliageBlades` (Default an, `!== false` wie die Schwestern).
+        const _lod0 = (skel.lodLevel | 0) === 0;
+        let bladeGeom = null;
+        if (_lod0 && this.state.foliageBlades !== false) {
+            bladeGeom = this._buildTreeFoliageBladeGeometry(skel);
+        }
+        // foliage-Geometrie (Cards) — bei aktiven Klingen nur noch die Nadel-Blätter.
+        const foliageGeom = this._buildTreeFoliageCardGeometry(skel, { skipBroadleaf: !!bladeGeom });
+        if (foliageGeom || bladeGeom) {
             const laubMat = this.state.materials && this.state.materials.laub;
             // V18.235 (§3 lushe Krone) — DoubleSide: ein Blatt ist dünn, von BEIDEN
             // Seiten sichtbar. Vorher FrontSide → die äusseren Karten (Normale zur
@@ -59732,8 +59856,20 @@ class AnazhRealm {
                 side: THREE.DoubleSide,
             };
             if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
-            const foliageMat = this._sharedFoliageMaterial(foliageMatOpts);
-            const cardLeaf = { geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() };
+            // Klingen-Material: DIESELBE Opts-Signatur + `foliageBlade` → eigenes geteiltes
+            // Singleton, das den Atlas-Sample überspringt (die Klinge IST Geometrie, alpha=1;
+            // alphaTest bleibt fürs Dither-Crossfade am L0→L1-Band).
+            let bladeLeaf = null;
+            if (bladeGeom) {
+                const bladeMat = this._sharedFoliageMaterial(
+                    Object.assign({}, foliageMatOpts, { foliageBlade: true })
+                );
+                bladeLeaf = { geom: bladeGeom, mat: bladeMat, localMatrix: new THREE.Matrix4() };
+            }
+            const foliageMat = foliageGeom ? this._sharedFoliageMaterial(foliageMatOpts) : null;
+            const cardLeaf = foliageGeom
+                ? { geom: foliageGeom, mat: foliageMat, localMatrix: new THREE.Matrix4() }
+                : null;
             // V18.349 — DER OPAKE KRONEN-KERN (das Tierfell-Prinzip): eine kleine OPAKE Icosphere
             // INNERHALB der Karten-Wolke. Sie füllt die Durchscheine-Löcher (dichter) UND schreibt
             // Tiefe → early-Z verwirft verdeckte Hinter-Karten (weniger Overdraw, die 90 %-Laub-Last-
@@ -59789,11 +59925,15 @@ class AnazhRealm {
                     };
                 }
             }
-            // V18.389 — die Karten casten nur, wenn KEIN Zwilling sie trägt (sonst bleibt der
-            // Karten-Schatten = kein Regress bei Toggle aus). Reihenfolge bark → card → core → twin
-            // (Leaf-Index-Stabilität für _archInstanceGroupFor/instSlots — nur am Ende angehängt).
-            if (twinLeaf) cardLeaf.castShadow = false;
-            leaves.push(cardLeaf);
+            // V18.389 — die Karten/Klingen casten nur, wenn KEIN Zwilling sie trägt (sonst bleibt
+            // der Laub-Schatten = kein Regress bei Toggle aus). Reihenfolge bark → blade → card →
+            // core → twin (Leaf-Index-Stabilität für _archInstanceGroupFor/instSlots).
+            if (twinLeaf) {
+                if (cardLeaf) cardLeaf.castShadow = false;
+                if (bladeLeaf) bladeLeaf.castShadow = false;
+            }
+            if (bladeLeaf) leaves.push(bladeLeaf);
+            if (cardLeaf) leaves.push(cardLeaf);
             if (coreLeaf) leaves.push(coreLeaf);
             if (twinLeaf) leaves.push(twinLeaf);
         }

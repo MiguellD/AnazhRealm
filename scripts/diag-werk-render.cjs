@@ -38,6 +38,16 @@ async function renderWerk(page, bpName, view) {
             // Loop EINFRIEREN (sonst rendert der Engine-rAF die Welt-Szene über mein Bild)
             r._gameLoopTick = () => {};
             if (st.renderer && st.renderer.setAnimationLoop) st.renderer.setAnimationLoop(null);
+            // V18.390 (Eins W4) — HARTE LOD-KANTE (die dokumentierte A/B-Mode, uLodMaskOn=0):
+            // diese Linse rahmt eine BREITE Krone (~16 m) formatfüllend → die Kamera steht bei
+            // ~35 m, JENSEITS thresh01 (32 m). Der S1-Dither-Crossfade blendet dort die LOD0-
+            // Blatt-Klingen KORREKT aus (in-game wären sie bei >32 m LOD1-Karten) — der Schatten-
+            // Pass (Override-Depth) ignoriert den colorNode-Discard → nur der Blatt-SCHATTEN blieb,
+            // die Krone verschwand (der „opaker Ball → kahle Äste"-Befund). Als reine FORM-Linse
+            // will diese Ansicht die LOD0-Klinge IMMER sehen, egal wie fern gerahmt: lodMaskOn=false
+            // → keep=1. VOR dem ersten _ensureLodUniforms + der schon gebaute Uniform mitgezogen.
+            st.lodMaskOn = false;
+            if (st.lodUniforms && st.lodUniforms.uLodMaskOn) st.lodUniforms.uLodMaskOn.value = 0;
             // HUD ausblenden (das DOM liegt über dem Canvas) → ein sauberes Werk-Bild.
             try {
                 const cv = st.renderer && st.renderer.domElement;
@@ -111,7 +121,15 @@ async function renderWerk(page, bpName, view) {
                 if (leaves) {
                     for (const lf of leaves) {
                         if (!lf || !lf.geom || !lf.mat) continue;
+                        // V18.390 (Eins W4) — der Schatten-Zwilling ist im Spiel KAMERA-
+                        // UNSICHTBAR (SHADOW_TWIN_LAYER, V18.389); diese Linse ohne Layer-
+                        // Handling zeigte ihn als opaken Ball ÜBER der Krone (Harness-Lüge,
+                        // nicht die Spiel-Wahrheit). Er fällt hier weg; die sichtbare Krone
+                        // (Klingen/Karten) castet stattdessen — reine Form-Linse.
+                        if (lf.shadowTwin) continue;
                         const im = new THREE.InstancedMesh(lf.geom, lf.mat, 1);
+                        im.castShadow = true;
+                        im.receiveShadow = true;
                         im.setMatrixAt(0, new THREE.Matrix4());
                         im.instanceMatrix.needsUpdate = true;
                         try {
