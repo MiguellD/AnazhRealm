@@ -2780,13 +2780,23 @@ init();
         const out = { kind: __assetMaterialKind(mesh.material) };
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
-        // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral.
+        // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral. ELEMENT-WEISE
+        // via count/itemSize + get*(): robust gegen INTERLEAVED-Puffer (at.array waere dort der
+        // ganze verschachtelte Puffer = 2^N-zu-gross), gibt einen dicht-gepackten Puffer zurueck.
         for (const name in A) {
             const at = A[name];
-            if (!at || !at.array) continue;
-            out[name] = { array: new Float32Array(at.array), itemSize: at.itemSize };
+            if (!at || typeof at.count !== "number") continue;
+            const is = at.itemSize || 3;
+            const dst = new Float32Array(at.count * is);
+            for (let i = 0; i < at.count; i++) {
+                dst[i * is] = at.getX(i);
+                if (is > 1) dst[i * is + 1] = at.getY(i);
+                if (is > 2) dst[i * is + 2] = at.getZ(i);
+                if (is > 3) dst[i * is + 3] = at.getW(i);
+            }
+            out[name] = { array: dst, itemSize: is };
         }
-        if (geo.index) out.index = new Uint32Array(geo.index.array);
+        if (geo.index) out.index = new Uint32Array(Array.from(geo.index.array));
         // Welt-Transform der Instanz (buildInstance setzt g.position.y; Meshes koennen lokal
         // versetzt sein) in die Vertices backen, damit AnazhRealm den Baum am Ursprung erhaelt.
         mesh.updateWorldMatrix(true, false);
@@ -2833,19 +2843,13 @@ init();
                 console.warn("[phyto] build-asset", msg.presetId, e && e.message);
             } catch (_) {}
         }
-        // Transferables sammeln (die ArrayBuffer der Attribut-/Index-Arrays).
-        const transfer = [];
-        for (const m of meshes) {
-            for (const k in m) {
-                if (m[k] && m[k].array && m[k].array.buffer) transfer.push(m[k].array.buffer);
-                else if (m[k] && m[k].buffer) transfer.push(m[k].buffer);
-            }
-        }
+        // KEINE Transferables: der strukturierte Klon kopiert die Float32/Uint32-Arrays
+        // sauber. Transferables teilten/neutralisierten Puffer (geteilte ArrayBuffer der
+        // interleaved Vorlagen-Attribute -> 2^N-Vertex-Korruption beim Empfaenger).
         if (window.parent && window.parent !== window) {
             window.parent.postMessage(
                 { type: "asset", world: "terrain", reqId, presetId: msg.presetId, seed: msg.seed, lod: msg.lod | 0, meshes },
-                "*",
-                transfer
+                "*"
             );
         }
     }

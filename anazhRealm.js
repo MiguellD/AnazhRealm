@@ -62877,12 +62877,16 @@ class AnazhRealm {
                 resolve(null);
                 return;
             }
+            // Grosszuegiges Timeout: ein Koniferen-lod0-Asset ist ~170k Verts (buildInstance +
+            // element-weise Extraktion + structured-clone) UND die Anfragen stauen sich im
+            // iframe (Single-Thread) hinter dem Prefetch -> 10s war zu knapp -> null -> Grammatik-
+            // Fallback (die tanne/fichte/birke wurden nie Foundry). 45s deckt den Rueckstau.
             setTimeout(() => {
                 if (f.pending.has(reqId)) {
                     f.pending.delete(reqId);
                     resolve(null);
                 }
-            }, 10000);
+            }, 45000);
         });
     }
     _foundryPresetFor(species) {
@@ -62928,25 +62932,40 @@ class AnazhRealm {
         if (!this._foundryMats) this._foundryMats = {};
         if (this._foundryMats[kind]) return this._foundryMats[kind];
         const T = THREE;
+        const TSL = T.TSL;
         const double = kind === "foliage" || kind === "foliageTex" || kind === "grass";
         let mat;
         try {
             mat = new T.MeshStandardNodeMaterial({
-                vertexColors: true,
                 roughness: kind === "bark" ? 0.9 : 0.62,
                 metalness: 0,
                 side: double ? T.DoubleSide : T.FrontSide,
             });
+            // Die Vorlagen-Farben leben als VERTEX-COLORS (bark braun, laub gruen). Auf
+            // WebGPU/NodeMaterial MUSS colorNode = attribute("color") sie explizit lesen —
+            // `vertexColors:true` wirkt hier NICHT (CLAUDE.md). Ohne das: weisses/ausgewaschenes
+            // Laub, schwarze Koniferen. `_foundryBuildGroup` garantiert das color-Attribut (STRIKT).
+            const vcol = TSL.attribute("color", "vec3");
             if (kind === "foliageTex") {
+                // Nadel-/Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad),
+                // RGB × Vertex-Farbe (die Vorlagen-Blattfarbe faerbt den Atlas).
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
                 const canvas =
                     core && typeof core.bakeLeafAtlasCanvas === "function" ? core.bakeLeafAtlasCanvas(document, { cell3: "needle" }) : null;
-                if (canvas) {
+                if (canvas && TSL.texture) {
                     const tex = new T.CanvasTexture(canvas);
                     tex.colorSpace = T.SRGBColorSpace;
-                    mat.map = tex;
+                    const uvN = TSL.attribute("uv", "vec2");
+                    const texN = TSL.texture(tex, uvN);
+                    mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0);
+                    mat.opacityNode = texN.a;
                     mat.alphaTest = 0.5;
+                    mat.transparent = false;
+                } else {
+                    mat.colorNode = TSL.vec4(vcol, 1.0);
                 }
+            } else {
+                mat.colorNode = TSL.vec4(vcol, 1.0);
             }
         } catch (_e) {
             mat = new T.MeshStandardMaterial({ vertexColors: true, side: double ? T.DoubleSide : T.FrontSide });
@@ -62968,8 +62987,18 @@ class AnazhRealm {
                 const geo = new T.BufferGeometry();
                 geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
                 if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
-                if (m.color && m.color.array)
-                    geo.setAttribute("color", new T.BufferAttribute(m.color.array, m.color.itemSize || 3));
+                const vcount = m.position.array.length / 3;
+                if (m.color && m.color.array && m.color.array.length >= vcount * 3)
+                    geo.setAttribute("color", new T.BufferAttribute(m.color.array, m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3));
+                else {
+                    // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER
+                    // (fehlt es -> schwarz/Crash, die schwarze Konifere). Fehlt die Vorlagen-Farbe,
+                    // ein kind-Default (bark braun, laub gruen) fuellen statt schwarz.
+                    const def = m.kind === "bark" || m.kind === "stem" ? [0.32, 0.22, 0.13] : [0.2, 0.34, 0.13];
+                    const carr = new Float32Array(vcount * 3);
+                    for (let v = 0; v < vcount; v++) { carr[v * 3] = def[0]; carr[v * 3 + 1] = def[1]; carr[v * 3 + 2] = def[2]; }
+                    geo.setAttribute("color", new T.BufferAttribute(carr, 3));
+                }
                 if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
                 if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
                 if (!m.normal || !m.normal.array) geo.computeVertexNormals();
@@ -63003,14 +63032,12 @@ class AnazhRealm {
                     const season = this.state.season || "summer";
                     const key = sp + "|" + sd + "|" + lod + "|" + season;
                     if (f.cache.has(key)) continue;
-                    let group = null;
                     try {
                         const meshes = await this._foundryRequest(sp, sd, lod, season);
-                        group = meshes ? this._foundryBuildGroup(meshes) : null;
-                    } catch (_e) {
-                        group = null;
-                    }
-                    f.cache.set(key, group);
+                        // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null cachen
+                        // -> die Art bleibt on-demand nachfragbar (sonst dauerhaft Grammatik-Fallback).
+                        if (meshes) f.cache.set(key, this._foundryBuildGroup(meshes));
+                    } catch (_e) {}
                 }
             }
         }
@@ -63063,7 +63090,13 @@ class AnazhRealm {
             if (!f.requested.has(key)) {
                 f.requested.add(key);
                 this._foundryRequest(preset, variant, lod, season).then((meshes) => {
-                    f.cache.set(key, meshes ? this._foundryBuildGroup(meshes) : null);
+                    if (meshes) {
+                        f.cache.set(key, this._foundryBuildGroup(meshes));
+                    } else {
+                        // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
+                        // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
+                        f.requested.delete(key);
+                    }
                     this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
                 });
             }
@@ -63090,8 +63123,11 @@ class AnazhRealm {
         const p = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
-        if (d < 25) return 0;
-        if (d < 70) return 1;
+        // lod0 = die volle Vorlagen-Geometrie (Konifere ~170k Verts!) NUR fuer die naechsten
+        // paar Baeume — sonst summieren sich Dutzende × 170k = Freeze (Schoepfer-Befund). Die
+        // Ferne traegt lod1 (~40k) / lod2 (~15k); der Perf-Regler deckelt zusaetzlich die Dichte.
+        if (d < 14) return 0;
+        if (d < 48) return 1;
         return 2;
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
@@ -78828,7 +78864,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.390.0";
+AnazhRealm.VERSION = "18.391.0";
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
