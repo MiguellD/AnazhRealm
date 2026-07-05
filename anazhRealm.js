@@ -63111,9 +63111,16 @@ class AnazhRealm {
         return typeof entry.type === "string" ? this._foundryPresetFor(entry.type) : null;
     }
     // Ist das Studio-Preset ein BAUM (Fernstufe = billiges Billboard, nicht schwere L2-Geometrie)?
-    // Die sieben buildInstance-Arten mit Krone. Fels/Kristall/Blume (spaerlich, kein Billboard)
-    // tragen ihre L2 als Geometrie.
+    // DATA-DRIVEN: das STUDIO klassifiziert seine Arten (`PRESETS[id].kind`), und diese Klassifikation
+    // fliesst schon durch die Rezept-Bruecke (`get-recipes` -> `f.recipes`). AnazhRealm LIEST sie —
+    // markiert der Schoepfer im Portalfile eine Art als `kind:"tree"`/`"shrub"` (Krone -> Billboard),
+    // folgt AnazhRealms Fernstufe automatisch, ohne dass hier etwas hartkodiert ist (der Schoepfer-
+    // Weg: das Studio ist die EINE Quelle, auch fuer die Arten-Klassifikation). Fallback auf die
+    // bekannten Baum-Presets, solange die Rezepte noch nicht geladen sind (headless / vor dem Ingest).
     _foundryPresetIsTree(preset) {
+        const f = this._foundry;
+        const rec = f && f.recipes && f.recipes[preset];
+        if (rec && typeof rec.kind === "string") return rec.kind === "tree" || rec.kind === "shrub";
         return (
             preset === "eiche" ||
             preset === "fichte" ||

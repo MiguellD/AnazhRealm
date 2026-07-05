@@ -15679,7 +15679,10 @@ async function checkBandWelle6APolish(ctx) {
             "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
             wave6a45Results.resolveUsesGetWorldDirection
         );
-        check("Welle 6.A4: _resolvePhantomTarget nutzt den feld-nativen _runRaycast", wave6a45Results.resolveUsesRayTest);
+        check(
+            "Welle 6.A4: _resolvePhantomTarget nutzt den feld-nativen _runRaycast",
+            wave6a45Results.resolveUsesRayTest
+        );
         check("Welle 6.A5: _resolvePhantomTarget liest hit-Normal für Stabilität", wave6a45Results.resolveReadsNormal);
         check(
             "Welle 6.A5: Stabilitäts-Schwelle ist Normal-Y > 0.5 (~60° walkable)",
@@ -25273,8 +25276,7 @@ async function checkBandV171Scatter(ctx) {
             grassSrc.includes("_windSwayOffset") &&
             motionSrc.includes("_windSwayOffset") &&
             motionSrc.includes("drift");
-        out.windCollapsed =
-            swaySrc.includes("gust") && !grassSrc.includes("gust") && !motionSrc.includes("gust");
+        out.windCollapsed = swaySrc.includes("gust") && !grassSrc.includes("gust") && !motionSrc.includes("gust");
 
         // (2) Methoden existieren.
         out.buildExists = typeof r._buildVoxelChunkScatter === "function";
@@ -39361,14 +39363,28 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         const r = window.anazhRealm;
         const s = r.state;
         const out = {};
-        if (typeof r.replayRun !== "function" || typeof r._replaySnapshotState !== "function" || !s.playerMesh || !s.playerVel)
+        if (
+            typeof r.replayRun !== "function" ||
+            typeof r._replaySnapshotState !== "function" ||
+            !s.playerMesh ||
+            !s.playerVel
+        )
             return out;
         const DT = 1 / 60;
         const mkFrames = (seq) => {
             const fr = [];
             for (const [count, k] of seq)
                 for (let i = 0; i < count; i++)
-                    fr.push({ dt: DT, yaw: 0, w: !!k.w, a: !!k.a, s: !!k.s, d: !!k.d, shift: !!k.shift, space: !!k.space });
+                    fr.push({
+                        dt: DT,
+                        yaw: 0,
+                        w: !!k.w,
+                        a: !!k.a,
+                        s: !!k.s,
+                        d: !!k.d,
+                        shift: !!k.shift,
+                        space: !!k.space,
+                    });
             return fr;
         };
         const sy = r.getTerrainHeightAt(0, 0);
@@ -39388,7 +39404,15 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         const framesB = mkFrames([[80, { s: true }]]);
         const recA = { start, frames: framesA };
         const eqBit = (p, q) =>
-            p && q && p.x === q.x && p.y === q.y && p.z === q.z && p.vx === q.vx && p.vy === q.vy && p.vz === q.vz && p.fieldVy === q.fieldVy;
+            p &&
+            q &&
+            p.x === q.x &&
+            p.y === q.y &&
+            p.z === q.z &&
+            p.vx === q.vx &&
+            p.vy === q.vy &&
+            p.vz === q.vz &&
+            p.fieldVy === q.fieldVy;
         const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z);
         const a1 = r.replayRun(recA);
         const a2 = r.replayRun(recA);
@@ -39398,16 +39422,26 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         out.moved = dist(start, a1); // (B) non-trivial
         out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
         // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
-        out.usesStep = /_stepCharacter\(/.test(r.replayRun.toString()) && /_loopPlayerMovement\(/.test(r.replayRun.toString());
+        out.usesStep =
+            /_stepCharacter\(/.test(r.replayRun.toString()) && /_loopPlayerMovement\(/.test(r.replayRun.toString());
         return out;
     });
     check(
         `P4 (Determinismus-Ernte): zwei+drei Replays derselben Aufnahme sind BIT-IDENTISCH (Determinismus bewiesen)`,
         res.bitEqual === true
     );
-    check(`P4: der Replay bewegt den Spieler spürbar (${(res.moved || 0).toFixed(2)} m, kein No-op)`, (res.moved || 0) > 2.0);
-    check("P4: ein anderer Input liefert ein anderes Ergebnis (input-sensitiv, kein Fixpunkt)", res.inputSensitive === true);
-    check("P4: der Replay läuft durch DENSELBEN Schritt-Pfad (_stepCharacter + _loopPlayerMovement, CONSUM)", res.usesStep === true);
+    check(
+        `P4: der Replay bewegt den Spieler spürbar (${(res.moved || 0).toFixed(2)} m, kein No-op)`,
+        (res.moved || 0) > 2.0
+    );
+    check(
+        "P4: ein anderer Input liefert ein anderes Ergebnis (input-sensitiv, kein Fixpunkt)",
+        res.inputSensitive === true
+    );
+    check(
+        "P4: der Replay läuft durch DENSELBEN Schritt-Pfad (_stepCharacter + _loopPlayerMovement, CONSUM)",
+        res.usesStep === true
+    );
 }
 
 async function checkBandV18262CreatureRenderLOD(ctx) {
@@ -41192,8 +41226,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const dlN = r.state.directionalLight;
         const midnightY = dlN.position.y;
         const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
-        out.lightPosFollowsTimeOfDay =
-            noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
+        out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
 
         // --- b) Sanfte Wetter-Übergänge
         out.weatherTransitionDuration = AnazhRealm.WEATHER_TRANSITION_DURATION_MS === 45000;
@@ -44319,7 +44352,11 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2: enterPortal(welt_terrain) lädt die Phytogenesis-Welt", w12terrainResults.enterTerrainWorld);
         check("W12 P2: die Brücke trägt einen Phytogenesis-Manifest-Op", w12terrainResults.terrainBridge);
     } else {
-        check("W12 P2: Phytogenesis-Welt Tests laufen", false, w12terrainResults ? w12terrainResults.error : "no result");
+        check(
+            "W12 P2: Phytogenesis-Welt Tests laufen",
+            false,
+            w12terrainResults ? w12terrainResults.error : "no result"
+        );
     }
 
     // ### W12 Phase 2 — Welt-Registry + Portal-Zielen ###
@@ -47072,7 +47109,8 @@ async function checkBandG8R3Locality(ctx) {
         // trusted → + allow-same-origin + allow-pointer-lock (V18.384: unser
         // eigener Code darf den Zeiger fangen — die begehbare Portal-Welt).
         out.sandboxedAttr = r._portalSandboxAttr({ trust: "sandboxed" }) === "allow-scripts";
-        out.trustedAttr = r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin allow-pointer-lock";
+        out.trustedAttr =
+            r._portalSandboxAttr({ trust: "trusted" }) === "allow-scripts allow-same-origin allow-pointer-lock";
         // (2) _sanitizePortalMeta: trust:"sandboxed" bleibt sandboxed, Default = trusted.
         const m1 = r._sanitizePortalMeta({ world: "worlds/x/i.html", trust: "sandboxed" }, "X");
         const m2 = r._sanitizePortalMeta({ world: "worlds/x/i.html" }, "X");
@@ -55539,7 +55577,11 @@ async function checkBandRing6Workshop(ctx) {
         // dieselbe feld-native Kollision (blockerAABBs beim Spawn, distanz-unabhängig).
         const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
         out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
-        out.coldHasCollision = !!(coldEntry && Array.isArray(coldEntry.blockerAABBs) && coldEntry.blockerAABBs.length > 0);
+        out.coldHasCollision = !!(
+            coldEntry &&
+            Array.isArray(coldEntry.blockerAABBs) &&
+            coldEntry.blockerAABBs.length > 0
+        );
 
         // Cleanup
         for (const a of r.state.architectures.slice()) {
@@ -55952,8 +55994,7 @@ async function checkBandRing6Workshop(ctx) {
         // auch nur die NICHT-grown-Baupläne (sonst Mismatch, sobald die Welt grown_-Varianten streamt).
         const list = document.getElementById("workshop-list");
         const listableCount = Object.keys(r.state.blueprints).filter((n) => !String(n).startsWith("grown_")).length;
-        out.listShowsAllBlueprints =
-            list && list.querySelectorAll(".workshop-list-row").length === listableCount;
+        out.listShowsAllBlueprints = list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 
         // createBlueprint
         const beforeCount = Object.keys(r.state.blueprints).length;
@@ -56966,9 +57007,7 @@ async function checkBandRing6Workshop(ctx) {
         // V18.309 — UNÜBERSEHBAR: ein toter/hängender Lauf endet NIE mehr als
         // rätselhafte ✅-Liste oder Endlos-Schweigen. Eine laute Zeile, Exit≠0,
         // egal ob STRICT — ein unvollständiger Lauf ist nie ein grünes Gate.
-        console.log(
-            `\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`
-        );
+        console.log(`\n⛔ GATE UNVOLLSTÄNDIG — abgebrochen bei Band „${gateAborted.band}" (Seite tot/abgehängt).`);
         console.log(`   Grund: ${gateAborted.reason}`);
         console.log(
             `   Die Bänder NACH dem Abbruch liefen nie → das ist KEIN grünes Gate. Das volle ~3500-` +
