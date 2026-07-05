@@ -62831,6 +62831,11 @@ class AnazhRealm {
     _foundryEnabled() {
         if (typeof window !== "undefined" && window.__anazhHeadlessNullRenderer) return false;
         if (this._useAssetFoundry === false) return false;
+        // NOT-AUS-Schalter (Absturz-Rettung): in der Konsole `localStorage.anazhNoFoundry='1'`
+        // + Reload -> die Foundry bleibt aus, die Welt laeuft auf den eigenen Baeumen (stabil).
+        try {
+            if (typeof localStorage !== "undefined" && localStorage.getItem("anazhNoFoundry")) return false;
+        } catch (_e) {}
         return typeof document !== "undefined" && typeof window !== "undefined" && !!(this.state && this.state.scene);
     }
     _ensureAssetFoundry() {
@@ -63065,10 +63070,22 @@ class AnazhRealm {
             return null;
         }
         if (group && group.children.length) {
-            // WARM-KOMPILIEREN (V18.367): die Foundry-Material-Pipeline compiliert sonst
-            // SYNCHRON beim ersten Zeigen des Baums = ein Stall/Crash genau bei der
-            // Interaktion. compileAsync warmt sie im Idle -> der erste Frame ist warm.
-            try { this._warmCompilePipeline(group, false); } catch (_e2) {}
+            // WARM-KOMPILIEREN (V18.367) — ABER NUR EINMAL JE MATERIAL. Die Foundry-Materialien
+            // sind per kind geteilt (~5 total). Ein compileAsync PRO BUILD flutete — seit das
+            // Bauen jeden Frame laeuft (per-Frame-Drain) — die WebGPU-Compile-Queue = Device-
+            // Crash (der Schoepfer-Absturz). Jetzt warmt nur ein NEUES, noch nicht gewaermtes
+            // Material die Pipeline; danach nie wieder -> kein Flooding, kein Sync-Compile-Stall.
+            if (!this._foundryWarmedMats) this._foundryWarmedMats = new Set();
+            let needsWarm = false;
+            for (const ch of group.children) {
+                if (ch.material && !this._foundryWarmedMats.has(ch.material)) {
+                    this._foundryWarmedMats.add(ch.material);
+                    needsWarm = true;
+                }
+            }
+            if (needsWarm) {
+                try { this._warmCompilePipeline(group, false); } catch (_e2) {}
+            }
             return group;
         }
         return null;
