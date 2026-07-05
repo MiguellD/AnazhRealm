@@ -287,27 +287,37 @@ function pushNeedle(arr,base,dir,len,color,sway,phase,omega){
    Winter, faerbt sich im Herbst, exakt wie geometrische Blaetter.            */
 function bakeLeafAtlas(){
   if(_leafAtlas)return;
-  const cv=document.createElement('canvas');cv.width=1024;cv.height=256;const x=cv.getContext('2d');
-  const rg=mulberry32(0xBEEF);   // eigener Strom!
-  for(let c=0;c<4;c++){const ox=c*256+128, oy=150;
-    const n=8+(c&1);
-    for(let i=0;i<n;i++){
-      const a=(i/n)*6.2831+rg()*0.9, R=(i===0)?0:22+rg()*38;
-      const lx=ox+Math.cos(a)*R, ly=oy+Math.sin(a)*R*0.72-18;
-      const rot=a+1.5708+(rg()-0.5)*0.8, L=76+rg()*30, W=L*(0.46+rg()*0.16);
-      const v=0.88+rg()*0.34;                                    // FIX v37: Wert um Mittel ~1 (vorher 0.62-1.0 -> Cluster ~35% dunkler als flach getoente L0-Blaetter = Farbsprung an der Blende); Variation bleibt als gemalte Tiefe
-      x.save();x.translate(lx,ly);x.rotate(rot);
-      const g=x.createLinearGradient(0,-L*0.5,0,L*0.5);
-      g.addColorStop(0,'rgba('+Math.min(255,Math.round(250*v))+','+Math.min(255,Math.round(255*v))+','+Math.min(255,Math.round(238*v))+',1)');
-      g.addColorStop(1,'rgba('+Math.min(255,Math.round(206*v))+','+Math.min(255,Math.round(220*v))+','+Math.min(255,Math.round(186*v))+',1)');
-      x.fillStyle=g;x.beginPath();
-      x.moveTo(0,-L*0.5);
-      x.quadraticCurveTo(W*0.62,-L*0.14,0,L*0.5);               // Blattrand rechts
-      x.quadraticCurveTo(-W*0.62,-L*0.14,0,-L*0.5);             // Blattrand links
-      x.closePath();x.fill();
-      x.strokeStyle='rgba(90,104,78,0.40)';x.lineWidth=2;        // Mittelrippe
-      x.beginPath();x.moveTo(0,-L*0.42);x.lineTo(0,L*0.42);x.stroke();
-      x.restore();}}
+  // DER GETEILTE SAMEN: der Blatt-Atlas lebt in phyto-core.js (bakeLeafAtlasCanvas) — dieselbe
+  // EINE Quelle, die AnazhRealm liest. Ein Edit am Cluster-Rezept fliesst hierher UND nach
+  // AnazhRealm. cell3:'broadleaf' malt die 4 Breitblatt-Zellen byte-treu (gleiche mulberry32-
+  // Ziehungen); AnazhRealm nutzt cell3:'needle' (Nadel-Zelle) → beide behalten ihren Look.
+  // Fallback auf den Inline-Bau, falls der Samen (noch) nicht geladen ist.
+  let cv=null;
+  const __core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(__core&&typeof __core.bakeLeafAtlasCanvas==='function'){cv=__core.bakeLeafAtlasCanvas(document,{cell3:'broadleaf'});}
+  if(!cv){
+    cv=document.createElement('canvas');cv.width=1024;cv.height=256;const x=cv.getContext('2d');
+    const rg=mulberry32(0xBEEF);   // eigener Strom!
+    for(let c=0;c<4;c++){const ox=c*256+128, oy=150;
+      const n=8+(c&1);
+      for(let i=0;i<n;i++){
+        const a=(i/n)*6.2831+rg()*0.9, R=(i===0)?0:22+rg()*38;
+        const lx=ox+Math.cos(a)*R, ly=oy+Math.sin(a)*R*0.72-18;
+        const rot=a+1.5708+(rg()-0.5)*0.8, L=76+rg()*30, W=L*(0.46+rg()*0.16);
+        const v=0.88+rg()*0.34;                                    // FIX v37: Wert um Mittel ~1 (vorher 0.62-1.0 -> Cluster ~35% dunkler als flach getoente L0-Blaetter = Farbsprung an der Blende); Variation bleibt als gemalte Tiefe
+        x.save();x.translate(lx,ly);x.rotate(rot);
+        const g=x.createLinearGradient(0,-L*0.5,0,L*0.5);
+        g.addColorStop(0,'rgba('+Math.min(255,Math.round(250*v))+','+Math.min(255,Math.round(255*v))+','+Math.min(255,Math.round(238*v))+',1)');
+        g.addColorStop(1,'rgba('+Math.min(255,Math.round(206*v))+','+Math.min(255,Math.round(220*v))+','+Math.min(255,Math.round(186*v))+',1)');
+        x.fillStyle=g;x.beginPath();
+        x.moveTo(0,-L*0.5);
+        x.quadraticCurveTo(W*0.62,-L*0.14,0,L*0.5);               // Blattrand rechts
+        x.quadraticCurveTo(-W*0.62,-L*0.14,0,-L*0.5);             // Blattrand links
+        x.closePath();x.fill();
+        x.strokeStyle='rgba(90,104,78,0.40)';x.lineWidth=2;        // Mittelrippe
+        x.beginPath();x.moveTo(0,-L*0.42);x.lineTo(0,L*0.42);x.stroke();
+        x.restore();}}
+  }
   _leafAtlas=new THREE.CanvasTexture(cv);
   _leafAtlas.minFilter=THREE.LinearMipmapLinearFilter;_leafAtlas.magFilter=THREE.LinearFilter;_leafAtlas.generateMipmaps=true;_leafAtlas.anisotropy=8;
   if(THREE.sRGBEncoding!==undefined)_leafAtlas.encoding=THREE.sRGBEncoding;

@@ -383,16 +383,28 @@
     // Breitblatt-Cluster (die Vorlage), 3 = Nadel-Spray (Wert-only, für Koniferen). Der
     // Aufrufer übergibt `doc` (document) — Canvas ist eine Main-Thread-Ressource; im Worker
     // wird der Atlas NICHT gemalt (nur die Geometrie), darum kein `doc` → null.
-    function bakeLeafAtlasCanvas(doc) {
+    function bakeLeafAtlasCanvas(doc, opts) {
         if (!doc || typeof doc.createElement !== "function") return null;
+        opts = opts || {};
+        // DIVERGENZ-AUFLÖSUNG (Vorlage `bakeLeafAtlas`): die Vorlage malt 4 BREITBLATT-Zellen,
+        // AnazhRealm braucht Zelle 3 als NADEL-Spray (seine Koniferen). `opts.cell3`:
+        //   'needle' (default → AnazhRealm unverändert) — 3 Breitblatt + 1 Nadel-Zelle.
+        //   'broadleaf' → 4 Breitblatt-Cluster wie die Vorlage (byte-treu).
+        // Der RNG: AnazhRealm erbt seinen bisherigen Strom (`_atlasRnd`), die Vorlage-Treue
+        // verlangt DENSELBEN Strom wie ihr `mulberry32(0xBEEF)` → im broadleaf-Modus (oder
+        // explizit via opts.mulberry) mulberry32; sonst _atlasRnd. So bleibt jeder Leser
+        // byte-identisch zu SEINER heutigen Ausgabe.
+        const cell3 = opts.cell3 || "needle";
+        const useMulberry = opts.mulberry != null ? opts.mulberry : cell3 === "broadleaf";
         const cv = doc.createElement("canvas");
         cv.width = 1024;
         cv.height = 256;
         const x = cv.getContext("2d");
         if (!x) return null;
-        const rg = _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG)
-        // Zellen 0..2 — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
-        for (let c = 0; c < 3; c++) {
+        const rg = useMulberry ? mulberry32(0xbeef) : _atlasRnd(0xbeef); // eigener Strom (verbraucht kein Welt-RNG)
+        // Zellen 0..2 (bzw. 0..3 im broadleaf-Modus) — Breitblatt-Cluster (Vorlage FIX v37: Wert um Mittel ~1, nahe weiß).
+        const broadCells = cell3 === "broadleaf" ? 4 : 3;
+        for (let c = 0; c < broadCells; c++) {
             const ox = c * 256 + 128,
                 oy = 150;
             const n = 8 + (c & 1);
@@ -437,7 +449,8 @@
         }
         // Zelle 3 — Nadel-Spray (Wert-only) für Koniferen (die Vorlage macht Nadeln als
         // Geometrie; AnazhRealm rendert einatlasig → eine Nadel-Zelle hält das eine Material).
-        {
+        // Im broadleaf-Modus (Vorlage-Treue) ist Zelle 3 bereits als Breitblatt gemalt.
+        if (cell3 !== "broadleaf") {
             const ox = 3 * 256 + 128,
                 oy = 128;
             const nn = 70;
