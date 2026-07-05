@@ -62935,16 +62935,29 @@ class AnazhRealm {
             baum_erle: "weide",
             baum_buche: "mammut",
             baum_totholz: "eiche",
-            // Fels: rund -> findling, kantig/Saeule -> basalt (die Vorlagen-Rezepte via emitRock)
+            // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
+            // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
+            // findling = runder Findling:
             noiserock: "findling",
             findling: "findling",
-            kiesel: "findling",
-            fels: "findling",
-            fels_var: "findling",
-            felsbrocken: "findling",
+            // basalt = Saeulen:
             stein_block: "basalt",
-            felsturm: "basalt",
-            felsbogen: "basalt",
+            stein: "basalt",
+            // sediment = Schichtfels (geschichtet):
+            fels: "sediment",
+            fels_var: "sediment",
+            schichtfels: "sediment",
+            sediment: "sediment",
+            // zacken = Felszacken (schroffe Tuerme/Boegen):
+            felsturm: "zacken",
+            felszacken: "zacken",
+            felsbogen: "zacken",
+            zacken: "zacken",
+            // geroell = Geroellhalde (Schutt/Talus/Kiesel):
+            geroell: "geroell",
+            talus: "geroell",
+            felsbrocken: "geroell",
+            kiesel: "geroell",
             // Kristall (emitCrystals)
             kristall_geode: "kristalle",
             geode: "kristalle",
