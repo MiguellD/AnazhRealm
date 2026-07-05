@@ -62899,6 +62899,13 @@ class AnazhRealm {
             baum_weide: "weide",
             baum_mammut: "mammut",
             baum_kiefer: "fichte",
+            // Die Wald-Generator-Nischen (_forestCellDarts) auf die Vorlagen-Arten: die Nass-Saum-
+            // Nische baum_erle -> Trauerweide (weide), die Riesen-Nische baum_buche -> Mammutbaum
+            // (mammut), der Totholz-Snag -> kahle Eiche. OHNE das fielen erle/buche/totholz auf die
+            // Grammatik zurueck (nicht die Vorlage) -> jetzt fliesst JEDE Wald-Art durch die Pipe.
+            baum_erle: "weide",
+            baum_buche: "mammut",
+            baum_totholz: "eiche",
             // Fels: rund -> findling, kantig/Saeule -> basalt (die Vorlagen-Rezepte via emitRock)
             noiserock: "findling",
             findling: "findling",
