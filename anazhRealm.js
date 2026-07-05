@@ -19350,9 +19350,13 @@ class AnazhRealm {
             // Sonnenaufgang-warm und Mittag-blau, sonst war der R-Sprung
             // (200→75) zu hart. Sanfter blau-grauer Vormittag-Tint.
             Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffe8c8, intensity: 0.95 }),
-            Object.freeze({ t: 0.5, sky: 0x4b75c2, light: 0xffffff, intensity: 1.0 }),
+            // Vorlage phytogenesis Z.1248: Mittags-Himmel = weiches Dunst-Blau (uTop 0x6a9ed0,
+            // NICHT das gesättigte 0x4b75c2) + WARME Sonne (uSunCol (1,0.95,0.85) = 0xfff2d9,
+            // NICHT reines Weiss). Das gesättigte Blau + kalte weisse Sonne war der harte,
+            // ungemütliche AnazhRealm-Look; die Vorlage ist weicher, wärmer, einladender.
+            Object.freeze({ t: 0.5, sky: 0x6a9ed0, light: 0xfff2d9, intensity: 1.0 }),
             // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
-            Object.freeze({ t: 0.56, sky: 0x7090b8, light: 0xfff0d8, intensity: 0.97 }),
+            Object.freeze({ t: 0.56, sky: 0x7ba0c8, light: 0xfff0d8, intensity: 0.97 }),
             Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffd8b0, intensity: 0.92 }),
             Object.freeze({ t: 0.68, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
             Object.freeze({ t: 0.74, sky: 0x804060, light: 0xb888a8, intensity: 0.62 }),
