@@ -217,6 +217,31 @@ const server = http.createServer((req, res) => {
             };
         }
 
+        // 8) LOD-BUTTON: L0 (viele Parts) -> L2 (wenige) fuer den Baum? Fels: Detail gruene?
+        eiche._recipeLod = 0;
+        r._workshopRegrowRecipe(eiche, r._treeRecipeDials("baum_eiche", null), "lod-test");
+        const nL0 = bbox(eiche).n;
+        eiche._recipeLod = 2;
+        r._workshopRegrowRecipe(eiche, r._treeRecipeDials("baum_eiche", null), "lod-test");
+        const nL2 = bbox(eiche).n;
+        eiche._recipeLod = 0;
+        out.lodButton = { baumL0Parts: nL0, baumL2Parts: nL2, groeberBeiL2: nL2 < nL0 };
+
+        // 9) PIPELINE-ZENSUS: welche editierbaren Baupláne fliessen durch die geteilte Pipeline?
+        const census = { tree: [], rock: [], crystal: [], keine: [] };
+        for (const name of Object.keys(s.blueprints)) {
+            if (String(name).startsWith("grown_")) continue;
+            const k = r._workshopRecipeKind(s.blueprints[name]);
+            (k ? census[k] : census.keine).push(name);
+        }
+        out.pipelineZensus = {
+            tree: census.tree.length,
+            rock: census.rock.length,
+            crystal: census.crystal.length,
+            keine_anzahl: census.keine.length,
+            keine_beispiele: census.keine.slice(0, 24),
+        };
+
         return out;
     });
     console.log(JSON.stringify(D, null, 1));
@@ -237,12 +262,17 @@ const server = http.createServer((req, res) => {
         D.kristall.regler === 2 &&
         D.kristall.dialGeaendert &&
         D.kristall.saatGeaendert;
-    console.log(`\nBAUM: ${treeOK ? "✅" : "❌"}  FELS: ${felsOK ? "✅" : "❌"}  KRISTALL: ${krisOK ? "✅" : "❌"}`);
-    const ok = treeOK && felsOK && krisOK;
+    const lodOK = D.lodButton && D.lodButton.groeberBeiL2;
     console.log(
-        ok
-            ? "✅ REZEPT-REGLER PRUEFBAR fuer BAUM · FELS · KRISTALL: Regler + Saat-Wuerfel aendern die Geometrie live."
-            : "❌ Etwas fehlt — siehe oben."
+        `\nBAUM: ${treeOK ? "✅" : "❌"}  FELS: ${felsOK ? "✅" : "❌"}  KRISTALL: ${krisOK ? "✅" : "❌"}  LOD-BUTTON: ${lodOK ? "✅" : "❌"}`
+    );
+    if (D.pipelineZensus)
+        console.log(
+            `PIPELINE-ZENSUS: Baum ${D.pipelineZensus.tree} · Fels ${D.pipelineZensus.rock} · Kristall ${D.pipelineZensus.crystal} fliessen | ${D.pipelineZensus.keine_anzahl} NICHT (${D.pipelineZensus.keine_beispiele.join(", ")})`
+        );
+    const ok = treeOK && felsOK && krisOK && lodOK;
+    console.log(
+        ok ? "✅ REZEPT-REGLER + LOD-BUTTON PRUEFBAR fuer BAUM · FELS · KRISTALL." : "❌ Etwas fehlt — siehe oben."
     );
     await browser.close();
     server.close();

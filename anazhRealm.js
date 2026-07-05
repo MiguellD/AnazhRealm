@@ -52748,7 +52748,8 @@ class AnazhRealm {
                                     : Math.max(0.05, Math.min(0.9, 0.62 - 0.5 * haerte)),
                             rough: _rk && Number.isFinite(_rk.rough) ? _rk.rough : 0.34 + 0.4 * haerte,
                             strat: _rk && Number.isFinite(_rk.strat) ? _rk.strat : 0.12,
-                            detail: det + 2,
+                            // LOD-Override (Werkstatt-Regler): gröbere Regeneration = weniger Detail.
+                            detail: Math.max(1, det + 2 - (Number.isFinite(part.rockLod) ? part.rockLod : 0)),
                             seed: Number.isFinite(part.rockSeed) ? (part.rockSeed % 9973) + 1 : (hs % 9973) + 1,
                             withColor: true,
                             speckle: true,
@@ -72705,6 +72706,36 @@ class AnazhRealm {
             row.appendChild(val);
             panel.appendChild(row);
         }
+        // LOD-Wahl (wie im Studio „gröbere Regeneration"): L0 fein · L1 mittel · L2 grob. Regeneriert
+        // den Bauplan durch die Pipeline auf der gewählten Stufe → beweist, dass die LOD-Stufen durch
+        // DIESELBE Quelle fliessen (Baum: Blätter → Karten → Impostor · Fels: Detail-Stufe).
+        if (spec.hasLod) {
+            const lodHead = document.createElement("div");
+            lodHead.className = "workshop-recipe-sub";
+            lodHead.textContent = "LOD (gröbere Regeneration)";
+            panel.appendChild(lodHead);
+            const lodRow = document.createElement("div");
+            lodRow.className = "workshop-recipe-btns workshop-recipe-lod";
+            const curLod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
+            [
+                ["L0 fein", 0],
+                ["L1 mittel", 1],
+                ["L2 grob", 2],
+            ].forEach(([lab, lv]) => {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "workshop-recipe-lod-btn" + (lv === curLod ? " active" : "");
+                b.textContent = lab;
+                b.title = "Regeneriere auf LOD-Stufe " + lv + " durch die Pipeline";
+                b.addEventListener("click", () => {
+                    bp._recipeLod = lv;
+                    spec.apply(spec.cur);
+                    this._workshopRenderRecipePanel(bp);
+                });
+                lodRow.appendChild(b);
+            });
+            panel.appendChild(lodRow);
+        }
         const btnRow = document.createElement("div");
         btnRow.className = "workshop-recipe-btns";
         const dice = document.createElement("button");
@@ -72763,6 +72794,7 @@ class AnazhRealm {
                     { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, step: 0.01, hint: "Astdicke-Erhalt" },
                     { key: "leaf", label: "Blattdichte", min: 0, max: 1, step: 0.01, hint: "kahl (0) ↔ voll (1)" },
                 ],
+                hasLod: true,
                 apply: (nd) => {
                     nd.conifer = nd.api >= 0.72;
                     this._workshopRegrowRecipe(bp, nd, bp._grownSeed || `${bp._grownSpecies}-studio`);
@@ -72793,6 +72825,7 @@ class AnazhRealm {
                     { key: "elong", label: "Streckung", min: 0.05, max: 0.8, step: 0.01, hint: "gedrungen ↔ länglich" },
                     { key: "strat", label: "Schichtung", min: 0, max: 0.5, step: 0.01, hint: "massiv ↔ sedimentär" },
                 ],
+                hasLod: true,
                 apply: (nd) => this._workshopRegrowRock(bp, nd, bp._rockSeedBase),
                 dice: () =>
                     this._workshopRegrowRock(bp, bp._rockRecipe || cur, (Math.floor(Math.random() * 1e8) + 1) >>> 0),
@@ -72840,9 +72873,10 @@ class AnazhRealm {
         const species = bp && bp._grownSpecies;
         const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
         if (!species || !grammar) return;
+        const lod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
         let parts = null;
         try {
-            parts = this._growTreeBlueprintRich(species, seedStr, grammar, { recipeDials: dials, lod: 0 });
+            parts = this._growTreeBlueprintRich(species, seedStr, grammar, { recipeDials: dials, lod });
         } catch (e) {
             if (typeof this.log === "function") this.log("Rezept-Regrow fehlgeschlagen: " + (e && e.message), "WARN");
             return;
@@ -72863,15 +72897,18 @@ class AnazhRealm {
     _workshopRegrowRock(bp, dials, seedBase) {
         if (!bp || !Array.isArray(bp.parts)) return;
         const reset = !dials;
+        const lod = Number.isFinite(bp._recipeLod) ? bp._recipeLod : 0;
         let idx = 0;
         for (const p of bp.parts) {
             if (!p || p.shape !== "noiserock") continue;
             if (reset) {
                 delete p.rockDials;
                 delete p.rockSeed;
+                delete p.rockLod;
             } else {
                 p.rockDials = { round: dials.round, rough: dials.rough, elong: dials.elong, strat: dials.strat };
                 if (Number.isFinite(seedBase)) p.rockSeed = (seedBase + idx * 7919) >>> 0;
+                p.rockLod = lod;
             }
             idx++;
         }
