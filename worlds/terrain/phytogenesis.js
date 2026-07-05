@@ -2743,8 +2743,94 @@ init();
             if (el) el.textContent = avatar.fingerprint ? name + " · " + avatar.fingerprint : name;
         } else if (msg.type === "dsl") {
             applyDsl(msg.program);
+        } else if (msg.type === "build-asset") {
+            // DER ASSET-KANAL: AnazhRealm fragt einen fertigen Baum/Pflanze an, die
+            // Vorlage laeuft ihr ECHTES buildInstance (Skelett+Rinde+Blaetter+Wurzeln, das
+            // eigene LOD), und schickt die reine Geometrie (engine-neutrale Float32-Puffer)
+            // als transferable zurueck. AnazhRealm pflanzt sie 1:1 — kein Nachbau, kein
+            // Sezieren; die Vorlage-Datei IST der Samen (ein Edit hier -> andere Assets).
+            __replyBuildAsset(msg);
         }
     });
+    // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
+    // lesend (buildInstance/emitTree unveraendert). kind aus dem Material-Zeiger.
+    function __assetMaterialKind(mat) {
+        if (!mat) return "unknown";
+        if (mat === barkMat || mat === barkMatBirch) return "bark";
+        if (mat === foliageMatTex) return "foliageTex";
+        if (mat === foliageMat) return "foliage";
+        if (mat === grassMat) return "grass";
+        if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
+        return "unknown";
+    }
+    function __extractAssetMesh(mesh) {
+        const geo = mesh.geometry;
+        if (!geo || !geo.attributes || !geo.attributes.position) return null;
+        const out = { kind: __assetMaterialKind(mesh.material) };
+        const A = geo.attributes;
+        // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
+        // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral.
+        for (const name in A) {
+            const at = A[name];
+            if (!at || !at.array) continue;
+            out[name] = { array: new Float32Array(at.array), itemSize: at.itemSize };
+        }
+        if (geo.index) out.index = new Uint32Array(geo.index.array);
+        // Welt-Transform der Instanz (buildInstance setzt g.position.y; Meshes koennen lokal
+        // versetzt sein) in die Vertices backen, damit AnazhRealm den Baum am Ursprung erhaelt.
+        mesh.updateWorldMatrix(true, false);
+        const e = mesh.matrixWorld.elements,
+            pos = out.position.array;
+        for (let i = 0; i < pos.length; i += 3) {
+            const x = pos[i],
+                y = pos[i + 1],
+                z = pos[i + 2];
+            pos[i] = e[0] * x + e[4] * y + e[8] * z + e[12];
+            pos[i + 1] = e[1] * x + e[5] * y + e[9] * z + e[13];
+            pos[i + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+        }
+        return out;
+    }
+    function __replyBuildAsset(msg) {
+        const reqId = msg.reqId;
+        let meshes = [];
+        try {
+            const g = buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
+            g.updateMatrixWorld(true);
+            g.traverse((o) => {
+                if (o.isMesh) {
+                    const m = __extractAssetMesh(o);
+                    if (m) meshes.push(m);
+                }
+            });
+            // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
+            g.traverse((o) => {
+                if (o.isMesh) {
+                    if (o.geometry) o.geometry.dispose();
+                }
+            });
+        } catch (e) {
+            meshes = [];
+            try {
+                console.warn("[phyto] build-asset", msg.presetId, e && e.message);
+            } catch (_) {}
+        }
+        // Transferables sammeln (die ArrayBuffer der Attribut-/Index-Arrays).
+        const transfer = [];
+        for (const m of meshes) {
+            for (const k in m) {
+                if (m[k] && m[k].array && m[k].array.buffer) transfer.push(m[k].array.buffer);
+                else if (m[k] && m[k].buffer) transfer.push(m[k].buffer);
+            }
+        }
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(
+                { type: "asset", world: "terrain", reqId, presetId: msg.presetId, seed: msg.seed, lod: msg.lod | 0, meshes },
+                "*",
+                transfer
+            );
+        }
+    }
     // Escape verlässt das Portal — aber NUR im Studio: im Wald gehört Escape
     // dem PointerLock ("Maus frei") und der ✕-Knopf dem Wald-Ausgang; das
     // Portal verlässt man erst aus dem Studio heraus (kein Doppel-Sinn).
