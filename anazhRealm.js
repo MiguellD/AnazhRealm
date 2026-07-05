@@ -22121,6 +22121,11 @@ class AnazhRealm {
     // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
     _tickFoliageGrowth() {
+        // Foundry-Baeume budget-gedrosselt nachbauen (die schwere Vorlagen-Geometrie gehoert
+        // frame-budgetiert, nicht in einen 300-Burst): ein kleiner Batch je Frame, NUR wenn der
+        // Frame Luft hat (_foundryRewarmColdTrees prueft _frameOverBudget selbst). So aecht
+        // AnazhRealm nicht mehr unter der Foundry-Last waehrend die Perf schon tief ist.
+        this._foundryRewarmColdTrees();
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
         // V18.282 — RESPONSIVITÄT VOR DURCHSATZ: ist der Frame über Budget (gemessene Frame-ZEIT
@@ -63108,18 +63113,25 @@ class AnazhRealm {
         // hoffen (unter Last baut der NICHTS -> die Baeume blieben cold).
         this._foundryRewarmColdTrees();
     }
-    // Cold-gebliebene Foundry-Baum-Eintraege in Reichweite neu bauen (die Bibliothek ist bereit).
-    // Budgetiert (300/Aufruf) gegen einen Burst; der Rest folgt beim naechsten Aufruf / Culling.
+    // Cold-gebliebene Foundry-Baum-Eintraege in Reichweite neu bauen. FRAME-BUDGETIERT
+    // (Schoepfer-Gesetz: „nicht wachsen lassen, wenn die Performance zu tief"): ist der Frame
+    // ueber Budget, baut das hier NICHTS — die schwere Vorlagen-Geometrie (bis ~170k Verts) auf
+    // dem Main-Thread ist genau das, was AnazhRealm mehr aechzen liess als die Vorlage (die ihren
+    // Wald EINMAL baut). Kleiner Batch je Tick (kein 300-Burst-Spike) + per-Frame-Drain aus
+    // _tickFoliageGrowth (dieselbe V18.282-Disziplin wie das Laub) -> die Baeume tropfen rein,
+    // wenn der Frame Luft hat, und HALTEN, wenn nicht.
     _foundryRewarmColdTrees() {
         if (!this._foundryEnabled()) return;
+        if (this.state._frameOverBudget) return; // Frame eng -> nichts Neues bauen
         const archs = this.state.architectures;
         if (!Array.isArray(archs)) return;
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
         const rad = this.state.architectureCullingRadius || 200;
         const radiusSq = rad * rad;
+        const MAX = AnazhRealm.FOUNDRY_BUILD_PER_TICK || 4;
         let n = 0;
         for (const entry of archs) {
-            if (n >= 300) break;
+            if (n >= MAX) break;
             if (!entry || entry.instanced || entry.mesh) continue;
             if (typeof entry.type !== "string" || !this._foundryPresetFor(entry.type)) continue;
             if (pm) {
@@ -78970,6 +78982,10 @@ AnazhRealm.VERSION = "18.391.0";
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
 AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
+// Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
+// budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).
+AnazhRealm.FOUNDRY_BUILD_PER_TICK = 4;
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
