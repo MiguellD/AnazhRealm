@@ -62850,12 +62850,16 @@ class AnazhRealm {
     // aendert die Baeume in AnazhRealm. GRACEFUL: ohne echten Browser (headless Gate) faellt der
     // Wald auf den AnazhRealm-Pfad zurueck (Engine-Grenze, wie der Null-Renderer den GPU stubt).
     _foundryEnabled() {
-        // RETIRED — der iframe-Geometrie-Foundry (zweiter GPU-Kontext) war der Crash + die
-        // Attrappe. Die Baeume wachsen jetzt IN-PROCESS aus dem exakten Vorlagen-Rezept
-        // (`_growTreeBlueprintRich` + phyto-core; `SPECIES_PHYTO_DIALS` = byte-exakt die PRESETS)
-        // -> kein zweiter Kontext, kein Crash, und AnazhRealms LOD/Impostor/Crossfade greift.
-        // Das Portal bleibt das begehbare Studio.
-        return false;
+        // DAS NEUE KLEID (WIEDERBELEBT) — DER SCHÖPFER-WEG: NICHT nachbauen, sondern das Asset aus
+        // dem Studio AUSLESEN + PLATZIEREN. Die Vorlage (worlds/terrain/phytogenesis.js) läuft
+        // versteckt als reiner GEOMETRIE-Motor (?asset-foundry=1 → `init()` kehrt VOR dem Renderer
+        // zurück, Z.1239: „Kein Renderer" → KEIN zweiter GPU-Kontext, KEIN Crash). Sie liefert ihre
+        // ECHTEN Bäume (Skelett+Rinde+Blätter+WURZELN+TOTE ÄSTE + ihr eigenes LOD) als Geometrie-
+        // Puffer; AnazhRealm baut daraus Meshes + pflanzt sie 1:1. Ein Edit im Studio ändert die
+        // Bäume in AnazhRealm — dieselben Regler, dasselbe LOD, alle Assets, byte-1:1. Nur im echten
+        // Browser mit DOM + echtem Renderer (headless-Null-Gate → Alt-Pfad, wie der Null-Renderer den
+        // GPU stubt; die Portal-Brücke lädt dort das Studio-iframe ohnehin nicht sinnvoll).
+        return typeof document !== "undefined" && !(this.state.renderer && this.state.renderer._isHeadlessNull);
     }
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
