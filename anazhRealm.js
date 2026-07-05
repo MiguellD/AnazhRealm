@@ -74220,7 +74220,7 @@ class AnazhRealm {
         const pm = this.state.playerMesh;
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
-            const earth = new THREE.Color(0x3a2818); // dunkles Erdbraun als Saat
+            const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
             if (pm && typeof this.auraAt === "function") {
                 const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
                 if (field) {
@@ -74245,7 +74245,10 @@ class AnazhRealm {
             // Vorlage: 0.18 tags / 0.03 nachts). Zusammen mit dem fast-null-Ambient
             // kippt das Licht-Verhältnis von 0.83:1 (Füll-Wash) auf ≥3:1 (Key führt,
             // Vorlagen-Prinzip) — der Himmel-Boden-Farbverlauf bleibt, nur leiser.
-            hl.intensity = (0.1 + 0.2 * sunHeight) * tint.lightMul;
+            // Vorlage phytogenesis Z.1291: der begehbare Wald nutzt HemisphereLight-Intensität 0.55
+            // (nicht AnazhRealms halbiertes 0.30). 0.55 + der starke Key (2.4) ist trotzdem key-
+            // dominant (~4:1) — die Halbierung war eine Fehl-Lesart. Mittag 0.55, Nacht 0.10.
+            hl.intensity = (0.1 + 0.45 * sunHeight) * tint.lightMul;
         }
         if (fog) {
             // V18.367 — die Nebel-/Aerial-Farbe ETWAS GEERDETER (Schöpfer „ich sehe die Sonne
@@ -76276,7 +76279,7 @@ class AnazhRealm {
         // bewusste, augen-validierte Look-Entscheidung für eine eigene Welle, nicht
         // als stiller Drift mit dem Aura-Fix gebündelt.) Reine Render-Output-Stufe.
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.05;
+        renderer.toneMappingExposure = 1.0; // Vorlage phytogenesis Z.1285 (exakt)
         // V10.0-j.b — Stencil-Buffer global deaktivieren. Three.js' Renderer-
         // Default ist `this.stencil = true` → bei JEDEM RenderPass setzt
         // WebGPUBackend stencilLoadOp + stencilStoreOp. Bei Pure-Depth-Format
