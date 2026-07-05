@@ -227,6 +227,33 @@ const server = http.createServer((req, res) => {
         eiche._recipeLod = 0;
         out.lodButton = { baumL0Parts: nL0, baumL2Parts: nL2, groeberBeiL2: nL2 < nL0 };
 
+        // 9b) SKELETT-VORSCHAU: baut die Werkstatt-Vorschau des Baums die Tube+Blatt-Klingen
+        //     (wenige Meshes, viele Verts) statt der ~80 Kugel-Blob-Parts?
+        eiche._recipeLod = 0;
+        r._workshopRegrowRecipe(eiche, r._treeRecipeDials("baum_eiche", null), "skel-test");
+        const skelGrp = r._workshopBuildSkeletonPreviewGroup(eiche);
+        let skelMeshes = 0,
+            skelVerts = 0;
+        if (skelGrp)
+            skelGrp.traverse((o) => {
+                if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
+                    skelMeshes++;
+                    skelVerts += o.geometry.attributes.position.count;
+                }
+            });
+        const partGrp = r._buildFromBlueprint(eiche, 0, undefined, {});
+        let partMeshes = 0;
+        if (partGrp)
+            partGrp.traverse((o) => {
+                if (o.isMesh) partMeshes++;
+            });
+        out.skelettVorschau = {
+            skelett_meshes: skelMeshes,
+            skelett_verts: skelVerts,
+            parts_blob_meshes: partMeshes,
+            istSkelett: skelMeshes > 0 && skelMeshes < 12 && skelVerts > 1000,
+        };
+
         // 9) PIPELINE-ZENSUS: welche editierbaren Baupláne fliessen durch die geteilte Pipeline?
         const census = { tree: [], rock: [], crystal: [], keine: [] };
         for (const name of Object.keys(s.blueprints)) {

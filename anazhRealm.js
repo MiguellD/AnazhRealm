@@ -70496,6 +70496,58 @@ class AnazhRealm {
     // Baut das Mesh aus dem aktiven Bauplan neu, populiert die
     // partMeshes-Map (sub-Mesh → partIdx) für Raycasting, cached die
     // ursprüngliche Farbe pro sub-Mesh damit die Selection-Tint reversibel ist.
+    // DAS NEUE KLEID — baut die Werkstatt-Vorschau eines gewachsenen Baums über den WELT-Render-
+    // Pfad (`_buildTreeSkeletonLeaves`: Tube-Rinde + Blatt-Klingen aus phyto-core) statt der Parts-
+    // Kugel-Blobs. Die Geometrie ist FRISCH (disposen sicher); die Materialien sind GETEILT mit der
+    // Welt (`sharedMat` → die Vorschau-Aufräumung disposed sie nicht).
+    _workshopBuildSkeletonPreviewGroup(bp) {
+        if (typeof THREE === "undefined") return null;
+        let leavesObj = null;
+        try {
+            leavesObj = this._buildTreeSkeletonLeaves(bp);
+        } catch (_e) {
+            return null;
+        }
+        if (!leavesObj || !Array.isArray(leavesObj.leaves) || !leavesObj.leaves.length) return null;
+        // Ein VORSCHAU-Material (opak, Vertex-Farbe) statt der geteilten WELT-Materialien: die lesen
+        // Welt-Tag/Nacht-Uniforms und rendern in der eigenen Preview-Szene SCHWARZ (gemessen). Die
+        // Skelett-Geometrie trägt Vertex-Farben (Rinde braun · Blatt grün) → ein schlichtes
+        // vertexColor-NodeMaterial zeigt Form + Farbe unter den Preview-Lichtern (wie die Vorlage).
+        const mat = this._workshopPreviewFoliageMat();
+        const group = new THREE.Group();
+        for (const lf of leavesObj.leaves) {
+            if (!lf || !lf.geom) continue;
+            // Den SCHATTEN-ZWILLING überspringen: er ist in der Welt kamera-UNSICHTBAR (liegt auf
+            // SHADOW_TWIN_LAYER, castet nur Schatten) — eine opake Voll-Kronen-Hülle, die in der
+            // Vorschau (kein Layer-Cull) den ganzen Baum als grünen Blob verdecken würde (gemessen).
+            if (lf.shadowTwin) continue;
+            const m = new THREE.Mesh(lf.geom, mat || lf.mat);
+            if (lf.localMatrix) m.applyMatrix4(lf.localMatrix);
+            m.frustumCulled = false;
+            m.userData.sharedMat = true; // das gecachte Vorschau-Material NICHT disposen
+            group.add(m);
+        }
+        return group.children.length ? group : null;
+    }
+
+    // Das EINE gecachte Vorschau-Material für die Skelett-Geometrie (opakes PBR-NodeMaterial, Albedo
+    // aus der Vertex-Farbe). attribute("color") ist auf WebGPU strikt — die Skelett-Builder setzen
+    // die Farbe immer. DoubleSide (Blatt/Tube dünn/gewickelt, wie die Welt).
+    _workshopPreviewFoliageMat() {
+        if (this._wsPreviewFoliageMat) return this._wsPreviewFoliageMat;
+        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
+        const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.82, metalness: 0 });
+        try {
+            if (typeof TSL !== "undefined" && TSL.attribute && TSL.vec4) {
+                mat.colorNode = TSL.vec4(TSL.attribute("color", "vec3"), 1.0);
+            }
+        } catch (_e) {
+            /* kein color-Attribut → Default-Albedo (kein Crash) */
+        }
+        this._wsPreviewFoliageMat = mat;
+        return mat;
+    }
+
     _workshopRebuildPreviewMesh() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview) return;
@@ -70509,7 +70561,10 @@ class AnazhRealm {
                 if (obj.isMesh || obj.isLine) {
                     // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
                     if (obj.geometry) this._queueDispose(obj.geometry);
-                    if (obj.material) {
+                    // DAS NEUE KLEID — die Skelett-Vorschau nutzt die GETEILTEN Welt-Materialien
+                    // (_sharedFoliageMaterial); die dürfen NIE disposed werden (sonst bricht die
+                    // Welt-Krone). Nur eigene Part-Materialien freigeben.
+                    if (obj.material && !(obj.userData && obj.userData.sharedMat)) {
                         if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
                         else this._queueDispose(obj.material);
                     }
@@ -70525,7 +70580,19 @@ class AnazhRealm {
             p.dirty = true;
             return;
         }
-        const group = this._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
+        // DAS NEUE KLEID — DER SKELETT-VORSCHAU-PFAD (Schöpfer „die Eiche sieht wie Blobs aus statt
+        // wie die Vorlage"): ein gewachsener Baum wird in der Vorschau über DENSELBEN Pfad gebaut,
+        // den die WELT rendert (Tube-Rinde + Blatt-Klingen aus phyto-core), NICHT über die Parts-
+        // Notgeometrie (Zylinder + Kugel-Blobs, die nur die Tags tragen). So sieht die Werkstatt-
+        // Vorschau 1:1 wie die Welt (und die Vorlage). `_buildTreeSkeletonLeaves` baut FRISCHE
+        // Geometrie (disposen sicher) mit GETEILTEN Materialien (sharedMat → nicht disposen).
+        let group = null;
+        if (bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
+            group = this._workshopBuildSkeletonPreviewGroup(bp);
+        }
+        if (!group) {
+            group = this._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
+        }
         // Top-level-Children korrespondieren 1:1 zu bp.parts (in Reihenfolge).
         // _buildFromBlueprint fügt pro Part entweder einen Mesh oder eine Sub-Group
         // (für fraktale blueprint-Refs) hinzu. Wir markieren nur Mesh-Children
