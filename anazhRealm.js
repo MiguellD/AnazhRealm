@@ -339,6 +339,13 @@ class AnazhRealm {
             // Einstellungen. Beide Felder persistiert. Lights+Skybox werden
             // pro Frame aus timeOfDay abgeleitet — eine Quelle der Wahrheit.
             timeOfDay: 0.5,
+            // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
+            // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
+            // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter.
+            season: "summer",
+            seasonPhase: 0.375,
+            autoSeason: true,
+            seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: 8,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
@@ -2336,6 +2343,11 @@ class AnazhRealm {
             // schöpfer: persönliche Welt-Beziehung).
             set_time_of_day: ([t]) => {
                 this.setTimeOfDay(Number(t));
+            },
+            // JAHRESZEIT setzen (Vorlagen-Phaenologie): "fruehling/sommer/herbst/winter" -> die
+            // Foundry backt den Wald in dieser Saison um (Herbst golden, Winter kahl).
+            set_season: ([name]) => {
+                this.setSeason(name);
             },
             gravity: ([value]) => {
                 // P3 — die Schwerkraft ist eine Skalar-Konstante, die `_stepCharacter` liest
@@ -62849,14 +62861,17 @@ class AnazhRealm {
         }
         return f;
     }
-    _foundryRequest(presetId, seed, lod) {
+    _foundryRequest(presetId, seed, lod, season) {
         const f = this._foundry;
         if (!f || !f.ready || !f.iframe || !f.iframe.contentWindow) return Promise.resolve(null);
         const reqId = "r" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                f.iframe.contentWindow.postMessage({ type: "build-asset", reqId, presetId, seed, lod }, "*");
+                f.iframe.contentWindow.postMessage(
+                    { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" },
+                    "*"
+                );
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
@@ -62985,11 +63000,12 @@ class AnazhRealm {
         for (const sp of spec.species) {
             for (const sd of spec.seeds) {
                 for (const lod of spec.lods) {
-                    const key = sp + "|" + sd + "|" + lod;
+                    const season = this.state.season || "summer";
+                    const key = sp + "|" + sd + "|" + lod + "|" + season;
                     if (f.cache.has(key)) continue;
                     let group = null;
                     try {
-                        const meshes = await this._foundryRequest(sp, sd, lod);
+                        const meshes = await this._foundryRequest(sp, sd, lod, season);
                         group = meshes ? this._foundryBuildGroup(meshes) : null;
                     } catch (_e) {
                         group = null;
@@ -63039,13 +63055,14 @@ class AnazhRealm {
         // Der Vorlagen-strauch ist bei lod0 ~208k Verts -> fuer den dichten Unterwuchs auf die
         // leichteren Stufen (>=1, ~77k/16k) zwingen. Baeume/Fels/Blume bleiben distanz-frei.
         if (preset === "strauch") lod = Math.max(1, lod);
-        const key = preset + "|" + variant + "|" + lod;
+        const season = this.state.season || "summer";
+        const key = preset + "|" + variant + "|" + lod + "|" + season;
         const group = f.cache.get(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season).then((meshes) => {
                     f.cache.set(key, meshes ? this._foundryBuildGroup(meshes) : null);
                     this._foundryRewarmColdTrees(); // das eben geladene Asset -> wartende Eintraege bauen
                 });
@@ -63076,6 +63093,60 @@ class AnazhRealm {
         if (d < 25) return 0;
         if (d < 70) return 1;
         return 2;
+    }
+    // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
+    _seasonName(phase) {
+        const p = ((phase % 1) + 1) % 1;
+        if (p < 0.25) return "spring";
+        if (p < 0.5) return "summer";
+        if (p < 0.75) return "autumn";
+        return "winter";
+    }
+    // Die langsame Jahres-Uhr: treibt seasonPhase, leitet die Saison ab; wechselt sie, backt die
+    // Foundry ihre Assets in der neuen Jahreszeit neu (Herbst golden, Winter kahl).
+    _tickSeason(currentTime) {
+        const st = this.state;
+        if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
+        if (st.autoSeason !== false) {
+            const now = currentTime || 0;
+            if (this._lastSeasonTime == null) this._lastSeasonTime = now;
+            const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
+            this._lastSeasonTime = now;
+            const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
+            st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
+        }
+        const name = this._seasonName(st.seasonPhase);
+        if (name !== st.season) {
+            st.season = name;
+            this._foundrySeasonChanged();
+        }
+    }
+    // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter".
+    setSeason(name) {
+        const map = { fruehling: "spring", frühling: "spring", spring: "spring", sommer: "summer", summer: "summer", herbst: "autumn", autumn: "autumn", winter: "winter" };
+        const key = map[String(name || "").toLowerCase()];
+        if (!key) return false;
+        const phaseFor = { spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 };
+        this.state.seasonPhase = phaseFor[key];
+        if (this.state.season !== key) {
+            this.state.season = key;
+            this._foundrySeasonChanged();
+        }
+        return true;
+    }
+    // Jahreszeit-Wechsel: alle foundry-instanzierten Assets ent-instanzieren -> sie bauen beim
+    // naechsten Rebuild mit der neuen Saison-Farbe neu (der Culling/Rewarm holt sie zurueck).
+    _foundrySeasonChanged() {
+        if (!this._foundry) return;
+        const archs = this.state.architectures;
+        if (!Array.isArray(archs)) return;
+        for (const entry of archs) {
+            if (!entry || !entry.instanced || typeof entry.type !== "string") continue;
+            if (!this._foundryPresetFor(entry.type)) continue;
+            if (this._archInstanceRemove) this._archInstanceRemove(entry);
+            entry.instanced = false;
+        }
+        this._foundryRewarmColdTrees();
     }
 
     _forestPlantChunk(cx, cz) {
@@ -77917,6 +77988,7 @@ class AnazhRealm {
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
+        this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickCanopyStreaming();
         this._tickWorldWaterCA();
         this._tickDirtyVoxelChunks(playerPos);

@@ -2805,6 +2805,13 @@ init();
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
+        // JAHRESZEIT (Vorlagen-Phaenologie): AnazhRealm reicht die aktuelle Saison herein, die
+        // Foundry backt die Assets in DIESER Jahreszeit (Blatt-Farbe/Praesenz Fruehling..Winter).
+        if (msg.season && typeof setSeasonColors === "function") {
+            try {
+                setSeasonColors(msg.season);
+            } catch (_se) {}
+        }
         try {
             const g = buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
