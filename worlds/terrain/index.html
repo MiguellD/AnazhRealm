@@ -115,6 +115,12 @@ body{margin:0;overflow:hidden;background:#070908}canvas{display:block}
 <script src="lib/MaskPass.js"></script>
 <script src="lib/ShaderPass.js"></script>
 <script src="lib/UnrealBloomPass.js"></script>
+<!-- DER GETEILTE SAMEN: phyto-core.js ist die EINE Pflanzen-Rezept-Quelle, die
+     dieses Vorlagen-Labor UND AnazhRealm (Main + Voxel-Worker) lesen. Same-origin
+     (trusted-Portal → allow-same-origin), CSP 'self' deckt den ../../-Pfad. Ein Edit
+     an einem Rezept in phyto-core.js fliesst hier UND in AnazhRealm — kein Nachbau,
+     kein Drift. Vor phytogenesis.js geladen, damit dessen Delegatoren __phytoCore sehen. -->
+<script src="../../phyto-core.js"></script>
 <script src="phytogenesis.js"></script>
 </body>
 </html>

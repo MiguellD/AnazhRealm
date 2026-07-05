@@ -776,6 +776,16 @@ function emitGrass(P){
 // REGNUM LITHOS v2 — Relief in der Geometrie, Kurvatur-AO gebacken, echte Stratigraphie
 function ridged(p,oct,off){let f=1,a=0.5,s=0,nrm=0;for(let i=0;i<oct;i++){const v=1-Math.abs(simplex3(p[0]*f+off,p[1]*f+off*1.7,p[2]*f+off*2.3));s+=a*v*v;nrm+=a;a*=0.5;f*=2.0;}return s/nrm;}
 function buildBoulder(P){
+  // DER GETEILTE SAMEN: das Fels-Rezept lebt in phyto-core.js (buildBoulderGeometry) —
+  // dieselbe EINE Quelle, die AnazhRealm liest. Ein Edit dort fliesst hierher UND nach
+  // AnazhRealm. detail+1, weil phyto-core intern (detail-1) rechnet → identische Silhouette.
+  // Fallback auf den Inline-Bau, falls der Samen (noch) nicht geladen ist.
+  var __core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(__core&&typeof __core.buildBoulderGeometry==='function'){
+    var __d=Math.max(1,(P.detail||6)-3-(__lod*2));
+    var __g=__core.buildBoulderGeometry(THREE,simplex3,{elong:P.elong,sph:P.sph,round:P.round,rough:P.rough,strat:P.strat,seed:P.seed,detail:__d+1,size:P.size,withColor:true,speckle:P.speckle,rockLichen:rockLichen,rockA:P.rockA,rockB:P.rockB,rockC:P.rockC},rnd);
+    if(__g)return __g;
+  }
   const detail=Math.max(1,(P.detail||6)-3-(__lod*2));   // Stein nicht scharf in der Natur -> Budget zum Stamm
   let geo=THREE.BufferGeometryUtils.mergeVertices(new THREE.IcosahedronGeometry(1,detail));
   const pos=geo.attributes.position,n=pos.count,idx=geo.index.array;

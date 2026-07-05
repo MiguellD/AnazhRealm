@@ -12,6 +12,18 @@
 // basalStems (Strauch), Blatt-Terminierung (Nadel/Peitsche/Laub), Blatt-Budget (Card-Cap).
 // Die Bake-/Farb-/Atlas-Rezepte reiten in späteren Wellen oben auf DIESER einen Quelle.
 (function (root) {
+    // Der Vorlagen-RNG (phytogenesis mulberry32) — die geteilte Quelle für die
+    // deterministischen Zufalls-Muster der Rezepte (Fels-Speckle, künftig mehr), damit
+    // AnazhRealm das EXAKTE Vorlagen-Korn erbt, nicht ein zweites LCG-Muster.
+    function mulberry32(a) {
+        return function () {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
     function growSkeleton(P, seq) {
         const rnd = seq;
         const rrange = (a, b) => a + (b - a) * rnd();
@@ -874,13 +886,10 @@
                 feld = new THREE.Color(0xc69a86),
                 mica = new THREE.Color(0x2c2a26),
                 bleach = new THREE.Color(0xccc7b6),
+                moss = new THREE.Color(0x6f8a3e),
                 iron = new THREE.Color(0x7a4a26);
-            let s2 = 0;
-            const sr = () => {
-                s2 = (s2 * 1664525 + 1013904223) & 0x7fffffff;
-                return s2 / 0x7fffffff;
-            };
-            s2 = Math.floor((P.seed || 1) * 9973) & 0x7fffffff;
+            const rockLichen = P.rockLichen != null ? P.rockLichen : 0;
+            const sr = mulberry32(Math.floor((P.seed || 1) * 9973));
             for (let i = 0; i < n; i++) {
                 let c = base.clone();
                 const up = nor.getY(i);
@@ -899,6 +908,14 @@
                 }
                 const stain = fbm3([V[i][0] * 1.4, V[i][1] * 3.2, V[i][2] * 1.4], 3, off + 21.0);
                 if (stain > 0.22) c.lerp(iron, (stain - 0.22) * 0.6);
+                // Vorlagen-Flechte/Moos (phytogenesis buildBoulder): auf sonnigen Kuppen, feucht-
+                // gemustert. Tag-neutral gegated (rockLichen default 0 → AnazhRealm-Fels unverändert;
+                // die Portal-Vorlage reicht 0.6 → ihr Moos bleibt). Byte-treu zur Vorlage.
+                if (rockLichen > 0 && up > 0.22) {
+                    const patch = fbm3([V[i][0] * 2.4, V[i][1] * 2.4, V[i][2] * 2.4], 3, off + 33.0);
+                    const lf = clamp((up - 0.22) / 0.5, 0, 1) * rockLichen;
+                    if (patch > -0.05) c.lerp(moss, clamp((patch + 0.05) * 1.8, 0, 1) * lf * 0.6);
+                }
                 const mott = fbm3([V[i][0] * 0.8, V[i][1] * 0.8, V[i][2] * 0.8], 3, off + 7.7);
                 c.multiplyScalar(1 + mott * 0.22);
                 c.multiplyScalar(0.88 + sr() * 0.22);
