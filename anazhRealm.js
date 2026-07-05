@@ -50026,6 +50026,23 @@ class AnazhRealm {
     // collision bleibt (HISM-Einträge haben sowieso keine Ammo-Body).
     _switchArchitectureLOD(entry, newLOD) {
         if (!entry || !entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return false;
+        // DAS NEUE KLEID — FOUNDRY-LOD: ist der Eintrag foundry-platziert, serviert die Foundry die
+        // neue Stufe (die klassische Distanz-Wahl `newLOD` FÜHRT, EINE Autorität). KEIN entry.type-
+        // Wechsel — das Studio-LOD lebt im leafKey (`f:preset|variant|lod|season`), nicht im Namen.
+        if (this._foundryEnabled() && entry.instFoundry) {
+            const preset = this._foundryPresetForEntry(entry);
+            if (preset) {
+                const fFlat = this._foundryFlattenFor(entry, preset, newLOD);
+                if (fFlat && fFlat.instanceable) {
+                    this._archInstanceRemove(entry);
+                    entry._lodLevel = newLOD;
+                    this._archInstanceAdd(entry, fFlat);
+                    return true;
+                }
+                if (fFlat === null) return false; // lädt noch → aktuelle Stufe halten
+                // fFlat === false → auf den klassischen LOD-Pfad zurück
+            }
+        }
         const species = entry._lodSpecies;
         const varIdx = entry._lodVariantIndex;
         // Sicherstellen, dass alle 3 LOD-Bauplane existieren (lazy-build)
@@ -51503,7 +51520,6 @@ class AnazhRealm {
         const crownForm = isTreeSpecies
             ? genome.pick("crownForm", [grammar.crown, grammar.crown, grammar.crown, "weeping", "vase", "schirm"])
             : grammar.crown;
-        const isWeeping = crownForm === "weeping";
         const leanMag = isTreeSpecies ? genome.range("leanMag", 0, 0.16) * (sizeClass === "gigant" ? 0.4 : 1) : 0;
         const leanDir = genome.axis("leanDir") * 6.283;
         const leanX = Math.cos(leanDir) * leanMag;
@@ -51546,11 +51562,10 @@ class AnazhRealm {
         // dicke Glieder, sonst knickt er (Ω-Φ3-b fängt den zu-dünnen Riesen). sizeFactor =
         // Höhe relativ zur Spezies-Normalhöhe; bei „normal" ≈ 1 (kein Bruch). Exponent 1.15
         // → der Mammutbaum trägt sich selbst (der Richter garantiert es, die Referenz hält
-        // die Proportion). segLenBase skaliert mit, damit die Part-Zahl bezahlbar bleibt.
+        // die Proportion).
         const refH = (grammar.height[0] + grammar.height[1]) * 0.5;
         const sizeFactor = totalH / Math.max(0.5, refH);
         const allometry = Math.pow(sizeFactor, 1.15);
-        const segLenBase = 0.55 * Math.max(1, Math.pow(sizeFactor, 0.6));
         // GERÜST-Dicke + Laub-Größe ans Alter koppeln (die age-Achse, wahrerwuchs §4.1):
         // jung = dünn/klein, uralt = dick/knorrig/voll. tag-neutral (nur Größe/Form).
         const foliageScale = Math.max(0.55, Math.pow(sizeFactor, 0.62)) * (0.78 + ageMul * 0.5);
@@ -61148,6 +61163,11 @@ class AnazhRealm {
         }
         entry.instanced = true;
         entry.instSlots = slots;
+        // DAS NEUE KLEID — Merker, ob dieser Eintrag aus dem Studio (Foundry) platziert wurde:
+        // der LOD-Tick (`_switchArchitectureLOD`) serviert dann die neue Stufe aus der Foundry
+        // statt aus dem klassischen `grown_..._lodN`-Bauplan. Transientes Render-Feld (wie
+        // `instanced`/`instSlots`) — nicht im Snapshot, nicht audit:strict (Entry-Feld, kein state.X).
+        entry.instFoundry = !!(flat && flat.foundry);
     }
 
     // Die Instanz-Matrizen eines Eintrags neu schreiben (Mount-Follow nutzt
@@ -61240,6 +61260,25 @@ class AnazhRealm {
         // V12.0-perf.c.2 — instancbare Baupläne (Vegetation etc.) gehen in die
         // HISM-Registry statt eine eigene Group zu bauen: Per-Instance-Matrix
         // statt N Draw-Calls. Collision aus Leaf-AABBs (kein entry.mesh nötig).
+        // DAS NEUE KLEID — DIE FOUNDRY PLATZIERT (der Schöpfer-Weg): ist der Eintrag foundry-fähig
+        // (Baum-Variante/Fels/Kristall/Blume/Strauch), wird sein ECHTES Studio-Asset ausgelesen +
+        // platziert — 1:1, dieselben Regler, dasselbe LOD. NICHT nachgebaut. Die klassische Distanz-
+        // LOD (`entry._lodLevel`) FÜHRT (die EINE Autorität), die Foundry serviert genau die Stufe.
+        //   - flat.instanceable → das Studio-Asset ins HISM (Instancing + Cull + Schatten-Distanz).
+        //   - null (lädt noch) → der Eintrag bleibt KALT; der Culling-Tick (`_archIsRendered`=false)
+        //     baut ihn erneut, sobald das Asset da ist → kein Klassik-Blitz, kein Pop.
+        //   - false (Foundry kann das nicht) → auf den AnazhRealm-Pfad zurück (Sicherheit).
+        // Headless-Null → `_foundryEnabled()` false → dieser Zweig entfällt ganz → Klassik (gate-treu).
+        const fPreset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
+        if (fPreset) {
+            const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
+            if (fFlat && fFlat.instanceable) {
+                this._archInstanceAdd(entry, fFlat);
+                return null;
+            }
+            if (fFlat === null) return null; // lädt noch → kalt lassen, der Culling-Tick holt es
+            // fFlat === false → weiter auf den Klassik-Pfad
+        }
         const flat = this._archFlattenBlueprint(entry.type);
         // DETERMINISMUS-BOGEN P3 — die Architektur-Kollision ist feld-nativ
         // (`entry.blockerAABBs` aus dem Spawn + `_stepCharacterStructures`); kein
@@ -63019,6 +63058,19 @@ class AnazhRealm {
         };
         return map[species] || null;
     }
+    // Das Foundry-Preset EINES EINTRAGS — die EINE Auflösung für den Platzier-Pfad. Ein GEWACHSENER
+    // Baum trägt seinen Typ als `grown_<art>_v<idx>` (NICHT im Preset-Map), aber seine BASIS-Art als
+    // `entry._lodSpecies` (= `baum_eiche` …, DIE im Map steht) — die liest der Platzier-Pfad zuerst.
+    // Fels/Kristall/Blume ohne LOD-Spezies fallen auf den direkten Typ. So fließt JEDER foundry-fähige
+    // Eintrag (Wald-Varianten UND direkt platzierte Built-ins) durch die EINE Studio-Pipeline.
+    _foundryPresetForEntry(entry) {
+        if (!entry) return null;
+        if (typeof entry._lodSpecies === "string") {
+            const p = this._foundryPresetFor(entry._lodSpecies);
+            if (p) return p;
+        }
+        return typeof entry.type === "string" ? this._foundryPresetFor(entry.type) : null;
+    }
     _foundryTreeMaterial(kind) {
         if (!this._foundryMats) this._foundryMats = {};
         if (this._foundryMats[kind]) return this._foundryMats[kind];
@@ -63198,6 +63250,8 @@ class AnazhRealm {
     _foundryRewarmColdTrees() {
         if (!this._foundryEnabled()) return;
         if (this.state._frameOverBudget) return; // Frame eng -> nichts Neues bauen
+        const f = this._foundry;
+        if (!f || !f.ready) return; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
         if (!Array.isArray(archs)) return;
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
@@ -63207,15 +63261,35 @@ class AnazhRealm {
         let n = 0;
         for (const entry of archs) {
             if (n >= MAX) break;
-            if (!entry || entry.instanced || entry.mesh) continue;
-            if (typeof entry.type !== "string" || !this._foundryPresetFor(entry.type)) continue;
+            if (!entry) continue;
+            // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
+            // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht → der
+            // alte `_foundryPresetFor(entry.type)` fand KEINEN Wald-Baum → sie blieben ewig klassisch).
+            if (!this._foundryPresetForEntry(entry)) continue;
             if (pm) {
                 const dx = entry.position.x - pm.x;
                 const dz = entry.position.z - pm.z;
                 if (dx * dx + dz * dz > radiusSq) continue;
             }
-            this._rebuildArchitectureMesh(entry);
-            n++;
+            if (!entry.instanced && !entry.mesh) {
+                // KALT (noch nie gebaut, oder auf das Foundry-Asset wartend) → jetzt bauen.
+                this._rebuildArchitectureMesh(entry);
+                n++;
+            } else if ((entry.instanced && !entry.instFoundry) || (entry.mesh && !entry.instFoundry)) {
+                // UPGRADE: klassisch platziert (vor Studio-ready gespawnt) → auf das Studio-Asset
+                // heben. ZUERST das Foundry-Asset prüfen/anfordern; erst wenn es DA ist, den klassischen
+                // Mesh ent-instanzieren + neu bauen (Foundry-Zweig) → kein Verschwinden-dann-Erscheinen
+                // (der Baum bleibt sichtbar, bis das Studio-Asset in der Hand ist). Lädt es noch (null),
+                // bleibt der klassische Look diesen Tick — der nächste Drain hebt ihn, wenn geladen.
+                const preset = this._foundryPresetForEntry(entry);
+                const fFlat = preset ? this._foundryFlattenFor(entry, preset, entry._lodLevel) : null;
+                if (fFlat && fFlat.instanceable) {
+                    if (entry.instanced) this._archInstanceRemove(entry);
+                    else if (entry.mesh) this._cullArchitectureMesh(entry);
+                    this._rebuildArchitectureMesh(entry);
+                    n++;
+                }
+            }
         }
     }
     // Die Foundry-„Flatten": ein Vorlagen-Baum-Eintrag -> Instancing-Leaves aus der ECHTEN
@@ -63262,11 +63336,17 @@ class AnazhRealm {
             f.cache.delete(oldest); // KEIN dispose — die InstancedMesh besitzt die Geometrie
         }
     }
-    _foundryFlattenFor(entry, preset) {
+    _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
         const variant = this._foundryVariantFor(entry.seed);
-        let lod = this._foundryLodForEntry(entry);
+        // DIE EINE LOD-AUTORITAET: die klassische Distanz-LOD (`_tickArchitectureLOD` ->
+        // `entry._lodLevel`) FUEHRT; die Foundry SERVIERT genau diese Stufe (kein zweiter,
+        // parallel driftender Distanz-Regler). `lodOverride` reicht die klassische Wahl herein;
+        // ohne (Kalt-Rewarm/Basis-Eintrag ohne LOD) faellt sie auf die eigene Distanz-Schaetzung.
+        let lod = Number.isFinite(lodOverride) ? lodOverride : this._foundryLodForEntry(entry);
+        if (lod < 0) lod = 0;
+        if (lod > 2) lod = 2;
         // Der Vorlagen-strauch ist bei lod0 ~208k Verts -> fuer den dichten Unterwuchs auf die
         // leichteren Stufen (>=1, ~77k/16k) zwingen. Baeume/Fels/Blume bleiben distanz-frei.
         if (preset === "strauch") lod = Math.max(1, lod);
@@ -63296,6 +63376,12 @@ class AnazhRealm {
         if (!group._foundryFlat) {
             const leaves = [];
             const I = new THREE.Matrix4();
+            // Die Schatten-Distanz (V18.265) trägt die Foundry mit: NUR die nahe Stufe (lod 0)
+            // wirft Schatten; die fernen lod1/lod2-Bäume werfen einen winzigen, fog-verschleierten
+            // Boden-Schatten, der den zweiten Voll-Render nicht lohnt. Der `leaf.castShadow`-Override
+            // (60842/60948) gewinnt gegen `_archGroupCastsShadow` (der aus dem Namen `_lodN` liest —
+            // den die Foundry-Einträge NICHT im Typ tragen, ihr LOD lebt im leafKey).
+            const castsShadow = lod < 1;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -63304,9 +63390,12 @@ class AnazhRealm {
                     mat: child.material,
                     localMatrix: I,
                     leafKey: "f:" + key + ":" + p,
+                    castShadow: castsShadow,
                 });
             }
-            group._foundryFlat = leaves.length ? { instanceable: true, reason: "foundry", leaves } : false;
+            group._foundryFlat = leaves.length
+                ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves }
+                : false;
         }
         return group._foundryFlat;
     }
@@ -65578,6 +65667,11 @@ class AnazhRealm {
                 if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
             }
         }
+        // DAS NEUE KLEID — der Foundry-Drain: baut kalte Foundry-Einträge + HEBT klassisch
+        // platzierte (vor Studio-ready gespawnte) auf das Studio-Asset. Budget-gedeckelt (≤4/Tick,
+        // pausiert über Budget) → die vor dem Studio-ready gewachsene Erst-Welt konvergiert nach
+        // und nach auf die Vorlage, ohne einen Spike. Headless/Studio-nicht-ready → früher No-op.
+        this._foundryRewarmColdTrees();
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
@@ -70542,7 +70636,8 @@ class AnazhRealm {
         if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") return null;
         const mat = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 0.82, metalness: 0 });
         try {
-            if (typeof TSL !== "undefined" && TSL.attribute && TSL.vec4) {
+            const TSL = THREE.TSL;
+            if (TSL && TSL.attribute && TSL.vec4) {
                 mat.colorNode = TSL.vec4(TSL.attribute("color", "vec3"), 1.0);
             }
         } catch (_e) {
