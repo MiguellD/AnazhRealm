@@ -1190,8 +1190,139 @@
         return g;
     }
 
+    // ─── DIE REZEPT→PARAMETER-PIPELINE (DAS NEUE KLEID — byte-treu aus der Vorlage) ───
+    // Die Vorlage baut JEDEN Baum aus 5 Reglern (api/slim/trop/delta/leaf = das Rezept) über
+    // GENAU zwei Funktionen: `phenotype()` leitet den Art-Charakter ab (Höhe/Rinde/Krone/…),
+    // `deriveParamsPlant()` (hier `treeParams`) fügt Saat-Jitter + LOD hinzu → der P-Vektor für
+    // `growSkeleton`. KEIN Nachbauen der Rezepte mehr — die 5 Regler fliessen durch DIESE eine
+    // Quelle (Main + Worker + Portal lesen sie). Portiert 1:1 aus phytogenesis v38
+    // (`phenotype` Z.1058, `deriveParamsPlant` Tree-Zweig Z.1105) — THREE-frei (die Blatt-Farbe
+    // bleibt roher Hex; der Renderer tönt sie). Die Zufalls-Zieh-REIHENFOLGE ist exakt die der
+    // Vorlage (inkl. der 3 verworfenen Farb-Jitter-Ziehungen) → derselbe Same ⇒ dieselbe Gestalt.
+    function treePhenotype(api, slim, trop, delta, leaf) {
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const conif = clamp((api - 0.62) / 0.2, 0, 1);
+        const isCon = conif > 0.5,
+            isShrub = api < 0.22;
+        const weep = !isCon && !isShrub ? clamp((trop - 0.5) / 0.4, 0, 1) : 0;
+        let height = lerp(2.2, 6.0, api * 0.35 + leaf * 0.3 + (1 - slim) * 0.35);
+        if (isCon) height *= 1.4;
+        let barkType;
+        if (isShrub) barkType = "smooth";
+        else if (isCon) barkType = slim < 0.4 ? "sequoia" : "conifer";
+        else if (weep > 0.4) barkType = "willow";
+        else if (slim > 0.66) barkType = "birch";
+        else barkType = "oak";
+        if (barkType === "sequoia") height *= 1.6;
+        if (isShrub) height = lerp(1.5, 2.6, leaf * 0.5 + 0.5);
+        const oakness = clamp((1 - slim) * 1.5, 0, 1) * (1 - conif) * (1 - weep * 0.7);
+        const lwsc = isCon ? 0.085 : lerp(0.16, 0.44, clamp((1 - slim * 0.65) * (1 - weep * 0.55), 0, 1));
+        const leafShape = {
+            m: 2 + 7 * oakness,
+            n1: lerp(1.0, 0.7, oakness),
+            n2: lerp(1.0, 0.55, oakness),
+            n3: lerp(1.0, 0.55, oakness),
+            a: 1,
+            b: 1,
+            wsc: lwsc,
+        };
+        const BC = {
+            oak: [0x3a2c1e, 0x6a5a44],
+            conifer: [0x4a2c1a, 0x6a4a30],
+            sequoia: [0x6a3a26, 0x9a5e3c],
+            birch: [0xe6e6dc, 0xf2f2ea],
+            willow: [0x4a4438, 0x665e4c],
+            smooth: [0x3a2c1e, 0x5a4a34],
+        };
+        const LC = {
+            oak: 0x4a7a2c,
+            conifer: 0x2e5526,
+            sequoia: 0x3a6a30,
+            birch: 0x8ab84a,
+            willow: 0x6a9a3a,
+            smooth: 0x4a7a2c,
+        };
+        const bc = BC[barkType];
+        return {
+            kind: isShrub ? "shrub" : "tree",
+            conifer: isCon,
+            height,
+            barkType,
+            leafShape,
+            barkA: bc[0],
+            barkB: bc[1],
+            leafCol: LC[barkType],
+            coniferDroop: isCon ? clamp(0.13 + trop * 0.25, 0.05, 0.5) : undefined,
+            whorlSpacing: isCon ? lerp(0.1, 0.15, 1 - leaf) : undefined,
+            crownBase: isCon
+                ? lerp(0.1, 0.48, clamp((0.55 - slim) / 0.45, 0, 1))
+                : isShrub
+                  ? 0
+                  : lerp(0, 0.32, clamp((api - 0.25) * 1.6, 0, 1)),
+            flare: isShrub ? 0.14 : lerp(0.16, 0.52, 1 - slim),
+            roots: Math.round(lerp(4, 6, 1 - slim)),
+            basalStems: isShrub ? Math.round(lerp(5, 2, api / 0.22)) : 1,
+            maxDepth: Math.round(lerp(7, 10, leaf * 0.4 + slim * 0.3 + api * 0.3)),
+            windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
+        };
+    }
+    // `dials` = {api,slim,trop,delta,leaf} (das Rezept). `seedInt` = die Saat (int, treibt IR).
+    // `lod` = 0|1|2. Gibt den P-Vektor für `growSkeleton` (+ die Material-Felder barkA/B/leafCol/
+    // leafShape/barkType, die der Renderer liest). Die 3 verworfenen Farb-Jitter-Ziehungen sind
+    // BEWAHRT (IR-Strom-Position = Vorlage), damit die Gestalt byte-treu zur Vorlage bleibt.
+    function treeParams(dials, seedInt, lod) {
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        const lerp = (a, b, t) => a + (b - a) * t;
+        const api = dials.api,
+            delta = dials.delta,
+            slim = dials.slim,
+            trop = dials.trop,
+            leaf = dials.leaf;
+        const IR = mulberry32(((Math.floor(seedInt) + 1) * 2246822519) >>> 0);
+        const J = (a) => 1 + (IR() - 0.5) * 2 * a,
+            O = (a) => (IR() - 0.5) * 2 * a;
+        const _lod = lod | 0;
+        const _lf = _lod === 0 ? 1 : _lod === 1 ? (dials && dials.conifer ? 0.36 : 0.21) : 0.16;
+        const ls = _lod === 0 ? 1 : _lod === 1 ? (dials && dials.conifer ? 1.62 : 2.05) : 4.0;
+        const ph = treePhenotype(api, slim, trop, delta, leaf);
+        // Die 3 Farb-Jitter-Ziehungen der Vorlage (Z.1107 offsetHSL) — verworfen, aber gezogen,
+        // damit der Wuchs-Strom (apical/height/leafSize…) byte-treu an der Vorlagen-Position sitzt.
+        IR();
+        IR();
+        IR();
+        return {
+            kind: ph.kind,
+            apical: clamp(api + O(0.1), 0, 1),
+            delta: delta + O(0.1),
+            slim: clamp(slim + O(0.1), 0, 1),
+            trop: trop + O(0.1),
+            leafD: clamp(leaf * J(0.16), 0.05, 1),
+            _lf: _lf,
+            height: ph.height * J(0.16),
+            conifer: ph.conifer,
+            coniferDroop: ph.coniferDroop,
+            crownBase: ph.crownBase,
+            whorlSpacing: ph.whorlSpacing,
+            flare: ph.flare,
+            roots: ph.roots * (_lod === 0 ? 1 : _lod === 1 ? 0.8 : 0.6),
+            basalStems: ph.basalStems,
+            maxDepth: ph.kind === "shrub" && _lod === 2 ? 3 : Math.max(4, ph.maxDepth),
+            barkA: ph.barkA,
+            barkB: ph.barkB,
+            leafCol: ph.leafCol,
+            leafShape: ph.leafShape,
+            barkType: ph.barkType,
+            leafSize: lerp(0.22, 0.6, leaf) * (ph.conifer ? 0.6 : 1) * J(0.12) * ls,
+            windGain: ph.windGain,
+            _bphase: IR() * 6.2831,
+        };
+    }
+
     root.__phytoCore = {
         growSkeleton: growSkeleton,
+        treePhenotype: treePhenotype,
+        treeParams: treeParams,
         bakeLeafAtlasCanvas: bakeLeafAtlasCanvas,
         buildFoliageQuads: buildFoliageQuads,
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0

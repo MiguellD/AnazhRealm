@@ -51403,6 +51403,32 @@ class AnazhRealm {
         };
     }
 
+    // DAS NEUE KLEID — DIE REZEPT-QUELLE: liefert die 5 Vorlagen-Regler {api,slim,trop,delta,leaf}
+    // (+ conifer-Hinweis) für eine Spezies — das „Rezept" im Rezeptbuch. Bevorzugt den byte-treuen
+    // Vorlagen-PRESET (SPECIES_PHYTO_DIALS = phytogenesis v38); eine Art ohne Eintrag bekommt einen
+    // aus der Grammatik-Krone abgeleiteten Regler-Satz. EINE Rezept-Quelle, die durch die EINE
+    // Pipeline (`__phytoCore.treeParams` → phenotype + deriveParamsPlant) fliesst — kein Nachbauen.
+    _treeRecipeDials(speciesKey, grammar) {
+        const preset = AnazhRealm.SPECIES_PHYTO_DIALS && AnazhRealm.SPECIES_PHYTO_DIALS[speciesKey];
+        if (preset)
+            return {
+                api: preset.api,
+                slim: preset.slim,
+                trop: preset.trop,
+                delta: preset.delta,
+                leaf: preset.leaf,
+                conifer: !!preset.conifer,
+            };
+        const crown = (grammar && grammar.crown) || "dome";
+        const fol = (grammar && grammar.foliage) || {};
+        const conifer = crown === "cone" || fol.kind === "needleSpray";
+        const api = conifer ? 0.9 : crown === "column" ? 0.72 : crown === "vase" || crown === "schirm" ? 0.38 : 0.34;
+        const slim = conifer ? 0.72 : crown === "column" ? 0.76 : 0.45;
+        const trop = crown === "weeping" ? 0.85 : conifer ? 0.06 : -0.1;
+        const leaf = fol.kind === "none" ? 0.2 : 0.6;
+        return { api, slim, trop, delta: 2.3, leaf, conifer };
+    }
+
     _growTreeBlueprintRich(speciesKey, seed, grammar, opts) {
         // V18.218 (DER LEBENDIGE GIGANT §3, Plan §3.6+§6) — LOD-STUFEN. Die
         // Grammatik bleibt EINE Quelle (die volle Spec); der `opts.lod`-Schalter
@@ -51445,31 +51471,27 @@ class AnazhRealm {
         // ihre eigene kleine Grammatik-Höhe (sie SIND die Strauch-Lebensform) → kein
         // 77-m-Riesen-Blume-Unsinn; nur das Alter variiert sie (jung/alt). wahrerwuchs §4.6.
         const isTreeSpecies = String(speciesKey || "").startsWith("baum_");
-        const sizeRoll = genome.axis("sizeClass");
-        let sizeClass, hLo, hHi;
-        if (!isTreeSpecies) {
-            sizeClass = "normal";
-            hLo = grammar.height[0];
-            hHi = grammar.height[1];
-        } else if (sizeRoll < 0.14) {
-            sizeClass = "strauch";
-            hLo = 1.5;
-            hHi = 4.0;
-        } else if (sizeRoll < 0.82) {
-            sizeClass = "normal";
-            hLo = grammar.height[0];
-            hHi = grammar.height[1];
-        } else if (sizeRoll < 0.96) {
-            sizeClass = "gross";
-            hLo = grammar.height[1] * 1.3;
-            hHi = grammar.height[1] * 1.95;
-        } else {
-            // GIGANT (Sequoia 30-80 m) ~4 % — selten, aber bei 16 Varianten/Art
-            // zuverlässig da (~4 Mammut-Haine/Welt; ein Wunder, das man findet).
-            sizeClass = "gigant";
-            hLo = 30;
-            hHi = 80;
-        }
+        genome.axis("sizeClass"); // Genom-Zieh-Strom-Position bewahren (die alte sizeClass-Achse)
+        // DAS NEUE KLEID — DIE REZEPT→PARAMETER-PIPELINE (die WURZEL, gemessen): Höhe + Proportion
+        // + Art-Charakter (Nadel/Laub · Krone · Rinde · maxDepth) kommen aus der VORLAGE — die 5
+        // Regler (SPECIES_PHYTO_DIALS = phytogenesis-PRESET, das „Rezept") fliessen durch die EINE
+        // geteilte Quelle `__phytoCore.treeParams` (phenotype + deriveParamsPlant, byte-treu). KEIN
+        // Genom-sizeClass-HÖHEN-Override mehr — der machte die 8-m-Tanne zum 2-m-Blob (GEMESSEN,
+        // diag-trees-real: schlank 0.86, h 2.1). Die per-Instanz-Varianz reitet im Vorlagen-Saat-
+        // Jitter (±16% Höhe, ±0.10 Dials, aus `hash`); die sizeClass ist nur noch ein ABGELEITETES
+        // Etikett (aus der gewachsenen Höhe/Rinde) für die Downstream-Form (Brettwurzel/Boost).
+        const _recipeDials = this._treeRecipeDials(speciesKey, grammar);
+        const _phytoP =
+            typeof globalThis !== "undefined" &&
+            globalThis.__phytoCore &&
+            typeof globalThis.__phytoCore.treeParams === "function"
+                ? globalThis.__phytoCore.treeParams(_recipeDials, hash >>> 0, lodLevel)
+                : null;
+        let sizeClass;
+        if (!isTreeSpecies || !_phytoP) sizeClass = "normal";
+        else if (_phytoP.barkType === "sequoia" || _phytoP.height >= 18) sizeClass = "gigant";
+        else if (_phytoP.height >= 9) sizeClass = "gross";
+        else sizeClass = "normal";
         const ageMul = genome.axis("age"); // 0 = jung (dünn/sparse) .. 1 = uralt (dick/knorrig/voll)
         // T6 (wahrerwuchs §4.1 — KRONEN-FORM/LEAN/PHYLLOTAXIS/MEHRSTÄMMIG): vier weitere
         // orthogonale Achsen, je tag-neutral (Form/Lage) + physik-safe (der Knick-Richter Ω-Φ3-b
@@ -51515,7 +51537,9 @@ class AnazhRealm {
         // Multi-segment polyline mit wander + taper. Die Höhe aus der Größenklasse —
         // für „normal" ist das EXAKT die alte Spezies-Spanne (bit-identische Welt für
         // die 70 % normalen Bäume); Strauch/Gross/Gigant weiten den Bereich auf 1.5-80 m.
-        const totalH = lerp(hLo, hHi, r01());
+        // Die Höhe kommt aus der Vorlagen-Pipeline (_phytoP.height, schon per-Saat gejittert);
+        // Fallback (Pipeline nicht geladen) auf die Grammatik-Spanne.
+        const totalH = _phytoP ? _phytoP.height : lerp(grammar.height[0], grammar.height[1], r01());
         skeleton.totalH = totalH;
         // Allometrie (Ω-B5, Quadrat-Kubik): ein größerer Baum braucht überproportional
         // dicke Glieder, sonst knickt er (Ω-Φ3-b fängt den zu-dünnen Riesen). sizeFactor =
@@ -51570,28 +51594,31 @@ class AnazhRealm {
         // (`genome.seq`) → unabhängig von der r01-Sequenz drumherum. Die zwei kanonischen
         // Ausgänge bleiben byte-kompatibel: parts[] (cylinder holz + sphere laub, Tags frozen)
         // + `_lastTreeSkeleton` (Polylinien + Anchors für Tube/Cards).
-        const conifer = grammar.crown === "cone" || grammar.foliage.kind === "needleSpray";
+        const conifer = _phytoP ? _phytoP.conifer : grammar.crown === "cone" || grammar.foliage.kind === "needleSpray";
         const phytoSeq = genome.seq("phyto-growth");
-        const P = this._phytoDialsFor(speciesKey, grammar, genome, r01, {
-            height: totalH,
-            crownForm,
-            foliageScale,
-            barkType: conifer ? "conifer" : "smooth",
-            // maxDepth VOLL (der Lead-Kette-Stamm erreicht die volle Höhe); der countCap ist
-            // der LOD-Hebel (er schneidet Seiten-Äste, NIE die tiefen-zuerst gewachsene Höhe).
-            maxDepth: conifer ? 4 : 5,
-            basalStems: multiStem > 0 ? multiStem + 1 : 0,
-            trunkMul: allometry * (0.85 + ageMul * 0.35),
-            countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
-            // DAS NEUE KLEID Welle 1 — die Krone füllt jetzt aus dem VOLLEN Blatt-Satz (die
-            // Vorlage rendert Hunderte Blätter bei L0): jedes Blatt = EIN Cluster-Quad (4 Verts)
-            // via `__phytoCore.buildFoliageQuads`, statt der alten N-Anker × K-Kreuz-Karten
-            // (8 Verts/Karte). 480 Quads (1920 Verts) sind DICHTER UND LEICHTER als die alten
-            // ~64 Anker × 5 Karten (2560 Verts). Der Baum ist instanziert (HISM) → EINE Geometrie
-            // je Template, die Instanz-Zahl multipliziert die Geometrie NICHT.
-            leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
-            phylloDiv,
-        });
+        // Der P-Vektor kommt aus der Vorlagen-Pipeline (_phytoP oben); hier reiten nur die AnazhRealm-
+        // RENDER-Budgets darauf (countCap/leafBudget = der LOD-Hebel — er schneidet DETAIL nach dem
+        // Wuchs, nie den Zufalls-Strom, wie die Vorlagen-v35-Lehre; trunkMul=1, die Allometrie trägt
+        // growSkeleton selbst via McMahon H→D). Der VOLLE Blatt-Satz (leafBudget 480 bei L0) füllt
+        // die Krone wie die Vorlage. Fallback auf den alten Dial-Ableiter, wenn phyto-core fehlt.
+        const P = _phytoP
+            ? Object.assign({}, _phytoP, {
+                  trunkMul: 1,
+                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
+              })
+            : this._phytoDialsFor(speciesKey, grammar, genome, r01, {
+                  height: totalH,
+                  crownForm,
+                  foliageScale,
+                  barkType: conifer ? "conifer" : "smooth",
+                  maxDepth: conifer ? 4 : 5,
+                  basalStems: multiStem > 0 ? multiStem + 1 : 0,
+                  trunkMul: allometry * (0.85 + ageMul * 0.35),
+                  countCap: lodLevel === 0 ? 3600 : lodLevel === 1 ? 600 : 90,
+                  leafBudget: lodLevel === 0 ? 480 : lodLevel === 1 ? 90 : 8,
+                  phylloDiv,
+              });
         const phyto = this._phytoGrowSkeleton(P, phytoSeq);
         const trunkBaseR = phyto.trunkR;
         // Konsistente Neigung (Lean, die T6-Genom-Achse): ein y-proportionaler Shear auf ALLE
@@ -63417,45 +63444,46 @@ class AnazhRealm {
                     if (fd < 1 && d.keep >= fd) continue;
                     // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture ueber
                     // _enqueueVegetationSpawn) -> harvestbar + kollidierbar + getaggt + LOD.
-                    // Seine VISUELLE Geometrie kommt 1:1 aus der Vorlage (Asset-Foundry), in
-                    // AnazhRealms Instancing-Maschinerie gefuettert (_rebuildArchitectureMesh).
+                    // V18.390 (DAS NEUE KLEID — DIE LOD-WURZEL): der Wald spawnt die GEWACHSENE
+                    // VARIANTE (`grown_<sp>_v<idx>`), NICHT die kanonische Basis-Art (`baum_*`).
+                    // GEMESSEN (diag-trees-real): 0 Bäume trugen `_lodSpecies` → keine L0/L1/L2 +
+                    // kein Impostor → die ganze Krone rendert bei L0 (15.8 M Dreiecke). Die WURZEL:
+                    // nur der gewachsene Varianten-Bauplan trägt `_isGrown` + `_variantIndex`, die
+                    // die LOD-Aktivierung (`spawnArchitecture` → `entry._lodSpecies`, `_tickArch
+                    // itectureLOD`) verlangt; die Basis-Built-ins (`baum_eiche` …) tragen nur
+                    // `_grownSpecies`. Die Variante (N/Art region-deterministisch aus dem bounded
+                    // Pool) bricht ZUGLEICH das Klon-Muster (jede Region ein eigener Stil) und
+                    // bleibt HISM-instanziert (N Geometrien/Art, nicht per-Instanz). Fallback auf
+                    // die Basis-Art, falls der Varianten-Bau scheitert (Tag-Wand-Ablehnung o.ä.).
+                    const regX = Math.floor(d.x / 256);
+                    const regZ = Math.floor(d.z / 256);
+                    const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                    const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
+                    const grownKey =
+                        typeof this._growTreeBlueprintForSpawn === "function"
+                            ? this._growTreeBlueprintForSpawn(d.sp, regionSeed)
+                            : null;
+                    const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
+                    const spawnType = grownBp && grownBp._isGrown ? grownKey : d.sp;
                     this._enqueueVegetationSpawn(
-                        d.sp,
+                        spawnType,
                         { x: d.x, y: d.surfaceY + 0.5, z: d.z },
                         { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }
                     );
                     planted++;
-                    // V18.389 (DAS NEUE KLEID P1-Heilung) — die drei Ω-H-Nebeneffekte, die
-                    // MIT dem alten Baum-Zweig aus `_vegetationSampleSpawn` wanderten (V18.217/
-                    // .220/.221): (a) die VARIANTE region-deterministisch WACHSEN (`_growTree
-                    // BlueprintForSpawn` hält den bounded Varianten-Pool am Leben — die Voraus-
-                    // setzung der Promotion §2: ein berührter/geernteter Wald-Baum re-wächst
-                    // BIT-GENAU aus `variantSeed[index]`); der Spawn bleibt die kanonische Art
-                    // (tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint) → EINE
-                    // Baum-Quelle. (b) die Scatter-Cell im Lookup REGISTRIEREN (species +
-                    // variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die reale
-                    // Form). (c) den „tree"-Zähler ERHÖHEN (die V18.220-Cap-Wand, die
-                    // `_vegetationSampleSpawn` weiter liest). Region-Seed 1:1 aus dem alten Pfad.
-                    {
-                        const regX = Math.floor(d.x / 256);
-                        const regZ = Math.floor(d.z / 256);
-                        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-                        const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
-                        const grownKey =
-                            typeof this._growTreeBlueprintForSpawn === "function"
-                                ? this._growTreeBlueprintForSpawn(d.sp, regionSeed)
-                                : null;
-                        const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
-                        if (
-                            grownBp &&
-                            grownBp._isGrown &&
-                            Number.isFinite(grownBp._variantIndex) &&
-                            this._scatterRegisterCell
-                        ) {
-                            this._scatterRegisterCell(d.x, d.z, "tree", grownBp._grownSpecies, grownBp._variantIndex);
-                        }
-                        if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
+                    // Die zwei restlichen Ω-H-Nebeneffekte (V18.217/.220/.221): (a) die Scatter-
+                    // Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
+                    // Resolver mappt die Cell auf die reale Form); (b) den „tree"-Zähler ERHÖHEN
+                    // (die V18.220-Cap-Wand, die `_vegetationSampleSpawn` weiter liest).
+                    if (
+                        grownBp &&
+                        grownBp._isGrown &&
+                        Number.isFinite(grownBp._variantIndex) &&
+                        this._scatterRegisterCell
+                    ) {
+                        this._scatterRegisterCell(d.x, d.z, "tree", grownBp._grownSpecies, grownBp._variantIndex);
                     }
+                    if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
                     // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
                     // gefallenen Stamm in 3–5 m Abstand (Vorlagen-Wald atmet: Snags in den
                     // Lücken). Wanderte aus dem alten Baum-Sample-Zweig hierher.

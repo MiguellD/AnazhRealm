@@ -32,65 +32,79 @@ const server = http.createServer((req, res) => {
         }
         const r = window.anazhRealm; const s = r.state; const pm = s.playerMesh;
         const out = {};
+        const isTreeType = (t) => typeof t === "string" && (/^baum_/.test(t) || /^grown_baum_/.test(t));
 
-        // 1) WERDEN BAEUME GEPFLANZT? Architektur-Eintraege + Instanzen zaehlen (nah um den Spieler).
+        // 1) WERDEN BAEUME GEPFLANZT? Architektur-Eintraege + Instanzen + LOD-Tag zaehlen.
         const px = pm ? pm.position.x : 0, pz = pm ? pm.position.z : 0;
-        let treeEntries = 0, treeNear = 0, instanced = 0;
-        const speciesCount = {};
+        let treeEntries = 0, treeNear = 0, instanced = 0, lodTagged = 0;
+        const speciesCount = {}, lodLevels = {}, byFamily = { baum: 0, grown: 0 };
         for (const e of (s.architectures || [])) {
-            if (!e || typeof e.type !== "string" || !/^baum_/.test(e.type)) continue;
+            if (!e || !isTreeType(e.type)) continue;
             treeEntries++; speciesCount[e.type] = (speciesCount[e.type] || 0) + 1;
+            byFamily[/^grown_/.test(e.type) ? "grown" : "baum"]++;
             if (e.instanced) instanced++;
+            if (e._lodSpecies) { lodTagged++; const l = e._lodLevel != null ? e._lodLevel : "?"; lodLevels[l] = (lodLevels[l] || 0) + 1; }
             const dx = e.position.x - px, dz = e.position.z - pz; if (dx * dx + dz * dz < 2500) treeNear++;
         }
-        out.plantung = { treeEntries, instanced, treeNear_50m: treeNear, arten: speciesCount };
+        out.plantung = { treeEntries, familie: byFamily, instanced, treeNear_50m: treeNear, arten: speciesCount };
+        out.lod = { baeume_mit_lodTag: lodTagged, verteilung_L: lodLevels };
 
-        // 2) STEHEN DIE DREIECKE? Instanz-Gruppen-Dreiecke zaehlen.
-        let groups = 0, totalTris = 0, totalInst = 0;
-        if (s.archInstanceGroups) s.archInstanceGroups.forEach((g) => {
-            if (g && g.mesh && g.mesh.geometry) {
-                const geo = g.mesh.geometry; const cnt = g.mesh.count || 0;
-                const idx = geo.index ? geo.index.count : (geo.attributes.position ? geo.attributes.position.count : 0);
-                groups++; totalInst += cnt; totalTris += (idx / 3) * cnt;
-            }
-        });
-        out.geometrie = { instanzGruppen: groups, instanzen: totalInst, dreiecke_gesamt: Math.round(totalTris) };
+        // 2) STEHEN DIE DREIECKE? Instanz-Gruppen-Dreiecke zaehlen (die ECHTE gerenderte Geometrie).
+        let groups = 0, totalTris = 0, totalInst = 0, treeTris = 0, treeGroups = 0;
+        const heavy = [];
+        const collect = (map) => { if (!map) return; map.forEach((g, key) => {
+            const mesh = g && (g.mesh || (g.kind === "batch" && g.batched));
+            if (!mesh || !mesh.geometry) return;
+            const geo = mesh.geometry; const cnt = mesh.count || (mesh.isBatchedMesh ? (mesh._geometryCount || 0) : 1);
+            const idx = geo.index ? geo.index.count : (geo.attributes.position ? geo.attributes.position.count : 0);
+            const tris = (idx / 3) * cnt;
+            groups++; totalInst += cnt; totalTris += tris;
+            const nm = String(g.name || key || "");
+            if (/baum|grown/i.test(nm)) { treeGroups++; treeTris += tris; }
+            heavy.push({ nm: nm.slice(0, 44), inst: cnt, triJe: Math.round(idx / 3), tris: Math.round(tris) });
+        }); };
+        collect(s.archInstanceGroups); collect(s.archBatchGroups);
+        heavy.sort((a, b) => b.tris - a.tris);
+        out.geometrie = { instanzGruppen: groups, instanzen: totalInst, dreiecke_gesamt: Math.round(totalTris), baum_gruppen: treeGroups, baum_dreiecke: Math.round(treeTris), teuerste: heavy.slice(0, 6) };
 
-        // 3) IST DIE GEOMETRIE EIN ECHTER BAUM? Eine Eiche wachsen + bbox/Teile/Farben messen.
-        const measure = (species, seed) => {
+        // 3) IST DIE GEOMETRIE EIN ECHTER BAUM? Die ECHTE gerenderte Skeleton-Geometrie (Tube+Cards)
+        //    einer gewachsenen Variante messen — NICHT die Parts-Fallback-Kugeln.
+        const measure = (species, regionSeed) => {
             try {
-                const parts = r._growTreeBlueprint(species, seed);
-                if (!parts || !parts.length) return { err: "keine parts" };
-                const grp = r._buildFromBlueprint({ name: "m", parts });
-                if (!grp) return { err: "kein mesh" };
-                let miny = 1e9, maxy = -1e9, maxr = 0, verts = 0, meshes = 0, hasGreen = false, hasBrown = false;
-                grp.traverse((o) => {
-                    if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
-                        const p = o.geometry.attributes.position; meshes++; verts += p.count;
-                        for (let i = 0; i < p.count; i++) { const y = p.getY(i); if (y < miny) miny = y; if (y > maxy) maxy = y; const rr = Math.hypot(p.getX(i), p.getZ(i)); if (rr > maxr) maxr = rr; }
-                        const c = o.geometry.attributes.color;
-                        if (c) for (let i = 0; i < c.count; i += 47) { const g = c.getY(i), rd = c.getX(i), b = c.getZ(i); if (g > rd && g > b) hasGreen = true; if (rd > g && rd > b * 0.9 && rd < 0.5) hasBrown = true; }
-                    }
-                });
-                try { r._disposeSoulGroup && r._disposeSoulGroup(grp); } catch (_e) {}
-                const h = maxy - miny;
-                return { hoehe: +h.toFixed(1), breite: +(maxr * 2).toFixed(1), schlankheit: +(h / (maxr * 2 || 1)).toFixed(2), teile: meshes, verts, laub_gruen: hasGreen, rinde_braun: hasBrown, sig: verts + ":" + Math.round(h * 10) + ":" + meshes };
+                const key = r._growTreeBlueprintForSpawn(species, regionSeed);
+                const bp = key && s.blueprints && s.blueprints[key];
+                if (!bp) return { err: "kein grown bp" };
+                // Die ECHTE gerenderte Geometrie: _archFlattenBlueprint(NAME) baut die Leaves
+                // (Tube+Cards). Die Geometrien sind GECACHT + geteilt -> NIE disposen.
+                let flat = null;
+                try { flat = r._archFlattenBlueprint ? r._archFlattenBlueprint(key) : null; } catch (e) { return { err: "flatten:" + (e && e.message) }; }
+                const leaves = flat && flat.leaves;
+                if (!leaves || !leaves.length) return { err: "keine leaves (" + (flat && flat.reason) + ")" };
+                let miny = 1e9, maxy = -1e9, maxr = 0, verts = 0, hasGreen = false, hasBrown = false, meshes = 0;
+                let barkMiny = 1e9, barkMaxy = -1e9, barkMaxr = 0; // Nur der STAMM/AST-Tube (leaf 0)
+                for (let li = 0; li < leaves.length; li++) {
+                    const lf = leaves[li];
+                    const geo = lf && (lf.geom || lf.geometry); if (!geo || !geo.attributes || !geo.attributes.position) continue;
+                    const p = geo.attributes.position; meshes++; verts += p.count;
+                    const isBark = li === 0;
+                    for (let i = 0; i < p.count; i++) { const y = p.getY(i), rr = Math.hypot(p.getX(i), p.getZ(i)); if (y < miny) miny = y; if (y > maxy) maxy = y; if (rr > maxr) maxr = rr; if (isBark) { if (y < barkMiny) barkMiny = y; if (y > barkMaxy) barkMaxy = y; if (rr > barkMaxr) barkMaxr = rr; } }
+                    const c = geo.attributes.color;
+                    if (c) for (let i = 0; i < c.count; i += 31) { const g = c.getY(i), rd = c.getX(i), b = c.getZ(i); if (g > rd + 0.02 && g > b) hasGreen = true; if (rd > g && rd > b && rd < 0.55 && g > 0.1) hasBrown = true; }
+                }
+                const h = maxy - miny; const bh = barkMaxy - barkMiny;
+                return { variante: key.replace(/^grown_/, ""), hoehe: +h.toFixed(1), breite: +(maxr * 2).toFixed(1), schlank: +(h / (maxr * 2 || 1)).toFixed(2), stamm_h: +bh.toFixed(1), stamm_schlank: +(bh / (barkMaxr * 2 || 1)).toFixed(2), leaves: meshes, verts, laub_gruen: hasGreen, rinde_braun: hasBrown };
             } catch (e) { return { err: String(e && e.message || e) }; }
         };
-        out.eiche = measure("baum_eiche", 12345);
-        out.tanne = measure("baum_tanne", 777);
-        out.birke = measure("baum_birke", 999);
+        const ws = (s.worldMeta && s.worldMeta.seed) || "anazh-realm-seed";
+        out.eiche = measure("baum_eiche", `${ws}|baum_eiche|0,0`);
+        out.tanne = measure("baum_tanne", `${ws}|baum_tanne|0,0`);
+        out.birke = measure("baum_birke", `${ws}|baum_birke|0,0`);
 
-        // 4) IST DIE VARIANZ REAL? 6 Eichen mit verschiedenen Seeds -> verschiedene Signaturen?
+        // 4) IST DIE VARIANZ REAL? Alle N Varianten einer Art -> verschiedene Hoehen/Silhouetten?
+        const N = r.constructor.VARIANTS_PER_SPECIES || 3;
         const sigs = [];
-        for (let i = 0; i < 6; i++) { const m = measure("baum_eiche", 1000 + i * 137); sigs.push(m.sig || "err"); }
-        const uniq = new Set(sigs);
-        out.varianz = { seeds: 6, distinkte_gestalten: uniq.size, signaturen: sigs };
-
-        // 5) GREIFT LOD? Setzen die instanzierten Baeume _lodSpecies?
-        let lodTagged = 0, lodLevels = {};
-        for (const e of (s.architectures || [])) { if (e && e.instanced && e._lodSpecies) { lodTagged++; const l = e._lodLevel != null ? e._lodLevel : "?"; lodLevels[l] = (lodLevels[l] || 0) + 1; } }
-        out.lod = { baeume_mit_lodTag: lodTagged, verteilung_L: lodLevels };
+        for (let i = 0; i < N; i++) { const m = measure("baum_eiche", `${ws}|baum_eiche|${i},${i * 7}`); sigs.push(m.err ? "err" : m.variante + "=" + m.hoehe + "m/s" + m.schlankheit); }
+        out.varianz = { varianten_pro_art: N, gestalten: sigs, distinkt: new Set(sigs).size };
 
         return out;
     });
