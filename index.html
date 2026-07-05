@@ -5873,6 +5873,72 @@
                 flex-direction: column;
                 gap: 4px;
             }
+            /* DAS NEUE KLEID — DER REZEPT-REGLER (Studio-Regler + Saat-Würfel in der Werkstatt) */
+            #workshop-recipe-panel {
+                margin-top: 8px;
+                padding: 7px 8px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 4px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            #workshop-recipe-panel[hidden] {
+                display: none;
+            }
+            .workshop-recipe-head {
+                margin: 0 0 2px;
+                font-size: 11px;
+                letter-spacing: 0.04em;
+                color: var(--ink-on-dark, #e8d4a8);
+            }
+            .workshop-recipe-row {
+                display: grid;
+                grid-template-columns: 78px 1fr 34px;
+                gap: 6px;
+                align-items: center;
+            }
+            .workshop-recipe-row label {
+                font-size: 10px;
+                color: var(--ink-on-dark-soft, #cdbf9a);
+                cursor: help;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .workshop-recipe-row input[type="range"] {
+                width: 100%;
+                accent-color: var(--brass-3, #b08648);
+                cursor: pointer;
+            }
+            .workshop-recipe-val {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 10px;
+                text-align: right;
+                color: var(--ink-on-dark, #e8d4a8);
+            }
+            .workshop-recipe-btns {
+                display: flex;
+                gap: 6px;
+                margin-top: 3px;
+            }
+            .workshop-recipe-btns button {
+                flex: 1;
+                font-size: 11px;
+                padding: 5px 6px;
+                background: rgba(176, 134, 72, 0.22);
+                border: 1px solid var(--brass-3, #b08648);
+                border-radius: 3px;
+                color: var(--ink-on-dark, #e8d4a8);
+                cursor: pointer;
+            }
+            .workshop-recipe-btns button:hover {
+                background: rgba(176, 134, 72, 0.4);
+            }
+            .workshop-recipe-dice {
+                font-weight: 600;
+            }
             .workshop-empty {
                 font-size: 11px;
                 color: var(--parch-ink-faded);
@@ -8132,6 +8198,11 @@
                              „was ich hinzufüge / wie es aussieht" → eine mentale Zone. -->
                         <h4>Farben</h4>
                         <div id="workshop-color-palette" role="group" aria-label="Farb-Palette"></div>
+                        <!-- DAS NEUE KLEID — DER REZEPT-REGLER: bei einem gewachsenen Bauplan (Baum/
+                             Fels/Kristall) erscheinen hier die STUDIO-Regler + der Saat-Würfel. Sie
+                             füttern die EINE geteilte Pipeline (phyto-core) live → beweist, dass die
+                             Pipeline läuft + AnazhRealm die Baupläne anpassen kann. Sonst leer/versteckt. -->
+                        <div id="workshop-recipe-panel" role="group" aria-label="Rezept-Regler" hidden></div>
                     </aside>
                     <div id="workshop-preview-wrapper">
                         <div id="workshop-mode-bar" role="group" aria-label="Manipulator-Modus">

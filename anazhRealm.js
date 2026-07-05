@@ -51480,7 +51480,8 @@ class AnazhRealm {
         // diag-trees-real: schlank 0.86, h 2.1). Die per-Instanz-Varianz reitet im Vorlagen-Saat-
         // Jitter (±16% Höhe, ±0.10 Dials, aus `hash`); die sizeClass ist nur noch ein ABGELEITETES
         // Etikett (aus der gewachsenen Höhe/Rinde) für die Downstream-Form (Brettwurzel/Boost).
-        const _recipeDials = this._treeRecipeDials(speciesKey, grammar);
+        // opts.recipeDials überschreibt das Vorlagen-Rezept (Werkstatt-Regler → Live-Anpassung).
+        const _recipeDials = (opts && opts.recipeDials) || this._treeRecipeDials(speciesKey, grammar);
         const _phytoP =
             typeof globalThis !== "undefined" &&
             globalThis.__phytoCore &&
@@ -69935,6 +69936,11 @@ class AnazhRealm {
         if (typeof this._workshopRebuildPreviewMesh === "function") {
             this._workshopRebuildPreviewMesh();
         }
+        // DAS NEUE KLEID — DER REZEPT-REGLER: bei einem gewachsenen Baum die Studio-Regler +
+        // den Saat-Würfel zeigen (sonst ausblenden). Beweist die Pipeline live.
+        if (typeof this._workshopRenderRecipePanel === "function") {
+            this._workshopRenderRecipePanel(selected);
+        }
         // V8.05 — Stats-Panel + Tool-Palette aktualisieren (Tool-Palette
         // hängt am Spieler-Inventar, das beim DSL-Pfad mutieren kann).
         if (typeof this._workshopRenderStatsPanel === "function") {
@@ -72567,6 +72573,122 @@ class AnazhRealm {
             swatch.style.background = hex;
             palette.appendChild(swatch);
         }
+    }
+
+    // DAS NEUE KLEID — DER REZEPT-REGLER (die Pipeline SICHTBAR + PRÜFBAR): bei einem gewachsenen
+    // Baum (bp._grownSpecies) zeigt die Werkstatt unter den Farben die 5 STUDIO-Regler
+    // (api/slim/trop/delta/leaf = das Rezept) + einen SAAT-WÜRFEL. Jede Regler-/Würfel-Änderung
+    // füttert die EINE geteilte Pipeline (phyto-core treeParams → growSkeleton) live neu → die
+    // Vorschau ändert sich. Das beweist: (a) die Pipeline läuft, (b) AnazhRealm kann die Baupläne
+    // anpassen. Für eine Art ohne Rezept (Nicht-Baum / Fels-Kristall ohne Dial-Pipeline) versteckt.
+    _workshopRenderRecipePanel(bp) {
+        if (typeof document === "undefined") return;
+        const panel = document.getElementById("workshop-recipe-panel");
+        if (!panel) return;
+        const species = bp && bp._grownSpecies;
+        const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
+        const isRecipeTree = !!(species && grammar && String(species).startsWith("baum_"));
+        if (!isRecipeTree) {
+            panel.hidden = true;
+            panel.innerHTML = "";
+            return;
+        }
+        panel.hidden = false;
+        panel.innerHTML = "";
+        const dials = bp._recipeDials || this._treeRecipeDials(species, grammar);
+        const head = document.createElement("h4");
+        head.textContent = "Rezept (Studio-Regler)";
+        head.className = "workshop-recipe-head";
+        panel.appendChild(head);
+        const SLIDERS = [
+            { key: "api", label: "Apikaldominanz", min: 0, max: 1, hint: "Nadel-Kegel (1) ↔ Laub-Krone (0)" },
+            { key: "slim", label: "Schlankheit", min: 0, max: 1, hint: "gedrungen (0) ↔ schlank (1)" },
+            { key: "trop", label: "Gravitropismus", min: -0.3, max: 1, hint: "aufrecht (−) ↔ hängend (+)" },
+            { key: "delta", label: "da-Vinci-Δ", min: 1.9, max: 2.9, hint: "Astdicke-Erhalt an den Gabeln" },
+            { key: "leaf", label: "Blattdichte", min: 0, max: 1, hint: "kahl (0) ↔ voll (1)" },
+        ];
+        for (const s of SLIDERS) {
+            const row = document.createElement("div");
+            row.className = "workshop-recipe-row";
+            const lab = document.createElement("label");
+            lab.textContent = s.label;
+            lab.title = s.hint;
+            const inp = document.createElement("input");
+            inp.type = "range";
+            inp.min = String(s.min);
+            inp.max = String(s.max);
+            inp.step = "0.01";
+            inp.value = String(dials[s.key] != null ? dials[s.key] : 0);
+            const val = document.createElement("span");
+            val.className = "workshop-recipe-val";
+            val.textContent = (+inp.value).toFixed(2);
+            inp.addEventListener("input", () => {
+                val.textContent = (+inp.value).toFixed(2);
+                const nd = Object.assign({}, bp._recipeDials || this._treeRecipeDials(species, grammar));
+                nd[s.key] = +inp.value;
+                // conifer-Hinweis (LOD-Faktor) folgt der Apikaldominanz.
+                nd.conifer = nd.api >= 0.72;
+                this._workshopRegrowRecipe(bp, nd, bp._grownSeed || `${species}-studio`);
+            });
+            row.appendChild(lab);
+            row.appendChild(inp);
+            row.appendChild(val);
+            panel.appendChild(row);
+        }
+        const btnRow = document.createElement("div");
+        btnRow.className = "workshop-recipe-btns";
+        const dice = document.createElement("button");
+        dice.type = "button";
+        dice.className = "workshop-recipe-dice";
+        dice.textContent = "🎲 Neue Saat";
+        dice.title = "Wirf eine andere Variante dieser Art (gleiches Rezept, anderer Same) — wie im Studio";
+        dice.addEventListener("click", () => {
+            // Math.random lebt in der UI (Γ5) — der Same ist eine Werkstatt-Geste, kein Worldgen.
+            const newSeed = `${species}-studio-${Math.floor(Math.random() * 1e9).toString(36)}`;
+            this._workshopRegrowRecipe(bp, bp._recipeDials || this._treeRecipeDials(species, grammar), newSeed);
+        });
+        btnRow.appendChild(dice);
+        const reset = document.createElement("button");
+        reset.type = "button";
+        reset.className = "workshop-recipe-reset";
+        reset.textContent = "↺ Vorlage";
+        reset.title = "Regler + Same auf das Vorlagen-Rezept zurücksetzen";
+        reset.addEventListener("click", () => {
+            delete bp._recipeDials;
+            this._workshopRegrowRecipe(bp, this._treeRecipeDials(species, grammar), `${species}-studio`);
+            this._workshopRenderRecipePanel(bp); // Regler-Positionen zurückstellen
+        });
+        btnRow.appendChild(reset);
+        panel.appendChild(btnRow);
+    }
+
+    // Regrow: die aktuellen Dials + Same durch die EINE Pipeline (`_growTreeBlueprintRich` →
+    // treeParams → growSkeleton) → neue parts + skeleton → in den Bauplan schreiben + Vorschau neu
+    // bauen. KEIN Panel-Neubau (der Slider-Drag behält seinen Fokus). Cache-Invalidierung, damit
+    // eine schon in der Welt platzierte Instanz beim nächsten Rebuild die neue Gestalt erbt.
+    _workshopRegrowRecipe(bp, dials, seedStr) {
+        const species = bp && bp._grownSpecies;
+        const grammar = species && AnazhRealm.SPECIES_GRAMMAR && AnazhRealm.SPECIES_GRAMMAR[species];
+        if (!species || !grammar) return;
+        let parts = null;
+        try {
+            parts = this._growTreeBlueprintRich(species, seedStr, grammar, { recipeDials: dials, lod: 0 });
+        } catch (e) {
+            if (typeof this.log === "function") this.log("Rezept-Regrow fehlgeschlagen: " + (e && e.message), "WARN");
+            return;
+        }
+        if (!Array.isArray(parts) || parts.length < 2) return;
+        const skeleton =
+            this._lastTreeSkeleton && Array.isArray(this._lastTreeSkeleton.branches) ? this._lastTreeSkeleton : null;
+        this._lastTreeSkeleton = null;
+        bp.parts = parts;
+        bp._skeleton = skeleton;
+        bp._recipeDials = dials;
+        bp._grownSeed = seedStr;
+        if (this.state.archFlattenCache && this.state.archFlattenCache.delete) this.state.archFlattenCache.delete(bp.name);
+        if (this.state.archMergedGeomCache && this.state.archMergedGeomCache.delete)
+            this.state.archMergedGeomCache.delete(bp.name);
+        if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
     }
 
     // V8.03 — Material-Drop: identifiziert den getroffenen Part via Raycaster
