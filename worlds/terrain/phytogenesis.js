@@ -324,6 +324,30 @@ function bakeLeafAtlas(){
   foliageMatTex.map=_leafAtlas;foliageMatTex.needsUpdate=true;
 }
 function pushLeafClusterQuad(arr,pos,dir,up,scale,color,sway,phase,omega,cell){
+  // DER GETEILTE SAMEN: die Blatt-Karten-GEOMETRIE (Quad + UV/Normale) lebt in phyto-core.js
+  // (buildFoliageQuads) — dieselbe EINE Quelle, die AnazhRealm liest. Die Geometrie ist byte-
+  // identisch; nur das WIND-Attribut-Schema divergiert (AnazhRealm: aFlex/aPhase — die Vorlage:
+  // aWind/aCenter/aType), darum hängt der Wrapper die Vorlagen-Attribute HIER an (der Kern bleibt
+  // rein). opts.cell routet die exakte Atlas-Zelle (Vorlage: (_lq++)&3). Fallback → Inline.
+  const __core=(typeof self!=='undefined'&&self.__phytoCore);
+  if(__core&&typeof __core.buildFoliageQuads==='function'){
+    const _r=__core.buildFoliageQuads([{pos:pos,dir:dir,up:up,scale:scale,sway:sway,phase:phase}],{leafColor:[color.r,color.g,color.b],scale:1,cell:cell});
+    if(_r&&_r.count){
+      const g=new THREE.BufferGeometry();
+      g.setAttribute('position',new THREE.Float32BufferAttribute(_r.positions,3));
+      g.setAttribute('normal',new THREE.Float32BufferAttribute(_r.normals,3));
+      g.setAttribute('uv',new THREE.Float32BufferAttribute(_r.uvs,2));
+      g.setAttribute('color',new THREE.Float32BufferAttribute(_r.colors,3));
+      const W=new Float32Array(12),CT=new Float32Array(12),T=new Float32Array(4);
+      for(let i=0;i<4;i++){W[i*3]=sway;W[i*3+1]=phase;W[i*3+2]=omega;CT[i*3]=pos[0];CT[i*3+1]=pos[1];CT[i*3+2]=pos[2];T[i]=1;}
+      g.setAttribute('aWind',new THREE.Float32BufferAttribute(W,3));
+      g.setAttribute('aCenter',new THREE.Float32BufferAttribute(CT,3));
+      g.setAttribute('aType',new THREE.Float32BufferAttribute(T,1));
+      g.setIndex(Array.from(_r.indices));
+      arr.push(g);
+      return;
+    }
+  }
   const cr=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
   const e1=vnorm(dir.slice());                                    // FIX v32: dir liegt IN der Blattflaeche (wie pushLeaf) — vorher war dir die NORMALE: Weiden-Peitschen (dir~abwaerts) wurden horizontale Lamellen, von der Seite = Streifen-Geister
   let uv0=(up&&(Math.abs(up[0])+Math.abs(up[1])+Math.abs(up[2]))>1e-4)?up.slice():[0,1,0];

@@ -529,7 +529,9 @@
             const r2 = [r[0] * ca - e1[0] * sa, r[1] * ca - e1[1] * sa, r[2] * ca - e1[2] * sa];
             const nrm = _vnorm(_vcross(r1, r2));
             const needle = !!l.needle;
-            const cell = needle ? 3 : li % 3;
+            // opts.cell erzwingt die Atlas-Zelle (die Vorlage routet cell=(_lq++)&3 pro Blatt);
+            // ohne opts.cell bleibt AnazhRealms Zyklus (needle→3, sonst li%3) unverändert.
+            const cell = opts.cell != null ? opts.cell : needle ? 3 : li % 3;
             const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5;
             const u0 = cell * 0.25,
                 u1 = u0 + 0.25;
