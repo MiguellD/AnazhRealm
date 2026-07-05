@@ -26765,9 +26765,14 @@ class AnazhRealm {
     // Übergang an der Halm-Basis); die Halm-SPITZE bleibt heller (das Leben des Halms), die lush/dry-
     // instanceColor moduliert Halm UND Boden ko-variant (dieselben ~1-Multiplikatoren). Browser-Knopf.
     static get MEADOW_GREEN() {
-        // V18.386 — PHYTO-KLEID (Boden-LOOK-Port): der Wiesen-Grund liest jetzt die vom Schöpfer im
+        // V18.386 — PHYTO-KLEID (Boden-LOOK-Port): der Wiesen-Grund liest die vom Schöpfer im
         // Portal-Labor (worlds/terrain/phytogenesis.js) justierte Boden-Farbe `cMead` (0x55632f, das
-        // satte Wald-Olivgrün), sRGB→linear konvertiert. Ersetzt das hellere [0.28,0.46,0.19].
+        // satte Wald-Olivgrün), sRGB→linear. DIE BREITE TAILLE: statt eines hartkodierten Abbilds
+        // liest der Getter jetzt den LIVE vom Studio durch `get-world-params` gereichten Wert
+        // (`_studioGround.mead`) — editiert der Schöpfer `PORTAL_GROUND.mead` im Portalfile, folgt
+        // der AnazhRealm-Wiesenboden beim nächsten Laden. Fallback = der bisherige Wert = 0 Regress.
+        const s = AnazhRealm._studioGround;
+        if (s && s.mead) return s.mead;
         return [0.0908, 0.1248, 0.0284];
     }
 
@@ -26780,17 +26785,22 @@ class AnazhRealm {
     // senkrecht. Browser-justierbar (Schöpfer-Sign-off), das Erst-Wurf-Profil ist
     // konservativ (Wiesen bleiben sauber, nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
+        // DIE BREITE TAILLE: die Fels-/Moos-/Waldkern-Tints lesen LIVE die Studio-Palette
+        // (`_studioGround.rock/wet/lit`, durch `get-world-params` gereicht), Fallback = der bisherige
+        // Hardcode (Portal-cRock/cWet/cLit sRGB→linear) = 0 Regress. Editiert der Schöpfer die
+        // Boden-Palette im Portalfile, folgt AnazhRealms ganze Geologie-Farbgebung beim Laden.
+        const s = AnazhRealm._studioGround;
         return Object.freeze({
             rockLo: 0.42, // ab dieser Steile (≈55°) beginnt der Fels
             rockHi: 0.7, // ab hier (≈73°) voll Fels (die Klippe/der Grat)
             screeLo: 0.2, // Geröll-Zone ab ≈33° (der Übergang, kein hartes Band)
             screeHi: 0.48,
-            rockTint: [0.147, 0.1221, 0.0976], // V18.386 — Portal-`cRock` (0x6b6258, warmer Fels-Grau-Braun) sRGB→linear
+            rockTint: (s && s.rock) || [0.147, 0.1221, 0.0976], // Portal-`cRock` (0x6b6258) live/Fallback
             rockLumMix: 0.5, // wie stark die REGIONALE Luminanz den Stein tönt
             //                  (schneebedeckter Gipfel-Fels heller, Glut-Hang wärmer)
             rockBand: 0.14, // Sediment-Schichtungs-Bänderung (Noise in Welt-Y)
             screeMix: 0.5, // Geröll = die Mitte zwischen Boden und Fels
-            mossTint: [0.0331, 0.0513, 0.0232], // V18.386 — Portal-`cWet` (0x33402a, nasses Niederungs-Grün) sRGB→linear
+            mossTint: (s && s.wet) || [0.0331, 0.0513, 0.0232], // Portal-`cWet` (0x33402a) live/Fallback
             mossDampLo: 0.16, // unter dieser Basis-Luminanz = „feucht/Niederung"
             mossDampHi: 0.34, //   (die Feuchte lebt schon im dampEarth-Basis-Mix)
             mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
@@ -26800,7 +26810,7 @@ class AnazhRealm {
             // im-Schatten (`_damp`, aus dem `_feuchteAt`-gebackenen Albedo) für die Standdichte → die
             // beschattete Niederung (wo die Bäume stehen, P5-Platzierung) wird dunkel-waldig, die
             // helle/trockene Lichtung behält die Wiese. Der Waldboden-Look über dem Voxel.
-            litTint: [0.0252, 0.0369, 0.0152],
+            litTint: (s && s.lit) || [0.0252, 0.0369, 0.0152], // Portal-`cLit` (0x2c3621) live/Fallback
             floorMax: 0.55, // Deckel der Wald-Kern-Übernahme (komplementär zu mossMax/meadowW)
             roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
             //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
@@ -62936,11 +62946,19 @@ class AnazhRealm {
                     // die Assets vorwaermen. Der Blueprint wird aus dem Studio gespeist.
                     try {
                         f.iframe.contentWindow.postMessage({ type: "get-recipes", reqId: "recipes" }, "*");
+                        // DIE BREITE TAILLE: auch die Welt-LOOK-DATEN (Boden-/Fels-Palette + Blatt-
+                        // Grundfarbe) durchs Portal ziehen — AnazhRealms Boden/Geologie/Vegetation
+                        // liest sie live (der Schoepfer editiert das Studio, die Welt folgt).
+                        f.iframe.contentWindow.postMessage({ type: "get-world-params", reqId: "wparams" }, "*");
                     } catch (_e) {}
                     this._foundryPrefetchLibrary();
                 } else if (m.type === "recipes") {
                     // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
                     this._foundryIngestRecipes(m.book);
+                } else if (m.type === "world-params") {
+                    // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-
+                    // Farbquellen gespeist (live, kein hartkodiertes Abbild mehr).
+                    this._foundryIngestWorldParams(m.params);
                 } else if (m.type === "asset") {
                     const p = f.pending.get(m.reqId);
                     if (p) {
@@ -62977,6 +62995,33 @@ class AnazhRealm {
             if (Object.prototype.hasOwnProperty.call(book, id)) n++;
         }
         f.recipeCount = n;
+    }
+    // DIE BREITE TAILLE — die Studio-Welt-Palette empfangen + in AnazhRealms Farbquellen speisen.
+    // Die Hex-Farben (sRGB) werden EINMAL nach linear konvertiert (THREE.Color, ColorManagement) +
+    // im STATISCHEN `AnazhRealm._studioGround` gecacht — die statischen Getter `MEADOW_GREEN`/
+    // `TERRAIN_GEOLOGY` lesen sie (Fallback = der bisherige Hardcode = 0 Regress, wenn nichts kam).
+    // So folgt der ganze Boden/Fels-/Vegetations-Look dem Portalfile, ohne Shader-Transfer.
+    _foundryIngestWorldParams(params) {
+        if (!params || typeof params !== "object" || typeof THREE === "undefined") return;
+        this.state.studioWorldParams = params;
+        const toLin = (hex) => {
+            try {
+                return new THREE.Color(hex).toArray(); // sRGB-Hex -> linear (ColorManagement default)
+            } catch (_e) {
+                return null;
+            }
+        };
+        const g = params.ground || {};
+        const ground = {};
+        for (const key of ["lit", "mead", "dirt", "rock", "wet", "sand"]) {
+            if (typeof g[key] === "number") {
+                const lin = toLin(g[key]);
+                if (lin) ground[key] = lin;
+            }
+        }
+        // Der statische Cache, den die Getter lesen (globaler Prozess-Zustand, kein Instanz-State →
+        // die Klassen-Getter erreichen ihn; Single-Instanz-App, kein Leck).
+        AnazhRealm._studioGround = Object.keys(ground).length ? ground : null;
     }
     // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
     _foundryRecipeFor(preset) {

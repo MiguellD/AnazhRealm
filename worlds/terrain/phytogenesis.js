@@ -240,6 +240,17 @@ const SEASON = {
     uSeasonMul: { value: new THREE.Color(1, 1, 1) },
 }; // uSeasonMul: aktueller Saison-Tint / Bau-Tint -> Laubfarbe drivet KONTINUIERLICH, ohne Rebuild
 const _seasonBuiltTint = new THREE.Color(0x4f7a30); // Tint, mit dem die Geometrie zuletzt gebacken wurde (Referenz fuer das Verhaeltnis)
+// DIE BODEN-PALETTE — EINE Quelle fuer die Terrain-Farbgebung UND den world-params-Export (die
+// Foundry reicht sie an AnazhRealm, dessen Boden/Fels-Farben sie live lesen). Editiert der Schoepfer
+// hier eine Farbe, folgt der AnazhRealm-Boden beim naechsten Laden — kein hartkodiertes Abbild mehr.
+const PORTAL_GROUND = {
+    lit: 0x2c3621,
+    mead: 0x55632f,
+    dirt: 0x5c4a33,
+    rock: 0x6b6258,
+    wet: 0x33402a,
+    sand: 0xc9b791,
+};
 // Zwei-Pass-Laub: geteilte Uniforms fuer den Tiefen-Test (Laub gegen die Struktur-Tiefe verdecken)
 const _dummyTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
 _dummyTex.needsUpdate = true;
@@ -4811,12 +4822,12 @@ function buildForest() {
     const tg = new THREE.PlaneGeometry(TS, TS, SEG, SEG),
         tp = tg.attributes.position,
         tcol = [];
-    const cLit = new THREE.Color(0x2c3621),
-        cMead = new THREE.Color(0x55632f),
-        cDirt = new THREE.Color(0x5c4a33),
-        cRock = new THREE.Color(0x6b6258),
-        cWet = new THREE.Color(0x33402a),
-        cSand = new THREE.Color(0xc9b791);
+    const cLit = new THREE.Color(PORTAL_GROUND.lit),
+        cMead = new THREE.Color(PORTAL_GROUND.mead),
+        cDirt = new THREE.Color(PORTAL_GROUND.dirt),
+        cRock = new THREE.Color(PORTAL_GROUND.rock),
+        cWet = new THREE.Color(PORTAL_GROUND.wet),
+        cSand = new THREE.Color(PORTAL_GROUND.sand);
     for (let i = 0; i < tp.count; i++) {
         const lx = tp.getX(i),
             ly = tp.getY(i),
@@ -7419,6 +7430,13 @@ init();
             // KEIN Nachbau in AnazhRealm: editiert der Schoepfer den Baecker/Shader/das Framing hier,
             // fliesst es automatisch in die AnazhRealm-Ferne. Der Studio-Baecker IST die Fernstufe.
             __replyBakeImpostor(msg);
+        } else if (msg.type === "get-world-params") {
+            // DER WELT-PARAMETER-KANAL: das Studio exportiert seine Welt-LOOK-DATEN (die Boden-/
+            // Fels-/Feucht-Palette + die Blatt-Grundfarbe) als reine Zahlen. AnazhRealms eigene
+            // WebGPU-Systeme (Boden-Albedo, Geologie, Vegetations-Tint) LESEN sie und richten sich
+            // danach — editiert der Schoepfer hier eine Farbe, folgt AnazhRealm beim naechsten Laden.
+            // Kein Shader-Transfer (r128-GLSL != WebGPU): die WERTE fliessen, der Renderer bleibt AnazhRealms.
+            __replyWorldParams(msg);
         } else if (msg.type === "get-recipes") {
             // DER REZEPT-KANAL: das Studio EXPORTIERT sein Rezeptbuch (die PRESETS: je Art die
             // Regler `s` + die Material/Form-Werte `fx`) durch das Portal. AnazhRealm speist das
@@ -7428,6 +7446,23 @@ init();
             __replyRecipes(msg);
         }
     });
+    function __replyWorldParams(msg) {
+        // Reine Daten (JSON-klonbar): die Boden-Palette (EINE Quelle PORTAL_GROUND) + die Blatt-
+        // Grundfarbe (der Saison-Bake-Referenz-Tint). Hex-Zahlen; AnazhRealm konvertiert sRGB->linear.
+        const params = {
+            ground: {
+                lit: PORTAL_GROUND.lit,
+                mead: PORTAL_GROUND.mead,
+                dirt: PORTAL_GROUND.dirt,
+                rock: PORTAL_GROUND.rock,
+                wet: PORTAL_GROUND.wet,
+                sand: PORTAL_GROUND.sand,
+            },
+        };
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
+        }
+    }
     function __replyRecipes(msg) {
         const book = {};
         try {
