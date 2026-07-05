@@ -63010,15 +63010,24 @@ class AnazhRealm {
         } catch (_e) {
             return null;
         }
-        return group && group.children.length ? group : null;
+        if (group && group.children.length) {
+            // WARM-KOMPILIEREN (V18.367): die Foundry-Material-Pipeline compiliert sonst
+            // SYNCHRON beim ersten Zeigen des Baums = ein Stall/Crash genau bei der
+            // Interaktion. compileAsync warmt sie im Idle -> der erste Frame ist warm.
+            try { this._warmCompilePipeline(group, false); } catch (_e2) {}
+            return group;
+        }
+        return null;
     }
     _foundryLibrarySpec() {
-        // Alle Vorlagen-Presets: Baeume (LOD 0-2) + Fels/Kristall/Blume/Strauch. Der Rest laedt
-        // on-demand (_foundryFlattenFor fragt fehlende Art:Variante:LOD nach).
+        // NUR die LEICHTE Ferne (lod2 ~15k) vorab backen -> die ganze Welt hat SOFORT einen
+        // Wald, ohne den Startup-Speicher-Bomben-Freeze (die 132 schweren lod0/1-Gruppen ~170k
+        // waren die Wurzel). lod0/lod1 laedt on-demand NUR fuer die naechsten Baeume
+        // (_foundryFlattenFor + _foundryLodForEntry) -> leicht + fluessig (Vorlagen-LOD-Philosophie).
         return {
             species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "kristalle", "blume", "strauch"],
             seeds: [1, 2, 3, 4],
-            lods: [0, 1, 2],
+            lods: [2],
         };
     }
     async _foundryPrefetchLibrary() {
