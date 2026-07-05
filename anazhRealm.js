@@ -63064,7 +63064,7 @@ class AnazhRealm {
             species: ["eiche", "fichte", "tanne", "birke", "weide", "mammut", "findling", "basalt", "kristalle", "blume", "strauch"],
             // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
             // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
-            // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..12.
+            // laden on-demand fuer die naechsten Baeume. _foundryVariantFor waehlt 1..16.
             seeds: [1, 2, 3, 4, 5, 6, 7, 8],
             lods: [2],
         };
@@ -63084,7 +63084,7 @@ class AnazhRealm {
                         const meshes = await this._foundryRequest(sp, sd, lod, season);
                         // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null cachen
                         // -> die Art bleibt on-demand nachfragbar (sonst dauerhaft Grammatik-Fallback).
-                        if (meshes) f.cache.set(key, this._foundryBuildGroup(meshes));
+                        if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
                     } catch (_e) {}
                 }
             }
@@ -63123,17 +63123,44 @@ class AnazhRealm {
     // InstancedMesh im BESTEHENDEN HISM -> Vielfalt + LOD + Instancing + Cull, kein Parallelpfad).
     // Null, wenn das Asset noch nicht geladen ist (Eintrag bleibt cold, der Culling-Tick baut nach).
     // Die EINE Varianten-Quelle: aus dem region+positions-deterministischen Baum-Seed
-    // (_forestCellDarts) eine von N Vorlagen-Gestalten. N=12 (statt 4) bricht das Klon-Muster —
+    // (_forestCellDarts) eine von N Vorlagen-Gestalten. N=16 bricht das Klon-Muster —
     // jede Region würfelt ihren eigenen Wald (gleicher Seed == gleicher Baum, andere Region ==
-    // andere Mischung); + per-Instanz scale/yaw/tint. Der Preis: N distinkte Geometrien je
-    // Art/LOD leben im Speicher (das HISM referenziert sie -> kein LRU-Freigeben), also ist N
-    // die bewusste Balance Vielfalt<->Speicher (der Dichte-Regler dünnt das Gerenderte).
+    // andere Mischung); + per-Instanz scale/yaw/tint. Der Speicher bleibt beschränkt durch die
+    // LRU (_foundryCacheSet): distinkte Geometrien fallen aus dem Cache, wenn sie lange nicht
+    // gesehen wurden -> beim Region-Entladen von der GC freigegeben. So trägt die unendliche
+    // Welt beliebige Vielfalt, ohne den Speicher aufzublähen (die „durchdacht"-Vollendung).
     _foundryVariantCount() {
-        return 12;
+        return 16;
     }
     _foundryVariantFor(seed) {
         const h = Math.imul((seed >>> 0) || 0, 2654435761) >>> 0; // Knuth-Mix: gute Streuung
         return (h % this._foundryVariantCount()) + 1;
+    }
+    // Der Foundry-Cache ist eine LRU (nicht ein ewiger Hort): ein Treffer wandert nach hinten
+    // (jüngste), beim Überlauf fällt die älteste NICHT-mehr-referenzierte Gestalt raus. WICHTIG:
+    // die Räumung LÖSCHT nur den Map-Eintrag (die Cache-Referenz) — sie ruft KEIN dispose. Die
+    // gerenderte InstancedMesh (HISM) besitzt ihre Geometrie weiter; erst wenn ihre Region
+    // entlädt (Group-Dispose), gibt die GC die Geometrie frei. So kann eine Räumung NIE einen
+    // sichtbaren Baum zerstören — sie schließt nur das „Cache hält alles ewig"-Leck der
+    // unendlichen Welt. Ein wieder benötigter Variant wird schlicht neu angefragt (build-dedup).
+    _foundryCacheGet(key) {
+        const f = this._foundry;
+        if (!f || !f.cache.has(key)) return undefined;
+        const v = f.cache.get(key);
+        f.cache.delete(key);
+        f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
+        return v;
+    }
+    _foundryCacheSet(key, v) {
+        const f = this._foundry;
+        if (!f) return;
+        f.cache.set(key, v);
+        const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
+        while (f.cache.size > CAP) {
+            const oldest = f.cache.keys().next().value;
+            if (oldest === key) break; // nie den gerade gesetzten räumen
+            f.cache.delete(oldest); // KEIN dispose — die InstancedMesh besitzt die Geometrie
+        }
     }
     _foundryFlattenFor(entry, preset) {
         const f = this._ensureAssetFoundry();
@@ -63145,14 +63172,14 @@ class AnazhRealm {
         if (preset === "strauch") lod = Math.max(1, lod);
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season;
-        const group = f.cache.get(key);
+        const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
                 this._foundryRequest(preset, variant, lod, season).then((meshes) => {
                     if (meshes) {
-                        f.cache.set(key, this._foundryBuildGroup(meshes));
+                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
                     } else {
                         // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
                         // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
@@ -78926,6 +78953,10 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 AnazhRealm.VERSION = "18.391.0";
+// Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
+// Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
+// „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
+AnazhRealm.FOUNDRY_CACHE_CAP = 256;
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
