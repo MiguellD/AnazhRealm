@@ -62831,7 +62831,7 @@ class AnazhRealm {
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
         if (this._foundry) return this._foundry;
-        const f = { iframe: null, ready: false, pending: new Map(), reqSeq: 1, cache: new Map(), retry: [], _prefetching: false };
+        const f = { iframe: null, ready: false, pending: new Map(), reqSeq: 1, cache: new Map(), retry: [], _prefetching: false, recipes: null };
         this._foundry = f;
         try {
             const iframe = document.createElement("iframe");
@@ -62846,7 +62846,15 @@ class AnazhRealm {
                 if (!m || typeof m !== "object") return;
                 if (m.type === "ready" && m.world === "terrain") {
                     f.ready = true;
+                    // ZUERST das Rezeptbuch durch das Portal ziehen (die PRESETS-Daten), DANN
+                    // die Assets vorwaermen. Der Blueprint wird aus dem Studio gespeist.
+                    try {
+                        f.iframe.contentWindow.postMessage({ type: "get-recipes", reqId: "recipes" }, "*");
+                    } catch (_e) {}
                     this._foundryPrefetchLibrary();
+                } else if (m.type === "recipes") {
+                    // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
+                    this._foundryIngestRecipes(m.book);
                 } else if (m.type === "asset") {
                     const p = f.pending.get(m.reqId);
                     if (p) {
@@ -62860,6 +62868,27 @@ class AnazhRealm {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
         return f;
+    }
+    // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
+    // Portal empfangen und als EINE Quelle halten. Der Blueprint liest hieraus (Rezeptbuch), statt
+    // Werte hartzukodieren — ein Edit an PRESETS im Studio fliesst automatisch mit. Reine Daten.
+    _foundryIngestRecipes(book) {
+        const f = this._foundry;
+        if (!f || !book || typeof book !== "object") return;
+        f.recipes = book;
+        // Der Blueprint WIRD das Rezeptbuch: je Studio-Preset ein Rezept-Eintrag im foundry-State,
+        // den der Generierungs-Pfad (_foundryRequest -> Studio buildInstance) + die kuenftige
+        // in-process-Ableitung lesen. Kein Abbild in Code — die Daten leben im State, vom Studio gespeist.
+        let n = 0;
+        for (const id in book) {
+            if (Object.prototype.hasOwnProperty.call(book, id)) n++;
+        }
+        f.recipeCount = n;
+    }
+    // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
+    _foundryRecipeFor(preset) {
+        const f = this._foundry;
+        return f && f.recipes ? f.recipes[preset] || null : null;
     }
     _foundryRequest(presetId, seed, lod, season) {
         const f = this._foundry;

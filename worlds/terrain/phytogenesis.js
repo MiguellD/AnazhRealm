@@ -2761,8 +2761,30 @@ init();
             // als transferable zurueck. AnazhRealm pflanzt sie 1:1 — kein Nachbau, kein
             // Sezieren; die Vorlage-Datei IST der Samen (ein Edit hier -> andere Assets).
             __replyBuildAsset(msg);
+        } else if (msg.type === "get-recipes") {
+            // DER REZEPT-KANAL: das Studio EXPORTIERT sein Rezeptbuch (die PRESETS: je Art die
+            // Regler `s` + die Material/Form-Werte `fx`) durch das Portal. AnazhRealm speist das
+            // in seinen Blueprint (der Blueprint WIRD das Rezeptbuch — kein hartkodiertes Abbild,
+            // keine Kopie; ein Edit an PRESETS hier fliesst automatisch mit). Die Geometrie-
+            // Erzeugung bleibt im Studio (build-asset); dies traegt nur die Rezept-DATEN.
+            __replyRecipes(msg);
         }
     });
+    function __replyRecipes(msg) {
+        const book = {};
+        try {
+            for (const id in PRESETS) {
+                if (!Object.prototype.hasOwnProperty.call(PRESETS, id)) continue;
+                const p = PRESETS[id];
+                if (!p || typeof p !== "object") continue;
+                // Reine Daten (JSON-klonbar): kind/panel + die Regler `s` + die Material/Form `fx`.
+                book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
+            }
+        } catch (_e) {}
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book }, "*");
+        }
+    }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
     // lesend (buildInstance/emitTree unveraendert). kind aus dem Material-Zeiger.
     function __assetMaterialKind(mat) {
