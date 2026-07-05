@@ -15367,7 +15367,7 @@ class AnazhRealm {
         // fragile Buffer-Pfad -> V15.3-b falls der Browser mehr Halme will).
         try {
             if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
-                const hfN = TSL.clamp(positionLocal.y.div(float(0.85)), float(0.0), float(1.0));
+                const hfN = TSL.clamp(positionLocal.y.div(float(AnazhRealm.GRASS_BLADE_H)), float(0.0), float(1.0));
                 // V18.342 — GRÜNER (Schöpfer „die Halme blass-gelb, die Wiese soll leben"): die Spitze
                 // war zu gelb (R0.58) → der Halm las blass über dem grünen Grund. Jetzt sattes Grün
                 // (Wurzel dunkel-grün → Spitze hell-grün, NICHT gelb) → die Halme matchen die Wiese.
@@ -15412,6 +15412,14 @@ class AnazhRealm {
                     const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
                     const glow = vec3(0.45, 0.5, 0.2).mul(wrap).mul(hfN).mul(float(0.9));
                     albedo = albedo.add(glow);
+                }
+                // V18.390 — Eins W5: die RISPEN-SPITZEN (aSeed=1) tragen den strohigen Samenkopf-Ton
+                // der Vorlage (seedTan 0xc8b27a, sRGB→linear) statt des Grün-Gradienten → der Grassamen-
+                // Kopf liest als heller Samenstand über dem Halm-Teppich. aSeed lebt auf der GETEILTEN
+                // Tuff-Geometrie (jeder Halm=0, jede Granne=1) → WebGPU-strikt erfüllt (Attribut immer da).
+                if (TSL.attribute) {
+                    const aSeed = TSL.attribute("aSeed", "float");
+                    albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
                 }
                 mat.colorNode = TSL.vec4(albedo, float(1.0));
             }
@@ -33263,7 +33271,7 @@ class AnazhRealm {
     _acquireGrassMesh() {
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
-        const GRASS_MAX_BLADES = 1400; // V18.232 (Ω-O4 Dichte) — Cap 1024→1400 (pool-sicher: beide Konstanten match, V10.0-j.c). r184-geheilt.
+        const GRASS_MAX_BLADES = AnazhRealm.GRASS_MAX_BLADES; // V18.390 Eins W5 — die EINE Cap-Quelle (Memory-Wand, pool-sicher by construction; der Regler ist der Look-Deckel, nicht der Cap).
         if (pool.length > 0) {
             const mesh = pool.pop();
             mesh.visible = true;
@@ -33363,59 +33371,148 @@ class AnazhRealm {
     // Tuff-Look zu verlieren — der eine Bend-Punkt (t=0.5) trägt die Biegung weiter,
     // das 5-Blatt-Fächer-Silhouette bleibt. Die fehlende Hälfte (Dichte unter den
     // Regler) steht in `_buildVoxelChunkGrass`. Look = Schöpfer-Browser (Regel #0).
+    // V18.390 — Eins W5 (DIE WIESE): der Tuff ist jetzt ein Büschel aus GRASS_TUFT_BLADES gebogenen
+    // Euler-Kragträger-Halmen (Port der Vorlagen-`emitGrass`, worlds/terrain/phytogenesis.js Z.717-772).
+    // Statt des alten steifen `bend = lean·t²` (kaum Bogen) akkumuliert jeder Halm über K=3 Segmente eine
+    // echte Biegung `dir += bendDir·f^1.8·droop·0.12` + Gravitropismus `dir.y -= f^1.8·droop·0.10` → die
+    // gebogene FONTÄNE der Vorlage (droop 0.45-1.35). ~28 % der Halme sind Rispen-Stängel (isCulm) mit
+    // nickenden Grannen an der Spitze (der Vorlagen-Samenkopf-Look; die Grannen tragen aSeed=1 → das
+    // Gras-Material färbt sie strohig). Halm-Verjüngung `w·(1-f·0.86)` wie die Vorlage. Die Geometrie ist
+    // das geteilte Singleton (fest geseedet → stabil; die per-Instanz-Vielfalt reitet auf rot/tilt/sY/tint
+    // im Build). userData trägt die Diag-Metriken (diag-grass-geom liest sie).
     _grassBladeTuftGeometry() {
         const positions = [];
         const normals = [];
-        const SEG = 2;
-        const H = 0.85;
-        const blade = (rot, lean, w0) => {
-            const cr = Math.cos(rot);
-            const sr = Math.sin(rot);
-            const ring = [];
-            for (let s = 0; s <= SEG; s++) {
-                const t = s / SEG;
-                ring.push({ w: w0 * (1 - t * 0.86), y: t * H, bend: lean * t * t }); // V18.386 Phyto-Kleid: Halm-Verjüngung 0.86 wie die Vorlage (emitGrass halfW=w*(1-f*0.86))
-            }
-            const nx = sr * 0.3;
-            const nz = -cr * 0.3;
-            const nrm = [nx, 0.95, nz];
-            const pt = (e, r) => {
-                const lx = e * r.w * 0.5;
-                const lz = r.bend;
-                return [lx * cr - lz * sr, r.y, lx * sr + lz * cr];
-            };
-            for (let s = 0; s < SEG; s++) {
-                const a = ring[s];
-                const b = ring[s + 1];
-                const a0 = pt(-1, a);
-                const a1 = pt(1, a);
-                const b0 = pt(-1, b);
-                const b1 = pt(1, b);
-                const push = (p) => {
-                    positions.push(p[0], p[1], p[2]);
-                    normals.push(nrm[0], nrm[1], nrm[2]);
-                };
-                push(a0);
-                push(a1);
-                push(b1);
-                push(a0);
-                push(b1);
-                push(b0);
-            }
+        const seeds = []; // aSeed: 0 = Halm, 1 = Rispen-Granne (strohiger Samenkopf)
+        const B = AnazhRealm.GRASS_TUFT_BLADES;
+        const H = AnazhRealm.GRASS_BLADE_H;
+        // Die Euler-Schleife läuft s=0..K (die Vorlagen-emitGrass-Semantik: 4 Vorschübe je L/K = ⁴⁄₃·L
+        // Bogenlänge, die Basis liegt bei L/K). Darum ist die LÄNGE (LEN) vom Höhen-BEZUG (H = Material-
+        // Gradient-Normalizer + sY-Teppich-Referenz) entkoppelt → localMaxY ≈ H (der Halm füllt den Bezug).
+        const LEN = H * 0.58;
+        const K = 3;
+        const GOLDEN = 2.399963229728653;
+        const clumpR = 0.05; // Fächer-Radius des Büschels (lokal)
+        // Fest geseedeter PRNG → die Singleton-Geometrie ist stabil (KEIN Determinismus-Eingriff: die
+        // Halm-POSITIONEN/Dichte kommen aus _buildVoxelChunkGrass; hier wächst nur die Tuff-FORM).
+        let rs = 0x9e3779b9 >>> 0;
+        const rnd = () => {
+            rs = (rs + 0x6d2b79f5) >>> 0;
+            let t = rs;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
-        // V18.342 — VOLLERER TUFF (Schöpfer „einzelne Halme, keine Büsche"): 6 statt 5 Blätter,
-        // rund um den Kreis gefächert + etwas breiter → liest als kleiner Busch statt Stachel-Fächer.
-        // Nur +20 % Tris/Tuff (der GRUND-Tint V18.341 trägt die Haupt-Fülle, ≈0 Perf).
-        blade(0.0, 0.12, 0.11);
-        blade(1.0, 0.16, 0.095);
-        blade(2.1, 0.1, 0.1);
-        blade(3.1, 0.18, 0.088);
-        blade(4.2, 0.13, 0.105);
-        blade(5.2, 0.14, 0.092);
+        const vnorm = (v) => {
+            const l = Math.hypot(v[0], v[1], v[2]) || 1;
+            return [v[0] / l, v[1] / l, v[2] / l];
+        };
+        const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+        const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+        // Ein Quad-Streifen zwischen zwei Ring-Kanten (cl/cr = links/rechts), flat-Normale nach oben.
+        const pushQuad = (cl0, cr0, cl1, cr1, seed) => {
+            const e1 = [cr0[0] - cl0[0], cr0[1] - cl0[1], cr0[2] - cl0[2]];
+            const e2 = [cl1[0] - cl0[0], cl1[1] - cl0[1], cl1[2] - cl0[2]];
+            let n = vnorm([
+                e1[1] * e2[2] - e1[2] * e2[1],
+                e1[2] * e2[0] - e1[0] * e2[2],
+                e1[0] * e2[1] - e1[1] * e2[0],
+            ]);
+            if (n[1] < 0) n = [-n[0], -n[1], -n[2]]; // nach oben orientieren (DoubleSide-Lambert liest sauber)
+            const emit = (p) => {
+                positions.push(p[0], p[1], p[2]);
+                normals.push(n[0], n[1], n[2]);
+                seeds.push(seed);
+            };
+            emit(cl0);
+            emit(cr0);
+            emit(cr1);
+            emit(cl0);
+            emit(cr1);
+            emit(cl1);
+        };
+        let localMaxY = 0;
+        let culmCount = 0;
+        let maxTipBendRatio = 0;
+        for (let i = 0; i < B; i++) {
+            const a = i * GOLDEN;
+            const rr = Math.sqrt(i / B) * clumpR;
+            const bx = Math.cos(a) * rr;
+            const bz = Math.sin(a) * rr;
+            const isCulm = rnd() < 0.22;
+            if (isCulm) culmCount++;
+            const L = LEN * (isCulm ? 1.05 + rnd() * 0.2 : 0.7 + rnd() * 0.45); // Rispe länger, Blatt kürzer
+            const w0 = (isCulm ? 0.02 : 0.03) * (0.85 + rnd() * 0.35); // Wurzel-Halbbreite
+            const la = rnd() * 6.2831;
+            const lean = 0.05 + rnd() * 0.16;
+            const bendDir = [Math.cos(la), 0, Math.sin(la)];
+            const droop = isCulm ? 0.3 + rnd() * 0.35 : 0.45 + rnd() * 0.9; // Euler-Fontäne (Rispe steifer)
+            let p = [bx, 0, bz];
+            let dir = vnorm([Math.sin(lean) * Math.cos(la), Math.cos(lean), Math.sin(lean) * Math.sin(la)]);
+            let cl = null;
+            let cr = null;
+            let tip = p.slice();
+            for (let s = 0; s <= K; s++) {
+                const f = s / K;
+                const dd = Math.pow(f, 1.8) * droop;
+                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12))); // Biegung unter Eigengewicht
+                dir = vnorm([dir[0], dir[1] - dd * 0.1, dir[2]]); // Gravitropismus
+                p = vadd(p, vscl(dir, L / K));
+                tip = p.slice();
+                if (p[1] > localMaxY) localMaxY = p[1];
+                const halfW = w0 * (1 - f * 0.86);
+                const rt = vnorm([-dir[2], 0, dir[0]]); // cross(dir, up)
+                const ncl = vadd(p, vscl(rt, -halfW));
+                const ncr = vadd(p, vscl(rt, halfW));
+                if (cl) pushQuad(cl, cr, ncl, ncr, 0);
+                cl = ncl;
+                cr = ncr;
+            }
+            // Bogen-Metrik: horizontaler Tip-Versatz relativ zur Basis / Tip-Höhe → der Euler-Bogen.
+            const dxh = Math.hypot(tip[0] - bx, tip[2] - bz);
+            const bendRatio = tip[1] > 1e-4 ? dxh / tip[1] : 0;
+            if (bendRatio > maxTipBendRatio) maxTipBendRatio = bendRatio;
+            if (isCulm) {
+                // Rispe: feine nickende Grannen an der Spitze (der Grassamen-Kopf, aSeed=1 → strohig).
+                // Leicht gehalten (Naw=2, AK=2) → der Samenkopf-LOOK bei ~Vorlagen-Tri-Parität (die
+                // Halme, nicht die Rispen, tragen den Teppich; volle Vorlagen-Rispen verdoppelten die Last).
+                const Naw = 2;
+                const AK = 2;
+                for (let k = 0; k < Naw; k++) {
+                    const aa = (k / Naw) * 6.2831 + rnd() * 0.5;
+                    const awl = L * (0.16 + rnd() * 0.12);
+                    let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]);
+                    let ap = tip.slice();
+                    let gcl = null;
+                    let gcr = null;
+                    for (let s2 = 0; s2 <= AK; s2++) {
+                        const f2 = s2 / AK;
+                        ad = vnorm([ad[0], ad[1] - 0.3 - f2 * 0.85, ad[2]]); // nickt nach unten
+                        ap = vadd(ap, vscl(ad, awl / AK));
+                        if (ap[1] > localMaxY) localMaxY = ap[1];
+                        const hw = 0.014 * (1 - f2 * 0.6);
+                        const rt2 = vnorm([-ad[2], 0, ad[0]]);
+                        const ncl = vadd(ap, vscl(rt2, -hw));
+                        const ncr = vadd(ap, vscl(rt2, hw));
+                        if (gcl) pushQuad(gcl, gcr, ncl, ncr, 1);
+                        gcl = ncl;
+                        gcr = ncr;
+                    }
+                }
+            }
+        }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        geo.setAttribute("aSeed", new THREE.Float32BufferAttribute(seeds, 1));
         geo.computeBoundingSphere();
+        geo.userData = {
+            tuftBlades: B,
+            culmCount,
+            localMaxY: +localMaxY.toFixed(4),
+            maxTipBendRatio: +maxTipBendRatio.toFixed(3),
+            vertCount: positions.length / 3,
+        };
         return geo;
     }
 
@@ -33556,8 +33653,13 @@ class AnazhRealm {
                     // wiegt sie zusätzlich (V16.2).
                     const r1 = rnd();
                     const r2 = rnd();
-                    const sXZ = 0.78 + r2 * 0.66; // V18.344 Breite [0.78, 1.44] — breiter = voller (free)
-                    const sY = 0.6 + r1 * r1 * 1.7; // V18.344 Höhe [0.6, 2.3] — höher füllt den Raum (free)
+                    // V18.390 — Eins W5 (DIE WIESE): der Teppich-Deckel. Der Halm ist lokal ~GRASS_BLADE_H
+                    // (0.40 m) hoch → sY hält die Welt-Höhe bei ~0.1-0.4 m (Vorlagen-Teppich) statt der alten
+                    // 0.5-1.95-m-Steppe (H 0.85 × sY bis 2.3). Nasses Ufergras wächst FETTER (Vorlagen-
+                    // `moW>0.8?1.45`): Breite ×1.45, Höhe ×1.15 (kein Zerreißen des Teppich-Höhen-Vertrags).
+                    const wet = feuchteG > 0.8 ? 1 : 0;
+                    const sXZ = (0.72 + r2 * 0.6) * (1 + wet * 0.45); // Breite [0.72, 1.32], nass fetter
+                    const sY = (0.4 + r1 * r1 * 0.5) * (1 + wet * 0.15); // Welt-Höhe ≈ localMaxY·sY ∈ [~0.17, ~0.40]
                     const tj = 0.9 + r2 * 0.2; // ±10 % per-Halm-Helligkeits-Jitter
                     blades.push({
                         x: gx,
@@ -33603,7 +33705,7 @@ class AnazhRealm {
         // für alle Pool-Meshes → Bound-Buffer konstant → kein Cache-
         // Mismatch zwischen Chunks. inst.count = realCount für die
         // DrawIndexed-Iteration (echte Render-Count).
-        const GRASS_MAX_BLADES = 1400; // V18.232 (Ω-O4 Dichte) — Cap 1024→1400 (pool-sicher: beide Konstanten match, V10.0-j.c). r184-geheilt.
+        const GRASS_MAX_BLADES = AnazhRealm.GRASS_MAX_BLADES; // V18.390 Eins W5 — die EINE Cap-Quelle (Memory-Wand, pool-sicher by construction; der Regler ist der Look-Deckel, nicht der Cap).
         const realCount = Math.min(blades.length, GRASS_MAX_BLADES);
         // V12.0-d — Pool-Pfad re-aktiviert auf r184. Drei strukturelle
         // Heilungen des Vendor-Upgrades machen das echte Recycling möglich:
@@ -81619,6 +81721,17 @@ AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62,
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
 // Gras weicht, BEVOR der Fels voll klettert (komplementär auf DERSELBEN `_slopeAt`-Achse). Feel-Knöpfe.
 AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
+// V18.390 — Eins W5 (DIE WIESE): die drei Gras-Zahlen als EINE Quelle (Gesetz #0 — vorher lag der
+// Cap als vier inline-Kopien `const GRASS_MAX_BLADES = 1400` verstreut, die „match" nur ein Kommentar
+// versprach). GRASS_MAX_BLADES ist die MEMORY-Wand pro Chunk (Pool-Kapazität), NICHT der Look-Deckel —
+// der `_foliageDensityScale`-Regler + `_tickGrassThin` fangen die Perf adaptiv (V18.307/.363). 1400→3200
+// hebt die Tuff-Dichte im lush Chunk auf ~1.71/m² (nahe der Vorlagen-1.93/m²); × GRASS_TUFT_BLADES=12
+// gebogenen Euler-Halmen = ~20.6 Halme/m² (Vorlage ~27, der Teppich-Eindruck statt der exakten Zahl,
+// bei vertretbarer Tri-Last). GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (der Material-Gradient-
+// Normalizer + der sY-Teppich-Deckel → Welt-Höhe 0.1-0.4 m statt der alten 0.5-1.95-m-Steppe).
+AnazhRealm.GRASS_MAX_BLADES = 3200;
+AnazhRealm.GRASS_TUFT_BLADES = 12;
+AnazhRealm.GRASS_BLADE_H = 0.42;
 // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
 // Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →
 // platzierte Bauten teilen die Streu-Region-Kantenlänge (eine Welt-Karte). Strukturen mit
