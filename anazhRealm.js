@@ -50698,15 +50698,26 @@ class AnazhRealm {
                     const preset = this._foundryPresetFor(species);
                     if (preset) {
                         const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
-                        const ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+                        let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+                        // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss weg, nicht überlagert
+                        // werden"): LÄDT das Studio-Asset noch (`ff === null`), ist der Lückenbüßer das STUDIO-
+                        // BILLBOARD (LOD2, beim Boot via `_foundryPrefetchLibrary` vorgewärmt) — NICHT die
+                        // Grammatik-Geometrie. So zeigt die Welt NIE meinen Nachbau, solange das Studio lebt.
+                        if (!(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length)) {
+                            const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
+                            if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
+                        }
                         if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
                             foundryFlat = ff;
                             bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
                         }
-                        // ff === null (lädt) / false (Foundry kann nicht) → bpName bleibt null → Grammatik-Fallback.
+                        // Weder volle Stufe noch Billboard bereit (der schmale Boot-Spalt) → bpName null →
+                        // die Grammatik traegt DIESEN Frame, bis das Studio-Asset da ist.
                     }
                 }
                 if (!bpName) {
+                    // GRAMMATIK-FALLBACK — NUR wenn die Foundry AUS ist (headless/Gate/offline) oder den Preset
+                    // nicht kennt, ODER im schmalen Boot-Spalt vor dem ersten Studio-Asset. Kein Parallel-Default.
                     const keys = this._buildVariantLODs(species, variantIndex);
                     if (!keys) continue;
                     bpName = keys[lod] || keys[0];
@@ -80228,7 +80239,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.399.0";
+AnazhRealm.VERSION = "18.400.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
