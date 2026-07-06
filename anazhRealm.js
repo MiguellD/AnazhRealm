@@ -63414,24 +63414,38 @@ class AnazhRealm {
         }
         return this._foundryBarkNormal;
     }
-    _foundryTreeMaterial(kind) {
+    _foundryTreeMaterial(kind, mp) {
         if (!this._foundryMats) this._foundryMats = {};
-        if (this._foundryMats[kind]) return this._foundryMats[kind];
         const T = THREE;
         const TSL = T.TSL;
         const double = kind === "foliage" || kind === "foliageTex" || kind === "grass";
         const isBark = kind === "bark" || kind === "stem";
-        // DIE VORLAGEN-RAUHEITEN (buildMaterials, byte-treu): Rinde 0.93, Laub/foliageTex 0.62,
-        // Gras 0.7. Vorher war Rinde 0.9 + KEINE Normalmap → flache blasse Bretter (der Schöpfer-
-        // Befund). Jetzt: die echte Studio-Roughness + die Rinden-Normalmap (makeBarkNormal).
-        const rough = isBark ? 0.93 : kind === "grass" ? 0.7 : 0.62;
+        // DIE MATERIAL-REGLER FLIESSEN (einspeisung der regler): sind die Studio-Parameter `mp`
+        // mitgereicht (roughness/metalness/flatShading/env/side), baut AnazhRealm EXAKT dieses
+        // Material — Fels matt, Kristall glaenzend+facettiert, Gras env-gedaempft. Ohne `mp`
+        // (Alt-Pfad) die byte-treuen Baum-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7). So folgt
+        // jedes Preset-Material dem Portalfile, ohne per-kind-Raten.
+        const rough =
+            mp && typeof mp.roughness === "number" ? mp.roughness : isBark ? 0.93 : kind === "grass" ? 0.7 : 0.62;
+        const metal = mp && typeof mp.metalness === "number" ? mp.metalness : 0;
+        const flat = mp ? !!mp.flatShading : false;
+        const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : kind === "grass" ? 0.18 : 1;
+        // Seite: Studio 0 Front · 2 Double; Laub/Gras immer Double (Alt-Verhalten).
+        const sideDouble = double || (mp && mp.side === 2);
+        // Cache-Key: kind + gerundete Regler (bounded — je Preset-Charakter ein Material).
+        const key = mp
+            ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
+            : kind;
+        if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         try {
             mat = new T.MeshStandardNodeMaterial({
                 roughness: rough,
-                metalness: 0,
-                side: double ? T.DoubleSide : T.FrontSide,
+                metalness: metal,
+                flatShading: flat,
+                side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
+            if (env !== 1) mat.envMapIntensity = env;
             // Die Vorlagen-Farben leben als VERTEX-COLORS (bark braun, laub gruen). Auf
             // WebGPU/NodeMaterial MUSS colorNode = attribute("color") sie explizit lesen —
             // `vertexColors:true` wirkt hier NICHT (CLAUDE.md). Ohne das: weisses/ausgewaschenes
@@ -63463,22 +63477,22 @@ class AnazhRealm {
                     const texN = TSL.texture(tex, uvN);
                     mat.colorNode = TSL.vec4(texN.rgb.mul(vcol), 1.0);
                     mat.opacityNode = texN.a;
-                    mat.alphaTest = 0.5;
+                    mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
                 } else {
                     mat.colorNode = TSL.vec4(vcol, 1.0);
                 }
             } else {
+                // Fels/Kristall/Blume/Laub: die Vertex-Farbe, die Regler (rough/metal/flat/env) sind
+                // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
                 mat.colorNode = TSL.vec4(vcol, 1.0);
-                // Gras: die Vorlagen-envMapIntensity 0.18 (weniger Sky-IBL-Glanz auf den Halmen).
-                if (kind === "grass") mat.envMapIntensity = 0.18;
             }
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
         } catch (_e) {
-            mat = new T.MeshStandardMaterial({ vertexColors: true, side: double ? T.DoubleSide : T.FrontSide });
+            mat = new T.MeshStandardMaterial({ vertexColors: true, side: sideDouble ? T.DoubleSide : T.FrontSide });
         }
-        this._foundryMats[kind] = mat;
+        this._foundryMats[key] = mat;
         return mat;
     }
     _foundryBuildGroup(meshes) {
@@ -63520,7 +63534,7 @@ class AnazhRealm {
                 if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
                 if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
                 if (!m.normal || !m.normal.array) geo.computeVertexNormals();
-                const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark"));
+                const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
                 mesh.castShadow = true;
                 mesh.receiveShadow = true;
                 group.add(mesh);

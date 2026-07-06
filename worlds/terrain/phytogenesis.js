@@ -7502,6 +7502,22 @@ init();
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
         const out = { kind: __assetMaterialKind(mesh.material) };
+        // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
+        // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
+        // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes
+        // per-kind-Raten in AnazhRealm. Editiert der Schoepfer eine Roughness/Metalness hier, folgt es.
+        const mat = mesh.material;
+        if (mat) {
+            out.mat = {
+                roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
+                metalness: typeof mat.metalness === "number" ? mat.metalness : 0,
+                flatShading: !!mat.flatShading,
+                envMapIntensity: typeof mat.envMapIntensity === "number" ? mat.envMapIntensity : 1,
+                side: typeof mat.side === "number" ? mat.side : 0, // 0 Front · 1 Back · 2 Double
+                alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
+                hasNormalMap: !!mat.normalMap,
+            };
+        }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
         // aWind/aCenter/aType und was sonst am Mesh haengt) — engine-neutral. ELEMENT-WEISE
