@@ -32627,17 +32627,17 @@ async function checkBandWHWald(ctx) {
         // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
         // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
         // statische _jung/_alt/_breit-Variante mehr (der V18.257-Legacy-Schnitt bleibt).
-        // V9.56-i — die Probe wandert mit dem Code (V18.390 DIE LOD-WURZEL): der Wald wächst die
-        // Variante region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`) NACH dem Nischen-
-        // Sieg und spawnt sie als `spawnType` — den GEWACHSENEN Bauplan `grown_<sp>_v<idx>` (er
-        // trägt `_lodSpecies` → L0/L1/L2 + Impostor), mit der kanonischen Art `d.sp` als Fallback.
-        // Das STRUKTURELLE Gesetz hält: die Variante wächst NACH dem Sieg (kein statischer _jung/
-        // _alt/_breit-Bauplan im Generator, keine im Pool) — nur die kanonische Basis ODER der
-        // grammatik-gewachsene grown-Schlüssel tritt an.
+        // V9.56-i — die Probe wandert mit dem Code (DAS NEUE KLEID — SOURCE-NEUTRALER WALD): der Wald
+        // spawnt die KANONISCHE Art (`d.sp` = `baum_eiche`) + den Varianten-Index als METADATEN
+        // (`_lodVariantIndex`), region-deterministisch NACH dem Nischen-Sieg (`_treeVariantIndexFor(d.sp,…)`).
+        // KEINE eager-gewachsene ~170k-Geometrie mehr im Spawn (`_growTreeBlueprintForSpawn` ist raus) — der
+        // RENDER wählt die Quelle: das Studio-Asset [Foundry] ODER, nur wenn das Studio aus ist, die lazy
+        // gewachsene Geometrie. Das STRUKTURELLE Gesetz hält unverändert: die kanonische Art tritt an, die
+        // Variante ist Metadaten NACH dem Sieg, KEIN statischer _jung/_alt/_breit-Bauplan im Generator.
         out.variantPickAfterWin =
-            /_growTreeBlueprintForSpawn\(\s*d\.sp/.test(forestSrc) &&
-            /spawnType\s*=\s*grownBp[\s\S]{0,80}?grownKey\s*:\s*d\.sp/.test(forestSrc) &&
-            /_enqueueVegetationSpawn\(\s*spawnType\b/.test(forestSrc) &&
+            /_treeVariantIndexFor\(\s*d\.sp/.test(forestSrc) &&
+            /_enqueueVegetationSpawn\(\s*d\.sp\b/.test(forestSrc) &&
+            /_lodVariantIndex:\s*variantIndex/.test(forestSrc) &&
             !/baum_\w+_(jung|alt|breit|schlank)/.test(forestSrc);
         // (4) GRÖSSEN-SPAN: die Größe wurde REICHER (reverse-J statt linear ±40 %) und
         // wanderte in den Generator — eine seed-deterministische Größe (`_forestCellDarts`:
@@ -32665,7 +32665,7 @@ async function checkBandWHWald(ctx) {
         res.refTableHat
     );
     check(
-        "W-H Wald: die Bäume treten im Affinitäts-Wettstreit NUR als kanonische Art an — die Gestalt wächst NACH dem Sieg über die Grammatik (keine Variante im Pool, keine im Spawn-Code)",
+        "W-H Wald: die Bäume treten im Affinitäts-Wettstreit NUR als kanonische Art an — der Varianten-Index reist als METADATEN nach dem Nischen-Sieg (source-neutral, keine eager-gewachsene Geometrie im Spawn; keine statische _jung/_alt/_breit-Variante)",
         res.notInCandidates && res.variantPickAfterWin
     );
     check(
