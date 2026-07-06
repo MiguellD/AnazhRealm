@@ -63906,6 +63906,34 @@ class AnazhRealm {
     // Wald EINMAL baut). Kleiner Batch je Tick (kein 300-Burst-Spike) + per-Frame-Drain aus
     // _tickFoliageGrowth (dieselbe V18.282-Disziplin wie das Laub) -> die Baeume tropfen rein,
     // wenn der Frame Luft hat, und HALTEN, wenn nicht.
+    // DAS NEUE KLEID — DER DOCK-PEEK (nicht-triggernd): ist das Studio-Asset für den AKTUELLEN LOD dieses
+    // Eintrags schon GEDOCKT (im Cache/Impostor-Record)? Rein lesend — löst KEINEN Bake aus (anders als
+    // `_foundryFlattenFor`, das bei Cache-Miss anfragt). So kann der Rewarm VOR dem Platzieren entscheiden:
+    // gedockt → billiger WebGPU-Instance (viele/Tick), nicht gedockt → Bake-Anfrage (streng limitiert).
+    // Die LOD-Wahl spiegelt `_rebuildArchitectureMesh`/`_foundryFlattenFor` (kalt → Distanz-LOD).
+    _foundryEntryReady(entry, preset) {
+        const f = this._foundry;
+        if (!f || !preset) return false;
+        const variant = this._foundryVariantFor(entry.seed);
+        const cold = !entry.instanced && !entry.mesh;
+        let lod = cold
+            ? this._foundryLodForEntry(entry)
+            : Number.isFinite(entry._lodLevel)
+              ? entry._lodLevel
+              : this._foundryLodForEntry(entry);
+        if (lod < 0) lod = 0;
+        if (lod > 2) lod = 2;
+        const season = this.state.season || "summer";
+        // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie.
+        if (lod >= 2 && this._foundryPresetIsTree(preset)) {
+            const key = "fimp:" + preset + "|" + variant + "|" + season;
+            const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
+            return !!(rec && rec !== "pending");
+        }
+        if (preset === "strauch") lod = Math.max(1, lod);
+        const key = preset + "|" + variant + "|" + lod + "|" + season;
+        return f.cache.has(key) && f.cache.get(key) != null;
+    }
     _foundryRewarmColdTrees() {
         if (!this._foundryEnabled()) return;
         // V18.395 — DIE FOUNDRY WARTET AUFS TERRAIN (Schöpfer „erst den Bereich sauber laden, DANN Detail;
@@ -63931,39 +63959,47 @@ class AnazhRealm {
         // nur verhungert). Heilung: KEINE 0-Wand mehr — progressiv aktivieren (über Budget 1/Tick,
         // langsam aber konvergent; gesund FOUNDRY_BUILD_PER_TICK/Tick). Die Welt wird IMMER zum Foundry-
         // Wald, nur langsamer unter Last; die Konvergenz ist EINMALIG (dann findet der Rewarm nichts mehr).
-        const MAX = this.state._frameOverBudget ? 1 : AnazhRealm.FOUNDRY_BUILD_PER_TICK || 4;
-        let n = 0;
+        // DAS NEUE KLEID — DER PROAKTIVE DOCK, ZWEI BUDGETS (Schöpfer „stück für stück um einen platziert,
+        // da sie gerade sowieso free; deterministisch über WebGPU"): GEDOCKTE Assets (Billboard/Geometrie im
+        // Cache) sind ein BILLIGER WebGPU-Instance → viele je Tick im Leerlauf (placeBudget). NICHT-gedockte
+        // lösen einen Studio-Bake aus (Ein-Thread-iframe) → streng limitiert (bakeBudget), damit die Schlange
+        // nicht flutet. Über Budget: nur 1 Instance, KEINE neue Bake-Anfrage (der Frame atmet zuerst).
+        const overBudget = this.state._frameOverBudget;
+        let placeBudget = overBudget ? 1 : AnazhRealm.FOUNDRY_PLACE_PER_TICK || 48;
+        let bakeBudget = overBudget ? 0 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK || 3;
         for (const entry of archs) {
-            if (n >= MAX) break;
+            if (placeBudget <= 0 && bakeBudget <= 0) break;
             if (!entry) continue;
             // Die Eignung liest die BASIS-Art (`_foundryPresetForEntry` — `entry._lodSpecies`), NICHT
-            // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht → der
-            // alte `_foundryPresetFor(entry.type)` fand KEINEN Wald-Baum → sie blieben ewig klassisch).
-            if (!this._foundryPresetForEntry(entry)) continue;
+            // `entry.type` (das bei Wald-Varianten `grown_..._v` ist, im Preset-Map NICHT steht).
+            const preset = this._foundryPresetForEntry(entry);
+            if (!preset) continue;
             if (pm) {
                 const dx = entry.position.x - pm.x;
                 const dz = entry.position.z - pm.z;
                 if (dx * dx + dz * dz > radiusSq) continue;
             }
-            if (!entry.instanced && !entry.mesh) {
-                // KALT (noch nie gebaut, oder auf das Foundry-Asset wartend) → jetzt bauen.
-                this._rebuildArchitectureMesh(entry);
-                n++;
-            } else if ((entry.instanced && !entry.instFoundry) || (entry.mesh && !entry.instFoundry)) {
-                // UPGRADE: klassisch platziert (vor Studio-ready gespawnt) → auf das Studio-Asset
-                // heben. ZUERST das Foundry-Asset prüfen/anfordern; erst wenn es DA ist, den klassischen
-                // Mesh ent-instanzieren + neu bauen (Foundry-Zweig) → kein Verschwinden-dann-Erscheinen
-                // (der Baum bleibt sichtbar, bis das Studio-Asset in der Hand ist). Lädt es noch (null),
-                // bleibt der klassische Look diesen Tick — der nächste Drain hebt ihn, wenn geladen.
-                const preset = this._foundryPresetForEntry(entry);
-                const fFlat = preset ? this._foundryFlattenFor(entry, preset, entry._lodLevel) : null;
-                if (fFlat && fFlat.instanceable) {
+            const cold = !entry.instanced && !entry.mesh;
+            const classic = !cold && !entry.instFoundry;
+            if (!cold && !classic) continue; // schon foundry-platziert → nichts zu tun
+            const ready = this._foundryEntryReady(entry, preset);
+            if (ready) {
+                // GEDOCKT → billiger deterministischer WebGPU-Instance (viele/Tick im Leerlauf).
+                if (placeBudget <= 0) continue;
+                if (classic) {
                     if (entry.instanced) this._archInstanceRemove(entry);
                     else if (entry.mesh) this._cullArchitectureMesh(entry);
-                    this._rebuildArchitectureMesh(entry);
-                    n++;
                 }
+                this._rebuildArchitectureMesh(entry);
+                placeBudget--;
+            } else if (cold) {
+                // NICHT gedockt → EINE Studio-Bake-Anfrage anstoßen (der Eintrag bleibt kalt, bis das
+                // Asset andockt → dann platziert ihn der nächste Rewarm billig). Streng limitiert.
+                if (bakeBudget <= 0) continue;
+                this._rebuildArchitectureMesh(entry); // löst _foundryFlattenFor → _foundryRequest aus
+                bakeBudget--;
             }
+            // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop).
         }
     }
     // Die Foundry-„Flatten": ein Vorlagen-Baum-Eintrag -> Instancing-Leaves aus der ECHTEN
@@ -80435,7 +80471,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.408.0";
+AnazhRealm.VERSION = "18.409.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -80444,6 +80480,15 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 256;
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).
 AnazhRealm.FOUNDRY_BUILD_PER_TICK = 4;
+// DAS NEUE KLEID — DER PROAKTIVE DOCK (Schöpfer „Asset für Asset angedockt, dann stück für stück um
+// einen platziert, da sie gerade sowieso free; deterministisch über WebGPU"): der Rewarm trennt ZWEI
+// Kosten. Ein GEDOCKTES Asset (Studio-Billboard/Geometrie schon im Cache) ist ein BILLIGER WebGPU-
+// Instance (nur Matrizen) → viele je Tick platzieren, wenn der Frame frei ist (das Leerlauf-Fenster).
+// Ein NICHT-gedocktes löst einen Studio-Bake aus (das iframe ist EIN Thread) → streng limitiert, damit
+// die Bake-Schlange nicht flutet. So füllt sich der ferne Wald so schnell die Billboards andocken,
+// ohne den Main-Thread mit schweren Bauten zu spiken. Tunable (Schöpfer-GPU balanciert).
+AnazhRealm.FOUNDRY_PLACE_PER_TICK = 48; // gedockte Assets (billiger Instance) je Frame im Leerlauf
+AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK = 3; // NEUE Studio-Bake-Anfragen je Frame (Ein-Thread-Schlange schonen)
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
