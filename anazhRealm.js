@@ -50480,8 +50480,12 @@ class AnazhRealm {
     // `_archGroupAlloc`-Pfad wie echte Bäume → real + Scatter desselben Baums in
     // EINEM InstancedMesh = ein Draw-Call, identische Geometrie (kein Sprung bei
     // Promotion). Liefert die belegten {key, slot}-Paare für späteres Freigeben.
-    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint, regionKey) {
-        const flat = this._archFlattenBlueprint(blueprintName);
+    _scatterInstanceAdd(blueprintName, x, y, z, yaw, scale, tint, regionKey, flatOverride) {
+        // V18.393 — DIE FOUNDRY-VEREINIGUNG: `flatOverride` reicht einen FERTIGEN Foundry-Flat herein
+        // (dieselben `leaves` wie `_archFlattenBlueprint` → identische HISM-Instancing-Naht). So servier
+        // der Fern-Scatter das STUDIO-Asset (nah=fern=Studio, EIN Baum-System) statt der grammatik-
+        // gebackenen Geometrie. Ohne Override bleibt der klassische Blueprint-Flat (Fels/Kiesel/Fallback).
+        const flat = flatOverride || this._archFlattenBlueprint(blueprintName);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || flat.leaves.length === 0) return null;
         const ew = this._archTmpScatterEntryM || (this._archTmpScatterEntryM = new THREE.Matrix4());
         const q = this._archTmpScatterQ || (this._archTmpScatterQ = new THREE.Quaternion());
@@ -50674,9 +50678,35 @@ class AnazhRealm {
                 // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
                 const visH = layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(species, variantIndex, tf.scale);
                 const lod = this._chooseLODForDistance(dist, undefined, visH);
-                const keys = this._buildVariantLODs(species, variantIndex);
-                if (!keys) continue;
-                const bpName = keys[lod] || keys[0];
+                // V18.393 — DIE FOUNDRY-VEREINIGUNG (Schöpfer „AnazhRealm nur das Nervensystem, die Foundry
+                // die EINE Baum-Quelle, nah UND fern; wir backen um die Wette"). GEMESSEN (diag-foundry-active
+                // + Bake-Probe): der Scatter (der dominante Fern-Renderer) backte AnazhRealms EIGENE
+                // Grammatik-Bäume (`_buildVariantLODs` → `_growTreeBlueprintRich`), WÄHREND die nahe
+                // Architektur die Foundry rendert → zwei parallele Baum-Systeme = der FPS-Doppel-Bake UND
+                // der „nicht 1:1"-Look (nah Studio, fern grown, matchen nicht). Heilung: trägt die Foundry
+                // die Baum-Art, servier der Scatter IHR Asset (Fern-LOD2 = das Studio-Billboard, nah = die
+                // Studio-Geometrie) — nah=fern=Studio, KEIN Grammatik-Bake mehr. Lädt das Asset noch (cache-
+                // miss), fällt DIESER Frame auf Grammatik zurück (kein Loch); ist es gecacht (Dauerzustand),
+                // ist der Scatter rein Foundry. Foundry-gegated → der headless-Gate (foundry aus) bleibt grün.
+                let bpName = null,
+                    foundryFlat = null;
+                if (layer.kind === "tree" && this._foundryEnabled()) {
+                    const preset = this._foundryPresetFor(species);
+                    if (preset) {
+                        const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+                        const ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+                        if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
+                            foundryFlat = ff;
+                            bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
+                        }
+                        // ff === null (lädt) / false (Foundry kann nicht) → bpName bleibt null → Grammatik-Fallback.
+                    }
+                }
+                if (!bpName) {
+                    const keys = this._buildVariantLODs(species, variantIndex);
+                    if (!keys) continue;
+                    bpName = keys[lod] || keys[0];
+                }
                 const tint = {
                     h: this._pcgFloat(cellX ^ layerSalt, cellZ, 5),
                     s: this._pcgFloat(cellX ^ layerSalt, cellZ, 6),
@@ -50702,7 +50732,8 @@ class AnazhRealm {
                     // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
                     this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree"
                         ? regX + "," + regZ
-                        : null
+                        : null,
+                    foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
                 );
                 if (!slots) continue;
                 region.cells.push({
@@ -80034,7 +80065,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.392.0";
+AnazhRealm.VERSION = "18.393.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
