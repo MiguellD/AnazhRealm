@@ -246,20 +246,62 @@ async function shootAnazh(browser) {
                 tz = best.z;
                 gy = best.y;
             } else if (v.want === "land") {
-                // Ein flaches Land-Stück über Wasser suchen (kein Steilhang, keine Pfütze).
-                let best = { x: cx, z: cz, sl: 9 };
-                for (let rad = 0; rad <= 60; rad += 5)
-                    for (let a = 0; a < 360; a += 20) {
-                        const x = cx + Math.cos((a * Math.PI) / 180) * rad,
-                            z = cz + Math.sin((a * Math.PI) / 180) * rad;
-                        const h = th(x, z);
-                        if (h < wl(x, z) + 1) continue;
-                        const sl = Math.abs(th(x + 2, z) - h) + Math.abs(th(x, z + 2) - h);
-                        if (sl < best.sl) best = { x, z, sl };
+                // Den DICHTESTEN Gras-Chunk anpeilen (garantiert Wiese, weg von Plattform/Wasser) —
+                // die vorigen Flach-Suchen trafen die Spawn-Plattform bzw. Voxel-Wasser (das
+                // `_waterLevelAt` nicht immer kennt). `state.voxelChunkGrass` trägt die echten
+                // Gras-InstancedMeshes; der Chunk mit den meisten Halmen IST eine Wiese.
+                const span = r._voxelChunkConfig ? r._voxelChunkConfig().span : 24;
+                let best = null;
+                const gm = s.voxelChunkGrass;
+                // Ein DRY Wiesen-Chunk: Zentrum + vier Ecken klar über Wasser (nicht die Ufer-Wiese,
+                // die das Vorlagen-„saftige Ufer" ans Seeufer setzt → Kamera fing sonst den See).
+                const dry = (wx, wz) => {
+                    const m = span * 0.35;
+                    for (const [dx, dz] of [
+                        [0, 0],
+                        [m, m],
+                        [-m, m],
+                        [m, -m],
+                        [-m, -m],
+                    ]) {
+                        if (th(wx + dx, wz + dz) < wl(wx + dx, wz + dz) + 2) return false;
                     }
-                tx = best.x;
-                tz = best.z;
-                gy = th(tx, tz);
+                    return true;
+                };
+                if (gm && gm.forEach) {
+                    gm.forEach((inst, key) => {
+                        if (!inst || !inst.count || inst.count < 40) return;
+                        const [gx, gz] = key.split(",").map(Number);
+                        const wx = gx * span + span / 2,
+                            wz = gz * span + span / 2;
+                        if (!dry(wx, wz)) return;
+                        const d = Math.hypot(wx - cx, wz - cz);
+                        if (!best || inst.count > best.count + 20 || (Math.abs(inst.count - best.count) <= 20 && d < best.d))
+                            best = { x: wx, z: wz, count: inst.count, d };
+                    });
+                }
+                if (best) {
+                    tx = best.x;
+                    tz = best.z;
+                    gy = th(tx, tz);
+                } else {
+                    // Fallback: flaches Land über Wasser, Ring rad≥30 (jenseits der Plattform).
+                    for (let rad = 30; rad <= 90; rad += 4)
+                        for (let a = 0; a < 360; a += 12) {
+                            const x = cx + Math.cos((a * Math.PI) / 180) * rad,
+                                z = cz + Math.sin((a * Math.PI) / 180) * rad;
+                            const h = th(x, z);
+                            if (h < wl(x, z) + 1.5) continue;
+                            const sl = Math.abs(th(x + 2, z) - h) + Math.abs(th(x, z + 2) - h);
+                            if (sl > 0.03 && sl < 1.2) {
+                                tx = x;
+                                tz = z;
+                                gy = h;
+                                rad = 999;
+                                break;
+                            }
+                        }
+                }
             }
             const H = 13;
             const pitch = (v.pitch * Math.PI) / 180;
