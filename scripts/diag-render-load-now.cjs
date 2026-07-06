@@ -82,12 +82,47 @@ const server = http.createServer((req, res) => {
             } catch (_e) {}
             if (i % 20 === 0) await sleep(25);
         }
-        const triOf = (g) => {
+        // GESETZ #0 — die EHRLICHE Zahl: fuer eine BatchedMesh ist `geometry.index.count` die RESERVIERTE
+        // Puffer-Kapazitaet (global ~524288 Verts -> „174763 Dreiecke"), NICHT die gezeichneten. Das log
+        // eine Phantom-Last (15.9M) fuer 83 fast-leere Reserve-Batches -> ein 48h-Phantomjagd. Die WAHRE
+        // gezeichnete Last summiert je AKTIVE Instanz die Tris IHRER Geometrie.
+        const idxTris = (g) => {
             if (!g) return 0;
             const idx = g.index;
             if (idx) return idx.count / 3;
             const p = g.attributes && g.attributes.position;
             return p ? p.count / 3 : 0;
+        };
+        const triOf = (g) => idxTris(g); // Kompat fuer die Speicher-Schaetzung (uniqueMem)
+        const drawnTrisOf = (o) => {
+            if (o.isBatchedMesh) {
+                const gi = o._geometryInfo || null;
+                const inst = o._instanceInfo || null;
+                const geoTris = (gid) =>
+                    gi && gi[gid] && Number.isFinite(gi[gid].count) ? gi[gid].count / 3 : 0;
+                let tris = 0;
+                if (inst && inst.length) {
+                    for (let i = 0; i < inst.length; i++) {
+                        const it = inst[i];
+                        if (!it || it.active === false || it.visible === false) continue;
+                        tris += geoTris(it.geometryIndex != null ? it.geometryIndex : it.geometryId);
+                    }
+                    return tris;
+                }
+                let sum = 0,
+                    cnt = 0;
+                if (gi && gi.length)
+                    for (let k = 0; k < gi.length; k++) {
+                        const c = gi[k] && gi[k].count;
+                        if (c) {
+                            sum += c / 3;
+                            cnt++;
+                        }
+                    }
+                return cnt ? (sum / cnt) * (o._multiDrawCount || cnt) : 0;
+            }
+            const per = idxTris(o.geometry);
+            return per * (o.isInstancedMesh ? o.count || 0 : 1);
         };
         let totalDrawn = 0,
             uniqueMem = 0,
@@ -99,8 +134,7 @@ const server = http.createServer((req, res) => {
             s.scene.traverse((o) => {
                 if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
                 const per = triOf(o.geometry);
-                const inst = o.isInstancedMesh ? o.count || 0 : o.isBatchedMesh ? o._geometryCount || o.count || 1 : 1;
-                const drawn = per * (o.isInstancedMesh ? inst : 1);
+                const drawn = drawnTrisOf(o);
                 totalDrawn += drawn;
                 visMeshes++;
                 drawCalls++;
@@ -127,7 +161,7 @@ const server = http.createServer((req, res) => {
             s.scene.traverse((o) => {
                 if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
                 const per = triOf(o.geometry);
-                const inst = o.isInstancedMesh ? o.count || 0 : o.isBatchedMesh ? o._geometryCount || o.count || 1 : 1;
+                const inst = o.isInstancedMesh ? o.count || 0 : o.isBatchedMesh ? o._multiDrawCount || 0 : 1;
                 const mat =
                     o.material && !Array.isArray(o.material)
                         ? o.material
@@ -136,7 +170,7 @@ const server = http.createServer((req, res) => {
                           : null;
                 const matNm = mat ? mat.name || (mat.userData && mat.userData.foundryKind) || mat.type || "?" : "?";
                 big.push({
-                    drawn: Math.round(per * (o.isInstancedMesh ? inst : 1)),
+                    drawn: Math.round(drawnTrisOf(o)),
                     per: Math.round(per),
                     inst,
                     kind: o.isInstancedMesh ? "Inst" : o.isBatchedMesh ? "Batch" : "Mesh",

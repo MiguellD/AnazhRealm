@@ -51232,6 +51232,18 @@ class AnazhRealm {
     // V17.16-Schutz: VOR Cache-Reuse Tag-Wand gegen baum_eiche (siehe Test G6);
     // schlägt sie an, ist der Bauplan abgelehnt + es wird auf baum_eiche
     // zurückgefallen (kein Spawn-Verlust, kein Affinitäts-Riss).
+    // DAS NEUE KLEID — DIE EINE VARIANTEN-WAHL (rein, ohne Geometrie-Bau): der regionSeed rastert in eine
+    // von N=VARIANTS_PER_SPECIES Varianten. So kann der Wald source-neutral spawnen (Art + Varianten-Index),
+    // OHNE die gewachsene Geometrie eager zu bauen — der Render waehlt die Quelle (Studio ODER grown-Fallback).
+    // V18.347: die HOHEN Bits (`hash >>> 24`) waehlen (die fnv-1a-Low-Bits sind mod 2er-Potenz degeneriert →
+    // nur ~2 von N Varianten lebten); hoch = gleichverteilt → alle Varianten leben. Deterministisch.
+    _treeVariantIndexFor(species, seed) {
+        const N = AnazhRealm.VARIANTS_PER_SPECIES;
+        const sKey = String(seed || species || "g7-default");
+        let hash = 2166136261 >>> 0;
+        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
+        return (hash >>> 24) % N;
+    }
     _growTreeBlueprintForSpawn(species, seed) {
         if (!this.state.blueprints) return null;
         // V18.217 (DER LEBENDIGE GIGANT §2, Plan §2.5) — der VARIANTEN-POOL.
@@ -51251,16 +51263,7 @@ class AnazhRealm {
         // Hash für die VARIANTEN-WAHL — fnv-1a über (species, regionSeed):
         // gleicher regionSeed → gleicher variantIndex (Region trägt EINEN
         // lokalen Stil); verschiedene regionSeeds streuen über N Varianten.
-        const sKey = String(seed || species || "g7-default");
-        let hash = 2166136261 >>> 0;
-        for (let i = 0; i < sKey.length; i++) hash = ((hash ^ sKey.charCodeAt(i)) * 16777619) >>> 0;
-        // V18.347 — DIE HOHEN BITS WÄHLEN DIE VARIANTE, nicht `hash % N` (= die NIEDRIGEN Bits):
-        // die fnv-1a-Low-Bits sind mod kleiner 2er-Potenzen DEGENERIERT (gemessen über 1000 Seeds:
-        // `hash % 8` traf nur {0,2,4,6}, Bucket 0+4 = 75 % → von 8 designten Baum-Varianten lebten
-        // effektiv ~2; die ungeraden Varianten waren TOT). Die hohen Bits (`hash >>> 24`) sind
-        // gleichverteilt (gemessen ~125/Bucket) → alle 8 Varianten leben. DETERMINISTISCH bewahrt
-        // (gleicher Seed → gleiche Variante, nur die VERTEILUNG geheilt); main-only, kein Worker-Mirror.
-        const variantIndex = (hash >>> 24) % N;
+        const variantIndex = this._treeVariantIndexFor(species, seed);
         const cacheKey = `grown_${species}_v${variantIndex}`;
         // Cache-Hit?
         const cached = this.state.blueprints[cacheKey];
@@ -61016,12 +61019,20 @@ class AnazhRealm {
         const batchKey = (leaf.mat.uuid || "m") + "#" + (castShadow ? "s" : "n") + (regional ? "@" + regionKey : "");
         let batch = this.state.archBatches.get(batchKey);
         if (!batch) {
-            // V18.353 PHASE A.2 — eine REGION ist klein → klein dimensioniert (KEIN 1-GB-Vorab-
-            // OOM, die V18.289-Wurzel war ein GLOBALER 8192-Instanz/524k-Vertex-Vorab-Alloc);
-            // Überlauf wächst on-demand (setInstanceCount/setGeometrySize, _archBatchAddGeometry).
-            const MAXV = regional ? 32768 : 524288;
-            const MAXI = regional ? 98304 : 1572864;
-            const MAXINST = regional ? 512 : 8192;
+            // V18.353 PHASE A.2 — eine REGION ist klein → klein dimensioniert; Überlauf wächst
+            // on-demand (setInstanceCount/setGeometrySize, _archBatchAddGeometry).
+            // DAS NEUE KLEID (V18.403) — DER GLOBALE BATCH STARTET AUCH KLEIN (die V18.289-Wurzel,
+            // die der Kommentar benannte, aber nie am GLOBALEN Pfad heilte): jeder distinkte platzierte
+            // Deko-Material-Batch reservierte EAGER 524288 Verts/1.57M Indizes (~20 MB im BatchedMesh-
+            // Konstruktor, sofort), obwohl er meist EINE winzige Geometrie (Billboard/Kiesel, geomCount 1)
+            // trägt → 83 globale Batches ≈ 1.7 GB tote Reserve = der swiftshader-Render-Hänger + der
+            // GPU-Speicher-Druck auf echter Hardware. Klein starten + wachsen (die Maschinerie steht,
+            // regional bewiesen) → dieselbe Reserve fällt auf ~200 MB, wächst NUR wenn ein Batch wirklich
+            // füllt. GEMESSEN: die Render-Last-Linse las die RESERVE als „gezeichnet" (Phantom 15.9M vs
+            // echt 1.2M) — die Reserve war nie gezeichnet, aber ihre ALLOKATION war der echte Freeze.
+            const MAXV = regional ? 32768 : 65536;
+            const MAXI = regional ? 98304 : 196608;
+            const MAXINST = regional ? 512 : 2048;
             const mesh = new THREE.BatchedMesh(MAXINST, MAXV, MAXI, leaf.mat);
             mesh.castShadow = castShadow;
             mesh.receiveShadow = true;
@@ -61281,6 +61292,22 @@ class AnazhRealm {
     // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
     // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
     _archInstanceAdd(entry, flat) {
+        // DAS NEUE KLEID — KEIN FALLBACK, DAS STUDIO IST DER MUSKEL (Schöpfer „AnazhRealm nur das Nerven-
+        // system, nicht der Muskel"): der EINE Chokepoint, durch den JEDE platzierte Architektur ins Render-
+        // system fliesst. Ist der Eintrag eine foundry-bekannte Art [Baum/Fels/Kristall/Blume/Strauch] UND
+        // der Flat KEIN Studio-Flat [`!flat.foundry` = gewachsene Grammatik], wird NICHTS platziert — der
+        // Eintrag wartet KALT, bis das Studio liefert [Culling-Tick/Refill baut ihn dann als Studio-Asset].
+        // So KANN keine gewachsene Geometrie in die Welt, egal welcher Pfad `_archInstanceAdd` ruft. Headless
+        // [Null-Renderer → `_foundryEnabled()` false] umgeht das → das Gate testet die Mechanik mit Grammatik.
+        if (
+            flat &&
+            !flat.foundry &&
+            typeof this._foundryEnabled === "function" &&
+            this._foundryEnabled() &&
+            this._foundryPresetForEntry(entry)
+        ) {
+            return;
+        }
         const ew = this._archEntryWorldMatrix(
             entry,
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
@@ -61784,7 +61811,16 @@ class AnazhRealm {
             // Distanz die LOD-Stufe wechseln, ohne die Welt-Identität zu
             // verlieren (Plan §2 SEELEN-Band: Berührung → Real). Backward-
             // Kompat: nicht-Bäume bleiben unangetastet.
-            if (bp._isGrown && typeof bp._grownSpecies === "string" && Number.isFinite(bp._variantIndex)) {
+            // DAS NEUE KLEID — SOURCE-NEUTRALER SPAWN: der Wald reicht `_lodSpecies` + `_lodVariantIndex`
+            // EXPLIZIT herein (die Basis-Art `baum_eiche` + der Varianten-Index), OHNE eine gewachsene
+            // Varianten-Geometrie eager zu bauen. So traegt der Eintrag die LOD-Identitaet, und der Render
+            // (`_rebuildArchitectureMesh`) waehlt die Quelle: Studio (Foundry) ODER grown-Fallback (lazy,
+            // nur wenn das Studio aus ist). Das loest die V18.390-Kopplung „Wald == gewachsene Geometrie".
+            if (typeof opts._lodSpecies === "string" && Number.isFinite(opts._lodVariantIndex)) {
+                entry._lodSpecies = opts._lodSpecies;
+                entry._lodVariantIndex = opts._lodVariantIndex;
+                entry._lodLevel = Number.isFinite(opts._lodLevel) ? opts._lodLevel : 0;
+            } else if (bp._isGrown && typeof bp._grownSpecies === "string" && Number.isFinite(bp._variantIndex)) {
                 entry._lodSpecies = bp._grownSpecies;
                 entry._lodVariantIndex = bp._variantIndex;
                 entry._lodLevel = Number.isFinite(bp._lodLevel) ? bp._lodLevel : 0;
@@ -64205,33 +64241,35 @@ class AnazhRealm {
                     // Pool) bricht ZUGLEICH das Klon-Muster (jede Region ein eigener Stil) und
                     // bleibt HISM-instanziert (N Geometrien/Art, nicht per-Instanz). Fallback auf
                     // die Basis-Art, falls der Varianten-Bau scheitert (Tag-Wand-Ablehnung o.ä.).
+                    // DAS NEUE KLEID — SOURCE-NEUTRALER WALD (Schöpfer „loese von alt, integriere modular"):
+                    // der Wald spawnt die BASIS-Art (`d.sp` = `baum_eiche`) + den Varianten-Index EXPLIZIT,
+                    // OHNE `_growTreeBlueprintForSpawn` [das die ~170k-Geometrie EAGER baute = die V18.390-
+                    // Wurzel der 15M/Nachbau]. Der Render waehlt die Quelle: das Studio-Asset [Foundry] ODER,
+                    // nur wenn das Studio aus ist, die gewachsene Geometrie [lazy via `_buildVariantLODs`].
+                    // Die LOD-Identitaet [`_lodSpecies`/`_lodVariantIndex`] reist durch die Spawn-Opts.
                     const regX = Math.floor(d.x / 256);
                     const regZ = Math.floor(d.z / 256);
                     const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                     const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
-                    const grownKey =
-                        typeof this._growTreeBlueprintForSpawn === "function"
-                            ? this._growTreeBlueprintForSpawn(d.sp, regionSeed)
-                            : null;
-                    const grownBp = grownKey && this.state.blueprints && this.state.blueprints[grownKey];
-                    const spawnType = grownBp && grownBp._isGrown ? grownKey : d.sp;
+                    const variantIndex =
+                        typeof this._treeVariantIndexFor === "function" ? this._treeVariantIndexFor(d.sp, regionSeed) : 0;
                     this._enqueueVegetationSpawn(
-                        spawnType,
+                        d.sp,
                         { x: d.x, y: d.surfaceY + 0.5, z: d.z },
-                        { seed: d.seed, silent: true, scale: d.s, rotationY: d.rotY }
+                        {
+                            seed: d.seed,
+                            silent: true,
+                            scale: d.s,
+                            rotationY: d.rotY,
+                            _lodSpecies: d.sp,
+                            _lodVariantIndex: variantIndex,
+                        }
                     );
                     planted++;
-                    // Die zwei restlichen Ω-H-Nebeneffekte (V18.217/.220/.221): (a) die Scatter-
-                    // Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
-                    // Resolver mappt die Cell auf die reale Form); (b) den „tree"-Zähler ERHÖHEN
-                    // (die V18.220-Cap-Wand, die `_vegetationSampleSpawn` weiter liest).
-                    if (
-                        grownBp &&
-                        grownBp._isGrown &&
-                        Number.isFinite(grownBp._variantIndex) &&
-                        this._scatterRegisterCell
-                    ) {
-                        this._scatterRegisterCell(d.x, d.z, "tree", grownBp._grownSpecies, grownBp._variantIndex);
+                    // Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-
+                    // Resolver mappt die Cell auf die reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
+                    if (this._scatterRegisterCell) {
+                        this._scatterRegisterCell(d.x, d.z, "tree", d.sp, variantIndex);
                     }
                     if (this._scatterIncrementCounter) this._scatterIncrementCounter("tree");
                     // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
@@ -80319,7 +80357,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.402.0";
+AnazhRealm.VERSION = "18.403.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
