@@ -75733,8 +75733,24 @@ class AnazhRealm {
             // V18.350 — TRÄGHEIT statt 0.08-Jagd (Schöpfer „Nebel stürmt nicht vor/zurück"): EINE Quelle.
             const sm = this._smoothFogEdge(this.state._fogEdgeSmooth, visualEdge);
             this.state._fogEdgeSmooth = sm;
-            fog.far = Math.min((150 - rainyMix * 55) * fogMult, sm, visualEdgeTarget);
-            fog.near = Math.min((35 - rainyMix * 13) * fogMult, fog.far * 0.45);
+            // DAS NEUE KLEID — DIE SICHTWEITE = DIE VORLAGE (Schöpfer „wir arbeiten mit Sichtweite wie im
+            // Wald, kein fernes Überflug-Feld erzwingen"): liegt der Studio-Wahrnehmungs-Config vor, führt
+            // SEINE Sichtweite (phytogenesis `_sightDist`: fog.far = sight, fog.near = sight·fogNearMul) —
+            // der Nebel schliesst wie im begehbaren Wald bei ~120 m, der 4.3-km-Mantel liegt dahinter im
+            // Nebel (kein Überflug). Der Lade-Nebel-Reveal (`sm`, kappt beim Boot auf die gebaute Kante) UND
+            // die Wetter-Dimmung (rainyMix, im Wald nicht vorhanden → als sanfter Faktor bewahrt) bleiben als
+            // min()-Terme aktiv. Ohne Studio-Config bleibt die Alt-Formel (150·fogMult) = 0 Regress.
+            const rcfg = this.state.studioRenderConfig;
+            const fogFarBase =
+                rcfg && Number.isFinite(rcfg.sight)
+                    ? rcfg.sight * (1 - rainyMix * 0.35)
+                    : (150 - rainyMix * 55) * fogMult;
+            fog.far = Math.min(fogFarBase, sm, visualEdgeTarget);
+            const fogNearBase =
+                rcfg && Number.isFinite(rcfg.sight)
+                    ? rcfg.sight * (Number.isFinite(rcfg.fogNearMul) ? rcfg.fogNearMul : 0.35) * (1 - rainyMix * 0.35)
+                    : (35 - rainyMix * 13) * fogMult;
+            fog.near = Math.min(fogNearBase, fog.far * 0.45);
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
             // hazeTop folgen Wetter (rainy = dichter + niedrigerer Gipfel-
@@ -80394,7 +80410,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.404.0";
+AnazhRealm.VERSION = "18.405.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
