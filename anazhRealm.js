@@ -19339,6 +19339,13 @@ class AnazhRealm {
     // linear (siehe dort). Konsequenz: smooth Phasenwechsel ohne harte
     // Farbsprünge.
     static get DAY_NIGHT_STOPS() {
+        // DIE BREITE TAILLE (Atmosphäre): der MITTAGS-Stop (t=0.5) folgt LIVE dem Studio-Himmel
+        // (`_studioSky.top`/`.sun`, durch `get-world-params` gereicht) — bisher ein Hardcode-Snapshot
+        // der Vorlagen-Werte (0x6a9ed0 / 0xfff2d9). Additiv: NUR der Mittags-Anker bindet ans Studio,
+        // der ganze Tag/Nacht-Zyklus bleibt AnazhRealms. Fallback = die bisherigen Werte = 0 Regress.
+        const sk = AnazhRealm._studioSky;
+        const noonSky = (sk && typeof sk.top === "number" && sk.top) || 0x6a9ed0;
+        const noonSun = (sk && typeof sk.sun === "number" && sk.sun) || 0xfff2d9;
         return Object.freeze([
             Object.freeze({ t: 0.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
             Object.freeze({ t: 0.15, sky: 0x1e1e3a, light: 0x7888b8, intensity: 0.35 }),
@@ -19354,7 +19361,7 @@ class AnazhRealm {
             // NICHT das gesättigte 0x4b75c2) + WARME Sonne (uSunCol (1,0.95,0.85) = 0xfff2d9,
             // NICHT reines Weiss). Das gesättigte Blau + kalte weisse Sonne war der harte,
             // ungemütliche AnazhRealm-Look; die Vorlage ist weicher, wärmer, einladender.
-            Object.freeze({ t: 0.5, sky: 0x6a9ed0, light: 0xfff2d9, intensity: 1.0 }),
+            Object.freeze({ t: 0.5, sky: noonSky, light: noonSun, intensity: 1.0 }),
             // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
             Object.freeze({ t: 0.56, sky: 0x7ba0c8, light: 0xfff0d8, intensity: 0.97 }),
             Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffd8b0, intensity: 0.92 }),
@@ -63013,7 +63020,7 @@ class AnazhRealm {
         };
         const g = params.ground || {};
         const ground = {};
-        for (const key of ["lit", "mead", "dirt", "rock", "wet", "sand"]) {
+        for (const key of ["lit", "mead", "rock", "wet"]) {
             if (typeof g[key] === "number") {
                 const lin = toLin(g[key]);
                 if (lin) ground[key] = lin;
@@ -63022,6 +63029,14 @@ class AnazhRealm {
         // Der statische Cache, den die Getter lesen (globaler Prozess-Zustand, kein Instanz-State →
         // die Klassen-Getter erreichen ihn; Single-Instanz-App, kein Leck).
         AnazhRealm._studioGround = Object.keys(ground).length ? ground : null;
+        // DIE ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe als HEX (der Tag/Nacht-Zyklus
+        // rechnet in Hex, nicht linear) → `DAY_NIGHT_STOPS` bindet seinen Mittags-Stop hieran. Additiv:
+        // nur der Mittag folgt dem Studio, der ganze Zyklus bleibt AnazhRealms. Fallback = 0 Regress.
+        const sk = params.sky || {};
+        const sky = {};
+        if (typeof sk.top === "number") sky.top = sk.top;
+        if (typeof sk.sun === "number") sky.sun = sk.sun;
+        AnazhRealm._studioSky = Object.keys(sky).length ? sky : null;
     }
     // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
     _foundryRecipeFor(preset) {

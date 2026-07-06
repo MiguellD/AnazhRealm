@@ -251,6 +251,12 @@ const PORTAL_GROUND = {
     wet: 0x33402a,
     sand: 0xc9b791,
 };
+// DER MITTAGS-ATMOSPHAERE-ANKER — EINE Quelle fuer den Himmel-Shader (uTop) UND den world-params-
+// Export. AnazhRealm bindet seinen Mittags-Tag/Nacht-Stop hieran (additiv; der Zyklus bleibt seiner).
+const PORTAL_SKY = {
+    top: 0x6a9ed0, // Mittags-Himmel-Top (weiches Dunst-Blau)
+    sun: 0xfff2d9, // Mittags-Sonnenfarbe (warm, = uSunCol (1,0.95,0.85))
+};
 // Zwei-Pass-Laub: geteilte Uniforms fuer den Tiefen-Test (Laub gegen die Struktur-Tiefe verdecken)
 const _dummyTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
 _dummyTex.needsUpdate = true;
@@ -3473,7 +3479,7 @@ function init() {
         const skyGeo = new THREE.SphereGeometry(1, 32, 20);
         const skyMat = new THREE.ShaderMaterial({
             uniforms: {
-                uTop: { value: new THREE.Color(0x6a9ed0) },
+                uTop: { value: new THREE.Color(PORTAL_SKY.top) },
                 uHor: { value: new THREE.Color(0xbcd2e0) },
                 uBot: { value: new THREE.Color(0x3a4250) },
                 uHaze: { value: 0.0 },
@@ -7447,17 +7453,20 @@ init();
         }
     });
     function __replyWorldParams(msg) {
-        // Reine Daten (JSON-klonbar): die Boden-Palette (EINE Quelle PORTAL_GROUND) + die Blatt-
-        // Grundfarbe (der Saison-Bake-Referenz-Tint). Hex-Zahlen; AnazhRealm konvertiert sRGB->linear.
+        // Reine Daten (JSON-klonbar): NUR die Werte, die AnazhRealm auch LIEST (kein toter Passagier).
         const params = {
+            // Boden-Palette -> MEADOW_GREEN + TERRAIN_GEOLOGY. dirt/sand leben lokal im Studio-Terrain,
+            // aber AnazhRealms Sand/Erde sitzt im determinismus-gesperrten Worker-Pfad (V17.100: eine
+            // Runtime-Tunable braeche den bit-Vertrag) -> nicht exportiert.
             ground: {
                 lit: PORTAL_GROUND.lit,
                 mead: PORTAL_GROUND.mead,
-                dirt: PORTAL_GROUND.dirt,
                 rock: PORTAL_GROUND.rock,
                 wet: PORTAL_GROUND.wet,
-                sand: PORTAL_GROUND.sand,
             },
+            // ATMOSPHAERE-ANKER (Mittag): Himmel-Top + Sonnenfarbe. AnazhRealms Tag/Nacht-Zyklus
+            // animiert den Rest; NUR der Mittags-Stop folgt dem Studio (additiv, kein Einfrieren).
+            sky: { top: PORTAL_SKY.top, sun: PORTAL_SKY.sun },
         };
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");

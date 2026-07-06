@@ -91,10 +91,25 @@ const approx = (a, b) =>
         const testMead = [0.9, 0.1, 0.5];
         A._studioGround = Object.assign({}, A._studioGround, { mead: testMead });
         o.meadFollowsEdit = ap(A.MEADOW_GREEN, testMead);
+        // KEIN TOTER PASSAGIER: dirt/sand werden NICHT ingestet (kein AnazhRealm-Leser).
+        o.noDirtSand = !A._studioGround.dirt && !A._studioGround.sand;
         // FALLBACK-BEWEIS: Cache leeren -> die bisherigen Hardcodes.
         A._studioGround = null;
         o.meadFallback = ap(A.MEADOW_GREEN, [0.0908, 0.1248, 0.0284]);
         o.rockFallback = ap(A.TERRAIN_GEOLOGY.rockTint, [0.147, 0.1221, 0.0976]);
+        // ATMOSPHAERE-ANKER: der Mittags-Tag/Nacht-Stop folgt dem Studio-Himmel.
+        o.hasStudioSky = !!A._studioSky;
+        const noon = A.DAY_NIGHT_STOPS.find((st) => st.t === 0.5);
+        o.noonSkyMatches = !!noon && noon.sky === 0x6a9ed0;
+        o.noonSunMatches = !!noon && noon.light === 0xfff2d9;
+        // DATA-DRIVEN-BEWEIS (Himmel): Cache aendern -> der Mittags-Stop folgt.
+        A._studioSky = { top: 0x123456, sun: 0xabcdef };
+        const noon2 = A.DAY_NIGHT_STOPS.find((st) => st.t === 0.5);
+        o.noonFollowsEdit = !!noon2 && noon2.sky === 0x123456 && noon2.light === 0xabcdef;
+        // FALLBACK (Himmel): Cache leeren -> die bisherigen Werte.
+        A._studioSky = null;
+        const noon3 = A.DAY_NIGHT_STOPS.find((st) => st.t === 0.5);
+        o.noonFallback = !!noon3 && noon3.sky === 0x6a9ed0 && noon3.light === 0xfff2d9;
         return o;
     });
 
@@ -109,8 +124,14 @@ const approx = (a, b) =>
         out.mossMatches &&
         out.litMatches &&
         out.meadFollowsEdit &&
+        out.noDirtSand &&
         out.meadFallback &&
-        out.rockFallback;
-    console.log(ok ? "OK — die Studio-Boden-Palette fliesst live durch die Taille (leicht+mittel+tiefer)" : "FAIL");
+        out.rockFallback &&
+        out.hasStudioSky &&
+        out.noonSkyMatches &&
+        out.noonSunMatches &&
+        out.noonFollowsEdit &&
+        out.noonFallback;
+    console.log(ok ? "OK — Boden-Palette + Atmosphaere-Anker fliessen live durch die Taille" : "FAIL");
     process.exit(ok ? 0 : 1);
 })();
