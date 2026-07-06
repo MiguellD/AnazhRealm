@@ -80642,8 +80642,14 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Dreiecks-Hebel. LOOK-SICHER erst durch den 8-View-Impostor DIESER Welle (Wand §2-3:
 // die Distanz-Senkung NIE vor der Impostor-Qualität — sonst poppt sichtbare Pappe näher).
 AnazhRealm.LOD_DISTANCES = Object.freeze({
-    thresh01: 32, // dist > 32 m → LOD1 (Vorlage L0<20 m, per lodRef-SSE gestreckt)
-    thresh12: 64, // dist > 64 m → LOD2/Impostor (Vorlage Billboard >40 m)
+    // DAS NEUE KLEID (Schöpfer „vollende das LOD"): auf die STUDIO-Werte gezogen. GEMESSEN (diag-tree-lod-dist):
+    // die alten 32/64 hielten 25 von 46 Baeumen auf LOD0 (volle ~170k-Geometrie), 16 davon im 14–32-m-Band, wo
+    // das Studio schon billboardet (L0<20 m, Billboard >40 m) → der dichte Wald blieb schwer. Jetzt: nur die
+    // wirklich nahen Baeume tragen die volle Studio-Geometrie, der Mittelgrund faellt auf LOD1, die Ferne aufs
+    // Studio-Billboard — der Boot kollabiert (Optimieren, nicht Drosseln). Die SSE-Wahrnehmungs-Distanz (visH)
+    // streckt grosse Baeume weiter darueber hinaus, aber vom STUDIO-Sockel aus statt vom 60%-gestreckten.
+    thresh01: 20, // dist > 20 m → LOD1 (die Studio-L0-Grenze; vorher 32 = gestreckt)
+    thresh12: 42, // dist > 42 m → LOD2/Impostor (die Studio-Billboard-Grenze ~40 m; vorher 64)
     hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
     lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar) — die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (die engeren Schwellen brauchen weniger Not-Hebel)
