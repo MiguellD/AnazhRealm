@@ -13584,17 +13584,14 @@ class AnazhRealm {
         // außen, so schnell die gemessene Render-Last (→ loadScale → effArch) sie trägt; steigt
         // sie zu hoch, sinkt das Ziel → der Radius schrumpft. Headless (Null-Renderer, KEINE
         // echte Render-Last) → sofort MAX, damit das Gate die volle Welt sieht (gate-treu).
-        const rcfg2 = this.state.studioRenderConfig;
         if (st.renderer && st.renderer._isHeadlessNull) {
             st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
-        } else if (rcfg2 && Number.isFinite(rcfg2.sight)) {
-            // DAS NEUE KLEID — DER SELBE AKTIVE RADIUS WIE IM WALD (Schöpfer „wir pflanzen die selbe Wiese
-            // im selben aktiven Radius"): die Vegetation füllt SOFORT den ganzen Sicht-Radius (Studio-`sight`
-            // = fog.far), nicht perf-gerampt von 70 m. Das Studio pflanzt seine GANZE Scheibe auf einmal (die
-            // Vorlagen-Weisheit) — die Last trägt LOD (Billboard ab 40 m) + die Sicht-Kappung (jenseits sight =
-            // Nebel = null Kosten). So ist der Wald im ganzen sichtbaren Radius da, statt in einem 70-m-Kern.
-            st.foliageRadius = rcfg2.sight;
         } else {
+            // DER LADE-RHYTHMUS BLEIBT (Schöpfer „wir wollen EINEN Chunk langsam laden, DANN wachsen — nicht
+            // den ganzen Radius auf einmal"): der `foliageRadius` startet KLEIN und wächst Chunk für Chunk nach
+            // Kapazität. Die Vorlagen-Dichte lebt PRO Chunk (V18.406 volle Dichte + V18.407 Billboard-LOD) —
+            // ein geladener Chunk ist dicht; die Welt füllt sich gemächlich von innen nach außen (der erste
+            // Chunk günstig, dann wachsen). KEIN Zwingen des Sicht-Radius (das war der V18.407-Fehlgriff).
             const frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
             const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
@@ -80438,7 +80435,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.407.0";
+AnazhRealm.VERSION = "18.408.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
