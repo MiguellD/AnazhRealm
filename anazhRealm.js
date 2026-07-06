@@ -71202,16 +71202,33 @@ class AnazhRealm {
             }
             return null;
         }
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(12345) : 1;
+        // DAS NEUE KLEID (Schöpfer „der Würfel rollt nur deinen Nachbau, nicht die wahren Pipeline-Daten"):
+        // der WÜRFEL + die LOD-Knöpfe der Werkstatt schreiben den SAMEN + die LOD-Stufe in den Bauplan
+        // (`bp._grownSeed`/`_rockSeedBase`/`_crystalSeedBase` · `bp._recipeLod`). Die Studio-Vorschau LIEST
+        // sie → ein neuer Wurf zieht eine ANDERE Studio-Variante, ein LOD-Knopf die entsprechende Studio-
+        // Stufe (echte Pipeline-Daten, kein fester Seed mehr). Der Same ist ein String/Zahl → auf eine
+        // Variante hashen (dieselbe Determinismus-Naht wie die Welt: `_foundryVariantFor`).
+        const bp = this.state.blueprints ? this.state.blueprints[bpName] : null;
+        const rawSeed =
+            (bp && (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase)) != null
+                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
+                : bpName;
+        let seedNum = 0;
+        const seedStr = String(rawSeed);
+        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        let lod = bp && Number.isFinite(bp._recipeLod) ? bp._recipeLod | 0 : 0;
+        if (lod < 0) lod = 0;
+        if (lod > 2) lod = 2;
         const season = this.state.season || "summer";
-        const key = preset + "|" + variant + "|0|" + season; // LOD0 = die volle Studio-Geometrie in der Werkstatt
+        const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus dem Bauplan = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season).then((meshes) => {
                     if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
                     else f.requested.delete(key);
                     rebuild();
@@ -80211,7 +80228,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.398.0";
+AnazhRealm.VERSION = "18.399.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
