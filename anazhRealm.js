@@ -71170,6 +71170,72 @@ class AnazhRealm {
         return mat;
     }
 
+    // DAS NEUE KLEID — DIE WERKSTATT ZIEHT DAS STUDIO-ASSET (Schöpfer „jedes Asset EINMAL ziehen, mit den
+    // Parametern und dem jeweiligen LOD, den Rest durch die GPU"). Kann die Foundry den gewählten Bauplan
+    // servieren (Baum/Fels/Kristall/Blume), liefert diese Methode eine Vorschau-Gruppe aus der EINMAL
+    // gezogenen, GECACHTEN Studio-Geometrie (geteilt, nie dupliziert) — sonst null (klassischer Pfad).
+    // Ist das Asset noch nicht gezogen, wird es EINMAL angefragt und die Vorschau bei Ankunft neu gebaut.
+    _workshopFoundryPreviewGroup(bpName) {
+        if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
+        const preset = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bpName) : null;
+        if (!preset) return null;
+        const f = this._ensureAssetFoundry();
+        if (!f) return null;
+        const rebuild = () => {
+            try {
+                this._workshopRebuildPreviewMesh();
+            } catch (_e) {}
+        };
+        if (!f.ready) {
+            // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen (Interim = Grammatik).
+            if (!f._workshopWaiting) {
+                f._workshopWaiting = true;
+                const t0 = performance.now();
+                const poll = () => {
+                    if (f.ready) {
+                        f._workshopWaiting = false;
+                        rebuild();
+                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
+                    else f._workshopWaiting = false;
+                };
+                setTimeout(poll, 150);
+            }
+            return null;
+        }
+        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(12345) : 1;
+        const season = this.state.season || "summer";
+        const key = preset + "|" + variant + "|0|" + season; // LOD0 = die volle Studio-Geometrie in der Werkstatt
+        const group = this._foundryCacheGet(key);
+        if (group === undefined) {
+            // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
+            if (!f.requested) f.requested = new Set();
+            if (!f.requested.has(key)) {
+                f.requested.add(key);
+                this._foundryRequest(preset, variant, 0, season).then((meshes) => {
+                    if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                    else f.requested.delete(key);
+                    rebuild();
+                });
+            }
+            return null;
+        }
+        if (group === null || !group.children || !group.children.length) return null;
+        // Vorschau-Gruppe aus der GETEILTEN Studio-Geometrie (sharedGeom/sharedMat → der Dispose lässt sie
+        // stehen; kein Klon der ~170k-Geometrie je Bauplan-Wechsel = billig + kein Studio-Asset-Verlust).
+        const T = THREE;
+        const out = new T.Group();
+        for (const ch of group.children) {
+            if (!ch.geometry || !ch.material) continue;
+            const mesh = new T.Mesh(ch.geometry, ch.material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData.sharedGeom = true;
+            mesh.userData.sharedMat = true;
+            mesh.userData.foundryPreview = true;
+            out.add(mesh);
+        }
+        return out.children.length ? out : null;
+    }
     _workshopRebuildPreviewMesh() {
         const ws = this._ensureWorkshopState();
         if (!ws.preview) return;
@@ -71182,7 +71248,10 @@ class AnazhRealm {
                 // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
                 if (obj.isMesh || obj.isLine) {
                     // V10.0-j.f — Defer (WebGPU Submit-Race-frei).
-                    if (obj.geometry) this._queueDispose(obj.geometry);
+                    // DAS NEUE KLEID — die Foundry-Vorschau teilt die GECACHTE Studio-Geometrie (EINMAL
+                    // gezogen, viele Leser); sie DARF NIE disposed werden (sonst zerstört ein Bauplan-
+                    // Wechsel das geteilte Studio-Asset für die ganze Welt). Nur eigene Geometrie freigeben.
+                    if (obj.geometry && !(obj.userData && obj.userData.sharedGeom)) this._queueDispose(obj.geometry);
                     // DAS NEUE KLEID — die Skelett-Vorschau nutzt die GETEILTEN Welt-Materialien
                     // (_sharedFoliageMaterial); die dürfen NIE disposed werden (sonst bricht die
                     // Welt-Krone). Nur eigene Part-Materialien freigeben.
@@ -71208,8 +71277,13 @@ class AnazhRealm {
         // Notgeometrie (Zylinder + Kugel-Blobs, die nur die Tags tragen). So sieht die Werkstatt-
         // Vorschau 1:1 wie die Welt (und die Vorlage). `_buildTreeSkeletonLeaves` baut FRISCHE
         // Geometrie (disposen sicher) mit GETEILTEN Materialien (sharedMat → nicht disposen).
-        let group = null;
-        if (bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
+        // DAS NEUE KLEID (Schöpfer „in der Werkstatt sehe ich immernoch deine Nachbauten, nicht die
+        // Studiobäume"): kann die Foundry diesen Bauplan als STUDIO-Asset servieren, zeigt die Vorschau
+        // die GEZOGENE Studio-Geometrie (EINMAL geladen, gecacht, geteilt) statt der gewachsenen Notgeometrie.
+        // Async: ist das Asset noch nicht gezogen, baut `_workshopFoundryPreviewGroup` die Vorschau neu,
+        // sobald es ankommt (die grammatik-gewachsene Version dient bis dahin als Interim).
+        let group = this._workshopFoundryPreviewGroup(ws.selectedBlueprint);
+        if (!group && bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
             group = this._workshopBuildSkeletonPreviewGroup(bp);
         }
         if (!group) {
