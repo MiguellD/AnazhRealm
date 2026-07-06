@@ -49859,6 +49859,17 @@ class AnazhRealm {
     // MAX-Aggregation identisch, V17.16-Wand strukturell).
     _buildVariantLODs(species, variantIndex) {
         if (!this.state.blueprints) return null;
+        // DAS NEUE KLEID — DER CHOKEPOINT (Gesetz #0, Schöpfer „der Nachbau muss WEG"): `_buildVariantLODs`
+        // ist die EINE Quelle der gewachsenen Baum-Geometrie. Lebt das Studio [Foundry ready] UND kennt es
+        // die Art, wird die Grammatik GAR NICHT gebaut [null] → KEIN Aufrufer [Scatter · LOD-Switch ·
+        // Platzierung] kann einen Nachbau setzen, egal welcher Pfad. Der schmale Boot-Spalt vor `f.ready`
+        // traegt noch Grammatik; sobald das Studio antwortet, ist der Nachbau strukturell unmoeglich.
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+            const f = this._foundry;
+            if (f && f.ready && typeof this._foundryPresetFor === "function" && this._foundryPresetFor(species)) {
+                return null;
+            }
+        }
         // V18.227 (Ω-OPSIS Säule II) — STATISCHE Deko-Baupläne (Kiesel/Felsen,
         // nicht in SPECIES_GRAMMAR) tragen keine gewachsenen Varianten: der EINE
         // Bauplan dient allen drei LOD-Slots (klein → kein Distanz-LOD nötig). So
@@ -50068,7 +50079,14 @@ class AnazhRealm {
         // DAS NEUE KLEID — FOUNDRY-LOD: ist der Eintrag foundry-platziert, serviert die Foundry die
         // neue Stufe (die klassische Distanz-Wahl `newLOD` FÜHRT, EINE Autorität). KEIN entry.type-
         // Wechsel — das Studio-LOD lebt im leafKey (`f:preset|variant|lod|season`), nicht im Namen.
-        if (this._foundryEnabled() && entry.instFoundry) {
+        // DAS NEUE KLEID — DIE TIMING-WURZEL (Schöpfer „heile, vollende"): der LOD-Switch prüfte
+        // `entry.instFoundry` — ein KALTER Baum (Studio lädt noch, Platzierung hält ihn kalt) hat das aber
+        // NICHT → er fiel hier auf den Grammatik-LOD-Pfad → GEWACHSENER Nachbau (die 82 batched-174k-Bäume,
+        // diag-render-load-now). Heilung: kennt die Foundry die Art, ist sie die EINE Quelle — serviere ihre
+        // Stufe ODER halte den aktuellen Zustand (kalt/current LOD), NIE Grammatik. Das Studio-Asset kommt
+        // über Prefetch/Refill; so KANN der LOD-Switch keinen Nachbau mehr auferwecken. Grammatik nur noch,
+        // wenn die Foundry AUS ist oder die Art nicht kennt (unten).
+        if (this._foundryEnabled()) {
             const preset = this._foundryPresetForEntry(entry);
             if (preset) {
                 const fFlat = this._foundryFlattenFor(entry, preset, newLOD);
@@ -50078,8 +50096,8 @@ class AnazhRealm {
                     this._archInstanceAdd(entry, fFlat);
                     return true;
                 }
-                if (fFlat === null) return false; // lädt noch → aktuelle Stufe halten
-                // fFlat === false → auf den klassischen LOD-Pfad zurück
+                // null (lädt) ODER false (Bake-Lücke) → aktuelle Stufe HALTEN, NIE Grammatik (kein Nachbau).
+                return false;
             }
         }
         const species = entry._lodSpecies;
@@ -61432,8 +61450,12 @@ class AnazhRealm {
                 this._archInstanceAdd(entry, fFlat);
                 return null;
             }
-            if (fFlat === null) return null; // lädt noch → kalt lassen, der Culling-Tick holt es
-            // fFlat === false → weiter auf den Klassik-Pfad
+            // DAS NEUE KLEID — kennt die Foundry die Art, ist sie die EINE Quelle: null (lädt) ODER false
+            // (Bake-Lücke, z.B. das Baum-Billboard bäckt noch) → den Eintrag KALT lassen, NIE die Grammatik.
+            // Das war der frühe Nachbau-Pfad (die 83 batched-174k-Bäume): ein fern-platzierter Baum, dessen
+            // Impostor `false` gab, fiel auf Grammatik. Kalt bleiben → der Culling-Tick/Refill baut ihn als
+            // Studio, sobald das Asset [Prefetch/Refill] da ist. So KANN die Platzierung keinen Nachbau setzen.
+            return null;
         }
         const flat = this._archFlattenBlueprint(entry.type);
         // DETERMINISMUS-BOGEN P3 — die Architektur-Kollision ist feld-nativ
@@ -63309,7 +63331,20 @@ class AnazhRealm {
             const p = this._foundryPresetFor(entry._lodSpecies);
             if (p) return p;
         }
-        return typeof entry.type === "string" ? this._foundryPresetFor(entry.type) : null;
+        if (typeof entry.type === "string") {
+            const p = this._foundryPresetFor(entry.type);
+            if (p) return p;
+            // DAS NEUE KLEID — die Timing-Wurzel: ein gewachsener Bauplan-Eintrag traegt den TYP
+            // `grown_baum_eiche_v0[_lodN]` (nicht `baum_eiche`) → der Preset-Map-Lookup verfehlte ihn →
+            // die Platzierung fiel auf die Grammatik (die 83 batched-174k-Baeume). Den grown-Praefix +
+            // Variante/LOD abstreifen → `baum_eiche` → das Studio-Preset → die Foundry serviert ihn.
+            const m = entry.type.match(/^grown_(baum_[a-z]+)/);
+            if (m) {
+                const gp = this._foundryPresetFor(m[1]);
+                if (gp) return gp;
+            }
+        }
+        return null;
     }
     // Ist das Studio-Preset ein BAUM (Fernstufe = billiges Billboard, nicht schwere L2-Geometrie)?
     // DATA-DRIVEN: das STUDIO klassifiziert seine Arten (`PRESETS[id].kind`), und diese Klassifikation
@@ -80284,7 +80319,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.401.0";
+AnazhRealm.VERSION = "18.402.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

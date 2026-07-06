@@ -128,12 +128,21 @@ const server = http.createServer((req, res) => {
                 if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
                 const per = triOf(o.geometry);
                 const inst = o.isInstancedMesh ? o.count || 0 : o.isBatchedMesh ? o._geometryCount || o.count || 1 : 1;
+                const mat =
+                    o.material && !Array.isArray(o.material)
+                        ? o.material
+                        : Array.isArray(o.material)
+                          ? o.material[0]
+                          : null;
+                const matNm = mat ? mat.name || (mat.userData && mat.userData.foundryKind) || mat.type || "?" : "?";
                 big.push({
                     drawn: Math.round(per * (o.isInstancedMesh ? inst : 1)),
                     per: Math.round(per),
                     inst,
                     kind: o.isInstancedMesh ? "Inst" : o.isBatchedMesh ? "Batch" : "Mesh",
-                    key: ((o.userData && o.userData.archInstanceKey) || o.name || "?").slice(0, 48),
+                    key: ((o.userData && o.userData.archInstanceKey) || o.name || "?").slice(0, 40),
+                    mat: (matNm + "").slice(0, 26),
+                    parent: ((o.parent && (o.parent.name || o.parent.type)) || "?").slice(0, 22),
                 });
             });
         big.sort((a, b) => b.drawn - a.drawn);
