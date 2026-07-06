@@ -63675,6 +63675,13 @@ class AnazhRealm {
     // wenn der Frame Luft hat, und HALTEN, wenn nicht.
     _foundryRewarmColdTrees() {
         if (!this._foundryEnabled()) return;
+        // V18.395 — DIE FOUNDRY WARTET AUFS TERRAIN (Schöpfer „erst den Bereich sauber laden, DANN Detail;
+        // der Ladefluss zu schwer, es erweitert"): baute in DIESEM Frame ein Terrain-Chunk, konvergiert die
+        // Foundry NICHT (dieselbe „erst der Boden, dann der Wald"-Disziplin wie der scatterDeco-Job). So
+        // bleibt der Boot-/Streaming-Fill LEICHT (nur Terrain baut), die Foundry-Bäume kommen in den LÜCKEN
+        // zwischen den Chunk-Builds — terrain-first, harmonisch wie der Studio-Wald. Die V18.392-Progressiv-
+        // Rate (1/Tick über Budget) greift erst, wenn das Terrain ruht → kein Konvergenz-Druck im Boot-Freeze.
+        if (this.state._frameChunksBuilt) return;
         const f = this._foundry;
         if (!f || !f.ready) return; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
@@ -80065,7 +80072,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.394.0";
+AnazhRealm.VERSION = "18.395.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
