@@ -3853,6 +3853,32 @@ function init() {
     build();
     wireUI();
     wireForest();
+    // PATCH-PROBE (?patch-probe=1): eine schmale Sicht-Taille fuer den 10x10m-Look-Abgleich
+    // Studio-vs-AnazhRealm — read-only Zugriff auf die Render-Globals + ein composer.render()
+    // (voller Studio-Look inkl. Post). Nur mit dem Query-Param aktiv → 0 Fussabdruck im
+    // normalen Studio-Gebrauch (wie ?asset-foundry). Toolchain-Infra, kein Verhalten.
+    try {
+        if (typeof location !== "undefined" && /[?&]patch-probe/.test(location.search)) {
+            window.__phytoView = {
+                get scene() {
+                    return scene;
+                },
+                get camera() {
+                    return camera;
+                },
+                get renderer() {
+                    return renderer;
+                },
+                get forestMode() {
+                    return forestMode;
+                },
+                renderPatch() {
+                    if (composer) composer.render();
+                    else renderer.render(scene, camera);
+                },
+            };
+        }
+    } catch (_pp) {}
     animate();
 }
 
