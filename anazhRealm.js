@@ -63149,6 +63149,12 @@ class AnazhRealm {
                         // Grundfarbe) durchs Portal ziehen — AnazhRealms Boden/Geologie/Vegetation
                         // liest sie live (der Schoepfer editiert das Studio, die Welt folgt).
                         f.iframe.contentWindow.postMessage({ type: "get-world-params", reqId: "wparams" }, "*");
+                        // DAS NEUE KLEID — DER WAHRNEHMUNGS-KANAL: die Sichtweite, die LOD-Distanzen/Fades,
+                        // die Wald-Dichte + den Understory-Raster durchs Portal ziehen. AnazhRealm adoptiert
+                        // sie 1:1 (dieselbe Sichtweite wie im Wald, dasselbe nahe LOD, dieselben Distanzen/
+                        // Fades, dieselbe Wiese/Blumen/Buesche im selben Radius) — der Schoepfer editiert den
+                        // Config-Block im externen File, AnazhRealm folgt.
+                        f.iframe.contentWindow.postMessage({ type: "get-render-config", reqId: "rcfg" }, "*");
                     } catch (_e) {}
                     this._foundryPrefetchLibrary();
                 } else if (m.type === "recipes") {
@@ -63158,6 +63164,9 @@ class AnazhRealm {
                     // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-
                     // Farbquellen gespeist (live, kein hartkodiertes Abbild mehr).
                     this._foundryIngestWorldParams(m.params);
+                } else if (m.type === "render-config") {
+                    // Der Wahrnehmungs-Config ist da: Sichtweite/LOD/Fades/Dichte/Understory adoptiert.
+                    this._foundryIngestRenderConfig(m.config);
                 } else if (m.type === "asset") {
                     const p = f.pending.get(m.reqId);
                     if (p) {
@@ -63229,6 +63238,34 @@ class AnazhRealm {
         if (typeof sk.top === "number") sky.top = sk.top;
         if (typeof sk.sun === "number") sky.sun = sk.sun;
         AnazhRealm._studioSky = Object.keys(sky).length ? sky : null;
+    }
+    // DAS NEUE KLEID — DER WAHRNEHMUNGS-KANAL (Schöpfer „die Vorlage ist die EINE Quelle für Sichtweite,
+    // LOD, Fades, Dichte; AnazhRealm der Übersetzer"): das Studio-PORTAL_RENDER_CONFIG empfangen + in
+    // AnazhRealms Wahrnehmungs-Quellen speisen. LOD-Distanzen/Fades → das (jetzt mutable) LOD_DISTANCES-
+    // Static (alle CPU-/Shader-Leser ziehen live nach) + state.lodRef. Sichtweite/Dichte/Understory werden
+    // im STATISCHEN `AnazhRealm._studioRenderConfig` gehalten, den die Fog-/Wald-/Understory-Leser lesen
+    // (Fallback = der bisherige Wert = 0 Regress, wenn nichts kam). Reine Daten, kein Shader-Transfer.
+    _foundryIngestRenderConfig(config) {
+        if (!config || typeof config !== "object") return;
+        this.state.studioRenderConfig = config;
+        AnazhRealm._studioRenderConfig = config;
+        // LOD-Distanzen/Fades in die EINE LOD-Quelle (LOD_DISTANCES ist jetzt mutable — die Defaults
+        // matchen die Vorlage schon; hier folgt AnazhRealm einem LIVE-Edit des Config-Blocks).
+        const L = config.lod;
+        const D = AnazhRealm.LOD_DISTANCES;
+        if (L && typeof L === "object") {
+            if (Number.isFinite(L.d0)) D.thresh01 = L.d0;
+            if (Number.isFinite(L.d1)) D.thresh12 = L.d1;
+            if (Number.isFinite(L.fade)) D.fade = L.fade;
+            if (Number.isFinite(L.fade0)) D.fade0 = L.fade0;
+            if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
+            if (Number.isFinite(L.ref)) {
+                D.lodRef = L.ref;
+                D.leafVisCap = L.ref; // die Blatt-Sichthöhe-Kappung = die Referenz-Sichthöhe (Studio uLodRef)
+                // state.lodRef ist die LIVE-Spiegel-Quelle (CPU-Membership + Shader-uLodRef, in _loopRender gespiegelt).
+                if (this.state) this.state.lodRef = L.ref;
+            }
+        }
     }
     // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
     _foundryRecipeFor(preset) {
@@ -80357,7 +80394,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.403.0";
+AnazhRealm.VERSION = "18.404.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -80787,30 +80824,25 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // Proportion auf AnazhRealms Wahrnehmungs-Skala): Voll-3D-Fläche 16×→~1× = der größte
 // Dreiecks-Hebel. LOOK-SICHER erst durch den 8-View-Impostor DIESER Welle (Wand §2-3:
 // die Distanz-Senkung NIE vor der Impostor-Qualität — sonst poppt sichtbare Pappe näher).
-AnazhRealm.LOD_DISTANCES = Object.freeze({
-    // DAS NEUE KLEID (Schöpfer „vollende das LOD"): auf die STUDIO-Werte gezogen. GEMESSEN (diag-tree-lod-dist):
-    // die alten 32/64 hielten 25 von 46 Baeumen auf LOD0 (volle ~170k-Geometrie), 16 davon im 14–32-m-Band, wo
-    // das Studio schon billboardet (L0<20 m, Billboard >40 m) → der dichte Wald blieb schwer. Jetzt: nur die
-    // wirklich nahen Baeume tragen die volle Studio-Geometrie, der Mittelgrund faellt auf LOD1, die Ferne aufs
-    // Studio-Billboard — der Boot kollabiert (Optimieren, nicht Drosseln). Die SSE-Wahrnehmungs-Distanz (visH)
-    // streckt grosse Baeume weiter darueber hinaus, aber vom STUDIO-Sockel aus statt vom 60%-gestreckten.
-    thresh01: 20, // dist > 20 m → LOD1 (die Studio-L0-Grenze; vorher 32 = gestreckt)
-    thresh12: 42, // dist > 42 m → LOD2/Impostor (die Studio-Billboard-Grenze ~40 m; vorher 64)
-    hysteresis: 10, // ± 10 m Pufferzone (Plan §3.6 „kein Flackern")
-    lodRef: 14, // Referenz-Sichthöhe (Screen-Space-Error-Bezug, browser-tunbar) — die EINE uLodRef-Quelle (CPU+Shader)
-    perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (die engeren Schwellen brauchen weniger Not-Hebel)
-    // V18.387 — DAS NEUE KLEID S1-SHADER: die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0).
-    // Die Übergangs-Bänder, über die das Dither-Crossfade die Laub-Karten weich ausblendet, BEVOR
-    // die nächste LOD-Stufe greift: fade0 = das nahe L0→L1-Band (fast identische Meshes → schmales
-    // Feld ohne spürbaren Pop), fade = das ferne L1→L2/Impostor-Band (3D → Karte → breiter). Auf
-    // AnazhRealms Meter-Skala (thresh 32/64) proportional zur Vorlage (D0/D1 20/40, FADE0/FADE 4/8).
-    fade: 13, // L1→L2-Band: das Crossfade blendet in [thresh12 − fade, thresh12] = [51,64] aus
-    fade0: 6, // L0→L1-Band: das Crossfade blendet in [thresh01 − fade0, thresh01] = [26,32] aus
-    // leafVisCap: die Kappung der BLATT-Sichthöhe (aH0L). Ein Blatt bleibt absolut klein, egal wie
-    // gross sein Baum ist → das Laub-Crossfade folgt der ABSOLUTEN Distanz (phytogenesis FIX v30);
-    // aH0 (Skelett) behält Detail nach Baumhöhe, aH0L (Laub) nicht. = die lodRef-Default-Höhe.
-    leafVisCap: 14,
-});
+// DAS NEUE KLEID (Schöpfer „die Pipeline professionell machen, dieselbe Sichtweite/LOD/Fades wie im Wald"):
+// EXAKT die Vorlagen-Werte (phytogenesis PORTAL_RENDER_CONFIG.lod). NICHT mehr `Object.freeze` — der
+// Wahrnehmungs-Kanal (`_foundryIngestRenderConfig`) schreibt die live vom Studio gelesenen Werte HIER hinein
+// (die Defaults MATCHEN die Vorlage → headless == live; editiert der Schöpfer den Config-Block im externen
+// File, folgt AnazhRealms LOD beim nächsten Laden). LOD ist REIN Render (nicht im deterministischen Sim-/
+// Replay-Pfad) → eine Live-Mutation dieses Statics ist determinismus-sicher.
+//   <thresh01 = L0 volle Geometrie · thresh01..thresh12 = L1 mittel · >thresh12 = L2 Studio-Billboard.
+AnazhRealm.LOD_DISTANCES = {
+    thresh01: 20, // Studio LOD_D0 — dist > 20 m → LOD1
+    thresh12: 40, // Studio LOD_D1 — dist > 40 m → LOD2/Impostor (Studio-Billboard-Grenze)
+    hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
+    lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
+    perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
+    // Die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0), über die das Dither-Crossfade die Laub-Karten
+    // weich ausblendet, BEVOR die nächste LOD-Stufe greift.
+    fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [32,40]
+    fade0: 4, // Studio LOD_FADE0 — L0→L1-Band: Crossfade in [thresh01 − fade0, thresh01] = [16,20]
+    leafVisCap: 12, // Blatt-Sichthöhe-Kappung (aH0L) = die Studio-uLodRef-Höhe (das Laub-Crossfade folgt der ABSOLUTEN Distanz)
+};
 
 // V18.389 (DAS NEUE KLEID — SUBSYSTEM 3, phytogenesis v38 `_occG`/`updateTreeLOD`
 // OCCLUSION-DEMOTION portiert) — DAS KRONEN-DICHTE-GITTER. Ein ferner 3D-Baum, der

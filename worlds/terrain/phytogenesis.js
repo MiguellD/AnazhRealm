@@ -257,6 +257,34 @@ const PORTAL_SKY = {
     top: 0x6a9ed0, // Mittags-Himmel-Top (weiches Dunst-Blau)
     sun: 0xfff2d9, // Mittags-Sonnenfarbe (warm, = uSunCol (1,0.95,0.85))
 };
+// DIE WAHRNEHMUNGS-QUELLE — EINE Quelle fuer die Sichtweite, die LOD-Distanzen/Fades, die Wald-Dichte
+// und den Understory-Raster. Das Studio LIEST sie (die Konstanten unten binden hieran), UND der Foundry-
+// Kanal EXPORTIERT sie (`get-render-config`) an AnazhRealm — editiert der Schoepfer HIER eine Zahl, folgt
+// beim naechsten Laden BEIDES: der Studio-Wald UND die AnazhRealm-WebGPU-Welt (dieselbe Sichtweite, dasselbe
+// nahe LOD, dieselben Distanzen/Fades, dieselbe Wiese/Blumen/Buesche im selben aktiven Radius). Kein
+// Shader-/Geometrie-Transfer (r128-GLSL != WebGPU) — die WERTE fliessen, der Renderer bleibt AnazhRealms.
+const PORTAL_RENDER_CONFIG = {
+    // Sichtweite (Dunst) — der Wald-Regime-Anker: fog.near = sight*fogNearMul, fog.far = sight, camera.far = sight+camFarPad.
+    sight: 120,
+    fogNearMul: 0.35,
+    camFarPad: 20,
+    // Baum-LOD — Wahrnehmungs-Distanzen (Screen-Space-Error, hoehen-gewichtet ueber `ref`): <d0 = L0 volle
+    // Geometrie, d0..d1 = L1 mittel, >d1 = L2 Billboard. `fade`/`fade0` = die Dither-Crossfade-Baender; `hyst`
+    // = die Membership-Hysterese (M); `ref` = die Referenz-Sichthoehe (uLodRef).
+    lod: { d0: 20, d1: 40, fade: 8, fade0: 4, ref: 12.0, hyst: 3.4 },
+    // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
+    // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
+    // Kronen-Radien je Art. AnazhRealm adoptiert diese in seine FOREST-Oekologie.
+    density: {
+        cell: 12,
+        pack: 1.16,
+        dartsPerM2: 1.2,
+        crown: { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 },
+    },
+    // Understory — der Raster-Abstand (m) je Schicht ueber den aktiven Radius: Gras dicht, Blumen mittel,
+    // Buesche weit. AnazhRealm pflanzt dieselbe Wiese/Blumen/Buesche im selben Radius.
+    understory: { grassStep: 0.72, flowerStep: 2.4, bushStep: 4.4 },
+};
 // Zwei-Pass-Laub: geteilte Uniforms fuer den Tiefen-Test (Laub gegen die Struktur-Tiefe verdecken)
 const _dummyTex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat);
 _dummyTex.needsUpdate = true;
@@ -4110,8 +4138,8 @@ function slopeAt(x, z) {
 }
 
 /* arttypischer Kronenradius (m) bei Größenfaktor 1 — Waldwuchs (schmal, Konkurrenz) */
-const CROWN = { eiche: 5.2, birke: 3.2, weide: 4.5, tanne: 2.95, fichte: 2.75, mammut: 9.2 }; // echter Beaestungsradius (Lichtkrone)
-const PACK = 1.16; // Zentren >= PACK*(Ti+Tj): Kronen-Schuechternheit, echte Lichtkonkurrenz (kein Ineinanderwachsen)
+const CROWN = PORTAL_RENDER_CONFIG.density.crown; // echter Beaestungsradius (Lichtkrone) — die EINE Quelle (Config)
+const PACK = PORTAL_RENDER_CONFIG.density.pack; // Zentren >= PACK*(Ti+Tj): Kronen-Schuechternheit (aus dem Config-Block)
 
 /* ---------- BÄUME: variabel-radius Poisson-Disc + Ökologie + Selbstausdünnung */
 function plantForest(R, seedInt) {
@@ -4138,7 +4166,7 @@ function plantForest(R, seedInt) {
             }
         return true;
     }
-    const darts = Math.floor(R * R * 1.2);
+    const darts = Math.floor(R * R * PORTAL_RENDER_CONFIG.density.dartsPerM2);
     for (let i = 0; i < darts; i++) {
         const a = rng() * 6.2831,
             rr = Math.sqrt(rng()) * R,
@@ -5459,8 +5487,12 @@ function buildForest() {
         nF = 0,
         nS = 0,
         nP = 0;
-    for (let gx = -R; gx <= R; gx += 0.72)
-        for (let gz = -R; gz <= R; gz += 0.72) {
+    // Understory-Raster aus dem Config-Block (die EINE Quelle): Gras dicht, Blumen mittel, Buesche weit.
+    const _uGrass = PORTAL_RENDER_CONFIG.understory.grassStep,
+        _uFlower = PORTAL_RENDER_CONFIG.understory.flowerStep,
+        _uBush = PORTAL_RENDER_CONFIG.understory.bushStep;
+    for (let gx = -R; gx <= R; gx += _uGrass)
+        for (let gz = -R; gz <= R; gz += _uGrass) {
             if (gx * gx + gz * gz > R * R) continue;
             const x = gx + (RNG() - 0.5) * 0.68,
                 z = gz + (RNG() - 0.5) * 0.68;
@@ -5487,8 +5519,8 @@ function buildForest() {
                 nP++;
             }
         } // FIX v27: 3-11cm statt Sandkorn
-    for (let gx = -R; gx <= R; gx += 2.4)
-        for (let gz = -R; gz <= R; gz += 2.4) {
+    for (let gx = -R; gx <= R; gx += _uFlower)
+        for (let gz = -R; gz <= R; gz += _uFlower) {
             if (gx * gx + gz * gz > R * R) continue;
             const x = gx + (RNG() - 0.5) * 2.2,
                 z = gz + (RNG() - 0.5) * 2.2;
@@ -5505,8 +5537,8 @@ function buildForest() {
                 nF++;
             }
         }
-    for (let gx = -R; gx <= R; gx += 4.4)
-        for (let gz = -R; gz <= R; gz += 4.4) {
+    for (let gx = -R; gx <= R; gx += _uBush)
+        for (let gz = -R; gz <= R; gz += _uBush) {
             if (gx * gx + gz * gz > R * R) continue;
             const x = gx + (RNG() - 0.5) * 4.0,
                 z = gz + (RNG() - 0.5) * 4.0;
@@ -5590,7 +5622,7 @@ function updateTreeLOD() {
     if (!_treeLOD.length) return;
     const cx = camera.position.x,
         cz = camera.position.z;
-    const M = 3.4,
+    const M = PORTAL_RENDER_CONFIG.lod.hyst,
         n0 = LOD_D0 - LOD_FADE0,
         n1 = LOD_D1 - LOD_FADE; // M = Hysterese-Rand (>= 1m-Trigger + eine Frame-Bewegung im Flug); die Shader-Blende bleibt exakt, die Mitgliedschaft ueberdeckt sie nur
     const fogD = scene && scene.fog ? scene.fog.far + 6 : 1e9; // FIX v30: AUSSER SICHTWEITE = NULL KOSTEN — jenseits fog.far ist jeder Baum 100% Nebelfarbe; wir zeichnen ihn gar nicht erst (Sichtweite-Regler wird zum ehrlichen Performance-Regler)
@@ -5940,7 +5972,7 @@ let _rScale = 1.25,
     _fpsTarget = 60,
     _fpsSlider = null,
     _folRes = 0.5,
-    _sightDist = 120,
+    _sightDist = PORTAL_RENDER_CONFIG.sight,
     _ctrlPanel = null,
     _folSlider = null,
     _sightSlider = null;
@@ -5972,11 +6004,16 @@ let _treeLOD = [],
     _lodT = 0,
     _lodCx = 1e9,
     _lodCz = 1e9;
-const LOD_D0 = 20,
-    LOD_D1 = 40,
-    LOD_FADE = 8,
-    LOD_FADE0 = 4; // FIX v27: FADE0 6->4 — das nahe L0->L1-Band (fast identische Meshes) traegt ein schmaleres Dither-Feld ohne spuerbaren Pop; die Fern-Blende (FADE=8, 3D->Billboard) bleibt breit. EINE Quelle fuers LOD-Band: <D0 fein, D0..D1 mittel, >D1 Billboard; KOMPLEMENTAERES Dither-Crossfade -- dieselbe Maske teilt die Pixel exakt (kein Pop, keine Luecke)
-const _lodU = { uLodMaskOn: { value: 1 }, uLodRef: { value: 12.0 }, uDitherT: { value: 0 } };
+// EINE Quelle fuers LOD-Band (aus PORTAL_RENDER_CONFIG.lod): <D0 fein, D0..D1 mittel, >D1 Billboard;
+// KOMPLEMENTAERES Dither-Crossfade -- dieselbe Maske teilt die Pixel exakt (kein Pop, keine Luecke). FADE0
+// 4 = das nahe L0->L1-Band (fast identische Meshes) traegt ein schmaleres Dither-Feld; die Fern-Blende
+// (FADE=8, 3D->Billboard) bleibt breit. Editiert der Schoepfer die Distanzen HIER (im Config-Block), folgt
+// das Studio-LOD UND — ueber den get-render-config-Kanal — AnazhRealms LOD.
+const LOD_D0 = PORTAL_RENDER_CONFIG.lod.d0,
+    LOD_D1 = PORTAL_RENDER_CONFIG.lod.d1,
+    LOD_FADE = PORTAL_RENDER_CONFIG.lod.fade,
+    LOD_FADE0 = PORTAL_RENDER_CONFIG.lod.fade0;
+const _lodU = { uLodMaskOn: { value: 1 }, uLodRef: { value: PORTAL_RENDER_CONFIG.lod.ref }, uDitherT: { value: 0 } };
 let taaPass = null,
     _taaPrevVP = new THREE.Matrix4(),
     _taaCurVP = new THREE.Matrix4(),
@@ -7483,6 +7520,12 @@ init();
             // danach — editiert der Schoepfer hier eine Farbe, folgt AnazhRealm beim naechsten Laden.
             // Kein Shader-Transfer (r128-GLSL != WebGPU): die WERTE fliessen, der Renderer bleibt AnazhRealms.
             __replyWorldParams(msg);
+        } else if (msg.type === "get-render-config") {
+            // DER WAHRNEHMUNGS-KANAL: das Studio exportiert PORTAL_RENDER_CONFIG (Sichtweite, LOD-Distanzen/
+            // Fades, Wald-Dichte, Understory-Raster) als reine Zahlen. AnazhRealm adoptiert sie -> dieselbe
+            // Sichtweite, dasselbe nahe LOD, dieselben Distanzen/Fades, dieselbe Wiese/Blumen/Buesche im
+            // selben aktiven Radius. Editiert der Schoepfer den Config-Block, folgt AnazhRealm beim Laden.
+            __replyRenderConfig(msg);
         } else if (msg.type === "get-recipes") {
             // DER REZEPT-KANAL: das Studio EXPORTIERT sein Rezeptbuch (die PRESETS: je Art die
             // Regler `s` + die Material/Form-Werte `fx`) durch das Portal. AnazhRealm speist das
@@ -7510,6 +7553,31 @@ init();
         };
         if (window.parent && window.parent !== window) {
             window.parent.postMessage({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
+        }
+    }
+    function __replyRenderConfig(msg) {
+        // Reine Daten (JSON-klonbar) — die EINE Wahrnehmungs-Quelle (PORTAL_RENDER_CONFIG). Tiefe Kopie,
+        // damit der Empfaenger nichts am Studio-Objekt mutiert.
+        const c = PORTAL_RENDER_CONFIG;
+        const cfg = {
+            sight: c.sight,
+            fogNearMul: c.fogNearMul,
+            camFarPad: c.camFarPad,
+            lod: { d0: c.lod.d0, d1: c.lod.d1, fade: c.lod.fade, fade0: c.lod.fade0, ref: c.lod.ref, hyst: c.lod.hyst },
+            density: {
+                cell: c.density.cell,
+                pack: c.density.pack,
+                dartsPerM2: c.density.dartsPerM2,
+                crown: Object.assign({}, c.density.crown),
+            },
+            understory: {
+                grassStep: c.understory.grassStep,
+                flowerStep: c.understory.flowerStep,
+                bushStep: c.understory.bushStep,
+            },
+        };
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
         }
     }
     function __replyRecipes(msg) {
