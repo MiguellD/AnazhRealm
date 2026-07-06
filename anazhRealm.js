@@ -13584,8 +13584,16 @@ class AnazhRealm {
         // außen, so schnell die gemessene Render-Last (→ loadScale → effArch) sie trägt; steigt
         // sie zu hoch, sinkt das Ziel → der Radius schrumpft. Headless (Null-Renderer, KEINE
         // echte Render-Last) → sofort MAX, damit das Gate die volle Welt sieht (gate-treu).
+        const rcfg2 = this.state.studioRenderConfig;
         if (st.renderer && st.renderer._isHeadlessNull) {
             st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        } else if (rcfg2 && Number.isFinite(rcfg2.sight)) {
+            // DAS NEUE KLEID — DER SELBE AKTIVE RADIUS WIE IM WALD (Schöpfer „wir pflanzen die selbe Wiese
+            // im selben aktiven Radius"): die Vegetation füllt SOFORT den ganzen Sicht-Radius (Studio-`sight`
+            // = fog.far), nicht perf-gerampt von 70 m. Das Studio pflanzt seine GANZE Scheibe auf einmal (die
+            // Vorlagen-Weisheit) — die Last trägt LOD (Billboard ab 40 m) + die Sicht-Kappung (jenseits sight =
+            // Nebel = null Kosten). So ist der Wald im ganzen sichtbaren Radius da, statt in einem 70-m-Kern.
+            st.foliageRadius = rcfg2.sight;
         } else {
             const frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
@@ -61472,6 +61480,17 @@ class AnazhRealm {
         // Headless-Null → `_foundryEnabled()` false → dieser Zweig entfällt ganz → Klassik (gate-treu).
         const fPreset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
         if (fPreset) {
+            // DAS NEUE KLEID — DER PLATZIERUNGS-DURCHSATZ (Schöpfer „L2 ist im Wald auch Billboard, tue es"):
+            // ein KALTER Baum (nie platziert) trägt `_lodLevel = 0` (Spawn-Default) — aber `_tickArchitectureLOD`
+            // ÜBERSPRINGT kalte Einträge (`!entry.instanced`) → er kriegt NIE die Distanz-LOD → die Platzierung
+            // zwingt jeden fernen Baum auf ein L0-ON-DEMAND-BAKE (~170k-Geometrie, langsam) statt auf das
+            // VORGEBACKENE L2-Billboard → nur ~9 Bäume erschienen, der ferne Wald blieb leer. Heilung: bei der
+            // KALT-Platzierung ZUERST die Distanz-LOD setzen → ferne Bäume nehmen sofort das prefetchte
+            // Billboard (instant), nahe bleiben L0 — genau wie im begehbaren Wald. Der LOD-Tick führt sie danach.
+            if (!entry.instanced && !entry.mesh && Number.isFinite(entry._lodVariantIndex)) {
+                const dlod = this._foundryLodForEntry(entry);
+                if (Number.isFinite(dlod)) entry._lodLevel = dlod;
+            }
             const fFlat = this._foundryFlattenFor(entry, fPreset, entry._lodLevel);
             if (fFlat && fFlat.instanceable) {
                 this._archInstanceAdd(entry, fFlat);
@@ -64077,11 +64096,13 @@ class AnazhRealm {
         const p = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!p || !entry || !entry.position) return 1;
         const d = Math.hypot(entry.position.x - p.x, entry.position.z - p.z);
-        // lod0 = die volle Vorlagen-Geometrie (Konifere ~170k Verts!) NUR fuer die naechsten
-        // paar Baeume — sonst summieren sich Dutzende × 170k = Freeze (Schoepfer-Befund). Die
-        // Ferne traegt lod1 (~40k) / lod2 (~15k); der Perf-Regler deckelt zusaetzlich die Dichte.
-        if (d < 14) return 0;
-        if (d < 48) return 1;
+        // DAS NEUE KLEID — die Kalt-Estimate-Schwellen = die Studio-LOD (LOD_DISTANCES, aus PORTAL_RENDER_
+        // CONFIG adoptiert): <thresh01 = L0 volle Vorlagen-Geometrie NUR nah · thresh01..thresh12 = L1 mittel
+        // · >thresh12 = L2 Billboard (prefetched, instant). Dieselben Grenzen wie `_chooseLODForDistance`
+        // (die Distanz-Autoritaet) → der Kalt-Placement-Estimate und der LOD-Tick stimmen ueberein.
+        const D = AnazhRealm.LOD_DISTANCES;
+        if (d < D.thresh01) return 0;
+        if (d < D.thresh12) return 1;
         return 2;
     }
     // ==================== JAHRESZEIT (Vorlagen-Phaenologie) ====================
@@ -80417,7 +80438,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.406.0";
+AnazhRealm.VERSION = "18.407.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
