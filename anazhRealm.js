@@ -80065,7 +80065,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.393.0";
+AnazhRealm.VERSION = "18.394.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83341,7 +83341,12 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)
-AnazhRealm.RING_RAMP_START = 2; // Start-Ring beim Boot (5×5 = 25 Chunks ≈ 108 m, Nebel nah)
+AnazhRealm.RING_RAMP_START = 1; // V18.394 — Start-Ring beim Boot (3×3 = 9 Chunks ≈ 65 m, Nebel NAH).
+// Schöpfer-Befund (diag-boot-ring, GEMESSEN): der alte Start-Ring 2 (25 Chunks) war der „Zwang zu viele
+// Chunks auf einmal" → Boot-Frames 2369/1650 ms, overBudget durchgehend, der Ramp wuchs NIE (nie stabil).
+// „Erst den ersten Bereich füllen, dann bei Stabilität wachsen" (die Vorlagen-Wald-Ladeharmonie): Ring 1
+// füllt die IMMEDIATE Umgebung (Spieler + 8 Nachbarn = solider Boden, kein Void), der Nebel liegt nah,
+// und der V18.301/.306/.318-Ramp wächst von dort bei gesundem Frame → sanftes Enthüllen statt Boot-Freeze.
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
 // B1 (V18.373) — DER WASSER-CA-WAKE LEBT NUR IM NAH-RING: jeder einstreamende Wasser-Chunk
 // weckte bisher den CA → er + seine 8 Nachbarn fielen aus `_waterSheetCaFree` → die FERNE See
