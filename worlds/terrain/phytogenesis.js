@@ -3876,6 +3876,14 @@ function init() {
                     if (composer) composer.render();
                     else renderer.render(scene, camera);
                 },
+                // Für den nackt-Horizont-Abgleich: das Laub des Waldes läuft über den FoliagePass
+                // (Screen-Space), nicht über InstancedMesh → ein `traverse(hide isInstancedMesh)`
+                // entfernt es NICHT. Hier den Pass gegen den einfachen RenderPass tauschen (nur Terrain
+                // + Himmel + Wasser), danach wiederherstellen. So ist der Vergleich Terrain-gegen-Terrain.
+                setForestFoliage(on) {
+                    if (!composer || !composer.passes || !renderPassMain) return;
+                    composer.passes[0] = on ? _foliagePass || renderPassMain : renderPassMain;
+                },
             };
         }
     } catch (_pp) {}
