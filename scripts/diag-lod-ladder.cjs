@@ -128,7 +128,10 @@ const GPU = [
                 return { grp, tris: Math.round(tris) };
             };
             const shots = [];
-            for (const lod of [0, 1, 2]) {
+            // LOD0 + LOD1 = die Studio-GEOMETRIE (nah/mittel). LOD2 fuer Baeume ist KEINE Geometrie,
+            // sondern das 2-Dreieck-BILLBOARD (`_buildImpostorCrossGeometry` = 1 Quad) mit dem Studio-
+            // Atlas — genau was die Welt fern rendert. Also: lod 0/1 Geometrie, lod 2 die Atlas-Karte.
+            for (const lod of [0, 1]) {
                 const meshes = await r._foundryRequest("eiche", 12345, lod, "summer");
                 const gl = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
                 gl.setSize(W, H, false);
@@ -148,7 +151,6 @@ const GPU = [
                     tris = bt.tris;
                     sc.add(bt.grp);
                 }
-                // Auto-Frame
                 const box = new T.Box3().setFromObject(sc);
                 const ctr = new T.Vector3();
                 const sz = new T.Vector3();
@@ -172,6 +174,41 @@ const GPU = [
                 console.log("ladder lod" + lod + " tris=" + tris);
                 gl.dispose();
             }
+            // LOD2 = DAS ECHTE BILLBOARD: das Studio-Impostor-Atlas (8-View), eine Ansicht auf ein Quad =
+            // 2 Dreiecke. Der Bake ist async → auf den Record warten, dann die Front-View-Zelle zeichnen.
+            const variant = typeof r._foundryVariantFor === "function" ? r._foundryVariantFor(12345) : 1;
+            let rec = r._foundryEnsureImpostorRecord("eiche", variant, "summer");
+            const tb = performance.now();
+            while (!rec && performance.now() - tb < 30000) {
+                await sleep(200);
+                rec = r._foundryEnsureImpostorRecord("eiche", variant, "summer");
+            }
+            const cv2 = document.createElement("canvas");
+            cv2.width = W;
+            cv2.height = H;
+            const c2 = cv2.getContext("2d");
+            c2.fillStyle = "#bcd2e0";
+            c2.fillRect(0, 0, W, H);
+            let billboardOk = false;
+            if (rec && rec.map && rec.map.image && rec.frame) {
+                const atlas = rec.map.image; // cw·V × ch (8 Ansichten horizontal)
+                const V = rec.views || 8;
+                const cw = Math.floor(atlas.width / V);
+                const ch = atlas.height;
+                // Aspekt aus dem Bake-Rahmen (halfW·2 / totalH), damit die Karte nicht verzerrt.
+                const totalH = rec.frame.totalH || ch;
+                const halfW = rec.frame.halfW || cw / 2;
+                const aspect = (halfW * 2) / totalH;
+                const drawH = H * 0.9;
+                const drawW = drawH * aspect;
+                const dx = (W - drawW) / 2;
+                const dy = (H - drawH) / 2;
+                // EINE Ansicht (Front, view 0) auf das Quad — genau was das 2-Tri-Billboard traegt.
+                c2.drawImage(atlas, 0, 0, cw, ch, dx, dy, drawW, drawH);
+                billboardOk = true;
+            }
+            shots.push({ lod: 2, tris: 2, dataURL: cv2.toDataURL("image/png"), billboardOk });
+            console.log("ladder lod2 BILLBOARD tris=2 ok=" + billboardOk);
             return { shots };
         },
         W,
