@@ -59065,6 +59065,40 @@ class AnazhRealm {
         }
     }
 
+    // V18.396 — BOOT-WARM-COMPILE (Schöpfer „der Ladefluss zu schwer, vollende es"): die WebGPU-Pipelines
+    // der nahen Welt (Terrain · Vegetation · Wasser · Himmel · Strukturen) kompilieren beim ERSTEN Render
+    // jedes neuen Material-Layouts SYNCHRON — ein echter Stall auf JEDER GPU (der Boot-Freeze; swiftshader
+    // verstärkt ihn nur). Das ist die V18.367-Klasse (`compileAsync`), hier auf den BOOT ausgedehnt:
+    // `renderer.compileAsync(scene, cam)` wärmt die Pipelines ASYNC vor, bevor der Render-Frame an ihnen
+    // stallt → der erste sichtbare Frame hängt nicht am Shader-Compile. Per-Frame gerufen, aber SELBST-
+    // GEDROSSELT (eine Warm-Welle je ~350 ms) + endet, sobald der nahe Ring steht + ein paar Wellen liefen
+    // (die nahen Pipelines sind dann warm + attribut-layout-gecacht). Instanz-Felder (kein state.X →
+    // nicht serialisiert/audit-geflaggt, wie `_editSaveTimer`). Headless/Null → No-op (kein compileAsync).
+    _bootWarmCompileScene() {
+        if (this._bootWarmDone) return;
+        const st = this.state;
+        const r = st.renderer,
+            sc = st.scene,
+            cam = st.camera;
+        if (!r || !sc || !cam || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
+        // ZWEI SCHUSS (nicht per-Frame → ein wiederholtes Kompilieren der GANZEN Szene überlastet die GPU):
+        // Schuss 1 FRÜH, sobald erste Chunks + Vegetation stehen (Terrain-/Gras-Pipelines) → die folgenden
+        // Chunk-Renders sind Cache-Treffer statt Stall. Schuss 2, sobald der nahe Ring KOMPLETT ist (Wald-/
+        // Wasser-/Struktur-Pipelines) → die Ring-Erweiterung + Re-Renders sind warm. Danach `_bootWarmDone`.
+        const chunks = st.voxelChunks ? st.voxelChunks.size : 0;
+        const stage = this._bootWarmStage || 0;
+        if (stage === 0 && chunks >= 3) {
+            this._bootWarmStage = 1;
+            Promise.resolve(r.compileAsync(sc, cam)).catch(() => {});
+            return;
+        }
+        const built = typeof this._builtRingRadius === "function" ? this._builtRingRadius() : null;
+        if (stage >= 1 && built !== null && built >= (st._activeRingRadius || 1)) {
+            this._bootWarmDone = true;
+            Promise.resolve(r.compileAsync(sc, cam)).catch(() => {});
+        }
+    }
+
     // V18.214 (DER LEBENDIGE GIGANT, Ω-G2 echte Tube-Geometrie) — baut aus
     // dem Skeleton (Polylinien) EINE bark-BufferGeometry mit Ring-von-6-
     // Vertices pro Polylinien-Punkt, lobed flare am Stamm-Fuß (Plan §3.3),
@@ -78160,6 +78194,9 @@ class AnazhRealm {
                 // ### Rendering ### (V9.44-f → _loopRender)
                 // V18.264 — VOR dem Render entscheiden, ob die Schatten-Map neu muss
                 // (Cache; im Stand/Umsehen übersprungen → der zweite Voll-Render entfällt).
+                // V18.396 — die nahen WebGPU-Pipelines async vorwärmen, BEVOR der Render an ihnen stallt
+                // (der Boot-Shader-Compile-Freeze). Selbst-gedrosselt + endet bei stabilem nahen Ring.
+                this._bootWarmCompileScene();
                 _pt = performance.now();
                 this._loopShadowUpdate();
                 this._loopRender(currentTime);
@@ -80072,7 +80109,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.395.0";
+AnazhRealm.VERSION = "18.396.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
