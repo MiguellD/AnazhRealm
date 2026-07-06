@@ -147,7 +147,36 @@ const server = http.createServer((req, res) => {
                 else if (/chunk|terrain|voxel/.test(nm)) cat.terrain += tt;
                 else cat.rest += tt;
             });
-        res.szeneGesamt = { totalTris: Math.round(totalTris), meshCount, instMeshCount };
+        // UNIQUE Geometrie-Dreiecke (Speicher/Upload) vs EFFEKTIV gezeichnete — der Instancing-Beweis:
+        // InstancedMesh teilt EINE geom (Speicher fällt), BatchedMesh KOPIERT je Instanz (Speicher = gezeichnet).
+        const seenGeo = new Set();
+        let uniqueTris = 0,
+            batchedCount = 0,
+            instancedCount = 0,
+            instancedDrawn = 0;
+        if (s.scene)
+            s.scene.traverse((o) => {
+                if (!o.visible || !(o.isMesh || o.isInstancedMesh || o.isBatchedMesh) || !o.geometry) return;
+                if (o.isBatchedMesh) batchedCount++;
+                if (o.isInstancedMesh) {
+                    instancedCount++;
+                    instancedDrawn += triOf(o.geometry) * (o.count || 0);
+                }
+                const gid = o.geometry.uuid;
+                if (!seenGeo.has(gid)) {
+                    seenGeo.add(gid);
+                    uniqueTris += triOf(o.geometry);
+                }
+            });
+        res.szeneGesamt = {
+            totalTris: Math.round(totalTris),
+            uniqueGeomTris: Math.round(uniqueTris),
+            meshCount,
+            instMeshCount,
+            batchedMeshes: batchedCount,
+            instancedMeshes: instancedCount,
+            instancedDrawnTris: Math.round(instancedDrawn),
+        };
         res.nachKategorie = {
             terrain: Math.round(cat.terrain),
             wasser: Math.round(cat.wasser),
@@ -163,14 +192,15 @@ const server = http.createServer((req, res) => {
                 const per = triOf(o.geometry);
                 const inst = o.isInstancedMesh ? o.count || 0 : 1;
                 const tot = per * (o.isInstancedMesh ? inst : 1);
+                const pc =
+                    o.geometry.attributes && o.geometry.attributes.position ? o.geometry.attributes.position.count : 0;
                 big.push({
                     tris: Math.round(tot),
-                    perInst: Math.round(per),
+                    posCount: pc,
                     inst,
                     kind: o.isInstancedMesh ? "InstMesh" : o.isBatchedMesh ? "Batched" : "Mesh",
-                    name: (o.name || "?").slice(0, 40),
-                    mat: o.material && o.material.name ? o.material.name.slice(0, 30) : "",
-                    fk: o.material && o.material.userData ? o.material.userData.foundryKind || "" : "",
+                    key: (o.userData && o.userData.archInstanceKey) || (o.name || "?").slice(0, 46),
+                    mat: o.material && o.material.name ? o.material.name.slice(0, 24) : "",
                 });
             });
         big.sort((a, b) => b.tris - a.tris);

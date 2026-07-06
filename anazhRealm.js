@@ -61060,7 +61060,23 @@ class AnazhRealm {
         // V18.353/.356 PHASE A.2 — der Batch-Pfad (region-gekeyt, Default an). Der alte
         // `useBatchedFoliage` (der gescheiterte V18.289-1-GB-Global-Batch) ist GESTRICHEN —
         // `useBatchedArch` (die Region-Batch) hat ihn abgelöst, kein doppelter Schalter.
-        if (this.state.useBatchedArch) return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
+        // DAS NEUE KLEID (Boot-Last-Wurzel, Schöpfer „1:1 auf die GPU, der Katalysator"): SCHWERE, über
+        // viele Platzierungen IDENTISCHE Geometrie (Bäume — Konifere LOD0 ~170k Verts, ob Foundry ODER
+        // gewachsen) UMGEHT den Region-Batch-Pfad. Grund: BatchedMesh KOPIERT die Geometrie je Instanz →
+        // N × 170k = Millionen Dreiecke (gemessen 6.9M bei EINEM Chunk) UND ein Baum sprengt ohnehin die
+        // regionale Batch-Kapazität (32768 Verts). InstancedMesh REFERENZIERT EINE geom → 170k EINMAL,
+        // N Matrizen — exakt wie das Studio seinen Wald instanziert (der GPU-Katalysator). Die Wahl ist
+        // GEOMETRIE-getrieben (universell) plus der explizite `instanceShare`-Merker (Foundry-Leaves).
+        // Leichte platzierte Architektur (Wände/Deko < Schwelle) bleibt auf dem Region-Batch (V18.353).
+        const heavyLeaf =
+            (leaf && leaf.instanceShare) ||
+            (leaf &&
+                leaf.geom &&
+                leaf.geom.attributes &&
+                leaf.geom.attributes.position &&
+                leaf.geom.attributes.position.count > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS);
+        if (this.state.useBatchedArch && !heavyLeaf)
+            return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
         const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
@@ -63875,6 +63891,14 @@ class AnazhRealm {
                     localMatrix: I,
                     leafKey: "f:" + key + ":" + p,
                     castShadow: castsShadow,
+                    // DAS NEUE KLEID (Boot-Last-Wurzel, Schöpfer „1:1 auf die GPU, der Katalysator"):
+                    // Foundry-Baum-Geometrie ist SCHWER (Konifere LOD0 ~170k Verts) UND über viele
+                    // Platzierungen IDENTISCH (gleiche geom je preset|variant|lod|part). BatchedMesh
+                    // KOPIERT die Geometrie je Instanz → N × 170k = Millionen Dreiecke (gemessen 6.9M
+                    // bei 1 Chunk). InstancedMesh REFERENZIERT EINE geom → 170k EINMAL, N Matrizen —
+                    // exakt wie das Studio seinen Wald instanziert. `instanceShare` zwingt diese Leaves
+                    // auf den InstancedMesh-Pfad (geteilte geom), die platzierte Architektur bleibt Batch.
+                    instanceShare: true,
                 });
             }
             group._foundryFlat = leaves.length
@@ -83469,6 +83493,12 @@ AnazhRealm.GRASS_BLADE_H = 0.42;
 // horizontalem Span > MAX_SPAN bleiben global (ihre Bounding-Sphere spannt zu weit → kein Cull-Wert).
 AnazhRealm.ARCH_REGION_M = 256;
 AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
+// DAS NEUE KLEID — die Verts-Schwelle, ab der ein platziertes Leaf den InstancedMesh-Pfad (geteilte
+// geom, N Matrizen) statt des Region-Batch (kopiert je Instanz) nimmt. Bäume (LOD0 ~262k / LOD1 ~40k
+// Verts) liegen weit darüber → EINE Geometrie statt N Kopien (der GPU-Katalysator des Studios); leichte
+// platzierte Architektur (Wände/Deko) bleibt unter der Schwelle → Region-Batch (Draw-Call-Kollaps).
+// 8192 < die regionale Batch-Kapazität (32768 Verts) → ein Baum sprengte den Batch ohnehin.
+AnazhRealm.ARCH_INSTANCE_SHARE_VERTS = 8192;
 // V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.
