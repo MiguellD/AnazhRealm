@@ -33606,7 +33606,18 @@ class AnazhRealm {
         // nicht an die Wurzel. Jetzt skaliert die Halm-Zahl beim Bau mit demselben
         // perf-geregelten Faktor wie die Streu (`_nexusPerfActuate`, KEIN Parallel-
         // Regler). Headless (Null-Renderer) → 1 (das Gate sieht die volle Wiese).
-        const grassDensityScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        // DAS NEUE KLEID — DIE WIESE = DIE VORLAGE (Schöpfer „vollende es — die selbe Dichte, die selbe
+        // Wiese"): liegt der Studio-Wahrnehmungs-Config vor, pflanzt AnazhRealm die VOLLE Gras-Dichte (=1),
+        // NICHT perf-gedrosselt. Bei voller Dichte trägt jede der 256 Sample-Zellen ~16 Halme → ~4000/Chunk
+        // ≈ 1.8 Halme/m² = exakt das Studio-0.72m-Raster; der Perf-Boden (0.22) hatte die Wiese auf ~195
+        // Halme gedünnt (der „spärliche Wiese"-Befund). Die ferne Wiese bleibt via `farFactor` leichter, das
+        // Gras kappt am Gras-Ring. Ohne Studio-Config bleibt der Perf-Regler = 0 Regress (Alt-Welten).
+        // Der Gate ist `_foundryEnabled()` (Studio-Pipeline aktiv, WAHR ab Frame 0) — NICHT der spät
+        // eintreffende `studioRenderConfig`: das Gras baut im Boot, BEVOR der Config andockt, und ist
+        // gecacht → ein config-später Gate ließe die Boot-Wiese für immer spärlich. Headless (null) →
+        // `_foundryEnabled()` false, aber dort ist `_foliageDensityScale`=1 → ebenfalls voll (gate-treu).
+        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
+        const grassDensityScale = grassStudio ? 1 : this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
         const surfAt = (x, z) => {
             if (chunkEntry && chunkEntry.surfMap) {
                 const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
@@ -34357,7 +34368,13 @@ class AnazhRealm {
                 : 1; // globaler Dichte-Faktor — Konsolen-tunbar (U4-Plan-Slider, UI = S-Entscheid)
         // V18.277 — die kapazitäts-gewachsene Dichte: der perf-geregelte Faktor lichtet die
         // Instanz-Zahl unter Last (weniger Dreiecke), füllt in den Lücken (undefined-sicher → 1).
-        const densityScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        // DAS NEUE KLEID — im Studio-Regime volle Understory-Dichte (=1), nicht perf-gedrosselt.
+        const densityScale =
+            typeof this._foundryEnabled === "function" && this._foundryEnabled()
+                ? 1
+                : this.state._foliageDensityScale != null
+                  ? this.state._foliageDensityScale
+                  : 1;
         const dekoDensity = (band.dekoDichte || 1) * atmoD * densityScale;
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
@@ -34871,7 +34888,13 @@ class AnazhRealm {
             const band = this._detailBand(ringDist);
             if (band.deko !== "impostor") continue;
             // V18.277 — die kapazitäts-gewachsene Dichte auch im Fernfeld (undefined-sicher → 1).
-            const fdScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+            // DAS NEUE KLEID — im Studio-Regime volle Fernfeld-Dichte (=1), nicht perf-gedrosselt.
+            const fdScale =
+                typeof this._foundryEnabled === "function" && this._foundryEnabled()
+                    ? 1
+                    : this.state._foliageDensityScale != null
+                      ? this.state._foliageDensityScale
+                      : 1;
             const dekoDensity = (band.dekoDichte || 0) * atmoD * fdScale;
             if (dekoDensity <= 0) continue;
             // Derselbe deterministische RNG-STROM wie der nahe Scatter (eine
@@ -50648,7 +50671,15 @@ class AnazhRealm {
         // Pro-Region-Cap. Ohne die Cap-Skalierung blieben DICHTE Wälder (cap-saturiert) unter Last
         // unverändert (der Cap maskiert die prob-Drosselung) — genau die Freeze-Hotspots. Mit ihr
         // thinnen auch sie. Undefined-sicher → 1.
-        const fdScale = this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        // DAS NEUE KLEID — die Streu (Blumen/Büsche/Unterwuchs) hält im Studio-Regime VOLLE Dichte (=1),
+        // NICHT perf-gedrosselt — wie das Studio seine Understory (Blumen 2.4m / Büsche 4.4m) voll pflanzt.
+        // Ohne Studio-Config bleibt der Perf-Regler (V18.277/.280) = 0 Regress.
+        const fdScale =
+            typeof this._foundryEnabled === "function" && this._foundryEnabled()
+                ? 1
+                : this.state._foliageDensityScale != null
+                  ? this.state._foliageDensityScale
+                  : 1;
         const cap = Math.max(1, Math.round(layer.cap * fdScale));
         let emitted = 0;
         for (let cz = 0; cz < cellsPerRegion && emitted < cap; cz++) {
@@ -51068,6 +51099,10 @@ class AnazhRealm {
     // — der Spawn-Ring re-baut es dichter, wenn die Kapazität zurückkehrt). EIN Regler, kein Parallel.
     _tickGrassThin(playerPos) {
         const st = this.state;
+        // DAS NEUE KLEID — im Studio-Regime dünnt die Wiese NIE (die Vorlage hält ihre volle Dichte); der
+        // Bau pflanzt schon voll, das Nach-Dünnen würde sie wieder auf den Perf-Boden ziehen = der „spärliche
+        // Wiese"-Rückfall. Gate = `_foundryEnabled()` (Studio aktiv, ab Frame 0). Ohne = adaptiv (V18.363).
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) return 0;
         if (st._frameOverBudget) return 0; // erst die Frame-Zeit, dann dünnen (V18.282)
         const map = st.voxelChunkGrass;
         const densMap = st.voxelChunkGrassDensity;
@@ -64324,7 +64359,7 @@ class AnazhRealm {
                     // statt hunderte Bäume = der leere Wald. Liegt der Studio-Config vor, pflanzt AnazhRealm
                     // VOLL (kein fd-Dünnen) — dieselbe Dichte wie im begehbaren Wald; die Sichtweite (V18.405,
                     // fog.far 120) + das Studio-LOD (V18.404, Billboard ab 40 m) halten die Last ehrlich.
-                    const studioDensity = this.state.studioRenderConfig != null;
+                    const studioDensity = typeof this._foundryEnabled === "function" && this._foundryEnabled();
                     if (!studioDensity && fd < 1 && d.keep >= fd) continue;
                     // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture ueber
                     // _enqueueVegetationSpawn) -> harvestbar + kollidierbar + getaggt + LOD.
@@ -80471,7 +80506,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.409.0";
+AnazhRealm.VERSION = "18.410.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
