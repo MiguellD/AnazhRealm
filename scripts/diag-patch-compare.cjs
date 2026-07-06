@@ -268,6 +268,10 @@ async function shootAnazh(browser) {
                     }
                     return true;
                 };
+                // FAIRE Wahl: das Studio zeigt LUSH-Waldboden (feucht, grün). AnazhRealms Dürre-Wiese
+                // ist ABSICHTLICH gelber/spärlicher (V18.344) — kein fairer Gegenpart. Deshalb unter den
+                // dry-Chunks (solider Boden) den FEUCHTESTEN wählen (grün-lush = das Studio-Pendant).
+                const feu = (x, z) => (typeof r._feuchteAt === "function" ? r._feuchteAt(x, z, th(x, z)) : 0);
                 if (gm && gm.forEach) {
                     gm.forEach((inst, key) => {
                         if (!inst || !inst.count || inst.count < 40) return;
@@ -275,9 +279,8 @@ async function shootAnazh(browser) {
                         const wx = gx * span + span / 2,
                             wz = gz * span + span / 2;
                         if (!dry(wx, wz)) return;
-                        const d = Math.hypot(wx - cx, wz - cz);
-                        if (!best || inst.count > best.count + 20 || (Math.abs(inst.count - best.count) <= 20 && d < best.d))
-                            best = { x: wx, z: wz, count: inst.count, d };
+                        const score = feu(wx, wz) + inst.count / 512; // feucht (grün) bevorzugt, Dichte als Tiebreak
+                        if (!best || score > best.score) best = { x: wx, z: wz, count: inst.count, score, feu: feu(wx, wz) };
                     });
                 }
                 if (best) {
