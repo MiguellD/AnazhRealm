@@ -26457,7 +26457,11 @@ class AnazhRealm {
         // Basis statt 81 Chunks auf einmal; Nebel + Laub folgen (Kopplung steht schon).
         const targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
         const activeRing = this.state._activeRingRadius != null ? this.state._activeRingRadius : targetRing;
-        const ringRadius = Math.max(1, Math.min(targetRing, activeRing));
+        // V18.397 — der Boot-Ring darf 0 sein (EIN einziger Chunk, Schöpfer „1 Chunk statt 9!"): der
+        // `Math.max(1,…)`-Floor zwang bisher mind. 9 Chunks (3×3) → er ignorierte RING_RAMP_START=0.
+        // Jetzt `Math.max(0,…)` → der Boot füllt den ALLERERSTEN Chunk, der Ramp wächst von dort. Der
+        // Nebel/Void-Boden trägt den Rand, bis Ring 1 nachzieht (der Spieler-Chunk baut ohnehin zuerst).
+        const ringRadius = Math.max(0, Math.min(targetRing, activeRing));
         // Welle E (E1) — die LOD-PYRAMIDE: alle Stufen teilen denselben
         // Horizontal-Span (dim·step = 43.2 m) UND denselben Vertikal-Span
         // (dimY·step = 360 m, floorDrop 90 → Decke base+270) → LOD-invariant,
@@ -80109,7 +80113,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.396.0";
+AnazhRealm.VERSION = "18.397.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83385,12 +83389,13 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)
-AnazhRealm.RING_RAMP_START = 1; // V18.394 — Start-Ring beim Boot (3×3 = 9 Chunks ≈ 65 m, Nebel NAH).
-// Schöpfer-Befund (diag-boot-ring, GEMESSEN): der alte Start-Ring 2 (25 Chunks) war der „Zwang zu viele
-// Chunks auf einmal" → Boot-Frames 2369/1650 ms, overBudget durchgehend, der Ramp wuchs NIE (nie stabil).
-// „Erst den ersten Bereich füllen, dann bei Stabilität wachsen" (die Vorlagen-Wald-Ladeharmonie): Ring 1
-// füllt die IMMEDIATE Umgebung (Spieler + 8 Nachbarn = solider Boden, kein Void), der Nebel liegt nah,
-// und der V18.301/.306/.318-Ramp wächst von dort bei gesundem Frame → sanftes Enthüllen statt Boot-Freeze.
+AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIGER Chunk (Schöpfer „1 Chunk statt 9!").
+// Schöpfer-Befund (diag-boot-ring, GEMESSEN): der Start-Ring 2 (25 Chunks) war der „Zwang zu viele Chunks
+// auf einmal" → Boot-Frames 2369 ms, der Ramp wuchs nie. V18.394 senkte auf 1 (9 Chunks); V18.397 auf 0 =
+// den ALLERERSTEN Chunk (der Spieler-Chunk, ~21 m) — der Lade-Nebel umhüllt ihn eng, dann wächst der
+// V18.301/.306/.318-Ramp bei gesundem Frame Ring für Ring. Der reine Studio-Wald-Fluss: EIN Chunk füllen,
+// stabil werden, wachsen. Ring 0 = 1 Chunk (Spieler steht darauf, der Void-Boden `_softFloorWhileChunk-
+// Loading` + der Nebel tragen den Rand, bis Ring 1 nachzieht) — kein 25-Chunk-Boot-Freeze mehr.
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
 // B1 (V18.373) — DER WASSER-CA-WAKE LEBT NUR IM NAH-RING: jeder einstreamende Wasser-Chunk
 // weckte bisher den CA → er + seine 8 Nachbarn fielen aus `_waterSheetCaFree` → die FERNE See
