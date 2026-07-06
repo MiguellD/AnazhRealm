@@ -77780,6 +77780,18 @@ class AnazhRealm {
                 // ### FPS aktualisieren ###
                 this.updateFps(delta);
 
+                // DAS NEUE KLEID — die Foundry so FRÜH wie möglich anwerfen: das Studio-iframe lädt
+                // ~1–2 s (r128 + phytogenesis), und bis es bereit ist, zeigt die Welt die alten
+                // Klassik-Bäume. `_ensureAssetFoundry` wird sonst erst LAZY beim ersten Foundry-Baum-
+                // Bau erzeugt (`_foundryRewarmColdTrees` liest `_foundry`, erzeugt es NICHT) → hier
+                // einmalig am Frame-Start starten, damit die Studio-Bäume so schnell wie möglich die
+                // Klassik-Bäume ersetzen. Cheap (nur iframe-Erzeugung); headless-Null → No-op.
+                if (!this._foundry && typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+                    try {
+                        this._ensureAssetFoundry();
+                    } catch (_efk) {}
+                }
+
                 // ### Nexus-Update ### (V9.44-f → _loopNexusUpdate)
                 this._loopNexusUpdate();
 
