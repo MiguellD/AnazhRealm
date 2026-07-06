@@ -75,9 +75,17 @@ async function shootAnazh() {
         // Den nächsten GEBAUTEN Baum finden (bevorzugt Foundry) — headless ist der volle Ring gebaut.
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0, pz = pm ? pm.position.z : 0;
+        // Den DICHTESTEN Wald-Innenraum finden (nicht den naechsten Einzelbaum): fuer jeden gebauten
+        // Baum die Nachbarn <20 m zaehlen, den mit den meisten waehlen -> ein fairer Wald-Innen-Vergleich.
+        const built = a.filter((e) => /baum/.test((e._lodSpecies || "") + "") && e.position && (e.instanced || e.mesh || e.instFoundry));
         let tgt = null;
-        for (const e of a) { const sp = (e._lodSpecies || "") + ""; if (!/baum/.test(sp) || !e.position) continue; if (!(e.instanced || e.mesh || e.instFoundry)) continue; const d = Math.hypot(e.position.x - px, e.position.z - pz); if (!tgt || (e.instFoundry && !tgt.f) || (!!e.instFoundry === !!tgt.f && d < tgt.d)) tgt = { x: e.position.x, z: e.position.z, d, f: !!e.instFoundry }; }
-        if (!tgt) tgt = { x: px + 12, z: pz, d: 12, f: false };
+        for (const e of built) {
+            let nb = 0;
+            for (const o of built) { if (o === e) continue; if (Math.hypot(o.position.x - e.position.x, o.position.z - e.position.z) < 20) nb++; }
+            if (!tgt || nb > tgt.nb) tgt = { x: e.position.x, z: e.position.z, nb, f: !!e.instFoundry };
+        }
+        if (!tgt) tgt = { x: px + 12, z: pz, nb: 0, f: false };
+        const nearby = built.filter((e) => Math.hypot(e.position.x - tgt.x, e.position.z - tgt.z) < 30).length;
         // Belaubung aus (Foundry-Blatt-Meshes), Rinde + Billboards bleiben.
         let hidLeaf = 0;
         if (r.state.scene) r.state.scene.traverse((o) => { if (!o.isMesh && !o.isInstancedMesh && !o.isBatchedMesh) return; const m = o.material; const fk = m && m.userData ? m.userData.foundryKind || "" : ""; if (/foliage/i.test(fk)) { o.visible = false; hidLeaf++; } });
@@ -98,7 +106,7 @@ async function shootAnazh() {
             try { if (typeof r._loopRender === "function") { r._loopRender(performance.now()); r._loopRender(performance.now()); } else window.__origRender(r.state.scene, cam); } catch (_e) { err = String((_e && _e.message) || _e); }
             r.state.renderer.render = function () {};
         } else err = "no origRender";
-        return { trees, foundry, hidLeaf, target: { x: +tgt.x.toFixed(1), z: +tgt.z.toFixed(1), foundry: tgt.f }, err };
+        return { trees, foundry, hidLeaf, target: { x: +tgt.x.toFixed(1), z: +tgt.z.toFixed(1), foundry: tgt.f, nachbarn20m: tgt.nb, baeume30m: nearby }, err };
     });
     await page.evaluate(() => { const st = document.createElement("style"); st.textContent = "body > *:not(canvas):not(script):not(style){display:none!important}"; document.head.appendChild(st); });
     await sleep(300);

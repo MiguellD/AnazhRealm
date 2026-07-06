@@ -64262,9 +64262,16 @@ class AnazhRealm {
                         }
                     }
                     if (!accepted) continue;
-                    // PERF-Kappung: am Ende gedünnt (die Krone reservierte weiter Platz →
-                    // die Wald-FORM bleibt, nur weniger gerendert; keepRoll ≠ prio).
-                    if (fd < 1 && d.keep >= fd) continue;
+                    // DAS NEUE KLEID — DIE DICHTE = DIE VORLAGE (Schöpfer „wir pflanzen die selbe Wiese im
+                    // selben aktiven Radius"): das Studio dünnt den Wald NIE — es pflanzt VOLLE Dichte und
+                    // trägt die Last über LOD (Billboard ab 40 m) + die Sicht-Kappung (jenseits ~120 m = null
+                    // Kosten). GEMESSEN (diag-forest-density): die Saat-POTENZ ist dicht (~10 Bäume/Zelle),
+                    // aber der Perf-Regler `_foliageDensityScale` (Boden 0.22) kappte den Wald auf ~22 % → 9
+                    // statt hunderte Bäume = der leere Wald. Liegt der Studio-Config vor, pflanzt AnazhRealm
+                    // VOLL (kein fd-Dünnen) — dieselbe Dichte wie im begehbaren Wald; die Sichtweite (V18.405,
+                    // fog.far 120) + das Studio-LOD (V18.404, Billboard ab 40 m) halten die Last ehrlich.
+                    const studioDensity = this.state.studioRenderConfig != null;
+                    if (!studioDensity && fd < 1 && d.keep >= fd) continue;
                     // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture ueber
                     // _enqueueVegetationSpawn) -> harvestbar + kollidierbar + getaggt + LOD.
                     // V18.390 (DAS NEUE KLEID — DIE LOD-WURZEL): der Wald spawnt die GEWACHSENE
@@ -80410,7 +80417,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.405.0";
+AnazhRealm.VERSION = "18.406.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
