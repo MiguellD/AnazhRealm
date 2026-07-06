@@ -107,7 +107,7 @@ async function shootStudio(browser) {
             // Augenhöhe über dem Wald-Zentrum, Blick zum Horizont (leicht runter).
             cam.position.set(0, 9, 0);
             const yaw = 0.6,
-                pitch = (-6 * Math.PI) / 180;
+                pitch = (4 * Math.PI) / 180;
             cam.lookAt(Math.sin(yaw) * 40, 9 + Math.sin(pitch) * 40, Math.cos(yaw) * 40);
             cam.updateMatrixWorld(true);
             V.renderPatch();
@@ -215,7 +215,7 @@ async function shootAnazh(browser) {
                     ey = spot.h + 1.7,
                     ez = spot.z;
                 const yaw = 0.6,
-                    pitch = (-6 * Math.PI) / 180;
+                    pitch = (4 * Math.PI) / 180;
                 cam.position.set(ex, ey, ez);
                 const dir = {
                     x: Math.sin(yaw) * Math.cos(pitch),

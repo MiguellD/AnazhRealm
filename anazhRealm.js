@@ -14670,7 +14670,25 @@ class AnazhRealm {
             .add(vec3(1.0, 0.9, 0.7).mul(sunGlowMid.mul(0.4))) // sun-back-lit am Cumulus-Rand
             .add(vec3(0.13, 0.16, 0.24).mul(nightCloudLight)); // kühles Mondlicht-Ambient nachts
 
-        const finalCloud = mix(nebula, cloudColor, cloudAmt);
+        // V18.392 — DAS NEUE KLEID (WELT-DARSTELLUNG): der VERTIKALE HIMMEL-GRADIENT (Vorlagen-Form
+        // `hh>0 ? mix(uHor,uTop,pow(hh,0.55)) : mix(uHor,uBot,pow(-hh,0.5))`). Der Befund (diag-horizon-
+        // compare, Schöpfer „schaue in den Horizont"): AnazhRealms Himmel war EIN flacher `nebula`-Ton
+        // über die ganze Kuppel = ein blasser Wash ohne Tiefe, mit harter Terrain-Kante. Heilung: der
+        // Zenit bleibt `nebula` (der Tag/Nacht-getriebene Ton), der HORIZONT hellt zu einem hazigen,
+        // entsättigten Dunst auf (atmosphärische Streuung — brighter+greyer am Horizont, schmilzt die
+        // ferne Terrain-Silhouette in den Himmel = Aerial-Perspektive), UNTER dem Horizont dunkelt er.
+        // ALLES aus `nebula` abgeleitet → tag/nacht-SICHER (Mittag blau→pale-blauer Horizont · Sonnen-
+        // untergang orange→pale-oranger Horizont), 0 neue Datenquelle, 0 Regress (kein Studio-hor nötig).
+        const _lumN = nebula.x.mul(0.3).add(nebula.y.mul(0.59)).add(nebula.z.mul(0.11));
+        const _hazeCol = mix(nebula, vec3(_lumN.add(0.34), _lumN.add(0.36), _lumN.add(0.4)), float(0.55));
+        const _botCol = nebula.mul(float(0.42));
+        const _upC = pow(clamp(vDir.y, float(0.0), float(1.0)), float(0.5));
+        const _dnC = pow(clamp(vDir.y.negate(), float(0.0), float(1.0)), float(0.5));
+        const _above = mix(_hazeCol, nebula, _upC);
+        const _below = mix(_hazeCol, _botCol, _dnC);
+        const _hemiBlend = smoothstep(float(-0.03), float(0.03), vDir.y);
+        const skyBase = mix(_below, _above, _hemiBlend);
+        const finalCloud = mix(skyBase, cloudColor, cloudAmt);
         // Sonnen-DISC + Halo wirken AUCH am wolkenlosen Himmel: nebula bekommt
         // einen weiten warmen Halo (die „warme Stunde"-Atmosphäre) + einen
         // bright Disc-Highlight (die sichtbare Sonne, auch ohne Sphere-Mesh).
@@ -63626,7 +63644,6 @@ class AnazhRealm {
     // wenn der Frame Luft hat, und HALTEN, wenn nicht.
     _foundryRewarmColdTrees() {
         if (!this._foundryEnabled()) return;
-        if (this.state._frameOverBudget) return; // Frame eng -> nichts Neues bauen
         const f = this._foundry;
         if (!f || !f.ready) return; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
@@ -63634,7 +63651,16 @@ class AnazhRealm {
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
         const rad = this.state.architectureCullingRadius || 200;
         const radiusSq = rad * rad;
-        const MAX = AnazhRealm.FOUNDRY_BUILD_PER_TICK || 4;
+        // V18.392 — ROBUSTE FOUNDRY-AKTIVIERUNG (Schöpfer „die Pipeline noch nicht aktiv/robust genug?").
+        // GEMESSEN (diag-foundry-active): die Foundry war ready, aber 0 platzierte Bäume waren Foundry —
+        // die Welt trug weiter AnazhRealms klassische `grown_baum_*`. WURZEL: das harte
+        // `if (_frameOverBudget) return` tötete die Aktivierung GENAU dann, wenn die Welt schwer ist
+        // (niedrige FPS = Dauerzustand auf schwacher HW) → die Naht war strukturell inert. PROBE: das
+        // Budget gesund erzwungen → 55 von 56 Bäumen wurden Foundry (die Pipeline FUNKTIONIERT, sie wurde
+        // nur verhungert). Heilung: KEINE 0-Wand mehr — progressiv aktivieren (über Budget 1/Tick,
+        // langsam aber konvergent; gesund FOUNDRY_BUILD_PER_TICK/Tick). Die Welt wird IMMER zum Foundry-
+        // Wald, nur langsamer unter Last; die Konvergenz ist EINMALIG (dann findet der Rewarm nichts mehr).
+        const MAX = this.state._frameOverBudget ? 1 : AnazhRealm.FOUNDRY_BUILD_PER_TICK || 4;
         let n = 0;
         for (const entry of archs) {
             if (n >= MAX) break;
@@ -80008,7 +80034,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.391.0";
+AnazhRealm.VERSION = "18.392.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
