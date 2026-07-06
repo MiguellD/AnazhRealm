@@ -1,17 +1,18 @@
-// DER 1:1-WALD-VERGLEICH — OHNE BELAUBUNG (Schöpfer „ohne belaubung und in der ferne die billboards,
-// das gleiche lod"). Blätter aus = LEICHT (überlebt den swiftshader-Kumulativ-Tod) UND zeigt die
-// STRUKTUR: Stamm+Äste nah, Billboards fern, gleiches LOD. LINKS Studio, RECHTS AnazhRealm (echtes
-// WebGPU via page.screenshot). Je Welt ein EIGENER Browser (kein Kumulativ-Tod). AnazhRealm: die
-// Foundry-Konvergenz erzwungen (Budget gesund + Rewarm). -> artifacts/forest-compare.png
+// DER 1:1-WALD-VERGLEICH (Schöpfer „erstelle eine Auswertung wie damals, haben wir es nun?").
+// Beide Welten OHNE Belaubung (leicht + zeigt die Struktur: Stamm/Äste nah, Billboards fern), Augenhöhe
+// im Wald. LINKS Studio, RECHTS AnazhRealm (echtes WebGPU via page.screenshot). AnazhRealm: die Foundry-
+// Konvergenz erzwungen (Budget gesund + Rewarm) → das Bild zeigt die Foundry-Bäume (nah+fern Studio).
+// KEIN Teleport (headless baut den vollen Ring sofort → die Bäume sind gebaut, ich ziele nur auf einen).
+// Je Welt ein eigener Browser. -> artifacts/forest-compare.png
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4517;
+const PORT = 4519;
 const root = path.resolve(__dirname, "..");
 const ART = path.join(root, "artifacts");
-const W = 460,
-    H = 320;
+const W = 420,
+    H = 290;
 const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png", ".woff2": "font/woff2" };
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
@@ -35,7 +36,8 @@ async function shootStudio() {
     await page.evaluate(() => {
         const st = document.createElement("style"); st.textContent = "body > *:not(canvas):not(script):not(style){display:none!important}"; document.head.appendChild(st);
         const V = window.__phytoView;
-        if (V && V.setForestFoliage) V.setForestFoliage(false); // Belaubung (FoliagePass) AUS → Stamm+Äste bleiben
+        if (V && V.scene) V.scene.traverse((o) => { if (o.isInstancedMesh) o.visible = false; }); // Stämme = InstancedMesh (aus)
+        if (V && V.setForestFoliage) V.setForestFoliage(false); // Laub-Pass aus
     });
     await page.evaluate(() => { const V = window.__phytoView; if (!V || !V.camera) return; const cam = V.camera; cam.position.set(0, 6, 14); cam.lookAt(0, 5, -25); cam.updateMatrixWorld(true); V.renderPatch(); V.renderPatch(); });
     await sleep(300);
@@ -57,50 +59,36 @@ async function shootAnazh() {
         while (performance.now() - s0 < 80000) {
             const r = window.anazhRealm;
             if (r && !stub && r.state && r.state.renderer) { window.__origRender = r.state.renderer.render.bind(r.state.renderer); r.state.renderer.render = function () {}; if (r.state.renderer.renderAsync) r.state.renderer.renderAsync = () => Promise.resolve(); r.state.postProcessingFailed = true; stub = true; }
-            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} if (r.state.voxelChunks && r.state.voxelChunks.size >= 16) break; }
+            if (r && typeof r._gameLoopTick === "function") { try { r._gameLoopTick(performance.now()); } catch (_e) {} if (r.state.voxelChunks && r.state.voxelChunks.size >= 12) break; }
             await sl(4);
         }
         const r = window.anazhRealm;
-        try { r.setTimeOfDay(0.5); for (let i = 0; i < 4; i++) r._gameLoopTick(performance.now()); } catch (_e) {} // Mittag (sonst Nacht → schwarz)
+        r._bootWarmDone = true; // V18.396-Boot-Warm-Compile in diesem Diag AUS (die compileAsync-Last stresst swiftshader)
         const f = r._ensureAssetFoundry();
         const t0 = performance.now();
         while (f && !f.ready && performance.now() - t0 < 30000) await sl(100);
-        // Foundry-Konvergenz erzwingen (Budget gesund + Rewarm), moderat (Blätter aus → leichter Render).
-        for (let i = 0; i < 70; i++) { r.state._frameOverBudget = false; try { r._foundryRewarmColdTrees(); r._gameLoopTick(performance.now()); } catch (_e) {} if (i % 20 === 0) await sl(25); }
+        // Foundry-Konvergenz erzwingen (Budget gesund + Rewarm) — KEIN Teleport, KEIN ensureVoxelChunkAt.
+        for (let i = 0; i < 35; i++) { r.state._frameOverBudget = false; try { r._foundryRewarmColdTrees(); r._gameLoopTick(performance.now()); } catch (_e) {} if (i % 20 === 0) await sl(25); }
         const a = r.state.architectures || [];
         let trees = 0, foundry = 0;
         for (const e of a) { const sp = (e._lodSpecies || "") + ""; if (/baum/.test(sp)) { trees++; if (e.instFoundry) foundry++; } }
-        // BELAUBUNG AUS: Foundry-Blatt-Meshes (foundryKind foliage/foliageTex) + grass-Layer verstecken;
-        // Rinde (bark/stem) + Billboards (impostor) BLEIBEN → Struktur + Fern-Billboards sichtbar.
-        let hidLeaf = 0;
-        if (r.state.scene) r.state.scene.traverse((o) => {
-            if (!o.isMesh && !o.isInstancedMesh && !o.isBatchedMesh) return;
-            const m = o.material;
-            const fk = m && m.userData ? m.userData.foundryKind || "" : "";
-            if (/foliage/i.test(fk)) { o.visible = false; hidLeaf++; }
-            // Gras-Layer (FOLIAGE_LAYER=1) aus → leichter.
-            if (o.layers && typeof o.layers.disable === "function" && o.layers.isEnabled && o.layers.isEnabled(1)) { /* Halme bleiben klein, aber der Blick ist waagerecht → egal */ }
-        });
-        // Kamera: auf einen GEBAUTEN Baum zielen (mesh/instanced/instFoundry), aus 13 m Augenhöhe —
-        // so ist garantiert ein Baum im Bild + der Chunk gebaut (der Baum-Cluster liegt sonst am
-        // Rand der 16-Chunk-Welt = Void = schwarz). Bevorzugt einen Foundry-Baum.
-        const th = (x, z) => (typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(x, z) : 0);
+        // Den nächsten GEBAUTEN Baum finden (bevorzugt Foundry) — headless ist der volle Ring gebaut.
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0, pz = pm ? pm.position.z : 0;
-        let target = null;
-        for (const e of a) { const sp = (e._lodSpecies || "") + ""; if (!/baum/.test(sp) || !e.position) continue; if (!(e.instanced || e.mesh || e.instFoundry)) continue; const d = Math.hypot(e.position.x - px, e.position.z - pz); if (!target || (e.instFoundry && !target.f) || d < target.d) target = { x: e.position.x, z: e.position.z, d, f: !!e.instFoundry }; }
-        const tgt = target || { x: px + 8, z: pz };
-        // Spieler dorthin teleportieren (Chunk bauen), dann Kamera 13 m davor.
-        const gy = th(tgt.x, tgt.z);
-        if (pm) { pm.position.set(tgt.x, gy + 2, tgt.z); try { r._ensureVoxelChunkAt && r._ensureVoxelChunkAt(Math.floor(tgt.x), Math.floor(tgt.z), { forceSync: true }); } catch (_e) {} }
-        for (let i = 0; i < 20; i++) { try { r.state._frameOverBudget = false; r._foundryRewarmColdTrees(); r._gameLoopTick(performance.now()); } catch (_e) {} }
-        // Tageszeit auf Mittag + wenige Ticks zum ANWENDEN (wie die Horizont-Linse; die ~90 Konvergenz-
-        // Ticks hatten die Uhr zur Nacht driften lassen = schwarz). ZUERST (die Ticks würden die Kamera
-        // aus dem Spieler neu setzen → erst danach die Kamera fest aufs Ziel richten).
-        try { r.setTimeOfDay(0.5); for (let i = 0; i < 5; i++) r._gameLoopTick(performance.now()); } catch (_e) {}
+        let tgt = null;
+        for (const e of a) { const sp = (e._lodSpecies || "") + ""; if (!/baum/.test(sp) || !e.position) continue; if (!(e.instanced || e.mesh || e.instFoundry)) continue; const d = Math.hypot(e.position.x - px, e.position.z - pz); if (!tgt || (e.instFoundry && !tgt.f) || (!!e.instFoundry === !!tgt.f && d < tgt.d)) tgt = { x: e.position.x, z: e.position.z, d, f: !!e.instFoundry }; }
+        if (!tgt) tgt = { x: px + 12, z: pz, d: 12, f: false };
+        // Belaubung aus (Foundry-Blatt-Meshes), Rinde + Billboards bleiben.
+        let hidLeaf = 0;
+        if (r.state.scene) r.state.scene.traverse((o) => { if (!o.isMesh && !o.isInstancedMesh && !o.isBatchedMesh) return; const m = o.material; const fk = m && m.userData ? m.userData.foundryKind || "" : ""; if (/foliage/i.test(fk)) { o.visible = false; hidLeaf++; } });
+        if (pm) pm.visible = false;
+        const th = (x, z) => (typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(x, z) : 0);
+        // Mittag setzen (setTimeOfDay ist INSTANT) + wenige Ticks wie die Horizont-Linse.
+        try { r.setTimeOfDay(0.5); for (let i = 0; i < 4; i++) r._gameLoopTick(performance.now()); } catch (_e) {}
+        // Kamera aufs Ziel, Augenhöhe (NACH den Ticks — die Ticks setzen die Kamera aus dem Spieler neu).
         const eye = th(tgt.x, tgt.z) + 3;
         const cam = r.state.camera;
-        cam.position.set(tgt.x + 13, eye, tgt.z + 13);
+        cam.position.set(tgt.x + 12, eye, tgt.z + 12);
         cam.lookAt(tgt.x, eye - 1, tgt.z);
         cam.updateMatrixWorld(true);
         if (pm) pm.visible = false;
@@ -110,7 +98,7 @@ async function shootAnazh() {
             try { if (typeof r._loopRender === "function") { r._loopRender(performance.now()); r._loopRender(performance.now()); } else window.__origRender(r.state.scene, cam); } catch (_e) { err = String((_e && _e.message) || _e); }
             r.state.renderer.render = function () {};
         } else err = "no origRender";
-        return { trees, foundry, hidLeaf, target: tgt ? { x: +tgt.x.toFixed(1), z: +tgt.z.toFixed(1), foundry: !!tgt.f } : null, err };
+        return { trees, foundry, hidLeaf, target: { x: +tgt.x.toFixed(1), z: +tgt.z.toFixed(1), foundry: tgt.f }, err };
     });
     await page.evaluate(() => { const st = document.createElement("style"); st.textContent = "body > *:not(canvas):not(script):not(style){display:none!important}"; document.head.appendChild(st); });
     await sleep(300);
