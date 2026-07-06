@@ -63324,16 +63324,111 @@ class AnazhRealm {
         };
         return rec._flat;
     }
+    // Die Vorlagen-Rinden-Normalmap (`makeBarkNormal`, byte-treu portiert): vertikale Hauptfissuren
+    // + horizontale Querrisse (Platten) + Knubbel → Höhenfeld → Normalmap. Gibt der Rinde ihre 3D-
+    // Struktur (statt flacher blasser Bretter). Gecacht (EINE Textur für alle Rinden). mulberry32(99)
+    // deterministisch — dieselbe Rinde wie im Studio.
+    _foundryBarkNormalTexture() {
+        if (this._foundryBarkNormal !== undefined) return this._foundryBarkNormal;
+        this._foundryBarkNormal = null;
+        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
+        try {
+            const N = 512;
+            const c = document.createElement("canvas");
+            c.width = c.height = N;
+            const x = c.getContext("2d");
+            if (!x) return null;
+            const img = x.createImageData(N, N);
+            const h = new Float32Array(N * N);
+            const mk = (a) =>
+                function () {
+                    a |= 0;
+                    a = (a + 0x6d2b79f5) | 0;
+                    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                };
+            const s = mk(99);
+            for (let i = 0; i < 300; i++) {
+                const cx = s() * N,
+                    w = 1 + s() * 3.5,
+                    dep = 0.6 + s() * 0.7; // vertikale Hauptfissuren
+                for (let y = 0; y < N; y++) {
+                    const wob = Math.sin(y * 0.05 + i) * 4 + Math.sin(y * 0.013 + i * 2.1) * 7;
+                    const px = Math.floor(cx + wob);
+                    for (let d = -w; d <= w; d++) {
+                        const xx = (((px + d) % N) + N) % N;
+                        h[y * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                    }
+                }
+            }
+            for (let i = 0; i < 95; i++) {
+                const cy = s() * N,
+                    len = N * (0.2 + s() * 0.5),
+                    x0 = s() * N,
+                    w = 0.8 + s() * 2.0,
+                    dep = 0.5 + s() * 0.6; // horizontale Querrisse -> Platten
+                for (let t = 0; t < len; t++) {
+                    const wob = Math.sin(t * 0.06 + i) * 3;
+                    const yy = Math.floor(cy + wob),
+                        xx = ((Math.floor(x0 + t) % N) + N) % N;
+                    for (let d = -w; d <= w; d++) {
+                        const y2 = (((yy + d) % N) + N) % N;
+                        h[y2 * N + xx] -= Math.exp(-(d * d) / (w * w)) * dep;
+                    }
+                }
+            }
+            for (let i = 0; i < 1500; i++) {
+                const px = Math.floor(s() * N),
+                    py = Math.floor(s() * N),
+                    r = 2 + s() * 5,
+                    amp = (s() - 0.5) * 0.55; // Knubbel/Rauheit
+                for (let dy = -r; dy <= r; dy++)
+                    for (let dx = -r; dx <= r; dx++) {
+                        const xx = (((px + dx) % N) + N) % N,
+                            yy = (((py + dy) % N) + N) % N;
+                        h[yy * N + xx] += Math.exp(-(dx * dx + dy * dy) / (r * r)) * amp;
+                    }
+            }
+            for (let i = 0; i < h.length; i++) h[i] += (s() - 0.5) * 0.18;
+            const G = 6.5;
+            for (let y = 0; y < N; y++)
+                for (let xx = 0; xx < N; xx++) {
+                    const dx = (h[y * N + ((xx + 1) % N)] - h[y * N + ((xx - 1 + N) % N)]) * G;
+                    const dy = (h[((y + 1) % N) * N + xx] - h[((y - 1 + N) % N) * N + xx]) * G;
+                    const l = Math.sqrt(dx * dx + dy * dy + 1);
+                    const p = (y * N + xx) * 4;
+                    img.data[p] = ((dx / l) * 0.5 + 0.5) * 255;
+                    img.data[p + 1] = ((dy / l) * 0.5 + 0.5) * 255;
+                    img.data[p + 2] = (1 / l) * 255;
+                    img.data[p + 3] = 255;
+                }
+            x.putImageData(img, 0, 0);
+            const tex = new THREE.CanvasTexture(c);
+            tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+            tex.repeat.set(2, 7);
+            tex.needsUpdate = true;
+            this._foundryBarkNormal = tex;
+        } catch (_e) {
+            this._foundryBarkNormal = null;
+        }
+        return this._foundryBarkNormal;
+    }
     _foundryTreeMaterial(kind) {
         if (!this._foundryMats) this._foundryMats = {};
         if (this._foundryMats[kind]) return this._foundryMats[kind];
         const T = THREE;
         const TSL = T.TSL;
         const double = kind === "foliage" || kind === "foliageTex" || kind === "grass";
+        const isBark = kind === "bark" || kind === "stem";
+        // DIE VORLAGEN-RAUHEITEN (buildMaterials, byte-treu): Rinde 0.93, Laub/foliageTex 0.62,
+        // Gras 0.7. Vorher war Rinde 0.9 + KEINE Normalmap → flache blasse Bretter (der Schöpfer-
+        // Befund). Jetzt: die echte Studio-Roughness + die Rinden-Normalmap (makeBarkNormal).
+        const rough = isBark ? 0.93 : kind === "grass" ? 0.7 : 0.62;
         let mat;
         try {
             mat = new T.MeshStandardNodeMaterial({
-                roughness: kind === "bark" ? 0.9 : 0.62,
+                roughness: rough,
                 metalness: 0,
                 side: double ? T.DoubleSide : T.FrontSide,
             });
@@ -63342,7 +63437,18 @@ class AnazhRealm {
             // `vertexColors:true` wirkt hier NICHT (CLAUDE.md). Ohne das: weisses/ausgewaschenes
             // Laub, schwarze Koniferen. `_foundryBuildGroup` garantiert das color-Attribut (STRIKT).
             const vcol = TSL.attribute("color", "vec3");
-            if (kind === "foliageTex") {
+            if (isBark) {
+                // DIE STUDIO-RINDE ÜBERSETZT: die Normalmap (`makeBarkNormal`, portiert) + normalScale
+                // 0.85 geben der Rinde ihre 3D-Struktur (Fissuren/Platten/Knubbel) statt flacher
+                // blasser Bretter. Die Vorlagen-Geometrie trägt UVs (extrahiert) → der NodeMaterial-
+                // normalMap greift (Tangenten aus den UV-Derivaten, wie im Studio-WebGL).
+                const bn = this._foundryBarkNormalTexture();
+                if (bn) {
+                    mat.normalMap = bn;
+                    mat.normalScale = new T.Vector2(0.85, 0.85);
+                }
+                mat.colorNode = TSL.vec4(vcol, 1.0);
+            } else if (kind === "foliageTex") {
                 // Nadel-/Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad),
                 // RGB × Vertex-Farbe (die Vorlagen-Blattfarbe faerbt den Atlas).
                 const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
@@ -63364,7 +63470,11 @@ class AnazhRealm {
                 }
             } else {
                 mat.colorNode = TSL.vec4(vcol, 1.0);
+                // Gras: die Vorlagen-envMapIntensity 0.18 (weniger Sky-IBL-Glanz auf den Halmen).
+                if (kind === "grass") mat.envMapIntensity = 0.18;
             }
+            mat.userData = mat.userData || {};
+            mat.userData.foundryKind = kind;
         } catch (_e) {
             mat = new T.MeshStandardMaterial({ vertexColors: true, side: double ? T.DoubleSide : T.FrontSide });
         }
