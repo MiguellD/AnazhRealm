@@ -7436,6 +7436,12 @@ init();
             // KEIN Nachbau in AnazhRealm: editiert der Schoepfer den Baecker/Shader/das Framing hier,
             // fliesst es automatisch in die AnazhRealm-Ferne. Der Studio-Baecker IST die Fernstufe.
             __replyBakeImpostor(msg);
+        } else if (msg.type === "render-native") {
+            // DER VERGLEICHS-KANAL: das Studio rendert EIN Asset mit SEINEN ECHTEN Materialien
+            // (barkMat/foliageMat/rockMat…) offscreen + schickt die Pixel + die Kamera zurueck.
+            // AnazhRealm rendert dasselbe Asset durch seine Pipeline mit DERSELBEN Kamera → Bild-
+            // Vergleich Seite an Seite (muessen identisch aussehen). Der ehrliche Beweis.
+            __replyRenderNative(msg);
         } else if (msg.type === "get-world-params") {
             // DER WELT-PARAMETER-KANAL: das Studio exportiert seine Welt-LOOK-DATEN (die Boden-/
             // Fels-/Feucht-Palette + die Blatt-Grundfarbe) als reine Zahlen. AnazhRealms eigene
@@ -7620,6 +7626,78 @@ init();
             return gl;
         } catch (_e) {
             return null;
+        }
+    }
+    // Ein Asset mit den STUDIO-EIGENEN Materialien rendern (offscreen WebGL) + Pixel/Kamera zurueck.
+    function __replyRenderNative(msg) {
+        const reqId = msg.reqId;
+        const presetId = msg.presetId || "eiche";
+        const seed = Number(msg.seed) || 0;
+        const lod = msg.lod | 0;
+        const W = msg.size || 320;
+        let payload = null;
+        try {
+            if (msg.season && typeof setSeasonColors === "function") {
+                try {
+                    setSeasonColors(msg.season);
+                } catch (_se) {}
+            }
+            const gl = __foundryBakeRenderer();
+            if (!gl) throw new Error("kein Renderer");
+            if (typeof bakeLeafAtlas === "function") {
+                try {
+                    bakeLeafAtlas();
+                } catch (_le) {}
+            }
+            const g = buildInstance(presetId, seed, lod, msg.ov || null);
+            g.updateMatrixWorld(true);
+            const sc = new THREE.Scene();
+            sc.add(new THREE.HemisphereLight(0xdfeecc, 0x2a2a1a, 0.7));
+            const kl = new THREE.DirectionalLight(0xfff2d9, 2.2);
+            kl.position.set(6, 10, 5);
+            sc.add(kl);
+            sc.add(g);
+            const box = new THREE.Box3().setFromObject(g);
+            const ctr = box.getCenter(new THREE.Vector3()),
+                sz = box.getSize(new THREE.Vector3());
+            const d = Math.max(sz.x, sz.y, sz.z) * 1.6 + 2;
+            const camPos = [ctr.x + d * 0.6, box.min.y + sz.y * 0.55, ctr.z + d * 0.7];
+            const camLook = [ctr.x, ctr.y, ctr.z];
+            const cam = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
+            cam.position.set(camPos[0], camPos[1], camPos[2]);
+            cam.lookAt(camLook[0], camLook[1], camLook[2]);
+            cam.updateProjectionMatrix();
+            const rt = new THREE.WebGLRenderTarget(W, W);
+            const pRT = gl.getRenderTarget();
+            gl.setRenderTarget(rt);
+            gl.setClearColor(0xbcd2e0, 1);
+            gl.clear();
+            gl.render(sc, cam);
+            const buf = new Uint8Array(W * W * 4);
+            gl.readRenderTargetPixels(rt, 0, 0, W, W, buf);
+            gl.setRenderTarget(pRT);
+            g.traverse((o) => {
+                if (o.isMesh && o.geometry) o.geometry.dispose();
+            });
+            rt.dispose();
+            payload = { W: W, pixels: buf, camPos: camPos, camLook: camLook };
+        } catch (e) {
+            try {
+                console.warn("[phyto] render-native", presetId, e && e.message);
+            } catch (_) {}
+        }
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(
+                {
+                    type: "render-native",
+                    world: "terrain",
+                    reqId: reqId,
+                    presetId: presetId,
+                    seed: seed,
+                    payload: payload,
+                },
+                "*"
+            );
         }
     }
     // Die Fernstufe EINES Baums: der Studio-Baecker bakt SEIN 8-Winkel-Billboard (Albedo + Normal),
