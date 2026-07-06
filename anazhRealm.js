@@ -50694,30 +50694,36 @@ class AnazhRealm {
                 // ist der Scatter rein Foundry. Foundry-gegated → der headless-Gate (foundry aus) bleibt grün.
                 let bpName = null,
                     foundryFlat = null;
-                if (layer.kind === "tree" && this._foundryEnabled()) {
-                    const preset = this._foundryPresetFor(species);
-                    if (preset) {
-                        const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
-                        let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
-                        // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss weg, nicht überlagert
-                        // werden"): LÄDT das Studio-Asset noch (`ff === null`), ist der Lückenbüßer das STUDIO-
-                        // BILLBOARD (LOD2, beim Boot via `_foundryPrefetchLibrary` vorgewärmt) — NICHT die
-                        // Grammatik-Geometrie. So zeigt die Welt NIE meinen Nachbau, solange das Studio lebt.
-                        if (!(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length)) {
-                            const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
-                            if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
-                        }
-                        if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
-                            foundryFlat = ff;
-                            bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
-                        }
-                        // Weder volle Stufe noch Billboard bereit (der schmale Boot-Spalt) → bpName null →
-                        // die Grammatik traegt DIESEN Frame, bis das Studio-Asset da ist.
+                // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss WEG, nicht überlagert werden;
+                // wir drehen uns ums Ziel"). Lebt das Studio (Foundry an) + kennt es die Art, ist die Foundry
+                // die EINZIGE Quelle: das ECHTE Studio-Asset (volle Stufe) ODER — solange es lädt — das STUDIO-
+                // BILLBOARD (LOD2, beim Boot vorgewärmt). Ist BEIDES noch nicht bereit (schmaler Boot-Spalt),
+                // wird der Fern-Baum DEFERRIERT (übersprungen) — NIE die Grammatik-Geometrie als Lückenbüßer.
+                // Der nächste Scatter-Durchgang (Bewegung/Thin, nach dem Impostor-Prefetch) platziert das Studio-
+                // Asset. So gibt es keinen Nachbau mehr, den man „drunter" findet, solange das Studio lebt.
+                const foundryTreePreset =
+                    layer.kind === "tree" && this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+                if (foundryTreePreset) {
+                    const preset = foundryTreePreset;
+                    const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+                    let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+                    if (!(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length)) {
+                        const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
+                        if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
+                    }
+                    if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
+                        foundryFlat = ff;
+                        bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
+                    } else {
+                        // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
+                        // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
+                        region._deferredFoundry = true;
+                        continue;
                     }
                 }
                 if (!bpName) {
-                    // GRAMMATIK-FALLBACK — NUR wenn die Foundry AUS ist (headless/Gate/offline) oder den Preset
-                    // nicht kennt, ODER im schmalen Boot-Spalt vor dem ersten Studio-Asset. Kein Parallel-Default.
+                    // GRAMMATIK — NUR wenn die Foundry AUS ist (headless/Gate/offline) oder den Preset nicht
+                    // kennt. Neben einem lebenden Studio steht KEIN Parallel-Default mehr (der 48h-Fehler).
                     const keys = this._buildVariantLODs(species, variantIndex);
                     if (!keys) continue;
                     bpName = keys[lod] || keys[0];
@@ -50932,6 +50938,20 @@ class AnazhRealm {
             if (!region) continue;
             if (Math.abs(region.regX - pRegX) > disposeR || Math.abs(region.regZ - pRegZ) > disposeR) {
                 this._disposeScatterRegion(rk);
+            }
+        }
+        // DAS NEUE KLEID — REFILL: hat das Studio seit dem letzten Mal ein Asset geliefert
+        // (`_scatterRefillPending`, gesetzt in `_foundryRewarmColdTrees`), die Regionen neu streamen, die
+        // einen Fern-Baum DEFERRIERT hatten (Studio war noch nicht da) → sie tragen jetzt das Studio-Asset
+        // statt der Lücke. EINMAL je Liefer-Batch (kein Churn); Schritt (1) baut sie über die nächsten Ticks.
+        if (this._scatterRefillPending) {
+            this._scatterRefillPending = false;
+            for (const rk of Array.from(map.keys())) {
+                const region = map.get(rk);
+                if (!region || !region._deferredFoundry) continue;
+                if (Math.abs(region.regX - pRegX) <= disposeR && Math.abs(region.regZ - pRegZ) <= disposeR) {
+                    this._disposeScatterRegion(rk); // Schritt (1) im nächsten Tick baut sie mit dem Studio-Asset neu
+                }
             }
         }
         // (3) Touch→Real: Scatter-Cells im promoteRadius zu echten Bäumen
@@ -63229,6 +63249,13 @@ class AnazhRealm {
             baum_erle: "weide",
             baum_buche: "mammut",
             baum_totholz: "eiche",
+            // DAS NEUE KLEID — die restlichen Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste
+            // Studio-Art, damit KEIN Wald-Baum mehr auf die Grammatik zurückfällt (der „nicht in allen
+            // Assets"-Befund): die Zypresse = schlanke Konifere → Tanne, der Karst-Klippenbaum = knorrig →
+            // Eiche, die Palme = hoher Einzelstamm mit Krone → Trauerweide. Jede Art ist jetzt Studio.
+            baum_zypresse: "tanne",
+            baum_karst: "eiche",
+            baum_palme: "weide",
             // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
             // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
             // findling = runder Findling:
@@ -63328,8 +63355,10 @@ class AnazhRealm {
                     return;
                 }
                 const rec = this._foundryBuildImpostorRecord(key, preset, variant, payload);
-                if (rec) this._impostorAtlasMap.set(key, rec);
-                else {
+                if (rec) {
+                    this._impostorAtlasMap.set(key, rec);
+                    this._scatterRefillPending = true; // ein Studio-Billboard kam an → deferrierte Fern-Regionen neu streamen
+                } else {
                     this._impostorAtlasMap.delete(key);
                     this._foundryImpReq.delete(key);
                 }
@@ -63725,6 +63754,21 @@ class AnazhRealm {
                 }
             }
         }
+        // DAS NEUE KLEID (der 252-Nachbau-Fern-Baum-Befund, diag-nachbau-check): auch die BAUM-BILLBOARDS
+        // [Impostor-Atlas] vorwaermen. Der Fern-Scatter serviert LOD2 = das Studio-Billboard; ist es beim
+        // Streamen noch nicht gebacken, fiel er auf die Grammatik zurueck (Nachbau in der Ferne). Die
+        // Impostoren [pro (Baum-Preset, Variante 1..16)] jetzt beim Boot anstossen → das Billboard steht,
+        // bevor der Scatter es braucht → der Fern-Scatter ist rein Studio. Sanft getaktet (Studio nicht fluten).
+        const impSeason = this.state.season || "summer";
+        for (const sp of spec.species) {
+            if (typeof this._foundryPresetIsTree === "function" && !this._foundryPresetIsTree(sp)) continue;
+            for (let v = 1; v <= 16; v++) {
+                try {
+                    this._foundryEnsureImpostorRecord(sp, v, impSeason);
+                } catch (_e) {}
+                await new Promise((r) => setTimeout(r, 8));
+            }
+        }
         f._prefetching = false;
         // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
         // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
@@ -63871,6 +63915,7 @@ class AnazhRealm {
                 this._foundryRequest(preset, variant, lod, season).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                        this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
                     } else {
                         // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
                         // Grammatik) -> aus der requested-Wache loesen -> naechster Tick fragt neu.
@@ -80239,7 +80284,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.400.0";
+AnazhRealm.VERSION = "18.401.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
