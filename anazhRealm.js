@@ -15470,6 +15470,12 @@ class AnazhRealm {
                     const aSeed = TSL.attribute("aSeed", "float");
                     albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
                 }
+                // V6 (Look-Finale, 2d) — DIE WIESE FOLGT DER SAISON: der Albedo × die
+                // EINE Saison-Tönungs-Uniform (`uSeasonMul`, kontinuierlich aus seasonPhase
+                // in `_tickSeason` gesetzt) → Frühling frisch, Herbst gold, Winter fahl —
+                // Lambert/Wind/Translucency bleiben voll aktiv (nur die Grundfarbe atmet).
+                const _su = this._ensureSeasonUniforms();
+                if (_su && _su.uSeasonMul) albedo = albedo.mul(_su.uSeasonMul);
                 mat.colorNode = TSL.vec4(albedo, float(1.0));
             }
         } catch {
@@ -19427,6 +19433,32 @@ class AnazhRealm {
     // wet-Frage (`_weatherIsWet`) ersetzt die binären ===\"rainy\"-Leser.
     static get WEATHER_INTENSITY() {
         return Object.freeze({ sunny: 0, rainy: 1, stormy: 1.35 });
+    }
+    // V6 (Look-Finale) — DAS WETTER ALS 5-KANAL-FELD (die LOOK-Auflösung der
+    // Intensitäts-Achse): je Wetter-Wort ein Vektor {fog,sun,grey,wind,rain},
+    // aus dem der EINE LOOK-Wetter-Leser `_weatherFieldFor(w)` transition-aware
+    // interpoliert (dieselbe from/to/progress-Lerp wie `_weatherBlendedValue`).
+    // grey entsättigt das LICHT (NIE den Himmel — Schöpfer-Regel), wind fährt
+    // die Böen-Amplitude, fog zieht den Nebel als Multiplikator auf fogMult,
+    // rain/sun sind Reserve-Kanäle. Der generische Skalar-Lerp `_weatherBlendedValue`
+    // bleibt (kein Parallelpfad — er trägt die alten Nicht-LOOK-Leser).
+    static get WEATHER_FIELD() {
+        return Object.freeze({
+            sunny: Object.freeze({ fog: 0.15, sun: 1.0, grey: 0.0, wind: 0.06, rain: 0.0 }),
+            rainy: Object.freeze({ fog: 0.4, sun: 0.55, grey: 0.6, wind: 0.35, rain: 0.6 }),
+            stormy: Object.freeze({ fog: 0.7, sun: 0.42, grey: 0.85, wind: 1.0, rain: 1.0 }),
+        });
+    }
+    // V6 — grey→Licht-Entsättigung: der grey-Kanal zieht das RICHTLICHT so weit
+    // Richtung neutral-grau (Luminanz-erhaltend). ~0.7 → stormy dämpft die
+    // Licht-Sättigung deutlich, ohne die Farbe ganz zu töten. Der HIMMEL bleibt.
+    static get WEATHER_GREY_K() {
+        return 0.7;
+    }
+    // V6 — Wind-Amplitude: uWindStrength = field.wind · AMP. stormy (wind 1.0)
+    // → 0.55 (kräftige Böe), sunny (wind 0.06) → 0.033 (ruhig). Browser-tunbar.
+    static get WEATHER_WIND_AMP() {
+        return 0.55;
     }
     static get WEATHER_TRANSITION_DURATION_MS() {
         return 45000; // 45 s — sanft, nicht zu lang
@@ -26310,6 +26342,17 @@ class AnazhRealm {
             // die Surface (das Vertex SITZT auf der Oberfläche).
             const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
             mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+            // V6 (Look-Finale, 4) — DAS KRONENDACH SCHREIBT AUF DEN BODEN: wo P1 dicht
+            // pflanzt (`_canopyLightAt` liest DIESELBEN Treiber wie die Wald-Platzierung),
+            // ist der Boden dunkler (Kronen-Schatten), die Lichtung liegt hell → der
+            // Waldboden liest sich als Waldboden. Reiner Skalar-Multiplikator (feuchte als
+            // wetHint = der schon berechnete Wert → kein Zweitaufruf). BIT-IDENTISCH im
+            // Worker-Mirror `attachFieldColors` (canopyLightAt, Konstanten hardkodiert).
+            const cL = typeof this._canopyLightAt === "function" ? this._canopyLightAt(x, z, y, feuchte) : 1;
+            const _cShade = 0.58 + 0.46 * cL;
+            c[0] *= _cShade;
+            c[1] *= _cShade;
+            c[2] *= _cShade;
             // V18.199 — Γ-M LICHEN: grüne Patina auf alten feuchten Steinen.
             // Drei Multiplikatoren — feuchte (genug Wasser zum Wachsen) ×
             // dichte (es ist ein Stein, kein Erde/Lava) × cluster (Lichen
@@ -64305,6 +64348,63 @@ class AnazhRealm {
         if (p < 0.75) return "autumn";
         return "winter";
     }
+    // V6 (Look-Finale, 2a) — die EINE Saison-Tönungs-Uniform, lazy (wie
+    // `_ensureAtmoUniforms`/`windUniforms` — TSL muss geladen sein). Das Gras
+    // (`_grassInstanceMat`) liest `uSeasonMul` als Albedo-Multiplikator, `_tickSeason`
+    // fährt sie kontinuierlich aus `state.seasonPhase` (KEIN Mesh-Rebuild). Der
+    // State ist in der audit-strict-Whitelist (abgeleitet, nicht im Snapshot).
+    _ensureSeasonUniforms() {
+        if (this.state.seasonUniforms) return this.state.seasonUniforms;
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!TSL || !TSL.uniform) return null;
+        this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
+        return this.state.seasonUniforms;
+    }
+
+    // V6 (Look-Finale, 2b) — die WIESE FOLGT DER SAISON: ein 4-Keyframe-Ring über
+    // seasonPhase (0..1) → ein Albedo-Multiplikator (kein Farb-Ersatz, das Gras-
+    // Grün bleibt lawful moduliert). Frühling gelbgrün-frisch · Sommer sattes Grün
+    // (0x5fa743, der Gras-Basiston → ×1) · Herbst gold-orange · Winter graubraun.
+    // Rein (kein THREE.TSL nötig → das Gate ruft es GPU-frei) → gibt eine THREE.Color
+    // als Multiplikator, je Kanal clamp(tint/summer, 0.25, 4). Sommer==1 (neutral).
+    _seasonTint(phase) {
+        const p = ((phase % 1) + 1) % 1;
+        // Keyframes zentriert auf die Saison-Mitten (spring .125 · summer .375 ·
+        // autumn .625 · winter .875), als Ring interpoliert (t wickelt um 1).
+        const KF = [
+            { t: 0.125, c: [0.52, 0.68, 0.28] }, // Frühling — frisches Gelbgrün
+            { t: 0.375, c: [0.373, 0.655, 0.263] }, // Sommer — 0x5fa743 (Gras-Basis → ×1)
+            { t: 0.625, c: [0.74, 0.52, 0.2] }, // Herbst — gold-orange
+            { t: 0.875, c: [0.5, 0.45, 0.38] }, // Winter — graubraun
+        ];
+        // finde das Segment [i, i+1] das p (ringförmig) enthält.
+        let i0 = KF.length - 1;
+        for (let i = 0; i < KF.length; i++) {
+            const a = KF[i].t;
+            const b = KF[(i + 1) % KF.length].t;
+            const inSeg = a < b ? p >= a && p < b : p >= a || p < b; // Wrap-Segment (winter→spring)
+            if (inSeg) {
+                i0 = i;
+                break;
+            }
+        }
+        const k0 = KF[i0];
+        const k1 = KF[(i0 + 1) % KF.length];
+        let span = k1.t - k0.t;
+        if (span <= 0) span += 1;
+        let u = (((p - k0.t) % 1) + 1) % 1;
+        u = span > 0 ? u / span : 0;
+        u = u * u * (3 - 2 * u); // smoothstep — sanfte Saison-Übergänge
+        const summer = KF[1].c; // der neutrale Sommer-Bezug (÷ → ×1 im Sommer)
+        const cl = (v) => (v < 0.25 ? 0.25 : v > 4 ? 4 : v);
+        const out = new THREE.Color(
+            cl((k0.c[0] + (k1.c[0] - k0.c[0]) * u) / summer[0]),
+            cl((k0.c[1] + (k1.c[1] - k0.c[1]) * u) / summer[1]),
+            cl((k0.c[2] + (k1.c[2] - k0.c[2]) * u) / summer[2])
+        );
+        return out;
+    }
+
     // Die langsame Jahres-Uhr: treibt seasonPhase, leitet die Saison ab; wechselt sie, backt die
     // Foundry ihre Assets in der neuen Jahreszeit neu (Herbst golden, Winter kahl).
     _tickSeason(currentTime) {
@@ -64317,6 +64417,12 @@ class AnazhRealm {
             this._lastSeasonTime = now;
             const yearSec = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
             st.seasonPhase = (st.seasonPhase + dt / yearSec) % 1;
+        }
+        // V6 (Look-Finale, 2c) — die Wiesen-Tönung folgt der Saison kontinuierlich
+        // (KEIN Rebuild): `uSeasonMul` wird jeden Frame aus seasonPhase gesetzt.
+        const su = this._ensureSeasonUniforms();
+        if (su && su.uSeasonMul && su.uSeasonMul.value && su.uSeasonMul.value.copy) {
+            su.uSeasonMul.value.copy(this._seasonTint(st.seasonPhase));
         }
         const name = this._seasonName(st.seasonPhase);
         if (name !== st.season) {
@@ -75475,6 +75581,22 @@ class AnazhRealm {
             skyColor.r = Math.max(0, Math.min(1, skyColor.r + flutter));
             skyColor.g = Math.max(0, Math.min(1, skyColor.g - flutter * 0.7));
         }
+        // V6 (Look-Finale, 1c) — grey ENTSÄTTIGT das LICHT (NIE den Himmel, die
+        // explizite Schöpfer-Regel; skyColor bleibt unberührt): der grey-Kanal des
+        // Wetter-Felds zieht das finale Richtlicht Luminanz-erhaltend Richtung
+        // neutralgrau → ein bedeckter Himmel dämpft die farbige Beleuchtung, ohne
+        // den (separat gefärbten) Himmel zu vergrauen. Nach allen Tint-Schichten,
+        // vor der Rückgabe (der Himmel-skyMul-Pfad darunter ist unberührt).
+        {
+            const wf = this._weatherFieldFor(this.state.weather);
+            if (wf.grey > 0) {
+                const gy = lightColor.r * 0.3 + lightColor.g * 0.59 + lightColor.b * 0.11;
+                lightColor.lerp(
+                    new THREE.Color(gy, gy, gy),
+                    Math.max(0, Math.min(1, wf.grey * AnazhRealm.WEATHER_GREY_K))
+                );
+            }
+        }
         return {
             skyColor,
             lightColor,
@@ -75919,7 +76041,13 @@ class AnazhRealm {
             // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
             // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
             const rainyMix = this._weatherBlendedValue(0, 1); // D5a: Achsen-Lerp — stormy zieht den Nebel dichter
-            const fogMult = (this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0;
+            // V6 (Look-Finale, 1e) — der Wetter-Feld-fog-Kanal zieht den Nebel als sanfter
+            // MULTIPLIKATOR auf den bestehenden fogMult näher (KEINE zweite Fog-Quelle; die
+            // visualEdge/Lade-Nebel-Kappe unten führt als min()-Deckel weiter, unberührt).
+            // sunny .15 → ×0.94 (kaum), stormy .70 → ×0.72 (spürbar dichter). Im Studio-
+            // Sichtweiten-Pfad (rcfg.sight) ohne fogMult ist der Effekt bewusst neutral.
+            const _wFog = this._weatherFieldFor(this.state.weather).fog;
+            const fogMult = (((this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0) * (1 - _wFog * 0.4));
             // A5 (gigant-plan §5 PHASE A) — der Fog liest die RING-KANTE statt einer
             // eigenen Konstante (eine Distanz, noch ein Gesicht — die V17.114-U1-Synergie
             // auf den Haupt-Fog vollendet): die Welt endet am gestreamten Chunk-Ring
@@ -76281,6 +76409,33 @@ class AnazhRealm {
             return valFor(wt.from) + (valFor(wt.to) - valFor(wt.from)) * p;
         }
         return valFor(this.state.weather);
+    }
+
+    // V6 (Look-Finale) — DER EINE LOOK-WETTER-LESER (Gesetz #0): liefert die 5
+    // Kanäle {fog,sun,grey,wind,rain} interpoliert, transition-aware (dieselbe
+    // from/to/progress-Lerp wie `_weatherBlendedValue`, nur vektoriell). `w` ist
+    // die Wort-Vorgabe (Default state.weather); während einer laufenden Transition
+    // führen from/to (w ignoriert, wie beim Skalar-Zwilling). Unbekannte Worte →
+    // sunny. Gibt eine FRISCHE Kopie zurück (der Aufrufer darf lesen/skalieren,
+    // die frozen Statics bleiben unberührt).
+    _weatherFieldFor(w) {
+        const FLD = AnazhRealm.WEATHER_FIELD;
+        const base = FLD.sunny;
+        const fieldFor = (word) => FLD[word] || base;
+        const lerpField = (a, b, p) => ({
+            fog: a.fog + (b.fog - a.fog) * p,
+            sun: a.sun + (b.sun - a.sun) * p,
+            grey: a.grey + (b.grey - a.grey) * p,
+            wind: a.wind + (b.wind - a.wind) * p,
+            rain: a.rain + (b.rain - a.rain) * p,
+        });
+        const wt = this.state.weatherTransition;
+        if (wt && wt.from && wt.to) {
+            const p = Math.max(0, Math.min(1, wt.progress || 0));
+            return lerpField(fieldFor(wt.from), fieldFor(wt.to), p);
+        }
+        const f = fieldFor(typeof w === "string" ? w : this.state.weather);
+        return { fog: f.fog, sun: f.sun, grey: f.grey, wind: f.wind, rain: f.rain };
     }
 
     // D5a (V18.128) — die wet-Frage: regnet es hier (rainy UND stormy)?
@@ -77979,6 +78134,11 @@ class AnazhRealm {
         this.state.scene = scene;
         this.log("Szene initialisiert", "INFO");
         this.state.selfAwareness.components.push("scene");
+
+        // V6 (Look-Finale, 2a) — die Saison-Tönungs-Uniform in init() erzeugen
+        // (TSL ist geladen; das Gras-Material liest sie später lazy). Der State ist
+        // in der audit-strict-Whitelist (abgeleitet aus seasonPhase, nicht im Snapshot).
+        this._ensureSeasonUniforms();
 
         this.createGalaxySkybox();
         this.log("Galaxy-Skybox erstellt", "INFO");
@@ -79733,6 +79893,18 @@ class AnazhRealm {
         this.updateCreatures(delta);
         this._perfSenseLap("creatures", _ct);
         this.state.weatherEffectTime += delta;
+        // V6 (Look-Finale, 1f) — DER KONTINUIERLICHE BÖEN-DRIFT (Math.random-frei):
+        // eine deterministische, layered-sine-Modulation auf weatherEffectTime hält den
+        // Wind LEBENDIG zwischen den diskreten Wort-Wechseln (das aktuelle Wort setzt die
+        // Basis, der Drift atmet ~±18 % darum). `_weatherWob` ist ein INSTANZ-Feld (this._x
+        // → nicht serialisiert, kein audit:strict); Wetter berührt den Fixed-Step nicht →
+        // Sim/Replay unberührt. Gelesen im uWindStrength-Sync (`_applyDayNightToScene`-Nähe).
+        {
+            const wt = this.state.weatherEffectTime;
+            const gust =
+                Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
+            this._weatherWob = 1 + 0.18 * gust; // ~[0.82, 1.18]
+        }
         // D5a (V18.128) — der Auto-Zug zieht POLYVALENT aus dem Vokabular
         // (nie zweimal dasselbe Wort) und geht SANFT über die Transition —
         // der alte rohe sunny↔rainy-Flip war der V9.82-Parallel-Pfad AM
@@ -79742,7 +79914,16 @@ class AnazhRealm {
         // harten Flip gepaart.
         if (this.state.weatherEffectTime >= 120.0) {
             const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
-            const next = words[Math.floor(Math.random() * words.length)];
+            // V6 (Look-Finale, 1f) — DETERMINISTISCHE Wort-Wahl (Math.random-frei, die
+            // Wetter-Pfad-Regel): der Index aus layered sines der Wall-Clock statt eines
+            // Zufalls. Das diskrete Wort bleibt (Symphonie/Journal/wet-Frage lesen es);
+            // der Wechsel ist reine Optik/Klang → Fixed-Step-Sim + Replay unberührt.
+            const wc = performance.now() / 1000 + this.state.weatherEffectTime;
+            const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
+            let idx = Math.floor(((pick + 3) / 6) * words.length);
+            if (idx < 0) idx = 0;
+            if (idx >= words.length) idx = words.length - 1;
+            const next = words[idx];
             this._setWeather(next);
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
@@ -80370,7 +80551,14 @@ class AnazhRealm {
         // uWindStrength emergiert aus weather (rainy = kräftiger).
         if (this.state.windUniforms) {
             this.state.windUniforms.uWindTime.value = currentTime;
-            this.state.windUniforms.uWindStrength.value = this._weatherBlendedValue(0.12, 0.26); // D5a: stormy bläst kräftiger
+            // V6 (Look-Finale, 1d+1f) — die Böen-Amplitude aus dem Wetter-Feld-wind-Kanal
+            // (stormy 1.0·AMP=0.55 kräftig, sunny 0.06·AMP ruhig) × der kontinuierliche
+            // Böen-Drift `_weatherWob` (deterministische layered sines, gesetzt in
+            // `_loopWeatherAndGrowth`) → der Wind LEBT zwischen den diskreten Wort-Wechseln.
+            this.state.windUniforms.uWindStrength.value =
+                this._weatherFieldFor(this.state.weather).wind *
+                AnazhRealm.WEATHER_WIND_AMP *
+                (this._weatherWob || 1);
         }
         // V18.387 — DAS NEUE KLEID S1-SHADER — die LOD-Dither-Maske wandert golden-ratio pro Frame
         // (phytogenesis: uDitherT rotiert → die zeitliche Streuung glättet den Crossfade-Übergang
@@ -82955,7 +83143,7 @@ AnazhRealm.FEUCHTE = Object.freeze({
     flussReichweite: 26, // m jenseits der Fluss-Halbbreite, smoothstep-Fade
     hoeheNah: 1.5, // ≤ so hoch überm Wasserspiegel = voll feucht (Niederung)
     hoeheFern: 7, // ab so hoch überm Spiegel = trocken (der Höhen-Fade)
-    hoeheGewicht: 0.6, // der breite Niederungs-Term zählt schwächer als der Fluss
+    hoeheGewicht: 0.85, // V6 (Look-Finale, 3): 0.6→0.85 — das FEUCHTE-DACH gehoben (breitere, sattere Niederungen → dichtere Wald-/Wiesen-Nähe); bit-identisch im Worker FEUCHTE_HOEHE_GEWICHT
     affinitaetGewicht: 0.8, // feuchte × lebendig in der Spawn-Affinität
     erdeGewicht: 0.35, // Γ1-Lesart Boden: feuchte hebt die erde-Achse beim Graben
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss DER BODEN ATMET):

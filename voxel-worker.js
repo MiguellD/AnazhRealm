@@ -973,7 +973,7 @@ function hydroRiverAt(x, z) {
 const FEUCHTE_FLUSS_REICHWEITE = 26;
 const FEUCHTE_HOEHE_NAH = 1.5;
 const FEUCHTE_HOEHE_FERN = 7;
-const FEUCHTE_HOEHE_GEWICHT = 0.6;
+const FEUCHTE_HOEHE_GEWICHT = 0.85; // V6 (Look-Finale, 3): 0.6→0.85 — bit-identischer Spiegel von AnazhRealm.FEUCHTE.hoeheGewicht (das FEUCHTE-DACH gehoben)
 
 function hydroDistAt(x, z) {
     const h = hydroFor(x, z);
@@ -1047,6 +1047,52 @@ function pathFieldAt(x, z, surfY) {
     }
     const band = 1 - d / bankW;
     return band * band;
+}
+
+// V6 (Look-Finale, 4) — DAS KRONENDACH-LICHT im Worker (bit-identischer Spiegel von
+// Main `_canopyLightAt` + `_placementStandAt("forest")`). Ohne diese Funktionen driftet
+// der `attachFieldColors`-Kronen-Multiplikator gegen die Main-Naht = Determinismus-Wand
+// rot. KONSTANTEN HARDKODIERT (V17.100-Lehre — Mirror von AnazhRealm.PLACEMENT_DENSITY
+// [forest subset] + AnazhRealm.UNDERGROWTH.canopyK; bei Änderung im Main hier mit-ziehen).
+const PLACE_FOREST_FREQ = 0.006; // PLACEMENT_DENSITY.forestFreq (λ~170 m Wald-Stand)
+const PLACE_CLUMP_AMP = 1.6;
+const PLACE_CLUMP_LO = 0.25;
+const PLACE_CLUMP_HI = 2.6;
+const PLACE_WET_BASE = 0.7;
+const PLACE_WET_GAIN = 0.9;
+const PLACE_HIGH_AMP = 0.75;
+const PLACE_HIGH_LO = 12;
+const PLACE_HIGH_HI = 45;
+const UNDERGROWTH_CANOPY_K = 0.85;
+let _placementForestNoise = null;
+let _placementForestSeed = null;
+function placementStandForest(x, z) {
+    // Mirror _placementStandAt(x,z,"forest"): SimplexNoise((seed||fallback)+":forest").
+    const seed = (state.seed || "anazh-realm-seed") + ":forest";
+    if (!_placementForestNoise || _placementForestSeed !== seed) {
+        _placementForestNoise = new SimplexNoise(seed);
+        _placementForestSeed = seed;
+    }
+    return _placementForestNoise.noise2D(x * PLACE_FOREST_FREQ, z * PLACE_FOREST_FREQ);
+}
+function canopyLightAt(x, z, surfaceY, wetHint) {
+    const ss = (e0, e1, v) => {
+        let t = (v - e0) / (e1 - e0);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return t * t * (3 - 2 * t);
+    };
+    const stand = placementStandForest(x, z); // [-1,1]
+    const clump = Math.max(PLACE_CLUMP_LO, Math.min(PLACE_CLUMP_HI, 1 + PLACE_CLUMP_AMP * stand));
+    let wet = Number.isFinite(wetHint) ? wetHint : feuchteAt(x, z, surfaceY);
+    wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
+    const wetF = PLACE_WET_BASE + PLACE_WET_GAIN * wet;
+    const baseH = state.baseHeight || 0;
+    const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
+    const highF = 1 - PLACE_HIGH_AMP * ss(PLACE_HIGH_LO, PLACE_HIGH_HI, relH);
+    let cover = clump * wetF * highF;
+    if (cover < 0) cover = 0;
+    const L = Math.exp(-cover * UNDERGROWTH_CANOPY_K);
+    return L < 0 ? 0 : L > 1 ? 1 : L;
 }
 
 function waterLevelAt(x, z) {
@@ -2020,6 +2066,15 @@ function attachFieldColors(positions) {
         // als surfY-Argument an feuchteAt übergeben.
         const feuchte = feuchteAt(x, z, y);
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
+        // V6 (Look-Finale, 4) — DAS KRONENDACH SCHREIBT AUF DEN BODEN (Worker-Mirror,
+        // bit-identisch zu Main `_attachVoxelFieldColors`): dichtes Dach → dunklerer
+        // Boden. feuchte als wetHint (der schon berechnete Wert). Identische Position
+        // im Mix-Stack wie Main: nach dampEarth, vor lichen/lava/snow/strand.
+        const cL = canopyLightAt(x, z, y, feuchte);
+        const _cShade = 0.58 + 0.46 * cL;
+        c[0] *= _cShade;
+        c[1] *= _cShade;
+        c[2] *= _cShade;
         // V18.199 — Γ-M LICHEN Worker-Mirror: identisch zur Main-Form.
         const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
         const lichenMix =

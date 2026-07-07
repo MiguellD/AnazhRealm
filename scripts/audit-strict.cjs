@@ -625,6 +625,7 @@ async function auditStateAndMethods() {
                 "_bpEditTick", // V18.358 — Bauplan-Part-Edit-Zähler für die Recipe-Book-Signatur, `(state.X || 0) + 1`
                 "treeImpostors", // Subsystem S2 (V18.387) — Impostor-Toggle, `state.X !== false` (undefined = an), lazy/undefined-sicher
                 "lodUniforms", // Subsystem A (V18.387) — lazy TSL-LOD-Uniforms via `_ensureLodUniforms()`, wie windUniforms (nicht in init())
+                "seasonUniforms", // V6 (Look-Finale) — Saison-Tönungs-Uniform via `_ensureSeasonUniforms()` (in init() erzeugt); abgeleitet aus seasonPhase, NICHT im Snapshot
             ]);
 
             // Filter: nur Top-Level oder zwei-Ebenen-Pfade prüfen (Drei-Ebenen

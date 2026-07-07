@@ -252,6 +252,17 @@ jobs:
         # Removes im Flip-Call (war O(archs)), Drain <= Budget/Frame, Instanz-Zahl erholt sich.
         run: npm run gate:season-flip
 
+      - name: V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht
+        # V6 (Look-Finale, Track 1): der EINE LOOK-Wetter-Leser liefert die fünf Kanäle transition-aware;
+        # grey stormy>=0.8 & sunny==0 (entsättigt das LICHT, nie den Himmel), wind stormy >=5x sunny,
+        # rain kontinuierlich (0/~0.6/1.0), fog über die Transition monoton. Null-Renderer, GPU-frei.
+        run: npm run gate:weather-vector
+
+      - name: V6 Wiese folgt der Saison — _grassInstanceMat liest uSeasonMul, _seasonTint verschieden je Phase
+        # V6 (Look-Finale, Track 2): das Gras faltet die Saison-Tönungs-Uniform in die Albedo (KONSUM-Beweis);
+        # _seasonTint gibt für die vier Saison-Phasen verschiedene Tönungen (Winter != Sommer, Sommer neutral).
+        run: npm run gate:season-meadow
+
       - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das per-Saison-Leck
         # V4(B): die geteilte Foundry-Baum-Geometrie wird jetzt freigegeben (LRU-Räumung → dispose,
         # sobald kein InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-
