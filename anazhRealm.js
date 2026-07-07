@@ -13702,6 +13702,16 @@ class AnazhRealm {
             const srApplied = Number.isFinite(this._shadowRangeApplied) ? this._shadowRangeApplied : srCeil;
             if (Math.abs(srTarget - srApplied) > 6) this._applyEffectiveShadowRange(srTarget);
         }
+        // V8 (Kür) — DER GODRAY-PERF-LEVER unter dem EINEN Regler (KEIN Parallel-Regler, Gesetz #0):
+        // die volumetrischen Licht-Schäfte sind reine Optik → sie geben unter Render-Last ZUERST
+        // nach (`effArch`, DIESELBE loadScale-PID-Quelle wie Laub/Schatten). Kopfraum → voll
+        // (PERF_GODRAY_MAX), anhaltende Last → 0 (aus). `_loopRender` liest `_godrayScale` × den
+        // Sonnen-Sichtbarkeits-Gate. Headless (Null-Renderer) → MAX (gate-treu, die volle Optik).
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st._godrayScale = AnazhRealm.PERF_GODRAY_MAX;
+        } else {
+            st._godrayScale = lerp(0, AnazhRealm.PERF_GODRAY_MAX, effArch);
+        }
         // V18.301 — DER LADE-RHYTHMUS-RING (Schöpfer „erst den ersten Ring, Nebel nah,
         // sauber ausschmücken, DANN wachsen, damit sich das System fängt; minimale Basis
         // startklar, dann robust wachsen ohne die CPU am Limit"): der Ziel-Ring (User-
@@ -15611,8 +15621,12 @@ class AnazhRealm {
             return true; // Farbe stabil ODER eben erst regeneriert → nichts tun (Drift- + Raten-Drossel)
         }
         try {
-            const W = 64,
-                H = 32;
+            // V8 (Kür) — die Env-Auflösung von 64×32 auf 128×64 gehoben: feinere IBL-Mip-Kette →
+            // die Metall-/Wasser-Reflexion des Himmels ist glatter, ohne dass die Textur-IDENTITÄT
+            // wechselt (dasselbe DataTexture-Objekt + dasselbe PMREM-RT werden wiederverwendet →
+            // gpu-lens bleibt 0 Recompiles, die V18.322/.324-Raten-Sperre UNBERÜHRT).
+            const W = 128,
+                H = 64;
             if (!st._skyEnvTex) {
                 st._skyEnvData = new Uint8Array(W * H * 4);
                 const tex = new THREE.DataTexture(st._skyEnvData, W, H);
@@ -15628,9 +15642,14 @@ class AnazhRealm {
                 const v = 1 - y / (H - 1); // v=1 oben (Zenit) … 0 unten (Boden/Nadir)
                 // Boden 0.35× (erd-dunkel) → Horizont 1.0× → Zenit 1.6× (hell) — der Himmel-Auslesewert
                 const fac = v >= 0.5 ? 1.0 + 0.6 * ((v - 0.5) / 0.5) : 0.35 + 0.65 * (v / 0.5);
-                const rr = Math.min(255, sky.r * fac * 255),
-                    gg = Math.min(255, sky.g * fac * 255),
-                    bb = Math.min(255, sky.b * fac * 255);
+                // V8 (Kür) — ein SUBTILER Grün-Wald-Boden-Bounce: die untere Halbkugel (v<0.5)
+                // bekommt einen leichten Grün-Stich (das indirekte Licht, das vom bewachsenen
+                // Boden zurückstrahlt) — stärker zum Nadir, aus am Horizont. Höhen-gewichtet
+                // (`bounce`), damit der Himmel (obere Halbkugel) unberührt bleibt.
+                const bounce = v < 0.5 ? 0.12 * (1 - v / 0.5) : 0; // 0 am Horizont → 0.12 am Nadir
+                const rr = Math.min(255, sky.r * fac * (1 - bounce * 0.5) * 255),
+                    gg = Math.min(255, sky.g * fac * (1 + bounce) * 255),
+                    bb = Math.min(255, sky.b * fac * (1 - bounce * 0.5) * 255);
                 for (let x = 0; x < W; x++) {
                     const i = (y * W + x) * 4;
                     d[i] = rr;
@@ -75621,6 +75640,22 @@ class AnazhRealm {
         return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
     }
 
+    // V8 (Kür) — die REINE Godray-Stärke-Vorgabe aus Sonnenhöhe × Wetter-Klarheit (keine
+    // this-Reads → headless voll verifizierbar). Godrays brauchen (a) eine Sonne über dem
+    // Horizont (die smoothstep blendet knapp über 0 auf, hoch = voll) und (b) klaren Himmel
+    // (`weatherSun` aus dem Wetter-Feld: sunny 1.0 · rainy 0.55 · stormy 0.42 — auf [0..1]
+    // remappt, so dass Sturm/Regen die Schäfte dämpft, klarer Himmel sie voll trägt). Der
+    // Screen-Sichtbarkeits-Gate (Sonne im Bild / vor der Kamera) sitzt separat im `_loopRender`.
+    _godrayFrameGate(sunDirY, weatherSun) {
+        const sm = (a, b, x) => {
+            const k = Math.max(0, Math.min(1, (x - a) / (b - a)));
+            return k * k * (3 - 2 * k);
+        };
+        const horizon = sm(0.04, 0.3, sunDirY); // knapp über dem Horizont aufblenden, hoch = voll
+        const clarity = sm(0.5, 0.95, Number.isFinite(weatherSun) ? weatherSun : 1); // Sturm→0, sunny→1
+        return horizon * clarity;
+    }
+
     // V18.390 — Eins W1: DAS ATMOSPHÄRE-GESETZ (Port Vorlage phytogenesis.js Z.2111,
     // byte-treu in der Mathematik). Sonnenhöhe e=sin(Elevation) → Luftmasse →
     // spektrale Beer-Lambert-Transmission (Rayleigh ~1/λ⁴, Bucholtz 1995: blau
@@ -80351,8 +80386,27 @@ class AnazhRealm {
                         ? this.state.atmosphere.edgeSharp
                         : 0.5
                 ),
+                // V8 (Kür) — GODRAYS (volumetrische Licht-Schäfte): der additive Screen-Space-
+                // Radial-March (GPU-Gems-3) hängt als NODE in DIESEN einen Pass (KEIN zweiter
+                // RenderPipeline, KEINE MRT-Depth → das WebGPU-swiftshader-Blank-Risiko bleibt
+                // klein). `godraySun` ist die Sonnen-Screen-UV (pro Frame aus dem Sonnen-Mesh
+                // projiziert), `godrayStrength` der Gesamt-Pegel (0 = Nacht/Sturm/Sonne aus dem
+                // Bild → No-op), `godrayDensity` die March-Länge, `godrayThreshold` die Himmels-
+                // Helligkeits-Schwelle (nur helle Lücken bluten → Kronen-Occlusion GRATIS).
+                godraySun: uniform(new THREE.Vector2(0.5, 0.6)),
+                godrayStrength: uniform(0),
+                godrayDensity: uniform(0.55),
+                godrayThreshold: uniform(0.8),
             };
             this.state.postProcessingUniforms = u;
+            // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
+            // + der Perf-Lever (`_nexusPerfActuate` via `_godrayScale`) lesen NUR diese Uniforms.
+            this.state.godrayUniforms = {
+                sunScreenPos: u.godraySun,
+                strength: u.godrayStrength,
+                density: u.godrayDensity,
+                threshold: u.godrayThreshold,
+            };
 
             // --- Bloom: helle Stellen (luminance > Schwelle) isolieren, weich
             // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
@@ -80384,9 +80438,30 @@ class AnazhRealm {
             }
             const bloom = acc.mul(u.bloomStrength);
 
+            // --- V8 (Kür) GODRAYS: der radiale Light-Shaft-March (GPU-Gems-3, „god rays").
+            // Von jedem Pixel aus tasten wir N feste Schritte in RICHTUNG der Sonnen-Screen-
+            // Position; nur SEHR helle Himmels-Lücken (Luminanz über der Schwelle) tragen bei
+            // → steht ein Blatt/Berg zwischen Pixel und Sonne, ist der Sample dunkel = kein
+            // Strahl (die Kronen-Occlusion ist GRATIS, ohne Depth-Buffer). UNROLLT (JS-Loop, der
+            // TSL-Nodes akkumuliert — KEIN Loop im Shader, wie das Bloom); der Beitrag klingt zum
+            // Pixel hin ab (0.96^i) → die Strahlen ballen sich um die Sonne. Additiv in DENSELBEN
+            // Pass (kein 2. RenderPipeline). `godrayStrength`=0 → gacc·0 = No-op (Nacht/Sturm).
+            const GN = 20;
+            const gDelta = u.godraySun.sub(screenUV); // Vektor Pixel → Sonne (Screen-UV)
+            let gacc = null;
+            for (let i = 0; i < GN; i++) {
+                const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
+                const cI = sceneColor.sample(uvI).rgb;
+                const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
+                const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
+                const srcI = cI.mul(mI).mul(float(wI));
+                gacc = gacc ? gacc.add(srcI) : srcI;
+            }
+            const godray = gacc.mul(u.godrayStrength);
+
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
             const base = sceneColor.rgb;
-            const bloomed = base.add(bloom);
+            const bloomed = base.add(bloom).add(godray);
             // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
             // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
             // Umgebung verstaerkt → Binnen-Kontraste + Kanten treten hervor
@@ -80572,6 +80647,43 @@ class AnazhRealm {
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
+        }
+        // V8 (Kür) — GODRAY-Frame-Steuerung: die Sonnen-Screen-Position + der Gesamt-Pegel.
+        // DEFENSIV geguarded — der Null-Renderer (headless) baut die Post-FX evtl. nicht, dann
+        // fehlt `godrayUniforms` (kein Crash). Die Himmelskörper sind oben schon an die Kamera
+        // geheftet (`_followCelestialBodies`), also trägt `sunMesh.position` bereits die aktuelle
+        // Welt-Position → `.project(camera)` gibt die NDC-Screen-Lage. Der Pegel = perf-Faktor
+        // (`_godrayScale`) × Wetter/Höhen-Gate (`_godrayFrameGate`) × Sichtbarkeit (Sonne vor der
+        // Kamera UND im Bild UND über dem Horizont).
+        if (this.state.godrayUniforms && this.state.sunMesh && this.state.camera) {
+            const gu = this.state.godrayUniforms;
+            const cam = this.state.camera;
+            const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+            const angle = t * Math.PI * 2 - Math.PI / 2;
+            const sunDir = this._dayNightSunDirection(angle); // dieselbe Richtungs-Quelle wie Licht/Skybox
+            // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
+            const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
+                .copy(this.state.sunMesh.position)
+                .project(cam);
+            const uvx = proj.x * 0.5 + 0.5;
+            const uvy = proj.y * 0.5 + 0.5;
+            gu.sunScreenPos.value.set(uvx, uvy);
+            // Sichtbarkeit: (a) VOR der Kamera (robust via Blickrichtung · Sonnen-Richtung, statt
+            // der zweideutigen NDC-z hinter der Kamera), (b) im Bild, (c) über dem Horizont.
+            const sm = (a, b, x) => {
+                const k = Math.max(0, Math.min(1, (x - a) / (b - a)));
+                return k * k * (3 - 2 * k);
+            };
+            const fwd = this._godrayFwd || (this._godrayFwd = new THREE.Vector3());
+            cam.getWorldDirection(fwd);
+            const off = this.state.sunMesh.userData && this.state.sunMesh.userData.skyOffset;
+            const facing = off ? fwd.x * sunDir.x + fwd.y * sunDir.y + fwd.z * sunDir.z : -1; // sunDir ≈ skyOffset-Richtung
+            const onScreen =
+                sm(-0.2, 0.05, uvx) * (1 - sm(0.95, 1.2, uvx)) * sm(-0.2, 0.05, uvy) * (1 - sm(0.95, 1.2, uvy));
+            const sunVisible = sm(0.02, 0.25, facing) * onScreen;
+            const weatherSun = this._weatherFieldFor(this.state.weather).sun;
+            const gate = this._godrayFrameGate(sunDir.y, weatherSun);
+            gu.strength.value = (this.state._godrayScale ?? 1) * gate * sunVisible;
         }
         // V10.0-d — WebGPURenderer's `init()` ist async, der Game-Loop läuft
         // sofort beim Worldgen-Abschluss. Skip-Render-Frames bis der Renderer
@@ -84331,6 +84443,10 @@ AnazhRealm.PERF_PHASES = Object.freeze(["streaming", "waterIso", "archCulling", 
 // (atmosphere.shadowRange). Der Nebel deckt eh >~150 m → fern-Schatten unsichtbar. MIN < fog-far.
 AnazhRealm.PERF_SHADOW_RANGE_MIN = 100;
 AnazhRealm.PERF_SHADOW_RANGE_MAX = 170; // = der Default-Ceiling (Fallback, wenn atmosphere.shadowRange fehlt)
+// V8 (Kür) — der GODRAY-Pegel-Ceiling: der Perf-Regler skaliert `_godrayScale` zwischen 0
+// (anhaltende Last → Schäfte aus) und diesem Max (Kopfraum → volle Optik). Reine Optik, also
+// gibt sie unter Render-Last früh nach; 0.8 ist ein sichtbarer, aber nicht überstrahlender Pegel.
+AnazhRealm.PERF_GODRAY_MAX = 0.8;
 AnazhRealm.PERF_TARGET_MS = 17;
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
 // Abstand UNTER der Decke liegt (17 − 4 = 13 ms ≈ 77 fps). Das Totband [13..17 ms] ist die

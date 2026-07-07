@@ -31,6 +31,7 @@
         "gate:phyto-core": "node scripts/diag-phyto-core-parity.cjs",
         "gate:seam": "node scripts/diag-chunk-seam.cjs --gate",
         "gate:seam-normal": "node scripts/diag-seam-normal.cjs",
+        "gate:godray": "node scripts/diag-godray.cjs",
         "gate:fern-wasser": "node scripts/diag-fern-wasser.cjs",
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "grass-load": "node scripts/diag-grass-load.cjs",

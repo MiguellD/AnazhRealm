@@ -184,6 +184,13 @@ jobs:
         # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
         run: npm run gate:seam-normal
 
+      - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
+        # V8: der additive Screen-Space-Light-Shaft-March haengt als NODE im einen RenderPipeline-Pass
+        # (kein 2. Pass, keine MRT-Depth → das swiftshader-Blank-Risiko bleibt klein). Beweist headless
+        # die EINE Quelle (godrayUniforms) + den March in _ensurePostProcessing + die Frame-Projektion
+        # + dass der Perf-Lever `_godrayScale` dem EINEN Regler folgt (Last→aus, Kopfraum→voll, headless→MAX).
+        run: npm run gate:godray
+
       - name: Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)
         # P1 des neues-kleid-Pipeline-Plans: der Studio-Generator (phytogenesis.js als Worker)
         # baut die kuratierten Goldens (spec/asset-contract/v1) neu und vergleicht Byte fuer Byte

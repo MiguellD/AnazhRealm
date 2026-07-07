@@ -593,6 +593,8 @@ async function auditStateAndMethods() {
                 "voxelChunkMaterial",
                 "auraSkinUniforms",
                 "postProcessingUniforms", // `if (state.X && state.X.localContrast)`-guarded
+                "godrayUniforms", // V8 (Kür) — lazy in `_ensurePostProcessing` gesetzt (wie postProcessingUniforms), NICHT im Snapshot; `if (state.X && …)`-guarded im _loopRender
+                "_godrayScale", // V8 (Kür) — Perf-Faktor, im `_nexusPerfActuate` gesetzt, `state.X ?? 1`-sicher gelesen
                 // Perf-Sense/Regelkreis (V18.263–.271):
                 "_perfFrame", // `state._perfFrame || (state._perfFrame = {})`
                 "_perfMarks",
