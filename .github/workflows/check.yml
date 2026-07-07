@@ -163,6 +163,13 @@ jobs:
         # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
         run: npm run gate:seam-normal
 
+      - name: Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)
+        # P1 des neues-kleid-Pipeline-Plans: der Studio-Generator (phytogenesis.js als Worker)
+        # baut die kuratierten Goldens (spec/asset-contract/v1) neu und vergleicht Byte fuer Byte
+        # + Schema (cv:1, Pflichtfelder). Ab hier kann KEIN Refactor der Pipeline mehr still
+        # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
+        run: npm run gate:asset-contract
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

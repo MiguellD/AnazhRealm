@@ -7723,6 +7723,7 @@ init();
                 {
                     type: "asset",
                     world: "terrain",
+                    cv: 1, // Asset-Vertrag v1 (spec/asset-contract/v1) — jede asset-Antwort traegt die Vertrags-Version.
                     reqId,
                     presetId: msg.presetId,
                     seed: msg.seed,
