@@ -50935,6 +50935,14 @@ class AnazhRealm {
         if (g.mesh) {
             if (this.state.scene) this.state.scene.remove(g.mesh);
             if (typeof g.mesh.dispose === "function") g.mesh.dispose();
+            // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
+            // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
+            // (`_evicted`), gibt jetzt der letzte Halter ihre geteilte Geometrie frei (deferred).
+            if (g._foundrySrc) {
+                g._foundrySrc._liveRefs = Math.max(0, (g._foundrySrc._liveRefs || 0) - 1);
+                if (g._foundrySrc._liveRefs <= 0 && g._foundrySrc._evicted)
+                    this._disposeFoundryGroupGeom(g._foundrySrc);
+            }
         }
     }
 
@@ -61271,6 +61279,14 @@ class AnazhRealm {
             regional,
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
         };
+        // V4(B) — NUR im NEU-Gruppen-Zweig (nach dem `if (g) return g;`-Early-Return, NICHT im
+        // Batch-Pfad, NICHT in _archInstanceGroupGrow → g-Identität bleibt): der Ref-Zähler der
+        // Cache-Gruppe steigt um 1, sobald eine lebende InstancedMesh-Gruppe ihre geteilte Geometrie
+        // hält. Der Guard in _disposeArchInstanceGroup spiegelt die Dekrementierung 1:1.
+        if (leaf && leaf._srcGroup) {
+            g._foundrySrc = leaf._srcGroup;
+            leaf._srcGroup._liveRefs = (leaf._srcGroup._liveRefs || 0) + 1;
+        }
         this.state.archInstanceGroups.set(key, g);
         return g;
     }
@@ -61508,7 +61524,15 @@ class AnazhRealm {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (g) {
                 this._archGroupFree(g, slot);
-                if (g.regional && typeof key === "string" && key.includes("@p:")) placedRegionKeys.add(key);
+                // V4(B) — die Empty-Dispose fasst zusätzlich die GLOBALEN Foundry-Gruppen (Key trägt
+                // `#f:`/`#fimp:` im Leaf, per-Saison-Schlüssel) → ihre leer gewordene InstancedMesh-
+                // (instanceMatrix-)Hülle wird entsorgt UND (via _disposeArchInstanceGroup) die geteilte
+                // Geometrie deferred freigegeben. Die Leer-Bedingung (liveCount<=0 unten) bleibt strikt.
+                if (
+                    (g.regional && typeof key === "string" && key.includes("@p:")) ||
+                    (typeof key === "string" && /#(f:|fimp:)/.test(key))
+                )
+                    placedRegionKeys.add(key);
             }
         }
         entry.instSlots = null;
@@ -63250,6 +63274,10 @@ class AnazhRealm {
             retry: [],
             _prefetching: false,
             recipes: null,
+            // V4(B) — die Leck-Linse: gebaute vs. deferred-freigegebene Foundry-Geometrien (die
+            // Schnitte heben sie ohnehin lazy via `|| 0`; hier explizit für die Auffindbarkeit).
+            _geomBuiltCount: 0,
+            _geomDisposedCount: 0,
         };
         this._foundry = f;
         try {
@@ -63919,6 +63947,10 @@ class AnazhRealm {
                     this._warmCompilePipeline(group, false);
                 } catch (_e2) {}
             }
+            // V4(B) — die Bilanz-Zahl (gebaute Foundry-Baum-Geometrien) für die Leck-Linse
+            // (gegen `_geomDisposedCount`). Lazy-init, kein state.X-Feld.
+            const _f = this._foundry;
+            if (_f) _f._geomBuiltCount = (_f._geomBuiltCount || 0) + (group.children ? group.children.length : 0);
             return group;
         }
         return null;
@@ -64137,13 +64169,38 @@ class AnazhRealm {
     _foundryCacheSet(key, v) {
         const f = this._foundry;
         if (!f) return;
+        // V4(B) — der Ref-Zähler startet bei 0 (keine lebende InstancedMesh-Gruppe hält die
+        // Geometrie dieser Cache-Gruppe, bis _archInstanceGroupFor sie referenziert).
+        if (v && v._liveRefs === undefined) v._liveRefs = 0;
         f.cache.set(key, v);
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
         while (f.cache.size > CAP) {
             const oldest = f.cache.keys().next().value;
             if (oldest === key) break; // nie den gerade gesetzten räumen
-            f.cache.delete(oldest); // KEIN dispose — die InstancedMesh besitzt die Geometrie
+            // V4(B) — DEFERRED DISPOSE (per-Saison-Leck-Schließung): die geräumte Gruppe gibt ihre
+            // Geometrie NUR frei, wenn keine lebende InstancedMesh-Gruppe sie mehr hält (_liveRefs 0).
+            // Hält noch eine, wird sie `_evicted` markiert → der letzte _disposeArchInstanceGroup
+            // (Ref → 0) disposed sie dann. So kann eine Räumung nie einen sichtbaren Baum zerstören.
+            const og = f.cache.get(oldest);
+            f.cache.delete(oldest);
+            if (og) {
+                if ((og._liveRefs || 0) > 0) og._evicted = true;
+                else this._disposeFoundryGroupGeom(og);
+            }
         }
+    }
+    // V4(B) — die geteilte Foundry-Baum-Geometrie EINMAL freigeben (das per-Saison-Leck: season
+    // steckt im Cache-Key/leafKey → je Saison akkumulierte ein Satz Geometrien). NUR die Geometrie
+    // disposen (das Material ist per kind über Varianten/Saisons geteilt → NIE). Idempotent via
+    // `_geomDisposed`; der Zähler bilanziert gegen `_geomBuiltCount` (die Leck-Linse).
+    _disposeFoundryGroupGeom(g) {
+        if (!g || !g.children || g._geomDisposed) return;
+        for (const ch of g.children) {
+            if (ch.geometry && typeof ch.geometry.dispose === "function") ch.geometry.dispose();
+        }
+        g._geomDisposed = true;
+        const f = this._foundry;
+        if (f) f._geomDisposedCount = (f._geomDisposedCount || 0) + g.children.length;
     }
     _foundryFlattenFor(entry, preset, lodOverride) {
         const f = this._ensureAssetFoundry();
@@ -64205,6 +64262,9 @@ class AnazhRealm {
                     mat: child.material,
                     localMatrix: I,
                     leafKey: "f:" + key + ":" + p,
+                    // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
+                    // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
+                    _srcGroup: group,
                     castShadow: castsShadow,
                     // DAS NEUE KLEID (Boot-Last-Wurzel, Schöpfer „1:1 auf die GPU, der Katalysator"):
                     // Foundry-Baum-Geometrie ist SCHWER (Konifere LOD0 ~170k Verts) UND über viele

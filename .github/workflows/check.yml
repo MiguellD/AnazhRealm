@@ -60,6 +60,15 @@ jobs:
       - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
         run: npm run gate:source-probes
 
+      - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
+        # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
+        # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
+        # `growTreeNodes`) byte-gleich zu machen versucht (unmöglich + eine Regression):
+        # (a) growSkeleton(P, seq) ist DETERMINISTISCH (identisch P+seq → byte-identisch);
+        # (b) Richter-Eingang (countCap 3600/leafBudget 480/xorshift-seq) ≠ Foundry-Eingang
+        # (countCap 8800/leafBudget 20000/mulberry-seq) → dokumentierte Distanz ≫ 0.
+        run: npm run gate:one-wuchs-parity
+
       - name: Single-Quote-Template-Strings (B2-Pattern)
         run: |
           # Erkennt Funktionsaufrufe wie foo('… ${x} …') – ${...} in einfach-quotierten
@@ -242,6 +251,13 @@ jobs:
         # budgetierte Rewarm re-platziert sie in der neuen Saison. Null-Renderer + Foundry-ON: 0 synchrone
         # Removes im Flip-Call (war O(archs)), Drain <= Budget/Frame, Instanz-Zahl erholt sich.
         run: npm run gate:season-flip
+
+      - name: V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das per-Saison-Leck
+        # V4(B): die geteilte Foundry-Baum-Geometrie wird jetzt freigegeben (LRU-Räumung → dispose,
+        # sobald kein InstancedMesh sie mehr hält, Ref-Zähler). Null-Renderer + Foundry-ON, JS-Bilanz-
+        # Zähler über 4 Saison-Zyklen: dispose feuert, der Speicher bleibt flach (kein lineares Leck),
+        # REF-GUARD: keine Geometrie wird disposed solange _liveRefs > 0 (kein Use-after-free).
+        run: npm run gate:foundry-memory
 
       - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)
         # P7: die Kreatur-Haut (bake-core Skin-Isosurface) ist am Asset-Vertrag angedockt (v2). Bäckt
