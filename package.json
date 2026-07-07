@@ -34,6 +34,8 @@
         "scene-cull": "node scripts/diag-scene-cull.cjs",
         "cut-method": "node scripts/cut-method.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
+        "diag:foundry-core-smoke": "node scripts/diag-foundry-core-smoke.cjs",
+        "diag:foundry-parity": "node scripts/diag-foundry-parity.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",

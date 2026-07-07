@@ -470,10 +470,20 @@ function injectWind(mat, foliage, isGrass) {
     return mat;
 }
 
+/* ---------- Canvas-Fabrik: DOM (Studio/iframe) ODER OffscreenCanvas (Worker) ---- */
+function __mkCanvas(w, h) {
+    if (typeof document !== "undefined") {
+        const c = document.createElement("canvas");
+        if (w) c.width = w;
+        if (h) c.height = h;
+        return c;
+    }
+    return new OffscreenCanvas(w || 1, h || 1);
+}
 /* ---------- Prozedurale Rinden-Normalmap (vertikale Riefen + Risse) -------- */
 function makeBarkNormal() {
     const N = 512,
-        c = document.createElement("canvas");
+        c = __mkCanvas();
     c.width = c.height = N;
     const x = c.getContext("2d");
     const img = x.createImageData(N, N);
@@ -884,12 +894,10 @@ function bakeLeafAtlas() {
     let cv = null;
     const __core = typeof self !== "undefined" && self.__phytoCore;
     if (__core && typeof __core.bakeLeafAtlasCanvas === "function") {
-        cv = __core.bakeLeafAtlasCanvas(document, { cell3: "broadleaf" });
+        cv = __core.bakeLeafAtlasCanvas(typeof document !== "undefined" ? document : null, { cell3: "broadleaf" });
     }
     if (!cv) {
-        cv = document.createElement("canvas");
-        cv.width = 1024;
-        cv.height = 256;
+        cv = __mkCanvas(1024, 256);
         const x = cv.getContext("2d");
         const rg = mulberry32(0xbeef); // eigener Strom!
         for (let c = 0; c < 4; c++) {
@@ -1065,7 +1073,7 @@ function growTreeNodes(P) {
     if (__core && typeof __core.growSkeleton === "function") {
         const __gsLBl = typeof __lod === "undefined" ? 0 : __lod;
         const __gsLB =
-            (window.PHYTO_LEAFBUDGET && window.PHYTO_LEAFBUDGET[__gsLBl]) ||
+            (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__gsLBl]) ||
             (P.kind === "shrub" ? [4000, 1500, 1400] : [20000, 9000, 7000])[__gsLBl];
         const __gsR = __core.growSkeleton(Object.assign({}, P, { leafBudget: __gsLB }), rnd);
         if (__gsR && __gsR.segs && __gsR.segs.length) {
@@ -1332,7 +1340,7 @@ function growTreeNodes(P) {
     }
     const __LBl = typeof __lod === "undefined" ? 0 : __lod,
         __LB =
-            (window.PHYTO_LEAFBUDGET && window.PHYTO_LEAFBUDGET[__LBl]) ||
+            (globalThis.PHYTO_LEAFBUDGET && globalThis.PHYTO_LEAFBUDGET[__LBl]) ||
             (P.kind === "shrub"
                 ? [4000, 1500, 1400]
                 : [
@@ -3490,8 +3498,12 @@ function init() {
     // FOUNDRY-MODUS: AnazhRealm laedt diese Datei versteckt als reinen Asset-Motor
     // (?asset-foundry=1). Kein Renderer, kein eigener Wald, kein Render-Loop — nur die
     // Materialien + Saison + PRESETS, damit buildInstance echte Baum-Assets liefert.
-    if (typeof location !== "undefined" && /[?&]asset-foundry/.test(location.search)) {
-        window.__PHYTO_FOUNDRY = true;
+    // P0 (foundry-core-Weg): dieselbe Foundry auch als WORKER ladbar — der Bootstrap setzt
+    // self.__PHYTO_FOUNDRY_WORKER=true vor importScripts (eine Blob-URL trägt kein ?search).
+    const __foundryWorker =
+        typeof window === "undefined" && typeof self !== "undefined" && self.__PHYTO_FOUNDRY_WORKER === true;
+    if (__foundryWorker || (typeof location !== "undefined" && /[?&]asset-foundry/.test(location.search))) {
+        globalThis.__PHYTO_FOUNDRY = true;
         try {
             buildMaterials();
         } catch (_e) {}
@@ -6019,11 +6031,11 @@ let taaPass = null,
     _taaCurVP = new THREE.Matrix4(),
     _taaReset = true,
     _taaFrame = 0; // FIX v32: TAA-Lite-Zustand; uDitherT rotiert golden-ratio NUR bei aktivem TAA
-window.PHYTO_LODMASK = (v) => {
+globalThis.PHYTO_LODMASK = (v) => {
     _lodU.uLodMaskOn.value = v ? 1 : 0;
     console.log("[phyto] LOD-Crossfade-Maske " + (v ? "AN" : "AUS (harte Kanten, altes Verhalten)"));
 }; // FIX v38 (AUDIT-FUND): Ventil WIEDERBELEBT — der v32-Global-Insert zog den Zeilenrest hinter einen //-Kommentar, window.PHYTO_LODMASK war seitdem tot (kein Renderschaden, aber ein offener Faden)
-window.PHYTO_LODREF = (v) => {
+globalThis.PHYTO_LODREF = (v) => {
     _lodU.uLodRef.value = Math.max(0.5, +v || 12);
     console.log(
         "[phyto] LOD-Referenzhoehe=" +
@@ -7424,10 +7436,16 @@ init();
    Parallel-Pfad) und trägt enter/ready/exit/event über postMessage.
    ========================================================================== */
 (() => {
+    // DUAL-TRANSPORT (der P0/P2-Weg zu foundry-core): DIESELBE Brücke antwortet im iframe
+    // (window.parent.postMessage) UND im Worker (self.postMessage) — EIN Protokoll, kein zweiter Pfad.
+    const __post =
+        typeof window !== "undefined"
+            ? (p) => {
+                  if (window.parent && window.parent !== window) window.parent.postMessage(p, "*");
+              }
+            : (p) => self.postMessage(p);
     function sendEvent(text) {
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "event", text: String(text) }, "*");
-        }
+        __post({ type: "event", text: String(text) });
     }
     function clickBtn(sel) {
         const b = document.querySelector(sel);
@@ -7481,9 +7499,7 @@ init();
             console.warn("Phytogenesis-Portal: Befehl fehlgeschlagen —", err && err.message);
         }
     }
-    window.addEventListener("message", (event) => {
-        if (event.source !== window.parent) return;
-        const msg = event.data;
+    function __portalOnMessage(msg) {
         if (!msg || typeof msg !== "object") return;
         if (msg.type === "enter") {
             const avatar = msg.avatar && typeof msg.avatar === "object" ? msg.avatar : {};
@@ -7534,7 +7550,15 @@ init();
             // Erzeugung bleibt im Studio (build-asset); dies traegt nur die Rezept-DATEN.
             __replyRecipes(msg);
         }
-    });
+    }
+    if (typeof window !== "undefined") {
+        window.addEventListener("message", (event) => {
+            if (event.source !== window.parent) return;
+            __portalOnMessage(event.data);
+        });
+    } else if (typeof self !== "undefined") {
+        self.onmessage = (event) => __portalOnMessage(event && event.data);
+    }
     function __replyWorldParams(msg) {
         // Reine Daten (JSON-klonbar): NUR die Werte, die AnazhRealm auch LIEST (kein toter Passagier).
         const params = {
@@ -7551,8 +7575,8 @@ init();
             // animiert den Rest; NUR der Mittags-Stop folgt dem Studio (additiv, kein Einfrieren).
             sky: { top: PORTAL_SKY.top, sun: PORTAL_SKY.sun },
         };
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
         }
     }
     function __replyRenderConfig(msg) {
@@ -7576,8 +7600,8 @@ init();
                 bushStep: c.understory.bushStep,
             },
         };
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
         }
     }
     function __replyRecipes(msg) {
@@ -7591,8 +7615,8 @@ init();
                 book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
             }
         } catch (_e) {}
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book }, "*");
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book }, "*");
         }
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
@@ -7694,8 +7718,8 @@ init();
         // KEINE Transferables: der strukturierte Klon kopiert die Float32/Uint32-Arrays
         // sauber. Transferables teilten/neutralisierten Puffer (geteilte ArrayBuffer der
         // interleaved Vorlagen-Attribute -> 2^N-Vertex-Korruption beim Empfaenger).
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post(
                 {
                     type: "asset",
                     world: "terrain",
@@ -7788,8 +7812,8 @@ init();
                 console.warn("[phyto] render-native", presetId, e && e.message);
             } catch (_) {}
         }
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post(
                 {
                     type: "render-native",
                     world: "terrain",
@@ -7859,8 +7883,8 @@ init();
                 console.warn("[phyto] bake-impostor", presetId, e && e.message);
             } catch (_) {}
         }
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post(
                 { type: "impostor", world: "terrain", reqId: reqId, presetId: presetId, seed: seed, payload: payload },
                 "*"
             );
@@ -7869,18 +7893,20 @@ init();
     // Escape verlässt das Portal — aber NUR im Studio: im Wald gehört Escape
     // dem PointerLock ("Maus frei") und der ✕-Knopf dem Wald-Ausgang; das
     // Portal verlässt man erst aus dem Studio heraus (kein Doppel-Sinn).
-    window.addEventListener("keydown", (event) => {
-        if (event.key !== "Escape") return;
-        if (forestMode || document.pointerLockElement) return;
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage({ type: "exit", world: "terrain" }, "*");
-        }
-    });
+    // (Nur im Fenster-Kontext — der Foundry-Worker hat keine Tasten.)
+    if (typeof window !== "undefined")
+        window.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") return;
+            if (forestMode || document.pointerLockElement) return;
+            if (window.parent && window.parent !== window) {
+                __post({ type: "exit", world: "terrain" }, "*");
+            }
+        });
     // W12 Phase 3 — die native Manifest-Stufe: die Welt liest ihr eigenes
     // manifest.json und meldet dsl + label im ready-Handshake.
     function announceReady(extra) {
-        if (window.parent && window.parent !== window) {
-            window.parent.postMessage(Object.assign({ type: "ready", world: "terrain" }, extra || {}), "*");
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post(Object.assign({ type: "ready", world: "terrain" }, extra || {}), "*");
         }
     }
     fetch("./manifest.json")
