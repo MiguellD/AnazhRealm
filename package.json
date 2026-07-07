@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.410.0",
+    "version": "18.411.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "scripts": {
@@ -41,6 +41,7 @@
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
+        "gate:boot-fog-ring": "node scripts/diag-boot-fog-ring.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",

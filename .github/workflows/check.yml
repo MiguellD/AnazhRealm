@@ -189,6 +189,13 @@ jobs:
         # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
         run: npm run gate:foundry-deadlock
 
+      - name: Boot-Nebel-Ring (der ferne Sichtring beim Ein-Chunk-Boot)
+        # V18.411: RING_RAMP_START=0 (EIN Chunk) riss den Reveal-Spalt auf — bei revealK==ringRadius==0
+        # sprang der Nebel auf den vollen Ziel-Rand über die ungebaute Leere (der ferne Sichtring). Beweist
+        # headless, dass der Ein-Chunk-Boot den Nebel auf die gebaute Kante kappt, mit dem Ring weitet und
+        # erst am Ziel den Weitblick öffnet; der Erwachen-Kokon bleibt eng.
+        run: npm run gate:boot-fog-ring
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

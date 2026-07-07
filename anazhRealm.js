@@ -75887,14 +75887,28 @@ class AnazhRealm {
                 (acc, v) => (v === null ? acc : acc === null ? v : Math.min(acc, v)),
                 null
             );
+            // V18.411 — DER RAMP-REVEAL-SPALT (Schöpfer „noch immer ein ferner Sichtring statt nur der
+            // Starter-Chunk"): V18.397 senkte den Boot-Ring auf 0 (EIN Chunk) — dabei riss der Reveal auf.
+            // Der Nebel weitet nur auf die gebaute Kante, solange `revealK < vCfg.ringRadius`; beim Ein-Chunk-
+            // Boot ist ABER `revealK == 0 == vCfg.ringRadius` → keine der beiden Klammern greift → der Nebel
+            // sprang auf den vollen Ziel-Rand (4.3-km-Mantel) über die noch UNGEBAUTE Leere = der ferne
+            // Sichtring. Die Wurzel: „aktiver Ring gebaut" heißt NICHT „Welt gebaut" — der aktive Ring RAMPT
+            // erst zum Ziel (`chunkRingRadius`). Solange die Welt wächst (`activeRing < targetRing`), kappt der
+            // Nebel IMMER auf die gebaute Kante, egal ob der aktive Ring voll steht; erst am Ziel öffnet der
+            // geliebte Mantel-Weitblick. Headless setzt activeRing sofort auf target → Mantel offen (gate-treu).
+            const _targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+            const _worldRamping =
+                this.state._activeRingRadius != null && this.state._activeRingRadius < _targetRing;
             if (revealK === null || revealK < 0) {
                 // V18.313 — DAS ERWACHEN: noch KEIN Boden-Chunk steht (nur die Plattform,
                 // builtK null/-1). Der Nebel umhüllt den Spieler ENG (Kokon) → die Welt + die
                 // fernen Spawns sind verborgen wie im Schlaf. Vorher griff hier der VOLLE
                 // Ziel-Rand (das „Start-Loch": ferne Geoden/Bauten durch klare Luft sichtbar).
                 visualEdge = Math.min(visualEdgeTarget, AnazhRealm.AWAKEN_FOG_FAR);
-            } else if (revealK < vCfg.ringRadius) {
+            } else if (revealK < vCfg.ringRadius || _worldRamping) {
                 // Boden + Wiese erscheinen → der Nebel WEITET zur bepflanzten Kante (exp-geglättet).
+                // Während die Welt noch zum Ziel-Ring wächst (`_worldRamping`) bleibt der Nebel HIER
+                // an der gebauten Kante — er öffnet erst zum Mantel, wenn der aktive Ring das Ziel erreicht.
                 visualEdge = Math.min(visualEdgeTarget, Math.max(46, (revealK + 0.5) * vCfg.span + 18));
             }
             // V18.358 — DIE HARTE WASSER-KAPPE (Schöpfer „wieso sehe ich immernoch die Wassergrenze,
@@ -80590,7 +80604,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.410.0";
+AnazhRealm.VERSION = "18.411.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
