@@ -229,6 +229,13 @@ jobs:
         # Fels->Rezept nach Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression rot.
         run: npm run gate:v1-resolve
 
+      - name: V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik
+        # V3: die P4-Invariante als Linse. Null-Renderer + Foundry-ON (der Worker bäckt GPU-frei):
+        # tickt die Welt, enumeriert die Instanz-Gruppen, klassifiziert nach Foundry-Leaf (f:/fimp:)
+        # vs Grammatik. 0 Grammatik-Baum-Gruppen = kein Nachbau. Der Scatter trägt Bäume UND Fels/
+        # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
+        run: npm run gate:no-second-treebuilder
+
       - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)
         # P7: die Kreatur-Haut (bake-core Skin-Isosurface) ist am Asset-Vertrag angedockt (v2). Bäckt
         # die FROZEN Kreatur-Specs (Avatar + Seelen) über bake-core DIREKT in Node neu (THREE-frei,

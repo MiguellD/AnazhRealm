@@ -50773,13 +50773,24 @@ class AnazhRealm {
                 // wird der Fern-Baum DEFERRIERT (übersprungen) — NIE die Grammatik-Geometrie als Lückenbüßer.
                 // Der nächste Scatter-Durchgang (Bewegung/Thin, nach dem Impostor-Prefetch) platziert das Studio-
                 // Asset. So gibt es keinen Nachbau mehr, den man „drunter" findet, solange das Studio lebt.
-                const foundryTreePreset =
-                    layer.kind === "tree" && this._foundryEnabled() ? this._foundryPresetFor(species) : null;
-                if (foundryTreePreset) {
-                    const preset = foundryTreePreset;
+                // V3 — DER SCATTER TRÄGT DAS STUDIO-KLEID AUCH FÜR FELS/KIESEL (Schöpfer „hör auf zu weichen,
+                // wir wollen die aus dem Studio"): nicht nur Bäume — JEDE foundry-gemappte Streu-Art zieht ihr
+                // ECHTES Studio-Asset (Fels→findling/basalt/sediment/zacken/geroell · Kiesel→geroell · Blume ·
+                // Strauch). Die Impostor-Fernstufe (Krone→billiges Billboard) gilt NUR Bäumen; Fels/Kristall/
+                // Blume bleiben L2-Geometrie (die Foundry backt für sie keinen Impostor). Lädt das Asset noch →
+                // DEFERRIEREN (kein Grammatik-Nachbau); nur eine WIRKLICH ungemappte Art (kein Foundry-Zwilling)
+                // fällt auf die Grammatik-Deko, die DORT die einzige Quelle ist. Foundry-aus (headless) → alles
+                // Grammatik (gate-treu). So ist der Scatter nah=fern=Studio, kein Zweit-System mehr.
+                const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+                if (foundryPreset) {
+                    const preset = foundryPreset;
                     const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
                     let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
-                    if (!(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length)) {
+                    if (
+                        !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
+                        this._foundryPresetIsTree(preset)
+                    ) {
+                        // Nur Bäume haben ein gebackenes Fern-Billboard (LOD2); Fels/Blume nicht.
                         const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
                         if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
                     }
@@ -50794,12 +50805,10 @@ class AnazhRealm {
                     }
                 }
                 if (!bpName) {
-                    // P4 — DIE EINE BAUM-QUELLE (Schöpfer „der Nachbau muss WEG"). Trägt eine lebende
-                    // Foundry die BAUM-Art, gibt es keinen Grammatik-Render-Nachbau: das Studio-Asset
-                    // lud noch nicht (oben `region._deferredFoundry` + `continue`) → diesen Frame kein
-                    // Baum, KEIN Ersatz. Fels/Kiesel/Understory haben KEINEN Foundry-Zwilling → ihre
-                    // Grammatik ist die EINZIGE Quelle (kein Nachbau) und bleibt; ebenso eine exotische
-                    // Worker-lose Einbettung (Foundry aus), wo die Grammatik auch die Bäume trägt.
+                    // Nur eine UNGEMAPPTE Art (foundryPreset null) erreicht das — ihre Grammatik ist die EINZIGE
+                    // Quelle (kein Nachbau). Ein foundry-gemappter Baum kann hier NICHT landen (oben deferriert);
+                    // die Sicherheits-Wand bleibt trotzdem stehen: bei lebender Foundry rendert KEIN Baum Grammatik
+                    // (gate:no-second-treebuilder beweist es). Foundry-aus → Grammatik trägt alles (gate-treu).
                     if (layer.kind === "tree" && this._foundryEnabled()) continue;
                     const keys = this._buildVariantLODs(species, variantIndex);
                     if (!keys) continue;

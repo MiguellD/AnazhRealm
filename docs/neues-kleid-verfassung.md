@@ -30,12 +30,17 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 
 Der Chokepoint `_buildVariantLODs` gibt bei lebender + bereiter Foundry, die die Art kennt, **null**
 zurück → kein Aufrufer (Scatter · LOD-Switch · Platzierung) KANN einen Grammatik-Nachbau setzen, egal
-welcher Pfad. Der Scatter (`_scatterPass`) unterdrückt den Grammatik-Render für BAUM-Schichten, wenn
-die Foundry lebt (`layer.kind === "tree" && this._foundryEnabled()) continue`) — lädt das Studio-Asset
-noch, wird die Zelle deferriert (`region._deferredFoundry`) + neu gestreamt, NIE ein Grammatik-Ersatz
-(„wenn kein Baum spawnt, ist es so"). Fels/Kiesel/Understory haben KEINEN Foundry-Zwilling → ihre
-Grammatik ist dort die EINZIGE Quelle (kein Nachbau) und bleibt. Der RICHTER (`_growTreeBlueprintRich`
-→ Tags/Physik) + die Understory (`_growTreeBlueprintForSpawn`) bleiben load-bearing.
+welcher Pfad. **V3 (Schöpfer „wir wollen die aus dem Studio"): der Scatter (`_scatterPass`) zieht JEDE
+foundry-gemappte Streu-Art durch die Foundry** — nicht nur Bäume, sondern auch Fels/Kiesel
+(findling/basalt/sediment/zacken/geroell) · Blume · Strauch (`foundryPreset = this._foundryEnabled() ?
+this._foundryPresetFor(species) : null` statt nur `layer.kind === "tree"`). Die Impostor-Fernstufe
+(Krone→Billboard) gilt nur Bäumen; Fels/Blume bleiben L2-Geometrie. Lädt das Studio-Asset noch, wird
+die Zelle deferriert (`region._deferredFoundry`) + neu gestreamt, NIE ein Grammatik-Ersatz („wenn kein
+Baum spawnt, ist es so"). Nur eine WIRKLICH ungemappte Art (kein Foundry-Zwilling, z. B. Understory-
+Farne der Understory-Grammatik) fällt auf die Grammatik-Deko, die dort die einzige Quelle bleibt. Der
+RICHTER (`_growTreeBlueprintRich` → Tags/Physik) + die Understory (`_growTreeBlueprintForSpawn`) bleiben
+load-bearing. **Die Linse:** `gate:no-second-treebuilder` (Null-Renderer + Foundry-ON) tickt die Welt +
+beweist ZAHL-genau: 0 Grammatik-Baum-Gruppen, der Scatter trägt Studio-Presets (Bäume + geroell/Fels).
 
 ### Gesetz 2 — EIN Wuchs
 
