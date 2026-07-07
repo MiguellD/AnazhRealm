@@ -170,6 +170,12 @@ jobs:
         # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
         run: npm run gate:asset-contract
 
+      - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
+        # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
+        # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
+        # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
+        run: npm run gate:foundry-warm
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

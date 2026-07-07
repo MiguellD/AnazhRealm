@@ -63160,16 +63160,27 @@ class AnazhRealm {
         // zurück, Z.1239: „Kein Renderer" → KEIN zweiter GPU-Kontext, KEIN Crash). Sie liefert ihre
         // ECHTEN Bäume (Skelett+Rinde+Blätter+WURZELN+TOTE ÄSTE + ihr eigenes LOD) als Geometrie-
         // Puffer; AnazhRealm baut daraus Meshes + pflanzt sie 1:1. Ein Edit im Studio ändert die
-        // Bäume in AnazhRealm — dieselben Regler, dasselbe LOD, alle Assets, byte-1:1. Nur im echten
-        // Browser mit DOM + echtem Renderer (headless-Null-Gate → Alt-Pfad, wie der Null-Renderer den
-        // GPU stubt; die Portal-Brücke lädt dort das Studio-iframe ohnehin nicht sinnvoll).
-        return typeof document !== "undefined" && !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        // Bäume in AnazhRealm — dieselben Regler, dasselbe LOD, alle Assets, byte-1:1.
+        // P3a (der neues-kleid-Pipeline-Plan): die Foundry ist jetzt ein WORKER (nicht mehr ein
+        // iframe) — sie läuft überall, wo es Worker gibt, AUCH headless (kein DOM/Renderer nötig für
+        // die Geometrie). Der Impostor-Bake (GL) hält bis P5 ein schmales Bake-iframe (nur im echten
+        // Browser). Nur echte Worker-Losigkeit → Alt-Pfad.
+        // GATE-DISZIPLIN (V-Messung, 07.07.): der volle Playtest baut die Welt im Null-Renderer über
+        // den Grammatik-Pfad (grown_*); die Foundry dort zu ERZWINGEN flippt 35 grammatik-kalibrierte
+        // Bänder (die P4 löscht/migriert, wenn der Fallback fällt — dann kippt der Gate sauber auf die
+        // Foundry). Bis dahin: die PRODUKTION (echter Browser) fährt den Worker (der Deadlock-Umbau),
+        // der Null-Renderer-Gate bleibt Grammatik. Der Worker-Beweis HEADLESS läuft über
+        // gate:foundry-warm (window.__anazhForceFoundry erzwingt den Worker dort → W1 provierbar geheilt).
+        if (typeof Worker === "undefined") return false;
+        if (typeof window !== "undefined" && window.__anazhForceFoundry) return true;
+        return !(this.state.renderer && this.state.renderer._isHeadlessNull);
     }
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
         if (this._foundry) return this._foundry;
         const f = {
-            iframe: null,
+            worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
+            bakeIframe: null, // P3b-LÖSCHKANDIDAT — das schmale GL-Bake-iframe NUR für Impostor, stirbt mit P5
             ready: false,
             pending: new Map(),
             reqSeq: 1,
@@ -63180,40 +63191,61 @@ class AnazhRealm {
         };
         this._foundry = f;
         try {
-            const iframe = document.createElement("iframe");
-            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-            iframe.style.cssText =
-                "position:absolute;width:8px;height:8px;left:-9999px;top:-9999px;border:0;visibility:hidden;pointer-events:none;";
-            iframe.src = "worlds/terrain/index.html?asset-foundry=1&v=" + (AnazhRealm.VERSION || "");
-            f.iframe = iframe;
-            window.addEventListener("message", (ev) => {
-                if (!f.iframe || ev.source !== f.iframe.contentWindow) return;
+            // P3a: der Studio-Generator läuft als WORKER — dieselben Dateien wie worlds/terrain/
+            // index.html (self.__PHYTO_FOUNDRY_WORKER=true schaltet den Foundry-Modus; init() kehrt vor
+            // jedem Renderer zurück). P0 bewies Worker==iframe byte-identisch (720/720). importScripts
+            // braucht ABSOLUTE URLs — die Blob-Worker-URL trägt keine Basis, new URL(..., location.href)
+            // respektiert auch einen Unterpfad. Die Studio-lib-Kette in Ladereihenfolge (FoliagePass
+            // extends THREE.Pass braucht EffectComposer davor; phytogenesis liest __phytoCore).
+            const v = "?v=" + (AnazhRealm.VERSION || "");
+            const rel = [
+                "worlds/terrain/lib/three-r128.min.js",
+                "worlds/terrain/lib/OrbitControls.js",
+                "worlds/terrain/lib/PointerLockControls.js",
+                "worlds/terrain/lib/BufferGeometryUtils.js",
+                "worlds/terrain/lib/CopyShader.js",
+                "worlds/terrain/lib/LuminosityHighPassShader.js",
+                "worlds/terrain/lib/FXAAShader.js",
+                "worlds/terrain/lib/EffectComposer.js",
+                "worlds/terrain/lib/RenderPass.js",
+                "worlds/terrain/lib/MaskPass.js",
+                "worlds/terrain/lib/ShaderPass.js",
+                "worlds/terrain/lib/UnrealBloomPass.js",
+                "phyto-core.js",
+                "worlds/terrain/phytogenesis.js",
+            ];
+            const base = typeof location !== "undefined" ? location.href : "";
+            const abs = rel.map((p) => new URL(p + v, base).href);
+            const boot =
+                "self.__PHYTO_FOUNDRY_WORKER=true;importScripts(" +
+                abs.map((u) => JSON.stringify(u)).join(",") +
+                ");init();";
+            const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+            f.worker = worker;
+            worker.onerror = () => {
+                /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
+            };
+            worker.onmessage = (ev) => {
                 const m = ev.data;
                 if (!m || typeof m !== "object") return;
                 if (m.type === "ready" && m.world === "terrain") {
                     f.ready = true;
-                    // ZUERST das Rezeptbuch durch das Portal ziehen (die PRESETS-Daten), DANN
-                    // die Assets vorwaermen. Der Blueprint wird aus dem Studio gespeist.
+                    // ZUERST das Rezeptbuch + Welt-/Render-Daten durch den Worker ziehen, DANN die Assets
+                    // vorwaermen (derselbe Handshake wie das iframe, nur self.postMessage statt "*").
                     try {
-                        f.iframe.contentWindow.postMessage({ type: "get-recipes", reqId: "recipes" }, "*");
-                        // DIE BREITE TAILLE: auch die Welt-LOOK-DATEN (Boden-/Fels-Palette + Blatt-
-                        // Grundfarbe) durchs Portal ziehen — AnazhRealms Boden/Geologie/Vegetation
-                        // liest sie live (der Schoepfer editiert das Studio, die Welt folgt).
-                        f.iframe.contentWindow.postMessage({ type: "get-world-params", reqId: "wparams" }, "*");
-                        // DAS NEUE KLEID — DER WAHRNEHMUNGS-KANAL: die Sichtweite, die LOD-Distanzen/Fades,
-                        // die Wald-Dichte + den Understory-Raster durchs Portal ziehen. AnazhRealm adoptiert
-                        // sie 1:1 (dieselbe Sichtweite wie im Wald, dasselbe nahe LOD, dieselben Distanzen/
-                        // Fades, dieselbe Wiese/Blumen/Buesche im selben Radius) — der Schoepfer editiert den
-                        // Config-Block im externen File, AnazhRealm folgt.
-                        f.iframe.contentWindow.postMessage({ type: "get-render-config", reqId: "rcfg" }, "*");
+                        worker.postMessage({ type: "get-recipes", reqId: "recipes" });
+                        // DIE BREITE TAILLE + DER WAHRNEHMUNGS-KANAL: Boden-/Fels-Palette + Blatt-Grundfarbe
+                        // sowie Sichtweite/LOD/Fades/Dichte/Understory durch den Worker ziehen — AnazhRealm
+                        // adoptiert sie 1:1 (der Schoepfer editiert das Studio, die Welt folgt).
+                        worker.postMessage({ type: "get-world-params", reqId: "wparams" });
+                        worker.postMessage({ type: "get-render-config", reqId: "rcfg" });
                     } catch (_e) {}
                     this._foundryPrefetchLibrary();
                 } else if (m.type === "recipes") {
                     // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
                     this._foundryIngestRecipes(m.book);
                 } else if (m.type === "world-params") {
-                    // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-
-                    // Farbquellen gespeist (live, kein hartkodiertes Abbild mehr).
+                    // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-Farbquellen.
                     this._foundryIngestWorldParams(m.params);
                 } else if (m.type === "render-config") {
                     // Der Wahrnehmungs-Config ist da: Sichtweite/LOD/Fades/Dichte/Understory adoptiert.
@@ -63224,20 +63256,49 @@ class AnazhRealm {
                         f.pending.delete(m.reqId);
                         p(m.meshes || []);
                     }
-                } else if (m.type === "impostor") {
-                    // Die Fernstufe (L2): der Studio-Baecker lieferte den 8-Winkel-Billboard-Atlas.
-                    const p = f.pending.get(m.reqId);
-                    if (p) {
-                        f.pending.delete(m.reqId);
-                        p(m.payload || null);
-                    }
                 }
-            });
-            document.body.appendChild(iframe);
+                // impostor: der Worker hat kein GL -> der 8-Winkel-Bake kommt vom schmalen Bake-iframe
+                // (_foundryEnsureBakeIframe, P3b-LÖSCHKANDIDAT bis P5), nicht von hier.
+            };
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
         return f;
+    }
+    // P3b-LÖSCHKANDIDAT (stirbt mit P5, Impostor auf den EINEN Haupt-Renderer): der Impostor-Bake
+    // braucht GL, der Worker hat keins. Bis dahin trägt ein SCHMALES Bake-iframe (dieselbe Studio-
+    // Datei, ?asset-foundry=1) NUR die bake-impostor-Antworten; lazy erzeugt beim ersten Impostor-
+    // Bedarf, nur im echten Browser (headless/Null-Gate -> kein Impostor, die Ferne fällt dort nicht an).
+    _foundryEnsureBakeIframe() {
+        const f = this._foundry;
+        if (!f) return null;
+        if (f.bakeIframe) return f.bakeIframe;
+        if (typeof document === "undefined") return null;
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) return null;
+        try {
+            const iframe = document.createElement("iframe");
+            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
+            iframe.style.cssText =
+                "position:absolute;width:8px;height:8px;left:-9999px;top:-9999px;border:0;visibility:hidden;pointer-events:none;";
+            iframe.src = "worlds/terrain/index.html?asset-foundry=1&v=" + (AnazhRealm.VERSION || "");
+            // NUR die impostor-Antwort vom iframe nehmen (die Geometrie/Daten trägt der Worker) —
+            // das iframe sendet zwar auch ready/recipes, die ignorieren wir hier bewusst.
+            window.addEventListener("message", (ev) => {
+                if (!f.bakeIframe || ev.source !== f.bakeIframe.contentWindow) return;
+                const m = ev.data;
+                if (!m || typeof m !== "object" || m.type !== "impostor") return;
+                const p = f.pending.get(m.reqId);
+                if (p) {
+                    f.pending.delete(m.reqId);
+                    p(m.payload || null);
+                }
+            });
+            document.body.appendChild(iframe);
+            f.bakeIframe = iframe;
+            return iframe;
+        } catch (_e) {
+            return null;
+        }
     }
     // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
     // Portal empfangen und als EINE Quelle halten. Der Blueprint liest hieraus (Rezeptbuch), statt
@@ -63325,15 +63386,12 @@ class AnazhRealm {
     }
     _foundryRequest(presetId, seed, lod, season) {
         const f = this._foundry;
-        if (!f || !f.ready || !f.iframe || !f.iframe.contentWindow) return Promise.resolve(null);
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const reqId = "r" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                f.iframe.contentWindow.postMessage(
-                    { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" },
-                    "*"
-                );
+                f.worker.postMessage({ type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" });
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
@@ -63356,12 +63414,16 @@ class AnazhRealm {
     // eigener Baecker, der Studio-Edit fliesst mit (der Schoepfer-Weg).
     _foundryRequestImpostor(presetId, seed, season) {
         const f = this._foundry;
-        if (!f || !f.ready || !f.iframe || !f.iframe.contentWindow) return Promise.resolve(null);
+        if (!f) return Promise.resolve(null);
+        // P3b-LÖSCHKANDIDAT: der Impostor-Bake (GL) läuft über das schmale Bake-iframe (der Worker
+        // hat kein GL). Bis P5 den Bake auf den EINEN Haupt-Renderer hebt. Kein iframe (headless) → null.
+        const bake = this._foundryEnsureBakeIframe();
+        if (!bake || !bake.contentWindow) return Promise.resolve(null);
         const reqId = "i" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                f.iframe.contentWindow.postMessage(
+                bake.contentWindow.postMessage(
                     { type: "bake-impostor", reqId, presetId, seed, season: season || "summer" },
                     "*"
                 );
