@@ -76099,10 +76099,17 @@ class AnazhRealm {
             // seinem Außenradius → die Kante, die der Fog decken muss, ist
             // der Mantel-Rand (4.3 km), nicht mehr der Chunk-Ring: die
             // geliebte Weite kehrt zurück, die Wetter-Formel führt wieder.
-            const visualEdgeTarget =
-                this.state.horizonMantle && !(this.state.atmosphere && this.state.atmosphere.horizonMantle === false)
-                    ? AnazhRealm.HORIZON_MANTLE.outerRadius
-                    : ringEdge;
+            // STUDIO-MODELL (Schöpfer „voll kippen"; die Anpassungs-Achse war INVERTIERT): der Reveal-/Nebel-
+            // Ziel-Rand ist die DICHTE WALD-KANTE (foliageRadius, gekappt auf den gebauten Ring), NICHT der
+            // 4.3-km-Horizont-Mantel. So schliesst der Nebel an der Wald-Krause wie im Studio (phytogenesis
+            // fog.far ~120 ≈ Wald-R 64) — man sieht NIE über den Wald in die baumlose Makro-Wiese/Mantel-Schale
+            // (die „ferne Kulisse, die alte Wiese"). Der Mantel rendert dahinter IM Nebel (unsichtbar; sein
+            // Cull + camera.far-Kopplung sind der Perf-Folgeschritt S1b). Die Tiefe kommt aus der DICHTE in der
+            // Nebelkuppel, nicht aus der Fernsicht — der Kern-Trick des Studios, den wir jetzt adaptieren.
+            const _folR = Number.isFinite(this.state.foliageRadius)
+                ? this.state.foliageRadius
+                : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+            const visualEdgeTarget = Math.min(_folR, ringEdge);
             // §6.5 (V18.164, Befund 23 — GEMESSEN diag-startloch): das START-
             // LOCH war die FOG-KOPPLUNG. fog.far las die VERSPROCHENE Kante
             // (Mantel 4.3 km), während beim Boot erst 1–12 von 81 Ring-Chunks
@@ -76177,16 +76184,13 @@ class AnazhRealm {
             // Nebel (kein Überflug). Der Lade-Nebel-Reveal (`sm`, kappt beim Boot auf die gebaute Kante) UND
             // die Wetter-Dimmung (rainyMix, im Wald nicht vorhanden → als sanfter Faktor bewahrt) bleiben als
             // min()-Terme aktiv. Ohne Studio-Config bleibt die Alt-Formel (150·fogMult) = 0 Regress.
-            const rcfg = this.state.studioRenderConfig;
-            const fogFarBase =
-                rcfg && Number.isFinite(rcfg.sight)
-                    ? rcfg.sight * (1 - rainyMix * 0.35)
-                    : (150 - rainyMix * 55) * fogMult;
+            // STUDIO-MODELL: die Basis-Sicht folgt NATIV der Wald-Kante (`visualEdgeTarget`) — kein Legacy-
+            // 750 m (150·fogMult) und kein async, race-anfälliger `studioRenderConfig.sight`-Snap mehr (die
+            // Studio-Sicht-Logik gehört in den DEFAULT-Zustand, nicht in ein spätes `if(rcfg)`). Die Wald-
+            // Kante IST jetzt die Sicht. Die rainyMix-Wetter-Dimmung bleibt als sanfter Faktor.
+            const fogFarBase = visualEdgeTarget * (1 - rainyMix * 0.35);
             fog.far = Math.min(fogFarBase, sm, visualEdgeTarget);
-            const fogNearBase =
-                rcfg && Number.isFinite(rcfg.sight)
-                    ? rcfg.sight * (Number.isFinite(rcfg.fogNearMul) ? rcfg.fogNearMul : 0.35) * (1 - rainyMix * 0.35)
-                    : (35 - rainyMix * 13) * fogMult;
+            const fogNearBase = visualEdgeTarget * 0.35 * (1 - rainyMix * 0.35);
             fog.near = Math.min(fogNearBase, fog.far * 0.45);
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +

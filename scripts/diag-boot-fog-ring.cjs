@@ -108,9 +108,11 @@ const server = http.createServer((req, res) => {
         stub(2);
         out.fogFarRamp2 = measure();
 
-        // SZENARIO C — DIE WELT AM ZIEL (activeRing == target == 4, voll gebaut): JETZT öffnet
-        // der geliebte Mantel-Weitblick — der Nebel darf weit sein (Regress-Wand: der Fix
-        // klemmt die Sicht NICHT dauerhaft klein).
+        // SZENARIO C — DIE WELT AM ZIEL (activeRing == target == 4, voll gebaut): STUDIO-MODELL
+        // (Schöpfer „voll kippen"): der Nebel schliesst an der WALD-KANTE (Ring-/foliageRadius-
+        // Kante ~194 m), NICHT am 4.3-km-Mantel. Man sieht die dichte Krause bis zum Rand, dann
+        // Nebel — nie die baumlose Makro-Wiese (die „ferne Kulisse"). Die Sicht wächst zur vollen
+        // Wald-Kante (klemmt nicht klein), öffnet aber NICHT jenseits davon (Regress-Wand).
         r.state._activeRingRadius = 4;
         stub(4);
         out.fogFarSettled = measure();
@@ -145,10 +147,15 @@ const server = http.createServer((req, res) => {
     // B — die Kante weitet mit dem wachsenden Ring (größer als der Ein-Chunk-Boot).
     if (!(S.fogFarRamp2 != null && S.fogFarRamp2 > S.fogFarRamp0))
         errs.push(`B: die Ramp-Kante wuchs nicht mit dem Ring (${fmt(S.fogFarRamp0)} → ${fmt(S.fogFarRamp2)} m)`);
-    // C — REGRESS-WAND: am Ziel-Ring öffnet der Sicht-Weitblick (klar weiter als der Ein-Chunk-Boot) —
-    // der Fix klemmt die Sicht NICHT dauerhaft auf die Boot-Kante.
-    if (!(S.fogFarSettled != null && S.fogFarSettled > S.fogFarRamp0 + 40))
-        errs.push(`C: am Ziel-Ring öffnete der Weitblick NICHT (${fmt(S.fogFarSettled)} m ≤ Boot ${fmt(S.fogFarRamp0)} m+40) — der Fix klemmt die Sicht fest`);
+    // C — STUDIO-MODELL (Schöpfer „voll kippen"): am Ziel schliesst der Nebel an der WALD-KANTE
+    // (Ring-Kante ~194 m bei Ring 4), NICHT am 4.3-km-Mantel/748-m-Weitblick. ZWEI Wände: (C1) die Sicht
+    // klemmt NICHT auf die Boot-Kante (wächst zur vollen Wald-Kante), (C2) sie öffnet NICHT JENSEITS der
+    // Wald-Kante in die ferne Kulisse. Eine Regression, die den Mantel wieder freigibt, wird hier ROT.
+    const _ringEdge4 = (4 + 0.5) * 43.2; // die gebaute Ring-Kante bei Ziel-Ring 4 = die Wald-Kante
+    if (!(S.fogFarSettled != null && S.fogFarSettled > S.fogFarRamp2))
+        errs.push(`C1: die Sicht wuchs am Ziel nicht zur vollen Wald-Kante (${fmt(S.fogFarRamp2)} → ${fmt(S.fogFarSettled)} m)`);
+    if (!(S.fogFarSettled != null && S.fogFarSettled <= _ringEdge4 + 60))
+        errs.push(`C2: der Nebel öffnete JENSEITS der Wald-Kante auf ${fmt(S.fogFarSettled)} m (> ${fmt(_ringEdge4 + 60)}) — die ferne Kulisse/der Mantel-Weitblick lebt wieder`);
     // D — der Kokon bleibt eng (≤ ~20 m, AWAKEN_FOG_FAR=14).
     if (!(S.fogFarAwaken != null && S.fogFarAwaken <= 20))
         errs.push(`D: der Erwachen-Kokon ist nicht eng (${fmt(S.fogFarAwaken)} m > 20)`);
@@ -159,7 +166,7 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Ein-Chunk-Boot kappt den Nebel auf die gebaute Kante (kein ferner Sichtring), er weitet mit dem Ring und öffnet am Ziel den Mantel-Weitblick; der Erwachen-Kokon bleibt eng."
+        "\n✅ GRÜN (STUDIO-MODELL) — der Nebel kappt beim Boot auf die gebaute Kante, weitet mit dem Ring und schliesst am Ziel an der WALD-KANTE (~194 m), NICHT am 4.3-km-Mantel — man sieht nie über den Wald in die ferne Kulisse; der Erwachen-Kokon bleibt eng."
     );
     process.exit(0);
 })().catch((e) => {
