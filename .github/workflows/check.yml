@@ -236,6 +236,13 @@ jobs:
         # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
         run: npm run gate:no-second-treebuilder
 
+      - name: V4 Saison-Flip progressiv — kein O(archs)-Entfern-Spike beim Jahreszeit-Wechsel
+        # V4(A): der Saison-Wechsel füllt eine Queue statt alle Foundry-Instanzen synchron zu entfernen;
+        # der `_drainSeasonFlip`-Scheduler-Job (prio 3) macht je Frame <= SEASON_FLIP_PER_TICK kalt, der
+        # budgetierte Rewarm re-platziert sie in der neuen Saison. Null-Renderer + Foundry-ON: 0 synchrone
+        # Removes im Flip-Call (war O(archs)), Drain <= Budget/Frame, Instanz-Zahl erholt sich.
+        run: npm run gate:season-flip
+
       - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)
         # P7: die Kreatur-Haut (bake-core Skin-Isosurface) ist am Asset-Vertrag angedockt (v2). Bäckt
         # die FROZEN Kreatur-Specs (Avatar + Seelen) über bake-core DIREKT in Node neu (THREE-frei,

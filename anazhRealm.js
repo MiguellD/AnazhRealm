@@ -64292,13 +64292,37 @@ class AnazhRealm {
         if (!this._foundry) return;
         const archs = this.state.architectures;
         if (!Array.isArray(archs)) return;
-        for (const entry of archs) {
-            if (!entry || !entry.instanced || typeof entry.type !== "string") continue;
-            if (!this._foundryPresetFor(entry.type)) continue;
-            if (this._archInstanceRemove) this._archInstanceRemove(entry);
-            entry.instanced = false;
+        // V4 — DER SAISON-FLIP IST PROGRESSIV (Schöpfer „vollende die Härtung"): statt ALLE Foundry-
+        // Instanzen SYNCHRON in EINEM Frame zu entfernen (O(archs)-Spike + alle Bäume ploppen weg und
+        // kehren langsam zurück), wird eine QUEUE befüllt. `_drainSeasonFlip` (ein Scheduler-Job, prio 3)
+        // macht je Frame eine kleine Charge (SEASON_FLIP_PER_TICK) KALT; der bereits pro Frame laufende,
+        // budgetierte `_foundryRewarmColdTrees` re-platziert sie in der NEUEN Saison (kein zweiter Rewarm-
+        // Pfad, Gesetz #0). `state.season` ist beim Aufruf schon neu → der Drain deckt nur die Entfernung.
+        // `_foundryPresetForEntry` (V1-konsistent) deckt auch die grown_/Varianten via `_lodSpecies`.
+        // Queue/Cursor sind INSTANZ-Felder (this._x, nicht state.X → nicht serialisiert, kein audit:strict).
+        this._seasonFlipQueue = archs.filter(
+            (e) => e && e.instanced && typeof e.type === "string" && this._foundryPresetForEntry(e)
+        );
+        this._seasonFlipCursor = 0;
+    }
+    // V4 — der progressive Drain: entfernt je Frame bis SEASON_FLIP_PER_TICK Alt-Saison-Instanzen (macht sie
+    // kalt); der budgetierte Rewarm platziert sie neu. COUNT-gedeckelt (auch headless progressiv = die
+    // messbare Zahl); die `ms`-Deadline ist ein optionaler Sekundär-Guard (leeres Budget → 0 Arbeit).
+    _drainSeasonFlip(ms) {
+        const q = this._seasonFlipQueue;
+        if (!q || this._seasonFlipCursor >= q.length) {
+            this._seasonFlipQueue = null;
+            return;
         }
-        this._foundryRewarmColdTrees();
+        let n = Math.min(AnazhRealm.SEASON_FLIP_PER_TICK || 24, q.length - this._seasonFlipCursor);
+        while (n-- > 0) {
+            const e = q[this._seasonFlipCursor++];
+            if (e && e.instanced) {
+                this._archInstanceRemove(e);
+                e.instanced = false;
+            }
+        }
+        if (this._seasonFlipCursor >= q.length) this._seasonFlipQueue = null;
     }
     // ==================== WETTER: sichtbarer Regen ====================
     // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
@@ -79795,6 +79819,11 @@ class AnazhRealm {
                     }
                 },
             },
+            {
+                name: "seasonFlip",
+                prio: 3, // V4 — die progressive Saison-Flip-Entfernung: unter allem (nach Deko), wartet bei
+                run: (ms) => this._drainSeasonFlip(ms), // leerem Budget; nur aktiv nach einem Saison-Wechsel
+            },
         ];
     }
 
@@ -80618,6 +80647,10 @@ AnazhRealm.FOUNDRY_BUILD_PER_TICK = 4;
 // ohne den Main-Thread mit schweren Bauten zu spiken. Tunable (Schöpfer-GPU balanciert).
 AnazhRealm.FOUNDRY_PLACE_PER_TICK = 48; // gedockte Assets (billiger Instance) je Frame im Leerlauf
 AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK = 3; // NEUE Studio-Bake-Anfragen je Frame (Ein-Thread-Schlange schonen)
+// V4 — DER SAISON-FLIP IST PROGRESSIV: wieviele Alt-Saison-Foundry-Instanzen je Tick der Drain kalt macht
+// (dann re-platziert der budgetierte `_foundryRewarmColdTrees` sie in der neuen Saison). Klein → der Flip
+// verteilt sich über Ticks (kein O(archs)-Entfern-Spike); die Instanz-Zahl erholt sich progressiv.
+AnazhRealm.SEASON_FLIP_PER_TICK = 24;
 
 // V18.93 — DER DISTANZ-DECAY des Wasser-Automaten (T4-Plan §7, Regel 1 — der
 // Minecraft-Weg): jeder LATERALE Transfer liefert nur diesen Anteil beim
