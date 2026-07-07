@@ -176,6 +176,13 @@ jobs:
         # sah der headless-Gate nur den Grammatik-Alt-Pfad) — _foundryRequest liefert echte Meshes.
         run: npm run gate:foundry-warm
 
+      - name: Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)
+        # P2 Kern-Split: der Studio-Generator lebt jetzt in foundry-core.js (verschoben aus
+        # phytogenesis.js), die Shell liest seine Top-Level-Globals. Beweist, dass das Portal im vollen
+        # Display-Modus (Renderer+Welt+UI, nicht ?asset-foundry) ohne page-error bootet — ein
+        # übersehener Bezug flöge hier als ReferenceError auf (der asset-foundry-Modus kehrt vorher zurück).
+        run: npm run gate:portal-boot
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

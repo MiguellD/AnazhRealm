@@ -33617,7 +33617,11 @@ class AnazhRealm {
         // gecacht → ein config-später Gate ließe die Boot-Wiese für immer spärlich. Headless (null) →
         // `_foundryEnabled()` false, aber dort ist `_foliageDensityScale`=1 → ebenfalls voll (gate-treu).
         const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
-        const grassDensityScale = grassStudio ? 1 : this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        const grassDensityScale = grassStudio
+            ? 1
+            : this.state._foliageDensityScale != null
+              ? this.state._foliageDensityScale
+              : 1;
         const surfAt = (x, z) => {
             if (chunkEntry && chunkEntry.surfMap) {
                 const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
@@ -61175,8 +61179,7 @@ class AnazhRealm {
                 leaf.geom.attributes &&
                 leaf.geom.attributes.position &&
                 leaf.geom.attributes.position.count > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS);
-        if (this.state.useBatchedArch && !heavyLeaf)
-            return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
+        if (this.state.useBatchedArch && !heavyLeaf) return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
         const key = regional ? name + "#" + leafIdx + "@" + regionKey : name + "#" + leafIdx;
@@ -63212,6 +63215,7 @@ class AnazhRealm {
                 "worlds/terrain/lib/ShaderPass.js",
                 "worlds/terrain/lib/UnrealBloomPass.js",
                 "phyto-core.js",
+                "foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
                 "worlds/terrain/phytogenesis.js",
             ];
             const base = typeof location !== "undefined" ? location.href : "";
@@ -64447,7 +64451,9 @@ class AnazhRealm {
                     const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                     const regionSeed = `${worldSeed}|${d.sp}|${regX},${regZ}`;
                     const variantIndex =
-                        typeof this._treeVariantIndexFor === "function" ? this._treeVariantIndexFor(d.sp, regionSeed) : 0;
+                        typeof this._treeVariantIndexFor === "function"
+                            ? this._treeVariantIndexFor(d.sp, regionSeed)
+                            : 0;
                     this._enqueueVegetationSpawn(
                         d.sp,
                         { x: d.x, y: d.surfaceY + 0.5, z: d.z },

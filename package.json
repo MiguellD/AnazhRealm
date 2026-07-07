@@ -39,6 +39,7 @@
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",
+        "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",

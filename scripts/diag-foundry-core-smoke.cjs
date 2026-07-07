@@ -78,6 +78,8 @@ const LIBS = [
 ];
 for (const f of LIBS) vm.runInContext(fs.readFileSync(path.join(TERR, "lib", f), "utf8"), sandbox, { filename: f });
 vm.runInContext(fs.readFileSync(path.join(ROOT, "phyto-core.js"), "utf8"), sandbox, { filename: "phyto-core.js" });
+// P2: der Studio-Generator-Kern (foundry-core.js) VOR phytogenesis.js (die Shell liest seine Globals).
+vm.runInContext(fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"), sandbox, { filename: "foundry-core.js" });
 vm.runInContext(fs.readFileSync(path.join(TERR, "phytogenesis.js"), "utf8"), sandbox, { filename: "phytogenesis.js" });
 if (typeof sandbox.onmessage !== "function") {
     console.error("❌ Brücke hat self.onmessage nicht verdrahtet");

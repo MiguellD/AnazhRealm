@@ -41,6 +41,7 @@ const WORKER_SCRIPTS = [
     "/worlds/terrain/lib/ShaderPass.js",
     "/worlds/terrain/lib/UnrealBloomPass.js",
     "/phyto-core.js",
+    "/foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
     "/worlds/terrain/phytogenesis.js",
 ];
 
