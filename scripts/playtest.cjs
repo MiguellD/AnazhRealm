@@ -56357,6 +56357,17 @@ async function checkBandRing6Workshop(ctx) {
     // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
     await page.evaluateOnNewDocument((realRenderer) => {
         window.__anazhHeadlessSkinResCap = 64;
+        // P4 — DER MECHANIK-GATE PRÜFT DIE LEBENDE GRAMMATIK, die Foundry-Pipeline die dedizierten
+        // Gates. Seit P4 ist die Foundry die EINE aktive Baum-RENDER-Quelle in Produktion; die
+        // Grammatik-MECHANIK (`_growTreeBlueprintRich` = der Richter für Tags/Physik, die LOD-Bauplan-
+        // Erzeugung `_buildVariantLODs`, die Understory `_growTreeBlueprintForSpawn`, die Scatter-
+        // Promotion) LEBT weiter und ist load-bearing. Der volle Playtest (Null-Renderer, „MECHANIK
+        // braucht eine ZAHL") isoliert genau diese Mechanik → Foundry hier deterministisch AUS, sonst
+        // unterdrückt der `_buildVariantLODs`-Chokepoint die gewachsene Geometrie (return null), sobald
+        // der Worker im Warmup ready wird = flackernd rot. Die Foundry-als-Quelle beweisen headless die
+        // vier dedizierten Gates (gate:foundry-warm · foundry-deadlock · asset-contract · portal-boot,
+        // alle foundry-ON) + der Fast-Tier. „MECHANIK eine ZAHL, LOOK ein BILD, Pipeline ein Gate."
+        window.__anazhGateNoFoundry = true;
         // GPU-FREI: kein Band liest je ein Pixel (nur ein Wegwerf-Screenshot), die
         // Rasterung war ohnehin schon gestubbt. Der Null-Renderer entfernt den GPU-
         // Kontext ganz → der Mechanik-Gate ist effizient + ROBUST (kein swiftshader-

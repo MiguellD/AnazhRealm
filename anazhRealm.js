@@ -50780,8 +50780,13 @@ class AnazhRealm {
                     }
                 }
                 if (!bpName) {
-                    // GRAMMATIK — NUR wenn die Foundry AUS ist (headless/Gate/offline) oder den Preset nicht
-                    // kennt. Neben einem lebenden Studio steht KEIN Parallel-Default mehr (der 48h-Fehler).
+                    // P4 — DIE EINE BAUM-QUELLE (Schöpfer „der Nachbau muss WEG"). Trägt eine lebende
+                    // Foundry die BAUM-Art, gibt es keinen Grammatik-Render-Nachbau: das Studio-Asset
+                    // lud noch nicht (oben `region._deferredFoundry` + `continue`) → diesen Frame kein
+                    // Baum, KEIN Ersatz. Fels/Kiesel/Understory haben KEINEN Foundry-Zwilling → ihre
+                    // Grammatik ist die EINZIGE Quelle (kein Nachbau) und bleibt; ebenso eine exotische
+                    // Worker-lose Einbettung (Foundry aus), wo die Grammatik auch die Bäume trägt.
+                    if (layer.kind === "tree" && this._foundryEnabled()) continue;
                     const keys = this._buildVariantLODs(species, variantIndex);
                     if (!keys) continue;
                     bpName = keys[lod] || keys[0];
@@ -63164,19 +63169,22 @@ class AnazhRealm {
         // ECHTEN Bäume (Skelett+Rinde+Blätter+WURZELN+TOTE ÄSTE + ihr eigenes LOD) als Geometrie-
         // Puffer; AnazhRealm baut daraus Meshes + pflanzt sie 1:1. Ein Edit im Studio ändert die
         // Bäume in AnazhRealm — dieselben Regler, dasselbe LOD, alle Assets, byte-1:1.
-        // P3a (der neues-kleid-Pipeline-Plan): die Foundry ist jetzt ein WORKER (nicht mehr ein
-        // iframe) — sie läuft überall, wo es Worker gibt, AUCH headless (kein DOM/Renderer nötig für
-        // die Geometrie). Der Impostor-Bake (GL) hält bis P5 ein schmales Bake-iframe (nur im echten
-        // Browser). Nur echte Worker-Losigkeit → Alt-Pfad.
-        // GATE-DISZIPLIN (V-Messung, 07.07.): der volle Playtest baut die Welt im Null-Renderer über
-        // den Grammatik-Pfad (grown_*); die Foundry dort zu ERZWINGEN flippt 35 grammatik-kalibrierte
-        // Bänder (die P4 löscht/migriert, wenn der Fallback fällt — dann kippt der Gate sauber auf die
-        // Foundry). Bis dahin: die PRODUKTION (echter Browser) fährt den Worker (der Deadlock-Umbau),
-        // der Null-Renderer-Gate bleibt Grammatik. Der Worker-Beweis HEADLESS läuft über
-        // gate:foundry-warm (window.__anazhForceFoundry erzwingt den Worker dort → W1 provierbar geheilt).
+        // P3a/P4 (der neues-kleid-Pipeline-Plan): die Foundry ist ein WORKER (nicht mehr ein iframe) —
+        // sie läuft ÜBERALL, wo es Worker gibt, AUCH headless. P4: die Foundry ist die EINE AKTIVE
+        // QUELLE — überall, auch im Gate. Der Grammatik-RENDER-Fallback für Bäume/Felsen ist GELÖSCHT
+        // (Schöpfer 07.07.: „wenn kein Baum spawnt, ist es so — lieber als am Vergangenen hängen"):
+        // ein noch nicht gebackenes Studio-Asset bedeutet KURZ kein Mesh (der Worker liefert async),
+        // KEIN Grammatik-Ersatz. Der RICHTER (`_growTreeBlueprintRich` → parts[]/Tags/Physik) + die
+        // Understory-Grammatik (`_growTreeBlueprintForSpawn`, Büsche/Farne — die Foundry deckt sie nicht)
+        // bleiben. Nur echte Worker-Losigkeit (exotische Einbettung) → Alt-Pfad.
         if (typeof Worker === "undefined") return false;
-        if (typeof window !== "undefined" && window.__anazhForceFoundry) return true;
-        return !(this.state.renderer && this.state.renderer._isHeadlessNull);
+        // TEST-HOOK: einzelne Gate-Bänder prüfen die noch LEBENDE Grammatik-MECHANIK (der Richter
+        // `_growTreeBlueprintRich`, die LOD-Bauplan-Erzeugung, die Scatter-Promotion, der Understory —
+        // die Foundry deckt die Baum-RENDER-Quelle, nicht die Mechanik). Sie schalten die Foundry
+        // gezielt aus, um die Mechanik isoliert zu prüfen; die Foundry-als-Quelle beweisen die
+        // dedizierten Gates (foundry-warm/deadlock/parity/contract). Produktion + der Rest: Foundry an.
+        if (typeof window !== "undefined" && window.__anazhGateNoFoundry) return false;
+        return true;
     }
     _ensureAssetFoundry() {
         if (!this._foundryEnabled()) return null;
@@ -63218,7 +63226,7 @@ class AnazhRealm {
                 "foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
                 "worlds/terrain/phytogenesis.js",
             ];
-            const base = typeof location !== "undefined" ? location.href : "";
+            const base = typeof window !== "undefined" && window.location ? window.location.href : "";
             const abs = rel.map((p) => new URL(p + v, base).href);
             const boot =
                 "self.__PHYTO_FOUNDRY_WORKER=true;importScripts(" +
