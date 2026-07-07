@@ -183,6 +183,12 @@ jobs:
         # übersehener Bezug flöge hier als ReferenceError auf (der asset-foundry-Modus kehrt vorher zurück).
         run: npm run gate:portal-boot
 
+      - name: Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)
+        # P4: der overBudget?0-bakeBudget liess die nahen LOD0/1-Bäume unter Last nie backen (=die kahle
+        # Nähe). Seit P3a bäckt der Worker off-thread → der Throttle ist hinfällig. Beweist headless, dass
+        # unter erzwungenem Dauer-Über-Budget kalte Nah-Bäume zu Foundry konvergieren (vorher: 0).
+        run: npm run gate:foundry-deadlock
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

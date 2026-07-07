@@ -64067,7 +64067,15 @@ class AnazhRealm {
         // nicht flutet. Über Budget: nur 1 Instance, KEINE neue Bake-Anfrage (der Frame atmet zuerst).
         const overBudget = this.state._frameOverBudget;
         let placeBudget = overBudget ? 1 : AnazhRealm.FOUNDRY_PLACE_PER_TICK || 48;
-        let bakeBudget = overBudget ? 0 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK || 3;
+        // P4 — DIE DEADLOCK-HEILUNG (der neues-kleid-Pipeline-Plan, Schöpfer-Befund „kahle Nähe"):
+        // der `overBudget ? 0`-bakeBudget liess die NAHEN LOD0/1-Bäume unter Last NIE backen → sie
+        // blieben kalt → nie platziert = die kahle Nähe (die Ferne prefetcht nur LOD2, deshalb fiel es
+        // nur nah auf). WURZEL des alten 0-Throttles: der Bake lief im SINGLE-THREAD-iframe → eine Flut
+        // fror den Main-Thread. SEIT P3a ist die Foundry ein WORKER → der Bake läuft OFF-THREAD; die
+        // Anfrage ist ein billiger postMessage, der Worker absorbiert die Schlange, das RESULT-Platzieren
+        // bleibt placeBudget-begrenzt (Main-Thread geschützt). Also backen wir AUCH über Budget → die
+        // Nähe konvergiert (unter Last langsamer, aber nie 0). Das ist der von P3a freigeschaltete Fix.
+        let bakeBudget = overBudget ? 2 : AnazhRealm.FOUNDRY_BAKE_REQ_PER_TICK || 3;
         for (const entry of archs) {
             if (placeBudget <= 0 && bakeBudget <= 0) break;
             if (!entry) continue;
