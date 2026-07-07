@@ -63521,6 +63521,22 @@ class AnazhRealm {
                 const gp = this._foundryPresetFor(m[1]);
                 if (gp) return gp;
             }
+            // V1 — DAS KRISTALL-KLEID (Schöpfer „kristalle nicht wie im Studio; jedes Asset ein
+            // Blueprint"): die FORMATIONS-Varianten tragen einen NUMMERN-Suffix (`kristall_var7` /
+            // `fels_var3`), den der exakte Preset-Map-Lookup verfehlt → sie fielen auf den Part-Pfad
+            // (GEMESSEN diag-v1-probe: 22× `kristall_var7 → NULL`, mesh-gebaut = die „alten Kristalle").
+            // Den Suffix abstreifen wie beim grown-Baum: Kristall → das EINE Studio-Rezept `kristalle`;
+            // Fels nach der Form-Klasse des Bauplans (brocken→findling · geroell→geroell · nadel→zacken ·
+            // stapel→sediment; Fallback sediment) → die Fels-VIELFALT bleibt (jede Form ihr Studio-Fels),
+            // die per-Instanz-Variation trägt `_foundryVariantFor(seed)`. `glut_var` bleibt BEWUSST
+            // Part-Look (Schöpfer-Entscheid „glutbrunnen bleibt noch") → nicht gemappt.
+            const vm = entry.type.match(/^(kristall|fels)_var\d+$/);
+            if (vm) {
+                if (vm[1] === "kristall") return "kristalle";
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                const fc = bp && bp._formClass;
+                return { brocken: "findling", geroell: "geroell", nadel: "zacken", stapel: "sediment" }[fc] || "sediment";
+            }
         }
         return null;
     }

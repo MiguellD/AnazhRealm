@@ -46,6 +46,7 @@
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",
         "gate:boot-fog-ring": "node scripts/diag-boot-fog-ring.cjs",
         "gate:foundry-impostor": "node scripts/diag-foundry-impostor.cjs",
+        "gate:v1-resolve": "node scripts/diag-v1-resolve.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
