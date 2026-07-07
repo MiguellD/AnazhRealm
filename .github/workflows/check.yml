@@ -209,11 +209,12 @@ jobs:
         # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
         run: npm run gate:foundry-impostor
 
-      - name: V1 Kristall-Kleid — Fels/Kristall-Varianten tragen das Studio-Rezept
+      - name: V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept
         # V1: die Formations-Varianten (kristall_var${N}/fels_var${N}) lösen jetzt auf ein Studio-
-        # Preset auf (vorher NULL = Part-Pfad = die „alten Kristalle"). Null-Renderer, GPU-frei:
-        # prüft die reine _foundryPresetForEntry-Auflösung (Kristall->kristalle, Fels->Rezept nach
-        # Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression (Suffix-Handling gebrochen) rot.
+        # Preset auf (vorher NULL = Part-Pfad = die „alten Kristalle"). V2: der Werkstatt-Rezept-Regler
+        # erkennt die Repräsentanten (fels_var0->rock, kristall_var0->crystal). Null-Renderer, GPU-frei:
+        # prüft die reine _foundryPresetForEntry-Auflösung + _workshopRecipeKind (Kristall->kristalle,
+        # Fels->Rezept nach Form-Klasse, glut bleibt bewusst Part-Look). Eine Regression rot.
         run: npm run gate:v1-resolve
 
       - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)

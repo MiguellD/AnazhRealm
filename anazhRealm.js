@@ -71504,7 +71504,13 @@ class AnazhRealm {
     // Ist das Asset noch nicht gezogen, wird es EINMAL angefragt und die Vorschau bei Ankunft neu gebaut.
     _workshopFoundryPreviewGroup(bpName) {
         if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
-        const preset = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bpName) : null;
+        // V1 — VORSCHAU == WELT: die Formations-Repräsentanten der Werkstatt tragen den `_var0`-Suffix
+        // (`kristall_var0`/`fels_var0`, V18.413-Bündelung), den der exakte `_foundryPresetFor`-Lookup
+        // verfehlte → die Vorschau fiel auf die Part-Grammatik zurück (der „Nachbau in der Werkstatt").
+        // `_foundryPresetForEntry` streift den Suffix ab (dieselbe Auflösung wie die WELT) → die Vorschau
+        // zeigt exakt das Studio-Asset, das die Welt platziert. (Named-Arten + grown-Bäume unverändert.)
+        const preset =
+            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: bpName }) : null;
         if (!preset) return null;
         const f = this._ensureAssetFoundry();
         if (!f) return null;

@@ -37,6 +37,12 @@ const server = http.createServer((req, res) => {
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glut_var3", "kristall_geode", "felsturm", "stein_block"]) {
             res[t] = { exists: !!bp[t], formClass: bp[t] && bp[t]._formClass, preset: resolve(t) };
         }
+        // V2 — WERKSTATT: der Rezept-Regler klassifiziert die Repräsentanten (Karte je Art) korrekt +
+        // der `_var0`-Suffix löst über `_foundryPresetForEntry` auf → die Vorschau zeigt das Studio-Asset.
+        res._workshop = {
+            felsKind: r._workshopRecipeKind ? r._workshopRecipeKind(bp["fels_var0"]) : "nomethod",
+            kristallKind: r._workshopRecipeKind ? r._workshopRecipeKind(bp["kristall_var0"]) : "nomethod",
+        };
         return res;
     });
     await browser.close(); server.close();
@@ -64,6 +70,17 @@ const server = http.createServer((req, res) => {
     check("felsturm", (r) => r.preset === "zacken", "Regression");
     check("stein_block", (r) => r.preset === "basalt", "Regression");
 
-    if (fails.length) { console.log(`\n❌ V1-Gate ROT: ${fails.join(", ")}`); process.exit(1); }
-    console.log("\n✅ V1-Gate GRÜN — jede Fels/Kristall-Variante trägt ihr Studio-Rezept, glut bleibt Part-Look.");
+    // V2 — WERKSTATT: der Rezept-Regler erkennt die Repräsentanten (Karte je Art).
+    console.log("--- V2 Werkstatt: Rezept-Kind der Formations-Repräsentanten ---");
+    const ws = out._workshop || {};
+    const wcheck = (label, got, want) => {
+        const ok = got === want;
+        console.log(`  ${ok ? "✅" : "❌"} ${label.padEnd(15)} -> ${got}  ${ok ? "" : "(erwartet " + want + ")"}`);
+        if (!ok) fails.push(label);
+    };
+    wcheck("fels_var0 kind", ws.felsKind, "rock");
+    wcheck("kristall_var0 kind", ws.kristallKind, "crystal");
+
+    if (fails.length) { console.log(`\n❌ Gate ROT: ${fails.join(", ")}`); process.exit(1); }
+    console.log("\n✅ Gate GRÜN — V1: jede Fels/Kristall-Variante trägt ihr Studio-Rezept (glut Part-Look); V2: der Werkstatt-Rezept-Regler erkennt die Repräsentanten.");
 })();
