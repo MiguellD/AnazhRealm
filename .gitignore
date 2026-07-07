@@ -12,3 +12,6 @@ artifacts/
 # Lokal überlebt sie als Komfort-Backup der aktuell aktiven Welt; die
 # kanonische Persistenz liegt in localStorage (anazhRealmState_<worldId>).
 anazhRealmState.json
+
+# Runtime-Flugschreiber-Artefakt (POST /api/perf-trace) — wie anazhRealmState.json nicht getrackt
+anazhRealmPerf.json
