@@ -196,7 +196,13 @@ const server = http.createServer((req, res) => {
         const cfg = r.constructor.LOD_DISTANCES;
         const baseRef = cfg && cfg.lodRef ? cfg.lodRef : 14;
         r.state.lodRef = baseRef;
-        const dist = (cfg.thresh01 + cfg.thresh12) / 2; // 120 m: > thresh01, < thresh12
+        // WELLE S2 — der SSE-Stretch ist jetzt GEDECKELT (visStretchMax → heightFactor-Floor
+        // 1/visStretchMax): ein Riese behält NUR noch beschränkt länger Detail (kein L0 mehr bis
+        // 194 m). Wir proben knapp JENSEITS thresh12, im Fenster [thresh12, thresh12/floor), wo die
+        // gedeckelte SSE einen Riesen (noch LOD1) von einem kleinen Baum (schon LOD2) trennt — die
+        // SSE-Idee bleibt sichtbar, aber die Streckung ist begrenzt.
+        const stretchMax = cfg && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
+        const dist = cfg.thresh12 * (1 + (stretchMax - 1) * 0.5); // default 45 m (∈ [thresh12, thresh12/floor))
         const bigH = cfg.thresh12; // sehr grosser Baum (Höhe ≫ lodRef)
         const smallH = Math.max(2, baseRef * 0.4); // kleiner Baum
         const lodTall = r._chooseLODForDistance(dist, undefined, bigH);

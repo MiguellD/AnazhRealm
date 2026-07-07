@@ -51294,8 +51294,22 @@ class AnazhRealm {
         const cfgRef = Number.isFinite(cfg.lodRef) && cfg.lodRef > 0 ? cfg.lodRef : 14;
         const lodRef =
             this.state && Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? this.state.lodRef : cfgRef;
-        const h = Number.isFinite(visHeight) && visHeight > 0 ? visHeight : lodRef;
-        // Sichthöhen-Faktor auf 1 gekappt (kleine Bäume nie früher).
+        const hRaw = Number.isFinite(visHeight) && visHeight > 0 ? visHeight : lodRef;
+        // WELLE S2 (Nah-Demotion) — DER SSE-STRETCH IST GEDECKELT: der rohe
+        // Sichthöhen-Faktor `min(lodRef/h, 1)` schrumpft die Wahrnehmungs-Distanz
+        // eines GROSSEN Baumes unbegrenzt (ein 45-m-Riese bei raw 45 m liest als
+        // ~12 m → bleibt L0 bis raw ~50 m, L1 bis raw ~100 m → der ganze Wald-Kragen
+        // klebt auf der 126-k-L0-Geometrie, gemessen diag-render-load). Die Studio-
+        // Vorlage demotet das LAUB (den Kosten-Träger) nach nahezu ABSOLUTER Distanz
+        // (phytogenesis `dnL`, auf die Blatt-Sichthöhe gekappt) — AnazhRealms EINE
+        // Geometrie pro Stufe ist laub-dominiert, also gilt hier dieselbe Kappung.
+        // Die effektive Sichthöhe wird auf `lodRef · visStretchMax` gedeckelt →
+        // ein Baum ≤ `lodRef · visStretchMax` behält gestuftes SSE (etwas länger
+        // Detail), darüber ist die Streckung begrenzt (heightFactor-Floor =
+        // 1/visStretchMax) → der Riese demotet im Kragen zu L1/L2 wie im Studio.
+        const stretchMax =
+            Number.isFinite(cfg.visStretchMax) && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
+        const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
         // Perf-Multiplikator aus der EINEN Regler-Quelle.
         const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
@@ -81449,6 +81463,7 @@ AnazhRealm.LOD_DISTANCES = {
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
+    visStretchMax: 1.25, // WELLE S2 — max. SSE-Sichthöhen-Streckung: die effektive Sichthöhe des LOD-Choosers ist auf lodRef·visStretchMax gedeckelt (heightFactor-Floor = 1/visStretchMax = 0.8) → grosse Bäume behalten ETWAS länger Detail (gestuft bis lodRef·visStretchMax = 15 m), aber der Riese klebt nicht mehr bis 194 m auf L0 (er demotet im Kragen zu L1/L2 wie das Studio-Laub). Nur der CPU-LOD-Chooser (Tick + Scatter-Promotion), NICHT die Shader-aH0-Stempel.
     // Die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0), über die das Dither-Crossfade die Laub-Karten
     // weich ausblendet, BEVOR die nächste LOD-Stufe greift.
     fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [32,40]

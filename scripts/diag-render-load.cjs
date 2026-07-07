@@ -227,7 +227,23 @@ const server = http.createServer((req, res) => {
             if (trulyNoCull) bySystem[sys].noCull += tris;
             if (sys === "hism") {
                 const k = String(u2.archInstanceKey || "");
-                const bucket = /_lod2#/.test(k) ? "lod2" : /_lod1#/.test(k) ? "lod1" : "lod0";
+                // WELLE S2 — die FOUNDRY-Keys tragen ihr LOD im leafKey, NICHT im _lodN-Namen:
+                //   `fimp:...`               → L2 (Studio-Billboard-Impostor, der Baum-Fernpfad)
+                //   `f:preset|var|LOD|season:p` → LOD ist das 3. |-Feld
+                // ohne diese Erkennung bucketet die alte `/_lod1#/`-Regex JEDEN Foundry-Baum als
+                // LOD0 (die „LOD1 0 / LOD2 0"-Fehlmessung, obwohl L1-Bäume existierten).
+                // Der archInstanceKey ist `entry.type#leafKey[@region]` (z.B.
+                // `baum_tanne#f:tanne|11|1|summer:2`) → das Foundry-LOD steht NACH dem `#`.
+                const fLodM = /(?:^|#)f:[^|#]*\|[^|#]*\|(\d)\|/.exec(k);
+                const bucket = /(?:^|#)fimp:/.test(k)
+                    ? "lod2"
+                    : fLodM
+                      ? "lod" + fLodM[1]
+                      : /_lod2#/.test(k)
+                        ? "lod2"
+                        : /_lod1#/.test(k)
+                          ? "lod1"
+                          : "lod0";
                 hismLOD[bucket].tris += tris;
                 hismLOD[bucket].inst += inst;
                 hismLOD[bucket].groups += 1;
@@ -302,7 +318,29 @@ const server = http.createServer((req, res) => {
                 withShadow = { error: String(e).slice(0, 80) };
             }
         }
+        // WELLE S2 — die WAHRE Demotion am ENTRY-Level: entry._lodLevel je Baum-
+        // Architektur + rohe Distanz → zeigt, ob der Tick die placed Foundry-Bäume
+        // tatsächlich nach Distanz demotet (die Quelle der Wahrheit, unabhängig vom
+        // Key-Parse; sie sieht auch die Demotion, die auf ihren Foundry-Bake wartet).
+        const treeLevel = { l0: 0, l1: 0, l2: 0, maxDist: 0, byBand: {} };
+        const pmp = s.playerMesh && s.playerMesh.position;
+        if (pmp && Array.isArray(s.architectures)) {
+            for (const e of s.architectures) {
+                if (!e || !e._lodSpecies || !e.position) continue;
+                const dx = e.position.x - pmp.x,
+                    dz = e.position.z - pmp.z;
+                const d = Math.sqrt(dx * dx + dz * dz);
+                if (d > treeLevel.maxDist) treeLevel.maxDist = d;
+                const L = e._lodLevel | 0;
+                treeLevel[L === 2 ? "l2" : L === 1 ? "l1" : "l0"]++;
+                const band = Math.min(9, Math.floor(d / 20)) * 20; // 20-m-Bänder
+                const bk = band + "-" + (band + 20) + "m";
+                if (!treeLevel.byBand[bk]) treeLevel.byBand[bk] = [0, 0, 0];
+                treeLevel.byBand[bk][L === 2 ? 2 : L === 1 ? 1 : 0]++;
+            }
+        }
         return {
+            treeLevel,
             byCat: acc,
             totals: {
                 tris: totalTris,
@@ -423,6 +461,25 @@ const server = http.createServer((req, res) => {
             for (const [p, v] of top) console.log("    " + p.padEnd(28) + fmt(v.tris).padStart(8) + " | " + v.inst);
         }
         console.log("  HISM nach LOD: LOD0 " + per(h.lod0) + " · LOD1 " + per(h.lod1) + " · LOD2 " + per(h.lod2));
+    }
+    if (out.treeLevel) {
+        const t = out.treeLevel;
+        console.log(
+            "  BAUM-ENTRY-LOD (entry._lodLevel, die WAHRE Demotion): L0 " +
+                t.l0 +
+                " · L1 " +
+                t.l1 +
+                " · L2 " +
+                t.l2 +
+                " · maxDist " +
+                Math.round(t.maxDist) +
+                "m"
+        );
+        const bands = Object.keys(t.byBand).sort((a, b) => parseInt(a) - parseInt(b));
+        for (const b of bands) {
+            const v = t.byBand[b];
+            console.log("    " + b.padEnd(9) + " L0=" + v[0] + " L1=" + v[1] + " L2=" + v[2]);
+        }
     }
     console.log(
         "  SCHATTEN-PASS: " +
