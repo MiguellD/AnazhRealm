@@ -3,6 +3,9 @@
     "version": "18.414.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
+    "engines": {
+        "node": ">=22"
+    },
     "scripts": {
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
