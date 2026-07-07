@@ -13601,7 +13601,10 @@ class AnazhRealm {
             // (`_activeRingRadius`, der V18.301-Lade-Rhythmus). So füllt sich der Nah-Chunk, DANN wächst der
             // Ring, DANN zieht die Vegetation nach — genau der geforderte „erst fertig, dann erweitern".
             const { span: _frSpan } = this._voxelChunkConfig();
-            const _ringR = st._activeRingRadius != null ? st._activeRingRadius : ringTarget;
+            const _ringR =
+                st._activeRingRadius != null
+                    ? st._activeRingRadius
+                    : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
             const _ringReach = (_ringR + 1) * _frSpan; // die Außenkante des gebauten Rings in Metern
             frTarget = Math.min(frTarget, _ringReach);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
