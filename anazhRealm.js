@@ -60464,14 +60464,27 @@ class AnazhRealm {
             ch = rec.cellH;
         // Der LOD1-Baum als Bake-Subjekt (Leaves aus der EINEN Flatten-Quelle;
         // geteilte Geometrien/Materialien — NICHT disposen).
-        const keys = this._buildVariantLODs(rec.species, rec.variantIndex);
-        const lod1Key = keys && keys[1];
-        if (!lod1Key) throw new Error("kein LOD1-Bauplan für " + key);
-        const flat = this._archFlattenBlueprint(lod1Key);
-        if (!flat || !Array.isArray(flat.leaves) || flat.leaves.length === 0)
-            throw new Error("LOD1 ohne Leaves für " + key);
+        // P5 (DAS NEUE KLEID — DER IMPOSTOR AUF DEM EINEN HAUPT-RENDERER): trägt der Record die
+        // Foundry-Flagge, ist das Subjekt der FOUNDRY-LOD1-Baum (worker-produzierte Geometrie, in
+        // `_foundryEnsureImpostorRecord` vorgelegt als `_foundryBakeLeaves`) — DIESELBE RTT-Maschine,
+        // KEIN Bake-iframe mehr. Sonst der klassische Grammatik-LOD1 (der Chokepoint gibt bei lebender
+        // Foundry null, aber der Foundry-Zweig braucht `_buildVariantLODs` gar nicht).
+        let bakeLeaves;
+        if (rec.foundry) {
+            bakeLeaves = rec._foundryBakeLeaves;
+            if (!Array.isArray(bakeLeaves) || bakeLeaves.length === 0)
+                throw new Error("Foundry-LOD1 ohne Leaves für " + key);
+        } else {
+            const keys = this._buildVariantLODs(rec.species, rec.variantIndex);
+            const lod1Key = keys && keys[1];
+            if (!lod1Key) throw new Error("kein LOD1-Bauplan für " + key);
+            const flat = this._archFlattenBlueprint(lod1Key);
+            if (!flat || !Array.isArray(flat.leaves) || flat.leaves.length === 0)
+                throw new Error("LOD1 ohne Leaves für " + key);
+            bakeLeaves = flat.leaves;
+        }
         const group = new THREE.Group();
-        for (const leaf of flat.leaves) {
+        for (const leaf of bakeLeaves) {
             if (leaf.shadowTwin) continue; // der Schatten-Zwilling gehört nicht ins Bild
             const mesh = new THREE.Mesh(leaf.geom, leaf.mat);
             if (leaf.localMatrix) {
@@ -63191,7 +63204,9 @@ class AnazhRealm {
         if (this._foundry) return this._foundry;
         const f = {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
-            bakeIframe: null, // P3b-LÖSCHKANDIDAT — das schmale GL-Bake-iframe NUR für Impostor, stirbt mit P5
+            // P5: das GL-Bake-iframe ist GESCHNITTEN — der Impostor-Atlas backt jetzt auf dem EINEN
+            // Haupt-Renderer (RTT, `_bakeImpostorAtlasRTT` über die `foundry`-Flagge). Ein Renderer,
+            // ein Bake-Pfad; kein null-origin-iframe mehr.
             ready: false,
             pending: new Map(),
             reqSeq: 1,
@@ -63269,48 +63284,14 @@ class AnazhRealm {
                         p(m.meshes || []);
                     }
                 }
-                // impostor: der Worker hat kein GL -> der 8-Winkel-Bake kommt vom schmalen Bake-iframe
-                // (_foundryEnsureBakeIframe, P3b-LÖSCHKANDIDAT bis P5), nicht von hier.
+                // impostor (P5): der Worker liefert die LOD1-GEOMETRIE; der 8-Winkel-Atlas backt daraus
+                // auf dem EINEN Haupt-Renderer (RTT, `_foundryEnsureImpostorRecord` → `_bakeImpostorAtlasRTT`).
+                // Kein Bake-iframe mehr.
             };
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
         return f;
-    }
-    // P3b-LÖSCHKANDIDAT (stirbt mit P5, Impostor auf den EINEN Haupt-Renderer): der Impostor-Bake
-    // braucht GL, der Worker hat keins. Bis dahin trägt ein SCHMALES Bake-iframe (dieselbe Studio-
-    // Datei, ?asset-foundry=1) NUR die bake-impostor-Antworten; lazy erzeugt beim ersten Impostor-
-    // Bedarf, nur im echten Browser (headless/Null-Gate -> kein Impostor, die Ferne fällt dort nicht an).
-    _foundryEnsureBakeIframe() {
-        const f = this._foundry;
-        if (!f) return null;
-        if (f.bakeIframe) return f.bakeIframe;
-        if (typeof document === "undefined") return null;
-        if (this.state.renderer && this.state.renderer._isHeadlessNull) return null;
-        try {
-            const iframe = document.createElement("iframe");
-            iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-            iframe.style.cssText =
-                "position:absolute;width:8px;height:8px;left:-9999px;top:-9999px;border:0;visibility:hidden;pointer-events:none;";
-            iframe.src = "worlds/terrain/index.html?asset-foundry=1&v=" + (AnazhRealm.VERSION || "");
-            // NUR die impostor-Antwort vom iframe nehmen (die Geometrie/Daten trägt der Worker) —
-            // das iframe sendet zwar auch ready/recipes, die ignorieren wir hier bewusst.
-            window.addEventListener("message", (ev) => {
-                if (!f.bakeIframe || ev.source !== f.bakeIframe.contentWindow) return;
-                const m = ev.data;
-                if (!m || typeof m !== "object" || m.type !== "impostor") return;
-                const p = f.pending.get(m.reqId);
-                if (p) {
-                    f.pending.delete(m.reqId);
-                    p(m.payload || null);
-                }
-            });
-            document.body.appendChild(iframe);
-            f.bakeIframe = iframe;
-            return iframe;
-        } catch (_e) {
-            return null;
-        }
     }
     // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
     // Portal empfangen und als EINE Quelle halten. Der Blueprint liest hieraus (Rezeptbuch), statt
@@ -63424,34 +63405,6 @@ class AnazhRealm {
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
     // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
     // eigener Baecker, der Studio-Edit fliesst mit (der Schoepfer-Weg).
-    _foundryRequestImpostor(presetId, seed, season) {
-        const f = this._foundry;
-        if (!f) return Promise.resolve(null);
-        // P3b-LÖSCHKANDIDAT: der Impostor-Bake (GL) läuft über das schmale Bake-iframe (der Worker
-        // hat kein GL). Bis P5 den Bake auf den EINEN Haupt-Renderer hebt. Kein iframe (headless) → null.
-        const bake = this._foundryEnsureBakeIframe();
-        if (!bake || !bake.contentWindow) return Promise.resolve(null);
-        const reqId = "i" + f.reqSeq++;
-        return new Promise((resolve) => {
-            f.pending.set(reqId, resolve);
-            try {
-                bake.contentWindow.postMessage(
-                    { type: "bake-impostor", reqId, presetId, seed, season: season || "summer" },
-                    "*"
-                );
-            } catch (_e) {
-                f.pending.delete(reqId);
-                resolve(null);
-                return;
-            }
-            setTimeout(() => {
-                if (f.pending.has(reqId)) {
-                    f.pending.delete(reqId);
-                    resolve(null);
-                }
-            }, 45000);
-        });
-    }
     _foundryPresetFor(species) {
         const map = {
             // Baeume
@@ -63568,106 +63521,83 @@ class AnazhRealm {
     // L2 — den Studio-Billboard-Atlas EINES (Preset,Variante) holen + als AnazhRealm-Impostor-Record
     // halten (in `_impostorAtlasMap`, das die EINE Impostor-Material-Quelle liest). Null solange der
     // Studio-Bake laeuft (der Aufrufer laesst L2 kalt), false bei Fehler (Aufrufer nimmt Geometrie).
+    // P5 (DAS NEUE KLEID — DER IMPOSTOR AUF DEM EINEN HAUPT-RENDERER, KEIN iframe): das Bake-Subjekt
+    // ist der FOUNDRY-LOD1-Baum (worker-produzierte Geometrie). Wir holen die LOD1-Gruppe aus dem
+    // Foundry-Cache; sobald sie steht, baut `_ensureImpostorAtlas` (die EINE Impostor-Quelle) den Record
+    // mit Silhouetten-Fallback + reiht den RTT-Bake ein (`_bakeImpostorAtlasRTT` liest über die
+    // `foundry`-Flagge die LOD1-Leaves). DIESELBE Maschine wie die Grammatik-Impostoren — ein Renderer,
+    // ein Bake-Pfad. Headless/Null-Renderer → der Silhouetten-Fallback bleibt (gate-treu, kein RTT).
     _foundryEnsureImpostorRecord(preset, variant, season) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         const key = "fimp:" + preset + "|" + variant + "|" + season;
         const cached = this._impostorAtlasMap.get(key);
         if (cached === "pending") return null;
-        if (cached) return cached;
-        if (!this._foundryImpReq) this._foundryImpReq = new Set();
-        if (!this._foundryImpReq.has(key)) {
-            this._foundryImpReq.add(key);
-            this._impostorAtlasMap.set(key, "pending");
-            // Repraesentativer Seed je Variante (deterministisch) — ein Studio-Baum je Varianten-Slot,
-            // wie die Vorlage per (Art,Variante) EIN Billboard bakt.
-            const seed = 1 + ((Math.imul(variant + 1, 2654435761) >>> 0) % 1000000);
-            this._foundryRequestImpostor(preset, seed, season).then((payload) => {
-                if (!payload || !payload.albedo) {
-                    this._impostorAtlasMap.delete(key);
-                    this._foundryImpReq.delete(key);
-                    return;
-                }
-                const rec = this._foundryBuildImpostorRecord(key, preset, variant, payload);
-                if (rec) {
-                    this._impostorAtlasMap.set(key, rec);
-                    this._scatterRefillPending = true; // ein Studio-Billboard kam an → deferrierte Fern-Regionen neu streamen
-                } else {
-                    this._impostorAtlasMap.delete(key);
-                    this._foundryImpReq.delete(key);
-                }
-                this._foundryRewarmColdTrees(); // das Billboard ist da -> wartende Fern-Baeume bauen
-            });
+        if (cached !== undefined) return cached; // Record ODER false (Foundry kann das nicht)
+        if (typeof THREE === "undefined" || typeof document === "undefined") return null;
+        // Die LOD1-Geometrie ist das Bake-Subjekt — aus dem Foundry-Cache (dieselbe Quelle wie der
+        // nahe Foundry-Baum). Fehlt sie, EINMAL anfordern; der nächste Tick findet sie gecacht.
+        const gkey = preset + "|" + variant + "|1|" + (season || "summer");
+        const group = this._foundryCacheGet(gkey);
+        if (group === undefined) {
+            const f = this._ensureAssetFoundry();
+            if (!f) return null;
+            if (!f.requested) f.requested = new Set();
+            if (!f.requested.has(gkey)) {
+                f.requested.add(gkey);
+                this._foundryRequest(preset, variant, 1, season || "summer").then((meshes) => {
+                    if (meshes) {
+                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
+                        this._scatterRefillPending = true;
+                    } else {
+                        f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
+                    }
+                    this._foundryRewarmColdTrees();
+                });
+            }
+            return null; // die Geometrie lädt (der Aufrufer lässt L2 kalt)
         }
-        return null;
+        if (group === null || !group.children || !group.children.length) {
+            this._impostorAtlasMap.set(key, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
+            return false;
+        }
+        // Frame aus der LOD1-Bounding-Box (Bake-Kamera + Billboard-Quad lesen dieselbe Formel).
+        const box = new THREE.Box3().setFromObject(group);
+        const totalH = Math.max(1, box.max.y - Math.min(0, box.min.y));
+        const maxR = Math.max(Math.abs(box.max.x), Math.abs(box.min.x), Math.abs(box.max.z), Math.abs(box.min.z), 0.5);
+        // Die Bake-Subjekt-Leaves aus der LOD1-Gruppe (geteilte Geometrien/Materialien — NICHT disposen).
+        const I = new THREE.Matrix4();
+        const leaves = [];
+        for (const child of group.children) {
+            if (child.geometry && child.material) leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I });
+        }
+        if (!leaves.length) {
+            this._impostorAtlasMap.set(key, false);
+            return false;
+        }
+        // Synthetisches Skelett-Hint NUR für Frame + Fallback-Silhouette (die echte Geometrie backt der
+        // RTT); die EINE Impostor-Quelle `_ensureImpostorAtlas` baut Record + Texturen + reiht den Bake ein.
+        const conifer = /fichte|tanne|kiefer|mammut/.test(preset);
+        const skelHint = {
+            totalH,
+            anchors: [{ x: maxR, y: totalH, z: 0 }],
+            foliageColor: 0x4a8a3a,
+            grammar: { foliage: { kind: conifer ? "needleSpray" : "leaf" } },
+        };
+        const rec = this._ensureImpostorAtlas(key, skelHint);
+        if (!rec) {
+            this._impostorAtlasMap.set(key, false);
+            return false;
+        }
+        rec.foundry = true;
+        rec._foundryBakeLeaves = leaves; // -> `_bakeImpostorAtlasRTT` liest sie über die Flagge
+        rec.species = preset;
+        rec.variantIndex = variant;
+        this._scatterRefillPending = true;
+        return rec;
     }
     // Den Studio-Payload (VERTIKALER 8-Zellen-Atlas cw×ch·V, bottom-up) in AnazhRealms HORIZONTALEN
     // Atlas (cw·V×ch) transponieren — genau das Layout, das der 8-Winkel-Impostor-Shader liest
     // (uv.x + v)/V. Pro Ansicht die Zelle drehen: Canvas-Zeile 0 (oben) = Kronenspitze (uv v=1).
-    _foundryBuildImpostorRecord(key, preset, variant, payload) {
-        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const cw = payload.cw | 0,
-            ch = payload.ch | 0,
-            V = payload.V | 0;
-        if (!cw || !ch || !V) return null;
-        const mkCanvas = (buf) => {
-            if (!buf) return null;
-            const cv = document.createElement("canvas");
-            cv.width = cw * V;
-            cv.height = ch;
-            const ctx = cv.getContext("2d");
-            if (!ctx) return null;
-            const img = ctx.createImageData(cw * V, ch);
-            const outRow = cw * V * 4,
-                cellRow = cw * 4;
-            for (let v = 0; v < V; v++) {
-                for (let y = 0; y < ch; y++) {
-                    const srcY = v * ch + (ch - 1 - y); // bottom-up + Zelle v -> Canvas-oben = Krone
-                    const srcBase = srcY * cellRow;
-                    const dstBase = y * outRow + v * cw * 4;
-                    for (let i = 0; i < cellRow; i++) img.data[dstBase + i] = buf[srcBase + i];
-                }
-            }
-            ctx.putImageData(img, 0, 0);
-            return cv;
-        };
-        const acv = mkCanvas(payload.albedo);
-        if (!acv) return null;
-        const ncv = mkCanvas(payload.normal);
-        const mkTex = (cv, srgb) => {
-            const t = new THREE.CanvasTexture(cv);
-            if (srgb) t.colorSpace = THREE.SRGBColorSpace; // nmap linear (Normalen sind DATEN)
-            t.generateMipmaps = true;
-            t.minFilter = THREE.LinearMipmapLinearFilter;
-            t.magFilter = THREE.LinearFilter;
-            t.wrapS = THREE.ClampToEdgeWrapping;
-            t.wrapT = THREE.ClampToEdgeWrapping;
-            try {
-                t.anisotropy = 4;
-            } catch (_e) {
-                /* anisotropy optional */
-            }
-            t.needsUpdate = true;
-            return t;
-        };
-        const height = Math.max(1, payload.height || 10);
-        const aspect = payload.aspect > 0 ? payload.aspect : 0.5;
-        const halfH = height * 0.5,
-            halfW = aspect * halfH;
-        return {
-            key,
-            map: mkTex(acv, true),
-            nmap: ncv ? mkTex(ncv, false) : null,
-            views: V,
-            cellW: cw,
-            cellH: ch,
-            rttBaked: true,
-            rttFailed: false,
-            species: preset,
-            variantIndex: variant,
-            frame: { totalH: height, maxR: halfW, halfH, halfW },
-            foundry: true,
-        };
-    }
     // L2 — das Studio-Billboard als HISM-Flat: EIN camera-facing Quad (Rahmen aus dem Studio-Bake)
     // + AnazhRealms 8-Winkel-Impostor-Material, das den Studio-Atlas sampelt (impostorKey -> der
     // gecachte Foundry-Record). Gecacht auf dem Record (alle Instanzen von Preset|Variante teilen
