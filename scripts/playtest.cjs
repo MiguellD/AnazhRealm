@@ -55989,11 +55989,13 @@ async function checkBandRing6Workshop(ctx) {
         out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
-        // Liste hat einen Eintrag pro Bauplan. V18.317/.347 — die Liste filtert die auto-gewachsenen
-        // Streaming-Varianten (`grown_<art>_v<N>`, re-wachsen f(seed)) HERAUS; der Test zählt darum
-        // auch nur die NICHT-grown-Baupläne (sonst Mismatch, sobald die Welt grown_-Varianten streamt).
+        // Liste hat einen Eintrag pro SICHTBAREM Bauplan. V18.317/.347 — die Liste filtert die auto-
+        // gewachsenen Streaming-Varianten (`grown_<art>_v<N>`) HERAUS; V18.413 — zusätzlich die Fels-/
+        // Kristall-/Glut-Formations-Varianten `*_var1+` (gebündelt: EINE Karte je Sorte, var0 = Repräsentant,
+        // wie im Studio). Der Test zählt darum mit DEMSELBEN Filter wie `_workshopRenderBlueprintList`.
         const list = document.getElementById("workshop-list");
-        const listableCount = Object.keys(r.state.blueprints).filter((n) => !String(n).startsWith("grown_")).length;
+        const _hidden = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
+        const listableCount = Object.keys(r.state.blueprints).filter((n) => !_hidden(n)).length;
         out.listShowsAllBlueprints = list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 
         // createBlueprint

@@ -196,6 +196,13 @@ jobs:
         # erst am Ziel den Weitblick öffnet; der Erwachen-Kokon bleibt eng.
         run: npm run gate:boot-fog-ring
 
+      - name: Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)
+        # V18.414: foliageRadius raste per perf-headroom auf MAX (240 m), waehrend der gebaute Ring erst
+        # 1 Chunk (43 m) war -> die Vegetation lag vor dem Boden = der ferne Billboard-Ring beim Spawn.
+        # Beweist headless (forcierter Nicht-headless-Ramp-Pfad), dass foliageRadius an der gebauten
+        # Ring-Kante bleibt statt auf MAX zu rennen.
+        run: npm run gate:boot-foliage-ring
+
       - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
         # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
         # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-

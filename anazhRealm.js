@@ -13592,7 +13592,18 @@ class AnazhRealm {
             // Kapazität. Die Vorlagen-Dichte lebt PRO Chunk (V18.406 volle Dichte + V18.407 Billboard-LOD) —
             // ein geladener Chunk ist dicht; die Welt füllt sich gemächlich von innen nach außen (der erste
             // Chunk günstig, dann wachsen). KEIN Zwingen des Sicht-Radius (das war der V18.407-Fehlgriff).
-            const frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
+            let frTarget = lerp(AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, effArch);
+            // V18.414 (Schöpfer „es wird ein riesiger ferner Ring mit Billboards bepflückt, statt erst
+            // den ersten Chunk zu beenden und DANN zu erweitern"): der `foliageRadius` raste (perf-headroom,
+            // leere Boot-Frames) auf MAX (240 m), WÄHREND der gebaute Terrain-Ring erst 1 Chunk (43 m) war —
+            // die Vegetation lag also weit VOR dem gebauten Boden = der ferne Billboard-Ring. Die Vegetation
+            // MUSS mit dem Boden wachsen, nie voraus: den Radius auf die gebaute Ring-Kante kappen
+            // (`_activeRingRadius`, der V18.301-Lade-Rhythmus). So füllt sich der Nah-Chunk, DANN wächst der
+            // Ring, DANN zieht die Vegetation nach — genau der geforderte „erst fertig, dann erweitern".
+            const { span: _frSpan } = this._voxelChunkConfig();
+            const _ringR = st._activeRingRadius != null ? st._activeRingRadius : ringTarget;
+            const _ringReach = (_ringR + 1) * _frSpan; // die Außenkante des gebauten Rings in Metern
+            frTarget = Math.min(frTarget, _ringReach);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
             const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
             // wachsen sanft (+step), schrumpfen schneller (−2·step) — die Sicherheit zuerst.
@@ -50984,11 +50995,24 @@ class AnazhRealm {
         const pRegX = Math.floor(playerPos.x / SC.regionM);
         const pRegZ = Math.floor(playerPos.z / SC.regionM);
         let work = 0;
-        // (1) fehlende Ring-Regionen generieren (bounded)
+        // V18.414 (Schöpfer „erst den ersten Chunk beenden, DANN erweitern") — die ferne Scatter-Region
+        // (LOD2-Billboards) darf NICHT vor dem gebauten Boden streamen: eine Region wird nur generiert,
+        // wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (der jetzt auf die gebaute Ring-Kante gekappt
+        // ist). Die Spieler-Region (nearDist 0) streamt immer; ferne Regionen warten, bis der Ring +
+        // der Radius zu ihnen wachsen — der nächste Tick streamt sie dann von selbst (selbst-heilend,
+        // kein Rebuild nötig). Headless → foliageRadius = MAX → alle Regionen (gate-treu).
+        const _folR = st => (st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX);
+        const _foliageR = _folR(this.state);
+        const _regionInReach = (rx, rz) => {
+            const nx = Math.max(rx * SC.regionM, Math.min(playerPos.x, (rx + 1) * SC.regionM));
+            const nz = Math.max(rz * SC.regionM, Math.min(playerPos.z, (rz + 1) * SC.regionM));
+            return Math.hypot(nx - playerPos.x, nz - playerPos.z) <= _foliageR;
+        };
+        // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da)
         for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame; dz++) {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
                 const rk = `${pRegX + dx},${pRegZ + dz}`;
-                if (!map.has(rk)) {
+                if (!map.has(rk) && _regionInReach(pRegX + dx, pRegZ + dz)) {
                     this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos);
                     work++;
                 }
@@ -80542,7 +80566,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.413.0";
+AnazhRealm.VERSION = "18.414.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

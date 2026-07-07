@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.413.0",
+    "version": "18.414.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "scripts": {
@@ -56,7 +56,8 @@
         "smoke:shim": "node scripts/smoke-shim.cjs",
         "smoke:selfboot": "node scripts/smoke-selfboot.cjs",
         "smoke:zeitportal": "node scripts/smoke-zeitportal.cjs",
-        "smoke:copresence": "node scripts/smoke-copresence.cjs"
+        "smoke:copresence": "node scripts/smoke-copresence.cjs",
+        "gate:boot-foliage-ring": "node scripts/diag-boot-foliage-ring.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",
