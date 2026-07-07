@@ -284,6 +284,15 @@ jobs:
         # Drift in der Isosurface-/smin-/Displace-/Taubin-Mathematik fliegt sofort auf.
         run: npm run gate:creature-contract
 
+      - name: S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)
+        # S4: der Impostor bäckt EAGER (kein `_frameOverBudget`-Gate mehr in `_tickImpostorBake` —
+        # der ferne Wald ist über Budget WEIL seine Bäume noch schwere Geometrie tragen; der Bake
+        # SENKT die Last, er darf nicht vom Budget blockiert werden; weiter ein RTT/Frame gedeckelt).
+        # Und die Werkstatt zeigt auf der L2-Baumstufe das 8-Winkel-Billboard (InstancedMesh aus dem
+        # Foundry-Impostor), NICHT die schwere L2-Geometrie. Null-Renderer, hardware-unabhängig:
+        # Source-Proben + Behavioral (der Aufruf @lod2 liefert die 6-Vertex-Impostor-Kreuz-Geometrie).
+        run: npm run gate:s4-impostor-workshop
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

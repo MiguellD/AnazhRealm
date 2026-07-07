@@ -60544,7 +60544,16 @@ class AnazhRealm {
         const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
         if (this._impostorBakePending) return 0; // ein Bake zur Zeit (async, mehrere Frames)
-        if (st._frameOverBudget) return 0; // erst die Frame-Zeit (V18.282)
+        // WELLE S4 — DER IMPOSTOR BÄCKT EAGER (Studio-Modell, Schöpfer „billboards werden
+        // kontinuierlich weiter erstellt, das ferne so stück für stück erweitert"): der alte
+        // `_frameOverBudget`-Gate (V18.282, Optik wartet über Budget) war hier ein HENNE-EI —
+        // der ferne Wald ist über Budget, WEIL seine Bäume noch schwere L1-Geometrie tragen (kein
+        // Impostor); der Gate verhinderte genau das Backen des Billboards, das die Last SENKT. Der
+        // Impostor-Bake ist die AUSNAHME zu V18.282: er ADDIERT keine Optik, er ERSETZT die schwere
+        // L2-Geometrie durch die billige Karte (netto last-SENKEND, permanent). Er bleibt streng
+        // gedeckelt (ein RTT-Bake pro Frame, async über mehrere Frames, die Queue drainet sich
+        // selbst) → ein bounded transienter Spike gegen einen bleibenden Gewinn, wie das Studio
+        // seinen Wald-Atlas eager bäckt. Headless/Null-Renderer → weiter no-op (unten).
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
         const key = this._impostorBakeQueue.shift();
@@ -71785,6 +71794,42 @@ class AnazhRealm {
         let lod = bp && Number.isFinite(bp._recipeLod) ? bp._recipeLod | 0 : 0;
         if (lod < 0) lod = 0;
         if (lod > 2) lod = 2;
+        // WELLE S4 — L2 IN DER WERKSTATT IST DAS BILLBOARD (Schöpfer „L2 ist nie ein billboard in der
+        // werkstatt"): die WELT serviert einen BAUM auf der L2-Stufe als 8-Winkel-Impostor
+        // (`_foundryFlattenFor` → `_foundryBuildImpostorFlat`, NICHT die schwere L2-Geometrie). Die
+        // Vorschau MUSS dasselbe zeigen (Vorschau == Welt), sonst lügt sie. Der Impostor-Record backt
+        // aus DEMSELBEN Studio-Baum (LOD1-RTT) → die Karte „stammt vom jeweiligen Baum ab". Die eine
+        // Impostor-Geometrie ist camera-facing + dekodiert Rotation/Skala aus der INSTANZ-Matrix →
+        // als 1-Instanz-InstancedMesh bauen (identity → aRot 0, weiss = kein Tint, der Atlas trägt die
+        // Farbe), NICHT als plain Mesh (sonst fehlt die Instanz-Matrix). Fels/Kristall/Blume behalten
+        // die L2-Geometrie (kein Impostor) — nur Bäume zweigen ab.
+        if (lod === 2 && typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(preset)) {
+            const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset);
+            if (flat === null) return null; // der RTT-Bake läuft → Vorschau bei Ankunft neu bauen
+            if (flat && Array.isArray(flat.leaves) && flat.leaves.length) {
+                const Ti = THREE;
+                const outImp = new Ti.Group();
+                for (const lf of flat.leaves) {
+                    if (!lf.geom || !lf.mat) continue;
+                    const inst = new Ti.InstancedMesh(lf.geom, lf.mat, 1);
+                    inst.setMatrixAt(0, new Ti.Matrix4());
+                    inst.instanceMatrix.needsUpdate = true;
+                    if (typeof inst.setColorAt === "function") {
+                        inst.setColorAt(0, new Ti.Color(1, 1, 1));
+                        if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+                    }
+                    inst.castShadow = false;
+                    inst.receiveShadow = false;
+                    inst.frustumCulled = false;
+                    inst.userData.sharedGeom = true;
+                    inst.userData.sharedMat = true;
+                    inst.userData.foundryPreview = true;
+                    outImp.add(inst);
+                }
+                if (outImp.children.length) return outImp;
+            }
+            // flat === false (Foundry kann keinen Impostor) → auf die L2-Geometrie unten zurückfallen.
+        }
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus dem Bauplan = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
@@ -81007,7 +81052,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.414.0";
+AnazhRealm.VERSION = "18.415.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
