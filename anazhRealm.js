@@ -70818,7 +70818,15 @@ class AnazhRealm {
         // Stand) und begruben die ~15 sauberen SPEZIES (`baum_eiche` …). Sie hier
         // ausblenden → die Werkstatt zeigt wieder die manipulierbaren Arten + eigenen
         // Baupläne. Die Spezies (kein `grown_`-Präfix) + alle User-Baupläne bleiben.
-        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => !String(n).startsWith("grown_"));
+        // V18.413 (Schöpfer „felsen einzeln in der werkstatt, statt gebündelt wie im studio;
+        // jedes asset müsste EIN blueprint haben") — dieselbe Klasse für die Fels-/Kristall-/
+        // Glut-FORMATIONEN: `_rockVariant`/`_crystalVariant`/`_glutVariant` legen je Typ N Streu-
+        // Varianten an (12 Fels · 8 Kristall · 6 Glut, alle mit IDENTISCHEM Label), die die Liste
+        // mit „Felsformation" ×12 usw. fluteten. Wie das Studio EIN Rezept je Sorte zeigt, zeigt die
+        // Werkstatt jetzt EINEN Repräsentanten je Formation (`*_var0`) — var1+ sind Streu-Render-
+        // Details (der Scatter nutzt sie weiter, sie bleiben in state.blueprints, nur die UI bündelt).
+        const _isHiddenVariant = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
+        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => !_isHiddenVariant(n));
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {
@@ -80534,7 +80542,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.412.0";
+AnazhRealm.VERSION = "18.413.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
