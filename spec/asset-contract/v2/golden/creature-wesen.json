@@ -1,0 +1,31 @@
+{
+ "cv": 2,
+ "id": "creature-wesen",
+ "kind": "skin",
+ "opts": {
+  "res": 48
+ },
+ "skin": {
+  "positions": {
+   "itemSize": 3,
+   "bytes": 30660,
+   "sha256": "863b78f491914aa910d688a1118fa8cd1829d8f0977565677c32a93697707d37"
+  },
+  "normals": {
+   "itemSize": 3,
+   "bytes": 30660,
+   "sha256": "f867ab065f79d2202be179975caaf1ef9e1f20b4de9346bf597c9cee0cce25dd"
+  },
+  "colors": {
+   "itemSize": 3,
+   "bytes": 30660,
+   "sha256": "1a1ded0017b58d6806117d0fbad2ee434b5efc0d3a74d5e85ae64f4f74574f58"
+  },
+  "vertexCount": 2555,
+  "index": {
+   "itemSize": 1,
+   "bytes": 61296,
+   "sha256": "b54add94cd5d16f6a5dd7380893526741c5dc46c83440060332d4aa6e0a4ba12"
+  }
+ }
+}

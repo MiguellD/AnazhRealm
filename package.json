@@ -38,6 +38,8 @@
         "diag:foundry-parity": "node scripts/diag-foundry-parity.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
+        "mint:creature-goldens": "node scripts/mint-creature-goldens.cjs",
+        "gate:creature-contract": "node scripts/diag-creature-contract.cjs",
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",
         "gate:foundry-deadlock": "node scripts/diag-foundry-deadlock.cjs",

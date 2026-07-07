@@ -1,0 +1,31 @@
+{
+ "cv": 2,
+ "id": "creature-glutwesen",
+ "kind": "skin",
+ "opts": {
+  "res": 48
+ },
+ "skin": {
+  "positions": {
+   "itemSize": 3,
+   "bytes": 25368,
+   "sha256": "abb56673b9aabc1496542091d3386fe6767228fd23a1b2607095c8cf1653eea9"
+  },
+  "normals": {
+   "itemSize": 3,
+   "bytes": 25368,
+   "sha256": "6d03b2a607487e2a2749e4ca5579ec6ea112d0c92712b900ca5cc29d9aef15da"
+  },
+  "colors": {
+   "itemSize": 3,
+   "bytes": 25368,
+   "sha256": "0636e9b9b6559667aeb5c668261d84b1d2b8f38e55e8bab80e3b3340b3ad8aae"
+  },
+  "vertexCount": 2114,
+  "index": {
+   "itemSize": 1,
+   "bytes": 50688,
+   "sha256": "5985873edaa63a5bc6514e80ff3b7f3b304b9065cd3e6753dda32e2c0f1a2469"
+  }
+ }
+}

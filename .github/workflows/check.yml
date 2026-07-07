@@ -202,6 +202,13 @@ jobs:
         # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
         run: npm run gate:foundry-impostor
 
+      - name: Kreatur-Vertrag v2 (die erste Nicht-Pflanzen-Asset-Klasse, byte-exakt)
+        # P7: die Kreatur-Haut (bake-core Skin-Isosurface) ist am Asset-Vertrag angedockt (v2). Bäckt
+        # die FROZEN Kreatur-Specs (Avatar + Seelen) über bake-core DIREKT in Node neu (THREE-frei,
+        # kein Browser) und prüft den byte-exakten Fingerabdruck gegen die eingefrorenen Goldens — ein
+        # Drift in der Isosurface-/smin-/Displace-/Taubin-Mathematik fliegt sofort auf.
+        run: npm run gate:creature-contract
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
