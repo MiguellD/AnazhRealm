@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.429.0",
+    "version": "18.430.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -30,6 +30,7 @@
         "gate:regler-sim": "node scripts/diag-regler-sim.cjs",
         "gate:boot-stage": "node scripts/diag-boot-stage.cjs --selftest",
         "gate:scatter-ab": "node scripts/diag-scatter-ab.cjs",
+        "gate:scatter-slice": "node scripts/diag-scatter-slice.cjs",
         "diag:boot-stage": "node scripts/diag-boot-stage.cjs",
         "diag:boot-timeline": "node scripts/diag-boot-timeline.cjs",
         "diag:boot-breakdown": "node scripts/diag-boot-breakdown.cjs",

@@ -205,6 +205,13 @@ jobs:
         # einzigen konstruktiven Rest-Klasse; Selbst-Test: falsches Wasser-Verdikt → Diff feuert.
         run: npm run gate:scatter-ab
 
+      - name: Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)
+        # Dieselbe Region One-Shot vs in N Deadline-Scheiben (Bake-Phase j-Zeilen + Zellen-Phase
+        # cz/cx/emitted-Fortsetzung): region.cells byte-exakt + HISM-Slot-Bilanz identisch (das
+        # Doppel-Add wäre im cells-Vergleich unsichtbar) + kein halber Bake je in der Map +
+        # Dispose-Storno mitten in der Fortsetzung crasht nie. Headless=One-Shot (gate-treu).
+        run: npm run gate:scatter-slice
+
       - name: Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)
         # Beweist headless, dass zwei same-LOD-Face-Nachbarn an ihrer GETEILTEN Boundary-Zeile
         # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht

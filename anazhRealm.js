@@ -50507,7 +50507,13 @@ class AnazhRealm {
     // headless für 64²×6 Stichproben), liefert das gefüllte Entry. Lazy:
     // ein zweiter Aufruf liest aus dem Cache. Die LRU-Disziplin verhindert,
     // dass die Welt 10000 Regionen sammelt.
-    _bakeRegionFields(regX, regZ) {
+    // W3.3b (Paritäts-Vollendung) — optionale ZEILEN-FORTSETZUNG (cont + deadlineMs):
+    // der ~43-ms-Kalt-Bake (nach dem 3a-Hoist; vorher 270 ms) wird in j-Zeilen-Scheiben
+    // geschnitten, wenn der Scheiben-Aufrufer (`_scatterRegion` mit Deadline) es verlangt.
+    // Der HALBE Bake lebt AUSSCHLIESSLICH in `cont.bakeEntry` — NIE in der Map
+    // (`_sampleBakedField` kann per Konstruktion keine halben Felder lesen). Ohne
+    // cont/deadline: der alte One-Shot, byte-identisch (Direkt-Aufrufer/headless).
+    _bakeRegionFields(regX, regZ, cont, deadlineMs) {
         const map = this._ensureBakedRegionMap();
         const key = this._bakedRegionKey(regX, regZ);
         const existing = map.get(key);
@@ -50520,6 +50526,10 @@ class AnazhRealm {
                     this._bakedRegionRing.push(key);
                 }
             }
+            if (cont) {
+                cont.bakeEntry = null;
+                cont.bakeJ = null;
+            }
             return existing;
         }
         const cfg = this._bakeRegionConfig();
@@ -50527,26 +50537,36 @@ class AnazhRealm {
         const t = cfg.texelM;
         const originX = regX * cfg.sizeM;
         const originZ = regZ * cfg.sizeM;
-        // Reuse den bestehenden Float-Buffer wenn dirty (kein Re-Alloc)
-        const entry = existing || {
-            regX: regX | 0,
-            regZ: regZ | 0,
-            originX,
-            originZ,
-            res: N,
-            texelM: t,
-            channels: cfg.channels,
-            data: new Float32Array(N * N * cfg.channels),
-            dirty: true,
-            bakedAt: 0,
-            sampleCount: 0,
-        };
+        // Reuse den bestehenden Float-Buffer wenn dirty (kein Re-Alloc); eine offene
+        // Scheiben-Fortsetzung trägt ihren halben Buffer selbst (cont.bakeEntry).
+        const entry = (cont && cont.bakeEntry) ||
+            existing || {
+                regX: regX | 0,
+                regZ: regZ | 0,
+                originX,
+                originZ,
+                res: N,
+                texelM: t,
+                channels: cfg.channels,
+                data: new Float32Array(N * N * cfg.channels),
+                dirty: true,
+                bakedAt: 0,
+                sampleCount: 0,
+            };
         // CPU-Sampling: pro Texel die echten Wahrheits-Quellen aufrufen
         // (das gleiche, was die CPU-Spawn-Pipeline liest → bit-Wahrheits-
         // Konsistenz im V18.220-Fallback-Pfad).
         const data = entry.data;
-        for (let j = 0; j < N; j++) {
+        const _jStart = cont && Number.isFinite(cont.bakeJ) ? cont.bakeJ : 0;
+        for (let j = _jStart; j < N; j++) {
             const z = originZ + (j + 0.5) * t;
+            // W3.3b — Scheiben-Schnitt am ZEILEN-Anfang (reine Unterbrechung: jede
+            // Texel-Zeile rechnet identisch, egal in welcher Scheibe; ~1,4 ms/Zeile).
+            if (cont && Number.isFinite(deadlineMs) && j > _jStart && performance.now() > deadlineMs) {
+                cont.bakeEntry = entry;
+                cont.bakeJ = j;
+                return null; // Scheibe voll — der Aufrufer kommt im nächsten Frame wieder
+            }
             for (let i = 0; i < N; i++) {
                 const x = originX + (i + 0.5) * t;
                 const idx = (j * N + i) * cfg.channels;
@@ -50571,6 +50591,10 @@ class AnazhRealm {
         entry.dirty = false;
         entry.bakedAt = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
         entry.sampleCount = N * N;
+        if (cont) {
+            cont.bakeEntry = null;
+            cont.bakeJ = null;
+        }
         map.set(key, entry);
         // LRU-Ring + Eviction
         if (!this._bakedRegionRing) this._bakedRegionRing = [];
@@ -50921,12 +50945,24 @@ class AnazhRealm {
     // die HISM-Gruppen. Deterministisch (pcg2d) → P2P-identisch + GPU-liftbar.
     // Bounded durch perRegionCap. Cells im promoteRadius werden NICHT gestreut
     // (der reale Ring trägt sie); promotete Cells (Bitmask) übersprungen.
-    _scatterRegion(regX, regZ, playerPos) {
+    // W3.3c (Paritäts-Vollendung) — DIE ZEIT-SCHEIBEN: mit `deadlineMs` (absolute
+    // performance.now()-Deadline) baut die Region in SCHEIBEN — der Fortsetzungs-
+    // Zustand lebt in `region._cont` (phase bake→cells · bakeJ · layerIdx · cz/cx ·
+    // emitted · px/pz/fdScale = SNAPSHOT der bau-zeitlichen Eingänge). Γ5-sicher per
+    // Konstruktion: jeder Wurf ist positions-gehasht (_pcg2d, KEIN sequentieller
+    // Strom), einzig der emitted<cap-Zähler ist ordnungs-gekoppelt — die Fortsetzung
+    // bewahrt exakt die cz-major/cx-minor-Ordnung ⇒ byte-identisch zum One-Shot
+    // (BEWIESEN: gate:scatter-slice, inkl. HISM-Slot-Bilanz). Rein ADDITIV sichtbar
+    // (kein Dispose zwischen Scheiben = kein Churn). OHNE deadlineMs (Playtest-
+    // Direktrufe · Thin · headless via Infinity-Budget): der alte One-Shot, byte-gleich.
+    _scatterRegion(regX, regZ, playerPos, deadlineMs) {
         if (typeof THREE === "undefined" || !this.state.scene) return null;
         const SC = AnazhRealm.SCATTER;
         const map = this._ensureScatterRegionMap();
         const key = `${regX},${regZ}`;
-        if (map.has(key)) return map.get(key);
+        const _existing = map.get(key);
+        if (_existing && !_existing._cont) return _existing;
+        if (_existing && _existing._cont) return this._scatterRegionWork(_existing, regX, regZ, key, deadlineMs);
         // DER STILLE SAUG (08.07., Schöpfer „die Andockstellen müssen instant saugen …
         // dinge werden platziert und wieder entfernt"): läuft der Foundry-Prefetch noch
         // (das Boot-Fenster, ~6 s), baut die Region NICHT HALB (warme Arten da, kalte
@@ -50956,9 +50992,6 @@ class AnazhRealm {
             map.set(key, empty);
             return empty;
         }
-        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        let seedHash = 2166136261 >>> 0;
-        for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         // V18.280 — die Dichte, bei der diese Region gebaut wurde (für das Nach-Dünnen:
         // sinkt die perf-geregelte Dichte unter diesen Wert, wird die Region re-gestreamt).
         // W1 — die Buchhaltung liest den ANGEWANDTEN Wert (die eine Quelle), nie den rohen.
@@ -50974,6 +51007,49 @@ class AnazhRealm {
             // Toggle bleibt sauber (alte Regionen entsorgen sich nach ihrer Bauweise).
             regional: this.state.useRegionFoliageCull !== false,
         };
+        if (Number.isFinite(deadlineMs)) {
+            // Scheiben-Modus: der SNAPSHOT der bau-zeitlichen Eingänge — die Fortsetzung
+            // liest IHN, nie die Live-Werte (sonst driftete der emitted-Satz gegen den
+            // One-Shot, wenn Spieler/Regler zwischen zwei Scheiben wandern).
+            region._cont = {
+                phase: "bake",
+                bakeEntry: null,
+                bakeJ: null,
+                layerIdx: 0,
+                cz: 0,
+                cx: 0,
+                emitted: 0,
+                hit: false,
+                px: playerPos ? playerPos.x : 0,
+                pz: playerPos ? playerPos.z : 0,
+                fdScale: this._effectiveFoliageDensity(),
+            };
+        }
+        map.set(key, region); // ab jetzt sichtbar — Fortsetzung/Dispose finden sie
+        return this._scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos);
+    }
+
+    // W3.3c — die BAU-ARBEIT (One-Shot UND Scheiben-Fortsetzung fließen hier durch —
+    // EIN Chokepoint, kein Parallelpfad): Bake-Phase (3b, j-Zeilen) → Schicht-Pässe
+    // (Zellen-Scheiben). Kehrt bei erschöpfter Deadline mit stehendem `region._cont`
+    // zurück; der nächste Aufruf (finish-first im Streaming-Tick) setzt exakt fort.
+    _scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos) {
+        const SC = AnazhRealm.SCATTER;
+        const cont = region._cont || null;
+        if (cont && cont.phase === "bake") {
+            const bcfg = this._bakeRegionConfig();
+            const done = this._bakeRegionFields(
+                Math.floor((regX * SC.regionM) / bcfg.sizeM),
+                Math.floor((regZ * SC.regionM) / bcfg.sizeM),
+                cont,
+                deadlineMs
+            );
+            if (!done) return region; // Bake-Scheibe voll — der nächste Frame setzt fort
+            cont.phase = "cells";
+        }
+        const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let seedHash = 2166136261 >>> 0;
+        for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         // V18.225 — die FÜNF Strata über drei Pässe (Canopy · Understory ·
         // Streu). Jeder Pass sein eigenes Zell-Raster + Cap. Die Pässe teilen
         // die gebackenen Felder + die Bitmask + die HISM-Gruppen.
@@ -50990,26 +51066,40 @@ class AnazhRealm {
                 promotable: true,
             },
         ];
-        for (const layer of layers) {
-            const n = this._scatterPass(region, layer, regX, regZ, seedHash, playerPos);
+        const startLayer = cont ? cont.layerIdx : 0;
+        for (let li = startLayer; li < layers.length; li++) {
+            const layer = layers[li];
+            if (cont) cont.layerIdx = li;
+            const n = this._scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs);
+            if (cont && cont.hit) {
+                cont.hit = false;
+                return region; // Zellen-Scheibe voll — cont trägt cz/cx/emitted exakt
+            }
             region.byLayer[layer.name] = n;
             region.instanceCount += n;
+            if (cont) {
+                cont.cz = 0;
+                cont.cx = 0;
+                cont.emitted = 0; // die nächste Schicht beginnt frisch
+            }
         }
-        map.set(key, region);
+        region._cont = null; // vollendet
         return region;
     }
 
     // V18.225 — EIN Scatter-Pass für eine Schicht (Plan §13 5-Strata). Walkt das
     // schicht-eigene Zell-Raster, gated gegen die gebackenen Felder, schreibt
     // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
-    _scatterPass(region, layer, regX, regZ, seedHash, playerPos) {
+    _scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs) {
         const SC = AnazhRealm.SCATTER;
         const cellM = layer.cellM;
         const cellsPerRegion = Math.round(SC.regionM / cellM);
         const baseCellX = Math.round((regX * SC.regionM) / cellM);
         const baseCellZ = Math.round((regZ * SC.regionM) / cellM);
-        const px = playerPos ? playerPos.x : 0;
-        const pz = playerPos ? playerPos.z : 0;
+        // W3.3c — im Scheiben-Modus lesen die Distanz-Gates den SNAPSHOT (cont.px/pz),
+        // nie die Live-Position — sonst driftete der emitted-Satz gegen den One-Shot.
+        const px = cont ? cont.px : playerPos ? playerPos.x : 0;
+        const pz = cont ? cont.pz : playerPos ? playerPos.z : 0;
         const N = AnazhRealm.VARIANTS_PER_SPECIES;
         const slopeMax = Number.isFinite(layer.slopeMax) ? layer.slopeMax : SC.slopeMax;
         const floor = Number.isFinite(layer.floor) ? layer.floor : SC.densityFloor;
@@ -51024,12 +51114,28 @@ class AnazhRealm {
         // DAS NEUE KLEID — die Streu (Blumen/Büsche/Unterwuchs) hält im Studio-Regime VOLLE Dichte (=1),
         // NICHT perf-gedrosselt — wie das Studio seine Understory (Blumen 2.4m / Büsche 4.4m) voll pflanzt.
         // Ohne Studio-Config bleibt der Perf-Regler (V18.277/.280) = 0 Regress.
-        // W1 — durch die EINE Quelle (Bau, Buchhaltung und Nach-Dünnen lesen denselben Wert).
-        const fdScale = this._effectiveFoliageDensity();
+        // W1 — durch die EINE Quelle (Bau, Buchhaltung und Nach-Dünnen lesen denselben Wert);
+        // W3.3c — im Scheiben-Modus der bau-zeitliche Snapshot (Regler-Drift zwischen Scheiben).
+        const fdScale = cont && cont.fdScale != null ? cont.fdScale : this._effectiveFoliageDensity();
         const cap = Math.max(1, Math.round(layer.cap * fdScale));
-        let emitted = 0;
-        for (let cz = 0; cz < cellsPerRegion && emitted < cap; cz++) {
-            for (let cx = 0; cx < cellsPerRegion && emitted < cap; cx++) {
+        let emitted = cont ? cont.emitted : 0;
+        const _czStart = cont ? cont.cz : 0;
+        const _cxFirst = cont ? cont.cx : 0;
+        const _dlOn = cont && Number.isFinite(deadlineMs);
+        let _dlCheck = 0;
+        for (let cz = _czStart; cz < cellsPerRegion && emitted < cap; cz++) {
+            for (let cx = cz === _czStart ? _cxFirst : 0; cx < cellsPerRegion && emitted < cap; cx++) {
+                // W3.3c — der Scheiben-Schnitt VOR der Zellen-Arbeit (alle ~64 Zellen):
+                // die Zelle (cz,cx) ist noch UNBERÜHRT — die Fortsetzung beginnt exakt hier,
+                // in derselben cz-major/cx-minor-Ordnung ⇒ der emitted<cap-Zähler zählt
+                // byte-identisch zum One-Shot (die einzige Ordnungs-Kopplung des Passes).
+                if (_dlOn && (++_dlCheck & 63) === 0 && performance.now() > deadlineMs) {
+                    cont.cz = cz;
+                    cont.cx = cx;
+                    cont.emitted = emitted;
+                    cont.hit = true;
+                    return emitted;
+                }
                 const cellX = baseCellX + cx;
                 const cellZ = baseCellZ + cz;
                 const h = this._pcg2d((cellX ^ seedHash ^ layerSalt) >>> 0, (cellZ * 2654435761) >>> 0);
@@ -51233,6 +51339,10 @@ class AnazhRealm {
         if (!map) return false;
         const region = map.get(key);
         if (!region) return false;
+        // W3.3c — DISPOSE-STORNO: eine offene Fortsetzung stirbt MIT der Region (sonst
+        // schriebe die nächste Scheibe Slots in entsorgte HISM-Gruppen — der zweite
+        // Fehlermodus neben emitted<cap; `gate:scatter-slice` prüft ihn mit Absturz-Probe).
+        region._cont = null;
         // V18.300 — regional gebaute Region: ihre Gruppen sind region-privat (Key
         // endet auf @regX,regZ) → die GANZE Gruppe entsorgen (Mesh aus der Szene +
         // instanceMatrix freigeben; geom/mat geteilt → bleiben), kein per-Slot-Free
@@ -51369,7 +51479,7 @@ class AnazhRealm {
     // generieren, ferne disposen, nahe Cells promovieren (Touch→Real). Gated
     // auf `state.atmosphere.gpuScatter` (Default true — der Gigant erwacht; in
     // browser abschaltbar). Bounded: maxRegionsPerFrame.
-    _tickScatterStreaming(playerPos) {
+    _tickScatterStreaming(playerPos, deadlineMs) {
         const atmo = this.state.atmosphere;
         if (atmo && atmo.gpuScatter === false) return 0;
         if (!playerPos) return 0;
@@ -51378,26 +51488,46 @@ class AnazhRealm {
         const pRegX = Math.floor(playerPos.x / SC.regionM);
         const pRegZ = Math.floor(playerPos.z / SC.regionM);
         let work = 0;
+        // W3.3c — FINISH-FIRST: offene Scheiben-Fortsetzungen ZUERST vollenden (eine
+        // Region wird fertig, bevor eine neue beginnt — kein Fortsetzungs-Stau, die
+        // Welt füllt sich Region für Region, additiv sichtbar). Bleibt die Fortsetzung
+        // nach dem Aufruf stehen (Deadline erschöpft), beginnt dieser Frame KEINE neue.
+        let _sliceFull = false;
+        for (const reg of map.values()) {
+            if (work >= SC.maxRegionsPerFrame) break;
+            if (!reg || !reg._cont) continue;
+            this._scatterRegion(reg.regX, reg.regZ, playerPos, deadlineMs);
+            work++;
+            if (reg._cont) {
+                _sliceFull = true;
+                break;
+            }
+        }
         // V18.414 (Schöpfer „erst den ersten Chunk beenden, DANN erweitern") — die ferne Scatter-Region
         // (LOD2-Billboards) darf NICHT vor dem gebauten Boden streamen: eine Region wird nur generiert,
         // wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (der jetzt auf die gebaute Ring-Kante gekappt
         // ist). Die Spieler-Region (nearDist 0) streamt immer; ferne Regionen warten, bis der Ring +
         // der Radius zu ihnen wachsen — der nächste Tick streamt sie dann von selbst (selbst-heilend,
         // kein Rebuild nötig). Headless → foliageRadius = MAX → alle Regionen (gate-treu).
-        const _folR = st => (st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX);
+        const _folR = (st) => (st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX);
         const _foliageR = _folR(this.state);
         const _regionInReach = (rx, rz) => {
             const nx = Math.max(rx * SC.regionM, Math.min(playerPos.x, (rx + 1) * SC.regionM));
             const nz = Math.max(rz * SC.regionM, Math.min(playerPos.z, (rz + 1) * SC.regionM));
             return Math.hypot(nx - playerPos.x, nz - playerPos.z) <= _foliageR;
         };
-        // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da)
-        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame; dz++) {
+        // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da);
+        // W3.3c: mit Deadline (Scheiben-Modus) + nie, wenn eine Fortsetzung den Frame schon füllte.
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull; dz++) {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
                 const rk = `${pRegX + dx},${pRegZ + dz}`;
                 if (!map.has(rk) && _regionInReach(pRegX + dx, pRegZ + dz)) {
-                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos);
+                    this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
                     work++;
+                    if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
+                        _sliceFull = true;
+                        break;
+                    }
                 }
             }
         }
@@ -51658,8 +51788,7 @@ class AnazhRealm {
         // ein Baum ≤ `lodRef · visStretchMax` behält gestuftes SSE (etwas länger
         // Detail), darüber ist die Streckung begrenzt (heightFactor-Floor =
         // 1/visStretchMax) → der Riese demotet im Kragen zu L1/L2 wie im Studio.
-        const stretchMax =
-            Number.isFinite(cfg.visStretchMax) && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
+        const stretchMax = Number.isFinite(cfg.visStretchMax) && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
         // Perf-Multiplikator aus der EINEN Regler-Quelle.
@@ -62462,7 +62591,7 @@ class AnazhRealm {
             entry.tintH = Math.max(0, Math.min(1.2, +opts.tintH));
         } else {
             const _tl = 0.92 + (((seed >>> 13) & 0xff) / 255) * 0.16;
-            const _tw = ((((seed >>> 21) & 0xff) / 255) - 0.5) * 0.06;
+            const _tw = (((seed >>> 21) & 0xff) / 255 - 0.5) * 0.06;
             entry.tintH = Math.min(1.08, _tl + _tw);
             entry.tintS = _tl;
             entry.tintV = Math.min(1.08, Math.max(0, _tl - _tw));
@@ -64275,7 +64404,9 @@ class AnazhRealm {
                 if (vm[1] === "kristall") return "kristalle";
                 const bp = this.state.blueprints && this.state.blueprints[entry.type];
                 const fc = bp && bp._formClass;
-                return { brocken: "findling", geroell: "geroell", nadel: "zacken", stapel: "sediment" }[fc] || "sediment";
+                return (
+                    { brocken: "findling", geroell: "geroell", nadel: "zacken", stapel: "sediment" }[fc] || "sediment"
+                );
             }
         }
         return null;
@@ -64379,7 +64510,8 @@ class AnazhRealm {
         const I = new THREE.Matrix4();
         const leaves = [];
         for (const child of group.children) {
-            if (child.geometry && child.material) leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I });
+            if (child.geometry && child.material)
+                leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I });
         }
         if (!leaves.length) {
             this._impostorAtlasMap.set(key, false);
@@ -65527,16 +65659,14 @@ class AnazhRealm {
                     if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
                     const bsy = this._voxelSurfaceY(bxp, bzp);
                     if (bsy === null || !Number.isFinite(bsy)) continue;
-                    if (!(typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(bxp, bzp, 0.1)))
-                        continue;
+                    if (!(typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(bxp, bzp, 0.1))) continue;
                     const bFeuchte = this._feuchteAt ? this._feuchteAt(bxp, bzp, bsy) : 0;
                     const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
                     const slopeB = this._slopeAt(bxp, bzp);
                     const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
                     const trail = this._pathFieldAt ? this._pathFieldAt(bxp, bzp, bsy) : 0;
                     const dL = L - 0.4;
-                    const pShrub =
-                        Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    const pShrub = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
                     if (hrnd() >= pShrub) continue;
                     // DER SPAWN-NAME IST EIN GEWACHSENER BAUPLAN (08.07., der Schöpfer-Log-ERROR
                     // „spawnArchitecture: unbekannter Typ 'busch_hazel'"): busch_hazel ist eine
@@ -65559,8 +65689,7 @@ class AnazhRealm {
                             bushKey = null;
                         }
                     }
-                    if (!bushKey && this.state.blueprints && this.state.blueprints.busch_hazel)
-                        bushKey = "busch_hazel";
+                    if (!bushKey && this.state.blueprints && this.state.blueprints.busch_hazel) bushKey = "busch_hazel";
                     if (!bushKey) continue;
                     this._enqueueVegetationSpawn(
                         bushKey,
@@ -65862,8 +65991,7 @@ class AnazhRealm {
             const _rcP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.placement;
             const _rar = _rcP && _rcP.rarity;
             if (_rar) {
-                const _preset =
-                    typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bestName) : null;
+                const _preset = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bestName) : null;
                 if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
             }
         }
@@ -77136,8 +77264,7 @@ class AnazhRealm {
             // Nebel IMMER auf die gebaute Kante, egal ob der aktive Ring voll steht; erst am Ziel öffnet der
             // geliebte Mantel-Weitblick. Headless setzt activeRing sofort auf target → Mantel offen (gate-treu).
             const _targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
-            const _worldRamping =
-                this.state._activeRingRadius != null && this.state._activeRingRadius < _targetRing;
+            const _worldRamping = this.state._activeRingRadius != null && this.state._activeRingRadius < _targetRing;
             if (revealK === null || revealK < 0) {
                 // V18.313 — DAS ERWACHEN: noch KEIN Boden-Chunk steht (nur die Plattform,
                 // builtK null/-1). Der Nebel umhüllt den Spieler ENG (Kokon) → die Welt + die
@@ -80945,8 +81072,7 @@ class AnazhRealm {
         // Sim/Replay unberührt. Gelesen im uWindStrength-Sync (`_applyDayNightToScene`-Nähe).
         {
             const wt = this.state.weatherEffectTime;
-            const gust =
-                Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
+            const gust = Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
             this._weatherWob = 1 + 0.18 * gust; // ~[0.82, 1.18]
         }
         // D5a (V18.128) — der Auto-Zug zieht POLYVALENT aus dem Vokabular
@@ -81087,15 +81213,23 @@ class AnazhRealm {
             {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
-                run: () => {
+                run: (ms) => {
                     if (st._frameChunksBuilt) return; // !chunksBuilt-Gate: erst der Boden, dann der Wald
                     // W1 — der Scatter bekommt seinen `_perfSenseLap`-Tap (die Disziplin „neue
                     // welt-formende Last wird attribuiert"): die 54-ms-`_scatterRegion`-Bauten
                     // (V18.427 ad-hoc gemessen) sind jetzt als `phase.scatter` im perfSense +
                     // Flugschreiber sichtbar statt anonym in frameMs — die stehende Kosten-Linse
                     // für die W3-Zeit-Scheiben (vorher/nachher als ZAHL).
+                    // W3.3c — das bisher IGNORIERTE ms-Budget fließt endlich durch (der halbe
+                    // Draht 80960→hier existierte seit V18.354): der Region-Bau läuft in
+                    // ≤SCATTER_SLICE_MS-Scheiben statt atomar 54/270 ms — die 5–7-FPS-Streaming-
+                    // Frames fallen UND der Ring-Kopfraum-Timer wird nicht mehr von der eigenen
+                    // Deko resetet. Headless: budget=Infinity → keine Deadline → One-Shot (gate-treu).
+                    const _dl = Number.isFinite(ms)
+                        ? performance.now() + Math.min(ms, AnazhRealm.SCATTER_SLICE_MS)
+                        : undefined;
                     const _sct = performance.now();
-                    this._tickScatterStreaming(playerPos);
+                    this._tickScatterStreaming(playerPos, _dl);
                     const grassBuilt = this._tickPendingGrass(1);
                     const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
                     if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
@@ -81647,9 +81781,7 @@ class AnazhRealm {
             // Böen-Drift `_weatherWob` (deterministische layered sines, gesetzt in
             // `_loopWeatherAndGrowth`) → der Wind LEBT zwischen den diskreten Wort-Wechseln.
             this.state.windUniforms.uWindStrength.value =
-                this._weatherFieldFor(this.state.weather).wind *
-                AnazhRealm.WEATHER_WIND_AMP *
-                (this._weatherWob || 1);
+                this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * (this._weatherWob || 1);
         }
         // V18.387 — DAS NEUE KLEID S1-SHADER — die LOD-Dither-Maske wandert golden-ratio pro Frame
         // (phytogenesis: uDitherT rotiert → die zeitliche Streuung glättet den Crossfade-Übergang
@@ -82013,7 +82145,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.429.0";
+AnazhRealm.VERSION = "18.430.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -82524,6 +82656,10 @@ AnazhRealm.OCCLUSION = Object.freeze({
 //     KEIN visueller Sprung (Plan §13 SEELEN-Band).
 // Der Scatter fliesst in DIESELBEN archInstanceGroups wie die echten Bäume
 // (V9.82 — kein Parallel-Pfad). Werte browser-justierbar.
+// W3.3c — die Scheiben-Länge des Region-Baus (ms je Frame im scatterDeco-Job): klein genug,
+// dass ein Streaming-Frame nie am Deko-Bau kippt (der Ring-Kopfraum-Timer überlebt), groß
+// genug, dass eine warme Region (~6-10 ms nach 3a) in 1-2 Scheiben steht.
+AnazhRealm.SCATTER_SLICE_MS = 6;
 AnazhRealm.SCATTER = Object.freeze({
     cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)
     regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
@@ -84732,7 +84868,16 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         id: "portale",
         label: "Porta — Ordnungen & fraktale Tiefe",
         world: "worlds/portale/index.html",
-        dsl: Object.freeze(["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor", "zufall"]),
+        dsl: Object.freeze([
+            "drachentor",
+            "kathedrale",
+            "maschine",
+            "geisttor",
+            "verkalkt",
+            "ruine",
+            "maurentor",
+            "zufall",
+        ]),
         desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
     }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
