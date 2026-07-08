@@ -335,10 +335,14 @@ class AnazhRealm {
             // Welle 6.G3 (V8.24) — Tag-Nacht-Zyklus. timeOfDay 0..1 mit
             // 0=Mitternacht, 0.25=Sonnenaufgang, 0.5=Mittag, 0.75=Sonnenuntergang.
             // dayLengthMinutes ist die Echt-Zeit für einen kompletten Zyklus.
-            // Default 8 Min (schnell-spürbar), Slider 1-60 Min in den
-            // Einstellungen. Beide Felder persistiert. Lights+Skybox werden
-            // pro Frame aus timeOfDay abgeleitet — eine Quelle der Wahrheit.
-            timeOfDay: 0.5,
+            // DER RUHIGE TAG (08.07., Schöpfer-Befund „nach dem Öffnen ist es ~19:30/
+            // dunkel"): der alte 8-Min-Zyklus machte die HALBE Spielzeit zur Nacht
+            // (Mittag→22:45 in 3,5 echten Minuten — gemessen am Screenshot); das
+            // Studio-Benchmark steht praktisch im Tageslicht. Default jetzt 40 Min
+            // (Slider 1–60 bleibt die Spieler-Wahl, persistiert) + der FRISCHE Start
+            // am MORGEN (0.35 ≈ 08:24) → die erste Stunde ist Licht, die Nacht ein
+            // Ereignis statt der Dauerzustand. Lights+Skybox pro Frame aus timeOfDay.
+            timeOfDay: 0.35,
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
             // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter.
@@ -346,7 +350,7 @@ class AnazhRealm {
             seasonPhase: 0.375,
             autoSeason: true,
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
-            dayLengthMinutes: 8,
+            dayLengthMinutes: 40,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
@@ -19530,7 +19534,10 @@ class AnazhRealm {
         return 60; // Slider-Maximum
     }
     static get DAY_LENGTH_DEFAULT_MINUTES() {
-        return 8; // Schöpfer-Wahl: schnell-spürbar
+        // DER RUHIGE TAG (08.07.): 8 Min war die frühe „schnell-spürbar"-Dev-Wahl —
+        // damit war die halbe Spielzeit Nacht (der „öffnet dunkel"-Schöpfer-Befund).
+        // 40 Min = die Nacht wird ein Ereignis; der 1–60-Slider bleibt die Wahl.
+        return 40;
     }
     // Welle 6.G3 — Fauna-Lifecycle-Parameter. TARGET ist die untere Schwelle
     // für Geburten (Welt atmet zurück zur Ziel-Population), MAX die obere
@@ -41051,7 +41058,15 @@ class AnazhRealm {
             const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
             const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
             if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
-                this.state.dayLengthMinutes = state.dayLengthMinutes;
+                // DER RUHIGE TAG (08.07.) — ALT-DEFAULT-MIGRATION: 8 war jahrelang der
+                // Default (nie eine bewusste Wahl-Signatur) → ein Save, der exakt 8
+                // trägt, wandert auf den neuen ruhigen Default (40); jeder ANDERE Wert
+                // ist echte Spieler-Wahl und bleibt. Wer 8 wirklich will, stellt den
+                // Slider erneut — ab dann ist es eine bewusste, bewahrte Wahl.
+                this.state.dayLengthMinutes =
+                    state.dayLengthMinutes === 8
+                        ? this.constructor.DAY_LENGTH_DEFAULT_MINUTES
+                        : state.dayLengthMinutes;
             }
         }
         // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler überleben den
@@ -61012,7 +61027,13 @@ class AnazhRealm {
             group.add(mesh);
         }
         const bs = new THREE.Scene();
-        bs.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05)); // FLACH backen (Vorlage Z.1618)
+        // Ü1 — DIE r128→r184-LICHT-ÜBERSETZUNG AUCH IM BAKE-RIG (der „Billboards falsche
+        // Farbe"-Befund): die Vorlagen-1.05 ist LEGACY-Licht (keine 1/π-BRDF-Normierung) —
+        // numerisch kopiert bäckt der Atlas ~π-DUNKEL (die grauen Silhouetten). Dieselbe
+        // dokumentierte Regel wie das Welt-Rig (AnazhRealm.LEGACY_LICHT), EIN weiterer
+        // Anwendungs-Ort. Der Atlas bleibt ein FLACHER Albedo-Bake (Vorlage Z.462/1618) —
+        // ALLES gerichtete Licht (Tag/Wetter-Drift) macht die PBR-Lichtung pro Frame.
+        bs.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05 * AnazhRealm.LEGACY_LICHT));
         bs.add(group);
         const halfW = rec.frame.halfW,
             halfH = rec.frame.halfH;
@@ -61110,15 +61131,22 @@ class AnazhRealm {
         if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
     }
 
-    // V18.390 (Eins W3) — RTT-Readback → Atlas-Zelle. GEMESSEN (Atlas-Dump): der
-    // r184-WebGPU-RT-Readback liefert die Zeilen BOTTOM-UP (WebGL-RT-Konvention —
-    // row 0 = Bild-UNTERKANTE/Stammfuß) → Zeilen FLIPPEN: canvas-row 0 (oben) =
-    // buffer-row h−1 = Kronenspitze = uv v=1 (CanvasTexture flipY default).
+    // V18.390 (Eins W3) — RTT-Readback → Atlas-Zelle. DIE BACKEND-ORIENTIERUNGS-REGEL
+    // (08.07., der „Billboards auf dem Kopf"-Schöpfer-Befund auf echter GPU): die
+    // `readRenderTargetPixelsAsync`-Zeilen-Ordnung ist BACKEND-abhängig — der
+    // WebGL(2)-Backend liefert BOTTOM-UP (GL-readPixels-Konvention, row 0 = Bild-
+    // Unterkante → FLIPPEN), der ECHTE WebGPU-Backend TOP-DOWN (WGPU-Texturen sind
+    // y-down → NICHT flippen). Die alte „GEMESSEN bottom-up"-Zeile war auf dem
+    // Container-WebGL2-FALLBACK gemessen und als universell verallgemeinert — auf
+    // der Schöpfer-GPU (WebGPU) stand darum jede Karte kopfüber. Dieselbe Regel gilt
+    // für Farb- UND Normal-Atlas (beide reisen durch diesen einen Blit).
     _impostorBlitPixels(ctx, buf, dx, w, h) {
+        const be = this.state.renderer && this.state.renderer.backend;
+        const flip = !(be && be.isWebGPUBackend === true);
         const img = ctx.createImageData(w, h);
         const row = w * 4;
         for (let y = 0; y < h; y++) {
-            const src = (h - 1 - y) * row;
+            const src = (flip ? h - 1 - y : y) * row;
             const dst = y * row;
             for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
         }
@@ -65472,8 +65500,32 @@ class AnazhRealm {
                     const pShrub =
                         Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
                     if (hrnd() >= pShrub) continue;
+                    // DER SPAWN-NAME IST EIN GEWACHSENER BAUPLAN (08.07., der Schöpfer-Log-ERROR
+                    // „spawnArchitecture: unbekannter Typ 'busch_hazel'"): busch_hazel ist eine
+                    // Grammatik-SPEZIES, kein Built-in-Blueprint — der Bauplan entsteht wie im
+                    // alten Lücken-Pfad über den RICHTER (`_growTreeBlueprintForSpawn`, region-
+                    // gecacht → Tags/Physik-Identität; der RENDER kommt weiter aus der Foundry
+                    // via busch_hazel→strauch-Mapping). Ohne gewachsenen Key → Punkt fällt
+                    // (kein Fehler-Spam, kein Phantom-Spawn).
+                    let bushKey = null;
+                    if (this._genVersion && this._genVersion() >= 4 && this._growTreeBlueprintForSpawn) {
+                        const bRegX = Math.floor(bxp / 256);
+                        const bRegZ = Math.floor(bzp / 256);
+                        const bSeedW = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+                        try {
+                            bushKey = this._growTreeBlueprintForSpawn(
+                                "busch_hazel",
+                                `${bSeedW}|busch_hazel|${bRegX},${bRegZ}`
+                            );
+                        } catch (_gbe) {
+                            bushKey = null;
+                        }
+                    }
+                    if (!bushKey && this.state.blueprints && this.state.blueprints.busch_hazel)
+                        bushKey = "busch_hazel";
+                    if (!bushKey) continue;
                     this._enqueueVegetationSpawn(
-                        "busch_hazel",
+                        bushKey,
                         { x: bxp, y: bsy + 0.5, z: bzp },
                         {
                             seed: (hs ^ 0x2f6e2b1) >>> 0,
@@ -81900,7 +81952,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.425.0";
+AnazhRealm.VERSION = "18.426.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

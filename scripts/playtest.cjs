@@ -41199,11 +41199,13 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- a) Tag-Nacht-Zyklus
         out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
-        out.dayLengthDefault = r.state.dayLengthMinutes === 8;
+        // DER RUHIGE TAG (08.07., V9.56-i): Default 8→40 (die halbe Spielzeit war Nacht);
+        // der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
+        out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
         out.dayLengthConstantsExist =
             AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
             AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
+            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 40;
         out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
         // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
         // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
@@ -41397,7 +41399,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
     if (wave6g3Results && !wave6g3Results.error) {
         // --- a) Tag-Nacht
         check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
-        check("Welle 6.G3.a: dayLengthMinutes Default 8", wave6g3Results.dayLengthDefault);
+        check(
+            "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (der ruhige Tag, 40)",
+            wave6g3Results.dayLengthDefault
+        );
         check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
         check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
         check(
