@@ -354,6 +354,7 @@ async function renderAnazh() {
             r._impostorBakePending = false;
             const dl = performance.now() + 45000;
             let n0 = (window.__impostorRttBaked || 0) | 0;
+            let _bi = 0;
             while (performance.now() < dl) {
                 // NUR den Bake-Tick pumpen (rendert die winzigen 128×256-RTT-Zellen), NIE den vollen
                 // _gameLoopTick mit echtem Render — N volle 7M-Tri-Frames auf WebGPU-swiftshader sind
@@ -361,6 +362,19 @@ async function renderAnazh() {
                 try {
                     r._tickImpostorBake();
                 } catch (_e) {}
+                // W4.3 (die 0/115-Wurzel): der async Readback des RTT-Bakes resolvt NUR, wenn die
+                // GPU-Queue echte Submissions sieht — ohne Frames hing der ERSTE Bake für immer
+                // (pending klemmte, die ganze Queue verhungerte still, err null). Ein winziger
+                // 1×1-Scissor-Render alle paar Ticks flusht die Queue, ohne die volle Szene zu
+                // rastern (die Kumulativ-Tod-Wand bleibt).
+                if ((++_bi & 7) === 0) {
+                    try {
+                        r.state.renderer.setScissorTest(true);
+                        r.state.renderer.setScissor(0, 0, 1, 1);
+                        r.state.renderer.render(r.state.scene, r.state.camera);
+                        r.state.renderer.setScissorTest(false);
+                    } catch (_e) {}
+                }
                 await new Promise((res) => setTimeout(res, 60));
                 const q = r._impostorBakeQueue;
                 if ((!q || q.length === 0) && !r._impostorBakePending) break;

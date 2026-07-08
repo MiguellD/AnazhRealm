@@ -146,6 +146,45 @@ const server = http.createServer((req, res) => {
                     const clean = terms();
                     o.selftest = { firesOnInject: dirty.streu === false, healsOnClean: clean.streu === true };
                 }
+                // ── W4.3 — DER BAKE-WATCHDOG (die 0/115-Wurzel): ein hängender async RTT-Bake
+                // (Readback resolvt nie) würde den IMPOST-Term dieser Bühne FÜR IMMER deadlocken.
+                // Simulation: pending klemmt „seit 20 s" auf einem frischen Record → EIN Tick muss
+                // ihn graziös verwerfen (rttFailed + pending frei + Token entwertet die späte finally).
+                {
+                    const A2 = window.AnazhRealm || r.constructor;
+                    const prevPending = r._impostorBakePending;
+                    const prevSince = r._impostorBakePendingSince;
+                    const prevKey = r._impostorBakePendingKey;
+                    const prevTok = r._impostorBakeTok;
+                    const anyKey =
+                        r._impostorAtlasMap && r._impostorAtlasMap.size
+                            ? Array.from(r._impostorAtlasMap.keys())[0]
+                            : null;
+                    const anyRec = anyKey ? r._impostorAtlasMap.get(anyKey) : null;
+                    const prevFailed = anyRec ? anyRec.rttFailed : null;
+                    if (anyRec && !r._impostorBakeQueue) r._impostorBakeQueue = [];
+                    if (anyRec) {
+                        r._impostorBakeQueue.push("__wd_dummy"); // Queue nicht-leer (der Tick läuft an)
+                        r._impostorBakePending = true;
+                        r._impostorBakePendingSince = performance.now() - (A2.IMPOSTOR_BAKE_TIMEOUT_MS + 5000);
+                        r._impostorBakePendingKey = anyKey;
+                        const tokBefore = r._impostorBakeTok || 0;
+                        r._tickImpostorBake();
+                        o.watchdog = {
+                            pendingCleared: r._impostorBakePending === false,
+                            recFailed: anyRec.rttFailed === true,
+                            tokenBumped: (r._impostorBakeTok || 0) > tokBefore,
+                        };
+                        // WIEDERHERSTELLEN (die Gate-Hook-Lehre)
+                        const qi = r._impostorBakeQueue.indexOf("__wd_dummy");
+                        if (qi >= 0) r._impostorBakeQueue.splice(qi, 1);
+                        anyRec.rttFailed = prevFailed;
+                        r._impostorBakePending = prevPending;
+                        r._impostorBakePendingSince = prevSince;
+                        r._impostorBakePendingKey = prevKey;
+                        r._impostorBakeTok = prevTok;
+                    }
+                }
             }
             return o;
         }, SELFTEST);
@@ -188,11 +227,16 @@ const server = http.createServer((req, res) => {
         },
         { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!tl.stage },
     ];
-    if (SELFTEST)
+    if (SELFTEST) {
         checks.push({
             name: "SELBST-TEST: injizierte deferierte Region macht das Prädikat rot + heilt nach Entfernen",
             pass: !!(out.selftest && out.selftest.firesOnInject && out.selftest.healsOnClean),
         });
+        checks.push({
+            name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · rttFailed · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,
+            pass: !!(out.watchdog && out.watchdog.pendingCleared && out.watchdog.recFailed && out.watchdog.tokenBumped),
+        });
+    }
     let fails = 0;
     for (const c of checks) {
         console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);

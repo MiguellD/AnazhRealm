@@ -925,6 +925,7 @@ class AnazhRealm {
             _ringRampLast: 0, // letzter Ring-Wachstums-/Schrumpf-Zeitstempel (der „Atem" zwischen Ringen)
             _ringOverBudgetSince: 0, // V18.306 — seit wann der Frame anhaltend über Budget ist (Schrumpf-Hysterese)
             _ringHeadroomSince: 0, // V18.318 — seit wann der Frame anhaltend Kopfraum hat (Wachs-Hysterese, symmetrisch)
+            _ringBootWindowUntil: 0, // W4.4 — Ring-Boot-Fenster: 0=frisch · Timestamp=offen bis · 1=geschlossen
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -13788,8 +13789,20 @@ class AnazhRealm {
             } else if (sense.frameMs > throttleMs) {
                 st._ringHeadroomSince = 0;
             }
-            const sustainedHeadroom =
-                st._ringHeadroomSince && now - st._ringHeadroomSince > AnazhRealm.RING_GROW_SUSTAIN_MS;
+            // W4.4 (Paritäts-Vollendung) — DAS BOOT-FENSTER DER RING-RAMP: die V18.318-
+            // Wachs-Hysterese (1500 ms Sustain PRO Schritt + Timer-Reset nach jedem Schritt)
+            // ist ein hardware-UNABHÄNGIGER Zeit-Boden ≥7,4 s bis zum Ziel-Ring — Boot ≤3 s
+            // (DONE-Kriterium 2) war damit PER KONSTRUKTION unerreichbar. Solange der Ziel-
+            // Ring noch NIE stand UND der Zeit-Deckel offen ist, gilt der KURZE Sustain
+            // (RING_RAMP_SETTLE_MS) — die Kopfraum-Bedingung selbst bleibt UNANGETASTET
+            // (gewachsen wird NIE unter Last, kein Wieder-Öffnen der V18.306-Overshoot-
+            // Klasse; der Schrumpf-Pfad ist byte-unberührt). Das Fenster schließt beim
+            // Erst-Erreichen, beim ersten Schrumpf ODER am Zeit-Deckel (schwache HW fällt
+            // gebunden in die volle Hysterese zurück — der Kritiker-Zeit-Deckel).
+            if (!st._ringBootWindowUntil) st._ringBootWindowUntil = now + AnazhRealm.RING_BOOT_WINDOW_MS;
+            const _bootWindow = st._ringBootWindowUntil > 1 && now < st._ringBootWindowUntil;
+            const _growSustainMs = _bootWindow ? AnazhRealm.RING_RAMP_SETTLE_MS : AnazhRealm.RING_GROW_SUSTAIN_MS;
+            const sustainedHeadroom = st._ringHeadroomSince && now - st._ringHeadroomSince > _growSustainMs;
             // Schrumpf-Hysterese: der Frame muss ANHALTEND über Budget sein (nicht ein einzelner
             // Bau-/Carve-Spike < 200 ms) → ein Sustain-Timer. So schrumpft die Welt nur bei
             // echter Dauerlast, nicht bei einem transienten Hitch (kein Pendeln gegen das Wachsen).
@@ -13813,11 +13826,13 @@ class AnazhRealm {
                 st._ringRampLast = now;
                 st._ringHeadroomSince = 0; // der nächste Wachs-Schritt verlangt einen frischen Sustain
                 st._activeRingRadius++;
+                if (st._activeRingRadius >= ringTarget) st._ringBootWindowUntil = 1; // Erst-Erreichen schließt das Fenster
             } else if (st._activeRingRadius > AnazhRealm.RING_RAMP_START && sustainedOver && breathed) {
                 // anhaltend über Budget → die äußerste Schale zurückgeben (Fern-Prune, sicher)
                 st._ringRampLast = now;
                 st._ringOverBudgetSince = 0; // der nächste Schrumpf wartet einen frischen Sustain
                 st._activeRingRadius--;
+                st._ringBootWindowUntil = 1; // der erste Schrumpf schließt das Boot-Fenster (W4.4)
             }
         }
         // Streaming — DER LADE-RHYTHMUS (V18.270, Schöpfer „der Nexus hemmt die
@@ -61114,7 +61129,30 @@ class AnazhRealm {
     _tickImpostorBake() {
         const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
-        if (this._impostorBakePending) return 0; // ein Bake zur Zeit (async, mehrere Frames)
+        // W4.3 (Paritäts-Vollendung) — DER BAKE-WATCHDOG: der W2-Baseline-Befund „RTT-Bake
+        // 0/115, err null" hatte GENAU diese Wurzel — der ERSTE async Bake hing (ein
+        // GPU-Readback ohne echte Frames resolvt nie), `_impostorBakePending` klemmte
+        // FÜR IMMER true → die ganze Queue verhungerte STILL (die V18.309-Klasse: kein
+        // Timeout, kein lautes Verdikt). Jetzt: hängt ein Bake länger als
+        // IMPOSTOR_BAKE_TIMEOUT_MS, wird sein Record graziös rttFailed (der Canvas-
+        // Fallback bleibt sichtbar), das Token entwertet die SPÄTE finally (sie darf
+        // den NÄCHSTEN Bake nicht löschen), die Queue lebt weiter. Ein sehr später
+        // Erfolg darf rttBaked trotzdem setzen (der Atlas-Swap ist idempotent-gut).
+        if (this._impostorBakePending) {
+            const since = this._impostorBakePendingSince || 0;
+            if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS) {
+                const hungKey = this._impostorBakePendingKey;
+                const hungRec = hungKey && this._impostorAtlasMap ? this._impostorAtlasMap.get(hungKey) : null;
+                if (hungRec) hungRec.rttFailed = true;
+                this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
+                this._impostorBakePending = false;
+                this._impostorBakeHung = (this._impostorBakeHung || 0) + 1;
+                this.log(
+                    `Impostor-Bake-Watchdog: hängender Bake (${hungKey}) verworfen — die Queue lebt weiter.`,
+                    "WARN"
+                );
+            } else return 0; // ein Bake zur Zeit (async, mehrere Frames)
+        }
         // WELLE S4 — DER IMPOSTOR BÄCKT EAGER (Studio-Modell, Schöpfer „billboards werden
         // kontinuierlich weiter erstellt, das ferne so stück für stück erweitert"): der alte
         // `_frameOverBudget`-Gate (V18.282, Optik wartet über Budget) war hier ein HENNE-EI —
@@ -61129,15 +61167,25 @@ class AnazhRealm {
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
         const key = this._impostorBakeQueue.shift();
         const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
-        if (!rec || rec.rttBaked || rec.rttFailed) return 0;
+        if (!rec || rec.rttBaked || rec.rttFailed) {
+            // W4.3 — der Drop ist GEZÄHLT statt still (Linsen-lesbar): ein Queue-Key ohne
+            // frischen Record ist legitim (schon gebacken/failed), aber nie mehr unsichtbar.
+            this._impostorBakeDropped = (this._impostorBakeDropped || 0) + 1;
+            return 0;
+        }
         this._impostorBakePending = true;
+        this._impostorBakePendingSince = performance.now();
+        this._impostorBakePendingKey = key;
+        const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
         this._bakeImpostorAtlasRTT(key, rec)
             .catch((e) => {
                 rec.rttFailed = true; // graziös: der Canvas-Fallback bleibt sichtbar
                 if (typeof window !== "undefined") window.__impostorRttError = String((e && e.message) || e);
             })
             .finally(() => {
-                this._impostorBakePending = false;
+                // die späte finally eines vom Watchdog verworfenen Bakes darf den
+                // NÄCHSTEN Bake nicht löschen (Token-Wand)
+                if (this._impostorBakeTok === _tok) this._impostorBakePending = false;
             });
         return 1;
     }
@@ -64250,12 +64298,19 @@ class AnazhRealm {
     }
     _foundryRequest(presetId, seed, lod, season) {
         const f = this._foundry;
-        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        if (!f) return Promise.resolve(null);
         const s = season || "summer";
         // Platte zuerst (µs–ms), Worker nur beim Miss; der Treffer IST der Worker-Reply
         // eines früheren Boots (byte-gleich, drift-bewacht über den Quellen-Stempel).
+        // W4.1 (Paritäts-Vollendung) — DISK-FIRST VOR f.ready: der IDB-Treffer braucht
+        // den Worker NICHT (Schlüssel + Reply sind worker-frei) — der warme Boot saugt
+        // die Bibliothek von der Platte, WÄHREND der Worker (~1-2 s: r128 600 KB +
+        // phytogenesis + libs) noch bootet. Der MISS vor dem Worker-Boot bleibt exakt
+        // das alte null (der Aufrufer deferriert + fragt später — gate-treu: headless
+        // ist der IDB-Cache ohnehin AUS, dort ist der Pfad byte-gleich zu vorher).
         return this._foundryIdbGet(presetId, seed, lod, s).then((hit) => {
             if (hit) return hit;
+            if (!f.ready || !f.worker) return null;
             return this._foundryWorkerRequest(presetId, seed, lod, s).then((meshes) => {
                 if (meshes && meshes.length) this._foundryIdbPut(presetId, seed, lod, s, meshes);
                 return meshes;
@@ -82145,7 +82200,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.430.0";
+AnazhRealm.VERSION = "18.431.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -82660,6 +82715,10 @@ AnazhRealm.OCCLUSION = Object.freeze({
 // dass ein Streaming-Frame nie am Deko-Bau kippt (der Ring-Kopfraum-Timer überlebt), groß
 // genug, dass eine warme Region (~6-10 ms nach 3a) in 1-2 Scheiben steht.
 AnazhRealm.SCATTER_SLICE_MS = 6;
+// W4.3 — der Impostor-Bake-Watchdog: hängt ein async RTT-Bake länger, wird er graziös
+// verworfen (rttFailed, Canvas-Fallback) statt die Queue für immer zu blocken. Weit über
+// jedem legitimen Bake (~100-500 ms real; swiftshader Sekunden), aber ENDLICH.
+AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 15000;
 AnazhRealm.SCATTER = Object.freeze({
     cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)
     regionM: 256, // eine Scatter-Region = 16 Voxel-Chunks (= Bake-Region V18.219)
@@ -85640,6 +85699,10 @@ AnazhRealm.RING_SHRINK_SUSTAIN_MS = 1200;
 // damit die Welt im Zweifel KLEIN + stabil bleibt (Wachsen ist zaghaft, Schrumpfen beherzt). So
 // ratscht ein transienter leichter Boot-Frame den Ring NICHT mehr hoch, bevor das Laub lädt.
 AnazhRealm.RING_GROW_SUSTAIN_MS = 1500;
+// W4.4 — der Zeit-Deckel des Ring-Boot-Fensters: solange der Ziel-Ring noch nie stand und
+// dieser Deckel offen ist, wächst der Ring mit dem KURZEN Sustain (RING_RAMP_SETTLE_MS) —
+// schwache HW fällt danach gebunden in die volle V18.318-Hysterese zurück.
+AnazhRealm.RING_BOOT_WINDOW_MS = 10000;
 // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
 // Schwester des `foliageRadius`. Wo der Radius die REICHWEITE der Vegetation nach Kapazität
 // fährt, fährt dieser Faktor ihre DICHTE (Instanz-Zahl pro Zelle, `dekoDensity`-Multiplikator

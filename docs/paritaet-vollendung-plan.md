@@ -92,7 +92,7 @@ W6 Silhouetten+Paritäts-Verdikt → W7 Fahrzeuge → W8 Schöpfer-Abnahme.**
 
 ## §2 · Die Wellen
 
-### W1 — Die Wahrheits-Wände (Regler/Tap-Härtung + das Thin-Loch) · klein, 3–4 Commits
+### W1 — Die Wahrheits-Wände · ✅ GEBAUT V18.428 (Bonus-Fang: die NaN-EWMA-Wand am Loop-Eingang)
 
 **Ziel:** Die V18.427-Heilung strukturell unumkehrbar machen (kein Konsument kann je wieder eine
 vergiftete/session-lineare Zahl lesen) und die letzte Endlosschleifen-Klasse schließen — BEVOR der
@@ -138,7 +138,7 @@ alles Null-Renderer, hardware-unabhängig. **Risiko:** minimal (fast rein test-s
 **DONE-Bezug:** Faden „HUD/Regler gegen die Wahrheit" vollständig; Vorbedingung für Kriterium 2 und
 die Abnahme aller vier.
 
-### W2 — Die zwei fehlenden Mess-Linsen (Bühne + Parität) · klein, 0,5–1 Welle
+### W2 — Die zwei fehlenden Mess-Linsen · ✅ GEBAUT V18.429 (Baseline: docs/analyse/paritaet-baseline-v18429.md; Befund RTT-Bake 0/115 → W4.3)
 
 **Ziel:** Kriterien 1+2 überhaupt erst prüfbar machen.
 
@@ -167,7 +167,7 @@ die Abnahme aller vier.
 lesend); headless kurzschließt Ring/IDB → die Real-Variante trägt die Zeit-Wahrheit.
 **DONE-Bezug:** Kriterium 1+2 werden messbar; 3 profitiert (gereinigte Bühne).
 
-### W3 — `_scatterRegion`-Zeit-Scheiben · mittel, 3 einzeln bewiesene Commits (3a/3b/3c)
+### W3 — `_scatterRegion`-Zeit-Scheiben · ✅ GEBAUT V18.430 (3a: Feld-Band GEMESSEN VERWORFEN → Hoist+Gate-Ordnung; 3b/3c: Fortsetzungs-Chokepoint, gate:scatter-ab 4/4 + gate:scatter-slice 5/5)
 
 **Ziel:** 54/270 ms → ≤~6-ms-Scheiben; die 5–7-FPS-Streaming-Frames fallen UND der
 Ring-Kopfraum-Timer wird nicht mehr von der eigenen Deko resetet.
@@ -229,7 +229,7 @@ NUR auf Mess-Beweis, falls 3a+3b+3c nicht <8 ms liefern. **DONE-Bezug:** Faden �
 vollständig; Kriterium 2 (die Ramp stallt nicht mehr an der eigenen Deko) + FPS-Grundlage jeder
 Schöpfer-Sichtung.
 
-### W4 — Boot ≤3 s: Warm-Pfad vollenden + Boot-Fenster der Ring-Ramp · mittel, 2–3 Commits
+### W4 — Boot ≤3 s · ✅ GEBAUT V18.431 (4.1 Disk-first vor f.ready · 4.3 Bake-Watchdog [die 0/115-Wurzel: hängender Readback klemmte pending für immer] · 4.4 Ring-Boot-Fenster [kurzer Sustain + Zeit-Deckel + schließt bei Erst-Erreichen/Schrumpf]; **4.2 Atlas-Persist BEWUSST VERTAGT hinter den W8-Atlas-Look-Sign-off** — der Atlas ist der einzige nicht-abgenommene Bake, Persistenz jetzt konservierte einen möglicherweise falschen Look; Stempel-Erweiterung um die Bäcker-Quellen bleibt die Bau-Vorschrift, wenn er kommt)
 
 **Ziel:** die zwei STRUKTURELLEN Zeit-Böden fallen (Worker-Warte ~1–2 s, Impostor-Tail ~5–10 s,
 Ramp-Boden ≥7,4 s); danach liefert diag-boot-stage die ehrliche Rest-Zahl gegen das 3-s-Ziel.

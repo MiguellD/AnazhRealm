@@ -210,6 +210,10 @@ async function auditStateAndMethods() {
 
             // Bekannt-fehlerhafte / dynamische Pfade die wir whitelisten
             const whitelist = new Set([
+                // W3.3a — TEST-HOOK der gate:scatter-ab-Byte-Wand (Legacy-Gate-Ordnung als
+                // Referenz-Ufer, wie __anazhGateNoFoundry): nur Gates setzen ihn; der eine
+                // Leser (_scatterPass) prüft `=== true` — undefined-sicher per Konstruktion.
+                "__scatterExactWater",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
                 "workshop.preview.currentMesh",
