@@ -63943,10 +63943,32 @@ class AnazhRealm {
             this._impostorAtlasMap.set(key, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
             return false;
         }
-        // Frame aus der LOD1-Bounding-Box (Bake-Kamera + Billboard-Quad lesen dieselbe Formel).
+        // Frame aus der LOD1-Geometrie — EXAKT die Studio-v36-Mathematik (bakeImpostorAtlas,
+        // phytogenesis Z.1760ff), GEMESSEN 08.07. (der Schöpfer-Befund „L2 nicht korrekt
+        // positioniert, geschnitten — im Studio sauberer"):
+        // (a) HÖHE = box.max.y (Anker Stammbasis y=0; die WURZEL-Geometrie unter y=0 — minY
+        //     −1.3…−5.0 m gemessen — ist im Welt-Boden unsichtbar und gehört NICHT in den
+        //     Rahmen; die alte `max.y − min(0,min.y)`-Form blähte die Zelle 29–69 % → leerer
+        //     Zell-Kopf = verschenkte Textur-Auflösung + Mip-Ausbluten).
+        // (b) BREITE = radialer VERTEX-Scan sqrt(x²+z²) (rotations-invariant über alle 8
+        //     Blickwinkel) statt AABB-Achsen-Extrem (unterschätzt Diagonal-Kronen → Weide
+        //     11 % Seiten-Clip gemessen — exakt die „geraden Schnittkanten", die das Studio
+        //     in v36 heilte). Einmalig pro Record (gecacht), wie der Studio-Bäcker.
         const box = new THREE.Box3().setFromObject(group);
-        const totalH = Math.max(1, box.max.y - Math.min(0, box.min.y));
-        const maxR = Math.max(Math.abs(box.max.x), Math.abs(box.min.x), Math.abs(box.max.z), Math.abs(box.min.z), 0.5);
+        const totalH = Math.max(1, box.max.y);
+        let _rad2 = 0.25;
+        group.traverse((o) => {
+            if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
+                const pa = o.geometry.attributes.position;
+                for (let i = 0; i < pa.count; i++) {
+                    const X = pa.getX(i),
+                        Z = pa.getZ(i),
+                        q = X * X + Z * Z;
+                    if (q > _rad2) _rad2 = q;
+                }
+            }
+        });
+        const maxR = Math.sqrt(_rad2);
         // Die Bake-Subjekt-Leaves aus der LOD1-Gruppe (geteilte Geometrien/Materialien — NICHT disposen).
         const I = new THREE.Matrix4();
         const leaves = [];
