@@ -64261,6 +64261,11 @@ class AnazhRealm {
                 "kristalle",
                 "blume",
                 "strauch",
+                // 08.07. — DAS GRAS DOCKT AN (Schöpfer „zum hundertsten Mal: nicht dieselben
+                // Gräser"): das echte Studio-gras-Asset in die Bibliothek — der kommende
+                // Gras-Schnitt liest es als Halm-Geometrie (statt der emitGrass-KOPIE
+                // _grassBladeTuftGeometry); der Prefetch wärmt es ab jetzt mit.
+                "gras",
             ],
             // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
             // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
