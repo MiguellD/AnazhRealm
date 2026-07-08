@@ -63176,7 +63176,13 @@ class AnazhRealm {
         const d =
             this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 +
             this._forestFbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
-        const v = (d - 0.5) * 1.9 + 0.5;
+        // Schöpfer „so viele chunks aber NICHTS dicht ... alles fehlt!" — die Vorlage (der Studio-Wald)
+        // ist ein GLEICHMÄSSIG dichter Wald, kein spärlicher Fleck. Die alte Stand-Dichte war bimodal
+        // (Kontrast 1.9, Mittel 0.5) → die Hälfte der Welt lag in fast-leeren Lichtungen → spärlich.
+        // Jetzt HÖHER + gleichmässiger: Mittel 0.72, Kontrast 1.35 → der Wald deckt (dichte Kerne +
+        // gelichtete Säume, keine Wüsten dazwischen); Lichtungen bleiben, aber tragen Wald. Der Perf-
+        // Regler (`_foliageDensityScale`) + die LOD-Demotion dünnen auf schwacher HW zurück.
+        const v = (d - 0.5) * 1.35 + 0.72;
         return v < 0 ? 0 : v > 1 ? 1 : v;
     }
 
@@ -63239,8 +63245,9 @@ class AnazhRealm {
             const x = (cx + rng()) * CELL;
             const z = (cz + rng()) * CELL;
             const sd = this._forestStandDensity(x, z);
-            // BIMODAL (Vorlage): Lichtungen wirklich leer, Kerne wirklich dicht.
-            if (rng() > 0.04 + 0.96 * ss(0.18, 0.8, sd)) continue;
+            // Der Lichtungs-Boden hebt (0.04→0.30): auch die gelichteten Säume tragen jetzt Wald
+            // (Studio-Modell: der Wald deckt gleichmässig), die dichten Kerne sättigen weiter voll.
+            if (rng() > 0.3 + 0.7 * ss(0.18, 0.8, sd)) continue;
             // Boden + Wasser: EIN _voxelSurfaceY-Scan, die Wasser-Marge selbst hergeleitet
             // (spart den zweiten Scan von _isAboveWaterAt).
             const surfaceY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : null;
@@ -76072,12 +76079,20 @@ class AnazhRealm {
         if (hl) {
             hl.color.setRGB(tint.skyR * 1.1, tint.skyG * 1.1, tint.skyB * 1.1);
             const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
-            if (pm && typeof this.auraAt === "function") {
+            // Schöpfer-Befund „der nebel wird durch die emotion gefärbt, das soll weg": der Hemi-BODEN
+            // (der über gMix in die NEBEL-Farbe fliesst + die Welt von unten färbt) wurde vom lebendigen
+            // Feld (glut/lebendig/mag) getönt OHNE auraK-Gate — bei glut≈0.95 am Spawn wurde er warm-rot
+            // → der Nebel/Boden warm. Das ist die letzte ungegatete Feld→Atmosphäre-Naht (die V18.364-
+            // „Emotionsfarbe raus [Default 0]" heilte nur den Himmel-Tint). Jetzt gated `tint.auraK` auch
+            // diesen Boden-Term → bei Default auraK=0 ist der Nebel/Boden REIN Tag-Nacht+Wetter, kein
+            // Feld-Anstrich; wer das lebendige Feld im Nebel will, hebt `atmosphere.auraTintStrength`.
+            const _aKGround = tint && Number.isFinite(tint.auraK) ? tint.auraK : 0;
+            if (_aKGround > 0 && pm && typeof this.auraAt === "function") {
                 const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
                 if (field) {
-                    const lebendig = Math.max(0, Math.min(1, field.lebendig || 0));
-                    const glut = Math.max(0, Math.min(1, field.glut || 0));
-                    const mag = Math.max(0, Math.min(1, field.magieleitung || 0));
+                    const lebendig = Math.max(0, Math.min(1, field.lebendig || 0)) * _aKGround;
+                    const glut = Math.max(0, Math.min(1, field.glut || 0)) * _aKGround;
+                    const mag = Math.max(0, Math.min(1, field.magieleitung || 0)) * _aKGround;
                     earth.r = Math.min(1, earth.r + lebendig * 0.15);
                     earth.g = Math.min(1, earth.g + lebendig * 0.25);
                     earth.r = Math.min(1, earth.r + glut * 0.35);
@@ -81052,7 +81067,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.415.0";
+AnazhRealm.VERSION = "18.416.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
