@@ -76197,7 +76197,12 @@ class AnazhRealm {
                 a.col.g * tint.lightColor.g * tint.lightMul,
                 a.col.b * tint.lightColor.b * tint.lightMul
             );
-            dl.intensity = AnazhRealm.KEY_BASE * a.lum * tint.lightIntensity * this._celestialHorizonFade(sunDir.y);
+            dl.intensity =
+                AnazhRealm.KEY_BASE *
+                AnazhRealm.LEGACY_LICHT *
+                a.lum *
+                tint.lightIntensity *
+                this._celestialHorizonFade(sunDir.y);
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // V18.390 — der Mond-Pfad BLEIBT (V18.377/.378: Richtung aus der EINEN Quelle,
@@ -76227,7 +76232,7 @@ class AnazhRealm {
                 fl.target.updateMatrixWorld();
             }
             fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
-            fl.intensity = F.base * a.lum * tint.lightMul;
+            fl.intensity = F.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
         }
         // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht von der sonnen-abgewandten Seite,
         // SEITLICH versetzt (⟂ zur Sonne) → eine Gegenlicht-Kante, die Laub/Stamm gegen den Himmel
@@ -76246,7 +76251,7 @@ class AnazhRealm {
                 rl.target.updateMatrixWorld();
             }
             rl.color.setRGB(R.r, R.g, R.b);
-            rl.intensity = R.base * a.lum * tint.lightMul;
+            rl.intensity = R.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
         }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
@@ -76376,7 +76381,9 @@ class AnazhRealm {
             // Vorlage phytogenesis Z.1291: der begehbare Wald nutzt HemisphereLight-Intensität 0.55
             // (nicht AnazhRealms halbiertes 0.30). 0.55 + der starke Key (2.4) ist trotzdem key-
             // dominant (~4:1) — die Halbierung war eine Fehl-Lesart. Mittag 0.55, Nacht 0.10.
-            hl.intensity = (0.1 + 0.45 * sunHeight) * tint.lightMul;
+            // r128→r184-Übersetzung NUR am Tag-Term (0.45 = der Vorlagen-Hemi 0.55 legacy);
+            // der Nacht-Floor 0.1 bleibt außerhalb (die V18.377-Mond-Nacht ist eigen getuned).
+            hl.intensity = (0.1 + 0.45 * AnazhRealm.LEGACY_LICHT * sunHeight) * tint.lightMul;
         }
         if (fog) {
             // V18.367 — die Nebel-/Aerial-Farbe ETWAS GEERDETER (Schöpfer „ich sehe die Sonne
@@ -76400,9 +76407,41 @@ class AnazhRealm {
             // Term nachts nicht (alles ist dunkel). Browser-A/B (der Tag ist unverändert).
             const dayAmt = Math.max(0, Math.min(1, Math.sin(angle) / 0.25)); // 1 ab ~15° Sonne, 0 am/unter Horizont
             const gMix = 0.26 * dayAmt;
-            const fogR = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
-            const fogG = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
-            const fogB = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+            const fogRn = tint.skyR * (1 - gMix) + (hl ? hl.groundColor.r : 0.3) * gMix;
+            const fogGn = tint.skyG * (1 - gMix) + (hl ? hl.groundColor.g : 0.25) * gMix;
+            const fogBn = tint.skyB * (1 - gMix) + (hl ? hl.groundColor.b : 0.2) * gMix;
+            // DER TAG-NEBEL FOLGT DEM STUDIO-GESETZ (08.07., „die Regeln kennen statt iterieren"):
+            // die Vorlage hat EINE Quelle für Himmel+Nebel+Ferne (phytogenesis Z.3474ff) —
+            // Helligkeit skyB aus der Sonnenhöhe zwischen den perzeptuellen Ankern (Tag 0xa6d2ec ·
+            // Nacht 0x0a1326), die Dämmerungs-GLUT ist die gerötete Sonnenfarbe SELBST (atm.col,
+            // dasselbe Rayleigh-Gesetz — kein Horizont-Hardcode). FARB-ÜBERSETZUNG r128→r184:
+            // r128 las Hex ALS LINEAR (keine Eingangs-Konvertierung) → die treue Übersetzung
+            // setzt die RAW-Werte per setRGB (linear), NICHT per Hex (der sRGB→linear wandeln
+            // würde = dunkler als die Vorlage zeigte). Der GEMESSENE Purpur-Schleier ([0.176,
+            // 0.24, 0.407] aus LUT-Sky × Hemi-Boden) weicht dem hellen Studio-Dunst. NACHTS
+            // (dayAmt→0) bleibt der bisherige Pfad byte-genau (die V18.377-Mond-Nacht ist eigen).
+            const sunHeightF = Math.max(0, Math.sin(angle)); // eigener Scope (das hl-Block-sunHeight lebt dort)
+            const _fATM = this._atmosphere(sunHeightF);
+            const _fSS = (a, b, x) => {
+                let q = (x - a) / (b - a);
+                q = q < 0 ? 0 : q > 1 ? 1 : q;
+                return q * q * (3 - 2 * q);
+            };
+            const skyB = 0.045 + 0.955 * _fSS(-0.18, 0.42, sunHeightF);
+            let fdR = 0.039 + (0.651 - 0.039) * skyB; // 0x0a1326 → 0xa6d2ec, raw als LINEAR (r128-treu)
+            let fdG = 0.075 + (0.824 - 0.075) * skyB;
+            let fdB = 0.149 + (0.925 - 0.149) * skyB;
+            const lowSun =
+                Math.max(0, 1 - Math.abs(sunHeightF) / 0.28) * Math.max(0, Math.min(1, 1 + sunHeightF * 3.5));
+            const glut = lowSun * lowSun * 0.6;
+            fdR += (_fATM.col.r - fdR) * glut;
+            fdG += (_fATM.col.g - fdG) * glut;
+            fdB += (_fATM.col.b - fdB) * glut;
+            // Wetter dämpft wie bisher über den EINEN Tint-Kanal (skyMul: sunny 1 → stormy 0.42).
+            const wDim = 0.35 + 0.65 * tint.skyMul;
+            const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
+            const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
+            const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
             fog.color.setRGB(fogR, fogG, fogB);
             // V8.29 — Fog-Distanz spürbar gemacht. sunny 35..150, rainy 22..95.
             // Slider 30..200 % via state.atmosphere.fogDistance.
@@ -84728,6 +84767,16 @@ AnazhRealm.RAYLEIGH_BETA = Object.freeze({ r: 0.044, g: 0.1, b: 0.23 });
 // Bounce-Licht der Vorlage (Z.1177: Farbe grün·atm.col, int 0.62·lum, von der Schattenseite
 // +22 m Hebung — formt die Schattenseite mit Laub-Farbe statt Ambient-Wash).
 AnazhRealm.KEY_BASE = 2.6;
+// DIE r128→r184-LICHT-ÜBERSETZUNG (08.07., Schöpfer „du bist nicht der erste, der diese
+// Versionen übersetzt — recherchiere die Regeln statt zu brute-forcen"): die DOKUMENTIERTE
+// three.js-Migrations-Regel (r155, useLegacyLights → physisch): Legacy-Licht hatte keine
+// 1/π-BRDF-Normierung — physikalische Lichter sind bei GLEICHER Zahl ~π-fach dunkler.
+// ALLE Rig-Werte hier (KEY_BASE ≈ Vorlagen-key 2.4 · FILL 0.62 · RIM 1.2 · Hemi-Tag 0.45)
+// wurden NUMERISCH aus dem r128-Studio kopiert → semantisch π-dunkel = die gemessene
+// „schwarze Stämme/dunkler Boden"-Wurzel. EINE Konstante, VIER Tages-Anwendungen (Sonne ·
+// Fill · Rim · Hemi-Tag-Term); die NACHT bleibt byte-unberührt (a.lum→0, Mond-Pfad eigen,
+// Hemi-Nacht-Floor 0.1 außerhalb des Faktors). Kein Tuning-Knopf — die Übersetzungsregel.
+AnazhRealm.LEGACY_LICHT = Math.PI;
 AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62, dist: 60, lift: 22 });
 // Vorlagen-RIM (phytogenesis Z.1294: DirectionalLight(0xaaccff, 1.2), von der sonnen-abgewandten
 // Seite): das kühle Gegenlicht, das die Laub-/Stamm-Kanten gegen den Himmel abhebt — das 5.
