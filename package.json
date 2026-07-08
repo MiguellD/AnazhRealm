@@ -36,6 +36,8 @@
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "grass-load": "node scripts/diag-grass-load.cjs",
         "scene-cull": "node scripts/diag-scene-cull.cjs",
+        "look:tragbar": "node scripts/diag-tragbar-render.cjs",
+        "look:studio": "node scripts/diag-studio-render.cjs",
         "cut-method": "node scripts/cut-method.cjs",
         "audit:strict": "node scripts/audit-strict.cjs",
         "diag:foundry-core-smoke": "node scripts/diag-foundry-core-smoke.cjs",
