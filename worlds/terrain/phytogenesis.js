@@ -1695,10 +1695,11 @@ function findClearing(trees, R, seedInt) {
 /* =================== ENDE ECO-ENGINE =================== */
 let __forest = null;
 function bakeImpostorAtlas() {
+    const _impSpec = PORTAL_RENDER_CONFIG.impostor || {};
     const K = Math.max(1, _impSpecs.length),
         V = _impV,
-        cw = 128,
-        ch = 256; // Spalten = (Art,Variante), Zeilen = 8 Blickwinkel um Y -> die Silhouette DREHT mit der Kamera (SpeedTree-Multi-View)
+        cw = _impSpec.cellW || 128,
+        ch = _impSpec.cellH || 256; // Spalten = (Art,Variante), Zeilen = 8 Blickwinkel um Y -> die Silhouette DREHT mit der Kamera (SpeedTree-Multi-View); Zell-Maße aus der EINEN Quelle (foundry-core)
     const sig = _impSpecs.map((s) => s.sp + s.seed).join(","); // Signatur der Baubeschreibungen: neue Seeds (Rebuild) -> Atlas MUSS neu, sonst zeigt die Ferne alte Baeume
     if (_impRT && _impK === K && _impBakedSig === sig) return; // EINMAL-BAKE: der Atlas ist SAISONINVARIANT (volle Krone gebacken; Praesenz+Tint macht der Shader) -> nach diesem Bake nie wieder, deterministischer Zyklus kostenlos
     if (!_impRT || _impK !== K) {
@@ -3033,7 +3034,7 @@ let _impAtlas = null,
     _impSpecs = [],
     _impCellOf = {},
     _impWR = {};
-const _impV = 8,
+const _impV = (PORTAL_RENDER_CONFIG.impostor && PORTAL_RENDER_CONFIG.impostor.views) || 8, // Bäcker-Spec aus der EINEN Quelle (foundry-core, Studio-Vertrag B2)
     _impYAxis = new THREE.Vector3(0, 1, 0); // 8 Blickwinkel je Baum im Atlas (Zeilen); _impNrm = Normal-Atlas; Atlas ist SAISONINVARIANT (einmal je Seed-Signatur); _impWR = Zell-Seitenverhaeltnis je Art (FIX v28)
 let _grassTiles = [];
 let _occG = null,
@@ -4628,6 +4629,11 @@ init();
             // NERVENSYSTEM — die Platzierungs-Daten (Welt-Skalen je Preset + Baum-Mul + Streu-
             // Seltenheit) fliessen als reine Zahlen: AnazhRealm liest sie LIVE statt eines
             // hartkodierten Spiegels. Ein neues Asset = eine scale-Zeile in foundry-core.
+            // Der Bäcker-Spec (Studio-Vertrag B2): Blickwinkel + Zell-Maße des Impostor-Atlas —
+            // AnazhRealms RTT-Bäcker liest DIESELBEN Zahlen wie bakeImpostorAtlas hier.
+            impostor: c.impostor
+                ? { views: c.impostor.views, cellW: c.impostor.cellW, cellH: c.impostor.cellH }
+                : undefined,
             placement: c.placement
                 ? {
                       treeScaleMul: c.placement.treeScaleMul,

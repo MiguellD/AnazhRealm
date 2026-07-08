@@ -145,6 +145,11 @@ const PORTAL_RENDER_CONFIG = {
         },
         rarity: { kristalle: 0.05, basalt: 0.3, sediment: 0.35, findling: 0.6, zacken: 0.6 },
     },
+    // DER BÄCKER-SPEC („Drähte statt Kopien" 08.07., Studio-Vertrag B2): das Atlas-Rezept des
+    // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
+    // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
+    // ändert sie HIER, nirgends sonst.
+    impostor: { views: 8, cellW: 128, cellH: 256 },
 };
 
 function injectWind(mat, foliage, isGrass) {

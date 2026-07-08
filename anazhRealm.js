@@ -36091,6 +36091,16 @@ class AnazhRealm {
         // Heap; der Streaming-Ring + `_pruneDistantVoxelChunks` räumt sie
         // bei Spieler-Bewegung sauber.
         this.state.lastWorldgen = now;
+        // DER PARALLELE SAUG (08.07., „Drähte statt Kopien" Schritt 4): der Foundry-Worker
+        // startet VOR dem synchronen Worldgen-Block — er lädt seine Kerne + wärmt die
+        // Bibliothek, WÄHREND der Main-Thread die Welt rechnet (zwei Threads gleichzeitig,
+        // statt des alten Erst-Loop-Frame-Starts, der die ganze Worldgen-Zeit verschenkte).
+        // Cheap (nur Worker-Erzeugung + Message-Posts); headless-Null/kein Worker → No-op.
+        if (!this._foundry && typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+            try {
+                this._ensureAssetFoundry();
+            } catch (_efb) {}
+        }
         this.generateTerrainWithParameters(this.state.terrainSteepness, this.state.terrainBaseHeight);
         return true;
     }
@@ -60554,9 +60564,14 @@ class AnazhRealm {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         if (this._impostorAtlasMap.has(key)) return this._impostorAtlasMap.get(key);
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const V = 8,
-            cw = 128,
-            ch = 256;
+        // Der Bäcker-Spec aus der EINEN Quelle (foundry-core PORTAL_RENDER_CONFIG.impostor,
+        // LIVE über get-render-config — „Drähte statt Kopien"): Blickwinkel + Zell-Maße
+        // teilen Studio-Bäcker und dieser RTT-Bäcker; Fallback = die bisherigen Werte
+        // (vor dem Worker-ready / exotische Einbettung).
+        const _ic = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.impostor) || {};
+        const V = _ic.views || 8,
+            cw = _ic.cellW || 128,
+            ch = _ic.cellH || 256;
         // (1) Fallback: die deterministische Silhouette in alle 8 Zellen (bis der
         // RTT-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
         const cell = this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
@@ -63854,6 +63869,15 @@ class AnazhRealm {
                     if (meshes) {
                         this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
                         this._scatterRefillPending = true;
+                        // DER SELBST-MATERIALISIERENDE RECORD (08.07., GEMESSEN: nach dem Prefetch
+                        // standen 0 Records — der erste ensure-Aufruf postet nur die Anfrage; erst
+                        // ein Aufruf NACH der Ankunft baut Record + Rahmen + reiht den RTT-Bake
+                        // ein, und den machte erst irgendwann der Scatter): im Ankunfts-Moment
+                        // sofort re-ensuren (Cache-Hit → Record formt sich, Bake-Queue füllt sich,
+                        // `_tickImpostorBake` drainet eager — kein Warten auf den Zufalls-Leser).
+                        try {
+                            this._foundryEnsureImpostorRecord(preset, variant, season);
+                        } catch (_ei) {}
                     } else {
                         f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
                     }
@@ -64242,26 +64266,35 @@ class AnazhRealm {
         if (!f || !f.ready || f._prefetching) return;
         f._prefetching = true;
         const spec = this._foundryLibrarySpec();
+        // DER PARALLELE SAUG („Drähte statt Kopien" 08.07., Schöpfer „die Andockstellen müssen
+        // quasi instant saugen, parallel synergetisch"): ALLE Anfragen feuern SOFORT (der
+        // Worker ist ein eigener Thread mit serieller Queue — er arbeitet sie Rücken an
+        // Rücken ab), statt der alten Rundreise-um-Rundreise-Schleife (await pro Asset =
+        // der Worker saß zwischen zwei Antworten idle, die Bibliothek tröpfelte über
+        // Sekunden). Post kostet den Main-Frame nichts; die Antworten docken async.
+        const jobs = [];
         for (const sp of spec.species) {
             for (const sd of spec.seeds) {
                 for (const lod of spec.lods) {
                     const season = this.state.season || "summer";
                     const key = sp + "|" + sd + "|" + lod + "|" + season;
                     if (f.cache.has(key)) continue;
-                    try {
-                        const meshes = await this._foundryRequest(sp, sd, lod, season);
-                        // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null cachen
-                        // -> die Art bleibt on-demand nachfragbar (sonst dauerhaft Grammatik-Fallback).
-                        if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
-                    } catch (_e) {}
+                    jobs.push(
+                        this._foundryRequest(sp, sd, lod, season)
+                            .then((meshes) => {
+                                // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
+                                // cachen -> die Art bleibt on-demand nachfragbar.
+                                if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                            })
+                            .catch(() => {})
+                    );
                 }
             }
         }
-        // DAS NEUE KLEID (der 252-Nachbau-Fern-Baum-Befund, diag-nachbau-check): auch die BAUM-BILLBOARDS
-        // [Impostor-Atlas] vorwaermen. Der Fern-Scatter serviert LOD2 = das Studio-Billboard; ist es beim
-        // Streamen noch nicht gebacken, fiel er auf die Grammatik zurueck (Nachbau in der Ferne). Die
-        // Impostoren [pro (Baum-Preset, Variante 1..16)] jetzt beim Boot anstossen → das Billboard steht,
-        // bevor der Scatter es braucht → der Fern-Scatter ist rein Studio. Sanft getaktet (Studio nicht fluten).
+        // DAS NEUE KLEID (der 252-Nachbau-Fern-Baum-Befund): auch die BAUM-BILLBOARDS [Impostor]
+        // vorwärmen — der Fern-Scatter serviert LOD2 = das Studio-Billboard. Jeder Record-Miss
+        // POSTET seine LOD1-Anfrage sofort (parallel zur Bibliothek oben, kein 8-ms-Schlaf mehr);
+        // der RTT-Bake folgt budgetiert über `_tickImpostorBake`, sobald die Geometrie dockt.
         const impSeason = this.state.season || "summer";
         for (const sp of spec.species) {
             if (typeof this._foundryPresetIsTree === "function" && !this._foundryPresetIsTree(sp)) continue;
@@ -64269,9 +64302,9 @@ class AnazhRealm {
                 try {
                     this._foundryEnsureImpostorRecord(sp, v, impSeason);
                 } catch (_e) {}
-                await new Promise((r) => setTimeout(r, 8));
             }
         }
+        await Promise.all(jobs);
         f._prefetching = false;
         // Die Bibliothek steht jetzt — cold-gebliebene Foundry-Baum-Eintraege (waehrend des
         // Prefetch gespawnt) AKTIV neu bauen, statt auf den budget-gedrosselten Culling-Tick zu
