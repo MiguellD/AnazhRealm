@@ -114,7 +114,13 @@ const server = http.createServer((req, res) => {
                 /* */
             }
             if (renderer && renderer.info && renderer.info.render) {
-                return { calls: renderer.info.render.calls, tris: renderer.info.render.triangles };
+                return {
+                    calls:
+                        renderer.info.render.drawCalls != null
+                            ? renderer.info.render.drawCalls
+                            : renderer.info.render.calls,
+                    tris: renderer.info.render.triangles,
+                };
             }
             return { calls: null, tris: null };
         };

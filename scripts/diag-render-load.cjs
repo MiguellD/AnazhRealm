@@ -305,14 +305,20 @@ const server = http.createServer((req, res) => {
                 if (info && typeof info.reset === "function") info.reset(); // V18.268: autoReset=false in prod → explizit
                 real(scene, cam);
                 renderMsWith = +(performance.now() - t0).toFixed(0);
-                withShadow = { calls: info.render.calls, tris: info.render.triangles };
+                withShadow = {
+                    calls: info.render.drawCalls != null ? info.render.drawCalls : info.render.calls,
+                    tris: info.render.triangles,
+                };
                 programs = info.programs ? info.programs.length : -1;
                 s.renderer.shadowMap.enabled = false;
                 t0 = performance.now();
                 if (info && typeof info.reset === "function") info.reset();
                 real(scene, cam);
                 renderMsNo = +(performance.now() - t0).toFixed(0);
-                noShadow = { calls: info.render.calls, tris: info.render.triangles };
+                noShadow = {
+                    calls: info.render.drawCalls != null ? info.render.drawCalls : info.render.calls,
+                    tris: info.render.triangles,
+                };
                 s.renderer.shadowMap.enabled = true;
             } catch (e) {
                 withShadow = { error: String(e).slice(0, 80) };

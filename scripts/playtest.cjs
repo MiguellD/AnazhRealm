@@ -22442,6 +22442,11 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
         out.loopRenderTaps =
             /renderCalls/.test(r._loopRender.toString()) && /info\.reset/.test(r._loopRender.toString());
+        // V18.427 — DIE VERGIFTETE ZAHL: im r184-WebGPU-Info ist `render.calls` ein
+        // LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap MUSS den PRO-FRAME-
+        // Zähler `render.drawCalls` lesen (Schöpfer-HUD zeigte 38108 „dc" = Session-
+        // Render-Aufrufe, und der Regler drosselte gegen die wachsende Phantom-Last).
+        out.loopRenderTapsDrawCalls = /render\.drawCalls/.test(r._loopRender.toString());
         out.overlayShowsRenderLoad =
             /renderCalls/.test(r._perfSenseRender.toString()) && /phaseMax|spike/i.test(r._perfSenseRender.toString());
 
@@ -22617,6 +22622,10 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     check(
         "V18.268: _loopRender tappt die GPU-Last (info.reset + renderCalls) + das Overlay zeigt sie",
         res.loopRenderTaps && res.overlayShowsRenderLoad
+    );
+    check(
+        "V18.427: der Tap liest den PRO-FRAME-Zähler render.drawCalls (nie den Lebenszeit-`calls`)",
+        res.loopRenderTapsDrawCalls
     );
     check(
         "V18.269: die Augen FAHREN — der Aktuator liest die Render-Last (renderCalls) in die Architektur-Domäne",
@@ -41199,13 +41208,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- a) Tag-Nacht-Zyklus
         out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
-        // DER RUHIGE TAG (08.07., V9.56-i): Default 8→40 (die halbe Spielzeit war Nacht);
-        // der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
+        // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
         out.dayLengthConstantsExist =
             AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
             AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 40;
+            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
         out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
         // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
         // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
@@ -41400,7 +41408,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // --- a) Tag-Nacht
         check("Welle 6.G3.a: state.timeOfDay existiert + ist [0,1]", wave6g3Results.timeOfDayField);
         check(
-            "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (der ruhige Tag, 40)",
+            "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
             wave6g3Results.dayLengthDefault
         );
         check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);

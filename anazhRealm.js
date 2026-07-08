@@ -335,14 +335,10 @@ class AnazhRealm {
             // Welle 6.G3 (V8.24) — Tag-Nacht-Zyklus. timeOfDay 0..1 mit
             // 0=Mitternacht, 0.25=Sonnenaufgang, 0.5=Mittag, 0.75=Sonnenuntergang.
             // dayLengthMinutes ist die Echt-Zeit für einen kompletten Zyklus.
-            // DER RUHIGE TAG (08.07., Schöpfer-Befund „nach dem Öffnen ist es ~19:30/
-            // dunkel"): der alte 8-Min-Zyklus machte die HALBE Spielzeit zur Nacht
-            // (Mittag→22:45 in 3,5 echten Minuten — gemessen am Screenshot); das
-            // Studio-Benchmark steht praktisch im Tageslicht. Default jetzt 40 Min
-            // (Slider 1–60 bleibt die Spieler-Wahl, persistiert) + der FRISCHE Start
-            // am MORGEN (0.35 ≈ 08:24) → die erste Stunde ist Licht, die Nacht ein
-            // Ereignis statt der Dauerzustand. Lights+Skybox pro Frame aus timeOfDay.
-            timeOfDay: 0.35,
+            // Default 8 Min (schnell-spürbar), Slider 1-60 Min in den
+            // Einstellungen. Beide Felder persistiert. Lights+Skybox werden
+            // pro Frame aus timeOfDay abgeleitet — eine Quelle der Wahrheit.
+            timeOfDay: 0.5,
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
             // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter.
@@ -350,7 +346,7 @@ class AnazhRealm {
             seasonPhase: 0.375,
             autoSeason: true,
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
-            dayLengthMinutes: 40,
+            dayLengthMinutes: 8,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
@@ -19534,10 +19530,7 @@ class AnazhRealm {
         return 60; // Slider-Maximum
     }
     static get DAY_LENGTH_DEFAULT_MINUTES() {
-        // DER RUHIGE TAG (08.07.): 8 Min war die frühe „schnell-spürbar"-Dev-Wahl —
-        // damit war die halbe Spielzeit Nacht (der „öffnet dunkel"-Schöpfer-Befund).
-        // 40 Min = die Nacht wird ein Ereignis; der 1–60-Slider bleibt die Wahl.
-        return 40;
+        return 8; // Schöpfer-Wahl: schnell-spürbar
     }
     // Welle 6.G3 — Fauna-Lifecycle-Parameter. TARGET ist die untere Schwelle
     // für Geburten (Welt atmet zurück zur Ziel-Population), MAX die obere
@@ -22399,7 +22392,7 @@ class AnazhRealm {
             stencil: false,
             outputColorSpace: "srgb",
             backend: null,
-            info: { render: { calls: 0, triangles: 0 }, memory: {}, autoReset: false, reset: () => {} },
+            info: { render: { calls: 0, drawCalls: 0, triangles: 0 }, memory: {}, autoReset: false, reset: () => {} },
             init: resolved,
             // render() lässt die GPU-RASTERUNG weg, macht aber die billige CPU-
             // Buchhaltung, die der echte Renderer auch tut: die Welt-Matrizen
@@ -41058,15 +41051,7 @@ class AnazhRealm {
             const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
             const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
             if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
-                // DER RUHIGE TAG (08.07.) — ALT-DEFAULT-MIGRATION: 8 war jahrelang der
-                // Default (nie eine bewusste Wahl-Signatur) → ein Save, der exakt 8
-                // trägt, wandert auf den neuen ruhigen Default (40); jeder ANDERE Wert
-                // ist echte Spieler-Wahl und bleibt. Wer 8 wirklich will, stellt den
-                // Slider erneut — ab dann ist es eine bewusste, bewahrte Wahl.
-                this.state.dayLengthMinutes =
-                    state.dayLengthMinutes === 8
-                        ? this.constructor.DAY_LENGTH_DEFAULT_MINUTES
-                        : state.dayLengthMinutes;
+                this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
         }
         // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler überleben den
@@ -81687,9 +81672,17 @@ class AnazhRealm {
         // V18.268 — die GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke
         // dieses Frames, alle Pässe summiert). Das war der blinde Fleck: „freezt, kann
         // mich nicht umsehen" ist reine Render-Last, die perfSense nie sah.
+        // V18.427 — DIE VERGIFTETE ZAHL (Schöpfer-HUD „38108dc" bei ~1100 Szene-Meshes):
+        // im r184-WebGPU-Info ist `render.calls` ein LEBENSZEIT-Zähler der render()-
+        // AUFRUFE (reset() löscht ihn NICHT — nur drawCalls/frameCalls/triangles) →
+        // er wuchs linear mit der Session (~30 fps × Minuten × ~7 Pässe/Frame ≈ 38k)
+        // und vergiftete HUD, Flugschreiber UND den Regler (renderLoadMs = calls ×
+        // 0.011 ms = Phantom-Last, die mit der Spielzeit wächst → Dauer-Drosselung).
+        // Der PRO-DRAW-Zähler heißt dort `render.drawCalls` (Info.update). Fallback
+        // `.calls` deckt nur alte/fremde Info-Formen (klassisches WebGL, Stubs).
         if (_rinfo && _rinfo.render) {
             const f = this.state._perfFrame || (this.state._perfFrame = {});
-            f.renderCalls = _rinfo.render.calls || 0;
+            f.renderCalls = _rinfo.render.drawCalls != null ? _rinfo.render.drawCalls : _rinfo.render.calls || 0;
             f.renderTris = _rinfo.render.triangles || 0;
         }
         // V10.0-j.f — Drain pendingDisposals via `device.queue.onSubmitted
@@ -81952,7 +81945,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.426.0";
+AnazhRealm.VERSION = "18.427.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
