@@ -35434,6 +35434,16 @@ class AnazhRealm {
             if (s.horizonMantle) this._disposeHorizonMantle();
             return;
         }
+        // DAS STUDIO-MODELL (08.07., „nimm raus was rausgehört"): das Studio hat KEINE
+        // ferne Bergkulisse — die Sicht schließt an der Wald-Kante (S1, fog.far ≈ 194 m),
+        // jenseits davon zeichnet NICHTS. Der Mantel (outerRadius 4300 m) ist ein Vor-
+        // Studio-Relikt der riesigen Welt (die „Bergkulissen") → im Studio-Regime AUS
+        // (dispose, falls er aus einer Alt-Ära steht). Ohne Foundry (Alt-Welten/Test-Hook
+        // __anazhGateNoFoundry) bleibt er byte-alt der Fern-Horizont.
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+            if (s.horizonMantle) this._disposeHorizonMantle();
+            return;
+        }
         const cfg = AnazhRealm.HORIZON_MANTLE;
         const pm = s.playerMesh.position;
         const seed = (s.worldMeta && s.worldMeta.seed) || "";

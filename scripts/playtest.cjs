@@ -24156,9 +24156,17 @@ async function checkBandPhaseAFundament(ctx) {
                 src: /visualEdge/.test(r._dayNightApplyHemiAndFog.toString()),
             };
         }
-        // ── B2 · Horizont-Mantel (die Instant-Gigantik).
+        // ── B2 · Horizont-Mantel — seit dem Studio-Modell (08.07.) der ALT-PFAD-Fernhorizont:
+        // im Studio-Regime ist die Kulisse AUS (die Sicht schließt an der Wald-Kante, S1),
+        // der Mantel lebt nur ohne Foundry weiter → das Band prüft die lebende Alt-Mechanik
+        // deterministisch über den Test-Hook (die gate:grass-thin-Klasse, V9.56-i) und räumt
+        // danach zurück in den Studio-Zustand (dispose).
         {
             const cfg = r._voxelChunkConfig();
+            window.__anazhGateNoFoundry = true;
+            try {
+                if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
+            } catch (_e) {}
             const m = r.state.horizonMantle;
             if (m && m.mesh && m.mesh.geometry) {
                 const HM = r.constructor.HORIZON_MANTLE;
@@ -24216,6 +24224,10 @@ async function checkBandPhaseAFundament(ctx) {
             } else {
                 out.b2 = { exists: false };
             }
+            delete window.__anazhGateNoFoundry;
+            try {
+                if (typeof r._disposeHorizonMantle === "function") r._disposeHorizonMantle();
+            } catch (_e) {}
         }
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
         out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
