@@ -22494,7 +22494,16 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap MUSS den PRO-FRAME-
         // Zähler `render.drawCalls` lesen (Schöpfer-HUD zeigte 38108 „dc" = Session-
         // Render-Aufrufe, und der Regler drosselte gegen die wachsende Phantom-Last).
-        out.loopRenderTapsDrawCalls = /render\.drawCalls/.test(r._loopRender.toString());
+        // W1 — die Probe war VAKUÖS-fähig (die V18.267-Klasse): der erklärende Tap-
+        // Kommentar zitiert `render.drawCalls` wörtlich → ein Revert auf `.calls`
+        // bliebe an toString grün. Jetzt __codeOf (kommentar-gestrippt) + drawCalls-
+        // FIRST (der Lebenszeit-Zähler darf nur als ??-Fallback dahinter stehen).
+        {
+            const _lrC = window.__codeOf(r._loopRender);
+            const _ltIdx = _lrC.indexOf("render.calls"); // −1 = kein Lebenszeit-Read (auch ok)
+            out.loopRenderTapsDrawCalls =
+                /render\.drawCalls/.test(_lrC) && (_ltIdx === -1 || _lrC.indexOf("render.drawCalls") < _ltIdx);
+        }
         out.overlayShowsRenderLoad =
             /renderCalls/.test(r._perfSenseRender.toString()) && /phaseMax|spike/i.test(r._perfSenseRender.toString());
 

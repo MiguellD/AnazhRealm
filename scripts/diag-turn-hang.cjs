@@ -14,14 +14,28 @@ const fs = require("fs");
 const path = require("path");
 const PORT = Number(process.env.DIAG_PORT) || 4396;
 const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".woff2": "font/woff2", ".css": "text/css", ".png": "image/png" };
+const mime = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".wasm": "application/wasm",
+    ".json": "application/json",
+    ".woff2": "font/woff2",
+    ".css": "text/css",
+    ".png": "image/png",
+};
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
     const fp = path.join(root, p);
-    if (!fp.startsWith(root)) { res.statusCode = 403; return res.end(); }
+    if (!fp.startsWith(root)) {
+        res.statusCode = 403;
+        return res.end();
+    }
     fs.readFile(fp, (e, d) => {
-        if (e) { res.statusCode = 404; return res.end(); }
+        if (e) {
+            res.statusCode = 404;
+            return res.end();
+        }
         res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
         res.end(d);
     });
@@ -42,23 +56,33 @@ const server = http.createServer((req, res) => {
     // Warmup: pumpen bis die Welt settled (Chunk-Plateau).
     await page.evaluate(async () => {
         const start = performance.now();
-        let lastSize = -1, stableFor = 0;
+        let lastSize = -1,
+            stableFor = 0;
         while (performance.now() - start < 90000) {
             const r = window.anazhRealm;
             if (r && typeof r._gameLoopTick === "function") {
-                try { r._gameLoopTick(performance.now()); } catch (_e) {}
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
                 const sz = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                if (sz === lastSize) stableFor++; else { stableFor = 0; lastSize = sz; }
+                if (sz === lastSize) stableFor++;
+                else {
+                    stableFor = 0;
+                    lastSize = sz;
+                }
                 if (sz > 40 && stableFor > 80) break;
             }
             await new Promise((res) => setTimeout(res, 4));
         }
     });
     const out = await page.evaluate(async () => {
-        const r = window.anazhRealm, s = r.state;
+        const r = window.anazhRealm,
+            s = r.state;
         const o = {};
         // (3) AMMO-BODY-ZAHL — hat Laub/Baum Kollision?
-        let ammoBodies = -1, archCollisions = 0, archWithMesh = 0;
+        let ammoBodies = -1,
+            archCollisions = 0,
+            archWithMesh = 0;
         try {
             if (s.physicsWorld && typeof s.physicsWorld.getNumCollisionObjects === "function") {
                 ammoBodies = s.physicsWorld.getNumCollisionObjects();
@@ -77,14 +101,22 @@ const server = http.createServer((req, res) => {
             architectures: Array.isArray(s.architectures) ? s.architectures.length : -1,
             archWithCollision: archCollisions,
             archWithMesh,
-            voxelChunksWithBVH: (() => { let n = 0; if (s.voxelChunks) for (const e of s.voxelChunks.values()) if (e && e.hasBVH) n++; return n; })(),
+            voxelChunksWithBVH: (() => {
+                let n = 0;
+                if (s.voxelChunks) for (const e of s.voxelChunks.values()) if (e && e.hasBVH) n++;
+                return n;
+            })(),
         };
         // (4) SZENE-INSTANZ-ZAHL (Bäume unter dem Radar)
-        let instMeshes = 0, instTotal = 0, plainMeshes = 0;
+        let instMeshes = 0,
+            instTotal = 0,
+            plainMeshes = 0;
         if (s.scene) {
             s.scene.traverse((n) => {
-                if (n.isInstancedMesh) { instMeshes++; instTotal += n.count || 0; }
-                else if (n.isMesh) plainMeshes++;
+                if (n.isInstancedMesh) {
+                    instMeshes++;
+                    instTotal += n.count || 0;
+                } else if (n.isMesh) plainMeshes++;
             });
         }
         o.scene = {
@@ -97,7 +129,11 @@ const server = http.createServer((req, res) => {
         // (1)+(2) STATIONÄR: Tick-Zeit + Heap-Churn über N Frames.
         const N = 300;
         const t = performance.now();
-        const gc = () => { try { if (window.gc) window.gc(); } catch (_e) {} };
+        const gc = () => {
+            try {
+                if (window.gc) window.gc();
+            } catch (_e) {}
+        };
         gc();
         const heap0 = performance.memory ? performance.memory.usedJSHeapSize : -1;
         const times = [];
@@ -105,7 +141,9 @@ const server = http.createServer((req, res) => {
         for (let i = 0; i < N; i++) {
             now += 16.67;
             const a = performance.now();
-            try { r._gameLoopTick(now); } catch (_e) {}
+            try {
+                r._gameLoopTick(now);
+            } catch (_e) {}
             times.push(performance.now() - a);
         }
         const heap1 = performance.memory ? performance.memory.usedJSHeapSize : -1;
@@ -125,18 +163,23 @@ const server = http.createServer((req, res) => {
             beforeMB: heap0 > 0 ? +(heap0 / 1048576).toFixed(1) : -1,
             afterMB: heap1 > 0 ? +(heap1 / 1048576).toFixed(1) : -1,
             afterGCMB: heap2 > 0 ? +(heap2 / 1048576).toFixed(1) : -1,
-            churnPerFrameKB: heap0 > 0 && heap1 > 0 ? +(((heap1 - heap0) / N) / 1024).toFixed(1) : -1,
+            churnPerFrameKB: heap0 > 0 && heap1 > 0 ? +((heap1 - heap0) / N / 1024).toFixed(1) : -1,
             churnTotalMB: heap0 > 0 && heap1 > 0 ? +((heap1 - heap0) / 1048576).toFixed(1) : -1,
         };
         // perfSense-Snapshot (was MISST der Nexus pro Subsystem?)
-        if (s.perfSense && s.perfSense.phases) {
+        // W1 — die Linse las FALSCHE Formen (immer leer/0, vakuös): die Phasen leben in
+        // `perfSense.phase` (Skalare; der Max separat in `phaseMax`), nicht `.phases` mit
+        // {ewma,max}-Objekten; und `renderCalls` ist ein SKALAR (EWMA-gefaltet), kein
+        // Objekt mit `.ewma`. Jetzt die echten Formen.
+        if (s.perfSense && s.perfSense.phase) {
             const ph = {};
-            for (const k of Object.keys(s.perfSense.phases)) {
-                const v = s.perfSense.phases[k];
-                if (v && (v.ewma > 0.05 || (v.max || 0) > 0.5)) ph[k] = { ewma: +(v.ewma || 0).toFixed(2), max: +(v.max || 0).toFixed(2) };
+            for (const k of Object.keys(s.perfSense.phase)) {
+                const ew = +(s.perfSense.phase[k] || 0);
+                const mx = +((s.perfSense.phaseMax && s.perfSense.phaseMax[k]) || 0);
+                if (ew > 0.05 || mx > 0.5) ph[k] = { ewma: +ew.toFixed(2), max: +mx.toFixed(2) };
             }
             o.perfSense = ph;
-            o.renderCalls = s.perfSense.renderCalls ? +(s.perfSense.renderCalls.ewma || 0).toFixed(0) : -1;
+            o.renderCalls = Number.isFinite(s.perfSense.renderCalls) ? +s.perfSense.renderCalls.toFixed(0) : -1;
         }
         return o;
     });
@@ -144,27 +187,77 @@ const server = http.createServer((req, res) => {
     console.log("  (3) KOLLISION (die Schoepfer-Frage: hat jedes Blatt Kollision?):");
     console.log("      Ammo-Bodies gesamt: " + out.ammo.totalBodies);
     console.log("      davon Voxel-Chunks mit BVH: " + out.ammo.voxelChunksWithBVH);
-    console.log("      architectures: " + out.ammo.architectures + " · mit Mesh: " + out.ammo.archWithMesh + " · mit Kollision: " + out.ammo.archWithCollision);
+    console.log(
+        "      architectures: " +
+            out.ammo.architectures +
+            " · mit Mesh: " +
+            out.ammo.archWithMesh +
+            " · mit Kollision: " +
+            out.ammo.archWithCollision
+    );
     console.log("      rigidBodies (getrackt): " + out.ammo.rigidBodiesTracked);
     console.log("\n  (4) BÄUME UNTER DEM RADAR (Szene vs Zähler):");
-    console.log("      InstancedMeshes: " + out.scene.instancedMeshes + " (= Draw-Calls) · Instanzen gesamt: " + out.scene.instancedTotal);
+    console.log(
+        "      InstancedMeshes: " +
+            out.scene.instancedMeshes +
+            " (= Draw-Calls) · Instanzen gesamt: " +
+            out.scene.instancedTotal
+    );
     console.log("      plain Meshes: " + out.scene.plainMeshes);
-    console.log("      archInstanceGroups (HISM): " + out.scene.archInstanceGroups + " · scatterRegions: " + out.scene.scatterRegions);
+    console.log(
+        "      archInstanceGroups (HISM): " +
+            out.scene.archInstanceGroups +
+            " · scatterRegions: " +
+            out.scene.scatterRegions
+    );
     console.log("\n  (1) STATIONÄRER TICK (CPU, " + out.tick.frames + " Frames):");
-    console.log("      p50 " + out.tick.p50 + " · p90 " + out.tick.p90 + " · p99 " + out.tick.p99 + " · MAX " + out.tick.max + " ms");
+    console.log(
+        "      p50 " +
+            out.tick.p50 +
+            " · p90 " +
+            out.tick.p90 +
+            " · p99 " +
+            out.tick.p99 +
+            " · MAX " +
+            out.tick.max +
+            " ms"
+    );
     console.log("\n  (2) HEAP-CHURN (GC-Druck = Ruckler):");
-    console.log("      vorher " + out.heap.beforeMB + " MB → nachher " + out.heap.afterMB + " MB (nach GC " + out.heap.afterGCMB + " MB)");
-    console.log("      churn: " + out.heap.churnPerFrameKB + " KB/Frame · " + out.heap.churnTotalMB + " MB über " + out.tick.frames + " Frames");
+    console.log(
+        "      vorher " +
+            out.heap.beforeMB +
+            " MB → nachher " +
+            out.heap.afterMB +
+            " MB (nach GC " +
+            out.heap.afterGCMB +
+            " MB)"
+    );
+    console.log(
+        "      churn: " +
+            out.heap.churnPerFrameKB +
+            " KB/Frame · " +
+            out.heap.churnTotalMB +
+            " MB über " +
+            out.tick.frames +
+            " Frames"
+    );
     if (out.perfSense) {
         console.log("\n  perfSense (Nexus-Selbstmessung, ms/Frame · nur >0.05):");
         for (const [k, v] of Object.entries(out.perfSense).sort((a, b) => b[1].ewma - a[1].ewma)) {
-            console.log("      " + k.padEnd(22) + " ewma " + String(v.ewma).padStart(6) + " · max " + String(v.max).padStart(6));
+            console.log(
+                "      " + k.padEnd(22) + " ewma " + String(v.ewma).padStart(6) + " · max " + String(v.max).padStart(6)
+            );
         }
         console.log("      renderCalls (EWMA): " + out.renderCalls);
     }
     console.log("\n======================================================\n");
-    try { fs.writeFileSync(path.join(root, "artifacts", "diag-turn-hang.json"), JSON.stringify(out, null, 2)); } catch (_e) {}
+    try {
+        fs.writeFileSync(path.join(root, "artifacts", "diag-turn-hang.json"), JSON.stringify(out, null, 2));
+    } catch (_e) {}
     await browser.close();
     server.close();
     process.exit(0);
-})().catch((e) => { console.error("CRASH:", e); process.exit(2); });
+})().catch((e) => {
+    console.error("CRASH:", e);
+    process.exit(2);
+});

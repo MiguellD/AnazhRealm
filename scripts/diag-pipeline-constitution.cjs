@@ -43,19 +43,46 @@ console.log("=== P8 — DIE VERFASSUNG DER PIPELINE (Struktur, nicht Ermahnung) 
 // lebender Foundry null (kein Aufrufer kann einen Nachbau setzen); der Scatter unterdrückt den
 // Grammatik-Render für Baum-Schichten, wenn die Foundry lebt.
 console.log("\nGesetz 1 — die Foundry ist die EINE Baum-Quelle (Chokepoint + Scatter-Gate):");
-law("der Chokepoint prüft `_foundryPresetFor(species)` (in `_buildVariantLODs`)", true, /_foundryPresetFor\(species\)/.test(anazhNC));
-law('der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → continue`)', true, /layer\.kind === "tree" && this\._foundryEnabled\(\)\)\s*continue/.test(anazhNC));
+law(
+    "der Chokepoint prüft `_foundryPresetFor(species)` (in `_buildVariantLODs`)",
+    true,
+    /_foundryPresetFor\(species\)/.test(anazhNC)
+);
+law(
+    'der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → continue`)',
+    true,
+    /layer\.kind === "tree" && this\._foundryEnabled\(\)\)\s*continue/.test(anazhNC)
+);
 
 // GESETZ 2 (P6) — EIN WUCHS: der Studio-Generator delegiert an die geteilte Quelle, KEIN Parallel-Wuchs.
 console.log("\nGesetz 2 — EIN Wuchs (foundry-core liest den geteilten phyto-core):");
 law("`growTreeNodes` delegiert an `__core.growSkeleton`", true, /__core\.growSkeleton/.test(foundryNC));
-law("KEIN Inline-Parallel-Wuchs (die `grow(pos,dir,radius,length,depth)`-Rekursion ist geschnitten)", false, /function grow\(pos, ?dir, ?radius, ?length, ?depth/.test(foundryNC), "der ~275-Zeilen-Inline-Bau lebt wieder");
+law(
+    "KEIN Inline-Parallel-Wuchs (die `grow(pos,dir,radius,length,depth)`-Rekursion ist geschnitten)",
+    false,
+    /function grow\(pos, ?dir, ?radius, ?length, ?depth/.test(foundryNC),
+    "der ~275-Zeilen-Inline-Bau lebt wieder"
+);
 
 // GESETZ 3 (P5) — DER IMPOSTOR BACKT AUF DEM EINEN HAUPT-RENDERER: kein GL-Bake-iframe; der RTT liest die Foundry-Leaves.
 console.log("\nGesetz 3 — der Impostor backt auf dem EINEN Haupt-Renderer (kein Bake-iframe):");
-law("`_bakeImpostorAtlasRTT` liest bei der `foundry`-Flagge die LOD1-Bake-Leaves", true, /if \(rec\.foundry\)/.test(anazhNC) && /_foundryBakeLeaves/.test(anazhNC));
-law("KEIN asset-foundry-Bake-iframe (kein `iframe.src = …asset-foundry`)", false, /iframe\.src\s*=\s*[^;]*asset-foundry/.test(anazhNC), "ein Bake-iframe wird wieder erzeugt");
-law("die drei iframe-Impostor-Methoden bleiben geschnitten", false, /_foundryEnsureBakeIframe|_foundryRequestImpostor|_foundryBuildImpostorRecord/.test(anazhNC), "eine iframe-Impostor-Methode ist zurück");
+law(
+    "`_bakeImpostorAtlasRTT` liest bei der `foundry`-Flagge die LOD1-Bake-Leaves",
+    true,
+    /if \(rec\.foundry\)/.test(anazhNC) && /_foundryBakeLeaves/.test(anazhNC)
+);
+law(
+    "KEIN asset-foundry-Bake-iframe (kein `iframe.src = …asset-foundry`)",
+    false,
+    /iframe\.src\s*=\s*[^;]*asset-foundry/.test(anazhNC),
+    "ein Bake-iframe wird wieder erzeugt"
+);
+law(
+    "die drei iframe-Impostor-Methoden bleiben geschnitten",
+    false,
+    /_foundryEnsureBakeIframe|_foundryRequestImpostor|_foundryBuildImpostorRecord/.test(anazhNC),
+    "eine iframe-Impostor-Methode ist zurück"
+);
 
 // GESETZ 4 (P1/P7) — DIE ASSET-VERTRÄGE: Pflanzen v1 + Kreatur-Skin v2 eingefroren + gate-bewacht.
 console.log("\nGesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht:");
@@ -66,7 +93,13 @@ law("`gate:creature-contract` verdrahtet", true, /"gate:creature-contract"\s*:/.
 
 // GESETZ 5 (P0–P8) — JEDE REGEL HAT IHRE LINSE: die Pipeline-Gates existieren im package.json.
 console.log("\nGesetz 5 — jede Regel hat ihre Linse (die Gates existieren):");
-for (const g of ["gate:foundry-warm", "gate:foundry-deadlock", "gate:portal-boot", "gate:foundry-impostor", "gate:boot-fog-ring"])
+for (const g of [
+    "gate:foundry-warm",
+    "gate:foundry-deadlock",
+    "gate:portal-boot",
+    "gate:foundry-impostor",
+    "gate:boot-fog-ring",
+])
     law(`\`${g}\` verdrahtet`, true, pkg.includes('"' + g + '"'));
 
 // GESETZ 6 („Drähte statt Kopien", 08.07.) — KEINE LOGIK-KOPIE IM MONOLITHEN: was auch im
@@ -76,15 +109,46 @@ for (const g of ["gate:foundry-warm", "gate:foundry-deadlock", "gate:portal-boot
 console.log("\nGesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):");
 const phytoNC = stripComments(read("phyto-core.js"));
 law("phyto-core trägt den Wald-Plan (`planForestCell`)", true, /function planForestCell\(/.test(phytoNC));
-law("phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)", true, /function impostorFrame\(/.test(phytoNC) && /function scanRadialXZ\(/.test(phytoNC));
-law("der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)", true, /core\.planForestCell\(cx, cz, seedInt/.test(anazhNC));
-law("KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)", false, /const wF = \(ss\(0\.4, 0\.8, clim\)/.test(anazhNC), "die Arten-Nische lebt wieder im Monolithen");
-law("KEINE Größen-Formel-Kopie im Monolithen (reverse-J `0.55 + 1.45·ue^1.45`)", false, /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(anazhNC), "die reverse-J-Größe lebt wieder im Monolithen");
+law(
+    "phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)",
+    true,
+    /function impostorFrame\(/.test(phytoNC) && /function scanRadialXZ\(/.test(phytoNC)
+);
+law(
+    "der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)",
+    true,
+    /core\.planForestCell\(cx, cz, seedInt/.test(anazhNC)
+);
+law(
+    "KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)",
+    false,
+    /const wF = \(ss\(0\.4, 0\.8, clim\)/.test(anazhNC),
+    "die Arten-Nische lebt wieder im Monolithen"
+);
+law(
+    "KEINE Größen-Formel-Kopie im Monolithen (reverse-J `0.55 + 1.45·ue^1.45`)",
+    false,
+    /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(anazhNC),
+    "die reverse-J-Größe lebt wieder im Monolithen"
+);
 law("der Monolith DELEGIERT den Rahmen (`core.impostorFrame(`)", true, /core\.impostorFrame\(/.test(anazhNC));
-law("KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)", false, /totalH \* 0\.51/.test(anazhNC), "die v36-Rahmenformel lebt wieder als Kopie im Monolithen");
+law(
+    "KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)",
+    false,
+    /totalH \* 0\.51/.test(anazhNC),
+    "die v36-Rahmenformel lebt wieder als Kopie im Monolithen"
+);
 const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
-law("das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)", true, /__phytoCore\.impostorFrame\(/.test(phytogenNC));
-law("der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)", true, /impostor:\s*\{\s*views:/.test(foundryNC));
+law(
+    "das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)",
+    true,
+    /__phytoCore\.impostorFrame\(/.test(phytogenNC)
+);
+law(
+    "der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)",
+    true,
+    /impostor:\s*\{\s*views:/.test(foundryNC)
+);
 // LOD-WURZEL (08.07., V9.56-i — das Gesetz wandert mit dem Code): der Halm-Draht ist
 // STUFEN-parameterisiert (`_grassStudioGeometry(stage)`, die Stufe aus den Vertrags-Daten
 // `kindStages.grass` via `_grassKindStages`); der Defer-Draht bleibt die Kopie-Bau-Wand.
@@ -98,20 +162,38 @@ law(
 // LOD-WURZEL (08.07.) — die Stufen-Wahrheit je Art lebt als VERTRAGS-DATEN in foundry-core
 // (kindStages), der Studio-Wald liest sie SELBST (near/far-Kacheln), AnazhRealm clampt seine
 // Distanz-Wahl darauf (kein Empfänger erfindet Stufen, die das Studio nicht vorsieht).
-law("die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)", true, /kindStages:\s*\{/.test(foundryNC));
-law("der Studio-Wald liest kindStages SELBST (near/far-Kacheln)", true, /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC));
-law("AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)", true, /kindStages\[_rec\.kind\]/.test(anazhNC));
+law(
+    "die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)",
+    true,
+    /kindStages:\s*\{/.test(foundryNC)
+);
+law(
+    "der Studio-Wald liest kindStages SELBST (near/far-Kacheln)",
+    true,
+    /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC)
+);
+law(
+    "AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)",
+    true,
+    /kindStages\[_rec\.kind\]/.test(anazhNC)
+);
 // W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
 // ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
 // (`builtDensity` in `_scatterRegion`) und Nach-Dünnen (`_tickFoliageThin`) LESEN ihn — kein
 // Leser rechnet die Dichte selbst (die V18.427-Rebuild-Endlosschleifen-Klasse strukturell zu).
 console.log("\nGesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-Metrik:");
-law("der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)", true, /_effectiveFoliageDensity\(\)\s*\{/.test(anazhNC));
+law(
+    "der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)",
+    true,
+    /_effectiveFoliageDensity\(\)\s*\{/.test(anazhNC)
+);
 {
     const _fnBody = (name) => {
         const m = anazhNC.match(new RegExp(name + "\\([^)]*\\) \\{"));
         if (!m) return "";
-        let i = anazhNC.indexOf(m[0]) + m[0].length, depth = 1, out = "";
+        let i = anazhNC.indexOf(m[0]) + m[0].length,
+            depth = 1,
+            out = "";
         while (i < anazhNC.length && depth > 0) {
             const ch = anazhNC[i++];
             if (ch === "{") depth++;
@@ -122,15 +204,25 @@ law("der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)", true, /_ef
     };
     const passBody = _fnBody("_scatterPass");
     const thinBody = _fnBody("_tickFoliageThin");
-    law("der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)", true, /_effectiveFoliageDensity\(\)/.test(passBody) && !/_foliageDensityScale/.test(passBody));
-    law("das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)", true, /_effectiveFoliageDensity\(\)/.test(thinBody) && /_foundryEnabled/.test(thinBody) && !/_foliageDensityScale/.test(thinBody));
+    law(
+        "der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)",
+        true,
+        /_effectiveFoliageDensity\(\)/.test(passBody) && !/_foliageDensityScale/.test(passBody)
+    );
+    law(
+        "das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)",
+        true,
+        /_effectiveFoliageDensity\(\)/.test(thinBody) &&
+            /_foundryEnabled/.test(thinBody) &&
+            !/_foliageDensityScale/.test(thinBody)
+    );
 }
 // W1 — DIE GEHEILTE RENDER-METRIK BLEIBT GEHEILT (die V18.427-Klasse strukturell): im r184-WebGPU-Info
 // ist `render.calls` ein LEBENSZEIT-Zähler — der EINE Tap liest `drawCalls ?? calls`; KEIN Leser im
 // Monolithen darf `render.calls` nackt lesen (nur als `??`-Fallback hinter drawCalls).
 {
     const nakedCalls = (anazhNC.match(/render\.calls/g) || []).length;
-    const fallbackCalls = (anazhNC.match(/drawCalls[^;\n]{0,80}render\.calls|render\.drawCalls\s*\?\?\s*[^;\n]{0,40}\.calls/g) || []).length;
+    const fallbackCalls = (anazhNC.match(/drawCalls[^;]{0,160}render\.calls/g) || []).length;
     law(
         "kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback)",
         true,
@@ -145,5 +237,7 @@ if (fail) {
     );
     process.exit(1);
 }
-console.log("\n✅ GRÜN — die Pipeline-Verfassung steht: eine Baum-Quelle · ein Wuchs · ein Bake-Pfad · zwei eingefrorene Verträge, jede Regel als Struktur (Chokepoint/Schnitt/Gate) verankert, nicht als Ermahnung.");
+console.log(
+    "\n✅ GRÜN — die Pipeline-Verfassung steht: eine Baum-Quelle · ein Wuchs · ein Bake-Pfad · zwei eingefrorene Verträge, jede Regel als Struktur (Chokepoint/Schnitt/Gate) verankert, nicht als Ermahnung."
+);
 process.exit(0);
