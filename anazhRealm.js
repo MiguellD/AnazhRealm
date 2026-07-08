@@ -31140,10 +31140,18 @@ class AnazhRealm {
         const skipAbove = Number.isFinite(macroSurf)
             ? Math.max(macroSurf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2)
             : Infinity;
+        // W3.3a (Paritäts-Vollendung) — DER V18.321-SPALTEN-HOIST AUCH HIER: ~61 % jeder
+        // Dichte-Probe ist reine 2D-Spalten-Arbeit (Makro/Erosion/Hydro), die der Scan
+        // pro Probe NEU rechnete (~25×/Spalte redundant). Der Kontext wird EINMAL gehoben,
+        // die Probe liest `_fieldDensityAt(x,y,z,ctx)` — DIESELBE eine Quelle wie die
+        // feld-native Kollision, bit-identisch zu `_terrainDensityAt` per Konstruktion
+        // (base+Σdelta == baseCol+Σdelta, diag-density-refactor maxDiff 0). Heilt ALLE
+        // Leser (Gras · Scatter-Wasser-Gate · Veg-Spawn · der 270-ms-Region-Feld-Bake).
+        const colCtx = this._terrainColumnContext(x, z);
         let prevAir = true;
         for (let y = top; y >= bottom; y -= 1.2) {
             if (y > skipAbove) continue; // Garantie-Luft — Probe gespart, Gitter unverändert
-            const solid = this._terrainDensityAt(x, y, z) > 0;
+            const solid = this._fieldDensityAt(x, y, z, colCtx) > 0;
             if (solid && prevAir) return y;
             prevAir = !solid;
         }
@@ -51035,7 +51043,26 @@ class AnazhRealm {
                 // promotable → ihre Bitmask bleibt leer; die Baum-Schicht schützt
                 // ihre realen Bäume)
                 if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
-                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(tf.x, tf.z, 0.4)) continue;
+                // W3.3a — GATE-ORDNUNG: das BILLIGE Feld zuerst (bilinear, ~30× billiger als der
+                // Scan), dann das Slope-Gate, DANN erst das teure exakte Wasser-Verdikt — eine
+                // steile Zelle (Bergregion: ~⅓ aller Zellen) verlässt die Schleife jetzt OHNE
+                // `_voxelSurfaceY`-Voll-Scan. Reine Konjunktions-Umordnung: zwischen den Gates
+                // zieht NICHTS aus dem RNG und schreibt NICHTS → der emittierte Satz ist per
+                // Konstruktion identisch (BEWIESEN byte-exakt: `gate:scatter-ab`, Korpus mit
+                // Ufer-/Steil-/Fluss-Klassen). Das Wasser-Verdikt selbst bleibt der EXAKTE
+                // `_isAboveWaterAt`-Scan (jetzt spalten-gehoistet): das Feld kann ihn NICHT
+                // ersetzen — GEMESSEN max|field.height − exakt| = 32,6 m global, Rest-Fehler
+                // bis 48 m an Canyon-/Klippen-Texeln (8-m-Bilinear) → jedes Feld-Band wäre
+                // stiller Content-Drift gegen die eingefrorene Benchmark. TEST-HOOK
+                // `state.__scatterExactWater` erzwingt die LEGACY-Ordnung (Wasser zuerst) —
+                // das Referenz-Ufer der A/B-Byte-Wand, wie `__anazhGateNoFoundry`.
+                const _legacyOrder = this.state.__scatterExactWater === true;
+                if (
+                    _legacyOrder &&
+                    typeof this._isAboveWaterAt === "function" &&
+                    !this._isAboveWaterAt(tf.x, tf.z, 0.4)
+                )
+                    continue;
                 const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
                 let lebendig, slope, moisture, surfY;
                 if (field) {
@@ -51053,6 +51080,12 @@ class AnazhRealm {
                     moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
                 }
                 if (slope > slopeMax) continue;
+                if (
+                    !_legacyOrder &&
+                    typeof this._isAboveWaterAt === "function" &&
+                    !this._isAboveWaterAt(tf.x, tf.z, 0.4)
+                )
+                    continue;
                 let prob;
                 if (layer.kind === "rock") {
                     // V18.227 (Ω-OPSIS Säule II Ω-O5) — rockExposure: Fels bricht an

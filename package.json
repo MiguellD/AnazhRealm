@@ -29,6 +29,7 @@
         "gate:render-tap": "node scripts/diag-render-tap.cjs",
         "gate:regler-sim": "node scripts/diag-regler-sim.cjs",
         "gate:boot-stage": "node scripts/diag-boot-stage.cjs --selftest",
+        "gate:scatter-ab": "node scripts/diag-scatter-ab.cjs",
         "diag:boot-stage": "node scripts/diag-boot-stage.cjs",
         "diag:boot-timeline": "node scripts/diag-boot-timeline.cjs",
         "diag:boot-breakdown": "node scripts/diag-boot-breakdown.cjs",
