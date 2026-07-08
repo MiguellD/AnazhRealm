@@ -87,11 +87,17 @@ const server = http.createServer((req, res) => {
             const dl = t0 + 60000;
             while (!f.ready && performance.now() < dl) await new Promise((res) => setTimeout(res, 50));
             out.readyMs = f.ready ? Math.round(performance.now() - t0) : -1;
-            out.recipeCount = f.recipeCount || 0;
             if (!f.ready) {
                 out.err = "Worker wurde nicht ready";
                 return out;
             }
+            // Der Rezept-Reply ist ein EIGENER Round-Trip NACH ready (get-recipes wird im
+            // ready-Handler gepostet) — die Linse wartet auf die WAHRHEIT (Rezepte fliessen),
+            // nicht auf den Timing-Zufall des 50-ms-Poll-Fensters (der Race stand seit dem
+            // Prefetch-Fächer auf der Kippe und kippte mit dem IDB-Layer deterministisch).
+            const dlR = performance.now() + 30000;
+            while (!(f.recipeCount > 0) && performance.now() < dlR) await new Promise((res) => setTimeout(res, 100));
+            out.recipeCount = f.recipeCount || 0;
             // DER KERN-BEWEIS: eine echte build-asset-Anfrage durch den Worker — liefert sie Meshes?
             const meshes = await r._foundryRequest("eiche", 7, 0, "summer");
             out.meshes = meshes ? meshes.length : 0;

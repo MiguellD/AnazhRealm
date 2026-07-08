@@ -64849,9 +64849,18 @@ class AnazhRealm {
         // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein RTT),
         // nur auf eine billige Karte geflacht. Fels/Kristall/Blume bleiben L2-Geometrie.
         if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
-        // Der Vorlagen-strauch ist bei lod0 ~208k Verts -> fuer den dichten Unterwuchs auf die
-        // leichteren Stufen (>=1, ~77k/16k) zwingen. Baeume/Fels/Blume bleiben distanz-frei.
-        if (preset === "strauch") lod = Math.max(1, lod);
+        // DIE STUDIO-LOD-WAHRHEIT JE ART (08.07., ersetzt die alte strauch-only-Regel):
+        // Nicht-Baum-Arten sind im Studio EINSTUFIG FEST (AnazhRealm.FOUNDRY_KIND_LOD,
+        // kind-basiert aus dem Rezeptbuch) — Distanz-LOD nur für Bäume. So kann eine
+        // ferne Blume/ein ferner Fels NIE eine ungeprüfte Rezept-Stufe serviern
+        // (der „L2 falsch geschnitten"-Befund), und der Strauch trägt die Studio-16k-
+        // Stufe (@2) statt der schweren @1.
+        if (!this._foundryPresetIsTree(preset)) {
+            const _rec = f.recipes && f.recipes[preset];
+            const _kl = _rec && AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind];
+            if (Number.isFinite(_kl)) lod = _kl;
+            else if (preset === "strauch") lod = 2; // Rezeptbuch noch nicht da → die Studio-Stufe direkt
+        }
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season;
         const group = this._foundryCacheGet(key);
@@ -81794,11 +81803,21 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.423.0";
+AnazhRealm.VERSION = "18.424.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
 AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// DIE STUDIO-LOD-WAHRHEIT JE ART (08.07., aus buildForest GEMESSEN — phytogenesis
+// Z.2140/2160-2185): NUR BÄUME tragen Distanz-LOD (L0 < d0 · L1 im Band · Billboard
+// > d1, mit Blende/Hysterese/Occlusion-Demotion); die Understory-/Fels-Arten baut das
+// Studio EINSTUFIG FEST — blume@0 · findling/zacken/basalt/sediment/kristalle/geroell@0
+// · gras@2 · strauch@2 (16k Verts statt 208k/77k @0/@1 — der „L1 schwer"-Befund) —
+// getiled + frustum-gecullt + Fog, KEIN Distanz-Wechsel. Eine Distanz-LOD auf
+// Nicht-Bäumen servierte bei uns UNGEPRÜFTE Rezept-Stufen (der „L2 manchmal falsch
+// geschnitten/positioniert"-Befund an Steinen). KIND-basiert (der Vertrags-Weg: ein
+// neues Studio-Preset erbt seine Stufe über sein kind, ohne AnazhRealm-Edit).
+AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, rock: 0 });
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).
