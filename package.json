@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.418.0",
+    "version": "18.419.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -60,6 +60,7 @@
         "gate:foundry-memory": "node scripts/diag-foundry-memory.cjs",
         "gate:one-wuchs-parity": "node scripts/diag-one-wuchs-parity.cjs",
         "gate:s4-impostor-workshop": "node scripts/diag-s4-impostor-workshop.cjs",
+        "gate:nervensystem": "node scripts/diag-nervensystem.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",

@@ -2184,22 +2184,13 @@ function buildForest() {
     const kristalleT = [0.6, 1.0, 1.7].map((cm) =>
         buildInstance("kristalle", Math.floor(RNG() * 1e6), 0, { amtMul: cm })
     ); // 3 Clustergroessen: ANZAHL Kristalle variiert, Einzelgroesse konstant
-    const SCALE = {
-        gras: 0.24,
-        blume: 0.27,
-        strauch: 0.332,
-        findling: 0.4,
-        zacken: 0.34,
-        basalt: 0.42,
-        sediment: 0.4,
-        kristalle: 0.15,
-        birke: 4.13,
-        eiche: 4.16,
-        weide: 2.75,
-        tanne: 4.26,
-        fichte: 4.85,
-        mammut: 4.31,
-    };
+    // NERVENSYSTEM — die EINE Platzierungs-Quelle: die Welt-Skalen leben in
+    // PORTAL_RENDER_CONFIG.placement (foundry-core.js, die geteilte Datei), NICHT mehr als
+    // lokales Literal. Der Studio-Wald liest sie hier, AnazhRealm liest DIESELBEN Werte ueber
+    // die get-render-config-Bruecke — ein Edit dort skaliert BEIDE Welten.
+    const _PL = PORTAL_RENDER_CONFIG.placement || {};
+    const SCALE = Object.assign({}, _PL.scale);
+    const TREE_SCALE_MUL = typeof _PL.treeScaleMul === "number" ? _PL.treeScaleMul : 0.82;
 
     // 4) compose + EIN Instanced-Mesh pro Template-Submesh (kein Tiling -> wenige Draw-Calls)
     const _dq = new THREE.Quaternion(),
@@ -2372,10 +2363,10 @@ function buildForest() {
             const vi = Math.floor(hash01(i * 2 + 1) * nVar);
             const _ci = _impCellOf[sp + "|" + vi],
                 _isp = _ci !== undefined ? _impSpecs[_ci] : null;
-            const sc = SCALE[sp] * tr.s * 0.82,
+            const sc = SCALE[sp] * tr.s * TREE_SCALE_MUL,
                 bh = H0arr[vi] * sc,
                 bw = bh * ((_isp && _impWR[_isp.sp + _isp.seed]) || 0.5); // FIX v28: Quad-Seitenverhaeltnis = Zell-Rahmen der Art (Weide breiter) -> Silhouette unverzerrt und ungeclippt
-            const bhL = Math.min(H0arr[vi], 24 / (SCALE[sp] * 0.82)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
+            const bhL = Math.min(H0arr[vi], 24 / (SCALE[sp] * TREE_SCALE_MUL)) * sc; // FIX v30: Blatt-Sichthoehe = aH0L * Instanzskala — EXAKT die Zahl, die der Shader bildet (CPU==GPU, kein Drift)
             const bm = new THREE.Matrix4().compose(
                 new THREE.Vector3(tr.x, tr.y, tr.z),
                 new THREE.Quaternion().setFromAxisAngle(_impYAxis, tr.rotY),
@@ -2390,7 +2381,7 @@ function buildForest() {
             for (let L = 0; L < 2; L++) {
                 const tmpl = poolL[L][sp][v],
                     dy = tmpl.position.y,
-                    capU = 24 / (SCALE[sp] * 0.82); // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
+                    capU = 24 / (SCALE[sp] * TREE_SCALE_MUL); // L0,L1 = echtes 3D-Mesh; capU: 18m Blatt-Referenz in Template-Einheiten
                 tmpl.traverse((o) => {
                     if (o.isMesh) {
                         const geo = o.geometry.clone();
@@ -4635,6 +4626,16 @@ init();
                 flowerStep: c.understory.flowerStep,
                 bushStep: c.understory.bushStep,
             },
+            // NERVENSYSTEM — die Platzierungs-Daten (Welt-Skalen je Preset + Baum-Mul + Streu-
+            // Seltenheit) fliessen als reine Zahlen: AnazhRealm liest sie LIVE statt eines
+            // hartkodierten Spiegels. Ein neues Asset = eine scale-Zeile in foundry-core.
+            placement: c.placement
+                ? {
+                      treeScaleMul: c.placement.treeScaleMul,
+                      scale: Object.assign({}, c.placement.scale),
+                      rarity: Object.assign({}, c.placement.rarity),
+                  }
+                : null,
         };
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
             __post({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");

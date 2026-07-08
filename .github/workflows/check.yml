@@ -293,6 +293,14 @@ jobs:
         # Source-Proben + Behavioral (der Aufruf @lod2 liefert die 6-Vertex-Impostor-Kreuz-Geometrie).
         run: npm run gate:s4-impostor-workshop
 
+      - name: Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)
+        # DER PIPELINE-BEWEIS: (A) die EINE Platzierungs-Quelle (PORTAL_RENDER_CONFIG.placement in
+        # foundry-core), die der Studio-Wald SELBST liest (kein lokales SCALE-Literal); (B) sie
+        # kommt live durch die Brücke an; (C) eine Daten-Mutation ändert die Welt-Skala SOFORT
+        # (live gewinnt gegen jeden Hardcode-Spiegel); (D) ein NEUES kind:tree-Preset registriert
+        # sich als Auto-Blueprint + wird vom Wald-Generator gestreut — ohne AnazhRealm-Edit.
+        run: npm run gate:nervensystem
+
       - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
         # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
         # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

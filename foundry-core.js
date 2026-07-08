@@ -108,6 +108,37 @@ const PORTAL_RENDER_CONFIG = {
     // Understory — der Raster-Abstand (m) je Schicht ueber den aktiven Radius: Gras dicht, Blumen mittel,
     // Buesche weit. AnazhRealm pflanzt dieselbe Wiese/Blumen/Buesche im selben Radius.
     understory: { grassStep: 0.72, flowerStep: 2.4, bushStep: 4.4 },
+    // PLATZIERUNG — DIE DRITTE SCHNITTSTELLE DES NERVENSYSTEMS (Schoepfer: "wenn ich ein neues
+    // Asset in der Vorlagedatei erstelle, wird automatisch erkannt wie oft es platziert wird").
+    // Die Template->Welt-Uebersetzung lebte VERTEILT (lokale SCALE-Tabelle im phytogenesis-Wald +
+    // hartkodierte Spiegel in AnazhRealm) — jetzt lebt sie HIER, EINMAL, editierbar: der Studio-
+    // Wald liest sie selbst UND die get-render-config-Bruecke reicht sie AnazhRealm. Ein neuer
+    // Preset-Eintrag in PRESETS + eine scale-Zeile hier = beide Welten platzieren ihn (Blueprint +
+    // LODs folgen automatisch ueber get-recipes/buildInstance).
+    //   scale        = Welt-Skala je Preset (die Templates sind klein gebaut, ~4m-Baum);
+    //   treeScaleMul = der Wald-Zusatzfaktor NUR fuer Baeume (der 0.82 des Vorlagen-Walds);
+    //   rarity       = Streu-Seltenheit 0..1 je Fels-/Kristall-Art (die Vorlage streut Kristalle
+    //                  fast nie -> 0.05; AnazhRealms Formationen folgen diesem Regler).
+    placement: {
+        treeScaleMul: 0.82,
+        scale: {
+            gras: 0.24,
+            blume: 0.27,
+            strauch: 0.332,
+            findling: 0.4,
+            zacken: 0.34,
+            basalt: 0.42,
+            sediment: 0.4,
+            kristalle: 0.15,
+            birke: 4.13,
+            eiche: 4.16,
+            weide: 2.75,
+            tanne: 4.26,
+            fichte: 4.85,
+            mammut: 4.31,
+        },
+        rarity: { kristalle: 0.05, basalt: 0.3, sediment: 0.35, findling: 0.6, zacken: 0.6 },
+    },
 };
 
 function injectWind(mat, foliage, isGrass) {

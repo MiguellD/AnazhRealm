@@ -63200,6 +63200,35 @@ class AnazhRealm {
     }
 
     // Vorlagen-`standDensity`: glatter, NICHT übersättigter Wald-↔-Lichtung-Gradient [0,1].
+    // NERVENSYSTEM — die AUTO-Arten-Liste für den Wald-Generator: alle kind:"tree"-Presets des
+    // LIVE-Rezeptbuchs, die KEINE historische Nische tragen (die sechs Basis-Arten fließen durch
+    // die fünf Vorlagen-Nischen). Jede bekommt ihr Patch-Zentrum + Grundgewicht DETERMINISTISCH
+    // aus dem Namens-Hash (Γ5: seed-frei ist ok — der Name IST die Identität, alle Peers teilen
+    // das Vorlagefile). Gecacht auf Rezeptbuch-Identität; sortiert (deterministische Pick-Folge).
+    _forestExtraSpecies() {
+        const f = this._foundry;
+        const book = f && f.recipes;
+        if (!book) return [];
+        if (this._forestExtraCache && this._forestExtraCacheBook === book) return this._forestExtraCache;
+        const BASE = { eiche: 1, fichte: 1, tanne: 1, birke: 1, weide: 1, mammut: 1 };
+        const out = [];
+        const ids = Object.keys(book).sort();
+        for (const id of ids) {
+            const rec = book[id];
+            if (!rec || rec.kind !== "tree" || BASE[id]) continue;
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
+            out.push({
+                species: "baum_" + id,
+                w0: 0.18, // bescheidenes Grundgewicht — die neue Art mischt sich ein, dominiert nicht
+                center: 0.05 + (h % 1000) / 1110, // Patch-Zentrum ∈ [0.05, 0.95] — eigene Haine
+            });
+        }
+        this._forestExtraCache = out;
+        this._forestExtraCacheBook = book;
+        return out;
+    }
+
     _forestStandDensity(x, z) {
         const d =
             this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 +
@@ -63307,14 +63336,34 @@ class AnazhRealm {
             const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
             const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
             const wW = wet * wet * (1 - dry) * 0.8 + feu * feu * 6.0 + 0.01; // Weide→erle: nur nass/tief
-            const wsum = wF + wT + wE + wB + wW;
+            // NERVENSYSTEM — die AUTO-Arten streuen mit: jedes selbst-registrierte Studio-Preset
+            // (`_foundryAutoRegisterSpecies`, kind:"tree" ohne historische Nische) bekommt eine
+            // eigene Patch-Nische aus seinem NAMENS-HASH (deterministisch, Γ5-treu: kein
+            // Math.random, kein Zeit-Term) → die neue Art bildet eigene Haine im Bestands-Mosaik,
+            // ohne dass hier je eine Zeile für sie geschrieben wird.
+            const extras = this._forestExtraSpecies();
+            let wXsum = 0;
+            for (let xi = 0; xi < extras.length; xi++) {
+                wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
+            }
+            const wsum = wF + wT + wE + wB + wW + wXsum;
             let pick = rng() * wsum;
             let sp;
             if ((pick -= wF) < 0) sp = "baum_kiefer";
             else if ((pick -= wT) < 0) sp = "baum_tanne";
             else if ((pick -= wE) < 0) sp = "baum_eiche";
             else if ((pick -= wB) < 0) sp = "baum_birke";
-            else sp = "baum_erle";
+            else if ((pick -= wW) < 0) sp = "baum_erle";
+            else {
+                // die Auto-Arten (Reihenfolge deterministisch: _forestExtraSpecies ist sortiert)
+                sp = "baum_erle";
+                for (let xi = 0; xi < extras.length; xi++) {
+                    if ((pick -= extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center))) < 0) {
+                        sp = extras[xi].species;
+                        break;
+                    }
+                }
+            }
             // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
             if (sp !== "baum_erle" && above <= 1.2) continue;
             // GRÖSSE: reverse-J + Selbstausdünnung (dichter Stand → kleinere Lose) + seltene
@@ -63323,7 +63372,7 @@ class AnazhRealm {
             let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
             if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
             s = s < 0.5 ? 0.5 : s > 1.95 ? 1.95 : s;
-            let T = F.crown[sp] * s;
+            let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
             // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
             if (sp !== "baum_erle" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
                 sp = "baum_buche";
@@ -63492,6 +63541,49 @@ class AnazhRealm {
             if (Object.prototype.hasOwnProperty.call(book, id)) n++;
         }
         f.recipeCount = n;
+        // NERVENSYSTEM — DER AUTO-BLUEPRINT (Schöpfer: „wird ein neuer Blueprint mit Reglern
+        // erstellt, sowie den LODs?" → JA, hier): jedes kind:"tree"-Preset im Rezeptbuch, das noch
+        // KEINE AnazhRealm-Spezies trägt, registriert sich selbst als `baum_<preset>` — Identität
+        // (Name·Tags·_grownSpecies) geklont von der generischen Baum-Basis (baum_eiche; der
+        // PHYSIK-Richter urteilt sie als Baum-Klasse, bis der Schöpfer ihr ein eigenes Grammatik-
+        // Profil gibt), der RENDER kommt komplett aus dem Studio (die generische
+        // `_foundryPresetFor`-Regel löst `baum_<preset>` → Preset, buildInstance liefert alle
+        // drei LODs, die Werkstatt-Regler kommen aus dem Rezept). Der Wald streut sie über
+        // `_forestExtraSpecies` (Dart-Nische aus dem Namens-Hash). Idempotent + erneut aufrufbar.
+        this._foundryAutoRegisterSpecies(book);
+    }
+    _foundryAutoRegisterSpecies(book) {
+        const bps = this.state && this.state.blueprints;
+        if (!bps || !book) return 0;
+        const donor = bps.baum_eiche;
+        if (!donor || !Array.isArray(donor.parts)) return 0;
+        let registered = 0;
+        for (const id in book) {
+            if (!Object.prototype.hasOwnProperty.call(book, id)) continue;
+            const rec = book[id];
+            if (!rec || rec.kind !== "tree") continue;
+            const name = "baum_" + id;
+            if (bps[name]) continue; // existiert (historische Arten + schon registrierte)
+            // Die leichte Identität: geklonte Judge-Parts (die Baum-Klasse), eigener Name +
+            // _grownSpecies (die V18.259-Lehre: der NAME ist load-bearing) — kein Grammatik-Bau
+            // (das Studio liefert die Geometrie), kein Parallel-Pfad.
+            const clone = JSON.parse(JSON.stringify(donor));
+            clone.label = rec.label || id.charAt(0).toUpperCase() + id.slice(1);
+            clone._grownSpecies = name;
+            clone._foundryAutoSpecies = id; // die Herkunfts-Marke (Diag/Provenienz)
+            bps[name] = clone;
+            registered++;
+        }
+        if (registered > 0) {
+            // Der Wald darf die neuen Arten in FRISCHE Zellen streuen: der Dart-Memo (gecacht vor
+            // der Rezept-Ankunft) wird einmal geleert — schon gepflanzte Chunks bleiben (kein
+            // Churn), die Streaming-Front trägt die neuen Arten. Deterministisch je (Seed, Rezept-
+            // Satz): alle Peers teilen dasselbe Vorlagefile.
+            this._forestDartMemo = null;
+            this._forestExtraCache = null; // die Auto-Arten-Liste neu ableiten (gleiche Buch-Identität möglich)
+            this.log(`Nervensystem: ${registered} neue Studio-Baumart(en) automatisch registriert.`, "INFO");
+        }
+        return registered;
     }
     // DIE BREITE TAILLE — die Studio-Welt-Palette empfangen + in AnazhRealms Farbquellen speisen.
     // Die Hex-Farben (sRGB) werden EINMAL nach linear konvertiert (THREE.Color, ColorManagement) +
@@ -63653,7 +63745,18 @@ class AnazhRealm {
             busch_hazel: "strauch",
             busch: "strauch",
         };
-        return map[species] || null;
+        if (map[species]) return map[species];
+        // NERVENSYSTEM — die GENERISCHE Regel hinter der Tabelle (Schöpfer: „ein neues Asset im
+        // Vorlagefile wird automatisch erkannt"): eine Spezies `baum_<preset>`/`<preset>`, deren
+        // Preset im LIVE-Rezeptbuch (`f.recipes`, get-recipes) steht, löst OHNE Tabellen-Edit auf.
+        // Die Tabelle oben bleibt für die historischen AnazhRealm-Namen (baum_kiefer→fichte …);
+        // NEUE Template-Presets brauchen sie nicht mehr.
+        const f = this._foundry;
+        if (f && f.recipes && typeof species === "string") {
+            const bare = species.startsWith("baum_") ? species.slice(5) : species;
+            if (Object.prototype.hasOwnProperty.call(f.recipes, bare)) return bare;
+        }
+        return null;
     }
     // Das Foundry-Preset EINES EINTRAGS — die EINE Auflösung für den Platzier-Pfad. Ein GEWACHSENER
     // Baum trägt seinen Typ als `grown_<art>_v<idx>` (NICHT im Preset-Map), aber seine BASIS-Art als
@@ -64432,14 +64535,21 @@ class AnazhRealm {
     // geteilter Cache pro Faktor reicht.
     _foundryWorldScaleMatrix(preset) {
         if (!this._foundryScaleMats) this._foundryScaleMats = new Map();
-        const T = AnazhRealm.STUDIO_WORLD_SCALE;
+        // NERVENSYSTEM — die LIVE-Quelle FÜHRT: `PORTAL_RENDER_CONFIG.placement` (foundry-core.js,
+        // die dritte Schnittstelle, durch get-render-config gereicht) trägt die Welt-Skala je
+        // Preset. Editiert der Schöpfer sie im Vorlagefile — oder legt ein NEUES Preset samt
+        // scale-Zeile an —, folgt AnazhRealm OHNE Code-Änderung (kein Hardcode-Spiegel mehr auf
+        // dem Pfad). Der statische STUDIO_WORLD_SCALE ist NUR das Boot-Fenster-Fallback (Assets
+        // können vor der Config ankommen); ab Ankunft gewinnen die Live-Daten — bewiesen per
+        // Mutation im gate:nervensystem. Understory (strauch/blume/gras — Vorlagen-scale < 1)
+        // trägt den Baum-Wald-Mul (0.82) NICHT; ein unbekanntes Preset ohne scale-Zeile → 1.
+        const rc = AnazhRealm._studioRenderConfig;
+        const live = rc && rc.placement && rc.placement.scale ? rc.placement : null;
+        const T = live ? live.scale : AnazhRealm.STUDIO_WORLD_SCALE;
+        const treeMul =
+            live && typeof live.treeScaleMul === "number" ? live.treeScaleMul : AnazhRealm.STUDIO_TREE_SCALE_MUL;
         const base = T && Object.prototype.hasOwnProperty.call(T, preset) ? T[preset] : 1;
-        const k =
-            base === 1
-                ? 1
-                : preset === "strauch" || preset === "blume"
-                  ? base
-                  : base * AnazhRealm.STUDIO_TREE_SCALE_MUL;
+        const k = base === 1 ? 1 : base < 1 ? base : base * treeMul;
         let m = this._foundryScaleMats.get(k);
         if (!m) {
             m = new THREE.Matrix4();
@@ -65086,6 +65196,19 @@ class AnazhRealm {
         ]);
         const isTree = TREE_NAMES.has(bestName);
         let chance = BASE_RATE * bestAffinity * bestAffinity;
+        // NERVENSYSTEM — die STREU-SELTENHEIT aus der Vorlagen-Quelle (PORTAL_RENDER_CONFIG.
+        // placement.rarity, live durch get-render-config; Schöpfer „dort werden fast nie
+        // Kristalle platziert"): das Vorlagefile bestimmt, wie selten Kristall/Fels-Formationen
+        // streuen — kristalle 0.05 = fast nie (wie im Studio-Wald), editierbar OHNE Code.
+        {
+            const _rcP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.placement;
+            const _rar = _rcP && _rcP.rarity;
+            if (_rar) {
+                const _preset =
+                    typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(bestName) : null;
+                if (_preset && Number.isFinite(_rar[_preset])) chance *= Math.max(0, Math.min(1, _rar[_preset]));
+            }
+        }
         if (isTree) {
             const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
             const lebendig = f ? f.lebendig : 0;
@@ -81143,7 +81266,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.418.0";
+AnazhRealm.VERSION = "18.419.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
