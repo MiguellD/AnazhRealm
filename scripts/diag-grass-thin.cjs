@@ -45,6 +45,12 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
+        // V9.56-i (08.07.) — der Test wandert mit dem Entscheid: im STUDIO-Regime dünnt die
+        // Wiese BEWUSST NIE (`_tickGrassThin` gated auf `_foundryEnabled()` — die Vorlage hält
+        // ihre volle Dichte, der „spärliche Wiese"-Rückfall ist verboten). Diese Linse prüft
+        // die weiterlebende NICHT-Studio-Dünn-Mechanik (V18.363) → Foundry deterministisch aus
+        // (derselbe Hook wie die Grammatik-Mechanik-Bänder, V18.411).
+        window.__anazhGateNoFoundry = true;
     });
     let out = null;
     try {

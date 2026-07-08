@@ -15399,6 +15399,10 @@ class AnazhRealm {
             };
         }
         const wu = this.state.windUniforms;
+        // DER GRAS-SCHNITT (08.07.): die Höhen-Referenz des Farb-Gradients ist ein UNIFORM —
+        // die Studio-gras-Geometrie bringt ihre eigene Halm-Höhe mit (localMaxY), der Tuft-
+        // Alt-Pfad behält GRASS_BLADE_H. Gesät aus dem, was zuerst da ist.
+        if (!wu.uBladeH) wu.uBladeH = uniform(this._grassStudioMaxY || AnazhRealm.GRASS_BLADE_H);
         const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
 
         // Wind-positionNode: die kohärente Böen-Welle kommt aus der EINEN Quelle
@@ -15426,7 +15430,7 @@ class AnazhRealm {
         // fragile Buffer-Pfad -> V15.3-b falls der Browser mehr Halme will).
         try {
             if (TSL.mx_noise_float && TSL.mix && TSL.clamp) {
-                const hfN = TSL.clamp(positionLocal.y.div(float(AnazhRealm.GRASS_BLADE_H)), float(0.0), float(1.0));
+                const hfN = TSL.clamp(positionLocal.y.div(wu.uBladeH), float(0.0), float(1.0));
                 // V18.342 — GRÜNER (Schöpfer „die Halme blass-gelb, die Wiese soll leben"): die Spitze
                 // war zu gelb (R0.58) → der Halm las blass über dem grünen Grund. Jetzt sattes Grün
                 // (Wurzel dunkel-grün → Spitze hell-grün, NICHT gelb) → die Halme matchen die Wiese.
@@ -33665,6 +33669,85 @@ class AnazhRealm {
         return geo;
     }
 
+    // DER GRAS-SCHNITT (08.07., Schöpfer „zum hundertsten Mal: nicht dieselben Gräser — vollende
+    // es"): der Halm ist das ECHTE Studio-Asset. `buildInstance('gras', 1, 2)` — DIESELBE Quelle
+    // + Stufe, die das Studio als Wald-Teppich streut (SCALE 0.24 aus der LIVE-placement-Quelle,
+    // dem Nervensystem V18.419) — wird zur Instanz-Geometrie des Gras-Systems; Platzierung/Wind/
+    // Pool/Regler bleiben AnazhRealms. Der Material-Vertrag wird ERFÜLLT, nicht umgangen (WebGPU-
+    // strikt): aSeed wird aus den gebackenen Vertex-Farben abgeleitet (die Vorlage markiert
+    // Rispen-Grannen mit seedTan 0xc8b27a → r>g; Halm-Grün → g>r), die Höhen-Referenz reist als
+    // uBladeH-Uniform (localMaxY der skalierten Studio-Geometrie). Rückgabe: Geometrie | null
+    // (Asset lädt — der Aufrufer deferiert die Zelle) | false (Foundry kann gras nicht → Alt-Pfad).
+    _grassStudioGeometry() {
+        if (this._grassStudioGeo !== undefined && this._grassStudioGeo !== null) return this._grassStudioGeo;
+        if (typeof THREE === "undefined") return null;
+        const st = this.state;
+        const season = "summer"; // die FORM ist saison-stabil; die Saison atmet live über uSeasonMul
+        const gkey = "gras|1|2|" + season;
+        const group = this._foundryCacheGet(gkey);
+        if (group === undefined) {
+            const f = this._ensureAssetFoundry();
+            if (!f) return false;
+            if (!f.requested) f.requested = new Set();
+            if (!f.requested.has(gkey)) {
+                f.requested.add(gkey);
+                this._foundryRequest("gras", 1, 2, season).then((meshes) => {
+                    if (meshes) this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
+                    else f.requested.delete(gkey); // Timeout: nachfragbar bleiben
+                });
+            }
+            return null; // lädt — die Zelle wartet (pendingGrass)
+        }
+        if (!group || !group.children || !group.children.length) {
+            this._grassStudioGeo = false; // Foundry kann gras nicht → Alt-Pfad (graceful)
+            return false;
+        }
+        // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
+        const k = this._foundryWorldScaleMatrix("gras").elements[0];
+        const pos = [];
+        const nrm = [];
+        const col = [];
+        for (const ch of group.children) {
+            const g = ch.geometry;
+            if (!g || !g.attributes || !g.attributes.position) continue;
+            const p = g.attributes.position;
+            const n = g.attributes.normal;
+            const c = g.attributes.color;
+            const idx = g.index;
+            const push = (vi) => {
+                pos.push(p.getX(vi) * k, p.getY(vi) * k, p.getZ(vi) * k);
+                nrm.push(n ? n.getX(vi) : 0, n ? n.getY(vi) : 1, n ? n.getZ(vi) : 0);
+                col.push(c ? c.getX(vi) : 0.3, c ? c.getY(vi) : 0.6, c ? c.getZ(vi) : 0.2);
+            };
+            if (idx) for (let i = 0; i < idx.count; i++) push(idx.getX(i));
+            else for (let i = 0; i < p.count; i++) push(i);
+        }
+        if (!pos.length) {
+            this._grassStudioGeo = false;
+            return false;
+        }
+        // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
+        const vc = pos.length / 3;
+        const seeds = new Float32Array(vc);
+        let maxY = 0.01;
+        for (let i = 0; i < vc; i++) {
+            seeds[i] = col[i * 3] > col[i * 3 + 1] ? 1 : 0;
+            const y = pos[i * 3 + 1];
+            if (y > maxY) maxY = y;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+        geo.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
+        geo.computeBoundingSphere();
+        geo.userData = { foundryGras: true, localMaxY: +maxY.toFixed(4), vertCount: vc };
+        this._grassStudioMaxY = maxY;
+        const wu = st.windUniforms;
+        if (wu && wu.uBladeH) wu.uBladeH.value = maxY; // die Höhen-Referenz des Farb-Gradients
+        this._grassStudioGeo = geo;
+        return geo;
+    }
+
     // voxel-basierte Welt grünt damit wie eine Heightfield-Welt.
     _buildVoxelChunkGrass(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return;
@@ -33686,6 +33769,21 @@ class AnazhRealm {
             this.state.voxelChunkGrass.set(key, null);
             this.state.voxelChunkGrassLod.set(key, entryLod);
             return;
+        }
+        // DER GRAS-SCHNITT (08.07.): bei lebender Foundry ist der Halm das ECHTE Studio-Asset
+        // (`_grassStudioGeometry` — buildInstance('gras',·,2), dieselbe Quelle wie der Studio-
+        // Wald-Teppich). Lädt es noch (null), WARTET die Zelle (re-enqueue in pendingGrass —
+        // die Baum-Regel V18.411 „wenn kein Gras da ist, ist es so", KEIN Kopie-Bau; der
+        // Lade-Nebel bleibt über die Gras-Front konservativ gedeckelt). false = die Foundry
+        // kann gras nicht (exotisch) → der Alt-Pfad (Tuft) trägt. Ohne Foundry (Worker-lose
+        // Einbettung/Test-Hook) trägt der Alt-Pfad wie bei den Bäumen.
+        if (this._foundryEnabled()) {
+            const sg = this._grassStudioGeometry();
+            if (sg === null) {
+                this._enqueueGrass(cx, cz);
+                return;
+            }
+            if (sg && this.state._grassConeGeometry !== sg) this.state._grassConeGeometry = sg;
         }
         const farFactor = entryLod >= 1 ? 0.35 : 1;
         // V18.307 — DAS GRAS KOMMT UNTER DEN EINEN REGLER (die Synergie-Hälfte):
@@ -33892,6 +33990,10 @@ class AnazhRealm {
             inst.castShadow = false;
             inst.receiveShadow = true; // V15.4 Harmonie: Gras empfaengt Terrain-Schatten
             inst.layers.enable(AnazhRealm.FOLIAGE_LAYER); // Subsystem 5: Gras ist Laub → eigene Layer
+        } else if (inst.geometry !== this.state._grassConeGeometry) {
+            // Pool-Mesh aus einer früheren Geometrie-Ära (Tuft↔Studio-Wechsel) → auf die
+            // aktuelle EINE Halm-Geometrie ziehen (geteilt, kein dispose — Singleton).
+            inst.geometry = this.state._grassConeGeometry;
         }
         inst.count = realCount;
         // V10.0-j.i — DynamicDrawUsage ENTFERNT. V10.0-g.1 hatte es als

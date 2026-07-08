@@ -85,6 +85,7 @@ law("KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)", false, /totalH 
 const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
 law("das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)", true, /__phytoCore\.impostorFrame\(/.test(phytogenNC));
 law("der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)", true, /impostor:\s*\{\s*views:/.test(foundryNC));
+law("DER GRAS-SCHNITT: der Halm ist das Studio-Asset (`_grassStudioGeometry` + Defer-Draht im Bauer)", true, /_grassStudioGeometry\(\)/.test(anazhNC) && /buildInstance\('gras'|"gras", 1, 2/.test(anazhNC.replace(/\s+/g, " ")) !== false && /this\._enqueueGrass\(cx, cz\);\s*return;/.test(anazhNC));
 
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {
