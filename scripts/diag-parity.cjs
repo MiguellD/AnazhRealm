@@ -216,7 +216,13 @@ async function renderAnazh() {
             const r = window.anazhRealm;
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
             try {
-                r.state.timeOfDay = 10 / 24; // Studio-Vormittag (Vorlage wTime=10:00)
+                // AnazhRealms Tages-KURVE ist anders gemappt als die Studio-Uhr: t=10/24 liegt in der
+                // Morgen-Rampe (warm-mauve), t=0.5 ist ZENIT — dort steht die Sonne senkrecht und
+                // VERTIKALE Stämme bekommen NdotL≈0 (der „schwarze Stamm", Zyklus 7 gemessen: Äste
+                // braun, Stamm schwarz — gleiche Farbe, anderes Licht). Das Studio schießt bei ~52°
+                // Sonnenstand (keyLight 58/92/40). Der visuelle Zwilling: t=0.58 (Sonne ~60°, Himmel
+                // blau, Licht warm-weiß, Stämme seitlich beleuchtet).
+                r.state.timeOfDay = 0.58;
                 r.state.weather = "sunny";
                 r.state.weatherTransition = null;
                 if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
@@ -303,10 +309,13 @@ async function renderAnazh() {
             const dl = performance.now() + 25000;
             let n0 = (window.__impostorRttBaked || 0) | 0;
             while (performance.now() < dl) {
+                // NUR den Bake-Tick pumpen (rendert die winzigen 128×256-RTT-Zellen), NIE den vollen
+                // _gameLoopTick mit echtem Render — N volle 7M-Tri-Frames auf WebGPU-swiftshader sind
+                // der Kumulativ-Tod (im 4. Zyklus gemessen: Target closed genau in dieser Phase).
                 try {
-                    r._gameLoopTick(performance.now());
+                    r._tickImpostorBake();
                 } catch (_e) {}
-                await new Promise((res) => setTimeout(res, 40));
+                await new Promise((res) => setTimeout(res, 60));
                 const q = r._impostorBakeQueue;
                 if ((!q || q.length === 0) && !r._impostorBakePending) break;
             }
@@ -331,6 +340,58 @@ async function renderAnazh() {
             return { tris: Math.round(tris), instances: inst };
         });
         console.log("ANAZH Szene:", JSON.stringify(out.scene));
+        // STAMM-SONDE: was IST der dunkle Stamm? Raycast durch die Bild-Mitte-rechts (dort stand er
+        // in Zyklus 7-10) → Mesh-Typ, leafKey/Name, Vertex-Farb-Attribut, Instanz-Farbe.
+        const trunkProbe = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const cam = r.state.camera;
+            const rc = new THREE.Raycaster();
+            const out = [];
+            for (const [nx, ny] of [
+                [0.25, 0.05],
+                [0.25, -0.2],
+                [0.0, 0.0],
+            ]) {
+                rc.setFromCamera(new THREE.Vector2(nx, ny), cam);
+                const hits = rc.intersectObjects(r.state.scene.children, true);
+                const h = hits && hits[0];
+                if (!h) {
+                    out.push(null);
+                    continue;
+                }
+                const o = h.object;
+                const g = o.geometry;
+                const col = g && g.getAttribute ? g.getAttribute("color") : null;
+                let colMean = null;
+                if (col) {
+                    let s = [0, 0, 0];
+                    const n = Math.min(col.count, 2000);
+                    for (let i = 0; i < n; i++) {
+                        s[0] += col.getX(i);
+                        s[1] += col.getY(i);
+                        s[2] += col.getZ(i);
+                    }
+                    colMean = s.map((v) => +(v / n).toFixed(3));
+                }
+                let instCol = null;
+                if (o.isInstancedMesh && o.instanceColor && Number.isFinite(h.instanceId)) {
+                    const c = new THREE.Color();
+                    o.getColorAt(h.instanceId, c);
+                    instCol = [+c.r.toFixed(3), +c.g.toFixed(3), +c.b.toFixed(3)];
+                }
+                out.push({
+                    type: o.isBatchedMesh ? "batch" : o.isInstancedMesh ? "inst" : "mesh",
+                    name: (o.name || "").slice(0, 60),
+                    kind: o.material && o.material.userData ? o.material.userData.foundryKind : null,
+                    hasColorAttr: !!col,
+                    colMean,
+                    instCol,
+                    dist: +h.distance.toFixed(1),
+                });
+            }
+            return out;
+        });
+        console.log("STAMM-SONDE:", JSON.stringify(trunkProbe));
         try {
             out.ms = await page.evaluate(() => {
                 const r = window.anazhRealm;

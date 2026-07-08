@@ -61535,14 +61535,15 @@ class AnazhRealm {
         // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): die HSL-Werte
         // werden als instanceColor RGB-getragen (0..1). Three.js' InstancedMesh
         // alloziert mesh.instanceColor LAZY beim ersten setColorAt — wir setzen
-        // nur für Leaves mit useInstanceTint-Material (laub, fleisch). Fallback
-        // 0.5,0.5,0.5 = neutrale Mitte (kein Shift) falls ein Leaf ihn doch
-        // liest, ohne dass der Spawn tintH gesetzt hat (defensive Wand).
+        // nur für Leaves mit useInstanceTint-Material (laub, fleisch).
+        // PARITÄT: der instanceColor MULTIPLIZIERT die Material-Farbe → neutral ist WEISS
+        // (1,1,1); das alte 0.5-Grau war eine stille 50-%-Verdunkelung jeder tint-losen
+        // Instanz (die „schwarzer Stamm"-Hälfte neben dem {h,s,v}-als-RGB-Wurf).
         const tintColor = this._archTmpTintColor || (this._archTmpTintColor = new THREE.Color());
         if (Number.isFinite(entry.tintH) && Number.isFinite(entry.tintS) && Number.isFinite(entry.tintV)) {
             tintColor.setRGB(entry.tintH, entry.tintS, entry.tintV);
         } else {
-            tintColor.setRGB(0.5, 0.5, 0.5);
+            tintColor.setRGB(1, 1, 1);
         }
         // V18.353 — PHASE A.1 (Draw-Call-Kollaps): der REGION-Key der platzierten Struktur
         // (`p:regX,regZ`, EINMAL pro Eintrag). Kleine/mittlere Bauten gehen in eine
@@ -62007,20 +62008,27 @@ class AnazhRealm {
         // wärme>0.5) lesen die Werte; alle anderen bekommen sie ignoriert. Reisen
         // bit-treu im Snapshot+Restore; bei Restore führen explizite opts.tintH/
         // S/V die seed-Berechnung (Welt-Identität bewahrt).
+        // PARITÄT — die VIERTE Stelle der {h,s,v}-als-RGB-Klasse (der SCHWARZE STAMM, im Paritäts-
+        // Bild gemessen: Vertex-Farben gesund, Licht-Rig vollständig, Stamm trotzdem dunkel): die
+        // drei Seed-Bit-Bänder hießen hue/sat/valShift, wurden aber in `_archInstanceAdd` als ROHES
+        // RGB multipliziert → jeder platzierte Baum bekam einen zufälligen Farbwurf (Mittel 0.5 =
+        // 50 % zu dunkel, Stamm UND Krone). Jetzt: NEUTRAL-NAHER Jitter (±8 % Luminanz + ±3 % warm/
+        // kühl) aus DENSELBEN Seed-Bändern (deterministisch, Snapshot-treu); explizite opts.tintH/
+        // S/V (Restore alter Welten) führen weiter — die Welt-Identität bleibt.
         if (Number.isFinite(opts.tintH)) {
-            entry.tintH = Math.max(0, Math.min(1, +opts.tintH));
+            entry.tintH = Math.max(0, Math.min(1.2, +opts.tintH));
         } else {
-            entry.tintH = ((seed >>> 13) & 0xff) / 256;
+            const _tl = 0.92 + (((seed >>> 13) & 0xff) / 255) * 0.16;
+            const _tw = ((((seed >>> 21) & 0xff) / 255) - 0.5) * 0.06;
+            entry.tintH = Math.min(1.08, _tl + _tw);
+            entry.tintS = _tl;
+            entry.tintV = Math.min(1.08, Math.max(0, _tl - _tw));
         }
         if (Number.isFinite(opts.tintS)) {
-            entry.tintS = Math.max(0, Math.min(1, +opts.tintS));
-        } else {
-            entry.tintS = ((seed >>> 21) & 0xff) / 256;
+            entry.tintS = Math.max(0, Math.min(1.2, +opts.tintS));
         }
         if (Number.isFinite(opts.tintV)) {
-            entry.tintV = Math.max(0, Math.min(1, +opts.tintV));
-        } else {
-            entry.tintV = ((seed >>> 5) & 0xff) / 256;
+            entry.tintV = Math.max(0, Math.min(1.2, +opts.tintV));
         }
         // Ω5 (taille-spec §5, Perpetuum-Verbot) — die HERKUNFT entscheidet den
         // Ertrag: ein GRATIS geborenes Spieler-Werk (schöpfer-Modus baute ohne
@@ -63818,7 +63826,18 @@ class AnazhRealm {
             reason: "foundry-impostor",
             foundry: true,
             lod: 2,
-            leaves: [{ geom, mat, localMatrix: new THREE.Matrix4(), leafKey: "fimp:" + rec.key, castShadow: false }],
+            // PARITÄT: das Billboard-Quad ist aus dem TEMPLATE-lokalen Rahmen gebaut → dieselbe
+            // Template→Welt-Übersetzung wie die 3D-Stufen (localMatrix), sonst wäre der ferne
+            // Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).
+            leaves: [
+                {
+                    geom,
+                    mat,
+                    localMatrix: this._foundryWorldScaleMatrix(preset),
+                    leafKey: "fimp:" + rec.key,
+                    castShadow: false,
+                },
+            ],
         };
         return rec._flat;
     }
@@ -63950,15 +63969,15 @@ class AnazhRealm {
             // Laub, schwarze Koniferen. `_foundryBuildGroup` garantiert das color-Attribut (STRIKT).
             const vcol = TSL.attribute("color", "vec3");
             if (isBark) {
-                // DIE STUDIO-RINDE ÜBERSETZT: die Normalmap (`makeBarkNormal`, portiert) + normalScale
-                // 0.85 geben der Rinde ihre 3D-Struktur (Fissuren/Platten/Knubbel) statt flacher
-                // blasser Bretter. Die Vorlagen-Geometrie trägt UVs (extrahiert) → der NodeMaterial-
-                // normalMap greift (Tangenten aus den UV-Derivaten, wie im Studio-WebGL).
-                const bn = this._foundryBarkNormalTexture();
-                if (bn) {
-                    mat.normalMap = bn;
-                    mat.normalScale = new T.Vector2(0.85, 0.85);
-                }
+                // PARITÄT — DER SCHWARZE STAMM (im Paritäts-Bild gemessen; Vertex-Farben gesund
+                // [0.21,0.17,0.13] warm-braun, Laub OHNE Normalmap sattgrün): die Rinden-Normalmap
+                // auf dem dünnen, gebogenen Tube-Stamm ist EXAKT die dokumentierte V18.337/.338-
+                // Klasse — r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf gestreckten Tube-UVs
+                // die Normale → der Stamm liest lichtlos/„von innen" = schwarz. Die eigene Lehre gilt
+                // auch hier: die Rinde lebt über ALBEDO (Studio-Vertex-Farben: sun-lerp barkA→barkB,
+                // Fissuren im Korn) + Roughness 0.93 — KEIN Normal-Override auf Vegetations-Stämmen.
+                // (`_foundryBarkNormalTexture` bleibt als Saat — der Studio-WebGL-Pfad nutzt sie
+                // korrekt; ein künftiger tangenten-echter r184-Pfad kann sie wieder anlegen.)
                 mat.colorNode = TSL.vec4(vcol, 1.0);
             } else if (kind === "foliageTex") {
                 // Nadel-/Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad),
@@ -64359,7 +64378,18 @@ class AnazhRealm {
         if (group === null || !group.children || !group.children.length) return false;
         if (!group._foundryFlat) {
             const leaves = [];
-            const I = new THREE.Matrix4();
+            // PARITÄT — DIE VERGESSENE TEMPLATE→WELT-ÜBERSETZUNG (der „Zwergwald"-Befund, im
+            // Paritäts-Bild gemessen: Büsche so groß wie Bäume, keine hohen Stämme): das Studio
+            // platziert seine Templates mit `SCALE[sp] · tr.s · 0.82` (phytogenesis Z.2214/2375 —
+            // eiche 4.16 · fichte 4.85 · …), AnazhRealm platzierte NUR das biologische `s`
+            // (0.55–1.95) → der 4.1-m-Template-Baum blieb ein 2–8-m-Zwerg statt des 14-m-Studio-
+            // Baums; der 4-m-strauch stand OHNE sein 0.332 als Riesen-Busch auf Augenhöhe. Die
+            // Übersetzung lebt HIER im einen Chokepoint (localMatrix der Flat-Leaves): jede
+            // Platzierung (Wald · Scatter · Understory · L2-Billboard) erbt sie automatisch,
+            // die Kronen-Schüchternheits-Radien (schon welt-getunt, eiche 5.2 m) bleiben korrekt,
+            // die `_foundryBakeLeaves` bleiben TEMPLATE-LOKAL (der RTT-Rahmen framet die Box der
+            // ungescalten Gruppe — ein Scale dort sprengte den Atlas). Grammatik-Pfad unberührt.
+            const I = this._foundryWorldScaleMatrix(preset);
             // Die Schatten-Distanz (V18.265) trägt die Foundry mit: NUR die nahe Stufe (lod 0)
             // wirft Schatten; die fernen lod1/lod2-Bäume werfen einen winzigen, fog-verschleierten
             // Boden-Schatten, der den zweiten Voll-Render nicht lohnt. Der `leaf.castShadow`-Override
@@ -64393,6 +64423,30 @@ class AnazhRealm {
                 : false;
         }
         return group._foundryFlat;
+    }
+    // PARITÄT — die EINE Template→Welt-Scale-Quelle (Studio phytogenesis Z.2214 `SCALE` +
+    // Z.2375 `SCALE[sp]·tr.s·0.82`): liefert die gecachte Scale-Matrix für die Flat-Leaves.
+    // Bäume tragen den 0.82-Wald-Mul der Vorlage; strauch/blume die reinen Tabellen-Werte;
+    // Fels/Kristall/Unbekanntes → Identität (deren Größen wurden in V1/V18.413 separat
+    // abgeglichen — hier NICHT anfassen). Matrizen sind read-only-Multiplikanden → ein
+    // geteilter Cache pro Faktor reicht.
+    _foundryWorldScaleMatrix(preset) {
+        if (!this._foundryScaleMats) this._foundryScaleMats = new Map();
+        const T = AnazhRealm.STUDIO_WORLD_SCALE;
+        const base = T && Object.prototype.hasOwnProperty.call(T, preset) ? T[preset] : 1;
+        const k =
+            base === 1
+                ? 1
+                : preset === "strauch" || preset === "blume"
+                  ? base
+                  : base * AnazhRealm.STUDIO_TREE_SCALE_MUL;
+        let m = this._foundryScaleMats.get(k);
+        if (!m) {
+            m = new THREE.Matrix4();
+            if (k !== 1) m.makeScale(k, k, k);
+            this._foundryScaleMats.set(k, m);
+        }
+        return m;
     }
     // Distanz-LOD (die Vorlagen-LODs 0/1/2): nah = voll (LOD 0 < 25 m), mittel = LOD 1, fern = LOD 2.
     // Perf-bewusst — die meisten Wald-Baeume sind mittel -> das leichte LOD 1.
@@ -71839,7 +71893,9 @@ class AnazhRealm {
                 for (const lf of flat.leaves) {
                     if (!lf.geom || !lf.mat) continue;
                     const inst = new Ti.InstancedMesh(lf.geom, lf.mat, 1);
-                    inst.setMatrixAt(0, new Ti.Matrix4());
+                    // PARITÄT: die Template→Welt-Scale reist in der leaf.localMatrix — die Vorschau
+                    // zeigt das Billboard in WELT-Größe (Vorschau == Welt), nicht template-lokal.
+                    inst.setMatrixAt(0, lf.localMatrix ? lf.localMatrix.clone() : new Ti.Matrix4());
                     inst.instanceMatrix.needsUpdate = true;
                     if (typeof inst.setColorAt === "function") {
                         inst.setColorAt(0, new Ti.Color(1, 1, 1));
@@ -81087,7 +81143,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.417.0";
+AnazhRealm.VERSION = "18.418.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83466,6 +83522,24 @@ AnazhRealm.UNDERGROWTH = Object.freeze({
 // Boden-Grundierung (die Voxelwelt hat Klippen, die die Vorlagen-Ebene nicht kennt).
 // Browser-justierbar (LOOK/FPS). Gelesen NUR vom Wald-Generator (`_forestCellDarts`/
 // `_forestPlantChunk`) — die EINE Quelle für „wo steht welcher Baum, wie groß".
+// PARITÄT — DIE STUDIO-WELT-SCALE-TABELLE (die Vorlage phytogenesis Z.2214, byte-treu): das
+// Studio baut seine Templates KLEIN (Baum ~4.1 m lokal) und platziert sie mit DIESEN Faktoren
+// (Bäume zusätzlich ·0.82, Z.2375) in die Welt → 14-m-Eichen, 1.3-m-Sträucher. AnazhRealm
+// hatte NUR das biologische s (0.55–1.95) — der Zwergwald-Befund. Konsument: der eine
+// Chokepoint `_foundryWorldScaleMatrix` → `_foundryFlattenFor`/`_foundryBuildImpostorFlat`
+// (localMatrix der Flat-Leaves). Editiert der Schöpfer die SCALE-Tabelle im Portalfile,
+// gehört dieser Spiegel nachgezogen (Doc-Sync-Grep: STUDIO_WORLD_SCALE).
+AnazhRealm.STUDIO_WORLD_SCALE = Object.freeze({
+    eiche: 4.16,
+    fichte: 4.85,
+    birke: 4.13,
+    tanne: 4.26,
+    weide: 2.75,
+    mammut: 4.31,
+    strauch: 0.332,
+    blume: 0.27,
+});
+AnazhRealm.STUDIO_TREE_SCALE_MUL = 0.82; // der Vorlagen-Wald-Mul (Z.2375, nur Bäume)
 AnazhRealm.FOREST = Object.freeze({
     cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
     pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)
