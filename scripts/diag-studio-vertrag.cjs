@@ -88,6 +88,20 @@ function validateManifest(m) {
         }
     }
     if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
+    // B2 (LOD-WURZEL 08.07.) — kindStages: die Stufen-Wahrheit je Art als Daten (SOLL, wenn
+    // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..2.
+    const lodC = m.cfg && m.cfg.lod;
+    if (lodC && lodC.kindStages) {
+        for (const k in lodC.kindStages) {
+            const s = lodC.kindStages[k];
+            if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 2)) {
+                v.push(`B2: lod.kindStages.${k} muss ein nicht-leeres Array aus Stufen 0..2 sein`);
+            } else {
+                for (let i = 1; i < s.length; i++)
+                    if (s[i] <= s[i - 1]) v.push(`B2: lod.kindStages.${k} muss strikt aufsteigend sein`);
+            }
+        }
+    }
     const pl = m.cfg && m.cfg.placement;
     if (pl) {
         if (pl.scale) for (const k in pl.scale) if (!(typeof pl.scale[k] === "number" && pl.scale[k] > 0)) v.push(`B3: placement.scale.${k} muss Zahl > 0 sein`);
@@ -166,17 +180,19 @@ function validateManifest(m) {
         vertrag: 1,
         presets: { testkaputt: { s: { a: 0.5 } }, "BÖSE ID": { kind: "tree" } },
         build: function () {},
-        cfg: { placement: { rarity: { x: 7 } } },
+        cfg: { placement: { rarity: { x: 7 } }, lod: { kindStages: { kaputt: [9], falschrum: [2, 1] } } },
         params: null,
         lehren: null,
     };
     const bv = validateManifest(broken);
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Version)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
+            bv.some((s) => s.includes("kindStages.kaputt")) &&
+            bv.some((s) => s.includes("kindStages.falschrum")) &&
             bvVer.some((s) => s.includes("G4.3")),
         `${bv.length + bvVer.length} erkannt`
     );

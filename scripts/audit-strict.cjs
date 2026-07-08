@@ -534,6 +534,7 @@ async function auditStateAndMethods() {
                 "visitedRegions", // Set lazy-init im Explore-Tick
                 "lastExploreFelt", // Map lazy-init im Explore-Tick
                 "voxelChunkGrassLod", // Map lazy-init im LOD-Build
+                "voxelChunkGrassStage", // Map lazy-init im Gras-Build (LOD-Wurzel 08.07. — gebaute Stufe je Chunk)
                 "scatterHarvested", // Map lazy-init beim ersten Scatter-Harvest
                 "_scatterImpostorGeoms", // Map lazy-init im Scatter-Impostor-Build
                 "dekoFernfeld", // Map lazy-init in der Fernfeld-Deko

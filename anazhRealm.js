@@ -33711,12 +33711,26 @@ class AnazhRealm {
     // Rispen-Grannen mit seedTan 0xc8b27a → r>g; Halm-Grün → g>r), die Höhen-Referenz reist als
     // uBladeH-Uniform (localMaxY der skalierten Studio-Geometrie). Rückgabe: Geometrie | null
     // (Asset lädt — der Aufrufer deferiert die Zelle) | false (Foundry kann gras nicht → Alt-Pfad).
-    _grassStudioGeometry() {
-        if (this._grassStudioGeo !== undefined && this._grassStudioGeo !== null) return this._grassStudioGeo;
+    // LOD-WURZEL (08.07.): die Wiese ist ZWEISTUFIG wie im Studio (kindStages.grass —
+    // nah die reiche Stufe, fern die halm-/breiten-kompensierte billige); `stageLod`
+    // wählt die Stufe (Default = die ferne 2, das alte Verhalten). Memo pro Stufe.
+    _grassKindStages() {
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const s =
+            L && L.kindStages && Array.isArray(L.kindStages.grass) && L.kindStages.grass.length
+                ? L.kindStages.grass
+                : null;
+        return s || [2];
+    }
+    _grassStudioGeometry(stageLod) {
+        const stage = Number.isFinite(stageLod) ? stageLod | 0 : 2;
+        if (!this._grassStudioGeoByStage) this._grassStudioGeoByStage = {};
+        const memo = this._grassStudioGeoByStage[stage];
+        if (memo !== undefined && memo !== null) return memo;
         if (typeof THREE === "undefined") return null;
         const st = this.state;
         const season = "summer"; // die FORM ist saison-stabil; die Saison atmet live über uSeasonMul
-        const gkey = "gras|1|2|" + season;
+        const gkey = "gras|1|" + stage + "|" + season;
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
@@ -33724,7 +33738,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
-                this._foundryRequest("gras", 1, 2, season).then((meshes) => {
+                this._foundryRequest("gras", 1, stage, season).then((meshes) => {
                     if (meshes) this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
                     else f.requested.delete(gkey); // Timeout: nachfragbar bleiben
                 });
@@ -33732,7 +33746,7 @@ class AnazhRealm {
             return null; // lädt — die Zelle wartet (pendingGrass)
         }
         if (!group || !group.children || !group.children.length) {
-            this._grassStudioGeo = false; // Foundry kann gras nicht → Alt-Pfad (graceful)
+            this._grassStudioGeoByStage[stage] = false; // Foundry kann gras nicht → Alt-Pfad (graceful)
             return false;
         }
         // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
@@ -33756,7 +33770,7 @@ class AnazhRealm {
             else for (let i = 0; i < p.count; i++) push(i);
         }
         if (!pos.length) {
-            this._grassStudioGeo = false;
+            this._grassStudioGeoByStage[stage] = false;
             return false;
         }
         // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
@@ -33773,11 +33787,13 @@ class AnazhRealm {
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
         geo.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
         geo.computeBoundingSphere();
-        geo.userData = { foundryGras: true, localMaxY: +maxY.toFixed(4), vertCount: vc };
-        this._grassStudioMaxY = maxY;
+        geo.userData = { foundryGras: true, localMaxY: +maxY.toFixed(4), vertCount: vc, foundryStage: stage };
+        // uBladeH ist EIN geteiltes Material-Uniform über beide Stufen → das MAXIMUM
+        // trägt (die Stufen kompensieren Breite/Anzahl, die Halm-Höhe ist ~gleich).
+        this._grassStudioMaxY = Math.max(this._grassStudioMaxY || 0, maxY);
         const wu = st.windUniforms;
-        if (wu && wu.uBladeH) wu.uBladeH.value = maxY; // die Höhen-Referenz des Farb-Gradients
-        this._grassStudioGeo = geo;
+        if (wu && wu.uBladeH) wu.uBladeH.value = this._grassStudioMaxY;
+        this._grassStudioGeoByStage[stage] = geo;
         return geo;
     }
 
@@ -33810,13 +33826,23 @@ class AnazhRealm {
         // Lade-Nebel bleibt über die Gras-Front konservativ gedeckelt). false = die Foundry
         // kann gras nicht (exotisch) → der Alt-Pfad (Tuft) trägt. Ohne Foundry (Worker-lose
         // Einbettung/Test-Hook) trägt der Alt-Pfad wie bei den Bäumen.
+        let _builtGrassStage = null;
         if (this._foundryEnabled()) {
-            const sg = this._grassStudioGeometry();
+            // LOD-WURZEL (08.07.): die STUFE folgt dem Studio-Gesetz (kindStages.grass) —
+            // der Spieler-Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe, die Ferne
+            // die kompensierte; `_tickGrassStage` baut falsch-stufige Chunks nach, wenn
+            // der Spieler wandert (das _tickGrassThin-Muster). Einstufige Daten → byte-alt.
+            const _gStages = this._grassKindStages();
+            const _pc = this.state.lastPlayerVoxelChunk;
+            const _gnear = _pc ? Math.max(Math.abs(cx - _pc.cx), Math.abs(cz - _pc.cz)) <= 1 : entryLod === 0;
+            const stage = _gnear ? _gStages[0] : _gStages[_gStages.length - 1];
+            const sg = this._grassStudioGeometry(stage);
             if (sg === null) {
                 this._enqueueGrass(cx, cz);
                 return;
             }
             if (sg && this.state._grassConeGeometry !== sg) this.state._grassConeGeometry = sg;
+            if (sg) _builtGrassStage = stage;
         }
         // DIE WIESE OHNE DISTANZ-ABFALL (Studio-Gesetz, 08.07.): das Studio pflanzt das Gras
         // als GLEICHMÄSSIGES Raster bis zur Sichtkante (grassStep 0.72 in buildForest — es
@@ -34111,6 +34137,12 @@ class AnazhRealm {
         // dünner neu gebaut werden müssen (die V18.280-Nach-Dünnen-Hälfte für Gras).
         if (!this.state.voxelChunkGrassDensity) this.state.voxelChunkGrassDensity = new Map();
         this.state.voxelChunkGrassDensity.set(key, grassDensityScale);
+        // LOD-WURZEL (08.07.) — die gebaute Gras-STUFE merken (wie die Bau-Dichte):
+        // `_tickGrassStage` liest sie, um beim Wandern falsch-stufige Chunks nachzubauen.
+        if (_builtGrassStage !== null) {
+            if (!this.state.voxelChunkGrassStage) this.state.voxelChunkGrassStage = new Map();
+            this.state.voxelChunkGrassStage.set(key, _builtGrassStage);
+        }
     }
 
     _disposeVoxelChunkGrass(key) {
@@ -34131,6 +34163,7 @@ class AnazhRealm {
             this._releaseGrassMesh(grass);
         }
         this.state.voxelChunkGrass.delete(key);
+        if (this.state.voxelChunkGrassStage) this.state.voxelChunkGrassStage.delete(key);
     }
 
     // ===================================================================
@@ -51370,6 +51403,9 @@ class AnazhRealm {
         // dichte Gras-Chunk dünner neu bauen, wenn die geregelte Dichte gesunken ist → das Gras
         // folgt dem EINEN Regler auch im Stand/Drehen, nicht nur beim Erst-Bau (die V18.280-Hälfte).
         this._tickGrassThin(playerPos);
+        // LOD-WURZEL (08.07.) — die zweistufige Studio-Wiese folgt der Bewegung (ein
+        // falsch-stufiger Chunk pro Idle-Tick, das Thin-Muster; Studio-Regime-only).
+        this._tickGrassStage();
         // V18.350 — DER BÄCKER PLANT VORAUS: solange der Spieler steht (dieser Idle-Pass feuert nur, wenn
         // das Chunk-Streaming nichts baut), warm die Merge-Cache der Hotbar-Baupläne → Auswahl/Ghost/
         // Platzieren ohne Hänger. Budgetiert (eins/Tick, nur unter Budget).
@@ -51469,6 +51505,48 @@ class AnazhRealm {
         const cz = parseInt(bestKey.slice(comma + 1), 10);
         this._disposeVoxelChunkGrass(bestKey);
         this._buildVoxelChunkGrass(cx, cz); // baut bei der AKTUELLEN (geringeren) Dichte
+        return 1;
+    }
+
+    // LOD-WURZEL (08.07.) — die ZWEISTUFIGE Studio-Wiese FOLGT der Bewegung: der Spieler-
+    // Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe (kindStages.grass[0]), die Ferne
+    // die halm-/breiten-kompensierte (letzte). Wandert der Spieler, baut EIN falsch-stufiger
+    // Chunk pro Idle-Tick neu (das _tickGrassThin-Muster: budgetiert, nur in den Lücken,
+    // nächster zuerst). Einstufige Daten/kein Config → No-op (byte-alt). Studio-Regime-only
+    // (der Alt-Pfad kennt keine Stufen).
+    _tickGrassStage() {
+        const st = this.state;
+        if (st._frameOverBudget) return 0;
+        if (!(typeof this._foundryEnabled === "function" && this._foundryEnabled())) return 0;
+        const stages = this._grassKindStages();
+        if (stages.length < 2) return 0;
+        const map = st.voxelChunkGrass;
+        const stageMap = st.voxelChunkGrassStage;
+        const pc = st.lastPlayerVoxelChunk;
+        if (!map || !stageMap || !stageMap.size || !pc) return 0;
+        const nearStage = stages[0];
+        const farStage = stages[stages.length - 1];
+        let bestKey = null,
+            bestD = Infinity;
+        for (const [key, built] of stageMap) {
+            if (!map.has(key) || !map.get(key)) continue; // null = kein Gras in diesem Chunk
+            const comma = key.indexOf(",");
+            const cx = parseInt(key.slice(0, comma), 10);
+            const cz = parseInt(key.slice(comma + 1), 10);
+            const cheb = Math.max(Math.abs(cx - pc.cx), Math.abs(cz - pc.cz));
+            const want = cheb <= 1 ? nearStage : farStage;
+            if (want === built) continue;
+            if (cheb < bestD) {
+                bestD = cheb;
+                bestKey = key;
+            }
+        }
+        if (bestKey === null) return 0;
+        const comma = bestKey.indexOf(",");
+        const cx = parseInt(bestKey.slice(0, comma), 10);
+        const cz = parseInt(bestKey.slice(comma + 1), 10);
+        this._disposeVoxelChunkGrass(bestKey);
+        this._buildVoxelChunkGrass(cx, cz); // baut bei der AKTUELLEN Soll-Stufe
         return 1;
     }
 
@@ -64599,6 +64677,14 @@ class AnazhRealm {
         if (!f || !f.ready || f._prefetching) return;
         f._prefetching = true;
         const spec = this._foundryLibrarySpec();
+        // LOD-WURZEL (08.07.): die Stufen je Art kommen aus den Vertrags-DATEN
+        // (kindStages, via get-render-config) — die Replies (recipes + render-config)
+        // sind winzig und reisen VOR den Asset-Bakes; ein kurzer Warte-Deckel (~2 s)
+        // lässt den Prefetch exakt die deklarierten Stufen wärmen statt zu raten.
+        for (let _w = 0; _w < 40 && !(f.recipeCount > 0 && AnazhRealm._studioRenderConfig); _w++)
+            await new Promise((r) => setTimeout(r, 50));
+        const _cfgLodP = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const _ksP = (_cfgLodP && _cfgLodP.kindStages) || null;
         // DER PARALLELE SAUG („Drähte statt Kopien" 08.07., Schöpfer „die Andockstellen müssen
         // quasi instant saugen, parallel synergetisch"): ALLE Anfragen feuern SOFORT (der
         // Worker ist ein eigener Thread mit serieller Queue — er arbeitet sie Rücken an
@@ -64607,15 +64693,16 @@ class AnazhRealm {
         // Sekunden). Post kostet den Main-Frame nichts; die Antworten docken async.
         const jobs = [];
         for (const sp of spec.species) {
-            // 08.07. (die Inventur-Heilung): BODEN-Arten (kein Baum) wärmen LOD 0 UND 2 —
-            // der nahe Streu-Pass platziert sie mit LOD 0; nur LOD-2-Wärme (der alte Stand)
-            // ließ JEDE nahe Zelle in die Defer-Runde laufen (~60 s bis Kiesel/Blumen).
+            // 08.07. (die Inventur-Heilung + LOD-WURZEL): BODEN-Arten wärmen EXAKT ihre
+            // deklarierten Stufen (kindStages — Gras/Strauch [1,2] zweistufig, Blume/Fels
+            // [0] einstufig; Fallback ohne Daten: [0,2] wie bisher) — der nahe Streu-Pass
+            // findet seine Stufe warm, keine Defer-Runde, keine ungenutzten Bakes.
             // Bäume bleiben bei LOD 2 (ihr LOD 0/1 lädt on-demand für die Nähe — die
             // Startup-Speicher-Wand; ihre Fern-Karte trägt der Impostor).
-            const _lods =
-                typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(sp)
-                    ? spec.lods
-                    : Array.from(new Set(spec.lods.concat([0])));
+            const _isTreeP = typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(sp);
+            const _recP = f.recipes && f.recipes[sp];
+            const _declared = !_isTreeP && _recP && _ksP && Array.isArray(_ksP[_recP.kind]) ? _ksP[_recP.kind] : null;
+            const _lods = _isTreeP ? spec.lods : _declared || Array.from(new Set(spec.lods.concat([0])));
             for (const sd of spec.seeds) {
                 for (const lod of _lods) {
                     const season = this.state.season || "summer";
@@ -64849,17 +64936,27 @@ class AnazhRealm {
         // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein RTT),
         // nur auf eine billige Karte geflacht. Fels/Kristall/Blume bleiben L2-Geometrie.
         if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
-        // DIE STUDIO-LOD-WAHRHEIT JE ART (08.07., ersetzt die alte strauch-only-Regel):
-        // Nicht-Baum-Arten sind im Studio EINSTUFIG FEST (AnazhRealm.FOUNDRY_KIND_LOD,
-        // kind-basiert aus dem Rezeptbuch) — Distanz-LOD nur für Bäume. So kann eine
-        // ferne Blume/ein ferner Fels NIE eine ungeprüfte Rezept-Stufe serviern
-        // (der „L2 falsch geschnitten"-Befund), und der Strauch trägt die Studio-16k-
-        // Stufe (@2) statt der schweren @1.
+        // DIE STUFEN-WAHRHEIT JE ART ALS VERTRAGS-DATEN (LOD-WURZEL 08.07.): die Distanz-
+        // Wahl clampt auf die Stufen, die das Studio für diese ART deklariert + selbst nutzt
+        // (`PORTAL_RENDER_CONFIG.lod.kindStages`, live über das Nervensystem — Gras/Strauch
+        // zweistufig [nah reich, fern kompensiert-billig], Blume/Fels einstufig). Gesetz:
+        // die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die kleinste (nah = reich).
+        // So serviert AnazhRealm NIE eine Stufe, die das Studio nicht vorgesehen hat (der
+        // „L2 falsch geschnitten"-Befund), und folgt jedem Studio-Edit der Daten. Fallback
+        // ohne Config: die einstufige Kind-Karte (AnazhRealm.FOUNDRY_KIND_LOD, fail-closed).
         if (!this._foundryPresetIsTree(preset)) {
             const _rec = f.recipes && f.recipes[preset];
-            const _kl = _rec && AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind];
-            if (Number.isFinite(_kl)) lod = _kl;
-            else if (preset === "strauch") lod = 2; // Rezeptbuch noch nicht da → die Studio-Stufe direkt
+            const _cfgLod = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+            let _stages = _rec && _cfgLod && _cfgLod.kindStages ? _cfgLod.kindStages[_rec.kind] : null;
+            if (!Array.isArray(_stages) || !_stages.length) {
+                const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : preset === "strauch" ? 2 : null;
+                _stages = Number.isFinite(_kl) ? [_kl] : null;
+            }
+            if (_stages) {
+                let _sv = _stages[0];
+                for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
+                lod = _sv;
+            }
         }
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season;
@@ -81803,20 +81900,16 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.424.0";
+AnazhRealm.VERSION = "18.425.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
 AnazhRealm.FOUNDRY_CACHE_CAP = 256;
-// DIE STUDIO-LOD-WAHRHEIT JE ART (08.07., aus buildForest GEMESSEN — phytogenesis
-// Z.2140/2160-2185): NUR BÄUME tragen Distanz-LOD (L0 < d0 · L1 im Band · Billboard
-// > d1, mit Blende/Hysterese/Occlusion-Demotion); die Understory-/Fels-Arten baut das
-// Studio EINSTUFIG FEST — blume@0 · findling/zacken/basalt/sediment/kristalle/geroell@0
-// · gras@2 · strauch@2 (16k Verts statt 208k/77k @0/@1 — der „L1 schwer"-Befund) —
-// getiled + frustum-gecullt + Fog, KEIN Distanz-Wechsel. Eine Distanz-LOD auf
-// Nicht-Bäumen servierte bei uns UNGEPRÜFTE Rezept-Stufen (der „L2 manchmal falsch
-// geschnitten/positioniert"-Befund an Steinen). KIND-basiert (der Vertrags-Weg: ein
-// neues Studio-Preset erbt seine Stufe über sein kind, ohne AnazhRealm-Edit).
+// DIE STUFEN-FALLBACK-KARTE JE ART (08.07., LOD-WURZEL): die LEBENDE Wahrheit sind die
+// Vertrags-DATEN `PORTAL_RENDER_CONFIG.lod.kindStages` (Baum [0,1,2] · Gras/Strauch [1,2]
+// zweistufig · Blume/Fels [0] einstufig — Studio-Wald UND AnazhRealm lesen dieselbe
+// Quelle). DIESE Karte ist nur der fail-closed-Fallback, solange der Config noch nicht
+// angedockt ist (die billige Einstufigkeit — nie eine ungeprüfte Stufe servieren).
 AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, rock: 0 });
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,

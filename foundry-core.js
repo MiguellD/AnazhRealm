@@ -101,7 +101,23 @@ const PORTAL_RENDER_CONFIG = {
     // Baum-LOD — Wahrnehmungs-Distanzen (Screen-Space-Error, hoehen-gewichtet ueber `ref`): <d0 = L0 volle
     // Geometrie, d0..d1 = L1 mittel, >d1 = L2 Billboard. `fade`/`fade0` = die Dither-Crossfade-Baender; `hyst`
     // = die Membership-Hysterese (M); `ref` = die Referenz-Sichthoehe (uLodRef).
-    lod: { d0: 20, d1: 40, fade: 8, fade0: 4, ref: 12.0, hyst: 3.4 },
+    // kindStages (08.07.) — DIE STUFEN-WAHRHEIT JE ART ALS DATEN (die eine Quelle fuer den
+    // Studio-Wald UND jeden Empfaenger): welche buildInstance-Stufen eine Art TRAEGT und
+    // NUTZT. Baeume die volle Kaskade (0/1 + Billboard-Atlas jenseits d1); Gras + Strauch
+    // ZWEISTUFIG (nah = reiche Stufe, fern = die breiten-/formkompensierte billige — die
+    // Rezepte tragen die Kompensation: Gras K=5/3 Halme mit wMul 1.7/4.6); Blume + Fels
+    // EINSTUFIG (wenige Instanzen bzw. Kleinst-Deko — eine Distanz-Stufe waere Deko ohne
+    // Wert). Der Wald waehlt nah = stages[0], fern = stages[letzte]; Empfaenger clampen
+    // ihre Distanz-Wahl auf die naechste verfuegbare Stufe.
+    lod: {
+        d0: 20,
+        d1: 40,
+        fade: 8,
+        fade0: 4,
+        ref: 12.0,
+        hyst: 3.4,
+        kindStages: { tree: [0, 1, 2], shrub: [1, 2], grass: [1, 2], flower: [0], rock: [0] },
+    },
     // Wald-Dichte (plantForest): variabel-radius Poisson, Zell-Raster `cell` m, Packung `pack` (Zentren
     // >= pack*(Ti+Tj) = Kronen-Schuechternheit), Kandidaten `dartsPerM2` (darts = R^2 * dartsPerM2), die
     // Kronen-Radien je Art. AnazhRealm adoptiert diese in seine FOREST-Oekologie.

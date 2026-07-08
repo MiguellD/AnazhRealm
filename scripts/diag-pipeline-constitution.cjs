@@ -85,7 +85,22 @@ law("KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)", false, /totalH 
 const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
 law("das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)", true, /__phytoCore\.impostorFrame\(/.test(phytogenNC));
 law("der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)", true, /impostor:\s*\{\s*views:/.test(foundryNC));
-law("DER GRAS-SCHNITT: der Halm ist das Studio-Asset (`_grassStudioGeometry` + Defer-Draht im Bauer)", true, /_grassStudioGeometry\(\)/.test(anazhNC) && /buildInstance\('gras'|"gras", 1, 2/.test(anazhNC.replace(/\s+/g, " ")) !== false && /this\._enqueueGrass\(cx, cz\);\s*return;/.test(anazhNC));
+// LOD-WURZEL (08.07., V9.56-i — das Gesetz wandert mit dem Code): der Halm-Draht ist
+// STUFEN-parameterisiert (`_grassStudioGeometry(stage)`, die Stufe aus den Vertrags-Daten
+// `kindStages.grass` via `_grassKindStages`); der Defer-Draht bleibt die Kopie-Bau-Wand.
+law(
+    "DER GRAS-SCHNITT: der Halm ist das Studio-Asset (`_grassStudioGeometry(stage)` + kindStages-Draht + Defer im Bauer)",
+    true,
+    /_grassStudioGeometry\(/.test(anazhNC) &&
+        /_grassKindStages\(\)/.test(anazhNC) &&
+        /this\._enqueueGrass\(cx, cz\);\s*return;/.test(anazhNC)
+);
+// LOD-WURZEL (08.07.) — die Stufen-Wahrheit je Art lebt als VERTRAGS-DATEN in foundry-core
+// (kindStages), der Studio-Wald liest sie SELBST (near/far-Kacheln), AnazhRealm clampt seine
+// Distanz-Wahl darauf (kein Empfänger erfindet Stufen, die das Studio nicht vorsieht).
+law("die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)", true, /kindStages:\s*\{/.test(foundryNC));
+law("der Studio-Wald liest kindStages SELBST (near/far-Kacheln)", true, /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC));
+law("AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)", true, /kindStages\[_rec\.kind\]/.test(anazhNC));
 
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {

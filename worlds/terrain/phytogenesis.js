@@ -2157,10 +2157,28 @@ function buildForest() {
             _impSpecs.push({ sp, seed: tmpl.userData.seed, crownBase: CB[sp], trunkMul: TMUL });
         });
     }
-    const shrubT = [buildInstance("strauch", Math.floor(RNG() * 1e6), 2)];
+    // LOD-WURZEL (08.07.) — DIE STUFEN-WAHRHEIT JE ART AUS DEN VERTRAGS-DATEN
+    // (PORTAL_RENDER_CONFIG.lod.kindStages): Gras + Strauch sind ZWEISTUFIG —
+    // nah die reiche Stufe (stages[0]), fern die kompensierte billige
+    // (stages[letzte]; die Rezepte tragen die Breiten-/Form-Kompensation).
+    // FORM-IDENTITAET: nah/fern eines Templates teilen DENSELBEN Seed (kein
+    // Gestalt-Sprung am Stufenwechsel); die RNG()-Aufrufzahl bleibt EXAKT die
+    // alte (ein Wurf je Template-Variante) — der ganze Wald wuerfelt unveraendert.
+    const _KS = (PORTAL_RENDER_CONFIG.lod && PORTAL_RENDER_CONFIG.lod.kindStages) || {};
+    const _ksN = (k, d) => ((_KS[k] && _KS[k].length ? _KS[k][0] : d) | 0);
+    const _ksF = (k, d) => ((_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0);
+    const _shrubSeed = Math.floor(RNG() * 1e6);
+    const shrubT = [buildInstance("strauch", _shrubSeed, _ksN("shrub", 2))];
+    const shrubTF = [buildInstance("strauch", _shrubSeed, _ksF("shrub", 2))];
+    const _grasSeedA = Math.floor(RNG() * 1e6),
+        _grasSeedB = Math.floor(RNG() * 1e6);
     const grassT = [
-        buildInstance("gras", Math.floor(RNG() * 1e6), 2),
-        buildInstance("gras", Math.floor(RNG() * 1e6), 2),
+        buildInstance("gras", _grasSeedA, _ksN("grass", 2)),
+        buildInstance("gras", _grasSeedB, _ksN("grass", 2)),
+    ];
+    const grassTF = [
+        buildInstance("gras", _grasSeedA, _ksF("grass", 2)),
+        buildInstance("gras", _grasSeedB, _ksF("grass", 2)),
     ];
     const flowerT = [
         buildInstance("blume", Math.floor(RNG() * 1e6), 0),
@@ -2239,7 +2257,12 @@ function buildForest() {
     // ★ KACHEL-INSTANZIERUNG: dichte Bodenschichten in 12m-Kacheln, jede mit EIGENER enger Welt-Kugel -> Three cullt jede Kachel
     // einzeln aus dem Frustum. Instanzen bleiben in WELT-Koordinaten (Wind-Phase korrekt, keine Nahtkanten zwischen Kacheln).
     const TILE = 12;
-    const addTiled = (variants, plByVar, kind) => {
+    // LOD-WURZEL (08.07.): `stage` macht eine Kachel-Schicht zweistufig — "near" traegt die
+    // reiche Stufe bis LOD_D0(+Ueberlapp), "far" die kompensierte billige dahinter bis zum
+    // Art-Limit; "single" = das alte Verhalten. Beide Stufen teilen PLACEMENTS + Seed
+    // (Form-Identitaet), der Ueberlapp (±2 m) ersetzt die Hysterese (kein Loch, kein
+    // Flackern — die Baum-Membership-Idee auf Kachel-Granularitaet).
+    const addTiled = (variants, plByVar, kind, stage) => {
         for (let v = 0; v < variants.length; v++) {
             const pls = plByVar[v];
             if (!pls || !pls.length) continue;
@@ -2303,6 +2326,7 @@ function buildForest() {
                     im.userData.tcx = b.cx;
                     im.userData.tcz = b.cz;
                     im.userData.tileKind = kind;
+                    im.userData.tileStage = stage || "single";
                     forestGroup.add(im);
                     drawMeshes++;
                     _grassTiles.push(im);
@@ -2594,14 +2618,22 @@ function buildForest() {
                 nS++;
             }
         }
-    addTiled(grassT, grassPl, "grass");
+    // LOD-WURZEL (08.07.): Gras + Strauch zweistufig, wenn die Vertrags-Daten zwei
+    // Stufen tragen (sonst byte-alt einstufig); Kiesel/Blume bleiben einstufig by data.
+    const _twoG = _ksN("grass", 2) !== _ksF("grass", 2);
+    addTiled(grassT, grassPl, "grass", _twoG ? "near" : "single");
+    if (_twoG) addTiled(grassTF, grassPl, "grass", "far");
     addTiled(pebbleT, pebblePl, "pebble"); // ★ gekachelt + frustum-gecullt (der Dreiecks-Hebel)
     instAdd(flowerT, flowerPl, false);
-    addTiled(
-        shrubT,
-        shrubPl,
-        "shrub"
-    ); /* Straeucher gekachelt wie Gras -> frustum-gecullt (der zweite Dreiecks-Hebel) */
+    const _twoS = _ksN("shrub", 2) !== _ksF("shrub", 2);
+    addTiled(shrubT, shrubPl, "shrub", _twoS ? "near" : "single");
+    if (_twoS)
+        addTiled(
+            shrubTF,
+            shrubPl,
+            "shrub",
+            "far"
+        ); /* Straeucher gekachelt wie Gras -> frustum-gecullt (der zweite Dreiecks-Hebel) */
 
     forestGroup.traverse((o) => {
         if (
@@ -3863,7 +3895,20 @@ function animate() {
                 dz = m.userData.tcz - cz,
                 k = m.userData.tileKind,
                 lim = Math.min(k === "pebble" ? 46 : k === "shrub" ? 88 : 67, fogT);
-            m.visible = dx * dx + dz * dz < lim * lim;
+            const d2 = dx * dx + dz * dz,
+                st = m.userData.tileStage;
+            // LOD-WURZEL (08.07.): zweistufige Kacheln — nah-Stufe bis LOD_D0(+2), fern-Stufe
+            // ab LOD_D0(−2) bis zum Art-Limit (der ±2-m-Ueberlapp deckt den Wechsel: kein Loch,
+            // kein Flackern); einstufige Kacheln behalten das alte Limit-Gesetz byte-gleich.
+            if (st === "near") {
+                const nl = Math.min(LOD_D0 + 2, lim);
+                m.visible = d2 < nl * nl;
+            } else if (st === "far") {
+                const nf = Math.max(0, LOD_D0 - 2);
+                m.visible = d2 >= nf * nf && d2 < lim * lim;
+            } else {
+                m.visible = d2 < lim * lim;
+            }
         }
     } // pro Art statt pauschal 60m — UND nie jenseits der Nebelwand (FIX v30)
     if (_treeLOD.length) {
@@ -4614,7 +4659,19 @@ init();
             sight: c.sight,
             fogNearMul: c.fogNearMul,
             camFarPad: c.camFarPad,
-            lod: { d0: c.lod.d0, d1: c.lod.d1, fade: c.lod.fade, fade0: c.lod.fade0, ref: c.lod.ref, hyst: c.lod.hyst },
+            // kindStages (LOD-WURZEL 08.07.): die Stufen-Wahrheit je Art als DATEN — welche
+            // buildInstance-Stufen eine Art traegt+nutzt (Baum [0,1,2] · Gras/Strauch [1,2]
+            // zweistufig · Blume/Fels einstufig). Der Empfaenger clampt seine Distanz-Wahl
+            // auf die naechste verfuegbare Stufe (tiefe Kopie, JSON-klonbar).
+            lod: {
+                d0: c.lod.d0,
+                d1: c.lod.d1,
+                fade: c.lod.fade,
+                fade0: c.lod.fade0,
+                ref: c.lod.ref,
+                hyst: c.lod.hyst,
+                kindStages: c.lod.kindStages ? JSON.parse(JSON.stringify(c.lod.kindStages)) : undefined,
+            },
             density: {
                 cell: c.density.cell,
                 pack: c.density.pack,
