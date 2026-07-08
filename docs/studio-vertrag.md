@@ -143,6 +143,32 @@ angewandt:
 - **G4.4 kein Spiegel:** Leser lesen die angekommenen Daten LIVE (Referenz),
   kein Hardcode-Duplikat in der Welt — bewiesen durch den Mutation-wins-Test.
 
+## §4b Die Laufzeit-Übersetzung (r128-Studio → r184-Welt) — NORMATIV
+
+Die Studios sind in Three.js r128 (Legacy) verfasst; die Hauptwelt rendert
+r184 (physisch, farb-verwaltet). Wo AnazhRealm Studio-INHALT selbst rendert
+(nicht das Portal — dort läuft das Original), gelten DREI dokumentierte
+Übersetzungs-Regeln (three.js-Migrationspfad, KEINE Tuning-Knöpfe):
+
+- **Ü1 — LICHT-INTENSITÄTEN × π** (r155, useLegacyLights→physisch: Legacy
+  hatte keine 1/π-BRDF-Normierung). Jeder aus einem Studio übernommene
+  Licht-Intensitätswert wird mit `AnazhRealm.LEGACY_LICHT` (= Math.PI)
+  multipliziert. Gilt für JEDE Domäne (Wald-Rig heute; Fahrzeug-Scheinwerfer/
+  Emissive morgen).
+- **Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR.** r128 las Hex ohne Eingangs-
+  Konvertierung; die treue Übersetzung setzt Studio-Farbwerte per
+  `setRGB(raw)` (linear), NIE per `setHex` (das sRGB→linear wandeln und
+  dunkler zeigen würde als die Vorlage). Vertex-Farb-ATTRIBUTE reisen roh
+  und sind automatisch korrekt (beide Renderer lesen Attribute linear).
+- **Ü3 — GESETZE STATT WERTE, wo das Studio ein Gesetz hat.** Trägt die
+  Vorlage eine Formel (atmosphere(e) · Nebel-skyB · Rahmen), liest die Welt
+  die FORMEL aus der geteilten Quelle (phyto-core/foundry-core), nicht
+  einen Wert-Snapshot.
+
+**Chokepoint-Pflicht:** eine neue Domäne wendet Ü1/Ü2 am IMPORT an (der
+kind-Handler bzw. die Ingest-Funktion), nicht verstreut an Anwendungs-
+Stellen — ein Wert quert die Naht GENAU EINMAL und ist danach r184-nativ.
+
 ## §5 Die Andock-Sequenz (wie eine neue Domäne andockt)
 
 Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":

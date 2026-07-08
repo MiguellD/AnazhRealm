@@ -121,7 +121,7 @@ function validateManifest(m) {
     check("Vertrag existiert (docs/studio-vertrag.md)", doc.length > 0);
     check(
         "Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze",
-        ["B1 — REZEPTE", "B2 — BUILD", "B3 — PLACEMENT", "B4 — PARAMS", "B5 — LEHREN", "B6 — VERHALTEN", "must-ignore", "fail-closed"].every((s) => doc.includes(s))
+        ["B1 — REZEPTE", "B2 — BUILD", "B3 — PLACEMENT", "B4 — PARAMS", "B5 — LEHREN", "B6 — VERHALTEN", "must-ignore", "fail-closed", "Ü1 — LICHT-INTENSITÄTEN × π", "Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR"].every((s) => doc.includes(s))
     );
 
     // §3/§4 — jeder registrierte Kern erfüllt den Vertrag.
@@ -143,6 +143,9 @@ function validateManifest(m) {
         console.log(`      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`);
         check(`${entry.file}: B1+B2 MUSS erfüllt (Rezepte + build)`, n >= 1 && typeof m.build === "function");
     }
+
+    // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
+    check("Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)", /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
 
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
