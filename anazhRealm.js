@@ -19407,7 +19407,6 @@ class AnazhRealm {
         // der ganze Tag/Nacht-Zyklus bleibt AnazhRealms. Fallback = die bisherigen Werte = 0 Regress.
         const sk = AnazhRealm._studioSky;
         const noonSky = (sk && typeof sk.top === "number" && sk.top) || 0x6a9ed0;
-        const noonSun = (sk && typeof sk.sun === "number" && sk.sun) || 0xfff2d9;
         return Object.freeze([
             Object.freeze({ t: 0.0, sky: 0x161830, light: 0x6a7aa8, intensity: 0.28 }),
             Object.freeze({ t: 0.15, sky: 0x1e1e3a, light: 0x7888b8, intensity: 0.35 }),
@@ -19418,15 +19417,24 @@ class AnazhRealm {
             // V8.26 zweite Iteration: zusätzlicher Stop bei 0.44 zwischen
             // Sonnenaufgang-warm und Mittag-blau, sonst war der R-Sprung
             // (200→75) zu hart. Sanfter blau-grauer Vormittag-Tint.
-            Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffe8c8, intensity: 0.95 }),
+            // DER SONNEN-TAG IST PHYSIK-PUR (08.07., „Drähte statt Kopien" — GEMESSEN am
+            // Paritäts-Shot: dl.color [1, 0.77, 0.50] statt Studio [1, 0.94, 0.80] bei
+            // gleicher Sonnenhöhe): die Tages-LUT-lightColors (0xffe8c8/0xfff2d9/0xfff0d8/
+            // 0xffd8b0) WÄRMTEN DOPPELT über der Rayleigh-Physik (`_atmosphere`, das geteilte
+            // Studio-Gesetz — atm.col ist bei jeder Höhe schon warm). Im Tag-Fenster
+            // (0.44–0.62) ist lightColor jetzt WEISS = die Physik trägt allein, exakt wie im
+            // Studio (dessen Wald-Sonne IST atmosphere(e).col, keine Stunden-LUT darüber);
+            // Dämmerung/Nacht (≤0.38 / ≥0.68) bleiben AnazhRealms eigene Dramaturgie. Der
+            // Himmel (sky) bleibt LUT-getragen — der Mittags-Anker folgt weiter LIVE dem
+            // Studio (uTop via get-world-params); uSunCol färbt dort den HIMMEL-Shader,
+            // nie das Richtlicht.
+            Object.freeze({ t: 0.44, sky: 0x8e9bb8, light: 0xffffff, intensity: 0.95 }),
             // Vorlage phytogenesis Z.1248: Mittags-Himmel = weiches Dunst-Blau (uTop 0x6a9ed0,
-            // NICHT das gesättigte 0x4b75c2) + WARME Sonne (uSunCol (1,0.95,0.85) = 0xfff2d9,
-            // NICHT reines Weiss). Das gesättigte Blau + kalte weisse Sonne war der harte,
-            // ungemütliche AnazhRealm-Look; die Vorlage ist weicher, wärmer, einladender.
-            Object.freeze({ t: 0.5, sky: noonSky, light: noonSun, intensity: 1.0 }),
+            // NICHT das gesättigte 0x4b75c2) — der Himmel-Anker folgt LIVE dem Studio.
+            Object.freeze({ t: 0.5, sky: noonSky, light: 0xffffff, intensity: 1.0 }),
             // Symmetrisch: Zwischenstop nach Mittag, vor Sonnenuntergang
-            Object.freeze({ t: 0.56, sky: 0x7ba0c8, light: 0xfff0d8, intensity: 0.97 }),
-            Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffd8b0, intensity: 0.92 }),
+            Object.freeze({ t: 0.56, sky: 0x7ba0c8, light: 0xffffff, intensity: 0.97 }),
+            Object.freeze({ t: 0.62, sky: 0x9078b0, light: 0xffffff, intensity: 0.92 }),
             Object.freeze({ t: 0.68, sky: 0xc04a7a, light: 0xffba88, intensity: 0.8 }),
             Object.freeze({ t: 0.74, sky: 0x804060, light: 0xb888a8, intensity: 0.62 }),
             Object.freeze({ t: 0.82, sky: 0x3a2c54, light: 0x8888b8, intensity: 0.42 }),

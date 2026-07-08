@@ -304,9 +304,26 @@ async function renderAnazh() {
         // die RTT-Bakes laufen async über mehrere Frames — pumpen bis die Queue leer ist.
         const baked = await page.evaluate(async () => {
             const r = window.anazhRealm;
+            // P-C (08.07.): ZUERST den parallelen Saug abwarten (er ist jetzt deterministisch —
+            // Bibliothek ~6 s, Records ~10 s nach Boot), DANN einen expliziten ensure-Pass über
+            // die Baum-(Art×Variante)-Matrix (enqueued alles, was der Block verpasste), DANN
+            // real backen. Vorher: baked:0, weil die Queue zum Drain-Zeitpunkt leer war.
+            const f = r._foundry;
+            const dlP = performance.now() + 30000;
+            while (f && f._prefetching && performance.now() < dlP) await new Promise((res) => setTimeout(res, 200));
+            try {
+                const spec = r._foundryLibrarySpec();
+                const season = r.state.season || "summer";
+                for (const sp of spec.species) {
+                    if (typeof r._foundryPresetIsTree === "function" && !r._foundryPresetIsTree(sp)) continue;
+                    for (let v = 1; v <= 16; v++) r._foundryEnsureImpostorRecord(sp, v, season);
+                }
+            } catch (_e) {}
+            const qLen0 = r._impostorBakeQueue ? r._impostorBakeQueue.length : 0;
+            const recs0 = r._impostorAtlasMap ? r._impostorAtlasMap.size : 0;
             r.state.renderer.render = window.__origRender;
             r._impostorBakePending = false;
-            const dl = performance.now() + 25000;
+            const dl = performance.now() + 45000;
             let n0 = (window.__impostorRttBaked || 0) | 0;
             while (performance.now() < dl) {
                 // NUR den Bake-Tick pumpen (rendert die winzigen 128×256-RTT-Zellen), NIE den vollen
@@ -320,7 +337,12 @@ async function renderAnazh() {
                 if ((!q || q.length === 0) && !r._impostorBakePending) break;
             }
             r.state.renderer.render = function () {};
-            return { baked: ((window.__impostorRttBaked || 0) | 0) - n0, err: window.__impostorRttError || null };
+            return {
+                baked: ((window.__impostorRttBaked || 0) | 0) - n0,
+                queueVorher: qLen0,
+                records: recs0,
+                err: window.__impostorRttError || null,
+            };
         });
         console.log("ANAZH Impostor-RTT gebacken:", JSON.stringify(baked));
         // Szene-Last + ein bare Render + Screenshot (crash-sicher).
