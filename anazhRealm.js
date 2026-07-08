@@ -55648,6 +55648,63 @@ class AnazhRealm {
             },
         ];
 
+        // Garage-Portal (08.07.2026) — ANATOMIE · FAHRZEUG: ein eiserner
+        // Rad-Reif (Reif + Nabe) mit Quarz-Scheibe als Tor-Fläche — das
+        // Fahrzeug-Motiv, unverwechselbar neben den Quarz-Ringen.
+        const weltGarageParts = [
+            {
+                shape: "torus",
+                material: "eisen",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 3.2, y: 3.2, z: 3.2 },
+            },
+            {
+                shape: "cylinder",
+                material: "eisen",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 0.55, y: 0.5, z: 0.55 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 2.0, z: 0 },
+                size: { x: 2.5, y: 0.14, z: 2.5 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
+        // Portale-Portal (08.07.2026) — PORTA: ein steinerner Torbogen
+        // (zwei Pfeiler + Sturz) mit Quarz-Scheibe — das Tor-Labor trägt
+        // selbst die älteste Tor-Form, den Architrav.
+        const weltPortaleParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -1.7, y: 1.6, z: 0 },
+                size: { x: 0.6, y: 3.2, z: 0.6 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 1.7, y: 1.6, z: 0 },
+                size: { x: 0.6, y: 3.2, z: 0.6 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 3.45, z: 0 },
+                size: { x: 4.0, y: 0.5, z: 0.6 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 1.7, z: 0 },
+                size: { x: 2.6, y: 0.14, z: 2.6 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+        ];
+
         // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
         // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
         // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
@@ -56221,6 +56278,29 @@ class AnazhRealm {
                 roleManual: true,
                 portalMeta: portalTo("terrain"),
                 parts: this._stationVariant(weltTerrainParts, felsWorldSeed + "-portal3"),
+            },
+            // Garage-Portal (08.07.2026) — führt ins Fahrzeug-Labor des
+            // Schöpfers (garage.txt: Rahmen · Gelenke · Lehren · Probefahrt).
+            // Dasselbe W12-Muster: Registry trägt Pfad + DSL-Manifest.
+            welt_garage: {
+                name: "welt_garage",
+                label: "Anatomie · Fahrzeug",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("garage"),
+                parts: this._stationVariant(weltGarageParts, felsWorldSeed + "-portal4"),
+            },
+            // Portale-Portal (08.07.2026) — führt ins Tor-Labor des Schöpfers
+            // (Portal.txt: sieben Ordnungen · Stich→Schub→Dicke · Türen E/R).
+            welt_portale: {
+                name: "welt_portale",
+                label: "Porta — Ordnungen & fraktale Tiefe",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("portale"),
+                parts: this._stationVariant(weltPortaleParts, felsWorldSeed + "-portal5"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
             // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
@@ -81266,7 +81346,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.419.0";
+AnazhRealm.VERSION = "18.420.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83944,6 +84024,43 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "nacht",
         ]),
         desc: "Das Morphologie-Labor: Bäume, Blumen und Felsen wachsen aus Gesetzen — mit begehbarem Wald, Tag/Nacht, Wetter und Jahreszeiten.",
+    }),
+    // 08.07.2026 — das FAHRZEUG-Labor des Schöpfers (garage.txt): Rahmen ·
+    // Gelenke · Lehren · Baukörper · Haut + fahrbare Probefahrt. Dasselbe
+    // Vorlagen-Organ wie phytogenesis (P-Vektor · PRESETS · LEHREN · derive/
+    // build · Verhalten) — die künftige EINE Quelle der Fahrzeug-Modelle/
+    // -Physik. Die DSL spricht die ECHTEN UI-Pfade: Gattungs-Presets +
+    // Kultur-Vektoren + probefahrt/werkstatt (Fahr-Modus rein/raus).
+    garage: Object.freeze({
+        id: "garage",
+        label: "Anatomie · Fahrzeug",
+        world: "worlds/garage/index.html",
+        dsl: Object.freeze([
+            "gt",
+            "supersport",
+            "limousine",
+            "kompakt-fwd",
+            "suv",
+            "cavallo",
+            "toro",
+            "stern",
+            "vorsprung",
+            "monolith",
+            "probefahrt",
+            "werkstatt",
+        ]),
+        desc: "Das Fahrzeug-Labor: Skelett, Soll-Maße und Lehren urteilen die Karosserie — fünf Gattungen, fünf Kulturen, fahrbare Probefahrt mit Reifenspuren.",
+    }),
+    // 08.07.2026 — das TOR-Labor des Schöpfers (Portal.txt): sieben Ordnungen
+    // vom Drachentor bis zum Maurentor, die Stich→Schub→Dicke-Lehre, fraktale
+    // Tiefe, begehbare Türen (E/R). Die künftige EINE Quelle der Portal-
+    // Modelle — vielfältiger als die heutigen Ring-Tore.
+    portale: Object.freeze({
+        id: "portale",
+        label: "Porta — Ordnungen & fraktale Tiefe",
+        world: "worlds/portale/index.html",
+        dsl: Object.freeze(["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor", "zufall"]),
+        desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
     }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
     // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),

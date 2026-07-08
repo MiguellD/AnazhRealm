@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Garage-Portal (08.07.2026) — ANATOMIE · FAHRZEUG: das Fahrzeug-Labor des
+     Schöpfers (Rahmen · Gelenke · Lehren · Baukörper · Haut + Probefahrt).
+     Eigenes Document, eigene strikte CSP: Skript nur same-origin (garage.js +
+     ../terrain/lib/ — Three.js r128 vendored, kein CDN). Die iframe-Sandbox
+     trägt die Isolation; die W12-Brücke am Ende von garage.js spricht die
+     Heimat (enter/ready/dsl/exit). -->
+<meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; base-uri 'self'; object-src 'none';"
+/>
+<title>ANATOMIE · FAHRZEUG — Rahmen · Gelenke · Lehren</title>
+<style>
+:root{
+  --bg:#070b10; --panel:rgba(9,14,20,.82); --ink:#cdd8e2; --mut:#6d7d8c; --hair:rgba(90,140,170,.16);
+  --steel:#4f8fa6; --steel-bright:#6fd0e8; --joint:#ffb24a; --glass:#7aa0c0;
+  --pass:#4ec98a; --warn:#e8b54a; --fail:#e0664a;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{overflow:hidden;background:var(--bg);font-family:var(--sans);color:var(--ink)}
+canvas{display:block}
+/* ── Kopf ── */
+#brand{position:fixed;top:16px;left:18px;z-index:10;pointer-events:none}
+#brand .eb{font-family:var(--mono);font-size:10px;letter-spacing:.32em;color:var(--steel)}
+#brand h1{font-size:15px;font-weight:600;letter-spacing:.04em;margin-top:3px}
+#brand h1 b{color:var(--steel-bright);font-weight:600}
+#brand p{font-size:11px;color:var(--mut);margin-top:4px;max-width:330px;line-height:1.55}
+/* ── Lehren-Tafel (links) ── der Signaturteil ── */
+#lehren{position:fixed;top:96px;left:18px;width:336px;max-height:calc(100vh - 200px);overflow-y:auto;z-index:10;
+  background:var(--panel);border:1px solid var(--hair);border-radius:11px;padding:13px 13px 9px;backdrop-filter:blur(7px)}
+#lehren::-webkit-scrollbar{width:6px}#lehren::-webkit-scrollbar-thumb{background:rgba(80,130,160,.28);border-radius:3px}
+.tafel-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
+.tafel-h .t{font-family:var(--mono);font-size:10px;letter-spacing:.26em;color:var(--steel)}
+.score{font-family:var(--mono);font-size:11px;color:var(--ink)}
+.score b{color:var(--pass)}
+.lr{padding:8px 0;border-top:1px solid var(--hair)}
+.lr:first-of-type{border-top:none}
+.lr-h{display:flex;justify-content:space-between;align-items:baseline}
+.lr-lab{font-size:12px;font-weight:500}
+.lr-val{font-family:var(--mono);font-size:12px;letter-spacing:.01em}
+.lr-bar{position:relative;height:6px;margin:6px 0 5px;border-radius:3px;background:rgba(120,150,175,.10);overflow:hidden}
+.lr-band{position:absolute;top:0;bottom:0;border-radius:3px;background:rgba(78,201,138,.22);box-shadow:inset 0 0 0 1px rgba(78,201,138,.30)}
+.lr-mark{position:absolute;top:-2px;width:2px;height:10px;border-radius:1px;transform:translateX(-1px)}
+.lr-hint{font-size:10px;line-height:1.5;color:var(--mut)}
+.lr.pass .lr-val{color:var(--pass)} .lr.pass .lr-mark{background:var(--pass);box-shadow:0 0 6px var(--pass)}
+.lr.warn .lr-val{color:var(--warn)} .lr.warn .lr-mark{background:var(--warn);box-shadow:0 0 6px var(--warn)}
+.lr.fail .lr-val{color:var(--fail)} .lr.fail .lr-mark{background:var(--fail);box-shadow:0 0 6px var(--fail)}
+.note{font-size:10px;color:var(--mut);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair)}
+.note b{color:var(--steel-bright);font-weight:500}
+/* ── Steuerung (rechts) ── */
+#ctl{position:fixed;top:16px;right:16px;width:294px;max-height:calc(100vh - 32px);overflow-y:auto;z-index:10;
+  background:var(--panel);border:1px solid var(--hair);border-radius:11px;padding:12px;backdrop-filter:blur(7px)}
+#ctl::-webkit-scrollbar{width:6px}#ctl::-webkit-scrollbar-thumb{background:rgba(80,130,160,.28);border-radius:3px}
+.sec-t{font-family:var(--mono);font-size:9px;letter-spacing:.24em;color:var(--steel);margin:11px 2px 6px}
+.sec-t:first-child{margin-top:2px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.btn{flex:1;min-width:62px;font-family:var(--sans);font-size:11px;color:var(--ink);background:rgba(80,130,160,.10);
+  border:1px solid var(--hair);border-radius:7px;padding:7px 4px;cursor:pointer;transition:.13s;text-align:center}
+.btn:hover{background:rgba(80,130,160,.20)}
+.btn.on{background:rgba(111,208,232,.16);border-color:rgba(111,208,232,.42);color:var(--steel-bright)}
+.sl{margin:7px 2px}
+.sl-h{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.sl-h .v{font-family:var(--mono);color:var(--steel-bright)}
+input[type=range]{width:100%;height:3px;-webkit-appearance:none;background:rgba(120,150,175,.22);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+  background:var(--steel-bright);cursor:pointer;box-shadow:0 0 0 3px rgba(111,208,232,.16)}
+input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-radius:50%;background:var(--steel-bright);cursor:pointer}
+.law{font-family:var(--mono);font-size:9px;color:var(--mut);line-height:1.35;margin:3px 2px 0;opacity:.82}
+.btn.start{flex:1 1 100%;font-size:12px;font-weight:600;letter-spacing:.02em;color:#cdeefa;padding:10px 4px;
+  background:linear-gradient(180deg,rgba(111,208,232,.20),rgba(111,208,232,.09));border-color:rgba(111,208,232,.46)}
+.btn.start:hover{background:linear-gradient(180deg,rgba(111,208,232,.30),rgba(111,208,232,.14));border-color:rgba(111,208,232,.7)}
+#hud{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:20;display:none;align-items:baseline;gap:22px;
+  font-family:var(--mono);color:var(--ink);background:rgba(10,16,22,.74);border:1px solid var(--hair);border-radius:12px;
+  padding:10px 20px;backdrop-filter:blur(8px)}
+#hud #spd{font-size:30px;font-weight:600;color:var(--steel-bright);letter-spacing:.01em}
+#hud .u{font-size:12px;color:var(--mut)}
+#hud .keys{font-size:11px;color:var(--mut);letter-spacing:.03em}
+#hud .keys b{color:var(--steel-bright);font-weight:600}
+/* ── Legende ── */
+#leg{position:fixed;bottom:14px;left:18px;z-index:10;font-family:var(--mono);font-size:10px;color:var(--mut);
+  background:var(--panel);border:1px solid var(--hair);border-radius:8px;padding:8px 11px;line-height:1.9;backdrop-filter:blur(7px)}
+#leg .k{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+#hint{position:fixed;bottom:14px;right:16px;z-index:10;font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.04em}
+</style>
+</head>
+<body>
+<div id="brand">
+  <div class="eb">ANATOMISCHE METHODE · KAROSSERIE</div>
+  <h1><b>Rahmen</b> · Gelenke · <b>Lehren</b> · Baukörper · Haut</h1>
+  <p>Wie beim Körper: zuerst Skelett und Soll-Maße, dann die Organe (Baukörper), zuletzt die Haut. Form folgt aus Knochen × Lehre — nie umgekehrt. <b>Haut aus</b> legt die funktionalen Baukörper frei: Akku, Motoren, Wellen, Zelle, Sitze, Lenkung.</p>
+</div>
+
+<div id="lehren">
+  <div class="tafel-h"><span class="t">DIE LEHREN · PROPORTIONS-PRÜFUNG</span><span class="score" id="score"></span></div>
+  <div id="lrlist"></div>
+  <div class="note">Toleranzbänder kodieren ein <b>sportlich-premium</b> Sollbild. Andere Gattungen (SUV, Kleinwagen) sitzen bewusst ausserhalb — die Lehre urteilt gegen eine <b>erklärte Absicht</b>, nicht gegen „richtig/falsch". Das ist die Anti-Attrappe-Disziplin: der Richter ist sichtbar.</div>
+</div>
+
+<div id="ctl">
+  <div class="sec-t">GATTUNGS-PRESETS</div>
+  <div class="row" id="presets"></div>
+  <div class="sec-t">FAHREN</div>
+  <div class="row"><button class="btn start" id="start">▶ Motor starten · Probefahrt</button></div>
+  <div class="sec-t">EBENEN</div>
+  <div class="row" id="layers"></div>
+  <div class="sec-t">ANSICHT</div>
+  <div class="row"><button class="btn" id="kin">Türen</button><button class="btn" id="clay">Clay / Lack</button><button class="btn" id="ergebnis">Ergebnis</button></div>
+  <div class="row" id="paintrow" style="flex-wrap:wrap;gap:5px;margin:1px 0 3px;align-items:center"><span style="font-size:9.5px;color:var(--mut);letter-spacing:.08em;width:100%">LACK</span></div>
+  <div id="sliders"></div>
+</div>
+
+<div id="leg">
+  <span class="k" style="background:#6fd0e8"></span>Rahmen — Hardpoints &amp; Glieder<br>
+  <span class="k" style="background:#ffb24a"></span>Gelenke — Freiheitsgrade (DOF-Hinweise)<br>
+  <span class="k" style="background:#4ec98a"></span>Lehren — Maßlinien (Soll erfüllt)<br>
+  <span class="k" style="background:#3a536a"></span>Baukörper — Akku · Motoren · Zelle · Sitze<br>
+  <span class="k" style="background:#b4c0cc"></span>Räder — Reifen · Felge · Bremse (Ergebnis)<br>
+  <span class="k" style="background:#8d9499"></span>Haut — Karosserie aus dem Rahmen<br>
+  <span class="k" style="background:#ff5a7a"></span>Negativraum — die Leere, die formt
+</div>
+<div id="hint">MAUS orbit · 1–7 Ebenen · K Türen · P Preset · Fahrzustand oben rechts · „Ergebnis" = fertiges Auto</div>
+<div id="hud"><span class="spd-wrap"><span id="spd">0</span> <span class="u">km/h</span></span><span class="keys"><b>W</b>/<b>S</b> Gas·Brems&nbsp;&nbsp;<b>A</b>/<b>D</b> Lenken&nbsp;&nbsp;<b>Leer</b> Handbremse&nbsp;&nbsp;<b>Maus</b> umsehen&nbsp;&nbsp;<b>ESC</b> Werkstatt&nbsp;&nbsp;·&nbsp;&nbsp;<b>Pylonen</b> umfahren · Reifen brennen Spuren</span></div>
+
+<!-- Klassische Global-Skripte: Three.js r128 + OrbitControls aus dem geteilten
+     Vendor-Regal des Terrain-Portals (EINE Kopie, kein Duplikat), dann das
+     Schöpfer-Werk selbst. -->
+<script src="../terrain/lib/three-r128.min.js"></script>
+<script src="../terrain/lib/OrbitControls.js"></script>
+<script src="garage.js?v=18.420.0"></script>
+</body>
+</html>
