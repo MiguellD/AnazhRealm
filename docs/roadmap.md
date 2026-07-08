@@ -34,6 +34,11 @@ Fern-Wasser) · Lockstep-MP Stufe 2 ✓ V18.382 (`smoke:lockstep` 284/284 bit-ex
 
 **WAS OFFEN IST (die vollständige Liste — jede Zeile hat ihr Detail-Zuhause):**
 
+0. **DIE PARITÄTS-VOLLENDUNG (der aktive Vollendungs-Bogen der Studio-Paritäts-Mission, NEU
+   08.07.):** die vier DONE-Kriterien (Bild-Paar ununterscheidbar · Boot ≤3 s · null
+   Fremd-Silhouetten · kein LOD-Pop) + die vier offenen Fäden aus V18.427 (HUD/Regler-Wahrheit ·
+   `_scatterRegion`-Zeit-Scheiben · Dither-Blende · Vertrag Phase 1 Fahrzeuge) als Wellen-Plan
+   W1–W8 mit hardware-unabhängigen Linsen. → `paritaet-vollendung-plan.md`.
 1. **Der AKTIVE schöpferische Bogen:** `wahrerguss.md` (4 Systeme) mit den Sub-Bögen **DAS
    NEUE KLEID (`neues-kleid-plan.md`, NEU 03.07. — die Phytogenese der Hauptwelt: gesetz-wahre
    Morphologie/Ökologie/Wald-Ferne aus der Schöpfer-Vorlage phytogenesis v38, Wellen K0–K6)**
