@@ -76869,13 +76869,13 @@ class AnazhRealm {
             // weit, die Ferne entdecken. Tiefe gehoert NICHT aus Nebel-Naehe,
             // sondern aus dem hoehen-dominanten Aerial-Term + Schatten).
             const rainyMix = this._weatherBlendedValue(0, 1); // D5a: Achsen-Lerp — stormy zieht den Nebel dichter
-            // V6 (Look-Finale, 1e) — der Wetter-Feld-fog-Kanal zieht den Nebel als sanfter
-            // MULTIPLIKATOR auf den bestehenden fogMult näher (KEINE zweite Fog-Quelle; die
-            // visualEdge/Lade-Nebel-Kappe unten führt als min()-Deckel weiter, unberührt).
-            // sunny .15 → ×0.94 (kaum), stormy .70 → ×0.72 (spürbar dichter). Im Studio-
-            // Sichtweiten-Pfad (rcfg.sight) ohne fogMult ist der Effekt bewusst neutral.
-            const _wFog = this._weatherFieldFor(this.state.weather).fog;
-            const fogMult = (((this.state.atmosphere && this.state.atmosphere.fogDistance) || 3.0) * (1 - _wFog * 0.4));
+            // STUDIO-MODELL (08.07., Band-Nachzug): der alte `fogMult` (fogDistance-Slider ×
+            // Wetter-Feld-fog) ist GESCHNITTEN — die Sicht folgt NATIV der Wald-Kante
+            // (`visualEdgeTarget`, S1), das Wetter dimmt über `rainyMix`, und der EINE
+            // Sicht-Regler ist der Ring-Slider (chunkRingRadius, V18.388 C). Ein zweiter
+            // fog-Multiplikator wäre ein Parallel-Regler (die V18.263-Wand); der
+            // `atmosphere.fogDistance`-Wert bleibt als persistiertes Datum (Alt-Welten-
+            // Snapshots), treibt aber keinen Welt-Nebel mehr.
             // A5 (gigant-plan §5 PHASE A) — der Fog liest die RING-KANTE statt einer
             // eigenen Konstante (eine Distanz, noch ein Gesicht — die V17.114-U1-Synergie
             // auf den Haupt-Fog vollendet): die Welt endet am gestreamten Chunk-Ring
@@ -81794,7 +81794,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.422.0";
+AnazhRealm.VERSION = "18.423.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

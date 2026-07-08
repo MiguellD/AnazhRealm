@@ -24163,6 +24163,11 @@ async function checkBandPhaseAFundament(ctx) {
         // danach zurück in den Studio-Zustand (dispose).
         {
             const cfg = r._voxelChunkConfig();
+            // Der VOLLE Gate setzt den Hook GLOBAL (Mechanik-Gate = foundry-aus) — hier
+            // nur sichern + WIEDERHERSTELLEN, nie löschen (ein delete schaltete sonst
+            // alle Folge-Bänder auf foundry-AN → der _buildVariantLODs-Chokepoint gibt
+            // null → 35 Folge-Rote, gemessen 08.07.).
+            const _prevNoFoundry = window.__anazhGateNoFoundry;
             window.__anazhGateNoFoundry = true;
             try {
                 if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
@@ -24224,10 +24229,15 @@ async function checkBandPhaseAFundament(ctx) {
             } else {
                 out.b2 = { exists: false };
             }
-            delete window.__anazhGateNoFoundry;
-            try {
-                if (typeof r._disposeHorizonMantle === "function") r._disposeHorizonMantle();
-            } catch (_e) {}
+            if (_prevNoFoundry) {
+                window.__anazhGateNoFoundry = _prevNoFoundry;
+            } else {
+                delete window.__anazhGateNoFoundry;
+                // Nur im foundry-AN-Kontext (Fast-Tier o.ä.) zurück in den Studio-Zustand.
+                try {
+                    if (typeof r._disposeHorizonMantle === "function") r._disposeHorizonMantle();
+                } catch (_e) {}
+            }
         }
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
         out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
@@ -31567,17 +31577,22 @@ async function checkBandLambda2HismSynthese(ctx) {
         return out;
     });
     check("Λ.2 HISM: INSTANCE_TINT ist frozen + trägt rangeH/S/V", res.instanceTintFrozen && res.instanceTintShape);
+    // PARITÄT (V18.421, Band-Nachzug V9.56-i): der Instanz-Tint ist BEWUSST NEUTRAL-NAH
+    // (±8 % Luminanz-Jitter, uniform [0.92, 1.08] → σ = 0.16/√12 ≈ 0.046) — der alte
+    // Farbwurf (σ > 0.05) zerstörte die Studio-Blattfarbe multiplikativ (rote Kronen,
+    // 50 % zu dunkle Stämme, im Paritäts-Bild gemessen). Der Vertrag jetzt: Varianz
+    // EXISTIERT (σ > 0.02, kein Klon-Flat) UND bleibt GEBUNDEN (σ < 0.06, kein Wurf).
     check(
-        `Λ.2 HISM: tintH-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
-        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.05
+        `Λ.2 HISM: tintH-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintHSpread && res.tintHSpread.toFixed(3)})`,
+        Number.isFinite(res.tintHSpread) && res.tintHSpread > 0.02 && res.tintHSpread < 0.06
     );
     check(
-        `Λ.2 HISM: tintS-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
-        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.05
+        `Λ.2 HISM: tintS-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintSSpread && res.tintSSpread.toFixed(3)})`,
+        Number.isFinite(res.tintSSpread) && res.tintSSpread > 0.02 && res.tintSSpread < 0.06
     );
     check(
-        `Λ.2 HISM: tintV-σ über 50 Eichen > 0.05 (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
-        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.05
+        `Λ.2 HISM: tintV-σ über 50 Eichen NEUTRAL-NAH in (0.02, 0.06) (GEMESSEN ${res.tintVSpread && res.tintVSpread.toFixed(3)})`,
+        Number.isFinite(res.tintVSpread) && res.tintVSpread > 0.02 && res.tintVSpread < 0.06
     );
     check("Λ.2 HISM: tintH/S/V reist bit-treu im Snapshot (V8.59-Klasse)", res.snapshotCarriesTint === true);
 }
@@ -36646,7 +36661,9 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // Studio-Modell (08.07.): die Shell ist ALT-PFAD-Fern-Kulisse (im Studio-Regime
         // aus, hinter dem Wald-Kanten-Nebel) → die lebende Mechanik prüft der Test-Hook
         // (die gate:grass-thin-Klasse, V9.56-i); Cleanup unten stellt den Studio-Zustand her.
+        const _prevNoFoundry = window.__anazhGateNoFoundry;
         if (out.cBuildExists) {
+            // Sichern + wiederherstellen, NIE löschen — der volle Gate trägt den Hook GLOBAL.
             window.__anazhGateNoFoundry = true;
             try {
                 const mesh = r._ensureCanopyShell();
@@ -36691,11 +36708,16 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
                 r.state.canopyShellMaterial.isMeshToonMaterial || r.state.canopyShellMaterial.isMeshStandardMaterial
             ); // V18.234 — Toon ODER PBR (Default pbr)
         }
-        // Studio-Zustand wiederherstellen: Hook weg + Shell weg (im Studio-Regime AUS).
-        delete window.__anazhGateNoFoundry;
-        try {
-            if (typeof r._disposeCanopyShell === "function") r._disposeCanopyShell();
-        } catch (_e) {}
+        // Hook-Zustand wiederherstellen (der volle Gate trägt ihn GLOBAL); nur im
+        // foundry-AN-Kontext zurück in den Studio-Zustand (Shell weg).
+        if (_prevNoFoundry) {
+            window.__anazhGateNoFoundry = _prevNoFoundry;
+        } else {
+            delete window.__anazhGateNoFoundry;
+            try {
+                if (typeof r._disposeCanopyShell === "function") r._disposeCanopyShell();
+            } catch (_e) {}
+        }
 
         return out;
     });
@@ -42008,11 +42030,22 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         const intensityNight = r.state.hemiLight.intensity;
         out.hemiIntensityFollowsDayCycle = intensityNoon > intensityNight;
 
-        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität
+        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität.
+        // PARITÄT (08.07., Band-Nachzug V9.56-i): der Feld→Boden-Term ist seit der
+        // Licht-Wurzel-Welle hinter `tint.auraK` gegated (Default `auraTintStrength` 0 —
+        // Schöpfer „der Nebel wird durch die Emotion gefärbt, das soll weg"); der
+        // MECHANISMUS lebt als Opt-in weiter → das Band testet ihn MIT dem Opt-in
+        // (Konsum-Beweis der lebenden Naht) + mockt den ECHTEN Leser (auraAt).
         r.setTimeOfDay(0.5);
         const origWFA = r.worldFieldAt;
+        const origAuraAt = r.auraAt;
+        const savedAuraStrength = r.state.atmosphere ? r.state.atmosphere.auraTintStrength : undefined;
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
         r.worldFieldAt = function () {
             return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
+        };
+        r.auraAt = function (x, z) {
+            return r.worldFieldAt(x, z);
         };
         r._applyDayNightToScene();
         // V12.0-vendor.3 Doku-Sync (V9.56-i): mit `ColorManagement.enabled=true`
@@ -42034,6 +42067,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.groundColorFollowsLebendig = groundLebendigG > 0.3;
         out.groundColorFollowsGlut = groundGlutR > 0.5;
         r.worldFieldAt = origWFA;
+        r.auraAt = origAuraAt;
+        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = savedAuraStrength;
         r._applyDayNightToScene();
 
         // 4. Architektur-Material ist Lambert (nach V8.27 Build-Pipeline)
@@ -42153,9 +42188,13 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.chunkHasFieldAttribute = chunkHasField;
 
         // --- Phase C: Fog ---
-        // setFogDistance ändert fog.near/far. playerEyesUnderwater
-        // erzwingt sonst fog.near=4 (Tauch-Tint) — der überschreibt
-        // den fogDistance-Effekt; hier deterministisch ausnullen.
+        // STUDIO-MODELL (08.07., Band-Nachzug V9.56-i): die Sicht folgt NATIV der
+        // Wald-Kante (visualEdgeTarget, S1) — der fogDistance-Slider treibt den
+        // Welt-Nebel NICHT mehr (der EINE Sicht-Regler ist chunkRingRadius; ein
+        // zweiter fog-Multiplikator wäre ein Parallel-Regler). Das Band prüft die
+        // NEUE Wahrheit: fog.near ist slider-UNABHÄNGIG (Toleranz = die sm-Nebel-
+        // Glättung, maxStep 4 m/Apply — alt sprang der Faktor 4×) UND die Quelle
+        // rechnet aus der Kanten-Formel; der Setter persistiert weiter (Datum).
         r.state.playerEyesUnderwater = false;
         r.setFogDistance(0.5);
         r._applyDayNightToScene();
@@ -42163,7 +42202,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         r.setFogDistance(2.0);
         r._applyDayNightToScene();
         const fogNear20 = r.state.fog ? r.state.fog.near : -1;
-        out.fogSliderWorks = fogNear20 > fogNear05;
+        out.fogSliderWorks =
+            fogNear05 > 0 &&
+            Math.abs(fogNear20 - fogNear05) < 5 &&
+            /visualEdgeTarget \* 0\.35/.test(r._dayNightApplyHemiAndFog.toString());
         r.setFogDistance(1.0);
 
         // --- Phase D: Wind + Wolken + Wasser ---
@@ -42390,7 +42432,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // sind tot (terrainMaterial=null seit V9.39). Welt-Affinität pro Vertex lebt im
         // Voxel-Mesh (V9.10 `_attachVoxelFieldColors`); die Cel-Shading-LUT ist
         // GESCHNITTEN (V18.236 — PBR ist die EINE Material-Wahrheit).
-        check("V8.28 C: setFogDistance ändert Fog-near (0.5↔2.0)", v828Results.fogSliderWorks);
+        check(
+            "V8.28 C→Studio-Modell: Welt-Nebel ist fogDistance-UNABHÄNGIG (die Wald-Kante führt, der Ring ist der Sicht-Regler)",
+            v828Results.fogSliderWorks
+        );
         check("V8.29 D: _grassInstanceMat existiert (Instanced-Gras-Wind)", v828Results.windMatExists);
         check("V8.29 D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("V8.28 D: state.windUniforms existiert (uWindTime)", v828Results.windUniformsExist);
