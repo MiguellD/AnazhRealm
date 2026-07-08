@@ -76452,6 +76452,25 @@ class AnazhRealm {
             rl.color.setRGB(R.r, R.g, R.b);
             rl.intensity = R.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
         }
+        // DAS WARME BACK-LICHT (Studio-Rig Z.726, das vierte Richtlicht): von der rim-
+        // GEGENÜBERLIEGENDEN Lateral-Seite (−z⊥ statt +z⊥), tiefer (lift 18) — der warme
+        // Gegenschein, der die Schatten-Seiten der Stämme formt statt sie schwarz zu lassen.
+        // Farbe konstant warm wie das Studio; Intensität folgt a.lum (nachts → 0, Mond führt).
+        const bl = this.state.backLight;
+        if (bl) {
+            const B = AnazhRealm.BACK_LIGHT;
+            bl.position.set(
+                focusX - lightDir.x * B.dist - lightDir.z * 24,
+                focusY - lightDir.y * B.dist + B.lift,
+                focusZ - lightDir.z * B.dist + lightDir.x * 24
+            );
+            if (bl.target) {
+                bl.target.position.set(focusX, focusY, focusZ);
+                bl.target.updateMatrixWorld();
+            }
+            bl.color.setRGB(B.r, B.g, B.b);
+            bl.intensity = B.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
+        }
         // V18.377 — die Post-FX-Entgrauung (warm-Lift grauer Pixel) WÄSCHT die legitim
         // entsättigte Nacht → sie fadet zur Nacht aus (das „Filter in meinen Augen"). Der Mond
         // gibt die Tiefe gerichtet, kein Post-FX-Lift nötig. `nightFactor` 0=Tag → 1=Nacht.
@@ -78895,6 +78914,14 @@ class AnazhRealm {
         scene.add(rimLight);
         scene.add(rimLight.target);
         this.state.rimLight = rimLight;
+        // DAS WARME BACK-LICHT (Studio-Rig Z.726, das vierte Richtlicht 0xffd8a0 0.5):
+        // OHNE Schatten, von der rim-gegenüberliegenden Lateral-Seite, tief — hellt die
+        // Schatten-Seiten-Stämme warm wie im Studio. Tag/Nacht führt _dayNightApply….
+        const backLight = new THREE.DirectionalLight(0xffd8a0, 0.5);
+        backLight.castShadow = false;
+        scene.add(backLight);
+        scene.add(backLight.target);
+        this.state.backLight = backLight;
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
         this.state.ambientLight = ambientLight;
@@ -84981,6 +85008,13 @@ AnazhRealm.FILL_LIGHT = Object.freeze({ r: 0.333, g: 0.478, b: 0.29, base: 0.62,
 // Seite): das kühle Gegenlicht, das die Laub-/Stamm-Kanten gegen den Himmel abhebt — das 5.
 // Licht der Vorlagen-Rig, das AnazhRealm fehlte (Schöpfer-Befund „Vorlage sculptet reicher").
 AnazhRealm.RIM_LIGHT = Object.freeze({ r: 0.667, g: 0.8, b: 1.0, base: 1.2, dist: 70, lift: 30 });
+// DAS WARME BACK-LICHT (Studio-Rig phytogenesis Z.726: DirectionalLight(0xffd8a0, 0.5)) —
+// das VIERTE Richtlicht des Studio-Rigs, das AnazhRealm fehlte (die gemessene Wurzel des
+// „Schatten-Seiten-Stamm liest dunkler als im Studio"-Befunds: Studio formt die Schatten-
+// seite mit key+fill+rim+back, wir trugen nur drei). Warm-konstant wie das Studio (kein
+// atm-Tint — der warme Gegenschein), von der rim-GEGENÜBERLIEGENDEN Lateral-Seite, tief
+// (lift 18 < rim 30). Intensität folgt a.lum → nachts aus (der Mond führt, night-probe-Wand).
+AnazhRealm.BACK_LIGHT = Object.freeze({ r: 1.0, g: 0.847, b: 0.627, base: 0.5, dist: 65, lift: 18 });
 // V18.351 — DIE SLOPE-SCHWELLEN DES GRAS-GATES (Schöpfer „noch nie eine Felswand mit Gras gesehen").
 // Gras voll bis `lo` (≈35°), verschwindet bis `hi` (≈52°) — sanfter Übergang, kein harter Schnitt.
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
