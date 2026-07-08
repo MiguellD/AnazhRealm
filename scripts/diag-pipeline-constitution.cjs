@@ -69,6 +69,23 @@ console.log("\nGesetz 5 — jede Regel hat ihre Linse (die Gates existieren):");
 for (const g of ["gate:foundry-warm", "gate:foundry-deadlock", "gate:portal-boot", "gate:foundry-impostor", "gate:boot-fog-ring"])
     law(`\`${g}\` verdrahtet`, true, pkg.includes('"' + g + '"'));
 
+// GESETZ 6 („Drähte statt Kopien", 08.07.) — KEINE LOGIK-KOPIE IM MONOLITHEN: was auch im
+// Studio-/Vorlagen-Kern steht, darf in anazhRealm.js nur als DRAHT existieren. Der Wald-Plan
+// (Poisson/Nische/Größe) + der Impostor-Rahmen (Studio v36) leben EINMAL in phyto-core; der
+// Monolith delegiert. Jeder Refactor, der die Formel zurückkopiert, wird hier rot.
+console.log("\nGesetz 6 — Drähte statt Kopien (Wald-Plan + Rahmen leben in der Quelle):");
+const phytoNC = stripComments(read("phyto-core.js"));
+law("phyto-core trägt den Wald-Plan (`planForestCell`)", true, /function planForestCell\(/.test(phytoNC));
+law("phyto-core trägt den Impostor-Rahmen (`impostorFrame` + `scanRadialXZ`)", true, /function impostorFrame\(/.test(phytoNC) && /function scanRadialXZ\(/.test(phytoNC));
+law("der Monolith DELEGIERT den Wald-Plan (ctx-Draht zu `planForestCell`)", true, /core\.planForestCell\(cx, cz, seedInt/.test(anazhNC));
+law("KEINE Nischen-Formel-Kopie im Monolithen (die wF/wT/wE-Gewichte sind umgezogen)", false, /const wF = \(ss\(0\.4, 0\.8, clim\)/.test(anazhNC), "die Arten-Nische lebt wieder im Monolithen");
+law("KEINE Größen-Formel-Kopie im Monolithen (reverse-J `0.55 + 1.45·ue^1.45`)", false, /0\.55 \+ 1\.45 \* Math\.pow\(ue/.test(anazhNC), "die reverse-J-Größe lebt wieder im Monolithen");
+law("der Monolith DELEGIERT den Rahmen (`core.impostorFrame(`)", true, /core\.impostorFrame\(/.test(anazhNC));
+law("KEINE Rahmen-Formel-Kopie im Monolithen (`totalH * 0.51`)", false, /totalH \* 0\.51/.test(anazhNC), "die v36-Rahmenformel lebt wieder als Kopie im Monolithen");
+const phytogenNC = stripComments(read("worlds/terrain/phytogenesis.js"));
+law("das Studio liest DENSELBEN Rahmen (`__phytoCore.impostorFrame` in bakeImpostorAtlas)", true, /__phytoCore\.impostorFrame\(/.test(phytogenNC));
+law("der Bäcker-Spec lebt als Daten in foundry-core (`impostor: { views:`)", true, /impostor:\s*\{\s*views:/.test(foundryNC));
+
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {
     console.error(

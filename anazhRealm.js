@@ -60649,13 +60649,13 @@ class AnazhRealm {
         }
         // „Drähte statt Kopien" (08.07.): die FORMEL lebt EINMAL in phyto-core
         // (__phytoCore.impostorFrame — Studio-v36; dieselbe liest der Studio-Bäcker).
-        // Nur das Skelett-Lesen (totalH/anchors) bleibt hier; graceful-Fallback
-        // wie _phytoGrowSkeleton (phyto-core lädt vor anazhRealm.js).
+        // Nur das Skelett-Lesen (totalH/anchors) bleibt hier. OHNE Kern (exotische
+        // Einbettung): null = kein Impostor-Rahmen (der Aufrufer lässt die Karte aus,
+        // Geometrie bleibt) — BEWUSST keine Formel-Kopie als Fallback (sie wäre genau
+        // die Drift-Quelle, die dieser Umzug tilgt; gate:constitution wacht).
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         if (core && typeof core.impostorFrame === "function") return core.impostorFrame(totalH, maxR);
-        const halfH = totalH * 0.51;
-        const halfW = Math.max(halfH * 0.5, maxR * 1.04);
-        return { totalH, maxR, halfH, halfW };
+        return null;
     }
 
     // V18.390 (Eins W3) — der budgetierte RTT-Bake-Tick (EINER pro Tick, läuft im
@@ -81321,7 +81321,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.420.0";
+AnazhRealm.VERSION = "18.421.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
