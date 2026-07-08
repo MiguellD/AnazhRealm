@@ -33785,7 +33785,15 @@ class AnazhRealm {
             }
             if (sg && this.state._grassConeGeometry !== sg) this.state._grassConeGeometry = sg;
         }
-        const farFactor = entryLod >= 1 ? 0.35 : 1;
+        // DIE WIESE OHNE DISTANZ-ABFALL (Studio-Gesetz, 08.07.): das Studio pflanzt das Gras
+        // als GLEICHMÄSSIGES Raster bis zur Sichtkante (grassStep 0.72 in buildForest — es
+        // gibt dort KEINEN Distanz-Falloff). Der 0.35-farFactor jenseits des LOD0-Rings
+        // (~108 m) war ein V18.97-Perf-Entscheid, keine Studio-Regel — er war der sichtbare
+        // Dichte-Ring (Schöpfer-Befund „das gras über andere distanzen verteilt"). Im
+        // Studio-Regime trägt die Wiese die volle Dichte bis zur Nebelkante; ohne Foundry
+        // (Alt-Welten/Test-Hook) bleibt der Perf-Faden byte-alt.
+        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
+        const farFactor = entryLod >= 1 && !grassStudio ? 0.35 : 1;
         // V18.307 — DAS GRAS KOMMT UNTER DEN EINEN REGLER (die Synergie-Hälfte):
         // das Gras war 83 % der GPU-Last, las aber NIE `_foliageDensityScale` → der
         // Perf-PID drosselte die kleine Streu (→ drab) + den Ring (→ klein), konnte
@@ -33797,13 +33805,13 @@ class AnazhRealm {
         // Wiese"): liegt der Studio-Wahrnehmungs-Config vor, pflanzt AnazhRealm die VOLLE Gras-Dichte (=1),
         // NICHT perf-gedrosselt. Bei voller Dichte trägt jede der 256 Sample-Zellen ~16 Halme → ~4000/Chunk
         // ≈ 1.8 Halme/m² = exakt das Studio-0.72m-Raster; der Perf-Boden (0.22) hatte die Wiese auf ~195
-        // Halme gedünnt (der „spärliche Wiese"-Befund). Die ferne Wiese bleibt via `farFactor` leichter, das
+        // Halme gedünnt (der „spärliche Wiese"-Befund). Die ferne Wiese trägt im Studio-Regime DIESELBE
+        // Dichte (kein farFactor-Abfall, s. oben); ohne Studio bleibt sie via `farFactor` leichter. Das
         // Gras kappt am Gras-Ring. Ohne Studio-Config bleibt der Perf-Regler = 0 Regress (Alt-Welten).
         // Der Gate ist `_foundryEnabled()` (Studio-Pipeline aktiv, WAHR ab Frame 0) — NICHT der spät
         // eintreffende `studioRenderConfig`: das Gras baut im Boot, BEVOR der Config andockt, und ist
         // gecacht → ein config-später Gate ließe die Boot-Wiese für immer spärlich. Headless (null) →
         // `_foundryEnabled()` false, aber dort ist `_foliageDensityScale`=1 → ebenfalls voll (gate-treu).
-        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
         const grassDensityScale = grassStudio
             ? 1
             : this.state._foliageDensityScale != null
@@ -81494,7 +81502,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.421.0";
+AnazhRealm.VERSION = "18.422.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
