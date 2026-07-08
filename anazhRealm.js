@@ -33528,7 +33528,12 @@ class AnazhRealm {
         const LEN = H * 0.58;
         const K = 3;
         const GOLDEN = 2.399963229728653;
-        const clumpR = 0.05; // Fächer-Radius des Büschels (lokal)
+        // PARITÄT (Schöpfer „nicht die selben Gräser"): der Büschel-Radius ist die gemessene Lücke —
+        // das Studio streut sein Wald-Gras als buildInstance("gras",·,2)·SCALE 0.24 → Büschel-SPREIZUNG
+        // ≈ clump 0.61·0.24 ≈ 0.146 m (breite Fontäne); unser 0.05 las als Nadel-Pin (⅓ der Vorlage).
+        // 0.14 = die Studio-Spreizung. Höhe/Halm-Zahl/Breite sind schon Vorlagen-Parität (12 Halme ≈
+        // Studio-L2 ~17 · Welthöhe 0.17-0.38 m ≈ Studio 0.13-0.26 m). Kostet NULL Dreiecke.
+        const clumpR = 0.14; // Fächer-Radius des Büschels (lokal) — die Studio-Fontäne
         // Fest geseedeter PRNG → die Singleton-Geometrie ist stabil (KEIN Determinismus-Eingriff: die
         // Halm-POSITIONEN/Dichte kommen aus _buildVoxelChunkGrass; hier wächst nur die Tuff-FORM).
         let rs = 0x9e3779b9 >>> 0;
@@ -34604,10 +34609,13 @@ class AnazhRealm {
                 m.compose(pos, q, scl);
                 inst.setMatrixAt(i, m);
                 if (wantTint) {
-                    const tH = hashInstanceTint(cx, cz, si, i, 0);
-                    const tS = hashInstanceTint(cx, cz, si, i, 1);
-                    const tV = hashInstanceTint(cx, cz, si, i, 2);
-                    tintColor.setRGB(tH, tS, tV);
+                    // PARITÄT (dieselbe Klasse wie der Scatter-Baum-Tint): drei unabhängige Hashes
+                    // als ROHES RGB zerstörten die Artenfarbe multiplikativ (zufällige rot/violette
+                    // Blumen/Farne, Mittel 0.5 = 50 % zu dunkel). Neutral-nah: ±8 % Luminanz + ±3 %
+                    // warm/kühl — die Arten-Farbe trägt die Geometrie/das Material, nicht der Würfel.
+                    const _tl = 0.92 + hashInstanceTint(cx, cz, si, i, 0) * 0.16;
+                    const _tw = (hashInstanceTint(cx, cz, si, i, 1) - 0.5) * 0.06;
+                    tintColor.setRGB(Math.min(1.08, _tl + _tw), _tl, Math.min(1.08, Math.max(0, _tl - _tw)));
                     inst.setColorAt(i, tintColor);
                 }
             }
@@ -50629,8 +50637,10 @@ class AnazhRealm {
         ew.compose(v, q, s);
         const m = this._archTmpScatterLeafM || (this._archTmpScatterLeafM = new THREE.Matrix4());
         const tintColor = this._archTmpScatterTint || (this._archTmpScatterTint = new THREE.Color());
+        // PARITÄT: der Instanz-Tint MULTIPLIZIERT die Studio-Blattfarbe → neutral ist WEISS (1,1,1),
+        // nicht 0.5-Grau (das war eine stille 50-%-Verdunkelung jeder tint-losen Instanz).
         if (tint) tintColor.setRGB(tint.h, tint.s, tint.v);
-        else tintColor.setRGB(0.5, 0.5, 0.5);
+        else tintColor.setRGB(1, 1, 1);
         const slots = [];
         for (let i = 0; i < flat.leaves.length; i++) {
             const leaf = flat.leaves[i];
@@ -50876,10 +50886,20 @@ class AnazhRealm {
                     if (!keys) continue;
                     bpName = keys[lod] || keys[0];
                 }
+                // PARITÄT (Schöpfer „billiger Abklatsch" — die ROTEN/violetten Kronen, im Paritäts-Bild
+                // gemessen): drei UNABHÄNGIGE 0..1-Würfe hießen {h,s,v}, wurden aber als ROHES RGB
+                // konsumiert (`tintColor.setRGB(tint.h, tint.s, tint.v)`, _scatterInstanceAdd) → jede
+                // Instanz bekam einen zufälligen Farbwurf, der die Studio-Blattfarbe MULTIPLIKATIV
+                // zerstörte (h=0.9,s=0.2 → rote Krone; Mittel 0.5 → 50 % zu dunkel). Die Studio-Vielfalt
+                // lebt schon in den 16 gewachsenen Varianten (offsetHSL beim Bau) — der Instanz-Tint ist
+                // NEUTRAL-NAH: ±8 % Luminanz + ein Hauch warm/kühl, nie ein Farbwurf. Die Felder heißen
+                // weiter h/s/v (der Konsument liest sie als r/g/b — EINE Naht, hier korrekt befüllt).
+                const _tl = 0.92 + this._pcgFloat(cellX ^ layerSalt, cellZ, 5) * 0.16; // Luminanz 0.92..1.08
+                const _tw = (this._pcgFloat(cellX ^ layerSalt, cellZ, 6) - 0.5) * 0.06; // warm/kühl ±3 %
                 const tint = {
-                    h: this._pcgFloat(cellX ^ layerSalt, cellZ, 5),
-                    s: this._pcgFloat(cellX ^ layerSalt, cellZ, 6),
-                    v: this._pcgFloat(cellX ^ layerSalt, cellZ, 7),
+                    h: Math.min(1.08, _tl + _tw),
+                    s: _tl,
+                    v: Math.min(1.08, Math.max(0, _tl - _tw)),
                 };
                 const slots = this._scatterInstanceAdd(
                     bpName,
@@ -81067,7 +81087,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.416.0";
+AnazhRealm.VERSION = "18.417.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
