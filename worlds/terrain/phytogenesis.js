@@ -1763,21 +1763,20 @@ function bakeImpostorAtlas() {
        beim Umrunden kreist der Karten-Stamm um den Anker und springt an der L1<->L2-Blende seitlich gegen den
        3D-Stamm. (Der alte Kommentar behauptete Achsen-Zentrierung — die Mathematik lieferte Boxmitte.) */
         bs.add(tree);
-        const top = Math.max(0.5, box.max.y) * 1.02,
-            halfH = top * 0.5;
+        /* „Drähte statt Kopien" (08.07., wie P6 beim Wuchs): Rahmen-Formel + Radial-Scan leben
+       EINMAL in phyto-core (__phytoCore.impostorFrame/scanRadialXZ — dieselben liest AnazhRealms
+       Foundry-Bäcker; byte-gleich zur alten Inline-Form: halfH = max(0.5,maxY)·1.02·0.5,
+       halfW = max(halfH·(cw/ch=0.5), radial·1.04) — FIX v36/v28 unverändert: exakter
+       Radialabstand, rotationsinvariant, kein Seiten-Clip, per-Art-Rahmen). */
         let _rad2 = 0;
         tree.traverse((o) => {
             if (o.isMesh && o.geometry && o.geometry.attributes.position) {
-                const pa = o.geometry.attributes.position;
-                for (let i = 0; i < pa.count; i++) {
-                    const X = pa.getX(i),
-                        Z = pa.getZ(i),
-                        q = X * X + Z * Z;
-                    if (q > _rad2) _rad2 = q;
-                }
+                _rad2 = __phytoCore.scanRadialXZ(o.geometry.attributes.position.array, _rad2);
             }
         });
-        const halfW = Math.max(halfH * (cw / ch), Math.sqrt(_rad2) * 1.04); // FIX v36: Rahmen = EXAKTER Radialabstand von der Achse (einmaliger Vertex-Scan) -> rotationsinvariant, kein Seiten-Clip in KEINER Ansicht (ersetzt den 1.08-Fudge); Leerraum bei einseitigen Kronen = Preis der Ankertreue         // FIX v28: PER-ART-RAHMEN (der im alten Kommentar dokumentierte Sonderfall, jetzt implementiert): nur Arten, die seitlich ueber den 0.5-Rahmen hinausragen (geneigte Weide!), bekommen einen breiteren — alle anderen behalten die volle Zellaufloesung. Keine geraden Schnittkanten mehr an der Silhouette.
+        const _frame = __phytoCore.impostorFrame(box.max.y, Math.sqrt(_rad2)),
+            halfH = _frame.halfH,
+            halfW = _frame.halfW;
         _impWR[s.sp + s.seed] = halfW / halfH; // Seitenverhaeltnis persistent (Objekt ueberlebt den Einmal-Bake-Fruehausstieg bei unveraenderter Signatur) -> Quad-Breite zieht in buildForest mit, Textur bleibt unverzerrt
         cam.left = -halfW;
         cam.right = halfW;

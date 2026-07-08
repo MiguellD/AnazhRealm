@@ -1319,7 +1319,37 @@
         };
     }
 
+    // DER EINE IMPOSTOR-RAHMEN (Studio v36, phytogenesis bakeImpostorAtlas — „Drähte statt
+    // Kopien", 08.07.): Bake-Kamera UND Billboard-Quad ALLER Leser (AnazhRealm-Main ·
+    // Foundry · Studio-Portal) lesen DIESELBE Formel — eine Hand-Abschrift kann nie wieder
+    // driften. Anker = Stammbasis y=0 (Wurzel-Geometrie unter 0 ist im Boden unsichtbar,
+    // sie gehört NICHT in den Rahmen); halfH trägt die 2%-Luft (·0.51 = ·1.02/2); halfW =
+    // max(Zell-Proportion 0.5, radiale Kronen-Spanne ·1.04) — rotations-invariant über die
+    // 8 Blickwinkel, kein Seiten-Clip in keiner Ansicht.
+    function impostorFrame(maxY, maxRadial) {
+        const totalH = Math.max(0.5, maxY || 0);
+        const halfH = totalH * 0.51;
+        const halfW = Math.max(halfH * 0.5, (maxRadial || 0) * 1.04);
+        return { totalH: totalH, maxR: maxRadial || 0, halfH: halfH, halfW: halfW };
+    }
+    // Der radiale Vertex-Scan dazu (max x²+z² über ein xyz-Positions-Array, akkumulierend) —
+    // die rotations-invariante Kronen-Spanne; rein, THREE-frei (nimmt attr.array).
+    function scanRadialXZ(positions, prevMaxSq) {
+        let m = prevMaxSq || 0;
+        if (positions && positions.length) {
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i],
+                    z = positions[i + 2],
+                    q = x * x + z * z;
+                if (q > m) m = q;
+            }
+        }
+        return m;
+    }
+
     root.__phytoCore = {
+        impostorFrame: impostorFrame,
+        scanRadialXZ: scanRadialXZ,
         growSkeleton: growSkeleton,
         treePhenotype: treePhenotype,
         treeParams: treeParams,

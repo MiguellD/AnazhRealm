@@ -60632,6 +60632,12 @@ class AnazhRealm {
                 if (rr > maxR) maxR = rr;
             }
         }
+        // „Drähte statt Kopien" (08.07.): die FORMEL lebt EINMAL in phyto-core
+        // (__phytoCore.impostorFrame — Studio-v36; dieselbe liest der Studio-Bäcker).
+        // Nur das Skelett-Lesen (totalH/anchors) bleibt hier; graceful-Fallback
+        // wie _phytoGrowSkeleton (phyto-core lädt vor anazhRealm.js).
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (core && typeof core.impostorFrame === "function") return core.impostorFrame(totalH, maxR);
         const halfH = totalH * 0.51;
         const halfW = Math.max(halfH * 0.5, maxR * 1.04);
         return { totalH, maxR, halfH, halfW };
@@ -63943,29 +63949,26 @@ class AnazhRealm {
             this._impostorAtlasMap.set(key, false); // Foundry kann das nicht → Aufrufer nimmt Geometrie
             return false;
         }
-        // Frame aus der LOD1-Geometrie — EXAKT die Studio-v36-Mathematik (bakeImpostorAtlas,
-        // phytogenesis Z.1760ff), GEMESSEN 08.07. (der Schöpfer-Befund „L2 nicht korrekt
-        // positioniert, geschnitten — im Studio sauberer"):
-        // (a) HÖHE = box.max.y (Anker Stammbasis y=0; die WURZEL-Geometrie unter y=0 — minY
-        //     −1.3…−5.0 m gemessen — ist im Welt-Boden unsichtbar und gehört NICHT in den
-        //     Rahmen; die alte `max.y − min(0,min.y)`-Form blähte die Zelle 29–69 % → leerer
-        //     Zell-Kopf = verschenkte Textur-Auflösung + Mip-Ausbluten).
-        // (b) BREITE = radialer VERTEX-Scan sqrt(x²+z²) (rotations-invariant über alle 8
-        //     Blickwinkel) statt AABB-Achsen-Extrem (unterschätzt Diagonal-Kronen → Weide
-        //     11 % Seiten-Clip gemessen — exakt die „geraden Schnittkanten", die das Studio
-        //     in v36 heilte). Einmalig pro Record (gecacht), wie der Studio-Bäcker.
+        // Frame aus der LOD1-Geometrie — GEMESSEN 08.07. (Schöpfer „L2 nicht korrekt
+        // positioniert, geschnitten"): (a) HÖHE = box.max.y (Anker Stammbasis; die Wurzel-
+        // Geometrie unter y=0, minY −1.3…−5.0 m gemessen, blähte die Zelle 29–69 %);
+        // (b) BREITE = radialer Vertex-Scan (AABB unterschätzte Diagonal-Kronen → Weide
+        // 11 % Seiten-Clip). „Drähte statt Kopien": Scan + Formel leben in phyto-core
+        // (__phytoCore.scanRadialXZ / impostorFrame — dieselben liest der Studio-Bäcker),
+        // hier nur das Geometrie-Ablesen. Einmalig pro Record (gecacht).
         const box = new THREE.Box3().setFromObject(group);
         const totalH = Math.max(1, box.max.y);
+        const _core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         let _rad2 = 0.25;
         group.traverse((o) => {
             if (o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position) {
-                const pa = o.geometry.attributes.position;
-                for (let i = 0; i < pa.count; i++) {
-                    const X = pa.getX(i),
-                        Z = pa.getZ(i),
-                        q = X * X + Z * Z;
-                    if (q > _rad2) _rad2 = q;
-                }
+                const arr = o.geometry.attributes.position.array;
+                if (_core && typeof _core.scanRadialXZ === "function") _rad2 = _core.scanRadialXZ(arr, _rad2);
+                else
+                    for (let i = 0; i < arr.length; i += 3) {
+                        const q = arr[i] * arr[i] + arr[i + 2] * arr[i + 2];
+                        if (q > _rad2) _rad2 = q;
+                    }
             }
         });
         const maxR = Math.sqrt(_rad2);
