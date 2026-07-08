@@ -18649,7 +18649,14 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
         out.actuateDrivesDensity = /_foliageDensityScale/.test(r._nexusPerfActuate.toString());
         out.scatterReadsDensity = /_foliageDensityScale/.test(r._buildVoxelChunkScatter.toString());
-        out.farScatterReadsDensity = /_foliageDensityScale/.test(r._scatterPass.toString());
+        // W1 (Paritäts-Vollendung) — die Probe wandert mit dem Code (V9.56-i): der ferne Scatter
+        // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (Gesetz #0), und DIE liest
+        // den Regler. Kette statt Literal — und via __codeOf (kommentar-gestrippt, kein vakuöses Grün).
+        out.farScatterReadsDensity =
+            /_effectiveFoliageDensity/.test(window.__codeOf(r._scatterPass)) &&
+            typeof r._effectiveFoliageDensity === "function" &&
+            /_foliageDensityScale/.test(window.__codeOf(r._effectiveFoliageDensity)) &&
+            /_foundryEnabled/.test(window.__codeOf(r._effectiveFoliageDensity));
         const ppD = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // CONSUM (behavioral): die FERNE Scatter-Region (der eigentliche Render-Last-Hebel,
         // 2.2 M Dreiecke) bei voller vs gedrosselter Dichte neu bauen → `instanceCount` fällt
@@ -18700,6 +18707,31 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.thinExists = typeof r._tickFoliageThin === "function";
         out.scatterReadsBuiltDensity = /builtDensity/.test(r._scatterRegion.toString());
         out.streamingCallsThin = /_tickFoliageThin/.test(r._tickScatterStreaming.toString());
+        // W1 — DAS THIN-LOCH GESCHLOSSEN (die letzte V18.427-Endlosschleifen-Klasse), zwei Wände:
+        // (a) die builtDensity-BUCHHALTUNG und der Thin-LESER lesen die EINE Quelle (vorher: Bau
+        // wandte fdScale=1 an, Buchhaltung verbuchte den ROHEN Regler-Wert → byte-identische
+        // 54-ms-Dispose+Rebuild-Zyklen im Studio-Regime); (b) das direkte Foundry-Gate in
+        // `_tickFoliageThin`, byte-symmetrisch zur Gras-Schwester `_tickGrassThin`.
+        out.builtDensityFromOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._scatterRegion));
+        out.thinReadsOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._tickFoliageThin));
+        out.thinFoundryGated = /_foundryEnabled/.test(window.__codeOf(r._tickFoliageThin));
+        // CONSUM (behavioral, die Gate-Hook-Lehre: SICHERN+WIEDERHERSTELLEN, nie löschen-und-vergessen):
+        // im Studio-Regime (Hook kurz gelüftet → Foundry an) liefert die eine Quelle 1 trotz
+        // gesenktem Regler, und das Nach-Dünnen ist ein No-op — die Rebuild-Schleife ist per
+        // Konstruktion tot. Beide Pfade sind reine Frühausstiege (kein Worker-Zugriff → gate-sicher).
+        try {
+            const _prevHook = window.__anazhGateNoFoundry;
+            st._foliageDensityScale = 0.4;
+            delete window.__anazhGateNoFoundry; // Foundry AN (nur für diese zwei Reads)
+            out.oneSourceStudioFull = r._effectiveFoliageDensity() === 1;
+            out.thinStudioNoop = r._tickFoliageThin({ x: 0, y: 0, z: 0 }) === 0;
+            if (_prevHook) window.__anazhGateNoFoundry = _prevHook;
+            else delete window.__anazhGateNoFoundry;
+            out.oneSourceGateFollows = r._effectiveFoliageDensity() === 0.4; // foundry-aus → der Regler führt
+            st._foliageDensityScale = 1;
+        } catch (_eOne) {
+            out.oneSourceProbeError = String((_eOne && _eOne.message) || _eOne);
+        }
         try {
             const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const SCt = (window.AnazhRealm || r.constructor).SCATTER;
@@ -18790,6 +18822,22 @@ async function checkBandV18275FoliageGrowth(ctx) {
         "V18.280: _tickFoliageThin existiert · Region trägt builtDensity · der Scatter-Tick ruft das Nach-Dünnen (Source)",
         res.thinExists && res.scatterReadsBuiltDensity && res.streamingCallsThin
     );
+    check(
+        "W1: EINE Streu-Dichte-Quelle `_effectiveFoliageDensity` — Bau, builtDensity-Buchhaltung UND Nach-Dünnen lesen sie (Gesetz #0, __codeOf)",
+        res.farScatterReadsDensity && res.builtDensityFromOneSource && res.thinReadsOneSource
+    );
+    check(
+        "W1: das Thin-Loch ist doppelt gewändet — `_tickFoliageThin` trägt das Foundry-Gate (byte-symmetrisch zur Gras-Schwester)",
+        res.thinFoundryGated
+    );
+    if (res.oneSourceProbeError) {
+        check("W1 CONSUM: Studio-Regime-Dichte-Probe lief ohne Fehler", false, res.oneSourceProbeError);
+    } else {
+        check(
+            "W1 CONSUM: Studio-Regime → Dichte-Quelle 1 trotz gesenktem Regler + Thin ist No-op; foundry-aus → der Regler führt (0.4)",
+            res.oneSourceStudioFull === true && res.thinStudioNoop === true && res.oneSourceGateFollows === true
+        );
+    }
     if (res.thinReduces !== undefined) {
         check(
             `V18.280 CONSUM: sinkt die Kapazität, schrumpft die STATIONÄRE Welt (Region ${res.thinFull} → ${res.thinAfter}) — die geladene Welt dünnt beim Drehen`,

@@ -101,6 +101,42 @@ law(
 law("die Stufen-Wahrheit je Art lebt als Daten (`kindStages:` in foundry-core)", true, /kindStages:\s*\{/.test(foundryNC));
 law("der Studio-Wald liest kindStages SELBST (near/far-Kacheln)", true, /kindStages/.test(phytogenNC) && /tileStage/.test(phytogenNC));
 law("AnazhRealm clampt auf die deklarierten Stufen (`kindStages` im Flatten-Chokepoint)", true, /kindStages\[_rec\.kind\]/.test(anazhNC));
+// W1 (Paritäts-Vollendung, 08.07.) — DIE EINE STREU-DICHTE-QUELLE: `_effectiveFoliageDensity`
+// ist der Chokepoint (Studio-Regime → 1, sonst Regler); Bau (`_scatterPass`), Buchhaltung
+// (`builtDensity` in `_scatterRegion`) und Nach-Dünnen (`_tickFoliageThin`) LESEN ihn — kein
+// Leser rechnet die Dichte selbst (die V18.427-Rebuild-Endlosschleifen-Klasse strukturell zu).
+console.log("\nGesetz 7 (W1) — EINE Streu-Dichte-Quelle + die geheilte Render-Metrik:");
+law("der Dichte-Chokepoint existiert (`_effectiveFoliageDensity()`)", true, /_effectiveFoliageDensity\(\)\s*\{/.test(anazhNC));
+{
+    const _fnBody = (name) => {
+        const m = anazhNC.match(new RegExp(name + "\\([^)]*\\) \\{"));
+        if (!m) return "";
+        let i = anazhNC.indexOf(m[0]) + m[0].length, depth = 1, out = "";
+        while (i < anazhNC.length && depth > 0) {
+            const ch = anazhNC[i++];
+            if (ch === "{") depth++;
+            else if (ch === "}") depth--;
+            if (depth > 0) out += ch;
+        }
+        return out;
+    };
+    const passBody = _fnBody("_scatterPass");
+    const thinBody = _fnBody("_tickFoliageThin");
+    law("der Scatter-Bau liest die EINE Quelle (kein eigener Dichte-Rechner in `_scatterPass`)", true, /_effectiveFoliageDensity\(\)/.test(passBody) && !/_foliageDensityScale/.test(passBody));
+    law("das Nach-Dünnen liest die EINE Quelle + trägt das Foundry-Gate (`_tickFoliageThin`)", true, /_effectiveFoliageDensity\(\)/.test(thinBody) && /_foundryEnabled/.test(thinBody) && !/_foliageDensityScale/.test(thinBody));
+}
+// W1 — DIE GEHEILTE RENDER-METRIK BLEIBT GEHEILT (die V18.427-Klasse strukturell): im r184-WebGPU-Info
+// ist `render.calls` ein LEBENSZEIT-Zähler — der EINE Tap liest `drawCalls ?? calls`; KEIN Leser im
+// Monolithen darf `render.calls` nackt lesen (nur als `??`-Fallback hinter drawCalls).
+{
+    const nakedCalls = (anazhNC.match(/render\.calls/g) || []).length;
+    const fallbackCalls = (anazhNC.match(/drawCalls[^;\n]{0,80}render\.calls|render\.drawCalls\s*\?\?\s*[^;\n]{0,40}\.calls/g) || []).length;
+    law(
+        "kein nackter `render.calls`-Read im Monolithen (nur als drawCalls-??-Fallback)",
+        true,
+        nakedCalls === 0 || fallbackCalls >= nakedCalls
+    );
+}
 
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {

@@ -50890,6 +50890,20 @@ class AnazhRealm {
         }
     }
 
+    // W1 (Paritäts-Vollendung) — DIE EINE STREU-DICHTE-QUELLE (Gesetz #0, Raptor):
+    // im Studio-Regime hält die Streu VOLLE Dichte (=1, das V18.422-Gesetz — die
+    // Vorlage pflanzt voll), sonst führt der Perf-Regler (`_foliageDensityScale`,
+    // V18.277/.280). ALLE Leser (Bau `_scatterPass` · Buchhaltung `builtDensity`
+    // in `_scatterRegion` · Nach-Dünnen `_tickFoliageThin`) lesen DIESE Quelle —
+    // vorher las der Bau den ANGEWANDTEN Wert, die Buchhaltung aber den ROHEN
+    // Regler-Wert → eine bei roh=1 verbuchte Studio-Region wurde beim Regler-Fall
+    // gedünnt und BYTE-IDENTISCH neu gebaut (54-ms-Dispose+Rebuild-Zyklen, die
+    // V18.427-Endlosschleifen-Klasse an ihrer letzten Wurzel).
+    _effectiveFoliageDensity() {
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) return 1;
+        return this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+    }
+
     // V18.224 — der SCATTER-GENERATOR für eine Region. Walkt das Cell-Raster,
     // gated gegen die gebackenen Felder (V18.219), schreibt Deko-Instanzen in
     // die HISM-Gruppen. Deterministisch (pcg2d) → P2P-identisch + GPU-liftbar.
@@ -50923,7 +50937,7 @@ class AnazhRealm {
                 cells: [],
                 instanceCount: 0,
                 byLayer: {},
-                builtDensity: this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1,
+                builtDensity: this._effectiveFoliageDensity(),
                 regional: this.state.useRegionFoliageCull !== false,
                 _deferredFoundry: true,
             };
@@ -50935,13 +50949,14 @@ class AnazhRealm {
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         // V18.280 — die Dichte, bei der diese Region gebaut wurde (für das Nach-Dünnen:
         // sinkt die perf-geregelte Dichte unter diesen Wert, wird die Region re-gestreamt).
+        // W1 — die Buchhaltung liest den ANGEWANDTEN Wert (die eine Quelle), nie den rohen.
         const region = {
             regX,
             regZ,
             cells: [],
             instanceCount: 0,
             byLayer: {},
-            builtDensity: this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1,
+            builtDensity: this._effectiveFoliageDensity(),
             // V18.300 — Schnappschuss: in welchem Modus wurde diese Region gebaut?
             // _disposeScatterRegion liest IHN (nicht das Live-Flag) → ein Laufzeit-
             // Toggle bleibt sauber (alte Regionen entsorgen sich nach ihrer Bauweise).
@@ -50997,12 +51012,8 @@ class AnazhRealm {
         // DAS NEUE KLEID — die Streu (Blumen/Büsche/Unterwuchs) hält im Studio-Regime VOLLE Dichte (=1),
         // NICHT perf-gedrosselt — wie das Studio seine Understory (Blumen 2.4m / Büsche 4.4m) voll pflanzt.
         // Ohne Studio-Config bleibt der Perf-Regler (V18.277/.280) = 0 Regress.
-        const fdScale =
-            typeof this._foundryEnabled === "function" && this._foundryEnabled()
-                ? 1
-                : this.state._foliageDensityScale != null
-                  ? this.state._foliageDensityScale
-                  : 1;
+        // W1 — durch die EINE Quelle (Bau, Buchhaltung und Nach-Dünnen lesen denselben Wert).
+        const fdScale = this._effectiveFoliageDensity();
         const cap = Math.max(1, Math.round(layer.cap * fdScale));
         let emitted = 0;
         for (let cz = 0; cz < cellsPerRegion && emitted < cap; cz++) {
@@ -51426,10 +51437,15 @@ class AnazhRealm {
     // Rückkopplung: jedes Dünnen senkt die Last → schafft Lücken → dünnt weiter → konvergiert.
     _tickFoliageThin(playerPos) {
         const st = this.state;
+        // W1 (Paritäts-Vollendung) — im Studio-Regime dünnt die STREU NIE (das V18.422-Gesetz,
+        // byte-symmetrisch zur Gras-Schwester `_tickGrassThin`): der Bau pflanzt voll (fdScale=1),
+        // ein Dünnen würde nur byte-identisch neu bauen (54 ms/Region umsonst). Zweite Wand neben
+        // der EINEN Dichte-Quelle `_effectiveFoliageDensity` (builtDensity == scale == 1 → nie Kandidat).
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) return 0;
         if (st._frameOverBudget) return 0; // erst die Frame-Zeit, dann dünnen (V18.282)
         const map = st.scatterRegions;
         if (!map || map.size === 0 || !playerPos) return 0;
-        const scale = st._foliageDensityScale != null ? st._foliageDensityScale : 1;
+        const scale = this._effectiveFoliageDensity();
         const SC = AnazhRealm.SCATTER;
         // die NÄCHSTE deutlich-zu-dichte Region finden (Margin 0.12 → kein Thrash am Ziel).
         let bestKey = null,
@@ -81028,11 +81044,18 @@ class AnazhRealm {
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: () => {
                     if (st._frameChunksBuilt) return; // !chunksBuilt-Gate: erst der Boden, dann der Wald
+                    // W1 — der Scatter bekommt seinen `_perfSenseLap`-Tap (die Disziplin „neue
+                    // welt-formende Last wird attribuiert"): die 54-ms-`_scatterRegion`-Bauten
+                    // (V18.427 ad-hoc gemessen) sind jetzt als `phase.scatter` im perfSense +
+                    // Flugschreiber sichtbar statt anonym in frameMs — die stehende Kosten-Linse
+                    // für die W3-Zeit-Scheiben (vorher/nachher als ZAHL).
+                    const _sct = performance.now();
                     this._tickScatterStreaming(playerPos);
                     const grassBuilt = this._tickPendingGrass(1);
                     const scatterBuilt = grassBuilt ? 1 : this._tickPendingScatter(2);
                     if (!grassBuilt && !scatterBuilt) this._tickDekoFernfeld();
                     this._tickScatterRegrow(performance.now());
+                    this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
                     const lastTileCheck = this._lastHydroTileCheck ?? -Infinity;
                     if (nowTiles - lastTileCheck > 1000 && playerPos) {
