@@ -1,0 +1,183 @@
+# DER STUDIO-VERTRAG (Manifest v1) — NORMATIV
+
+**EINE Pipeline für alle Schöpfer-Labore.** Dieses Dokument ist der eingefrorene
+Vertrag zwischen einem Studio (einer Vorlagedatei des Schöpfers) und AnazhRealm
+(dem Nervensystem). Es beschreibt exakt die Pipeline, die für die Pflanzen
+GEBAUT und BEWIESEN ist (V18.411–.419, `gate:nervensystem` 17/17), und hebt sie
+zur Norm für jede kommende Domäne: Fahrzeuge · Tore · Bauwerke/Dörfer ·
+Kreaturen/Avatare.
+
+**Der Leitsatz (das Ribosom):** das Nervensystem kennt keine Fahrzeuge, keine
+Tore, keine Bäume — es kennt den CODE: `kind + rezepte + build + placement +
+params + lehren + verhalten`. Eine Maschine, viele Bücher. Wer eine neue Domäne
+integriert, schreibt KEINEN neuen Import-Pfad — er erfüllt diesen Vertrag und
+dockt an den EINEN an.
+
+Wächter: `npm run gate:studio-vertrag` (`scripts/diag-studio-vertrag.cjs`, im
+`check`-Gate) — validiert jeden registrierten Kern GEGEN diesen Vertrag und
+beweist sich selbst (injizierte Verletzung → rot).
+
+---
+
+## §1 Die Anatomie eines Studios (deskriptiv)
+
+Jede Vorlagedatei des Schöpfers trägt dieselben fünf Organe — das ist die
+gemessene Handschrift aller drei existierenden Vorlagen (phytogenesis v38 ·
+garage.txt · Portal.txt):
+
+1. **P-Vektor** — die Regler (Parameter mit Grenzen und Bedeutung).
+2. **PRESETS** — benannte Gattungen (eingefrorene P-Punkte + Ausstattung).
+3. **LEHREN** — Gesetze mit Toleranzbändern, die das Gebaute BEURTEILEN
+   (der sichtbare Richter: da Vinci Δ · Radstand/Länge · Stich→Schub→Dicke).
+4. **build(P)** — der deterministische Bau: derselbe Seed ⇒ dasselbe Werk.
+5. **VERHALTEN** — die Verben der Domäne (wachsen/Wind · fahren · Türen öffnen).
+
+Der Vertrag macht aus diesen Organen MASCHINENLESBARE Blöcke (§3).
+
+## §2 Das Kern-Gesetz — EINE Quelle, zwei Leser
+
+**G2.1** Die generative Substanz eines Studios lebt in EINER reinen Kern-Datei
+(`foundry-core.js`-Klasse: klassisches Skript, Top-Level-Globals, kein
+Framework-Zwang im Manifest-Teil). Die Labor-Shell (das begehbare Portal) und
+AnazhRealm (der Foundry-Worker) lesen DIESELBE Datei — ein Edit fließt in
+beide, ein Nachbau ist verboten (Verfassungs-Gesetz #0, `gate:constitution`).
+
+**G2.2** Die Naht ist das Float32-Attribut: `build` liefert Geometrie als
+typisierte Arrays (Positionen/Normalen/Farben/Indizes) — kein Szenegraph, kein
+Renderer-Objekt quert die Naht.
+
+**G2.3** Der Kern ist DETERMINISTISCH: alle Zufälligkeit fließt aus dem
+`seed`-Argument (mulberry32-Klasse); `Math.random`/`Date.now` sind im Bau-Pfad
+verboten (Γ5-Stream-Gesetz der Hauptwelt, hier gespiegelt).
+
+## §3 Die sechs Manifest-Blöcke
+
+Ein Kern erfüllt den Vertrag, wenn er die MUSS-Blöcke trägt; SOLL-Blöcke sind
+pro Domäne deklariert (§6-Matrix). Alle Blöcke sind DATEN (JSON-fähig), außer
+B2 (die Bau-Funktion).
+
+### B1 — REZEPTE (MUSS)
+
+Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
+
+- `rezeptId` ∈ `[a-z0-9_-]+` (der Namensraum; die Welt leitet Blueprint-Namen
+  daraus ab: `baum_<id>`, `fahrzeug_<id>`, `tor_<id>` …).
+- Jedes Rezept trägt **`kind`** (MUSS, string) — der EINE Dispatch-Schlüssel.
+  Registrierte kinds v1: `tree · shrub · flower · grass · rock` (gebaut);
+  reserviert: `vehicle · gate · building · creature`.
+- `s` (SOLL): der Dial-Vektor (P-Punkt des Presets) — Zahlen.
+- `fx` (DARF): domänen-eigene Ausstattung (frei, must-ignore §4).
+
+### B2 — BUILD (MUSS)
+
+`buildInstance(rezeptId, seed, lod, ov?)` — die EINE Bau-Funktion.
+
+- Deterministisch (G2.3), LOD-gestuft: **die LOD-Grade sind Studio-eigen**
+  (0 fein · 1 mittel · 2 grob/Impostor) — AnazhRealm erfindet keine LODs, es
+  RUFT sie.
+- Byte-Beweis: die eingefrorenen Vertrags-Fixtures (`spec/asset-contract/`,
+  sha256-Goldens, NIE regenerieren) — jede Domäne bekommt ihren Ordner
+  (v1 Pflanzen · v2 Kreatur-Haut · v3 Fahrzeuge · v4 Tore …).
+
+### B3 — PLACEMENT (SOLL)
+
+Ein Block `PORTAL_RENDER_CONFIG.placement`: wie oft, wo, wie groß.
+
+- v1-Felder (Pflanzen, gebaut): `scale` (Welt-Skala je Rezept, Zahl > 0),
+  `rarity` (Spawn-Dämpfung je Rezept, 0 < r ≤ 1), `treeScaleMul`.
+- Domänen erweitern ihn (must-ignore): Fahrzeuge/Bauwerke z. B.
+  `sites: "settlement"`, Tore `sites: "shrine"`. Fehlt der Block, ist die
+  Domäne „deliberate" (nur Katalog/Werkstatt, kein Worldgen-Streuen).
+- **Schichten-Gesetz (USD-Lehre):** Welt-seitige Anpassungen leben ÜBER dem
+  Template-Block (eigene Override-Schicht), sie mutieren ihn NIE — die Vorlage
+  bleibt byte-heilig; der Live-Read gewinnt gegen jeden Spiegel (der
+  Mutation-wins-Beweis, `gate:nervensystem` C).
+
+### B4 — PARAMS (SOLL; ab Domäne `vehicle` MUSS)
+
+Die Regler-Definitionen als DATEN (die HDA-Lehre): ein Array
+`PARAMS = [{ id, lab, min, max, step, grp?, law? }]`.
+
+- Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
+  hartkodiertes Slider-Panel pro Domäne. garage.txt trägt dieses Array heute
+  schon wörtlich (`SLIDERS`); der Vertrag friert die Feldnamen ein.
+- `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
+
+### B5 — LEHREN (SOLL)
+
+Der mitreisende Richter: ein Array
+`LEHREN = [{ id, lab, pass: [lo, hi], warn: [lo, hi], hint? }]` + eine
+Mess-Funktion `messen(P) → { <lehrenId>: wert }`.
+
+- Damit kann AnazhRealm Varianten BEURTEILEN (Score/Validierung in Werkstatt
+  und Auto-Registrierung) — dieselbe Richter-Fläche wie Ω-PHYSIS, aber die
+  Bänder kommen aus der Vorlage (der Richter ist sichtbar, Anti-Attrappe).
+
+### B6 — VERHALTEN (SOLL)
+
+Die Verben + Daten-Komponenten der Domäne (die ECS-Lehre: `kind` wählt
+Komponenten-SÄTZE, keine Klassen):
+
+- `dsl`: die Wörter, die die begehbare Welt versteht (W12-ready-Handshake —
+  gebaut für alle fünf Portale).
+- Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
+  Parallel-System): `vehicle.fahrprofil` (radstand/spur/federrate/daempfung/
+  grip → `_vehicleProfile` liest DATEN statt zu raten) · `gate.tueren` ·
+  `creature.gang` (Phase 5).
+
+## §4 Die Empfänger-Gesetze (Taille-Erbe)
+
+Diese vier gelten für JEDEN Leser des Manifests (AnazhRealm heute, P2P-geteilte
+Studios morgen) — sie sind die `docs/taille-spec.md`-Gesetze, auf Assets
+angewandt:
+
+- **G4.1 must-ignore:** unbekannte Felder und unbekannte `kind`-Werte werden
+  IGNORIERT, nie zerstört und nie als Fehler behandelt (ein altes AnazhRealm
+  überlebt ein neues Studio; `_foundryAutoRegisterSpecies` registriert heute
+  nur bekannte kinds — genau diese Form).
+- **G4.2 fail-closed:** ein Rezept, das einen MUSS-Block verletzt (kein `kind`,
+  ungültige id), wird NICHT registriert und LAUT geloggt — nie halb-registriert.
+- **G4.3 EINE Versions-Semantik:** der Kern deklariert `STUDIO_VERTRAG = 1`
+  (Top-Level-Konstante). Erhöht wird nur bei einem Bruch der MUSS-Blöcke;
+  SOLL/DARF wachsen unter v1 (must-ignore trägt sie).
+- **G4.4 kein Spiegel:** Leser lesen die angekommenen Daten LIVE (Referenz),
+  kein Hardcode-Duplikat in der Welt — bewiesen durch den Mutation-wins-Test.
+
+## §5 Die Andock-Sequenz (wie eine neue Domäne andockt)
+
+Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
+
+1. **Kern-Split:** die generative Substanz der Vorlage wandert in
+   `<domäne>-core.js` (G2.1); die Labor-Shell liest den Kern (Beweis:
+   `diag:foundry-parity`-Klasse, byte-identisch vor/nach Split).
+2. **Manifest:** der Kern trägt B1+B2 (+ deklarierte SOLL-Blöcke) +
+   `STUDIO_VERTRAG = 1`.
+3. **Andocken:** der EINE Foundry-Worker lädt den Kern zusätzlich
+   (`importScripts`), die Rezepte fließen in das EINE Buch (`f.recipes`,
+   kind-getaggt); die Brücken (`get-recipes`/`get-render-config`/`get-params`)
+   exportieren die Blöcke.
+4. **kind-Handler:** der EINE Auto-Register-Chokepoint bekommt den Zweig für
+   den neuen kind (Blueprint-Namensraum + Komponenten-Anschluss an
+   existierende Systeme) — kein zweiter Register-Pfad.
+5. **Wächter:** ein `gate:nervensystem-<domäne>` (synthetisches Rezept
+   injizieren → Auto-Blueprint → platziert/angeschlossen, ohne eine Zeile
+   AnazhRealm-Edit) + eingefrorene Vertrags-Fixtures (`spec/asset-contract/
+   v<n>/`) + dieser Validator (`gate:studio-vertrag` prüft den neuen Kern
+   automatisch mit).
+
+## §6 Konformanz-Matrix (Stand 08.07.2026)
+
+| Block | Pflanzen (foundry-core) | Fahrzeuge (Phase 1) | Tore (Phase 2) |
+| ----- | ----------------------- | ------------------- | -------------- |
+| B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | porta-core: 7 Ordnungen |
+| B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | buildGate → v4-Goldens |
+| B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | shrine-Sites |
+| B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | SOLL (Slider-Gruppen existieren) |
+| B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | SOLL (Stich→Schub→Dicke) |
+| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil | dsl ✅ + tueren |
+| STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt | ab Split | ab Split |
+
+**Benannte Schulden (kein Verstecken):** die Pflanzen-Dials/Lehren leben noch
+in der phytogenesis-Shell statt als B4/B5-Datenblöcke — sie wandern bei der
+nächsten Pflanzen-Welle in den Kern; die 5 Basis-Arten-Nischenformeln sind
+noch Code statt Daten (V18.419-Restliste).

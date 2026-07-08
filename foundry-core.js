@@ -87,6 +87,12 @@ const PORTAL_SKY = {
     sun: 0xfff2d9, // Mittags-Sonnenfarbe (warm, = uSunCol (1,0.95,0.85))
 };
 
+// DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
+// Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
+// (REZEPTE/BUILD); SOLL/DARF-Blöcke wachsen unter v1 (must-ignore trägt sie).
+// Jeder Studio-Kern deklariert sie; `gate:studio-vertrag` validiert.
+const STUDIO_VERTRAG = 1;
+
 const PORTAL_RENDER_CONFIG = {
     // Sichtweite (Dunst) — der Wald-Regime-Anker: fog.near = sight*fogNearMul, fog.far = sight, camera.far = sight+camFarPad.
     sight: 120,
