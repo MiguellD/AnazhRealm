@@ -13452,6 +13452,10 @@ class AnazhRealm {
         const st = this.state;
         let sense = st.perfSense;
         if (!sense) sense = st.perfSense = this._perfSenseInit();
+        // W1 — DIE EWMA-NaN-WAND (zweite Hälfte der Loop-Eingangs-Wand): ein einziger
+        // nicht-finiter frameMs würde die EWMA dauerhaft vergiften (ewma(NaN,·)=NaN →
+        // der Regler für immer im Totband). Kein Aufrufer kann das Gedächtnis brechen.
+        if (!Number.isFinite(frameMs)) frameMs = Number.isFinite(sense.frameMs) ? sense.frameMs : 16.7;
         const f = st._perfFrame || {};
         const m = st._perfMarks || {};
         const A = AnazhRealm.PERF_SENSE_ALPHA;
@@ -79714,9 +79718,17 @@ class AnazhRealm {
         // - V7.66 Vollendung: Alle Funktionen integriert, Fehler behoben, Kommentare ergänzt
         let lastTime = performance.now();
         const loop = (time) => {
-            const delta = Math.max(0.001, (time - lastTime) / 1000);
-            lastTime = time;
-            const currentTime = time / 1000;
+            // W1 (Paritäts-Vollendung) — DIE NaN-WAND AM LOOP-EINGANG: ein argloser Aufruf
+            // (`_gameLoopTick()` — JEDER Test-/Diag-Warmup pumpt so) machte `time` undefined →
+            // `Math.max(0.001, NaN)` = NaN → delta/frameMs NaN → die frameMs-EWMA war FÜR
+            // IMMER vergiftet (ewma(NaN, x) bleibt NaN) → der Regler saß still im Totband
+            // (err=0, nie wieder drosseln/wachsen), `_frameOverBudget` für immer false.
+            // Dieselbe Klasse wie die vergiftete Zahl (V18.427): EIN schlechter Wert, der
+            // sich im Gedächtnis festsetzt. Gefangen von `gate:regler-sim` beim Erstlauf.
+            const t = Number.isFinite(time) ? time : performance.now();
+            const delta = Math.max(0.001, (t - lastTime) / 1000);
+            lastTime = t;
+            const currentTime = t / 1000;
 
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
@@ -81968,7 +81980,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.427.0";
+AnazhRealm.VERSION = "18.428.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

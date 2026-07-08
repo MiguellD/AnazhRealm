@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.427.0",
+    "version": "18.428.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -27,6 +27,7 @@
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",
         "gate:render-tap": "node scripts/diag-render-tap.cjs",
+        "gate:regler-sim": "node scripts/diag-regler-sim.cjs",
         "gate:foliage-res": "node scripts/diag-foliage-res.cjs",
         "gate:phyto-tree": "node scripts/diag-phyto-tree.cjs",
         "gate:phyto-core": "node scripts/diag-phyto-core-parity.cjs",
