@@ -232,6 +232,18 @@ async function renderAnazh() {
                 if (el !== cv && el.tagName !== "SCRIPT") el.style.display = "none";
             const r = window.anazhRealm;
             if (r.state.playerMesh) r.state.playerMesh.visible = false;
+            // W2 — BÜHNEN-REINIGUNG (das Bild vergleicht die WELT-PRÄSENTATION, nicht die
+            // Welt-Substanz): Kreaturen + start_plattform + fliegende Inseln sind AnazhRealm-
+            // Substanz ohne Studio-Gegenstück → im Paritäts-SHOT versteckt (in der Welt bleiben
+            // sie — kein Render-Regime-Gate auf Welt-Inhalt, nur die Mess-Bühne ist sauber).
+            try {
+                if (Array.isArray(r.state.creatures)) for (const c of r.state.creatures) if (c) c.visible = false;
+                if (Array.isArray(r.state.floatingIslands))
+                    for (const isl of r.state.floatingIslands) if (isl) isl.visible = false;
+                if (Array.isArray(r.state.architectures))
+                    for (const a of r.state.architectures)
+                        if (a && a.type === "start_plattform" && a.mesh) a.mesh.visible = false;
+            } catch (_e) {}
             try {
                 // AnazhRealms Tages-KURVE ist anders gemappt als die Studio-Uhr: t=10/24 liegt in der
                 // Morgen-Rampe (warm-mauve), t=0.5 ist ZENIT — dort steht die Sonne senkrecht und
@@ -452,7 +464,10 @@ async function renderAnazh() {
             out.ok = true;
             console.log(`ANAZH gerendert: ${out.ms} ms/Frame → parity-anazh.png ✓`);
         } catch (e) {
-            console.log("ANAZH-Render/Screenshot scheiterte:", (e && e.message ? e.message : e).toString().split("\n")[0]);
+            console.log(
+                "ANAZH-Render/Screenshot scheiterte:",
+                (e && e.message ? e.message : e).toString().split("\n")[0]
+            );
         }
     } catch (e) {
         console.log("ANAZH scheiterte:", (e && e.message ? e.message : e).toString().split("\n")[0]);
@@ -463,50 +478,155 @@ async function renderAnazh() {
     return out;
 }
 
-async function analyze() {
-    // GPU-frei: die zwei PNGs in einer 2D-Canvas-Seite vermessen (Himmel/Boden/Grün-Deckung).
+async function analyze(selftest) {
+    // GPU-frei: die zwei PNGs in einer 2D-Canvas-Seite vermessen. W2 — die framing-robusten
+    // Statistiken fürs künftige VERDIKT (Kalibrierung erst in W6, NACH den bild-ändernden
+    // Wellen — die V18.346-Kontaminations-Disziplin): Zonen-RGB + Grün-% (wie gehabt) PLUS
+    // Luma-Histogramm (32 Bins, L1-Distanz — framing-tolerant) + Kanten-Dichte pro Zone,
+    // AA-ROBUST (Downscale ¼ VOR der Gradienten-Statistik — swiftshader hat kein MSAA, die
+    // Sub-Pixel-Kanten-Achse ist genau die Container↔GPU-Divergenz, V18.374).
     const browser = await puppeteer.launch({ headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 20000 }).catch(() => {});
-    const stats = await page.evaluate(async (port) => {
-        const load = (src) =>
-            new Promise((res) => {
-                const img = new Image();
-                img.onload = () => res(img);
-                img.onerror = () => res(null);
-                img.src = `http://127.0.0.1:${port}/artifacts/${src}`;
-            });
-        const measure = (img) => {
-            if (!img) return null;
-            const c = document.createElement("canvas");
-            c.width = img.width;
-            c.height = img.height;
-            const x = c.getContext("2d");
-            x.drawImage(img, 0, 0);
-            const d = x.getImageData(0, 0, c.width, c.height).data;
-            const zone = (y0, y1) => {
-                let r = 0,
-                    g = 0,
-                    b = 0,
-                    n = 0,
-                    green = 0;
-                for (let y = Math.floor(c.height * y0); y < Math.floor(c.height * y1); y += 2)
-                    for (let px = 0; px < c.width; px += 2) {
-                        const i = (y * c.width + px) * 4;
-                        r += d[i];
-                        g += d[i + 1];
-                        b += d[i + 2];
-                        if (d[i + 1] > d[i] * 1.05 && d[i + 1] > d[i + 2] * 1.05) green++;
-                        n++;
-                    }
-                return { rgb: [Math.round(r / n), Math.round(g / n), Math.round(b / n)], greenPct: +((green / n) * 100).toFixed(1) };
+    await page
+        .goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 20000 })
+        .catch(() => {});
+    const stats = await page.evaluate(
+        async (port, doSelftest) => {
+            const load = (src) =>
+                new Promise((res) => {
+                    const img = new Image();
+                    img.onload = () => res(img);
+                    img.onerror = () => res(null);
+                    img.src = `http://127.0.0.1:${port}/artifacts/${src}`;
+                });
+            const measure = (src) => {
+                // src: Image ODER Canvas (der Selbst-Test misst synthetische Canvases)
+                if (!src) return null;
+                const W0 = src.width,
+                    H0 = src.height;
+                const c = document.createElement("canvas");
+                c.width = W0;
+                c.height = H0;
+                const x = c.getContext("2d");
+                x.drawImage(src, 0, 0);
+                const d = x.getImageData(0, 0, W0, H0).data;
+                const zone = (y0, y1) => {
+                    let r = 0,
+                        g = 0,
+                        b = 0,
+                        n = 0,
+                        green = 0;
+                    for (let y = Math.floor(H0 * y0); y < Math.floor(H0 * y1); y += 2)
+                        for (let px = 0; px < W0; px += 2) {
+                            const i = (y * W0 + px) * 4;
+                            r += d[i];
+                            g += d[i + 1];
+                            b += d[i + 2];
+                            if (d[i + 1] > d[i] * 1.05 && d[i + 1] > d[i + 2] * 1.05) green++;
+                            n++;
+                        }
+                    return {
+                        rgb: [Math.round(r / n), Math.round(g / n), Math.round(b / n)],
+                        greenPct: +((green / n) * 100).toFixed(1),
+                    };
+                };
+                // Luma-Histogramm (32 Bins, normiert) übers ganze Bild
+                const hist = new Array(32).fill(0);
+                let hn = 0;
+                for (let i = 0; i < d.length; i += 16) {
+                    const l = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+                    hist[Math.min(31, (l / 8) | 0)]++;
+                    hn++;
+                }
+                for (let i = 0; i < 32; i++) hist[i] /= hn;
+                // Kanten-Dichte, AA-robust: erst auf ¼ verkleinern (bilinear = Blur), dann Gradient
+                const c4 = document.createElement("canvas");
+                c4.width = Math.max(8, (W0 / 4) | 0);
+                c4.height = Math.max(8, (H0 / 4) | 0);
+                const x4 = c4.getContext("2d");
+                x4.drawImage(src, 0, 0, c4.width, c4.height);
+                const d4 = x4.getImageData(0, 0, c4.width, c4.height).data;
+                const lum = (i) => 0.2126 * d4[i] + 0.7152 * d4[i + 1] + 0.0722 * d4[i + 2];
+                const edgeZone = (y0, y1) => {
+                    let e = 0,
+                        n = 0;
+                    for (
+                        let y = Math.max(1, (c4.height * y0) | 0);
+                        y < Math.min(c4.height - 1, (c4.height * y1) | 0);
+                        y++
+                    )
+                        for (let px = 1; px < c4.width - 1; px++) {
+                            const i = (y * c4.width + px) * 4;
+                            const gx = Math.abs(lum(i + 4) - lum(i - 4));
+                            const gy = Math.abs(lum(i + c4.width * 4) - lum(i - c4.width * 4));
+                            if (gx + gy > 48) e++;
+                            n++;
+                        }
+                    return +(e / Math.max(1, n)).toFixed(4);
+                };
+                return {
+                    sky: zone(0, 0.3),
+                    mid: zone(0.3, 0.65),
+                    ground: zone(0.65, 1),
+                    lumaHist: hist,
+                    edges: { sky: edgeZone(0, 0.3), mid: edgeZone(0.3, 0.65), ground: edgeZone(0.65, 1) },
+                };
             };
-            return { sky: zone(0, 0.3), mid: zone(0.3, 0.65), ground: zone(0.65, 1) };
-        };
-        const a = await load("parity-anazh.png");
-        const s = await load("parity-studio.png");
-        return { anazh: measure(a), studio: measure(s) };
-    }, PORT);
+            const out = {};
+            if (doSelftest) {
+                // ── SELBST-TEST (GPU-frei, standalone): das Statistik-SKELETT muss eine
+                // injizierte Störung als DELTA zeigen — sonst wären alle Baseline-Zahlen
+                // unverifiziert (ein ~0-Delta-Skelett fiele erst in W6 auf, 4 Wellen später).
+                const synth = (hueShift, bright, jitter) => {
+                    const c = document.createElement("canvas");
+                    c.width = 240;
+                    c.height = 150;
+                    const x = c.getContext("2d");
+                    for (let y = 0; y < c.height; y++) {
+                        const t = y / c.height;
+                        const r = (60 + t * 60 + hueShift) | 0,
+                            g = (140 - t * 40 + bright) | 0,
+                            b = (200 - t * 160) | 0;
+                        x.fillStyle = `rgb(${r},${g},${b})`;
+                        x.fillRect(0, y, c.width, 1);
+                    }
+                    // deterministisches „Blatt-Rauschen" für die Kanten-Statistik
+                    let s = 12345;
+                    const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+                    for (let i = 0; i < 400 + jitter; i++) {
+                        x.fillStyle = i % 2 ? "#1c4a1c" : "#2f6b2f";
+                        x.fillRect((rnd() * c.width) | 0, (60 + rnd() * 80) | 0, 3, 3);
+                    }
+                    return c;
+                };
+                const base = measure(synth(0, 0, 0));
+                const same = measure(synth(0, 0, 0));
+                const disturbed = measure(synth(40, 30, 900));
+                const l1 = (a, b) => a.lumaHist.reduce((s2, v, i) => s2 + Math.abs(v - b.lumaHist[i]), 0);
+                const rgbD = (a, b, z) => Math.hypot(...a[z].rgb.map((v, i) => v - b[z].rgb[i]));
+                out.selftest = {
+                    identicalNearZero: l1(base, same) < 0.01 && rgbD(base, same, "mid") < 1,
+                    disturbedVisible:
+                        l1(base, disturbed) > 0.08 &&
+                        rgbD(base, disturbed, "mid") > 15 &&
+                        Math.abs(base.edges.mid - disturbed.edges.mid) > 0.005,
+                    deltas: {
+                        histSame: +l1(base, same).toFixed(4),
+                        histDist: +l1(base, disturbed).toFixed(4),
+                        rgbDist: +rgbD(base, disturbed, "mid").toFixed(1),
+                        edgeDist: +Math.abs(base.edges.mid - disturbed.edges.mid).toFixed(4),
+                    },
+                };
+            }
+            const a = await load("parity-anazh.png");
+            const s = await load("parity-studio.png");
+            out.anazh = measure(a);
+            out.studio = measure(s);
+            return out;
+        },
+        PORT,
+        !!selftest
+    );
     await browser.close();
     return stats;
 }
@@ -516,19 +636,55 @@ async function analyze() {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const skipStudio = process.argv.includes("--skip-studio");
     const skipAnazh = process.argv.includes("--skip-anazh");
+    const selftest = process.argv.includes("--selftest");
     let studio = { ms: NaN },
         anazh = { ms: NaN };
     if (!skipStudio) studio = await renderStudio();
     if (!skipAnazh) anazh = await renderAnazh();
-    const st = await analyze();
+    const st = await analyze(selftest);
+    if (selftest && st.selftest) {
+        console.log("\n===== SELBST-TEST DES STATISTIK-SKELETTS (synthetisch, GPU-frei) =====");
+        console.log(
+            `  identisch → ~0-Delta: ${st.selftest.identicalNearZero ? "✅" : "❌"} (hist ${st.selftest.deltas.histSame})`
+        );
+        console.log(
+            `  Störung → sichtbares Delta: ${st.selftest.disturbedVisible ? "✅" : "❌"} (hist ${st.selftest.deltas.histDist} · RGB ${st.selftest.deltas.rgbDist} · Kanten ${st.selftest.deltas.edgeDist})`
+        );
+        if (!st.selftest.identicalNearZero || !st.selftest.disturbedVisible) {
+            server.close();
+            process.exit(1);
+        }
+    }
     console.log("\n===== PARITÄTS-TABELLE =====");
     const row = (name, m) =>
         console.log(
-            `  ${name.padEnd(8)} Himmel ${m ? JSON.stringify(m.sky.rgb) : "—"} · Mitte ${m ? JSON.stringify(m.mid.rgb) : "—"} (grün ${m ? m.mid.greenPct : "—"}%) · Boden ${m ? JSON.stringify(m.ground.rgb) : "—"} (grün ${m ? m.ground.greenPct : "—"}%)`
+            `  ${name.padEnd(8)} Himmel ${m ? JSON.stringify(m.sky.rgb) : "—"} · Mitte ${m ? JSON.stringify(m.mid.rgb) : "—"} (grün ${m ? m.mid.greenPct : "—"}%) · Boden ${m ? JSON.stringify(m.ground.rgb) : "—"} (grün ${m ? m.ground.greenPct : "—"}%)${m && m.edges ? ` · Kanten [${m.edges.sky}, ${m.edges.mid}, ${m.edges.ground}]` : ""}`
         );
     row("STUDIO", st.studio);
     row("ANAZH", st.anazh);
-    console.log(`  Frame:   Studio ${studio.ms} ms · Anazh ${anazh.ms} ms${anazh.scene ? ` · Anazh-Szene ${(anazh.scene.tris / 1e6).toFixed(2)}M Tris / ${anazh.scene.instances} Inst` : ""}`);
+    console.log(
+        `  Frame:   Studio ${studio.ms} ms · Anazh ${anazh.ms} ms${anazh.scene ? ` · Anazh-Szene ${(anazh.scene.tris / 1e6).toFixed(2)}M Tris / ${anazh.scene.instances} Inst` : ""}`
+    );
+    // W2 — DAS VERDIKT-SKELETT (PROVISORISCH, NICHT-GATEND): die Deltas als Zahlen + eine
+    // vorläufige Schwellen-Ampel. Die Schwellen werden erst in W6 KALIBRIERT + scharf
+    // gestellt (exit≠0), NACHDEM W5/W6 das Bild stabilisiert haben (V18.346-Disziplin:
+    // nie auf einem Bild kalibrieren, das sich noch bewegt). Bis dahin: Baseline-Anker.
+    if (st.studio && st.anazh) {
+        const rgbD = (z) => Math.hypot(...st.studio[z].rgb.map((v, i) => v - st.anazh[z].rgb[i]));
+        const histL1 = st.studio.lumaHist.reduce((s2, v, i) => s2 + Math.abs(v - st.anazh.lumaHist[i]), 0);
+        const rows = [
+            { k: "Himmel-RGB-Δ", v: +rgbD("sky").toFixed(1), thr: 25 },
+            { k: "Mitte-RGB-Δ", v: +rgbD("mid").toFixed(1), thr: 25 },
+            { k: "Boden-RGB-Δ", v: +rgbD("ground").toFixed(1), thr: 25 },
+            { k: "Grün-%-Δ (Mitte)", v: +Math.abs(st.studio.mid.greenPct - st.anazh.mid.greenPct).toFixed(1), thr: 12 },
+            { k: "Luma-Hist-L1", v: +histL1.toFixed(3), thr: 0.35 },
+            { k: "Kanten-Δ (Mitte)", v: +Math.abs(st.studio.edges.mid - st.anazh.edges.mid).toFixed(4), thr: 0.06 },
+        ];
+        console.log("\n===== VERDIKT-SKELETT (provisorische Schwellen — Kalibrierung + Schärfung in W6) =====");
+        for (const r of rows) console.log(`  ${r.v <= r.thr ? "✓" : "⚠"} ${r.k.padEnd(18)} ${r.v}  (prov. ≤ ${r.thr})`);
+    } else if (!selftest) {
+        console.log("\n(Verdikt-Skelett: mindestens ein Bild fehlt — nur mit beiden PNGs messbar.)");
+    }
     console.log("\nBilder: artifacts/parity-studio.png + artifacts/parity-anazh.png");
     server.close();
     process.exit(0);
