@@ -65117,6 +65117,71 @@ class AnazhRealm {
                 }
             }
         }
+        // DER STRAUCH-TEPPICH (Studio-Gesetz buildForest Z.2579ff, 08.07.): das Studio
+        // pflanzt Sträucher auf einem bushStep-RASTER (±2 m Jitter) mit der Halbschatten-
+        // Wahrscheinlichkeit gc.shrub = gauss(L, 0.4, 0.16) · (1−rk) · 0.42 — ein dichter
+        // Busch-Teppich, KEIN seltener Baum-Slot-Fallback (der alte BUSH_RATE-Pfad gab
+        // ~12 Sträucher, das Studio einen Teppich). AnazhRealm ist hier NUR LESER: der
+        // Raster-Step ist B3-DATEN (PORTAL_RENDER_CONFIG.understory.bushStep, live über
+        // das Nervensystem; 4.4 = der Vertrags-Default, gleich dem frozen Golden), die
+        // Formel ist das übersetzte Studio-Gesetz mit AnazhRealms kanonischen Quellen als
+        // Eingängen (L = _canopyLightAt · rk aus der EINEN Platzierungs-Slope · Pfad =
+        // _pathFieldAt). Chunk-deterministisch + reihenfolge-unabhängig: das Raster ankert
+        // an WELT-Koordinaten, der Wurf pro Rasterpunkt ist ein Positions-Hash (Γ5) — die
+        // Übersetzung des sequenziellen Studio-RNG in die Streaming-Welt (das
+        // planForestCell-Muster). Ein über die Chunk-Naht gejitterter Punkt FÄLLT (der
+        // Nachbar würfelt ihn nie → kein Doppel, Raster-Rand mittelwert-nah). Nur im
+        // Studio-Regime; ohne Foundry bleibt der alte Lücken-Pfad die einzige Quelle.
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+            const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
+            const bushStep = uCfg && Number.isFinite(uCfg.bushStep) ? uCfg.bushStep : 4.4;
+            const GS = AnazhRealm.GRASS_SLOPE;
+            const g0x = Math.ceil(ox / bushStep);
+            const g1x = Math.ceil((ox + span) / bushStep) - 1;
+            const g0z = Math.ceil(oz / bushStep);
+            const g1z = Math.ceil((oz + span) / bushStep) - 1;
+            for (let bgz = g0z; bgz <= g1z; bgz++) {
+                for (let bgx = g0x; bgx <= g1x; bgx++) {
+                    let hs = ((bgx * 73856093) ^ (bgz * 19349663) ^ seedInt ^ 0x5bd1e995) >>> 0 || 1;
+                    const hrnd = () => {
+                        hs = (hs + 0x6d2b79f5) >>> 0;
+                        let t = hs;
+                        t = Math.imul(t ^ (t >>> 15), t | 1);
+                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                    };
+                    const bxp = bgx * bushStep + (hrnd() - 0.5) * 4.0; // Studio-Jitter ±2 m
+                    const bzp = bgz * bushStep + (hrnd() - 0.5) * 4.0;
+                    if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
+                    const bsy = this._voxelSurfaceY(bxp, bzp);
+                    if (bsy === null || !Number.isFinite(bsy)) continue;
+                    if (!(typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(bxp, bzp, 0.1)))
+                        continue;
+                    const bFeuchte = this._feuchteAt ? this._feuchteAt(bxp, bzp, bsy) : 0;
+                    const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
+                    const slopeB = this._slopeAt(bxp, bzp);
+                    const rk = Math.max(0, Math.min(1, (slopeB - GS.lo) / (GS.hi - GS.lo)));
+                    const trail = this._pathFieldAt ? this._pathFieldAt(bxp, bzp, bsy) : 0;
+                    const dL = L - 0.4;
+                    const pShrub =
+                        Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
+                    if (hrnd() >= pShrub) continue;
+                    this._enqueueVegetationSpawn(
+                        "busch_hazel",
+                        { x: bxp, y: bsy + 0.5, z: bzp },
+                        {
+                            seed: (hs ^ 0x2f6e2b1) >>> 0,
+                            silent: true,
+                            // Studio: SCALE.strauch × (0.8 + RNG()·0.5) — die Tabellen-Skala
+                            // (0.332) trägt der Render-Pfad (V18.418), hier nur die Streuung.
+                            scale: 0.8 + hrnd() * 0.5,
+                            rotationY: hrnd() * Math.PI * 2,
+                        }
+                    );
+                    planted++;
+                }
+            }
+        }
         return planted;
     }
 
