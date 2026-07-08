@@ -206,6 +206,23 @@ async function renderAnazh() {
                 } catch (_e) {}
                 await new Promise((res) => setTimeout(res, 4));
             }
+            // INVENTUR (08.07., Schöpfer „Steine fehlen"): auf die STREU-KONVERGENZ warten —
+            // deferrierte Regionen (Assets waren beim ersten Pass kalt) werden vom Refill neu
+            // gestreamt; erst wenn KEINE Region mehr deferriert ist (oder Timeout), ist die
+            // Bühne vollständig (Kiesel-Teppich · Blumen · Sträucher · Fels im Bild).
+            const dl2 = performance.now() + 90000;
+            while (performance.now() < dl2) {
+                for (let i = 0; i < 120; i++) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                }
+                await new Promise((res) => setTimeout(res, 300));
+                let deferred = 0;
+                if (r.state.scatterRegions)
+                    for (const reg of r.state.scatterRegions.values()) if (reg && reg._deferredFoundry) deferred++;
+                if (deferred === 0 && !r._scatterRefillPending) break;
+            }
         });
         // UI aus + Avatar aus + TAGESZEIT auf Studio-10:00 gepinnt (die Tick-Pumpe hatte die Uhr
         // in die Dämmerung gedreht → violetter Himmel + Sterne am Tag im ersten Paritäts-Bild).

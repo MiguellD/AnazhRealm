@@ -64368,6 +64368,16 @@ class AnazhRealm {
                 // Gras-Schnitt liest es als Halm-Geometrie (statt der emitGrass-KOPIE
                 // _grassBladeTuftGeometry); der Prefetch wärmt es ab jetzt mit.
                 "gras",
+                // 08.07. — DIE INVENTUR (Schöpfer „Steine scheinen zu fehlen — werden alle
+                // Assets ausgelesen und gepflanzt?"): GEMESSEN brauchte der Unterwuchs ~60 s
+                // bis zur Materialisierung (Zeitreihe: t=54s alles deferriert → t=61s Blumen
+                // 500 · Kiesel 3960 · Fels 65), weil der Kiesel-Teppich (kiesel→geroell) +
+                // zacken/sediment NICHT in der Bibliothek standen → jede Streu-Zelle lief in
+                // die Defer-Runde (Asset kalt → warten auf Refill). Jetzt wärmt der parallele
+                // Saug auch sie — die erste Streu-Welle findet den Cache warm.
+                "geroell",
+                "zacken",
+                "sediment",
             ],
             // 8 der 12 Varianten vorab (lod2 leicht ~15k) -> die ferne Panorama-Vielfalt steht
             // sofort (dort fallen Klone am meisten auf); die restlichen Varianten + lod0/lod1
@@ -64389,8 +64399,17 @@ class AnazhRealm {
         // Sekunden). Post kostet den Main-Frame nichts; die Antworten docken async.
         const jobs = [];
         for (const sp of spec.species) {
+            // 08.07. (die Inventur-Heilung): BODEN-Arten (kein Baum) wärmen LOD 0 UND 2 —
+            // der nahe Streu-Pass platziert sie mit LOD 0; nur LOD-2-Wärme (der alte Stand)
+            // ließ JEDE nahe Zelle in die Defer-Runde laufen (~60 s bis Kiesel/Blumen).
+            // Bäume bleiben bei LOD 2 (ihr LOD 0/1 lädt on-demand für die Nähe — die
+            // Startup-Speicher-Wand; ihre Fern-Karte trägt der Impostor).
+            const _lods =
+                typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(sp)
+                    ? spec.lods
+                    : Array.from(new Set(spec.lods.concat([0])));
             for (const sd of spec.seeds) {
-                for (const lod of spec.lods) {
+                for (const lod of _lods) {
                     const season = this.state.season || "summer";
                     const key = sp + "|" + sd + "|" + lod + "|" + season;
                     if (f.cache.has(key)) continue;
