@@ -63316,17 +63316,13 @@ class AnazhRealm {
     }
 
     _forestStandDensity(x, z) {
-        const d =
-            this._forestFbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 +
-            this._forestFbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
-        // Schöpfer „so viele chunks aber NICHTS dicht ... alles fehlt!" — die Vorlage (der Studio-Wald)
-        // ist ein GLEICHMÄSSIG dichter Wald, kein spärlicher Fleck. Die alte Stand-Dichte war bimodal
-        // (Kontrast 1.9, Mittel 0.5) → die Hälfte der Welt lag in fast-leeren Lichtungen → spärlich.
-        // Jetzt HÖHER + gleichmässiger: Mittel 0.72, Kontrast 1.35 → der Wald deckt (dichte Kerne +
-        // gelichtete Säume, keine Wüsten dazwischen); Lichtungen bleiben, aber tragen Wald. Der Perf-
-        // Regler (`_foliageDensityScale`) + die LOD-Demotion dünnen auf schwacher HW zurück.
-        const v = (d - 0.5) * 1.35 + 0.72;
-        return v < 0 ? 0 : v > 1 ? 1 : v;
+        // „Drähte statt Kopien" (08.07.): die Formel lebt in phyto-core (forestStandDensity —
+        // Studio-Modell: Mittel 0.72, Kontrast 1.35, dichte Kerne + gelichtete Säume); hier nur
+        // der Draht mit AnazhRealms fbm. Diag-Linsen (diag-forest-*) lesen weiter diese Methode.
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (core && typeof core.forestStandDensity === "function")
+            return core.forestStandDensity((px, pz) => this._forestFbm(px, pz), x, z);
+        return 0;
     }
 
     // Der Welt-Seed als 32-bit-Int (fnv-1a, gecacht) — treibt die Zell-Hashes → alle
@@ -63343,13 +63339,10 @@ class AnazhRealm {
 
     // Ein deterministischer mulberry32 pro Zelle (Hash aus Zell-Koord × Welt-Seed).
     _forestCellRng(cx, cz, seedInt) {
-        let a = (Math.imul(cx | 0, 73856093) ^ Math.imul(cz | 0, 19349663) ^ seedInt) >>> 0;
-        return function () {
-            a = (a + 0x6d2b79f5) | 0;
-            let t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        // Draht zur EINEN Quelle (phyto-core.forestCellRng) — Diag-Linsen lesen weiter hier.
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (core && typeof core.forestCellRng === "function") return core.forestCellRng(cx, cz, seedInt);
+        return () => 0;
     }
 
     // Die BORN-Darts einer Zelle — reine Funktion von (cx,cz,seed). Jeder Roh-Dart läuft
@@ -63373,106 +63366,30 @@ class AnazhRealm {
         const memoKey = cx + "," + cz;
         const hit = memo.get(memoKey);
         if (hit) return hit;
-        const F = AnazhRealm.FOREST;
-        const CELL = F.cell;
-        const rng = this._forestCellRng(cx, cz, seedInt);
-        const ss = (e0, e1, v) => {
-            let t = (v - e0) / (e1 - e0);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            return t * t * (3 - 2 * t);
-        };
-        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
-        const baseH = (this.state && this.state.terrainBaseHeight) || 0;
-        const out = [];
-        for (let i = 0; i < F.dartsPerCell; i++) {
-            const x = (cx + rng()) * CELL;
-            const z = (cz + rng()) * CELL;
-            const sd = this._forestStandDensity(x, z);
-            // Der Lichtungs-Boden hebt (0.04→0.30): auch die gelichteten Säume tragen jetzt Wald
-            // (Studio-Modell: der Wald deckt gleichmässig), die dichten Kerne sättigen weiter voll.
-            if (rng() > 0.3 + 0.7 * ss(0.18, 0.8, sd)) continue;
-            // Boden + Wasser: EIN _voxelSurfaceY-Scan, die Wasser-Marge selbst hergeleitet
-            // (spart den zweiten Scan von _isAboveWaterAt).
-            const surfaceY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : null;
-            if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
-            const waterY = typeof this._waterLevelAt === "function" ? this._waterLevelAt(x, z) : -Infinity;
-            const above = surfaceY - waterY;
-            if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
-            // SLOPE-Grundierung (AnazhRealm-Boden-Tauglichkeit — die Vorlage plantet auf
-            // tauglichem Grund; die Voxelwelt hat Klippen, die die Vorlage nicht kennt).
-            // getTerrainHeightAt ±2 m = derselbe billige Sampler wie der Alt-Sample-Pfad.
-            const slope =
-                typeof this._slopeAt === "function"
-                    ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
-                    : 0;
-            if (rng() > 1 - ss(F.slopeLo, F.slopeHi, slope)) continue;
-            // ARTEN-NISCHE (Vorlage wF/wT/wE/wB/wW) — Klima-Gradient × Patch-Mosaik ×
-            // Feuchte × Höhen-Trockenheit × Offenheit. 1:1 übersetzt, nur die Achsen aus
-            // AnazhRealms echten Feldern gegründet (_feuchteAt, relH über terrainBaseHeight).
-            const relH = surfaceY - baseH;
-            const feu = typeof this._feuchteAt === "function" ? clamp01(this._feuchteAt(x, z, surfaceY)) : 0;
-            const dry = clamp01((relH + 6) / F.dryScale);
-            const wet = feu;
-            const open = 1 - sd;
-            const clim = this._forestFbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
-            const patch = this._forestFbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
-            const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
-            const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
-            const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
-            const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
-            const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
-            const wW = wet * wet * (1 - dry) * 0.8 + feu * feu * 6.0 + 0.01; // Weide→erle: nur nass/tief
-            // NERVENSYSTEM — die AUTO-Arten streuen mit: jedes selbst-registrierte Studio-Preset
-            // (`_foundryAutoRegisterSpecies`, kind:"tree" ohne historische Nische) bekommt eine
-            // eigene Patch-Nische aus seinem NAMENS-HASH (deterministisch, Γ5-treu: kein
-            // Math.random, kein Zeit-Term) → die neue Art bildet eigene Haine im Bestands-Mosaik,
-            // ohne dass hier je eine Zeile für sie geschrieben wird.
-            const extras = this._forestExtraSpecies();
-            let wXsum = 0;
-            for (let xi = 0; xi < extras.length; xi++) {
-                wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
-            }
-            const wsum = wF + wT + wE + wB + wW + wXsum;
-            let pick = rng() * wsum;
-            let sp;
-            if ((pick -= wF) < 0) sp = "baum_kiefer";
-            else if ((pick -= wT) < 0) sp = "baum_tanne";
-            else if ((pick -= wE) < 0) sp = "baum_eiche";
-            else if ((pick -= wB) < 0) sp = "baum_birke";
-            else if ((pick -= wW) < 0) sp = "baum_erle";
-            else {
-                // die Auto-Arten (Reihenfolge deterministisch: _forestExtraSpecies ist sortiert)
-                sp = "baum_erle";
-                for (let xi = 0; xi < extras.length; xi++) {
-                    if ((pick -= extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center))) < 0) {
-                        sp = extras[xi].species;
-                        break;
-                    }
-                }
-            }
-            // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
-            if (sp !== "baum_erle" && above <= 1.2) continue;
-            // GRÖSSE: reverse-J + Selbstausdünnung (dichter Stand → kleinere Lose) + seltene
-            // Überhälter (Altbestand). 1:1 aus der Vorlage.
-            let ue = clamp01(rng() * (1 - 0.52 * sd));
-            let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
-            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
-            s = s < 0.5 ? 0.5 : s > 1.95 ? 1.95 : s;
-            let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
-            // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
-            if (sp !== "baum_erle" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
-                sp = "baum_buche";
-                s = 0.85 + rng() * 0.4;
-                T = F.crown.baum_buche * s;
-            }
-            const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt
-            const keep = rng(); // Perf-Kappung (separat von prio → die Form bleibt beim Dünnen)
-            const totRoll = rng(); // Totholz-Sub-Spawn (Wald-Boden-Debris)
-            const rotY = rng() * 6.283185307;
-            const seed =
-                (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
-            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
-        }
+        // „Drähte statt Kopien" (08.07.): die PFLANZ-LOGIK (Poisson · Nische · Größe ·
+        // Mammut) lebt EINMAL in phyto-core (planForestCell — im Vorlagen-Kern, neben den
+        // Rezepten, die sie pflanzt); hier bleiben nur der Memo und die WELT-READS, die als
+        // ctx-Funktionen hereinreichen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne
+        // Kern (exotische Einbettung) → leerer Wald, graceful wie _phytoGrowSkeleton.
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const out =
+            core && typeof core.planForestCell === "function"
+                ? core.planForestCell(cx, cz, seedInt, {
+                      F: AnazhRealm.FOREST,
+                      baseH: (this.state && this.state.terrainBaseHeight) || 0,
+                      extras: this._forestExtraSpecies(),
+                      fbm: (px, pz) => this._forestFbm(px, pz),
+                      surfaceYAt: (x, z) =>
+                          typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : null,
+                      waterYAt: (x, z) =>
+                          typeof this._waterLevelAt === "function" ? this._waterLevelAt(x, z) : -Infinity,
+                      slopeAt: (x, z) =>
+                          typeof this._slopeAt === "function"
+                              ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
+                              : 0,
+                      feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
+                  })
+                : [];
         if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
         memo.set(memoKey, out);
         return out;

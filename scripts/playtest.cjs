@@ -32622,7 +32622,13 @@ async function checkBandWHWald(ctx) {
         // (die kanonische Art tritt an, die Variante wird NACH der Nischen-Entscheidung
         // GEWACHSEN — keine statische _jung/_alt-Variante im Pool NOCH im Generator).
         const forestSrc = r._forestPlantChunk.toString();
-        const cellDartsSrc = r._forestCellDarts.toString();
+        // „Drähte statt Kopien" (08.07.): die Dart-PFLANZ-LOGIK (Größen-Formel) lebt jetzt in
+        // phyto-core.planForestCell (byte-identisch umgezogen, Dart-Parität bewiesen) — die
+        // Probe wandert mit dem Code (V9.56-i); der Monolith trägt nur noch den ctx-Draht.
+        const cellDartsSrc =
+            window.__phytoCore && typeof window.__phytoCore.planForestCell === "function"
+                ? window.__phytoCore.planForestCell.toString()
+                : r._forestCellDarts.toString();
         // Die Variante wächst region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`)
         // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
         // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE

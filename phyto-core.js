@@ -1347,9 +1347,134 @@
         return m;
     }
 
+    // ===================== DER WALD-PLAN (Vorlagen-Ökologie, „Drähte statt Kopien" 08.07.) =====================
+    // Die Pflanz-LOGIK des Waldes (Poisson-Darts · Stand-Dichte · Arten-Nische · reverse-J-
+    // Größe · Mammut-Promotion) lebt EINMAL hier — im Vorlagen-Kern, neben den Rezepten, die
+    // sie pflanzt. AnazhRealm ist nur noch der Boden: seine Welt-Reads (Oberfläche · Wasser ·
+    // Slope · Feuchte · fbm) reisen als ctx-Funktionen herein. Γ5-treu: aller Zufall aus dem
+    // seed-gebundenen Zell-Hash (forestCellRng), kein Math.random, keine Zeit.
+    // Der Zell-Hash-RNG: reine Funktion von (cx,cz,seed) — alle Peers sehen denselben Wald.
+    function forestCellRng(cx, cz, seedInt) {
+        let a = (Math.imul(cx | 0, 73856093) ^ Math.imul(cz | 0, 19349663) ^ seedInt) >>> 0;
+        return function () {
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+    // Vorlagen-`standDensity`: glatter Wald-↔-Lichtung-Gradient [0,1] (Studio-Modell: hoch +
+    // gleichmässig — Mittel 0.72, Kontrast 1.35; dichte Kerne + gelichtete Säume, keine Wüsten).
+    function forestStandDensity(fbm, x, z) {
+        const d = fbm(x * 0.014 + 30, z * 0.014 + 12) * 0.55 + fbm(x * 0.038 + 5, z * 0.038 + 20) * 0.45;
+        const v = (d - 0.5) * 1.35 + 0.72;
+        return v < 0 ? 0 : v > 1 ? 1 : v;
+    }
+    // Die BORN-Darts einer Zelle — reine Funktion von (cx,cz,seed,ctx). Jeder Roh-Dart läuft
+    // die Vorlagen-Kette: bimodaler standDensity-Wurf → Boden/Wasser → Slope-Grundierung →
+    // Arten-Nische (Klima × Patch-Mosaik × Feuchte × Höhen-Trockenheit × Offenheit, inkl. der
+    // AUTO-Arten aus dem Rezeptbuch via ctx.extras) → reverse-J-Größe → Mammut-Promotion.
+    // ctx = { F, baseH, extras, fbm(px,pz), surfaceYAt(x,z), waterYAt(x,z), slopeAt(x,z),
+    // feuchteAt(x,z,surfY) }. Die rng()-Aufruf-REIHENFOLGE ist heilig (byte-deterministisch).
+    function planForestCell(cx, cz, seedInt, ctx) {
+        const F = ctx.F;
+        const CELL = F.cell;
+        const rng = forestCellRng(cx, cz, seedInt);
+        const ss = (e0, e1, v) => {
+            let t = (v - e0) / (e1 - e0);
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            return t * t * (3 - 2 * t);
+        };
+        const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const baseH = ctx.baseH || 0;
+        const extras = ctx.extras || [];
+        const out = [];
+        for (let i = 0; i < F.dartsPerCell; i++) {
+            const x = (cx + rng()) * CELL;
+            const z = (cz + rng()) * CELL;
+            const sd = forestStandDensity(ctx.fbm, x, z);
+            // Der Lichtungs-Boden hebt (0.04→0.30): auch gelichtete Säume tragen Wald.
+            if (rng() > 0.3 + 0.7 * ss(0.18, 0.8, sd)) continue;
+            // Boden + Wasser: EIN Oberflächen-Scan, die Wasser-Marge selbst hergeleitet.
+            const surfaceY = ctx.surfaceYAt(x, z);
+            if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
+            const waterY = ctx.waterYAt(x, z);
+            const above = surfaceY - waterY;
+            if (above <= 0.4) continue; // im offenen/flachen Wasser wächst NICHTS (Vorlage _de<-0.2)
+            // SLOPE-Grundierung (die Voxelwelt hat Klippen, die die Vorlage nicht kennt).
+            const slope = ctx.slopeAt(x, z);
+            if (rng() > 1 - ss(F.slopeLo, F.slopeHi, slope)) continue;
+            // ARTEN-NISCHE (Vorlage wF/wT/wE/wB/wW) — Klima × Patch × Feuchte × Trockenheit × Offenheit.
+            const relH = surfaceY - baseH;
+            const feu = clamp01(ctx.feuchteAt(x, z, surfaceY));
+            const dry = clamp01((relH + 6) / F.dryScale);
+            const wet = feu;
+            const open = 1 - sd;
+            const clim = ctx.fbm(x * 0.012 + 50, z * 0.012 + 9); // breiter Klima-/Trockengradient
+            const patch = ctx.fbm(x * 0.05 + 200, z * 0.05 + 90); // Bestands-Mosaik (Reinbestände + Mischsäume)
+            const pf = (c) => Math.max(0, 1 - Math.abs(patch - c) / 0.14);
+            const wF = (ss(0.4, 0.8, clim) * 0.45 + dry * 0.5 + 0.04) * (0.18 + 4.8 * pf(0.15)); // Fichte→kiefer: trockene Höhen
+            const wT = (ss(0.5, 0.9, clim) * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pf(0.36)); // Tanne: höher/feuchter
+            const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pf(0.58)); // Eiche: tiefe, feuchte Lagen
+            const wB = ((0.14 + 0.45 * open) * (1 - Math.abs(clim - 0.5) * 0.9) + 0.03) * (0.2 + 3.6 * pf(0.82)); // Birke: Pionier in Lücken
+            const wW = wet * wet * (1 - dry) * 0.8 + feu * feu * 6.0 + 0.01; // Weide→erle: nur nass/tief
+            // NERVENSYSTEM — die AUTO-Arten (ctx.extras, aus dem LIVE-Rezeptbuch) streuen mit:
+            // Patch-Nische deterministisch aus dem Namens-Hash — die neue Art bildet eigene
+            // Haine, ohne dass hier je eine Zeile für sie geschrieben wird.
+            let wXsum = 0;
+            for (let xi = 0; xi < extras.length; xi++) {
+                wXsum += extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center));
+            }
+            const wsum = wF + wT + wE + wB + wW + wXsum;
+            let pick = rng() * wsum;
+            let sp;
+            if ((pick -= wF) < 0) sp = "baum_kiefer";
+            else if ((pick -= wT) < 0) sp = "baum_tanne";
+            else if ((pick -= wE) < 0) sp = "baum_eiche";
+            else if ((pick -= wB) < 0) sp = "baum_birke";
+            else if ((pick -= wW) < 0) sp = "baum_erle";
+            else {
+                // die Auto-Arten (Reihenfolge deterministisch: extras ist sortiert)
+                sp = "baum_erle";
+                for (let xi = 0; xi < extras.length; xi++) {
+                    if ((pick -= extras[xi].w0 * (0.2 + 3.6 * pf(extras[xi].center))) < 0) {
+                        sp = extras[xi].species;
+                        break;
+                    }
+                }
+            }
+            // Nur die Weide-Nische (baum_erle) steht im nassen Saum; der Rest würde versaufen.
+            if (sp !== "baum_erle" && above <= 1.2) continue;
+            // GRÖSSE: reverse-J + Selbstausdünnung (dichter Stand → kleinere Lose) + seltene
+            // Überhälter (Altbestand). 1:1 aus der Vorlage.
+            let ue = clamp01(rng() * (1 - 0.52 * sd));
+            let s = 0.55 + 1.45 * Math.pow(ue, 1.45);
+            if (rng() < 0.05) s = Math.max(s, 1.3 + rng() * 0.55);
+            s = s < 0.5 ? 0.5 : s > 1.95 ? 1.95 : s;
+            let T = (F.crown[sp] || 4.0) * s; // Auto-Arten ohne Kronen-Eintrag → generischer 4-m-Radius
+            // MAMMUT-Nische (baum_buche, selten + riesig) an dichten, trockenen Kernen.
+            if (sp !== "baum_erle" && sd > 0.72 && clim > 0.5 && rng() < 0.02) {
+                sp = "baum_buche";
+                s = 0.85 + rng() * 0.4;
+                T = F.crown.baum_buche * s;
+            }
+            const prio = rng(); // Kronen-Schüchternheit: das prio-Maximum im Konflikt-Radius gewinnt
+            const keep = rng(); // Perf-Kappung (separat von prio → die Form bleibt beim Dünnen)
+            const totRoll = rng(); // Totholz-Sub-Spawn (Wald-Boden-Debris)
+            const rotY = rng() * 6.283185307;
+            const seed =
+                (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
+            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY });
+        }
+        return out;
+    }
+
     root.__phytoCore = {
         impostorFrame: impostorFrame,
         scanRadialXZ: scanRadialXZ,
+        forestCellRng: forestCellRng,
+        forestStandDensity: forestStandDensity,
+        planForestCell: planForestCell,
         growSkeleton: growSkeleton,
         treePhenotype: treePhenotype,
         treeParams: treeParams,
