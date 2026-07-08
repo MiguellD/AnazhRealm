@@ -106,6 +106,15 @@ if (typeof WEBGPU.RenderPipeline === "function") {
 } else if (typeof WEBGPU.PostProcessing === "function") {
     THREE_GLOBAL.PostProcessing = WEBGPU.PostProcessing;
 }
+// 08.07. — DIESELBE V18.267-WURZEL-KLASSE beim PMREM: `{...THREE}` spreizt den
+// WebGL-Ära-PMREMGenerator (ShaderMaterial-intern) über das Objekt — der WebGPU-
+// Renderer lehnt dessen interne Materialien ab („ShaderMaterial is not compatible",
+// 2× je Env-Bau im Schöpfer-Log). Das three/webgpu-Bundle exportiert seinen EIGENEN
+// node-basierten PMREMGenerator (gleiche fromEquirectangular(tex, rt)-Signatur) —
+// er gewinnt; fehlt er (Vendor-Wechsel), bleibt der alte als Fallback funktional.
+if (typeof WEBGPU.PMREMGenerator === "function") {
+    THREE_GLOBAL.PMREMGenerator = WEBGPU.PMREMGenerator;
+}
 THREE_GLOBAL.TSL = TSL;
 // B4 — CSM ist optional (fehlt das Symbol nach einem Vendor-Wechsel, fällt
 // initThreeJS sauber auf die EINE 2048er-Map zurück — Soft-Anbindung wie

@@ -13357,7 +13357,16 @@ class AnazhRealm {
             this.state._fpsElapsed = 0;
             const fpsDiv = typeof document !== "undefined" ? document.getElementById("fps") : null;
             if (fpsDiv) fpsDiv.innerText = `FPS: ${fps}`;
-            this.log(`FPS: ${fps}`, "INFO");
+            // DIE LEISE KONSOLE (08.07., Schöpfer-Log-Befund): eine FPS-INFO-Zeile pro
+            // Sekunde ertränkt die echten Signale (Leck-Verdacht/Fehler). Die Zahl lebt
+            // im HUD (#fps) + perf-Overlay; die Konsole spricht nur bei einem ECHTEN
+            // EINBRUCH (> 30 % unter die laufende Referenz, gedrosselt via Referenz-Reset).
+            const ref = this._fpsLogRef || fps;
+            if (fps < ref * 0.7 && fps < 45) {
+                this.log(`FPS-Einbruch: ${fps} (zuvor ~${Math.round(ref)})`, "WARN");
+            }
+            // EWMA-Referenz (träge, Instanz-Feld wie _editSaveTimer — nicht serialisiert).
+            this._fpsLogRef = ref * 0.9 + fps * 0.1;
         }
     }
 
@@ -14386,7 +14395,16 @@ class AnazhRealm {
         }
         // EINMAL laut sagen, sobald ein klares Leck steht — OHNE dass jemand einen Befehl
         // tippt (genau das, was sich der Schöpfer wünscht: das System spuckt es selbst aus).
-        if (!fr._leakAnnounced && ((heapRate != null && heapRate > 0.5) || topV > 200)) {
+        // DER RAMP-GATE (08.07., die V18.306-Lehre strukturell): während die Welt zum
+        // Ziel-Ring RAMPT (Boot/Welt-Wechsel), IST Wachstum der Normalzustand (die Welt
+        // streamt ein) — die Heuristik feuerte auf genau diese transiente Phase (das
+        // „+6.59 MB/s über 3s"-Boot-Log, gemessen kein Leck). Sie spricht erst, wenn
+        // die Welt am Ziel steht (kein aktiver Ramp) — ein ECHTES Leck wächst weiter
+        // und wird dann gemeldet; ein Boot-Transient verstummt von selbst.
+        const _ramping =
+            this.state._activeRingRadius != null &&
+            this.state._activeRingRadius < Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
+        if (!fr._leakAnnounced && !_ramping && ((heapRate != null && heapRate > 0.5) || topV > 200)) {
             fr._leakAnnounced = true;
             this.log(`Flugschreiber LECK-VERDACHT — ${verdict}`, "INFO");
         }
@@ -15071,6 +15089,17 @@ class AnazhRealm {
     // nur die VISUELLE Brücke zwischen Einzelbaum-Cull und Horizont.
     // Tag-Neutral: kein Welt-Effekt, kein Tag-Push (reine Render-Schicht).
     _ensureCanopyShell() {
+        // DAS STUDIO-MODELL (08.07., „nimm raus was rausgehört"): die Canopy-Shell ist
+        // wie der Horizont-Mantel eine Vor-Studio-FERN-Kulisse (die geschlossene Wald-
+        // Fläche JENSEITS des Einzelbaum-Culls) — im Studio-Modell schließt der Nebel an
+        // der Wald-Kante (S1, ~194 m), die Shell steht komplett im Nebel UND kostete
+        // jeden Boot ×2 (Szenen-Init-rAF + Load-rAF) je ~9k worldFieldAt-Samples — die
+        // gemessene „Canopy-Shell gebaut"-Doppel-Zeile im Schöpfer-Log. Im Studio-Regime
+        // AUS (Chokepoint: ALLE Ensure-Aufrufer erben es); ohne Foundry byte-alt.
+        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+            if (this.state.canopyShell) this._disposeCanopyShell();
+            return null;
+        }
         if (this.state.canopyShell) return this.state.canopyShell;
         if (!this.state.scene || typeof THREE === "undefined") return null;
         return this._buildCanopyShell();
@@ -23718,35 +23747,39 @@ class AnazhRealm {
         }
         // V9.39 Phase 5c.2.c.3.b.iii — der Heightfield-Chunks-Cleanup ist
         // entfernt (Voxel ist permanent seit V9.35, beide Sammlungen leer).
-        if (this.state.floatingIslands) {
+        // EHRLICHE LOGS (08.07., der Schöpfer-Log-Befund „dinge werden platziert und
+        // wieder entfernt"): die „entfernt"-Zeilen feuerten auch auf LEEREN Arrays
+        // (`if (array)` ist für [] wahr) — der Boot LOG log Abriss, wo keiner war.
+        // Jetzt spricht die Zeile nur, wenn wirklich etwas entfernt wurde (count > 0).
+        if (this.state.floatingIslands && this.state.floatingIslands.length) {
             this.state.floatingIslands.forEach((island) => {
                 this.state.scene.remove(island);
             });
-            this.state.floatingIslands = [];
-            this.log("Alte fliegende Inseln entfernt");
+            this.log(`Alte fliegende Inseln entfernt (${this.state.floatingIslands.length})`);
         }
-        if (this.state.ufos) {
+        this.state.floatingIslands = [];
+        if (this.state.ufos && this.state.ufos.length) {
             this.state.ufos.forEach((ufo) => this.state.scene.remove(ufo));
-            this.state.ufos = [];
-            this.log("Alte UFOs entfernt");
+            this.log(`Alte UFOs entfernt (${this.state.ufos.length})`);
         }
-        if (this.state.creatures) {
+        this.state.ufos = [];
+        if (this.state.creatures && this.state.creatures.length) {
             this.state.creatures.forEach((creature) => {
                 this.state.scene.remove(creature);
                 // P3 — Kreaturen tragen keinen Ammo-Body mehr; nur die rigidBodies-Ref lösen.
                 this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
             });
-            this.state.creatures = [];
-            this.state.creatureEmotions = [];
-            this.log("Alte Kreaturen entfernt");
+            this.log(`Alte Kreaturen entfernt (${this.state.creatures.length})`);
         }
-        if (this.state.vegetation) {
+        this.state.creatures = [];
+        this.state.creatureEmotions = [];
+        if (this.state.vegetation && this.state.vegetation.length) {
             this.state.vegetation.forEach((veg) => {
                 this.state.scene.remove(veg);
             });
-            this.state.vegetation = [];
-            this.log("Alte Vegetation entfernt");
+            this.log(`Alte Vegetation entfernt (${this.state.vegetation.length})`);
         }
+        this.state.vegetation = [];
         // V9.43-c — Hydrosphären-Meshes (Fluss-Ribbons, See-Planes, Wasserfall-
         // Planes) abräumen. Der V9.43-a-per-Chunk-Wasserfall-Spawner ist abgelöst.
         this._disposeHydrosphereMeshes();
@@ -50835,6 +50868,35 @@ class AnazhRealm {
         const map = this._ensureScatterRegionMap();
         const key = `${regX},${regZ}`;
         if (map.has(key)) return map.get(key);
+        // DER STILLE SAUG (08.07., Schöpfer „die Andockstellen müssen instant saugen …
+        // dinge werden platziert und wieder entfernt"): läuft der Foundry-Prefetch noch
+        // (das Boot-Fenster, ~6 s), baut die Region NICHT HALB (warme Arten da, kalte
+        // deferriert → der Refill DISPOSED die halbe Region sichtbar + baut sie neu =
+        // der gemessene Churn). Sie entsteht LEER mit dem Defer-Flag und baut EINMAL,
+        // wenn die Bibliothek warm ist (die Baum-/Gras-Warte-Regel V18.411, auf die
+        // ganze Region gehoben; der Refill-Dispose einer leeren Region ist unsichtbar).
+        // Headless/Null-Renderer → sofort voll bauen (gate-treu, die foliageRadius-Klasse).
+        const _fdry = this._foundry;
+        if (
+            _fdry &&
+            _fdry._prefetching &&
+            typeof this._foundryEnabled === "function" &&
+            this._foundryEnabled() &&
+            !(this.state.renderer && this.state.renderer._isHeadlessNull)
+        ) {
+            const empty = {
+                regX,
+                regZ,
+                cells: [],
+                instanceCount: 0,
+                byLayer: {},
+                builtDensity: this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1,
+                regional: this.state.useRegionFoliageCull !== false,
+                _deferredFoundry: true,
+            };
+            map.set(key, empty);
+            return empty;
+        }
         const worldSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
@@ -60707,7 +60769,7 @@ class AnazhRealm {
         const atlasCanvas = document.createElement("canvas");
         atlasCanvas.width = cw * V;
         atlasCanvas.height = ch;
-        const actx = atlasCanvas.getContext("2d");
+        const actx = atlasCanvas.getContext("2d", { willReadFrequently: true });
         if (!actx) return null;
         for (let v = 0; v < V; v++) actx.drawImage(cell, v * cw, 0, cw, ch);
         // Neutraler Normal-Atlas: (0.5,0.5,1) = Normale ZUR Kamera (Vorlage Z.1622,
@@ -60715,7 +60777,7 @@ class AnazhRealm {
         const nrmCanvas = document.createElement("canvas");
         nrmCanvas.width = cw * V;
         nrmCanvas.height = ch;
-        const nctx = nrmCanvas.getContext("2d");
+        const nctx = nrmCanvas.getContext("2d", { willReadFrequently: true });
         if (nctx) {
             nctx.fillStyle = "rgb(128,128,255)";
             nctx.fillRect(0, 0, cw * V, ch);
@@ -60907,11 +60969,11 @@ class AnazhRealm {
         const colCanvas = document.createElement("canvas");
         colCanvas.width = cw * V;
         colCanvas.height = ch;
-        const colCtx = colCanvas.getContext("2d");
+        const colCtx = colCanvas.getContext("2d", { willReadFrequently: true });
         const nrmCanvas = document.createElement("canvas");
         nrmCanvas.width = cw * V;
         nrmCanvas.height = ch;
-        const nrmCtx = nrmCanvas.getContext("2d");
+        const nrmCtx = nrmCanvas.getContext("2d", { willReadFrequently: true });
         if (!colCtx || !nrmCtx) throw new Error("2D-Kontext für den Atlas-Blit fehlt");
         // MeshNormalMaterial (Core-Klasse — der WebGPURenderer konvertiert sie nativ
         // zur Node-Variante; exakt der Vorlagen-Override Z.1616, KEIN Bootstrap-Edit
@@ -60988,14 +61050,18 @@ class AnazhRealm {
     // V18.390 (Eins W3) — die 2px-CPU-Dilation (Vorlagen-Shader Z.1656 als Canvas-
     // Pass): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 → die
     // Mips mischen Blattfarbe statt Clear-Grün (kein dunkler Halo an fernen Karten).
+    // IN-MEMORY (08.07., der Schöpfer-Log-Befund „115× willReadFrequently"): der alte
+    // Pfad rief getImageData/putImageData PRO PASS PRO BAKE = ein GPU→CPU-Readback-
+    // Sturm auf dem Main-Thread mitten im Boot. Jetzt EIN Readback + Pässe als Ping-
+    // Pong auf zwei typed Arrays + EIN Write — byte-identisches Ergebnis (dieselbe
+    // Nachbar-Max-Regel auf denselben Daten), N−1 Readbacks weniger je Aufruf.
     _impostorDilate(ctx, w, h, radiusPx) {
         const passes = Math.max(1, radiusPx | 0);
+        const img = ctx.getImageData(0, 0, w, h);
+        let d = img.data;
+        let o = new Uint8ClampedArray(d.length);
         for (let p = 0; p < passes; p++) {
-            const src = ctx.getImageData(0, 0, w, h);
-            const out = ctx.createImageData(w, h);
-            out.data.set(src.data);
-            const d = src.data,
-                o = out.data;
+            o.set(d);
             for (let y = 0; y < h; y++) {
                 for (let x = 0; x < w; x++) {
                     const idx = (y * w + x) * 4;
@@ -61028,8 +61094,12 @@ class AnazhRealm {
                     }
                 }
             }
-            ctx.putImageData(out, 0, 0);
+            const t = d;
+            d = o;
+            o = t;
         }
+        img.data.set(d);
+        ctx.putImageData(img, 0, 0);
     }
 
     // Die deterministische Silhouetten-Zeichnung (aus Key-Hash + skeleton.kind).
@@ -63670,6 +63740,12 @@ class AnazhRealm {
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
+        // DER STILLE SAUG — den persistenten Asset-Cache PARALLEL zum Worker-Boot öffnen
+        // (Stempel-Hash + DB-Open laufen, während der Worker das Studio lädt): beim
+        // Prefetch ist die Platte schon bereit → der zweite Boot saugt in Millisekunden.
+        try {
+            this._foundryIdbInit(f);
+        } catch (_e2) {}
         return f;
     }
     // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
@@ -63799,7 +63875,121 @@ class AnazhRealm {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
+    // ===== DER PERSISTENTE ASSET-CACHE (08.07., „instant saugen") =====
+    // Die Studio-Assets sind DETERMINISTISCH (Rezept × Variante × LOD × Saison) → der
+    // gebackene Worker-Reply (postMessage-transportiert = structured-clone-sicher by
+    // construction) wird UNVERÄNDERT in IndexedDB persistiert. Der zweite Boot liest
+    // die Bibliothek in Millisekunden aus der Platte statt Sekunden aus dem Worker —
+    // der Boot-≤3s-Pfad des Done-Kriteriums. DIE DRIFT-WAND (die „jede Kopie war die
+    // Drift-Quelle"-Lehre — ein persistierter Bake IST eine Kopie): der Cache-Stempel
+    // ist der HASH DER GENERATOR-QUELLEN (foundry-core.js + phyto-core.js) — ein
+    // Studio-Edit ändert den Hash → der Cache bustet VON SELBST (kein Versions-Ritual,
+    // keine stale Assets möglich). Headless/Null-Renderer → AUS (gate-deterministisch,
+    // der Worker-Pfad bleibt der geprüfte). Jeder Fehler fällt STUMM auf den Worker.
+    _foundryIdbInit(f) {
+        if (f._idbReady) return f._idbReady;
+        const off = () => {
+            f._idbDead = true;
+            return null;
+        };
+        if (
+            typeof indexedDB === "undefined" ||
+            (this.state.renderer && this.state.renderer._isHeadlessNull) ||
+            typeof fetch !== "function" ||
+            typeof crypto === "undefined" ||
+            !crypto.subtle
+        ) {
+            f._idbReady = Promise.resolve(null);
+            f._idbDead = true;
+            return f._idbReady;
+        }
+        const V = AnazhRealm.VERSION;
+        f._idbReady = Promise.all([
+            fetch("foundry-core.js?v=" + V).then((r) => r.text()),
+            fetch("phyto-core.js?v=" + V).then((r) => r.text()),
+        ])
+            .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
+            .then((buf) => {
+                const stamp = Array.from(new Uint8Array(buf))
+                    .map((b) => b.toString(16).padStart(2, "0"))
+                    .join("");
+                return new Promise((resolve) => {
+                    const req = indexedDB.open("anazhFoundryAssets", 1);
+                    req.onupgradeneeded = () => {
+                        req.result.createObjectStore("assets");
+                    };
+                    req.onerror = () => resolve(off());
+                    req.onsuccess = () => {
+                        const db = req.result;
+                        const tx = db.transaction("assets", "readwrite");
+                        const st = tx.objectStore("assets");
+                        const g = st.get("__stamp");
+                        g.onsuccess = () => {
+                            if (g.result !== stamp) {
+                                // Generator geändert → der GANZE Cache ist potenziell drift → leeren.
+                                st.clear();
+                                st.put(stamp, "__stamp");
+                            }
+                        };
+                        tx.oncomplete = () => {
+                            f._idbDb = db;
+                            resolve(db);
+                        };
+                        tx.onerror = () => resolve(off());
+                    };
+                });
+            })
+            .catch(() => off());
+        return f._idbReady;
+    }
+    _foundryIdbGet(presetId, seed, lod, season) {
+        const f = this._foundry;
+        if (!f || f._idbDead) return Promise.resolve(null);
+        return this._foundryIdbInit(f).then((db) => {
+            if (!db) return null;
+            return new Promise((resolve) => {
+                try {
+                    const g = db
+                        .transaction("assets", "readonly")
+                        .objectStore("assets")
+                        .get(`${presetId}|${seed}|${lod}|${season}`);
+                    g.onsuccess = () => resolve(g.result && g.result.meshes ? g.result.meshes : null);
+                    g.onerror = () => resolve(null);
+                } catch (_e) {
+                    resolve(null);
+                }
+            });
+        });
+    }
+    _foundryIdbPut(presetId, seed, lod, season, meshes) {
+        const f = this._foundry;
+        if (!f || f._idbDead || !f._idbDb || !meshes || !meshes.length) return;
+        try {
+            f._idbDb
+                .transaction("assets", "readwrite")
+                .objectStore("assets")
+                .put({ meshes }, `${presetId}|${seed}|${lod}|${season}`).onerror = () => {
+                f._idbDead = true; // Quota/Fehler → still auf den Worker-only-Pfad
+            };
+        } catch (_e) {
+            f._idbDead = true;
+        }
+    }
     _foundryRequest(presetId, seed, lod, season) {
+        const f = this._foundry;
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const s = season || "summer";
+        // Platte zuerst (µs–ms), Worker nur beim Miss; der Treffer IST der Worker-Reply
+        // eines früheren Boots (byte-gleich, drift-bewacht über den Quellen-Stempel).
+        return this._foundryIdbGet(presetId, seed, lod, s).then((hit) => {
+            if (hit) return hit;
+            return this._foundryWorkerRequest(presetId, seed, lod, s).then((meshes) => {
+                if (meshes && meshes.length) this._foundryIdbPut(presetId, seed, lod, s, meshes);
+                return meshes;
+            });
+        });
+    }
+    _foundryWorkerRequest(presetId, seed, lod, season) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const reqId = "r" + f.reqSeq++;

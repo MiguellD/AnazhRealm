@@ -1279,7 +1279,10 @@ function emitTree(P) {
         }
     }
     if (useTexL && !_leafAtlas) useTexL = false; // FIX v34: stiller Fehlschlag unmoeglich — ohne Atlas fallen wir sichtbar auf Geometrie zurueck UND loggen es
-    if (__lod === 1)
+    // DIE LEISE KONSOLE (08.07.): die per-Bau-INFO-Zeile flutete den Boot (~112 Zeilen)
+    // und ertraenkte echte Signale — nur noch hinter dem Debug-Flag (__phytoDebug).
+    // Der v34-Fallback-WARN (Atlas-Fehlschlag) bleibt IMMER laut (stiller Fehlschlag unmoeglich).
+    if (__lod === 1 && globalThis.__phytoDebug)
         console.log(
             "[phyto] L1-Bau: " +
                 (useTexL

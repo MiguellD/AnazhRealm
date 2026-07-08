@@ -36643,7 +36643,11 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
 
         // Behavioral: _ensureCanopyShell baut das Mesh + state.canopyShell
         // wird gesetzt + erste Vertex hat Y > 0 (Terrain-Höhe).
+        // Studio-Modell (08.07.): die Shell ist ALT-PFAD-Fern-Kulisse (im Studio-Regime
+        // aus, hinter dem Wald-Kanten-Nebel) → die lebende Mechanik prüft der Test-Hook
+        // (die gate:grass-thin-Klasse, V9.56-i); Cleanup unten stellt den Studio-Zustand her.
         if (out.cBuildExists) {
+            window.__anazhGateNoFoundry = true;
             try {
                 const mesh = r._ensureCanopyShell();
                 out.cMeshBuilt = !!mesh && mesh.isMesh === true;
@@ -36687,6 +36691,11 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
                 r.state.canopyShellMaterial.isMeshToonMaterial || r.state.canopyShellMaterial.isMeshStandardMaterial
             ); // V18.234 — Toon ODER PBR (Default pbr)
         }
+        // Studio-Zustand wiederherstellen: Hook weg + Shell weg (im Studio-Regime AUS).
+        delete window.__anazhGateNoFoundry;
+        try {
+            if (typeof r._disposeCanopyShell === "function") r._disposeCanopyShell();
+        } catch (_e) {}
 
         return out;
     });
