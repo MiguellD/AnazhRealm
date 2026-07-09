@@ -392,6 +392,57 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
     }
 }
 
+// N5 (Nervensystem-Plan Phase δ, „Gesetze andocken") — DIE EINE PLACE-AUFLÖSUNG: wie eine
+// Buch-Art in die Welt kommt, entscheidet `_placePolicyFor` (Rezept-fx.place führt, sonst die
+// placeExtra-Ableitung) + der Dispatch-Chokepoint `_placeDispatch`. Die Wald-Nischen-Quelle
+// (`_forestExtraSpecies`) LIEST diese Auflösung — kein direkter placeExtra-Griff mehr außerhalb
+// der Auflösung (der `.placeExtra`-Property-READ lebt genau EINMAL, in `_placePolicyFor`; die
+// KIND_POLICY-Tabellen-ZEILEN `placeExtra:` sind Daten, keine Reads). Fail-closed: unbekannte
+// modes fallen über die PLACE_MODES-Tabelle auf "none".
+console.log("\nGesetz N5 — die Place-Auflösung (eine Quelle · Dispatch-Chokepoint · kein placeExtra-Griff):");
+{
+    const _fnBodyN5 = (re) => {
+        const m = anazhNC.match(re);
+        if (!m) return "";
+        let i = anazhNC.indexOf(m[0]) + m[0].length,
+            depth = 1,
+            out = "";
+        while (i < anazhNC.length && depth > 0) {
+            const ch = anazhNC[i++];
+            if (ch === "{") depth++;
+            else if (ch === "}") depth--;
+            if (depth > 0) out += ch;
+        }
+        return out;
+    };
+    const extrasBody = _fnBodyN5(/_forestExtraSpecies\(\) \{/);
+    law(
+        "N5: die Wald-Nischen-Quelle liest die EINE Auflösung (`_placePolicyFor` + `_placeDispatch` in `_forestExtraSpecies`)",
+        true,
+        extrasBody.length > 0 && /_placePolicyFor\(/.test(extrasBody) && /_placeDispatch\(/.test(extrasBody)
+    );
+    law(
+        "N5: kein direkter placeExtra-Griff in der Wald-Nischen-Quelle",
+        false,
+        /placeExtra/.test(extrasBody),
+        "die Nischen-Quelle greift wieder direkt auf placeExtra"
+    );
+    const policyBody = _fnBodyN5(/_placePolicyFor\(rec, kindPolicy\) \{/);
+    law(
+        "N5: der `.placeExtra`-READ lebt genau EINMAL — in `_placePolicyFor` (die Ableitung)",
+        true,
+        (anazhNC.match(/\.placeExtra/g) || []).length === 1 && /\.placeExtra === "forest"/.test(policyBody)
+    );
+    law(
+        'N5: die Auflösung fällt fail-closed über die PLACE_MODES-Tabelle (unbekannter mode → "none")',
+        true,
+        /PLACE_MODES = Object\.freeze\(\{ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 \}\)/.test(
+            anazhNC
+        ) && /PLACE_MODES\[src\.mode\] === 1 \? src\.mode : "none"/.test(anazhNC)
+    );
+    law("N5: `gate:place-policy` verdrahtet", true, /"gate:place-policy"\s*:/.test(pkg));
+}
+
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {
     console.error(

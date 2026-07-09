@@ -450,19 +450,37 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 
 | Schritt | Spezifikation                                                                                                                    |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| N5.1    | Schema `components.place` lesen aus Rezept `fx.place` oder render-config                                                         |
-| N5.2    | `_placeDispatch(chunk                                                                                                            | region, policy, rng)` Chokepoint |
-| N5.3    | mode `forest` → bestehendes `_forestPlantChunk`                                                                                  |
-| N5.4    | mode `scatter` → `_scatterPass` mit Policy-Parametern                                                                            |
-| N5.5    | mode `hand` / `none` → kein Worldgen                                                                                             |
-| N5.6    | mode `site` — minimal: Tag/Nische (Tor); Gate mit synthetischem Rezept                                                           |
+| N5.1    | ✅ (09.07.) Schema `components.place` lesen aus Rezept `fx.place` — `_placePolicyFor(rec, kindPolicy)`                           |
+| N5.2    | ✅ (09.07.) `_placeDispatch(policy, ctx)` Chokepoint — die Wald-Nischen-Quelle ruft ihn (Verfassung N5)                          |
+| N5.3    | ✅ (09.07.) mode `forest` → bestehende `_forestExtraSpecies`-Nische → `_forestPlantChunk` (byte-gleich, kein Wald-Code dupliziert) |
+| N5.4    | ⏳ mode `scatter` → BENANNT-VORBEREITET: Kanal steht im Dispatch, Anschluss an `_scatterPass` dokumentiert, NICHT verdrahtet (heute kein Konsument — Verdrahtung = bewusster Folge-Schritt) |
+| N5.5    | ✅ (09.07.) mode `hand` / `none` → kein Worldgen (Dispatch null — das vehicle-Verhalten)                                         |
+| N5.6    | ✅ (09.07.) mode `site` — minimal: Semantik-Weiche steht, siteTag reist als Daten, streut NICHT (Welt-Nische = ε-Anschluss/Porta); Gate mit synthetischem Rezept (injizierte tor-Policy-Zeile, 0 Stamm-Diff) |
 | N5.7    | mode `settlement` — **nach** Stadt-Lab-Export; Seed-Suffix `:stadt`; Schwester-Logik zu Forest, nicht Kopie des Wald-Codes im if |
 
 **Akzeptanz N5:**
 
-- [ ] Rezept `place.mode:none` → Katalog ja, Worldgen nein
-- [ ] Forest-Verhalten Regression grün
-- [ ] Synthetisches site-Rezept registrierbar über Policy (β) und platziert unter N5.6
+- [x] Rezept `place.mode:none` → Katalog ja, Worldgen nein (`gate:place-policy` c — H8-Kern, none vs forest disjunkt)
+- [x] Forest-Verhalten Regression grün (Nischen-Liste BYTE-GLEICH zur alten placeExtra-Regel, `gate:place-policy` a + `gate:nervensystem` D unverändert grün)
+- [x] Synthetisches site-Rezept registrierbar über Policy (β) — `gate:place-policy` d; die PLATZIERUNG (Welt-Nische) ist bewusst der benannte ε-Anschluss (N5.6 minimal: site verhält sich heute wie none + trägt siteTag als Daten)
+
+**N5 Teil-DONE (09.07. — „Place-Policies", Linse `gate:place-policy` per-push-CI, inkl. Selbst-Test):**
+
+- [x] N5.1 `_placePolicyFor(rec, kindPolicy)`: Rezept-`fx.place` FÜHRT wenn vorhanden (nur die
+      bekannten Felder mode/layer/step/density/affinity/siteTag/seedSuffix tragen Semantik;
+      unbekannte Felder reisen unangetastet mit [must-ignore + must-preserve], unbekannter mode
+      fällt GESCHLOSSEN auf "none" via `PLACE_MODES`-Tabelle); sonst die KIND_POLICY-Ableitung
+      (placeExtra "forest" → forest, alles andere → none). Heute trägt KEIN Rezept den Block → 0 Regress.
+- [x] N5.2 `_placeDispatch(policy, ctx)` = die EINE Weiche zum Welt-Kanal ("forest" | "scatter"
+      [benannt, ohne Konsument] | null); `_forestExtraSpecies` liest die Auflösung statt
+      placeExtra direkt (Umleitung, byte-gleich; der `.placeExtra`-READ lebt genau EINMAL in
+      `_placePolicyFor` — Verfassungs-Gesetz N5, 5 Zeilen).
+- [x] N5.6 site minimal: Registrierung über Policy-Zeile (N2-Mechanik) + siteTag als Daten +
+      streut nicht — die SEMANTIK-Weiche steht, die Nischen-Platzierung ist der ε-Anschluss.
+- [ ] N5.4 scatter-Verdrahtung (policy-getriebene Schicht in `_scatterRegion`/`_scatterPass` aus
+      policy.layer/step/density) — der bewusste Folge-Schritt, sobald ein Rezept scatter trägt.
+- [ ] N5.7 settlement — **Anker: nach dem Stadt-Lab-Export** (Phase ε, §Lab-Tabelle „Stadt");
+      Schwester-Logik zu forest (Seed-Suffix `:stadt`), keine Kopie des Wald-Codes im if.
 
 ### N6 — Drive / Wield
 
@@ -523,7 +541,7 @@ Pro Lab **Checkliste** (immer gleich):
 | **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                                                                                               |
 | **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Baseline 29 Call-Sites → **22** (N7.2 Scheibe 1, 09.07.; Inventur `docs/analyse/dual-regime-inventur-n7.md`) |
 | **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                                                                                            |
-| **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                                                                                                         |
+| **H8** | place.mode none vs forest disjunkt                             | δ N5  | `gate:place-policy` ✅ (09.07., per-push-CI — none: Katalog ja/Nische nein · forest byte-gleich · site trägt siteTag ohne Streu · must-ignore/must-preserve; Selbst-Test: Verletzungs-Injektion feuert) |
 
 Bestehende Pflicht-Gates pro Merge: `check` · relevant nervensystem* · studio-vertrag · page-error wo Render.
 

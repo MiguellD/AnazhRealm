@@ -64156,12 +64156,64 @@ class AnazhRealm {
         return a * 0.65 + b * 0.35;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // N5 (Nervensystem-Plan Phase δ, „Gesetze andocken") — PLACE-POLICIES.
+    // Wörterbuch v1 §2.4: place { mode, layer?, step?, density?, affinity?, siteTag?, seedSuffix? },
+    // mode ∈ { none | hand | scatter | forest | site | settlement }. Die EINE Auflösung + der EINE
+    // Dispatch-Chokepoint, durch die eine BUCH-Art (Rezeptbuch-Preset) in die Welt kommt. Die
+    // historischen Nicht-Buch-Arten (die sechs Basis-Nischen, Grammatik-Understory, Fels/Kiesel)
+    // leben bewusst AUSSERHALB dieser Auflösung — ihr Eingang ist kein Rezept.
+    // ─────────────────────────────────────────────────────────────────────────
+    // N5.1 — DIE EINE PLACE-AUFLÖSUNG: trägt das Rezept einen fx.place-Block, FÜHRT er (das
+    // Lab-Gesetz als Daten, M1/M7); sonst die KIND_POLICY-Ableitung (placeExtra "forest" →
+    // mode "forest", alles andere → "none" = das heutige vehicle-Verhalten; heute trägt KEIN
+    // Rezept den Block → 0 Regress). must-ignore/must-preserve (M6): unbekannte FELDER des
+    // Blocks reisen unangetastet mit (weder gestrippt noch gedeutet, das Rezept bleibt
+    // unberührt); ein unbekannter/fehlender mode fällt GESCHLOSSEN auf "none" — der Host
+    // erfindet keine Platzierung für eine Semantik, die er nicht kennt.
+    _placePolicyFor(rec, kindPolicy) {
+        const pol = kindPolicy !== undefined ? kindPolicy : rec && AnazhRealm.KIND_POLICY[rec.kind];
+        const src = rec && rec.fx && rec.fx.place && typeof rec.fx.place === "object" ? rec.fx.place : null;
+        if (src) {
+            const out = Object.assign({}, src); // must-preserve: unbekannte Felder reisen unangetastet mit
+            out.mode = AnazhRealm.PLACE_MODES[src.mode] === 1 ? src.mode : "none"; // fail-closed
+            return out;
+        }
+        return { mode: pol && pol.placeExtra === "forest" ? "forest" : "none" };
+    }
+    // N5.2 — DER PLACE-DISPATCH-CHOKEPOINT (Gesetz #0): die EINE Weiche vom aufgelösten
+    // place.mode zum Welt-Kanal. Rückgabe = Kanal-Name oder null (kein Worldgen). Der Dispatch
+    // DUPLIZIERT keinen Platzierungs-Code — er BENENNT den Kanal, die bestehenden Systeme
+    // bleiben die Bauer:
+    //   forest (N5.3)     → "forest": die bestehende Wald-Nische (_forestExtraSpecies →
+    //                       phyto-core planForestCell). Die Auflösung passiert VOR den Darts,
+    //                       nie darin — Γ5: keine rng-Aufrufs-Reihenfolge berührt.
+    //   scatter (N5.4)    → "scatter": BENANNT-VORBEREITET, NICHT verdrahtet. Der dokumentierte
+    //                       Anschluss: eine policy-getriebene Schicht in _scatterRegion/
+    //                       _scatterPass (layer-Spec aus policy.layer/step/density statt der
+    //                       festen SCATTER-Schichten). Heute trägt kein Rezept scatter — die
+    //                       Verdrahtung wäre eine Verhaltens-Änderung ohne Konsument und ist
+    //                       der bewusste Folge-Schritt.
+    //   hand/none (N5.5)  → null: kein Worldgen (Katalog/Werkstatt/Spawn-Befehl — das heutige
+    //                       vehicle-Verhalten).
+    //   site (N5.6)       → null: verhält sich HEUTE wie none und trägt siteTag als DATEN —
+    //                       die Welt-Nische (Schrein/Tor) ist der benannte ε-Anschluss (Porta).
+    //   settlement (N5.7) → null: NACH dem Stadt-Lab-Export (Schwester-Logik zu forest,
+    //                       seedSuffix ":stadt" — keine Kopie des Wald-Codes in einem if).
+    _placeDispatch(policy, _ctx) {
+        const mode = policy && policy.mode;
+        if (mode === "forest") return "forest";
+        if (mode === "scatter") return "scatter"; // benannter Kanal — heute ohne Konsument (s. o.)
+        return null;
+    }
+
     // Vorlagen-`standDensity`: glatter, NICHT übersättigter Wald-↔-Lichtung-Gradient [0,1].
-    // NERVENSYSTEM — die AUTO-Arten-Liste für den Wald-Generator: alle kind:"tree"-Presets des
-    // LIVE-Rezeptbuchs, die KEINE historische Nische tragen (die sechs Basis-Arten fließen durch
-    // die fünf Vorlagen-Nischen). Jede bekommt ihr Patch-Zentrum + Grundgewicht DETERMINISTISCH
-    // aus dem Namens-Hash (Γ5: seed-frei ist ok — der Name IST die Identität, alle Peers teilen
-    // das Vorlagefile). Gecacht auf Rezeptbuch-Identität; sortiert (deterministische Pick-Folge).
+    // NERVENSYSTEM — die AUTO-Arten-Liste für den Wald-Generator: alle Wald-fähigen Presets des
+    // LIVE-Rezeptbuchs (Place-Auflösung → mode "forest"), die KEINE historische Nische tragen
+    // (die sechs Basis-Arten fließen durch die fünf Vorlagen-Nischen). Jede bekommt ihr
+    // Patch-Zentrum + Grundgewicht DETERMINISTISCH aus dem Namens-Hash (Γ5: seed-frei ist ok —
+    // der Name IST die Identität, alle Peers teilen das Vorlagefile). Gecacht auf
+    // Rezeptbuch-Identität; sortiert (deterministische Pick-Folge).
     _forestExtraSpecies() {
         const f = this._foundry;
         const book = f && f.recipes;
@@ -64172,10 +64224,15 @@ class AnazhRealm {
         const ids = Object.keys(book).sort();
         for (const id of ids) {
             const rec = book[id];
-            // N1 (M8): die Wald-Nischen-Faehigkeit kommt aus der Policy (placeExtra "forest"),
-            // nicht aus einem kind-Vergleich — eine neue Wald-faehige Domaene ist eine Zeile.
+            // N5 (Phase δ): die Wald-Fähigkeit kommt aus der EINEN Place-Auflösung + dem
+            // Dispatch-Chokepoint (Rezept-fx.place führt, sonst die placeExtra-Ableitung) —
+            // kein direkter placeExtra-Griff mehr (Verfassung N5). Byte-gleich für alle
+            // heutigen Arten (kein Rezept trägt fx.place). Der prefix bleibt Pflicht
+            // (fail-closed: ohne Namensregel keine Nische — ein place {mode:"forest"} auf
+            // einer prefix-losen Klasse streut nicht).
             const _pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
-            if (!_pol || _pol.placeExtra !== "forest" || BASE[id]) continue;
+            if (!_pol || !_pol.prefix || BASE[id]) continue;
+            if (this._placeDispatch(this._placePolicyFor(rec, _pol), { id }) !== "forest") continue;
             let h = 2166136261 >>> 0;
             for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
             out.push({
@@ -82828,6 +82885,12 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         placeExtra: null,
     }),
 });
+// N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
+// `_placePolicyFor` liest sie fail-closed: ein Rezept mit unbekanntem mode (ein künftiges Lab)
+// platziert NICHT (→ "none"), es crasht nicht (must-ignore, M6). site/settlement sind semantisch
+// bekannt, führen heute aber zu keinem Worldgen-Kanal (`_placeDispatch` → null; site = der benannte
+// ε-Anschluss [Porta, siteTag als Daten] · settlement = nach dem Stadt-Lab-Export, N5.7).
+AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).

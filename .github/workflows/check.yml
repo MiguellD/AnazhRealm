@@ -366,6 +366,16 @@ jobs:
               # entsteht + der Worker liefert das Fahrzeug-Asset — ohne eine Zeile AnazhRealm-Edit.
               run: npm run gate:nervensystem-vehicle
 
+            - name: Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)
+              # DER PLACE-BEWEIS (Phase δ, headless foundry-ON): die EINE Auflösung (_placePolicyFor —
+              # Rezept-fx.place führt, sonst die placeExtra-Ableitung) + der EINE Dispatch-Chokepoint
+              # (_placeDispatch). (a) tree ohne place → forest, Nischen-Liste BYTE-GLEICH zur alten
+              # Regel; (b) vehicle → none; (c) H8: fx.place {mode:none} auf tree → Katalog ja, Wald-
+              # Nische nein (disjunkt); (d) site-Rezept (N5.6) registriert + siteTag als Daten, streut
+              # nicht; (e) must-ignore/must-preserve unbekannter Felder. Inklusive Selbst-Test
+              # (Verletzungs-Injektion: none-Art erscheint doch → die Detektion feuert).
+              run: npm run gate:place-policy
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
