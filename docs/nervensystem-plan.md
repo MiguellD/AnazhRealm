@@ -194,7 +194,7 @@ Schwert und Wagen „verstehen“ sich nur über:
 | Dual-Regime                     | **34**× `_foundryEnabled()`                    | M4/M7                         |
 | ~~drive = Emergenz, nicht carPhys~~ | GETILGT N6 (09.07.): Brücke rechnet `fx.fahrprofil = exportDrive(s+fx)`, `_vehicleProfile` fährt Lab-Werte | M1/M9 erfüllt (`gate:vehicle-drive`) |
 | place nicht generisch           | forest/scatter pflanzen-gebunden               | M4 für Stadt                  |
-| Porta 0 im Worker               | Labor nur W12-Portal                           | appear fehlt                  |
+| ~~Porta 0 im Worker~~           | GETILGT ε (09.07.): porta-core im Manifest, 7 gate-Rezepte im Buch, Asset end-to-end (`gate:nervensystem-porta`) | appear erfüllt |
 | Pack ohne components            | IDB nur meshes                                 | M2 unvollständig              |
 
 ## 3.3 Baseline-Zahlen (N0 — fortschreiben)
@@ -204,8 +204,8 @@ _foundryEnabled()        = 34 → 27 (N7.2 Scheibe 1, 09.07.; Nennungen ohne Def
                            echte Call-Sites 29 → 22, Inventur: docs/analyse/dual-regime-inventur-n7.md)
 AutoRegister kind-ifs    = 2
 Worker-cores hardcoded   = vehicle (+ phyto/foundry stack)
-porta im Foundry-Worker  = 0
-IDB stamp scripts        = 3 (foundry, phyto, vehicle)
+porta im Foundry-Worker  = 0 → 7 gate-Rezepte (ε, 09.07. — Manifest-Zeile porta-core)
+IDB stamp scripts        = 3 (foundry, phyto, vehicle) → 4 (+ porta; Stempel = Manifest-getrieben)
 ```
 
 ---
@@ -562,7 +562,7 @@ Pro Lab **Checkliste** (immer gleich):
 | ------ | ------------------- | ------------------------------ | ------------------------------------ |
 | Wald   | Inhalt läuft        | place forest/scatter           | γ aufräumen, nicht neu erfinden      |
 | Garage | N6 ✅ (09.07.)      | drive + appear                 | Physik = carPhys→exportDrive→drive   |
-| Porta  | ε nach β            | appear + place site + portal   | porta-core Split                     |
+| Porta  | ✅ ε (09.07.)       | appear ✅ + place site (Daten, N5.6) + portal (benannter Folge-Anschluss) | porta-core Split ✅ (14/14 Paritäts-Hashes · Goldens cv:4 `gate:porta-contract` · Linse `gate:nervensystem-porta`; Stamm-Diff = NUR KIND_POLICY-gate-Zeile + tor_basis-Donor-DATENBLOCK) |
 | Stadt  | ε nach N5.7         | appear Haus + place settlement | Lab liefert Policy+Haus-Assets       |
 | Arena  | ε                   | appear + wield hints           | Ω-first                              |
 | Körper | parallel wahrerguss | appear + motion                | eigener Bogen; Nervensystem = appear |
@@ -627,6 +627,13 @@ Der Nervensystem-Bogen ist **fertig**, wenn:
 2. **γ grün:** H3 + H4 + H6 (Dual klar gesunken).
 3. **δ grün:** H7 + H8; Fahrzeug fühlt Lab-drive; place.mode disjunkt.
 4. **ε bewiesen:** mindestens **eine** neue Domäne (Porta **oder** Stadt-Policy) nur über Checkliste §ε, ohne kind-if im Stamm.
+   ✅ **(09.07., Porta):** der `git diff anazhRealm.js` des Andockens trägt AUSSCHLIESSLICH
+   die KIND_POLICY-`gate`-Zeile + den `tor_basis`-Donor-DATENBLOCK (0 Logik, kein if,
+   kein neuer Pfad — der Diff-Beweis lebt im ε-Commit); alles andere sind Daten/Lab-Dateien
+   (cores.manifest-Zeile · porta-core.js · Lab-Shell liest den Kern, Split-Parität 14/14
+   hash-bewiesen). Linsen: `gate:nervensystem-porta` (statisch + foundry-ON end-to-end,
+   Selbst-Test) · `gate:porta-contract` (Goldens cv:4, seed-invariant) · `gate:studio-vertrag`
+   validiert den dritten Kern automatisch übers Manifest.
 5. Schöpfer-Sign-off: „Lab ändern → Welt folgt; neue Domäne fühlt sich nicht wie 100 Versionen an.“
 
 Bis dahin: jeder Merge kann **Teil-DONE** einer Phase sein — nie „Pipeline fertig“ ohne H-Zeile.

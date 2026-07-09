@@ -388,6 +388,17 @@ jobs:
               # bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul nur in _loopPlayerMovement).
               run: npm run gate:vehicle-drive
 
+            - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
+              # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
+              # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-
+              # Donor-DATENBLOCK + fx.place-Rezept-Daten; der Stamm bekam KEINEN neuen kind-Zweig
+              # (M8, Diff-Beweis). Statisch (Manifest/Policy/Donor/kindStages/place als Daten) +
+              # Browser foundry-ON (7 Tor-Rezepte im LIVE-Buch · kindStages.gate [0] gemerged ·
+              # Auto-Blueprint tor_drachentor am EINEN Chokepoint · Tor-Asset end-to-end durch den
+              # Worker · site streut nicht [N5.6] · Fail-Closed-Clamp auf Stufe 0). Inklusive
+              # Selbst-Test (injizierte Verletzungen feuern).
+              run: npm run gate:nervensystem-porta
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

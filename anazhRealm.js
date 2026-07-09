@@ -57145,6 +57145,45 @@ class AnazhRealm {
                 parts: this._vehicleVariant(reittierHolzrossParts, felsWorldSeed + "-holzross"),
                 connections: reittierHolzrossConnections,
             },
+            // ε (Nervensystem-Plan) — DER TOR-DONOR: die Judge-Parts der gate-Domäne (die
+            // KIND_POLICY-gate-Zeile klont IHN zu tor_<preset>, der RENDER kommt aus porta-core).
+            // Bewusst ein EIGENER Datenblock statt welt_portal/welt_portale als Donor: beide
+            // tragen role "portal" + roleManual + portalMeta (ein Welt-Ziel) — ein Klon davon
+            // machte jedes platzierte Tor zum Weltwechsel-Portal. Reines stein-Architrav
+            // (zwei Pfeiler + Sturz + Schwelle, die Form des Porta-Labs): der Physik-Richter
+            // sieht ein stehendes Tor, die Öffnung ist begehbar (per-Part-Kollision — die
+            // Tür-Lücke ist kein Part), reines stein = affinitäts-sicher.
+            tor_basis: {
+                name: "tor_basis",
+                label: "Torbogen",
+                builtIn: true,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: -1.7, y: 1.7, z: 0 },
+                        size: { x: 0.6, y: 3.4, z: 0.7 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 1.7, y: 1.7, z: 0 },
+                        size: { x: 0.6, y: 3.4, z: 0.7 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 3.65, z: 0 },
+                        size: { x: 4.2, y: 0.5, z: 0.7 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 0.1, z: 0 },
+                        size: { x: 4.4, y: 0.2, z: 1.2 },
+                    },
+                ],
+            },
             // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
             ...builtinBodyBlueprints,
         };
@@ -82880,6 +82919,16 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     vehicle: Object.freeze({
         prefix: "fahrzeug_",
         donor: "fahrzeug_wagen",
+        grown: false,
+        builtIn: false,
+        placeExtra: null,
+    }),
+    // ε (Nervensystem-Plan TEIL VIII Punkt 4) — DIE TOR-DOMAENE ALS DATEN-ZEILE: porta-core
+    // (cores.manifest.json) liefert kind:"gate"-Rezepte; die Platzierung reist als Rezept-DATEN
+    // (fx.place mode "site" + siteTag "tor", N5.6 — streut heute nicht), darum placeExtra null.
+    gate: Object.freeze({
+        prefix: "tor_",
+        donor: "tor_basis",
         grown: false,
         builtIn: false,
         placeExtra: null,

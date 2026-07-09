@@ -6,5 +6,6 @@
         "ns": null,
         "shell": "worlds/terrain/phytogenesis.js"
     },
-    { "id": "vehicle", "scripts": ["vehicle-core.js"], "vertrag": "vehicle-core.js", "ns": "__vehicleCore" }
+    { "id": "vehicle", "scripts": ["vehicle-core.js"], "vertrag": "vehicle-core.js", "ns": "__vehicleCore" },
+    { "id": "porta", "scripts": ["porta-core.js"], "vertrag": "porta-core.js", "ns": "__portaCore" }
 ]

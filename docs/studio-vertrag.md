@@ -197,15 +197,15 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 
 ## §6 Konformanz-Matrix (Stand 08.07.2026)
 
-| Block | Pflanzen (foundry-core) | Fahrzeuge (Phase 1) | Tore (Phase 2) |
+| Block | Pflanzen (foundry-core) | Fahrzeuge (Phase 1) | Tore (Phase 2, ✅ 09.07.) |
 | ----- | ----------------------- | ------------------- | -------------- |
-| B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | porta-core: 7 Ordnungen |
-| B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | buildGate → v4-Goldens |
-| B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | shrine-Sites |
-| B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | SOLL (Slider-Gruppen existieren) |
-| B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | SOLL (Stich→Schub→Dicke) |
-| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil ✅ (N6, 09.07.: Brücke rechnet `exportDrive` beim Buch-Bau, `gate:vehicle-drive`) | dsl ✅ + tueren |
-| STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt | ab Split | ab Split |
+| B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | ✅ porta-core: 7 Ordnungen `kind:"gate"` |
+| B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | ✅ buildInstance → v4-Goldens (`gate:porta-contract`) |
+| B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
+| B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle) |
+| B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht |
+| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil ✅ (N6, 09.07.: Brücke rechnet `exportDrive` beim Buch-Bau, `gate:vehicle-drive`) | dsl ✅ + tueren (Shell E/R; Host-`portal` = benannter Folge-Anschluss) |
+| STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt | ab Split | ✅ = 1 (`__portaCore`) |
 
 **Benannte Schulden (kein Verstecken):** die Pflanzen-Dials/Lehren leben noch
 in der phytogenesis-Shell statt als B4/B5-Datenblöcke — sie wandern bei der
@@ -254,4 +254,11 @@ je Kern.
 `kind:"vehicle"` · B2 `buildInstance` + `kindStages:{vehicle:[0]}` + Goldens
 `spec/asset-contract/v3/` (`gate:vehicle-contract`) · B4 PARAMS · B5
 LEHREN+`messen` · CULTURES als Daten; Shell-Verhaltens-Parität beim Split
-hash-bewiesen). `porta-core` (Phase 2) folgt derselben Form (`__portaCore`).
+hash-bewiesen). `porta-core.js` (Phase 2, ε — GEBAUT 09.07.: B1 7 Ordnungen
+`kind:"gate"` · B2 `buildInstance` + `kindStages:{gate:[0]}` + Goldens
+`spec/asset-contract/v4/` (`gate:porta-contract`, seed-invariant cv:4) ·
+B4 PARAMS (aus SLIDERS abgeleitet) · B5 als `messen`-Formel (Stich→Schub→Dicke;
+pass/warn-Bänder trägt das Lab nicht — benannte Schuld) · B6 dsl (W12) +
+`fx.place {mode:"site", siteTag:"tor"}` als Platzierungs-Daten (N5.6);
+Split-Parität 14/14 hash-bewiesen, Andocken = reine Daten-Zeilen —
+der ε-Beweis, `gate:nervensystem-porta`).
