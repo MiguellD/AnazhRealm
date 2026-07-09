@@ -33927,15 +33927,16 @@ class AnazhRealm {
             }
             return null; // lädt — die Zelle wartet (pendingGrass)
         }
+        // W6 (Paritäts-Vollendung, die V18.380-has-vs-null-Klasse): eine RESOLVED-LEERE
+        // Studio-Antwort ist KEIN Miss — im Studio-Regime heißt sie „das Studio sagt
+        // bewusst LEER" → "leer" (der Aufrufer verbucht die Zelle als gras-los; NIE der
+        // Alt-Tuft-Nachbau = Fail-Open-Fremd-Silhouette). Nur OHNE Studio (foundry aus/
+        // kein Worker) bleibt false = der legitime Alt-Pfad. N7.2 (Dual-Regime senken):
+        // EIN Regime-Read pro Aufruf — beide Leer-Wände unten lesen dasselbe Verdikt.
+        const _leerVerdikt = this._foundryEnabled() ? "leer" : false;
         if (!group || !group.children || !group.children.length) {
-            // W6 (Paritäts-Vollendung, die V18.380-has-vs-null-Klasse): eine RESOLVED-LEERE
-            // Studio-Antwort ist KEIN Miss — im Studio-Regime heißt sie „das Studio sagt
-            // bewusst LEER" → "leer" (der Aufrufer verbucht die Zelle als gras-los; NIE der
-            // Alt-Tuft-Nachbau = Fail-Open-Fremd-Silhouette). Nur OHNE Studio (foundry aus/
-            // kein Worker) bleibt false = der legitime Alt-Pfad.
-            const _verdict = this._foundryEnabled() ? "leer" : false;
-            this._grassStudioGeoByStage[stage] = _verdict;
-            return _verdict;
+            this._grassStudioGeoByStage[stage] = _leerVerdikt;
+            return _leerVerdikt;
         }
         // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
         const k = this._foundryWorldScaleMatrix("gras").elements[0];
@@ -33958,9 +33959,9 @@ class AnazhRealm {
             else for (let i = 0; i < p.count; i++) push(i);
         }
         if (!pos.length) {
-            const _verdict2 = this._foundryEnabled() ? "leer" : false; // W6 — dieselbe Resolved-Leer-Wand
-            this._grassStudioGeoByStage[stage] = _verdict2;
-            return _verdict2;
+            // W6 — dieselbe Resolved-Leer-Wand (das eine Verdikt von oben, N7.2).
+            this._grassStudioGeoByStage[stage] = _leerVerdikt;
+            return _leerVerdikt;
         }
         // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
         const vc = pos.length / 3;
@@ -34016,7 +34017,10 @@ class AnazhRealm {
         // kann gras nicht (exotisch) → der Alt-Pfad (Tuft) trägt. Ohne Foundry (Worker-lose
         // Einbettung/Test-Hook) trägt der Alt-Pfad wie bei den Bäumen.
         let _builtGrassStage = null;
-        if (this._foundryEnabled()) {
+        // N7.2 (Dual-Regime senken): EIN Studio-Regime-Read pro Bau — der Halm-Zweig hier
+        // und die farFactor/Dichte-Entscheidung unten lesen dieselbe Wahrheit.
+        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
+        if (grassStudio) {
             // LOD-WURZEL (08.07.): die STUFE folgt dem Studio-Gesetz (kindStages.grass) —
             // der Spieler-Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe, die Ferne
             // die kompensierte; `_tickGrassStage` baut falsch-stufige Chunks nach, wenn
@@ -34048,7 +34052,6 @@ class AnazhRealm {
         // Dichte-Ring (Schöpfer-Befund „das gras über andere distanzen verteilt"). Im
         // Studio-Regime trägt die Wiese die volle Dichte bis zur Nebelkante; ohne Foundry
         // (Alt-Welten/Test-Hook) bleibt der Perf-Faden byte-alt.
-        const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
         const farFactor = entryLod >= 1 && !grassStudio ? 0.35 : 1;
         // V18.307 — DAS GRAS KOMMT UNTER DEN EINEN REGLER (die Synergie-Hälfte):
         // das Gras war 83 % der GPU-Last, las aber NIE `_foliageDensityScale` → der
@@ -34840,12 +34843,9 @@ class AnazhRealm {
         // V18.277 — die kapazitäts-gewachsene Dichte: der perf-geregelte Faktor lichtet die
         // Instanz-Zahl unter Last (weniger Dreiecke), füllt in den Lücken (undefined-sicher → 1).
         // DAS NEUE KLEID — im Studio-Regime volle Understory-Dichte (=1), nicht perf-gedrosselt.
-        const densityScale =
-            typeof this._foundryEnabled === "function" && this._foundryEnabled()
-                ? 1
-                : this.state._foliageDensityScale != null
-                  ? this.state._foliageDensityScale
-                  : 1;
+        // N7.2 (Dual-Regime senken, Gesetz #0): die Studio/Regler-Gabel lebt EINMAL in
+        // `_effectiveFoliageDensity` (W1) — hier nur noch der Draht (byte-gleiche Wahrheit).
+        const densityScale = this._effectiveFoliageDensity();
         const dekoDensity = (band.dekoDichte || 1) * atmoD * densityScale;
         const { span } = this._voxelChunkConfig();
         const ox = cx * span;
@@ -35366,12 +35366,9 @@ class AnazhRealm {
             if (band.deko !== "impostor") continue;
             // V18.277 — die kapazitäts-gewachsene Dichte auch im Fernfeld (undefined-sicher → 1).
             // DAS NEUE KLEID — im Studio-Regime volle Fernfeld-Dichte (=1), nicht perf-gedrosselt.
-            const fdScale =
-                typeof this._foundryEnabled === "function" && this._foundryEnabled()
-                    ? 1
-                    : this.state._foliageDensityScale != null
-                      ? this.state._foliageDensityScale
-                      : 1;
+            // N7.2 (Dual-Regime senken, Gesetz #0): die Gabel lebt EINMAL in
+            // `_effectiveFoliageDensity` (W1) — hier nur noch der Draht (byte-gleiche Wahrheit).
+            const fdScale = this._effectiveFoliageDensity();
             const dekoDensity = (band.dekoDichte || 0) * atmoD * fdScale;
             if (dekoDensity <= 0) continue;
             // Derselbe deterministische RNG-STROM wie der nahe Scatter (eine
@@ -36507,7 +36504,10 @@ class AnazhRealm {
         // Bibliothek, WÄHREND der Main-Thread die Welt rechnet (zwei Threads gleichzeitig,
         // statt des alten Erst-Loop-Frame-Starts, der die ganze Worldgen-Zeit verschenkte).
         // Cheap (nur Worker-Erzeugung + Message-Posts); headless-Null/kein Worker → No-op.
-        if (!this._foundry && typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+        // N7.2 (Dual-Regime senken): die Boot-Wahrheit prüft der EINE Chokepoint
+        // `_ensureAssetFoundry` selbst (foundry-aus → null, byte-gleicher No-op) —
+        // der Aufrufer dupliziert das Gate nicht.
+        if (!this._foundry) {
             try {
                 this._ensureAssetFoundry();
             } catch (_efb) {}
@@ -66094,7 +66094,11 @@ class AnazhRealm {
         const oz = cz * span;
         const seedInt = this._forestSeedInt();
         // Perf-Kappung: der EINE Regler (headless/Null-Renderer → 1 = voll, gate-treu).
-        const fd = this.state && this.state._foliageDensityScale != null ? this.state._foliageDensityScale : 1;
+        // N7.2 (Dual-Regime senken, Gesetz #0): die Dichte kommt aus der EINEN Quelle
+        // `_effectiveFoliageDensity` (W1) — im Studio-Regime 1 (das Studio dünnt den Wald
+        // NIE, s. Dichte-Kommentar unten), sonst der Perf-Regler; die frühere separate
+        // studioDensity-Wache am Dünn-Check ist damit byte-gleich subsumiert (fd=1 → nie dünnen).
+        const fd = this._effectiveFoliageDensity();
         const c0x = Math.floor(ox / CELL);
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
@@ -66153,8 +66157,9 @@ class AnazhRealm {
                     // statt hunderte Bäume = der leere Wald. Liegt der Studio-Config vor, pflanzt AnazhRealm
                     // VOLL (kein fd-Dünnen) — dieselbe Dichte wie im begehbaren Wald; die Sichtweite (V18.405,
                     // fog.far 120) + das Studio-LOD (V18.404, Billboard ab 40 m) halten die Last ehrlich.
-                    const studioDensity = typeof this._foundryEnabled === "function" && this._foundryEnabled();
-                    if (!studioDensity && fd < 1 && d.keep >= fd) continue;
+                    // N7.2: `fd` liest die EINE Quelle (oben) — Studio-Regime → fd=1 → der Check
+                    // feuert nie (byte-gleich zur frueheren studioDensity-Wache, ein Regime-Read weniger).
+                    if (fd < 1 && d.keep >= fd) continue;
                     // Der Baum wird ein ECHTER Architektur-Eintrag (spawnArchitecture ueber
                     // _enqueueVegetationSpawn) -> harvestbar + kollidierbar + getaggt + LOD.
                     // V18.390 (DAS NEUE KLEID — DIE LOD-WURZEL): der Wald spawnt die GEWACHSENE
@@ -80526,7 +80531,9 @@ class AnazhRealm {
                 // Bau erzeugt (`_foundryRewarmColdTrees` liest `_foundry`, erzeugt es NICHT) → hier
                 // einmalig am Frame-Start starten, damit die Studio-Bäume so schnell wie möglich die
                 // Klassik-Bäume ersetzen. Cheap (nur iframe-Erzeugung); headless-Null → No-op.
-                if (!this._foundry && typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+                // N7.2 (Dual-Regime senken): das Gate prüft der EINE Chokepoint
+                // `_ensureAssetFoundry` selbst (foundry-aus → null, byte-gleicher No-op).
+                if (!this._foundry) {
                     try {
                         this._ensureAssetFoundry();
                     } catch (_efk) {}

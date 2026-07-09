@@ -200,7 +200,8 @@ Schwert und Wagen „verstehen“ sich nur über:
 ## 3.3 Baseline-Zahlen (N0 — fortschreiben)
 
 ```text
-_foundryEnabled()        = 34
+_foundryEnabled()        = 34 → 27 (N7.2 Scheibe 1, 09.07.; Nennungen ohne Definitions-Zeile —
+                           echte Call-Sites 29 → 22, Inventur: docs/analyse/dual-regime-inventur-n7.md)
 AutoRegister kind-ifs    = 2
 Worker-cores hardcoded   = vehicle (+ phyto/foundry stack)
 porta im Foundry-Worker  = 0
@@ -360,8 +361,8 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
 
 | Schritt | Spezifikation                                                                              |
 | ------- | ------------------------------------------------------------------------------------------ |
-| N7.1    | Inventur: alle 34 `_foundryEnabled()`-Sites kategorisieren (Boot / Policy / Legacy)        |
-| N7.2    | Policy-Gabeln → Default appear-on; Legacy nur hinter explizitem Test-Hook                  |
+| N7.1    | ✅ (09.07.) Inventur: alle Sites kategorisiert (Boot 4 / Policy 24 / Legacy 1) — `docs/analyse/dual-regime-inventur-n7.md` |
+| N7.2    | Policy-Gabeln → Default appear-on; Legacy nur hinter explizitem Test-Hook — **Scheibe 1 ✅ (09.07.): 7 Sites gesenkt, 29 → 22 Call-Sites** (Dichte-Draht → `_effectiveFoliageDensity` ×3 · Methoden-Dedup ×2 · Boot-Chokepoint-Dedup ×2; jede byte-gleich, voller Playtest foundry-off grün) |
 | N7.3    | Headless: Foundry-Fixtures/ON für Produktionsnähe; `__anazhGateNoFoundry` nur Unit-Richter |
 | N7.4    | Zielzahl: ≤ 10 Aufrufe, dann ≤ 5 (Boot + Hook)                                             |
 
@@ -454,7 +455,7 @@ Pro Lab **Checkliste** (immer gleich):
 | **H3** | Inventur appear: requested ⊆ visible\|cached                   | γ     | `gate:asset-inventory` ✅ (09.07., CI) |
 | **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity`                     |
 | **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                         |
-| **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Zähl-Skript / Baseline                 |
+| **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Baseline 29 Call-Sites → **22** (N7.2 Scheibe 1, 09.07.; Inventur `docs/analyse/dual-regime-inventur-n7.md`) |
 | **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                      |
 | **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                                   |
 
@@ -532,4 +533,4 @@ Dann N2, nicht Porta.
 
 ---
 
-_Verifikation Code-Anker (V18.432): `_ensureAssetFoundry`, `_foundryAutoRegisterSpecies`, `_foundryPresetFor`, `_foundryRequest`/`_foundryIdb*`, `_foundryBuildGroup`, `_vehicleProfile`, `_forestPlantChunk`/`_scatterPass`, phytogenesis Portal `build-asset`/`get-recipes`/`get-render-config`, `diag-nervensystem*`, `diag-studio-vertrag` CORES, Zählung `_foundryEnabled()` = 34._
+_Verifikation Code-Anker (V18.432): `_ensureAssetFoundry`, `_foundryAutoRegisterSpecies`, `_foundryPresetFor`, `_foundryRequest`/`_foundryIdb*`, `_foundryBuildGroup`, `_vehicleProfile`, `_forestPlantChunk`/`_scatterPass`, phytogenesis Portal `build-asset`/`get-recipes`/`get-render-config`, `diag-nervensystem*`, `diag-studio-vertrag` CORES, Zählung `_foundryEnabled()` = 34 (→ 27 nach N7.2 Scheibe 1, 09.07.)._

@@ -18648,7 +18648,10 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // der Aktuator fährt `_foliageDensityScale`; der NAHE Scatter (`_buildVoxelChunkScatter`)
         // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
         out.actuateDrivesDensity = /_foliageDensityScale/.test(r._nexusPerfActuate.toString());
-        out.scatterReadsDensity = /_foliageDensityScale/.test(r._buildVoxelChunkScatter.toString());
+        // N7.2 (Dual-Regime senken, V9.56-i — die Probe wandert mit): auch der NAHE Scatter
+        // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (wie der ferne, W1);
+        // dass DIE den Regler liest, beweist `farScatterReadsDensity` direkt darunter.
+        out.scatterReadsDensity = /_effectiveFoliageDensity/.test(window.__codeOf(r._buildVoxelChunkScatter));
         // W1 (Paritäts-Vollendung) — die Probe wandert mit dem Code (V9.56-i): der ferne Scatter
         // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (Gesetz #0), und DIE liest
         // den Regler. Kette statt Literal — und via __codeOf (kommentar-gestrippt, kein vakuöses Grün).
