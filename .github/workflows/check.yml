@@ -234,6 +234,17 @@ jobs:
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
               run: npm run gate:asset-contract
 
+            - name: Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)
+              # N3 (Nervensystem Phase γ): (a) spec/pack/v0/CONTRACT.md trägt die Pflicht-Abschnitte
+              # (v0-Ist-Kanon · v1-Schema · Ü1/Ü2-Chokepoint); (b) der IDB-Stempel hasht Manifest +
+              # alle Manifest-Skripte (kommentar-gestrippter Source-Grep — die Drift-Wand steht);
+              # (c) der Ship-Hook __anazhLiveBake===false lebt im Request-Pfad, VOR dem Worker-
+              # Fallback (Source + VERHALTEN: Hook an → null trotz ready-Worker); (d) der Roundtrip-
+              # Beweis: EIN Preset (eiche, lod 2) live minten → zurücklesen → byte-gleich (sha256 je
+              # Puffer, unabhängig vor der b64-Kodierung gerechnet). --selftest zuerst: ein korruptes
+              # Pack-Artefakt macht die Linse rot (nicht vakuös).
+              run: npm run gate:pack-contract
+
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
               # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher

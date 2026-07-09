@@ -343,8 +343,35 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
 **Akzeptanz N3:**
 
 - [ ] Warmer Boot: Library aus IDB ohne auf Worker-ready zu warten (teilweise da — absichern)
-- [ ] Generator-Edit → Stempel-Bust (Regression)
-- [ ] Goldens `gate:asset-contract` ungebrochen
+- [ ] Generator-Edit → Stempel-Bust (Regression; die STATISCHE Hälfte wacht seit 09.07. in
+      `gate:pack-contract` [der Stempel-Code hasht Manifest+Skripte, kommentar-gestrippter Grep])
+- [x] Goldens `gate:asset-contract` ungebrochen (09.07., 52/52 nach N3-Welle)
+
+**N3 Teil-DONE (09.07. — „Pack-Kanon", Linse `gate:pack-contract` per-push-CI):**
+
+- [x] N3.1 Pack-v0 dokumentiert: `spec/pack/v0/CONTRACT.md` — der HEUTIGE IDB-Kanon eingefroren
+      (Key `preset|seed|lod|season` · Val `{meshes}` = der structured-clone-sichere Worker-Reply ·
+      Stempel = SHA-256(Manifest-Text + alle Manifest-Skripte) · Miss/Bust/Fail-stumm-Regeln)
+- [x] N3.2 Pack-v1 Schema (Doc-only, derselbe CONTRACT): + `meta {kind, coreId}` (coreId
+      DATEN-getrieben aus panel×Manifest, M8) + `components` (Wörterbuch v1 §2.4, heute leer) +
+      `cv` + must-ignore/must-preserve; der Live-Code schreibt weiter v0 (§v1.5 = der bewusste
+      Umstiegs-Folge-Schritt, 5 Punkte spezifiziert)
+- [x] N3.3 Mint-Werkzeug `scripts/mint-asset-packs.cjs` (`npm run mint:asset-packs`, KEIN CI-Gate;
+      `--verify`-Modus mit Exit-Codes 0/1/2): bootet foundry-ON headless, wartet die Bibliothek
+      warm, mintet die `f.cache`-Schlüssel als `artifacts/packs/*.json` + `index.json` (mit
+      Generator-Stempel); Puffer als base64 der rohen Bytes; Roundtrip JE Artefakt BEWIESEN
+      (mint → zurücklesen → sha256 je Puffer byte-gleich zum Live-Reply)
+- [x] N3.4 Ship-Hook im Request-Pfad: `window.__anazhLiveBake === false` überspringt den
+      Worker-Fallback (Pack/IDB-only, der künftige Ship-Pfad); Default byte-gleich; Source- +
+      Verhaltens-Probe in `gate:pack-contract` (Plan sagte `?liveBake=0` — als window-Hook
+      gebaut, die dokumentierte Test-Hook-Konvention des Hauses)
+- [x] N3.5 Ü1/Ü2 dokumentiert am Chokepoint: CONTRACT.md §„r128→r184-Übersetzung" mit
+      Datei/Symbol-Ankern (Ü1 `LEGACY_LICHT`=π in `_dayNightApplyDirectionalLight`/
+      `_dayNightApplyAmbient`/`_bakeImpostorAtlasRTT` · Ü2 raw-als-linear in
+      `_foundryTreeMaterial`/`_foundryBuildGroup`/`_foundryIngestWorldParams`); keine Code-Änderung
+- [x] Linse `gate:pack-contract` (package.json + check.yml playtest-Job): Pflicht-Abschnitte ·
+      Stempel-Grep · Hook-Source+Verhalten · Roundtrip-Beweis (1 Preset, lod 2); `--selftest`
+      beweist: ein korruptes Pack-Artefakt → rot
 
 ### N4 — Instance-Straße
 

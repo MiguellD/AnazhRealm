@@ -55,6 +55,8 @@
         "diag:foundry-parity": "node scripts/diag-foundry-parity.cjs",
         "mint:asset-goldens": "node scripts/mint-asset-goldens.cjs",
         "gate:asset-contract": "node scripts/diag-asset-contract.cjs",
+        "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
+        "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
         "mint:creature-goldens": "node scripts/mint-creature-goldens.cjs",
         "gate:creature-contract": "node scripts/diag-creature-contract.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",

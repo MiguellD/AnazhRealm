@@ -64723,6 +64723,12 @@ class AnazhRealm {
         // ist der IDB-Cache ohnehin AUS, dort ist der Pfad byte-gleich zu vorher).
         return this._foundryIdbGet(presetId, seed, lod, s).then((hit) => {
             if (hit) return hit;
+            // N3.4 (Pack-Kanon, spec/pack/v0/CONTRACT.md) — DER SHIP-PFAD-HOOK: der dokumentierte
+            // Test-Hook `window.__anazhLiveBake === false` ueberspringt den Live-Worker-Fallback
+            // (Pack/IDB-only — der kuenftige Auslieferungs-Pfad liest NUR gemintete Packs/Platte,
+            // ein Miss ist dann ein ehrliches null wie heute vor f.ready). Default (Hook undefined)
+            // = heutiges Verhalten, byte-gleich; Linse `gate:pack-contract` (Source + Verhalten).
+            if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
             if (!f.ready || !f.worker) return null;
             return this._foundryWorkerRequest(presetId, seed, lod, s).then((meshes) => {
                 if (meshes && meshes.length) this._foundryIdbPut(presetId, seed, lod, s, meshes);
