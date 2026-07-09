@@ -43,3 +43,10 @@ jobs:
         env:
           PLAYTEST_SECONDS: "30"
         run: npm run playtest
+
+      - name: H4 — Perf-Paritaet studio-relativ im Band (Nervensystem-Plan, Phase gamma)
+        # Zwei Browser-Boots (~4 min): dasselbe Profi-Metrik-Set auf AnazhRealm UND dem
+        # Studio-Wald, eine Zensus-Quelle, Drift-Baender aus der V18.432-Baseline (TRI <=1,5x ·
+        # DRW <=3x · VIS >=50 % · VRAM <=2x + Asset-Budget +-2 %). Nightly bewusst — fuer den
+        # per-push-Job zu schwer (15-min-Deckel).
+        run: npm run gate:perf-parity

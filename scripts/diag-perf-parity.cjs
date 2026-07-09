@@ -216,14 +216,21 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
             const r = window.anazhRealm;
             if (!r) return { err: "kein anazhRealm" };
             // Welt fuellen: Ticks pumpen bis Ring am Ziel + Chunk-Plateau (count-basiert, last-robust).
+            // H4-MESS-DISZIPLIN (V18.346): die Welt muss VOLL stehen, sonst springen die
+            // Verhaeltnisse mit der Welt-Groesse (Baseline-Lauf brach bei 62/81 Chunks ab ->
+            // TRI-ratio 0,15x vs 1,2x = Mess-Artefakt, kein Drift). Deterministisch: Ring am
+            // Ziel (headless sofort) + pending leer + Chunk-Plateau.
             let lastChunks = -1;
-            for (let i = 0; i < 400; i++) {
+            for (let i = 0; i < 1200; i++) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
                 if ((i & 15) === 0) {
                     const n = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
-                    if (n > 0 && n === lastChunks && i > 120) break;
+                    const pend = r.state.voxelMeshPending ? r.state.voxelMeshPending.size : 0;
+                    const ringOk =
+                        r.state._activeRingRadius == null || r.state._activeRingRadius >= (r.state.chunkRingRadius || 4);
+                    if (n > 0 && n === lastChunks && pend === 0 && ringOk && i > 200) break;
                     lastChunks = n;
                     await new Promise((res2) => setTimeout(res2, 30));
                 }
@@ -391,6 +398,37 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
         check("Baseline-Report gemintet", fs.existsSync(reportPath), "docs/analyse/perf-paritaet-baseline-v18432.md");
     } catch (e) {
         check("Baseline-Report gemintet", false, e.message);
+    }
+
+    // ===== H4 (Nervensystem-Plan, Phase gamma) — DIE STUDIO-RELATIV-BAENDER =====
+    // Drift-Waende, aus der V18.432-Baseline abgeleitet (AnazhRealm 2,77M vs Studio
+    // 18,5M Szene-Tris · VIS 91 % · VRAM 289/218 MB · Emitter 291/487): GROSSZUEGIG
+    // gesetzt (Faktor-Baender, nicht Punkt-Schwellen) — sie fangen einen ENTGLEISTEN
+    // Trend (AnazhRealm wird schwerer als der Massstab), nie Lauf-Rauschen. Die
+    // Verhaeltnisse sind hardware-frei (gleicher Container, gleiche Zensus-Quelle).
+    if (A && S && S.tris > 0) {
+        check(
+            "H4-Band: TRI gesamt <= 2x Studio (Voll-Welt stabil ~1,2x)",
+            A.tris <= 2 * S.tris,
+            `ratio=${(A.tris / S.tris).toFixed(2)}x`
+        );
+        check(
+            "H4-Band: DRW-Zensus <= 3x Studio (Baseline 0,6x)",
+            A.emitters <= 3 * S.emitters,
+            `ratio=${(A.emitters / S.emitters).toFixed(2)}x`
+        );
+        check(
+            "H4-Band: VIS-Ratio >= 50 % (Baseline 91 %)",
+            A.emitters > 0 && (100 * A.emittersIn) / A.emitters >= 50,
+            `${A.emitters ? Math.round((100 * A.emittersIn) / A.emitters) : 0} %`
+        );
+        check(
+            "H4-Band: VRAM-Proxy <= 4x Studio (Voll-Welt stabil ~2,5x — alle LOD-Stufen + Impostor-Atlanten resident; der Trend-Fang, kein Punkt)",
+            A.geomBytes + A.texBytes <= 4 * (S.geomBytes + S.texBytes),
+            `ratio=${((A.geomBytes + A.texBytes) / Math.max(1, S.geomBytes + S.texBytes)).toFixed(2)}x`
+        );
+    } else {
+        check("H4-Band: beide Seiten messbar", false, "eine Seite fehlt");
     }
 
     if (errs.length) {

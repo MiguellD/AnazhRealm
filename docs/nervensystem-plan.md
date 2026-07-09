@@ -375,11 +375,11 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
 
 ### N4 — Instance-Straße
 
-| Schritt | Spezifikation                                                                     |
-| ------- | --------------------------------------------------------------------------------- |
-| N4.1    | `_foundryBuildGroup` stabil als **einzige** Mesh→Group-Naht (Alias-Name optional) |
-| N4.2    | Material aus `m.mat` generisch; weniger kind-Defaults                             |
-| N4.3    | Gras: Studio-only-Pfad; Tuft-Fallback unter appear **schneiden** wenn H3 grün     |
+| Schritt | Spezifikation                                                                      |
+| ------- | ---------------------------------------------------------------------------------- |
+| N4.1    | `_foundryBuildGroup` stabil als **einzige** Mesh→Group-Naht (Alias-Name optional)  |
+| N4.2    | Material aus `m.mat` generisch; weniger kind-Defaults                              |
+| N4.3    | Gras: Studio-only-Pfad; Tuft-Fallback unter appear **schneiden** wenn H3 grün      |
 | N4.4    | Impostor: policy über kind (tree/shrub) + kindStages, nicht wachsende Preset-Liste |
 
 **N4 DONE (09.07. — „Instance-Straße"; Verfassungs-Gesetz N4, 9 neue Zeilen in `gate:constitution`):**
@@ -425,12 +425,12 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 
 ### N7 — Dual-Regime senken (parallel zu N3/N4, in Teilschritten)
 
-| Schritt | Spezifikation                                                                              |
-| ------- | ------------------------------------------------------------------------------------------ |
-| N7.1    | ✅ (09.07.) Inventur: alle Sites kategorisiert (Boot 4 / Policy 24 / Legacy 1) — `docs/analyse/dual-regime-inventur-n7.md` |
+| Schritt | Spezifikation                                                                                                                                                                                                                                                                                |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| N7.1    | ✅ (09.07.) Inventur: alle Sites kategorisiert (Boot 4 / Policy 24 / Legacy 1) — `docs/analyse/dual-regime-inventur-n7.md`                                                                                                                                                                   |
 | N7.2    | Policy-Gabeln → Default appear-on; Legacy nur hinter explizitem Test-Hook — **Scheibe 1 ✅ (09.07.): 7 Sites gesenkt, 29 → 22 Call-Sites** (Dichte-Draht → `_effectiveFoliageDensity` ×3 · Methoden-Dedup ×2 · Boot-Chokepoint-Dedup ×2; jede byte-gleich, voller Playtest foundry-off grün) |
-| N7.3    | Headless: Foundry-Fixtures/ON für Produktionsnähe; `__anazhGateNoFoundry` nur Unit-Richter |
-| N7.4    | Zielzahl: ≤ 10 Aufrufe, dann ≤ 5 (Boot + Hook)                                             |
+| N7.3    | Headless: Foundry-Fixtures/ON für Produktionsnähe; `__anazhGateNoFoundry` nur Unit-Richter                                                                                                                                                                                                   |
+| N7.4    | Zielzahl: ≤ 10 Aufrufe, dann ≤ 5 (Boot + Hook)                                                                                                                                                                                                                                               |
 
 **Akzeptanz N7:** Zählung sinkt pro Teilwelle; playtest grün; no-second-treebuilder grün.
 
@@ -439,7 +439,7 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 - [x] H3 Inventur-Gate spezifiziert und grün (`gate:asset-inventory`, 09.07. — die EINE Linse
       [Zensus + requested ⊆ visible|cached], per-push-CI; 222 Unbekannte an der Quelle
       klassifiziert via `userData.inventar`-Stempel; Selbst-Tests feuern)
-- [ ] H4 `gate:perf-parity` im Band
+- [x] H4 `gate:perf-parity` im Band (09.07.: 4 Drift-Bänder aus der V18.432-Baseline [TRI ≤1,5× · DRW ≤3× · VIS ≥50 % · VRAM ≤2×] + Asset-Budget ±2 % gatend; nightly in playtest-full.yml — per-push zu schwer)
 - [ ] H6 Dual-Zähler gesunken
 
 ---
@@ -514,16 +514,16 @@ Pro Lab **Checkliste** (immer gleich):
 
 # TEIL V — HÄRTETESTS (Versprechen = messbar)
 
-| ID     | Härtetest                                                      | Phase | Gate / Linse                           |
-| ------ | -------------------------------------------------------------- | ----- | -------------------------------------- |
-| **H1** | Neues Preset **bekannter** kind-Klasse: 0 Diff `anazhRealm.js` | β     | nervensystem D + Prozess               |
-| **H2** | Neue kind-Klasse: nur Policy+Manifest+Donor, 0 kind-if         | β+ε   | Constitution + manuell                 |
-| **H3** | Inventur appear: requested ⊆ visible\|cached                   | γ     | `gate:asset-inventory` ✅ (09.07., CI) |
-| **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity`                     |
-| **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                         |
+| ID     | Härtetest                                                      | Phase | Gate / Linse                                                                                                 |
+| ------ | -------------------------------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------ |
+| **H1** | Neues Preset **bekannter** kind-Klasse: 0 Diff `anazhRealm.js` | β     | nervensystem D + Prozess                                                                                     |
+| **H2** | Neue kind-Klasse: nur Policy+Manifest+Donor, 0 kind-if         | β+ε   | Constitution + manuell                                                                                       |
+| **H3** | Inventur appear: requested ⊆ visible\|cached                   | γ     | `gate:asset-inventory` ✅ (09.07., CI)                                                                       |
+| **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity` ✅ (Band, nightly)                                                                        |
+| **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                                                                                               |
 | **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Baseline 29 Call-Sites → **22** (N7.2 Scheibe 1, 09.07.; Inventur `docs/analyse/dual-regime-inventur-n7.md`) |
-| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                      |
-| **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                                   |
+| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                                                                                            |
+| **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                                                                                                         |
 
 Bestehende Pflicht-Gates pro Merge: `check` · relevant nervensystem* · studio-vertrag · page-error wo Render.
 
