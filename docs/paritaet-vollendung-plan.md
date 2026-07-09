@@ -1,5 +1,7 @@
 # DIE PARITÄTS-VOLLENDUNG — der Plan zum DONE-Kriterium (W1–W8)
 
+> **UNTERGEORDNET (09.07.2026): `docs/nervensystem-plan.md` ist der aktive Architektur-Bogen.** Dieses Plans DONE ist neu definiert: H3 (Inventur/Zensus) + H4 (perf-parity) + Schöpfer-Sign-off — NICHT endlose Pixel-Parität (Look eicht im Lab, der Host rendert nativ). W9/W10 werden zu Look-GESETZ-Adoptionen (Daten fließen wie der V18.416-Tag-Nebel), keine Pixel-Diff-Gates. Das α-Moratorium gilt: keine neuen kind-ifs, kein Porta-Hardcode vor Phase β.
+
 **Stand: 08.07.2026 · Basis V18.427 (Commit acde9e5) · der aktive Vollendungs-Plan des
 Studio-Paritäts-Bogens (V18.413–.427, „Drähte statt Kopien").**
 

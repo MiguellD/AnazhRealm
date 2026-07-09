@@ -9,6 +9,8 @@ sind schlank: **Stand+Lehren** (`CLAUDE.md`) · **Chronik** (`archiv/handover.md
 
 ---
 
+> **DER AKTIVE ARCHITEKTUR-BOGEN: `nervensystem-plan.md`** — das Host↔Lab-Fundament (Meta-Gesetze M0–M9 · Host-Verben · Komponenten-Wörterbuch · Weg α→ε). **ZUERST lesen** vor Studio-Andock/Foundry/Fahrzeug/Tor/Stadt/Arena/Pipeline/Pack; der Paritäts-Plan ist ihm UNTERGEORDNET (DONE = H3/H4 + Sign-off).
+
 ## Die tragenden Texte (immer konsultiert — der aktive Tisch + die NORMATIVEN Bibliotheks-Referenzen)
 
 > Die ersten Zeilen sind die Immer-aktuell-Texte in `docs/` (der schlanke Tisch). Die zwei

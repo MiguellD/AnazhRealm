@@ -67,6 +67,7 @@
         "gate:foundry-crossfade": "node scripts/diag-foundry-crossfade.cjs --selftest && node scripts/diag-foundry-crossfade.cjs",
         "gate:v1-resolve": "node scripts/diag-v1-resolve.cjs",
         "gate:no-second-treebuilder": "node scripts/diag-no-second-treebuilder.cjs",
+        "gate:silhouetten-zensus": "node scripts/diag-silhouetten-zensus.cjs --selftest",
         "gate:season-flip": "node scripts/diag-season-flip.cjs",
         "gate:weather-vector": "node scripts/diag-weather-vector.cjs",
         "gate:season-meadow": "node scripts/diag-season-meadow.cjs",
