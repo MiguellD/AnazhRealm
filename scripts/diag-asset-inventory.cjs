@@ -389,10 +389,20 @@ const server = http.createServer((req, res) => {
                 fake3.userData.inventar = "selftest-fremdklasse";
                 st.scene.add(fake3);
                 injected.push(fake3);
+                // N4.3 (Nervensystem-Plan, DIE TUFT-WAND): ein GRAS-Mesh OHNE foundryGras-Stempel
+                // (= der Alt-Tuft-Nachbau, der W6-Fail-Open) MUSS als Verletzung zählen — die
+                // stehende Wand, die den N7.3-gebundenen Tuft-Schnitt bis dahin bewacht. Die
+                // Injektion beweist, dass die Zensus-Klasse „Gras ohne foundryGras" FEUERT
+                // (sonst wäre die Wand vakuös, solange die lebende Wiese brav Studio trägt).
+                const fake4 = new THREE.InstancedMesh(geo, mat, 2);
+                fake4.count = 2;
+                st.scene.add(fake4);
+                grassSet.add(fake4); // wie ein Eintrag in st.voxelChunkGrass (der Zensus-Schnappschuss)
+                injected.push(fake4);
                 // meshKeys ist ein Schnappschuss von VOR der Injektion → fake1 fällt (wie
-                // fake2) in den Fail-Closed-Fallback: alle drei MÜSSEN als +3 Verletzungen
-                // zählen. Der Namens-Regel-Pfad (Grammatik-Baum-Key → verletzung) wird
-                // zusätzlich PUR über classifyKey geprüft — alle Fangpfade bewiesen:
+                // fake2) in den Fail-Closed-Fallback: fake1–fake3 + der Tuft-Fake MÜSSEN als
+                // +4 Verletzungen zählen. Der Namens-Regel-Pfad (Grammatik-Baum-Key →
+                // verletzung) wird zusätzlich PUR über classifyKey geprüft — alle Fangpfade bewiesen:
                 const c1 = classifyKey("baum_eiche#0@3,3");
                 const c2 = classifyKey("fscatter:eiche:2:0#0@1,1");
                 const c3 = classifyKey("tempel#2");
@@ -405,8 +415,11 @@ const server = http.createServer((req, res) => {
                 o.selftest = {
                     before: o.zensus.buckets.verletzung,
                     after: z2.buckets.verletzung,
-                    fired: z2.buckets.verletzung === o.zensus.buckets.verletzung + 3,
+                    fired: z2.buckets.verletzung === o.zensus.buckets.verletzung + 4,
+                    // N4.3 — die Tuft-Wand feuert NAMENTLICH (nicht nur der Zähler):
+                    tuftWallFired: z2.violations.some((v) => /foundryGras/.test(v.label)),
                 };
+                grassSet.delete(fake4); // Schnappschuss-Hygiene (Szene räumt das finally)
                 // (b) der synthetisch VERLORENE Key: in f.requested, aber weder Cache noch
                 // Szene noch Räumungs-Buch kennen ihn → die Inventur MUSS ihn als lost fangen.
                 if (f) {
@@ -474,7 +487,12 @@ const server = http.createServer((req, res) => {
         console.log(
             `  Selbst-Test Inventur: verloren vorher=${out.selftestLost ? out.selftestLost.before : "?"} nachher=${out.selftestLost ? out.selftestLost.after : "?"} → ${out.selftestLost && out.selftestLost.fired ? "feuert ✅" : "feuert NICHT ❌"}`
         );
+        console.log(
+            `  Selbst-Test Tuft-Wand (N4.3): Gras ohne foundryGras-Stempel → ${out.selftest.tuftWallFired ? "feuert ✅" : "feuert NICHT ❌"}`
+        );
         if (!out.selftest.fired) fails.push("Selbst-Test: injizierte Fremd-Emitter nicht gefangen");
+        if (!out.selftest.tuftWallFired)
+            fails.push("Selbst-Test: die Tuft-Wand (Gras ohne foundryGras-Stempel) feuert nicht");
         if (
             !out.selftestRules ||
             !out.selftestRules.grammarTreeCaught ||

@@ -295,6 +295,103 @@ law(
     );
 }
 
+// N4 (Nervensystem-Plan Phase γ, „Instance-Straße") — DIE EINE MESH→GROUP-NAHT + DAS REPLY-
+// MATERIAL FÜHRT + DIE TUFT-WAND + IMPOSTOR-POLITIK ALS DATEN. Vier Gesetze, jedes als Struktur:
+// N4.1 der Worker-Reply wird EXAKT EINMAL zu THREE-Geometrie (in `_foundryBuildGroup`) — jeder
+//      `_foundryRequest(...).then((meshes)`-Leser routet durch diese eine Naht (kein zweiter
+//      Bau-Pfad kann still entstehen; die IDB-Persistenz in `_foundryRequest` selbst speichert
+//      den Reply UNVERÄNDERT, sie baut nicht → zählt nicht als Leser).
+// N4.2 wo `m.mat` reist, FÜHRT es — die kind-Defaults (Rinde 0.93 · Laub 0.62 · Gras 0.7/0.18)
+//      sind reiner Fallback für mat-lose Alt-Replies (jeder heutige Reply trägt mat, V18.418).
+// N4.3 die W6-Leer-Wand steht: im Studio-Regime ist die Resolved-Leere „leer" (NIE der
+//      Alt-Tuft-Nachbau = Fail-Open); der Bauer verbucht „leer" VOR dem Tuft-Fallback. Der
+//      Tuft-SCHNITT ist N7.3-gebunden (die Gras-Bänder üben den foundry-off-Pfad) — bis dahin
+//      wacht diese Wand + die Zensus-Klasse in gate:asset-inventory.
+// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree + shrub), kein
+//      kind-Literal in `_foundryPresetIsTree`; vehicle/rock/flower/grass impostorn fail-closed nicht.
+console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");
+{
+    const _fnBodyN4 = (re) => {
+        const m = anazhNC.match(re);
+        if (!m) return "";
+        let i = anazhNC.indexOf(m[0]) + m[0].length,
+            depth = 1,
+            out = "";
+        while (i < anazhNC.length && depth > 0) {
+            const ch = anazhNC[i++];
+            if (ch === "{") depth++;
+            else if (ch === "}") depth--;
+            if (depth > 0) out += ch;
+        }
+        return out;
+    };
+    // N4.1a — die Roh-Reply→Geometrie-Konversion existiert genau EINMAL (die eine Naht):
+    const rawConv = (anazhNC.match(/new T\.BufferAttribute\(m\.position\.array/g) || []).length;
+    law("N4.1: die Reply→Geometrie-Konversion lebt genau EINMAL (`_foundryBuildGroup`)", true, rawConv === 1);
+    // N4.1b — jeder `_foundryRequest`-Aufrufer mit meshes-Handler routet durch die Naht:
+    {
+        let sites = 0,
+            routed = 0;
+        let idx = -1;
+        while ((idx = anazhNC.indexOf("this._foundryRequest(", idx + 1)) !== -1) {
+            const win = anazhNC.slice(idx, idx + 700);
+            if (!/\.then\(\(meshes\)/.test(win)) continue; // kein Reply-Leser (gibt es heute nicht)
+            sites++;
+            if (/_foundryBuildGroup\(meshes/.test(win)) routed++;
+        }
+        law(
+            `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed}/${sites} Sites, erwartet ≥5)`,
+            true,
+            sites >= 5 && routed === sites
+        );
+    }
+    // N4.2 — die Naht reicht das Reply-Material herein + mp FÜHRT (kind-Defaults nur Fallback):
+    law(
+        "N4.2: die Naht reicht das Reply-Material herein (`m.mat` an `_foundryTreeMaterial`)",
+        true,
+        /_foundryTreeMaterial\(m\.kind \|\| "bark", m\.mat \|\| null\)/.test(anazhNC)
+    );
+    law(
+        "N4.2: mp FÜHRT — rough/metal/env lesen das Reply-Material zuerst, kind-Literale nur ohne mp",
+        true,
+        /mp && typeof mp\.roughness === "number" \? mp\.roughness :/.test(anazhNC) &&
+            /mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(anazhNC) &&
+            /mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(anazhNC)
+    );
+    // N4.3 — die W6-Leer-Wand + der Bauer verbucht „leer" vor dem (N7.3-gebundenen) Tuft-Fallback:
+    law(
+        'N4.3: die W6-Leer-Wand steht (`_foundryEnabled() ? "leer" : false` in `_grassStudioGeometry`)',
+        true,
+        /_foundryEnabled\(\) \? "leer" : false/.test(anazhNC)
+    );
+    law(
+        'N4.3: der Gras-Bauer verbucht „leer" als Studio-Antwort (`sg === "leer"` vor dem Tuft-Fallback)',
+        true,
+        /sg === "leer"/.test(anazhNC) && (anazhNC.match(/this\._grassBladeTuftGeometry\(\)/g) || []).length === 1
+    );
+    // N4.4 — die Impostor-Politik ist eine Daten-Zeile, kein kind-Literal:
+    law(
+        "N4.4: KIND_POLICY trägt die Impostor-Politik (tree + shrub `impostor: true`)",
+        true,
+        /tree:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC) &&
+            /shrub:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
+    );
+    law(
+        "N4.4: vehicle trägt KEINE Impostor-Zeile (Fernstufe bleibt Geometrie/Grade)",
+        false,
+        /vehicle:\s*Object\.freeze\(\{[^}]*impostor/.test(anazhNC),
+        "die vehicle-Policy-Zeile impostort plötzlich"
+    );
+    {
+        const treeBody = _fnBodyN4(/_foundryPresetIsTree\(preset\) \{/);
+        law(
+            "N4.4: `_foundryPresetIsTree` liest die Policy-Tabelle, kein tree|shrub-kind-Literal im Body",
+            true,
+            treeBody.length > 0 && /KIND_POLICY\[rec\.kind\]/.test(treeBody) && !/"tree"|"shrub"/.test(treeBody)
+        );
+    }
+}
+
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {
     console.error(

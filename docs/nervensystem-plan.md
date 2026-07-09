@@ -380,9 +380,48 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
 | N4.1    | `_foundryBuildGroup` stabil als **einzige** Mesh→Group-Naht (Alias-Name optional) |
 | N4.2    | Material aus `m.mat` generisch; weniger kind-Defaults                             |
 | N4.3    | Gras: Studio-only-Pfad; Tuft-Fallback unter appear **schneiden** wenn H3 grün     |
-| N4.4    | Impostor: policy über kind/tree                                                   | shrub + kindStages, nicht wachsende Preset-Liste |
+| N4.4    | Impostor: policy über kind (tree/shrub) + kindStages, nicht wachsende Preset-Liste |
 
-**Akzeptanz N4:** `gate:no-second-treebuilder`, grass gates, vehicle contract.
+**N4 DONE (09.07. — „Instance-Straße"; Verfassungs-Gesetz N4, 9 neue Zeilen in `gate:constitution`):**
+
+- [x] N4.1 VERIFIZIERT + GEPINNT: `_foundryBuildGroup` ist die EINZIGE Mesh-Reply→THREE-Group-Naht.
+      Die fünf Leser (alle `_foundryRequest(...).then((meshes)`-Sites): Gras
+      (`_grassStudioGeometry`) · Impostor-LOD1 (`_foundryEnsureImpostorRecord`) · Prefetch
+      (`_foundryPrefetchLibrary`-Fächer) · Flatten (`_foundryFlattenFor`) · Werkstatt-Vorschau
+      (`_workshopFoundryPreviewGroup`) — jeder routet durch die Naht. KEIN zweiter Bau-Pfad
+      (die Vorschau-Gruppen WRAPPEN gecachte, naht-gebaute Gruppen/Impostor-Leaves — Konsumenten,
+      keine Nähte; die IDB-Persistenz speichert den Reply UNVERÄNDERT). Verfassung: die
+      Reply→Geometrie-Konversion (`new T.BufferAttribute(m.position.array`) existiert genau
+      EINMAL + jede Site routet (kommentar-gestrippter Fenster-Grep, Sites ≥ 5 gezählt).
+- [x] N4.2 BEFUND: `m.mat` FÜHRT HEUTE SCHON (seit V18.418) — jeder Reply trägt `mat`
+      (rough/metal/flat/env/side/alphaTest, Serialisierung `__extractAssetMesh`), die
+      kind-Literale (Rinde 0.93 · Laub 0.62 · Gras 0.7/0.18) sind reiner Fallback für mat-lose
+      Alt-Pfade → KEINE Code-Änderung (byte-gleich), nur Verfassungs-Pins + Doc. GEMESSEN am
+      echten Reply (Einmal-Probe, headless foundry-ON): basalt-L0-Reply mat.roughness 0.8 →
+      gebautes Material 0.8/0.04/flat/env 0.5/DoubleSide (mp, NICHT der 0.62-kind-Default);
+      ohne mp bark 0.93 · grass 0.7+env 0.18; mp überstimmt auch bark (0.41 geprüft).
+- [x] N4.3 GEMESSEN + WAND GEBAUT · **SCHNITT BEWUSST VERTAGT (N7.3-GEBUNDEN):** (a) foundry-ON
+      erreicht der Tuft-Fallback NIE — die W6-Leer-Wand (`_foundryEnabled() ? "leer" : false`)
+      macht jede Studio-Antwort zu geo|null|„leer", der Bauer returnt VOR dem Tuft-Zweig;
+      GEMESSEN (Einmal-Probe): 76/76 Gras-Meshes tragen `foundryGras`, 0 Tuft. (b) foundry-OFF
+      ist der GATE-MODUS (der volle Playtest + `gate:grass-thin` setzen `__anazhGateNoFoundry`
+      und ÜBEN den Tuft-Pfad) → der Schnitt fällt ERST mit N7.3 (Gate auf foundry-ON heben;
+      Anker: `docs/analyse/dual-regime-inventur-n7.md` §1 Sites #2–#5 + §4). DIE STEHENDE WAND
+      bis dahin: die Zensus-Klasse „Gras ohne foundryGras-Stempel" in `gate:asset-inventory`
+      (foundry-ON, per-push-CI) — seit N4 mit SELBST-TEST (injiziertes Tuft-Gras → Verletzung
+      feuert, sonst wäre die Wand vakuös) + Verfassungs-Pins (Leer-Wand · `sg === "leer"` ·
+      genau EIN Tuft-Aufrufer).
+- [x] N4.4 DIE IMPOSTOR-POLITIK IST DATEN (M8): `KIND_POLICY` trägt je Zeile ein optionales
+      `impostor: true` (tree + NEUE render-only-Zeile shrub [ohne prefix/donor — Auto-Register
+      überspringt sie fail-closed, placeExtra fehlt → keine Wald-Nische]); `_foundryPresetIsTree`
+      liest NUR die Policy (kein tree|shrub-kind-Literal mehr). Wahrheitstafel EXAKT wie vorher
+      (live gemessen: eiche/strauch → Impostor · findling/blume/gras/gt → Geometrie); die
+      Preset-Namen-Fallback-Liste bleibt (Buch-lose Frühphase, wächst nicht). Eine neue Domäne
+      steuert ihre Fernstufe per Daten-Zeile.
+
+**Akzeptanz N4:** `gate:no-second-treebuilder`, grass gates, vehicle contract — ✅ (09.07.),
+plus `gate:constitution` Gesetz N4 (9 Zeilen) · `gate:asset-inventory` Tuft-Selbst-Test ·
+voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 
 ### N7 — Dual-Regime senken (parallel zu N3/N4, in Teilschritten)
 

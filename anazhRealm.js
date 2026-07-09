@@ -64482,6 +64482,10 @@ class AnazhRealm {
             const rec = book[id];
             const pol = rec && KP[rec.kind];
             if (!pol) continue;
+            // N4.4 — eine RENDER-ONLY-Policy-Zeile (nur `impostor`, kein prefix/donor — heute
+            // shrub) registriert KEINEN Blueprint: fail-closed ueberspringen, BEVOR ein
+            // undefined-Praefix einen Namen formen koennte.
+            if (!pol.prefix || !pol.donor) continue;
             const name = pol.prefix + id;
             if (bps[name]) continue; // existiert (historische Arten + schon registrierte)
             const donor = bps[pol.donor];
@@ -64900,17 +64904,22 @@ class AnazhRealm {
         }
         return null;
     }
-    // Ist das Studio-Preset ein BAUM (Fernstufe = billiges Billboard, nicht schwere L2-Geometrie)?
-    // DATA-DRIVEN: das STUDIO klassifiziert seine Arten (`PRESETS[id].kind`), und diese Klassifikation
-    // fliesst schon durch die Rezept-Bruecke (`get-recipes` -> `f.recipes`). AnazhRealm LIEST sie —
-    // markiert der Schoepfer im Portalfile eine Art als `kind:"tree"`/`"shrub"` (Krone -> Billboard),
-    // folgt AnazhRealms Fernstufe automatisch, ohne dass hier etwas hartkodiert ist (der Schoepfer-
-    // Weg: das Studio ist die EINE Quelle, auch fuer die Arten-Klassifikation). Fallback auf die
-    // bekannten Baum-Presets, solange die Rezepte noch nicht geladen sind (headless / vor dem Ingest).
+    // Ist das Studio-Preset ein BAUM/STRAUCH (Fernstufe = billiges Billboard, nicht schwere L2-
+    // Geometrie)? DATA-DRIVEN in ZWEI Schichten (N4.4, M8: Tabelle vor if): (a) das STUDIO
+    // klassifiziert seine Arten (`PRESETS[id].kind`), die Klassifikation fliesst durch die Rezept-
+    // Bruecke (`get-recipes` -> `f.recipes`); (b) WELCHE kind-Klasse impostort, sagt die
+    // KIND_POLICY-Zeile (`impostor: true` — heute tree + shrub, exakt die alte Wahrheitstafel;
+    // rock/flower/grass/vehicle tragen keine -> fail-closed keine Karte). Eine neue Domaene
+    // steuert ihre Fernstufe per DATEN-Zeile, ohne kind-Literal im Stamm. Fallback auf die
+    // bekannten Baum-Presets, solange die Rezepte noch nicht geladen sind (headless / vor dem
+    // Ingest — die Buch-lose Fruehphase; die Liste bleibt bewusst, sie waechst nicht).
     _foundryPresetIsTree(preset) {
         const f = this._foundry;
         const rec = f && f.recipes && f.recipes[preset];
-        if (rec && typeof rec.kind === "string") return rec.kind === "tree" || rec.kind === "shrub";
+        if (rec && typeof rec.kind === "string") {
+            const pol = AnazhRealm.KIND_POLICY[rec.kind];
+            return !!(pol && pol.impostor === true);
+        }
         return (
             preset === "eiche" ||
             preset === "fichte" ||
@@ -82801,9 +82810,16 @@ AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, roc
 // fail-closed wenn er fehlt) · grown (true = Pflanzen-Identitaet via _grownSpecies [V18.259,
 // der NAME ist load-bearing], false = clone.name wird gesetzt) · builtIn (nur wenn definiert
 // gesetzt; Baum erbt das Donor-true) · placeExtra ("forest" = _forestExtraSpecies streut die
-// Auto-Art in die Wald-Nischen; null = nur Katalog/Werkstatt).
+// Auto-Art in die Wald-Nischen; null = nur Katalog/Werkstatt) · impostor (N4.4: true = die
+// Fernstufe dieser kind-Klasse ist das 8-Winkel-Billboard, `_foundryPresetIsTree` liest NUR
+// diese Zeile — keine Zeile/false = L2 bleibt Geometrie [rock/flower/grass/vehicle]).
 AnazhRealm.KIND_POLICY = Object.freeze({
-    tree: Object.freeze({ prefix: "baum_", donor: "baum_eiche", grown: true, placeExtra: "forest" }),
+    tree: Object.freeze({ prefix: "baum_", donor: "baum_eiche", grown: true, placeExtra: "forest", impostor: true }),
+    // N4.4 — RENDER-ONLY-ZEILE: shrub traegt bewusst KEIN prefix/donor (der Auto-Register-
+    // Chokepoint ueberspringt sie fail-closed, placeExtra fehlt -> keine Wald-Nische) — die
+    // Zeile steuert NUR die Impostor-Politik. Zusammen mit tree exakt die alte
+    // tree|shrub-Wahrheitstafel (Baeume + Straeucher impostorn, sonst niemand).
+    shrub: Object.freeze({ impostor: true }),
     vehicle: Object.freeze({
         prefix: "fahrzeug_",
         donor: "fahrzeug_wagen",
