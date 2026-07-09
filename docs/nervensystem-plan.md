@@ -400,7 +400,9 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
       echten Reply (Einmal-Probe, headless foundry-ON): basalt-L0-Reply mat.roughness 0.8 →
       gebautes Material 0.8/0.04/flat/env 0.5/DoubleSide (mp, NICHT der 0.62-kind-Default);
       ohne mp bark 0.93 · grass 0.7+env 0.18; mp überstimmt auch bark (0.41 geprüft).
-- [x] N4.3 GEMESSEN + WAND GEBAUT · **SCHNITT BEWUSST VERTAGT (N7.3-GEBUNDEN):** (a) foundry-ON
+- [x] N4.3 GEMESSEN + WAND GEBAUT · **SCHNITT VOLLZOGEN (N7.4b, V18.436 — das Tuft-Paket:
+      Tuft-Bauer + Gras-Thin geschnitten, die Wiese ist Studio-definiert; die Zensus-Wand
+      + die Verfassungs-Pins wanderten mit [55 Gesetze]). Historie des Vertagens:** (a) foundry-ON
       erreicht der Tuft-Fallback NIE — die W6-Leer-Wand (`_foundryEnabled() ? "leer" : false`)
       macht jede Studio-Antwort zu geo|null|„leer", der Bauer returnt VOR dem Tuft-Zweig;
       GEMESSEN (Einmal-Probe): 76/76 Gras-Meshes tragen `foundryGras`, 0 Tuft. (b) foundry-OFF
@@ -429,8 +431,8 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | N7.1    | ✅ (09.07.) Inventur: alle Sites kategorisiert (Boot 4 / Policy 24 / Legacy 1) — `docs/analyse/dual-regime-inventur-n7.md`                                                                                                                                                                   |
 | N7.2    | Policy-Gabeln → Default appear-on; Legacy nur hinter explizitem Test-Hook — **Scheibe 1 ✅ (09.07.): 7 Sites gesenkt, 29 → 22 Call-Sites** (Dichte-Draht → `_effectiveFoliageDensity` ×3 · Methoden-Dedup ×2 · Boot-Chokepoint-Dedup ×2; jede byte-gleich, voller Playtest foundry-off grün) |
-| N7.3    | Headless: Foundry-Fixtures/ON für Produktionsnähe; `__anazhGateNoFoundry` nur Unit-Richter                                                                                                                                                                                                   |
-| N7.4    | Zielzahl: ≤ 10 Aufrufe, dann ≤ 5 (Boot + Hook)                                                                                                                                                                                                                                               |
+| N7.3    | ✅ (09.07., V18.435) der VOLLE Playtest fährt foundry-ON; `__anazhGateNoFoundry` nur noch Unit-Richter (`__withNoFoundry`, sync-only); 26 Rote reconciled ohne Aufweichen                                                                                                                     |
+| N7.4    | ✅ (09.07., V18.436) DER ABSCHIED: Kulissen + Tuft-Paket geschnitten, 4 Daten-Wahrheits-Kollapse — **29 → 14 Call-Sites = die GEMESSENE strukturelle Ziel-Menge** (die „≤10/≤5" waren vor der N7.3-Endgestalt aspirational: die Erschein-Familie trägt die Hook-Fixturen; Urteile in `dual-regime-inventur-n7.md` §5) |
 
 **Akzeptanz N7:** Zählung sinkt pro Teilwelle; playtest grün; no-second-treebuilder grün.
 

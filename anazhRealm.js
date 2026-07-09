@@ -20766,7 +20766,11 @@ class AnazhRealm {
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
-        const targetGone = !target || !this.state.architectures.includes(target) || !target.mesh;
+        // N7.4 — ein INSTANZIERTER Eintrag (Foundry-/HISM-Welt, der Produktions-Normalfall)
+        // trägt KEIN .mesh (er lebt in instSlots) — das nackte `!target.mesh` klassifizierte
+        // ihn als „weg" → die Kreatur suchte ihr Ziel JEDEN Tick neu (Nearest-Scan-Churn).
+        // Weg-Wahrheit: aus der Welt entfernt ODER weder Mesh noch Instanz-Slots.
+        const targetGone = !target || !this.state.architectures.includes(target) || (!target.mesh && !target.instanced);
         if (targetGone) {
             target = this._findNearestArchitectureWithMaterial(creature.position, material);
             if (!target) {
@@ -33758,11 +33762,10 @@ class AnazhRealm {
             else for (let i = 0; i < p.count; i++) push(i);
         }
         if (!pos.length) {
-            // W6 — dieselbe Resolved-Leer-Wand (das eine Verdikt von oben, N7.2);
-            // N7.3 — dieselbe Memo-Wand: das transiente off-Verdikt (false) reist NIE
-            // ins Memo (s. die erste Wand oben).
-            if (_leerVerdikt !== false) this._grassStudioGeoByStage[stage] = _leerVerdikt;
-            return _leerVerdikt;
+            // W6/N7.4 — dieselbe Resolved-Leer-Wand nach dem Merge: bedingungslos „leer"
+            // (wie die erste Wand oben — der false-Tuft-Zweig ist mit dem Tuft geschnitten).
+            this._grassStudioGeoByStage[stage] = "leer";
+            return "leer";
         }
         // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
         const vc = pos.length / 3;
@@ -82482,7 +82485,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.435.0";
+AnazhRealm.VERSION = "18.436.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

@@ -49,6 +49,11 @@ const server = http.createServer((req, res) => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true;
+        // N7.4 — BEGRÜNDETER Hook (vorher unbegründet): die Linse prüft die REVEAL-KLAMMER-
+        // Logik (welche Kappe greift), nicht den Look. Foundry-an würde der async andockende
+        // Studio-Sicht-Config (`_sightDist` überstimmt die Alt-Formel) ein Timing-Race in die
+        // Szenario-C-Baseline (796 m Alt-Welt-Weitblick) tragen — der Hook hält die Formel
+        // deterministisch; die Klammer-Mechanik selbst ist regime-unabhängig (Fronten gestubbt).
         window.__anazhGateNoFoundry = true;
     });
     const pageErrors = [];
