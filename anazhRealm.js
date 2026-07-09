@@ -33773,8 +33773,14 @@ class AnazhRealm {
             return null; // lädt — die Zelle wartet (pendingGrass)
         }
         if (!group || !group.children || !group.children.length) {
-            this._grassStudioGeoByStage[stage] = false; // Foundry kann gras nicht → Alt-Pfad (graceful)
-            return false;
+            // W6 (Paritäts-Vollendung, die V18.380-has-vs-null-Klasse): eine RESOLVED-LEERE
+            // Studio-Antwort ist KEIN Miss — im Studio-Regime heißt sie „das Studio sagt
+            // bewusst LEER" → "leer" (der Aufrufer verbucht die Zelle als gras-los; NIE der
+            // Alt-Tuft-Nachbau = Fail-Open-Fremd-Silhouette). Nur OHNE Studio (foundry aus/
+            // kein Worker) bleibt false = der legitime Alt-Pfad.
+            const _verdict = this._foundryEnabled() ? "leer" : false;
+            this._grassStudioGeoByStage[stage] = _verdict;
+            return _verdict;
         }
         // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
         const k = this._foundryWorldScaleMatrix("gras").elements[0];
@@ -33797,8 +33803,9 @@ class AnazhRealm {
             else for (let i = 0; i < p.count; i++) push(i);
         }
         if (!pos.length) {
-            this._grassStudioGeoByStage[stage] = false;
-            return false;
+            const _verdict2 = this._foundryEnabled() ? "leer" : false; // W6 — dieselbe Resolved-Leer-Wand
+            this._grassStudioGeoByStage[stage] = _verdict2;
+            return _verdict2;
         }
         // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
         const vc = pos.length / 3;
@@ -33866,6 +33873,14 @@ class AnazhRealm {
             const sg = this._grassStudioGeometry(stage);
             if (sg === null) {
                 this._enqueueGrass(cx, cz);
+                return;
+            }
+            if (sg === "leer") {
+                // W6 — RESOLVED-LEER ist eine STUDIO-ANTWORT, kein Miss (V18.380-Klasse):
+                // die Zelle wird als bewusst-gras-los verbucht (die Nebel-Front ist zufrieden,
+                // kein Deadlock) — und NIE der Alt-Tuft-Nachbau (fail-closed zur Studio-Wahrheit).
+                this.state.voxelChunkGrass.set(key, null);
+                this.state.voxelChunkGrassLod.set(key, entryLod);
                 return;
             }
             if (sg && this.state._grassConeGeometry !== sg) this.state._grassConeGeometry = sg;
@@ -35688,7 +35703,19 @@ class AnazhRealm {
     _ensureFarWaterSheet() {
         const s = this.state;
         if (!s.scene || typeof THREE === "undefined") return;
-        if (s.atmosphere && s.atmosphere.farWater === false) {
+        // W6 (Paritäts-Vollendung) — PROVISORIUM, REVERSIBEL: im Studio-Regime ist das
+        // Fern-Wasser DEFAULT AUS (dieselbe Vor-Studio-Relikt-Klasse wie Mantle/Shell —
+        // der Studio-Nebel schließt an der Wald-Kante ~194 m, das Sheet baute bis
+        // fog.far+60 DARÜBER HINAUS; `outR = max((ringR+2.5)·span, fogFar+60)` ragt
+        // beweisbar über den Nebel = eine Fremd-Silhouetten-QUELLE). ABER: Fern-Wasser
+        // ist ECHTE Hydro-Wahrheit (keine Kulisse) → KEIN hartes Gate, sondern der
+        // bestehende saubere Schalter als Default — `atmosphere.farWater === true`
+        // (expliziter User-/Schöpfer-Wille) erzwingt es AUCH im Studio-Regime; der
+        // endgültige Entscheid ist E-D (Wasser-Scope von Kriterium 1, W8).
+        const _farOff =
+            (s.atmosphere && s.atmosphere.farWater === false) ||
+            (this._foundryEnabled() && !(s.atmosphere && s.atmosphere.farWater === true));
+        if (_farOff) {
             if (s.farWater) this._disposeFarWaterSheet();
             return;
         }
@@ -64408,6 +64435,10 @@ class AnazhRealm {
             // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
             busch_hazel: "strauch",
             busch: "strauch",
+            // W6 (Paritäts-Vollendung) — die LETZTE ungemappte Understory-Art: das Kraut-
+            // Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) fiel als
+            // einzige noch auf die Grammatik-Silhouette zurück (Fremd-Silhouetten-Inventur).
+            farn_busch: "strauch",
         };
         if (map[species]) return map[species];
         // NERVENSYSTEM — die GENERISCHE Regel hinter der Tabelle (Schöpfer: „ein neues Asset im
@@ -65664,7 +65695,13 @@ class AnazhRealm {
                     // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
                     // gefallenen Stamm in 3–5 m Abstand (Vorlagen-Wald atmet: Snags in den
                     // Lücken). Wanderte aus dem alten Baum-Sample-Zweig hierher.
-                    if (d.totRoll < AnazhRealm.TOTHOLZ_RATE) {
+                    // W6 (Paritäts-Vollendung) — IM STUDIO-REGIME AUS (das HORIZON_MANTLE-
+                    // Chokepoint-Muster): die Totholz-Ökologie ist eine MONOLITH-Platzierungs-
+                    // Regel ohne Studio-Gesetz — ihr Grammatik-Stamm ist eine Fremd-Silhouette
+                    // im Paritäts-Bild (DONE-Kriterium 3). Die lebende Alt-Mechanik prüft das
+                    // V18.190-Band über den __anazhGateNoFoundry-Hook (foundry-aus) weiter;
+                    // der Γ-Totholz-Faden (roadmap §4) bleibt Saat, nicht gestrichen.
+                    if (d.totRoll < AnazhRealm.TOTHOLZ_RATE && !this._foundryEnabled()) {
                         const ang = d.rotY * 2.0;
                         const dist = 3 + d.keep * 2;
                         const tx = d.x + Math.cos(ang) * dist;

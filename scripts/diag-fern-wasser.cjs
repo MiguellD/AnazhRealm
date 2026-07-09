@@ -12,7 +12,13 @@ const fs = require("fs");
 const path = require("path");
 const PORT = 4404;
 const root = path.resolve(__dirname, "..");
-const mime = { ".html": "text/html", ".js": "application/javascript", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
+const mime = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".json": "application/json",
+    ".css": "text/css",
+    ".png": "image/png",
+};
 const server = http.createServer((req, res) => {
     let p = req.url.split("?")[0];
     if (p === "/") p = "/index.html";
@@ -32,16 +38,28 @@ const server = http.createServer((req, res) => {
 });
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-gpu"], protocolTimeout: 240000 });
+    const browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-gpu"],
+        protocolTimeout: 240000,
+    });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
+        // W6 (V9.56-i — die Linse wandert mit dem Entscheid): im Studio-Regime ist das
+        // Fern-Wasser DEFAULT AUS (Provisorium bis E-D) — diese Linse prüft die lebende
+        // ALT-Mechanik (Atlas-Treue · Coverage · Re-Anker · Toggle) → Foundry deterministisch
+        // aus, wie die anderen Alt-Mechanik-Bänder (der V18.411-Hook).
+        window.__anazhGateNoFoundry = true;
     });
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
-    await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function", {
-        timeout: 120000,
-    });
+    await page.waitForFunction(
+        () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function",
+        {
+            timeout: 120000,
+        }
+    );
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
     await page.evaluate(async () => {
         const r = window.anazhRealm;
@@ -191,9 +209,12 @@ const server = http.createServer((req, res) => {
         console.log(
             `  Quad-Zellen (${out.cellsChecked} Stichproben): atlas-nass ${(out.cellsWetFrac * 100).toFixed(1)} % · ausserhalb Ring ${(out.cellsOutsideFrac * 100).toFixed(1)} %`
         );
-        console.log(`  nasse Vertices bei Atlas-L−drop: ${(out.vLevelFrac * 100).toFixed(1)} % (${out.vChecked} Proben)`);
+        console.log(
+            `  nasse Vertices bei Atlas-L−drop: ${(out.vLevelFrac * 100).toFixed(1)} % (${out.vChecked} Proben)`
+        );
         console.log(`  COVERAGE atlas-nasser Annulus-Zellen: ${(out.coverage * 100).toFixed(1)} % von ${out.wetCells}`);
-        if (out.uncovered && out.uncovered.length) console.log(`  UNGEDECKT (Beispiele): ${JSON.stringify(out.uncovered)}`);
+        if (out.uncovered && out.uncovered.length)
+            console.log(`  UNGEDECKT (Beispiele): ${JSON.stringify(out.uncovered)}`);
         console.log(
             `  Re-Anker beim Crossing: ${out.reanchored} · Toggle aus→weg: ${out.toggleOffDisposed} · an→wieder da: ${out.toggleOnRebuilt}`
         );
