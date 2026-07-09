@@ -51,6 +51,11 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
                 r.state.renderer.render = function () {};
                 if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
                 r.state.postProcessingFailed = true;
+                // P0 (Bühnen-Ordnung, 09.07.) — die Bühne für diese Linse VOR-latchen: sie misst
+                // Steady-State-Idle-Churn, nicht die Boot-Ordnung. Ohne Latch könnte das Bühnen-
+                // Prädikat mitten im 16-Frame-Mess-Fenster schließen → Fern-Deko (Planeten/Sterne)
+                // + Bake-Queue kompilierten neue Pipelines = falsches ❌ (Boot-Transient, kein Churn).
+                r.state._buehneStand = true;
                 stubbed = true;
             }
             if (r && r.state && r.state.rendererReady && typeof r._gameLoopTick === "function") {

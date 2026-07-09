@@ -926,6 +926,12 @@ class AnazhRealm {
             _ringOverBudgetSince: 0, // V18.306 — seit wann der Frame anhaltend über Budget ist (Schrumpf-Hysterese)
             _ringHeadroomSince: 0, // V18.318 — seit wann der Frame anhaltend Kopfraum hat (Wachs-Hysterese, symmetrisch)
             _ringBootWindowUntil: 0, // W4.4 — Ring-Boot-Fenster: 0=frisch · Timestamp=offen bis · 1=geschlossen
+            // P0 (Bühnen-Ordnung, 09.07.) — DER BÜHNEN-LATCH: einmal true, bleibt true
+            // (Session-Lebenszeit, NICHT persistiert — buildStateSnapshot kopiert mit festem
+            // Feld-Satz). Gesetzt von `_buehneSteht()` (dem einen kanonischen Prädikat), gelesen
+            // von allen spielfremden Tick-Quellen (Nexus-Evolution · Grok-Chatter · Wetter-Auto-
+            // Zug · Brennglas · Saison-Drift · Impostor-Bake-Queue · Fern-Deko-Defer).
+            _buehneStand: false,
             symphony: {
                 ctx: null,
                 enabled: false,
@@ -1508,6 +1514,13 @@ class AnazhRealm {
     }
 
     grokTick(currentTime) {
+        // P0.2 (Bühnen-Ordnung) — der proaktive Begleiter-Chatter (idle/jumpBurst/
+        // rainLong/Journal-Kommentar/emotionShift/aiTend) wartet auf die Bühne: bei
+        // einem 3-FPS-Boot plapperte Grok, während der Boden noch streamte (Schöpfer-
+        // Log). Der Erst-Spawn-Gruß (grokMarkFirstSpawn, eigener Pfad) bleibt unberührt;
+        // nach der Bühne re-armen die Timer sauber (idleSince/Snapshots initialisieren
+        // beim ersten gelassenen Tick). Headless steht die Bühne sofort (gate-treu).
+        if (!this._buehneSteht()) return;
         const grok = this.state.grok;
         const keys = this.state.keys || {};
         const moving = !!(keys["w"] || keys["a"] || keys["s"] || keys["d"] || keys[" "]);
@@ -14567,6 +14580,16 @@ class AnazhRealm {
             this.log("Skybox-Bau: TSL/MeshBasicNodeMaterial im Bootstrap fehlt", "ERROR");
             return;
         }
+        // P0.1 (Bühnen-Ordnung) — IDEMPOTENT AM CHOKEPOINT (das V18.423-Canopy-Shell-
+        // Muster): ein zweiter Bau ERSETZT den ersten statt eine zweite Kuppel in die
+        // Szene zu stapeln (kein Doppel-Heap). Heute gibt es EINEN Aufrufer (init);
+        // die Wand hält jeden künftigen zweiten Pfad strukturell ab.
+        if (this.state.skybox) {
+            if (this.state.scene) this.state.scene.remove(this.state.skybox);
+            if (this.state.skybox.geometry) this.state.skybox.geometry.dispose();
+            if (this.state.skybox.material) this.state.skybox.material.dispose();
+            this.state.skybox = null;
+        }
         const {
             uniform,
             vec3,
@@ -14806,7 +14829,56 @@ class AnazhRealm {
         this.state.skybox = skybox;
         this.log("Galaxy-Skybox erstellt (V10.0-f-1 TSL)");
 
-        // Planeten hinzufügen
+        // P0.3 (Bühnen-Ordnung, 09.07.) — PLANETEN + STERNFELD SIND FERN-DEKO: sie bauen
+        // NACH der Bühne (`_tickBootFernDeko`, das V18.308-Defer-Muster) statt auf dem
+        // kritischen Boot-Pfad — der Himmel selbst (Skybox oben + Sonne/Mond in init)
+        // bleibt Boot (sichtbarer Himmel ab Frame 1). HEADLESS baut sofort (gate-treu:
+        // die Stern-Feld-/Planeten-Bänder des Playtests sehen die volle Szene). Alle
+        // Konsumenten (_followCelestialBodies · _loopSkyboxPlanets · _dayNightApply-
+        // StarField · der starField-Kamera-Pin) sind null-/leer-sicher by construction
+        // (state.planets=[] im Konstruktor, starField/starFieldUniforms=null-Guards).
+        if (this.state.renderer && this.state.renderer._isHeadlessNull) {
+            this._buildSkyPlanets();
+            // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
+            this._buildStarField();
+        } else {
+            this._fernDekoDeferred = true; // Instanz-Feld (this._x — nicht serialisiert)
+        }
+        // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
+        this._buildWaterPlane();
+        // V18.212 — Ω-C Canopy-Shell (DER LEBENDIGE GIGANT §9): die ferne
+        // Wald-Oberfläche, die individuelle Bäume in der Distanz cullt
+        // und durch eine geschlossene grüne Fläche ersetzt. Lazy via
+        // _ensureCanopyShell — die Methode prüft state.canopyShell und
+        // baut bei Bedarf. Wir rufen sie hier deferred (rAF), damit die
+        // Welt-Init nicht zusätzliche ~100ms belastet (Per-Vertex-Sample
+        // worldFieldAt × ~9k Vertices).
+        if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(() => {
+                try {
+                    this._ensureCanopyShell();
+                } catch (e) {
+                    if (typeof this.log === "function") {
+                        this.log(`Ω-C Canopy-Shell Build-Fehler: ${e.message}`, "WARN");
+                    }
+                }
+            });
+        }
+    }
+
+    // P0.3 (Bühnen-Ordnung) — die drei Planeten, aus createGalaxySkybox extrahiert
+    // (V9.44-Konvention: neue Logik in eine benannte Methode). Math.random ist hier
+    // Γ5-legitim (reine Himmels-Deko, keine Welt-Substanz). Idempotent: ein zweiter
+    // Bau ersetzt die alten Planeten (Szene-Remove + Dispose, kein Doppel-Heap).
+    _buildSkyPlanets() {
+        if (!this.state.scene || typeof THREE === "undefined") return;
+        if (Array.isArray(this.state.planets)) {
+            for (const p of this.state.planets) {
+                this.state.scene.remove(p);
+                if (p.geometry) p.geometry.dispose();
+                if (p.material) p.material.dispose();
+            }
+        }
         this.state.planets = [];
         // V18.331 — Dev-Drossel revertiert (Cold-Start ist nach dem Perf-/Worldgen-/
         // Determinismus-Bogen schnell): Planeten zurück auf 3.
@@ -14838,27 +14910,23 @@ class AnazhRealm {
                 `Planet ${i} erstellt: Position (${planet.position.x.toFixed(2)}, ${planet.position.y.toFixed(2)}, ${planet.position.z.toFixed(2)})`
             );
         }
-        // V8.28 6.G4.b A — echtes Stern-Feld als THREE.Points
-        this._buildStarField();
-        // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
-        this._buildWaterPlane();
-        // V18.212 — Ω-C Canopy-Shell (DER LEBENDIGE GIGANT §9): die ferne
-        // Wald-Oberfläche, die individuelle Bäume in der Distanz cullt
-        // und durch eine geschlossene grüne Fläche ersetzt. Lazy via
-        // _ensureCanopyShell — die Methode prüft state.canopyShell und
-        // baut bei Bedarf. Wir rufen sie hier deferred (rAF), damit die
-        // Welt-Init nicht zusätzliche ~100ms belastet (Per-Vertex-Sample
-        // worldFieldAt × ~9k Vertices).
-        if (typeof requestAnimationFrame === "function") {
-            requestAnimationFrame(() => {
-                try {
-                    this._ensureCanopyShell();
-                } catch (e) {
-                    if (typeof this.log === "function") {
-                        this.log(`Ω-C Canopy-Shell Build-Fehler: ${e.message}`, "WARN");
-                    }
-                }
-            });
+    }
+
+    // P0.3 (Bühnen-Ordnung) — der deferierte Fern-Deko-Bau: Planeten + 2800-Sterne-Feld
+    // erscheinen EINMAL, sobald die Bühne steht (das V18.308-`_tickBootPhase3`-Muster).
+    // Vorher bauten sie synchron im Boot — auf der 3-FPS-Maschine des Schöpfers stahl
+    // jede Fern-Deko-Arbeit dem Boden-Streaming den Frame. No-op, wenn nichts deferiert
+    // ist (headless baut in createGalaxySkybox sofort → `_fernDekoDeferred` bleibt unset).
+    _tickBootFernDeko() {
+        if (!this._fernDekoDeferred) return;
+        if (!this._buehneSteht()) return;
+        this._fernDekoDeferred = false;
+        try {
+            this._buildSkyPlanets();
+            this._buildStarField();
+        } catch (err) {
+            // Fern-Deko darf den ewigen Loop nie reißen — laut, aber nicht tödlich.
+            this.log(`Fern-Deko-Bau (Planeten/Sterne) fehlgeschlagen: ${err.message}`, "WARN");
         }
     }
 
@@ -21319,6 +21387,63 @@ class AnazhRealm {
             this.log("Boot-Phase 3 (Kreaturen) progressiv vollendet.", "INFO");
             this.state._bootPhase3 = null;
         }
+    }
+
+    // P0 (Bühnen-Ordnung, 09.07. — Schöpfer-Boot bei 3–13 FPS: Nexus-Evolutionen, Grok-
+    // Geplapper, Wetter-Wechsel und Brennglas-Zündungen liefen, WÄHREND der Boden noch
+    // streamte) — DIE EINE BÜHNEN-WAHRHEIT: das W2-Prädikat aus `diag-boot-stage.cjs`
+    // als LIVE-Methode (Gesetz #0 — eine kanonische Größe, alle spielfremden Tick-
+    // Quellen LESEN sie statt eigene Boot-Heuristiken zu raten). „Die Bühne steht" =
+    // der Boden ist da: Ring am Ziel + Gras/Wasser aufgeholt + keine deferierte Streu-
+    // Region — bewusst die BILLIGE Teilmenge des W2-Prädikats (KEIN Impostor-/Nebel-
+    // Term: die Bake-Queue wartet ihrerseits auf die Bühne → ein Impostor-Term wäre
+    // ein Deadlock by construction; der Nebel folgt dem Ring ohnehin). Einmal true
+    // bleibt sie true (`state._buehneStand`-Latch → nach dem Latch ist der Read EIN
+    // Boolean, keine Map-Iteration pro Frame).
+    // GATE-TREU: headless (Null-Renderer) steht die Bühne SOFORT (derselbe Kurzschluss
+    // wie foliageRadius V18.275 / Ring V18.301) → alle Playtest-Bänder byte-gleich.
+    // SICHERHEITS-DECKEL (die V18.276-Klasse — „ein reiner Deckel gegen den echten
+    // Hänger"): der Ring wächst nur mit Frame-Kopfraum — eine Maschine, die dauerhaft
+    // über Budget läuft (die 3-FPS-Realität), erreichte das Ziel NIE → ohne Deckel
+    // verlöre der Schöpfer Wetter/Nexus/Begleiter/Impostor-Bakes für die GANZE Session,
+    // und der last-SENKENDE Impostor-Bake bliebe ausgesperrt (das S4-Henne-Ei eine
+    // Ebene höher). Nach BUEHNE_SETTLE_CAP_MS Wall-Clock öffnet die Bühne darum
+    // bedingungslos — kein verlorenes Feature, nur Reihenfolge.
+    _buehneSteht() {
+        const st = this.state;
+        if (st._buehneStand) return true;
+        if (st.renderer && st.renderer._isHeadlessNull) {
+            st._buehneStand = true;
+            return true;
+        }
+        if (this._buehneT0 == null) this._buehneT0 = performance.now();
+        let steht = false;
+        if (performance.now() - this._buehneT0 > AnazhRealm.BUEHNE_SETTLE_CAP_MS) {
+            steht = true; // der Deckel: die Welt hat settled, was die Hardware trägt
+        } else {
+            const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+            const ring = st._activeRingRadius != null && st._activeRingRadius >= ringTarget;
+            const grass = !st.pendingGrass || st.pendingGrass.size === 0;
+            const water = !st.pendingWaterIso || st.pendingWaterIso.size === 0;
+            let streu = true;
+            if (ring && grass && water && st.scatterRegions) {
+                for (const reg of st.scatterRegions.values()) {
+                    if (reg && reg._deferredFoundry) {
+                        streu = false;
+                        break;
+                    }
+                }
+            }
+            steht = ring && grass && water && streu;
+        }
+        if (steht) {
+            st._buehneStand = true;
+            this.log(
+                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Impostor-Bakes · Fern-Deko) starten.",
+                "INFO"
+            );
+        }
+        return steht;
     }
 
     updateCreatures(delta) {
@@ -41259,7 +41384,22 @@ class AnazhRealm {
             const known =
                 this.playerSoulDefs[state.playerSoul] ||
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
-            if (known) this.applyPlayerSoul(state.playerSoul);
+            if (known) {
+                // P0.1 (Bühnen-Ordnung, 09.07.) — DIE „Seele gewechselt ×2"-WURZEL: init()
+                // deferiert den Avatar-Bau (V18.304, `_deferredAvatarSoul`), aber dieser
+                // Restore baute die gespeicherte Seele SOFORT — und der Loop-Defer baute
+                // sie 6 Frames später NOCHMAL (zwei volle Körper-Builds + Dispose auf dem
+                // 3-FPS-Boot, das Schöpfer-Log-Doppel). Läuft der Boot-Defer, aktualisiert
+                // der Restore nur die WAHL — der EINE Loop-Defer baut sie (die V18.304-
+                // Absicht gilt auch für den Restore-Pfad). Headless setzt den Defer nie
+                // (baut synchron) → dieser Zweig ist dort tot, alle Bänder byte-gleich.
+                if (this.state._deferredAvatarSoul) {
+                    this.state._deferredAvatarSoul = state.playerSoul;
+                    this.state.player.soul = state.playerSoul;
+                } else {
+                    this.applyPlayerSoul(state.playerSoul);
+                }
+            }
         }
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this.state.timeOfDay = state.timeOfDay;
@@ -49816,6 +49956,12 @@ class AnazhRealm {
     // Licht. Vision: die Welt erkennt die Spieler-Geste „Brennglas + Sonne +
     // Holz" und antwortet emergent.
     _tickFocusingAffordances(dt) {
+        // P0.2 (Bühnen-Ordnung) — das Brennglas zündet erst auf stehender Bühne
+        // („Sonnen-Brennglas entzündete baum_kiefer" mitten im unspielbaren Boot =
+        // Welt-Substanz verbrannte, bevor der Schöpfer handeln konnte). Headless
+        // steht die Bühne sofort → die Brennglas-Bänder (direkter Tick-Aufruf mit
+        // dt=25) laufen byte-gleich.
+        if (!this._buehneSteht()) return;
         if (this.state.weather !== "sunny") return;
         const focusing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.focusing);
         if (focusing.length === 0) return;
@@ -50165,6 +50311,11 @@ class AnazhRealm {
         this.state.scene.add(newGroup);
         this.state.playerMesh = newGroup;
         this.state.player.soul = canonical;
+        // P0.1 (Bühnen-Ordnung) — IDEMPOTENT AM CHOKEPOINT (die V18.423-Klasse): JEDER
+        // erfolgreiche Seelen-Bau erfüllt den deferierten Boot-Avatar-Bau (V18.304) mit —
+        // der Loop-Defer kann danach keinen zweiten Bau mehr stapeln, egal welcher Pfad
+        // (Restore · DSL · UI) zuerst baute.
+        this.state._deferredAvatarSoul = null;
         this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
@@ -61475,6 +61626,16 @@ class AnazhRealm {
     _tickImpostorBake() {
         const st = this.state;
         if (!this._impostorBakeQueue || this._impostorBakeQueue.length === 0) return 0;
+        // P0.4 (Bühnen-Ordnung, 09.07.) — DIE BAKE-QUEUE WARTET AUF DIE BÜHNE: bei 3 FPS
+        // stiehlt jeder RTT-Bake (+ ein 15-s-Watchdog-Hänger, zweimal im Schöpfer-Log)
+        // die GPU vom Boden-Streaming. Der Canvas-Silhouetten-Fallback trägt die Karten
+        // solange (dieselbe Degradation wie rttFailed — nichts ist unsichtbar). NACH der
+        // Bühne drained die Queue wie heute (das S4-Eager-Prinzip bleibt: der Bake ist
+        // netto last-SENKEND — darum öffnet die Bühne notfalls über den Wall-Clock-
+        // Deckel, nie „nie"). Headless steht die Bühne sofort → der Watchdog-Selbst-Test
+        // (gate:boot-stage) + alle foundry-Gates laufen byte-gleich; vor der Bühne kann
+        // kein Bake STARTEN → kein pending, das der Watchdog vor ihr räumen müsste.
+        if (!this._buehneSteht()) return 0;
         // W4.3 (Paritäts-Vollendung) — DER BAKE-WATCHDOG: der W2-Baseline-Befund „RTT-Bake
         // 0/115, err null" hatte GENAU diese Wurzel — der ERSTE async Bake hing (ein
         // GPU-Readback ohne echte Frames resolvt nie), `_impostorBakePending` klemmte
@@ -66058,7 +66219,12 @@ class AnazhRealm {
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
-        if (st.autoSeason !== false) {
+        // P0.2 (Bühnen-Ordnung) — NUR der DRIFT wartet auf die Bühne (die geladene
+        // Saison + die uSeasonMul-Tönung unten laufen unverändert): ein Saison-Wechsel
+        // triggert `_foundrySeasonChanged` (Assets ent-instanzieren + neu backen) —
+        // das gehört nicht in einen 3-FPS-Boot. `_lastSeasonTime` bleibt bis zur Bühne
+        // null → der erste gelassene Tick startet mit dt=0 (kein Zeit-Sprung).
+        if (st.autoSeason !== false && this._buehneSteht()) {
             const now = currentTime || 0;
             if (this._lastSeasonTime == null) this._lastSeasonTime = now;
             const dt = Math.min(0.2, Math.max(0, (now - this._lastSeasonTime) / 1000));
@@ -80023,8 +80189,10 @@ class AnazhRealm {
         // in der audit-strict-Whitelist (abgeleitet aus seasonPhase, nicht im Snapshot).
         this._ensureSeasonUniforms();
 
+        // P0.1 (Bühnen-Ordnung) — das zweite „Galaxy-Skybox erstellt"-Log ist WEG: der
+        // Builder loggt sich selbst (createGalaxySkybox-Ende) — die Doppel-Zeile im
+        // Schöpfer-Log war EIN Bau mit ZWEI Log-Sites (Builder + Call-Site), kein Doppel-Bau.
         this.createGalaxySkybox();
-        this.log("Galaxy-Skybox erstellt", "INFO");
 
         // Welle 6.G3 V2 (V8.25) — Sonne + Mond als sichtbare Himmelskörper.
         // Beide sind emissive-Sphere-Meshes, Position folgt DirectionalLight
@@ -80720,6 +80888,10 @@ class AnazhRealm {
                 // nur wenn der Frame Luft hat. No-op, sobald P3 vollendet ist.
                 this._tickBootPhase3(performance.now());
 
+                // ### Fern-Deko (P0.3 Bühnen-Ordnung) — Planeten + Sternfeld NACH der Bühne ###
+                // No-op, wenn nichts deferiert ist (headless baut sofort in createGalaxySkybox).
+                this._tickBootFernDeko();
+
                 // ### Symphonie-Wetter-Layer (Ring 4) ###
                 this.symphonyTick();
 
@@ -80932,6 +81104,12 @@ class AnazhRealm {
     }
 
     _loopNexusUpdate() {
+        // P0.2 (Bühnen-Ordnung) — der Nexus WIRKT erst auf stehender Bühne: kein
+        // dslRun/Regel-Registrieren, solange der Boden noch streamt (das Schöpfer-Log:
+        // evo_1..evo_14 liefen, während der Boot bei 3 FPS unspielbar war). Die Queue
+        // bleibt stehen und drained NACH der Bühne — kein verlorenes Feature, nur
+        // Reihenfolge. Headless steht die Bühne sofort (gate-treu, alle Bänder byte-gleich).
+        if (!this._buehneSteht()) return;
         if (this.state.nexusEvolutionQueue.length > 0) {
             const evolution = this.state.nexusEvolutionQueue.shift();
             if (Array.isArray(evolution.program)) {
@@ -81780,7 +81958,11 @@ class AnazhRealm {
         // (`_frameOverBudget` — derselbe Zeit-Zustand wie der Laub-/Ring-Regler, KEIN Parallel-
         // System), STRECKT sich das Intervall (×2 → 48 s) → der Nexus wird still, wenn der Spieler
         // kämpft, lebt voll, wenn Luft ist. Nie tot (×2 gedeckelt), nur ruhig.
-        if (this.nexus) {
+        // P0.2 (Bühnen-Ordnung) — auch die REGISTRIERUNG wartet auf die Bühne (sonst
+        // füllt sich die Queue + Autonomie tickt, während der Boden streamt); der
+        // Evolutions-Takt beginnt faktisch NACH der Bühne (nexusLastEvolution ist der
+        // Boot-Stempel → das erste Intervall zählt ab dort weiter, kein Boot-Burst).
+        if (this.nexus && this._buehneSteht()) {
             const evoInterval = this.state.nexusEvolutionInterval * (this.state._frameOverBudget ? 2.0 : 1.0);
             if (currentTime - this.state.nexusLastEvolution >= evoInterval) {
                 this.evolveNexus(currentTime);
@@ -81812,7 +81994,12 @@ class AnazhRealm {
         // Takt 30→120 s: mit der 45-s-Transition STEHT das Wetter jetzt
         // (~75 s) statt dauernd zu morphen — der alte 30er war mit dem
         // harten Flip gepaart.
-        if (this.state.weatherEffectTime >= 120.0) {
+        // P0.2 (Bühnen-Ordnung) — der AUTO-Zug wartet auf die Bühne (nur der Wechsel-
+        // TICK, nicht das Wetter-System: geladenes Wetter + Böen-Drift + Transitions
+        // laufen unverändert — der Schöpfer-Log-„stormy"-Zug kam mitten in den 3-FPS-
+        // Boot). weatherEffectTime akkumuliert weiter → steht die Bühne, zieht das
+        // Wetter EINMAL weich weiter (45-s-Transition, kein Snap). Headless sofort.
+        if (this.state.weatherEffectTime >= 120.0 && this._buehneSteht()) {
             const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
             // V6 (Look-Finale, 1f) — DETERMINISTISCHE Wort-Wahl (Math.random-frei, die
             // Wetter-Pfad-Regel): der Index aus layered sines der Wall-Clock statt eines
@@ -86295,6 +86482,14 @@ AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach
 // 280 ms → ~10 Wesen erscheinen sanft über ~2,8 s NACH der Kontrolle (statt 3,1 s Skin-Builds
 // synchron im Boot). Headless ist davon unberührt (dort spawnt P3 sofort, gate-treu).
 AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
+// P0 (Bühnen-Ordnung, 09.07.) — der Sicherheits-Deckel der Bühne (`_buehneSteht`): erreicht
+// eine Maschine das Ring-Ziel NIE (der Ring wächst nur mit Frame-Kopfraum — die 3-FPS-Realität
+// des Schöpfer-Boots), öffnet die Bühne nach dieser Wall-Clock trotzdem. Ein reiner Deckel
+// gegen den ewigen Verschluss (die V18.276-Klasse) — auf gesunder Hardware schließt das
+// Prädikat in Sekunden, der Deckel kostet den Schnellfall nichts. 90 s = die ersten anderthalb
+// Boot-Minuten gehören exklusiv dem Boden-Streaming/der Bewegung, danach dürfen die Welt-
+// Systeme (inkl. des netto last-SENKENDEN Impostor-Bakes — das S4-Henne-Ei) anlaufen.
+AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)

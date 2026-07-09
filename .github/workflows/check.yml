@@ -198,6 +198,15 @@ jobs:
               # die Wall-Clock-Wahrheit liefert die Schöpfer-GPU (W8).
               run: npm run gate:boot-stage
 
+            - name: Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)
+              # Simuliert schwere Frames (330-ms-Zeitsprünge = 3 FPS) mit gehaltenem W: (a) der
+              # Spieler MUSS sich horizontal bewegen (der Fixed-Step ist unconditional, Streaming/
+              # Bewegung heilig V18.282/.355); (b) auch OHNE gebauten Spieler-Chunk (gestallter
+              # Worker — der Mesh kommt nie) trägt die feld-native Kollision (V18.331) die Bewegung;
+              # (c) die Boden-Garantie: nie im Soliden, nie Void (der Nachfolger des BVH-Ankers).
+              # Selbst-Test: eine künstlich gepinnte Position macht die Linse rot (nicht blind).
+              run: npm run gate:move-under-load
+
             - name: Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)
               # Korpus mit erzwungenen Ufer-/Steil-/Fluss-Klassen; jede Region einmal in Legacy-Ordnung
               # (state.__scatterExactWater, das Referenz-Ufer) und einmal im Produktions-Pfad gebaut →

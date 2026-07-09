@@ -352,6 +352,9 @@ async function renderAnazh() {
             const recs0 = r._impostorAtlasMap ? r._impostorAtlasMap.size : 0;
             r.state.renderer.render = window.__origRender;
             r._impostorBakePending = false;
+            // P0 (Bühnen-Ordnung, 09.07.) — die Bake-Queue wartet in Produktion auf die Bühne
+            // (_tickImpostorBake-Gate); diese Linse will die Bakes JETZT drainen → Bühne latchen.
+            r.state._buehneStand = true;
             const dl = performance.now() + 45000;
             let n0 = (window.__impostorRttBaked || 0) | 0;
             let _bi = 0;
