@@ -81849,14 +81849,18 @@ class AnazhRealm {
             this.state.windUniforms.uWindStrength.value =
                 this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * (this._weatherWob || 1);
         }
-        // V18.387 — DAS NEUE KLEID S1-SHADER — die LOD-Dither-Maske wandert golden-ratio pro Frame
-        // (phytogenesis: uDitherT rotiert → die zeitliche Streuung glättet den Crossfade-Übergang
-        // über ~6-8 Frames, TAA-Idee). uLodRef spiegelt live die EINE Quelle `state.lodRef` (ein
-        // Slider wirkt ohne Mesh-Rebuild — dieselbe Zahl liest die CPU-`_lodPerceptionDistance`);
+        // V18.387 — DAS NEUE KLEID S1-SHADER — uLodRef spiegelt live die EINE Quelle `state.lodRef`
+        // (ein Slider wirkt ohne Mesh-Rebuild — dieselbe Zahl liest die CPU-`_lodPerceptionDistance`);
         // uLodMaskOn spiegelt den A/B-Toggle. Co-located mit dem Wind-Uniform-Tick.
+        // W5.2 (Paritäts-Vollendung) — uDitherT ist DEFAULT STATISCH: das Studio rotiert das
+        // Dither NUR bei aktivem TAA-Lite (phytogenesis „animiertes Dither ohne TAA wäre
+        // kriechendes Rauschen") — die V18.387-Immer-Rotation war eine unbeabsichtigte
+        // Benchmark-Abweichung (wir haben kein TAA). Die Rotation wartet hinter dem
+        // künftigen TAA-Gate (`state.taaLite`, benannter Folge-Faden) statt zu kriechen.
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
-            if (_lu.uDitherT) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
+            if (_lu.uDitherT && this.state.taaLite === true)
+                _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
             if (_lu.uLodRef)
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;

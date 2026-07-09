@@ -214,6 +214,10 @@ async function auditStateAndMethods() {
                 // Referenz-Ufer, wie __anazhGateNoFoundry): nur Gates setzen ihn; der eine
                 // Leser (_scatterPass) prüft `=== true` — undefined-sicher per Konstruktion.
                 "__scatterExactWater",
+                // W5.2 — das künftige TAA-Lite-Gate (benannter Folge-Faden): die uDitherT-Rotation
+                // wartet dahinter (Studio-Gesetz „animiertes Dither ohne TAA = kriechendes
+                // Rauschen"); der eine Leser prüft `=== true` — undefined-sicher.
+                "taaLite",
                 // Lazy-init Pfade (werden erst nach User-Geste gesetzt)
                 "workshop.preview",
                 "workshop.preview.currentMesh",

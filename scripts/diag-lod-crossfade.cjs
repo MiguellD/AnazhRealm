@@ -235,12 +235,22 @@ const server = http.createServer((req, res) => {
         } catch (_e) {}
         out.vals.maskOnVal = lu.uLodMaskOn.value;
         out.checks.maskToggleAB = lu.uLodMaskOn.value === 1 && out.vals.maskOffVal === 0;
-        // uDitherT rotiert (golden-ratio) — die Maske wandert über Frames.
+        // W5.2 (V9.56-i — die Probe wandert mit dem Entscheid): das Studio rotiert das Dither
+        // NUR unter TAA-Lite („animiertes Dither ohne TAA wäre kriechendes Rauschen") — die
+        // Probe prüft jetzt BEIDE Hälften: default STATISCH (kein Kriechen) und unter dem
+        // TAA-Gate (state.taaLite) rotiert golden-ratio.
         const d0 = lu.uDitherT.value;
         try {
             r._gameLoopTick(performance.now());
         } catch (_e) {}
-        out.checks.ditherRotates = lu.uDitherT.value !== d0;
+        const staticByDefault = lu.uDitherT.value === d0;
+        r.state.taaLite = true;
+        try {
+            r._gameLoopTick(performance.now());
+        } catch (_e) {}
+        const rotatesUnderTaa = lu.uDitherT.value !== d0;
+        delete r.state.taaLite;
+        out.checks.ditherRotates = staticByDefault && rotatesUnderTaa;
         // uLodRef spiegelt live state.lodRef nach dem Tick.
         out.checks.uLodRefLive = Math.abs(lu.uLodRef.value - baseRef) < 0.01;
 
