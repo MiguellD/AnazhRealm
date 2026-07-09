@@ -18258,49 +18258,56 @@ async function checkBandWelle6GHylomorphism(ctx) {
         // blockerAABBs (eine AABB pro solidem Stein-Part). Das IST der begehbare
         // Durchgang auf Kollisions-Ebene — die Lücke zwischen den Pfeilern hat
         // keinen Part → keine AABB dort. DETERMINISMUS-BOGEN P3 (kein Ammo-Compound).
+        // N7.3 — UNIT-RICHTER: felsbogen/felsturm sind Studio-bekannt (→ zacken);
+        // foundry-ON hinge „gerendert + Leaf-Farbe" an der Varianten-Cache-Lotterie
+        // (Spawn-Seed → Variante → warm=instanced ODER kalt=nichts, lauf-abhängig
+        // GEMESSEN: Lauf 1-3 grün, Lauf 4 rot). Der Prüf-Gegenstand ist der
+        // klassische/Grammatik-Spawn → lokaler Hook (deterministisch).
         const pm = r.state.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
-        const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
-        out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
-        // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
-        // = instanced ODER klassischer Mesh.
-        out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
-        out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
-        out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
-        // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
-        // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
-        // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
-        if (eb) {
-            let firstMeshHex = null;
-            if (eb.mesh) {
-                eb.mesh.traverse((n) => {
-                    if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
-                        firstMeshHex = n.material.color.getHex();
+        window.__withNoFoundry(() => {
+            const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
+            out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
+            // V12.0-perf.c.2 — felsbogen ist instanced (kein eb.mesh); „gerendert"
+            // = instanced ODER klassischer Mesh.
+            out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
+            out.felsbogenCompoundChildren = eb && Array.isArray(eb.blockerAABBs) ? eb.blockerAABBs.length : 0;
+            out.felsbogenWalkThroughCollision = out.felsbogenCompoundChildren >= 3;
+            // V9.06 — der Felsbogen rendert in der stein-Material-Farbe
+            // (0x7a7a7a), NICHT weiss. V12.0-perf.c.2 — die Farbe kommt jetzt aus
+            // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
+            if (eb) {
+                let firstMeshHex = null;
+                if (eb.mesh) {
+                    eb.mesh.traverse((n) => {
+                        if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                            firstMeshHex = n.material.color.getHex();
+                        }
+                    });
+                } else if (eb.instanced) {
+                    const flat = r._archFlattenBlueprint("felsbogen");
+                    if (flat.leaves[0] && flat.leaves[0].mat && flat.leaves[0].mat.color) {
+                        firstMeshHex = flat.leaves[0].mat.color.getHex();
                     }
-                });
-            } else if (eb.instanced) {
-                const flat = r._archFlattenBlueprint("felsbogen");
-                if (flat.leaves[0] && flat.leaves[0].mat && flat.leaves[0].mat.color) {
-                    firstMeshHex = flat.leaves[0].mat.color.getHex();
+                }
+                out.felsbogenMeshHex = firstMeshHex;
+                // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
+                // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
+                // ein dunkleres Grau, aber klar KEIN Weiss.
+                if (firstMeshHex !== null) {
+                    const rr = (firstMeshHex >> 16) & 0xff;
+                    const gg = (firstMeshHex >> 8) & 0xff;
+                    const bb = firstMeshHex & 0xff;
+                    out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
+                    out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
                 }
             }
-            out.felsbogenMeshHex = firstMeshHex;
-            // stein ist ein Grau (r=g=b). Der gerenderte Wert ist
-            // stein × Helligkeit (V4-P3-Präzisions-Modulation) —
-            // ein dunkleres Grau, aber klar KEIN Weiss.
-            if (firstMeshHex !== null) {
-                const rr = (firstMeshHex >> 16) & 0xff;
-                const gg = (firstMeshHex >> 8) & 0xff;
-                const bb = firstMeshHex & 0xff;
-                out.felsbogenNotWhite = firstMeshHex !== 0xffffff;
-                out.felsbogenStoneGrey = rr === gg && gg === bb && rr <= 0xa0;
-            }
-        }
-        const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
-        out.felsturmSpawned = !!(et && et.type === "felsturm");
-        // P3 — feld-native Kollision via blockerAABBs (solide Stein-Parts).
-        out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
+            const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
+            out.felsturmSpawned = !!(et && et.type === "felsturm");
+            // P3 — feld-native Kollision via blockerAABBs (solide Stein-Parts).
+            out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
+        });
 
         // V9.39 Phase 5c.2.c.3.b.iii — Placement-Probe nutzt jetzt
         // den Voxel-Populator (das Heightfield-Pendant ist tot).
@@ -18668,6 +18675,11 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // genau den Freeze-Hotspots). Anders als die LOD-Schwelle (gemessen 0 %, gebackene
         // Geometrie) senkt WENIGER Instanzen die Dreiecke wirklich. Die Spieler-Region selbst
         // bauen (der Warmup baut den fernen Scatter nicht) → der CONSUM läuft IN-GATE.
+        // N7.3 — UNIT-RICHTER: der Regler-Dichte-Pfad lebt BY DESIGN nur foundry-aus
+        // (Studio-Regime → `_effectiveFoliageDensity()` = 1, W1); der Gate fährt jetzt
+        // foundry-ON, also prüft diese CONSUM-Probe die lebende Regler-Mechanik unter
+        // LOKALEM Hook (sichern + WIEDERHERSTELLEN, V18.423-Form). Die Wiederherstellung
+        // der echten Region passiert NACH dem Restore — im ambienten Regime, wie die Welt.
         try {
             const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
             if (SCcfg && Number.isFinite(SCcfg.regionM) && typeof r._scatterRegion === "function") {
@@ -18675,17 +18687,26 @@ async function checkBandV18275FoliageGrowth(ctx) {
                     frz = Math.floor(ppD.z / SCcfg.regionM);
                 const fk = `${frx},${frz}`;
                 const existed = !!(st.scatterRegions && st.scatterRegions.has(fk));
-                const instAt = (scale) => {
-                    st._foliageDensityScale = scale;
+                const _prevDensHook = window.__anazhGateNoFoundry;
+                window.__anazhGateNoFoundry = true;
+                let dFull = 0,
+                    dLow = 0;
+                try {
+                    const instAt = (scale) => {
+                        st._foliageDensityScale = scale;
+                        r._disposeScatterRegion(fk);
+                        const reg = r._scatterRegion(frx, frz, ppD);
+                        return reg ? reg.instanceCount : 0;
+                    };
+                    dFull = instAt(1);
+                    dLow = instAt(0.4);
                     r._disposeScatterRegion(fk);
-                    const reg = r._scatterRegion(frx, frz, ppD);
-                    return reg ? reg.instanceCount : 0;
-                };
-                const dFull = instAt(1);
-                const dLow = instAt(0.4);
-                r._disposeScatterRegion(fk);
-                st._foliageDensityScale = 1;
-                if (existed) r._scatterRegion(frx, frz, ppD); // echte Region wiederherstellen
+                    st._foliageDensityScale = 1;
+                } finally {
+                    if (_prevDensHook) window.__anazhGateNoFoundry = _prevDensHook;
+                    else delete window.__anazhGateNoFoundry;
+                }
+                if (existed) r._scatterRegion(frx, frz, ppD); // echte Region wiederherstellen (ambientes Regime)
                 if (dFull > 5) {
                     out.densFull = dFull;
                     out.densLow = dLow;
@@ -18719,18 +18740,21 @@ async function checkBandV18275FoliageGrowth(ctx) {
         out.thinReadsOneSource = /_effectiveFoliageDensity/.test(window.__codeOf(r._tickFoliageThin));
         out.thinFoundryGated = /_foundryEnabled/.test(window.__codeOf(r._tickFoliageThin));
         // CONSUM (behavioral, die Gate-Hook-Lehre: SICHERN+WIEDERHERSTELLEN, nie löschen-und-vergessen):
-        // im Studio-Regime (Hook kurz gelüftet → Foundry an) liefert die eine Quelle 1 trotz
-        // gesenktem Regler, und das Nach-Dünnen ist ein No-op — die Rebuild-Schleife ist per
-        // Konstruktion tot. Beide Pfade sind reine Frühausstiege (kein Worker-Zugriff → gate-sicher).
+        // N7.3 — der Gate fährt foundry-ON: das Studio-Regime ist jetzt der DEFAULT (Hook-frei
+        // gelüftet, im neuen Regime ein No-op) → die eine Quelle liefert 1 trotz gesenktem
+        // Regler, das Nach-Dünnen ist ein No-op. Die foundry-aus-Lesung („der Regler führt")
+        // prüft der Unit-Richter: Hook LOKAL setzen, dann wiederherstellen. Beide Pfade sind
+        // reine Frühausstiege (kein Worker-Zugriff → gate-sicher).
         try {
             const _prevHook = window.__anazhGateNoFoundry;
             st._foliageDensityScale = 0.4;
-            delete window.__anazhGateNoFoundry; // Foundry AN (nur für diese zwei Reads)
+            delete window.__anazhGateNoFoundry; // Foundry AN (explizit; unter globalem Hook wäre das die Lüftung)
             out.oneSourceStudioFull = r._effectiveFoliageDensity() === 1;
             out.thinStudioNoop = r._tickFoliageThin({ x: 0, y: 0, z: 0 }) === 0;
+            window.__anazhGateNoFoundry = true; // der Unit-Richter: foundry-aus → der Regler führt
+            out.oneSourceGateFollows = r._effectiveFoliageDensity() === 0.4;
             if (_prevHook) window.__anazhGateNoFoundry = _prevHook;
             else delete window.__anazhGateNoFoundry;
-            out.oneSourceGateFollows = r._effectiveFoliageDensity() === 0.4; // foundry-aus → der Regler führt
             st._foliageDensityScale = 1;
         } catch (_eOne) {
             out.oneSourceProbeError = String((_eOne && _eOne.message) || _eOne);
@@ -18743,37 +18767,47 @@ async function checkBandV18275FoliageGrowth(ctx) {
                 // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
                 const snap = st.scatterRegions;
                 st.scatterRegions = new Map();
-                const prx = Math.floor(ppT.x / SCt.regionM),
-                    prz = Math.floor(ppT.z / SCt.regionM);
-                st._foliageDensityScale = 1;
-                st._frameOverBudget = false;
-                let tfk = null,
-                    tFull = 0;
-                for (let dz = -1; dz <= 1 && tFull <= 5; dz++) {
-                    for (let dx = -1; dx <= 1 && tFull <= 5; dx++) {
-                        const k = `${prx + dx},${prz + dz}`;
-                        const reg = r._scatterRegion(prx + dx, prz + dz, ppT);
-                        const n = reg ? reg.instanceCount : 0;
-                        if (n > 5) {
-                            tfk = k;
-                            tFull = n;
-                        } else {
-                            r._disposeScatterRegion(k); // leere Region wieder weg (nur die mit Scatter bleibt)
+                // N7.3 — UNIT-RICHTER: das Nach-Dünnen ist im Studio-Regime BY DESIGN ein No-op
+                // (thinStudioNoop oben) → die lebende Regler-Mechanik prüft dieser Block unter
+                // LOKALEM Hook (V18.423-Form: sichern + wiederherstellen im finally).
+                const _prevThinHook = window.__anazhGateNoFoundry;
+                window.__anazhGateNoFoundry = true;
+                try {
+                    const prx = Math.floor(ppT.x / SCt.regionM),
+                        prz = Math.floor(ppT.z / SCt.regionM);
+                    st._foliageDensityScale = 1;
+                    st._frameOverBudget = false;
+                    let tfk = null,
+                        tFull = 0;
+                    for (let dz = -1; dz <= 1 && tFull <= 5; dz++) {
+                        for (let dx = -1; dx <= 1 && tFull <= 5; dx++) {
+                            const k = `${prx + dx},${prz + dz}`;
+                            const reg = r._scatterRegion(prx + dx, prz + dz, ppT);
+                            const n = reg ? reg.instanceCount : 0;
+                            if (n > 5) {
+                                tfk = k;
+                                tFull = n;
+                            } else {
+                                r._disposeScatterRegion(k); // leere Region wieder weg (nur die mit Scatter bleibt)
+                            }
                         }
                     }
+                    if (tfk) {
+                        st._foliageDensityScale = 0.4; // Kapazität sinkt → das Nach-Dünnen greift
+                        r._tickFoliageThin(ppT); // MEINE Region ist die einzige Kandidatin → wird gedünnt
+                        const regThin = st.scatterRegions.get(tfk);
+                        out.thinFull = tFull;
+                        out.thinAfter = regThin ? regThin.instanceCount : 0;
+                        out.thinReduces = out.thinAfter < tFull;
+                    }
+                    // alles disposen (HISM-Instanzen freigeben) + den echten SET wiederherstellen
+                    for (const k of Array.from(st.scatterRegions.keys())) r._disposeScatterRegion(k);
+                    st.scatterRegions = snap;
+                    st._foliageDensityScale = 1;
+                } finally {
+                    if (_prevThinHook) window.__anazhGateNoFoundry = _prevThinHook;
+                    else delete window.__anazhGateNoFoundry;
                 }
-                if (tfk) {
-                    st._foliageDensityScale = 0.4; // Kapazität sinkt → das Nach-Dünnen greift
-                    r._tickFoliageThin(ppT); // MEINE Region ist die einzige Kandidatin → wird gedünnt
-                    const regThin = st.scatterRegions.get(tfk);
-                    out.thinFull = tFull;
-                    out.thinAfter = regThin ? regThin.instanceCount : 0;
-                    out.thinReduces = out.thinAfter < tFull;
-                }
-                // alles disposen (HISM-Instanzen freigeben) + den echten SET wiederherstellen
-                for (const k of Array.from(st.scatterRegions.keys())) r._disposeScatterRegion(k);
-                st.scatterRegions = snap;
-                st._foliageDensityScale = 1;
             }
         } catch (_eThin) {
             out.thinProbeError = String((_eThin && _eThin.message) || _eThin);
@@ -22154,88 +22188,94 @@ async function checkBandWellePerfCArchInstancing(ctx) {
         if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(group);
 
         // --- perf.c.2 Cutover: instancbarer Spawn geht in die Registry ---
+        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist die GRAMMATIK-Instancing-
+        // Registry (die `baum_kiefer#0`-Gruppen-Form + Slot/Cull/Pick-Mechanik);
+        // foundry-ON platziert derselbe Spawn Studio-Instanzen (f:-Gruppen) →
+        // lokaler Hook (__withNoFoundry, V18.423-Form).
         if (r.state.playerMesh && typeof r.spawnArchitecture === "function") {
-            const pp = r.state.playerMesh.position;
-            const origRadius = r.state.architectureCullingRadius;
-            r.state.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
-            const e = r.spawnArchitecture(
-                "baum_kiefer",
-                { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
-                { seed: 7777, silent: true }
-            );
-            out.cutoverInstanced = !!(e && e.instanced === true);
-            out.cutoverNoMesh = !!(e && !e.mesh);
-            out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
-            // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
-            // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
-            // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
-            out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
-            // V18.353 PHASE A.1 — die platzierte Architektur ist jetzt region-gekeyt
-            // (`baum_kiefer#0@p:regX,regZ`, frustum-cullbar) statt global (`baum_kiefer#0`);
-            // der Test folgt dem Refactor: eine baum_kiefer#0-Gruppe (region-gekeyt ODER global).
-            out.cutoverGroupExists = !!(
-                r.state.archInstanceGroups &&
-                [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
-            );
-            // Cull → instanced-Render weg, Daten-Eintrag bleibt.
-            if (e) {
-                r._cullArchitectureMesh(e);
-                out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
-                // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
-                out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
-                r.removeArchitecture(e); // sauber raus aus der Test-Welt
-            }
-            r.state.architectureCullingRadius = origRadius;
-
-            // Nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh).
-            const wf = r.spawnArchitecture(
-                "waterfall",
-                { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
-                { seed: 8888, silent: true }
-            );
-            out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
-            if (wf) r.removeArchitecture(wf);
-
-            // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
-            //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
-            //     via instanceId → slotEntry). ---
-            if (r.state.camera && typeof r._pickArchitectureAtCrosshair === "function") {
-                const tcx = pp.x + 6;
-                const tcz = pp.z + 6;
-                const pe = r.spawnArchitecture(
+            window.__withNoFoundry(() => {
+                const pp = r.state.playerMesh.position;
+                const origRadius = r.state.architectureCullingRadius;
+                r.state.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
+                const e = r.spawnArchitecture(
                     "baum_kiefer",
-                    { x: tcx, y: pp.y, z: tcz },
-                    { seed: 9191, silent: true }
+                    { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
+                    { seed: 7777, silent: true }
                 );
-                const cam = r.state.camera;
-                const savedPos = cam.position.clone();
-                const savedQuat = cam.quaternion.clone();
-                cam.position.set(tcx, pp.y + 1.2, tcz - 6);
-                cam.lookAt(tcx, pp.y + 1.0, tcz);
-                cam.updateMatrixWorld(true);
-                // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin): unter kumulativer
-                // Last (Band ~130) fällt der Pick aus ZWEI Gründen, die BEIDE nichts mit der
-                // getesteten Sache (ist ein instancierter Baum pickbar?) zu tun haben: (a) es gibt
-                // zwischen Spawn + Pick keinen Render-Frame → die InstancedMesh-WELT-Matrizen sind
-                // stale → der Raycaster verwirft sie; (b) ein akkumulierter NACHBAR liegt in der
-                // 6-m-Sichtlinie → er wird zuerst getroffen. Die Mechanik ist in ISOLATION grün
-                // (pick.entry === pe). Wir aktualisieren die Szene-Matrizen (gegen a) UND räumen
-                // Blocker aus der Sichtlinie (gegen b) — legitimes Target-Isolieren, dann testet
-                // der finale Pick GENAU, ob pe's Instanz raycast-bar ist (load-unabhängig).
-                if (r.state.scene) r.state.scene.updateMatrixWorld(true);
-                for (let g = 0; g < 10; g++) {
-                    const pk = r._pickArchitectureAtCrosshair();
-                    if (!pk || pk.entry === pe) break;
-                    r.removeArchitecture(pk.entry); // Nachbar aus der Sichtlinie
-                    if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                out.cutoverInstanced = !!(e && e.instanced === true);
+                out.cutoverNoMesh = !!(e && !e.mesh);
+                out.cutoverSlots = e && e.instSlots ? e.instSlots.length : -1;
+                // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
+                // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
+                // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
+                out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
+                // V18.353 PHASE A.1 — die platzierte Architektur ist jetzt region-gekeyt
+                // (`baum_kiefer#0@p:regX,regZ`, frustum-cullbar) statt global (`baum_kiefer#0`);
+                // der Test folgt dem Refactor: eine baum_kiefer#0-Gruppe (region-gekeyt ODER global).
+                out.cutoverGroupExists = !!(
+                    r.state.archInstanceGroups &&
+                    [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
+                );
+                // Cull → instanced-Render weg, Daten-Eintrag bleibt.
+                if (e) {
+                    r._cullArchitectureMesh(e);
+                    out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
+                    // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
+                    out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
+                    r.removeArchitecture(e); // sauber raus aus der Test-Welt
                 }
-                const pick = r._pickArchitectureAtCrosshair();
-                out.instancedPickHits = !!(pick && pick.entry === pe);
-                cam.position.copy(savedPos);
-                cam.quaternion.copy(savedQuat);
-                cam.updateMatrixWorld(true);
-                if (pe) r.removeArchitecture(pe);
-            }
+                r.state.architectureCullingRadius = origRadius;
+
+                // Nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh).
+                const wf = r.spawnArchitecture(
+                    "waterfall",
+                    { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
+                    { seed: 8888, silent: true }
+                );
+                out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
+                if (wf) r.removeArchitecture(wf);
+
+                // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
+                //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
+                //     via instanceId → slotEntry). ---
+                if (r.state.camera && typeof r._pickArchitectureAtCrosshair === "function") {
+                    const tcx = pp.x + 6;
+                    const tcz = pp.z + 6;
+                    const pe = r.spawnArchitecture(
+                        "baum_kiefer",
+                        { x: tcx, y: pp.y, z: tcz },
+                        { seed: 9191, silent: true }
+                    );
+                    const cam = r.state.camera;
+                    const savedPos = cam.position.clone();
+                    const savedQuat = cam.quaternion.clone();
+                    cam.position.set(tcx, pp.y + 1.2, tcz - 6);
+                    cam.lookAt(tcx, pp.y + 1.0, tcz);
+                    cam.updateMatrixWorld(true);
+                    // V18.386-HÄRTUNG (Last-Robustheit, die V18.273/.276-Disziplin): unter kumulativer
+                    // Last (Band ~130) fällt der Pick aus ZWEI Gründen, die BEIDE nichts mit der
+                    // getesteten Sache (ist ein instancierter Baum pickbar?) zu tun haben: (a) es gibt
+                    // zwischen Spawn + Pick keinen Render-Frame → die InstancedMesh-WELT-Matrizen sind
+                    // stale → der Raycaster verwirft sie; (b) ein akkumulierter NACHBAR liegt in der
+                    // 6-m-Sichtlinie → er wird zuerst getroffen. Die Mechanik ist in ISOLATION grün
+                    // (pick.entry === pe). Wir aktualisieren die Szene-Matrizen (gegen a) UND räumen
+                    // Blocker aus der Sichtlinie (gegen b) — legitimes Target-Isolieren, dann testet
+                    // der finale Pick GENAU, ob pe's Instanz raycast-bar ist (load-unabhängig).
+                    if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                    for (let g = 0; g < 10; g++) {
+                        const pk = r._pickArchitectureAtCrosshair();
+                        if (!pk || pk.entry === pe) break;
+                        r.removeArchitecture(pk.entry); // Nachbar aus der Sichtlinie
+                        if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                    }
+                    const pick = r._pickArchitectureAtCrosshair();
+                    out.instancedPickHits = !!(pick && pick.entry === pe);
+                    cam.position.copy(savedPos);
+                    cam.quaternion.copy(savedQuat);
+                    cam.updateMatrixWorld(true);
+                    if (pe) r.removeArchitecture(pe);
+                }
+            });
         }
         return out;
     });
@@ -22316,50 +22356,56 @@ async function checkBandWellePerfDBudget(ctx) {
         out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
         const budget = r.state.architectureBuildBudgetPerFrame;
         out.budget = budget;
-        const pp = r.state.playerMesh.position;
-        // 12 cold-in-range Einträge: cullingRadius=0 beim Spawn (cold), dann
-        // restaurieren, sodass sie alle im Render-Radius liegen.
-        const origRadius = r.state.architectureCullingRadius;
-        r.state.architectureCullingRadius = 0;
-        const ids = [];
-        const N = 12;
-        for (let i = 0; i < N; i++) {
-            const e = r.spawnArchitecture(
-                "baum_kiefer",
-                { x: pp.x + 4 + i, y: pp.y, z: pp.z + 4 },
-                { seed: 31000 + i, silent: true }
-            );
-            if (e) ids.push(e.id);
-        }
-        r.state.architectureCullingRadius = Math.max(origRadius, 300);
-        // V18.298 — tickArchitectureCulling baut 0 bei `_frameOverBudget` (der Nexus baut
-        // nur in der freien Zeit). Der Test prüft den BAU-Pfad (baut die Kaskade über
-        // Ticks?) → Kopfraum erzwingen, statt am Warmup-Leftover zu hängen (last-flaky:
-        // ein langsamer Warmup lässt frameMs > Budget → _frameOverBudget bleibt true).
-        r.state._frameOverBudget = false;
-        const idSet = new Set(ids);
-        const renderedCount = () => r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
-        out.coldBefore = ids.length - renderedCount();
-        // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
-        const renderedPre = renderedCount();
-        r.tickArchitectureCulling(performance.now());
-        out.builtInOneTick = renderedCount() - renderedPre;
-        out.respectsBudget = out.builtInOneTick <= budget;
-        // Alle 12 bauen → der Bau-PFAD trägt jede (sanftes Pop-In). ROBUST gegen die
-        // geteilte-Budget-Konkurrenz: das Cull-Budget ist GLOBAL — unter kumulativer Last
-        // konkurrieren Hunderte cold-Architekturen (Worldgen/Nexus) um die wenigen Build-
-        // Slots/Tick, sodass die 12 Test-Bäume in einer endlichen Tick-Schleife verhungern
-        // könnten (der gemessene Last-Flake „0/12"). Wir verifizieren den Bau-Pfad DIREKT
-        // (`_rebuildArchitectureMesh` pro noch-nicht-gerenderter Test-Architektur) — das ist
-        // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft, nur ohne die Fremd-Konkurrenz.
-        for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
-            r._rebuildArchitectureMesh(e);
-        }
-        out.builtAfterManyTicks = renderedCount();
-        out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
-        // Cleanup.
-        for (const e of r.state.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
-        r.state.architectureCullingRadius = origRadius;
+        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der budgetierte GRAMMATIK-Bau-Pfad
+        // (`_rebuildArchitectureMesh` klassisch/instanced); foundry-ON hinge derselbe Spawn
+        // an der Studio-Varianten-Cache-Lage (variant-abhängig kalt) → lokaler Hook.
+        window.__withNoFoundry(() => {
+            const pp = r.state.playerMesh.position;
+            // 12 cold-in-range Einträge: cullingRadius=0 beim Spawn (cold), dann
+            // restaurieren, sodass sie alle im Render-Radius liegen.
+            const origRadius = r.state.architectureCullingRadius;
+            r.state.architectureCullingRadius = 0;
+            const ids = [];
+            const N = 12;
+            for (let i = 0; i < N; i++) {
+                const e = r.spawnArchitecture(
+                    "baum_kiefer",
+                    { x: pp.x + 4 + i, y: pp.y, z: pp.z + 4 },
+                    { seed: 31000 + i, silent: true }
+                );
+                if (e) ids.push(e.id);
+            }
+            r.state.architectureCullingRadius = Math.max(origRadius, 300);
+            // V18.298 — tickArchitectureCulling baut 0 bei `_frameOverBudget` (der Nexus baut
+            // nur in der freien Zeit). Der Test prüft den BAU-Pfad (baut die Kaskade über
+            // Ticks?) → Kopfraum erzwingen, statt am Warmup-Leftover zu hängen (last-flaky:
+            // ein langsamer Warmup lässt frameMs > Budget → _frameOverBudget bleibt true).
+            r.state._frameOverBudget = false;
+            const idSet = new Set(ids);
+            const renderedCount = () =>
+                r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
+            out.coldBefore = ids.length - renderedCount();
+            // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
+            const renderedPre = renderedCount();
+            r.tickArchitectureCulling(performance.now());
+            out.builtInOneTick = renderedCount() - renderedPre;
+            out.respectsBudget = out.builtInOneTick <= budget;
+            // Alle 12 bauen → der Bau-PFAD trägt jede (sanftes Pop-In). ROBUST gegen die
+            // geteilte-Budget-Konkurrenz: das Cull-Budget ist GLOBAL — unter kumulativer Last
+            // konkurrieren Hunderte cold-Architekturen (Worldgen/Nexus) um die wenigen Build-
+            // Slots/Tick, sodass die 12 Test-Bäume in einer endlichen Tick-Schleife verhungern
+            // könnten (der gemessene Last-Flake „0/12"). Wir verifizieren den Bau-Pfad DIREKT
+            // (`_rebuildArchitectureMesh` pro noch-nicht-gerenderter Test-Architektur) — das ist
+            // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft, nur ohne die Fremd-Konkurrenz.
+            for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
+                r._rebuildArchitectureMesh(e);
+            }
+            out.builtAfterManyTicks = renderedCount();
+            out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
+            // Cleanup.
+            for (const e of r.state.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
+            r.state.architectureCullingRadius = origRadius;
+        });
         return out;
     });
     if (res.error) {
@@ -28195,36 +28241,48 @@ async function checkBandWelle6HCreatures(ctx) {
         out.gatherWithNumberDrops = !r._buildCreatureTaskArgs("gather", 5).material;
 
         // Gather-Direction: läuft zum Ziel
-        const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
-        c0.position.set(p.x, p.y, p.z);
-        r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
-        const task = r._getCreatureTask(c0);
-        const dir = r._tickCreatureTaskDirection(c0, task, "happy");
-        out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
-        out.gatherDirTargetsX = dir && dir.x > 0;
-        out.targetCached = !!task.args._target;
+        // N7.3 — UNIT-RICHTER: baum_eiche/stein_block sind Studio-bekannt; foundry-ON
+        // hinge `_findNearestArchitectureWithMaterial` (filtert auf `_archIsRendered`)
+        // an der Varianten-Cache-Lotterie des Spawns (kalt = unauffindbar, lauf-abhängig).
+        // Der Prüf-Gegenstand ist die Gather-MECHANIK → die Fixturen bauen deterministisch
+        // klassisch/Grammatik unter lokalem Hook.
+        window.__withNoFoundry(() => {
+            const target = r.spawnArchitecture("baum_eiche", { x: p.x + 10, y: p.y, z: p.z });
+            c0.position.set(p.x, p.y, p.z);
+            r.assignCreatureTask(c0, "gather", { material: "holz" }, { silent: true });
+            const task = r._getCreatureTask(c0);
+            const dir = r._tickCreatureTaskDirection(c0, task, "happy");
+            out.gatherDirNonZero = dir && Math.abs(dir.x) + Math.abs(dir.z) > 0;
+            out.gatherDirTargetsX = dir && dir.x > 0;
+            out.targetCached = !!task.args._target;
 
-        // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
-        // carrying (nicht direkt Inventar; Bring-Phase folgt).
-        // c0 weit weg vom Spieler positionieren damit nicht sofort
-        // Übergabe ausgelöst wird.
-        const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
-        c0.position.set(p.x + 50.5, p.y, p.z + 50);
-        c0.userData.carrying = null;
-        r.state.player.inventory = new Array(27).fill(null);
-        r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
-        const archCountBefore = r.state.architectures.length;
-        const t2 = r._getCreatureTask(c0);
-        r._tickCreatureTaskDirection(c0, t2, "happy");
-        out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
-        // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
-        // erst bei Übergabe gefüllt. carrying-State prüfen.
-        out.inventoryHasHarvested =
-            c0.userData.carrying && c0.userData.carrying.materials && (c0.userData.carrying.materials.stein || 0) > 0;
-        out.memoryHasGathered =
-            c0.userData.memory &&
-            c0.userData.memory.some((m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block");
-        void tempArch;
+            // Gather-Ernte bei haltDist — Phase 2B.5: Ernte landet in
+            // carrying (nicht direkt Inventar; Bring-Phase folgt).
+            // c0 weit weg vom Spieler positionieren damit nicht sofort
+            // Übergabe ausgelöst wird.
+            const tempArch = r.spawnArchitecture("stein_block", { x: p.x + 50, y: p.y, z: p.z + 50 });
+            c0.position.set(p.x + 50.5, p.y, p.z + 50);
+            c0.userData.carrying = null;
+            r.state.player.inventory = new Array(27).fill(null);
+            r.assignCreatureTask(c0, "gather", { material: "stein" }, { silent: true });
+            const archCountBefore = r.state.architectures.length;
+            const t2 = r._getCreatureTask(c0);
+            r._tickCreatureTaskDirection(c0, t2, "happy");
+            out.archRemovedOnHarvest = r.state.architectures.length === archCountBefore - 1;
+            // P2B.5: jetzt landet die Ernte in carrying, das Inventar wird
+            // erst bei Übergabe gefüllt. carrying-State prüfen.
+            out.inventoryHasHarvested =
+                c0.userData.carrying &&
+                c0.userData.carrying.materials &&
+                (c0.userData.carrying.materials.stein || 0) > 0;
+            out.memoryHasGathered =
+                c0.userData.memory &&
+                c0.userData.memory.some(
+                    (m) => m.type === "gathered" && m.content && m.content.blueprint === "stein_block"
+                );
+            void target;
+            void tempArch;
+        });
 
         // Unknown Material → wander-Fallback (carrying muss leer sein,
         // sonst greift Bring-Phase statt Sucher-Phase).
@@ -28490,25 +28548,32 @@ async function checkBandWelle6HCreatures(ctx) {
         );
 
         // Kreatur-gather: zwei-Phasen mit carrying
+        // N7.3 — UNIT-RICHTER (dieselbe Klasse wie P2B.1): foundry-ON hinge die Fixtur
+        // an der Varianten-Cache-Lotterie (`_findNearestArchitectureWithMaterial` filtert
+        // `_archIsRendered`; ein kalt gespawnter stein_block ist unauffindbar — GEMESSEN
+        // lauf-abhängig rot in Lauf 3+4). Die Gather-Mechanik ist der Prüf-Gegenstand →
+        // deterministische Grammatik-Fixtur unter lokalem Hook.
         r.state.player.inventory = new Array(27).fill(null);
-        r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
-        const c = r.state.creatures[0];
-        c.position.set(p.x + 29.5, p.y, p.z);
-        c.userData.carrying = null;
-        r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
-        r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-        out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
-        out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
-        out.carryingSpriteCreated = !!c.userData.carryingSprite;
+        window.__withNoFoundry(() => {
+            r.spawnArchitecture("stein_block", { x: p.x + 30, y: p.y, z: p.z });
+            const c = r.state.creatures[0];
+            c.position.set(p.x + 29.5, p.y, p.z);
+            c.userData.carrying = null;
+            r.assignCreatureTask(c, "gather", { material: "stein" }, { silent: true });
+            r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+            out.creatureCarryingSet = !!(c.userData.carrying && c.userData.carrying.materials);
+            out.inventoryStillEmptyAfterHarvest = r.state.player.inventory.every((sl) => !sl);
+            out.carryingSpriteCreated = !!c.userData.carryingSprite;
 
-        // Kreatur zum Spieler bewegen → Übergabe
-        c.position.set(p.x + 1.5, p.y, p.z);
-        r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
-        out.carryingClearedAfterDelivery = c.userData.carrying === null;
-        out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
-            (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
-        );
-        out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
+            // Kreatur zum Spieler bewegen → Übergabe
+            c.position.set(p.x + 1.5, p.y, p.z);
+            r._tickCreatureTaskDirection(c, r._getCreatureTask(c), "happy");
+            out.carryingClearedAfterDelivery = c.userData.carrying === null;
+            out.playerHasMaterialAfterDelivery = r.state.player.inventory.some(
+                (sl) => sl && sl.kind === "material" && sl.material === "stein" && sl.count >= 1
+            );
+            out.memoryHasDelivered = c.userData.memory && c.userData.memory.some((m) => m.type === "delivered");
+        });
 
         // Inventar-UI rendert Material-Slot mit Klasse
         r.state.player.inventory = new Array(27).fill(null);
@@ -37972,27 +38037,32 @@ async function checkBandV18218LODStufen(ctx) {
         }
 
         // ─── (C) LOD-Bauplane werden gebaut (3 Stufen) ────────────────
+        // N7.3 — UNIT-RICHTER: der Gate fährt foundry-ON, der _buildVariantLODs-
+        // Chokepoint gäbe null (V18.411, baum_eiche ist Studio-bekannt) → die lebende
+        // Grammatik-LOD-Erzeugung prüft unter LOKALEM Hook (__withNoFoundry).
         if (out.buildVariantLODsExists) {
-            const keys = r._buildVariantLODs("baum_eiche", 0);
-            out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
-            if (keys) {
-                out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
-                out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
-                out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
-                out.bp0Exists = !!r.state.blueprints[keys[0]];
-                out.bp1Exists = !!r.state.blueprints[keys[1]];
-                out.bp2Exists = !!r.state.blueprints[keys[2]];
-                if (out.bp1Exists && out.bp2Exists) {
-                    out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
-                    out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
-                    out.lodsShareVariantIndex =
-                        r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
-                        r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
-                    out.lodsShareSeed =
-                        r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
-                        r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
+            window.__withNoFoundry(() => {
+                const keys = r._buildVariantLODs("baum_eiche", 0);
+                out.lodKeysReturned = !!(keys && keys[0] && keys[1] && keys[2]);
+                if (keys) {
+                    out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
+                    out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
+                    out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
+                    out.bp0Exists = !!r.state.blueprints[keys[0]];
+                    out.bp1Exists = !!r.state.blueprints[keys[1]];
+                    out.bp2Exists = !!r.state.blueprints[keys[2]];
+                    if (out.bp1Exists && out.bp2Exists) {
+                        out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
+                        out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
+                        out.lodsShareVariantIndex =
+                            r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
+                            r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
+                        out.lodsShareSeed =
+                            r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
+                            r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
+                    }
                 }
-            }
+            });
         }
 
         // ─── (D) Geometrie: LOD-Reduktion in Parts-Anzahl ────────────
@@ -38039,21 +38109,24 @@ async function checkBandV18218LODStufen(ctx) {
         }
 
         // ─── (F) V17.16-Tag-Wand: LOD0/1/2 share compoundTags ────────
+        // N7.3 — UNIT-RICHTER (wie Block C): die Grammatik-LOD-Baupläne unter lokalem Hook.
         if (r._buildVariantLODs) {
-            const keys = r._buildVariantLODs("baum_eiche", 1);
-            if (keys && keys[0] && keys[1] && keys[2]) {
-                const bp0 = r.state.blueprints[keys[0]];
-                const bp1 = r.state.blueprints[keys[1]];
-                const bp2 = r.state.blueprints[keys[2]];
-                if (bp0 && bp1 && bp2) {
-                    const t0 = r.computeCompoundTags(bp0);
-                    const t1 = r.computeCompoundTags(bp1);
-                    const t2 = r.computeCompoundTags(bp2);
-                    const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-                    out.tagNeutralLOD01 = axes.every((a) => Math.abs((t0[a] || 0) - (t1[a] || 0)) < 1e-6);
-                    out.tagNeutralLOD02 = axes.every((a) => Math.abs((t0[a] || 0) - (t2[a] || 0)) < 1e-6);
+            window.__withNoFoundry(() => {
+                const keys = r._buildVariantLODs("baum_eiche", 1);
+                if (keys && keys[0] && keys[1] && keys[2]) {
+                    const bp0 = r.state.blueprints[keys[0]];
+                    const bp1 = r.state.blueprints[keys[1]];
+                    const bp2 = r.state.blueprints[keys[2]];
+                    if (bp0 && bp1 && bp2) {
+                        const t0 = r.computeCompoundTags(bp0);
+                        const t1 = r.computeCompoundTags(bp1);
+                        const t2 = r.computeCompoundTags(bp2);
+                        const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
+                        out.tagNeutralLOD01 = axes.every((a) => Math.abs((t0[a] || 0) - (t1[a] || 0)) < 1e-6);
+                        out.tagNeutralLOD02 = axes.every((a) => Math.abs((t0[a] || 0) - (t2[a] || 0)) < 1e-6);
+                    }
                 }
-            }
+            });
         }
 
         // ─── (G) Version + walk-with-code ────────────────────────────
@@ -38165,25 +38238,30 @@ async function checkBandV18219bisVollendung(ctx) {
         out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
         const tickSrc = r._tickArchitectureLOD.toString();
         out.lodTickReadsFlag = /atmosphere/.test(tickSrc) && /treeLOD/.test(tickSrc);
-        const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v218-lod-spawn-test");
-        if (grownKey && r.state.scene) {
-            const e = r.spawnArchitecture(
-                grownKey,
-                { x: 12345, y: r._voxelSurfaceY(12345, 6789) || 1, z: 6789 },
-                { silent: true, seed: 1 }
-            );
-            if (e) {
-                out.spawnedEntryHasLodFields =
-                    !!e._lodSpecies && Number.isFinite(e._lodVariantIndex) && Number.isFinite(e._lodLevel);
-                out.spawnedEntrySpeciesIsEiche = e._lodSpecies === "baum_eiche";
-                const switched = r._switchArchitectureLOD(e, 2);
-                out.lodSwitchedToLOD2 = switched === true && e._lodLevel === 2;
-                out.lodTypeChanged = /_lod2$/.test(e.type);
-                r._switchArchitectureLOD(e, 0);
-                out.lodSwitchedBack = e._lodLevel === 0 && !/_lod\d+$/.test(e.type);
-                r.removeArchitecture(e);
+        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
+        // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
+        // Studio-Pfad die Stufe OHNE Typ-Wechsel (by design) → lokaler Hook.
+        window.__withNoFoundry(() => {
+            const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v218-lod-spawn-test");
+            if (grownKey && r.state.scene) {
+                const e = r.spawnArchitecture(
+                    grownKey,
+                    { x: 12345, y: r._voxelSurfaceY(12345, 6789) || 1, z: 6789 },
+                    { silent: true, seed: 1 }
+                );
+                if (e) {
+                    out.spawnedEntryHasLodFields =
+                        !!e._lodSpecies && Number.isFinite(e._lodVariantIndex) && Number.isFinite(e._lodLevel);
+                    out.spawnedEntrySpeciesIsEiche = e._lodSpecies === "baum_eiche";
+                    const switched = r._switchArchitectureLOD(e, 2);
+                    out.lodSwitchedToLOD2 = switched === true && e._lodLevel === 2;
+                    out.lodTypeChanged = /_lod2$/.test(e.type);
+                    r._switchArchitectureLOD(e, 0);
+                    out.lodSwitchedBack = e._lodLevel === 0 && !/_lod\d+$/.test(e.type);
+                    r.removeArchitecture(e);
+                }
             }
-        }
+        });
 
         // ─── V18.219 GPU-FELD-BAKE ───────────────────────────────────
         out.bakeRegionExists = typeof r._bakeRegionFields === "function";
@@ -38659,42 +38737,50 @@ async function checkBandV18224ScatterPromotion(ctx) {
         }
 
         // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ────
+        // N7.3 — UNIT-RICHTER: foundry-ON überspringt der Scatter die Baum-Schichten
+        // (kein promotable Cell) — die lebende Grammatik-Promotion (Touch→Real über
+        // grown_-Baupläne) prüft unter LOKALEM Hook; die Test-Region wird danach
+        // entsorgt (kein Grammatik-Bestand in der ambient Studio-Welt).
         if (out.promoteExists && r.state.scene) {
-            // Eine frische Scatter-Cell bauen + promovieren
-            const pp2 = { x: 5000, y: 50, z: 5000 };
-            const SC = A.SCATTER;
-            const regX2 = Math.floor(pp2.x / SC.regionM);
-            const regZ2 = Math.floor(pp2.z / SC.regionM);
-            const region = r._scatterRegion(regX2, regZ2, pp2);
-            if (region && region.cells.length > 0) {
-                // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
-                // (V18.225 — Understory/Streu sind nie promotable)
-                const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
-                if (cell) {
-                    const archBefore = r.state.architectures.length;
-                    const promotedSpecies = cell.species;
-                    const promotedVariant = cell.variantIndex;
-                    const entry = r._promoteScatterCell(cell);
-                    out.promoteReturnsEntry = !!entry;
-                    out.archCountIncreased = r.state.architectures.length === archBefore + 1;
-                    if (entry) {
-                        // Der echte Eintrag trägt die Provenienz (Welt-Genese-Cell)
-                        out.entryHasProvenance = entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
-                        out.provenanceSpecies = entry.provenance && entry.provenance.species === promotedSpecies;
-                        // Der Eintrag nutzt den GLEICHEN grown-Bauplan (kein Sprung):
-                        // entry.type ist grown_<species>_v<variant> (LOD0). Der
-                        // Entry trägt _lodSpecies (von spawnArchitecture gesetzt),
-                        // NICHT _grownSpecies (das lebt am Blueprint).
-                        out.entryUsesGrownBp = /^grown_/.test(entry.type) && entry._lodSpecies === promotedSpecies;
-                        out.entryVariantMatches = entry._lodVariantIndex === promotedVariant;
-                        // Cell ist jetzt promoted (Bitmask) + slots freigegeben
-                        out.cellSlotsFreed = cell.slots === null;
-                        out.cellNowPromoted = r._scatterIsCellPromoted(cell.x, cell.z, "tree") === true;
-                        // Aufräumen
-                        r.removeArchitecture(entry);
+            window.__withNoFoundry(() => {
+                // Eine frische Scatter-Cell bauen + promovieren
+                const pp2 = { x: 5000, y: 50, z: 5000 };
+                const SC = A.SCATTER;
+                const regX2 = Math.floor(pp2.x / SC.regionM);
+                const regZ2 = Math.floor(pp2.z / SC.regionM);
+                const region = r._scatterRegion(regX2, regZ2, pp2);
+                if (region && region.cells.length > 0) {
+                    // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
+                    // (V18.225 — Understory/Streu sind nie promotable)
+                    const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
+                    if (cell) {
+                        const archBefore = r.state.architectures.length;
+                        const promotedSpecies = cell.species;
+                        const promotedVariant = cell.variantIndex;
+                        const entry = r._promoteScatterCell(cell);
+                        out.promoteReturnsEntry = !!entry;
+                        out.archCountIncreased = r.state.architectures.length === archBefore + 1;
+                        if (entry) {
+                            // Der echte Eintrag trägt die Provenienz (Welt-Genese-Cell)
+                            out.entryHasProvenance =
+                                entry.provenance && entry.provenance.bornFrom === "world-genesis-cell";
+                            out.provenanceSpecies = entry.provenance && entry.provenance.species === promotedSpecies;
+                            // Der Eintrag nutzt den GLEICHEN grown-Bauplan (kein Sprung):
+                            // entry.type ist grown_<species>_v<variant> (LOD0). Der
+                            // Entry trägt _lodSpecies (von spawnArchitecture gesetzt),
+                            // NICHT _grownSpecies (das lebt am Blueprint).
+                            out.entryUsesGrownBp = /^grown_/.test(entry.type) && entry._lodSpecies === promotedSpecies;
+                            out.entryVariantMatches = entry._lodVariantIndex === promotedVariant;
+                            // Cell ist jetzt promoted (Bitmask) + slots freigegeben
+                            out.cellSlotsFreed = cell.slots === null;
+                            out.cellNowPromoted = r._scatterIsCellPromoted(cell.x, cell.z, "tree") === true;
+                            // Aufräumen
+                            r.removeArchitecture(entry);
+                        }
                     }
+                    r._disposeScatterRegion(`${regX2},${regZ2}`);
                 }
-            }
+            });
         }
 
         // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
@@ -38987,7 +39073,10 @@ async function checkBandWahrerAnblickFels(ctx) {
         }
 
         // (D) CONSUM: die Streu liest die statischen Fels-Baupläne
-        const lods = r._buildVariantLODs("kiesel", 0);
+        // N7.3 — UNIT-RICHTER: kiesel ist Studio-bekannt (→ geroell), foundry-ON gäbe
+        // der Chokepoint null; der Prüf-Gegenstand ist der STATISCHE Grammatik-LOD-Weg
+        // ({0,1,2} = derselbe Bauplan, V18.227) → lokaler Hook.
+        const lods = window.__withNoFoundry(() => r._buildVariantLODs("kiesel", 0));
         out.staticLods = !!(lods && lods[0] === "kiesel" && lods[1] === "kiesel" && lods[2] === "kiesel");
         const sp = r._scatterSpeciesForLayer("rock", 0.1, 0.1, 50);
         out.rockSpecies = sp === "kiesel" || sp === "felsbrocken" || sp === "stein_block";
@@ -39131,11 +39220,14 @@ async function checkBandWahrerAnblickLaub(ctx) {
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
 
         // (B) Behavioral — ein gewachsener Baum baut Tube + blatt-geformte Card
+        // N7.3 — UNIT-RICHTER: foundry-ON gäbe der Chokepoint null → der gen<7-Zweig
+        // stellte die Probe still auf true (vakuös). Der lokale Hook hält den
+        // Behavioral-Beweis (Tube/Card aus dem gewachsenen Skelett) am Leben.
         let tubeOk = false,
             cardOk = false,
             taperProven = false;
         try {
-            const keys = r._buildVariantLODs("baum_eiche", 0);
+            const keys = window.__withNoFoundry(() => r._buildVariantLODs("baum_eiche", 0));
             const bp = keys && r.state.blueprints[keys[0]];
             const skel = bp && bp._skeleton;
             if (skel) {
@@ -39266,7 +39358,10 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         out.understoryLayer = !!(layers && layers.some((l) => l.kind === "under"));
         let buschParts = 0;
         try {
-            const keys = r._buildVariantLODs("busch_hazel", 0);
+            // N7.3 — UNIT-RICHTER: busch_hazel ist Studio-bekannt → foundry-ON gäbe der
+            // Chokepoint null und `buschParts === 0` passierte vakuös; der lokale Hook
+            // hält den Reichtums-Beweis (≥8 Parts aus der Skeleton-Grammatik) am Leben.
+            const keys = window.__withNoFoundry(() => r._buildVariantLODs("busch_hazel", 0));
             const bp = keys && r.state.blueprints[keys[0]];
             buschParts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
         } catch (_e) {
@@ -42148,24 +42243,30 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V8.28 — Architektur-Material ist jetzt MeshToonMaterial
         // (Cel-Shading). Reagiert auf Licht wie Lambert, aber
         // quantisiert das Sonnen-Diffuse über die gradientMap.
+        // N7.3 — UNIT-RICHTER: stein_block ist Studio-bekannt (→ basalt) — foundry-ON
+        // platziert er als f:-Instanz OHNE entry.mesh; der Prüf-Gegenstand ist das
+        // Material des KLASSISCHEN Bau-Pfads (_buildFromBlueprint) → lokaler Hook
+        // (+ der Spawn wird IMMER entfernt, auch mesh-los — kein Test-Leck).
         let hasToonMaterial = false;
         if (typeof r.spawnArchitecture === "function" && r.state.blueprints && r.state.blueprints.stein_block) {
-            const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
-            if (arch && arch.mesh) {
-                arch.mesh.traverse((node) => {
-                    // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER
-                    // PBR (Default pbr). Beide reagieren auf Licht/Tag-Nacht.
-                    if (
-                        node.isMesh &&
-                        node.material &&
-                        (node.material.isMeshToonMaterial || node.material.isMeshStandardMaterial)
-                    ) {
-                        hasToonMaterial = true;
-                    }
-                });
-                // Cleanup
-                if (typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
-            }
+            window.__withNoFoundry(() => {
+                const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
+                if (arch && arch.mesh) {
+                    arch.mesh.traverse((node) => {
+                        // V18.234 — mode-agnostisch: das aktive Lichtmodell ist Toon ODER
+                        // PBR (Default pbr). Beide reagieren auf Licht/Tag-Nacht.
+                        if (
+                            node.isMesh &&
+                            node.material &&
+                            (node.material.isMeshToonMaterial || node.material.isMeshStandardMaterial)
+                        ) {
+                            hasToonMaterial = true;
+                        }
+                    });
+                }
+                // Cleanup — unbedingt (auch ein mesh-loser Spawn verlässt die Test-Welt).
+                if (arch && typeof r.removeArchitecture === "function") r.removeArchitecture(arch);
+            });
         }
         out.architectureUsesLambert = hasToonMaterial;
 
@@ -56504,17 +56605,16 @@ async function checkBandRing6Workshop(ctx) {
     // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
     await page.evaluateOnNewDocument((realRenderer) => {
         window.__anazhHeadlessSkinResCap = 64;
-        // P4 — DER MECHANIK-GATE PRÜFT DIE LEBENDE GRAMMATIK, die Foundry-Pipeline die dedizierten
-        // Gates. Seit P4 ist die Foundry die EINE aktive Baum-RENDER-Quelle in Produktion; die
-        // Grammatik-MECHANIK (`_growTreeBlueprintRich` = der Richter für Tags/Physik, die LOD-Bauplan-
-        // Erzeugung `_buildVariantLODs`, die Understory `_growTreeBlueprintForSpawn`, die Scatter-
-        // Promotion) LEBT weiter und ist load-bearing. Der volle Playtest (Null-Renderer, „MECHANIK
-        // braucht eine ZAHL") isoliert genau diese Mechanik → Foundry hier deterministisch AUS, sonst
-        // unterdrückt der `_buildVariantLODs`-Chokepoint die gewachsene Geometrie (return null), sobald
-        // der Worker im Warmup ready wird = flackernd rot. Die Foundry-als-Quelle beweisen headless die
-        // vier dedizierten Gates (gate:foundry-warm · foundry-deadlock · asset-contract · portal-boot,
-        // alle foundry-ON) + der Fast-Tier. „MECHANIK eine ZAHL, LOOK ein BILD, Pipeline ein Gate."
-        window.__anazhGateNoFoundry = true;
+        // N7.3 — DER GATE FÄHRT FOUNDRY-ON (die Produktions-Wahrheit): der GLOBALE
+        // `__anazhGateNoFoundry`-Hook ist GEFALLEN. Die Foundry (der Studio-Worker) bootet im
+        // Gate mit — wie in Produktion und wie der Fast-Tier es seit V18.411 beweist; der
+        // Warmup wartet unten gedeckelt, bis die Studio-Bibliothek WARM ist (f.ready +
+        // recipeCount + Prefetch fertig), bevor die Bänder laufen. Die noch LEBENDE
+        // Grammatik-MECHANIK (der Richter `_growTreeBlueprintRich`, die LOD-Bauplan-Erzeugung
+        // `_buildVariantLODs`, die Scatter-Promotion, die Understory, der Regler-Dichte-Pfad)
+        // prüfen ihre Bänder als UNIT-RICHTER: sie setzen den Hook LOKAL (sichern +
+        // WIEDERHERSTELLEN, nie löschen — die V18.423-Form ist Pflicht). „MECHANIK eine ZAHL,
+        // LOOK ein BILD, Pipeline ein Gate."
         // GPU-FREI: kein Band liest je ein Pixel (nur ein Wegwerf-Screenshot), die
         // Rasterung war ohnehin schon gestubbt. Der Null-Renderer entfernt den GPU-
         // Kontext ganz → der Mechanik-Gate ist effizient + ROBUST (kein swiftshader-
@@ -56532,6 +56632,27 @@ async function checkBandRing6Workshop(ctx) {
             String(fnOrSrc)
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
+        // N7.3 — DIE EINE UNIT-RICHTER-QUELLE: ein Band, das die lebende Grammatik-
+        // MECHANIK prüft (LOD-Bauplan-Erzeugung · Scatter-Promotion · Instancing-
+        // Registry · Regler-Dichte), fährt seine Probe durch DIESEN Chokepoint —
+        // er trägt die V18.423-Form strukturell (sichern + im finally WIEDER-
+        // HERSTELLEN, nie löschen; ein geleakter Hook = die 35-Folge-Rote-Klasse).
+        // SYNC-ONLY als Wand: ein await im Hook-Fenster ließe Hintergrund-Ticks
+        // foundry-aus laufen (Grammatik-Bauten in der warmen Studio-Welt) —
+        // ein zurückgegebenes Promise wirft LAUT statt still zu vergiften.
+        window.__withNoFoundry = (fn) => {
+            const prev = window.__anazhGateNoFoundry;
+            window.__anazhGateNoFoundry = true;
+            try {
+                const out = fn();
+                if (out && typeof out.then === "function")
+                    throw new Error("__withNoFoundry ist sync-only (kein await im Hook-Fenster)");
+                return out;
+            } finally {
+                if (prev) window.__anazhGateNoFoundry = prev;
+                else delete window.__anazhGateNoFoundry;
+            }
+        };
     }, REAL_RENDERER);
 
     const logs = [];
@@ -56611,7 +56732,7 @@ async function checkBandRing6Workshop(ctx) {
         // Drosselung + CI-CPU-Last deterministisch ablaufen. Wall-Clock-
         // getriebene Trigger (Grok 1.5 s, idle 45 s) sehen weiterhin echte
         // performance.now()-Werte → keine semantische Verschiebung.
-        await page.evaluate(async (durationMs) => {
+        const warmupInfo = await page.evaluate(async (durationMs) => {
             const start = performance.now();
             // Phase 1 — auf den Game-Loop warten. Der Konstruktor exponiert
             // `_gameLoopTick` erst am Ende; im Headless dauert die Init normal
@@ -56740,10 +56861,65 @@ async function checkBandRing6Workshop(ctx) {
                 }
                 await new Promise((resolve) => setTimeout(resolve, 0));
             }
+            // N7.3 — DER FOUNDRY-WARM-ANKER (foundry-warm-Muster, gedeckelt wie BOOT_READY_CAP):
+            // der Gate fährt foundry-ON, der Studio-Worker bootet ASYNC (ein ANDERER Worker als
+            // der oben ausgehängte voxelWorker — der Chunk-Warmup bleibt sync/deterministisch).
+            // Bänder, die Baum-/Asset-/Scatter-Zustände lesen, dürfen nicht das Boot-Fenster
+            // statt der Wahrheit sehen (die V18.273-Async-Timing-Flake-Klasse) → hier wartet
+            // der Warmup auf die DREI Stufen der Foundry-Wahrheit: f.ready (der Worker bootet)
+            // → recipeCount > 0 (das Rezeptbuch floss) → !_prefetching (die Bibliothek ist WARM;
+            // `_prefetching` wird im ready-Handler synchron true, also ist „false nach ready"
+            // genau „Prefetch fertig"). Der Loop pumpt weiter (Retry-/Rewarm-Ticks laufen),
+            // die Sleeps lassen Worker-Antworten docken. Der Deckel ist reiner Hänger-Schutz:
+            // ein Cap-Treffer lässt die Bänder ehrlich rot werden (kein Verschlucken).
+            const _fdry = r._foundry || (typeof r._ensureAssetFoundry === "function" ? r._ensureAssetFoundry() : null);
+            const foundryT0 = performance.now();
+            let foundryReadyMs = -1;
+            if (_fdry) {
+                const FOUNDRY_WARM_CAP_MS = 120000;
+                const fDeadline = performance.now() + FOUNDRY_WARM_CAP_MS;
+                while (
+                    !(_fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false) &&
+                    performance.now() < fDeadline
+                ) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {
+                        // Ein einzelner Tick-Fehler darf den Warm-Anker nicht abbrechen.
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 25));
+                }
+                foundryReadyMs =
+                    _fdry.ready && _fdry.recipeCount > 0 && _fdry._prefetching === false
+                        ? Math.round(performance.now() - foundryT0)
+                        : -1;
+                // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
+                // frame-budgetiert) baut kalt gebliebene Baum-Einträge in Reichweite —
+                // ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
+                for (let s = 0; s < 40; s++) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                }
+            }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
             // (er re-synct seine Worldgen-Kachel lazy beim ersten Request, V18.132).
             r.state.voxelWorker = _warmupSavedWorker;
+            return {
+                foundryWarmMs: foundryReadyMs,
+                foundryReady: _fdry ? _fdry.ready === true : false,
+                recipeCount: _fdry ? _fdry.recipeCount || 0 : 0,
+            };
         }, DURATION_MS);
+
+        // N7.3 — die Foundry-Warm-Wahrheit sichtbar machen (informativ; die harte
+        // Wand ist das Band `checkInitialState`/die Foundry-Leser selbst).
+        if (warmupInfo && typeof warmupInfo === "object") {
+            console.log(
+                `Foundry-Warm: ready=${warmupInfo.foundryReady} · Rezepte=${warmupInfo.recipeCount} · Bibliothek warm nach ${warmupInfo.foundryWarmMs} ms`
+            );
+        }
 
         // ### Bericht (informativ) ###
         const fpsText = await page.$eval("#fps", (el) => el.innerText).catch(() => "?");

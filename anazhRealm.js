@@ -34060,7 +34060,14 @@ class AnazhRealm {
         // EIN Regime-Read pro Aufruf — beide Leer-Wände unten lesen dasselbe Verdikt.
         const _leerVerdikt = this._foundryEnabled() ? "leer" : false;
         if (!group || !group.children || !group.children.length) {
-            this._grassStudioGeoByStage[stage] = _leerVerdikt;
+            // N7.3 — DAS OFF-VERDIKT WIRD NIE MEMOISIERT (die vergiftete-Zahl-Klasse,
+            // V18.427/W1): `false` ist REGIME-transient („die Foundry ist gerade aus",
+            // Test-Hook/exotische Einbettung), keine Studio-Wahrheit — der Memo-Read
+            // oben gäbe ein einmal memoisiertes false für IMMER zurück, auch wenn das
+            // Regime zurückkehrt (der Studio-Gras-Pfad wäre still tot). Nur „leer"
+            // (die bewusste Studio-Antwort) ist memo-stabil; foundry-aus entscheidet
+            // jeder Aufruf frisch.
+            if (_leerVerdikt !== false) this._grassStudioGeoByStage[stage] = _leerVerdikt;
             return _leerVerdikt;
         }
         // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
@@ -34084,8 +34091,10 @@ class AnazhRealm {
             else for (let i = 0; i < p.count; i++) push(i);
         }
         if (!pos.length) {
-            // W6 — dieselbe Resolved-Leer-Wand (das eine Verdikt von oben, N7.2).
-            this._grassStudioGeoByStage[stage] = _leerVerdikt;
+            // W6 — dieselbe Resolved-Leer-Wand (das eine Verdikt von oben, N7.2);
+            // N7.3 — dieselbe Memo-Wand: das transiente off-Verdikt (false) reist NIE
+            // ins Memo (s. die erste Wand oben).
+            if (_leerVerdikt !== false) this._grassStudioGeoByStage[stage] = _leerVerdikt;
             return _leerVerdikt;
         }
         // aSeed aus den gebackenen Farben (seedTan r>g = Granne · Grün g>r = Halm) + Höhe messen.
@@ -62649,8 +62658,9 @@ class AnazhRealm {
         // system fliesst. Ist der Eintrag eine foundry-bekannte Art [Baum/Fels/Kristall/Blume/Strauch] UND
         // der Flat KEIN Studio-Flat [`!flat.foundry` = gewachsene Grammatik], wird NICHTS platziert — der
         // Eintrag wartet KALT, bis das Studio liefert [Culling-Tick/Refill baut ihn dann als Studio-Asset].
-        // So KANN keine gewachsene Geometrie in die Welt, egal welcher Pfad `_archInstanceAdd` ruft. Headless
-        // [Null-Renderer → `_foundryEnabled()` false] umgeht das → das Gate testet die Mechanik mit Grammatik.
+        // So KANN keine gewachsene Geometrie in die Welt, egal welcher Pfad `_archInstanceAdd` ruft. N7.3: der
+        // volle Gate fährt foundry-ON — die Grammatik-Mechanik prüfen Unit-Richter-Bänder unter lokalem Hook
+        // (`__withNoFoundry` → `_foundryEnabled()` false → die Wand öffnet für die Grammatik-Fixtur).
         if (
             flat &&
             !flat.foundry &&
@@ -62853,7 +62863,8 @@ class AnazhRealm {
         //   - null (lädt noch) → der Eintrag bleibt KALT; der Culling-Tick (`_archIsRendered`=false)
         //     baut ihn erneut, sobald das Asset da ist → kein Klassik-Blitz, kein Pop.
         //   - false (Foundry kann das nicht) → auf den AnazhRealm-Pfad zurück (Sicherheit).
-        // Headless-Null → `_foundryEnabled()` false → dieser Zweig entfällt ganz → Klassik (gate-treu).
+        // N7.3: der volle Gate fährt foundry-ON (Produktions-Wahrheit) — dieser Zweig lebt dort;
+        // Grammatik-Mechanik-Bänder prüfen den Klassik-Zweig als Unit-Richter (__withNoFoundry).
         const fPreset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
         if (fPreset) {
             // DAS NEUE KLEID — DER PLATZIERUNGS-DURCHSATZ (Schöpfer „L2 ist im Wald auch Billboard, tue es"):
