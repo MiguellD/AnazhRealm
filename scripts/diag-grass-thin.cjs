@@ -1,15 +1,24 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-grass-thin.cjs — DAS GRAS-NACH-DÜNNEN (npm run gate:grass-thin, V18.363)
+// diag-grass-thin.cjs — DIE WIESE IST STUDIO-DEFINIERT (npm run gate:grass-thin, N7.4)
 //
-// Das Gras ist die DOMINANTE kapazitäts-geregelte Last (V18.307, 83 %), las aber
-// `_foliageDensityScale` NUR beim Erst-Bau → eine schon geladene Welt behielt ihr
-// volles Gras beim Stehen/Drehen → der Regler konnte die dominante Last nicht
-// senken (drab UND langsam zugleich, der Synergie-Verlust). `_tickGrassThin` (die
-// Schwester zu `_tickFoliageThin`/Streu, V18.280) baut eine zu dichte Gras-Chunk
-// dünner neu, wenn die geregelte Dichte gesunken ist. Diese Linse beweist headless:
-// (a) Default scale=1 → KEIN Dünnen (volle Wiese, gate-treu), (b) gesunkene Dichte →
-// die geladene Gras-Last SINKT, (c) über Budget → kein Dünnen (V18.282). GPU-frei.
+// Geschichte: V18.363 baute das Gras-Nach-Dünnen (`_tickGrassThin`) für den Alt-Tuft-Pfad;
+// V18.422 entschied „im Studio-Regime dünnt die Wiese NIE" (das Studio-Raster trägt die
+// volle Dichte bis zur Sichtkante). N7.4 vollzieht den Abschied: der Alt-Tuft-Bauer
+// (`_grassBladeTuftGeometry`) und der Gras-Thin-Tick sind GESCHNITTEN — die Wiese IST das
+// Studio-Asset (das P4-Gesetz „wenn kein Gras da ist, ist es so", auf das Gras gehoben).
+// Ohne Studio-Pipeline (Test-Hook/Worker-lose Einbettung) wird jede Gras-Zelle bewusst
+// gras-los verbucht (Nebel-Front zufrieden, kein Deadlock, KEIN Nachbau).
+//
+// Diese Linse beweist headless (foundry-off-Welt über den globalen Hook):
+//   (a) die Welt baut OHNE Studio → JEDE Gras-Zelle ist bewusst gras-los verbucht
+//       (voxelChunkGrass: nur null-Einträge · 0 Halm-Instanzen · Lod-Map gefüllt =
+//       die Front ist zufrieden) — und KEIN Page-Error (der Schnitt crasht nirgends);
+//   (b) QUELLE (kommentar-bereinigt): kein `_grassBladeTuftGeometry`, kein `_tickGrassThin`,
+//       die Existenz-Gabel `if (!grassStudio)` steht, die Dichte ist das Studio-Literal 1,
+//       der Idle-Pass ruft keinen Gras-Thin mehr.
+// Die STUDIO-Wiese selbst (Halm = Studio-Asset, volle Dichte) beweisen der volle
+// foundry-ON-Playtest + gate:foundry-warm. GPU-frei.
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -39,17 +48,22 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// Kommentar-Strip (die V18.267-Falle: ein erklärender Kommentar zitiert das geschnittene
+// Symbol → ein naiver Absenz-Grep stolpert). Dieselbe Disziplin wie gate:constitution.
+function stripComments(src) {
+    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+}
+
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({ headless: "new", args: ["--no-sandbox", "--disable-gpu"] });
     const page = await browser.newPage();
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        // V9.56-i (08.07.) — der Test wandert mit dem Entscheid: im STUDIO-Regime dünnt die
-        // Wiese BEWUSST NIE (`_tickGrassThin` gated auf `_foundryEnabled()` — die Vorlage hält
-        // ihre volle Dichte, der „spärliche Wiese"-Rückfall ist verboten). Diese Linse prüft
-        // die weiterlebende NICHT-Studio-Dünn-Mechanik (V18.363) → Foundry deterministisch aus
-        // (derselbe Hook wie die Grammatik-Mechanik-Bänder, V18.411).
+        // N7.4 — die Linse prüft die OHNE-Studio-Welt (der eine Unit-Richter-Hook):
+        // dort MUSS die Wiese bewusst gras-los sein (kein Tuft-Nachbau, kein Crash).
         window.__anazhGateNoFoundry = true;
     });
     let out = null;
@@ -72,45 +86,37 @@ const server = http.createServer((req, res) => {
             const r = window.anazhRealm,
                 st = r.state;
             const o = {};
-            const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
-            const grassInstances = () => {
-                let n = 0;
-                if (st.voxelChunkGrass) for (const inst of st.voxelChunkGrass.values()) if (inst) n += inst.count || 0;
-                return n;
-            };
-            o.hasThin = typeof r._tickGrassThin === "function";
-            o.hasDensityMap = !!st.voxelChunkGrassDensity && st.voxelChunkGrassDensity.size > 0;
-            // (1) Default-Dichte (headless → 1) → kein Dünnen (volle Wiese, gate-treu)
-            st._foliageDensityScale = 1;
-            st._frameOverBudget = false;
-            const beforeFull = grassInstances();
-            let thinnedAtFull = 0;
-            for (let i = 0; i < 30; i++) thinnedAtFull += r._tickGrassThin(pos);
-            o.noThinAtFullDensity = thinnedAtFull === 0 && grassInstances() === beforeFull;
-            o.fullCount = beforeFull;
-            // (2) Dichte gesunken (kämpfende HW) → die GELADENE Gras-Last SINKT
-            st._foliageDensityScale = 0.4;
-            st._frameOverBudget = false;
-            const beforeThin = grassInstances();
-            let thinSteps = 0;
-            for (let i = 0; i < 200; i++) {
-                if (r._tickGrassThin(pos) === 0) break;
-                thinSteps++;
-            }
-            const afterThin = grassInstances();
-            o.thinStepsRan = thinSteps;
-            o.beforeThin = beforeThin;
-            o.afterThin = afterThin;
-            o.grassDropped = afterThin < beforeThin;
-            o.dropFraction = beforeThin > 0 ? +(1 - afterThin / beforeThin).toFixed(2) : 0;
-            // (3) über Budget → KEIN Dünnen (V18.282 — erst die Frame-Zeit)
-            st._foliageDensityScale = 0.4;
-            st._frameOverBudget = true;
-            const beforeBudget = grassInstances();
-            let thinnedOverBudget = 0;
-            for (let i = 0; i < 10; i++) thinnedOverBudget += r._tickGrassThin(pos);
-            o.noThinOverBudget = thinnedOverBudget === 0 && grassInstances() === beforeBudget;
-            st._frameOverBudget = false;
+            // (a) BEHAVIORAL — die foundry-off-Welt: jede Gras-Zelle bewusst gras-los.
+            o.chunks = st.voxelChunks ? st.voxelChunks.size : 0;
+            o.grassEntries = st.voxelChunkGrass ? st.voxelChunkGrass.size : 0;
+            let nonNull = 0,
+                instances = 0;
+            if (st.voxelChunkGrass)
+                for (const inst of st.voxelChunkGrass.values())
+                    if (inst) {
+                        nonNull++;
+                        instances += inst.count || 0;
+                    }
+            o.grassNonNull = nonNull;
+            o.grassInstances = instances;
+            o.lodMapSize = st.voxelChunkGrassLod ? st.voxelChunkGrassLod.size : 0;
+            // (b) QUELLE — der Schnitt steht (kommentar-bereinigt, sonst V18.267-Falle).
+            const strip = (src) =>
+                String(src)
+                    .replace(/\/\*[\s\S]*?\*\//g, "")
+                    .replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+            o.tuftMethodGone = typeof r._grassBladeTuftGeometry === "undefined";
+            o.thinMethodGone = typeof r._tickGrassThin === "undefined";
+            o.densityMapGone = st.voxelChunkGrassDensity === undefined;
+            const buildSrc = strip(r._buildVoxelChunkGrass.toString());
+            o.existenzGabel = /if \(!grassStudio\) \{/.test(buildSrc);
+            o.dichteLiteral = /const grassDensityScale = 1;/.test(buildSrc);
+            o.farFactorLiteral = /const farFactor = 1;/.test(buildSrc);
+            o.keinTuftAufruf = !/_grassBladeTuftGeometry/.test(buildSrc);
+            const idleSrc = strip(r._tickScatterStreaming.toString());
+            o.idleOhneGrasThin = !/_tickGrassThin/.test(idleSrc);
+            // der Streu-Thin (V18.280) LEBT weiter — der eine verbliebene Thin-Hebel:
+            o.streuThinLebt = /_tickFoliageThin/.test(idleSrc) && typeof r._tickFoliageThin === "function";
             return o;
         });
     } catch (e) {
@@ -120,43 +126,55 @@ const server = http.createServer((req, res) => {
     server.close();
 
     if (!out || out.__err) {
-        console.log(`⛔ Gras-Dünn-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
+        console.log(`⛔ Wiese-Studio-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
         process.exit(2);
     }
 
+    // Statische Doppel-Wand (Node-seitig, ohne Browser-Umweg): das Symbol lebt nirgends im Stamm.
+    const anazhNC = stripComments(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const staticTuftGone = !/_grassBladeTuftGeometry/.test(anazhNC) && !/GRASS_TUFT_BLADES/.test(anazhNC);
+    const staticThinGone = !/_tickGrassThin/.test(anazhNC) && !/voxelChunkGrassDensity/.test(anazhNC);
+
     const checks = [
         {
-            name: "_tickGrassThin existiert + Gras-Bau-Dichte wird gemerkt (voxelChunkGrassDensity)",
-            pass: out.hasThin && out.hasDensityMap,
+            name: `foundry-off-Welt baut (${out.chunks} Chunks) + JEDE Gras-Zelle bewusst gras-los (${out.grassEntries} verbucht, ${out.grassNonNull} non-null, ${out.grassInstances} Halme)`,
+            pass: out.chunks > 0 && out.grassEntries > 0 && out.grassNonNull === 0 && out.grassInstances === 0,
         },
         {
-            name: `Default-Dichte (scale=1) → KEIN Dünnen (volle Wiese ${out.fullCount} Büschel, gate-treu)`,
-            pass: out.noThinAtFullDensity,
+            name: `die Front ist zufrieden (Lod-Map ${out.lodMapSize} Einträge — verbucht, nicht übersprungen)`,
+            pass: out.lodMapSize > 0 && out.lodMapSize >= out.grassEntries,
         },
         {
-            name: `Dichte gesunken (0.4) → die GELADENE Gras-Last SINKT (${out.beforeThin}→${out.afterThin}, −${Math.round((out.dropFraction || 0) * 100)}%, ${out.thinStepsRan} Chunks)`,
-            pass: out.grassDropped,
+            name: "kein Page-Error (der Schnitt crasht nirgends)",
+            pass: pageErrors.length === 0,
         },
         {
-            name: "Über Budget → KEIN Dünnen (V18.282: erst die Frame-Zeit, dann nachregeln)",
-            pass: out.noThinOverBudget,
+            name: "Tuft-Bauer + Thin-Tick + Dichte-Map sind geschnitten (Laufzeit + statisch)",
+            pass: out.tuftMethodGone && out.thinMethodGone && out.densityMapGone && staticTuftGone && staticThinGone,
+        },
+        {
+            name: "die Existenz-Gabel steht (`if (!grassStudio)`) + Studio-Literale (Dichte 1, farFactor 1) + kein Tuft-Aufruf",
+            pass: out.existenzGabel && out.dichteLiteral && out.farFactorLiteral && out.keinTuftAufruf,
+        },
+        {
+            name: "der Idle-Pass ruft keinen Gras-Thin mehr; der Streu-Thin (V18.280) lebt als der eine Hebel",
+            pass: out.idleOhneGrasThin && out.streuThinLebt,
         },
     ];
-    console.log("\n=== Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand) ===");
+    console.log("\n=== N7.4 — DIE WIESE IST STUDIO-DEFINIERT (der Tuft-Abschied) ===");
     let fails = 0;
     for (const c of checks) {
         console.log(`  ${c.pass ? "✅" : "❌"} ${c.name}`);
         if (!c.pass) fails++;
     }
-    console.log(`\n${checks.length - fails}/${checks.length} Gras-Dünn-Invarianten OK.`);
-    if (fails) {
-        console.log(
-            "⛔ Das Gras folgt dem Regler im Stand noch nicht — der dominante Last-Träger bleibt außerhalb der Schleife."
-        );
+    if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
+    if (fails > 0) {
+        console.log(`\n❌ ${fails} Prüfung(en) rot`);
         process.exit(1);
     }
-    console.log(
-        "✅ Das Gras schrumpft im Stand auf die gemessene Kapazität (adaptiv, nicht geschnitten) — der Regler erreicht die dominante Last."
-    );
+    console.log("\n✅ GRÜN — die Wiese ist Studio-definiert: ohne Pipeline bewusst gras-los, kein Nachbau.");
     process.exit(0);
-})();
+})().catch((e) => {
+    console.error("⛔", e);
+    process.exit(2);
+});

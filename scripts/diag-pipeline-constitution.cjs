@@ -358,16 +358,30 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
             /mp && typeof mp\.metalness === "number" \? mp\.metalness :/.test(anazhNC) &&
             /mp && typeof mp\.envMapIntensity === "number" \? mp\.envMapIntensity :/.test(anazhNC)
     );
-    // N4.3 — die W6-Leer-Wand + der Bauer verbucht „leer" vor dem (N7.3-gebundenen) Tuft-Fallback:
+    // N4.3/N7.4 — die Wiese IST Studio-definiert: das Resolved-Leer-Verdikt ist bedingungslos,
+    // ohne Studio wird die Zelle bewusst gras-los verbucht, der Alt-Tuft-Bauer ist GESCHNITTEN
+    // (das P4-Gesetz „wenn kein Gras da ist, ist es so" — kein Nachbau, keine Rückkehr):
     law(
-        'N4.3: die W6-Leer-Wand steht (`_foundryEnabled() ? "leer" : false` in `_grassStudioGeometry`)',
+        'N4.3: der Gras-Bauer verbucht „leer" als Studio-Antwort (`sg === "leer"` lebt)',
         true,
-        /_foundryEnabled\(\) \? "leer" : false/.test(anazhNC)
+        /sg === "leer"/.test(anazhNC)
     );
     law(
-        'N4.3: der Gras-Bauer verbucht „leer" als Studio-Antwort (`sg === "leer"` vor dem Tuft-Fallback)',
+        "N7.4: ohne Studio-Pipeline wird die Gras-Zelle bewusst gras-los verbucht (Existenz-Gabel)",
         true,
-        /sg === "leer"/.test(anazhNC) && (anazhNC.match(/this\._grassBladeTuftGeometry\(\)/g) || []).length === 1
+        /if \(!grassStudio\) \{/.test(anazhNC)
+    );
+    law(
+        "N7.4: der Alt-Tuft-Bauer ist geschnitten (kein _grassBladeTuftGeometry im Code)",
+        false,
+        /_grassBladeTuftGeometry/.test(anazhNC),
+        "der Tuft-Nachbau ist zurückgekehrt"
+    );
+    law(
+        "N7.4: der Gras-Thin-Tick ist geschnitten (die Wiese dünnt NIE — V18.422 bedingungslos)",
+        false,
+        /_tickGrassThin/.test(anazhNC),
+        "das Gras-Nach-Dünnen ist zurückgekehrt"
     );
     // N4.4 — die Impostor-Politik ist eine Daten-Zeile, kein kind-Literal:
     law(

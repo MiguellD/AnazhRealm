@@ -107,11 +107,6 @@ class AnazhRealm {
             voxelTerrainActive: true,
             voxelChunks: null,
             voxelChunkGrass: null,
-            // V18.363 — pro Gras-Chunk die DICHTE, mit der er gebaut wurde (`_foliageDensityScale`
-            // zur Bau-Zeit). `_tickGrassThin` liest sie: sinkt die geregelte Dichte unter den
-            // builtDensity eines schon GELADENEN Chunks, wird sein Gras dünner neu gebaut → die
-            // dominante Gras-Last (V18.307) folgt dem EINEN Regler auch im Stand (V18.280 für Gras).
-            voxelChunkGrassDensity: null,
             // V17.1 — FÜLLE/DICHTE: die artenreiche, GPU-instanzierte Klein-
             // Vegetation (Blüten/Farne/Glut-Gestrüpp/Fels-Brocken/Leucht-Sporen)
             // aus den VIER worldFieldAt-Feldern. Reine Deko (keine Physik) wie
@@ -33686,171 +33681,6 @@ class AnazhRealm {
         pool.length = 0;
     }
 
-    // (das Heightfield-Gras): ein 16×16-Raster, die Dichte emergiert aus
-    // `worldFieldAt.lebendig`, jeder Halm sitzt auf der Voxel-Oberfläche
-    // (`_voxelSurfaceY`). Idempotent über `state.voxelChunkGrass`. Ein
-    // V16.2 — Grasblatt-Büschel-Geometrie (ersetzt den Spitzkegel-"Stachel").
-    // Mehrere schmale, leicht gebogene Blätter, fächerförmig rotiert → liest
-    // sich als Gras-Tuff, nicht als Bartstoppel. Singleton (einmal pro Realm,
-    // von allen InstancedMeshes geteilt). Jedes Blatt: 2 Höhen-Segmente, zur
-    // Spitze schmaler + nach vorn gebogen. Wurzel bei y=0 (die Wind-positionNode-
-    // Math nutzt positionLocal.y als Höhen-Faktor). KEINE Physik, reine Deko.
-    // V18.307 — DAS GRAS WAR 83 % DER GPU-LAST (gemessen diag-scatter-species:
-    // 2.12M Tris / 53.007 Halm-Büschel = 40 Tris/Büschel). Die WURZEL: 5 Blätter ×
-    // SEG 4 × 2 Tris. SEG 4→2 halbiert die Büschel-Geometrie (40→20 Tris) ohne den
-    // Tuff-Look zu verlieren — der eine Bend-Punkt (t=0.5) trägt die Biegung weiter,
-    // das 5-Blatt-Fächer-Silhouette bleibt. Die fehlende Hälfte (Dichte unter den
-    // Regler) steht in `_buildVoxelChunkGrass`. Look = Schöpfer-Browser (Regel #0).
-    // V18.390 — Eins W5 (DIE WIESE): der Tuff ist jetzt ein Büschel aus GRASS_TUFT_BLADES gebogenen
-    // Euler-Kragträger-Halmen (Port der Vorlagen-`emitGrass`, worlds/terrain/phytogenesis.js Z.717-772).
-    // Statt des alten steifen `bend = lean·t²` (kaum Bogen) akkumuliert jeder Halm über K=3 Segmente eine
-    // echte Biegung `dir += bendDir·f^1.8·droop·0.12` + Gravitropismus `dir.y -= f^1.8·droop·0.10` → die
-    // gebogene FONTÄNE der Vorlage (droop 0.45-1.35). ~28 % der Halme sind Rispen-Stängel (isCulm) mit
-    // nickenden Grannen an der Spitze (der Vorlagen-Samenkopf-Look; die Grannen tragen aSeed=1 → das
-    // Gras-Material färbt sie strohig). Halm-Verjüngung `w·(1-f·0.86)` wie die Vorlage. Die Geometrie ist
-    // das geteilte Singleton (fest geseedet → stabil; die per-Instanz-Vielfalt reitet auf rot/tilt/sY/tint
-    // im Build). userData trägt die Diag-Metriken (diag-grass-geom liest sie).
-    _grassBladeTuftGeometry() {
-        const positions = [];
-        const normals = [];
-        const seeds = []; // aSeed: 0 = Halm, 1 = Rispen-Granne (strohiger Samenkopf)
-        const B = AnazhRealm.GRASS_TUFT_BLADES;
-        const H = AnazhRealm.GRASS_BLADE_H;
-        // Die Euler-Schleife läuft s=0..K (die Vorlagen-emitGrass-Semantik: 4 Vorschübe je L/K = ⁴⁄₃·L
-        // Bogenlänge, die Basis liegt bei L/K). Darum ist die LÄNGE (LEN) vom Höhen-BEZUG (H = Material-
-        // Gradient-Normalizer + sY-Teppich-Referenz) entkoppelt → localMaxY ≈ H (der Halm füllt den Bezug).
-        const LEN = H * 0.58;
-        const K = 3;
-        const GOLDEN = 2.399963229728653;
-        // PARITÄT (Schöpfer „nicht die selben Gräser"): der Büschel-Radius ist die gemessene Lücke —
-        // das Studio streut sein Wald-Gras als buildInstance("gras",·,2)·SCALE 0.24 → Büschel-SPREIZUNG
-        // ≈ clump 0.61·0.24 ≈ 0.146 m (breite Fontäne); unser 0.05 las als Nadel-Pin (⅓ der Vorlage).
-        // 0.14 = die Studio-Spreizung. Höhe/Halm-Zahl/Breite sind schon Vorlagen-Parität (12 Halme ≈
-        // Studio-L2 ~17 · Welthöhe 0.17-0.38 m ≈ Studio 0.13-0.26 m). Kostet NULL Dreiecke.
-        const clumpR = 0.14; // Fächer-Radius des Büschels (lokal) — die Studio-Fontäne
-        // Fest geseedeter PRNG → die Singleton-Geometrie ist stabil (KEIN Determinismus-Eingriff: die
-        // Halm-POSITIONEN/Dichte kommen aus _buildVoxelChunkGrass; hier wächst nur die Tuff-FORM).
-        let rs = 0x9e3779b9 >>> 0;
-        const rnd = () => {
-            rs = (rs + 0x6d2b79f5) >>> 0;
-            let t = rs;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-        const vnorm = (v) => {
-            const l = Math.hypot(v[0], v[1], v[2]) || 1;
-            return [v[0] / l, v[1] / l, v[2] / l];
-        };
-        const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-        const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
-        // Ein Quad-Streifen zwischen zwei Ring-Kanten (cl/cr = links/rechts), flat-Normale nach oben.
-        const pushQuad = (cl0, cr0, cl1, cr1, seed) => {
-            const e1 = [cr0[0] - cl0[0], cr0[1] - cl0[1], cr0[2] - cl0[2]];
-            const e2 = [cl1[0] - cl0[0], cl1[1] - cl0[1], cl1[2] - cl0[2]];
-            let n = vnorm([
-                e1[1] * e2[2] - e1[2] * e2[1],
-                e1[2] * e2[0] - e1[0] * e2[2],
-                e1[0] * e2[1] - e1[1] * e2[0],
-            ]);
-            if (n[1] < 0) n = [-n[0], -n[1], -n[2]]; // nach oben orientieren (DoubleSide-Lambert liest sauber)
-            const emit = (p) => {
-                positions.push(p[0], p[1], p[2]);
-                normals.push(n[0], n[1], n[2]);
-                seeds.push(seed);
-            };
-            emit(cl0);
-            emit(cr0);
-            emit(cr1);
-            emit(cl0);
-            emit(cr1);
-            emit(cl1);
-        };
-        let localMaxY = 0;
-        let culmCount = 0;
-        let maxTipBendRatio = 0;
-        for (let i = 0; i < B; i++) {
-            const a = i * GOLDEN;
-            const rr = Math.sqrt(i / B) * clumpR;
-            const bx = Math.cos(a) * rr;
-            const bz = Math.sin(a) * rr;
-            const isCulm = rnd() < 0.22;
-            if (isCulm) culmCount++;
-            const L = LEN * (isCulm ? 1.05 + rnd() * 0.2 : 0.7 + rnd() * 0.45); // Rispe länger, Blatt kürzer
-            const w0 = (isCulm ? 0.02 : 0.03) * (0.85 + rnd() * 0.35); // Wurzel-Halbbreite
-            const la = rnd() * 6.2831;
-            const lean = 0.05 + rnd() * 0.16;
-            const bendDir = [Math.cos(la), 0, Math.sin(la)];
-            const droop = isCulm ? 0.3 + rnd() * 0.35 : 0.45 + rnd() * 0.9; // Euler-Fontäne (Rispe steifer)
-            let p = [bx, 0, bz];
-            let dir = vnorm([Math.sin(lean) * Math.cos(la), Math.cos(lean), Math.sin(lean) * Math.sin(la)]);
-            let cl = null;
-            let cr = null;
-            let tip = p.slice();
-            for (let s = 0; s <= K; s++) {
-                const f = s / K;
-                const dd = Math.pow(f, 1.8) * droop;
-                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12))); // Biegung unter Eigengewicht
-                dir = vnorm([dir[0], dir[1] - dd * 0.1, dir[2]]); // Gravitropismus
-                p = vadd(p, vscl(dir, L / K));
-                tip = p.slice();
-                if (p[1] > localMaxY) localMaxY = p[1];
-                const halfW = w0 * (1 - f * 0.86);
-                const rt = vnorm([-dir[2], 0, dir[0]]); // cross(dir, up)
-                const ncl = vadd(p, vscl(rt, -halfW));
-                const ncr = vadd(p, vscl(rt, halfW));
-                if (cl) pushQuad(cl, cr, ncl, ncr, 0);
-                cl = ncl;
-                cr = ncr;
-            }
-            // Bogen-Metrik: horizontaler Tip-Versatz relativ zur Basis / Tip-Höhe → der Euler-Bogen.
-            const dxh = Math.hypot(tip[0] - bx, tip[2] - bz);
-            const bendRatio = tip[1] > 1e-4 ? dxh / tip[1] : 0;
-            if (bendRatio > maxTipBendRatio) maxTipBendRatio = bendRatio;
-            if (isCulm) {
-                // Rispe: feine nickende Grannen an der Spitze (der Grassamen-Kopf, aSeed=1 → strohig).
-                // Leicht gehalten (Naw=2, AK=2) → der Samenkopf-LOOK bei ~Vorlagen-Tri-Parität (die
-                // Halme, nicht die Rispen, tragen den Teppich; volle Vorlagen-Rispen verdoppelten die Last).
-                const Naw = 2;
-                const AK = 2;
-                for (let k = 0; k < Naw; k++) {
-                    const aa = (k / Naw) * 6.2831 + rnd() * 0.5;
-                    const awl = L * (0.16 + rnd() * 0.12);
-                    let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]);
-                    let ap = tip.slice();
-                    let gcl = null;
-                    let gcr = null;
-                    for (let s2 = 0; s2 <= AK; s2++) {
-                        const f2 = s2 / AK;
-                        ad = vnorm([ad[0], ad[1] - 0.3 - f2 * 0.85, ad[2]]); // nickt nach unten
-                        ap = vadd(ap, vscl(ad, awl / AK));
-                        if (ap[1] > localMaxY) localMaxY = ap[1];
-                        const hw = 0.014 * (1 - f2 * 0.6);
-                        const rt2 = vnorm([-ad[2], 0, ad[0]]);
-                        const ncl = vadd(ap, vscl(rt2, -hw));
-                        const ncr = vadd(ap, vscl(rt2, hw));
-                        if (gcl) pushQuad(gcl, gcr, ncl, ncr, 1);
-                        gcl = ncl;
-                        gcr = ncr;
-                    }
-                }
-            }
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geo.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
-        geo.setAttribute("aSeed", new THREE.Float32BufferAttribute(seeds, 1));
-        geo.computeBoundingSphere();
-        geo.userData = {
-            tuftBlades: B,
-            culmCount,
-            localMaxY: +localMaxY.toFixed(4),
-            maxTipBendRatio: +maxTipBendRatio.toFixed(3),
-            vertCount: positions.length / 3,
-        };
-        return geo;
-    }
-
     // DER GRAS-SCHNITT (08.07., Schöpfer „zum hundertsten Mal: nicht dieselben Gräser — vollende
     // es"): der Halm ist das ECHTE Studio-Asset. `buildInstance('gras', 1, 2)` — DIESELBE Quelle
     // + Stufe, die das Studio als Wald-Teppich streut (SCALE 0.24 aus der LIVE-placement-Quelle,
@@ -33883,7 +33713,10 @@ class AnazhRealm {
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
-            if (!f) return false;
+            // N7.4 — 3-wertiger Vertrag (null=lädt · "leer"=bewusst gras-los · Geometrie):
+            // der Aufrufer ist Studio-gegated; fällt ensure dennoch aus, ist die ehrliche
+            // Antwort "leer" (kein false-Tuft-Pfad mehr — der Tuft ist geschnitten).
+            if (!f) return "leer";
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
@@ -33896,22 +33729,13 @@ class AnazhRealm {
             return null; // lädt — die Zelle wartet (pendingGrass)
         }
         // W6 (Paritäts-Vollendung, die V18.380-has-vs-null-Klasse): eine RESOLVED-LEERE
-        // Studio-Antwort ist KEIN Miss — im Studio-Regime heißt sie „das Studio sagt
-        // bewusst LEER" → "leer" (der Aufrufer verbucht die Zelle als gras-los; NIE der
-        // Alt-Tuft-Nachbau = Fail-Open-Fremd-Silhouette). Nur OHNE Studio (foundry aus/
-        // kein Worker) bleibt false = der legitime Alt-Pfad. N7.2 (Dual-Regime senken):
-        // EIN Regime-Read pro Aufruf — beide Leer-Wände unten lesen dasselbe Verdikt.
-        const _leerVerdikt = this._foundryEnabled() ? "leer" : false;
+        // Studio-Antwort ist KEIN Miss — sie heißt „das Studio sagt bewusst LEER" → "leer"
+        // (der Aufrufer verbucht die Zelle als gras-los). N7.4: der alte false-Zweig (Tuft-
+        // Alt-Pfad) ist mit dem Tuft geschnitten; alle Aufrufer sind Studio-gegated → das
+        // Verdikt ist bedingungslos "leer" (memo-stabil, die bewusste Studio-Antwort).
         if (!group || !group.children || !group.children.length) {
-            // N7.3 — DAS OFF-VERDIKT WIRD NIE MEMOISIERT (die vergiftete-Zahl-Klasse,
-            // V18.427/W1): `false` ist REGIME-transient („die Foundry ist gerade aus",
-            // Test-Hook/exotische Einbettung), keine Studio-Wahrheit — der Memo-Read
-            // oben gäbe ein einmal memoisiertes false für IMMER zurück, auch wenn das
-            // Regime zurückkehrt (der Studio-Gras-Pfad wäre still tot). Nur „leer"
-            // (die bewusste Studio-Antwort) ist memo-stabil; foundry-aus entscheidet
-            // jeder Aufruf frisch.
-            if (_leerVerdikt !== false) this._grassStudioGeoByStage[stage] = _leerVerdikt;
-            return _leerVerdikt;
+            this._grassStudioGeoByStage[stage] = "leer";
+            return "leer";
         }
         // Kinder mergen (position/normal/color; non-indexed expandieren) + Welt-Skala backen.
         const k = this._foundryWorldScaleMatrix("gras").elements[0];
@@ -33986,22 +33810,26 @@ class AnazhRealm {
             this.state.voxelChunkGrassLod.set(key, entryLod);
             return;
         }
-        // DER GRAS-SCHNITT (08.07.): bei lebender Foundry ist der Halm das ECHTE Studio-Asset
-        // (`_grassStudioGeometry` — buildInstance('gras',·,2), dieselbe Quelle wie der Studio-
-        // Wald-Teppich). Lädt es noch (null), WARTET die Zelle (re-enqueue in pendingGrass —
-        // die Baum-Regel V18.411 „wenn kein Gras da ist, ist es so", KEIN Kopie-Bau; der
-        // Lade-Nebel bleibt über die Gras-Front konservativ gedeckelt). false = die Foundry
-        // kann gras nicht (exotisch) → der Alt-Pfad (Tuft) trägt. Ohne Foundry (Worker-lose
-        // Einbettung/Test-Hook) trägt der Alt-Pfad wie bei den Bäumen.
+        // DER GRAS-SCHNITT (08.07.): der Halm ist das ECHTE Studio-Asset (`_grassStudioGeometry`
+        // — buildInstance('gras',·,2), dieselbe Quelle wie der Studio-Wald-Teppich). Lädt es
+        // noch (null), WARTET die Zelle (re-enqueue in pendingGrass — die Baum-Regel V18.411,
+        // KEIN Kopie-Bau; der Lade-Nebel bleibt über die Gras-Front konservativ gedeckelt).
+        // N7.4 — DAS TUFT-PAKET: das P4-Gesetz gilt auch der Wiese („wenn kein Gras da ist,
+        // ist es so"): OHNE Studio-Pipeline (Test-Hook/Worker-lose Einbettung) wird die Zelle
+        // bewusst gras-los verbucht (Nebel-Front zufrieden, kein Deadlock) — der Alt-Tuft-
+        // Bauer ist GESCHNITTEN, kein Nachbau. Der eine Regime-Read ist die Existenz-Gabel.
         let _builtGrassStage = null;
-        // N7.2 (Dual-Regime senken): EIN Studio-Regime-Read pro Bau — der Halm-Zweig hier
-        // und die farFactor/Dichte-Entscheidung unten lesen dieselbe Wahrheit.
         const grassStudio = typeof this._foundryEnabled === "function" && this._foundryEnabled();
-        if (grassStudio) {
+        if (!grassStudio) {
+            this.state.voxelChunkGrass.set(key, null);
+            this.state.voxelChunkGrassLod.set(key, entryLod);
+            return;
+        }
+        {
             // LOD-WURZEL (08.07.): die STUFE folgt dem Studio-Gesetz (kindStages.grass) —
             // der Spieler-Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe, die Ferne
             // die kompensierte; `_tickGrassStage` baut falsch-stufige Chunks nach, wenn
-            // der Spieler wandert (das _tickGrassThin-Muster). Einstufige Daten → byte-alt.
+            // der Spieler wandert (das budgetierte Idle-Thin-Muster). Einstufige Daten → byte-alt.
             const _gStages = this._grassKindStages();
             const _pc = this.state.lastPlayerVoxelChunk;
             const _gnear = _pc ? Math.max(Math.abs(cx - _pc.cx), Math.abs(cz - _pc.cz)) <= 1 : entryLod === 0;
@@ -34023,36 +33851,16 @@ class AnazhRealm {
             if (sg) _builtGrassStage = stage;
         }
         // DIE WIESE OHNE DISTANZ-ABFALL (Studio-Gesetz, 08.07.): das Studio pflanzt das Gras
-        // als GLEICHMÄSSIGES Raster bis zur Sichtkante (grassStep 0.72 in buildForest — es
-        // gibt dort KEINEN Distanz-Falloff). Der 0.35-farFactor jenseits des LOD0-Rings
-        // (~108 m) war ein V18.97-Perf-Entscheid, keine Studio-Regel — er war der sichtbare
-        // Dichte-Ring (Schöpfer-Befund „das gras über andere distanzen verteilt"). Im
-        // Studio-Regime trägt die Wiese die volle Dichte bis zur Nebelkante; ohne Foundry
-        // (Alt-Welten/Test-Hook) bleibt der Perf-Faden byte-alt.
-        const farFactor = entryLod >= 1 && !grassStudio ? 0.35 : 1;
-        // V18.307 — DAS GRAS KOMMT UNTER DEN EINEN REGLER (die Synergie-Hälfte):
-        // das Gras war 83 % der GPU-Last, las aber NIE `_foliageDensityScale` → der
-        // Perf-PID drosselte die kleine Streu (→ drab) + den Ring (→ klein), konnte
-        // aber den eigentlichen Last-Träger (Gras) NICHT anfassen — der Hebel reichte
-        // nicht an die Wurzel. Jetzt skaliert die Halm-Zahl beim Bau mit demselben
-        // perf-geregelten Faktor wie die Streu (`_nexusPerfActuate`, KEIN Parallel-
-        // Regler). Headless (Null-Renderer) → 1 (das Gate sieht die volle Wiese).
-        // DAS NEUE KLEID — DIE WIESE = DIE VORLAGE (Schöpfer „vollende es — die selbe Dichte, die selbe
-        // Wiese"): liegt der Studio-Wahrnehmungs-Config vor, pflanzt AnazhRealm die VOLLE Gras-Dichte (=1),
-        // NICHT perf-gedrosselt. Bei voller Dichte trägt jede der 256 Sample-Zellen ~16 Halme → ~4000/Chunk
-        // ≈ 1.8 Halme/m² = exakt das Studio-0.72m-Raster; der Perf-Boden (0.22) hatte die Wiese auf ~195
-        // Halme gedünnt (der „spärliche Wiese"-Befund). Die ferne Wiese trägt im Studio-Regime DIESELBE
-        // Dichte (kein farFactor-Abfall, s. oben); ohne Studio bleibt sie via `farFactor` leichter. Das
-        // Gras kappt am Gras-Ring. Ohne Studio-Config bleibt der Perf-Regler = 0 Regress (Alt-Welten).
-        // Der Gate ist `_foundryEnabled()` (Studio-Pipeline aktiv, WAHR ab Frame 0) — NICHT der spät
-        // eintreffende `studioRenderConfig`: das Gras baut im Boot, BEVOR der Config andockt, und ist
-        // gecacht → ein config-später Gate ließe die Boot-Wiese für immer spärlich. Headless (null) →
-        // `_foundryEnabled()` false, aber dort ist `_foliageDensityScale`=1 → ebenfalls voll (gate-treu).
-        const grassDensityScale = grassStudio
-            ? 1
-            : this.state._foliageDensityScale != null
-              ? this.state._foliageDensityScale
-              : 1;
+        // als GLEICHMÄSSIGES Raster bis zur Sichtkante (grassStep 0.72 in buildForest — kein
+        // Distanz-Falloff; der 0.35-farFactor war V18.97-Perf, keine Studio-Regel). N7.4: der
+        // Bau ist Studio-only (Früh-Return oben) → die Gabel kollabiert aufs Studio-Gesetz.
+        const farFactor = 1;
+        // DAS NEUE KLEID — DIE WIESE = DIE VORLAGE (Schöpfer „die selbe Dichte, die selbe
+        // Wiese"): das Studio pflanzt die VOLLE Dichte (~1.8 Halme/m² = das 0.72-m-Raster) bis
+        // zur Nebelkante — die Wiese dünnt NIE (V18.422-Gesetz; N7.4 bedingungslos: der Bau ist
+        // Studio-only, der `_foliageDensityScale`-Gras-Hebel starb mit dem Thin-Tick — die
+        // Kapazität atmet über Ring/LOD/Schatten, nicht über die Wiesen-Dichte).
+        const grassDensityScale = 1;
         const surfAt = (x, z) => {
             if (chunkEntry && chunkEntry.surfMap) {
                 const v = this._chunkSurfaceAt(chunkEntry, cx, cz, x, z);
@@ -34188,18 +33996,10 @@ class AnazhRealm {
             this.state.voxelChunkGrassLod.set(key, entryLod);
             return;
         }
-        // V10.0-j.j — ConeGeometry als Singleton (Profi-Vorbild: shared meshes).
-        // Bisher allokierte jeder Chunk eine eigene ConeGeometry → bei Welt-
-        // Lebensdauer hunderte separate Buffer. Mit Singleton: EIN Buffer
-        // pro Realm-Instanz, alle InstancedMeshes teilen ihn (mit eigenen
-        // instanceMatrix-Buffers). Sparen 100-500 KB GPU-Heap.
-        // V16.2 — Halm-FORM: der 3-seitige Spitzkegel (ein "Stachel" =
-        // Bartstoppel-Befund) wird ein BÜSCHEL aus gebogenen Grasblättern
-        // (_grassBladeTuftGeometry). Heilt die "keine Wiese"-Wurzel an der
-        // Geometrie, nicht an der Zahl. Singleton wie bisher.
-        if (!this.state._grassConeGeometry) {
-            this.state._grassConeGeometry = this._grassBladeTuftGeometry();
-        }
+        // V10.0-j.j — die Halm-Geometrie ist ein Singleton (shared mesh, EIN Buffer pro
+        // Realm-Instanz). N7.4: die EINE Quelle ist das Studio-Asset (`_grassStudioGeometry`
+        // setzte `_grassConeGeometry` oben, bevor der Loop läuft) — der Alt-Tuft-Fallback
+        // (`_grassBladeTuftGeometry`) ist GESCHNITTEN, kein Nachbau-Bauer mehr.
         // V11.0-b (Mesh-Pool aktiv im Build-Pfad) — wir holen ein
         // InstancedMesh aus dem Pool (oder allokieren neu wenn leer)
         // statt jedes Mal `new THREE.InstancedMesh` zu rufen. Pool-Identity
@@ -34309,12 +34109,7 @@ class AnazhRealm {
         this.state.scene.add(inst);
         this.state.voxelChunkGrass.set(key, inst);
         this.state.voxelChunkGrassLod.set(key, entryLod);
-        // V18.363 — die Bau-Dichte merken (der EINE Regler-Faktor zur Bau-Zeit), damit
-        // `_tickGrassThin` weiß, welche schon-gebauten Chunks bei gesunkener Kapazität
-        // dünner neu gebaut werden müssen (die V18.280-Nach-Dünnen-Hälfte für Gras).
-        if (!this.state.voxelChunkGrassDensity) this.state.voxelChunkGrassDensity = new Map();
-        this.state.voxelChunkGrassDensity.set(key, grassDensityScale);
-        // LOD-WURZEL (08.07.) — die gebaute Gras-STUFE merken (wie die Bau-Dichte):
+        // LOD-WURZEL (08.07.) — die gebaute Gras-STUFE merken:
         // `_tickGrassStage` liest sie, um beim Wandern falsch-stufige Chunks nachzubauen.
         if (_builtGrassStage !== null) {
             if (!this.state.voxelChunkGrassStage) this.state.voxelChunkGrassStage = new Map();
@@ -34324,7 +34119,6 @@ class AnazhRealm {
 
     _disposeVoxelChunkGrass(key) {
         if (this.state.voxelChunkGrassLod) this.state.voxelChunkGrassLod.delete(key);
-        if (this.state.voxelChunkGrassDensity) this.state.voxelChunkGrassDensity.delete(key);
         if (!this.state.voxelChunkGrass) return;
         const grass = this.state.voxelChunkGrass.get(key);
         if (grass) {
@@ -51711,10 +51505,9 @@ class AnazhRealm {
         // (kein Re-Stream). Jetzt schrumpft die Welt AKTIV auf die gemessene Kapazität: eine
         // Region, die bei höherer Dichte gebaut wurde als jetzt gilt, wird re-gestreamt (dünner).
         this._tickFoliageThin(playerPos);
-        // V18.363 — desgleichen das GRAS (die dominante Last, V18.307): eine schon geladene, zu
-        // dichte Gras-Chunk dünner neu bauen, wenn die geregelte Dichte gesunken ist → das Gras
-        // folgt dem EINEN Regler auch im Stand/Drehen, nicht nur beim Erst-Bau (die V18.280-Hälfte).
-        this._tickGrassThin(playerPos);
+        // N7.4 — der Gras-Thin-Tick (V18.363) ist GESCHNITTEN: die Wiese ist Studio-definiert
+        // und dünnt NIE (V18.422-Gesetz, jetzt bedingungslos — die Kapazität atmet über
+        // Ring/LOD/Schatten; der Streu-Thin `_tickFoliageThin` oben bleibt der lebende Hebel).
         // LOD-WURZEL (08.07.) — die zweistufige Studio-Wiese folgt der Bewegung (ein
         // falsch-stufiger Chunk pro Idle-Tick, das Thin-Muster; Studio-Regime-only).
         this._tickGrassStage();
@@ -51738,8 +51531,8 @@ class AnazhRealm {
     // Rückkopplung: jedes Dünnen senkt die Last → schafft Lücken → dünnt weiter → konvergiert.
     _tickFoliageThin(playerPos) {
         const st = this.state;
-        // W1 (Paritäts-Vollendung) — im Studio-Regime dünnt die STREU NIE (das V18.422-Gesetz,
-        // byte-symmetrisch zur Gras-Schwester `_tickGrassThin`): der Bau pflanzt voll (fdScale=1),
+        // W1 (Paritäts-Vollendung) — im Studio-Regime dünnt die STREU NIE (das V18.422-Gesetz;
+        // die Gras-Schwester ist N7.4 geschnitten — die Wiese dünnt NIE): der Bau pflanzt voll (fdScale=1),
         // ein Dünnen würde nur byte-identisch neu bauen (54 ms/Region umsonst). Zweite Wand neben
         // der EINEN Dichte-Quelle `_effectiveFoliageDensity` (builtDensity == scale == 1 → nie Kandidat).
         if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) return 0;
@@ -51771,66 +51564,14 @@ class AnazhRealm {
         return 1;
     }
 
-    // V18.363 — DAS NACH-DÜNNEN FÜR GRAS (die fehlende Hälfte aus V18.307): das Gras ist die
-    // DOMINANTE kapazitäts-geregelte Last (83 % der Szene, V18.307) — aber `_foliageDensityScale`
-    // griff bisher NUR beim Erst-Bau (`_buildVoxelChunkGrass`). Eine schon GELADENE, dichte Welt
-    // behielt ihr volles Gras beim reinen DREHEN/STEHEN (kein Re-Stream) → senkte der Regler die
-    // Dichte unter Last, dünnte er Streu (V18.280) + Ring, aber das Gras pinnte die GPU weiter →
-    // der Regler musste alles ANDERE über-drosseln (drab) ohne die fps zu heilen (langsam), der
-    // gemessene Synergie-Verlust. Diese Methode ist die EXAKTE Schwester zu `_tickFoliageThin`
-    // (Streu) auf das Gras: die NÄCHSTE Gras-Chunk, deren Bau-Dichte deutlich über der jetzt
-    // geregelten liegt, wird dünner neu gebaut (dispose→build liest `_foliageDensityScale` live).
-    // Budgetiert (1 Chunk/Tick) + NUR in den Lücken (`!_frameOverBudget` — die V18.282-Wand: erst
-    // die Frame-Zeit, dann nachregeln). Headless → scale=1 == builtDensity → nie aktiv (gate-treu,
-    // die volle Wiese). KEIN Schnitt der Qualität: starke HW hält scale≈1 → kein Dünnen; nur die
-    // kämpfende HW lichtet das Gras genau so weit, wie sie es nicht tragen kann (adaptiv, bidirektional
-    // — der Spawn-Ring re-baut es dichter, wenn die Kapazität zurückkehrt). EIN Regler, kein Parallel.
-    _tickGrassThin(playerPos) {
-        const st = this.state;
-        // DAS NEUE KLEID — im Studio-Regime dünnt die Wiese NIE (die Vorlage hält ihre volle Dichte); der
-        // Bau pflanzt schon voll, das Nach-Dünnen würde sie wieder auf den Perf-Boden ziehen = der „spärliche
-        // Wiese"-Rückfall. Gate = `_foundryEnabled()` (Studio aktiv, ab Frame 0). Ohne = adaptiv (V18.363).
-        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) return 0;
-        if (st._frameOverBudget) return 0; // erst die Frame-Zeit, dann dünnen (V18.282)
-        const map = st.voxelChunkGrass;
-        const densMap = st.voxelChunkGrassDensity;
-        if (!map || map.size === 0 || !densMap || !playerPos) return 0;
-        const scale = st._foliageDensityScale != null ? st._foliageDensityScale : 1;
-        const { span } = this._voxelChunkConfig();
-        // die NÄCHSTE deutlich-zu-dichte Gras-Chunk finden (Margin 0.12 → kein Thrash am Ziel);
-        // nächste-zuerst, weil die nahen Halme die meisten Instanzen auf den Schirm bringen.
-        let bestKey = null,
-            bestDist = Infinity;
-        for (const [key, inst] of map) {
-            if (!inst) continue; // null = kein Gras (leerer/ferner Chunk)
-            const built = densMap.get(key);
-            if (built == null || built <= scale + 0.12) continue;
-            const comma = key.indexOf(",");
-            const cx = parseInt(key.slice(0, comma), 10);
-            const cz = parseInt(key.slice(comma + 1), 10);
-            const rcx = (cx + 0.5) * span,
-                rcz = (cz + 0.5) * span;
-            const d = (rcx - playerPos.x) ** 2 + (rcz - playerPos.z) ** 2;
-            if (d < bestDist) {
-                bestDist = d;
-                bestKey = key;
-            }
-        }
-        if (!bestKey) return 0;
-        const comma = bestKey.indexOf(",");
-        const cx = parseInt(bestKey.slice(0, comma), 10);
-        const cz = parseInt(bestKey.slice(comma + 1), 10);
-        this._disposeVoxelChunkGrass(bestKey);
-        this._buildVoxelChunkGrass(cx, cz); // baut bei der AKTUELLEN (geringeren) Dichte
-        return 1;
-    }
-
     // LOD-WURZEL (08.07.) — die ZWEISTUFIGE Studio-Wiese FOLGT der Bewegung: der Spieler-
     // Nahring (chebyshev ≤1 Chunk) trägt die reiche Stufe (kindStages.grass[0]), die Ferne
     // die halm-/breiten-kompensierte (letzte). Wandert der Spieler, baut EIN falsch-stufiger
-    // Chunk pro Idle-Tick neu (das _tickGrassThin-Muster: budgetiert, nur in den Lücken,
-    // nächster zuerst). Einstufige Daten/kein Config → No-op (byte-alt). Studio-Regime-only
-    // (der Alt-Pfad kennt keine Stufen).
+    // Chunk pro Idle-Tick neu (budgetiert, nur in den Lücken, nächster zuerst). Einstufige
+    // Daten/kein Config → No-op (byte-alt). Der Regime-Read ist seit N7.4 eine ECHTE WAND:
+    // ohne Studio verbucht `_buildVoxelChunkGrass` die Zelle gras-los (der Tuft ist
+    // geschnitten) — liefe der Stage-Tick in einem Hook-Fenster, würde das Nachbauen
+    // Studio-Gras ZERSTÖREN (set null). Die Wand hält den Tick strikt Studio-only.
     _tickGrassStage() {
         const st = this.state;
         if (st._frameOverBudget) return 0;
@@ -65363,9 +65104,8 @@ class AnazhRealm {
                 "blume",
                 "strauch",
                 // 08.07. — DAS GRAS DOCKT AN (Schöpfer „zum hundertsten Mal: nicht dieselben
-                // Gräser"): das echte Studio-gras-Asset in die Bibliothek — der kommende
-                // Gras-Schnitt liest es als Halm-Geometrie (statt der emitGrass-KOPIE
-                // _grassBladeTuftGeometry); der Prefetch wärmt es ab jetzt mit.
+                // Gräser"): das echte Studio-gras-Asset in die Bibliothek — die EINE Halm-
+                // Geometrie (N7.4: der Alt-Tuft-Bauer ist geschnitten); der Prefetch wärmt sie.
                 "gras",
                 // 08.07. — DIE INVENTUR (Schöpfer „Steine scheinen zu fehlen — werden alle
                 // Assets ausgelesen und gepflanzt?"): GEMESSEN brauchte der Unterwuchs ~60 s
@@ -86198,16 +85938,12 @@ AnazhRealm.BACK_LIGHT = Object.freeze({ r: 1.0, g: 0.847, b: 0.627, base: 0.5, d
 // `hi` < rock-`SCATTER.slopeMax`(1.45) → die natürliche Abfolge Wiese → Mischhang → Geröll → Fels:
 // Gras weicht, BEVOR der Fels voll klettert (komplementär auf DERSELBEN `_slopeAt`-Achse). Feel-Knöpfe.
 AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
-// V18.390 — Eins W5 (DIE WIESE): die drei Gras-Zahlen als EINE Quelle (Gesetz #0 — vorher lag der
-// Cap als vier inline-Kopien `const GRASS_MAX_BLADES = 1400` verstreut, die „match" nur ein Kommentar
-// versprach). GRASS_MAX_BLADES ist die MEMORY-Wand pro Chunk (Pool-Kapazität), NICHT der Look-Deckel —
-// der `_foliageDensityScale`-Regler + `_tickGrassThin` fangen die Perf adaptiv (V18.307/.363). 1400→3200
-// hebt die Tuff-Dichte im lush Chunk auf ~1.71/m² (nahe der Vorlagen-1.93/m²); × GRASS_TUFT_BLADES=12
-// gebogenen Euler-Halmen = ~20.6 Halme/m² (Vorlage ~27, der Teppich-Eindruck statt der exakten Zahl,
-// bei vertretbarer Tri-Last). GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (der Material-Gradient-
-// Normalizer + der sY-Teppich-Deckel → Welt-Höhe 0.1-0.4 m statt der alten 0.5-1.95-m-Steppe).
+// V18.390 — Eins W5 (DIE WIESE): die Gras-Zahlen als EINE Quelle (Gesetz #0). GRASS_MAX_BLADES
+// ist die MEMORY-Wand pro Chunk (Pool-Kapazität), NICHT der Look-Deckel. N7.4: der Tuft-Bauer +
+// GRASS_TUFT_BLADES sind GESCHNITTEN (die Wiese IST das Studio-Asset, dünnt nie — V18.422
+// bedingungslos); die Kapazität atmet über Ring/LOD/Schatten. GRASS_BLADE_H = die lokale
+// Referenz-Halm-Höhe (Material-Gradient-Normalizer; uBladeH-Fallback, wenn kein Studio-Maß da).
 AnazhRealm.GRASS_MAX_BLADES = 3200;
-AnazhRealm.GRASS_TUFT_BLADES = 12;
 AnazhRealm.GRASS_BLADE_H = 0.42;
 // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die Region-Geometrie für das
 // Frustum-Cullen der PLATZIERTEN Architektur. ARCH_REGION_M = _bakeRegionConfig().sizeM (256 m) →
