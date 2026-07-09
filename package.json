@@ -79,6 +79,7 @@
         "gate:nervensystem": "node scripts/diag-nervensystem.cjs",
         "gate:nervensystem-vehicle": "node scripts/diag-nervensystem-vehicle.cjs --selftest && node scripts/diag-nervensystem-vehicle.cjs",
         "gate:place-policy": "node scripts/diag-place-policy.cjs --selftest",
+        "gate:vehicle-drive": "node scripts/diag-vehicle-drive.cjs --selftest && node scripts/diag-vehicle-drive.cjs",
         "gate:perf-parity": "node scripts/diag-perf-parity.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",

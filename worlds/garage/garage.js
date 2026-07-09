@@ -293,7 +293,7 @@ function updateTrack(dt){const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
 // Fahrzustand auf der Ebene — Körperframe-Geschwindigkeit (vlong/vlat) für echten Schlupf — + Eingaben
 const car={x:0,z:0,yaw:0,vlong:0,vlat:0,yawRate:0,steer:0,wheelAng:0,speed:0,aLong:0};
 const input={throttle:0,brake:0,steer:0,hand:0};
-const FAHR={maxSteer:0.52,brakeDecel:14,rollDecel:1.0,handDecel:9,G:9.8,CA_F:5.0,CA_R:5.6,maxGrip:1.0,izzK:1.4};
+const FAHR=VC.FAHR;  // N6.1 — die Fahr-Konstanten leben im KERN (byte-gleich umgezogen): EINE Quelle fuer Probefahrt UND exportDrive
 function updateVehicle(dt,t){
   const ph=carPhys(P),m=ph.mass,L=P.radstand,W=P.spur,b=L*0.5,c=L*0.5;   // CG mittig → b=c=radstand/2
   const Izz=m*(L*L+W*W)/12*FAHR.izzK, cgH=cgHeightOf(P), grip=P.grip;     // Gier-Trägheit aus Masse·Abmessungen

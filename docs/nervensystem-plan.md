@@ -179,7 +179,7 @@ Schwert und Wagen „verstehen“ sich nur über:
 | placement-Daten              | `PORTAL_RENDER_CONFIG.placement`                  | place (scale/rarity)   |
 | tree Auto-BP ohne Stamm-Edit | `gate:nervensystem` D                             | appear+place forest    |
 | vehicle Kern + BP            | vehicle-core, W7, `gate:nervensystem-vehicle`     | appear + identity      |
-| fahrprofil-Steckplatz        | `_vehicleProfile` liest `fx.fahrprofil`           | drive (fast leer)      |
+| fahrprofil-Steckplatz        | `_vehicleProfile` liest `fx.fahrprofil`           | drive (seit N6 GEFÜLLT: Brücke rechnet exportDrive) |
 | Feld-Physik, Tags, Ω, DSL    | Stamm                                             | body · wield · rule    |
 | Validator CORES              | `diag-studio-vertrag.cjs`                         | Draft Registry         |
 
@@ -192,7 +192,7 @@ Schwert und Wagen „verstehen“ sich nur über:
 | Zweit-Kern nur `VC` if          | phytogenesis recipes/build                     | M8                            |
 | Preset-Map historisch groß      | `_foundryPresetFor`                            | M8 (Legacy ok, nicht wachsen) |
 | Dual-Regime                     | **34**× `_foundryEnabled()`                    | M4/M7                         |
-| drive = Emergenz, nicht carPhys | Presets ohne fahrprofil; `carPhys` unverbunden | M1/M9                         |
+| ~~drive = Emergenz, nicht carPhys~~ | GETILGT N6 (09.07.): Brücke rechnet `fx.fahrprofil = exportDrive(s+fx)`, `_vehicleProfile` fährt Lab-Werte | M1/M9 erfüllt (`gate:vehicle-drive`) |
 | place nicht generisch           | forest/scatter pflanzen-gebunden               | M4 für Stadt                  |
 | Porta 0 im Worker               | Labor nur W12-Portal                           | appear fehlt                  |
 | Pack ohne components            | IDB nur meshes                                 | M2 unvollständig              |
@@ -486,22 +486,61 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 
 | Schritt | Spezifikation                                                                                           |
 | ------- | ------------------------------------------------------------------------------------------------------- |
-| N6.1    | `vehicle-core`: `exportDrive(P)` oder Preset-`fx.drive` aus **`carPhys(P)` + springRate** (eine Formel) |
-| N6.2    | `__replyRecipes` trägt drive-Felder im Buch (oder fx.drive)                                             |
-| N6.3    | `_vehicleProfile`: Lab-drive **führt**, Emergenz = Fallback wenn fehlend                                |
-| N6.4    | Movement bleibt **ein** Pfad (kAcc/kBrake/topSpeed/vmax mappen)                                         |
-| N6.5    | Optional später: spring/pitch nur wenn Host-Verb erweitert (M4!)                                        |
-| N6.6    | wield: **kein** Arena-Import; Arena eicht; Host Ω + optional wield-Hints; M9                            |
+| N6.1    | ✅ (09.07.) `vehicle-core`: `exportDrive(P)` aus **`carPhys(P)` + FAHR + springRate** (eine Formel)     |
+| N6.2    | ✅ (09.07.) `__replyRecipes` rechnet `fx.fahrprofil = kern.exportDrive(s+fx)` beim Buch-Bau             |
+| N6.3    | ✅ (09.07.) `_vehicleProfile`: Lab-drive **führt** (W7b-Steckplatz), Emergenz = Fallback wenn fehlend   |
+| N6.4    | ✅ (09.07.) Movement bleibt **ein** Pfad (ride.kAcc/kBrake/topSpeedMul je genau 1×, gate-bewacht)       |
+| N6.5    | Optional später: spring/pitch nur wenn Host-Verb erweitert (M4!) — `spring {k,c}` reist schon als Daten |
+| N6.6    | ✅ (09.07., geprüft) wield: **kein** Arena-Import; Arena eicht; Host Ω + optional wield-Hints; M9       |
 
 **Akzeptanz N6:**
 
-- [ ] GT vs Supersport: messbar unterschiedliche drive-Skalare aus Lab-Formel
-- [ ] `gate:nervensystem-vehicle` + walk/mount smoke
-- [ ] Ohne drive-Felder: alter Emergenz-Pfad (0 Regress)
+- [x] GT vs Supersport: messbar unterschiedliche drive-Skalare aus Lab-Formel (H7 — topSpeedMul
+      1.5998 vs 1.6359 · kAcc 0.5627 vs 0.6617 · kBrake 0.6252 vs 0.7228 · mass 8.94 vs 7.44 ·
+      spring.k 100 vs 135; `gate:vehicle-drive` A3/B-b)
+- [x] `gate:nervensystem-vehicle` grün + `smoke:labs` mit Probefahrt-Liveness (Tacho steigt mit Kern-FAHR)
+- [x] Ohne drive-Felder: alter Emergenz-Pfad byte-gleich (`fahrzeug_wagen` → kein Buch-Rezept →
+      Emergenz nachgerechnet ===, `gate:vehicle-drive` B-c; der volle Playtest läuft foundry-off =
+      Emergenz überall, 0 Regress)
+
+**N6 GEBAUT (09.07. — „Das Lab-Fahrprofil führt", Linse `gate:vehicle-drive` per-push-CI, inkl. Selbst-Test):**
+
+- [x] N6.1 DIE EINE FORMEL: `exportDrive(P)` lebt in vehicle-core NEBEN `carPhys` und leitet die
+      Host-Skalare aus DENSELBEN Primitiven ab, die die Probefahrt fährt — `topSpeedMul = vmax/10`
+      (GT-Eich-Anker: carPhys ist auf den GT geeicht [vmax≈16], der GT fährt am emergenten
+      Vier-Rad-Cap 1.6 → REF 10) · `kAcc = aEngine/vmax` [1/s, linearisierte Antriebs-Zeitkonstante]
+      · `kBrake = (aEngine + FAHR.rollDecel)/vmax` [Roll-aus bei vmax: Drag + Rollwiderstand] ·
+      `mass/vmax` als Daten-Reisende · `spring {k,c}` = der benannte N6.5-Anschluss. `floats` FEHLT
+      BEWUSST (Schwimmen bleibt Substanz-Entscheid des Hosts, W-F V18.175). Ein partieller
+      Regler-Vektor mergt über DIESELBE Basis wie buildInstance (DEFAULT_P+BASE_P — eine
+      Merge-Ordnung). Dazu der FORMEL-UMZUG: die `FAHR`-Konstanten (Antrieb/Reifen, kein
+      Geometrie-Bezug) zogen byte-gleich aus der Shell in den Kern, die Shell liest `VC.FAHR`
+      (Paritäts-Beweis: Werte identisch + Probefahrt-Liveness in `smoke:labs` + `gate:vehicle-contract`
+      cv:3 byte-grün — wheelClearance sah vorher wie nachher maxSteer 0.52).
+- [x] N6.2 DIE REISE ALS BRÜCKEN-RECHNUNG (nicht statisch in PRESETS): `__replyRecipes` rechnet in
+      der generischen Zweit-Kern-Schleife `fx.fahrprofil = zk.kern.exportDrive({...s, ...fx})` beim
+      Buch-Bau — Gesetz #0: KEIN eingefrorenes Duplikat, ein Schöpfer-Edit an carPhys/FAHR fließt
+      beim nächsten Buch-Bau automatisch mit; must-ignore für Alt-Leser; `buildInstance` byte-unberührt.
+- [x] N6.3 LAB FÜHRT: der W7b-Steckplatz in `_vehicleProfile` trägt jetzt WERTE — bewiesen
+      end-to-end BIT-EXAKT (Node-exportDrive == LIVE-Buch == gemountetes Profil, `gate:vehicle-drive` B).
+- [x] N6.4 EIN PFAD: ride.topSpeedMul/kAcc/kBrake leben je GENAU EINMAL, alle in
+      `_loopPlayerMovement` (statisch gate-bewacht — ein zweiter Fahr-Code wird rot).
+- [ ] N6.5 spring/pitch als Host-Verb — BENANNT, NICHT gebaut (M4); die Daten (`spring {k,c}`)
+      reisen schon im fahrprofil, der Konsument ist der bewusste Folge-Schritt.
+- [x] N6.6 WIELD GEPRÜFT: kein Arena-Import gebaut — Ω-PHYSIS bleibt der Wield-Richter
+      (`_blueprintUseKind` + wahrerbauplan, souverän im Host), der wield-Hints-Steckplatz ist im
+      Wörterbuch v1 benannt (`wield { reachMul?, swingMul? }`, §2.4) und wartet auf die
+      Arena-Eichung (Phase ε, „Ω-first").
 
 ### DONE Phase δ
 
 Gesetze aus Lab **kommunizieren** über Wörterbuch v1; Host-Verben fühlen den Unterschied.
+
+- [x] N5 Teil-DONE (place none/forest/site disjunkt, H8 grün; offen: N5.4 scatter-Verdrahtung
+      [wartet auf das erste scatter-Rezept] + N5.7 settlement [wartet auf den Stadt-Lab-Export, ε])
+- [x] N6 GEBAUT (drive aus der EINEN Lab-Formel, H7 grün; offen: N6.5 spring/pitch [M4-benannt])
+- [x] H7 + H8 grün → **Phase δ steht** (die ε-Anschlüsse N5.4/N5.7/N6.5 sind benannte Folge-Schritte,
+      keine offenen Gesetze — „Fahrzeug fühlt Lab-drive; place.mode disjunkt" ist messbar erfüllt).
 
 ---
 
@@ -522,7 +561,7 @@ Pro Lab **Checkliste** (immer gleich):
 | Lab    | Phase               | components                     | Notiz                                |
 | ------ | ------------------- | ------------------------------ | ------------------------------------ |
 | Wald   | Inhalt läuft        | place forest/scatter           | γ aufräumen, nicht neu erfinden      |
-| Garage | N6                  | drive + appear                 | Physik = carPhys→drive               |
+| Garage | N6 ✅ (09.07.)      | drive + appear                 | Physik = carPhys→exportDrive→drive   |
 | Porta  | ε nach β            | appear + place site + portal   | porta-core Split                     |
 | Stadt  | ε nach N5.7         | appear Haus + place settlement | Lab liefert Policy+Haus-Assets       |
 | Arena  | ε                   | appear + wield hints           | Ω-first                              |
@@ -540,7 +579,7 @@ Pro Lab **Checkliste** (immer gleich):
 | **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity` ✅ (Band, nightly)                                                                        |
 | **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                                                                                               |
 | **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Baseline 29 Call-Sites → **22** (N7.2 Scheibe 1, 09.07.; Inventur `docs/analyse/dual-regime-inventur-n7.md`) |
-| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                                                                                            |
+| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | `gate:vehicle-drive` ✅ (09.07., per-push-CI — GT vs Supersport ≥2 Skalare verschieden [kAcc +17,6 % · kBrake +15,6 % · topSpeedMul/mass/vmax], bit-exakt Formel→Buch→Mount-Profil; ohne Buch Emergenz byte-gleich; Selbst-Test feuert) |
 | **H8** | place.mode none vs forest disjunkt                             | δ N5  | `gate:place-policy` ✅ (09.07., per-push-CI — none: Katalog ja/Nische nein · forest byte-gleich · site trägt siteTag ohne Streu · must-ignore/must-preserve; Selbst-Test: Verletzungs-Injektion feuert) |
 
 Bestehende Pflicht-Gates pro Merge: `check` · relevant nervensystem* · studio-vertrag · page-error wo Render.

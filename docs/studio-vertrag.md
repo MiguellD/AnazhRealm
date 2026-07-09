@@ -121,9 +121,13 @@ Komponenten-SÄTZE, keine Klassen):
 - `dsl`: die Wörter, die die begehbare Welt versteht (W12-ready-Handshake —
   gebaut für alle fünf Portale).
 - Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
-  Parallel-System): `vehicle.fahrprofil` (radstand/spur/federrate/daempfung/
-  grip → `_vehicleProfile` liest DATEN statt zu raten) · `gate.tueren` ·
-  `creature.gang` (Phase 5).
+  Parallel-System): `vehicle.fahrprofil` — GEBAUT N6 (09.07.): NICHT die rohen
+  Regler, sondern die ABGELEITETEN drive-Skalare des Wörterbuchs v1
+  (`topSpeedMul/kAcc/kBrake/mass/vmax/spring`), von der Brücke beim Buch-Bau
+  aus der EINEN Kern-Formel `exportDrive(P)` (carPhys + FAHR + Federrate)
+  gerechnet → `_vehicleProfile` liest DATEN statt zu raten (Abgeleitetes reist
+  hier bewusst als Export der SELBEN Formel, nicht als zweite Wahrheit — M3)
+  · `gate.tueren` · `creature.gang` (Phase 5).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
@@ -200,7 +204,7 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 | B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | shrine-Sites |
 | B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | SOLL (Slider-Gruppen existieren) |
 | B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | SOLL (Stich→Schub→Dicke) |
-| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil | dsl ✅ + tueren |
+| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil ✅ (N6, 09.07.: Brücke rechnet `exportDrive` beim Buch-Bau, `gate:vehicle-drive`) | dsl ✅ + tueren |
 | STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt | ab Split | ab Split |
 
 **Benannte Schulden (kein Verstecken):** die Pflanzen-Dials/Lehren leben noch

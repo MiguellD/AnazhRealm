@@ -4769,6 +4769,21 @@ init();
                         s: Object.assign({}, p.s),
                         fx: Object.assign({}, p.fx),
                     };
+                    // N6.2 (Nervensystem Phase δ, Woerterbuch v1 `drive`) — DIE FAHR-FORMEL
+                    // REIST ALS DATEN: traegt der Kern die EINE Export-Formel (exportDrive —
+                    // dieselben Gesetze wie die Probefahrt: carPhys + FAHR + Federrate),
+                    // rechnet die BRUECKE das fahrprofil BEIM BUCH-BAU statt es statisch in
+                    // die PRESETS einzufrieren (Gesetz #0: ein Schoepfer-Edit an carPhys
+                    // fliesst beim naechsten Buch-Bau automatisch mit, kein Duplikat).
+                    // s+fx ist exakt der buildInstance-Merge-Schwanz (der Kern mergt intern
+                    // DEFAULT_P+BASE_P davor — die eine Merge-Ordnung). must-ignore: ein
+                    // Alt-Leser ohne fahrprofil-Steckplatz ignoriert das Feld schlicht.
+                    if (typeof zk.kern.exportDrive === "function") {
+                        try {
+                            const fp = zk.kern.exportDrive(Object.assign({}, p.s, p.fx));
+                            if (fp && typeof fp === "object") book[id].fx.fahrprofil = fp;
+                        } catch (_e3) {}
+                    }
                 }
             }
         } catch (_e2) {}

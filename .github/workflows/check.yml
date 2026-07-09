@@ -376,6 +376,18 @@ jobs:
               # (Verletzungs-Injektion: none-Art erscheint doch → die Detektion feuert).
               run: npm run gate:place-policy
 
+            - name: Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)
+              # DER DRIVE-BEWEIS (Phase δ, headless foundry-ON): exportDrive (vehicle-core) leitet
+              # die Host-Fahr-Skalare aus DENSELBEN Primitiven ab, die die Garage-Probefahrt fährt
+              # (carPhys + FAHR + Federrate — die Konstanten leben seit N6.1 im Kern, die Shell
+              # LIEST sie); die Brücke rechnet fx.fahrprofil beim Buch-Bau (kein eingefrorenes
+              # Duplikat). (a) das Buch trägt fahrprofil 5/5; (b) H7: GT vs Supersport messbar
+              # verschieden; (c) _vehicleProfile(fahrzeug_gt) fährt die Lab-Werte, fahrzeug_wagen
+              # (kein Buch) die Emergenz byte-gleich; (d) Formel-Parität Kern==Probefahrt-Primitive;
+              # (e) Selbst-Test (verfälschtes fahrprofil → Divergenz erkannt). Der Bewegungs-Loop
+              # bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul nur in _loopPlayerMovement).
+              run: npm run gate:vehicle-drive
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

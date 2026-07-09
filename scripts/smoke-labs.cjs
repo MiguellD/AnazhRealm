@@ -114,6 +114,49 @@ async function testWorld(browser, id, opts) {
         expectActive: "Supersport",
     });
 
+    // N6.1 — DIE PROBEFAHRT LEBT: die Fahr-Konstanten (FAHR) leben seit dem
+    // Formel-Umzug im KERN (vehicle-core, VC.FAHR) — dieser Check beweist den
+    // Umzug am LEBENDEN Fahrmodell: DSL "probefahrt" schaltet in den Fahr-Modus
+    // (HUD sichtbar), KeyW beschleunigt (updateVehicle liest carPhys+FAHR), der
+    // HUD-Tacho steigt ueber 0.
+    {
+        console.log("\n=== GARAGE — Probefahrt (Fahrmodell mit Kern-FAHR) ===");
+        const page = await browser.newPage();
+        const pageErrors = [];
+        page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+        await page.goto(`http://127.0.0.1:${PORT}/__harness_garage.html`, { waitUntil: "load", timeout: 60000 });
+        await page.evaluate(() => window.__sendEnter());
+        await page.waitForFunction(() => window.__ready, { timeout: 30000 }).catch(() => null);
+        const frame = page.frames().find((f) => f.url().includes("worlds/garage/"));
+        await page.evaluate(() => window.__sendDsl([["probefahrt"]]));
+        await new Promise((r) => setTimeout(r, 500));
+        const hudOn = frame
+            ? await frame
+                  .evaluate(() => {
+                      const h = document.getElementById("hud");
+                      return !!h && h.style.display === "block";
+                  })
+                  .catch(() => false)
+            : false;
+        check("garage: DSL \"probefahrt\" schaltet in den Fahr-Modus (HUD sichtbar)", hudOn);
+        if (frame) {
+            await frame.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" })));
+            await new Promise((r) => setTimeout(r, 1600));
+            const spd = await frame
+                .evaluate(() => {
+                    window.dispatchEvent(new KeyboardEvent("keyup", { code: "KeyW" }));
+                    const el = document.querySelector("#hud #spd");
+                    return el ? parseInt(el.textContent, 10) : -1;
+                })
+                .catch(() => -1);
+            check("garage: KeyW beschleunigt — der Tacho steigt (carPhys+FAHR aus dem Kern treiben)", spd > 0, `spd=${spd}`);
+        } else {
+            check("garage: Probefahrt-Frame gefunden", false);
+        }
+        check("garage: 0 Seiten-Fehler in der Probefahrt", pageErrors.length === 0, pageErrors[0] || "");
+        await page.close();
+    }
+
     await testWorld(browser, "portale", {
         label: "Porta",
         dslWord: "maschine",

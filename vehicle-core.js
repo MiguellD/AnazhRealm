@@ -2007,6 +2007,24 @@
     }
     const A_PITCH_MAX = 13,
         A_LAT_MAX = 11; // Laengs-/Quer-Beschl.-Klammern (g-equiv.) — EINZIGE Quelle: updateVehicle UND Radkasten-Huellkurve
+    // ── N6.1 (Nervensystem Phase δ) — DIE FAHR-KONSTANTEN: Formel-UMZUG aus der Shell
+    // (worlds/garage/garage.js, byte-gleiche Werte). Die Antriebs-/Reifen-Konstanten der
+    // Probefahrt tragen KEINEN Geometrie-Bezug (Lenkanschlag · Brems-/Roll-/Handbrems-
+    // Verzoegerung · Reifen-Steifigkeiten · Reibkreis · Gier-Traegheits-Faktor). Die Shell
+    // LIEST sie von hier (VC.FAHR) — EINE Quelle fuer Probefahrt UND exportDrive (M1/M9:
+    // kein zweiter Wahrheits-Satz). wheelClearance oben findet sie jetzt immer (der
+    // typeof-Fallback 0.52 == FAHR.maxSteer bleibt als Robustheits-Wand, byte-gleich).
+    const FAHR = {
+        maxSteer: 0.52,
+        brakeDecel: 14,
+        rollDecel: 1.0,
+        handDecel: 9,
+        G: 9.8,
+        CA_F: 5.0,
+        CA_R: 5.6,
+        maxGrip: 1.0,
+        izzK: 1.4,
+    };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
     //    inb   = inboard-Reichweite des (gelenkten) Reifens ab Radmitte · roll = Wank-Spitze  → Tiefe der inneren Radhausschale
@@ -2041,6 +2059,41 @@
             F0 = 80.5,
             dragC = 0.1618;
         return { aEngine: F0 / mass, dragK: (dragC * front) / mass, vmax: Math.sqrt(F0 / (dragC * front)), mass: mass };
+    }
+    // ── N6.1 (Nervensystem Phase δ, Wörterbuch v1 `drive`) — DIE EINE FAHR-FORMEL ALS EXPORT:
+    // exportDrive(P) leitet die Host-Fahr-Skalare aus DENSELBEN Gesetzen ab, die die Probefahrt
+    // faehrt — carPhys (Masse/Antrieb/Widerstand AUS DER FORM, oben) + FAHR (Roll-Widerstand) +
+    // Federrate. KEIN zweiter Wahrheits-Satz (M1/M9): ein Schoepfer-Edit an carPhys/FAHR aendert
+    // Probefahrt UND Welt-Fahrgefuehl zugleich. Die Ableitung (die Lab-Wahrheit, dokumentiert):
+    //   topSpeedMul   — vmax des Rezepts am GT-EICH-ANKER: carPhys ist auf den GT geeicht
+    //                   (vmax≈16, s. o.), und der GT faehrt am emergenten Vier-Rad-Cap des
+    //                   Hosts (1 + 0.6) → VMAX_REF = 16/1.6 = 10 [m/s je Mul-Einheit].
+    //   kAcc   [1/s]  — die linearisierte Laengs-Zeitkonstante des Antriebs: aEngine/vmax
+    //                   (der exp-Host beschleunigt bei v=0 damit exakt mit aEngine-Aequivalent).
+    //   kBrake [1/s]  — die linearisierte ROLL-AUS-Konstante bei vmax (der Host-kBrake wirkt
+    //                   ohne Eingabe = Ausrollen): Luftwiderstand (dragK·vmax² == aEngine am
+    //                   Gleichgewicht) + Rollwiderstand → (aEngine + FAHR.rollDecel)/vmax.
+    //   mass/vmax     — die Lab-Groessen als DATEN (must-ignore-Reisende; der Host-`mass`
+    //                   bleibt sein _compoundSizeFactor — andere Einheit, bewusst NICHT geführt).
+    //   spring {k,c}  — Federrate/Daempfung als benannter N6.5-Anschluss (das Host-Verb
+    //                   Nick/Wank ist NICHT gebaut — M4: erst wenn das Verb erweitert wird).
+    //   floats FEHLT BEWUSST: Schwimmen entscheidet die SUBSTANZ des Werks im Host (W-F
+    //                   V18.175, volumen-gewichtete Dichte) — das Lab kennt kein Wasser.
+    // REIN + THREE-frei (validator-vm-fest); ein PARTIELLER Regler-Vektor (z. B. pre.s+pre.fx
+    // der Presets) mergt ueber DIESELBE Basis wie buildInstance (DEFAULT_P + BASE_P) — die
+    // eine Merge-Ordnung, kein Duplikat.
+    function exportDrive(Pin) {
+        const P = Object.assign({}, DEFAULT_P, BASE_P, Pin || {});
+        const ph = carPhys(P);
+        const VMAX_REF = 10; // GT-Eich-Anker: vmax_GT≈16 / Host-Vier-Rad-Cap 1.6
+        return {
+            topSpeedMul: ph.vmax / VMAX_REF,
+            kAcc: ph.aEngine / ph.vmax,
+            kBrake: (ph.aEngine + FAHR.rollDecel) / ph.vmax,
+            mass: ph.mass,
+            vmax: ph.vmax,
+            spring: { k: P.springRate, c: P.damping },
+        };
     }
 
     const PARAMS = [
@@ -2437,6 +2490,8 @@
         cgHeightOf: cgHeightOf,
         wheelClearance: wheelClearance,
         carPhys: carPhys,
+        FAHR: FAHR,
+        exportDrive: exportDrive,
         A_PITCH_MAX: A_PITCH_MAX,
         A_LAT_MAX: A_LAT_MAX,
         // Bau-Fläche (die Shell baut ihre Ebenen aus DIESER Quelle)
