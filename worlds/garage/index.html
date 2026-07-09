@@ -128,10 +128,13 @@ input[type=range]::-moz-range-thumb{width:13px;height:13px;border:none;border-ra
 <div id="hud"><span class="spd-wrap"><span id="spd">0</span> <span class="u">km/h</span></span><span class="keys"><b>W</b>/<b>S</b> Gas·Brems&nbsp;&nbsp;<b>A</b>/<b>D</b> Lenken&nbsp;&nbsp;<b>Leer</b> Handbremse&nbsp;&nbsp;<b>Maus</b> umsehen&nbsp;&nbsp;<b>ESC</b> Werkstatt&nbsp;&nbsp;·&nbsp;&nbsp;<b>Pylonen</b> umfahren · Reifen brennen Spuren</span></div>
 
 <!-- Klassische Global-Skripte: Three.js r128 + OrbitControls aus dem geteilten
-     Vendor-Regal des Terrain-Portals (EINE Kopie, kein Duplikat), dann das
-     Schöpfer-Werk selbst. -->
+     Vendor-Regal des Terrain-Portals (EINE Kopie, kein Duplikat), dann der
+     FAHRZEUG-STUDIO-KERN (vehicle-core.js, __vehicleCore — W7a Kern-Split,
+     die EINE generative Quelle für Shell UND AnazhRealm-Foundry) VOR der
+     Shell, dann das Schöpfer-Werk selbst. -->
 <script src="../terrain/lib/three-r128.min.js"></script>
 <script src="../terrain/lib/OrbitControls.js"></script>
+<script src="../../vehicle-core.js?v=18.421.0"></script>
 <script src="garage.js?v=18.421.0"></script>
 </body>
 </html>

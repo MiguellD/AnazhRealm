@@ -26,7 +26,14 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 
 // Die registrierten Studio-Kerne (wächst pro Domäne — §5 Schritt 5).
-const CORES = [{ file: "foundry-core.js", deps: ["phyto-core.js"] }];
+// `ns` = Namensraum-Kern (Vertrag v1.1 §7, Entscheid E-A): der ZWEIT-Kern einer
+// Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt
+// (z. B. __vehicleCore.PRESETS) statt top-level — löst die const-Kollision mit
+// foundry-core (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
+const CORES = [
+    { file: "foundry-core.js", deps: ["phyto-core.js"] },
+    { file: "vehicle-core.js", ns: "__vehicleCore" },
+];
 
 const REZEPT_ID = /^[a-z0-9_-]+$/;
 // Registrierte + reservierte kinds (§3 B1). Ein UNBEKANNTER kind ist KEIN
@@ -61,14 +68,29 @@ function loadCore(entry) {
     let code = "";
     for (const dep of entry.deps || []) code += fs.readFileSync(path.join(root, dep), "utf8") + "\n;";
     code += fs.readFileSync(path.join(root, entry.file), "utf8");
-    code +=
-        "\n;__manifest = {" +
-        " vertrag: typeof STUDIO_VERTRAG !== 'undefined' ? STUDIO_VERTRAG : null," +
-        " presets: typeof PRESETS !== 'undefined' ? PRESETS : null," +
-        " build: typeof buildInstance !== 'undefined' ? buildInstance : null," +
-        " cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null," +
-        " params: typeof PARAMS !== 'undefined' ? PARAMS : null," +
-        " lehren: typeof LEHREN !== 'undefined' ? LEHREN : null };";
+    if (entry.ns) {
+        // v1.1-Namensraum-Kern: dieselben Block-Namen, gelesen unter entry.ns
+        // (fehlt der Namensraum ganz, bleibt alles null → B1/B2/G4.3 werden rot).
+        code +=
+            "\n;__manifest = (function(){" +
+            ` var N = typeof ${entry.ns} !== 'undefined' && ${entry.ns} ? ${entry.ns} : {};` +
+            " return {" +
+            " vertrag: 'STUDIO_VERTRAG' in N ? N.STUDIO_VERTRAG : null," +
+            " presets: N.PRESETS || null," +
+            " build: N.buildInstance || null," +
+            " cfg: N.PORTAL_RENDER_CONFIG || null," +
+            " params: N.PARAMS || null," +
+            " lehren: N.LEHREN || null }; })();";
+    } else {
+        code +=
+            "\n;__manifest = {" +
+            " vertrag: typeof STUDIO_VERTRAG !== 'undefined' ? STUDIO_VERTRAG : null," +
+            " presets: typeof PRESETS !== 'undefined' ? PRESETS : null," +
+            " build: typeof buildInstance !== 'undefined' ? buildInstance : null," +
+            " cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null," +
+            " params: typeof PARAMS !== 'undefined' ? PARAMS : null," +
+            " lehren: typeof LEHREN !== 'undefined' ? LEHREN : null };";
+    }
     vm.runInContext(code, ctx, { timeout: 30000, filename: entry.file });
     return ctx.__manifest;
 }
@@ -77,14 +99,17 @@ function loadCore(entry) {
 function validateManifest(m) {
     const v = [];
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
-    if (!m.presets || typeof m.presets !== "object" || Object.keys(m.presets).length < 1) v.push("B1: PRESETS fehlt oder leer");
+    if (!m.presets || typeof m.presets !== "object" || Object.keys(m.presets).length < 1)
+        v.push("B1: PRESETS fehlt oder leer");
     else {
         for (const id in m.presets) {
             const r = m.presets[id];
             if (!REZEPT_ID.test(id)) v.push(`B1: rezeptId "${id}" verletzt den Namensraum [a-z0-9_-]+`);
             if (!r || typeof r.kind !== "string" || !r.kind) v.push(`B1: Rezept "${id}" trägt kein kind`);
             if (r && r.s && typeof r.s === "object")
-                for (const dk in r.s) if (typeof r.s[dk] !== "number" || !isFinite(r.s[dk])) v.push(`B1: Rezept "${id}" Dial s.${dk} ist keine endliche Zahl`);
+                for (const dk in r.s)
+                    if (typeof r.s[dk] !== "number" || !isFinite(r.s[dk]))
+                        v.push(`B1: Rezept "${id}" Dial s.${dk} ist keine endliche Zahl`);
         }
     }
     if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
@@ -104,15 +129,23 @@ function validateManifest(m) {
     }
     const pl = m.cfg && m.cfg.placement;
     if (pl) {
-        if (pl.scale) for (const k in pl.scale) if (!(typeof pl.scale[k] === "number" && pl.scale[k] > 0)) v.push(`B3: placement.scale.${k} muss Zahl > 0 sein`);
-        if (pl.rarity) for (const k in pl.rarity) if (!(typeof pl.rarity[k] === "number" && pl.rarity[k] > 0 && pl.rarity[k] <= 1)) v.push(`B3: placement.rarity.${k} muss in (0,1] liegen`);
+        if (pl.scale)
+            for (const k in pl.scale)
+                if (!(typeof pl.scale[k] === "number" && pl.scale[k] > 0))
+                    v.push(`B3: placement.scale.${k} muss Zahl > 0 sein`);
+        if (pl.rarity)
+            for (const k in pl.rarity)
+                if (!(typeof pl.rarity[k] === "number" && pl.rarity[k] > 0 && pl.rarity[k] <= 1))
+                    v.push(`B3: placement.rarity.${k} muss in (0,1] liegen`);
     }
     if (m.params) {
         if (!Array.isArray(m.params)) v.push("B4: PARAMS ist kein Array");
         else
             for (const p of m.params) {
-                if (!p || typeof p.id !== "string" || typeof p.lab !== "string") v.push("B4: PARAMS-Eintrag ohne id/lab");
-                else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max)) v.push(`B4: PARAMS "${p.id}" min/max ungültig`);
+                if (!p || typeof p.id !== "string" || typeof p.lab !== "string")
+                    v.push("B4: PARAMS-Eintrag ohne id/lab");
+                else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max))
+                    v.push(`B4: PARAMS "${p.id}" min/max ungültig`);
             }
     }
     if (m.lehren) {
@@ -120,7 +153,8 @@ function validateManifest(m) {
         else
             for (const l of m.lehren) {
                 if (!l || typeof l.id !== "string") v.push("B5: LEHREN-Eintrag ohne id");
-                else if (!(Array.isArray(l.pass) && l.pass.length === 2 && l.pass[0] < l.pass[1])) v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
+                else if (!(Array.isArray(l.pass) && l.pass.length === 2 && l.pass[0] < l.pass[1]))
+                    v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
     }
     return v;
@@ -135,7 +169,18 @@ function validateManifest(m) {
     check("Vertrag existiert (docs/studio-vertrag.md)", doc.length > 0);
     check(
         "Vertrag trägt die sechs Blöcke B1–B6 + die Empfänger-Gesetze",
-        ["B1 — REZEPTE", "B2 — BUILD", "B3 — PLACEMENT", "B4 — PARAMS", "B5 — LEHREN", "B6 — VERHALTEN", "must-ignore", "fail-closed", "Ü1 — LICHT-INTENSITÄTEN × π", "Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR"].every((s) => doc.includes(s))
+        [
+            "B1 — REZEPTE",
+            "B2 — BUILD",
+            "B3 — PLACEMENT",
+            "B4 — PARAMS",
+            "B5 — LEHREN",
+            "B6 — VERHALTEN",
+            "must-ignore",
+            "fail-closed",
+            "Ü1 — LICHT-INTENSITÄTEN × π",
+            "Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR",
+        ].every((s) => doc.includes(s))
     );
 
     // §3/§4 — jeder registrierte Kern erfüllt den Vertrag.
@@ -154,12 +199,17 @@ function validateManifest(m) {
         const n = m.presets ? Object.keys(m.presets).length : 0;
         const kinds = m.presets ? [...new Set(Object.values(m.presets).map((r) => r && r.kind))] : [];
         const unknown = kinds.filter((k) => !KNOWN_KINDS.includes(k));
-        console.log(`      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`);
+        console.log(
+            `      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`
+        );
         check(`${entry.file}: B1+B2 MUSS erfüllt (Rezepte + build)`, n >= 1 && typeof m.build === "function");
     }
 
     // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
-    check("Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)", /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")));
+    check(
+        "Ü1: AnazhRealm.LEGACY_LICHT = Math.PI existiert (r155-Migrations-Regel)",
+        /LEGACY_LICHT\s*=\s*Math\.PI/.test(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))
+    );
 
     // §4 G4.1 — must-ignore am EINEN Auto-Register-Chokepoint: unbekannte
     // kinds werden ÜBERSPRUNGEN (continue-Filter), nie geworfen. Kommentare
@@ -201,6 +251,8 @@ function validateManifest(m) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, must-ignore ist am Chokepoint verankert, und der Selbst-Test beweist die Linse feuert.");
+    console.log(
+        "\n✅ GRÜN — der Studio-Vertrag steht als Struktur: jeder registrierte Kern erfüllt die MUSS-Blöcke, die SOLL-Blöcke validieren wo vorhanden, must-ignore ist am Chokepoint verankert, und der Selbst-Test beweist die Linse feuert."
+    );
     process.exit(0);
 })();

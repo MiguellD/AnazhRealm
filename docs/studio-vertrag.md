@@ -207,3 +207,47 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 in der phytogenesis-Shell statt als B4/B5-Datenblöcke — sie wandern bei der
 nächsten Pflanzen-Welle in den Kern; die 5 Basis-Arten-Nischenformeln sind
 noch Code statt Daten (V18.419-Restliste).
+
+---
+
+## §7 v1.1 — Die Namensraum-Regel für Zweit-Kerne (NORMATIV, Entscheid E-A, 09.07.2026)
+
+Die wörtliche v1-Form (§2 G2.1: „Top-Level-Globals") ist an foundry-core.js
+EINGEFROREN und trägt genau EINEN Kern pro Laufzeit — jeder weitere Kern im
+selben Worker/Portal kollidierte an den const-Symbolen (`STUDIO_VERTRAG` ·
+`PORTAL_RENDER_CONFIG` · `PRESETS`, foundry-core.js:94/96/2248). v1.1 normt
+die Adressierung für alle kommenden Domänen, OHNE einen Block zu ändern:
+
+- **N7.1 — Der ERSTE Kern einer Laufzeit bleibt Top-Level** (foundry-core,
+  byte-heilig; ein Merge/Refactor dort nur unter Byte-Beweis — nie für einen
+  Zweit-Kern).
+- **N7.2 — Jeder WEITERE Kern ist eine namespaced IIFE:**
+  `(function(root){ root.__<domäne>Core = { … } })(typeof self!=="undefined"?self:globalThis)`
+  — erster Bau: `vehicle-core.js` → `__vehicleCore`. Die Manifest-Blöcke leben
+  UNTER dem Namensraum, **namens- und formgleich** zu §3 (`__vehicleCore.PRESETS`,
+  `.buildInstance`, `.PORTAL_RENDER_CONFIG`, `.PARAMS`, `.LEHREN`,
+  `.STUDIO_VERTRAG`). Kein Block ändert seine Gestalt — nur seine Adresse.
+- **N7.3 — Der Validator mappt pro Kern:** der CORES-Eintrag trägt `ns`
+  (`diag-studio-vertrag.cjs`), die Prüfungen selbst sind identisch. Ein
+  Namensraum-Kern ohne seinen Namensraum wird rot (B1/B2/G4.3 lesen null).
+- **N7.4 — Die Versions-Konstante bleibt `STUDIO_VERTRAG = 1`:** v1.1 ist eine
+  Adressierungs-Norm, kein Bruch eines MUSS-Block-INHALTS (G4.3). Ein
+  Empfänger, der nur v1 kennt, liest Zweit-Kerne schlicht nicht (must-ignore
+  G4.1) — nichts bricht.
+
+**N7.5 — Der Empfänger-Merge disjunkter kind-Blöcke (NORM für W7b und alle
+Folge-Domänen):** liest ein Wirt mehrere Kerne, mergt er ihre
+`PORTAL_RENDER_CONFIG.lod.kindStages`-Blöcke am EINEN Ingest-Chokepoint
+(AnazhRealm: `_foundryIngestRenderConfig`) — kind-weise disjunkt (jede Domäne
+deklariert nur ihre eigenen kinds; ein Kern ÜBERSCHREIBT nie den Block eines
+anderen), must-ignore-fest für unbekannte Felder, und **fail-closed: ein kind
+ohne kindStages-Eintrag gilt als `[0]`** (nur die feine Stufe — der Wirt gradet
+konstruktiv L1=L0/L2=Auto-Impostor, statt Stufen zu erfinden, die der Kern
+nicht trägt). Kein zweiter Ingest-Pfad; die Mutation-wins-Probe (G4.4) gilt
+je Kern.
+
+**Stand der Zweit-Kerne:** `vehicle-core.js` (Phase 1, W7a — B1 5 Gattungen
+`kind:"vehicle"` · B2 `buildInstance` + `kindStages:{vehicle:[0]}` + Goldens
+`spec/asset-contract/v3/` (`gate:vehicle-contract`) · B4 PARAMS · B5
+LEHREN+`messen` · CULTURES als Daten; Shell-Verhaltens-Parität beim Split
+hash-bewiesen). `porta-core` (Phase 2) folgt derselben Form (`__portaCore`).
