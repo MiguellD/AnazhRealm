@@ -64319,74 +64319,101 @@ class AnazhRealm {
             // index.html (self.__PHYTO_FOUNDRY_WORKER=true schaltet den Foundry-Modus; init() kehrt vor
             // jedem Renderer zurück). P0 bewies Worker==iframe byte-identisch (720/720). importScripts
             // braucht ABSOLUTE URLs — die Blob-Worker-URL trägt keine Basis, new URL(..., location.href)
-            // respektiert auch einen Unterpfad. Die Studio-lib-Kette in Ladereihenfolge (FoliagePass
-            // extends THREE.Pass braucht EffectComposer davor; phytogenesis liest __phytoCore).
+            // respektiert auch einen Unterpfad.
+            // N2 (Nervensystem-Plan Phase β, „Runtime = Validator"): der Worker-Boot ist MANIFEST-
+            // GETRIEBEN — die Kern-Liste lebt als DATEN in cores.manifest.json (die EINE Quelle:
+            // dieser Boot + der IDB-Stempel + der Vertrags-Validator lesen sie). Der ?v=-Buster ist
+            // Gesetz (jede separat geladene versionierte Datei). Reihenfolge: die fixe Studio-lib-
+            // Kette (FoliagePass extends THREE.Pass braucht EffectComposer davor) → alle Kern-
+            // Skripte in Manifest-Reihenfolge (phyto-core VOR foundry-core: die Shell liest
+            // __phytoCore; vehicle-core als namespaced IIFE kollisionsfrei daneben) → die Shells
+            // ZULETZT (phytogenesis liest die Kern-Globals). Der Worker entsteht dadurch ASYNC im
+            // then — f wird sofort zurückgegeben, f.ready bleibt false bis zum ready-Handshake
+            // (kein Konsument griff je synchron auf f.worker zu). FAIL-CLOSED: jeder Fetch-/Parse-
+            // Fehler lässt f.ready false → der Alt-Pfad trägt (wie ein Worker-Boot-Fehler heute).
             const v = "?v=" + (AnazhRealm.VERSION || "");
-            const rel = [
-                "worlds/terrain/lib/three-r128.min.js",
-                "worlds/terrain/lib/OrbitControls.js",
-                "worlds/terrain/lib/PointerLockControls.js",
-                "worlds/terrain/lib/BufferGeometryUtils.js",
-                "worlds/terrain/lib/CopyShader.js",
-                "worlds/terrain/lib/LuminosityHighPassShader.js",
-                "worlds/terrain/lib/FXAAShader.js",
-                "worlds/terrain/lib/EffectComposer.js",
-                "worlds/terrain/lib/RenderPass.js",
-                "worlds/terrain/lib/MaskPass.js",
-                "worlds/terrain/lib/ShaderPass.js",
-                "worlds/terrain/lib/UnrealBloomPass.js",
-                "phyto-core.js",
-                "foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
-                "vehicle-core.js", // W7b (Vertrag v1.1 N7.2): der Zweit-Kern als namespaced IIFE (__vehicleCore) — kollisionsfrei neben foundry-core; die Bruecke liest ihn (Rezepte + kindStages + build-asset-Dispatch)
-                "worlds/terrain/phytogenesis.js",
-            ];
-            const base = typeof window !== "undefined" && window.location ? window.location.href : "";
-            const abs = rel.map((p) => new URL(p + v, base).href);
-            const boot =
-                "self.__PHYTO_FOUNDRY_WORKER=true;importScripts(" +
-                abs.map((u) => JSON.stringify(u)).join(",") +
-                ");init();";
-            const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
-            f.worker = worker;
-            worker.onerror = () => {
-                /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
-            };
-            worker.onmessage = (ev) => {
-                const m = ev.data;
-                if (!m || typeof m !== "object") return;
-                if (m.type === "ready" && m.world === "terrain") {
-                    f.ready = true;
-                    // ZUERST das Rezeptbuch + Welt-/Render-Daten durch den Worker ziehen, DANN die Assets
-                    // vorwaermen (derselbe Handshake wie das iframe, nur self.postMessage statt "*").
-                    try {
-                        worker.postMessage({ type: "get-recipes", reqId: "recipes" });
-                        // DIE BREITE TAILLE + DER WAHRNEHMUNGS-KANAL: Boden-/Fels-Palette + Blatt-Grundfarbe
-                        // sowie Sichtweite/LOD/Fades/Dichte/Understory durch den Worker ziehen — AnazhRealm
-                        // adoptiert sie 1:1 (der Schoepfer editiert das Studio, die Welt folgt).
-                        worker.postMessage({ type: "get-world-params", reqId: "wparams" });
-                        worker.postMessage({ type: "get-render-config", reqId: "rcfg" });
-                    } catch (_e) {}
-                    this._foundryPrefetchLibrary();
-                } else if (m.type === "recipes") {
-                    // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
-                    this._foundryIngestRecipes(m.book);
-                } else if (m.type === "world-params") {
-                    // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-Farbquellen.
-                    this._foundryIngestWorldParams(m.params);
-                } else if (m.type === "render-config") {
-                    // Der Wahrnehmungs-Config ist da: Sichtweite/LOD/Fades/Dichte/Understory adoptiert.
-                    this._foundryIngestRenderConfig(m.config);
-                } else if (m.type === "asset") {
-                    const p = f.pending.get(m.reqId);
-                    if (p) {
-                        f.pending.delete(m.reqId);
-                        p(m.meshes || []);
+            fetch("cores.manifest.json" + v)
+                .then((res) => res.json())
+                .then((manifest) => {
+                    if (!Array.isArray(manifest) || !manifest.length) return; // fail-closed: kein Kern-Satz, kein Worker
+                    const rel = [
+                        "worlds/terrain/lib/three-r128.min.js",
+                        "worlds/terrain/lib/OrbitControls.js",
+                        "worlds/terrain/lib/PointerLockControls.js",
+                        "worlds/terrain/lib/BufferGeometryUtils.js",
+                        "worlds/terrain/lib/CopyShader.js",
+                        "worlds/terrain/lib/LuminosityHighPassShader.js",
+                        "worlds/terrain/lib/FXAAShader.js",
+                        "worlds/terrain/lib/EffectComposer.js",
+                        "worlds/terrain/lib/RenderPass.js",
+                        "worlds/terrain/lib/MaskPass.js",
+                        "worlds/terrain/lib/ShaderPass.js",
+                        "worlds/terrain/lib/UnrealBloomPass.js",
+                    ];
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.scripts)) continue;
+                        for (const s of core.scripts) if (typeof s === "string" && s) rel.push(s);
                     }
-                }
-                // impostor (P5): der Worker liefert die LOD1-GEOMETRIE; der 8-Winkel-Atlas backt daraus
-                // auf dem EINEN Haupt-Renderer (RTT, `_foundryEnsureImpostorRecord` → `_bakeImpostorAtlasRTT`).
-                // Kein Bake-iframe mehr.
-            };
+                    for (const core of manifest) {
+                        if (core && typeof core.shell === "string" && core.shell) rel.push(core.shell);
+                    }
+                    const base = typeof window !== "undefined" && window.location ? window.location.href : "";
+                    const abs = rel.map((p) => new URL(p + v, base).href);
+                    // self.__anazhCores reist VOR den importScripts in den Worker — die Brücke liest
+                    // daraus die ns-Kerne GENERISCH (kein Kern-spezifisches ns-Literal, M8). Das
+                    // Manifest ist reines JSON → JSON.stringify ist ein sicheres JS-Literal (kein
+                    // Template-Interpolations-Risiko).
+                    const boot =
+                        "self.__PHYTO_FOUNDRY_WORKER=true;self.__anazhCores=" +
+                        JSON.stringify(manifest) +
+                        ";importScripts(" +
+                        abs.map((u) => JSON.stringify(u)).join(",") +
+                        ");init();";
+                    const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
+                    f.worker = worker;
+                    worker.onerror = () => {
+                        /* Boot-/Laufzeit-Fehler des Workers: f.ready bleibt false -> alles fällt auf den Alt-Pfad */
+                    };
+                    worker.onmessage = (ev) => {
+                        const m = ev.data;
+                        if (!m || typeof m !== "object") return;
+                        if (m.type === "ready" && m.world === "terrain") {
+                            f.ready = true;
+                            // ZUERST das Rezeptbuch + Welt-/Render-Daten durch den Worker ziehen, DANN die Assets
+                            // vorwaermen (derselbe Handshake wie das iframe, nur self.postMessage statt "*").
+                            try {
+                                worker.postMessage({ type: "get-recipes", reqId: "recipes" });
+                                // DIE BREITE TAILLE + DER WAHRNEHMUNGS-KANAL: Boden-/Fels-Palette + Blatt-Grundfarbe
+                                // sowie Sichtweite/LOD/Fades/Dichte/Understory durch den Worker ziehen — AnazhRealm
+                                // adoptiert sie 1:1 (der Schoepfer editiert das Studio, die Welt folgt).
+                                worker.postMessage({ type: "get-world-params", reqId: "wparams" });
+                                worker.postMessage({ type: "get-render-config", reqId: "rcfg" });
+                            } catch (_e) {}
+                            this._foundryPrefetchLibrary();
+                        } else if (m.type === "recipes") {
+                            // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
+                            this._foundryIngestRecipes(m.book);
+                        } else if (m.type === "world-params") {
+                            // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-Farbquellen.
+                            this._foundryIngestWorldParams(m.params);
+                        } else if (m.type === "render-config") {
+                            // Der Wahrnehmungs-Config ist da: Sichtweite/LOD/Fades/Dichte/Understory adoptiert.
+                            this._foundryIngestRenderConfig(m.config);
+                        } else if (m.type === "asset") {
+                            const p = f.pending.get(m.reqId);
+                            if (p) {
+                                f.pending.delete(m.reqId);
+                                p(m.meshes || []);
+                            }
+                        }
+                        // impostor (P5): der Worker liefert die LOD1-GEOMETRIE; der 8-Winkel-Atlas backt daraus
+                        // auf dem EINEN Haupt-Renderer (RTT, `_foundryEnsureImpostorRecord` → `_bakeImpostorAtlasRTT`).
+                        // Kein Bake-iframe mehr.
+                    };
+                })
+                .catch(() => {
+                    /* FAIL-CLOSED: Manifest nicht ladbar/parsebar → kein Worker, f.ready bleibt false → Alt-Pfad */
+                });
         } catch (_e) {
             this._foundry = f; // f.ready bleibt false -> alles faellt auf den Alt-Pfad
         }
@@ -64582,13 +64609,27 @@ class AnazhRealm {
             return f._idbReady;
         }
         const V = AnazhRealm.VERSION;
-        f._idbReady = Promise.all([
-            fetch("foundry-core.js?v=" + V).then((r) => r.text()),
-            fetch("phyto-core.js?v=" + V).then((r) => r.text()),
-            // W7b: der Zweit-Kern ist GENERATOR-QUELLE (Fahrzeug-Assets) -> PFLICHT im Stempel,
-            // sonst ueberleben stale Fahrzeug-Bakes einen vehicle-core-Edit (die Drift-Klasse).
-            fetch("vehicle-core.js?v=" + V).then((r) => r.text()),
-        ])
+        // N2 (Nervensystem-Plan): der Stempel ist MANIFEST-GETRIEBEN — er hasht den MANIFEST-TEXT
+        // selbst (ein Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem Manifest
+        // (jeder Kern ist GENERATOR-QUELLE: ein Edit an phyto-/foundry-/vehicle-core bustet, sonst
+        // ueberleben stale Bakes einen Kern-Edit — die Drift-Klasse). Dieselbe Fetch-Promise-Kette
+        // wie zuvor, nur aus den Manifest-DATEN abgeleitet statt aus drei harten Zeilen.
+        f._idbReady = fetch("cores.manifest.json?v=" + V)
+            .then((r) => r.text())
+            .then((manifestText) => {
+                const manifest = JSON.parse(manifestText);
+                const scripts = [];
+                if (Array.isArray(manifest)) {
+                    for (const core of manifest) {
+                        if (!core || !Array.isArray(core.scripts)) continue;
+                        for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
+                    }
+                }
+                return Promise.all([
+                    Promise.resolve(manifestText),
+                    ...scripts.map((s) => fetch(s + "?v=" + V).then((r) => r.text())),
+                ]);
+            })
             .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
             .then((buf) => {
                 const stamp = Array.from(new Uint8Array(buf))

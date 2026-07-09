@@ -14,7 +14,7 @@
         "lint:fix": "eslint --fix anazhRealm.js bake-core.js bake-worker.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write anazhRealm.js bake-core.js bake-worker.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "prettier --check anazhRealm.js bake-core.js bake-worker.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
-        "check": "node --check anazhRealm.js && node --check bake-core.js && node --check bake-worker.js && node --check phyto-core.js && node --check voxel-worker.js && node --check foundry-core.js && node --check vehicle-core.js && node --check save-server.js && node --check signaling-server.js && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs && node scripts/diag-phyto-core-parity.cjs && node scripts/diag-pipeline-constitution.cjs && node scripts/diag-studio-vertrag.cjs",
+        "check": "node --check anazhRealm.js && node --check bake-core.js && node --check bake-worker.js && node --check phyto-core.js && node --check voxel-worker.js && node --check foundry-core.js && node --check vehicle-core.js && node --check save-server.js && node --check signaling-server.js && node -e \"JSON.parse(require('fs').readFileSync('cores.manifest.json','utf8'))\" && node scripts/diag-atlas.cjs --check && node scripts/diag-source-probes.cjs && node scripts/diag-phyto-tree.cjs && node scripts/diag-phyto-core-parity.cjs && node scripts/diag-pipeline-constitution.cjs && node scripts/diag-studio-vertrag.cjs",
         "atlas": "node scripts/diag-atlas.cjs",
         "playtest": "node scripts/playtest.cjs",
         "playtest:fast": "node scripts/playtest-fast.cjs",

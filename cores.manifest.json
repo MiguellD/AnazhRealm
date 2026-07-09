@@ -1,0 +1,10 @@
+[
+    {
+        "id": "phyto",
+        "scripts": ["phyto-core.js", "foundry-core.js"],
+        "vertrag": "foundry-core.js",
+        "ns": null,
+        "shell": "worlds/terrain/phytogenesis.js"
+    },
+    { "id": "vehicle", "scripts": ["vehicle-core.js"], "vertrag": "vehicle-core.js", "ns": "__vehicleCore" }
+]

@@ -4650,6 +4650,26 @@ init();
             __post({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
         }
     }
+    // N2 (Nervensystem-Plan, „Runtime = Validator") — DIE GENERISCHE ZWEIT-KERN-LISTE: der
+    // Foundry-Worker injiziert self.__anazhCores (= cores.manifest.json) VOR den importScripts;
+    // die Bruecke liest daraus alle Kerne mit eigenem Namensraum (ns != null; das ns-Global via
+    // self[ns]) — kein Kern-spezifisches ns-Literal mehr (M8: Tabelle vor if). Ein dritter Kern
+    // ist eine Manifest-Zeile, keine Bruecken-Zeile. Fehlt self.__anazhCores (die Portal-FENSTER-
+    // Instanz laedt keine Kerne), ist die Liste leer — byte-gleich zum Verhalten ohne Zweit-Kern.
+    function __zweitKerne() {
+        const out = [];
+        try {
+            const cores = typeof self !== "undefined" && Array.isArray(self.__anazhCores) ? self.__anazhCores : [];
+            for (let i = 0; i < cores.length; i++) {
+                const c = cores[i];
+                if (!c || typeof c.ns !== "string" || !c.ns) continue;
+                const kern = self[c.ns];
+                if (kern && typeof kern === "object")
+                    out.push({ id: typeof c.id === "string" && c.id ? c.id : c.ns, kern });
+            }
+        } catch (_e) {}
+        return out;
+    }
     function __replyRenderConfig(msg) {
         // Reine Daten (JSON-klonbar) — die EINE Wahrnehmungs-Quelle (PORTAL_RENDER_CONFIG). Tiefe Kopie,
         // damit der Empfaenger nichts am Studio-Objekt mutiert.
@@ -4698,17 +4718,21 @@ init();
                   }
                 : null,
         };
-        // W7b (Studio-Vertrag v1.1 N7.5) — die kindStages-Bloecke der ZWEIT-KERNE reisen SEPARAT
-        // (je Kern ein Block unter cfg.lod.zusatzKindStages): der EMPFAENGER mergt am EINEN
-        // Ingest-Chokepoint (_foundryIngestRenderConfig), ein Kern ueberschreibt nie den Block
-        // eines anderen. must-ignore-fest: ein v1-only-Leser ignoriert das Zusatz-Feld schlicht.
+        // W7b/N2 (Studio-Vertrag v1.1 N7.5 + Nervensystem-Plan) — die kindStages-Bloecke der
+        // ZWEIT-KERNE reisen SEPARAT (je Kern ein Block unter cfg.lod.zusatzKindStages[<id>],
+        // GENERISCH aus der Manifest-Schleife): der EMPFAENGER mergt am EINEN Ingest-Chokepoint
+        // (_foundryIngestRenderConfig), ein Kern ueberschreibt nie den Block eines anderen.
+        // must-ignore-fest: ein v1-only-Leser ignoriert das Zusatz-Feld schlicht.
         try {
-            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
-            const vks =
-                VC && VC.PORTAL_RENDER_CONFIG && VC.PORTAL_RENDER_CONFIG.lod
-                    ? VC.PORTAL_RENDER_CONFIG.lod.kindStages
-                    : null;
-            if (vks && cfg.lod) cfg.lod.zusatzKindStages = { "vehicle-core": JSON.parse(JSON.stringify(vks)) };
+            for (const zk of __zweitKerne()) {
+                const ks =
+                    zk.kern.PORTAL_RENDER_CONFIG && zk.kern.PORTAL_RENDER_CONFIG.lod
+                        ? zk.kern.PORTAL_RENDER_CONFIG.lod.kindStages
+                        : null;
+                if (!ks || !cfg.lod) continue;
+                if (!cfg.lod.zusatzKindStages) cfg.lod.zusatzKindStages = {};
+                cfg.lod.zusatzKindStages[zk.id] = JSON.parse(JSON.stringify(ks));
+            }
         } catch (_e) {}
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
             __post({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
@@ -4725,21 +4749,22 @@ init();
                 book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
             }
         } catch (_e) {}
-        // W7b (Studio-Vertrag v1.1 N7.2) — die ZWEIT-KERN-REZEPTE reisen im SELBEN Buch: laeuft
-        // im Foundry-Worker ein weiterer Kern (vehicle-core -> __vehicleCore via importScripts),
-        // traegt das Buch auch seine kind:"vehicle"-Presets. Disjunkt first-wins: ein Zweit-Kern
-        // ueberschreibt NIE einen Eintrag des Erst-Kerns (N7.5-Geist). Ohne Zweit-Kern (Portal-
-        // Fenster laedt vehicle-core nicht): No-op, das Buch bleibt byte-gleich.
+        // W7b/N2 (Studio-Vertrag v1.1 N7.2 + Nervensystem-Plan) — die ZWEIT-KERN-REZEPTE reisen im
+        // SELBEN Buch: jeder Manifest-Kern mit eigenem Namensraum traegt seine Presets bei (die
+        // GENERISCHE Schleife, kein Kern-spezifisches if). Disjunkt first-wins: ein spaeterer Kern
+        // ueberschreibt NIE einen Eintrag eines frueheren (N7.5-Geist); `lab` reist mit. Ohne
+        // Kerne (Portal-Fenster laedt kein Manifest): No-op, das Buch bleibt byte-gleich.
         try {
-            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
-            if (VC && VC.PRESETS) {
-                for (const id in VC.PRESETS) {
-                    if (!Object.prototype.hasOwnProperty.call(VC.PRESETS, id) || book[id]) continue;
-                    const p = VC.PRESETS[id];
+            for (const zk of __zweitKerne()) {
+                const P = zk.kern.PRESETS;
+                if (!P) continue;
+                for (const id in P) {
+                    if (!Object.prototype.hasOwnProperty.call(P, id) || book[id]) continue;
+                    const p = P[id];
                     if (!p || typeof p !== "object") continue;
                     book[id] = {
                         kind: p.kind,
-                        panel: p.panel || "vehicle",
+                        panel: p.panel || zk.id,
                         lab: typeof p.lab === "string" ? p.lab : undefined,
                         s: Object.assign({}, p.s),
                         fx: Object.assign({}, p.fx),
@@ -4836,20 +4861,28 @@ init();
             } catch (_se) {}
         }
         try {
-            // W7b (Studio-Vertrag v1.1) — der ZWEIT-KERN-DISPATCH: ein Preset, das NICHT im
-            // Pflanzen-Buch steht aber im vehicle-core (__vehicleCore.PRESETS), baut durch
-            // DESSEN buildInstance (dieselbe Vertrags-Signatur; kindStages.vehicle=[0] — der
-            // Kern klemmt intern auf die feine Stufe). Extraktion/Dispose identisch: die
-            // Meshes reisen engine-neutral, mat-Regler + mat.color fliessen mit.
-            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
-            const isZweitKern =
-                VC &&
-                VC.PRESETS &&
-                typeof msg.presetId === "string" &&
-                !Object.prototype.hasOwnProperty.call(PRESETS, msg.presetId) &&
-                Object.prototype.hasOwnProperty.call(VC.PRESETS, msg.presetId);
+            // W7b/N2 (Studio-Vertrag v1.1 + Nervensystem-Plan) — der ZWEIT-KERN-DISPATCH ist
+            // MANIFEST-GETRIEBEN: ein Preset, das NICHT im Pflanzen-Buch steht (der Primaer-
+            // PRESETS-Check fuehrt wie bisher), baut durch den ERSTEN Manifest-Kern, dessen
+            // PRESETS es traegt (dieselbe Vertrags-Signatur; der Kern klemmt intern auf seine
+            // feine Stufe). Extraktion/Dispose identisch: die Meshes reisen engine-neutral,
+            // mat-Regler fliessen mit; der zweitKern-Flag steuert die mat.color-Serialisierung.
+            let zweit = null;
+            if (typeof msg.presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, msg.presetId)) {
+                for (const zk of __zweitKerne()) {
+                    if (
+                        zk.kern.PRESETS &&
+                        Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, msg.presetId) &&
+                        typeof zk.kern.buildInstance === "function"
+                    ) {
+                        zweit = zk;
+                        break;
+                    }
+                }
+            }
+            const isZweitKern = !!zweit;
             const g = isZweitKern
-                ? VC.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
+                ? zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
                 : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
             g.traverse((o) => {

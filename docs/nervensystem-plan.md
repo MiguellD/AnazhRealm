@@ -316,9 +316,9 @@ vehicle: { prefix: "fahrzeug_", donor: "fahrzeug_wagen", grown: false, placeExtr
 
 **Akzeptanz N2:**
 
-- [ ] `gate:studio-vertrag` + nervensystem + nervensystem-vehicle + asset-contract grün
-- [ ] Neuer Core **kann** als JSON-Zeile eingetragen werden ohne `if VC`
-- [ ] IDB bustet bei vehicle-core-Edit weiterhin
+- [x] `gate:studio-vertrag` + nervensystem + nervensystem-vehicle + asset-contract grün (N2, 09.07.)
+- [x] Neuer Core **kann** als JSON-Zeile eingetragen werden ohne `if VC` (Dritter-Kern-Beweis 12/12: synthetischer tor-Kern, 0 Stamm-Diff)
+- [x] IDB bustet bei vehicle-core-Edit weiterhin (Stempel = Manifest-Text + alle manifest-scripts)
 
 ### DONE Phase β
 

@@ -25,15 +25,20 @@ const path = require("path");
 
 const root = path.resolve(__dirname, "..");
 
-// Die registrierten Studio-Kerne (wächst pro Domäne — §5 Schritt 5).
-// `ns` = Namensraum-Kern (Vertrag v1.1 §7, Entscheid E-A): der ZWEIT-Kern einer
-// Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt
-// (z. B. __vehicleCore.PRESETS) statt top-level — löst die const-Kollision mit
-// foundry-core (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
-const CORES = [
-    { file: "foundry-core.js", deps: ["phyto-core.js"] },
-    { file: "vehicle-core.js", ns: "__vehicleCore" },
-];
+// Die registrierten Studio-Kerne — N2 (Nervensystem-Plan, „Runtime = Validator"): die Liste
+// kommt aus cores.manifest.json, der EINEN Kern-Quelle (Worker-Boot `_ensureAssetFoundry` +
+// IDB-Stempel `_foundryIdbInit` + dieser Validator lesen sie). Je Eintrag: file = `vertrag`
+// (das Skript, das die Manifest-Blöcke trägt), deps = die übrigen scripts davor (z. B.
+// phyto-core vor foundry-core), ns = Namensraum-Kern (Vertrag v1.1 §7, Entscheid E-A): der
+// ZWEIT-Kern einer Laufzeit trägt seine Manifest-Blöcke namensgleich unter EINEM Objekt
+// statt top-level — löst die const-Kollision mit foundry-core
+// (STUDIO_VERTRAG/PORTAL_RENDER_CONFIG/PRESETS) ohne dessen Edit.
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8"));
+const CORES = MANIFEST.map((c) => ({
+    file: c.vertrag,
+    deps: (Array.isArray(c.scripts) ? c.scripts : []).filter((s) => s !== c.vertrag),
+    ns: c.ns || undefined,
+}));
 
 const REZEPT_ID = /^[a-z0-9_-]+$/;
 // Registrierte + reservierte kinds (§3 B1). Ein UNBEKANNTER kind ist KEIN
@@ -181,6 +186,23 @@ function validateManifest(m) {
             "Ü1 — LICHT-INTENSITÄTEN × π",
             "Ü2 — AUTOREN-FARBEN RAW-ALS-LINEAR",
         ].every((s) => doc.includes(s))
+    );
+
+    // N2 — das Kern-Manifest selbst ist gültig (die eine Quelle, aus der CORES abgeleitet ist).
+    check(
+        "cores.manifest.json ist ein gültiger Kern-Satz (id + scripts + vertrag je Eintrag)",
+        Array.isArray(MANIFEST) &&
+            MANIFEST.length >= 1 &&
+            MANIFEST.every(
+                (c) =>
+                    c &&
+                    typeof c.id === "string" &&
+                    Array.isArray(c.scripts) &&
+                    c.scripts.length >= 1 &&
+                    typeof c.vertrag === "string" &&
+                    c.scripts.includes(c.vertrag)
+            ),
+        `${MANIFEST.length} Kern(e): ${MANIFEST.map((c) => c && c.id).join(", ")}`
     );
 
     // §3/§4 — jeder registrierte Kern erfüllt den Vertrag.

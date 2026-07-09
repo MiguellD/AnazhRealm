@@ -2,8 +2,10 @@
 // Die Schwester zu diag-nervensystem.cjs fuer die ERSTE Nicht-Pflanzen-Domaene: beweist, dass
 // ein kind:"vehicle"-Preset im Zweit-Kern (vehicle-core.js, __vehicleCore — v1.1 N7.2) OHNE
 // eine Zeile AnazhRealm-Edit durch die EINE Pipeline fliesst:
-//   A (statisch, Node): der Worker importiert vehicle-core; der IDB-Stempel hasht ihn (die
-//     Drift-Wand); die Bruecke merged Zweit-Kern-Rezepte + exportiert zusatzKindStages; der
+//   A (statisch, Node — N2-migriert, V9.56-i): der Worker-Boot + der IDB-Stempel sind MANIFEST-
+//     getrieben (cores.manifest.json traegt den Kern-Satz; die Drift-Wand hasht Manifest-Text +
+//     alle Kern-Skripte); die Bruecke merged Kern-Rezepte + exportiert zusatzKindStages je Kern
+//     GENERISCH (Schleife ueber self.__anazhCores, KEIN Kern-spezifisches ns-Literal); der
 //     N7.5-Merge lebt NUR in _foundryIngestRenderConfig (Chokepoint-Gesetz); der Clamp traegt
 //     das Fail-Closed-[0]. --selftest injiziert 2 Verletzungen und beweist: die Linse feuert.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Fahrzeug-Presets (der
@@ -86,17 +88,28 @@ function countOcc(src, needle) {
 }
 
 // ===== TEIL A: die statischen Gesetze =====
-function staticLaws(anazhSrc, phytoSrc, vcSrc) {
+function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     const anazhNC = stripComments(anazhSrc);
     const phytoNC = stripComments(phytoSrc);
     const out = [];
+    // A1 (N2-migriert): die rel-Liste ist keine Hardcode-Zeile mehr — das MANIFEST traegt die
+    // Kerne (vehicle-core + foundry-core als scripts-Eintraege), und der Worker-Boot in
+    // _ensureAssetFoundry liest cores.manifest.json (?v=-Buster) + baut rel aus core.scripts.
     out.push([
-        "A1: der Foundry-Worker importiert vehicle-core.js (rel-Liste)",
-        /"vehicle-core\.js",/.test(anazhSrc) && /"foundry-core\.js",/.test(anazhSrc),
+        "A1: der Worker-Boot ist manifest-getrieben (Manifest traegt vehicle-core, _ensureAssetFoundry liest cores.manifest.json)",
+        /"vehicle-core\.js"/.test(manifestSrc) &&
+            /"foundry-core\.js"/.test(manifestSrc) &&
+            /fetch\("cores\.manifest\.json" \+ v\)/.test(anazhNC) &&
+            /core\.scripts/.test(anazhNC),
     ]);
+    // A2 (N2-migriert): der IDB-Stempel hasht MANIFEST-getrieben — den Manifest-TEXT selbst
+    // (Manifest-Edit = neuer Kern-Satz = Bust) + ALLE Kern-Skripte aus dem Manifest (deckt
+    // vehicle-core weiter, ohne harte Zeile — die Drift-Wand bleibt).
     out.push([
-        "A2: der IDB-Stempel hasht vehicle-core (die Drift-Wand)",
-        /fetch\("vehicle-core\.js\?v=" \+ V\)/.test(anazhNC),
+        "A2: der IDB-Stempel hasht manifest-getrieben (Manifest-Text + alle Kern-Skripte)",
+        /fetch\("cores\.manifest\.json\?v=" \+ V\)/.test(anazhNC) &&
+            /manifestText/.test(anazhNC) &&
+            /fetch\(s \+ "\?v=" \+ V\)/.test(anazhNC),
     ]);
     // A3 — Chokepoint-Gesetz: der N7.5-Merge (zusatzKindStages-Leser) lebt NUR in
     // _foundryIngestRenderConfig; ein zweiter Ingest-Pfad wird rot.
@@ -112,17 +125,23 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc) {
         "A4: der kindStages-Clamp traegt das Fail-Closed-[0] (bekanntes Rezept ohne Eintrag)",
         /_stages = Number\.isFinite\(_kl\) \? \[_kl\] : _rec \? \[0\] : null;/.test(anazhNC),
     ]);
+    // A5–A7 (N2-migriert): die drei Bruecken-Sites sind EINE generische Schleife ueber
+    // self.__anazhCores (ns-Kerne aus dem Manifest) — KEIN self.__vehicleCore-Literal mehr
+    // in der Bruecke (Kommentare gestrippt; ein Kern-spezifischer Zugriff wuerde hier rot).
     out.push([
-        "A5: die Bruecke merged Zweit-Kern-Rezepte (first-wins, __vehicleCore.PRESETS)",
-        /self\.__vehicleCore/.test(phytoNC) && /VC\.PRESETS/.test(phytoNC),
+        "A5: die Bruecke merged Kern-Rezepte generisch (Schleife ueber __anazhCores, kein ns-Literal)",
+        /self\.__anazhCores/.test(phytoNC) &&
+            /__zweitKerne\(\)/.test(phytoNC) &&
+            /zk\.kern\.PRESETS/.test(phytoNC) &&
+            !/self\.__vehicleCore/.test(phytoNC),
     ]);
     out.push([
-        "A6: die Bruecke exportiert zusatzKindStages (je Kern ein Block)",
-        /zusatzKindStages = \{ "vehicle-core":/.test(phytoNC),
+        "A6: die Bruecke exportiert zusatzKindStages je Kern generisch (zusatzKindStages[zk.id])",
+        /zusatzKindStages\[zk\.id\]/.test(phytoNC),
     ]);
     out.push([
-        "A7: build-asset dispatcht Zweit-Kern-Presets an __vehicleCore.buildInstance",
-        /VC\.buildInstance\(msg\.presetId/.test(phytoNC),
+        "A7: build-asset dispatcht an den ERSTEN Kern, dessen PRESETS das Preset traegt",
+        /zweit\.kern\.buildInstance\(msg\.presetId/.test(phytoNC),
     ]);
     out.push([
         "A8: vehicle-core deklariert kindStages.vehicle == [0] (B2-Vertrags-Daten)",
@@ -147,6 +166,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc) {
     const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const phytoSrc = fs.readFileSync(path.join(root, "worlds/terrain/phytogenesis.js"), "utf8");
     const vcSrc = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
+    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
 
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
@@ -155,14 +175,14 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc) {
             "_stages = Number.isFinite(_kl) ? [_kl] : _rec ? [0] : null;",
             "_stages = Number.isFinite(_kl) ? [_kl] : null;"
         );
-        const a4 = staticLaws(broken1, phytoSrc, vcSrc).find((l) => l[0].startsWith("A4"));
+        const a4 = staticLaws(broken1, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A4"));
         check("Selbst-Test 1: Fail-Closed entfernt -> A4 feuert", a4 && a4[1] === false);
         // V2: ein ZWEITER Ingest-Pfad (zusatzKindStages-Leser ausserhalb des Chokepoints) -> A3 rot.
         const broken2 = anazhSrc.replace(
             "_foundryIdbInit(f) {",
             "_foundryIdbInit(f) {\n        const _leak = this.state && this.state.zusatzKindStages;\n        void _leak;"
         );
-        const a3 = staticLaws(broken2, phytoSrc, vcSrc).find((l) => l[0].startsWith("A3"));
+        const a3 = staticLaws(broken2, phytoSrc, vcSrc, manifestSrc).find((l) => l[0].startsWith("A3"));
         check("Selbst-Test 2: zweiter Ingest-Pfad injiziert -> A3 feuert", a3 && a3[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -173,7 +193,7 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc) {
     }
 
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Gesetze (Node) ===");
-    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc)) check(name, ok, detail);
+    for (const [name, ok, detail] of staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc)) check(name, ok, detail);
 
     console.log("\n=== TEIL B-F: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
