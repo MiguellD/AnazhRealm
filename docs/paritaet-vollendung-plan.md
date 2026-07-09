@@ -404,8 +404,14 @@ ohne eine Zeile AnazhRealm-Edit) + Merge-Selbst-Test. **Risiko:** W7a minimal ·
 
 ### W8 — Die Schöpfer-Runde: Abnahme + Goldens einfrieren · 0,5 Tage Vorbereitung + 1 Session
 
-**Vorbedingung:** W1–W7 haben alle Zahlen-Hälften grün geliefert — hier fallen NUR die Urteile, die
-nur das Schöpfer-Auge/die echte GPU fällen kann.
+**Vorbedingung + KORREKTUR 09.07. (Schöpfer: „Wahrnehmungsurteil stimmt nicht — die Physik der
+Richter, der Code die Geschichte; das Studio, der begehbare Wald der Maßstab"):** W8 ist der
+SIGN-OFF eines VOLLENDETEN, selbst-verifizierten Werks (der Fischer, nicht der Bettler) — ALLE
+Urteile fallen vorab durch Messung + meine eigenen settled Shots (die swiftshader-Bilder sind treu);
+die Perf ist studio-relativ + gegen das Profi-Band messbar (`gate:perf-parity`, Baseline
+`docs/analyse/perf-paritaet-baseline-v18432.md`), NIE auf Nutzer-FPS vertagt. Beim Schöpfer bleiben
+genau ZWEI Dinge: das Real-GPU-Golden minten (`look-golden --mint`, dein Auge einmal — die Maschine
+bewacht danach) und der Sign-off des Ergebnisses.
 
 1. **VOR der Session ✅ ERLEDIGT (`docs/analyse/hud-lesenotiz-w8.md`):** eine kurze HUD-Lese-Notiz in docs/ (die W1-dokumentierte Semantik: dc = Σ
    aller Pässe seit dem EINEN reset → erwartet ~900–1600, nicht 436, nicht 38108; das
@@ -419,10 +425,29 @@ nur das Schöpfer-Auge/die echte GPU fällen kann.
    vergiftete Traces, 14252).
 5. Boot-Wall-Clock (kalt + warm) gegen diag-boot-stage; LOOK-Urteile: Dither-Blende im Band ·
    stiller Saug/Ankunfts-Pop · Wiese-bis-Kante/Busch-Teppich/Back-Licht (V18.422-Reste).
-6. Die offenen Entscheide (§3) in EINER Sitzung schließen — jede Antwort wird benannte Folge-Welle
-   oder dokumentierter Bewusst-Entscheid.
+6. Rest-Bestätigungen (§3): NUR noch E-E (glut als bewusste eigene Substanz) + E-F (Inseln/
+   Plattform bleiben Welt-Substanz) — beides steht als Default aus bestehenden Gesetzen, ein Wort
+   genügt. E-A/E-C entschieden · E-B als Messung definiert · E-D durch das stehende Wort aufgelöst
+   (→ W9/W10) · E-G durch die W3-Messung geschlossen.
 
 ---
+
+### W9 — Der Himmel 1:1 (E-D-Folge) · mittel
+
+**Ziel:** der eigene Wolken-Dome übersetzt das Studio-Himmels-Gesetz vollständig — Kriterium 1+3
+SCHLIESSEN den Himmel ein (E-D-Auflösung; die Tag-Nebel-/skyB-Anker stehen seit V18.416/.421).
+Offen ist das WOLKEN-Feld selbst (Deckung/Formen/Dichte gegen das Studio-GLSL, phytogenesis
+602–650) auf dem Dome (anazhRealm 14617–14675, Zenit-Kompensation V18.369 bewahren). **Linse:**
+die diag-parity-Himmel-Zone (Baseline Himmel-Δ 110 → Ziel-Band nach der W5.3/5.4-Kalibrierung);
+Mechanik-Wand: Tag/Nacht-Zyklus + `diag-night-probe` byte-unberührt.
+
+### W10 — Die Wasser-OBERFLÄCHE 1:1 (E-D-Folge) · mittel-groß
+
+**Ziel:** Shader/Spiegelung/Licht der Wasser-Oberfläche = der Studio-Teich/Bach-Look
+(phytogenesis 1078–1191) auf unserem Sheet — **der AUTOMAT bleibt unser** (Flood/CA/Tiefe/Fluss =
+die Mechanik, byte-unberührt: `diag-worker-watersheet` maxDiff 0 ist die Wand). Mit W10 fällt das
+W6-Fern-Wasser-Provisorium zurück auf AN (`atmosphere.farWater`). **Linse:** die
+diag-parity-Wasser-Zone + die bestehenden Wasser-Mechanik-Gates unverändert grün.
 
 ## §3 · Offene Schöpfer-Entscheide
 
@@ -431,13 +456,13 @@ nur das Schöpfer-Auge/die echte GPU fällen kann.
   unter Byte-Beweis / eigener Garage-Worker? (2) kindStages-Erweiterung: Merge disjunkter
   kind-Blöcke am EINEN Ingest, unbekannter kind → [0] fail-closed (Empfehlung) — beides prägt die
   normative Form ALLER kommenden Domänen.
-- **E-B:** Boot-≤3s-DEFINITION: ab Kontrolle oder ab Navigation (4,7-MB-Parse + init + Worldgen
+- **E-B ✅ ALS MESSUNG DEFINIERT 09.07.2026 (der Schöpfer: der Boot ist messbar — was startet nacheinander, wie effizient, wie lange dauern hardware-unabhängige Anteile, was passiert bis SPIELBAR + UI BEDIENBAR, was bedeckt die Linse [Nebel/Overlay/Filter/Shader]. Die Definition ist ein PRÄDIKAT, keine Schöpfer-Frage: t(spielbar) ab Navigation, hardware-unabhängige Anteile per Zeitleiste attribuiert, der Render-Anteil per Studio-Relativ-Benchmark [gate:perf-parity] statt Nutzer-FPS):** ~~Boot-≤3s-DEFINITION: ab Kontrolle oder ab Navigation~~ (4,7-MB-Parse + init + Worldgen
   ~1–1,5 s sind ein harter Kalt-Boden)? Zählt der Warm-Boot (IDB)? Die diag-boot-stage-Zahl nach W4
   entscheidet, wie viel Rest-Härte akzeptiert oder weiter gebaut wird.
 - **E-C (früh stellbar, vor W5-Ende):** „kein LOD-Pop" = kein LOD-WECHSEL-Pop (W5 deckt es) — gilt
   der Materialisierungs-Pop kalter Bäume (`_foundryRewarmColdTrees`) als eigener Fall? Falls ja:
   Zeit-Fade NUR für die Materialisierung als Nachschlag (erst nach dem W8-Boot-Eindruck).
-- **E-D:** SCOPE von Kriterium 1+3 bei Himmel/Wasser: zählen der eigene Wolken-Dome
+- **E-D ✅ AUFGELÖST 09.07.2026 (der Schöpfer: mehrfach über die letzten 100 Versionen gesagt — der Himmel zählt; das Wasser: der AUTOMAT/die Mechanik bleibt AnazhRealm, aber Shader/Oberflächen-Spiegelung/Licht/Himmel = Studio-Look 1:1 übersetzt. Kriterium 1+3 SCHLIESSEN Himmel + Wasser-OBERFLÄCHE ein → benannte Bau-Wellen W9 [Himmel 1:1] + W10 [Wasser-Oberfläche 1:1]; das W6-Fern-Wasser-Provisorium fällt mit W10 zurück auf AN):** ~~SCOPE von Kriterium 1+3 bei Himmel/Wasser: zählen der eigene Wolken-Dome~~
   (14617–14675 vs Studio-GLSL-Himmel phytogenesis.js:602–650) und die Wasser-Oberfläche (das Studio
   HAT Teich/Bach, 1078–1191) zum „ununterscheidbar" (→ eigene Folge-Wellen) — oder sind
   Himmel/Wasser AnazhRealm-Domänen (Boden·Speicher·Spieler)? Hieran hängt auch das
@@ -446,7 +471,7 @@ nur das Schöpfer-Auge/die echte GPU fällen kann.
   nimmt sie aus) oder künftige Vertrags-Domäne?
 - **E-F:** Fliegende Inseln + start_plattform: Welt-SUBSTANZ, die bleibt (Empfehlung — ein
   Render-Regime-Gate auf Worldgen-Inhalt koppelte Welt an Präsentation, die falsche Naht)?
-- **E-G:** Falls W3 die Scatter-Kosten NICHT unter ~8 ms drückt: Freigabe für das Endgame
+- **E-G ✅ DURCH MESSUNG GESCHLOSSEN (W3/V18.430: Kalt-Bake 270→43,5 ms, per-Frame auf SCATTER_SLICE_MS=6 ms gescheibt — die Bedingung trat nie ein, keine neue Spiegel-Fläche):** ~~Falls W3 die Scatter-Kosten NICHT unter ~8 ms drückt:~~ Freigabe für das Endgame
   „Region-Plan im voxel-worker als geteilter Kern" — neue Spiegel-Fläche, nur auf Mess-Beweis.
 
 ## §4 · Benannte Folge-Fäden (nicht Teil dieses Bogens — nie still gestrichen)
