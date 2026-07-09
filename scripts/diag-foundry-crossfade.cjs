@@ -1,5 +1,5 @@
-// diag-foundry-crossfade.cjs — DIE MASKEN-QUELLEN-LINSE (Paritäts-Vollendung W5.3, Teil (a)).
-// Node-pur, OHNE Browser: beweist, dass die EINE geteilte Masken-Quelle
+// diag-foundry-crossfade.cjs — DIE MASKEN-QUELLEN-LINSE (Paritäts-Vollendung W5.3+W5.4).
+// Teil (a) Node-pur, OHNE Browser: beweist, dass die EINE geteilte Masken-Quelle
 // `__phytoCore.lodCrossfadeMask` (phyto-core.js) die Studio-Dither-Blende
 // (foundry-core.js `injectWind`-Fragment, FIX v37 + phytogenesis `_impMat`-fin)
 // EXAKT übersetzt:
@@ -18,14 +18,34 @@
 //       wird die Linse rot.
 //   (4) --selftest: zwei verfälschte phyto-core-Kopien (IGN-Koeffizient · Rampen-Faktor)
 //       via vm → die Äquivalenz-Checks MÜSSEN feuern (die Linse ist nicht vakuös).
+// Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
+// CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
+// thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
+//   IM Band [Schwelle−fade−M, Schwelle+M] hält er Slots in BEIDEN Stufen-Gruppen,
+//   außerhalb in EXAKT einer, NIE 0 — und die SLOT-BILANZ über den ganzen Sweep ist dicht
+//   (Σ liveCount zurück auf die Baseline · je Gruppe next − free.length == liveCount ·
+//   kein slotEntry-Rest). Der Sweep läuft SYNCHRON in einem Block (keine async-Interleaves),
+//   alle drei Stufen sind VOR der Baseline gewärmt (kein Rewarm-Störer).
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const http = require("http");
+const puppeteer = require("puppeteer");
 
 const root = path.resolve(__dirname, "..");
+const PORT = Number(process.env.CROSSFADE_PORT || 4418);
+const mime = {
+    ".html": "text/html",
+    ".js": "application/javascript",
+    ".wasm": "application/wasm",
+    ".json": "application/json",
+    ".css": "text/css",
+    ".png": "image/png",
+    ".woff2": "font/woff2",
+};
 const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
@@ -247,7 +267,179 @@ function loadCore(src, label) {
     return sandbox.self.__phytoCore;
 }
 
-function main() {
+// ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
+async function runPartB() {
+    const server = http.createServer((req, res) => {
+        let p = req.url.split("?")[0];
+        if (p === "/") p = "/index.html";
+        const fp = path.join(root, p);
+        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+        fs.readFile(fp, (err, data) => {
+            if (err) return ((res.statusCode = 404), res.end());
+            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
+            res.end(data);
+        });
+    });
+    await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
+    const browser = await puppeteer.launch({
+        headless: true,
+        protocolTimeout: 240000,
+        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+        window.__anazhHeadlessSkinResCap = 64;
+        window.__anazhForceFoundry = true;
+        window.__anazhHeadlessNullRenderer = true;
+    });
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+
+    const out = await page.evaluate(async () => {
+        const res = { samples: [], err: null };
+        const sleep = (ms) => new Promise((r2) => setTimeout(r2, ms));
+        // ── Boot + Foundry abwarten ──
+        const dl0 = performance.now() + 60000;
+        while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
+            await sleep(100);
+        const r = window.anazhRealm;
+        if (!r) return { err: "anazhRealm nicht gebootet" };
+        const st = r.state;
+        const A = r.constructor;
+        res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
+        const f = r._ensureAssetFoundry();
+        const dl1 = performance.now() + 50000;
+        while (!(f && f.ready) && performance.now() < dl1) await sleep(80);
+        res.foundryReady = !!(f && f.ready);
+        if (!res.foundryReady) return res;
+        // ── der Proben-Baum (das V18.218.1-Band-Muster: gewachsener Bauplan, ferner Fix-Spot) ──
+        const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
+        const px = 12345,
+            pz = 6789;
+        const py = r._voxelSurfaceY(px, pz) || 1;
+        const entry = r.spawnArchitecture(grownKey, { x: px, y: py, z: pz }, { silent: true, seed: 1 });
+        if (!entry) return { err: "spawnArchitecture gab null" };
+        const preset = r._foundryPresetForEntry(entry);
+        res.preset = preset;
+        // ── ALLE drei Stufen VOR der Baseline wärmen (kein Rewarm-Störer im Sweep):
+        //    flatten(0/1/2) bis truthy; der Loop-Pump treibt Worker-Replies + Impostor-Bake. ──
+        const warm = { 0: false, 1: false, 2: false };
+        const dl2 = performance.now() + 120000;
+        while (performance.now() < dl2 && !(warm[0] && warm[1] && warm[2])) {
+            for (const lod of [0, 1, 2]) {
+                if (!warm[lod]) {
+                    const fl = r._foundryFlattenFor(entry, preset, lod);
+                    if (fl && fl.instanceable) warm[lod] = true;
+                }
+            }
+            if (!(warm[0] && warm[1] && warm[2])) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                await sleep(120);
+            }
+        }
+        res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
+        if (!(warm[0] && warm[1] && warm[2])) return res;
+        // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
+        const dl3 = performance.now() + 20000;
+        while (f.pending && f.pending.size > 0 && performance.now() < dl3) await sleep(100);
+        res.pendingAtSweep = f.pending ? f.pending.size : -1;
+
+        // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════
+        const cfg = A.LOD_DISTANCES;
+        const M = cfg.hysteresis || 0;
+        const visH = r._lodTreeVisHeight(entry);
+        const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 12;
+        const factor = r._lodPerceptionDistance(1000, visH) / 1000; // linear → skalierbar
+        res.visH = visH;
+        res.factor = factor;
+        const stageOfKey = (k) => {
+            if (/#fimp:/.test(k)) return 2;
+            const m = /#f:[^|]+\|\d+\|(\d)\|/.exec(k);
+            return m ? +m[1] : null;
+        };
+        const stagesOf = (e) => {
+            const s = new Set();
+            for (const list of [e.instSlots, e.instSlotsBand])
+                if (Array.isArray(list)) for (const { key } of list) s.add(stageOfKey(key));
+            s.delete(null);
+            return Array.from(s).sort();
+        };
+        const balance = () => {
+            let live = 0;
+            const perKey = {};
+            let inconsistent = 0,
+                entryRefs = 0;
+            if (st.archInstanceGroups)
+                for (const [k, g] of st.archInstanceGroups) {
+                    live += g.liveCount || 0;
+                    perKey[k] = g.liveCount || 0;
+                    if (g.kind !== "batch" && Array.isArray(g.free)) {
+                        if ((g.next || 0) - g.free.length !== (g.liveCount || 0)) inconsistent++;
+                    }
+                    if (Array.isArray(g.slotEntry)) for (const se of g.slotEntry) if (se === entry) entryRefs++;
+                }
+            return { live, perKey, inconsistent, entryRefs };
+        };
+        // Spieler an die erste Probe-Position, DANN Baseline (vor der Erst-Platzierung).
+        const dnTargets = [6, 14, 18, 22, 26, 31, 36, 42, 55, 36, 26, 18, 6];
+        const place = (dn) => {
+            const raw = dn / factor;
+            st.playerMesh.position.set(px - raw, py, pz);
+            return raw;
+        };
+        place(dnTargets[0]);
+        const before = balance();
+        r._rebuildArchitectureMesh(entry); // Erst-Platzierung (Assets warm → sofort instanced)
+        res.placed = entry.instanced === true;
+        const savedArchs = st.architectures;
+        const savedCursor = r._archLODCursor;
+        try {
+            st.architectures = [entry]; // SICHERN+WIEDERHERSTELLEN (Gate-Hook-Lehre)
+            for (const target of dnTargets) {
+                const raw = place(target);
+                r._archLODCursor = 0;
+                for (let k = 0; k < 4; k++) r._tickArchitectureLOD(99); // Switch + Band-Pflege (idempotent)
+                const dn = r._lodPerceptionDistance(raw, visH);
+                const dnL = r._lodPerceptionDistance(raw, Math.min(visH, capL));
+                const inB01 = dnL > cfg.thresh01 - (cfg.fade0 || 4) - M && dn < cfg.thresh01 + M;
+                const inB12 = dn > cfg.thresh12 - (cfg.fade || 8) - M && dn < cfg.thresh12 + M;
+                res.samples.push({
+                    target,
+                    dn: +dn.toFixed(2),
+                    dnL: +dnL.toFixed(2),
+                    inB01,
+                    inB12,
+                    stages: stagesOf(entry),
+                    primary: entry._lodLevel,
+                    band: Number.isFinite(entry._lodBandLevel) ? entry._lodBandLevel : null,
+                });
+            }
+        } finally {
+            st.architectures = savedArchs;
+            r._archLODCursor = savedCursor;
+        }
+        r.removeArchitecture(entry); // Default-Remove räumt Primär + Band
+        const after = balance();
+        res.balance = {
+            liveBefore: before.live,
+            liveAfter: after.live,
+            inconsistentAfter: after.inconsistent,
+            entryRefsAfter: after.entryRefs,
+            slotsAfter: !!entry.instSlots,
+            bandAfter: !!entry.instSlotsBand,
+        };
+        return res;
+    });
+
+    await browser.close();
+    server.close();
+    return { out, pageErrors };
+}
+
+async function main() {
     const P = parseStudio();
     if (!P.ok) {
         console.error("❌ Studio-GLSL nicht parsbar: " + P.why.join(", "));
@@ -307,17 +499,31 @@ function main() {
         ignBody.includes(P.dhA) && ignBody.includes(P.dhBx) && ignBody.includes(P.dhBy)
     );
     // die TSL-Hälfte (anazhRealm._lodCrossfadeMaskNode) mappt DIESELBEN Koeffizienten + die
-    // EINEN Quellen (LOD_DISTANCES · uDitherT/uLodMaskOn) — statische Symbol-Wand:
+    // EINEN Quellen — statische Symbol-Wand. W5.4 (Schritt 3, der Test wandert mit dem Code,
+    // V9.56-i): die Band-Zahlen leben jetzt als LIVE-Uniforms uLodD0/uLodD1/uLodFade/uLodFade0
+    // (der Helfer liest sie statt gefalteter Floats); ihr Seed kommt aus LOD_DISTANCES in
+    // `_ensureLodUniforms`, der Frame-Spiegel (`uLodD0.value = _D.thresh01`) hält sie live.
     const anazhNC = stripComments(anazhSrc);
     const tslBody = fnBody(anazhNC, /_lodCrossfadeMaskNode\(T, opts\)\s*/) || "";
     check(
-        "TSL-Hälfte (_lodCrossfadeMaskNode): dieselben IGN-Koeffizienten + die EINEN Quellen",
+        "TSL-Hälfte (_lodCrossfadeMaskNode): dieselben IGN-Koeffizienten + die Uniform-Quellen",
         tslBody.includes(P.dhA) &&
             tslBody.includes(P.dhBx) &&
             tslBody.includes(P.dhBy) &&
-            /LOD_DISTANCES/.test(tslBody) &&
+            /uLodD0/.test(tslBody) &&
+            /uLodD1/.test(tslBody) &&
+            /uLodFade\b/.test(tslBody) &&
+            /uLodFade0/.test(tslBody) &&
             /uDitherT/.test(tslBody) &&
             /uLodMaskOn/.test(tslBody)
+    );
+    const ensureBody = fnBody(anazhNC, /_ensureLodUniforms\(\)\s*/) || "";
+    check(
+        "Uniform-Seed + Live-Spiegel: uLodD0..Fade0 aus LOD_DISTANCES (thresh01/thresh12/fade/fade0)",
+        /uLodD0/.test(ensureBody) &&
+            /thresh01/.test(ensureBody) &&
+            /thresh12/.test(ensureBody) &&
+            /uLodD0\.value = _D\.thresh01/.test(anazhNC)
     );
 
     console.log("--- Teil 1+2: die Masken-Invarianten auf dem 64×64-Raster übers Band ---");
@@ -363,20 +569,76 @@ function main() {
     check("LAUB: Band-Anfang ~100 % L0", agg.covL0Start >= 0.999, (agg.covL0Start * 100).toFixed(2) + " %");
     check("LAUB: Band-Ende ~100 % Impostor", agg.covL2End >= 0.999, (agg.covL2End * 100).toFixed(2) + " %");
     check("LAUB: monotoner Übergang (L0 fällt, Impostor steigt)", agg.folMonotonic === true);
+    // Statische Scope-Wand der CPU-Hälfte: Band nur für Foundry-BAUM-Einträge (dieselbe
+    // Wand wie der aLodLevel-Stempel), Add/Remove nur durch die Slot-Chokepoints.
+    const bandBody = fnBody(anazhNC, /_updateFoundryLodBand\(entry, dist, presetOpt\)\s*/) || "";
+    check(
+        "CPU-Band-Pflege: Baum-Wand + Chokepoint-Disziplin (_updateFoundryLodBand)",
+        /_foundryPresetIsTree/.test(bandBody) &&
+            /instFoundry/.test(bandBody) &&
+            /_archInstanceAdd/.test(bandBody) &&
+            /_archInstanceRemove/.test(bandBody)
+    );
+
+    console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
+    const { out, pageErrors } = await runPartB();
+    if (out.err) check("Teil (b) lief", false, out.err);
+    else {
+        check("W5.4: foundryCrossfade ist DEFAULT AN", out.flagDefault === true);
+        check("Foundry ready + Preset aufgelöst", out.foundryReady === true && out.preset === "eiche", out.preset);
+        check(
+            "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
+            !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
+            JSON.stringify(out.warm)
+        );
+        check("der Proben-Baum platziert (instanced)", out.placed === true);
+        let holes = 0,
+            b01Fail = 0,
+            b12Fail = 0,
+            outsideFail = 0;
+        for (const s of out.samples || []) {
+            const set = JSON.stringify(s.stages);
+            if (!s.stages.length) holes++;
+            if (s.inB01 && !s.inB12 && set !== "[0,1]") b01Fail++;
+            if (s.inB12 && set !== "[1,2]") b12Fail++;
+            if (!s.inB01 && !s.inB12 && s.stages.length !== 1) outsideFail++;
+        }
+        check(`Sweep gelaufen (${(out.samples || []).length} Proben, hin + zurück)`, (out.samples || []).length >= 10);
+        check("NIE 0 Stufen resident", holes === 0);
+        check("IM L0/L1-Band: Slots in BEIDEN Stufen-Gruppen ({0,1})", b01Fail === 0);
+        check("IM L1/L2-Band: Slots in BEIDEN Stufen-Gruppen ({1,2})", b12Fail === 0);
+        check("AUSSERHALB der Bänder: exakt EINE Stufe", outsideFail === 0);
+        const B = out.balance || {};
+        check(
+            "SLOT-BILANZ: Σ liveCount zurück auf die Baseline (kein Leck)",
+            B.liveBefore === B.liveAfter,
+            `${B.liveBefore} → ${B.liveAfter}`
+        );
+        check("SLOT-BILANZ: je Gruppe next − free == liveCount (konsistent)", B.inconsistentAfter === 0);
+        check(
+            "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
+            B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false
+        );
+        if ((out.samples || []).length) {
+            console.log(
+                "   Sweep: " +
+                    out.samples.map((s) => `${s.dn}m→[${s.stages}]${s.inB01 ? "B01" : s.inB12 ? "B12" : ""}`).join(" ")
+            );
+        }
+    }
+    if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DIE EINE MASKEN-QUELLE STEHT: __phytoCore.lodCrossfadeMask übersetzt die Studio-Dither-Blende (FIX v37) byte-nah — Rinde exakte Partition, Laub überlappende Rampen ohne Loch, Impostor-fin-EINblendung; die Drift-Wand parst die GLSL-Konstanten und hält phyto-core + TSL-Hälfte auf denselben Zahlen."
+        "\n✅ GRÜN — DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN."
     );
     process.exit(0);
 }
 
-try {
-    main();
-} catch (e) {
+main().catch((e) => {
     console.error("Crossfade-Diag-Fehler:", (e && e.stack) || e);
     process.exit(2);
-}
+});

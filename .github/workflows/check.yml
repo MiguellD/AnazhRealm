@@ -344,6 +344,15 @@ jobs:
               # entsteht + der Worker liefert das Fahrzeug-Asset — ohne eine Zeile AnazhRealm-Edit.
               run: npm run gate:nervensystem-vehicle
 
+            - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
+              # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
+              # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
+              # Regex geparste foundry-core-GLSL (FIX v37 — Rinde XOR-Partition, Laub überlappende
+              # Rampen ohne Loch, Impostor-fin; die Drift-Wand gegen jeden Studio-GLSL-Edit);
+              # (b) headless foundry-ON: der Distanz-Sweep über thresh01/thresh12 — IM Band Slots
+              # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
+              run: npm run gate:foundry-crossfade
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
               # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).

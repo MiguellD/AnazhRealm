@@ -1255,17 +1255,21 @@ class AnazhRealm {
                     ? AnazhRealm.LOD_DISTANCES.lodRef
                     : 14,
             lodMaskOn: true,
-            // W5.3 (Paritäts-Vollendung) — DIE FOUNDRY-DITHER-BLENDE, BUILD-ZEIT-GATE (Default
-            // AUS): die Studio-Crossfade-Maske (foundry-core FIX v37, via der EINEN Quelle
-            // `__phytoCore.lodCrossfadeMask` + `_lodCrossfadeMaskNode`) ist auf dem Foundry-Pfad
-            // VERDRAHTET (`_foundryTreeMaterial` Fade-out/Partition der 3D-Stufen ·
-            // `_foundryBuildGroup` aLodLevel/aH0/aH0L-Stempel · Impostor-fin-EINblendung), aber
-            // hinter DIESEM Flag aus, bis W5.4 die CPU-Doppel-Mitgliedschaft bringt — eine Maske
-            // ohne Doppel-Mitgliedschaft dithert die einzige residente Stufe aus = Coverage-
-            // Löcher. Build-zeitlich gelesen (der Material-Cache-Key trägt das Flag; ein Live-
-            // Toggle wirkt nur auf NEU gebaute Gruppen — Material + Stempel entstehen im selben
-            // Build-Pass, per Konstruktion konsistent).
-            foundryCrossfade: false,
+            // W5.3+W5.4 (Paritäts-Vollendung) — DIE FOUNDRY-DITHER-BLENDE, DEFAULT AN: die
+            // Studio-Crossfade-Maske (foundry-core FIX v37, via der EINEN Quelle
+            // `__phytoCore.lodCrossfadeMask` + `_lodCrossfadeMaskNode`) UND die CPU-Doppel-
+            // Mitgliedschaft im Band (`_updateFoundryLodBand` — Studio phytogenesis
+            // Z.2696–2749) schalten ZUSAMMEN an DIESEM einen Flag (Maske ohne Band =
+            // Coverage-Löcher · Band ohne Maske = voll-opaker Doppel-Draw/Z-Fight — beide
+            // Halb-Zustände sind per Konstruktion unmöglich). Verdrahtung: `_foundryTreeMaterial`
+            // (Fade-out/Partition der 3D-Stufen) · `_foundryBuildGroup` (aLodLevel/aH0/aH0L-
+            // Stempel) · Impostor-fin-EINblendung · `_tickArchitectureLOD`/`_switchArchitectureLOD`
+            // (Band-Residency). Die doppelte Draw-Last im Band ist Benchmark-konform (das Studio
+            // zahlt dieselbe). Das Flag ist BUILD-ZEIT (Material-Cache-Key trägt es; ein Live-
+            // Toggle wirkt nur auf NEU gebaute Gruppen) — das SOFORTIGE A/B ist `state.lodMaskOn`
+            // (uLodMaskOn-Uniform, Maske aus ohne Rebuild; das Band bleibt dann als opake
+            // Doppel-Residency stehen = die sichere A/B-Richtung, kein Loch).
+            foundryCrossfade: true,
             // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die GLOBAL
             // PLATZIERTE Architektur (`_archInstanceAdd`) war frustumCulled=false → NIE
             // gecullt, die ganze Welt rendert egal wohin man schaut. Das V18.300-Muster
@@ -29330,9 +29334,9 @@ class AnazhRealm {
                                     // `__phytoCore.lodCrossfadeMask` lod=2, via `_lodCrossfadeMaskNode`).
                                     // Distanz = die Fragment-Anker-Peilung (√_hl2, dieselbe Näherung wie
                                     // die View-Zellen-Wahl oben); Sichthöhe = Bake-Rahmen × Instanz-Skala
-                                    // (rec.frame.halfH·2 × _sInst — das Studio-szV). Hinter dem
-                                    // foundryCrossfade-Gate AUS: Default byte-unverändert (W5.4 bringt
-                                    // die CPU-Doppel-Mitgliedschaft, erst dann Default-an).
+                                    // (rec.frame.halfH·2 × _sInst — das Studio-szV). W5.4: DEFAULT AN —
+                                    // Maske + CPU-Doppel-Mitgliedschaft (`_updateFoundryLodBand`) schalten
+                                    // zusammen am foundryCrossfade-Flag.
                                     if (this.state && this.state.foundryCrossfade === true) {
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
@@ -29950,10 +29954,20 @@ class AnazhRealm {
             const _T = typeof THREE !== "undefined" && THREE.TSL;
             if (_T && typeof _T.uniform === "function") {
                 const _ref = Number.isFinite(st.lodRef) && st.lodRef > 0 ? +st.lodRef : 14;
+                // W5.4 (Schritt 3) — die Crossfade-Band-Zahlen als LIVE-Uniforms (geseedet aus
+                // der EINEN Quelle `AnazhRealm.LOD_DISTANCES`, pro Frame in `_loopRender`
+                // gespiegelt wie uLodRef): ein Studio-Live-Ingest (`_foundryIngestRenderConfig`
+                // mutiert LOD_DISTANCES) greift SOFORT in der Shader-Maske — die Mutation-wins-
+                // Klasse, kein build-zeitlich eingefrorener Zweit-Satz.
+                const _D = AnazhRealm.LOD_DISTANCES || {};
                 u = {
                     uLodRef: _T.uniform(_ref),
                     uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
                     uDitherT: _T.uniform(0),
+                    uLodD0: _T.uniform(Number.isFinite(_D.thresh01) ? _D.thresh01 : 20),
+                    uLodD1: _T.uniform(Number.isFinite(_D.thresh12) ? _D.thresh12 : 40),
+                    uLodFade: _T.uniform(Number.isFinite(_D.fade) ? _D.fade : 8),
+                    uLodFade0: _T.uniform(Number.isFinite(_D.fade0) ? _D.fade0 : 4),
                 };
             }
         } catch (_e) {
@@ -29969,9 +29983,10 @@ class AnazhRealm {
     // `_impMat`-fin): dieser Helfer baut DIESELBE Mathematik symbolisch als TSL-Graph — jede
     // Formel/Konstante hier MUSS der phyto-core-Funktion entsprechen (die Node-Linse
     // `gate:foundry-crossfade` beweist die phyto-core↔GLSL-Äquivalenz; dieser Graph mappt 1:1).
-    // Die ZAHLEN kommen aus den EINEN Quellen: `AnazhRealm.LOD_DISTANCES` (thresh01/thresh12/
-    // fade/fade0 — live von `_foundryIngestRenderConfig` gespeist, hier build-zeitlich als
-    // float-Knoten gefaltet wie im V18.387-Grammatik-Block) + `_ensureLodUniforms` (uLodRef/
+    // Die ZAHLEN kommen aus den EINEN Quellen: die Band-Zahlen als LIVE-Uniforms
+    // uLodD0/uLodD1/uLodFade/uLodFade0 (W5.4 Schritt 3 — geseedet aus `AnazhRealm.
+    // LOD_DISTANCES`, pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest greift
+    // SOFORT, kein build-zeitlich eingefrorener Zweit-Satz) + `_ensureLodUniforms` (uLodRef/
     // uLodMaskOn/uDitherT — KEINE neue Uniform-Sammlung). step-Konvention wie der bestehende
     // Block (`step(a,b)` = 1 wo b ≥ a): an der exakten Gleichheit ditherVal == Rampe weicht sie
     // vom strikten GLSL-`>=`-Discard ab — maßtheoretisch nie getroffen (IGN-Werte sind irrational-
@@ -29999,14 +30014,19 @@ class AnazhRealm {
                 !T.fract ||
                 !T.screenCoordinate ||
                 !T.step ||
-                !T.mix
+                !T.mix ||
+                !_lu.uLodD0 ||
+                !_lu.uLodD1 ||
+                !_lu.uLodFade ||
+                !_lu.uLodFade0
             )
                 return null;
-            const cfg = AnazhRealm.LOD_DISTANCES;
-            const D0 = cfg.thresh01,
-                D1 = cfg.thresh12,
-                FADE = cfg.fade || 8,
-                FADE0 = cfg.fade0 || 4;
+            // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
+            // `_ensureLodUniforms`-Seed + `_loopRender`-Spiegel): Rampen-Kanten als Knoten-Mathe.
+            const _edge1 = _lu.uLodD1.sub(_lu.uLodFade); // D1 − FADE
+            const _edge0 = _lu.uLodD0.sub(_lu.uLodFade0); // D0 − FADE0
+            const _fadeW = _lu.uLodFade.max(T.float(1e-3));
+            const _fadeW0 = _lu.uLodFade0.max(T.float(1e-3));
             // _dh — Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN
             // (52.9829189 · 0.06711056 · 0.00583715; foundry-core.js Z.212).
             const _fc = T.screenCoordinate;
@@ -30025,10 +30045,7 @@ class AnazhRealm {
                     const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
                     _vCD = _dist.mul(_k);
                 }
-                const _f1i = _vCD
-                    .sub(T.float(D1 - FADE))
-                    .div(T.float(FADE))
-                    .clamp(0.0, 1.0);
+                const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
                 const _keepFin = T.step(_dh, _f1i.mul(2.0).min(T.float(1.0)));
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
@@ -30045,14 +30062,8 @@ class AnazhRealm {
             const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
             const _dL = _cd.mul(_lkL); // vLodDL (Blatt-Metrik)
             // __phytoCore.lodCrossfadeMask: f1/f0/f1o — dieselben Rampen, symbolisch.
-            const _f1 = _dS
-                .sub(T.float(D1 - FADE))
-                .div(T.float(FADE))
-                .clamp(0.0, 1.0);
-            const _f0 = _dL
-                .sub(T.float(D0 - FADE0))
-                .div(T.float(FADE0))
-                .clamp(0.0, 1.0);
+            const _f1 = _dS.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
+            const _f0 = _dL.sub(_edge0).div(_fadeW0).clamp(0.0, 1.0);
             const _f1o = _f1.mul(2.0).sub(1.0).clamp(0.0, 1.0);
             const _foliage = !!(opts && opts.foliage);
             // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
@@ -50591,7 +50602,15 @@ class AnazhRealm {
             } else if (entry._occluded) {
                 entry._occluded = false;
             }
-            if (newLOD === entry._lodLevel) continue;
+            if (newLOD === entry._lodLevel) {
+                // W5.4 — BAND-PFLEGE OHNE PRIMÄR-WECHSEL: der Eintrag wandert durchs Dither-
+                // Crossfade-Band (oder verlässt es), während die Primär-Stufe (Hysterese) steht —
+                // die Doppel-Mitgliedschaft folgt der Partner-Wahl. Ein Band-Add/-Remove ist ein
+                // Alloc/Free wie ein Switch → zählt aufs selbe Spike-Budget. Flag-Wand zuerst
+                // (foundryCrossfade aus → byte-billiger Tick wie vor W5.4).
+                if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) switches++;
+                continue;
+            }
             // LOD-Switch — re-allocate
             const success = this._switchArchitectureLOD(entry, newLOD);
             if (success) switches++;
@@ -50622,9 +50641,20 @@ class AnazhRealm {
             if (preset) {
                 const fFlat = this._foundryFlattenFor(entry, preset, newLOD);
                 if (fFlat && fFlat.instanceable) {
-                    this._archInstanceRemove(entry);
+                    this._archInstanceRemove(entry); // räumt Primär UND Band (W5.4-Default)
                     entry._lodLevel = newLOD;
                     this._archInstanceAdd(entry, fFlat);
+                    // W5.4 — die Band-Mitgliedschaft nach dem Primär-Wechsel SOFORT nachziehen
+                    // (im Band wechselt der Primär die Seite → der Partner ist die alte Stufe;
+                    // dieselbe EINE Pflege-Quelle wie im Tick, idempotent).
+                    if (this.state.foundryCrossfade === true) {
+                        const _pm = this.state.playerMesh && this.state.playerMesh.position;
+                        if (_pm && entry.position) {
+                            const _bdx = entry.position.x - _pm.x;
+                            const _bdz = entry.position.z - _pm.z;
+                            this._updateFoundryLodBand(entry, Math.sqrt(_bdx * _bdx + _bdz * _bdz), preset);
+                        }
+                    }
                     return true;
                 }
                 // null (lädt) ODER false (Bake-Lücke) → aktuelle Stufe HALTEN, NIE Grammatik (kein Nachbau).
@@ -50655,6 +50685,87 @@ class AnazhRealm {
         entry._lodLevel = newLOD;
         // Neue Slots allozieren via Standard-Pfad
         this._archInstanceAdd(entry, newFlat);
+        return true;
+    }
+
+    // W5.4 (Paritäts-Vollendung) — DIE BAND-PARTNER-WAHL: welche ZWEITE Stufe hält ein
+    // Foundry-Baum-Eintrag im Dither-Crossfade-Band? Die exakte Übersetzung der Studio-
+    // Mitgliedschaft (phytogenesis Z.2696–2749, M = Hysterese-Rand):
+    //   b0/f0 (Stufe L0): resident bis dn < D0 + M,
+    //   b1/f1 (Stufe L1): Einstieg nach BLATT-Metrik (dnL > D0 − FADE0 − M), Ausstieg nach
+    //     BAUM-Metrik (dn < D1 + M) — „Laub L1: Einstieg Blatt-Metrik, Ausstieg Baum-Metrik",
+    //   Billboard (Stufe 2): resident ab dn > D1 − FADE − M (die fin-EINblendung liest die
+    //     Skelett-Metrik, phytogenesis _impMat vCD).
+    // Relativ zur PRIMÄR-Stufe (`entry._lodLevel`) ist der Partner der Nachbar im Band:
+    //   primär 0 → 1 (wenn dnL im L0/L1-Band) · primär 1 → 0 ODER 2 (die Bänder überlappen
+    //   bei den Default-Zahlen nie: D0+M=23.4 < D1−FADE−M=28.6) · primär 2 → 1. Außerhalb
+    //   der Bänder: null (exakt EINE Stufe). dn/dnL kommen aus der EINEN Wahrnehmungs-
+    //   Quelle `_lodPerceptionDistance` (Skelett = volle Sichthöhe · Blatt = auf leafVisCap
+    //   gekappt — dieselbe Kappung, die der aH0L-Stempel in `_foundryBuildGroup` trägt).
+    _foundryLodBandPartner(entry, dist) {
+        const cfg = AnazhRealm.LOD_DISTANCES;
+        if (!cfg) return null;
+        const M = Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0;
+        const D0 = cfg.thresh01,
+            D1 = cfg.thresh12,
+            FADE = cfg.fade || 8,
+            FADE0 = cfg.fade0 || 4;
+        const visH = this._lodTreeVisHeight(entry);
+        const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH) : dist;
+        const cur = Math.max(0, Math.min(2, entry._lodLevel | 0));
+        if (cur === 0) {
+            const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 12;
+            const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH, capL)) : dist;
+            return dnL > D0 - FADE0 - M ? 1 : null;
+        }
+        if (cur === 1) {
+            if (dn < D0 + M) return 0;
+            if (dn > D1 - FADE - M) return 2;
+            return null;
+        }
+        return dn < D1 + M ? 1 : null;
+    }
+
+    // W5.4 — DIE EINE BAND-PFLEGE-QUELLE (Gesetz #0): hält die Band-Mitgliedschaft eines
+    // FOUNDRY-Baum-Eintrags synchron zur Partner-Wahl — gerufen vom LOD-Tick (Band wandert
+    // ohne Primär-Wechsel) UND vom Foundry-LOD-Switch (Band nach dem Wechsel nachziehen).
+    // Add/Remove NUR durch die Slot-Chokepoints. Scope-Wände: nur unter `foundryCrossfade`
+    // (Maske+Band schalten ZUSAMMEN — Band ohne Maske = voll-opaker Doppel-Draw/Z-Fight,
+    // Maske ohne Band = Coverage-Löcher), nur foundry-platzierte (`instFoundry` — Grammatik-
+    // Einträge tragen keine Maske), nur Baum-Presets (`_foundryPresetIsTree` — dieselbe
+    // Wand wie der aLodLevel-Stempel; Fels/Blume bleiben Ein-Stufen-Welt). Lädt die Partner-
+    // Stufe noch (flatten null), bleibt das Band diese Runde leer (die Primär-Stufe deckt —
+    // ihre Maske blendet erst im Band, nie auf 0) und der nächste Tick versucht es neu.
+    // Rückgabe true, wenn sich die Mitgliedschaft geändert hat (zählt aufs Switch-Budget).
+    _updateFoundryLodBand(entry, dist, presetOpt) {
+        const st = this.state;
+        let desired = null;
+        let preset = null;
+        if (
+            st &&
+            st.foundryCrossfade === true &&
+            entry &&
+            entry.instanced &&
+            entry.instFoundry &&
+            Number.isFinite(dist) &&
+            this._foundryEnabled()
+        ) {
+            preset = presetOpt || this._foundryPresetForEntry(entry);
+            if (preset && this._foundryPresetIsTree(preset)) {
+                desired = this._foundryLodBandPartner(entry, dist);
+                if (desired === entry._lodLevel) desired = null; // defensiv: Partner nie == Primär
+            }
+        }
+        const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;
+        if (cur === desired) return false;
+        if (entry.instSlotsBand) this._archInstanceRemove(entry, { bandOnly: true });
+        if (desired === null) {
+            entry._lodBandLevel = null;
+            return true;
+        }
+        const flat = this._foundryFlattenFor(entry, preset, desired);
+        if (!flat || !flat.instanceable) return false; // lädt/kann nicht → Band leer, nächster Tick
+        this._archInstanceAdd(entry, flat, { band: true, bandLod: desired });
         return true;
     }
 
@@ -62313,7 +62424,14 @@ class AnazhRealm {
 
     // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
     // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
-    _archInstanceAdd(entry, flat) {
+    // W5.4 (Paritäts-Vollendung) — DER EINE SLOT-CHOKEPOINT LERNT DIE BAND-MITGLIEDSCHAFT:
+    // `opts.band` schreibt die Slots in `entry.instSlotsBand` (+ `entry._lodBandLevel` =
+    // `opts.bandLod`) statt `entry.instSlots` — die ZWEITE residente Stufe im Dither-
+    // Crossfade-Band (Studio phytogenesis Z.2696–2749: b0/b1/f0/f1-Mitgliedschaft ±M).
+    // Primär-Felder (`instanced`/`instSlots`/`instFoundry`) bleiben bei einem Band-Add
+    // UNBERÜHRT. Add/Remove laufen weiterhin AUSSCHLIESSLICH durch diese zwei Chokepoints
+    // (kein dritter Pfad — `_updateFoundryLodBand` ruft nur hierher).
+    _archInstanceAdd(entry, flat, opts) {
         // DAS NEUE KLEID — KEIN FALLBACK, DAS STUDIO IST DER MUSKEL (Schöpfer „AnazhRealm nur das Nerven-
         // system, nicht der Muskel"): der EINE Chokepoint, durch den JEDE platzierte Architektur ins Render-
         // system fliesst. Ist der Eintrag eine foundry-bekannte Art [Baum/Fels/Kristall/Blume/Strauch] UND
@@ -62385,6 +62503,13 @@ class AnazhRealm {
             if (g.slotEntry) g.slotEntry[slot] = entry;
             slots.push({ key: g.key, slot });
         }
+        // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
+        // Snapshot, kein state.X). Der Primär-Zustand des Eintrags bleibt byte-unberührt.
+        if (opts && opts.band) {
+            entry.instSlotsBand = slots;
+            entry._lodBandLevel = Number.isFinite(opts.bandLod) ? opts.bandLod : null;
+            return;
+        }
         entry.instanced = true;
         entry.instSlots = slots;
         // DAS NEUE KLEID — Merker, ob dieser Eintrag aus dem Studio (Foundry) platziert wurde:
@@ -62420,9 +62545,20 @@ class AnazhRealm {
     }
 
     // Einen Eintrag aus der Registry entfernen (Slots freigeben).
-    _archInstanceRemove(entry) {
-        if (!entry.instSlots) {
-            entry.instanced = false;
+    // W5.4 (Paritäts-Vollendung) — der Default räumt IMMER BEIDE Slot-Sätze (Primär +
+    // Band-Mitgliedschaft): jeder bestehende Aufrufer (Cull · Prune · Remove · Rewarm ·
+    // LOD-Switch) gibt die Band-Slots per Konstruktion mit frei — kein Leck möglich.
+    // `opts.bandOnly` räumt NUR das Band (der `_updateFoundryLodBand`-Pfad); der
+    // Primär-Zustand (`instanced`/`instSlots`) bleibt dann byte-unberührt.
+    _archInstanceRemove(entry, opts) {
+        const bandOnly = !!(opts && opts.bandOnly);
+        const lists = [];
+        if (!bandOnly && entry.instSlots) lists.push(entry.instSlots);
+        if (entry.instSlotsBand) lists.push(entry.instSlotsBand);
+        if (!lists.length) {
+            entry.instSlotsBand = null;
+            entry._lodBandLevel = null;
+            if (!bandOnly) entry.instanced = false;
             return;
         }
         // V18.353 — PHASE A.1: region-private PLATZIERTE Gruppen (Key @p:), die nach dem
@@ -62430,23 +62566,28 @@ class AnazhRealm {
         // leerer Gruppen, während der Spieler die Welt erkundet + ferne Bauten gepruned
         // werden. Lazy-Neuaufbau via _archInstanceGroupFor bei Annäherung.
         const placedRegionKeys = new Set();
-        for (const { key, slot } of entry.instSlots) {
-            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
-            if (g) {
-                this._archGroupFree(g, slot);
-                // V4(B) — die Empty-Dispose fasst zusätzlich die GLOBALEN Foundry-Gruppen (Key trägt
-                // `#f:`/`#fimp:` im Leaf, per-Saison-Schlüssel) → ihre leer gewordene InstancedMesh-
-                // (instanceMatrix-)Hülle wird entsorgt UND (via _disposeArchInstanceGroup) die geteilte
-                // Geometrie deferred freigegeben. Die Leer-Bedingung (liveCount<=0 unten) bleibt strikt.
-                if (
-                    (g.regional && typeof key === "string" && key.includes("@p:")) ||
-                    (typeof key === "string" && /#(f:|fimp:)/.test(key))
-                )
-                    placedRegionKeys.add(key);
+        for (const list of lists)
+            for (const { key, slot } of list) {
+                const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+                if (g) {
+                    this._archGroupFree(g, slot);
+                    // V4(B) — die Empty-Dispose fasst zusätzlich die GLOBALEN Foundry-Gruppen (Key trägt
+                    // `#f:`/`#fimp:` im Leaf, per-Saison-Schlüssel) → ihre leer gewordene InstancedMesh-
+                    // (instanceMatrix-)Hülle wird entsorgt UND (via _disposeArchInstanceGroup) die geteilte
+                    // Geometrie deferred freigegeben. Die Leer-Bedingung (liveCount<=0 unten) bleibt strikt.
+                    if (
+                        (g.regional && typeof key === "string" && key.includes("@p:")) ||
+                        (typeof key === "string" && /#(f:|fimp:)/.test(key))
+                    )
+                        placedRegionKeys.add(key);
+                }
             }
+        entry.instSlotsBand = null;
+        entry._lodBandLevel = null;
+        if (!bandOnly) {
+            entry.instSlots = null;
+            entry.instanced = false;
         }
-        entry.instSlots = null;
-        entry.instanced = false;
         for (const key of placedRegionKeys) {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             // V18.356 — vollständig leer = liveCount 0 (EINE Quelle für InstancedMesh UND Batch; vorher
@@ -64987,12 +65128,12 @@ class AnazhRealm {
         const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : kind === "grass" ? 0.18 : 1;
         // Seite: Studio 0 Front · 2 Double; Laub/Gras immer Double (Alt-Verhalten).
         const sideDouble = double || (mp && mp.side === 2);
-        // W5.3 (Paritäts-Vollendung) — das BUILD-ZEIT-Gate der Studio-Dither-Blende (Default AUS,
-        // bis W5.4 die CPU-Doppel-Mitgliedschaft bringt — Maske ohne Doppel-Mitgliedschaft dithert
-        // die einzige residente Stufe aus = Coverage-Löcher). Der Key trägt das Flag: ein Live-
-        // Toggle baut NEUE (maskierte) Materialien nur für NEU gebaute Gruppen — Material und
-        // Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Build-Pass, per Konstruktion
-        // konsistent (kein „Maske liest fehlendes Attribut"-Crash auf Alt-Geometrie).
+        // W5.3+W5.4 (Paritäts-Vollendung) — das BUILD-ZEIT-Gate der Studio-Dither-Blende
+        // (DEFAULT AN seit W5.4: Maske + CPU-Doppel-Mitgliedschaft schalten ZUSAMMEN am einen
+        // foundryCrossfade-Flag, s. init()). Der Key trägt das Flag: ein Live-Toggle baut NEUE
+        // Materialien nur für NEU gebaute Gruppen — Material und Attribut-Stempel
+        // (`_foundryBuildGroup`) entstehen im selben Build-Pass, per Konstruktion konsistent
+        // (kein „Maske liest fehlendes Attribut"-Crash auf Alt-Geometrie).
         const xfade = !!(this.state && this.state.foundryCrossfade === true);
         // Cache-Key: kind + gerundete Regler (bounded — je Preset-Charakter ein Material).
         const key =
@@ -65061,12 +65202,12 @@ class AnazhRealm {
                 // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
                 mat.colorNode = TSL.vec4(vcol, 1.0);
             }
-            // W5.3 — DIE STUDIO-DITHER-BLENDE (FIX v37) auf den Foundry-3D-Stufen: Fade-out der
-            // L0 + Fade-in der L1 (Laub überlappend, Rinde exakte Partition) — die Maske faltet
-            // in die Alpha (TSL-Idiom statt GLSL-discard, alphaTest cullt); Formeln = die EINE
-            // Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`). Nur hinter dem
-            // xfade-Gate: der Default-Render bleibt byte-unverändert (kein neuer Knoten, kein
-            // alphaTest-Wechsel auf der Rinde).
+            // W5.3+W5.4 — DIE STUDIO-DITHER-BLENDE (FIX v37) auf den Foundry-3D-Stufen: Fade-out
+            // der L0 + Fade-in der L1 (Laub überlappend, Rinde exakte Partition) — die Maske
+            // faltet in die Alpha (TSL-Idiom statt GLSL-discard, alphaTest cullt); Formeln = die
+            // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`). Seit W5.4
+            // DEFAULT AN — zusammen mit der CPU-Doppel-Mitgliedschaft im Band (das eine Flag);
+            // xfade aus (Build-Zeit-A/B) = byte-unverändertes Material wie vor W5.3.
             if (xfade) {
                 const _keepX = this._lodCrossfadeMaskNode(TSL, {
                     foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
@@ -65597,6 +65738,12 @@ class AnazhRealm {
             // Boden-Schatten, der den zweiten Voll-Render nicht lohnt. Der `leaf.castShadow`-Override
             // (60842/60948) gewinnt gegen `_archGroupCastsShadow` (der aus dem Namen `_lodN` liest —
             // den die Foundry-Einträge NICHT im Typ tragen, ihr LOD lebt im leafKey).
+            // W5.4 (Paritäts-Vollendung) — DIESE Zeile IST die Schatten-Regel der DOPPEL-
+            // MITGLIEDSCHAFT: im L0/L1-Band ist der Eintrag in BEIDEN Stufen resident, aber nur
+            // die NAH-Stufe (lod 0) wirft Schatten — der Schatten-Pass ist UNGEMASKT (wie im
+            // Studio), zwei werfende Stufen wären eine sichtbare Doppel-Verdunklung im Band.
+            // Im L1/L2-Band werfen beide Mitglieder ohnehin keinen (die V18.265-Fern-Regel,
+            // byte-unverändert). Genau EIN Schatten-Träger je Baum, per Konstruktion.
             const castsShadow = lod < 1;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
@@ -82203,6 +82350,15 @@ class AnazhRealm {
                 _lu.uLodRef.value =
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
+            // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
+            // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
+            const _D = AnazhRealm.LOD_DISTANCES;
+            if (_D && _lu.uLodD0) {
+                if (Number.isFinite(_D.thresh01)) _lu.uLodD0.value = _D.thresh01;
+                if (Number.isFinite(_D.thresh12)) _lu.uLodD1.value = _D.thresh12;
+                if (Number.isFinite(_D.fade)) _lu.uLodFade.value = _D.fade;
+                if (Number.isFinite(_D.fade0)) _lu.uLodFade0.value = _D.fade0;
+            }
         }
         // V8 (Kür) — GODRAY-Frame-Steuerung: die Sonnen-Screen-Position + der Gesamt-Pegel.
         // DEFENSIV geguarded — der Null-Renderer (headless) baut die Post-FX evtl. nicht, dann
