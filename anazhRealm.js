@@ -50899,14 +50899,11 @@ class AnazhRealm {
         // wenn die Bibliothek warm ist (die Baum-/Gras-Warte-Regel V18.411, auf die
         // ganze Region gehoben; der Refill-Dispose einer leeren Region ist unsichtbar).
         // Headless/Null-Renderer → sofort voll bauen (gate-treu, die foliageRadius-Klasse).
+        // N7.4 — die Daten-Wahrheit trägt allein: `_fdry._prefetching` ist nur bei lebender
+        // Foundry wahr (der Boot-Chokepoint erzeugt sie ausschließlich foundry-an; der
+        // Foundry-Warm-Anker des Gates wartet auf !_prefetching, headless deckt zusätzlich).
         const _fdry = this._foundry;
-        if (
-            _fdry &&
-            _fdry._prefetching &&
-            typeof this._foundryEnabled === "function" &&
-            this._foundryEnabled() &&
-            !(this.state.renderer && this.state.renderer._isHeadlessNull)
-        ) {
+        if (_fdry && _fdry._prefetching && !(this.state.renderer && this.state.renderer._isHeadlessNull)) {
             const empty = {
                 regX,
                 regZ,
@@ -65230,7 +65227,9 @@ class AnazhRealm {
         return f.cache.has(key) && f.cache.get(key) != null;
     }
     _foundryRewarmColdTrees() {
-        if (!this._foundryEnabled()) return;
+        // N7.4 — die Daten-Wahrheit trägt: `!f || !f.ready` unten deckt jeden foundry-losen
+        // Zustand (unter dem globalen Hook wird `_foundry` nie erzeugt; der sync-only-
+        // Unit-Richter `__withNoFoundry` pumpt keine Ticks) — kein separater Regime-Read.
         // V18.395 — DIE FOUNDRY WARTET AUFS TERRAIN (Schöpfer „erst den Bereich sauber laden, DANN Detail;
         // der Ladefluss zu schwer, es erweitert"): baute in DIESEM Frame ein Terrain-Chunk, konvergiert die
         // Foundry NICHT (dieselbe „erst der Boden, dann der Wald"-Disziplin wie der scatterDeco-Job). So
@@ -65931,9 +65930,12 @@ class AnazhRealm {
         // an WELT-Koordinaten, der Wurf pro Rasterpunkt ist ein Positions-Hash (Γ5) — die
         // Übersetzung des sequenziellen Studio-RNG in die Streaming-Welt (das
         // planForestCell-Muster). Ein über die Chunk-Naht gejitterter Punkt FÄLLT (der
-        // Nachbar würfelt ihn nie → kein Doppel, Raster-Rand mittelwert-nah). Nur im
-        // Studio-Regime; ohne Foundry bleibt der alte Lücken-Pfad die einzige Quelle.
-        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+        // Nachbar würfelt ihn nie → kein Doppel, Raster-Rand mittelwert-nah).
+        // N7.4 — BEDINGUNGSLOS: das Raster ist das EINE Busch-Gesetz (B3-Daten mit
+        // Vertrags-Default 4.4). Ohne Studio spawnt es über den Richter
+        // (`_growTreeBlueprintForSpawn`) + die Grammatik-Understory — P4-treu; der alte
+        // BUSH_RATE-Lücken-Pfad lebt nur im separaten `_vegetationSampleSpawn`.
+        {
             const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
             const bushStep = uCfg && Number.isFinite(uCfg.bushStep) ? uCfg.bushStep : 4.4;
             const GS = AnazhRealm.GRASS_SLOPE;
@@ -73031,7 +73033,9 @@ class AnazhRealm {
     // gezogenen, GECACHTEN Studio-Geometrie (geteilt, nie dupliziert) — sonst null (klassischer Pfad).
     // Ist das Asset noch nicht gezogen, wird es EINMAL angefragt und die Vorschau bei Ankunft neu gebaut.
     _workshopFoundryPreviewGroup(bpName) {
-        if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
+        // N7.4 — der Boot-Chokepoint prüft selbst (V18.268-Lehre): der Preset-Lookup ist
+        // pur, `_ensureAssetFoundry()` gibt foundry-aus null → identisches null-Ergebnis
+        // ohne separaten Regime-Read (nur die Auswertungs-Reihenfolge änderte sich).
         // V1 — VORSCHAU == WELT: die Formations-Repräsentanten der Werkstatt tragen den `_var0`-Suffix
         // (`kristall_var0`/`fels_var0`, V18.413-Bündelung), den der exakte `_foundryPresetFor`-Lookup
         // verfehlte → die Vorschau fiel auf die Part-Grammatik zurück (der „Nachbau in der Werkstatt").

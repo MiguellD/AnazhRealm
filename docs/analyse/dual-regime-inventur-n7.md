@@ -5,8 +5,14 @@
 > — zählt Zeilen mit dem Symbol inkl. Klammern (Definition + Kommentar-Zitate zählen mit).
 > **Baseline VOR N7.2:** 35 Zeilen-Treffer = 1 Definition + 5 Kommentar-Zitate + **29 echte Call-Sites**.
 > (Die Plan-Baseline „34" aus §3.3 entspricht den Nennungen ohne die Definitions-Zeile.)
-> **NACH N7.2 (erste Scheibe, dieser Stand):** 28 Zeilen-Treffer = 1 Definition + 5 Kommentar-Zitate
+> **NACH N7.2 (erste Scheibe):** 28 Zeilen-Treffer = 1 Definition + 5 Kommentar-Zitate
 > + **22 echte Call-Sites** — der H6-Zähler sinkt um 7.
+> **NACH N7.4 (der Abschied, 09.07. — §5 unten):** **14 echte Call-Sites** — die gemessene
+> strukturelle Ziel-Menge (Boot-Chokepoint · Hook · Nachbau-Chokepoints · Erschein-Familie ·
+> die zwei Dichte-/Thin-Wände · E-D-Schalter · Totholz-Saat). Die Plan-Ziele „≤10, dann ≤5"
+> waren aspirational VOR der N7.3-Endgestalt (der Hook lebt als Unit-Richter mit ~13
+> Band-Fixturen weiter) — solange die Grammatik-MECHANIK unter dem Hook geübt wird, ist die
+> Erschein-Familie (#5 #11 #12 #13 #16 #17 #21 #22) last-tragend, kein Senkungs-Kandidat.
 
 ## 0. Klassen-Definition
 
@@ -142,3 +148,49 @@ grep -c "_foundryEnabled()" :    35 → 28
   (#16/#17-off) und die Thin-Pfade werden alle vom foundry-off-Voll-Gate erreicht. Ein echter
   0-Aufrufer-Beweis (Schnitt-Welle) wird erst NACH N7.3 möglich, wenn der Hook auf Unit-Richter
   schrumpft.
+
+## 5. N7.4 — DER ABSCHIED (09.07., nach N7.3; „wir müssen uns von dingen verabschieden,
+## welche nun durch die Pipeline definiert sind")
+
+Drei Commits, jedes Urteil einzeln, jede Stufe unter der vollen Batterie („Alle Invarianten OK"):
+
+**(a) DER KULISSEN-ABSCHIED (N7.4a) — #1 + #8 GESCHNITTEN (ganze Subsysteme):**
+Canopy-Shell (V18.212 Ω-C) und Horizont-Mantel (B2, 4300 m) waren Vor-Studio-Fern-Kulissen —
+im Studio-Modell (Nebel an der Wald-Kante) standen beide komplett im Nebel und kosteten
+Boot-Doppel-Bauten + zwei Regime-Gabeln. Ersetzt durch: den Foundry-Wald + den Wald-Kanten-Nebel
+(S1). Methoden + Konstanten + State + Tick-Aufrufe weg; die Bänder wanderten auf die ABWESENHEIT
+(V9.56-i); `diag-mantle-overlap.cjs` (Mess-Werkzeug des Subsystems) gelöscht; der tote
+Mantel-Stub in `diag-boot-fog-ring` raus (der Nebel las den Mantel nirgends — Code-bewiesen).
+
+**(b) DAS TUFT-PAKET (N7.4b) — EIN Urteil, vier Schnitte:** das P4-Gesetz („wenn kein Baum
+spawnt, ist es so") gilt jetzt auch der Wiese. `_grassBladeTuftGeometry` + `GRASS_TUFT_BLADES`
+GESCHNITTEN; `_buildVoxelChunkGrass` trägt die EXISTENZ-GABEL (`!grassStudio` → Zelle bewusst
+gras-los verbucht — Nebel-Front zufrieden, kein Deadlock); farFactor/grassDensityScale
+kollabieren auf die Studio-Literale 1 (die Wiese dünnt NIE — V18.422 bedingungslos);
+`_tickGrassThin` (#19) + `voxelChunkGrassDensity` GESCHNITTEN (der Gras-Regler-Hebel stirbt mit;
+die Kapazität atmet über Ring/LOD/Schatten, der Streu-Thin V18.280 bleibt der eine Hebel);
+das `_grassStudioGeometry`-Verdikt bedingungslos „leer" (3-wertiger Vertrag). #20
+(`_tickGrassStage`) BLEIBT als ECHTE WAND: ohne den Read würde ein Hook-Fenster-Nachbau
+Studio-Gras ZERSTÖREN (set null). `gate:grass-thin` → die Abschieds-Linse „DIE WIESE IST
+STUDIO-DEFINIERT"; Verfassung 53→55 Gesetze (Tuft-/Thin-Rückkehr strukturell verboten).
+
+**(c) DIE DATEN-WAHRHEITS-KOLLAPSE (N7.4c) — #15 #24 #27 #28, je Wahrheitstafel-bewiesen:**
+- **#15 `_scatterRegion`-Defer:** `_fdry._prefetching` trägt allein (die Foundry existiert nur
+  foundry-an; der Warm-Anker des Gates wartet auf `!_prefetching`; headless deckt zusätzlich).
+- **#24 `_foundryRewarmColdTrees`:** `!f || !f.ready` deckt jeden foundry-losen Zustand (unter
+  dem globalen Hook wird `_foundry` nie erzeugt; `__withNoFoundry` ist sync-only = pumpt nie).
+- **#27 Strauch-Teppich:** das Raster ist BEDINGUNGSLOS das eine Busch-Gesetz (B3-Daten);
+  ohne Studio spawnt es über den Richter + die Grammatik-Understory (P4-treu, dichter statt
+  Lücken-Pfad; der alte BUSH_RATE-Pfad lebt nur im separaten `_vegetationSampleSpawn` — der
+  hat lebende Aufrufer, KEIN Schnitt-Kandidat dieser Welle).
+- **#28 Werkstatt-Vorschau:** der Boot-Chokepoint prüft selbst (Preset-Lookup pur, ensure
+  gibt foundry-aus null → identische Rückgabe; die vertagte Scheibe 2 vollzogen).
+
+**Die verbleibenden 14 (die strukturelle Ziel-Menge, jede mit Grund):**
+#5 (Gras-Existenz-Gabel — trägt seit dem Tuft-Schnitt die „ohne Studio kein Gras"-Wahrheit) ·
+#9 (E-D-Schalter bis W10) · #11 #17 #21 (Nachbau-Chokepoints, Verfassungs-gepinnt) ·
+#12 #13 #16 #22 (Erschein-Familie: Hook-Fixturen üben die Grammatik-Mechanik durch genau
+diese Gabeln) · #14 (die EINE Dichte-Quelle) · #18 #20 (Thin-/Stage-Wände: der off-Zweig
+bzw. das Hook-Fenster wäre sonst destruktiv) · #23 (Boot-Chokepoint) · #26 (Totholz-Saat,
+roadmap §4). Weitere Senkung verlangt, die Hook-Fixturen selbst zu falten (eigene Welle,
+NICHT erzwingen — die Erschein-Familie ist die eine appear-Verb-Gabel des Nervensystems).
