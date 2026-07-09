@@ -275,7 +275,7 @@ Recompiles nach Atlas-Restore. **Risiko:** mittel (exakt die V18.306/.318-Klasse
 Kopfraum-Bedingung bleibt, Linse assertiert, Rollback = Flag streichen). **DONE-Bezug:** Kriterium 2,
 der Haupthebel.
 
-### W5 — Die Dither-Blende der Foundry-Bäume (Studio-Vollübersetzung) · groß, 3–4 Commits
+### W5 — Die Dither-Blende der Foundry-Bäume (Studio-Vollübersetzung) · W5.1+W5.2 ✅ GEBAUT V18.432 (Tint-Kontinuität FIX v27 · uDitherT default statisch hinter dem TAA-Gate) · W5.3/5.4 BENANNT-OFFEN (die geteilte Masken-Quelle + Doppel-Band brauchen die Stage-Residency-Semantik als eigene Welle — kein Halb-Zustand)
 
 **Ziel:** die einzige Baum-Render-Quelle bekommt die Studio-Blende byte-nah übersetzt
 (Doppel-Mitgliedschaft im Band + komplementäre Dither-Maske — das eingefrorene Benchmark-Modell
@@ -324,7 +324,7 @@ W8. **DONE-Bezug:** Kriterium 4 + Faden „Dither-Blende" vollständig; stützt 
 Materialisierungs-Pop kalter Bäume (`_foundryRewarmColdTrees` 64791–64866) ist ein separater
 Entscheid — früh stellbar, nicht erst W8.
 
-### W6 — Null Fremd-Silhouetten + das Paritäts-Verdikt scharf · klein-mittel, 1 Welle
+### W6 — Null Fremd-Silhouetten + das Paritäts-Verdikt scharf · ✅ GEBAUT V18.432 (die vier Quellen-Gates: farn_busch · Totholz · Fern-Wasser-Provisorium [reversibel, wartet E-D] · Gras-Leer-Wand; Kalibrierung + Zensus-Linse an W5.3/5.4 gekoppelt — Schwellen erst auf stabilem Bild)
 
 **Ziel:** die Silhouetten-QUELLEN-Liste als endliche Liste schließen und DANACH — auf dem stabilen
 Bild — die Paritäts-Schwellen kalibrieren und gaten.
@@ -360,7 +360,7 @@ neuem Gate. **Risiko:** niedrig (bewährte Chokepoint-Muster); die Falle ist die
 Schwellen-Kalibrierung (V18.346: Teilmenge unabhängig vom Signal klassifizieren).
 **DONE-Bezug:** Kriterium 3 vollständig bis auf benannte Entscheide; Kriterium 1 messbar geschlossen.
 
-### W7 — Studio-Vertrag Phase 1: Fahrzeuge (Manifest-first) · mittel-groß, 2 Wellen
+### W7 — Studio-Vertrag Phase 1: Fahrzeuge (Manifest-first) · ✅ GEBAUT V18.432 (W7a Kern-Split __vehicleCore, 9/9 Paritäts-Hashes, Vertrag v1.1 §7 + gate:vehicle-contract · W7b Andocken: N7.5-Merge-Chokepoint, Auto-Blueprint fahrzeug_<id>, gate:nervensystem-vehicle end-to-end; E-A entschieden)
 
 **VORBEDINGUNG (blockiert W7a UND W7b):** die zwei normativen Entscheide §3 E-A sind gefallen —
 die `__vehicleCore`-Namespace-IIFE bricht die WÖRTLICHE eingefrorene Vertrags-Form (§3 B1
@@ -407,7 +407,7 @@ ohne eine Zeile AnazhRealm-Edit) + Merge-Selbst-Test. **Risiko:** W7a minimal ·
 **Vorbedingung:** W1–W7 haben alle Zahlen-Hälften grün geliefert — hier fallen NUR die Urteile, die
 nur das Schöpfer-Auge/die echte GPU fällen kann.
 
-1. **VOR der Session:** eine kurze HUD-Lese-Notiz in docs/ (die W1-dokumentierte Semantik: dc = Σ
+1. **VOR der Session ✅ ERLEDIGT (`docs/analyse/hud-lesenotiz-w8.md`):** eine kurze HUD-Lese-Notiz in docs/ (die W1-dokumentierte Semantik: dc = Σ
    aller Pässe seit dem EINEN reset → erwartet ~900–1600, nicht 436, nicht 38108; das
    Zensus-Ratio als Lesehilfe) — sonst wiederholt sich die 38108-Fehldeutung mit der korrekten,
    aber unintuitiven neuen Zahl IN der Abnahme.
@@ -426,7 +426,7 @@ nur das Schöpfer-Auge/die echte GPU fällen kann.
 
 ## §3 · Offene Schöpfer-Entscheide
 
-- **E-A (VOR W7, asynchron stellbar):** (1) Zweit-Kern-Form: namespaced IIFE `__vehicleCore` +
+- **E-A ✅ ENTSCHIEDEN 09.07.2026 (beide Empfehlungen bestätigt; NORMATIV in docs/studio-vertrag.md §7 N7.1–N7.5, gebaut W7a/W7b):** (1) Zweit-Kern-Form: namespaced IIFE `__vehicleCore` +
   Validator-Symbol-Mapping + Vertrag-v1.1-Namensraum-Regel (Empfehlung) — oder foundry-core-Edit
   unter Byte-Beweis / eigener Garage-Worker? (2) kindStages-Erweiterung: Merge disjunkter
   kind-Blöcke am EINEN Ingest, unbekannter kind → [0] fail-closed (Empfehlung) — beides prägt die
