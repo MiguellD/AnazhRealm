@@ -275,7 +275,7 @@ Recompiles nach Atlas-Restore. **Risiko:** mittel (exakt die V18.306/.318-Klasse
 Kopfraum-Bedingung bleibt, Linse assertiert, Rollback = Flag streichen). **DONE-Bezug:** Kriterium 2,
 der Haupthebel.
 
-### W5 — Die Dither-Blende der Foundry-Bäume (Studio-Vollübersetzung) · W5.1+W5.2 ✅ GEBAUT V18.432 (Tint-Kontinuität FIX v27 · uDitherT default statisch hinter dem TAA-Gate) · W5.3/5.4 BENANNT-OFFEN (die geteilte Masken-Quelle + Doppel-Band brauchen die Stage-Residency-Semantik als eigene Welle — kein Halb-Zustand)
+### W5 — Die Dither-Blende der Foundry-Bäume (Studio-Vollübersetzung) · ✅ VOLL GEBAUT (W5.1+W5.2 V18.432: Tint-Kontinuität + uDitherT statisch · W5.3+W5.4 V18.433: die eine Masken-Quelle [phyto-core lodCrossfadeMask + GLSL-Drift-Wand] + CPU-Doppel-Mitgliedschaft im Band, Maske+Band DEFAULT AN — gate:foundry-crossfade im CI; DONE-Kriterium 4 mechanisch komplett, der LOOK ist W8)
 
 **Ziel:** die einzige Baum-Render-Quelle bekommt die Studio-Blende byte-nah übersetzt
 (Doppel-Mitgliedschaft im Band + komplementäre Dither-Maske — das eingefrorene Benchmark-Modell
