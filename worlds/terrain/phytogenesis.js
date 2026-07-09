@@ -4762,7 +4762,7 @@ init();
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
         return "unknown";
     }
-    function __extractAssetMesh(mesh) {
+    function __extractAssetMesh(mesh, zweitKern) {
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
         const out = { kind: __assetMaterialKind(mesh.material) };
@@ -4781,12 +4781,15 @@ init();
                 alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
                 hasNormalMap: !!mat.normalMap,
             };
-            // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser): Pflanzen
-            // tragen ihre Farbe als Vertex-Colors (dieses Feld ungenutzt), ein Zweit-Kern-Mesh
-            // ohne color-Attribut (Fahrzeug: paint/glass/clay uniform) bekommt sie beim
-            // Empfaenger als Vertex-Fill. r128 liest Hex als LINEAR -> raw-Komponenten (die
-            // Farb-Regel: treue Anker als linear, nie ueber eine sRGB-Konversion).
-            if (mat.color && typeof mat.color.r === "number") out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
+            // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser), aber NUR
+            // fuer ZWEIT-KERN-Meshes (der Dispatch-Flag, NICHT der Material-kind: Fels/Kristall
+            // sind ebenfalls kind "unknown" und leben byte-exakt in den v1-Asset-Goldens —
+            // gate:asset-contract, 52 sha256 ueber den Reply, gemessen). Fahrzeug-Materialien
+            // (paint/glass/clay) sind uniform ohne Vertex-Colors; der Empfaenger
+            // (_foundryBuildGroup) fuellt daraus das color-Attribut. r128 liest Hex als
+            // LINEAR -> raw-Komponenten (die Farb-Regel: treue Anker als linear).
+            if (zweitKern && mat.color && typeof mat.color.r === "number")
+                out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
         }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
@@ -4851,7 +4854,7 @@ init();
             g.updateMatrixWorld(true);
             g.traverse((o) => {
                 if (o.isMesh) {
-                    const m = __extractAssetMesh(o);
+                    const m = __extractAssetMesh(o, isZweitKern);
                     if (m) meshes.push(m);
                 }
             });
