@@ -64761,6 +64761,17 @@ class AnazhRealm {
                 side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
             if (env !== 1) mat.envMapIntensity = env;
+            // W5.1 (Paritäts-Vollendung) — TINT-KONTINUITÄT L0/L1↔L2 (Studio FIX v27,
+            // foundry-core.js:200/244: Per-Instanz-Tint NUR auf dem LAUB, multiplikativ,
+            // aus dem POSITIONS-Hash — identisch über ALLE Stufen): die Foundry-3D-Stufen
+            // trugen KEIN useInstanceTint, der L2-Impostor schon → beim Stufen-Wechsel
+            // sprang die Kronenfarbe (Hue-Pop, unabhängig von der Geometrie-Blende).
+            // Das Flag lässt den EINEN Add-Chokepoint (`_scatterInstanceAdd` liest
+            // `leaf.mat.userData.useInstanceTint`) denselben positions-gehashten Tint
+            // auf die 3D-Krone legen, den die L2-Karte trägt — Rinde bleibt untintet
+            // (das Studio-Gesetz ist foliage-only). Der native InstanceNode-Auto-Multiply
+            // trägt ihn (V18.267-Konvention: NUR das Flag, NIE attribute("instanceColor")).
+            if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
             // Die Vorlagen-Farben leben als VERTEX-COLORS (bark braun, laub gruen). Auf
             // WebGPU/NodeMaterial MUSS colorNode = attribute("color") sie explizit lesen —
             // `vertexColors:true` wirkt hier NICHT (CLAUDE.md). Ohne das: weisses/ausgewaschenes
