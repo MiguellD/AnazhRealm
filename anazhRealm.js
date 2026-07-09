@@ -30962,6 +30962,10 @@ class AnazhRealm {
         const mesh = new THREE.Mesh(bg, this._getVoxelChunkMaterial());
         mesh.castShadow = false;
         mesh.receiveShadow = true;
+        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: das LOD-Stitch-Band + der Skirt
+        // sind Terrain-Familie (render-only Naht-Brücke), namenlos direkt unter Scene —
+        // ohne Stempel wären sie der Fail-Closed-Fallback der Inventur-Linse.
+        mesh.userData.inventar = "terrain-stitch";
         if (this.state.scene) this.state.scene.add(mesh);
         entry.lodStitchMesh = mesh;
     }
@@ -34749,6 +34753,11 @@ class AnazhRealm {
         inst.count = 0;
         inst.castShadow = false;
         inst.receiveShadow = !species.emissive;
+        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL am Bau-Chokepoint: die kleine
+        // Streu (KLEIN_VEGETATION, bewusst ohne Studio-Zwilling) trägt ihre Bau-Quelle
+        // als Inventar-Klasse. Reine Identität, kein Verhalten; der Pool recycelt das
+        // Mesh SAMT Stempel (darum hier, nicht am Aufrufer).
+        inst.userData.inventar = "streu-klein";
         return inst;
     }
 
@@ -35329,6 +35338,9 @@ class AnazhRealm {
             inst.castShadow = false;
             inst.receiveShadow = false;
             inst.frustumCulled = false; // das Feld umspannt den Spieler ringsum
+            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Fern-Impostor-Ring der
+            // kleinen Streu (dieselbe Familie wie streu-klein, nur die Fern-Stufe).
+            inst.userData.inventar = "deko-fernfeld";
             this.state.scene.add(inst);
             ff.meshes.set(sp.name, inst);
         }
@@ -65668,6 +65680,17 @@ class AnazhRealm {
             // (Ref → 0) disposed sie dann. So kann eine Räumung nie einen sichtbaren Baum zerstören.
             const og = f.cache.get(oldest);
             f.cache.delete(oldest);
+            // H3 (gate:asset-inventory) — REINES INVENTUR-BUCH, kein Verhalten: ein LRU-
+            // geräumter Key ist eine BEWUSSTE Räumung, kein stilles Verhungern — die Linse
+            // liest dieses Buch, um die zwei Klassen zu trennen (requested ⊆ visible|cached;
+            // ein geräumter, noch in f.requested stehender Key wäre sonst ein falsches Rot).
+            if (!f.lruEvicted) f.lruEvicted = new Set();
+            f.lruEvicted.add(oldest);
+            // H3-HEILUNG (die vom Inventur-Bau benannte Verhungern-Klasse): der geraeumte Key
+            // verlaesst auch die requested-Dedup-Wache — sonst fragt KEINE On-demand-Wache
+            // (_foundryFlattenFor · Impostor-Ensure · Gras · Werkstatt-Vorschau) ihn je neu an
+            // und die Variante liefert bis zum Reload permanent null. Raeumen = wieder anfragbar.
+            if (f.requested) f.requested.delete(oldest);
             if (og) {
                 if ((og._liveRefs || 0) > 0) og._evicted = true;
                 else this._disposeFoundryGroupGeom(og);
@@ -66026,6 +66049,9 @@ class AnazhRealm {
             const mesh = new T.Points(geo, mat);
             mesh.frustumCulled = false;
             mesh.renderOrder = 5;
+            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: die Regen-Punktwolke ist
+            // Wetter-Substanz (nur bei rainy/stormy sichtbar, folgt dem Spieler).
+            mesh.userData.inventar = "wetter-regen";
             this.state.scene.add(mesh);
             this._rainSystem = { mesh, lastT: null };
         } catch (_e) {

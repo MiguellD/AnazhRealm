@@ -1,4 +1,5 @@
-> **GEPARKT 09.07.2026 (Nervensystem-Plan, Phase-Regel):** dieser Kalibrierungs-Lauf wurde bei Lauf 3/5 gestoppt — die Schwellen sind NICHT festgezogen, diag-parity blieb auf dem W2-Stand (Look-Watch, kein Merge-Gate; Parität ist dem Nervensystem-Plan untergeordnet, DONE = H3/H4 + Sign-off). Die Zensus-Linse (`scripts/diag-silhouetten-zensus.cjs`) ist der H3-KEIM für Phase γ — 222 Emitter warten auf Klassifikation, Selbst-Test feuert.
+> **GEPARKT 09.07.2026 (Nervensystem-Plan, Phase-Regel):** dieser Kalibrierungs-Lauf wurde bei Lauf 3/5 gestoppt — die Schwellen sind NICHT festgezogen, diag-parity blieb auf dem W2-Stand (Look-Watch, kein Merge-Gate; Parität ist dem Nervensystem-Plan untergeordnet, DONE = H3/H4 + Sign-off).
+> **H3 STEHT (09.07.2026, Phase γ):** der Zensus-Keim ist zur EINEN Inventur-Linse gewachsen — `scripts/diag-asset-inventory.cjs` (`npm run gate:asset-inventory`, per-push-CI, ersetzt `gate:silhouetten-zensus`). Die 222 unbekannten Emitter sind AN DER QUELLE klassifiziert (Instrumentierung, nicht geraten): `streu-klein` (`_acquireScatterMesh`, ~194) · `deko-fernfeld` (`_buildDekoFernfeldSpecies`, ~12) · `terrain-stitch` (`_rebuildLodStitchBand`, ~16) · `wetter-regen` (`_ensureRainSystem`, nur bei rainy/stormy) — je ein `userData.inventar`-Identitäts-Stempel am Bau-Chokepoint, kein Verhalten. Dazu die H3-Hälfte: requested ⊆ visible|cached (f.requested gegen f.cache + fscatter/f:/fimp:/Gras-Memo-Attestierung; LRU-Räumungen via `f.lruEvicted`-Inventur-Buch bewusst, kein Verlust). Erstlauf GRÜN: 1119 Emitter erklärt · 0 Fremd-Silhouetten · 174 Keys, 0 verloren, 0 hängend; Selbst-Tests (3 injizierte Fremd-Emitter + 1 synthetisch verlorener Key) feuern.
 
 # Paritäts-Kalibrierung V18.433 (W6-Rest: Schwellen + Zensus, 09.07.2026)
 
@@ -85,9 +86,13 @@ Analyzer-Eigen-Jitter (zweiter analyze auf denselben PNGs, anderes Browser-Profi
   Fern-Wasser ist im Studio-Regime aus (W6-Provisorium). Die Wasser-OBERFLÄCHEN-Zone
   entsteht mit W10 (dann fällt auch das Fern-Wasser-Provisorium zurück auf AN).
 
-## 4 · Der Silhouetten-Zensus (die stehende W6-Linse)
+## 4 · Der Silhouetten-Zensus (die stehende W6-Linse → seit 09.07. Teil der Asset-Inventur)
 
-(wird nach dem Zensus-Lauf gefüllt)
+Der Zensus lebt jetzt als Hälfte 1 der EINEN Inventur-Linse `scripts/diag-asset-inventory.cjs`
+(H3, Nervensystem Phase γ — siehe Kopf-Note). Erstlauf auf V18.433+: 1119 Emitter erklärt,
+0 VERLETZUNGEN (Studio 721 · Substanz 368 [darin die vier gestempelten Bau-Quellen] ·
+Entscheid 30). Die Klassifikation bleibt fail-closed: ein unerklärter Emitter ODER eine
+unbekannte `inventar`-Klasse ist rot, bis sie klassifiziert wird.
 
 ## 5 · Vergleich zur V18.429-Baseline
 
@@ -105,6 +110,7 @@ W5.1–W6 und (b) den Bühnen-Zustand. Erst die gepinnte Bühne trennt sie.
 - `diag-parity` = **zwei swiftshader-Renders, gemessen ~13,5 min/Lauf** → bleibt
   **manuell/nightly** (`npm run diag:parity`), NICHT per-push (der per-push-Gate ist
   bewusst leicht).
-- Der **Silhouetten-Zensus** (Null-Renderer, foundry-ON, GPU-frei, ~1–2 min) geht in den
-  **per-push-CI** (playtest-Job, nach `gate:no-second-treebuilder`):
-  `npm run gate:silhouetten-zensus` (läuft immer mit `--selftest`).
+- Die **Asset-Inventur** (Zensus + H3-Inventur; Null-Renderer, foundry-ON, GPU-frei,
+  ~1–2 min) steht im **per-push-CI** (playtest-Job, nach `gate:no-second-treebuilder`):
+  `npm run gate:asset-inventory` (läuft immer mit `--selftest`; ersetzt den früheren
+  `gate:silhouetten-zensus`-Eintrag — EINE Linse, Gesetz #0).

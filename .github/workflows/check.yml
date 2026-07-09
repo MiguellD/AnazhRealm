@@ -288,6 +288,17 @@ jobs:
               # Kiesel/Blume/Strauch als Studio-Asset (fscatter:*); nur ungemappte Arten bleiben Grammatik.
               run: npm run gate:no-second-treebuilder
 
+            - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
+              # DIE EINE INVENTUR-LINSE (aus dem Silhouetten-Zensus gewachsen, Gesetz #0), zwei Hälften:
+              # (1) ZENSUS — jeder sichtbare Emitter der Szene wird über IDENTITÄT klassifiziert
+              # (Studio · Substanz [inkl. der gestempelten Bau-Quellen streu-klein/deko-fernfeld/
+              # terrain-stitch/wetter-regen] · Entscheid · VERLETZUNG fail-closed) → 0 Fremd-Silhouetten.
+              # (2) INVENTUR — jeder on-demand angefragte Foundry-Key (f.requested) ist am Ende resident
+              # (f.cache) oder sichtbar attestiert (fscatter/f:/fimp:/Gras-Memo); LRU-Räumungen (f.lruEvicted)
+              # sind bewusst, kein Verlust → 0 verlorene Keys = das stille Verhungern (V18.309-Klasse) ist
+              # strukturell laut. Selbst-Tests: injizierte Fremd-Emitter + synthetisch verlorener Key → rot.
+              run: npm run gate:asset-inventory
+
             - name: V4 Saison-Flip progressiv — kein O(archs)-Entfern-Spike beim Jahreszeit-Wechsel
               # V4(A): der Saison-Wechsel füllt eine Queue statt alle Foundry-Instanzen synchron zu entfernen;
               # der `_drainSeasonFlip`-Scheduler-Job (prio 3) macht je Frame <= SEASON_FLIP_PER_TICK kalt, der

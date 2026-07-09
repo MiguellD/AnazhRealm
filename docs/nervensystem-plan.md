@@ -369,9 +369,11 @@ H2 vorbereitet: neue kind-Klasse = Policy-Zeile + optional Manifest + Donor-BP.
 
 ### DONE Phase γ
 
-- H3 Inventur-Gate spezifiziert und grün (neues `gate:asset-inventory` oder Band)
-- H4 `gate:perf-parity` im Band
-- H6 Dual-Zähler gesunken
+- [x] H3 Inventur-Gate spezifiziert und grün (`gate:asset-inventory`, 09.07. — die EINE Linse
+      [Zensus + requested ⊆ visible|cached], per-push-CI; 222 Unbekannte an der Quelle
+      klassifiziert via `userData.inventar`-Stempel; Selbst-Tests feuern)
+- [ ] H4 `gate:perf-parity` im Band
+- [ ] H6 Dual-Zähler gesunken
 
 ---
 
@@ -445,16 +447,16 @@ Pro Lab **Checkliste** (immer gleich):
 
 # TEIL V — HÄRTETESTS (Versprechen = messbar)
 
-| ID     | Härtetest                                                      | Phase | Gate / Linse                   |
-| ------ | -------------------------------------------------------------- | ----- | ------------------------------ |
-| **H1** | Neues Preset **bekannter** kind-Klasse: 0 Diff `anazhRealm.js` | β     | nervensystem D + Prozess       |
-| **H2** | Neue kind-Klasse: nur Policy+Manifest+Donor, 0 kind-if         | β+ε   | Constitution + manuell         |
-| **H3** | Inventur appear: requested ⊆ visible\|cached                   | γ     | **neu** `gate:asset-inventory` |
-| **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity`             |
-| **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                 |
-| **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Zähl-Skript / Baseline         |
-| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil              |
-| **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                           |
+| ID     | Härtetest                                                      | Phase | Gate / Linse                           |
+| ------ | -------------------------------------------------------------- | ----- | -------------------------------------- |
+| **H1** | Neues Preset **bekannter** kind-Klasse: 0 Diff `anazhRealm.js` | β     | nervensystem D + Prozess               |
+| **H2** | Neue kind-Klasse: nur Policy+Manifest+Donor, 0 kind-if         | β+ε   | Constitution + manuell                 |
+| **H3** | Inventur appear: requested ⊆ visible\|cached                   | γ     | `gate:asset-inventory` ✅ (09.07., CI) |
+| **H4** | Perf studio-relativ im Band                                    | γ     | `gate:perf-parity`                     |
+| **H5** | Unbekannte component-keys: must-ignore, kein Crash             | β+δ   | Unit im Ingest                         |
+| **H6** | `_foundryEnabled()`-Zähler sinkt                               | γ N7  | Zähl-Skript / Baseline                 |
+| **H7** | drive aus Lab-Formel ≠ reiner Emergenz-Zufall                  | δ N6  | diag Mount-Profil                      |
+| **H8** | place.mode none vs forest disjunkt                             | δ N5  | Gate                                   |
 
 Bestehende Pflicht-Gates pro Merge: `check` · relevant nervensystem* · studio-vertrag · page-error wo Render.
 
