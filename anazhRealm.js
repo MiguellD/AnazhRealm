@@ -1255,6 +1255,17 @@ class AnazhRealm {
                     ? AnazhRealm.LOD_DISTANCES.lodRef
                     : 14,
             lodMaskOn: true,
+            // W5.3 (Paritäts-Vollendung) — DIE FOUNDRY-DITHER-BLENDE, BUILD-ZEIT-GATE (Default
+            // AUS): die Studio-Crossfade-Maske (foundry-core FIX v37, via der EINEN Quelle
+            // `__phytoCore.lodCrossfadeMask` + `_lodCrossfadeMaskNode`) ist auf dem Foundry-Pfad
+            // VERDRAHTET (`_foundryTreeMaterial` Fade-out/Partition der 3D-Stufen ·
+            // `_foundryBuildGroup` aLodLevel/aH0/aH0L-Stempel · Impostor-fin-EINblendung), aber
+            // hinter DIESEM Flag aus, bis W5.4 die CPU-Doppel-Mitgliedschaft bringt — eine Maske
+            // ohne Doppel-Mitgliedschaft dithert die einzige residente Stufe aus = Coverage-
+            // Löcher. Build-zeitlich gelesen (der Material-Cache-Key trägt das Flag; ein Live-
+            // Toggle wirkt nur auf NEU gebaute Gruppen — Material + Stempel entstehen im selben
+            // Build-Pass, per Konstruktion konsistent).
+            foundryCrossfade: false,
             // V18.353 — PHASE A.1 (Engine-Orchestrierung, Draw-Call-Kollaps): die GLOBAL
             // PLATZIERTE Architektur (`_archInstanceAdd`) war frustumCulled=false → NIE
             // gecullt, die ganze Welt rendert egal wohin man schaut. Das V18.300-Muster
@@ -29313,6 +29324,26 @@ class AnazhRealm {
                                         _fb
                                     );
                                     _alpha = _samp.a;
+                                    // W5.3 (Paritäts-Vollendung) — die fin-EINblendung des Billboards
+                                    // (Studio _impMat-Fragment: fin = clamp((vCD−(uD1−uFade))/uFade,0,1),
+                                    // discard wenn max(min(fin·2,1),vOcc) < _dh — die EINE Quelle
+                                    // `__phytoCore.lodCrossfadeMask` lod=2, via `_lodCrossfadeMaskNode`).
+                                    // Distanz = die Fragment-Anker-Peilung (√_hl2, dieselbe Näherung wie
+                                    // die View-Zellen-Wahl oben); Sichthöhe = Bake-Rahmen × Instanz-Skala
+                                    // (rec.frame.halfH·2 × _sInst — das Studio-szV). Hinter dem
+                                    // foundryCrossfade-Gate AUS: Default byte-unverändert (W5.4 bringt
+                                    // die CPU-Doppel-Mitgliedschaft, erst dann Default-an).
+                                    if (this.state && this.state.foundryCrossfade === true) {
+                                        const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
+                                            impostor: true,
+                                            distNode: _Ta.sqrt(_hl2),
+                                            visHeightNode:
+                                                _rec.frame && Number.isFinite(_rec.frame.halfH)
+                                                    ? _Ta.float(_rec.frame.halfH * 2).mul(_sInst)
+                                                    : null,
+                                        });
+                                        if (_keepFin) _alpha = _alpha.mul(_keepFin);
+                                    }
                                     // der Atlas trägt die VOLLE Baumfarbe (RTT des echten Baums);
                                     // vertex-color = weiß (Identität), Tint via instanceColor.
                                     albedoNode = _samp.rgb;
@@ -29930,6 +29961,114 @@ class AnazhRealm {
         }
         st.lodUniforms = u;
         return u;
+    }
+
+    // W5.3 (Paritäts-Vollendung) — DIE STUDIO-DITHER-BLENDE ALS TSL-KNOTEN. Die zweite Leser-
+    // Hälfte der EINEN Masken-Quelle `__phytoCore.lodCrossfadeMask` (phyto-core.js — die byte-
+    // nahe Übersetzung von foundry-core.js `injectWind` Z.210–233 FIX v37 + phytogenesis
+    // `_impMat`-fin): dieser Helfer baut DIESELBE Mathematik symbolisch als TSL-Graph — jede
+    // Formel/Konstante hier MUSS der phyto-core-Funktion entsprechen (die Node-Linse
+    // `gate:foundry-crossfade` beweist die phyto-core↔GLSL-Äquivalenz; dieser Graph mappt 1:1).
+    // Die ZAHLEN kommen aus den EINEN Quellen: `AnazhRealm.LOD_DISTANCES` (thresh01/thresh12/
+    // fade/fade0 — live von `_foundryIngestRenderConfig` gespeist, hier build-zeitlich als
+    // float-Knoten gefaltet wie im V18.387-Grammatik-Block) + `_ensureLodUniforms` (uLodRef/
+    // uLodMaskOn/uDitherT — KEINE neue Uniform-Sammlung). step-Konvention wie der bestehende
+    // Block (`step(a,b)` = 1 wo b ≥ a): an der exakten Gleichheit ditherVal == Rampe weicht sie
+    // vom strikten GLSL-`>=`-Discard ab — maßtheoretisch nie getroffen (IGN-Werte sind irrational-
+    // artig gestreut), dieselbe Konvention trägt schon das V18.388-Grammatik-Crossfade.
+    //   opts.impostor: true → die fin-EINblendung (lod=2): keep = step(dh, min(2·f1, 1)) mit
+    //     f1 aus opts.distNode (Kamera-xz-Distanz) × Wahrnehmungs-k aus opts.visHeightNode
+    //     (Welt-Sichthöhe; ohne sie Faktor 1 = absolute Distanz — der Klein-Baum-Fall).
+    //   sonst → die 3D-Stufen: liest die `_foundryBuildGroup`-Stempel aLodLevel (Studio-Semantik:
+    //     1 = Stufe L0 · 2 = Stufe L1 · 0 = ungemaskt, das GLSL-`vLod>0.5`-Gate) + aH0/aH0L
+    //     (Welt-Sichthöhen für die SSE-Metrik; per-Instanz-Skala wie im V18.388-Block bewusst
+    //     genähert — die CPU-Mitgliedschaft W5.4 rechnet exakt via `_lodPerceptionDistance`).
+    //     opts.foliage schaltet Laub (überlappende Rampen) vs. Rinde (exakte Partition).
+    // Rückgabe: der keep-Knoten (1 = behalten) oder null (kein TSL/Uniforms — der Aufrufer
+    // lässt das Material unberührt). Der Aufrufer faltet keep in die Alpha (alphaTest cullt).
+    _lodCrossfadeMaskNode(T, opts) {
+        try {
+            const _lu = this._ensureLodUniforms();
+            if (
+                !T ||
+                !_lu ||
+                !_lu.uLodRef ||
+                !_lu.uLodMaskOn ||
+                !_lu.uDitherT ||
+                !T.float ||
+                !T.fract ||
+                !T.screenCoordinate ||
+                !T.step ||
+                !T.mix
+            )
+                return null;
+            const cfg = AnazhRealm.LOD_DISTANCES;
+            const D0 = cfg.thresh01,
+                D1 = cfg.thresh12,
+                FADE = cfg.fade || 8,
+                FADE0 = cfg.fade0 || 4;
+            // _dh — Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN
+            // (52.9829189 · 0.06711056 · 0.00583715; foundry-core.js Z.212).
+            const _fc = T.screenCoordinate;
+            const _dh = T.fract(
+                T.float(52.9829189)
+                    .mul(T.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
+                    .add(_lu.uDitherT)
+            );
+            if (opts && opts.impostor === true) {
+                // __phytoCore.lodCrossfadeMask lod=2: keep = min(2·f1, 1) ≥ dh (fin-EINblendung;
+                // vOcc trägt der RTT-Bake nicht → 0-Annahme wie in der Quelle dokumentiert).
+                const _dist = opts.distNode;
+                if (!_dist) return null;
+                let _vCD = _dist;
+                if (opts.visHeightNode) {
+                    const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
+                    _vCD = _dist.mul(_k);
+                }
+                const _f1i = _vCD
+                    .sub(T.float(D1 - FADE))
+                    .div(T.float(FADE))
+                    .clamp(0.0, 1.0);
+                const _keepFin = T.step(_dh, _f1i.mul(2.0).min(T.float(1.0)));
+                return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
+            }
+            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen:
+            if (!T.attribute || !T.positionWorld || !T.cameraPosition || !T.length || !T.vec2) return null;
+            const _aLod = T.attribute("aLodLevel", "float");
+            const _aH0 = T.attribute("aH0", "float");
+            const _aH0L = T.attribute("aH0L", "float");
+            const _cd = T.length(
+                T.vec2(T.cameraPosition.x.sub(T.positionWorld.x), T.cameraPosition.z.sub(T.positionWorld.z))
+            );
+            const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
+            const _lkL = _lu.uLodRef.div(_aH0L.max(T.float(1e-3))).min(T.float(1.0));
+            const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
+            const _dL = _cd.mul(_lkL); // vLodDL (Blatt-Metrik)
+            // __phytoCore.lodCrossfadeMask: f1/f0/f1o — dieselben Rampen, symbolisch.
+            const _f1 = _dS
+                .sub(T.float(D1 - FADE))
+                .div(T.float(FADE))
+                .clamp(0.0, 1.0);
+            const _f0 = _dL
+                .sub(T.float(D0 - FADE0))
+                .div(T.float(FADE0))
+                .clamp(0.0, 1.0);
+            const _f1o = _f1.mul(2.0).sub(1.0).clamp(0.0, 1.0);
+            const _foliage = !!(opts && opts.foliage);
+            // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
+            const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
+            // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh.
+            const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
+            const _keep1 = _fadeIn.mul(T.step(_f1o, _dh));
+            // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
+            const _stageKeep = T.mix(_keep0, _keep1, T.step(T.float(1.5), _aLod));
+            const _masked = T.step(T.float(0.5), _aLod);
+            const _keep = T.mix(T.float(1.0), _stageKeep, _masked);
+            return T.mix(T.float(1.0), _keep, _lu.uLodMaskOn);
+        } catch (_e) {
+            if (typeof window !== "undefined") window.__foundryCrossfadeError = String((_e && _e.message) || _e);
+            return null;
+        }
     }
 
     _applyVegetationResponse(mat, opts, responseProfile) {
@@ -33766,7 +33905,8 @@ class AnazhRealm {
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
                 this._foundryRequest("gras", 1, stage, season).then((meshes) => {
-                    if (meshes) this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
+                    if (meshes)
+                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: stage, preset: "gras" }));
                     else f.requested.delete(gkey); // Timeout: nachfragbar bleiben
                 });
             }
@@ -64615,7 +64755,7 @@ class AnazhRealm {
                 f.requested.add(gkey);
                 this._foundryRequest(preset, variant, 1, season || "summer").then((meshes) => {
                     if (meshes) {
-                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes));
+                        this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: 1, preset }));
                         this._scatterRefillPending = true;
                         // DER SELBST-MATERIALISIERENDE RECORD (08.07., GEMESSEN: nach dem Prefetch
                         // standen 0 Records — der erste ensure-Aufruf postet nur die Anfrage; erst
@@ -64847,10 +64987,18 @@ class AnazhRealm {
         const env = mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : kind === "grass" ? 0.18 : 1;
         // Seite: Studio 0 Front · 2 Double; Laub/Gras immer Double (Alt-Verhalten).
         const sideDouble = double || (mp && mp.side === 2);
+        // W5.3 (Paritäts-Vollendung) — das BUILD-ZEIT-Gate der Studio-Dither-Blende (Default AUS,
+        // bis W5.4 die CPU-Doppel-Mitgliedschaft bringt — Maske ohne Doppel-Mitgliedschaft dithert
+        // die einzige residente Stufe aus = Coverage-Löcher). Der Key trägt das Flag: ein Live-
+        // Toggle baut NEUE (maskierte) Materialien nur für NEU gebaute Gruppen — Material und
+        // Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Build-Pass, per Konstruktion
+        // konsistent (kein „Maske liest fehlendes Attribut"-Crash auf Alt-Geometrie).
+        const xfade = !!(this.state && this.state.foundryCrossfade === true);
         // Cache-Key: kind + gerundete Regler (bounded — je Preset-Charakter ein Material).
-        const key = mp
-            ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
-            : kind;
+        const key =
+            (mp
+                ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
+                : kind) + (xfade ? "|xf" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         try {
@@ -64913,6 +65061,25 @@ class AnazhRealm {
                 // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
                 mat.colorNode = TSL.vec4(vcol, 1.0);
             }
+            // W5.3 — DIE STUDIO-DITHER-BLENDE (FIX v37) auf den Foundry-3D-Stufen: Fade-out der
+            // L0 + Fade-in der L1 (Laub überlappend, Rinde exakte Partition) — die Maske faltet
+            // in die Alpha (TSL-Idiom statt GLSL-discard, alphaTest cullt); Formeln = die EINE
+            // Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`). Nur hinter dem
+            // xfade-Gate: der Default-Render bleibt byte-unverändert (kein neuer Knoten, kein
+            // alphaTest-Wechsel auf der Rinde).
+            if (xfade) {
+                const _keepX = this._lodCrossfadeMaskNode(TSL, {
+                    foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
+                });
+                if (_keepX) {
+                    if (mat.opacityNode) mat.opacityNode = mat.opacityNode.mul(_keepX);
+                    else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined)
+                        mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
+                    if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5;
+                    mat.userData = mat.userData || {};
+                    mat.userData.foundryCrossfade = true; // Linsen-Marker (kein Verhalten)
+                }
+            }
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
         } catch (_e) {
@@ -64921,7 +65088,12 @@ class AnazhRealm {
         this._foundryMats[key] = mat;
         return mat;
     }
-    _foundryBuildGroup(meshes) {
+    // W5.3 — `stage` (optional): { lod, preset } des gebauten Assets (alle Aufrufer haben den
+    // Cache-Key `preset|variant|lod|season` in der Hand). Trägt die Stufen-/SSE-Stempel für die
+    // Studio-Dither-Blende — NUR unter dem foundryCrossfade-Gate gestempelt (Material und
+    // Attribute entstehen im selben Build-Pass → per Konstruktion konsistent; ohne Flag null
+    // Extra-Speicher). Ohne `stage` (Alt-Aufrufer/Diag) → Stempel-Wert 0 = ungemaskt.
+    _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
         let group = null;
@@ -64975,6 +65147,52 @@ class AnazhRealm {
             }
         } catch (_e) {
             return null;
+        }
+        if (group && group.children.length && this.state && this.state.foundryCrossfade === true) {
+            // W5.3 — DIE STUFEN-/SSE-STEMPEL (das GLSL-Attribut-Vokabular der Studio-Blende,
+            // phytogenesis Z.2413–2435): aLodLevel = 1 (Stufe L0) · 2 (Stufe L1) · 0 (ungemaskt —
+            // Nicht-Baum-Kinds und der Impostor-Pfad; exakt das Studio-`vLod>0.5`-Gate), aH0 =
+            // Welt-Sichthöhe der Gruppe (Template-Höhe × Preset-Welt-Skala; die per-Entry-Skala
+            // ist wie im V18.388-Block genähert — W5.4 rechnet die CPU-Mitgliedschaft exakt),
+            // aH0L = Blatt-Sichthöhe (Laub gekappt auf LOD_DISTANCES.leafVisCap, die EINE
+            // Kapp-Quelle des Hauses; Rinde aH0L == aH0). VOR dem Warm-Kompilieren gestempelt
+            // (die Pipeline-Layout-Wahrheit muss beim compileAsync schon stehen).
+            try {
+                const _lodS = stage && Number.isFinite(stage.lod) ? stage.lod | 0 : null;
+                const _isTree = !!(
+                    stage &&
+                    stage.preset &&
+                    typeof this._foundryPresetIsTree === "function" &&
+                    this._foundryPresetIsTree(stage.preset)
+                );
+                const _aLodVal = _isTree && _lodS === 0 ? 1 : _isTree && _lodS === 1 ? 2 : 0;
+                let _minY = Infinity,
+                    _maxY = -Infinity;
+                for (const ch of group.children) {
+                    const pa = ch.geometry.attributes.position.array;
+                    for (let i = 1; i < pa.length; i += 3) {
+                        if (pa[i] < _minY) _minY = pa[i];
+                        if (pa[i] > _maxY) _maxY = pa[i];
+                    }
+                }
+                const _wsM = stage && stage.preset ? this._foundryWorldScaleMatrix(stage.preset) : null;
+                const _ws = _wsM && _wsM.elements ? _wsM.elements[0] || 1 : 1;
+                const _h0 = Math.max(0.1, (_maxY - _minY) * _ws);
+                const _D = AnazhRealm.LOD_DISTANCES;
+                const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 12;
+                for (const ch of group.children) {
+                    const _n = ch.geometry.attributes.position.count;
+                    const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
+                    const _isFol = _fk === "foliage" || _fk === "foliageTex" || _fk === "grass";
+                    const _h0L = _isFol ? Math.min(_h0, _capL) : _h0;
+                    ch.geometry.setAttribute(
+                        "aLodLevel",
+                        new T.BufferAttribute(new Float32Array(_n).fill(_aLodVal), 1)
+                    );
+                    ch.geometry.setAttribute("aH0", new T.BufferAttribute(new Float32Array(_n).fill(_h0), 1));
+                    ch.geometry.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(_n).fill(_h0L), 1));
+                }
+            } catch (_eS) {}
         }
         if (group && group.children.length) {
             // WARM-KOMPILIEREN (V18.367) — ABER NUR EINMAL JE MATERIAL. Die Foundry-Materialien
@@ -65085,7 +65303,8 @@ class AnazhRealm {
                             .then((meshes) => {
                                 // Nur bei ECHTER Antwort cachen. Ein Timeout (meshes null) NICHT null
                                 // cachen -> die Art bleibt on-demand nachfragbar.
-                                if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                                if (meshes)
+                                    this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset: sp }));
                             })
                             .catch(() => {})
                     );
@@ -65344,7 +65563,7 @@ class AnazhRealm {
                 f.requested.add(key);
                 this._foundryRequest(preset, variant, lod, season).then((meshes) => {
                     if (meshes) {
-                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                         this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
                     } else {
                         // Timeout/Fehler: NICHT null cachen (das doomt die Art dauerhaft zu
@@ -73016,7 +73235,7 @@ class AnazhRealm {
             if (!f.requested.has(key)) {
                 f.requested.add(key);
                 this._foundryRequest(preset, variant, lod, season).then((meshes) => {
-                    if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes));
+                    if (meshes) this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                     else f.requested.delete(key);
                     rebuild();
                 });

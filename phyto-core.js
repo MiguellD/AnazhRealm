@@ -1469,6 +1469,67 @@
         return out;
     }
 
+    // ===== W5.3 (Paritäts-Vollendung) — DIE GETEILTE LOD-CROSSFADE-MASKEN-QUELLE =====
+    // Die EXAKTE Übersetzung der Studio-Dither-Blende (foundry-core.js `injectWind`,
+    // Fragment-Maske Z.210–233, FIX v37 + phytogenesis `_impMat`-Fragment „fin") als reine
+    // Skalar-Funktionen — DREI Leser (Gesetz #0, kein Re-Derivations-Parallelpfad):
+    //   (1) der Studio-GLSL selbst (foundry-core.js — seine Konstanten kommen aus DENSELBEN
+    //       Config-Zahlen `PORTAL_RENDER_CONFIG.lod` d0/d1/fade/fade0),
+    //   (2) AnazhRealms TSL-Builder (`_lodCrossfadeMaskNode` mappt symbolisch auf DIESE Formeln),
+    //   (3) die Node-Linse (`scripts/diag-foundry-crossfade.cjs` evaluiert DIESE Funktion gegen
+    //       die per Regex aus foundry-core.js geparsten GLSL-Konstanten — die Drift-Wand).
+    // KEINE eigene Konstante: `cfg` trägt d0/d1/fade/fade0 als PARAMETER (dieselben Zahlen, die
+    // in AnazhRealm als LOD_DISTANCES.thresh01/thresh12/fade/fade0 leben — beide Schreibweisen
+    // werden gelesen).
+    //
+    // Interleaved-Gradient-Noise (Jimenez) — BYTE-GENAU die foundry-core-`_dh`-Koeffizienten:
+    //   _dh = fract(52.9829189 · fract(x·0.06711056 + y·0.00583715) + uDitherT)
+    function lodDitherIGN(x, y, t) {
+        const fr = (v) => v - Math.floor(v);
+        return fr(52.9829189 * fr(x * 0.06711056 + y * 0.00583715) + (t || 0));
+    }
+    // Die Masken-Entscheidung EINER Stufe an EINEM Fragment (dist, ditherWert → keep/discard).
+    //   dist     = Skelett-Wahrnehmungs-Distanz (GLSL vLodD = camDist·min(uLodRef/(aH0·s),1)),
+    //   distLeaf = Blatt-Distanz (GLSL vLodDL, aH0L-Metrik; Default = dist — Rinde: aH0L==aH0),
+    //   ditherVal = der IGN-Wert des Fragments (lodDitherIGN),
+    //   cfg      = { d0, d1, fade, fade0 } (== thresh01/thresh12/fade/fade0),
+    //   lod      = 0 (Stufe L0, Studio aLodLevel 1) · 1 (Stufe L1, aLodLevel 2) · 2 (Impostor/fin),
+    //   isFoliage = Laub (überlappende Rampen, FIX v37) vs. Rinde (exakte Partition — die L0/L1-
+    //               Zylinder liegen deckungsgleich, Union hieße Z-Fighting auf jedem Stamm).
+    // Rückgabe { keep, f0, f1, f1o }: keep true = das Fragment bleibt (GLSL: kein discard).
+    function lodCrossfadeMask(dist, ditherVal, cfg, lod, isFoliage, distLeaf) {
+        const c01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+        const d0 = cfg && cfg.d0 !== undefined ? cfg.d0 : cfg ? cfg.thresh01 : NaN;
+        const d1 = cfg && cfg.d1 !== undefined ? cfg.d1 : cfg ? cfg.thresh12 : NaN;
+        const fade = cfg ? cfg.fade : NaN;
+        const fade0 = cfg ? cfg.fade0 : NaN;
+        const dL = typeof distLeaf === "number" ? distLeaf : dist;
+        // GLSL: _f1 = clamp((vLodD −(LOD_D1−LOD_FADE))/LOD_FADE, 0, 1)  — das L1→L2-Band,
+        //       _f0 = clamp((vLodDL−(LOD_D0−LOD_FADE0))/LOD_FADE0, 0, 1) — das L0→L1-Band,
+        //       _f1o = clamp(_f1·2 − 1, 0, 1) — die VERZÖGERTE Fern-Ausblendung (obere Bandhälfte;
+        //       das Billboard blendet in der unteren Hälfte ein → Union, fight-frei da tiefen-versetzt).
+        const f1 = c01((dist - (d1 - fade)) / fade);
+        const f0 = c01((dL - (d0 - fade0)) / fade0);
+        const f1o = c01(f1 * 2.0 - 1.0);
+        let keep;
+        if (lod >= 2) {
+            // Impostor-EINblendung (phytogenesis _impMat: fin = clamp((vCD−(uD1−uFade))/uFade,0,1);
+            // discard wenn max(min(fin·2,1), vOcc) < _dh — vOcc (Vorbake-Okklusion) hier 0):
+            keep = Math.min(f1 * 2.0, 1.0) >= ditherVal;
+        } else if (lod <= 0) {
+            // Stufe L0 (GLSL vLod<1.5): Laub discard wenn clamp(2f0−1)≥dh (weicht erst in der
+            // OBEREN Bandhälfte — FIX v37) · Rinde discard wenn f0≥dh (volle Rampe = Partition).
+            keep = isFoliage ? c01(f0 * 2.0 - 1.0) < ditherVal : f0 < ditherVal;
+        } else {
+            // Stufe L1 (GLSL else): Laub-EINblendung via min(2f0,1) (discard wenn <dh, bei Band-
+            // mitte VOLL da) · Rinde exakt komplementär (discard wenn f0<dh → keepL0 XOR keepL1);
+            // Fern-Ausblendung beider via f1o (discard wenn f1o≥dh).
+            const fadeIn = isFoliage ? Math.min(f0 * 2.0, 1.0) >= ditherVal : f0 >= ditherVal;
+            keep = fadeIn && f1o < ditherVal;
+        }
+        return { keep: keep, f0: f0, f1: f1, f1o: f1o };
+    }
+
     root.__phytoCore = {
         impostorFrame: impostorFrame,
         scanRadialXZ: scanRadialXZ,
@@ -1486,5 +1547,7 @@
         buildBoulderGeometry: buildBoulderGeometry,
         buildCrystalPointGeometry: buildCrystalPointGeometry,
         buildBarkTubeArrays: buildBarkTubeArrays,
+        lodDitherIGN: lodDitherIGN, // W5.3 — das foundry-core-_dh (Interleaved-Gradient-Noise), byte-genau
+        lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);
