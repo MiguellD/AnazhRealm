@@ -178,7 +178,7 @@ function simplex3(x, y, z) {
 }
 
 /* ---------- Geteilte Uniforms: Wind (Eigenfreq) + Saison (Phaenologie) ----- */
- // uSeasonMul: aktueller Saison-Tint / Bau-Tint -> Laubfarbe drivet KONTINUIERLICH, ohne Rebuild
+// uSeasonMul: aktueller Saison-Tint / Bau-Tint -> Laubfarbe drivet KONTINUIERLICH, ohne Rebuild
 const _seasonBuiltTint = new THREE.Color(0x4f7a30); // Tint, mit dem die Geometrie zuletzt gebacken wurde (Referenz fuer das Verhaeltnis)
 // DIE BODEN-PALETTE — EINE Quelle fuer die Terrain-Farbgebung UND den world-params-Export (die
 // Foundry reicht sie an AnazhRealm, dessen Boden/Fels-Farben sie live lesen). Editiert der Schoepfer
@@ -353,7 +353,6 @@ let framedOnce = false;
    BAUM-MASCHINE — rekursive Veraestelung aus Gesetzen
    da Vinci (Delta) · Apikaldominanz · Gravitropismus · Phyllotaxis (137.5)
  * ========================================================================== */
-
 
 /* ========================================================================== *
    BLUME — Vogel-Spirale (Korb) + Fibonacci-Blueten (Superformel)
@@ -2165,8 +2164,8 @@ function buildForest() {
     // Gestalt-Sprung am Stufenwechsel); die RNG()-Aufrufzahl bleibt EXAKT die
     // alte (ein Wurf je Template-Variante) — der ganze Wald wuerfelt unveraendert.
     const _KS = (PORTAL_RENDER_CONFIG.lod && PORTAL_RENDER_CONFIG.lod.kindStages) || {};
-    const _ksN = (k, d) => ((_KS[k] && _KS[k].length ? _KS[k][0] : d) | 0);
-    const _ksF = (k, d) => ((_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0);
+    const _ksN = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][0] : d) | 0;
+    const _ksF = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0;
     const _shrubSeed = Math.floor(RNG() * 1e6);
     const shrubT = [buildInstance("strauch", _shrubSeed, _ksN("shrub", 2))];
     const shrubTF = [buildInstance("strauch", _shrubSeed, _ksF("shrub", 2))];
@@ -4699,6 +4698,18 @@ init();
                   }
                 : null,
         };
+        // W7b (Studio-Vertrag v1.1 N7.5) — die kindStages-Bloecke der ZWEIT-KERNE reisen SEPARAT
+        // (je Kern ein Block unter cfg.lod.zusatzKindStages): der EMPFAENGER mergt am EINEN
+        // Ingest-Chokepoint (_foundryIngestRenderConfig), ein Kern ueberschreibt nie den Block
+        // eines anderen. must-ignore-fest: ein v1-only-Leser ignoriert das Zusatz-Feld schlicht.
+        try {
+            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
+            const vks =
+                VC && VC.PORTAL_RENDER_CONFIG && VC.PORTAL_RENDER_CONFIG.lod
+                    ? VC.PORTAL_RENDER_CONFIG.lod.kindStages
+                    : null;
+            if (vks && cfg.lod) cfg.lod.zusatzKindStages = { "vehicle-core": JSON.parse(JSON.stringify(vks)) };
+        } catch (_e) {}
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
             __post({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
         }
@@ -4714,6 +4725,28 @@ init();
                 book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
             }
         } catch (_e) {}
+        // W7b (Studio-Vertrag v1.1 N7.2) — die ZWEIT-KERN-REZEPTE reisen im SELBEN Buch: laeuft
+        // im Foundry-Worker ein weiterer Kern (vehicle-core -> __vehicleCore via importScripts),
+        // traegt das Buch auch seine kind:"vehicle"-Presets. Disjunkt first-wins: ein Zweit-Kern
+        // ueberschreibt NIE einen Eintrag des Erst-Kerns (N7.5-Geist). Ohne Zweit-Kern (Portal-
+        // Fenster laedt vehicle-core nicht): No-op, das Buch bleibt byte-gleich.
+        try {
+            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
+            if (VC && VC.PRESETS) {
+                for (const id in VC.PRESETS) {
+                    if (!Object.prototype.hasOwnProperty.call(VC.PRESETS, id) || book[id]) continue;
+                    const p = VC.PRESETS[id];
+                    if (!p || typeof p !== "object") continue;
+                    book[id] = {
+                        kind: p.kind,
+                        panel: p.panel || "vehicle",
+                        lab: typeof p.lab === "string" ? p.lab : undefined,
+                        s: Object.assign({}, p.s),
+                        fx: Object.assign({}, p.fx),
+                    };
+                }
+            }
+        } catch (_e2) {}
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
             __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book }, "*");
         }
@@ -4748,6 +4781,12 @@ init();
                 alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
                 hasNormalMap: !!mat.normalMap,
             };
+            // W7b — die MATERIAL-FARBE reist additiv mit (must-ignore fuer Alt-Leser): Pflanzen
+            // tragen ihre Farbe als Vertex-Colors (dieses Feld ungenutzt), ein Zweit-Kern-Mesh
+            // ohne color-Attribut (Fahrzeug: paint/glass/clay uniform) bekommt sie beim
+            // Empfaenger als Vertex-Fill. r128 liest Hex als LINEAR -> raw-Komponenten (die
+            // Farb-Regel: treue Anker als linear, nie ueber eine sRGB-Konversion).
+            if (mat.color && typeof mat.color.r === "number") out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
         }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
@@ -4794,7 +4833,21 @@ init();
             } catch (_se) {}
         }
         try {
-            const g = buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
+            // W7b (Studio-Vertrag v1.1) — der ZWEIT-KERN-DISPATCH: ein Preset, das NICHT im
+            // Pflanzen-Buch steht aber im vehicle-core (__vehicleCore.PRESETS), baut durch
+            // DESSEN buildInstance (dieselbe Vertrags-Signatur; kindStages.vehicle=[0] — der
+            // Kern klemmt intern auf die feine Stufe). Extraktion/Dispose identisch: die
+            // Meshes reisen engine-neutral, mat-Regler + mat.color fliessen mit.
+            const VC = typeof self !== "undefined" && self.__vehicleCore ? self.__vehicleCore : null;
+            const isZweitKern =
+                VC &&
+                VC.PRESETS &&
+                typeof msg.presetId === "string" &&
+                !Object.prototype.hasOwnProperty.call(PRESETS, msg.presetId) &&
+                Object.prototype.hasOwnProperty.call(VC.PRESETS, msg.presetId);
+            const g = isZweitKern
+                ? VC.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
+                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
             g.traverse((o) => {
                 if (o.isMesh) {

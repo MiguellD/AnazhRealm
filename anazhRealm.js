@@ -49349,6 +49349,23 @@ class AnazhRealm {
             kBrake: radCount > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
             roles,
         };
+        // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
+        // Zweit-Kerns (fx.fahrprofil, ein reiner Daten-Block) Fahr-Werte, fuehren SIE — sonst
+        // traegt das EMERGENTE Profil oben allein (0 Regress: heute traegt kein Rezept den
+        // Block; `fahrzeug_wagen` loest auf kein Preset -> unberuehrt). Editiert der Schoepfer
+        // das fahrprofil im Kern, folgt das Fahrgefuehl beim naechsten Aufsitzen (der Cache
+        // haengt am entry und stirbt mit ihm).
+        try {
+            const _pf = typeof this._foundryPresetFor === "function" ? this._foundryPresetFor(entry.type) : null;
+            const _rec = _pf && this._foundry && this._foundry.recipes ? this._foundry.recipes[_pf] : null;
+            const _fp = _rec && _rec.fx && typeof _rec.fx.fahrprofil === "object" ? _rec.fx.fahrprofil : null;
+            if (_fp) {
+                if (Number.isFinite(_fp.topSpeedMul)) prof.topSpeedMul = _fp.topSpeedMul;
+                if (Number.isFinite(_fp.kAcc)) prof.kAcc = _fp.kAcc;
+                if (Number.isFinite(_fp.kBrake)) prof.kBrake = _fp.kBrake;
+                if (typeof _fp.floats === "boolean") prof.floats = _fp.floats;
+            }
+        } catch (_e) {}
         entry._vehicleProfile = prof;
         return prof;
     }
@@ -64036,6 +64053,7 @@ class AnazhRealm {
                 "worlds/terrain/lib/UnrealBloomPass.js",
                 "phyto-core.js",
                 "foundry-core.js", // P2: der Studio-Generator-Kern VOR phytogenesis (die Shell liest seine Globals)
+                "vehicle-core.js", // W7b (Vertrag v1.1 N7.2): der Zweit-Kern als namespaced IIFE (__vehicleCore) — kollisionsfrei neben foundry-core; die Bruecke liest ihn (Rezepte + kindStages + build-asset-Dispatch)
                 "worlds/terrain/phytogenesis.js",
             ];
             const base = typeof window !== "undefined" && window.location ? window.location.href : "";
@@ -64131,7 +64149,30 @@ class AnazhRealm {
         for (const id in book) {
             if (!Object.prototype.hasOwnProperty.call(book, id)) continue;
             const rec = book[id];
-            if (!rec || rec.kind !== "tree") continue;
+            if (!rec) continue;
+            // W7b (Studio-Vertrag Phase 1) — der kind:"vehicle"-Zweig am SELBEN Chokepoint:
+            // ein Fahrzeug-Preset im Buch (vehicle-core via Bruecke) registriert sich als
+            // `fahrzeug_<id>` — Identitaet geklont vom Fahrzeug-Donor (fahrzeug_wagen: der
+            // PHYSIK-Richter urteilt Rad/Gelenk/Sitz-Rollen), der RENDER kommt komplett aus
+            // dem Zweit-Kern (die generische `_foundryPresetFor`-Regel loest `fahrzeug_<id>`
+            // -> Preset, __vehicleCore.buildInstance liefert Stufe 0; kindStages.vehicle=[0],
+            // L1/L2 gradet der Wirt). KEIN _grownSpecies (das ist die Pflanzen-Identitaet —
+            // ein Fahrzeug ist keine gewachsene Art). Idempotent wie der Baum-Zweig.
+            if (rec.kind === "vehicle") {
+                const vname = "fahrzeug_" + id;
+                if (bps[vname]) continue;
+                const vdonor = bps.fahrzeug_wagen;
+                if (!vdonor || !Array.isArray(vdonor.parts)) continue;
+                const vclone = JSON.parse(JSON.stringify(vdonor));
+                vclone.name = vname;
+                vclone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
+                vclone.builtIn = false;
+                vclone._foundryAutoSpecies = id;
+                bps[vname] = vclone;
+                registered++;
+                continue;
+            }
+            if (rec.kind !== "tree") continue;
             const name = "baum_" + id;
             if (bps[name]) continue; // existiert (historische Arten + schon registrierte)
             // Die leichte Identität: geklonte Judge-Parts (die Baum-Klasse), eigener Name +
@@ -64216,6 +64257,24 @@ class AnazhRealm {
                 // state.lodRef ist die LIVE-Spiegel-Quelle (CPU-Membership + Shader-uLodRef, in _loopRender gespiegelt).
                 if (this.state) this.state.lodRef = L.ref;
             }
+            // W7b — DER MERGE-CHOKEPOINT (Studio-Vertrag v1.1 N7.5): die kind-Bloecke der
+            // ZWEIT-KERNE (cfg.lod.zusatzKindStages, je Kern ein Block) werden HIER — und
+            // NUR hier, kein zweiter Ingest-Pfad — kind-weise disjunkt in die EINE
+            // kindStages-Karte gemergt: ein Kern ueberschreibt NIE den Block eines anderen
+            // (first-wins, der Erst-Kern foundry-core fuehrt), unbekannte Felder reisen
+            // must-ignore. Der Clamp-Leser (AnazhRealm._studioRenderConfig.lod.kindStages,
+            // _foundryFlattenFor) sieht den Merge, weil config oben schon die Quelle ist.
+            const zk = L.zusatzKindStages;
+            if (zk && typeof zk === "object") {
+                const ks = L.kindStages && typeof L.kindStages === "object" ? L.kindStages : (L.kindStages = {});
+                for (const core in zk) {
+                    const blk = zk[core];
+                    if (!blk || typeof blk !== "object") continue;
+                    for (const kind in blk) {
+                        if (!(kind in ks) && Array.isArray(blk[kind])) ks[kind] = blk[kind];
+                    }
+                }
+            }
         }
     }
     // Das Rezept eines Presets (aus dem Studio-Buch) — die EINE Rezept-Quelle fuer den Blueprint.
@@ -64255,6 +64314,9 @@ class AnazhRealm {
         f._idbReady = Promise.all([
             fetch("foundry-core.js?v=" + V).then((r) => r.text()),
             fetch("phyto-core.js?v=" + V).then((r) => r.text()),
+            // W7b: der Zweit-Kern ist GENERATOR-QUELLE (Fahrzeug-Assets) -> PFLICHT im Stempel,
+            // sonst ueberleben stale Fahrzeug-Bakes einen vehicle-core-Edit (die Drift-Klasse).
+            fetch("vehicle-core.js?v=" + V).then((r) => r.text()),
         ])
             .then((srcs) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(srcs.join("\n"))))
             .then((buf) => {
@@ -64448,7 +64510,14 @@ class AnazhRealm {
         // NEUE Template-Presets brauchen sie nicht mehr.
         const f = this._foundry;
         if (f && f.recipes && typeof species === "string") {
-            const bare = species.startsWith("baum_") ? species.slice(5) : species;
+            // W7b: der `fahrzeug_`-Praefix loest wie `baum_` ueber das LIVE-Buch (der Zweit-Kern
+            // liefert kind:"vehicle"-Presets; `fahrzeug_wagen` bleibt Built-in — "wagen" steht
+            // in keinem Buch -> null -> sein Part-Pfad unberuehrt).
+            const bare = species.startsWith("baum_")
+                ? species.slice(5)
+                : species.startsWith("fahrzeug_")
+                  ? species.slice(9)
+                  : species;
             if (Object.prototype.hasOwnProperty.call(f.recipes, bare)) return bare;
         }
         return null;
@@ -64879,7 +64948,15 @@ class AnazhRealm {
                     // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER
                     // (fehlt es -> schwarz/Crash, die schwarze Konifere). Fehlt die Vorlagen-Farbe,
                     // ein kind-Default (bark braun, laub gruen) fuellen statt schwarz.
-                    const def = m.kind === "bark" || m.kind === "stem" ? [0.32, 0.22, 0.13] : [0.2, 0.34, 0.13];
+                    // W7b: ein ZWEIT-KERN-Mesh (kind "unknown", Fahrzeug paint/glass/clay) traegt
+                    // seine MATERIAL-Farbe im Reply (m.mat.color, r128-linear) -> sie fuellt das
+                    // Attribut; Pflanzen-kinds bleiben byte-gleich (der Guard greift nur "unknown").
+                    const def =
+                        m.kind === "bark" || m.kind === "stem"
+                            ? [0.32, 0.22, 0.13]
+                            : m.kind === "unknown" && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
+                              ? m.mat.color
+                              : [0.2, 0.34, 0.13];
                     const carr = new Float32Array(vcount * 3);
                     for (let v = 0; v < vcount; v++) {
                         carr[v * 3] = def[0];
@@ -65245,7 +65322,12 @@ class AnazhRealm {
             let _stages = _rec && _cfgLod && _cfgLod.kindStages ? _cfgLod.kindStages[_rec.kind] : null;
             if (!Array.isArray(_stages) || !_stages.length) {
                 const _kl = _rec ? AnazhRealm.FOUNDRY_KIND_LOD[_rec.kind] : preset === "strauch" ? 2 : null;
-                _stages = Number.isFinite(_kl) ? [_kl] : null;
+                // W7b (v1.1 N7.5, FAIL-CLOSED): ein BEKANNTES Rezept ohne kindStages-Eintrag
+                // (weder Vertrags-Daten noch Kind-Karte — eine neue Domaene vor ihrem Merge)
+                // gilt als [0]: nur die feine Stufe, der Wirt gradet konstruktiv (L1=L0/
+                // L2=Auto-Impostor) statt Stufen anzufragen, die der Kern nicht traegt.
+                // Alle Pflanzen-kinds sind gedeckt -> byte-gleich fuer den Bestand.
+                _stages = Number.isFinite(_kl) ? [_kl] : _rec ? [0] : null;
             }
             if (_stages) {
                 let _sv = _stages[0];
