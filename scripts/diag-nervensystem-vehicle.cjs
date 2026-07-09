@@ -128,9 +128,17 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc) {
         "A8: vehicle-core deklariert kindStages.vehicle == [0] (B2-Vertrags-Daten)",
         /kindStages:\s*\{\s*vehicle:\s*\[0\]\s*\}/.test(vcSrc),
     ]);
+    // A9 (N1-migriert, V9.56-i): der kind:vehicle-ZWEIG ist der KIND_POLICY-Zeile gewichen —
+    // die Probe prueft jetzt die Tabellen-Realitaet: die vehicle-Policy-Zeile traegt Praefix+Donor,
+    // und der Auto-Register-Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich (M8).
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*/);
     out.push([
-        "A9: der Auto-Register-Chokepoint traegt den kind:vehicle-Zweig (Donor fahrzeug_wagen)",
-        /rec\.kind === "vehicle"/.test(anazhNC) && /bps\.fahrzeug_wagen/.test(anazhNC),
+        "A9: KIND_POLICY traegt die vehicle-Zeile (prefix fahrzeug_, donor fahrzeug_wagen)",
+        /vehicle:\s*Object\.freeze\(\{\s*prefix:\s*"fahrzeug_",\s*donor:\s*"fahrzeug_wagen"/.test(anazhNC),
+    ]);
+    out.push([
+        "A10: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-if, M8)",
+        autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
     ]);
     return out;
 }

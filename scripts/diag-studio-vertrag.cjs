@@ -220,8 +220,10 @@ function validateManifest(m) {
         .replace(/\/\/[^\n]*/g, "");
     const reg = realm.match(/_foundryAutoRegisterSpecies\(book\)\s*\{[\s\S]{0,2500}/);
     check(
-        "G4.1: der Auto-Register-Chokepoint filtert per kind (must-ignore, wirft nie)",
-        !!reg && /rec\.kind\s*!==\s*"tree"\)\s*continue/.test(reg[0])
+        // N1-migriert (V9.56-i): der kind-Filter ist die KIND_POLICY-Tabelle — ein
+        // unbekannter kind hat keine Policy-Zeile und wird uebersprungen (must-ignore).
+        "G4.1: der Auto-Register-Chokepoint filtert per Policy (must-ignore, wirft nie)",
+        !!reg && /KP\[rec\.kind\]/.test(reg[0]) && /if \(!pol\) continue/.test(reg[0])
     );
 
     // SELBST-TEST — das Gate ist nicht vakuös: eine injizierte Verletzung

@@ -64160,11 +64160,14 @@ class AnazhRealm {
         const ids = Object.keys(book).sort();
         for (const id of ids) {
             const rec = book[id];
-            if (!rec || rec.kind !== "tree" || BASE[id]) continue;
+            // N1 (M8): die Wald-Nischen-Faehigkeit kommt aus der Policy (placeExtra "forest"),
+            // nicht aus einem kind-Vergleich — eine neue Wald-faehige Domaene ist eine Zeile.
+            const _pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+            if (!_pol || _pol.placeExtra !== "forest" || BASE[id]) continue;
             let h = 2166136261 >>> 0;
             for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 16777619) >>> 0;
             out.push({
-                species: "baum_" + id,
+                species: _pol.prefix + id,
                 w0: 0.18, // bescheidenes Grundgewicht — die neue Art mischt sich ein, dominiert nicht
                 center: 0.05 + (h % 1000) / 1110, // Patch-Zentrum ∈ [0.05, 0.95] — eigene Haine
             });
@@ -64424,44 +64427,31 @@ class AnazhRealm {
     _foundryAutoRegisterSpecies(book) {
         const bps = this.state && this.state.blueprints;
         if (!bps || !book) return 0;
-        const donor = bps.baum_eiche;
-        if (!donor || !Array.isArray(donor.parts)) return 0;
+        // N1 (Nervensystem-Plan M8: TABELLE VOR IF) — der EINE Register-Chokepoint laeuft die
+        // KIND_POLICY-Tabelle statt einer kind-if-Kette: eine NEUE Domaene ist eine Policy-Zeile
+        // (+ Donor-Blueprint), KEIN Logik-Zweig. Fail-closed je kind: fehlt der Donor, wird die
+        // Klasse uebersprungen (keine halbe Registrierung). Semantik byte-treu zu den zwei
+        // historischen Zweigen (V18.419 Baum · V18.432 Fahrzeug): `grown` traegt die Pflanzen-
+        // Identitaet (`_grownSpecies` = der load-bearing NAME, V18.259; clone.name bleibt der
+        // Donor-Name) — nicht-gewachsene Domaenen setzen clone.name; `builtIn` nur wenn die
+        // Policy es definiert (Baum erbt das Donor-true, Fahrzeug ist false = User-Werk-Sicht).
+        // Unbekannter kind: must-ignore (M6).
+        const KP = AnazhRealm.KIND_POLICY;
         let registered = 0;
         for (const id in book) {
             if (!Object.prototype.hasOwnProperty.call(book, id)) continue;
             const rec = book[id];
-            if (!rec) continue;
-            // W7b (Studio-Vertrag Phase 1) — der kind:"vehicle"-Zweig am SELBEN Chokepoint:
-            // ein Fahrzeug-Preset im Buch (vehicle-core via Bruecke) registriert sich als
-            // `fahrzeug_<id>` — Identitaet geklont vom Fahrzeug-Donor (fahrzeug_wagen: der
-            // PHYSIK-Richter urteilt Rad/Gelenk/Sitz-Rollen), der RENDER kommt komplett aus
-            // dem Zweit-Kern (die generische `_foundryPresetFor`-Regel loest `fahrzeug_<id>`
-            // -> Preset, __vehicleCore.buildInstance liefert Stufe 0; kindStages.vehicle=[0],
-            // L1/L2 gradet der Wirt). KEIN _grownSpecies (das ist die Pflanzen-Identitaet —
-            // ein Fahrzeug ist keine gewachsene Art). Idempotent wie der Baum-Zweig.
-            if (rec.kind === "vehicle") {
-                const vname = "fahrzeug_" + id;
-                if (bps[vname]) continue;
-                const vdonor = bps.fahrzeug_wagen;
-                if (!vdonor || !Array.isArray(vdonor.parts)) continue;
-                const vclone = JSON.parse(JSON.stringify(vdonor));
-                vclone.name = vname;
-                vclone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
-                vclone.builtIn = false;
-                vclone._foundryAutoSpecies = id;
-                bps[vname] = vclone;
-                registered++;
-                continue;
-            }
-            if (rec.kind !== "tree") continue;
-            const name = "baum_" + id;
+            const pol = rec && KP[rec.kind];
+            if (!pol) continue;
+            const name = pol.prefix + id;
             if (bps[name]) continue; // existiert (historische Arten + schon registrierte)
-            // Die leichte Identität: geklonte Judge-Parts (die Baum-Klasse), eigener Name +
-            // _grownSpecies (die V18.259-Lehre: der NAME ist load-bearing) — kein Grammatik-Bau
-            // (das Studio liefert die Geometrie), kein Parallel-Pfad.
+            const donor = bps[pol.donor];
+            if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind
             const clone = JSON.parse(JSON.stringify(donor));
-            clone.label = rec.label || id.charAt(0).toUpperCase() + id.slice(1);
-            clone._grownSpecies = name;
+            clone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
+            if (pol.grown) clone._grownSpecies = name;
+            else clone.name = name;
+            if (pol.builtIn !== undefined) clone.builtIn = pol.builtIn;
             clone._foundryAutoSpecies = id; // die Herkunfts-Marke (Diag/Provenienz)
             bps[name] = clone;
             registered++;
@@ -64791,14 +64781,18 @@ class AnazhRealm {
         // NEUE Template-Presets brauchen sie nicht mehr.
         const f = this._foundry;
         if (f && f.recipes && typeof species === "string") {
-            // W7b: der `fahrzeug_`-Praefix loest wie `baum_` ueber das LIVE-Buch (der Zweit-Kern
-            // liefert kind:"vehicle"-Presets; `fahrzeug_wagen` bleibt Built-in — "wagen" steht
-            // in keinem Buch -> null -> sein Part-Pfad unberuehrt).
-            const bare = species.startsWith("baum_")
-                ? species.slice(5)
-                : species.startsWith("fahrzeug_")
-                  ? species.slice(9)
-                  : species;
+            // N1 (M8): der Praefix-Strip laeuft ueber die KIND_POLICY-Tabelle — jede Domaene
+            // loest `<prefix><id>` ueber das LIVE-Buch (Built-ins wie `fahrzeug_wagen` bleiben
+            // unberuehrt: "wagen" steht in keinem Buch -> null -> ihr Part-Pfad haelt).
+            let bare = species;
+            const KP = AnazhRealm.KIND_POLICY;
+            for (const k in KP) {
+                const px = KP[k].prefix;
+                if (px && species.startsWith(px)) {
+                    bare = species.slice(px.length);
+                    break;
+                }
+            }
             if (Object.prototype.hasOwnProperty.call(f.recipes, bare)) return bare;
         }
         return null;
@@ -82720,6 +82714,24 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 256;
 // Quelle). DIESE Karte ist nur der fail-closed-Fallback, solange der Config noch nicht
 // angedockt ist (die billige Einstufigkeit — nie eine ungeprüfte Stufe servieren).
 AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, rock: 0 });
+// N1 (Nervensystem-Plan, M8: TABELLE VOR IF) — DIE EINE DOMAENEN-POLICY: welche kind-Klasse des
+// Rezept-Buchs sich wie registriert. Eine NEUE Domaene (Tor/Stadt/Arena/...) ist EINE Zeile hier
+// (+ Donor-Blueprint), kein Logik-Zweig im Stamm. Felder: prefix (Blueprint-Name = prefix+id;
+// auch die generische _foundryPresetFor-Strip-Regel liest ihn) · donor (Judge-Parts-Spender,
+// fail-closed wenn er fehlt) · grown (true = Pflanzen-Identitaet via _grownSpecies [V18.259,
+// der NAME ist load-bearing], false = clone.name wird gesetzt) · builtIn (nur wenn definiert
+// gesetzt; Baum erbt das Donor-true) · placeExtra ("forest" = _forestExtraSpecies streut die
+// Auto-Art in die Wald-Nischen; null = nur Katalog/Werkstatt).
+AnazhRealm.KIND_POLICY = Object.freeze({
+    tree: Object.freeze({ prefix: "baum_", donor: "baum_eiche", grown: true, placeExtra: "forest" }),
+    vehicle: Object.freeze({
+        prefix: "fahrzeug_",
+        donor: "fahrzeug_wagen",
+        grown: false,
+        builtIn: false,
+        placeExtra: null,
+    }),
+});
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).

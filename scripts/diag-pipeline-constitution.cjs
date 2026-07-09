@@ -230,6 +230,38 @@ law(
     );
 }
 
+// N1 (Nervensystem-Plan, M8: TABELLE VOR IF) — der Auto-Register-Chokepoint laeuft die
+// KIND_POLICY-Tabelle: eine neue Domaene ist eine Policy-Zeile, KEIN kind-if-Zweig im Stamm.
+// Ein Refactor, der einen `if (rec.kind === ...)`-Zweig zurueckbringt, wird hier rot.
+{
+    const _autoBody = (() => {
+        const m = anazhNC.match(/_foundryAutoRegisterSpecies\(book\) \{/);
+        if (!m) return "";
+        let i = anazhNC.indexOf(m[0]) + m[0].length,
+            depth = 1,
+            out = "";
+        while (i < anazhNC.length && depth > 0) {
+            const ch = anazhNC[i++];
+            if (ch === "{") depth++;
+            else if (ch === "}") depth--;
+            if (depth > 0) out += ch;
+        }
+        return out;
+    })();
+    law(
+        "N1/M8: KIND_POLICY existiert (tree + vehicle als Tabellen-Zeilen)",
+        true,
+        /KIND_POLICY = Object\.freeze/.test(anazhNC) &&
+            /tree:\s*Object\.freeze/.test(anazhNC) &&
+            /vehicle:\s*Object\.freeze/.test(anazhNC)
+    );
+    law(
+        "N1/M8: der Auto-Register-Chokepoint laeuft die Tabelle (kein kind-String-Vergleich im Body)",
+        true,
+        _autoBody.length > 0 && /KIND_POLICY/.test(_autoBody) && !/kind\s*[!=]==?\s*"/.test(_autoBody)
+    );
+}
+
 console.log(`\n${pass} Gesetze gehalten, ${fail} verletzt.`);
 if (fail) {
     console.error(

@@ -234,8 +234,8 @@ IDB stamp scripts        = 3 (foundry, phyto, vehicle)
 ### α.1 (diese Datei)
 
 - [x] Vision, Meta-Gesetze, Verben, Wörterbuch, Weg
-- [ ] In `docs/README.md` als tragender Text verlinken
-- [ ] Optional: eine Zeile im `CLAUDE.md`-Stand: „Architekturbogen: nervensystem-plan“
+- [x] In `docs/README.md` als tragender Text verlinken (09.07.)
+- [x] Eine Zeile im `CLAUDE.md`-Stand (09.07.): „Architekturbogen: nervensystem-plan“
 
 ### α.2 Moratorium
 
@@ -281,11 +281,11 @@ vehicle: { prefix: "fahrzeug_", donor: "fahrzeug_wagen", grown: false, placeExtr
 
 **Akzeptanz N1:**
 
-- [ ] `npm run gate:nervensystem` grün
-- [ ] `npm run gate:nervensystem-vehicle` grün
-- [ ] `npm run check` grün
-- [ ] Diff AutoRegister: keine neuen String-Vergleiche auf kind
-- [ ] Byte-Verhalten tree/vehicle unverändert (Smoke Mount/Wald)
+- [x] `npm run gate:nervensystem` grün (N1, 09.07.)
+- [x] `npm run gate:nervensystem-vehicle` grün (A9/A10 auf Policy migriert)
+- [x] `npm run check` grün (G4.1-Probe migriert)
+- [x] Diff AutoRegister: 0 kind-String-Vergleiche (Constitution-Gesetz N1/M8, 35 Gesetze)
+- [x] Byte-Verhalten tree/vehicle unverändert (beide Gates D-Serien + voller Playtest)
 
 ### N2 — Core-Manifest (Runtime = Validator)
 
