@@ -15,8 +15,9 @@
 //   ENTSCHEID  — dokumentierte Schöpfer-Entscheide (glut* [E-E] · start_plattform +
 //                fliegende Inseln [E-F]); im Parity-Shot seit W2 versteckt, in der Welt daheim.
 //   VERLETZUNG — alles andere: eine Vegetations-/Deko-Silhouette OHNE Studio-Herkunft
-//                (Grammatik-Baum/-Strauch/-Fels · Alt-Tuft-Gras · Totholz · Vor-Studio-
-//                Kulissen [HORIZON_MANTLE/Canopy-Shell]) ODER ein UNBEKANNTER Emitter ODER
+//                (Grammatik-Baum/-Strauch/-Fels · Alt-Tuft-Gras · Totholz; die Vor-Studio-
+//                Kulissen Mantle/Shell sind N7.4 GESCHNITTEN — per Konstruktion unmöglich)
+//                ODER ein UNBEKANNTER Emitter ODER
 //                eine unbekannte inventar-Klasse — der Fallback ist bewusst FAIL-CLOSED:
 //                was die Linse nicht erklären kann, ist rot, bis es klassifiziert wird
 //                (die V18.346-Disziplin: die Teilmenge wird über IDENTITÄT klassifiziert,
@@ -141,7 +142,8 @@ const server = http.createServer((req, res) => {
             [st.skybox, st.sunMesh, st.moonMesh, st.starField, st.waterPlane].filter(Boolean).concat(st.planets || [])
         );
         const islandSet = new Set((st.floatingIslands || []).filter(Boolean));
-        const kulissenSet = new Set([st.horizonMantle, st.canopyShell].filter(Boolean));
+        // N7.4 — die Vor-Studio-Kulissen (Horizont-Mantel/Canopy-Shell) sind GESCHNITTEN:
+        // die Verletzungs-Klasse ist per Konstruktion unmöglich, der Detektor entfällt.
         // Platzierte/gemergte Architektur: mesh → Bauplan-Name (Wurzel-Objekt des Eintrags).
         const archMeshName = new Map();
         for (const a of st.architectures || []) if (a && a.mesh) archMeshName.set(a.mesh, a.type || "(arch)");
@@ -277,8 +279,6 @@ const server = http.createServer((req, res) => {
                     return tally("substanz", "kreatur");
                 if (st.playerMesh && chain.includes(st.playerMesh)) return tally("substanz", "avatar");
                 if (chain.some((p) => islandSet.has(p))) return tally("entscheid", "fliegende Insel (E-F)");
-                if (chain.some((p) => kulissenSet.has(p)))
-                    return tally("verletzung", "Vor-Studio-Kulisse (Mantle/Shell) im Studio-Regime sichtbar");
                 for (const p of chain) {
                     const nm = archMeshName.get(p);
                     if (nm) {

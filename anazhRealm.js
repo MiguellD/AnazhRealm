@@ -14846,24 +14846,10 @@ class AnazhRealm {
         }
         // V8.28 6.G4.b D — Welt-Wasser (Wave-Plane in Senken)
         this._buildWaterPlane();
-        // V18.212 — Ω-C Canopy-Shell (DER LEBENDIGE GIGANT §9): die ferne
-        // Wald-Oberfläche, die individuelle Bäume in der Distanz cullt
-        // und durch eine geschlossene grüne Fläche ersetzt. Lazy via
-        // _ensureCanopyShell — die Methode prüft state.canopyShell und
-        // baut bei Bedarf. Wir rufen sie hier deferred (rAF), damit die
-        // Welt-Init nicht zusätzliche ~100ms belastet (Per-Vertex-Sample
-        // worldFieldAt × ~9k Vertices).
-        if (typeof requestAnimationFrame === "function") {
-            requestAnimationFrame(() => {
-                try {
-                    this._ensureCanopyShell();
-                } catch (e) {
-                    if (typeof this.log === "function") {
-                        this.log(`Ω-C Canopy-Shell Build-Fehler: ${e.message}`, "WARN");
-                    }
-                }
-            });
-        }
+        // N7.4 — die Canopy-Shell (V18.212 Ω-C) ist GESCHNITTEN: eine Vor-Studio-Fern-
+        // Kulisse, die im Studio-Modell komplett hinter dem Wald-Kanten-Nebel stand und
+        // jeden Boot ×2 baute (V18.423). Der Foundry-Wald + der Nebel an der Wald-Kante
+        // tragen die Ferne — kein rAF-Bau mehr auf dem Boot-Pfad.
     }
 
     // P0.3 (Bühnen-Ordnung) — die drei Planeten, aus createGalaxySkybox extrahiert
@@ -15177,137 +15163,6 @@ class AnazhRealm {
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
     }
 
-    // V18.212 — Ω-C CANOPY-SHELL (Plan §9): „Einzelne Bäume cullen in der
-    // Distanz → ohne Schale bleibt der ferne Hang kahl, egal wie dicht
-    // der Nahbereich ist." Die Lösung: ein grobes Mesh, dessen Vertices
-    // das Heightfield reiten + einen Coverage-Lift aus `worldFieldAt.
-    // lebendig` bekommen. Geshaded als rollende grüne Wald-Oberfläche.
-    // Distanz-Dither: fadet IN bei Distanz (>150m vom Auge), unsichtbar
-    // wenn nah (wo Einzel-Bäume die Wahrheit tragen). EIN Mesh statisch
-    // im Worldgen-Bereich (±1024m), Welt-Stimme `lebendig` bestimmt die
-    // Wald-Verteilung — keine GPU-Scatter-Vorbedingung nötig.
-    //
-    // Anti-Scope: KEIN Eintritt in Pillar III (GPU-Scatter); Canopy ist
-    // nur die VISUELLE Brücke zwischen Einzelbaum-Cull und Horizont.
-    // Tag-Neutral: kein Welt-Effekt, kein Tag-Push (reine Render-Schicht).
-    _ensureCanopyShell() {
-        // DAS STUDIO-MODELL (08.07., „nimm raus was rausgehört"): die Canopy-Shell ist
-        // wie der Horizont-Mantel eine Vor-Studio-FERN-Kulisse (die geschlossene Wald-
-        // Fläche JENSEITS des Einzelbaum-Culls) — im Studio-Modell schließt der Nebel an
-        // der Wald-Kante (S1, ~194 m), die Shell steht komplett im Nebel UND kostete
-        // jeden Boot ×2 (Szenen-Init-rAF + Load-rAF) je ~9k worldFieldAt-Samples — die
-        // gemessene „Canopy-Shell gebaut"-Doppel-Zeile im Schöpfer-Log. Im Studio-Regime
-        // AUS (Chokepoint: ALLE Ensure-Aufrufer erben es); ohne Foundry byte-alt.
-        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
-            if (this.state.canopyShell) this._disposeCanopyShell();
-            return null;
-        }
-        if (this.state.canopyShell) return this.state.canopyShell;
-        if (!this.state.scene || typeof THREE === "undefined") return null;
-        return this._buildCanopyShell();
-    }
-
-    _buildCanopyShell() {
-        if (typeof THREE === "undefined" || !this.state.scene) return null;
-        const C = AnazhRealm.CANOPY_SHELL;
-        // Grobes Plane-Grid: SIZE × SIZE Vertices über REGION_M × REGION_M.
-        const SIZE = C.gridSize; // 96 Vertices pro Seite
-        const REGION = C.regionM; // ±REGION/2 m um Ursprung
-        const N = SIZE - 1; // Segmente
-        const geom = new THREE.PlaneGeometry(REGION, REGION, N, N);
-        // Plane liegt in xy-Ebene → wir wollen sie auf xz-Ebene legen.
-        geom.rotateX(-Math.PI / 2);
-        // Per-Vertex Y aus Terrain-Höhe + Coverage-Lift berechnen.
-        const positions = geom.attributes.position;
-        const colors = new Float32Array(positions.count * 3);
-        let liveCount = 0;
-        for (let i = 0; i < positions.count; i++) {
-            const x = positions.getX(i);
-            const z = positions.getZ(i);
-            // Terrain-Höhe (cached via _voxelSurfaceY).
-            const terrainY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : 0;
-            // Welt-Stimme `lebendig` als Coverage-Proxy. Hoher Wert = dichter
-            // Wald. Die Spawn-Wahrscheinlichkeit in `_vegetationSampleSpawn`
-            // ist ∝ lebendig → eine konsistente Lese-Schicht zum Scatter.
-            let coverage = 0;
-            if (typeof this.worldFieldAt === "function") {
-                const f = this.worldFieldAt(x, z);
-                coverage = f ? Math.max(0, Math.min(1, f.lebendig)) : 0;
-                // Clump-Faktor (Wald-Maske λ~170m) MULT mit lebendig — die
-                // V18.102-Wald-Maske ehrt: dichter Wald in Clumps statt
-                // ausgespreizt.
-                if (typeof this._clumpAt === "function") {
-                    const clump = Math.max(0, Math.min(1, 0.5 + 0.5 * this._clumpAt(x, z, 0.006)));
-                    coverage = coverage * (0.4 + 0.6 * clump);
-                }
-            }
-            // Lift-Formel aus Plan §9: nur sichtbar wenn coverage > ~0.18.
-            const lift = (coverage > 0.18 ? coverage * 7 + 11 : 0) * C.liftScale;
-            // Crown-Bump für Variation (deterministischer Welt-Noise; KEIN
-            // Math.random → Stream-Gesetz Γ5).
-            let bump = 0;
-            if (this._growTreeNoise) {
-                bump = this._growTreeNoise.noise2D(x * 0.05, z * 0.05) * 0.8;
-            }
-            const finalY = terrainY + lift + bump;
-            positions.setY(i, finalY);
-            // Per-Vertex Color: gedämpftes Grün, das mit coverage moduliert
-            // (heller im dichten Wald, dunkler an Rändern). Eine Variation
-            // hilft den Toon-Shader, das Mesh nicht uniform zu malen.
-            const greenBase = 0.32 + coverage * 0.18; // 0.32..0.50
-            colors[i * 3 + 0] = 0.16 + coverage * 0.08; // R
-            colors[i * 3 + 1] = greenBase; // G
-            colors[i * 3 + 2] = 0.13 + coverage * 0.08; // B
-            // Alpha-flag: coverage > Threshold → Canopy hier sichtbar.
-            if (coverage > 0.22) liveCount++;
-        }
-        positions.needsUpdate = true;
-        geom.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-        geom.computeVertexNormals();
-        // Toon-Material mit Vertex-Colors + Distanz-Dither.
-        const mat = this._buildToonNodeMaterial({
-            color: 0xffffff, // wird durch vertexColors überstimmt
-            vertexColors: true,
-            transparent: true,
-            opacity: 1.0,
-            side: THREE.DoubleSide,
-        });
-        // V18.212 — DISTANZ-DITHER (Plan §9): die Canopy fadet IN bei
-        // großer Distanz vom Auge. Nah ist sie UNSICHTBAR (Einzelbäume
-        // tragen die Wahrheit), fern wird sie ZUR Wald-Oberfläche.
-        try {
-            const _T = THREE.TSL;
-            if (_T && _T.cameraPosition && _T.positionWorld && _T.smoothstep) {
-                const _dist = _T.positionWorld.sub(_T.cameraPosition).length();
-                // Dither IN ab `distNear` m, voll ab `distFar` m.
-                const _ditherIn = _T.smoothstep(_T.float(C.distNear), _T.float(C.distFar), _dist);
-                // Maximaler Alpha (sanft, nicht 1.0 — die Canopy darf am
-                // Horizont durchscheinen, nicht hart-schwarz).
-                mat.opacityNode = _ditherIn.mul(_T.float(C.maxOpacity));
-            }
-        } catch (_e) {
-            if (typeof window !== "undefined") window.__canopyDitherError = String((_e && _e.message) || _e);
-        }
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.frustumCulled = true;
-        mesh.castShadow = false;
-        mesh.receiveShadow = true;
-        // Render NACH dem Wasser, damit der Tiefenpuffer korrekt sortiert.
-        mesh.renderOrder = 2;
-        mesh.userData.kind = "canopyShell";
-        mesh.userData.liveCoverageVertices = liveCount;
-        this.state.scene.add(mesh);
-        this.state.canopyShell = mesh;
-        this.state.canopyShellMaterial = mat;
-        if (typeof this.log === "function") {
-            this.log(
-                `Ω-C Canopy-Shell ${SIZE}×${SIZE} (${REGION}m²) gebaut — ${liveCount}/${positions.count} Vertices mit Wald-Coverage`,
-                "INFO"
-            );
-        }
-        return mesh;
-    }
-
     // ═══════════════════════════════════════════════════════════════════
     // V18.222 (DER LEBENDIGE GIGANT §7, Plan §9) — CANOPY CHUNK-STREAMING
     // ═══════════════════════════════════════════════════════════════════
@@ -15478,18 +15333,6 @@ class AnazhRealm {
             }
         }
         return built + disposed;
-    }
-
-    // V18.212 — Canopy-Shell beim Welt-Wechsel räumen (frische Welt = neue
-    // Verteilung → neue Coverage-Karte). Material + Geometry disposen.
-    _disposeCanopyShell() {
-        if (!this.state.canopyShell) return;
-        const m = this.state.canopyShell;
-        if (this.state.scene) this.state.scene.remove(m);
-        if (m.geometry) m.geometry.dispose();
-        if (m.material) m.material.dispose();
-        this.state.canopyShell = null;
-        this.state.canopyShellMaterial = null;
     }
 
     // V8.29 — Geteiltes Gras-Material für InstancedMesh. Wie machen es die
@@ -35804,177 +35647,6 @@ class AnazhRealm {
         if (this.state.waterCapJ) for (const key of drop) this.state.waterCapJ.delete(key);
     }
 
-    // Streamt den Voxel-Chunk-Ring um den Spieler. V9.85 Perf-2.a — Frame-
-    // Time-Budget statt fester `MAX_PER_FRAME=1`. Profi-Pattern aus Subnautica/
-    // NMS: baue Chunks solange `now() - start < FRAME_BUDGET_MS`, mit einem
-    // harten oberen Cap als Sicherheits-Netz. Adaptiv: auf 60-FPS-Maschine
-    // mit schnellen Chunks (~30 ms nach Perf-2.e+f) baut der Loop 2–4 chunks
-    // pro Frame; auf überlasteter Maschine 0–1. Niemals Frame-Spike. Wenn
-    // ein einzelner Chunk schon teurer als das Budget ist (heute typisch
-    // 100–150 ms), bleibt das Verhalten effektiv 1-chunk-pro-Frame —
-    // identisch zum alten Pfad, aber bereit für die Cost-Heilungen.
-    // B2 (gigant-plan §5 — G7-H): DER HORIZONT-MANTEL — die Instant-Gigantik.
-    // Jenseits des Chunk-Rings zeichnete NICHTS (die Welt endete im Fog statt in
-    // Bergketten). Der Mantel ist ein GROBES Fern-Terrain als POLAR-Gitter
-    // (rings × segments, geometrisch wachsend — fein nah, grob fern, KEINE
-    // T-Junctions) aus `_terrainMacroSurfaceY` — der EINEN deterministischen
-    // Quelle: exakt die Hügel, die der Ring später fein baut. Loch in der Mitte
-    // (eine Chunk-Spanne UNTER der Ring-Kante → der echte Ring occludet die
-    // Übergangs-Zone von oben), Land sitzt `drop` unter dem Macro (kein Poke-
-    // Through gegen die echte Roughness), Meer (`macro < waterLevel`) wird eine
-    // Tiefblau-Ebene knapp unter dem Spiegel. Farben: DIESELBE Biom-Logik wie
-    // die Chunks (`_attachVoxelFieldColors` — eine Quelle, noch ein Leser);
-    // Material: eigener Toon (vertexColors, OHNE geomorph — kein aMorphTarget-
-    // Read, WebGPU-strikt sauber); `_applySubstanceResponse` + Fog VERSCHMELZEN den
-    // Übergang (V17.106-Aerial trägt ihn). Re-Anker alle ~250 m Spielerbewegung
-    // (EIN Rebuild ~1.4k Macro-Samples = wenige ms, kein Per-Frame-Pfad).
-    // Render-only, main-only, seed-deterministisch — kein Worker/Determinismus.
-    _ensureHorizonMantle() {
-        const s = this.state;
-        if (!s.scene || !s.playerMesh || !s.voxelTerrainActive) return;
-        if (s.atmosphere && s.atmosphere.horizonMantle === false) {
-            if (s.horizonMantle) this._disposeHorizonMantle();
-            return;
-        }
-        // DAS STUDIO-MODELL (08.07., „nimm raus was rausgehört"): das Studio hat KEINE
-        // ferne Bergkulisse — die Sicht schließt an der Wald-Kante (S1, fog.far ≈ 194 m),
-        // jenseits davon zeichnet NICHTS. Der Mantel (outerRadius 4300 m) ist ein Vor-
-        // Studio-Relikt der riesigen Welt (die „Bergkulissen") → im Studio-Regime AUS
-        // (dispose, falls er aus einer Alt-Ära steht). Ohne Foundry (Alt-Welten/Test-Hook
-        // __anazhGateNoFoundry) bleibt er byte-alt der Fern-Horizont.
-        if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
-            if (s.horizonMantle) this._disposeHorizonMantle();
-            return;
-        }
-        const cfg = AnazhRealm.HORIZON_MANTLE;
-        const pm = s.playerMesh.position;
-        const seed = (s.worldMeta && s.worldMeta.seed) || "";
-        const { span, ringRadius } = this._voxelChunkConfig();
-        // V18.118 — DIE SPIELER-STANZE (S-Befund, zwei Browser-Bilder: „die
-        // blaue Meerfläche statisch, wird nicht entfernt wenn ich näher gehe"
-        // + „ebene Sheets wie eine Macro-Annäherung ÜBER dem richtigen
-        // Terrain, durch die ich falle"; GEMESSEN diag-mantle-overlap: nach
-        // 238 m Lauf lagen 81 Mantel-Vertices UN-gedeckt im Sicht-Ring, 14
-        // als opake Meer-Platten): das GEOMETRIE-Loch sitzt um den ANKER und
-        // hinkt bis reanchorDist hinterher — der Chunk-Ring folgt dem Spieler
-        // SOFORT. Das SICHTBARE Loch ist darum jetzt eine SHADER-STANZE
-        // (Fragment-Kill um die SPIELER-Position, pro Tick nachgeführt) → der
-        // Überlapp ist PRO PIXEL unmöglich, egal wie der Anker hinkt. Die
-        // Geometrie behält ein KLEINERES Anker-Loch (weniger Overdraw) unter
-        // der KONSTRUKTIONS-Ungleichung geoHole + reanchEff ≤ stanzR (per
-        // Bau-Formel garantiert) → die Stanze deckt das Geo-Loch IMMER, kein
-        // Himmels-Ring. Bei kleinen Sicht-Ringen schrumpft reanchEff (öfter
-        // re-ankern, Bau ~ms), damit die Ungleichung hält.
-        const stanzR = (ringRadius + 0.5) * span + 6;
-        const reanchEff = Math.max(16, Math.min(cfg.reanchorDist, stanzR - span - 6));
-        if (s.mantleHoleUniforms) {
-            s.mantleHoleUniforms.cx.value = pm.x;
-            s.mantleHoleUniforms.cz.value = pm.z;
-            s.mantleHoleUniforms.r.value = stanzR;
-        }
-        const m = s.horizonMantle;
-        if (m && m.seed === seed && m.builtStanzR === stanzR) {
-            const dx = pm.x - m.anchorX,
-                dz = pm.z - m.anchorZ;
-            if (dx * dx + dz * dz < reanchEff * reanchEff) return;
-        }
-        const t0 = performance.now();
-        // Das Geometrie-Loch: klein genug, dass die Spieler-Stanze es bei
-        // maximalem Anker-Versatz (reanchEff) noch VOLL enthält.
-        const holeR = Math.max(span, stanzR - reanchEff - 6);
-        const rings = cfg.rings,
-            segs = cfg.segments;
-        const ax = pm.x,
-            az = pm.z;
-        const waterLevel = Number.isFinite(s.waterLevel) ? s.waterLevel : 0;
-        const growth = Math.pow(cfg.outerRadius / holeR, 1 / (rings - 1));
-        const positions = new Float32Array(rings * segs * 3);
-        const isSea = new Uint8Array(rings * segs);
-        let vi = 0;
-        for (let ri = 0; ri < rings; ri++) {
-            const r = holeR * Math.pow(growth, ri);
-            for (let si = 0; si < segs; si++) {
-                const th = (si / segs) * Math.PI * 2;
-                const x = ax + Math.cos(th) * r,
-                    z = az + Math.sin(th) * r;
-                const h0 = this._terrainMacroSurfaceY(x, z);
-                const h = Number.isFinite(h0) ? h0 : waterLevel;
-                const sea = h < waterLevel + 0.4;
-                isSea[ri * segs + si] = sea ? 1 : 0;
-                positions[vi++] = x;
-                // Meer-Kulisse DEUTLICH unter die Wellen-/Ufer-Shader-Zone (−3 m:
-                // bei ≥190 m Distanz optisch nahtlos, sticht nie durch Wellen-Täler).
-                positions[vi++] = sea ? waterLevel - 3 : h - cfg.drop;
-                positions[vi++] = z;
-            }
-        }
-        const idx = [];
-        for (let ri = 0; ri < rings - 1; ri++) {
-            for (let si = 0; si < segs; si++) {
-                const a = ri * segs + si;
-                const b = ri * segs + ((si + 1) % segs);
-                const c = (ri + 1) * segs + ((si + 1) % segs);
-                const d = (ri + 1) * segs + si;
-                idx.push(a, b, c, a, c, d);
-            }
-        }
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        geom.setIndex(idx);
-        geom.computeVertexNormals();
-        // V18.113 — der Mantel behält seine echten Flächen-Normalen (Schatten-
-        // Vertrag); die LICHTUNG flacht der geteilte normalNode-Override im
-        // Terrain-Material (er teilt _buildToonNodeMaterial mit den Chunks).
-        // EINE Farb-Quelle: dieselbe Biom-Logik wie die Chunks; das Meer danach Tiefblau.
-        this._attachVoxelFieldColors(geom);
-        const col = geom.attributes.color;
-        if (col) {
-            for (let i = 0; i < rings * segs; i++) {
-                if (isSea[i]) col.setXYZ(i, 0.16, 0.3, 0.46);
-            }
-            col.needsUpdate = true;
-        }
-        if (!s.horizonMantleMaterial) {
-            s.horizonMantleMaterial = this._buildToonNodeMaterial({ vertexColors: true });
-            // V18.118 — die SPIELER-STANZE: Fragmente innerhalb stanzR um die
-            // (pro Tick nachgeführte) Spieler-Position fallen via alphaTest
-            // (step(edge,x) = 0 innen → alpha 0 → discard). Render-only.
-            const T = THREE.TSL;
-            const hu = { cx: T.uniform(pm.x), cz: T.uniform(pm.z), r: T.uniform(stanzR) };
-            s.mantleHoleUniforms = hu;
-            const d = T.length(T.positionWorld.xz.sub(T.vec2(hu.cx, hu.cz)));
-            s.horizonMantleMaterial.opacityNode = T.step(hu.r, d);
-            s.horizonMantleMaterial.alphaTest = 0.5;
-        }
-        if (m && m.mesh) {
-            this._queueGeometryDispose(m.mesh.geometry);
-            m.mesh.geometry = geom;
-            m.anchorX = ax;
-            m.anchorZ = az;
-            m.seed = seed;
-            m.builtStanzR = stanzR;
-            m.geoHoleR = holeR;
-        } else {
-            const mesh = new THREE.Mesh(geom, s.horizonMantleMaterial);
-            mesh.castShadow = false;
-            mesh.receiveShadow = false;
-            mesh.frustumCulled = false; // der Ring umgibt die Kamera
-            s.scene.add(mesh);
-            s.horizonMantle = { mesh, anchorX: ax, anchorZ: az, seed, builtStanzR: stanzR, geoHoleR: holeR };
-        }
-        s.horizonMantle.builtMs = +(performance.now() - t0).toFixed(1);
-    }
-
-    _disposeHorizonMantle() {
-        const m = this.state.horizonMantle;
-        if (!m) return;
-        if (m.mesh) {
-            if (this.state.scene) this.state.scene.remove(m.mesh);
-            this._queueGeometryDispose(m.mesh.geometry);
-        }
-        this.state.horizonMantle = null;
-    }
-
     // ===== V18.381 — DAS FERN-WASSER (die Wasser-LOD-Kaskade, roadmap §4) =====
     // Schöpfer-Befund „Wasserkanten / leere Seen in der Ferne": das ECHTE Wasser endet am
     // Voxel-Chunk-Ring (~194 m bei Ring 4), die Sicht reicht weiter (fog.far sunny ~450 m,
@@ -41142,22 +40814,6 @@ class AnazhRealm {
         if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
         if (!externalState) this._loadStateRestoreVersionHistory();
-        // V18.212 — Ω-C Canopy-Shell nach jedem Load deferred rebuild.
-        // Die Canopy ist welt-spezifisch (lebendig-Feld); nach einem
-        // Welt-Wechsel/-Restore muss sie für die neue Welt entstehen.
-        // rAF deferred, damit der Restore-Frame nicht zusätzlich belastet
-        // wird (Per-Vertex worldFieldAt × ~9k Vertices ≈ ~50-100ms).
-        if (typeof requestAnimationFrame === "function") {
-            requestAnimationFrame(() => {
-                try {
-                    this._ensureCanopyShell();
-                } catch (e) {
-                    if (typeof this.log === "function") {
-                        this.log(`Ω-C Canopy nach Restore: ${e.message}`, "WARN");
-                    }
-                }
-            });
-        }
         return true;
     }
 
@@ -41287,10 +40943,6 @@ class AnazhRealm {
         // aber ein Welt-Wechsel kann CREATURE_SOULS-Custom-Definitionen austauschen.
         // Sauberster Pfad: am Welt-Identitäts-Wechsel leeren (defensive).
         if (this._scentSizeBySoul) this._scentSizeBySoul.clear();
-        // V18.212 — Ω-C Canopy-Shell ist welt-spezifisch (lebendig-Feld ist
-        // an worldSeed gebunden). Beim Welt-Wechsel: alte Canopy disposen,
-        // neue baut sich beim nächsten _ensureCanopyShell oder rAF-Hook.
-        if (typeof this._disposeCanopyShell === "function") this._disposeCanopyShell();
         // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
         // baut den 3×3-Ring der neuen Welt lazy nach.
         if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
@@ -66497,7 +66149,7 @@ class AnazhRealm {
                     // TOTHOLZ (Wald-Boden-Debris) — ~TOTHOLZ_RATE der Bäume tragen einen
                     // gefallenen Stamm in 3–5 m Abstand (Vorlagen-Wald atmet: Snags in den
                     // Lücken). Wanderte aus dem alten Baum-Sample-Zweig hierher.
-                    // W6 (Paritäts-Vollendung) — IM STUDIO-REGIME AUS (das HORIZON_MANTLE-
+                    // W6 (Paritäts-Vollendung) — IM STUDIO-REGIME AUS (das Kulissen-
                     // Chokepoint-Muster): die Totholz-Ökologie ist eine MONOLITH-Platzierungs-
                     // Regel ohne Studio-Gesetz — ihr Grammatik-Stamm ist eine Fremd-Silhouette
                     // im Paritäts-Bild (DONE-Kriterium 3). Die lebende Alt-Mechanik prüft das
@@ -78125,9 +77777,9 @@ class AnazhRealm {
             // Ziel-Rand ist die DICHTE WALD-KANTE (foliageRadius, gekappt auf den gebauten Ring), NICHT der
             // 4.3-km-Horizont-Mantel. So schliesst der Nebel an der Wald-Krause wie im Studio (phytogenesis
             // fog.far ~120 ≈ Wald-R 64) — man sieht NIE über den Wald in die baumlose Makro-Wiese/Mantel-Schale
-            // (die „ferne Kulisse, die alte Wiese"). Der Mantel rendert dahinter IM Nebel (unsichtbar; sein
-            // Cull + camera.far-Kopplung sind der Perf-Folgeschritt S1b). Die Tiefe kommt aus der DICHTE in der
-            // Nebelkuppel, nicht aus der Fernsicht — der Kern-Trick des Studios, den wir jetzt adaptieren.
+            // (die „ferne Kulisse, die alte Wiese"). Der Horizont-Mantel, der historisch dahinter rendern
+            // durfte, ist N7.4 GESCHNITTEN — jenseits der Wald-Kante deckt allein der Nebel. Die Tiefe kommt
+            // aus der DICHTE in der Nebelkuppel, nicht aus der Fernsicht — der Kern-Trick des Studios.
             const _folR = Number.isFinite(this.state.foliageRadius)
                 ? this.state.foliageRadius
                 : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
@@ -78167,7 +77819,7 @@ class AnazhRealm {
             // Sichtring. Die Wurzel: „aktiver Ring gebaut" heißt NICHT „Welt gebaut" — der aktive Ring RAMPT
             // erst zum Ziel (`chunkRingRadius`). Solange die Welt wächst (`activeRing < targetRing`), kappt der
             // Nebel IMMER auf die gebaute Kante, egal ob der aktive Ring voll steht; erst am Ziel öffnet der
-            // geliebte Mantel-Weitblick. Headless setzt activeRing sofort auf target → Mantel offen (gate-treu).
+            // Weitblick. Headless setzt activeRing sofort auf target → Weitblick offen (gate-treu).
             const _targetRing = Math.max(1, Math.min(12, this.state.chunkRingRadius || 4));
             const _worldRamping = this.state._activeRingRadius != null && this.state._activeRingRadius < _targetRing;
             if (revealK === null || revealK < 0) {
@@ -78201,8 +77853,8 @@ class AnazhRealm {
             // DAS NEUE KLEID — DIE SICHTWEITE = DIE VORLAGE (Schöpfer „wir arbeiten mit Sichtweite wie im
             // Wald, kein fernes Überflug-Feld erzwingen"): liegt der Studio-Wahrnehmungs-Config vor, führt
             // SEINE Sichtweite (phytogenesis `_sightDist`: fog.far = sight, fog.near = sight·fogNearMul) —
-            // der Nebel schliesst wie im begehbaren Wald bei ~120 m, der 4.3-km-Mantel liegt dahinter im
-            // Nebel (kein Überflug). Der Lade-Nebel-Reveal (`sm`, kappt beim Boot auf die gebaute Kante) UND
+            // der Nebel schliesst wie im begehbaren Wald bei ~120 m (kein Überflug; die Fern-Kulissen
+            // sind N7.4 geschnitten). Der Lade-Nebel-Reveal (`sm`, kappt beim Boot auf die gebaute Kante) UND
             // die Wetter-Dimmung (rainyMix, im Wald nicht vorhanden → als sanfter Faktor bewahrt) bleiben als
             // min()-Terme aktiv. Ohne Studio-Config bleibt die Alt-Formel (150·fogMult) = 0 Regress.
             // STUDIO-MODELL: die Basis-Sicht folgt NATIV der Wald-Kante (`visualEdgeTarget`) — kein Legacy-
@@ -82182,12 +81834,12 @@ class AnazhRealm {
     }
 
     // V18.354 — PHASE B: der DISPATCHER-Lauf (die Verteil-Schicht, KEIN zweiter Regler). Die
-    // fixen günstigen Ticks (horizonMantle/vegSpawns/archLOD/canopy/waterCA/dirtyChunks) laufen
+    // fixen günstigen Ticks (vegSpawns/archLOD/canopy/waterCA/dirtyChunks) laufen
     // wie im festen Pfad; die BUDGETIERTEN gehen durch `_dispatchFrameJobs`. `_frameOverBudget`
     // wird zur FOLGE des Schedulers (Budget leer) — die V18.282-Heiligkeit als Konstruktion.
+    // N7.4 — der Horizont-Mantel-Tick ist mit dem Mantel geschnitten (Vor-Studio-Kulisse).
     _runFrameScheduler(playerPos) {
         const st = this.state;
-        this._ensureHorizonMantle();
         this._ensureFarWaterSheet(); // V18.381 — steady-state No-op (Anker-Hysterese), Rebuild budget-gegated
         const B = st._frameBudget || (st._frameBudget = this._makeFrameBudget());
         B.totalMs = this._deferrableBudgetMs();
@@ -83243,21 +82895,11 @@ AnazhRealm.CA_STAU = Object.freeze({
 // `aiDiv` (V17.115 U3): wie selten ferne Kreaturen ihre teure KI-Richtung neu
 // rechnen (jeden N-ten Frame; dazwischen bewegen sie sich GLATT mit der gecachten
 // Richtung weiter → kein Ruckeln). Band 0/1 (nah/mittel, sichtbar) = jeden Frame.
-// B2 (gigant-plan §5 — G7-H) — der Horizont-Mantel: Polar-Gitter-Auflösung,
-// Außenradius, Land-Absenkung (gegen Poke-Through der echten Roughness) und
-// die Re-Anker-Distanz. rings×segments = 20×72 = 1440 Vertices (~ms-Rebuild).
-AnazhRealm.HORIZON_MANTLE = Object.freeze({
-    outerRadius: 4300,
-    rings: 20,
-    segments: 72,
-    drop: 2.5,
-    reanchorDist: 120,
-});
-
 // V18.381 — DAS FERN-WASSER (die Wasser-LOD-Kaskade): das grobe Atlas-Wasser-Sheet jenseits
 // des Voxel-Chunk-Rings, bis knapp hinter die Sicht (`fog.far + margin`, gedeckelt). `step` =
 // span/4 = 10,8 m (Grid-Linien exakt auf Chunk-Grenzen); `drop` legt den Fern-Spiegel knapp
-// unter die Nah-Kräusel-Zone (und klar ÜBER die Mantel-Sea-Ebene waterLevel−3); `dip` taucht
+// unter die Nah-Kräusel-Zone (historischer Anker: die Mantel-Sea-Ebene lag bei waterLevel−3,
+// der Mantel ist N7.4 geschnitten — die Zahlen bleiben byte-alt); `dip` taucht
 // die Ufer-Anker unters Terrain (per-Pixel-Kante via edgeFade); `depth` = die konstante Fern-
 // Tiefen-Farbe (kein Makro-Sample → O(1)-Bau); `reanchorDist`/`rebuildDelta` = die Rebuild-
 // Hysterese (Spieler-Crossing bzw. Sicht-/Ring-Änderung). Feel-Knöpfe (Schöpfer-Browser).
@@ -83736,34 +83378,6 @@ AnazhRealm.SCATTER = Object.freeze({
             promotable: false,
         }),
     ]),
-});
-
-// V18.212 — Ω-C CANOPY-SHELL (DER LEBENDIGE GIGANT §9): die ferne Wald-
-// Oberfläche, die individuelle Bäume in der Distanz cullt und durch eine
-// geschlossene grüne Fläche ersetzt. Plan-§9-Formel:
-//   lift = smoothstep(0.18, 0.5, coverage) · (coverage · 7 + 11)
-//   canopyTop = terrain + lift + crown-bumps
-// Coverage in unserer Architektur: `worldFieldAt.lebendig` × Clump-Faktor
-// (V18.102-Wald-Maske λ~170m). Konsistent mit dem Scatter — derselbe Term
-// treibt Tree-Spawn-Probability + Canopy-Lift. Frozen Konstanten browser-
-// justierbar wenn der Schöpfer Look-Feinheiten anpasst.
-AnazhRealm.CANOPY_SHELL = Object.freeze({
-    // Gitter-Auflösung: 96×96 = 9216 Vertices. ~21m Vertex-Abstand bei 2km
-    // Region — fein genug für sichtbare Strukturen, grob genug für FPS.
-    gridSize: 96,
-    // Welt-Abdeckung in m. ±1024m ist der Worldgen-Bereich (wo `lebendig`
-    // definiert ist); 2048m = 2km × 2km.
-    regionM: 2048,
-    // Distanz-Dither: Canopy fadet von distNear (m) bis distFar (m) ein.
-    // Vor distNear: unsichtbar (Einzelbäume tragen die Wahrheit). Ab distFar:
-    // voll sichtbar als ferne Wald-Oberfläche.
-    distNear: 180,
-    distFar: 320,
-    // Maximale Deckkraft am Horizont — < 1.0 damit Atmosphäre durchscheint.
-    maxOpacity: 0.85,
-    // Lift-Skala: 1.0 = Plan-Formel direkt. Browser-justierbar wenn die
-    // Bäume „zu hoch" über dem Terrain liegen.
-    liftScale: 0.85,
 });
 
 // V18.235 (wahreranblick §3 — DIE LUSHE KRONE, „die Samen werden zu Mammutbäumen"):

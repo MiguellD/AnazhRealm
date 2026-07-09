@@ -23995,11 +23995,9 @@ async function checkBandPhasenBF(ctx) {
                 r.state.creatureEmotions = saved.ce;
             }
         })();
-        // V18.113 — der Mantel erbt die Lichtung über das GETEILTE Terrain-Material
-        // (kein eigener Geometrie-Bake — der wäre die Akne-Klasse).
-        out.b3Mantle =
-            !/setXYZ\(i, 0, 1, 0\)/.test(r._ensureHorizonMantle.toString()) &&
-            /computeVertexNormals/.test(r._ensureHorizonMantle.toString());
+        // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
+        // Material-Probe wandert zur Abwesenheit (der Schnitt bleibt geschnitten).
+        out.b3Mantle = typeof r._ensureHorizonMantle === "undefined";
         // V18.125 — A4-SCHELF: der KÜSTEN-AQUIFER, der synthetische Drei-Beweis
         // auf einem PRÄPARIERTEN preDensity-Grid an einem atlas-freien In-Region-
         // Ort: (a) die himmel-offene Senke unter dem Wassertisch trägt WASSER
@@ -24154,7 +24152,7 @@ async function checkBandPhasenBF(ctx) {
     check("E4+E5: die bewährte Geste kristallisiert zum Gesetz, die Emotion gebiert die Bedingung", res.e45Crystal);
     check("E4+E5: eine frozen-Welt-Geste kristallisiert NIE (die EINE Effekt-Whitelist)", res.e45Guard);
     check("E4+E5: der Kristallisierer lebt im Selbstanalyse-Takt (KONSUM)", res.e45Hook);
-    check("B3/V18.113: der Mantel behält echte Normalen + erbt die Lichtung übers Material", res.b3Mantle);
+    check("B3/N7.4: der Horizont-Mantel ist geschnitten (kein Mantel-Material-Pfad mehr)", res.b3Mantle);
     check("B8: rimStrength-Uniform verdrahtet (Struktur-LUT mit Toon gepurged → PBR-Rim)", res.b8Rim);
     check(
         "A4/V18.125: der KÜSTEN-AQUIFER — offene Senke unterm Wassertisch trägt Wasser, Land + gedeckelte Höhle bleiben trocken",
@@ -24255,15 +24253,13 @@ async function checkBandPhaseAFundament(ctx) {
                 }
             }
         }
-        // ── A5 · Fog liest die SICHTBARE Welt-Kante (B2: Mantel-Rand, sonst Ring).
+        // ── A5 · Fog liest die SICHTBARE Welt-Kante (N7.4: die Kulissen sind geschnitten —
+        // die Kante IST der Ring; der Studio-Nebel schliesst an der Wald-Kante).
         {
             const cfg = r._voxelChunkConfig();
             const ringEdge = (cfg.ringRadius + 0.5) * cfg.span;
-            if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
             if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
-            const mantleOn =
-                r.state.horizonMantle && !(r.state.atmosphere && r.state.atmosphere.horizonMantle === false);
-            const visualEdge = mantleOn ? r.constructor.HORIZON_MANTLE.outerRadius : ringEdge;
+            const visualEdge = ringEdge;
             out.a5 = {
                 fogFar: r.state.fog ? r.state.fog.far : null,
                 visualEdge,
@@ -24271,89 +24267,17 @@ async function checkBandPhaseAFundament(ctx) {
                 src: /visualEdge/.test(r._dayNightApplyHemiAndFog.toString()),
             };
         }
-        // ── B2 · Horizont-Mantel — seit dem Studio-Modell (08.07.) der ALT-PFAD-Fernhorizont:
-        // im Studio-Regime ist die Kulisse AUS (die Sicht schließt an der Wald-Kante, S1),
-        // der Mantel lebt nur ohne Foundry weiter → das Band prüft die lebende Alt-Mechanik
-        // deterministisch über den Test-Hook (die gate:grass-thin-Klasse, V9.56-i) und räumt
-        // danach zurück in den Studio-Zustand (dispose).
-        {
-            const cfg = r._voxelChunkConfig();
-            // Der VOLLE Gate setzt den Hook GLOBAL (Mechanik-Gate = foundry-aus) — hier
-            // nur sichern + WIEDERHERSTELLEN, nie löschen (ein delete schaltete sonst
-            // alle Folge-Bänder auf foundry-AN → der _buildVariantLODs-Chokepoint gibt
-            // null → 35 Folge-Rote, gemessen 08.07.).
-            const _prevNoFoundry = window.__anazhGateNoFoundry;
-            window.__anazhGateNoFoundry = true;
-            try {
-                if (typeof r._ensureHorizonMantle === "function") r._ensureHorizonMantle();
-            } catch (_e) {}
-            const m = r.state.horizonMantle;
-            if (m && m.mesh && m.mesh.geometry) {
-                const HM = r.constructor.HORIZON_MANTLE;
-                const pos = m.mesh.geometry.attributes.position;
-                // Stichprobe: Mantel-Höhe folgt dem Macro (Land: macro−drop; See: waterLevel−0.6)
-                let probed = 0,
-                    matches = 0;
-                for (let i = 0; i < pos.count; i += 97) {
-                    const x = pos.getX(i),
-                        y = pos.getY(i),
-                        z = pos.getZ(i);
-                    const macro = r._terrainMacroSurfaceY(x, z);
-                    if (!Number.isFinite(macro)) continue;
-                    probed++;
-                    const wl = r.state.waterLevel || 0;
-                    const expect = macro < wl + 0.4 ? wl - 3 : macro - HM.drop; // V18.115: See-Kulisse −3
-                    if (Math.abs(y - expect) < 0.2) matches++;
-                }
-                // Loch-Radius: kein Vertex näher als (ringRadius−0.5−ε)·span am Anker
-                let minR = Infinity;
-                for (let i = 0; i < pos.count; i += 31) {
-                    const dx = pos.getX(i) - m.anchorX,
-                        dz = pos.getZ(i) - m.anchorZ;
-                    minR = Math.min(minR, Math.hypot(dx, dz));
-                }
-                // V18.118 — die SPIELER-STANZE (das alte „Geo-Loch ≥ Welt-Kante"
-                // war ein STAND-Bild-Maß: der Anker hinkt bis reanchorDist, der
-                // Ring folgt dem Spieler sofort → die opake Platte überdeckte
-                // nach Bewegung den halben Sicht-Ring, S-Bilder 10.06.). Jetzt:
-                // (1) das SICHTBARE Loch ist ein Shader-Stanz-Uniform um die
-                // SPIELER-Position (pro Tick nachgeführt, KONSUM), Radius ≥
-                // Welt-Kante; (2) die KONSTRUKTIONS-Ungleichung geoHole +
-                // reanchEff ≤ stanzR (kein Himmels-Ring); (3) das Geo-Loch
-                // selbst bleibt ≥ geoHoleR−ε (Bau-Wahrheit).
-                const hu = r.state.mantleHoleUniforms;
-                const pm2 = r.state.playerMesh.position;
-                const stanzR = (cfg.ringRadius + 0.5) * cfg.span + 6;
-                const reanchEff = Math.max(16, Math.min(HM.reanchorDist, stanzR - cfg.span - 6));
-                out.b2 = {
-                    exists: true,
-                    verts: pos.count,
-                    probed,
-                    matches,
-                    minR: +minR.toFixed(1),
-                    holeOk:
-                        !!hu &&
-                        hu.r.value >= stanzR - 0.01 &&
-                        Math.hypot(hu.cx.value - pm2.x, hu.cz.value - pm2.z) < 2 &&
-                        (m.geoHoleR || 0) + reanchEff <= hu.r.value + 0.01 &&
-                        minR >= (m.geoHoleR || 0) - 1,
-                    punchWired: !!(m.mesh.material && m.mesh.material.opacityNode && m.mesh.material.alphaTest > 0),
-                    builtMs: m.builtMs,
-                    matVertexColors: !!(m.mesh.material && m.mesh.material.vertexColors),
-                };
-            } else {
-                out.b2 = { exists: false };
-            }
-            if (_prevNoFoundry) {
-                window.__anazhGateNoFoundry = _prevNoFoundry;
-            } else {
-                delete window.__anazhGateNoFoundry;
-                // Nur im foundry-AN-Kontext (Fast-Tier o.ä.) zurück in den Studio-Zustand.
-                try {
-                    if (typeof r._disposeHorizonMantle === "function") r._disposeHorizonMantle();
-                } catch (_e) {}
-            }
-        }
+        // ── B2 · Horizont-Mantel — N7.4 GESCHNITTEN (Vor-Studio-Fern-Kulisse, V18.423
+        // im Studio-Regime aus, jetzt ganz weg: der Nebel schliesst an der Wald-Kante,
+        // jenseits davon zeichnet NICHTS). Das Band prüft die ABWESENHEIT — der Schnitt
+        // bleibt geschnitten, kein Re-Grow (Methoden · Konstante · State · Tick-Aufruf).
+        out.b2 = {
+            methodsGone:
+                typeof r._ensureHorizonMantle === "undefined" && typeof r._disposeHorizonMantle === "undefined",
+            constGone: !r.constructor.HORIZON_MANTLE,
+            stateGone: r.state.horizonMantle === undefined && r.state.mantleHoleUniforms === undefined,
+            tickGone: !/_ensureHorizonMantle/.test(window.__codeOf(r._runFrameScheduler)),
+        };
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
         out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
         out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(r._addVoxelEdit.toString());
@@ -24410,27 +24334,18 @@ async function checkBandPhaseAFundament(ctx) {
         res.a2 ? `outside=${res.a2.totalOutside} changed=${res.a2.changedOutside}` : "kein Chunk"
     );
     check(
-        "A5: fog.far ≤ sichtbare Welt-Kante (B2-Mantel-Rand bzw. Ring — eine Distanz, noch ein Gesicht)",
+        "A5: fog.far ≤ sichtbare Welt-Kante (Ring — eine Distanz, noch ein Gesicht)",
         res.a5 && res.a5.coupled === true,
         res.a5 ? `far=${res.a5.fogFar && res.a5.fogFar.toFixed(1)} edge=${res.a5.visualEdge.toFixed(1)}` : ""
     );
     check("A5: _dayNightApplyHemiAndFog liest die sichtbare Kante (Source)", res.a5 && res.a5.src === true);
-    check("B2: der Horizont-Mantel existiert (Instant-Gigantik)", res.b2 && res.b2.exists === true);
+    check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
+    check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
     check(
-        "B2: Mantel-Höhen folgen dem Macro (Land: −drop · See: Spiegel−0.6)",
-        res.b2 && res.b2.exists && res.b2.probed > 5 && res.b2.matches === res.b2.probed,
-        res.b2 && res.b2.exists ? `${res.b2.matches}/${res.b2.probed} verts=${res.b2.verts} ${res.b2.builtMs}ms` : ""
+        "B2/N7.4: kein Mantel-State (horizonMantle/mantleHoleUniforms undefined)",
+        res.b2 && res.b2.stateGone === true
     );
-    check(
-        "B2/V18.118: die Spieler-Stanze deckt den Sicht-Ring (Uniform folgt + Ungleichung geo+reanch≤stanz)",
-        res.b2 && res.b2.exists && res.b2.holeOk === true,
-        res.b2 && res.b2.exists ? `minR=${res.b2.minR}` : ""
-    );
-    check(
-        "B2/V18.118: die Stanze ist im Material verdrahtet (opacityNode + alphaTest)",
-        res.b2 && res.b2.exists && res.b2.punchWired === true
-    );
-    check("B2: Mantel-Material liest vertexColors (eine Farb-Quelle)", res.b2 && res.b2.matVertexColors === true);
+    check("B2/N7.4: der Scheduler ruft keinen Mantel-Tick mehr (Source)", res.b2 && res.b2.tickGone === true);
     check("A6b: handleJump klemmt am Decken-Headroom (Source)", res.a6SrcJump === true);
     check("A6a: _addVoxelEdit ruft die Begraben-Rettung (Source)", res.a6SrcEdit === true);
     check("A6b: _loopCamera klemmt das Ego-Auge unter die Decke (Source)", res.a6SrcCam === true);
@@ -36776,82 +36691,17 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
             }
         }
 
-        // ─── Ω-C CANOPY-SHELL (§9 Plan, der ferne Wald) ────────────────
-        out.cConstExists = !!A.CANOPY_SHELL;
-        if (out.cConstExists) {
-            out.cConstSensible =
-                A.CANOPY_SHELL.gridSize > 0 &&
-                A.CANOPY_SHELL.regionM > 0 &&
-                A.CANOPY_SHELL.distNear < A.CANOPY_SHELL.distFar &&
-                A.CANOPY_SHELL.maxOpacity > 0 &&
-                A.CANOPY_SHELL.maxOpacity <= 1;
-        }
-        out.cBuildExists = typeof r._buildCanopyShell === "function";
-        out.cEnsureExists = typeof r._ensureCanopyShell === "function";
-        out.cDisposeExists = typeof r._disposeCanopyShell === "function";
-
-        // Behavioral: _ensureCanopyShell baut das Mesh + state.canopyShell
-        // wird gesetzt + erste Vertex hat Y > 0 (Terrain-Höhe).
-        // Studio-Modell (08.07.): die Shell ist ALT-PFAD-Fern-Kulisse (im Studio-Regime
-        // aus, hinter dem Wald-Kanten-Nebel) → die lebende Mechanik prüft der Test-Hook
-        // (die gate:grass-thin-Klasse, V9.56-i); Cleanup unten stellt den Studio-Zustand her.
-        const _prevNoFoundry = window.__anazhGateNoFoundry;
-        if (out.cBuildExists) {
-            // Sichern + wiederherstellen, NIE löschen — der volle Gate trägt den Hook GLOBAL.
-            window.__anazhGateNoFoundry = true;
-            try {
-                const mesh = r._ensureCanopyShell();
-                out.cMeshBuilt = !!mesh && mesh.isMesh === true;
-                if (out.cMeshBuilt) {
-                    const pos = mesh.geometry.attributes.position;
-                    // Erwartete Vertex-Count: gridSize × gridSize.
-                    out.cVertexCount = pos.count;
-                    out.cExpectedVertexCount = A.CANOPY_SHELL.gridSize * A.CANOPY_SHELL.gridSize;
-                    out.cCorrectVertexCount = pos.count === out.cExpectedVertexCount;
-                    // Min/Max Y prüfen — die Y-Werte sollten Terrain folgen
-                    // (variieren ≠ alle auf 0).
-                    let minY = Infinity,
-                        maxY = -Infinity;
-                    for (let i = 0; i < pos.count; i++) {
-                        const y = pos.getY(i);
-                        if (y < minY) minY = y;
-                        if (y > maxY) maxY = y;
-                    }
-                    out.cYVaries = maxY - minY > 1; // mindestens 1m Spanne
-                    out.cVertexCountColors = !!mesh.geometry.attributes.color;
-                }
-                // Disposable → nach dispose ist canopyShell wieder null.
-                if (out.cMeshBuilt && out.cDisposeExists) {
-                    r._disposeCanopyShell();
-                    out.cDisposed = !r.state.canopyShell;
-                    // Rebuild für Folge-Test (Tests-Hygiene).
-                    r._ensureCanopyShell();
-                }
-            } catch (_e) {
-                out.cBuildException = String(_e && _e.message);
-            }
-        }
-
-        // Source-Probe: _disposeCanopyShell wird beim Welt-Wechsel gerufen.
-        const restoreSrc = r._loadStateRestoreWorldMeta.toString();
-        out.cDisposeAufWeltWechsel = /_disposeCanopyShell/.test(restoreSrc);
-        // Source-Probe: Material trägt opacityNode mit smoothstep auf Distanz.
-        if (r.state.canopyShellMaterial) {
-            out.cMaterialHasOpacityNode = r.state.canopyShellMaterial.opacityNode != null;
-            out.cMaterialIsToon = !!(
-                r.state.canopyShellMaterial.isMeshToonMaterial || r.state.canopyShellMaterial.isMeshStandardMaterial
-            ); // V18.234 — Toon ODER PBR (Default pbr)
-        }
-        // Hook-Zustand wiederherstellen (der volle Gate trägt ihn GLOBAL); nur im
-        // foundry-AN-Kontext zurück in den Studio-Zustand (Shell weg).
-        if (_prevNoFoundry) {
-            window.__anazhGateNoFoundry = _prevNoFoundry;
-        } else {
-            delete window.__anazhGateNoFoundry;
-            try {
-                if (typeof r._disposeCanopyShell === "function") r._disposeCanopyShell();
-            } catch (_e) {}
-        }
+        // ─── Ω-C CANOPY-SHELL — N7.4 GESCHNITTEN (Vor-Studio-Fern-Kulisse) ─────
+        // Die Shell stand im Studio-Modell komplett hinter dem Wald-Kanten-Nebel und
+        // baute jeden Boot ×2 (V18.423); der Foundry-Wald + der Nebel tragen die Ferne.
+        // Das Band prüft die ABWESENHEIT (Konstante · Methoden · State · Restore-Pfad).
+        out.cConstGone = !A.CANOPY_SHELL;
+        out.cMethodsGone =
+            typeof r._ensureCanopyShell === "undefined" &&
+            typeof r._buildCanopyShell === "undefined" &&
+            typeof r._disposeCanopyShell === "undefined";
+        out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
+        out.cRestoreClean = !/_disposeCanopyShell/.test(window.__codeOf(r._loadStateRestoreWorldMeta));
 
         return out;
     });
@@ -36876,32 +36726,11 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         check("V18.212 (H4) Behavioral: provenance.species = baum_eiche", res.hProvenanceCarriesSpecies === true);
     }
 
-    // Ω-C
-    check("V18.212 (C1a) CANOPY_SHELL frozen Config existiert", res.cConstExists === true);
-    check(
-        "V18.212 (C1b) CANOPY_SHELL Konstanten sinnvoll (grid>0, distNear<distFar, opacity≤1)",
-        res.cConstSensible === true
-    );
-    check("V18.212 (C2a) _buildCanopyShell existiert", res.cBuildExists === true);
-    check("V18.212 (C2b) _ensureCanopyShell existiert (lazy)", res.cEnsureExists === true);
-    check("V18.212 (C2c) _disposeCanopyShell existiert (Welt-Wechsel)", res.cDisposeExists === true);
-    check("V18.212 (C3a) Mesh wird gebaut (state.canopyShell + isMesh)", res.cMeshBuilt === true);
-    check(
-        `V18.212 (C3b) Vertex-Count = gridSize² (${res.cVertexCount}/${res.cExpectedVertexCount})`,
-        res.cCorrectVertexCount === true
-    );
-    check("V18.212 (C3c) Vertex Y variiert (Terrain wird gelesen, nicht alle 0)", res.cYVaries === true);
-    check("V18.212 (C3d) Color-Attribut existiert (Per-Vertex-Tönung)", res.cVertexCountColors === true);
-    check("V18.212 (C4a) _disposeCanopyShell setzt state.canopyShell auf null", res.cDisposed === true);
-    check(
-        "V18.212 (C4b) _disposeCanopyShell wird im Welt-Wechsel gerufen (Source)",
-        res.cDisposeAufWeltWechsel === true
-    );
-    check("V18.212 (C5a) Canopy-Material trägt opacityNode (Distanz-Dither)", res.cMaterialHasOpacityNode === true);
-    check(
-        "V18.212/234 (C5b) Canopy-Material ist das aktive lit NodeMaterial (Toon ODER PBR)",
-        res.cMaterialIsToon === true
-    );
+    // Ω-C — N7.4: die Shell ist geschnitten; die Bänder prüfen die Abwesenheit.
+    check("N7.4 (C1) CANOPY_SHELL-Konstante geschnitten", res.cConstGone === true);
+    check("N7.4 (C2) Canopy-Shell-Methoden geschnitten (ensure/build/dispose weg)", res.cMethodsGone === true);
+    check("N7.4 (C3) kein Canopy-Shell-State (canopyShell/Material undefined)", res.cStateGone === true);
+    check("N7.4 (C4) Welt-Wechsel-Restore referenziert die Shell nicht mehr (Source)", res.cRestoreClean === true);
 }
 
 // V18.213 — DER LEBENDIGE GIGANT, MESH-MERGE pro Variante (gigant-fortsetzung-

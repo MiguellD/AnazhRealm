@@ -73,9 +73,9 @@ const server = http.createServer((req, res) => {
         // Eine feste Tageszeit (Mittag) → deterministische Sonne, keine Nacht-Zweige.
         r.state.timeOfDay = 0.5;
         r.state.weather = "clear";
-        // Der Ziel-Ring (User-Sicht-Regler) = 4; der Mantel steht (der geliebte Weitblick am Ziel).
+        // Der Ziel-Ring (User-Sicht-Regler) = 4. (N7.4: der Horizont-Mantel ist geschnitten —
+        // der alte Mantel-Stub hier war toter Ballast, der Nebel liest den Mantel nirgends.)
         r.state.chunkRingRadius = 4;
-        r.state.horizonMantle = r.state.horizonMantle || { mesh: null };
 
         // Die Nebel-KANTE führt `_smoothFogEdge` träge nach (max 4 m/Schritt — die V18.350-Inertia,
         // eine SEPARATE, eigen-getestete Sache: diag-fog-inertia). Für die REVEAL-ENTSCHEIDUNG (welche
@@ -143,7 +143,9 @@ const server = http.createServer((req, res) => {
     // ((0+0.5)·43.2+18 = 39.6 → floor 46). OHNE den Fix läge A bei der vollen Sicht-Basis (~120–150 m),
     // weil die else-Klammer den Nebel auf visualEdgeTarget öffnete → großzügige Wand ≤ 60 m.
     if (!(S.fogFarRamp0 != null && S.fogFarRamp0 <= 60))
-        errs.push(`A: der Ein-Chunk-Boot öffnete den Nebel auf ${fmt(S.fogFarRamp0)} m (> 60) — der ferne Sichtring lebt`);
+        errs.push(
+            `A: der Ein-Chunk-Boot öffnete den Nebel auf ${fmt(S.fogFarRamp0)} m (> 60) — der ferne Sichtring lebt`
+        );
     // B — die Kante weitet mit dem wachsenden Ring (größer als der Ein-Chunk-Boot).
     if (!(S.fogFarRamp2 != null && S.fogFarRamp2 > S.fogFarRamp0))
         errs.push(`B: die Ramp-Kante wuchs nicht mit dem Ring (${fmt(S.fogFarRamp0)} → ${fmt(S.fogFarRamp2)} m)`);
@@ -153,9 +155,13 @@ const server = http.createServer((req, res) => {
     // Wald-Kante in die ferne Kulisse. Eine Regression, die den Mantel wieder freigibt, wird hier ROT.
     const _ringEdge4 = (4 + 0.5) * 43.2; // die gebaute Ring-Kante bei Ziel-Ring 4 = die Wald-Kante
     if (!(S.fogFarSettled != null && S.fogFarSettled > S.fogFarRamp2))
-        errs.push(`C1: die Sicht wuchs am Ziel nicht zur vollen Wald-Kante (${fmt(S.fogFarRamp2)} → ${fmt(S.fogFarSettled)} m)`);
+        errs.push(
+            `C1: die Sicht wuchs am Ziel nicht zur vollen Wald-Kante (${fmt(S.fogFarRamp2)} → ${fmt(S.fogFarSettled)} m)`
+        );
     if (!(S.fogFarSettled != null && S.fogFarSettled <= _ringEdge4 + 60))
-        errs.push(`C2: der Nebel öffnete JENSEITS der Wald-Kante auf ${fmt(S.fogFarSettled)} m (> ${fmt(_ringEdge4 + 60)}) — die ferne Kulisse/der Mantel-Weitblick lebt wieder`);
+        errs.push(
+            `C2: der Nebel öffnete JENSEITS der Wald-Kante auf ${fmt(S.fogFarSettled)} m (> ${fmt(_ringEdge4 + 60)}) — die ferne Kulisse/der Mantel-Weitblick lebt wieder`
+        );
     // D — der Kokon bleibt eng (≤ ~20 m, AWAKEN_FOG_FAR=14).
     if (!(S.fogFarAwaken != null && S.fogFarAwaken <= 20))
         errs.push(`D: der Erwachen-Kokon ist nicht eng (${fmt(S.fogFarAwaken)} m > 20)`);

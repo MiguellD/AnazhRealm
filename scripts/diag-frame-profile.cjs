@@ -115,7 +115,6 @@ const server = http.createServer((req, res) => {
             "_loopFrustumCulling",
             "p2pTick",
             "_loopSkyboxPlanets",
-            "_ensureHorizonMantle",
             // V18.290 — die Sub-Ticks von _loopVoxelStreaming (im Stand: welcher ist heiß?)
             "_tickVoxelChunkStreaming",
             "_tickArchitectureLOD",

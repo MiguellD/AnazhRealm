@@ -589,7 +589,6 @@ async function auditStateAndMethods() {
                 "erosionTiles",
                 "hydroTiles",
                 "tarns", // null-init, `if (state.tarns)`-Leser
-                "horizonMantle", // null-init, `if (state.horizonMantle)`-Leser
                 "canopyChunks",
                 "bakedRegionFields",
                 "scatterRegions",
