@@ -52,7 +52,7 @@ Verb erfinden"). Sie werden je als eigene ε-Welle mit Gate gebaut, BEVOR das je
 
 ## Andock-Reihenfolge (nach δ, je Lab die ε-Checkliste)
 
-1. **schmiede** (wield ist fertig, kein Wörterbuch-Gap — der billigste Beweis nach Porta)
+1. **schmiede** ✅ GEDOCKT (10.07., V18.439 — W-A4a: schmiede-core.js, 21 Rezepte, Split-Parität 21/21; offen W-A4b Hand-Render · W-A4c Portal-Umzug)
 2. **fachwerk** (braucht N5.7 settlement — direkt danach)
 3. **tetrapoda** + **koerperstudio** (brauchen das `motion`-Feld — eine Welle für das Feld, dann beide)
 4. **klang** (braucht das `klang`-Feld + den einen Audio-Konsumenten)
