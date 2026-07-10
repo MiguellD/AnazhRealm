@@ -416,6 +416,13 @@ jobs:
               # auf, das Interim ist ehrlich (pending statt Donor-Part-Gestalt).
               run: npm run gate:rezept-katalog
 
+            - name: Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)
+              # DAS BAUM-MUSTER AUF PORTALE: 5 studioGestalt-Daten-Zeilen + der EINE generische
+              # Entry-Resolver; das Studio-Tor materialisiert end-to-end ohne Doppel-Bild, die
+              # Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt
+              # in BEIDEN Regimen (Hook -> Part-Pfad).
+              run: npm run gate:portal-gestalt
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

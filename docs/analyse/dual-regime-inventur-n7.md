@@ -194,3 +194,7 @@ diese Gabeln) · #14 (die EINE Dichte-Quelle) · #18 #20 (Thin-/Stage-Wände: de
 bzw. das Hook-Fenster wäre sonst destruktiv) · #23 (Boot-Chokepoint) · #26 (Totholz-Saat,
 roadmap §4). Weitere Senkung verlangt, die Hook-Fixturen selbst zu falten (eigene Welle,
 NICHT erzwingen — die Erschein-Familie ist die eine appear-Verb-Gabel des Nervensystems).
+
+**Nachzug W-A3 (V18.438):** der Gestalt-Resolver (`studioGestalt` in `_foundryPresetForEntry`)
+trägt einen NEUEN Erschein-Familie-Read → **15 Call-Sites** (dokumentiert, kein Drift: dieselbe
+Gabel-Klasse wie #22 — fail-soft auf den Part-Pfad unter dem Hook, Hook-Fixturen-tragend).
