@@ -19,9 +19,11 @@
 //     B-b GT vs Supersport im LIVE-Buch verschieden UND bit-exakt == den Node-
 //         Werten (die Formel reiste unverfaelscht durch Worker + Ingest).
 //     B-c _vehicleProfile(fahrzeug_gt) traegt die LAB-Werte (=== exportDrive);
-//         _vehicleProfile(fahrzeug_wagen) — KEIN Buch-Preset — traegt die EMERGENZ
-//         byte-gleich (gegen die emergente Formel nachgerechnet, 0 Regress); floats
-//         bleibt in BEIDEN die Substanz-Entscheidung (das Lab kennt kein Wasser).
+//         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
+//         gefallen) wird an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen
+//         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
+//         byte-gleich gegen die emergente Formel nachgerechnet; floats bleibt in
+//         BEIDEN die Substanz-Entscheidung (das Lab kennt kein Wasser).
 //   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
 //     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
@@ -276,16 +278,29 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             res.prof.gt = pGt
                 ? { topSpeedMul: pGt.topSpeedMul, kAcc: pGt.kAcc, kBrake: pGt.kBrake, floats: pGt.floats }
                 : null;
-            const pWg = r._vehicleProfile({ type: "fahrzeug_wagen" });
+            // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
+            // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
+            // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const sub = KS.fahrzeug_wagen;
+            res.prof.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
+            res.prof.substanzParts = sub && Array.isArray(sub.parts) ? sub.parts.length : 0;
+            delete r.state.blueprints._drive_probe_wagen;
+            r.state.blueprints._drive_probe_wagen = {
+                name: "_drive_probe_wagen",
+                parts: JSON.parse(JSON.stringify(sub.parts)),
+                connections: JSON.parse(JSON.stringify(sub.connections || [])),
+            };
+            const pWg = r._vehicleProfile({ type: "_drive_probe_wagen" });
             res.prof.wagen = pWg
                 ? { topSpeedMul: pWg.topSpeedMul, kAcc: pWg.kAcc, kBrake: pWg.kBrake, floats: pWg.floats }
                 : null;
             // fahrzeug_wagen loest auf KEIN Buch-Preset ("wagen" steht in keinem Buch -> null,
-            // der dokumentierte Built-in-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
+            // der dokumentierte Substanz-Pfad) — die 0-Regress-Praemisse: kein Override moeglich.
             res.prof.wagenPreset = r._foundryPresetFor("fahrzeug_wagen");
             res.prof.wagenHasRecipe = !!(f.recipes && res.prof.wagenPreset && f.recipes[res.prof.wagenPreset]);
             // Die EMERGENTE Formel NACHGERECHNET (byte-gleich zur _vehicleProfile-Emergenz):
-            const bp = r.state.blueprints.fahrzeug_wagen;
+            const bp = r.state.blueprints._drive_probe_wagen;
             const roles =
                 bp && Array.isArray(bp.parts) && bp.parts.length >= 2
                     ? r.computeMotionRoles(bp.parts, bp.connections)
@@ -303,6 +318,8 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                 kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
                 kBrake: rad > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
             };
+            res.emerg.radCount = rad;
+            delete r.state.blueprints._drive_probe_wagen; // Aufraeumen (die Probe hinterlaesst nichts)
         } catch (e) {
             res.profErr = (e && e.message) || String(e);
         }
@@ -350,18 +367,26 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     );
     const pw = out.prof.wagen;
     check(
-        "B-c: fahrzeug_wagen loest auf KEIN Buch-Rezept (null — der Built-in-Part-Pfad, 0-Regress-Praemisse)",
+        "B-c: der Alt-Blueprint fahrzeug_wagen ist ABWESEND — die Substanz-Tabelle traegt 17 Parts (AUSLÖSCHUNGS-WELLE)",
+        out.prof.wagenAbsent === true && out.prof.substanzParts === 17,
+        `absent=${out.prof.wagenAbsent} substanzParts=${out.prof.substanzParts}`
+    );
+    check(
+        "B-c: fahrzeug_wagen loest auf KEIN Buch-Rezept (null — der Substanz-Pfad, 0-Regress-Praemisse)",
         out.prof.wagenPreset === null && out.prof.wagenHasRecipe === false,
         `${out.prof.wagenPreset} · imBuch=${out.prof.wagenHasRecipe}`
     );
     check(
-        "B-c: _vehicleProfile(fahrzeug_wagen) traegt die EMERGENZ byte-gleich (nachgerechnet, 0 Regress)",
+        "B-c: _vehicleProfile(Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen) traegt die EMERGENZ byte-gleich (nachgerechnet, 4 Raeder leben in der Substanz)",
         !!pw &&
             !!out.emerg &&
             pw.topSpeedMul === out.emerg.topSpeedMul &&
             pw.kAcc === out.emerg.kAcc &&
-            pw.kBrake === out.emerg.kBrake,
-        pw ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc}` : "kein Profil"
+            pw.kBrake === out.emerg.kBrake &&
+            out.emerg.radCount === 4,
+        pw
+            ? `kAcc=${pw.kAcc} soll=${out.emerg && out.emerg.kAcc} rad=${out.emerg && out.emerg.radCount}`
+            : "kein Profil"
     );
     check(
         "B-c: floats bleibt SUBSTANZ-Entscheidung (Lab exportiert kein floats — gt == wagen, derselbe Donor)",

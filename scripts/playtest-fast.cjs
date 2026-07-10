@@ -192,20 +192,39 @@ function check(name, ok) {
                 const g = r._buildCreatureGroup("glutwesen");
                 return { ok: !!g };
             });
-            // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad)
+            // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
+            // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
+            // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
+            // r.constructor.KIND_SUBSTANCE, die dokumentierte V18.259-Falle).
             out.blueprintBuilds = safe(() => {
-                const names = ["geraet_schwert", "esse", "welt_portal", "ruestung_brustpanzer"];
+                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+                const names = ["esse", "welt_portal", "ruestung_brustpanzer"];
                 const res = {};
+                res.geraet_schwert = KS.geraet_schwert
+                    ? !!r._buildFromBlueprint(
+                          {
+                              name: "_fast_schwert",
+                              parts: JSON.parse(JSON.stringify(KS.geraet_schwert.parts)),
+                          },
+                          0,
+                          undefined,
+                          {}
+                      )
+                    : "missing";
                 for (const n of names) {
                     const bp = st.blueprints[n];
                     res[n] = bp ? !!r._buildFromBlueprint(bp, 0, undefined, {}) : "missing";
                 }
                 return res;
             });
-            // RESONANZ: built-in Baupläne tragen sinnvolle Rollen (Form×Material → Rolle)
+            // RESONANZ: Substanz/Built-ins tragen sinnvolle Rollen (Form×Material → Rolle)
             out.roles = safe(() => {
+                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
                 const res = {};
-                const probe = { geraet_schwert: "weapon", ruestung_brustpanzer: "armor", welt_portal: "portal" };
+                res.geraet_schwert = KS.geraet_schwert
+                    ? r.computeBlueprintRole({ parts: KS.geraet_schwert.parts }) || "?"
+                    : "missing";
+                const probe = { ruestung_brustpanzer: "armor", welt_portal: "portal" };
                 for (const n of Object.keys(probe)) {
                     const bp = st.blueprints[n];
                     if (!bp) {
@@ -251,11 +270,11 @@ function check(name, ok) {
         check("KREATUR 'glutwesen' baut", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
-        check("KERN-BAUPLÄNE bauen (Schwert·Esse·Portal·Rüstung)", bbOk);
+        check("KERN-BAUPLÄNE bauen (Schwert-Substanz·Esse·Portal·Rüstung)", bbOk);
         if (!bbOk) console.log("     ⟶ " + JSON.stringify(bb));
         const ro = R.roles || {};
         check(
-            "RESONANZ: Schwert→weapon · Rüstung→armor · Portal→portal",
+            "RESONANZ: Schwert-Substanz→weapon · Rüstung→armor · Portal→portal",
             ro.geraet_schwert === "weapon" && ro.ruestung_brustpanzer === "armor" && ro.welt_portal === "portal"
         );
         if (ro.geraet_schwert !== "weapon") console.log("     ⟶ " + JSON.stringify(ro));

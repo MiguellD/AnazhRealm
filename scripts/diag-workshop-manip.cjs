@@ -40,7 +40,14 @@ function startServer() {
                     const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
                     if (tab) tab.click();
                 }
-                r.cloneBlueprint("village", "diag_test");
+                // AUSLÖSCHUNGS-WELLE: village ist gefallen — das Mehr-Part-Test-Blueprint
+                // kommt aus der eingefrorenen Haus-Substanz (KIND_SUBSTANCE.haus_basis).
+                const KSm = r.constructor.KIND_SUBSTANCE || {};
+                r.state.blueprints.diag_test = {
+                    name: "diag_test",
+                    label: "Diag Test",
+                    parts: JSON.parse(JSON.stringify((KSm.haus_basis || { parts: [] }).parts)),
+                };
                 r.selectBlueprintForEdit("diag_test");
                 r._workshopSetSelection(0);
                 r._workshopEnsurePreview();

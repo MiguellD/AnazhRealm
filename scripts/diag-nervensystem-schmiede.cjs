@@ -6,13 +6,16 @@
 // „kein kind-if im AutoRegister"-Wall traegt zusaetzlich das Verfassungs-Gesetz N1 in
 // gate:constitution). Gestraffte Schwester zu diag-nervensystem-porta.cjs:
 //   S (statisch, Node): Manifest traegt schmiede (ns __schmiedeCore) · KIND_POLICY
-//     traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert) · der Auto-
-//     Register-Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich ·
+//     traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert, donorTool
+//     geraet_spitzhacke — AUSLÖSCHUNGS-WELLE) · der Auto-Register-Chokepoint
+//     laeuft die Tabelle OHNE kind-String-Vergleich und loest den Donor ueber
+//     bps[dKey] || KIND_SUBSTANCE[dKey] (donorTool fuer fx.tool-Rezepte) ·
 //     schmiede-core deklariert kindStages.weapon == [0] · die Rezepte tragen
-//     fx.place {mode:"hand"} als DATEN · der Donor geraet_schwert ist ein
-//     DATENBLOCK in _defaultBlueprints (kein portalMeta/roleManual — die Rolle
-//     EMERGIERT aus den Parts, Omega-PHYSIS ist der Wield-Richter).
-//     --selftest injiziert 2 Verletzungen.
+//     fx.place {mode:"hand"} als DATEN · die Donor-SUBSTANZ (geraet_schwert +
+//     geraet_spitzhacke) lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (kein
+//     portalMeta/roleManual — die Rolle EMERGIERT aus den Parts, Omega-PHYSIS
+//     ist der Wield-Richter); der Alt-Blueprint ist PHYSISCH gefallen.
+//     --selftest injiziert 3 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 21 Klingen-
 //     Rezepte (Waffen UND Werkzeuge) · kindStages.weapon == [0] gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
@@ -106,16 +109,22 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
             schmiede.ns === "__schmiedeCore",
     ]);
     out.push([
-        "S2: KIND_POLICY traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert — die EINE Daten-Zeile)",
-        /weapon:\s*Object\.freeze\(\{\s*prefix:\s*"klinge_",\s*donor:\s*"geraet_schwert"/.test(anazhNC),
+        "S2: KIND_POLICY traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert, donorTool geraet_spitzhacke — die EINE Daten-Zeile)",
+        /weapon:\s*Object\.freeze\(\{\s*prefix:\s*"klinge_",\s*donor:\s*"geraet_schwert",\s*donorTool:\s*"geraet_spitzhacke"/.test(
+            anazhNC
+        ),
     ]);
     // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
     // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
     // im File VOR der Definition und schnitte sonst den falschen Body.
     const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
     out.push([
-        "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
-        autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
+        "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8) und loest den Donor ueber KIND_SUBSTANCE + donorTool (AUSLÖSCHUNGS-WELLE)",
+        autoReg !== null &&
+            /KIND_POLICY/.test(autoReg) &&
+            !/kind\s*[!=]==?\s*"/.test(autoReg) &&
+            /KIND_SUBSTANCE/.test(autoReg) &&
+            /donorTool/.test(autoReg),
     ]);
     out.push([
         "S4: schmiede-core deklariert kindStages.weapon == [0] (B2-Vertrags-Daten)",
@@ -126,10 +135,13 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         /place:\s*\{\s*mode:\s*"hand"\s*\}/.test(scNC),
     ]);
     out.push([
-        "S6: der Donor geraet_schwert ist ein DATENBLOCK in den Built-ins (kein portalMeta/roleManual — Rolle emergiert aus den Parts)",
-        /geraet_schwert:\s*\{\s*name:\s*"geraet_schwert"/.test(anazhNC) &&
-            !/geraet_schwert:\s*\{[^}]*portalMeta/.test(anazhNC) &&
-            !/geraet_schwert:\s*\{[^}]*roleManual/.test(anazhNC),
+        "S6: die Donor-SUBSTANZ lebt in KIND_SUBSTANCE (geraet_schwert + geraet_spitzhacke mit parts, kein portalMeta/roleManual) — der Alt-Blueprint-Block ist GEFALLEN",
+        /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
+            /geraet_schwert:\s*\{"label":"Schwert","parts":\[\{"shape"/.test(anazhNC) &&
+            /geraet_spitzhacke:\s*\{"label":"Spitzhacke","parts":\[\{"shape"/.test(anazhNC) &&
+            !/geraet_schwert:\s*\{\s*name:\s*"geraet_schwert"/.test(anazhNC) &&
+            !/geraet_schwert:\s*\{[^\n]*portalMeta/.test(anazhNC) &&
+            !/geraet_schwert:\s*\{[^\n]*roleManual/.test(anazhNC),
     ]);
     // W-A4b — die Hand-Gesetze (statisch):
     out.push([
@@ -253,11 +265,32 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
             res.d.label = bp ? bp.label : null;
             res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
             res.d.builtIn = bp ? !!bp.builtIn : null;
-            res.d.donorIntact = !!(r.state.blueprints.geraet_schwert && r.state.blueprints.geraet_schwert.builtIn);
+            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND
+            // (state.blueprints), die Substanz lebt eingefroren in KIND_SUBSTANCE, der
+            // Auto-Klon traegt byte-gleiche Parts (JSON.stringify ===).
+            const KS = A.KIND_SUBSTANCE || {};
+            res.d.donorAbsent =
+                !(r.state.blueprints && r.state.blueprints.geraet_schwert) &&
+                !(r.state.blueprints && r.state.blueprints.geraet_spitzhacke);
+            res.d.substanzSchwert =
+                KS.geraet_schwert && Array.isArray(KS.geraet_schwert.parts) ? KS.geraet_schwert.parts.length : 0;
+            res.d.substanzSpitz =
+                KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts)
+                    ? KS.geraet_spitzhacke.parts.length
+                    : 0;
+            res.d.weaponPartsMatch =
+                !!bp && !!KS.geraet_schwert && JSON.stringify(bp.parts) === JSON.stringify(KS.geraet_schwert.parts);
+            res.d.weaponRole = bp ? r.computeBlueprintRole(bp) : null;
             res.d.presetResolves = r._foundryPresetFor("klinge_langschwert");
             res.d.entryResolves = r._foundryPresetForEntry({ type: "klinge_spitzhacke" });
-            // die Werkzeug-Klasse dockt genauso (geraet_spitzhacke-Klasse gedeckt):
-            res.d.toolBlueprint = !!(r.state.blueprints && r.state.blueprints.klinge_spitzhacke);
+            // die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz):
+            const tbp = r.state.blueprints && r.state.blueprints.klinge_spitzhacke;
+            res.d.toolBlueprint = !!tbp;
+            res.d.toolPartsMatch =
+                !!tbp &&
+                !!KS.geraet_spitzhacke &&
+                JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
+            res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
             res.d.err = (e && e.message) || String(e);
         }
@@ -472,10 +505,28 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     );
     check("D: das Label reist aus dem Rezept (lab == Langschwert)", out.d.label === "Langschwert", String(out.d.label));
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", out.d.builtIn === false);
-    check("D: der Donor geraet_schwert bleibt Built-in (unberuehrt)", out.d.donorIntact === true);
     check(
-        "D: die Werkzeug-Klasse dockt mit (klinge_spitzhacke registriert — geraet_spitzhacke-Klasse gedeckt)",
+        "D: die Alt-Donoren sind ABWESEND (kein geraet_schwert/geraet_spitzhacke in state.blueprints — AUSLÖSCHUNGS-WELLE)",
+        out.d.donorAbsent === true
+    );
+    check(
+        "D: die Substanz-Tabelle traegt beide Zeilen (KIND_SUBSTANCE.geraet_schwert 4 Parts · geraet_spitzhacke 2 Parts)",
+        out.d.substanzSchwert === 4 && out.d.substanzSpitz === 2,
+        `schwert=${out.d.substanzSchwert} spitz=${out.d.substanzSpitz}`
+    );
+    check(
+        'D: die reine Waffe traegt die SCHWERT-Substanz byte-gleich + role "weapon" (klinge_langschwert)',
+        out.d.weaponPartsMatch === true && out.d.weaponRole === "weapon",
+        `role=${out.d.weaponRole}`
+    );
+    check(
+        "D: die Werkzeug-Klasse dockt mit (klinge_spitzhacke registriert — donorTool-Zeile gedeckt)",
         out.d.toolBlueprint === true
+    );
+    check(
+        'D: das Werkzeug traegt die WERKZEUG-Substanz byte-gleich + role "tool" (klinge_spitzhacke == KIND_SUBSTANCE.geraet_spitzhacke)',
+        out.d.toolPartsMatch === true && out.d.toolRole === "tool",
+        `role=${out.d.toolRole}`
     );
     check(
         "D: die generische klinge_-Regel loest auf (klinge_langschwert -> langschwert)",

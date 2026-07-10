@@ -375,47 +375,32 @@ function startSaveServer() {
                     r.state.blueprints.esse.parts.length
                 );
             }
-            // ── S6 GERÄT: Schwert (Oakeshott-Typ + Balance Ω-Φ4) + Werkzeug (Stiel/Kopf-Hebel) ──
-            if (typeof r._bladedWeaponVariant === "function") {
-                const sigs = new Set();
-                let balanceOk = true;
-                for (let s = 0; s < 40; s++) {
-                    const sw = r._bladedWeaponVariant("sw" + s);
+            // ── S6 GERÄT (AUSLÖSCHUNGS-WELLE): die Genom-Maschinen _bladedWeaponVariant/
+            // _toolVariant sind bewusst GESCHNITTEN (die Klingen-/Werkzeug-Vielfalt kommt
+            // aus den 21 schmiede-core-Rezepten) — die Judge-SUBSTANZ lebt eingefroren in
+            // KIND_SUBSTANCE, Balance/Rolle werden WEITER gerechnet (Ω-Φ4/U4 lebend).
+            {
+                const KSg = C.KIND_SUBSTANCE || {};
+                o.swordVariantCut = typeof r._bladedWeaponVariant !== "function";
+                o.toolVariantCut = typeof r._toolVariant !== "function";
+                if (KSg.geraet_schwert) {
+                    const sw = JSON.parse(JSON.stringify(KSg.geraet_schwert.parts));
                     const sd = r._swingDynamics({ parts: sw });
-                    if (!(sd.balance > 0 && sd.swingSpeed > 0)) balanceOk = false;
+                    o.swordBalance = sd.balance > 0 && sd.swingSpeed > 0;
                     const blade = sw.find((p) => p.shape === "bladeProfile");
-                    sigs.add(blade ? blade.size.y.toFixed(2) + ":" + (blade.fuller || 0) : "none");
+                    o.swordSubstanzBlade = !!(blade && typeof blade.fuller === "number" && blade.tipWidth < 1);
                 }
-                o.swordVaries = sigs.size >= 2;
-                o.swordBalance = balanceOk;
-                o.swordDet =
-                    JSON.stringify(r._bladedWeaponVariant("dsw")) === JSON.stringify(r._bladedWeaponVariant("dsw"));
-            }
-            if (typeof r._toolVariant === "function") {
-                const levers = new Set();
-                let wellFormed = true,
-                    readsAsTool = true;
-                for (let s = 0; s < 40; s++) {
-                    const t = r._toolVariant("t" + s);
+                if (KSg.geraet_spitzhacke) {
+                    const t = JSON.parse(JSON.stringify(KSg.geraet_spitzhacke.parts));
                     // F2: wohlgeformt: Holz-Stiel + gebogener eisen-`pickHead` (die Spitzhacke IST spitz).
-                    if (
-                        !(
-                            t.length === 2 &&
-                            t[0].material === "holz" &&
-                            t[1].material === "eisen" &&
-                            t[1].shape === "pickHead"
-                        )
-                    )
-                        wellFormed = false;
+                    o.toolWellFormed =
+                        t.length === 2 &&
+                        t[0].material === "holz" &&
+                        t[1].material === "eisen" &&
+                        t[1].shape === "pickHead";
                     // die FORM liest als Gerät/Klinge (spitz + gestreckt, U4) — NICHT Bauwerk.
-                    if (r._isGraspableBladeForm && r._isGraspableBladeForm({ parts: t }) !== true) readsAsTool = false;
-                    // der HEBEL variiert: Stiel-Länge × Kopf-Masse/Keil-Winkel.
-                    levers.add(t[0].size.y.toFixed(2) + ":" + t[1].size.x.toFixed(2));
+                    o.toolReadsAsTool = !r._isGraspableBladeForm || r._isGraspableBladeForm({ parts: t }) === true;
                 }
-                o.toolVaries = levers.size >= 3;
-                o.toolWellFormed = wellFormed;
-                o.toolReadsAsTool = readsAsTool;
-                o.toolDet = JSON.stringify(r._toolVariant("dt")) === JSON.stringify(r._toolVariant("dt"));
             }
 
             // ── S7 KREATUR-ALLOMETRIE: per-Kreatur-Körpergröße (klein/normal/gross/GIGANT),
@@ -681,41 +666,26 @@ function startSaveServer() {
                 o.potionDet = JSON.stringify(r._potionVariant("dpo")) === JSON.stringify(r._potionVariant("dpo"));
                 o.potionRole = r.state.blueprints.trank_lebenssaft && r.state.blueprints.trank_lebenssaft.role;
             }
-            if (typeof r._vehicleVariant === "function") {
-                const wagenBase = [
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: 0, y: 0.85, z: 0 },
-                        size: { x: 1.3, y: 0.35, z: 2.1 },
-                    },
-                    ...[
-                        [-0.72, 0.8],
-                        [0.72, 0.8],
-                        [-0.72, -0.8],
-                        [0.72, -0.8],
-                    ].map(([x, z]) => ({
-                        shape: "cylinder",
-                        material: "eisen",
-                        position: { x, y: 0.34, z },
-                        size: { x: 0.62, y: 0.14, z: 0.62 },
-                        rotation: { x: 0, y: 0, z: 1.5708 },
-                    })),
-                ];
-                // Ω-Φ4 SSF = Spur / (2·CoM-Höhe ÜBER GRUND) — die echte Kipp-Schwelle. Die CoM-
-                // Höhe über Grund nutzt das ENGINE-`_compoundBottomY` (rotation-korrekt, DIESELBE
-                // Quelle, aus der mountArchitecture _groundClear ableitet) → die SSF variiert mit
-                // BEIDEM: der Spur (track) UND der Rad-Größe (wheelR hebt das Gefährt = kippiger).
-                const ssfs = new Set();
-                const bottoms = new Set();
-                let allStand = true,
-                    seatSafe = true,
-                    sameCount = true;
-                for (let s = 0; s < 120; s++) {
-                    const v = r._vehicleVariant(wagenBase, "vh" + s);
-                    if (v.length !== wagenBase.length) sameCount = false;
-                    if (Math.abs(v[0].position.y - wagenBase[0].position.y) > 1e-9) seatSafe = false;
-                    if (r._stability({ parts: v }).inside !== true) allStand = false;
+            // ── T4-FAHRZEUG (AUSLÖSCHUNGS-WELLE): die Genom-Maschine _vehicleVariant ist
+            // bewusst GESCHNITTEN (die Fahrzeug-Vielfalt kommt aus den 5 vehicle-core-
+            // Presets) — die Judge-SUBSTANZ des Wagens lebt eingefroren in KIND_SUBSTANCE:
+            // sie STEHT (Ω-Φ2), traegt den sitz-Anker + 4 Rad-Gelenke, die SSF ist gerechnet.
+            {
+                const KSv = C.KIND_SUBSTANCE || {};
+                o.vehicleVariantCut = typeof r._vehicleVariant !== "function";
+                const sub = KSv.fahrzeug_wagen;
+                if (sub && Array.isArray(sub.parts)) {
+                    const v = JSON.parse(JSON.stringify(sub.parts));
+                    o.vehicleSubstanzParts = v.length;
+                    o.vehicleAllStand = r._stability({ parts: v }).inside === true;
+                    o.vehicleSitz =
+                        Array.isArray(sub.connections) && sub.connections.some((c) => c && c.type === "sitz");
+                    o.vehicleHaftings = Array.isArray(sub.connections)
+                        ? sub.connections.filter((c) => c && c.type === "hafting").length
+                        : 0;
+                    // Ω-Φ4 SSF = Spur / (2·CoM-Höhe ÜBER GRUND) — die echte Kipp-Schwelle,
+                    // weiter GERECHNET aus der eingefrorenen Substanz (_compoundBottomY =
+                    // dieselbe Quelle wie mountArchitecture._groundClear).
                     let trackMax = 0,
                         comY = 0;
                     for (const p of v) {
@@ -727,19 +697,8 @@ function startSaveServer() {
                     }
                     comY /= v.length;
                     const bottomY = r._compoundBottomY({ parts: v });
-                    bottoms.add(bottomY.toFixed(3));
-                    ssfs.add((trackMax / (2 * Math.max(0.1, comY - bottomY))).toFixed(3));
+                    o.vehicleSSF = Number((trackMax / (2 * Math.max(0.1, comY - bottomY))).toFixed(3));
                 }
-                o.vehicleSSFSpread = ssfs.size;
-                // die Rad-GRÖSSE variiert ECHT → die Unterkante (der Re-Anker-Punkt) variiert
-                // → das Gefährt re-verankert sich an seiner eigenen Geometrie (kein gefrorenes Rad).
-                o.vehicleWheelVaries = bottoms.size >= 4;
-                o.vehicleAllStand = allStand;
-                o.vehicleSeatSafe = seatSafe;
-                o.vehicleSameCount = sameCount;
-                o.vehicleDet =
-                    JSON.stringify(r._vehicleVariant(wagenBase, "dvh")) ===
-                    JSON.stringify(r._vehicleVariant(wagenBase, "dvh"));
             }
 
             // ══ T5 (wahrerwuchs §4.7 / Ω-B5) — KREATUR-ALLOMETRIE (Galileo Quadrat-Kubik) ══
@@ -952,19 +911,16 @@ function startSaveServer() {
             out.stationAnchored === true && out.stationVaries === true && out.stationApplied === true
         );
         ck("BAUWERK-DETERMINISMUS", out.stationDet, out.stationDet === true);
-        // ── S6 GERÄT ──
+        // ── S6 GERÄT (AUSLÖSCHUNGS-WELLE: Maschinen geschnitten, Substanz eingefroren) ──
         ck(
-            "GERÄT-SCHWERT: Oakeshott-Varianten + Balance gerechnet (Ω-Φ4) + det.",
-            `${out.swordVaries}/${out.swordBalance}/${out.swordDet}`,
-            out.swordVaries === true && out.swordBalance === true && out.swordDet === true
+            "GERÄT-SCHWERT: _bladedWeaponVariant GESCHNITTEN + Substanz-Klinge (bladeProfile/fuller/taper) + Balance gerechnet (Ω-Φ4)",
+            `cut=${out.swordVariantCut}/balance=${out.swordBalance}/blade=${out.swordSubstanzBlade}`,
+            out.swordVariantCut === true && out.swordBalance === true && out.swordSubstanzBlade === true
         );
         ck(
-            "GERÄT-WERKZEUG: Hebel-Varianten + spitz (liest als Gerät, U4) + det.",
-            `${out.toolVaries}/${out.toolWellFormed}/${out.toolReadsAsTool}/${out.toolDet}`,
-            out.toolVaries === true &&
-                out.toolWellFormed === true &&
-                out.toolReadsAsTool === true &&
-                out.toolDet === true
+            "GERÄT-WERKZEUG: _toolVariant GESCHNITTEN + Substanz wohlgeformt (holz+pickHead) + spitz (liest als Gerät, U4)",
+            `cut=${out.toolVariantCut}/${out.toolWellFormed}/${out.toolReadsAsTool}`,
+            out.toolVariantCut === true && out.toolWellFormed === true && out.toolReadsAsTool === true
         );
         // ── S7 KREATUR ──
         ck(
@@ -1061,14 +1017,15 @@ function startSaveServer() {
                 out.potionDet === true
         );
         ck(
-            "T4-FAHRZEUG: SSF + Rad-Größe variieren (re-verankert) + jede STEHT + SEAT-SAFE + Gelenke heil",
-            `ssf=${out.vehicleSSFSpread}/wheel=${out.vehicleWheelVaries}/stand=${out.vehicleAllStand}/seat=${out.vehicleSeatSafe}/count=${out.vehicleSameCount}`,
-            out.vehicleSSFSpread >= 4 &&
-                out.vehicleWheelVaries === true &&
+            "T4-FAHRZEUG: _vehicleVariant GESCHNITTEN + Substanz STEHT (17 Parts, sitz + 4 hafting) + SSF gerechnet",
+            `cut=${out.vehicleVariantCut}/parts=${out.vehicleSubstanzParts}/stand=${out.vehicleAllStand}/sitz=${out.vehicleSitz}/haft=${out.vehicleHaftings}/ssf=${out.vehicleSSF}`,
+            out.vehicleVariantCut === true &&
+                out.vehicleSubstanzParts === 17 &&
                 out.vehicleAllStand === true &&
-                out.vehicleSeatSafe === true &&
-                out.vehicleSameCount === true &&
-                out.vehicleDet === true
+                out.vehicleSitz === true &&
+                out.vehicleHaftings === 4 &&
+                Number.isFinite(out.vehicleSSF) &&
+                out.vehicleSSF > 0
         );
 
         // ── T5 (wahrerwuchs §4.7 / Ω-B5): KREATUR-ALLOMETRIE (Galileo Quadrat-Kubik) ──

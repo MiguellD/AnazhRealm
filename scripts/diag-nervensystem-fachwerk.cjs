@@ -11,10 +11,11 @@
 //     traegt die haus-Zeile (prefix haus_, donor haus_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · fachwerk-core
 //     deklariert kindStages.haus == [0,1,2] · die Rezepte tragen fx.place
-//     {mode:"settlement", siteTag:"haus"} als DATEN · der Donor haus_basis ist ein
-//     DATENBLOCK in _defaultBlueprints (kein portalMeta/roleManual — die Rolle
-//     EMERGIERT; zwei Front-Segmente = die TUER-LUECKE ist KEIN Part, begehbar
-//     per Konstruktion). --selftest injiziert 3 Verletzungen.
+//     {mode:"settlement", siteTag:"haus"} als DATEN · die Donor-SUBSTANZ haus_basis
+//     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (kein portalMeta/roleManual —
+//     die Rolle EMERGIERT; zwei Front-Segmente = die TUER-LUECKE ist KEIN Part,
+//     begehbar per Konstruktion; der Alt-Blueprint ist PHYSISCH gefallen —
+//     AUSLÖSCHUNGS-WELLE). --selftest injiziert 3 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
 //     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
 //     [0,1,2] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
@@ -119,13 +120,15 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
         /place:\s*\{\s*mode:\s*"settlement",\s*siteTag:\s*"haus"\s*\}/.test(fcNC),
     ]);
-    const donorBlock = anazhNC.match(/haus_basis:\s*\{\s*name:\s*"haus_basis"[\s\S]{0,3000}?\n\s{12}\},/);
+    // AUSLÖSCHUNGS-WELLE: die Donor-Substanz lebt als EINE JSON-Zeile in KIND_SUBSTANCE.
+    const donorBlock = anazhNC.match(/haus_basis:\s*\{"label":"Haus","parts":\[[^\n]*\},/);
     out.push([
-        "S6: der Donor haus_basis ist ein DATENBLOCK in den Built-ins (kein portalMeta/roleManual; >= 6 Parts — die Tuer-Luecke ist KEIN Part, begehbar per Konstruktion)",
+        "S6: die Donor-SUBSTANZ haus_basis lebt in KIND_SUBSTANCE (kein portalMeta/roleManual; >= 6 Parts — die Tuer-Luecke ist KEIN Part, begehbar per Konstruktion) — der Alt-Blueprint-Block ist GEFALLEN",
         !!donorBlock &&
             !/portalMeta/.test(donorBlock[0]) &&
             !/roleManual/.test(donorBlock[0]) &&
-            (donorBlock[0].match(/shape:\s*"box"/g) || []).length >= 6,
+            (donorBlock[0].match(/"shape":"box"/g) || []).length >= 6 &&
+            !/haus_basis:\s*\{\s*name:\s*"haus_basis"/.test(anazhNC),
     ]);
     return out;
 }
@@ -229,7 +232,13 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
             res.d.label = bp ? bp.label : null;
             res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
             res.d.builtIn = bp ? !!bp.builtIn : null;
-            res.d.donorIntact = !!(r.state.blueprints.haus_basis && r.state.blueprints.haus_basis.builtIn);
+            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
+            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.haus_basis);
+            res.d.substanzParts = KS.haus_basis && Array.isArray(KS.haus_basis.parts) ? KS.haus_basis.parts.length : 0;
+            res.d.clonePartsMatch =
+                !!bp && !!KS.haus_basis && JSON.stringify(bp.parts) === JSON.stringify(KS.haus_basis.parts);
             res.d.hochhaus = !!(r.state.blueprints && r.state.blueprints.haus_hochhaus);
             res.d.presetResolves = r._foundryPresetFor("haus_alemannisch");
             res.d.entryResolves = r._foundryPresetForEntry({ type: "haus_hanseatisch" });
@@ -349,7 +358,15 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         String(out.d.label)
     );
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor/Klinge)", out.d.builtIn === false);
-    check("D: der Donor haus_basis bleibt Built-in (unberuehrt)", out.d.donorIntact === true);
+    check(
+        "D: der Alt-Donor haus_basis ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (6 Parts)",
+        out.d.donorAbsent === true && out.d.substanzParts === 6,
+        `substanzParts=${out.d.substanzParts}`
+    );
+    check(
+        "D: der Auto-Klon traegt die Substanz byte-gleich (haus_alemannisch.parts == KIND_SUBSTANCE.haus_basis.parts)",
+        out.d.clonePartsMatch === true
+    );
     check("D: auch der Glasturm dockt (haus_hochhaus registriert)", out.d.hochhaus === true);
     check(
         "D: die generische haus_-Regel loest auf (haus_alemannisch -> alemannisch)",

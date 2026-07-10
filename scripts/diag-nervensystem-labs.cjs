@@ -389,6 +389,75 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             res.d = res.d || {};
             res.d.err = (e && e.message) || String(e);
         }
+        // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
+        try {
+            res.x = {};
+            // (X1) glutwesen ↔ wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
+            const frozenG = r.constructor.CREATURE_SOULS.glutwesen.bodyParts;
+            const effG = r._tetrapodaSoulParts("glutwesen");
+            res.x.glutDocked = !!effG && effG.length === frozenG.length;
+            res.x.glutDialsWirken = !!effG && JSON.stringify(effG) !== JSON.stringify(frozenG);
+            res.x.glutTagNeutral =
+                !!effG &&
+                JSON.stringify(r.computeCompoundTags({ parts: effG })) ===
+                    JSON.stringify(r.computeCompoundTags({ parts: frozenG }));
+            // KONSUM als ZAHL: neck-Dial 0.263 -> 0.15 verkuerzt den Hals — der hoechste
+            // Part-Anker (Kopf) sinkt messbar.
+            const hiY = (ps) =>
+                Math.max.apply(
+                    null,
+                    ps.map((q) => (q && q.position ? q.position.y : -1e9))
+                );
+            const prevNeck = f.recipes.wolf.s.neck;
+            f.recipes.wolf.s.neck = 0.15;
+            const effG2 = r._tetrapodaSoulParts("glutwesen");
+            f.recipes.wolf.s.neck = prevNeck;
+            res.x.glutNeckConsumed = !!effG && !!effG2 && hiY(effG2) < hiY(effG) - 0.01;
+            // (X2) DER WÄCHTER aus dem Landmark-Guss: 6 Parts, Body-Klassifikator, Rolle,
+            // Tags == die eingefrorene Identität (die Alt-Konstruktion, gemünzt 10.07.).
+            const wb = r.state.blueprints.avatar_waechter;
+            res.x.waechterParts = wb && wb.parts ? wb.parts.length : 0;
+            res.x.waechterBody = !!wb && r._isBodyShaped(wb) === true;
+            res.x.waechterRole = wb ? r.computeBlueprintRole(wb) : null;
+            res.x.waechterTags = wb ? JSON.stringify(r.computeCompoundTags({ parts: wb.parts })) : "";
+            // Der Guss LIEST die Dial-Zeile: height-Dial hoch => der Kopf-Anker steigt.
+            const W0 = r.constructor.WAECHTER_DIALS;
+            res.x.waechterGussLiest = (() => {
+                try {
+                    const p1 = r._waechterSoulParts();
+                    const alt = Object.assign({}, W0, { height: W0.height * 1.2 });
+                    const AR = r.constructor;
+                    const orig = AR.WAECHTER_DIALS;
+                    Object.defineProperty(AR, "WAECHTER_DIALS", { value: alt, configurable: true, writable: true });
+                    const p2 = r._waechterSoulParts();
+                    Object.defineProperty(AR, "WAECHTER_DIALS", { value: orig, configurable: true, writable: true });
+                    return hiY(p2) > hiY(p1) * 1.1;
+                } catch (_e2) {
+                    return "err:" + _e2.message;
+                }
+            })();
+            // (X3) DAS HOLZROSS aus dem Skelett-Guss: Skelett-Partzahl, Antrieb, Rolle,
+            // Sitz + Tags WERT-GLEICH zur gemünzten Alt-Identität (sortiert — die
+            // Schluessel-REIHENFOLGE wandert mit der Part-Reihenfolge, die WERTE nie).
+            const hb = r.state.blueprints.reittier_holzross;
+            const tagSorted = (ps) => {
+                const t = r.computeCompoundTags({ parts: ps });
+                return JSON.stringify(
+                    Object.keys(t)
+                        .sort()
+                        .map((k) => [k, t[k]])
+                );
+            };
+            res.x.holzrossParts = hb && hb.parts ? hb.parts.length : 0;
+            res.x.holzrossMoveable = !!hb && r._isMoveable(hb) === true;
+            res.x.holzrossRole = hb ? r.computeBlueprintRole(hb) : null;
+            res.x.holzrossSitz = !!hb && JSON.stringify(hb.connections) === '[{"type":"sitz","partA":0,"partB":-1}]';
+            res.x.holzrossTags = hb ? tagSorted(hb.parts) : "";
+            res.x.holzrossKern = !!hb && hb.parts[hb.parts.length - 1].material === "quarz";
+        } catch (e) {
+            res.x = res.x || {};
+            res.x.err = (e && e.message) || String(e);
+        }
         // ===== E: DIE EMOTIONS->PROFIL-BRUECKE (Abschieds-Welle B — beide Leser) =====
         try {
             res.e = {};
@@ -601,6 +670,48 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     check(
         "E: die walkPhase<->Profil-Bruecke lebt (animatePlayerSoul ruft _koerperMotionProfile)",
         !!out.e && out.e.stepBridge === true
+    );
+    check(
+        "X (Auslöschung A5): glutwesen liest die tetrapoda-wolf-Dials (gleiche Part-Zahl, Dials wirken, TAG-BYTE-GLEICH)",
+        !!out.x && out.x.glutDocked === true && out.x.glutDialsWirken === true && out.x.glutTagNeutral === true,
+        (out.x && out.x.err) || ""
+    );
+    check(
+        "X: KONSUM als ZAHL — neck-Dial 0.263->0.15 senkt den Kopf-Anker des Glutwesens",
+        !!out.x && out.x.glutNeckConsumed === true
+    );
+    check(
+        "X: der WÄCHTER ist der Landmark-Guss (6 Parts · _isBodyShaped · Rolle soul) + der Guss liest WAECHTER_DIALS",
+        !!out.x &&
+            out.x.waechterParts === 6 &&
+            out.x.waechterBody === true &&
+            out.x.waechterRole === "soul" &&
+            out.x.waechterGussLiest === true,
+        out.x ? `parts=${out.x.waechterParts} body=${out.x.waechterBody} liest=${out.x.waechterGussLiest}` : ""
+    );
+    check(
+        "X: WÄCHTER-Identität — Tags BYTE-GLEICH zur gemünzten Alt-Konstruktion (10.07.)",
+        !!out.x &&
+            out.x.waechterTags ===
+                '{"härte":0.15,"dichte":1.2000000000000002,"zähigkeit":1.5,"wärmeleitung":1.35,"brennbar":0.35,"lebendig":2}',
+        out.x ? out.x.waechterTags : ""
+    );
+    check(
+        "X: das HOLZROSS ist der Skelett-Guss (≥30 Parts · Quarz-Kern · moveable · Rolle vehicle · sitz@0)",
+        !!out.x &&
+            out.x.holzrossParts >= 30 &&
+            out.x.holzrossKern === true &&
+            out.x.holzrossMoveable === true &&
+            out.x.holzrossRole === "vehicle" &&
+            out.x.holzrossSitz === true,
+        out.x ? `parts=${out.x.holzrossParts} role=${out.x.holzrossRole}` : ""
+    );
+    check(
+        "X: HOLZROSS-Identität — Tags WERT-GLEICH zur gemünzten Alt-Konstruktion (sortiert, 10.07.)",
+        !!out.x &&
+            out.x.holzrossTags ===
+                '[["brennbar",0.8],["dichte",1.3],["härte",2.0999999999999996],["lebendig",1.4],["magieleitung",2.55],["resoniert",1.8],["transparent",2.8499999999999996],["wärmeleitung",0.44999999999999996],["zähigkeit",1.2]]',
+        out.x ? out.x.holzrossTags : ""
     );
     check(
         "W: die Studio-Rezepte-Liste der Werkstatt fuehrt lofi/wolf/mensch (sichtbar/regelbar)",

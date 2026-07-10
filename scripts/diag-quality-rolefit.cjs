@@ -92,22 +92,40 @@ function startSaveServer() {
                 };
             };
             const out = {};
-            // (1) die Bibliothek + Built-in-Seelen
+            // (1) die Bibliothek + Built-in-Seelen. AUSLÖSCHUNGS-WELLE: der gefallene
+            // Donor geraet_spitzhacke liest seine Judge-Substanz aus KIND_SUBSTANCE.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const bpOf = (n) => r.state.blueprints[n] || (KS[n] ? { name: n, parts: KS[n].parts } : null);
             for (const n of ["geraet_spitzhacke", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
-                out[n] = measure(r.state.blueprints[n]);
+                out[n] = measure(bpOf(n));
             }
             // (2) Synthetik: eine scharfe Eisen-Klinge (Waffe) vs ein stumpfer Eisen-Klotz (gleiche Materie!)
             const blade = {
                 name: "_blade",
                 parts: [
-                    { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 0.2, y: 0.1, z: 1.6 } },
-                    { shape: "cone", material: "eisen", position: { x: 0, y: 0, z: 1.2 }, size: { x: 0.2, y: 0.1, z: 0.6 } },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 0.2, y: 0.1, z: 1.6 },
+                    },
+                    {
+                        shape: "cone",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 1.2 },
+                        size: { x: 0.2, y: 0.1, z: 0.6 },
+                    },
                 ],
             };
             const block = {
                 name: "_block",
                 parts: [
-                    { shape: "box", material: "eisen", position: { x: 0, y: 0, z: 0 }, size: { x: 1.2, y: 1.2, z: 1.2 } },
+                    {
+                        shape: "box",
+                        material: "eisen",
+                        position: { x: 0, y: 0, z: 0 },
+                        size: { x: 1.2, y: 1.2, z: 1.2 },
+                    },
                 ],
             };
             out["KLINGE (eisen, scharf)"] = measure(blade);

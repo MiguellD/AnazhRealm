@@ -217,7 +217,9 @@ function startSaveServer() {
                     ne: "weapon",
                 },
                 // --- STABILITÄT der Built-ins (die lebende Welt-Saat) ---
-                { n: "builtin fahrzeug_wagen", b: "fahrzeug_wagen", e: "vehicle" },
+                // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
+                // Rollen-Probe liest die eingefrorene Judge-Substanz (KIND_SUBSTANCE, ks:).
+                { n: "substanz fahrzeug_wagen (KIND_SUBSTANCE)", ks: "fahrzeug_wagen", e: "vehicle" },
                 { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },
                 { n: "builtin baum_eiche", b: "baum_eiche", e: "architecture" },
                 { n: "builtin baum_kiefer", b: "baum_kiefer", e: "architecture" },
@@ -240,10 +242,19 @@ function startSaveServer() {
                 { n: "GEGEN glut-brocken ≠ seele", p: [P("sphere", "glut", 0, 0.5, 0, 1.2, 1.2, 1.2)], ne: "soul" },
             ];
             const out = [];
+            const KS = r.constructor.KIND_SUBSTANCE || {};
             for (const tc of BANK) {
                 const bp = tc.b
                     ? r.state.blueprints[tc.b]
-                    : { name: "_bank", parts: tc.p, ...(tc.c ? { connections: tc.c } : {}) };
+                    : tc.ks
+                      ? KS[tc.ks] && {
+                            name: "_ks_" + tc.ks,
+                            parts: JSON.parse(JSON.stringify(KS[tc.ks].parts)),
+                            ...(KS[tc.ks].connections
+                                ? { connections: JSON.parse(JSON.stringify(KS[tc.ks].connections)) }
+                                : {}),
+                        }
+                      : { name: "_bank", parts: tc.p, ...(tc.c ? { connections: tc.c } : {}) };
                 if (!bp) {
                     out.push({ n: tc.n, got: "(builtin fehlt)", ok: false });
                     continue;

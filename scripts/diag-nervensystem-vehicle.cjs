@@ -13,8 +13,9 @@
 //     die foundry-core-kinds UNANGETASTET (kein Overwrite).
 //   C (Merge-Semantik, direkt): ein Probe-Kern, der einen foundry-core-kind ueberschreiben
 //     WILL, verliert (first-wins); ein disjunkter kind kommt an. Restore danach.
-//   D (Auto-Blueprint): fahrzeug_gt entsteht am EINEN Register-Chokepoint (Donor
-//     fahrzeug_wagen, KEIN _grownSpecies), die generische fahrzeug_-Regel loest ihn auf;
+//   D (Auto-Blueprint): fahrzeug_gt entsteht am EINEN Register-Chokepoint (Donor-Substanz
+//     KIND_SUBSTANCE.fahrzeug_wagen — der Alt-Blueprint ist PHYSISCH gefallen, AUSLÖSCHUNGS-
+//     WELLE; KEIN _grownSpecies), die generische fahrzeug_-Regel loest ihn auf;
 //     ein injiziertes Probe-Preset registriert sich idempotent.
 //   E (das Asset selbst): _foundryRequest("gt",7,0) liefert echte Meshes mit mat.color,
 //     _foundryBuildGroup baut die Gruppe mit color-Attribut-Fill.
@@ -270,7 +271,18 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
             res.d.autoSpecies = bp ? bp._foundryAutoSpecies : null;
             res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
             res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            res.d.donorIntact = !!(r.state.blueprints.fahrzeug_wagen && r.state.blueprints.fahrzeug_wagen.builtIn);
+            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
+            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
+            const KS = A.KIND_SUBSTANCE || {};
+            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
+            res.d.substanzParts =
+                KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
+            res.d.clonePartsMatch =
+                !!bp && !!KS.fahrzeug_wagen && JSON.stringify(bp.parts) === JSON.stringify(KS.fahrzeug_wagen.parts);
+            res.d.cloneConnMatch =
+                !!bp &&
+                !!KS.fahrzeug_wagen &&
+                JSON.stringify(bp.connections || null) === JSON.stringify(KS.fahrzeug_wagen.connections || null);
             res.d.presetResolves = r._foundryPresetFor("fahrzeug_gt");
             res.d.entryResolves = r._foundryPresetForEntry({ type: "fahrzeug_gt" });
             // Idempotenz + Probe-Preset (Injektion == der Schoepfer legt ein Preset im Kern an):
@@ -366,7 +378,15 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
         out.d.grownSpecies === null,
         String(out.d.grownSpecies)
     );
-    check("D: der Donor fahrzeug_wagen bleibt Built-in (unberuehrt)", out.d.donorIntact === true);
+    check(
+        "D: der Alt-Donor fahrzeug_wagen ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (17 Parts)",
+        out.d.donorAbsent === true && out.d.substanzParts === 17,
+        `substanzParts=${out.d.substanzParts}`
+    );
+    check(
+        "D: der Auto-Klon traegt die Substanz byte-gleich (fahrzeug_gt parts+connections == KIND_SUBSTANCE.fahrzeug_wagen)",
+        out.d.clonePartsMatch === true && out.d.cloneConnMatch === true
+    );
     check(
         "D: die generische fahrzeug_-Regel loest auf (fahrzeug_gt -> gt)",
         out.d.presetResolves === "gt",

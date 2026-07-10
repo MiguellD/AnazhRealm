@@ -130,7 +130,16 @@ const server = http.createServer((req, res) => {
         if (!spot) spot = { x: 0, z: 0, h: r.getTerrainHeightAt(0, 0) };
 
         // eine solide Struktur am Spot spawnen — die erste, die blockerAABBs trägt.
-        const candidates = ["temple", "village", "tower", "haus", "stein_block", "wall", "monument"];
+        // AUSLÖSCHUNGS-WELLE: temple/village sind gefallen — das begehbare Haus kommt
+        // aus der eingefrorenen Substanz (KIND_SUBSTANCE.haus_basis → Waende/blockerAABBs).
+        const KSs = r.constructor.KIND_SUBSTANCE || {};
+        if (KSs.haus_basis && !r.state.blueprints._probe_haus) {
+            r.state.blueprints._probe_haus = {
+                name: "_probe_haus",
+                parts: JSON.parse(JSON.stringify(KSs.haus_basis.parts)),
+            };
+        }
+        const candidates = ["_probe_haus", "stein_block", "wall"];
         let entry = null,
             usedType = null;
         for (const t of candidates) {

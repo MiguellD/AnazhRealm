@@ -131,10 +131,13 @@ const server = http.createServer((req, res) => {
                     Math.abs(s1b.loadScale - s1a.loadScale) < 0.02 &&
                     Math.abs(s1b.renderScale - s1a.renderScale) < 0.051;
                 o.s1 = { a: s1a, b: s1b };
-                // Studio-Regime: trotz gefallener Dichte KEIN Dispose+Rebuild (die tote Schleife)
+                // Studio-Regime: trotz gefallener Dichte KEIN Dispose+Rebuild (die tote Schleife).
+                // AUSLÖSCHUNGS-WELLE (Beifang, V9.56-i nachgezogen): `_tickGrassThin` fiel in
+                // V18.436 mit dem Tuft-Paket (die Wiese dünnt NIE — Studio-Gesetz); der Streu-
+                // Thin ist der EINE verbliebene Hebel — die Probe liest nur noch ihn.
                 st._frameOverBudget = false;
                 let thinFired = 0;
-                for (let i = 0; i < 25; i++) thinFired += r._tickFoliageThin(pos) + r._tickGrassThin(pos);
+                for (let i = 0; i < 25; i++) thinFired += r._tickFoliageThin(pos);
                 o.s1NoRebuildLoop = thinFired === 0;
                 o.s1EffectiveDensityOne = r._effectiveFoliageDensity() === 1;
                 // ── S2: STREAMING-BURST (Rückstau) → Stream-Budget MAX (heilig) ──

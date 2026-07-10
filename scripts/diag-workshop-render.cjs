@@ -31,7 +31,10 @@ function startSaveServer() {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
             const d = performance.now() + 8000;
-            while ((!window.anazhRealm || !window.anazhRealm.state || !window.anazhRealm.state.blueprints) && performance.now() < d)
+            while (
+                (!window.anazhRealm || !window.anazhRealm.state || !window.anazhRealm.state.blueprints) &&
+                performance.now() < d
+            )
                 await new Promise((r) => setTimeout(r, 50));
         });
         const dump = await page.evaluate(() => {
@@ -43,20 +46,44 @@ function startSaveServer() {
                 r._workshopRenderStatsPanel();
                 const panel = document.getElementById("workshop-stats-panel");
                 if (!panel) return { error: "no panel" };
-                const o = { displayRole: r._displayRole(r.state.blueprints[name]), emergent: r.computeBlueprintRole(r.state.blueprints[name]) };
+                const o = {
+                    displayRole: r._displayRole(r.state.blueprints[name]),
+                    emergent: r.computeBlueprintRole(r.state.blueprints[name]),
+                };
                 o.roleChip = (panel.querySelector(".role-chip") || {}).textContent || "(none)";
-                o.affordanceChips = Array.from(panel.querySelectorAll(".affordance-chip:not(.capability-chip)")).map((c) => c.textContent);
+                o.affordanceChips = Array.from(panel.querySelectorAll(".affordance-chip:not(.capability-chip)")).map(
+                    (c) => c.textContent
+                );
                 o.capabilityChips = Array.from(panel.querySelectorAll(".capability-chip")).map((c) => c.textContent);
                 // alle stat-label → text Paare
                 o.rows = Array.from(panel.querySelectorAll(".stat-row")).map((row) => {
                     const lab = (row.querySelector(".stat-label") || {}).textContent || "?";
-                    const rest = Array.from(row.children).filter((c) => !c.classList.contains("stat-label")).map((c) => c.textContent).join(" | ");
+                    const rest = Array.from(row.children)
+                        .filter((c) => !c.classList.contains("stat-label"))
+                        .map((c) => c.textContent)
+                        .join(" | ");
                     return `${lab}: ${rest}`;
                 });
                 return o;
             };
-            out.spitzhacke = renderFor("geraet_spitzhacke");
-            out.schwert = r.state.blueprints["geraet_schwert"] ? renderFor("geraet_schwert") : "(schwert fehlt)";
+            // AUSLÖSCHUNGS-WELLE: die Alt-Blueprints geraet_* sind gefallen — die
+            // Werkstatt-Panel-Probe registriert Test-Blueprints aus der eingefrorenen
+            // Substanz-Tabelle (KIND_SUBSTANCE), rendert und raeumt auf.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const mkSub = (ksName, tmpName) => {
+                const row = KS[ksName];
+                if (!row) return "(substanz fehlt: " + ksName + ")";
+                r.state.blueprints[tmpName] = {
+                    name: tmpName,
+                    label: row.label,
+                    parts: JSON.parse(JSON.stringify(row.parts)),
+                };
+                const o = renderFor(tmpName);
+                delete r.state.blueprints[tmpName];
+                return o;
+            };
+            out.spitzhacke = mkSub("geraet_spitzhacke", "_wsr_spitzhacke");
+            out.schwert = mkSub("geraet_schwert", "_wsr_schwert");
             out.esse = r.state.blueprints["esse"] ? renderFor("esse") : "(esse fehlt)";
             return out;
         });

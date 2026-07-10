@@ -27,6 +27,7 @@
 //   node scripts/diag-trias.cjs [--selftest]
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const root = path.resolve(__dirname, "..");
 const errs = [];
@@ -42,6 +43,41 @@ function stripComments(src) {
 // gemessen → Deckel 70k (×2.5 Marge). Die Fernstufe selbst: L2 ≤ 8k Tris je Haus.
 const HAUS_FERN_DECKEL_TRIS = 70000;
 const HAUS_L2_MAX_TRIS = 8000;
+
+// ── AUSLÖSCHUNGS-WELLE — DIE SUBSTANZ-PARITAET (stehende Linse, Teil N4) ──
+// Die Judge-Substanz der fuenf gefallenen Donor-Blueprints lebt EINGEFROREN in
+// AnazhRealm.KIND_SUBSTANCE (je EINE Zeile `    <name>: {...json...},`). Die Muenzen
+// (sha256 ueber JSON.stringify der geparsten Zeile, Mint 10.07.2026) machen jede
+// Drift der Substanz laut.
+const KIND_SUBSTANCE_MINT = {
+    geraet_schwert: "fbd9f91fa5f8e26c9dd99959ce99f0c8906cbe82662ee1f82035003529e4ff9b",
+    geraet_spitzhacke: "f9465bb4d29ee17d0145c2fec6eebad0581f05c17c6c54af675fa19cb326c7f6",
+    fahrzeug_wagen: "5b642cc51995ef9bf31bb05135d38dd16d8d9ea51ba12ee52a2fb1ed9ff84a8a",
+    tor_basis: "3192e75d2f5e82ab941f1b2356de608d45824819d704779750163797732ecfb3",
+    haus_basis: "56b2a5e79068d1e21df40e1b77299e11b683f441d47c9bd427c9f7f69f6bc628",
+};
+function kindSubstanceRows(src) {
+    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
+    if (start < 0) return null;
+    const block = src.slice(start, src.indexOf("});", start));
+    const rows = {};
+    for (const name of Object.keys(KIND_SUBSTANCE_MINT)) {
+        const m = block.match(new RegExp("^\\s{4}" + name + ": (\\{.*\\}),$", "m"));
+        if (!m) {
+            rows[name] = null;
+            continue;
+        }
+        try {
+            rows[name] = JSON.parse(m[1]);
+        } catch (_e) {
+            rows[name] = null;
+        }
+    }
+    return rows;
+}
+function kindSubstanceHash(row) {
+    return crypto.createHash("sha256").update(JSON.stringify(row)).digest("hex");
+}
 
 // ── Teil S: die Struktur-Gesetze (Definitions-Form, kommentar-gestrippt) ──
 function triasStaticLaws(anazhSrc) {
@@ -134,6 +170,21 @@ function triasStaticLaws(anazhSrc) {
             t1 * 3 > HAUS_FERN_DECKEL_TRIS,
             `L1=${Math.round(t1)} tris`
         );
+        // AUSLÖSCHUNGS-WELLE — N4 ist nicht vakuoes: eine gedriftete Substanz-Zeile
+        // verfehlt die Muenze, eine fehlende Zeile wird null.
+        const bKS = anazhSrc.replace('"label":"Schwert"', '"label":"Schwertx"');
+        const rowsB = kindSubstanceRows(bKS);
+        check(
+            "Selbst-Test 5: eine gedriftete Substanz-Zeile verfehlt die Muenze (N4 feuert)",
+            !!(rowsB && rowsB.geraet_schwert) &&
+                kindSubstanceHash(rowsB.geraet_schwert) !== KIND_SUBSTANCE_MINT.geraet_schwert
+        );
+        const bKS2 = anazhSrc.replace(/^\s{4}tor_basis: \{.*\},$/m, "");
+        const rowsB2 = kindSubstanceRows(bKS2);
+        check(
+            "Selbst-Test 5b: eine ENTFERNTE Substanz-Zeile wird null (N4 feuert)",
+            !!rowsB2 && rowsB2.tor_basis === null
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -172,6 +223,21 @@ function triasStaticLaws(anazhSrc) {
                 : null
         ) === "[0,1,2]"
     );
+    // AUSLÖSCHUNGS-WELLE — N4: die Substanz-Paritaet als stehende Linse (alle 5
+    // KIND_SUBSTANCE-Zeilen existieren mit nicht-leeren parts, sha256 == Muenze).
+    {
+        const rows = kindSubstanceRows(anazhSrc);
+        for (const [name, mint] of Object.entries(KIND_SUBSTANCE_MINT)) {
+            const row = rows && rows[name];
+            const okParts = !!row && Array.isArray(row.parts) && row.parts.length > 0;
+            const hash = okParts ? kindSubstanceHash(row) : "fehlt";
+            check(
+                `N4: KIND_SUBSTANCE.${name} steht (parts > 0) + sha256 == Muenze`,
+                okParts && hash === mint,
+                hash === mint ? `parts=${row.parts.length}` : hash
+            );
+        }
+    }
 
     // ===== Teil S =====
     console.log("\n=== TEIL S: die Struktur-Gesetze am Stamm ===");
@@ -379,10 +445,19 @@ function triasStaticLaws(anazhSrc) {
         const ok1 = r.cloneBlueprint("welt_portal", cloneName);
         const c1 = r.state.blueprints[cloneName];
         res.kloneGestalt = !!(ok1 && c1 && c1.studioGestalt === (r.state.blueprints.welt_portal || {}).studioGestalt);
-        const donorSrc = r.state.blueprints.tor_basis;
-        const ok2 = donorSrc ? r.cloneBlueprint("tor_basis", cloneName2) : null;
+        // AUSLÖSCHUNGS-WELLE: der Alt-Donor tor_basis ist gefallen — die Klon-
+        // Sichtbarkeits-Regel wird an einem SYNTHETISCHEN donorOnly-Blueprint bewiesen
+        // (registrieren → klonen → aufraeumen; kein vakuoeses skip mehr).
+        delete r.state.blueprints._t_donor;
+        r.state.blueprints._t_donor = {
+            name: "_t_donor",
+            donorOnly: true,
+            parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
+        };
+        const ok2 = r.cloneBlueprint("_t_donor", cloneName2);
         const c2 = r.state.blueprints[cloneName2];
-        res.kloneSichtbar = donorSrc ? !!(ok2 && c2 && c2.donorOnly !== true && donorSrc.donorOnly === true) : "skip";
+        res.kloneSichtbar = !!(ok2 && c2 && c2.donorOnly !== true && r.state.blueprints._t_donor.donorOnly === true);
+        delete r.state.blueprints._t_donor;
         delete r.state.blueprints[cloneName];
         delete r.state.blueprints[cloneName2];
 
@@ -475,8 +550,8 @@ function triasStaticLaws(anazhSrc) {
         );
         check("B9: W-A3.1 — der Klon erbt die studioGestalt (welt_portal -> geisttor)", out.kloneGestalt === true);
         check(
-            "B10: donorOnly reist NICHT mit (der Klon eines Donors ist sichtbar)",
-            out.kloneSichtbar === true || out.kloneSichtbar === "skip",
+            "B10: donorOnly reist NICHT mit (der Klon eines synthetischen donorOnly-Blueprints ist sichtbar — nie skip)",
+            out.kloneSichtbar === true,
             String(out.kloneSichtbar)
         );
         check(

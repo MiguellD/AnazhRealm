@@ -119,18 +119,31 @@ const server = http.createServer((req, res) => {
             if (!best || span < best.span) best = { x, z, y: h0, span };
         }
         if (best) {
-            const t = r.state.tmpTransform;
-            t.setIdentity();
-            t.setOrigin(r.setVec(r.state.tmpVec1, best.x, best.y + 1.6, best.z));
-            r.state.playerBody.setWorldTransform(t);
-            r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
-            r.state.playerBody.activate(true);
+            // Feld-nativ (Ammo ist raus, V18.331): die Position lebt auf dem Mesh;
+            // der Ammo-Body-Teleport gilt nur noch, falls ein Body existiert (heute nie).
+            if (r.state.playerBody && r.state.tmpTransform) {
+                const t = r.state.tmpTransform;
+                t.setIdentity();
+                t.setOrigin(r.setVec(r.state.tmpVec1, best.x, best.y + 1.6, best.z));
+                r.state.playerBody.setWorldTransform(t);
+                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                r.state.playerBody.activate(true);
+            }
             pm.set(best.x, best.y + 1.6, best.z);
         }
         // Auf der STAND-Fläche des Spielers spawnen (die Genesis-Plattform ist
         // ARCHITEKTUR — getTerrainHeightAt sähe das Terrain DARUNTER): der
         // Wagen steht, wo der Reiter steht.
-        const entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 2, y: pm.y - 0.9, z: pm.z }, { silent: true });
+        // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — das
+        // Test-Blueprint kommt aus der Substanz-Tabelle (parts + connections/sitz).
+        const KSr = r.constructor.KIND_SUBSTANCE || {};
+        const subW = KSr.fahrzeug_wagen || { parts: [] };
+        r.state.blueprints._ride_wagen = {
+            name: "_ride_wagen",
+            parts: JSON.parse(JSON.stringify(subW.parts)),
+            connections: JSON.parse(JSON.stringify(subW.connections || [])),
+        };
+        const entry = r.spawnArchitecture("_ride_wagen", { x: pm.x + 2, y: pm.y - 0.9, z: pm.z }, { silent: true });
         if (!entry) return { err: "spawn failed" };
         const res = r.mountArchitecture(entry);
         // FAHNDUNG: wer ENTFERNT? (Falle ab JETZT — der Kill kam in der Shot-Phase.)
@@ -290,12 +303,15 @@ const server = http.createServer((req, res) => {
             }
             if (best && best.span > 0.4) {
                 const hy = r.getTerrainHeightAt(best.x, best.z) + 1.5;
-                const t = r.state.tmpTransform;
-                t.setIdentity();
-                t.setOrigin(r.setVec(r.state.tmpVec1, best.x, hy + 1.6, best.z));
-                r.state.playerBody.setWorldTransform(t);
-                r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
-                r.state.playerBody.activate(true);
+                // Feld-nativ (Ammo ist raus, V18.331): Body-Teleport nur falls Body existiert.
+                if (r.state.playerBody && r.state.tmpTransform) {
+                    const t = r.state.tmpTransform;
+                    t.setIdentity();
+                    t.setOrigin(r.setVec(r.state.tmpVec1, best.x, hy + 1.6, best.z));
+                    r.state.playerBody.setWorldTransform(t);
+                    r.state.playerBody.setLinearVelocity(r.setVec(r.state.tmpVec2, 0, 0, 0));
+                    r.state.playerBody.activate(true);
+                }
                 pm2.set(best.x, hy + 1.6, best.z);
                 ross._rideYaw = Math.PI / 2; // Fahrt-Richtung +x (die Mess-Achse des Hangs)
                 for (let i = 0; i < 30; i++) r._tickMountedMovement(0.05);
@@ -400,10 +416,12 @@ const server = http.createServer((req, res) => {
         window.__trace = trace;
         r.state.keys["w"] = false;
         // Ausrollen (Trägheit sichtbar): noch ~1 s ohne Input.
+        // Feld-nativ (Ammo ist raus, V18.331): die horizontale Velocity lebt in
+        // state.playerVel (Plain-Vektor mit .x()/.z()), kein Ammo-Body mehr.
         const t1 = performance.now();
         let coastStart = null;
-        const v = r.state.playerBody.getLinearVelocity();
-        coastStart = Math.hypot(v.x(), v.z());
+        const v = r.state.playerVel || (r.state.playerBody && r.state.playerBody.getLinearVelocity());
+        coastStart = v ? Math.hypot(v.x(), v.z()) : 0;
         while (performance.now() - t1 < 1000) {
             try {
                 r._gameLoopTick(performance.now());
@@ -412,7 +430,7 @@ const server = http.createServer((req, res) => {
             }
             await new Promise((res) => setTimeout(res, 4));
         }
-        const v2 = r.state.playerBody.getLinearVelocity();
+        const v2 = r.state.playerVel || (r.state.playerBody && r.state.playerBody.getLinearVelocity());
         const dbg = {
             speed: r.state.speed,
             sprint: r.state.sprintSpeed,
@@ -427,7 +445,7 @@ const server = http.createServer((req, res) => {
             dist: +Math.hypot(pm.x - x0, pm.z - z0).toFixed(1),
             py: +pm.y.toFixed(1),
             coastFrom: +coastStart.toFixed(2),
-            coastTo: +Math.hypot(v2.x(), v2.z()).toFixed(2),
+            coastTo: v2 ? +Math.hypot(v2.x(), v2.z()).toFixed(2) : null,
             stillMounted: archId !== null && archId !== undefined,
             entryFound: !!entry,
             rideYaw: entry && Number.isFinite(entry._rideYaw) ? +entry._rideYaw.toFixed(2) : null,

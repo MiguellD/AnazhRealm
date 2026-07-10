@@ -421,6 +421,38 @@ async function runPartB() {
             st.architectures = savedArchs;
             r._archLODCursor = savedCursor;
         }
+        // ════ TEIL Z (AUSLÖSCHUNGS-WELLE, Feld B) — DER STUFEN-ZENSUS: bei Studio-
+        // äquivalenten Distanzen serviert der HOST dieselbe Stufe wie der Studio-Wald.
+        // Studio-CPU-Formel (phytogenesis Z.2739-2750): dn = dr·min(HREF/bh, 1)
+        // UNGEDECKELT (kein visStretchMax) · Blatt-Kappe bh_L = min(bh, 24) (Z.2392) —
+        // der Host-`_lodPerceptionDistance`/-Partner MUSS dieselben Zahlen liefern
+        // (Zahl je Distanz-Band × Sichthöhe; vor der Kalibrierung: Deckel 15 m +
+        // Kappe 12 m = doppelt so frühe Demotion, der „nicht wie in der Vorlage"-Riss).
+        res.zensus = [];
+        const hrefZ = cfg.lodRef;
+        const stageStudio = (dr, bh) => {
+            const dnS = dr * Math.min(1, hrefZ / bh);
+            return dnS < cfg.thresh01 ? 0 : dnS < cfg.thresh12 ? 1 : 2;
+        };
+        // Distanzen meiden EXAKTE Schwellen-Treffer (160·12/48 = 40.0 — Host-Hysterese
+        // und Studio-`<` urteilen die Kante verschieden; die Kante ist kein Zensus-Fall).
+        const fdPrev = st._foliageDensityScale;
+        st._foliageDensityScale = 1; // perfMul neutral — der Zensus misst die METRIK, nicht den Regler
+        for (const bh of [8, 12, 24, 36, 48]) {
+            for (const dr of [10, 18, 30, 45, 70, 110, 165]) {
+                const host = r._chooseLODForDistance(dr, undefined, bh);
+                const studio = stageStudio(dr, bh);
+                res.zensus.push({ bh, dr, host, studio, ok: host === studio });
+            }
+        }
+        // Blatt-Kappe 24 (Studio) statt 12: großer Baum (bh 36) bei dr 20 → dnL = 20·(12/24) = 10
+        // ≤ D0−FADE0−M (12.6) → KEIN L1-Partner (das Laub lebt noch voll in L0; mit Kappe 12
+        // wäre dnL = 20 > 12.6 → Partner — die alte, halbierte Laub-Sichthöhe).
+        res.leafCapPartner = r._lodBandPartnerFor(20, 36, 0);
+        res.leafCapValue = cfg.leafVisCap;
+        // visStretchMax UNGEDECKELT: dn(100, 36) = 100·12/36 = 33.33 (der alte Deckel gab 80).
+        res.stretchProbe = +r._lodPerceptionDistance(100, 36).toFixed(2);
+        st._foliageDensityScale = fdPrev;
         r.removeArchitecture(entry); // Default-Remove räumt Primär + Band
         const after = balance();
         res.balance = {
@@ -628,6 +660,26 @@ async function main() {
     }
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
+    if (out && Array.isArray(out.zensus)) {
+        const bad = out.zensus.filter((z) => !z.ok);
+        check(
+            "Z (Stufen-Zensus): der Host serviert bei Studio-äquivalenten Distanzen DIESELBE Stufe (5 Sichthöhen × 7 Distanzen)",
+            out.zensus.length === 35 && bad.length === 0,
+            bad.length ? JSON.stringify(bad.slice(0, 4)) : "35/35"
+        );
+        check(
+            "Z: die Blatt-Kappe ist die Studio-24 (phytogenesis Z.2392) — großer Baum (36 m) bei 20 m trägt KEINEN L1-Partner",
+            out.leafCapValue === 24 && out.leafCapPartner === null,
+            `cap=${out.leafCapValue} partner=${out.leafCapPartner}`
+        );
+        check(
+            "Z: die SSE-Sichthöhe ist UNGEDECKELT (foundry-core Z.196) — dn(100, 36) = 33.33 (der alte 15-m-Deckel gab 80)",
+            Math.abs(out.stretchProbe - 100 * (12 / 36)) < 0.05,
+            String(out.stretchProbe)
+        );
+    } else if (out && !out.err) {
+        check("Z (Stufen-Zensus) lief", false, "zensus fehlt");
+    }
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);

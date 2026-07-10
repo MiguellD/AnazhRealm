@@ -100,10 +100,12 @@ function startSaveServer() {
                 "geraet_schwert",
                 "ruestung_brustpanzer",
                 "koerper_human",
-                "village",
+                "haus_basis",
                 "glutbrunnen",
             ]) {
-                const bp = r.state.blueprints[name];
+                // AUSLÖSCHUNGS-WELLE: gefallene Donor-Namen lesen ihre Judge-Substanz aus
+                // der eingefrorenen Tabelle (KIND_SUBSTANCE) statt aus state.blueprints.
+                const bp = r.state.blueprints[name] || (C.KIND_SUBSTANCE && C.KIND_SUBSTANCE[name]) || null;
                 if (!bp) continue;
                 const ext = r._compoundVisualExtent(bp);
                 const span = Math.max(ext.dx || 0, ext.dy || 0, ext.dz || 0);
@@ -150,7 +152,18 @@ function startSaveServer() {
                 gezogen_3m: round3(r._compoundSizeFactor(mkBp(3))),
                 gezogen_10m: round3(r._compoundSizeFactor(mkBp(10))),
             };
-            return { floor: C.FORM_ROLE_RESONANCE_FLOOR, rows, exploit, axes };
+            // AUSLÖSCHUNGS-WELLE — die Rollen der eingefrorenen Judge-Substanz (die 5
+            // gefallenen Donoren leben als Daten-Zeilen; die Rolle EMERGIERT weiter):
+            const substanzRollen = {};
+            const KS = C.KIND_SUBSTANCE || {};
+            for (const name in KS) {
+                const row = KS[name];
+                substanzRollen[name] = r.computeBlueprintRole({
+                    parts: row.parts,
+                    connections: row.connections,
+                });
+            }
+            return { floor: C.FORM_ROLE_RESONANCE_FLOOR, rows, exploit, axes, substanzRollen };
         });
         console.log(`FORM_ROLE_RESONANCE_FLOOR = ${dump.floor}\n`);
         const pad = (s, n) => String(s).padEnd(n);
@@ -185,6 +198,8 @@ function startSaveServer() {
         console.log(JSON.stringify(dump.exploit, null, 2));
         console.log("\nACHSEN-ROHDATEN (span/Volumina/spread/motion):");
         console.log(JSON.stringify(dump.axes, null, 2));
+        console.log("\nSUBSTANZ-ROLLEN (KIND_SUBSTANCE — die gefallenen Donoren als Daten):");
+        console.log(JSON.stringify(dump.substanzRollen, null, 2));
     } catch (e) {
         console.error("DIAG-FEHLER:", e.message);
         process.exitCode = 1;

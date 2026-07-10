@@ -119,7 +119,14 @@ const server = http.createServer((req, res) => {
                 } catch (_e) {}
             }
         };
-        const kinds = ["spawn_village", "spawn_temple", "spawn_waterfall"];
+        // AUSLÖSCHUNGS-WELLE: spawn_village routet auf spawnSettlement (async/Studio)
+        // und spawn_temple skippt bei kaltem Buch — die Leak-INTENT ist blueprint-
+        // agnostisch, darum deterministisch billige Spawn-Programme (waterfall +
+        // stein_block ueber denselben dslRun/spawnArchitecture-Pfad).
+        const progs = [
+            () => ["spawn_waterfall", ["far_player", 180, 380]],
+            () => ["spawn_blueprint", "stein_block", ["far_player", 180, 380]],
+        ];
         // GC-FLOOR-WELLEN: jede Welle spawnt+evolved+tickt, dann GC, dann misst den
         // RETAINED-Boden. Klettert der Boden welle-über-welle monoton → echtes Leck.
         // Bleibt er flach → die Roh-Heap-Drift war GC-Sägezahn (kein Leck).
@@ -130,9 +137,8 @@ const server = http.createServer((req, res) => {
         const WAVES = 8;
         for (let w = 1; w <= WAVES; w++) {
             for (let round = 0; round < 80; round++) {
-                const k = kinds[round % kinds.length];
                 try {
-                    r.dslRun([k, ["far_player", 180, 380]], { source: "nexus" });
+                    r.dslRun(progs[round % progs.length](), { source: "nexus" });
                     spawnOk++;
                 } catch (e) {
                     spawnErr = spawnErr || String(e.message || e);

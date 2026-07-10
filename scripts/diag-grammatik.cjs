@@ -50,7 +50,13 @@ function startSaveServer() {
             const r = window.anazhRealm,
                 C = r.constructor;
             const o = {};
-            const temple = r.state.blueprints.temple;
+            // AUSLÖSCHUNGS-WELLE: der statische temple-Blueprint ist gefallen (spawn_temple
+            // routet auf haus_griechisch/Studio) — die GRAMMATIK selbst lebt weiter in
+            // _buildClassicalTemple/CLASSICAL_ORDERS und wird HIER direkt geprueft.
+            const temple = {
+                name: "_temple_probe",
+                parts: r._buildClassicalTemple("dorisch", { columnsFront: 6, columnsSide: 9 }),
+            };
             o.exists = !!(temple && Array.isArray(temple.parts));
             o.partCount = temple ? temple.parts.length : 0;
 
@@ -67,26 +73,29 @@ function startSaveServer() {
             o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length; // geschlossener Giebel
             o.hasOrders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
 
-            // ── Ω-B4 GENERATIV: N Seeds → N VERSCHIEDENE Tempel, ALLE physik-garant ──
+            // ── Ω-B4 GENERATIV (AUSLÖSCHUNGS-WELLE): _classicalTempleVariant ist bewusst
+            // GESCHNITTEN — die Genom-Klasse (Seed → N verschiedene, deterministische,
+            // physik-garante Varianten) lebt in _rockVariant weiter (dieselbe
+            // _rollGenome-Maschine); die neue Wahrheit wird BEIDES geprueft: die
+            // Methode ist weg UND die lebende Maschine traegt die Klasse.
+            o.templeVariantCut = typeof r._classicalTempleVariant !== "function";
             const variants = ["alpha", "beta", "gamma", "delta", "omega"].map((s) => ({
                 seed: s,
-                bp: { parts: r._classicalTempleVariant(s) },
+                bp: { parts: r._rockVariant(s) },
             }));
             const sigs = new Set();
             let allStand = true,
                 allNoBuckle = true;
             for (const v of variants) {
-                const shaftsV = v.bp.parts.filter((p) => p.shape === "flutedColumn");
-                const fl = shaftsV.length ? shaftsV[0].flutes : 0;
-                sigs.add(v.bp.parts.length + ":" + fl); // Signatur = Parts + Ordnung(Flutes)
+                sigs.add(JSON.stringify(v.bp.parts)); // Signatur = die volle Gestalt
                 if (!(r._stability(v.bp).inside === true)) allStand = false;
                 if (r._failsUnderLoad(v.bp).buckles !== false) allNoBuckle = false;
             }
-            o.variantCount = sigs.size; // verschiedene Tempel aus verschiedenen Seeds
+            o.variantCount = sigs.size; // verschiedene Varianten aus verschiedenen Seeds
             o.variantsAllStand = allStand;
             o.variantsAllNoBuckle = allNoBuckle;
             o.variantDeterministic =
-                r._classicalTempleVariant("alpha").length === r._classicalTempleVariant("alpha").length;
+                JSON.stringify(r._rockVariant("alpha")) === JSON.stringify(r._rockVariant("alpha"));
 
             // ── EINGANG: die Front-Cella-Wand hat eine TÜR-Lücke (kein Part deckt die Tür-Mitte) ──
             // V18.250 — der Welt-Tempel trägt jetzt eine seed-gewürfelte STEIN-PALETTE (Marmor/
@@ -181,7 +190,12 @@ function startSaveServer() {
             o.slenderTempleParts = slenderTemple.parts.length; // baut (kein Crash)
 
             // ── Ω-B2: die parametrische KLINGE (Oakeshott — distale Verjüngung + Hohlkehle) ──
-            const sword = r.state.blueprints.geraet_schwert;
+            // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint geraet_schwert ist gefallen — die
+            // Schwert-SUBSTANZ lebt eingefroren in KIND_SUBSTANCE und wird hier gelesen.
+            const KSg = r.constructor.KIND_SUBSTANCE || {};
+            const sword = KSg.geraet_schwert
+                ? { name: "_schwert_substanz", parts: JSON.parse(JSON.stringify(KSg.geraet_schwert.parts)) }
+                : null;
             o.swordExists = !!(sword && Array.isArray(sword.parts));
             const blades = o.swordExists ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
             o.hasBladeProfile = blades.length === 1; // eine echte Klinge (kein Kegel)
@@ -234,12 +248,20 @@ function startSaveServer() {
         line("TYMPANON schließt den Giebel (gableTriangle)", out.tympanon, "soll 2", out.tympanon === 2);
         line("EINGANG: Tür-Lücke in der Front-Wand", out.hasEntrance, "soll true", out.hasEntrance);
         line("zwei Ordnungen (dorisch + ionisch)", out.hasOrders, "soll true", out.hasOrders);
-        console.log("\n— Ω-B4 GENERATIV: die Regel erzeugt VERSCHIEDENE Tempel —");
-        line("N Seeds → N verschiedene Tempel", out.variantCount, "soll ≥ 4", out.variantCount >= 4);
+        console.log(
+            "\n— Ω-B4 GENERATIV: die lebende Genom-Klasse (_rockVariant; _classicalTempleVariant bewusst geschnitten) —"
+        );
+        line(
+            "_classicalTempleVariant existiert NICHT mehr",
+            out.templeVariantCut,
+            "soll true (AUSLÖSCHUNG)",
+            out.templeVariantCut
+        );
+        line("N Seeds → N verschiedene Varianten", out.variantCount, "soll ≥ 4", out.variantCount >= 4);
         line("ALLE Varianten stehen (physik-garant)", out.variantsAllStand, "soll true", out.variantsAllStand);
         line("ALLE Varianten knicken nicht", out.variantsAllNoBuckle, "soll true", out.variantsAllNoBuckle);
         line(
-            "deterministisch (gleicher Seed → gleicher Tempel)",
+            "deterministisch (gleicher Seed → gleiche Variante)",
             out.variantDeterministic,
             "soll true",
             out.variantDeterministic
@@ -304,6 +326,7 @@ function startSaveServer() {
             out.tympanon === 2,
             out.hasEntrance,
             out.hasOrders,
+            out.templeVariantCut,
             out.variantCount >= 4,
             out.variantsAllStand,
             out.variantsAllNoBuckle,

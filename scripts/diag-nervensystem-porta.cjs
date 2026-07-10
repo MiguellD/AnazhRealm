@@ -9,8 +9,9 @@
 //     traegt die gate-Zeile (prefix tor_, donor tor_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · porta-core
 //     deklariert kindStages.gate == [0] · die Rezepte tragen fx.place
-//     {mode:"site", siteTag:"tor"} als DATEN · der Donor tor_basis ist ein
-//     DATENBLOCK in _defaultBlueprints. --selftest injiziert 2 Verletzungen.
+//     {mode:"site", siteTag:"tor"} als DATEN · die Donor-SUBSTANZ tor_basis
+//     lebt als EINGEFRORENE Zeile in KIND_SUBSTANCE (der Alt-Blueprint ist
+//     PHYSISCH gefallen — AUSLÖSCHUNGS-WELLE). --selftest injiziert 2 Verletzungen.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 7 Tor-
 //     Rezepte · kindStages.gate == [0] gemerged (foundry-core-kinds unberuehrt) ·
 //     Auto-Blueprint tor_drachentor entsteht am EINEN Chokepoint (Donor-Klon,
@@ -114,8 +115,11 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         /place:\s*\{\s*mode:\s*"site",\s*siteTag:\s*"tor"\s*\}/.test(pcNC),
     ]);
     out.push([
-        "S6: der Donor tor_basis ist ein DATENBLOCK in den Built-ins (kein portalMeta/role-Erbe)",
-        /tor_basis:\s*\{\s*name:\s*"tor_basis"/.test(anazhNC) && !/tor_basis:\s*\{[^}]*portalMeta/.test(anazhNC),
+        "S6: die Donor-SUBSTANZ tor_basis lebt in KIND_SUBSTANCE (label Torbogen, parts, kein portalMeta) — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
+        /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
+            /tor_basis:\s*\{"label":"Torbogen","parts":\[\{"shape"/.test(anazhNC) &&
+            !/tor_basis:\s*\{\s*name:\s*"tor_basis"/.test(anazhNC) &&
+            !/tor_basis:\s*\{[^\n]*portalMeta/.test(anazhNC),
     ]);
     return out;
 }
@@ -202,7 +206,13 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
             res.d.grownSpecies = bp ? bp._grownSpecies || null : "kein-bp";
             res.d.label = bp ? bp.label : null;
             res.d.parts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
-            res.d.donorIntact = !!(r.state.blueprints.tor_basis && r.state.blueprints.tor_basis.builtIn);
+            // AUSLÖSCHUNGS-WELLE — die neue Donor-Wahrheit: der Alt-Name ist ABWESEND,
+            // die Substanz lebt in KIND_SUBSTANCE, der Klon traegt byte-gleiche Parts.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            res.d.donorAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
+            res.d.substanzParts = KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
+            res.d.clonePartsMatch =
+                !!bp && !!KS.tor_basis && JSON.stringify(bp.parts) === JSON.stringify(KS.tor_basis.parts);
             res.d.presetResolves = r._foundryPresetFor("tor_drachentor");
             res.d.entryResolves = r._foundryPresetForEntry({ type: "tor_drachentor" });
         } catch (e) {
@@ -283,7 +293,15 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         String(out.d.grownSpecies)
     );
     check("D: das Label reist aus dem Rezept (lab == Drachentor)", out.d.label === "Drachentor", String(out.d.label));
-    check("D: der Donor tor_basis bleibt Built-in (unberuehrt)", out.d.donorIntact === true);
+    check(
+        "D: der Alt-Donor tor_basis ist ABWESEND (state.blueprints) — die Substanz lebt in KIND_SUBSTANCE (4 Parts)",
+        out.d.donorAbsent === true && out.d.substanzParts === 4,
+        `substanzParts=${out.d.substanzParts}`
+    );
+    check(
+        "D: der Auto-Klon traegt die Substanz byte-gleich (tor_drachentor.parts == KIND_SUBSTANCE.tor_basis.parts)",
+        out.d.clonePartsMatch === true
+    );
     check(
         "D: die generische tor_-Regel loest auf (tor_drachentor -> drachentor)",
         out.d.presetResolves === "drachentor",

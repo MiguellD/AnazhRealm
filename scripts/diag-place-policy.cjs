@@ -154,6 +154,9 @@ function check(name, ok, detail) {
                     Object.assign({}, KP0, {
                         tor: Object.freeze({
                             prefix: "tor_",
+                            // AUSLÖSCHUNGS-WELLE: der Donor loest am Chokepoint ueber
+                            // bps[dKey] || KIND_SUBSTANCE[dKey] — fahrzeug_wagen lebt
+                            // als Substanz-Zeile weiter (der Alt-Blueprint ist gefallen).
                             donor: "fahrzeug_wagen",
                             grown: false,
                             builtIn: false,
@@ -161,7 +164,12 @@ function check(name, ok, detail) {
                         }),
                     })
                 );
-                f.recipes.probetor = { kind: "tor", panel: "tor", s: {}, fx: { place: { mode: "site", siteTag: "tor" } } };
+                f.recipes.probetor = {
+                    kind: "tor",
+                    panel: "tor",
+                    s: {},
+                    fx: { place: { mode: "site", siteTag: "tor" } },
+                };
                 const nTor = r._foundryAutoRegisterSpecies(f.recipes);
                 res.d.registered = nTor >= 1 && !!(r.state.blueprints && r.state.blueprints.tor_probetor);
                 const pd = r._placePolicyFor(f.recipes.probetor);
@@ -236,21 +244,44 @@ function check(name, ok, detail) {
     check("a: Nischen-Liste IDENTISCH zur alten placeExtra-Regel (vorher/nachher)", out.a.identical === true);
     check("a: die testahorn-Nische entsteht wie heute", out.a.inExtras === true);
     check("a: der Wald-Generator streut testahorn (Dart geboren)", out.a.planted === true);
-    check('b: vehicle ohne place → mode "none"', out.b.vid !== null && out.b.mode === "none", `${out.b.vid}: ${out.b.mode}`);
+    check(
+        'b: vehicle ohne place → mode "none"',
+        out.b.vid !== null && out.b.mode === "none",
+        `${out.b.vid}: ${out.b.mode}`
+    );
     check("b: vehicle-Dispatch → kein Worldgen-Kanal (null)", out.b.dispatch === null, String(out.b.dispatch));
     check("b: keine fahrzeug_-Nische in der Wald-Liste", out.b.noVehicleNiche === true);
     check("c: fx.place {mode:none} auf tree → Katalog JA (Auto-Blueprint)", out.c.katalog === true);
-    check('c: … → mode "none" + Dispatch null', out.c.mode === "none" && out.c.dispatch === null, `${out.c.mode}/${out.c.dispatch}`);
+    check(
+        'c: … → mode "none" + Dispatch null',
+        out.c.mode === "none" && out.c.dispatch === null,
+        `${out.c.mode}/${out.c.dispatch}`
+    );
     check("c: H8-Kern — none-Art NICHT in der Wald-Nische (disjunkt)", out.c.inExtras === false);
     check("c: … während die forest-Art (testahorn) drin bleibt", out.c.forestStillThere === true);
-    check("c: kein verbotener Dart (testnone/probetor) im Zellen-Scan", out.c.forbiddenDart == null, String(out.c.forbiddenDart));
+    check(
+        "c: kein verbotener Dart (testnone/probetor) im Zellen-Scan",
+        out.c.forbiddenDart == null,
+        String(out.c.forbiddenDart)
+    );
     check("d: site-Rezept über KIND_POLICY-Zeile registriert (tor_probetor)", out.d.registered === true);
-    check('d: Auflösung erkennt mode "site" + siteTag lesbar', out.d.mode === "site" && out.d.siteTag === "tor", `${out.d.mode}/${out.d.siteTag}`);
+    check(
+        'd: Auflösung erkennt mode "site" + siteTag lesbar',
+        out.d.mode === "site" && out.d.siteTag === "tor",
+        `${out.d.mode}/${out.d.siteTag}`
+    );
     check("d: site streut NICHT (Dispatch null + keine Nische)", out.d.dispatch === null && out.d.inExtras === false);
-    check('e: unbekannte place-Felder reisen unangetastet mit (must-preserve)', out.e.mode === "forest" && out.e.preserved === true);
+    check(
+        "e: unbekannte place-Felder reisen unangetastet mit (must-preserve)",
+        out.e.mode === "forest" && out.e.preserved === true
+    );
     check("e: das Rezept selbst bleibt unberührt (kein Strip am Original)", out.e.origUntouched === true);
     check('e: unbekannter mode fällt geschlossen auf "none"', out.e.unknownMode === "none", String(out.e.unknownMode));
-    check("e: malformter place-Block → Ableitung (tree → forest), kein Crash", out.e.malformed === "forest", String(out.e.malformed));
+    check(
+        "e: malformter place-Block → Ableitung (tree → forest), kein Crash",
+        out.e.malformed === "forest",
+        String(out.e.malformed)
+    );
     check('e: rec null → "none", kein Crash', out.e.nullRec === "none", String(out.e.nullRec));
     if (SELFTEST) {
         check(

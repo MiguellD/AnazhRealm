@@ -507,14 +507,30 @@ async function renderWerk(page, bpName, view) {
                     window.__treeInfo = "ERR:" + _e.message;
                 }
             } else if (bpName.indexOf("templevar:") === 0) {
-                // V18.250 — eine Tempel-VARIANTE direkt aus einem Seed (zeigt Palette + Größe)
+                // AUSLÖSCHUNGS-WELLE: _classicalTempleVariant ist geschnitten — die lebende
+                // Tempel-GRAMMATIK (_buildClassicalTemple/CLASSICAL_ORDERS) rendert direkt;
+                // der Seed waehlt nur noch die Ordnung (i/ionisch → ionisch, sonst dorisch).
                 const seed = bpName.split(":")[1] || "anazh";
+                const order = seed === "i" || seed === "ionisch" ? "ionisch" : "dorisch";
                 grp = r._buildFromBlueprint(
-                    { name: "_tvar", parts: r._classicalTempleVariant(seed) },
+                    { name: "_tvar", parts: r._buildClassicalTemple(order, { columnsFront: 6, columnsSide: 9 }) },
                     0,
                     undefined,
                     {}
                 );
+            } else if (bpName.indexOf("ks:") === 0) {
+                // AUSLÖSCHUNGS-WELLE: die gefallenen Donor-Blueprints rendern aus ihrer
+                // eingefrorenen Judge-Substanz (AnazhRealm.KIND_SUBSTANCE).
+                const ksName = bpName.split(":")[1];
+                const row = (r.constructor.KIND_SUBSTANCE || {})[ksName];
+                grp = row
+                    ? r._buildFromBlueprint(
+                          { name: "_ks_" + ksName, parts: JSON.parse(JSON.stringify(row.parts)) },
+                          0,
+                          undefined,
+                          {}
+                      )
+                    : null;
             } else {
                 grp = r._buildFromBlueprint(st.blueprints[bpName], 0, undefined, {});
             }
@@ -728,14 +744,15 @@ async function renderWerk(page, bpName, view) {
             ["fels_var7", "werk-fels-b.png", ""],
             ["kristall_var0", "werk-kristall.png", ""], // F4: Habitus (Druse/Cluster/Geode) + Facetten + Glanz
             ["glut_var0", "werk-glut.png", ""], // T3: Becken + Intensität
-            // ── BAUWERKE (T2) ──
-            ["village", "werk-dorf.png", "front"], // begehbare Hütten + Platz/Wege
-            ["templevar:c", "werk-tempel.png", "front"], // dorische Ordnung, Basalt
+            // ── BAUWERKE (T2) — AUSLÖSCHUNGS-WELLE: village ist gefallen (Dorf = Studio/
+            // spawnSettlement); die Haus-Judge-Substanz rendert aus KIND_SUBSTANCE. ──
+            ["ks:haus_basis", "werk-haus-substanz.png", "front"], // begehbare Haus-Substanz (Tuer-Luecke)
+            ["templevar:c", "werk-tempel.png", "front"], // dorische Ordnung (lebende Grammatik)
             ["esse", "werk-esse.png", ""], // T2: Werkstatt (Proportion + Detail)
             ["welt_portal", "werk-portal.png", "front"], // T2: Portal
-            // ── GERÄT / RÜSTUNG / TRANK (T4) ──
-            ["geraet_schwert", "werk-schwert.png", ""], // Oakeshott-Klinge + Hohlkehle
-            ["geraet_spitzhacke", "werk-spitzhacke.png", ""], // Hebel (Stiel/Kopf/Keil)
+            // ── GERÄT / RÜSTUNG / TRANK (T4) — geraet_* leben als Substanz-Zeilen ──
+            ["ks:geraet_schwert", "werk-schwert.png", ""], // Oakeshott-Klinge + Hohlkehle
+            ["ks:geraet_spitzhacke", "werk-spitzhacke.png", ""], // Hebel (Stiel/Kopf/Keil)
             ["ruestung_brustpanzer", "werk-ruestung.png", ""], // T4: Platten + Artikulation
             ["trank_lebenssaft", "werk-trank.png", ""], // T4: Phiole + Glasur
             // ── AVATAR / KREATUR (T5) ──
@@ -791,8 +808,8 @@ async function renderWerk(page, bpName, view) {
             ["creature:glutwesen:2.0", "werk-kreatur-glutwesen.png", "front"], // T5: Glut-Wesen, gross
             ["creature:glutwesen:2.0", "werk-kreatur-glutwesen-seite.png", "side"], // SEITE
             ["ruestung_brustpanzer", "werk-ruestung-seite.png", "side"], // SEITE: wie getragen liest
-            // ── FAHRZEUG (T4) ──
-            ["fahrzeug_wagen", "werk-wagen.png", ""], // SSF: Spur/Rad/Kabine
+            // ── FAHRZEUG (T4) — der Wagen lebt als Substanz-Zeile ──
+            ["ks:fahrzeug_wagen", "werk-wagen.png", ""], // SSF: Spur/Rad/Kabine
         ]) {
             if (FILTER && !(bp + " " + file).includes(FILTER)) continue;
             await renderWerk(page, bp, view);

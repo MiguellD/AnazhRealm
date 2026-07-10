@@ -34,7 +34,14 @@ function startServer() {
         await page.evaluate(() => {
             const r = window.anazhRealm;
             document.querySelector('#topbar [data-tab="werkstatt"]').click();
-            r.cloneBlueprint("village", "diag_frame");
+            // AUSLÖSCHUNGS-WELLE: village ist gefallen — das Mehr-Part-Test-Blueprint
+            // kommt aus der eingefrorenen Haus-Substanz (KIND_SUBSTANCE.haus_basis).
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            r.state.blueprints.diag_frame = {
+                name: "diag_frame",
+                label: "Diag Frame",
+                parts: JSON.parse(JSON.stringify((KS.haus_basis || { parts: [] }).parts)),
+            };
             r.selectBlueprintForEdit("diag_frame");
         });
         await new Promise((r) => setTimeout(r, 700));

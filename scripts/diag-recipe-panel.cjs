@@ -109,10 +109,13 @@ const server = http.createServer((req, res) => {
         const reset = panel ? panel.querySelector(".workshop-recipe-reset") : null;
         out.panel = { sichtbar: !!(panel && !panel.hidden), regler: sliders.length, wuerfel: !!dice, reset: !!reset };
 
-        // 2) Panel VERSTECKT fuer einen Nicht-Baum (z.B. temple)?
-        const temple = s.blueprints.temple;
-        if (temple) {
-            r._workshopRenderRecipePanel(temple);
+        // 2) Panel VERSTECKT fuer einen Nicht-Rezept-Bauplan (AUSLÖSCHUNGS-WELLE:
+        // der gefallene "temple" wich der lebenden Esse — ein Crafting-Geraet
+        // OHNE Rezept-kind, das das Panel wirklich versteckt; stein_block/kristall
+        // haben rock/crystal-kinds und ZEIGEN es, taugten also nicht).
+        const nichtRezept = s.blueprints.esse;
+        if (nichtRezept) {
+            r._workshopRenderRecipePanel(nichtRezept);
             out.nichtBaum_versteckt = !!(panel && panel.hidden);
         }
 

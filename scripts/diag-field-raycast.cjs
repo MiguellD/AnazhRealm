@@ -182,7 +182,16 @@ const server = http.createServer((req, res) => {
             return best || { x: px, z: pz, h: r.getTerrainHeightAt(px, pz) };
         })();
         let entry = null;
-        for (const t of ["temple", "village", "tower", "haus", "monument"]) {
+        // AUSLÖSCHUNGS-WELLE: temple/village sind gefallen — die solide Wand kommt aus
+        // der eingefrorenen Haus-Substanz (KIND_SUBSTANCE.haus_basis → blockerAABBs).
+        const KSf = r.constructor.KIND_SUBSTANCE || {};
+        if (KSf.haus_basis && !r.state.blueprints._probe_haus) {
+            r.state.blueprints._probe_haus = {
+                name: "_probe_haus",
+                parts: JSON.parse(JSON.stringify(KSf.haus_basis.parts)),
+            };
+        }
+        for (const t of ["_probe_haus", "stein_block", "wall"]) {
             try {
                 const e = r.spawnArchitecture(t, { x: flat.x, y: flat.h, z: flat.z }, {});
                 if (e && e.blockerAABBs && e.blockerAABBs.length) {

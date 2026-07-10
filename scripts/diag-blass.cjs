@@ -59,7 +59,10 @@ function startSaveServer() {
             const measure = (bp, label) => {
                 if (!bp) return { label, MISSING: true };
                 const ab = r._blueprintAbilityStats(bp);
-                const spec = r._blueprintRoleSpectrum(bp).slice(0, 5).map((s) => `${s.role} ${round(s.score)}`);
+                const spec = r
+                    ._blueprintRoleSpectrum(bp)
+                    .slice(0, 5)
+                    .map((s) => `${s.role} ${round(s.score)}`);
                 const tags = r.computeCompoundTags(bp) || {};
                 return {
                     label,
@@ -81,13 +84,32 @@ function startSaveServer() {
             };
 
             const mk = (parts, role) => ({ name: "_syn", parts, role });
-            const box = (mat, s, pos) => ({ shape: "box", material: mat, size: s, position: pos || { x: 0, y: 0, z: 0 } });
-            const cone = (mat, s, pos) => ({ shape: "cone", material: mat, size: s, position: pos || { x: 0, y: 0, z: 0 } });
+            const box = (mat, s, pos) => ({
+                shape: "box",
+                material: mat,
+                size: s,
+                position: pos || { x: 0, y: 0, z: 0 },
+            });
+            const cone = (mat, s, pos) => ({
+                shape: "cone",
+                material: mat,
+                size: s,
+                position: pos || { x: 0, y: 0, z: 0 },
+            });
 
             const out = [];
-            // (1) Die Bibliothek (was der Spieler craftet)
-            for (const n of ["geraet_spitzhacke", "geraet_schwert", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
-                out.push(measure(r.state.blueprints[n], n));
+            // (1) Die Bibliothek (was der Spieler craftet). AUSLÖSCHUNGS-WELLE: die
+            // gefallenen Donoren (geraet_*) lesen ihre Judge-Substanz aus KIND_SUBSTANCE.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const bpOf = (n) => r.state.blueprints[n] || (KS[n] ? { name: n, parts: KS[n].parts } : null);
+            for (const n of [
+                "geraet_spitzhacke",
+                "geraet_schwert",
+                "ruestung_brustpanzer",
+                "trank_lebenssaft",
+                "avatar_waechter",
+            ]) {
+                out.push(measure(bpOf(n), n));
             }
 
             // (2) DIE SCHLÜSSEL-FRAGE: macht das MATERIAL einen sichtbaren Unterschied?
@@ -104,7 +126,17 @@ function startSaveServer() {
             out.push(measure(mk([box("eisen", { x: 1.2, y: 1.2, z: 1.2 })]), "KLOTZ eisen (stumpf)"));
 
             // (4) Macht die GRÖSSE einen Unterschied? (Schöpfer-Befund: "größer = stärker"?)
-            out.push(measure(mk(bladeShape("eisen").map((p) => ({ ...p, size: { x: p.size.x * 3, y: p.size.y * 3, z: p.size.z * 3 } }))), "KLINGE eisen 3× GRÖSSER"));
+            out.push(
+                measure(
+                    mk(
+                        bladeShape("eisen").map((p) => ({
+                            ...p,
+                            size: { x: p.size.x * 3, y: p.size.y * 3, z: p.size.z * 3 },
+                        }))
+                    ),
+                    "KLINGE eisen 3× GRÖSSER"
+                )
+            );
 
             return out;
         });
@@ -119,7 +151,9 @@ function startSaveServer() {
             console.log(`    Werte:    ${Array.isArray(m.werte) ? m.werte.join("  ·  ") : m.werte}`);
             console.log(`    Eignung:  ${m.eignung_fit}×   (mul ${m.eignung_mul}, quality ${m.quality})`);
             console.log(`    Spektrum: ${m.spektrum_top5.join("  ·  ")}`);
-            console.log(`    Tags:     härte ${m.tags.härte}  dichte ${m.tags.dichte}  lebendig ${m.tags.lebendig}  zäh ${m.tags.zähigkeit}`);
+            console.log(
+                `    Tags:     härte ${m.tags.härte}  dichte ${m.tags.dichte}  lebendig ${m.tags.lebendig}  zäh ${m.tags.zähigkeit}`
+            );
             console.log("");
         }
     } finally {

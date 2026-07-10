@@ -173,7 +173,11 @@ function startSaveServer() {
             const handle = cons.querySelector(".resize-handle");
             out.handleClass = handle ? handle.className : null;
             const r0 = cons.getBoundingClientRect();
-            out.start = { w: Math.round(r0.width), h: Math.round(r0.height), collapsed: cons.classList.contains("collapsed") };
+            out.start = {
+                w: Math.round(r0.width),
+                h: Math.round(r0.height),
+                collapsed: cons.classList.contains("collapsed"),
+            };
             // Drag simulieren: Handle 120px nach oben ziehen (tr wächst nach oben)
             if (handle) {
                 const hr = handle.getBoundingClientRect();
@@ -209,13 +213,23 @@ function startSaveServer() {
             const r = window.anazhRealm;
             const out = {};
             const pm = r.state.playerMesh;
+            // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — der
+            // Ritt-Test faehrt ein Test-Blueprint aus der Substanz-Tabelle (parts +
+            // connections JSON-geklont; der sitz-Anker lebt in den connections).
+            const KSa = r.constructor.KIND_SUBSTANCE || {};
+            const subW = KSa.fahrzeug_wagen || { parts: [] };
+            r.state.blueprints._audit_wagen = {
+                name: "_audit_wagen",
+                parts: JSON.parse(JSON.stringify(subW.parts)),
+                connections: JSON.parse(JSON.stringify(subW.connections || [])),
+            };
             // Wagen spawnen + besteigen
             const sp = { x: pm.position.x + 4, y: pm.position.y, z: pm.position.z };
-            const s = r.spawnArchitecture("fahrzeug_wagen", sp, { precise: true });
+            const s = r.spawnArchitecture("_audit_wagen", sp, { precise: true });
             const entry = r.state.architectures[r.state.architectures.length - 1];
             r.mountArchitecture(entry);
             for (let i = 0; i < 12; i++) r._gameLoopTick(performance.now() + i * 16);
-            const bp = r.state.blueprints.fahrzeug_wagen;
+            const bp = r.state.blueprints._audit_wagen;
             const seatLocal = r._attachPointFor(bp, "sitz").point;
             const scale = Number.isFinite(entry.scale) ? entry.scale : 1;
             const seatWorldY = entry.position.y + seatLocal.y * scale;
@@ -229,10 +243,11 @@ function startSaveServer() {
                 entryY: Math.round(entry.position.y * 100) / 100,
                 terrainY: Math.round(r.getTerrainHeightAt(entry.position.x, entry.position.z) * 100) / 100,
             };
-            out.wagen.clip =
-                Math.round((out.wagen.entryY + out.wagen.bottomY - out.wagen.terrainY) * 100) / 100;
+            out.wagen.clip = Math.round((out.wagen.entryY + out.wagen.bottomY - out.wagen.terrainY) * 100) / 100;
             r.dismountArchitecture && r.dismountArchitecture();
             if (typeof r.unmountArchitecture === "function") r.unmountArchitecture();
+            // (kein delete des Test-Blueprints: der gespawnte Architektur-Eintrag lebt in
+            // der Session weiter und liest seinen Typ — die Seite endet ohnehin gleich)
             return out;
         });
         console.log("E Ritt:", JSON.stringify(e));
@@ -242,8 +257,18 @@ function startSaveServer() {
             const r = window.anazhRealm;
             const out = {};
             const pm = r.state.playerMesh.position;
-            // Struktur über den NEXUS-Pfad (source nexus, at_player)
-            const prog1 = ["seq", ["spawn_architecture", "temple", ["at_player"]]];
+            // Struktur über den NEXUS-Pfad (source nexus, at_player).
+            // AUSLÖSCHUNGS-WELLE: der temple-Bauplan ist gefallen — die GROSSE Struktur
+            // kommt als Test-Blueprint aus KIND_SUBSTANCE.haus_basis (Footprint 6.6 m >
+            // STRUCTURE_CLEAR_MIN_FOOTPRINT → die Spawn-Klemme greift), via spawn_blueprint
+            // (spawn_architecture war nie eine DSL-Op).
+            const KSf = r.constructor.KIND_SUBSTANCE || {};
+            const subH = KSf.haus_basis || { parts: [] };
+            r.state.blueprints._audit_haus = {
+                name: "_audit_haus",
+                parts: JSON.parse(JSON.stringify(subH.parts)),
+            };
+            const prog1 = ["seq", ["spawn_blueprint", "_audit_haus", ["at_player"]]];
             r.dslRun(prog1, { source: "nexus" });
             const lastA = r.state.architectures[r.state.architectures.length - 1];
             out.strukturDist = lastA

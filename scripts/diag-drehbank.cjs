@@ -83,22 +83,38 @@ function startSaveServer() {
             out.placedNear = r._isWorkshopStationPlacedNear("drehbank");
 
             // Erscheint sie im Prozess-Menü (frieden)?
-            out.processesForMenu = r._workshopProcessesForMenu().map((p) => `${p.label} · ${p.opName} (${p.cap.toFixed(2)})`);
+            out.processesForMenu = r
+                ._workshopProcessesForMenu()
+                .map((p) => `${p.label} · ${p.opName} (${p.cap.toFixed(2)})`);
 
-            // Klon erstellen + per-Part-Apply-Select prüfen
-            r.cloneBlueprint("geraet_schwert", "schwert_fix");
+            // Klon erstellen + per-Part-Apply-Select prüfen.
+            // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint geraet_schwert ist gefallen — das
+            // Test-Blueprint kommt aus der eingefrorenen Substanz-Tabelle (KIND_SUBSTANCE).
+            const KSd = r.constructor.KIND_SUBSTANCE || {};
+            delete r.state.blueprints["schwert_fix"];
+            r.state.blueprints["schwert_fix"] = {
+                name: "schwert_fix",
+                label: "Schwert (Substanz-Probe)",
+                parts: JSON.parse(JSON.stringify((KSd.geraet_schwert || {}).parts || [])),
+            };
             r.selectBlueprintForEdit("schwert_fix");
             r._renderWorkshopDOM();
+            // V17.91: der alte #workshop-editor-DOM ist gefallen (3D-zentrische Werkstatt) —
+            // null-sicher lesen, damit der Dump nicht am toten Selector stirbt.
             const ed = document.getElementById("workshop-editor");
-            const selects = [...ed.querySelectorAll(".workshop-op-tool")];
-            out.perPartApplyOptions = selects.length ? [...selects[0].options].map((o) => o.textContent.trim()) : "(keine)";
+            const selects = ed ? [...ed.querySelectorAll(".workshop-op-tool")] : [];
+            out.perPartApplyOptions = selects.length
+                ? [...selects[0].options].map((o) => o.textContent.trim())
+                : "(kein editor-DOM — V17.91 3D-zentrisch)";
 
             return out;
         });
         console.log("=== Drehbank-Prozess-Fluss (frieden, platziert + nah) ===\n");
         console.log(JSON.stringify(dump, null, 2));
         console.log("");
-        console.log(`FAZIT: Drehbank im Prozess-Menü? ${dump.processesForMenu.length ? "JA — " + dump.processesForMenu.join(", ") : "NEIN ✗"}`);
+        console.log(
+            `FAZIT: Drehbank im Prozess-Menü? ${dump.processesForMenu.length ? "JA — " + dump.processesForMenu.join(", ") : "NEIN ✗"}`
+        );
         console.log(`       placedNear erkannt? ${dump.placedNear ? "JA" : "NEIN ✗"}`);
         console.log(`       Domäne der Drehbank: ${dump.drehbankDomain || "NULL ✗ (= kein Prozess!)"}`);
     } finally {

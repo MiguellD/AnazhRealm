@@ -10,8 +10,9 @@
 //       Checksummen sind VERSCHIEDEN; und der ov-Request legt KEINEN neuen f.cache-Key an
 //       (Welt-Reinheit: die Regler-Vorschau vergiftet nie den Welt-Cache).
 //   (c) KATALOG: die „Studio-Rezepte"-Sektion der Werkstatt-Liste enthaelt `gras`; die
-//       Donor-Eintraege (fahrzeug_wagen · tor_basis) fehlen in der gerenderten Liste
-//       (DOM-Abfrage), existieren aber voll funktional in state.blueprints.
+//       Alt-Donor-Namen (fahrzeug_wagen · tor_basis) fehlen in der gerenderten Liste
+//       (DOM-Abfrage) UND sind ABWESEND in state.blueprints (AUSLÖSCHUNGS-WELLE) —
+//       ihre Judge-Substanz lebt eingefroren in AnazhRealm.KIND_SUBSTANCE.
 //   (d) REGLER: Auswahl tor_drachentor → Slider-Anzahl == PARAMS-Laenge des porta-Kerns;
 //       ein programmatischer ov-Wert treibt die Vorschau (Rebuild feuert, Gruppe non-null).
 //   (e) INTERIM: bei kuenstlich kalter Auswahl (Cache-Keys geloescht) zeigt die Vorschau
@@ -172,13 +173,13 @@ function check(name, ok, detail) {
             res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
             res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
             res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
-            res.c.wagenExists = !!(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
-            res.c.torBasisExists = !!(r.state.blueprints && r.state.blueprints.tor_basis);
-            res.c.wagenDonorOnly = !!(r.state.blueprints.fahrzeug_wagen && r.state.blueprints.fahrzeug_wagen.donorOnly);
-            res.c.wagenParts =
-                r.state.blueprints.fahrzeug_wagen && Array.isArray(r.state.blueprints.fahrzeug_wagen.parts)
-                    ? r.state.blueprints.fahrzeug_wagen.parts.length
-                    : 0;
+            // AUSLÖSCHUNGS-WELLE: die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
+            const KS = r.constructor.KIND_SUBSTANCE || {};
+            res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
+            res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
+            res.c.wagenSubstanzParts =
+                KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
+            res.c.torSubstanzParts = KS.tor_basis && Array.isArray(KS.tor_basis.parts) ? KS.tor_basis.parts.length : 0;
         } catch (e) {
             res.c.err = (e && e.message) || String(e);
         }
@@ -312,9 +313,12 @@ function check(name, ok, detail) {
     check("fahrzeug_wagen fehlt in der gerenderten Liste (DOM)", out.c.wagenRow === false);
     check("tor_basis fehlt in der gerenderten Liste (DOM)", out.c.torBasisRow === false);
     check(
-        "die Donoren existieren voll funktional in state.blueprints (donorOnly-Daten)",
-        out.c.wagenExists === true && out.c.torBasisExists === true && out.c.wagenDonorOnly === true,
-        `wagenParts=${out.c.wagenParts}`
+        "die Alt-Donoren sind ABWESEND in state.blueprints — die Substanz-Tabelle traegt sie (wagen 17 · tor 4 Parts)",
+        out.c.wagenAbsent === true &&
+            out.c.torBasisAbsent === true &&
+            out.c.wagenSubstanzParts === 17 &&
+            out.c.torSubstanzParts === 4,
+        `wagenSubstanz=${out.c.wagenSubstanzParts} torSubstanz=${out.c.torSubstanzParts}`
     );
 
     console.log("\n=== (d) Regler — tor_drachentor: Slider aus DATEN + ov treibt die Vorschau ===");

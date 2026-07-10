@@ -1201,8 +1201,11 @@ async function checkBandV1728SpawnClearance(ctx) {
         const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
         out.hasConsts =
             typeof MIN === "number" && typeof MARGIN === "number" && typeof r.constructor.PLAYER_VOID_Y === "number";
-        // Footprint-Radius: Dorf gross (>= MIN), Felsblock klein (< MIN)
-        const fpVillage = r._blueprintFootprintRadius("village");
+        // Footprint-Radius: die Siedlungs-Klasse gross (>= MIN), Felsblock klein (< MIN).
+        // AUSLÖSCHUNGS-WELLE — der village-Blueprint fiel; die Spawn-Klemme misst jetzt
+        // über die eingefrorene Substanz-Zeile haus_basis (KIND_SUBSTANCE-Fallback in
+        // _blueprintFootprintRadius — exakt der Pfad, den spawn_village selbst nimmt).
+        const fpVillage = r._blueprintFootprintRadius("haus_basis");
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
@@ -1213,17 +1216,17 @@ async function checkBandV1728SpawnClearance(ctx) {
                 py = pm.y,
                 pz = pm.z;
             const ctx2 = { state: r.state, rng: () => 0.5 };
-            // (1) Dorf AUF dem Spieler → wird auf >= clearance geschoben
+            // (1) Haus-Substanz AUF dem Spieler → wird auf >= clearance geschoben
             const onPlayer = { x: px, y: py, z: pz };
-            const cleared = r._structureSpawnPos("village", onPlayer, ctx2);
+            const cleared = r._structureSpawnPos("haus_basis", onPlayer, ctx2);
             const dist = Math.hypot(cleared.x - px, cleared.z - pz);
             out.villagePushed = dist >= fpVillage + MARGIN - 0.01;
             // (2) Felsblock AUF dem Spieler → bleibt (klein = intentional)
             const blockCleared = r._structureSpawnPos("stein_block", { x: px, y: py, z: pz }, ctx2);
             out.blockUntouched = Math.abs(blockCleared.x - px) < 1e-6 && Math.abs(blockCleared.z - pz) < 1e-6;
-            // (3) Dorf WEIT weg → unberuehrt (schon ausserhalb der clearance)
+            // (3) Haus WEIT weg → unberuehrt (schon ausserhalb der clearance)
             const farPos = { x: px + 200, y: py, z: pz };
-            const farCleared = r._structureSpawnPos("village", farPos, ctx2);
+            const farCleared = r._structureSpawnPos("haus_basis", farPos, ctx2);
             out.farUntouched = Math.abs(farCleared.x - (px + 200)) < 1e-6;
             // (4) Void-Rettung: faellt der Spieler durch, kommt er an die Oberflaeche
             pm.set ? pm.set(px, -200, pz) : (pm.y = -200);
@@ -1242,11 +1245,14 @@ async function checkBandV1728SpawnClearance(ctx) {
         return out;
     });
     check("V17.28 Spawn-Clearance: Konstanten verdrahtet (MIN/MARGIN/PLAYER_VOID_Y)", res.hasConsts);
-    check("V17.28 Spawn-Clearance: Dorf-Footprint gross (>= MIN, wird geschoben)", res.villageBig);
+    check(
+        "V17.28 Spawn-Clearance: Siedlungs-Footprint (haus_basis-Substanz) gross (>= MIN, wird geschoben)",
+        res.villageBig
+    );
     check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
     check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
     check(
-        "V17.28 Spawn-Clearance: ein Dorf AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
+        "V17.28 Spawn-Clearance: ein Haus AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
         res.villagePushed
     );
     check(
@@ -5777,27 +5783,31 @@ async function checkBandV1769RoleResonance(ctx) {
             typeof r._computeFormRole === "function" &&
             !!r.constructor.FORM_ROLE_SIGNATURES;
 
-        // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags
-        const tv = r._blueprintProductVector(blu.temple);
+        // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags.
+        // AUSLÖSCHUNGS-WELLE — der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
+        // + Sturz) lebt eingefroren als KIND_SUBSTANCE.tor_basis — der Test wandert auf die Substanz-Zeile.
+        const KS169 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const templeFix = { parts: JSON.parse(JSON.stringify(KS169.tor_basis.parts)) };
+        const tv = r._blueprintProductVector(templeFix);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
 
-        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — temple + felsbogen WAREN soul (body-förmig), sind jetzt
-        // architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als dichte, harte Stein-Struktur
-        // resoniert „architecture" STÄRKER als „soul". V18.181-merge-Λ Sub 3c (V9.56-i — Test wandert):
-        // die Λ.1-livingCenterY-Heilung (V18.173) klemmt _isBodyShaped DIREKT — ein stein-tempel hat keine
-        // lebendige Masse → !_isBodyShaped → kein Resonanz-Vergleich nötig. Der Test akzeptiert beide
-        // Heilungs-Pfade: Λ.1 direkt (tvBody === false) ODER V17.69-Resonanz-Vorrang (archScore > soulScore
-        // bei body-förmig). Beide ergeben dasselbe Resultat: templeHealed/felsbogenHealed sind architecture.
-        out.templeHealed = r.computeBlueprintRole(blu.temple) === "architecture";
+        // (2) DER HEAL (Schöpfer-Wahl „jetzt heilen") — die Säulen-Klasse (tor_basis-Substanz) + felsbogen
+        // WAREN soul (body-förmig), sind architecture: ihre Geometrie ist body-förmig (bodyShape=1), aber als
+        // dichte, harte Stein-Struktur resoniert „architecture" STÄRKER als „soul". V18.181-merge-Λ Sub 3c
+        // (V9.56-i — Test wandert): die Λ.1-livingCenterY-Heilung (V18.173) klemmt _isBodyShaped DIREKT — ein
+        // stein-Bau hat keine lebendige Masse → !_isBodyShaped → kein Resonanz-Vergleich nötig. Der Test
+        // akzeptiert beide Heilungs-Pfade: Λ.1 direkt (tvBody === false) ODER V17.69-Resonanz-Vorrang
+        // (archScore > soulScore bei body-förmig). Beide ergeben dasselbe Resultat: architecture.
+        out.templeHealed = r.computeBlueprintRole(templeFix) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
-        const tvBody = r._isBodyShaped(blu.temple);
+        const tvBody = r._isBodyShaped(templeFix);
         const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
         const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
         out.healMechanism = tvBody === false || archScore > soulScore;
 
-        // (3) DER WÄCHTER — die 12 Form-Fallback-Built-ins, Baseline eingefroren (temple/felsbogen jetzt architecture)
+        // (3) DER WÄCHTER — die Form-Fallback-Built-ins, Baseline eingefroren (felsbogen jetzt architecture).
+        // AUSLÖSCHUNGS-WELLE — village/temple sind PHYSISCH gefallen; die 8 lebenden Arch-Built-ins tragen die Baseline.
         const wantArch = [
-            "village",
             "waterfall",
             "stein_block",
             "damm",
@@ -5805,7 +5815,6 @@ async function checkBandV1769RoleResonance(ctx) {
             "kristall_geode",
             "glutbrunnen",
             "felsturm",
-            "temple",
             "felsbogen",
         ];
         out.allArch = wantArch.every((n) => r.computeBlueprintRole(blu[n]) === "architecture");
@@ -5889,11 +5898,11 @@ async function checkBandV1769RoleResonance(ctx) {
         res.vectorHasSpatial
     );
     check(
-        "V17.69 R3 DER HEAL: temple + felsbogen sind jetzt architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
+        "V17.69 R3 DER HEAL: Säulen-Klasse (tor_basis-Substanz) + felsbogen sind architecture (waren soul) — body-förmig, aber als dichte Stein-Struktur resoniert architecture STÄRKER als soul",
         res.templeHealed && res.felsbogenHealed && res.healMechanism
     );
     check(
-        "V17.69 R3 DER WÄCHTER: die 12 Form-Fallback-Built-ins emergieren auf der Baseline (10 architecture; M2: die 2 Bäume jetzt auch — bulk nimmt dem Laub die Trank-Resonanz)",
+        "V17.69 R3 DER WÄCHTER: die Form-Fallback-Built-ins emergieren auf der Baseline (8 architecture; M2: die 2 Bäume jetzt auch — bulk nimmt dem Laub die Trank-Resonanz)",
         res.allArch && res.baeumeArchitecture
     );
     check(
@@ -6274,12 +6283,12 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
         const topRes = r._blueprintResonance(r._blueprintProductVector(topHeavyVeh), sigV);
         o.truthBand = r._stability(topHeavyVeh).margin < r._stability(veh).margin && topRes < vehRes; // kippliges Fahrzeug schwächer
         // ── Ω-L2 KEINE Live-Rollen-Verschiebung: Built-ins bleiben (domain-fest) ──
+        // AUSLÖSCHUNGS-WELLE — temple/fahrzeug_wagen fielen; die lebenden Built-ins tragen die Probe
+        // (stein_block=architecture · welt_portal=portal · reittier_holzross=vehicle, nicht-vakuös).
         o.builtinsHold =
-            r.computeBlueprintRole(r.state.blueprints.temple) === "architecture" &&
+            r.computeBlueprintRole(r.state.blueprints.stein_block) === "architecture" &&
             r.computeBlueprintRole(r.state.blueprints.welt_portal) === "portal" &&
-            (r.state.blueprints.fahrzeug_wagen
-                ? r.computeBlueprintRole(r.state.blueprints.fahrzeug_wagen) === "vehicle"
-                : true);
+            r.computeBlueprintRole(r.state.blueprints.reittier_holzross) === "vehicle";
         // ── Ω-L3 Geltungsbereich-Markierung ──
         o.l3Marks =
             C.AXIS_CLASS &&
@@ -6287,7 +6296,7 @@ async function checkBandOmegaPhysisSaeuleI_II(ctx) {
             C.AXIS_CLASS.magieleitung === "konvention" &&
             C.AXIS_CLASS.spread === "form";
         // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
-        const why = r._blueprintRoleWhy(r.state.blueprints.fahrzeug_wagen || veh);
+        const why = r._blueprintRoleWhy(r.state.blueprints.reittier_holzross || veh);
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
         return o;
     });
@@ -6437,8 +6446,10 @@ async function checkBandOmegaGrammatik(ctx) {
         const r = window.anazhRealm,
             C = r.constructor;
         const o = {};
-        // ── Ω-B1/B4 der klassische Tempel (der Welt-Tempel ist eine VARIANTE — dorisch ODER ionisch) ──
-        const temple = r.state.blueprints.temple;
+        // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
+        // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
+        // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt (V9.56-i).
+        const temple = { parts: r._buildClassicalTemple("dorisch") };
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
         const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
         const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
@@ -6447,11 +6458,19 @@ async function checkBandOmegaGrammatik(ctx) {
             temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
         o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length === 2; // geschlossener Giebel
         o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
-        // Ω-B4 GENERATIV: N Seeds → N verschiedene Tempel, ALLE physik-garant
+        // Ω-B4 GENERATIV: N Ordnungen×Parameter → N verschiedene Tempel, ALLE physik-garant.
+        // (Der _classicalTempleVariant-Seed-Roller fiel; die Grammatik selbst — Ordnung ×
+        // columnsFront — spannt den Varianten-Raum, jede Ausprägung bleibt physik-garant.)
         const sigs = new Set();
         let varStand = true;
-        for (const s of ["a1", "b2", "c3", "d4", "e5"]) {
-            const bp = { parts: r._classicalTempleVariant(s) };
+        for (const [ordName, nFront] of [
+            ["dorisch", 6],
+            ["ionisch", 6],
+            ["dorisch", 4],
+            ["ionisch", 8],
+            ["dorisch", 8],
+        ]) {
+            const bp = { parts: r._buildClassicalTemple(ordName, { columnsFront: nFront }) };
             const sh = bp.parts.filter((p) => p.shape === "flutedColumn");
             sigs.add(bp.parts.length + ":" + (sh.length ? sh[0].flutes : 0));
             if (r._stability(bp).inside !== true || r._failsUnderLoad(bp).buckles !== false) varStand = false;
@@ -6494,8 +6513,11 @@ async function checkBandOmegaGrammatik(ctx) {
                     { shape: "box", material: "stein", size: { x: 8, y: 6, z: 0.34 }, position: { x: 0, y: 3, z: 0 } },
                 ],
             }).buckles === false;
-        // ── Ω-B2 die Oakeshott-Klinge ──
-        const sword = r.state.blueprints.geraet_schwert;
+        // ── Ω-B2 die Oakeshott-Klinge — AUSLÖSCHUNGS-WELLE: der geraet_schwert-Blueprint fiel;
+        // seine Judge-Substanz lebt eingefroren in KIND_SUBSTANCE.geraet_schwert (bladeProfile
+        // mit Verjüngung + Hohlkehle) — der Test liest die Substanz-Zeile.
+        const KSog = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const sword = KSog.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KSog.geraet_schwert.parts)) } : null;
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
         o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
@@ -6523,7 +6545,10 @@ async function checkBandOmegaGrammatik(ctx) {
         res.templeOk && res.doricShafts
     );
     check("Ω-B1: Giebel-Dach + TYMPANON (geschlossen) + zwei Ordnungen", res.pediment && res.tympanon && res.orders);
-    check("⟡ Ω-B4 GENERATIV: N Seeds → N verschiedene Tempel, alle physik-garant", res.variantsDistinct === true);
+    check(
+        "⟡ Ω-B4 GENERATIV: N Ordnungen×Parameter → N verschiedene Tempel, alle physik-garant",
+        res.variantsDistinct === true
+    );
     check("Ω-B1: die flutedColumn-Geometrie baut (Entasis + Kanneluren, EINE Mesh)", res.flutedGeo === true);
     check("⟡ Ω-B1 PHYSIK-GARANT: der Tempel steht + liest als Bauwerk", res.templeStands && res.templeRole);
     check(
@@ -6535,7 +6560,7 @@ async function checkBandOmegaGrammatik(ctx) {
         res.overSlenderBuckles && res.wallNoBuckle
     );
     check(
-        "Ω-B2: das Schwert ist eine echte Klinge (bladeProfile: Verjüngung + Hohlkehle)",
+        "Ω-B2: die Schwert-Substanz (KIND_SUBSTANCE) ist eine echte Klinge (bladeProfile: Verjüngung + Hohlkehle)",
         res.realBlade && res.oakeshott
     );
     check("Ω-B2: die Klingen-Geometrie baut; liest als gehaltene Klinge", res.bladeGeo && res.swordImplement);
@@ -6573,11 +6598,17 @@ async function checkBandV1772Library(ctx) {
         const blu = r.state.blueprints;
         const p = r.state.player;
 
-        const G = blu.geraet_spitzhacke;
+        // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; die Werkzeug-Substanz lebt
+        // eingefroren in KIND_SUBSTANCE. Der Test registriert ein deterministisches Test-Blueprint
+        // aus der Substanz-Zeile (foundry-unabhängig) und räumt es am Ende wieder auf.
+        const KS72 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (blu._t_v1772) delete blu._t_v1772;
+        blu._t_v1772 = { name: "_t_v1772", parts: JSON.parse(JSON.stringify(KS72.geraet_spitzhacke.parts)) };
+        const G = blu._t_v1772;
         const A = blu.ruestung_brustpanzer;
         const T = blu.trank_lebenssaft;
         const V = blu.avatar_waechter;
-        out.allExist = !!(G && A && T && V) && G.builtIn && A.builtIn && T.builtIn && V.builtIn;
+        out.allExist = !!(KS72.geraet_spitzhacke && A && T && V) && A.builtIn && T.builtIn && V.builtIn;
 
         // (1) die deklarierten Rollen: Gerät rollenlos (gehalten, W2-B), die drei anderen deklariert.
         out.rolesDeclared = G.role === undefined && A.role === "armor" && T.role === "consumable" && V.role === "soul";
@@ -6592,9 +6623,9 @@ async function checkBandV1772Library(ctx) {
         out.geraetIsImplement = ["weapon", "tool"].includes(r.computeBlueprintRole(G)); // V17.83 U4: die Spitzhacke (spitz+gestreckt) → Gerät aus der Form
 
         // (3) das Role-GATE beißt: die rollen-spezifischen Mach-Akte lehnen das rollenlose Gerät ab.
-        out.armorGate = r.forgeArmor("geraet_spitzhacke").reason === "not_marked_as_armor";
-        out.brewGate = r.brewConsumable("geraet_spitzhacke").reason === "not_a_consumable";
-        out.avatarGate = r.forgeAvatar("geraet_spitzhacke").reason === "blueprint_not_soul";
+        out.armorGate = r.forgeArmor("_t_v1772").reason === "not_marked_as_armor";
+        out.brewGate = r.brewConsumable("_t_v1772").reason === "not_a_consumable";
+        out.avatarGate = r.forgeAvatar("_t_v1772").reason === "blueprint_not_soul";
 
         // (4) kein Worldgen-Litter: deliberate Items (kein `instanced` → nicht in der Mass-Spawn-Bahn).
         out.noLitter = !G.instanced && !A.instanced && !T.instanced && !V.instanced;
@@ -6608,8 +6639,8 @@ async function checkBandV1772Library(ctx) {
         if (typeof r.setGameMode === "function") r.setGameMode("schöpfer");
         else r.state.worldMeta.gameMode = "schöpfer";
 
-        const fg = r.fertigeBlueprint("geraet_spitzhacke");
-        out.geraetForged = fg.ok === true && p.equipped.held === "geraet_spitzhacke";
+        const fg = r.fertigeBlueprint("_t_v1772");
+        out.geraetForged = fg.ok === true && p.equipped.held === "_t_v1772";
         const fa = r.fertigeBlueprint("ruestung_brustpanzer");
         out.armorForged = fa.ok === true && p.equipped.armor === "ruestung_brustpanzer";
         const ft = r.fertigeBlueprint("trank_lebenssaft");
@@ -6621,7 +6652,7 @@ async function checkBandV1772Library(ctx) {
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
         if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"]; // V17.74 — kein Soul-Leck für spätere Bands
-        for (const bn of ["geraet_spitzhacke", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
+        for (const bn of ["_t_v1772", "ruestung_brustpanzer", "trank_lebenssaft", "avatar_waechter"]) {
             if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
         }
         r.applyPlayerSoul(savedSoul);
@@ -6629,11 +6660,12 @@ async function checkBandV1772Library(ctx) {
             p.equipped = savedEquip;
             p.boosts = savedBoosts;
         }
+        delete blu._t_v1772; // Test-Blueprint aufräumen (kein Katalog-Leck)
         if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
         return out;
     });
     check(
-        "V17.72 A1: die vier Bibliotheks-Baupläne existieren als Built-in-Saat (Gerät/Rüstung/Trank/Avatar)",
+        "V17.72 A1: die drei Bibliotheks-Built-ins (Rüstung/Trank/Avatar) + die Geräte-Substanz (KIND_SUBSTANCE) existieren",
         res.allExist
     );
     check(
@@ -6681,14 +6713,23 @@ async function checkBandV1773HeldMesh(ctx) {
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
 
+        // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
+        // eingefrorenen Werkzeug-Substanz (KIND_SUBSTANCE, foundry-unabhängig, am Ende geräumt).
+        const KS73 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_v1773) delete r.state.blueprints._t_v1773;
+        r.state.blueprints._t_v1773 = {
+            name: "_t_v1773",
+            parts: JSON.parse(JSON.stringify(KS73.geraet_spitzhacke.parts)),
+        };
+
         // sauberer Start
         r.equipHeld(null);
         out.startNoMesh = !(pm.userData && pm.userData.heldMesh);
 
-        // (1) ein echtes Geräte-Bauplan (die V17.72-Bibliothek) → Mesh erscheint, am Avatar geparentet
-        const eq1 = r.equipHeld("geraet_spitzhacke");
+        // (1) ein echtes Geräte-Bauplan (Werkzeug-Substanz) → Mesh erscheint, am Avatar geparentet
+        const eq1 = r.equipHeld("_t_v1773");
         const m1 = pm.userData && pm.userData.heldMesh;
-        out.equipOk = eq1.ok === true && p.equipped.held === "geraet_spitzhacke";
+        out.equipOk = eq1.ok === true && p.equipped.held === "_t_v1773";
         out.meshBuilt = !!m1 && Array.isArray(m1.children) && m1.children.length > 0;
         const parts = pm.userData && pm.userData.parts;
         const armAnchor = parts && (parts.rightArm || parts.rightWing);
@@ -6700,9 +6741,9 @@ async function checkBandV1773HeldMesh(ctx) {
         out.scaled = !!m1 && m1.scale.x > 0 && m1.scale.x <= r.constructor.HELD_MESH.maxScale;
 
         // (3) Equip-Wechsel: anderer Bauplan → das Mesh wechselt (neues Objekt) + das alte ist
-        //     aus dem Graph (kein Leak). `village` (große Struktur) testet zugleich die Skalierung.
+        //     aus dem Graph (kein Leak). `waterfall` (große Struktur) testet zugleich die Skalierung.
         const m1uuid = m1 && m1.uuid;
-        r.equipHeld("village");
+        r.equipHeld("waterfall");
         const m2 = pm.userData && pm.userData.heldMesh;
         out.swapped = !!m2 && m2.uuid !== m1uuid;
         out.oldDetached = !m1 || m1.parent === null;
@@ -6719,7 +6760,7 @@ async function checkBandV1773HeldMesh(ctx) {
 
         // (6) KONSUM — KÖRPER-WECHSEL: Gerät halten, Seele wechseln → das Mesh re-attached am NEUEN
         //     Körper (Restore-/Seelen-sicher; deckt auch den loadState-Pfad).
-        r.equipHeld("geraet_spitzhacke");
+        r.equipHeld("_t_v1773");
         r.applyPlayerSoul(savedSoul === "phoenix" ? "human" : "phoenix");
         const pm2 = r.state.playerMesh;
         const m3 = pm2.userData && pm2.userData.heldMesh;
@@ -6730,6 +6771,7 @@ async function checkBandV1773HeldMesh(ctx) {
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
+        delete r.state.blueprints._t_v1773; // Test-Blueprint aufräumen
         if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
         return out;
     });
@@ -6738,7 +6780,7 @@ async function checkBandV1773HeldMesh(ctx) {
         res.hasPlayerMesh && res.startNoMesh
     );
     check(
-        "V17.73 S9: ein Geräte-Bauplan (geraet_spitzhacke) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
+        "V17.73 S9: ein Geräte-Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) erzeugt ein Hand-Mesh, an den Avatar geparentet (Arm/Flügel/Wurzel)",
         res.equipOk && res.meshBuilt && res.parented && res.onAnchor
     );
     check("V17.73 S9: das Hand-Mesh ist auf greifbare Hand-Größe skaliert (0 < scale ≤ maxScale)", res.scaled);
@@ -6779,31 +6821,42 @@ async function checkBandV1774UseByRole(ctx) {
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
         if (r.state.customSouls) delete r.state.customSouls["bp_avatar_waechter"];
 
+        // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel; Test-Blueprint aus der Werkzeug-Substanz
+        // (KIND_SUBSTANCE, deterministisch, am Ende geräumt). Das Label trägt „Spitzhacke",
+        // damit die Rezeptbuch-Sichtbarkeits-Probe (5) dieselbe Wahrheit liest.
+        const KS74 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (blu._t_v1774) delete blu._t_v1774;
+        blu._t_v1774 = {
+            name: "_t_v1774",
+            label: "Spitzhacke (Substanz)",
+            parts: JSON.parse(JSON.stringify(KS74.geraet_spitzhacke.parts)),
+        };
+
         // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
         const kind = (n) => r._blueprintUseKind(blu[n]);
-        out.kindGeraet = kind("geraet_spitzhacke") === "hold";
+        out.kindGeraet = kind("_t_v1774") === "hold";
         out.kindArmor = kind("ruestung_brustpanzer") === "wear";
         out.kindTrank = kind("trank_lebenssaft") === "drink";
         out.kindAvatar = kind("avatar_waechter") === "embody";
-        // die DEFAULT-Hotbar MUSS „place" bleiben — Wasserfall ist der Test der größen-bewussten Spanne
-        // (Klippe pos y=4, aber 8 m hoch; positions-only läse 3.8 < 6 → fälschlich „hold").
+        // die DEFAULT-Hotbar (stein_block·waterfall·damm) MUSS „place" bleiben — Wasserfall ist der Test
+        // der größen-bewussten Spanne (Klippe pos y=4, aber 8 m hoch; positions-only läse 3.8 < 6 → fälschlich „hold").
         out.defaultHotbarPlace =
-            kind("village") === "place" && kind("temple") === "place" && kind("waterfall") === "place";
+            kind("stein_block") === "place" && kind("damm") === "place" && kind("waterfall") === "place";
 
         // (2) HOTBAR-GATE — Gerät → IN DIE HAND, kein Phantom
         r.equipHeld(null);
         r._clearBuildMode();
-        r.setHotbarSlot(0, "geraet_spitzhacke");
+        r.setHotbarSlot(0, "_t_v1774");
         r.selectHotbarSlot(0);
         const bm = r.state.buildMode;
-        out.deviceToHand = p.equipped.held === "geraet_spitzhacke" && bm.active === false && !bm.phantomMesh;
+        out.deviceToHand = p.equipped.held === "_t_v1774" && bm.active === false && !bm.phantomMesh;
 
         // (3) HOTBAR-TOGGLE — schon gehaltenen Slot re-auswählen → ablegen (Faust)
         r.selectHotbarSlot(0);
         out.toggleOff = p.equipped.held == null;
 
         // (4) HOTBAR-GATE — Struktur → Platzier-Phantom (wie bisher, kein Regress)
-        r.setHotbarSlot(1, "village");
+        r.setHotbarSlot(1, "waterfall");
         r.selectHotbarSlot(1);
         out.structureToPhantom = bm.active === true && !!bm.phantomMesh;
         r._clearBuildMode(); // das Test-Phantom abräumen
@@ -6874,6 +6927,7 @@ async function checkBandV1774UseByRole(ctx) {
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
         for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
+        delete blu._t_v1774; // Test-Blueprint aufräumen
         if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
@@ -6884,7 +6938,7 @@ async function checkBandV1774UseByRole(ctx) {
         res.kindGeraet && res.kindArmor && res.kindTrank && res.kindAvatar
     );
     check(
-        "V17.74 Welle 1b: die DEFAULT-Hotbar (Dorf/Tempel/Wasserfall) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
+        "V17.74 Welle 1b: die DEFAULT-Hotbar (Felsblock/Wasserfall/Damm) bleibt platzierbar — die groessen-bewusste Spanne faengt den 8-m-Wasserfall (kein Gate-Regress)",
         res.defaultHotbarPlace
     );
     check(
@@ -6971,15 +7025,18 @@ async function checkBandV1775MakeActCost(ctx) {
         const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "avatar_waechter") : null;
         out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
 
-        // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei)
-        const tb = r.state.blueprints["geraet_spitzhacke"];
-        const savedForged = tb ? tb.forgedPrecision : undefined;
-        if (tb) tb.forgedPrecision = 0.8;
-        out.forgedFree = r._makeActCostSuffix("geraet_spitzhacke") === "";
-        if (tb) {
-            if (savedForged === undefined) delete tb.forgedPrecision;
-            else tb.forgedPrecision = savedForged;
-        }
+        // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei).
+        // AUSLÖSCHUNGS-WELLE — Test-Blueprint aus der Werkzeug-Substanz (KIND_SUBSTANCE).
+        const KS75 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_v1775) delete r.state.blueprints._t_v1775;
+        r.state.blueprints._t_v1775 = {
+            name: "_t_v1775",
+            parts: JSON.parse(JSON.stringify(KS75.geraet_spitzhacke.parts)),
+        };
+        const tb = r.state.blueprints["_t_v1775"];
+        tb.forgedPrecision = 0.8;
+        out.forgedFree = r._makeActCostSuffix("_t_v1775") === "";
+        delete r.state.blueprints._t_v1775;
 
         // restore
         setMode(savedMode);
@@ -7720,8 +7777,16 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const DEFLEN = r._defaultPartOpChain().length;
-        // (#3a) der BUILT-IN rollenlose Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default
-        const spit = r.state.blueprints["geraet_spitzhacke"];
+        // (#3a) ein ROLLENLOSER Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default.
+        // AUSLÖSCHUNGS-WELLE — der builtIn geraet_spitzhacke fiel; die Werkzeug-Substanz
+        // (KIND_SUBSTANCE) trägt dieselbe Probe als registriertes Test-Blueprint (rollenlos).
+        const KS85 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_v1785_spitz) delete r.state.blueprints._t_v1785_spitz;
+        r.state.blueprints._t_v1785_spitz = {
+            name: "_t_v1785_spitz",
+            parts: JSON.parse(JSON.stringify(KS85.geraet_spitzhacke.parts)),
+        };
+        const spit = r.state.blueprints["_t_v1785_spitz"];
         out.spitRoleField = spit ? spit.role || "(undefined)" : "(missing)";
         out.spitDisplay = spit ? r._displayRole(spit) : "(missing)";
         out.spitEmergent = spit ? r.computeBlueprintRole(spit) : "(missing)";
@@ -7732,7 +7797,7 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         out.armorStaysArmor = out.armorDisplay === "armor";
         // (#3c) cloneBlueprint materialisiert die emergente Rolle → ein frischer Spitzhacke-Klon trägt „tool"
         delete r.state.blueprints["_v1785_clone"];
-        r.cloneBlueprint("geraet_spitzhacke", "_v1785_clone");
+        r.cloneBlueprint("_t_v1785_spitz", "_v1785_clone");
         const clone = r.state.blueprints["_v1785_clone"];
         out.cloneRoleField = clone ? clone.role || "(undefined)" : "(missing)";
         out.cloneCarriesTool = clone && clone.role === "tool";
@@ -7769,17 +7834,18 @@ async function checkBandV1785RoleDisplayAndUndo(ctx) {
         out.opCountReverted = out.opCountAfterRemove === DEFLEN;
         out.roleAfterRemove = r.computeBlueprintRole(ub);
         out.roleReverted = out.roleAfterRemove === out.roleBeforeApply;
-        // (#1c) removePartOp lehnt einen Built-in ab
-        const remBuiltin = r.removePartOp("geraet_spitzhacke", 0);
+        // (#1c) removePartOp lehnt einen Built-in ab (ruestung_brustpanzer — lebendes builtIn)
+        const remBuiltin = r.removePartOp("ruestung_brustpanzer", 0);
         out.remBuiltinRejected = remBuiltin.ok === false && remBuiltin.reason === "cannot_modify_builtin";
         // restore
+        delete r.state.blueprints["_t_v1785_spitz"];
         delete r.state.blueprints["_v1785_undo"];
         r.state.player.tools = savedTools;
         if (typeof r.setGameMode === "function") r.setGameMode(prevMode);
         return out;
     });
     check(
-        'V17.85 #3: ein rollenloser Built-in-Bauplan (Spitzhacke) zeigt seine EMERGENTE Form-Rolle „tool", nicht den „architecture"-Default',
+        'V17.85 #3: ein rollenloser Bauplan (Spitzhacken-Substanz aus KIND_SUBSTANCE) zeigt seine EMERGENTE Form-Rolle „tool", nicht den „architecture"-Default',
         res.spitShowsTool,
         `display=${res.spitDisplay} (Feld=${res.spitRoleField}, emergent=${res.spitEmergent})`
     );
@@ -7836,15 +7902,17 @@ async function checkBandV1786WorkshopCoherence(ctx) {
                 capRowChips: capChipEls.map((c) => c.textContent),
             };
         };
-        // (1) der Schwert-Samen existiert + ist eine Klinge (schneidet) + ein gehaltenes Implement
-        const sw = r.state.blueprints["geraet_schwert"];
-        out.schwertExists = !!(sw && sw.builtIn);
+        // (1) der Schwert-Samen — AUSLÖSCHUNGS-WELLE: der Blueprint fiel, die Judge-Substanz lebt
+        // eingefroren in KIND_SUBSTANCE.geraet_schwert (Klinge, schneidet, gehaltenes Implement).
+        const KS86 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const sw = KS86.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KS86.geraet_schwert.parts)) } : null;
+        out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
         out.schwertLabel = sw ? r._implementAffordanceLabel(sw) : "(missing)";
         out.schwertCuts = out.schwertLabel === "Klinge"; // ein Schwert SCHNEIDET, ist kein Brecher
         // die Spitzhacke bleibt ausgewogen/Werkzeug (kein Regress, der Substanz-Unterschied bleibt)
-        const sp = r.state.blueprints["geraet_spitzhacke"];
+        const sp = KS86.geraet_spitzhacke ? { parts: JSON.parse(JSON.stringify(KS86.geraet_spitzhacke.parts)) } : null;
         out.spitzLabel = sp ? r._implementAffordanceLabel(sp) : "(missing)";
         // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
         const esse = r.state.blueprints["esse"];
@@ -7859,7 +7927,7 @@ async function checkBandV1786WorkshopCoherence(ctx) {
         return out;
     });
     check(
-        "V17.86 Samen: das Schwert existiert als Built-in + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
+        "V17.86 Samen: die Schwert-Substanz (KIND_SUBSTANCE) existiert + emergiert als gehaltenes Gerät (tool/weapon aus der Klingen-Form)",
         res.schwertExists && res.schwertHeld,
         `role=${res.schwertRole}`
     );
@@ -7925,8 +7993,8 @@ async function checkBandV1787UndoRedo(ctx) {
         r.undoBlueprintEdit("_ur");
         out.opUndoReverts =
             opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
-        // Built-in lehnt ab (unveränderlich → keine Geschichte)
-        out.builtinReject = r.undoBlueprintEdit("geraet_spitzhacke").ok === false;
+        // Built-in lehnt ab (unveränderlich → keine Geschichte) — lebendes builtIn: Brustpanzer
+        out.builtinReject = r.undoBlueprintEdit("ruestung_brustpanzer").ok === false;
         // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
         const snap = typeof r.buildStateSnapshot === "function" ? r.buildStateSnapshot() : {};
         out.notPersisted = snap.blueprintEditHistory === undefined;
@@ -8114,9 +8182,15 @@ async function checkBandV1789WorkshopReadout(ctx) {
         const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
         if (tab) tab.click();
         delete blu["_ab_clone"];
-        // ein WAFFEN-Klon (geraet_schwert) — eine Ausrüstungs-Rolle, die Werte hat (village = architecture
-        // → bewusst KEINE Werte-Zeile); zugleich nicht-builtIn → der Undo/Redo-Verlauf rendert.
-        r.cloneBlueprint("geraet_schwert", "_ab_clone");
+        // ein WAFFEN-Klon (Schwert-Substanz aus KIND_SUBSTANCE — der geraet_schwert-Blueprint fiel) —
+        // eine Ausrüstungs-Rolle, die Werte hat (architecture → bewusst KEINE Werte-Zeile);
+        // zugleich nicht-builtIn → der Undo/Redo-Verlauf rendert. Klon-Quelle registrieren,
+        // klonen (materialisiert die emergente Rolle), Quelle räumen.
+        const KS89 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (blu._t_ab_src) delete blu._t_ab_src;
+        blu._t_ab_src = { name: "_t_ab_src", parts: JSON.parse(JSON.stringify(KS89.geraet_schwert.parts)) };
+        r.cloneBlueprint("_t_ab_src", "_ab_clone");
+        delete blu._t_ab_src;
         r.selectBlueprintForEdit("_ab_clone");
         r._renderWorkshopDOM();
         // V18.44 Spec-Sheet: die Werte sind der Fähigkeits-Chip-Streifen (.spec-stat-strip).
@@ -8134,7 +8208,7 @@ async function checkBandV1789WorkshopReadout(ctx) {
             for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
                 delete r.state.blueprintEditHistory[n];
         }
-        r.selectBlueprintForEdit("village");
+        r.selectBlueprintForEdit("stein_block");
         if (r.setGameMode) r.setGameMode(prevMode);
         return out;
     });
@@ -8232,8 +8306,10 @@ async function checkBandV1790Recalibration(ctx) {
         delete blu._rcheavy;
 
         // (4) FACETTE 4 — ROLLE scharf: Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge).
-        out.spitzhackeTool = r.computeBlueprintRole(blu.geraet_spitzhacke) === "tool";
-        out.schwertWeapon = r.computeBlueprintRole(blu.geraet_schwert) === "weapon";
+        // AUSLÖSCHUNGS-WELLE — die Blueprints fielen; die Substanz-Zeilen (KIND_SUBSTANCE) tragen die Probe.
+        const KS90 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        out.spitzhackeTool = r.computeBlueprintRole({ parts: KS90.geraet_spitzhacke.parts }) === "tool";
+        out.schwertWeapon = r.computeBlueprintRole({ parts: KS90.geraet_schwert.parts }) === "weapon";
         // ein lebendiger Körper bleibt soul, ein dichter Klotz bleibt architecture (kein Regress durch livingBody)
         out.bladeWeapon = r.computeBlueprintRole(blade("eisen")) === "weapon";
 
@@ -8393,10 +8469,11 @@ async function checkBandWaves1to3(ctx) {
         );
         out.defineBlueprintWorks =
             res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
-        // B — Built-in lässt sich nicht überschreiben
-        const builtInBefore = r.state.blueprints.village && r.state.blueprints.village.parts.length;
-        r.dslRun(["define_blueprint", "village", [{ shape: "box" }]], { source: "test" });
-        out.builtInProtected = r.state.blueprints.village && r.state.blueprints.village.parts.length === builtInBefore;
+        // B — Built-in lässt sich nicht überschreiben (stein_block — lebendes builtIn)
+        const builtInBefore = r.state.blueprints.stein_block && r.state.blueprints.stein_block.parts.length;
+        r.dslRun(["define_blueprint", "stein_block", [{ shape: "box" }]], { source: "test" });
+        out.builtInProtected =
+            r.state.blueprints.stein_block && r.state.blueprints.stein_block.parts.length === builtInBefore;
         // C — Selbst-Referenz wird verboten
         delete r.state.blueprints["self-ref"];
         r.dslRun(["define_blueprint", "self-ref", [{ shape: "blueprint", refName: "self-ref" }]], {
@@ -8634,8 +8711,8 @@ async function checkBandWave4(ctx) {
         });
         out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
         out.dslLogsDefinedEvent = runRes.log.some((e) => e.event === "defined_material");
-        // Built-in-Bauplan-Parts haben material gesetzt
-        const villageParts = r.state.blueprints.village.parts;
+        // Built-in-Bauplan-Parts haben material gesetzt (stein_block — lebendes builtIn)
+        const villageParts = r.state.blueprints.stein_block.parts;
         out.builtInPartsHaveMaterial = villageParts.every((p) => typeof p.material === "string" && mats[p.material]);
         // Save-Roundtrip: eigenes Material überlebt
         const snap = r.buildStateSnapshot();
@@ -8930,8 +9007,8 @@ async function checkBandWave4(ctx) {
         const ap3 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
         r.state.player.tools.push("drehbank-meißel"); // restore
-        // Built-in protection
-        const ap4 = r.applyOpToPart("village", 0, "schmiede-hammer");
+        // Built-in protection (stein_block — lebendes builtIn; die Wand greift VOR der Material-Kompat)
+        const ap4 = r.applyOpToPart("stein_block", 0, "schmiede-hammer");
         out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
         // DSL-Op apply_op
@@ -9793,8 +9870,8 @@ async function checkBandWave5(ctx) {
         // addConnectionToBlueprint
         const addR = r.addConnectionToBlueprint("w5a-test", { type: "welding", partA: 0, partB: 1 });
         out.addConnectionOk = addR.ok && r.state.blueprints["w5a-test"].connections.length === 1;
-        // Built-in protection
-        const addBuiltin = r.addConnectionToBlueprint("village", { type: "welding", partA: 0, partB: 1 });
+        // Built-in protection (stein_block — lebendes builtIn; die Wand greift VOR der Index-Validierung)
+        const addBuiltin = r.addConnectionToBlueprint("stein_block", { type: "welding", partA: 0, partB: 1 });
         out.builtinBlocked = !addBuiltin.ok && addBuiltin.reason === "cannot_modify_builtin";
         // remove
         const rmR = r.removeConnectionFromBlueprint("w5a-test", 0);
@@ -9948,8 +10025,8 @@ async function checkBandWave5(ctx) {
         // Bad opName
         const metaBadName = r.setBlueprintToolMeta("w5c-lathe", "böser Name!", "plastic");
         out.rejectsInvalidName = !metaBadName.ok && metaBadName.reason === "invalid_op_name";
-        // Built-in protected
-        const metaBuiltin = r.setBlueprintToolMeta("village", "lathe", "subtractive");
+        // Built-in protected (stein_block — lebendes builtIn)
+        const metaBuiltin = r.setBlueprintToolMeta("stein_block", "lathe", "subtractive");
         out.builtinProtected = !metaBuiltin.ok && metaBuiltin.reason === "cannot_modify_builtin";
 
         // registerBlueprintAsTool
@@ -15021,24 +15098,31 @@ async function checkBandLateMultiUser(ctx) {
             Number.isFinite(dammPattern.program[2][3]) &&
             Number.isInteger(dammPattern.program[3]);
 
-        // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch
-        // (zwei Spawn-Aufrufe mit gleichem Seed liefern dieselbe Architektur-Geometrie)
-        const beforeArchCount = r.state.architectures.length;
-        r.dslRun(["spawn_village", ["at", 50, 0, 50], 12345], { source: "remote:peerX" });
-        const arch1 = r.state.architectures[r.state.architectures.length - 1];
-        r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
-        const arch2 = r.state.architectures[r.state.architectures.length - 1];
-        out.seedDeterminismHolds = arch1 && arch2 && arch1.seed === arch2.seed && arch1.seed === 12345;
-        // Cleanup
-        r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+        // 8./9. AUSLÖSCHUNGS-WELLE — spawn_village hebt jetzt das Studio-DORF (spawnSettlement,
+        // async über den Worker) statt einen village-Architektur-Eintrag zu bauen. Die INTENT
+        // bleibt Multi-User-Sync: der Empfänger ruft mit dem SENDER-Seed und der SENDER-Position.
+        // Der Test fängt die spawnSettlement-Argumente am Chokepoint (Stub, deterministisch).
+        const spCalls = [];
+        const origSpawnSettlement = r.spawnSettlement;
+        r.spawnSettlement = function (o) {
+            spCalls.push(o);
+            return null;
+        };
+        try {
+            // 8. Diskrimination: spawn_village mit FIXEM Seed → deterministisch (der Seed reist 1:1)
+            r.dslRun(["spawn_village", ["at", 50, 0, 50], 12345], { source: "remote:peerX" });
+            r.dslRun(["spawn_village", ["at", 60, 0, 60], 12345], { source: "remote:peerX" });
+            out.seedDeterminismHolds = spCalls.length === 2 && spCalls[0].seed === 12345 && spCalls[1].seed === 12345;
 
-        // 9. spawn_village mit at-Position landet WIRKLICH dort
-        // (Empfänger spawnt am SENDER-Ort, nicht am eigenen Player)
-        r.dslRun(["spawn_village", ["at", 77, 0, -33], 999], { source: "remote:peerY" });
-        const lastArch = r.state.architectures[r.state.architectures.length - 1];
-        out.atPositionRespected =
-            lastArch && lastArch.position && lastArch.position.x === 77 && lastArch.position.z === -33;
-        r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+            // 9. spawn_village mit at-Position landet WIRKLICH dort
+            // (Empfänger spawnt am SENDER-Ort, nicht am eigenen Player)
+            r.dslRun(["spawn_village", ["at", 77, 0, -33], 999], { source: "remote:peerY" });
+            const call3 = spCalls[2];
+            out.atPositionRespected =
+                !!call3 && !!call3.position && call3.position.x === 77 && call3.position.z === -33;
+        } finally {
+            r.spawnSettlement = origSpawnSettlement;
+        }
 
         return out;
     });
@@ -15078,11 +15162,11 @@ async function checkBandLateMultiUser(ctx) {
             ring11V21Results.dammHasSpawnBlueprint
         );
         check(
-            "Ring 11 V2.1: spawn_village(seed) ist deterministisch (gleicher Seed → gleicher Wert)",
+            "Ring 11 V2.1: spawn_village(seed) ist deterministisch (der Sender-Seed reist 1:1 in spawnSettlement)",
             ring11V21Results.seedDeterminismHolds
         );
         check(
-            "Ring 11 V2.1: at-Position wird respektiert (Empfänger spawnt am SENDER-Ort)",
+            "Ring 11 V2.1: at-Position wird respektiert (Empfänger ruft spawnSettlement am SENDER-Ort)",
             ring11V21Results.atPositionRespected
         );
     }
@@ -15311,7 +15395,15 @@ async function checkBandWelle6APolish(ctx) {
         const archX = savedX + 20;
         const archZ = savedZ + 20;
         const beforeArchCount = r.state.architectures.length;
-        const entry = r.spawnArchitecture("temple", { x: archX, y: 0, z: archZ }, { seed: 4242 });
+        // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE)
+        // trägt die Erdungs-Probe als Test-Blueprint (flaches Dach, solide blockerAABBs).
+        const KS6a = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_w6a_haus) delete r.state.blueprints._t_w6a_haus;
+        r.state.blueprints._t_w6a_haus = {
+            name: "_t_w6a_haus",
+            parts: JSON.parse(JSON.stringify(KS6a.haus_basis.parts)),
+        };
+        const entry = r.spawnArchitecture("_t_w6a_haus", { x: archX, y: 0, z: archZ }, { seed: 4242 });
         out.archEntrySpawned = !!entry;
         // DETERMINISMUS-BOGEN P3 — Architektur-Kollision ist feld-nativ via
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
@@ -15377,8 +15469,9 @@ async function checkBandWelle6APolish(ctx) {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
-        // Cleanup: gespawnte Architektur entfernen
+        // Cleanup: gespawnte Architektur + Test-Blueprint entfernen
         r.state.architectures = r.state.architectures.slice(0, beforeArchCount);
+        delete r.state.blueprints._t_w6a_haus;
 
         // V18.279 — der Physik-Selbstheil-DOOM-LOOP ist entfernt: kein per-Frame-Pfad ruft mehr
         // optimizePhysics/processOptimization (heilte einen Render-Freeze nicht, leckte WASM,
@@ -15477,7 +15570,15 @@ async function checkBandWelle6APolish(ctx) {
         let _entryA3 = null;
         let _spawnErrA3 = null;
         try {
-            _entryA3 = r.spawnArchitecture("temple", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
+            // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE) trägt
+            // die „flaches Dach ist nicht steil"-Probe als Test-Blueprint.
+            const KSa3 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            if (r.state.blueprints._t_w6a3_haus) delete r.state.blueprints._t_w6a3_haus;
+            r.state.blueprints._t_w6a3_haus = {
+                name: "_t_w6a3_haus",
+                parts: JSON.parse(JSON.stringify(KSa3.haus_basis.parts)),
+            };
+            _entryA3 = r.spawnArchitecture("_t_w6a3_haus", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         } catch (e) {
             _spawnErrA3 = String((e && e.stack) || e).slice(0, 300);
         }
@@ -15531,6 +15632,7 @@ async function checkBandWelle6APolish(ctx) {
         }
         out.flatBlueprintNotSteep = flatBlueprintNotSteep;
         r.state.architectures = r.state.architectures.slice(0, _beforeArchA3);
+        delete r.state.blueprints._t_w6a3_haus;
         r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
         // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
@@ -15620,7 +15722,7 @@ async function checkBandWelle6APolish(ctx) {
         out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
         out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
 
-        // Funktionaler Test: Build-Modus auf "village"-Slot 0 aktivieren,
+        // Funktionaler Test: Build-Modus auf "stein_block"-Slot 0 aktivieren,
         // Kamera so positionieren dass sie in den Heightfield-Boden
         // schaut, tickBuildMode aufrufen, prüfen dass Phantom im
         // Treffer-Bereich liegt + isStable=true.
@@ -15650,8 +15752,16 @@ async function checkBandWelle6APolish(ctx) {
         const _spawnArchZ = 60;
         const _spawnArchY = 200;
         const _beforeArchA45 = r.state.architectures.length;
+        // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE)
+        // liefert die garantiert-flache Raycast-Fläche als Test-Blueprint.
+        const KSa45 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_w6a45_haus) delete r.state.blueprints._t_w6a45_haus;
+        r.state.blueprints._t_w6a45_haus = {
+            name: "_t_w6a45_haus",
+            parts: JSON.parse(JSON.stringify(KSa45.haus_basis.parts)),
+        };
         const _archEntry = r.spawnArchitecture(
-            "temple",
+            "_t_w6a45_haus",
             { x: _spawnArchX, y: _spawnArchY, z: _spawnArchZ },
             { seed: 4711 }
         );
@@ -15665,7 +15775,7 @@ async function checkBandWelle6APolish(ctx) {
         // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
         r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
         r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
-        // Build-Modus auf Slot 0 (village in Default-Hotbar)
+        // Build-Modus auf Slot 0 (stein_block in Default-Hotbar)
         r.selectHotbarSlot(0);
         out.buildModeActive = r.state.buildMode.active;
         out.phantomExists = !!r.state.buildMode.phantomMesh;
@@ -15689,6 +15799,7 @@ async function checkBandWelle6APolish(ctx) {
         // Cleanup
         r._clearBuildMode();
         r.state.architectures = r.state.architectures.slice(0, _beforeArchA45);
+        delete r.state.blueprints._t_w6a45_haus;
         if (savedCamPos) r.state.camera.position.copy(savedCamPos);
         if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
         r.state.playerMesh.position.copy(savedPlayerPos);
@@ -16542,9 +16653,8 @@ async function checkBandWelle6DSoul(ctx) {
         out.markArmorOk = markResult.ok;
         out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
 
-        // Built-in schützen
-        r.state.blueprints.village.builtIn = true;
-        const markBuiltinResult = r.setBlueprintAsArmor("village");
+        // Built-in schützen (stein_block — lebendes builtIn)
+        const markBuiltinResult = r.setBlueprintAsArmor("stein_block");
         out.markBuiltinRejected = !markBuiltinResult.ok && markBuiltinResult.reason === "cannot_modify_builtin";
 
         // Equip Rüstung
@@ -23645,7 +23755,9 @@ async function checkBandPhasenBF(ctx) {
             });
             const save = { held: eq.held || null, offhand: eq.offhand || null };
             try {
-                const name = r.state.blueprints.geraet_spitzhacke ? "geraet_spitzhacke" : "stein_block";
+                // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel; das foundry-Werkzeug klinge_spitzhacke
+                // (wenn ingested) oder stein_block trägt die Swap-Probe (der Name ist mechanik-egal).
+                const name = r.state.blueprints.klinge_spitzhacke ? "klinge_spitzhacke" : "stein_block";
                 r.equipHeld(name); // equipHeld ist das freie Low-Level-Primitiv (GEBRAUCH)
                 const s1 = r.swapHands();
                 const okA = !!(s1.ok && s1.offhand === name && !s1.held);
@@ -23695,7 +23807,15 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.c7Seeds = (() => {
-            const w = r.state.blueprints.fahrzeug_wagen;
+            // AUSLÖSCHUNGS-WELLE — der fahrzeug_wagen-Blueprint fiel; seine Substanz (inkl.
+            // sitz-connection auf Part 0) lebt eingefroren in KIND_SUBSTANCE.fahrzeug_wagen.
+            const KSc7 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            const w = KSc7.fahrzeug_wagen
+                ? {
+                      parts: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.parts)),
+                      connections: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.connections || [])),
+                  }
+                : null;
             const h = r.state.blueprints.reittier_holzross;
             if (!w || !h) return false;
             const wMv = r._isMoveable(w);
@@ -23815,7 +23935,9 @@ async function checkBandPhasenBF(ctx) {
         // (Eisen-Räder) klassifiziert MIT connections als rad; die Panel-
         // Quelle trägt den connections-Call + die Gelenk-Labels.
         out.c1JointReadout = (() => {
-            const bp = r.state.blueprints && r.state.blueprints.fahrzeug_wagen;
+            // AUSLÖSCHUNGS-WELLE — die Wagen-Substanz (KIND_SUBSTANCE) trägt die rad-Klassifikation.
+            const KSc1 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            const bp = KSc1.fahrzeug_wagen;
             if (!bp) return false;
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
@@ -26331,10 +26453,10 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.removeFromInventory(0, 99);
         out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
 
-        // DSL-Op add_to_inventory
+        // DSL-Op add_to_inventory (damm — lebendes builtIn; der Name ist mechanik-egal)
         if (typeof r.dslRun === "function") {
-            r.dslRun(["add_to_inventory", "village", 1], { source: "test" });
-            const has = r.state.player.inventory.some((s) => s && s.blueprintName === "village");
+            r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
+            const has = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
             out.dslOpWorks = has;
         }
 
@@ -26530,7 +26652,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
         // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
         // nicht von Test-Verschmutzung verletzt werden.
-        r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.state.player.inventory = new Array(27).fill(null);
         if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
         if (typeof r.renderInventoryUI === "function") r.renderInventoryUI();
@@ -26722,7 +26844,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.player.inventory = new Array(27).fill(null);
         r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
         r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
-        r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
 
         // Fake-Event-Object für drop-Handler.
         const mkEvent = () => ({
@@ -26770,13 +26892,13 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
         // (2d) inv → hot mit anderem Bauplan: Swap.
         r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-        r.state.hotbar[4] = "village";
+        r.state.hotbar[4] = "stein_block";
         r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 4);
         out.invToHotSwap =
             r.state.hotbar[4] === "baum_eiche" &&
             r.state.player.inventory[0] &&
-            r.state.player.inventory[0].blueprintName === "village" &&
+            r.state.player.inventory[0].blueprintName === "stein_block" &&
             r.state.player.inventory[0].count === 1;
 
         // Reset
@@ -26784,45 +26906,45 @@ async function checkBandVoxelP3AndInventory(ctx) {
         r.state.hotbar[3] = null;
         r.state.hotbar[4] = null;
 
-        // (3) hot → hot: Slot 0 (village) ↔ Slot 1 (temple).
-        r.state.drag = { kind: "hot", index: 0, name: "village" };
+        // (3) hot → hot: Slot 0 (stein_block) ↔ Slot 1 (waterfall).
+        r.state.drag = { kind: "hot", index: 0, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "hot", 1);
-        out.hotToHotSwap = r.state.hotbar[0] === "temple" && r.state.hotbar[1] === "village";
+        out.hotToHotSwap = r.state.hotbar[0] === "waterfall" && r.state.hotbar[1] === "stein_block";
 
         // Reset
-        r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
 
         // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE
         // (Schöpfer-Fix V7.77+: alte Logik räumte nur Hotbar,
         // Bauplan verschwand). Erwartung: Hot wird null,
-        // Inv-Slot 10 bekommt {temple, count: 1}.
+        // Inv-Slot 10 bekommt {waterfall, count: 1}.
         r.state.player.inventory[10] = null;
-        r.state.drag = { kind: "hot", index: 1, name: "temple" };
+        r.state.drag = { kind: "hot", index: 1, name: "waterfall" };
         r._onSlotDrop(mkEvent(), "inv", 10);
         out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
         out.hotToInvFillsInvSlot =
             r.state.player.inventory[10] &&
-            r.state.player.inventory[10].blueprintName === "temple" &&
+            r.state.player.inventory[10].blueprintName === "waterfall" &&
             r.state.player.inventory[10].count === 1;
 
         // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
         // (count += 1, Hot wird null).
-        r.state.hotbar[1] = "temple"; // Hot wieder befüllen
-        r.state.player.inventory[10] = { blueprintName: "temple", count: 3 };
-        r.state.drag = { kind: "hot", index: 1, name: "temple" };
+        r.state.hotbar[1] = "waterfall"; // Hot wieder befüllen
+        r.state.player.inventory[10] = { blueprintName: "waterfall", count: 3 };
+        r.state.drag = { kind: "hot", index: 1, name: "waterfall" };
         r._onSlotDrop(mkEvent(), "inv", 10);
         out.hotToInvStacksSameBp =
             r.state.hotbar[1] === null && r.state.player.inventory[10] && r.state.player.inventory[10].count === 4;
 
         // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
-        r.state.hotbar[1] = "village";
-        r.state.player.inventory[10] = { blueprintName: "temple", count: 2 };
-        r.state.drag = { kind: "hot", index: 1, name: "village" };
+        r.state.hotbar[1] = "stein_block";
+        r.state.player.inventory[10] = { blueprintName: "waterfall", count: 2 };
+        r.state.drag = { kind: "hot", index: 1, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "inv", 10);
         out.hotToInvOtherBpNoOp =
-            r.state.hotbar[1] === "village" &&
+            r.state.hotbar[1] === "stein_block" &&
             r.state.player.inventory[10] &&
-            r.state.player.inventory[10].blueprintName === "temple" &&
+            r.state.player.inventory[10].blueprintName === "waterfall" &&
             r.state.player.inventory[10].count === 2;
 
         // Cleanup für (5)
@@ -26830,7 +26952,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
 
         // (5) src === target: no-op (state unverändert).
         const before = JSON.stringify(r.state.hotbar);
-        r.state.drag = { kind: "hot", index: 0, name: "village" };
+        r.state.drag = { kind: "hot", index: 0, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "hot", 0);
         out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
 
@@ -26854,7 +26976,7 @@ async function checkBandVoxelP3AndInventory(ctx) {
         out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
 
         // Cleanup
-        r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.state.player.inventory = new Array(27).fill(null);
         r.toggleInventoryOverlay(false);
         r._renderHotbarDOM();
@@ -27205,7 +27327,7 @@ async function checkBandWelle6Keybindings(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         r.resetKeybindings();
-        r.setHotbarSlot(0, "village");
+        r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         const hud = document.getElementById("build-mode-hud");
         out.hudVisible = hud && !hud.hidden;
@@ -28732,11 +28854,11 @@ async function checkBandWelle6HCreatures(ctx) {
         out.hudShowsCostInFrieden = hudFrieden && /stein/.test(hudFrieden) && /\(30\)/.test(hudFrieden);
 
         // Cleanup: zurück auf frieden + Hotbar-Defaults für nachfolgende Tests.
-        // Default-Hotbar (Ring 6.5): [village, temple, waterfall, null×6].
+        // Default-Hotbar (AUSLÖSCHUNGS-WELLE): [stein_block, waterfall, damm, null×6].
         r._clearBuildMode && r._clearBuildMode();
-        r.setHotbarSlot(0, "village");
-        r.setHotbarSlot(1, "temple");
-        r.setHotbarSlot(2, "waterfall");
+        r.setHotbarSlot(0, "stein_block");
+        r.setHotbarSlot(1, "waterfall");
+        r.setHotbarSlot(2, "damm");
         for (let i = 3; i < 9; i++) r.setHotbarSlot(i, null);
         r.setGameMode(origMode || "frieden");
         return out;
@@ -29923,7 +30045,16 @@ async function checkBandV18150Ride(ctx) {
         const savedMounted = r.state.player.mountedArch;
         let entry = null;
         try {
-            entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
+            // AUSLÖSCHUNGS-WELLE — der fahrzeug_wagen-Blueprint fiel; die Wagen-Substanz
+            // (KIND_SUBSTANCE, parts + connections) trägt die Fahr-Tiefe als Test-Blueprint.
+            const KSr = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            if (r.state.blueprints._t_ride_wagen) delete r.state.blueprints._t_ride_wagen;
+            r.state.blueprints._t_ride_wagen = {
+                name: "_t_ride_wagen",
+                parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
+                connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
+            };
+            entry = r.spawnArchitecture("_t_ride_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
             out.spawned = !!entry;
             if (!entry) return out;
             // (1) das Profil emergiert aus den Gelenken + der Masse.
@@ -29971,6 +30102,7 @@ async function checkBandV18150Ride(ctx) {
             out.dismounts = r.state.player.mountedArch === null;
         } finally {
             if (entry) r.removeArchitecture(entry);
+            delete r.state.blueprints._t_ride_wagen;
             r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
         }
         return out;
@@ -30205,7 +30337,16 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (1) die fahrzeug-Rolle + ihr MECHANISMUS: der Wagen (4 rad-Gelenke + sitz)
         // und das Holzross (sitz + moveable) emergieren vehicle; am Holzross schlägt
         // die vehicle-Resonanz das alte soul (livingBody) — die rideable-Konjunktion.
-        out.wagenVehicle = r.computeBlueprintRole(blu.fahrzeug_wagen) === "vehicle";
+        // AUSLÖSCHUNGS-WELLE — der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE) +
+        // hier als Test-Blueprint (für den Klon-Erbe-Teil (5)).
+        const KSm2 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (blu._t_m2_wagen) delete blu._t_m2_wagen;
+        blu._t_m2_wagen = {
+            name: "_t_m2_wagen",
+            parts: JSON.parse(JSON.stringify(KSm2.fahrzeug_wagen.parts)),
+            connections: JSON.parse(JSON.stringify(KSm2.fahrzeug_wagen.connections || [])),
+        };
+        out.wagenVehicle = r.computeBlueprintRole(blu._t_m2_wagen) === "vehicle";
         out.rossVehicle = r.computeBlueprintRole(blu.reittier_holzross) === "vehicle";
         const rossV = r._blueprintProductVector(blu.reittier_holzross);
         out.rossMechanism =
@@ -30215,8 +30356,7 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (2) useKind: ein Fahrzeug wird PLATZIERT (Befund 7: es rutschte in die Hand) —
         // und ein Baum wird nicht mehr GETRUNKEN (war useKind=drink via consumable).
         out.vehiclePlace =
-            r._blueprintUseKind(blu.fahrzeug_wagen) === "place" &&
-            r._blueprintUseKind(blu.reittier_holzross) === "place";
+            r._blueprintUseKind(blu._t_m2_wagen) === "place" && r._blueprintUseKind(blu.reittier_holzross) === "place";
         // V18.257 — baum_eiche statisch geschnitten; ein gewachsener Baum wird PLATZIERT.
         const __ukKey = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "usekind");
         out.baumPlace = !!__ukKey && r._blueprintUseKind(blu[__ukKey]) === "place";
@@ -30247,14 +30387,15 @@ async function checkBandM2RollenWahrheit(ctx) {
         // (5) der Klon erbt die SUBSTANZ: ein geklonter Wagen behält seine connections
         // (Gelenke/Sitz) → die fahrzeug-Rolle emergiert auch am Klon (Befund 7-Kette).
         if (blu.__m2_wagenklon) delete blu.__m2_wagenklon;
-        r.cloneBlueprint("fahrzeug_wagen", "__m2_wagenklon");
+        r.cloneBlueprint("_t_m2_wagen", "__m2_wagenklon");
         const wk = blu.__m2_wagenklon;
         out.klonSubstanz =
             !!wk &&
             Array.isArray(wk.connections) &&
-            wk.connections.length === (blu.fahrzeug_wagen.connections || []).length &&
+            wk.connections.length === (blu._t_m2_wagen.connections || []).length &&
             r.computeBlueprintRole(wk) === "vehicle";
         delete blu.__m2_wagenklon;
+        delete blu._t_m2_wagen;
 
         // (6) der Klon erbt den INTENT: ein geklonter Brennkolben BLEIBT Werkstatt-
         // Station (Chip + _workshopStationGate lesen bp.role — Befund 6-Kette).
@@ -30320,11 +30461,19 @@ async function checkBandM3RittVollendet(ctx) {
         const savedPos = { x: pm.x, y: pm.y, z: pm.z };
         let entry = null;
         try {
+            // AUSLÖSCHUNGS-WELLE — Wagen-Substanz (KIND_SUBSTANCE) als Test-Blueprint;
             // nah am Spieler spawnen (gebauter Chunk → getTerrainHeightAt trägt).
-            entry = r.spawnArchitecture("fahrzeug_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
+            const KSm3 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            if (r.state.blueprints._t_m3_wagen) delete r.state.blueprints._t_m3_wagen;
+            r.state.blueprints._t_m3_wagen = {
+                name: "_t_m3_wagen",
+                parts: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.parts)),
+                connections: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.connections || [])),
+            };
+            entry = r.spawnArchitecture("_t_m3_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
             out.spawned = !!entry;
             if (!entry) return out;
-            const bp = r.state.blueprints.fahrzeug_wagen;
+            const bp = r.state.blueprints._t_m3_wagen;
 
             // (1) die RAD-ACHSE ist die Zylinder-Eigenachse (Welt-X am Wagen-Rad,
             // rotation.z=π/2) — NICHT die Verbindungs-Richtung (connAxis wäre "z" =
@@ -30365,9 +30514,9 @@ async function checkBandM3RittVollendet(ctx) {
             out.riderFollows = Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.05;
             out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
             // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), KEIN gefrorenes
-            // Maß — so re-verankert sich JEDE Fahrzeug-Variante (auch grosse Räder, wahrerwuchs
-            // T4 _vehicleVariant) korrekt auf dem Terrain. Der Test prüft die ABLEITUNG, nicht
-            // eine Magie-Zahl → robust gegen das Rad-Genom.
+            // Maß — so re-verankert sich JEDE Fahrzeug-Gestalt (auch grosse Räder aus den
+            // Lab-Rezepten) korrekt auf dem Terrain. Der Test prüft die ABLEITUNG, nicht
+            // eine Magie-Zahl → robust gegen jede Rad-Gestalt.
             const expectClear = -r._compoundBottomY(bp) * (entry.scale || 1);
             out.clearCached = Number.isFinite(entry._groundClear) && Math.abs(entry._groundClear - expectClear) < 0.05;
 
@@ -30393,6 +30542,7 @@ async function checkBandM3RittVollendet(ctx) {
             return out;
         } finally {
             if (entry) r.removeArchitecture(entry);
+            delete r.state.blueprints._t_m3_wagen;
             r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
             pm.set(savedPos.x, savedPos.y, savedPos.z);
             // Feld-nativ: Position über das Mesh, Velocity über playerVel + _fieldVy.
@@ -30997,7 +31147,14 @@ async function checkBandArchetypBank(ctx) {
                 p: [P("cone", "stein", 0, 0.5, 0, 0.6, 0.7, 0.6), P("cone", "stein", 0.3, 0.45, 0.2, 0.5, 0.6, 0.5)],
                 ne: "weapon",
             },
-            { n: "builtin fahrzeug_wagen", b: "fahrzeug_wagen", e: "vehicle" },
+            // AUSLÖSCHUNGS-WELLE — der fahrzeug_wagen-Blueprint fiel; die Substanz-Zeile
+            // (KIND_SUBSTANCE, parts + connections) trägt die Bank-Probe unverändert.
+            {
+                n: "substanz fahrzeug_wagen (KIND_SUBSTANCE)",
+                p: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.parts,
+                c: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.connections,
+                e: "vehicle",
+            },
             { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },
             { n: "builtin baum_eiche", b: "baum_eiche", e: "architecture" },
             { n: "builtin baum_kiefer", b: "baum_kiefer", e: "architecture" },
@@ -31302,7 +31459,8 @@ async function checkBandWCIchWahrheit(ctx) {
                 equipHost.querySelector(".equip-slot") ? equipHost.querySelector(".equip-slot").title : ""
             );
         // (e) LABEL == TAT: der Fahrzeug-Knopf sagt „Fertigen" (der Wagen log „In die Hand").
-        const row = r._recipeRow("fahrzeug_wagen", "vehicle");
+        // AUSLÖSCHUNGS-WELLE — der Wagen fiel; das lebende Fahrzeug-Built-in (Holzross) trägt die Probe.
+        const row = r._recipeRow("reittier_holzross", "vehicle");
         out.vehicleLabel =
             !!row && /Fertigen/.test(row.querySelector("button") ? row.querySelector("button").textContent : "");
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
@@ -32648,18 +32806,27 @@ async function checkBandM6ErnteSpawn(ctx) {
 
             // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out)
             // weicht aus; precise/silent/string-id bleiben EXAKT (bit-treu).
+            // AUSLÖSCHUNGS-WELLE — village fiel; die grosse haus_basis-Substanz
+            // (KIND_SUBSTANCE, Footprint ≥ MIN) trägt die Klemm-Probe als Test-Blueprint.
             r.setGameMode("frieden");
-            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7 });
+            const KSm6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            if (r.state.blueprints._t_m6_haus) delete r.state.blueprints._t_m6_haus;
+            r.state.blueprints._t_m6_haus = {
+                name: "_t_m6_haus",
+                parts: JSON.parse(JSON.stringify(KSm6.haus_basis.parts)),
+            };
+            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7 });
             const d = clampSpawn ? Math.hypot(clampSpawn.position.x - pm.x, clampSpawn.position.z - pm.z) : 0;
             out.wurzelKlemmt = !!clampSpawn && d > 2.9;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
-            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, precise: true });
+            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, precise: true });
             out.preciseExakt = !!clampSpawn && clampSpawn.position.x === pm.x && clampSpawn.position.z === pm.z;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
-            clampSpawn = r.spawnArchitecture("village", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, id: "mu-sync-1" });
+            clampSpawn = r.spawnArchitecture("_t_m6_haus", { x: pm.x, y: pm.y, z: pm.z }, { seed: 7, id: "mu-sync-1" });
             out.idExakt = !!clampSpawn && clampSpawn.position.x === pm.x;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
             clampSpawn = null;
+            delete r.state.blueprints._t_m6_haus;
             // KONSUM: die Klemme sitzt in spawnArchitecture (die Wurzel — kein Pfad daran vorbei).
             out.klemmeKonsum = /_structureSpawnPos/.test(r.spawnArchitecture.toString());
             return out;
@@ -33811,10 +33978,19 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
             factorMid > factorEmpty + 0.1 &&
             factorMid < factorFull;
 
-        // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). Wir nutzen
-        // einen Werkstatt-tauglichen Test-Bauplan: spitzhacke aus der V17.72-
-        // Bibliothek (eisen/cylinder/cone, role:tool/weapon — egal für forge).
-        const heldName = "geraet_spitzhacke";
+        // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). AUSLÖSCHUNGS-WELLE —
+        // der geraet_spitzhacke-Blueprint fiel; die craftbare Werkzeug-Substanz lebt in
+        // KIND_SUBSTANCE (die klinge_-Gattungen des Schmiede-Labs SIND die Werkzeuge).
+        // Deterministisches Test-Blueprint aus der Substanz-Zeile, am Ende geräumt.
+        const KSw5 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const heldName = "_t_wear_spitz";
+        if (r.state.blueprints._t_wear_spitz) delete r.state.blueprints._t_wear_spitz;
+        if (KSw5.geraet_spitzhacke) {
+            r.state.blueprints._t_wear_spitz = {
+                name: "_t_wear_spitz",
+                parts: JSON.parse(JSON.stringify(KSw5.geraet_spitzhacke.parts)),
+            };
+        }
         let heldBp = r.state.blueprints && r.state.blueprints[heldName];
         out.libraryHasSpitzhacke = !!heldBp;
         if (heldBp) {
@@ -33940,8 +34116,10 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         out.noRepairOp = !/op\s*===\s*["']repair_held["']/.test(dslRunSrc);
         out.noSetWearOp = !/op\s*===\s*["']set_wear["']/.test(dslRunSrc);
 
-        // Aufräumen — Modus zurück, Gerät wieder voll für Folge-Tests.
+        // Aufräumen — Modus zurück, Hand leer + Test-Blueprint geräumt (kein dangling Held).
         if (heldBp) r._setBlueprintWear(heldBp, 1);
+        r.equipHeld(null);
+        delete r.state.blueprints._t_wear_spitz;
         if (typeof r.setGameMode === "function") r.setGameMode("frieden");
 
         return out;
@@ -33968,7 +34146,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         res.factorMonotonic
     );
     check(
-        "W5 (W6): FORGE setzt wear=1 (frisches/repariertes Werkzeug startet voll) — die Bibliothek hat eine craftbare Spitzhacke",
+        "W5 (W6): FORGE setzt wear=1 (frisches/repariertes Werkzeug startet voll) — die Spitzhacken-Substanz (KIND_SUBSTANCE) ist craftbar",
         res.libraryHasSpitzhacke && res.forgeRefilled
     );
     check(
@@ -39637,7 +39815,15 @@ async function checkBandWGGelenke(ctx) {
         out.teachScharnier = /Scharnier.*Längsachse/.test(r._jointTeachLine("scharnier", "z") || "");
         out.teachNull = r._jointTeachLine("nonsense", "x") === null;
         // (d) PROGRESSIVE DISCLOSURE: die Typen NACH Substanz-Stärke geordnet.
-        const wagen = r.state.blueprints.fahrzeug_wagen;
+        // AUSLÖSCHUNGS-WELLE — der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE).
+        const KSwg = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const wagen = KSwg.fahrzeug_wagen
+            ? {
+                  name: "_wg_wagen",
+                  parts: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.parts)),
+                  connections: JSON.parse(JSON.stringify(KSwg.fahrzeug_wagen.connections || [])),
+              }
+            : null;
         out.ranked = false;
         out.rankedOrdered = false;
         if (wagen) {
@@ -40809,7 +40995,7 @@ async function checkBandWelle6XAudit(ctx) {
             /* ignore */
         }
         if (r.state.hotbar && r.state.hotbar.length === 9) {
-            const builtIns = ["village", "temple", "waterfall"];
+            const builtIns = ["stein_block", "waterfall", "damm"];
             for (let i = 0; i < 9; i++) {
                 r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
             }
@@ -43883,8 +44069,8 @@ async function checkBandW12WorldPortal(ctx) {
         r._refreshBlueprintRoleEmergent("_w12p");
         out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
 
-        // Built-in-Schutz + Unknown-Reject.
-        const builtinRej = r.setBlueprintAsPortal("village");
+        // Built-in-Schutz + Unknown-Reject (stein_block — lebendes builtIn).
+        const builtinRej = r.setBlueprintAsPortal("stein_block");
         out.rejectBuiltin = !!builtinRej && builtinRej.ok === false && builtinRej.reason === "cannot_modify_builtin";
         const unknownRej = r.setBlueprintAsPortal("_does_not_exist_xyz");
         out.rejectUnknown = !!unknownRej && unknownRej.ok === false && unknownRej.reason === "blueprint_unknown";
@@ -44097,7 +44283,7 @@ async function checkBandW12WorldPortal(ctx) {
         const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
         out.affPortal = wpAff.isPortal === true;
         out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
-        out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.village).isPortal;
+        out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.stein_block).isPortal;
 
         out.methods =
             typeof r.enterPortal === "function" &&
@@ -44138,7 +44324,7 @@ async function checkBandW12WorldPortal(ctx) {
         // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
         const exitAgain = r.exitPortal();
         out.rejectsExitWhenIdle = !exitAgain.ok && exitAgain.reason === "not_in_portal";
-        const badEnter = r.enterPortal({ type: "village", affordances: {} });
+        const badEnter = r.enterPortal({ type: "stein_block", affordances: {} });
         out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
 
         // Loop-Guard ist verdrahtet.
@@ -45083,8 +45269,8 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             typeof bp.signedHash === "string" &&
             typeof bp.signedAt === "number";
         out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
-        // Built-in lässt sich nicht signieren.
-        const builtinRes = await r.signBlueprint("village");
+        // Built-in lässt sich nicht signieren (stein_block — lebendes builtIn).
+        const builtinRes = await r.signBlueprint("stein_block");
         out.rejectBuiltin = !!builtinRes && builtinRes.ok === false && builtinRes.reason === "builtin";
         const unknownRes = await r.signBlueprint("_does_not_exist_w13");
         out.rejectUnknown = !!unknownRes && unknownRes.ok === false && unknownRes.reason === "unknown";
@@ -50413,8 +50599,8 @@ async function checkBandCadWorkshop(ctx) {
 
             // --- Phase 1: Selection-Pfad (ohne Preview, headless-safe) ---
             // Bauplan auswählen: braucht selectBlueprintForEdit auf existing built-in
-            r.selectBlueprintForEdit("village");
-            out.selectedSetToVillage = ws.selectedBlueprint === "village";
+            r.selectBlueprintForEdit("stein_block");
+            out.selectedSetToVillage = ws.selectedBlueprint === "stein_block";
             // selectedPartIdx wurde zurückgesetzt
             out.selectionResetOnBlueprintSwitch = ws.selectedPartIdx === null;
             // Manuelle Selection setzen (ohne Klick)
@@ -50436,7 +50622,7 @@ async function checkBandCadWorkshop(ctx) {
             }
 
             // --- Phase 2: Manipulator-Drag auf Built-in lehnt ab ---
-            // village ist built-in → kein Drag
+            // stein_block ist built-in → kein Drag
             out.builtInRejected = true;
             try {
                 r._workshopSetSelection(0);
@@ -50454,8 +50640,8 @@ async function checkBandCadWorkshop(ctx) {
             }
 
             // --- Phase 2: Manipulator auf eigenem Bauplan ---
-            // Klone village zu test_wave6b
-            const cloneOk = r.cloneBlueprint("village", "test_wave6b");
+            // Klone stein_block zu test_wave6b
+            const cloneOk = r.cloneBlueprint("stein_block", "test_wave6b");
             out.cloneOk = cloneOk;
             if (cloneOk) {
                 r.selectBlueprintForEdit("test_wave6b");
@@ -50494,7 +50680,7 @@ async function checkBandCadWorkshop(ctx) {
                 // sonst sieht der nachfolgende Ring-6.6-Test eine Liste,
                 // die 1 Eintrag länger ist als state.blueprints.
                 r.deleteBlueprint("test_wave6b");
-                r.selectBlueprintForEdit("village");
+                r.selectBlueprintForEdit("stein_block");
                 r._renderWorkshopDOM();
             }
 
@@ -50531,9 +50717,9 @@ async function checkBandCadWorkshop(ctx) {
                 out.gizmoHasPickers = tCount >= 9 && rCount >= 6 && sCount >= 8;
 
                 // --- Bug-Fix V7.99: Gizmo-Sichtbarkeit bei Built-in vs. eigen ---
-                // Bauplan ist aktuell village (Built-in). Sync rufen
+                // Bauplan ist aktuell stein_block (Built-in). Sync rufen
                 // und prüfen dass Gizmo versteckt ist.
-                r.selectBlueprintForEdit("village");
+                r.selectBlueprintForEdit("stein_block");
                 r._workshopSetSelection(0);
                 r._workshopSyncGizmo();
                 out.gizmoHiddenOnBuiltIn = pre.gizmo.visible === false;
@@ -50544,7 +50730,7 @@ async function checkBandCadWorkshop(ctx) {
                 const firstModeBtn = document.querySelector("#workshop-mode-bar [data-workshop-mode]");
                 out.modeBarDisabledOnBuiltIn = firstModeBtn && firstModeBtn.disabled === true;
                 // Jetzt mit eigenem Bauplan: Klone + Selection + Sync
-                r.cloneBlueprint("village", "test_visibility");
+                r.cloneBlueprint("stein_block", "test_visibility");
                 r.selectBlueprintForEdit("test_visibility");
                 r._workshopSetSelection(0);
                 r._workshopSyncGizmo();
@@ -50552,7 +50738,7 @@ async function checkBandCadWorkshop(ctx) {
                 out.readonlyBannerHiddenOnCustom = banner && banner.hidden === true;
                 out.modeBarEnabledOnCustom = firstModeBtn && firstModeBtn.disabled === false;
                 r.deleteBlueprint("test_visibility");
-                r.selectBlueprintForEdit("village");
+                r.selectBlueprintForEdit("stein_block");
                 r._renderWorkshopDOM();
             }
         } catch (err) {
@@ -50626,7 +50812,7 @@ async function checkBandCadWorkshop(ctx) {
             "Welle 6.B P2: _workshopBeginManipulation auf Built-in setzt KEINEN dragManipulator (read-only-Schutz)",
             wave6bResults.builtInRejected
         );
-        check("Welle 6.B P2: cloneBlueprint(village → test_wave6b) erfolgreich", wave6bResults.cloneOk);
+        check("Welle 6.B P2: cloneBlueprint(stein_block → test_wave6b) erfolgreich", wave6bResults.cloneOk);
         check(
             "Welle 6.B P2: _workshopBeginManipulation auf eigenem Bauplan setzt dragManipulator",
             wave6bResults.dragManipulatorSet,
@@ -50970,19 +51156,19 @@ async function checkBandCadWorkshop(ctx) {
                     "helix",
                 ].every((s) => shapes.has(s));
                 // Default: draggable=true (eigener Bauplan)
-                // Aber bei Built-in (initial village) sollten sie draggable=false sein
+                // Aber bei Built-in (initial stein_block) sollten sie draggable=false sein
             }
 
             // Drop-Handler-Test: auf Built-in muss er ablehnen
-            r.selectBlueprintForEdit("village");
-            const partsBeforeBuiltIn = r.state.blueprints.village.parts.length;
+            r.selectBlueprintForEdit("stein_block");
+            const partsBeforeBuiltIn = r.state.blueprints.stein_block.parts.length;
             r._workshopHandleShapeDrop("box", 100, 100);
-            const partsAfterBuiltIn = r.state.blueprints.village.parts.length;
+            const partsAfterBuiltIn = r.state.blueprints.stein_block.parts.length;
             out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
 
             // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
             if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
-            r.cloneBlueprint("village", "test_phase3");
+            r.cloneBlueprint("stein_block", "test_phase3");
             r.selectBlueprintForEdit("test_phase3");
             r._workshopEnsurePreview();
             const partsBefore = r.state.blueprints.test_phase3.parts.length;
@@ -50992,6 +51178,22 @@ async function checkBandCadWorkshop(ctx) {
             const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
             out.newPartIsSphere = newPart && newPart.shape === "sphere";
             out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
+
+            // §7.1 — der Sphere-Drop auf den kompakten Fels (stein_block-Klon, 1 Part) kann
+            // eine AUTO-Verbindung (Berührung) gebären → der Connect-Popover trüge zusätzlich
+            // die „✂ Lösen"-Kachel (14 statt 13 Buttons). Der Test misst den FRISCHEN
+            // Paar-Dialog → das Test-Paar startet unverbunden (die Auto-Geburt selbst
+            // prüft das eigene §7.1-Band).
+            {
+                const bp3 = r.state.blueprints.test_phase3;
+                bp3.connections = (bp3.connections || []).filter(
+                    (c) =>
+                        !(
+                            (c.partA === 0 && c.partB === partsAfter - 1) ||
+                            (c.partA === partsAfter - 1 && c.partB === 0)
+                        )
+                );
+            }
 
             // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
             out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
@@ -51046,7 +51248,7 @@ async function checkBandCadWorkshop(ctx) {
             // Cleanup
             r.setWorkshopManipulatorMode("translate");
             r.deleteBlueprint("test_phase3");
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
         } catch (err) {
             out.error = err && err.message;
@@ -51127,7 +51329,7 @@ async function checkBandCadWorkshop(ctx) {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
-            r.cloneBlueprint("village", "test_v803");
+            r.cloneBlueprint("stein_block", "test_v803");
             r.selectBlueprintForEdit("test_v803");
             r._workshopEnsurePreview();
             const pre = r.state.workshop.preview;
@@ -51230,7 +51432,7 @@ async function checkBandCadWorkshop(ctx) {
             // Cleanup
             r.state.workshop.selectedPartIdx = null;
             r.deleteBlueprint("test_v803");
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
@@ -51339,7 +51541,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
             if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
-            r.cloneBlueprint("village", "test_9a_empty");
+            r.cloneBlueprint("stein_block", "test_9a_empty");
             // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
             r.applyOpToPart("test_9a_empty", 0, "hände");
             out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
@@ -51360,7 +51562,7 @@ async function checkBandWaves9And10a(ctx) {
                 r.state.player.tools.push("test_forge_hammer");
             }
             if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
-            r.cloneBlueprint("village", "test_9a_forging");
+            r.cloneBlueprint("stein_block", "test_9a_forging");
             // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
             // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
             r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
@@ -51387,7 +51589,7 @@ async function checkBandWaves9And10a(ctx) {
                 r.state.player.tools.push("test_alchemy_mortar");
             }
             if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
-            r.cloneBlueprint("village", "test_9a_alchemy");
+            r.cloneBlueprint("stein_block", "test_9a_alchemy");
             r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
             r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
             out.alchemyRoleIsConsumable = r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
@@ -51407,13 +51609,13 @@ async function checkBandWaves9And10a(ctx) {
                 r.state.player.tools.push("test_lathe");
             }
             if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
-            r.cloneBlueprint("village", "test_9a_mech");
+            r.cloneBlueprint("stein_block", "test_9a_mech");
             r.applyOpToPart("test_9a_mech", 0, "test_lathe");
             out.mechanismRoleIsMachine = r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
 
             // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
             if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
-            r.cloneBlueprint("village", "test_9a_emergent");
+            r.cloneBlueprint("stein_block", "test_9a_emergent");
             r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
             out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
 
@@ -51571,7 +51773,7 @@ async function checkBandWaves9And10a(ctx) {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
-            r.cloneBlueprint("village", "test_9b");
+            r.cloneBlueprint("stein_block", "test_9b");
             r.selectBlueprintForEdit("test_9b");
             r._renderWorkshopDOM();
             // V17.91 — die Rolle wird jetzt im intuitiven Stats-Panel angezeigt (Rolle-Zeile mit .role-chip),
@@ -51602,7 +51804,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Cleanup
             if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
@@ -51684,7 +51886,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Forging-Bauplan vorbereiten
             if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
-            r.cloneBlueprint("village", "test_9c_forging");
+            r.cloneBlueprint("stein_block", "test_9c_forging");
             r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
 
@@ -51714,7 +51916,7 @@ async function checkBandWaves9And10a(ctx) {
             const gateBootstrap = r._workshopStationGate("esse", farPos);
             out.bootstrapOk = gateBootstrap && gateBootstrap.ok === true && gateBootstrap.bootstrap === true;
 
-            const gateArch = r._workshopStationGate("village", farPos);
+            const gateArch = r._workshopStationGate("stein_block", farPos);
             out.archNoCheck = gateArch && gateArch.ok === true;
 
             // Cleanup
@@ -51759,7 +51961,7 @@ async function checkBandWaves9And10a(ctx) {
             wave9cResults.bootstrapOk
         );
         check(
-            "Welle 9c: architecture-Bauplan (village) überspringt Werkstatt-Check (keine Domain → kein Gate)",
+            "Welle 9c: architecture-Bauplan (stein_block) überspringt Werkstatt-Check (keine Domain → kein Gate)",
             wave9cResults.archNoCheck
         );
     } else if (wave9cResults && wave9cResults.error) {
@@ -51778,7 +51980,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Maschinen-Bonus
             if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
-            r.cloneBlueprint("village", "test_9d_machine");
+            r.cloneBlueprint("stein_block", "test_9d_machine");
             r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
             // setBlueprintToolMeta setzt role=tool; force machine:
             r.state.blueprints.test_9d_machine.role = "machine";
@@ -51795,7 +51997,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Ohne machine: kein Bonus
             if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
-            r.cloneBlueprint("village", "test_9d_normaltool");
+            r.cloneBlueprint("stein_block", "test_9d_normaltool");
             r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
             const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
             r.registerBlueprintAsTool("test_9d_normaltool");
@@ -51805,7 +52007,7 @@ async function checkBandWaves9And10a(ctx) {
 
             // Seelen-Bauplan
             if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
-            r.cloneBlueprint("village", "test_9d_soul");
+            r.cloneBlueprint("stein_block", "test_9d_soul");
             r.state.blueprints.test_9d_soul.role = "soul";
             r.state.blueprints.test_9d_soul.roleManual = true;
             const soulBefore = r.state.player.soul;
@@ -51814,7 +52016,7 @@ async function checkBandWaves9And10a(ctx) {
             out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
             out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
 
-            const archRes = r.applyPlayerSoulFromBlueprint("village");
+            const archRes = r.applyPlayerSoulFromBlueprint("stein_block");
             out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
             const unknownRes = r.applyPlayerSoulFromBlueprint("nonsense_blueprint");
             out.unknownReject = unknownRes && unknownRes.ok === false && unknownRes.reason === "blueprint_unknown";
@@ -51830,7 +52032,7 @@ async function checkBandWaves9And10a(ctx) {
             out.oldSoulButtonGone = !document.querySelector(".workshop-soul-activate");
 
             if (r.state.blueprints["test_9d_arch"]) r.deleteBlueprint("test_9d_arch");
-            r.cloneBlueprint("village", "test_9d_arch");
+            r.cloneBlueprint("stein_block", "test_9d_arch");
             r.selectBlueprintForEdit("test_9d_arch");
             // die EINE FERTIGEN-Zeile erscheint auch fürs Gerät/Bauwerk — ein Akt für alle Mach-Rollen.
             out.archAlsoFertigen = !!document.querySelector("#workshop-action-zone .workshop-fertigen");
@@ -51841,7 +52043,7 @@ async function checkBandWaves9And10a(ctx) {
                 if (r.state.blueprints[n]) r.deleteBlueprint(n);
             }
             if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
             r.state.yaw = 0;
@@ -51943,7 +52145,7 @@ async function checkBandWaves9And10a(ctx) {
             // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
             // Synthese: Soul-Bauplan + opChain
             if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
-            r.cloneBlueprint("village", "test_10a_soul");
+            r.cloneBlueprint("stein_block", "test_10a_soul");
             // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
             const bp = r.state.blueprints.test_10a_soul;
             bp.role = "soul";
@@ -51981,7 +52183,7 @@ async function checkBandWaves9And10a(ctx) {
             // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
             // Tool-Tags mit Präzision multipliziert werden.
             if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
-            r.cloneBlueprint("village", "test_10a_tool");
+            r.cloneBlueprint("stein_block", "test_10a_tool");
             const toolBp = r.state.blueprints.test_10a_tool;
             for (const p of toolBp.parts) {
                 p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
@@ -52091,7 +52293,7 @@ async function checkBandWave10b(ctx) {
 
             // moveable
             if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
-            r.cloneBlueprint("village", "test_10b_car");
+            r.cloneBlueprint("stein_block", "test_10b_car");
             r.state.blueprints.test_10b_car.parts = [
                 {
                     shape: "cylinder",
@@ -52118,7 +52320,7 @@ async function checkBandWave10b(ctx) {
             // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
             // Konfiguration entscheidet.
             if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
-            r.cloneBlueprint("village", "test_10b_sled");
+            r.cloneBlueprint("stein_block", "test_10b_sled");
             r.state.blueprints.test_10b_sled.parts = [
                 // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
                 {
@@ -52145,7 +52347,7 @@ async function checkBandWave10b(ctx) {
 
             // ohne Antrieb → nicht moveable
             if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
-            r.cloneBlueprint("village", "test_10b_carless");
+            r.cloneBlueprint("stein_block", "test_10b_carless");
             r.state.blueprints.test_10b_carless.parts = [
                 {
                     shape: "cylinder",
@@ -52164,7 +52366,7 @@ async function checkBandWave10b(ctx) {
 
             // magnifying
             if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
-            r.cloneBlueprint("village", "test_10b_scope");
+            r.cloneBlueprint("stein_block", "test_10b_scope");
             r.state.blueprints.test_10b_scope.parts = [
                 {
                     shape: "sphere",
@@ -52193,7 +52395,7 @@ async function checkBandWave10b(ctx) {
             // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
             // gespreizt, NICHT auf einer Achse) strahlt.
             if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
-            r.cloneBlueprint("village", "test_10ext_radiator");
+            r.cloneBlueprint("stein_block", "test_10ext_radiator");
             r.state.blueprints.test_10ext_radiator.parts = [
                 {
                     shape: "octahedron",
@@ -52227,7 +52429,7 @@ async function checkBandWave10b(ctx) {
             // resoniert (Vision-Beweis: kein Form-Whitelist, die
             // Konfiguration entscheidet).
             if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
-            r.cloneBlueprint("village", "test_10ext_mast");
+            r.cloneBlueprint("stein_block", "test_10ext_mast");
             r.state.blueprints.test_10ext_mast.parts = [
                 {
                     shape: "octahedron",
@@ -52290,7 +52492,7 @@ async function checkBandWave10b(ctx) {
             // Eine waagrechte Eisen-Linie (leitfähig, aber Achse x,
             // nicht y) → NICHT broadcasting (ein Mast steht aufrecht).
             if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
-            r.cloneBlueprint("village", "test_10ext_bcline");
+            r.cloneBlueprint("stein_block", "test_10ext_bcline");
             r.state.blueprints.test_10ext_bcline.parts = [
                 {
                     shape: "cylinder",
@@ -52361,7 +52563,7 @@ async function checkBandWave10b(ctx) {
             // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
             // dieselbe Substanz, andere Form, messbar bessere Antenne.
             if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
-            r.cloneBlueprint("village", "test_10ext_radstrong");
+            r.cloneBlueprint("stein_block", "test_10ext_radstrong");
             r.state.blueprints.test_10ext_radstrong.parts = [
                 {
                     shape: "sphere",
@@ -52393,7 +52595,7 @@ async function checkBandWave10b(ctx) {
             out.radStrengthScales = typeof radWeakStr === "number" && radStrongStr > radWeakStr && radStrongStr <= 1;
             // Ein Quarz-Mast ist eine STÄRKERE Antenne als ein Holz-Mast.
             if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
-            r.cloneBlueprint("village", "test_10ext_mastweak");
+            r.cloneBlueprint("stein_block", "test_10ext_mastweak");
             r.state.blueprints.test_10ext_mastweak.parts = [
                 {
                     shape: "cylinder",
@@ -52468,7 +52670,7 @@ async function checkBandWave10b(ctx) {
                 AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
             // Eine breite, flache, schwere Stein-Box-Plattform gründet.
             if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
-            r.cloneBlueprint("village", "test_10ext_platform");
+            r.cloneBlueprint("stein_block", "test_10ext_platform");
             r.state.blueprints.test_10ext_platform.parts = [
                 {
                     shape: "box",
@@ -52507,7 +52709,7 @@ async function checkBandWave10b(ctx) {
             // Stärke skaliert: eine Stein-Box-Plattform (dichte 2.55)
             // gründet stärker als eine Stein-Cylinder-Plattform (1.7).
             if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
-            r.cloneBlueprint("village", "test_10ext_platweak");
+            r.cloneBlueprint("stein_block", "test_10ext_platweak");
             r.state.blueprints.test_10ext_platweak.parts = [
                 {
                     shape: "cylinder",
@@ -52572,7 +52774,7 @@ async function checkBandWave10b(ctx) {
                 AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
             // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
             if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
-            r.cloneBlueprint("village", "test_10ext_lifter");
+            r.cloneBlueprint("stein_block", "test_10ext_lifter");
             r.state.blueprints.test_10ext_lifter.parts = [
                 {
                     shape: "cone",
@@ -52609,7 +52811,7 @@ async function checkBandWave10b(ctx) {
             // Stärke skaliert: ein Quarz-Helix-Heber (magie 2.55) hebt
             // stärker als der Quarz-Cone-Heber (magie 1.7).
             if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
-            r.cloneBlueprint("village", "test_10ext_lifterstrong");
+            r.cloneBlueprint("stein_block", "test_10ext_lifterstrong");
             r.state.blueprints.test_10ext_lifterstrong.parts = [
                 {
                     shape: "helix",
@@ -52699,7 +52901,7 @@ async function checkBandWave10b(ctx) {
             ]) {
                 if (r.state.blueprints[n]) r.deleteBlueprint(n);
             }
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
@@ -52932,7 +53134,7 @@ async function checkBandWave10b(ctx) {
 
             // Mount-Test
             if (r.state.blueprints["test_10b3_car"]) r.deleteBlueprint("test_10b3_car");
-            r.cloneBlueprint("village", "test_10b3_car");
+            r.cloneBlueprint("stein_block", "test_10b3_car");
             r.state.blueprints.test_10b3_car.parts = [
                 {
                     shape: "cylinder",
@@ -52995,7 +53197,7 @@ async function checkBandWave10b(ctx) {
 
             // Focusing-Test
             if (r.state.blueprints["test_10b3_lens"]) r.deleteBlueprint("test_10b3_lens");
-            r.cloneBlueprint("village", "test_10b3_lens");
+            r.cloneBlueprint("stein_block", "test_10b3_lens");
             r.state.blueprints.test_10b3_lens.parts = [
                 {
                     shape: "sphere",
@@ -53172,7 +53374,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Klone eigenen Bauplan + Part selektieren → Del-Btn enabled
             if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
-            r.cloneBlueprint("village", "test_v805");
+            r.cloneBlueprint("stein_block", "test_v805");
             r.selectBlueprintForEdit("test_v805");
             r._workshopSetSelection(0);
             out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
@@ -53188,7 +53390,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Cleanup
             if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
@@ -53346,7 +53548,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
             // Klone + Neu sind IMMER enabled — auch bei built-in Bauplan
-            r.selectBlueprintForEdit("village"); // built-in
+            r.selectBlueprintForEdit("stein_block"); // built-in
             const cloneBtn = document.getElementById("workshop-clone-btn");
             const newBtn = document.getElementById("workshop-new-btn");
             out.cloneBtnAlwaysEnabled = cloneBtn && cloneBtn.disabled === false;
@@ -53356,7 +53558,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
             out.modeBtnDisabledOnBuiltIn = moveBtn && moveBtn.disabled === true;
             // Bei eigenem Bauplan: alle wieder enabled
             if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
-            r.cloneBlueprint("village", "test_v807");
+            r.cloneBlueprint("stein_block", "test_v807");
             r.selectBlueprintForEdit("test_v807");
             out.modeBtnEnabledOnCustom = moveBtn && moveBtn.disabled === false;
 
@@ -53396,7 +53598,7 @@ async function checkBandWorkshopPolishAndLlm(ctx) {
 
             // Cleanup
             if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
-            r.selectBlueprintForEdit("village");
+            r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r && typeof r.closeAllDrawers === "function") r.closeAllDrawers();
@@ -55521,23 +55723,35 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
 
-        // (a) Direkter Spawn jeder Sorte
-        const v = r.spawnArchitecture("village", { x: 10, y: 5, z: 10 }, { seed: 42 });
-        out.villageBuilt = !!v && v.type === "village" && !!v.mesh;
+        // (a) Direkter Spawn jeder Sorte. AUSLÖSCHUNGS-WELLE — village/temple fielen als
+        // Blueprints; die eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis/tor_basis)
+        // tragen die Spawn-/Save-/Cull-Mechanik als Test-Blueprints (am Band-Ende geräumt).
+        const KSr6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_r6_haus) delete r.state.blueprints._t_r6_haus;
+        r.state.blueprints._t_r6_haus = {
+            name: "_t_r6_haus",
+            parts: JSON.parse(JSON.stringify(KSr6.haus_basis.parts)),
+        };
+        if (r.state.blueprints._t_r6_tor) delete r.state.blueprints._t_r6_tor;
+        r.state.blueprints._t_r6_tor = {
+            name: "_t_r6_tor",
+            parts: JSON.parse(JSON.stringify(KSr6.tor_basis.parts)),
+        };
+        const v = r.spawnArchitecture("_t_r6_haus", { x: 10, y: 5, z: 10 }, { seed: 42 });
+        out.villageBuilt = !!v && v.type === "_t_r6_haus" && !!v.mesh;
         // V18.260 — der Render-Merge fasst die Teile per Material zu wenigen Meshes
-        // zusammen (Dorf = viele Hütten-/Plaza-Teile → ~2 gemergte Meshes). Die
-        // Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an der
-        // gerenderten Kind-Zahl: der Bauplan trägt weiter alle Hütten+Plaza-Teile.
+        // zusammen. Die Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an
+        // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
-            v && v.mesh && !!r.state.blueprints.village && (r.state.blueprints.village.parts || []).length >= 5;
+            v && v.mesh && !!r.state.blueprints._t_r6_haus && (r.state.blueprints._t_r6_haus.parts || []).length >= 5;
         out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
 
-        const t = r.spawnArchitecture("temple", { x: 30, y: 5, z: 10 }, { seed: 7 });
-        out.templeBuilt = !!t && t.type === "temple" && !!t.mesh;
-        // 6 Pfeiler + 1 Dach + 1 Altar = mind. 8 Bauplan-Teile (V18.260: per Material
-        // zu ~2 Meshes gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
+        const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
+        out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
+        // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; V18.260: per Material
+        // gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
         out.templeHasPillars =
-            t && t.mesh && !!r.state.blueprints.temple && (r.state.blueprints.temple.parts || []).length >= 8;
+            t && t.mesh && !!r.state.blueprints._t_r6_tor && (r.state.blueprints._t_r6_tor.parts || []).length >= 4;
 
         const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
         out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
@@ -55551,26 +55765,38 @@ async function checkBandRing6Workshop(ctx) {
         out.architectureCountAfterThree = r.state.architectures.length === 3;
         out.idsAreUnique = new Set(r.state.architectures.map((a) => a.id)).size === r.state.architectures.length;
 
-        // (d) DSL-Op: spawn_village wirkt durch Interpreter
-        const beforeCount = r.state.architectures.length;
-        const dslRes = r.dslRun(["spawn_village", ["at_origin"]]);
+        // (d) DSL-Op: spawn_village wirkt durch Interpreter. AUSLÖSCHUNGS-WELLE — das VERB
+        // hebt jetzt das Studio-DORF (spawnSettlement, async über den Worker) statt einen
+        // Architektur-Eintrag zu bauen; der Test fängt den Ruf am Chokepoint (Stub).
+        const svCalls = [];
+        const origSv = r.spawnSettlement;
+        r.spawnSettlement = function (o) {
+            svCalls.push(o);
+            return null;
+        };
+        let dslRes;
+        try {
+            dslRes = r.dslRun(["spawn_village", ["at_origin"]]);
+        } finally {
+            r.spawnSettlement = origSv;
+        }
         out.dslSpawnVillageOk =
-            dslRes.ok === true &&
-            r.state.architectures.length === beforeCount + 1 &&
-            dslRes.log.some((e) => e.event === "spawned_village");
+            dslRes.ok === true && svCalls.length === 1 && dslRes.log.some((e) => e.event === "spawned_village");
 
-        // (e) Chat-Pattern routet auf DSL
+        // (e) Chat-Pattern routet auf DSL. AUSLÖSCHUNGS-WELLE — spawn_temple spawnt
+        // haus_griechisch (Foundry warm) ODER skippt fail-closed (studio_kalt, kein Bau).
         const beforeChat = r.state.architectures.length;
         r.processChatCommand("Baue Tempel hier");
         out.chatRoutesToDsl =
             Array.isArray(r.state.dsl.lastUserProgram) && r.state.dsl.lastUserProgram[0] === "spawn_temple";
-        out.chatActuallySpawned = r.state.architectures.length === beforeChat + 1;
+        const tempelWarm = !!(r.state.blueprints && r.state.blueprints.haus_griechisch);
+        out.chatActuallySpawned = r.state.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
 
         // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
         // Datenmäßig unbegrenzt; GPU-Last per Distance-Culling.
         const beforeMany = r.state.architectures.length;
         for (let i = 0; i < 50; i++) {
-            r.spawnArchitecture("temple", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
+            r.spawnArchitecture("_t_r6_tor", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
         }
         out.unboundedSpawn = r.state.architectures.length === beforeMany + 50;
         // Die weiten (500m) Strukturen müssen ohne Mesh sein
@@ -55632,17 +55858,17 @@ async function checkBandRing6Workshop(ctx) {
         // loadState rekonstruiert die Liste deterministisch aus seed
         const loadInput = {
             architectures: [
-                { type: "village", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
-                { type: "temple", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
+                { type: "_t_r6_haus", position: { x: 0, y: 5, z: 0 }, seed: 12345 },
+                { type: "_t_r6_tor", position: { x: 20, y: 5, z: 0 }, seed: 67890 },
             ],
         };
         r.loadState(loadInput);
         out.loadRebuildsCount = r.state.architectures.length === 2;
         out.loadRebuildsTypes =
-            r.state.architectures[0].type === "village" && r.state.architectures[1].type === "temple";
+            r.state.architectures[0].type === "_t_r6_haus" && r.state.architectures[1].type === "_t_r6_tor";
         out.loadRebuildsSeeds = r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
 
-        // Cleanup
+        // Cleanup (inkl. Test-Blueprints — kein Katalog-Leck)
         for (const a of r.state.architectures) {
             if (a.mesh) {
                 r.state.scene.remove(a.mesh);
@@ -55650,6 +55876,8 @@ async function checkBandRing6Workshop(ctx) {
             }
         }
         r.state.architectures = [];
+        delete r.state.blueprints._t_r6_haus;
+        delete r.state.blueprints._t_r6_tor;
         return out;
     });
 
@@ -55660,15 +55888,15 @@ async function checkBandRing6Workshop(ctx) {
             ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 6: spawnArchitecture('village') liefert Group", ring6Results.villageBuilt);
+        check("Ring 6: spawnArchitecture(haus_basis-Substanz) liefert Group", ring6Results.villageBuilt);
         check(
-            "Ring 6: Dorf ist vollständig (≥5 Bauplan-Teile: Hütten + Plaza; Render gemergt)",
+            "Ring 6: Haus ist vollständig (≥5 Substanz-Teile: Wände + Dach; Render gemergt)",
             ring6Results.villageHasChildren
         );
-        check("Ring 6: Dorf wird zur Szene hinzugefügt", ring6Results.villageInScene);
-        check("Ring 6: spawnArchitecture('temple') liefert Group", ring6Results.templeBuilt);
+        check("Ring 6: Haus wird zur Szene hinzugefügt", ring6Results.villageInScene);
+        check("Ring 6: spawnArchitecture(tor_basis-Substanz) liefert Group", ring6Results.templeBuilt);
         check(
-            "Ring 6: Tempel ist vollständig (≥8 Bauplan-Teile: 6 Pfeiler + Dach + Altar; Render gemergt)",
+            "Ring 6: Tor ist vollständig (4 Substanz-Teile: 2 Pfosten + Sturz + Schwelle; Render gemergt)",
             ring6Results.templeHasPillars
         );
         check("Ring 6: spawnArchitecture('waterfall') liefert Group", ring6Results.waterfallBuilt);
@@ -55676,9 +55904,15 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6: Unbekannter Typ wird abgelehnt (returns null)", ring6Results.unknownTypeRejected);
         check("Ring 6: state.architectures wächst korrekt nach drei Spawns", ring6Results.architectureCountAfterThree);
         check("Ring 6: Architecture-IDs sind eindeutig", ring6Results.idsAreUnique);
-        check("Ring 6: DSL-Op spawn_village wirkt + emit spawned_village", ring6Results.dslSpawnVillageOk);
+        check(
+            "Ring 6: DSL-Op spawn_village wirkt (ruft spawnSettlement) + emit spawned_village",
+            ring6Results.dslSpawnVillageOk
+        );
         check("Ring 6: Chat 'Baue Tempel hier' routet auf DSL spawn_temple", ring6Results.chatRoutesToDsl);
-        check("Ring 6: Chat-Routing spawnt tatsächlich", ring6Results.chatActuallySpawned);
+        check(
+            "Ring 6: Chat-Routing spawnt tatsächlich (haus_griechisch warm) bzw. skippt fail-closed (studio_kalt)",
+            ring6Results.chatActuallySpawned
+        );
         check("Ring 6 V2: 50+ Strukturen koexistieren ohne Cap", ring6Results.unboundedSpawn);
         check(
             "Ring 6 V2: Weite Strukturen (>cullingRadius) sind 'cold' (mesh=null)",
@@ -55716,10 +55950,18 @@ async function checkBandRing6Workshop(ctx) {
         r.state.architectures = [];
 
         // Struktur nahe spawnen → Mesh + feld-native blockerAABBs gleich da.
+        // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE,
+        // solide Wände + Tür-Lücke als per-Part-Kollision) trägt die Kollisions-Probe.
+        const KSr63 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_r63_haus) delete r.state.blueprints._t_r63_haus;
+        r.state.blueprints._t_r63_haus = {
+            name: "_t_r63_haus",
+            parts: JSON.parse(JSON.stringify(KSr63.haus_basis.parts)),
+        };
         const px = r.state.playerMesh.position.x;
         const pz = r.state.playerMesh.position.z;
         const entry = r.spawnArchitecture(
-            "temple",
+            "_t_r63_haus",
             { x: px + 8, y: r.state.playerMesh.position.y, z: pz + 4 },
             { seed: 11 }
         );
@@ -55752,7 +55994,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // Eine ferne (cold) Struktur wird NICHT gerendert (kein Mesh), trägt aber
         // dieselbe feld-native Kollision (blockerAABBs beim Spawn, distanz-unabhängig).
-        const coldEntry = r.spawnArchitecture("village", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
+        const coldEntry = r.spawnArchitecture("_t_r63_haus", { x: 10000, y: 5, z: 10000 }, { seed: 1 });
         out.coldHasNoMesh = coldEntry && coldEntry.mesh === null;
         out.coldHasCollision = !!(
             coldEntry &&
@@ -55760,11 +56002,12 @@ async function checkBandRing6Workshop(ctx) {
             coldEntry.blockerAABBs.length > 0
         );
 
-        // Cleanup
+        // Cleanup (inkl. Test-Blueprint)
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
         r.state.architectures = [];
+        delete r.state.blueprints._t_r63_haus;
         return out;
     });
 
@@ -55778,7 +56021,7 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
         check("Ring 6.3: Architektur hat feld-native Kollision via blockerAABBs", ring63Results.entryHasCollision);
         check(
-            "Ring 6.3: Kollisions-Box-Größe plausibel (Tempel, via Mesh-BBox)",
+            "Ring 6.3: Kollisions-Box-Größe plausibel (Haus-Substanz, via Mesh-BBox)",
             ring63Results.collisionSizePlausible,
             ring63Results.collisionSizeFromMesh
                 ? `mesh-size=${JSON.stringify({
@@ -55810,9 +56053,17 @@ async function checkBandRing6Workshop(ctx) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
         r.state.architectures = [];
-        // Tempel direkt vor Welt-Ursprung platzieren
-        r.spawnArchitecture("temple", { x: 0, y: 5, z: 5 }, { seed: 11 });
-        // Player nach (0, 5, −2) — Tempel liegt in +Z, Spieler läuft in +Z auf ihn zu.
+        // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
+        // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
+        // ein WAND-Segment (die Tür-Lücke der Front liegt dann bei x≈1.3..2.6, nicht im Weg).
+        const KSlive = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_live_haus) delete r.state.blueprints._t_live_haus;
+        r.state.blueprints._t_live_haus = {
+            name: "_t_live_haus",
+            parts: JSON.parse(JSON.stringify(KSlive.haus_basis.parts)),
+        };
+        r.spawnArchitecture("_t_live_haus", { x: 1.925, y: 5, z: 5 }, { seed: 11 });
+        // Player nach (0, 5, −2) — Haus liegt in +Z, Spieler läuft in +Z auf es zu.
         r.state.playerMesh.position.set(0, 5, -2);
         if (r.state.playerVel) {
             r.state.playerVel.setValue(0, 0, 0);
@@ -55838,22 +56089,23 @@ async function checkBandRing6Workshop(ctx) {
         }
         return { playerZ, playerY };
     });
-    // Tempel sitzt bei z=5, Pillar-Radius ~3.5, also Pillar-Vorderkante
-    // bei z=1.5. Player startete bei z=-2, hätte ohne Kollision in
+    // Haus sitzt bei z=5, Front-Wand (z-Offset −2.55, Dicke 0.3) → Wand-Vorderkante
+    // bei z≈2.3. Player startete bei z=-2, hätte ohne Kollision in
     // 0.8s mehr als 4 m gemacht. Mit Kollision (blockerAABBs) sollte er
-    // VOR der Pillar-Vorderkante stehen (z < ~2).
+    // VOR der Wand-Vorderkante stehen (z < ~2).
     check(
-        "Ring 6.3: feld-native Kollision (blockerAABBs) stoppt den Spieler vor dem Tempel",
+        "Ring 6.3: feld-native Kollision (blockerAABBs) stoppt den Spieler vor der Haus-Wand",
         collisionLive.playerZ < 2.0,
         `playerZ=${collisionLive.playerZ.toFixed(2)} (Erwartung < 2.0)`
     );
-    // Cleanup
+    // Cleanup (inkl. Test-Blueprint)
     await page.evaluate(() => {
         const r = window.anazhRealm;
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
         r.state.architectures = [];
+        delete r.state.blueprints._t_live_haus;
     });
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
@@ -55864,14 +56116,19 @@ async function checkBandRing6Workshop(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Built-ins vorhanden
-        out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.village;
-        out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.temple;
+        // Built-ins vorhanden. AUSLÖSCHUNGS-WELLE — village/temple fielen; die Daten-Schicht
+        // besteht jetzt aus den lebenden Built-ins (stein_block/damm/waterfall) + den
+        // eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis 6 / tor_basis 4 Teile).
+        const KSr64 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        out.hasVillage = !!r.state.blueprints && !!r.state.blueprints.stein_block;
+        out.hasTemple = !!r.state.blueprints && !!r.state.blueprints.damm;
         out.hasWaterfall = !!r.state.blueprints && !!r.state.blueprints.waterfall;
-        out.villageBuiltIn = r.state.blueprints.village && r.state.blueprints.village.builtIn === true;
-        out.villagePartsArray = Array.isArray(r.state.blueprints.village.parts);
-        out.villageHasParts = r.state.blueprints.village.parts.length >= 10; // 6 huts × 2 + plaza
-        out.templeHasParts = r.state.blueprints.temple.parts.length >= 9;
+        out.villageBuiltIn = r.state.blueprints.stein_block && r.state.blueprints.stein_block.builtIn === true;
+        out.villagePartsArray = Array.isArray(r.state.blueprints.stein_block.parts);
+        out.villageHasParts =
+            !!KSr64.haus_basis && Array.isArray(KSr64.haus_basis.parts) && KSr64.haus_basis.parts.length >= 5;
+        out.templeHasParts =
+            !!KSr64.tor_basis && Array.isArray(KSr64.tor_basis.parts) && KSr64.tor_basis.parts.length >= 4;
         out.waterfallHasParts = r.state.blueprints.waterfall.parts.length === 3;
 
         // 8 Primitive renderbar — wir bauen einen Test-Bauplan
@@ -55946,7 +56203,7 @@ async function checkBandRing6Workshop(ctx) {
         out.saveContainsUserBlueprint =
             !!parsed && Array.isArray(parsed.blueprints) && parsed.blueprints.some((bp) => bp.name === "test_hut");
         out.saveOmitsBuiltIn =
-            !!parsed && Array.isArray(parsed.blueprints) && !parsed.blueprints.some((bp) => bp.name === "village");
+            !!parsed && Array.isArray(parsed.blueprints) && !parsed.blueprints.some((bp) => bp.name === "waterfall");
 
         // loadState mit eigenem Bauplan reaktiviert ihn
         delete r.state.blueprints["test_hut"];
@@ -55985,13 +56242,13 @@ async function checkBandRing6Workshop(ctx) {
             ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
         );
     } else {
-        check("Ring 6.4: Built-in Dorf-Bauplan vorhanden", ring64Results.hasVillage);
-        check("Ring 6.4: Built-in Tempel-Bauplan vorhanden", ring64Results.hasTemple);
+        check("Ring 6.4: Built-in Felsblock-Bauplan vorhanden", ring64Results.hasVillage);
+        check("Ring 6.4: Built-in Damm-Bauplan vorhanden", ring64Results.hasTemple);
         check("Ring 6.4: Built-in Wasserfall-Bauplan vorhanden", ring64Results.hasWaterfall);
-        check("Ring 6.4: Dorf ist als builtIn markiert", ring64Results.villageBuiltIn);
+        check("Ring 6.4: Felsblock ist als builtIn markiert", ring64Results.villageBuiltIn);
         check("Ring 6.4: parts ist Array", ring64Results.villagePartsArray);
-        check("Ring 6.4: Dorf hat ≥10 Parts (6 Hütten + Plaza)", ring64Results.villageHasParts);
-        check("Ring 6.4: Tempel hat ≥9 Parts (6 Pfeiler + Dach + Altar + Spitze)", ring64Results.templeHasParts);
+        check("Ring 6.4: haus_basis-Substanz (KIND_SUBSTANCE) hat ≥5 Teile", ring64Results.villageHasParts);
+        check("Ring 6.4: tor_basis-Substanz (KIND_SUBSTANCE) hat ≥4 Teile", ring64Results.templeHasParts);
         check("Ring 6.4: Wasserfall hat 3 Parts", ring64Results.waterfallHasParts);
         check(
             "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
@@ -56002,7 +56259,7 @@ async function checkBandRing6Workshop(ctx) {
         check("Ring 6.4: Unbekannter Bauplan-Name wird abgelehnt", ring64Results.unknownBlueprintRejected);
         check("Ring 6.4: saveState persistiert eigene Baupläne", ring64Results.saveContainsUserBlueprint);
         check(
-            "Ring 6.4: Save lässt Built-in-Baupläne aus (kommen aus _defaultBlueprints)",
+            "Ring 6.4: Save lässt Built-in-Baupläne aus (waterfall kommt aus _defaultBlueprints)",
             ring64Results.saveOmitsBuiltIn
         );
         check("Ring 6.4: loadState rekonstruiert eigene Baupläne", ring64Results.loadRestoresUserBlueprint);
@@ -56020,16 +56277,17 @@ async function checkBandRing6Workshop(ctx) {
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
             bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
+        // AUSLÖSCHUNGS-WELLE — die Default-Hotbar ist [stein_block, waterfall, damm, null×6].
         out.defaultHotbar =
             Array.isArray(r.state.hotbar) &&
             r.state.hotbar.length === 9 &&
-            r.state.hotbar[0] === "village" &&
-            r.state.hotbar[1] === "temple" &&
-            r.state.hotbar[2] === "waterfall" &&
+            r.state.hotbar[0] === "stein_block" &&
+            r.state.hotbar[1] === "waterfall" &&
+            r.state.hotbar[2] === "damm" &&
             r.state.hotbar.slice(3).every((s) => s === null);
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
-        out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Dorf";
+        out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Felsblock";
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
         r.state.blueprints["test_hotbar_bp"] = {
@@ -56091,7 +56349,7 @@ async function checkBandRing6Workshop(ctx) {
         out.hotbarConfigHasNineRows = config && config.querySelectorAll(".hotbar-slot").length === 10; // 9 + Off-Hand (E8)
 
         // Save-Roundtrip
-        r.setHotbarSlot(7, "temple");
+        r.setHotbarSlot(7, "damm");
         r.saveState();
         const raw = localStorage.getItem(r.worldStorageKey(r.state.worldMeta.worldId));
         let parsed = null;
@@ -56101,17 +56359,17 @@ async function checkBandRing6Workshop(ctx) {
             void e;
         }
         out.saveContainsHotbar =
-            !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "temple";
+            !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "damm";
 
         // loadState restauriert hotbar
         r.state.hotbar = [null, null, null, null, null, null, null, null, null];
-        r.loadState({ hotbar: ["temple", null, "village", null, null, null, null, null, null] });
-        out.loadRestoresHotbar = r.state.hotbar[0] === "temple" && r.state.hotbar[2] === "village";
+        r.loadState({ hotbar: ["damm", null, "waterfall", null, null, null, null, null, null] });
+        out.loadRestoresHotbar = r.state.hotbar[0] === "damm" && r.state.hotbar[2] === "waterfall";
 
         // Cleanup
         delete r.state.blueprints["test_hotbar_bp"];
         r._clearBuildMode();
-        r.state.hotbar = ["village", "temple", "waterfall", null, null, null, null, null, null];
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r._renderHotbarDOM();
         for (const a of r.state.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
@@ -56129,7 +56387,7 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-        check("Ring 6.5: Default-Hotbar [village, temple, waterfall, ..., null]", ring65Results.defaultHotbar);
+        check("Ring 6.5: Default-Hotbar [stein_block, waterfall, damm, ..., null]", ring65Results.defaultHotbar);
         check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
         check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
         check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
@@ -56169,8 +56427,9 @@ async function checkBandRing6Workshop(ctx) {
         // Liste hat einen Eintrag pro SICHTBAREM Bauplan. V18.317/.347 — die Liste filtert die auto-
         // gewachsenen Streaming-Varianten (`grown_<art>_v<N>`) HERAUS; V18.413 — zusätzlich die Fels-/
         // Kristall-/Glut-Formations-Varianten `*_var1+` (gebündelt: EINE Karte je Sorte, var0 = Repräsentant,
-        // wie im Studio). W-A1 (Katalysator §5, Donor-Abschied) — zusätzlich die donorOnly-Spender
-        // (fahrzeug_wagen · tor_basis): reine Daten-Spender ohne Katalog-Auftritt. Der Test zählt
+        // wie im Studio). W-A1 (Katalysator §5, Donor-Abschied) — zusätzlich der donorOnly-Filter
+        // (die alten Donor-Blueprints sind seit der AUSLÖSCHUNGS-WELLE physisch gefallen;
+        // der Filter bleibt code-treu für persistierte Alt-Klone). Der Test zählt
         // darum mit DEMSELBEN Filter wie `_workshopRenderBlueprintList` (der Test wandert mit dem
         // Code, V9.56-i). Die neuen „Studio-Rezepte"-Zeilen tragen eine EIGENE Klasse
         // (.workshop-studio-recipe-row) — die .workshop-list-row-Zählung bleibt rezept-frei.
@@ -56203,8 +56462,8 @@ async function checkBandRing6Workshop(ctx) {
         });
         out.addPartOk = ok2 === true && r.state.blueprints["test_hut"].parts.length === 1;
 
-        // Built-in akzeptiert keine addPart
-        const okBuiltIn = r.addPartToBlueprint("village", { shape: "sphere" });
+        // Built-in akzeptiert keine addPart (stein_block — lebendes builtIn)
+        const okBuiltIn = r.addPartToBlueprint("stein_block", { shape: "sphere" });
         out.builtInRejectsAddPart = okBuiltIn === false;
 
         // updatePartInBlueprint
@@ -56222,18 +56481,18 @@ async function checkBandRing6Workshop(ctx) {
         r.removePartFromBlueprint("test_hut", 1);
         out.removePartShrinks = r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
 
-        // cloneBlueprint (Built-in → eigen)
-        const okClone = r.cloneBlueprint("temple", "my_temple");
+        // cloneBlueprint (Built-in → eigen; damm — lebendes builtIn)
+        const okClone = r.cloneBlueprint("damm", "my_temple");
         out.cloneBlueprintOk =
             okClone === true &&
             r.state.blueprints["my_temple"].builtIn === false &&
-            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length;
+            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["damm"].parts.length;
 
         // Klone können editiert werden
         const okClonePart = r.removePartFromBlueprint("my_temple", 0);
         out.cloneIsEditable =
             okClonePart === true &&
-            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["temple"].parts.length - 1;
+            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["damm"].parts.length - 1;
 
         // deleteBlueprint (eigen)
         const beforeDel = Object.keys(r.state.blueprints).length;
@@ -56243,9 +56502,9 @@ async function checkBandRing6Workshop(ctx) {
             Object.keys(r.state.blueprints).length === beforeDel - 1 &&
             !r.state.blueprints["test_hut"];
 
-        // deleteBlueprint Built-in wird abgelehnt
-        const okDelBuiltIn = r.deleteBlueprint("village");
-        out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["village"];
+        // deleteBlueprint Built-in wird abgelehnt (stein_block — lebendes builtIn)
+        const okDelBuiltIn = r.deleteBlueprint("stein_block");
+        out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["stein_block"];
 
         // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
         r.state.hotbar[4] = "my_temple";
@@ -56276,7 +56535,7 @@ async function checkBandRing6Workshop(ctx) {
 
         // Cleanup
         r.deleteBlueprint("ed_test");
-        r.selectBlueprintForEdit("village");
+        r.selectBlueprintForEdit("stein_block");
         return out;
     });
 
@@ -56336,10 +56595,18 @@ async function checkBandRing6Workshop(ctx) {
         r.state._frameOverBudget = false;
 
         // === A) Distance-Culling ===
+        // AUSLÖSCHUNGS-WELLE — temple fiel; die haus_basis-Substanz (KIND_SUBSTANCE)
+        // trägt die Cull-/Rebuild-Mechanik als Test-Blueprint (am Band-Ende geräumt).
+        const KSr6v2 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        if (r.state.blueprints._t_r6v2_haus) delete r.state.blueprints._t_r6v2_haus;
+        r.state.blueprints._t_r6v2_haus = {
+            name: "_t_r6v2_haus",
+            parts: JSON.parse(JSON.stringify(KSr6v2.haus_basis.parts)),
+        };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
         r.state.playerMesh.position.set(0, 20, 0);
-        const near = r.spawnArchitecture("temple", { x: 5, y: 5, z: 5 }, { seed: 1 });
-        const far = r.spawnArchitecture("temple", { x: 400, y: 5, z: 400 }, { seed: 2 });
+        const near = r.spawnArchitecture("_t_r6v2_haus", { x: 5, y: 5, z: 5 }, { seed: 1 });
+        const far = r.spawnArchitecture("_t_r6v2_haus", { x: 400, y: 5, z: 400 }, { seed: 2 });
         out.nearHasMesh = !!near.mesh;
         out.farIsCold = far.mesh === null;
         // Spieler weg vom near → cull-Tick muss near disposen
@@ -56404,8 +56671,8 @@ async function checkBandRing6Workshop(ctx) {
         }
         r.state.architectures = [];
         r.state.playerMesh.position.set(0, 20, 0);
-        for (let i = 0; i < 3; i++) r.spawnArchitecture("temple", { x: i * 10, y: 5, z: 0 }, { seed: i });
-        for (let i = 0; i < 5; i++) r.spawnArchitecture("village", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
+        for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
+        for (let i = 0; i < 5; i++) r.spawnArchitecture("_t_r6v2_haus", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
         const counts = r.countArchitecturesNearPlayer(60);
         out.counterNear = counts.near === 3;
         out.counterTotal = counts.total === 8;
@@ -56419,9 +56686,9 @@ async function checkBandRing6Workshop(ctx) {
         r._clearBuildMode();
         out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = village.
+        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block.
         r.selectHotbarSlot(0);
-        out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "village";
+        out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
         out.phantomInScene =
             r.state.buildMode.phantomMesh && r.state.scene.children.indexOf(r.state.buildMode.phantomMesh) >= 0;
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
@@ -56435,9 +56702,9 @@ async function checkBandRing6Workshop(ctx) {
         // Toggle (gleicher Slot nochmal → off)
         r.selectHotbarSlot(0);
         out.toggleOffSameForm = r.state.buildMode.active === false;
-        // Slot wechseln (Slot 1 = temple)
+        // Slot wechseln (Slot 1 = waterfall)
         r.selectHotbarSlot(1);
-        out.switchFormChanges = r.state.buildMode.blueprintName === "temple";
+        out.switchFormChanges = r.state.buildMode.blueprintName === "waterfall";
         // confirmBuild platziert echte Struktur — S2 (kampf-plan §11.2): in schöpfer testen, weil
         // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
         r.setGameMode("schöpfer");
@@ -56449,7 +56716,7 @@ async function checkBandRing6Workshop(ctx) {
         r._clearBuildMode();
         out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
 
-        // Cleanup
+        // Cleanup (inkl. Test-Blueprint)
         for (const a of r.state.architectures) {
             if (a.mesh) {
                 r.state.scene.remove(a.mesh);
@@ -56457,6 +56724,7 @@ async function checkBandRing6Workshop(ctx) {
             }
         }
         r.state.architectures = [];
+        delete r.state.blueprints._t_r6v2_haus;
         r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;
     });

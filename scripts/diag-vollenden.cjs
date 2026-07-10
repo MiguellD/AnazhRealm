@@ -121,124 +121,43 @@ function startSaveServer() {
                 o.o7TreeErr = e.message;
             }
 
-            // ═══ Ω-B4 — DIE DORF-VARIANTEN ═══
-            o.b4IsFn = typeof r._villageHutVariant === "function";
-            const placeFor = (i) => {
-                const angle = (i / 6) * Math.PI * 2;
-                const radius = 7.5;
-                return {
-                    hx: Math.cos(angle) * radius,
-                    hz: Math.sin(angle) * radius,
-                    bodyRot: -angle + Math.PI,
-                    ix: -Math.cos(angle),
-                    iz: -Math.sin(angle),
-                    sx: -Math.sin(angle),
-                    sz: Math.cos(angle),
-                };
-            };
-            // (a) N Hütten EINES Dorfs (fixer Seed, Index 0..5) → variiert, nicht geklont.
-            const sig = (parts) => {
-                const roofs = parts.filter((p) => p.shape === "pyramid").length;
-                const gable = parts.some((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05);
-                const body = parts.find((p) => p.color === 0x6e3a14 || (p.size && p.size.y > 1 && p.size.x > 1.5));
-                const h = body ? Math.round(body.size.y * 10) : 0;
-                return parts.length + ":" + roofs + ":" + (gable ? "G" : "W") + ":" + h;
-            };
-            const hutSigs = new Set();
-            let allHutsStand = true;
-            let allHutsLoadIntact = true;
-            let onlyBoxPyramid = true;
-            let noMaterialField = true;
-            let allHollow = true; // V18.248: BEGEHBAR — die Innen-Mitte ist frei
-            for (let i = 0; i < 6; i++) {
-                const place = placeFor(i);
-                const hut = r._villageHutVariant("anazh-seed-A", i, place);
-                hutSigs.add(sig(hut));
-                const bp = { parts: hut };
-                if (!(r._stability(bp).inside === true)) allHutsStand = false;
-                // Ω-Φ5: der Richter verdiktet "intact" (winzige Deko-Fenster < 2% Masse zählen
-                // nicht als gebrochener Lastpfad — dieselbe Schwelle wie beim Tempel).
-                if (!(r._loadPath(bp).intact === true)) allHutsLoadIntact = false;
-                for (const p of hut) {
-                    if (p.shape !== "box" && p.shape !== "pyramid") onlyBoxPyramid = false;
-                    if (p.material) noMaterialField = false;
+            // ═══ Ω-B4 (AUSLÖSCHUNGS-WELLE) — DAS DORF IST STUDIO ═══
+            // _villageHutVariant + der statische village-Bauplan sind bewusst GESCHNITTEN
+            // (spawn_village routet auf spawnSettlement/fachwerk — gate:settlement prueft
+            // den lebenden Kanal); die Judge-SUBSTANZ des Hauses lebt eingefroren in
+            // KIND_SUBSTANCE.haus_basis und bleibt physik-wahr: sie STEHT (Ω-Φ2), der
+            // Lastpfad schliesst (Ω-Φ5), der Innenraum ist BEGEHBAR (hohl) und die
+            // TUER-LUECKE ist KEIN Part (begehbar per Konstruktion) — die V18.248-Proben
+            // auf die neue Wahrheit gehoben, NICHT vakuoes.
+            o.b4HutCut = typeof r._villageHutVariant !== "function";
+            o.b4VillageAbsent = !r.state.blueprints.village;
+            const hausSub = (r.constructor.KIND_SUBSTANCE || {}).haus_basis;
+            o.b4HausParts = hausSub && Array.isArray(hausSub.parts) ? hausSub.parts.length : 0;
+            if (hausSub) {
+                const hbp = { parts: JSON.parse(JSON.stringify(hausSub.parts)) };
+                o.b4HausStands = r._stability(hbp).inside === true;
+                // Ω-Φ5: der Richter verdiktet "intact" (Waende tragen zum Boden, das Dach
+                // sitzt auf den Waenden — dieselbe Schwelle wie beim Tempel).
+                o.b4HausLoadIntact = r._loadPath(hbp).intact === true;
+                // BEGEHBAR: kein Part deckt die Innen-Mitte auf Brusthoehe; die TUER-MITTE
+                // der Front-Wand (z=-2.55) ist FREI (die Luecke ist KEIN Part) — Welt-AABB-
+                // Containment via _partWorldAABB.
+                const aabbs = hbp.parts.map((p) => r._partWorldAABB(p)).filter(Boolean);
+                const covers = (x, y, z) =>
+                    aabbs.some(
+                        (a) =>
+                            x >= a.min.x && x <= a.max.x && y >= a.min.y && y <= a.max.y && z >= a.min.z && z <= a.max.z
+                    );
+                o.b4HausHollow = !covers(0, 1.6, 0); // der Innenraum ist frei
+                o.b4HausDoorGap = !covers(0, 1.6, -2.55); // die Tuer-Mitte ist KEIN Part
+                // der Haus-Mesh baut aus der Substanz (kein Fehler):
+                o.b4HausMeshBuilds = false;
+                try {
+                    const grp = r._buildFromBlueprint({ name: "_haus_probe", parts: hbp.parts }, 0, undefined, {});
+                    o.b4HausMeshBuilds = !!(grp && grp.children && grp.children.length >= 6);
+                } catch (e) {
+                    o.b4MeshErr = e.message;
                 }
-                // BEGEHBAR (V18.248): die Hütte ist HOHL — kein Part deckt die Innen-Mitte auf
-                // Brusthöhe (eine solide Box hätte sie gefüllt). Per-Part-Kollision → man betritt
-                // den Raum durch die Tür-Lücke (Welt-AABB-Containment via _partWorldAABB).
-                const aabbs = hut.map((p) => r._partWorldAABB(p)).filter(Boolean);
-                const cy = 1.6; // Brusthöhe über dem Fundament
-                const covered = aabbs.some(
-                    (a) =>
-                        place.hx >= a.min.x &&
-                        place.hx <= a.max.x &&
-                        cy >= a.min.y &&
-                        cy <= a.max.y &&
-                        place.hz >= a.min.z &&
-                        place.hz <= a.max.z
-                );
-                if (covered) allHollow = false;
-            }
-            o.b4VariantCount = hutSigs.size; // verschiedene Hütten in EINEM Dorf
-            o.b4AllStand = allHutsStand; // jede Hütte steht (Ω-Φ2)
-            o.b4LoadIntact = allHutsLoadIntact; // jede Hütte: Lastpfad schließt (Ω-Φ5)
-            o.b4OnlyBoxPyramid = onlyBoxPyramid; // KEINE neue Form → affinität-neutral (V17.17)
-            o.b4NoMaterial = noMaterialField; // KEIN Material → 0 Affinität, DSL-gespawnt
-            o.b4Hollow = allHollow; // BEGEHBAR — der Innenraum ist frei (kein solider Block)
-            // (b) verschiedene Welt-Seeds → verschiedene Dörfer.
-            const dorfA = r._villageHutVariant("alpha", 0, placeFor(0));
-            const dorfB = r._villageHutVariant("beta", 0, placeFor(0));
-            o.b4WorldSeedVaries = sig(dorfA) !== sig(dorfB) || dorfA.length !== dorfB.length;
-            // (c) Determinismus: gleicher (Seed, Index) → bit-identische Geometrie.
-            const det1 = r._villageHutVariant("gamma", 2, placeFor(2));
-            const det2 = r._villageHutVariant("gamma", 2, placeFor(2));
-            o.b4Deterministic =
-                det1.length === det2.length &&
-                det1.every(
-                    (p, k) =>
-                        p.shape === det2[k].shape &&
-                        Math.abs(p.position.x - det2[k].position.x) < 1e-9 &&
-                        Math.abs(p.position.y - det2[k].position.y) < 1e-9 &&
-                        p.size.y === det2[k].size.y
-                );
-            // (d) das GANZE Dorf-Bauplan: existiert, reich, STEHT, affinität-IDENTISCH zu V18.245.
-            // Die Spawn-Affinität (computeCompoundTags) ist eine MAX über (Form-Aktivierung ×
-            // Material-Tags) je Part. Material-lose Parts erben bei der Registrierung das DEFAULT
-            // "stein" (uniform für ALLE box/pyramid/cylinder-Parts) → die Compound-Tags hängen
-            // NUR vom Form-SATZ ab (nicht von Maß/Zahl/Position, die die MAX nicht ändern). Der
-            // Form-Satz {box,pyramid,cylinder} ist unverändert (Hütten box+pyramid wie vorher,
-            // Brunnen cylinder) → BEWEIS: die Dorf-Compound-Tags sind bit-gleich zu einem
-            // kanonischen {box,pyramid,cylinder}×stein-Referenz-Satz (V17.17-Disziplin). (Das
-            // Dorf wird ohnehin DSL-gestisch platziert, nicht scatter-gespawnt.)
-            const village = r.state.blueprints.village;
-            o.b4VillageExists = !!(village && Array.isArray(village.parts));
-            o.b4VillageRich = o.b4VillageExists && village.parts.length >= 40;
-            o.b4VillageStands = o.b4VillageExists && r._stability(village).inside === true;
-            const vShapes = o.b4VillageExists ? [...new Set(village.parts.map((p) => p.shape))] : [];
-            o.b4VillageShapeSet = vShapes.every((s) => s === "box" || s === "pyramid" || s === "cylinder");
-            const refBp = {
-                parts: [
-                    { shape: "box", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } },
-                    { shape: "pyramid", material: "stein", size: { x: 1, y: 1, z: 1 }, position: { x: 2, y: 0, z: 0 } },
-                    {
-                        shape: "cylinder",
-                        material: "stein",
-                        size: { x: 1, y: 1, z: 1 },
-                        position: { x: 4, y: 0, z: 0 },
-                    },
-                ],
-            };
-            const refTags = r.computeCompoundTags(refBp);
-            const vTags = o.b4VillageExists ? r.computeCompoundTags(village) : {};
-            const axes = [...new Set([...Object.keys(refTags), ...Object.keys(vTags)])];
-            o.b4AffinityMatch =
-                o.b4VillageShapeSet && axes.every((a) => Math.abs((refTags[a] || 0) - (vTags[a] || 0)) < 1e-9);
-            o.b4VillageMeshBuilds = false;
-            try {
-                const grp = r._buildFromBlueprint(village, 0, undefined, {});
-                o.b4VillageMeshBuilds = !!(grp && grp.children && grp.children.length > 30);
-            } catch (e) {
-                o.b4MeshErr = e.message;
             }
             return o;
         });
@@ -276,39 +195,21 @@ function startSaveServer() {
             "soll true",
             out.o14FoliageNoError
         );
-        console.log("\n=== Ω-PHYSIS Ω-B4 — DIE DORF-VARIANTEN (generativ, physik-garant) ===\n");
-        line("_villageHutVariant existiert", out.b4IsFn, "soll true", out.b4IsFn);
-        line("N Hütten EINES Dorfs sind variiert", out.b4VariantCount, "soll ≥ 3", out.b4VariantCount >= 3);
-        line("JEDE Hütte STEHT (Ω-Φ2)", out.b4AllStand, "soll true", out.b4AllStand);
-        line("JEDE Hütte: Lastpfad schließt (Ω-Φ5)", out.b4LoadIntact, "soll true", out.b4LoadIntact);
-        line("JEDE Hütte ist HOHL/BEGEHBAR (Innen frei)", out.b4Hollow, "soll true", out.b4Hollow);
-        line("NUR box+pyramid (affinität-neutral)", out.b4OnlyBoxPyramid, "soll true", out.b4OnlyBoxPyramid);
-        line("KEIN Material (0 Affinität, DSL-gespawnt)", out.b4NoMaterial, "soll true", out.b4NoMaterial);
-        line(
-            "verschiedene Welt-Seeds → verschiedene Dörfer",
-            out.b4WorldSeedVaries,
-            "soll true",
-            out.b4WorldSeedVaries
+        console.log(
+            "\n=== Ω-PHYSIS Ω-B4 (AUSLÖSCHUNGS-WELLE) — DAS DORF IST STUDIO, die Substanz bleibt physik-wahr ===\n"
         );
-        line("deterministisch (Seed,Index → bit-gleich)", out.b4Deterministic, "soll true", out.b4Deterministic);
+        line("_villageHutVariant existiert NICHT mehr", out.b4HutCut, "soll true (AUSLÖSCHUNG)", out.b4HutCut);
+        line("village-Bauplan ist ABWESEND", out.b4VillageAbsent, "soll true (AUSLÖSCHUNG)", out.b4VillageAbsent);
+        line("KIND_SUBSTANCE.haus_basis traegt 6 Parts", out.b4HausParts, "soll 6", out.b4HausParts === 6);
+        line("die Haus-Substanz STEHT (Ω-Φ2)", out.b4HausStands, "soll true", out.b4HausStands);
+        line("Haus-Substanz: Lastpfad schließt (Ω-Φ5)", out.b4HausLoadIntact, "soll true", out.b4HausLoadIntact);
+        line("Haus-Substanz ist HOHL/BEGEHBAR (Innen frei)", out.b4HausHollow, "soll true", out.b4HausHollow);
+        line("TUER-LUECKE ist KEIN Part (Front-Mitte frei)", out.b4HausDoorGap, "soll true", out.b4HausDoorGap);
         line(
-            "Dorf-Bauplan existiert + reich",
-            out.b4VillageExists + "/" + out.b4VillageRich,
+            "der Haus-Mesh baut aus der Substanz (kein Fehler)",
+            out.b4HausMeshBuilds + (out.b4MeshErr ? " [" + out.b4MeshErr + "]" : ""),
             "soll true",
-            out.b4VillageExists && out.b4VillageRich
-        );
-        line("das ganze Dorf STEHT", out.b4VillageStands, "soll true", out.b4VillageStands);
-        line(
-            "Dorf-Affinität bit-identisch (= {box,pyr,cyl}×stein)",
-            out.b4VillageShapeSet + "/" + out.b4AffinityMatch,
-            "soll true/true",
-            out.b4AffinityMatch
-        );
-        line(
-            "der Dorf-Mesh baut (kein Fehler)",
-            out.b4VillageMeshBuilds + (out.b4MeshErr ? " [" + out.b4MeshErr + "]" : ""),
-            "soll true",
-            out.b4VillageMeshBuilds
+            out.b4HausMeshBuilds
         );
         const all = [
             out.o7BlockInPbr,
@@ -320,25 +221,20 @@ function startSaveServer() {
             out.o14AtlasBuilds,
             out.o14MatSamples,
             out.o14FoliageNoError,
-            out.b4IsFn,
-            out.b4VariantCount >= 3,
-            out.b4AllStand,
-            out.b4LoadIntact,
-            out.b4Hollow,
-            out.b4OnlyBoxPyramid,
-            out.b4NoMaterial,
-            out.b4WorldSeedVaries,
-            out.b4Deterministic,
-            out.b4VillageExists && out.b4VillageRich,
-            out.b4VillageStands,
-            out.b4AffinityMatch,
-            out.b4VillageMeshBuilds,
+            out.b4HutCut,
+            out.b4VillageAbsent,
+            out.b4HausParts === 6,
+            out.b4HausStands,
+            out.b4HausLoadIntact,
+            out.b4HausHollow,
+            out.b4HausDoorGap,
+            out.b4HausMeshBuilds,
         ];
         const failed = all.filter((b) => !b).length;
         console.log(
             "\n" +
                 (failed === 0
-                    ? "✓ ALLE GRÜN — die Rinde erzählt ihr Holz, das Dorf zeigt variierte Hütten (der volle Bogen)."
+                    ? "✓ ALLE GRÜN — die Rinde erzählt ihr Holz, das Dorf ist Studio und die Haus-Substanz bleibt physik-wahr (der volle Bogen)."
                     : `✗ ${failed} FAIL`)
         );
         process.exitCode = failed === 0 ? 0 : 1;

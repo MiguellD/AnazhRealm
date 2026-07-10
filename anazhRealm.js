@@ -1298,7 +1298,10 @@ class AnazhRealm {
             // Slot — leerer Slot lässt den Modus aus, belegter Slot aktiviert
             // den entsprechenden Bauplan oder toggelt zurück, wenn er
             // bereits aktiv ist. F baut. ESC verlässt.
-            hotbar: ["village", "temple", "waterfall", null, null, null, null, null, null],
+            // AUSLÖSCHUNGS-WELLE — die Alt-Content-Starter (village/temple) sind gefallen;
+            // der Start-Gurt trägt die lebende Saat (Block · Wasserfall · Damm). Die
+            // Studio-Kataloge (klinge_/haus_/tor_) füllen sich zur Laufzeit über den Picker.
+            hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],
             buildMode: {
                 active: false,
                 slotIndex: -1,
@@ -2590,28 +2593,41 @@ class AnazhRealm {
             // Seed explizit setzen, sonst wird wie bisher zufällig erzeugt.
             // Beim Broadcast embed der Sender das verwendete Seed, damit
             // der Empfänger DIESELBEN Häuser sieht, nicht eigene.
+            // AUSLÖSCHUNGS-WELLE — das VERB bleibt, die GESTALT ist Studio: spawn_village
+            // hebt das fachwerk-DORF (spawnSettlement — exportSettlement über den EINEN
+            // Worker; deterministisch je Seed, alle Peers sehen dieselben Häuser). Der
+            // alte village-Bauplan ist PHYSISCH gefallen. Budget: EIN Spawn-Akt je Op —
+            // die Häuser deckelt nH, den Nexus-Hort der autonomous-Cap (V18.297-Lehre).
             spawn_village: ([positionNode, seed], ctx) => {
-                // V17.28 — eine GROSSE Struktur nie AUF den Spieler (Fall-durch-
-                // den-Boden): footprint-bewusst aus seinem Bereich schieben.
-                const pos = this._structureSpawnPos("village", this.dslEvalPos(positionNode, ctx), ctx);
+                // V17.28 — eine GROSSE Struktur nie AUF den Spieler: die Siedlungs-Klemme
+                // misst über die Substanz-Zeile haus_basis (×3 ≈ Dorf-Kern-Radius).
+                const pos = this._structureSpawnPos("haus_basis", this.dslEvalPos(positionNode, ctx), ctx, 3);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("village", pos, { seed: s, autonomous: ctx.source === "nexus" });
-                ctx.log.push({ event: "spawned_village", id: entry ? entry.id : null, pos, seed: s });
+                this.spawnSettlement({ position: pos, seed: s, nH: 9, autonomous: ctx.source === "nexus" });
+                ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
+            // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
+            // fachwerk-Labs (haus_griechisch, KULTNAMES — der sakrale Klassik-Bau des
+            // Studios). Fail-closed: kaltes Buch (Blueprint fehlt) → Skip-Log, kein Bau.
             spawn_temple: ([positionNode, seed], ctx) => {
-                const pos = this._structureSpawnPos("temple", this.dslEvalPos(positionNode, ctx), ctx);
+                const name = "haus_griechisch";
+                if (!this.state.blueprints || !this.state.blueprints[name]) {
+                    ctx.log.push({ event: "skipped", reason: "studio_kalt", op: "spawn_temple" });
+                    return;
+                }
+                const pos = this._structureSpawnPos(name, this.dslEvalPos(positionNode, ctx), ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("temple", pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: ctx.source === "nexus" });
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
@@ -3151,8 +3167,12 @@ class AnazhRealm {
             // konkret im Code.
             spawn_fractal: ([positionNode, type, depth, ratio, rootSeedArg], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
-                const validTypes = { village: true, temple: true, waterfall: true };
-                const t = typeof type === "string" && validTypes[type] ? type : "temple";
+                // AUSLÖSCHUNGS-WELLE — die alten Typ-WÖRTER bleiben gültig (alte Programme/
+                // Regeln laufen weiter), die Gestalt ist Studio: village/temple mappen auf
+                // fachwerk-Kulturen (Blueprint kalt → waterfall-Saat als fail-soft-Ziel).
+                const typeMap = { village: "haus_alemannisch", temple: "haus_griechisch", waterfall: "waterfall" };
+                let t = typeMap[typeof type === "string" ? type : ""] || typeMap.temple;
+                if (!(this.state.blueprints && this.state.blueprints[t])) t = "waterfall";
                 const d = c(depth, 0, 3);
                 const r = c(ratio, 0.2, 0.8);
                 let spawned = 0;
@@ -18215,6 +18235,95 @@ class AnazhRealm {
         }
     }
 
+    // AUSLÖSCHUNGS-WELLE (A5) — DER WÄCHTER AUS DEM KOERPERSTUDIO-GUSS: die hand-
+    // geschriebene 6-Part-Liste ist gefallen; Positionen/Größen kommen aus der EINEN
+    // Landmark-Quelle `_humanoidLandmarks` (dieselbe, die Rig + Metaball-Haut lesen),
+    // die Dial-Zeile ist DATEN (WAECHTER_DIALS, über KOERPER_DIAL_MAP wie das Lab:
+    // height→kh · mass→build · tone→muscle · gender→sex; armOut/stance = die Wächter-
+    // HALTUNG als Daten — der Klassifikator `_isBodyShaped` braucht Glied-Paare
+    // deutlich außerhalb der Spiegel-Toleranz, GEMESSEN Mint-Probe 10.07.).
+    // TAG-BYTE-GLEICH per Konstruktion: dieselbe Shape×Material-Menge
+    // {box,sphere,cylinder}×fleisch — computeCompoundTags liest keine Maße.
+    // Der Bauplan friert seinen Guss beim Boot ein (freie Information); die LIVE-
+    // Dial-Straße gehört dem Avatar (`_koerperStudioDials`) — bewusste Wand.
+    _waechterSoulParts() {
+        const W = AnazhRealm.WAECHTER_DIALS;
+        const g = {};
+        let khMul = 1;
+        for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
+            const v = Number(W[row.dial]);
+            if (!Number.isFinite(v)) continue;
+            if (row.axis === "khMul") khMul = row.base + row.mul * v;
+            else g[row.axis] = row.base + row.mul * v;
+        }
+        const kh = 0.2125 * khMul; // PLAYER_KH × height-Dial — der Wächter überragt den Menschen
+        const L = AnazhRealm._humanoidLandmarks(g);
+        const sh = L.shoulderHalf;
+        const hipY = L.hipY;
+        const shoulderY = L.shoulderY;
+        const headY = L.joint("head")[1];
+        const wristY = L.joint("wrist", 1)[1];
+        const headD = 0.95 * kh * (L.headRatio || 1);
+        const armLen = (shoulderY - 0.1 - wristY) * kh;
+        const armD = 0.62 * L.limbF * 0.4 * kh;
+        const legD = 0.78 * L.limbF * 0.4 * kh;
+        const parts = [
+            {
+                shape: "box",
+                material: "fleisch",
+                position: { x: 0, y: ((hipY + shoulderY) / 2) * kh, z: 0 },
+                size: { x: sh * 1.2 * kh, y: (shoulderY - hipY) * kh, z: sh * 0.62 * kh },
+            },
+            {
+                shape: "sphere",
+                material: "fleisch",
+                position: { x: 0, y: headY * kh, z: 0 },
+                size: { x: headD, y: headD, z: headD },
+            },
+        ];
+        for (const s of [-1, 1])
+            parts.push({
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: s * (sh + W.armOut) * kh, y: (shoulderY - 0.1) * kh - armLen / 2, z: 0 },
+                size: { x: armD, y: armLen, z: armD },
+                segments: 6,
+            });
+        for (const s of [-1, 1])
+            parts.push({
+                shape: "cylinder",
+                material: "fleisch",
+                position: { x: s * W.stance * kh, y: (hipY / 2) * kh, z: 0 },
+                size: { x: legD, y: hipY * kh, z: legD },
+                segments: 6,
+            });
+        return parts;
+    }
+    // AUSLÖSCHUNGS-WELLE (A5) — DAS HOLZROSS AUS DEM TETRAPODA-GUSS: die hand-
+    // geschriebene 7-Part-Liste ist gefallen; der Körper kommt aus dem EINEN
+    // Skelett-Gesetz `_creatureSkeleton` (die Gattung deer als Daten-Zeile
+    // REITTIER_SKELETON_G — die tetrapoda-Paarung des Reittiers, wie
+    // TETRAPODA_SOUL_MAP für die Seelen), BODEN-GELIFTET (ein Bauplan steht
+    // auf y=0, kein Kreatur-Grounding) + der belebende QUARZ-KERN (magieleitung
+    // = Antrieb, `_isMoveable`). Tags WERT-GLEICH + Rolle vehicle GEMESSEN
+    // (Mint-Probe 10.07.; kein leder-Limb — leder gewann nie einen Tag-MAX).
+    _holzrossParts() {
+        const G = AnazhRealm.REITTIER_SKELETON_G.holzross;
+        const arch = Object.assign({}, AnazhRealm.CREATURE_ARCHETYPES[G.archetypeName] || {});
+        const parts = AnazhRealm._creatureSkeleton(Object.assign({ archetype: arch }, G));
+        let minY = Infinity;
+        for (const q of parts) minY = Math.min(minY, q.position.y - (q.size.y || 0) / 2);
+        for (const q of parts) q.position.y -= minY;
+        const t0 = parts[0].position;
+        parts.push({
+            shape: "octahedron",
+            material: "quarz",
+            position: { x: 0, y: t0.y, z: t0.z - 0.2 },
+            size: { x: G.kern, y: G.kern, z: G.kern },
+        });
+        return parts;
+    }
+
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
@@ -30246,8 +30355,10 @@ class AnazhRealm {
                     .add(_lu.uDitherT)
             );
             if (opts && opts.impostor === true) {
-                // __phytoCore.lodCrossfadeMask lod=2: keep = min(2·f1, 1) ≥ dh (fin-EINblendung;
-                // vOcc trägt der RTT-Bake nicht → 0-Annahme wie in der Quelle dokumentiert).
+                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh —
+                // AUSLÖSCHUNGS-WELLE (Feld B): die 0-Annahme ist GEFALLEN, aOccl reist als
+                // Instanz-Attribut (die Karte des verdeckt-demotierten Baums blendet VOLL,
+                // exakt phytogenesis Z.2369; Default-0-Vertex-Attribut = byte-altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) return null;
                 let _vCD = _dist;
@@ -30256,7 +30367,9 @@ class AnazhRealm {
                     _vCD = _dist.mul(_k);
                 }
                 const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
-                const _keepFin = T.step(_dh, _f1i.mul(2.0).min(T.float(1.0)));
+                const _occl = T.attribute ? T.attribute("aOccl", "float") : null;
+                const _fin = _f1i.mul(2.0).min(T.float(1.0));
+                const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
                 return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
             }
             // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen:
@@ -49330,7 +49443,7 @@ class AnazhRealm {
         // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
         // Zweit-Kerns (fx.fahrprofil, ein reiner Daten-Block) Fahr-Werte, fuehren SIE — sonst
         // traegt das EMERGENTE Profil oben allein (0 Regress: heute traegt kein Rezept den
-        // Block; `fahrzeug_wagen` loest auf kein Preset -> unberuehrt). Editiert der Schoepfer
+        // Block; die Substanz-Tabelle KIND_SUBSTANCE loest auf kein Preset -> unberuehrt). Editiert der Schoepfer
         // das fahrprofil im Kern, folgt das Fahrgefuehl beim naechsten Aufsitzen (der Cache
         // haengt am entry und stirbt mit ihm).
         try {
@@ -50453,10 +50566,19 @@ class AnazhRealm {
                     dist,
                     entry._occluded === true
                 );
-                entry._occluded = occ;
+                // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — ein Occlusion-WECHSEL ohne Stufen-
+                // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die aOccl-Slots nach
+                // (das Studio-vOcc: die Karte des verdeckt-demotierten Baums blendet VOLL).
+                if (entry._occluded !== occ) {
+                    entry._occluded = occ;
+                    this._lodSlotOcclusionRefresh(entry);
+                } else {
+                    entry._occluded = occ;
+                }
                 if (occ) newLOD = 2;
             } else if (entry._occluded) {
                 entry._occluded = false;
+                this._lodSlotOcclusionRefresh(entry);
             }
             if (newLOD === entry._lodLevel) {
                 // W5.4 — BAND-PFLEGE OHNE PRIMÄR-WECHSEL: der Eintrag wandert durchs Dither-
@@ -50578,6 +50700,13 @@ class AnazhRealm {
     //   Quelle `_lodPerceptionDistance` (Skelett = volle Sichthöhe · Blatt = auf leafVisCap
     //   gekappt — dieselbe Kappung, die der aH0L-Stempel in `_foundryBuildGroup` trägt).
     _foundryLodBandPartner(entry, dist) {
+        return this._lodBandPartnerFor(dist, this._lodTreeVisHeight(entry), entry._lodLevel | 0);
+    }
+    // AUSLÖSCHUNGS-WELLE (Feld B) — DER ENTRY-FREIE PARTNER-KERN (Gesetz #0, EINE
+    // Band-Quelle): Architektur-Einträge UND der Scatter (Fern-Bäume) fragen DIESELBE
+    // Regel — welche zweite Stufe wohnt im Dither-Crossfade-Band (Studio phytogenesis
+    // Z.2696–2749: Mitgliedschaft ±M um die Fade-Fenster).
+    _lodBandPartnerFor(dist, visH, cur) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return null;
         const M = Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0;
@@ -50585,11 +50714,10 @@ class AnazhRealm {
             D1 = cfg.thresh12,
             FADE = cfg.fade || 8,
             FADE0 = cfg.fade0 || 4;
-        const visH = this._lodTreeVisHeight(entry);
         const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH) : dist;
-        const cur = Math.max(0, Math.min(2, entry._lodLevel | 0));
+        cur = Math.max(0, Math.min(2, cur | 0));
         if (cur === 0) {
-            const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 12;
+            const capL = Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 24;
             const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH, capL)) : dist;
             return dnL > D0 - FADE0 - M ? 1 : null;
         }
@@ -51098,6 +51226,8 @@ class AnazhRealm {
             // Eintrag) → der Crosshair-Raycast (liest slotEntry) ignoriert ihn,
             // bis er promoted wird.
             if (g.slotEntry) g.slotEntry[slot] = null;
+            // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (reverse-J-Skala).
+            this._lodSlotStamp(g, slot, scale, false);
             slots.push({ key: g.key, slot });
         }
         return slots;
@@ -51494,6 +51624,45 @@ class AnazhRealm {
                     foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
                 );
                 if (!slots) continue;
+                // AUSLÖSCHUNGS-WELLE (Feld B, W8-Schuld „Scatter-Fern-Bäume ohne Band-
+                // Residency"): der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN
+                // Stufen — DIESELBE Partner-Quelle wie die Architektur (`_lodBandPartnerFor`,
+                // kein zweites Band), die Partner-Slots reisen im selben cell.slots-Satz
+                // (Region-Dispose räumt beide; der Dither-Shader blendet per vLodD-Rampe).
+                if (
+                    foundryFlat &&
+                    this.state.foundryCrossfade === true &&
+                    foundryPreset &&
+                    this._foundryPresetIsTree(foundryPreset)
+                ) {
+                    const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
+                    const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
+                    // derselbe deterministische Varianten-Seed wie der Primär-Flat (Formel-Zwilling)
+                    const _fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+                    if (_partner != null && _partner !== _curLod) {
+                        const pf = this._foundryFlattenFor({ seed: _fseed }, foundryPreset, _partner);
+                        if (
+                            pf &&
+                            pf.instanceable &&
+                            Array.isArray(pf.leaves) &&
+                            pf.leaves.length &&
+                            pf.lod !== _curLod
+                        ) {
+                            const pSlots = this._scatterInstanceAdd(
+                                "fscatter:" + foundryPreset + ":" + this._foundryVariantFor(_fseed) + ":" + pf.lod,
+                                tf.x,
+                                Number.isFinite(surfY) ? surfY : 0,
+                                tf.z,
+                                tf.yaw,
+                                tf.scale,
+                                tint,
+                                null, // Bäume sind GLOBAL instanziert (V18.390-Weisheit)
+                                pf
+                            );
+                            if (pSlots) for (const ps of pSlots) slots.push(ps);
+                        }
+                    }
+                }
                 region.cells.push({
                     cellX,
                     cellZ,
@@ -51917,11 +52086,13 @@ class AnazhRealm {
         // Vorlage demotet das LAUB (den Kosten-Träger) nach nahezu ABSOLUTER Distanz
         // (phytogenesis `dnL`, auf die Blatt-Sichthöhe gekappt) — AnazhRealms EINE
         // Geometrie pro Stufe ist laub-dominiert, also gilt hier dieselbe Kappung.
-        // Die effektive Sichthöhe wird auf `lodRef · visStretchMax` gedeckelt →
-        // ein Baum ≤ `lodRef · visStretchMax` behält gestuftes SSE (etwas länger
-        // Detail), darüber ist die Streckung begrenzt (heightFactor-Floor =
-        // 1/visStretchMax) → der Riese demotet im Kragen zu L1/L2 wie im Studio.
-        const stretchMax = Number.isFinite(cfg.visStretchMax) && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
+        // AUSLÖSCHUNGS-WELLE (Feld B) — der Deckel ist VORLAGE-TREU GEFALLEN
+        // (visStretchMax = Infinity, s. LOD_DISTANCES): das Studio rechnet
+        // `min(uLodRef/(aH0·_isy),1)` UNGEDECKELT (foundry-core.js Z.196) — der
+        // grosse Baum behält Detail proportional länger. Der alte S2-Deckel
+        // demotete Riesen ~2× zu früh (der „nicht wie in der Vorlage"-Befund).
+        // Infinity ist bewusst gültig (kein Number.isFinite-Guard — > 0 reicht).
+        const stretchMax = cfg.visStretchMax > 0 && cfg.visStretchMax >= 1 ? cfg.visStretchMax : 1.25;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
         // Perf-Multiplikator aus der EINEN Regler-Quelle.
@@ -53890,6 +54061,10 @@ class AnazhRealm {
     }
 
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B1 — DIE ARCHITEKTUR-GRAMMATIK (reference-first) ═══
+    // AUSLÖSCHUNGS-WELLE: der Spiel-Aufrufer (`_classicalTempleVariant`/der
+    // temple-Bauplan) ist GEFALLEN — der Tempel-Bau kommt jetzt aus den fachwerk-
+    // Kulturen. Diese Grammatik-Maschine bleibt als PHYSIK-Richter-Saat: die
+    // Ω-PHYSIS-Gates (diag-genom) proben sie direkt. KEIN Spiel-Pfad ruft sie mehr.
     // (wahrerbauplan §6 — die SCHÖNHEIT): ein klassischer Tempel, NICHT aus unreifer
     // Formel, sondern aus der ORDNUNG abgeleitet (das 2000 Jahre kodifizierte „LAAS der
     // Tempel", §3). WÄHLE die Ordnung (dorisch/ionisch) → alles folgt daraus: Säulen-
@@ -54135,138 +54310,6 @@ class AnazhRealm {
                 };
             },
         };
-    }
-
-    // Ω-B4 (wahrerbauplan §6) — DIE REGEL IST GENERATIV, kein Einzel-Beispiel: ein
-    // deterministischer Seed → eine VARIANTE (Ordnung · Säulen-Zahl · Tiefe · Durchmesser).
-    // 2 Ordnungen × 4 Fronten × 4 Tiefen × 8 Durchmesser × 4 Paletten = 1024 verschiedene
-    // Tempel, ALLE physik-garant (die Ordnung liefert solide Proportionen, §6). Jede Welt
-    // würfelt aus ihrem Seed ihren eigenen Tempel über den GETEILTEN Roller (wahrerwuchs §3
-    // S0 — kein inlined Bit-Slicing mehr, kein Vorzeichen-Leak). Hexastyle+ reich.
-    _classicalTempleVariant(seed) {
-        const g = this._rollGenome(seed, "temple");
-        const order = g.pick("order", ["dorisch", "ionisch"]);
-        // V18.250 (Schöpfer „gigantisch, unterschiedlichster formen und grössen") — WEITE
-        // Größen-Spanne: intim-tetrastyle (4 Säulen, schmal) bis GIGANTISCH (10 Säulen, dick).
-        // Die Schlankheit (1:7/1:9) ist FIX → ein größerer Durchmesser macht den Tempel
-        // proportional höher + breiter (physik-garant: der Lastpfad/Knick-Test fängt den
-        // Ausreißer; die Ordnung hält die Proportion solide).
-        const columnsFront = 4 + 2 * g.int("columnsFront", 0, 3); // 4 · 6 · 8 · 10 Säulen-Front
-        const columnsSide = columnsFront + 3 + 2 * g.int("columnsSide", 0, 3); // Tiefe variiert
-        const columnDiameter = 0.7 + g.int("columnDiameter", 0, 7) * 0.1; // 0.7..1.4 (intim → gigantisch)
-        // STEIN-PALETTE aus dem Seed: Marmor · Sandstein · Granit · dunkler Basalt
-        const palettes = [
-            { marble: 0xe6e0d2, cap: 0xeae3d4, step: 0xd8d2c0, wall: 0xcfc8b4, frieze: 0xdcd5c2, trig: 0xcfc7b2 }, // Marmor (weiss)
-            { marble: 0xcaa878, cap: 0xd4b886, step: 0xbf9f70, wall: 0xbb9a68, frieze: 0xc6a880, trig: 0xb89a6a }, // Sandstein (warm)
-            { marble: 0x8e8c88, cap: 0x9a9894, step: 0x807e7a, wall: 0x787672, frieze: 0x908e8a, trig: 0x82807c }, // Granit (grau)
-            { marble: 0x46443e, cap: 0x55534c, step: 0x3c3a34, wall: 0x34322c, frieze: 0x4a4842, trig: 0x3e3c36 }, // Basalt (dunkel)
-        ];
-        const palette = g.pick("palette", palettes);
-        return this._buildClassicalTemple(order, { columnsFront, columnsSide, columnDiameter, palette });
-    }
-
-    // Ω-B4 (wahrerbauplan §6 — DIE REGEL IST GENERATIV, für Architektur) — V18.248: eine
-    // BEGEHBARE Hütte (Schöpfer „ein haus das man begehen kann?"): ein HOHLES Haus aus 4
-    // Wänden mit echter Tür-LÜCKE (wie die Tempel-Cella). Die Architektur-Kollision ist
-    // PER-PART (jede Wand ein eigener Box-Shape, GEMESSEN) → die Tür-Lücke hat KEIN Part →
-    // man geht hindurch in den hohlen Raum. Ein deterministischer Seed (Welt-Seed + Index)
-    // → eine VARIANTE (Größe · Geschoss · Fenster-Zahl · Schornstein · Dach-Pitch · Tönung).
-    // NUR box+pyramid (KEINE neue Form, KEIN Material) → Spawn-Affinität bit-identisch
-    // (V17.17). PHYSIK-GARANT: die Wände stehen auf dem Fundament (Ω-Φ2), das Walm-Dach ruht
-    // auf den Wänden (Lastpfad Ω-Φ5). LOKAL gebaut (Tür auf +Z), via yaw=atan2(ix,iz) zum
-    // Dorf-Zentrum gedreht (die Tür schaut auf den Platz). Deterministisch über Peers.
-    _villageHutVariant(seed, index, place) {
-        // wahrerwuchs §3 S0 — über den GETEILTEN Roller (kein inlined Bit-Slicing,
-        // kein Vorzeichen-Leak); jede Hütte ein eigener (seed:index)-Namensraum.
-        const g = this._rollGenome(String(seed == null ? "anazh" : seed) + ":" + (index | 0), "hut");
-        const { hx, hz, ix, iz } = place;
-        const parts = [];
-        const yaw = Math.atan2(ix, iz); // lokal +Z (Tür) → Welt (ix,iz) = zum Zentrum
-        const cY = Math.cos(yaw);
-        const sY = Math.sin(yaw);
-        // lokale (lx,ly,lz) → Welt: um yaw um y gedreht, nach (hx,hz) verschoben.
-        const box = (color, lx, ly, lz, sx, sy, sz) =>
-            parts.push({
-                shape: "box",
-                color,
-                position: { x: hx + lx * cY + lz * sY, y: ly, z: hz - lx * sY + lz * cY },
-                rotation: { x: 0, y: yaw, z: 0 },
-                size: { x: sx, y: sy, z: sz },
-            });
-        // ─── Variation aus dem Seed ───
-        // V18.250 (Schöpfer „grosse, kleine") — WEITE Größen-Spanne: Kate (0.78×) bis
-        // Langhaus/Gehöft (1.73×); physik-garant (ein breiter Kasten steht immer) + 8 Holz-/
-        // Lehm-Töne (war 5) → ein Dorf mit echtem Größen- + Farb-Reichtum statt Klonen.
-        const sv = 0.78 + g.axis("size") * 0.95; // 0.78..1.73 (Kate → Langhaus)
-        const tall = g.chance("tall", 0.5); // zweites Geschoss
-        const winSide = g.chance("winOne", 0.5) ? 1 : 2; // Fenster je Seitenwand
-        const chimney = g.chance("chimney", 0.5);
-        const tints = [0x7a4a28, 0x8a5a30, 0x6e4220, 0x946a40, 0x63421f, 0x9a7048, 0x5a3a1c, 0x84512a];
-        const wallColor = g.pick("tint", tints);
-        const trimColor = 0x4a2c14;
-        const roofColor = 0x8b2a1e;
-        const stoneColor = 0x6a6258;
-        // ─── Maße (quadratisch-nah → das Walm-Dach passt sauber) ───
-        const W = 4.2 * sv; // Breite (x)
-        const D = 4.6 * sv; // Tiefe (z), Tür auf +D/2
-        const wallT = 0.26;
-        const foundH = 0.4;
-        const floorY = foundH;
-        const storyH = 2.7;
-        const wallH = tall ? storyH * 1.85 : storyH;
-        const wallTop = floorY + wallH;
-        const wallYc = floorY + wallH / 2;
-        const doorW = 1.3;
-        const doorH = 2.4;
-        // (1) Fundament + Innen-Boden
-        box(stoneColor, 0, foundH / 2, 0, W + 0.6, foundH, D + 0.6);
-        box(trimColor, 0, floorY + 0.06, 0, W - 0.1, 0.12, D - 0.1);
-        // (2) Rück-Wand + 2 Seiten-Wände (massiv, kollidierbar)
-        box(wallColor, 0, wallYc, -D / 2 + wallT / 2, W, wallH, wallT);
-        box(wallColor, W / 2 - wallT / 2, wallYc, 0, wallT, wallH, D);
-        box(wallColor, -(W / 2 - wallT / 2), wallYc, 0, wallT, wallH, D);
-        // (3) FRONT-Wand mit Tür-LÜCKE: 2 Pfeiler + Sturz (die Lücke = BEGEHBARE Tür)
-        const fpw = (W - doorW) / 2;
-        box(wallColor, -(doorW / 2 + fpw / 2), wallYc, D / 2 - wallT / 2, fpw, wallH, wallT);
-        box(wallColor, doorW / 2 + fpw / 2, wallYc, D / 2 - wallT / 2, fpw, wallH, wallT);
-        box(wallColor, 0, floorY + doorH + (wallH - doorH) / 2, D / 2 - wallT / 2, doorW, wallH - doorH, wallT);
-        // (4) gerahmter Eingang: Rahmen (vorstehend) + Schwelle (Tritt) + Vordach
-        box(trimColor, -(doorW / 2 + 0.08), floorY + doorH / 2, D / 2 + 0.05, 0.16, doorH, 0.22);
-        box(trimColor, doorW / 2 + 0.08, floorY + doorH / 2, D / 2 + 0.05, 0.16, doorH, 0.22);
-        box(trimColor, 0, floorY + doorH + 0.11, D / 2 + 0.05, doorW + 0.5, 0.22, 0.22);
-        box(stoneColor, 0, floorY + 0.09, D / 2 + 0.32, doorW + 0.6, 0.18, 0.6);
-        box(roofColor, 0, floorY + doorH + 0.36, D / 2 + 0.36, doorW + 0.85, 0.14, 0.74);
-        // (5) Fenster (vorstehender Rahmen + warm leuchtende Scheibe) in den Seitenwänden
-        const winY = floorY + Math.min(wallH, storyH) * 0.52;
-        for (const sgn of [-1, 1]) {
-            for (let w = 0; w < winSide; w++) {
-                const lz = winSide === 1 ? 0 : w === 0 ? -D * 0.22 : D * 0.22;
-                box(trimColor, sgn * (W / 2 + 0.03), winY, lz, 0.16, 0.64, 0.64);
-                box(0xe2b667, sgn * (W / 2 - 0.04), winY, lz, 0.12, 0.48, 0.48);
-            }
-        }
-        // zweites Geschoss: Gurtsims + ein Fenster vorne oben
-        if (tall) {
-            box(trimColor, 0, floorY + storyH, 0, W + 0.14, 0.14, D + 0.14);
-            box(0xe2b667, 0, floorY + storyH * 1.4, D / 2 + 0.03, 0.5, 0.5, 0.16);
-        }
-        // (6) WALM-DACH (Pyramide, sauber) — Basis ≈ √2·(Spannweite+Überstand), 45° gedreht
-        // → die Dach-FLÄCHEN (nicht die Diamant-Ecken) decken die Wände + ein Traufen-Überstand.
-        const roofH = (1.25 + (g.chance("roofTall", 0.5) ? 0.55 : 0)) * sv;
-        const roofBase = 1.42 * (Math.max(W, D) + 1.2);
-        box(trimColor, 0, wallTop + 0.04, 0, W + 0.7, 0.16, D + 0.7); // Traufe-Kranz
-        parts.push({
-            shape: "pyramid",
-            color: roofColor,
-            position: { x: hx, y: wallTop + roofH * 0.5 + 0.1, z: hz },
-            rotation: { x: 0, y: yaw + Math.PI / 4, z: 0 },
-            size: { x: roofBase, y: roofH, z: roofBase },
-        });
-        // (7) Schornstein (optional)
-        if (chimney) {
-            box(stoneColor, W * 0.3, wallTop + roofH * 0.5, -D * 0.2, 0.42, roofH * 1.2, 0.42);
-        }
-        return parts;
     }
 
     // ═══ DAS FELS-GENOM (wahrerwuchs §4.2 S3) — vom Kiesel zum Felsturm, EIN Genom ═══
@@ -54793,48 +54836,6 @@ class AnazhRealm {
         return out;
     }
 
-    // ═══ DAS GERÄT-GENOM (wahrerwuchs §4.6 S6) — die FUNKTION ist Physik ═══
-    // SCHWERT: ein OAKESHOTT-Typ aus dem Roller (die BALANCE folgt aus den Massen, Ω-Φ4,
-    // GERECHNET nie gesetzt — das `_buildBladedWeapon`-Muster). WERKZEUG: der einfache Hebel
-    // (τ = Kopf-Masse · Stiel-Länge; Keil-Winkel; die Form treibt mine/cut-Profil, U4). Beide
-    // GEHALTEN (kein freistehender Richter — Ω-Φ4 Schwung/Hebel ist der Maßstab).
-    _bladedWeaponVariant(seed) {
-        const g = this._rollGenome(seed, "blade");
-        const types = (AnazhRealm.OAKESHOTT_TYPES && Object.keys(AnazhRealm.OAKESHOTT_TYPES)) || ["XII"];
-        return this._buildBladedWeapon(g.pick("typ", types));
-    }
-    _toolVariant(seed) {
-        const g = this._rollGenome(seed, "tool");
-        const parts = [];
-        const handleLen = g.range("handle", 1.0, 1.6); // Stiel-Länge (der Hebelarm)
-        // F2 (§11): der KOPF ist jetzt ein gebogener `pickHead` (Pick-Spitze + Adze über dem
-        // Auge) statt eines Kegels → liest als Spitzhacke. Die Spannweite < handleLen/2.2 hält
-        // das Werk gestreckt+spitz (U4 → Gerät, nicht Bauwerk; _isGraspableBladeForm). Der
-        // HEBEL (Ω-Φ4) variiert: Stiel-Länge × Kopf-Masse(Auge) × Spannweite(Pick-Reichweite).
-        const span = handleLen * g.range("spanFrac", 0.32, 0.42); // Spitze↔Adze
-        const headMass = g.range("headMass", 0.13, 0.2); // Auge-Höhe (die Masse) — schlanker Kopf
-        const curve = g.range("curve", 0.12, 0.3); // Krümmung des Pickels (leicht herabgebogen)
-        // Stiel (holz) — der Hebel.
-        parts.push({
-            shape: "cylinder",
-            material: "holz",
-            color: 0x6e4a28,
-            position: { x: 0, y: handleLen / 2, z: 0 },
-            size: { x: 0.1, y: handleLen, z: 0.1 },
-            segments: 6,
-        });
-        // Kopf (eisen `pickHead`) — über dem Stiel, schwingend.
-        parts.push({
-            shape: "pickHead",
-            material: "eisen",
-            color: 0xb9bfc6,
-            position: { x: 0, y: handleLen + headMass * 0.3, z: 0 },
-            size: { x: span, y: headMass, z: 0.14 },
-            curve,
-        });
-        return parts;
-    }
-
     // ═══ DAS RÜSTUNGS-GENOM (wahrerwuchs §4.6 T4) — Platten-Größe · Artikulation · Material ═══
     // Eine Rüstung ist GESTEN/Bibliothek-gespawnt (NICHT scatter) → Material FREI (V17.17 §2).
     // Die Achsen: Brustplatten-Größe (chestW/chestH) · ARTIKULATION (Pauldron-Größe/Spreizung +
@@ -54971,46 +54972,12 @@ class AnazhRealm {
         return parts;
     }
 
-    // ═══ DAS FAHRZEUG-SSF-GENOM (wahrerwuchs §4.7 T4 / Ω-Φ4) — die Fahrdynamik-Stabilität ═══
-    // SSF = Spur / (2 · Schwerpunkt-Höhe) — die echte Kipp-Schwelle. Das Genom variiert die
-    // SPUR (Rad/Bein-x) · die KABINEN-Breite · die RAD-Größe — die HÖHE (y) bleibt UNANGETASTET
-    // → der SITZ-Punkt + die Gelenk-Indizes (connections) bleiben heil (der „Fahrzeug-Fahr-
-    // Tiefe"-Faden unberührt: keine moveable/mount/Sitz-Höhen-Verschiebung). Eine breitere Spur
-    // senkt das Kippen (Ω-Φ2/Φ4 GEMESSEN: die Stabilitäts-Marge variiert, jede Variante steht).
-    // Part-Reihenfolge/-Zahl bleibt → die Index-basierten connections reisen unverändert mit.
-    _vehicleVariant(parts, seed) {
-        if (!Array.isArray(parts) || !parts.length) return parts;
-        const g = this._rollGenome(seed, "vehicle");
-        const track = g.range("track", 0.9, 1.32); // Spur (Rad/Bein-x) — breiter = stabiler (SSF↑)
-        const cabinScale = g.range("cabin", 0.85, 1.2); // Korpus-Breite/Tiefe
-        // Die RAD-GRÖSSE variiert ECHT (Karren-Räder ↔ Wagen-Räder) — KEINE Ausweichung: das
-        // Gefährt RE-VERANKERT sich an seiner eigenen Geometrie. `mountArchitecture` leitet
-        // `_groundClear = −_compoundBottomY·scale` AB (kein gefrorenes Maß) → die Unterkante ruht
-        // IMMER auf dem Terrain, egal wie groß die Räder; ein großes Rad hebt das Gefährt (höherer
-        // Sitz, höherer Schwerpunkt über Grund = ehrlich kippiger, Ω-Φ4). Die y-BREITE des Rads
-        // bleibt (die Lauffläche), nur der RADIUS (x/z) wächst — physik-wahr, nicht eingefroren.
-        const wheelR = g.range("wheelR", 0.8, 1.32);
-        return parts.map((p) => {
-            const np = { ...p };
-            const isWheel = p.material === "eisen" && (p.shape === "cylinder" || p.shape === "spokeWheel");
-            // die SPUR weitet (Rad/Bein-x × track) → der SSF variiert; y bleibt überall (seat-safe).
-            if (p.position)
-                np.position = { x: (p.position.x || 0) * track, y: p.position.y || 0, z: p.position.z || 0 };
-            if (p.size) {
-                if (isWheel)
-                    np.size = { x: (p.size.x || 0.3) * wheelR, y: p.size.y || 0.3, z: (p.size.z || 0.3) * wheelR }; // Radius wächst, Lauffläche bleibt
-                else
-                    np.size = {
-                        x: (p.size.x || 0.3) * cabinScale,
-                        y: p.size.y || 0.3,
-                        z: (p.size.z || 0.3) * cabinScale,
-                    };
-            }
-            return np;
-        });
-    }
-
     // ═══ Ω-PHYSIS · SÄULE III · Ω-B2 — DIE PARAMETRISCHE KLINGE (reference-first) ═══
+    // AUSLÖSCHUNGS-WELLE: der Spiel-Aufrufer (`_bladedWeaponVariant`/der geraet_schwert-
+    // Donor) ist GEFALLEN — die Klingen-Vielfalt kommt jetzt aus den 21 schmiede-core-
+    // Rezepten, die eingefrorene Judge-Substanz aus KIND_SUBSTANCE. Diese Grammatik-
+    // Maschine bleibt als PHYSIK-Richter-Saat: die Balance-Gates (diag-genom) proben sie
+    // direkt. KEIN Spiel-Pfad ruft sie mehr.
     // (wahrerbauplan §6/§3.5): ein Schwert NICHT als „Box mit pointedFraction", sondern
     // als OAKESHOTT-Typ — Knauf · Griff · Parier · distal-verjüngte Klinge mit Hohlkehle
     // (der bladeProfile-Mesh). Die BALANCE (Ω-Φ4) FOLGT aus der Massen-Verteilung der
@@ -55501,102 +55468,13 @@ class AnazhRealm {
         // Hilfsfunktionen für die Built-in-Generierung. Bauen einen Bauplan
         // imperativ und liefern flache Part-Listen zurück. Da das nur EINMAL
         // beim Initialisieren läuft, kostet das nichts.
-        const villageParts = [];
-        // Ω-B4 — der Dorf-Seed (Welt-Seed) würfelt das Dorf eigen + deterministisch.
-        const villageSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-village";
-        // V18.249 (Schöpfer „häuser kollidieren, immer gleiche anordnung ... keine struktur") —
-        // das Dorf bekommt eine sichtbare STRUKTUR statt „Hütten im Kreis": ein zentraler PLATZ,
-        // organisch GESTREUTE Häuser (seed-variierter Winkel + Radius → kein zwei Dörfer gleich,
-        // kein Überlappen durch großen Radius + Streuung), und STEIN-WEGE von jeder Tür zum Platz.
-        // Die Häuser schauen mit der Tür auf den Platz (yaw=atan2(ix,iz) in der Variante).
-        const vHash = (salt) => {
-            let hh = 2166136261;
-            const ss = "vlayout:" + villageSeed + ":" + salt;
-            for (let ci = 0; ci < ss.length; ci++) {
-                hh ^= ss.charCodeAt(ci);
-                hh = Math.imul(hh, 16777619);
-            }
-            return ((hh >>> 0) % 1000000) / 1000000; // [0,1)
-        };
-        const hutCount = 5 + Math.floor(vHash("count") * 3); // 5-7 Häuser (variierte Dorf-Größe)
-        const baseRadius = 15.5; // groß genug, dass auch die großen Langhäuser (bis ~8 m) nicht kollidieren
-        // (A) der zentrale PLATZ — eine flache Stein-Plattform (gibt dem Dorf eine Mitte)
-        villageParts.push({
-            shape: "cylinder",
-            color: 0x8f877b,
-            position: { x: 0, y: 0.12, z: 0 },
-            size: { x: 7.6, y: 0.24, z: 7.6 },
-            segments: 18,
-        });
-        for (let i = 0; i < hutCount; i++) {
-            const angle = (i / hutCount) * Math.PI * 2 + (vHash(i + ":a") - 0.5) * 0.7; // ±0.35 rad Streuung
-            const radius = baseRadius * (0.92 + vHash(i + ":r") * 0.36); // 0.92..1.28 × base
-            const hx = Math.cos(angle) * radius;
-            const hz = Math.sin(angle) * radius;
-            const ix = -Math.cos(angle); // zum Zentrum (die Tür schaut auf den Platz)
-            const iz = -Math.sin(angle);
-            const hutParts = this._villageHutVariant(villageSeed, i, { hx, hz, ix, iz });
-            for (let hp = 0; hp < hutParts.length; hp++) villageParts.push(hutParts[hp]);
-            // (B) ein STEIN-WEG von der Tür zum Platz (radial ausgerichtet) — die Dorf-Struktur
-            const pathInner = 3.8;
-            const pathOuter = radius - 3.4; // bis kurz vor die Tür
-            if (pathOuter > pathInner + 0.6) {
-                const pmid = (pathInner + pathOuter) / 2;
-                villageParts.push({
-                    shape: "box",
-                    color: 0x9a9388,
-                    position: { x: Math.cos(angle) * pmid, y: 0.1, z: Math.sin(angle) * pmid },
-                    rotation: { x: 0, y: Math.atan2(Math.cos(angle), Math.sin(angle)), z: 0 },
-                    size: { x: 1.5, y: 0.16, z: pathOuter - pathInner },
-                });
-            }
-        }
-        // Dorf-Brunnen im Zentrum (statt der flachen Platte): Stein-Ring +
-        // dunkles Wasser innen + zwei Pfosten + Dach-Andeutung.
-        villageParts.push({
-            shape: "cylinder",
-            color: 0x787068,
-            position: { x: 0, y: 0.5, z: 0 },
-            size: { x: 2.4, y: 1.0, z: 2.4 },
-            segments: 12,
-        });
-        villageParts.push({
-            shape: "cylinder",
-            color: 0x21323a,
-            position: { x: 0, y: 1.02, z: 0 },
-            size: { x: 1.7, y: 0.1, z: 1.7 },
-            segments: 12,
-        });
-        villageParts.push({
-            shape: "box",
-            color: 0x5a3a1c,
-            position: { x: -1.0, y: 1.9, z: 0 },
-            size: { x: 0.2, y: 2.0, z: 0.2 },
-        });
-        villageParts.push({
-            shape: "box",
-            color: 0x5a3a1c,
-            position: { x: 1.0, y: 1.9, z: 0 },
-            size: { x: 0.2, y: 2.0, z: 0.2 },
-        });
-        villageParts.push({
-            shape: "pyramid",
-            color: 0x6e3a14,
-            position: { x: 0, y: 3.1, z: 0 },
-            size: { x: 2.8, y: 0.7, z: 1.4 },
-        });
-
-        // Ω-B1 (wahrerbauplan §6 — die SCHÖNHEIT): der Tempel folgt jetzt der DORISCHEN
-        // ORDNUNG (reference-first, §3, das 2000-Jahre-„LAAS der Tempel"): kannelierte
-        // Schäfte mit Entasis, Echinus-Kapitelle, Triglyphen-Fries, GIEBEL — aus der
-        // Ordnung ABGELEITET, nicht hand-geraten. Die alte „6 glatte Zylinder + Kegeldach"-
-        // Attrappe ist ersetzt. Physik-garant: die 1:7-Säulen knicken nicht (Ω-Φ3-b),
-        // der Lastpfad schließt (Ω-Φ5). Parametrisch — ionisch ist ein Parameter-Tausch.
-        // Ω-B4 — die Welt würfelt aus ihrem Seed ihren EIGENEN Tempel (generativ, nicht eine
-        // Attrappe): Ordnung/Größe/Säulen-Zahl variieren deterministisch, alle physik-garant.
-        const _templeSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-temple";
-        const templeParts = this._classicalTempleVariant(_templeSeed);
-
+        // AUSLÖSCHUNGS-WELLE (Schöpfer 10.07.: „die alten dinge endlich raus! die alten
+        // avatare, körper, tempel, dorf, schwert") — die Alt-Content-Baupläne `village` +
+        // `temple` sind PHYSISCH gefallen: das DORF ist das Studio-Dorf (fachwerk
+        // exportSettlement → spawnSettlement, spawn_village routet dorthin), der TEMPEL
+        // ist die klassische Portikus-Kultur des fachwerk-Labs (haus_griechisch,
+        // spawn_temple routet dorthin). `waterfall` bleibt als SAAT (Wasser-Natur,
+        // kein Lab-Gegenstück — der benannte Wasserfall-Render-Faden).
         const waterfallParts = [
             // Klippe hinten
             {
@@ -56557,23 +56435,11 @@ class AnazhRealm {
         // KEIN `instanced` (deliberate Items, kein Worldgen-Spawn — sie stehen
         // NICHT in der `_vegetationSampleSpawn`-Kandidatenliste → kein Litter).
 
-        // GERÄT — eine Spitzhacke (Werkzeug UND Waffe, W2-B). Holz-Stiel + eiserne
-        // Spitze; eisen ist hart+dicht → kräftiges Abbauen/Schneiden. Rollenlos:
-        // gehalten, die Fähigkeit emergiert aus Form × Material.
-        // wahrerwuchs §4.6 S6 — das WERKZEUG aus dem Genom: Stiel-Länge · Kopf-Masse ·
-        // Kopf-Form (Pickel/Axt/Schlägel) → der Hebel (Ω-Φ4) + das mine/cut-Profil emergieren.
-        const _toolSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        const geraetSpitzhackeParts = this._toolVariant(`${_toolSeed}-tool`);
-        // V17.86 — DAS SCHWERT (Schöpfer-Wunsch „ein Schwert wäre als Samen/Hilfestellung gut").
-        // Ω-B2 (wahrerbauplan §6/§3.5): NICHT mehr „Box/Kegel mit pointedFraction", sondern ein
-        // OAKESHOTT-Typ XII (Schnitt+Stich) — Knauf · Griff · Parier · distal-verjüngte Klinge mit
-        // HOHLKEHLE (der bladeProfile-Mesh). ROLLENLOS wie die Spitzhacke (V17.72) → die Rolle
-        // EMERGIERT (gestreckt + spitz → `_isGraspableBladeForm` → Waffe/Gerät, U4; Oktaeder-Knauf +
-        // bladeProfile-Klinge halten pointedFraction 0.5 → KLINGE, nicht Brecher). Die BALANCE
-        // (Ω-Φ4) FOLGT aus den Massen (Knauf vs. Klinge), nicht aus einer Setzung.
-        // wahrerwuchs §4.6 S6 — das SCHWERT aus dem Genom: ein OAKESHOTT-Typ aus dem Roller
-        // (die Balance Ω-Φ4 folgt aus den Massen, gerechnet nie gesetzt).
-        const geraetSchwertParts = this._bladedWeaponVariant(`${_toolSeed}-blade`);
+        // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke + geraet_schwert sind PHYSISCH gefallen:
+        // die 21 klinge_-Gattungen des Schmiede-Labs SIND die Werkzeuge/Klingen; ihre
+        // Judge-Substanz lebt eingefroren in AnazhRealm.KIND_SUBSTANCE (geraet_schwert →
+        // Klingen, geraet_spitzhacke → fx.tool-Werkzeuge, donorTool-Zeile der weapon-Policy).
+
         // RÜSTUNG — ein eiserner Brustpanzer. Dicht + hart → Schutz-Fähigkeit.
         // role:"armor" deklariert (Rüstung vs. Bauwerk sind Substanz-Zwillinge,
         // die Unterscheidung ist INTENT — der V17.70-Override, wie die Stationen).
@@ -56581,237 +56447,11 @@ class AnazhRealm {
         // (`_armorVariant` / `_potionVariant`, parametrisch generiert) statt fixer
         // Parts-Listen durch _stationVariant (scale+tint). Die alten Listen sind
         // ersetzt (V17.20: erst tiefer-ersetzt, dann geschnitten).
-        // AVATAR — ein hölzerner Wächter. Sechs Parts (Torso + Kopf + 2 Arme +
-        // 2 Beine), bilateral symmetrisch + vertikal + Glied-Paare → _isBodyShaped
-        // TRUE → resoniert ehrlich `soul` (bodyShape 2.0 + lebendig). role:"soul"
-        // deklariert; forgeAvatar formt den Körper (applyPlayerSoulFromBlueprint).
-        const avatarWaechterParts = [
-            {
-                shape: "box",
-                material: "fleisch",
-                position: { x: 0, y: 1.25, z: 0 },
-                size: { x: 0.6, y: 0.9, z: 0.35 },
-            },
-            {
-                shape: "sphere",
-                material: "fleisch",
-                position: { x: 0, y: 1.95, z: 0 },
-                size: { x: 0.42, y: 0.42, z: 0.42 },
-            },
-            // Arme + Beine als bilaterale Spiegel-Paare (_compoundSymmetry-Glieder).
-            // GEMESSEN (diag-library-roles): die Spiegel-Toleranz skaliert mit der
-            // größten Spanne (≈0.56 bei spanY 1.5) → Arme MÜSSEN deutlich weiter
-            // außen als der Torso (x=0) stehen, sonst „spiegelt" ein Arm den Torso
-            // (Fehl-Partner) statt den anderen Arm → limbPairs=0, kein Körper.
-            // Beine müssen > offAxisCut (≈0.29 bei spanX 1.6) liegen, um als Glied
-            // zu zählen. Arme ±0.8 / Beine ±0.34 → zwei echte Glied-Paare.
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.8, y: 1.25, z: 0 },
-                size: { x: 0.16, y: 0.85, z: 0.16 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.8, y: 1.25, z: 0 },
-                size: { x: 0.16, y: 0.85, z: 0.16 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: -0.34, y: 0.45, z: 0 },
-                size: { x: 0.2, y: 0.9, z: 0.2 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: 0.34, y: 0.45, z: 0 },
-                size: { x: 0.2, y: 0.9, z: 0.2 },
-                segments: 6,
-            },
-        ];
-
-        // V18.110 — C7: die FAHRZEUG/REITTIER-Saat (S-Entscheid 10.06., das
-        // V17.72-Muster — craftbare Beispiel-Baupläne, NICHT in der Spawn-
-        // Kandidatenliste → kein Worldgen-Litter). Beide zeigen das GANZE
-        // C7-Muster: explizite sitz-Punkte (connections) + echte Rad-/Bein-
-        // Gelenke (C1) + moveable per Substanz (GEMESSEN im Playtest-Band):
-        // der WAGEN fährt über Eisen-Räder (stromleitung = Antrieb, RAD-
-        // Gelenke drehen beim Fahren), das HOLZROSS über den Quarz-Kern
-        // (magieleitung = der belebende Antrieb) auf gespreizten Beinen.
-        const fahrzeugWagenParts = [
-            // Korpus — die Sitzfläche (flach + breit, oben).
-            {
-                shape: "box",
-                material: "holz",
-                position: { x: 0, y: 0.85, z: 0 },
-                size: { x: 1.3, y: 0.35, z: 2.1 },
-            },
-            // F5 (§11): 4 SPEICHEN-Räder (`spokeWheel`: Nabe + Speichen + Felge) statt voller
-            // Scheiben → liest als Wagen, nicht als „Kiste auf Discs". Achse = lokal Y, um Z
-            // gekippt → vertikales Rad (Achse X); bodennah + gespreizt (Trag-Basis + RAD-Gelenke).
-            {
-                shape: "spokeWheel",
-                material: "eisen",
-                spokes: 8,
-                position: { x: -0.72, y: 0.36, z: 0.8 },
-                size: { x: 0.7, y: 0.14, z: 0.7 },
-                rotation: { x: 0, y: 0, z: 1.5707963 },
-            },
-            {
-                shape: "spokeWheel",
-                material: "eisen",
-                spokes: 8,
-                position: { x: 0.72, y: 0.36, z: 0.8 },
-                size: { x: 0.7, y: 0.14, z: 0.7 },
-                rotation: { x: 0, y: 0, z: 1.5707963 },
-            },
-            {
-                shape: "spokeWheel",
-                material: "eisen",
-                spokes: 8,
-                position: { x: -0.72, y: 0.36, z: -0.8 },
-                size: { x: 0.7, y: 0.14, z: 0.7 },
-                rotation: { x: 0, y: 0, z: 1.5707963 },
-            },
-            {
-                shape: "spokeWheel",
-                material: "eisen",
-                spokes: 8,
-                position: { x: 0.72, y: 0.36, z: -0.8 },
-                size: { x: 0.7, y: 0.14, z: 0.7 },
-                rotation: { x: 0, y: 0, z: 1.5707963 },
-            },
-            // F5 (§11, Quality-Lift): das FAHRGESTELL — nicht nur eine Kiste, sondern ein
-            // Karren mit Bord-WÄNDEN, Eck-Pfosten, ACHSEN unter dem Bett + einer DEICHSEL
-            // (Zug-Stange + Querholz). Die Teile kommen NACH den Rädern (Index 5+) → die
-            // sitz/hafting-connections (0–4) bleiben heil. Alles holz-box (kein eisen →
-            // nicht als Rad mis-erkannt; kein cylinder → kein Phantom-Gelenk).
-            // Bord-Wände (2 Längs-Seiten + Front/Heck).
-            {
-                shape: "box",
-                material: "holz",
-                position: { x: -0.61, y: 1.22, z: 0 },
-                size: { x: 0.1, y: 0.4, z: 1.95 },
-            },
-            { shape: "box", material: "holz", position: { x: 0.61, y: 1.22, z: 0 }, size: { x: 0.1, y: 0.4, z: 1.95 } },
-            { shape: "box", material: "holz", position: { x: 0, y: 1.22, z: 0.97 }, size: { x: 1.3, y: 0.4, z: 0.1 } },
-            { shape: "box", material: "holz", position: { x: 0, y: 1.22, z: -0.97 }, size: { x: 1.3, y: 0.4, z: 0.1 } },
-            // 4 Eck-Pfosten (Stake-Posts).
-            ...[
-                [-0.6, 0.92],
-                [0.6, 0.92],
-                [-0.6, -0.92],
-                [0.6, -0.92],
-            ].map(([x, z]) => ({
-                shape: "box",
-                material: "holz",
-                color: 0x5a3d22,
-                position: { x, y: 1.32, z },
-                size: { x: 0.13, y: 0.62, z: 0.13 },
-            })),
-            // 2 Achs-Balken (verbinden die Rad-Paare unter dem Bett).
-            {
-                shape: "box",
-                material: "holz",
-                color: 0x5a3d22,
-                position: { x: 0, y: 0.36, z: 0.8 },
-                size: { x: 1.6, y: 0.13, z: 0.15 },
-            },
-            {
-                shape: "box",
-                material: "holz",
-                color: 0x5a3d22,
-                position: { x: 0, y: 0.36, z: -0.8 },
-                size: { x: 1.6, y: 0.13, z: 0.15 },
-            },
-            // DEICHSEL — die Zug-Stange nach vorn (+Z) + ein Querholz (Singletree) am Ende.
-            {
-                shape: "box",
-                material: "holz",
-                color: 0x5a3d22,
-                position: { x: 0, y: 0.62, z: 1.95 },
-                size: { x: 0.13, y: 0.13, z: 1.8 },
-            },
-            {
-                shape: "box",
-                material: "holz",
-                color: 0x5a3d22,
-                position: { x: 0, y: 0.62, z: 2.78 },
-                size: { x: 0.95, y: 0.11, z: 0.11 },
-            },
-        ];
-        const fahrzeugWagenConnections = [
-            { type: "sitz", partA: 0, partB: -1 },
-            { type: "hafting", partA: 1, partB: 0 },
-            { type: "hafting", partA: 2, partB: 0 },
-            { type: "hafting", partA: 3, partB: 0 },
-            { type: "hafting", partA: 4, partB: 0 },
-        ];
-        const reittierHolzrossParts = [
-            // Rumpf — der Rücken ist die Sitzfläche.
-            {
-                shape: "box",
-                material: "holz",
-                position: { x: 0, y: 1.05, z: 0 },
-                size: { x: 0.6, y: 0.5, z: 1.5 },
-            },
-            // Kopf vorn.
-            {
-                shape: "box",
-                material: "leder",
-                position: { x: 0, y: 1.5, z: 0.95 },
-                size: { x: 0.3, y: 0.4, z: 0.5 },
-            },
-            // der belebende Quarz-Kern (magieleitung = Antrieb).
-            {
-                shape: "octahedron",
-                material: "quarz",
-                position: { x: 0, y: 1.05, z: -0.2 },
-                size: { x: 0.22, y: 0.22, z: 0.22 },
-            },
-            // 4 Beine — gespreizt (Trag-Basis), vertikale Zylinder.
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: -0.28, y: 0.4, z: 0.6 },
-                size: { x: 0.14, y: 0.8, z: 0.14 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: 0.28, y: 0.4, z: 0.6 },
-                size: { x: 0.14, y: 0.8, z: 0.14 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: -0.28, y: 0.4, z: -0.6 },
-                size: { x: 0.14, y: 0.8, z: 0.14 },
-                segments: 6,
-            },
-            {
-                shape: "cylinder",
-                material: "holz",
-                position: { x: 0.28, y: 0.4, z: -0.6 },
-                size: { x: 0.14, y: 0.8, z: 0.14 },
-                segments: 6,
-            },
-        ];
-        const reittierHolzrossConnections = [
-            { type: "sitz", partA: 0, partB: -1 },
-            { type: "hafting", partA: 1, partB: 0 },
-            { type: "hafting", partA: 3, partB: 0 },
-            { type: "hafting", partA: 4, partB: 0 },
-            { type: "hafting", partA: 5, partB: 0 },
-            { type: "hafting", partA: 6, partB: 0 },
-        ];
+        // AUSLÖSCHUNGS-WELLE — die hand-gebauten fahrzeugWagen-/reittierHolzross-Part-Listen
+        // sind PHYSISCH gefallen: der Wagen ist reine Substanz-DATEN (KIND_SUBSTANCE.fahrzeug_wagen,
+        // die garage-Presets SIND die Fahrzeuge), das Holzross gießt _holzrossParts aus dem
+        // EINEN Skelett-Gesetz (_creatureSkeleton, tetrapoda-Gattung deer als Daten-Zeile
+        // REITTIER_SKELETON_G — Identität Name/Tags/Rolle bewiesen tag-wert-gleich).
 
         // V18.110 — C7 (S-Entscheid 10.06.): die BUILT-IN-KÖRPER liegen
         // automatisch als role:soul-Blueprints in der Bibliothek — der
@@ -56953,8 +56593,6 @@ class AnazhRealm {
         return {
             ...landmarkVariants,
             ...treeSpeciesBlueprints,
-            village: { name: "village", label: "Dorf", builtIn: true, parts: villageParts },
-            temple: { name: "temple", label: "Tempel", builtIn: true, parts: templeParts },
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
             // V12.0-perf.c.2 — `instanced: true` deklariert die Render-Absicht:
             // dieser Bauplan wird vom Worldgen massenhaft gespawnt (Wald/
@@ -57242,30 +56880,11 @@ class AnazhRealm {
                 portalMeta: portalTo("tetrapoda"),
                 parts: this._stationVariant(weltTetrapodaParts, felsWorldSeed + "-portal10"),
             },
-            // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
-            // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
-            // einen Bauplan zum Fertigen geben. Siehe der Kommentar bei den
-            // *Parts-Definitionen oben (vision-treu: emergent wo die Substanz
-            // trägt, Intent-Override nur bei Rüstung/Bauwerk-Zwilling).
-            geraet_spitzhacke: {
-                name: "geraet_spitzhacke",
-                label: "Spitzhacke",
-                builtIn: true,
-                parts: geraetSpitzhackeParts,
-            },
-            geraet_schwert: {
-                name: "geraet_schwert",
-                label: "Schwert",
-                builtIn: true,
-                // ABSCHIEDS-WELLE (Donor-Abschied D, Schöpfer-Segen 10.07.) — reiner DATEN-
-                // Spender der weapon-Domaene (KIND_POLICY.weapon → klinge_<preset>; die 21
-                // Schmiede-Gattungen SIND die sichtbaren Klingen, W-A4). Kein Katalog-/
-                // Picker-Auftritt mehr (donorOnly); voll funktional bleibt er (Klonen ·
-                // Tests · Spawn · equipHeld) — die Parts sind die SUBSTANZ-Wahrheit
-                // (Tags · Omega-PHYSIS · wield, das Baum-Muster).
-                donorOnly: true,
-                parts: geraetSchwertParts,
-            },
+            // A1 — DIE BIBLIOTHEK: die craftbaren Beispiel-Baupläne der Mach-Akte.
+            // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke/geraet_schwert sind GEFALLEN (die
+            // klinge_-Gattungen des Schmiede-Labs SIND Werkzeuge+Klingen; Substanz in
+            // KIND_SUBSTANCE). Rüstung + Trank bleiben die EHRLICHE WAND (kein Lab
+            // exportiert Rüstungs-/Trank-Presets — nichts erfinden, W-A4-Urteil).
             ruestung_brustpanzer: {
                 name: "ruestung_brustpanzer",
                 label: "Brustpanzer",
@@ -57285,135 +56904,36 @@ class AnazhRealm {
                 // T4 — das dedizierte TRANK-Genom (Phiole-Form + Glasur aus der Wirkung).
                 parts: this._potionVariant(felsWorldSeed + "-trank"),
             },
+            // AUSLÖSCHUNGS-WELLE — der WÄCHTER aus dem koerperstudio-GUSS: Positionen/
+            // Größen aus der EINEN Landmark-Quelle (_humanoidLandmarks — dieselbe, die
+            // Rig+Haut lesen), die Dial-Zeile ist DATEN (WAECHTER_DIALS über
+            // KOERPER_DIAL_MAP). Shapes×Materialien = EXAKT die alte Menge
+            // {box,sphere,cylinder}×fleisch → Tags BYTE-GLEICH per Konstruktion;
+            // _isBodyShaped + Rolle soul GEMESSEN erhalten (Mint-Probe 10.07.).
             avatar_waechter: {
                 name: "avatar_waechter",
                 label: "Wächter",
                 builtIn: true,
                 role: "soul",
                 roleManual: true,
-                parts: avatarWaechterParts,
+                parts: this._waechterSoulParts(),
             },
-            // V18.110 — C7: die Fahrzeug-/Reittier-Saat (sitz-Punkte + Gelenke).
-            fahrzeug_wagen: {
-                name: "fahrzeug_wagen",
-                label: "Wagen",
-                builtIn: true,
-                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender: der Auto-
-                // Register-Chokepoint klont ihn zu fahrzeug_<preset> (KIND_POLICY.vehicle),
-                // die Gestalten kommen aus dem garage-Lab. Kein Katalog-/Picker-Auftritt
-                // mehr (donorOnly), voll funktional bleibt er (Klonen · Tests · Spawn).
-                donorOnly: true,
-                // T4 (Ω-Φ4 SSF) — die Spur/Kabine/Rad-Größe variieren (SEAT-SAFE: y unberührt
-                // → die Sitz-/Gelenk-connections bleiben heil; der Fahr-Tiefe-Faden unangetastet).
-                parts: this._vehicleVariant(fahrzeugWagenParts, felsWorldSeed + "-wagen"),
-                connections: fahrzeugWagenConnections,
-            },
+            // AUSLÖSCHUNGS-WELLE — das HOLZROSS aus dem tetrapoda-GUSS: dasselbe
+            // Skelett-Gesetz wie die Kreaturen (_creatureSkeleton, Gattung deer als
+            // Daten-Zeile REITTIER_SKELETON_G) + der belebende Quarz-Kern (Antrieb).
+            // Tags WERT-GLEICH gemessen (Mint-Probe 10.07.), Rolle vehicle + rideable
+            // (sitz-connection auf dem Torso-Kern, Part 0) bleiben.
             reittier_holzross: {
                 name: "reittier_holzross",
                 label: "Holzross",
                 builtIn: true,
-                parts: this._vehicleVariant(reittierHolzrossParts, felsWorldSeed + "-holzross"),
-                connections: reittierHolzrossConnections,
+                parts: this._holzrossParts(),
+                connections: [{ type: "sitz", partA: 0, partB: -1 }],
             },
-            // ε (Nervensystem-Plan) — DER TOR-DONOR: die Judge-Parts der gate-Domäne (die
-            // KIND_POLICY-gate-Zeile klont IHN zu tor_<preset>, der RENDER kommt aus porta-core).
-            // Bewusst ein EIGENER Datenblock statt welt_portal/welt_portale als Donor: beide
-            // tragen role "portal" + roleManual + portalMeta (ein Welt-Ziel) — ein Klon davon
-            // machte jedes platzierte Tor zum Weltwechsel-Portal. Reines stein-Architrav
-            // (zwei Pfeiler + Sturz + Schwelle, die Form des Porta-Labs): der Physik-Richter
-            // sieht ein stehendes Tor, die Öffnung ist begehbar (per-Part-Kollision — die
-            // Tür-Lücke ist kein Part), reines stein = affinitäts-sicher.
-            tor_basis: {
-                name: "tor_basis",
-                label: "Torbogen",
-                builtIn: true,
-                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender der gate-
-                // Domaene (KIND_POLICY.gate → tor_<preset>; Gestalt aus porta-core).
-                // Kein Katalog-/Picker-Auftritt (donorOnly); funktional unveraendert.
-                donorOnly: true,
-                parts: [
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: -1.7, y: 1.7, z: 0 },
-                        size: { x: 0.6, y: 3.4, z: 0.7 },
-                    },
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 1.7, y: 1.7, z: 0 },
-                        size: { x: 0.6, y: 3.4, z: 0.7 },
-                    },
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 3.65, z: 0 },
-                        size: { x: 4.2, y: 0.5, z: 0.7 },
-                    },
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 0.1, z: 0 },
-                        size: { x: 4.4, y: 0.2, z: 1.2 },
-                    },
-                ],
-            },
-            // W-A5a (Katalysator-Bogen, ε-Checkliste) — DER HAUS-DONOR: die Judge-Parts der
-            // haus-Domäne (die KIND_POLICY-haus-Zeile klont IHN zu haus_<preset>, der RENDER
-            // kommt aus fachwerk-core). BEGEHBAR per Konstruktion (die emergente Kollisions-
-            // Lehre: per-Part-blockerAABBs, die TÜR-LÜCKE ist KEIN Part — man geht hindurch,
-            // kein Voll-Block): zwei Front-Wandsegmente (holz) mit 1.3-m-Tür-Lücke dazwischen ·
-            // steinerne Rückwand (Brandwand) · zwei Seitenwände (holz) · Holz-Dachplatte
-            // (TRÄGT: effSurf = max(Terrain, Struktur)). holz+stein = die Substanz-Wahrheit
-            // eines Fachwerkhauses (Tags/Ω-PHYSIS urteilen ein stehendes Gebäude); kein
-            // portalMeta/roleManual — die Rolle EMERGIERT aus den Parts.
-            haus_basis: {
-                name: "haus_basis",
-                label: "Haus",
-                builtIn: true,
-                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender der haus-
-                // Domaene (KIND_POLICY.haus → haus_<preset>; Gestalt aus fachwerk-core).
-                // Kein Katalog-/Picker-Auftritt (donorOnly); funktional unveraendert.
-                donorOnly: true,
-                parts: [
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: -1.925, y: 1.55, z: -2.55 },
-                        size: { x: 2.55, y: 3.1, z: 0.3 },
-                    },
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: 1.925, y: 1.55, z: -2.55 },
-                        size: { x: 2.55, y: 3.1, z: 0.3 },
-                    },
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 1.55, z: 2.55 },
-                        size: { x: 6.4, y: 3.1, z: 0.3 },
-                    },
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: -3.05, y: 1.55, z: 0 },
-                        size: { x: 0.3, y: 3.1, z: 4.8 },
-                    },
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: 3.05, y: 1.55, z: 0 },
-                        size: { x: 0.3, y: 3.1, z: 4.8 },
-                    },
-                    {
-                        shape: "box",
-                        material: "holz",
-                        position: { x: 0, y: 3.25, z: 0 },
-                        size: { x: 6.6, y: 0.3, z: 5.6 },
-                    },
-                ],
-            },
+            // AUSLÖSCHUNGS-WELLE — tor_basis + haus_basis sind PHYSISCH gefallen:
+            // ihre Judge-Substanz (Tags · Ω-PHYSIS · begehbare Tür-Lücke als
+            // per-Part-Kollision) lebt eingefroren in AnazhRealm.KIND_SUBSTANCE;
+            // der Auto-Register-Chokepoint klont von dort (tor_/haus_<preset>).
             // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
             ...builtinBodyBlueprints,
         };
@@ -60747,7 +60267,7 @@ class AnazhRealm {
         const vc = g.attributes.position.count;
         if (!(vc > 0)) return g;
         const cfg = AnazhRealm.LOD_DISTANCES;
-        const cap = cfg && Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 14;
+        const cap = cfg && Number.isFinite(cfg.leafVisCap) && cfg.leafVisCap > 0 ? cfg.leafVisCap : 24;
         const h0 = Number.isFinite(totalH) && totalH > 0 ? totalH : 10;
         const h0l = Math.min(h0, cap);
         const aH0 = new Float32Array(vc);
@@ -62151,6 +61671,11 @@ class AnazhRealm {
         g.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
         g.setAttribute("color", new THREE.BufferAttribute(colors, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+        // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — der Occlusion-Kanal des Studio-Billboards
+        // (phytogenesis Z.2369/2474 aOccl, Default 0): per-Vertex hier (jeder Nutzer der
+        // Impostor-Materialien trägt das Attribut — die WebGPU-Attribut-Pflicht), die
+        // HISM-Gruppen ersetzen ihn per Instanz-Fassade (verdeckt-demotiert → 1).
+        g.setAttribute("aOccl", new THREE.BufferAttribute(new Float32Array(VC), 1));
         g.setAttribute("aImpX", new THREE.BufferAttribute(impX, 1));
         g.setAttribute("aFlex", new THREE.BufferAttribute(flex, 1));
         g.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
@@ -62533,6 +62058,89 @@ class AnazhRealm {
         if (isFoliage) mesh.layers.enable(AnazhRealm.FOLIAGE_LAYER);
     }
 
+    // AUSLÖSCHUNGS-WELLE (Feld B, W8-Schuld „aH0 ohne per-Entry-Skala" + „vOcc=0") —
+    // DIE INSTANZ-FASSADE: das Studio rechnet die SSE-Metrik PER INSTANZ
+    // (foundry-core.js Z.196 `min(uLodRef/(aH0*_isy),1)`, _isy = Instanz-Matrix-Skala;
+    // Billboard-vOcc: phytogenesis Z.2369 `max(min(fin*2,1),vOcc)`). Der Host-Shader
+    // liest Attribute — die geteilte Quell-Geometrie (fCache) kann keine per-Instanz-
+    // Werte tragen. Die Fassade TEILT alle Vertex-Buffer der Quelle (zero-copy, Index
+    // + Attribute-Objekte) und ersetzt aH0/aH0L/aOccl durch INSTANZIERTE Attribute
+    // (ein Float je Slot, am Slot-Chokepoint gestempelt: Template-Höhe × Instanz-
+    // Skala bzw. der Occlusion-Zustand des Eintrags). EIN Fassade-Objekt je Gruppe,
+    // über Grow wiederverwendet (setAttribute ersetzt nur die Instanz-Arrays); nie
+    // geometry.dispose() (die Vertex-Buffer sind geteilt — dieselbe Regel wie die
+    // Quell-Geometrie, s. _disposeArchInstanceGroup „geom/mat geteilt → bleiben").
+    _lodInstanceFacade(srcGeom, capacity) {
+        const g2 = new THREE.BufferGeometry();
+        if (srcGeom.index) g2.setIndex(srcGeom.index);
+        for (const k in srcGeom.attributes) {
+            if (k === "aH0" || k === "aH0L" || k === "aOccl") continue;
+            g2.setAttribute(k, srcGeom.attributes[k]);
+        }
+        const a0 = srcGeom.attributes.aH0;
+        const a0L = srcGeom.attributes.aH0L;
+        const h0 = a0 && a0.array && a0.array.length ? a0.array[0] : 0;
+        const h0L = a0L && a0L.array && a0L.array.length ? a0L.array[0] : h0;
+        if (a0) {
+            g2.setAttribute("aH0", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
+            g2.setAttribute("aH0L", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
+        }
+        if (srcGeom.attributes.aOccl)
+            g2.setAttribute("aOccl", new THREE.InstancedBufferAttribute(new Float32Array(capacity), 1));
+        g2.boundingSphere = srcGeom.boundingSphere;
+        g2.boundingBox = srcGeom.boundingBox;
+        g2.userData._lodFacade = true;
+        g2.userData._h0Tpl = h0;
+        g2.userData._h0LTpl = h0L;
+        return g2;
+    }
+    // Grow-Pfad der Fassade: die Instanz-Arrays auf die neue Kapazität heben (Werte
+    // kopieren) — dasselbe Geometrie-Objekt bleibt (die Vertex-Buffer sind geteilt).
+    _lodFacadeGrow(geom, newCap) {
+        if (!geom || !geom.userData || !geom.userData._lodFacade) return;
+        for (const k of ["aH0", "aH0L", "aOccl"]) {
+            const a = geom.attributes[k];
+            if (!a || !a.isInstancedBufferAttribute) continue;
+            const arr = new Float32Array(newCap);
+            arr.set(a.array.subarray(0, Math.min(a.array.length, newCap)));
+            geom.setAttribute(k, new THREE.InstancedBufferAttribute(arr, 1));
+        }
+    }
+    // DER EINE SLOT-STEMPEL (beide Slot-Chokepoints rufen ihn): Sichthöhe = Template ×
+    // Instanz-Skala (exakt das Studio-`aH0*_isy`) + der Occlusion-Zustand (vOcc).
+    _lodSlotStamp(g, slot, scale, occluded) {
+        const geom = g && g.mesh && g.mesh.geometry;
+        if (!geom || !geom.userData || !geom.userData._lodFacade) return;
+        const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
+        const a0 = geom.attributes.aH0;
+        if (a0 && a0.isInstancedBufferAttribute && slot < a0.array.length) {
+            a0.array[slot] = geom.userData._h0Tpl * s;
+            a0.needsUpdate = true;
+            const a0L = geom.attributes.aH0L;
+            if (a0L && slot < a0L.array.length) {
+                a0L.array[slot] = geom.userData._h0LTpl * s;
+                a0L.needsUpdate = true;
+            }
+        }
+        const ao = geom.attributes.aOccl;
+        if (ao && ao.isInstancedBufferAttribute && slot < ao.array.length) {
+            ao.array[slot] = occluded ? 1 : 0;
+            ao.needsUpdate = true;
+        }
+    }
+    // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die aOccl-Werte
+    // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
+    // nur am WECHSEL, derselbe Wert dazwischen).
+    _lodSlotOcclusionRefresh(entry) {
+        const lists = [entry.instSlots, entry.instSlotsBand];
+        for (const list of lists) {
+            if (!Array.isArray(list)) continue;
+            for (const ref of list) {
+                const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(ref.key);
+                if (g) this._lodSlotStamp(g, ref.slot, entry.scale, entry._occluded === true);
+            }
+        }
+    }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
         // V18.353/.356 PHASE A.2 — der Batch-Pfad (region-gekeyt, Default an). Der alte
         // `useBatchedFoliage` (der gescheiterte V18.289-1-GB-Global-Batch) ist GESTRICHEN —
@@ -62562,7 +62170,13 @@ class AnazhRealm {
         // V18.349 — per-Leaf-Override (der opake Kronen-Kern setzt castShadow:false): ein einzelner
         // Leaf darf den Namen-basierten Schatten-Default überstimmen; sonst der LOD-Default via Name.
         const castShadow = leaf.castShadow !== undefined ? !!leaf.castShadow : this._archGroupCastsShadow(name);
-        const mesh = new THREE.InstancedMesh(leaf.geom, leaf.mat, capacity);
+        // AUSLÖSCHUNGS-WELLE (Feld B) — trägt die Quell-Geometrie LOD-Attribute (aH0 =
+        // Baum-Stufen · aOccl = Impostor), bekommt die Gruppe die INSTANZ-FASSADE
+        // (per-Instanz-Metrik wie das Studio; s. _lodInstanceFacade).
+        const wantsFacade =
+            leaf.geom && leaf.geom.attributes && (leaf.geom.attributes.aH0 || leaf.geom.attributes.aOccl);
+        const groupGeom = wantsFacade ? this._lodInstanceFacade(leaf.geom, capacity) : leaf.geom;
+        const mesh = new THREE.InstancedMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
         mesh.count = 0; // noch keine Instanz sichtbar
@@ -62580,7 +62194,7 @@ class AnazhRealm {
         g = {
             key,
             mesh,
-            geom: leaf.geom,
+            geom: groupGeom,
             mat: leaf.mat,
             capacity,
             next: 0,
@@ -62606,6 +62220,7 @@ class AnazhRealm {
     _archInstanceGroupGrow(g) {
         if (g.kind === "batch") return; // Batch wächst in _archGroupAlloc (setInstanceCount)
         const newCap = g.capacity * 2;
+        this._lodFacadeGrow(g.geom, newCap); // AUSLÖSCHUNGS-WELLE (Feld B) — Instanz-Attribute mitziehen
         const next = new THREE.InstancedMesh(g.geom, g.mat, newCap);
         next.castShadow = g.castShadow !== false; // V18.265 — Schatten-Distanz mitführen
         next.receiveShadow = true;
@@ -62793,6 +62408,8 @@ class AnazhRealm {
                 g.mesh.boundingSphere = null;
             }
             if (g.slotEntry) g.slotEntry[slot] = entry;
+            // AUSLÖSCHUNGS-WELLE (Feld B) — die per-Instanz-Metrik stempeln (Studio aH0·_isy + vOcc).
+            this._lodSlotStamp(g, slot, entry.scale, entry._occluded === true);
             slots.push({ key: g.key, slot });
         }
         // W5.4 — Band-Add: NUR die Band-Felder schreiben (transient wie instSlots, nicht im
@@ -63163,7 +62780,13 @@ class AnazhRealm {
     // Clearance: wie weit eine Struktur vom Spieler weg muss, damit ihr
     // Footprint ihn nicht verschluckt. Reine Daten aus bp.parts (size+position).
     _blueprintFootprintRadius(type, scale = 1) {
-        const bp = this.state.blueprints && this.state.blueprints[type];
+        // AUSLÖSCHUNGS-WELLE — Fallback auf die Substanz-Tabelle: die Spawn-Klemme
+        // (`_structureSpawnPos`) darf auch über eine reine Daten-Zeile messen
+        // (haus_basis als Siedlungs-Footprint-Klasse — der Blueprint ist gefallen).
+        const bp =
+            (this.state.blueprints && this.state.blueprints[type]) ||
+            (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[type]) ||
+            null;
         if (!bp || !Array.isArray(bp.parts)) return 0;
         let r = 0;
         for (const part of bp.parts) {
@@ -64879,8 +64502,13 @@ class AnazhRealm {
                 if (bps[name]._foundryAutoSpecies && bps[name].donorOnly) delete bps[name].donorOnly;
                 continue; // existiert (historische Arten + schon registrierte)
             }
-            const donor = bps[pol.donor];
-            if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind
+            // AUSLÖSCHUNGS-WELLE — die Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche,
+            // der Grammatik-Exemplar-Baum) ODER die EINGEFRORENE Substanz-Zeile (KIND_SUBSTANCE —
+            // die vier Alt-Donoren sind physisch gefallen, ihre Judge-Substanz lebt als Daten).
+            // donorTool (Daten in der Policy-Zeile): ein fx.tool-Rezept zieht die Werkzeug-Substanz.
+            const dKey = pol.donorTool && rec.fx && rec.fx.tool ? pol.donorTool : pol.donor;
+            const donor = bps[dKey] || (AnazhRealm.KIND_SUBSTANCE && AnazhRealm.KIND_SUBSTANCE[dKey]) || null;
+            if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind (Blueprint UND Tabelle leer)
             const clone = JSON.parse(JSON.stringify(donor));
             // ABSCHIEDS-WELLE (Donor-Abschied D) — DIE EINE KLON-SICHTBARKEITS-REGEL am
             // Chokepoint (dieselbe wie cloneBlueprint/W-A3.1, gate:trias B10): ein Klon
@@ -64964,7 +64592,10 @@ class AnazhRealm {
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
             if (Number.isFinite(L.ref)) {
                 D.lodRef = L.ref;
-                D.leafVisCap = L.ref; // die Blatt-Sichthöhe-Kappung = die Referenz-Sichthöhe (Studio uLodRef)
+                // AUSLÖSCHUNGS-WELLE (Feld B) — leafVisCap wird NICHT mehr an ref gekoppelt:
+                // die Blatt-Kappe ist die eigene Studio-Konstante 24 m (phytogenesis Z.2392),
+                // sie steht NICHT in PORTAL_RENDER_CONFIG.lod — die alte Kopplung setzte sie
+                // bei jedem Ingest auf 12 zurück (die halbe Laub-Sichthöhe, W8-Schuld).
                 // state.lodRef ist die LIVE-Spiegel-Quelle (CPU-Membership + Shader-uLodRef, in _loopRender gespiegelt).
                 if (this.state) this.state.lodRef = L.ref;
             }
@@ -65147,7 +64778,7 @@ class AnazhRealm {
     // KIND_POLICY-Tabelle über den kind des LIVE-Rezepts (kein "haus_"-Literal, M8),
     // `_isAboveWaterAt`-Wand je Slot (Welt-Awareness = EINE Quelle), fehlender
     // Blueprint/fremde Kultur → Slot fällt GESCHLOSSEN aus. Rückgabe true = platziert.
-    _spawnSettlementSlot(slot, origin, f) {
+    _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
         const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
@@ -65157,20 +64788,22 @@ class AnazhRealm {
         const wz = origin.z + slot.z;
         if (!this._isAboveWaterAt(wx, wz, 0.2)) return false; // die Wasser-Wand
         const wy = this.getTerrainHeightAt(wx, wz) + 0.5;
+        // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
+        // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
         const entry = this.spawnArchitecture(
             name,
             { x: wx, y: wy, z: wz },
-            { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true }
+            { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true, autonomous: !!(so && so.autonomous) }
         );
         return !!entry;
     }
-    _spawnSettlementFromExport(plan, origin) {
+    _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
         const f = this._foundry;
         let placed = 0;
         let skipped = 0;
         for (const slot of plan.slots) {
-            if (this._spawnSettlementSlot(slot, origin, f)) placed++;
+            if (this._spawnSettlementSlot(slot, origin, f, so)) placed++;
             else skipped++;
         }
         return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null };
@@ -65179,7 +64812,7 @@ class AnazhRealm {
     // Siedlungs-Samen Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt" — die Wald-
     // Schwester-Disziplin, kein Math.random auf dem welt-formenden Pfad), holt den Export
     // vom Worker und platziert am ANKER. Der Anker läuft durch den EINEN Spawn-Chokepoint
-    // `_structureSpawnPos` (Footprint-Klasse "village"): nie auf dem Spieler. Async
+    // `_structureSpawnPos` (Footprint-Klasse "haus_basis" aus KIND_SUBSTANCE): nie auf dem Spieler. Async
     // (Worker-Roundtrip) — der Rückweg meldet ins Chat-Log.
     spawnSettlement(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
@@ -65202,13 +64835,15 @@ class AnazhRealm {
         const pm = this.state.playerMesh;
         const base =
             o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
-        const anchor = o.position ? base : this._structureSpawnPos("village", base, { state: this.state });
+        // AUSLÖSCHUNGS-WELLE — die Footprint-Klasse misst über die Substanz-Zeile
+        // haus_basis (×3 ≈ Dorf-Kern; der village-Bauplan ist gefallen).
+        const anchor = o.position ? base : this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);
         return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
             if (!plan) {
                 this.log("Siedlung: kein Settlement-Export (Foundry aus/kalt) — nichts platziert.", "WARN");
                 return null;
             }
-            const res = this._spawnSettlementFromExport(plan, anchor);
+            const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             this.log(
                 `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`,
                 "INFO"
@@ -65308,7 +64943,7 @@ class AnazhRealm {
         if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
         // Der Anker läuft durch den EINEN Spawn-Chokepoint (nie auf dem Spieler —
         // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall; fern = no-op).
-        const anchor = this._structureSpawnPos("village", { x: i2.x, y: 0, z: i2.z }, { state: st });
+        const anchor = this._structureSpawnPos("haus_basis", { x: i2.x, y: 0, z: i2.z }, { state: st });
         this._autoSettlementPendingKey = key;
         return this._foundryRequestSettlement({ seed: i2.seed, nH: i2.nH }).then((plan) => {
             this._autoSettlementPendingKey = null;
@@ -65523,7 +65158,7 @@ class AnazhRealm {
         const f = this._foundry;
         if (f && f.recipes && typeof species === "string") {
             // N1 (M8): der Praefix-Strip laeuft ueber die KIND_POLICY-Tabelle — jede Domaene
-            // loest `<prefix><id>` ueber das LIVE-Buch (Built-ins wie `fahrzeug_wagen` bleiben
+            // loest `<prefix><id>` ueber das LIVE-Buch (praefix-freie Built-ins bleiben
             // unberuehrt: "wagen" steht in keinem Buch -> null -> ihr Part-Pfad haelt).
             let bare = species;
             const KP = AnazhRealm.KIND_POLICY;
@@ -66077,7 +65712,7 @@ class AnazhRealm {
                 const _ws = _wsM && _wsM.elements ? _wsM.elements[0] || 1 : 1;
                 const _h0 = Math.max(0.1, (_maxY - _minY) * _ws);
                 const _D = AnazhRealm.LOD_DISTANCES;
-                const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 12;
+                const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 24;
                 for (const ch of group.children) {
                     const _n = ch.geometry.attributes.position.count;
                     const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
@@ -72871,7 +72506,7 @@ class AnazhRealm {
                 "schuppen",
             ];
             const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-            // W-A1 (Donor-Abschied) — donorOnly-Spender (fahrzeug_wagen · tor_basis) treten
+            // W-A1/AUSLÖSCHUNG — donorOnly-Spender (heute keine Built-ins mehr; Alt-Saves) treten
             // in keinem nutzer-sichtbaren Picker auf (auch nicht im Baue-Auftrag-Select).
             const bpNames = Object.keys(this.state.blueprints || {})
                 .filter((n) => !(this.state.blueprints[n] && this.state.blueprints[n].donorOnly))
@@ -73392,7 +73027,10 @@ class AnazhRealm {
     // Beides Session-State; Defaults translate + snap an.
     _ensureWorkshopState() {
         if (!this.state.workshop) {
-            this.state.workshop = { selectedBlueprint: "village" };
+            // AUSLÖSCHUNGS-WELLE: der Werkstatt-Erst-Default ist ein LEBENDER
+            // Bauplan (die Eiche, der kanonische Schaustück-Baum) — der alte
+            // "village"-Default fiel mit dem gleichnamigen Bauplan.
+            this.state.workshop = { selectedBlueprint: "baum_eiche" };
         }
         if (typeof this.state.workshop.selectedPartIdx === "undefined") {
             this.state.workshop.selectedPartIdx = null;
@@ -73529,8 +73167,8 @@ class AnazhRealm {
         // Werkstatt jetzt EINEN Repräsentanten je Formation (`*_var0`) — var1+ sind Streu-Render-
         // Details (der Scatter nutzt sie weiter, sie bleiben in state.blueprints, nur die UI bündelt).
         const _isHiddenVariant = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
-        // W-A1 (Katalysator §5, DONOR-ABSCHIED) — donorOnly-Blueprints (fahrzeug_wagen ·
-        // tor_basis) sind REINE DATEN-Spender fuer den Auto-Register-Chokepoint: kein
+        // W-A1/AUSLÖSCHUNG — die Donor-Substanz lebt als DATEN (KIND_SUBSTANCE); donorOnly-
+        // Blueprints (nur noch Alt-Saves/Tests) sind reine Daten-Spender: kein
         // Katalog-Auftritt (die Gestalten kommen aus den Labs). Die Blueprints selbst
         // bleiben voll funktional (Donor-Klonen · Tests · spawnArchitecture).
         const blueprintNames = Object.keys(this.state.blueprints).filter(
@@ -83968,7 +83606,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.445.0";
+AnazhRealm.VERSION = "18.446.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -84038,9 +83676,14 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // der Hand-Konsument (_heldFoundryGroup/buildHand) liest NUR diese Zeile und mappt
     // Template-X auf die Hand-Konvention (lange Achse = +Y, Griff unten); Domaenen ohne
     // handAxis (Pflanzen/Fels: Template-Y = hoch) reisen unrotiert.
+    // AUSLÖSCHUNGS-WELLE — donorTool: die WERKZEUG-Substanz-Zeile der Domäne (Daten, M8):
+    // ein Rezept mit fx.tool (die 8 Schmiede-Werkzeuge) klont die Spitzhacken-Substanz
+    // (KIND_SUBSTANCE.geraet_spitzhacke) statt der Klingen-Substanz — Rolle/Wield/Abbau
+    // urteilen fortan EHRLICH als Werkzeug (vorher trugen alle 21 Gattungen Schwert-Parts).
     weapon: Object.freeze({
         prefix: "klinge_",
         donor: "geraet_schwert",
+        donorTool: "geraet_spitzhacke",
         grown: false,
         builtIn: false,
         placeExtra: null,
@@ -84069,6 +83712,311 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         placeExtra: null,
         lodServe: Object.freeze({ 1: 2 }),
     }),
+});
+// AUSLÖSCHUNGS-WELLE — DIE SUBSTANZ-TABELLE (das Baum-Muster zu Ende gebaut, V18.259-Gesetz:
+// Identität als DATEN, dann der Schnitt): die Judge-SUBSTANZ der vier Donor-Domänen + der
+// Werkzeug-Klasse lebt hier als EINGEFRORENE Daten — byte-genau EINMAL aus den LEBENDEN
+// Donor-Blueprints gemünzt (Default-Seed "anazh-realm-seed", Mint 10.07.2026; sha256 je Zeile
+// im Chronik-Eintrag). Der Auto-Register-Chokepoint (_foundryAutoRegisterSpecies) liest
+// bps[donor] ODER diese Tabelle (fail-closed: kein Blueprint UND keine Zeile → kind registriert
+// nicht); die alten Donor-BLUEPRINTS (geraet_schwert · geraet_spitzhacke · fahrzeug_wagen ·
+// tor_basis · haus_basis) sind PHYSISCH gefallen (Schöpfer 10.07.: "die alten dinge endlich
+// raus"). Parts = die unsichtbare SUBSTANZ-WAHRHEIT (Tags · Ω-PHYSIS · blockerAABBs · wield ·
+// sitz/fahrprofil-Anker) — die sichtbare GESTALT kommt IMMER aus dem Studio (Appear-Pfad).
+// BEWUSST welt-invariant: die frühere Welt-Seed-Varianz der Donor-Parts (T4-Roller) entfiel
+// mit der Münze — die Substanz einer DOMÄNE ist fix, die Vielfalt kommt aus den Lab-Rezepten.
+AnazhRealm.KIND_SUBSTANCE = Object.freeze({
+    geraet_schwert: {
+        label: "Schwert",
+        parts: [
+            {
+                shape: "octahedron",
+                material: "eisen",
+                color: 10133670,
+                position: { x: 0, y: 0.13, z: 0 },
+                size: { x: 0.26, y: 0.26, z: 0.26 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "cylinder",
+                material: "leder",
+                color: 4863270,
+                position: { x: 0, y: 0.43000000000000005, z: 0 },
+                size: { x: 0.07, y: 0.34, z: 0.07 },
+                segments: 8,
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "octahedron",
+                material: "eisen",
+                color: 10133670,
+                position: { x: 0, y: 0.6400000000000001, z: 0 },
+                size: { x: 0.46, y: 0.1, z: 0.16 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "bladeProfile",
+                material: "eisen",
+                color: 13094098,
+                position: { x: 0, y: 1.405, z: 0 },
+                size: { x: 0.2, y: 1.45, z: 0.06 },
+                tipWidth: 0.34,
+                fuller: 0.5,
+                heightSegments: 16,
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+        ],
+    },
+    geraet_spitzhacke: {
+        label: "Spitzhacke",
+        parts: [
+            {
+                shape: "cylinder",
+                material: "holz",
+                color: 7227944,
+                position: { x: 0, y: 0.6867654114030302, z: 0 },
+                size: { x: 0.1, y: 1.3735308228060603, z: 0.1 },
+                segments: 6,
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "pickHead",
+                material: "eisen",
+                color: 12173254,
+                position: { x: 0, y: 1.4314084202637896, z: 0 },
+                size: { x: 0.47407894089054187, y: 0.1929253248590976, z: 0.14 },
+                curve: 0.21169302093330772,
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+        ],
+    },
+    fahrzeug_wagen: {
+        label: "Wagen",
+        parts: [
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 0.85, z: 0 },
+                size: { x: 1.2852911676524672, y: 0.35, z: 2.076239578515524 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "spokeWheel",
+                material: "eisen",
+                spokes: 8,
+                position: { x: -0.8540178782735021, y: 0.36, z: 0.8 },
+                size: { x: 0.8451017794599757, y: 0.14, z: 0.8451017794599757 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "spokeWheel",
+                material: "eisen",
+                spokes: 8,
+                position: { x: 0.8540178782735021, y: 0.36, z: 0.8 },
+                size: { x: 0.8451017794599757, y: 0.14, z: 0.8451017794599757 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "spokeWheel",
+                material: "eisen",
+                spokes: 8,
+                position: { x: -0.8540178782735021, y: 0.36, z: -0.8 },
+                size: { x: 0.8451017794599757, y: 0.14, z: 0.8451017794599757 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "spokeWheel",
+                material: "eisen",
+                spokes: 8,
+                position: { x: 0.8540178782735021, y: 0.36, z: -0.8 },
+                size: { x: 0.8451017794599757, y: 0.14, z: 0.8451017794599757 },
+                rotation: { x: 0, y: 0, z: 1.5707963 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -0.7235429246483838, y: 1.22, z: 0 },
+                size: { x: 0.0988685513578821, y: 0.4, z: 1.927936751478701 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0.7235429246483838, y: 1.22, z: 0 },
+                size: { x: 0.0988685513578821, y: 0.4, z: 1.927936751478701 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 1.22, z: 0.97 },
+                size: { x: 1.2852911676524672, y: 0.4, z: 0.0988685513578821 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 1.22, z: -0.97 },
+                size: { x: 1.2852911676524672, y: 0.4, z: 0.0988685513578821 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: -0.7116815652279184, y: 1.32, z: 0.92 },
+                size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0.7116815652279184, y: 1.32, z: 0.92 },
+                size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: -0.7116815652279184, y: 1.32, z: -0.92 },
+                size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0.7116815652279184, y: 1.32, z: -0.92 },
+                size: { x: 0.12852911676524673, y: 0.62, z: 0.12852911676524673 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0, y: 0.36, z: 0.8 },
+                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0, y: 0.36, z: -0.8 },
+                size: { x: 1.5818968217261136, y: 0.13, z: 0.14830282703682313 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0, y: 0.62, z: 1.95 },
+                size: { x: 0.12852911676524673, y: 0.13, z: 1.7796339244418777 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                color: 5913890,
+                position: { x: 0, y: 0.62, z: 2.78 },
+                size: { x: 0.9392512378998799, y: 0.11, z: 0.10875540649367031 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+        ],
+        connections: [
+            { type: "sitz", partA: 0, partB: -1 },
+            { type: "hafting", partA: 1, partB: 0 },
+            { type: "hafting", partA: 2, partB: 0 },
+            { type: "hafting", partA: 3, partB: 0 },
+            { type: "hafting", partA: 4, partB: 0 },
+        ],
+    },
+    tor_basis: {
+        label: "Torbogen",
+        parts: [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -1.7, y: 1.7, z: 0 },
+                size: { x: 0.6, y: 3.4, z: 0.7 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 1.7, y: 1.7, z: 0 },
+                size: { x: 0.6, y: 3.4, z: 0.7 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 3.65, z: 0 },
+                size: { x: 4.2, y: 0.5, z: 0.7 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.1, z: 0 },
+                size: { x: 4.4, y: 0.2, z: 1.2 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+        ],
+    },
+    haus_basis: {
+        label: "Haus",
+        parts: [
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -1.925, y: 1.55, z: -2.55 },
+                size: { x: 2.55, y: 3.1, z: 0.3 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 1.925, y: 1.55, z: -2.55 },
+                size: { x: 2.55, y: 3.1, z: 0.3 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 1.55, z: 2.55 },
+                size: { x: 6.4, y: 3.1, z: 0.3 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -3.05, y: 1.55, z: 0 },
+                size: { x: 0.3, y: 3.1, z: 4.8 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 3.05, y: 1.55, z: 0 },
+                size: { x: 0.3, y: 3.1, z: 4.8 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 3.25, z: 0 },
+                size: { x: 6.6, y: 0.3, z: 5.6 },
+                opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+            },
+        ],
+    },
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
 // `_placePolicyFor` liest sie fail-closed: ein Rezept mit unbekanntem mode (ein künftiges Lab)
@@ -84540,12 +84488,12 @@ AnazhRealm.LOD_DISTANCES = {
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
-    visStretchMax: 1.25, // WELLE S2 — max. SSE-Sichthöhen-Streckung: die effektive Sichthöhe des LOD-Choosers ist auf lodRef·visStretchMax gedeckelt (heightFactor-Floor = 1/visStretchMax = 0.8) → grosse Bäume behalten ETWAS länger Detail (gestuft bis lodRef·visStretchMax = 15 m), aber der Riese klebt nicht mehr bis 194 m auf L0 (er demotet im Kragen zu L1/L2 wie das Studio-Laub). Nur der CPU-LOD-Chooser (Tick + Scatter-Promotion), NICHT die Shader-aH0-Stempel.
+    visStretchMax: Infinity, // AUSLÖSCHUNGS-WELLE (Feld B) — VORLAGE-TREU UNGEDECKELT: das Studio deckelt die SSE-Sichthöhe NICHT (foundry-core.js Z.196 `min(uLodRef/(aH0*_isy),1)` — der grosse Baum behält Detail proportional länger). Der V18.413-S2-Deckel (1.25) demotete Riesen ~2× zu früh = der „L1/L2 nicht wie in der Vorlage"-Befund; die LAST atmet weiter über den EINEN Regler (perfMul/foliageRadius/Dichte), nicht über eine Metrik-Lüge. Nur der CPU-LOD-Chooser, NICHT die Shader-aH0-Stempel.
     // Die Crossfade-Band-Breiten (phytogenesis LOD_FADE/FADE0), über die das Dither-Crossfade die Laub-Karten
     // weich ausblendet, BEVOR die nächste LOD-Stufe greift.
     fade: 8, // Studio LOD_FADE — L1→L2-Band: Crossfade in [thresh12 − fade, thresh12] = [32,40]
     fade0: 4, // Studio LOD_FADE0 — L0→L1-Band: Crossfade in [thresh01 − fade0, thresh01] = [16,20]
-    leafVisCap: 12, // Blatt-Sichthöhe-Kappung (aH0L) = die Studio-uLodRef-Höhe (das Laub-Crossfade folgt der ABSOLUTEN Distanz)
+    leafVisCap: 24, // AUSLÖSCHUNGS-WELLE (Feld B) — die ECHTE Studio-Blatt-Kappe: phytogenesis.js Z.2392/2407 `Math.min(H0arr[vi], 24/(SCALE[sp]*TREE_SCALE_MUL))` = 24 m Welt-Sichthöhe (NICHT uLodRef=12 — die alte Kopplung halbierte die Laub-Sichthöhe, das Laub demotete bei halber Studio-Distanz)
 };
 
 // V18.389 (DAS NEUE KLEID — SUBSYSTEM 3, phytogenesis v38 `_occG`/`updateTreeLOD`
@@ -85860,6 +85808,36 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         bodyColor: 0x6e4d30,
         limbColor: 0x6e4d30,
     }),
+    // AUSLÖSCHUNGS-WELLE (A5) — das glutwesen-g als DATEN (dieselben Werte, die
+    // CREATURE_SOULS beim Modul-Init gießt): `_tetrapodaSoulParts` dockt zur BAU-
+    // Zeit die wolf-Dials (TETRAPODA_SOUL_MAP) auf DENSELBEN Guss. box+cone(glut)
+    // bleiben die Tag-Wahrheit (lebendig=0 → das WILDE Temperament tag-emergent).
+    glutwesen: Object.freeze({
+        size: 0.53,
+        archetypeName: "bigcat",
+        bodyMat: "glut",
+        limbMat: "glut",
+        headMat: "glut",
+        shapes: Object.freeze({ torso: "box", limb: "cone", head: "box", snout: "cone", tail: "cone", crest: "cone" }),
+        crest: true,
+    }),
+});
+// AUSLÖSCHUNGS-WELLE (A5) — die REITTIER-Skelett-Daten: das Holzross liest die
+// tetrapoda-Gattung deer (leggy Lauftier — die ehrliche Ross-Paarung des Labs;
+// kein horse im 4-Gattungs-Lab) über dasselbe Skelett-Gesetz. kern = die Kanten-
+// länge des belebenden Quarz-Oktaeders (magieleitung = Antrieb, `_isMoveable`).
+// headMat bewusst holz (kein leder-Limb — Tag-WERT-Parität gemessen 10.07.).
+AnazhRealm.REITTIER_SKELETON_G = Object.freeze({
+    holzross: Object.freeze({
+        size: 1.6,
+        archetypeName: "deer",
+        bodyMat: "holz",
+        limbMat: "holz",
+        headMat: "holz",
+        shapes: Object.freeze({ torso: "box", limb: "limb", head: "box", snout: "limb", tail: "limb" }),
+        bodyBarrel: true,
+        kern: 0.22,
+    }),
 });
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     sprite: Object.freeze({
@@ -85945,16 +85923,18 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     glutwesen: Object.freeze({
         label: "Glutwesen",
         predator: true,
+        // AUSLÖSCHUNGS-WELLE (A5) — das g lebt als DATEN in CREATURE_SKELETON_G
+        // (byte-identischer Guss; size 0.53 = die sizeFactor-Tarierung, V18.208).
+        // Zur BAU-Zeit dockt `_tetrapodaSoulParts` die wolf-Dials (Raubtier-
+        // Gattung) auf DENSELBEN Guss; diese Modul-bodyParts bleiben die frozen
+        // fail-soft-Wahrheit (Tags/Stats lesen sie — dial-tag-neutral gemessen).
         bodyParts: Object.freeze(
-            AnazhRealm._creatureSkeleton({
-                size: 0.53, // Tarierung: hält den sizeFactor im Tie-Band um sprite/wesen (V18.208-Monotonie; nach Muskel-Masse von 0.57 neu tariert)
-                archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat, // Jäger (frontale Augen, langer Schwanz, Klauen)
-                bodyMat: "glut",
-                limbMat: "glut",
-                headMat: "glut",
-                shapes: { torso: "box", limb: "cone", head: "box", snout: "cone", tail: "cone", crest: "cone" },
-                crest: true,
-            }).map((p) => Object.freeze(p))
+            AnazhRealm._creatureSkeleton(
+                Object.assign(
+                    { archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat },
+                    AnazhRealm.CREATURE_SKELETON_G.glutwesen
+                )
+            ).map((p) => Object.freeze(p))
         ),
         // wahrerguss System B — die Haut VERBINDET die Bestie (statt schwebender Kegel): die
         // Metaball-Haut umhüllt Rumpf/Glieder/Kamm zu EINEM zusammenhängenden Körper, der
@@ -88173,11 +88153,19 @@ AnazhRealm.KOERPER_DIAL_MAP = Object.freeze([
     Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
     Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
 ]);
-// ABSCHIEDS-WELLE (Koerper-Dock A2) — welche CREATURE_SOULS-Gestalt welches
-// tetrapoda-Rezept liest. NUR ehrliche Matches: wesen trägt den deer-Archetyp =
-// die tetrapoda-Gattung "deer". glutwesen (bigcat) · sprite/geist (skelettlos)
-// haben KEIN ehrliches Lab-Gegenstück → byte-alt (dokumentiert, kein Zwang).
-AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({ wesen: "deer" });
+// AUSLÖSCHUNGS-WELLE — die WÄCHTER-Dial-Zeile (Daten): dieselben vier Lab-Dials
+// wie koerper-core `mensch` (KOERPER_DIAL_MAP-Semantik) + die Wächter-HALTUNG
+// (armOut/stance in Landmark-Einheiten — der Guss `_waechterSoulParts` liest sie).
+AnazhRealm.WAECHTER_DIALS = Object.freeze({ height: 1.2, mass: 0.6, tone: 0.85, gender: 0, armOut: 1.5, stance: 1.35 });
+// AUSLÖSCHUNGS-WELLE (A5) — welche CREATURE_SOULS-Gestalt welches tetrapoda-Rezept
+// liest. wesen↔deer (V18.445) + glutwesen↔wolf (AUSLÖSCHUNGS-WELLE: der Wolf ist
+// die Raubtier-Gattung des Labs — Carnivor diet=1, frontale Augen wie der bigcat-
+// Archetyp; bear wäre der plantigrade Allesfresser = unehrlicher. Die Dials
+// überschreiben NUR die vier Zahl-Achsen [TETRAPODA_DIAL_MAP], Shapes+Materialien
+// [box+cone glut] bleiben → Tags BYTE-GLEICH GEMESSEN, Mint-Probe 10.07.).
+// sprite/geist bleiben BEWUSST: skelettlos-ätherische 2-Part-DATEN-Minimalformen,
+// keine Körper-Konstruktion — tetrapoda ist ein Vierbeiner-Labor (kein Gegenstück).
+AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({ wesen: "deer", glutwesen: "wolf" });
 // Die Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht —
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich: neck 0.33≈0.34 ·
 // leg 0.28·(0.6/0.28)=0.60 · build 0.28=torsoW 0.28 · diet 0→eyeFront 0.12):
