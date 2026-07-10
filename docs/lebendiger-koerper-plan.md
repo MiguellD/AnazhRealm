@@ -1,5 +1,24 @@
 # DER LEBENDIGE KÖRPER — Form × Bewegung × Werkstatt zu EINEM System
 
+> **STAND-NACHTRAG (ABSCHIEDS-WELLE nach V18.444): SÄULE II-1 (KONVERGENZ) IST GEBAUT —
+> mit EINER gemessenen Präzisierung gegenüber dem Plan.** (a) Phönix + Drache fließen durch
+> den EINEN Kern: `_buildPhoenixGroup/_animatePhoenix/_buildDragonGroup/_animateDragon`
+> (MeshBasicMaterial = Vor-PBR-Sediment) sind GESCHNITTEN (cut-method); die Built-ins bauen
+> wie jede Compound-Seele über `_buildFromBlueprint` (die V18.101-bodyParts waren genau
+> dafür als Spiegel-Paare gelegt) und bewegen sich durch `_animateCompoundMotion` — lokal,
+> als Peer und auf der Ich-Bühne; die EINE Schwimm-Lehne (`SOUL_SWIM_LEAN`) + die benannten
+> Anker (`_stampSoulPartRefs` aus der EINEN Rollen-Quelle: Kopf-Hide/Hand-Anker) gelten
+> JEDER Compound-Seele. (b) Der MENSCH bleibt das Skinning-RIG (`_animateHumanoidRig`) —
+> die SkinnedMesh-Wand ist REAL (der Kern kann Bones nicht treiben, ohne das Rig zu
+> zerstören; CLAUDE.md Säule-II-Vermerk): der Rig ist aber kein Parallel-CHARAKTER mehr,
+> sondern LESER derselben Studio-Daten (koerper-fx.motion über die EINE Emotions→Profil-
+> Brücke `MOTION_EMOTION_PROFILES`: Atem lab-normalisiert · MOTION_RIG_MAP-Pose-Deltas ·
+> walkPhase×freq); `_animateHuman` ist ein dünner Rig-Delegator (der tote Box-Avatar-Zweig
+> fiel). (c) SÄULE II-3 (Motion-Resonanz, „Emotion moduliert Bewegung") ist damit im
+> ERSTKONSUM gebaut (chaos→flee-Schwanz · sorrow→sad-Pose/pwalk-Schritt — Zahlen in
+> `gate:nervensystem-labs` D/E). OFFEN bleiben II-2 (Fuß-IK/Foot-Lock/Blending/Spring)
+> und die Gusse 2/4/5.
+>
 > **STAND (17.06.2026 — REINER PLAN, kein Code).** Schöpfer-Auftrag: „schau dir die Körper an,
 > die Bewegungen, das Gesamtsystem — wie können wir alles vereinen, der Austausch, die Interaktion
 > in der Werkstatt (Anpassung, das ganze Prinzip) UND schönere Körper? Glieder, Animation auf AAA-

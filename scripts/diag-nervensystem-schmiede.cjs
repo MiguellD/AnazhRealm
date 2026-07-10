@@ -109,7 +109,10 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         "S2: KIND_POLICY traegt die weapon-Zeile (prefix klinge_, donor geraet_schwert — die EINE Daten-Zeile)",
         /weapon:\s*Object\.freeze\(\{\s*prefix:\s*"klinge_",\s*donor:\s*"geraet_schwert"/.test(anazhNC),
     ]);
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*/);
+    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
+    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
+    // im File VOR der Definition und schnitte sonst den falschen Body.
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),

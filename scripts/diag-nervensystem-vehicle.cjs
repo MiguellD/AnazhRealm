@@ -150,7 +150,10 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     // A9 (N1-migriert, V9.56-i): der kind:vehicle-ZWEIG ist der KIND_POLICY-Zeile gewichen —
     // die Probe prueft jetzt die Tabellen-Realitaet: die vehicle-Policy-Zeile traegt Praefix+Donor,
     // und der Auto-Register-Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich (M8).
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*/);
+    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
+    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
+    // im File VOR der Definition und schnitte sonst den falschen Body.
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
     out.push([
         "A9: KIND_POLICY traegt die vehicle-Zeile (prefix fahrzeug_, donor fahrzeug_wagen)",
         /vehicle:\s*Object\.freeze\(\{\s*prefix:\s*"fahrzeug_",\s*donor:\s*"fahrzeug_wagen"/.test(anazhNC),

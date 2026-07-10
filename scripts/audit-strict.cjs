@@ -251,6 +251,19 @@ async function auditStateAndMethods() {
                 // Kamera-Höhe, vom Render-Loop pro Frame gespiegelt (nie in
                 // init() gesetzt — der Playtest liest sie umgebungs-unabhängig).
                 "_cameraDesiredY",
+                // ABSCHIEDS-WELLE (Drift-Nachlese, V18.272-Disziplin — jedes Feld am
+                // Lese-Ort geprüft): drei pre-existierende, undefined-SICHERE Felder:
+                // foliageBlades = Opt-out-Toggle, der eine Leser prüft `!== false`
+                // (undefined == an, wie die Schwestern-Toggles).
+                "foliageBlades",
+                // worldField = lazy-init Noise-Feld-Cache (worldFieldAt: `if (!state.
+                // worldField || seed-Wechsel) neu` — jeder Leser läuft durch den Init).
+                "worldField",
+                "worldField.seed",
+                "worldField.rngNoise",
+                // _frameChunksBuilt = transienter Frame-Scheduler-Zustand (V18.354):
+                // der Scheduler setzt ihn am Frame-Anfang auf false, Leser truthy-only.
+                "_frameChunksBuilt",
                 // Browser-API-Wrapper
                 "playerMesh.position",
                 "playerMesh.rotation",

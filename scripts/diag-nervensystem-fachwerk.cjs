@@ -103,7 +103,10 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         "S2: KIND_POLICY traegt die haus-Zeile (prefix haus_, donor haus_basis — die EINE Daten-Zeile)",
         /haus:\s*Object\.freeze\(\{\s*prefix:\s*"haus_",\s*donor:\s*"haus_basis"/.test(anazhNC),
     ]);
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*/);
+    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
+    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
+    // im File VOR der Definition und schnitte sonst den falschen Body.
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
@@ -275,9 +278,13 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
             res.e.err = (e && e.message) || String(e);
         }
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2] LEBT) =====
-        // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0] — hier MUSS
-        // die Distanz-Wahl 1 die Stufe |1| und die Wahl 2 die Stufe |2| anfragen; die Wahl 5
-        // faltet der Chokepoint auf 2 (lod>2-Klemme) → ebenfalls |2|.
+        // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
+        // ABSCHIEDS-WELLE (lodServe, V9.56-i — der Test wandert mit dem Entscheid): die
+        // haus-Policy mappt den Stufen-WUNSCH 1 auf die Fernstufe 2 (KIND_POLICY.haus.
+        // lodServe {1:2} — L1 75k ~ L0 88k, der Mittel-Ring spart gemessen kaum). Also:
+        // Wahl 2 fragt |2| frisch an; Wahl 1 fragt DENSELBEN |2|-Key (kein frischer Key =
+        // der lodServe-Beweis, kein [0]-Kollaps); Wahl 5 faltet die lod>2-Klemme auf |2|;
+        // Wahl 0 bleibt die feine |0| (die Stufen-Existenz [0,1,2] beweist gate:trias N/B).
         try {
             if (!f.requested) f.requested = new Set();
             const probe = (preset, lodWahl) => {
@@ -286,8 +293,8 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
                 const fresh = Array.from(f.requested).filter((k) => !before.has(k));
                 return fresh.find((k) => k.startsWith(preset + "|")) || null;
             };
-            res.f.k1 = probe("hanseatisch", 1);
             res.f.k2 = probe("hanseatisch", 2);
+            res.f.k1 = probe("hanseatisch", 1);
             res.f.k5 = probe("japanisch", 5);
             res.f.k0 = probe("japanisch", 0);
         } catch (e) {
@@ -377,14 +384,14 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
-        "F: die Distanz-Wahl 1 wird mit der ECHTEN Stufe |1| bedient (kein [0]-Kollaps — der Merge lebt)",
-        /\|1\|/.test(out.f.k1 || ""),
-        out.f.err || String(out.f.k1)
+        "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",
+        /\|2\|/.test(out.f.k2 || ""),
+        out.f.err || String(out.f.k2)
     );
     check(
-        "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient",
-        /\|2\|/.test(out.f.k2 || ""),
-        String(out.f.k2)
+        "F (Abschieds-Welle): die Wahl 1 mappt lodServe auf die schon angefragte Fernstufe |2| (kein frischer Key)",
+        out.f.k1 === null,
+        String(out.f.k1)
     );
     check(
         "F: die Wahl 5 faltet der Chokepoint auf Stufe 2 (lod>2-Klemme)",

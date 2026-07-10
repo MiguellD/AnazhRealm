@@ -97,7 +97,10 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         "S2: KIND_POLICY traegt die gate-Zeile (prefix tor_, donor tor_basis — die EINE Daten-Zeile)",
         /gate:\s*Object\.freeze\(\{\s*prefix:\s*"tor_",\s*donor:\s*"tor_basis"/.test(anazhNC),
     ]);
-    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*/);
+    // ABSCHIEDS-WELLE (V9.56-i + die V18.440-fnBody-Lehre): die Probe ankert auf der
+    // DEFINITIONS-Form (\\(book\\)\\s*\\{) — die CALL-SITE in _foundryIngestRecipes steht
+    // im File VOR der Definition und schnitte sonst den falschen Body.
+    const autoReg = fnBody(anazhNC, /_foundryAutoRegisterSpecies\(book\)\s*\{/);
     out.push([
         "S3: der Auto-Register-Chokepoint laeuft die Policy-Tabelle (kein kind-String-Vergleich, M8 — s. a. gate:constitution N1)",
         autoReg !== null && /KIND_POLICY/.test(autoReg) && !/kind\s*[!=]==?\s*"/.test(autoReg),
@@ -112,8 +115,7 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
     ]);
     out.push([
         "S6: der Donor tor_basis ist ein DATENBLOCK in den Built-ins (kein portalMeta/role-Erbe)",
-        /tor_basis:\s*\{\s*name:\s*"tor_basis"/.test(anazhNC) &&
-            !/tor_basis:\s*\{[^}]*portalMeta/.test(anazhNC),
+        /tor_basis:\s*\{\s*name:\s*"tor_basis"/.test(anazhNC) && !/tor_basis:\s*\{[^}]*portalMeta/.test(anazhNC),
     ]);
     return out;
 }
@@ -183,7 +185,8 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
         res.b.kind = f && f.recipes && f.recipes.drachentor ? f.recipes.drachentor.kind : null;
-        res.b.orders = f && f.recipes && f.recipes.drachentor && f.recipes.drachentor.s ? f.recipes.drachentor.s.orders : null;
+        res.b.orders =
+            f && f.recipes && f.recipes.drachentor && f.recipes.drachentor.s ? f.recipes.drachentor.s.orders : null;
         res.b.gateCount =
             f && f.recipes
                 ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "gate").length
@@ -296,7 +299,11 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         out.p.mode === "site" && out.p.siteTag === "tor",
         out.p.err || `${out.p.mode}/${out.p.siteTag}`
     );
-    check("P: site streut NICHT (Dispatch null, N5.6 — die Welt-Nische ist der benannte Folge-Anschluss)", out.p.dispatch === null, String(out.p.dispatch));
+    check(
+        "P: site streut NICHT (Dispatch null, N5.6 — die Welt-Nische ist der benannte Folge-Anschluss)",
+        out.p.dispatch === null,
+        String(out.p.dispatch)
+    );
     check("P: keine tor_-Nische in der Wald-Liste", out.p.inExtras === false);
     check(
         "E: der Worker liefert das Tor-Asset (Meshes > 0)",

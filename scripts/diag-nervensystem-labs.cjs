@@ -102,6 +102,26 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         'S6: die MOTION_HOST_RECIPE-Daten-Zeile existiert ("wolf") + MOTION_PROFILE_MAP (Tabelle, kein if)',
         /MOTION_HOST_RECIPE\s*=\s*"wolf"/.test(anazhNC) && /MOTION_PROFILE_MAP\s*=\s*Object\.freeze/.test(anazhNC),
     ]);
+    // ABSCHIEDS-WELLE (Koerper-Dock + Motion-Vollendung): die Daten-Zeilen der
+    // Dial- und Emotions-Bruecken existieren (Tabellen, kein if — M8) und die
+    // Konsumenten rufen die EINEN Leser (Definitions-Form).
+    out.push([
+        'S7: die KOERPER_HOST_RECIPE-Daten-Zeile existiert ("mensch") + KOERPER_DIAL_MAP/TETRAPODA_SOUL_MAP/TETRAPODA_DIAL_MAP (Tabellen)',
+        /KOERPER_HOST_RECIPE\s*=\s*"mensch"/.test(anazhNC) &&
+            /KOERPER_DIAL_MAP\s*=\s*Object\.freeze/.test(anazhNC) &&
+            /TETRAPODA_SOUL_MAP\s*=\s*Object\.freeze/.test(anazhNC) &&
+            /TETRAPODA_DIAL_MAP\s*=\s*Object\.freeze/.test(anazhNC),
+    ]);
+    out.push([
+        "S8: die EINE Emotions-Bruecke (MOTION_EMOTION_PROFILES) existiert und BEIDE Leser fliessen durch _motionProfileName",
+        /MOTION_EMOTION_PROFILES\s*=\s*Object\.freeze/.test(anazhNC) &&
+            (anazhNC.match(/_motionProfileName\(moving, emotions, "kreatur"\)/g) || []).length >= 1 &&
+            (anazhNC.match(/_motionProfileName\(moving, emotions, "koerper"\)/g) || []).length >= 1,
+    ]);
+    out.push([
+        "S9: der Rig ist LESER (_animateHumanoidRig ruft _koerperMotionProfile) + der Avatar-Bau liest die Dials (_buildHumanGroup ruft _koerperStudioDials)",
+        /_koerperMotionProfile\(false, emotions\)/.test(anazhNC) && /_koerperStudioDials\(\)/.test(anazhNC),
+    ]);
     return out;
 }
 
@@ -133,6 +153,12 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         const brokenMotion = anazhSrc.replace('MOTION_HOST_RECIPE = "wolf"', 'MOTION_HOST_RECIPE = "bear"');
         const s6 = staticLaws(brokenMotion, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S6"));
         check("Selbst-Test 4: MOTION_HOST_RECIPE verstellt -> S6 feuert", s6 && s6[1] === false);
+        const brokenKoerper = anazhSrc.replace('KOERPER_HOST_RECIPE = "mensch"', 'KOERPER_HOST_RECIPE = "roboter"');
+        const s7 = staticLaws(brokenKoerper, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S7"));
+        check("Selbst-Test 5: KOERPER_HOST_RECIPE verstellt -> S7 feuert", s7 && s7[1] === false);
+        const brokenBridge = anazhSrc.replace(/_motionProfileName\(moving, emotions, "koerper"\)/g, "null");
+        const s8 = staticLaws(brokenBridge, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S8"));
+        check("Selbst-Test 6: koerper-Leser von der Bruecke getrennt -> S8 feuert", s8 && s8[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -288,6 +314,138 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             res.m = res.m || {};
             res.m.err = (e && e.message) || String(e);
         }
+        // ===== D: DER KOERPER-DOCK (Abschieds-Welle A — Dials formen GEOMETRIE) =====
+        try {
+            res.d = {};
+            // A1 AVATAR: die Dial-Quelle lebt + der Boot-Avatar traegt den Studio-Stempel
+            // (der Ingest-Chokepoint goss nach, falls er vor der Buch-Ankunft baute).
+            const dials = r._koerperStudioDials();
+            res.d.dials = dials
+                ? { height: dials.height, mass: dials.mass, tone: dials.tone, gender: dials.gender }
+                : null;
+            const pmStamp = r.state.playerMesh && r.state.playerMesh.userData._koerperDials;
+            res.d.playerStamped = !!pmStamp;
+            res.d.playerBuild = pmStamp ? pmStamp.build : null; // Studio mass 0.35 (Host-Konstante war 0.52)
+            // KONSUM als ZAHL: height-Dial 1.15 -> Rig-Hoehe x1.15 (Boundingbox).
+            const bboxH = (g) => {
+                g.updateMatrixWorld(true);
+                const b = new THREE.Box3().setFromObject(g);
+                return b.max.y - b.min.y;
+            };
+            const g0 = r._buildHumanGroup();
+            const h0 = bboxH(g0);
+            r._disposeSoulGroup(g0);
+            const prevH = f.recipes.mensch.s.height;
+            f.recipes.mensch.s.height = 1.15;
+            const g1 = r._buildHumanGroup();
+            const h1 = bboxH(g1);
+            r._disposeSoulGroup(g1);
+            f.recipes.mensch.s.height = prevH;
+            res.d.h0 = h0;
+            res.d.h1 = h1;
+            res.d.heightConsumed = h0 > 0 && Math.abs(h1 / h0 - 1.15) < 0.03;
+            // fail-soft: Rezept versteckt -> Stempel null (byte-alt Konstanten-Bau).
+            const prevRec = f.recipes.mensch;
+            delete f.recipes.mensch;
+            const g2 = r._buildHumanGroup();
+            res.d.hiddenStamp = g2.userData._koerperDials === null;
+            r._disposeSoulGroup(g2);
+            f.recipes.mensch = prevRec;
+            // A2 KREATUR (wesen <-> tetrapoda deer): der Studio-Guss lebt + ist tag-neutral.
+            const frozen = r.constructor.CREATURE_SOULS.wesen.bodyParts;
+            const eff = r._tetrapodaSoulParts("wesen");
+            res.d.wesenDocked = !!eff && eff.length === frozen.length;
+            res.d.wesenTagNeutral =
+                !!eff &&
+                JSON.stringify(r.computeCompoundTags({ parts: eff })) ===
+                    JSON.stringify(r.computeCompoundTags({ parts: frozen }));
+            // KONSUM als ZAHL: leg-Dial 0.22 -> 0.35 => legFrac 0.6 -> 0.75 => laengere
+            // Beine schieben den Boden (groundY = belly - legLen) messbar TIEFER —
+            // der tiefste Part-Anker (die Fuesse) sinkt.
+            const lowY = (ps) =>
+                Math.min.apply(
+                    null,
+                    ps.map((p) => (p && p.position ? p.position.y : 1e9))
+                );
+            const prevLeg = f.recipes.deer.s.leg;
+            f.recipes.deer.s.leg = 0.35;
+            const eff2 = r._tetrapodaSoulParts("wesen");
+            f.recipes.deer.s.leg = prevLeg;
+            res.d.legBase = eff ? lowY(eff) : 1e9;
+            res.d.legLong = eff2 ? lowY(eff2) : 1e9;
+            res.d.legConsumed = !!eff && !!eff2 && res.d.legLong < res.d.legBase - 0.03;
+            // fail-soft: Rezept versteckt -> der Bau faellt byte-alt auf die frozen
+            // Modul-bodyParts (dieselbe Referenz am Gruppen-Stempel).
+            const prevDeer = f.recipes.deer;
+            delete f.recipes.deer;
+            const cg = r._buildCreatureGroup("wesen");
+            res.d.wesenFallback = !!cg && cg.userData._soulParts === frozen;
+            f.recipes.deer = prevDeer;
+            const cg2 = r._buildCreatureGroup("wesen");
+            res.d.wesenStudioBuild = !!cg2 && cg2.userData._soulParts !== frozen;
+            if (cg && r._disposeSoulGroup) r._disposeSoulGroup(cg);
+            if (cg2 && r._disposeSoulGroup) r._disposeSoulGroup(cg2);
+        } catch (e) {
+            res.d = res.d || {};
+            res.d.err = (e && e.message) || String(e);
+        }
+        // ===== E: DIE EMOTIONS->PROFIL-BRUECKE (Abschieds-Welle B — beide Leser) =====
+        try {
+            res.e = {};
+            res.e.fleeName = r._motionProfileName(true, { chaos: 1 }, "kreatur"); // flee
+            res.e.sadName = r._motionProfileName(false, { sorrow: 0.8 }, "koerper"); // sad
+            res.e.defName = r._motionProfileName(true, null, "kreatur"); // joy (byte-alt Default)
+            // Kreatur-ZAHL: Schwanz unter Furcht (chaos) = flee 11.0/0.006 geklemmt.
+            const mkGroup = () => ({
+                children: [{ rotation: { x: 0, y: 0, z: 0 }, position: { x: 0, y: 0, z: 0 } }],
+                userData: {},
+            });
+            const roles = [{ role: "schwanz", phase: 0 }];
+            const gf = mkGroup();
+            r._animateCompoundMotion(gf, roles, 1, 0, true, { chaos: 1 });
+            res.e.tailFlee = gf.children[0].rotation.y; // sin(11)*0.006
+            // Rig-ZAHL: synthetischer Rig — sorrow=1 -> Kopf sinkt exakt um das
+            // sad-headX-Delta (0.18); neutral -> 0 (byte-alt trotz warmem Buch).
+            const mkBone = () => ({
+                rotation: {
+                    x: 0,
+                    y: 0,
+                    z: 0,
+                    set(a, b, c) {
+                        this.x = a;
+                        this.y = b;
+                        this.z = c;
+                    },
+                },
+                position: { x: 0, y: 0, z: 0 },
+            });
+            const mkSide = () => ({ shoulder: mkBone(), elbow: mkBone(), wrist: mkBone() });
+            const mkLeg = () => ({ hip: mkBone(), knee: mkBone(), ankle: mkBone() });
+            const mkRig = () => ({
+                hips: mkBone(),
+                spine: mkBone(),
+                chest: mkBone(),
+                neck: mkBone(),
+                head: mkBone(),
+                armL: mkSide(),
+                armR: mkSide(),
+                legL: mkLeg(),
+                legR: mkLeg(),
+            });
+            const rigN = mkRig();
+            r._animateHumanoidRig(rigN, 0.7, 0, false, false, null);
+            res.e.headNeutral = rigN.head.rotation.x; // 0 (Delta-Null)
+            res.e.spineNeutral = rigN.spine.rotation.x; // -0.02 + sin(0.7*1.6)*0.02 byte-alt
+            const rigS = mkRig();
+            r._animateHumanoidRig(rigS, 0.7, 0, false, false, { sorrow: 1 });
+            res.e.headSad = rigS.head.rotation.x; // +0.18 (sad-Delta)
+            // walkPhase<->Profil: animatePlayerSoul liest die Bruecke (Source-Probe).
+            const apsSrc = window.__codeOf ? window.__codeOf(r.animatePlayerSoul) : r.animatePlayerSoul.toString();
+            res.e.stepBridge = /_koerperMotionProfile/.test(apsSrc);
+        } catch (e) {
+            res.e = res.e || {};
+            res.e.err = (e && e.message) || String(e);
+        }
         // ===== W: die Werkstatt-Sichtbarkeit (Studio-Rezepte-Liste, W-A1-Straße) =====
         try {
             const ids = r._workshopStudioRecipeIds();
@@ -389,6 +547,60 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     check(
         "M: der EINE Animator ruft den Studio-Leser (Source-Probe _animateCompoundMotion → _motionStudioProfile)",
         !!out.m && out.m.consumes === true
+    );
+    check(
+        "D (Koerper-Dock A1): _koerperStudioDials liest die 8 Morph-Dials + der Boot-Avatar traegt den Studio-Stempel (build 0.35 statt Host-0.52)",
+        !!out.d &&
+            !!out.d.dials &&
+            out.d.dials.height === 1 &&
+            out.d.dials.mass === 0.35 &&
+            out.d.playerStamped === true &&
+            Math.abs((out.d.playerBuild || 0) - 0.35) < 1e-9,
+        (out.d && out.d.err) || JSON.stringify(out.d && out.d.dials)
+    );
+    check(
+        "D: KONSUM als ZAHL — height-Dial 1.15 skaliert die Rig-Hoehe x1.15",
+        !!out.d && out.d.heightConsumed === true,
+        out.d ? `h0=${out.d.h0} h1=${out.d.h1}` : ""
+    );
+    check(
+        "D: fail-soft — Rezept versteckt -> Stempel null (byte-alt Konstanten-Bau)",
+        !!out.d && out.d.hiddenStamp === true
+    );
+    check(
+        "D (Koerper-Dock A2): wesen liest die tetrapoda-deer-Dials (gleiche Part-Zahl, TAG-NEUTRAL per Zahl)",
+        !!out.d && out.d.wesenDocked === true && out.d.wesenTagNeutral === true
+    );
+    check(
+        "D: KONSUM als ZAHL — leg-Dial 0.22->0.35 senkt den Fuss-Anker messbar (laengere Beine)",
+        !!out.d && out.d.legConsumed === true,
+        out.d ? `base=${out.d.legBase} long=${out.d.legLong}` : ""
+    );
+    check(
+        "D: fail-soft — deer versteckt -> _buildCreatureGroup faellt auf die frozen Modul-bodyParts (Referenz-Beweis); warm -> Studio-Guss",
+        !!out.d && out.d.wesenFallback === true && out.d.wesenStudioBuild === true
+    );
+    check(
+        "E (Emotions-Bruecke): der EINE Resolver waehlt flee (kreatur/chaos) · sad (koerper/sorrow) · joy (Default byte-alt)",
+        !!out.e && out.e.fleeName === "flee" && out.e.sadName === "sad" && out.e.defName === "joy",
+        (out.e && out.e.err) || (out.e ? `${out.e.fleeName}/${out.e.sadName}/${out.e.defName}` : "")
+    );
+    check(
+        "E: KONSUM als ZAHL — Schwanz unter Furcht = flee-Profil sin(11)*0.006",
+        !!out.e && Math.abs(out.e.tailFlee - Math.sin(11) * 0.006) < 1e-9,
+        out.e ? String(out.e.tailFlee) : ""
+    );
+    check(
+        "E: DER RIG LIEST — sorrow=1 senkt den Kopf exakt um das sad-Delta (0.18); neutral bleibt byte-alt (Kopf 0, Atem-Konstanten)",
+        !!out.e &&
+            Math.abs(out.e.headSad - 0.18) < 1e-9 &&
+            Math.abs(out.e.headNeutral) < 1e-9 &&
+            Math.abs(out.e.spineNeutral - (-0.02 + Math.sin(0.7 * 1.6) * 0.02)) < 1e-9,
+        out.e ? `sad=${out.e.headSad} neutral=${out.e.headNeutral}` : ""
+    );
+    check(
+        "E: die walkPhase<->Profil-Bruecke lebt (animatePlayerSoul ruft _koerperMotionProfile)",
+        !!out.e && out.e.stepBridge === true
     );
     check(
         "W: die Studio-Rezepte-Liste der Werkstatt fuehrt lofi/wolf/mensch (sichtbar/regelbar)",

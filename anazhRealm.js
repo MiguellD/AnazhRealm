@@ -7866,11 +7866,28 @@ class AnazhRealm {
         if (def && typeof def.build === "function") {
             group = def.build();
             kind = "soul";
+        } else if (def && Array.isArray(def.bodyParts) && def.bodyParts.length > 0) {
+            // ABSCHIEDS-WELLE (Konvergenz C) — Built-ins OHNE Hand-Skelett (Phönix/
+            // Drache): der Peer baut sie LOKAL aus den bekannten def.bodyParts (kein
+            // Draht-Feld nötig) und bewegt sie über den EINEN Compound-Pfad; die
+            // bodyParts wandern in den Entry, damit die Rollen-Ableitung sie liest.
+            group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: def.bodyParts });
+            this._stampSoulPartRefs(group, def.bodyParts);
+            entry.bodyParts = def.bodyParts;
+            kind = "soul-custom";
         } else if (Array.isArray(entry.bodyParts) && entry.bodyParts.length > 0) {
             group = this._buildFromBlueprint({ name: `peer:${entry.peerId}`, parts: entry.bodyParts });
+            this._stampSoulPartRefs(group, entry.bodyParts);
             kind = "soul-custom";
         }
         if (!group) return; // unbekannte Seele ohne bodyParts → Platzhalter bleibt
+        // Die EINE Schwimm-Lehnen-Regel braucht die lokale x-Achse im gedrehten
+        // Frame — die Spieler-Gruppen-Konvention (YXZ) gilt auch dem Peer-Mesh.
+        group.rotation.order = "YXZ";
+        // ABSCHIEDS-WELLE (Konvergenz C) — der Rollen-Memo folgt der NEUEN Seele
+        // (ein Seelen-Wechsel phoenix→dragon trüge sonst stale Phönix-Rollen —
+        // der Memo wird am EINEN Apply-Chokepoint geleert, nicht an N Lesern).
+        entry._motionRoles = undefined;
         if (entry.mesh) {
             this.state.scene.remove(entry.mesh);
             this._p2pDisposeMesh(entry.mesh);
@@ -8010,6 +8027,11 @@ class AnazhRealm {
                 if (entry._motionRoles === undefined) entry._motionRoles = this.computeMotionRoles(entry.bodyParts);
                 if (entry._motionRoles) {
                     entry.walkPhase = (entry.walkPhase || 0) + (isMoving ? dt * 5.0 : 0);
+                    // ABSCHIEDS-WELLE (Konvergenz C) — die EINE Schwimm-Lehne auch für
+                    // Peer-Compound-Seelen (Built-ins Phönix/Drache + Customs; die
+                    // Gruppe ist YXZ, s. _p2pApplyPeerSoul).
+                    const L = AnazhRealm.SOUL_SWIM_LEAN;
+                    mesh.rotation.x = underwater ? (isMoving ? L.moving : L.idle) : 0;
                     this._animateCompoundMotion(mesh, entry._motionRoles, nowSec, entry.walkPhase, isMoving);
                 } else {
                     posY += Math.sin(t * 1.8) * 0.04;
@@ -17600,7 +17622,9 @@ class AnazhRealm {
             skin.userData._creatureSkin = true;
             skin.castShadow = true;
             // die Knochen-Teile verbergen (die Haut IST die Gestalt); ein Feature-Teil bliebe sichtbar.
-            (soul.bodyParts || []).forEach((p, i) => {
+            // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (studio-gedockter Guss),
+            // fail-soft die Modul-bodyParts.
+            ((group.userData && group.userData._soulParts) || soul.bodyParts || []).forEach((p, i) => {
                 const ch = group.children[i];
                 if (ch) ch.visible = !!p.feature;
             });
@@ -18059,7 +18083,7 @@ class AnazhRealm {
     // gebeugt — die Beine bleiben am Boden, weil der Lean in spine/chest sitzt, nicht im Hüft-
     // Root); Gehen = der 4-Posen-Walk-Cycle (Bein ±28°, Knie nur beugen, Arme gegenphasig,
     // CoM-Bob doppelte Frequenz); Schwimmen = Vorlehnen + Kraul/Flattern.
-    _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater) {
+    _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions) {
         if (!rig) return;
         const r = rig;
         const z = (b, v) => {
@@ -18114,7 +18138,19 @@ class AnazhRealm {
             return;
         }
         // RUHE — Kontrapost (Standbein rechts/R): Hüfte kippt, Wirbelsäule lehnt gegen, Kopf zurück.
-        const breath = Math.sin(t * 1.6) * 0.02;
+        // ABSCHIEDS-WELLE (Motion-Vollendung) — DER RIG ALS LESER: das koerper-fx.motion-
+        // Profil (Da-Vinci-Studio, über die EINE Emotions-Brücke) führt den Atem
+        // (breath/freq, auf das Lab-idle NORMALISIERT → neutral exakt byte-alt 0.02/1.6)
+        // und die Emotions-POSE (MOTION_RIG_MAP-Deltas relativ zum Lab-idle: sad → Kopf
+        // sinkt 0.18, joy → Arme heben 0.6, fear → Deckung). Fail-soft: kaltes Buch →
+        // mp null → die Host-Konstanten, byte-identisch. Der Rig bleibt der ANIMATOR
+        // (SkinnedMesh-Wand) — er LIEST nur die Studio-Zahlen (wahrerguss Säule II).
+        const mp = this._koerperMotionProfile(false, emotions);
+        const mref = mp ? this._koerperMotionProfile(false, null) : null;
+        const bAmp =
+            mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
+        const bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
+        const breath = Math.sin(t * bRate) * bAmp;
         z(r.spine, 0.1); // Oberkörper lehnt zur Standbein-Seite
         z(r.chest, -0.06); // Brust-Gegenkipp
         z(r.neck, 0.05); // Kopf wieder aufrecht (krönt die S-Kurve)
@@ -18130,19 +18166,75 @@ class AnazhRealm {
         z(r.armR.shoulder, 0.17);
         x(r.armL.elbow, -0.18); // sanfte Ellbogen-Beuge
         x(r.armR.elbow, -0.1);
+        // Die Emotions-Pose als DATEN-Deltas (mp === mref am Neutralpunkt → Schleife
+        // trägt Nullen → byte-alt; mp/mref sind dieselbe Preset-Referenz bei "idle").
+        if (mp && mref && mp !== mref) {
+            for (const row of AnazhRealm.MOTION_RIG_MAP) {
+                const dv = (Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0);
+                if (!dv) continue;
+                const seg = row.bone.split(".");
+                const bone = seg.length === 2 ? r[seg[0]] && r[seg[0]][seg[1]] : r[seg[0]];
+                if (bone && bone.rotation) bone.rotation[row.axis] += dv * row.mul;
+            }
+        }
+    }
+
+    // ABSCHIEDS-WELLE (Koerper-Dock A2) — DIE EINE KREATUR-DIAL-QUELLE: liest die fünf
+    // allometrischen Dials einer tetrapoda-Gattung LIVE (f.recipes[id].s — das
+    // `_klangStudioPreset`-Muster). Fail-soft: kaltes Buch/fremder kind → null.
+    _tetrapodaStudioDials(recId) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[recId] : null;
+        // WELCHES Rezept eine Seele liest, pinnt TETRAPODA_SOUL_MAP (Daten) — hier nur
+        // die Form-Wache (must-ignore, kein kind-Literal: das klang-Leser-Muster).
+        return rec && rec.s && typeof rec.s === "object" ? rec.s : null;
+    }
+    // ABSCHIEDS-WELLE (Koerper-Dock A2) — DER STUDIO-GUSS EINER SEELE: gießt das
+    // CREATURE_SKELETON_G-g der Seele mit dem dial-überschriebenen Archetyp neu
+    // (TETRAPODA_SOUL_MAP sagt WELCHES Rezept, TETRAPODA_DIAL_MAP WIE — reine Daten).
+    // Tag-neutral per Konstruktion (nur Längen/Positionen wandern, Shapes+Materialien
+    // identisch → Compound-MAX byte-gleich, die V17.16-Affinitäts-Wand). null =
+    // kein ehrliches Mapping / kaltes Buch → der Aufrufer bleibt bei den frozen
+    // Modul-bodyParts (byte-alt).
+    _tetrapodaSoulParts(soulKey) {
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
+        const gSpec = AnazhRealm.CREATURE_SKELETON_G[soulKey];
+        if (!recId || !gSpec) return null;
+        const s = this._tetrapodaStudioDials(recId);
+        if (!s) return null;
+        const arch = Object.assign({}, AnazhRealm.CREATURE_ARCHETYPES[gSpec.archetypeName] || {});
+        for (const row of AnazhRealm.TETRAPODA_DIAL_MAP) {
+            const v = Number(s[row.dial]);
+            if (!Number.isFinite(v)) continue;
+            arch[row.axis] = row.base + row.mul * v;
+        }
+        try {
+            return AnazhRealm._creatureSkeleton(Object.assign({ archetype: arch }, gSpec));
+        } catch (_e) {
+            return null;
+        }
     }
 
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
+    // ABSCHIEDS-WELLE (Koerper-Dock A2) — „keine eigenen Kreaturen": trägt das LIVE-
+    // Buch die gemappte tetrapoda-Gattung, gießt `_tetrapodaSoulParts` die GESTALT
+    // aus den Lab-Dials (der Host bleibt der OFEN: dasselbe Skelett-Gesetz, dieselbe
+    // Metaball-Haut); die effektiven Parts tragen Bau + Haut + Gesicht + Allometrie
+    // (`userData._soulParts`), Tags/Stats lesen weiter die frozen Modul-bodyParts
+    // (dial-tag-neutral per Konstruktion — Spawn-Affinität kippt NIE).
     _buildCreatureGroup(soulName) {
         if (typeof THREE === "undefined") return null;
-        const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
-        const group = this._buildFromBlueprint({ name: `creature_${soulName}`, parts: soul.bodyParts });
+        const soulKey = AnazhRealm.CREATURE_SOULS[soulName] ? soulName : "wesen";
+        const soul = AnazhRealm.CREATURE_SOULS[soulKey];
+        const parts = this._tetrapodaSoulParts(soulKey) || soul.bodyParts;
+        const group = this._buildFromBlueprint({ name: `creature_${soulName}`, parts });
+        group.userData._soulParts = parts;
         // Opacity-Hinweise aus den bodyParts auf die Materialien übertragen —
         // _buildFromBlueprint pflegt das normalerweise über das Bauplan-Schema,
         // aber CreatureSouls dürfen `opacity` direkt am Part tragen.
-        soul.bodyParts.forEach((part, i) => {
+        parts.forEach((part, i) => {
             const child = group.children[i];
             if (!child || !child.material) return;
             if (typeof part.opacity === "number" && part.opacity < 1) {
@@ -18167,17 +18259,17 @@ class AnazhRealm {
             if (worker) {
                 // die Knochen SOFORT verbergen (die Haut IST die Gestalt) → kein Strichmann sichtbar,
                 // während der Bäcker arbeitet; fern + im Nebel ist die Lücke ohnehin unsichtbar.
-                soul.bodyParts.forEach((p, i) => {
+                parts.forEach((p, i) => {
                     const ch = group.children[i];
                     if (ch) ch.visible = !!p.feature;
                 });
-                this._bakeSkinRequest(soul.bodyParts, {}).then((geom) => {
+                this._bakeSkinRequest(parts, {}).then((geom) => {
                     if (geom && group) this._attachCreatureSkin(group, soul, geom);
                     else if (geom && geom.dispose) geom.dispose();
                 });
             } else {
                 try {
-                    const geom = this._buildCreatureSkinGeometry(soul.bodyParts);
+                    const geom = this._buildCreatureSkinGeometry(parts);
                     if (geom) this._attachCreatureSkin(group, soul, geom);
                 } catch (_e) {
                     /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
@@ -18205,7 +18297,11 @@ class AnazhRealm {
     // kein Motion-Role) → der Merge ist render-rein, kein Bewegungs-Pfad berührt.
     _addCreatureFace(group, soul) {
         if (typeof THREE === "undefined" || !group || !soul) return;
-        const head = (soul.bodyParts || []).find((p) => p && p.bodyRole === "head");
+        // ABSCHIEDS-WELLE (A2) — der Kopf-Anker aus den EFFEKTIVEN Parts (studio-
+        // gedockter Guss verschiebt den Kopf mit der Nack-Länge), fail-soft Modul-Daten.
+        const head = ((group.userData && group.userData._soulParts) || soul.bodyParts || []).find(
+            (p) => p && p.bodyRole === "head"
+        );
         if (!head || !head.position || !head.size) return;
         const hr = Math.abs(head.size.x) || 0.2;
         const hx = head.position.x || 0,
@@ -18337,7 +18433,9 @@ class AnazhRealm {
     _applyCreatureAllometry(group, soulName, bodySize) {
         if (!group || !group.children || !Number.isFinite(bodySize)) return;
         const soul = AnazhRealm.CREATURE_SOULS[soulName] || AnazhRealm.CREATURE_SOULS.wesen;
-        const parts = soul && soul.bodyParts;
+        // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (der studio-gedockte Guss
+        // ändert Glied-Längen → die Glied-Klassifikation liest die gebaute Wahrheit).
+        const parts = (group.userData && group.userData._soulParts) || (soul && soul.bodyParts);
         if (!Array.isArray(parts)) return;
         const allo = Math.sqrt(Math.max(0.01, bodySize)); // der EXTRA-Querschnitt (relativ zur Uniform-Skala)
         for (let i = 0; i < parts.length; i++) {
@@ -18669,13 +18767,50 @@ class AnazhRealm {
     // Säule II — _animateCompoundMotion kann das Rig nicht treiben, ohne es zu
     // zerstören). Fail-soft (G4.1): kaltes Buch/Rezept versteckt → null, jeder
     // Leser fällt byte-alt auf seine Konstante.
-    _motionStudioProfile(moving) {
+    _motionStudioProfile(moving, emotions) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
         const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
         if (!m) return null;
-        const p = m[AnazhRealm.MOTION_PROFILE_MAP[moving ? "moving" : "idle"]];
+        const p = m[this._motionProfileName(moving, emotions, "kreatur")];
         return p && typeof p === "object" ? p : null;
+    }
+    // ABSCHIEDS-WELLE — DER EINE BRÜCKEN-RESOLVER (Daten-Tabelle MOTION_EMOTION_PROFILES,
+    // Vorrang-Zeilen; keine Achse über der Schwelle → die MOTION_PROFILE_MAP-Default-
+    // Zeile). BEIDE Leser (Rig `_koerperMotionProfile` + Compound `_motionStudioProfile`)
+    // fließen hier durch — EINE Quelle, zwei Spalten (koerper/kreatur).
+    _motionProfileName(moving, emotions, column) {
+        const e = emotions && typeof emotions === "object" ? emotions : null;
+        if (e) {
+            for (const row of AnazhRealm.MOTION_EMOTION_PROFILES) {
+                const v = Number(e[row.axis]) || 0;
+                if (v >= row.min && row[column]) return row[column][moving ? "moving" : "idle"];
+            }
+        }
+        const d = AnazhRealm.MOTION_PROFILE_MAP[column];
+        return d ? d[moving ? "moving" : "idle"] : null;
+    }
+    // ABSCHIEDS-WELLE — DAS KOERPER-BEWEGUNGS-PROFIL: der EINE Leser der koerper-
+    // fx.motion-Daten (Da-Vinci-Studio, Vertrag §8.2) — die Schwester von
+    // `_motionStudioProfile`, Spalte "koerper". Fail-soft (G4.1): kaltes Buch/
+    // Rezept versteckt → null, jeder Leser fällt byte-alt auf seine Konstante.
+    _koerperMotionProfile(moving, emotions) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
+        const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
+        if (!m) return null;
+        const p = m[this._motionProfileName(moving, emotions, "koerper")];
+        return p && typeof p === "object" ? p : null;
+    }
+    // ABSCHIEDS-WELLE (Koerper-Dock A1) — DIE EINE GESTALT-DIAL-QUELLE: liest die acht
+    // Morph-Dials des Da-Vinci-Studios LIVE (f.recipes[mensch].s — das
+    // `_klangStudioPreset`-Muster). Fail-soft: kaltes Buch → null → der Avatar baut
+    // byte-alt aus den Host-Konstanten (`_buildHumanGroup` ist der Konsument).
+    _koerperStudioDials() {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
+        const s = rec && rec.s;
+        return s && typeof s === "object" ? s : null;
     }
 
     // Der EINE generische Animator: wendet die Bewegungs-Rollen auf die
@@ -18684,8 +18819,24 @@ class AnazhRealm {
     // Center-Pivot-Schwünge in der Sprache der Hand-Skelette: absolute Werte
     // pro Frame (Basis + Delta, kein Drift); die Basis-Rotationen (part.rotation)
     // werden einmal eingefangen und geehrt. t in Sekunden.
-    _animateCompoundMotion(group, roles, t, walkPhase, moving) {
+    _animateCompoundMotion(group, roles, t, walkPhase, moving, emotions) {
         if (!group || !roles || !Array.isArray(group.children)) return;
+        // ABSCHIEDS-WELLE (Motion-Vollendung) — das Studio-Profil EINMAL je Aufruf (lazy,
+        // nur wenn eine lesende Rolle [schwanz/kopf] es braucht) statt je Kind; `emotions`
+        // reist vom Halter (Kreatur ud.emotions · Spieler state.player.emotions · Peers
+        // null) durch die EINE Brücke (_motionProfileName). ref = das Lab-idle-Profil
+        // (die Delta-Null der Emotions-Offsets — neutral bleibt byte-alt).
+        let _mpDone = false;
+        let _mp = null;
+        let _mpRef = null;
+        const studioProf = () => {
+            if (!_mpDone) {
+                _mpDone = true;
+                _mp = this._motionStudioProfile(moving, emotions);
+                _mpRef = _mp ? this._motionStudioProfile(false, null) : null;
+            }
+            return _mp;
+        };
         const kids = group.children;
         let base = group.userData._motionBase;
         if (!base || base.length !== kids.length) {
@@ -18766,13 +18917,22 @@ class AnazhRealm {
             } else if (r.role === "schwanz") {
                 // W-A6-ERSTKONSUMENT: der Schwanz liest tailRate/tailAmp aus dem
                 // tetrapoda-Studio-Profil (fx.motion als DATEN — idle: 0.5/0.10 ruhig,
-                // moving [joy]: 5.5/0.38 lebhaft); ohne Rezept byte-alt (2.2 / 0.28).
-                const mp = this._motionStudioProfile(moving);
+                // moving [joy]: 5.5/0.38 lebhaft; flee [chaos-Brücke]: 11.0/0.006
+                // geklemmt); ohne Rezept byte-alt (2.2 / 0.28).
+                const mp = studioProf();
                 const tr = mp && Number.isFinite(mp.tailRate) ? mp.tailRate : 2.2;
                 const ta = mp && Number.isFinite(mp.tailAmp) ? mp.tailAmp : 0.28;
                 c.rotation.y = b.ry + Math.sin(t * tr + r.phase) * ta;
             } else if (r.role === "kopf") {
-                c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0);
+                // ABSCHIEDS-WELLE — der KOPF liest die Studio-Haltung als DELTA relativ
+                // zum Lab-idle (hunt: −0.12 gesenkt/pirschend · joy: +0.04 gehoben);
+                // neutral/ohne Rezept exakt byte-alt (Delta 0 bzw. mp null).
+                const mp = studioProf();
+                const dHead =
+                    mp && _mpRef && Number.isFinite(mp.headX) && Number.isFinite(_mpRef.headX)
+                        ? mp.headX - _mpRef.headX
+                        : 0;
+                c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0) + dHead;
             } else if (r.role === "segel") {
                 // C2 — das Tuch/Segel FLATTERT (Wind): kleine schnelle Wellen.
                 c.rotation.z = b.rz + Math.sin(t * 4.2 + r.phase + i) * 0.07;
@@ -21654,12 +21814,15 @@ class AnazhRealm {
                 if (mroles) {
                     const movingNow = direction.lengthSq() > 0.01;
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
+                    // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
+                    // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
                     this._animateCompoundMotion(
                         creature,
                         mroles,
                         this.state.creatureAnimationTime,
                         creature.userData.walkPhase,
-                        movingNow
+                        movingNow,
+                        creature.userData.emotions
                     );
                 }
             }
@@ -42730,8 +42893,13 @@ class AnazhRealm {
             phoenix: {
                 label: "Phönix",
                 color: 0xff7a1a,
-                build: () => this._buildPhoenixGroup(),
-                animate: (g, t, ph, mv, uw) => this._animatePhoenix(g, t, ph, mv, uw),
+                // ABSCHIEDS-WELLE (Konvergenz C) — das Hand-Skelett (_buildPhoenixGroup/
+                // _animatePhoenix, MeshBasicMaterial = Vor-PBR-Sediment) ist GESCHNITTEN:
+                // der Phönix baut wie jede Compound-Seele über `_buildFromBlueprint`
+                // (bodyParts unten, PBR = die EINE Material-Wahrheit V18.236) und bewegt
+                // sich durch den EINEN Kern `_animateCompoundMotion` (die V18.101-
+                // bodyParts wurden GENAU dafür als Spiegel-Paare gelegt — die Motion-
+                // Resonanz liest fluegel/schwanz/kopf von selbst).
                 // V18.101 — positioniert (s. human): dieselben (Form,Material)-
                 // Paare wie der alte Stat-Schatten (box/plane/cone+federn,
                 // sphere+glut) → Tag-Parität; die Flügel als ECHTES Spiegel-Paar
@@ -42785,8 +42953,10 @@ class AnazhRealm {
             dragon: {
                 label: "Drache",
                 color: 0x2d6e3b,
-                build: () => this._buildDragonGroup(),
-                animate: (g, t, ph, mv, uw) => this._animateDragon(g, t, ph, mv, uw),
+                // ABSCHIEDS-WELLE (Konvergenz C) — das Hand-Skelett (_buildDragonGroup/
+                // _animateDragon) ist GESCHNITTEN (s. phoenix): Compound-Bau + der EINE
+                // Kern; die vier Spiegel-Beine tragen den Diagonal-Trab der Motion-
+                // Resonanz, der Schweif die |z|-Phasen-Welle — genau die V18.101-Saat.
                 // V18.101 — positioniert (s. human): dieselben Paare (box/
                 // cylinder+schuppen, sphere+schuppen, cylinder+knochen) →
                 // Tag-Parität; vier gespiegelte Beine (Diagonal-Trab der
@@ -43177,6 +43347,35 @@ class AnazhRealm {
         if (this.playerSoulDefs[name]) return this.playerSoulDefs[name];
         if (this.state.customSouls && this.state.customSouls[name]) return this.state.customSouls[name];
         return null;
+    }
+
+    // ABSCHIEDS-WELLE (Konvergenz C) — DIE BENANNTEN ANKER AUS DER EINEN ROLLEN-QUELLE:
+    // eine Compound-Seele (konvergierte Built-ins Phönix/Drache + Customs + Peers)
+    // bekommt ihre `userData.parts`-Referenzen (head · left/rightArm · left/rightWing ·
+    // left/rightLeg) aus `computeMotionRoles` abgeleitet — kein Hand-Skelett-Sonderpfad
+    // mehr. Konsumenten: der 1st-Person-Kopf-Hide (Kamera sitzt im Kopf) + der Hand-
+    // Anker (`_refreshHeldMesh`: leftArm||leftWing). side +1 = px>0 = rechts (die
+    // WASD-Gotcha-Konvention der Rollen-Quelle). Kein Treffer → parts bleibt leer
+    // (der Hand-Anker fällt auf die Körper-Wurzel, wie eh bei Custom-Seelen).
+    _stampSoulPartRefs(group, bodyParts) {
+        if (!group || !group.userData || !Array.isArray(bodyParts) || !Array.isArray(group.children)) return;
+        const roles = this.computeMotionRoles(bodyParts);
+        if (!roles) return;
+        const parts = {};
+        const SLOT = { kopf: "head", arm: "Arm", fluegel: "Wing", bein: "Leg" };
+        for (let i = 0; i < roles.length && i < group.children.length; i++) {
+            const r = roles[i];
+            if (!r || !SLOT[r.role]) continue;
+            const child = group.children[i];
+            if (!child) continue;
+            if (r.role === "kopf") {
+                if (!parts.head) parts.head = child;
+                continue;
+            }
+            const key = (r.side < 0 ? "left" : "right") + SLOT[r.role];
+            if (!parts[key]) parts[key] = child;
+        }
+        if (Object.keys(parts).length) group.userData.parts = parts;
     }
 
     // Welle 6.D Etappe 1.7 — UI-Mutations-Pfade für eigene Seelen.
@@ -48311,21 +48510,9 @@ class AnazhRealm {
     }
 
     // ===== ATLAS §15 · SPIELER-SEELEN/BEWEGUNG — Avatare · Movement/Sprung · Ritt · Hand =====
-    // Hilfs-Helper: ein Glied (Arm/Bein) mit Pivot am Joint. Joint-Group
-    // sitzt an (jx, jy, jz); das Mesh hängt von der Y-Achse nach unten,
-    // sodass Rotation der Joint-Group am Schulter-/Hüft-Punkt ankert.
-    _buildLimb(material, jx, jy, jz, length, width, depth) {
-        const joint = new THREE.Group();
-        joint.position.set(jx, jy, jz);
-        const mesh = new THREE.Mesh(new THREE.BoxGeometry(width, length, depth), material);
-        mesh.position.y = -length / 2;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        joint.add(mesh);
-        joint.userData.length = length;
-        return joint;
-    }
-
+    // (ABSCHIEDS-WELLE: der Marker sass am geschnittenen `_buildLimb` — der Zonen-Anker
+    // wandert an den lebenden Zonen-Anfang; Phönix/Drache sind Compound-Seelen, die
+    // Hand-Skelette fielen per cut-method.)
     _buildHumanGroup() {
         const group = new THREE.Group();
         // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
@@ -48343,13 +48530,32 @@ class AnazhRealm {
         // realistische Haut wie die Referenzbilder). Ein warmer natürlicher Hautton; das alte rote
         // 0xc0392b war ein Sediment-Bug, kein Identitäts-Wille.
         const skinTint = 0xc89372;
+        // ABSCHIEDS-WELLE (Koerper-Dock A1) — „kein eigener Avatar": die GESTALT-DIALS
+        // kommen aus dem Da-Vinci-Studio (koerper-core `mensch`.s, LIVE über
+        // `_koerperStudioDials`), die Dial→Genom-Zuordnung ist die DATEN-Tabelle
+        // KOERPER_DIAL_MAP (kein if-Baum; khMul skaliert die EINE Kopfhöhen-Einheit).
+        // Fail-soft byte-alt: kaltes Buch → dials null → g exakt der bisherige
+        // Konstanten-Bau. Der Stempel `_koerperDials` trägt die Wahrheit (null = ohne
+        // Studio gebaut) — der Rezept-Ankunfts-Chokepoint gießt dann EINMAL nach.
+        const dials = this._koerperStudioDials();
+        const g = { kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint };
+        if (dials) {
+            for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
+                const v = Number(dials[row.dial]);
+                if (!Number.isFinite(v)) continue;
+                const val = row.base + row.mul * v;
+                if (row.axis === "khMul") g.kh = PLAYER_KH * val;
+                else g[row.axis] = val;
+            }
+        }
         let built = null;
         try {
-            built = this._buildHumanoidRig({ kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint });
+            built = this._buildHumanoidRig(g);
         } catch (_e) {
             built = null;
         }
         if (built && built.rig) {
+            group.userData._koerperDials = dials ? { kh: g.kh, sex: g.sex, build: g.build, muscle: g.muscle } : null;
             // V18.316 — die Bones + das Gesicht stehen SOFORT (animierbar, equip-fähig); die Haut
             // (SkinnedMesh) kommt synchron (headless) ODER off-thread (echte Welt, der Bäcker).
             group.userData.rig = built.rig;
@@ -48390,54 +48596,17 @@ class AnazhRealm {
         return group;
     }
 
-    _animateHuman(group, t, walkPhase, isMoving, underwater) {
+    _animateHuman(group, t, walkPhase, isMoving, underwater, emotions) {
         // GUSS 2b — der Rig-Avatar wird über die Bones bewegt (Walk/Idle/Kontrapost/Schwimm).
-        if (group.userData && group.userData.rig) {
-            // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne — wie ein Schwimmer);
-            // die Glieder kraulen/flattern macht das Rig. An Land aufrecht (rotation.x = 0).
-            group.rotation.x = underwater ? (isMoving ? 0.6 : 0.3) : 0;
-            this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater);
-            return;
-        }
-        const p = group.userData.parts;
-        if (underwater) {
-            // V8.33 — Schwimm-Pose: der Körper neigt sich vorwärts ins
-            // Wasser, die Arme ziehen wechselnde Kraul-Züge in weitem Bogen,
-            // die Beine flattern. Der Avatar wirkt nicht mehr statisch gegen
-            // das bewegte Wasser.
-            group.rotation.x = isMoving ? 0.6 : 0.28;
-            const armAmp = isMoving ? 1.5 : 0.7;
-            p.leftArm.rotation.x = Math.sin(walkPhase) * armAmp - 0.35;
-            p.rightArm.rotation.x = Math.sin(walkPhase + Math.PI) * armAmp - 0.35;
-            p.leftArm.rotation.z = 0.4;
-            p.rightArm.rotation.z = -0.4;
-            const kickAmp = isMoving ? 0.4 : 0.18;
-            p.leftLeg.rotation.x = Math.sin(walkPhase * 1.8) * kickAmp;
-            p.rightLeg.rotation.x = Math.sin(walkPhase * 1.8 + Math.PI) * kickAmp;
-            p.torso.position.y = 0.45 + Math.sin(t * 2.2) * 0.05;
-            return;
-        }
-        // An Land: Lehnen + Arm-Splay zurücksetzen (Schwimm-Pose räumen).
-        group.rotation.x = 0;
-        p.leftArm.rotation.z = 0;
-        p.rightArm.rotation.z = 0;
-        if (isMoving) {
-            // Schritt-Zyklus: Beine ±0.5 rad gegenphasig, Arme ±0.3 entgegen
-            const swing = Math.sin(walkPhase) * 0.5;
-            p.leftLeg.rotation.x = swing;
-            p.rightLeg.rotation.x = -swing;
-            p.leftArm.rotation.x = -swing * 0.6;
-            p.rightArm.rotation.x = swing * 0.6;
-            p.torso.position.y = 0.45 + Math.abs(Math.sin(walkPhase)) * 0.04;
-        } else {
-            // Idle: leichter Atem-Hub + sanftes Arm-Pendel
-            const breath = Math.sin(t * 1.8) * 0.025;
-            p.torso.position.y = 0.45 + breath;
-            p.leftArm.rotation.x = Math.sin(t * 1.2) * 0.05;
-            p.rightArm.rotation.x = -Math.sin(t * 1.2) * 0.05;
-            p.leftLeg.rotation.x = 0;
-            p.rightLeg.rotation.x = 0;
-        }
+        // ABSCHIEDS-WELLE (Konvergenz C) — der tote Box-Avatar-Zweig (userData.parts ohne
+        // Rig) ist GESCHNITTEN: `_buildHumanGroup` liefert seit V18.316 ausschließlich das
+        // Rig (oder eine leere Gruppe ohne parts → hasSkeleton false, der Aufrufer kommt
+        // nie hierher) — der Rig IST die eine Quelle, der Legacy-Zweig war unerreichbar.
+        if (!group.userData || !group.userData.rig) return;
+        // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne — wie ein Schwimmer);
+        // die Glieder kraulen/flattern macht das Rig. An Land aufrecht (rotation.x = 0).
+        group.rotation.x = underwater ? (isMoving ? 0.6 : 0.3) : 0;
+        this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions);
     }
 
     // M3(b)/V18.155 — die Sitz-Pose des menschlichen Avatars (Befund 10): die
@@ -48445,7 +48614,7 @@ class AnazhRealm {
     // Geste), der Torso atmet sanft. Absolute Werte pro Frame (kein Drift —
     // die _animateHuman-Sprache); _animateHuman räumt die Pose beim Absteigen
     // (sein Idle-/Walk-Zweig setzt alle Rotationen absolut).
-    _applySeatPose(group, t) {
+    _applySeatPose(group, _t) {
         // GUSS 2b — der Rig-Avatar SITZT über die Bein-/Arm-Bones (Beine angewinkelt nach
         // vorn, Arme vorgehalten); absolute Werte (kein Drift — _animateHumanoidRig räumt sie).
         const rig = group.userData && group.userData.rig;
@@ -48461,196 +48630,10 @@ class AnazhRealm {
             rig.armR.shoulder.rotation.x = -0.4;
             rig.armL.elbow.rotation.x = -0.5;
             rig.armR.elbow.rotation.x = -0.5;
-            return;
         }
-        const p = group.userData.parts;
-        if (!p || !p.leftLeg || !p.rightLeg) return;
-        group.rotation.x = 0;
-        p.leftLeg.rotation.x = -1.3;
-        p.rightLeg.rotation.x = -1.3;
-        p.leftArm.rotation.x = -0.45;
-        p.rightArm.rotation.x = -0.45;
-        p.leftArm.rotation.z = 0.12;
-        p.rightArm.rotation.z = -0.12;
-        p.torso.position.y = 0.45 + Math.sin(t * 1.8) * 0.02;
-    }
-
-    _buildPhoenixGroup() {
-        const group = new THREE.Group();
-        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
-        group.rotation.order = "YXZ";
-        const material = new THREE.MeshBasicMaterial({ color: 0xff7a1a });
-        // Körper: Oktaeder im Brust-Bereich
-        const body = new THREE.Mesh(new THREE.OctahedronGeometry(0.45, 0), material);
-        body.position.y = 0.5;
-        body.castShadow = true;
-        body.receiveShadow = true;
-        group.add(body);
-        // Kopf: kleinerer Oktaeder oben
-        const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), material);
-        head.position.set(0, 0.95, 0.05);
-        head.castShadow = true;
-        group.add(head);
-        // Schweif: Kegel nach hinten unten
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.9, 6), material);
-        tail.position.set(0, 0.4, -0.55);
-        tail.rotation.x = Math.PI / 2;
-        tail.castShadow = true;
-        group.add(tail);
-        // Flügel: zwei flache Boxen mit Joint an der Schulter, sodass
-        // Rotation um die Forward-Achse (Z) wie Flügelschlag aussieht.
-        const buildWing = (sign) => {
-            const joint = new THREE.Group();
-            joint.position.set(sign * 0.3, 0.55, 0);
-            const wing = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.04, 0.5), material);
-            wing.position.x = sign * 0.45;
-            wing.castShadow = true;
-            joint.add(wing);
-            return joint;
-        };
-        const leftWing = buildWing(-1);
-        const rightWing = buildWing(1);
-        group.add(leftWing, rightWing);
-        group.userData.material = material;
-        group.userData.parts = { body, head, tail, leftWing, rightWing };
-        return group;
-    }
-
-    _animatePhoenix(group, t, walkPhase, isMoving, underwater) {
-        const p = group.userData.parts;
-        if (underwater) {
-            // V8.33 — Schwimm-Pose: die Flügel werden zu Flossen, ein
-            // langsamer breiter Paddel-Schlag treibt den Phönix wie einen
-            // tauchenden Vogel (Pinguin/Kormoran). Körper geneigt + Wippen.
-            group.rotation.x = isMoving ? 0.5 : 0.22;
-            const paddle = Math.sin(walkPhase) * (isMoving ? 1.0 : 0.5);
-            p.leftWing.rotation.z = -0.3 - paddle;
-            p.rightWing.rotation.z = 0.3 + paddle;
-            p.body.position.y = 0.5 + Math.sin(t * 2.0) * 0.05;
-            p.head.position.y = 0.95 + Math.sin(t * 2.0) * 0.04;
-            p.tail.rotation.z = Math.sin(t * 1.5) * 0.12;
-            return;
-        }
-        group.rotation.x = 0;
-        // Flügel flattern immer (Phönix ist ein Flugwesen). In Bewegung
-        // schneller, im Idle gemächlich.
-        const flapSpeed = isMoving ? 14 : 7;
-        const flapAmp = isMoving ? 0.85 : 0.55;
-        const flap = Math.sin(t * flapSpeed) * flapAmp;
-        p.leftWing.rotation.z = -flap;
-        p.rightWing.rotation.z = flap;
-        // Hover-Bob für Körper, im Idle stärker als im Walk
-        const bobAmp = isMoving ? 0.04 : 0.07;
-        const bobSpeed = isMoving ? 6 : 1.6;
-        p.body.position.y = 0.5 + Math.sin(t * bobSpeed) * bobAmp;
-        p.head.position.y = 0.95 + Math.sin(t * bobSpeed) * bobAmp * 0.7;
-        // Schweif folgt sanft
-        p.tail.rotation.z = Math.sin(t * 1.2) * 0.1;
-    }
-
-    _buildDragonGroup() {
-        const group = new THREE.Group();
-        // V8.33 — YXZ-Rotation für den lokalen Schwimm-Lehnen (rotation.x).
-        group.rotation.order = "YXZ";
-        const material = new THREE.MeshBasicMaterial({ color: 0x2d6e3b });
-        // Welle 6.D Etappe 3b — Drache-Orientierung bleibt mit Kopf in +Z
-        // (Forward). Der Schöpfer hatte zwischenzeitlich „W/S vertauscht"
-        // gemeldet; ein π-Inner-Flip-Versuch drehte den Avatar visuell um,
-        // sodass er den Spieler in 3rd-Person anschaute statt von ihm
-        // wegzulaufen. Revertiert: keine Inner-Group-Drehung, Original-
-        // Orientierung wiederhergestellt. Wer hier ändert, prüfe in echter
-        // 3rd-Person-Ansicht, dass die Kopf-Box vom Spieler wegzeigt.
-        // Körper: gestreckter Quader entlang Z
-        const body = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.45, 1.2), material);
-        body.position.y = 0.4;
-        body.castShadow = true;
-        body.receiveShadow = true;
-        group.add(body);
-        // Kopf: vorne dran
-        const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.38, 0.45), material);
-        head.position.set(0, 0.5, 0.85);
-        head.castShadow = true;
-        group.add(head);
-        // Vier Beine in Box-Eck-Anordnung
-        const legY = 0.18;
-        const legLen = 0.5;
-        const flLeg = this._buildLimb(material, -0.25, legY, 0.35, legLen, 0.15, 0.15);
-        const frLeg = this._buildLimb(material, 0.25, legY, 0.35, legLen, 0.15, 0.15);
-        const blLeg = this._buildLimb(material, -0.25, legY, -0.35, legLen, 0.15, 0.15);
-        const brLeg = this._buildLimb(material, 0.25, legY, -0.35, legLen, 0.15, 0.15);
-        group.add(flLeg, frLeg, blLeg, brLeg);
-        // Schweif: drei Segmente in Kette nach hinten, jedes als Joint
-        // rotiert um den vorherigen — gibt eine wellige Sinus-Welle.
-        const tailJoint = new THREE.Group();
-        tailJoint.position.set(0, 0.4, -0.6);
-        const tailSeg1 = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.28, 0.45), material);
-        tailSeg1.position.z = -0.22;
-        tailSeg1.castShadow = true;
-        tailJoint.add(tailSeg1);
-        const tailJoint2 = new THREE.Group();
-        tailJoint2.position.z = -0.45;
-        const tailSeg2 = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.4), material);
-        tailSeg2.position.z = -0.2;
-        tailSeg2.castShadow = true;
-        tailJoint2.add(tailSeg2);
-        const tailJoint3 = new THREE.Group();
-        tailJoint3.position.z = -0.4;
-        const tailSeg3 = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.13, 0.35), material);
-        tailSeg3.position.z = -0.17;
-        tailSeg3.castShadow = true;
-        tailJoint3.add(tailSeg3);
-        tailJoint2.add(tailJoint3);
-        tailJoint.add(tailJoint2);
-        group.add(tailJoint);
-        group.userData.material = material;
-        group.userData.parts = { body, head, flLeg, frLeg, blLeg, brLeg, tailJoint, tailJoint2, tailJoint3 };
-        return group;
-    }
-
-    _animateDragon(group, t, walkPhase, isMoving, underwater) {
-        const p = group.userData.parts;
-        if (underwater) {
-            // V8.33 — Schwimm-Pose: der Drache gleitet wie eine Seeschlange,
-            // der Schweif wellt kräftig als Antrieb, die Beine paddeln knapp,
-            // der Körper neigt sich ins Wasser.
-            group.rotation.x = isMoving ? 0.4 : 0.16;
-            const paddle = Math.sin(walkPhase) * (isMoving ? 0.45 : 0.2);
-            p.flLeg.rotation.x = paddle;
-            p.brLeg.rotation.x = paddle;
-            p.frLeg.rotation.x = -paddle;
-            p.blLeg.rotation.x = -paddle;
-            p.body.position.y = 0.4 + Math.sin(t * 1.9) * 0.05;
-            // Schweif wellt kräftiger — Antrieb statt Zier.
-            const tailAmp = isMoving ? 0.5 : 0.32;
-            p.tailJoint.rotation.y = Math.sin(t * 3.0) * tailAmp;
-            p.tailJoint2.rotation.y = Math.sin(t * 3.0 - 0.7) * (tailAmp + 0.12);
-            p.tailJoint3.rotation.y = Math.sin(t * 3.0 - 1.4) * (tailAmp + 0.24);
-            p.head.position.y = 0.5 + Math.sin(t * 1.7) * 0.03;
-            return;
-        }
-        group.rotation.x = 0;
-        if (isMoving) {
-            // Trab: Diagonale Bein-Paare (FL+BR vs FR+BL) gegenphasig
-            const swing = Math.sin(walkPhase) * 0.45;
-            p.flLeg.rotation.x = swing;
-            p.brLeg.rotation.x = swing;
-            p.frLeg.rotation.x = -swing;
-            p.blLeg.rotation.x = -swing;
-            p.body.position.y = 0.4 + Math.abs(Math.sin(walkPhase * 2)) * 0.025;
-        } else {
-            const breath = Math.sin(t * 1.4) * 0.02;
-            p.body.position.y = 0.4 + breath;
-            p.flLeg.rotation.x = 0;
-            p.brLeg.rotation.x = 0;
-            p.frLeg.rotation.x = 0;
-            p.blLeg.rotation.x = 0;
-        }
-        // Schweif wellt sich immer (jedes Segment phasenversetzt)
-        p.tailJoint.rotation.y = Math.sin(t * 2.0) * 0.25;
-        p.tailJoint2.rotation.y = Math.sin(t * 2.0 - 0.6) * 0.35;
-        p.tailJoint3.rotation.y = Math.sin(t * 2.0 - 1.2) * 0.45;
-        // Kopf nickt leicht
-        p.head.position.y = 0.5 + Math.sin(t * 1.6) * 0.02;
+        // ABSCHIEDS-WELLE (Konvergenz C) — der Nicht-Rig-Sitz-Zweig (Box-Avatar-parts)
+        // ist GESCHNITTEN: die Sitz-Pose gilt nur dem menschlichen Rig-Avatar (der
+        // einzige Aufrufer gated auf soulName === "human", und der baut immer das Rig).
     }
 
     // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
@@ -49968,13 +49951,23 @@ class AnazhRealm {
         const old = this.state.playerMesh;
         // Position + Scale + Rotation übernehmen, damit Soul-Wechsel mitten
         // im Spiel keine Sprünge produziert.
-        // Built-in-Seele: def.build() ist ein eigener Multi-Mesh-Pfad mit
-        // Walk-Cycle. Custom-Seele: über `_buildFromBlueprint` aus bodyParts
-        // — derselbe Render-Pfad wie für Bauwerke.
-        const newGroup =
-            def && typeof def.build === "function"
-                ? def.build()
-                : this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
+        // ABSCHIEDS-WELLE (Konvergenz C) — nur der Mensch trägt noch einen build()
+        // (das Skinning-RIG, die SkinnedMesh-Wand); Phönix/Drache/Customs bauen ALLE
+        // über `_buildFromBlueprint` aus bodyParts — derselbe Render-Pfad wie für
+        // Bauwerke, PBR statt des alten MeshBasic-Hand-Skeletts. `_stampSoulPartRefs`
+        // leitet die benannten Anker (head/Arme/Flügel) aus der EINEN Rollen-Quelle
+        // ab → 1st-Person-Kopf-Hide + Hand-Anker leben für JEDE Compound-Seele.
+        let newGroup;
+        if (def && typeof def.build === "function") {
+            newGroup = def.build();
+        } else {
+            newGroup = this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
+            this._stampSoulPartRefs(newGroup, def.bodyParts || []);
+        }
+        // Die Spieler-Gruppe ist IMMER YXZ (lokale Schwimm-Lehne im gedrehten Frame) —
+        // UNBEDINGT am Chokepoint (vorher nur im old-Zweig: ein Boot-Restore einer
+        // Compound-Seele bliebe sonst XYZ — die Abschieds-Welle hob es hierher).
+        newGroup.rotation.order = "YXZ";
         if (old) {
             newGroup.position.copy(old.position);
             newGroup.rotation.copy(old.rotation);
@@ -53142,11 +53135,14 @@ class AnazhRealm {
         // Geh-/Schwimm-Takt wie die Hand-Skelette.
         let customRoles = null;
         if (!hasSkeleton) {
-            const custom = this.state.customSouls && this.state.customSouls[soulName];
-            if (!custom || !Array.isArray(custom.bodyParts)) return;
+            // ABSCHIEDS-WELLE (Konvergenz C) — die EINE Rollen-Quelle für ALLE Compound-
+            // Seelen: `_getSoulDef` deckt Built-ins (Phönix/Drache — ihre Hand-Skelette
+            // sind konvergiert, sie bauen + bewegen wie jede Custom-Seele) UND Customs.
+            const sdef = this._getSoulDef(soulName);
+            if (!sdef || !Array.isArray(sdef.bodyParts)) return;
             if (mesh.userData._motionSoul !== soulName) {
                 mesh.userData._motionSoul = soulName;
-                mesh.userData._motionRoles = this.computeMotionRoles(custom.bodyParts);
+                mesh.userData._motionRoles = this.computeMotionRoles(sdef.bodyParts);
                 mesh.userData._motionBase = null;
             }
             customRoles = mesh.userData._motionRoles;
@@ -53163,9 +53159,9 @@ class AnazhRealm {
             if (hasSkeleton && soulName === "human" && mesh.userData.parts) {
                 this._applySeatPose(mesh, currentTime);
             } else if (hasSkeleton) {
-                def.animate(mesh, currentTime, p.walkPhase, false, false);
+                def.animate(mesh, currentTime, p.walkPhase, false, false, p.emotions);
             } else if (customRoles) {
-                this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, false);
+                this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, false, p.emotions);
             }
             return;
         }
@@ -53190,11 +53186,27 @@ class AnazhRealm {
             // der Zug-Rhythmus nicht beim Start/Stopp.
             p.walkPhase += dt * (isMoving ? 5.0 : 2.3);
         } else if (isMoving) {
-            const stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
+            // ABSCHIEDS-WELLE (walkPhase↔Profil-Brücke) — die SCHRITT-FREQUENZ liest das
+            // koerper-Bewegungsprofil über die EINE Emotions-Brücke, NORMALISIERT auf das
+            // Lab-Default-Gehen (MOTION_PROFILE_MAP.koerper.moving = "run", freq 2.0):
+            // neutral → Faktor 1 = byte-alt 5.5/4.5; sorrow → "pwalk" (1.6) = 0.8× träger.
+            // Fail-soft: kaltes Buch → Faktor 1.
+            let stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
+            const mpv = this._koerperMotionProfile(true, p.emotions);
+            const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
+            if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) stepHz *= mpv.freq / mpr.freq;
             p.walkPhase += dt * stepHz;
         }
-        if (hasSkeleton) def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater);
-        else this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, isMoving);
+        if (hasSkeleton) {
+            def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater, p.emotions);
+        } else {
+            // ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE für jede Compound-
+            // Seele (konvergierte Built-ins + Customs; die Spieler-Gruppe ist IMMER YXZ,
+            // applyPlayerSoul erzwingt die Order → die Lehne kippt lokal-vorwärts).
+            const L = AnazhRealm.SOUL_SWIM_LEAN;
+            mesh.rotation.x = underwater ? (isMoving ? L.moving : L.idle) : 0;
+            this._animateCompoundMotion(mesh, customRoles, currentTime, p.walkPhase, isMoving, p.emotions);
+        }
     }
 
     // ### Ring 6 – architectureTemplates V1 ###
@@ -57245,6 +57257,13 @@ class AnazhRealm {
                 name: "geraet_schwert",
                 label: "Schwert",
                 builtIn: true,
+                // ABSCHIEDS-WELLE (Donor-Abschied D, Schöpfer-Segen 10.07.) — reiner DATEN-
+                // Spender der weapon-Domaene (KIND_POLICY.weapon → klinge_<preset>; die 21
+                // Schmiede-Gattungen SIND die sichtbaren Klingen, W-A4). Kein Katalog-/
+                // Picker-Auftritt mehr (donorOnly); voll funktional bleibt er (Klonen ·
+                // Tests · Spawn · equipHeld) — die Parts sind die SUBSTANZ-Wahrheit
+                // (Tags · Omega-PHYSIS · wield, das Baum-Muster).
+                donorOnly: true,
                 parts: geraetSchwertParts,
             },
             ruestung_brustpanzer: {
@@ -64813,6 +64832,20 @@ class AnazhRealm {
         // drei LODs, die Werkstatt-Regler kommen aus dem Rezept). Der Wald streut sie über
         // `_forestExtraSpecies` (Dart-Nische aus dem Namens-Hash). Idempotent + erneut aufrufbar.
         this._foundryAutoRegisterSpecies(book);
+        // ABSCHIEDS-WELLE (Koerper-Dock A1) — DER AVATAR ZIEHT NACH: baute der Boot den
+        // menschlichen Rig-Avatar VOR der Buch-Ankunft (der Worker liefert async), trägt
+        // er noch die Konstanten-Gestalt (`_koerperDials === null`). Jetzt, wo die
+        // Da-Vinci-Dials da sind, EINMAL über den EINEN Seelen-Pfad neu gießen
+        // (applyPlayerSoul ist der Chokepoint: Position/Physik/Held reisen mit; der
+        // Stempel wird non-null → idempotent, kein zweiter Guss).
+        try {
+            const pmU = this.state.playerMesh && this.state.playerMesh.userData;
+            if (pmU && pmU._koerperDials === null && this._koerperStudioDials()) {
+                this.applyPlayerSoul(this.state.player.soul || "human");
+            }
+        } catch (_e) {
+            /* fail-soft: der Avatar bleibt auf der Konstanten-Gestalt bis zum nächsten Seelen-Wechsel */
+        }
     }
     _foundryAutoRegisterSpecies(book) {
         const bps = this.state && this.state.blueprints;
@@ -64838,10 +64871,23 @@ class AnazhRealm {
             // undefined-Praefix einen Namen formen koennte.
             if (!pol.prefix || !pol.donor) continue;
             const name = pol.prefix + id;
-            if (bps[name]) continue; // existiert (historische Arten + schon registrierte)
+            if (bps[name]) {
+                // ABSCHIEDS-WELLE (D) — HEILUNG persistierter Alt-Klone: ein VOR dieser
+                // Welle registrierter (und ggf. im Save gereister) Auto-Blueprint erbte
+                // donorOnly über den JSON-Klon und war picker-unsichtbar; der Chokepoint
+                // heilt ihn beim nächsten Ingest (die eine Klon-Sichtbarkeits-Regel).
+                if (bps[name]._foundryAutoSpecies && bps[name].donorOnly) delete bps[name].donorOnly;
+                continue; // existiert (historische Arten + schon registrierte)
+            }
             const donor = bps[pol.donor];
             if (!donor || !Array.isArray(donor.parts)) continue; // fail-closed je kind
             const clone = JSON.parse(JSON.stringify(donor));
+            // ABSCHIEDS-WELLE (Donor-Abschied D) — DIE EINE KLON-SICHTBARKEITS-REGEL am
+            // Chokepoint (dieselbe wie cloneBlueprint/W-A3.1, gate:trias B10): ein Klon
+            // ist SICHTBAR — `donorOnly` reist NIE mit. Vorher erbte jeder Auto-Blueprint
+            // (fahrzeug_/tor_/haus_/klinge_<preset>) das Versteck-Flag seines Donors über
+            // den JSON-Klon und fiel still aus allen Pickern (die latente W-A1-Lücke).
+            delete clone.donorOnly;
             clone.label = rec.lab || rec.label || id.charAt(0).toUpperCase() + id.slice(1);
             if (pol.grown) clone._grownSpecies = name;
             else clone.name = name;
@@ -66328,23 +66374,56 @@ class AnazhRealm {
         f.cache.set(key, v); // LRU-Berührung: ans Ende (jüngste)
         return v;
     }
+    // ABSCHIEDS-WELLE (E) — das Eintrags-GEWICHT: die typed-array-Byte-Längen der
+    // Kind-Geometrien (Attribute + Index), EINMAL beim Einfügen gerechnet. Nicht-
+    // Gruppen-Werte (null/Records ohne children) wiegen 0 — für sie trägt die
+    // Entries-Zweitwand (FOUNDRY_CACHE_CAP). Flach wie `_disposeFoundryGroupGeom`
+    // (Cache-Gruppen tragen flache children — dieselbe Traversal-Wahrheit).
+    _foundryGroupBytes(g) {
+        if (!g || !Array.isArray(g.children)) return 0;
+        let bytes = 0;
+        for (const ch of g.children) {
+            const geo = ch && ch.geometry;
+            if (!geo) continue;
+            const attrs = geo.attributes || {};
+            for (const k in attrs) {
+                const a = attrs[k];
+                if (a && a.array && Number.isFinite(a.array.byteLength)) bytes += a.array.byteLength;
+            }
+            const idx = geo.index;
+            if (idx && idx.array && Number.isFinite(idx.array.byteLength)) bytes += idx.array.byteLength;
+        }
+        return bytes;
+    }
     _foundryCacheSet(key, v) {
         const f = this._foundry;
         if (!f) return;
         // V4(B) — der Ref-Zähler startet bei 0 (keine lebende InstancedMesh-Gruppe hält die
         // Geometrie dieser Cache-Gruppe, bis _archInstanceGroupFor sie referenziert).
         if (v && v._liveRefs === undefined) v._liveRefs = 0;
+        // ABSCHIEDS-WELLE (E) — GEWICHTS-BILANZ am EINEN Chokepoint: Überschreiben
+        // desselben Keys bucht das alte Gewicht aus, das neue ein (`_cacheBytes`-Stempel);
+        // die Eviction unten bucht jede Räumung aus. `f.cacheBytes` ist die kanonische
+        // Summe (Gesetz #0 — eine Größe, alle Leser lesen sie).
+        if (!Number.isFinite(f.cacheBytes)) f.cacheBytes = 0;
+        const prev = f.cache.get(key);
+        if (prev && Number.isFinite(prev._cacheBytes)) f.cacheBytes -= prev._cacheBytes;
+        if (v && typeof v === "object" && !Number.isFinite(v._cacheBytes)) v._cacheBytes = this._foundryGroupBytes(v);
+        if (v && Number.isFinite(v._cacheBytes)) f.cacheBytes += v._cacheBytes;
         f.cache.set(key, v);
         const CAP = AnazhRealm.FOUNDRY_CACHE_CAP || 256;
-        while (f.cache.size > CAP) {
+        const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES || Infinity;
+        while (f.cache.size > CAP || f.cacheBytes > BYTES) {
             const oldest = f.cache.keys().next().value;
-            if (oldest === key) break; // nie den gerade gesetzten räumen
+            if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
             // V4(B) — DEFERRED DISPOSE (per-Saison-Leck-Schließung): die geräumte Gruppe gibt ihre
             // Geometrie NUR frei, wenn keine lebende InstancedMesh-Gruppe sie mehr hält (_liveRefs 0).
             // Hält noch eine, wird sie `_evicted` markiert → der letzte _disposeArchInstanceGroup
             // (Ref → 0) disposed sie dann. So kann eine Räumung nie einen sichtbaren Baum zerstören.
             const og = f.cache.get(oldest);
             f.cache.delete(oldest);
+            // ABSCHIEDS-WELLE (E) — das Gewicht der Räumung ausbuchen (die Bilanz bleibt exakt).
+            if (og && Number.isFinite(og._cacheBytes)) f.cacheBytes -= og._cacheBytes;
             // H3 (gate:asset-inventory) — REINES INVENTUR-BUCH, kein Verhalten: ein LRU-
             // geräumter Key ist eine BEWUSSTE Räumung, kein stilles Verhungern — die Linse
             // liest dieses Buch, um die zwei Klassen zu trennen (requested ⊆ visible|cached;
@@ -66417,6 +66496,12 @@ class AnazhRealm {
                 for (let _si = 0; _si < _stages.length; _si++) if (_stages[_si] <= lod) _sv = _stages[_si];
                 lod = _sv;
             }
+            // ABSCHIEDS-WELLE (F) — der HOST-Stufen-Wunsch als DATEN (KIND_POLICY.lodServe,
+            // z. B. haus {1:2} — der Mittel-Ring spart gemessen kaum, s. Policy-Zeile):
+            // NACH der kindStages-Klammer gemappt, damit die Schlüssel deklarierte Stufen
+            // sind; der Clamp-Kurzschluss (_servedLod) hält den Wechsel churn-frei.
+            const _polL = _rec && AnazhRealm.KIND_POLICY[_rec.kind];
+            if (_polL && _polL.lodServe && _polL.lodServe[lod] != null) lod = _polL.lodServe[lod];
         }
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season;
@@ -83888,6 +83973,20 @@ AnazhRealm.VERSION = "18.444.0";
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
 AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// ABSCHIEDS-WELLE (E, der benannte Trias-Faden) — DER GEWICHTS-DECKEL: der Eintrags-
+// Zähler allein war BYTE-BLIND (ein Haus-L0 trägt ≈ 7–8 MB Geometrie [V18.444 gemessen],
+// ein Blumen-L0 wenige KB — 256 schwere Einträge wären ~2 GB). Jetzt bilanziert
+// `_foundryCacheSet` die typed-array-Bytes jedes Eintrags (einmal beim Einfügen,
+// `_cacheBytes`-Stempel) und räumt LRU, bis BEIDE Wände stehen: Byte-Budget UND
+// Entries-Cap (die Zweitwand für byte-leichte Nicht-Gruppen-Einträge). DIE ZAHL IST
+// GEMESSEN (gate:trias B12 + gate:foundry-crossfade): die warme Boot+Dorf-Arbeits-
+// Menge trägt 189–255 MB — ein Budget IN der Arbeits-Menge räumte AKTIV genutzte
+// Stufen (der Crossfade-Sweep fing es: gewärmte Assets fielen vor dem Konsum) →
+// das Budget liegt mit ~2× Kopfraum DARÜBER (der Sollwert ist NICHT die Grenze,
+// V18.281): kein Arbeits-Mengen-Churn, aber der byte-blinde Worst-Case (256
+// schwere Einträge ≈ 2 GB) fällt auf ein Viertel. Räumung bleibt graziös (H3:
+// re-anfragbar; _liveRefs-Disziplin — nie ein sichtbarer Baum). Tunable.
+AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
 // DIE STUFEN-FALLBACK-KARTE JE ART (08.07., LOD-WURZEL): die LEBENDE Wahrheit sind die
 // Vertrags-DATEN `PORTAL_RENDER_CONFIG.lod.kindStages` (Baum [0,1,2] · Gras/Strauch [1,2]
 // zweistufig · Blume/Fels [0] einstufig — Studio-Wald UND AnazhRealm lesen dieselbe
@@ -83956,12 +84055,19 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Wahrheit: Tags · Omega-PHYSIS · blockerAABBs mit TUER-LUECKE — das Baum-/Tor-
     // Muster; die Studio-Gestalt kommt aus dem Appear-Pfad). Die erste MEHR-Stufen-
     // Domaene ausserhalb der Baeume: kindStages.haus = [0,1,2] (fachwerk-core B2).
+    // ABSCHIEDS-WELLE (F, Haus-Fern-Feinschliff) — lodServe: der HOST-Stufen-Wunsch als
+    // DATEN (gemessen gate:trias N: L1 ≈ 75k ≈ L0 88k Tris — der Mittel-Ring spart bei
+    // Häusern fast nichts, L2 = 2.8k). Die Zeile mappt die angeforderte Stufe 1 auf die
+    // Fernstufe 2 am EINEN Flatten-Chokepoint; die Lab-Stufen-WAHRHEIT (kindStages,
+    // fachwerk-core B2 — EINGEFROREN) bleibt unberührt, nur der Wunsch wandert. Eine
+    // L1-Diät im Lab bleibt Schöpfer-Entscheid — fällt sie, löscht man diese Zeile.
     haus: Object.freeze({
         prefix: "haus_",
         donor: "haus_basis",
         grown: false,
         builtIn: false,
         placeExtra: null,
+        lodServe: Object.freeze({ 1: 2 }),
     }),
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
@@ -85735,6 +85841,26 @@ AnazhRealm.CREATURE_ARCHETYPES = Object.freeze({
     },
 });
 AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_ARCHETYPES));
+// ABSCHIEDS-WELLE (Koerper-Dock A2) — DIE EINE SKELETT-G-QUELLE der studio-gedockten
+// Seelen: dieselben Werte, die CREATURE_SOULS beim Modul-Init in `_creatureSkeleton`
+// gießt, leben HIER als benannte Daten — damit `_tetrapodaSoulParts` zur BAU-Zeit
+// (wenn das LIVE-Buch die tetrapoda-Dials trägt) dasselbe g mit dial-überschriebenem
+// Archetyp erneut gießen kann (fail-soft: ohne Rezept bleiben die Modul-bodyParts
+// byte-alt die Wahrheit). archetypeName wird beim Guss über CREATURE_ARCHETYPES
+// aufgelöst; alle übrigen Felder reisen unverändert in `_creatureSkeleton(g)`.
+AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
+    wesen: Object.freeze({
+        size: 0.6,
+        archetypeName: "deer",
+        bodyMat: "stein",
+        limbMat: "holz",
+        headMat: "holz",
+        shapes: Object.freeze({ torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" }),
+        bodyBarrel: true,
+        bodyColor: 0x6e4d30,
+        limbColor: 0x6e4d30,
+    }),
+});
 AnazhRealm.CREATURE_SOULS = Object.freeze({
     sprite: Object.freeze({
         label: "Sprite",
@@ -85764,25 +85890,17 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     // GEMESSEN diag-genom F1-Band). Liest als Tier statt als Box+Stummel.
     wesen: Object.freeze({
         label: "Wesen",
+        // ABSCHIEDS-WELLE (Koerper-Dock A2) — das g lebt als DATEN in CREATURE_SKELETON_G
+        // (dieselben Werte, byte-identischer Guss): `size` 0.6 = die sizeFactor-Tarierung
+        // ins Tie-Band (V18.208-Monotonie; stats-tragend, darum KEIN Studio-Dial), der
+        // deer-Archetyp = sanfter Pflanzenfresser (leggy, seitliche Augen), erdige
+        // Tönungen tag-neutral. Zur BAU-Zeit dockt `_tetrapodaSoulParts` die tetrapoda-
+        // Dials (deer) auf DENSELBEN Guss; diese Modul-bodyParts bleiben die frozen
+        // fail-soft-Wahrheit (Tags/Stats lesen sie — dial-tag-neutral per Konstruktion).
         bodyParts: Object.freeze(
-            AnazhRealm._creatureSkeleton({
-                // `size` 0.87: die GLIEDER sind dünne Kapseln, deren AABB-Hülle (die Quelle
-                // von `_compoundSizeFactor`) das echte Volumen ÜBER-zählt → ohne diese Tarierung
-                // überholte der sizeFactor `sprite` und brach die V18.208-Cross-Seelen-Monotonie
-                // (größer = tankiger/träger). 0.87 hält den sizeFactor im Tie-Band (~0.97), die
-                // Proportionen + die Lesbarkeit als Vierbeiner bleiben (die Welt-Größe trägt
-                // ohnehin `_creatureBodySize`).
-                size: 0.6, // Tarierung des sizeFactor ins Tie-Band (V18.208-Monotonie; nach der Muskel-Masse GUSS 1+2 von 0.64 neu tariert); der LOOK ist
-                // size-invariant (uniform, kamera-gerahmt), die Welt-Größe trägt _creatureBodySize.
-                archetype: AnazhRealm.CREATURE_ARCHETYPES.deer, // sanfter Pflanzenfresser (leggy, seitliche Augen)
-                bodyMat: "stein",
-                limbMat: "holz",
-                headMat: "holz",
-                shapes: { torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" },
-                bodyBarrel: true, // ein organischer Leib (Kapsel-Tonne) über dem dichten box-Kern
-                bodyColor: 0x6e4d30, // erdige Tönung auf dem stein-Kern (tag-neutral, dichte bleibt 3)
-                limbColor: 0x6e4d30, // harmonierte holz-Glieder + der Leib
-            }).map((p) => Object.freeze(p))
+            AnazhRealm._creatureSkeleton(
+                Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.deer }, AnazhRealm.CREATURE_SKELETON_G.wesen)
+            ).map((p) => Object.freeze(p))
         ),
         skin: true, // F1-TIEFE: die Metaball-Haut (Glieder verschmelzen → organisches Tier)
         skinColor: 0x6e4d30,
@@ -87977,7 +88095,107 @@ AnazhRealm.KLANG_HOST_RECIPE = "lofi";
 // f.recipes[..].fx.motion LIVE) + die Zustands→Profil-Zuordnung (der Host kennt
 // moving/idle, das Lab kennt joy/idle — die Brücke ist eine Tabelle, kein if).
 AnazhRealm.MOTION_HOST_RECIPE = "wolf";
-AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({ moving: "joy", idle: "idle" });
+// ABSCHIEDS-WELLE (Motion-Vollendung) — welches koerper-Rezept den Avatar-Gestalt-
+// und Bewegungs-Charakter führt (`_koerperStudioDials`/`_koerperMotionProfile`
+// lesen f.recipes[..].s bzw. fx.motion LIVE — das KLANG_HOST_RECIPE-Muster).
+AnazhRealm.KOERPER_HOST_RECIPE = "mensch";
+// ABSCHIEDS-WELLE — die VERALLGEMEINERTE Zustands→Profil-Tabelle (MOTION_PROFILE_MAP
+// war der Anfang): je Lab-SPALTE (kreatur = tetrapoda-Profile · koerper = Da-Vinci-
+// Profile) die Default-Zuordnung. Die kreatur-Spalte ist BYTE-ALT zur V18.443-Zeile
+// (moving→joy · idle→idle); koerper: moving→run · idle→idle (die Lab-Neutralgänge).
+AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
+    kreatur: Object.freeze({ moving: "joy", idle: "idle" }),
+    koerper: Object.freeze({ moving: "run", idle: "idle" }),
+});
+// ABSCHIEDS-WELLE — DIE EINE EMOTIONS→PROFIL-BRÜCKE (Daten, kein if-Baum): Zeilen in
+// VORRANG-Reihenfolge; die erste Achse (die 6 Host-Emotions-Achsen, EMOTION_AXES —
+// Kreaturen tragen dieselben, Phase E speist Furcht als sorrow+chaos) über ihrer
+// Schwelle wählt das Profil je Spalte; keine → die MOTION_PROFILE_MAP-Default-Zeile.
+// BEIDE Leser (der Rig `_animateHumanoidRig` über `_koerperMotionProfile` UND der
+// Compound-Kern `_animateCompoundMotion` über `_motionStudioProfile`) lesen DIESE
+// eine Tabelle über den EINEN Resolver `_motionProfileName`.
+AnazhRealm.MOTION_EMOTION_PROFILES = Object.freeze([
+    Object.freeze({
+        axis: "chaos", // Furcht/Erregung (Phase E: threatened → sorrow+chaos)
+        min: 0.5,
+        koerper: Object.freeze({ idle: "fear", moving: "run" }),
+        kreatur: Object.freeze({ idle: "alert", moving: "flee" }),
+    }),
+    Object.freeze({
+        axis: "sorrow",
+        min: 0.5,
+        koerper: Object.freeze({ idle: "sad", moving: "pwalk" }),
+        kreatur: Object.freeze({ idle: "idle", moving: "idle" }),
+    }),
+    Object.freeze({
+        axis: "joy",
+        min: 0.5,
+        koerper: Object.freeze({ idle: "joy", moving: "run" }),
+        kreatur: Object.freeze({ idle: "joy", moving: "joy" }),
+    }),
+]);
+// ABSCHIEDS-WELLE — DIE PROFIL→RIG-ZUORDNUNG ALS DATEN (kein if-Baum): welches
+// koerper-fx.motion-Feld welches Rig-Bone um welche Achse verschiebt (mul trägt die
+// Vorzeichen-Brücke Lab↔Host: Lab armL + = Arm hebt/abduziert; Host-L-Schulter-z ist
+// die Adduktions-Achse mit gespiegeltem R). Angewandt als DELTA relativ zum Lab-idle-
+// Profil (`p[key] − ref[key]`) → das neutrale Idle ist per Konstruktion BYTE-ALT,
+// die Emotions-Profile (sad: Kopf sinkt 0.18 · joy: Arme heben 0.6 · fear: Deckung)
+// verschieben messbar. breath/freq normalisieren auf das Lab-idle (0.042/1.25) →
+// der Host-Atem (0.02 · 1.6 rad/s) bleibt am Neutralpunkt byte-identisch.
+AnazhRealm.MOTION_RIG_MAP = Object.freeze([
+    Object.freeze({ key: "headX", bone: "head", axis: "x", mul: 1 }),
+    Object.freeze({ key: "headZ", bone: "head", axis: "z", mul: 1 }),
+    Object.freeze({ key: "spineX", bone: "spine", axis: "x", mul: 1 }),
+    Object.freeze({ key: "spineZ", bone: "spine", axis: "z", mul: 1 }),
+    Object.freeze({ key: "armL", bone: "armL.shoulder", axis: "z", mul: 1 }),
+    Object.freeze({ key: "armR", bone: "armR.shoulder", axis: "z", mul: -1 }),
+    Object.freeze({ key: "armLX", bone: "armL.shoulder", axis: "x", mul: 1 }),
+    Object.freeze({ key: "armRX", bone: "armR.shoulder", axis: "x", mul: 1 }),
+    Object.freeze({ key: "elbowL", bone: "armL.elbow", axis: "x", mul: -1 }),
+    Object.freeze({ key: "elbowR", bone: "armR.elbow", axis: "x", mul: -1 }),
+    Object.freeze({ key: "hipLX", bone: "legL.hip", axis: "x", mul: 1 }),
+    Object.freeze({ key: "hipRX", bone: "legR.hip", axis: "x", mul: 1 }),
+    Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
+    Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
+]);
+// ABSCHIEDS-WELLE (Koerper-Dock) — DIE DIAL→GENOM-ZUORDNUNG ALS DATEN: welcher
+// koerper-core-Morph-Dial (B4 `s`) welche Host-Genom-Achse (`_humanoidLandmarks`)
+// speist (axis = base + mul·dial). NUR ehrliche Matches: height→kh-Skala ·
+// mass→build (Fettanteil = schlank↔schwer) · tone→muscle · gender→sex (Lab 1 =
+// männlich ↔ Host 0 = maskuliner V-Taper, darum base 1/mul −1). BEWUSST unmapped
+// (kein ehrlicher Host-Proportions-Konsument): age (der Host altert über Haltung/
+// Animation, nicht Kopf-Proportion) · hairLen/hairVol (die Haar-Kappe ist Fest-
+// Geometrie) · arms (die A-Pose ist eine Bau-Konstante). Der NPC-Roller
+// (`_rollHumanoidGenome`) bleibt unberührt — das Studio definiert den AVATAR.
+AnazhRealm.KOERPER_DIAL_MAP = Object.freeze([
+    Object.freeze({ dial: "height", axis: "khMul", base: 0, mul: 1 }),
+    Object.freeze({ dial: "mass", axis: "build", base: 0, mul: 1 }),
+    Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
+    Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
+]);
+// ABSCHIEDS-WELLE (Koerper-Dock A2) — welche CREATURE_SOULS-Gestalt welches
+// tetrapoda-Rezept liest. NUR ehrliche Matches: wesen trägt den deer-Archetyp =
+// die tetrapoda-Gattung "deer". glutwesen (bigcat) · sprite/geist (skelettlos)
+// haben KEIN ehrliches Lab-Gegenstück → byte-alt (dokumentiert, kein Zwang).
+AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({ wesen: "deer" });
+// Die Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht —
+// bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich: neck 0.33≈0.34 ·
+// leg 0.28·(0.6/0.28)=0.60 · build 0.28=torsoW 0.28 · diet 0→eyeFront 0.12):
+//   neck→neckFrac (gleiche Einheit: Anteil der Körperlänge) · leg→legFrac
+//   (Einheiten-Brücke Archetyp/Lab) · build→torsoW (Statur = Rumpf-Masse) ·
+//   diet→eyeFront (Carnivor frontal, Herbivor lateral — die Lab-law-Zeile).
+// BEWUSST unmapped: size (die Welt-Größe trägt `_creatureBodySize`, und die
+// V18.208-sizeFactor-Tarierung [g.size 0.6] ist stats-tragend — kein Render-Dial).
+AnazhRealm.TETRAPODA_DIAL_MAP = Object.freeze([
+    Object.freeze({ dial: "neck", axis: "neckFrac", base: 0, mul: 1 }),
+    Object.freeze({ dial: "leg", axis: "legFrac", base: 0, mul: 0.6 / 0.28 }),
+    Object.freeze({ dial: "build", axis: "torsoW", base: 0, mul: 1 }),
+    Object.freeze({ dial: "diet", axis: "eyeFront", base: 0.12, mul: 0.63 }),
+]);
+// ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE: jede Compound-Seele
+// (konvergierte Built-ins Phönix/Drache + Custom + Peers) legt sich unter Wasser
+// über DIESELBE Daten-Zeile (der Rig-Avatar trägt sie in _animateHuman weiter).
+AnazhRealm.SOUL_SWIM_LEAN = Object.freeze({ moving: 0.5, idle: 0.22 });
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 // W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
 // Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +

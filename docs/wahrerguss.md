@@ -599,7 +599,7 @@ DANN gelöst:
   Ansicht beweist solide/geschlossene Geometrie) → echte-WebGPU-Browser-Abnahme.
 - **Achsel-Skinning** kollabiert leicht beim Arm-Schwung (clavicle-Helper-Bone / Weights).
 - **Waden spindeldürr**, Hände noch klobig (Fäustlinge), Rest-Rim in der Arm-Hüft-Falte.
-- **Phoenix/Dragon** noch am alten Box-Pfad (`_buildPhoenixGroup`/`_buildDragonGroup`).
+- ~~**Phoenix/Dragon** noch am alten Box-Pfad (`_buildPhoenixGroup`/`_buildDragonGroup`)~~ ✓ ERFÜLLT (Abschieds-Welle nach V18.444: konvergiert auf `_buildFromBlueprint` + `_animateCompoundMotion` — die Hand-Skelette fielen per cut-method, PBR statt MeshBasic).
 - **Kreatur-Politur:** lose Box-Füße verbinden, Beine, S-Curve.
 - **Selektions-Richter (§11)** für die KREATUR-Vielfalt (Quadruped) — eigener Guss.
 
@@ -650,7 +650,7 @@ ohne Mehr-Winkel-Prüfung ist die Beschönigungs-Falle.
 - **Die Metaball-Decke:** ein glatter Blob + Stuck-Features wird „anständig stilisiert" (~6–7),
   KEINE echte 10. Ein wahrer 10er bräuchte eine reichere Repräsentation (sculpted Mesh / echte
   Gesichts-Topologie / Kleidung) — eine Architektur-Entscheidung, kein Tweak.
-- Phoenix/Dragon noch am alten Box-Pfad · Kreatur-Beine spindeldürr + Augen glubschig ·
+- ~~Phoenix/Dragon noch am alten Box-Pfad~~ ✓ konvergiert (Abschieds-Welle) · Kreatur-Beine spindeldürr + Augen glubschig ·
   Selektions-Richter §11 (Quadruped-Vielfalt) · echte-WebGPU-Browser-Abnahme.
 
 ### §12-GUSS 7 (17.06.2026) — DIE UNSAUBERKEITEN HEILEN, NICHT VERSTECKEN (Profi-recherchiert)

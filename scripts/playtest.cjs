@@ -42977,7 +42977,9 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
         {
             const src = r.animatePlayerSoul.toString();
-            out.animPassesUnderwater = /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater\)/.test(src);
+            // ABSCHIEDS-WELLE (Konvergenz C): def.animate traegt jetzt auch die Emotions-
+            // Bruecke (6. Arg) — die Probe prueft weiter, dass underwater durchreist.
+            out.animPassesUnderwater = /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater/.test(src);
         }
         {
             const gh = r._buildHumanGroup();
@@ -42988,15 +42990,28 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.humanSwimReset = Math.abs(gh.rotation.x) < 0.001;
             r._disposeSoulGroup(gh);
 
-            const gp = r._buildPhoenixGroup();
-            r._animatePhoenix(gp, 1.0, 0, true, true);
-            out.phoenixSwimLean = Math.abs(gp.rotation.x) > 0.05;
-            r._disposeSoulGroup(gp);
-
-            const gd = r._buildDragonGroup();
-            r._animateDragon(gd, 1.0, 0, true, true);
-            out.dragonSwimLean = Math.abs(gd.rotation.x) > 0.05;
-            r._disposeSoulGroup(gd);
+            // ABSCHIEDS-WELLE (Konvergenz C): Phoenix/Drache sind Compound-Seelen — die
+            // EINE Schwimm-Lehne (SOUL_SWIM_LEAN) wendet animatePlayerSoul an (der
+            // Hand-Skelett-Pfad _buildPhoenixGroup/_animatePhoenix ist geschnitten).
+            // Der Test faehrt den ECHTEN Pfad: Seele wechseln, underwater setzen, Zahl lesen.
+            const savedSoulSwim = r.state.player.soul;
+            const savedUw = r.state.playerUnderwater;
+            const L = r.constructor.SOUL_SWIM_LEAN;
+            const swimProbe = (soulName) => {
+                r.applyPlayerSoul(soulName);
+                r.state.playerUnderwater = true;
+                r.state.player.animationLastTick = -Infinity;
+                r.animatePlayerSoul(20.0);
+                const lean = r.state.playerMesh.rotation.x;
+                r.state.playerUnderwater = false;
+                r.animatePlayerSoul(20.1);
+                const reset = r.state.playerMesh.rotation.x;
+                return (Math.abs(lean - L.idle) < 1e-6 || Math.abs(lean - L.moving) < 1e-6) && Math.abs(reset) < 1e-9;
+            };
+            out.phoenixSwimLean = swimProbe("phoenix");
+            out.dragonSwimLean = swimProbe("dragon");
+            r.state.playerUnderwater = savedUw;
+            r.applyPlayerSoul(savedSoulSwim);
         }
 
         // --- Gerstner-Wellen im Wasser-Material (V10.0-f-4 Doku-Sync: TSL).
@@ -43085,21 +43100,29 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" }));
         const pv1b = p2p.peers.get("pv1");
         out.builtinSoulName = !!pv1b && pv1b.soulName === "phoenix";
-        out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul";
+        // ABSCHIEDS-WELLE (Konvergenz C): Phoenix/Drache reisen beim Peer als Compound-
+        // Seelen (meshKind "soul-custom", lokal aus def.bodyParts gebaut, YXZ) — die
+        // benannten Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
+        out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul-custom";
         out.builtinHasParts = !!(
             pv1b &&
             pv1b.mesh &&
             pv1b.mesh.userData &&
             pv1b.mesh.userData.parts &&
-            pv1b.mesh.userData.parts.leftWing
+            pv1b.mesh.userData.parts.leftWing &&
+            pv1b.mesh.rotation.order === "YXZ"
         );
         out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
 
-        // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut.
+        // Soul-Wechsel phoenix → dragon → Mesh wird neu gebaut (Compound: children ==
+        // bodyParts, die schwanz-Rolle lebt in den Peer-Motion-Rollen).
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "dragon" }));
         const pv1c = p2p.peers.get("pv1");
         out.soulChangeRebuilt =
-            !!pv1c && pv1c.soulName === "dragon" && pv1c.mesh.userData.parts && !!pv1c.mesh.userData.parts.tailJoint;
+            !!pv1c &&
+            pv1c.soulName === "dragon" &&
+            pv1c.mesh.children.length >= r.playerSoulDefs.dragon.bodyParts.length &&
+            (r.computeMotionRoles(pv1c.bodyParts) || []).some((x) => x && x.role === "schwanz");
 
         // soul-Nachricht (Custom-Seele via bodyParts).
         r.p2pHandleMessage(
@@ -43164,7 +43187,10 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
         check("V8.34: soul-Nachricht setzt soulName (Built-in)", v834Results.builtinSoulName);
-        check("V8.34: Built-in-Seele → meshKind 'soul'", v834Results.builtinMeshKind);
+        check(
+            "V8.34 (Konvergenz C): Peer-Phönix reist als Compound (meshKind 'soul-custom', YXZ)",
+            v834Results.builtinMeshKind
+        );
         check("V8.34: Peer-Phönix hat animierbare Parts (Flügel)", v834Results.builtinHasParts);
         check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
         check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
@@ -55075,14 +55101,21 @@ async function checkBandRing5Soul(ctx) {
         const okPhoenix = r.applyPlayerSoul("phoenix");
         out.applyReturnsTrue = okPhoenix === true;
         out.phoenixSoulSet = r.state.player.soul === "phoenix";
-        out.phoenixColor = currentMaterial() && currentMaterial().color.getHex() === 0xff7a1a;
+        // ABSCHIEDS-WELLE (Konvergenz C): der Phoenix ist eine COMPOUND-Seele
+        // (_buildFromBlueprint aus bodyParts, PBR — kein MeshBasic-Hand-Skelett,
+        // kein userData.material mehr): children == bodyParts, kein def.build/animate.
+        out.phoenixColor =
+            currentMesh().children.length >= r.playerSoulDefs.phoenix.bodyParts.length &&
+            typeof r.playerSoulDefs.phoenix.build !== "function" &&
+            typeof r.playerSoulDefs.phoenix.animate !== "function";
+        // Die benannten Anker kommen aus der EINEN Rollen-Quelle (_stampSoulPartRefs):
+        // die Fluegel-Spiegel-Paare der V18.101-bodyParts werden left/rightWing.
         const phoenixParts = currentParts();
         out.phoenixHasWingsAndTail =
             phoenixParts &&
-            !!phoenixParts.body &&
             !!phoenixParts.leftWing &&
             !!phoenixParts.rightWing &&
-            !!phoenixParts.tail;
+            (r.computeMotionRoles(r.playerSoulDefs.phoenix.bodyParts) || []).some((x) => x && x.role === "schwanz");
         out.positionPreserved =
             Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
             Math.abs(currentMesh().position.y - posBefore.y) < 1e-6 &&
@@ -55103,15 +55136,20 @@ async function checkBandRing5Soul(ctx) {
             r.state.dsl.lastUserProgram[0] === "player_soul" &&
             r.state.dsl.lastUserProgram[1] === "drache";
         out.dragonSoulSet = r.state.player.soul === "dragon";
-        out.dragonColor = currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
+        // ABSCHIEDS-WELLE (Konvergenz C): der Drache ist eine COMPOUND-Seele (s. phoenix).
+        out.dragonColor =
+            currentMesh().children.length >= r.playerSoulDefs.dragon.bodyParts.length &&
+            typeof r.playerSoulDefs.dragon.build !== "function" &&
+            typeof r.playerSoulDefs.dragon.animate !== "function";
+        // Vier Spiegel-Beine leben als bein-Rollen (Diagonal-Trab) + gestempelte Anker.
         const dragonParts = currentParts();
+        const dragonRoles = r.computeMotionRoles(r.playerSoulDefs.dragon.bodyParts) || [];
         out.dragonHasFourLegs =
             dragonParts &&
-            !!dragonParts.flLeg &&
-            !!dragonParts.frLeg &&
-            !!dragonParts.blLeg &&
-            !!dragonParts.brLeg &&
-            !!dragonParts.tailJoint;
+            !!dragonParts.leftLeg &&
+            !!dragonParts.rightLeg &&
+            dragonRoles.filter((x) => x && x.role === "bein").length === 4 &&
+            dragonRoles.some((x) => x && x.role === "schwanz");
 
         // Deutsch+Englisch+Phönix-Alias funktionieren
         r.applyPlayerSoul("phönix");
@@ -55161,8 +55199,11 @@ async function checkBandRing5Soul(ctx) {
 
         // loadState mit dragon-Seele
         r.loadState({ ...parsed, playerSoul: "dragon" });
+        // ABSCHIEDS-WELLE (Konvergenz C): der Drache ist compound — der Mesh-Beweis ist
+        // die children-Zahl (bodyParts gebaut), nicht mehr die Hand-Skelett-Farbe.
         out.loadAppliesSoul =
-            r.state.player.soul === "dragon" && currentMaterial() && currentMaterial().color.getHex() === 0x2d6e3b;
+            r.state.player.soul === "dragon" &&
+            currentMesh().children.length >= r.playerSoulDefs.dragon.bodyParts.length;
 
         // Status-Bar
         r.applyPlayerSoul("phoenix");
@@ -55183,23 +55224,42 @@ async function checkBandRing5Soul(ctx) {
         const leftLegRotMoving = humanGroup.userData.parts.leftLeg.rotation.x;
         out.humanWalkAnimationMoves = Math.abs(leftLegRotMoving - leftLegRotInitial) > 0.1;
 
-        // Phönix-Flügel flattern auch im Idle
+        // ABSCHIEDS-WELLE (Konvergenz C) — Phoenix-Fluegel flattern auch im Idle,
+        // jetzt durch den EINEN Kern (_animateCompoundMotion, fluegel-Rolle) ueber
+        // den ECHTEN Spieler-Pfad (animatePlayerSoul). Die Emotionen werden fuer die
+        // Probe NEUTRALISIERT (deterministisch, V18.273-Lehre: Warmup-Emotionen
+        // waehlten sonst ueber die Emotions-Bruecke ein anderes Profil [alert:
+        // tailAmp 0.04] und konfundierten die Amplituden-Schwelle).
+        const savedEmo = Object.assign({}, r.state.player.emotions);
+        for (const k in r.state.player.emotions) r.state.player.emotions[k] = 0;
         r.applyPlayerSoul("phoenix");
         const phGroup = currentMesh();
-        r.playerSoulDefs.phoenix.animate(phGroup, 0.1, 0, false);
+        r.state.player.animationLastTick = -Infinity;
+        r.animatePlayerSoul(0.1);
         const wingRotA = phGroup.userData.parts.leftWing.rotation.z;
-        r.playerSoulDefs.phoenix.animate(phGroup, 0.3, 0, false);
+        r.animatePlayerSoul(0.3);
         const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
         out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
 
-        // Drache-Schweif wellt sich
+        // Drache-Schweif wellt sich (schwanz-Rolle im EINEN Kern). Die Probe-Zeiten
+        // folgen der PROFIL-Mathematik (V9.56-i): das Studio-idle-Profil traegt
+        // tailRate 0.5 rad/s — zwei nah beieinander liegende Zeiten (0.1/0.5 s) lagen
+        // an der Sinus-SPITZE nur ~0.002 rad auseinander (GEMESSEN rot). Eine HALBE
+        // Periode (pi/0.5 = 6.2832 s) flippt das Vorzeichen -> Delta = 2*|sin(x)|*amp
+        // >= 0.13 fuer jede Drachen-Schwanz-Phase (0.68..1.32). Fallback-byte-alt
+        // (foundry-aus, tailRate 2.2) bleibt messbar (kein Nulldurchgangs-Paar).
         r.applyPlayerSoul("dragon");
         const drGroup = currentMesh();
-        r.playerSoulDefs.dragon.animate(drGroup, 0.1, 0, false);
-        const tailA = drGroup.userData.parts.tailJoint3.rotation.y;
-        r.playerSoulDefs.dragon.animate(drGroup, 0.5, 0, false);
-        const tailB = drGroup.userData.parts.tailJoint3.rotation.y;
-        out.dragonTailWaves = Math.abs(tailA - tailB) > 0.05;
+        r.state.player.animationLastTick = -Infinity;
+        r.animatePlayerSoul(0.1);
+        const drRoles = drGroup.userData._motionRoles || [];
+        let tailIdx = -1;
+        for (let i = 0; i < drRoles.length; i++) if (drRoles[i] && drRoles[i].role === "schwanz") tailIdx = i;
+        const tailA = tailIdx >= 0 ? drGroup.children[tailIdx].rotation.y : 0;
+        r.animatePlayerSoul(0.1 + Math.PI / 0.5);
+        const tailB = tailIdx >= 0 ? drGroup.children[tailIdx].rotation.y : 0;
+        out.dragonTailWaves = tailIdx >= 0 && Math.abs(tailA - tailB) > 0.05;
+        Object.assign(r.state.player.emotions, savedEmo);
 
         // Cleanup
         r.applyPlayerSoul("human");
@@ -55225,16 +55285,28 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
         check("Ring 5: applyPlayerSoul('phoenix') liefert true", ring5Results.applyReturnsTrue);
         check("Ring 5: Phönix setzt state.player.soul = 'phoenix'", ring5Results.phoenixSoulSet);
-        check("Ring 5: Phönix-Material-Farbe ist 0xff7a1a", ring5Results.phoenixColor);
-        check("Ring 5 V2: Phönix-Group hat body/2 Flügel/Schweif", ring5Results.phoenixHasWingsAndTail);
+        check(
+            "Ring 5 (Konvergenz C): Phönix ist Compound-Seele (bodyParts gebaut, kein build/animate)",
+            ring5Results.phoenixColor
+        );
+        check(
+            "Ring 5 V2: Phönix trägt gestempelte Flügel-Anker + schwanz-Rolle (die EINE Rollen-Quelle)",
+            ring5Results.phoenixHasWingsAndTail
+        );
         check("Ring 5: Seelen-Wechsel erhält Spieler-Position", ring5Results.positionPreserved);
         // V18.331/.347 — die zwei Ammo-Physics-Body-Checks sind GESCHNITTEN (der Spieler ist
         // body-frei, feld-native; es gibt keinen rigid body, der dem Soul-Group folgt).
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5: Chat 'werde drache' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
         check("Ring 5: Chat 'werde drache' setzt Seele auf dragon", ring5Results.dragonSoulSet);
-        check("Ring 5: Drache-Material-Farbe ist 0x2d6e3b", ring5Results.dragonColor);
-        check("Ring 5 V2: Drache-Group hat 4 Beine + Schweif-Joint", ring5Results.dragonHasFourLegs);
+        check(
+            "Ring 5 (Konvergenz C): Drache ist Compound-Seele (bodyParts gebaut, kein build/animate)",
+            ring5Results.dragonColor
+        );
+        check(
+            "Ring 5 V2: Drache trägt 4 bein-Rollen (Diagonal-Trab) + schwanz-Rolle + Bein-Anker",
+            ring5Results.dragonHasFourLegs
+        );
         check("Ring 5: Umlaut-Alias 'phönix' kanonisiert auf phoenix", ring5Results.umlautAliasWorks);
         check("Ring 5: Englisches Alias 'dragon' kanonisiert auf dragon", ring5Results.englishAliasWorks);
         check("Ring 5: Unbekannte Seele wird abgelehnt", ring5Results.unknownRejected);
@@ -55252,7 +55324,7 @@ async function checkBandRing5Soul(ctx) {
             ring5Results.phoenixWingsFlapInIdle
         );
         check(
-            "Ring 5 V2: Drache-Schweif wellt sich (zwei Frames, unterschiedliche tailJoint3.rotation.y)",
+            "Ring 5 V2: Drache-Schweif wellt sich (zwei Frames, schwanz-Rolle im EINEN Kern)",
             ring5Results.dragonTailWaves
         );
     }

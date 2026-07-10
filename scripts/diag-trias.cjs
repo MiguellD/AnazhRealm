@@ -74,6 +74,22 @@ function triasStaticLaws(anazhSrc) {
             /studioGestalt = source\.studioGestalt/.test(clone) &&
                 !/donorOnly/.test(clone.replace(/donorOnly` reist BEWUSST NICHT/g, "")),
         ],
+        // ABSCHIEDS-WELLE (F) — der HOST-Stufen-Wunsch als DATEN: die haus-Policy traegt
+        // lodServe {1:2} (der Mittel-Ring spart gemessen kaum: L1 75k ~ L0 88k) und der
+        // EINE Flatten-Chokepoint liest die Tabelle (kein kind-Literal).
+        [
+            "T-S5: KIND_POLICY.haus traegt lodServe {1:2} + _foundryFlattenFor liest lodServe (Daten, kein if-Baum)",
+            /lodServe:\s*Object\.freeze\(\{\s*1:\s*2\s*\}\)/.test(nc) &&
+                /lodServe\[lod\]/.test(fnBody("_foundryFlattenFor")),
+        ],
+        // ABSCHIEDS-WELLE (E) — der GEWICHTS-DECKEL des fCache: die Byte-Budget-Wand
+        // (FOUNDRY_CACHE_BYTES) + die Bilanz am EINEN Chokepoint (_foundryCacheSet).
+        [
+            "T-S6: _foundryCacheSet bilanziert Bytes (cacheBytes) und raeumt am Byte-Budget (FOUNDRY_CACHE_BYTES)",
+            /FOUNDRY_CACHE_BYTES\s*=/.test(nc) &&
+                /f\.cacheBytes > BYTES/.test(fnBody("_foundryCacheSet")) &&
+                /_foundryGroupBytes/.test(fnBody("_foundryCacheSet")),
+        ],
     ];
 }
 
@@ -96,6 +112,12 @@ function triasStaticLaws(anazhSrc) {
         const b4 = anazhSrc.replace(/studioGestalt = source\.studioGestalt/, "nixGestalt = source.nixGestalt");
         const l4 = triasStaticLaws(b4).find((l) => l[0].startsWith("T-S4"));
         check("Selbst-Test 3: Klon-Erbe entfernt -> T-S4 feuert", l4 && l4[1] === false);
+        const b5 = anazhSrc.replace(/lodServe\[lod\]/g, "nixServe[lod]");
+        const l5 = triasStaticLaws(b5).find((l) => l[0].startsWith("T-S5"));
+        check("Selbst-Test 3b: lodServe-Konsum entfernt -> T-S5 feuert", l5 && l5[1] === false);
+        const b6 = anazhSrc.replace(/f\.cacheBytes > BYTES/g, "false");
+        const l6 = triasStaticLaws(b6).find((l) => l[0].startsWith("T-S6"));
+        check("Selbst-Test 3c: Byte-Budget-Wand entfernt -> T-S6 feuert", l6 && l6[1] === false);
         // Die ZAHLEN-Linse ist nicht vakuoes: die schwere L1-Stufe (gemessen ~75k) liegt
         // WEIT ueber dem Fern-Deckel je Haus — klebte L1 fern, risse der Deckel.
         global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
@@ -292,6 +314,33 @@ function triasStaticLaws(anazhSrc) {
         res.nearBuilt = hausStats();
         res.nearHeavy = near3.every((h) => h.instanced); // die 3 stehen (Voraussetzung)
 
+        // (2b) ABSCHIEDS-WELLE (F) — lodServe: im L1-RING serviert die Foundry die
+        // FERNSTUFE (2), waehrend die Distanz-Autoritaet 1 stempelt (KIND_POLICY.haus
+        // lodServe {1:2} — der Mittel-Ring spart gemessen kaum). Ring visH-echt
+        // via _chooseLODForDistance gescannt, Konvergenz gepumpt.
+        const h0b = near3[0];
+        const visH0 = r._lodTreeVisHeight(h0b);
+        let dRing = -1;
+        for (let d = 10; d < 400; d += 2) {
+            if (r._chooseLODForDistance(d, 0, visH0) === 1) {
+                dRing = d + 6;
+                break;
+            }
+        }
+        res.l1RingDist = dRing;
+        if (dRing > 0) {
+            tp(h0b.position.x + dRing, h0b.position.z);
+            const dlServe = performance.now() + 90000;
+            while (performance.now() < dlServe) {
+                await pumpRender(24);
+                if (h0b._lodLevel === 1 && h0b._servedLod === 2) break;
+            }
+            res.lodServeLevel = h0b._lodLevel;
+            res.lodServeServed = h0b._servedLod;
+            const mS = h0b.instanced && h0b.instSlots[0] && h0b.instSlots[0].key.match(/#f:[^|]+\|\d+\|(\d)\|/);
+            res.lodServeSlot = mS ? Number(mS[1]) : null;
+        }
+
         // (3) 120 m zuruecktreten (IM Cull-Radius) -> die EINE LOD-Geschichte demotet.
         // KONVERGENZ-PUMPE: die Hysterese-Leiter (0 -> 1 -> 2) braucht je Stufe einen
         // Switch UND die Ziel-Stufe muss ggf. erst im Worker backen (L1 einer frischen
@@ -336,6 +385,46 @@ function triasStaticLaws(anazhSrc) {
         res.kloneSichtbar = donorSrc ? !!(ok2 && c2 && c2.donorOnly !== true && donorSrc.donorOnly === true) : "skip";
         delete r.state.blueprints[cloneName];
         delete r.state.blueprints[cloneName2];
+
+        // (7) ABSCHIEDS-WELLE (E) — DER GEWICHTS-DECKEL des fCache: die warme Bibliothek
+        // MESSEN (die Budget-Begruendungs-Zahl: 189-255 MB Arbeits-Menge gemessen ->
+        // Budget 512 MB = ~2x Kopfraum, KEIN Arbeits-Mengen-Churn [der Crossfade-Sweep
+        // fing ein zu enges Budget]), dann synthetisch beweisen (Scratch-Swap, Sicherung
+        // + Wiederherstellung — die Gate-Hook-Disziplin): 80 x 8-MB-Eintraege deckeln am
+        // BYTE-Budget (512/8 = 64, weit vor CAP 256); 300 leichte deckeln an der
+        // Entries-Zweitwand (256).
+        const f2 = r._ensureAssetFoundry();
+        res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
+        res.warmCacheSize = f2.cache.size;
+        const savedC = { cache: f2.cache, bytes: f2.cacheBytes, req: f2.requested, lru: f2.lruEvicted };
+        const BYTES = r.constructor.FOUNDRY_CACHE_BYTES;
+        const mkFake = (mb) => ({
+            children: [
+                {
+                    geometry: {
+                        attributes: {
+                            position: { array: new Float32Array(Math.max(1, Math.round((mb * 1048576) / 4))) },
+                        },
+                    },
+                },
+            ],
+        });
+        f2.cache = new Map();
+        f2.cacheBytes = 0;
+        f2.requested = new Set();
+        f2.lruEvicted = new Set();
+        for (let i = 0; i < 80; i++) r._foundryCacheSet("gewicht8|" + i, mkFake(8));
+        res.heavySize = f2.cache.size;
+        res.heavyBytesOk = f2.cacheBytes <= BYTES;
+        f2.cache = new Map();
+        f2.cacheBytes = 0;
+        f2.requested = new Set();
+        for (let i = 0; i < 300; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));
+        res.lightSize = f2.cache.size;
+        f2.cache = savedC.cache;
+        f2.cacheBytes = savedC.bytes;
+        f2.requested = savedC.req;
+        f2.lruEvicted = savedC.lru;
         return res;
     });
 
@@ -390,6 +479,17 @@ function triasStaticLaws(anazhSrc) {
             out.kloneSichtbar === true || out.kloneSichtbar === "skip",
             String(out.kloneSichtbar)
         );
+        check(
+            "B11 (F/lodServe): im L1-Ring stempelt die Distanz-Autoritaet 1, die Foundry SERVIERT die Fernstufe 2 (Slot-Key-Beweis)",
+            out.lodServeLevel === 1 && out.lodServeServed === 2 && out.lodServeSlot === 2,
+            `ring=${out.l1RingDist}m level=${out.lodServeLevel} served=${out.lodServeServed} slot=${out.lodServeSlot}`
+        );
+        check(
+            "B12 (E/Gewicht): 80x8-MB-Eintraege deckeln am BYTE-Budget (64 = 512MB/8MB, weit vor CAP 256)",
+            out.heavySize === 64 && out.heavyBytesOk === true,
+            `size=${out.heavySize} warmeBibliothek=${out.warmCacheMB}MB/${out.warmCacheSize} Eintraege`
+        );
+        check("B13 (E/Zweitwand): 300 leichte Eintraege deckeln an der Entries-Wand (256)", out.lightSize === 256);
         if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

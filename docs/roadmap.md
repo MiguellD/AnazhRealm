@@ -57,8 +57,12 @@ Fern-Wasser) · Lockstep-MP Stufe 2 ✓ V18.382 (`smoke:lockstep` 284/284 bit-ex
 6. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
    V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · KI als volle Co-Schöpferin
    (Infra steht, opt-in-Politur). → §4 GEMERKTE FÄDEN.
-7. **Nicht-mehr-synergetische Parallelpfade** (keine Eile, bewusst benannt): built-in
-   Avatar-Anim-Pfade vs `_animateCompoundMotion` · Emotion→Farbe-Konstanten in
+7. **Nicht-mehr-synergetische Parallelpfade** (keine Eile, bewusst benannt): ~~built-in
+   Avatar-Anim-Pfade vs `_animateCompoundMotion`~~ ✓ ERFÜLLT (Abschieds-Welle nach V18.444:
+   Phönix/Drache konvergiert auf den EINEN Kern, die Hand-Skelette per cut-method gefallen;
+   der Mensch bleibt das RIG [SkinnedMesh-Wand], liest aber dieselben Studio-Motion-Daten
+   über die EINE Emotions-Brücke — sichtbar behalten, nicht gestrichen) ·
+   Emotion→Farbe-Konstanten in
    `dslComposeFieldColor` · die ~19 gebauten-aber-UI-losen Subsystem-APIs (§7). → CLAUDE.md-Stand + §7.
 8. **Schlafende Pläne mit Rest-Wellen** (erwachen, wenn ihr Thema dran ist): Γ-Reste
    (Γ7/Γ3/Γ-M/Γ8/Totholz, `archiv/genese-plan.md`) · Aufstiegs-Leiter Sprossen 4–7 + S-Dialog
