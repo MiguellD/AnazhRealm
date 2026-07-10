@@ -408,6 +408,14 @@ jobs:
               # Selbst-Test (injizierte Verletzungen feuern).
               run: npm run gate:nervensystem-porta
 
+            - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
+              # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
+              # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie
+              # (kein Welt-Cache-Gift), die Werkstatt zeigt die Studio-Rezepte (gras) + Slider
+              # aus den Daten, die Donoren (fahrzeug_wagen/tor_basis) treten in keinem Picker
+              # auf, das Interim ist ehrlich (pending statt Donor-Part-Gestalt).
+              run: npm run gate:rezept-katalog
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

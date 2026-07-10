@@ -105,7 +105,7 @@ später die Crafting-Geräte (esse → schmiede-Gestalt) und Bauten (fachwerk) a
 
 | Welle    | Inhalt                                                                                                                                              | entsperrt                       |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------| ------------------------------- |
-| **W-A1** | REZEPT-KATALOG + generische B4-Regler (`ov`-Roundtrip in der Vorschau) + Donor-Abschied aus dem Katalog + ehrliches Interim                          | „regelbar, alle Assets“         |
+| **W-A1** | ✅ (10.07., V18.437) REZEPT-KATALOG + generische B4-Regler (`ov`-Roundtrip cache-frei) + Donor-Abschied + ehrliches Interim — `gate:rezept-katalog` (CI) | „regelbar, alle Assets“ ✅      |
 | **W-A2** | LOD-Grade generisch (Auto-Impostor je Domäne per Daten-Flag) — Messung entscheidet je Domäne                                                         | §4 vollständig                  |
 | **W-A3** | PORTAL-GESTALT-WECHSEL: welt_* tragen porta-Gestalt (Zuordnung als Daten) + body.blockers-Feld; die 5 Part-Konstruktionen fallen                     | „keine eigenen Portale“         |
 | **W-A4** | schmiede dockt (ε-Checkliste; wield steht): klinge_* ersetzt geraet_schwert/spitzhacke; Rüstung/Trank folgen als Rezepte                             | „keine eigenen Werkzeuge“       |
