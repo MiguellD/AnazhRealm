@@ -56586,6 +56586,15 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("skeleton"),
+                // W-A3 (Katalysator §6 — DER GESTALT-WECHSEL, das Baum-Muster): die RENDER-
+                // Gestalt kommt vom porta-Kern (Daten-Zeile, gelesen im EINEN Entry-Resolver
+                // `_foundryPresetForEntry`); die Parts bleiben VOLLSTAENDIG als unsichtbare
+                // SUBSTANZ-Wahrheit (computeCompoundTags · blockerAABBs · Portal-Trigger ·
+                // Omega-PHYSIS) — exakt wie der gewachsene Baum-Bauplan unter dem Studio-
+                // Render lebt. Zuordnung nach CHARAKTER: das Ziel ist die SKELETT-Welt
+                // (Geister-Thema) und die Alt-Form trug die arkane Quarz-Membran + Runen-
+                // Glyphen -> geisttor (wLace 1 · glow 1 · fractal 1 = das arkane Tor).
+                studioGestalt: "geisttor",
                 parts: this._stationVariant(weltPortalParts, felsWorldSeed + "-portal1"),
             },
             // W12 Phase 2 — Strom-Welt-Portal. Führt in die erste lebendige
@@ -56600,6 +56609,12 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("fluid"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): die Strom-Welt ist
+                // Fluss/Turbulenz (three-fluid-fx) -> drachentor (wBraid 1 = geflochtene
+                // Straenge wie Stroemungslinien · energy 0.6 · glow). NICHT maschine —
+                // die traegt welt_garage; jede der 5 Gestalten bleibt UNVERWECHSELBAR
+                // (porta-buildInstance ist seed-invariant: gleiches Preset == gleiches Tor).
+                studioGestalt: "drachentor",
                 parts: this._stationVariant(weltStromParts, felsWorldSeed + "-portal2"),
             },
             // Terrain-Portal, dritte Gestalt — PHYTOGENESIS & LITHOS: das
@@ -56615,6 +56630,10 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("terrain"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): das Morphologie-Labor
+                // (Phytogenesis & Lithos — gewachsene/mineralische Formen) -> verkalkt
+                // (Mauerwerk × Geflecht, weather 0.4 = das organisch-mineralische Tor).
+                studioGestalt: "verkalkt",
                 parts: this._stationVariant(weltTerrainParts, felsWorldSeed + "-portal3"),
             },
             // Garage-Portal (08.07.2026) — führt ins Fahrzeug-Labor des
@@ -56627,6 +56646,10 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("garage"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): das Fahrzeug-Labor
+                // trug schon den eisernen Rad-Reif -> maschine (metal 0.95 · reflect 0.8 ·
+                // energy 0.78 = das technische Tor, die eindeutigste Zuordnung der fuenf).
+                studioGestalt: "maschine",
                 parts: this._stationVariant(weltGarageParts, felsWorldSeed + "-portal4"),
             },
             // Portale-Portal (08.07.2026) — führt ins Tor-Labor des Schöpfers
@@ -56638,6 +56661,10 @@ class AnazhRealm {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("portale"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): das Tor-Labor selbst
+                // traegt die hoechste Ordnung der Tor-Baukunst -> kathedrale (orders 4 ·
+                // wLace 0.8 · realm 0.7 — die Alt-Form war der schlichte Architrav).
+                studioGestalt: "kathedrale",
                 parts: this._stationVariant(weltPortaleParts, felsWorldSeed + "-portal5"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
@@ -64590,6 +64617,23 @@ class AnazhRealm {
                 return (
                     { brocken: "findling", geroell: "geroell", nadel: "zacken", stapel: "sediment" }[fc] || "sediment"
                 );
+            }
+            // W-A3 (Katalysator §6) — DER GESTALT-WECHSEL ALS DATEN (das Baum-Muster): traegt
+            // der Bauplan dieses Eintrags eine `studioGestalt`-Zeile (welt_portal -> "geisttor"
+            // ...) UND steht die Gestalt im LIVE-Buch (`f.recipes`), serviert das Studio die
+            // Render-Schicht — die Parts bleiben als unsichtbare SUBSTANZ-Wahrheit (Tags ·
+            // blockerAABBs · Portal-Trigger) am Blueprint stehen. GENERISCH (kein welt_-
+            // Literal): dieselbe Daten-Zeile loest spaeter esse -> schmiede-Gestalt (W-A5).
+            // Fail-soft: unbekannte Gestalt / kaltes Buch / Foundry aus (Gate-Hook
+            // `__anazhGateNoFoundry`) -> null -> der Part-Pfad lebt byte-alt weiter.
+            if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
+                const gbp = this.state.blueprints && this.state.blueprints[entry.type];
+                if (gbp && typeof gbp.studioGestalt === "string") {
+                    const gf = this._foundry;
+                    if (gf && gf.recipes && Object.prototype.hasOwnProperty.call(gf.recipes, gbp.studioGestalt)) {
+                        return gbp.studioGestalt;
+                    }
+                }
             }
         }
         return null;
