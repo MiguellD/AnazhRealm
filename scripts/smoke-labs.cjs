@@ -1,6 +1,7 @@
-// smoke-labs.cjs — Browser-Beweis der zwei neuen Schöpfer-Labor-Portale
-// (08.07.2026): worlds/garage/ (ANATOMIE · FAHRZEUG) + worlds/portale/
-// (PORTA · ORDNUNGEN + FRAKTAL). Je Welt vier Prüfungen:
+// smoke-labs.cjs — Browser-Beweis der Schöpfer-Labor-Portale:
+// worlds/garage/ (ANATOMIE · FAHRZEUG, 08.07.2026) + worlds/portale/
+// (PORTA · ORDNUNGEN + FRAKTAL, 08.07.2026) + worlds/schmiede/
+// (ANATOMIE · KLINGE, 10.07.2026 — W-A4c). Je Welt vier Prüfungen:
 //   1. lädt fehlerfrei (0 pageerrors — die gate:page-error-Klasse)
 //   2. rendert (canvas existiert)
 //   3. die W12-Brücke meldet ready (world/label/dsl-Manifest)
@@ -53,6 +54,10 @@ const server = http.createServer((req, res) => {
         res.setHeader("Content-Type", "text/html");
         return res.end(harness("/worlds/portale/index.html"));
     }
+    if (p === "/__harness_schmiede.html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.end(harness("/worlds/schmiede/index.html"));
+    }
     const fp = path.join(root, p);
     if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
     fs.readFile(fp, (err, data) => {
@@ -81,7 +86,15 @@ async function testWorld(browser, id, opts) {
         .then(() => page.evaluate(() => window.__ready))
         .catch(() => null);
     check(`${id}: W12-Brücke meldet ready`, !!ready, ready ? "" : "kein ready binnen 30s");
-    check(`${id}: ready trägt world+label+dsl`, !!ready && ready.world === id && typeof ready.label === "string" && Array.isArray(ready.dsl) && ready.dsl.length > 0, ready ? `${ready.world} · ${ready.dsl && ready.dsl.length} Wörter` : "");
+    check(
+        `${id}: ready trägt world+label+dsl`,
+        !!ready &&
+            ready.world === id &&
+            typeof ready.label === "string" &&
+            Array.isArray(ready.dsl) &&
+            ready.dsl.length > 0,
+        ready ? `${ready.world} · ${ready.dsl && ready.dsl.length} Wörter` : ""
+    );
     // Canvas im iframe (die Welt rendert).
     const frame = page.frames().find((f) => f.url().includes(`worlds/${id}/`));
     const hasCanvas = frame ? await frame.evaluate(() => !!document.querySelector("canvas")).catch(() => false) : false;
@@ -90,7 +103,11 @@ async function testWorld(browser, id, opts) {
     await page.evaluate((w) => window.__sendDsl([[w]]), opts.dslWord);
     await new Promise((r) => setTimeout(r, 600));
     const active = frame ? await frame.evaluate(opts.activeProbe).catch(() => null) : null;
-    check(`${id}: DSL "${opts.dslWord}" klickt den echten Preset-Button`, active === opts.expectActive, `aktiv: ${JSON.stringify(active)}`);
+    check(
+        `${id}: DSL "${opts.dslWord}" klickt den echten Preset-Button`,
+        active === opts.expectActive,
+        `aktiv: ${JSON.stringify(active)}`
+    );
     check(`${id}: 0 Seiten-Fehler`, pageErrors.length === 0, pageErrors[0] || "");
     await page.close();
 }
@@ -138,7 +155,7 @@ async function testWorld(browser, id, opts) {
                   })
                   .catch(() => false)
             : false;
-        check("garage: DSL \"probefahrt\" schaltet in den Fahr-Modus (HUD sichtbar)", hudOn);
+        check('garage: DSL "probefahrt" schaltet in den Fahr-Modus (HUD sichtbar)', hudOn);
         if (frame) {
             await frame.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" })));
             await new Promise((r) => setTimeout(r, 1600));
@@ -149,7 +166,11 @@ async function testWorld(browser, id, opts) {
                     return el ? parseInt(el.textContent, 10) : -1;
                 })
                 .catch(() => -1);
-            check("garage: KeyW beschleunigt — der Tacho steigt (carPhys+FAHR aus dem Kern treiben)", spd > 0, `spd=${spd}`);
+            check(
+                "garage: KeyW beschleunigt — der Tacho steigt (carPhys+FAHR aus dem Kern treiben)",
+                spd > 0,
+                `spd=${spd}`
+            );
         } else {
             check("garage: Probefahrt-Frame gefunden", false);
         }
@@ -168,6 +189,18 @@ async function testWorld(browser, id, opts) {
         expectActive: "Maschine",
     });
 
+    // W-A4c — das Klingen-Labor: eine Gattung über den echten #presets-Pfad
+    // klicken (Start-Gattung ist Langschwert; "degen" wechselt die class "on").
+    await testWorld(browser, "schmiede", {
+        label: "Anatomie · Klinge",
+        dslWord: "degen",
+        activeProbe: () => {
+            const b = document.querySelector("#presets button.on");
+            return b ? b.textContent : null;
+        },
+        expectActive: "Degen",
+    });
+
     await browser.close();
     server.close();
 
@@ -175,7 +208,9 @@ async function testWorld(browser, id, opts) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — beide Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade.");
+    console.log(
+        "\n✅ GRÜN — alle drei Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade."
+    );
     process.exit(0);
 })().catch((e) => {
     console.error("smoke-labs-Fehler:", (e && e.stack) || e);

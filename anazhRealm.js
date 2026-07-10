@@ -43829,11 +43829,7 @@ class AnazhRealm {
         const held = rec && rec.fx && rec.fx.held;
         const s = rec && rec.s;
         wrap.userData.heldGripX =
-            held && Number.isFinite(held.gripX)
-                ? held.gripX
-                : ax && s && Number.isFinite(s.griff)
-                  ? s.griff * 0.5
-                  : 0;
+            held && Number.isFinite(held.gripX) ? held.gripX : ax && s && Number.isFinite(s.griff) ? s.griff * 0.5 : 0;
         return wrap;
     }
 
@@ -56200,6 +56196,44 @@ class AnazhRealm {
             },
         ];
 
+        // Schmiede-Portal (10.07.2026, W-A4c) — ANATOMIE · KLINGE: zwei steinerne
+        // Esse-Pfeiler unter einem eisernen Traversen-Balken, davor der Amboss
+        // (Stein-Sockel + Eisen-Block) — der Schmiede-Charakter, unverwechselbar
+        // neben Ring/Reif/Architrav. Reines stein+eisen (affinitäts-sicher, die
+        // Rolle ist manuell portal); die RENDER-Gestalt kommt via studioGestalt.
+        const weltSchmiedeParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: -1.6, y: 1.5, z: 0 },
+                size: { x: 0.7, y: 3.0, z: 0.7 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 1.6, y: 1.5, z: 0 },
+                size: { x: 0.7, y: 3.0, z: 0.7 },
+            },
+            {
+                shape: "box",
+                material: "eisen",
+                position: { x: 0, y: 3.25, z: 0 },
+                size: { x: 4.0, y: 0.5, z: 0.6 },
+            },
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0.9, y: 0.2, z: 1.1 },
+                size: { x: 0.8, y: 0.4, z: 0.55 },
+            },
+            {
+                shape: "box",
+                material: "eisen",
+                position: { x: 0.9, y: 0.62, z: 1.1 },
+                size: { x: 0.7, y: 0.45, z: 0.4 },
+            },
+        ];
+
         // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
         // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
         // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
@@ -56823,6 +56857,23 @@ class AnazhRealm {
                 // wLace 0.8 · realm 0.7 — die Alt-Form war der schlichte Architrav).
                 studioGestalt: "kathedrale",
                 parts: this._stationVariant(weltPortaleParts, felsWorldSeed + "-portal5"),
+            },
+            // Schmiede-Portal (10.07.2026, W-A4c) — führt ins Klingen-Labor des
+            // Schöpfers (worlds/schmiede/: Rückgrat · Schnitt · Lehren · Stahl +
+            // Prüfstand; der Kern schmiede-core.js ist seit W-A4a die EINE Quelle).
+            // Dasselbe W12-Muster: Registry trägt Pfad + DSL-Manifest.
+            welt_schmiede: {
+                name: "welt_schmiede",
+                label: "Anatomie · Klinge",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("schmiede"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): die Schmiede ist
+                // Stein-Handwerk × Glut -> maurentor (das steinerne Handwerks-Tor, war
+                // frei; ruine bleibt frei — jede Gestalt bleibt UNVERWECHSELBAR).
+                studioGestalt: "maurentor",
+                parts: this._stationVariant(weltSchmiedeParts, felsWorldSeed + "-portal6"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
             // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
@@ -85877,6 +85928,49 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
             "zufall",
         ]),
         desc: "Das Tor-Labor: sieben Portal-Ordnungen aus der Stich-Schub-Dicke-Lehre, fraktal vertieft, mit öffnenden Türen.",
+    }),
+    // 10.07.2026 — das KLINGEN-Labor des Schöpfers (W-A4c, schmiede.txt):
+    // Rückgrat · Schnitt · Lehren · Stahl — 21 Gattungen (Waffen + Werkzeuge),
+    // 4 Traditionen, Anschlag-Probe (Harmonik-Knoten) + begehbarer Prüfstand.
+    // Der Kern (schmiede-core.js, __schmiedeCore) ist seit W-A4a die EINE
+    // generative Quelle für Shell UND AnazhRealm-Foundry (Split-Parität 21/21).
+    // Die DSL spricht die ECHTEN UI-Pfade: Gattungen + Traditionen (Umlaute
+    // ASCII-gefaltet: saebel/grossschwert/faellaxt — die terrain-Konvention
+    // "fruehling") + anschlagen (Harmonik-Probe) + stahl (Stahl/Roh-Ansicht).
+    schmiede: Object.freeze({
+        id: "schmiede",
+        label: "Anatomie · Klinge",
+        world: "worlds/schmiede/index.html",
+        dsl: Object.freeze([
+            "langschwert",
+            "saebel",
+            "degen",
+            "grossschwert",
+            "dolch",
+            "messer",
+            "langbogen",
+            "kriegsbogen",
+            "reiterbogen",
+            "recurvebogen",
+            "streitkolben",
+            "kriegsaxt",
+            "kriegshammer",
+            "keule",
+            "faellaxt",
+            "spaltmaul",
+            "vorschlaghammer",
+            "beil",
+            "spitzhacke",
+            "spaten",
+            "schaufel",
+            "frank",
+            "nihon",
+            "pars",
+            "urvolk",
+            "anschlagen",
+            "stahl",
+        ]),
+        desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
     // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),

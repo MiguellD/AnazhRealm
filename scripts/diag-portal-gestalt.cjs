@@ -1,12 +1,18 @@
 // diag-portal-gestalt.cjs — W-A3 DER PORTAL-GESTALT-WECHSEL (Katalysator-Bogen §6, das Baum-Muster).
-// Die 5 funktionalen Portal-Blueprints (welt_portal/strom/terrain/garage/portale) behalten
-// IDENTITAET + FUNKTION (Name · role portal · portalMeta · Tags · blockerAABBs · E-Trigger),
-// aber ihre RENDER-GESTALT kommt vom porta-Kern (studioGestalt-DATEN-Zeile, gelesen im EINEN
-// Entry-Resolver `_foundryPresetForEntry`). Die Linse prueft mit ehrlichen Zahlen:
-//   S (statisch, Node): die 5 studioGestalt-Daten-Zeilen stehen · der Resolver-Block ist
-//     GENERISCH (liest `studioGestalt` + LIVE-Buch, KEIN welt_-Literal, foundry-gegated).
-//   A (Browser, foundry-ON warm, Null-Renderer): alle 5 Blueprints tragen studioGestalt,
-//     jede Gestalt steht im LIVE-Buch (f.recipes).
+// Die funktionalen Portal-Blueprints (welt_portal/strom/terrain/garage/portale + seit W-A4c
+// welt_schmiede) behalten IDENTITAET + FUNKTION (Name · role portal · portalMeta · Tags ·
+// blockerAABBs · E-Trigger), aber ihre RENDER-GESTALT kommt vom porta-Kern (studioGestalt-
+// DATEN-Zeile, gelesen im EINEN Entry-Resolver `_foundryPresetForEntry`). W-A4c/V9.56-i: die
+// LISTE zieht die Linse DYNAMISCH aus der Quelle (jede studioGestalt-Zeile + ihr Blueprint) —
+// ein neues Gestalt-Portal waechst von selbst hinein; die ANKER bleiben hart (Drift laut).
+// Die Linse prueft mit ehrlichen Zahlen:
+//   S (statisch, Node): die studioGestalt-Traeger aus der Quelle abgeleitet (>= 6, Anker
+//     welt_terrain -> verkalkt · welt_schmiede -> maurentor, jede Gestalt UNVERWECHSELBAR,
+//     jeder Traeger ist ein portal-Blueprint) · der Resolver-Block ist GENERISCH (liest
+//     `studioGestalt` + LIVE-Buch, KEIN welt_-Literal, foundry-gegated).
+//   A (Browser, foundry-ON warm, Null-Renderer): alle abgeleiteten Blueprints tragen
+//     studioGestalt LIVE (Set-Paritaet Quelle==Browser), jede Gestalt steht im LIVE-Buch
+//     (f.recipes).
 //   B: der Resolver loest welt_terrain -> verkalkt; Blueprints OHNE studioGestalt loesen
 //     unveraendert (baum_eiche -> eiche · esse -> null · fahrzeug_wagen -> null = Regression 0).
 //   C: ein gespawntes welt_-Portal materialisiert END-TO-END als Studio-Asset
@@ -77,26 +83,56 @@ function fnBody(src, sigRe) {
     return null;
 }
 
-// Die kanonische Zuordnung (die Daten-Zeilen der 5 welt_-Blueprints) — Drift wird laut.
-const GESTALT = {
-    welt_portal: "geisttor",
-    welt_strom: "drachentor",
-    welt_terrain: "verkalkt",
-    welt_garage: "maschine",
-    welt_portale: "kathedrale",
-};
+// W-A4c/V9.56-i — DIE DYNAMISCHE WAHRHEIT: die Gestalt-Zuordnung kommt aus der QUELLE
+// selbst (jede studioGestalt-Daten-Zeile + der Name des umschliessenden Blueprints via
+// `NAME: { name: "NAME"`-Rueckwaerts-Anker), nicht aus einer hart gepflegten Liste — ein
+// neues Gestalt-Portal (welt_schmiede) waechst von selbst in die Linse. Die ANKER unten
+// (Mindest-Zahl · terrain/schmiede-Zuordnung · Einzigartigkeit) halten die Drift laut.
+function deriveGestalt(srcNC) {
+    const map = {};
+    const re = /studioGestalt:\s*"([a-z_]+)"/g;
+    let m;
+    while ((m = re.exec(srcNC))) {
+        const before = srcNC.slice(Math.max(0, m.index - 4000), m.index);
+        const bpRe = /(\w+):\s*\{\s*name:\s*"\1"/g;
+        let last = null;
+        let b;
+        while ((b = bpRe.exec(before))) last = b[1];
+        if (last) map[last] = m[1];
+    }
+    return map;
+}
 
 (async () => {
     const anazhSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const anazhNC = stripComments(anazhSrc);
+    const GESTALT = deriveGestalt(anazhNC);
 
     console.log("=== W-A3 PORTAL-GESTALT — TEIL S: die statischen Gesetze (Node) ===");
+    console.log(
+        `  ℹ️ abgeleitete Gestalt-Traeger (${Object.keys(GESTALT).length}): ${Object.entries(GESTALT)
+            .map(([k, v]) => `${k}->${v}`)
+            .join(" · ")}`
+    );
+    check(
+        `S0: >= 6 Gestalt-Traeger aus der Quelle abgeleitet (${Object.keys(GESTALT).length})`,
+        Object.keys(GESTALT).length >= 6
+    );
+    check(
+        'S0: ANKER welt_terrain -> "verkalkt" (traegt B/C/D/F) + welt_schmiede -> "maurentor" (W-A4c)',
+        GESTALT.welt_terrain === "verkalkt" && GESTALT.welt_schmiede === "maurentor",
+        `terrain=${GESTALT.welt_terrain} schmiede=${GESTALT.welt_schmiede}`
+    );
+    check(
+        "S0: jede Gestalt ist UNVERWECHSELBAR (keine zwei Portale teilen ein Preset)",
+        new Set(Object.values(GESTALT)).size === Object.keys(GESTALT).length
+    );
     for (const [bp, gestalt] of Object.entries(GESTALT)) {
         const idx = anazhNC.indexOf(`${bp}: {`);
         const block = idx >= 0 ? anazhNC.slice(idx, idx + 900) : "";
         check(
-            `S1: ${bp} traegt die Daten-Zeile studioGestalt: "${gestalt}"`,
-            new RegExp(`studioGestalt:\\s*"${gestalt}"`).test(block)
+            `S1: ${bp} ("${gestalt}") ist ein portal-Blueprint (role portal + portalMeta am Traeger)`,
+            /role:\s*"portal"/.test(block) && /portalMeta/.test(block)
         );
     }
     // Die DEFINITION ankern (newline + Einrueckung + oeffnende Klammer) — der nackte Name
@@ -158,6 +194,10 @@ const GESTALT = {
                 kind: f && f.recipes && bp && f.recipes[bp.studioGestalt] ? f.recipes[bp.studioGestalt].kind : null,
             };
         }
+        // (A2) Set-Paritaet: die LIVE-Blueprints mit studioGestalt == die Quelle-Ableitung.
+        res.liveSet = Object.keys(r.state.blueprints || {})
+            .filter((n) => typeof (r.state.blueprints[n] || {}).studioGestalt === "string")
+            .sort();
         // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben.
         res.b.terrain = r._foundryPresetForEntry({ type: "welt_terrain" });
         res.b.eiche = r._foundryPresetForEntry({ type: "baum_eiche" });
@@ -167,6 +207,11 @@ const GESTALT = {
     }, GESTALT);
 
     check("A: das LIVE-Buch ist warm (porta-Rezepte angekommen)", outAB.warm === true);
+    check(
+        "A: Set-Paritaet — die LIVE-Gestalt-Traeger sind exakt die Quelle-Ableitung (dynamische Wahrheit beidseitig)",
+        JSON.stringify(outAB.liveSet) === JSON.stringify(Object.keys(GESTALT).sort()),
+        `live=${(outAB.liveSet || []).join(",")}`
+    );
     for (const [name, gestalt] of Object.entries(GESTALT)) {
         const a = outAB.a[name] || {};
         check(
@@ -445,7 +490,7 @@ const GESTALT = {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — W-A3 STEHT: die 5 welt_-Portale tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen."
+        `\n✅ GRÜN — W-A3 STEHT: die ${Object.keys(GESTALT).length} welt_-Portale (dynamisch aus der Quelle) tragen ihre porta-Gestalt als DATEN-Zeile, der EINE Entry-Resolver serviert sie generisch (fail-soft, foundry-gegated), das Studio-Asset materialisiert end-to-end ohne Doppel-Bild, die Substanz-Wahrheit (portalMeta · Tags · blockerAABBs · E-Trigger) lebt byte-alt in BEIDEN Regimen.`
     );
     process.exit(0);
 })().catch((e) => {
