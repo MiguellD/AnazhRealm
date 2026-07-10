@@ -3,6 +3,8 @@
 > **Status:** ROH GESICHERT (die Original-Files byte-treu unter `worlds/<id>/index.html`;
 > sie laden three r128 noch per CDN — direkt im Browser lauffähig, durchs PORTAL erst nach
 > der Andock-Welle [CSP `script-src 'self'` → vendored libs, das V18.383-Muster]).
+> **ÜBERGEORDNET seit 10.07.: `docs/auslagerungs-plan.md` (DER KATALYSATOR-BOGEN) führt die
+> Reihenfolge (W-A1–A7); dieser Fahrplan bleibt die Lab-Detail-Referenz.**
 > Das Andocken je Lab folgt der **ε-Checkliste des Nervensystem-Plans** (`docs/nervensystem-plan.md`
 > TEIL IV Phase ε) — Kern-Split · Manifest-Zeile · Policy-Zeile · components · Gates.
 > **Reihenfolge: erst δ fertig (N5 läuft, N6 folgt), dann ε — kein Lab-Hardcode vorher (Moratorium).**
