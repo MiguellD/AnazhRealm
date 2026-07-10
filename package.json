@@ -87,6 +87,7 @@
         "gate:nervensystem-fachwerk": "node scripts/diag-nervensystem-fachwerk.cjs --selftest && node scripts/diag-nervensystem-fachwerk.cjs",
         "gate:nervensystem-labs": "node scripts/diag-nervensystem-labs.cjs --selftest && node scripts/diag-nervensystem-labs.cjs",
         "gate:settlement": "node scripts/diag-settlement.cjs --selftest && node scripts/diag-settlement.cjs",
+        "gate:trias": "node scripts/diag-trias.cjs --selftest && node scripts/diag-trias.cjs",
         "gate:daten-contract": "node scripts/diag-daten-contract.cjs --selftest && node scripts/diag-daten-contract.cjs",
         "gate:rezept-katalog": "node scripts/diag-rezept-katalog.cjs",
         "gate:portal-gestalt": "node scripts/diag-portal-gestalt.cjs",

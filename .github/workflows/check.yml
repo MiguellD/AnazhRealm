@@ -459,6 +459,16 @@ jobs:
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
 
+            - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
+              # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
+              # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah
+              # gebaute Haeuser (L1 = 75k Tris!) kleben nicht mehr fuer immer auf ihrer
+              # Bau-Stufe (GEMESSEN: 380k -> ~28k nach 120 m Zuruecktreten). Fernstufe fern
+              # (Zahl-Deckel 70k), Promotion nah, Cull + Ghost-/Band-Slot-Bilanz sauber
+              # ueber Churn, und der Klon erbt die studioGestalt (W-A3.1, donorOnly bewusst
+              # nicht). Inkl. Selbst-Test.
+              run: npm run gate:trias
+
             - name: Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)
               # STUDIO-VERTRAG §8: Manifest-Zeilen + MESHFREI-Kerne (kein buildInstance — der
               # Host bleibt der Ofen), das LIVE-Buch traegt fx.klang/fx.motion, paramsByKind

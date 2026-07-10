@@ -50431,7 +50431,15 @@ class AnazhRealm {
             const idx = (this._archLODCursor + i) % archs.length;
             const entry = archs[idx];
             if (!entry || !entry.instanced) continue;
-            if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) continue;
+            // TRIAS-WELLE (V18.444) — DIE EINE LOD-GESCHICHTE auch fuer PLATZIERTE STUDIO-
+            // ARCHITEKTUR (haus_ u. a.): bisher tickten NUR Wald-Varianten (`_lodSpecies`) —
+            // ein foundry-platziertes Haus behielt seine BAU-Stufe fuer immer, solange es im
+            // Cull-Radius stand (GEMESSEN: L1 = 75k Tris/Haus klebte bei 120 m Distanz; ein
+            // durchlaufenes 16-Haus-Dorf konvergierte auf ~1.3M Tris und kam nie zurueck).
+            // Eligibility ist DATEN-getrieben (instFoundry-Mechanik-Flag; die Stufen-Wahrheit
+            // je Art bleibt kindStages in _foundryFlattenFor — M8, kein kind-Literal).
+            const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+            if (!treeLike && entry.instFoundry !== true) continue;
             const dx = entry.position.x - pm.x;
             const dz = entry.position.z - pm.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
@@ -50480,7 +50488,13 @@ class AnazhRealm {
     // blockerAABBs bleiben (Welt-Substanz gestempelt; LOD ist reine Render-Schicht).
     // collision bleibt (HISM-Einträge haben sowieso keine Ammo-Body).
     _switchArchitectureLOD(entry, newLOD) {
-        if (!entry || !entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return false;
+        if (!entry) return false;
+        // TRIAS-WELLE (V18.444) — auch platzierte Studio-Architektur (instFoundry, z. B.
+        // haus_) wechselt ihre Stufe ueber den EINEN Foundry-Zweig unten; der Grammatik-
+        // Zweig (entry.type-Wechsel auf grown_..._lodN) bleibt den Wald-Varianten
+        // (`_lodSpecies` + `_lodVariantIndex`) vorbehalten.
+        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+        if (!treeLike && entry.instFoundry !== true) return false;
         // DAS NEUE KLEID — FOUNDRY-LOD: ist der Eintrag foundry-platziert, serviert die Foundry die
         // neue Stufe (die klassische Distanz-Wahl `newLOD` FÜHRT, EINE Autorität). KEIN entry.type-
         // Wechsel — das Studio-LOD lebt im leafKey (`f:preset|variant|lod|season`), nicht im Namen.
@@ -50496,6 +50510,16 @@ class AnazhRealm {
             if (preset) {
                 const fFlat = this._foundryFlattenFor(entry, preset, newLOD);
                 if (fFlat && fFlat.instanceable) {
+                    // TRIAS-WELLE (V18.444) — CLAMP-KURZSCHLUSS: liefert die kindStages-Klammer
+                    // fuer newLOD DIESELBE servierte Stufe, die schon steht (Ein-Stufen-Art wie
+                    // fels [0] beim Schwellen-Uebertritt), waere Remove+Add ein byte-identischer
+                    // Re-Alloc — nur die Distanz-Autoritaet stempeln, kein Slot-Churn. Baeume
+                    // (kindStages [0,1,2], Klammer = Identitaet) erreichen den Zweig nie, weil
+                    // dort fFlat.lod == newLOD != entry._lodLevel == _servedLod gilt.
+                    if (entry.instanced && Number.isFinite(fFlat.lod) && fFlat.lod === entry._servedLod) {
+                        entry._lodLevel = newLOD;
+                        return false;
+                    }
                     this._archInstanceRemove(entry); // räumt Primär UND Band (W5.4-Default)
                     entry._lodLevel = newLOD;
                     this._archInstanceAdd(entry, fFlat);
@@ -50516,6 +50540,9 @@ class AnazhRealm {
                 return false;
             }
         }
+        // TRIAS-WELLE — platzierte Studio-Architektur (nicht treeLike) hat KEINEN
+        // Grammatik-Zweig: ohne aufloesbares Preset (Foundry aus/kalt) Stufe halten.
+        if (!treeLike) return false;
         const species = entry._lodSpecies;
         const varIdx = entry._lodVariantIndex;
         // Sicherstellen, dass alle 3 LOD-Bauplane existieren (lazy-build)
@@ -62763,6 +62790,11 @@ class AnazhRealm {
         // statt aus dem klassischen `grown_..._lodN`-Bauplan. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot, nicht audit:strict (Entry-Feld, kein state.X).
         entry.instFoundry = !!(flat && flat.foundry);
+        // TRIAS-WELLE (V18.444) — die SERVIERTE Stufe merken (flat.lod nach der kindStages-
+        // Klammer; Impostor-Flat traegt lod:2): der Clamp-Kurzschluss in _switchArchitectureLOD
+        // liest sie, damit eine Ein-Stufen-Art (fels [0]) beim Schwellen-Uebertritt nicht
+        // byte-identisch re-alloziert. Transient wie instFoundry (nicht im Snapshot).
+        entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
     }
 
     // Die Instanz-Matrizen eines Eintrags neu schreiben (Mount-Follow nutzt
@@ -62898,7 +62930,15 @@ class AnazhRealm {
             // VORGEBACKENE L2-Billboard → nur ~9 Bäume erschienen, der ferne Wald blieb leer. Heilung: bei der
             // KALT-Platzierung ZUERST die Distanz-LOD setzen → ferne Bäume nehmen sofort das prefetchte
             // Billboard (instant), nahe bleiben L0 — genau wie im begehbaren Wald. Der LOD-Tick führt sie danach.
-            if (!entry.instanced && !entry.mesh && Number.isFinite(entry._lodVariantIndex)) {
+            // TRIAS-WELLE (V18.444) — der Stempel gilt JEDEM kalten Foundry-Eintrag, nicht nur den
+            // Wald-Varianten (`_lodVariantIndex`): auch platzierte Studio-Architektur (haus_/tor_/
+            // fels_var...) traegt ab dem Bau die Distanz-Autoritaet `entry._lodLevel` — sonst blieb
+            // sie fuer den LOD-Tick unsichtbar und klebte fuer immer auf ihrer Bau-Stufe (GEMESSEN:
+            // 9 Haeuser nah gebaut = 434k Tris, nach 120 m Zuruecktreten unveraendert 380k statt
+            // ehrlicher ~22k — L1 eines Fachwerk-Hauses ist 75k Tris, nur L2 [2.8k] ist leicht).
+            // Fuer Arten mit Ein-Stufen-kindStages (fels [0]) aendert der Stempel NICHTS am
+            // Servieren (die Klammer in _foundryFlattenFor greift identisch).
+            if (!entry.instanced && !entry.mesh) {
                 const dlod = this._foundryLodForEntry(entry);
                 if (Number.isFinite(dlod)) entry._lodLevel = dlod;
             }
@@ -73105,6 +73145,14 @@ class AnazhRealm {
         // rad-Gelenke + den Sitz (keine rollenden Räder, kein Reiten, keine fahrzeug-Rolle).
         if (Array.isArray(source.connections) && source.connections.length) {
             this.state.blueprints[cleanNew].connections = JSON.parse(JSON.stringify(source.connections));
+        }
+        // W-A3.1 (Trias-Welle, V18.444) — DER KLON ERBT DIE STUDIO-GESTALT (das benannte
+        // Klon-Erbe): `studioGestalt` ist ein reines DATEN-Feld (W-A3, M8) — ein geklontes
+        // Portal (portal_<id> aus welt_portal, Z. ~44315) traegt sonst wieder den Part-Look
+        // statt des Geisttors. `donorOnly` reist BEWUSST NICHT mit (ein Klon soll sichtbar
+        // sein — genau dafuer klont man einen Donor).
+        if (typeof source.studioGestalt === "string") {
+            this.state.blueprints[cleanNew].studioGestalt = source.studioGestalt;
         }
         // M2 — und den INTENT: eine DEKLARIERTE Rolle (builtIn-Saat ODER roleManual — z. B. die
         // Werkstatt-Designation V17.70) reist mit (als roleManual, via Markier-Sektion lösbar):
