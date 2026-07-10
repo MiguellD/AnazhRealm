@@ -96,17 +96,20 @@ BLUEPRINT — darum ist die Wiese unsichtbar (sie ist eine Schicht, kein Bauplan
 
 Muster (V18.259-Gesetz: der NAME ist load-bearing): `welt_portal` & Co. behalten id · Rolle ·
 `portalMeta` · Spawn-Orte — ihre RENDER-GESTALT kommt vom porta-Kern (Rezept-Zuordnung als
-DATEN-Zeile je welt_-Blueprint, z. B. `welt_terrain → maurentor`). Kollision/Durchgang: das Lab
-liefert `body.blockers` (Template-AABBs, §2.6), der Host skaliert + stempelt `blockerAABBs` —
-KEIN Voll-AABB (Tür-Lücke bleibt begehbar, das emergente Prinzip bleibt). Dasselbe Muster löst
-später die Crafting-Geräte (esse → schmiede-Gestalt) und Bauten (fachwerk) ab.
+DATEN-Zeile je welt_-Blueprint: `studioGestalt: "maurentor"`, gelesen im EINEN Preset-Resolver).
+**Kollision/Tags/Funktion: DAS BAUM-MUSTER (Korrektur 10.07. — schärfer als das erst benannte
+body.blockers):** die Parts BLEIBEN als unsichtbare SUBSTANZ-WAHRHEIT (Tags · blockerAABBs ·
+Portal-Trigger — exakt wie der gewachsene Baum-Bauplan unter dem Studio-Render lebt); NUR die
+Render-Schicht wechselt. `body.blockers` vom Lab wird erst nötig, wenn ein Lab-Ding OHNE
+Part-Bauplan begehbar sein muss. Dasselbe Muster löst später die Crafting-Geräte
+(esse → schmiede-Gestalt) und Bauten (fachwerk) ab.
 
 ## §7 Die Wellen (Reihenfolge; je Welle: Alt-Modell fällt per Saat-Regel, Bänder wandern, volle Batterie)
 
 | Welle    | Inhalt                                                                                                                                              | entsperrt                       |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------| ------------------------------- |
 | **W-A1** | ✅ (10.07., V18.437) REZEPT-KATALOG + generische B4-Regler (`ov`-Roundtrip cache-frei) + Donor-Abschied + ehrliches Interim — `gate:rezept-katalog` (CI) | „regelbar, alle Assets“ ✅      |
-| **W-A2** | LOD-Grade generisch (Auto-Impostor je Domäne per Daten-Flag) — Messung entscheidet je Domäne                                                         | §4 vollständig                  |
+| **W-A2** | LOD-Grade generisch — **GEMESSEN VERTAGT (10.07.):** Fahrzeuge/Tore haben heute 0 Worldgen-Fern-Instanzen (place hand/none/site-ohne-Kanal; Hand-Platzierung = einzelne), der Auto-Impostor je Domäne lohnt erst mit Site-/Settlement-Platzierung → nach W-A5 neu messen | §4 wartet ehrlich               |
 | **W-A3** | PORTAL-GESTALT-WECHSEL: welt_* tragen porta-Gestalt (Zuordnung als Daten) + body.blockers-Feld; die 5 Part-Konstruktionen fallen                     | „keine eigenen Portale“         |
 | **W-A4** | schmiede dockt (ε-Checkliste; wield steht): klinge_* ersetzt geraet_schwert/spitzhacke; Rüstung/Trank folgen als Rezepte                             | „keine eigenen Werkzeuge“       |
 | **W-A5** | fachwerk dockt + N5.7 settlement: haus_* + Dorf-Seeds; die Geräte-Gestalten (esse …) wechseln per §6                                                 | „keine eigenen Bauten“          |
