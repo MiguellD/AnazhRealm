@@ -4620,6 +4620,29 @@ init();
             // keine Kopie; ein Edit an PRESETS hier fliesst automatisch mit). Die Geometrie-
             // Erzeugung bleibt im Studio (build-asset); dies traegt nur die Rezept-DATEN.
             __replyRecipes(msg);
+        } else if (msg.type === "export-settlement") {
+            // DER SETTLEMENT-KANAL (N5.7, W-A5b): der Host fragt eine Siedlung als reine
+            // DATEN an (Slots + benannte Schichten). GENERISCH wie exportDrive (N6.2):
+            // der ERSTE Manifest-Kern mit einer exportSettlement-Formel antwortet — kein
+            // Kern-spezifisches Literal (M8: Tabelle vor if). Fail-soft: kein Kern/Fehler
+            // -> plan null, der Host behandelt das geschlossen.
+            __replySettlement(msg);
+        }
+    }
+    function __replySettlement(msg) {
+        let plan = null;
+        try {
+            for (const zk of __zweitKerne()) {
+                if (typeof zk.kern.exportSettlement === "function") {
+                    plan = zk.kern.exportSettlement(msg && msg.dp);
+                    break;
+                }
+            }
+        } catch (_e) {
+            plan = null;
+        }
+        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
+            __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
         }
     }
     if (typeof window !== "undefined") {

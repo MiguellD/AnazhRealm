@@ -1,7 +1,8 @@
 // smoke-labs.cjs — Browser-Beweis der Schöpfer-Labor-Portale:
 // worlds/garage/ (ANATOMIE · FAHRZEUG, 08.07.2026) + worlds/portale/
 // (PORTA · ORDNUNGEN + FRAKTAL, 08.07.2026) + worlds/schmiede/
-// (ANATOMIE · KLINGE, 10.07.2026 — W-A4c). Je Welt vier Prüfungen:
+// (ANATOMIE · KLINGE, 10.07.2026 — W-A4c) + worlds/fachwerk/
+// (FACHWERKHAUS, 10.07.2026 — W-A5b). Je Welt vier Prüfungen:
 //   1. lädt fehlerfrei (0 pageerrors — die gate:page-error-Klasse)
 //   2. rendert (canvas existiert)
 //   3. die W12-Brücke meldet ready (world/label/dsl-Manifest)
@@ -57,6 +58,10 @@ const server = http.createServer((req, res) => {
     if (p === "/__harness_schmiede.html") {
         res.setHeader("Content-Type", "text/html");
         return res.end(harness("/worlds/schmiede/index.html"));
+    }
+    if (p === "/__harness_fachwerk.html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.end(harness("/worlds/fachwerk/index.html"));
     }
     const fp = path.join(root, p);
     if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
@@ -201,6 +206,19 @@ async function testWorld(browser, id, opts) {
         expectActive: "Degen",
     });
 
+    // W-A5b — das Haus-Labor: eine Kultur über den ECHTEN UI-Pfad (das
+    // Kultur-Select #pK, change-Event → applyKultur + regen; die Brücke
+    // setzt den Wert wie der Nutzer). Probe = der Select-Wert selbst.
+    await testWorld(browser, "fachwerk", {
+        label: "Fachwerkhaus — parametrisch, begehbar",
+        dslWord: "tudor",
+        activeProbe: () => {
+            const el = document.getElementById("pK");
+            return el ? el.value : null;
+        },
+        expectActive: "tudor",
+    });
+
     await browser.close();
     server.close();
 
@@ -209,7 +227,7 @@ async function testWorld(browser, id, opts) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — alle drei Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade."
+        "\n✅ GRÜN — alle vier Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade."
     );
     process.exit(0);
 })().catch((e) => {

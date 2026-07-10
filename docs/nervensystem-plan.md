@@ -458,7 +458,7 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
 | N5.4    | ⏳ mode `scatter` → BENANNT-VORBEREITET: Kanal steht im Dispatch, Anschluss an `_scatterPass` dokumentiert, NICHT verdrahtet (heute kein Konsument — Verdrahtung = bewusster Folge-Schritt) |
 | N5.5    | ✅ (09.07.) mode `hand` / `none` → kein Worldgen (Dispatch null — das vehicle-Verhalten)                                         |
 | N5.6    | ✅ (09.07.) mode `site` — minimal: Semantik-Weiche steht, siteTag reist als Daten, streut NICHT (Welt-Nische = ε-Anschluss/Porta); Gate mit synthetischem Rezept (injizierte tor-Policy-Zeile, 0 Stamm-Diff) |
-| N5.7    | mode `settlement` — **nach** Stadt-Lab-Export; Seed-Suffix `:stadt`; Schwester-Logik zu Forest, nicht Kopie des Wald-Codes im if |
+| N5.7    | ✅ (10.07., W-A5b) mode `settlement` — GEBAUT nach dem fachwerk-Export: `exportSettlement` (Kern) → Worker-Kanal → `spawnSettlement` (Seed-Suffix `:stadt`, Wasser-Wand, fail-closed, KIND_POLICY-Tabelle — Schwester-Logik, keine Wald-Code-Kopie); Worldgen-Auto-Streu bewusst offen (`_placeDispatch` "settlement" = deliberater Kanal); `gate:settlement` |
 
 **Akzeptanz N5:**
 
@@ -481,8 +481,11 @@ voller Playtest foundry-off byte-gleich (kein off-Zweig fiel).
       streut nicht — die SEMANTIK-Weiche steht, die Nischen-Platzierung ist der ε-Anschluss.
 - [ ] N5.4 scatter-Verdrahtung (policy-getriebene Schicht in `_scatterRegion`/`_scatterPass` aus
       policy.layer/step/density) — der bewusste Folge-Schritt, sobald ein Rezept scatter trägt.
-- [ ] N5.7 settlement — **Anker: nach dem Stadt-Lab-Export** (Phase ε, §Lab-Tabelle „Stadt");
-      Schwester-Logik zu forest (Seed-Suffix `:stadt`), keine Kopie des Wald-Codes im if.
+- [x] N5.7 settlement ✅ (10.07., W-A5b): der fachwerk-Export IST der Stadt-Lab-Export —
+      `exportSettlement(dp)` (DORF-QUELLE lebt im Kern) → `export-settlement`-Kanal (Brücke
+      generisch über die Zweit-Kern-Schleife, M8) → `spawnSettlement` (Γ5 `:stadt`,
+      `_isAboveWaterAt`-Wand, fail-closed, Blueprint-Name aus der KIND_POLICY-Tabelle);
+      Worldgen-Auto-Dörfer = benannter Folge-Schritt am "settlement"-Dispatch-Kanal.
 
 ### N6 — Drive / Wield
 

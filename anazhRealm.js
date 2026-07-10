@@ -10908,10 +10908,27 @@ class AnazhRealm {
         });
     }
 
-    // Die Akkord-Dauer in ms. 60 BPM × 4 Schläge = 4 s; sorrow (Trauer)
-    // verlangsamt das Tempo um bis zu 50 % (bis ~6 s je Akkord).
+    // W-A7 (Katalysator §7, Wörterbuch v1.1 `klang`) — DIE EINE KLANG-QUELLE: das
+    // Genesis-Lab liefert seine Genre-Presets als reine Daten durchs EINE Buch
+    // (klang-core → __replyRecipes → f.recipes, kind "klang"); der Host-Leser ist
+    // das BESTEHENDE Lofi-System (kein Parallel-Audio, M4). Welches Genre das
+    // Lofi-Pad führt, ist eine DATEN-Zeile (KLANG_HOST_RECIPE — naturgemäß "lofi",
+    // das Genre-Geschwister des Host-Sounds). Kaltes Buch/Foundry aus → null,
+    // jeder Leser fällt byte-alt auf seine LOFI_*-Konstante (fail-soft, G4.1).
+    _klangStudioPreset() {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[AnazhRealm.KLANG_HOST_RECIPE] : null;
+        const k = rec && rec.fx && rec.fx.klang;
+        return k && typeof k === "object" ? k : null;
+    }
+    // Die Akkord-Dauer in ms. Das TEMPO führt das Studio-Klang-Rezept (W-A7:
+    // Genesis "LoFi" bpm — der erste echte klang-Konsument; ohne Buch die
+    // LOFI_BPM-Konstante, byte-alt 60 BPM × 4 Schläge = 4 s); sorrow (Trauer)
+    // verlangsamt das Tempo um bis zu 50 %.
     _lofiChordDurationMs() {
-        const beatMs = 60000 / AnazhRealm.LOFI_BPM;
+        const studio = this._klangStudioPreset();
+        const bpm = studio && Number.isFinite(studio.bpm) && studio.bpm > 0 ? studio.bpm : AnazhRealm.LOFI_BPM;
+        const beatMs = 60000 / bpm;
         const base = beatMs * AnazhRealm.LOFI_CHORD_BEATS;
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
@@ -23258,6 +23275,19 @@ class AnazhRealm {
     get chatSystemPatterns() {
         if (this._chatSystemPatternsCache) return this._chatSystemPatternsCache;
         this._chatSystemPatternsCache = [
+            {
+                // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24".
+                // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
+                example: "dorf [seed] [häuser]",
+                re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?$/i,
+                run: (m, append) => {
+                    const opts = {};
+                    if (m[1] !== undefined) opts.seed = Number(m[1]);
+                    if (m[2] !== undefined) opts.nH = Number(m[2]);
+                    this.spawnSettlement(opts);
+                    append("Siedlung wird gegründet (Settlement-Export läuft) …");
+                },
+            },
             {
                 example: "lerne fähigkeit <name> <beschreibung>",
                 re: /^lerne\s+fähigkeit(?:\s+(\S+))?(?:\s+(.+))?$/i,
@@ -56234,6 +56264,53 @@ class AnazhRealm {
             },
         ];
 
+        // Fachwerk-Portal (10.07.2026, W-A5b) — FACHWERKHAUS: zwei hölzerne
+        // Ständer unter einem vorkragenden Holz-Rähm mit steinerner Schwelle —
+        // der Zimmermanns-Charakter (Fachwerk-Torrahmen), unverwechselbar
+        // neben Esse/Ring/Reif/Architrav. Reines holz+stein (affinitäts-
+        // sicher, die Rolle ist manuell portal); die RENDER-Gestalt kommt
+        // via studioGestalt (porta "ruine" — die letzte freie Tor-Ordnung).
+        const weltFachwerkParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 4.2, y: 0.4, z: 0.9 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -1.55, y: 1.75, z: 0 },
+                size: { x: 0.45, y: 2.7, z: 0.45 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 1.55, y: 1.75, z: 0 },
+                size: { x: 0.45, y: 2.7, z: 0.45 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 3.35, z: 0 },
+                size: { x: 4.4, y: 0.5, z: 0.7 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -0.9, y: 2.5, z: 0.05 },
+                size: { x: 0.3, y: 1.4, z: 0.3 },
+                rotation: { x: 0, y: 0, z: Math.PI / 5 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0.9, y: 2.5, z: 0.05 },
+                size: { x: 0.3, y: 1.4, z: 0.3 },
+                rotation: { x: 0, y: 0, z: -Math.PI / 5 },
+            },
+        ];
+
         // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
         // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
         // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
@@ -56874,6 +56951,26 @@ class AnazhRealm {
                 // frei; ruine bleibt frei — jede Gestalt bleibt UNVERWECHSELBAR).
                 studioGestalt: "maurentor",
                 parts: this._stationVariant(weltSchmiedeParts, felsWorldSeed + "-portal6"),
+            },
+            // Fachwerk-Portal (10.07.2026, W-A5b) — führt ins Haus-Labor des
+            // Schöpfers (worlds/fachwerk/: parametrisches Fachwerk · 32 Kulturen ·
+            // begehbar · Dorf-Modus; der Kern fachwerk-core.js ist seit W-A5a die
+            // EINE Quelle, seit W-A5b auch die DORF-QUELLE + exportSettlement).
+            // Dasselbe W12-Muster: Registry trägt Pfad + DSL-Manifest.
+            welt_fachwerk: {
+                name: "welt_fachwerk",
+                label: "Fachwerkhaus — parametrisch, begehbar",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("fachwerk"),
+                // W-A3 — porta-Gestalt (Baum-Muster, s. welt_portal): das Haus-Labor
+                // trägt die RUINE (die letzte freie der sieben Tor-Ordnungen — das
+                // alte Gemäuer, aus dem neu gebaut wird; jede Gestalt bleibt
+                // UNVERWECHSELBAR: geisttor/drachentor/verkalkt/maschine/
+                // kathedrale/maurentor sind vergeben).
+                studioGestalt: "ruine",
+                parts: this._stationVariant(weltFachwerkParts, felsWorldSeed + "-portal7"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
             // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
@@ -64105,12 +64202,16 @@ class AnazhRealm {
     //                       vehicle-Verhalten).
     //   site (N5.6)       → null: verhält sich HEUTE wie none und trägt siteTag als DATEN —
     //                       die Welt-Nische (Schrein/Tor) ist der benannte ε-Anschluss (Porta).
-    //   settlement (N5.7) → null: NACH dem Stadt-Lab-Export (Schwester-Logik zu forest,
-    //                       seedSuffix ":stadt" — keine Kopie des Wald-Codes in einem if).
+    //   settlement (N5.7) → "settlement": GEBAUT (W-A5b) als DELIBERATER Kanal — der Konsument
+    //                       ist `spawnSettlement` (Export → Slots → spawnArchitecture, Seed-
+    //                       Stream ":stadt", keine Kopie des Wald-Codes in einem if). Worldgen
+    //                       streut settlement-Rezepte NICHT automatisch (kein Streu-Leser des
+    //                       Kanals — der Auto-Dorf-Anschluss ist der benannte Folge-Schritt).
     _placeDispatch(policy, _ctx) {
         const mode = policy && policy.mode;
         if (mode === "forest") return "forest";
         if (mode === "scatter") return "scatter"; // benannter Kanal — heute ohne Konsument (s. o.)
+        if (mode === "settlement") return "settlement"; // N5.7 — deliberater Kanal (spawnSettlement)
         return null;
     }
 
@@ -64381,6 +64482,15 @@ class AnazhRealm {
                             if (p) {
                                 f.pending.delete(m.reqId);
                                 p(m.meshes || []);
+                            }
+                        } else if (m.type === "settlement") {
+                            // N5.7 (W-A5b) — der Settlement-Kanal: die Slot-DATEN einer Siedlung
+                            // (fachwerk exportSettlement, generisch über die Zweit-Kern-Schleife
+                            // der Brücke). Dieselbe pending-Map wie die Assets (reqIds disjunkt).
+                            const ps = f.pending.get(m.reqId);
+                            if (ps) {
+                                f.pending.delete(m.reqId);
+                                ps(m.plan || null);
                             }
                         }
                         // impostor (P5): der Worker liefert die LOD1-GEOMETRIE; der 8-Winkel-Atlas backt daraus
@@ -64682,6 +64792,112 @@ class AnazhRealm {
         } catch (_e) {
             f._idbDead = true;
         }
+    }
+    // N5.7 (W-A5b) — DIE SIEDLUNG ALS DATEN ANFRAGEN: der Foundry-Worker rechnet den
+    // Settlement-Export (fachwerk exportSettlement — generisch über die Zweit-Kern-Schleife
+    // der Brücke, M8) und liefert reine Slot-DATEN (kein Mesh, kein Cache — eine Siedlung
+    // ist ein deliberater Akt, kein Asset-Bake). Fail-closed: kein Worker/nicht ready →
+    // null (der Aufrufer meldet ehrlich). Dieselbe pending-Map wie die Assets.
+    _foundryRequestSettlement(dp) {
+        const f = this._ensureAssetFoundry();
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        return new Promise((resolve) => {
+            const reqId = "stl-" + f.reqSeq++;
+            f.pending.set(reqId, resolve);
+            try {
+                f.worker.postMessage({ type: "export-settlement", reqId, dp: dp || {} });
+            } catch (_e) {
+                f.pending.delete(reqId);
+                resolve(null);
+            }
+        });
+    }
+    // N5.7 — DER SETTLEMENT-KONSUMENT (die Wald-Schwester als DELIBERATER Akt): hebt einen
+    // Settlement-Export (Slots aus exportSettlement) welt-verankert in die Welt. TABELLEN-
+    // GETRIEBEN (M8): der Blueprint-Name je Slot kommt aus KIND_POLICY über den kind des
+    // LIVE-Rezepts (prefix + kultur — kein "haus_"-Literal, dieselbe Regel trüge eine
+    // künftige Tempel-Domäne). Die Wände: `_isAboveWaterAt` vor JEDEM Spawn (kein Haus im
+    // See), fehlender Blueprint/fremde Kultur → Slot fällt GESCHLOSSEN aus (kein halbes
+    // Dorf-Chaos). Γ5: alle Zufälligkeit lebt im Export (Seed-LCGs des Kerns) — hier wird
+    // NUR gelesen + platziert (spawnArchitecture silent = kein Spieler-Clamp, der ANKER
+    // ging durch den `_structureSpawnPos`-Chokepoint in spawnSettlement). Häuser stehen
+    // auf ihrer eigenen Terrain-Höhe (`getTerrainHeightAt` — die kanonische Quelle);
+    // Straßen/Laternen/Mauer reisen als benannte, v1 unkonsumierte Daten im Export.
+    _spawnSettlementFromExport(plan, origin) {
+        if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
+        const f = this._foundry;
+        const KP = AnazhRealm.KIND_POLICY;
+        let placed = 0;
+        let skipped = 0;
+        for (const slot of plan.slots) {
+            if (!slot || typeof slot.kultur !== "string") {
+                skipped++;
+                continue;
+            }
+            const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
+            const pol = rec && KP[rec.kind];
+            const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
+            if (!name || !this.state.blueprints[name]) {
+                skipped++; // fail-closed: keine Policy/kein Auto-Blueprint → Slot fällt aus
+                continue;
+            }
+            const wx = origin.x + slot.x;
+            const wz = origin.z + slot.z;
+            if (!this._isAboveWaterAt(wx, wz, 0.2)) {
+                skipped++; // die Wasser-Wand (Welt-Awareness = EINE Quelle)
+                continue;
+            }
+            const wy = this.getTerrainHeightAt(wx, wz) + 0.5;
+            const entry = this.spawnArchitecture(
+                name,
+                { x: wx, y: wy, z: wz },
+                { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true }
+            );
+            if (entry) placed++;
+            else skipped++;
+        }
+        return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null };
+    }
+    // N5.7 — DER DELIBERATE SIEDLUNGS-AKT (Chat „dorf [seed] [n]" / Gate): würfelt den
+    // Siedlungs-Samen Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt" — die Wald-
+    // Schwester-Disziplin, kein Math.random auf dem welt-formenden Pfad), holt den Export
+    // vom Worker und platziert am ANKER. Der Anker läuft durch den EINEN Spawn-Chokepoint
+    // `_structureSpawnPos` (Footprint-Klasse "village"): nie auf dem Spieler. Async
+    // (Worker-Roundtrip) — der Rückweg meldet ins Chat-Log.
+    spawnSettlement(opts) {
+        const o = opts && typeof opts === "object" ? opts : {};
+        let seed = Number.isFinite(o.seed) ? Number(o.seed) : NaN;
+        if (!Number.isFinite(seed)) {
+            // Γ5: der Siedlungs-Same zieht aus dem Welt-Seed-Stream (Suffix ":stadt", FNV-1a —
+            // das _worldRuleSeed-Muster; pro Akt zählt settlementCount hoch → jede neue
+            // Siedlung derselben Welt ein ANDERER, aber deterministischer Same).
+            const wm = this.state.worldMeta || {};
+            const n = (this._settlementCount = (this._settlementCount || 0) + 1); // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert, kein audit-Feld)
+            const s = `${wm.seed || "anazh-realm-seed"}:stadt:${n}`;
+            let h = 2166136261 >>> 0;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 16777619) >>> 0;
+            }
+            seed = h >>> 0 || 1;
+        }
+        const nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : 18;
+        const pm = this.state.playerMesh;
+        const base =
+            o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
+        const anchor = o.position ? base : this._structureSpawnPos("village", base, { state: this.state });
+        return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
+            if (!plan) {
+                this.log("Siedlung: kein Settlement-Export (Foundry aus/kalt) — nichts platziert.", "WARN");
+                return null;
+            }
+            const res = this._spawnSettlementFromExport(plan, anchor);
+            this.log(
+                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`,
+                "INFO"
+            );
+            return res;
+        });
     }
     _foundryRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
@@ -83291,9 +83507,9 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // W-A5a (Katalysator-Bogen §7, ε-Checkliste) — DIE HAUS-DOMAENE ALS DATEN-ZEILE:
     // fachwerk-core (cores.manifest.json) liefert kind:"haus"-Rezepte (die 32 klickbaren
     // Kultur-Archetypen des Fachwerk-Labs); die Platzierung reist als Rezept-DATEN
-    // (fx.place mode "site" + siteTag "haus", N5.6 — streut heute nicht; der settlement-
-    // Kanal N5.7 kommt in W-A5b als fx.place-Upgrade aus dem Dorf-Export), darum
-    // placeExtra null. Donor ist der begehbare haus_basis-DATENBLOCK (Parts = SUBSTANZ-
+    // (fx.place mode "settlement" + siteTag "haus", N5.7 — der Settlement-Kanal ist seit
+    // W-A5b GEBAUT: exportSettlement liefert Slots, spawnSettlement hebt sie deliberate in
+    // die Welt; Worldgen streut weiter nicht automatisch), darum placeExtra null. Donor ist der begehbare haus_basis-DATENBLOCK (Parts = SUBSTANZ-
     // Wahrheit: Tags · Omega-PHYSIS · blockerAABBs mit TUER-LUECKE — das Baum-/Tor-
     // Muster; die Studio-Gestalt kommt aus dem Appear-Pfad). Die erste MEHR-Stufen-
     // Domaene ausserhalb der Baeume: kindStages.haus = [0,1,2] (fachwerk-core B2).
@@ -86044,6 +86260,57 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Klingen-Labor: Rückgrat, Schnittprofil und Lehren urteilen die Waffe — 21 Gattungen, 4 Traditionen, Anschlag-Probe und Prüfstand.",
     }),
+    // 10.07.2026 — das HAUS-Labor des Schöpfers (W-A5b): Fachwerkhaus,
+    // parametrisch + begehbar — 32 Kultur-Archetypen, Tragwerk-ehrliche
+    // Subsysteme, Dorf-Modus (gewachsene Siedlung mit Straßengraph, Mauer,
+    // Jahresringen). Der Kern (fachwerk-core.js, __fachwerkCore) ist seit
+    // W-A5a die EINE generative Quelle für Shell UND AnazhRealm-Foundry;
+    // seit W-A5b trägt er auch die DORF-QUELLE + exportSettlement (N5.7).
+    // Die DSL spricht die ECHTEN UI-Pfade: die 32 Kulturen über das
+    // Kultur-Select (#pK, change-Event) + "dorf"/"haus" über die
+    // Dorf-Checkbox (#pDorf).
+    fachwerk: Object.freeze({
+        id: "fachwerk",
+        label: "Fachwerkhaus — parametrisch, begehbar",
+        world: "worlds/fachwerk/index.html",
+        dsl: Object.freeze([
+            "alemannisch",
+            "fraenkisch",
+            "niedersaechsisch",
+            "mittelalterlich",
+            "holzhuette",
+            "franzoesisch",
+            "italienisch",
+            "modern",
+            "volle_moderne",
+            "hochhaus",
+            "roemisch",
+            "tudor",
+            "alpenchalet",
+            "hollaendisch",
+            "hanseatisch",
+            "georgian",
+            "viktorianisch",
+            "griechisch",
+            "spanisch",
+            "andalusisch",
+            "provenzalisch",
+            "pueblo",
+            "marokkanisch",
+            "skandinavisch",
+            "norwegisch",
+            "russisch",
+            "schwarzwald",
+            "japanisch",
+            "gotisch",
+            "barock",
+            "renaissance",
+            "chinesisch",
+            "dorf",
+            "haus",
+        ]),
+        desc: "Das Haus-Labor: parametrisches Fachwerk, tragwerk-ehrlich und begehbar — 32 Kulturen, Dorf-Modus mit gewachsenen Siedlungen.",
+    }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
     // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),
     // die in einem null-origin-iframe sandgesichert läuft. trust:"sandboxed"
@@ -87148,7 +87415,10 @@ AnazhRealm.LOFI_HARMONY = Object.freeze([
 // Harmonie-Wahl: joy/hope ziehen zu hell, sorrow zu dunkel.
 AnazhRealm.LOFI_BRIGHT_DEGREES = Object.freeze([2, 5]); // III, VI
 AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
-AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo
+AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo (Fallback — das Studio-Klang-Rezept führt, s. KLANG_HOST_RECIPE)
+// W-A7 (Wörterbuch v1.1 `klang`) — DATEN-Zeile: welches Genesis-Genre-Rezept das
+// Host-Lofi-Pad führt (`_klangStudioPreset` liest f.recipes[..].fx.klang LIVE).
+AnazhRealm.KLANG_HOST_RECIPE = "lofi";
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 // W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
 // Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +

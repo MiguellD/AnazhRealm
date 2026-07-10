@@ -279,8 +279,58 @@ außerhalb der Bäume** (0 ≙ Ring-A-Vollbau-Bake · 1 ≙ Chunk-Stufe-1-Hülle
 Goldens `spec/asset-contract/v6/` (`gate:fachwerk-contract`, **seed-GETRIEBEN**
 cv:6 — der Haus-Bau würfelt Fenstertakt/OG-Material/Giebel-Verband/Gauben/
 Fenster-Schlaf aus P.seed) · B4 PARAMS (21 Regler aus den Lab-HTML-Slidern,
-def = Lab-Startzustand) · `fx.place {mode:"site", siteTag:"haus"}` als
-Platzierungs-Daten (N5.6, streut nicht — settlement N5.7 kommt in W-A5b);
+def = Lab-Startzustand) · `fx.place {mode:"settlement", siteTag:"haus"}` als
+Platzierungs-Daten (N5.7, W-A5b: exportSettlement [die DORF-QUELLE lebt im
+Kern] → `spawnSettlement` — der deliberate Kanal; Worldgen streut nicht);
 Split-Parität je Rezept × Stufe hash-bewiesen (buildInstance == die Shell-
 Komposition der Kern-Primitive), Andocken = reine Daten-Zeilen — der
 ε-Beweis, `gate:nervensystem-fachwerk`).
+
+---
+
+## §8 v1.1 — Nicht-geometrische Domänen: MESHFREI + die Komponenten-Felder `motion` und `klang` (NORMATIV, W-A6/W-A7, 10.07.2026)
+
+Die zwei im Labs-Fahrplan benannten v1.1-Erweiterungen sind KOMPONENTEN-Felder,
+keine Verben (Nervensystem-Entscheidungsbaum: „Komponente erweitern, nicht Verb
+erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
+— must-ignore-billig per Design (ein v1-Leser ignoriert sie schlicht).
+
+- **§8.1 MESHFREI (components-only-Kerne):** eine NICHT-GEOMETRISCHE Domäne
+  (Klang; Körper-/Kreatur-GESTALT-Daten — der Host bleibt der OFEN) deklariert
+  auf ihrem Namensraum `MESHFREI = 1`. Dann ist **B2 N/A** (kein
+  `buildInstance` — der Kern liefert DATEN, keine Gestalt); ein MESHFREI-Kern,
+  der trotzdem `buildInstance` trägt, ist eine Vertrags-Verletzung
+  (Widerspruch, der Validator wird rot). Strukturell gedeckt: der
+  build-asset-Dispatch der Brücke wählt Zweit-Kerne NUR mit
+  `typeof buildInstance === "function"` — ein MESHFREI-Kern kann den
+  Mesh-Kanal per Konstruktion nicht betreten. Alle übrigen Blöcke (B1 REZEPTE
+  MUSS · B4 PARAMS SOLL · G4.3 STUDIO_VERTRAG) gelten unverändert.
+- **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
+  reine Daten. Schema (alle Felder DARF, must-ignore):
+  `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],
+  standPose?: zahl[][] }` — die Achsen sind Lab-eigene Regler (freq · stride ·
+  tension · kpMul · Gelenk-Ziele …); der Host interpretiert sie NIE als
+  zweites Animations-System (M4): der EINE Konsument ist der bestehende
+  `_animateCompoundMotion`-/Rig-Bogen (wahrerguss Säule II — der Andock-Punkt
+  ist benannt, der Konsum der bewusste Folge-Schritt). Spender heute:
+  `koerper-core.js` (`mensch`, 10 Profile) · `tetrapoda-core.js`
+  (wolf/fox/bear/deer, 6 Profile + CPG + Stand-Pose).
+- **§8.3 `fx.klang` (Musik-Daten, W-A7):** ein Genre als reine Daten. Schema
+  (bpm MUSS im Feld, Rest DARF): `klang { bpm, scaleName?, scale?: halbton[],
+  dna?: { swing darkness color flow tension space }, form? harmony? rhythm?
+  bass? melody?, inst?, tilt? }`. Die Skala ist VOR-ABGELEITET aus der EINEN
+  Lab-Formel (`scaleFor(darkness)`, das exportDrive-Muster N6.2/M3 — Export
+  der SELBEN Formel, keine zweite Wahrheit). Der EINE Host-Konsument ist das
+  BESTEHENDE Lofi-System (kein Parallel-Audio, M4): `_klangStudioPreset()`
+  liest das Rezept der DATEN-Zeile `AnazhRealm.KLANG_HOST_RECIPE` („lofi"),
+  `_lofiChordDurationMs` fährt das Studio-Tempo; kaltes Buch → die
+  LOFI_*-Konstanten byte-alt (fail-soft, G4.1). Spender heute:
+  `klang-core.js` (22 Genesis-Genres, `kind:"klang"`).
+
+**Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
+B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
+`mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion) · `tetrapoda-core.js`
+(`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische Dials · fx.motion).
+Alle drei: keine KIND_POLICY-Zeile (keine Katalog-Blueprints — die Rezepte
+erscheinen als Studio-Rezepte in der Werkstatt, W-A1-Straße), `fx.place
+{mode:"none"}`, Daten-Goldens `spec/asset-contract/v7/` (`gate:daten-contract`).

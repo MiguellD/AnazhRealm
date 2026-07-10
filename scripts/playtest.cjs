@@ -13784,15 +13784,22 @@ async function checkBandW4LofiPad(ctx) {
         // major-lean (hope) hebt die Terz (Ton 2), lässt die Wurzel.
         const freqsMajor = r._lofiChordFreqs([0, 3, 7, 10], true);
         out.majorLeanRaisesThird = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
-        // _lofiChordDurationMs — sorrow verlangsamt das Tempo.
+        // _lofiChordDurationMs — sorrow verlangsamt das Tempo. W-A7 (V9.56-i, der Test
+        // wandert mit dem Code): das TEMPO führt seit dem klang-Dock das Studio-Genre
+        // (_klangStudioPreset, Genesis "lofi" bpm 78 wenn das Buch warm ist; kaltes
+        // Buch → LOFI_BPM 60 byte-alt) — die Erwartung liest DIESELBE kanonische
+        // Quelle statt der Konstante (kein Timing-Flake: Buch-Ankunft ist async).
         const emo = r.state.player.emotions;
         const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
+        const kStudio = r._klangStudioPreset();
+        const kBpm = kStudio && Number.isFinite(kStudio.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 60;
+        const baseExpected = (60000 / kBpm) * 4;
         emo.sorrow = 0;
         const durCalm = r._lofiChordDurationMs();
         emo.sorrow = 1;
         const durSad = r._lofiChordDurationMs();
-        out.calmDuration4s = Math.abs(durCalm - 4000) < 1;
-        out.sorrowSlowsTempo = durSad > durCalm && durSad <= 6001;
+        out.calmDuration4s = Math.abs(durCalm - baseExpected) < 1;
+        out.sorrowSlowsTempo = durSad > durCalm && durSad <= baseExpected * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
         if (r.state.symphony && r.state.symphony.enabled && typeof r.disposeSymphony === "function") {
             r.disposeSymphony();
@@ -14030,7 +14037,10 @@ async function checkBandW4LofiPad(ctx) {
         check("W4 V2: _lofiChordFreqs liefert positive Frequenzen", w4v2Results.freqsPositive);
         check("W4 V2: die Akkord-Wurzel ist A (≈110 Hz)", w4v2Results.rootIsA);
         check("W4 V2: major-lean (hope) hebt die Terz, lässt die Wurzel", w4v2Results.majorLeanRaisesThird);
-        check("W4 V2: _lofiChordDurationMs — ruhig ≈ 4000 ms (60 BPM × 4)", w4v2Results.calmDuration4s);
+        check(
+            "W4 V2/W-A7: _lofiChordDurationMs — ruhig == Studio-/Fallback-Tempo x 4 Schlaege",
+            w4v2Results.calmDuration4s
+        );
         check("W4 V2: sorrow verlangsamt das Lofi-Tempo (bis ~6 s)", w4v2Results.sorrowSlowsTempo);
         if (w4v2Results.symphonyReady) {
             check(

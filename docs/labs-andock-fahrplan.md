@@ -1,8 +1,10 @@
 # Labs-Andock-Fahrplan — die fünf Schöpfer-Systeme (Anlieferung 09.07.2026)
 
-> **Status:** ROH GESICHERT (die Original-Files byte-treu unter `worlds/<id>/index.html`;
-> sie laden three r128 noch per CDN — direkt im Browser lauffähig, durchs PORTAL erst nach
-> der Andock-Welle [CSP `script-src 'self'` → vendored libs, das V18.383-Muster]).
+> **Status (V18.442):** ALLE FÜNF GEDOCKT — schmiede (W-A4a–c, VOLL: Kern+Hand+Portal) ·
+> fachwerk (W-A5a Kern + W-A5b settlement/Portal) · koerperstudio + tetrapoda (W-A6
+> Daten-Dock: MESHFREI-Kerne + motion-Feld; Shells lesen die Kerne, laden three noch per
+> CDN — Portal-Umzug = Folge-Schritt) · klang (W-A7: MESHFREI-Kern + klang-Feld + der
+> EINE Lofi-Konsument; Shell liest den Kern, CDN-frei).
 > **ÜBERGEORDNET seit 10.07.: `docs/auslagerungs-plan.md` (DER KATALYSATOR-BOGEN) führt die
 > Reihenfolge (W-A1–A7); dieser Fahrplan bleibt die Lab-Detail-Referenz.**
 > Das Andocken je Lab folgt der **ε-Checkliste des Nervensystem-Plans** (`docs/nervensystem-plan.md`
@@ -53,8 +55,8 @@ Verb erfinden"). Sie werden je als eigene ε-Welle mit Gate gebaut, BEVOR das je
 ## Andock-Reihenfolge (nach δ, je Lab die ε-Checkliste)
 
 1. **schmiede** ✅ GEDOCKT (10.07., V18.439 — W-A4a: schmiede-core.js, 21 Rezepte, Split-Parität 21/21; W-A4b Hand-Render ✅ V18.440 · W-A4c Portal-Umzug ✅ V18.441 — die Schmiede ist VOLL angedockt; offen nur Donor-Abschied nach Schöpfer-Abnahme + Rüstung/Trank als Rezepte)
-2. **fachwerk** (braucht N5.7 settlement — direkt danach)
-3. **tetrapoda** + **koerperstudio** (brauchen das `motion`-Feld — eine Welle für das Feld, dann beide)
-4. **klang** (braucht das `klang`-Feld + den einen Audio-Konsumenten)
+2. **fachwerk** ✅ GEDOCKT (10.07. — W-A5a Kern + W-A5b [V18.442]: N5.7 settlement [DORF-QUELLE im Kern, exportSettlement→spawnSettlement, gate:settlement] + Portal [fachwerk.js, CSP, W12, welt_fachwerk, smoke:labs])
+3. **tetrapoda** + **koerperstudio** ✅ DATEN-GEDOCKT (V18.442 — motion-Feld v1.1 §8.2 + MESHFREI-Kerne + gate:daten-contract/gate:nervensystem-labs; der motion-KONSUM [_animateCompoundMotion] ist der benannte Folge-Schritt, der Host bleibt der OFEN)
+4. **klang** ✅ GEDOCKT (V18.442 — klang-Feld v1.1 §8.3 + klang-core [22 Genres] + der EINE Audio-Konsument: das Lofi-Pad fährt das Genesis-Tempo [_klangStudioPreset/_lofiChordDurationMs])
 
 Porta (`worlds/portale/`, liegt bereit) bleibt der ERSTE ε-Beweis (Plan TEIL VIII Punkt 4).

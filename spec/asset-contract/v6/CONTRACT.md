@@ -86,3 +86,13 @@ seed 7 != 12345 an L0), lod-Klemme (lod 9 == lod 2 · lod −1 == lod 0) und die
 Split-Parität `buildInstance == Shell-Komposition der Kern-Primitive`
 (kulturParams-frisch → stapelBau/HAUS.build/bakeLOD/fragFuer/mischeGeoms —
 Kern-Vertrags-Pfad und Lab-Pfad bleiben EIN Bau) je Stichproben-Rezept × Stufe.
+
+## Nachtrag W-A5b (10.07.2026) — der Settlement-Export (N5.7)
+
+`golden/siedlung.json` friert den **exportSettlement**-Kanal ein (die DORF-QUELLE
+lebt seit W-A5b im Kern): sha256 über das volle Export-JSON je dp-Fixture
+({seed:7,nH:12} · {seed:12345,nH:6}) — Slots (Anker x/z/phi = die Lab-wrap-
+Semantik, obb, kultur, seed, rolle, baujahr, ov) + die benannten Siedlungs-
+Schichten (roads/platz/brunnen/mauer/fluss/laternen/… — v1 unkonsumiert
+erlaubt). EINGEFROREN (gemintet NUR wenn die Datei fehlt); Wächter
+`gate:settlement` (Selbst-Test: 1-mm-Slot-Versatz kippt den Fingerabdruck).

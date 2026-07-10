@@ -1942,6 +1942,535 @@
   B.frag=geoms; B.fragStufe=stufe; return B.frag; }
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  DIE DORF-QUELLE (W-A5b, N5.7 settlement) — byte-treu aus der Lab-Shell
+    //  verschoben (worlds/fachwerk/index.html, Marker DORF-QUELLE-START/ENDE;
+    //  sha256-Paritäts-Beleg im Wellen-Bericht). REIN: kein DOM, kein THREE —
+    //  DORF (Region·Epoche·Rollen·Jahresringe) · dorfLayout (Straßengraph ·
+    //  SAT-Parzellen · Mauer/Fluss/Laternen) · lodPlan · PROXYHAUS · die
+    //  OBB-Fundamentalgesetze. Die Shell LIEST diese eine Quelle (Aliasse),
+    //  exportSettlement (unten) exportiert sie als reine Slot-DATEN an den
+    //  Host (das exportDrive-Muster, N6.2). LOD1SKIP wanderte als Teil des
+    //  Blocks mit (ruhende Saat, 0 Leser — der Kopf-Kommentar oben gilt).
+    // ═══════════════════════════════════════════════════════════════════════
+    // ════════════ DORF v2 — GEWACHSEN, nicht platziert ════════════
+    // GRÜNDUNGS-GESETZ: Siedlung entsteht an einem GRUND (Brunnen/Kreuzung/Anger/Markt).
+    // REGION-GESETZ: ein Ort = eine Region; ihre Kulturen lösen sich über die HISTORIE ab (Zeitbänder).
+    // ZEIT-GESETZ: jedes Gebäude trägt ein Baujahr; Kern=alt, Rand=jung — der Gradient EMERGIERT aus dem Wachstum.
+    // WOHLSTANDS-GESETZ: Nähe zum Kern = Wohlstand → Breite/Geschosse/Balkon. SONDERBAU-GESETZ: ab Schwellen
+    // weiß das Dorf, was es braucht (Kirche·Gasthaus·Schmiede·Brunnen). HOF-GESETZ: Agrarparzellen tragen Scheunen.
+    // prettier-ignore
+    const REGION_HIST={
+  mitteleuropa:[[0,['mittelalterlich']],[1250,['mittelalterlich','tudor','alemannisch','fraenkisch']],[1500,['alemannisch','fraenkisch','niedersaechsisch','tudor']],[1650,['barock','renaissance','franzoesisch']],[1800,['hanseatisch','georgian','viktorianisch','hollaendisch']],[1900,['modern']],[1965,['modern','volle_moderne']]],
+  alpin:       [[0,['holzhuette']],[1350,['holzhuette','russisch']],[1550,['alpenchalet','schwarzwald']],[1800,['schwarzwald','alpenchalet','skandinavisch']],[1930,['modern']]],
+  mediterran:  [[-800,['griechisch','roemisch']],[500,['provenzalisch','italienisch']],[1400,['italienisch','spanisch','provenzalisch']],[1650,['barock','andalusisch','spanisch']],[1900,['modern']]],
+  nordisch:    [[0,['russisch','norwegisch']],[1550,['skandinavisch','norwegisch']],[1880,['skandinavisch','modern']],[1945,['modern']]],
+  fernost:     [[0,['japanisch','chinesisch']],[1900,['japanisch','chinesisch','modern']],[1955,['modern','volle_moderne']]],
+  antik:       [[-800,['griechisch','roemisch']],[0,['roemisch','griechisch']]],
+};
+    // prettier-ignore
+    const EPOCHEN={   // Legacy-Wahl → fixiert Region+Zeit (Pool-Override); 'gewuerfelt' überlässt ALLES dem Samen
+  antike:      {region:'antik',        jahr:80,   spanne:70,  groesse:'markt'},
+  mittelalter: {region:'mitteleuropa', jahr:1320, spanne:90,  groesse:'dorf'},
+  hanse:       {region:'mitteleuropa', jahr:1560, spanne:140, groesse:'markt', pool:['hanseatisch','hollaendisch','niedersaechsisch'], mark:{k:'hanseatisch',set:{turm:1,storeys:4}}},
+  barock:      {region:'mitteleuropa', jahr:1700, spanne:80,  groesse:'dorf',  pool:['barock','renaissance','franzoesisch'], mark:{k:'barock',set:{kuppel:1,W:14,D:11}}},
+  gruenderzeit:{region:'mitteleuropa', jahr:1860, spanne:60,  groesse:'markt', pool:['viktorianisch','georgian','hanseatisch'], mark:{k:'viktorianisch',set:{turm:1,storeys:3}}},
+  alpin:       {region:'alpin',        jahr:1620, spanne:220, groesse:'dorf'},
+  mediterran:  {region:'mediterran',   jahr:1520, spanne:260, groesse:'dorf'},
+  fernost:     {region:'fernost',      jahr:1250, spanne:300, groesse:'dorf'},
+  moderne:     {region:'mitteleuropa', jahr:1935, spanne:70,  groesse:'stadt', pool:['modern','volle_moderne'], mark:{k:'hochhaus',set:{}}},
+};
+    // prettier-ignore
+    const NAMEN={
+  mitteleuropa:{v:['Alden','Rot','Stein','Wolfen','Linden','Eber','Grün','Falken','Hohen','Wester'],n:['burg','heim','hausen','dorf','feld','bach','stadt','brück']},
+  alpin:{v:['Ober','Unter','Gams','Brand','Alp','Kar','Firn','Stein'],n:['egg','wald','tal','eck','berg','au','moos','stein']},
+  mediterran:{v:['Monte','Porto','Villa','Castel','San','Terra','Bella','Roc'],n:['bello','mare','nova','forte','luna','verde','alto','sole']},
+  nordisch:{v:['Björn','Ravn','Ulv','Sten','Vind','Hav','Skog','Ny'],n:['vik','fjord','stad','berg','dal','holm','nes','by']},
+  fernost:{v:['Shan','Hai','Long','Mei','Yun','Feng','Jin','Tian'],n:['zhou','jing','shan','he','lin','men','chuan','xi']},
+  antik:{v:['Aqua','Nova','Alta','Porta','Castra','Colonia','Ara','Via'],n:['rium','num','polis','dunum','ium','ata','ona','ensis']}};
+    // prettier-ignore
+    function ORTSNAME(region, seed){ let s=((Math.round(seed*911+37)*2654435761)>>>0);
+  const r=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const T=NAMEN[region]||NAMEN.mitteleuropa;
+  return T.v[(r()*T.v.length)|0]+T.n[(r()*T.n.length)|0]; }
+    // prettier-ignore
+    const LOD1SKIP={geruest:1,boeden:1,innenwaende:1,herd:1,treppe:1,moebel:1}; // System-Hülle: Haut+Türen+Fenster, kein Innenleben
+    // prettier-ignore
+    const DORF_NORM={ gap:2.5, gapStadt:1.0, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };
+    // prettier-ignore
+    function DORF(DP){
+  let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const nZiel=Math.max(4,Math.min(500,DP.nH||24));                                          // ZIEL-GESETZ: der Regler IST die Stadt
+  const leg=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;
+  let region,jahr,spanne;
+  if(leg){ region=leg.region; jahr=leg.jahr+(((rnd()-0.5)*50)|0); spanne=leg.spanne; }
+  else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
+    if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
+    else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
+      if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
+  const n=nZiel;
+  const groesse= n<8?'weiler': n<17?'dorf': n<27?'markt': n<49?'stadt': n<141?'grossstadt':'metropole';
+  const staedtisch=(groesse==='markt'||groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole');
+  const kr=rnd(); const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
+  const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
+  const geb=[];
+  const ringe=staedtisch&&jahr>1700;                                                          /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
+  const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
+  for(let i=0;i<n;i++){
+    const t9r=i/Math.max(1,n-1);
+    let by; if(ringe){ by=Math.round(gr0 + (jahr+spanne-gr0)*Math.pow(t9r,0.82)*(0.88+0.24*rnd()));
+      const mix=rnd(); if(mix<0.12) by=Math.round(by+(jahr+spanne-by)*(0.45+0.5*rnd()));      /*ERSATZBAU: die Luecke im Ring, spaeter gefuellt*/
+      else if(mix>0.93) by=Math.round(gr0+(by-gr0)*rnd()*0.45);                                /*UEBERLEBENDER: das alte Haus zwischen den Juengeren*/
+      by=Math.max(gr0, Math.min(jahr+spanne, by)); }
+    else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
+    const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
+    const p=kulturParams(kn,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
+    if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
+    const w=(1.22-0.5*(i/Math.max(1,n-1)))*(0.78+0.44*rnd()); p.wohl=Math.round(w*100)/100;
+    p.W=Math.max(5,Math.min(15,Math.round(p.W*(0.84+0.30*w)*2)/2));
+    if(staedtisch&&jahr>1880){ const t9=i/Math.max(1,n-1);                                     /*STADTKOERPER: in RING-Staedten macht die ZEIT den Gradient selbst (alt=niedrig innen); der Turm-Boost wandert an die MODERNE-KANTE — die europaeische Wahrheit (Altkern flach, Tuerme aussen)*/
+      if(!ringe){ p.storeys=Math.max(1, Math.min(12, Math.round(p.storeys*(1.85-1.45*t9))));
+        if(t9<0.16&&jahr>1920&&rnd()<0.6) p.storeys=Math.max(p.storeys, 7+((rnd()*5)|0)); }
+      else if(t9>0.74&&p.baujahr>1915&&rnd()<0.55) p.storeys=Math.max(p.storeys, 6+((rnd()*5)|0)); }
+    if(staedtisch&&w>0.9&&p.storeys<4)p.storeys++; p.turmbau=0;
+    p.keller=(rnd()<0.35)?1:0; p.annexN=(rnd()<0.25)?1:0;
+    p.arm=(n>=16&&w<0.72)?1:0;
+    p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
+    if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
+    geb.push(p); }
+  const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
+  if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel
+    p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0);
+    p.dachTyp='flach'; p.grundriss='I'; p.balcony=0; p.keller=0; p.annexN=0; p.arm=0; p.turmbau=1; p.rolle='turm'; } } }
+  if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6){ const p=geb[i];             // GEWERBE-GESETZ: Hallen-Viertel am Rand
+    p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
+    p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; } } }
+  if(n>=8){ const p=geb[0];
+    const mk=(leg&&leg.mark)?leg.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(jahr>1880?{k:'hochhaus',set:{}}:jahr>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
+    Object.assign(p,kulturParams(mk.k,p.seed),{kultur:mk.k},mk.set||{}); p.rolle='kirche'; p.mark=1; p.keller=0; p.baujahr=jahr; }
+  if(n>=8){ const p=geb[1]; p.rolle='gasthaus'; p.W=Math.min(15,p.W+2.5); p.D=Math.min(11,p.D+1);
+    if(p.storeys<2)p.storeys=2; if(region==='mitteleuropa'||region==='mediterran')p.arkade=1; }
+  if(n>=10){ const p=geb[Math.max(2,(n*0.62)|0)]; p.rolle='schmiede'; p.W=5.5; p.D=5; p.storeys=1; p.balcony=0; p.annexN=0; p.grundriss='I'; p.turm=0; p.kuppel=0; }
+  if(staedtisch&&jahr<1700&&n>=16&&rnd()<0.5){                                            // BURG-GESETZ: die Stadt hat einen Herrn
+    const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
+    const bp=kulturParams(bk,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
+      W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
+    geb.push(bp); }
+  const alle=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
+  geb.forEach(p=>{ const pi=alle.length; alle.push(p);
+    if(p.rolle==='wohnhaus'&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){
+      const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
+      alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
+        pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
+        hip:0, roofCurve:0, grundriss:'I', dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
+        keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:p.baujahr, wohl:p.wohl,
+        treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); } });
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses:alle,
+          norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
+}
+    // prettier-ignore
+    function rotAABB(bb,k){ let b={x0:bb.x0,x1:bb.x1,z0:bb.z0,z1:bb.z1};
+  for(let i=0;i<(((k%4)+4)%4);i++) b={x0:b.z0,x1:b.z1,z0:-b.x1,z1:-b.x0}; return b; }
+    // ════════════ OBB-FUNDAMENTALGESETZ ════════════ R(φ) auf (x,z): wx=x·c+z·s, wz=−x·s+z·c (deckt k·90° ab)
+    // prettier-ignore
+    function obbR(o,A){ const c=Math.cos(o.phi),s2=Math.sin(o.phi), u0=c,u1=-s2, v0=s2,v1=c;   // Weltachsen der Boxachsen
+  return o.ex*Math.abs(A[0]*u0+A[1]*u1)+o.ez*Math.abs(A[0]*v0+A[1]*v1); }
+    // prettier-ignore
+    function obbSep(a,b){ const cA=Math.cos(a.phi),sA=Math.sin(a.phi),cB=Math.cos(b.phi),sB=Math.sin(b.phi);
+  const axes=[[cA,-sA],[sA,cA],[cB,-sB],[sB,cB]], d=[b.cx-a.cx,b.cz-a.cz]; let mx=-1e9;
+  for(const A of axes){ const sep=Math.abs(A[0]*d[0]+A[1]*d[1])-obbR(a,A)-obbR(b,A); if(sep>mx)mx=sep; }
+  return mx; } // SAT: >0 ⇒ Abstand ≥ sep (untere Schranke); ≤0 ⇒ Überlappung
+    // prettier-ignore
+    function distPunktOBB(px,pz,o){ const c=Math.cos(o.phi),s2=Math.sin(o.phi), dx=px-o.cx, dz=pz-o.cz;
+  const lx=dx*c-dz*s2, lz=dx*s2+dz*c;             // Welt→lokal = R(−φ)
+  const ex=Math.max(Math.abs(lx)-o.ex,0), ez=Math.max(Math.abs(lz)-o.ez,0); return Math.hypot(ex,ez); }
+    // ════════════ PROXY-GESETZ ════════════ ferne Gebäude als Massivkörper (~30 Prims): Korpus·Fensterraster·Tür·Satteldach·Giebel·Kamin
+    // prettier-ignore
+    function PROXYHAUS(p){ const W=p.W, D=p.D, st=Math.max(1,p.storeys), sh=2.75, H=st*sh;
+  const wr= p.stil==='klinker'?'backstein': p.stil==='huette'?'holz': p.stil==='glas'?'glas': p.stil==='alt'?'gefach':'putz';
+  const B=[], T2=[];
+  B.push({b:[0,H/2,0, W,H,D], r:wr});
+  if(st>=6||p.dachTyp==='flach'){                                                            // TURM-PROXY: Bänder, Attika, Dachkasten, Antenne
+    for(let g=1; g<st; g++) B.push({b:[0,g*sh,0, W+0.08,0.42,D+0.08], r:(p.stil==='glas')?'dunkel':'putz'});
+    B.push({b:[0,H+0.25,0, W+0.3,0.5,D+0.3], r:'dunkel'});
+    B.push({b:[W*0.18,H+1.1,0, Math.min(3.5,W*0.4),1.7,Math.min(3.2,D*0.35)], r:'metall'});
+    B.push({b:[0,1.25,-D/2-0.07, 2.2,2.5,0.14], r:'dunkel'});
+    if(st>=10) B.push({b:[-W*0.2,H+2.6,D*0.14, 0.16,3.4,0.16], r:'metall'});
+    return {B, T2, bb:{x0:-W/2-0.3,x1:W/2+0.3,z0:-D/2-0.3,z1:D/2+0.3,y1:H+(st>=10?4.4:2.0)}}; }
+  const nw=Math.max(1,Math.round(W/2.4));
+  for(let g=0; g<st; g++){ const y=g*sh+1.55;
+    for(let k=0;k<nw;k++){ const fx=-W/2+(k+0.5)*W/nw;
+      B.push({b:[fx,y,-D/2-0.05, 0.85,1.2,0.1], r:(p.stil==='glas'?'metall':'dunkel')});
+      B.push({b:[fx,y, D/2+0.05, 0.85,1.2,0.1], r:(p.stil==='glas'?'metall':'dunkel')}); } }
+  B.push({b:[0,1.05,-D/2-0.06, 1.0,2.1,0.12], r:'dunkel'});
+  const ov=0.45, rise=Math.max(0.5,Math.tan((p.pitchDeg||30)*Math.PI/180)*(D/2)), y1=H+rise;
+  const X=W/2+ov, Z=D/2+ov;
+  T2.push({r:'ziegel', verts:[[-X,H,-Z],[X,H,-Z],[X,y1,0]]}); T2.push({r:'ziegel', verts:[[-X,H,-Z],[X,y1,0],[-X,y1,0]]});
+  T2.push({r:'ziegel', verts:[[X,H,Z],[-X,H,Z],[-X,y1,0]]}); T2.push({r:'ziegel', verts:[[X,H,Z],[-X,y1,0],[X,y1,0]]});
+  T2.push({r:wr, verts:[[-W/2,H,-D/2],[-W/2,H,D/2],[-W/2,H+rise*(D/(D+2*ov)),0]]});
+  T2.push({r:wr, verts:[[ W/2,H,D/2],[ W/2,H,-D/2],[ W/2,H+rise*(D/(D+2*ov)),0]]});
+  if(p.rolle!=='scheune') B.push({b:[W*0.24,H+rise*0.55,0, 0.55,rise*1.1+0.8,0.55], r:'ziegel2'});
+  return {B, T2, bb:{x0:-X,x1:X,z0:-Z,z1:Z,y1:y1}};
+}
+    // ════════════ dorfLayout v4 — KURVEN-WACHSTUM ════════════
+    // KURVEN-GESETZ: Straßen = Heading-Random-Walk mit Rückstellfeder (Epoche steuert Krümmung: <1500 stark, modern gerade).
+    // Häuser stehen TANGENTIAL zu ihrem Straßenpunkt; Parzellen-Packing per SAT gegen ALLE Nachbarn — ersetzt Knick-/Ecken-/Streifen-Sondergesetze.
+    // ════════════ LOD-RING (rein) ════════════ fern=Proxy, nah=real: wer im Ring rin liegt wird befördert (Budget maxDyn),
+    // wer jenseits rout liegt degradiert (Hysterese). list=[{i,dist,lod,dyn,kern,pr?}] → {promote:[],demote:[]} · pr = BLICK-PRIORITÄT (vorne zuerst), Ring-Zugehörigkeit bleibt bei dist
+    // prettier-ignore
+    function lodPlan(list, maxDyn, rin, rout){
+  const metr=b=>(b.pr!==undefined?b.pr:b.dist);                                              // METRIK-EINHEITS-GESETZ: Kandidaten-Rang UND Tausch-Demote sprechen DIESELBE Sprache — pr(Blick) vs dist erzeugte Promotions-Ping-Pong (bi rein/raus im Wechsel, GEMESSEN)
+  const promote=[], demote=[];
+  const dyn=list.filter(b=>b.dyn).sort((a,b)=>metr(a)-metr(b));
+  for(const b of dyn) if(b.dist>rout) demote.push(b.i);                                      // Ring-AUSTRITT bleibt echte Distanz (rout ist eine Ringgrenze, keine Blickfrage)
+  let nDyn=dyn.length-demote.length;
+  const cand=list.filter(b=>b.lod==='proxy'&&!b.kern&&b.dist<rin).sort((a,b)=>metr(a)-metr(b));
+  for(const c of cand){
+    if(nDyn<maxDyn){ promote.push(c.i); nDyn++; }
+    else { const far=dyn.filter(d=>!demote.includes(d.i)).pop();
+      if(far&&metr(far)>metr(c)+10){ demote.push(far.i); promote.push(c.i); } else break; } }
+  return {promote, demote};
+}
+    // ════════════ STRASSENGRAPH-GESETZ ════════════ Straßen wachsen als Graph: Kurvensegmente von Knoten zu Knoten;
+    // SNAP: endet ein Trieb nahe Bestand, VERBINDET er sich (Knoten/Kantensplit) → ZYKLEN → BLÖCKE. Das ist der Unterschied Stadt/Straßendorf.
+    // prettier-ignore
+    function strassengraph(rnd, plan, sW, lw, Rw, fluss){
+  const staedt=plan.staedtisch, jahr=plan.jahr, DS=3;
+  const kruemm= staedt?0.006:(jahr<1500?0.016:jahr<1800?0.010:0.003);
+  const grid=(plan.region==='antik')||(staedt&&jahr>=1800);
+  const nodes=[{x:0,z:0}], edges=[];
+  const deg=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
+  const dFluss=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
+  function walk(x0,z0,th0,len,gen){ const pts=[]; let x=x0,z=z0,dev=0;
+    for(let u=0;u<=len;u+=DS){ const th=th0+dev; pts.push({x,z,th});
+      if(Rw&&Math.hypot(x,z)>Rw-8){ break; }
+      if(fluss&&gen>0&&dFluss(x+Math.cos(th)*DS, z+Math.sin(th)*DS)<fluss.w/2+2){ break; }   // FLUSS-GESETZ: nur Arterien queren
+      dev+=(rnd()-0.5)*2*kruemm*DS - dev*0.028*DS; x+=Math.cos(th0+dev)*DS; z+=Math.sin(th0+dev)*DS; }
+    return pts; }
+  const nT= staedt? ((plan.groesse==='grossstadt'||plan.groesse==='metropole')?4:(rnd()<0.5?4:3)) : 2;
+  const tips=[];
+  for(let a2=0;a2<nT;a2++){ const th= grid? a2*Math.PI*2/nT : (a2*2*Math.PI/nT+(rnd()-0.5)*0.5);
+    tips.push({node:0, th, gen:0, steps: staedt?(plan.groesse==='metropole'?16: plan.groesse==='grossstadt'?7:4)+((rnd()*2)|0) : 6+((rnd()*3)|0)}); }
+  const maxE= staedt? (plan.groesse==='metropole'?Math.min(150,40+((plan.houses.length*0.36)|0)): plan.groesse==='grossstadt'?54:24) : 8, gates=[];
+  while(tips.length&&edges.length<maxE){
+    const t=tips.shift(); if(t.steps<=0) continue;
+    const nd=nodes[t.node];
+    if(Rw&&Math.hypot(nd.x,nd.z)>Rw-14){ if(t.gen===0)gates.push({th:Math.atan2(nd.z,nd.x)}); continue; }
+    const pts=walk(nd.x,nd.z,t.th, (staedt?34:26)+rnd()*(staedt?30:26), t.gen);
+    if(pts.length<4) { if(t.gen===0)gates.push({th:Math.atan2(nd.x?nd.x:Math.cos(t.th),0)*0+Math.atan2(Math.sin(t.th),Math.cos(t.th))}); continue; }
+    const ex=pts[pts.length-1]; let endNode=-1, dead=false;
+    let bi=-1,bd=1e9; nodes.forEach((q,i2)=>{ if(i2===t.node)return; const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<bd){bd=d;bi=i2;} });
+    if(bd<(staedt?16:13)){ endNode=bi; dead=true;                                                        // SNAP an Knoten → Zyklus
+      const P=nodes[bi], pv=pts[pts.length-2]; pts[pts.length-1]={x:P.x,z:P.z,th:Math.atan2(P.z-pv.z,P.x-pv.x)}; }
+    else { let be=-1,bk=0,ed=1e9;
+      edges.forEach((e,ei)=>{ e.pts.forEach((q,k)=>{ const d=Math.hypot(ex.x-q.x,ex.z-q.z); if(d<ed){ed=d;be=ei;bk=k;} }); });
+      if(ed<(staedt?12:9)&&edges.length){ const q=edges[be].pts[bk]; nodes.push({x:q.x,z:q.z}); endNode=nodes.length-1; dead=true;  // SNAP an Kante
+        const pv=pts[pts.length-2]; pts[pts.length-1]={x:q.x,z:q.z,th:Math.atan2(q.z-pv.z,q.x-pv.x)}; }
+      else { nodes.push({x:ex.x,z:ex.z}); endNode=nodes.length-1; } }
+    edges.push({a:t.node,b:endNode,pts,w:(t.gen===0)?sW:(t.gen===1)?sW*0.78:lw,gen:t.gen});
+    if(!dead){
+      tips.push({node:endNode, th:ex.th+(grid?0:(rnd()-0.5)*0.18), gen:t.gen, steps:t.steps-1});
+      if(rnd()<(staedt?(plan.groesse==='metropole'?0.72:0.6):0.28)&&t.gen<2&&edges.length>1){ const sg=(rnd()<0.5)?1:-1;
+        tips.push({node:endNode, th:ex.th+sg*Math.PI/2+(grid?0:(rnd()-0.5)*0.3), gen:t.gen+1, steps:(t.gen===0)?2+((rnd()*3)|0):1+((rnd()*2)|0)}); } }
+  }
+  if(staedt){                                                                              // VERBINDUNGS-PASS: Sackgassen schließen → garantierte Blöcke
+    const degF=k=>{ let d=0; for(const e of edges){ if(e.a===k||e.b===k)d++; } return d; };
+    const maxAdd= plan.groesse==='metropole'?8: plan.groesse==='grossstadt'?4: plan.groesse==='stadt'?3:1; let added=0;
+    const zyk=()=>Math.max(0,edges.length-(nodes.length-1));
+    for(const RUNDE of [{dm:55,fr:8,dg:2},{dm:80,fr:5,dg:3}]){ if(RUNDE.fr<8&&zyk()>0)break;
+    for(let i2=1;i2<nodes.length&&added<maxAdd;i2++){ if(degF(i2)>RUNDE.dg)continue;
+      for(let j2=i2+1;j2<nodes.length&&added<maxAdd;j2++){ if(degF(j2)>RUNDE.dg)continue;
+        if(edges.some(e=>(e.a===i2&&e.b===j2)||(e.a===j2&&e.b===i2)))continue;
+        const A=nodes[i2],B=nodes[j2], d=Math.hypot(B.x-A.x,B.z-A.z);
+        if(d<24||d>RUNDE.dm)continue;
+        const th=Math.atan2(B.z-A.z,B.x-A.x), np2=Math.max(3,(d/DS)|0), pts=[];
+        for(let k2=0;k2<=np2;k2++){ const f=k2/np2, bow=Math.sin(f*Math.PI)*(rnd()-0.5)*3;
+          pts.push({x:A.x+(B.x-A.x)*f-Math.sin(th)*bow, z:A.z+(B.z-A.z)*f+Math.cos(th)*bow, th}); }
+        for(let k2=0;k2<pts.length-1;k2++) pts[k2].th=Math.atan2(pts[k2+1].z-pts[k2].z, pts[k2+1].x-pts[k2].x);   // th = echte Ableitung, nicht Sehne
+        pts[pts.length-1].th=pts[pts.length-2].th;
+        let frei=true;
+        for(let k2=2;k2<pts.length-2&&frei;k2++){ for(const e of edges){ for(const q of e.pts){
+          if(Math.hypot(pts[k2].x-q.x,pts[k2].z-q.z)<RUNDE.fr){frei=false;break;} } if(!frei)break; } }
+        if(!frei)continue;
+        edges.push({a:i2,b:j2,pts,w:sW*0.78,gen:1}); added++; } } } }
+  const bruecken=[];
+  if(fluss){ for(const e of edges){ if(e.gen!==0) continue;
+    let i0=-1,i1=-1;
+    e.pts.forEach((q,k)=>{ if(dFluss(q.x,q.z)<fluss.w/2+0.5){ if(i0<0)i0=k; i1=k; } });
+    if(i0>=0){ const A=e.pts[Math.max(0,i0-1)], B=e.pts[Math.min(e.pts.length-1,i1+1)];
+      bruecken.push({x:(A.x+B.x)/2, z:(A.z+B.z)/2, th:Math.atan2(B.z-A.z,B.x-A.x), len:Math.hypot(B.x-A.x,B.z-A.z)+3, w:e.w+1.2}); } } }
+  return {nodes, edges, gates, bruecken};
+}
+    // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
+    // prettier-ignore
+    function dorfLayout(plan, ext, seed){
+  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length;
+  let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const staedt=plan.staedtisch;
+  const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
+  const DS=3;
+  const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
+  const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
+  let fluss=null;                                                                            // FLUSS-GESETZ: der große Städtebauer
+  if(rnd()<(staedt?0.45:0.30)){ const fth=rnd()*Math.PI, off=(16+rnd()*26)*(rnd()<0.5?1:-1), fw=8+rnd()*6;
+    const fpts=[]; let dev=0; const R0=Math.max(340, Rw*2+120);
+    for(let u=-R0;u<=R0;u+=6){ const th=fth+dev;
+      fpts.push({x:Math.cos(fth)*u - Math.sin(fth)*off + Math.sin(fth)*dev*0, z:Math.sin(fth)*u + Math.cos(fth)*off, th});
+      dev+=(rnd()-0.5)*0.05; }
+    for(let k2=0;k2<fpts.length;k2++){ const b2=(rnd()-0.5); fpts[k2].x+=-Math.sin(fth)*b2; fpts[k2].z+=Math.cos(fth)*b2;
+      if(k2>0) fpts[k2-1].th=Math.atan2(fpts[k2].z-fpts[k2-1].z, fpts[k2].x-fpts[k2-1].x); }
+    fluss={pts:fpts, w:fw}; }
+  const dFl=(x,z)=>{ if(!fluss)return 1e9; let m=1e9; for(const q of fluss.pts){ const d=Math.hypot(x-q.x,z-q.z); if(d<m)m=d; } return m; };
+  const G=strassengraph(rnd, plan, sW, lw, Rw, fluss);
+  const roads=G.edges;
+  const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
+    const x=A.x+(B.x-A.x)*f, z=A.z+(B.z-A.z)*f, th=A.th; return {x,z,th,nx:-Math.sin(th),nz:Math.cos(th)}; };
+  const edepth=new Array(roads.length).fill(99);                                            // BFS-Tiefe → radiales Wachstum = Zeit-Gradient
+  { const nd=new Array(G.nodes.length).fill(99); nd[0]=0; let ch=true;
+    while(ch){ ch=false; roads.forEach((e,ei)=>{ const d=Math.min(nd[e.a],nd[e.b])+1;
+      if(d<nd[e.a]){nd[e.a]=d;ch=true;} if(d<nd[e.b]){nd[e.b]=d;ch=true;}
+      const dd=Math.min(nd[e.a],nd[e.b]); if(dd<edepth[ei]){edepth[ei]=dd;ch=true;} }); } }
+  { const qMax=(plan.groesse==='metropole')?8:(plan.groesse==='grossstadt')?6:(plan.groesse==='stadt')?4:2;   /*QUERGASSEN-GESETZ: aus dem Strassen-BAUM wird GEWEBE — kernnahe Aeste (edepth≤3) werden quer verbunden, es entstehen GESCHLOSSENE BLOECKE (Zyklen = Block-Beweis)*/
+    let qN=0; const paar=new Set(); const qMax2=qMax+2;
+    const punktAuf=(rd,x,z)=>{ let bd=1e9,bx=0,bz=0,bth=0; for(let k2=0;k2+1<rd.pts.length;k2++){ const A2=rd.pts[k2],B2=rd.pts[k2+1];
+      const dx=B2.x-A2.x,dz=B2.z-A2.z,L2=dx*dx+dz*dz||1; let t2=((x-A2.x)*dx+(z-A2.z)*dz)/L2; t2=Math.max(0,Math.min(1,t2));
+      const px=A2.x+dx*t2, pz=A2.z+dz*t2, dd=Math.hypot(x-px,z-pz); if(dd<bd){bd=dd;bx=px;bz=pz;bth=A2.th;} } return {d:bd,x:bx,z:bz,th:bth}; };
+    for(let i=0;i<roads.length&&qN<qMax;i++){ if(roads[i].gen>1||edepth[i]>3) continue;
+      const li=(roads[i].pts.length-1)*DS;
+      for(let j=i+1;j<roads.length&&qN<qMax2;j++){ if(roads[j].gen>1||edepth[j]>3||paar.has(i+'_'+j)) continue;
+        for(const fu of [0.35,0.6]){ const P=at(roads[i], li*fu), Q=punktAuf(roads[j], P.x, P.z);
+          if(Q.d<13||Q.d>48) continue;
+          const qth=Math.atan2(Q.z-P.z, Q.x-P.x);
+          if(Math.abs(Math.sin(qth-P.th))<0.55) continue;                                      /*quer, nicht parallel*/
+          let frei9=true;
+          for(let u9=3;u9<Q.d-3&&frei9;u9+=3){ const wx=P.x+Math.cos(qth)*u9, wz=P.z+Math.sin(qth)*u9;
+            if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){frei9=false;break;}
+            for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){frei9=false;break;} } }
+          if(!frei9) continue;
+          const gp=[]; const gl=Q.d; for(let u9=0;u9<=gl;u9+=DS) gp.push({x:P.x+Math.cos(qth)*Math.min(u9,gl), z:P.z+Math.sin(qth)*Math.min(u9,gl), th:qth});
+          gp.push({x:Q.x,z:Q.z,th:qth});
+          roads.push({a:-1,b:-1,pts:gp,w:Math.max(2.6, lw*0.72),gen:2,len:gl,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1);   /*quer-Flag: BINNENGASSE, nicht Vorstadt*/   /*len fehlte — (rd.len||0)=0 liess den Setzer die Gasse ueberspringen: WURZEL der Unbesaeumtheit (#1)*/
+          paar.add(i+'_'+j); qN++;
+          const P2=at(roads[i], li*(fu+0.28)); if(fu<0.5&&qN<qMax2){ const Q2=punktAuf(roads[j], P2.x, P2.z);   /*PAARUNG: zweite Parallelgasse je Block — erst zwei Schnitte machen QUARTIERE*/
+            if(Q2.d>=13&&Q2.d<=48){ const th2=Math.atan2(Q2.z-P2.z,Q2.x-P2.x);
+              if(Math.abs(Math.sin(th2-P2.th))>=0.55){ let fr2=true;
+                for(let u9=3;u9<Q2.d-3&&fr2;u9+=3){ const wx=P2.x+Math.cos(th2)*u9, wz=P2.z+Math.sin(th2)*u9;
+                  if(dFl(wx,wz)<(fluss?fluss.w/2:0)+3.5){fr2=false;break;}
+                  for(let m9=0;m9<roads.length;m9++){ if(m9===i||m9===j)continue; if(punktAuf(roads[m9],wx,wz).d<5.5){fr2=false;break;} } }
+                if(fr2){ const gp2=[]; for(let u9=0;u9<=Q2.d;u9+=DS) gp2.push({x:P2.x+Math.cos(th2)*Math.min(u9,Q2.d), z:P2.z+Math.sin(th2)*Math.min(u9,Q2.d), th:th2});
+                  gp2.push({x:Q2.x,z:Q2.z,th:th2});
+                  roads.push({a:-1,b:-1,pts:gp2,w:Math.max(2.6, lw*0.72),gen:2,len:Q2.d,quer:true}); edepth.push(Math.min(edepth[i],edepth[j])+1); qN++; } } } }
+          break; } } }
+    plan._quergassen=qN; }
+  if(staedt&&plan.jahr>1700){ let zqx=0,zqz=0,zqn=0;                                          /*STRASSEN-GEDAECHTNIS (#2): Kern-Gassen SCHMAL, Saum breit — die Breite erinnert die Zeit; gen0-Arterien bleiben*/
+    for(const rd9 of roads) for(const q9 of rd9.pts){ zqx+=q9.x; zqz+=q9.z; zqn++; } zqx/=zqn; zqz/=zqn;
+    let rq=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d=Math.hypot(q9.x-zqx,q9.z-zqz); if(d>rq)rq=d; }
+    for(const rd9 of roads){ if(rd9.gen===0) continue; const qm=rd9.pts[Math.floor(rd9.pts.length/2)];
+      const dN=Math.min(1, Math.hypot(qm.x-zqx,qm.z-zqz)/(rq*0.85));
+      rd9.w=Math.max(2.2, rd9.w*(0.72+0.42*dN)); } }
+  const gatePts=[];
+  if(walled){                                                                                // VORSTADT-GESETZ: Ausfallstraßen ab Tor tragen den Überlauf
+    const dg0=new Array(G.nodes.length).fill(0); roads.forEach(e=>{dg0[e.a]++;dg0[e.b]++;});
+    let gts=G.gates.slice();
+    roads.forEach(e=>{ if(e.gen===0&&dg0[e.b]===1){ const q=e.pts[e.pts.length-1];
+      if(Math.hypot(q.x,q.z)>Rw-20) gts.push({th:Math.atan2(q.z,q.x)}); } });
+    if(gts.length<2) gts.push({th:(gts[0]?gts[0].th:0)+Math.PI});
+    const seen=[];
+    for(const g2 of gts){ if(seen.some(a2=>Math.abs(Math.atan2(Math.sin(a2-g2.th),Math.cos(a2-g2.th)))<0.5))continue; seen.push(g2.th);
+      const gx=Math.cos(g2.th)*Rw, gz=Math.sin(g2.th)*Rw; gatePts.push({x:gx,z:gz,th:g2.th});
+      const flen=(plan.groesse==='metropole')?230:(plan.groesse==='grossstadt')?110:70;
+      const fp=[]; for(let u=0;u<=flen;u+=DS){ fp.push({x:gx+Math.cos(g2.th)*(u+1), z:gz+Math.sin(g2.th)*(u+1), th:g2.th}); }
+      roads.push({a:-1,b:-1,pts:fp,w:sW*0.6,gen:2}); edepth.push(7);
+      if(plan.groesse==='metropole'||plan.groesse==='grossstadt'){                            // FAUBOURG-GESETZ: die Vorstadt ist selbst ein Netz
+        const nq=(plan.groesse==='metropole')?5:2;
+        for(let qk=0;qk<nq;qk++){ const uq=26+qk*(flen-40)/Math.max(1,nq-1)+rnd()*10, sg=(rnd()<0.5?1:-1);
+          const qx=gx+Math.cos(g2.th)*uq, qz=gz+Math.sin(g2.th)*uq, qth=g2.th+sg*Math.PI/2+(rnd()-0.5)*0.25;
+          const qp=[]; for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
+          roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
+  const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
+  let platz=null;
+  if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(n,40)*0.30), PD=Math.max(6,PW*0.55);
+    platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
+    if(platz.typ==='weg'){ staende.push({x:-PW*0.45,z:sW/2+PD*0.45}); staende.push({x:PW*0.45,z:sW/2+PD*0.55}); if(n>18)staende.push({x:0,z:sW/2+PD*0.82}); } }
+  else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
+  const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
+  const curs=[];
+  const ordn=[...roads.keys()].sort((a,b)=>{ const qa=(roads[a].gen===2&&(roads[a].len||99)<=44)?0:1, qb=(roads[b].gen===2&&(roads[b].len||99)<=44)?0:1; return qa-qb; });   /*QUERGASSEN-VORRANG (#1): Kurzgassen setzen ZUERST — sonst frisst das Hauptstrassen-Hinterland ihr Bauland (GEMESSEN 0 Saeumer trotz len)*/
+  for(const r of ordn){ const st0= (edepth[r]===0&&platz)? platz.ex*0.7 : (roads[r].gen===2&&(roads[r].len||99)<=44? 1.6 : 2.5);
+    curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
+  const parentCu={};
+  const tryPlace=(i, cu, skipPair)=>{                                                       // SAT + STRASSEN-FREIHALTUNG + MAUER
+    const rd=roads[cu.rd], e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
+    const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
+    for(let tr=0;tr<26;tr++){
+      const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; return null; }   /*quer nutzt die volle Laenge*/
+      const q=at(rd,sc), jit=(rnd()-0.5)*2*jitAmp;
+      const phi=Math.atan2(cu.side*q.nx, cu.side*q.nz);
+      const c=Math.cos(phi), s2=Math.sin(phi);
+      const ccx=q.x+cu.side*q.nx*(rd.w/2+gw+jit+ezH), ccz=q.z+cu.side*q.nz*(rd.w/2+gw+jit+ezH);
+      const o={cx:ccx,cz:ccz,phi,ex:exH,ez:ezH};
+      let ok=true;
+      if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exH,ezH);                          // MAUER: Stadt innen, Vorstadt außen, Mauerband tabu
+        if(rd.gen!==2&&rc>Rw-2.2-rq) ok=false;
+        if(rd.gen===2&&!rd.quer&&rc<Rw+1.2+rq) ok=false; if(!ok&&rd.quer)QD.mauer++;
+        if(Math.abs(rc-Rw)<2.0+rq) ok=false; }
+      if(ok) for(let j2=0;j2<obbs.length;j2++){ if(skipPair===obbs[j2].i)continue;
+        if(obbSep(o,obbs[j2].o)<gap-1e-6){ ok=false; if(rd.quer)QD.obb++; break; } }
+      if(ok&&platzObb&&obbSep(o,platzObb)<0.5) ok=false;
+      if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exH,ezH)) ok=false;                 // UFER-FREIHALTUNG
+      if(ok){ const k0=(sc/DS)|0, kw=(((exH+rd.w/2+gw+4)/DS)|0)+1;
+        for(let r2=0;r2<roads.length&&ok;r2++){ const rr=roads[r2], own=(r2===cu.rd);
+          for(let k5=0;k5<rr.pts.length;k5++){ const q2=rr.pts[k5], thr=(own&&Math.abs(k5-k0)<=kw)?(rr.w/2+0.02):(rr.w/2+0.25);
+            if(distPunktOBB(q2.x,q2.z,o)<thr){ ok=false; break; } } } }
+      if(ok){ const tx=ccx-(lcx*c+lcz*s2), tz=ccz-(-lcx*s2+lcz*c);
+        const fmx=q.x+cu.side*q.nx*(rd.w/2+gw+jit), fmz=q.z+cu.side*q.nz*(rd.w/2+gw+jit);
+        pl[i]={x:tx,z:tz,phi,obb:o,fm:[fmx,fmz],rd:cu.rd,fr:rd.w/2+gw,jit};
+        obbs.push({i,o}); parentCu[i]=cu;
+        const prevEnd=cu.lastEnd;
+        if(!staedt&&prevEnd!=null&&(sc-exH)-prevEnd<=7.5&&(sc-exH)-prevEnd>=1.2){
+          const a0=at(rd,prevEnd+0.35), a1=at(rd,sc-exH-0.35), off=rd.w/2+gw;
+          fences.push({x0:a0.x+cu.side*a0.nx*off, z0:a0.z+cu.side*a0.nz*off, x1:a1.x+cu.side*a1.nx*off, z1:a1.z+cu.side*a1.nz*off}); }
+        if(rd.quer){QD.ok++; (QD.pos=QD.pos||[]).push([Math.round(o.cx),Math.round(o.cz)]);}
+        cu.lastEnd=sc+exH;
+        const dN9=(staedt&&plan.jahr>1700)? Math.min(1, Math.hypot(q.x,q.z)/(Rw*0.82)) : 1;   /*SETZER-VERDICHTUNG: die Fuge waechst mit dem Radius — der KERN rueckt in die Snap-Zone und fusioniert zur geschlossenen STRASSENWAND, der Saum atmet*/
+        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?rnd()*0.15*dN9:rnd()*1.2);
+        return pl[i]; }
+      cu.cur+=1.1; }
+    return null; };
+  for(let i=0;i<n;i++){
+    const g=plan.houses[i];
+    if(g.rolle==='scheune'){
+      const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
+      const e=ext[i]; let exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
+      if(rnd()<0.55&&exS<=P0.obb.ez-0.05&&ezS<=P0.obb.ex+3){ phi=P0.phi+Math.PI/2; const t2=exS; exS=ezS; ezS=t2; }
+      const c=Math.cos(P0.phi), s2=Math.sin(P0.phi), ox=s2, oz=c;
+      let done=false;
+      for(let k2=0;k2<5&&!done;k2++){
+        const sh=(k2===0)?Math.max(-1,Math.min(1,(rnd()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
+        const ux=c, uz=-s2;
+        const ccx=P0.obb.cx+ox*(P0.obb.ez+1.4+k2*0.8+ezS)+ux*sh, ccz=P0.obb.cz+oz*(P0.obb.ez+1.4+k2*0.8+ezS)+uz*sh;
+        const o={cx:ccx,cz:ccz,phi,ex:exS,ez:ezS};
+        let ok=true;
+        if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exS,ezS), rp=Math.hypot(P0.obb.cx,P0.obb.cz);
+          if(rp<Rw&&rc>Rw-2.2-rq) ok=false; if(rp>Rw&&rc<Rw+1.2+rq) ok=false; if(Math.abs(rc-Rw)<2.0+rq) ok=false; }
+        if(ok) for(const q2 of obbs){ if(q2.i===j){ if(obbSep(o,q2.o)<0.9)ok=false; }
+          else if(obbSep(o,q2.o)<gap-1e-6)ok=false; if(!ok)break; }
+        if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
+        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+Math.hypot(exS,ezS))ok=false;
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
+          pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o, parent:j};
+          obbs.push({i,o}); done=true; } }
+      if(!done) pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}};
+      continue; }
+    if(g.rolle==='burg'){                                                                    // BURG-GESETZ: Bergfried innen an der Mauer, Front zur Stadt
+      const e=ext[i], exB=(e.x1-e.x0)/2, ezB=(e.z1-e.z0)/2, rq=Math.hypot(exB,ezB);
+      let done=false;
+      const a0=rnd()*Math.PI*2, rB=(Rw?Rw-4.5-rq:34+rq);
+      for(let k2=0;k2<10&&!done;k2++){ const a2=a0+k2*0.63;
+        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(-Math.sin(a2),-Math.cos(a2))*0+Math.atan2(-Math.cos(a2)*0-Math.sin(a2), -Math.cos(a2));
+        const o={cx:ccx,cz:ccz,phi,ex:exB,ez:ezB};
+        let ok=true;
+        for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
+        if(ok&&platzObb&&obbSep(o,platzObb)<0.5)ok=false;
+        if(ok&&fluss&&dFl(ccx,ccz)<fluss.w/2+2+rq)ok=false;
+        if(ok){ for(const rr of roads){ for(const q3 of rr.pts){ if(distPunktOBB(q3.x,q3.z,o)<rr.w/2+0.25){ok=false;break;} } if(!ok)break; } }
+        if(ok&&Rw&&Math.abs(Math.hypot(ccx,ccz)-Rw)<2.0+rq)ok=false;
+        if(ok){ const lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2, cc=Math.cos(phi), ss=Math.sin(phi);
+          pl[i]={x:ccx-(lcx*cc+lcz*ss), z:ccz-(-lcx*ss+lcz*cc), phi, obb:o};
+          obbs.push({i,o}); done=true; } }
+      if(!done) pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}};
+      continue; }
+    const curMetric=(cu)=>{ let m=edepth[cu.rd]*34+cu.cur;                                  // radiales Wachstum: BFS-Tiefe zuerst
+      if(g.sektor!=null){ const rp=roads[cu.rd].pts, qm=rp[(rp.length/2)|0];
+        const da=Math.atan2(Math.sin(Math.atan2(qm.z,qm.x)-g.sektor),Math.cos(Math.atan2(qm.z,qm.x)-g.sektor));
+        const rM=Math.hypot(qm.x,qm.z);
+        m=(Math.abs(da)<1.0&&rM>20)? (cu.cur+edepth[cu.rd]*4) : (900+rM*2+cu.cur); }           // GEWERBE-ZWANG: randige Sektor-Kanten — auch im Fallback
+      return m; };
+    let best=null,bs=1e9;
+    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer?12:0); if(m<bs){bs=m;best=cu;} }   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    let placedP=tryPlace(i,best,-1);
+    if(!placedP){ const so=curs.slice().sort((a,b2)=>curMetric(a)-curMetric(b2));
+      for(const cu of so){ if(cu!==best&&(placedP=tryPlace(i,cu,-1)))break; } }
+    if(!placedP){ pl[i]={x:0,z:9999+i*20,phi:0,obb:{cx:0,cz:9999+i*20,phi:0,ex:1,ez:1}}; continue; }
+    const cu=parentCu[i];
+    if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
+      brunnen.push({x:q.x+cu.side*q.nx*(roads[cu.rd].w/2+0.6), z:q.z+cu.side*q.nz*(roads[cu.rd].w/2+0.6)}); }
+  }
+  for(let r=0;r<roads.length;r++){ let mx=8;
+    for(const cu of curs) if(cu.rd===r) mx=Math.max(mx,cu.cur+4);
+    roads[r].len=Math.min(mx, roads[r].pts.length*DS-3); }
+  const deg=new Array(G.nodes.length).fill(0); roads.forEach(e=>{ if(e.a>=0){deg[e.a]++;deg[e.b]++;} });
+  const feldwege=[];
+  if(walled){ roads.forEach(rd=>{ if(rd.gen!==2)return; const q=at(rd,(rd.len||8)-2);
+      const fp=[]; for(let u=0;u<=20;u+=DS){ fp.push({x:q.x+Math.cos(q.th)*u, z:q.z+Math.sin(q.th)*u, th:q.th}); }
+      feldwege.push({pts:fp, w:rd.w}); }); }
+  else { roads.forEach(e=>{ if(e.gen!==0||deg[e.b]!==1)return; const q=e.pts[e.pts.length-1];
+    const fp=[]; for(let u=0;u<=22;u+=DS){ fp.push({x:q.x+Math.cos(q.th)*u, z:q.z+Math.sin(q.th)*u, th:q.th}); }
+    feldwege.push({pts:fp, w:sW*0.6}); }); }
+  for(const fw of feldwege){ const q=fw.pts[Math.min(2,fw.pts.length-1)];
+    for(let k2=0;k2<(n>14?2:1);k2++){ const sgn=k2===0?1:-1, fwd=12+rnd()*9, fd=8+rnd()*7;
+      const nx2=-Math.sin(q.th), nz2=Math.cos(q.th);
+      const fcx=q.x+Math.cos(q.th)*(6+fwd/2)+sgn*nx2*(sW/2+2+fd/2), fcz=q.z+Math.sin(q.th)*(6+fwd/2)+sgn*nz2*(sW/2+2+fd/2);
+      const fo={cx:fcx,cz:fcz,phi:q.th,ex:fwd/2,ez:fd/2};
+      let ok=true; for(const q2 of obbs) if(obbSep(fo,q2.o)<0.5){ok=false;break;}
+      if(ok&&fluss){ for(const qf of fluss.pts){ if(distPunktOBB(qf.x,qf.z,fo)<fluss.w/2+0.5){ok=false;break;} } }
+      if(ok&&Rw){ let mn=1e9; for(let a2=0;a2<12;a2++){ const wx=Math.cos(a2/12*2*Math.PI)*Rw, wz=Math.sin(a2/12*2*Math.PI)*Rw;
+        mn=Math.min(mn,distPunktOBB(wx,wz,fo)); } if(Math.hypot(fcx,fcz)<Rw+3&&mn<1.5)ok=false; }
+      if(ok) felder.push(fo); } }
+  let mauer=null;
+  if(walled){ const NV=30, segs=[], towers=[], vr=[];
+    for(let k2=0;k2<NV;k2++) vr.push(Rw*(0.985+rnd()*0.03));
+    const gA=0.30;
+    for(let k2=0;k2<NV;k2++){ const a0=k2/NV*2*Math.PI, a1=(k2+1)/NV*2*Math.PI, am=(a0+a1)/2;
+      const nearGate=gatePts.some(g2=>Math.abs(Math.atan2(Math.sin(am-g2.th),Math.cos(am-g2.th)))<gA);
+      if(nearGate) continue;
+      segs.push({x0:Math.cos(a0)*vr[k2], z0:Math.sin(a0)*vr[k2], x1:Math.cos(a1)*vr[(k2+1)%NV], z1:Math.sin(a1)*vr[(k2+1)%NV]});
+      if(k2%5===0) towers.push({x:Math.cos(a0)*vr[k2], z:Math.sin(a0)*vr[k2]}); }
+    mauer={segs, towers, R:Rw, gates:gatePts}; }
+  let X0=1e9,X1=-1e9,Z0=1e9,Z1=-1e9;
+  obbs.forEach(q2=>{ const o=q2.o, rr=Math.hypot(o.ex,o.ez); X0=Math.min(X0,o.cx-rr);X1=Math.max(X1,o.cx+rr);Z0=Math.min(Z0,o.cz-rr);Z1=Math.max(Z1,o.cz+rr); });
+  roads.forEach(rd=>{ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); X0=Math.min(X0,q.x-rd.w);X1=Math.max(X1,q.x+rd.w);Z0=Math.min(Z0,q.z-rd.w);Z1=Math.max(Z1,q.z+rd.w); } });
+  if(mauer){ X0=Math.min(X0,-Rw-8);X1=Math.max(X1,Rw+8);Z0=Math.min(Z0,-Rw-8);Z1=Math.max(Z1,Rw+8); }
+  feldwege.forEach(fw=>fw.pts.forEach(q=>{ X0=Math.min(X0,q.x-4);X1=Math.max(X1,q.x+4);Z0=Math.min(Z0,q.z-4);Z1=Math.max(Z1,q.z+4); }));
+  const trees=[]; let tries=0;
+  while(trees.length<Math.min(30,6+n)&&tries<520){ tries++;
+    let tx,tz;
+    if(rnd()<0.58&&obbs.length){ const q2=obbs[(rnd()*obbs.length)|0].o;
+      tx=q2.cx+Math.sin(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; tz=q2.cz+Math.cos(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; }
+    else { tx=X0-6+rnd()*(X1-X0+12); tz=Z0-6+rnd()*(Z1-Z0+12); }
+    let ok=true;
+    for(const q2 of obbs) if(distPunktOBB(tx,tz,q2.o)<1.2){ok=false;break;}
+    if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
+    if(ok&&platzObb&&distPunktOBB(tx,tz,platzObb)<(platz&&platz.typ==='weg'?0.8:-1))ok=false;
+    if(ok&&felder.some(f=>distPunktOBB(tx,tz,f)<0.8))ok=false;
+    if(ok&&fluss&&dFl(tx,tz)<fluss.w/2+0.8)ok=false;
+    if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
+    if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
+    if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
+    if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
+  const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
+  let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
+  if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
+    for(let u=6, fl=1; u<(rd.len||0)-4; u+=13+((u*7)%5), fl=-fl){ const q=at(rd,u);
+      const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
+      let ok=true;
+      for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
+      if(ok&&fluss&&dFl(lx2,lz2)<fluss.w/2+0.6)ok=false;
+      if(ok&&laternen.some(l=>Math.hypot(lx2-l.x,lz2-l.z)<9))ok=false;
+      if(ok){ const dL=Math.min(1, Math.hypot(lx2,lz2)/(R9L*0.80));                          /*LATERNEN-ZEITREISE: jede Laterne liest das JAHR ihres Rings — Gas im Altkern, Elektro am Saum*/
+        const R0=globalThis.__ring; const rj=(R0&&R0.ringe)? (R0.gr0+(plan.jahr-R0.gr0)*Math.pow(dL,0.82)) : plan.jahr;
+        const gasB=(rj<1895) && (plan.jahr<1930 || dL<0.45);                                /*NACHRUEST-WELLE: ab 1930 elektrifiziert die Moderne von AUSSEN herein — der Altkern behaelt sein Gaslicht (Berlin-Wahrheit)*/
+        laternen.push({x:lx2,z:lz2,th:Math.atan2(-fl*q.nz,-fl*q.nx),gas:gasB}); } } } }
+  const sp=at(roads[0],Math.min(roads[0].len||8,8));
+  const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
+  return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+          feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
+          fluss, bruecken:G.bruecken||[], laternen,
+          graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
+          welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
+}
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  B4 PARAMS (Vertrags-Form {id,lab,min,max,step,def,law,grp}) — ABGELEITET
     //  aus den klickbaren Form-Reglern des Labs (worlds/fachwerk/index.html
     //  Z.51–79: die <input>-Zeilen tragen min/max/step/value; readParams mappt
@@ -1990,10 +2519,13 @@
     //  Boot-Samen des Labs (`let SEED=3`), derselbe Zustand, den ein Klick auf
     //  die Kultur beim Lab-Start zeigt (applyKultur → Slider → readParams).
     //  Die String-/Farb-Anteile (brace · stil · dachTyp · bogenTyp · grundriss ·
-    //  col) reisen in fx (JSON-klonbar, must-ignore). fx.place (N5.6, Wörterbuch
-    //  v1 §2.4): mode "site" + siteTag "haus" — site ist Daten-only, streut
-    //  heute NICHT (der settlement-Kanal N5.7 hebt die Häuser in W-A5b in die
-    //  Welt). Ein Rezept = kind "haus"; ids sind die KULTNAMES (Vertrags-
+    //  col) reisen in fx (JSON-klonbar, must-ignore). fx.place (N5.7, Wörterbuch
+    //  v1 §2.4): mode "settlement" + siteTag "haus" — der Settlement-Kanal ist
+    //  GEBAUT (W-A5b): exportSettlement liefert die Slots, der Host hebt die
+    //  Häuser DELIBERATE in die Welt (spawnSettlement); Worldgen streut weiter
+    //  NICHT automatisch (der Auto-Dorf-Anschluss ist der benannte Folge-
+    //  Schritt am _placeDispatch-"settlement"-Kanal, kein Wald-Code-if).
+    //  Ein Rezept = kind "haus"; ids sind die KULTNAMES (Vertrags-
     //  Namensraum [a-z0-9_-]+, kollisionfrei gegen Pflanzen/Fahrzeug/Tor/Klinge).
     // ═══════════════════════════════════════════════════════════════════════
     var LAB_SEED = 3;
@@ -2022,7 +2554,7 @@
                 terrasse: kp.terrasse,
             };
             var fx = {
-                place: { mode: "site", siteTag: "haus" },
+                place: { mode: "settlement", siteTag: "haus" },
                 brace: kp.brace,
                 stil: kp.stil,
                 dachTyp: kp.dachTyp,
@@ -2185,6 +2717,78 @@
         return g;
     }
 
+    // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
+    //    N6.2: die EINE Lab-Formel exportiert ABGELEITETE Daten, kein Duplikat).
+    //    dp = { seed, nH, epoche?, budget? } → reine, structured-clone-sichere
+    //    DATEN: name/region/groesse + slots[] (je Haus: Anker x/z/phi [exakt die
+    //    Lab-wrap-Semantik: position.set(x,0,z) + rotation.y=phi], obb, kultur,
+    //    seed, rolle, baujahr, ov = der volle Haus-P-Vektor als benannte Daten)
+    //    + die BENANNTEN Siedlungs-Schichten (roads/platz/brunnen/mauer/fluss/
+    //    laternen/… — dürfen v1 unkonsumiert bleiben, must-ignore). Der Fußab-
+    //    druck je Haus kommt aus massBau (der MASS-BUILD, Δext=0-bewiesen) —
+    //    exakt der buildDorf-Pfad der Shell. DETERMINISTISCH: DORF/dorfLayout
+    //    ziehen aus ihren Seed-LCGs, massBau ist reiner Bau — derselbe dp ⇒
+    //    byte-derselbe Export (gate:settlement friert das ein). Unplatzierte
+    //    Häuser (die ±9999-Parkplätze des Layouts) reisen NICHT (fail-closed).
+    function exportSettlement(dp) {
+        dp = dp && typeof dp === "object" ? dp : {};
+        var plan = DORF({
+            seed: isFinite(dp.seed) ? Number(dp.seed) : 1,
+            nH: isFinite(dp.nH) ? Number(dp.nH) : 18,
+            epoche: typeof dp.epoche === "string" ? dp.epoche : undefined,
+            budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
+        });
+        var ext = [];
+        var i;
+        for (i = 0; i < plan.houses.length; i++) ext.push(massBau(Object.assign({}, plan.houses[i])).ext);
+        var lay = dorfLayout(plan, ext, plan.seed);
+        var slots = [];
+        for (i = 0; i < plan.houses.length; i++) {
+            var q = lay.pl[i];
+            if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
+            var hp = plan.houses[i];
+            slots.push({
+                x: q.x,
+                z: q.z,
+                phi: q.phi,
+                obb: { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez },
+                ext: ext[i],
+                kultur: typeof hp.kultur === "string" ? hp.kultur : null,
+                seed: hp.seed >>> 0,
+                rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
+                baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
+                ov: JSON.parse(JSON.stringify(hp)),
+            });
+        }
+        return {
+            seed: plan.seed,
+            name: plan.name,
+            region: plan.region,
+            groesse: plan.groesse,
+            kernel: plan.kernel,
+            jahr: plan.jahr,
+            spanne: plan.spanne,
+            staedtisch: !!plan.staedtisch,
+            spawn: lay.spawn,
+            welt: lay.welt,
+            slots: slots,
+            // Benannte Siedlungs-Schichten (v1 unkonsumiert erlaubt, must-ignore):
+            roads: lay.roads,
+            feldwege: lay.feldwege,
+            platz: lay.platz,
+            brunnen: lay.brunnen,
+            fences: lay.fences,
+            felder: lay.felder,
+            staende: lay.staende,
+            trees: lay.trees,
+            mauer: lay.mauer,
+            fluss: lay.fluss,
+            bruecken: lay.bruecken,
+            laternen: lay.laternen,
+            graph: lay.graph,
+        };
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
     root.__fachwerkCore = {
         VERSION: VERSION,
@@ -2193,6 +2797,22 @@
         PRESETS: PRESETS,
         PARAMS: PARAMS,
         buildInstance: buildInstance,
+        // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
+        exportSettlement: exportSettlement,
+        DORF: DORF,
+        dorfLayout: dorfLayout,
+        strassengraph: strassengraph,
+        lodPlan: lodPlan,
+        PROXYHAUS: PROXYHAUS,
+        rotAABB: rotAABB,
+        obbR: obbR,
+        obbSep: obbSep,
+        distPunktOBB: distPunktOBB,
+        ORTSNAME: ORTSNAME,
+        DORF_NORM: DORF_NORM,
+        EPOCHEN: EPOCHEN,
+        REGION_HIST: REGION_HIST,
+        LOD1SKIP: LOD1SKIP,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,

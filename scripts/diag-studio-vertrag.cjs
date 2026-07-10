@@ -55,6 +55,10 @@ const KNOWN_KINDS = [
     "haus",
     "building",
     "creature",
+    // W-A6/W-A7 (v1.1 §8, components-only-Domänen): Klang-Genres + Körper-/Kreatur-Gestalt-Daten.
+    "klang",
+    "koerper",
+    "kreatur",
 ];
 
 const errs = [];
@@ -95,6 +99,7 @@ function loadCore(entry) {
             " vertrag: 'STUDIO_VERTRAG' in N ? N.STUDIO_VERTRAG : null," +
             " presets: N.PRESETS || null," +
             " build: N.buildInstance || null," +
+            " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
             " params: N.PARAMS || null," +
             " lehren: N.LEHREN || null }; })();";
@@ -104,6 +109,7 @@ function loadCore(entry) {
             " vertrag: typeof STUDIO_VERTRAG !== 'undefined' ? STUDIO_VERTRAG : null," +
             " presets: typeof PRESETS !== 'undefined' ? PRESETS : null," +
             " build: typeof buildInstance !== 'undefined' ? buildInstance : null," +
+            " meshfrei: typeof MESHFREI !== 'undefined' && MESHFREI === 1," +
             " cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null," +
             " params: typeof PARAMS !== 'undefined' ? PARAMS : null," +
             " lehren: typeof LEHREN !== 'undefined' ? LEHREN : null };";
@@ -129,7 +135,13 @@ function validateManifest(m) {
                         v.push(`B1: Rezept "${id}" Dial s.${dk} ist keine endliche Zahl`);
         }
     }
-    if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
+    // v1.1 §8 — MESHFREI (components-only): ein nicht-geometrischer Kern (klang/koerper/
+    // tetrapoda) deklariert MESHFREI = 1 → B2 ist N/A (er liefert DATEN, keine Gestalt;
+    // der build-asset-Dispatch der Brücke überspringt ihn strukturell am typeof-Guard).
+    // Ein MESHFREI-Kern, der TROTZDEM buildInstance trägt, ist widersprüchlich → rot.
+    if (m.meshfrei) {
+        if (typeof m.build === "function") v.push("B2/§8: MESHFREI-Kern trägt buildInstance (widersprüchlich)");
+    } else if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
     // B2 (LOD-WURZEL 08.07.) — kindStages: die Stufen-Wahrheit je Art als Daten (SOLL, wenn
     // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..2.
     const lodC = m.cfg && m.cfg.lod;
@@ -236,7 +248,10 @@ function validateManifest(m) {
         console.log(
             `      ${n} Rezepte · kinds: ${kinds.join(", ")}${unknown.length ? ` · unbekannt (must-ignore): ${unknown.join(", ")}` : ""}`
         );
-        check(`${entry.file}: B1+B2 MUSS erfüllt (Rezepte + build)`, n >= 1 && typeof m.build === "function");
+        check(
+            `${entry.file}: B1+B2 MUSS erfüllt (Rezepte + build | MESHFREI §8)`,
+            n >= 1 && (typeof m.build === "function" || m.meshfrei === true)
+        );
     }
 
     // §4b Ü1 — die Licht-Übersetzungs-Konstante existiert im Code (die Regel ist Struktur).
@@ -272,15 +287,23 @@ function validateManifest(m) {
     };
     const bv = validateManifest(broken);
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
+    // §8 — ein MESHFREI-Kern mit buildInstance ist widersprüchlich (die Linse feuert).
+    const bvMesh = validateManifest({
+        vertrag: 1,
+        presets: { a: { kind: "klang" } },
+        build: function () {},
+        meshfrei: true,
+    });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version · MESHFREI-Widerspruch)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
             bv.some((s) => s.includes("kindStages.kaputt")) &&
             bv.some((s) => s.includes("kindStages.falschrum")) &&
-            bvVer.some((s) => s.includes("G4.3")),
-        `${bv.length + bvVer.length} erkannt`
+            bvVer.some((s) => s.includes("G4.3")) &&
+            bvMesh.some((s) => s.includes("MESHFREI")),
+        `${bv.length + bvVer.length + bvMesh.length} erkannt`
     );
 
     if (errs.length) {

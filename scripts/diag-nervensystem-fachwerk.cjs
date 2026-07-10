@@ -2,7 +2,7 @@
 // W-A5a; Nervensystem-Plan TEIL IV Phase ε). Die Haus-Domaene (fachwerk-core.js,
 // __fachwerkCore) dockt NUR ueber die Checkliste §ε an: Manifest-Zeile (N2) +
 // KIND_POLICY-Zeile + Donor-Blueprint (N1, beides DATEN) + fx.place als Rezept-Daten
-// (N5.6, mode "site" + siteTag "haus" — streut nicht; settlement N5.7 kommt in W-A5b) —
+// (N5.7, mode "settlement" + siteTag "haus" — der deliberate Kanal, Worldgen streut nicht) —
 // der Stamm bekam KEINEN Logik-Zweig (M8). Gestraffte Schwester zu
 // diag-nervensystem-schmiede.cjs, PLUS die MEHR-STUFEN-PROBE (die erste Domaene mit
 // kindStages [0,1,2] ausserhalb der Baeume — der Flatten-Chokepoint muss die
@@ -11,7 +11,7 @@
 //     traegt die haus-Zeile (prefix haus_, donor haus_basis) · der Auto-Register-
 //     Chokepoint laeuft die Tabelle OHNE kind-String-Vergleich · fachwerk-core
 //     deklariert kindStages.haus == [0,1,2] · die Rezepte tragen fx.place
-//     {mode:"site", siteTag:"haus"} als DATEN · der Donor haus_basis ist ein
+//     {mode:"settlement", siteTag:"haus"} als DATEN · der Donor haus_basis ist ein
 //     DATENBLOCK in _defaultBlueprints (kein portalMeta/roleManual — die Rolle
 //     EMERGIERT; zwei Front-Segmente = die TUER-LUECKE ist KEIN Part, begehbar
 //     per Konstruktion). --selftest injiziert 3 Verletzungen.
@@ -20,7 +20,7 @@
 //     [0,1,2] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
 //     haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon, KEIN
 //     _grownSpecies) · die generische haus_-Regel loest auf · die Place-
-//     Aufloesung liefert mode "site", der Dispatch streut NICHT + keine
+//     Aufloesung liefert mode "settlement", der Dispatch benennt den deliberaten Kanal (kein Worldgen-Streuer) + keine
 //     haus_-Wald-Nische · _foundryRequest("alemannisch",7,L) liefert Meshes
 //     end-to-end fuer ALLE drei Stufen (Mesh-Zahl je Stufe geloggt) · der
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
@@ -113,8 +113,8 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2\]\s*\}/.test(fcSrc),
     ]);
     out.push([
-        'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "site" + siteTag "haus")',
-        /place:\s*\{\s*mode:\s*"site",\s*siteTag:\s*"haus"\s*\}/.test(fcNC),
+        'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
+        /place:\s*\{\s*mode:\s*"settlement",\s*siteTag:\s*"haus"\s*\}/.test(fcNC),
     ]);
     const donorBlock = anazhNC.match(/haus_basis:\s*\{\s*name:\s*"haus_basis"[\s\S]{0,3000}?\n\s{12}\},/);
     out.push([
@@ -203,7 +203,8 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         const ks = rc && rc.lod ? rc.lod.kindStages : null;
         // ===== B: das Buch + der N7.5-Merge KOMMEN AN =====
         res.b.kind = f && f.recipes && f.recipes.alemannisch ? f.recipes.alemannisch.kind : null;
-        res.b.sW = f && f.recipes && f.recipes.alemannisch && f.recipes.alemannisch.s ? f.recipes.alemannisch.s.W : null;
+        res.b.sW =
+            f && f.recipes && f.recipes.alemannisch && f.recipes.alemannisch.s ? f.recipes.alemannisch.s.W : null;
         res.b.stil =
             f && f.recipes && f.recipes.alemannisch && f.recipes.alemannisch.fx ? f.recipes.alemannisch.fx.stil : null;
         res.b.hausCount =
@@ -232,7 +233,7 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         } catch (e) {
             res.d.err = (e && e.message) || String(e);
         }
-        // ===== P: die PLACE-AUFLOESUNG (N5.6 — site als Daten, streut nicht) =====
+        // ===== P: die PLACE-AUFLOESUNG (N5.7 — settlement als benannter DELIBERATER Kanal, Worldgen streut nicht) =====
         try {
             const pol = r._placePolicyFor(f.recipes.alemannisch);
             res.p.mode = pol.mode;
@@ -354,13 +355,13 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         String(out.d.entryResolves)
     );
     check(
-        'P: die Place-Aufloesung liest die Rezept-DATEN (mode "site", siteTag "haus")',
-        out.p.mode === "site" && out.p.siteTag === "haus",
+        'P: die Place-Aufloesung liest die Rezept-DATEN (mode "settlement", siteTag "haus" — N5.7)',
+        out.p.mode === "settlement" && out.p.siteTag === "haus",
         out.p.err || `${out.p.mode}/${out.p.siteTag}`
     );
     check(
-        "P: site streut NICHT (Dispatch null, N5.6 — settlement kommt in W-A5b)",
-        out.p.dispatch === null,
+        'P: settlement ist der benannte DELIBERATE Kanal (Dispatch "settlement" — Konsument spawnSettlement, kein Worldgen-Streu-Leser)',
+        out.p.dispatch === "settlement",
         String(out.p.dispatch)
     );
     check("P: keine haus_-Nische in der Wald-Liste", out.p.inExtras === false);
@@ -380,8 +381,16 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         /\|1\|/.test(out.f.k1 || ""),
         out.f.err || String(out.f.k1)
     );
-    check("F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient", /\|2\|/.test(out.f.k2 || ""), String(out.f.k2));
-    check("F: die Wahl 5 faltet der Chokepoint auf Stufe 2 (lod>2-Klemme)", /\|2\|/.test(out.f.k5 || ""), String(out.f.k5));
+    check(
+        "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient",
+        /\|2\|/.test(out.f.k2 || ""),
+        String(out.f.k2)
+    );
+    check(
+        "F: die Wahl 5 faltet der Chokepoint auf Stufe 2 (lod>2-Klemme)",
+        /\|2\|/.test(out.f.k5 || ""),
+        String(out.f.k5)
+    );
     check("F: die Wahl 0 bleibt die feine Stufe |0|", /\|0\|/.test(out.f.k0 || ""), String(out.f.k0));
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
@@ -390,7 +399,7 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2] + B4-Regler + Asset auf allen drei Stufen), haus_<id> entsteht am EINEN Chokepoint, site reist als Daten ohne Streu (N5.6), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
+        "\n✅ GRÜN — DER ε-BEWEIS STEHT: die Haus-Domaene dockt NUR ueber die Checkliste §ε an (Manifest-Zeile + KIND_POLICY-Zeile + begehbarer Donor-DATENBLOCK + fx.place-Daten), der Stamm traegt KEINEN neuen kind-Zweig — fachwerk-core reist durch den EINEN Foundry-Worker (32 Rezepte + kindStages [0,1,2] + B4-Regler + Asset auf allen drei Stufen), haus_<id> entsteht am EINEN Chokepoint, settlement reist als Daten (N5.7, deliberater Kanal ohne Worldgen-Streu), und der Flatten-Chokepoint bedient die Mehr-Stufen-Wahrheit der ersten Nicht-Baum-Domaene mit echten Stufen."
     );
     process.exit(0);
 })().catch((e) => {

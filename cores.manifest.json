@@ -6,8 +6,46 @@
         "ns": null,
         "shell": "worlds/terrain/phytogenesis.js"
     },
-    { "id": "vehicle", "scripts": ["vehicle-core.js"], "vertrag": "vehicle-core.js", "ns": "__vehicleCore" },
-    { "id": "porta", "scripts": ["porta-core.js"], "vertrag": "porta-core.js", "ns": "__portaCore" },
-    { "id": "schmiede", "scripts": ["schmiede-core.js"], "vertrag": "schmiede-core.js", "ns": "__schmiedeCore" },
-    { "id": "fachwerk", "scripts": ["fachwerk-core.js"], "vertrag": "fachwerk-core.js", "ns": "__fachwerkCore" }
+    {
+        "id": "vehicle",
+        "scripts": ["vehicle-core.js"],
+        "vertrag": "vehicle-core.js",
+        "ns": "__vehicleCore"
+    },
+    {
+        "id": "porta",
+        "scripts": ["porta-core.js"],
+        "vertrag": "porta-core.js",
+        "ns": "__portaCore"
+    },
+    {
+        "id": "schmiede",
+        "scripts": ["schmiede-core.js"],
+        "vertrag": "schmiede-core.js",
+        "ns": "__schmiedeCore"
+    },
+    {
+        "id": "fachwerk",
+        "scripts": ["fachwerk-core.js"],
+        "vertrag": "fachwerk-core.js",
+        "ns": "__fachwerkCore"
+    },
+    {
+        "id": "klang",
+        "scripts": ["klang-core.js"],
+        "vertrag": "klang-core.js",
+        "ns": "__klangCore"
+    },
+    {
+        "id": "koerper",
+        "scripts": ["koerper-core.js"],
+        "vertrag": "koerper-core.js",
+        "ns": "__koerperCore"
+    },
+    {
+        "id": "tetrapoda",
+        "scripts": ["tetrapoda-core.js"],
+        "vertrag": "tetrapoda-core.js",
+        "ns": "__tetrapodaCore"
+    }
 ]

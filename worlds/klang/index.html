@@ -213,6 +213,7 @@ section h2::after{content:'';flex:1;height:1px;background:var(--line)}
 
 <div id="toast"></div>
 
+<script src="../../klang-core.js"></script>
 <script>
 'use strict';
 /* ════════════════════════════════════════════════════════════════
@@ -230,79 +231,13 @@ section h2::after{content:'';flex:1;height:1px;background:var(--line)}
 
 const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','H'];
 
-const SCALES = {
-  ionian:         [0,2,4,5,7,9,11],
-  mixolydian:     [0,2,4,5,7,9,10],
-  dorian:         [0,2,3,5,7,9,10],
-  blues:          [0,3,5,6,7,10],
-  aeolian:        [0,2,3,5,7,8,10],
-  harmonic_minor: [0,2,3,5,7,8,11],
-  chromatic:      [0,1,2,3,4,5,6,7,8,9,10,11]
-};
-const SCALE_LABELS = {
-  ionian:'Ionisch', mixolydian:'Mixolydisch', dorian:'Dorisch', blues:'Blues',
-  aeolian:'Äolisch', harmonic_minor:'Harm. Moll', chromatic:'Chromatisch'
-};
-function scaleFor(d){
-  if (d < 0.15) return 'ionian';
-  if (d < 0.30) return 'mixolydian';
-  if (d < 0.45) return 'dorian';
-  if (d < 0.55) return 'blues';
-  if (d < 0.70) return 'aeolian';
-  if (d < 0.85) return 'harmonic_minor';
-  return 'chromatic';
-}
-
-const LAWS = {
-  form:    { name:'Form',     cols:3, options:{ AAB:{desc:'AAB'}, AABA:{desc:'AABA'}, Vamp:{desc:'Vamp'}, Build:{desc:'Build'}, Sonata:{desc:'Sonate'}, Free:{desc:'Frei'} } },
-  harmony: { name:'Harmonie', cols:3, options:{ Blues:{desc:'Blues'}, iiVI:{desc:'ii-V-I'}, Modal:{desc:'Modal'}, Functional:{desc:'Funktional'}, Polychord:{desc:'Polychord'}, Free:{desc:'Frei'} } },
-  rhythm:  { name:'Rhythmus', cols:3, options:{ Straight:{desc:'Straight'}, Swing:{desc:'Swing'}, Shuffle:{desc:'Shuffle'}, OneDrop:{desc:'One Drop'}, Breakbeat:{desc:'Breakbeat'}, Bossa:{desc:'Bossa/Clave'}, Funk:{desc:'Funk'}, Rock:{desc:'Rock'}, None:{desc:'Pulslos'} } },
-  bass:    { name:'Bass',     cols:3, options:{ Walking:{desc:'Walking'}, Root:{desc:'Grundton'}, RootFive:{desc:'Grundton–Quinte'}, FunkRiff:{desc:'Funk-Riff'}, Achtel:{desc:'Treibende Achtel'}, Sub808:{desc:'808 Sub'}, Riddim:{desc:'Riddim'}, Drone:{desc:'Drone'}, None:{desc:'Kein'} } },
-  melody:  { name:'Melodie',  cols:3, options:{ PlayChanges:{desc:'Changes'}, BlueNotes:{desc:'Blue Notes'}, Motivic:{desc:'Motivisch'}, CallResponse:{desc:'Ruf/Antwort'}, MicroPoly:{desc:'Mikropoly'}, Lazy:{desc:'Karge Tupfer'}, None:{desc:'Keine'} } }
-};
-
-const INSTRUMENTS = {
-  drums:   { name:'Schlagzeug', cols:3, options:{ Acoustic:{desc:'Akustik'}, Electronic:{desc:'Elektronisch'}, LoFi:{desc:'Lo-Fi'}, Brush:{desc:'Besen'}, Perc:{desc:'Percussion'} } },
-  bass:    { name:'Bass',       cols:4, options:{ DoubleBass:{desc:'Kontrabass'}, PickBass:{desc:'E-Bass'}, Sub808:{desc:'808 Sub'}, SynthBass:{desc:'Synth'}, ReeseBass:{desc:'Reese'} } },
-  harmony: { name:'Akkorde',    cols:5, options:{ GrandPiano:{desc:'Klavier'}, Rhodes:{desc:'Rhodes'}, Strings:{desc:'Streicher'}, Guitar:{desc:'Gitarre'}, SynthPad:{desc:'Pad'}, Organ:{desc:'Orgel'}, Clavinet:{desc:'Clavinet'}, Vibraphone:{desc:'Vibraphon'}, SynthBrass:{desc:'Brass'}, DistGuitar:{desc:'E-Git. Zerre'} } },
-  lead:    { name:'Melodie',    cols:5, options:{ GrandPiano:{desc:'Klavier'}, Rhodes:{desc:'Rhodes'}, LeadSynth:{desc:'Lead'}, Guitar:{desc:'Gitarre'}, Flute:{desc:'Flöte'}, Vibraphone:{desc:'Vibraphon'}, Marimba:{desc:'Marimba'}, Kalimba:{desc:'Kalimba'}, Organ:{desc:'Orgel'}, SynthBrass:{desc:'Brass'}, DistGuitar:{desc:'E-Git. Zerre'} } }
-};
-const SIM_INSTRUMENTS = ['GrandPiano','Rhodes','Guitar','Strings','SynthPad','LeadSynth','Flute','Vibraphone','Marimba','Kalimba','Organ','Clavinet','SynthBrass','Sub808','Drums'];
-
-const DNA = [
-  { k:'swing',    label:'Swing' },
-  { k:'darkness', label:'Dunkelheit' },
-  { k:'color',    label:'Farbe' },
-  { k:'flow',     label:'Fluss' },
-  { k:'tension',  label:'Spannung' },
-  { k:'space',    label:'Raum' }
-];
-
-/* Presets: Gesetze + DNA + Tempo + Instrumentierung pro Genre */
-const PRESETS = {
-  Blues:    { bpm:96,  form:'AAB',   harmony:'Blues',      rhythm:'Shuffle',   bass:'Walking', melody:'BlueNotes',    swing:.72, darkness:.50, color:.30, flow:.50, tension:.40, space:.22, inst:{drums:'Acoustic',   bass:'DoubleBass', harmony:'GrandPiano', lead:'Guitar'} },
-  Bebop:    { bpm:168, form:'AABA',  harmony:'iiVI',       rhythm:'Swing',     bass:'Walking', melody:'PlayChanges',  swing:.66, darkness:.28, color:.70, flow:.85, tension:.70, space:.15, inst:{drums:'Acoustic',   bass:'DoubleBass', harmony:'GrandPiano', lead:'GrandPiano'} },
-  CoolJazz: { bpm:118, form:'AABA',  harmony:'Modal',      rhythm:'Swing',     bass:'Walking', melody:'Motivic',      swing:.60, darkness:.40, color:.55, flow:.50, tension:.35, space:.30, inst:{drums:'Acoustic',   bass:'DoubleBass', harmony:'GrandPiano', lead:'Flute'} },
-  FreeJazz: { bpm:150, form:'Free',  harmony:'Free',       rhythm:'Swing',     bass:'Walking', melody:'MicroPoly',    swing:.30, darkness:.85, color:.95, flow:.90, tension:.90, space:.20, inst:{drums:'Acoustic',   bass:'DoubleBass', harmony:'GrandPiano', lead:'GrandPiano'} },
-  BoomBap:  { bpm:90,  form:'Vamp',  harmony:'Modal',      rhythm:'Swing',     bass:'Sub808',  melody:'Lazy',         swing:.58, tilt:{harmony:2,lead:-5}, darkness:.60, color:.45, flow:.40, tension:.50, space:.30, inst:{drums:'LoFi',       bass:'Sub808',     harmony:'Rhodes',     lead:'Rhodes'} },
-  Trap:     { bpm:140, form:'Vamp',  harmony:'Modal',      rhythm:'Straight',  bass:'Sub808',  melody:'Motivic',      swing:.12, darkness:.75, color:.35, flow:.50, tension:.70, space:.30, inst:{drums:'Electronic', bass:'Sub808',     harmony:'SynthPad',   lead:'LeadSynth'} },
-  Techno:   { bpm:128, form:'Build', harmony:'Modal',      rhythm:'Straight',  bass:'Sub808',  melody:'None',         swing:0,   darkness:.60, color:.20, flow:.30, tension:.65, space:.35, inst:{drums:'Electronic', bass:'Sub808',     harmony:'SynthPad',   lead:'LeadSynth'} },
-  DnB:      { bpm:172, form:'Build', harmony:'Modal',      rhythm:'Breakbeat', bass:'Sub808',  melody:'Motivic',      swing:.08, darkness:.60, color:.30, flow:.65, tension:.80, space:.35, inst:{drums:'Electronic', bass:'Sub808',     harmony:'SynthPad',   lead:'LeadSynth'} },
-  Reggae:   { bpm:76,  form:'Vamp',  harmony:'Modal',      rhythm:'OneDrop',   bass:'Riddim',  melody:'Lazy',         swing:.15, tilt:{bass:3.5,harmony:1.5,lead:-5}, darkness:.50, color:.30, flow:.35, tension:.30, space:.35, inst:{drums:'Acoustic',   bass:'SynthBass',  harmony:'Guitar',     lead:'Rhodes'} },
-  Ambient:  { bpm:60,  form:'Free',  harmony:'Modal',      rhythm:'None',      bass:'Drone',   melody:'MicroPoly',    swing:0,   darkness:.30, color:.40, flow:.15, tension:.15, space:.85, inst:{drums:'Acoustic',   bass:'Sub808',     harmony:'SynthPad',   lead:'Flute'} },
-  Barock:   { bpm:96,  form:'Sonata',harmony:'Functional', rhythm:'None',      bass:'Root',    melody:'Motivic',      swing:0,   darkness:.12, color:.25, flow:.60, tension:.40, space:.30, inst:{drums:'Acoustic',   bass:'DoubleBass', harmony:'GrandPiano', lead:'GrandPiano'} },
-  Minimal:  { bpm:124, form:'Build', harmony:'Modal',      rhythm:'Straight',  bass:'Root',    melody:'Motivic',      swing:0,   darkness:.35, color:.15, flow:.40, tension:.35, space:.30, inst:{drums:'Electronic', bass:'SynthBass',  harmony:'SynthPad',   lead:'LeadSynth'} },
-  LoFi:     { bpm:78,  form:'Vamp',  harmony:'iiVI',       rhythm:'Swing',     bass:'Root',    melody:'Lazy',         swing:.50, tilt:{harmony:2.5,lead:-6,drums:-1}, darkness:.45, color:.60, flow:.35, tension:.25, space:.50, inst:{drums:'LoFi',       bass:'DoubleBass', harmony:'Rhodes',     lead:'Rhodes'} },
-  Modern:   { bpm:152, form:'Build', harmony:'Polychord',  rhythm:'Breakbeat', bass:'Sub808',  melody:'MicroPoly',    swing:.15, darkness:.55, color:.85, flow:.55, tension:.70, space:.45, inst:{drums:'Electronic', bass:'Sub808',     harmony:'GrandPiano', lead:'LeadSynth'} },
-  Bossa:    { bpm:128, form:'AABA',  harmony:'iiVI',       rhythm:'Bossa',     bass:'RootFive',melody:'CallResponse', swing:.18, darkness:.35, color:.60, flow:.50, tension:.30, space:.45, inst:{drums:'Brush',      bass:'DoubleBass', harmony:'Guitar',     lead:'Flute'} },
-  Vibes:    { bpm:126, form:'AABA',  harmony:'Modal',      rhythm:'Swing',     bass:'Walking', melody:'PlayChanges',  swing:.60, darkness:.38, color:.60, flow:.55, tension:.40, space:.40, inst:{drums:'Brush',      bass:'DoubleBass', harmony:'Rhodes',     lead:'Vibraphone'} },
-  Funk:     { bpm:104, form:'Vamp',  harmony:'Modal',      rhythm:'Funk',      bass:'FunkRiff',melody:'BlueNotes',    swing:.22, darkness:.45, color:.50, flow:.70, tension:.60, space:.20, inst:{drums:'Acoustic',   bass:'SynthBass',  harmony:'Clavinet',   lead:'SynthBrass'} },
-  Latin:    { bpm:184, form:'Vamp',  harmony:'Functional', rhythm:'Bossa',     bass:'RootFive',melody:'Motivic',      swing:.10, darkness:.30, color:.55, flow:.65, tension:.55, space:.25, inst:{drums:'Perc',       bass:'DoubleBass', harmony:'GrandPiano', lead:'SynthBrass'} },
-  Dub:      { bpm:74,  form:'Vamp',  harmony:'Modal',      rhythm:'OneDrop',   bass:'Riddim',  melody:'Lazy',         swing:.15, tilt:{bass:4,harmony:1,lead:-4}, darkness:.55, color:.35, flow:.30, tension:.35, space:.70, inst:{drums:'Acoustic',   bass:'Sub808',     harmony:'Organ',      lead:'Rhodes'} },
-  Synthwave:{ bpm:92,  form:'Build', harmony:'Modal',      rhythm:'Straight',  bass:'Root',    melody:'Motivic',      swing:0,   darkness:.55, color:.35, flow:.45, tension:.55, space:.50, inst:{drums:'Electronic', bass:'ReeseBass',  harmony:'SynthBrass', lead:'LeadSynth'} },
-  Cinematic:{ bpm:72,  form:'Sonata',harmony:'Polychord',  rhythm:'None',      bass:'Drone',   melody:'Motivic',      swing:0,   darkness:.40, color:.70, flow:.30, tension:.45, space:.80, inst:{drums:'Acoustic',   bass:'Sub808',     harmony:'Strings',    lead:'Marimba'} },
-  Rock:     { bpm:132, form:'AAB',   harmony:'Functional', rhythm:'Rock',      bass:'Achtel',  melody:'BlueNotes',    swing:.05, darkness:.45, color:.30, flow:.60, tension:.65, space:.22, inst:{drums:'Acoustic',   bass:'PickBass',   harmony:'DistGuitar', lead:'DistGuitar'} }
-};
+/* ══ DIE MUSIK-QUELLE lebt seit W-A7 im STUDIO-KERN ../../klang-core.js (__klangCore,
+   VOR diesem Skript geladen) — EINE Quelle fuer Lab-Shell, Foundry-Worker und
+   AnazhRealm (G2.1, kein Nachbau; byte-treu verschoben, sha256-Beleg im Wellen-
+   Bericht). Die Shell LIEST sie (GENRES = die Genre-Tafel, im Lab PRESETS genannt): ══ */
+const KC = window.__klangCore;
+const SCALES=KC.SCALES, SCALE_LABELS=KC.SCALE_LABELS, scaleFor=KC.scaleFor, LAWS=KC.LAWS;
+const INSTRUMENTS=KC.INSTRUMENTS, SIM_INSTRUMENTS=KC.SIM_INSTRUMENTS, DNA=KC.DNA, PRESETS=KC.GENRES;
 
 const SECTION_LABELS = { V:'Vamp', Free:'∞', Return:'Klimax', Expo:'Exposition', Dev:'Durchführung', Repr:'Reprise', Drop:'Drop' };
 
