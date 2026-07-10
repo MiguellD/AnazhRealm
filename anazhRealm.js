@@ -11933,6 +11933,8 @@ class AnazhRealm {
             for (const bp of Object.values(this.state.blueprints || {})) {
                 if (out.length >= LIMIT) return;
                 if (!bp || !Array.isArray(bp.parts)) continue;
+                // W-A1 (Donor-Abschied) — donorOnly-Spender treten in keinem Picker auf.
+                if (bp.donorOnly) continue;
                 const role = this._displayRole(bp);
                 if (roles && !roles.includes(role)) continue;
                 // M4 (V18.158) — der EINE Heuhaufen + Kern: Name/Rolle(label)/Material/Tags.
@@ -44738,7 +44740,8 @@ class AnazhRealm {
             items.push({ kind: "world", id: "world:" + p.id, label: p.label, prof: p, search: p.searchText });
         }
         for (const bp of Object.values(this.state.blueprints || {})) {
-            if (!bp || bp.instanced || bp.role === "portal") continue; // Portale = Welten; instanced = Worldgen-Litter
+            // W-A1 (Donor-Abschied) — donorOnly-Spender treten auch im Bibliotheks-Feed nicht auf.
+            if (!bp || bp.instanced || bp.role === "portal" || bp.donorOnly) continue; // Portale = Welten; instanced = Worldgen-Litter
             const p = this._recipeProfile(bp);
             items.push({ kind: "recipe", id: "recipe:" + bp.name, label: p.label, prof: p, search: p.searchText });
         }
@@ -56686,6 +56689,11 @@ class AnazhRealm {
                 name: "fahrzeug_wagen",
                 label: "Wagen",
                 builtIn: true,
+                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender: der Auto-
+                // Register-Chokepoint klont ihn zu fahrzeug_<preset> (KIND_POLICY.vehicle),
+                // die Gestalten kommen aus dem garage-Lab. Kein Katalog-/Picker-Auftritt
+                // mehr (donorOnly), voll funktional bleibt er (Klonen · Tests · Spawn).
+                donorOnly: true,
                 // T4 (Ω-Φ4 SSF) — die Spur/Kabine/Rad-Größe variieren (SEAT-SAFE: y unberührt
                 // → die Sitz-/Gelenk-connections bleiben heil; der Fahr-Tiefe-Faden unangetastet).
                 parts: this._vehicleVariant(fahrzeugWagenParts, felsWorldSeed + "-wagen"),
@@ -56710,6 +56718,10 @@ class AnazhRealm {
                 name: "tor_basis",
                 label: "Torbogen",
                 builtIn: true,
+                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender der gate-
+                // Domaene (KIND_POLICY.gate → tor_<preset>; Gestalt aus porta-core).
+                // Kein Katalog-/Picker-Auftritt (donorOnly); funktional unveraendert.
+                donorOnly: true,
                 parts: [
                     {
                         shape: "box",
@@ -64065,7 +64077,8 @@ class AnazhRealm {
                             this._foundryPrefetchLibrary();
                         } else if (m.type === "recipes") {
                             // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
-                            this._foundryIngestRecipes(m.book);
+                            // W-A1 — die B4-Regler-Tabellen (paramsByKind) reisen im selben Reply mit.
+                            this._foundryIngestRecipes(m.book, m.paramsByKind);
                         } else if (m.type === "world-params") {
                             // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-Farbquellen.
                             this._foundryIngestWorldParams(m.params);
@@ -64101,10 +64114,15 @@ class AnazhRealm {
     // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
     // Portal empfangen und als EINE Quelle halten. Der Blueprint liest hieraus (Rezeptbuch), statt
     // Werte hartzukodieren — ein Edit an PRESETS im Studio fliesst automatisch mit. Reine Daten.
-    _foundryIngestRecipes(book) {
+    _foundryIngestRecipes(book, paramsByKind) {
         const f = this._foundry;
         if (!f || !book || typeof book !== "object") return;
         f.recipes = book;
+        // W-A1 (Katalysator §5) — die B4-REGLER-TABELLEN der Kerne als reine Daten je kind
+        // (id/lab/min/max/step/def/law/grp): die Werkstatt rendert ihre Slider AUS dieser
+        // Tabelle (kein UI-Hardcode je Domaene). must-ignore: eine Alt-Bruecke ohne das
+        // Feld laesst {} stehen — die Werkstatt zeigt dann schlicht keine Studio-Regler.
+        f.paramsByKind = paramsByKind && typeof paramsByKind === "object" ? paramsByKind : {};
         // Der Blueprint WIRD das Rezeptbuch: je Studio-Preset ein Rezept-Eintrag im foundry-State,
         // den der Generierungs-Pfad (_foundryRequest -> Studio buildInstance) + die kuenftige
         // in-process-Ableitung lesen. Kein Abbild in Code — die Daten leben im State, vom Studio gespeist.
@@ -64374,10 +64392,16 @@ class AnazhRealm {
             f._idbDead = true;
         }
     }
-    _foundryRequest(presetId, seed, lod, season) {
+    _foundryRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
         if (!f) return Promise.resolve(null);
         const s = season || "summer";
+        // W-A1 (Katalysator §5) — DER REGLER-KANAL: ein nicht-leeres ov (B4-Overrides der
+        // Werkstatt-Slider) umgeht die Platte KOMPLETT (kein Get, kein Put) — eine Regler-
+        // Vorschau ist ein UNIKAT, sie darf weder einen ov-losen Treffer lesen noch den
+        // persistenten Welt-Cache vergiften (Welt-Reinheit). Der ov-lose Default-Pfad bleibt
+        // byte-identisch (Disk-first → Ship-Hook → Worker).
+        const hasOv = !!(ov && typeof ov === "object" && Object.keys(ov).length);
         // Platte zuerst (µs–ms), Worker nur beim Miss; der Treffer IST der Worker-Reply
         // eines früheren Boots (byte-gleich, drift-bewacht über den Quellen-Stempel).
         // W4.1 (Paritäts-Vollendung) — DISK-FIRST VOR f.ready: der IDB-Treffer braucht
@@ -64386,7 +64410,7 @@ class AnazhRealm {
         // phytogenesis + libs) noch bootet. Der MISS vor dem Worker-Boot bleibt exakt
         // das alte null (der Aufrufer deferriert + fragt später — gate-treu: headless
         // ist der IDB-Cache ohnehin AUS, dort ist der Pfad byte-gleich zu vorher).
-        return this._foundryIdbGet(presetId, seed, lod, s).then((hit) => {
+        return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s)).then((hit) => {
             if (hit) return hit;
             // N3.4 (Pack-Kanon, spec/pack/v0/CONTRACT.md) — DER SHIP-PFAD-HOOK: der dokumentierte
             // Test-Hook `window.__anazhLiveBake === false` ueberspringt den Live-Worker-Fallback
@@ -64395,20 +64419,25 @@ class AnazhRealm {
             // = heutiges Verhalten, byte-gleich; Linse `gate:pack-contract` (Source + Verhalten).
             if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
             if (!f.ready || !f.worker) return null;
-            return this._foundryWorkerRequest(presetId, seed, lod, s).then((meshes) => {
-                if (meshes && meshes.length) this._foundryIdbPut(presetId, seed, lod, s, meshes);
+            return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
+                if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
                 return meshes;
             });
         });
     }
-    _foundryWorkerRequest(presetId, seed, lod, season) {
+    _foundryWorkerRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const reqId = "r" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                f.worker.postMessage({ type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" });
+                // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (der ov-lose
+                // Message-Body bleibt byte-identisch zum Bestand; die Bruecke reicht ov
+                // ausschliesslich an Zweit-Kern-buildInstance durch).
+                const msg = { type: "build-asset", reqId, presetId, seed, lod, season: season || "summer" };
+                if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
+                f.worker.postMessage(msg);
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
@@ -71798,7 +71827,11 @@ class AnazhRealm {
                 "schuppen",
             ];
             const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-            const bpNames = Object.keys(this.state.blueprints || {}).sort();
+            // W-A1 (Donor-Abschied) — donorOnly-Spender (fahrzeug_wagen · tor_basis) treten
+            // in keinem nutzer-sichtbaren Picker auf (auch nicht im Baue-Auftrag-Select).
+            const bpNames = Object.keys(this.state.blueprints || {})
+                .filter((n) => !(this.state.blueprints[n] && this.state.blueprints[n].donorOnly))
+                .sort();
             const orderSelect = this._el(
                 "select",
                 {
@@ -72327,6 +72360,16 @@ class AnazhRealm {
         if (typeof this.state.workshop.snapEnabled !== "boolean") {
             this.state.workshop.snapEnabled = true;
         }
+        // W-A1 (Katalysator §5) — DER REZEPT-KATALOG: selectedRecipe ist der ZWEITE
+        // Selektions-Modus NEBEN selectedBlueprint (genau EINER aktiv — die Setter
+        // nullen den jeweils anderen). studioOv traegt die B4-Regler-Overrides je
+        // Preset (reine Daten; die ov-Vorschau reist NIE in den Welt-Cache).
+        if (typeof this.state.workshop.selectedRecipe === "undefined") {
+            this.state.workshop.selectedRecipe = null;
+        }
+        if (!this.state.workshop.studioOv || typeof this.state.workshop.studioOv !== "object") {
+            this.state.workshop.studioOv = {};
+        }
         return this.state.workshop;
     }
 
@@ -72339,6 +72382,8 @@ class AnazhRealm {
         ws.selectedBlueprint = name;
         // Welle 6.B Phase 1 — Selection zurücksetzen beim Bauplan-Wechsel
         ws.selectedPartIdx = null;
+        // W-A1 — genau EIN Selektions-Modus aktiv: die Bauplan-Wahl beendet die Rezept-Sicht.
+        ws.selectedRecipe = null;
         this._renderWorkshopDOM();
         // Preview-Mesh neu bauen (falls Preview existiert — defensive für DSL-Pfade
         // die selectBlueprintForEdit aus Headless aufrufen).
@@ -72356,6 +72401,30 @@ class AnazhRealm {
         // einen vorher gedrehten Bauplan die alte Sicht „klebte". Reset
         // garantiert: jeder Klick auf ein Listen-Item → frische Top-Down-
         // schräge Sicht auf den Bauplan-Schwerpunkt.
+        if (typeof this.resetWorkshopCamera === "function") {
+            this.resetWorkshopCamera();
+        }
+        return true;
+    }
+
+    // W-A1 (Katalysator §5) — REZEPT-AUSWAHL: ein Studio-Rezept OHNE Katalog-Blueprint
+    // (die „Studio-Rezepte"-Sektion, heute mindestens `gras`) wird ANSCHAUBAR + REGELBAR,
+    // aber NICHT platzierbar (Katalog-Eintrag != Welt-Platzierung — kein Hotbar-/Platzier-
+    // Fluss). Genau EIN Selektions-Modus aktiv: die Rezept-Wahl nullt selectedBlueprint.
+    selectStudioRecipeForView(recipeId) {
+        const ws = this._ensureWorkshopState();
+        const f = this._foundry;
+        if (!f || !f.recipes || !f.recipes[recipeId]) {
+            this.log(`selectStudioRecipeForView: '${recipeId}' nicht im LIVE-Buch`, "ERROR");
+            return false;
+        }
+        ws.selectedRecipe = recipeId;
+        ws.selectedBlueprint = null;
+        ws.selectedPartIdx = null;
+        this._renderWorkshopDOM();
+        if (typeof this._workshopUpdateManipulatorButtons === "function") {
+            this._workshopUpdateManipulatorButtons();
+        }
         if (typeof this.resetWorkshopCamera === "function") {
             this.resetWorkshopCamera();
         }
@@ -72383,7 +72452,13 @@ class AnazhRealm {
         this._workshopRenderBlueprintList(list, ws);
         const selected = this.state.blueprints[ws.selectedBlueprint];
         this._workshopUpdateTopBarState(selected);
-        if (!selected) return;
+        if (!selected) {
+            // W-A1 — REZEPT-AUSWAHL (Studio-Rezepte-Sektion): eigener Tail — Vorschau
+            // durch die EINE Studio-Quelle + generische B4-Regler + Rezept-Steckbrief.
+            // KEIN Hotbar-/Platzier-/Fertigen-Fluss (Katalog-Eintrag != Welt-Platzierung).
+            if (ws.selectedRecipe) this._workshopRenderRecipeTail(ws);
+            return;
+        }
         this._workshopRenderTail(selected);
     }
 
@@ -72402,7 +72477,13 @@ class AnazhRealm {
         // Werkstatt jetzt EINEN Repräsentanten je Formation (`*_var0`) — var1+ sind Streu-Render-
         // Details (der Scatter nutzt sie weiter, sie bleiben in state.blueprints, nur die UI bündelt).
         const _isHiddenVariant = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
-        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => !_isHiddenVariant(n));
+        // W-A1 (Katalysator §5, DONOR-ABSCHIED) — donorOnly-Blueprints (fahrzeug_wagen ·
+        // tor_basis) sind REINE DATEN-Spender fuer den Auto-Register-Chokepoint: kein
+        // Katalog-Auftritt (die Gestalten kommen aus den Labs). Die Blueprints selbst
+        // bleiben voll funktional (Donor-Klonen · Tests · spawnArchitecture).
+        const blueprintNames = Object.keys(this.state.blueprints).filter(
+            (n) => !_isHiddenVariant(n) && !this.state.blueprints[n].donorOnly
+        );
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {
@@ -72431,8 +72512,69 @@ class AnazhRealm {
             });
             list.appendChild(row);
         }
+        // W-A1 (Katalysator §5) — DIE „STUDIO-REZEPTE"-SEKTION: das LIVE-Buch unter den
+        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute mindestens `gras`).
+        this._workshopAppendStudioRecipeSection(list, ws);
         // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
         this._applyWorkshopFilter();
+    }
+
+    // W-A1 — die Rezept-Ids des LIVE-Buchs OHNE Katalog-Blueprint (dynamisch berechnet):
+    // ein Rezept ist gedeckt, wenn ein Blueprint direkt unter seiner Id existiert ODER
+    // ein Auto-/Katalog-Blueprint via KIND_POLICY-Praefix darauf zeigt (baum_eiche →
+    // eiche · fahrzeug_gt → gt · tor_drachentor → drachentor). Der Rest — die Schicht-/
+    // Streu-Rezepte wie `gras`/`blume`/die Fels-Sorten — ist NUR ueber diese Sektion
+    // anschaubar/regelbar (place.mode entscheidet allein das Welt-Verhalten, §5).
+    _workshopStudioRecipeIds() {
+        const f = this._foundry;
+        if (!f || !f.recipes) return [];
+        const bps = this.state.blueprints || {};
+        const KP = AnazhRealm.KIND_POLICY || {};
+        const out = [];
+        for (const id in f.recipes) {
+            if (!Object.prototype.hasOwnProperty.call(f.recipes, id)) continue;
+            const rec = f.recipes[id];
+            if (!rec || typeof rec !== "object") continue;
+            if (bps[id]) continue; // ein Blueprint traegt die Id direkt
+            const pol = typeof rec.kind === "string" ? KP[rec.kind] : null;
+            if (pol && pol.prefix && bps[pol.prefix + id]) continue; // Auto-Blueprint zeigt darauf
+            out.push(id);
+        }
+        out.sort();
+        return out;
+    }
+
+    // W-A1 — die Sektion rendern: ein Kopf + je Rezept eine Zeile (Klasse BEWUSST nicht
+    // `workshop-list-row` — die Blueprint-Zaehlung der Liste bleibt rezept-frei). Die
+    // Eintraege sind NUR anschaubar/regelbar (kein Hotbar-/Platzier-Knopf).
+    _workshopAppendStudioRecipeSection(list, ws) {
+        const ids = this._workshopStudioRecipeIds();
+        if (!ids.length) return;
+        const f = this._foundry;
+        const head = document.createElement("div");
+        head.className = "workshop-list-section";
+        head.textContent = "Studio-Rezepte";
+        head.title = "Das LIVE-Rezeptbuch der Labore — anschaubar + regelbar, nicht platzierbar.";
+        list.appendChild(head);
+        for (const id of ids) {
+            const rec = f.recipes[id];
+            const row = document.createElement("div");
+            row.className = "workshop-studio-recipe-row" + (id === ws.selectedRecipe ? " selected" : "");
+            row.setAttribute("data-recipe", id);
+            const nameSpan = document.createElement("span");
+            nameSpan.className = "name";
+            nameSpan.textContent = (rec && rec.lab) || id.charAt(0).toUpperCase() + id.slice(1);
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            badge.textContent = "Rezept";
+            row.appendChild(nameSpan);
+            row.appendChild(badge);
+            row.addEventListener("click", () => {
+                this.selectStudioRecipeForView(id);
+                this._workshopClosePicker();
+            });
+            list.appendChild(row);
+        }
     }
 
     // Bauplan-Suche (search-not-scroll, wie Hof-Befehle + Rezeptbuch): blendet Nicht-Treffer aus.
@@ -73049,27 +73191,6 @@ class AnazhRealm {
         if (!preset) return null;
         const f = this._ensureAssetFoundry();
         if (!f) return null;
-        const rebuild = () => {
-            try {
-                this._workshopRebuildPreviewMesh();
-            } catch (_e) {}
-        };
-        if (!f.ready) {
-            // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen (Interim = Grammatik).
-            if (!f._workshopWaiting) {
-                f._workshopWaiting = true;
-                const t0 = performance.now();
-                const poll = () => {
-                    if (f.ready) {
-                        f._workshopWaiting = false;
-                        rebuild();
-                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
-                    else f._workshopWaiting = false;
-                };
-                setTimeout(poll, 150);
-            }
-            return null;
-        }
         // DAS NEUE KLEID (Schöpfer „der Würfel rollt nur deinen Nachbau, nicht die wahren Pipeline-Daten"):
         // der WÜRFEL + die LOD-Knöpfe der Werkstatt schreiben den SAMEN + die LOD-Stufe in den Bauplan
         // (`bp._grownSeed`/`_rockSeedBase`/`_crystalSeedBase` · `bp._recipeLod`). Die Studio-Vorschau LIEST
@@ -73084,10 +73205,17 @@ class AnazhRealm {
         let seedNum = 0;
         const seedStr = String(rawSeed);
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
-        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        // W-A1 — die Varianten-Wahl (`_foundryVariantFor`) lebt jetzt in der EINEN
+        // Studio-Quelle `_workshopStudioPreviewFrom` (seedNum reist als Parameter).
         let lod = bp && Number.isFinite(bp._recipeLod) ? bp._recipeLod | 0 : 0;
         if (lod < 0) lod = 0;
         if (lod > 2) lod = 2;
+        // W-A1 — die B4-Regler-Overrides dieser Auswahl (ws.studioOv[preset], null wenn leer).
+        const ov = this._workshopStudioOvFor(preset);
+        // W-A1 — EHRLICHES INTERIM: bootet der Worker noch, traegt die EINE Quelle das
+        // Warte-Polling + gibt "pending" (KEIN Grammatik-Interim fuer foundry-aufloesbare
+        // Auswahl mehr — die Buehne bleibt leer, der Status sagt „Studio-Asset lädt…").
+        if (!f.ready) return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
         // WELLE S4 — L2 IN DER WERKSTATT IST DAS BILLBOARD (Schöpfer „L2 ist nie ein billboard in der
         // werkstatt"): die WELT serviert einen BAUM auf der L2-Stufe als 8-Winkel-Impostor
         // (`_foundryFlattenFor` → `_foundryBuildImpostorFlat`, NICHT die schwere L2-Geometrie). Die
@@ -73099,7 +73227,7 @@ class AnazhRealm {
         // die L2-Geometrie (kein Impostor) — nur Bäume zweigen ab.
         if (lod === 2 && typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(preset)) {
             const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset);
-            if (flat === null) return null; // der RTT-Bake läuft → Vorschau bei Ankunft neu bauen
+            if (flat === null) return "pending"; // der RTT-Bake läuft → ehrliches Interim, Vorschau bei Ankunft neu
             if (flat && Array.isArray(flat.leaves) && flat.leaves.length) {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
@@ -73126,8 +73254,79 @@ class AnazhRealm {
             }
             // flat === false (Foundry kann keinen Impostor) → auf die L2-Geometrie unten zurückfallen.
         }
+        // W-A1 (Gesetz #0) — der Rest laeuft durch DIE EINE Vorschau-Quelle (Bauplan- UND
+        // Rezept-Auswahl teilen sie; ov-Vorschauen laufen cache-frei durch den Regler-Kanal).
+        return this._workshopStudioPreviewFrom(preset, seedNum, lod, ov);
+    }
+
+    // W-A1 — die ov-Overrides der aktuellen Auswahl fuer ein Preset (null wenn leer/keine).
+    _workshopStudioOvFor(presetId) {
+        const ws = this.state.workshop;
+        const ov = ws && ws.studioOv ? ws.studioOv[presetId] : null;
+        return ov && typeof ov === "object" && Object.keys(ov).length ? ov : null;
+    }
+
+    // W-A1 (Katalysator §5, Gesetz #0) — DIE EINE STUDIO-VORSCHAU-QUELLE: baut die Werkstatt-
+    // Vorschau aus (presetId, seedNum, lod, ov) — von der Bauplan-Auswahl (via
+    // `_workshopFoundryPreviewGroup`) UND der Rezept-Auswahl (Studio-Rezepte-Sektion) gerufen.
+    // DREI-WERTIG: THREE.Group (fertig) · "pending" (die Foundry kennt das Preset, das Asset
+    // zieht noch / der Worker bootet / der ov-Bau laeuft) · false (die Foundry kann das nicht
+    // → der Aufrufer faellt ehrlich auf seinen klassischen Pfad zurueck bzw. bleibt leer).
+    // ov-Pfad: cache-FREI (die Regler-Vorschau vergiftet NIE den Welt-Cache) — ein kleines
+    // per-Selektion-Memo (`_wsStudioOvMemo`, Instanz-Feld) traegt das eigene Ergebnis; bei
+    // Auswahl-/ov-Wechsel wird es verworfen + seine Geometrie disposed (die Wrapper-Meshes
+    // sind sharedGeom-markiert, damit der generische Vorschau-Dispose die Memo-Geometrie
+    // nicht mitten im Leben zerstoert — der Memo-Wechsel ist der EINE Dispose-Ort).
+    _workshopStudioPreviewFrom(preset, seedNum, lod, ov) {
+        const f = this._ensureAssetFoundry();
+        if (!f) return null;
+        const rebuild = () => {
+            try {
+                this._workshopRebuildPreviewMesh();
+            } catch (_e) {}
+        };
+        if (!f.ready) {
+            // Foundry bootet noch → sobald sie bereit ist, die Vorschau EINMAL neu bauen.
+            if (!f._workshopWaiting) {
+                f._workshopWaiting = true;
+                const t0 = performance.now();
+                const poll = () => {
+                    if (f.ready) {
+                        f._workshopWaiting = false;
+                        rebuild();
+                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
+                    else f._workshopWaiting = false;
+                };
+                setTimeout(poll, 150);
+            }
+            return "pending";
+        }
         const season = this.state.season || "summer";
-        const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus dem Bauplan = echte Pipeline-Daten
+        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        if (ov) {
+            // DER REGLER-KANAL: ov-Bau ohne jede Cache-Beruehrung (kein f.cache, kein IDB).
+            const key = preset + "|" + variant + "|" + lod + "|" + season + "|" + JSON.stringify(ov);
+            const memo = this._wsStudioOvMemo;
+            if (!memo || memo.key !== key) {
+                // Auswahl-/ov-Wechsel: das alte Memo faellt, seine EIGENE Geometrie wird frei.
+                if (memo && memo.group && memo.group !== "pending") this._disposeFoundryGroupGeom(memo.group);
+                const fresh = { key, group: "pending" };
+                this._wsStudioOvMemo = fresh;
+                this._foundryRequest(preset, variant, lod, season, ov).then((meshes) => {
+                    // Wechselte die Auswahl waehrend des Baus, verfaellt das Ergebnis (rohe
+                    // Arrays, kein GPU-Leak — die Naht `_foundryBuildGroup` laeuft nur fuer
+                    // das LEBENDE Memo).
+                    if (this._wsStudioOvMemo !== fresh) return;
+                    fresh.group = meshes && meshes.length ? this._foundryBuildGroup(meshes, { lod, preset }) : null;
+                    rebuild();
+                });
+                return "pending";
+            }
+            if (memo.group === "pending") return "pending";
+            if (!memo.group || !memo.group.children || !memo.group.children.length) return false;
+            return this._workshopWrapFoundryGroup(memo.group);
+        }
+        const key = preset + "|" + variant + "|" + lod + "|" + season; // Same + LOD aus der Auswahl = echte Pipeline-Daten
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             // Noch nicht gezogen → GENAU EINMAL anfragen (die requested-Wache), Vorschau bei Ankunft neu bauen.
@@ -73140,11 +73339,16 @@ class AnazhRealm {
                     rebuild();
                 });
             }
-            return null;
+            return "pending";
         }
-        if (group === null || !group.children || !group.children.length) return null;
-        // Vorschau-Gruppe aus der GETEILTEN Studio-Geometrie (sharedGeom/sharedMat → der Dispose lässt sie
-        // stehen; kein Klon der ~170k-Geometrie je Bauplan-Wechsel = billig + kein Studio-Asset-Verlust).
+        if (group === null || !group.children || !group.children.length) return false;
+        return this._workshopWrapFoundryGroup(group);
+    }
+
+    // W-A1 — die Vorschau-Huelle um eine Foundry-Gruppe: geteilte Geometrie/Materialien
+    // (sharedGeom/sharedMat → der Vorschau-Dispose laesst sie stehen; kein Klon der
+    // ~170k-Geometrie je Auswahl-Wechsel = billig + kein Studio-Asset-Verlust).
+    _workshopWrapFoundryGroup(group) {
         const T = THREE;
         const out = new T.Group();
         for (const ch of group.children) {
@@ -73191,6 +73395,12 @@ class AnazhRealm {
 
         const bp = this.state.blueprints[ws.selectedBlueprint];
         if (!bp || !Array.isArray(bp.parts)) {
+            // W-A1 — REZEPT-AUSWAHL (kein Bauplan, aber ein Studio-Rezept gewaehlt):
+            // die Vorschau baut durch DIE EINE Studio-Quelle (anschaubar + regelbar).
+            if (!bp && ws.selectedRecipe) {
+                this._workshopRebuildRecipePreview(ws, p);
+                return;
+            }
             p.dirty = true;
             return;
         }
@@ -73206,6 +73416,22 @@ class AnazhRealm {
         // Async: ist das Asset noch nicht gezogen, baut `_workshopFoundryPreviewGroup` die Vorschau neu,
         // sobald es ankommt (die grammatik-gewachsene Version dient bis dahin als Interim).
         let group = this._workshopFoundryPreviewGroup(ws.selectedBlueprint);
+        // W-A1 — EHRLICHES INTERIM: "pending" heisst „die Foundry kennt das Preset, das
+        // Asset zieht noch" → LEERE Buehne + Status-Text (KEIN Part-/Grammatik-Bau des
+        // Donors — die Wagen-Gestalt waere eine Luege, §5); bei Ankunft baut rebuild() um
+        // (der Draht lebt in der EINEN Studio-Quelle). Grammatik-only-Blueprints (preset
+        // null) behalten den Part-Pfad UNVERAENDERT; false = „Foundry kann das nicht"
+        // faellt wie bisher ehrlich auf den klassischen Pfad zurueck.
+        if (group === "pending") {
+            this._wsStudioPending = true;
+            this._workshopStudioStatusSync();
+            p.physicsVerdict = null;
+            p.dirty = true;
+            return;
+        }
+        this._wsStudioPending = false;
+        this._workshopStudioStatusSync();
+        if (group === false) group = null;
         if (!group && bp._skeleton && Array.isArray(bp._skeleton.branches) && bp._skeleton.branches.length > 0) {
             group = this._workshopBuildSkeletonPreviewGroup(bp);
         }
@@ -73253,6 +73479,13 @@ class AnazhRealm {
         p._leanWasApplied = false;
 
         // Auto-center: Kamera-Target auf Bauplan-Center, Distanz aus Diagonale
+        this._workshopCenterPreviewOn(group, p);
+        p.dirty = true;
+    }
+
+    // W-A1 — das Auto-Center der Vorschau-Kamera (aus _workshopRebuildPreviewMesh gehoben,
+    // V9.56-i: Bauplan- UND Rezept-Vorschau teilen es — eine Quelle).
+    _workshopCenterPreviewOn(group, p) {
         const bbox = new THREE.Box3().setFromObject(group);
         if (!bbox.isEmpty()) {
             bbox.getCenter(p.orbit.target);
@@ -73270,7 +73503,96 @@ class AnazhRealm {
                 }
             }
         }
+    }
+
+    // W-A1 (Katalysator §5) — DIE REZEPT-VORSCHAU: baut die Buehne fuer ein gewaehltes
+    // Studio-Rezept (Seed aus der Rezept-Id gehasht, Stufe 0, ov aus den B4-Reglern)
+    // durch DIE EINE Studio-Quelle. „pending" = leere Buehne + Status; false/null =
+    // ehrlich leer (KEIN Nachbau — das P4-Gesetz).
+    _workshopRebuildRecipePreview(ws, p) {
+        const preset = ws.selectedRecipe;
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        if (!rec) {
+            p.dirty = true;
+            return;
+        }
+        let seedNum = 0;
+        const seedStr = String(preset);
+        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const ov = this._workshopStudioOvFor(preset);
+        const group = this._workshopStudioPreviewFrom(preset, seedNum, 0, ov);
+        this._wsStudioPending = group === "pending";
+        this._workshopStudioStatusSync();
+        p.physicsVerdict = null;
+        if (!group || group === "pending" || group === false) {
+            p.dirty = true;
+            return;
+        }
+        p.currentMesh = group;
+        p.scene.add(group);
+        p._restRotX = group.rotation.x;
+        p._restRotZ = group.rotation.z;
+        p._leanWasApplied = false;
+        this._workshopCenterPreviewOn(group, p);
         p.dirty = true;
+    }
+
+    // W-A1 — der REZEPT-TAIL (von _renderWorkshopDOM bei selectedRecipe gerufen): Vorschau +
+    // generische B4-Regler + Rezept-Steckbrief. Bewusst OHNE Hotbar-/Fertigen-/Platzier-Fluss.
+    _workshopRenderRecipeTail(ws) {
+        if (typeof this._workshopRebuildPreviewMesh === "function") {
+            this._workshopRebuildPreviewMesh();
+        }
+        if (typeof this._workshopRenderRecipePanel === "function") {
+            this._workshopRenderRecipePanel(null);
+        }
+        this._workshopRenderRecipeStats(ws.selectedRecipe);
+    }
+
+    // W-A1 — der Rezept-Steckbrief im bestehenden Stats-Element (nur anschaubar/regelbar).
+    _workshopRenderRecipeStats(presetId) {
+        if (typeof document === "undefined") return;
+        const panel = document.getElementById("workshop-stats-panel");
+        if (!panel) return;
+        const az = document.getElementById("workshop-action-zone");
+        panel.innerHTML = "";
+        if (az) az.innerHTML = "";
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[presetId] : null;
+        if (!rec) return;
+        const head = document.createElement("div");
+        head.className = "workshop-recipe-stats-head";
+        head.textContent = (rec.lab || presetId) + " · Studio-Rezept (" + (rec.kind || "?") + ")";
+        panel.appendChild(head);
+        const hint = document.createElement("div");
+        hint.className = "workshop-recipe-stats-hint";
+        hint.textContent =
+            "Ein Eintrag des LIVE-Rezeptbuchs — anschaubar + regelbar (Studio-Regler links), nicht platzierbar. Das Welt-Verhalten bestimmt allein place.mode des Rezepts.";
+        panel.appendChild(hint);
+        this._workshopStudioStatusSync();
+    }
+
+    // W-A1 — DER EINE STATUS-SYNC („Studio-Asset lädt…"): pflegt die Status-Zeile im
+    // bestehenden Stats-Element aus `_wsStudioPending` (Instanz-Feld, runtime-only).
+    // Von rebuild (pending-Wechsel) UND vom Stats-Renderer (innerHTML-Wipe) gerufen —
+    // eine Quelle, zwei Anlaesse.
+    _workshopStudioStatusSync() {
+        if (typeof document === "undefined") return;
+        const panel = document.getElementById("workshop-stats-panel");
+        if (!panel) return;
+        let el = document.getElementById("workshop-studio-status");
+        if (this._wsStudioPending) {
+            if (!el) {
+                el = document.createElement("div");
+                el.id = "workshop-studio-status";
+                el.className = "workshop-studio-status";
+                panel.prepend(el);
+            }
+            el.textContent = "Studio-Asset lädt…";
+        } else if (el) {
+            el.remove();
+        }
     }
 
     // V8.01 — robuste Canvas-Größen-Synchronisation. Liest die aktuelle
@@ -74229,6 +74551,9 @@ class AnazhRealm {
             // M5 (V18.157, Befund 17) — das UMWIDMEN gehört der WERKSTATT.
             if (!bp.builtIn) this._workshopAppendUmwidmenRow(machZone, bp);
         }
+        // W-A1 — der innerHTML-Wipe oben nahm auch die Status-Zeile mit: neu synchronisieren
+        // (die EINE Quelle `_workshopStudioStatusSync`, ehrliches Interim „Studio-Asset lädt…").
+        this._workshopStudioStatusSync();
     }
 
     // W-C(f) (V18.169, Korpus R-008 — Schöpfer: „wozu Umwidmen, der Prozess fixt
@@ -75352,6 +75677,11 @@ class AnazhRealm {
         if (!panel) return;
         const kind = this._workshopRecipeKind(bp);
         if (!kind) {
+            // W-A1 (Katalysator §5) — GENERISCHE B4-REGLER: loest die aktuelle Auswahl
+            // (Bauplan ODER Studio-Rezept) auf ein LIVE-Buch-Rezept auf, dessen kind eine
+            // PARAMS-Tabelle traegt (f.paramsByKind) → die Slider rendern AUS DEN DATEN
+            // (kein UI-Hardcode je Domaene). Sonst wie bisher: Panel versteckt.
+            if (this._workshopRenderStudioParams(panel, bp)) return;
             panel.hidden = true;
             panel.innerHTML = "";
             return;
@@ -75442,6 +75772,107 @@ class AnazhRealm {
         });
         btnRow.appendChild(reset);
         panel.appendChild(btnRow);
+    }
+
+    // W-A1 (Katalysator §5, „regelbar, alle Assets") — DIE GENERISCHEN B4-REGLER: rendert
+    // die Slider-Reihen AUS der PARAMS-Tabelle des Kerns (f.paramsByKind[kind] — id/lab/
+    // min/max/step/def/law/grp; Gruppen via grp als Zwischentitel). Werte leben in
+    // ws.studioOv[presetId]; onChange debounced (~180 ms) → Vorschau-Rebuild mit ov durch
+    // den cache-freien Regler-Kanal; „Zurücksetzen" leert ov. KEIN UI-Hardcode je Domaene.
+    // Rueckgabe true = gerendert (der Aufrufer laesst das Panel sichtbar), false = keine
+    // PARAMS fuer diese Auswahl.
+    _workshopRenderStudioParams(panel, bp) {
+        const ws = this._ensureWorkshopState();
+        const f = this._foundry;
+        if (!f || !f.recipes || !f.paramsByKind) return false;
+        // Aufloesung: der EXPLIZIT gereichte Bauplan fuehrt (der Panel-Renderer bekommt ihn);
+        // ohne Bauplan traegt die Rezept-Auswahl (Studio-Rezepte-Sektion).
+        const preset = bp
+            ? typeof this._foundryPresetForEntry === "function" && bp.name
+                ? this._foundryPresetForEntry({ type: bp.name })
+                : null
+            : ws.selectedRecipe || null;
+        const rec = preset ? f.recipes[preset] : null;
+        const params = rec && typeof rec.kind === "string" ? f.paramsByKind[rec.kind] : null;
+        if (!Array.isArray(params) || !params.length) return false;
+        panel.hidden = false;
+        panel.innerHTML = "";
+        const head = document.createElement("h4");
+        head.className = "workshop-recipe-head";
+        head.textContent = "Studio-Regler · " + (rec.lab || preset);
+        panel.appendChild(head);
+        const ov = ws.studioOv[preset] || {};
+        const applyOv = (dialId, value) => {
+            if (!ws.studioOv[preset]) ws.studioOv[preset] = {};
+            ws.studioOv[preset][dialId] = value;
+            // Debounce (~180 ms): erst wenn die Hand ruht, baut die Vorschau mit ov neu.
+            if (this._wsOvDebounce) clearTimeout(this._wsOvDebounce);
+            this._wsOvDebounce = setTimeout(() => {
+                this._wsOvDebounce = null;
+                if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+            }, 180);
+        };
+        let lastGrp = null;
+        for (const d of params) {
+            if (!d || typeof d.id !== "string") continue;
+            if (typeof d.grp === "string" && d.grp && d.grp !== lastGrp) {
+                lastGrp = d.grp;
+                const sub = document.createElement("div");
+                sub.className = "workshop-recipe-sub";
+                sub.textContent = d.grp;
+                panel.appendChild(sub);
+            }
+            const min = typeof d.min === "number" ? d.min : 0;
+            const max = typeof d.max === "number" ? d.max : 1;
+            const step = typeof d.step === "number" ? d.step : 0.01;
+            // Startwert-Kette (fail-soft): ov-Override → Rezept-Dial (rec.s) → def → min.
+            const cur =
+                ov[d.id] != null
+                    ? ov[d.id]
+                    : rec.s && typeof rec.s[d.id] === "number"
+                      ? rec.s[d.id]
+                      : typeof d.def === "number"
+                        ? d.def
+                        : min;
+            const row = document.createElement("div");
+            row.className = "workshop-recipe-row workshop-studio-param-row";
+            const lab = document.createElement("label");
+            lab.textContent = d.lab || d.id;
+            if (typeof d.law === "string" && d.law) lab.title = d.law;
+            const inp = document.createElement("input");
+            inp.type = "range";
+            inp.min = String(min);
+            inp.max = String(max);
+            inp.step = String(step);
+            inp.value = String(cur);
+            const val = document.createElement("span");
+            val.className = "workshop-recipe-val";
+            const fmt = (v) => (step >= 1 ? String(Math.round(v)) : (+v).toFixed(2));
+            val.textContent = fmt(+inp.value);
+            inp.addEventListener("input", () => {
+                val.textContent = fmt(+inp.value);
+                applyOv(d.id, +inp.value);
+            });
+            row.appendChild(lab);
+            row.appendChild(inp);
+            row.appendChild(val);
+            panel.appendChild(row);
+        }
+        const btnRow = document.createElement("div");
+        btnRow.className = "workshop-recipe-btns";
+        const reset = document.createElement("button");
+        reset.type = "button";
+        reset.className = "workshop-recipe-reset";
+        reset.textContent = "↺ Zurücksetzen";
+        reset.title = "Alle Regler auf das Rezept zuruecksetzen (ov leeren)";
+        reset.addEventListener("click", () => {
+            delete ws.studioOv[preset];
+            this._workshopRenderStudioParams(panel);
+            if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+        });
+        btnRow.appendChild(reset);
+        panel.appendChild(btnRow);
+        return true;
     }
 
     // Die Dial-Spezifikation + aktuellen Werte + apply/dice/reset je Art. EINE Struktur, drei Rezept-

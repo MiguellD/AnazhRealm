@@ -80,15 +80,17 @@ const server = http.createServer((req, res) => {
         const t0 = performance.now();
         while (f && !f.ready && performance.now() - t0 < 30000) await sleep(100);
         res.foundryReady = !!(f && f.ready);
-        // 1. Aufruf: zieht das Asset async (gibt null zurueck).
+        // 1. Aufruf: zieht das Asset async (gibt "pending" zurueck — W-A1 ehrliches Interim;
+        // der Test wandert mit, V9.56-i).
         let g = r._workshopFoundryPreviewGroup("baum_eiche");
-        res.ersterAufruf = g ? "gruppe" : "null (zieht async)";
+        res.ersterAufruf = g && g !== "pending" ? "gruppe" : "pending (zieht async)";
         // Warten bis das Studio-Asset gezogen + gecacht ist, dann 2. Aufruf.
         const t1 = performance.now();
-        while (!g && performance.now() - t1 < 30000) {
+        while ((!g || g === "pending") && performance.now() - t1 < 30000) {
             await sleep(200);
             g = r._workshopFoundryPreviewGroup("baum_eiche");
         }
+        if (g === "pending") g = null;
         if (g) {
             let foundryMeshes = 0,
                 totalTris = 0;

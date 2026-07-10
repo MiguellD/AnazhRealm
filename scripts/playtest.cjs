@@ -56067,9 +56067,16 @@ async function checkBandRing6Workshop(ctx) {
         // Liste hat einen Eintrag pro SICHTBAREM Bauplan. V18.317/.347 — die Liste filtert die auto-
         // gewachsenen Streaming-Varianten (`grown_<art>_v<N>`) HERAUS; V18.413 — zusätzlich die Fels-/
         // Kristall-/Glut-Formations-Varianten `*_var1+` (gebündelt: EINE Karte je Sorte, var0 = Repräsentant,
-        // wie im Studio). Der Test zählt darum mit DEMSELBEN Filter wie `_workshopRenderBlueprintList`.
+        // wie im Studio). W-A1 (Katalysator §5, Donor-Abschied) — zusätzlich die donorOnly-Spender
+        // (fahrzeug_wagen · tor_basis): reine Daten-Spender ohne Katalog-Auftritt. Der Test zählt
+        // darum mit DEMSELBEN Filter wie `_workshopRenderBlueprintList` (der Test wandert mit dem
+        // Code, V9.56-i). Die neuen „Studio-Rezepte"-Zeilen tragen eine EIGENE Klasse
+        // (.workshop-studio-recipe-row) — die .workshop-list-row-Zählung bleibt rezept-frei.
         const list = document.getElementById("workshop-list");
-        const _hidden = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
+        const _hidden = (n) =>
+            /^grown_/.test(n) ||
+            /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n) ||
+            !!(r.state.blueprints[n] && r.state.blueprints[n].donorOnly);
         const listableCount = Object.keys(r.state.blueprints).filter((n) => !_hidden(n)).length;
         out.listShowsAllBlueprints = list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 

@@ -85,13 +85,14 @@ const server = http.createServer((req, res) => {
             return p ? p.count / 3 : 0;
         };
         const previewSig = async (bpName) => {
+            // W-A1: "pending" = ehrliches Interim (zieht noch) — weiterwarten (V9.56-i).
             let g = r._workshopFoundryPreviewGroup(bpName);
             const tp = performance.now();
-            while (!g && performance.now() - tp < 20000) {
+            while ((!g || g === "pending") && performance.now() - tp < 20000) {
                 await sleep(200);
                 g = r._workshopFoundryPreviewGroup(bpName);
             }
-            if (!g) return { tris: 0, geoms: [] };
+            if (!g || g === "pending") return { tris: 0, geoms: [] };
             let tris = 0;
             const geoms = [];
             g.traverse((o) => {

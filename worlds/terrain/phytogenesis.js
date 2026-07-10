@@ -4787,8 +4787,48 @@ init();
                 }
             }
         } catch (_e2) {}
+        // W-A1 (Katalysator-Bogen §5, „regelbar, alle Assets") — DIE B4-REGLER-TABELLEN REISEN
+        // MIT DEM BUCH: jeder Manifest-Kern mit PARAMS-Array traegt seine Regler-Tabelle unter
+        // paramsByKind[<kind>] bei (kind aus dem ERSTEN Rezept des Kerns; disjunkt first-wins
+        // wie das Buch). NUR JSON-klonbare Felder reisen (id/lab/min/max/step/def/law/grp,
+        // fail-soft gefiltert) — der Empfaenger rendert seine Werkstatt-Slider AUS diesen
+        // Daten, kein UI-Hardcode je Domaene. must-ignore-billig: ein Alt-Empfaenger ohne
+        // paramsByKind-Steckplatz ignoriert das Feld schlicht.
+        const paramsByKind = {};
+        try {
+            for (const zk of __zweitKerne()) {
+                const PA = zk.kern.PARAMS;
+                const P = zk.kern.PRESETS;
+                if (!Array.isArray(PA) || !PA.length || !P) continue;
+                let kind = null;
+                for (const id in P) {
+                    if (!Object.prototype.hasOwnProperty.call(P, id)) continue;
+                    const p = P[id];
+                    if (p && typeof p.kind === "string" && p.kind) {
+                        kind = p.kind;
+                        break;
+                    }
+                }
+                if (!kind || paramsByKind[kind]) continue;
+                const rows = [];
+                for (let i = 0; i < PA.length; i++) {
+                    const d = PA[i];
+                    if (!d || typeof d.id !== "string" || !d.id) continue;
+                    const row = { id: d.id };
+                    if (typeof d.lab === "string" && d.lab) row.lab = d.lab;
+                    if (typeof d.min === "number" && isFinite(d.min)) row.min = d.min;
+                    if (typeof d.max === "number" && isFinite(d.max)) row.max = d.max;
+                    if (typeof d.step === "number" && isFinite(d.step)) row.step = d.step;
+                    if (typeof d.def === "number" && isFinite(d.def)) row.def = d.def;
+                    if (typeof d.law === "string" && d.law) row.law = d.law;
+                    if (typeof d.grp === "string" && d.grp) row.grp = d.grp;
+                    rows.push(row);
+                }
+                if (rows.length) paramsByKind[kind] = rows;
+            }
+        } catch (_e4) {}
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book }, "*");
+            __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book, paramsByKind }, "*");
         }
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN
@@ -4896,9 +4936,13 @@ init();
                 }
             }
             const isZweitKern = !!zweit;
+            // W-A1 (Katalysator §5) — DER REGLER-KANAL: msg.ov (B4-Overrides der Werkstatt)
+            // reist NUR in den Zweit-Kern-Zweig (buildInstance nimmt ov als 4. Argument).
+            // Pflanzen/foundry-core bekommen KEIN ov (der Pflanzen-Pfad ist byte-vertraglich
+            // eingefroren, gate:asset-contract — Regler fuer Pflanzen sind ein eigener Bogen).
             const g = isZweitKern
                 ? zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
+                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, null);
             g.updateMatrixWorld(true);
             g.traverse((o) => {
                 if (o.isMesh) {

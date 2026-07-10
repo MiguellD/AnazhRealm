@@ -5849,6 +5849,63 @@
                 letter-spacing: 0.8px;
                 color: var(--parch-ink-faded);
             }
+            /* W-A1 (Katalysator §5) — die „Studio-Rezepte"-Sektion: Kopf spannt beide
+               Grid-Spalten; die Rezept-Zeilen tragen BEWUSST eine eigene Klasse (die
+               Blueprint-Zählung der Liste bleibt rezept-frei), sprechen aber dieselbe
+               visuelle Sprache wie die Bauplan-Zeilen. */
+            .workshop-list-section {
+                grid-column: 1 / -1;
+                margin-top: 5px;
+                padding: 2px 4px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: var(--parch-ink-faded);
+                border-bottom: 1px solid rgba(138, 106, 54, 0.4);
+            }
+            .workshop-studio-recipe-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 8px;
+                background: rgba(40, 25, 10, 0.08);
+                border: 1px solid rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink);
+            }
+            .workshop-studio-recipe-row:hover {
+                background: rgba(40, 25, 10, 0.18);
+            }
+            .workshop-studio-recipe-row.selected {
+                background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
+                border-color: var(--violet-1);
+            }
+            .workshop-studio-recipe-row .badge {
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--parch-ink-faded);
+            }
+            /* W-A1 — das ehrliche Interim: die Status-Zeile im Stats-Element. */
+            .workshop-studio-status {
+                padding: 4px 8px;
+                font-size: 11px;
+                font-style: italic;
+                color: var(--parch-ink-faded);
+            }
+            .workshop-recipe-stats-head {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+            .workshop-recipe-stats-hint {
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+            }
             .workshop-header {
                 display: flex;
                 justify-content: space-between;

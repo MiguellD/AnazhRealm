@@ -99,13 +99,15 @@ const server = http.createServer((req, res) => {
                 res.proKlasse[bp] = { preset: null, studio: false };
                 continue;
             }
-            // Ziehen (async), warten, dann pruefen.
+            // Ziehen (async), warten, dann pruefen. W-A1: "pending" = ehrliches Interim
+            // (Asset zieht noch) — zaehlt als noch-nicht-da (der Test wandert mit, V9.56-i).
             let g = r._workshopFoundryPreviewGroup(bp);
             const tp = performance.now();
-            while (!g && performance.now() - tp < 20000) {
+            while ((!g || g === "pending") && performance.now() - tp < 20000) {
                 await sleep(200);
                 g = r._workshopFoundryPreviewGroup(bp);
             }
+            if (g === "pending") g = null;
             let foundryMeshes = 0;
             if (g)
                 g.traverse((o) => {
