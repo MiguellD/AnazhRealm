@@ -83005,6 +83005,19 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
     }),
+    // W-A4a (Katalysator-Bogen §7, ε-Checkliste) — DIE WAFFEN-/WERKZEUG-DOMAENE ALS DATEN-ZEILE:
+    // schmiede-core (cores.manifest.json) liefert kind:"weapon"-Rezepte (alle 21 Gattungen des
+    // Schmiede-Labs, Waffen UND Werkzeuge); die Platzierung reist als Rezept-DATEN (fx.place
+    // mode "hand" — Spawn/Befehl/Hand, kein Worldgen), darum placeExtra null. Donor ist der
+    // craftbare geraet_schwert-DATENBLOCK (Parts = SUBSTANZ-Wahrheit: Tags · Omega-PHYSIS ·
+    // wield — das Baum-/Portal-Muster; die Studio-Gestalt kommt aus dem Appear-Pfad).
+    weapon: Object.freeze({
+        prefix: "klinge_",
+        donor: "geraet_schwert",
+        grown: false,
+        builtIn: false,
+        placeExtra: null,
+    }),
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
 // `_placePolicyFor` liest sie fail-closed: ein Rezept mit unbekanntem mode (ein künftiges Lab)

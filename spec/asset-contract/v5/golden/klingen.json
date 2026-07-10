@@ -1,0 +1,226 @@
+{
+  "cv": 5,
+  "minted": "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall",
+  "cases": {
+    "langschwert-s7-L0": {
+      "objects": 18,
+      "vertices": 10011,
+      "sha256": "ac185d7e806d3788d32d0034d0b0b030d06543f650b6cccca3f58ae9e4ea6de5"
+    },
+    "langschwert-s12345-L0": {
+      "objects": 18,
+      "vertices": 10011,
+      "sha256": "ac185d7e806d3788d32d0034d0b0b030d06543f650b6cccca3f58ae9e4ea6de5"
+    },
+    "saebel-s7-L0": {
+      "objects": 14,
+      "vertices": 9183,
+      "sha256": "0eaff5e58cae2e0072bdb7b17212c10449649f3dbecff6d8c878dc439668b13b"
+    },
+    "saebel-s12345-L0": {
+      "objects": 14,
+      "vertices": 9183,
+      "sha256": "0eaff5e58cae2e0072bdb7b17212c10449649f3dbecff6d8c878dc439668b13b"
+    },
+    "degen-s7-L0": {
+      "objects": 14,
+      "vertices": 9183,
+      "sha256": "8b8212d72b629a334e8e28a3b616c762079586b928f951f75af40c91c46ded36"
+    },
+    "degen-s12345-L0": {
+      "objects": 14,
+      "vertices": 9183,
+      "sha256": "8b8212d72b629a334e8e28a3b616c762079586b928f951f75af40c91c46ded36"
+    },
+    "grossschwert-s7-L0": {
+      "objects": 26,
+      "vertices": 11667,
+      "sha256": "85cde30e32056af54475ab35824f5718085764a5092eb0864980498af2c3a05b"
+    },
+    "grossschwert-s12345-L0": {
+      "objects": 26,
+      "vertices": 11667,
+      "sha256": "85cde30e32056af54475ab35824f5718085764a5092eb0864980498af2c3a05b"
+    },
+    "dolch-s7-L0": {
+      "objects": 12,
+      "vertices": 8769,
+      "sha256": "b0d70057e7d462080acb5dda1df37ee2ac9083ddd7c18edf5d063b0b7bd2169a"
+    },
+    "dolch-s12345-L0": {
+      "objects": 12,
+      "vertices": 8769,
+      "sha256": "b0d70057e7d462080acb5dda1df37ee2ac9083ddd7c18edf5d063b0b7bd2169a"
+    },
+    "messer-s7-L0": {
+      "objects": 9,
+      "vertices": 8271,
+      "sha256": "c33055baf121ec862978ac3e9fb89752b1d10c27978c00cd7c4f437b1413c601"
+    },
+    "messer-s12345-L0": {
+      "objects": 9,
+      "vertices": 8271,
+      "sha256": "c33055baf121ec862978ac3e9fb89752b1d10c27978c00cd7c4f437b1413c601"
+    },
+    "langbogen-s7-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "8fcbda560a6d857d5ece70826c2ca4a2f58d53c7164ead6b5dec77bc406bbd75"
+    },
+    "langbogen-s12345-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "8fcbda560a6d857d5ece70826c2ca4a2f58d53c7164ead6b5dec77bc406bbd75"
+    },
+    "kriegsbogen-s7-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "0cb7ada7cdfdfef3cccb0da28c53fb91ca577ec49d3f9b161b49dd69dedce1f2"
+    },
+    "kriegsbogen-s12345-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "0cb7ada7cdfdfef3cccb0da28c53fb91ca577ec49d3f9b161b49dd69dedce1f2"
+    },
+    "reiterbogen-s7-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "f1135f8589dd4b5b0e21f048c899d33223367cb68e47226e0bdefb21e7d069ff"
+    },
+    "reiterbogen-s12345-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "f1135f8589dd4b5b0e21f048c899d33223367cb68e47226e0bdefb21e7d069ff"
+    },
+    "recurvebogen-s7-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "7505f578f1a3df7dab46f623738b4275fc2d2177cf29b21c5312b93723a5e3b6"
+    },
+    "recurvebogen-s12345-L0": {
+      "objects": 4,
+      "vertices": 336,
+      "sha256": "7505f578f1a3df7dab46f623738b4275fc2d2177cf29b21c5312b93723a5e3b6"
+    },
+    "streitkolben-s7-L0": {
+      "objects": 15,
+      "vertices": 3081,
+      "sha256": "c26c4ea2e5e1b314883601a7e80cb70e423cd97021a35388c86f13293ec1b4f5"
+    },
+    "streitkolben-s12345-L0": {
+      "objects": 15,
+      "vertices": 3081,
+      "sha256": "c26c4ea2e5e1b314883601a7e80cb70e423cd97021a35388c86f13293ec1b4f5"
+    },
+    "kriegsaxt-s7-L0": {
+      "objects": 11,
+      "vertices": 2899,
+      "sha256": "34f0552eae4fcd27d91e33eb2a38fd1e80ad274e23a5d54a7a54c0bfb3527190"
+    },
+    "kriegsaxt-s12345-L0": {
+      "objects": 11,
+      "vertices": 2899,
+      "sha256": "34f0552eae4fcd27d91e33eb2a38fd1e80ad274e23a5d54a7a54c0bfb3527190"
+    },
+    "kriegshammer-s7-L0": {
+      "objects": 10,
+      "vertices": 2037,
+      "sha256": "c7f20bb6750db574639a7dc4e9a7c5b8f731e07ad50d40bc4ae71b3f35e869a2"
+    },
+    "kriegshammer-s12345-L0": {
+      "objects": 10,
+      "vertices": 2037,
+      "sha256": "c7f20bb6750db574639a7dc4e9a7c5b8f731e07ad50d40bc4ae71b3f35e869a2"
+    },
+    "keule-s7-L0": {
+      "objects": 10,
+      "vertices": 2414,
+      "sha256": "f0846af8ce75c52af78b649057f0038df59f7d3223c4d3811b09ccf94641cf06"
+    },
+    "keule-s12345-L0": {
+      "objects": 10,
+      "vertices": 2414,
+      "sha256": "f0846af8ce75c52af78b649057f0038df59f7d3223c4d3811b09ccf94641cf06"
+    },
+    "faellaxt-s7-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "54f50d33704f9ec16608298776a4be1af56f29fddf82e754feefad8096598bda"
+    },
+    "faellaxt-s12345-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "54f50d33704f9ec16608298776a4be1af56f29fddf82e754feefad8096598bda"
+    },
+    "spaltmaul-s7-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "4132b0773b7b5673ab86236412929b325be0fa37972708b5cdb1639c3bce4939"
+    },
+    "spaltmaul-s12345-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "4132b0773b7b5673ab86236412929b325be0fa37972708b5cdb1639c3bce4939"
+    },
+    "vorschlaghammer-s7-L0": {
+      "objects": 10,
+      "vertices": 1910,
+      "sha256": "0c4575ff4574850371e00bae91624d5ef22a7fc7dbbb733d9f1a378a8ede276d"
+    },
+    "vorschlaghammer-s12345-L0": {
+      "objects": 10,
+      "vertices": 1910,
+      "sha256": "0c4575ff4574850371e00bae91624d5ef22a7fc7dbbb733d9f1a378a8ede276d"
+    },
+    "beil-s7-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "b3b9aa48b48a404673bd25583e014ce9e722d8d601c1e54d548c87c97df50fbc"
+    },
+    "beil-s12345-L0": {
+      "objects": 11,
+      "vertices": 2809,
+      "sha256": "b3b9aa48b48a404673bd25583e014ce9e722d8d601c1e54d548c87c97df50fbc"
+    },
+    "spitzhacke-s7-L0": {
+      "objects": 10,
+      "vertices": 1882,
+      "sha256": "ef86debf3453fc8964bf75134fedd73936f7388f8efcd0afe427b5296c18b95f"
+    },
+    "spitzhacke-s12345-L0": {
+      "objects": 10,
+      "vertices": 1882,
+      "sha256": "ef86debf3453fc8964bf75134fedd73936f7388f8efcd0afe427b5296c18b95f"
+    },
+    "spaten-s7-L0": {
+      "objects": 9,
+      "vertices": 2323,
+      "sha256": "dfec35a112dc972fb4d78f4e50fd0030b57a2d98bf513b1238d1bbe87b30790e"
+    },
+    "spaten-s12345-L0": {
+      "objects": 9,
+      "vertices": 2323,
+      "sha256": "dfec35a112dc972fb4d78f4e50fd0030b57a2d98bf513b1238d1bbe87b30790e"
+    },
+    "schaufel-s7-L0": {
+      "objects": 8,
+      "vertices": 2299,
+      "sha256": "db404e05b2e20525d623082132938c6376e1b4ba94e0eee71d0b29804c68a18d"
+    },
+    "schaufel-s12345-L0": {
+      "objects": 8,
+      "vertices": 2299,
+      "sha256": "db404e05b2e20525d623082132938c6376e1b4ba94e0eee71d0b29804c68a18d"
+    },
+    "langschwert-s7-L0-ov_fuller_klinge": {
+      "objects": 18,
+      "vertices": 10011,
+      "sha256": "6eaf31c8c0de7495970144f43d871884c1b3f120640e43f8e2ff6e4267ddbaf0"
+    },
+    "spitzhacke-s7-L0-ov_schaft": {
+      "objects": 10,
+      "vertices": 1882,
+      "sha256": "ae8dce46b370a2adceb66d2ee7d2101c013d22b9a729f344deb489aa1f6f0924"
+    }
+  }
+}

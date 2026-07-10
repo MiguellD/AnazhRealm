@@ -261,4 +261,12 @@ B4 PARAMS (aus SLIDERS abgeleitet) · B5 als `messen`-Formel (Stich→Schub→Di
 pass/warn-Bänder trägt das Lab nicht — benannte Schuld) · B6 dsl (W12) +
 `fx.place {mode:"site", siteTag:"tor"}` als Platzierungs-Daten (N5.6);
 Split-Parität 14/14 hash-bewiesen, Andocken = reine Daten-Zeilen —
-der ε-Beweis, `gate:nervensystem-porta`).
+der ε-Beweis, `gate:nervensystem-porta`). `schmiede-core.js` (W-A4a, ε —
+GEBAUT 10.07.: B1 21 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
+tool:true-Marke reist in fx] · B2 `buildInstance` + `kindStages:{weapon:[0]}` +
+Goldens `spec/asset-contract/v5/` (`gate:schmiede-contract`, seed-invariant
+cv:5) · B4 PARAMS (PARAMS_BLADE+PARAMS_IMPACT, def aus dem Lab-Startzustand) ·
+B5 LEHREN (pass = hieb-Band) + BANDS/`messen`/`evalLehren` · `fx.place
+{mode:"hand"}` als Platzierungs-Daten (N5.5, streut nicht) · KEIN fx.wield
+(Ω-PHYSIS bleibt der Wield-Richter, N6.6); Split-Parität 21/21 hash-bewiesen,
+Andocken = reine Daten-Zeilen — der ε-Beweis, `gate:nervensystem-schmiede`).

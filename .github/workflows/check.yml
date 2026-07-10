@@ -408,6 +408,25 @@ jobs:
               # Selbst-Test (injizierte Verletzungen feuern).
               run: npm run gate:nervensystem-porta
 
+            - name: Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)
+              # DER ε-BEWEIS DER WAFFEN-DOMÄNE (Katalysator-Bogen): die Klingen-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (schmiede-core,
+              # __schmiedeCore) + KIND_POLICY-weapon-Zeile + geraet_schwert-Donor-DATENBLOCK +
+              # fx.place-Rezept-Daten (mode hand); der Stamm bekam KEINEN neuen kind-Zweig (M8,
+              # Diff = 13 Zeilen Daten). Statisch + Browser foundry-ON (21 Klingen-Rezepte im
+              # LIVE-Buch [Waffen UND Werkzeuge, tool-Marke] · kindStages.weapon [0] gemerged ·
+              # B4-paramsByKind.weapon 18 Dials · Auto-Blueprint klinge_<id> am EINEN Chokepoint ·
+              # Klingen-Asset end-to-end durch den Worker · hand streut nicht [N5.5] ·
+              # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-schmiede
+
+            - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
+              # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
+              # 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus · Seed-Invarianz ·
+              # ov-Kanal · lod-Klemme · Split-Parität buildInstance==buildWeaponModel je Gattung ·
+              # Selbst-Test (korruptes Golden wird rot).
+              run: npm run gate:schmiede-contract
+
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
               # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
               # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie

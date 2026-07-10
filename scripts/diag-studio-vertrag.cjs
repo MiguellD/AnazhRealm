@@ -43,7 +43,7 @@ const CORES = MANIFEST.map((c) => ({
 const REZEPT_ID = /^[a-z0-9_-]+$/;
 // Registrierte + reservierte kinds (§3 B1). Ein UNBEKANNTER kind ist KEIN
 // Fehler (must-ignore G4.1) — er wird hier nur informativ gelistet.
-const KNOWN_KINDS = ["tree", "shrub", "flower", "grass", "rock", "vehicle", "gate", "building", "creature"];
+const KNOWN_KINDS = ["tree", "shrub", "flower", "grass", "rock", "vehicle", "gate", "weapon", "building", "creature"];
 
 const errs = [];
 function check(name, ok, detail) {
