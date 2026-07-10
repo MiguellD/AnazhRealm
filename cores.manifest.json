@@ -8,5 +8,6 @@
     },
     { "id": "vehicle", "scripts": ["vehicle-core.js"], "vertrag": "vehicle-core.js", "ns": "__vehicleCore" },
     { "id": "porta", "scripts": ["porta-core.js"], "vertrag": "porta-core.js", "ns": "__portaCore" },
-    { "id": "schmiede", "scripts": ["schmiede-core.js"], "vertrag": "schmiede-core.js", "ns": "__schmiedeCore" }
+    { "id": "schmiede", "scripts": ["schmiede-core.js"], "vertrag": "schmiede-core.js", "ns": "__schmiedeCore" },
+    { "id": "fachwerk", "scripts": ["fachwerk-core.js"], "vertrag": "fachwerk-core.js", "ns": "__fachwerkCore" }
 ]

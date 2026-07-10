@@ -56984,6 +56984,62 @@ class AnazhRealm {
                     },
                 ],
             },
+            // W-A5a (Katalysator-Bogen, ε-Checkliste) — DER HAUS-DONOR: die Judge-Parts der
+            // haus-Domäne (die KIND_POLICY-haus-Zeile klont IHN zu haus_<preset>, der RENDER
+            // kommt aus fachwerk-core). BEGEHBAR per Konstruktion (die emergente Kollisions-
+            // Lehre: per-Part-blockerAABBs, die TÜR-LÜCKE ist KEIN Part — man geht hindurch,
+            // kein Voll-Block): zwei Front-Wandsegmente (holz) mit 1.3-m-Tür-Lücke dazwischen ·
+            // steinerne Rückwand (Brandwand) · zwei Seitenwände (holz) · Holz-Dachplatte
+            // (TRÄGT: effSurf = max(Terrain, Struktur)). holz+stein = die Substanz-Wahrheit
+            // eines Fachwerkhauses (Tags/Ω-PHYSIS urteilen ein stehendes Gebäude); kein
+            // portalMeta/roleManual — die Rolle EMERGIERT aus den Parts.
+            haus_basis: {
+                name: "haus_basis",
+                label: "Haus",
+                builtIn: true,
+                // W-A1 (Katalysator §5, DONOR-ABSCHIED) — reiner DATEN-Spender der haus-
+                // Domaene (KIND_POLICY.haus → haus_<preset>; Gestalt aus fachwerk-core).
+                // Kein Katalog-/Picker-Auftritt (donorOnly); funktional unveraendert.
+                donorOnly: true,
+                parts: [
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -1.925, y: 1.55, z: -2.55 },
+                        size: { x: 2.55, y: 3.1, z: 0.3 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 1.925, y: 1.55, z: -2.55 },
+                        size: { x: 2.55, y: 3.1, z: 0.3 },
+                    },
+                    {
+                        shape: "box",
+                        material: "stein",
+                        position: { x: 0, y: 1.55, z: 2.55 },
+                        size: { x: 6.4, y: 3.1, z: 0.3 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -3.05, y: 1.55, z: 0 },
+                        size: { x: 0.3, y: 3.1, z: 4.8 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 3.05, y: 1.55, z: 0 },
+                        size: { x: 0.3, y: 3.1, z: 4.8 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 3.25, z: 0 },
+                        size: { x: 6.6, y: 0.3, z: 5.6 },
+                    },
+                ],
+            },
             // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
             ...builtinBodyBlueprints,
         };
@@ -83231,6 +83287,22 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
         handAxis: "x",
+    }),
+    // W-A5a (Katalysator-Bogen §7, ε-Checkliste) — DIE HAUS-DOMAENE ALS DATEN-ZEILE:
+    // fachwerk-core (cores.manifest.json) liefert kind:"haus"-Rezepte (die 32 klickbaren
+    // Kultur-Archetypen des Fachwerk-Labs); die Platzierung reist als Rezept-DATEN
+    // (fx.place mode "site" + siteTag "haus", N5.6 — streut heute nicht; der settlement-
+    // Kanal N5.7 kommt in W-A5b als fx.place-Upgrade aus dem Dorf-Export), darum
+    // placeExtra null. Donor ist der begehbare haus_basis-DATENBLOCK (Parts = SUBSTANZ-
+    // Wahrheit: Tags · Omega-PHYSIS · blockerAABBs mit TUER-LUECKE — das Baum-/Tor-
+    // Muster; die Studio-Gestalt kommt aus dem Appear-Pfad). Die erste MEHR-Stufen-
+    // Domaene ausserhalb der Baeume: kindStages.haus = [0,1,2] (fachwerk-core B2).
+    haus: Object.freeze({
+        prefix: "haus_",
+        donor: "haus_basis",
+        grown: false,
+        builtIn: false,
+        placeExtra: null,
     }),
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.

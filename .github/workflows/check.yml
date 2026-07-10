@@ -427,6 +427,29 @@ jobs:
               # Selbst-Test (korruptes Golden wird rot).
               run: npm run gate:schmiede-contract
 
+            - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
+              # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
+              # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,
+              # __fachwerkCore) + KIND_POLICY-haus-Zeile + begehbarer haus_basis-Donor-
+              # DATENBLOCK (Tür-Lücke ist KEIN Part) + fx.place-Rezept-Daten (mode site,
+              # siteTag haus — streut nicht, settlement N5.7 kommt in W-A5b); der Stamm bekam
+              # KEINEN neuen kind-Zweig (M8). Statisch + Browser foundry-ON (32 Kultur-Rezepte
+              # im LIVE-Buch · kindStages.haus [0,1,2] gemerged — die ERSTE Mehr-Stufen-Domäne
+              # außerhalb der Bäume · B4-paramsByKind.haus 21 Dials · Auto-Blueprint haus_<id>
+              # am EINEN Chokepoint · Haus-Asset end-to-end auf ALLEN drei Stufen · der
+              # Flatten-Chokepoint bedient die Wahlen 1/2 mit den ECHTEN Stufen statt
+              # [0]-Kollaps). Inklusive Selbst-Test (injizierte Verletzungen).
+              run: npm run gate:nervensystem-fachwerk
+
+            - name: Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)
+              # cv:6 (spec/asset-contract/v6): 194 frozen sha256-Goldens (32 Kulturen × 2 Seeds ×
+              # 3 Stufen + 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus ·
+              # SEED-GETRIEBEN (der Haus-Bau würfelt aus P.seed — anders als Fahrzeug/Tor/
+              # Klinge) · Stufen-Wahrheit (L0 Voll != L1 Hülle != L2 Destillat) · ov-Kanal ·
+              # lod-Klemme · Split-Parität buildInstance == Shell-Komposition der Kern-
+              # Primitive je Rezept×Stufe · Selbst-Test (korruptes Golden wird rot).
+              run: npm run gate:fachwerk-contract
+
             - name: Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)
               # DER KATALOG-BEWEIS (auslagerungs-plan §5): die B4-Tabellen reisen als Daten
               # (paramsByKind gate+vehicle), der ov-Kanal baut cache-frei eine ANDERE Geometrie
