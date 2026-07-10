@@ -74,11 +74,19 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             !/function buildInstance\(/.test(stripComments(src)),
         ]);
     }
+    // Nachlese-Welle (V9.56-i — die Probe ankert auf der DEFINITIONS-Form): das
+    // Gesetz gilt dem KIND_POLICY-BLOCK selbst; ein `klang: Object.freeze(...)`
+    // anderswo (WORLD_REGISTRY.klang, das Klang-Portal) ist legitim und darf die
+    // Linse nicht auslösen.
+    const kpStart = anazhNC.indexOf("AnazhRealm.KIND_POLICY = Object.freeze({");
+    const kpEnd = kpStart >= 0 ? anazhNC.indexOf("AnazhRealm.PLACE_MODES", kpStart) : -1;
+    const kpBlock = kpStart >= 0 && kpEnd > kpStart ? anazhNC.slice(kpStart, kpEnd) : "";
     out.push([
         "S3: KIND_POLICY traegt BEWUSST keine klang/koerper/kreatur-Zeile (keine Katalog-Blueprints)",
-        !/klang:\s*Object\.freeze/.test(anazhNC) &&
-            !/koerper:\s*Object\.freeze/.test(anazhNC) &&
-            !/kreatur:\s*Object\.freeze/.test(anazhNC),
+        kpBlock.length > 0 &&
+            !/\bklang:\s*Object\.freeze/.test(kpBlock) &&
+            !/\bkoerper:\s*Object\.freeze/.test(kpBlock) &&
+            !/\bkreatur:\s*Object\.freeze/.test(kpBlock),
     ]);
     out.push([
         'S4: die KLANG_HOST_RECIPE-Daten-Zeile existiert ("lofi")',
@@ -87,6 +95,12 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     out.push([
         "S5: der build-asset-Dispatch der Bruecke guardet typeof buildInstance (MESHFREI kann den Mesh-Kanal nicht betreten)",
         /typeof zk\.kern\.buildInstance === "function"/.test(stripComments(brueckeSrc)),
+    ]);
+    // Nachlese-Welle (W-A6-Erstkonsument): die Motion-Daten-Zeilen existieren
+    // (MOTION_HOST_RECIPE + die Zustands→Profil-Tabelle — kein if, M8).
+    out.push([
+        'S6: die MOTION_HOST_RECIPE-Daten-Zeile existiert ("wolf") + MOTION_PROFILE_MAP (Tabelle, kein if)',
+        /MOTION_HOST_RECIPE\s*=\s*"wolf"/.test(anazhNC) && /MOTION_PROFILE_MAP\s*=\s*Object\.freeze/.test(anazhNC),
     ]);
     return out;
 }
@@ -116,6 +130,9 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         const brokenAnazh = anazhSrc.replace('KLANG_HOST_RECIPE = "lofi"', 'KLANG_HOST_RECIPE = "techno"');
         const s4 = staticLaws(brokenAnazh, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S4"));
         check("Selbst-Test 3: KLANG_HOST_RECIPE verstellt -> S4 feuert", s4 && s4[1] === false);
+        const brokenMotion = anazhSrc.replace('MOTION_HOST_RECIPE = "wolf"', 'MOTION_HOST_RECIPE = "bear"');
+        const s6 = staticLaws(brokenMotion, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S6"));
+        check("Selbst-Test 4: MOTION_HOST_RECIPE verstellt -> S6 feuert", s6 && s6[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
             process.exit(1);
@@ -214,15 +231,62 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             emo.sorrow = 0;
             res.k.studio = r._klangStudioPreset() ? r._klangStudioPreset().bpm : null;
             res.k.durStudio = r._lofiChordDurationMs();
+            // W-A7-VERTIEFUNG (Nachlese-Welle): die SKALA führt das Studio-Rezept —
+            // der EINE skalen-bewusste Ton-Mapper faltet (mod Skalenlaenge + Oktave).
+            res.k.scaleStudio = JSON.stringify(r._lofiActiveScale());
+            res.k.semi2Studio = r._lofiScaleSemitone(2); // Blues: scale[2] = 5
+            res.k.semi6Studio = r._lofiScaleSemitone(6); // 6-Ton-Skala: idx 6 = Oktav-Wurzel +12
+            res.k.chord0Studio = JSON.stringify(r._lofiChordFromDegree(0)); // [0,5,7,12]
+            // Frequenz als ZAHL: der 2. Akkord-Ton (Halbton 5 ueber A2=110) = 110*2^(5/12).
+            res.k.freq1Studio = r._lofiChordFreqs(r._lofiChordFromDegree(0), false)[1];
             // Rezept kurz VERSTECKEN (Sicherung + Wiederherstellung — die Gate-Hook-Disziplin):
             const prev = f.recipes.lofi;
             delete f.recipes.lofi;
             res.k.durFallback = r._lofiChordDurationMs();
+            res.k.scaleFallbackIsConst = r._lofiActiveScale() === window.anazhRealm.constructor.LOFI_SCALE; // byte-alt: DIESELBE Referenz
+            res.k.semi2Fallback = r._lofiScaleSemitone(2); // A-Moll: 3
+            res.k.chord0Fallback = JSON.stringify(r._lofiChordFromDegree(0)); // [0,3,7,10]
             f.recipes.lofi = prev;
             res.k.durRestored = r._lofiChordDurationMs();
+            res.k.semi2Restored = r._lofiScaleSemitone(2);
             emo.sorrow = s0;
         } catch (e) {
             res.k.err = (e && e.message) || String(e);
+        }
+        // ===== M: DER MOTION-ERSTKONSUMENT (die Schwanz-Rolle liest fx.motion) =====
+        try {
+            res.m = {};
+            const pi = r._motionStudioProfile(false); // idle
+            const pm = r._motionStudioProfile(true); // moving -> joy (MOTION_PROFILE_MAP)
+            res.m.idle = pi ? { tailRate: pi.tailRate, tailAmp: pi.tailAmp } : null;
+            res.m.moving = pm ? { tailRate: pm.tailRate, tailAmp: pm.tailAmp } : null;
+            // KONSUM (Verhaltens-Zahl): eine synthetische Schwanz-Rolle durch den EINEN
+            // Animator — mit Studio-Profil sin(t*0.5)*0.10, byte-alt sin(t*2.2)*0.28.
+            const mkGroup = () => ({
+                children: [{ rotation: { x: 0, y: 0, z: 0 }, position: { x: 0, y: 0, z: 0 } }],
+                userData: {},
+            });
+            const roles = [{ role: "schwanz", phase: 0 }];
+            const g1 = mkGroup();
+            r._animateCompoundMotion(g1, roles, 1, 0, false);
+            res.m.tailStudio = g1.children[0].rotation.y;
+            const prevWolf = f.recipes.wolf;
+            delete f.recipes.wolf;
+            const g2 = mkGroup();
+            r._animateCompoundMotion(g2, roles, 1, 0, false);
+            res.m.tailFallback = g2.children[0].rotation.y;
+            f.recipes.wolf = prevWolf;
+            const g3 = mkGroup();
+            r._animateCompoundMotion(g3, roles, 1, 0, false);
+            res.m.tailRestored = g3.children[0].rotation.y;
+            // Source-Probe am lebenden Symbol: der Animator RUFT den Studio-Leser.
+            const src = window.__codeOf
+                ? window.__codeOf(r._animateCompoundMotion)
+                : r._animateCompoundMotion.toString();
+            res.m.consumes = /_motionStudioProfile/.test(src);
+        } catch (e) {
+            res.m = res.m || {};
+            res.m.err = (e && e.message) || String(e);
         }
         // ===== W: die Werkstatt-Sichtbarkeit (Studio-Rezepte-Liste, W-A1-Straße) =====
         try {
@@ -281,6 +345,52 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     );
     check("K: nach der Wiederherstellung wieder Studio-Tempo", Math.abs(out.k.durRestored - out.k.durStudio) < 1);
     check(
+        "K2 (W-A7-Vertiefung): _lofiActiveScale liest die Studio-Blues-Skala [0,3,5,6,7,10]",
+        out.k.scaleStudio === "[0,3,5,6,7,10]",
+        String(out.k.scaleStudio)
+    );
+    check(
+        "K2: der EINE Ton-Mapper faltet (scale[2]=5 · idx 6 = Oktav-Wurzel 12 · Akkord i = [0,5,7,12])",
+        out.k.semi2Studio === 5 && out.k.semi6Studio === 12 && out.k.chord0Studio === "[0,5,7,12]",
+        `semi2=${out.k.semi2Studio} semi6=${out.k.semi6Studio} chord=${out.k.chord0Studio}`
+    );
+    check(
+        "K2: die Frequenz ist die Studio-Zahl (2. Akkord-Ton = 110·2^(5/12) ≈ 146.83 Hz)",
+        Math.abs(out.k.freq1Studio - 110 * Math.pow(2, 5 / 12)) < 0.01,
+        String(out.k.freq1Studio)
+    );
+    check(
+        "K2: versteckt → byte-alt (LOFI_SCALE-REFERENZ · semi2=3 · Akkord [0,3,7,10]) · wiederhergestellt → Studio",
+        out.k.scaleFallbackIsConst === true &&
+            out.k.semi2Fallback === 3 &&
+            out.k.chord0Fallback === "[0,3,7,10]" &&
+            out.k.semi2Restored === 5,
+        `fallback semi2=${out.k.semi2Fallback} restored=${out.k.semi2Restored}`
+    );
+    check(
+        "M (W-A6-Erstkonsument): _motionStudioProfile liest idle 0.5/0.10 · moving[joy] 5.5/0.38",
+        !!out.m &&
+            !!out.m.idle &&
+            out.m.idle.tailRate === 0.5 &&
+            out.m.idle.tailAmp === 0.1 &&
+            !!out.m.moving &&
+            out.m.moving.tailRate === 5.5 &&
+            out.m.moving.tailAmp === 0.38,
+        (out.m && out.m.err) || JSON.stringify(out.m && out.m.idle)
+    );
+    check(
+        "M: KONSUM als ZAHL — Schwanz-Winkel Studio sin(0.5)·0.10, versteckt byte-alt sin(2.2)·0.28, wiederhergestellt Studio",
+        !!out.m &&
+            Math.abs(out.m.tailStudio - Math.sin(0.5) * 0.1) < 1e-9 &&
+            Math.abs(out.m.tailFallback - Math.sin(2.2) * 0.28) < 1e-9 &&
+            Math.abs(out.m.tailRestored - Math.sin(0.5) * 0.1) < 1e-9,
+        out.m ? `studio=${out.m.tailStudio} fallback=${out.m.tailFallback}` : ""
+    );
+    check(
+        "M: der EINE Animator ruft den Studio-Leser (Source-Probe _animateCompoundMotion → _motionStudioProfile)",
+        !!out.m && out.m.consumes === true
+    );
+    check(
         "W: die Studio-Rezepte-Liste der Werkstatt fuehrt lofi/wolf/mensch (sichtbar/regelbar)",
         out.w.lofi === true && out.w.wolf === true && out.w.mensch === true,
         out.w.err || ""
@@ -292,7 +402,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — und der EINE Audio-Konsument lebt (das Lofi-Pad faehrt das Genesis-Tempo, fail-soft byte-alt)."
+        "\n✅ GRÜN — DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl)."
     );
     process.exit(0);
 })().catch((e) => {

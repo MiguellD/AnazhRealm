@@ -10632,10 +10632,32 @@ class AnazhRealm {
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     }
 
-    // W4 V3 — ein Tonleiter-Index (kann > 6, wickelt in höhere Oktaven) zu
+    // W-A7-VERTIEFUNG (Nachlese-Welle) — DIE EINE SKALEN-QUELLE: das Studio-Klang-
+    // Rezept führt neben dem Tempo auch die SKALA (fx.klang.scale — im Kern aus der
+    // EINEN Lab-Formel scaleFor(darkness) VOR-ABGELEITET, exportDrive-Muster N6.2).
+    // Fail-soft (G4.1): Rezept versteckt/Feld fehlt/unsauber → die LOFI_SCALE-
+    // Konstante byte-alt (A natürlich Moll). Validierung fail-closed: nur ein
+    // nicht-leeres Array endlicher Halbtöne führt.
+    _lofiActiveScale() {
+        const studio = this._klangStudioPreset();
+        const sc = studio && studio.scale;
+        if (Array.isArray(sc) && sc.length > 0 && sc.every((v) => Number.isFinite(v))) return sc;
+        return AnazhRealm.LOFI_SCALE;
+    }
+
+    // W4 V3 — ein Tonleiter-Index (kann > n−1, wickelt in höhere Oktaven) zu
     // einem Halbton-Abstand zur Wurzel. Negative Indizes werden gewickelt.
+    // W-A7-VERTIEFUNG — DER EINE SKALEN-BEWUSSTE TON-MAPPER (Gesetz #0): ALLE
+    // Ton-Leser (Akkord-Stapel `_lofiChordFromDegree` · Melodie `_lofiMelodyNotes` ·
+    // Bass-Wurzel) fließen durch DIESE eine Abbildung. GEWÄHLTE REGEL (dokumentiert):
+    // Grad → Skalenton mod SKALENLÄNGE mit Oktav-Faltung (`scale[idx mod n] +
+    // 12·floor(idx/n)`) — die 7-stufige LOFI_HARMONY-Markov-Wanderung bleibt die
+    // Host-Mechanik (Stufen-Indizes 0..6), erst die TON-Abbildung faltet in die
+    // Studio-Skala: bei einer 6-Ton-Skala (Blues, das lofi-Genre) wird die
+    // „Septime" d+6 zur Oktav-Wurzel (Verdopplung statt Septime — musikalisch
+    // wohlgeformt, keine zweite Tabelle, kein Parallel-Audio-Pfad M4).
     _lofiScaleSemitone(idx) {
-        const scale = AnazhRealm.LOFI_SCALE;
+        const scale = this._lofiActiveScale();
         const n = scale.length;
         const wrapped = ((idx % n) + n) % n;
         return scale[wrapped] + 12 * Math.floor(idx / n);
@@ -18636,6 +18658,26 @@ class AnazhRealm {
         return roles;
     }
 
+    // W-A6-ERSTKONSUMENT (Nachlese-Welle) — DAS STUDIO-BEWEGUNGS-PROFIL: der EINE
+    // Leser der tetrapoda-fx.motion-Daten (Vertrag §8.2). Welches Rezept den Host-
+    // Bewegungs-Charakter führt, ist eine DATEN-Zeile (MOTION_HOST_RECIPE — das
+    // KLANG_HOST_RECIPE-Muster); die Zustands→Profil-Zuordnung ebenso
+    // (MOTION_PROFILE_MAP: moving→joy · idle→idle). KEIN zweites Animations-
+    // System (M4): der bestehende `_animateCompoundMotion`-Kern LIEST die Zahlen
+    // (erster Konsument: die Schwanz-Rolle — tailRate/tailAmp); der Avatar-Rig
+    // (`_animateHumanoidRig`, SkinnedMesh) bleibt BEWUSST unberührt (wahrerguss
+    // Säule II — _animateCompoundMotion kann das Rig nicht treiben, ohne es zu
+    // zerstören). Fail-soft (G4.1): kaltes Buch/Rezept versteckt → null, jeder
+    // Leser fällt byte-alt auf seine Konstante.
+    _motionStudioProfile(moving) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
+        const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
+        if (!m) return null;
+        const p = m[AnazhRealm.MOTION_PROFILE_MAP[moving ? "moving" : "idle"]];
+        return p && typeof p === "object" ? p : null;
+    }
+
     // Der EINE generische Animator: wendet die Bewegungs-Rollen auf die
     // Compound-Children an (`children[i] ↔ parts[i]`, der _buildFromBlueprint-
     // Vertrag — gilt für Kreaturen, Custom-Avatare und Peer-Seelen gleich).
@@ -18722,7 +18764,13 @@ class AnazhRealm {
                 const flap = Math.sin(t * (moving ? 11 : 5.5) + r.phase) * (moving ? 0.65 : 0.3);
                 c.rotation.z = b.rz + flap * r.side;
             } else if (r.role === "schwanz") {
-                c.rotation.y = b.ry + Math.sin(t * 2.2 + r.phase) * 0.28;
+                // W-A6-ERSTKONSUMENT: der Schwanz liest tailRate/tailAmp aus dem
+                // tetrapoda-Studio-Profil (fx.motion als DATEN — idle: 0.5/0.10 ruhig,
+                // moving [joy]: 5.5/0.38 lebhaft); ohne Rezept byte-alt (2.2 / 0.28).
+                const mp = this._motionStudioProfile(moving);
+                const tr = mp && Number.isFinite(mp.tailRate) ? mp.tailRate : 2.2;
+                const ta = mp && Number.isFinite(mp.tailAmp) ? mp.tailAmp : 0.28;
+                c.rotation.y = b.ry + Math.sin(t * tr + r.phase) * ta;
             } else if (r.role === "kopf") {
                 c.rotation.x = b.rx + Math.sin(t * 1.6) * 0.05 + (moving ? 0.04 : 0);
             } else if (r.role === "segel") {
@@ -51705,6 +51753,10 @@ class AnazhRealm {
         // lazy beim ersten LOD2-Bedarf enqueued; headless/Null-Renderer = No-op —
         // der Canvas-Fallback trägt, gate-treu).
         this._tickImpostorBake();
+        // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
+        // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
+        // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
+        this._tickAutoSettlement(playerPos);
         return work + promotions;
     }
 
@@ -56311,6 +56363,141 @@ class AnazhRealm {
             },
         ];
 
+        // Klang-Portal (Nachlese-Welle) — DIE LYRA: Stein-Sockel, zwei leicht
+        // gespreizte Holz-Arme, ein Joch, drei Quarz-Saiten (das Musik-Motiv,
+        // unverwechselbar neben den Tor-Rahmen). Substanz-Wahrheit wie alle
+        // welt_*-Parts (Tags · Blocker · E-Trigger); KEIN studioGestalt — die
+        // sieben porta-Tor-Ordnungen sind vergeben (jede Gestalt bleibt
+        // UNVERWECHSELBAR, W-A3-Gesetz), die Part-Gestalt trägt.
+        const weltKlangParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 3.6, y: 0.4, z: 0.9 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -1.3, y: 1.9, z: 0 },
+                size: { x: 0.35, y: 3.0, z: 0.35 },
+                rotation: { x: 0, y: 0, z: 0.14 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 1.3, y: 1.9, z: 0 },
+                size: { x: 0.35, y: 3.0, z: 0.35 },
+                rotation: { x: 0, y: 0, z: -0.14 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 3.5, z: 0 },
+                size: { x: 3.4, y: 0.4, z: 0.5 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: -0.7, y: 1.9, z: 0 },
+                size: { x: 0.07, y: 2.9, z: 0.07 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0, y: 1.9, z: 0 },
+                size: { x: 0.07, y: 2.9, z: 0.07 },
+            },
+            {
+                shape: "cylinder",
+                material: "quarz",
+                position: { x: 0.7, y: 1.9, z: 0 },
+                size: { x: 0.07, y: 2.9, z: 0.07 },
+            },
+        ];
+
+        // Körperstudio-Portal (Nachlese-Welle) — DER VITRUV-RAHMEN: Stein-Sockel,
+        // zwei Holz-Pfosten, Quarz-Kreis (der vitruvianische Mensch als Tor-Motiv).
+        const weltKoerperParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 3.8, y: 0.4, z: 0.9 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: -1.5, y: 1.7, z: 0 },
+                size: { x: 0.4, y: 2.6, z: 0.4 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 1.5, y: 1.7, z: 0 },
+                size: { x: 0.4, y: 2.6, z: 0.4 },
+            },
+            {
+                shape: "torus",
+                material: "quarz",
+                position: { x: 0, y: 2.1, z: 0 },
+                size: { x: 2.6, y: 2.6, z: 2.6 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 3.2, z: 0 },
+                size: { x: 3.6, y: 0.4, z: 0.5 },
+            },
+        ];
+
+        // Tetrapoda-Portal (Nachlese-Welle) — DAS TIER-TOR: vier Holz-Beine unter
+        // einem Rückgrat-Balken + Kopf-Kugel (die Vierbeiner-Silhouette als Tor).
+        const weltTetrapodaParts = [
+            {
+                shape: "box",
+                material: "stein",
+                position: { x: 0, y: 0.2, z: 0 },
+                size: { x: 4.0, y: 0.4, z: 1.6 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.5, y: 1.5, z: -0.5 },
+                size: { x: 0.3, y: 2.2, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 1.5, y: 1.5, z: -0.5 },
+                size: { x: 0.3, y: 2.2, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: -1.5, y: 1.5, z: 0.5 },
+                size: { x: 0.3, y: 2.2, z: 0.3 },
+            },
+            {
+                shape: "cylinder",
+                material: "holz",
+                position: { x: 1.5, y: 1.5, z: 0.5 },
+                size: { x: 0.3, y: 2.2, z: 0.3 },
+            },
+            {
+                shape: "box",
+                material: "holz",
+                position: { x: 0, y: 2.8, z: 0 },
+                size: { x: 4.2, y: 0.5, z: 1.2 },
+            },
+            {
+                shape: "sphere",
+                material: "holz",
+                position: { x: 2.3, y: 3.1, z: 0 },
+                size: { x: 0.7, y: 0.7, z: 0.7 },
+            },
+        ];
+
         // A1 (roadmap „OFFENE FÄDEN") — DIE BIBLIOTHEK: ein craftbarer Beispiel-
         // Bauplan pro Mach-Akt-Rolle (Schöpfer-Befund 03.06.). Portal + Werkstatt
         // hatten schon Saat (welt_*/esse/…); die VIER Lücken sind genau die vier
@@ -56971,6 +57158,50 @@ class AnazhRealm {
                 // kathedrale/maurentor sind vergeben).
                 studioGestalt: "ruine",
                 parts: this._stationVariant(weltFachwerkParts, felsWorldSeed + "-portal7"),
+            },
+            // Klang-Portal (Nachlese-Welle) — führt ins Musik-Labor des Schöpfers
+            // (worlds/klang/: Genesis Engine Pro, 22 Genre-Presets aus Gesetzen +
+            // DNA; der Kern klang-core.js ist seit W-A7 die EINE Musik-Daten-
+            // Quelle — der Host-Lofi liest Tempo + Skala daraus). Dasselbe
+            // W12-Muster; KEIN studioGestalt (die 7 Tor-Ordnungen sind vergeben,
+            // die Lyra-Part-Gestalt trägt — jede Gestalt bleibt unverwechselbar).
+            welt_klang: {
+                name: "welt_klang",
+                label: "Genesis — Generatives Musiksystem",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("klang"),
+                parts: this._stationVariant(weltKlangParts, felsWorldSeed + "-portal8"),
+            },
+            // Körperstudio-Portal (Nachlese-Welle) — führt ins Menschen-Labor des
+            // Schöpfers (worlds/koerperstudio/: Da Vinci Studio, Morph-Dials +
+            // Bewegungsprofile + Ninja-Park; der Kern koerper-core.js ist seit
+            // W-A6 die EINE Gestalt-/Motion-Daten-Quelle — der Host bleibt der
+            // OFEN). Dasselbe W12-Muster; KEIN studioGestalt (s. welt_klang).
+            welt_koerperstudio: {
+                name: "welt_koerperstudio",
+                label: "Da Vinci Studio — Lebendiger Mensch",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("koerperstudio"),
+                parts: this._stationVariant(weltKoerperParts, felsWorldSeed + "-portal9"),
+            },
+            // Tetrapoda-Portal (Nachlese-Welle) — führt ins Kreaturen-Labor des
+            // Schöpfers (worlds/tetrapoda/: Evolution Lab Aureus, 4 Gattungen aus
+            // allometrischen Dials + CPG-Gangnetz; der Kern tetrapoda-core.js ist
+            // seit W-A6 die EINE Gestalt-/Motion-Daten-Quelle — der Motion-
+            // Erstkonsument [Schwanz-Rolle] liest sie seit der Nachlese-Welle).
+            // Dasselbe W12-Muster; KEIN studioGestalt (s. welt_klang).
+            welt_tetrapoda: {
+                name: "welt_tetrapoda",
+                label: "Tetrapoda — Evolution Lab",
+                builtIn: true,
+                role: "portal",
+                roleManual: true,
+                portalMeta: portalTo("tetrapoda"),
+                parts: this._stationVariant(weltTetrapodaParts, felsWorldSeed + "-portal10"),
             },
             // A1 — DIE BIBLIOTHEK: die vier craftbaren Beispiel-Baupläne (Gerät/
             // Rüstung/Trank/Avatar), die den vier Mach-Akten (V17.59–.66) endlich
@@ -64823,37 +65054,37 @@ class AnazhRealm {
     // ging durch den `_structureSpawnPos`-Chokepoint in spawnSettlement). Häuser stehen
     // auf ihrer eigenen Terrain-Höhe (`getTerrainHeightAt` — die kanonische Quelle);
     // Straßen/Laternen/Mauer reisen als benannte, v1 unkonsumierte Daten im Export.
+    // N5.7-NACHLESE — DIE EINE SLOT-QUELLE (Gesetz #0, Raptor): ein Settlement-Slot
+    // wird IMMER hier gehoben — der deliberate Akt (`_spawnSettlementFromExport`,
+    // alle Slots sofort) UND der budgetierte Auto-Dorf-Tick (`_tickAutoSettlement`,
+    // Slots über Ticks verteilt) lesen DIESELBE Regel: Blueprint-Name aus der
+    // KIND_POLICY-Tabelle über den kind des LIVE-Rezepts (kein "haus_"-Literal, M8),
+    // `_isAboveWaterAt`-Wand je Slot (Welt-Awareness = EINE Quelle), fehlender
+    // Blueprint/fremde Kultur → Slot fällt GESCHLOSSEN aus. Rückgabe true = platziert.
+    _spawnSettlementSlot(slot, origin, f) {
+        if (!slot || typeof slot.kultur !== "string" || !origin) return false;
+        const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
+        const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
+        const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
+        if (!name || !this.state.blueprints[name]) return false; // fail-closed
+        const wx = origin.x + slot.x;
+        const wz = origin.z + slot.z;
+        if (!this._isAboveWaterAt(wx, wz, 0.2)) return false; // die Wasser-Wand
+        const wy = this.getTerrainHeightAt(wx, wz) + 0.5;
+        const entry = this.spawnArchitecture(
+            name,
+            { x: wx, y: wy, z: wz },
+            { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true }
+        );
+        return !!entry;
+    }
     _spawnSettlementFromExport(plan, origin) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
         const f = this._foundry;
-        const KP = AnazhRealm.KIND_POLICY;
         let placed = 0;
         let skipped = 0;
         for (const slot of plan.slots) {
-            if (!slot || typeof slot.kultur !== "string") {
-                skipped++;
-                continue;
-            }
-            const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
-            const pol = rec && KP[rec.kind];
-            const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
-            if (!name || !this.state.blueprints[name]) {
-                skipped++; // fail-closed: keine Policy/kein Auto-Blueprint → Slot fällt aus
-                continue;
-            }
-            const wx = origin.x + slot.x;
-            const wz = origin.z + slot.z;
-            if (!this._isAboveWaterAt(wx, wz, 0.2)) {
-                skipped++; // die Wasser-Wand (Welt-Awareness = EINE Quelle)
-                continue;
-            }
-            const wy = this.getTerrainHeightAt(wx, wz) + 0.5;
-            const entry = this.spawnArchitecture(
-                name,
-                { x: wx, y: wy, z: wz },
-                { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true }
-            );
-            if (entry) placed++;
+            if (this._spawnSettlementSlot(slot, origin, f)) placed++;
             else skipped++;
         }
         return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null };
@@ -64898,6 +65129,170 @@ class AnazhRealm {
             );
             return res;
         });
+    }
+    // ═══════════ N5.7-AUTO (Nachlese-Welle) — WORLDGEN-AUTO-DÖRFER ═══════════
+    // Der "settlement"-Kanal (`_placeDispatch`) bekommt seinen Worldgen-Konsumenten:
+    // Dörfer entstehen VON SELBST in der Welt. Die Wald-Schwester-Disziplin:
+    //   · SITE-WAHL seed-deterministisch (Γ5): grobe Welt-Zellen (AUTO_SETTLEMENT.cellM),
+    //     Hash(worldSeed + ":dorf:" + cx,cz, FNV-1a) entscheidet Existenz (selten —
+    //     Dörfer sind besonders: 1 von `rarity` Zellen) + Seed + Größe + Anker-Jitter.
+    //   · SITE-WÄNDE welt-deterministisch: flach (`_slopeAt`) · über Wasser
+    //     (`_isAboveWaterAt`) · fern vom Welt-Spawn (`spawnClearM` — die Warmup-Welt
+    //     [Ring ~4] bleibt per Konstruktion dorffrei).
+    //   · ASYNC (V18.423-Muster „die Region entsteht LEER und baut EINMAL"): die Zelle
+    //     wird vorgemerkt, der Export läuft durch den EINEN Foundry-Worker, die Häuser
+    //     materialisieren NACH Ankunft BUDGETIERT (perTick Slots je Idle-Tick, nur
+    //     `!_frameOverBudget` — das BOOT_PHASE3-Muster) durch DIE EINE Slot-Quelle
+    //     `_spawnSettlementSlot` (kein Parallel-Platzierer).
+    //   · IDEMPOTENZ ÜBER RELOAD: `worldMeta.settlementCells` = das Spawn-einmal-
+    //     Gedächtnis (reist im worldMeta-Spread von buildStateSnapshot/loadState —
+    //     der V8.59-Pfad, kein neuer Restore-Zweig; die Häuser selbst persistieren
+    //     als state.architectures). Markiert wird bei ANKUNFT des Exports (fail-closed:
+    //     ein Reload mitten in der budgetierten Materialisierung verliert die Rest-
+    //     Slots — nie ein Doppel-Dorf; das Fenster ist wenige Ticks).
+    //   · GATE-TREUE: headless (Null-Renderer) ruht der Auto-Zug DEFAULT (der
+    //     Voll-Playtest teleportiert den Spieler quer durch die Welt — ein Zufalls-
+    //     Dorf mitten in einem Band wäre die Cap/Zähl-Flake-Klasse; dieselbe
+    //     Disziplin wie der IDB-Cache). Der dedizierte Gate erzwingt den Zug über
+    //     den Hook `__anazhAutoSettlement` (sichern + wiederherstellen, nie löschen).
+    // Reine Zell-Wahrheit (cx,cz) → {seed, nH, Anker} oder null (Γ5, kein Math.random).
+    _autoSettlementCellInfo(cx, cz) {
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const wm = this.state.worldMeta || {};
+        const s = `${wm.seed || "anazh-realm-seed"}:dorf:${cx},${cz}`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        if (h % A.rarity !== 0) return null; // Dörfer sind besonders (selten)
+        // getrennte Seed-Bit-Bänder (die V18.181-Disziplin): Anker-Jitter (>>>8/>>>16,
+        // ±¼ Zelle — kein Raster-Look) + Dorf-Größe (>>>24).
+        const jx = (((h >>> 8) & 0xff) / 255 - 0.5) * A.cellM * 0.5;
+        const jz = (((h >>> 16) & 0xff) / 255 - 0.5) * A.cellM * 0.5;
+        return {
+            key: cx + "," + cz,
+            seed: h >>> 0 || 1,
+            nH: A.nHMin + ((h >>> 24) % A.nHSpan),
+            x: (cx + 0.5) * A.cellM + jx,
+            z: (cz + 0.5) * A.cellM + jz,
+        };
+    }
+    // Die welt-deterministischen SITE-WÄNDE am Anker (die Slot-Wände prüft
+    // `_spawnSettlementSlot` zusätzlich je Haus).
+    _autoSettlementSiteOk(x, z) {
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        if (Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
+        const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
+        return !(Number.isFinite(slope) && slope > A.slopeMax); // flach genug
+    }
+    // Der Kanal entscheidet (M8): Auto-Dörfer laufen NUR, wenn das LIVE-Buch
+    // mindestens ein Rezept trägt, dessen Place-Auflösung durch den EINEN
+    // Dispatch-Chokepoint auf "settlement" fällt (fx.place der 32 Haus-Rezepte) —
+    // kein Rezept-Kanal, kein Auto-Dorf. Gecacht auf Buch-Identität
+    // (das _forestExtraSpecies-Muster).
+    _autoSettlementChannelLive() {
+        const f = this._foundry;
+        const book = f && f.ready && f.recipes;
+        if (!book) return false;
+        if (this._autoStlChannelBook === book && this._autoStlChannelCache != null) return this._autoStlChannelCache;
+        let live = false;
+        for (const id in book) {
+            if (this._placeDispatch(this._placePolicyFor(book[id]), { id }) === "settlement") {
+                live = true;
+                break;
+            }
+        }
+        this._autoStlChannelCache = live;
+        this._autoStlChannelBook = book;
+        return live;
+    }
+    // Eine Dorf-Zelle deliberat heben (der Gate-/Test-Pfad UND der Tick teilen ihn):
+    // reserviert bei Export-ANKUNFT (`worldMeta.settlementCells[key]`), stellt die
+    // Slots in die budgetierte Bau-Queue. Fail-closed: kein Export → nichts markiert
+    // (der nächste Tick versucht neu).
+    _autoSettlementSpawnCell(cx, cz, info) {
+        const st = this.state;
+        const i2 = info || this._autoSettlementCellInfo(cx, cz);
+        if (!i2) return Promise.resolve(null);
+        const wm = st.worldMeta || (st.worldMeta = {});
+        if (!wm.settlementCells || typeof wm.settlementCells !== "object") wm.settlementCells = {};
+        const key = cx + "," + cz;
+        if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
+        // Der Anker läuft durch den EINEN Spawn-Chokepoint (nie auf dem Spieler —
+        // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall; fern = no-op).
+        const anchor = this._structureSpawnPos("village", { x: i2.x, y: 0, z: i2.z }, { state: st });
+        this._autoSettlementPendingKey = key;
+        return this._foundryRequestSettlement({ seed: i2.seed, nH: i2.nH }).then((plan) => {
+            this._autoSettlementPendingKey = null;
+            if (!plan || !Array.isArray(plan.slots)) return null; // fail-closed (Foundry kalt)
+            wm.settlementCells[key] = 1; // das Spawn-einmal-Gedächtnis (persistiert im worldMeta-Spread)
+            this._autoSettlementQueue = { plan, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
+            if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+            return plan;
+        });
+    }
+    // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
+    // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
+    _tickAutoSettlement(playerPos) {
+        const st = this.state;
+        if (!playerPos) return;
+        // Gate-Treue (s. Block-Kommentar): headless ruht der Auto-Zug, der Hook führt.
+        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
+        if (hook === false) return;
+        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
+        // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
+        const q = this._autoSettlementQueue;
+        if (q && q.plan) {
+            if (st._frameOverBudget) return; // erst die Frame-Zeit (V18.282-Wand)
+            const f = this._foundry;
+            let n = 0;
+            while (q.idx < q.plan.slots.length && n < A.perTick) {
+                this._spawnSettlementSlot(q.plan.slots[q.idx++], q.origin, f);
+                n++;
+            }
+            if (q.idx >= q.plan.slots.length) {
+                this._autoSettlementQueue = null;
+                this.log(
+                    `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
+                    "INFO"
+                );
+            }
+            return;
+        }
+        if (st._frameOverBudget) return;
+        if (this._autoSettlementPendingKey) return; // ein Export-Roundtrip zur Zeit
+        if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
+        const wm = st.worldMeta || {};
+        const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
+        const pcx = Math.floor(playerPos.x / A.cellM);
+        const pcz = Math.floor(playerPos.z / A.cellM);
+        for (let dz = -1; dz <= 1; dz++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const cx = pcx + dx;
+                const cz = pcz + dz;
+                const key = cx + "," + cz;
+                if ((cells && cells[key]) || this._autoSettlementRejected.has(key)) continue;
+                const info = this._autoSettlementCellInfo(cx, cz);
+                if (!info) {
+                    this._autoSettlementRejected.add(key); // Zelle trägt kein Dorf (Hash)
+                    continue;
+                }
+                const ddx = info.x - playerPos.x;
+                const ddz = info.z - playerPos.z;
+                if (ddx * ddx + ddz * ddz > A.nearM * A.nearM) continue; // noch fern — später
+                if (!this._autoSettlementSiteOk(info.x, info.z)) {
+                    this._autoSettlementRejected.add(key); // Site untauglich (Wasser/steil/Spawn-nah)
+                    continue;
+                }
+                this._autoSettlementSpawnCell(cx, cz, info);
+                return; // EIN Dorf-Akt pro Tick
+            }
+        }
     }
     _foundryRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
@@ -83523,10 +83918,33 @@ AnazhRealm.KIND_POLICY = Object.freeze({
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
 // `_placePolicyFor` liest sie fail-closed: ein Rezept mit unbekanntem mode (ein künftiges Lab)
-// platziert NICHT (→ "none"), es crasht nicht (must-ignore, M6). site/settlement sind semantisch
-// bekannt, führen heute aber zu keinem Worldgen-Kanal (`_placeDispatch` → null; site = der benannte
-// ε-Anschluss [Porta, siteTag als Daten] · settlement = nach dem Stadt-Lab-Export, N5.7).
+// platziert NICHT (→ "none"), es crasht nicht (must-ignore, M6). site ist semantisch bekannt,
+// führt heute aber zu keinem Worldgen-Kanal (`_placeDispatch` → null; der benannte ε-Anschluss
+// [Porta, siteTag als Daten]) · settlement ist seit W-A5b der deliberate Kanal (spawnSettlement)
+// und trägt seit der Nachlese-Welle den Worldgen-Konsumenten (`_tickAutoSettlement`).
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
+// N5.7-AUTO (Nachlese-Welle) — die WORLDGEN-AUTO-DORF-Daten (der eine Konsument:
+// `_tickAutoSettlement`; die Wände + Γ5-Disziplin dort dokumentiert):
+//   cellM        768-m-Welt-Zellen (welt-verankert wie planForestCell/das Busch-Raster)
+//   rarity       1 von 5 Zellen trägt ein Dorf (Hash-Existenz — Dörfer sind besonders,
+//                ~1 Dorf je ~3 km² vor den Site-Wänden)
+//   nearM        Materialisierungs-Distanz Spieler↔Anker (näher kommen weckt die Zelle)
+//   spawnClearM  Mindestabstand vom Welt-Ursprung (die Warmup-/Boot-Welt [Ring ~4 ≈
+//                ~130 m] bleibt per Konstruktion dorffrei; nearM < spawnClearM ⇒ am
+//                Spawn stehend kann KEINE Zelle beides erfüllen)
+//   slopeMax     Site-Wand: der Anker muss flach sein (_slopeAt, |∇h| m/m)
+//   nHMin/nHSpan Dorf-Größe 8..17 Häuser (deterministisch aus dem Zell-Hash)
+//   perTick      budgetierte Materialisierung: Häuser je Idle-Tick (BOOT_PHASE3-Muster)
+AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
+    cellM: 768,
+    rarity: 5,
+    nearM: 260,
+    spawnClearM: 320,
+    slopeMax: 0.35,
+    nHMin: 8,
+    nHSpan: 10,
+    perTick: 2,
+});
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).
@@ -86311,6 +86729,93 @@ AnazhRealm.WORLD_REGISTRY = Object.freeze({
         ]),
         desc: "Das Haus-Labor: parametrisches Fachwerk, tragwerk-ehrlich und begehbar — 32 Kulturen, Dorf-Modus mit gewachsenen Siedlungen.",
     }),
+    // Nachlese-Welle (10.07.2026) — das MUSIK-Labor des Schöpfers (Genesis Engine
+    // Pro, W-A7): 22 Genre-Presets aus Kompositions-Gesetzen (Form · Harmonie ·
+    // Rhythmus · Bass · Melodie) + sechs DNA-Dials. Der Kern (klang-core.js,
+    // __klangCore, MESHFREI §8.1) ist die EINE Musik-Daten-Quelle für Shell UND
+    // AnazhRealm (das Host-Lofi liest Tempo + Skala, KLANG_HOST_RECIPE). Die DSL
+    // spricht die ECHTEN UI-Pfade: die Genre-Buttons (#presets .presetBtn,
+    // click → applyPreset; Wörter = lowercase-Lab-Namen — die Buch-id-Ausnahmen
+    // modern-klang/barock-klang gelten dem first-wins-Buch, nicht dem Lab-UI).
+    klang: Object.freeze({
+        id: "klang",
+        label: "Genesis — Generatives Musiksystem",
+        world: "worlds/klang/index.html",
+        dsl: Object.freeze([
+            "blues",
+            "bebop",
+            "cooljazz",
+            "freejazz",
+            "boombap",
+            "trap",
+            "techno",
+            "dnb",
+            "reggae",
+            "ambient",
+            "barock",
+            "minimal",
+            "lofi",
+            "modern",
+            "bossa",
+            "vibes",
+            "funk",
+            "latin",
+            "dub",
+            "synthwave",
+            "cinematic",
+            "rock",
+        ]),
+        desc: "Das Klang-Labor: 22 Genres aus Kompositions-Gesetzen und DNA-Dials — dieselbe Quelle, aus der das Host-Lofi Tempo und Skala liest.",
+    }),
+    // Nachlese-Welle (10.07.2026) — das MENSCHEN-Labor des Schöpfers (Da Vinci
+    // Studio, W-A6): Morph-Dials (Größe/Masse/Tonus/Alter) · Haar/Kleidung ·
+    // acht Bewegungs-/Emotionsprofile · Ninja-Park. Der Kern (koerper-core.js,
+    // __koerperCore, MESHFREI) ist die EINE Gestalt-/Motion-Daten-Quelle.
+    // Die DSL spricht die ECHTEN UI-Pfade: die #emotions-Buttons (data-e,
+    // click → emo.set) + zufall/zuruecksetzen (btnRandom/btnReset).
+    koerperstudio: Object.freeze({
+        id: "koerperstudio",
+        label: "Da Vinci Studio — Lebendiger Mensch",
+        world: "worlds/koerperstudio/index.html",
+        dsl: Object.freeze([
+            "entspannt",
+            "freude",
+            "trauer",
+            "wut",
+            "angst",
+            "rennen",
+            "kampf",
+            "showcase",
+            "zufall",
+            "zuruecksetzen",
+        ]),
+        desc: "Das Menschen-Labor: der lebendige Körper aus Morph-Dials, Bewegungsprofilen und Ninja-Park — die Quelle der Avatar-Gestalt-Daten.",
+    }),
+    // Nachlese-Welle (10.07.2026) — das KREATUREN-Labor des Schöpfers (Evolution
+    // Lab Aureus, W-A6): Wolf/Fuchs/Bär/Hirsch aus fünf allometrischen Dials,
+    // CPG-Gangnetz + sechs Bewegungsprofile. Der Kern (tetrapoda-core.js,
+    // __tetrapodaCore, MESHFREI) ist die EINE Gestalt-/Motion-Daten-Quelle —
+    // der Motion-Erstkonsument (Schwanz-Rolle, `_motionStudioProfile`) liest sie.
+    // Die DSL spricht die ECHTEN UI-Pfade: Gattungs-Buttons (#presets, data-p)
+    // + Profil-Buttons (#emotions, data-e); Wörter deutsch, ASCII-gefaltet (baer).
+    tetrapoda: Object.freeze({
+        id: "tetrapoda",
+        label: "Tetrapoda — Evolution Lab",
+        world: "worlds/tetrapoda/index.html",
+        dsl: Object.freeze([
+            "wolf",
+            "fuchs",
+            "baer",
+            "hirsch",
+            "entspannt",
+            "freude",
+            "jagd",
+            "flucht",
+            "wachsam",
+            "showcase",
+        ]),
+        desc: "Das Kreaturen-Labor: Vierbeiner aus allometrischen Gesetzen — Gattungs-Dials, CPG-Gang und Bewegungsprofile als Daten-Quelle.",
+    }),
     // V8.70 — die erste UNTRUSTED Welt: eine echte fremde Engine (2D-Boids,
     // eigenes Canvas, eigener Loop — kein Three.js, kein AnazhRealm-Code),
     // die in einem null-origin-iframe sandgesichert läuft. trust:"sandboxed"
@@ -87419,6 +87924,12 @@ AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo (Fallback — das Studio-Klang-R
 // W-A7 (Wörterbuch v1.1 `klang`) — DATEN-Zeile: welches Genesis-Genre-Rezept das
 // Host-Lofi-Pad führt (`_klangStudioPreset` liest f.recipes[..].fx.klang LIVE).
 AnazhRealm.KLANG_HOST_RECIPE = "lofi";
+// W-A6-ERSTKONSUMENT (Wörterbuch v1.1 `motion`) — DATEN-Zeilen: welches tetrapoda-
+// Rezept den Host-Bewegungs-Charakter führt (`_motionStudioProfile` liest
+// f.recipes[..].fx.motion LIVE) + die Zustands→Profil-Zuordnung (der Host kennt
+// moving/idle, das Lab kennt joy/idle — die Brücke ist eine Tabelle, kein if).
+AnazhRealm.MOTION_HOST_RECIPE = "wolf";
+AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({ moving: "joy", idle: "idle" });
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 // W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
 // Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +

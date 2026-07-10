@@ -1,10 +1,14 @@
 # Labs-Andock-Fahrplan — die fünf Schöpfer-Systeme (Anlieferung 09.07.2026)
 
-> **Status (V18.442):** ALLE FÜNF GEDOCKT — schmiede (W-A4a–c, VOLL: Kern+Hand+Portal) ·
-> fachwerk (W-A5a Kern + W-A5b settlement/Portal) · koerperstudio + tetrapoda (W-A6
-> Daten-Dock: MESHFREI-Kerne + motion-Feld; Shells lesen die Kerne, laden three noch per
-> CDN — Portal-Umzug = Folge-Schritt) · klang (W-A7: MESHFREI-Kern + klang-Feld + der
-> EINE Lofi-Konsument; Shell liest den Kern, CDN-frei).
+> **Status (Nachlese-Welle nach V18.442):** ALLE FÜNF GEDOCKT + ALLE FÜNF PORTALE —
+> schmiede (W-A4a–c, VOLL: Kern+Hand+Portal) · fachwerk (W-A5a Kern + W-A5b settlement/
+> Portal + Nachlese: Worldgen-Auto-Dörfer) · koerperstudio + tetrapoda (W-A6 Daten-Dock:
+> MESHFREI-Kerne + motion-Feld; Nachlese: Portal-Umzug [W-A4c-Muster, vendored r128,
+> byte-treue Splits koerperstudio.js/tetrapoda.js, W12-Brücken, smoke:labs] + der
+> motion-ERSTKONSUMENT [Schwanz-Rolle liest fx.motion]) · klang (W-A7: MESHFREI-Kern +
+> klang-Feld + der EINE Lofi-Konsument [Tempo + seit der Nachlese SKALA]; Nachlese:
+> Portal-Umzug klang.js, THREE-frei). smoke:labs = 7 Portale — JEDES Schöpfer-Lab ist
+> ein Portal.
 > **ÜBERGEORDNET seit 10.07.: `docs/auslagerungs-plan.md` (DER KATALYSATOR-BOGEN) führt die
 > Reihenfolge (W-A1–A7); dieser Fahrplan bleibt die Lab-Detail-Referenz.**
 > Das Andocken je Lab folgt der **ε-Checkliste des Nervensystem-Plans** (`docs/nervensystem-plan.md`
@@ -56,7 +60,7 @@ Verb erfinden"). Sie werden je als eigene ε-Welle mit Gate gebaut, BEVOR das je
 
 1. **schmiede** ✅ GEDOCKT (10.07., V18.439 — W-A4a: schmiede-core.js, 21 Rezepte, Split-Parität 21/21; W-A4b Hand-Render ✅ V18.440 · W-A4c Portal-Umzug ✅ V18.441 — die Schmiede ist VOLL angedockt; offen nur Donor-Abschied nach Schöpfer-Abnahme + Rüstung/Trank als Rezepte)
 2. **fachwerk** ✅ GEDOCKT (10.07. — W-A5a Kern + W-A5b [V18.442]: N5.7 settlement [DORF-QUELLE im Kern, exportSettlement→spawnSettlement, gate:settlement] + Portal [fachwerk.js, CSP, W12, welt_fachwerk, smoke:labs])
-3. **tetrapoda** + **koerperstudio** ✅ DATEN-GEDOCKT (V18.442 — motion-Feld v1.1 §8.2 + MESHFREI-Kerne + gate:daten-contract/gate:nervensystem-labs; der motion-KONSUM [_animateCompoundMotion] ist der benannte Folge-Schritt, der Host bleibt der OFEN)
-4. **klang** ✅ GEDOCKT (V18.442 — klang-Feld v1.1 §8.3 + klang-core [22 Genres] + der EINE Audio-Konsument: das Lofi-Pad fährt das Genesis-Tempo [_klangStudioPreset/_lofiChordDurationMs])
+3. **tetrapoda** + **koerperstudio** ✅ VOLL (V18.442 Daten-Dock [motion-Feld v1.1 §8.2 + MESHFREI-Kerne + gate:daten-contract/gate:nervensystem-labs] + Nachlese-Welle: PORTALE [welt_tetrapoda/welt_koerperstudio, W12-Brücken, vendored r128] + der motion-ERSTKONSUMENT [die Schwanz-Rolle des EINEN Animators liest fx.motion via _motionStudioProfile, fail-soft byte-alt — der Gang-/Rig-Konsum bleibt der benannte eigene Bogen, der Host bleibt der OFEN]; Beifang: der W-A6-Alias-Bug der tetrapoda-Shell geheilt [presets doppelt geschachtelt → emo.set warf])
+4. **klang** ✅ VOLL (V18.442 klang-Feld v1.1 §8.3 + klang-core [22 Genres] + Tempo-Konsument; Nachlese-Welle: PORTAL [welt_klang, klang.js THREE-frei] + SKALA/HARMONIK [_lofiActiveScale + der EINE skalen-bewusste Ton-Mapper _lofiScaleSemitone, Oktav-Faltung mod Skalenlänge, fail-soft byte-alt])
 
 Porta (`worlds/portale/`, liegt bereit) bleibt der ERSTE ε-Beweis (Plan TEIL VIII Punkt 4).

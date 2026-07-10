@@ -2,7 +2,10 @@
 // worlds/garage/ (ANATOMIE · FAHRZEUG, 08.07.2026) + worlds/portale/
 // (PORTA · ORDNUNGEN + FRAKTAL, 08.07.2026) + worlds/schmiede/
 // (ANATOMIE · KLINGE, 10.07.2026 — W-A4c) + worlds/fachwerk/
-// (FACHWERKHAUS, 10.07.2026 — W-A5b). Je Welt vier Prüfungen:
+// (FACHWERKHAUS, 10.07.2026 — W-A5b) + worlds/klang/ (GENESIS ENGINE PRO)
+// + worlds/koerperstudio/ (DA VINCI STUDIO) + worlds/tetrapoda/ (EVOLUTION
+// LAB — alle drei Nachlese-Welle 10.07.2026: JEDES Schöpfer-Lab ist ein
+// Portal). Je Welt vier Prüfungen:
 //   1. lädt fehlerfrei (0 pageerrors — die gate:page-error-Klasse)
 //   2. rendert (canvas existiert)
 //   3. die W12-Brücke meldet ready (world/label/dsl-Manifest)
@@ -62,6 +65,18 @@ const server = http.createServer((req, res) => {
     if (p === "/__harness_fachwerk.html") {
         res.setHeader("Content-Type", "text/html");
         return res.end(harness("/worlds/fachwerk/index.html"));
+    }
+    if (p === "/__harness_klang.html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.end(harness("/worlds/klang/index.html"));
+    }
+    if (p === "/__harness_koerperstudio.html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.end(harness("/worlds/koerperstudio/index.html"));
+    }
+    if (p === "/__harness_tetrapoda.html") {
+        res.setHeader("Content-Type", "text/html");
+        return res.end(harness("/worlds/tetrapoda/index.html"));
     }
     const fp = path.join(root, p);
     if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
@@ -219,6 +234,39 @@ async function testWorld(browser, id, opts) {
         expectActive: "tudor",
     });
 
+    // Nachlese-Welle — die drei letzten Schöpfer-Labore als Portale (W-A4c-Muster):
+    // klang (THREE-frei, Genre-Buttons entstehen dynamisch aus __klangCore.GENRES),
+    // koerperstudio + tetrapoda (vendored r128-Regal, Emotions-/Gattungs-Buttons).
+    await testWorld(browser, "klang", {
+        label: "Genesis — Generatives Musiksystem",
+        dslWord: "trap",
+        activeProbe: () => {
+            const b = document.querySelector("#presets .presetBtn.active");
+            return b ? b.textContent : null;
+        },
+        expectActive: "Trap",
+    });
+
+    await testWorld(browser, "koerperstudio", {
+        label: "Da Vinci Studio — Lebendiger Mensch",
+        dslWord: "wut",
+        activeProbe: () => {
+            const b = document.querySelector("#emotions button.active");
+            return b ? b.textContent : null;
+        },
+        expectActive: "Wut",
+    });
+
+    await testWorld(browser, "tetrapoda", {
+        label: "Tetrapoda — Evolution Lab",
+        dslWord: "hirsch",
+        activeProbe: () => {
+            const b = document.querySelector("#presets button.active");
+            return b ? b.textContent : null;
+        },
+        expectActive: "Hirsch",
+    });
+
     await browser.close();
     server.close();
 
@@ -227,7 +275,7 @@ async function testWorld(browser, id, opts) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — alle vier Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade."
+        "\n✅ GRÜN — alle SIEBEN Schöpfer-Labore laufen als Portale: fehlerfrei, rendernd, W12-Brücke spricht, die DSL klickt die echten UI-Pfade."
     );
     process.exit(0);
 })().catch((e) => {

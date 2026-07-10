@@ -13749,7 +13749,15 @@ async function checkBandW4LofiPad(ctx) {
             Object.isFrozen(harmony) &&
             harmony.every((t) => Array.isArray(t) && t.length >= 1);
         out.bpmDefined = AnazhRealm.LOFI_BPM === 60 && AnazhRealm.LOFI_BASE_FREQ === 110;
-        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen.
+        // W-A7-VERTIEFUNG (V9.56-i — der Test wandert mit dem Code): die SKALA führt
+        // seit der Nachlese-Welle das Studio-Klang-Rezept (_lofiActiveScale, Blues-
+        // Skala bei warmem Buch) — die byte-alten Konstanten-Proben laufen darum mit
+        // VERSTECKTEM Rezept (Sicherung + Wiederherstellung, die Gate-Hook-Disziplin);
+        // die Studio-Skalen-Probe steht daneben.
+        const fK = r._foundry;
+        const prevLofi = fK && fK.recipes ? fK.recipes.lofi : undefined;
+        if (prevLofi) delete fK.recipes.lofi;
+        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (byte-alt: A-Moll).
         const deg0 = r._lofiChordFromDegree(0);
         const deg3 = r._lofiChordFromDegree(3);
         out.chordFromDegree =
@@ -13758,6 +13766,14 @@ async function checkBandW4LofiPad(ctx) {
         // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven.
         out.scaleSemitone =
             r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(7) === 12 && r._lofiScaleSemitone(2) === 3;
+        if (prevLofi) fK.recipes.lofi = prevLofi;
+        // W-A7-VERTIEFUNG — mit warmem Buch faltet der EINE Mapper in die Studio-
+        // Skala (lofi → Blues [0,3,5,6,7,10], 6 Töne: idx 6 = Oktav-Wurzel +12).
+        out.scaleStudio =
+            !prevLofi ||
+            (r._lofiScaleSemitone(2) === 5 &&
+                r._lofiScaleSemitone(6) === 12 &&
+                JSON.stringify(r._lofiChordFromDegree(0)) === JSON.stringify([0, 5, 7, 12]));
         // W4 V3 Phase 3 — der Groove: Trommel-Muster + Swing.
         const gp = AnazhRealm.LOFI_GROOVE_PATTERN;
         out.grooveDefined =
@@ -14026,6 +14042,10 @@ async function checkBandW4LofiPad(ctx) {
         check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
         check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
         check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
+        check(
+            "W-A7-Vertiefung: der EINE Ton-Mapper faltet in die Studio-Skala (lofi → Blues, 6 Töne)",
+            w4v2Results.scaleStudio
+        );
         check(
             "W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert",
             w4v2Results.grooveDefined

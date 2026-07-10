@@ -12,8 +12,18 @@
 //     platziert N haus_<kultur>-Einträge POSITIONS-DETERMINISTISCH am Anker (zweiter
 //     Anker ⇒ identische Offsets), die Wasser-Wand + die fail-closed-Slot-Regel greifen
 //     (unbekannte Kultur wird übersprungen), und der Chat-Konsument "dorf" existiert.
+//   TEIL C (Nachlese-Welle — WORLDGEN-AUTO-DÖRFER, derselbe Browser): der
+//     "settlement"-Dispatch-Kanal hat seinen Worldgen-Konsumenten — Zell-Wahrheit
+//     deterministisch (2 Läufe byte-gleich, zell-sensitiv, Γ5 ":dorf"-Stream), die
+//     Site-Wände greifen (Spawn-Klar-Wand am Ursprung), die erzwungene Dorf-Zelle
+//     (Hook __anazhAutoSettlement, gesichert+wiederhergestellt) materialisiert
+//     BUDGETIERT über Ticks (perTick, _frameOverBudget pausiert), IDEMPOTENT
+//     (worldMeta.settlementCells markiert; zweiter Durchlauf spawnt 0 neue) und
+//     durch DIE EINE Slot-Quelle _spawnSettlementSlot; headless-default RUHT der
+//     Auto-Zug (Null-Renderer ohne Hook → kein Pending, kein Dorf).
 //   --selftest: ein in-memory korrumpiertes Golden MUSS rot erkannt werden + ein
-//     Slot mit unbekannter Kultur MUSS fallen (die Linse ist nicht vakuös).
+//     Slot mit unbekannter Kultur MUSS fallen + die Auto-Dorf-Struktur-Gesetze
+//     MÜSSEN auf injizierte Verletzungen feuern (die Linse ist nicht vakuös).
 //   node scripts/diag-settlement.cjs [--selftest]
 const crypto = require("crypto");
 const fs = require("fs");
@@ -29,6 +39,38 @@ function check(name, ok, detail) {
     if (!ok) errs.push(name);
 }
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
+
+// Nachlese-Welle — die STATISCHEN Auto-Dorf-Gesetze (kommentar-gestrippt, die
+// V18.267-Falle): Reservierung + Γ5-Stream + die EINE Slot-Quelle + Headless-Ruhe.
+function stripComments(src) {
+    return src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+}
+function autoStaticLaws(anazhSrc) {
+    const nc = stripComments(anazhSrc);
+    return [
+        [
+            "C-S1: _autoSettlementSpawnCell RESERVIERT (settlementCells[key] = 1 — das Spawn-einmal-Gedächtnis)",
+            /settlementCells\[key\] = 1/.test(nc),
+        ],
+        [
+            'C-S2: die Zell-Wahrheit zieht aus dem ":dorf"-Stream (Γ5, kein Math.random im Auto-Pfad)',
+            /:dorf:/.test(nc) &&
+                (() => {
+                    const i = nc.indexOf("_autoSettlementCellInfo(cx, cz) {");
+                    const j = i >= 0 ? nc.indexOf("_tickAutoSettlement(", i) : -1;
+                    return i >= 0 && j > i && !/Math\.random/.test(nc.slice(i, j));
+                })(),
+        ],
+        [
+            "C-S3: der Tick platziert durch DIE EINE Slot-Quelle (_spawnSettlementSlot — kein Parallel-Platzierer)",
+            /_tickAutoSettlement\(playerPos\) \{[\s\S]{0,4000}_spawnSettlementSlot\(/.test(nc),
+        ],
+        [
+            "C-S4: der Auto-Zug ruht headless (Null-Renderer-Wand + __anazhAutoSettlement-Hook)",
+            /_isHeadlessNull\) return;/.test(nc) && /__anazhAutoSettlement/.test(nc),
+        ],
+    ];
+}
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
 function fingerprint(plan) {
@@ -60,6 +102,19 @@ const FIXTURES = [
         const b = JSON.parse(JSON.stringify(a));
         b.slots[0].x += 0.001;
         check("Selbst-Test 2: ein 1-mm-Slot-Versatz kippt den Fingerabdruck", fingerprint(a) !== fingerprint(b));
+        // V3 (Nachlese-Welle): die Auto-Dorf-Struktur-Gesetze feuern auf Injektion.
+        const anazhSrcST = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
+        check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
+        const broken1 = anazhSrcST.replace("settlementCells[key] = 1", "settlementCells[key] = 0 ? 1 : 1 - 0");
+        const cs1 = autoStaticLaws(broken1).find((l) => l[0].startsWith("C-S1"));
+        check("Selbst-Test 4: Reservierung entfernt -> C-S1 feuert", cs1 && cs1[1] === false);
+        const broken2 = anazhSrcST.replace(
+            /_spawnSettlementSlot\(q\.plan\.slots/g,
+            "_meinParallelPlatzierer(q.plan.slots"
+        );
+        const cs3 = autoStaticLaws(broken2).find((l) => l[0].startsWith("C-S3"));
+        check("Selbst-Test 5: Parallel-Platzierer injiziert -> C-S3 feuert", cs3 && cs3[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -247,10 +302,90 @@ const FIXTURES = [
         // 5) Γ5: spawnSettlement wuerfelt seed-frei aus dem Welt-Stream (Source-Probe am lebenden Symbol).
         const src = window.__codeOf ? window.__codeOf(r.spawnSettlement) : r.spawnSettlement.toString();
         res.gammaStream = /:stadt/.test(src) && !/Math\.random/.test(src);
+        // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
+        // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
         res.waterWall = /_isAboveWaterAt/.test(
-            window.__codeOf ? window.__codeOf(r._spawnSettlementFromExport) : r._spawnSettlementFromExport.toString()
+            window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
         );
         res.anchorChokepoint = /_structureSpawnPos/.test(src);
+        // ===== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) =====
+        res.c = {};
+        try {
+            const A = r.constructor.AUTO_SETTLEMENT;
+            // C1 — Zell-Wahrheit deterministisch + zell-sensitiv (reine Funktion, Γ5).
+            let cand = null;
+            let candCount = 0;
+            for (let cz = -6; cz <= 6 && !cand; cz++) {
+                for (let cx = -6; cx <= 6; cx++) {
+                    const i1 = r._autoSettlementCellInfo(cx, cz);
+                    if (!i1) continue;
+                    candCount++;
+                    if (r._autoSettlementSiteOk(i1.x, i1.z)) {
+                        cand = i1;
+                        break;
+                    }
+                }
+            }
+            res.c.hashRare = candCount > 0 && candCount < 169; // selten, aber existent (13x13 Zellen)
+            const rep = cand ? r._autoSettlementCellInfo(parseInt(cand.key), parseInt(cand.key.split(",")[1])) : null;
+            res.c.deterministic = !!(cand && rep && JSON.stringify(cand) === JSON.stringify(rep));
+            res.c.spawnClearWall = r._autoSettlementSiteOk(0, 0) === false; // die Warmup-Welt bleibt dorffrei
+            res.c.channelLive = r._autoSettlementChannelLive() === true; // der Dispatch-Kanal (M8)
+            // C2 — HEADLESS-DEFAULT: Null-Renderer ohne Hook -> der Tick ruht (kein Pending).
+            const prevHook = window.__anazhAutoSettlement;
+            delete window.__anazhAutoSettlement;
+            if (cand) r._tickAutoSettlement({ x: cand.x, z: cand.z });
+            res.c.headlessQuiet = !r._autoSettlementPendingKey && !r._autoSettlementQueue;
+            // C3 — die ERZWUNGENE Dorf-Zelle (Hook an, sichern + wiederherstellen):
+            // Export -> Reservierung -> budgetierte Materialisierung ueber Ticks.
+            window.__anazhAutoSettlement = true;
+            const wm = r.state.worldMeta;
+            const key = cand ? cand.key : null;
+            const archBefore = r.state.architectures.length;
+            const plan = cand
+                ? await Promise.race([
+                      r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand),
+                      new Promise((rs) => setTimeout(() => rs("timeout"), 90000)),
+                  ])
+                : null;
+            res.c.planOk = !!(plan && plan !== "timeout" && Array.isArray(plan.slots));
+            res.c.reserved = !!(key && wm.settlementCells && wm.settlementCells[key] === 1);
+            // Budget-Wand: ueber Budget materialisiert NICHTS.
+            const fob = r.state._frameOverBudget;
+            r.state._frameOverBudget = true;
+            r._tickAutoSettlement({ x: cand ? cand.x : 0, z: cand ? cand.z : 0 });
+            const archOverBudget = r.state.architectures.length;
+            res.c.budgetWall = archOverBudget === archBefore;
+            r.state._frameOverBudget = false;
+            // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
+            let ticks = 0;
+            let maxPerTick = 0;
+            let prevCount = r.state.architectures.length;
+            while (r._autoSettlementQueue && ticks < 500) {
+                r._tickAutoSettlement({ x: cand.x, z: cand.z });
+                const now2 = r.state.architectures.length;
+                if (now2 - prevCount > maxPerTick) maxPerTick = now2 - prevCount;
+                prevCount = now2;
+                ticks++;
+            }
+            const archAfter = r.state.architectures.length;
+            res.c.placed = archAfter - archBefore;
+            res.c.ticks = ticks;
+            res.c.budgeted = maxPerTick > 0 && maxPerTick <= A.perTick && ticks >= 2;
+            res.c.allHaus = r.state.architectures
+                .slice(archBefore)
+                .every((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+            // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
+            const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
+            for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });
+            res.c.idempotent = again === null && r.state.architectures.length === archAfter;
+            // Hook wiederherstellen (sichern + wiederherstellen, nie loeschen — die Disziplin):
+            if (prevHook === undefined) delete window.__anazhAutoSettlement;
+            else window.__anazhAutoSettlement = prevHook;
+            r.state._frameOverBudget = fob;
+        } catch (e) {
+            res.c.err = (e && e.message) || String(e);
+        }
         return res;
     });
 
@@ -278,8 +413,40 @@ const FIXTURES = [
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
     check("B: Γ5 — der Siedlungs-Same zieht aus dem :stadt-Stream (kein Math.random)", out.gammaStream === true);
-    check("B: die Wasser-Wand steht im Konsumenten (_isAboveWaterAt je Slot)", out.waterWall === true);
+    check(
+        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
+        out.waterWall === true
+    );
     check("B: der Anker laeuft durch den EINEN Spawn-Chokepoint (_structureSpawnPos)", out.anchorChokepoint === true);
+    console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
+    for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
+    const c = out.c || {};
+    check(
+        "C1: die Zell-Wahrheit ist selten + deterministisch (2 Läufe byte-gleich, Γ5)",
+        c.hashRare === true && c.deterministic === true,
+        c.err || ""
+    );
+    check("C1b: die Spawn-Klar-Wand steht (der Welt-Ursprung ist nie Dorf-Site)", c.spawnClearWall === true);
+    check("C1c: der Dispatch-Kanal lebt (mind. ein Rezept -> settlement, M8)", c.channelLive === true);
+    check(
+        "C2: HEADLESS-DEFAULT — Null-Renderer ohne Hook: der Auto-Zug ruht (kein Pending, keine Queue)",
+        c.headlessQuiet === true
+    );
+    check(
+        "C3: die erzwungene Dorf-Zelle materialisiert (Export -> Reservierung -> Häuser)",
+        c.planOk === true && c.reserved === true && c.placed >= 1 && c.allHaus === true,
+        `placed=${c.placed} ticks=${c.ticks}`
+    );
+    check("C3b: die Budget-Wand pausiert (_frameOverBudget -> 0 Häuser in dem Tick)", c.budgetWall === true);
+    check(
+        "C3c: BUDGETIERT über Ticks (je Tick <= perTick Slots, mehrere Ticks — das BOOT_PHASE3-Muster)",
+        c.budgeted === true,
+        `ticks=${c.ticks}`
+    );
+    check(
+        "C4: IDEMPOTENT — dieselbe Zelle nochmal: 0 neue Häuser (worldMeta.settlementCells trägt über den Reload)",
+        c.idempotent === true
+    );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
@@ -287,7 +454,7 @@ const FIXTURES = [
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT: exportSettlement ist deterministisch + eingefroren (Kern), der Export reist durch den EINEN Worker (Brücke generisch, M8), und der Host hebt die Slots positions-deterministisch, wasser-bewacht und fail-closed in die Welt (Wald-Schwester als deliberater Akt)."
+        "\n✅ GRÜN — DER SETTLEMENT-KANAL N5.7 STEHT: exportSettlement ist deterministisch + eingefroren (Kern), der Export reist durch den EINEN Worker (Brücke generisch, M8), der Host hebt die Slots positions-deterministisch, wasser-bewacht und fail-closed in die Welt (deliberater Akt) — UND der Worldgen-Konsument lebt (Auto-Dörfer: Γ5-Zellen, Site-Wände, budgetierte Materialisierung durch die EINE Slot-Quelle, Reload-idempotent, headless-ruhig)."
     );
     process.exit(0);
 })().catch((e) => {
