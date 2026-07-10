@@ -43656,7 +43656,20 @@ class AnazhRealm {
         const buildHand = (bpName, side) => {
             const bp = this.state.blueprints && this.state.blueprints[bpName];
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return null;
-            const mesh = this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+            // W-A4b (Katalysator §6/§7) — DIE STUDIO-GESTALT IN DER HAND (das Baum-/Portal-
+            // Muster): löst der EINE Preset-Resolver den Bauplan auf (klinge_<id> → LIVE-Buch)
+            // UND ist die gecachte Foundry-Gruppe warm, tragen Wrapper um die GETEILTE Studio-
+            // Geometrie die Hand-Optik; die Parts bleiben die unsichtbare SUBSTANZ-Wahrheit
+            // (Tags · Ω-PHYSIS · wield). "pending" (Asset zieht noch) → der Part-Bau trägt
+            // SICHTBAR als Interim (Welt-Interim-Regel: die Hand ist nie leer); null (foundry-
+            // aus/Hook/kaltes Buch/unbekanntes Preset) → der Part-Pfad byte-alt.
+            const studio = this._heldFoundryGroup(bpName);
+            const isStudio = !!(studio && studio !== "pending");
+            const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+            // W-A4b — Erst-Zeig-Stall (die V18.367-Klasse): die frisch gebaute Studio-Hand-
+            // Gruppe warm kompilieren (Null-Renderer/headless: No-op; disposeAfter false —
+            // die Geometrie ist GETEILT und bleibt im Spiel).
+            if (isStudio) this._warmCompilePipeline(mesh, false);
             // auf greifbare Hand-Größe skalieren — die ECHTE Geometrie-Spanne (positions + sizes +
             // rotation), robust auch bei Ein-Part-Geräten (anders als _compoundBBox, positions-only).
             try {
@@ -43683,14 +43696,145 @@ class AnazhRealm {
             // verschoben, dass der griffigste Part (bzw. der explizite griff-
             // Punkt) am Hand-Anker sitzt, nicht der Bauplan-Ursprung.
             const ms = mesh.scale && Number.isFinite(mesh.scale.x) ? mesh.scale.x : 1;
-            const gp = this._attachPointFor(bp, "griff").point;
+            // W-A4b — der Griff der STUDIO-Gestalt kommt als DATEN (heldGripX aus dem LIVE-Buch,
+            // s. _heldFoundryGroup): die Schmiede-Template-Achse ist X (stations(): xButt =
+            // xGrip0 = 0, Klinge/Kopf nach +X) → die EINE Achsen-Abbildung rotation.z += π/2
+            // (Euler XYZ: Z wirkt zuerst) stellt sie in die Hand-Konvention des Part-Pfads
+            // (lange Achse = +Y, Griff unten); der Griff-Punkt (gripX, 0, 0) liegt danach bei
+            // (0, gripX, 0) — dieselbe Versatz-Formel wie der Part-Pfad (beide nähern den tilt
+            // nicht in den Versatz ein, bewusst identisch). Der Part-Pfad liest wie immer den
+            // griffigsten Part (_attachPointFor).
+            const gp = isStudio
+                ? { x: 0, y: (mesh.userData && mesh.userData.heldGripX) || 0, z: 0 }
+                : this._attachPointFor(bp, "griff").point;
+            const axisRot = isStudio && mesh.userData && mesh.userData.heldAxis === "x" ? Math.PI / 2 : 0;
             mesh.position.set(off.x * sx - gp.x * ms, off.y - gp.y * ms, off.z - gp.z * ms);
-            mesh.rotation.set(cfg.tilt.x, cfg.tilt.y * sx, cfg.tilt.z * sx);
+            mesh.rotation.set(cfg.tilt.x, cfg.tilt.y * sx, cfg.tilt.z * sx + axisRot);
             anchor.add(mesh);
             return mesh;
         };
         if (eq && eq.held) pm.userData.heldMesh = buildHand(eq.held, "right");
         if (eq && eq.offhand) pm.userData.offhandMesh = buildHand(eq.offhand, "left");
+    }
+
+    // W-A4b (Katalysator-Bogen §7 — DIE STUDIO-GESTALT IN DER HAND) — die EINE Quelle der
+    // gehaltenen Studio-Gruppe, DREI-WERTIG wie die Werkstatt-Schwester (_workshopStudioPreviewFrom):
+    // THREE.Group (Wrapper um die GECACHTE Foundry-Gruppe, sharedGeom/sharedMat via der EINEN
+    // Wrapper-Quelle _workshopWrapFoundryGroup) · "pending" (Asset zieht noch / Worker bootet —
+    // der Aufrufer lässt den Part-Bau sichtbar stehen) · null (foundry-aus/Hook/unbekanntes
+    // Preset/leere Gruppe → Part-Pfad byte-alt). Cache-Schlüssel == Werkstatt/Welt
+    // (preset|variant|0|season; Same→Variante exakt der W-A1-Vorschau-Hash) → ein von der
+    // Werkstatt gezogenes Klingen-Asset dient der Hand instant (EIN Zug, viele Leser).
+    // Miss → GENAU EINE Anfrage (requested-Wache) + bei Ankunft GENAU EIN _refreshHeldMesh
+    // (der Cache-Treffer beendet die Kette — kein Loop; wechselte das Equip inzwischen, baut
+    // der Refresh schlicht den JETZT-Zustand). LRU-Sicherheit: der Wrapper zählt _liveRefs
+    // auf der Quell-Gruppe (V4(B)-Disziplin) — eine Räumung disposed die gehaltene Geometrie
+    // NIE mitten im Leben; _disposeSoulGroup gibt den Ref beim Unequip/Körper-Wechsel zurück.
+    _heldFoundryGroup(bpName) {
+        const preset =
+            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: bpName }) : null;
+        const f = this._ensureAssetFoundry(); // der Chokepoint prüft das Regime selbst (N7.4-Muster)
+        if (!f) return null;
+        if (!f.ready || !f.recipes) {
+            // Worker bootet / Buch kalt: EIN Warte-Poll (Guard f._heldWaiting, das
+            // _workshopWaiting-Muster) baut die Hand GENAU EINMAL neu, sobald das Buch
+            // steht — bis dahin trägt der Part-Bau (die Hand ist nie leer).
+            if (!f._heldWaiting) {
+                f._heldWaiting = true;
+                const t0 = performance.now();
+                const poll = () => {
+                    if (f.ready && f.recipes) {
+                        f._heldWaiting = false;
+                        try {
+                            this._refreshHeldMesh();
+                        } catch (_e) {}
+                    } else if (performance.now() - t0 < 20000) setTimeout(poll, 150);
+                    else f._heldWaiting = false;
+                };
+                setTimeout(poll, 150);
+            }
+            return preset ? "pending" : null;
+        }
+        if (!preset) return null;
+        // Same → Variante EXAKT wie die Werkstatt-Vorschau (W-A1) → derselbe Cache-Schlüssel.
+        const bp = this.state.blueprints ? this.state.blueprints[bpName] : null;
+        const rawSeed =
+            (bp && (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase)) != null
+                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
+                : bpName;
+        let seedNum = 0;
+        const seedStr = String(rawSeed);
+        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
+        const season = this.state.season || "summer";
+        // Stufe 0 — die Hand ist NAH (kindStages.weapon == [0]; für mehrstufige Arten ist 0 die reiche Stufe).
+        const key = preset + "|" + variant + "|0|" + season;
+        const group = this._foundryCacheGet(key);
+        if (group === undefined) {
+            if (!f.requested) f.requested = new Set();
+            if (!f.requested.has(key)) {
+                f.requested.add(key);
+                this._foundryRequest(preset, variant, 0, season).then((meshes) => {
+                    if (meshes) {
+                        this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
+                        try {
+                            this._refreshHeldMesh(); // Ankunft → die Hand einmal neu (Cache-Treffer, kein Loop)
+                        } catch (_e) {}
+                    } else {
+                        f.requested.delete(key); // Timeout: nicht dauerhaft doomen — der nächste Equip fragt neu
+                    }
+                });
+            } else if (!f._heldCacheWait) {
+                // Der Schlüssel ist schon UNTERWEGS (Welt/Werkstatt fragte zuerst — die
+                // requested-Wache dedupt GLOBAL, und DEREN Ankunfts-Callback kennt die Hand
+                // nicht): ein begrenzter Poll (EIN Guard, 45 s = das Worker-Timeout) baut die
+                // Hand GENAU EINMAL neu, sobald der Cache trägt; starb die fremde Anfrage
+                // (Timeout räumt die Wache), fragt der Neubau selbst frisch an (self-healing).
+                f._heldCacheWait = key;
+                const tw0 = performance.now();
+                const cachePoll = () => {
+                    const arrived = f.cache && f.cache.has(key);
+                    if (arrived || !f.requested.has(key)) {
+                        f._heldCacheWait = null;
+                        try {
+                            this._refreshHeldMesh();
+                        } catch (_e) {}
+                    } else if (performance.now() - tw0 < 45000) setTimeout(cachePoll, 150);
+                    else f._heldCacheWait = null;
+                };
+                setTimeout(cachePoll, 150);
+            }
+            return "pending";
+        }
+        if (group === null || !group.children || !group.children.length) return null;
+        const wrap = this._workshopWrapFoundryGroup(group); // EINE Wrapper-Quelle (W-A1)
+        if (!wrap) return null;
+        wrap.userData.foundryHeld = true;
+        wrap.userData.heldPreset = preset;
+        // V4(B)-Ref: die Hand hält die Quell-Geometrie lebendig — die LRU räumt sie erst
+        // nach der Rückgabe (_disposeSoulGroup) wirklich frei.
+        group._liveRefs = (group._liveRefs || 0) + 1;
+        wrap.userData.foundrySrcGroup = group;
+        // Griff + Achse als DATEN (M8: Tabelle vor if): die KIND_POLICY-Zeile deklariert die
+        // Template-Handachse (weapon: handAxis "x"), das LIVE-Buch die GRIFF-MITTE als
+        // VERTRAGS-DATEN (`fx.held.gripX` — der Kern rechnet sie aus stations(P) über
+        // dieselbe P-Präparation wie buildInstance: Klinge (0+griff)/2 · Werkzeug/Wucht die
+        // echte Haft-Spanne aus der Task-DNA · Bogen 0 = Riser-Mitte). Kein Dial-Raten im
+        // Wirt (die Werkzeug-Klasse ankerte sonst bei 0 — gemessen); Fallback für ein Buch
+        // ohne held-Feld: die Klingen-Formel s.griff/2, sonst 0.
+        const rec = f.recipes[preset];
+        const pol = rec && rec.kind ? AnazhRealm.KIND_POLICY[rec.kind] : null;
+        const ax = !!(pol && pol.handAxis === "x");
+        wrap.userData.heldAxis = ax ? "x" : "y";
+        const held = rec && rec.fx && rec.fx.held;
+        const s = rec && rec.s;
+        wrap.userData.heldGripX =
+            held && Number.isFinite(held.gripX)
+                ? held.gripX
+                : ax && s && Number.isFinite(s.griff)
+                  ? s.griff * 0.5
+                  : 0;
+        return wrap;
     }
 
     // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
@@ -48445,8 +48589,21 @@ class AnazhRealm {
         // material.dispose() triggert eine Three.js-RenderObject-Cascade-
         // Invalidation die mit pending Submit racy ist. Materials akkumulieren
         // minimal — Geometry-Disposes räumen den großen Heap-Anteil.
+        // W-A4b — die sharedGeom-Konvention (das W-A1-Werkstatt-Muster) gilt am EINEN
+        // Dispose-Chokepoint: ein Studio-Hand-Wrapper (Unequip UND Körper-Wechsel laufen
+        // beide hier durch) teilt die GECACHTE Foundry-Geometrie — sie bleibt stehen,
+        // sonst verlöre Welt/Werkstatt/Cache das Asset (die V18.268-Chokepoint-Lehre).
         group.traverse((node) => {
-            if (node.geometry) this._queueDispose(node.geometry);
+            if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);
+            // W-A4b — Ref-Rückgabe der geteilten Foundry-Quell-Gruppe (V4(B)-Disziplin):
+            // war sie WÄHREND des Haltens LRU-geräumt (_evicted), fällt ihre Geometrie
+            // erst JETZT (nie mitten im Leben, nie geleakt). Idempotent via Nullen.
+            const src = node.userData && node.userData.foundrySrcGroup;
+            if (src) {
+                node.userData.foundrySrcGroup = null;
+                src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+                if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+            }
         });
     }
 
@@ -83011,12 +83168,18 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // mode "hand" — Spawn/Befehl/Hand, kein Worldgen), darum placeExtra null. Donor ist der
     // craftbare geraet_schwert-DATENBLOCK (Parts = SUBSTANZ-Wahrheit: Tags · Omega-PHYSIS ·
     // wield — das Baum-/Portal-Muster; die Studio-Gestalt kommt aus dem Appear-Pfad).
+    // W-A4b — handAxis: die TEMPLATE-HANDACHSE dieser Domaene als DATEN (M8: Tabelle vor if):
+    // das Schmiede-Lab baut entlang +X (stations(): xButt = xGrip0 = 0, Klinge/Kopf nach +X) —
+    // der Hand-Konsument (_heldFoundryGroup/buildHand) liest NUR diese Zeile und mappt
+    // Template-X auf die Hand-Konvention (lange Achse = +Y, Griff unten); Domaenen ohne
+    // handAxis (Pflanzen/Fels: Template-Y = hoch) reisen unrotiert.
     weapon: Object.freeze({
         prefix: "klinge_",
         donor: "geraet_schwert",
         grown: false,
         builtIn: false,
         placeExtra: null,
+        handAxis: "x",
     }),
 });
 // N5.1 (Nervensystem-Plan §2.4/§2.5, Phase δ) — die BEKANNTEN place.mode-Werte des Wörterbuchs v1.
