@@ -934,7 +934,7 @@ async function checkBandV1722NexusEyes(ctx) {
         out.lebendigColor = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 1 }) === "#7bd389";
         const neutral = r.dslComposeFieldColor(lo, { magieleitung: 0, glut: 0, lebendig: 0 });
         out.neutralPalette = typeof neutral === "string" && neutral.startsWith("#") && neutral !== "#d4a3ff";
-        out.atomicReadsField = /auraAt/.test(r.dslComposeAtomic.toString());
+        out.atomicReadsField = /auraAt/.test(window.__codeOf(r.dslComposeAtomic));
         const prog = r.dslComposeAtomic(() => 0.5);
         out.composesValid = Array.isArray(prog) && typeof prog[0] === "string";
         return out;
@@ -962,7 +962,7 @@ async function checkBandV1723Harmony(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         const out = {};
-        const atomicSrc = r.dslComposeAtomic.toString();
+        const atomicSrc = window.__codeOf(r.dslComposeAtomic);
         out.weatherYields = /emoSignal/.test(atomicSrc) && /1 - emoSignal/.test(atomicSrc);
         out.skyTintMax = r.constructor.SKY_TINT_MAX === 0.6;
         r.state.skyTint = null;
@@ -997,7 +997,7 @@ async function checkBandV1723Harmony(ctx) {
             r.state.skyTintTarget = 0;
             r.state.skyTintStrength = 0;
         }
-        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
         out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
         return out;
     });
@@ -1023,12 +1023,17 @@ async function checkBandV1725FieldReaders(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — die Fauna-Behavioral-Probe misst den frozen Kern
+        // U1 (V18.452) — KONSUM-Beweis statt Quelltext-Zitat: die Leser rufen
+        // auraAt WIRKLICH (Spy-Swap __consumes, überlebt jede Kern-Wanderung);
+        // das glut-Token bleibt als __codeOf-Probe (kommentar-gestrippt) und
+        // die Behavioral-Probe unten (faunaDiffers) misst die glut-Dämpfung.
         out.faunaReadsAura =
-            /auraAt/.test(r._currentFaunaTarget.toString()) && /glut/.test(r._currentFaunaTarget.toString());
+            window.__consumes(r, "_currentFaunaTarget", r, "auraAt") &&
+            /glut/.test(window.__codeOf(r._currentFaunaTarget));
         out.faunaMaxReadsAura =
-            /auraAt/.test(r._currentFaunaMax.toString()) && /glut/.test(r._currentFaunaMax.toString());
-        out.lightReadsAura = /auraAt/.test(r._dayNightComputeTint.toString());
-        out.lofiReadsAura = /auraAt/.test(r._lofiWorldField.toString());
+            window.__consumes(r, "_currentFaunaMax", r, "auraAt") && /glut/.test(window.__codeOf(r._currentFaunaMax));
+        out.lightReadsAura = /auraAt/.test(window.__codeOf(r._dayNightComputeTint));
+        out.lofiReadsAura = window.__consumes(r, "_lofiWorldField", r, "auraAt");
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const ox = pm.x,
@@ -1086,7 +1091,7 @@ async function checkBandV1726FieldDirection(ctx) {
         const out = {};
         if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
         out.hasResolver = !!(r.dslPositions && typeof r.dslPositions.at_field_need === "function");
-        out.composeUsesNeed = /at_field_need/.test(r.dslComposeAtomic.toString());
+        out.composeUsesNeed = /at_field_need/.test(window.__codeOf(r.dslComposeAtomic));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm && out.hasResolver) {
             const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
@@ -1128,8 +1133,8 @@ async function checkBandV1727WritableField(ctx) {
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
-        out.auraReadsOverlay = /_lifeOverlayAt/.test(r.auraAt.toString());
-        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? r.dslEffects.spawn_creature.toString() : "";
+        out.auraReadsOverlay = /_lifeOverlayAt/.test(window.__codeOf(r.auraAt));
+        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
         out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
         // sauberer Start
         if (r.state.lifeField) r.state.lifeField.clear();
@@ -1209,7 +1214,7 @@ async function checkBandV1728SpawnClearance(ctx) {
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        out.villageEffectUsesClear = /_structureSpawnPos/.test(r.dslEffects.spawn_village.toString());
+        out.villageEffectUsesClear = /_structureSpawnPos/.test(window.__codeOf(r.dslEffects.spawn_village));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const px = pm.x,
@@ -1279,8 +1284,8 @@ async function checkBandV1729CreatureTrickle(ctx) {
         const out = {};
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConsts = typeof cfg.trickle === "number" && typeof cfg.trickleEverySec === "number";
-        out.spawnTagsTends = /tendsLife/.test(r.dslEffects.spawn_creature.toString());
-        out.updateTrickles = /_tickCreatureLifeTrickle/.test(r.updateCreatures.toString());
+        out.spawnTagsTends = /tendsLife/.test(window.__codeOf(r.dslEffects.spawn_creature));
+        out.updateTrickles = /_tickCreatureLifeTrickle/.test(window.__codeOf(r.updateCreatures));
         if (r.state.lifeField) r.state.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
         const X = 23456,
@@ -1355,14 +1360,14 @@ async function checkBandV1730EmotionFromBeing(ctx) {
         // Hooks an jeder realen Handlungs-Stelle (Source-Proben)
         // V17.46 — die Hooks tragen jetzt z.T. ein opts-Argument (die Substanz) → Prefix-
         // Match statt exaktem ")" (V9.56-i: die strukturelle Probe wandert mit dem Code).
-        out.hookBuild = /_feelAction\("build"/.test(r.confirmBuild.toString());
-        out.hookDamage = /_feelAction\("damage"/.test(r.damagePlayer.toString());
-        out.hookHarvest = /_feelAction\("harvest"/.test(r.harvestArchitecture.toString());
-        out.hookBond = /_feelAction\("bond"/.test(r.assignCreatureTask.toString());
-        out.hookExplore = /_feelAction\("explore"/.test(r._setLastPlayerVoxelChunk.toString());
-        out.hookLife = /_feelAction\("create_life"/.test(r.dslEffects.spawn_creature.toString());
+        out.hookBuild = /_feelAction\("build"/.test(window.__codeOf(r.confirmBuild));
+        out.hookDamage = /_feelAction\("damage"/.test(window.__codeOf(r.damagePlayer));
+        out.hookHarvest = /_feelAction\("harvest"/.test(window.__codeOf(r.harvestArchitecture));
+        out.hookBond = /_feelAction\("bond"/.test(window.__codeOf(r.assignCreatureTask));
+        out.hookExplore = /_feelAction\("explore"/.test(window.__codeOf(r._setLastPlayerVoxelChunk));
+        out.hookLife = /_feelAction\("create_life"/.test(window.__codeOf(r.dslEffects.spawn_creature));
         // ZUSTAND-Kanal: niedrige HP driftet sorrow/chaos (updatePlayerEmotions, pfad)
-        const upe = r.updatePlayerEmotions.toString();
+        const upe = window.__codeOf(r.updatePlayerEmotions);
         out.hpChannel = /hpMax/.test(upe) && /sorrow/.test(upe) && /chaos/.test(upe);
         return out;
     });
@@ -1396,9 +1401,9 @@ async function checkBandV1731EmotionDrivesWorld(ctx) {
         const r = window.anazhRealm;
         const out = {};
         if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
-        const tintSrc = r._dayNightComputeTint.toString();
+        const tintSrc = window.__codeOf(r._dayNightComputeTint);
         out.tintReadsAuraEmotion = /aura\.emotion/.test(tintSrc); // de-passengered: liest die Feld-Achse
-        const renderSrc = r._loopRender.toString();
+        const renderSrc = window.__codeOf(r._loopRender);
         out.waterFed = /hydroSurfaceUniforms\.emotion/.test(renderSrc) && /em\.joy/.test(renderSrc); // toter Haken gefuettert
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
         const e = r.state.player.emotions;
@@ -1460,8 +1465,8 @@ async function checkBandV1732SpatialEmotion(ctx) {
             Array.isArray(K.EMOTION_AXES) &&
             K.EMOTION_AXES.length === 6 &&
             typeof K.EMOTION_FIELD.decayPerSec === "number";
-        out.auraBlends = /_emotionOverlayAt/.test(r.auraAt.toString());
-        out.feelDeposits = /_depositEmotion/.test(r._feelAction.toString());
+        out.auraBlends = /_emotionOverlayAt/.test(window.__codeOf(r.auraAt));
+        out.feelDeposits = /_depositEmotion/.test(window.__codeOf(r._feelAction));
         if (r.state.emotionField) r.state.emotionField.clear();
         const e = r.state.player.emotions;
         const saved = Object.assign({}, e);
@@ -1560,7 +1565,7 @@ async function checkBandV1733WorldRules(ctx) {
         out.registryArray = Array.isArray(r.state.worldRules);
         out.ruleOp = typeof r.dslEffects.rule === "function";
         out.tickDefined = typeof r._tickWorldRules === "function";
-        out.tickWired = /this\._tickWorldRules\(currentTime\)/.test(r.startEternalLoop.toString());
+        out.tickWired = /this\._tickWorldRules\(currentTime\)/.test(window.__codeOf(r.startEternalLoop));
 
         // Save world state we mutate
         const savedRules = r.state.worldRules.slice();
@@ -2678,7 +2683,7 @@ async function checkBandV1740LlmRules(ctx) {
         out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
 
         // --- (6) der LLM-Reply-Pfad trennt Regel-Programme ab (nicht der Gesten-Finalizer) ---
-        out.replySeparatesRules = /reply\.program\[0\] === "rule"/.test(r.maybeAnswerWithLlm.toString());
+        out.replySeparatesRules = /reply\.program\[0\] === "rule"/.test(window.__codeOf(r.maybeAnswerWithLlm));
 
         // restore
         r.state.worldRules = savedRules;
@@ -3025,7 +3030,7 @@ async function checkBandV1743RuleFitness(ctx) {
         out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
 
         // --- (5) Mutations-Elternschaft ist wert-gewichtet (verdrahtet) ---
-        out.parentWeighted = /0\.5 \+ 0\.5 \* \(r\.value/.test(r._composeNexusRule.toString());
+        out.parentWeighted = /0\.5 \+ 0\.5 \* \(r\.value/.test(window.__codeOf(r._composeNexusRule));
 
         // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
         r.state.worldRules = [];
@@ -3439,9 +3444,9 @@ async function checkBandV1746EmotionSubstance(ctx) {
         reset();
         r._feelAction("create", { tags: { magieleitung: 1 }, magnitude: 1.5 });
         out.createPride = p.emotions.joy > 0 && p.emotions.hope > 0 && p.emotions.awe > 0; // Stolz (joy+hope) + Magie (awe)
-        const dbSrc = r.dslEffects.define_blueprint.toString();
+        const dbSrc = window.__codeOf(r.dslEffects.define_blueprint);
         out.createHooked = /_feelAction\("create"/.test(dbSrc) && /source === "human"/.test(dbSrc);
-        out.buildHooked = /_feelAction\("build", \{ blueprint/.test(r.confirmBuild.toString());
+        out.buildHooked = /_feelAction\("build", \{ blueprint/.test(window.__codeOf(r.confirmBuild));
 
         // (6) KEIN Regress: ohne Substanz exakt V17.30 (build → joy 0.1, hope 0.1; explore-Fallback)
         reset();
@@ -3737,7 +3742,7 @@ async function checkBandV1748Social(ctx) {
         inject("happy", 0, "wait");
         r._tickEmotionContagion(2);
         out.waitNoBond = r.state.creatures[0].userData.bond === 0;
-        out.followBumpWired = /bondFollowBump/.test(r.assignCreatureTask.toString());
+        out.followBumpWired = /bondFollowBump/.test(window.__codeOf(r.assignCreatureTask));
 
         // (5) BOND-LOSS — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (∝ Bindung × Vitalität)
         const grief = (bond, leb) => 0.3 + bond * 1.2 + leb * 0.4; // die _creatureNaturalDeath-Formel
@@ -3748,7 +3753,7 @@ async function checkBandV1748Social(ctx) {
         r._feelAction("loss", { magnitude: grief(1, 0.5) });
         const sBonded = p.emotions.sorrow;
         out.bondLossHurts = sBonded > sUnbonded + 0.05;
-        const cnd = r._creatureNaturalDeath.toString();
+        const cnd = window.__codeOf(r._creatureNaturalDeath);
         out.lossWired = /bond/.test(cnd) && /lebendig/.test(cnd) && /_feelAction\("loss"/.test(cnd);
 
         // (6) KO-REGULATION — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Wort)
@@ -3764,7 +3769,7 @@ async function checkBandV1748Social(ctx) {
         r.state.grok.triggers.comfort.lastFired = -Infinity;
         r._aiTendPlayer();
         out.noTendWhenOk = p.emotions.hope === 0;
-        out.tendWired = /_aiTendPlayer/.test(r.grokTick.toString());
+        out.tendWired = /_aiTendPlayer/.test(window.__codeOf(r.grokTick));
 
         // restore
         setEmo(savedEmo);
@@ -3861,7 +3866,7 @@ async function checkBandV1749Adventure(ctx) {
         r._depositLife(pm.x, pm.z, 1.0); // üppig
         const magCommute = r._exploreMagnitude(333, 333);
         out.adventureGrades = magAdventure > magCommute + 0.5;
-        out.distWired = /distScale|hypot/.test(r._exploreMagnitude.toString());
+        out.distWired = /distScale|hypot/.test(window.__codeOf(r._exploreMagnitude));
         r.state.lifeField = new Map();
 
         // (4) KÜHNHEIT — in eine karge Aura wagen staunt mehr als in eine üppige (liest auraAt;
@@ -3887,7 +3892,7 @@ async function checkBandV1749Adventure(ctx) {
         r._feelAction("explore", { magnitude: 0.3 });
         const aweTimid = p.emotions.awe;
         out.exploreScales = aweBold > aweTimid + 0.02;
-        out.hookWired = /_exploreMagnitude/.test(r._setLastPlayerVoxelChunk.toString());
+        out.hookWired = /_exploreMagnitude/.test(window.__codeOf(r._setLastPlayerVoxelChunk));
 
         // (6) visitedRegions bounded (Prune beim Überlauf)
         const big = new Set();
@@ -4003,8 +4008,8 @@ async function checkBandV1750Klammer(ctx) {
         const vNearNeg = measureRule(pm.x, pm.z, vbaseNear, -0.5);
         out.noGamingWhenNoSituation = Math.abs(vNearNeg - vNearNoBonus) < 1e-9;
         out.wired =
-            /appraisalDelta/.test(r._measureRuleReward.toString()) &&
-            /phase4Radius/.test(r._measureRuleReward.toString());
+            /appraisalDelta/.test(window.__codeOf(r._measureRuleReward)) &&
+            /phase4Radius/.test(window.__codeOf(r._measureRuleReward));
 
         // restore
         setEmo(savedEmo);
@@ -4097,7 +4102,7 @@ async function checkBandV1751CombatStats(ctx) {
 
         // (5) die Sichtbarkeit — das Selbst-Spec-Sheet (_ichBuildSpecSheet, V18.44/.57) trägt das Kombat-Profil
         //     (echter UI-Konsum; V18.61 Ich-F ersetzte die flache renderPlayerStatsUI-Liste durch diese Daten-Viz).
-        const uiSrc = r._ichBuildSpecSheet.toString();
+        const uiSrc = window.__codeOf(r._ichBuildSpecSheet);
         out.uiShowsCombat = /damage/.test(uiSrc) && /defense/.test(uiSrc) && /precision/.test(uiSrc);
 
         // (6) V18.312 (Gesetz #0) — die KANONISCHE Stat-Pipeline: beide Spezies LESEN dieselben drei
@@ -4464,8 +4469,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
         // (7) der Dispatch + die Schuld sind wired (Source-Probe)
-        const tmb = r.tryMouseBreak.toString();
-        const dth = r._creatureCombatDeath.toString();
+        const tmb = window.__codeOf(r.tryMouseBreak);
+        const dth = window.__codeOf(r._creatureCombatDeath);
         out.dispatchWired = /_pickCreatureAtCrosshair/.test(tmb) && /_playerAttackCreature/.test(tmb);
         out.guiltWired = /computeCreatureCompoundTags/.test(dth) && /_feelAction\("loss"/.test(dth);
 
@@ -4856,7 +4861,7 @@ async function checkBandV1758CreatureNature(ctx) {
         timid.userData.fearUntil = 0;
 
         // (10) der wander-Tick liest _creatureWariness (der Konsument ist verdrahtet)
-        out.wanderReadsWariness = /_creatureWariness/.test(r.updateCreatures.toString());
+        out.wanderReadsWariness = /_creatureWariness/.test(window.__codeOf(r.updateCreatures));
 
         // cleanup
         for (const c of [timid, bold, far]) if (c && r.state.creatures.indexOf(c) !== -1) r.removeCreature(c);
@@ -5552,7 +5557,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
         out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
         // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
-        out.statsPanelCallsFertigen = r._workshopRenderStatsPanel.toString().includes("_workshopAppendFertigenRow");
+        out.statsPanelCallsFertigen = window.__codeOf(r._workshopRenderStatsPanel).includes("_workshopAppendFertigenRow");
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -6415,10 +6420,10 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
             vWeapon.lean === 0 &&
             !lineHas(vWeapon, /kippt/);
         // ── Ω-W3 CONSUM: die Vorschau LIEST das Verdikt (Source-Probe, kein GPU) ──
-        o.consumRebuild = /_workshopPhysicsVerdict/.test(r._workshopRebuildPreviewMesh.toString());
+        o.consumRebuild = /_workshopPhysicsVerdict/.test(window.__codeOf(r._workshopRebuildPreviewMesh));
         o.consumTick =
-            /physicsVerdict/.test(r._workshopStartRAF.toString()) && /rotation/.test(r._workshopStartRAF.toString());
-        o.consumRender = /floatingParts/.test(r._workshopRender.toString());
+            /physicsVerdict/.test(window.__codeOf(r._workshopStartRAF)) && /rotation/.test(window.__codeOf(r._workshopStartRAF));
+        o.consumRender = /floatingParts/.test(window.__codeOf(r._workshopRender));
         return o;
     });
     check("Ω-W2: physik-wahre Optimierungs-Verben (Standfestigkeit/Lastpfad/Rollfähigkeit)", res.w2Verbs === true);
@@ -8584,7 +8589,7 @@ async function checkBandWaves1to3(ctx) {
         out.worldExportInBibliothek = !!document.getElementById("action-export-state");
         // KONSUM: der EINE Empfangen-Eingang nimmt BEIDE Datei-Arten (Snapshot → Welt-Tor, Manifest
         // → andocken) — der Handler routet beide Pfade.
-        const himfSrc = r._handleWorldManifestFile.toString();
+        const himfSrc = window.__codeOf(r._handleWorldManifestFile);
         out.importUnified = himfSrc.includes("_openWeltTorDialog") && himfSrc.includes("importWorldManifest");
         // F — updateWorldInfo treibt jetzt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
@@ -11477,7 +11482,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         out.creatureProposedNoModifyTerrain = proposed && !proposed.has("modify_terrain");
 
         // (7) tryMouseBreak hat keinen modify_terrain-Fallback mehr.
-        const breakSrc = (typeof r.tryMouseBreak === "function" && r.tryMouseBreak.toString()) || "";
+        const breakSrc = (typeof r.tryMouseBreak === "function" && window.__codeOf(r.tryMouseBreak)) || "";
         out.tryMouseBreakNoModifyTerrain = !/modify_terrain/.test(breakSrc);
 
         return out;
@@ -15383,7 +15388,7 @@ async function checkBandWelle6APolish(ctx) {
         const out = {};
 
         // 6.A2 — Threshold-Konstante ist 0.6 (im Function-Source)
-        const fnSrc = r.isPlayerGrounded.toString();
+        const fnSrc = window.__codeOf(r.isPlayerGrounded);
         out.hasGroundDistanceVar = fnSrc.includes("groundDistance");
         out.groundDistanceIs06 = /groundDistance\s*=\s*0\.6/.test(fnSrc);
 
@@ -15487,7 +15492,7 @@ async function checkBandWelle6APolish(ctx) {
         // __codeOf strippt Kommentare (sonst stolpert der Absenz-Grep über den erklärenden
         // Kommentar, der den ENTFERNTEN Code zitiert — die dokumentierte .toString()-Falle).
         out.noDoomLoopInSelfAnalysis = !/processOptimization|optimizePhysics/.test(
-            window.__codeOf ? window.__codeOf(r._loopSelfAnalysis) : r._loopSelfAnalysis.toString()
+            window.__codeOf(r._loopSelfAnalysis)
         );
         out.nexusProcessOptGone = !(r.nexus && typeof r.nexus.processOptimization === "function");
 
@@ -15645,7 +15650,7 @@ async function checkBandWelle6APolish(ctx) {
 
         // 6.A3 — Quell-Check: Funktion liest tatsächlich die Normal
         // (sonst wäre das Tracking ein No-op)
-        const fnSrc = r.isPlayerGrounded.toString();
+        const fnSrc = window.__codeOf(r.isPlayerGrounded);
         out.fnReadsNormal = fnSrc.includes("get_m_hitNormalWorld");
         out.fnSetsSteepFlag = /onSteepSlope\s*=/.test(fnSrc);
         out.fnSetsGroundNormal = /groundNormalY\s*=/.test(fnSrc);
@@ -15655,7 +15660,7 @@ async function checkBandWelle6APolish(ctx) {
         // Quellcode der Bewegungs-Phase (statischer Check, weil
         // einen echten Slope im Headless zu synthetisieren fragil
         // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
-        const loopSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
+        const loopSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
         out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
         out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
         out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
@@ -15709,12 +15714,12 @@ async function checkBandWelle6APolish(ctx) {
         out.hasPhantomOnGroundField = "phantomOnGround" in r.state.buildMode;
 
         // Source-Checks: tickBuildMode nutzt die neuen Pfade
-        const tickSrc = r.tickBuildMode.toString();
+        const tickSrc = window.__codeOf(r.tickBuildMode);
         out.tickUsesResolve = /_resolvePhantomTarget/.test(tickSrc);
         out.tickUsesTint = /_applyPhantomTint/.test(tickSrc);
         out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
 
-        const resolveSrc = r._resolvePhantomTarget.toString();
+        const resolveSrc = window.__codeOf(r._resolvePhantomTarget);
         out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
         out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
         // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
@@ -15725,7 +15730,7 @@ async function checkBandWelle6APolish(ctx) {
         out.resolveHasFallback = /fallback/.test(resolveSrc);
         out.resolveStabilityThreshold = /nrm\.y\(\)\s*>\s*0\.5/.test(resolveSrc);
 
-        const tintSrc = r._applyPhantomTint.toString();
+        const tintSrc = window.__codeOf(r._applyPhantomTint);
         out.tintCachesOrigColor = /_origColor/.test(tintSrc);
         out.tintHasGreenStable = /0x88ff88/.test(tintSrc);
         out.tintHasRedUnstable = /0xff8888/.test(tintSrc);
@@ -16045,7 +16050,7 @@ async function checkBandWelle6APolish(ctx) {
         });
         out.worldClean = worldLines === 0;
         out.workshopOrders = /connectionLines: true/.test(
-            r._workshopRebuildPreviewMesh ? r._workshopRebuildPreviewMesh.toString() : ""
+            r._workshopRebuildPreviewMesh ? window.__codeOf(r._workshopRebuildPreviewMesh) : ""
         );
 
         // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
@@ -16316,7 +16321,7 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
 
         // applyPlayerSoul ruft recompute auf
-        const applySrc = r.applyPlayerSoul.toString();
+        const applySrc = window.__codeOf(r.applyPlayerSoul);
         out.applyCallsRecompute = /recomputePlayerStats/.test(applySrc);
 
         // UI im DOM (V18.61 Ich-F — das Selbst-Spec-Sheet #ich-stage-spec ersetzt die flache #player-stats-Liste)
@@ -16358,7 +16363,7 @@ async function checkBandWelle6DSoul(ctx) {
         // Coords (forward × up = -X). A=+right=player-links, D=-right=
         // player-rechts — wie es immer war. V9.44-f — die WASD-Logik
         // lebt in der Bewegungs-Phase _loopPlayerMovement.
-        const loopSrc = r._loopPlayerMovement.toString();
+        const loopSrc = window.__codeOf(r._loopPlayerMovement);
         out.aPressPosRight = /keys\["a"\][^;]*addScaledVector\(this\.state\.right,\s*1\)/.test(loopSrc);
         out.dPressNegRight = /keys\["d"\][^;]*addScaledVector\(this\.state\.right,\s*-1\)/.test(loopSrc);
 
@@ -16383,7 +16388,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
         out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
         out.auraLoopGone = !/tickPlayerAura/.test(
-            window.__codeOf ? window.__codeOf(r.startEternalLoop) : String(r.startEternalLoop)
+            window.__codeOf(r.startEternalLoop)
         );
         out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
         // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
@@ -16834,8 +16839,11 @@ async function checkBandWelle6DSoul(ctx) {
 
         // --- Tod-Behandlung (ALTLASTEN-NULL: feld-nativ) ---
         out.hasDamageMethod = typeof r.damagePlayer === "function";
-        out.hasTriggerPhoenixMethod = typeof r._playerDeathRespawn === "function";
-        out.hasTickPhoenixMethod = typeof r.tickPlayerVitals === "function";
+        // U1 (V18.452) — Katalog-Existenz statt Namens-Wiederholung: der ANKER-
+        // KATALOG (window.__anker) trägt die Symbolnamen; zieht das Symbol um,
+        // wandert EINE Katalog-Zeile, nie N Proben.
+        out.hasTriggerPhoenixMethod = typeof r[window.__anker.todRespawn] === "function";
+        out.hasTickPhoenixMethod = typeof r[window.__anker.vitalsTick] === "function";
         out.hasPhoenixState = "respawnGraceUntil" in r.state.player && !("phoenixUntil" in r.state.player);
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
@@ -18725,7 +18733,7 @@ async function checkBandV18278LoopErrorBoundary(ctx) {
     const res = await page.evaluate(() => {
         const r = window.anazhRealm;
         if (!r || typeof r._gameLoopTick !== "function") return { error: "kein _gameLoopTick" };
-        const src = r._gameLoopTick.toString();
+        const src = window.__codeOf(r._gameLoopTick);
         const out = {};
         out.loopHasTry = /try\s*\{/.test(src);
         out.loopCallsBoundary = /_loopErrorBoundary/.test(src);
@@ -18778,7 +18786,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         const st = r.state;
         const out = {};
         // Source: der Aktuator fährt foliageRadius; Gate + Wachstum existieren.
-        out.actuatorDrives = /foliageRadius/.test(r._nexusPerfActuate.toString());
+        out.actuatorDrives = /foliageRadius/.test(window.__codeOf(r._nexusPerfActuate));
         out.hasGate = typeof r._foliageChunkInRadius === "function";
         out.hasGrowth = typeof r._tickFoliageGrowth === "function";
         // Headless (Null-Renderer): der Aktuator setzt foliageRadius = MAX (gate-treu).
@@ -18824,7 +18832,7 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"):
         // der Aktuator fährt `_foliageDensityScale`; der NAHE Scatter (`_buildVoxelChunkScatter`)
         // UND der FERNE Compute-Scatter (`_scatterPass`, die MASSE der Render-Last) LESEN ihn.
-        out.actuateDrivesDensity = /_foliageDensityScale/.test(r._nexusPerfActuate.toString());
+        out.actuateDrivesDensity = /_foliageDensityScale/.test(window.__codeOf(r._nexusPerfActuate));
         // N7.2 (Dual-Regime senken, V9.56-i — die Probe wandert mit): auch der NAHE Scatter
         // liest jetzt die EINE Dichte-Quelle `_effectiveFoliageDensity` (wie der ferne, W1);
         // dass DIE den Regler liest, beweist `farScatterReadsDensity` direkt darunter.
@@ -18899,8 +18907,8 @@ async function checkBandV18275FoliageGrowth(ctx) {
         // wenn die geregelte Dichte sinkt (`_tickFoliageThin` re-streamt sie) → die schon geladene
         // Welt sinkt auf die Kapazität, nicht nur die frisch gebaute. CONSUM: instanceCount fällt.
         out.thinExists = typeof r._tickFoliageThin === "function";
-        out.scatterReadsBuiltDensity = /builtDensity/.test(r._scatterRegion.toString());
-        out.streamingCallsThin = /_tickFoliageThin/.test(r._tickScatterStreaming.toString());
+        out.scatterReadsBuiltDensity = /builtDensity/.test(window.__codeOf(r._scatterRegion));
+        out.streamingCallsThin = /_tickFoliageThin/.test(window.__codeOf(r._tickScatterStreaming));
         // W1 — DAS THIN-LOCH GESCHLOSSEN (die letzte V18.427-Endlosschleifen-Klasse), zwei Wände:
         // (a) die builtDensity-BUCHHALTUNG und der Thin-LESER lesen die EINE Quelle (vorher: Bau
         // wandte fdScale=1 an, Buchhaltung verbuchte den ROHEN Regler-Wert → byte-identische
@@ -19810,7 +19818,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         // String-Literal `=== "voxel terrain on"` (die echte
         // Code-Logik, nicht ein Kommentar — der V9.35-Eintrag-
         // Kommentar erwähnt den toten Befehl als Doku).
-        const src = (typeof r.processChatCommand === "function" && r.processChatCommand.toString()) || "";
+        const src = (typeof r.processChatCommand === "function" && window.__codeOf(r.processChatCommand)) || "";
         out.noChatToggle = !/===\s*["']voxel terrain on["']/.test(src);
         return out;
     });
@@ -20036,7 +20044,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" && r.generateTerrainWithParameters.toString()) || "";
+            (typeof r.generateTerrainWithParameters === "function" && window.__codeOf(r.generateTerrainWithParameters)) || "";
         return {
             noExtendTerrain: typeof r.extendTerrain !== "function",
             noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
@@ -20069,9 +20077,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" && r.generateTerrainWithParameters.toString()) || "";
-        const srcGet = (typeof r.getTerrainHeightAt === "function" && r.getTerrainHeightAt.toString()) || "";
-        const srcFind = (typeof r.findSurfaceAbove === "function" && r.findSurfaceAbove.toString()) || "";
+            (typeof r.generateTerrainWithParameters === "function" && window.__codeOf(r.generateTerrainWithParameters)) || "";
+        const srcGet = (typeof r.getTerrainHeightAt === "function" && window.__codeOf(r.getTerrainHeightAt)) || "";
+        const srcFind = (typeof r.findSurfaceAbove === "function" && window.__codeOf(r.findSurfaceAbove)) || "";
         return {
             // (1) `calculateTerrainSteepness` ist gelöscht — kein
             // Aufrufer mehr nach Wasserfall-Loop-Lösch.
@@ -20156,12 +20164,12 @@ async function checkBandVoxelTerrainCore(ctx) {
             loopHasNoPrune: !(
                 proto._gameLoopTick &&
                 /pruneDistantChunks/.test(
-                    (
+                    window.__codeOf(
                         Object.getOwnPropertyNames(proto)
                             .map((n) => proto[n])
-                            .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(f.toString())) ||
-                        function () {}
-                    ).toString()
+                            .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(window.__codeOf(f))) ||
+                            function () {}
+                    )
                 )
             ),
             // (9) `_buildWaterPlane` ist voxel-only — kein echter
@@ -20170,7 +20178,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             // Test-Kommentar-Falle: Regex auf den Aufruf-Pattern).
             waterPlaneVoxelOnly:
                 typeof r._buildWaterPlane === "function" &&
-                !/this\._terrainHeightAtWorld\s*\(/.test(r._buildWaterPlane.toString()),
+                !/this\._terrainHeightAtWorld\s*\(/.test(window.__codeOf(r._buildWaterPlane)),
             // (10) Voxel-Pendants leben weiter (Vision-Anker)
             voxelGrassAlive: typeof r._buildVoxelChunkGrass === "function" && r.state.voxelChunkGrass instanceof Map,
             voxelVegetationAlive: typeof r._populateVoxelChunkVegetation === "function",
@@ -20247,8 +20255,8 @@ async function checkBandHydrosphere(ctx) {
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
-        const ensureSrc = (r._ensureVoxelChunkAt || function () {}).toString();
-        const disposeSrc = (r._disposeVoxelChunk || function () {}).toString();
+        const ensureSrc = window.__codeOf(r._ensureVoxelChunkAt || function () {});
+        const disposeSrc = window.__codeOf(r._disposeVoxelChunk || function () {});
         return {
             buildGone: typeof r._buildVoxelChunkWaterfalls !== "function",
             disposeGone: typeof r._disposeVoxelChunkWaterfalls !== "function",
@@ -20745,7 +20753,7 @@ async function checkBandHydrosphere(ctx) {
         // P3 — die Schwimm-/Wasser-Physik wanderte aus `_loopPhysicsSync` (jetzt nur noch
         // `_stepCharacter`-Dispatch) in den feld-nativen Controller `_stepCharacter`.
         out.physicsUsesEffWater =
-            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(r._stepCharacter.toString());
+            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(window.__codeOf(r._stepCharacter));
         return out;
     });
 
@@ -20925,7 +20933,7 @@ async function checkBandHydrosphere(ctx) {
         // Sync, der Wasserschatten-an-Hängen-Fix).
         out.unifiedQueriesRivers =
             typeof r._buildVoxelChunkWaterCells === "function" &&
-            /_atlasWaterLevelAt/.test(r._buildVoxelChunkWaterCells.toString());
+            /_atlasWaterLevelAt/.test(window.__codeOf(r._buildVoxelChunkWaterCells));
         // (14) der Carve ist im Perf-Budget
         const t0 = performance.now();
         const span = hydro.size;
@@ -21314,8 +21322,8 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         // Helfer `_finalizeVoxelChunkBuild`. V12.0-perf.h — Finalize ENQUEUED
         // den Wasser-Iso jetzt (deferred-Queue) statt ihn synchron zu bauen;
         // der per-Frame-Tick / Drain baut ihn. Source-Probe wandert mit.
-        out.rebuildCallsBuild = /this\._enqueueWaterIso\(/.test(r._finalizeVoxelChunkBuild.toString());
-        out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(r._disposeVoxelChunk.toString());
+        out.rebuildCallsBuild = /this\._enqueueWaterIso\(/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
+        out.disposeCallsDispose = /this\._disposeVoxelChunkWaterIso\(/.test(window.__codeOf(r._disposeVoxelChunk));
         // V12.0-perf.h — die ausstehenden Wasser-Iso-Builds drainen, bevor wir
         // die Iso-Map prüfen (im Spiel baut der per-Frame-Tick ≤2/Frame).
         if (typeof r._drainPendingWaterIso === "function") r._drainPendingWaterIso();
@@ -21644,7 +21652,7 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // 1) Stempel-Methode existiert
         out.hasStampMethod = typeof r._stampArchitectureSolidCellsInto === "function";
         out.cellBuildCallsStamp = /this\._stampArchitectureSolidCellsInto\(/.test(
-            r._buildVoxelChunkWaterCells.toString()
+            window.__codeOf(r._buildVoxelChunkWaterCells)
         );
         // 2) AABB hat botY (V9.74-Erweiterung)
         // V9.88 (Welle Perf-3.b — Distance-LOD-Doku-Sync): jede Cell-Index-
@@ -21939,15 +21947,15 @@ async function checkBandWelleC3CellularReaction(ctx) {
             }
         }
         // T1 Source-Probes (V9.56-i): der Edit-Pfad ruft den Footprint-Sync, der forceSync nutzt.
-        out.t1AddEditCallsSync = /_syncRebuildEditFootprint/.test(r._addVoxelEdit.toString());
+        out.t1AddEditCallsSync = /_syncRebuildEditFootprint/.test(window.__codeOf(r._addVoxelEdit));
         out.t1SyncUsesForceSync =
             typeof r._syncRebuildEditFootprint === "function" &&
-            /forceSync:\s*true/.test(r._syncRebuildEditFootprint.toString());
+            /forceSync:\s*true/.test(window.__codeOf(r._syncRebuildEditFootprint));
         // V18.364 — der Footprint-Rebuild ist adaptiv: bei Über-Budget (schwache HW) baut er
         // NICHT sync, sondern lässt die Chunks async heilen (kein Grab-Stall, Kollision feld-nativ).
         out.t1FootprintAdaptive =
             typeof r._syncRebuildEditFootprint === "function" &&
-            /_frameOverBudget/.test(r._syncRebuildEditFootprint.toString());
+            /_frameOverBudget/.test(window.__codeOf(r._syncRebuildEditFootprint));
 
         // T2 (Terrain-Kohärenz-Plan §4 — Cross-LOD-Geomorph): die feinen Boundary-Vertices an
         // einer LOD0↔LOD1-Grenze auf die GROBE Nachbar-Oberfläche ziehen → die T-junction
@@ -21957,8 +21965,8 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // ruft den Geomorph, und er FEUERT (≥1 Chunk hasMorph an einer Cross-LOD-Grenze).
         out.t2NoMorphError = !window.__terrainMorphError;
         out.t2GeomorphMethod = typeof r._applyCrossLodGeomorph === "function";
-        out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(r._finalizeVoxelChunkBuild.toString());
-        out.t2MaterialHasMorph = /positionNode\s*=/.test(r._buildPbrNodeMaterial.toString()); // V18.236: PBR ist der EINE Builder
+        out.t2FinalizeCallsMorph = /_applyCrossLodGeomorph/.test(window.__codeOf(r._finalizeVoxelChunkBuild));
+        out.t2MaterialHasMorph = /positionNode\s*=/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR ist der EINE Builder
         let t2HasAttrs = false,
             t2ChunksWithMorph = 0;
         if (r.state.voxelChunks) {
@@ -21976,10 +21984,10 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // ans QEF-Minimum (scharf) statt ins Mittel (blobig); der Laplacian ist feature-bewusst
         // (verschont scharfe Vertices). Determinismus (Worker bit-identisch) deckt V9.42-b ab
         // (288 geteilte Naht-Vertices = Worker- + Main-QEF koinzident). Hier: Source-Probes.
-        const exSrc = r._voxelExtractSurfaceVertices.toString();
+        const exSrc = window.__codeOf(r._voxelExtractSurfaceVertices);
         out.t3QefMesher = /a00 \+= gx \* gx/.test(exSrc) && /Cramer|m00 \* b0/.test(exSrc);
         out.t3ExtractReturnsSharp = /vertCells, cellVert, sharp/.test(exSrc);
-        out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(r._voxelLaplacianSmoothPositions.toString());
+        out.t3FeatureAwareLaplacian = /sharp && sharp\[v\]/.test(window.__codeOf(r._voxelLaplacianSmoothPositions));
         out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
 
         // T4 (terrain-t4-wasser-ca-plan §3 — der Wasser-Automat-KERN): `_tickWaterCA` ist die
@@ -22015,13 +22023,13 @@ async function checkBandWelleC3CellularReaction(ctx) {
         // T4a-2 — der Automat ist in die WELT verdrahtet: reaktive Level-Schicht + Welt-Tick +
         // cross-chunk-wake, der Carve weckt die Region. Voller Welt-Beweis: `diag-water-world-flow`.
         out.t4HasWorldTick = typeof r._tickWorldWaterCA === "function" && typeof r._wakeWaterCA === "function";
-        out.t4CarveWakesCA = /_wakeWaterCA/.test(r._addVoxelEdit.toString());
+        out.t4CarveWakesCA = /_wakeWaterCA/.test(window.__codeOf(r._addVoxelEdit));
         out.t4ExchangesBoundary = typeof r._exchangeWaterBoundary === "function";
 
         // 6) Source-Probes: spawnArchitecture + removeArchitecture rufen
         // _remeshVoxelChunksAround (Cell-Rebuild-Trigger)
-        out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.spawnArchitecture.toString());
-        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(r.removeArchitecture.toString());
+        out.spawnTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(window.__codeOf(r.spawnArchitecture));
+        out.removeTriggersRemesh = /this\._remeshVoxelChunksAround\(/.test(window.__codeOf(r.removeArchitecture));
         // V18.224 — Scatter-Flag wiederherstellen (Test-Isolation aufräumen)
         if (r.state.atmosphere) r.state.atmosphere.gpuScatter = _savedScatter;
         return out;
@@ -22226,9 +22234,9 @@ async function checkBandWellePerf3bDistanceLod(ctx) {
         out.lod0CellsLen = lod0Cells;
         out.lod1CellsLen = lod1Cells;
         // 4) Source-Probes
-        out.streamingUsesLod = /_voxelChunkLodFor\(/.test(r._tickVoxelChunkStreaming.toString());
+        out.streamingUsesLod = /_voxelChunkLodFor\(/.test(window.__codeOf(r._tickVoxelChunkStreaming));
         out.buildDataAcceptsLod = /_buildVoxelChunkData\s*\(\s*cx\s*,\s*cz\s*,\s*lod/.test(
-            r._buildVoxelChunkData.toString().slice(0, 200)
+            window.__codeOf(r._buildVoxelChunkData).slice(0, 200)
         );
         return out;
     });
@@ -22624,13 +22632,13 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.hasSenseFold = typeof r._perfSenseFoldFrame === "function";
         out.hasEstimate = typeof r._estimatePerfCost === "function";
         if (!out.hasGovernor || !out.hasRegulate || !out.hasActuate) return out;
-        const saStr = r.selfAwarenessAnalyze.toString();
+        const saStr = window.__codeOf(r.selfAwarenessAnalyze);
         out.noGravityPflaster = !/gravity\s*\*=/.test(saStr);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
         out.noParallelGovernor = !/_nexusAdaptiveQuality/.test(saStr);
         // CONSUM (source-probe): der Regler liest die GEMESSENE frameMs + die Phasen.
-        out.regulateReadsSense = /sense\.frameMs/.test(r._nexusPerfRegulate.toString());
-        out.actuateReadsPhase = /sense\.phase/.test(r._nexusPerfActuate.toString());
+        out.regulateReadsSense = /sense\.frameMs/.test(window.__codeOf(r._nexusPerfRegulate));
+        out.actuateReadsPhase = /sense\.phase/.test(window.__codeOf(r._nexusPerfActuate));
 
         const st = r.state;
         const snap = {
@@ -22708,7 +22716,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.foldRenderMax = st.perfSense.renderCallsMax >= 1000 && st.perfSense.renderTrisMax >= 500000;
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
         out.loopRenderTaps =
-            /renderCalls/.test(r._loopRender.toString()) && /info\.reset/.test(r._loopRender.toString());
+            /renderCalls/.test(window.__codeOf(r._loopRender)) && /info\.reset/.test(window.__codeOf(r._loopRender));
         // V18.427 — DIE VERGIFTETE ZAHL: im r184-WebGPU-Info ist `render.calls` ein
         // LEBENSZEIT-Zähler (reset() löscht ihn nicht) — der Tap MUSS den PRO-FRAME-
         // Zähler `render.drawCalls` lesen (Schöpfer-HUD zeigte 38108 „dc" = Session-
@@ -22724,13 +22732,13 @@ async function checkBandWellePerfENexusGovernor(ctx) {
                 /render\.drawCalls/.test(_lrC) && (_ltIdx === -1 || _lrC.indexOf("render.drawCalls") < _ltIdx);
         }
         out.overlayShowsRenderLoad =
-            /renderCalls/.test(r._perfSenseRender.toString()) && /phaseMax|spike/i.test(r._perfSenseRender.toString());
+            /renderCalls/.test(window.__codeOf(r._perfSenseRender)) && /phaseMax|spike/i.test(window.__codeOf(r._perfSenseRender));
 
         // (7) V18.269 — die Augen FAHREN: bei reiner RENDER-Last (viele Draw-Calls, CPU-
         // Phasen niedrig) drosselt der Regler die render-senkenden Hebel (Schatten-Intervall
         // + Cull-Radius), NICHT das Streaming. Vorher wog er die Architektur-Domäne als billig
         // (p.render=CPU≈0) → drosselte das Falsche, der Schatten-Pass lief ungebremst.
-        out.actuateReadsRenderLoad = /renderCalls/.test(r._nexusPerfActuate.toString());
+        out.actuateReadsRenderLoad = /renderCalls/.test(window.__codeOf(r._nexusPerfActuate));
         // (a) MODERATE Render-Last (Draw-Calls UNTER dem Responsiv-Schwellwert): die
         // Architektur-Domäne (Schatten/Cull = die render-VERURSACHENDEN Hebel) gibt MEHR
         // nach als das Streaming — der Regler drosselt das RICHTIGE (NICHT blind das
@@ -22786,7 +22794,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         // MAX Streaming-Budget (rückstau-getrieben), AUCH unter starker Drosselung — der
         // PID drosselt NICHT den Bau, der das hohe frameMs selbst erzeugt. Settled (kein
         // Rückstau) drosselt derselbe Druck das Streaming wieder (smooth exploration).
-        out.actuateReadsBacklog = /voxelMeshPending|streamBacklog/.test(r._nexusPerfActuate.toString());
+        out.actuateReadsBacklog = /voxelMeshPending|streamBacklog/.test(window.__codeOf(r._nexusPerfActuate));
         const pendingSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
         r._nexusPerfActuate({
@@ -22833,7 +22841,7 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
         // CONSUM (source-probe): der Regler trägt das Totband (growMs/throttleMs), nicht EINEN Sollwert.
         out.regulateHasDeadband =
-            /throttleMs/.test(r._nexusPerfRegulate.toString()) && /growMs/.test(r._nexusPerfRegulate.toString());
+            /throttleMs/.test(window.__codeOf(r._nexusPerfRegulate)) && /growMs/.test(window.__codeOf(r._nexusPerfRegulate));
         // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
@@ -22974,7 +22982,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         out.hasTick = typeof r._tickPendingWaterIso === "function";
         out.hasDrain = typeof r._drainPendingWaterIso === "function";
         if (!out.hasEnqueue || !out.hasTick || !out.hasDrain) return out;
-        const finSrc = r._finalizeVoxelChunkBuild.toString();
+        const finSrc = window.__codeOf(r._finalizeVoxelChunkBuild);
         // V12.0-perf.h.1 — Finalize hat ZWEI Pfade: enqueue (Streaming, deferred)
         // ODER sync-build (Edit-Rebuild via syncWater, kein Flacker). Beide da.
         out.finalizeEnqueues = /_enqueueWaterIso\(/.test(finSrc);
@@ -22990,7 +22998,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         // Spawn meshet seinen Footprint SYNCHRON (sonst deferred der async-Worker die
         // Verdrängung → Wasser steht in der Struktur). Probe: spawnArchitecture
         // sammelt `footprintKeys` + forceSynct wasser-tragende.
-        const spawnSrc = r.spawnArchitecture.toString();
+        const spawnSrc = window.__codeOf(r.spawnArchitecture);
         out.spawnSyncsWaterFootprint =
             /footprintKeys/.test(spawnSrc) && /forceSync: true/.test(spawnSrc) && /waterCells/.test(spawnSrc);
         out.queueIsSet = r.state.pendingWaterIso === null || r.state.pendingWaterIso instanceof Set;
@@ -22999,7 +23007,7 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
         // `_buildDeferrableJobs` (waterIso-Job, prio 1); der Test folgt dem Refactor.
         out.loopTicksQueue =
             typeof r._buildDeferrableJobs === "function" &&
-            /_tickPendingWaterIso\(/.test(r._buildDeferrableJobs.toString());
+            /_tickPendingWaterIso\(/.test(window.__codeOf(r._buildDeferrableJobs));
         // Mechanik: 3 echte Chunk-Keys enqueuen → tick(1) baut ≤1 → drain leert.
         if (!r.state.pendingWaterIso) r.state.pendingWaterIso = new Set();
         r.state.pendingWaterIso.clear();
@@ -23272,8 +23280,8 @@ async function checkBandWellePerf3cPhase2Async(ctx) {
         out.editClearedCache = !r.state.voxelDensityCache || r.state.voxelDensityCache.size === 0;
         // 6) Source-Probes
         // V12.0-perf.a — Worker-Density-Stufe lebt in `_acquireVoxelChunkBuild`.
-        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(r._acquireVoxelChunkBuild.toString());
-        out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(r._addVoxelEdit.toString());
+        out.ensureUsesFetch = /_fetchOrRequestChunkDensity\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
+        out.addEditCallsNotify = /_voxelWorkerNotifyEdit\(/.test(window.__codeOf(r._addVoxelEdit));
         return out;
     });
     if (res.error) {
@@ -23473,7 +23481,7 @@ async function checkBandWellePerf3cPhase3FullMesh(ctx) {
         syncFresh.mesh.geometry.dispose();
         // Source-Probe
         // V12.0-perf.a — Worker-Mesh-Stufe-1 lebt in `_acquireVoxelChunkBuild`.
-        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(r._acquireVoxelChunkBuild.toString());
+        out.ensureUsesFetchMesh = /_fetchOrRequestChunkMesh\(/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         return out;
     });
     if (res.error) {
@@ -23667,12 +23675,12 @@ async function checkBandV17118WorkerEngaged(ctx) {
             workerSpawned: !!r.state.voxelWorker,
             worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
             // Source: der Bootstrap lebt in _voxelWorkerSyncWorldgenState (war: early-return).
-            bootstrapSrc: /_getVoxelWorker\(\)/.test(r._voxelWorkerSyncWorldgenState.toString()),
+            bootstrapSrc: /_getVoxelWorker\(\)/.test(window.__codeOf(r._voxelWorkerSyncWorldgenState)),
             // Source: V18.271 — der Spieler-Chunk baut ASYNC (kein `_voxelChunkIsPlayerChunk`-
             // Sync-Trip mehr im Streaming). DETERMINISMUS-BOGEN P3: der weiche Boden ist mit
             // Ammo entfallen (der Spieler fällt nicht mehr durch einen ungebauten Chunk — das
             // Dichtefeld trägt den Boden global) → nur noch die Async-Quelle wird geprüft.
-            playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(r._ensureVoxelChunkAt.toString()),
+            playerAsyncSrc: !/_voxelChunkIsPlayerChunk/.test(window.__codeOf(r._ensureVoxelChunkAt)),
         };
     });
     if (res.error) {
@@ -23711,15 +23719,15 @@ async function checkBandPhasenBF(ctx) {
         );
         const joint = roles && roles.find((x) => x && x.joint);
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
-        out.c2Src = /_idleMotion/.test(r.tickArchitectures.toString());
+        out.c2Src = /_idleMotion/.test(window.__codeOf(r.tickArchitectures));
         out.c5Curves =
-            /handleJump\(/.test(r._loopPlayerMovement.toString()) && /Math\.exp/.test(r._loopPlayerMovement.toString());
+            /handleJump\(/.test(window.__codeOf(r._loopPlayerMovement)) && /Math\.exp/.test(window.__codeOf(r._loopPlayerMovement));
         // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
         out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
-        out.d2Src = /_herdContagionAcc/.test(r._tickEmotionContagion.toString());
-        out.d3Age = /FAUNA_MAX_AGE_MS/.test(r.tickFaunaLifecycle.toString());
-        out.d3Feed = /_depositLife/.test(r._creatureNaturalDeath.toString());
-        out.d4Src = /gegenwehr/.test(r.damageCreature.toString());
+        out.d2Src = /_herdContagionAcc/.test(window.__codeOf(r._tickEmotionContagion));
+        out.d3Age = /FAUNA_MAX_AGE_MS/.test(window.__codeOf(r.tickFaunaLifecycle));
+        out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
+        out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
         // V18.107 — D4-VOLL: das Temperament emergiert aus der Seelen-Substanz
         // (GEMESSEN an den Built-ins: wesen [stein+holz, dicht] → wehrhaft ·
         // geist [laub+leder, lebendig-weich] → sanft · sprite [quarz,
@@ -23752,14 +23760,14 @@ async function checkBandPhasenBF(ctx) {
             return t("wesen") === "wehrhaft" && argT(laubWeich) === "sanft" && argT(quarzAether) === "scheu";
         })();
         out.d4Konsum =
-            /_creatureTemperament/.test(r.damageCreature.toString()) &&
-            /fleeMul/.test(r.damageCreature.toString()) &&
+            /_creatureTemperament/.test(window.__codeOf(r.damageCreature)) &&
+            /fleeMul/.test(window.__codeOf(r.damageCreature)) &&
             AnazhRealm.TEMPERAMENT_PROFILES.sanft.strike === 0 &&
             AnazhRealm.TEMPERAMENT_PROFILES.scheu.strike === 0 &&
             AnazhRealm.TEMPERAMENT_PROFILES.wehrhaft.strike > 0;
         // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
         out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
-        out.e2Gate = /nexusWirk/.test(r._loopNexusUpdate.toString());
+        out.e2Gate = /nexusWirk/.test(window.__codeOf(r._loopNexusUpdate));
         // V18.108 — E2-VOLL: der REGELKREIS. Behavioral: ruhige Emotion → Faktor 1,
         // stark gekippte (chaos dominant) → klein (<0.5). KONSUM an allen vier
         // Stellen: Outcome-Regen + Idle-Tropf + Kosten-Tor + proaktive Stimmen
@@ -23778,19 +23786,19 @@ async function checkBandPhasenBF(ctx) {
             }
         })();
         out.e2Kreis =
-            /_emotionBalanceFactor/.test(r._loopNexusUpdate.toString()) &&
-            /_emotionBalanceFactor/.test(r._loopSelfAnalysis.toString()) &&
-            /_emotionBalanceFactor/.test(r._creatureSpeakProactive.toString()) &&
-            /_emotionBalanceFactor/.test(r.finalizePendingOutcomes.toString());
-        out.e3Mana = /mana/.test(r._chatTryDslParse.toString());
-        out.e4Heal = /finalized/.test(r.dslSelectByFitness.toString());
-        out.f1Blob = /Blob/.test(r._getVoxelWorker.toString());
-        out.f2Proto = /PROTO_VERSION/.test(r.p2pSend.toString());
+            /_emotionBalanceFactor/.test(window.__codeOf(r._loopNexusUpdate)) &&
+            /_emotionBalanceFactor/.test(window.__codeOf(r._loopSelfAnalysis)) &&
+            /_emotionBalanceFactor/.test(window.__codeOf(r._creatureSpeakProactive)) &&
+            /_emotionBalanceFactor/.test(window.__codeOf(r.finalizePendingOutcomes));
+        out.e3Mana = /mana/.test(window.__codeOf(r._chatTryDslParse));
+        out.e4Heal = /finalized/.test(window.__codeOf(r.dslSelectByFitness));
+        out.f1Blob = /Blob/.test(window.__codeOf(r._getVoxelWorker));
+        out.f2Proto = /PROTO_VERSION/.test(window.__codeOf(r.p2pSend));
         out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
         // G8 R1 (V18.123) — der creature-pos-Cap wanderte vom _cpRate-Inline
         // auf das geteilte _p2pPeerRateAdmit-Tor (V9.82-Verdichtung). Der Test
         // wandert mit (V9.56-i): die INTENT bleibt „trägt den Empfangs-Cap".
-        out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString());
+        out.f2CpCap = /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos));
         // B8 — Struktur-LUT + Rim verdrahtet (B2-Mantel prüft das A-Band in der Tiefe).
         // V18.259 — die Struktur-Gradient-LUT (`_ensureStructureGradient`) war eine
         // TOON-Schicht, mit dem Cel-System gepurged (bdb03e9, V18.236 PBR = die EINE
@@ -23826,7 +23834,7 @@ async function checkBandPhasenBF(ctx) {
         })();
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
         out.e8Key = (r.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
-        out.e8OffhandMeshPath = /offhandMesh/.test(r._refreshHeldMesh.toString());
+        out.e8OffhandMeshPath = /offhandMesh/.test(window.__codeOf(r._refreshHeldMesh));
         // V18.110 — C7 ATTACHMENT-PUNKTE: (1) ein sitz-Punkt validiert ohne
         // partB (Attachment zur Außenwelt), (2) die getragene Rüstung sitzt am
         // TORSO (Masse-Zentrum auf 0.18 — der „auf dem Kopf"-Fix, GEMESSEN am
@@ -23884,8 +23892,8 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
         out.c7MountSitz =
-            /_sitzHeight/.test(r.mountArchitecture.toString()) && /_sitzHeight/.test(r._tickMountedMovement.toString());
-        out.c7Grip = /_attachPointFor/.test(r._refreshHeldMesh.toString());
+            /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) && /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
+        out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
         // V18.111 — A4: die Wasserfall-PLANE ist geschnitten (Builder weg, das
         // Abwärts-Material lebt als markierte Saat), der STEIL-SPLIT formt
         // vertikales Wasser im Zell-Sheet (Lippe + Vorhang; GEMESSEN
@@ -23899,15 +23907,15 @@ async function checkBandPhasenBF(ctx) {
         // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
         // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
         out.a4Curtain =
-            /VERT_SPLIT/.test(r._computeWaterSheetData.toString()) &&
-            /dupVert/.test(r._computeWaterSheetData.toString());
+            /VERT_SPLIT/.test(window.__codeOf(r._computeWaterSheetData)) &&
+            /dupVert/.test(window.__codeOf(r._computeWaterSheetData));
         // V18.116 — A4-MÜNDUNGS-SYNERGIE: aWave (Ozean-Wellen-Anteil) ist
         // ART-gedämpft — die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem
         // Fluss, ein See ist still (GEMESSEN diag-mouth: Fluss-Kern aWave>0.5
         // 75 %→0). Source-Probe; der behaviorale Wächter ist diag-mouth.cjs.
         out.a4MouthWave = (() => {
-            const src = r._computeWaterSheetData.toString();
+            const src = window.__codeOf(r._computeWaterSheetData);
             return (
                 /riverness/.test(src) && /heightRamp \* \(1 - riverness\)/.test(src) && /_hydrosphereLakeAt/.test(src)
             );
@@ -23996,7 +24004,7 @@ async function checkBandPhasenBF(ctx) {
             if (!bp) return false;
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
             const hasRad = roles.some((x) => x && x.role === "rad");
-            const src = r._specRenderBody ? r._specRenderBody.toString() : "";
+            const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
         // V18.120 — B5-UNTERWASSER-PASS: der dritte Konsument des einen
@@ -24044,7 +24052,7 @@ async function checkBandPhasenBF(ctx) {
                 level[4 * dimSq] = 0.9;
                 const third = r._caRoofChanged(a, dim, dimY);
                 const fourth = r._caRoofChanged(a, dim, dimY);
-                const src = r._tickWorldWaterCA ? r._tickWorldWaterCA.toString() : "";
+                const src = r._tickWorldWaterCA ? window.__codeOf(r._tickWorldWaterCA) : "";
                 return first && !second && third && !fourth && /_caRoofChanged/.test(src);
             } finally {
                 if (saved === undefined) r.state.voxelChunks.delete(key);
@@ -24123,7 +24131,7 @@ async function checkBandPhasenBF(ctx) {
                 dsl.lastCrystallizeAt = saved.last;
             }
         })();
-        out.e45Hook = /_crystallizeGestureRule/.test(r._loopSelfAnalysis.toString());
+        out.e45Hook = /_crystallizeGestureRule/.test(window.__codeOf(r._loopSelfAnalysis));
         // V18.127 — E1: das EINE Dispatch-Tor (gigant-plan §3-Zwilling 5).
         // (a) VERDICHTUNG: die vier if-else-Handler sind GESCHNITTEN, der
         // Dispatch läuft über die chatSystemPatterns-Tabelle (kein Parallel-
@@ -24138,7 +24146,7 @@ async function checkBandPhasenBF(ctx) {
                 typeof r._chatTryAbilityCommand !== "function" &&
                 typeof r._chatTryPersistenceCommand !== "function";
             if (!oldHandlersGone) return "alte if-else-Handler leben noch";
-            if (!/chatSystemPatterns/.test(r._chatDispatchLegacyCommand.toString()))
+            if (!/chatSystemPatterns/.test(window.__codeOf(r._chatDispatchLegacyCommand)))
                 return "Dispatch liest die Tabelle nicht";
             const out0 = document.getElementById("chat-output");
             const before = out0 ? out0.children.length : 0;
@@ -24190,8 +24198,8 @@ async function checkBandPhasenBF(ctx) {
                 const em = fake.userData.emotions;
                 if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
                     return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
-                if (!/_setWeather/.test(r._loopWeatherAndGrowth.toString())) return "Auto-Zug ruft _setWeather nicht";
-                if (!/requestWeatherTransition/.test(r._setWeather.toString())) return "_setWeather fadet nicht";
+                if (!/_setWeather/.test(window.__codeOf(r._loopWeatherAndGrowth))) return "Auto-Zug ruft _setWeather nicht";
+                if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
                 return true;
             } finally {
                 Math.random = savedRandom;
@@ -24420,9 +24428,9 @@ async function checkBandPhaseAFundament(ctx) {
         out.bands = bands;
         out.bandAttrsOk = bandAttrsOk;
         out.cappedTotal = cappedTotal;
-        out.a1SrcCap = /snapCap/.test(r._applyCrossLodGeomorph.toString());
-        out.a1SrcBand = /_rebuildLodStitchBand/.test(r._applyCrossLodGeomorph.toString());
-        out.a1SrcDispose = /lodStitchMesh/.test(r._disposeVoxelChunk.toString());
+        out.a1SrcCap = /snapCap/.test(window.__codeOf(r._applyCrossLodGeomorph));
+        out.a1SrcBand = /_rebuildLodStitchBand/.test(window.__codeOf(r._applyCrossLodGeomorph));
+        out.a1SrcDispose = /lodStitchMesh/.test(window.__codeOf(r._disposeVoxelChunk));
         // ── A2 · Edit-Lokalität: ein kleiner Carve ändert NUR die Sub-Region
         // (der Ganz-Chunk-Rebuild ist deterministisch → der „Reset" ist unsichtbar).
         {
@@ -24471,7 +24479,7 @@ async function checkBandPhaseAFundament(ctx) {
                 fogFar: r.state.fog ? r.state.fog.far : null,
                 visualEdge,
                 coupled: !!r.state.fog && r.state.fog.far <= visualEdge + 0.001,
-                src: /visualEdge/.test(r._dayNightApplyHemiAndFog.toString()),
+                src: /visualEdge/.test(window.__codeOf(r._dayNightApplyHemiAndFog)),
             };
         }
         // ── B2 · Horizont-Mantel — N7.4 GESCHNITTEN (Vor-Studio-Fern-Kulisse, V18.423
@@ -24486,9 +24494,9 @@ async function checkBandPhaseAFundament(ctx) {
             tickGone: !/_ensureHorizonMantle/.test(window.__codeOf(r._runFrameScheduler)),
         };
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
-        out.a6SrcJump = /_ceilingHeadroom/.test(r.handleJump.toString());
-        out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(r._addVoxelEdit.toString());
-        out.a6SrcCam = /_ceilingHeadroom/.test(r._loopCamera.toString());
+        out.a6SrcJump = /_ceilingHeadroom/.test(window.__codeOf(r.handleJump));
+        out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(window.__codeOf(r._addVoxelEdit));
+        out.a6SrcCam = /_ceilingHeadroom/.test(window.__codeOf(r._loopCamera));
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
         const a6h = r._ceilingHeadroom();
@@ -24613,10 +24621,10 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         out.allCellsAreLod0 = allCellsAreLod0;
         out.firstMismatchLen = firstMismatchLen;
         // Source-Probe: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest
-        const isoSrc = r._buildVoxelChunkWaterIsoSurface.toString();
+        const isoSrc = window.__codeOf(r._buildVoxelChunkWaterIsoSurface);
         out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
         // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
-        const buildSrc = r._buildVoxelChunkData.toString();
+        const buildSrc = window.__codeOf(r._buildVoxelChunkData);
         out.buildPassesLod0 = /_buildVoxelChunkWaterCells\([^)]*,\s*0\s*\)/.test(buildSrc);
         return out;
     });
@@ -24718,8 +24726,8 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // kommt jetzt aus `_creatureGroundY` (gecacht) → die `_voxelSurfaceY`-
         // Quelle ist dorthin gewandert; `_creatureGroundY` ist der EINZIGE
         // Surface-Leser (EIN-Quelle-Disziplin bleibt, eine Ebene höher).
-        const helperSrc = r._creatureWaterContextAt.toString();
-        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(r._creatureGroundY.toString());
+        const helperSrc = window.__codeOf(r._creatureWaterContextAt);
+        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(window.__codeOf(r._creatureGroundY));
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
 
@@ -24824,7 +24832,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         const out = {};
 
         // Source-Probes — die strukturelle Wahrheit unabhängig von Welt-Daten.
-        const loopSrc = r.updateCreatures.toString();
+        const loopSrc = window.__codeOf(r.updateCreatures);
         out.loopReadsWaterContext = /_creatureWaterContextAt\(/.test(loopSrc);
         out.loopHasWaterSurface = /waterSurface/.test(loopSrc);
         out.loopHasShoreBias = /shoreDir/.test(loopSrc);
@@ -24964,9 +24972,9 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         out.findExists = typeof r._findNearestWaterPoint === "function";
 
         // Source-Probes — Routing + Helper-Konsum.
-        const routerSrc = r._tickCreatureTaskDirection.toString();
+        const routerSrc = window.__codeOf(r._tickCreatureTaskDirection);
         out.routerHasDrink = /task\.name === "drink"/.test(routerSrc);
-        const drinkSrc = r._tickCreatureDrink.toString();
+        const drinkSrc = window.__codeOf(r._tickCreatureDrink);
         out.drinkHasPhases = /_target/.test(drinkSrc) && /_drinkStart/.test(drinkSrc);
         // V18.100 G4-1 (Test wandert mit, V9.56-i): das vollendete Trinken fühlt
         // jetzt über das EINE Substrat (_feelCreatureAction → harvest: joy+hope;
@@ -25204,9 +25212,11 @@ async function checkBandWelleV11BPoolBuild(ctx) {
         // + compileAsync-non-blocking heilen den v160-InstancedMesh-Re-Use-
         // Bug strukturell). Source-Probe prüft jetzt: Build-Pfad nutzt
         // `_acquireGrassMesh()`. V11.0-d.fix.gras3-Workaround obsolet.
-        const buildSrc = r._buildVoxelChunkGrass.toString();
+        const buildSrc = window.__codeOf(r._buildVoxelChunkGrass);
         out.usesAcquire = /this\._acquireGrassMesh\(/.test(buildSrc);
-        out.v12dMarker = /V12\.0-d/.test(buildSrc);
+        // U1 (V18.452) — der V12.0-d-Marker ist eine DOKU-Behauptung (er wohnt
+        // im Kommentar des Pool-Pfads) → bewusst __dokuOf, nie __codeOf.
+        out.v12dMarker = /V12\.0-d/.test(window.__dokuOf(r._buildVoxelChunkGrass));
 
         // Empirischer Pre-fill-Test: lege ein Mesh manuell in den Pool, dann
         // baue einen neuen Chunk — der sollte aus dem Pool acquiren.
@@ -25281,9 +25291,10 @@ async function checkBandWelleV11CPoolDispose(ctx) {
         // V12.0-d — Dispose-Pfad nutzt `_releaseGrassMesh` (Pool-Push +
         // scene.remove intern). V11.0-d.fix.gras3-Workaround (direkt
         // scene.remove) obsolet auf r184.
-        const disposeSrc = r._disposeVoxelChunkGrass.toString();
+        const disposeSrc = window.__codeOf(r._disposeVoxelChunkGrass);
         out.usesRelease = /this\._releaseGrassMesh\(grass\)/.test(disposeSrc);
-        out.v12dMarker = /V12\.0-d/.test(disposeSrc);
+        // U1 (V18.452) — DOKU-Marker (wohnt im Kommentar) → __dokuOf, nie __codeOf.
+        out.v12dMarker = /V12\.0-d/.test(window.__dokuOf(r._disposeVoxelChunkGrass));
 
         // Voller despawn+respawn-Identity-Test mit einer echten Chunk-
         // Position. Schaue nach einem existierenden Gras-Chunk.
@@ -27287,7 +27298,7 @@ async function checkBandWelle6Keybindings(ctx) {
         out.hasFarewellPing = typeof r._playArchitectureFarewellPing === "function";
         out.removeIntegratesPing =
             typeof r.removeArchitecture === "function" &&
-            r.removeArchitecture.toString().includes("_playArchitectureFarewellPing");
+            window.__codeOf(r.removeArchitecture).includes("_playArchitectureFarewellPing");
         // Threshold-Konstante existiert
         const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
         out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
@@ -29012,9 +29023,9 @@ async function checkBandV18131DekoKaskade(ctx) {
         out.ringFiel = species.every((sp) => typeof sp.ring === "undefined");
         // KONSUM-Proben (V17.31): der Scatter liest das Band, der Loop tickt das
         // Fernfeld terrain-nachrangig.
-        out.scatterReadsBand = /_detailBand\(ringDist\)/.test(r._buildVoxelChunkScatter.toString());
+        out.scatterReadsBand = /_detailBand\(ringDist\)/.test(window.__codeOf(r._buildVoxelChunkScatter));
         // V18.358 — der Fernfeld-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
-        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(r._buildDeferrableJobs.toString());
+        out.loopTicksFernfeld = /_tickDekoFernfeld/.test(window.__codeOf(r._buildDeferrableJobs));
         // WebGPU-strikt (V10.0-g.1): die Impostor-Geometrie trägt das color-
         // Attribut, das das geteilte Art-Material liest.
         const geo = r._scatterImpostorGeometry(species[0]);
@@ -29090,9 +29101,9 @@ async function checkBandV18132FerneSeen(ctx) {
             r._hydroRiverAt,
             r._voxelChunkHasAnyWater,
         ];
-        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(f.toString()));
+        out.readersResolved = readers.every((f) => /_hydroFor|_erosionFor/.test(window.__codeOf(f)));
         // Der EINE Build-Eingang traegt die harte Kachel-Garantie.
-        out.buildGuarded = /_ensureHydroTilesAround/.test(r._acquireVoxelChunkBuild.toString());
+        out.buildGuarded = /_ensureHydroTilesAround/.test(window.__codeOf(r._acquireVoxelChunkBuild));
         // Worker-Mirror (Quelle per fetch — gleiche Origin): Resolver + Apply.
         try {
             const src = await fetch("voxel-worker.js").then((x) => x.text());
@@ -29180,10 +29191,10 @@ async function checkBandV18133Forage(ctx) {
         out.forageConst = !!r.constructor.FORAGE && Number.isFinite(r.constructor.FORAGE.regrowMs);
         // KONSUM-Proben: die Maus-Geste routet Flora, der Build filtert die
         // Ernte, der Streaming-Slot tickt den Regrow.
-        out.gestureRoutes = /_pickScatterAtCrosshair/.test(r.tryMouseBreak.toString());
-        out.buildFilters = /scatterHarvested/.test(r._buildVoxelChunkScatter.toString());
+        out.gestureRoutes = /_pickScatterAtCrosshair/.test(window.__codeOf(r.tryMouseBreak));
+        out.buildFilters = /scatterHarvested/.test(window.__codeOf(r._buildVoxelChunkScatter));
         // V18.358 — der Regrow-Tick wanderte in die Scheduler-Job-Registry (scatterDeco-Job).
-        out.loopRegrows = /_tickScatterRegrow/.test(r._buildDeferrableJobs.toString());
+        out.loopRegrows = /_tickScatterRegrow/.test(window.__codeOf(r._buildDeferrableJobs));
         // Die Zutaten-Oekonomie schliesst: der Lebenssaft traegt kraut (das
         // Mach-Tor V17.65 zieht damit GEPFLUECKTE Zutaten).
         out.trankKraut =
@@ -29268,9 +29279,9 @@ async function checkBandV18134Social(ctx) {
         const out = {};
         out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
         // KONSUM-Proben: das Werten signiert, der Kanal routet, der Feed liest.
-        out.rateSigns = /_socialSignOwnRating/.test(r._setFeedRating.toString());
-        out.channelRoutes = /social-rating/.test(r._p2pHandleChannelMessage.toString());
-        out.feedReadsAgg = /_feedRatingAgg/.test(r._feedRatingBar.toString());
+        out.rateSigns = /_socialSignOwnRating/.test(window.__codeOf(r._setFeedRating));
+        out.channelRoutes = /social-rating/.test(window.__codeOf(r._p2pHandleChannelMessage));
+        out.feedReadsAgg = /_feedRatingAgg/.test(window.__codeOf(r._feedRatingBar));
         if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
             out.unmeasurable = true;
             return out;
@@ -29372,9 +29383,9 @@ async function checkBandV18135Bookmarks(ctx) {
         if (was) r._toggleFeedBookmark(id); // Zustand wiederherstellen
         // KONSUM: Karte traegt den Toggle + dataset, Chips tragen Gemerkt,
         // der Filter liest es.
-        out.barHasMark = /_toggleFeedBookmark/.test(r._feedRatingBar.toString());
-        out.chipsHaveGemerkt = /gemerkt/.test(r._renderFeedKindChips.toString());
-        out.filterReads = /bookmarked/.test(r._applyLibraryFilter.toString());
+        out.barHasMark = /_toggleFeedBookmark/.test(window.__codeOf(r._feedRatingBar));
+        out.chipsHaveGemerkt = /gemerkt/.test(window.__codeOf(r._renderFeedKindChips));
+        out.filterReads = /bookmarked/.test(window.__codeOf(r._applyLibraryFilter));
         return out;
     });
     if (!res) {
@@ -29431,11 +29442,11 @@ async function checkBandV18142Follow(ctx) {
         out.notInSnapshot = !("feedFollows" in snap);
         // KONSUM: Items tragen den Autor, die Karte den Toggle (nicht auf
         // eigenen), Chips tragen Gefolgt, der Filter liest data-followed.
-        out.itemsCarryAuthor = /it\.author/.test(r._feedItems.toString());
-        const barSrc = r._feedRatingBar.toString();
+        out.itemsCarryAuthor = /it\.author/.test(window.__codeOf(r._feedItems));
+        const barSrc = window.__codeOf(r._feedRatingBar);
         out.barHasFollow = /_toggleFeedFollow/.test(barSrc) && /item\.author !== myKey/.test(barSrc);
-        out.chipsHaveGefolgt = /gefolgt/.test(r._renderFeedKindChips.toString());
-        out.filterReads = /followed/.test(r._applyLibraryFilter.toString());
+        out.chipsHaveGefolgt = /gefolgt/.test(window.__codeOf(r._renderFeedKindChips));
+        out.filterReads = /followed/.test(window.__codeOf(r._applyLibraryFilter));
         return out;
     });
     if (!res) {
@@ -29509,11 +29520,11 @@ async function checkBandV18143Comments(ctx) {
         r.unrevokeKey(pub2);
         // (4) die Verdrahtung: Handler kanal-exklusiv + onopen-Batch + die
         // Karte traegt 💬 + der Panel-Text ist textContent (XSS-Wand).
-        const handler = r._p2pHandleChannelMessage.toString();
+        const handler = window.__codeOf(r._p2pHandleChannelMessage);
         out.handlerWired = /social-comment/.test(handler) && /_p2pPeerRateAdmit\("social"/.test(handler);
         out.batchExists = typeof r._socialCommentsBatch === "function";
-        out.barHasTalk = /_renderFeedCommentsPanel/.test(r._feedRatingBar.toString());
-        const panelSrc = r._renderFeedCommentsPanel.toString();
+        out.barHasTalk = /_renderFeedCommentsPanel/.test(window.__codeOf(r._feedRatingBar));
+        const panelSrc = window.__codeOf(r._renderFeedCommentsPanel);
         out.xssWall = /textContent = c\.x/.test(panelSrc) && !/innerHTML\s*=\s*c\.x/.test(panelSrc);
         // restore
         r.state.socialComments = saved;
@@ -29580,9 +29591,9 @@ async function checkBandW18CoPresence(ctx) {
             !!reg && reg.coPresence === true && reg.trust === "sandboxed" && /worlds\/begegnung\//.test(reg.world);
         // (4) der Mesh-Pfad ist verdrahtet: ALLOWED-Liste + Dispatch-Tabelle +
         // Empfänger-Rate-Wand je Peer (das _cpRate-Muster).
-        out.channelAllowed = /"subworld-pose"/.test(r._p2pHandleChannelMessage.toString());
+        out.channelAllowed = /"subworld-pose"/.test(window.__codeOf(r._p2pHandleChannelMessage));
         out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
-        out.peerRate = /_p2pPeerRateAdmit\("subworld-pose"/.test(r._p2pMsgSubworldPose.toString());
+        out.peerRate = /_p2pPeerRateAdmit\("subworld-pose"/.test(window.__codeOf(r._p2pMsgSubworldPose));
         // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
         // die postMessage-Injektion wird über ein Fake-contentWindow gefangen).
         const savedPo = r._portalOverlay;
@@ -29647,12 +29658,12 @@ async function checkBandW18CoPresence(ctx) {
         // (9) der invite-Gate kennt die Ko-Präsenz (Quelle) + die Marke reist
         // im Blueprint-Snapshot (V8.59: sonst verlöre das Portal beim Reload
         // die Injektion) + obtainPortalForWorld trägt sie ins portalMeta.
-        out.inviteGate = /!po\.multiplayer && !po\.coPresence/.test(r._p2pBroadcastPortalInvite.toString());
-        out.serializeTravels = /portalMeta\.coPresence/.test(r._serializeBlueprint.toString());
-        out.aimTravels = /coPresence === true\) meta\.coPresence = true/.test(r.aimBlueprintAtWorld.toString());
+        out.inviteGate = /!po\.multiplayer && !po\.coPresence/.test(window.__codeOf(r._p2pBroadcastPortalInvite));
+        out.serializeTravels = /portalMeta\.coPresence/.test(window.__codeOf(r._serializeBlueprint));
+        out.aimTravels = /coPresence === true\) meta\.coPresence = true/.test(window.__codeOf(r.aimBlueprintAtWorld));
         // (10) der Hinweis + der Banner sprechen die Tier-Wahrheit (Konsum).
-        out.hintConsumes = /_portalCoPresenceTier/.test(r._portalRefreshHint.toString());
-        out.bannerConsumes = /_portalCoPresenceTier/.test(r._renderPortalInviteBanner.toString());
+        out.hintConsumes = /_portalCoPresenceTier/.test(window.__codeOf(r._portalRefreshHint));
+        out.bannerConsumes = /_portalCoPresenceTier/.test(window.__codeOf(r._renderPortalInviteBanner));
         return out;
     });
     check("W18 Ko-Präsenz: die Tier-Wahrheit (EINE Quelle, drei ehrliche Stufen)", res.tier2 && res.tier1 && res.tier0);
@@ -29750,8 +29761,8 @@ async function checkBandW18InputBridge(ctx) {
         // (5) Verdrahtung: ready-Zweig ruft die Brücke, der Dispose räumt den
         // Listener (lebt + stirbt mit dem Overlay), die Begegnungs-Welt
         // deklariert sie (der Smoke beweist den vollen Kreis).
-        out.readyWired = /_portalEnableInputBridge/.test(r._buildPortalOverlay.toString());
-        out.disposeCleans = /onInputKey/.test(r._disposePortalOverlay.toString());
+        out.readyWired = /_portalEnableInputBridge/.test(window.__codeOf(r._buildPortalOverlay));
+        out.disposeCleans = /onInputKey/.test(window.__codeOf(r._disposePortalOverlay));
         return out;
     });
     check("W18-C Input-Brücke: eingefrorenes Vokabular + Tasten-Karte (WASD/Pfeile)", res.vocab && res.keymap);
@@ -29839,15 +29850,15 @@ async function checkBandW18Dwell(ctx) {
         // (7) Verdrahtung: der Boot ruft die Rückkehr; das Wohnen reist im
         // soul-Kanal (Sender + Empfänger + Name-Schild); die Chat-Gesten
         // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle (V18.127).
-        out.bootWired = /_portalDwellingBootReturn/.test(r.init.toString());
-        out.soulSends = /dwell/.test(r._p2pBroadcastSoul.toString());
-        out.soulReads = /dwellingIn/.test(r._p2pMsgSoul.toString());
-        out.labelShows = /wohnt in/.test(r._p2pRefreshPeerNameLabel.toString());
+        out.bootWired = /_portalDwellingBootReturn/.test(window.__codeOf(r.init));
+        out.soulSends = /dwell/.test(window.__codeOf(r._p2pBroadcastSoul));
+        out.soulReads = /dwellingIn/.test(window.__codeOf(r._p2pMsgSoul));
+        out.labelShows = /wohnt in/.test(window.__codeOf(r._p2pRefreshPeerNameLabel));
         const examples = r.chatSystemPatterns.map((p) => p.example);
         out.chatGestures = examples.includes("wohne hier") && examples.includes("ziehe heim");
         // (8) der Zeiger + der Slot leben GLOBAL (nie im Welt-Snapshot) —
         // buildStateSnapshot kennt sie nicht.
-        out.notInSnapshot = !/portalDwelling|portalState/.test(r.buildStateSnapshot.toString());
+        out.notInSnapshot = !/portalDwelling|portalState/.test(window.__codeOf(r.buildStateSnapshot));
         return out;
     });
     check("W18-D Wohnen: außerhalb eines Portals ehrlich unmöglich", res.dwellOutside);
@@ -29876,7 +29887,7 @@ async function checkBandV18147ForYou(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) der Score KONSUMIERT alle fünf F4-Quellen (Stufen 1-4).
-        const src = r._feedForYouScore.toString();
+        const src = window.__codeOf(r._feedForYouScore);
         out.consumesAll =
             /_feedFollowed/.test(src) &&
             /_feedRatingAgg/.test(src) &&
@@ -29903,7 +29914,7 @@ async function checkBandV18147ForYou(ctx) {
         // (4) die Reihung ist verdrahtet: der Strom sortiert nach dem Score,
         // die Chips tragen „Für dich" (Konsum, nicht Existenz).
         out.sortWired =
-            /fuerdich/.test(r.renderLibraryUI.toString()) && /_feedForYouScore/.test(r.renderLibraryUI.toString());
+            /fuerdich/.test(window.__codeOf(r.renderLibraryUI)) && /_feedForYouScore/.test(window.__codeOf(r.renderLibraryUI));
         // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
         const savedSort = r.state.feedSort;
         r._renderFeedSort();
@@ -29942,7 +29953,7 @@ async function checkBandPhaseEThreat(ctx) {
         for (let i = 0; i < 60; i++) {
             if (r._pickCreatureSoulName() === "wolf") randomPickedPredator = true;
         }
-        out.ambientExcluded = !randomPickedPredator && /predator/.test(r._pickFaunaSoulAtPlayer.toString());
+        out.ambientExcluded = !randomPickedPredator && /predator/.test(window.__codeOf(r._pickFaunaSoulAtPlayer));
         const p = r.state.player;
         const pm = r.state.playerMesh.position;
         const savedMode = r.getGameMode();
@@ -30015,8 +30026,8 @@ async function checkBandPhaseEThreat(ctx) {
             out.triumphFelt = (p.emotions.joy || 0) > joy0;
             // (6) die Bewegungs-Verdrahtung: Jagd + Biss sitzen im Wariness-Zweig.
             out.moveWired =
-                /_creatureHuntDrive/.test(r.updateCreatures.toString()) &&
-                /_tickCreatureHuntStrike/.test(r.updateCreatures.toString());
+                /_creatureHuntDrive/.test(window.__codeOf(r.updateCreatures)) &&
+                /_tickCreatureHuntStrike/.test(window.__codeOf(r.updateCreatures));
         } finally {
             for (const c of spawned) {
                 if (c) r.removeCreature(c);
@@ -30136,15 +30147,15 @@ async function checkBandV18150Ride(ctx) {
             // (= player.mountedArch) überspringt (der Ersatz für den alten Ammo-Dispose).
             r.mountArchitecture(entry);
             out.collisionRests =
-                r.state.player.mountedArch === entry.id && /riddenId/.test(r._stepCharacterStructures.toString());
+                r.state.player.mountedArch === entry.id && /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
             out.profileConsumed = r._mountedVehicleProfile() === prof;
             // (3) Reiter + Gefährt sind EINS: unerntbar + kein Sammler-Ziel +
             // brennglas-fest (Quelle), solange geritten.
             out.unharvestable = r.harvestArchitecture(entry, "player") === null;
             out.noGatherTarget = r._findNearestArchitectureWithMaterial(entry.position, "holz") !== entry;
-            out.brennglasSafe = /riddenId/.test(r._tickFocusingAffordances.toString());
+            out.brennglasSafe = /riddenId/.test(window.__codeOf(r._tickFocusingAffordances));
             // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
-            out.lazyPassSkips = /riddenId/.test(r._stepCharacterStructures.toString());
+            out.lazyPassSkips = /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
             // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
             // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
             r.state.playerVel.setValue(5, 0, 0);
@@ -30161,11 +30172,11 @@ async function checkBandV18150Ride(ctx) {
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
             // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
-            const moveSrc = r._loopPlayerMovement ? r._loopPlayerMovement.toString() : "";
+            const moveSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
             out.movementConsumes =
                 /ride\.kAcc/.test(moveSrc) && /ride\.kBrake/.test(moveSrc) && /ride\.topSpeedMul/.test(moveSrc);
             // (6) der Idle-Animator pausiert fürs gerittene Gefährt.
-            out.idleSkips = /mountedId/.test(r.tickArchitectures.toString());
+            out.idleSkips = /mountedId/.test(window.__codeOf(r.tickArchitectures));
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
             r.dismountArchitecture();
             out.dismounts = r.state.player.mountedArch === null;
@@ -30237,7 +30248,7 @@ async function checkBandV18151Idb(ctx) {
         } finally {
             Storage.prototype.setItem = origSet;
         }
-        out.quotaSoft = !threw && /lebt in IndexedDB weiter/.test(r.saveState.toString());
+        out.quotaSoft = !threw && /lebt in IndexedDB weiter/.test(window.__codeOf(r.saveState));
         r.saveState(); // den echten Spiegel wiederherstellen
         // (5) der Boot-Vorzug: ein ECHT frischerer IDB-Stand gewinnt das Lesen
         // (Welt-Guard inklusive — der Preload trägt die worldId).
@@ -30260,8 +30271,8 @@ async function checkBandV18151Idb(ctx) {
         out.preloadConsumed = r._idbPreloadedState === null;
         r.saveState(); // die Wahrheit zurück in den IDB-Spiegel
         // (6) Verdrahtung: init awaitet den Preload; deleteWorld räumt IDB.
-        out.initAwaits = /await this\._idbPreload\(\)/.test(r.init.toString());
-        out.deleteCleans = /_idbDeleteWorld/.test(r.deleteWorld.toString());
+        out.initAwaits = /await this\._idbPreload\(\)/.test(window.__codeOf(r.init));
+        out.deleteCleans = /_idbDeleteWorld/.test(window.__codeOf(r.deleteWorld));
         return out;
     });
     check(
@@ -30330,7 +30341,7 @@ async function checkBandR6Capability(ctx) {
                 granted.ok === true &&
                 !!r.state.grantedCapabilities["regen-tanz"] &&
                 !r.state.capabilityProposals.has("regen-tanz");
-            out.gestureWired = /_sovereignGesture/.test(r.grantCapability.toString());
+            out.gestureWired = /_sovereignGesture/.test(window.__codeOf(r.grantCapability));
             const ran = r.runCapability("regen-tanz");
             out.runs = ran.ok === true && r.state.weather === "rainy";
             const pub = "cd".repeat(32);
@@ -30476,7 +30487,7 @@ async function checkBandM2RollenWahrheit(ctx) {
 
         // (7) das ehrliche Mach-Tor SICHTBAR (Befund 8): die Rezept-Zeile sagt
         // „Bauplan" vs „Werk ✓" (recipe-status aus forgedPrecision).
-        const rowSrc = r._recipeRow.toString();
+        const rowSrc = window.__codeOf(r._recipeRow);
         out.machTorSichtbar = /recipe-status/.test(rowSrc) && /Werk ✓/.test(rowSrc) && /forgedPrecision/.test(rowSrc);
 
         // (8) kein Regress an den Substanz-Zwillingen: Trank bleibt Trank (klein +
@@ -30606,7 +30617,7 @@ async function checkBandM3RittVollendet(ctx) {
             // Quelle liest ext.dy/dx/dz, Höhe (1.15/dy) UND Breite (0.95/dw) deckeln.
             // (Positiv-Probe — der Erklär-Kommentar in der Quelle nennt das alte
             // Literal, eine Negativ-Probe matchte den Kommentar.)
-            const fitSrc = r._tickWornArmorVisual.toString();
+            const fitSrc = window.__codeOf(r._tickWornArmorVisual);
             out.fitReadsDy = /ext\.dy/.test(fitSrc) && /ext\.dx/.test(fitSrc) && /1\.15 \/ dy/.test(fitSrc);
             return out;
         } finally {
@@ -30845,7 +30856,7 @@ async function checkBandNutzerBlickNachbau(ctx) {
             };
             out.ohneSitzKeinTrank = r.computeBlueprintRole(ohneSitz) === "architecture";
             // (4) das Rezeptbuch kennt die Fahrzeug-Gruppe.
-            out.rezeptGruppe = /vehicle: "Fahrzeug"/.test(r.renderRecipeBook.toString());
+            out.rezeptGruppe = /vehicle: "Fahrzeug"/.test(window.__codeOf(r.renderRecipeBook));
             // (5) der Kachel-Klick ERSETZT (ein Paar = eine Verbindung).
             const ov2 = document.getElementById("workshop-connect-overlay");
             if (ov2) r._workshopCloseConnectPopover();
@@ -31351,7 +31362,7 @@ async function checkBandPsi0Winkel(ctx) {
     const psi1 = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const liest = (fn) => typeof fn === "function" && /_resonateArgmax/.test(fn.toString());
+        const liest = (fn) => typeof fn === "function" && /_resonateArgmax/.test(window.__codeOf(fn));
         out.organDa = typeof r._resonateArgmax === "function";
         out.leser =
             liest(r._computeWorkshopDomain) &&
@@ -31394,8 +31405,8 @@ async function checkBandWBHofKarte(ctx) {
         // EIN Renderer, zwei Konsumenten (Source-KONSUM, V17.31).
         out.einRenderer =
             typeof r._buildEmotionRows === "function" &&
-            /_buildEmotionRows/.test(r.initStatusPanel.toString()) &&
-            /_buildEmotionRows/.test(r._hofBuildSpecSheet.toString());
+            /_buildEmotionRows/.test(window.__codeOf(r.initStatusPanel)) &&
+            /_buildEmotionRows/.test(window.__codeOf(r._hofBuildSpecSheet));
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
         const pm = r.state.playerMesh.position;
         // V18.347 (Cap-Gotcha, V18.296-Klasse): den maxCreatures-Cap (20) für die EINE Test-Kreatur
@@ -31475,9 +31486,9 @@ async function checkBandWCIchWahrheit(ctx) {
             /4× eisen/.test(r._machTorHint({ ok: false, reason: "not_enough_material", missing: { eisen: 4 } })) &&
             /⚒/.test(r._machTorHint({ ok: false, reason: "no_workshop_station", neededDomain: "forging" }));
         out.konsumenten =
-            /_showMachTorHint/.test(r._renderInventoryEquip.toString()) &&
-            /_showMachTorHint/.test(r._recipeRow.toString()) &&
-            /_showMachTorHint/.test(r._workshopAppendFertigenRow.toString());
+            /_showMachTorHint/.test(window.__codeOf(r._renderInventoryEquip)) &&
+            /_showMachTorHint/.test(window.__codeOf(r._recipeRow)) &&
+            /_showMachTorHint/.test(window.__codeOf(r._workshopAppendFertigenRow));
         // (a) NUTZER-ZUSTAND (§8.7): frieden + leerer Beutel → der Web-Akt scheitert
         // EHRLICH strukturiert, der Hint nennt das fehlende Material. Deterministisch:
         // Inventar + forgedPrecision (ein früheres Band könnte gefertigt haben) gesichert.
@@ -31509,7 +31520,7 @@ async function checkBandWCIchWahrheit(ctx) {
         const orte = document.querySelectorAll(".ich-boosts");
         const hostBand = document.querySelector("#ich-boosts-host .ich-boosts");
         out.einBandOrt = orte.length === 1 && !!hostBand;
-        const selfSheetSrc = (r._ichBuildSpecSheet || function () {}).toString();
+        const selfSheetSrc = window.__codeOf(r._ichBuildSpecSheet || function () {});
         out.fusszeileOhneBoosts = !/✺/.test(selfSheetSrc);
         const chip = document.querySelector("#ich-boosts-host .ich-boost-chip");
         if (chip) {
@@ -31540,10 +31551,10 @@ async function checkBandWCIchWahrheit(ctx) {
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
         out.warumTrank = !!whyTrank && /Lebendig|lebendig/.test(whyTrank.text);
         out.warumFlaechen =
-            /spec-why-line/.test(r._specRenderBody.toString()) &&
-            /_blueprintRoleWhy/.test(r._specRenderBody.toString());
+            /spec-why-line/.test(window.__codeOf(r._specRenderBody)) &&
+            /_blueprintRoleWhy/.test(window.__codeOf(r._specRenderBody));
         out.warumKarten =
-            /_blueprintRoleWhy/.test(r._recipeRow.toString()) && /_blueprintRoleWhy/.test(r._feedRecipeCard.toString());
+            /_blueprintRoleWhy/.test(window.__codeOf(r._recipeRow)) && /_blueprintRoleWhy/.test(window.__codeOf(r._feedRecipeCard));
         // (g) V18.172-Nachbau-Fund — das LEISTEN-LOCH ist tot: bei Ruhe verlässt
         // das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade; vorher
         // stand „Freude" mit 49 px + Doppel-Gap unsichtbar in der Leiste);
@@ -31608,7 +31619,7 @@ async function checkBandWDRittSpawn(ctx) {
         const out = {};
         // (1) die Hüft-Konstante + der EINE Konsument (Source-KONSUM).
         out.hipKonstante = A.SITZ_HIP_OFFSET === 0.45;
-        const mountSrc = r.mountArchitecture.toString();
+        const mountSrc = window.__codeOf(r.mountArchitecture);
         out.hipKonsum = /SITZ_HIP_OFFSET/.test(mountSrc) && !/\+ 0\.9\b/.test(mountSrc);
         // (2) die Klemme: ein Spawn IM Spieler (1 m) landet auf ≥3 m; precise bleibt.
         const pm = r.state.playerMesh.position;
@@ -31627,7 +31638,7 @@ async function checkBandWDRittSpawn(ctx) {
         }
         r.state.maxCreatures = saveMax;
         // (3) der Restore ist PRECISE (Source-Probe — bit-treue Welt nach Reload).
-        out.restorePrecise = /precise:\s*true/.test(r._restoreCreatureFromSnapshot.toString());
+        out.restorePrecise = /precise:\s*true/.test(window.__codeOf(r._restoreCreatureFromSnapshot));
         return out;
     });
     check(
@@ -31915,7 +31926,7 @@ async function checkBandLambda3Wind(ctx) {
         out.steinWiegtNull = steinProfile.wiegen;
         // Source-Probe: V18.234 — der Wind-Sway lebt im GETEILTEN _applyVegetationResponse
         // (Toon + PBR rufen ihn).
-        const src = r._applyVegetationResponse.toString();
+        const src = window.__codeOf(r._applyVegetationResponse);
         out.windSwayCode = /responseProfile.*wiegen.*>\s*0\.05/.test(src) && /positionNode\s*=/.test(src);
         return out;
     });
@@ -31939,13 +31950,13 @@ async function checkBandLambda4Streu(ctx) {
         // V18.187-Welle-11 (Reviewer-Befund): die Probe trägt jetzt ALLE drei
         // Λ.4-Stufen (V18.174 instanceColor + V18.175 per-Achsen + V18.176
         // 12 Geometrien), nicht nur die V18.175-Skalierung.
-        const src = r._buildVoxelChunkScatter.toString();
+        const src = window.__codeOf(r._buildVoxelChunkScatter);
         // V18.175 — per-Achsen-Skalierung.
         out.perAchsenCode = /sp\.wind/.test(src) && /sx:.*sy:.*sz:/s.test(src);
         out.consumerCode = /scl\.set\(it\.sx,\s*it\.sy,\s*it\.sz\)/.test(src);
         // V18.174 — instanceColor pro-Instanz (Hash-Stream, setColorAt).
         out.instanceColorCode = /hashInstanceTint/.test(src) && /setColorAt\(i,\s*tintColor\)/.test(src);
-        const matSrc = r._scatterMaterial.toString();
+        const matSrc = window.__codeOf(r._scatterMaterial);
         // V18.267 — der pro-Instanz-Tint kommt jetzt über Three.js' nativen
         // InstanceNode-Pfad (setupDiffuseColor multipliziert instanceColor
         // automatisch): das Material setzt das useInstanceTint-Flag, liest aber
@@ -31969,7 +31980,7 @@ async function checkBandLambda4Streu(ctx) {
         const schilf3 = names.has("schilf_reihe") && names.has("schilf_tuff") && names.has("schilf_rohr");
         out.zwoelfGeometrien = blume3 && farn3 && gestruepp3 && schilf3;
         // Build-Methode kennt die 12 Geom-Cases.
-        const geomSrc = r._scatterSpeciesGeometry.toString();
+        const geomSrc = window.__codeOf(r._scatterSpeciesGeometry);
         out.geomBuilderHat12 =
             /blume_tulpe/.test(geomSrc) &&
             /blume_klee/.test(geomSrc) &&
@@ -32013,7 +32024,7 @@ async function checkBandLambda5MischwaldSynthese(ctx) {
         const ref = window.anazhRealm.constructor.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
         // candidates-Liste in _vegetationSampleSpawn trägt die 4 NEUEN, aber NICHT die Varianten.
-        const src = r._vegetationSampleSpawn.toString();
+        const src = window.__codeOf(r._vegetationSampleSpawn);
         const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
         const block = candidatesMatch ? candidatesMatch[1] : "";
         out.candidatesBirke = /["']baum_birke["']/.test(block);
@@ -32056,7 +32067,7 @@ async function checkBandLambda6Detail(ctx) {
         out.steinDetailNull = steinProfile.detail;
         // Source-Probe: V18.234 — der Subsurface-Backlit lebt im GETEILTEN
         // _applyVegetationResponse (Toon + PBR).
-        const src = r._applyVegetationResponse.toString();
+        const src = window.__codeOf(r._applyVegetationResponse);
         out.detailCode = /responseProfile.*detail.*>\s*0\.4/.test(src) && /backlit|_backlit/.test(src);
         return out;
     });
@@ -32238,14 +32249,14 @@ async function checkBandGammaGenese(ctx) {
                 Number.isFinite(farn.floorNass) &&
                 farn.kronen === "unter"
             );
-            const nahSrc = r._buildVoxelChunkScatter.toString();
-            const fernSrc = r._buildDekoFernfeldSpecies.toString();
+            const nahSrc = window.__codeOf(r._buildVoxelChunkScatter);
+            const fernSrc = window.__codeOf(r._buildDekoFernfeldSpecies);
             const reads = (src) =>
                 /feldNass/.test(src) && /_kronenMult/.test(src) && /minGen/.test(src) && /_feuchteAt/.test(src);
             out.gatingNah = reads(nahSrc);
             out.gatingFern = reads(fernSrc);
-            out.bodenLiest = /_feuchteAt/.test(r._terrainMaterialAt.toString());
-            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(r._vegetationSampleSpawn.toString());
+            out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
+            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(window.__codeOf(r._vegetationSampleSpawn));
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -32299,7 +32310,7 @@ async function checkBandGammaGenese(ctx) {
         /dampEarth/.test(ctx.realm ? "" : "") ||
             /dampEarth/.test(
                 (await safeEvaluate(page, () =>
-                    window.anazhRealm ? window.anazhRealm._attachVoxelFieldColors.toString() : ""
+                    window.anazhRealm ? window.__codeOf(window.anazhRealm._attachVoxelFieldColors) : ""
                 )) || ""
             )
     );
@@ -32513,7 +32524,7 @@ async function checkBandV18164WarumLicht(ctx) {
         const spec2 = r._blueprintRoleSpectrum(wagenOhneSitz);
         out.spektrumKeinTrank = spec2[0].role !== "consumable";
         // (2) die Führung ist VERDRAHTET (Spektrum-Zeile + sichtbare Hint-Zeile + Ruf).
-        const srcSpec = r._specRenderBody.toString();
+        const srcSpec = window.__codeOf(r._specRenderBody);
         out.verdrahtet =
             /spec-gap-hint/.test(srcSpec) &&
             /_blueprintRoleGapHint/.test(srcSpec) &&
@@ -32538,7 +32549,7 @@ async function checkBandV18164WarumLicht(ctx) {
         // konsumiert + der Tag-Nacht-Sync treibt es (nachts > 0, mittags 0).
         const au = r._ensureAtmoUniforms();
         out.moonUniform = !!au.terrainMoonRim;
-        out.moonKonsum = /terrainMoonRim/.test(r._applySubstanceResponse.toString());
+        out.moonKonsum = /terrainMoonRim/.test(window.__codeOf(r._applySubstanceResponse));
         const tintProbe = { skyR: 0.1, skyG: 0.1, skyB: 0.2, lightMul: 1 };
         r._dayNightApplyHemiAndFog(-Math.PI / 2, tintProbe); // Mitternacht (sin=-1)
         const nightVal = au.terrainMoonRim.value;
@@ -32557,7 +32568,7 @@ async function checkBandV18164WarumLicht(ctx) {
             Number.isFinite(snap.atmosphere.microStrength) &&
             Number.isFinite(snap.atmosphere.terrainNightFloor) &&
             Number.isFinite(snap.atmosphere.moonRim);
-        const srcRestore = r._loadStateRestoreSoulAndAtmosphere.toString();
+        const srcRestore = window.__codeOf(r._loadStateRestoreSoulAndAtmosphere);
         out.restoreLiest =
             /setMicroStrength/.test(srcRestore) &&
             /setTerrainNightFloor/.test(srcRestore) &&
@@ -32567,7 +32578,7 @@ async function checkBandV18164WarumLicht(ctx) {
         // Ziel-Ring nicht voll steht, deckt der Nebel die GEBAUTE Kante (der
         // Boot-Blick in die Mantel-Stanze fällt). KONSUM: der Fog-Sync liest
         // _builtRingRadius; im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = /_builtRingRadius/.test(r._dayNightApplyHemiAndFog.toString());
+        out.ladeNebelKonsum = /_builtRingRadius/.test(window.__codeOf(r._dayNightApplyHemiAndFog));
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel =
@@ -32682,10 +32693,10 @@ async function checkBandM5HudPolitur(ctx) {
         // (5) Equip/Pickup rufen den Sofort-Refresh (Source-KONSUM + Helper existiert).
         out.instantRefresh =
             typeof r._refreshIchIfOpen === "function" &&
-            /_refreshIchIfOpen/.test(r.equipHeld.toString()) &&
-            /_refreshIchIfOpen/.test(r.equipArmor.toString()) &&
-            /_refreshIchIfOpen/.test(r.addToInventory.toString()) &&
-            /_refreshIchIfOpen/.test(r.addMaterialToInventory.toString());
+            /_refreshIchIfOpen/.test(window.__codeOf(r.equipHeld)) &&
+            /_refreshIchIfOpen/.test(window.__codeOf(r.equipArmor)) &&
+            /_refreshIchIfOpen/.test(window.__codeOf(r.addToInventory)) &&
+            /_refreshIchIfOpen/.test(window.__codeOf(r.addMaterialToInventory));
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
         const pm = r.state.playerMesh.position;
         // V18.347 Cap-Gotcha (V18.296): den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
@@ -32796,12 +32807,12 @@ async function checkBandM4SuchKern(ctx) {
             }
             // (4) KONSUM überall (Source-Proben — kein Privat-Filter-Rest).
             out.konsum =
-                /_matchQuery/.test(r._applyWorkshopFilter.toString()) &&
-                /_blueprintSearchText/.test(r._applyWorkshopFilter.toString()) &&
-                /_matchQuery/.test(r._applyIchFilter.toString()) &&
-                /_matchQuery/.test(r._applyLibraryFilter.toString()) &&
-                /_blueprintSearchText/.test(r._omniboxSearch.toString()) &&
-                /_blueprintSearchText/.test(r._recipeRow.toString());
+                /_matchQuery/.test(window.__codeOf(r._applyWorkshopFilter)) &&
+                /_blueprintSearchText/.test(window.__codeOf(r._applyWorkshopFilter)) &&
+                /_matchQuery/.test(window.__codeOf(r._applyIchFilter)) &&
+                /_matchQuery/.test(window.__codeOf(r._applyLibraryFilter)) &&
+                /_blueprintSearchText/.test(window.__codeOf(r._omniboxSearch)) &&
+                /_blueprintSearchText/.test(window.__codeOf(r._recipeRow));
             return out;
         } finally {
             delete blu.__m4probe;
@@ -32861,7 +32872,7 @@ async function checkBandM6ErnteSpawn(ctx) {
             // (2) die TERRAIN-Mühe (pfad): der erste Hieb gräbt NICHT (Fortschritt),
             // erst die Schlag-Zahl vollendet; die Stamina ist ANTEILIG (Σ ≈ alter
             // Ein-Hieb-Preis — die Faust KANN weiter graben); frieden bleibt instant.
-            const src = r.tryMouseBreak.toString();
+            const src = window.__codeOf(r.tryMouseBreak);
             out.musyntax = /_dig/.test(src) && /dig\.progress \+= digFit\.progress/.test(src) && /perStrike/.test(src);
             r.setGameMode("pfad");
             r.state.player.stamina = 100;
@@ -32897,7 +32908,7 @@ async function checkBandM6ErnteSpawn(ctx) {
             clampSpawn = null;
             delete r.state.blueprints._t_m6_haus;
             // KONSUM: die Klemme sitzt in spawnArchitecture (die Wurzel — kein Pfad daran vorbei).
-            out.klemmeKonsum = /_structureSpawnPos/.test(r.spawnArchitecture.toString());
+            out.klemmeKonsum = /_structureSpawnPos/.test(window.__codeOf(r.spawnArchitecture));
             return out;
         } finally {
             if (baum) r.removeArchitecture(baum);
@@ -32946,7 +32957,7 @@ async function checkBandWHWald(ctx) {
         // KEINE statische _jung/_alt-Variante mehr im Spawn. Das STRUKTURELLE Gesetz
         // bleibt heil (Varianten nicht im candidates-Pool); nur ihr Beweis aktualisiert
         // sich auf den neuen, einen Pfad.
-        const src = r._vegetationSampleSpawn.toString();
+        const src = window.__codeOf(r._vegetationSampleSpawn);
         const candidatesMatch = src.match(/const\s+candidates\s*=\s*\[([\s\S]*?)\]/);
         const candidatesBlock = candidatesMatch ? candidatesMatch[1] : "";
         out.notInCandidates =
@@ -32963,14 +32974,14 @@ async function checkBandWHWald(ctx) {
         // die Beweise lesen jetzt den Wald-Generator. Das STRUKTURELLE Gesetz bleibt heil
         // (die kanonische Art tritt an, die Variante wird NACH der Nischen-Entscheidung
         // GEWACHSEN — keine statische _jung/_alt-Variante im Pool NOCH im Generator).
-        const forestSrc = r._forestPlantChunk.toString();
+        const forestSrc = window.__codeOf(r._forestPlantChunk);
         // „Drähte statt Kopien" (08.07.): die Dart-PFLANZ-LOGIK (Größen-Formel) lebt jetzt in
         // phyto-core.planForestCell (byte-identisch umgezogen, Dart-Parität bewiesen) — die
         // Probe wandert mit dem Code (V9.56-i); der Monolith trägt nur noch den ctx-Draht.
         const cellDartsSrc =
             window.__phytoCore && typeof window.__phytoCore.planForestCell === "function"
-                ? window.__phytoCore.planForestCell.toString()
-                : r._forestCellDarts.toString();
+                ? window.__codeOf(window.__phytoCore.planForestCell)
+                : window.__codeOf(r._forestCellDarts);
         // Die Variante wächst region-deterministisch (`_growTreeBlueprintForSpawn(d.sp,…)`)
         // NACH dem Poisson-/Nischen-Sieg; gespawnt wird die KANONISCHE Art (`d.sp`) — die
         // Identität ist tag-neutral, die Gestalt-Vielfalt reitet über scale/yaw/tint. KEINE
@@ -32996,7 +33007,7 @@ async function checkBandWHWald(ctx) {
         // wirkt entry.rotationY (sonst zeigt ein ganzer Wald nach Norden) UND der
         // Spawn setzt sie seed-deterministisch. Behavioral: zwei Entries mit
         // verschiedener rotationY liefern verschiedene Welt-Matrizen.
-        out.rotInMatrix = /entry\.rotationY/.test(r._archEntryWorldMatrix.toString());
+        out.rotInMatrix = /entry\.rotationY/.test(window.__codeOf(r._archEntryWorldMatrix));
         out.rotInSpawn = /spawnYaw/.test(src) && /rotationY: spawnYaw/.test(src);
         const m0 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 0 });
         const m1 = r._archEntryWorldMatrix({ position: { x: 0, y: 0, z: 0 }, scale: 1, rotationY: 1.2 });
@@ -33004,8 +33015,8 @@ async function checkBandWHWald(ctx) {
         // (7) die Yaw reist im Snapshot + Restore (V8.59-Klasse — sonst rasten
         // geladene Bäume auf Identity zurück, der Klon-Look kehrt wieder).
         out.rotPersists =
-            /rotationY: a\.rotationY/.test(r.buildStateSnapshot.toString()) &&
-            /rotationY: Number\.isFinite\(a\.rotationY\)/.test(r._loadStateRestoreArchitectures.toString());
+            /rotationY: a\.rotationY/.test(window.__codeOf(r.buildStateSnapshot)) &&
+            /rotationY: Number\.isFinite\(a\.rotationY\)/.test(window.__codeOf(r._loadStateRestoreArchitectures));
         return out;
     });
     check(
@@ -33078,7 +33089,7 @@ async function checkBandPhiArchipel(ctx) {
         // (sie sind GAR KEINE Ops). Strukturelle Probe an der `dslRun`-Source:
         // setPortalAddress/setWorldVisibility/setWorldGuestRights/kickPeer/banPeer
         // tauchen NICHT als Ops in der Run-Logik auf (kein op === "kick_peer" o.ä.).
-        const dslRunSrc = r.dslRun.toString();
+        const dslRunSrc = window.__codeOf(r.dslRun);
         out.noKickOp = !/op\s*===\s*["']kick_peer["']/.test(dslRunSrc);
         out.noBanOp = !/op\s*===\s*["']ban_peer["']/.test(dslRunSrc);
         out.noSetVisibilityOp = !/op\s*===\s*["']set_visibility["']/.test(dslRunSrc);
@@ -33178,7 +33189,7 @@ async function checkBandPhiArchipel(ctx) {
         out.visGelistet = r.state.worldMeta.visibility === "gelistet";
         r.setWorldVisibility("privat");
         out.visPrivat = r.state.worldMeta.visibility === "privat";
-        const setterSrc = r.setWorldVisibility.toString();
+        const setterSrc = window.__codeOf(r.setWorldVisibility);
         out.lobbyBridgePublishes = /publishToLobby/.test(setterSrc);
         out.lobbyBridgeUnpublishes = /unpublishLobby/.test(setterSrc);
         r.setWorldVisibility(visBefore || "privat");
@@ -33315,7 +33326,7 @@ async function checkBandPhiArchipelV2(ctx) {
         // wenn regionsActive=true + worldId vorhanden → der DEFAULT-Raum
         // ist worldId:currentRegionKey. Wir prüfen das, indem wir die Source-
         // Probe des regionalDefault-Pfads matchen.
-        const initSrc = r.initP2PSync.toString();
+        const initSrc = window.__codeOf(r.initP2PSync);
         out.initReadsRegional = /regionalDefault/.test(initSrc) && /_regionRoomId/.test(initSrc);
 
         // (Q7) Übergangs-Detection: wir setzen die Player-Position TIEF in eine
@@ -33375,7 +33386,7 @@ async function checkBandPhiArchipelV2(ctx) {
 
         // (Q12) requestWorldPresence ist verdrahtet (Source-Probe — den echten
         // Round-Trip macht smoke-multiuser); ohne p2p.connected → false.
-        const reqSrc = r.requestWorldPresence.toString();
+        const reqSrc = window.__codeOf(r.requestWorldPresence);
         out.requestWired = /world-presence/.test(reqSrc) && /_p2pSignal/.test(reqSrc);
         out.requestNoConn = r.requestWorldPresence("welt-test") === false;
 
@@ -33438,13 +33449,13 @@ async function checkBandPhiArchipelV2(ctx) {
 
         // (Q19) DISJUNKTHEIT: weder pin/unpin/setRegionsActive sind DSL-Ops
         // (R2 strukturell durch Pool-Disjunktheit).
-        const dslRunSrc = r.dslRun.toString();
+        const dslRunSrc = window.__codeOf(r.dslRun);
         out.noPinOp = !/op\s*===\s*["']pin_world["']/.test(dslRunSrc);
         out.noRegionOp = !/op\s*===\s*["']set_regions_active["']/.test(dslRunSrc);
 
         // (Q20) _p2pMsgWorldRequest hat den Carrier-Pfad: ein NICHT-Host ruft
         // _p2pMaybeServeAsCarrier (Source-Probe).
-        const wrSrc = r._p2pMsgWorldRequest.toString();
+        const wrSrc = window.__codeOf(r._p2pMsgWorldRequest);
         out.requestUsesCarrier = /_p2pMaybeServeAsCarrier/.test(wrSrc);
 
         return out;
@@ -33689,11 +33700,11 @@ async function checkBandPhi7PortalHalls(ctx) {
 
         // (H13) enterPortal-Coalesce: entry-level portalMeta gewinnt vor
         // bauplan-level (Source-Probe — der echte Trip baut Overlay).
-        const epSrc = r.enterPortal.toString();
+        const epSrc = window.__codeOf(r.enterPortal);
         out.enterCoalesces = /entryPortalMeta\s*\|\|\s*bpPortalMeta/.test(epSrc);
 
         // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops.
-        const dslRunSrc = r.dslRun.toString();
+        const dslRunSrc = window.__codeOf(r.dslRun);
         out.noCreateHallOp = !/op\s*===\s*["']create_portal_hall["']/.test(dslRunSrc);
         out.noMatHallOp = !/op\s*===\s*["']materialize_portal_hall["']/.test(dslRunSrc);
 
@@ -33898,7 +33909,7 @@ async function checkBandPhi6ComputeSpende(ctx) {
         out.snapHasRuns = Array.isArray(snap.playtestContributions) && snap.playtestContributions.length >= 1;
 
         // (K13) R2-DISJUNKTHEIT: keine Φ6-Akte sind DSL-Ops.
-        const dslRunSrc = r.dslRun.toString();
+        const dslRunSrc = window.__codeOf(r.dslRun);
         out.noPinComputeOp = !/op\s*===\s*["']pin_compute["']/.test(dslRunSrc);
         out.noSignPlaytestOp = !/op\s*===\s*["']sign_playtest["']/.test(dslRunSrc);
 
@@ -34181,7 +34192,7 @@ async function checkBandW5Werkzeugabnutzung(ctx) {
         // (W13) R2-DISJUNKTHEIT strukturell: weder repair_held noch wear-Setter
         // sind DSL-Ops (kein Skript kann automatisch reparieren oder die Mühe-
         // Senke umgehen — Ω5 lebt nur durch echte Spieler-Akte).
-        const dslRunSrc = r.dslRun.toString();
+        const dslRunSrc = window.__codeOf(r.dslRun);
         out.noRepairOp = !/op\s*===\s*["']repair_held["']/.test(dslRunSrc);
         out.noSetWearOp = !/op\s*===\s*["']set_wear["']/.test(dslRunSrc);
 
@@ -34483,7 +34494,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // Konstanten + Substraktion y-base-_cont0, alte ss(12,42,y) NICHT mehr,
         // und der gemessene Schnee-Anteil in der NAHEN Region (±300 m) ist
         // < 0.1 (kein flächiger Boden-Schnee mehr).
-        const attachSrc = r._attachVoxelFieldColors.toString();
+        const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.snowOnProminence = /SNOW_PROM_START/.test(attachSrc) && /y\s*-\s*base\s*-\s*_cont0/.test(attachSrc);
         // ALTE absolute Form ss(12,42,y) darf NICHT als Code (mix(snow,…))
         // erscheinen — im Kommentar erlaubt. Engere regex auf den Code-Stil.
@@ -34543,7 +34554,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         // (G2) CHUNK-SEAM: Pad+Crop-Mechanismus präsent (V9.42-b der Wahrheits-
         // Anker, gleich-LOD-Naht). Strukturelle Wand gegen Regression auf
         // cropMargin=0 (Naht-Riss-Klasse).
-        const buildSrc = r._voxelChunkGeometry ? r._voxelChunkGeometry.toString() : "";
+        const buildSrc = r._voxelChunkGeometry ? window.__codeOf(r._voxelChunkGeometry) : "";
         out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
         // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
@@ -34573,7 +34584,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.waterCellHighNotWater = highIsNotWater;
         out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
         // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
-        const cellsSrc = r._buildVoxelChunkWaterCells ? r._buildVoxelChunkWaterCells.toString() : "";
+        const cellsSrc = r._buildVoxelChunkWaterCells ? window.__codeOf(r._buildVoxelChunkWaterCells) : "";
         out.cellsBuildHasFlood = cellsSrc.length > 200;
         // Worker-Snapshot trägt hydroBand mit (V9.91 — Cells-Klassifikations-
         // Skip ausserhalb [bottom..top]) → das CELL-MODELL ist tragend
@@ -34616,7 +34627,7 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             archSeen < 3 ? "skipped-no-archs" : archWithBlockers / Math.max(1, archSeen) >= 0.3;
         // Source-Probe: _blockerComputePartAABB (die Solidität-Quelle, V9.65-
         // Lehre: Material-Tag dichte ≥ 0.3 macht den Part SOLID).
-        const blockerSrc = r._blockerComputePartAABB ? r._blockerComputePartAABB.toString() : "";
+        const blockerSrc = r._blockerComputePartAABB ? window.__codeOf(r._blockerComputePartAABB) : "";
         out.blockerComputeExists = blockerSrc.length > 50;
 
         return out;
@@ -34670,7 +34681,7 @@ async function checkBandV18195AvatarSizeHp(ctx) {
 
         // (S1) STRUKTUR: die Größen-Skalierung lebt in computePlayerStats
         // als Source-Probe (sqrt(soulSize) gegen hpMax + staminaMax).
-        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
+        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeMul = /sizeHpMul|soulSize|_compoundSizeFactor.*soulBp/i.test(src);
         out.appliesToHpMax = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul|stats\.hpMax\s*\*=/.test(src);
         out.appliesToStamMax =
@@ -34888,7 +34899,7 @@ async function checkBandV18196ManaSymmetry(ctx) {
 
         // (M8) Größen-Skalierung (V18.195-Symmetrie): manaMax skaliert mit
         // sqrt(soulSize) genau wie hpMax/staminaMax
-        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
+        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.manaScaledByMul = /stats\.manaMax\s*=\s*stats\.manaMax\s*\*\s*sizeHpMul/.test(src);
 
         return out;
@@ -34931,7 +34942,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         out.constExists = typeof A.STRATA_STEIN_DEPTH === "number" && A.STRATA_STEIN_DEPTH > 0;
 
         // (S2) Source-Probe: _terrainMaterialAt nimmt y + nutzt STRATA_STEIN_DEPTH
-        const src = r._terrainMaterialAt.toString();
+        const src = window.__codeOf(r._terrainMaterialAt);
         out.acceptsY = /\(x,\s*z,\s*y\)/.test(src);
         out.usesStrataDepth = /STRATA_STEIN_DEPTH/.test(src);
 
@@ -34978,7 +34989,7 @@ async function checkBandV18197GammaMStrata(ctx) {
         // (S7) digTerrain ruft _terrainMaterialAt mit target.y (Source-Probe)
         // Mehrere mögliche Aufrufer haben sich an die strukturelle Wahrheit
         // angepasst.
-        const code = r.constructor && r.constructor.toString ? r.constructor.toString().substr(0, 5000) : "";
+        const code = r.constructor && r.constructor.toString ? window.__codeOf(r.constructor).substr(0, 5000) : "";
         // Statt grobem source-grep prüfen wir das spezifische Verhalten —
         // _terrainMaterialAt(x, z, y) als Mechanik via direkte Probe.
         out.digConsumesY = out.acceptsY; // direkter Source-Beweis
@@ -35084,8 +35095,8 @@ async function checkBandV18198Gamma2Totholz(ctx) {
         // mit dem Code). Dort leben jetzt TOTHOLZ_RATE + stamm_gefallen. `src` bleibt
         // `_vegetationSampleSpawn` für die T6-Determinismus-Probe unten (dort lebt der
         // rng.noise2D-Unterwuchs weiter).
-        const src = r._vegetationSampleSpawn.toString();
-        const forestSrc = r._forestPlantChunk.toString();
+        const src = window.__codeOf(r._vegetationSampleSpawn);
+        const forestSrc = window.__codeOf(r._forestPlantChunk);
         out.hasSubSpawn = /TOTHOLZ_RATE/.test(forestSrc) && /stamm_gefallen/.test(forestSrc);
 
         // (T6) RNG-DETERMINISMUS: der Sub-Spawn nutzt ein DETERMINISTISCHES
@@ -35160,7 +35171,7 @@ async function checkBandV18199GammaMLichen(ctx) {
         }
 
         // (L2) Source-Probe Main: LICHEN-Mix lebt in _attachVoxelFieldColors
-        const mainSrc = r._attachVoxelFieldColors.toString();
+        const mainSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.mainHasLichen = /LICHEN/.test(mainSrc) && /lichenMix/.test(mainSrc) && /lichenCluster/.test(mainSrc);
         // Position im Mix-Stack: NACH dampEarth, VOR lava
         out.mainOrderCorrect =
@@ -35350,7 +35361,7 @@ async function checkBandV18200GammaMIronBands(ctx) {
         }
 
         // (I7) Source-Probe: _terrainMaterialAt enthält IRON_BANDS-Logik
-        const src = r._terrainMaterialAt.toString();
+        const src = window.__codeOf(r._terrainMaterialAt);
         out.srcHasIronCheck = /IRON_BANDS/.test(src) && /_eisenAderAt/.test(src);
 
         return out;
@@ -35442,7 +35453,7 @@ async function checkBandV18201ManaKonsum(ctx) {
             out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
 
             // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
-            const dslOpsSrc = r.constructor.toString().substring(0, 100000);
+            const dslOpsSrc = window.__codeOf(r.constructor).substring(0, 100000);
             // grobe Probe: kein "drain_mana" oder "consume_mana" als DSL-Op-Key
             out.noDslDrainMana = !/\bdrain_mana\s*:\s*\(/.test(dslOpsSrc) && !/\bconsume_mana\s*:\s*\(/.test(dslOpsSrc);
 
@@ -35716,7 +35727,7 @@ async function checkBandV18203Gamma3FeldCharakter(ctx) {
             out.totalDeltaDichte = Number(totalDeltaDichte.toFixed(3));
 
             // (F7) Source-Probe: FIELD_CHARACTER + gen>=3-Gate
-            const src = r.worldFieldAt.toString();
+            const src = window.__codeOf(r.worldFieldAt);
             out.srcHasGate = /FIELD_CHARACTER/.test(src) && /_genVersion/.test(src);
 
             // (F8) V18.204 DOMAIN-WARP — warpAmp + warpScale Konstanten existieren
@@ -35897,9 +35908,9 @@ async function checkBandV18205Gamma7Grammatik(ctx) {
             // den Stamm-Helper in drei Pfade zerteilt (Routing + Rich + Legacy),
             // die Probe walkt mit (V9.56-i-Disziplin).
             const src =
-                r._growTreeBlueprint.toString() +
-                (r._growTreeBlueprintRich ? r._growTreeBlueprintRich.toString() : "") +
-                (r._growTreeBlueprintLegacy ? r._growTreeBlueprintLegacy.toString() : "");
+                window.__codeOf(r._growTreeBlueprint) +
+                (r._growTreeBlueprintRich ? window.__codeOf(r._growTreeBlueprintRich) : "") +
+                (r._growTreeBlueprintLegacy ? window.__codeOf(r._growTreeBlueprintLegacy) : "");
             out.usesGrammarStream = /-veg-grammatik/.test(src);
             out.usesNoise = /SimplexNoise|noise2D/.test(src);
         }
@@ -35933,7 +35944,7 @@ async function checkBandV18206SpeedTrade(ctx) {
         const out = {};
 
         // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
-        const src = r.computePlayerStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
+        const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
         out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
         out.appliedToAttackSpeed =
@@ -36054,10 +36065,15 @@ async function checkBandV18207R5StructureTexture(ctx) {
                 A.R5_STRUCTURE_TEXTURE.microBoost < 5;
         }
 
-        // (R2) Source-Probe: _applySubstanceResponse nutzt R5_STRUCTURE_TEXTURE
-        const src = r._applySubstanceResponse.toString();
-        out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(src);
-        out.srcMultipliesMicro = /microBoost/.test(src) || /_r5Boost/.test(src);
+        // (R2) U1 (V18.452) — die Probe wandert auf die V18.210-Wahrheit (der
+        // rohe toString-Grep war nur über einen zitierenden KOMMENTAR grün):
+        // die Konstante seedet in _ensureAtmoUniforms das LIVE-Uniform
+        // `r5StructureBoost`; _applySubstanceResponse LIEST das Uniform und
+        // multipliziert es aufs micro-Gewicht — die KETTE zählt (kein Literal).
+        const src = window.__codeOf(r._applySubstanceResponse);
+        const seedSrc = window.__codeOf(r._ensureAtmoUniforms);
+        out.srcHasR5 = /R5_STRUCTURE_TEXTURE/.test(seedSrc) && /r5StructureBoost/.test(seedSrc);
+        out.srcMultipliesMicro = /r5StructureBoost\.mul/.test(src) && /micro/.test(src);
 
         // (R3) V18.210 (§1-A2): der Default wanderte 1.0 → 1.3 (sichtbar);
         // der Slider ist live → der Spieler dreht selbst. Pre-V18.207 lebte
@@ -36073,9 +36089,12 @@ async function checkBandV18207R5StructureTexture(ctx) {
         `V18.207 (R1b) microBoost sinnvoll (>0, <5; gemessen ${res.microBoostValue})`,
         res.microBoostSensible === true
     );
-    check("V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE wird in _applySubstanceResponse gelesen", res.srcHasR5 === true);
     check(
-        "V18.207 (R2b) Source: micro × Boost-Faktor (microBoost oder _r5Boost im Code)",
+        "V18.207 (R2a) Source: R5_STRUCTURE_TEXTURE seedet das r5StructureBoost-Uniform (_ensureAtmoUniforms, V18.210-Kette)",
+        res.srcHasR5 === true
+    );
+    check(
+        "V18.207 (R2b) Source: _applySubstanceResponse multipliziert r5StructureBoost aufs micro-Gewicht (live-Uniform)",
         res.srcMultipliesMicro === true
     );
     check("V18.207 (R3) V18.210-Default microBoost = 1.3 (sichtbar — Slider live)", res.defaultIs13 === true);
@@ -36091,7 +36110,7 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const out = {};
 
         // (C1) Source: Größen-Multiplier in computeCreatureStats
-        const src = r.computeCreatureStats.toString() + r._applySizeMultipliersToStats.toString(); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
+        const src = window.__codeOf(r.computeCreatureStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
         out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
         out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
         out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
@@ -36200,7 +36219,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         out.gamma4Anker = typeof r._macroAnker === "function";
         out.gamma6Snowband =
             typeof r._attachVoxelFieldColors === "function" &&
-            /SNOW_PROM_START/.test(r._attachVoxelFieldColors.toString());
+            /SNOW_PROM_START/.test(window.__codeOf(r._attachVoxelFieldColors));
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -36223,9 +36242,9 @@ async function checkBandV18209Konsolidierung(ctx) {
         // V18.312/.347 — die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         // (Gesetz #0); die `_compoundSizeFactor`/`creatureSize`-Quelle bleibt in compute*Stats, die
         // ANWENDUNG (sizeHpMul/sizeSpeedMul) liest die geteilte Quelle. Beide source-probes lesen sie mit.
-        const _sizeMulSrc = r._applySizeMultipliersToStats.toString();
-        const srcCompPlayer = r.computePlayerStats.toString() + _sizeMulSrc;
-        const srcCompCreature = r.computeCreatureStats.toString() + _sizeMulSrc;
+        const _sizeMulSrc = window.__codeOf(r._applySizeMultipliersToStats);
+        const srcCompPlayer = window.__codeOf(r.computePlayerStats) + _sizeMulSrc;
+        const srcCompCreature = window.__codeOf(r.computeCreatureStats) + _sizeMulSrc;
         out.playerHpStaminaMana = /sizeHpMul/.test(srcCompPlayer);
         out.playerSpeedTrade = /sizeSpeedMul/.test(srcCompPlayer);
         out.creatureSizeSymmetry = /creatureSize/.test(srcCompCreature) && /sizeHpMul/.test(srcCompCreature);
@@ -36327,7 +36346,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A3-Perf Watch-Item #1) — die Scent-sizeFactor-Cache muss PRO SOUL
         // sein (1 Compute je Soul, nicht je Tick × Quelle). Source-Probe +
         // Cache-Verhalten.
-        out.a3SizeCacheSrc = /_scentSizeBySoul/.test(r._creatureScentHuntDir.toString());
+        out.a3SizeCacheSrc = /_scentSizeBySoul/.test(window.__codeOf(r._creatureScentHuntDir));
         out.a3SizeCacheReuse = false;
         if (out.a3SizeCacheSrc) {
             // Eine Probe: cache leeren, einmal helper rufen (mit synth predator+prey),
@@ -36370,10 +36389,10 @@ async function checkBandV18210Verdrahtung(ctx) {
         }
         // (Welt-Wechsel-Reset des Scent-Cache, V18.210-Audit-Folge)
         out.a3SizeCacheResetsOnWorldSwitch = /_scentSizeBySoul[\s\S]{0,80}\.clear\(\)/.test(
-            r._loadStateRestoreWorldMeta.toString()
+            window.__codeOf(r._loadStateRestoreWorldMeta)
         );
         // (A1h) SOURCE-PROBE: _vegetationSampleSpawn ruft den Helper an gen≥4
-        const src = r._vegetationSampleSpawn.toString();
+        const src = window.__codeOf(r._vegetationSampleSpawn);
         // V18.258 — die gen≥4-Schranke ist GESCHNITTEN (ALLE gen wachsen durch die
         // Grammatik); der Worldgen ruft den Helper jetzt unbedingt für Bäume. Die Probe
         // prüft darum nur noch, DASS der Helper im Spawn-Pfad lebt.
@@ -36386,7 +36405,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (Heilung #1b) Restore-Helper existiert UND ist vor _loadStateRestoreArchitectures verdrahtet
         out.a1RestoreHelperExists =
             typeof r._loadStateRestoreGrownBlueprints === "function" &&
-            /_loadStateRestoreGrownBlueprints/.test(r.loadState.toString());
+            /_loadStateRestoreGrownBlueprints/.test(window.__codeOf(r.loadState));
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
         if (typeof r._isGrownBlueprintReferenced === "function") {
@@ -36463,13 +36482,13 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (Heilung #3b) TAG-WAND: Birke gegen baum_birke (nicht baum_eiche).
         // V18.258 — die statischen Spezies-Baupläne sind geschnitten; die Wand liest
         // die per-Spezies-Referenz jetzt aus der frozen SPECIES_TAG_REFERENCE[species].
-        out.a1TagWandSpecies = /SPECIES_TAG_REFERENCE\[species\]/.test(r._growTreeBlueprintForSpawn.toString());
+        out.a1TagWandSpecies = /SPECIES_TAG_REFERENCE\[species\]/.test(window.__codeOf(r._growTreeBlueprintForSpawn));
         // (Heilung #6 Selbst-Audit) WELT-WECHSEL: _growTreeNoise wird im
         // _loadStateRestoreWorldMeta resetted, sonst trägt die neue Welt den
         // alten Welt-Stempel (P2P-Drift-Klasse, V18.193-Erbgut-Lehre).
         out.a1WorldSwitchResetsNoise =
-            /this\._growTreeNoise\s*=\s*null/.test(r._loadStateRestoreWorldMeta.toString()) &&
-            /this\._growTreeRing\s*=\s*\[\]/.test(r._loadStateRestoreWorldMeta.toString());
+            /this\._growTreeNoise\s*=\s*null/.test(window.__codeOf(r._loadStateRestoreWorldMeta)) &&
+            /this\._growTreeRing\s*=\s*\[\]/.test(window.__codeOf(r._loadStateRestoreWorldMeta));
 
         // ============== A2: R5 LIVE-UNIFORM + SLIDER ==============
         // (A2a) Default wanderte 1.0 → 1.3
@@ -36492,7 +36511,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             r.setStructureBoost(before); // restore
         }
         // (A2d) SOURCE-PROBE: _applySubstanceResponse liest das Uniform statt Konstante
-        const srcSubst = r._applySubstanceResponse.toString();
+        const srcSubst = window.__codeOf(r._applySubstanceResponse);
         out.a2SubstReadsUniform = /r5StructureBoost/.test(srcSubst) && /_au\.r5StructureBoost/.test(srcSubst);
         // (A2e) DOM-Slider existiert
         out.a2DomSliderExists = !!document.getElementById("slider-structureboost");
@@ -36510,9 +36529,9 @@ async function checkBandV18210Verdrahtung(ctx) {
             typeof out.a3ScentProbeM === "number" &&
             out.a3ScentProbeM > 0;
         // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
-        out.a3HelperUsesScent = /_scentAt/.test(r._creatureScentHuntDir.toString());
+        out.a3HelperUsesScent = /_scentAt/.test(window.__codeOf(r._creatureScentHuntDir));
         // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
-        const srcUpd = r.updateCreatures.toString();
+        const srcUpd = window.__codeOf(r.updateCreatures);
         out.a3WanderWired = /_creatureScentHuntDir/.test(srcUpd);
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
@@ -36566,11 +36585,11 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A4a) Konstante existiert
         out.a4ManaCostConst = typeof A.TOOL_OP_MANA_COST === "number" && A.TOOL_OP_MANA_COST > 0;
         // (A4b) SOURCE-PROBE: applyOpToPart liest tool.opClass + zweigt zu _drainMana
-        const srcOp = r.applyOpToPart.toString();
+        const srcOp = window.__codeOf(r.applyOpToPart);
         out.a4OpToPartReadsMana =
             /phaseChange/.test(srcOp) && /_drainMana/.test(srcOp) && /not_enough_mana/.test(srcOp);
         // (A4c) SOURCE-PROBE: Werkstatt-Pfad liest proc.opClass
-        const srcWs = r.applyWorkshopProcessToPart.toString();
+        const srcWs = window.__codeOf(r.applyWorkshopProcessToPart);
         out.a4WorkshopReadsMana = /phaseChange/.test(srcWs) && /_drainMana/.test(srcWs);
         // (A4d) BEHAVIORAL: phaseChange-Op (ritueller-stab) zieht Mana statt Stamina
         const sm = r.getGameMode ? r.getGameMode() : "frieden";
@@ -36821,7 +36840,7 @@ async function checkBandV18211SkeletonGrammar(ctx) {
         // Wir können nicht in-place gen wechseln, ohne die Welt-Init zu brechen;
         // STATTDESSEN: prüfen, dass die Routing-Funktion das Gate ZIEHT (Source-
         // Probe genVersion >= 5).
-        const routingSrc = r._growTreeBlueprint.toString();
+        const routingSrc = window.__codeOf(r._growTreeBlueprint);
         out.routingHasGate = /genVersion\(\)\s*>=\s*5/.test(routingSrc) || /_genVersion\(\)\s*>=\s*5/.test(routingSrc);
         out.routingDelegates = /_growTreeBlueprintRich/.test(routingSrc) && /_growTreeBlueprintLegacy/.test(routingSrc);
 
@@ -36930,7 +36949,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // Source-Probe: das Wind-Sway im _buildToonNodeMaterial trägt
         // (1) quadratischen crownFactor (statt linear) UND (2) ein
         // aperiodisches Flatter (flutter mit höherer Frequenz).
-        const swaySrc = r._applyVegetationResponse.toString(); // V18.234 — Wind geteilt
+        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
         out.wQuadraticCrown =
             /crownLin\.mul\(_crownLin\)/.test(swaySrc) || /crownFactor.*square|quadratisch/.test(swaySrc);
         out.wHasFlutter = /_flutter\b/.test(swaySrc) && /flutterPhase/.test(swaySrc);
@@ -36940,7 +36959,7 @@ async function checkBandV18212GigantRestsubschritte(ctx) {
         // ─── Ω-H PROVENIENZ BEIM ERNTEN (§2 Plan SEELEN-Band) ─────────
         // Source-Probe: harvestArchitecture liest _isGrown + _grownSpecies +
         // _grownSeed und schreibt sie in den Journal-Eintrag + Return-Value.
-        const harvestSrc = r.harvestArchitecture.toString();
+        const harvestSrc = window.__codeOf(r.harvestArchitecture);
         out.hReadsGrown = /_isGrown\s*&&\s*bp\._grownSpecies/.test(harvestSrc) || /bp\._isGrown\s*&&/.test(harvestSrc);
         out.hWritesProvenance = /grownProvenance/.test(harvestSrc) && /journalDetails\.provenance/.test(harvestSrc);
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
@@ -37029,12 +37048,12 @@ async function checkBandV18213MeshMerge(ctx) {
         out.mergeHelperExists = typeof r._mergeBlueprintByMaterial === "function";
         out.mergeGeomsExists = typeof r._mergeGeometries === "function";
         // _archFlattenBlueprint trägt den merged-Pfad (Source-grep).
-        const flattenSrc = r._archFlattenBlueprint.toString();
+        const flattenSrc = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasMergedPath =
             /bp\._isMerged\s*===\s*true/.test(flattenSrc) && /archMergedGeomCache/.test(flattenSrc);
         // _loadStateRestoreWorldMeta disposed den merged-Cache (Welt-
         // Identitäts-Wand, V18.210-Lehre).
-        const restoreSrc = r._loadStateRestoreWorldMeta.toString();
+        const restoreSrc = window.__codeOf(r._loadStateRestoreWorldMeta);
         out.restoreDisposesMerged =
             /archMergedGeomCache/.test(restoreSrc) && /\.dispose\s*\(\s*\)|\.clear\s*\(\s*\)/.test(restoreSrc);
 
@@ -37047,7 +37066,7 @@ async function checkBandV18213MeshMerge(ctx) {
         // (Backward-Kompat-Test): bestehende Welten bleiben auf ihrem
         // genVersion-Stand, NUR neue Welten bekommen 6. So sind die alten
         // Welten bit-identisch (V18.211-Pfad).
-        const newMetaSrc = r._generateFreshWorldMeta ? r._generateFreshWorldMeta.toString() : "";
+        const newMetaSrc = r._generateFreshWorldMeta ? window.__codeOf(r._generateFreshWorldMeta) : "";
         // V18.213-Probe: gen >= 6 (Mesh-Merge aktiv). V18.214 hebt auf 7 —
         // wir akzeptieren beide (Aufwärts-Kompat). M2 prüft NICHT den exakten
         // Wert (das macht V18.214-T-band), sondern nur den Mesh-Merge-Floor.
@@ -37250,7 +37269,7 @@ async function checkBandV18214SkeletonMesh(ctx) {
         out.cardBuilderExists = typeof r._buildTreeFoliageCardGeometry === "function";
         out.skelLeavesExists = typeof r._buildTreeSkeletonLeaves === "function";
         out.mergeAttrExists = typeof r._mergeAttributedGeometries === "function";
-        const flattenSrc2 = r._archFlattenBlueprint.toString();
+        const flattenSrc2 = window.__codeOf(r._archFlattenBlueprint);
         out.flattenHasSkeletonPath = /bp\._skeleton/.test(flattenSrc2) && /_buildTreeSkeletonLeaves/.test(flattenSrc2);
         out.defaultFlareExists =
             !!A.DEFAULT_TREE_FLARE && Number.isFinite(A.DEFAULT_TREE_FLARE.amp) && A.DEFAULT_TREE_FLARE.amp > 0;
@@ -37271,11 +37290,11 @@ async function checkBandV18214SkeletonMesh(ctx) {
         }
 
         // ─── (T2) Wind: useFlexAttr-Pfad existiert in _buildToonNodeMaterial ─
-        const swaySrc = r._applyVegetationResponse.toString(); // V18.234 — Wind geteilt
+        const swaySrc = window.__codeOf(r._applyVegetationResponse); // V18.234 — Wind geteilt
         out.swayReadsFlexAttr = /useFlexAttr\s*===\s*true/.test(swaySrc) && /attribute\(['"]aFlex['"]/.test(swaySrc);
 
         // ─── (T3) Slope/Höhen-Gate in _vegetationSampleSpawn ────────
-        const spawnSrc = r._vegetationSampleSpawn.toString();
+        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.spawnReadsSlopeHeight =
             /SPECIES_TREE_PARAMS/.test(spawnSrc) && /slopeMax/.test(spawnSrc) && /heightRange/.test(spawnSrc);
 
@@ -37507,12 +37526,16 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         out.treeParamsHasTotholz = !!(A.SPECIES_TREE_PARAMS && A.SPECIES_TREE_PARAMS.baum_totholz);
 
         // ─── (W3) V17.16-VARIATIONS-Wand in _growTreeBlueprintForSpawn ─
-        const growSrc = r._growTreeBlueprintForSpawn.toString();
+        const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
         out.wandGeschaerft = /SPECIES_TAG_VARIATION/.test(growSrc) && /\(a in variation\)\s*continue/.test(growSrc);
 
-        // ─── (W4) computeCompoundTags wendet Variation für _isGrown ──
-        const tagsSrc = r.computeCompoundTags.toString();
-        out.tagsAppliesVariation = /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_isGrown/.test(tagsSrc);
+        // ─── (W4) computeCompoundTags wendet Variation für _grownSpecies ──
+        // U1 (V18.452) — die Probe wandert auf die V18.259-Wahrheit: die
+        // Bedingung prüft `_grownSpecies` (die SPEZIES-Identität), nicht mehr
+        // `_isGrown` (das Laufzeit-Flag). Der rohe toString-Grep war nur über
+        // den zitierenden KOMMENTAR grün (die __codeOf-Falsch-Positiv-Klasse).
+        const tagsSrc = window.__codeOf(r.computeCompoundTags);
+        out.tagsAppliesVariation = /SPECIES_TAG_VARIATION/.test(tagsSrc) && /_grownSpecies/.test(tagsSrc);
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
         // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
@@ -37587,7 +37610,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         // V18.259 — DEV-DROSSEL: SAMPLES ist temporär gesenkt (Schöpfer „weniger Bäume,
         // schneller iterieren"); v1.0 dreht zurück auf die volle V18.215-Dichte (10). Der
         // Test prüft darum einen SANEN Bereich (≥4), nicht den festen Wert 10.
-        const popSrc = r._populateVoxelChunkVegetation.toString();
+        const popSrc = window.__codeOf(r._populateVoxelChunkVegetation);
         const _sm = popSrc.match(/const SAMPLES\s*=\s*(\d+)/);
         out.samples10 = !!_sm && Number(_sm[1]) >= 4;
 
@@ -37605,7 +37628,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         }
 
         // ─── (W9) baum_totholz in TREE_NAMES + candidates ────────────
-        const spawnSrc = r._vegetationSampleSpawn.toString();
+        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesIncludeTotholz = /["']baum_totholz["']/.test(spawnSrc);
 
         return out;
@@ -37623,7 +37646,7 @@ async function checkBandV18215AtemberaubenderWald(ctx) {
         res.wandGeschaerft === true
     );
     check(
-        "V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _isGrown an (Source)",
+        "V18.215 (W4) computeCompoundTags wendet SPECIES_TAG_VARIATION für _grownSpecies an (Source, V18.259-Wahrheit)",
         res.tagsAppliesVariation === true
     );
     check(
@@ -37809,7 +37832,7 @@ async function checkBandV18216KarstUndUnderstory(ctx) {
         }
 
         // ─── (E) Source: candidates + TREE_NAMES + Bush-Sub-Spawn ─────
-        const spawnSrc = r._vegetationSampleSpawn.toString();
+        const spawnSrc = window.__codeOf(r._vegetationSampleSpawn);
         out.candidatesHasKarst = /["']baum_karst["']/.test(spawnSrc);
         out.treeNamesHasKarst = /TREE_NAMES[\s\S]{0,400}["']baum_karst["']/.test(spawnSrc);
         // Bush-Sub-Spawn Block: das BUSH_RATE-Konstrukt + "farn_busch"/"busch_hazel"/"blume_gross"
@@ -37916,7 +37939,7 @@ async function checkBandV18217VariantenPool(ctx) {
         out.ensureHelperExists = typeof r._ensureVariantSeedPool === "function";
         out.generateHelperExists = typeof r._generateVariantSeedPool === "function";
         // Grow-Pipeline liest Pool + variantIndex (Source-Probe)
-        const growSrc = r._growTreeBlueprintForSpawn.toString();
+        const growSrc = window.__codeOf(r._growTreeBlueprintForSpawn);
         out.growUsesPool = /_ensureVariantSeedPool/.test(growSrc);
         out.growUsesVariantIndex = /variantIndex/.test(growSrc);
         // Cache-Key-Form `grown_<species>_v<idx>` statt der alten Hash-Form
@@ -38118,7 +38141,7 @@ async function checkBandV18218LODStufen(ctx) {
         out.buildVariantLODsExists = typeof r._buildVariantLODs === "function";
         out.chooseLODExists = typeof r._chooseLODForDistance === "function";
         // _growTreeBlueprintRich nimmt opts.lod (Source-Probe)
-        const richSrc = r._growTreeBlueprintRich.toString();
+        const richSrc = window.__codeOf(r._growTreeBlueprintRich);
         out.richHasLodOpt = /opts\s*&&\s*Number\.isFinite\(opts\.lod\)/.test(richSrc) || /opts.*lod/.test(richSrc);
         out.richHasLodLevel = /lodLevel/.test(richSrc);
 
@@ -38328,7 +38351,7 @@ async function checkBandV18219bisVollendung(ctx) {
         // einer der `_loopXY`-Phasen, nicht im `_gameLoopTick`-Closure selbst.
         // Wir prüfen ALLE Loop-Phasen-Quellen.
         const loopSources = [];
-        if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
+        if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
             // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
             // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
@@ -38338,12 +38361,12 @@ async function checkBandV18219bisVollendung(ctx) {
                 (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
                 typeof r[k] === "function"
             )
-                loopSources.push(r[k].toString());
+                loopSources.push(window.__codeOf(r[k]));
         }
         const loopBody = loopSources.join("\n");
         out.lodTickInLoop = /_tickArchitectureLOD/.test(loopBody);
         out.lodFlagDefault = r.state.atmosphere && r.state.atmosphere.treeLOD === true;
-        const tickSrc = r._tickArchitectureLOD.toString();
+        const tickSrc = window.__codeOf(r._tickArchitectureLOD);
         out.lodTickReadsFlag = /atmosphere/.test(tickSrc) && /treeLOD/.test(tickSrc);
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Typ-Wechsel
         // (`entry.type` wandert zwischen grown_*-Keys); foundry-ON serviert der
@@ -38407,7 +38430,7 @@ async function checkBandV18219bisVollendung(ctx) {
             const after = r.state.bakedRegionFields.get("0,0");
             out.invalidationSetDirty = after && after.dirty === true;
         }
-        const editSrc = r._addVoxelEdit ? r._addVoxelEdit.toString() : "";
+        const editSrc = r._addVoxelEdit ? window.__codeOf(r._addVoxelEdit) : "";
         out.editTriggersInvalidate = /_invalidateBakedRegionsAround/.test(editSrc);
 
         // ─── V18.220 SCATTER-BITMASK + CAP + LOOKUP ──────────────────
@@ -38433,7 +38456,7 @@ async function checkBandV18219bisVollendung(ctx) {
             out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
             out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
         }
-        const sampleSrc = r._vegetationSampleSpawn ? r._vegetationSampleSpawn.toString() : "";
+        const sampleSrc = r._vegetationSampleSpawn ? window.__codeOf(r._vegetationSampleSpawn) : "";
         // S12/S13: `_vegetationSampleSpawn` LIEST weiter die Promotion-Bitmask + den Cap
         // (für den Unterwuchs-/Landmark-Pfad — bleibt unberührt).
         out.spawnReadsBitmask = /_scatterIsCellPromoted/.test(sampleSrc);
@@ -38441,18 +38464,18 @@ async function checkBandV18219bisVollendung(ctx) {
         // S14: V18.389 (DAS NEUE KLEID P1) — die SCHREIB-Seite (Scatter-Cell im Ω-H-Lookup
         // registrieren: species + variantIndex → der V18.221-Resolver mappt die Cell auf die
         // reale gewachsene Form) wanderte MIT dem Baum-Spawn in `_forestPlantChunk` (V9.56-i).
-        const forestSpawnSrc = r._forestPlantChunk ? r._forestPlantChunk.toString() : "";
+        const forestSpawnSrc = r._forestPlantChunk ? window.__codeOf(r._forestPlantChunk) : "";
         out.spawnRegistersCell = /_scatterRegisterCell/.test(forestSpawnSrc);
 
         // ─── V18.221 Ω-H PROMOTION ───────────────────────────────────
-        const spawnSrc2 = r.spawnArchitecture ? r.spawnArchitecture.toString() : "";
+        const spawnSrc2 = r.spawnArchitecture ? window.__codeOf(r.spawnArchitecture) : "";
         out.spawnAutoPromotes = /_scatterMarkCellPromoted/.test(spawnSrc2) && /_scatterRegisterCell/.test(spawnSrc2);
         const snap = r.buildStateSnapshot();
         out.snapshotCarriesPromoted = !!(snap && snap.worldMeta && Array.isArray(snap.worldMeta.scatterPromoted));
         if (out.snapshotCarriesPromoted) {
             out.snapshotPromotedCount = snap.worldMeta.scatterPromoted.length;
         }
-        const restoreSrc = r._loadStateRestoreWorldMeta ? r._loadStateRestoreWorldMeta.toString() : "";
+        const restoreSrc = r._loadStateRestoreWorldMeta ? window.__codeOf(r._loadStateRestoreWorldMeta) : "";
         out.restoreRebuildsPromotedSet = /scatterPromoted/.test(restoreSrc) && /new Set/.test(restoreSrc);
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
@@ -38462,7 +38485,7 @@ async function checkBandV18219bisVollendung(ctx) {
         out.canopyTickExists = typeof r._tickCanopyStreaming === "function";
         out.canopyTickInLoop = /_tickCanopyStreaming/.test(loopBody);
         out.canopyFlagDefault = r.state.atmosphere && r.state.atmosphere.canopyStreaming === false;
-        const canopyTickSrc = r._tickCanopyStreaming.toString();
+        const canopyTickSrc = window.__codeOf(r._tickCanopyStreaming);
         out.canopyTickReadsFlag = /canopyStreaming/.test(canopyTickSrc);
         if (out.canopyEnsureExists) {
             const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
@@ -38591,7 +38614,7 @@ async function checkBandV18223PbrKohaerenz(ctx) {
         // Dispatch-Source-Probe
         // V18.236 (§2 — toon raus): _buildToonNodeMaterial delegiert jetzt IMMER an PBR
         // (kein materialMode-Toggle mehr) — der Source-Beweis ist die PBR-Delegation.
-        const toonSrc = r._buildToonNodeMaterial.toString();
+        const toonSrc = window.__codeOf(r._buildToonNodeMaterial);
         out.toonDispatchesOnMode = /_buildPbrNodeMaterial/.test(toonSrc);
 
         // Build a PBR material directly
@@ -38727,7 +38750,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
         out.flagDefault = r.state.atmosphere && r.state.atmosphere.gpuScatter === true;
         // Loop-Verdrahtung (alle _loopXY-Phasen scannen)
         const loopSources = [];
-        if (r._gameLoopTick) loopSources.push(r._gameLoopTick.toString());
+        if (r._gameLoopTick) loopSources.push(window.__codeOf(r._gameLoopTick));
         for (const k of Object.getOwnPropertyNames(r.constructor.prototype)) {
             // V18.358 — der feste `_loopVoxelStreaming`-Pfad ist abgelöst; die deferrable Ticks
             // (archLOD/canopy/scatter/waterIso/dekoFernfeld/scatterRegrow) leben jetzt im
@@ -38737,7 +38760,7 @@ async function checkBandV18224ScatterPromotion(ctx) {
                 (/^_loop[A-Z]/.test(k) || k === "_runFrameScheduler" || k === "_buildDeferrableJobs") &&
                 typeof r[k] === "function"
             )
-                loopSources.push(r[k].toString());
+                loopSources.push(window.__codeOf(r[k]));
         }
         out.tickInLoop = /_tickScatterStreaming/.test(loopSources.join("\n"));
 
@@ -38893,10 +38916,10 @@ async function checkBandV18224ScatterPromotion(ctx) {
         // ─── (F) Streaming-Tick + Welt-Wechsel-Cleanup ────────────────
         out.disposeRegionExists = typeof r._disposeScatterRegion === "function";
         out.disposeAllExists = typeof r._disposeAllScatterRegions === "function";
-        const restoreSrc = r._loadStateRestoreWorldMeta ? r._loadStateRestoreWorldMeta.toString() : "";
+        const restoreSrc = r._loadStateRestoreWorldMeta ? window.__codeOf(r._loadStateRestoreWorldMeta) : "";
         out.worldWechselDisposes = /_disposeAllScatterRegions/.test(restoreSrc);
         // Tick respektiert das Flag
-        const tickSrc = r._tickScatterStreaming.toString();
+        const tickSrc = window.__codeOf(r._tickScatterStreaming);
         out.tickReadsFlag = /gpuScatter/.test(tickSrc);
 
         // ─── (G) Version ──────────────────────────────────────────────
@@ -39042,8 +39065,8 @@ async function checkBandWahrerAnblickSaeule1(ctx) {
         out.mossMaxBounded = !!G && G.mossMax > 0 && G.mossMax <= 1;
 
         // (B) CONSUM — BEIDE Builder rufen den Helfer (eine Quelle, zwei Lichtmodelle)
-        out.toonCallsGeology = /_terrainGeologyAlbedo/.test(r._buildPbrNodeMaterial.toString()); // V18.236: PBR der EINE Builder
-        out.pbrCallsGeology = /_terrainGeologyAlbedo/.test(r._buildPbrNodeMaterial.toString());
+        out.toonCallsGeology = /_terrainGeologyAlbedo/.test(window.__codeOf(r._buildPbrNodeMaterial)); // V18.236: PBR der EINE Builder
+        out.pbrCallsGeology = /_terrainGeologyAlbedo/.test(window.__codeOf(r._buildPbrNodeMaterial));
 
         // (C) Uniforms TREIBEN (V18.65) — nach ensure existieren geoRock/geoMoss
         r._ensureAtmoUniforms();
@@ -39194,7 +39217,7 @@ async function checkBandWahrerAnblickFels(ctx) {
 
         // (E) Die V18.226-Geologie-Korrektur (CONSUM: gegated auf !useFlexAttr)
         // V18.236 (§2): der EINE Builder ist PBR; die Gate-Probe liest ihn.
-        const pbrSrc = r._buildPbrNodeMaterial.toString();
+        const pbrSrc = window.__codeOf(r._buildPbrNodeMaterial);
         out.geologyGated = /!opts\.useFlexAttr.*_terrainGeologyAlbedo/s.test(pbrSrc);
         out.pbrGeologyGated = /!opts\.useFlexAttr/.test(pbrSrc);
 
@@ -39245,7 +39268,7 @@ async function checkBandWahrerAnblickGras(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
-        const matSrc = r._grassInstanceMat.toString();
+        const matSrc = window.__codeOf(r._grassInstanceMat);
         // V18.267 — der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad
         // (setupDiffuseColor multipliziert instanceColor automatisch). Das Material
         // liest instanceColor NICHT mehr manuell (das war redundant + die
@@ -39256,7 +39279,7 @@ async function checkBandWahrerAnblickGras(ctx) {
         // Erklär-Kommentar zitiert den entfernten Read —, der CODE darf es nicht.
         const matCode = window.__codeOf(matSrc);
         out.matNoManualInstanceColor = !/attribute\(["']instanceColor["']/.test(matCode);
-        const buildSrc = r._buildVoxelChunkGrass.toString();
+        const buildSrc = window.__codeOf(r._buildVoxelChunkGrass);
         out.buildSetsColor = /setColorAt/.test(buildSrc) && /instanceColor/.test(buildSrc);
         out.buildComputesTint = /lushG/.test(buildSrc) && /tintR/.test(buildSrc) && /_feuchteAt/.test(buildSrc);
 
@@ -39320,9 +39343,9 @@ async function checkBandWahrerAnblickLaub(ctx) {
         const out = {};
 
         // (A) CONSUM Source-Probes
-        const tubeSrc = r._buildTreeTubeGeometry.toString();
+        const tubeSrc = window.__codeOf(r._buildTreeTubeGeometry);
         out.barkGrain = /grainFreq/.test(tubeSrc) && /Math\.sin\(i \* grainFreq\)/.test(tubeSrc);
-        const cardSrc = r._buildTreeFoliageCardGeometry.toString();
+        const cardSrc = window.__codeOf(r._buildTreeFoliageCardGeometry);
         out.cardTaper = /const tw = hw \* 0\.42/.test(cardSrc);
         out.cardCurl = /const curl = hh \* 0\.32/.test(cardSrc) && /cu \* bdx/.test(cardSrc);
 
@@ -39408,9 +39431,9 @@ async function checkBandWahrerAnblickPfade(ctx) {
         out.pathBounded = bounded;
 
         // (B) CONSUM — der Boden-Bau packt die Pfad-Erde, der Gras-Bau weicht
-        const attachSrc = r._attachVoxelFieldColors.toString();
+        const attachSrc = window.__codeOf(r._attachVoxelFieldColors);
         out.attachReadsPath = /_pathFieldAt/.test(attachSrc) && /packedDirt/.test(attachSrc);
-        const grassSrc = r._buildVoxelChunkGrass.toString();
+        const grassSrc = window.__codeOf(r._buildVoxelChunkGrass);
         out.grassReadsPath = /pathSuppress/.test(grassSrc) && /_pathFieldAt/.test(grassSrc);
 
         // (B3) Behavioral (soft): wie viele Pfad-Treffer in einem 600m-Raster?
@@ -39479,7 +39502,7 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
 
         // (V) die Atmosphäre koppelt ans Wetter über ALLE Dunst-Uniforms
         r._ensureAtmoUniforms();
-        const fogSrc = r._dayNightApplyHemiAndFog.toString();
+        const fogSrc = window.__codeOf(r._dayNightApplyHemiAndFog);
         out.hazeWeather = /hazeTop[^]*rainyMix/.test(fogSrc) && /density[^]*rainyMix/.test(fogSrc);
         out.hazeNearWeather = /hazeNear[^]*rainyMix/.test(fogSrc);
         out.hazeNearUniform = !!(r.state.atmoUniforms && r.state.atmoUniforms.hazeNear);
@@ -39533,7 +39556,7 @@ async function checkBandV18264ShadowCache(ctx) {
         out.autoUpdateOff = !!sm && sm.autoUpdate === false;
         out.hasLever = Array.isArray(A.PERF_LEVERS && A.PERF_LEVERS.shadowMinInterval);
         // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
-        out.actuatorDrives = /_shadowMinInterval/.test(r._nexusPerfActuate.toString());
+        out.actuatorDrives = /_shadowMinInterval/.test(window.__codeOf(r._nexusPerfActuate));
         if (!out.hasMethod || !sm) {
             return out;
         }
@@ -39592,8 +39615,8 @@ async function checkBandV18265ShadowDistance(ctx) {
         // CONSUM (source-probe): die Gruppen-Erzeugung liest die Methode, der
         // Capacity-Grow trägt das Flag mit (sonst kippt ein wachsender Fern-Baum
         // zurück auf castShadow=true).
-        out.groupForReads = /_archGroupCastsShadow/.test(r._archInstanceGroupFor.toString());
-        out.growCarries = /castShadow\s*=\s*g\.castShadow/.test(r._archInstanceGroupGrow.toString());
+        out.groupForReads = /_archGroupCastsShadow/.test(window.__codeOf(r._archInstanceGroupFor));
+        out.growCarries = /castShadow\s*=\s*g\.castShadow/.test(window.__codeOf(r._archInstanceGroupGrow));
         // BEHAVIORAL: echte Gruppen bauen + das gerenderte Flag prüfen.
         if (typeof THREE !== "undefined") {
             const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
@@ -39658,7 +39681,7 @@ async function checkBandV18266RockDetail(ctx) {
         out.smallCheaperThanBig = out.smallTris * 3 <= out.bigTris; // 4× billiger
         out.overrideHonored = out.overrideTris >= 60; // noiseDetail:1 erzwingt det 1 trotz kleiner Grösse
         // CONSUM (source-probe): die Detail-Stufe leitet sich aus der Grösse ab.
-        out.sizeDriven = /_maxDim\s*<\s*0\.7/.test(r._makePartGeometry.toString());
+        out.sizeDriven = /_maxDim\s*<\s*0\.7/.test(window.__codeOf(r._makePartGeometry));
         return out;
     });
     check(`V18.266: kleiner Kiesel ist low-poly (${res.smallTris} Dreiecke, det 0)`, res.smallLow === true);
@@ -39743,7 +39766,7 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
         // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
         out.usesStep =
-            /_stepCharacter\(/.test(r.replayRun.toString()) && /_loopPlayerMovement\(/.test(r.replayRun.toString());
+            /_stepCharacter\(/.test(window.__codeOf(r.replayRun)) && /_loopPlayerMovement\(/.test(window.__codeOf(r.replayRun));
         return out;
     });
     check(
@@ -39922,7 +39945,7 @@ async function checkBandWGGelenke(ctx) {
         // (c) GELENK-PROBE: Methode + Button + RAF-Konsum (Wiring; Animation Browser).
         out.probeMethod = typeof r._workshopProbeJoints === "function";
         out.probeBtn = !!document.getElementById("workshop-probe-btn");
-        out.probeInRAF = /p\.probe/.test(r._workshopStartRAF.toString());
+        out.probeInRAF = /p\.probe/.test(window.__codeOf(r._workshopStartRAF));
         return out;
     });
     check(
@@ -39957,7 +39980,7 @@ async function checkBandW3UiPuls(ctx) {
         const reg = r._uiRoomRegistry();
         out.registryRooms = !!reg && !!reg.ich && !!reg.hof;
         // (2) `_refreshIchIfOpen` ist ein ALIAS auf den Puls (die 8 Aufrufer heil).
-        out.ichAlias = /_uiDirty\("ich"\)/.test(r._refreshIchIfOpen.toString());
+        out.ichAlias = /_uiDirty\("ich"\)/.test(window.__codeOf(r._refreshIchIfOpen));
         // (3) DEDUP: zwei dirty-Rufe in einem Frame → EIN Puls (Set dedupt).
         r._uiPulseQueued = false;
         r._uiDirtyRooms = new Set();
@@ -39969,9 +39992,9 @@ async function checkBandW3UiPuls(ctx) {
         // Source ist außerhalb der Browser-Sandbox lesbar).
         // (5) INSEL-ISOLATION: ein werfender Raum-Render killt nicht den Puls
         // (try/catch im Source — der __uiPulseError-Marker fängt ihn).
-        out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(r._uiDirty.toString());
+        out.islandIsolated = /try \{[\s\S]*?room\.render\(\)[\s\S]*?catch/.test(window.__codeOf(r._uiDirty));
         // (6) der ON-OPEN-Render im Hof-Hook (so darf die Insel isOpen-skippen).
-        out.hofOnOpen = /_renderCreatureListUI\(\)/.test(r._hofHandleDrawerChange.toString());
+        out.hofOnOpen = /_renderCreatureListUI\(\)/.test(window.__codeOf(r._hofHandleDrawerChange));
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;
     });
@@ -40039,15 +40062,15 @@ async function checkBandWFFluss(ctx) {
         // `_computeWaterSheetData` (Main+Worker-geteilte Quelle) → die Source-Probe liest sie dort.
         // V18.347: der Tauch-Trigger wanderte von `_loopPhysicsSync` nach `_stepCharacter` (V18.331
         // feld-native Physik — der Spieler-Schritt liest die Wasser-Fläche via `_waterRunSurfaceAt`).
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(r._computeWaterSheetData.toString());
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(r._stepCharacter.toString());
+        out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
+        out.diveReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._stepCharacter));
         // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
-        out.centernessField = /centerness/.test(r._hydroRiverAt.toString());
+        out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
         out.centernessBlend =
-            /centerness/.test(r._waterRunSurfaceAt.toString()) && /\* center/.test(r._waterRunSurfaceAt.toString());
+            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) && /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
         // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
-        out.flowRipple = /flowRipple/.test(r._ensureHydroSurfaceMaterial.toString());
+        out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
         // eisen sinken (volumen-gewichtete Mittel-Dichte < 0.55). Behavioral.
         const mkBoat = (mat) => ({
@@ -40069,7 +40092,7 @@ async function checkBandWFFluss(ctx) {
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
         // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(r._tickMountedMovement.toString());
+        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._tickMountedMovement));
         return out;
     });
     check(
@@ -40125,27 +40148,27 @@ async function checkBandWEFrequenzband(ctx) {
         };
         out.tagsReisen = _glow(mGlut) > _glow(mStein) + 0.01;
         out.tagsImBuilder =
-            /matOpts\.tags = partMatDef\.tags/.test(r._buildFromBlueprint.toString()) &&
-            /matOpts\.tags = partMatDef\.tags/.test(r._archLeafMaterial.toString());
+            /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._buildFromBlueprint)) &&
+            /matOpts\.tags = partMatDef\.tags/.test(window.__codeOf(r._archLeafMaterial));
         // (3) FÜLL-LICHT statt Clamp: der fuell-Block addiert
         // albedo·floor·(1−lit) (die oneMinus-Dämpfung steht), der alte
         // max(_rgb, …)-Clamp ist gefallen (§8.1#11 strukturell tot).
-        const src = r._applySubstanceResponse.toString();
+        const src = window.__codeOf(r._applySubstanceResponse);
         out.fuellLicht = /oneMinus\(\)\.clamp/.test(src) && !/_T\.max\(_rgb/.test(src);
         // (4) das Band trifft ALLE Ebenen: das Werk-Profil bestellt fuell+mond,
         // das Gras ist angedockt (Source + outputNode-KONSUM).
         const SR = r.constructor.SUBSTANCE_RESPONSE;
         out.werkAmBand = SR.defaults.werk.fuell > 0 && SR.defaults.werk.mond > 0;
-        out.grasDocked = /_applySubstanceResponse/.test(r._grassInstanceMat.toString());
+        out.grasDocked = /_applySubstanceResponse/.test(window.__codeOf(r._grassInstanceMat));
         const gm = r._grassInstanceMat();
         out.grasOutput = !!gm && gm.outputNode != null;
         // (5) E3 BAND-REGLER: das Terrain-Mikro liest den microStrength-Uniform
         // (vorher 0.13-Hardcode im colorNode — ein Regler, eine Welt-Antwort).
-        out.terrainMicroAmBand = /microStrength/.test(r._applySubstanceResponse.toString()); // V18.236: das Mikro lebt im geteilten Empfänger
+        out.terrainMicroAmBand = /microStrength/.test(window.__codeOf(r._applySubstanceResponse)); // V18.236: das Mikro lebt im geteilten Empfänger
         // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
         // Restore migriert den alten auto-gebackenen 0.12-Default.
         out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
-        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(r._loadStateRestoreSoulAndAtmosphere.toString());
+        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(window.__codeOf(r._loadStateRestoreSoulAndAtmosphere));
         return out;
     });
     check(
@@ -40197,8 +40220,8 @@ async function checkBandM7LichtFeinschliff(ctx) {
         // micro-Block; das fuell-Licht auf der Albedo; der vertexColors-Bau
         // reicht die per-Vertex-Albedo-Quelle — W-E: die Probe wanderte mit
         // dem Code in den EINEN Band-Empfänger, V9.56-i).
-        const aerialSrc = r._applySubstanceResponse.toString();
-        const toonSrc = r._buildPbrNodeMaterial.toString(); // V18.236 (§2): PBR der EINE Builder
+        const aerialSrc = window.__codeOf(r._applySubstanceResponse);
+        const toonSrc = window.__codeOf(r._buildPbrNodeMaterial); // V18.236 (§2): PBR der EINE Builder
         out.treeConsumes =
             /_au\.microStrength/.test(aerialSrc) &&
             /terrainNightFloor/.test(aerialSrc) &&
@@ -40252,7 +40275,7 @@ async function checkBandM8MakroFenster(ctx) {
         const el = document.getElementById("p2p-broker-stats");
         out.statsCached = !!p2p.brokerStats && p2p.brokerStats.rooms === 3 && p2p.brokerStats.peers === 7;
         out.statsShown = !!el && /7 online in 3/.test(el.textContent);
-        out.welcomeAsks = /type: "stats"/.test(r._p2pMsgWelcome.toString());
+        out.welcomeAsks = /type: "stats"/.test(window.__codeOf(r._p2pMsgWelcome));
         // Müll fällt (defensive Wand).
         r._p2pMsgStats({ rooms: "x", peers: null }, p2p);
         out.statsWall = p2p.brokerStats.rooms === 3;
@@ -40294,7 +40317,7 @@ async function checkBandM8MakroFenster(ctx) {
         // trägt den feed-ident-Klick) + der Backup-Hinweis steht.
         const protoSrcs = Object.getOwnPropertyNames(Object.getPrototypeOf(r)).map((n) => {
             try {
-                return typeof r[n] === "function" ? r[n].toString() : "";
+                return typeof r[n] === "function" ? window.__codeOf(r[n]) : "";
             } catch {
                 return "";
             }
@@ -40338,8 +40361,8 @@ async function checkBandV18136Audit(ctx) {
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
         // setShadowRange UND der Perf-Regler rufen); die Sonde folgt dem Refactor (V9.56-i).
         out.rangeSrc =
-            /csm\.maxFar/.test(r._applyEffectiveShadowRange.toString()) &&
-            /_applyEffectiveShadowRange/.test(r.setShadowRange.toString());
+            /csm\.maxFar/.test(window.__codeOf(r._applyEffectiveShadowRange)) &&
+            /_applyEffectiveShadowRange/.test(window.__codeOf(r.setShadowRange));
         const savedCsm = r.state.csmNode;
         const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
         r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
@@ -40348,14 +40371,14 @@ async function checkBandV18136Audit(ctx) {
         r.state.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         // (2) Kachel-Erosion ohne flowTo-Ballast (Source-Probe am Ensure).
-        out.tileLean = /eTile\.flowTo = null/.test(r._ensureHydroTilesAround.toString());
+        out.tileLean = /eTile\.flowTo = null/.test(window.__codeOf(r._ensureHydroTilesAround));
         // (3) die Rail liest die Gemeinschafts-Aggregation.
-        out.trendsAgg = /_feedRatingAgg/.test(r._renderFeedTrends.toString());
+        out.trendsAgg = /_feedRatingAgg/.test(window.__codeOf(r._renderFeedTrends));
         // (4) EIN RNG-Helfer, zwei Konsumenten (V9.82).
         out.oneRng =
             typeof r._scatterChunkRng === "function" &&
-            /_scatterChunkRng/.test(r._buildVoxelChunkScatter.toString()) &&
-            /_scatterChunkRng/.test(r._buildDekoFernfeldSpecies.toString());
+            /_scatterChunkRng/.test(window.__codeOf(r._buildVoxelChunkScatter)) &&
+            /_scatterChunkRng/.test(window.__codeOf(r._buildDekoFernfeldSpecies));
         return out;
     });
     if (!res) {
@@ -40437,10 +40460,10 @@ async function checkBandTailleOmega2(ctx) {
         // (4) Material/Tool-Zwilling: EINE Serialize-Quelle (Source-Proben) +
         // Substanz-Treue (label + fremde Tag-Achse + Unbekanntes + isMachine).
         out.oneSource =
-            /_serializeMaterial/.test(r.buildStateSnapshot.toString()) &&
-            /_serializeMaterial/.test(r._buildEmptyWorldSnapshot.toString()) &&
-            /_serializeTool/.test(r.buildStateSnapshot.toString()) &&
-            /_serializeTool/.test(r._buildEmptyWorldSnapshot.toString());
+            /_serializeMaterial/.test(window.__codeOf(r.buildStateSnapshot)) &&
+            /_serializeMaterial/.test(window.__codeOf(r._buildEmptyWorldSnapshot)) &&
+            /_serializeTool/.test(window.__codeOf(r.buildStateSnapshot)) &&
+            /_serializeTool/.test(window.__codeOf(r._buildEmptyWorldSnapshot));
         const serMat = r._serializeMaterial({
             name: "_omega2_mat",
             label: "Ω2-Stoff",
@@ -40726,9 +40749,9 @@ async function checkBandTailleOmega5(ctx) {
         // (4) die Verdrahtung: confirmBuild trägt gate.free → freeBorn; der
         // Restore reicht die Marke durch (Source-Proben).
         out.wired =
-            /freeBorn: gate\.free === true/.test(r.confirmBuild.toString()) &&
-            /freeBorn: a\.freeBorn === true/.test(r._loadStateRestoreArchitectures.toString()) &&
-            /entry\.freeBorn === true/.test(r.harvestArchitecture.toString());
+            /freeBorn: gate\.free === true/.test(window.__codeOf(r.confirmBuild)) &&
+            /freeBorn: a\.freeBorn === true/.test(window.__codeOf(r._loadStateRestoreArchitectures)) &&
+            /entry\.freeBorn === true/.test(window.__codeOf(r.harvestArchitecture));
         r.setGameMode(savedMode);
         delete r.state.blueprints["_o5_werk"];
         return out;
@@ -40914,7 +40937,7 @@ async function checkBandTailleGolden(ctx) {
             // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
             // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
             out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
-            const handlerSrc = r._p2pHandleChannelMessage.toString() + r.p2pHandleMessage.toString();
+            const handlerSrc = window.__codeOf(r._p2pHandleChannelMessage) + window.__codeOf(r.p2pHandleMessage);
             const dead = g.envelopes.types.filter((t) => handlerSrc.indexOf(`"${t.type}"`) < 0).map((t) => t.type);
             out.typesAlive = dead.length === 0;
             out.deadTypes = dead.join(",");
@@ -40959,7 +40982,7 @@ async function checkBandWelle6XAudit(ctx) {
         // --- A1: DETERMINISMUS-BOGEN P3 — der Sprung ist feld-nativ: handleJump
         // schreibt den Impuls in `state.playerVel.y` (kein Ammo-Body/Sleep-Wakeup
         // mehr). Quelltext-Inspektion + behavioral: ein Sprung am Boden hebt _fieldVy.
-        const jumpSrc = r.handleJump.toString();
+        const jumpSrc = window.__codeOf(r.handleJump);
         out.handleJumpWritesVel = /playerVel/.test(jumpSrc) && /setValue/.test(jumpSrc) && !/playerBody/.test(jumpSrc);
 
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
@@ -41152,7 +41175,7 @@ async function checkBandWelle6XAudit(ctx) {
         // B4 — Scrollrad-Hotbar
         // Code-Strukturtest: Wheel-Listener im init() (Methode liest
         // Wheel-Event auf dem Canvas und ruft selectHotbarSlot).
-        const initSrc = typeof r.init === "function" ? r.init.toString() : "";
+        const initSrc = typeof r.init === "function" ? window.__codeOf(r.init) : "";
         out.wheelListenerInstalled =
             /addEventListener\s*\(\s*["']wheel["']/.test(initSrc) && /selectHotbarSlot/.test(initSrc);
 
@@ -41400,7 +41423,7 @@ async function checkBandWelle6XAudit(ctx) {
 
         // --- D1: isPlayerGrounded-Cache
         // Source-Check: Cache-Felder + Time-Check existieren
-        const isgSrc = r.isPlayerGrounded.toString();
+        const isgSrc = window.__codeOf(r.isPlayerGrounded);
         out.cacheFieldsInSource = /_groundedCache/.test(isgSrc) && /_groundedCachedAt/.test(isgSrc);
         out.cacheTimeoutInSource = /< 33/.test(isgSrc) || /<= 33/.test(isgSrc);
 
@@ -42121,7 +42144,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    const src = fn.toString();
+                    const src = window.__codeOf(fn);
                     if (/skybox\.position\.copy\s*\(\s*this\.state\.camera\.position/.test(src)) {
                         out.skyboxFollowsCamera = true;
                         break;
@@ -42141,7 +42164,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.shaderUsesLocalPosition = false;
         out.shaderFragmentUsesVDir = false;
         try {
-            const builderSrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
+            const builderSrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
             out.shaderUsesLocalPosition = /const\s+vDir\s*=\s*normalize\s*\(\s*positionLocal\s*\)/.test(builderSrc);
             // V8.26 Bug-1-Lehre: vDir wird im Nebula- + Wolken-Pfad konsumiert
             // → Stern-/Wolken-Stabilität bei Spieler-Bewegung. V17.10: der
@@ -42165,7 +42188,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.intermediateStopExists = !!t032;
         // V8.48 — _interpolateDayNight nutzt jetzt Catmull-Rom
         // (global C1-stetig) statt per-Intervall-smoothstep.
-        const interpSrc = r._interpolateDayNight.toString();
+        const interpSrc = window.__codeOf(r._interpolateDayNight);
         out.interpUsesCatmull = /_catmullDayNight/.test(interpSrc);
 
         // V8.48 — kein Pulsen mehr. Die alte per-Intervall-
@@ -42279,7 +42302,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    const src = fn.toString();
+                    const src = window.__codeOf(fn);
                     if (/skybox\.position\.copy/.test(src)) foundCount++;
                 } catch {
                     /* skip */
@@ -42506,7 +42529,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.fogSliderWorks =
             fogNear05 > 0 &&
             Math.abs(fogNear20 - fogNear05) < 5 &&
-            /visualEdgeTarget \* 0\.35/.test(r._dayNightApplyHemiAndFog.toString());
+            /visualEdgeTarget \* 0\.35/.test(window.__codeOf(r._dayNightApplyHemiAndFog));
         r.setFogDistance(1.0);
 
         // --- Phase D: Wind + Wolken + Wasser ---
@@ -42568,7 +42591,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r.state.camera.position.copy(camOrig);
             r._followCelestialBodies();
         }
-        const skySrc = r.createGalaxySkybox ? r.createGalaxySkybox.toString() : "";
+        const skySrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
         out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
@@ -42624,7 +42647,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.structHasAerialOutput = !!(_structMat && _structMat.outputNode);
         // (3) der Builder ruft die EINE Quelle (Source-Probe: kein Parallel-Pfad).
         // V18.236 (§2): PBR ist der EINE Builder; _buildToonNodeMaterial delegiert an ihn.
-        const _btSrc = r._buildPbrNodeMaterial ? r._buildPbrNodeMaterial.toString() : "";
+        const _btSrc = r._buildPbrNodeMaterial ? window.__codeOf(r._buildPbrNodeMaterial) : "";
         out.aerialFromOneSource = _btSrc.includes("_applySubstanceResponse") && !_btSrc.includes("__structAerialError");
         // (4) die dynamische Farbe (Marking/Emotion) bleibt setzbar — der
         // outputNode liest `output` (post-lighting), überschreibt material.color
@@ -42652,11 +42675,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
         // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
         // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
-        const _aerSrc = typeof r._applySubstanceResponse === "function" ? r._applySubstanceResponse.toString() : "";
+        const _aerSrc = typeof r._applySubstanceResponse === "function" ? window.__codeOf(r._applySubstanceResponse) : "";
         out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
-        const ppSrc = r._ensurePostProcessing ? r._ensurePostProcessing.toString() : "";
+        const ppSrc = r._ensurePostProcessing ? window.__codeOf(r._ensurePostProcessing) : "";
         out.degrayPresent = ppSrc.includes("degrayStrength") && ppSrc.includes("greyness") && ppSrc.includes("warm");
         // V17.13 — lokaler Kontrast-Hebel (Unsharp-Mask) im Post-FX (Source-Probe,
         // Post-FX headless nicht baubar — schuetzt gegen versehentliches Loeschen).
@@ -42850,7 +42873,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(fn.toString())) found = true;
+                    if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(window.__codeOf(fn))) found = true;
                 } catch {
                     /* skip */
                 }
@@ -42953,7 +42976,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         let waterDepthShoreline = false;
         let waterMinDepthCull = false;
         if (wMat) {
-            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // V18.368 — die WELLEN-VERSCHIEBUNG ist organische Dünung (`oceanSwell`), KEIN
             // Gerstner mehr (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Befund):
             // mehrere dekorrelierte value-noise-Oktaven (`vnoise`) statt `dot(xz,d)`-Wellenfronten
@@ -43005,7 +43028,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         {
             const isoSrc =
                 typeof r._buildVoxelChunkWaterIsoSurface === "function"
-                    ? r._buildVoxelChunkWaterIsoSurface.toString()
+                    ? window.__codeOf(r._buildVoxelChunkWaterIsoSurface)
                     : "";
             out.waterIsoSynergy =
                 /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
@@ -43022,7 +43045,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    const src = fn.toString();
+                    const src = window.__codeOf(fn);
                     if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
                     if (/playerUnderwater\)\s*currentSpeed\s*\*=/.test(src)) speedCut = true;
                 } catch {
@@ -43087,7 +43110,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 r.state.hydroSurfaceUniforms.fogColor &&
                 r.state.hydroSurfaceUniforms.fogNear
             );
-            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // V18.368 — Heterogenität kommt jetzt aus der MEHR-SKALEN organischen Dünung
             // (`oceanSwell`: drei value-noise-Oktaven bei 0.05/0.12/0.23 mit eigenen Drift-
             // Richtungen), NICHT mehr aus dem Gerstner-Domain-Warp → kein periodisches Raster,
@@ -43154,7 +43177,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     if (typeof fn !== "function") continue;
                     if (
                         /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
-                            fn.toString()
+                            window.__codeOf(fn)
                         )
                     )
                         found = true;
@@ -43168,14 +43191,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // mehr playerUnderwater. V9.56-i: die Hemi+Fog-Phase lebt jetzt
         // im _dayNightApplyHemiAndFog-Helfer (Source-Pattern wandert mit).
         {
-            const src = r._dayNightApplyHemiAndFog.toString();
+            const src = window.__codeOf(r._dayNightApplyHemiAndFog);
             out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /fog\.near = 4/.test(src);
         }
 
         // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
         const wFresMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wFresMat) {
-            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // Fresnel = pow(1 - max(dot(viewDir, n), 0), 3) im colorNode-Tree.
             out.waterFresnel = /fres\s*=\s*pow/.test(builderSrc) && /max\(dot\(viewDir,\s*n\)/.test(builderSrc);
         }
@@ -43230,7 +43253,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    const src = fn.toString();
+                    const src = window.__codeOf(fn);
                     if (/_swimVerticalVelocity\(/.test(src) && /keys\["shift"\]/.test(src) && /keys\[" "\]/.test(src))
                         usesFn = true;
                     if (/keys\["shift"\]\s*&&\s*!this\.state\.playerUnderwater/.test(src)) shiftNotSprint = true;
@@ -43244,7 +43267,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Schwimm-Animation (isoliert, soul-unabhängig) ---
         {
-            const src = r.animatePlayerSoul.toString();
+            const src = window.__codeOf(r.animatePlayerSoul);
             // ABSCHIEDS-WELLE (Konvergenz C): def.animate traegt jetzt auch die Emotions-
             // Bruecke (6. Arg) — die Probe prueft weiter, dass underwater durchreist.
             out.animPassesUnderwater = /playerUnderwater/.test(src) && /def\.animate\([^)]*underwater/.test(src);
@@ -43287,7 +43310,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // --- Gerstner-Wellen im Wasser-Material (V10.0-f-4 Doku-Sync: TSL).
         const wGerstMat = r._ensureHydroSurfaceMaterial && r._ensureHydroSurfaceMaterial();
         if (wGerstMat) {
-            const builderSrc = r._ensureHydroSurfaceMaterial.toString();
+            const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // V18.368 — die Wellen-Verschiebung ist organische Dünung (`oceanSwell`), NICHT mehr
             // Gerstner (die parallelen Sinus-Kämme = das Chevron-V, Schöpfer-Browser-Befund).
             out.swellFn = /oceanSwell\s*=\s*Fn/.test(builderSrc) && !/gerstnerWave/.test(builderSrc);
@@ -43667,7 +43690,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         for (const name of Object.getOwnPropertyNames(proto)) {
             try {
                 const fn = proto[name];
-                if (typeof fn === "function") allSrc.push({ name, src: fn.toString() });
+                if (typeof fn === "function") allSrc.push({ name, src: window.__codeOf(fn) });
             } catch {
                 /* skip */
             }
@@ -43823,7 +43846,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
 
         // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
         {
-            const src = r._workshopInstallShapeDragDrop.toString();
+            const src = window.__codeOf(r._workshopInstallShapeDragDrop);
             // Delegation: EIN Listener am bleibenden Container, NICHT
             // pro Karte (Karten verschwinden beim Re-Render).
             out.dragDelegated = /container\.addEventListener\("dragstart"/.test(src) && !/cards\.forEach/.test(src);
@@ -43834,7 +43857,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             const card = palette ? palette.querySelector(".workshop-tool-card") : null;
             out.toolCardDraggable = !!card && card.getAttribute("draggable") === "true";
             // Domänen-Farbpunkt bekommt einen erklärenden Tooltip.
-            out.dotHasTitle = /dot\.title\s*=/.test(r._workshopRenderToolPalette.toString());
+            out.dotHasTitle = /dot\.title\s*=/.test(window.__codeOf(r._workshopRenderToolPalette));
         }
 
         // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
@@ -43844,7 +43867,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             r.state.fps = 0;
             for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
             out.fpsRollingAvg = r.state.fps === 60;
-            out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(r.updateFps.toString());
+            out.fpsNotSingleFrame = !/Math\.round\(1 \/ delta\)/.test(window.__codeOf(r.updateFps));
             r.state._fpsFrames = 5;
             r.state._fpsElapsed = 0.3;
             r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
@@ -43966,7 +43989,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             out.previewAspect = [...document.querySelectorAll("style")].some((s) =>
                 /#workshop-preview-canvas[^}]*aspect-ratio:\s*5\s*\/\s*3/.test(s.textContent)
             );
-            out.cameraAspectSync = /camera\.aspect = w \/ h/.test(r._workshopSyncCanvasSize.toString());
+            out.cameraAspectSync = /camera\.aspect = w \/ h/.test(window.__codeOf(r._workshopSyncCanvasSize));
         }
 
         return out;
@@ -44061,7 +44084,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.creatureStatsQuality =
             /_foldEquippedStatTags/.test(window.__codeOf(r.computeCreatureStats)) &&
             /computeBlueprintQuality/.test(window.__codeOf(r._foldEquippedStatTags));
-        out.consumableQuality = /computeBlueprintQuality/.test(r.activateConsumable.toString());
+        out.consumableQuality = /computeBlueprintQuality/.test(window.__codeOf(r.activateConsumable));
 
         // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
         {
@@ -44433,7 +44456,7 @@ async function checkBandW12WorldPortal(ctx) {
         out.rejectsNonPortal = !badEnter.ok && badEnter.reason === "not_a_portal";
 
         // Loop-Guard ist verdrahtet.
-        out.loopGuard = /_portalOverlay/.test(r.startEternalLoop.toString());
+        out.loopGuard = /_portalOverlay/.test(window.__codeOf(r.startEternalLoop));
 
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist.
         // V17.32-Heilung (GEMESSEN-Wurzel): die zwischenzeitlichen _gameLoopTick
@@ -44470,7 +44493,7 @@ async function checkBandW12WorldPortal(ctx) {
             out.skeletonForwardsEsc = false;
         }
         // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
-        out.overlayHandlesExit = /"exit"/.test(r._buildPortalOverlay.toString());
+        out.overlayHandlesExit = /"exit"/.test(window.__codeOf(r._buildPortalOverlay));
 
         return out;
     });
@@ -46112,7 +46135,7 @@ async function checkBandW13W14VibePassLibrary(ctx) {
             ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
         for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
         delete r.state.tools._w14tool;
-        out.sendUsesPayload = /_portalEnterPayload/.test(r._portalSendEnter.toString());
+        out.sendUsesPayload = /_portalEnterPayload/.test(window.__codeOf(r._portalSendEnter));
         return out;
     });
 
@@ -47404,11 +47427,11 @@ async function checkBandG8R1DampedChannel(ctx) {
         if (r._p2pRate) delete r._p2pRate["g8r1-test"];
         // (5) Verdichtung + Verdrahtung (Source-Proben): der Kanal-Bucket sitzt
         // im onMessage-Eingang, beide Mesh-Empfänger nutzen das EINE Raten-Tor.
-        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(r._buildPortalOverlay.toString());
-        out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(r._p2pMsgSubworldNet.toString());
+        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(window.__codeOf(r._buildPortalOverlay));
+        out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(window.__codeOf(r._p2pMsgSubworldNet));
         out.creaturePosUsesGate =
-            /_p2pPeerRateAdmit\("creature-pos"/.test(r._p2pMsgCreaturePos.toString()) &&
-            !/_cpRate/.test(r._p2pMsgCreaturePos.toString());
+            /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos)) &&
+            !/_cpRate/.test(window.__codeOf(r._p2pMsgCreaturePos));
         return out;
     });
     if (!res) {
@@ -47483,10 +47506,10 @@ async function checkBandG8R2SovereignWall(ctx) {
         out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;
         // (5) die drei realen souveränen Akte laufen durch die Geste (Source) +
         // dslEval trägt die Wand.
-        out.signBpRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signBlueprint.toString());
-        out.signWorldRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(r.signWorld.toString());
-        out.identityRouted = /_sovereignGesture\(\s*"change_identity"/.test(r.importVibePass.toString());
-        out.evalGuard = /SOVEREIGN_ACTIONS\.includes\(op\)/.test(r.dslEval.toString());
+        out.signBpRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(window.__codeOf(r.signBlueprint));
+        out.signWorldRouted = /_sovereignGesture\(\s*"sign_manifest"/.test(window.__codeOf(r.signWorld));
+        out.identityRouted = /_sovereignGesture\(\s*"change_identity"/.test(window.__codeOf(r.importVibePass));
+        out.evalGuard = /SOVEREIGN_ACTIONS\.includes\(op\)/.test(window.__codeOf(r.dslEval));
         // (6) eine Welt-REGEL kann keinen souveränen Effekt ausführen.
         const ctxr = r.dslCtx({ source: "rule-test" });
         r.dslEval(["grant_capability", "world", "domain"], ctxr);
@@ -47543,11 +47566,11 @@ async function checkBandG8R3Locality(ctx) {
         out.vendoredForced = audit.facts.vendoredForcedSandboxed === true;
         out.innerRingAbsent = audit.facts.innerRingAbsent === true;
         // (4) _buildPortalOverlay nutzt die EINE Quelle (kein inline-Ternär mehr).
-        out.usesOneSource = /_portalSandboxAttr\(meta\)/.test(r._buildPortalOverlay.toString());
+        out.usesOneSource = /_portalSandboxAttr\(meta\)/.test(window.__codeOf(r._buildPortalOverlay));
         // (5) der Server-Kontext-iframe ist IMMER null-origin (allow-scripts allein).
         out.serverNullOrigin =
             typeof r._portalSpawnServerContext === "function" &&
-            /setAttribute\("sandbox", "allow-scripts"\)/.test(r._portalSpawnServerContext.toString());
+            /setAttribute\("sandbox", "allow-scripts"\)/.test(window.__codeOf(r._portalSpawnServerContext));
         return out;
     });
     if (!res) {
@@ -47649,9 +47672,9 @@ async function checkBandG8R4Immunity(ctx) {
         out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
         // (6) Verdrahtung (Source): sign/export/import tragen die Kette, die Lader sieben.
         out.signSetsChain =
-            /_appendProvenance/.test(r.signWorld.toString()) && /_appendProvenance/.test(r.signBlueprint.toString());
-        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(r._sanitizeImportedManifest.toString());
-        out.loaderSieves = /_artifactProvenanceTainted/.test(r._loadCustomWorlds.toString());
+            /_appendProvenance/.test(window.__codeOf(r.signWorld)) && /_appendProvenance/.test(window.__codeOf(r.signBlueprint));
+        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(window.__codeOf(r._sanitizeImportedManifest));
+        out.loaderSieves = /_artifactProvenanceTainted/.test(window.__codeOf(r._loadCustomWorlds));
         // restore
         delete r.state.signedWorlds["_g8r4_evil"];
         delete r.state.signedWorlds["_g8r4_good"];
@@ -47753,11 +47776,11 @@ async function checkBandV18129HochBecken(ctx) {
             [C.REACH, C.MAX_CELLS, C.FEED, C.WIN_MAX, C.CLUSTER_GAP, C.MIN_EXTENT].every(Number.isFinite);
         // KONSUM-Source-Proben (V17.31: kein Passagier): der Kappen-Bau liest die
         // Stau-Felder, der Pin trägt den Tropf, alle drei Werk-Pfade invalidieren.
-        out.capReadsStau = /_stauFieldsNear/.test(r._ensureWaterCALevel.toString());
-        out.pinHasDrip = /src\[c\] === 2/.test(r._tickWorldWaterCA.toString());
-        out.editInvalidates = /_invalidateWaterCapsAround/.test(r._addVoxelEdit.toString());
-        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(r.spawnArchitecture.toString());
-        out.removeInvalidates = /_invalidateWaterCapsAround/.test(r.removeArchitecture.toString());
+        out.capReadsStau = /_stauFieldsNear/.test(window.__codeOf(r._ensureWaterCALevel));
+        out.pinHasDrip = /src\[c\] === 2/.test(window.__codeOf(r._tickWorldWaterCA));
+        out.editInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r._addVoxelEdit));
+        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.spawnArchitecture));
+        out.removeInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.removeArchitecture));
         // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
         // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
         const w = 11;
@@ -47873,8 +47896,8 @@ async function checkBandV18130CsmShadow(ctx) {
         }
         // KONSUM-Proben: der Bias-Hebel propagiert auf die Kaskaden-Lichter,
         // der Resize ruft updateFrustums (Addon-Vertrag).
-        out.biasPropagates = /csm\.lights/.test(r.setShadowBias.toString());
-        out.resizeUpdates = /updateFrustums/.test(r.init.toString());
+        out.biasPropagates = /csm\.lights/.test(window.__codeOf(r.setShadowBias));
+        out.resizeUpdates = /updateFrustums/.test(window.__codeOf(r.init));
         return out;
     });
     if (!res) {
@@ -47937,7 +47960,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             r.setFogDistance(9.0) === 9.0 && r.setFogDistance(0.5) === 0.9 && r.setFogDistance(3.0) === 3.0;
         out.fogDefault3 = r.setFogDistance() === 3.0;
         r.setFogDistance(origFog);
-        out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(r.slidersInitDOM.toString());
+        out.fogHandlerTriples = /\(pct \/ 100\) \* 3/.test(window.__codeOf(r.slidersInitDOM));
 
         // V8.41 — Cache-Buster auf der anazhRealm.js-Einbindung.
         const appScript = [...document.querySelectorAll("script")].find((s) =>
@@ -47991,7 +48014,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Semantik (_weatherBlendedValue), aber das Ziel ist u.cloudCover.value.
         // V18.128 (D5a): der [0,1]-Konsument clampt die unbounded Achse lokal
         // (Math.min(1, …)) — die Probe toleriert den Clamp-Wrapper.
-        const skyboxSrc = r._dayNightApplySkybox.toString();
+        const skyboxSrc = window.__codeOf(r._dayNightApplySkybox);
         out.cloudFades = /u\.cloudCover\.value\s*=\s*(?:Math\.min\(\s*1\s*,\s*)?this\._weatherBlendedValue/.test(
             skyboxSrc
         );
@@ -48111,7 +48134,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     const v849Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const src = r.updateCreatures.toString();
+        const src = window.__codeOf(r.updateCreatures);
         // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
         // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
         out.usesDistanceSquared = /distanceToSquared/.test(src);
@@ -48255,7 +48278,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         }
 
         // --- D2: playCreaturePing-Source enthält creaturePingVolume
-        const pcpSrc = r.playCreaturePing.toString();
+        const pcpSrc = window.__codeOf(r.playCreaturePing);
         out.pingsSourceUsesVolume = /creaturePingVolume/.test(pcpSrc);
 
         return out;
@@ -51469,7 +51492,7 @@ async function checkBandCadWorkshop(ctx) {
                 // Wir prüfen via Source-Inspection (statt dispatchEvent,
                 // weil Puppeteer-MouseEvent-Constructor manchmal
                 // Modifier-Keys nicht zuverlässig propagiert).
-                const src = r._workshopInstallPreviewListeners.toString();
+                const src = window.__codeOf(r._workshopInstallPreviewListeners);
                 out.shiftLeftStartsPan = src.includes("shiftKey") && src.includes("event.button === 1");
                 out.middleMouseStartsPan = src.includes("event.button === 1");
                 // Listener wurden tatsächlich installed (listenersInstalled-Flag)
@@ -54951,7 +54974,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.hudReturns = getComputedStyle(topbar).pointerEvents !== "none";
         // (c) die H-Taste ist im Keydown-Pfad verdrahtet (Source-Probe)
         const r = window.anazhRealm;
-        const src = typeof r.init === "function" ? r.init.toString() : "";
+        const src = typeof r.init === "function" ? window.__codeOf(r.init) : "";
         out.keyWired = /KeyH/.test(src) && /hud-hidden/.test(src);
         return out;
     });
@@ -56941,6 +56964,72 @@ async function checkBandRing6Workshop(ctx) {
             String(fnOrSrc)
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
+        // U1 (V18.452) — DIE DOKU-LINSE (bewusst UNGESTRIPPT): einzelne Bänder
+        // prüfen einen DOKUMENTATIONS-Marker (z.B. „V12.0-d" im Pool-Pfad), der
+        // per Definition im KOMMENTAR wohnt. Diese Probe läuft explizit durch
+        // __dokuOf — nie durch rohes .toString() (der Apparat-Ratchet zählt) und
+        // nie durch __codeOf (das den Marker strippen würde). CODE-Behauptungen
+        // gehören in __codeOf/__consumes, NIE hierher.
+        window.__dokuOf = (fnOrSrc) => String(fnOrSrc);
+        // U1 (V18.452) — DER APPARAT-SCHLÜSSEL, Teil 1: KONSUM-Beweis statt
+        // Quelltext-Zitat. Spy-Swap: providerObj[providerKey] wird temporär durch
+        // einen Zähl-Spy ersetzt (der ans Original delegiert), dann läuft
+        // obj[methodName](...args), dann wird own-Property-treu restauriert.
+        // true = der Konsument hat den Provider WIRKLICH gerufen — der Beweis
+        // überlebt jede Kern-Wanderung, die das Verhalten erhält, und kein
+        // zitierender Kommentar kann ihn fälschen. Wirft nie (try/finally+catch).
+        window.__consumes = (obj, methodName, providerObj, providerKey, args) => {
+            try {
+                const hadOwn = Object.prototype.hasOwnProperty.call(providerObj, providerKey);
+                const original = providerObj[providerKey];
+                let fired = 0;
+                providerObj[providerKey] = function (...a) {
+                    fired++;
+                    return typeof original === "function" ? original.apply(this, a) : original;
+                };
+                try {
+                    obj[methodName](...(args || []));
+                } catch (_e) {
+                    /* ein Throw NACH dem Provider-Ruf entwertet den Konsum-Beweis nicht */
+                } finally {
+                    if (hadOwn) providerObj[providerKey] = original;
+                    else delete providerObj[providerKey];
+                }
+                return fired > 0;
+            } catch (_e) {
+                return false;
+            }
+        };
+        // U1, Teil 2 — DER ANKER-KATALOG: semantischer Anker → Symbolname, EINE
+        // frozen Tabelle (Gesetz #0). Bänder proben r[window.__anker.X] statt den
+        // Namen N-fach zu wiederholen — zieht ein Symbol um, wandert EINE Zeile
+        // hier statt N Proben. Bestand: die 20 meist-geprobten Symbole (grep-
+        // gezählt, U1) + die Tod/Vitals-Anker; diag-apparat.cjs hält jeden
+        // Eintrag gegen den lebenden Stamm-Code (kein toter Katalog).
+        window.__anker = Object.freeze({
+            weltZustand: "state",
+            modusSetzen: "setGameMode",
+            dslWirkungen: "dslEffects",
+            werkstattRender: "_renderWorkshopDOM",
+            vegetationSpawn: "_vegetationSampleSpawn",
+            loopTick: "_gameLoopTick",
+            schubladenZu: "closeAllDrawers",
+            dslLauf: "dslRun",
+            bauAbriss: "removeArchitecture",
+            substanzAntwort: "_applySubstanceResponse",
+            statsNeuRechnen: "recomputePlayerStats",
+            kreaturenTick: "updateCreatures",
+            kreaturenListeUI: "_renderCreatureListUI",
+            seelenWahlUI: "_refreshSoulSelect",
+            brechenVersuch: "tryMouseBreak",
+            feldFarben: "_attachVoxelFieldColors",
+            chunkDrain: "_drainDirtyVoxelChunks",
+            bauSpawn: "spawnArchitecture",
+            perfAktor: "_nexusPerfActuate",
+            pbrMaterial: "_buildPbrNodeMaterial",
+            todRespawn: "_playerDeathRespawn",
+            vitalsTick: "tickPlayerVitals",
+        });
         // N7.3 — DIE EINE UNIT-RICHTER-QUELLE: ein Band, das die lebende Grammatik-
         // MECHANIK prüft (LOD-Bauplan-Erzeugung · Scatter-Promotion · Instancing-
         // Registry · Regler-Dichte), fährt seine Probe durch DIESEN Chokepoint —
