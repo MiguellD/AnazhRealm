@@ -108,7 +108,8 @@
         "smoke:copresence": "node scripts/smoke-copresence.cjs",
         "smoke:labs": "node scripts/smoke-labs.cjs",
         "gate:boot-foliage-ring": "node scripts/diag-boot-foliage-ring.cjs",
-        "gate:altlasten": "node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs"
+        "gate:altlasten": "node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs",
+        "gate:koerper-kern": "node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs"
     },
     "devDependencies": {
         "eslint": "^9.18.0",

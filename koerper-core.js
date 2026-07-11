@@ -312,10 +312,276 @@
         Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
     ]);
 
+    // ════════════════════════════════════════════════════════════════════
+    // ULTRAGUSS U3 — DAS LAB-GESETZ WIRD DIE QUELLE (verbatim aus worlds/
+    // koerperstudio/koerperstudio.js gewandert; der Schöpfer formte es, es
+    // ist das SCHÖNE). Drei Kern-Funktionen, reine Mathe, THREE-/DOM-frei:
+    // labProportionen() — die 6-Kopfhöhen-Loomis-Konstanten (Lab Z.99),
+    // labMorph(dials)   — die ~30 Dial-Formeln (age/gender/mass/tone-Wirkung,
+    //                     Lab morph() Z.1740; die shell-Closures nehmen die
+    //                     BASE-Skala als {x,y,z} und geben die Ziel-Skala —
+    //                     Ausdrucks-Reihenfolge byte-treu, kein Umbau),
+    // labLandmarks(mess)— das Landmarken-Urteil (Lab _landmarks() Z.1388;
+    //                     die Shell MISST am lebenden Rig, der Kern URTEILT).
+    // Beweis: scripts/diag-koerper-kern.cjs (gate:koerper-kern) — Dial-Gitter
+    // alt==neu, 0 Abweichungen. MESHFREI §8 bleibt: Zahlen, keine Meshes.
+    // ════════════════════════════════════════════════════════════════════
+
+    // Die Proportions-Zeile (Lab Z.99, verbatim): H=6.0 Gesamthöhe,
+    // 6-Kopfhöhen-Loomis — Akromion 0.818H, Trochanter 0.530H, Schädel-Maße.
+    function labProportionen() {
+        var H = 6.0,
+            headSeg = 0.130 * H,
+            acromionY = 0.818 * H,
+            nippleY = 0.720 * H,
+            trochanterY = 0.530 * H;
+        var shoulderHW = (0.259 * H) / 2,
+            hipHW = (0.191 * H) / 2,
+            baseArmX = shoulderHW * 0.95;
+        var thighLen = 0.245 * H,
+            calfLen = 0.246 * H,
+            upperArmLen = 0.186 * H,
+            forearmLen = 0.146 * H;
+        var skullBaseR = headSeg / 2,
+            skullCY = headSeg / 2,
+            skullRX = skullBaseR * 1.03,
+            skullRY = skullBaseR * 1.03 * 1.12,
+            skullRZ = skullBaseR * 1.03;
+        var eyeDist = headSeg / 1.618,
+            jawW = headSeg * 0.56,
+            chinW = headSeg * 0.22;
+        var browY = headSeg * 0.58,
+            eyeY = headSeg * 0.48,
+            cheekY = headSeg * 0.33;
+        var noseY = headSeg * 0.25,
+            lipY = headSeg * 0.03,
+            chinY = -headSeg * 0.20,
+            jawY = -headSeg * 0.10,
+            hairlineY = headSeg * 0.91;
+        return {
+            H: H,
+            headSeg: headSeg,
+            acromionY: acromionY,
+            nippleY: nippleY,
+            trochanterY: trochanterY,
+            shoulderHW: shoulderHW,
+            hipHW: hipHW,
+            baseArmX: baseArmX,
+            thighLen: thighLen,
+            calfLen: calfLen,
+            upperArmLen: upperArmLen,
+            forearmLen: forearmLen,
+            skullBaseR: skullBaseR,
+            skullCY: skullCY,
+            skullRX: skullRX,
+            skullRY: skullRY,
+            skullRZ: skullRZ,
+            eyeDist: eyeDist,
+            jawW: jawW,
+            chinW: chinW,
+            browY: browY,
+            eyeY: eyeY,
+            cheekY: cheekY,
+            noseY: noseY,
+            lipY: lipY,
+            chinY: chinY,
+            jawY: jawY,
+            hairlineY: hairlineY,
+        };
+    }
+
+    // Die Dial→Gestalt-Mathe (Lab morph() Z.1740, verbatim): dials
+    // {height,mass,tone,age,gender,arms} → abgeleitete Größen + shell-Closures
+    // (base-Skala {x,y,z} → Ziel-Skala; lat setzt ABSOLUT — wie das Original).
+    function labMorph(p) {
+        var h = p.height;
+        var effTone = (0.62 + p.tone * 0.53) * (1 - p.age * 0.35);
+        var armM = effTone * (0.68 + p.gender * 0.32);
+        var armMY = 1 + (armM - 1) * 0.1;
+        var legM = effTone * (0.88 + p.gender * 0.12);
+        var legMY = 1 + (legM - 1) * 0.1;
+        var torsoM = effTone * (0.75 + p.gender * 0.25);
+        var shMod = 0.80 + p.gender * 0.20;
+        var hipMod = 1.18 - p.gender * 0.23;
+        var waistMod = 0.76 + p.gender * 0.24;
+        var totalFat = p.mass + p.age * 0.18;
+        var fatScale = 1 + totalFat * 0.7;
+        var neckThick = (1 + totalFat * 0.22) * (1 + effTone * 0.15) * (0.78 + p.gender * 0.22);
+        var jawScale = (0.78 + p.gender * 0.22) * (1 + p.age * 0.12) * (1 + effTone * 0.04);
+        return {
+            effTone: effTone,
+            armM: armM,
+            armMY: armMY,
+            legM: legM,
+            legMY: legMY,
+            torsoM: torsoM,
+            shMod: shMod,
+            hipMod: hipMod,
+            waistMod: waistMod,
+            totalFat: totalFat,
+            fatScale: fatScale,
+            neckThick: neckThick,
+            jawScale: jawScale,
+            charScale: { x: h * 0.93, y: h, z: h * 0.93 },
+            armPose: {
+                xMul: shMod,
+                rotZ: 0.06 + p.gender * 0.05 + p.arms * 1.30,
+                rotX: 0.05 - p.arms * 0.05,
+            },
+            headPose: { ageDrop: p.age * 0.08, fwd: p.age * 0.12 },
+            shell: {
+                ribcage: function (b) {
+                    return { x: b.x * shMod, y: b.y, z: b.z * (0.95 + p.gender * 0.05) };
+                },
+                pelvis: function (b) {
+                    return { x: b.x * hipMod, y: b.y, z: b.z * (0.88 + p.gender * 0.12) };
+                },
+                waist: function (b) {
+                    return { x: b.x * fatScale * waistMod, y: b.y, z: b.z * (1 + totalFat * 0.4) };
+                },
+                abs: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.45), y: b.y, z: b.z * (1 + totalFat * 0.3 - effTone * 0.08) };
+                },
+                oblique: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.35) * waistMod, y: b.y, z: b.z * (1 + totalFat * 0.2) };
+                },
+                glute: function (b) {
+                    return {
+                        x: b.x * (1 + totalFat * 0.3) * hipMod,
+                        y: b.y * (1 + totalFat * 0.1) * (0.95 + (1 - p.gender) * 0.22),
+                        z: b.z * (1 + totalFat * 0.2) * (1.0 + (1 - p.gender) * 0.32),
+                    };
+                },
+                quad: function (b) {
+                    return { x: b.x * legM * (1 + totalFat * 0.15), y: b.y * legMY, z: b.z * legM };
+                },
+                hamstring: function (b) {
+                    return { x: b.x * legM, y: b.y, z: b.z * legM };
+                },
+                calf: function (b) {
+                    return { x: b.x * legM, y: b.y * legMY, z: b.z * legM };
+                },
+                bicep: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                tricep: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                uarm: function (b) {
+                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
+                },
+                forearm: function (b) {
+                    var fm = (0.70 + p.gender * 0.30) * (0.92 + effTone * 0.12);
+                    return { x: b.x * fm, y: b.y, z: b.z * fm };
+                },
+                deltoid: function (b) {
+                    return { x: b.x * armM * shMod, y: b.y * armM, z: b.z * armM * shMod };
+                },
+                trap: function (b) {
+                    return {
+                        x: b.x * (1 + (torsoM - 1) * 0.4) * (0.82 + p.gender * 0.18),
+                        y: b.y * (1 + (torsoM - 1) * 0.3) * (0.85 + p.gender * 0.15),
+                        z: b.z,
+                    };
+                },
+                lat: function () {
+                    return { x: 1 + (torsoM - 1) * 0.5, y: 1, z: 1 + (torsoM - 1) * 0.3 };
+                },
+                upperBack: function (b) {
+                    return {
+                        x: b.x * (1 + (torsoM - 1) * 0.25) * shMod,
+                        y: b.y,
+                        z: b.z * (1 + (torsoM - 1) * 0.2) * (0.82 + p.gender * 0.18),
+                    };
+                },
+                chest: function (b) {
+                    return {
+                        x: b.x * (0.62 + p.gender * 0.38) * (1 + (torsoM - 1) * 0.1),
+                        y: b.y,
+                        z: b.z * (0.85 + p.gender * 0.15),
+                    };
+                },
+                pec: function (b) {
+                    return {
+                        x: b.x * (0.55 + p.gender * 0.45) * (1 + (torsoM - 1) * 0.15),
+                        y: b.y * (1 + (torsoM - 1) * 0.04),
+                        z: b.z * (0.70 + p.gender * 0.30),
+                    };
+                },
+                breast: function (b) {
+                    var bs = Math.max(0.02, (1 - p.gender) * (0.92 + totalFat * 0.5));
+                    return { x: b.x * bs, y: b.y * bs * 1.05, z: b.z * bs };
+                },
+                neck: function (b) {
+                    return { x: b.x * neckThick, y: b.y, z: b.z * neckThick };
+                },
+                jaw: function (b) {
+                    return { x: b.x * jawScale, y: b.y, z: b.z };
+                },
+                chin: function (b) {
+                    return { x: b.x * (0.82 + p.gender * 0.18), y: b.y, z: b.z };
+                },
+                buccal: function (b) {
+                    return { x: b.x * (1 + totalFat * 0.4 + p.age * 0.1), y: b.y, z: b.z };
+                },
+                cheekbone: function (b) {
+                    return { x: b.x * (0.80 + p.gender * 0.20), y: b.y, z: b.z };
+                },
+                masseter: function (b) {
+                    return { x: b.x * torsoM, y: b.y, z: b.z };
+                },
+            },
+        };
+    }
+
+    // ── EICHUNG Kern-landmarks() (8-KH-Stamm-Extrakt, Kopf 7.95) gegen das ──
+    // Lab-Gesetz (6-KH-Loomis, H=6.0) an 5 Referenz-Gelenken, Default-Dials
+    // (gender=1→sex=0 · mass=0.35→build · tone=0.5→muscle · height=1):
+    // Stationen als Anteil der Gesamthöhe (y/7.95 bzw. y/6.0), Δrel = Kern−Lab.
+    // | Gelenk     | Kern y | rel    | Lab y  | rel    | Δrel    | Δrel x  |
+    // | Schulter   | 6.40   | 0.8050 | 4.9080 | 0.8180 | -0.0130 | +0.0114 |
+    // | Hüfte      | 4.05   | 0.5094 | 3.1800 | 0.5300 | -0.0206 | -0.0076 |
+    // | Knie       | 2.30   | 0.2893 | 1.7100 | 0.2850 | +0.0043 | -0.0261 |
+    // | Handgelenk | 3.85   | 0.4843 | 2.9160 | 0.4860 | -0.0017 | +0.0850 |
+    // | Kopf-Mitte | 7.20   | 0.9057 | 5.6100 | 0.9350 | -0.0293 |  0.0000 |
+    // Die y-Stationen liegen ≤3 % auseinander (größte Lücke: Kopf/Hüfte);
+    // seitlich klafft das Handgelenk (+8,5 % — der 8-KH-Extrakt spreizt die
+    // Arme weiter). Die Stamm-Konvergenz (Rig übernimmt die Lab-Proportionen)
+    // ist eine SICHT-Welle und bleibt bewusst offen — die Zahl liegt bereit.
+    // Das Landmarken-Urteil (Lab _landmarks() Z.1388–1408, verbatim): die
+    // Shell misst chin/neckBase/waist/knee1 + den neckBase-Radius am lebenden
+    // Rig und reicht sie als mess her; der Kern trägt Offsets, Fallbacks und
+    // den Handgelenks-VERTRAG (wristFrac/wristOverlap — hand-shell endet bei
+    // wristFrac, Körperhaut reicht wristFrac+overlap darüber).
+    function labLandmarks(mess) {
+        mess = mess || {};
+        var chin = mess.chin,
+            nb = mess.neckBase,
+            waist = mess.waist,
+            knee = mess.knee;
+        var neckBaseRad = mess.neckBaseRad != null ? mess.neckBaseRad : 0.13;
+        return {
+            chinY: chin ? chin.y : 5.44,
+            neckTopY: (chin ? chin.y : 5.44) - 0.04,
+            collarY: nb ? nb.y + 0.02 : 4.95,
+            shoulderTopY: nb ? nb.y + 0.04 : 5.06,
+            neckR: Math.max(0.12, neckBaseRad * 1.05),
+            neckCX: nb ? nb.x : 0,
+            neckCZ: nb ? nb.z : 0,
+            waistY: waist ? waist.y : 3.9,
+            wristFrac: 1.36,
+            wristOverlap: 0.06,
+            kneeY: knee ? knee.y : 1.86,
+        };
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
         landmarks: landmarks,
+        labProportionen: labProportionen,
+        labMorph: labMorph,
+        labLandmarks: labLandmarks,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,

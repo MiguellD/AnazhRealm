@@ -169,6 +169,24 @@ const ZWILLINGE = [
         verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
     },
+    {
+        fingerprint: "0.818 * H",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
+    },
+    {
+        fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
+    },
+    {
+        fingerprint: "wristFrac: 1.36",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
+    },
 ];
 
 function scanZwillinge() {
