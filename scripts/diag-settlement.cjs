@@ -187,6 +187,59 @@ const FIXTURES = [
         );
     }
 
+    // ===== U6c: SNAP-/BRANDWAND-PROBE — die EINE Wahrheit, zwei Leser =====
+    // Die Gesetze wohnen im Kern (__fachwerkCore.reihenSnap/brandwand, verbatim aus
+    // buildDorf gewandert); das Lab ruft DIESELBEN Funktionen. Probe 1 (synthetisch):
+    // zwei dichte parallele Nachbarn docken auf die Norm-Fuge und markieren die
+    // anliegende Seite als Brandwand. Probe 2 (end-to-end): ein städtischer Export
+    // trägt ov.brandwand — der Kern-Layout-Pfad KONSUMIERT das Gesetz.
+    console.log("\n=== U6c: REIHEN-SNAP + BRANDWAND (Kern-Gesetz, beidseitiger Konsum) ===");
+    {
+        const gap = 0.06; // Metropol-Norm — dicht (<=0.6), der Snap-Pfad ist scharf
+        const Bs = [
+            { dims: { W: 8, D: 7 }, kern: false, p: {} },
+            { dims: { W: 8, D: 7 }, kern: false, p: {} },
+        ];
+        const pl = [
+            { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
+            { phi: 0, x: 9, z: 0, obb: { cx: 9, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
+        ];
+        const snaps = FC.reihenSnap(Bs, pl, gap);
+        const fuge = Math.abs(pl[1].obb.cx - pl[0].obb.cx) - 8; // (Wi+Wj)/2 = 8
+        check("Snap-Probe: zwei dichte Nachbarn docken an (1 Paar)", snaps === 1, `snaps=${snaps}`);
+        check("Snap-Probe: die Fuge ist die Norm-Fuge", Math.abs(fuge - gap) < 1e-9, `fuge=${fuge.toFixed(4)}`);
+        check(
+            "Snap-Probe: x und obb.cx rücken kohärent (Solids/OBB fließen konsistent)",
+            pl[0].x === pl[0].obb.cx && pl[1].x === pl[1].obb.cx
+        );
+        Bs.forEach((B, i) => (B.q = pl[i]));
+        const bwN = FC.brandwand(Bs, gap);
+        check(
+            "Brandwand-Probe: die anliegenden Seiten sind markiert (x1 am linken, x0 am rechten Haus)",
+            bwN === 2 && Bs[0].p.brandwand && Bs[0].p.brandwand.x1 === 1 && Bs[1].p.brandwand && Bs[1].p.brandwand.x0 === 1,
+            `bwN=${bwN}`
+        );
+        const weit = FC.reihenSnap(
+            [
+                { dims: { W: 8, D: 7 }, kern: false, p: {} },
+                { dims: { W: 8, D: 7 }, kern: false, p: {} },
+            ],
+            [
+                { phi: 0, x: 0, z: 0, obb: { cx: 0, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
+                { phi: 0, x: 30, z: 0, obb: { cx: 30, cz: 0, phi: 0, ex: 4, ez: 3.5 } },
+            ],
+            gap
+        );
+        check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
+        const stadt = FC.exportSettlement({ seed: 7, nH: 20 });
+        const bwSlots = stadt.slots.filter((s) => s.ov && s.ov.brandwand).length;
+        check(
+            "Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf)",
+            stadt.staedtisch === true && bwSlots >= 1,
+            `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
+        );
+    }
+
     // ===== TEIL B: der lebende Kanal (Browser, foundry-ON) =====
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
     const puppeteer = require("puppeteer");

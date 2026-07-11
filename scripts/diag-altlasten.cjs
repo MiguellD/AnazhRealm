@@ -193,6 +193,24 @@ const ZWILLINGE = [
         verboten: ["anazhRealm.js"],
         fiel: "U7 — die fusiforme Muskel-Spindel (MUSC-Atlas) wohnt im Gesetzbuch (humanSkeleton)",
     },
+    {
+        fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
+        gesetzbuch: "fachwerk-core.js",
+        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
+    },
+    {
+        fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
+        gesetzbuch: "fachwerk-core.js",
+        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
+    },
+    {
+        fingerprint: "jahr<1150?'romanik'",
+        gesetzbuch: "fachwerk-core.js",
+        verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
+        fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
+    },
 ];
 
 function scanZwillinge() {

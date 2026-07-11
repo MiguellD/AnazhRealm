@@ -2717,6 +2717,115 @@
         return g;
     }
 
+    // ═══ ULTRAGUSS U6c — die drei Lab-Gesetze wohnen im Gesetzbuch (verbatim
+    //     aus worlds/fachwerk/fachwerk.js gewandert): REIHEN-SNAP · BRANDWAND ·
+    //     META. KONSUM BEIDSEITIG: buildDorf (Lab-Shell) UND exportSettlement
+    //     (unten) rufen DIESELBEN Funktionen — eine Wahrheit, zwei Leser. ═══
+    // REIHEN-SNAP-GESETZ: verdichtetes Bauen — parallele Baulinien-Nachbarn mit
+    // Fuge<1.8m docken auf Norm-gap an (die Stadtgeschichte baute Wand an Wand);
+    // läuft VOR der Platzierung, damit Solids/OBB konsistent fließen.
+    // dorfB: [{dims,kern}] · pl: die Layout-Plätze (lay.pl — wird MUTIERT:
+    // x/z + obb.cx/cz rücken zusammen) · gap: plan.norm.gap. Rückgabe: Snap-Zahl.
+    function reihenSnap(dorfB, pl, gap){
+      const dicht=(gap<=0.6);
+      let snaps=0;
+      if(dicht){
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||A.kern) continue;
+        const qi=pl[i]; if(!qi) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
+        for(let j=i+1;j<dorfB.length;j++){ const Bj=dorfB[j]; if(!Bj.dims||Bj.kern) continue;
+          const qj=pl[j]; if(!qj) continue;
+          let dphi=Math.abs(qi.phi-qj.phi)%Math.PI; if(dphi>Math.PI/2)dphi=Math.PI-dphi;
+          if(dphi>0.18) continue;
+          const dx=qj.obb.cx-qi.obb.cx, dz=qj.obb.cz-qi.obb.cz;
+          const lx=dx*ci-dz*si, lz=dx*si+dz*ci;
+          const Wi=A.dims.W||8, Wj=Bj.dims.W||8, Di=A.dims.D||8, Dj=Bj.dims.D||8;
+          const soll=(Wi+Wj)/2+gap, fuge=Math.abs(lx)-(Wi+Wj)/2;
+          if(Math.abs(lz)>Math.min(Di,Dj)*0.45 || fuge<=gap+0.02 || fuge>1.8) continue;
+          const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
+          const mvx=s2*zug*ci, mvz=-s2*zug*si;                                                // lokal (±zug,0) → Welt via R(phi)
+          qi.x+=mvx; qi.z+=mvz; qi.obb.cx+=mvx; qi.obb.cz+=mvz;
+          qj.x-=mvx; qj.z-=mvz; qj.obb.cx-=mvx; qj.obb.cz-=mvz;
+          snaps++; } }
+      }
+      return snaps;
+    }
+    // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
+    // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
+    // Brandmauer (der Same erfährt es via hp.brandwand). dorfB: [{dims,q,p}] —
+    // p wird MUTIERT (p.brandwand.{x0,x1,z0,z1}=1) · gap: plan.norm.gap.
+    // Rückgabe: Zahl der markierten anliegenden Seiten.
+    function brandwand(dorfB, gap){
+      let bwN=0;
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims) continue;
+        const Wi=A.dims.W||8, Di=A.dims.D||8, ci=Math.cos(A.q.phi), si=Math.sin(A.q.phi);
+        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims) continue;
+          let dphi=Math.abs(A.q.phi-Bj.q.phi)%Math.PI; if(dphi>Math.PI/2) dphi=Math.PI-dphi;
+          if(dphi>0.26) continue;                                                             // nur parallele Reihen bilden Brandwände
+          const dx=Bj.q.obb.cx-A.q.obb.cx, dz=Bj.q.obb.cz-A.q.obb.cz;
+          const lx=dx*ci-dz*si, lz=dx*si+dz*ci;                                               // ins Haus-Lokal von A (R(-phi))
+          const Wj=Bj.dims.W||8, Dj=Bj.dims.D||8;
+          if(Math.abs(lz)<(Di+Dj)/2*0.6 && Math.abs(Math.abs(lx)-(Wi+Wj)/2)<((gap||0.06)+0.15)){   // Schwelle an die NORM gekoppelt — gedockte Marktgassen (0.6) werden ebenso Brandwände wie Metropol-Fugen (0.06)
+            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lx>0?'x1':'x0']=1; bwN++; }
+          if(Math.abs(lx)<(Wi+Wj)/2*0.6 && Math.abs(Math.abs(lz)-(Di+Dj)/2)<((gap||0.06)+0.15)){
+            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lz>0?'z1':'z0']=1; bwN++; } } }
+      return bwN;
+    }
+    // ════════════ META-GESETZ ════════════ eine Quelle für Browser + Sweep
+    // Aus Zeit · Klima · Personen · Wohlstand emergiert die ganze Form — nach der Ordnung der Stil-Epochen.
+    function metaParams(jahr, klima, leute, wohl){
+      const kalt=klima<0.3, heiss=klima>0.72, nord=klima<0.5;
+      const epoche = jahr<1150?'romanik' : jahr<1500?'gotik' : jahr<1650?'renaissance' : jahr<1770?'barock' : jahr<1900?'klassik' : jahr<1950?'gruender' : 'moderne';
+      // PITCH — steil(kalt,früh) → flach(heiss,spät); heisse Zonen mediterran gekappt
+      const eraP = jahr<1500?56 : jahr<1770?44 : jahr<1900?34 : jahr<1950?24 : 13;
+      let pitch = Math.round(eraP + (0.5-klima)*34);
+      if(heiss) pitch = Math.min(pitch, Math.round(22-(klima-0.72)*30));
+      pitch = Math.max(7, Math.min(62, pitch));
+      // MATERIAL — Klima × Wohlstand × Epoche (Vernakular ↔ Mauerwerk)
+      let stil;
+      if(epoche==='moderne') stil = wohl>0.55?'glas':'modern';
+      else if(heiss) stil = 'stein';
+      else if(jahr>=1850) stil = 'klinker';
+      else if(wohl>0.62) stil = (jahr>=1450?'klinker':'stein');     // reich → Mauerwerk (Burg: früh Stein)
+      else if(wohl>0.4 && jahr>=1500) stil = 'klinker';             // bürgerlich (Renaissance+) → Backstein-Stadthaus
+      else stil = kalt?'huette':'alt';                              // Vernakular: Norden Holz, Mitte Fachwerk
+      const massiv = (stil==='stein'||stil==='klinker');
+      // BOGEN — Epoche × Mauerwerk
+      let bogen='none';
+      if(heiss && massiv && jahr<1800) bogen='hufeisen';
+      else if(epoche==='gotik' && massiv) bogen='spitz';
+      else if((epoche==='romanik'||epoche==='renaissance') && massiv) bogen='rund';
+      // GRUNDRISS — Süden Hof (Kühlung), grosse Wohlhabende L
+      const grund = heiss ? 'hof' : ((wohl>0.5&&leute>8)?'L':'I');
+      // GRÖSSE — Personen × Wohlstand
+      const storeys = Math.max(1, Math.min(8, Math.round(1 + leute/5 + (wohl>0.55?1:0) + (epoche==='moderne'&&wohl>0.7?Math.floor(leute/3):0))));
+      const W = Math.max(6, Math.min(15, Math.round(6 + leute*0.4 + wohl*3)));
+      const D = Math.max(5, Math.min(11, Math.round(5 + leute*0.3 + wohl*2)));
+      // MONUMENT-VOKABULAR — Wohlstand schaltet die Hochform der Epoche
+      const F={treppgiebel:0,vorkragung:0,portikus:0,kuppel:0,turm:0,zinnen:0,veranda:0,pilotis:0,terrasse:0,arkade:0};
+      const reich = wohl>0.66, mittel = wohl>0.4&&wohl<=0.66;
+      if(reich){
+        if(epoche==='romanik'||epoche==='gotik'){ F.turm=1; if(jahr<1350) F.zinnen=1; }   // Burg / Dom
+        else if(epoche==='renaissance') F.portikus=1;                                      // Palazzo
+        else if(epoche==='barock') F.kuppel=1;                                             // Barock-Kuppel
+        else if(epoche==='klassik') F.portikus=1;                                          // Tempel-Portikus
+        else if(epoche==='gruender'){ F.turm=1; if(!kalt) F.veranda=1; }                   // Viktorianisch
+        else if(epoche==='moderne') F.pilotis=1;                                           // Villa moderne
+      }
+      // Vernakular/bürgerliche Marker — regional, additiv
+      if(nord && stil==='klinker' && jahr>=1400 && jahr<1700 && !reich) F.treppgiebel=1;   // Hanse / Holland (bürgerlich, nicht auf Monument)
+      if(epoche==='gotik' && stil==='alt' && !reich) F.vorkragung=1;                       // Fachwerk-Jetty
+      if(heiss && massiv && (mittel||reich) && jahr<1800) F.arkade=1;                      // Riad / Kreuzgang
+      if(!heiss && !kalt && jahr>=1750 && jahr<1930 && mittel && grund!=='hof') F.veranda=1; // Kolonial
+      // FARBEN — Stil × Klima
+      let col;
+      if(stil==='huette') col = kalt?{holz:0x6b5236,stamm:0x6b655e,ziegel:0x55402a}:{holz:0x82602f,stamm:0x664a2e,ziegel:0x664a2e};
+      else if(stil==='stein') col = heiss?{putz:0xf2efe8,ziegel:0xc06a3a,ziegel2:0x9a5230}:{putz:0xe4d8bc,ziegel:0xab6840,ziegel2:0x824c2c};
+      else if(stil==='klinker') col = nord?{backstein:0x8c4636,ziegel:0x6e3828,ziegel2:0x552a1d}:{backstein:0x9a5a44,ziegel:0x7a3f2c,ziegel2:0x60301f};
+      else if(stil==='modern'||stil==='glas') col = {putz:0xe9e6df,glas:0x9fb8c4,metall:0x8a8a92,dachmod:0x33363c};
+      else col = {holz:0x6a4c2e,gefach:0xe9e3d6,ziegel:0x9c4a35,ziegel2:0x7e3826};
+      return {pitch,W,D,storeys,stil,bogen,grund,col,F,epoche};
+    }
+
     // ── N5.7 SETTLEMENT-EXPORT — exportSettlement(dp) (das exportDrive-Muster,
     //    N6.2: die EINE Lab-Formel exportiert ABGELEITETE Daten, kein Duplikat).
     //    dp = { seed, nH, epoche?, budget? } → reine, structured-clone-sichere
@@ -2739,9 +2848,26 @@
             budget: isFinite(dp.budget) ? Number(dp.budget) : undefined,
         });
         var ext = [];
+        var Bs = [];
         var i;
-        for (i = 0; i < plan.houses.length; i++) ext.push(massBau(Object.assign({}, plan.houses[i])).ext);
+        for (i = 0; i < plan.houses.length; i++) {
+            var Bm = massBau(Object.assign({}, plan.houses[i]));
+            Bm.p = plan.houses[i]; // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
+            Bs.push(Bm);
+            ext.push(Bm.ext);
+        }
         var lay = dorfLayout(plan, ext, plan.seed);
+        // U6c — KONSUM BEIDSEITIG: der Export wendet DIESELBE Snap-/Brandwand-
+        // Wahrheit an wie buildDorf (Lab): reihenSnap rückt lay.pl zusammen
+        // (Slot-x/z/obb), brandwand markiert hp.brandwand (reist als ov.brandwand).
+        reihenSnap(Bs, lay.pl, plan.norm.gap);
+        for (i = 0; i < Bs.length; i++) Bs[i].q = lay.pl[i];
+        brandwand(
+            Bs.filter(function (b) {
+                return b.q;
+            }),
+            plan.norm.gap
+        );
         var slots = [];
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
@@ -2799,6 +2925,10 @@
         buildInstance: buildInstance,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)
         exportSettlement: exportSettlement,
+        // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
+        reihenSnap: reihenSnap,
+        brandwand: brandwand,
+        metaParams: metaParams,
         DORF: DORF,
         dorfLayout: dorfLayout,
         strassengraph: strassengraph,
