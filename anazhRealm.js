@@ -13783,6 +13783,16 @@ class AnazhRealm {
             st._activeRingRadius = ringTarget;
         } else {
             if (st._activeRingRadius == null) st._activeRingRadius = Math.min(ringTarget, AnazhRealm.RING_RAMP_START);
+            // JEDES-HOLZ-WELLE — DER EXISTENZ-BODEN (Schöpfer „das system muss auf jedem
+            // holz laufen, starten"): bis RING_EXIST_FLOOR wächst der Ring OHNE das
+            // Kopfraum-Gate. Auf Holz, dessen Frame ab Bild 1 über dem Totband liegt
+            // (Software-Rasterizer, alte iGPU), wartete `sustainedHeadroom` sonst EWIG →
+            // Ring 0 → die Welt entstand NIE. Geordnet bleibt das Wachsen (settled + kein
+            // Rückstau + Wiese + Atem) — NUR die fps-Bedingung entfällt unterhalb des
+            // Bodens, und der Schrumpf-Pfad endet hier: die Existenz-Welt wird nie
+            // zurückgegeben. Der PID atmet NUR darüber (seine Hebel darunter bleiben
+            // Pixel-Scale/Laub/Schatten/Godray). „Streaming ist heilig": Existenz vor Framerate.
+            const ringFloor = Math.min(ringTarget, AnazhRealm.RING_EXIST_FLOOR);
             // V18.306 — DER RING ATMET IN BEIDE RICHTUNGEN (Schöpfer „siehe immernoch 100
             // Chunks statt dass es mal STABIL lädt"): der V18.301-Ring wuchs nur MONOTON →
             // er OVERSHOOTET. Auf einer Maschine, deren leerer Boot-Frame schnell ist, wächst
@@ -13861,14 +13871,14 @@ class AnazhRealm {
                 ringSettled &&
                 noBacklog &&
                 grassCaughtUp &&
-                sustainedHeadroom &&
+                (st._activeRingRadius < ringFloor || sustainedHeadroom) &&
                 breathed
             ) {
                 st._ringRampLast = now;
                 st._ringHeadroomSince = 0; // der nächste Wachs-Schritt verlangt einen frischen Sustain
                 st._activeRingRadius++;
                 if (st._activeRingRadius >= ringTarget) st._ringBootWindowUntil = 1; // Erst-Erreichen schließt das Fenster
-            } else if (st._activeRingRadius > AnazhRealm.RING_RAMP_START && sustainedOver && breathed) {
+            } else if (st._activeRingRadius > ringFloor && sustainedOver && breathed) {
                 // anhaltend über Budget → die äußerste Schale zurückgeben (Fern-Prune, sicher)
                 st._ringRampLast = now;
                 st._ringOverBudgetSince = 0; // der nächste Schrumpf wartet einen frischen Sustain
@@ -13930,11 +13940,66 @@ class AnazhRealm {
     // Dead-Band gegen Churn — ein setPixelRatio realloziert die Framebuffer, gehört NUR auf eine
     // echte Stufen-Änderung, nie pro Frame. `_renderScaleApplied` merkt den zuletzt angewandten
     // (dpr-multiplizierten) Wert. Non-headless-only (der Null-Renderer stubt setPixelRatio).
+    // JEDES-HOLZ-WELLE — die Holz-Wahl: URL ?holz= schlägt localStorage schlägt
+    // AUTO (Adapter-Info: Software-Renderer → kienspan). Läuft VOR dem Renderer-
+    // Bau (init) — der Adapter wird billig vorab befragt (dasselbe Device nutzt
+    // dann der WebGPURenderer). Gibt den Profil-Namen zurück, nie null.
+    async _holzWahl() {
+        const P = AnazhRealm.HOLZ_PROFILE;
+        try {
+            const url = typeof location !== "undefined" ? new URLSearchParams(location.search).get("holz") : null;
+            if (url && P[url]) return url;
+        } catch (_e) {
+            /* location kann in Workern fehlen */
+        }
+        try {
+            const stored = typeof localStorage !== "undefined" ? localStorage.getItem("anazhHolz") : null;
+            if (stored && P[stored]) return stored;
+        } catch (_e) {
+            /* Privacy-Modus */
+        }
+        try {
+            if (typeof navigator !== "undefined" && navigator.gpu) {
+                const a = await Promise.race([
+                    navigator.gpu.requestAdapter(),
+                    new Promise((res) => setTimeout(() => res(null), 4000)),
+                ]);
+                const info = a && a.info ? a.info : {};
+                const sig = `${info.vendor || ""} ${info.architecture || ""} ${info.description || ""}`.toLowerCase();
+                if (/swiftshader|llvmpipe|lavapipe|software|cpu/.test(sig)) return "kienspan";
+            }
+        } catch (_e) {
+            /* Adapter-Probe fail-soft → voll */
+        }
+        return "voll";
+    }
+
+    // Das gewählte Profil auf den State legen (Start+Deckel; der PID atmet darunter).
+    _applyHolzProfil(name) {
+        const prof = AnazhRealm.HOLZ_PROFILE[name] || AnazhRealm.HOLZ_PROFILE.voll;
+        this.state._holzProfil = name;
+        this.state._holzPixelCap = prof.pixelCap;
+        this.state.chunkRingRadius = Math.min(this.state.chunkRingRadius || 4, prof.ring);
+        if (!this.state.atmosphere) this.state.atmosphere = {};
+        if (Number.isFinite(prof.shadowRange)) {
+            this.state.atmosphere.shadowRange = Math.min(this.state.atmosphere.shadowRange || 170, prof.shadowRange);
+        }
+        if (prof.farWater === false) this.state.atmosphere.farWater = false;
+        this.log(
+            `HOLZ-PROFIL „${name}": Ring ≤${prof.ring} · Schatten ≤${prof.shadowRange} m · ` +
+                `Fern-Wasser ${prof.farWater === false ? "aus" : "Standard"} · Pixel-Cap ${prof.pixelCap} ` +
+                `(überschreibbar: ?holz=voll|nah|kienspan — die Nähe bleibt immer voll)`,
+            "INFO"
+        );
+    }
+
     _applyRenderScale(scale) {
         const st = this.state;
         const renderer = st.renderer;
         if (!renderer || renderer._isHeadlessNull || typeof renderer.setPixelRatio !== "function") return;
-        const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+        const dprRaw = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+        // JEDES-HOLZ: das Profil deckelt den DPR (kienspan 1) — die eine Stelle.
+        const dpr = Math.min(dprRaw, this.state._holzPixelCap || 2);
         const target = Math.max(AnazhRealm.PERF_RENDER_SCALE_MIN, Math.min(1, scale)) * dpr;
         if (st._renderScaleApplied != null && Math.abs(target - st._renderScaleApplied) < 0.001) return;
         st._renderScaleApplied = target;
@@ -21332,7 +21397,10 @@ class AnazhRealm {
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
         renderer.setClearColor(0x000000, 1);
-        renderer.shadowMap.enabled = true;
+        // JEDES-HOLZ: kienspan schaltet Schatten GANZ aus (der CSM-Erst-Frame-
+        // Kompilierschock tötet Software-Dawn-Devices; ohne Schatten-Pipeline
+        // überlebt der Boot — die NÄHE bleibt voll, nur das Licht wird flach).
+        renderer.shadowMap.enabled = this.state._holzProfil !== "kienspan";
         // V9.84 Perf-1.a — PCFShadowMap statt PCFSoftShadowMap (4 statt 16
         // Samples — Performance-Win).
         renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -79221,12 +79289,18 @@ class AnazhRealm {
             this._showWebGPUGate();
             throw new Error(msg);
         }
+        // JEDES-HOLZ-WELLE — die Holz-Wahl VOR dem Renderer-Bau (der Adapter wird
+        // billig vorab befragt; Software-Holz → kienspan: kleiner Ring, kein
+        // Antialias, Pixel-Cap 1 — volle NÄHE, weniger FERNE).
+        const holz = await this._holzWahl();
+        this._applyHolzProfil(holz);
+        const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
         // Opt-in Headless-Null-Renderer (GPU-frei) für den Mechanik-Playtest /
         // Server-Sim; sonst der echte WebGPU-Renderer (Produktion + alle Look-Tools).
         const renderer =
             typeof window !== "undefined" && window.__anazhHeadlessNullRenderer
                 ? this._makeHeadlessRenderer(canvas)
-                : new THREE.WebGPURenderer({ canvas, antialias: true });
+                : new THREE.WebGPURenderer({ canvas, antialias: holzProf.antialias !== false });
         // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR (Sonne 2.4
         // + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei 1.0 = ausgewaschen.
         // ACES rollt die HDR-Lichter filmisch ab. (NeutralToneMapping [Khronos] wäre
@@ -79247,11 +79321,45 @@ class AnazhRealm {
         this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
         this._configureRenderer(renderer);
         this.state.rendererReady = false;
+        // JEDES-HOLZ — der Boot-Wächter: ein still hängendes init() (Software-
+        // Vulkan) bekommt nach 25 s eine LAUTE Diagnose statt einer weißen Welt.
+        const initWatch = setTimeout(() => {
+            if (!this.state.rendererReady) {
+                this.log(
+                    "WebGPU-Renderer init() antwortet nach 25 s nicht — schwaches/Software-Holz? " +
+                        "Versuche ?holz=kienspan (kleiner Ring, kein AA) oder einen anderen Browser.",
+                    "ERROR"
+                );
+            }
+        }, 25000);
         renderer
             .init()
             .then(() => {
+                clearTimeout(initWatch);
                 this.state.rendererReady = true;
                 this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
+                // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
+                // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
+                // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.
+                try {
+                    const dev = renderer.backend && renderer.backend.device;
+                    if (dev && dev.lost && typeof dev.lost.then === "function") {
+                        dev.lost.then((info) => {
+                            this.state._deviceLost = (info && info.reason) || "unknown";
+                            const tieferes =
+                                this.state._holzProfil === "kienspan"
+                                    ? "Dieses Holz trägt selbst kienspan nicht — die Welt braucht eine echte GPU."
+                                    : "Versuche ?holz=kienspan (kleiner Ring, keine Schatten, kein AA).";
+                            this.log(
+                                `GPU-DEVICE VERLOREN (${this.state._deviceLost}) — die Welt kann nicht weiterrendern. ${tieferes}`,
+                                "ERROR"
+                            );
+                            if (typeof this._showWebGPUGate === "function") this._showWebGPUGate();
+                        });
+                    }
+                } catch (_e) {
+                    /* Wächter ist fail-soft — ohne lost-Promise kein Wächter */
+                }
             })
             .catch((err) => {
                 this.log(
@@ -81858,6 +81966,11 @@ class AnazhRealm {
         // ready ist (typisch 1-2 Frames bei AMD/Nvidia, mehr bei async
         // requestAdapter()-Latenz).
         if (!this.state.rendererReady) return;
+        // JEDES-HOLZ — nach GPU-DEVICE-VERLUST rendert kein Pfad mehr: jeder weitere
+        // Versuch wirft nur noch createBuffer-Fehler (jeden Frame, endlos). Der
+        // Wächter hat den lauten ERROR + das Gate schon gezeigt; die SIMULATION
+        // (Bewegung/Feld/Netz) läuft weiter. EIN Chokepoint statt Fang-Regen.
+        if (this.state._deviceLost) return;
         // V18.268 — perfSense-Render-Tap: EINMAL pro Frame zurücksetzen, dann am Ende
         // die akkumulierte Per-Frame-Last (alle render()-Pässe) lesen (autoReset=false).
         const _rinfo = this.state.renderer.info;
@@ -82165,7 +82278,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.452.0";
+AnazhRealm.VERSION = "18.453.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -86027,6 +86140,10 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
 AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)
 AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIGER Chunk (Schöpfer „1 Chunk statt 9!").
+// JEDES-HOLZ-WELLE — DER EXISTENZ-BODEN: bis zu diesem Ring wächst die Ramp ohne
+// Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,
+// auf kienspan zugleich der Deckel → dort ist die Welt FIX). Existenz vor Framerate.
+AnazhRealm.RING_EXIST_FLOOR = 2;
 // Schöpfer-Befund (diag-boot-ring, GEMESSEN): der Start-Ring 2 (25 Chunks) war der „Zwang zu viele Chunks
 // auf einmal" → Boot-Frames 2369 ms, der Ramp wuchs nie. V18.394 senkte auf 1 (9 Chunks); V18.397 auf 0 =
 // den ALLERERSTEN Chunk (der Spieler-Chunk, ~21 m) — der Lade-Nebel umhüllt ihn eng, dann wächst der
@@ -86621,6 +86738,18 @@ AnazhRealm.SOUL_SWIM_LEAN = Object.freeze({ moving: 0.5, idle: 0.22 });
 // ALTLASTEN-NULL — die Gnaden-Frist nach dem feld-nativen Tod (Sekunden):
 // innerhalb dieser Frist zieht kein Schaden und feuert kein zweiter Respawn.
 AnazhRealm.RESPAWN_GRACE_SEC = 8;
+// JEDES-HOLZ-WELLE — DIE HOLZ-LEITER (Schöpfer: „das system muss auf jedem holz
+// laufen … volle tiefe, evt. weniger ferne"): EIN Daten-Profil je Holz-Klasse
+// setzt die FERNE-Deckel (Ring · Schatten-Frustum · Fern-Wasser · Pixel-Cap ·
+// Antialias) — die NÄHE (Voxel-Detail · LOD0 · Substanz) bleibt IMMER voll.
+// Der EINE PID atmet weiter DARUNTER (das Profil ist Start+Deckel, kein
+// Parallel-Regler — Gesetz #0). Wahl: ?holz=<name> > localStorage anazhHolz >
+// AUTO (Software-Adapter [swiftshader/llvmpipe/lavapipe] → kienspan).
+AnazhRealm.HOLZ_PROFILE = Object.freeze({
+    voll: Object.freeze({ ring: 4, shadowRange: 170, farWater: null, pixelCap: 2, antialias: true }),
+    nah: Object.freeze({ ring: 3, shadowRange: 110, farWater: false, pixelCap: 1.25, antialias: true }),
+    kienspan: Object.freeze({ ring: 2, shadowRange: 0, farWater: false, pixelCap: 1, antialias: false }),
+});
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 // W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
 // Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +

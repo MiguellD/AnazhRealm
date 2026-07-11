@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.452 — ULTRAGUSS VOLLZOGEN)
+## Stand (V18.453 — JEDES-HOLZ)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
@@ -30,8 +30,13 @@ byte-gleich) · U6c (Snap/Brandwand/metaParams in fachwerk-core, Goldens byte-tr
 Stamm-Rig-Konvergenz 6-KH — alles braucht Render/Auge = DIE Schöpfer-Runde) · typeof-Voll-Wanderung.
 Davor: SYNERGIE (V18.448 — EINE
 Export-Form `PARAMS_BY_KIND`, EIN Umschlag `get-book`, EIN Ingest) · Nervensystem/Katalysator/Trias
-(V18.434–.447). **OFFEN:** die eine Schöpfer-Browser-Runde (W8-Abnahme + LOOK-Stau) · W9 Himmel 1:1 ·
-W10 Wasser-Oberfläche 1:1 (`docs/roadmap.md` §0).
+(V18.434–.447). **JEDES-HOLZ (V18.453):** die HOLZ-LEITER (`HOLZ_PROFILE` voll·nah·kienspan =
+Ferne-Deckel, Nähe IMMER voll; `?holz=` > localStorage > AUTO-Adapter-Probe) · der EXISTENZ-BODEN
+(`RING_EXIST_FLOOR=2`: der Ring wächst bis dorthin OHNE Kopfraum-Gate, Schrumpf endet dort — die
+Welt ENTSTEHT auf jedem Holz) · Device-Loss-Wächter (LAUT + Gate + Render-Stopp statt Weißwelt-
+Lüge) · das HOLZ-AUGE (`scripts/diag-holz-auge.cjs`: RTT statt Swap-Chain + manueller Dawn-
+Readback — echte Augen auf Present-losem Holz). **OFFEN:** die eine Schöpfer-Browser-Runde
+(W8-Abnahme + LOOK-Stau) · W9 Himmel 1:1 · W10 Wasser-Oberfläche 1:1 (`docs/roadmap.md` §0).
 
 ## Architektur (die Karte — voll: docs/archiv/claude-md-v18448-snapshot.md)
 
@@ -69,7 +74,9 @@ W10 Wasser-Oberfläche 1:1 (`docs/roadmap.md` §0).
 12. **Monolith-Chirurgie:** `cut-method` (AST-sicher) · sofort `node --check` + eslint ·
     seriell committen, nie Batch; worktree-Agenten zweigen von main ab (falsche Naht bei Feature-Branch).
 13. **Der Loop/Regler:** Streaming ist heilig (prio 0), Bewegung hängt nie am Render-Signal;
-    EIN PID, Totband 59–77 fps; NaN-Wände vor jedem EWMA-Gedächtnis.
+    EIN PID, Totband 59–77 fps; NaN-Wände vor jedem EWMA-Gedächtnis; Existenz vor Framerate —
+    der Ring wächst bis `RING_EXIST_FLOOR` OHNE fps-Gate (sonst entsteht die Welt auf schwachem
+    Holz NIE), der PID atmet nur darüber.
 14. **Schwere deterministische Arbeit:** gecacht + im Idle vorgebacken + frame-adaptiv, nie synchron
     auf dem Interaktions-Pfad.
 

@@ -22961,6 +22961,112 @@ async function checkBandWellePerfENexusGovernor(ctx) {
     );
 }
 
+// JEDES-HOLZ — DER EXISTENZ-BODEN der Ring-Ramp: auf Holz, dessen Frame ab Bild 1
+// über dem Totband liegt (Software-Rasterizer, alte iGPU), wartete das Kopfraum-
+// Gate der V18.318-Ramp EWIG → Ring 0 → die Welt entstand NIE (gemessen: Kienspan-
+// Boot chunks=1 für immer). Der Boden RING_EXIST_FLOOR garantiert die Existenz:
+// bis dorthin wächst der Ring OHNE fps-Bedingung (geordnet: settled + kein Rückstau
+// + Atem), und der Schrumpf-Pfad endet dort. Der PID atmet NUR darüber.
+async function checkBandJedesHolzExistenzBoden(ctx) {
+    const { page, check } = ctx;
+    const res = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const A = r.constructor;
+        const out = {};
+        out.hasFloor = Number.isFinite(A.RING_EXIST_FLOOR) && A.RING_EXIST_FLOOR >= 1;
+        // KONSUM (source-probe, kommentar-frei): die Ramp liest den Boden in Wachs- UND Schrumpf-Pfad.
+        const src = window.__codeOf(r._nexusPerfActuate);
+        out.rampConsumesFloor = /RING_EXIST_FLOOR/.test(src) && /ringFloor/.test(src);
+        // Fixture: schwaches Holz — frameMs 50 (≈20 fps) ab dem ersten Bild, NIE Kopfraum.
+        const snap = {
+            renderer: st.renderer,
+            active: st._activeRingRadius,
+            target: st.chunkRingRadius,
+            pend: st.voxelMeshPending,
+            grass: st.pendingGrass,
+            rampLast: st._ringRampLast,
+            head: st._ringHeadroomSince,
+            over: st._ringOverBudgetSince,
+            boot: st._ringBootWindowUntil,
+            overB: st._frameOverBudget,
+            streamMs: st._voxelStreamBudgetMs,
+            streamN: st._voxelStreamMaxPerFrame,
+            built: r._builtRingRadius,
+            shadowApplied: r._shadowRangeApplied,
+        };
+        try {
+            st.renderer = { _isHeadlessNull: false }; // die ECHTE Ramp (nicht der Headless-Instant-Pfad)
+            r._builtRingRadius = () => 12; // Bau-Stub: das Band beweist die RAMP-Entscheidung, nicht den Bau
+            st.chunkRingRadius = 4; // Ziel ÜBER dem Boden — der Boden darf nie übers Ziel
+            st.voxelMeshPending = new Set();
+            st.pendingGrass = new Set();
+            st._frameOverBudget = false;
+            st._activeRingRadius = 0;
+            st._ringHeadroomSince = 0;
+            st._ringOverBudgetSince = 0;
+            st._ringBootWindowUntil = 0;
+            const weakSense = () => ({
+                loadScale: 0.3,
+                frameMs: 50,
+                renderCalls: 100,
+                phase: { streaming: 1, render: 1, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
+            });
+            const grown = [];
+            for (let i = 0; i < 4; i++) {
+                st._ringRampLast = performance.now() - (A.RING_RAMP_SETTLE_MS + 50); // der Atem ist verstrichen
+                r._nexusPerfActuate(weakSense());
+                grown.push(st._activeRingRadius);
+            }
+            out.grownPath = grown.join(",");
+            // OHNE Kopfraum wächst der Ring GENAU bis zum Boden — die Welt ENTSTEHT, aber der
+            // PID behält die Hoheit darüber (kein Wachsen über den Boden bei Dauerlast):
+            out.growsToFloor = grown[grown.length - 1] === A.RING_EXIST_FLOOR;
+            out.neverAboveFloor = grown.every((g) => g <= A.RING_EXIST_FLOOR);
+            // Der Schrumpf-Pfad endet am Boden: anhaltende Überlast von oben (Boden+1) → Boden, nie tiefer.
+            st._activeRingRadius = A.RING_EXIST_FLOOR + 1;
+            st._frameOverBudget = true;
+            for (let i = 0; i < 3; i++) {
+                st._ringOverBudgetSince = performance.now() - (A.RING_SHRINK_SUSTAIN_MS + 100);
+                st._ringRampLast = performance.now() - (A.RING_RAMP_SETTLE_MS + 50);
+                r._nexusPerfActuate(weakSense());
+            }
+            out.shrinkStopsAtFloor = st._activeRingRadius === A.RING_EXIST_FLOOR;
+        } catch (e) {
+            out.error = e.message;
+        } finally {
+            st.renderer = snap.renderer;
+            r._builtRingRadius = snap.built;
+            st._activeRingRadius = snap.active;
+            st.chunkRingRadius = snap.target;
+            st.voxelMeshPending = snap.pend;
+            st.pendingGrass = snap.grass;
+            st._ringRampLast = snap.rampLast;
+            st._ringHeadroomSince = snap.head;
+            st._ringOverBudgetSince = snap.over;
+            st._ringBootWindowUntil = snap.boot;
+            st._frameOverBudget = snap.overB;
+            st._voxelStreamBudgetMs = snap.streamMs;
+            st._voxelStreamMaxPerFrame = snap.streamN;
+            if (Number.isFinite(snap.shadowApplied)) r._applyEffectiveShadowRange(snap.shadowApplied);
+        }
+        return out;
+    });
+    if (res.error) {
+        check("JEDES-HOLZ: Existenz-Boden-Band (realm)", false, res.error);
+        return;
+    }
+    check("JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1) + die Ramp KONSUMIERT ihn (Wachs- und Schrumpf-Pfad)", res.hasFloor && res.rampConsumesFloor);
+    check(
+        `JEDES-HOLZ: ohne Kopfraum (frameMs 50 ab Bild 1) wächst der Ring GENAU bis zum Existenz-Boden (${res.grownPath}) — die Welt ENTSTEHT auf jedem Holz, der PID regiert darüber`,
+        res.growsToFloor && res.neverAboveFloor
+    );
+    check(
+        "JEDES-HOLZ: der Schrumpf-Pfad endet am Existenz-Boden — anhaltende Überlast gibt die Fern-Schale zurück, NIE die Existenz-Welt",
+        res.shrinkStopsAtFloor
+    );
+}
+
 // DETERMINISMUS-BOGEN P3 — das Lazy-Proxy-Collision-Band (V12.0-perf.d.2) ist
 // ENTFERNT: die Ammo-Ära baute einen Kollisions-Body nur innerhalb eines kleinen
 // Collision-Radius (~90 m, lazy add/free je Spieler-Distanz). Mit Ammo weg ist die
@@ -57478,6 +57584,8 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWellePerfDBudget, ctx);
             // V12.0-perf.e — Nexus → adaptiver Qualitäts-Governor (Wurzel D).
             await timed(checkBandWellePerfENexusGovernor, ctx);
+            // JEDES-HOLZ — der Existenz-Boden der Ring-Ramp (die Welt entsteht auf jedem Holz).
+            await timed(checkBandJedesHolzExistenzBoden, ctx);
             // V12.0-perf.h — Wasser-Iso deferred-Queue (Streaming-Hitch-Heilung).
             await timed(checkBandWellePerfHWaterIsoQueue, ctx);
             // V9.89 — Welle Perf-3.c Phase 1 Worker-Foundation + Determinismus.

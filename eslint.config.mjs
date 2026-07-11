@@ -22,6 +22,8 @@ export default [
                 URL: "readonly",
                 console: "readonly",
                 localStorage: "readonly",
+                location: "readonly", // JEDES-HOLZ: _holzWahl liest ?holz= aus der URL
+                URLSearchParams: "readonly",
                 fetch: "readonly",
                 FileReader: "readonly",
                 setTimeout: "readonly",
