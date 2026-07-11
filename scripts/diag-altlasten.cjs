@@ -187,6 +187,12 @@ const ZWILLINGE = [
         verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
+    {
+        fingerprint: "len * 0.5 + bulge * 0.25",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["anazhRealm.js"],
+        fiel: "U7 — die fusiforme Muskel-Spindel (MUSC-Atlas) wohnt im Gesetzbuch (humanSkeleton)",
+    },
 ];
 
 function scanZwillinge() {
