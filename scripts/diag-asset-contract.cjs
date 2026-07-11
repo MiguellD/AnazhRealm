@@ -78,16 +78,19 @@ function meshDiff(tag, gold, live) {
     let ok = 0;
     await runWithWorker(PORT, async ({ build, getData }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
-        for (const [type, key] of [
-            ["get-recipes", "recipes"],
-            ["get-world-params", "world-params"],
-            ["get-render-config", "render-config"],
+        // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
+        // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
+        // bleiben die BYTE-Wahrheit der Payloads (nur der Umschlag wechselte).
+        const bookReply = await getData("get-book");
+        for (const [key, field] of [
+            ["recipes", "book"],
+            ["world-params", "worldParams"],
+            ["render-config", "renderConfig"],
         ]) {
             const goldPath = path.join(DIR, key + ".json");
             if (!fs.existsSync(goldPath)) continue;
             const gold = fs.readFileSync(goldPath, "utf8").trim();
-            const d = await getData(type);
-            const live = JSON.stringify(key === "recipes" ? d.book : d.params || d.config);
+            const live = JSON.stringify(bookReply[field]);
             if (live !== gold) fails.push(`${key}: divergiert vom eingefrorenen JSON`);
         }
         for (const f of files) {

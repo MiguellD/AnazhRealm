@@ -86,9 +86,7 @@ if (typeof sandbox.onmessage !== "function") {
     process.exit(1);
 }
 const send = (msg) => sandbox.onmessage({ data: msg });
-send({ type: "get-recipes", reqId: "r" });
-send({ type: "get-world-params", reqId: "w" });
-send({ type: "get-render-config", reqId: "c" });
+send({ type: "get-book", reqId: "r" }); // SYNERGIE-WELLE: der EINE Umschlag
 send({ type: "build-asset", reqId: "a1", presetId: "eiche", seed: 7, lod: 0, season: "summer" });
 send({ type: "build-asset", reqId: "a2", presetId: "eiche", seed: 7, lod: 0, season: "summer" });
 send({ type: "build-asset", reqId: "a3", presetId: "tanne", seed: 12345, lod: 1, season: "autumn" });
@@ -101,9 +99,9 @@ const rec = by.r,
 console.log("Rezepte:", rec && rec.book ? Object.keys(rec.book).length + " Presets ✅" : "❌");
 console.log(
     "World-Params:",
-    by.w && by.w.params && by.w.params.ground ? "✅" : "❌",
+    by.r && by.r.worldParams && by.r.worldParams.ground ? "✅" : "❌",
     "· Render-Config:",
-    by.c && by.c.config ? "✅" : "❌"
+    by.r && by.r.renderConfig ? "✅" : "❌"
 );
 const tot = (m, f) => m.reduce((s, x) => s + (x[f] && x[f].array ? x[f].array.length : 0), 0);
 if (!a1 || !a1.meshes || !a1.meshes.length) {

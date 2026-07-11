@@ -101,7 +101,7 @@ function loadCore(entry) {
             " build: N.buildInstance || null," +
             " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
-            " params: N.PARAMS || null," +
+            " paramsByKind: N.PARAMS_BY_KIND || null," +
             " lehren: N.LEHREN || null }; })();";
     } else {
         code +=
@@ -111,7 +111,7 @@ function loadCore(entry) {
             " build: typeof buildInstance !== 'undefined' ? buildInstance : null," +
             " meshfrei: typeof MESHFREI !== 'undefined' && MESHFREI === 1," +
             " cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null," +
-            " params: typeof PARAMS !== 'undefined' ? PARAMS : null," +
+            " paramsByKind: typeof PARAMS_BY_KIND !== 'undefined' ? PARAMS_BY_KIND : null," +
             " lehren: typeof LEHREN !== 'undefined' ? LEHREN : null };";
     }
     vm.runInContext(code, ctx, { timeout: 30000, filename: entry.file });
@@ -167,14 +167,26 @@ function validateManifest(m) {
                 if (!(typeof pl.rarity[k] === "number" && pl.rarity[k] > 0 && pl.rarity[k] <= 1))
                     v.push(`B3: placement.rarity.${k} muss in (0,1] liegen`);
     }
-    if (m.params) {
-        if (!Array.isArray(m.params)) v.push("B4: PARAMS ist kein Array");
+    // SYNERGIE-WELLE (v1.2) — DIE EINE B4-FORM: die Regler-Tabellen reisen als MAP
+    // PARAMS_BY_KIND ({ <kind>: rows }) — auch Ein-Kind-Kerne. Das flache PARAMS ist
+    // GEFALLEN (ein Kern, der es noch truege, wuerde schlicht nicht validiert —
+    // must-ignore; die Werkstatt saehe keine Regler → der Bau-Fehler wird sichtbar).
+    if (m.paramsByKind) {
+        if (typeof m.paramsByKind !== "object" || Array.isArray(m.paramsByKind))
+            v.push("B4: PARAMS_BY_KIND ist keine Map { kind: rows[] }");
         else
-            for (const p of m.params) {
-                if (!p || typeof p.id !== "string" || typeof p.lab !== "string")
-                    v.push("B4: PARAMS-Eintrag ohne id/lab");
-                else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max))
-                    v.push(`B4: PARAMS "${p.id}" min/max ungültig`);
+            for (const kind in m.paramsByKind) {
+                const rows = m.paramsByKind[kind];
+                if (!Array.isArray(rows)) {
+                    v.push(`B4: PARAMS_BY_KIND.${kind} ist kein Array`);
+                    continue;
+                }
+                for (const p of rows) {
+                    if (!p || typeof p.id !== "string" || typeof p.lab !== "string")
+                        v.push(`B4: PARAMS_BY_KIND.${kind}-Eintrag ohne id/lab`);
+                    else if (!(typeof p.min === "number" && typeof p.max === "number" && p.min < p.max))
+                        v.push(`B4: PARAMS_BY_KIND.${kind} "${p.id}" min/max ungültig`);
+                }
             }
     }
     if (m.lehren) {

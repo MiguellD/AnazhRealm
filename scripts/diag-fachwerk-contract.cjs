@@ -126,7 +126,7 @@ function shellPfad(name, seed, stufe) {
     const kp = FC.kulturParams(name, FC.LAB_SEED);
     // ≡ hausParams-Basis: B4-Defaults + terrain:0, dann die Kultur-Felder (applyKultur → readParams).
     const p = { terrain: 0, seed: seed };
-    for (const row of FC.PARAMS) p[row.id] = row.def;
+    for (const row of FC.PARAMS_BY_KIND.haus) p[row.id] = row.def;
     p.W = kp.W;
     p.D = kp.D;
     p.pitchDeg = kp.pitchDeg;

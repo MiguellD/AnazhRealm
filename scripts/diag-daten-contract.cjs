@@ -48,7 +48,7 @@ function loadCore(file, ns) {
 }
 
 function canonical(N) {
-    return JSON.stringify({ PRESETS: N.PRESETS, PARAMS: N.PARAMS });
+    return JSON.stringify({ PRESETS: N.PRESETS, PARAMS_BY_KIND: N.PARAMS_BY_KIND });
 }
 
 // Reine Schema-Prüfung → Verletzungsliste (auch der Selbst-Test ruft sie).
@@ -62,7 +62,8 @@ function validateDaten(N, spec) {
     const ids = Object.keys(P);
     if (ids.length < spec.minRezepte) v.push(`B1: nur ${ids.length} Rezepte (< ${spec.minRezepte})`);
     const bands = {};
-    for (const row of N.PARAMS || []) bands[row.id] = row;
+    // SYNERGIE-WELLE (v1.2) — DIE EINE B4-FORM: PARAMS_BY_KIND (Map), das flache PARAMS fiel.
+    for (const row of (N.PARAMS_BY_KIND && N.PARAMS_BY_KIND[spec.kind]) || []) bands[row.id] = row;
     for (const id of ids) {
         const r = P[id];
         if (!/^[a-z0-9_-]+$/.test(id)) v.push(`B1: id "${id}" verletzt den Namensraum`);
@@ -129,7 +130,7 @@ function validateDaten(N, spec) {
         console.log("=== SELBST-TEST: die Daten-Vertrags-Linse feuert ===");
         const N = loadCore(CORES[0].file, CORES[0].ns);
         // V1: Schema-Verletzung (bpm 0 + kaputte dna) wird erkannt.
-        const broken = JSON.parse(JSON.stringify({ PRESETS: N.PRESETS, PARAMS: N.PARAMS }));
+        const broken = JSON.parse(JSON.stringify({ PRESETS: N.PRESETS, PARAMS_BY_KIND: N.PARAMS_BY_KIND }));
         broken.STUDIO_VERTRAG = 1;
         broken.MESHFREI = 1;
         broken.PRESETS.lofi.fx.klang.bpm = 0;
@@ -143,7 +144,7 @@ function validateDaten(N, spec) {
         check("Selbst-Test 2: korruptes Golden wird erkannt", sha(canonical(N)) !== "deadbeef");
         // V3: motion-Schema feuert (ein String im Profil).
         const T = loadCore(CORES[2].file, CORES[2].ns);
-        const brokenT = JSON.parse(JSON.stringify({ PRESETS: T.PRESETS, PARAMS: T.PARAMS }));
+        const brokenT = JSON.parse(JSON.stringify({ PRESETS: T.PRESETS, PARAMS_BY_KIND: T.PARAMS_BY_KIND }));
         brokenT.STUDIO_VERTRAG = 1;
         brokenT.MESHFREI = 1;
         brokenT.PRESETS.wolf.fx.motion.presets.idle.freq = "kaputt";

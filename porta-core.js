@@ -359,7 +359,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS: PARAMS,
+        PARAMS_BY_KIND: { gate: PARAMS },
         SLIDERS: SLIDERS,
         pk: pk,
         gateParams: gateParams,

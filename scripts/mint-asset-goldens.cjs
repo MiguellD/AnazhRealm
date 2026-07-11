@@ -43,13 +43,14 @@ const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
     const manifest = { cv: 1, mintedCases: CASES.length, files: {} };
     await runWithWorker(PORT, async ({ build, getData }) => {
         // Die drei Daten-Kanäle einfrieren (reine Daten, JSON — der Vertrag normiert sie).
-        for (const [type, key] of [
-            ["get-recipes", "recipes"],
-            ["get-world-params", "world-params"],
-            ["get-render-config", "render-config"],
+        // SYNERGIE-WELLE — der EINE Umschlag (get-book) traegt die drei Payloads.
+        const bookReply = await getData("get-book");
+        for (const [field, key] of [
+            ["book", "recipes"],
+            ["worldParams", "world-params"],
+            ["renderConfig", "render-config"],
         ]) {
-            const d = await getData(type);
-            const body = key === "recipes" ? d.book : d.params || d.config;
+            const body = bookReply[field];
             const json = JSON.stringify(body);
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
             manifest.files[key + ".json"] = crypto.createHash("sha256").update(json).digest("hex");

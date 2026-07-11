@@ -7622,15 +7622,14 @@ class AnazhRealm {
     }
 
     _p2pMsgAura(msg, p2p) {
-        // Ring 11 V3 — Aura-Sync. Dominante Tag-Hue + Intensität (~1 Hz).
-        const pid = msg.peerId;
+        // SYNERGIE-WELLE — DIE AVATAR-AURA IST GEFALLEN (Schoepfer „wir brauchen in
+        // anazh weder eine avatar aura…"): der Handler bleibt als must-ignore-Stub
+        // (Taille-Gesetz — ALT-Peers senden weiterhin ~1-Hz-aura-Messages; sie
+        // duerfen nie crashen), rendert aber nichts mehr und haelt keinen Zustand.
+        const pid = msg && msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
-        const entry = this._p2pEnsurePeerEntry(pid);
-        const hue = Number(msg.hue);
-        const intensity = Number(msg.intensity);
-        if (Number.isFinite(hue)) entry.auraHue = hue;
-        if (Number.isFinite(intensity)) entry.auraIntensity = intensity;
-        entry.lastSeen = performance.now() / 1000;
+        const entry = p2p.peers && p2p.peers.get(pid);
+        if (entry) entry.lastSeen = performance.now() / 1000;
     }
 
     _p2pMsgVibe(msg, p2p) {
@@ -7835,9 +7834,6 @@ class AnazhRealm {
             avatarName: null,
             walkPhase: 0,
             lastMovedAt: 0,
-            auraHue: null,
-            auraIntensity: 0,
-            auraGlow: null,
             nameLabel: null,
             // W13 Phase 3 — Vibe-Pass-Identität des Peers. vibePassId ist der
             // behauptete öffentliche ed25519-Schlüssel; vibeVerified wird erst
@@ -7938,28 +7934,6 @@ class AnazhRealm {
         obj.traverse((node) => {
             if (node.geometry) this._queueDispose(node.geometry);
         });
-    }
-
-    // Ring 11 V3 — Aura-Sprite eines Peers. Teilt die gecachte Gradient-
-    // Textur mit dem Spieler-Aura-Sprite. Anders als der lokale Aura-Sprite
-    // ist die Peer-Aura IMMER sichtbar — der 1st-Person-Hide gilt nur die
-    // eigene Kamera, ein Mitspieler sieht meine Aura immer.
-    _p2pEnsurePeerAura(entry) {
-        if (entry.auraGlow) return entry.auraGlow;
-        if (typeof THREE === "undefined" || !this.state.scene) return null;
-        const mat = new THREE.SpriteMaterial({
-            map: this._buildAuraGradientTexture(),
-            color: 0xffffff,
-            blending: THREE.AdditiveBlending,
-            transparent: true,
-            opacity: 0.6,
-            depthWrite: false,
-        });
-        const sprite = new THREE.Sprite(mat);
-        sprite.scale.set(3.0, 3.0, 1);
-        this.state.scene.add(sprite);
-        entry.auraGlow = sprite;
-        return sprite;
     }
 
     // Ring 11 V3 — Name-Schild über dem Peer. Eine CanvasTexture mit dem
@@ -8076,18 +8050,6 @@ class AnazhRealm {
                 def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
             }
         }
-        // Aura — immer sichtbar (Peer-Aura ignoriert den lokalen Kamera-Hide).
-        if (entry.auraHue !== null) {
-            const glow = this._p2pEnsurePeerAura(entry);
-            if (glow) {
-                glow.position.set(entry.x, entry.y + 0.5, entry.z);
-                glow.material.color.setHSL((((entry.auraHue % 360) + 360) % 360) / 360, 0.78, 0.5);
-                const intensity = Math.max(0, Math.min(1, entry.auraIntensity || 0));
-                glow.material.opacity = 0.4 + 0.5 * intensity;
-                const breath = 3.0 * (1 + Math.sin(t) * 0.05);
-                glow.scale.set(breath, breath, 1);
-            }
-        }
         // Name-Schild folgt über dem Kopf.
         if (entry.nameLabel) {
             entry.nameLabel.position.set(entry.x, entry.y + 2.3, entry.z);
@@ -8188,16 +8150,8 @@ class AnazhRealm {
         this.p2pSend(msg);
     }
 
-    // Ring 11 V3 — die eigene Aura (dominante Tag-Hue + Intensität) senden.
-    // Niedrigfrequent (~1 Hz, p2pTick) — die Aura pulsiert langsam, kein
-    // Frame-Sync nötig. Werte stammen aus tickPlayerAura.
-    _p2pBroadcastAura() {
-        if (!this.state.p2p || !this.state.p2p.enabled || !this.state.player) return;
-        const hue = this.state.player._auraHueOut;
-        const intensity = this.state.player._auraIntensityOut;
-        if (typeof hue !== "number" || typeof intensity !== "number") return;
-        this.p2pSend({ type: "aura", hue, intensity });
-    }
+    // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: die Sende-Seite existiert
+    // nicht mehr (der Empfangs-Stub _p2pMsgAura bleibt must-ignore-tolerant).
 
     // W11 Phase 4 — Voice-Sync. Wenn der eigene Begleiter spricht (jeder Pfad
     // durch grokRender), den Text an alle Mitspieler senden — wie soul/aura
@@ -8296,11 +8250,6 @@ class AnazhRealm {
             if (this.state.scene) this.state.scene.remove(entry.mesh);
             this._p2pDisposeMesh(entry.mesh);
         }
-        if (entry.auraGlow) {
-            if (this.state.scene) this.state.scene.remove(entry.auraGlow);
-            // V10.0-j.e — Material-Dispose deferred (WebGPU Submit-Race).
-            if (entry.auraGlow.material) this._queueDispose(entry.auraGlow.material);
-        }
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
             if (entry.nameLabel.material) {
@@ -8344,7 +8293,6 @@ class AnazhRealm {
         // Frame-Sync nötig).
         if (currentTimeMs - (p2p._lastAuraBroadcast || 0) > 1000) {
             p2p._lastAuraBroadcast = currentTimeMs;
-            this._p2pBroadcastAura();
         }
         // Kreatur-Sicht-Sync — die eigenen Kreatur-Positionen ~5,5 Hz
         // streamen (Kreaturen bewegen sich gemächlich, kein Frame-Sync nötig).
@@ -43606,82 +43554,6 @@ class AnazhRealm {
     // weicht der C6-Haut; tiefer ersetzt = schneidbar). `_buildAuraGradientTexture`
     // unten bleibt — die PEER-Aura (p2p) ist ihr lebender Konsument.
 
-    // Welle 6.D Etappe 3b V4 — Radial-Gradient-Texture für den Aura-Sprite.
-    // Einmalig erzeugt + gecached. 128×128 Canvas mit fünf-Stop-Gradient von
-    // weiß-translucent (Mitte) → komplett transparent (Rand). Im Sprite mit
-    // AdditiveBlending werden die hellen Mitte-Pixel zu echtem Leuchten,
-    // während die transparenten Rand-Pixel sanft verschmelzen — kein
-    // harter Kontur-Cutoff mehr.
-    _buildAuraGradientTexture() {
-        if (this._auraGradientTexture) return this._auraGradientTexture;
-        if (typeof document === "undefined" || typeof THREE === "undefined") return null;
-        const size = 128;
-        const canvas = document.createElement("canvas");
-        canvas.width = canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-        gradient.addColorStop(0.0, "rgba(255,255,255,0.55)");
-        gradient.addColorStop(0.25, "rgba(255,255,255,0.38)");
-        gradient.addColorStop(0.55, "rgba(255,255,255,0.16)");
-        gradient.addColorStop(0.85, "rgba(255,255,255,0.04)");
-        gradient.addColorStop(1.0, "rgba(255,255,255,0.0)");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, size, size);
-        const tex = new THREE.CanvasTexture(canvas);
-        // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded.
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.needsUpdate = true;
-        this._auraGradientTexture = tex;
-        return tex;
-    }
-
-    // C6 (gigant-plan §5) — DIE AURA WIRD HAUT: ein Fresnel-Schimmer auf den
-    // Soul-Parts (Kanten-Glimmen in Aura-Hue, ∝ Intensität, atmet mit) statt
-    // einer folgenden Glow-Lampe. Implementiert als SHELL-Kinder AM Part-Mesh
-    // (Enkel der Soul-Group → der children[i]↔parts[i]-Motion-Vertrag bleibt
-    // heil, die Shells ERBEN jede Gelenk-/Gait-Bewegung gratis). EIN additives
-    // NodeMaterial pro Spieler (Uniforms hue/intensity — dieselbe Quelle
-    // `_auraHueOut`/`_auraIntensityOut` wie der P2P-Sync: eine Quelle, neuer
-    // Leser). Geometrie wird GETEILT (kein Copy — nur scale 1.05 am Shell).
-    _ensureAuraSkinShells() {
-        const pm = this.state.playerMesh;
-        if (!pm || typeof THREE === "undefined" || !THREE.TSL) return null;
-        const soulKey = (this.state.player && this.state.player.soul) || "";
-        if (pm.userData._auraShellSoul === soulKey && this.state.auraSkinUniforms) return this.state.auraSkinUniforms;
-        if (!this.state.auraSkinUniforms) {
-            const T = THREE.TSL;
-            const colorU = T.uniform(new THREE.Color(0.5, 0.8, 1.0));
-            const intensityU = T.uniform(0.5);
-            const mat = new THREE.MeshBasicNodeMaterial({
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false,
-            });
-            const vd = T.cameraPosition.sub(T.positionWorld).normalize();
-            const fres = T.normalWorld.dot(vd).abs().oneMinus().clamp(0.0, 1.0).pow(2.5);
-            mat.colorNode = T.vec4(colorU.mul(fres.mul(intensityU)), 1.0);
-            this.state.auraSkinUniforms = { color: colorU, intensity: intensityU, material: mat };
-        }
-        // Shells (re-)bauen: alte abwerfen, pro Part-Mesh ein skaliertes Shell-Kind.
-        for (const kid of pm.children) {
-            if (!kid || !kid.children) continue;
-            for (const sub of [...kid.children]) {
-                if (sub && sub.userData && sub.userData._auraShell) kid.remove(sub);
-            }
-        }
-        for (const kid of pm.children) {
-            if (!kid || !kid.isMesh || !kid.geometry) continue;
-            const shell = new THREE.Mesh(kid.geometry, this.state.auraSkinUniforms.material);
-            shell.scale.setScalar(1.05);
-            shell.userData._auraShell = true;
-            shell.castShadow = false;
-            shell.receiveShadow = false;
-            kid.add(shell);
-        }
-        pm.userData._auraShellSoul = soulKey;
-        return this.state.auraSkinUniforms;
-    }
-
     // C3 (gigant-plan §5) — RÜSTUNG AM AVATAR SICHTBAR: die getragene armor als
     // Kind-Gruppe der Soul-Group (derselbe `_buildFromBlueprint`-Pfad — KEIN
     // neues Render-System), auf ~60 % Körperhöhe skaliert, am Torso zentriert.
@@ -43733,106 +43605,6 @@ class AnazhRealm {
             pm.userData._wornArmorMesh = g;
         } catch (_e) {
             /* Rüstungs-Optik ist Deko — nie den Loop reißen */
-        }
-    }
-
-    tickPlayerAura() {
-        if (!this.state.playerMesh || !this.state.player) return;
-        if (typeof THREE === "undefined") return;
-        // Dominante Tag-Achse aus den Final-Tags (inkl. Boosts + Equipped).
-        const tags = this.state.player.statTags || {};
-        let bestKey = "lebendig";
-        let bestVal = 0;
-        for (const k of Object.keys(AnazhRealm.AURA_TAG_HUE)) {
-            const v = tags[k] || 0;
-            if (v > bestVal) {
-                bestVal = v;
-                bestKey = k;
-            }
-        }
-        const hue = AnazhRealm.AURA_TAG_HUE[bestKey] || 0;
-        const hpMax = this.state.player.hpMax || 100;
-        const hpRatio = hpMax > 0 ? Math.max(0.05, Math.min(1, (this.state.player.hp || 0) / hpMax)) : 1;
-        // Aura-Farbe + Helligkeits-Faktor aus HP. Voll-HP = klar leuchtend,
-        // niedrig-HP = blasser + dunkler (Saturation × hpRatio).
-        const auraSat = 0.85 * hpRatio;
-        const auraLit = 0.5;
-        const auraColor = new THREE.Color().setHSL(hue / 360, auraSat, auraLit);
-        // Ring 11 V3 — dominante Hue + Intensität cachen, damit p2pTick sie im
-        // Aura-Sync an die Mitspieler senden kann (~1 Hz). intensity ist
-        // hpRatio × Tag-Stärke — 0..1, der Empfänger rendert daraus die Opacity.
-        const auraStrength = Math.min(1, bestVal / 1.5);
-        this.state.player._auraHueOut = hue;
-        this.state.player._auraIntensityOut = hpRatio * auraStrength;
-        // (a) ENTFERNT (V18.105, Schöpfer-Sign-off 10.06.: „Hautschimmer passt,
-        // Leuchtkugel kann weg, die mich verfolgt"): der V4-Glow-Sprite ist durch
-        // die C6-HAUT (Fresnel-Shells unten) TIEFER ersetzt — die Saat-Regel
-        // erlaubt den Schnitt. Die Radial-Gradient-Texture bleibt (die PEER-Aura
-        // teilt sie); ein etwaiger Alt-Sprite einer laufenden Session wird geräumt.
-        if (this.state.playerAuraGlow) {
-            if (this.state.scene) this.state.scene.remove(this.state.playerAuraGlow);
-            this.state.playerAuraGlow = null;
-        }
-        // C6 — die HAUT schimmert: Fresnel-Shells in Aura-Hue, atmet mit dem Puls.
-        const skin = this._ensureAuraSkinShells();
-        if (skin) {
-            const pulse = 1 + Math.sin(performance.now() * 0.0012) * 0.18;
-            skin.color.value.copy(auraColor);
-            skin.intensity.value = Math.min(1.2, (0.25 + 0.75 * hpRatio * auraStrength) * pulse);
-        }
-        // C3 — die getragene Rüstung sichtbar am Körper (lazy, nur bei Wechsel).
-        this._tickWornArmorVisual();
-        // (b) Sub-Mesh-Tint dezent: 15 % Mix, damit Original-Farbe vorranig
-        // bleibt aber das Leuchten in die Materialien hineinwirkt.
-        // V12.0-f.1 hatte einen Anti-Drift-Cache pro MATERIAL eingeführt (gegen
-        // die Shared-Material-Kreuz-Kontamination über die 6 Körperteile). Das
-        // war korrekt, traf aber NICHT die Weiß-Wurzel.
-        // V12.0-f.2 — die ECHTE Wurzel (empirisch via diag-avatar-color.cjs):
-        // ein sRGB↔Linear-Mismatch. Der alte Tint zerlegte den Basis-Hex
-        // (#c0392b) in sRGB-Floats (0.753, 0.224, 0.169) und schrieb sie via
-        // `setRGB(r,g,b)`. Seit V12.0-vendor.3 ist `ColorManagement.enabled =
-        // true` → `setRGB` interpretiert die Werte als LINEAR (workingColorSpace).
-        // sRGB-Magnitude-Zahlen in einen Linear-Slot → beim Display-Convert
-        // (linear→sRGB) werden sie viel heller: das tiefe Rot #c0392b rendert
-        // als blasses Lachsrosa #e47c6e → der Avatar wirkte „weiß/verwaschen".
-        // Unsichtbar bis V12.0-f (V10.0-g-Workaround buk die Farbe statisch in
-        // den colorNode, material.color wurde ignoriert) UND bis V12.0-vendor.3
-        // (ColorManagement war vorher aus → setRGB == sRGB == Display).
-        // Heilung: die Mathematik konsistent über THREE.Color rechnen — `setHex`
-        // (sRGB→working) für die Basis, `multiplyScalar(darken)` + `lerp(aura,
-        // mix)` im selben Arbeitsraum. Formel identisch (base·(1−mix)·darken +
-        // aura·mix), nur farbraum-konsistent. THREE.Color managed sRGB↔Linear.
-        const auraMix = 0.15;
-        const darken = 0.6 + 0.4 * hpRatio;
-        const baseScratch = this._auraTintBaseScratch || (this._auraTintBaseScratch = new THREE.Color());
-        const tintedMats = new Set();
-        this.state.playerMesh.traverse((node) => {
-            if (!node || !node.isMesh || !node.material || !node.material.color) return;
-            const mat = node.material;
-            if (mat.userData._auraBaseColor === undefined) {
-                // getHex() liefert sRGB-Hex (Default-ColorSpace) — die ehrliche
-                // Identitäts-Farbe, unabhängig vom internen Linear-Storage.
-                mat.userData._auraBaseColor = mat.color.getHex();
-            }
-            // Probe-Kompat: node.userData spiegelt den Material-Cache.
-            if (node.userData._auraBaseColor === undefined) {
-                node.userData._auraBaseColor = mat.userData._auraBaseColor;
-            }
-            if (tintedMats.has(mat)) return; // geteiltes Material: nur einmal/Frame
-            tintedMats.add(mat);
-            // setHex(sRGB-Hex) → Basis korrekt in den Arbeitsraum (Linear)
-            // konvertiert. auraColor (aus setHSL) + mat.color leben im selben
-            // Arbeitsraum → darken + lerp sind farbraum-konsistent.
-            baseScratch.setHex(mat.userData._auraBaseColor);
-            mat.color.copy(baseScratch).multiplyScalar(darken).lerp(auraColor, auraMix);
-        });
-        // Alten Boden-Torus aus Etappe 3b V1 säubern, falls noch da.
-        if (this.state.playerAura && this.state.scene) {
-            this.state.scene.remove(this.state.playerAura);
-            // V10.0-j.e — Defer dispose (player-aura updated bei jedem Soul-Tick).
-            this._queueDispose(this.state.playerAura.geometry);
-            this._queueDispose(this.state.playerAura.material);
-            this.state.playerAura = null;
         }
     }
 
@@ -56505,6 +56277,32 @@ class AnazhRealm {
         } catch (_e) {
             /* defensiv — ohne Körper-Saat bleibt der Katalog heil */
         }
+        // SYNERGIE-WELLE — „WERDE DAS TIER" (Schöpfer: die alten Körper „ersetzt durch
+        // avatar/menschenkörper und den kreaturen/tierkörper"): die skin-tragenden
+        // CREATURE_SOULS (Hirsch · Wolf · Fuchs · Bär · Glutwesen) spiegeln als
+        // TRAGBARE Körper-Baupläne — derselbe Spiegel wie die Seelen-Defs, derselbe
+        // GENERISCHE embody-Pfad (er liest nur role+parts, gemessen: kein
+        // koerper_-Sonderleser). Die frozen bodyParts sind die fail-soft-Wahrheit;
+        // die Gattungs-Dials formen die Welt-Instanz wie bei jeder Kreatur.
+        try {
+            const CS = AnazhRealm.CREATURE_SOULS || {};
+            for (const key of Object.keys(CS)) {
+                const cs = CS[key];
+                if (!cs || !cs.skin || !Array.isArray(cs.bodyParts) || !cs.bodyParts.length) continue;
+                const name = `koerper_${key}`;
+                if (builtinBodyBlueprints[name]) continue;
+                builtinBodyBlueprints[name] = {
+                    name,
+                    label: `${cs.label || key} (Körper)`,
+                    builtIn: true,
+                    role: "soul",
+                    roleManual: true,
+                    parts: JSON.parse(JSON.stringify(cs.bodyParts)),
+                };
+            }
+        } catch (_e) {
+            /* defensiv — ohne Tier-Körper-Saat bleibt der Katalog heil */
+        }
 
         // W12 Phase 2 — portalMeta aus der Welt-Registry (eine Quelle der
         // Wahrheit; je Bauplan eine eigene dsl-Kopie).
@@ -64399,27 +64197,16 @@ class AnazhRealm {
                         if (!m || typeof m !== "object") return;
                         if (m.type === "ready" && m.world === "terrain") {
                             f.ready = true;
-                            // ZUERST das Rezeptbuch + Welt-/Render-Daten durch den Worker ziehen, DANN die Assets
-                            // vorwaermen (derselbe Handshake wie das iframe, nur self.postMessage statt "*").
+                            // SYNERGIE-WELLE — DER EINE UMSCHLAG: das KOMPLETTE Studio-Buch (Rezepte +
+                            // B4-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Roundtrip
+                            // ziehen, DANN die Assets vorwaermen. Die drei Einzel-Kanaele sind
+                            // GEFALLEN — ein Kanal, ein Reply-Zweig, ein Ingest-Chokepoint.
                             try {
-                                worker.postMessage({ type: "get-recipes", reqId: "recipes" });
-                                // DIE BREITE TAILLE + DER WAHRNEHMUNGS-KANAL: Boden-/Fels-Palette + Blatt-Grundfarbe
-                                // sowie Sichtweite/LOD/Fades/Dichte/Understory durch den Worker ziehen — AnazhRealm
-                                // adoptiert sie 1:1 (der Schoepfer editiert das Studio, die Welt folgt).
-                                worker.postMessage({ type: "get-world-params", reqId: "wparams" });
-                                worker.postMessage({ type: "get-render-config", reqId: "rcfg" });
+                                worker.postMessage({ type: "get-book", reqId: "book" });
                             } catch (_e) {}
                             this._foundryPrefetchLibrary();
-                        } else if (m.type === "recipes") {
-                            // Das Studio-Rezeptbuch ist da: EINE Quelle, in AnazhRealms Blueprint gespeist.
-                            // W-A1 — die B4-Regler-Tabellen (paramsByKind) reisen im selben Reply mit.
-                            this._foundryIngestRecipes(m.book, m.paramsByKind);
-                        } else if (m.type === "world-params") {
-                            // Die Studio-Welt-Palette ist da: in AnazhRealms Boden-/Geologie-/Vegetations-Farbquellen.
-                            this._foundryIngestWorldParams(m.params);
-                        } else if (m.type === "render-config") {
-                            // Der Wahrnehmungs-Config ist da: Sichtweite/LOD/Fades/Dichte/Understory adoptiert.
-                            this._foundryIngestRenderConfig(m.config);
+                        } else if (m.type === "book") {
+                            this._foundryIngestBook(m);
                         } else if (m.type === "asset") {
                             const p = f.pending.get(m.reqId);
                             if (p) {
@@ -64458,6 +64245,18 @@ class AnazhRealm {
     // Das Studio-Rezeptbuch (PRESETS: je Preset die Regler `s` + Material/Form `fx`) durch das
     // Portal empfangen und als EINE Quelle halten. Der Blueprint liest hieraus (Rezeptbuch), statt
     // Werte hartzukodieren — ein Edit an PRESETS im Studio fliesst automatisch mit. Reine Daten.
+    // SYNERGIE-WELLE — DER EINE INGEST-CHOKEPOINT: das komplette Studio-Buch aus EINEM
+    // Umschlag (Kanal "get-book" → Reply "book"). Die drei benannten Fach-Ingests bleiben
+    // die Bausteine (Rezepte→Blueprint/AutoRegister · Welt-Palette→Farbquellen ·
+    // Wahrnehmung→LOD/Fog/Placement) — aber es gibt nur noch EINEN Kanal, EINEN
+    // Reply-Zweig und DIESE eine Reihenfolge. Jeder Baustein ist fail-soft bei null
+    // (must-ignore: ein Umschlag ohne Teilfeld laesst den Teil schlicht byte-alt).
+    _foundryIngestBook(m) {
+        if (!m || typeof m !== "object") return;
+        this._foundryIngestRecipes(m.book, m.paramsByKind);
+        this._foundryIngestWorldParams(m.worldParams);
+        this._foundryIngestRenderConfig(m.renderConfig);
+    }
     _foundryIngestRecipes(book, paramsByKind) {
         const f = this._foundry;
         if (!f || !book || typeof book !== "object") return;
@@ -81591,10 +81390,6 @@ class AnazhRealm {
                 // HP-Regen während aktiver Wandlung + Ablauf-Detection.
                 this.tickPhoenixDeath(currentTime);
 
-                // ### Player-Aura (Welle 6.D Etappe 3b) ###
-                // Position folgt playerMesh, Farbe aus dominanter Tag-Achse + HP%.
-                this.tickPlayerAura();
-
                 // ### Stats-HUD (Welle 6.X.4 B3) ###
                 // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
                 this.tickStatsHud(currentTime);
@@ -84517,23 +84312,9 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     defense: (t) => (t.dichte || 0) * 8 + (t.härte || 0) * 6,
 });
 
-// Welle 6.D Etappe 3b — Aura-Hue-Map: jede der 10 MATERIAL_TAG_KEYS bekommt
-// einen HSL-Hue (0..360). Die dominanteste Tag-Achse des Spieler-Compounds
-// bestimmt die Aura-Farbe; Saturation skaliert mit HP-Prozent (verletzte
-// Spieler haben blassere Auren). Vision-Treue: Tag-Achsen sind die EINE
-// Welt-Sprache; die Aura macht sie sichtbar ohne Zahlen-Inspect.
-AnazhRealm.AURA_TAG_HUE = Object.freeze({
-    härte: 30, // Erdbraun
-    dichte: 0, // Tief-rot, schwer
-    zähigkeit: 130, // Mossgrün
-    wärmeleitung: 25, // Orange-warm
-    stromleitung: 200, // Stahlblau
-    magieleitung: 270, // Violett
-    transparent: 180, // Eis-cyan
-    brennbar: 15, // Feuer
-    resoniert: 290, // Magenta-Schwingung
-    lebendig: 110, // Frühlingsgrün
-});
+// SYNERGIE-WELLE — die AURA_TAG_HUE-Map ist mit der Avatar-Aura GEFALLEN
+// (Schoepfer: keine Avatar-Aura im Nervensystem; die Tag-Achsen sprechen
+// weiter durch Substanz/Resonanz/Werkstatt-Chips — nicht durch einen Glow).
 
 // Welle 6.D Etappe 3b — Stat-Stacking-Gewichte. Compound-Tags der ausge-
 // rüsteten Werkzeuge/Rüstung werden zur Soul-Tag-Basis addiert, dann läuft

@@ -2836,7 +2836,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS: PARAMS,
+        PARAMS_BY_KIND: { weapon: PARAMS },
         LEHREN: LEHREN_B5,
         buildInstance: buildInstance,
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)

@@ -152,7 +152,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: PRESETS,
-        PARAMS: PARAMS,
+        PARAMS_BY_KIND: { koerper: PARAMS },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,

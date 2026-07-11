@@ -200,7 +200,7 @@ function ksRow(src, name) {
     require(path.join(root, "fachwerk-core.js"));
     const FCn = globalThis.__fachwerkCore;
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;
-    const kernParamsRows = FCn.PARAMS.length;
+    const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));

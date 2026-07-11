@@ -132,7 +132,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: PRESETS,
-        PARAMS: PARAMS,
+        PARAMS_BY_KIND: { kreatur: PARAMS },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GATTUNGEN: GATTUNGEN,
         MOTION: MOTION,

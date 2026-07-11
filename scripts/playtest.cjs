@@ -16349,32 +16349,31 @@ async function checkBandWelle6DSoul(ctx) {
         const ruestePattern = r.parseChatToDsl("rüste werkzeug hammer");
         out.ruesteChatParses = ruestePattern && ruestePattern.program[0] === "equip_tool";
 
-        // (3) Aura: ECHTER Glow als Sphere + dezenter Sub-Mesh-Tint
+        // (3) SYNERGIE-WELLE — DIE AVATAR-AURA IST GEFALLEN (Schoepfer „wir brauchen
+        // in anazh weder eine avatar aura…"): das Band wandert auf die ABWESENHEIT
+        // (V9.56-i, kein Aufweichen): Tick + Haut-Shells + Hue-Map + Loop-Aufruf +
+        // p2p-Sende-Seite sind PHYSISCH raus; der p2p-Empfangs-Stub bleibt
+        // must-ignore-tolerant (Alt-Peers senden weiter aura-Messages).
         r.applyPlayerSoul("human");
         const sub = r.state.playerMesh.children[0];
         out.subMeshExists = !!sub && !!sub.material;
-        const beforeColor = sub && sub.material ? sub.material.color.getHex() : null;
-        r.tickPlayerAura();
-        out.auraBaseColorCached = sub && sub.userData && typeof sub.userData._auraBaseColor === "number";
-        const afterColor = sub && sub.material ? sub.material.color.getHex() : null;
-        out.auraTintChangedColor = beforeColor !== afterColor;
+        out.auraTickGone = typeof r.tickPlayerAura !== "function";
+        out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
+        out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
+        out.auraLoopGone = !/tickPlayerAura/.test(
+            window.__codeOf ? window.__codeOf(r.startEternalLoop) : String(r.startEternalLoop)
+        );
+        out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
+        out.auraStubTolerant = (() => {
+            try {
+                r._p2pMsgAura({ peerId: "fremd-alt-peer", hue: 12, intensity: 1 }, { peers: new Map(), peerId: "x" });
+                return true;
+            } catch (_e) {
+                return false;
+            }
+        })();
         out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-        // V18.105 (Test wandert mit, V9.56-i): der V4-Glow-Sprite ist GESCHNITTEN
-        // (Schöpfer-Sign-off „Leuchtkugel kann weg") — die Aura lebt als C6-HAUT:
-        // Fresnel-Shells als Kinder der Soul-Parts, EIN additives NodeMaterial,
-        // gespeist von derselben Hue/Intensitäts-Quelle.
-        r.tickPlayerAura();
         out.glowSpriteGone = !r.state.playerAuraGlow;
-        const skinU = r.state.auraSkinUniforms;
-        out.skinUniformsExist = !!(skinU && skinU.color && skinU.intensity && skinU.material);
-        out.skinMatAdditive = !!skinU && skinU.material.blending === THREE.AdditiveBlending;
-        let shellCount = 0;
-        for (const kid of r.state.playerMesh.children) {
-            if (!kid || !kid.children) continue;
-            for (const sub of kid.children) if (sub && sub.userData && sub.userData._auraShell) shellCount++;
-        }
-        out.skinShellsOnParts = shellCount >= 1;
-        out.skinIntensityLive = typeof skinU.intensity.value === "number" && skinU.intensity.value > 0;
 
         // Drache: Original-Orientierung (Head in +Z). Inner-π-Flip
         // wurde wieder revertiert, weil er den Drache in 3rd-Person
@@ -16531,19 +16530,18 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
         check("Reflex 2: 'rüste werkzeug X' chat-pattern → DSL ['equip_tool', ...]", reflexResults.ruesteChatParses);
-        // (3) Aura: Glow-Sphere + dezenter Sub-Mesh-Tint
-        check("Reflex 3: tickPlayerAura cached _auraBaseColor auf Sub-Mesh", reflexResults.auraBaseColorCached);
-        check("Reflex 3: tickPlayerAura mischt Aura-Farbe in Material", reflexResults.auraTintChangedColor);
-        check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
-        // V18.105 (gewandert): die Lampe ist geschnitten — die Aura ist HAUT (C6).
-        check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
-        check("Reflex 3 C6: Haut-Uniforms (color/intensity/material) existieren", reflexResults.skinUniformsExist);
-        check("Reflex 3 C6: Haut-Material ist additiv (Fresnel-Schimmer)", reflexResults.skinMatAdditive);
+        // (3) SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN (das Band wandert, V9.56-i):
+        check("Reflex 3 SYNERGIE: tickPlayerAura ist PHYSISCH raus", reflexResults.auraTickGone);
+        check("Reflex 3 SYNERGIE: die Fresnel-Haut-Shells sind PHYSISCH raus", reflexResults.auraShellsGone);
+        check("Reflex 3 SYNERGIE: AURA_TAG_HUE-Map ist gefallen", reflexResults.auraMapGone);
+        check("Reflex 3 SYNERGIE: der Loop ruft keine Aura mehr", reflexResults.auraLoopGone);
+        check("Reflex 3 SYNERGIE: die p2p-Sende-Seite ist gefallen", reflexResults.auraSendGone);
         check(
-            "Reflex 3 C6: Fresnel-Shells sitzen an den Soul-Parts (folgen per Konstruktion)",
-            reflexResults.skinShellsOnParts
+            "Reflex 3 SYNERGIE: der p2p-Empfangs-Stub ist must-ignore-tolerant (Alt-Peers crashen nie)",
+            reflexResults.auraStubTolerant
         );
-        check("Reflex 3 C6: die Haut-Intensität lebt (KONSUM, > 0)", reflexResults.skinIntensityLive);
+        check("Reflex 3: Alter Boden-Torus-Ring entfernt", reflexResults.boundsRingRemoved);
+        check("Reflex 3 V18.105: der Glow-Sprite ist GESCHNITTEN (Schöpfer-Sign-off)", reflexResults.glowSpriteGone);
         // Drache-Orientierung (Schöpfer-Korrektur 13.05.2026): KEIN
         // Inner-π-Flip — der Drache schaut wieder vom Spieler weg.
         check(
@@ -16615,8 +16613,9 @@ async function checkBandWelle6DSoul(ctx) {
         out.hasSetArmor = typeof r.setBlueprintAsArmor === "function";
         out.hasEquippedState =
             r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
-        out.hasAuraHueMap = C.AURA_TAG_HUE && typeof C.AURA_TAG_HUE === "object";
-        out.auraHueMapHasAllTags = C.MATERIAL_TAG_KEYS.every((k) => k in C.AURA_TAG_HUE);
+        // SYNERGIE-WELLE — die Hue-Map ist mit der Avatar-Aura gefallen (Abwesenheit).
+        out.hasAuraHueMap = !C.AURA_TAG_HUE;
+        out.auraHueMapHasAllTags = !C.AURA_TAG_HUE;
         // NON_BROADCASTABLE
         out.equipNonBroadcast =
             C.NON_BROADCASTABLE_OPS.has("equip_tool") &&
@@ -16712,11 +16711,8 @@ async function checkBandWelle6DSoul(ctx) {
             snap.playerEquipped.held === "test_armor_eisen";
         r.equipHeld(null);
 
-        // Aura-Visual (Schöpfer-Feedback: jetzt am Charakter, nicht Boden-Ring)
-        r.tickPlayerAura();
-        // V2: Aura tinted Sub-Meshes; siehe Reflex-Tests Block oben
-        const subMesh = r.state.playerMesh.children[0];
-        out.auraSubMeshTinted = !!subMesh && !!subMesh.userData && typeof subMesh.userData._auraBaseColor === "number";
+        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: kein Tick, kein Tint (V9.56-i).
+        out.auraSubMeshTinted = typeof r.tickPlayerAura !== "function";
 
         // Cleanup
         r.equipArmor(null);
@@ -16740,11 +16736,7 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 3b: state.player.equipped = {held, armor} (V17.57 W2-B)",
             wave6d3bResults.hasEquippedState
         );
-        check("Welle 6.D Etappe 3b: AURA_TAG_HUE-Map existiert", wave6d3bResults.hasAuraHueMap);
-        check(
-            "Welle 6.D Etappe 3b: AURA_TAG_HUE-Map deckt alle 10 MATERIAL_TAG_KEYS ab",
-            wave6d3bResults.auraHueMapHasAllTags
-        );
+        check("Welle 6.D 3b/SYNERGIE: AURA_TAG_HUE ist GEFALLEN (Avatar-Aura raus)", wave6d3bResults.hasAuraHueMap);
         check("Welle 6.D Etappe 3b: equip-Ops in NON_BROADCASTABLE_OPS (privat)", wave6d3bResults.equipNonBroadcast);
         check("Welle 6.D Etappe 3b: setBlueprintAsArmor liefert ok", wave6d3bResults.markArmorOk);
         check("Welle 6.D Etappe 3b: setBlueprintAsArmor setzt role:'armor'", wave6d3bResults.markArmorSetsRole);
@@ -16786,7 +16778,7 @@ async function checkBandWelle6DSoul(ctx) {
             wave6d3bResults.snapHasEquipped
         );
         check(
-            "Welle 6.D Etappe 3b (V2): Aura tintet Spieler-Sub-Meshes (statt Boden-Ring)",
+            "Welle 6.D 3b/SYNERGIE: der Aura-Tint ist mit der Avatar-Aura gefallen (kein Tick mehr)",
             wave6d3bResults.auraSubMeshTinted
         );
     } else if (wave6d3bResults && wave6d3bResults.error) {

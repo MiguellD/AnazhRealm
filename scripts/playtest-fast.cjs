@@ -202,6 +202,22 @@ function check(name, ok) {
                 }
                 return res;
             });
+            // SYNERGIE-WELLE — „WERDE DAS TIER": die Tier-Körper sind TRAGBARE
+            // soul-Baupläne (der generische embody-Pfad; Konsum = wirklich getragen).
+            out.tierKoerper = safe(() => {
+                const bp = r.state.blueprints.koerper_wolf;
+                const okDef = !!(bp && bp.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
+                const prev = (r.state.player && r.state.player.soul) || "human";
+                let getragen = false;
+                if (okDef) {
+                    r.applyPlayerSoulFromBlueprint("koerper_wolf");
+                    getragen =
+                        !!(r.state.player && /koerper_wolf/.test(String(r.state.player.soul))) &&
+                        !!(r.state.playerMesh && r.state.playerMesh.children.length >= 5);
+                    r.applyPlayerSoul(prev);
+                }
+                return { okDef, getragen, hirsch: !!r.state.blueprints.koerper_wesen };
+            });
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
@@ -284,6 +300,13 @@ function check(name, ok) {
                 (R.creatureTiere || {}).fuchs === true &&
                 (R.creatureTiere || {}).baer === true &&
                 !(R.creatureTiere || {}).__err
+        );
+        check(
+            "WERDE DAS TIER: koerper_wolf ist tragbar (generischer embody-Pfad) + koerper_wesen/Hirsch existiert",
+            (R.tierKoerper || {}).okDef === true &&
+                (R.tierKoerper || {}).getragen === true &&
+                (R.tierKoerper || {}).hirsch === true &&
+                !(R.tierKoerper || {}).__err
         );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);

@@ -4600,26 +4600,15 @@ init();
             // AnazhRealm rendert dasselbe Asset durch seine Pipeline mit DERSELBEN Kamera → Bild-
             // Vergleich Seite an Seite (muessen identisch aussehen). Der ehrliche Beweis.
             __replyRenderNative(msg);
-        } else if (msg.type === "get-world-params") {
-            // DER WELT-PARAMETER-KANAL: das Studio exportiert seine Welt-LOOK-DATEN (die Boden-/
-            // Fels-/Feucht-Palette + die Blatt-Grundfarbe) als reine Zahlen. AnazhRealms eigene
-            // WebGPU-Systeme (Boden-Albedo, Geologie, Vegetations-Tint) LESEN sie und richten sich
-            // danach — editiert der Schoepfer hier eine Farbe, folgt AnazhRealm beim naechsten Laden.
-            // Kein Shader-Transfer (r128-GLSL != WebGPU): die WERTE fliessen, der Renderer bleibt AnazhRealms.
-            __replyWorldParams(msg);
-        } else if (msg.type === "get-render-config") {
-            // DER WAHRNEHMUNGS-KANAL: das Studio exportiert PORTAL_RENDER_CONFIG (Sichtweite, LOD-Distanzen/
-            // Fades, Wald-Dichte, Understory-Raster) als reine Zahlen. AnazhRealm adoptiert sie -> dieselbe
-            // Sichtweite, dasselbe nahe LOD, dieselben Distanzen/Fades, dieselbe Wiese/Blumen/Buesche im
-            // selben aktiven Radius. Editiert der Schoepfer den Config-Block, folgt AnazhRealm beim Laden.
-            __replyRenderConfig(msg);
-        } else if (msg.type === "get-recipes") {
-            // DER REZEPT-KANAL: das Studio EXPORTIERT sein Rezeptbuch (die PRESETS: je Art die
-            // Regler `s` + die Material/Form-Werte `fx`) durch das Portal. AnazhRealm speist das
-            // in seinen Blueprint (der Blueprint WIRD das Rezeptbuch — kein hartkodiertes Abbild,
-            // keine Kopie; ein Edit an PRESETS hier fliesst automatisch mit). Die Geometrie-
-            // Erzeugung bleibt im Studio (build-asset); dies traegt nur die Rezept-DATEN.
-            __replyRecipes(msg);
+        } else if (msg.type === "get-book") {
+            // SYNERGIE-WELLE — DER EINE UMSCHLAG: das Studio exportiert sein KOMPLETTES Buch
+            // (Rezepte + B4-Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM
+            // Reply. Die drei Einzel-Kanaele (get-recipes/get-world-params/get-render-config)
+            // sind GEFALLEN (Abschied, kein Parallelpfad): EIN Roundtrip, EIN Reply-Zweig,
+            // EIN Ingest-Chokepoint am Host (_foundryIngestBook). Ein Edit an PRESETS/
+            // PORTAL_GROUND/PORTAL_RENDER_CONFIG hier fliesst automatisch mit; die Geometrie-
+            // Erzeugung bleibt im Studio (build-asset — der on-demand-Kanal).
+            __replyBook(msg);
         } else if (msg.type === "export-settlement") {
             // DER SETTLEMENT-KANAL (N5.7, W-A5b): der Host fragt eine Siedlung als reine
             // DATEN an (Slots + benannte Schichten). GENERISCH wie exportDrive (N6.2):
@@ -4653,7 +4642,12 @@ init();
     } else if (typeof self !== "undefined") {
         self.onmessage = (event) => __portalOnMessage(event && event.data);
     }
-    function __replyWorldParams(msg) {
+    // SYNERGIE-WELLE — DIE DREI PAYLOAD-QUELLEN (Welt-Palette · Wahrnehmung · Buch)
+    // liefern reine Daten; der EINE Umschlag (__replyBook / Kanal "get-book") traegt
+    // sie in EINEM Roundtrip. Die drei Einzel-Kanaele (get-recipes/get-world-params/
+    // get-render-config) sind GEFALLEN (Abschied, kein Parallelpfad — Host + Gates
+    // fragen den Umschlag).
+    function __worldParamsPayload() {
         // Reine Daten (JSON-klonbar): NUR die Werte, die AnazhRealm auch LIEST (kein toter Passagier).
         const params = {
             // Boden-Palette -> MEADOW_GREEN + TERRAIN_GEOLOGY. dirt/sand leben lokal im Studio-Terrain,
@@ -4669,9 +4663,7 @@ init();
             // animiert den Rest; NUR der Mittags-Stop folgt dem Studio (additiv, kein Einfrieren).
             sky: { top: PORTAL_SKY.top, sun: PORTAL_SKY.sun },
         };
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post({ type: "world-params", world: "terrain", reqId: msg && msg.reqId, params }, "*");
-        }
+        return params;
     }
     // N2 (Nervensystem-Plan, „Runtime = Validator") — DIE GENERISCHE ZWEIT-KERN-LISTE: der
     // Foundry-Worker injiziert self.__anazhCores (= cores.manifest.json) VOR den importScripts;
@@ -4693,7 +4685,7 @@ init();
         } catch (_e) {}
         return out;
     }
-    function __replyRenderConfig(msg) {
+    function __renderConfigPayload() {
         // Reine Daten (JSON-klonbar) — die EINE Wahrnehmungs-Quelle (PORTAL_RENDER_CONFIG). Tiefe Kopie,
         // damit der Empfaenger nichts am Studio-Objekt mutiert.
         const c = PORTAL_RENDER_CONFIG;
@@ -4757,11 +4749,9 @@ init();
                 cfg.lod.zusatzKindStages[zk.id] = JSON.parse(JSON.stringify(ks));
             }
         } catch (_e) {}
-        if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post({ type: "render-config", world: "terrain", reqId: msg && msg.reqId, config: cfg }, "*");
-        }
+        return cfg;
     }
-    function __replyRecipes(msg) {
+    function __bookPayload() {
         const book = {};
         try {
             for (const id in PRESETS) {
@@ -4835,40 +4825,47 @@ init();
             }
             return rows;
         };
-        try {
-            for (const zk of __zweitKerne()) {
-                const PA = zk.kern.PARAMS;
-                const P = zk.kern.PRESETS;
-                if (!Array.isArray(PA) || !PA.length || !P) continue;
-                let kind = null;
-                for (const id in P) {
-                    if (!Object.prototype.hasOwnProperty.call(P, id)) continue;
-                    const p = P[id];
-                    if (p && typeof p.kind === "string" && p.kind) {
-                        kind = p.kind;
-                        break;
-                    }
-                }
-                if (!kind || paramsByKind[kind]) continue;
-                const rows = __paramRows(PA);
+        // SYNERGIE-WELLE — DIE EINE B4-FORM: JEDER Kern (Primaer-Kern foundry-core wie
+        // jeder Zweit-Kern) exportiert seine Regler-Tabellen als MAP `PARAMS_BY_KIND`
+        // ({ <kind>: rows }) — auch Ein-Kind-Kerne. Der alte flache PARAMS-Zweig (kind
+        // implizit aus dem ersten Rezept geraten) ist GEFALLEN (Abschied, kein
+        // Parallelpfad): EIN Export-Dialekt, EINE Assembly-Schleife, erste Quelle
+        // gewinnt je kind (wie das Buch, must-ignore-billig).
+        const __mergeParamsMap = (map) => {
+            if (!map || typeof map !== "object") return;
+            for (const kind in map) {
+                if (!Object.prototype.hasOwnProperty.call(map, kind)) continue;
+                if (paramsByKind[kind] || !Array.isArray(map[kind])) continue;
+                const rows = __paramRows(map[kind]);
                 if (rows.length) paramsByKind[kind] = rows;
             }
-        } catch (_e4) {}
-        // ERFINDER-WELLE (B4, „regelbar, alle Assets") — der PRIMAER-KERN traegt MEHRERE
-        // kinds (tree/flower/grass/rock): seine Tabellen reisen als MAP `PARAMS_BY_KIND`
-        // (foundry-core; erste Quelle gewinnt je kind, wie das Buch — must-ignore-billig).
+        };
         try {
-            if (typeof PARAMS_BY_KIND === "object" && PARAMS_BY_KIND) {
-                for (const kind in PARAMS_BY_KIND) {
-                    if (!Object.prototype.hasOwnProperty.call(PARAMS_BY_KIND, kind)) continue;
-                    if (paramsByKind[kind] || !Array.isArray(PARAMS_BY_KIND[kind])) continue;
-                    const rows = __paramRows(PARAMS_BY_KIND[kind]);
-                    if (rows.length) paramsByKind[kind] = rows;
-                }
-            }
+            for (const zk of __zweitKerne()) __mergeParamsMap(zk.kern.PARAMS_BY_KIND);
+        } catch (_e4) {}
+        try {
+            if (typeof PARAMS_BY_KIND === "object") __mergeParamsMap(PARAMS_BY_KIND);
         } catch (_e5) {}
+        return { book, paramsByKind };
+    }
+    // SYNERGIE-WELLE — DER EINE UMSCHLAG: das komplette Studio-Buch (Rezepte +
+    // Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Reply — der
+    // Host (und jedes Gate) fragt EINEN Kanal statt drei.
+    function __replyBook(msg) {
+        const bp = __bookPayload();
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
-            __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book, paramsByKind }, "*");
+            __post(
+                {
+                    type: "book",
+                    world: "terrain",
+                    reqId: msg && msg.reqId,
+                    book: bp.book,
+                    paramsByKind: bp.paramsByKind,
+                    worldParams: __worldParamsPayload(),
+                    renderConfig: __renderConfigPayload(),
+                },
+                "*"
+            );
         }
     }
     // Ein Mesh der Instanz -> {kind, + alle Vertex-Attribute als Float32/Uint32}. REIN

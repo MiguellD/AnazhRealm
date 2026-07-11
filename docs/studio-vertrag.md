@@ -93,14 +93,18 @@ Ein Block `PORTAL_RENDER_CONFIG.placement`: wie oft, wo, wie groß.
   bleibt byte-heilig; der Live-Read gewinnt gegen jeden Spiegel (der
   Mutation-wins-Beweis, `gate:nervensystem` C).
 
-### B4 — PARAMS (SOLL; ab Domäne `vehicle` MUSS)
+### B4 — PARAMS_BY_KIND (SOLL; ab Domäne `vehicle` MUSS) · **v1.2: DIE EINE FORM**
 
-Die Regler-Definitionen als DATEN (die HDA-Lehre): ein Array
-`PARAMS = [{ id, lab, min, max, step, grp?, law? }]`.
+Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
+`PARAMS_BY_KIND = { <kind>: [{ id, lab, min, max, step, def?, grp?, law? }] }`.
 
+- **v1.2 (SYNERGIE-WELLE, 11.07.2026):** das flache `PARAMS`-Array (kind implizit
+  aus dem ersten Rezept des Kerns geraten) ist GEFALLEN — JEDER Kern (auch ein
+  Ein-Kind-Kern) exportiert die Map. EIN Export-Dialekt, EINE Brücken-Assembly
+  (`__mergeParamsMap`, first-wins je kind), Multi-Kind-Kerne (der Primär-Kern:
+  tree/flower/grass/rock) tragen mehrere Einträge. Kein zweiter Dialekt.
 - Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
-  hartkodiertes Slider-Panel pro Domäne. garage.txt trägt dieses Array heute
-  schon wörtlich (`SLIDERS`); der Vertrag friert die Feldnamen ein.
+  hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
 
 ### B5 — LEHREN (SOLL)
@@ -229,7 +233,7 @@ die Adressierung für alle kommenden Domänen, OHNE einen Block zu ändern:
   `(function(root){ root.__<domäne>Core = { … } })(typeof self!=="undefined"?self:globalThis)`
   — erster Bau: `vehicle-core.js` → `__vehicleCore`. Die Manifest-Blöcke leben
   UNTER dem Namensraum, **namens- und formgleich** zu §3 (`__vehicleCore.PRESETS`,
-  `.buildInstance`, `.PORTAL_RENDER_CONFIG`, `.PARAMS`, `.LEHREN`,
+  `.buildInstance`, `.PORTAL_RENDER_CONFIG`, `.PARAMS_BY_KIND` (v1.2), `.LEHREN`,
   `.STUDIO_VERTRAG`). Kein Block ändert seine Gestalt — nur seine Adresse.
 - **N7.3 — Der Validator mappt pro Kern:** der CORES-Eintrag trägt `ns`
   (`diag-studio-vertrag.cjs`), die Prüfungen selbst sind identisch. Ein

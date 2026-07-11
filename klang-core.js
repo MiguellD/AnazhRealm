@@ -253,7 +253,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,
-        PARAMS: PARAMS,
+        PARAMS_BY_KIND: { klang: PARAMS },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GENRES: PRESETS,
         SCALES: SCALES,

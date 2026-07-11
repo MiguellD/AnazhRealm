@@ -57,10 +57,11 @@ function check(name, ok, detail) {
     // Node-direkt: die porta-PARAMS-Laenge als unabhaengige Referenz (die IIFE setzt
     // globalThis.__portaCore — derselbe Lade-Pfad wie im Worker, nur ohne Browser).
     require(path.join(root, "porta-core.js"));
-    const portaParams = globalThis.__portaCore && globalThis.__portaCore.PARAMS;
+    const portaParams =
+        globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;
     const portaParamsLen = Array.isArray(portaParams) ? portaParams.length : -1;
     console.log("=== W-A1 REZEPT-KATALOG — Node-Referenz ===");
-    check("porta-core.PARAMS ist ein nicht-leeres Array", portaParamsLen > 0, `len=${portaParamsLen}`);
+    check("porta-core.PARAMS_BY_KIND.gate ist ein nicht-leeres Array (die EINE B4-Form)", portaParamsLen > 0, `len=${portaParamsLen}`);
 
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({

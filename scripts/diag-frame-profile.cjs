@@ -111,7 +111,6 @@ const server = http.createServer((req, res) => {
             "tickArchitectures",
             "_loopPlayerMovement",
             "_loopSelfAnalysis",
-            "tickPlayerAura",
             "_loopFrustumCulling",
             "p2pTick",
             "_loopSkyboxPlanets",

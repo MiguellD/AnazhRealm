@@ -163,12 +163,11 @@ const PAGE = `<!doctype html><meta charset="utf-8"><title>P0 Foundry-Parität</t
 
         // Daten-Kanäle: recipes / world-params / render-config müssen JSON-identisch sein.
         S.phase = "daten-kanäle";
-        const [rI, rW] = [await askIframe({ type: "get-recipes" }), await askWorker({ type: "get-recipes" })];
+        // SYNERGIE-WELLE — der EINE Umschlag: beide Seiten liefern das komplette Buch.
+        const [rI, rW] = [await askIframe({ type: "get-book" }), await askWorker({ type: "get-book" })];
         if (JSON.stringify(rI.book) !== JSON.stringify(rW.book)) S.fails.push("recipes divergieren");
-        const [pI, pW] = [await askIframe({ type: "get-world-params" }), await askWorker({ type: "get-world-params" })];
-        if (JSON.stringify(pI.params) !== JSON.stringify(pW.params)) S.fails.push("world-params divergieren");
-        const [cI, cW] = [await askIframe({ type: "get-render-config" }), await askWorker({ type: "get-render-config" })];
-        if (JSON.stringify(cI.config) !== JSON.stringify(cW.config)) S.fails.push("render-config divergieren");
+        if (JSON.stringify(rI.worldParams) !== JSON.stringify(rW.worldParams)) S.fails.push("world-params divergieren");
+        if (JSON.stringify(rI.renderConfig) !== JSON.stringify(rW.renderConfig)) S.fails.push("render-config divergieren");
 
         const presets = Object.keys(rI.book || {});
         S.presets = presets.length;
