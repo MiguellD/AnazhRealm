@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.451 — ALTLASTEN-NULL + HERZ + ULTRAGUSS I)
+## Stand (V18.452 — ULTRAGUSS VOLLZOGEN)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
@@ -21,8 +21,13 @@ Gesetzbücher (Phänotyp-Zwilling tot [foundry→phyto-core] · Tier-Allometrie+
 Progression+Terzschichtung in klang-core · Feder-Koeffizienten in vehicle-core.FAHR · Membran-
 Palette in porta-core; die Stamm-Lofi-Improvisation ist BEWUSST ein eigener Komponist [Emotion+
 Feld], gleiche Skalen); die Buster-Linse + Zwillings-Wand wachsen in gate:altlasten.
-OFFEN aus `docs/ultraguss-plan.md`: U3-Kern (koerperstudio-morph, XL) · U6c/d (fachwerk-Snap ·
-schmiede-Profil) · U7 · U8 (W9 Himmel · W10 Wasser · Look-Goldens — braucht Render/Auge).
+**ULTRAGUSS II (V18.452, seriell-agentisch):** U3-Kern (Lab-Anatomie in koerper-core, 396k Werte
+identisch, 6↔8-KH-Delta-Tabelle liegt) · U7 (Muskel-Atlas 595 Z. → koerper-core, parts-sha256
+byte-gleich) · U6c (Snap/Brandwand/metaParams in fachwerk-core, Goldens byte-treu) · U6d
+(Klingenprofil + OAKESHOTT in schmiede-core, 98k Werte identisch) · U1 (Apparat: toString-Zitate
+434→4 + gate:apparat-Ratchet + __consumes/__anker; 5 stumm-grüne Bänder geheilt); Zwillings-Wand
+= 13 Fingerabdrücke. OFFEN (`docs/ultraguss-plan.md`): U8 (W9 Himmel · W10 Wasser · Look-Goldens ·
+Stamm-Rig-Konvergenz 6-KH — alles braucht Render/Auge = DIE Schöpfer-Runde) · typeof-Voll-Wanderung.
 Davor: SYNERGIE (V18.448 — EINE
 Export-Form `PARAMS_BY_KIND`, EIN Umschlag `get-book`, EIN Ingest) · Nervensystem/Katalysator/Trias
 (V18.434–.447). **OFFEN:** die eine Schöpfer-Browser-Runde (W8-Abnahme + LOOK-Stau) · W9 Himmel 1:1 ·

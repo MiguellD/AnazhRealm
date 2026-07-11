@@ -3,8 +3,10 @@
 > **STAND V18.451 (ULTRAGUSS I gebaut):** U2 ✓ (Phänotyp-Zwilling tot; Rinde benannt offen) ·
 > U4 ✓ (Allometrie+CPG im Kern, Lab liest) · U5 ✓ (Progression+stack im Kern; Stamm-Lofi als
 > EIGENER Komponist geurteilt) · U6a ✓ (garage FAHR-Konstanten) · U6b ✓ (porta membranPalette) ·
-> U3a ✓ (Buster-Klasse + Linse). **OFFEN:** U1 (Apparat-Katalog, ganz) · U3-Kern (morph/XL) ·
-> U6c fachwerk · U6d schmiede · U7 · U8 (W9/W10/Look — braucht Render/Auge) · U0-Bilder.
+> U3a ✓ (Buster-Klasse + Linse).
+> **ULTRAGUSS II (V18.452, seriell-agentisch): U3-Kern ✓ · U7 ✓ · U6c ✓ · U6d ✓ · U1 ✓.**
+> **OFFEN:** U8 (W9 Himmel · W10 Wasser · Look-Goldens · Rig-Konvergenz — braucht Render/Auge =
+> DIE Schöpfer-Runde) · U1-Folge (typeof-Voll-Wanderung, tabellen-getrieben) · Rinden-Vereinigung.
 
 > Fundament: die Herz-Vermessung (12 Messagenten über alle 8 Domänen-Nähte + Stamm-Sediment +
 > Erlebnis + Apparat, 11.07.2026). Jede Zahl unten ist gegriffen, nicht geraten.
