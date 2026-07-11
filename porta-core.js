@@ -354,6 +354,29 @@
     }
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Bau-Vokabular ──
+
+    // ULTRAGUSS U6 — DAS MEMBRAN-FARB-GESETZ (verbatim aus der Lab-Shell):
+    // Kern-Farbe warm/kalt aus temp; saturierte IQ-Kosinus-Palette
+    // a+b·cos(2π(c·t+d)) — Familie aus temp, Sättigung aus energy,
+    // Verschiebung aus realm. Reine Zahlen (MESHFREI-artig; die Shell/der
+    // Ofen machen daraus Uniforms).
+    function membranPalette(p) {
+        var lerp = function (a, b, t) { return a + (b - a) * t; };
+        var warm = [1.95, 1.45, 0.85], cold = [0.4, 0.6, 1.5];
+        var core = [lerp(cold[0], warm[0], p.temp), lerp(cold[1], warm[1], p.temp), lerp(cold[2], warm[2], p.temp)];
+        var dWarm = [0.0, 0.12, 0.2], dCool = [0.6, 0.5, 0.42], dCryst = [0.3, 0.55, 0.85];
+        var dd = [lerp(dCool[0], dWarm[0], p.temp), lerp(dCool[1], dWarm[1], p.temp), lerp(dCool[2], dWarm[2], p.temp)];
+        dd = [lerp(dd[0], dCryst[0], p.realm * 0.5), lerp(dd[1], dCryst[1], p.realm * 0.5), lerp(dd[2], dCryst[2], p.realm * 0.5)];
+        var sat = 0.42 + 0.34 * p.energy;
+        return {
+            core: core,
+            PA: [0.5, 0.5, 0.5],
+            PB: [sat, sat, sat],
+            PC: [1.0 + p.realm * 0.8, 1.0 + p.realm * 0.4, 1.0],
+            PD: dd,
+        };
+    }
+
     root.__portaCore = {
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
@@ -367,6 +390,7 @@
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)
         messen: messen,
         deriveGate: deriveGate,
+        membranPalette: membranPalette,
         archProfile: archProfile,
         interpTop: interpTop,
         // Bau-Fläche (die Shell baut ihre Struktur aus DIESER Quelle)

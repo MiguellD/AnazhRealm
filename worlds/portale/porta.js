@@ -40,14 +40,9 @@ function buildMembrane(){
   var W=64,data=new Uint8Array(W*4);
   for(var i=0;i<W;i++){var xx=left+spanW*i/(W-1);var ty=interpTop(prof,xx)+springY;var tn=clamp((ty-baseY)/Math.max(0.001,height),0,1);var b=Math.round(tn*255);data[i*4]=b;data[i*4+1]=b;data[i*4+2]=b;data[i*4+3]=255;}
   var topTex=new THREE.DataTexture(data,W,1,THREE.RGBAFormat);topTex.minFilter=THREE.LinearFilter;topTex.magFilter=THREE.LinearFilter;topTex.needsUpdate=true;
-  var warm=[1.95,1.45,0.85],cold=[0.4,0.6,1.5],core=[lerp(cold[0],warm[0],p.temp),lerp(cold[1],warm[1],p.temp),lerp(cold[2],warm[2],p.temp)];
+  /* ULTRAGUSS U6: das Farb-Gesetz wohnt im Gesetzbuch (__portaCore.membranPalette). */
+  var PAL=window.__portaCore.membranPalette(p),core=PAL.core,PA=PAL.PA,PB=PAL.PB,PC=PAL.PC,PD=PAL.PD;
   var centerW=new THREE.Vector3(0,baseY+D.jambH*0.55,0.0);
-  // SATURIERTE Kosinus-Palette (IQ): a+b·cos(2π(c·t+d)). Familie aus temp, Sättigung aus energy, Verschiebung aus realm.
-  var dWarm=[0.00,0.12,0.20],dCool=[0.60,0.50,0.42],dCryst=[0.30,0.55,0.85];
-  var dd=[lerp(dCool[0],dWarm[0],p.temp),lerp(dCool[1],dWarm[1],p.temp),lerp(dCool[2],dWarm[2],p.temp)];
-  dd=[lerp(dd[0],dCryst[0],p.realm*0.5),lerp(dd[1],dCryst[1],p.realm*0.5),lerp(dd[2],dCryst[2],p.realm*0.5)];
-  var sat=0.42+0.34*p.energy;
-  var PA=[0.5,0.5,0.5],PB=[sat,sat,sat],PC=[1.0+p.realm*0.8,1.0+p.realm*0.4,1.0],PD=dd;
   memMat=new THREE.ShaderMaterial({uniforms:{
       uTime:{value:0},uCam:{value:new THREE.Vector3()},
       uTopTex:{value:topTex},uLeft:{value:left},uW:{value:spanW},uBaseY:{value:baseY},uHspan:{value:height},uSpringX:{value:Math.max(Math.abs(left),Math.abs(right))},
