@@ -66,11 +66,12 @@ async function run() {
             catalog: [{ id: "smoke-cat-w16", label: "Smoke-Welt", hash: "abc123", multiplayer: true }],
         })
     );
+    // ALTLASTEN-NULL: aura ist aus dem Protokoll gefallen — der Broker MUSS
+    // den unbekannten Typ still verwerfen (§4 must-ignore, hier bewiesen).
     wsA.send(JSON.stringify({ type: "aura", hue: 270, intensity: 0.8 }));
     await sleep(150);
-    // Defensive: soul ohne soulName + aura mit NaN-hue werden verworfen.
+    // Defensive: soul ohne soulName wird verworfen.
     wsA.send(JSON.stringify({ type: "soul" }));
-    wsA.send(JSON.stringify({ type: "aura", hue: "x", intensity: 0.5 }));
     await sleep(150);
 
     // W13 Phase 3: Vibe-Pass-Identität. A teilt vibePassId + proof → B
@@ -216,13 +217,11 @@ async function run() {
             Array.isArray(e.catalog) &&
             e.catalog.some((c) => c.id === "smoke-cat-w16" && c.hash === "abc123" && c.multiplayer === true)
     );
-    const bGotAuraFromA = events.b.some(
-        (e) => e.type === "aura" && e.peerId === "peerA" && e.hue === 270 && e.intensity === 0.8
-    );
+    // ALTLASTEN-NULL: der Broker kennt aura nicht mehr — NICHTS kommt an.
+    const bAuraIgnored = !events.b.some((e) => e.type === "aura");
     const aNotEchoedOwnSoul = !events.a.some((e) => e.type === "soul");
-    // Genau die EINE gute soul-/aura-Nachricht (kaputte wurden verworfen).
+    // Genau die EINE gute soul-Nachricht (kaputte wurden verworfen).
     const bRejectedBadSoul = events.b.filter((e) => e.type === "soul").length === 1;
-    const bRejectedBadAura = events.b.filter((e) => e.type === "aura").length === 1;
 
     // W13 Phase 3 Assertions
     const bGotVibeFromA = events.b.some(
@@ -267,9 +266,9 @@ async function run() {
     console.log("V2.2 A bekommt eigenen world-snapshot NICHT zurück:", aNotEchoedOwnSnapshot);
     console.log("V3 B bekommt A's soul (phoenix/Aria) mit peerId-Stempel:", bGotSoulFromA);
     console.log("W16P2 B bekommt A's Welt-Katalog im soul-Kanal:", bGotCatalogFromA);
-    console.log("V3 B bekommt A's aura (hue/intensity) mit peerId-Stempel:", bGotAuraFromA);
+    console.log("ALTLASTEN-NULL: aura ist dem Broker unbekannt (still verworfen):", bAuraIgnored);
     console.log("V3 A bekommt eigene soul NICHT zurück:", aNotEchoedOwnSoul);
-    console.log("V3 Server verwirft soul ohne soulName / aura mit NaN:", bRejectedBadSoul && bRejectedBadAura);
+    console.log("V3 Server verwirft soul ohne soulName:", bRejectedBadSoul);
     console.log("W13P3 B bekommt A's vibe (vibePassId/proof) mit peerId-Stempel:", bGotVibeFromA);
     console.log("W13P3 A bekommt eigene vibe NICHT zurück:", aNotEchoedOwnVibe);
     console.log("W13P3 Server verwirft vibe ohne proof:", bRejectedBadVibe);
@@ -376,10 +375,9 @@ async function run() {
         aNotEchoedOwnSnapshot &&
         bGotSoulFromA &&
         bGotCatalogFromA &&
-        bGotAuraFromA &&
+        bAuraIgnored &&
         aNotEchoedOwnSoul &&
         bRejectedBadSoul &&
-        bRejectedBadAura &&
         bGotVibeFromA &&
         aNotEchoedOwnVibe &&
         bRejectedBadVibe &&

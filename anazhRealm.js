@@ -6386,7 +6386,6 @@ class AnazhRealm {
             "input", // V18.382 — Lockstep-Input-Strom (kanal-gestempelte peerId, unfälschbar)
             "dsl",
             "soul",
-            "aura",
             "vibe",
             "creature-pos",
             "companion-say",
@@ -7618,17 +7617,6 @@ class AnazhRealm {
         entry.lastSeen = performance.now() / 1000;
     }
 
-    _p2pMsgAura(msg, p2p) {
-        // SYNERGIE-WELLE — DIE AVATAR-AURA IST GEFALLEN (Schoepfer „wir brauchen in
-        // anazh weder eine avatar aura…"): der Handler bleibt als must-ignore-Stub
-        // (Taille-Gesetz — ALT-Peers senden weiterhin ~1-Hz-aura-Messages; sie
-        // duerfen nie crashen), rendert aber nichts mehr und haelt keinen Zustand.
-        const pid = msg && msg.peerId;
-        if (typeof pid !== "string" || pid === p2p.peerId) return;
-        const entry = p2p.peers && p2p.peers.get(pid);
-        if (entry) entry.lastSeen = performance.now() / 1000;
-    }
-
     _p2pMsgVibe(msg, p2p) {
         // W13 Phase 3 — Vibe-Pass-Identität eines Peers. vibePassId ist
         // der behauptete öffentliche Schlüssel, proof eine Signatur über
@@ -8147,15 +8135,11 @@ class AnazhRealm {
         this.p2pSend(msg);
     }
 
-    // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: die Sende-Seite existiert
-    // nicht mehr (der Empfangs-Stub _p2pMsgAura bleibt must-ignore-tolerant).
-
     // W11 Phase 4 — Voice-Sync. Wenn der eigene Begleiter spricht (jeder Pfad
-    // durch grokRender), den Text an alle Mitspieler senden — wie soul/aura
+    // durch grokRender), den Text an alle Mitspieler senden — wie soul
     // ein dedizierter Kanal, KEIN DSL (der Begleiter-Output ist eine
     // Darstellungs-Tatsache, keine Welt-Mutation). Immer broadcastet; ob ein
-    // Mitspieler ihn HÖRT, entscheidet sein eigener Stimme-Toggle (Empfänger-
-    // seite) — exakt wie die Aura immer reist und der Empfänger sie rendert.
+    // Mitspieler ihn HÖRT, entscheidet sein eigener Stimme-Toggle (Empfänger-Seite).
     _p2pBroadcastCompanionSay(text) {
         const p2p = this.state.p2p;
         if (!p2p || !p2p.enabled || !p2p.connected) return;
@@ -87712,7 +87696,6 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
     input: "_p2pMsgInput", // V18.382 — Lockstep-MP Stufe 2: der Input-Strom (seq · yaw · Bitmask)
     dsl: "_p2pMsgDsl",
     soul: "_p2pMsgSoul",
-    aura: "_p2pMsgAura",
     vibe: "_p2pMsgVibe",
     "rtc-offer": "_p2pMsgRtcOffer",
     "rtc-answer": "_p2pMsgRtcAnswer",

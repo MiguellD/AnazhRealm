@@ -131,7 +131,7 @@ dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
 
 - **Client → Broker:** `join {room, peerId}` (authentifiziert den Socket; alles
   davor außer `stats`/`world-presence` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
-  `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` · `aura` ·
+  `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` ·
   `vibe` · `companion-say` · `subworld-net` · `portal-invite` ·
   `world-request`/`world-snapshot` (Welt-Zug, Durchreiche) · adressiert
   `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC-Rendezvous) · Lobby
