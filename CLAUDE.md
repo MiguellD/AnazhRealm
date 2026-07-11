@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.450 — ALTLASTEN-NULL + HERZ)
+## Stand (V18.451 — ALTLASTEN-NULL + HERZ + ULTRAGUSS I)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
@@ -16,7 +16,14 @@ Bestand = **Mensch + Hirsch·Wolf·Fuchs·Bär (+ Pferd)**, `werde wolf` verkör
 wohnen in den Gesetzbüchern (tetrapoda-core `buildSkeleton`+`ARCHETYPES`+`DIAL_MAP` · koerper-core
 `landmarks`+`DIAL_MAP`; der Stamm DELEGIERT fail-closed, index.html lädt die Kerne vor dem Stamm);
 `werde wolf` trägt die ECHTE Kreatur (Metaball-Haut, 1st-Person-Regel); Mensch-Dials tragen Stats
-(dieselbe Größen-Achse, Default exakt 1.0). Davor: SYNERGIE (V18.448 — EINE
+(dieselbe Größen-Achse, Default exakt 1.0). **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
+Gesetzbücher (Phänotyp-Zwilling tot [foundry→phyto-core] · Tier-Allometrie+CPG in tetrapoda-core ·
+Progression+Terzschichtung in klang-core · Feder-Koeffizienten in vehicle-core.FAHR · Membran-
+Palette in porta-core; die Stamm-Lofi-Improvisation ist BEWUSST ein eigener Komponist [Emotion+
+Feld], gleiche Skalen); die Buster-Linse + Zwillings-Wand wachsen in gate:altlasten.
+OFFEN aus `docs/ultraguss-plan.md`: U3-Kern (koerperstudio-morph, XL) · U6c/d (fachwerk-Snap ·
+schmiede-Profil) · U7 · U8 (W9 Himmel · W10 Wasser · Look-Goldens — braucht Render/Auge).
+Davor: SYNERGIE (V18.448 — EINE
 Export-Form `PARAMS_BY_KIND`, EIN Umschlag `get-book`, EIN Ingest) · Nervensystem/Katalysator/Trias
 (V18.434–.447). **OFFEN:** die eine Schöpfer-Browser-Runde (W8-Abnahme + LOOK-Stau) · W9 Himmel 1:1 ·
 W10 Wasser-Oberfläche 1:1 (`docs/roadmap.md` §0).

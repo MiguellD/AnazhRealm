@@ -1,5 +1,11 @@
 # DER ULTRAGUSS — die Vollendung der Synergiemaschine (Plan, 11.07.2026)
 
+> **STAND V18.451 (ULTRAGUSS I gebaut):** U2 ✓ (Phänotyp-Zwilling tot; Rinde benannt offen) ·
+> U4 ✓ (Allometrie+CPG im Kern, Lab liest) · U5 ✓ (Progression+stack im Kern; Stamm-Lofi als
+> EIGENER Komponist geurteilt) · U6a ✓ (garage FAHR-Konstanten) · U6b ✓ (porta membranPalette) ·
+> U3a ✓ (Buster-Klasse + Linse). **OFFEN:** U1 (Apparat-Katalog, ganz) · U3-Kern (morph/XL) ·
+> U6c fachwerk · U6d schmiede · U7 · U8 (W9/W10/Look — braucht Render/Auge) · U0-Bilder.
+
 > Fundament: die Herz-Vermessung (12 Messagenten über alle 8 Domänen-Nähte + Stamm-Sediment +
 > Erlebnis + Apparat, 11.07.2026). Jede Zahl unten ist gegriffen, nicht geraten.
 > Ausführung: ultracode — pro Welle ein Workflow (Scout → parallele Worktree-Agenten je Domäne →
