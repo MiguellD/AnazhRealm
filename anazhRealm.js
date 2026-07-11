@@ -12332,7 +12332,9 @@ class AnazhRealm {
         }
         if (r.creatures) r.creatures.textContent = String(this.state.creatures.length);
         if (r.soul) {
-            const def = this.playerSoulDefs[this.state.player.soul || "human"];
+            // ALTLASTEN-NULL: die EINE Auflösungs-Quelle (_getSoulDef) — auch ein
+            // getragener Tier-Körper (Custom-Seele bp_koerper_*) zeigt sein Label.
+            const def = this._getSoulDef(this.state.player.soul || "human");
             r.soul.textContent = (def && def.label) || "—";
         }
         if (r.architectures) {
@@ -18944,6 +18946,17 @@ class AnazhRealm {
         const soulKey = creature.userData.soul || "";
         if (creature.userData._temperament && creature.userData._temperamentSoul === soulKey)
             return creature.userData._temperament;
+        // ALTLASTEN-NULL — die GATTUNG trägt das Raubtier-Temperament: die vier
+        // Tiere sind bewusst tag-identisch (V17.16-Spawn-Wand), also kann die
+        // Substanz den Jäger nicht mehr unterscheiden; der predator-Flag IST
+        // die Gattungs-Wahrheit (Carnivor-diet der tetrapoda-Daten). Customs
+        // + alle Nicht-Raubtiere bleiben substanz-gerichtet (argmax unten).
+        const soulDef = AnazhRealm.CREATURE_SOULS[soulKey];
+        if (soulDef && soulDef.predator === true) {
+            creature.userData._temperament = "wild";
+            creature.userData._temperamentSoul = soulKey;
+            return "wild";
+        }
         const raw = this.computeCreatureCompoundTags(creature) || {};
         const tags = {};
         // ÷3-Norm (PRODUCT_VECTOR_TAG_NORM) statt Clamp — die MAX-Aktivierung
@@ -49659,7 +49672,15 @@ class AnazhRealm {
         this.log(`Seele gewechselt: ${def.label} (${canonical})`, "INFO");
         if (typeof document !== "undefined") {
             const select = document.getElementById("player-soul-select");
-            if (select && select.value !== canonical) select.value = canonical;
+            if (select && select.value !== canonical) {
+                select.value = canonical;
+                // Eine Verkörperung (bp_<bauplan>) hat keinen eigenen Options-
+                // Eintrag — ihr BAUPLAN ist die sichtbare Wahl (UI ↔ State).
+                if (select.value !== canonical && canonical.startsWith("bp_")) {
+                    const bpOpt = canonical.slice(3);
+                    if ([...select.options].some((opt) => opt.value === bpOpt)) select.value = bpOpt;
+                }
+            }
             const status = document.getElementById("status-soul");
             if (status) status.textContent = def.label;
         }

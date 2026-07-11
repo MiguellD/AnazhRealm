@@ -3133,17 +3133,21 @@
                 font-weight: 600;
                 color: var(--parch-bg, #ece1c5);
             }
-            .hof-spec-sheet .spec-name.soul-sprite {
-                color: #88e1e1;
-                text-shadow: 0 0 5px rgba(136, 225, 225, 0.4);
+            .hof-spec-sheet .spec-name.soul-wolf {
+                color: #aeb6c2;
+                text-shadow: 0 0 5px rgba(174, 182, 194, 0.4);
             }
             .hof-spec-sheet .spec-name.soul-wesen {
                 color: #e0b07a;
                 text-shadow: 0 0 5px rgba(224, 176, 122, 0.3);
             }
-            .hof-spec-sheet .spec-name.soul-geist {
-                color: #a8d6a0;
-                text-shadow: 0 0 5px rgba(168, 214, 160, 0.3);
+            .hof-spec-sheet .spec-name.soul-fuchs {
+                color: #e08a54;
+                text-shadow: 0 0 5px rgba(224, 138, 84, 0.3);
+            }
+            .hof-spec-sheet .spec-name.soul-baer {
+                color: #b08968;
+                text-shadow: 0 0 5px rgba(176, 137, 104, 0.3);
             }
             .hof-spec-sheet .spec-soul-label {
                 font-size: 10px;
@@ -3381,21 +3385,23 @@
             .creature-list .creature-name {
                 font-weight: 600;
             }
-            /* Welle 6.H Phase 2E V1.1 — Soul-spezifische Namensfarben.
-               Sprite (Magie · Quarz) → cyan; Wesen (Solid · Stein+Holz) → erdig brass;
-               Geist (Ätherisch · Laub+Leder) → grünlich. Macht Identität sofort
-               sichtbar — Spieler erkennt am Namen den Charakter-Typ. */
-            .creature-list .creature-name.soul-sprite {
-                color: #88e1e1;
-                text-shadow: 0 0 4px rgba(136, 225, 225, 0.35);
+            /* Welle 6.H Phase 2E V1.1 / ALTLASTEN-NULL — Soul-Namensfarben der
+               vier Tiere: Hirsch erdig, Wolf grau-blau, Fuchs rost, Bär braun. */
+            .creature-list .creature-name.soul-wolf {
+                color: #aeb6c2;
+                text-shadow: 0 0 4px rgba(174, 182, 194, 0.35);
             }
             .creature-list .creature-name.soul-wesen {
                 color: #d4a373;
                 text-shadow: 0 0 4px rgba(212, 163, 115, 0.25);
             }
-            .creature-list .creature-name.soul-geist {
-                color: #9fc89d;
-                text-shadow: 0 0 4px rgba(159, 200, 157, 0.25);
+            .creature-list .creature-name.soul-fuchs {
+                color: #e08a54;
+                text-shadow: 0 0 4px rgba(224, 138, 84, 0.25);
+            }
+            .creature-list .creature-name.soul-baer {
+                color: #b08968;
+                text-shadow: 0 0 4px rgba(176, 137, 104, 0.25);
             }
             /* Welle 6.H Phase 2E V1.1 — Chat-Antwort einer Kreatur mit
                Soul-farbigem Namen. Identische Farben wie in der Liste,
@@ -3403,14 +3409,17 @@
             .chat-creature-name {
                 font-weight: bold;
             }
-            .chat-creature-name.soul-sprite {
-                color: #88e1e1;
+            .chat-creature-name.soul-wolf {
+                color: #aeb6c2;
             }
             .chat-creature-name.soul-wesen {
                 color: #d4a373;
             }
-            .chat-creature-name.soul-geist {
-                color: #9fc89d;
+            .chat-creature-name.soul-fuchs {
+                color: #e08a54;
+            }
+            .chat-creature-name.soul-baer {
+                color: #b08968;
             }
             /* Welle 6.H Phase 2E V3 — Kreatur-Vorschlag-Buttons inline im Chat.
                Spieler bestätigt/lehnt direkt in der Zeile. Auto-Hinweis-Zeilen
@@ -8151,9 +8160,10 @@
                     <div class="hof-spawn-row">
                         <select id="creature-soul-select" aria-label="Kreatur-Seele wählen">
                             <option value="">Zufällig</option>
-                            <option value="sprite">Sprite (Magie · Quarz)</option>
-                            <option value="wesen">Wesen (Solid · Stein+Holz)</option>
-                            <option value="geist">Geist (Ätherisch · Laub+Leder)</option>
+                            <option value="wesen">Hirsch (sanft · Wiese)</option>
+                            <option value="wolf">Wolf (Jäger · wach)</option>
+                            <option value="fuchs">Fuchs (flink · listig)</option>
+                            <option value="baer">Bär (schwer · ruhig)</option>
                         </select>
                         <button type="button" data-creature-spawn="1">+1</button>
                         <button type="button" data-creature-spawn="5">+5</button>
