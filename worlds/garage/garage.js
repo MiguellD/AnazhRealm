@@ -343,8 +343,8 @@ function updateVehicle(dt,t){
   // ── Aufbau-Lastverlagerung: ECHTE Beschleunigung aus dem Reifenmodell → Feder-Dämpfer ──
   const aL=Math.max(-A_PITCH_MAX,Math.min(A_PITCH_MAX,aLongB)), aQ=Math.max(-A_LAT_MAX,Math.min(A_LAT_MAX,aLatB));
   const k=P.springRate, cd=P.damping;
-  const mPitch=aL*(cgH/L)*2.6, mRoll=aQ*(cgH/W)*1.8, mHeave=-Math.abs(aL)*0.08-Math.abs(car.vlong)*0.035; // physikalische Amplitude (~2–3°), nicht übertrieben
-  spPitch.step(mPitch,k,cd,dt); spRoll.step(mRoll,k,cd,dt); spHeave.step(mHeave,k*1.3,cd*1.15,dt);
+  const FG=VC.FAHR; const mPitch=aL*(cgH/L)*FG.pitchGain, mRoll=aQ*(cgH/W)*FG.rollGain, mHeave=-Math.abs(aL)*FG.heaveA-Math.abs(car.vlong)*FG.heaveV; // physikalische Amplitude (~2–3°), nicht übertrieben
+  spPitch.step(mPitch,k,cd,dt); spRoll.step(mRoll,k,cd,dt); spHeave.step(mHeave,k*FG.heaveKMul,cd*FG.heaveCMul,dt);
   const idle=(car.speed<0.05)?(Math.sin(t*42)*0.0014+Math.sin(t*26)*0.0009):0;
   gSprung.rotation.z=spPitch.x;
   gSprung.rotation.x=spRoll.x+((car.speed<0.05)?Math.sin(t*40)*0.0006:0);

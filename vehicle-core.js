@@ -2024,6 +2024,15 @@
         CA_R: 5.6,
         maxGrip: 1.0,
         izzK: 1.4,
+        // ULTRAGUSS U6 — die Feder-Momenten-Koeffizienten als EINE Quelle
+        // (vorher zweimal getippt: Lab updateVehicle + Kern wheelClearance —
+        // ein einseitiges Tuning ließ die Radkasten-Hüllkurve still divergieren):
+        pitchGain: 2.6,
+        rollGain: 1.8,
+        heaveA: 0.08,
+        heaveV: 0.035,
+        heaveKMul: 1.3,
+        heaveCMul: 1.15,
     };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
@@ -2041,9 +2050,11 @@
             const z = cc / (2 * Math.sqrt(kk));
             return 1 + (z < 1 ? Math.exp((-z * Math.PI) / Math.sqrt(1 - z * z)) : 0);
         }; // Ueberschwing-Faktor aus ζ=c/2√k
-        const pitch = ((A_PITCH_MAX * (cgH / L) * 2.6) / k) * OS(k, c); // Nickwinkel-Spitze [rad]  (mPitch=aL·(cgH/L)·2.6, Feder k,c)
-        const roll = ((A_LAT_MAX * (cgH / W) * 1.8) / k) * OS(k, c); // Wankwinkel-Spitze [rad]  (mRoll=aQ·(cgH/W)·1.8)
-        const heave = ((A_PITCH_MAX * 0.08 + 12 * 0.035) / (k * 1.3)) * OS(k * 1.3, c * 1.15); // Squat-Spitze [m]         (mHeave, Feder k·1.3,c·1.15; v≈12 m/s)
+        const pitch = ((A_PITCH_MAX * (cgH / L) * FAHR.pitchGain) / k) * OS(k, c); // Nickwinkel-Spitze [rad]
+        const roll = ((A_LAT_MAX * (cgH / W) * FAHR.rollGain) / k) * OS(k, c); // Wankwinkel-Spitze [rad]
+        const heave =
+            ((A_PITCH_MAX * FAHR.heaveA + 12 * FAHR.heaveV) / (k * FAHR.heaveKMul)) *
+            OS(k * FAHR.heaveKMul, c * FAHR.heaveCMul); // Squat-Spitze [m] (v≈12 m/s)
         const vert = Math.abs(axleX) * Math.sin(pitch) + heave; // vertikale Annaeherung Reifen→Bogenscheitel
         const inb = (front ? R * Math.sin(steer) : 0) + hw * Math.cos(front ? steer : 0); // inboard-Rand des gelenkten Reifens ab Radmitte
         return { pitch, roll, heave, vert, inb, gap: Math.min(0.3, Math.max(0.045, vert + 0.025)) }; // +25 mm Reserve, gedeckelt
