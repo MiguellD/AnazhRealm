@@ -187,6 +187,27 @@ function scanZwillinge() {
     return errs;
 }
 
+// ULTRAGUSS U3 — DIE BUSTER-LINSE (Lehre 10 als Klasse): JEDER Lab-Kern-Script-
+// Tag trägt die AKTUELLE Version — ein stale ?v= serviert den Studios altes
+// Gesetz aus dem HTTP-Cache (gemessen 11.07.: alle acht Labs stale).
+function scanLabBuster() {
+    const root = path.join(__dirname, "..");
+    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const errs = [];
+    const worlds = fs.readdirSync(path.join(root, "worlds"));
+    for (const w of worlds) {
+        const idx = path.join(root, "worlds", w, "index.html");
+        if (!fs.existsSync(idx)) continue;
+        const src = fs.readFileSync(idx, "utf8");
+        const re = /src="[^"]*-core\.js\?v=([0-9.]+)"/g;
+        let m;
+        while ((m = re.exec(src))) {
+            if (m[1] !== version) errs.push(`worlds/${w}/index.html lädt Kern mit stale ?v=${m[1]} (aktuell ${version})`);
+        }
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     const files = ["anazhRealm.js", "voxel-worker.js", "bake-core.js", "index.html", "signaling-server.js"].map((f) =>
@@ -204,7 +225,7 @@ function main() {
         process.exit(fired ? 0 : 1);
     }
 
-    const errs = scan(files).concat(checkSoulKeys()).concat(scanZwillinge());
+    const errs = scan(files).concat(checkSoulKeys()).concat(scanZwillinge()).concat(scanLabBuster());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
         for (const e of errs) console.log("   ❌ " + e);
