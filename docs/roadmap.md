@@ -20,7 +20,7 @@
 
 ---
 
-## §0 · DER TISCH — die Übersicht (Stand V18.447, Doc-Ordnung 11.07.2026)
+## §0 · DER TISCH — die Übersicht (Stand V18.448, Doc-Ordnung 11.07.2026)
 
 **Die eine Seite, die alles Offene trägt — bevor der nächste GROSSE Bogen beginnt.** Alles
 Erledigte lebt in der Chronik (`docs/archiv/handover.md`); hier steht NUR, was offen ist, mit dem
@@ -88,7 +88,10 @@ neues Groß-Bauen, sondern ein Trichter — vier Stufen, in dieser Reihenfolge:
 5. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
    V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · Wasser-Zwei-Naturen-
    Vereinigung (`L` + CA zu EINER Natur + Wasserfall-Politur) · Lockstep-MP Stufe 3
-   (Fixed-Point/cross-Maschine). → §4 GEMERKTE FÄDEN.
+   (Fixed-Point/cross-Maschine) · **Phönix/Drache-Todes-Design** (V18.448 gemessen: der Phönix
+   trägt die Tod-Wiedergeburts-MECHANIK [`tickPhoenixDeath`, 54 Test-Anker] — der Abschied der
+   zwei konvergierten Fantasie-Seelen ist ein Design-Umbau mit Schöpfer-Wort [welche Gestalt
+   trägt die Wiedergeburt], kein Schnitt im Vorbeigehen). → §4 GEMERKTE FÄDEN.
 6. **Der UX-Bogen:** die ~19 gebauten-aber-UI-losen Subsystem-APIs (Archipel · Robustheit ·
    Compute-Sharing · pinCurrentWorld …) verdienen Verdrahtung. → §7.
 7. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):** N5.4

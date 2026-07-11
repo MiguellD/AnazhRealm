@@ -42,7 +42,8 @@ const rim=new THREE.DirectionalLight(0x6fd0e8,0.6);rim.position.set(-2,3,6);scen
 const VC=window.__vehicleCore;
 const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); Lack-Wechsel mutiert M.paint
 let bodyMat=M.clay; // umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,cgHeightOf,carPhys,A_PITCH_MAX,A_LAT_MAX,PARAMS,CULTURES,PRESETS}=VC;
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,cgHeightOf,carPhys,A_PITCH_MAX,A_LAT_MAX,CULTURES,PRESETS}=VC;
+const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
 function ell(r,sc,m){const me=new THREE.Mesh(new THREE.SphereGeometry(r,40,28),m||bodyMat);if(sc)me.scale.set(sc[0],sc[1],sc[2]);me.castShadow=true;me.receiveShadow=true;return me;}

@@ -23676,7 +23676,8 @@ async function checkBandPhasenBF(ctx) {
         out.c2Src = /_idleMotion/.test(r.tickArchitectures.toString());
         out.c5Curves =
             /handleJump\(/.test(r._loopPlayerMovement.toString()) && /Math\.exp/.test(r._loopPlayerMovement.toString());
-        out.c6Src = /_ensureAuraSkinShells/.test(r.tickPlayerAura.toString());
+        // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
+        out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
         out.d2Src = /_herdContagionAcc/.test(r._tickEmotionContagion.toString());
         out.d3Age = /FAUNA_MAX_AGE_MS/.test(r.tickFaunaLifecycle.toString());
         out.d3Feed = /_depositLife/.test(r._creatureNaturalDeath.toString());
@@ -24243,7 +24244,7 @@ async function checkBandPhasenBF(ctx) {
     check("C1: Verbindung → Gelenk-Rolle mit Anker+Achse (computeMotionRoles, KONSUM)", res.c1Joint);
     check("C2: tickArchitectures trägt das Idle-Motion-Gate (Source)", res.c2Src);
     check("C5: Bewegung läuft über exp-Kurven + EIN handleJump (Source, Verdichtung)", res.c5Curves);
-    check("C6: tickPlayerAura speist die Haut-Shells (Source)", res.c6Src);
+    check("C6/SYNERGIE: die Avatar-Aura (Tick + Haut-Shells) ist PHYSISCH gefallen", res.c6Src);
     check("D2: Herden-Contagion lebt im Contagion-Kern (Source)", res.d2Src);
     check("D3: Alter zählt im Lebenszyklus (FAUNA_MAX_AGE_MS, Source)", res.d3Age);
     check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
@@ -40976,18 +40977,14 @@ async function checkBandWelle6XAudit(ctx) {
             out.statsShowsArmorRow = false;
         }
 
-        // --- A4 (V18.105 gewandert): die Lampe ist GESCHNITTEN — der alte
-        // 1st/3rd-Visibility-Toggle ist gegenstandslos. Die Haut (C6-Shells,
-        // FrontSide → von innen geculled) lebt modus-unabhängig am Körper.
+        // --- A4 (SYNERGIE-WELLE gewandert): die Avatar-Aura ist GANZ gefallen —
+        // kein Tick, keine Lampe, keine Haut-Shells; der Kamera-Wechsel bleibt aura-frei.
         r.setCameraMode("first");
-        r.tickPlayerAura();
-        out.auraHiddenInFirst = !r.state.playerAuraGlow; // die Lampe existiert nicht mehr
+        out.auraHiddenInFirst = !r.state.playerAuraGlow && typeof r.tickPlayerAura !== "function";
         r.setCameraMode("third");
-        r.tickPlayerAura();
-        out.auraVisibleInThird = !r.state.playerAuraGlow && !!r.state.auraSkinUniforms; // Haut statt Lampe
+        out.auraVisibleInThird = !r.state.playerAuraGlow && !r.state.auraSkinUniforms;
         r.setCameraMode("first");
-        r.tickPlayerAura();
-        out.auraPositionStillTracked = true; // Shells sind Kinder — folgen per Konstruktion
+        out.auraPositionStillTracked = true; // gegenstandslos — nichts folgt mehr
 
         // --- Cleanup: Camera-Mode auf Default „first" zurücksetzen
         // (Ring 5 V2-Prep prüft Initial-Modus). Hotbar auf Default
@@ -43272,14 +43269,16 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         p2p.peerId = "self-v834";
         p2p.enabled = false;
 
+        // SYNERGIE-WELLE — die Avatar-Aura ist gefallen: 5 lebende Methoden + die
+        // explizite ABWESENHEIT der zwei Aura-Seiten (Sende + Peer-Sprite).
         out.methodsExist =
             typeof r._p2pBuildPlaceholderMesh === "function" &&
             typeof r._p2pApplyPeerSoul === "function" &&
             typeof r._p2pBuildNameLabel === "function" &&
             typeof r._p2pUpdatePeer === "function" &&
-            typeof r._p2pEnsurePeerAura === "function" &&
+            typeof r._p2pEnsurePeerAura !== "function" &&
             typeof r._p2pBroadcastSoul === "function" &&
-            typeof r._p2pBroadcastAura === "function";
+            typeof r._p2pBroadcastAura !== "function";
 
         // Frischer Peer → Cone+Sphere-Platzhalter, V3-Felder vorhanden.
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
@@ -43287,7 +43286,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
         out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
         out.entryHasV3Fields =
-            !!pv1 && "soulName" in pv1 && "auraHue" in pv1 && "walkPhase" in pv1 && "nameLabel" in pv1;
+            !!pv1 && "soulName" in pv1 && !("auraHue" in pv1) && "walkPhase" in pv1 && "nameLabel" in pv1;
 
         // soul-Nachricht (Built-in Phönix) → echte Seele + Name-Schild.
         r.p2pHandleMessage(JSON.stringify({ type: "soul", peerId: "pv1", soulName: "phoenix", name: "Aria" }));
@@ -43330,14 +43329,15 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
         out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
 
-        // aura-Nachricht.
+        // aura-Nachricht (SYNERGIE-WELLE): must-ignore-Stub — ein alter Peer darf sie
+        // weiter senden, sie crasht nie und hinterlaesst KEINEN Aura-State am Entry.
         r.p2pHandleMessage(JSON.stringify({ type: "aura", peerId: "pv1", hue: 270, intensity: 0.8 }));
         const pv1d = p2p.peers.get("pv1");
-        out.auraReceived = !!pv1d && pv1d.auraHue === 270 && Math.abs((pv1d.auraIntensity || 0) - 0.8) < 0.001;
+        out.auraReceived = !!pv1d && !("auraHue" in pv1d) && !("auraIntensity" in pv1d);
 
-        // _p2pUpdatePeer erzeugt den Aura-Sprite + animiert.
+        // _p2pUpdatePeer animiert — und erzeugt KEINEN Aura-Sprite mehr (gefallen).
         r._p2pUpdatePeer(pv1d, 1.0, 0.016);
-        out.auraSpriteCreated = !!pv1d.auraGlow;
+        out.auraSpriteCreated = !pv1d.auraGlow;
 
         // _p2pBroadcastSoul-Payload (p2pSend gemockt).
         p2p.enabled = true;
@@ -43356,16 +43356,14 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
             captured.soulName === r.state.player.soul &&
             typeof captured.name === "string";
 
-        // tickPlayerAura cached die Aura-Werte für den Sync.
-        r.tickPlayerAura();
-        out.auraOutCached =
-            typeof r.state.player._auraHueOut === "number" && typeof r.state.player._auraIntensityOut === "number";
+        // SYNERGIE-WELLE: tickPlayerAura ist GESCHNITTEN — kein Aura-Cache am Spieler.
+        out.auraOutCached = typeof r.tickPlayerAura !== "function" && !("_auraHueOut" in r.state.player);
 
         // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
         // den dedizierten `soul`-Kanal, NICHT über die DSL.
         out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
 
-        // _p2pRemovePeer räumt Peer + Mesh + Aura + Name-Schild.
+        // _p2pRemovePeer räumt Peer + Mesh + Name-Schild.
         r._p2pRemovePeer("pv1");
         r._p2pRemovePeer("pv2");
         out.peersRemoved = !p2p.peers.has("pv1") && !p2p.peers.has("pv2");
@@ -43375,7 +43373,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
     });
 
     if (v834Results && !v834Results.error) {
-        check("V8.34: Soul-Sync-Methoden existieren (7)", v834Results.methodsExist);
+        check("V8.34 (SYNERGIE): Soul-Sync-Methoden (5 leben, Aura-Paar geschnitten)", v834Results.methodsExist);
         check("V8.34: frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
@@ -43389,12 +43387,12 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Drache)", v834Results.soulChangeRebuilt);
         check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
         check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
-        check("V8.34: aura-Nachricht setzt Hue + Intensität", v834Results.auraReceived);
-        check("V8.34: _p2pUpdatePeer erzeugt den Peer-Aura-Sprite", v834Results.auraSpriteCreated);
+        check("V8.34 (SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
+        check("V8.34 (SYNERGIE): _p2pUpdatePeer erzeugt KEINEN Aura-Sprite", v834Results.auraSpriteCreated);
         check("V8.34: _p2pBroadcastSoul sendet {type:soul, soulName, name}", v834Results.broadcastSoulPayload);
-        check("V8.34: tickPlayerAura cached Hue+Intensität für den Sync", v834Results.auraOutCached);
+        check("V8.34 (SYNERGIE): tickPlayerAura ist geschnitten (kein Aura-Cache)", v834Results.auraOutCached);
         check("V8.34: player_soul bleibt NON_BROADCASTABLE (Soul-Sync ≠ DSL)", v834Results.playerSoulStillLocal);
-        check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Aura + Schild", v834Results.peersRemoved);
+        check("V8.34: _p2pRemovePeer entfernt Peer + Avatar + Schild", v834Results.peersRemoved);
     } else {
         check("V8.34: Soul-Sync Tests laufen", false, v834Results ? v834Results.error : "no result");
     }
