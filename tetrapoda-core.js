@@ -573,11 +573,65 @@
         Object.freeze({ dial: "diet", axis: "eyeFront", base: 0.12, mul: 0.63 }),
     ]);
 
+
+    // ULTRAGUSS U4 — DIE DIAL→TIER-ALLOMETRIE (verbatim aus dem Lab gewandert;
+    // die EINE Quelle für Lab-Anatomie UND jeden künftigen Leser). Reine Mathe:
+    // dials {size, neckLen, legLen, diet, build} → ~25 abgeleitete Größen
+    // (Muskel-Skalierung ^0.67 · Schädel ^0.25 · Schnauze/Auge aus diet ·
+    // Fell-Dichten · Farb-Triade). MESHFREI §8 — Zahlen, keine Meshes.
+    function deriveTierParams(d) {
+        var size = d.size, neckLen = d.neckLen, legLen = d.legLen, diet = d.diet, build = d.build;
+        var legMuscle = 0.42 * Math.pow(size / 2.4, 0.67) + (build - 0.5) * 0.3;
+        legMuscle = Math.max(0.10, Math.min(0.90, legMuscle));
+        var neckAng = 8 + (neckLen - 0.263) * 55,
+            snoutZ = 1.50 + (1 - diet) * 0.35,
+            snoutX = 0.92 - (1 - diet) * 0.25,
+            eyeFwd = 0.05 + diet * 0.18,
+            noseW = 2.00 - diet * 0.40;
+        var bWF = 0.35 + build * 0.20,
+            bellyD = 0.04 + build * 0.18,
+            skullR = 0.064 * Math.pow(size / 2.4, 0.25),
+            tailSegs = Math.round(4 + (1 - build) * 7);
+        var cB, cD, cL, base;
+        if (diet > 0.7) { cB = 0x6b5840; cD = 0x3a2e1c; cL = 0xc0a060; base = '#5a4838'; }
+        else if (diet > 0.3) { cB = 0x3a2a1a; cD = 0x1a1208; cL = 0x5a4030; base = '#3a2a18'; }
+        else { cB = 0x7a5a38; cD = 0x3a2a18; cL = 0x9a7a50; base = '#6a4a28'; }
+        var guardL = 0.025 + build * 0.020,
+            underL = 0.010 + build * 0.010,
+            gDens = Math.round(30000 + build * 30000),
+            uDens = Math.round(15000 + build * 14000),
+            maneCount = Math.round(2000 * diet),
+            maneLen = 0.16;
+        return {
+            size: size, neckLen: neckLen, neckAng: neckAng, legLen: legLen, legMuscle: legMuscle,
+            diet: diet, build: build, snoutZ: snoutZ, snoutX: snoutX, eyeFwd: eyeFwd, noseW: noseW,
+            bWF: bWF, bellyD: bellyD, skullR: skullR, tailSegs: tailSegs,
+            cB: cB, cD: cD, cL: cL, base: base,
+            guardL: guardL, underL: underL, gDens: gDens, uDens: uDens,
+            maneCount: maneCount, maneLen: maneLen, throat: 0.15 + diet * 0.10,
+        };
+    }
+
+    // ULTRAGUSS U4 — DER CPG-PHASEN-SCHRITT (das Gang-Netz-Gesetz, verbatim aus
+    // dem Lab): phases[4] werden über die Kopplungs-Matrix + Gain 0.8 fortgeschrieben.
+    function cpgStep(phases, freq, coupling, dt) {
+        var d = [0, 0, 0, 0];
+        for (var i = 0; i < 4; i++) {
+            var c = 0;
+            for (var j = 0; j < 4; j++) c += coupling[i][j] * Math.sin(phases[j] - phases[i]);
+            d[i] = freq + c * 0.8;
+        }
+        for (var k = 0; k < 4; k++) phases[k] += d[k] * dt;
+        return phases;
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__tetrapodaCore = {
         VERSION: VERSION,
         ARCHETYPES: ARCHETYPES,
         buildSkeleton: buildSkeleton,
+        deriveTierParams: deriveTierParams,
+        cpgStep: cpgStep,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,

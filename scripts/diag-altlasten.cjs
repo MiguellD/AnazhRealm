@@ -157,6 +157,18 @@ const ZWILLINGE = [
         verboten: ["foundry-core.js"],
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
     },
+    {
+        fingerprint: "Math.pow(size / 2.4, 0.67)",
+        gesetzbuch: "tetrapoda-core.js",
+        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
+    },
+    {
+        fingerprint: "Math.sin(phases[j] - phases[i])",
+        gesetzbuch: "tetrapoda-core.js",
+        verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
+        fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
+    },
 ];
 
 function scanZwillinge() {
