@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 11.07.2026 (V18.447):** Die ARCHITEKTUR-Bögen sind RUND — **Nervensystem** α→ε
+> **Stand 11.07.2026 (V18.449):** Die ARCHITEKTUR-Bögen sind RUND — **Nervensystem** α→ε
 > (`docs/nervensystem-plan.md`, DoD 1–4 ✓, offen nur DoD 5 = das Schöpfer-Wort) + **Katalysator**
 > W-A1–A7 (`docs/auslagerungs-plan.md` — der Stamm trägt keine eigenen Modelle mehr, Labs 7/7
 > gedockt + 7/7 Portale) + **Parität W1–W7** (`docs/paritaet-vollendung-plan.md` — offen W8
@@ -20,7 +20,7 @@
 
 ---
 
-## §0 · DER TISCH — die Übersicht (Stand V18.448, Doc-Ordnung 11.07.2026)
+## §0 · DER TISCH — die Übersicht (Stand V18.449, Doc-Ordnung 11.07.2026)
 
 **Die eine Seite, die alles Offene trägt — bevor der nächste GROSSE Bogen beginnt.** Alles
 Erledigte lebt in der Chronik (`docs/archiv/handover.md`); hier steht NUR, was offen ist, mit dem
@@ -37,7 +37,9 @@ V18.434** (KIND_POLICY · Manifest · Pack · Instance-Straße · Place/Drive ·
 2 Daten-Hunks; DoD 1–4 ✓) · **Katalysator W-A1–A7 ✓ V18.437–.446** (Rezept-Katalog · Portal-Gestalt ·
 schmiede/fachwerk/koerperstudio/tetrapoda/klang VOLL gedockt · Auto-Dörfer · Emotions→Profil-Brücke ·
 Donor-/Alt-Modell-Abschied PHYSISCH — der Stamm trägt 0 eigene Modelle, 0 kind-ifs, Labs 7/7 Portale) ·
-**Trias-LOD-Wahrheit ✓ V18.444** (platzierte Studio-Architektur in der EINEN LOD-Geschichte, 13,5×).
+**Trias-LOD-Wahrheit ✓ V18.444** (platzierte Studio-Architektur in der EINEN LOD-Geschichte, 13,5×) ·
+**ALTLASTEN-NULL ✓ V18.449** (Phönix/Drache/Glut/Sprite/Geist/Wächter/Aura physisch raus · Tod feld-nativ ·
+Körper→Stats als Zahl · `gate:altlasten` als stehende Rückkehr-Wand · CLAUDE.md = eine Seite).
 
 **DER VOLLENDUNGS-TRICHTER (der Weg zum professionellen Abschluss — 11.07.2026):**
 Das gemessene Muster der letzten ~20 Wellen: headless exzellent verifiziert, aber die
@@ -88,10 +90,9 @@ neues Groß-Bauen, sondern ein Trichter — vier Stufen, in dieser Reihenfolge:
 5. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
    V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · Wasser-Zwei-Naturen-
    Vereinigung (`L` + CA zu EINER Natur + Wasserfall-Politur) · Lockstep-MP Stufe 3
-   (Fixed-Point/cross-Maschine) · **Phönix/Drache-Todes-Design** (V18.448 gemessen: der Phönix
-   trägt die Tod-Wiedergeburts-MECHANIK [`tickPhoenixDeath`, 54 Test-Anker] — der Abschied der
-   zwei konvergierten Fantasie-Seelen ist ein Design-Umbau mit Schöpfer-Wort [welche Gestalt
-   trägt die Wiedergeburt], kein Schnitt im Vorbeigehen). → §4 GEMERKTE FÄDEN.
+   (Fixed-Point/cross-Maschine). **ERFÜLLT V18.449
+   (sichtbar behalten):** Phönix/Drache-Todes-Design — der Tod ist feld-nativ (Anker-Rückkehr,
+   derselbe Körper, Feld-Spur), die Fantasie-Seelen sind ganz gefallen. → §4 GEMERKTE FÄDEN.
 6. **Der UX-Bogen:** die ~19 gebauten-aber-UI-losen Subsystem-APIs (Archipel · Robustheit ·
    Compute-Sharing · pinCurrentWorld …) verdienen Verdrahtung. → §7.
 7. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):** N5.4

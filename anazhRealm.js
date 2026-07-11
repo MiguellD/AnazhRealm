@@ -24,10 +24,10 @@
 // §04 AUDIO — Lo-Fi-Symphonie · Resonanz-Pings
 // §05 UI-GRUNDIERUNG — Drawer · Omnibox · Help-Pops · Feed-Spiegel
 // §06 KREATUREN — Seelen · Innenleben/Emotion · Motion · Aufträge · Jagd
-// §07 CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · BVH · Kollisions-Leben
+// §07 CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision
 // §08 WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen
 // §09 KASKADE/KERN-STATICS — Detail-Kaskade · frozen Signaturen/Konstanten
-// §10 LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · Toon-Material
+// §10 LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · PBR-Uniform-Sync
 // §11 VOXEL-MESHER/WASSER — Chunk-Build · Wasser-Zellen/Iso/Sheet · CA · Edits
 // §12 PERSISTENZ/TAILLE — Snapshot · Restore · IndexedDB · Ω-Zwillinge
 // §13 IDENTITÄT/WELTEN/SOZIAL — Vibe-Pass · Bibliothek/Feed · Zeugnisse · Welt-Manifest
@@ -36,7 +36,7 @@
 // §16 SUBSTANZ/BAU — Materialien · Baupläne · der EINE Builder · Verbindungen
 // §17 ARCHITEKTUR-HISM — Instancing · Welt-Spawns · Culling
 // §18 LEBENS-FELD — deposit/decay-Overlay — die Schreib-Seite des Feldes
-// §19 LICHT/WASSER-REGLER — Cel-LUT · alle Render-Setter
+// §19 LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler)
 // §20 SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung
 // §21 BAU-ÖKONOMIE/ERNTE — Kosten-Tore · confirmBuild · Ernte/Abbau
 // §22 ICH/HOF-RÄUME — Equip-UI · Rezeptbuch · Hof-Bühne/Karten
@@ -21900,7 +21900,7 @@ class AnazhRealm {
         }
     }
 
-    // ===== ATLAS §07 · CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · BVH · Kollisions-Leben =====
+    // ===== ATLAS §07 · CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision =====
     // Lazy-Singleton: spawnt den Voxel-Density-Worker (off-thread CPU, integriert
     // seit V9.90, voll engagiert V17.118 — der Mesh-Bau läuft off-main-thread, nur
     // der Spieler-Chunk sync). Der Determinismus-Test bewacht die bit-identische
@@ -28883,7 +28883,7 @@ class AnazhRealm {
         return mat;
     }
 
-    // ===== ATLAS §10 · LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · Toon-Material =====
+    // ===== ATLAS §10 · LICHT-MATERIAL/FREQUENZBAND — Atmo-Uniforms · Substanz-Antennen · PBR-Uniform-Sync =====
     // V12.0-f — Toon-Material-Helper: alle Toon-Materials der Welt (Voxel-
     // Chunks, Architektur-Parts, Inseln, Avatar-Torso) sind native
     // `THREE.MeshToonNodeMaterial` (r184, lights=true). Die EINE Wahrheits-
@@ -63059,7 +63059,7 @@ class AnazhRealm {
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     }
 
-    // ===== ATLAS §19 · LICHT/WASSER-REGLER — Cel-LUT · alle Render-Setter =====
+    // ===== ATLAS §19 · LICHT/WASSER-REGLER — alle Render-Setter (EINE Quelle je Regler) =====
     // V8.28 6.G4.b C — Mutations-Pfad für den Fog-Distanz-Slider.
     // fogDistance ist ein Multiplikator (0.3 dicht .. 2.0 weit) auf
     // Fog-near/far. Die echten Werte setzt _applyDayNightToScene.
@@ -83346,7 +83346,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.448.0";
+AnazhRealm.VERSION = "18.449.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

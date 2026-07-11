@@ -1,4 +1,7 @@
-# DER ALTLASTEN-NULL-BOGEN — der Plan, der den Zyklus beendet
+# DER ALTLASTEN-NULL-BOGEN — GEBAUT V18.449 (ein Guss, 11.07.2026)
+
+> Alle drei Wellen vollzogen; die Rückkehr-Wand (`gate:altlasten`) steht im check.
+> Dieses Dokument bleibt als Referenz der Gesetze (§1) — der Zyklus ist beendet.
 
 Schöpfer-Auftrag 11.07.2026: „aura kann raus, es gibt keine alten peers … wir haben soviele
 altlasten, weil wir nie entfernt haben, hör auf damit! … es ging darum die eigenschaften ändern
