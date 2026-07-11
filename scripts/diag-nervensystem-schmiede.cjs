@@ -134,14 +134,23 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
         'S5: die Klingen-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "hand")',
         /place:\s*\{\s*mode:\s*"hand"\s*\}/.test(scNC),
     ]);
+    // ERFINDER-WELLE (Linsen-Heilung, die Trias-Parser-Klasse): die Substanz-Zeilen sind
+    // seit einem Prettier-Lauf MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex
+    // griff ins Leere (vorbestehend rot, tail-maskiert). Klammer-bewusste Row-Extraktion
+    // (ksRow) + SEMANTIK-Pruefung statt Format-Pin.
+    const swRow = ksRow(anazhNC, "geraet_schwert");
+    const spRow = ksRow(anazhNC, "geraet_spitzhacke");
     out.push([
         "S6: die Donor-SUBSTANZ lebt in KIND_SUBSTANCE (geraet_schwert + geraet_spitzhacke mit parts, kein portalMeta/roleManual) — der Alt-Blueprint-Block ist GEFALLEN",
         /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
-            /geraet_schwert:\s*\{"label":"Schwert","parts":\[\{"shape"/.test(anazhNC) &&
-            /geraet_spitzhacke:\s*\{"label":"Spitzhacke","parts":\[\{"shape"/.test(anazhNC) &&
-            !/geraet_schwert:\s*\{\s*name:\s*"geraet_schwert"/.test(anazhNC) &&
-            !/geraet_schwert:\s*\{[^\n]*portalMeta/.test(anazhNC) &&
-            !/geraet_schwert:\s*\{[^\n]*roleManual/.test(anazhNC),
+            /label:\s*"Schwert"/.test(swRow) &&
+            /parts:\s*\[/.test(swRow) &&
+            /shape/.test(swRow) &&
+            /label:\s*"Spitzhacke"/.test(spRow) &&
+            /parts:\s*\[/.test(spRow) &&
+            !/name:\s*"geraet_schwert"/.test(swRow) &&
+            !/portalMeta/.test(swRow) &&
+            !/roleManual/.test(swRow),
     ]);
     // W-A4b — die Hand-Gesetze (statisch):
     out.push([
@@ -636,3 +645,31 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     console.error("ε-Schmiede-Diag-Fehler:", (e && e.stack) || e);
     process.exit(2);
 });
+
+// ERFINDER-WELLE — die klammer-bewusste KIND_SUBSTANCE-Row-Extraktion (quote-sicher;
+// dieselbe Heilung wie gate:trias kindSubstanceRowSpan).
+function ksRow(src, name) {
+    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
+    if (start < 0) return "";
+    const end = src.indexOf("\n});", start);
+    const k = src.indexOf("\n    " + name + ": ", start);
+    if (k < 0 || k > end) return "";
+    const i = src.indexOf("{", k);
+    let depth = 0;
+    let inStr = null;
+    for (let j = i; j <= end; j++) {
+        const c = src[j];
+        if (inStr) {
+            if (c === "\\") j++;
+            else if (c === inStr) inStr = null;
+            continue;
+        }
+        if (c === '"' || c === "'") inStr = c;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+            depth--;
+            if (!depth) return src.slice(i, j + 1);
+        }
+    }
+    return "";
+}

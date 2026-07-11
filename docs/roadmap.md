@@ -6,7 +6,7 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 11.07.2026 (V18.446):** Die ARCHITEKTUR-Bögen sind RUND — **Nervensystem** α→ε
+> **Stand 11.07.2026 (V18.447):** Die ARCHITEKTUR-Bögen sind RUND — **Nervensystem** α→ε
 > (`docs/nervensystem-plan.md`, DoD 1–4 ✓, offen nur DoD 5 = das Schöpfer-Wort) + **Katalysator**
 > W-A1–A7 (`docs/auslagerungs-plan.md` — der Stamm trägt keine eigenen Modelle mehr, Labs 7/7
 > gedockt + 7/7 Portale) + **Parität W1–W7** (`docs/paritaet-vollendung-plan.md` — offen W8
@@ -20,7 +20,7 @@
 
 ---
 
-## §0 · DER TISCH — die Übersicht (Stand V18.446, Doc-Ordnung 11.07.2026)
+## §0 · DER TISCH — die Übersicht (Stand V18.447, Doc-Ordnung 11.07.2026)
 
 **Die eine Seite, die alles Offene trägt — bevor der nächste GROSSE Bogen beginnt.** Alles
 Erledigte lebt in der Chronik (`docs/archiv/handover.md`); hier steht NUR, was offen ist, mit dem
@@ -125,7 +125,7 @@ verloren): MECHANIK braucht eine ZAHL, LOOK braucht ein BILD.
 
 ## §2 · Wo wir stehen
 
-> **Der LIVE-Stand lebt im `CLAUDE.md`-Kopf („Aktueller Stand", heute V18.446) + der Chronik
+> **Der LIVE-Stand lebt im `CLAUDE.md`-Kopf („Aktueller Stand", heute V18.447) + der Chronik
 > `docs/archiv/handover.md` — dieser Absatz ist der 11./18.06.-Snapshot (Fundament-Wertung, gültig).**
 
 Das **Fundament steht und ist RUND** (Stand 11.06.2026): Voxel-Terrain mit Höhlen/Canyons ·
@@ -208,7 +208,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 11.07.2026 (V18.446):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
+> **Stand 11.07.2026 (V18.447):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
 > **`docs/wahrerguss.md`** (+ Sub-Bögen `lebendiger-koerper-plan.md` · `koerper-neuanlage-plan.md`);
 > die NORMATIVEN Referenzen `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS) + `docs/archiv/wahreranblick.md`
 > (Ω-OPSIS) liegen in der Bibliothek. Der Live-

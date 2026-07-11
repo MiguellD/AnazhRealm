@@ -120,17 +120,49 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
         'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
         /place:\s*\{\s*mode:\s*"settlement",\s*siteTag:\s*"haus"\s*\}/.test(fcNC),
     ]);
-    // AUSLÖSCHUNGS-WELLE: die Donor-Substanz lebt als EINE JSON-Zeile in KIND_SUBSTANCE.
-    const donorBlock = anazhNC.match(/haus_basis:\s*\{"label":"Haus","parts":\[[^\n]*\},/);
+    // AUSLÖSCHUNGS-WELLE: die Donor-Substanz lebt in KIND_SUBSTANCE. ERFINDER-WELLE
+    // (Linsen-Heilung, die Trias-Parser-Klasse): die Zeile ist seit einem Prettier-Lauf
+    // MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex griff ins Leere (vorbestehend
+    // rot, tail-maskiert). Klammer-bewusste Row-Extraktion + SEMANTIK-Pruefung.
+    const hausRow = ksRow(anazhNC, "haus_basis");
     out.push([
         "S6: die Donor-SUBSTANZ haus_basis lebt in KIND_SUBSTANCE (kein portalMeta/roleManual; >= 6 Parts — die Tuer-Luecke ist KEIN Part, begehbar per Konstruktion) — der Alt-Blueprint-Block ist GEFALLEN",
-        !!donorBlock &&
-            !/portalMeta/.test(donorBlock[0]) &&
-            !/roleManual/.test(donorBlock[0]) &&
-            (donorBlock[0].match(/"shape":"box"/g) || []).length >= 6 &&
-            !/haus_basis:\s*\{\s*name:\s*"haus_basis"/.test(anazhNC),
+        !!hausRow &&
+            /label:\s*"Haus"/.test(hausRow) &&
+            !/portalMeta/.test(hausRow) &&
+            !/roleManual/.test(hausRow) &&
+            (hausRow.match(/shape:\s*"box"/g) || []).length >= 6 &&
+            !/name:\s*"haus_basis"/.test(hausRow),
     ]);
     return out;
+}
+
+// ERFINDER-WELLE — die klammer-bewusste KIND_SUBSTANCE-Row-Extraktion (quote-sicher;
+// dieselbe Heilung wie gate:trias kindSubstanceRowSpan).
+function ksRow(src, name) {
+    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
+    if (start < 0) return "";
+    const end = src.indexOf("\n});", start);
+    const k = src.indexOf("\n    " + name + ": ", start);
+    if (k < 0 || k > end) return "";
+    const i = src.indexOf("{", k);
+    let depth = 0;
+    let inStr = null;
+    for (let j = i; j <= end; j++) {
+        const c = src[j];
+        if (inStr) {
+            if (c === "\\") j++;
+            else if (c === inStr) inStr = null;
+            continue;
+        }
+        if (c === '"' || c === "'") inStr = c;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+            depth--;
+            if (!depth) return src.slice(i, j + 1);
+        }
+    }
+    return "";
 }
 
 (async () => {

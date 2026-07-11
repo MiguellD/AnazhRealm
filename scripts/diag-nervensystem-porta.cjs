@@ -114,14 +114,50 @@ function staticLaws(anazhSrc, pcSrc, manifestSrc) {
         "S5: die Tor-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode site + siteTag tor)",
         /place:\s*\{\s*mode:\s*"site",\s*siteTag:\s*"tor"\s*\}/.test(pcNC),
     ]);
+    // ERFINDER-WELLE (Linsen-Heilung, die Trias-Parser-Klasse): die Substanz-Zeile ist
+    // seit einem Prettier-Lauf MEHRZEILIG (unquoted keys) — die Einzeilen-JSON-Regex
+    // griff ins Leere (vorbestehend rot, tail-maskiert). Klammer-bewusste, quote-
+    // sichere Row-Extraktion; geprueft wird die SEMANTIK (label · parts · keine
+    // Blueprint-Felder), nicht das Format.
+    const torRow = ksRow(anazhNC, "tor_basis");
     out.push([
         "S6: die Donor-SUBSTANZ tor_basis lebt in KIND_SUBSTANCE (label Torbogen, parts, kein portalMeta) — der Alt-Blueprint-Block ist GEFALLEN (AUSLÖSCHUNGS-WELLE)",
         /KIND_SUBSTANCE = Object\.freeze\(\{/.test(anazhNC) &&
-            /tor_basis:\s*\{"label":"Torbogen","parts":\[\{"shape"/.test(anazhNC) &&
-            !/tor_basis:\s*\{\s*name:\s*"tor_basis"/.test(anazhNC) &&
-            !/tor_basis:\s*\{[^\n]*portalMeta/.test(anazhNC),
+            /label:\s*"Torbogen"/.test(torRow) &&
+            /parts:\s*\[/.test(torRow) &&
+            /shape/.test(torRow) &&
+            !/name:\s*"tor_basis"/.test(torRow) &&
+            !/portalMeta/.test(torRow),
     ]);
     return out;
+}
+
+// ERFINDER-WELLE — die klammer-bewusste KIND_SUBSTANCE-Row-Extraktion (quote-sicher;
+// dieselbe Heilung wie gate:trias kindSubstanceRowSpan).
+function ksRow(src, name) {
+    const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
+    if (start < 0) return "";
+    const end = src.indexOf("\n});", start);
+    const k = src.indexOf("\n    " + name + ": ", start);
+    if (k < 0 || k > end) return "";
+    const i = src.indexOf("{", k);
+    let depth = 0;
+    let inStr = null;
+    for (let j = i; j <= end; j++) {
+        const c = src[j];
+        if (inStr) {
+            if (c === "\\") j++;
+            else if (c === inStr) inStr = null;
+            continue;
+        }
+        if (c === '"' || c === "'") inStr = c;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+            depth--;
+            if (!depth) return src.slice(i, j + 1);
+        }
+    }
+    return "";
 }
 
 (async () => {

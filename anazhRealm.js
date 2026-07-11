@@ -18314,11 +18314,11 @@ class AnazhRealm {
             });
         return parts;
     }
-    // AUSLÖSCHUNGS-WELLE (A5) — DAS HOLZROSS AUS DEM TETRAPODA-GUSS: die hand-
-    // geschriebene 7-Part-Liste ist gefallen; der Körper kommt aus dem EINEN
-    // Skelett-Gesetz `_creatureSkeleton` (die Gattung deer als Daten-Zeile
-    // REITTIER_SKELETON_G — die tetrapoda-Paarung des Reittiers, wie
-    // TETRAPODA_SOUL_MAP für die Seelen), BODEN-GELIFTET (ein Bauplan steht
+    // AUSLÖSCHUNGS-WELLE (A5) / ERFINDER-WELLE — DAS PFERD AUS DEM SKELETT-GUSS: die
+    // hand-geschriebene 7-Part-Liste ist gefallen; der Körper kommt aus dem EINEN
+    // Skelett-Gesetz `_creatureSkeleton` (der horse-Archetyp als Daten-Zeile
+    // REITTIER_SKELETON_G — echte Pferde-Proportionen statt der deer-Ausrede),
+    // BODEN-GELIFTET (ein Bauplan steht
     // auf y=0, kein Kreatur-Grounding) + der belebende QUARZ-KERN (magieleitung
     // = Antrieb, `_isMoveable`). Tags WERT-GLEICH + Rolle vehicle GEMESSEN
     // (Mint-Probe 10.07.; kein leder-Limb — leder gewann nie einen Tag-MAX).
@@ -48677,8 +48677,7 @@ class AnazhRealm {
         // ERFINDER-WELLE — dialsOv: der Werkstatt-Regler-Kanal (die mensch-Rezept-Vorschau
         // formt den Koerper LIVE); ohne Argument byte-alt (alle bestehenden Aufrufer).
         const dialsBase = this._koerperStudioDials();
-        const dials =
-            dialsOv && typeof dialsOv === "object" ? Object.assign({}, dialsBase || {}, dialsOv) : dialsBase;
+        const dials = dialsOv && typeof dialsOv === "object" ? Object.assign({}, dialsBase || {}, dialsOv) : dialsBase;
         const g = { kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint };
         if (dials) {
             for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
@@ -56946,14 +56945,17 @@ class AnazhRealm {
                 roleManual: true,
                 parts: this._waechterSoulParts(),
             },
-            // AUSLÖSCHUNGS-WELLE — das HOLZROSS aus dem tetrapoda-GUSS: dasselbe
-            // Skelett-Gesetz wie die Kreaturen (_creatureSkeleton, Gattung deer als
+            // AUSLÖSCHUNGS-WELLE — das REITTIER aus dem Skelett-GUSS: dasselbe
+            // Skelett-Gesetz wie die Kreaturen (_creatureSkeleton, horse-Archetyp als
             // Daten-Zeile REITTIER_SKELETON_G) + der belebende Quarz-Kern (Antrieb).
             // Tags WERT-GLEICH gemessen (Mint-Probe 10.07.), Rolle vehicle + rideable
             // (sitz-connection auf dem Torso-Kern, Part 0) bleiben.
+            // ERFINDER-WELLE — das Reittier heißt ehrlich PFERD (horse-Archetyp-Guss);
+            // der Schlüssel `reittier_holzross` bleibt load-bearing (Saves · Hotbar ·
+            // platzierte Einträge — V18.259-Gesetz), nur Schild + Gestalt modern.
             reittier_holzross: {
                 name: "reittier_holzross",
-                label: "Holzross",
+                label: "Pferd",
                 builtIn: true,
                 parts: this._holzrossParts(),
                 connections: [{ type: "sitz", partA: 0, partB: -1 }],
@@ -83803,7 +83805,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.446.0";
+AnazhRealm.VERSION = "18.447.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -86058,15 +86060,17 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         crest: true,
     }),
 });
-// AUSLÖSCHUNGS-WELLE (A5) — die REITTIER-Skelett-Daten: das Holzross liest die
-// tetrapoda-Gattung deer (leggy Lauftier — die ehrliche Ross-Paarung des Labs;
-// kein horse im 4-Gattungs-Lab) über dasselbe Skelett-Gesetz. kern = die Kanten-
-// länge des belebenden Quarz-Oktaeders (magieleitung = Antrieb, `_isMoveable`).
-// headMat bewusst holz (kein leder-Limb — Tag-WERT-Parität gemessen 10.07.).
+// ERFINDER-WELLE (Schöpfer „wieso holzross?") — DAS REITTIER IST EIN PFERD: der
+// Host-Archetyp `horse` existiert (CREATURE_ARCHETYPES) und trägt die ehrlichen
+// Pferde-Proportionen (legFrac 0.62 · neckTilt 0.46 · torsoL 0.58) — die alte
+// deer-Paarung war nur die Lab-Ausrede („kein horse im 4-Gattungs-Lab"); das
+// SKELETT-GESETZ ist dasselbe. Shapes×Materialien UNVERÄNDERT → Tags WERT-GLEICH
+// (die labs-Gate-X-Münze wacht). kern = die Kantenlänge des belebenden
+// Quarz-Oktaeders (magieleitung = Antrieb, `_isMoveable`).
 AnazhRealm.REITTIER_SKELETON_G = Object.freeze({
     holzross: Object.freeze({
         size: 1.6,
-        archetypeName: "deer",
+        archetypeName: "horse",
         bodyMat: "holz",
         limbMat: "holz",
         headMat: "holz",

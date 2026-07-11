@@ -27975,12 +27975,21 @@ async function checkBandWelle6HCreatures(ctx) {
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
-        // Phase E (V18.148) gebar die vierte Seele (glutwesen, predator) —
-        // der Test wandert mit (V9.56-i): die drei sanften Gründer + das Raubtier.
+        // Phase E (V18.148) gebar die vierte Seele (glutwesen, predator); die
+        // ERFINDER-WELLE die Tiere wolf/fuchs/baer (tetrapoda-Gattungen als Seelen) —
+        // der Test wandert mit (V9.56-i): 7 Seelen, die Gründer + Jäger + die Tiere.
         out.threeSouls =
-            souls && Object.keys(souls).length === 4 && souls.sprite && souls.wesen && souls.geist && souls.glutwesen;
+            souls &&
+            Object.keys(souls).length === 7 &&
+            souls.sprite &&
+            souls.wesen &&
+            souls.geist &&
+            souls.glutwesen &&
+            souls.wolf &&
+            souls.fuchs &&
+            souls.baer;
         out.hasSoulNames =
-            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 4;
+            Array.isArray(r.constructor.CREATURE_SOUL_NAMES) && r.constructor.CREATURE_SOUL_NAMES.length === 7;
         out.hasNamePool =
             Array.isArray(r.constructor.CREATURE_NAME_POOL) && r.constructor.CREATURE_NAME_POOL.length >= 20;
         const spritePart = souls && souls.sprite && souls.sprite.bodyParts[0];
@@ -28146,7 +28155,10 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2aResults && !wave6hP2aResults.error) {
         check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-        check("Welle 6.H P2A/Phase E: vier Seelen (sprite/wesen/geist + glutwesen)", wave6hP2aResults.threeSouls);
+        check(
+            "Welle 6.H P2A/Phase E/ERFINDER: sieben Seelen (sprite/wesen/geist + glutwesen + wolf/fuchs/baer)",
+            wave6hP2aResults.threeSouls
+        );
         check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
         check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
         check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
@@ -41560,9 +41572,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.oldestIsOlder = true; // skip wenn keine Kreaturen
         }
 
-        // _pickFaunaSoulAtPlayer liefert valide Soul
+        // _pickFaunaSoulAtPlayer liefert valide Soul — die AMBIENT-Menge sind die
+        // NICHT-predator-Seelen (ERFINDER-WELLE: + fuchs/baer; wolf/glutwesen sind
+        // bewusste Schöpfung, nie ambient — der Test wandert mit, V9.56-i).
         const soul = r._pickFaunaSoulAtPlayer();
-        out.faunaSoulValid = soul === "sprite" || soul === "wesen" || soul === "geist";
+        out.faunaSoulValid =
+            soul === "sprite" || soul === "wesen" || soul === "geist" || soul === "fuchs" || soul === "baer";
 
         // _creatureNaturalDeath effektiviert (sorrow +0.2, journal-loss, removeCreature)
         if (r.state.creatures.length > 0) {
@@ -41697,7 +41712,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.c: state.faunaLifecycle initialisiert", wave6g3Results.faunaLifecycleField);
         check("Welle 6.G3.c: _findOldestCreature wählt kleinste bornAt", wave6g3Results.oldestIsOlder);
         check(
-            "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide Soul (sprite/wesen/geist)",
+            "Welle 6.G3.c: _pickFaunaSoulAtPlayer liefert valide ambient-Soul (sprite/wesen/geist/fuchs/baer)",
             wave6g3Results.faunaSoulValid
         );
         check("Welle 6.G3.c: _creatureNaturalDeath reduziert Kreaturen-Anzahl", wave6g3Results.deathReducesCount);

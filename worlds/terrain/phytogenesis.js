@@ -4818,6 +4818,23 @@ init();
         // Daten, kein UI-Hardcode je Domaene. must-ignore-billig: ein Alt-Empfaenger ohne
         // paramsByKind-Steckplatz ignoriert das Feld schlicht.
         const paramsByKind = {};
+        const __paramRows = (PA) => {
+            const rows = [];
+            for (let i = 0; i < PA.length; i++) {
+                const d = PA[i];
+                if (!d || typeof d.id !== "string" || !d.id) continue;
+                const row = { id: d.id };
+                if (typeof d.lab === "string" && d.lab) row.lab = d.lab;
+                if (typeof d.min === "number" && isFinite(d.min)) row.min = d.min;
+                if (typeof d.max === "number" && isFinite(d.max)) row.max = d.max;
+                if (typeof d.step === "number" && isFinite(d.step)) row.step = d.step;
+                if (typeof d.def === "number" && isFinite(d.def)) row.def = d.def;
+                if (typeof d.law === "string" && d.law) row.law = d.law;
+                if (typeof d.grp === "string" && d.grp) row.grp = d.grp;
+                rows.push(row);
+            }
+            return rows;
+        };
         try {
             for (const zk of __zweitKerne()) {
                 const PA = zk.kern.PARAMS;
@@ -4833,23 +4850,23 @@ init();
                     }
                 }
                 if (!kind || paramsByKind[kind]) continue;
-                const rows = [];
-                for (let i = 0; i < PA.length; i++) {
-                    const d = PA[i];
-                    if (!d || typeof d.id !== "string" || !d.id) continue;
-                    const row = { id: d.id };
-                    if (typeof d.lab === "string" && d.lab) row.lab = d.lab;
-                    if (typeof d.min === "number" && isFinite(d.min)) row.min = d.min;
-                    if (typeof d.max === "number" && isFinite(d.max)) row.max = d.max;
-                    if (typeof d.step === "number" && isFinite(d.step)) row.step = d.step;
-                    if (typeof d.def === "number" && isFinite(d.def)) row.def = d.def;
-                    if (typeof d.law === "string" && d.law) row.law = d.law;
-                    if (typeof d.grp === "string" && d.grp) row.grp = d.grp;
-                    rows.push(row);
-                }
+                const rows = __paramRows(PA);
                 if (rows.length) paramsByKind[kind] = rows;
             }
         } catch (_e4) {}
+        // ERFINDER-WELLE (B4, „regelbar, alle Assets") — der PRIMAER-KERN traegt MEHRERE
+        // kinds (tree/flower/grass/rock): seine Tabellen reisen als MAP `PARAMS_BY_KIND`
+        // (foundry-core; erste Quelle gewinnt je kind, wie das Buch — must-ignore-billig).
+        try {
+            if (typeof PARAMS_BY_KIND === "object" && PARAMS_BY_KIND) {
+                for (const kind in PARAMS_BY_KIND) {
+                    if (!Object.prototype.hasOwnProperty.call(PARAMS_BY_KIND, kind)) continue;
+                    if (paramsByKind[kind] || !Array.isArray(PARAMS_BY_KIND[kind])) continue;
+                    const rows = __paramRows(PARAMS_BY_KIND[kind]);
+                    if (rows.length) paramsByKind[kind] = rows;
+                }
+            }
+        } catch (_e5) {}
         if (typeof window === "undefined" || (window.parent && window.parent !== window)) {
             __post({ type: "recipes", world: "terrain", reqId: msg && msg.reqId, book, paramsByKind }, "*");
         }
@@ -4960,12 +4977,15 @@ init();
             }
             const isZweitKern = !!zweit;
             // W-A1 (Katalysator §5) — DER REGLER-KANAL: msg.ov (B4-Overrides der Werkstatt)
-            // reist NUR in den Zweit-Kern-Zweig (buildInstance nimmt ov als 4. Argument).
-            // Pflanzen/foundry-core bekommen KEIN ov (der Pflanzen-Pfad ist byte-vertraglich
-            // eingefroren, gate:asset-contract — Regler fuer Pflanzen sind ein eigener Bogen).
+            // reist in BEIDE Zweige (buildInstance nimmt ov als 4. Argument — der Pflanzen-
+            // Pfad traegt Object.assign(P, ov) seit je, die Bruecke reichte nur null).
+            // ERFINDER-WELLE („blume z.B. keine regler?"): jetzt sind auch die Pflanzen
+            // regelbar; OHNE ov ist der Bau byte-identisch (gate:asset-contract Goldens
+            // laufen ov-frei — der Welt-Pfad bleibt byte-vertraglich rein, W-A1-Gesetz:
+            // ov umgeht IDB + f.cache am Host).
             const g = isZweitKern
                 ? zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, null);
+                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
             g.traverse((o) => {
                 if (o.isMesh) {

@@ -2765,6 +2765,26 @@ function setSeasonColors(s) {
     rockLichen = s === "winter" ? 0.0 : 0.6;
 }
 
+// ERFINDER-WELLE (Katalysator §2 B4, „regelbar, alle Assets") — DIE REGLER-TABELLEN DER
+// PFLANZEN-DOMAENEN: die ov-Reise existiert in buildInstance seit je (Object.assign(P, ov)
+// NACH deriveParams*), diese Tabellen machen sie SICHTBAR (die Werkstatt rendert ihre
+// Slider AUS diesen Daten). Die ids sind ECHTE P-Felder des jeweiligen emit-Pfads —
+// kein Fantasie-Regler. Ohne ov bleibt jeder Bau byte-identisch (Goldens unberuehrt).
+var PARAMS_BY_KIND = {
+    flower: [
+        { id: "height", lab: "Stängel-Höhe", min: 0.4, max: 2.4, step: 0.01, def: 1.35, grp: "Blüte" },
+        { id: "headR", lab: "Blütenkopf", min: 0.03, max: 0.3, step: 0.005, def: 0.17, grp: "Blüte" },
+        { id: "petalLen", lab: "Blatt-Länge", min: 0.08, max: 0.6, step: 0.01, def: 0.31, grp: "Blüte" },
+        { id: "petalRich", lab: "Blütenfülle", min: 0, max: 1, step: 0.01, def: 0.55, grp: "Blüte" },
+        { id: "bloomCount", lab: "Blüten-Zahl", min: 1, max: 12, step: 1, def: 1, grp: "Blüte" },
+    ],
+    grass: [
+        { id: "bladeLen", lab: "Halm-Länge", min: 0.2, max: 1.8, step: 0.01, def: 0.95, grp: "Halm" },
+        { id: "bladeW", lab: "Halm-Breite", min: 0.02, max: 0.14, step: 0.002, def: 0.07, grp: "Halm" },
+        { id: "density", lab: "Dichte", min: 0.06, max: 1, step: 0.01, def: 0.7, grp: "Halm" },
+        { id: "droop", lab: "Neigung", min: 0.04, max: 1.35, step: 0.01, def: 0.5, grp: "Halm" },
+    ],
+};
 function buildInstance(presetId, seed, lod, ov) {
     const sS = subject,
         sSeed = SEED,

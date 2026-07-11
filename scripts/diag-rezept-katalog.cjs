@@ -124,6 +124,11 @@ function check(name, ok, detail) {
         res.a.vehicleRowsOk = Array.isArray(pk.vehicle) && pk.vehicle.every((d) => rowOk(d, false));
         res.a.gateMatchesNode = res.a.gateLen === portaLen;
         res.a.gateHasGrp = Array.isArray(pk.gate) && pk.gate.some((d) => typeof d.grp === "string" && d.grp);
+        // ERFINDER-WELLE („blume z.B. keine regler?") — die PFLANZEN-Tabellen reisen
+        // (PARAMS_BY_KIND des Primaer-Kerns): flower + grass als Regler-DATEN.
+        res.a.flowerLen = Array.isArray(pk.flower) ? pk.flower.length : -1;
+        res.a.flowerRowsOk = Array.isArray(pk.flower) && pk.flower.every((d) => rowOk(d, true));
+        res.a.grassLen = Array.isArray(pk.grass) ? pk.grass.length : -1;
 
         // ===== (b) OV-ROUNDTRIP: mass-Override aendert die Geometrie, Cache bleibt rein =====
         const csum = (meshes) => {
@@ -161,6 +166,23 @@ function check(name, ok, detail) {
             res.b.addedCache = addedCache;
             res.b.cacheClean = addedCache.every((k) => k.indexOf("drachentor|") !== 0);
             res.b.requestedClean = addedReq.every((k) => k.indexOf("drachentor|") !== 0);
+            // ERFINDER-WELLE — der ov-Kanal erreicht jetzt auch den PFLANZEN-Pfad
+            // (Bruecke reicht msg.ov an foundry-core.buildInstance): die Blume formt.
+            const bKeysBefore = new Set(f.cache.keys());
+            const b0 = await Promise.race([r._foundryRequest("blume", 3, 0, "summer"), sleep(45000)]);
+            const bOv = await Promise.race([
+                r._foundryRequest("blume", 3, 0, "summer", { height: 2.2, bloomCount: 9 }),
+                sleep(45000),
+            ]);
+            res.b.blume0 = csum(b0);
+            res.b.blumeOv = csum(bOv);
+            res.b.blumeDiffer =
+                Array.isArray(b0) &&
+                Array.isArray(bOv) &&
+                (res.b.blume0.s !== res.b.blumeOv.s || res.b.blume0.n !== res.b.blumeOv.n);
+            const bAdded = Array.from(f.cache.keys()).filter((k) => !bKeysBefore.has(k));
+            // der DEFAULT-Zug darf cachen (Welt-Pfad), der ov-Zug NIE: genau EIN blume-Key.
+            res.b.blumeCacheClean = bAdded.filter((k) => k.indexOf("blume|") === 0).length <= 1;
         } catch (e) {
             res.b.err = (e && e.message) || String(e);
         }
@@ -285,6 +307,11 @@ function check(name, ok, detail) {
         `${out.a.gateLen} vs ${portaParamsLen}`
     );
     check("gate-Tabelle traegt grp-Gruppen (Zwischentitel-Daten)", out.a.gateHasGrp === true);
+    check(
+        "ERFINDER: flower-Tabelle da (5 Zeilen, id/min/max/def) + grass-Tabelle da — die Blume ist regelbar",
+        out.a.flowerLen === 5 && out.a.flowerRowsOk === true && out.a.grassLen >= 4,
+        `flower=${out.a.flowerLen} grass=${out.a.grassLen}`
+    );
 
     console.log("\n=== (b) ov-Roundtrip — mass-Override wirkt, Cache bleibt rein ===");
     check(
@@ -303,6 +330,11 @@ function check(name, ok, detail) {
         `cache=${out.b.cacheKeysAfter}`
     );
     check("der ov-Request beruehrt die requested-Wache nicht", out.b.requestedClean === true);
+    check(
+        "ERFINDER: die BLUME formt unter ov (height/bloomCount aendern die Geometrie) + ov cached nie",
+        out.b.blumeDiffer === true && out.b.blumeCacheClean === true,
+        `b0=${JSON.stringify(out.b.blume0)} bOv=${JSON.stringify(out.b.blumeOv)}`
+    );
 
     console.log("\n=== (c) Katalog — Studio-Rezepte-Sektion + Donor-Abschied ===");
     check(
