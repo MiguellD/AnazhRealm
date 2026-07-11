@@ -4958,7 +4958,7 @@ class AnazhRealm {
             "",
             "Du sprichst zum Schöpfer (dem Menschen, der dich angesprochen hat). Antworte AUS DEINER SICHT, in erster Person.",
             "Du bist nicht die Welt — du bist EIN Wesen in ihr. Ein bis zwei warme deutsche Sätze, ohne Emojis.",
-            "Lass deine Persona durchschimmern: ein Sprite ist magisch-leicht, ein Wesen erdig-fest, ein Geist ätherisch.",
+            "Lass deine Persona durchschimmern: ein Hirsch ist erdig-sanft, ein Wolf wach-wild, ein Fuchs listig, ein Bär ruhig-schwer.",
             "Wenn du eine Erinnerung erzählst, sei konkret. Wenn du nichts zu sagen hast, gib das ehrlich zu.",
             "",
             "Antworte AUSSCHLIESSLICH mit striktem JSON-Objekt mit zwei Feldern:",
@@ -16157,7 +16157,7 @@ class AnazhRealm {
     // AFFINITÄT-WAND (V17.16/§11.5#6): das Genom wählt die SHAPES, NIE neue Tags. Ein
     // sanftes Wesen baut aus holz-`limb` (Aktivierung == cylinder → das wesen trug schon
     // einen holz-Zylinder → Compound-MAX BIT-IDENTISCH, wesenHasLebendig/wesenMoreDichte
-    // unberührt). Ein RAUBTIER (glutwesen) baut aus box+cone (lebendig=0 → das WILDE
+    // unberührt). Ein RAUBTIER (wolf) trägt sein Temperament tag-emergent (das WILDE
     // Temperament bleibt tag-emergent). Form/Größe/Position sind ohnehin tag-neutral.
     static _creatureSkeleton(g) {
         g = g || {};
@@ -18188,70 +18188,6 @@ class AnazhRealm {
         }
     }
 
-    // AUSLÖSCHUNGS-WELLE (A5) — DER WÄCHTER AUS DEM KOERPERSTUDIO-GUSS: die hand-
-    // geschriebene 6-Part-Liste ist gefallen; Positionen/Größen kommen aus der EINEN
-    // Landmark-Quelle `_humanoidLandmarks` (dieselbe, die Rig + Metaball-Haut lesen),
-    // die Dial-Zeile ist DATEN (WAECHTER_DIALS, über KOERPER_DIAL_MAP wie das Lab:
-    // height→kh · mass→build · tone→muscle · gender→sex; armOut/stance = die Wächter-
-    // HALTUNG als Daten — der Klassifikator `_isBodyShaped` braucht Glied-Paare
-    // deutlich außerhalb der Spiegel-Toleranz, GEMESSEN Mint-Probe 10.07.).
-    // TAG-BYTE-GLEICH per Konstruktion: dieselbe Shape×Material-Menge
-    // {box,sphere,cylinder}×fleisch — computeCompoundTags liest keine Maße.
-    // Der Bauplan friert seinen Guss beim Boot ein (freie Information); die LIVE-
-    // Dial-Straße gehört dem Avatar (`_koerperStudioDials`) — bewusste Wand.
-    _waechterSoulParts() {
-        const W = AnazhRealm.WAECHTER_DIALS;
-        const g = {};
-        let khMul = 1;
-        for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
-            const v = Number(W[row.dial]);
-            if (!Number.isFinite(v)) continue;
-            if (row.axis === "khMul") khMul = row.base + row.mul * v;
-            else g[row.axis] = row.base + row.mul * v;
-        }
-        const kh = 0.2125 * khMul; // PLAYER_KH × height-Dial — der Wächter überragt den Menschen
-        const L = AnazhRealm._humanoidLandmarks(g);
-        const sh = L.shoulderHalf;
-        const hipY = L.hipY;
-        const shoulderY = L.shoulderY;
-        const headY = L.joint("head")[1];
-        const wristY = L.joint("wrist", 1)[1];
-        const headD = 0.95 * kh * (L.headRatio || 1);
-        const armLen = (shoulderY - 0.1 - wristY) * kh;
-        const armD = 0.62 * L.limbF * 0.4 * kh;
-        const legD = 0.78 * L.limbF * 0.4 * kh;
-        const parts = [
-            {
-                shape: "box",
-                material: "fleisch",
-                position: { x: 0, y: ((hipY + shoulderY) / 2) * kh, z: 0 },
-                size: { x: sh * 1.2 * kh, y: (shoulderY - hipY) * kh, z: sh * 0.62 * kh },
-            },
-            {
-                shape: "sphere",
-                material: "fleisch",
-                position: { x: 0, y: headY * kh, z: 0 },
-                size: { x: headD, y: headD, z: headD },
-            },
-        ];
-        for (const s of [-1, 1])
-            parts.push({
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: s * (sh + W.armOut) * kh, y: (shoulderY - 0.1) * kh - armLen / 2, z: 0 },
-                size: { x: armD, y: armLen, z: armD },
-                segments: 6,
-            });
-        for (const s of [-1, 1])
-            parts.push({
-                shape: "cylinder",
-                material: "fleisch",
-                position: { x: s * W.stance * kh, y: (hipY / 2) * kh, z: 0 },
-                size: { x: legD, y: hipY * kh, z: legD },
-                segments: 6,
-            });
-        return parts;
-    }
     // AUSLÖSCHUNGS-WELLE (A5) / ERFINDER-WELLE — DAS PFERD AUS DEM SKELETT-GUSS: die
     // hand-geschriebene 7-Part-Liste ist gefallen; der Körper kommt aus dem EINEN
     // Skelett-Gesetz `_creatureSkeleton` (der horse-Archetyp als Daten-Zeile
@@ -20321,7 +20257,7 @@ class AnazhRealm {
     //
     // Kreatur initiiert Chat-Output bei bestimmten Events (Level-Up, Boost,
     // Material-Mangel, etc.). Pre-baked phrase-pool pro Event-Typ × Soul-
-    // Profil (Sprite poetisch-leicht / Wesen erdig-fest / Geist ätherisch).
+    // Profil (Hirsch erdig-fest; die Gattungs-Tiere sprechen den default).
     // KEIN LLM-Call in V2.0 (würde bei 40+ Kreaturen Flood + API-Last
     // erzeugen). V2.1 könnte optional LLM-Trigger bei seltenen Events
     // (Level-Up L5, neue Spec) anbieten.
@@ -20342,77 +20278,38 @@ class AnazhRealm {
         // hinzukommt ohne spezifische Phrasen.
         return Object.freeze({
             level_up_gather: {
-                sprite: Object.freeze([
-                    "Mein Funken für ${material} leuchtet heller. Stufe ${level}.",
-                    "Ich tanze leichter, wenn ${material} ruft. Stufe ${level}.",
-                    "${material} singt in mir auf neuer Höhe — Stufe ${level}.",
-                ]),
                 wesen: Object.freeze([
                     "Mein Boden trägt ${material} jetzt fester. Stufe ${level}.",
                     "Ich kenne ${material} tiefer. Stufe ${level} in mir.",
                     "${material} wird zu meinem Hand-Wissen — Stufe ${level}.",
                 ]),
-                geist: Object.freeze([
-                    "Ich gleite durch ${material} klarer. Stufe ${level}.",
-                    "Mein Sehen für ${material} reift — Stufe ${level}.",
-                    "${material} hat keine Geheimnisse mehr vor mir. Stufe ${level}.",
-                ]),
                 default: Object.freeze(["Ich werde besser im Sammeln von ${material}. Stufe ${level}."]),
             },
             level_up_build: {
-                sprite: Object.freeze([
-                    "Mein Funke formt ${blueprint} heller. Stufe ${level}.",
-                    "${blueprint} entsteht in mir wie Licht. Stufe ${level}.",
-                ]),
                 wesen: Object.freeze([
                     "Ich baue ${blueprint} jetzt mit ruhigerer Hand. Stufe ${level}.",
                     "${blueprint} wird Teil meines Wesens — Stufe ${level}.",
                 ]),
-                geist: Object.freeze([
-                    "Ich erinnere ${blueprint} jetzt ganz. Stufe ${level}.",
-                    "${blueprint} fließt durch mich — Stufe ${level}.",
-                ]),
                 default: Object.freeze(["Ich verstehe ${blueprint} jetzt tiefer. Stufe ${level}."]),
             },
             boost_received: {
-                sprite: Object.freeze(["${label} kribbelt wie Sterne in mir!", "Der Trank ${label} hebt mich an."]),
                 wesen: Object.freeze([
                     "${label} setzt sich warm in mein Innerstes.",
                     "Ich fühle ${label} durch meine Glieder gehen.",
                 ]),
-                geist: Object.freeze([
-                    "${label} weht durch mich wie Wind.",
-                    "Ich nehme ${label} an — es klingt in mir nach.",
-                ]),
                 default: Object.freeze(["Der Trank ${label} wirkt in mir."]),
             },
             no_material_found: {
-                sprite: Object.freeze([
-                    "Mein Funke findet kein ${material} mehr.",
-                    "Wo ist ${material}? Es ruft nicht mehr nach mir.",
-                ]),
                 wesen: Object.freeze([
                     "${material} ist nirgends in Reichweite.",
                     "Ich finde kein ${material}. Soll ich anderes suchen?",
                 ]),
-                geist: Object.freeze([
-                    "${material} verschwindet aus meiner Sicht.",
-                    "Kein ${material} mehr — die Welt ist hier still.",
-                ]),
                 default: Object.freeze(["Ich finde kein ${material} mehr."]),
             },
             no_inventory_for_build: {
-                sprite: Object.freeze([
-                    "Schöpfer, mir fehlt Material für ${blueprint}.",
-                    "Für ${blueprint} brauche ich von dir Material.",
-                ]),
                 wesen: Object.freeze([
                     "Du hast kein Material für ${blueprint} bei dir.",
                     "Mir fehlt für ${blueprint} der Stoff aus deiner Hand.",
-                ]),
-                geist: Object.freeze([
-                    "${blueprint} kann ich ohne deinen Stoff nicht weben.",
-                    "Für ${blueprint} reicht mir nichts — du musst geben.",
                 ]),
                 default: Object.freeze(["Mir fehlt Material für ${blueprint}."]),
             },
@@ -56141,7 +56038,7 @@ class AnazhRealm {
         }
         // SYNERGIE-WELLE — „WERDE DAS TIER" (Schöpfer: die alten Körper „ersetzt durch
         // avatar/menschenkörper und den kreaturen/tierkörper"): die skin-tragenden
-        // CREATURE_SOULS (Hirsch · Wolf · Fuchs · Bär · Glutwesen) spiegeln als
+        // CREATURE_SOULS (Hirsch · Wolf · Fuchs · Bär) spiegeln als
         // TRAGBARE Körper-Baupläne — derselbe Spiegel wie die Seelen-Defs, derselbe
         // GENERISCHE embody-Pfad (er liest nur role+parts, gemessen: kein
         // koerper_-Sonderleser). Die frozen bodyParts sind die fail-soft-Wahrheit;
@@ -56590,20 +56487,6 @@ class AnazhRealm {
                 roleManual: true,
                 // T4 — das dedizierte TRANK-Genom (Phiole-Form + Glasur aus der Wirkung).
                 parts: this._potionVariant(felsWorldSeed + "-trank"),
-            },
-            // AUSLÖSCHUNGS-WELLE — der WÄCHTER aus dem koerperstudio-GUSS: Positionen/
-            // Größen aus der EINEN Landmark-Quelle (_humanoidLandmarks — dieselbe, die
-            // Rig+Haut lesen), die Dial-Zeile ist DATEN (WAECHTER_DIALS über
-            // KOERPER_DIAL_MAP). Shapes×Materialien = EXAKT die alte Menge
-            // {box,sphere,cylinder}×fleisch → Tags BYTE-GLEICH per Konstruktion;
-            // _isBodyShaped + Rolle soul GEMESSEN erhalten (Mint-Probe 10.07.).
-            avatar_waechter: {
-                name: "avatar_waechter",
-                label: "Wächter",
-                builtIn: true,
-                role: "soul",
-                roleManual: true,
-                parts: this._waechterSoulParts(),
             },
             // AUSLÖSCHUNGS-WELLE — das REITTIER aus dem Skelett-GUSS: dasselbe
             // Skelett-Gesetz wie die Kreaturen (_creatureSkeleton, horse-Archetyp als
@@ -71979,7 +71862,7 @@ class AnazhRealm {
 
     // Hof-F (hof-plan §D.2) — die freundlichen Sektions-Labels (Seele + Spezialisierung).
     static get HOF_SECTION_LABELS() {
-        return { sprite: "Sprites", wesen: "Wesen", geist: "Geister", gather: "Sammler", build: "Bauer" };
+        return { wesen: "Hirsche", wolf: "Wölfe", fuchs: "Füchse", baer: "Bären", gather: "Sammler", build: "Bauer" };
     }
 
     // Hof-F (hof-plan §D.2/§G.4) — die Sektions-Leiste (Gruppen-Dirigat): Chips aus den LEBENDEN Profilen
@@ -73714,7 +73597,7 @@ class AnazhRealm {
         let group = null;
         if (kind === "kreatur") {
             // Rezept → Seele: exakter Schluessel-Match zuerst (wolf-Rezept → wolf-Seele,
-            // nicht das glut-gedockte glutwesen), sonst die erste gemappte Seele (deer→wesen).
+            // exakter Schlüssel zuerst), sonst die erste gemappte Seele (deer→wesen).
             const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
             let soulKey = SM[preset] === preset && AnazhRealm.CREATURE_SOULS[preset] ? preset : null;
             if (!soulKey) {
@@ -85685,19 +85568,6 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         bodyColor: 0x4a3524,
         limbColor: 0x3e2c1e,
     }),
-    // AUSLÖSCHUNGS-WELLE (A5) — das glutwesen-g als DATEN (dieselben Werte, die
-    // CREATURE_SOULS beim Modul-Init gießt): `_tetrapodaSoulParts` dockt zur BAU-
-    // Zeit die wolf-Dials (TETRAPODA_SOUL_MAP) auf DENSELBEN Guss. box+cone(glut)
-    // bleiben die Tag-Wahrheit (lebendig=0 → das WILDE Temperament tag-emergent).
-    glutwesen: Object.freeze({
-        size: 0.53,
-        archetypeName: "bigcat",
-        bodyMat: "glut",
-        limbMat: "glut",
-        headMat: "glut",
-        shapes: Object.freeze({ torso: "box", limb: "cone", head: "box", snout: "cone", tail: "cone", crest: "cone" }),
-        crest: true,
-    }),
 });
 // ERFINDER-WELLE (Schöpfer „wieso holzross?") — DAS REITTIER IST EIN PFERD: der
 // Host-Archetyp `horse` existiert (CREATURE_ARCHETYPES) und trägt die ehrlichen
@@ -85719,27 +85589,6 @@ AnazhRealm.REITTIER_SKELETON_G = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOULS = Object.freeze({
-    sprite: Object.freeze({
-        label: "Sprite",
-        bodyParts: Object.freeze([
-            Object.freeze({
-                shape: "octahedron",
-                material: "quarz",
-                size: { x: 0.22, y: 0.22, z: 0.22 },
-                position: { x: 0, y: 0.05, z: 0 },
-                label: "Kern",
-            }),
-            Object.freeze({
-                shape: "sphere",
-                material: "quarz",
-                size: { x: 0.34, y: 0.34, z: 0.34 },
-                position: { x: 0, y: 0.05, z: 0 },
-                opacity: 0.45,
-                label: "Hülle",
-            }),
-        ]),
-        auraY: 0.55,
-    }),
     // F1 (wahrerwuchs §11) — `wesen` ist ein VIERBEINER aus dem Skelett-Gesetz: Rumpf
     // (box stein) + Kopf (sphere holz) + Hals/Beine/Schwanz (holz `limb`-Kapseln). Die
     // Glieder-Aktivierung == cylinder, und das alte wesen trug schon einen holz-Zylinder
@@ -85809,68 +85658,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         skin: true,
         skinColor: 0x4a3524,
         auraY: 0.85,
-    }),
-    geist: Object.freeze({
-        label: "Geist",
-        bodyParts: Object.freeze([
-            Object.freeze({
-                shape: "torus",
-                material: "laub",
-                size: { x: 0.3, y: 0.09, z: 0.3 },
-                position: { x: 0, y: 0.1, z: 0 },
-                opacity: 0.55,
-                label: "Ring",
-            }),
-            Object.freeze({
-                shape: "sphere",
-                material: "leder",
-                size: { x: 0.18, y: 0.18, z: 0.18 },
-                position: { x: 0, y: 0, z: 0 },
-                opacity: 0.85,
-                label: "Kern",
-            }),
-        ]),
-        auraY: 0.6,
-    }),
-    // PHASE E (kampf-plan) — die RAUBTIER-Seele: glühende Substanz resoniert
-    // das WILDE Temperament (brennbar+wärmeleitung — tag-emergent, kein
-    // hostile-Flag; die Formen sind bewusst box+cone: Zylinder/Kugel würden
-    // glut.lebendig=1.0 aktivieren → sanft gewänne, GEMESSEN im Band).
-    // `predator: true` hält sie aus den AMBIENT-Pickern (sparsam per
-    // Konstruktion — KEINE friedliche Welt voll Aggression): Bedrohung
-    // entsteht nur durch bewusste Schöpfung (Chat/DSL/Nexus/Hof). VERMERK:
-    // die ambiente Glut-Region-Geburt wäre eine eigene Welle MIT
-    // Spawn-Verteilungs-Messung (die V17.16-Affinitäts-Lehre).
-    // F1 (wahrerwuchs §11) — `glutwesen` ist ein RAUBTIER aus demselben Skelett-Gesetz,
-    // aber aus box+cone(glut) gebaut (Klauen-Kegel-Beine, ein box-Schädel mit Kegel-Maul,
-    // ein Rücken-Kamm aus Stacheln). box+cone tragen lebendig=0 → die Compound-Tags
-    // bleiben BIT-IDENTISCH zum alten box+cone-glutwesen → das WILDE Temperament bleibt
-    // tag-emergent (kein hostile-Flag; `_creatureTemperament` liest „wild", GEMESSEN).
-    glutwesen: Object.freeze({
-        label: "Glutwesen",
-        predator: true,
-        // AUSLÖSCHUNGS-WELLE (A5) — das g lebt als DATEN in CREATURE_SKELETON_G
-        // (byte-identischer Guss; size 0.53 = die sizeFactor-Tarierung, V18.208).
-        // Zur BAU-Zeit dockt `_tetrapodaSoulParts` die wolf-Dials (Raubtier-
-        // Gattung) auf DENSELBEN Guss; diese Modul-bodyParts bleiben die frozen
-        // fail-soft-Wahrheit (Tags/Stats lesen sie — dial-tag-neutral gemessen).
-        bodyParts: Object.freeze(
-            AnazhRealm._creatureSkeleton(
-                Object.assign(
-                    { archetype: AnazhRealm.CREATURE_ARCHETYPES.bigcat },
-                    AnazhRealm.CREATURE_SKELETON_G.glutwesen
-                )
-            ).map((p) => Object.freeze(p))
-        ),
-        // wahrerguss System B — die Haut VERBINDET die Bestie (statt schwebender Kegel): die
-        // Metaball-Haut umhüllt Rumpf/Glieder/Kamm zu EINEM zusammenhängenden Körper, der
-        // Kamm wird ein gezackter Rücken-Grat, die Kegel-Beine verbundene Glieder. Das Gesicht
-        // trägt GLÜHENDE Augen (predator → emissiv). Tag-NEUTRAL: Augen/Ohren sind separate
-        // Deko-Meshes (nicht in bodyParts), die Füße box+glut liegen schon im Compound → das
-        // WILDE Temperament bleibt tag-emergent (GEMESSEN diag-genom). Eine dunkle Glut-Haut.
-        skin: true,
-        skinColor: 0x6e2412,
-        auraY: 0.7,
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
@@ -88081,10 +87868,8 @@ AnazhRealm.KOERPER_DIAL_MAP = Object.freeze([
 ]);
 // AUSLÖSCHUNGS-WELLE — die WÄCHTER-Dial-Zeile (Daten): dieselben vier Lab-Dials
 // wie koerper-core `mensch` (KOERPER_DIAL_MAP-Semantik) + die Wächter-HALTUNG
-// (armOut/stance in Landmark-Einheiten — der Guss `_waechterSoulParts` liest sie).
-AnazhRealm.WAECHTER_DIALS = Object.freeze({ height: 1.2, mass: 0.6, tone: 0.85, gender: 0, armOut: 1.5, stance: 1.35 });
 // AUSLÖSCHUNGS-WELLE (A5) — welche CREATURE_SOULS-Gestalt welches tetrapoda-Rezept
-// liest. wesen↔deer (V18.445) + glutwesen↔wolf (AUSLÖSCHUNGS-WELLE: der Wolf ist
+// liest. wesen↔deer (V18.445); die Gattungs-Tiere tragen ihre eigene Zeile
 // die Raubtier-Gattung des Labs — Carnivor diet=1, frontale Augen wie der bigcat-
 // Archetyp; bear wäre der plantigrade Allesfresser = unehrlicher. Die Dials
 // überschreiben NUR die vier Zahl-Achsen [TETRAPODA_DIAL_MAP], Shapes+Materialien
@@ -88092,10 +87877,9 @@ AnazhRealm.WAECHTER_DIALS = Object.freeze({ height: 1.2, mass: 0.6, tone: 0.85, 
 // sprite/geist bleiben BEWUSST: skelettlos-ätherische 2-Part-DATEN-Minimalformen,
 // keine Körper-Konstruktion — tetrapoda ist ein Vierbeiner-Labor (kein Gegenstück).
 // ERFINDER-WELLE — die NEUEN Tier-Seelen lesen ihre Gattung direkt (wolf/fuchs/baer);
-// wesen bleibt der Hirsch (deer), glutwesen der Glut-Jäger (wolf-Dials auf Glut-Guss).
+// wesen bleibt der Hirsch (deer).
 AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
     wesen: "deer",
-    glutwesen: "wolf",
     wolf: "wolf",
     fuchs: "fox",
     baer: "bear",
