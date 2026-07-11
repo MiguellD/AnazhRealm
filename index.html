@@ -9505,7 +9505,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.449.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.450.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9519,11 +9519,16 @@
         <!-- V18.315 DER BÄCKER: die THREE-freie Skin-Isosurface-Mathe. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Avatar-Bau im init liest das globale
              __bakeSkinGeometry. Derselbe Code läuft auch im bake-worker (importScripts). -->
-        <script src="bake-core.js?v=18.449.0" defer></script>
+        <script src="bake-core.js?v=18.450.0" defer></script>
         <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
-        <script src="phyto-core.js?v=18.449.0" defer></script>
-        <script src="anazhRealm.js?v=18.449.0" defer></script>
+        <script src="phyto-core.js?v=18.450.0" defer></script>
+        <!-- ALTLASTEN-NULL HERZ: die Anatomie-Gesetzbücher (MESHFREI, reine
+             Daten+Mathe) laden VOR dem Stamm — er delegiert Skelett/Landmarken
+             an die EINE Quelle (dieselben Kerne trägt der Foundry-Worker). -->
+        <script src="koerper-core.js?v=18.450.0" defer></script>
+        <script src="tetrapoda-core.js?v=18.450.0" defer></script>
+        <script src="anazhRealm.js?v=18.450.0" defer></script>
     </body>
 </html>

@@ -16146,334 +16146,14 @@ class AnazhRealm {
     // unberührt). Ein RAUBTIER (wolf) trägt sein Temperament tag-emergent (das WILDE
     // Temperament bleibt tag-emergent). Form/Größe/Position sind ohnehin tag-neutral.
     static _creatureSkeleton(g) {
-        g = g || {};
-        const bodyMat = g.bodyMat || "stein";
-        const limbMat = g.limbMat || bodyMat;
-        const headMat = g.headMat || limbMat;
-        const SH = g.shapes || {};
-        const torsoShape = SH.torso || "box";
-        const limbShape = SH.limb || "limb";
-        const headShape = SH.head || "sphere";
-        const snoutShape = SH.snout || "limb";
-        const s = g.size || 1;
-        const bodyCol = g.bodyColor;
-        const limbCol = g.limbColor;
-        const parts = [];
-        const add = (shape, material, x, y, z, sx, sy, sz, rot, col, extra) => {
-            const p = { shape, material, position: { x, y, z }, size: { x: sx, y: sy, z: sz } };
-            if (rot && (rot.x || rot.y || rot.z)) p.rotation = rot;
-            if (typeof col === "number") p.color = col;
-            if (extra) Object.assign(p, extra);
-            parts.push(p);
-            return p;
-        };
-        // wahrerguss System B — die BIOMECHANISCHE ARCHETYP-Grammatik (Form folgt Funktion,
-        // recherchiert): Wolf/Reh/Bär/Wiesel/Pferd/Großkatze unterscheiden sich in Bein-Anteil,
-        // Glied-Gliederung (distal schlanker), Hals/Kopf, Rumpf-Breite/Höhe, Augen-FRONTALITÄT
-        // (Jäger vorwärts ~0.7 / Pflanzenfresser seitlich ~0.12), Neigung. EIN Schema, viele
-        // Tiere. TAG-NEUTRAL: nur Längen/Positionen/Anzahl variieren (gleiche Shapes+Materialien
-        // → der compound-MAX bleibt unverändert; GEMESSEN diag-genom Affinität-Band).
-        const A = g.archetype || (AnazhRealm.CREATURE_ARCHETYPES && AnazhRealm.CREATURE_ARCHETYPES.balanced) || {};
-        const af = (k, d) => (A && A[k] != null ? A[k] : d);
-        const BL = (g.bodyLen != null ? g.bodyLen : 1.0) * s; // Körper-Länge = Referenz
-        const torsoLen = BL * af("torsoL", 0.55);
-        const torsoW = BL * af("torsoW", 0.3);
-        const torsoH = BL * af("torsoH", 0.36);
-        const legLen = BL * af("legFrac", 0.5);
-        const legR = BL * af("legR", 0.05);
-        const neckLen = BL * af("neckFrac", 0.24);
-        const neckTilt = af("neckTilt", 0.55); // +y-Ende nach vorn-oben (rotV: (0,cos,sin))
-        const headFull = BL * af("headFrac", 0.22);
-        const headR = headFull * 0.5;
-        const tailLen = BL * af("tailFrac", 0.34);
-        const eyeFront = af("eyeFront", 0.4);
-        const stanceX = torsoW * 0.42; // Beine leicht INNERHALB der Körper-Kante (Bein überlappt den Leib)
-
-        // (1) RUMPF — die ZWEI LASTTRAGENDEN BLÖCKE (Reh-Referenz, Schöpfer-Tafel; „ein
-        //     Tierkörper ist gebaute Topologieoptimierung"): ein tiefer BRUSTKORB (Thorax,
-        //     vorn-tief, die dominante Masse) + ein hohes BECKEN (Kruppe, hinten), verbunden
-        //     durch eine leichtere Lende mit Bauch-Einzug. Die Topline ist GEKRÜMMT (Widerrist
-        //     → Senke → Kruppe), nie gerade (Spore-Lektion: die gerade Oberlinie liest tot).
-        //     ALLE Massen sind KONVEX + überlappend → der smin verschmilzt sie zu EINEM Leib
-        //     OHNE Front-Mulde (der alte 5-Kugel-Spine erzeugte den konkaven Brust-Krater).
-        //     TAG-NEUTRAL: nur torsoShape + bodyMat, allein Längen/Positionen variieren.
-        const barrel = g.bodyBarrel !== false;
-        const bodyLen = torsoLen * 1.7; // sichtbare Körper-Länge entlang z
-        // ── DER KÖRPER ALS REGEL (Schöpfer „schärfe die Regel statt zu brute-forcen — kein fetter
-        //    Ball"): ZWEI KURVEN + ein PROFIL, an N Stationen abgetastet — KEINE hand-platzierten
-        //    Blobs. · TOPLINE yTop(zf): die Rücken-Kurve (Widerrist hoch · Rücken · Kruppe hoch).
-        //    · TIEFE depth(zf): die Brust-Tiefe nach UNTEN (Ribcage tief · Flanke getuckt · Becken).
-        //    · BREITE width(zf): die SCHMALE Körper-Breite. Jede Station ist ein ANISOTROPES
-        //    Ellipsoid (x schmal, y tief, z = Scheibe) → Rücken = yTop, Bauch = yTop − depth: die
-        //    tiefe SCHMALE Brust + der Flanken-Tuck EMERGIEREN aus den Profilen. Reh-Referenz-
-        //    Parameter (Archetyp/Genom variieren sie). TAG-NEUTRAL (torsoShape+bodyMat; Maße zählen
-        //    nicht in die Compound-Tags).
-        const lerpCurve = (cps, zf) => {
-            if (zf >= cps[0][0]) return cps[0][1];
-            for (let i = 1; i < cps.length; i++)
-                if (zf >= cps[i][0]) {
-                    const t = (zf - cps[i][0]) / (cps[i - 1][0] - cps[i][0]);
-                    return cps[i][1] + (cps[i - 1][1] - cps[i][1]) * t;
-                }
-            return cps[cps.length - 1][1];
-        };
-        // ANIMAL-ANATOMIE (Hunde-/ARAP-Referenz): ein Tier ist eine HÄNGEBRÜCKE — ein tiefer SCHMALER
-        // Brustkorb + ein hohes Becken, verbunden durch eine LEICHTE Lende mit scharfem Flanken-TUCK
-        // (der Bauch zieht sich HOCH). KEIN Barrel. Tiefe ≫ Breite. Widerrist + Kruppe als Anker.
-        const toplineCP = af("topline", 0) || [
-            [0.5, 0.46], // Brust-Ansatz
-            [0.34, 0.52], // WIDERRIST hoch (Schulterblatt)
-            [0.08, 0.4], // Rücken
-            [-0.16, 0.38], // Lende
-            [-0.32, 0.5], // KRUPPE hoch (Becken)
-            [-0.5, 0.4], // Schwanz-Ansatz (rund, nicht spitz)
-        ];
-        const depthCP = af("depthProfile", 0) || [
-            [0.5, 0.5], // Brisket rund-blunt vorn (kein Raketen-Prow)
-            [0.34, 1.02], // tiefer BRUSTKORB — die dominante Masse, hängt tief
-            [0.12, 0.92], // Rippen
-            [-0.06, 0.4], // FLANKEN-TUCK — der Bauch zieht sich HOCH (die Taille des Tiers)
-            [-0.3, 0.74], // Becken/Schenkel-Masse
-            [-0.5, 0.44], // Heck rund (nicht spitz)
-        ];
-        const widthCP = af("widthProfile", 0) || [
-            [0.5, 0.4], // schmale runde Brust vorn
-            [0.3, 0.6], // Brustkorb (breiteste Stelle — aber SCHMAL: ein Tier ist tief, nicht breit)
-            [0.0, 0.42], // schmale Lende
-            [-0.3, 0.6], // Kruppe/Hinterhand (etwas breiter)
-            [-0.5, 0.42], // Heck rund
-        ];
-        // der dichte Kern (verborgen) — trägt die dichte-Tags.
-        // kleiner dichte-Kern im BRUSTKORB (trägt die dichte-Tags — Größe geht NICHT in die Tags ein);
-        // klein + vorn-oben → er füllt NICHT den Flanken-Tuck (der alte große Mittel-Kern war ein
-        // Haupt-Treiber des Barrel-Blobs, GEMESSEN am Render).
-        add(
-            torsoShape,
-            bodyMat,
-            0,
-            torsoH * 0.12,
-            torsoLen * 0.24,
-            torsoW * 0.34,
-            torsoH * 0.32,
-            torsoLen * 0.34,
-            null,
-            bodyCol
-        );
-        let bellyShoulder = -torsoH * 0.3,
-            bellyHip = -torsoH * 0.3;
-        if (barrel) {
-            const NS = 13;
-            for (let i = 0; i < NS; i++) {
-                const zf = 0.5 - (i / (NS - 1)) * 1.0; // +0.5 … −0.5 (Front → Heck)
-                const yTop = lerpCurve(toplineCP, zf) * torsoH;
-                const depth = Math.max(0.06, lerpCurve(depthCP, zf) * torsoH);
-                const width = Math.max(0.06, lerpCurve(widthCP, zf) * torsoW);
-                const cy = yTop - depth * 0.5; // Top ≈ Topline (Rücken), Bauch hängt um depth
-                const sliceZ = (bodyLen / (NS - 1)) * 1.5; // leichter überlappend (feiner gesampelt) → der Flanken-TUCK überlebt statt verschmiert zu werden
-                add(torsoShape, bodyMat, 0, cy, zf * bodyLen, width, depth, sliceZ, null, bodyCol);
-                if (Math.abs(zf - 0.34) < 0.07) bellyShoulder = yTop - depth; // Bauch an der Schulter
-                if (Math.abs(zf + 0.28) < 0.07) bellyHip = yTop - depth; // Bauch an der Hüfte
-            }
+        // ALTLASTEN-NULL HERZ — das Skelett-GESETZ wohnt im Evolutions-
+        // Gesetzbuch (tetrapoda-core, EINE Anatomie-Quelle; index.html lädt
+        // den Kern vor dem Stamm). Fail-closed: ohne Gesetzbuch kein Tier.
+        const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
+        if (!core || typeof core.buildSkeleton !== "function") {
+            throw new Error("tetrapoda-core fehlt — das Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)");
         }
-
-        // (2) BEINE — schlanke gegliederte Streben aus dem BAUCH jeder Station (Kragträger): das
-        //     obere Glied tief im Bauch verankert (glatte Emergenz, kein Pin-Kneif), das untere
-        //     sehnig-dünn, ein flacher HUF-Donor am Boden. Vorderbein fast gerade, Hinterbein
-        //     Z-gebogen (Stifle/Sprunggelenk — die Reh-Signatur). Vier Paare → Stützpolygon (Ω-Φ2).
-        const shoulderZ = torsoLen * 0.5;
-        const hipZ = torsoLen * 0.48;
-        const segBetween = (ax, ay, az, bx, by, bz, r) => {
-            const dy = by - ay,
-                dz = bz - az;
-            const len = Math.hypot(bx - ax, dy, dz) || 0.01;
-            add(
-                limbShape,
-                limbMat,
-                (ax + bx) / 2,
-                (ay + by) / 2,
-                (az + bz) / 2,
-                r * 2,
-                len,
-                r * 2,
-                { x: Math.atan2(dz, dy), y: 0, z: 0 },
-                limbCol
-            );
-        };
-        const hoofCol = typeof limbCol === "number" ? (limbCol >> 1) & 0x7f7f7f : limbCol; // dunkler Huf (tag-neutral)
-        const embedY = torsoH * 0.08;
-        const groundY = Math.min(bellyShoulder, bellyHip) - legLen; // gemeinsamer Boden → Füße auf einer Ebene
-        // WURZEL 2 (lebendiger-koerper §2½ — MUSKEL ALS DYNAMIK): die Hinterhand ist der Gang-MOTOR
-        // (Gluteus/Biceps femoris erzeugen das Spitzen-Hüft-Drehmoment beim Abstoß), das Vorderbein
-        // die passive STREBE/der Stoßdämpfer. Muskel-Querschnitt ∝ Spitzen-Gang-Drehmoment — das liegt
-        // in Ω-CHRONOS (DYNAMIK), nicht Ω-PHYSIS (STATIK: ein Tisch steht ohne einen einzigen Muskel).
-        // Darum trägt die Hinterhand eine große PROXIMALE Masse (verdicktes Oberglied + ein Schenkel-
-        // Bauch an der Kruppe), das Vorderbein eine kleinere Schulter; DISTAL bleibt sehnig-dünn (die
-        // distale Leichtigkeit echter Läufer = niedrige Glied-Trägheit). Die Muskel-Kapsel überlappt
-        // Leib + Oberglied → der smin verschmilzt sie zu EINEM muskulösen Massiv (kein aufgeklebter
-        // Blob — die Mr.-Potato-Lehre). TAG-NEUTRAL: limb + limbMat (im Compound-MAX schon da, Maße
-        // zählen nicht), die Masse bleibt INNERHALB der Körper-AABB (sizeFactor-stabil, V18.208).
-        const hindMotor = af("hindMotor", 0.95); // Propulsions-Anteil der Hinterhand (Läufer hoch)
-        const foreMotor = af("foreMotor", 0.5); // Vorderbein = Strebe (leichter)
-        const muscleScale = af("limbMuscle", 1.0);
-        // DIGITIGRADE Z-FALTUNG (Hunde-/ARAP-Referenz, die Schöpfer-Tafel): ein Tier steht auf den
-        // ZEHEN — das Bein faltet Hüfte→Stifle(hoch,vorn)→SPRUNGGELENK(mittig, HOCH über dem Boden)→
-        // Zehen. Das HOHE Hock/Handwurzel-Gelenk + der lange ~vertikale Mittelfuß ist die Signatur,
-        // die das Tier vom plumpen Stelzen-Tisch trennt. fold = {stifleH, stifleZ, hockH, hockZ, toeZ}
-        // (H = Höhe als Anteil der Beinhöhe über Boden, Z = Versatz in legLen — aus der Referenz).
-        const buildLeg = (sgnX, belly, zPos, fold, motor) => {
-            const x = sgnX * stanceX;
-            const topY = belly + embedY; // Hüft-/Schulter-Gelenk, tief im Bauch verankert
-            const drop = topY - groundY; // ganze Beinhöhe
-            const m = Math.max(0, motor || 0) * muscleScale;
-            const stifleY = groundY + drop * fold.stifleH,
-                stifleZ = zPos + legLen * fold.stifleZ;
-            const hockY = groundY + drop * fold.hockH, // das HOHE Sprung-/Handwurzelgelenk
-                hockZ = zPos + legLen * fold.hockZ;
-            const toeZ = zPos + legLen * fold.toeZ;
-            const upperR = legR * (1.15 + m * 0.6); // Femur/Humerus proximal bemuskelt ∝ Motor
-            segBetween(x, topY, zPos, x, stifleY, stifleZ, upperR); // Femur/Humerus
-            segBetween(x, stifleY, stifleZ, x, hockY, hockZ, legR * 0.74); // Tibia/Radius (sehnig)
-            segBetween(x, hockY, hockZ, x, groundY + legR * 0.5, toeZ, legR * 0.56); // Mittelfuß (dünn, ~vertikal)
-            // MUSKEL-BAUCH — Kruppe/Schenkel (Heck) bzw. Schulter (vorn) am proximalen Glied.
-            if (m > 0.12) {
-                const bz = zPos + (zPos < 0 ? -legLen * 0.04 : legLen * 0.03);
-                const by2 = topY - drop * 0.16;
-                segBetween(
-                    x * 0.86,
-                    belly + embedY * 1.4,
-                    bz,
-                    x * 0.95,
-                    by2,
-                    stifleZ - legLen * 0.02,
-                    legR * (0.95 + m * 1.4)
-                );
-            }
-            // PFOTE — flach am Boden, die Zehen vorn (überlappt den Mittelfuß → smin verbindet).
-            add(
-                "box",
-                limbMat,
-                x,
-                groundY + legR * 0.5,
-                toeZ + legR * 0.55,
-                legR * 1.2,
-                legR * 0.85,
-                legR * 2.1,
-                null,
-                hoofCol
-            );
-        };
-        // Fore = straffer (Stütze), Hind = stärker gefaltet (Motor) — beide digitigrad, Hock HOCH.
-        const foreFold = { stifleH: 0.62, stifleZ: -0.03, hockH: 0.3, hockZ: 0.04, toeZ: 0.06 };
-        const hindFold = { stifleH: 0.64, stifleZ: 0.13, hockH: 0.33, hockZ: -0.05, toeZ: 0.03 };
-        buildLeg(-1, bellyShoulder, shoulderZ, foreFold, foreMotor); // Vorderbein
-        buildLeg(1, bellyShoulder, shoulderZ, foreFold, foreMotor);
-        buildLeg(-1, bellyHip, -hipZ, hindFold, hindMotor); // Hinterbein
-        buildLeg(1, bellyHip, -hipZ, hindFold, hindMotor);
-
-        // (3) HALS + (4) KOPF — Neigung aus der Rolle. Der Hals verbindet die Rumpf-Front mit dem
-        //     Kopf; rotV: ein y-Glied mit rotation.x=θ zeigt sein +y-Ende nach (0,cosθ,sinθ) =
-        //     vorn-oben. Der Kopf sitzt am Hals-Ende; er trägt den ANKER + die Augen-FRONTALITÄT.
-        const neckCY = torsoH * 0.34,
-            neckCZ = torsoLen * 0.64; // Hals an der Brust-FRONT des langen Leibs
-        const dirY = Math.cos(neckTilt),
-            dirZ = Math.sin(neckTilt);
-        // THROAT-BRIDGE — eine ~kubische torsoShape-Masse (→ Kugel im Feld) füllt den Hals-Brust-
-        // Reentrant; ohne sie liest der dünne Hals auf der großen Brust von VORN als konkaver
-        // Kehl-Krater. torsoShape+bodyMat → tag-neutral (Box in beiden Seelen-Sets; Größe geht
-        // nicht in die Compound-Tags ein).
-        add(
-            torsoShape,
-            bodyMat,
-            0,
-            neckCY * 0.5,
-            neckCZ * 0.92,
-            torsoW * 0.78,
-            torsoH * 0.5,
-            torsoLen * 0.41,
-            null,
-            bodyCol
-        );
-        add(
-            limbShape,
-            limbMat,
-            0,
-            neckCY,
-            neckCZ,
-            legR * 2.3,
-            neckLen,
-            legR * 1.9,
-            { x: neckTilt, y: 0, z: 0 },
-            limbCol
-        );
-        const headCY = neckCY + dirY * (neckLen * 0.5 + headR * 0.55);
-        const headCZ = neckCZ + dirZ * (neckLen * 0.5 + headR * 0.55);
-        add(headShape, headMat, 0, headCY, headCZ, headFull * 0.92, headFull * 0.86, headFull * 1.12, null, limbCol, {
-            bodyRole: "head",
-            eyeFront,
-        });
-        // MAUL/SCHNAUZE — nach vorn (rotation x≈1.5 → fast +z). Länge aus der Rolle: ein
-        // Pflanzenfresser (eyeFront niedrig) trägt ein längeres Grasmaul, ein Jäger ein
-        // kürzeres, tieferes (höhere Bisskraft). reference-first an den Tier-Fotos.
-        const muzzleLen = headR * (1.05 + (1 - eyeFront) * 0.85);
-        const muzzleW = headR * (0.95 - eyeFront * 0.1);
-        add(
-            snoutShape,
-            headMat,
-            0,
-            headCY - headR * 0.16,
-            headCZ + headR * 0.82,
-            muzzleW,
-            muzzleLen,
-            muzzleW,
-            { x: 1.5, y: 0, z: 0 },
-            limbCol
-        );
-
-        // (5) SCHWANZ — im HECK VERANKERT (die Wurzel überlappt den Rumpf → kein schwebender
-        //     Stummel, der reference-Fix), nach hinten-unten via segBetween (die Metaball-Haut
-        //     verschmilzt ihn mit dem Körper).
-        const tRootZ = -torsoLen * 0.62,
-            tRootY = torsoH * 0.18; // Schwanz-Wurzel am HECK des langen Leibs
-        // dicker Schwanz-ANSATZ (torsoH·0.2, tapert zur Spitze) → liest als Schwanz, der aus dem
-        // Körper wächst, statt als dünner Stummel, den die Körper-Masse verschluckt. Der Ansatz
-        // SITZT im Heck (überlappt die Hüft-Wirbel) → verbindet ohne Kneif.
-        segBetween(0, tRootY, tRootZ, 0, tRootY - tailLen * 0.5, tRootZ - tailLen * 0.82, torsoH * 0.2);
-
-        // (6) ACCESSOIRES — Hörner + Rücken-Kamm (symmetrisch/zentral → Template unverbogen).
-        if (g.horns) {
-            const hornShape = SH.horn || "cone";
-            const hl = BL * af("hornFrac", 0.18);
-            for (const sgnX of [-1, 1])
-                add(
-                    hornShape,
-                    headMat,
-                    sgnX * headR * 0.7,
-                    headCY + headR * 1.0,
-                    headCZ - headR * 0.2,
-                    headR * 0.55,
-                    hl,
-                    headR * 0.55,
-                    { x: -0.3, y: 0, z: sgnX * 0.3 },
-                    limbCol
-                );
-        }
-        if (g.crest) {
-            const crestShape = SH.crest || "cone";
-            for (let i = 0; i < 3; i++)
-                add(
-                    crestShape,
-                    limbMat,
-                    0,
-                    torsoH * 0.45,
-                    torsoLen * (0.2 - i * 0.2),
-                    legR * 0.9,
-                    legR * 2.4,
-                    legR * 0.7,
-                    null,
-                    limbCol
-                );
-        }
-        return parts;
+        return core.buildSkeleton(g);
     }
 
     // wahrerguss System B (GUSS 1) — DAS HUMANOIDE SKELETT-GESETZ (biped, anatomisch
@@ -16496,151 +16176,13 @@ class AnazhRealm {
     //    `joint(name, s)` gibt die Knoten in KH (vor `kh`-Skala), s = Seite ±1; die Werte SIND
     //    die Haut-Anker (das Glied beginnt/endet hier) → die Bones sitzen IM Fleisch.
     static _humanoidLandmarks(g) {
-        g = g || {};
-        const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask. V-Taper, 1 weibl. Sanduhr
-        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.52)); // 0 schlank · 0.5 athlet. · 1 schwer
-        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : Math.min(1, build + 0.18))); // Glied-Masse
-        const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0)); // Alter/Heroik
-        const limbF = 0.82 + muscle * 0.6; // Glied-Durchmesser-Faktor
-        const girthF = 0.92 + build * 0.34; // Rumpf-Girth
-        const bellyF = build * build * 0.5; // Bauch-Vorwölbung (quadratisch)
-        const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
-        // 8-Kopf-Stationen (Sohle y=0) + Breiten (Halbachsen) — Referenz-vermessen:
-        const shoulderHalf = 1.12 - sex * 0.27; // Schulter ~2.2 KH (Referenz-breit) → schmaler (weibl.)
-        const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen)
-        const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl.)
-        const hipY = 4.15,
-            waistY = 5.0,
-            shoulderY = 6.5;
-        // benannte Gelenk-Knoten: die Mittellinien-Kette (Rig) + die paarigen Glied-Knoten (Haut+Rig).
-        const joint = (name, s) => {
-            s = s || 1;
-            switch (name) {
-                case "hips":
-                    return [0, hipY, 0];
-                case "spine":
-                    return [0, waistY, 0];
-                case "chest":
-                    return [0, shoulderY - 0.5, 0];
-                case "neck":
-                    return [0, shoulderY + 0.12, 0];
-                case "head":
-                    return [0, 7.2, 0];
-                case "headTop":
-                    return [0, 7.95, 0];
-                case "shoulder":
-                    return [s * shoulderHalf, shoulderY - 0.1, 0]; // Schulter-Gelenk (Arm-Ursprung, im Deltoid)
-                case "elbow":
-                    return [s * (shoulderHalf + 0.4), waistY + 0.1, 0];
-                case "wrist":
-                    return [s * (shoulderHalf + 0.6), hipY - 0.3, 0];
-                case "hand":
-                    return [s * (shoulderHalf + 0.6), hipY - 0.62, 0.05]; // Knöchel-Reihe (Skinning-Ende)
-                case "hip":
-                    return [s * hipHalf * 0.72, hipY - 0.1, -0.12]; // Hüft-Gelenk (Schenkel-Ursprung)
-                case "knee":
-                    return [s * 0.4, 2.3, 0];
-                case "ankle":
-                    return [s * 0.38, 0.4, 0];
-                case "foot":
-                    return [s * 0.38, 0.2, 0.56]; // Zehen-Ballen (vorn)
-                // ── Muskel-Ansatz-Landmarken (Ursprung/Ansatz — „geführt über die Gelenke") ──
-                case "sternumTop":
-                    return [0, 6.0, 0.32 * girthF]; // Manubrium (obere Brust-Front)
-                case "sternumLow":
-                    return [0, 5.4, 0.34 * girthF];
-                case "xiphoid":
-                    return [0, 5.0, 0.34 * girthF];
-                case "navel":
-                    return [0, 4.32, 0.36 * girthF];
-                case "pubis":
-                    return [0, 3.85, 0.2 * girthF];
-                case "c7":
-                    return [0, 6.85, -0.16 * girthF]; // Nacken-Basis hinten
-                case "sacrum":
-                    return [s * 0.13, 4.15, -0.34 * girthF];
-                case "erectorTop":
-                    return [s * 0.13, 6.2, -0.34 * girthF];
-                case "mastoid":
-                    return [s * 0.19, 7.28, -0.05]; // Warzenfortsatz hinterm Ohr
-                case "cheek":
-                    return [s * 0.3 * headRatio, 7.46, 0.16 * headRatio];
-                case "jawAngle":
-                    return [s * 0.29 * headRatio, 7.12, 0.04 * headRatio];
-                case "clavicleMed":
-                    return [s * 0.12, 6.42, 0.2 * girthF];
-                case "acromion":
-                    return [s * shoulderHalf * 1.04, 6.62, 0]; // Schulter-Spitze
-                case "scapula":
-                    return [s * shoulderHalf * 0.64, 6.05, -0.34 * girthF];
-                case "axilla":
-                    return [s * shoulderHalf * 0.82, 5.95, -0.14 * girthF]; // Achsel (Lat/Teres-Ansatz)
-                case "deltoidIns":
-                    return [s * shoulderHalf * 1.06, 5.85, 0]; // Deltoid-Tuberositas (Humerus-Mitte)
-                case "pecIns":
-                    return [s * shoulderHalf * 0.88, 6.0, 0.12 * girthF]; // Pec-Ansatz (Humerus vorn)
-                case "shoulderFront":
-                    return [s * shoulderHalf, 6.3, 0.14 * limbF]; // Bizeps-Ursprung
-                case "shoulderBack":
-                    return [s * shoulderHalf, 6.3, -0.14 * limbF]; // Trizeps-Ursprung
-                case "elbowFront":
-                    return [s * (shoulderHalf + 0.4), 5.05, 0.12 * limbF];
-                case "elbowBack":
-                    return [s * (shoulderHalf + 0.4), 5.08, -0.13 * limbF]; // Olecranon (Trizeps-Ansatz)
-                case "iliac":
-                    return [s * hipHalf * 0.95, 4.42, 0.02 * girthF]; // Darmbeinkamm
-                case "iliacBack":
-                    return [s * hipHalf * 0.62, 4.3, -0.32 * girthF]; // Becken hinten (Glute/Lat-Ursprung)
-                case "ischium":
-                    return [s * hipHalf * 0.52, 3.9, -0.3 * girthF]; // Sitzbein (Hamstring-Ursprung)
-                case "hipFront":
-                    return [s * hipHalf * 0.66, 4.0, 0.12 * girthF]; // Quad-Ursprung (vorn)
-                case "thighInner":
-                    return [s * 0.22, 3.1, 0.02]; // innerer Oberschenkel (Adduktor-Ansatz)
-                case "kneeFront":
-                    return [s * 0.4, 2.36, 0.14 * girthF]; // Patella (Quad/Tibialis)
-                case "kneeBack":
-                    return [s * 0.4, 2.36, -0.16 * girthF]; // Kniekehle (Hamstring/Gastroc)
-                case "shinTop":
-                    return [s * 0.4, 2.05, -0.1 * girthF]; // oberer Schienbein hinten (Soleus)
-                case "ankleFront":
-                    return [s * 0.38, 0.58, 0.1 * girthF]; // Knöchel vorn (Tibialis-Ansatz)
-                case "heel":
-                    return [s * 0.38, 0.3, -0.22]; // Fersenbein (Achilles/Gastroc-Ansatz)
-                // ── Glied-Vollkachelung (Vastus/Brachialis/Extensoren/Peroneus) + Schulter-Kappe ──
-                case "kneeOut":
-                    return [s * (0.4 + 0.18 * limbF), 2.4, 0.06 * girthF]; // äußeres Knie (Vastus lateralis-Ansatz)
-                case "kneeIn":
-                    return [s * (0.4 - 0.14 * limbF), 2.5, 0.1 * girthF]; // inneres Knie / „Tropfen" (Vastus medialis)
-                case "shinOut":
-                    return [s * (0.38 + 0.16 * limbF), 1.2, 0.04 * girthF]; // äußerer Unterschenkel (Peroneus)
-                case "upperArmOut":
-                    return [s * (shoulderHalf + 0.46), 5.4, 0]; // außen-mittlerer Oberarm (Brachialis)
-                case "forearmBack":
-                    return [s * (shoulderHalf + 0.62), hipY - 0.32, -0.12 * limbF]; // dorsales Handgelenk (Extensoren)
-                case "humerusTop":
-                    return [s * shoulderHalf * 1.02, 6.42, 0]; // Humeruskopf-Scheitel (Schulter-Kappen-Brücke)
-                default:
-                    return [0, 0, 0];
-            }
-        };
-        return {
-            sex,
-            build,
-            muscle,
-            headRatio,
-            limbF,
-            girthF,
-            bellyF,
-            mF,
-            shoulderHalf,
-            waistHalf,
-            hipHalf,
-            hipY,
-            waistY,
-            shoulderY,
-            joint,
-        };
+        // ALTLASTEN-NULL HERZ — die humanoiden Landmarken wohnen im Anatomie-
+        // Gesetzbuch (koerper-core, EINE Quelle für Rig + Haut + Werkstatt).
+        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
+        if (!core || typeof core.landmarks !== "function") {
+            throw new Error("koerper-core fehlt — das Landmark-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)");
+        }
+        return core.landmarks(g);
     }
 
     static _humanoidSkeleton(g) {
@@ -18797,6 +18339,23 @@ class AnazhRealm {
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s = rec && rec.s;
         return s && typeof s === "object" ? s : null;
+    }
+
+    // ALTLASTEN-NULL HERZ — DER MENSCH HÄNGT AN DERSELBEN GRÖSSEN-ACHSE: die
+    // koerperstudio-Dials (dieselbe Quelle, die das Rig formt) tragen den
+    // Größen-Faktor in die EINE Stat-Fold-Quelle (_applySizeMultipliersToStats).
+    // Default-Dials (height 1.0 · mass 0.35 · tone 0.5) → EXAKT 1.0 (kein
+    // Balance-Bruch am Bestand); Spanne ≈ 0.63 (klein·zart) … 1.61 (groß·massig)
+    // — dieselbe Ordnung wie der Custom-Avatar-Hebel (0.7…1.7). Höhe wirkt
+    // quadratisch (Fläche), Masse/Tonus linear-mild; die sqrt-Faltung des
+    // Aufrufers dämpft wie bei jeder Kreatur.
+    _humanDialSizeFactor() {
+        const s = this._koerperStudioDials();
+        if (!s) return 1;
+        const height = Number.isFinite(s.height) ? s.height : 1.0;
+        const mass = Number.isFinite(s.mass) ? s.mass : 0.35;
+        const tone = Number.isFinite(s.tone) ? s.tone : 0.5;
+        return height * height * (1 + 0.25 * (mass - 0.35)) * (1 + 0.1 * (tone - 0.5));
     }
 
     // Der EINE generische Animator: wendet die Bewegungs-Rollen auf die
@@ -49626,8 +49185,18 @@ class AnazhRealm {
         // leitet die benannten Anker (head/Arme/Flügel) aus der EINEN Rollen-Quelle
         // ab → 1st-Person-Kopf-Hide + Hand-Anker leben für JEDE Compound-Seele.
         let newGroup;
+        // ALTLASTEN-NULL HERZ — „werde wolf" IST der Wolf: eine bp_koerper_<tier>-
+        // Verkörperung baut durch DENSELBEN Guss wie die Welt-Kreatur (Skelett +
+        // Gattungs-Dials + Metaball-Haut + Gang), nicht als nackter Compound.
+        // Tags/Stats lesen weiter def.bodyParts (die frozen Wahrheit — Fold oben).
+        const tierMatch = canonical.match(/^bp_koerper_([a-z]+)$/);
+        const tierKey = tierMatch && AnazhRealm.CREATURE_SOULS[tierMatch[1]] ? tierMatch[1] : null;
         if (def && typeof def.build === "function") {
             newGroup = def.build();
+        } else if (tierKey && AnazhRealm.CREATURE_SOULS[tierKey].skin) {
+            newGroup = this._buildCreatureGroup(tierKey);
+            const effParts = (newGroup.userData && newGroup.userData._soulParts) || def.bodyParts || [];
+            this._stampSoulPartRefs(newGroup, effParts);
         } else {
             newGroup = this._buildFromBlueprint({ name: canonical, parts: def.bodyParts || [] });
             this._stampSoulPartRefs(newGroup, def.bodyParts || []);
@@ -49791,7 +49360,10 @@ class AnazhRealm {
         // MultipliersToStats` (geteilt mit der Kreatur); HIER wird nur der spieler-eigene Eingang berechnet —
         // built-in Souls NEUTRAL (sizeFactor=1), Custom-Avatare bekommen den Größen-Hebel aus der Substanz.
         const soulBpForSize = { parts: (soul && soul.bodyParts) || [] };
-        const soulSize = isBuiltinSoul ? 1 : this._compoundSizeFactor(soulBpForSize);
+        // ALTLASTEN-NULL HERZ: die 1er-Klemme fällt — der Mensch (die einzige
+        // Built-in-Seele) zieht seinen Größen-Faktor aus den koerperstudio-
+        // Dials; Custom-Körper aus ihrer Substanz. EINE Fold-Quelle für alle.
+        const soulSize = isBuiltinSoul ? this._humanDialSizeFactor() : this._compoundSizeFactor(soulBpForSize);
         this._applySizeMultipliersToStats(stats, Math.sqrt(soulSize));
         return { tags: finalTags, stats };
     }
@@ -82533,6 +82105,14 @@ class AnazhRealm {
             {
                 const headPart = player.userData && player.userData.parts && player.userData.parts.head;
                 if (headPart) headPart.visible = this.state.cameraMode === "third";
+                // HERZ: ein getragener Tier-Körper trägt die Metaball-HAUT als
+                // Ganzkörper-Mesh — im 1st sitzt die Kamera IN ihr; sie folgt
+                // derselben Kopf-Regel (3rd sichtbar, 1st verborgen).
+                for (const ch of player.children) {
+                    if (ch && ch.userData && ch.userData._creatureSkin) {
+                        ch.visible = this.state.cameraMode === "third";
+                    }
+                }
             }
             if (this.state.cameraMode === "third") {
                 // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
@@ -83346,7 +82926,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.449.0";
+AnazhRealm.VERSION = "18.450.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -85421,97 +85001,12 @@ AnazhRealm.MOTION_ROLE_FLOOR = 0.55;
 // reference-kalibriert an echten Tier-Seitenprofilen (Schöpfer-Foto-Tafel): der KÖRPER ist die
 // dominante Masse (tiefer Brustkorb, torsoH 0.42–0.5), die Beine GEBOGEN (kneeFwd = Knie-Knick
 // nach vorn), der Kopf substanziell (headFrac), die Topline aus Schulter→Becken.
-AnazhRealm.CREATURE_ARCHETYPES = Object.freeze({
-    balanced: {
-        legFrac: 0.5,
-        segRatio: 1.0,
-        torsoL: 0.58,
-        torsoW: 0.32,
-        torsoH: 0.42,
-        neckFrac: 0.24,
-        neckTilt: 0.55,
-        headFrac: 0.24,
-        tailFrac: 0.34,
-        eyeFront: 0.4,
-        kneeFwd: 0.05,
-    },
-    deer: {
-        legFrac: 0.6,
-        segRatio: 0.82,
-        torsoL: 0.54,
-        torsoW: 0.28,
-        torsoH: 0.44,
-        neckFrac: 0.34,
-        neckTilt: 0.5,
-        headFrac: 0.21,
-        tailFrac: 0.16,
-        eyeFront: 0.12,
-        kneeFwd: 0.055,
-    },
-    wolf: {
-        legFrac: 0.54,
-        segRatio: 1.0,
-        torsoL: 0.6,
-        torsoW: 0.3,
-        torsoH: 0.44,
-        neckFrac: 0.22,
-        neckTilt: 0.46,
-        headFrac: 0.26,
-        tailFrac: 0.42,
-        eyeFront: 0.5,
-        kneeFwd: 0.06,
-    },
-    bear: {
-        legFrac: 0.42,
-        segRatio: 1.2,
-        torsoL: 0.62,
-        torsoW: 0.46,
-        torsoH: 0.52,
-        neckFrac: 0.16,
-        neckTilt: 0.42,
-        headFrac: 0.26,
-        tailFrac: 0.12,
-        eyeFront: 0.35,
-        kneeFwd: 0.05,
-    },
-    bigcat: {
-        legFrac: 0.48,
-        segRatio: 1.0,
-        torsoL: 0.62,
-        torsoW: 0.36,
-        torsoH: 0.48,
-        neckFrac: 0.16,
-        neckTilt: 0.38,
-        headFrac: 0.27,
-        tailFrac: 0.5,
-        eyeFront: 0.75,
-        kneeFwd: 0.065,
-    },
-    weasel: {
-        legFrac: 0.2,
-        segRatio: 1.0,
-        torsoL: 0.86,
-        torsoW: 0.22,
-        torsoH: 0.24,
-        neckFrac: 0.16,
-        neckTilt: 0.5,
-        headFrac: 0.2,
-        tailFrac: 0.5,
-        eyeFront: 0.35,
-        kneeFwd: 0.03,
-    },
-    horse: {
-        legFrac: 0.62,
-        segRatio: 0.78,
-        torsoL: 0.58,
-        torsoW: 0.3,
-        torsoH: 0.46,
-        neckFrac: 0.32,
-        neckTilt: 0.46,
-        headFrac: 0.22,
-        tailFrac: 0.3,
-        eyeFront: 0.12,
-        kneeFwd: 0.05,
+// ALTLASTEN-NULL HERZ — die Archetyp-Proportionen wohnen im Evolutions-
+// Gesetzbuch (tetrapoda-core.ARCHETYPES); der Stamm liest die EINE Quelle.
+Object.defineProperty(AnazhRealm, "CREATURE_ARCHETYPES", {
+    get() {
+        const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
+        return (core && core.ARCHETYPES) || null;
     },
 });
 AnazhRealm.CREATURE_ARCHETYPE_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_ARCHETYPES));
@@ -87864,12 +87359,14 @@ AnazhRealm.MOTION_RIG_MAP = Object.freeze([
 // Animation, nicht Kopf-Proportion) · hairLen/hairVol (die Haar-Kappe ist Fest-
 // Geometrie) · arms (die A-Pose ist eine Bau-Konstante). Der NPC-Roller
 // (`_rollHumanoidGenome`) bleibt unberührt — das Studio definiert den AVATAR.
-AnazhRealm.KOERPER_DIAL_MAP = Object.freeze([
-    Object.freeze({ dial: "height", axis: "khMul", base: 0, mul: 1 }),
-    Object.freeze({ dial: "mass", axis: "build", base: 0, mul: 1 }),
-    Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
-    Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
-]);
+// ALTLASTEN-NULL HERZ — die Dial-Semantik wohnt im Anatomie-Gesetzbuch
+// (koerper-core.DIAL_MAP); der Stamm liest die EINE Quelle.
+Object.defineProperty(AnazhRealm, "KOERPER_DIAL_MAP", {
+    get() {
+        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
+        return (core && core.DIAL_MAP) || [];
+    },
+});
 // AUSLÖSCHUNGS-WELLE — die WÄCHTER-Dial-Zeile (Daten): dieselben vier Lab-Dials
 // wie koerper-core `mensch` (KOERPER_DIAL_MAP-Semantik) + die Wächter-HALTUNG
 // AUSLÖSCHUNGS-WELLE (A5) — welche CREATURE_SOULS-Gestalt welches tetrapoda-Rezept
@@ -87896,12 +87393,14 @@ AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
 //   diet→eyeFront (Carnivor frontal, Herbivor lateral — die Lab-law-Zeile).
 // BEWUSST unmapped: size (die Welt-Größe trägt `_creatureBodySize`, und die
 // V18.208-sizeFactor-Tarierung [g.size 0.6] ist stats-tragend — kein Render-Dial).
-AnazhRealm.TETRAPODA_DIAL_MAP = Object.freeze([
-    Object.freeze({ dial: "neck", axis: "neckFrac", base: 0, mul: 1 }),
-    Object.freeze({ dial: "leg", axis: "legFrac", base: 0, mul: 0.6 / 0.28 }),
-    Object.freeze({ dial: "build", axis: "torsoW", base: 0, mul: 1 }),
-    Object.freeze({ dial: "diet", axis: "eyeFront", base: 0.12, mul: 0.63 }),
-]);
+// ALTLASTEN-NULL HERZ — die Dial-Semantik wohnt im Evolutions-Gesetzbuch
+// (tetrapoda-core.DIAL_MAP); der Stamm liest die EINE Quelle.
+Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
+    get() {
+        const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
+        return (core && core.DIAL_MAP) || [];
+    },
+});
 // ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE: jede Compound-Seele
 // (konvergierte Built-ins Phönix/Drache + Custom + Peers) legt sich unter Wasser
 // über DIESELBE Daten-Zeile (der Rig-Avatar trägt sie in _animateHuman weiter).

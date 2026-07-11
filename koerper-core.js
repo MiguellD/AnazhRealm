@@ -146,9 +146,177 @@
         };
     })();
 
+
+    // ════════════════════════════════════════════════════════════════════
+    // ALTLASTEN-NULL HERZ (V18.449) — DIE EINE ANATOMIE-QUELLE.
+    // Die humanoiden LANDMARKEN (8-Kopf-Stationen, Referenz-vermessen; die
+    // eine Quelle, die Rig + Metaball-Haut + Werkstatt lesen) wohnen im
+    // Anatomie-Gesetzbuch (diesem Kern), nicht im Stamm. Reine Mathe ->
+    // Stationen/joint()-Ableser; MESHFREI §8. Der Stamm DELEGIERT hierher.
+    // (Verbatim aus dem Stamm gewandert — byte-gleicher Guss, Batterie-belegt.)
+    // ════════════════════════════════════════════════════════════════════
+    function landmarks(g) {
+        g = g || {};
+        const sex = Math.max(0, Math.min(1, g.sex != null ? g.sex : 0)); // 0 mask. V-Taper, 1 weibl. Sanduhr
+        const build = Math.max(0, Math.min(1, g.build != null ? g.build : 0.52)); // 0 schlank · 0.5 athlet. · 1 schwer
+        const muscle = Math.max(0, Math.min(1, g.muscle != null ? g.muscle : Math.min(1, build + 0.18))); // Glied-Masse
+        const headRatio = Math.max(0.8, Math.min(1.4, g.headRatio != null ? g.headRatio : 1.0)); // Alter/Heroik
+        const limbF = 0.82 + muscle * 0.6; // Glied-Durchmesser-Faktor
+        const girthF = 0.92 + build * 0.34; // Rumpf-Girth
+        const bellyF = build * build * 0.5; // Bauch-Vorwölbung (quadratisch)
+        const mF = 0.85 + muscle * 0.55; // Muskel-Fülle
+        // 8-Kopf-Stationen (Sohle y=0) + Breiten (Halbachsen) — Referenz-vermessen:
+        const shoulderHalf = 1.12 - sex * 0.27; // Schulter ~2.2 KH (Referenz-breit) → schmaler (weibl.)
+        const waistHalf = 0.72 - sex * 0.05; // Taille (eingezogen)
+        const hipHalf = 0.76 + sex * 0.18; // Becken: schmal (mask. V) → breit (weibl.)
+        const hipY = 4.15,
+            waistY = 5.0,
+            shoulderY = 6.5;
+        // benannte Gelenk-Knoten: die Mittellinien-Kette (Rig) + die paarigen Glied-Knoten (Haut+Rig).
+        const joint = (name, s) => {
+            s = s || 1;
+            switch (name) {
+                case "hips":
+                    return [0, hipY, 0];
+                case "spine":
+                    return [0, waistY, 0];
+                case "chest":
+                    return [0, shoulderY - 0.5, 0];
+                case "neck":
+                    return [0, shoulderY + 0.12, 0];
+                case "head":
+                    return [0, 7.2, 0];
+                case "headTop":
+                    return [0, 7.95, 0];
+                case "shoulder":
+                    return [s * shoulderHalf, shoulderY - 0.1, 0]; // Schulter-Gelenk (Arm-Ursprung, im Deltoid)
+                case "elbow":
+                    return [s * (shoulderHalf + 0.4), waistY + 0.1, 0];
+                case "wrist":
+                    return [s * (shoulderHalf + 0.6), hipY - 0.3, 0];
+                case "hand":
+                    return [s * (shoulderHalf + 0.6), hipY - 0.62, 0.05]; // Knöchel-Reihe (Skinning-Ende)
+                case "hip":
+                    return [s * hipHalf * 0.72, hipY - 0.1, -0.12]; // Hüft-Gelenk (Schenkel-Ursprung)
+                case "knee":
+                    return [s * 0.4, 2.3, 0];
+                case "ankle":
+                    return [s * 0.38, 0.4, 0];
+                case "foot":
+                    return [s * 0.38, 0.2, 0.56]; // Zehen-Ballen (vorn)
+                // ── Muskel-Ansatz-Landmarken (Ursprung/Ansatz — „geführt über die Gelenke") ──
+                case "sternumTop":
+                    return [0, 6.0, 0.32 * girthF]; // Manubrium (obere Brust-Front)
+                case "sternumLow":
+                    return [0, 5.4, 0.34 * girthF];
+                case "xiphoid":
+                    return [0, 5.0, 0.34 * girthF];
+                case "navel":
+                    return [0, 4.32, 0.36 * girthF];
+                case "pubis":
+                    return [0, 3.85, 0.2 * girthF];
+                case "c7":
+                    return [0, 6.85, -0.16 * girthF]; // Nacken-Basis hinten
+                case "sacrum":
+                    return [s * 0.13, 4.15, -0.34 * girthF];
+                case "erectorTop":
+                    return [s * 0.13, 6.2, -0.34 * girthF];
+                case "mastoid":
+                    return [s * 0.19, 7.28, -0.05]; // Warzenfortsatz hinterm Ohr
+                case "cheek":
+                    return [s * 0.3 * headRatio, 7.46, 0.16 * headRatio];
+                case "jawAngle":
+                    return [s * 0.29 * headRatio, 7.12, 0.04 * headRatio];
+                case "clavicleMed":
+                    return [s * 0.12, 6.42, 0.2 * girthF];
+                case "acromion":
+                    return [s * shoulderHalf * 1.04, 6.62, 0]; // Schulter-Spitze
+                case "scapula":
+                    return [s * shoulderHalf * 0.64, 6.05, -0.34 * girthF];
+                case "axilla":
+                    return [s * shoulderHalf * 0.82, 5.95, -0.14 * girthF]; // Achsel (Lat/Teres-Ansatz)
+                case "deltoidIns":
+                    return [s * shoulderHalf * 1.06, 5.85, 0]; // Deltoid-Tuberositas (Humerus-Mitte)
+                case "pecIns":
+                    return [s * shoulderHalf * 0.88, 6.0, 0.12 * girthF]; // Pec-Ansatz (Humerus vorn)
+                case "shoulderFront":
+                    return [s * shoulderHalf, 6.3, 0.14 * limbF]; // Bizeps-Ursprung
+                case "shoulderBack":
+                    return [s * shoulderHalf, 6.3, -0.14 * limbF]; // Trizeps-Ursprung
+                case "elbowFront":
+                    return [s * (shoulderHalf + 0.4), 5.05, 0.12 * limbF];
+                case "elbowBack":
+                    return [s * (shoulderHalf + 0.4), 5.08, -0.13 * limbF]; // Olecranon (Trizeps-Ansatz)
+                case "iliac":
+                    return [s * hipHalf * 0.95, 4.42, 0.02 * girthF]; // Darmbeinkamm
+                case "iliacBack":
+                    return [s * hipHalf * 0.62, 4.3, -0.32 * girthF]; // Becken hinten (Glute/Lat-Ursprung)
+                case "ischium":
+                    return [s * hipHalf * 0.52, 3.9, -0.3 * girthF]; // Sitzbein (Hamstring-Ursprung)
+                case "hipFront":
+                    return [s * hipHalf * 0.66, 4.0, 0.12 * girthF]; // Quad-Ursprung (vorn)
+                case "thighInner":
+                    return [s * 0.22, 3.1, 0.02]; // innerer Oberschenkel (Adduktor-Ansatz)
+                case "kneeFront":
+                    return [s * 0.4, 2.36, 0.14 * girthF]; // Patella (Quad/Tibialis)
+                case "kneeBack":
+                    return [s * 0.4, 2.36, -0.16 * girthF]; // Kniekehle (Hamstring/Gastroc)
+                case "shinTop":
+                    return [s * 0.4, 2.05, -0.1 * girthF]; // oberer Schienbein hinten (Soleus)
+                case "ankleFront":
+                    return [s * 0.38, 0.58, 0.1 * girthF]; // Knöchel vorn (Tibialis-Ansatz)
+                case "heel":
+                    return [s * 0.38, 0.3, -0.22]; // Fersenbein (Achilles/Gastroc-Ansatz)
+                // ── Glied-Vollkachelung (Vastus/Brachialis/Extensoren/Peroneus) + Schulter-Kappe ──
+                case "kneeOut":
+                    return [s * (0.4 + 0.18 * limbF), 2.4, 0.06 * girthF]; // äußeres Knie (Vastus lateralis-Ansatz)
+                case "kneeIn":
+                    return [s * (0.4 - 0.14 * limbF), 2.5, 0.1 * girthF]; // inneres Knie / „Tropfen" (Vastus medialis)
+                case "shinOut":
+                    return [s * (0.38 + 0.16 * limbF), 1.2, 0.04 * girthF]; // äußerer Unterschenkel (Peroneus)
+                case "upperArmOut":
+                    return [s * (shoulderHalf + 0.46), 5.4, 0]; // außen-mittlerer Oberarm (Brachialis)
+                case "forearmBack":
+                    return [s * (shoulderHalf + 0.62), hipY - 0.32, -0.12 * limbF]; // dorsales Handgelenk (Extensoren)
+                case "humerusTop":
+                    return [s * shoulderHalf * 1.02, 6.42, 0]; // Humeruskopf-Scheitel (Schulter-Kappen-Brücke)
+                default:
+                    return [0, 0, 0];
+            }
+        };
+        return {
+            sex,
+            build,
+            muscle,
+            headRatio,
+            limbF,
+            girthF,
+            bellyF,
+            mF,
+            shoulderHalf,
+            waistHalf,
+            hipHalf,
+            hipY,
+            waistY,
+            shoulderY,
+            joint,
+        };
+    }
+
+    // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
+    // verbatim aus dem Stamm gewandert; khMul skaliert die EINE Kopfhöhen-Einheit):
+    var DIAL_MAP = Object.freeze([
+        Object.freeze({ dial: "height", axis: "khMul", base: 0, mul: 1 }),
+        Object.freeze({ dial: "mass", axis: "build", base: 0, mul: 1 }),
+        Object.freeze({ dial: "tone", axis: "muscle", base: 0, mul: 1 }),
+        Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
+    ]);
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {
         VERSION: VERSION,
+        landmarks: landmarks,
+        DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: PRESETS,

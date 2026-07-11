@@ -6,13 +6,17 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.449 — ALTLASTEN-NULL)
+## Stand (V18.450 — ALTLASTEN-NULL + HERZ)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
 Körper→Eigenschaften ist ZAHL (Bär>Wolf>Fuchs HP · invers im Tempo, EINE Größen-Fold-Quelle);
 Bestand = **Mensch + Hirsch·Wolf·Fuchs·Bär (+ Pferd)**, `werde wolf` verkörpert per Chat.
-`gate:altlasten` (im check) hält Gefallenes strukturell draußen. Davor: SYNERGIE (V18.448 — EINE
+`gate:altlasten` (im check) hält Gefallenes strukturell draußen. **DAS HERZ:** die Anatomie-GESETZE
+wohnen in den Gesetzbüchern (tetrapoda-core `buildSkeleton`+`ARCHETYPES`+`DIAL_MAP` · koerper-core
+`landmarks`+`DIAL_MAP`; der Stamm DELEGIERT fail-closed, index.html lädt die Kerne vor dem Stamm);
+`werde wolf` trägt die ECHTE Kreatur (Metaball-Haut, 1st-Person-Regel); Mensch-Dials tragen Stats
+(dieselbe Größen-Achse, Default exakt 1.0). Davor: SYNERGIE (V18.448 — EINE
 Export-Form `PARAMS_BY_KIND`, EIN Umschlag `get-book`, EIN Ingest) · Nervensystem/Katalysator/Trias
 (V18.434–.447). **OFFEN:** die eine Schöpfer-Browser-Runde (W8-Abnahme + LOOK-Stau) · W9 Himmel 1:1 ·
 W10 Wasser-Oberfläche 1:1 (`docs/roadmap.md` §0).

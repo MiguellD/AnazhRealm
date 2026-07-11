@@ -106,11 +106,13 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
     // Dial- und Emotions-Bruecken existieren (Tabellen, kein if — M8) und die
     // Konsumenten rufen die EINEN Leser (Definitions-Form).
     out.push([
-        'S7: die KOERPER_HOST_RECIPE-Daten-Zeile existiert ("mensch") + KOERPER_DIAL_MAP/TETRAPODA_SOUL_MAP/TETRAPODA_DIAL_MAP (Tabellen)',
+        'S7 (HERZ): KOERPER_HOST_RECIPE ("mensch") + SOUL_MAP im Stamm; die DIAL_MAPs wohnen in den GESETZBÜCHERN (Kern-Delegaten)',
         /KOERPER_HOST_RECIPE\s*=\s*"mensch"/.test(anazhNC) &&
-            /KOERPER_DIAL_MAP\s*=\s*Object\.freeze/.test(anazhNC) &&
             /TETRAPODA_SOUL_MAP\s*=\s*Object\.freeze/.test(anazhNC) &&
-            /TETRAPODA_DIAL_MAP\s*=\s*Object\.freeze/.test(anazhNC),
+            /"KOERPER_DIAL_MAP",\s*\{/.test(anazhNC) &&
+            /"TETRAPODA_DIAL_MAP",\s*\{/.test(anazhNC) &&
+            /DIAL_MAP\s*=\s*Object\.freeze/.test(fs.readFileSync(path.join(root, "koerper-core.js"), "utf8")) &&
+            /DIAL_MAP\s*=\s*Object\.freeze/.test(fs.readFileSync(path.join(root, "tetrapoda-core.js"), "utf8")),
     ]);
     out.push([
         "S8: die EINE Emotions-Bruecke (MOTION_EMOTION_PROFILES) existiert und BEIDE Leser fliessen durch _motionProfileName",
@@ -392,9 +394,9 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         // ===== X: DIE AUSLÖSCHUNGS-GÜSSE (A5 — Wächter/Holzross/Glutwesen aus den Studio-Straßen) =====
         try {
             res.x = {};
-            // (X1) glutwesen ↔ wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
-            const frozenG = r.constructor.CREATURE_SOULS.glutwesen.bodyParts;
-            const effG = r._tetrapodaSoulParts("glutwesen");
+            // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH (V17.16-Wand)
+            const frozenG = r.constructor.CREATURE_SOULS.wolf.bodyParts;
+            const effG = r._tetrapodaSoulParts("wolf");
             res.x.glutDocked = !!effG && effG.length === frozenG.length;
             res.x.glutDialsWirken = !!effG && JSON.stringify(effG) !== JSON.stringify(frozenG);
             res.x.glutTagNeutral =
@@ -410,28 +412,29 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
                 );
             const prevNeck = f.recipes.wolf.s.neck;
             f.recipes.wolf.s.neck = 0.15;
-            const effG2 = r._tetrapodaSoulParts("glutwesen");
+            const effG2 = r._tetrapodaSoulParts("wolf");
             f.recipes.wolf.s.neck = prevNeck;
             res.x.glutNeckConsumed = !!effG && !!effG2 && hiY(effG2) < hiY(effG) - 0.01;
-            // (X2) DER WÄCHTER aus dem Landmark-Guss: 6 Parts, Body-Klassifikator, Rolle,
-            // Tags == die eingefrorene Identität (die Alt-Konstruktion, gemünzt 10.07.).
-            const wb = r.state.blueprints.avatar_waechter;
+            // (X2/HERZ) DER MENSCH-KÖRPER aus dem Landmark-Guss: koerper_human ist
+            // body-shaped + Rolle soul; das Landmark-GESETZ wohnt im koerper-core
+            // (der Stamm-Delegat und der Kern liefern DENSELBEN Guss — eine Quelle).
+            const wb = r.state.blueprints.koerper_human;
             res.x.waechterParts = wb && wb.parts ? wb.parts.length : 0;
             res.x.waechterBody = !!wb && r._isBodyShaped(wb) === true;
             res.x.waechterRole = wb ? r.computeBlueprintRole(wb) : null;
             res.x.waechterTags = wb ? JSON.stringify(r.computeCompoundTags({ parts: wb.parts })) : "";
-            // Der Guss LIEST die Dial-Zeile: height-Dial hoch => der Kopf-Anker steigt.
-            const W0 = r.constructor.WAECHTER_DIALS;
+            res.x.humanDefTags = JSON.stringify(r.computeSoulCompoundTags(r.playerSoulDefs.human) || {});
             res.x.waechterGussLiest = (() => {
                 try {
-                    const p1 = r._waechterSoulParts();
-                    const alt = Object.assign({}, W0, { height: W0.height * 1.2 });
-                    const AR = r.constructor;
-                    const orig = AR.WAECHTER_DIALS;
-                    Object.defineProperty(AR, "WAECHTER_DIALS", { value: alt, configurable: true, writable: true });
-                    const p2 = r._waechterSoulParts();
-                    Object.defineProperty(AR, "WAECHTER_DIALS", { value: orig, configurable: true, writable: true });
-                    return hiY(p2) > hiY(p1) * 1.1;
+                    const core = window.__koerperCore;
+                    if (!core || typeof core.landmarks !== "function") return "err:kern fehlt";
+                    const g = { sex: 0.3, build: 0.6, muscle: 0.5 };
+                    const a = r.constructor._humanoidLandmarks(g);
+                    const b = core.landmarks(g);
+                    return (
+                        Math.abs(a.shoulderHalf - b.shoulderHalf) < 1e-12 &&
+                        Math.abs(a.joint("head")[1] - b.joint("head")[1]) < 1e-12
+                    );
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }
@@ -704,28 +707,26 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         !!out.e && out.e.stepBridge === true
     );
     check(
-        "X (Auslöschung A5): glutwesen liest die tetrapoda-wolf-Dials (gleiche Part-Zahl, Dials wirken, TAG-BYTE-GLEICH)",
+        "X (NULL): der WOLF liest die tetrapoda-wolf-Dials (gleiche Part-Zahl, Dials wirken, TAG-BYTE-GLEICH)",
         !!out.x && out.x.glutDocked === true && out.x.glutDialsWirken === true && out.x.glutTagNeutral === true,
         (out.x && out.x.err) || ""
     );
     check(
-        "X: KONSUM als ZAHL — neck-Dial 0.263->0.15 senkt den Kopf-Anker des Glutwesens",
+        "X: KONSUM als ZAHL — neck-Dial 0.263->0.15 senkt den Kopf-Anker des Wolfs",
         !!out.x && out.x.glutNeckConsumed === true
     );
     check(
-        "X: der WÄCHTER ist der Landmark-Guss (6 Parts · _isBodyShaped · Rolle soul) + der Guss liest WAECHTER_DIALS",
+        "X (HERZ): koerper_human ist der Landmark-Guss (_isBodyShaped · Rolle soul) + Stamm-Delegat === Kern-Gesetz",
         !!out.x &&
-            out.x.waechterParts === 6 &&
+            out.x.waechterParts >= 6 &&
             out.x.waechterBody === true &&
             out.x.waechterRole === "soul" &&
             out.x.waechterGussLiest === true,
         out.x ? `parts=${out.x.waechterParts} body=${out.x.waechterBody} liest=${out.x.waechterGussLiest}` : ""
     );
     check(
-        "X: WÄCHTER-Identität — Tags BYTE-GLEICH zur gemünzten Alt-Konstruktion (10.07.)",
-        !!out.x &&
-            out.x.waechterTags ===
-                '{"härte":0.15,"dichte":1.2000000000000002,"zähigkeit":1.5,"wärmeleitung":1.35,"brennbar":0.35,"lebendig":2}',
+        "X (HERZ): Spiegel-Identität — koerper_human trägt EXAKT die Def-Tags des Menschen",
+        !!out.x && !!out.x.waechterTags && out.x.waechterTags === out.x.humanDefTags,
         out.x ? out.x.waechterTags : ""
     );
     check(

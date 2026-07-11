@@ -238,13 +238,38 @@ function check(name, ok) {
                 const wo = read("koerper_wolf");
                 const ba = read("koerper_baer");
                 const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(r.state.player.soul));
+                // HERZ: „werde wolf" IST der Wolf — derselbe Guss wie die Welt-
+                // Kreatur (Metaball-Haut am getragenen Körper, headless sync).
+                const wolfSkin = (r.state.playerMesh.children || []).some(
+                    (c) => c && c.userData && c.userData._creatureSkin
+                );
                 const softOk = !!r.applyPlayerSoul("phoenix") && r.state.player.soul === "human";
+                // HERZ: der MENSCH hängt an derselben Größen-Achse — die
+                // koerperstudio-Dials (dieselbe Quelle wie das Rig) tragen
+                // Stats: mehr Masse/Höhe → mehr HP, weniger Tempo.
+                let menschDials = false;
+                const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE];
+                if (rec && rec.s) {
+                    const saved = JSON.parse(JSON.stringify(rec.s));
+                    r.applyPlayerSoul("human");
+                    r.recomputePlayerStats();
+                    const base = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    rec.s.height = 1.15;
+                    rec.s.mass = 1.0;
+                    r.recomputePlayerStats();
+                    const big = { hp: r.state.player.stats.hpMax, sp: r.state.player.stats.speed };
+                    Object.assign(rec.s, saved);
+                    r.recomputePlayerStats();
+                    menschDials = big.hp > base.hp && big.sp < base.sp;
+                }
                 r.applyPlayerSoul(prev);
                 return {
                     hpOrder: ba.hp > wo.hp && wo.hp > fu.hp,
                     speedOrder: fu.sp > wo.sp && wo.sp > ba.sp,
                     aliasOk,
                     softOk,
+                    wolfSkin,
+                    menschDials,
                 };
             });
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
@@ -344,6 +369,14 @@ function check(name, ok) {
                 (R.koerperStats || {}).aliasOk === true &&
                 (R.koerperStats || {}).softOk === true &&
                 !(R.koerperStats || {}).__err
+        );
+        check(
+            "HERZ: werde wolf trägt die Metaball-HAUT (derselbe Guss wie die Welt-Kreatur)",
+            (R.koerperStats || {}).wolfSkin === true && !(R.koerperStats || {}).__err
+        );
+        check(
+            "HERZ: Mensch-Dials tragen Stats (mehr Masse/Höhe → mehr HP, weniger Tempo — EINE Größen-Achse)",
+            (R.koerperStats || {}).menschDials === true && !(R.koerperStats || {}).__err
         );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
