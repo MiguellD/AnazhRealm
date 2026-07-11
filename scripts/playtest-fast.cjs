@@ -188,9 +188,13 @@ function check(name, ok) {
                 const g = r._buildCreatureGroup("wesen");
                 return { ok: !!g, children: g ? g.children.length : 0 };
             });
+            // ALTLASTEN-NULL — glutwesen/sprite/geist sind GEFALLEN: die Seelen-
+            // Menge ist exakt die vier ehrlichen Tiere.
             out.creatureGlut = safe(() => {
-                const g = r._buildCreatureGroup("glutwesen");
-                return { ok: !!g };
+                const names = (window.AnazhRealm || r.constructor).CREATURE_SOUL_NAMES || [];
+                const exakt =
+                    names.length === 4 && ["wesen", "wolf", "fuchs", "baer"].every((n) => names.includes(n));
+                return { ok: exakt };
             });
             // ERFINDER-WELLE — die NEUEN Tiere (wolf/fuchs/baer aus den tetrapoda-
             // Gattungen) bauen durch DENSELBEN Guss (Konsum-Beweis, nicht Existenz).
@@ -217,6 +221,31 @@ function check(name, ok) {
                     r.applyPlayerSoul(prev);
                 }
                 return { okDef, getragen, hirsch: !!r.state.blueprints.koerper_wesen };
+            });
+            // ALTLASTEN-NULL — KÖRPER→EIGENSCHAFTEN als ZAHL: die Skelett-Größen
+            // differenzieren die getragenen Tier-Körper über die EINE Größen-Fold-
+            // Quelle (sizeHpMul): Bär > Wolf > Fuchs in HP, Fuchs > Wolf > Bär im
+            // Tempo. Plus: der werde-Alias trägt (wolf→koerper_wolf) und ein
+            // gefallener Alt-Name fällt fail-soft auf den Menschen.
+            out.koerperStats = safe(() => {
+                const prev = (r.state.player && r.state.player.soul) || "human";
+                const read = (k) => {
+                    r.applyPlayerSoulFromBlueprint(k);
+                    const st = r.state.player.stats || {};
+                    return { hp: st.hpMax || 0, sp: st.speed || 0 };
+                };
+                const fu = read("koerper_fuchs");
+                const wo = read("koerper_wolf");
+                const ba = read("koerper_baer");
+                const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(r.state.player.soul));
+                const softOk = !!r.applyPlayerSoul("phoenix") && r.state.player.soul === "human";
+                r.applyPlayerSoul(prev);
+                return {
+                    hpOrder: ba.hp > wo.hp && wo.hp > fu.hp,
+                    speedOrder: fu.sp > wo.sp && wo.sp > ba.sp,
+                    aliasOk,
+                    softOk,
+                };
             });
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
@@ -293,7 +322,7 @@ function check(name, ok) {
         check("AVATAR ist ein Rig (SkinnedMesh + Bones)", av.hasRig === true && av.skinned === true);
         const cw = R.creatureWesen || {};
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
-        check("KREATUR 'glutwesen' baut", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
+        check("ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
         check(
             "DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)",
             (R.creatureTiere || {}).wolf === true &&
@@ -307,6 +336,14 @@ function check(name, ok) {
                 (R.tierKoerper || {}).getragen === true &&
                 (R.tierKoerper || {}).hirsch === true &&
                 !(R.tierKoerper || {}).__err
+        );
+        check(
+            "KÖRPER→EIGENSCHAFTEN: Bär>Wolf>Fuchs (HP) · Fuchs>Wolf>Bär (Tempo) + werde-Alias + fail-soft",
+            (R.koerperStats || {}).hpOrder === true &&
+                (R.koerperStats || {}).speedOrder === true &&
+                (R.koerperStats || {}).aliasOk === true &&
+                (R.koerperStats || {}).softOk === true &&
+                !(R.koerperStats || {}).__err
         );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
