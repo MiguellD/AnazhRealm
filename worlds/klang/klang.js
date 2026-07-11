@@ -1333,39 +1333,12 @@ function sbass(t, f, midi, dur, vel, bus){
 /* ══════════ 5) HARMONIK & VOICE LEADING ══════════ */
 
 function getProgression(bar){
-  const h = laws.harmony;
-  let deg = 0;
-  if (h === 'Blues'){
-    const b = bar % 12;
-    const quick = srand(Math.floor(bar / 12) * 2.3) > 0.5;   // Quick-Change im 2. Takt
-    deg = [0, quick ? 3 : 0, 0, 0, 3, 3, 0, 0, 4, 3, 0, 4][b];
-  } else if (h === 'iiVI'){
-    deg = [1, 4, 0, 5, 1, 4, 0, 4][bar % 8];
-  } else if (h === 'Modal'){
-    deg = [0, 0, 3, 0, 0, 0, 6, 3][bar % 8];
-  } else if (h === 'Functional'){
-    deg = [0, 3, 4, 0, 0, 5, 1, 4][bar % 8];
-  } else if (h === 'Polychord'){
-    deg = [0, 2, 5, 4][bar % 4];
-  } else if (h === 'Free'){
-    deg = Math.floor(srand(bar * 1.71) * 7);
-  }
-  if (state.form && state.form.section === 'Dev') deg = (deg + 4) % 7;   // Durchführung moduliert
-  return { deg };
+  /* ULTRAGUSS U5: das Progressions-Gesetz wohnt im Gesetzbuch (__klangCore). */
+  return __klangCore.progressionDeg(laws.harmony, bar, srand, !!(state.form && state.form.section === 'Dev'));
 }
 
-/* Terzschichtung auf Skalenstufen: 1-3-5-7 (-9 -13 je nach Farbe) */
-function stack(rootMidi, deg, scale, ext){
-  const L = scale.length;
-  const idx = k => {
-    const q = deg + k, o = Math.floor(q / L);
-    return rootMidi + scale[((q % L) + L) % L] + o * 12;
-  };
-  const t = [idx(0), idx(2), idx(4), idx(6)];
-  if (ext >= 2) t.push(idx(8));    // None
-  if (ext >= 3) t.push(idx(12));   // Tredezime (11 wird übersprungen)
-  return t;
-}
+/* Terzschichtung: wohnt im Gesetzbuch (__klangCore.stack). */
+function stack(rootMidi, deg, scale, ext){ return __klangCore.stack(rootMidi, deg, scale, ext); }
 
 function buildTones(bar){
   const rt = rootFor(bar);

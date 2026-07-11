@@ -248,8 +248,49 @@
     ];
 
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI): Manifest-Blöcke + Lab-Quelle ──
+
+    // ULTRAGUSS U5 — DAS PROGRESSIONS- UND SCHICHTUNGS-GESETZ (verbatim aus dem
+    // Lab): progressionDeg(harmony, bar, srandFn, inDev) → Skalenstufe des Takts
+    // (Blues 12-taktig mit Quick-Change · iiVI · Modal · Functional · Polychord ·
+    // Free); stack(rootMidi, deg, scale, ext) → Terzschichtung 1-3-5-7(-9,-13).
+    // RNG reist als PARAMETER (srandFn) — der Seed-Strom des Rufers bleibt heilig.
+    function progressionDeg(harmony, bar, srandFn, inDev) {
+        var deg = 0;
+        if (harmony === 'Blues') {
+            var b = bar % 12;
+            var quick = srandFn(Math.floor(bar / 12) * 2.3) > 0.5;
+            deg = [0, quick ? 3 : 0, 0, 0, 3, 3, 0, 0, 4, 3, 0, 4][b];
+        } else if (harmony === 'iiVI') {
+            deg = [1, 4, 0, 5, 1, 4, 0, 4][bar % 8];
+        } else if (harmony === 'Modal') {
+            deg = [0, 0, 3, 0, 0, 0, 6, 3][bar % 8];
+        } else if (harmony === 'Functional') {
+            deg = [0, 3, 4, 0, 0, 5, 1, 4][bar % 8];
+        } else if (harmony === 'Polychord') {
+            deg = [0, 2, 5, 4][bar % 4];
+        } else if (harmony === 'Free') {
+            deg = Math.floor(srandFn(bar * 1.71) * 7);
+        }
+        if (inDev) deg = (deg + 4) % 7;
+        return { deg: deg };
+    }
+
+    function stack(rootMidi, deg, scale, ext) {
+        var L = scale.length;
+        var idx = function (k) {
+            var q = deg + k, o = Math.floor(q / L);
+            return rootMidi + scale[((q % L) + L) % L] + o * 12;
+        };
+        var t = [idx(0), idx(2), idx(4), idx(6)];
+        if (ext >= 2) t.push(idx(8));
+        if (ext >= 3) t.push(idx(12));
+        return t;
+    }
+
     root.__klangCore = {
         VERSION: VERSION,
+        progressionDeg: progressionDeg,
+        stack: stack,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,
