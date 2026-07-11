@@ -211,6 +211,24 @@ const ZWILLINGE = [
         verboten: ["worlds/fachwerk/fachwerk.js", "anazhRealm.js"],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
+    {
+        fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
+        gesetzbuch: "schmiede-core.js",
+        verboten: ["anazhRealm.js"],
+        fiel: "U6d — die distale Klingen-Verjüngung (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
+    },
+    {
+        fingerprint: "Math.pow(w / 0.4, 2)",
+        gesetzbuch: "schmiede-core.js",
+        verboten: ["anazhRealm.js"],
+        fiel: "U6d — die Hohlkehle des Wirts-Schnitts (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
+    },
+    {
+        fingerprint: "bladeLen: 1.45",
+        gesetzbuch: "schmiede-core.js",
+        verboten: ["anazhRealm.js"],
+        fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
+    },
 ];
 
 function scanZwillinge() {

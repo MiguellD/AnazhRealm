@@ -16151,7 +16151,9 @@ class AnazhRealm {
         // den Kern vor dem Stamm). Fail-closed: ohne Gesetzbuch kein Tier.
         const core = (typeof globalThis !== "undefined" && globalThis.__tetrapodaCore) || null;
         if (!core || typeof core.buildSkeleton !== "function") {
-            throw new Error("tetrapoda-core fehlt — das Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)");
+            throw new Error(
+                "tetrapoda-core fehlt — das Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)"
+            );
         }
         return core.buildSkeleton(g);
     }
@@ -16180,7 +16182,9 @@ class AnazhRealm {
         // Gesetzbuch (koerper-core, EINE Quelle für Rig + Haut + Werkstatt).
         const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
         if (!core || typeof core.landmarks !== "function") {
-            throw new Error("koerper-core fehlt — das Landmark-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)");
+            throw new Error(
+                "koerper-core fehlt — das Landmark-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)"
+            );
         }
         return core.landmarks(g);
     }
@@ -16191,7 +16195,9 @@ class AnazhRealm {
         // Werkstatt; index.html lädt den Kern vor dem Stamm). Fail-closed: kein Kern, kein Mensch.
         const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
         if (!core || typeof core.humanSkeleton !== "function") {
-            throw new Error("koerper-core fehlt — das humanoide Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)");
+            throw new Error(
+                "koerper-core fehlt — das humanoide Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)"
+            );
         }
         return core.humanSkeleton(g);
     }
@@ -52331,35 +52337,34 @@ class AnazhRealm {
                 // entfernt = gelebtes Flächenträgheitsmoment Ω-Φ3: leichter bei gleicher
                 // Steifigkeit, warum Knochen hohl sind) + linsenförmiger Querschnitt zu den
                 // SCHNEIDEN (dick am Grat, scharf an den Kanten). Deterministisch, ein Part.
-                const baseHalfW = Math.max(0.01, sx / 2); // size.x = Klingen-Breite an der Parier
+                // ULTRAGUSS U6d — DIE KLINGE IST EINE: das Schnitt-Formel-Gesetz (Verjüngung
+                // t^1.3 · Linse · Hohlkehle + die tipWidth/fuller-Klemmen) wohnt im Gesetzbuch
+                // schmiede-core (`klingenProfil`, neben sectionAt) — der Stamm DELEGIERT
+                // fail-closed (index.html lädt den Kern VOR dem Stamm; kalter Kern → Wurf,
+                // nie ein Formel-Nachbau). Werte numerisch identisch (Gitter-Beweis U6d).
+                const core = (typeof globalThis !== "undefined" && globalThis.__schmiedeCore) || null;
+                if (!core || typeof core.klingenProfil !== "function")
+                    throw new Error("bladeProfile braucht das Gesetzbuch schmiede-core (klingenProfil)");
+                const spec = {
+                    baseHalfW: Math.max(0.01, sx / 2), // size.x = Klingen-Breite an der Parier
+                    maxThick: Math.max(0.01, sz), // size.z = max Dicke (Mittelgrat)
+                    tipWidth: part.tipWidth,
+                    fuller: part.fuller,
+                };
                 const L = Math.max(0.1, sy); // size.y = Klingen-Länge
-                const maxThick = Math.max(0.01, sz); // size.z = max Dicke (Mittelgrat)
-                const tipFrac = Number.isFinite(part.tipWidth) ? Math.max(0.04, Math.min(1, part.tipWidth)) : 0.18;
-                const fuller = Number.isFinite(part.fuller) ? Math.max(0, Math.min(0.85, part.fuller)) : 0.0;
                 const wseg = 8;
                 const hseg = Math.max(6, Math.min(40, part.heightSegments || 14));
                 const W1 = wseg + 1;
-                const halfWAtT = (t) =>
-                    baseHalfW *
-                    (1 - (1 - tipFrac) * Math.pow(t, 1.3)) *
-                    (t > 0.92 ? Math.max(0.04, (1 - t) / 0.08) : 1);
-                const thickProfile = (w) => {
-                    let th = Math.pow(1 - Math.min(1, Math.abs(w)), 0.7); // linsenförmig: dick am Grat, 0 an der Schneide
-                    if (fuller > 0) th -= fuller * Math.max(0, 1 - Math.pow(w / 0.4, 2)); // Hohlkehle (zentrale Rinne)
-                    return Math.max(0, th);
-                };
                 const verts = [];
                 const idx = [];
                 const ring = (zSign) => {
                     for (let j = 0; j <= hseg; j++) {
                         const t = j / hseg;
                         const y = (t - 0.5) * L;
-                        const hw = halfWAtT(t);
-                        const thT = 1 - 0.6 * t; // distale Dicken-Verjüngung
                         for (let k = 0; k <= wseg; k++) {
                             const w = (k / wseg - 0.5) * 2;
-                            const th = thickProfile(w) * maxThick * thT;
-                            verts.push(w * hw, y, (zSign * th) / 2);
+                            const p = core.klingenProfil(spec, t, w);
+                            verts.push(p.w, y, (zSign * p.h) / 2);
                         }
                     }
                 };
@@ -84561,40 +84566,14 @@ AnazhRealm.CLASSICAL_ORDERS = Object.freeze({
 // (wahrerbauplan §3.5) — die gemessene Klingen-Referenz: Querschnitt · Länge · Hohlkehle ·
 // distale Verjüngung. `_buildBladedWeapon` leitet die Klinge daraus ab; die BALANCE
 // (Ω-Φ4) folgt aus den Massen (Knauf vs. Klinge), nicht aus einer Setzung. Längen in m.
-AnazhRealm.OAKESHOTT_TYPES = Object.freeze({
-    // Typ XII — das ritterliche Schnitt-UND-Stich-Schwert: breite Hohlkehle, mäßige Verjüngung.
-    XII: Object.freeze({
-        bladeLen: 1.45,
-        bladeBaseW: 0.2,
-        tipWidth: 0.34,
-        fuller: 0.5,
-        thick: 0.06,
-        gripLen: 0.34,
-        pommelR: 0.13,
-        guardW: 0.46,
-    }),
-    // Typ XV — stich-orientiert: scharfe Verjüngung zur Spitze, KEINE Hohlkehle, diamant-steif.
-    XV: Object.freeze({
-        bladeLen: 1.4,
-        bladeBaseW: 0.17,
-        tipWidth: 0.12,
-        fuller: 0.0,
-        thick: 0.07,
-        gripLen: 0.32,
-        pommelR: 0.12,
-        guardW: 0.42,
-    }),
-    // Typ XIIIa — das große Schwert: lang, lange Hohlkehle, langer Griff (Kontergewicht-Knauf).
-    XIIIa: Object.freeze({
-        bladeLen: 1.9,
-        bladeBaseW: 0.23,
-        tipWidth: 0.45,
-        fuller: 0.55,
-        thick: 0.06,
-        gripLen: 0.46,
-        pommelR: 0.15,
-        guardW: 0.52,
-    }),
+// ULTRAGUSS U6d — die Tabelle wohnt im Gesetzbuch (schmiede-core.OAKESHOTT_TYPES, neben
+// den 21 GATTUNGEN); der Stamm liest die EINE Quelle als Getter-Delegat (das
+// KOERPER_DIAL_MAP-Muster), fail-closed: kalter Kern → null, nie ein Tabellen-Nachbau.
+Object.defineProperty(AnazhRealm, "OAKESHOTT_TYPES", {
+    get() {
+        const core = (typeof globalThis !== "undefined" && globalThis.__schmiedeCore) || null;
+        return (core && core.OAKESHOTT_TYPES) || null;
+    },
 });
 // Λ.2 (V18.173 — V18.181-merge-Λ Sub 3a — clever-gauss): die HSL-Spannweite,
 // die jede gespawnte Architektur-Instanz bekommt (seed-deterministisch aus

@@ -197,6 +197,77 @@
         }
         return top.concat(bot.reverse());
     }
+    // ── ULTRAGUSS U6d — DAS WIRTS-SCHNITT-GESETZ (bladeProfile): die EINE Formel-Quelle
+    //    des Stamm-Loft-Meshes. anazhRealm `_makePartGeometry` case "bladeProfile" (die
+    //    Werkstatt-/DSL-öffentliche Klinge, Oakeshott-Grammatik) liest DIESE Funktion
+    //    fail-closed — verbatim aus dem Stamm gewandert, Werte NUMERISCH IDENTISCH
+    //    (Gitter-Beweis U6d, 0 Abweichungen: persistierte Spieler-Baupläne + die
+    //    eingefrorene KIND_SUBSTANCE-Klinge tragen dieselben Bytes). Neben sectionAt
+    //    (der Lab-Metrologie, 4 Familien) ist dies das BEWUSST eigene fünfte Profil
+    //    derselben Familie — beide wohnen im Gesetzbuch, kein Parallelpfad im Stamm.
+    //    klingenProfil(spec, t, w) → { w, h }:
+    //      spec = { baseHalfW, maxThick, tipWidth?, fuller? } (Meter; tipWidth/fuller
+    //      roh — die Klemmen wohnen HIER, dieselben Bänder wie der Stamm-Sanitizer),
+    //      t ∈ [0,1] Klingen-Anteil Basis→Spitze, w ∈ [−1,1] Breiten-Anteil
+    //      (−1 = Schneide, 0 = Grat). Rückgabe: w = X-Koordinate (Meter, signiert),
+    //      h = volle Dicke (Meter) an (t,w) — der Loft legt ±h/2 um die Mittelebene.
+    function klingenProfil(spec, t, w) {
+        const baseHalfW = spec.baseHalfW,
+            maxThick = spec.maxThick;
+        const tipFrac = Number.isFinite(spec.tipWidth) ? Math.max(0.04, Math.min(1, spec.tipWidth)) : 0.18;
+        const fuller = Number.isFinite(spec.fuller) ? Math.max(0, Math.min(0.85, spec.fuller)) : 0.0;
+        // distale Verjüngung t^1.3 + Spitzen-Klemme im letzten 8-%-Band
+        const hw =
+            baseHalfW *
+            (1 - (1 - tipFrac) * Math.pow(t, 1.3)) *
+            (t > 0.92 ? Math.max(0.04, (1 - t) / 0.08) : 1);
+        let th = Math.pow(1 - Math.min(1, Math.abs(w)), 0.7); // linsenförmig: dick am Grat, 0 an der Schneide
+        if (fuller > 0) th -= fuller * Math.max(0, 1 - Math.pow(w / 0.4, 2)); // Hohlkehle (zentrale Rinne)
+        th = Math.max(0, th);
+        const thT = 1 - 0.6 * t; // distale Dicken-Verjüngung
+        return { w: w * hw, h: th * maxThick * thT };
+    }
+    // ── ULTRAGUSS U6d — DIE OAKESHOTT-TYPOLOGIE des Wirts (Ω-B2, wahrerbauplan §3.5):
+    //    die drei Werkstatt-/DSL-Proportions-Typen (Querschnitt · Länge · Hohlkehle ·
+    //    distale Verjüngung; Längen in m) — verbatim aus dem Stamm gewandert, der Stamm
+    //    liest sie als Getter-Delegat (AnazhRealm.OAKESHOTT_TYPES, KOERPER_DIAL_MAP-
+    //    Muster). Die 21 GATTUNGEN bleiben die Lab-Rezept-Wahrheit; DIESE Tabelle ist
+    //    die eingefrorene Spiel-Grammatik (_buildBladedWeapon), Werte-identisch seit Ω-B2.
+    var OAKESHOTT_TYPES = Object.freeze({
+        // Typ XII — das ritterliche Schnitt-UND-Stich-Schwert: breite Hohlkehle, mäßige Verjüngung.
+        XII: Object.freeze({
+            bladeLen: 1.45,
+            bladeBaseW: 0.2,
+            tipWidth: 0.34,
+            fuller: 0.5,
+            thick: 0.06,
+            gripLen: 0.34,
+            pommelR: 0.13,
+            guardW: 0.46,
+        }),
+        // Typ XV — stich-orientiert: scharfe Verjüngung zur Spitze, KEINE Hohlkehle, diamant-steif.
+        XV: Object.freeze({
+            bladeLen: 1.4,
+            bladeBaseW: 0.17,
+            tipWidth: 0.12,
+            fuller: 0.0,
+            thick: 0.07,
+            gripLen: 0.32,
+            pommelR: 0.12,
+            guardW: 0.42,
+        }),
+        // Typ XIIIa — das große Schwert: lang, lange Hohlkehle, langer Griff (Kontergewicht-Knauf).
+        XIIIa: Object.freeze({
+            bladeLen: 1.9,
+            bladeBaseW: 0.23,
+            tipWidth: 0.45,
+            fuller: 0.55,
+            thick: 0.06,
+            gripLen: 0.46,
+            pommelR: 0.15,
+            guardW: 0.52,
+        }),
+    });
     // Polygon-Flächenmomente — exakt (Shoelace + zweite Momente), auf Schwerpunkt
     function sectionMoments(poly) {
         let A = 0,
@@ -2851,6 +2922,7 @@
         sectionAt: sectionAt,
         sectionMoments: sectionMoments,
         halfH: halfH,
+        klingenProfil: klingenProfil,
         curveY: curveY,
         bladeBeta: bladeBeta,
         headModel: headModel,
@@ -2881,6 +2953,7 @@
         tradWerkstoff: tradWerkstoff,
         // Gattungs-/Traditions-Fläche (die Shell-UI liest DIESE Daten)
         GATTUNGEN: GATTUNGEN,
+        OAKESHOTT_TYPES: OAKESHOTT_TYPES,
         TRADITIONEN: TRADITIONEN,
         REZEPT_ZU_GATTUNG: REZEPT_ZU_GATTUNG,
         PARAMS_BLADE: PARAMS_BLADE,

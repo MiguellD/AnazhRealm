@@ -126,6 +126,41 @@ function compare(golden, actual) {
         GATTUNGEN.length === 21 && GATTUNGEN.every((g) => /^[a-z0-9_-]+$/.test(g) && SC.PRESETS[g])
     );
 
+    // ── ULTRAGUSS U6d — das Wirts-Schnitt-Gesetz wohnt im Kern (die EINE Formel-Quelle
+    //    des Stamm-bladeProfile; der Stamm delegiert fail-closed, OAKESHOTT_TYPES ist
+    //    Stamm-seitig ein Getter-Delegat). Eingefrorene Referenz-Werte (Mint 11.07.2026,
+    //    Gitter-Beweis alt==neu 0 Abweichungen) — eine Formel-Drift ist ein Vertrags-Akt.
+    const kp = typeof SC.klingenProfil === "function" ? SC.klingenProfil : null;
+    check("U6d: klingenProfil exportiert (reine Profil-Funktion)", !!kp);
+    if (kp) {
+        const specXII = { baseHalfW: 0.1, maxThick: 0.06, tipWidth: 0.34, fuller: 0.5 };
+        const p1 = kp(specXII, 0.5, -0.25); // Hohlkehle greift (|w|<fullerW-Band)
+        const p2 = kp(specXII, 0.96, 1); // Spitzen-Klemme (t>0.92) an der Schneide
+        const p3 = kp({ baseHalfW: 0.1, maxThick: 0.06 }, 0.5, 0); // Defaults tipFrac .18 / fuller 0
+        check(
+            "U6d: Referenz-Werte eingefroren (Verjüngung t^1.3 · Linse · Hohlkehle · Spitzen-Klemme)",
+            p1.w === -0.01829891773006106 &&
+                p1.h === 0.021542483263434557 &&
+                p2.w === 0.018705606234187114 &&
+                p2.h === 0 &&
+                p3.w === 0 &&
+                p3.h === 0.041999999999999996,
+            `${p1.w}/${p1.h}/${p2.w}/${p2.h}/${p3.w}/${p3.h}`
+        );
+    }
+    const OT = SC.OAKESHOTT_TYPES;
+    check(
+        "U6d: OAKESHOTT_TYPES wohnt im Kern (XII/XV/XIIIa, Werte eingefroren)",
+        !!OT &&
+            Object.keys(OT).length === 3 &&
+            OT.XII.bladeLen === 1.45 &&
+            OT.XII.tipWidth === 0.34 &&
+            OT.XV.fuller === 0 &&
+            OT.XV.bladeBaseW === 0.17 &&
+            OT.XIIIa.bladeLen === 1.9 &&
+            OT.XIIIa.gripLen === 0.46
+    );
+
     // 1) Alle Fälle bauen + fingerprinten (und Determinismus im Lauf: doppelt bauen).
     const actual = {};
     let determin = true;
