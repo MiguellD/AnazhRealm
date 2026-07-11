@@ -828,7 +828,7 @@ class AnazhRealm {
                 //               soll nicht hostil sein).
                 //   "pfad"    — Welt verhandelt: HP/Stamina/Tod-Wandlung aktiv.
                 //               Werkzeug-Anwendung kostet Stamina. Tod →
-                //               5min Phönix + Welt-Trauer (sorrow+0.3, awe+0.2).
+                //               Anker-Rückkehr + Welt-Trauer (sorrow+0.3, awe+0.2).
                 //   "schöpfer" — Welt gehorcht: kein Schaden, voller Zugang.
                 //                Mensch=Null=Schöpfer (Vision §1.5).
                 // Persistiert pro Welt (nicht global) — jede Welt darf ihren
@@ -965,7 +965,7 @@ class AnazhRealm {
                 // System-Prompt referenziert damit Grok dich beim Namen
                 // ansprechen kann.
                 name: "Schöpfer",
-                // Ring 5 V2 — Spieler-Seele. Drei Formen (human/phoenix/dragon)
+                // Ring 5 V2 — Spieler-Seele. Der Mensch (human) + koerper_-Baupläne
                 // mit Multi-Mesh-Group + sin/cos-Animation. Ammo-Body bleibt
                 // identisch (rein visuell). Default "human".
                 soul: "human",
@@ -1011,15 +1011,12 @@ class AnazhRealm {
                     "emotion:chaos": -Infinity,
                 },
                 boostLastTick: -Infinity,
-                // Welle 6.D Etappe 3a — Tod-Behandlung („Phönix-Wandlung mit
-                // Welt-Trauer", wave-6-design §10.3). Bei HP=0 wechselt die Seele
-                // für 5 min automatisch auf phoenix, HP regeneriert linear zurück,
-                // Welt fühlt sorrow + awe. `phoenixUntil = -Infinity` heißt:
-                // keine aktive Wandlung. `preDeathSoul` merkt die vorherige Seele
-                // für den Rückwandel.
-                phoenixUntil: -Infinity,
-                phoenixDurationSeconds: 300,
-                preDeathSoul: null,
+                // ALTLASTEN-NULL — DER TOD IST FELD-NATIV: bei HP=0 kehrt DERSELBE
+                // Körper am Ursprungs-Anker zurück (der Körper IST die Identität,
+                // kein Gestalt-Tausch), die Welt merkt den Ort (_depositLife) und
+                // fühlt sorrow + awe. `respawnGraceUntil` = kurze Gnade nach der
+                // Rückkehr (kein Ping-Pong-Tod). Die Wunde unten trägt die Erinnerung.
+                respawnGraceUntil: -Infinity,
                 deathLastTick: -Infinity,
                 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Tod-
                 // Wunde bleibt nach der Wandlung als gradueller Tag-Penalty,
@@ -8046,7 +8043,7 @@ class AnazhRealm {
             const def = this.playerSoulDefs[entry.soulName];
             if (def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
                 if (underwater) entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
-                else if (isMoving) entry.walkPhase += dt * (entry.soulName === "dragon" ? 4.5 : 5.5);
+                else if (isMoving) entry.walkPhase += dt * 5.5;
                 def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
             }
         }
@@ -9073,11 +9070,11 @@ class AnazhRealm {
                 }),
             },
             {
-                // Ring 5: "werde mensch|phönix|phoenix|drache|dragon" wechselt
-                // die Seele (visuell). applyPlayerSoul kanonisiert intern auf
-                // {human, phoenix, dragon}.
-                example: "werde phönix",
-                re: /^werde\s+(mensch|human|phönix|phoenix|drache|drachen|dragon)\s*$/i,
+                // Ring 5 / ALTLASTEN-NULL: "werde mensch|hirsch|wolf|fuchs|bär"
+                // wechselt den Körper. applyPlayerSoul kanonisiert (Tiere lösen
+                // auf die koerper_-Baupläne — der generische embody-Pfad).
+                example: "werde wolf",
+                re: /^werde\s+(mensch|human|hirsch|wolf|fuchs|bär|baer)\s*$/i,
                 build: (m) => {
                     const raw = m[1].toLowerCase();
                     return {
@@ -11189,7 +11186,7 @@ class AnazhRealm {
             },
             {
                 title: "Spieler-Seele",
-                commands: ["Werde Mensch", "Werde Phönix", "Werde Drache"],
+                commands: ["Werde Mensch", "Werde Wolf", "Werde Hirsch"],
             },
             {
                 title: "Bauwerke (Ring 6)",
@@ -13368,13 +13365,6 @@ class AnazhRealm {
                     this.state.worldJournal.seenLow[axis] = true;
                 }
             }
-        }
-        // Drache: spawn_blueprint mit dragon oder ein soul-Wechsel zu dragon
-        if (this.state.player && this.state.player.soul === "dragon") {
-            this.journalAppendOnce("becameDragon", "soul", "Du wurdest zum Drachen.");
-        }
-        if (this.state.player && this.state.player.soul === "phoenix") {
-            this.journalAppendOnce("becamePhoenix", "soul", "Du wurdest zum Phönix.");
         }
         // currentTime nur für künftige Throttle-Logik; aktuell ist
         // journalAppendOnce der eigentliche Spam-Schutz.
@@ -42975,146 +42965,6 @@ class AnazhRealm {
                     },
                 ],
             },
-            phoenix: {
-                label: "Phönix",
-                color: 0xff7a1a,
-                // ABSCHIEDS-WELLE (Konvergenz C) — das Hand-Skelett (_buildPhoenixGroup/
-                // _animatePhoenix, MeshBasicMaterial = Vor-PBR-Sediment) ist GESCHNITTEN:
-                // der Phönix baut wie jede Compound-Seele über `_buildFromBlueprint`
-                // (bodyParts unten, PBR = die EINE Material-Wahrheit V18.236) und bewegt
-                // sich durch den EINEN Kern `_animateCompoundMotion` (die V18.101-
-                // bodyParts wurden GENAU dafür als Spiegel-Paare gelegt — die Motion-
-                // Resonanz liest fluegel/schwanz/kopf von selbst).
-                // V18.101 — positioniert (s. human): dieselben (Form,Material)-
-                // Paare wie der alte Stat-Schatten (box/plane/cone+federn,
-                // sphere+glut) → Tag-Parität; die Flügel als ECHTES Spiegel-Paar
-                // (die Motion-Resonanz erkennt sie als fluegel).
-                bodyParts: [
-                    {
-                        shape: "box",
-                        material: "federn",
-                        size: { x: 0.5, y: 0.55, z: 0.4 },
-                        position: { x: 0, y: 0.5, z: 0 },
-                        label: "Körper",
-                    },
-                    {
-                        shape: "box",
-                        material: "federn",
-                        size: { x: 0.3, y: 0.3, z: 0.3 },
-                        position: { x: 0, y: 0.95, z: 0.05 },
-                        label: "Haupt",
-                    },
-                    {
-                        shape: "sphere",
-                        material: "glut",
-                        size: { x: 0.22, y: 0.22, z: 0.22 },
-                        position: { x: 0, y: 0.55, z: 0.12 },
-                        label: "Inneres Feuer",
-                    },
-                    {
-                        shape: "plane",
-                        material: "federn",
-                        size: { x: 0.9, y: 0.04, z: 0.5 },
-                        position: { x: 0.62, y: 0.55, z: 0 },
-                        label: "Flügel rechts",
-                    },
-                    {
-                        shape: "plane",
-                        material: "federn",
-                        size: { x: 0.9, y: 0.04, z: 0.5 },
-                        position: { x: -0.62, y: 0.55, z: 0 },
-                        label: "Flügel links",
-                    },
-                    {
-                        shape: "cone",
-                        material: "federn",
-                        size: { x: 0.18, y: 0.9, z: 0.18 },
-                        position: { x: 0, y: 0.4, z: -0.6 },
-                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
-                        label: "Schweif",
-                    },
-                ],
-            },
-            dragon: {
-                label: "Drache",
-                color: 0x2d6e3b,
-                // ABSCHIEDS-WELLE (Konvergenz C) — das Hand-Skelett (_buildDragonGroup/
-                // _animateDragon) ist GESCHNITTEN (s. phoenix): Compound-Bau + der EINE
-                // Kern; die vier Spiegel-Beine tragen den Diagonal-Trab der Motion-
-                // Resonanz, der Schweif die |z|-Phasen-Welle — genau die V18.101-Saat.
-                // V18.101 — positioniert (s. human): dieselben Paare (box/
-                // cylinder+schuppen, sphere+schuppen, cylinder+knochen) →
-                // Tag-Parität; vier gespiegelte Beine (Diagonal-Trab der
-                // Motion-Resonanz) + der dreigliedrige Schweif als Kette.
-                bodyParts: [
-                    {
-                        shape: "box",
-                        material: "schuppen",
-                        size: { x: 0.55, y: 0.45, z: 1.2 },
-                        position: { x: 0, y: 0.4, z: 0 },
-                        label: "Körper",
-                    },
-                    {
-                        shape: "sphere",
-                        material: "schuppen",
-                        size: { x: 0.42, y: 0.38, z: 0.45 },
-                        position: { x: 0, y: 0.5, z: 0.85 },
-                        label: "Haupt",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "knochen",
-                        size: { x: 0.15, y: 0.45, z: 0.15 },
-                        position: { x: 0.25, y: 0.1, z: 0.4 },
-                        label: "Bein vorn rechts",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "knochen",
-                        size: { x: 0.15, y: 0.45, z: 0.15 },
-                        position: { x: -0.25, y: 0.1, z: 0.4 },
-                        label: "Bein vorn links",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "knochen",
-                        size: { x: 0.15, y: 0.45, z: 0.15 },
-                        position: { x: 0.25, y: 0.1, z: -0.4 },
-                        label: "Bein hinten rechts",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "knochen",
-                        size: { x: 0.15, y: 0.45, z: 0.15 },
-                        position: { x: -0.25, y: 0.1, z: -0.4 },
-                        label: "Bein hinten links",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "schuppen",
-                        size: { x: 0.3, y: 0.45, z: 0.3 },
-                        position: { x: 0, y: 0.4, z: -0.85 },
-                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
-                        label: "Schweif-Wurzel",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "schuppen",
-                        size: { x: 0.2, y: 0.4, z: 0.2 },
-                        position: { x: 0, y: 0.4, z: -1.25 },
-                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
-                        label: "Schweif-Mitte",
-                    },
-                    {
-                        shape: "cylinder",
-                        material: "schuppen",
-                        size: { x: 0.13, y: 0.35, z: 0.13 },
-                        position: { x: 0, y: 0.4, z: -1.6 },
-                        rotation: { x: Math.PI / 2, y: 0, z: 0 },
-                        label: "Schweif-Spitze",
-                    },
-                ],
-            },
         };
         return this._playerSoulDefsCache;
     }
@@ -43275,13 +43125,13 @@ class AnazhRealm {
         // Welle 6.C2 — Modus-Gate. Im frieden-Modus existiert HP nicht als
         // Konsequenz; im schöpfer-Modus gehört die Welt dem Spieler und sie
         // versehrt ihn nicht. Schaden wird stumm verworfen (kein Log-Spam),
-        // hp + Phönix-Wandlung bleiben unangefasst.
+        // hp + Todes-Pfad bleiben unangefasst.
         const mode = this.getGameMode ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return false;
-        // Wenn aktuell in Phönix-Wandlung: kein doppelter Tod (Spieler ist
+        // Respawn-Gnade: kein doppelter Tod (Spieler ist
         // unverwundbar während der Heilungs-Phase, das ist Teil der Mythos).
         const now = performance.now() / 1000;
-        if (this.state.player.phoenixUntil > now) return false;
+        if ((this.state.player.respawnGraceUntil || -Infinity) > now) return false;
         // Resistenz: feuer/hitze-Quellen werden durch heatResist gedämpft.
         const stats = this.state.player.stats || {};
         let scaled = value;
@@ -43318,59 +43168,74 @@ class AnazhRealm {
             `Schaden ${scaled.toFixed(1)} (${source || "unbekannt"}) → HP ${hp.toFixed(0)}/${stats.hpMax || 0}`,
             "INFO"
         );
-        if (hp <= 0) this.triggerPhoenixDeath(source);
+        if (hp <= 0) this._playerDeathRespawn(source);
         return true;
     }
 
-    // HP=0 → Phönix-Wandlung. Die alte Seele wird gemerkt, der Spieler-Avatar
-    // wechselt automatisch zur phoenix-Form, HP zurück auf max, Welt fühlt
-    // sorrow + awe. Nach `phoenixDurationSeconds` (Default 5 min) kann der
-    // Spieler manuell zurück (oder bleibt phoenix). Im Frieden-Modus (kommt
-    // mit 6.C2) wird HP nicht erreicht.
-    triggerPhoenixDeath(source) {
+    // ALTLASTEN-NULL — DER TOD IST FELD-NATIV (ersetzt die Phönix-Wandlung):
+    // HP=0 → die Welt merkt den Ort (_depositLife — das dritte Verb: sie WERTET,
+    // wo Leben fiel), der Körper bleibt DERSELBE (der Körper ist die Identität),
+    // der Spieler kehrt am Genesis-Anker zurück, die Wunde (deathWoundIntensity)
+    // trägt die Erinnerung als Stat-Penalty, eine kurze Gnade (respawnGraceUntil)
+    // verhindert Ping-Pong-Tod. Deterministisch, headless beweisbar.
+    _playerDeathRespawn(source) {
         const now = performance.now() / 1000;
-        const oldSoul = this.state.player.soul;
-        // Doppelt-Trigger-Schutz: wenn bereits aktive Wandlung läuft, ignorieren
-        if (this.state.player.phoenixUntil > now) return;
-        this.state.player.preDeathSoul = oldSoul && oldSoul !== "phoenix" ? oldSoul : null;
-        this.state.player.phoenixUntil = now + (this.state.player.phoenixDurationSeconds || 300);
-        // Welt-Trauer: zwei Achsen schwingen mit, Tod ist Verlust + Wandlung.
+        if ((this.state.player.respawnGraceUntil || -Infinity) > now) return;
+        this.state.player.respawnGraceUntil = now + (AnazhRealm.RESPAWN_GRACE_SEC || 8);
+        // Welt-Trauer: zwei Achsen schwingen mit — Tod ist Verlust + Rückkehr.
         if (this.state.player.emotions) {
             this.state.player.emotions.sorrow = Math.min(1, (this.state.player.emotions.sorrow || 0) + 0.3);
             this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
         }
-        // Welle 6.D Etappe 3a+ — Wunde frisch setzen. Bleibt nach Phönix-Phase
-        // bestehen und regeneriert langsam (deathWoundRegenSeconds = 10 min).
         this.state.player.deathWoundIntensity = 1.0;
-        // Phönix-Form aktivieren (recomputePlayerStats läuft automatisch in
-        // applyPlayerSoul, HP wird dabei auf neue hpMax gesetzt).
-        const oldLabel = this._getSoulDef(oldSoul) ? this._getSoulDef(oldSoul).label : oldSoul;
-        if (oldSoul !== "phoenix") this.applyPlayerSoul("phoenix");
-        else this.recomputePlayerStats(); // wenn bereits phoenix, nur HP refreshen
-        // Journal: einmalige Erinnerung pro Welt-Tod. Mehrfach-Tode bekommen
-        // den `seen`-Marker nicht (jeder Tod ist ein Ereignis).
-        this.journalAppend(
-            "loss",
-            `Die ${oldLabel || oldSoul} fiel ${source ? `(${source}) ` : ""}— eine Flamme erhob sich.`,
-            {
-                previousSoul: oldSoul,
-                source: source || null,
-                at: now,
-            }
-        );
-        this.log(`Phönix-Wandlung: ${oldSoul} → phoenix (${source || "Tod"})`, "INFO");
+        // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
+        const pm = this.state.playerMesh;
+        if (pm && pm.position && typeof this._depositLife === "function") {
+            this._depositLife(pm.position.x, pm.position.z);
+        }
+        // Rückkehr am Genesis-Anker (die Start-Plattform); ohne Anker der
+        // offene Spawn-Spot — dieselben Quellen wie der Welt-Ursprung.
+        const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
+        let ax = 0;
+        let az = 0;
+        let ay = null;
+        if (anchor && anchor.position) {
+            ax = anchor.position.x;
+            az = anchor.position.z;
+            ay = anchor.position.y + 2.2;
+        } else if (typeof this._findOpenSpawnSpot === "function") {
+            const spot = this._findOpenSpawnSpot();
+            ax = spot.x;
+            az = spot.z;
+        }
+        const surf = this.getTerrainHeightAt(ax, az);
+        const safeY = Math.max(Number.isFinite(surf) ? surf + 2.0 : 2.0, ay || -Infinity);
+        if (pm) {
+            pm.position.set(ax, safeY, az);
+            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+            this.state._fieldVy = 0;
+        }
+        // HP kehrt voll zurück — die WUNDE (Stat-Penalty, 10-min-Regen) trägt
+        // die Erinnerung, nicht ein HP-Malus.
+        this.state.player.hp = this.state.player.hpMax || 100;
+        this.recomputePlayerStats();
+        this.journalAppend("loss", `Der Körper fiel ${source ? `(${source}) ` : ""}— am Ursprung kehrt er wieder.`, {
+            source: source || null,
+            at: now,
+        });
+        this.log(`Tod (${source || "unbekannt"}) → Rückkehr am Anker (${ax.toFixed(0)}, ${az.toFixed(0)})`, "INFO");
     }
 
-    // 1×/s tick: prüft, ob die Wandlung abgelaufen ist; während der Wandlung
-    // regeneriert HP linear (max in `phoenixDurationSeconds` Sekunden voll).
-    tickPhoenixDeath(currentTime) {
+    // 1×/s Vitals-Tick: Wunden-Regen (10 min Erinnerung), Stamina-Regen,
+    // Mana-Regen (magieleitungs-gehoben). ALTLASTEN-NULL: der Phönix-Timer ist
+    // gefallen — der Tod lebt in _playerDeathRespawn, die Vitals hier.
+    tickPlayerVitals(currentTime) {
         if (!this.state.player) return;
         if (currentTime - (this.state.player.deathLastTick || -Infinity) < 1.0) return;
         const dt = Math.max(0.1, Math.min(10, currentTime - this.state.player.deathLastTick));
         this.state.player.deathLastTick = currentTime;
         // Welle 6.D Etappe 3a+ — Wunde regenerieren UNABHÄNGIG von der
-        // Phönix-Wandlungs-Phase. Die Wandlung heilt HP schnell (5 min), aber
-        // die Stat-Wunde bleibt 10 min als Erinnerung an die Verletzung.
+        // Respawn-Rückkehr. Die Stat-Wunde bleibt 10 min als Erinnerung.
         const woundIntensity = this.state.player.deathWoundIntensity || 0;
         if (woundIntensity > 0) {
             const regenRate = 1 / (this.state.player.deathWoundRegenSeconds || 600);
@@ -43401,27 +43266,6 @@ class AnazhRealm {
             const manaRate = (AnazhRealm.MANA_REGEN_PER_SEC || 3) * (1 + magBoost);
             this.state.player.mana = Math.min(manaMax, mana + manaRate * dt);
         }
-        const now = performance.now() / 1000;
-        const until = this.state.player.phoenixUntil || -Infinity;
-        if (until <= -Infinity || until <= 0) return;
-        if (now >= until) {
-            // Wandlungs-Phase vorbei. Spieler bleibt phoenix (er kann manuell
-            // via Dropdown/Chat zurückwechseln) — wer in der Phönix-Form
-            // bleiben möchte, weil ihm das gefällt, darf das.
-            this.state.player.phoenixUntil = -Infinity;
-            this.journalAppendOnce(
-                `phoenix_settled:${Math.floor(now / 60)}`,
-                "growth",
-                "Die Flamme hat sich beruhigt. Was bleibt, ist die Wahl der Form.",
-                { at: now }
-            );
-            return;
-        }
-        // Linear regen: hp += hpMax / duration jede Sekunde
-        const hpMax = this.state.player.hpMax || 100;
-        const duration = this.state.player.phoenixDurationSeconds || 300;
-        const regen = hpMax / duration;
-        this.state.player.hp = Math.min(hpMax, (this.state.player.hp || 0) + regen);
     }
 
     // Welle 6.D Etappe 1.6 — Seele auflösen: erst Built-in, dann Custom.
@@ -49813,7 +49657,7 @@ class AnazhRealm {
     // S5 — „verkörpern": der SPIELER-Pfad (Spiegel von wield/wear). Eine UNgemachte Seele in pfad/frieden →
     // erst FORMEN (forgeAvatar, zahlt + friert ein); eine gemachte (forgedPrecision) ODER schöpfer → frei
     // verkörpern (applyPlayerSoulFromBlueprint = der freie GEBRAUCH, re-erschafft denselben Körper). Die drei
-    // Starter-Seelen (Mensch/Phönix/Drache) sind gegebene Identitäten — die laufen über applyPlayerSoul, frei.
+    // Der Mensch ist gegebene Identität — er läuft über applyPlayerSoul, frei.
     embodyBlueprint(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
@@ -49830,27 +49674,45 @@ class AnazhRealm {
         const alias = {
             mensch: "human",
             human: "human",
-            phönix: "phoenix",
-            phoenix: "phoenix",
-            drache: "dragon",
-            drachen: "dragon",
-            dragon: "dragon",
+            // ALTLASTEN-NULL — „werde das Tier": die deutschen Namen lösen auf
+            // die koerper_-Spiegel der Tier-Seelen (der generische embody-Pfad
+            // unten trägt sie; der Schlüssel wesen bleibt load-bearing = Hirsch).
+            hirsch: "koerper_wesen",
+            wolf: "koerper_wolf",
+            fuchs: "koerper_fuchs",
+            bär: "koerper_baer",
+            baer: "koerper_baer",
         };
         // Welle 6.D Etappe 1.6 — auch Custom-Seelen tolerieren. Alias-Map gilt
         // weiter für deutsche/englische Built-in-Namen; sonst sanitizen wir den
         // Namen (lowercase) und akzeptieren, wenn er als Built-in ODER Custom-
         // Soul existiert.
         const sanitized = key.replace(/[^a-z0-9_-]/gi, "");
+        const aliased = alias[key] || null;
+        // Ein Alias zählt nur als kanonisch, wenn er eine echte Def/Custom-Seele
+        // trifft — die Tier-Aliase (koerper_*) laufen sonst unten in den
+        // generischen Bauplan-embody-Pfad.
         const canonical =
-            alias[key] ||
+            (aliased && (defs[aliased] || (this.state.customSouls && this.state.customSouls[aliased])) && aliased) ||
             (defs[key] && key) ||
             (defs[sanitized] && sanitized) ||
             (this.state.customSouls && this.state.customSouls[sanitized] && sanitized) ||
             null;
         if (!canonical) {
-            const customNames = this.state.customSouls ? Object.keys(this.state.customSouls) : [];
-            const all = Object.keys(defs).concat(customNames);
-            this.log(`Seele '${name}' unbekannt — bekannt: ${all.join(", ")}`, "ERROR");
+            // ALTLASTEN-NULL — der generische embody-Pfad ist Teil der EINEN
+            // Kanonisierung: ein soul-rolliger Bauplan-Name (koerper_wolf …)
+            // wird GETRAGEN statt abgelehnt. Deckt auch die Alias-Tiere oben.
+            const bpName = aliased || sanitized;
+            const bp = this.state.blueprints && this.state.blueprints[bpName];
+            if (bp && bp.role === "soul" && typeof this.applyPlayerSoulFromBlueprint === "function") {
+                return this.applyPlayerSoulFromBlueprint(bpName);
+            }
+            // Fail-soft auf den Menschen (alte Saves mit gefallenen Seelen-Namen
+            // laden heil — der Körper ist die Identität, human ist der Anker).
+            if (key && key !== "human" && defs.human) {
+                this.log(`Seele '${name}' unbekannt — der Mensch trägt (fail-soft).`, "WARNING");
+                return this.applyPlayerSoul("human");
+            }
             return false;
         }
         // Vor Mesh-Erstellung (z. B. loadState im frühen Bootstrap): Wahl
@@ -53052,13 +52914,13 @@ class AnazhRealm {
     }
 
     // Stats berechnen + auf state anwenden (Soul-Wechsel-Pfad). HP+Stamina
-    // werden bei Wechsel auf max gesetzt (Phönix-Wandlung in Etappe 3 nutzt
+    // werden bei Wechsel auf max gesetzt (der Todes-Respawn nutzt
     // diesen Pfad bewusst — Wandlung heilt). DSL-Ops player_speed +
     // player_jump_power dürfen state.speed/jumpPower danach frei überschreiben.
     // V18.361 — DER EINE STAT-CHOKEPOINT (Governance-Wand gegen Re-Bifurkation): JEDE
     // Mutation, die die Spieler-Stats ändert, ruft DIESE Methode (computePlayerStats ist
     // die EINE Berechnungs-Quelle, V18.312). Die bekannten Mutations-Aufrufer: setPlayerSoul
-    // · applyPlayerSoul · applyPhoenixForm · tickEmotionBoosts · setPlayerEquipment/unequipItem
+    // · applyPlayerSoul · _playerDeathRespawn · tickEmotionBoosts · setPlayerEquipment/unequipItem
     // · confirmBuild/resetStats · setPlayerSpeed · Kreatur-besiegt-Logik. Ein NEUER Stat-
     // verändernder Pfad gehört hierher (recomputePlayerStats aufrufen), NIE inline neu rechnen —
     // sonst driftet eine zweite Stat-Wahrheit (genau die Lücke, die `_foldEquippedStatTags`
@@ -53161,7 +53023,7 @@ class AnazhRealm {
             // Lab-Default-Gehen (MOTION_PROFILE_MAP.koerper.moving = "run", freq 2.0):
             // neutral → Faktor 1 = byte-alt 5.5/4.5; sorrow → "pwalk" (1.6) = 0.8× träger.
             // Fail-soft: kaltes Buch → Faktor 1.
-            let stepHz = this.state.player.soul === "dragon" ? 4.5 : 5.5;
+            let stepHz = 5.5;
             const mpv = this._koerperMotionProfile(true, p.emotions);
             const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
             if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) stepHz *= mpv.freq / mpr.freq;
@@ -57426,7 +57288,7 @@ class AnazhRealm {
         }
         // Welle 6.D Etappe 3a+ — Stamina-Kosten. Schöpfer-Geste mit Werkzeug
         // verbraucht Energie. Reicht Stamina nicht, lehnen wir ab — der
-        // Spieler muss warten (Regen via tickPhoenixDeath/tickPlayerVitals)
+        // Spieler muss warten (Regen via tickPlayerVitals)
         // oder eine Stamina-stärkere Seele wählen. Damit ist „beliebig stapeln"
         // strukturell ausgeschlossen; Geduld wird zur ECHTEN Kosten, nicht
         // nur zur Reihenfolge.
@@ -77464,10 +77326,6 @@ class AnazhRealm {
         if (!this.state.worldMeta) this.state.worldMeta = {};
         this.state.worldMeta.gameMode = canonical;
         this.state.gameMode = canonical;
-        // Wenn der Wechsel auf frieden/schöpfer fällt während HP=0
-        // (mitten in Phönix-Wandlung), bleibt der Spieler in der Wandlung
-        // — das ist Vision-treu: der Mythos der Phönix-Stunde respektiert
-        // sich auch beim Modus-Wechsel. Phönix endet automatisch nach 5 min.
         // HP bei frieden→pfad-Wechsel NICHT zurücksetzen: der Spieler
         // bringt seinen Zustand mit (Vision: Welt-Beziehung ändert sich,
         // nicht der Spieler).
@@ -81386,9 +81244,9 @@ class AnazhRealm {
                 // 1×/s per-creature self-throttled — säubert abgelaufene Konsumable-Boosts.
                 this.tickCreatureBoosts(currentTime);
 
-                // ### Phönix-Wandlung-Tick (Welle 6.D Etappe 3a) ###
+                // ### Vitals-Tick (Wunde·Stamina·Mana — ALTLASTEN-NULL) ###
                 // HP-Regen während aktiver Wandlung + Ablauf-Detection.
-                this.tickPhoenixDeath(currentTime);
+                this.tickPlayerVitals(currentTime);
 
                 // ### Stats-HUD (Welle 6.X.4 B3) ###
                 // HP/Stamina-Bars über der Hotbar, throttled auf 10 Hz.
@@ -88260,6 +88118,9 @@ AnazhRealm.TETRAPODA_DIAL_MAP = Object.freeze([
 // (konvergierte Built-ins Phönix/Drache + Custom + Peers) legt sich unter Wasser
 // über DIESELBE Daten-Zeile (der Rig-Avatar trägt sie in _animateHuman weiter).
 AnazhRealm.SOUL_SWIM_LEAN = Object.freeze({ moving: 0.5, idle: 0.22 });
+// ALTLASTEN-NULL — die Gnaden-Frist nach dem feld-nativen Tod (Sekunden):
+// innerhalb dieser Frist zieht kein Schaden und feuert kein zweiter Respawn.
+AnazhRealm.RESPAWN_GRACE_SEC = 8;
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
 // W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
 // Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +
