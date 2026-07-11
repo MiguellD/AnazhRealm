@@ -6,19 +6,21 @@
 > (`docs/archiv/handover.md` Chronik · `docs/archiv/roadmap-chronik-bis-v18.83.md` der alte Backlog ·
 > `docs/archiv/README.md` der Bogen-Index). Ein Bogen erwacht → sein Plan kommt auf den Tisch.
 >
-> **Stand 03.07.2026 (V18.382):** DER AKTIVE BOGEN ist **`docs/wahrerguss.md`** (DER WAHRE GUSS —
-> die Konvergenz von FORM·PHYSIK·ANBLICK in EIN Gesetz) + seine Sub-Bögen
-> (`docs/lebendiger-koerper-plan.md` · `docs/koerper-neuanlage-plan.md`). Die NORMATIVEN Referenzen
-> dazu liegen in der Bibliothek: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS · der Physik-Richter im
-> Code) + **`docs/archiv/wahreranblick.md`** (Ω-OPSIS · Anblick-Tiefe, in wahrerguss System A absorbiert).
-> Der Live-Stand + die Reflexion:
+> **Stand 11.07.2026 (V18.446):** Die ARCHITEKTUR-Bögen sind RUND — **Nervensystem** α→ε
+> (`docs/nervensystem-plan.md`, DoD 1–4 ✓, offen nur DoD 5 = das Schöpfer-Wort) + **Katalysator**
+> W-A1–A7 (`docs/auslagerungs-plan.md` — der Stamm trägt keine eigenen Modelle mehr, Labs 7/7
+> gedockt + 7/7 Portale) + **Parität W1–W7** (`docs/paritaet-vollendung-plan.md` — offen W8
+> Sign-off + die UNGEBAUTEN W9/W10). Der aktive SCHÖPFERISCHE Bogen bleibt **`docs/wahrerguss.md`**
+> (+ `docs/lebendiger-koerper-plan.md` — offen Säule II-2 + Gusse 2/4/5; Säule II-1/II-3 GEBAUT
+> V18.445). Die NORMATIVEN Referenzen: **`docs/archiv/wahrerbauplan.md`** (Ω-PHYSIS) +
+> **`docs/archiv/wahreranblick.md`** (Ω-OPSIS). Der Live-Stand + die Reflexion:
 > der **„Aktueller Stand"-Kopf in `CLAUDE.md`**. **DIESES Doc trägt den BACKLOG vorwärts + die GEMERKTEN FÄDEN** (§4) — die
 > Fäden, die NICHT im aktiven Bogen liegen, aber dem Schöpfer alle wichtig sind. (Die alten
 > „EINE-Plan"-Pläne `abschluss-plan` + `gigant-fortsetzung-plan` sind archiviert/abgelöst.)
 
 ---
 
-## §0 · DER TISCH IST FREI — die Übersicht (Stand V18.382, Doc-Ordnung 03.07.2026)
+## §0 · DER TISCH — die Übersicht (Stand V18.446, Doc-Ordnung 11.07.2026)
 
 **Die eine Seite, die alles Offene trägt — bevor der nächste GROSSE Bogen beginnt.** Alles
 Erledigte lebt in der Chronik (`docs/archiv/handover.md`); hier steht NUR, was offen ist, mit dem
@@ -28,43 +30,77 @@ Zeiger auf sein Detail. Nichts geht verloren, nichts hält auf.
 Determinismus/Feld-Physik ✓ V18.331 (Ammo raus, Replay bit-identisch) · Performance-Regelkreis ✓
 V18.260–.331 (EIN PID, kapazitäts-gewachsene Welt, Flugschreiber) · Genialität ✓ V18.319–.321
 (Chunk-Bau 6–12×, byte-identisch) · Engine-Orchestrierung ✓ V18.353–.358 (Phasen A/B/C default-an) ·
-Naht-Entscheidung ✓ V18.372 (`archiv/goldstandard-mesh-plan.md` GESCHLOSSEN) · Wasser-Finish ✓
-V18.373–.381 (Moiré-Wurzel Vertex-Jitter · kontinuierliche Tiefe · Mondlicht · Wahrheits-Front ·
-Fern-Wasser) · Lockstep-MP Stufe 2 ✓ V18.382 (`smoke:lockstep` 284/284 bit-exakt).
+Naht-Entscheidung ✓ V18.372 · Wasser-Finish ✓ V18.373–.381 · Lockstep-MP Stufe 2 ✓ V18.382
+(284/284 bit-exakt) · **Studio-Parität W1–W7 ✓ V18.428–.433** (Wahrheits-Wände · Mess-Linsen ·
+Zeit-Scheiben · Boot · Dither-Blende · Silhouetten · Fahrzeug-Vertrag) · **Nervensystem α→ε ✓
+V18.434** (KIND_POLICY · Manifest · Pack · Instance-Straße · Place/Drive · ε-Beweis Porta =
+2 Daten-Hunks; DoD 1–4 ✓) · **Katalysator W-A1–A7 ✓ V18.437–.446** (Rezept-Katalog · Portal-Gestalt ·
+schmiede/fachwerk/koerperstudio/tetrapoda/klang VOLL gedockt · Auto-Dörfer · Emotions→Profil-Brücke ·
+Donor-/Alt-Modell-Abschied PHYSISCH — der Stamm trägt 0 eigene Modelle, 0 kind-ifs, Labs 7/7 Portale) ·
+**Trias-LOD-Wahrheit ✓ V18.444** (platzierte Studio-Architektur in der EINEN LOD-Geschichte, 13,5×).
+
+**DER VOLLENDUNGS-TRICHTER (der Weg zum professionellen Abschluss — 11.07.2026):**
+Das gemessene Muster der letzten ~20 Wellen: headless exzellent verifiziert, aber die
+Schöpfer-Sign-off-Schuld AKKUMULIERT (der LOOK von ~10 Wellen seit V18.437 ungesehen; W8, DoD 5,
+look-golden, perf.json warten alle auf dieselbe Browser-Runde). Der Abschluss ist darum kein
+neues Groß-Bauen, sondern ein Trichter — vier Stufen, in dieser Reihenfolge:
+
+1. **DIE EINE SCHÖPFER-RUNDE (der Engpass — EINE Session tilgt ALLE Sign-off-Schulden):**
+   W8-Abnahme (die 4 DONE-Kriterien; `docs/analyse/hud-lesenotiz-w8.md` liegt bereit) ·
+   `npm run look-golden --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
+   `anazhRealmPerf.json` einfangen (der Flugschreiber POSTet automatisch beim Spielen) ·
+   Nervensystem-**DoD 5** (das Wort: „neue Domäne fühlt sich nicht wie 100 Versionen an") ·
+   die 3 Ein-Wort-Entscheide **E-C/E-E/E-F** (`paritaet-vollendung-plan.md` §3) · der LOOK-Stau
+   (Studio-Avatar · Auto-Dörfer · vollendete Bäume · 7 Lab-Portale · Klingen in der Hand ·
+   5 Tore · Emotions-Posen). Vorbereitung durch den Agenten: ein Abnahme-Drehbuch (Reihenfolge ·
+   je Punkt die Zahl/das Bild als Kriterium), damit die Runde Abnahme ist, keine Diagnose-Sitzung.
+2. **W9 + W10 — die letzten UNGEBAUTEN Paritäts-Wellen (E-D-Folge):** der Himmel 1:1 (Wolken-Feld
+   gegen das Studio-GLSL auf dem eigenen Dome) + die Wasser-OBERFLÄCHE 1:1 (Shader/Spiegelung/Licht;
+   der AUTOMAT bleibt unser, `diag-worker-watersheet` maxDiff 0 ist die Wand); danach fällt das
+   W6-Fern-Wasser-Provisorium zurück auf AN und Kriterium 1+3 sind VOLLSTÄNDIG.
+   → `paritaet-vollendung-plan.md` W9/W10.
+3. **DIE DOKU-WAHRHEIT (eine Hygiene-Welle — Doc-Sync ist eine Grep-Aufgabe, W15-Lehre):** die
+   stehengebliebenen Stand-Köpfe nachziehen (`das-lebendige-feld.md` trägt „Stand V18.94 / offener
+   Vektor N-Naht" — beides längst geschlossen · die CLAUDE.md-Stand-Archive V18.411–.445 in die
+   Chronik falten, die Datei verlangt selbst „nur was JETZT gilt" · das vorbestehend-rote
+   `diag-genom` „0 Gigant" heilen oder als bewussten Zustand mit Begründung benennen). Dieses §0
+   ist seit 11.07. nachgezogen.
+4. **DER NÄCHSTE GROSSE BOGEN (Schöpfer-Wahl — erst wenn 1–3 stehen, der Tisch ist dann wirklich
+   frei):** (a) **der lebendige Körper** (Säule II-2 Fuß-IK/Foot-Lock/Blending/Spring + Gusse 2/4/5 —
+   am billigsten JETZT: die Studio-Daten-Basis [Dials · Motion · Emotions-Brücke] liegt frisch aus
+   W-A6) · (b) **Seelen-Vertiefung** (Emotion→Regel-EMERGENZ statt hand-codierter Kopplungen ·
+   die KI als volle Co-Schöpferin — Pfeiler 1+2 zu Ende, `das-lebendige-feld.md` §6) · (c) **der
+   UX-Bogen** (die ~19 gebauten-aber-UI-losen Subsystem-APIs verdrahten, §7) · (d) **die gemerkten
+   Fäden** (VR/WebXR · Zeit-Portal-Alt-Build · Wasser-Zwei-Naturen · Lockstep Stufe 3).
+   Empfehlung: (a) → (b).
 
 **WAS OFFEN IST (die vollständige Liste — jede Zeile hat ihr Detail-Zuhause):**
 
-0. **DIE PARITÄTS-VOLLENDUNG (der aktive Vollendungs-Bogen der Studio-Paritäts-Mission, NEU
-   08.07.):** die vier DONE-Kriterien (Bild-Paar ununterscheidbar · Boot ≤3 s · null
-   Fremd-Silhouetten · kein LOD-Pop) + die vier offenen Fäden aus V18.427 (HUD/Regler-Wahrheit ·
-   `_scatterRegion`-Zeit-Scheiben · Dither-Blende · Vertrag Phase 1 Fahrzeuge) als Wellen-Plan
-   W1–W8 mit hardware-unabhängigen Linsen. → `paritaet-vollendung-plan.md`.
-1. **Der AKTIVE schöpferische Bogen:** `wahrerguss.md` (4 Systeme) mit den Sub-Bögen **DAS
-   NEUE KLEID (`neues-kleid-plan.md`, NEU 03.07. — die Phytogenese der Hauptwelt: gesetz-wahre
-   Morphologie/Ökologie/Wald-Ferne aus der Schöpfer-Vorlage phytogenesis v38, Wellen K0–K6)**
-   sowie Körper-Neuanlage (`koerper-neuanlage-plan.md` — regel-basiert statt geratener
-   per-Teil-`k`) und lebendiger Körper (`lebendiger-koerper-plan.md` — Motion-Konvergenz/IK/
-   Blend). → die Sub-Bögen selbst.
-2. **DIE EINE SCHÖPFER-RUNDE** (Verifikations-Asymmetrie): `anazhRealmPerf.json` einmal auf echter
-   GPU einfangen + `npm run look-golden --mint` — „dein Auge einmal, die Maschine für immer". → §4 ★.
-3. **Lockstep-MP Stufe 3:** Fixed-Point/cross-Maschine (zwei CPUs können in libm abweichen) —
-   eigener Faden auf dem V18.382-Fundament. → `archiv/eigene-physik-plan.md`.
-4. **Der GPU-render-gebundene FPS-Sockel** (Schatten/Draw-Calls/Gras-Dichte sind render-gebunden) +
-   Look-Fäden fürs Schöpfer-Auge: Fern-Wasser-Handoff-LOOK an der Ring-Kante (V18.381) ·
-   steiler-Fluss-Fresnel-Tradeoff (V18.373) · Gras-Tiefen-Verschmelzung/echte Dichte. → §4.
-5. **Wasser-Zwei-Naturen-Vereinigung:** statisches `L` + CA zu EINER Natur + Wasserfall-Politur
-   (die CA-Flut IST gebaut V18.84–.94). → `archiv/wasser-render-architektur-plan.md`.
-6. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
-   V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · KI als volle Co-Schöpferin
-   (Infra steht, opt-in-Politur). → §4 GEMERKTE FÄDEN.
-7. **Nicht-mehr-synergetische Parallelpfade** (keine Eile, bewusst benannt): ~~built-in
-   Avatar-Anim-Pfade vs `_animateCompoundMotion`~~ ✓ ERFÜLLT (Abschieds-Welle nach V18.444:
-   Phönix/Drache konvergiert auf den EINEN Kern, die Hand-Skelette per cut-method gefallen;
-   der Mensch bleibt das RIG [SkinnedMesh-Wand], liest aber dieselben Studio-Motion-Daten
-   über die EINE Emotions-Brücke — sichtbar behalten, nicht gestrichen) ·
-   Emotion→Farbe-Konstanten in
-   `dslComposeFieldColor` · die ~19 gebauten-aber-UI-losen Subsystem-APIs (§7). → CLAUDE.md-Stand + §7.
-8. **Schlafende Pläne mit Rest-Wellen** (erwachen, wenn ihr Thema dran ist): Γ-Reste
+1. **Die Schöpfer-Runde** (Trichter-Stufe 1 — W8 · DoD 5 · look-golden · perf.json · E-C/E-E/E-F ·
+   LOOK-Stau). → `paritaet-vollendung-plan.md` W8/§3 · `nervensystem-plan.md` TEIL VIII · §4 ★.
+2. **W9 Himmel 1:1 + W10 Wasser-Oberfläche 1:1** (die zwei benannten, ungebauten Bau-Wellen).
+   → `paritaet-vollendung-plan.md`.
+3. **Der lebendige Körper:** Säule II-2 (Fuß-IK/Foot-Lock/Blending/Spring) + Gusse 2 (Glied-/
+   Muskel-Grammatik) / 4 (Körper-Editor) / 5 (Substanz-Tiefe). → `lebendiger-koerper-plan.md`.
+4. **Seelen-Vertiefung:** Emotion→Regel-Emergenz (hand-codierte Kopplungen als evolvierbare
+   DSL-Regeln neu fassen) · KI-Co-Schöpferin opt-in-Politur · Emotion→Farbe-Konstanten in
+   `dslComposeFieldColor` (Rest-Schuld, kein Parallelpfad). → `das-lebendige-feld.md` §6.
+5. **Die gemerkten Schöpfer-Fäden** (nie still streichen): VR/WebXR (0 Code) · das echte
+   V18→V19-Zeit-Portal (Empfang gebaut, der Alt-Build-Lauf fehlt) · Wasser-Zwei-Naturen-
+   Vereinigung (`L` + CA zu EINER Natur + Wasserfall-Politur) · Lockstep-MP Stufe 3
+   (Fixed-Point/cross-Maschine). → §4 GEMERKTE FÄDEN.
+6. **Der UX-Bogen:** die ~19 gebauten-aber-UI-losen Subsystem-APIs (Archipel · Robustheit ·
+   Compute-Sharing · pinCurrentWorld …) verdienen Verdrahtung. → §7.
+7. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):** N5.4
+   scatter-Verdrahtung [wartet aufs erste scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
+   Rüstung/Trank-Rezepte + Geräte-Gestalten (0/7 ehrlich mappbar) + L1-Diät [warten auf
+   Lab-Presets/-Entscheide] · W-A2 Auto-Impostor [wartet auf eine Worldgen-Massen-Domäne ohne
+   ehrliche Stufen] · TAA-Lite [dann rotiert `uDitherT` wieder] · Zwei-Pass-Laub-Composite
+   [ruhend] · Pflanzen-B4/B5-Datenblöcke · plantForest↔planForestCell [NUR unter Byte-Beweis] ·
+   Totholz-Saat + start_plattform [bis fachwerk sie deckt]. → `auslagerungs-plan.md` ·
+   `nervensystem-plan.md` · `paritaet-vollendung-plan.md` §4.
+8. **Doku-Wahrheit** (Trichter-Stufe 3 — die stehengebliebenen Stand-Köpfe + diag-genom-rot).
+9. **Schlafende Pläne mit Rest-Wellen** (erwachen, wenn ihr Thema dran ist): Γ-Reste
    (Γ7/Γ3/Γ-M/Γ8/Totholz, `archiv/genese-plan.md`) · Aufstiegs-Leiter Sprossen 4–7 + S-Dialog
    (`archiv/meister-plan.md`) · U2/U6 LOD-Reste (`archiv/lod-kaskade-plan.md`) · Hof/Ich/Bibliothek/
    Einstellungen-Rest-Wellen (die vier Raum-Pläne im Archiv).
@@ -89,7 +125,7 @@ verloren): MECHANIK braucht eine ZAHL, LOOK braucht ein BILD.
 
 ## §2 · Wo wir stehen
 
-> **Der LIVE-Stand lebt im `CLAUDE.md`-Kopf („Aktueller Stand", heute V18.382) + der Chronik
+> **Der LIVE-Stand lebt im `CLAUDE.md`-Kopf („Aktueller Stand", heute V18.446) + der Chronik
 > `docs/archiv/handover.md` — dieser Absatz ist der 11./18.06.-Snapshot (Fundament-Wertung, gültig).**
 
 Das **Fundament steht und ist RUND** (Stand 11.06.2026): Voxel-Terrain mit Höhlen/Canyons ·
@@ -172,7 +208,7 @@ benannt-fern nur der Übersetzer-Avatar-Hook) · ~~Ω die gefrorene Taille~~
 
 ## §4 · Die offenen Fäden + DIE GEMERKTEN FÄDEN
 
-> **Stand 03.07.2026 (V18.382):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
+> **Stand 11.07.2026 (V18.446):** Der AKTIVE BOGEN (das, was JETZT gebaut wird) ist
 > **`docs/wahrerguss.md`** (+ Sub-Bögen `lebendiger-koerper-plan.md` · `koerper-neuanlage-plan.md`);
 > die NORMATIVEN Referenzen `docs/archiv/wahrerbauplan.md` (Ω-PHYSIS) + `docs/archiv/wahreranblick.md`
 > (Ω-OPSIS) liegen in der Bibliothek. Der Live-
