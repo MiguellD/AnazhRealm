@@ -2478,73 +2478,14 @@ const PRESETS = {
     },
 };
 
+// ULTRAGUSS U2 — DER PHÄNOTYP-ZWILLING IST TOT: das Gesetz wohnt EINMAL in
+// phyto-core (treePhenotype); dieser Name bleibt als Delegat für alle Leser
+// (Studio + Foundry-Worker). Fail-closed: ohne Gesetzbuch kein Phänotyp.
 function phenotype(api, slim, trop, delta, leaf) {
-    // META-REGEL: Phaenotyp aus dem Reglervektor -> Art als Region/Richtung im Raum
-    const conif = clamp((api - 0.62) / 0.2, 0, 1); // Apikaldominanz: exkurrent(Nadel) vs dekurrent(Laub)
-    const isCon = conif > 0.5,
-        isShrub = api < 0.22; // kein Leittrieb -> basal verzweigter Busch
-    const weep = !isCon && !isShrub ? clamp((trop - 0.5) / 0.4, 0, 1) : 0; // Trauerwuchs
-    let height = lerp(2.2, 6.0, api * 0.35 + leaf * 0.3 + (1 - slim) * 0.35);
-    if (isCon) height *= 1.4;
-    let barkType;
-    if (isShrub) barkType = "smooth";
-    else if (isCon)
-        barkType = slim < 0.4 ? "sequoia" : "conifer"; // dick+apikal->Sequoia, schlank+apikal->Fichte
-    else if (weep > 0.4) barkType = "willow";
-    else if (slim > 0.66) barkType = "birch";
-    else barkType = "oak";
-    if (barkType === "sequoia") height *= 1.6; // Mammutbaum-Gigant
-    if (isShrub) height = lerp(1.5, 2.6, leaf * 0.5 + 0.5);
-    const oakness = clamp((1 - slim) * 1.5, 0, 1) * (1 - conif) * (1 - weep * 0.7); // breit+gelappt
-    const lwsc = isCon ? 0.085 : lerp(0.16, 0.44, clamp((1 - slim * 0.65) * (1 - weep * 0.55), 0, 1)); // Nadel/Weide schmal -> Eiche breit
-    const leafShape = {
-        m: 2 + 7 * oakness,
-        n1: lerp(1.0, 0.7, oakness),
-        n2: lerp(1.0, 0.55, oakness),
-        n3: lerp(1.0, 0.55, oakness),
-        a: 1,
-        b: 1,
-        wsc: lwsc,
-    };
-    const BC = {
-        oak: [0x3a2c1e, 0x6a5a44],
-        conifer: [0x4a2c1a, 0x6a4a30],
-        sequoia: [0x6a3a26, 0x9a5e3c],
-        birch: [0xe6e6dc, 0xf2f2ea],
-        willow: [0x4a4438, 0x665e4c],
-        smooth: [0x3a2c1e, 0x5a4a34],
-    };
-    const LC = {
-        oak: 0x4a7a2c,
-        conifer: 0x2e5526,
-        sequoia: 0x3a6a30,
-        birch: 0x8ab84a,
-        willow: 0x6a9a3a,
-        smooth: 0x4a7a2c,
-    };
-    const bc = BC[barkType];
-    return {
-        kind: isShrub ? "shrub" : "tree",
-        conifer: isCon,
-        height,
-        barkType,
-        leafShape,
-        barkA: bc[0],
-        barkB: bc[1],
-        leafCol: LC[barkType],
-        coniferDroop: isCon ? clamp(0.13 + trop * 0.25, 0.05, 0.5) : undefined,
-        whorlSpacing: isCon ? lerp(0.1, 0.15, 1 - leaf) : undefined,
-        crownBase: isCon
-            ? lerp(0.1, 0.48, clamp((0.55 - slim) / 0.45, 0, 1))
-            : isShrub
-              ? 0
-              : lerp(0, 0.32, clamp((api - 0.25) * 1.6, 0, 1)),
-        flare: isShrub ? 0.14 : lerp(0.16, 0.52, 1 - slim),
-        roots: Math.round(lerp(4, 6, 1 - slim)),
-        basalStems: isShrub ? Math.round(lerp(5, 2, api / 0.22)) : 1,
-        maxDepth: Math.round(lerp(7, 10, leaf * 0.4 + slim * 0.3 + api * 0.3)),
-        windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
-    };
+    const core = typeof self !== "undefined" && self.__phytoCore;
+    if (!core || typeof core.treePhenotype !== "function")
+        throw new Error("phyto-core fehlt — der Phänotyp wohnt im Gesetzbuch (Ladereihenfolge)");
+    return core.treePhenotype(api, slim, trop, delta, leaf);
 }
 
 function deriveParamsPlant(pre) {

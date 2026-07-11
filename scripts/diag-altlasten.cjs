@@ -148,6 +148,33 @@ function checkSoulKeys() {
     return errs;
 }
 
+// ULTRAGUSS U2 — DIE ZWILLINGS-WAND: getötete Formel-Zwillinge dürfen nicht
+// nachwachsen. Je Zeile: der Formel-Fingerabdruck darf NUR im Gesetzbuch leben.
+const ZWILLINGE = [
+    {
+        fingerprint: "conif = clamp((api - 0.62)",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js"],
+        fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
+    },
+];
+
+function scanZwillinge() {
+    const root = path.join(__dirname, "..");
+    const errs = [];
+    for (const z of ZWILLINGE) {
+        const home = fs.readFileSync(path.join(root, z.gesetzbuch), "utf8");
+        if (home.indexOf(z.fingerprint) < 0)
+            errs.push(`Zwillings-Wand: Fingerabdruck "${z.fingerprint}" fehlt im Gesetzbuch ${z.gesetzbuch}`);
+        for (const f of z.verboten) {
+            const src = stripComments(fs.readFileSync(path.join(root, f), "utf8"));
+            if (src.indexOf(z.fingerprint) >= 0)
+                errs.push(`Zwillings-Wand: ${f} trägt wieder "${z.fingerprint}" (fiel: ${z.fiel})`);
+        }
+    }
+    return errs;
+}
+
 function main() {
     const root = path.join(__dirname, "..");
     const files = ["anazhRealm.js", "voxel-worker.js", "bake-core.js", "index.html", "signaling-server.js"].map((f) =>
@@ -165,14 +192,14 @@ function main() {
         process.exit(fired ? 0 : 1);
     }
 
-    const errs = scan(files).concat(checkSoulKeys());
+    const errs = scan(files).concat(checkSoulKeys()).concat(scanZwillinge());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen sind im Code grep=0 (Kommentare erzählen, der Code trägt nicht), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}].`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch.`
     );
 }
 
