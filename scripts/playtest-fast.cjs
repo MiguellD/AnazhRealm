@@ -192,6 +192,16 @@ function check(name, ok) {
                 const g = r._buildCreatureGroup("glutwesen");
                 return { ok: !!g };
             });
+            // ERFINDER-WELLE — die NEUEN Tiere (wolf/fuchs/baer aus den tetrapoda-
+            // Gattungen) bauen durch DENSELBEN Guss (Konsum-Beweis, nicht Existenz).
+            out.creatureTiere = safe(() => {
+                const res = {};
+                for (const n of ["wolf", "fuchs", "baer"]) {
+                    const g = r._buildCreatureGroup(n);
+                    res[n] = !!(g && g.children.length);
+                }
+                return res;
+            });
             // KERN-BAUPLÄNE bauen (Werkstatt-Render-Pfad). AUSLÖSCHUNGS-WELLE — der
             // geraet_schwert-Blueprint fiel; seine Judge-Substanz lebt eingefroren in
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
@@ -268,6 +278,13 @@ function check(name, ok) {
         const cw = R.creatureWesen || {};
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
         check("KREATUR 'glutwesen' baut", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
+        check(
+            "DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)",
+            (R.creatureTiere || {}).wolf === true &&
+                (R.creatureTiere || {}).fuchs === true &&
+                (R.creatureTiere || {}).baer === true &&
+                !(R.creatureTiere || {}).__err
+        );
         const bb = R.blueprintBuilds || {};
         const bbOk = !bb.__err && Object.values(bb).every((v) => v === true);
         check("KERN-BAUPLÄNE bauen (Schwert-Substanz·Esse·Portal·Rüstung)", bbOk);

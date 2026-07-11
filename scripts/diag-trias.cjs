@@ -56,19 +56,52 @@ const KIND_SUBSTANCE_MINT = {
     tor_basis: "3192e75d2f5e82ab941f1b2356de608d45824819d704779750163797732ecfb3",
     haus_basis: "56b2a5e79068d1e21df40e1b77299e11b683f441d47c9bd427c9f7f69f6bc628",
 };
-function kindSubstanceRows(src) {
+// ERFINDER-WELLE (Linsen-Heilung) — der Zeilen-Parser war auf EINZEILEN-JSON geeicht
+// (`    name: {...json...},`); ein Prettier-Lauf formatierte die Substanz-Zeilen in
+// MEHRZEILIGE JS-Literale (unquoted keys) → die Regex griff ins Leere → Selbst-Test 5
+// stand rot / 5b vakuoes-gruen (die dokumentierte `gate | tail`-Maskierung verbarg es).
+// Jetzt: klammer-bewusste Extraktion (quote-sicher) + vm-Eval des Literals; die MUENZEN
+// bleiben UNANGETASTET — JSON.stringify(vm-Objekt) reproduziert byte-genau die gemintete
+// Kanonik (Key-Reihenfolge = Quelle, Zahlen exakt), sonst waere es ECHTE Drift.
+function kindSubstanceRowSpan(src, name) {
     const start = src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({");
     if (start < 0) return null;
-    const block = src.slice(start, src.indexOf("});", start));
+    const end = src.indexOf("\n});", start);
+    const key = "\n    " + name + ": ";
+    const k = src.indexOf(key, start);
+    if (k < 0 || k > end) return null;
+    let i = src.indexOf("{", k);
+    if (i < 0 || i > end) return null;
+    let depth = 0;
+    let inStr = null;
+    for (let j = i; j <= end; j++) {
+        const c = src[j];
+        if (inStr) {
+            if (c === "\\") j++;
+            else if (c === inStr) inStr = null;
+            continue;
+        }
+        if (c === '"' || c === "'") inStr = c;
+        else if (c === "{") depth++;
+        else if (c === "}") {
+            depth--;
+            if (depth === 0) return { rowStart: k + 1, objStart: i, objEnd: j + 1 };
+        }
+    }
+    return null;
+}
+function kindSubstanceRows(src) {
+    if (src.indexOf("AnazhRealm.KIND_SUBSTANCE = Object.freeze({") < 0) return null;
+    const vm = require("vm");
     const rows = {};
     for (const name of Object.keys(KIND_SUBSTANCE_MINT)) {
-        const m = block.match(new RegExp("^\\s{4}" + name + ": (\\{.*\\}),$", "m"));
-        if (!m) {
+        const span = kindSubstanceRowSpan(src, name);
+        if (!span) {
             rows[name] = null;
             continue;
         }
         try {
-            rows[name] = JSON.parse(m[1]);
+            rows[name] = vm.runInNewContext("(" + src.slice(span.objStart, span.objEnd) + ")");
         } catch (_e) {
             rows[name] = null;
         }
@@ -172,18 +205,31 @@ function triasStaticLaws(anazhSrc) {
         );
         // AUSLÖSCHUNGS-WELLE — N4 ist nicht vakuoes: eine gedriftete Substanz-Zeile
         // verfehlt die Muenze, eine fehlende Zeile wird null.
-        const bKS = anazhSrc.replace('"label":"Schwert"', '"label":"Schwertx"');
+        // Die Injektionen zielen auf die ECHTE (prettier-formatierte) Form der Zeilen —
+        // eine Injektion, die ins Leere greift, macht den Vergleich vakuoes (genau der
+        // Zustand, den diese Heilung beendet; darum prueft 5 auch die PRAEMISSE laut).
+        const schwertSpan = kindSubstanceRowSpan(anazhSrc, "geraet_schwert");
+        const schwertText = schwertSpan ? anazhSrc.slice(schwertSpan.objStart, schwertSpan.objEnd) : "";
+        const bKS =
+            schwertSpan && /label: "Schwert"/.test(schwertText)
+                ? anazhSrc.slice(0, schwertSpan.objStart) +
+                  schwertText.replace('label: "Schwert"', 'label: "Schwertx"') +
+                  anazhSrc.slice(schwertSpan.objEnd)
+                : anazhSrc;
         const rowsB = kindSubstanceRows(bKS);
         check(
             "Selbst-Test 5: eine gedriftete Substanz-Zeile verfehlt die Muenze (N4 feuert)",
-            !!(rowsB && rowsB.geraet_schwert) &&
-                kindSubstanceHash(rowsB.geraet_schwert) !== KIND_SUBSTANCE_MINT.geraet_schwert
+            !!(schwertSpan && rowsB && rowsB.geraet_schwert) &&
+                kindSubstanceHash(rowsB.geraet_schwert) !== KIND_SUBSTANCE_MINT.geraet_schwert,
+            schwertSpan ? undefined : "geraet_schwert-Zeile nicht gefunden (Parser-Praemisse verletzt)"
         );
-        const bKS2 = anazhSrc.replace(/^\s{4}tor_basis: \{.*\},$/m, "");
+        const torSpan = kindSubstanceRowSpan(anazhSrc, "tor_basis");
+        const bKS2 = torSpan ? anazhSrc.slice(0, torSpan.rowStart) + anazhSrc.slice(torSpan.objEnd + 1) : anazhSrc;
         const rowsB2 = kindSubstanceRows(bKS2);
         check(
             "Selbst-Test 5b: eine ENTFERNTE Substanz-Zeile wird null (N4 feuert)",
-            !!rowsB2 && rowsB2.tor_basis === null
+            !!(torSpan && rowsB2) && rowsB2.tor_basis === null,
+            torSpan ? undefined : "tor_basis-Zeile nicht gefunden (Parser-Praemisse verletzt)"
         );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -460,6 +506,28 @@ function triasStaticLaws(anazhSrc) {
         delete r.state.blueprints._t_donor;
         delete r.state.blueprints[cloneName];
         delete r.state.blueprints[cloneName2];
+        // ERFINDER-WELLE — DIE KLON-IDENTITAET eines Auto-Blueprints (der Schoepfer-Befund
+        // „ich klone einen reiterbogen, und er wird zum alten schwert"): jeder Auto-
+        // Blueprint traegt seine Rezept-Identitaet als DATEN (`studioGestalt`), der Klon
+        // erbt sie, und der EINE Resolver loest den Klon aufs REZEPT — nie auf die
+        // Donor-Substanz. Gemessen an einem echten klinge_-Auto-Blueprint des LIVE-Buchs.
+        const autoBp = Object.keys(r.state.blueprints).find(
+            (n) => r.state.blueprints[n] && r.state.blueprints[n]._foundryAutoSpecies && /^klinge_/.test(n)
+        );
+        res.autoBpName = autoBp || null;
+        if (autoBp) {
+            const recId = r.state.blueprints[autoBp]._foundryAutoSpecies;
+            res.autoGestaltStamp = r.state.blueprints[autoBp].studioGestalt === recId;
+            const cloneName3 = "trias_probe_bogen_klon";
+            delete r.state.blueprints[cloneName3];
+            const ok3 = r.cloneBlueprint(autoBp, cloneName3);
+            const resolved = ok3 ? r._foundryPresetForEntry({ type: cloneName3 }) : null;
+            res.kloneRezept = !!(ok3 && resolved === recId);
+            delete r.state.blueprints[cloneName3];
+        } else {
+            res.autoGestaltStamp = false;
+            res.kloneRezept = false;
+        }
 
         // (7) ABSCHIEDS-WELLE (E) — DER GEWICHTS-DECKEL des fCache: die warme Bibliothek
         // MESSEN (die Budget-Begruendungs-Zahl: 189-255 MB Arbeits-Menge gemessen ->
@@ -549,6 +617,16 @@ function triasStaticLaws(anazhSrc) {
             out.leaveBalance && out.leaveBalance.ghost === 0 && out.leaveBalance.band === 0
         );
         check("B9: W-A3.1 — der Klon erbt die studioGestalt (welt_portal -> geisttor)", out.kloneGestalt === true);
+        check(
+            "B9b: ERFINDER — jeder Auto-Blueprint traegt studioGestalt=Rezept (Daten-Identitaet statt Name)",
+            out.autoGestaltStamp === true,
+            `bp=${out.autoBpName}`
+        );
+        check(
+            "B9c: ERFINDER — der Klon eines Auto-Blueprints loest aufs REZEPT (nie Donor-Substanz)",
+            out.kloneRezept === true,
+            `bp=${out.autoBpName}`
+        );
         check(
             "B10: donorOnly reist NICHT mit (der Klon eines synthetischen donorOnly-Blueprints ist sichtbar — nie skip)",
             out.kloneSichtbar === true,

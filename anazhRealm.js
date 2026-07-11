@@ -340,6 +340,10 @@ class AnazhRealm {
             season: "summer",
             seasonPhase: 0.375,
             autoSeason: true,
+            // ERFINDER-WELLE — DER WELT-KLANG ALS WAHL: welches klang-Rezept (Genesis-Genre)
+            // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
+            // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
+            klangPreset: null,
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: 8,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
@@ -10981,7 +10985,14 @@ class AnazhRealm {
     // jeder Leser fällt byte-alt auf seine LOFI_*-Konstante (fail-soft, G4.1).
     _klangStudioPreset() {
         const f = this._foundry;
-        const rec = f && f.recipes ? f.recipes[AnazhRealm.KLANG_HOST_RECIPE] : null;
+        if (!f || !f.recipes) return null;
+        // ERFINDER-WELLE (Schoepfer „audiobauplaene liegen in der werkstatt aber kann
+        // eigentlich nichts damit machen") — die WELT-KLANG-WAHL fuehrt: state.klangPreset
+        // (aus der Werkstatt gesetzt, persistiert) waehlt das Genre; fail-soft aufs
+        // Host-Rezept (byte-alt), wenn keine Wahl steht / der Name kein klang-Rezept ist.
+        const chosen = this.state && typeof this.state.klangPreset === "string" ? this.state.klangPreset : null;
+        const cRec = chosen ? f.recipes[chosen] : null;
+        const rec = cRec && cRec.kind === "klang" ? cRec : f.recipes[AnazhRealm.KLANG_HOST_RECIPE];
         const k = rec && rec.fx && rec.fx.klang;
         return k && typeof k === "object" ? k : null;
     }
@@ -18216,11 +18227,15 @@ class AnazhRealm {
     // identisch → Compound-MAX byte-gleich, die V17.16-Affinitäts-Wand). null =
     // kein ehrliches Mapping / kaltes Buch → der Aufrufer bleibt bei den frozen
     // Modul-bodyParts (byte-alt).
-    _tetrapodaSoulParts(soulKey) {
+    _tetrapodaSoulParts(soulKey, ovOpt) {
         const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
         const gSpec = AnazhRealm.CREATURE_SKELETON_G[soulKey];
         if (!recId || !gSpec) return null;
-        const s = this._tetrapodaStudioDials(recId);
+        // ERFINDER-WELLE — der optionale ov-Kanal (Werkstatt-Regler): Overrides mergen
+        // ueber die LIVE-Buch-Dials (ohne ovOpt byte-alt; kaltes Buch + ov → nur ov,
+        // die Finite-Wache je Zeile traegt Teilvektoren).
+        const s0 = this._tetrapodaStudioDials(recId);
+        const s = ovOpt && typeof ovOpt === "object" ? Object.assign({}, s0 || {}, ovOpt) : s0;
         if (!s) return null;
         const arch = Object.assign({}, AnazhRealm.CREATURE_ARCHETYPES[gSpec.archetypeName] || {});
         for (const row of AnazhRealm.TETRAPODA_DIAL_MAP) {
@@ -18333,11 +18348,13 @@ class AnazhRealm {
     // Metaball-Haut); die effektiven Parts tragen Bau + Haut + Gesicht + Allometrie
     // (`userData._soulParts`), Tags/Stats lesen weiter die frozen Modul-bodyParts
     // (dial-tag-neutral per Konstruktion — Spawn-Affinität kippt NIE).
-    _buildCreatureGroup(soulName) {
+    _buildCreatureGroup(soulName, opts) {
         if (typeof THREE === "undefined") return null;
         const soulKey = AnazhRealm.CREATURE_SOULS[soulName] ? soulName : "wesen";
         const soul = AnazhRealm.CREATURE_SOULS[soulKey];
-        const parts = this._tetrapodaSoulParts(soulKey) || soul.bodyParts;
+        // ERFINDER-WELLE — opts.dialsOv: der Werkstatt-Regler-Kanal (Vorschau formt die
+        // Gattung LIVE); ohne opts byte-alt (jeder bestehende Aufrufer reicht nichts).
+        const parts = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
         const group = this._buildFromBlueprint({ name: `creature_${soulName}`, parts });
         group.userData._soulParts = parts;
         // Opacity-Hinweise aus den bodyParts auf die Materialien übertragen —
@@ -36830,6 +36847,8 @@ class AnazhRealm {
             // Reload soll mit stabilem Wetter starten).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
+            klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
             // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler des
             // Einstellungen-Drawers reisen im Snapshot (V8.59-Klasse — ein Regler, der nur in der
             // Session lebt, wird bei jedem Reload still zurückgesetzt). Ziel-FPS (perfTargetMs) ·
@@ -41224,6 +41243,11 @@ class AnazhRealm {
             if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
                 this.state.dayLengthMinutes = state.dayLengthMinutes;
             }
+        }
+        // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`
+        // prueft LIVE gegen das Buch — ein stale Name faellt dort fail-soft aufs Host-Rezept).
+        if (typeof state.klangPreset === "string" && state.klangPreset.length <= 64) {
+            this.state.klangPreset = state.klangPreset;
         }
         // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler überleben den
         // Reload (V8.59-Klasse — sonst setzt jeder Welt-Wechsel sie still auf Default zurück).
@@ -48626,7 +48650,7 @@ class AnazhRealm {
     // (ABSCHIEDS-WELLE: der Marker sass am geschnittenen `_buildLimb` — der Zonen-Anker
     // wandert an den lebenden Zonen-Anfang; Phönix/Drache sind Compound-Seelen, die
     // Hand-Skelette fielen per cut-method.)
-    _buildHumanGroup() {
+    _buildHumanGroup(dialsOv) {
         const group = new THREE.Group();
         // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
         // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
@@ -48650,7 +48674,11 @@ class AnazhRealm {
         // Fail-soft byte-alt: kaltes Buch → dials null → g exakt der bisherige
         // Konstanten-Bau. Der Stempel `_koerperDials` trägt die Wahrheit (null = ohne
         // Studio gebaut) — der Rezept-Ankunfts-Chokepoint gießt dann EINMAL nach.
-        const dials = this._koerperStudioDials();
+        // ERFINDER-WELLE — dialsOv: der Werkstatt-Regler-Kanal (die mensch-Rezept-Vorschau
+        // formt den Koerper LIVE); ohne Argument byte-alt (alle bestehenden Aufrufer).
+        const dialsBase = this._koerperStudioDials();
+        const dials =
+            dialsOv && typeof dialsOv === "object" ? Object.assign({}, dialsBase || {}, dialsOv) : dialsBase;
         const g = { kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint };
         if (dials) {
             for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
@@ -64500,6 +64528,14 @@ class AnazhRealm {
                 // donorOnly über den JSON-Klon und war picker-unsichtbar; der Chokepoint
                 // heilt ihn beim nächsten Ingest (die eine Klon-Sichtbarkeits-Regel).
                 if (bps[name]._foundryAutoSpecies && bps[name].donorOnly) delete bps[name].donorOnly;
+                // ERFINDER-WELLE (Klon-Identität) — HEILUNG persistierter Alt-Blueprints: ein VOR
+                // dieser Welle registrierter Auto-Blueprint trug seine Rezept-Identität NUR im
+                // NAMEN (Praefix-Strip) — ein Klon/Umbenennen verlor sie und fiel auf die
+                // Donor-Substanz (der „Reiterbogen wird zum alten Schwert"-Befund). Der
+                // Chokepoint stempelt sie nach (dieselbe Daten-Zeile wie unten).
+                if (bps[name]._foundryAutoSpecies && typeof bps[name].studioGestalt !== "string") {
+                    bps[name].studioGestalt = id;
+                }
                 continue; // existiert (historische Arten + schon registrierte)
             }
             // AUSLÖSCHUNGS-WELLE — die Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche,
@@ -64521,6 +64557,13 @@ class AnazhRealm {
             else clone.name = name;
             if (pol.builtIn !== undefined) clone.builtIn = pol.builtIn;
             clone._foundryAutoSpecies = id; // die Herkunfts-Marke (Diag/Provenienz)
+            // ERFINDER-WELLE (Klon-Identität) — die Rezept-Identität als DATEN-Feld statt nur
+            // im NAMEN: `studioGestalt` ist die W-A3-Zeile, die der EINE Resolver
+            // (`_foundryPresetForEntry`) generisch liest und die `cloneBlueprint` schon erbt.
+            // Damit behaelt JEDER Klon/jede Umbenennung eines Auto-Blueprints (klinge_/haus_/
+            // fahrzeug_/tor_/baum_) seine Studio-Gestalt — der Name ist nicht mehr der einzige
+            // Traeger (die „Klon wird zum Donor-Schwert"-Klasse ist strukturell tot).
+            clone.studioGestalt = id;
             bps[name] = clone;
             registered++;
         }
@@ -73060,6 +73103,10 @@ class AnazhRealm {
         if (!this.state.workshop.studioOv || typeof this.state.workshop.studioOv !== "object") {
             this.state.workshop.studioOv = {};
         }
+        // ERFINDER-WELLE — die LOD-Wahl der Rezept-Auswahl (generisch aus kindStages).
+        if (!Number.isFinite(this.state.workshop.recipeLod)) {
+            this.state.workshop.recipeLod = 0;
+        }
         return this.state.workshop;
     }
 
@@ -73111,6 +73158,8 @@ class AnazhRealm {
         ws.selectedRecipe = recipeId;
         ws.selectedBlueprint = null;
         ws.selectedPartIdx = null;
+        // ERFINDER-WELLE — die LOD-Wahl ist PRO Auswahl (frische Auswahl = feinste Stufe).
+        ws.recipeLod = 0;
         this._renderWorkshopDOM();
         if (typeof this._workshopUpdateManipulatorButtons === "function") {
             this._workshopUpdateManipulatorButtons();
@@ -73967,6 +74016,73 @@ class AnazhRealm {
     // Auswahl-/ov-Wechsel wird es verworfen + seine Geometrie disposed (die Wrapper-Meshes
     // sind sharedGeom-markiert, damit der generische Vorschau-Dispose die Memo-Geometrie
     // nicht mitten im Leben zerstoert — der Memo-Wechsel ist der EINE Dispose-Ort).
+    // ERFINDER-WELLE — DER HOST-OFEN IN DER VORSCHAU (Schoepfer „waehle mensch/wolf in der
+    // werkstatt aber der koerper erscheint nicht"): die MESHFREI-Domaenen (koerper · kreatur ·
+    // klang, Studio-Vertrag §8.1) exportieren per Vertrag KEIN Mesh — ihre GESTALT baeckt der
+    // Host-OFEN (das Skelett-Gesetz + die Metaball-Haut bzw. das Avatar-Rig; „der Host bleibt
+    // der OFEN", W-A6). Ohne diesen Zweig lief die Vorschau in eine ENDLOSE request→null→
+    // retry-Schleife („Studio-Asset laedt…" fuer immer). Rueckgabe: THREE.Group (Ofen-Guss) ·
+    // false (klang: ehrlich kein 3D — der Steckbrief traegt die Audio-Aktionen) · undefined
+    // (keine Ofen-Domaene → der Aufrufer faehrt den Foundry-Pfad). Memo je (preset|ov):
+    // EIN lebender Guss, der Wechsel disposed den alten tief (der Memo ist der EINE
+    // Eigentuemer — die Meshes sind shared-markiert, der generische Vorschau-Dispose
+    // laesst sie stehen; die Haut/das Rig attachen off-thread in die LEBENDE Gruppe).
+    _workshopOvenPreview(rec, preset, ov) {
+        const kind = rec && rec.kind;
+        if (kind !== "kreatur" && kind !== "koerper" && kind !== "klang") return undefined;
+        if (kind === "klang") return false;
+        const key = kind + "|" + preset + "|" + (ov ? JSON.stringify(ov) : "");
+        const memo = this._wsOvenMemo;
+        if (memo && memo.key === key && memo.group) return memo.group;
+        if (memo && memo.group) {
+            try {
+                memo.group.traverse((o) => {
+                    if (o.isMesh || o.isSkinnedMesh) {
+                        if (o.geometry) this._queueDispose(o.geometry);
+                        if (o.material) {
+                            if (Array.isArray(o.material)) o.material.forEach((m) => this._queueDispose(m));
+                            else this._queueDispose(o.material);
+                        }
+                    }
+                });
+            } catch (_e) {}
+        }
+        this._wsOvenMemo = null;
+        let group = null;
+        if (kind === "kreatur") {
+            // Rezept → Seele: exakter Schluessel-Match zuerst (wolf-Rezept → wolf-Seele,
+            // nicht das glut-gedockte glutwesen), sonst die erste gemappte Seele (deer→wesen).
+            const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+            let soulKey = SM[preset] === preset && AnazhRealm.CREATURE_SOULS[preset] ? preset : null;
+            if (!soulKey) {
+                for (const k in SM) {
+                    if (SM[k] === preset && AnazhRealm.CREATURE_SOULS[k]) {
+                        soulKey = k;
+                        break;
+                    }
+                }
+            }
+            if (soulKey) {
+                group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null });
+                // Die Knochen-Teile SICHTBAR lassen (ehrliches Interim, waehrend die Haut
+                // off-thread baeckt) — der Welt-Spawn versteckt sie, die Vorschau zeigt sie.
+                if (group) for (const ch of group.children) ch.visible = true;
+            }
+        } else {
+            group = this._buildHumanGroup(ov || undefined);
+        }
+        if (!group || !group.children) return false;
+        group.traverse((o) => {
+            if (o.isMesh || o.isSkinnedMesh) {
+                o.userData.sharedGeom = true;
+                o.userData.sharedMat = true;
+                o.userData.foundryPreview = true;
+            }
+        });
+        this._wsOvenMemo = { key, group };
+        return group;
+    }
+
     _workshopStudioPreviewFrom(preset, seedNum, lod, ov) {
         const f = this._ensureAssetFoundry();
         if (!f) return null;
@@ -73990,6 +74106,13 @@ class AnazhRealm {
                 setTimeout(poll, 150);
             }
             return "pending";
+        }
+        // ERFINDER-WELLE — die Ofen-Domaenen (koerper/kreatur/klang) ZUERST: der Host baeckt
+        // ihre Gestalt selbst; der Foundry-Worker kennt sie nicht (MESHFREI per Vertrag).
+        const ovenRec = f.recipes ? f.recipes[preset] : null;
+        if (ovenRec && typeof ovenRec.kind === "string") {
+            const oven = this._workshopOvenPreview(ovenRec, preset, ov);
+            if (oven !== undefined) return oven;
         }
         const season = this.state.season || "summer";
         const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
@@ -74211,7 +74334,10 @@ class AnazhRealm {
         const seedStr = String(preset);
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
         const ov = this._workshopStudioOvFor(preset);
-        const group = this._workshopStudioPreviewFrom(preset, seedNum, 0, ov);
+        // ERFINDER-WELLE — die Rezept-Vorschau ehrt die LOD-Wahl (ws.recipeLod, generisch
+        // aus kindStages — z. B. haus L0/L1/L2); Default 0 = byte-alt.
+        const rLod = Number.isFinite(ws.recipeLod) ? Math.max(0, Math.min(2, ws.recipeLod | 0)) : 0;
+        const group = this._workshopStudioPreviewFrom(preset, seedNum, rLod, ov);
         this._wsStudioPending = group === "pending";
         this._workshopStudioStatusSync();
         p.physicsVerdict = null;
@@ -74260,6 +74386,37 @@ class AnazhRealm {
         hint.textContent =
             "Ein Eintrag des LIVE-Rezeptbuchs — anschaubar + regelbar (Studio-Regler links), nicht platzierbar. Das Welt-Verhalten bestimmt allein place.mode des Rezepts.";
         panel.appendChild(hint);
+        // ERFINDER-WELLE — DAS KLANG-REZEPT IST BENUTZBAR (Schoepfer „audiobauplaene liegen
+        // in der werkstatt aber kann eigentlich nichts damit machen"): ein Genre traegt
+        // kein 3D — sein Verb ist HOEREN. „Als Welt-Klang setzen" waehlt das Genre fuer den
+        // EINEN Lofi-Konsumenten (state.klangPreset, persistiert; Tempo/Skala folgen ab dem
+        // naechsten Akkord LIVE) + spielt sofort einen Akkord als hoerbares Feedback.
+        if (rec.kind === "klang") {
+            const kRow = document.createElement("div");
+            kRow.className = "workshop-recipe-btns";
+            const cur = this.state.klangPreset || AnazhRealm.KLANG_HOST_RECIPE;
+            const kBtn = document.createElement("button");
+            kBtn.type = "button";
+            kBtn.className = "workshop-recipe-dice";
+            kBtn.textContent = cur === presetId ? "♪ Welt-Klang (aktiv)" : "♪ Als Welt-Klang setzen";
+            kBtn.title =
+                "Der Lofi-Strom der Welt folgt diesem Genre (Tempo + Skala aus dem Genesis-Rezept) — ab dem nächsten Akkord.";
+            kBtn.addEventListener("click", () => {
+                this.state.klangPreset = presetId;
+                this.saveState && this.saveState();
+                const bpm = rec.fx && rec.fx.klang && rec.fx.klang.bpm;
+                this.log(`Welt-Klang: ${rec.lab || presetId}${bpm ? ` (${bpm} bpm)` : ""}`, "INFO");
+                // Sofort hoerbar: ein Akkord des neuen Genres (fail-soft, Audio ggf. aus).
+                try {
+                    if (this.state.symphony && this.state.symphony.enabled && this._lofiPlayChord) {
+                        this._lofiPlayChord(this._lofiChordFromDegree ? this._lofiChordFromDegree(0) : [0, 4, 7]);
+                    }
+                } catch (_e) {}
+                this._workshopRenderRecipeStats(presetId);
+            });
+            kRow.appendChild(kBtn);
+            panel.appendChild(kRow);
+        }
         this._workshopStudioStatusSync();
     }
 
@@ -76484,7 +76641,18 @@ class AnazhRealm {
             : ws.selectedRecipe || null;
         const rec = preset ? f.recipes[preset] : null;
         const params = rec && typeof rec.kind === "string" ? f.paramsByKind[rec.kind] : null;
-        if (!Array.isArray(params) || !params.length) return false;
+        // ERFINDER-WELLE (Schoepfer „haeuser keine LODs?") — die LOD-STUFEN eines Rezepts
+        // sind DATEN (kindStages, N7.5): traegt die Art mehr als eine ehrliche Stufe
+        // (haus [0,1,2] · baum [0,1,2]), bekommt die REZEPT-Auswahl eine generische
+        // LOD-Wahl — auch ohne PARAMS-Tabelle. Kein UI-Hardcode je Domaene.
+        const _cfgLodW = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const stages =
+            !bp && rec && _cfgLodW && _cfgLodW.kindStages && Array.isArray(_cfgLodW.kindStages[rec.kind])
+                ? _cfgLodW.kindStages[rec.kind]
+                : null;
+        const hasParams = Array.isArray(params) && params.length > 0;
+        const hasStages = !!(stages && stages.length > 1);
+        if (!hasParams && !hasStages) return false;
         panel.hidden = false;
         panel.innerHTML = "";
         const head = document.createElement("h4");
@@ -76503,7 +76671,7 @@ class AnazhRealm {
             }, 180);
         };
         let lastGrp = null;
-        for (const d of params) {
+        for (const d of hasParams ? params : []) {
             if (!d || typeof d.id !== "string") continue;
             if (typeof d.grp === "string" && d.grp && d.grp !== lastGrp) {
                 lastGrp = d.grp;
@@ -76550,17 +76718,46 @@ class AnazhRealm {
         }
         const btnRow = document.createElement("div");
         btnRow.className = "workshop-recipe-btns";
-        const reset = document.createElement("button");
-        reset.type = "button";
-        reset.className = "workshop-recipe-reset";
-        reset.textContent = "↺ Zurücksetzen";
-        reset.title = "Alle Regler auf das Rezept zuruecksetzen (ov leeren)";
-        reset.addEventListener("click", () => {
-            delete ws.studioOv[preset];
-            this._workshopRenderStudioParams(panel);
-            if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
-        });
-        btnRow.appendChild(reset);
+        // ERFINDER-WELLE — die generische LOD-Wahl AUS den kindStages-Daten (haus 0/1/2 …):
+        // nur ehrlich getragene Stufen erscheinen; die Wahl reist als ws.recipeLod in die
+        // EINE Vorschau-Quelle (Vorschau == Welt-Stufe, kein Fake-Grading).
+        if (hasStages) {
+            const lodHead = document.createElement("div");
+            lodHead.className = "workshop-recipe-sub";
+            lodHead.textContent = "LOD-Stufe (aus den Vertrags-Daten)";
+            panel.appendChild(lodHead);
+            const lodRow = document.createElement("div");
+            lodRow.className = "workshop-recipe-btns workshop-recipe-lod";
+            const curLod = Number.isFinite(ws.recipeLod) ? ws.recipeLod : 0;
+            const lodLabels = { 0: "L0 fein", 1: "L1 mittel", 2: "L2 fern" };
+            for (const lv of stages) {
+                const b = document.createElement("button");
+                b.type = "button";
+                b.className = "workshop-recipe-lod-btn" + (lv === curLod ? " active" : "");
+                b.textContent = lodLabels[lv] || "L" + lv;
+                b.title = "Vorschau auf der ehrlichen Vertrags-Stufe " + lv;
+                b.addEventListener("click", () => {
+                    ws.recipeLod = lv;
+                    if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+                    this._workshopRenderStudioParams(panel);
+                });
+                lodRow.appendChild(b);
+            }
+            panel.appendChild(lodRow);
+        }
+        if (hasParams) {
+            const reset = document.createElement("button");
+            reset.type = "button";
+            reset.className = "workshop-recipe-reset";
+            reset.textContent = "↺ Zurücksetzen";
+            reset.title = "Alle Regler auf das Rezept zuruecksetzen (ov leeren)";
+            reset.addEventListener("click", () => {
+                delete ws.studioOv[preset];
+                this._workshopRenderStudioParams(panel);
+                if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
+            });
+            btnRow.appendChild(reset);
+        }
         panel.appendChild(btnRow);
         return true;
     }
@@ -85808,6 +86005,45 @@ AnazhRealm.CREATURE_SKELETON_G = Object.freeze({
         bodyColor: 0x6e4d30,
         limbColor: 0x6e4d30,
     }),
+    // ERFINDER-WELLE — DIE NEUEN TIERE (Schöpfer „es ist immernoch der alte körper,
+    // die alten kreaturen die die welt begehen? im hof die alten wesen und geister?"):
+    // die tetrapoda-Gattungen des Labs (wolf · fox · bear) werden erstklassige SEELEN
+    // aus DEMSELBEN Skelett-Gesetz. Shapes+Materialien sind BEWUSST die wesen-Menge
+    // ({box,limb,sphere} × stein/holz) → die Compound-Tags sind IDENTISCH zur wesen-
+    // Klasse = KEINE Spawn-Affinitäts-Verdrängung (die V17.16-Wand, winner-take-all);
+    // nur Farben (tag-neutral) + die Gattungs-Dials (Zahl-Achsen) unterscheiden die
+    // Tiere. size = die stats-tragende Tarierung (V18.208-Tie-Band, um wesen 0.6).
+    wolf: Object.freeze({
+        size: 0.58,
+        archetypeName: "wolf",
+        bodyMat: "stein",
+        limbMat: "holz",
+        headMat: "holz",
+        shapes: Object.freeze({ torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" }),
+        bodyColor: 0x6b6f75,
+        limbColor: 0x5c6066,
+    }),
+    fuchs: Object.freeze({
+        size: 0.45,
+        archetypeName: "weasel",
+        bodyMat: "stein",
+        limbMat: "holz",
+        headMat: "holz",
+        shapes: Object.freeze({ torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" }),
+        bodyColor: 0xa5502a,
+        limbColor: 0x7c3a1e,
+    }),
+    baer: Object.freeze({
+        size: 0.72,
+        archetypeName: "bear",
+        bodyMat: "stein",
+        limbMat: "holz",
+        headMat: "holz",
+        shapes: Object.freeze({ torso: "box", limb: "limb", head: "sphere", snout: "limb", tail: "limb" }),
+        bodyBarrel: true,
+        bodyColor: 0x4a3524,
+        limbColor: 0x3e2c1e,
+    }),
     // AUSLÖSCHUNGS-WELLE (A5) — das glutwesen-g als DATEN (dieselben Werte, die
     // CREATURE_SOULS beim Modul-Init gießt): `_tetrapodaSoulParts` dockt zur BAU-
     // Zeit die wolf-Dials (TETRAPODA_SOUL_MAP) auf DENSELBEN Guss. box+cone(glut)
@@ -85867,7 +86103,10 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     // → die Compound-Tags sind BIT-IDENTISCH (wesenMoreDichte/wesenHasLebendig unberührt,
     // GEMESSEN diag-genom F1-Band). Liest als Tier statt als Box+Stummel.
     wesen: Object.freeze({
-        label: "Wesen",
+        // ERFINDER-WELLE — der ehrliche NAME der Gestalt: das wesen IST der Hirsch
+        // (deer-Gattung/Archetyp seit F1). Der Schlüssel `wesen` bleibt load-bearing
+        // (Saves · Tests · TETRAPODA_SOUL_MAP), nur das Schild modernisiert.
+        label: "Hirsch",
         // ABSCHIEDS-WELLE (Koerper-Dock A2) — das g lebt als DATEN in CREATURE_SKELETON_G
         // (dieselben Werte, byte-identischer Guss): `size` 0.6 = die sizeFactor-Tarierung
         // ins Tie-Band (V18.208-Monotonie; stats-tragend, darum KEIN Studio-Dial), der
@@ -85883,6 +86122,50 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
         skin: true, // F1-TIEFE: die Metaball-Haut (Glieder verschmelzen → organisches Tier)
         skinColor: 0x6e4d30,
         auraY: 0.8,
+    }),
+    // ERFINDER-WELLE — DIE NEUEN TIERE: die drei restlichen tetrapoda-Gattungen als
+    // Seelen (dasselbe Skelett-Gesetz + Metaball-Haut wie wesen/Hirsch; die Gattungs-
+    // Dials formen sie zur BAU-Zeit über `_tetrapodaSoulParts`, TETRAPODA_SOUL_MAP).
+    // Tag-identisch zur wesen-Klasse (V17.16-Wand) → sie TEILEN seine Spawn-Nische
+    // statt sie zu verdrängen: die Welt begehen jetzt Hirsch · Wolf · Fuchs · Bär.
+    // wolf trägt `predator` (Carnivor diet=1 — ehrlich; er bleibt aus den AMBIENT-
+    // Pickern und ist bewusste Schöpfung wie das Glutwesen); fuchs/baer sind ambient.
+    wolf: Object.freeze({
+        label: "Wolf",
+        predator: true,
+        bodyParts: Object.freeze(
+            AnazhRealm._creatureSkeleton(
+                Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.wolf }, AnazhRealm.CREATURE_SKELETON_G.wolf)
+            ).map((p) => Object.freeze(p))
+        ),
+        skin: true,
+        skinColor: 0x6b6f75,
+        auraY: 0.75,
+    }),
+    fuchs: Object.freeze({
+        label: "Fuchs",
+        bodyParts: Object.freeze(
+            AnazhRealm._creatureSkeleton(
+                Object.assign(
+                    { archetype: AnazhRealm.CREATURE_ARCHETYPES.weasel },
+                    AnazhRealm.CREATURE_SKELETON_G.fuchs
+                )
+            ).map((p) => Object.freeze(p))
+        ),
+        skin: true,
+        skinColor: 0xa5502a,
+        auraY: 0.6,
+    }),
+    baer: Object.freeze({
+        label: "Bär",
+        bodyParts: Object.freeze(
+            AnazhRealm._creatureSkeleton(
+                Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.bear }, AnazhRealm.CREATURE_SKELETON_G.baer)
+            ).map((p) => Object.freeze(p))
+        ),
+        skin: true,
+        skinColor: 0x4a3524,
+        auraY: 0.85,
     }),
     geist: Object.freeze({
         label: "Geist",
@@ -88165,7 +88448,15 @@ AnazhRealm.WAECHTER_DIALS = Object.freeze({ height: 1.2, mass: 0.6, tone: 0.85, 
 // [box+cone glut] bleiben → Tags BYTE-GLEICH GEMESSEN, Mint-Probe 10.07.).
 // sprite/geist bleiben BEWUSST: skelettlos-ätherische 2-Part-DATEN-Minimalformen,
 // keine Körper-Konstruktion — tetrapoda ist ein Vierbeiner-Labor (kein Gegenstück).
-AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({ wesen: "deer", glutwesen: "wolf" });
+// ERFINDER-WELLE — die NEUEN Tier-Seelen lesen ihre Gattung direkt (wolf/fuchs/baer);
+// wesen bleibt der Hirsch (deer), glutwesen der Glut-Jäger (wolf-Dials auf Glut-Guss).
+AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
+    wesen: "deer",
+    glutwesen: "wolf",
+    wolf: "wolf",
+    fuchs: "fox",
+    baer: "bear",
+});
 // Die Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht —
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich: neck 0.33≈0.34 ·
 // leg 0.28·(0.6/0.28)=0.60 · build 0.28=torsoW 0.28 · diet 0→eyeFront 0.12):

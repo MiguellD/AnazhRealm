@@ -524,6 +524,38 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         } catch (e) {
             res.w.err = (e && e.message) || String(e);
         }
+        // ===== O: DER HOST-OFEN IN DER VORSCHAU (ERFINDER-WELLE — „waehle mensch/wolf
+        // und nichts erscheint" ist tot: die EINE Vorschau-Quelle baeckt MESHFREI-Domaenen
+        // selbst; klang ist ehrlich 3D-frei + die Welt-Klang-Wahl WIRKT als Zahl) =====
+        try {
+            res.o = {};
+            const gM = r._workshopStudioPreviewFrom("mensch", 1, 0, null);
+            res.o.mensch = !!(gM && gM.isObject3D && gM.userData && gM.userData.rig);
+            res.o.menschMemo = r._workshopStudioPreviewFrom("mensch", 1, 0, null) === gM;
+            const gW = r._workshopStudioPreviewFrom("wolf", 1, 0, null);
+            res.o.wolf = !!(gW && gW.isObject3D && gW.children.length > 0);
+            const pDef = r._tetrapodaSoulParts("wolf");
+            const pOv = r._tetrapodaSoulParts("wolf", { leg: 0.5 });
+            res.o.ovFormt = !!(
+                pDef &&
+                pOv &&
+                JSON.stringify(pDef.map((p) => p.position)) !== JSON.stringify(pOv.map((p) => p.position))
+            );
+            res.o.klangFalse = r._workshopStudioPreviewFrom("lofi", 1, 0, null) === false;
+            const before = r._lofiChordDurationMs();
+            r.state.klangPreset = "blues";
+            const after = r._lofiChordDurationMs();
+            r.state.klangPreset = null;
+            res.o.klangWahl = { before: Math.round(before), after: Math.round(after), wirkt: before !== after };
+            // Die neuen Tier-Seelen bauen durch den EINEN Guss (Hof/Welt-Roster).
+            res.o.tiere = ["wolf", "fuchs", "baer"].every((n) => {
+                const g = r._buildCreatureGroup(n);
+                return !!(g && g.children.length);
+            });
+        } catch (e) {
+            res.o = res.o || {};
+            res.o.err = (e && e.message) || String(e);
+        }
         return res;
     });
 
@@ -718,6 +750,21 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         out.w.lofi === true && out.w.wolf === true && out.w.mensch === true,
         out.w.err || ""
     );
+    check(
+        "O: mensch-Rezept -> der Host-Ofen baeckt den AVATAR-Rig in der Vorschau (+ Memo stabil)",
+        !!out.o && out.o.mensch === true && out.o.menschMemo === true,
+        (out.o && out.o.err) || ""
+    );
+    check(
+        "O: wolf-Rezept -> der Gattungs-Guss steht in der Vorschau + ov FORMT (leg-Dial aendert Positionen)",
+        !!out.o && out.o.wolf === true && out.o.ovFormt === true
+    );
+    check(
+        "O: klang-Rezept ist ehrlich 3D-frei (false, keine pending-Schleife) + die WELT-KLANG-WAHL wirkt (Tempo-Zahl)",
+        !!out.o && out.o.klangFalse === true && out.o.klangWahl && out.o.klangWahl.wirkt === true,
+        out.o && out.o.klangWahl ? `lofi=${out.o.klangWahl.before}ms blues=${out.o.klangWahl.after}ms` : ""
+    );
+    check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
     if (errs.length) {
