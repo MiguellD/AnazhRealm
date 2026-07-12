@@ -47,7 +47,6 @@ const server = http.createServer((req, res) => {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true;
         // N7.4 — BEGRÜNDETER Hook (vorher unbegründet): die Linse prüft die REVEAL-KLAMMER-
         // Logik (welche Kappe greift), nicht den Look. Foundry-an würde der async andockende

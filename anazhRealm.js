@@ -16222,180 +16222,6 @@ class AnazhRealm {
         return core.buildSkeleton(g);
     }
 
-    // ═══ F1-TIEFE (wahrerwuchs §11/§12) — DAS METABALL-HAUT-GESETZ (Skelett → Feld → Haut) ═══
-    // Der mandat-§11.7-Kern für Kreaturen: ein virtuelles SKELETT (Knochen-Kapseln) erzeugt ein
-    // glattes zusammenhängendes FELD (Σ Kapsel-Beiträge); seine ISOFLÄCHE (Surface Nets — DIE
-    // Terrain-Technik der Welt, EINE Quelle) ist eine organische HAUT, in der die Glieder
-    // VERSCHMELZEN — keine hand-gestapelten Kapseln mehr, die Gestalt EMERGIERT aus dem Feld.
-    // Reine Geometrie (kein Material). `parts` = die Body-Masse-Knochen (Rumpf/Hals/Kopf);
-    // die animierten Beine bleiben separate Teile (sie tragen die Bewegung). Liefert eine
-    // BufferGeometry (Vertices in Kreatur-Lokal-Koords) oder null.
-    // V18.283 — CACHE (die Wurzel-Heilung des größten Freeze, vom Schöpfer erkannt): der
-    // Isosurface-Guss ist DETERMINISTISCH (gleiche parts+opts → bit-gleiche Geometrie), kostete
-    // aber den vollen Bau PRO Aufruf ohne Memo (gemessen ~29 s headless für den res-128-Avatar) →
-    // der Avatar fror den Spawn + JEDEN Seelen-Wechsel, jede Kreatur jeden Spawn. Memoisiert über
-    // eine Signatur aus parts+opts: gleiche Signatur → ein KLON der gebauten Geometrie (der Aufrufer
-    // translatet/skinnt darauf → Klon, nicht teilen). Heilt Avatar (#4) UND Kreaturen (#3) — EINE
-    // Pipeline, EINE Heilung, wie der Schöpfer es batete. Der ERST-Bau pro Signatur kostet weiter
-    // (→ res-Senkung/async der nächste Schritt); jeder Wiederbau ist instant.
-    _buildCreatureSkinGeometry(parts, opts) {
-        if (typeof THREE === "undefined" || !Array.isArray(parts) || !parts.length) return null;
-        let sig = null;
-        try {
-            sig = JSON.stringify(parts) + "#" + JSON.stringify(opts || {});
-        } catch (_e) {
-            sig = null; // nicht-serialisierbar → ungecacht bauen (sicher, nur kein Memo)
-        }
-        const cache = this._skinGeomCache || (this._skinGeomCache = new Map());
-        if (sig && cache.has(sig)) {
-            const c = cache.get(sig);
-            cache.delete(sig);
-            cache.set(sig, c); // LRU-Berührung (jüngste hinten)
-            return c.clone();
-        }
-        const geom = this._buildCreatureSkinGeometryUncached(parts, opts);
-        if (sig && geom) {
-            cache.set(sig, geom.clone()); // pristinen Klon cachen, Original an den Aufrufer
-            const CAP = AnazhRealm.SKIN_GEOM_CACHE_CAP || 16;
-            while (cache.size > CAP) cache.delete(cache.keys().next().value); // ältesten räumen
-        }
-        return geom;
-    }
-
-    _buildCreatureSkinGeometryUncached(parts, opts) {
-        // V18.315 — DER BÄCKER (Stufe 2): die Skin-Isosurface-Mathe lebt jetzt in bake-core.js
-        // (`__bakeSkinGeometry`, EINE Quelle — auch der bake-worker liest sie). Hier bleibt nur der
-        // THREE-Zusammenbau der Arrays. Byte-identisch zur alten Inline-Mathe (diag-bake-ab:
-        // position/normal/color/index maxDiff=0). Der Live-Pfad (Avatar/headless) ruft das SYNCHRON,
-        // der Kreatur-Pfad in der echten Welt über den Worker ASYNC — beide durch dieselbe Mathe.
-        const bake = typeof globalThis !== "undefined" && globalThis.__bakeSkinGeometry;
-        if (typeof bake !== "function") return null; // bake-core nicht geladen → graceful (Knochen-Fallback)
-        const baked = bake(
-            parts,
-            Object.assign({ headlessResCap: this.constructor.__HEADLESS_SKIN_RES_CAP | 0 }, opts || {})
-        );
-        return this._assembleSkinGeometry(baked);
-    }
-
-    // V18.315 — der THREE-Zusammenbau der gebackenen Arrays. GETEILTE Naht: der sync-Pfad UND der
-    // async Worker-Pfad gehen hierdurch (Arrays → BufferGeometry), damit es nur EINE Stelle gibt,
-    // die die Bäcker-Ausgabe in THREE-Geometrie übersetzt.
-    _assembleSkinGeometry(baked) {
-        if (typeof THREE === "undefined" || !baked || !baked.positions || !baked.indices) return null;
-        const geom = new THREE.BufferGeometry();
-        geom.setAttribute("position", new THREE.Float32BufferAttribute(baked.positions, 3));
-        if (Array.isArray(baked.indices)) geom.setIndex(baked.indices);
-        else geom.setIndex(new THREE.BufferAttribute(baked.indices, 1));
-        geom.setAttribute("normal", new THREE.Float32BufferAttribute(baked.normals, 3));
-        const cols = baked.colors || new Float32Array((baked.positions.length / 3) * 3).fill(1);
-        geom.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
-        return geom;
-    }
-
-    // V18.315 — DER BÄCKER-WORKER (lazy): EIN Off-Thread-Worker für den schweren Skin-Bau (der
-    // ~4-s-Isosurface-Block, der bisher pro Spawn den Main-Thread einfror). Gibt den Worker zurück
-    // oder null (kein Worker-Support / Sandbox-iframe / Fehler → der Aufrufer baut synchron). State
-    // lazy: `_bakeWorker` undefined=noch nicht versucht · null=versucht+gescheitert · Worker=ok.
-    _ensureBakeWorker() {
-        if (this.state._bakeWorker !== undefined) return this.state._bakeWorker;
-        try {
-            if (typeof Worker === "undefined") {
-                this.state._bakeWorker = null;
-                return null;
-            }
-            const w = new Worker(`bake-worker.js?v=${AnazhRealm.VERSION}`);
-            this.state._bakeReqMap = new Map();
-            this.state._bakeReqId = 0;
-            w.onmessage = (e) => {
-                const m = e.data || {};
-                if (m.type === "bake-skin-result") {
-                    const resolve = this.state._bakeReqMap.get(m.requestId);
-                    if (resolve) {
-                        this.state._bakeReqMap.delete(m.requestId);
-                        resolve(m);
-                    }
-                }
-            };
-            w.onerror = () => {
-                /* Worker gebrochen → künftige Anfragen fallen über _bakeSkinRequest auf sync zurück */
-            };
-            this.state._bakeWorker = w;
-            return w;
-        } catch (_e) {
-            this.state._bakeWorker = null;
-            return null;
-        }
-    }
-
-    // → Promise<BufferGeometry|null>: backt die Skin-Geometrie OFF-THREAD über den Bäcker; ohne
-    // Worker synchron (graceful). EINE Mathe-Quelle (bake-core.js) für beide Wege; der Zusammenbau
-    // läuft durch _assembleSkinGeometry (auch eine Quelle).
-    _bakeSkinRequest(parts, opts) {
-        const w = this._ensureBakeWorker();
-        if (!w) {
-            try {
-                return Promise.resolve(this._buildCreatureSkinGeometry(parts, opts));
-            } catch (_e) {
-                return Promise.resolve(null);
-            }
-        }
-        return new Promise((resolve) => {
-            const id = ++this.state._bakeReqId;
-            this.state._bakeReqMap.set(id, (m) => {
-                if (!m || m.empty || m.error || !m.positions) {
-                    resolve(null);
-                    return;
-                }
-                resolve(this._assembleSkinGeometry(m));
-            });
-            w.postMessage({
-                type: "bake-skin",
-                requestId: id,
-                parts,
-                opts: Object.assign({ headlessResCap: this.constructor.__HEADLESS_SKIN_RES_CAP | 0 }, opts || {}),
-            });
-        });
-    }
-
-    // V18.315 — die gebackene Haut an die Kreatur-Gruppe hängen (Material + Knochen verbergen +
-    // Gesicht). GETEILT vom sync-Pfad UND dem async Worker-Callback → EINE Anhäng-Naht.
-    _attachCreatureSkin(group, soul, geom) {
-        if (!group || !soul || !geom || typeof THREE === "undefined") return;
-        try {
-            const col = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-            let tags = null;
-            try {
-                tags = this.computeCompoundTags ? this.computeCompoundTags({ parts: soul.bodyParts }) : null;
-            } catch (_e) {
-                tags = null;
-            }
-            const mat =
-                typeof this._buildCreatureHideMaterial === "function"
-                    ? this._buildCreatureHideMaterial(col, { predator: !!soul.predator, tags })
-                    : this._buildPbrNodeMaterial
-                      ? this._buildPbrNodeMaterial({ color: col, tags })
-                      : new THREE.MeshStandardMaterial({ color: col });
-            const skin = new THREE.Mesh(geom, mat);
-            skin.userData._creatureSkin = true;
-            skin.castShadow = true;
-            // die Knochen-Teile verbergen (die Haut IST die Gestalt); ein Feature-Teil bliebe sichtbar.
-            // ABSCHIEDS-WELLE (A2) — die EFFEKTIVEN Parts führen (studio-gedockter Guss),
-            // fail-soft die Modul-bodyParts.
-            ((group.userData && group.userData._soulParts) || soul.bodyParts || []).forEach((p, i) => {
-                const ch = group.children[i];
-                if (ch) ch.visible = !!p.feature;
-            });
-            group.add(skin);
-            try {
-                this._addCreatureFace(group, soul);
-            } catch (_e) {
-                /* Gesicht optional */
-            }
-        } catch (_e) {
-            /* Anhängen fehlgeschlagen → Knochen bleiben sichtbar (kein Crash) */
-        }
-    }
-
     // wahrerguss System A×B — DAS FELL/HIDE-MATERIAL (Profi-Rezept, Material-Agent): macht aus
     // der glatten Einfarb-Haut lebendiges Gewebe. KEINE Bitmap — aus der Form gerechnet:
     //  · COUNTER-SHADING (Bauch dunkler, Rücken heller — real bei Tieren)
@@ -16508,15 +16334,6 @@ class AnazhRealm {
         return mat;
     }
 
-    // wahrerguss System B (GUSS 2) — DAS RIG: das humanoide Skelett-Gesetz wird ein echtes
-    // THREE.Skeleton (Bone-Hierarchie hips→spine→chest→neck→head · chest→shoulder→ellbogen→
-    // handgelenk · hips→hüfte→knie→knöchel) UND die Metaball-Haut wird ein SkinnedMesh, dessen
-    // skinWeights aus der BONE-SEGMENT-NÄHE fallen (der Profi-Pfad, Recherche-Methode B/A: weiche
-    // Gelenk-Übergänge gratis, weil das smin-Feld dort schon glatt blendet). So lebt die EINE
-    // glatte Gestalt + bewegt sich. Auf WebGPU mit NodeMaterial automatisch geskinnt (kein
-    // SkeletonUtils.clone — WebGPU-Crash #32236; kein positionNode-Override — umginge die
-    // Skinning-Injektion). Liefert { mesh, skeleton, bones, rig, kh } oder null.
-    //
     // wahrerguss System B (GUSS 5) — DER GENOM-ROLLER: aus EINEM Seed ein deterministisches
     // Körper-Genom (Geschlecht · Statur · Muskel · Kopf-Verhältnis · Größe · Haut/Haar-Ton). DER
     // RPM-übertreffende Hebel: unendliche distinkte Körper aus EINEM Gesetz — RPM hat feste Presets,
@@ -16526,8 +16343,10 @@ class AnazhRealm {
         // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core.SKIN_TONES/
         // HAIR_COLORS): der Roller PICKT aus der Lab-Wahrheit, kein Zwilling mehr.
         const core = typeof window !== "undefined" && window.__koerperCore;
-        const skinTones = core && core.SKIN_TONES ? Object.keys(core.SKIN_TONES).map((k) => core.SKIN_TONES[k].hex) : [0xc48566];
-        const hairTones = core && core.HAIR_COLORS ? Object.keys(core.HAIR_COLORS).map((k) => core.HAIR_COLORS[k].base) : [0x2a1a10];
+        const skinTones =
+            core && core.SKIN_TONES ? Object.keys(core.SKIN_TONES).map((k) => core.SKIN_TONES[k].hex) : [0xc48566];
+        const hairTones =
+            core && core.HAIR_COLORS ? Object.keys(core.HAIR_COLORS).map((k) => core.HAIR_COLORS[k].base) : [0x2a1a10];
         return {
             sex: g.axis("sex"),
             build: g.axis("build"),
@@ -16560,16 +16379,6 @@ class AnazhRealm {
         return d;
     }
 
-    // KONVERGENZ-WELLE — DER STAMM LIEST DAS LAB-GESETZ: bauMensch (der Da-Vinci-
-    // Teile-Baum) + morphAuf (die Regler-Anwendung) laufen auf DATEN-Knoten;
-    // der Baum wird mit THREE-treuer Euler-XYZ-Komposition in Welt-Raum gefaltet:
-    //   fieldParts — Ellipsoide (skin·joint·lips·socket·dark) für die Metaball-Haut,
-    //   features   — Auge/Iris/Pupille/Brauen (nicht im Feld, sitzen AUF der Haut),
-    //   spec       — die Bone-Spezifikation aus den GELENK-GRUPPEN des Baums
-    //                (hip/knee/ankle/arm/elbow/hand/head — dieselbe Quelle wie die Teile).
-    // Skala: Lab-Einheiten (H=6-Loomis) → Welt über f = 8·kh/6 (die alte 8-KH-Welt-
-    // Höhe bleibt; der Größen-Dial reist in morphAufs charScale — EINMAL, nie doppelt).
-    // Fail-closed: kalter Kern → null (der Aufrufer scheitert LAUT wie beim Atlas).
     // KONVERGENZ-WELLE — DER STAMM BAUT DEN STUDIO-KÖRPER SELBST (Schöpfer: „wieso
     // baust du ihn nach?! die pipeline entfernen"): koerper-core.bauMensch liefert
     // den EINEN Da-Vinci-Teile-Baum, morphAuf trägt die Regler — der Stamm gibt nur
@@ -16804,6 +16613,137 @@ class AnazhRealm {
     // identisch → Compound-MAX byte-gleich, die V17.16-Affinitäts-Wand). null =
     // kein ehrliches Mapping / kaltes Buch → der Aufrufer bleibt bei den frozen
     // Modul-bodyParts (byte-alt).
+    // KONVERGENZ III — DER STAMM BAUT DAS STUDIO-TIER SELBST: tetrapoda-core.bauTier
+    // liefert den EINEN Vierbeiner-Baum (dieselben Kugeln wie das Lab); der Stamm gibt
+    // THREE-Fabriken (geteilte Geometrien, PBR-Klassen aus TIER_MATERIAL_KLASSEN,
+    // Fell = P-Farbe als Material — die Strähnen sind Lab-Kür, F.fellSchweif ist hier
+    // still). Die PARTS-Wahrheit (_tetrapodaSoulParts) bleibt die MECHANIK (Tags/
+    // Größe/Statusbar/Allometrie) — der Baum ist die GESTALT. Selbst-eichend: der
+    // Baum wird auf die Parts-Höhe skaliert (EINE Formel, keine Magic je Art).
+    _buildTierBaum(soulKey, ovOpt) {
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        if (!core || typeof core.bauTier !== "function") return null;
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
+        if (!recId) return null;
+        // Dial-Quelle: das LIVE-Buch (Schöpfer-editiert) — kaltes Buch fällt auf die
+        // KERN-Defaults der Art zurück (PRESETS[recId].s — dieselbe eine Quelle,
+        // nie auf Legacy-bodyParts).
+        const preset = core.PRESETS && core.PRESETS[recId] && core.PRESETS[recId].s;
+        const s0 = this._tetrapodaStudioDials(recId) || (preset ? Object.assign({}, preset) : null);
+        const dials = ovOpt && typeof ovOpt === "object" ? Object.assign({}, s0 || {}, ovOpt) : s0;
+        if (!dials) return null;
+        let P;
+        try {
+            P = core.deriveTierParams(dials);
+        } catch (_e) {
+            return null;
+        }
+        const TK = core.TIER_MATERIAL_KLASSEN || {};
+        const matCache = this._tierMatCache || (this._tierMatCache = new Map());
+        const mat = (key, c, r) => {
+            const k = key + "_" + c;
+            if (!matCache.has(k)) {
+                let m;
+                try {
+                    m = this._buildPbrNodeMaterial
+                        ? this._buildPbrNodeMaterial({ color: c, roughness: r, metalness: 0 })
+                        : new THREE.MeshStandardMaterial({ color: c, roughness: r });
+                } catch (_e2) {
+                    m = new THREE.MeshStandardMaterial({ color: c, roughness: r });
+                }
+                matCache.set(k, m);
+            }
+            return matCache.get(k);
+        };
+        const matFuer = (k) => {
+            if (k === "fell" || k === "straehne" || k === "straehneD" || k === "straehneL") {
+                // KONVERGENZ III — das FELL trägt das Hide-Gesetz (Counter-Shading +
+                // Korn + Roughness-Variation + Rim): dieselbe eine Material-Quelle,
+                // die zuvor die Metaball-Haut trug, jetzt auf dem Studio-Baum.
+                const kf = "fell_" + recId + "_" + (P.base != null ? P.base : 0x6b4a2e);
+                if (!matCache.has(kf)) {
+                    let m = null;
+                    try {
+                        if (this._buildCreatureHideMaterial)
+                            m = this._buildCreatureHideMaterial(P.base != null ? P.base : 0x6b4a2e, {
+                                predator: P.diet > 0.5,
+                            });
+                    } catch (_e3) {
+                        m = null;
+                    }
+                    if (!m)
+                        m = new THREE.MeshStandardMaterial({
+                            color: P.base != null ? P.base : 0x6b4a2e,
+                            roughness: 0.93,
+                        });
+                    matCache.set(kf, m);
+                }
+                return matCache.get(kf);
+            }
+            const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
+            return mat(k, kl.c, kl.r);
+        };
+        const geoCache = AnazhRealm._tierGeoCache || (AnazhRealm._tierGeoCache = new Map());
+        const kugelGeo = (r, segs) => {
+            const s2 = segs || 14;
+            const key = "k" + r.toFixed(4) + "_" + s2;
+            if (!geoCache.has(key))
+                geoCache.set(key, new THREE.SphereGeometry(r, s2, Math.max(8, Math.round(s2 * 0.75))));
+            return geoCache.get(key);
+        };
+        const zylGeo = (rt, rb, h) => {
+            const key = "z" + rt.toFixed(4) + "_" + rb.toFixed(4) + "_" + h.toFixed(4);
+            if (!geoCache.has(key)) geoCache.set(key, new THREE.CylinderGeometry(rt, rb, h, 10, 1));
+            return geoCache.get(key);
+        };
+        const F = {
+            gruppe: () => new THREE.Group(),
+            kugel: (r, k, sc) => {
+                const m = new THREE.Mesh(kugelGeo(r), matFuer(k));
+                if (sc) m.scale.set(sc[0], sc[1], sc[2]);
+                m.castShadow = k === "fell";
+                m.receiveShadow = true;
+                return m;
+            },
+            zylinder: (rt, rb, h, k) => {
+                const m = new THREE.Mesh(zylGeo(rt, rb, h), matFuer(k));
+                m.castShadow = k === "fell";
+                return m;
+            },
+            kugelFein: (r, k, segs) => new THREE.Mesh(kugelGeo(r, Math.min(16, segs || 16)), matFuer(k)),
+            v3: (x, y, z) => new THREE.Vector3(x, y, z),
+            richte: (node, dir) => {
+                node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+            },
+            fellSchweif: () => {},
+        };
+        try {
+            return { B: core.bauTier(F, dials), P, dials };
+        } catch (e) {
+            this.log("bauTier scheiterte (" + (e && e.message) + ") — Tier fail-closed.", "ERROR");
+            return null;
+        }
+    }
+
+    // Der kompakte Baum-Gang (Trab: diagonale Beinpaare) + Schweif-/Kopf-Leben.
+    // Bewusst einfach — die CPG-Politur (cpgStep-Kopplung) ist benannte Kür.
+    _animateTierBaum(group, t, walkPhase, moving) {
+        const tb = group && group.userData && group.userData._tierBaum;
+        if (!tb || !tb.teile) return;
+        const T = tb.teile;
+        const amp = moving ? 0.5 : 0.05;
+        const sw = Math.sin(walkPhase);
+        const sw2 = Math.sin(walkPhase + Math.PI);
+        if (T.legFL) T.legFL.rotation.x = amp * sw;
+        if (T.legHR) T.legHR.rotation.x = amp * sw * 0.85;
+        if (T.legFR) T.legFR.rotation.x = amp * sw2;
+        if (T.legHL) T.legHL.rotation.x = amp * sw2 * 0.85;
+        if (T.headGroup)
+            T.headGroup.rotation.x = 0.05 * Math.sin(t * 1.7) + (moving ? 0.04 * Math.sin(walkPhase * 2) : 0);
+        const ts = tb.tailSegs || [];
+        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * 2.4 - i * 0.5) * 0.14;
+    }
+
     _tetrapodaSoulParts(soulKey, ovOpt) {
         const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
         const gSpec = AnazhRealm.CREATURE_SKELETON_G[soulKey];
@@ -16855,195 +16795,52 @@ class AnazhRealm {
     // Welle 6.H Phase 2A — Builder: Multi-Mesh-Group aus CREATURE_SOULS[name].
     // Selber Renderpfad wie Architektur (_buildFromBlueprint), damit Material-
     // Tags + Form-Aktivierung emergent fallen. Soul-unbekannt → Fallback wesen.
-    // ABSCHIEDS-WELLE (Koerper-Dock A2) — „keine eigenen Kreaturen": trägt das LIVE-
-    // Buch die gemappte tetrapoda-Gattung, gießt `_tetrapodaSoulParts` die GESTALT
-    // aus den Lab-Dials (der Host bleibt der OFEN: dasselbe Skelett-Gesetz, dieselbe
-    // Metaball-Haut); die effektiven Parts tragen Bau + Haut + Gesicht + Allometrie
-    // (`userData._soulParts`), Tags/Stats lesen weiter die frozen Modul-bodyParts
-    // (dial-tag-neutral per Konstruktion — Spawn-Affinität kippt NIE).
+    // ABSCHIEDS-WELLE (Koerper-Dock A2) / KONVERGENZ III — „keine eigenen
+    // Kreaturen": das LIVE-Buch trägt die gemappte tetrapoda-Gattung; die Parts
+    // aus `_tetrapodaSoulParts` sind die MECHANIK-Wahrheit (Tags/Stats/Physik/
+    // Allometrie + Baum-Skalierung lesen `userData._soulParts`), die GESTALT
+    // trägt der Studio-Baum (bauTier). Tags/Stats lesen die frozen Modul-
+    // bodyParts (dial-tag-neutral per Konstruktion — Spawn-Affinität kippt NIE).
     _buildCreatureGroup(soulName, opts) {
         if (typeof THREE === "undefined") return null;
         const soulKey = AnazhRealm.CREATURE_SOULS[soulName] ? soulName : "wesen";
         const soul = AnazhRealm.CREATURE_SOULS[soulKey];
-        // ERFINDER-WELLE — opts.dialsOv: der Werkstatt-Regler-Kanal (Vorschau formt die
-        // Gattung LIVE); ohne opts byte-alt (jeder bestehende Aufrufer reicht nichts).
-        const parts = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
-        const group = this._buildFromBlueprint({ name: `creature_${soulName}`, parts });
-        group.userData._soulParts = parts;
-        // Opacity-Hinweise aus den bodyParts auf die Materialien übertragen —
-        // _buildFromBlueprint pflegt das normalerweise über das Bauplan-Schema,
-        // aber CreatureSouls dürfen `opacity` direkt am Part tragen.
-        parts.forEach((part, i) => {
-            const child = group.children[i];
-            if (!child || !child.material) return;
-            if (typeof part.opacity === "number" && part.opacity < 1) {
-                child.material.transparent = true;
-                child.material.opacity = part.opacity;
+        // KONVERGENZ III — JEDE Kreatur ist der STUDIO-BAUM (bauTier): dieselben
+        // Kugeln wie das Lab, die Parts-Wahrheit bleibt die Mechanik (Tags/Physik/
+        // Allometrie lesen _soulParts). Custom-Namen kanonisieren oben auf wesen →
+        // auch sie tragen den Baum. Das Metaball-Tier (Skin-Isosurface + Gesichts-
+        // LOD + Bäcker) ist GEFALLEN — fail-closed statt Rückfall: ein kalter Kern
+        // liefert LAUT null, nie einen zweiten Körper.
+        const baum = this._buildTierBaum(soulKey, opts && opts.dialsOv);
+        if (baum && baum.B && baum.B.teile && baum.B.teile.wolf) {
+            const parts2 = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
+            const group2 = new THREE.Group();
+            let pTop = 0;
+            for (const p of parts2 || []) {
+                // Part-Positionen sind ZENTREN — der Scheitel liegt bei y + Höhe/2.
+                const t2 = ((p.position && p.position.y) || 0) + ((p.size && p.size.y) || 0) / 2;
+                if (t2 > pTop) pTop = t2;
             }
-        });
-        // F1-TIEFE (wahrerwuchs §11/§12) — für ORGANISCHE Seelen (`skin`) die METABALL-HAUT
-        // bauen: aus den Skelett-Knochen-Teilen ein glattes Feld → Surface-Nets-Isofläche →
-        // EINE organische Haut, in der die Glieder VERSCHMELZEN. Die Knochen-Teile bleiben
-        // (verborgen) als die WAHRHEIT für Tags/Physik/Motion/Allometrie (children-Index +
-        // alle Gesetze unberührt); die Haut ist die sichtbare Gestalt. So liest die Kreatur
-        // als gewachsenes Tier statt als Kapsel-Stapel — das Detail emergiert aus dem Gesetz.
-        if (soul.skin && this._buildCreatureSkinGeometry) {
-            // V18.315 — DER BÄCKER: der ~4-s-Skin-Bau lief bisher SYNCHRON pro Spawn = der Freeze.
-            // Jetzt: headless (Gate) → synchron (gate-treu, das Band sieht die Haut sofort); echte
-            // Welt → OFF-THREAD über den bake-worker (der Main-Thread bleibt frei). Die Kreatur spawnt
-            // fern im Nebel (_spawnOneInitialCreature) → ihre Haut backt unsichtbar, während sie noch
-            // fern ist; sie taucht schon-fertig aus der Distanz auf (kein Pop, kein Platzhalter).
-            const headless = !!(this.state.renderer && this.state.renderer._isHeadlessNull);
-            const worker = headless ? null : this._ensureBakeWorker();
-            if (worker) {
-                // die Knochen SOFORT verbergen (die Haut IST die Gestalt) → kein Strichmann sichtbar,
-                // während der Bäcker arbeitet; fern + im Nebel ist die Lücke ohnehin unsichtbar.
-                parts.forEach((p, i) => {
-                    const ch = group.children[i];
-                    if (ch) ch.visible = !!p.feature;
-                });
-                this._bakeSkinRequest(parts, {}).then((geom) => {
-                    if (geom && group) this._attachCreatureSkin(group, soul, geom);
-                    else if (geom && geom.dispose) geom.dispose();
-                });
-            } else {
-                try {
-                    const geom = this._buildCreatureSkinGeometry(parts);
-                    if (geom) this._attachCreatureSkin(group, soul, geom);
-                } catch (_e) {
-                    /* Haut-Bau fehlgeschlagen → die Knochen-Teile bleiben sichtbar (kein Crash) */
-                }
-            }
+            const bb = new THREE.Box3().setFromObject(baum.B.teile.wolf);
+            const treeH = Math.max(1e-3, bb.max.y - bb.min.y);
+            const f2 = pTop > 0 ? pTop / treeH : 1;
+            const wrap2 = new THREE.Group();
+            wrap2.scale.setScalar(f2);
+            wrap2.position.y = -bb.min.y * f2;
+            wrap2.add(baum.B.teile.wolf);
+            wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib
+            group2.add(wrap2);
+            group2.userData._soulParts = parts2;
+            group2.userData._tierBaum = {
+                teile: baum.B.teile,
+                tailSegs: baum.B.tailSegs,
+                neckSegs: baum.B.neckSegs,
+                f: f2,
+            };
+            return group2;
         }
-        return group;
-    }
-
-    // wahrerguss System B — DAS GESICHT: Augen + Funken + Ohren am Kopf-Anker
-    // (`bodyRole:"head"`). Sie liegen NICHT in bodyParts (kein Tag-Drift, keine
-    // Allometrie-/Index-Kopplung — sie hängen jenseits von parts.length) und werden
-    // NICHT von der Metaball-Haut umhüllt → sichtbar AUF der Haut. Augen = dunkle Kugeln
-    // (Raubtier: glühende Glut-Augen, emissiv); Ohren = kleine Kegel in Haut-Farbe.
-    //
-    // V18.262 (DER KREATUR-RENDER-HEBEL, gemessen nach V18.260) — die sechs statischen
-    // Gesichts-Sub-Meshes (2 Augen + 2 Funken + 2 Ohren) werden pro Material-Typ zu DREI
-    // gemergten Meshes verschmolzen (6 → 3 Draw-Calls; beide Seiten teilen exakt ihr
-    // Material → kein Look-Verlust) und hängen in EINER Sub-Gruppe `_creatureFaceLOD`.
-    // updateCreatures blendet diese Gruppe jenseits ~CREATURE_FACE_LOD_DIST·L aus (die
-    // cm-Skala-Augen sind dann sub-pixel) → eine ferne Skin-Kreatur rendert nur noch die
-    // Haut (7 → 1 Draw-Call). Der Merge (`_mergeGeometries`) lässt `uv` fallen — sicher,
-    // weil die solid-color-Gesichts-Materialien (kein foliageLeaf/bark) kein uv lesen
-    // (GEMESSEN `_buildPbrNodeMaterial`). Das Gesicht animiert NICHT (jenseits parts.length,
-    // kein Motion-Role) → der Merge ist render-rein, kein Bewegungs-Pfad berührt.
-    _addCreatureFace(group, soul) {
-        if (typeof THREE === "undefined" || !group || !soul) return;
-        // ABSCHIEDS-WELLE (A2) — der Kopf-Anker aus den EFFEKTIVEN Parts (studio-
-        // gedockter Guss verschiebt den Kopf mit der Nack-Länge), fail-soft Modul-Daten.
-        const head = ((group.userData && group.userData._soulParts) || soul.bodyParts || []).find(
-            (p) => p && p.bodyRole === "head"
-        );
-        if (!head || !head.position || !head.size) return;
-        const hr = Math.abs(head.size.x) || 0.2;
-        const hx = head.position.x || 0,
-            hy = head.position.y || 0,
-            hz = head.position.z || 0;
-        const predator = !!soul.predator;
-        const eyeCol = predator ? 0xff5a1e : 0x0b0b0e;
-        const skinCol = typeof soul.skinColor === "number" ? soul.skinColor : 0x6e4d30;
-        const faceGroup = new THREE.Group();
-        faceGroup.userData._creatureFace = true;
-        const mkFaceMat = (color, opts = {}) => {
-            let mat;
-            try {
-                mat = this._buildPbrNodeMaterial
-                    ? this._buildPbrNodeMaterial({ color, roughness: opts.roughness, metalness: opts.metalness })
-                    : new THREE.MeshStandardMaterial({ color });
-            } catch (_e) {
-                mat = new THREE.MeshStandardMaterial({ color });
-            }
-            if (opts.emissive && mat.emissive) {
-                mat.emissive.setHex(color);
-                mat.emissiveIntensity = opts.emissiveIntensity || 0.85;
-            }
-            return mat;
-        };
-        // mergt die zwei (gespiegelten) Geometrien EINER Gesichts-Sorte zu EINEM Mesh:
-        // jede Geom wird transform-gebacken (rotateZ DANN translate = die alte
-        // mesh.rotation+position-Reihenfolge), dann via _mergeGeometries vereint.
-        const addMergedPair = (sides, mat) => {
-            const geoms = [];
-            for (const s of sides) {
-                const g = s.geom();
-                if (s.rotZ) g.rotateZ(s.rotZ);
-                g.translate(s.x, s.y, s.z);
-                geoms.push(g);
-            }
-            const merged = this._mergeGeometries ? this._mergeGeometries(geoms) : null;
-            for (const g of geoms) if (g && typeof g.dispose === "function") g.dispose();
-            if (!merged) return;
-            const m = new THREE.Mesh(merged, mat);
-            m.userData._creatureFace = true;
-            m.castShadow = false;
-            faceGroup.add(m);
-        };
-        // AUGEN — kleiner, tiefer sitzend, GLÄNZEND (niedrige roughness → fängt ein
-        // Glanzlicht = das „lebendige" Auge). AUGEN-PLATZIERUNG aus der ROLLE
-        // (Biomechanik): Jäger frontal (eng+vorn, binokular), Pflanzenfresser lateral
-        // (weit+seitlich, Rundum-Sicht). eyeFront ∈ [0..1] vom Kopf-Anker. Raubtier → glühend.
-        const ef = head.eyeFront != null ? head.eyeFront : 0.4;
-        const eyeR = hr * 0.16;
-        const exOff = hr * (0.82 - 0.5 * ef), // lateral weit → frontal eng
-            eyeY = hy + hr * 0.18,
-            eyeZ = hz + hr * (0.26 + 0.58 * ef); // lateral hinten → frontal vorn
-        addMergedPair(
-            [
-                { geom: () => new THREE.SphereGeometry(eyeR, 12, 10), x: hx - exOff, y: eyeY, z: eyeZ },
-                { geom: () => new THREE.SphereGeometry(eyeR, 12, 10), x: hx + exOff, y: eyeY, z: eyeZ },
-            ],
-            mkFaceMat(eyeCol, { roughness: 0.12, metalness: 0, emissive: predator, emissiveIntensity: 1.0 })
-        );
-        // die Catch-Light-Funken (oben-außen auf der Pupille), emissiv-weiß — der Funke,
-        // der ein Auge lebendig macht.
-        const sparkR = eyeR * 0.34;
-        addMergedPair(
-            [
-                {
-                    geom: () => new THREE.SphereGeometry(sparkR, 8, 6),
-                    x: hx - exOff - eyeR * 0.3,
-                    y: eyeY + eyeR * 0.34,
-                    z: eyeZ + eyeR * 0.74,
-                },
-                {
-                    geom: () => new THREE.SphereGeometry(sparkR, 8, 6),
-                    x: hx + exOff + eyeR * 0.3,
-                    y: eyeY + eyeR * 0.34,
-                    z: eyeZ + eyeR * 0.74,
-                },
-            ],
-            mkFaceMat(0xfff4e0, { emissive: true, emissiveIntensity: 1.3, roughness: 0.3 })
-        );
-        // OHREN — zwei kleine Kegel oben am Kopf (Haut-Farbe), leicht nach außen geneigt.
-        addMergedPair(
-            [
-                {
-                    geom: () => new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8),
-                    rotZ: 0.3,
-                    x: hx - hr * 0.5,
-                    y: hy + hr * 0.7,
-                    z: hz - hr * 0.05,
-                },
-                {
-                    geom: () => new THREE.ConeGeometry(hr * 0.22, hr * 0.55, 8),
-                    rotZ: -0.3,
-                    x: hx + hr * 0.5,
-                    y: hy + hr * 0.7,
-                    z: hz - hr * 0.05,
-                },
-            ],
-            mkFaceMat(skinCol, {})
-        );
-        if (faceGroup.children.length === 0) return;
-        group.add(faceGroup);
-        group.userData._creatureFaceLOD = faceGroup;
+        this.log(`Tier-Baum für „${soulKey}" fiel aus (kalter Kern?) — fail-closed, kein Metaball-Rückfall.`, "ERROR");
+        return null;
     }
 
     // S7 (wahrerwuchs §4.7 / Ω-B5) — DIE KÖRPERGRÖSSE-ACHSE: aus einer Identitäts-Zeichenkette
@@ -17476,6 +17273,12 @@ class AnazhRealm {
     // pro Frame (Basis + Delta, kein Drift); die Basis-Rotationen (part.rotation)
     // werden einmal eingefangen und geehrt. t in Sekunden.
     _animateCompoundMotion(group, roles, t, walkPhase, moving, emotions) {
+        // KONVERGENZ III — EIN Chokepoint: Baum-Tiere (bauTier-Gestalt) animieren
+        // über den Baum-Gang; ALLE Aufrufer (Welt-Kreaturen, Peers, Verkörperung)
+        // laufen hier durch — kein Parallel-Verzweigen an jedem Aufrufer.
+        if (group && group.userData && group.userData._tierBaum) {
+            return this._animateTierBaum(group, t, walkPhase, moving);
+        }
         if (!group || !roles || !Array.isArray(group.children)) return;
         // ABSCHIEDS-WELLE (Motion-Vollendung) — das Studio-Profil EINMAL je Aufruf (lazy,
         // nur wenn eine lesende Rolle [schwanz/kopf] es braucht) statt je Kind; `emotions`
@@ -20018,10 +19821,9 @@ class AnazhRealm {
     // Boden, nicht das schlafende Heightfield). Symphonie kurz stumm (sonst N Pings).
     _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
         const angle = Math.random() * Math.PI * 2;
-        // V18.315 — FERN spawnen (im Nebel, jenseits der klaren Sicht): die Haut backt off-thread,
-        // während das Wesen noch fern ist → es taucht schon-FERTIG aus der Distanz auf (wie in echt:
-        // man sieht sie nicht kommen), statt dir vor die Füße zu ploppen + dort die Haut zu bauen.
-        // (spawnRadius bleibt die Streu-Spanne oben drauf.)
+        // V18.315 — FERN spawnen (im Nebel, jenseits der klaren Sicht): das Wesen
+        // taucht aus der Distanz auf (wie in echt: man sieht sie nicht kommen),
+        // statt dir vor die Füße zu ploppen. (spawnRadius = Streu-Spanne oben drauf.)
         const radius = AnazhRealm.CREATURE_SPAWN_FAR_MIN + Math.random() * Math.max(80, spawnRadius * 1.6);
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
@@ -20044,7 +19846,7 @@ class AnazhRealm {
     // Pfad (Terrain + Grund + Plattform), übergibt die Kontrolle, und streamt das
     // Schwere DANACH progressiv. P0 = Kontrolle+Grund (frame 0) · P1 = echte
     // Kollision (async, V18.271) · P2 = Ring+Laub nach Kapazität (V18.275/.301) ·
-    // P3 = das Deferierte (Kreaturen — die 3,1-s-Skin-Builds). Headless (Null-
+    // P3 = das Deferierte (die Kreatur-Spawns). Headless (Null-
     // Renderer) → alles sofort (gate-treu, das Gate sieht die volle Welt).
 
     // P3-Einrichtung: die Kreaturen aus dem kritischen Boot-Pfad nehmen. Headless
@@ -20066,7 +19868,7 @@ class AnazhRealm {
 
     // P3-Progression: pro „Atem" eine Kreatur spawnen, NACHDEM die Kontrolle steht —
     // nur wenn der Frame Luft hat (`_frameOverBudget` falsy) → die Bewegung/das Laden
-    // gehen vor. So erscheinen die Wesen sanft über ~Sekunden, statt 10 Skin-Builds
+    // gehen vor. So erscheinen die Wesen sanft über ~Sekunden, statt 10 Spawns
     // synchron in den Boot zu pressen. Im Loop aufgerufen; no-op ohne offene P3-Arbeit.
     _tickBootPhase3(now) {
         const p3 = this.state._bootPhase3;
@@ -20504,20 +20306,6 @@ class AnazhRealm {
             // bleiben aktiv für ALLE Kreaturen (das ist der V8.49-Anker:
             // off-screen-Kreaturen leben weiter, sie zeigen sich nur nicht).
             if (inFrustum) {
-                // V18.262 (DER KREATUR-RENDER-HEBEL) — die GESICHTS-LOD: die statischen
-                // Gesichts-Sub-Meshes (Augen/Funken/Ohren, cm-Skala, in `_creatureFaceLOD`
-                // gemergt) sind jenseits ~CREATURE_FACE_LOD_DIST·L sub-pixel → die Sub-
-                // Gruppe ausblenden spart pro ferner Skin-Kreatur 3 Draw-Calls (7 → 1;
-                // der gemessene nächste Hebel nach V18.260). distSqToPlayer ist schon
-                // berechnet (XZ); die Schwelle skaliert mit der Körpergröße L (group.scale)
-                // → ein GIGANT zeigt seine Augen länger. Nur im Frustum getoggelt (off-
-                // screen ist die ganze Gruppe `creature.visible=false`); beim Frustum-
-                // Eintritt setzt DIESELBE Frame den korrekten Zustand (kein Stale-Pop).
-                const faceLOD = creature.userData._creatureFaceLOD;
-                if (faceLOD) {
-                    const faceL = creature.scale.x || 1;
-                    faceLOD.visible = distSqToPlayer < AnazhRealm.CREATURE_FACE_LOD_DIST_SQ * faceL * faceL;
-                }
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
                 if (aura) {
@@ -46838,9 +46626,8 @@ class AnazhRealm {
         // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
         // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
         group.rotation.order = "YXZ";
-        // wahrerguss System B (GUSS 2b) — der getragene Avatar IST jetzt das humanoide RIG
-        // (SkinnedMesh + Bones + anatomische Metaball-Haut): EINE glatte Gestalt, die sich über
-        // die Knochen bewegt (der Strichmann war die lose Box-Montage darunter). parts.{leftArm,
+        // KONVERGENZ — der getragene Avatar IST der Studio-Baum (bauMensch +
+        // Gelenk-Gruppen-Rig): EINE Gestalt aus dem Lab-Gesetz. parts.{leftArm,
         // rightArm,…} → die WRIST-/HÜFT-Bones (equipHeld hängt das Gerät an die Hand, die Posen
         // an die Gelenke; ein Mesh-Kind eines Bones folgt ihm). Fällt auf den alten Box-Avatar
         // zurück, wenn SkinnedMesh fehlt.
@@ -46884,8 +46671,8 @@ class AnazhRealm {
         }
         if (built && built.rig) {
             group.userData._koerperDials = dials ? { kh: g.kh, sex: g.sex, build: g.build, muscle: g.muscle } : null;
-            // V18.316 — die Bones + das Gesicht stehen SOFORT (animierbar, equip-fähig); die Haut
-            // (SkinnedMesh) kommt synchron (headless) ODER off-thread (echte Welt, der Bäcker).
+            // KONVERGENZ — der Baum steht SOFORT (animierbar, equip-fähig); das Rig
+            // sind die Gelenk-GRUPPEN des Baums (keine Bones, kein Bäcker mehr).
             group.userData.rig = built.rig;
             group.userData.parts = {
                 torso: built.rig.chest,
@@ -46909,15 +46696,7 @@ class AnazhRealm {
                 // compileAsync wärmt auch unsichtbare Objekte → der Wechsel ist ein Cache-Treffer.
                 this._warmCompilePipeline(group, false);
             };
-            if (built.mesh) {
-                attachMesh(built.mesh); // sync (headless): die Haut steht sofort
-            } else {
-                // async: die Bones/Gesicht SOFORT in die Gruppe (sichtbar + animierbar, in
-                // First-Person ohnehin unsichtbar); der Bäcker liefert die Haut → attachMesh
-                // re-parentet bones[0] unter die Mesh (in finishSkin) + hängt die Mesh ein.
-                if (built.bones && built.bones[0]) group.add(built.bones[0]);
-                if (built.skinPromise && built.skinPromise.then) built.skinPromise.then(attachMesh);
-            }
+            attachMesh(built.mesh); // der Baum steht sofort (sync — kein async-Pfad mehr)
             return group;
         }
         // Kein Rig (in der vendored r184/WebGPU nie der Fall) → leere Gruppe statt des
@@ -48306,16 +48085,22 @@ class AnazhRealm {
         // leitet die benannten Anker (head/Arme/Flügel) aus der EINEN Rollen-Quelle
         // ab → 1st-Person-Kopf-Hide + Hand-Anker leben für JEDE Compound-Seele.
         let newGroup;
-        // ALTLASTEN-NULL HERZ — „werde wolf" IST der Wolf: eine bp_koerper_<tier>-
-        // Verkörperung baut durch DENSELBEN Guss wie die Welt-Kreatur (Skelett +
-        // Gattungs-Dials + Metaball-Haut + Gang), nicht als nackter Compound.
-        // Tags/Stats lesen weiter def.bodyParts (die frozen Wahrheit — Fold oben).
+        // ALTLASTEN-NULL HERZ / KONVERGENZ III — „werde wolf" IST der Wolf: eine
+        // bp_koerper_<tier>-Verkörperung trägt DENSELBEN Studio-Baum wie die
+        // Welt-Kreatur (bauTier + Gattungs-Dials + Gang), nicht einen nackten
+        // Compound. Tags/Stats lesen weiter def.bodyParts (die frozen Wahrheit).
+        // Kalter Kern → LAUT + der Mensch trägt (derselbe fail-soft-Anker wie
+        // „Seele unbekannt" — nie ein zweiter Tier-Körper).
         const tierMatch = canonical.match(/^bp_koerper_([a-z]+)$/);
-        const tierKey = tierMatch && AnazhRealm.CREATURE_SOULS[tierMatch[1]] ? tierMatch[1] : null;
+        const tierKey = tierMatch && AnazhRealm.TETRAPODA_SOUL_MAP[tierMatch[1]] ? tierMatch[1] : null;
         if (def && typeof def.build === "function") {
             newGroup = def.build();
-        } else if (tierKey && AnazhRealm.CREATURE_SOULS[tierKey].skin) {
+        } else if (tierKey) {
             newGroup = this._buildCreatureGroup(tierKey);
+            if (!newGroup) {
+                this.log(`Verkörperung „${canonical}" fiel aus (kalter Tier-Kern) — der Mensch trägt.`, "ERROR");
+                return this.applyPlayerSoul("human");
+            }
             const effParts = (newGroup.userData && newGroup.userData._soulParts) || def.bodyParts || [];
             this._stampSoulPartRefs(newGroup, effParts);
         } else {
@@ -54734,8 +54519,8 @@ class AnazhRealm {
             /* defensiv — ohne Körper-Saat bleibt der Katalog heil */
         }
         // SYNERGIE-WELLE — „WERDE DAS TIER" (Schöpfer: die alten Körper „ersetzt durch
-        // avatar/menschenkörper und den kreaturen/tierkörper"): die skin-tragenden
-        // CREATURE_SOULS (Hirsch · Wolf · Fuchs · Bär) spiegeln als
+        // avatar/menschenkörper und den kreaturen/tierkörper"): die STUDIO-Gattungen
+        // (TETRAPODA_SOUL_MAP — Hirsch · Wolf · Fuchs · Bär) spiegeln als
         // TRAGBARE Körper-Baupläne — derselbe Spiegel wie die Seelen-Defs, derselbe
         // GENERISCHE embody-Pfad (er liest nur role+parts, gemessen: kein
         // koerper_-Sonderleser). Die frozen bodyParts sind die fail-soft-Wahrheit;
@@ -54744,7 +54529,8 @@ class AnazhRealm {
             const CS = AnazhRealm.CREATURE_SOULS || {};
             for (const key of Object.keys(CS)) {
                 const cs = CS[key];
-                if (!cs || !cs.skin || !Array.isArray(cs.bodyParts) || !cs.bodyParts.length) continue;
+                if (!cs || !AnazhRealm.TETRAPODA_SOUL_MAP[key] || !Array.isArray(cs.bodyParts) || !cs.bodyParts.length)
+                    continue;
                 const name = `koerper_${key}`;
                 if (builtinBodyBlueprints[name]) continue;
                 builtinBodyBlueprints[name] = {
@@ -72261,8 +72047,8 @@ class AnazhRealm {
     // nicht mitten im Leben zerstoert — der Memo-Wechsel ist der EINE Dispose-Ort).
     // ERFINDER-WELLE — DER HOST-OFEN IN DER VORSCHAU (Schoepfer „waehle mensch/wolf in der
     // werkstatt aber der koerper erscheint nicht"): die MESHFREI-Domaenen (koerper · kreatur ·
-    // klang, Studio-Vertrag §8.1) exportieren per Vertrag KEIN Mesh — ihre GESTALT baeckt der
-    // Host-OFEN (das Skelett-Gesetz + die Metaball-Haut bzw. das Avatar-Rig; „der Host bleibt
+    // klang, Studio-Vertrag §8.1) exportieren per Vertrag KEIN Mesh — ihre GESTALT baut der
+    // Host-OFEN (der bauTier-Baum bzw. der bauMensch-Baum; „der Host bleibt
     // der OFEN", W-A6). Ohne diesen Zweig lief die Vorschau in eine ENDLOSE request→null→
     // retry-Schleife („Studio-Asset laedt…" fuer immer). Rueckgabe: THREE.Group (Ofen-Guss) ·
     // false (klang: ehrlich kein 3D — der Steckbrief traegt die Audio-Aktionen) · undefined
@@ -81265,9 +81051,10 @@ class AnazhRealm {
             {
                 const headPart = player.userData && player.userData.parts && player.userData.parts.head;
                 if (headPart) headPart.visible = this.state.cameraMode === "third";
-                // HERZ: ein getragener Tier-Körper trägt die Metaball-HAUT als
-                // Ganzkörper-Mesh — im 1st sitzt die Kamera IN ihr; sie folgt
-                // derselben Kopf-Regel (3rd sichtbar, 1st verborgen).
+                // HERZ/KONVERGENZ III: ein getragener Tier-Körper trägt den
+                // Studio-Baum als Ganzkörper-Wrap (_creatureSkin) — die Kamera
+                // sitzt im 1st IN ihm; er folgt derselben Kopf-Regel (3rd
+                // sichtbar, 1st verborgen).
                 for (const ch of player.children) {
                     if (ch && ch.userData && ch.userData._creatureSkin) {
                         ch.visible = this.state.cameraMode === "third";
@@ -82091,7 +81878,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.455.0";
+AnazhRealm.VERSION = "18.456.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -84276,12 +84063,10 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.deer }, AnazhRealm.CREATURE_SKELETON_G.wesen)
             ).map((p) => Object.freeze(p))
         ),
-        skin: true, // F1-TIEFE: die Metaball-Haut (Glieder verschmelzen → organisches Tier)
-        skinColor: 0x6e4d30,
         auraY: 0.8,
     }),
     // ERFINDER-WELLE — DIE NEUEN TIERE: die drei restlichen tetrapoda-Gattungen als
-    // Seelen (dasselbe Skelett-Gesetz + Metaball-Haut wie wesen/Hirsch; die Gattungs-
+    // Seelen (dasselbe Skelett-Gesetz wie wesen/Hirsch — der Studio-BAUM trägt die Gestalt;
     // Dials formen sie zur BAU-Zeit über `_tetrapodaSoulParts`, TETRAPODA_SOUL_MAP).
     // Tag-identisch zur wesen-Klasse (V17.16-Wand) → sie TEILEN seine Spawn-Nische
     // statt sie zu verdrängen: die Welt begehen jetzt Hirsch · Wolf · Fuchs · Bär.
@@ -84295,8 +84080,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.wolf }, AnazhRealm.CREATURE_SKELETON_G.wolf)
             ).map((p) => Object.freeze(p))
         ),
-        skin: true,
-        skinColor: 0x6b6f75,
         auraY: 0.75,
     }),
     fuchs: Object.freeze({
@@ -84309,8 +84092,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 )
             ).map((p) => Object.freeze(p))
         ),
-        skin: true,
-        skinColor: 0xa5502a,
         auraY: 0.6,
     }),
     baer: Object.freeze({
@@ -84320,19 +84101,10 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
                 Object.assign({ archetype: AnazhRealm.CREATURE_ARCHETYPES.bear }, AnazhRealm.CREATURE_SKELETON_G.baer)
             ).map((p) => Object.freeze(p))
         ),
-        skin: true,
-        skinColor: 0x4a3524,
         auraY: 0.85,
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
-
-// V18.262 (DER KREATUR-RENDER-HEBEL) — die Distanz (Meter, für Körpergröße L=1),
-// jenseits derer die cm-Skala-Gesichts-Sub-Meshes (Augen/Funken/Ohren) sub-pixel
-// werden und die `_creatureFaceLOD`-Gruppe ausgeblendet wird (updateCreatures, ×L²).
-// 42 m: ein 3-cm-Auge subtendiert dort < 1 px (1080p/60°-FOV) → render-rein. Als
-// Quadrat gespeichert, weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
-AnazhRealm.CREATURE_FACE_LOD_DIST_SQ = 42 * 42;
 
 // Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen
 // aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf
@@ -85938,8 +85710,8 @@ AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
 AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
 // V18.308 — DAS BOOT-PHASEN-GERÜST: der Atem zwischen zwei deferierten P3-Kreatur-Spawns.
-// 280 ms → ~10 Wesen erscheinen sanft über ~2,8 s NACH der Kontrolle (statt 3,1 s Skin-Builds
-// synchron im Boot). Headless ist davon unberührt (dort spawnt P3 sofort, gate-treu).
+// 280 ms → ~10 Wesen erscheinen sanft über ~2,8 s NACH der Kontrolle (statt aller
+// Spawns synchron im Boot). Headless ist davon unberührt (dort spawnt P3 sofort, gate-treu).
 AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // P0 (Bühnen-Ordnung, 09.07.) — der Sicherheits-Deckel der Bühne (`_buehneSteht`): erreicht
 // eine Maschine das Ring-Ziel NIE (der Ring wächst nur mit Frame-Kopfraum — die 3-FPS-Realität
@@ -85951,7 +85723,7 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // V18.301 — DER LADE-RHYTHMUS-RING: der beim Boot aktive Terrain-Chunk-Ring startet KLEIN
 // (eine settled Basis statt 81 Chunks auf einmal) und wächst monoton zum chunkRingRadius-Ziel.
-AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): die Haut backt off-thread unsichtbar, sie tauchen schon-fertig aus der Distanz auf (kein Pop/Freeze in Sicht)
+AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen ≥130 m fern (im Nebel): sie tauchen aus der Distanz auf (kein Pop in Sicht)
 AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIGER Chunk (Schöpfer „1 Chunk statt 9!").
 // JEDES-HOLZ-WELLE — DER EXISTENZ-BODEN: bis zu diesem Ring wächst die Ramp ohne
 // Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,
@@ -86164,7 +85936,6 @@ AnazhRealm.FLIGHT_RECORDER_FREEZE_MS = 50;
 AnazhRealm.MAX_NEXUS_STRUCTURES = 48;
 // V18.283 — wie viele gebaute Skin-Geometrien (Avatar + Kreatur-Arten) memoisiert bleiben
 // (deterministischer Isosurface-Guss, ~1–4 MB/Eintrag). 16 deckt Mensch + alle Arten + Custom-Seelen.
-AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
 // V18.283 — die Avatar-Haut-Isosurface-Auflösung (Gitter pro Kante). 128 kostete ~29 s/Bau (N³, der
 // größte Spawn-Freeze). 96 ist im engen Close-up SELBST GEPRÜFT (Screenshot res 96 vs 128 ≈ identisch:
 // Brust/Sixpack/Klavikel-Definition bleibt) und baut in ~13 s (Container; ~0,5–1 s real), einmalig →
@@ -87209,11 +86980,6 @@ function _bootAnazhRealm() {
     // Globale Referenz für DevTools-Debug und automatisierten Playtest.
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
-        // [PERF/TEST] Headless-Skin-Res-Cap-Seed: setzt der Playtest vor dem Laden
-        // `window.__anazhHeadlessSkinResCap` (via evaluateOnNewDocument), greift der
-        // Cap schon beim ALLERERSTEN Avatar-Build in init() (der ~270-Teil-Isosurface
-        // baut sonst ~19 s). Produktion setzt das Flag nie → 0 → kein Effekt.
-        if (window.__anazhHeadlessSkinResCap) AnazhRealm.__HEADLESS_SKIN_RES_CAP = window.__anazhHeadlessSkinResCap | 0;
     }
     anazhRealm.init();
 }

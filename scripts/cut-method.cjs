@@ -19,7 +19,7 @@
 //   node scripts/cut-method.cjs <methodName> --apply      → schneidet NUR diese Spanne raus
 //   node scripts/cut-method.cjs <methodName> --with-comment → inkl. des Kopf-Kommentar-Blocks
 //   node scripts/cut-method.cjs <methodName> --nth 2      → bei mehreren Treffern den N-ten
-//   node scripts/cut-method.cjs <methodName> --file bake-core.js
+//   node scripts/cut-method.cjs <methodName> --file phyto-core.js
 // ─────────────────────────────────────────────────────────────────────────
 const fs = require("fs");
 const path = require("path");

@@ -37,7 +37,6 @@ const server = http.createServer((req, res) => {
 async function bootPage(browser, nullRenderer) {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((nr) => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhForceFoundry = true;
         if (nr) window.__anazhHeadlessNullRenderer = true;
     }, nullRenderer);

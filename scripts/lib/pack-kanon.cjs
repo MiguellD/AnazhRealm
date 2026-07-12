@@ -261,7 +261,6 @@ async function bootRealm(port) {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true;
         window.__anazhForceFoundry = true;
     });

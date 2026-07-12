@@ -59,7 +59,6 @@ function check(name, ok) {
     // [PERF] Skin-Res-Cap vor dem Laden seeden (der Avatar-Isosurface baut sonst ~19 s im Boot);
     // die Checks prüfen „Avatar baut + ist Rig", nicht die Treue → verlustfrei. Siehe playtest.cjs.
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         // GPU-frei: der Mechanik-Tier braucht kein Pixel (niemand wertet headless-
         // Pixel mit Augen aus). Der Null-Renderer macht den Lauf robust gegen
         // swiftshader-Renderer-Crashes. Der LOOK lebt in diag-settled-view.
@@ -186,7 +185,7 @@ function check(name, ok) {
                 const gelenke = !!(rig && rig.armL && rig.armL.shoulder && rig.legL && rig.legL.knee && rig.head);
                 return { ok: !!g, hasRig: !!rig, baum: rig ? rig._baum === true : false, meshN, gelenke };
             });
-            // KREATUR baut (die geteilte Metaball-Pipeline)
+            // KREATUR baut (der Studio-Baum, KONVERGENZ III)
             out.creatureWesen = safe(() => {
                 const g = r._buildCreatureGroup("wesen");
                 return { ok: !!g, children: g ? g.children.length : 0 };
@@ -220,7 +219,13 @@ function check(name, ok) {
                     r.applyPlayerSoulFromBlueprint("koerper_wolf");
                     getragen =
                         !!(r.state.player && /koerper_wolf/.test(String(r.state.player.soul))) &&
-                        !!(r.state.playerMesh && r.state.playerMesh.children.length >= 5);
+                        // KONVERGENZ III: der getragene Tier-Leib ist der Studio-BAUM
+                        // (ein Wrap-Kind + _tierBaum-Register) — nicht mehr der Compound.
+                        !!(
+                            r.state.playerMesh &&
+                            (r.state.playerMesh.children.length >= 5 ||
+                                (r.state.playerMesh.userData && r.state.playerMesh.userData._tierBaum))
+                        );
                     r.applyPlayerSoul(prev);
                 }
                 return { okDef, getragen, hirsch: !!r.state.blueprints.koerper_wesen };
@@ -241,8 +246,9 @@ function check(name, ok) {
                 const wo = read("koerper_wolf");
                 const ba = read("koerper_baer");
                 const aliasOk = !!r.applyPlayerSoul("wolf") && /koerper_wolf/.test(String(r.state.player.soul));
-                // HERZ: „werde wolf" IST der Wolf — derselbe Guss wie die Welt-
-                // Kreatur (Metaball-Haut am getragenen Körper, headless sync).
+                // HERZ/KONVERGENZ III: „werde wolf" IST der Wolf — derselbe
+                // Studio-Baum wie die Welt-Kreatur (der _creatureSkin-Wrap deckt
+                // den Leib für die 1st-Person-Regel).
                 const wolfSkin = (r.state.playerMesh.children || []).some(
                     (c) => c && c.userData && c.userData._creatureSkin
                 );
@@ -377,7 +383,7 @@ function check(name, ok) {
                 !(R.koerperStats || {}).__err
         );
         check(
-            "HERZ: werde wolf trägt die Metaball-HAUT (derselbe Guss wie die Welt-Kreatur)",
+            "HERZ: werde wolf trägt den Studio-Baum (derselbe Guss wie die Welt-Kreatur)",
             (R.koerperStats || {}).wolfSkin === true && !(R.koerperStats || {}).__err
         );
         check(

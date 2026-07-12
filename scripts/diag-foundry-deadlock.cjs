@@ -40,7 +40,6 @@ const server = http.createServer((req, res) => {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true;
         window.__anazhForceFoundry = true; // die Foundry im Gate-Kontext an (die echte Pipeline)
     });

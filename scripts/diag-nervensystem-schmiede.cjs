@@ -217,7 +217,6 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
     });

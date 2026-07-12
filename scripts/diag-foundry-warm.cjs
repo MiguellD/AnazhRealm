@@ -43,7 +43,6 @@ const server = http.createServer((req, res) => {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhHeadlessNullRenderer = true; // der GATE-Kontext (kein GPU) — genau hier muss die Pipeline lesen
         window.__anazhForceFoundry = true; // den Worker im Null-Renderer ERZWINGEN (W1-Beweis: liest die Pipeline headless?)
     });

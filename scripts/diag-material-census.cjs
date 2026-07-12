@@ -27,7 +27,7 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 580000, args: ["--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; window.__anazhHeadlessSkinResCap = 64; });
+    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "load", timeout: 30000 });
     await page.evaluate(async () => {
         const start = performance.now();

@@ -62,7 +62,12 @@ function startSaveServer() {
 // aber catch ist Browser-Crash-Pfad — passiert nicht auf grünen Läufen). Sub-
 // Welle f rollt diesen Helfer mechanisch durch alle ~200 Call-Sites.
 async function safeEvaluate(page, fn, ...args) {
-    return await page.evaluate(fn, ...args).catch(() => null);
+    // Fehler LAUT loggen statt still null (V18.456-Lehre: „page.evaluate
+    // fehlgeschlagen" ohne Botschaft kostet eine ganze Diagnose-Runde).
+    return await page.evaluate(fn, ...args).catch((e) => {
+        console.log(`    [safeEvaluate] ${String((e && e.message) || e).slice(0, 300)}`);
+        return null;
+    });
 }
 
 // V9.52 Sub-Welle a — die Initial-State-Probe als benannte Funktion. War vorher der
@@ -28182,7 +28187,13 @@ async function checkBandWelle6HCreatures(ctx) {
                 typeof c0.userData.soul === "string" && r.constructor.CREATURE_SOUL_NAMES.includes(c0.userData.soul);
             out.initialHasName = typeof c0.userData.name === "string" && c0.userData.name.length > 0;
             out.initialHasTask = c0.userData.task && c0.userData.task.name === "wander";
-            out.initialHasChildren = c0.children && c0.children.length >= 2;
+            // KONVERGENZ III — die Gestalt ist der Studio-Baum in EINEM Wrap:
+            // die Körper-Wahrheit zählt MESHES (traverse), nicht Top-Level-Kinder.
+            let c0Meshes = 0;
+            c0.traverse((n) => {
+                if (n.isMesh) c0Meshes++;
+            });
+            out.initialHasChildren = c0Meshes >= 2;
         }
         r.clearCreatures();
         const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 5, z: 0 };
@@ -39637,14 +39648,6 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
 
-// V18.262 (DER KREATUR-RENDER-HEBEL) — der nächste gemessene Draw-Call-Hebel nach
-// V18.260 (Render-Merge placed Strukturen): eine Skin-Kreatur (wesen/wolf) rendert
-// 1 Haut + 6 statische Gesichts-Sub-Meshes. Die Heilung: (a) das Gesicht pro Material-Typ
-// zu DREI gemergten Meshes verschmelzen (6 → 3) + (b) eine Distanz-LOD blendet die
-// `_creatureFaceLOD`-Gruppe jenseits ~CREATURE_FACE_LOD_DIST·L aus (cm-Skala-Augen
-// sub-pixel) → ferne Skin-Kreatur = nur Haut (7 → 1 Draw-Call). Vier Wände: (1) Konstante,
-// (2) Struktur/Merge, (3) CONSUM des LOD-Readers (frustum-gestubbt, kreatur-isoliert),
-// (4) der gemessene Draw-Call-Win nah/fern.
 // V18.264 (DER SCHATTEN-CACHE) — der Schatten-Pass ist ein zweiter Voll-Render
 // (gemessen 2.32M Dreiecke). Beim Umsehen (Maus = Rotation) bewegt sich die
 // Schatten-Kamera NICHT (folgt der Spieler-Position) → die Map ist identisch.
@@ -39893,110 +39896,75 @@ async function checkBandV18331ReplayDeterminism(ctx) {
     );
 }
 
-async function checkBandV18262CreatureRenderLOD(ctx) {
+// KONVERGENZ III (V18.456) — DIE KREATUR IST DER STUDIO-BAUM: alle vier Gattungen
+// (Hirsch·Wolf·Fuchs·Bär) bauen aus tetrapoda-core.bauTier (dieselben Kugeln wie das
+// Lab); die Parts bleiben die Mechanik-Wahrheit (_soulParts), der Baum die Gestalt.
+// Die Metaball-Klasse (Skin-Isosurface + Gesichts-LOD + Bäcker) ist GEFALLEN.
+// Wände: (1) Struktur je Gattung (Baum-Gruppe, ≥2 Meshes, KEIN Metaball-Rest),
+// (2) DIE NaN-LINSE (die V18.456-Fehler-Klasse: EIN NaN-Radius kollabierte den Wolf
+// zu unsichtbaren NaN-Matrizen — die Welt-BBox jeder Kreatur ist FINIT + sinnvoll),
+// (3) CONSUM: der EINE Animations-Chokepoint (_animateCompoundMotion) bewegt die
+// Baum-Beine (Diagonal-Trab), (4) die Render-Ehrlichkeit: Baum ≤ 300 Meshes bei
+// GETEILTEN Geometrien (der Mesh-Zähler ist dokumentierte Realität, kein Win-Theater).
+async function checkBandKonvergenzTierBaum(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
-        const A = r.constructor; // window.AnazhRealm ist headless undefined (V18.259-Gotcha)
-        const out = {};
-
-        // (1) die LOD-Distanz-Konstante existiert + ist sinnvoll.
-        out.lodConst = typeof A.CREATURE_FACE_LOD_DIST_SQ === "number" && A.CREATURE_FACE_LOD_DIST_SQ > 0;
-
-        // (2) STRUKTUR: ein wesen trägt die gemergte Gesichts-LOD-Gruppe.
-        const g = r._buildCreatureGroup("wesen");
-        const faceLOD = g && g.userData && g.userData._creatureFaceLOD;
-        out.faceLODExists = !!(faceLOD && faceLOD.isGroup);
-        out.faceMergedCount = faceLOD ? faceLOD.children.length : -1; // 6 → ≤3
-        out.faceAllMeshes = !!faceLOD && faceLOD.children.every((c) => c.isMesh);
-        let skinMeshes = 0,
-            faceMeshes = 0;
-        g.traverse((n) => {
-            if (!n.isMesh) return;
-            if (n.userData && n.userData._creatureSkin) skinMeshes++;
-            if (n.userData && n.userData._creatureFace) faceMeshes++;
-        });
-        out.hasSkin = skinMeshes === 1; // die Metaball-Haut bleibt (Merge render-rein)
-        r._disposeSoulGroup(g);
-
-        // (3) CONSUM: der LOD-Reader in updateCreatures toggelt die Gruppe nach Distanz.
-        // Frustum stubben (kamera-unabhängig), Kreatur-Liste isolieren (Cap-Gotcha).
-        const pm = r.state.playerMesh;
-        const savedC = r.state.creatures,
-            savedE = r.state.creatureEmotions;
-        const origFrustum = r.isInFrustum;
-        let nearVis = null,
-            farVis = null,
-            testC = null;
-        try {
-            // V18.347 (Cap-Gotcha, dieselbe Klasse wie V8.49): die Liste VOR dem Spawn leeren —
-            // sonst gibt spawnCreatureAt bei vollem maxCreatures-Cap (20) null → testC.position.set
-            // wirft → die ganze evaluate wirft → "reading lodConst on null". Die Isolation kam zu spät.
-            r.state.creatures = [];
-            r.state.creatureEmotions = [];
-            testC = r.spawnCreatureAt(pm.position.x + 2, pm.position.y, pm.position.z + 2, "happy", "wesen");
-            if (testC) {
-                r.state.creatures = [testC];
-                r.state.creatureEmotions = ["happy"];
-                r.isInFrustum = () => true;
-                testC.position.set(pm.position.x + 2, pm.position.y, pm.position.z + 2);
-                r.updateCreatures(0.016);
-                nearVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
-                testC.position.set(pm.position.x + 200, pm.position.y, pm.position.z + 200);
-                r.updateCreatures(0.016);
-                farVis = testC.userData._creatureFaceLOD && testC.userData._creatureFaceLOD.visible;
-            }
-        } finally {
-            r.isInFrustum = origFrustum;
-            r.state.creatures = savedC;
-            r.state.creatureEmotions = savedE;
-            if (testC) r.removeCreature(testC);
-        }
-        out.lodNearVisible = nearVis === true;
-        out.lodFarHidden = farVis === false;
-
-        // (4) DRAW-CALL-WIN: render-Meshes (own-visible mit visible-Vorfahren, Gruppe
-        // visible gezwungen → orthogonal zum Frustum) nah (≤4) vs fern (==1, nur Haut).
-        const renderMeshes = (grp) => {
-            const wv = grp.visible;
-            grp.visible = true;
-            let n = 0;
-            grp.traverse((node) => {
-                if (!node.isMesh) return;
-                let cur = node,
-                    ok = true;
-                while (cur && cur !== grp.parent) {
-                    if (!cur.visible) {
-                        ok = false;
-                        break;
+        const out = { arten: {} };
+        for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
+            const g = r._buildCreatureGroup(art);
+            const a = { baum: false, meshN: 0, faceLOD: false, geoSet: new Set() };
+            if (g) {
+                a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
+                g.traverse((n) => {
+                    if (n.isMesh) {
+                        a.meshN++;
+                        if (n.geometry) a.geoSet.add(n.geometry.uuid);
                     }
-                    cur = cur.parent;
-                }
-                if (ok) n++;
-            });
-            grp.visible = wv;
-            return n;
-        };
-        const g2 = r._buildCreatureGroup("wesen");
-        out.nearDrawCalls = renderMeshes(g2);
-        if (g2.userData._creatureFaceLOD) g2.userData._creatureFaceLOD.visible = false;
-        out.farDrawCalls = renderMeshes(g2);
-        r._disposeSoulGroup(g2);
+                });
+                a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
+                // DIE NaN-LINSE: Welt-BBox finit + sinnvoll (0.05..20 Einheiten hoch).
+                const bb = new THREE.Box3().setFromObject(g);
+                const h = bb.max.y - bb.min.y;
+                a.bboxFinit =
+                    [bb.min.x, bb.min.y, bb.min.z, bb.max.x, bb.max.y, bb.max.z].every(Number.isFinite) &&
+                    h > 0.05 &&
+                    h < 20;
+                a.geoUnique = a.geoSet.size;
+                delete a.geoSet;
+                r._disposeSoulGroup(g);
+            }
+            out.arten[art] = a;
+        }
+        // (3) CONSUM — der Chokepoint bewegt die Baum-Beine (Diagonal-Trab).
+        const g2 = r._buildCreatureGroup("wolf");
+        out.trab = false;
+        if (g2 && g2.userData._tierBaum) {
+            const T = g2.userData._tierBaum.teile;
+            const vorher = T.legFL ? T.legFL.rotation.x : null;
+            r._animateCompoundMotion(g2, null, 0.5, Math.PI / 2, true);
+            const nachher = T.legFL ? T.legFL.rotation.x : null;
+            out.trab =
+                vorher != null && nachher != null && Math.abs(nachher - vorher) > 0.1 && T.legFR.rotation.x < 0;
+            r._disposeSoulGroup(g2);
+        }
         return out;
     });
-
-    check("V18.262 (1) CREATURE_FACE_LOD_DIST_SQ Konstante existiert (>0)", res.lodConst === true);
-    check("V18.262 (2) wesen trägt eine gemergte Gesichts-LOD-Gruppe (_creatureFaceLOD)", res.faceLODExists === true);
-    check(
-        `V18.262 (2) Gesicht gemergt 6→≤3 Meshes (gemessen ${res.faceMergedCount})`,
-        res.faceMergedCount >= 1 && res.faceMergedCount <= 3
-    );
-    check("V18.262 (2) die Gesichts-LOD-Kinder sind alle Meshes", res.faceAllMeshes === true);
-    check("V18.262 (2) die Metaball-Haut bleibt (der Merge ist render-rein)", res.hasSkin === true);
-    check("V18.262 (3) CONSUM: der LOD-Reader zeigt das Gesicht nah (visible)", res.lodNearVisible === true);
-    check("V18.262 (3) CONSUM: der LOD-Reader blendet das Gesicht fern aus (sub-pixel)", res.lodFarHidden === true);
-    check(`V18.262 (4) Draw-Call-Win nah: ≤4 (gemessen ${res.nearDrawCalls}, war 7)`, res.nearDrawCalls <= 4);
-    check(`V18.262 (4) Draw-Call-Win fern: 1 nur Haut (gemessen ${res.farDrawCalls}, war 7)`, res.farDrawCalls === 1);
+    const arten = (res && res.arten) || {};
+    for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
+        const a = arten[art] || {};
+        check(`KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`, a.baum === true && a.meshN >= 2);
+        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
+        check(
+            `KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`,
+            a.bboxFinit === true
+        );
+        check(
+            `KONVERGENZ III (4) ${art}: ≤300 Meshes, Geometrien GETEILT (gemessen ${a.meshN} Meshes / ${a.geoUnique} Geos)`,
+            a.meshN > 0 && a.meshN <= 300 && a.geoUnique > 0 && a.geoUnique < a.meshN
+        );
+    }
+    check("KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal)", res && res.trab === true);
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -55540,20 +55508,23 @@ async function checkBandRing5Soul(ctx) {
             y: currentMesh().position.y,
             z: currentMesh().position.z,
         };
-        // ALTLASTEN-NULL: der WOLF-Körper (koerper_wolf via werde-Alias) ist die
-        // Wechsel-Probe — eine COMPOUND-Seele (_buildFromBlueprint aus parts,
-        // PBR): children == parts, benannte Anker aus der EINEN Rollen-Quelle.
+        // ALTLASTEN-NULL / KONVERGENZ III: der WOLF-Körper (koerper_wolf via
+        // werde-Alias) ist die Wechsel-Probe — der getragene Leib IST der
+        // Studio-Baum (_tierBaum); die Rollen-Quelle bleibt der frozen Bauplan.
         const okPhoenix = r.applyPlayerSoul("wolf");
         out.applyReturnsTrue = !!okPhoenix && okPhoenix.ok !== false;
         out.phoenixSoulSet = r.state.player.soul === "bp_koerper_wolf";
         const wolfBp = r.state.blueprints.koerper_wolf;
-        out.phoenixColor = currentMesh().children.length >= wolfBp.parts.length;
-        const phoenixParts = currentParts();
+        let wolfMeshN = 0;
+        currentMesh().traverse((n) => {
+            if (n.isMesh) wolfMeshN++;
+        });
+        out.phoenixColor = !!currentMesh().userData._tierBaum && wolfMeshN >= 2;
+        const wolfTeile = (currentMesh().userData._tierBaum || {}).teile || {};
         const wolfRoles = r.computeMotionRoles(wolfBp.parts) || [];
         out.phoenixHasWingsAndTail =
-            phoenixParts &&
-            !!phoenixParts.leftLeg &&
-            !!phoenixParts.rightLeg &&
+            !!wolfTeile.legFL &&
+            !!wolfTeile.legHR &&
             wolfRoles.some((x) => x && x.role === "schwanz");
         out.positionPreserved =
             Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
@@ -55577,14 +55548,20 @@ async function checkBandRing5Soul(ctx) {
             r.state.dsl.lastUserProgram[1] === "hirsch";
         out.dragonSoulSet = r.state.player.soul === "bp_koerper_wesen";
         const hirschBp = r.state.blueprints.koerper_wesen;
-        out.dragonColor = currentMesh().children.length >= hirschBp.parts.length;
-        // Vier Spiegel-Beine leben als bein-Rollen (Diagonal-Trab) + gestempelte Anker.
-        const dragonParts = currentParts();
+        let hirschMeshN = 0;
+        currentMesh().traverse((n) => {
+            if (n.isMesh) hirschMeshN++;
+        });
+        out.dragonColor = !!currentMesh().userData._tierBaum && hirschMeshN >= 2;
+        // Vier Beine leben am BAUM (teile.legXX); die bein-/schwanz-Rollen
+        // bleiben die frozen Bauplan-Wahrheit (reine Funktion, Tags/Motion).
+        const hirschTeile = (currentMesh().userData._tierBaum || {}).teile || {};
         const dragonRoles = r.computeMotionRoles(hirschBp.parts) || [];
         out.dragonHasFourLegs =
-            dragonParts &&
-            !!dragonParts.leftLeg &&
-            !!dragonParts.rightLeg &&
+            !!hirschTeile.legFL &&
+            !!hirschTeile.legFR &&
+            !!hirschTeile.legHL &&
+            !!hirschTeile.legHR &&
             dragonRoles.filter((x) => x && x.role === "bein").length >= 4 &&
             dragonRoles.some((x) => x && x.role === "schwanz");
 
@@ -55683,21 +55660,19 @@ async function checkBandRing5Soul(ctx) {
         const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
         out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
 
-        // Der Schweif wellt sich (schwanz-Rolle im EINEN Kern) — am getragenen
-        // HIRSCH-Körper. Die Probe-Zeiten folgen der PROFIL-Mathematik (V9.56-i):
-        // eine HALBE idle-tailRate-Periode (pi/0.5 s) flippt das Vorzeichen ->
-        // Delta = 2*|sin|*amp, messbar fuer jede Schwanz-Phase.
+        // Der Schweif wellt sich — am getragenen HIRSCH-Körper. KONVERGENZ III:
+        // der Schweif lebt in _tierBaum.tailSegs (der EINE Chokepoint
+        // _animateCompoundMotion routet Baum-Gruppen nach _animateTierBaum);
+        // eine Viertel-Periode (t·2.4 = sin) flippt das Vorzeichen messbar.
         r.applyPlayerSoul("hirsch");
         const drGroup = currentMesh();
         r.state.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(0.1);
-        const drRoles = drGroup.userData._motionRoles || [];
-        let tailIdx = -1;
-        for (let i = 0; i < drRoles.length; i++) if (drRoles[i] && drRoles[i].role === "schwanz") tailIdx = i;
-        const tailA = tailIdx >= 0 ? drGroup.children[tailIdx].rotation.y : 0;
-        r.animatePlayerSoul(0.1 + Math.PI / 0.5);
-        const tailB = tailIdx >= 0 ? drGroup.children[tailIdx].rotation.y : 0;
-        out.dragonTailWaves = tailIdx >= 0 && Math.abs(tailA - tailB) > 0.05;
+        const drTail = ((drGroup.userData._tierBaum || {}).tailSegs || [])[0] || null;
+        const tailA = drTail ? drTail.rotation.y : 0;
+        r.animatePlayerSoul(0.1 + Math.PI / 2.4);
+        const tailB = drTail ? drTail.rotation.y : 0;
+        out.dragonTailWaves = !!drTail && Math.abs(tailA - tailB) > 0.05;
         Object.assign(r.state.player.emotions, savedEmo);
         delete r.state.customSouls.fluegelprobe;
 
@@ -57048,7 +57023,6 @@ async function checkBandRing6Workshop(ctx) {
     // bevor init() den ~270-Teil-Avatar baut) → schon der ALLERERSTE Build ist gedrosselt
     // (~19 s → ~2.8 s). Die Bands prüfen Logik, nie die Isosurface-Treue. Siehe Build-Kommentar.
     await page.evaluateOnNewDocument((realRenderer) => {
-        window.__anazhHeadlessSkinResCap = 64;
         // N7.3 — DER GATE FÄHRT FOUNDRY-ON (die Produktions-Wahrheit): der GLOBALE
         // `__anazhGateNoFoundry`-Hook ist GEFALLEN. Die Foundry (der Studio-Worker) bootet im
         // Gate mit — wie in Produktion und wie der Fast-Tier es seit V18.411 beweist; der
@@ -57756,7 +57730,7 @@ async function checkBandRing6Workshop(ctx) {
             await timed(checkBandWahrerAnblickLaub, ctx);
             await timed(checkBandWahrerAnblickPfade, ctx);
             await timed(checkBandWahrerAnblickAtmoBusch, ctx);
-            await timed(checkBandV18262CreatureRenderLOD, ctx);
+            await timed(checkBandKonvergenzTierBaum, ctx);
             await timed(checkBandV18264ShadowCache, ctx);
             await timed(checkBandV18265ShadowDistance, ctx);
             await timed(checkBandV18266RockDetail, ctx);

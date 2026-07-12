@@ -166,7 +166,6 @@ async function auditStateAndMethods() {
         // Crash-Quelle. Die No-op-Hülle bootet schneller + ohne GPU-Tod-Risiko.
         await page.evaluateOnNewDocument(() => {
             window.__anazhHeadlessNullRenderer = true;
-            window.__anazhHeadlessSkinResCap = 64;
         });
         await page.goto("http://127.0.0.1:4312/", { waitUntil: "load" });
         await new Promise((r) => setTimeout(r, 12000));
@@ -640,9 +639,6 @@ async function auditStateAndMethods() {
                 "_loopErrorCount", // V18.278 — Loop-Error-Boundary-Zähler, `state.X || 0`
                 "_loopErrorLastLog", // V18.278 — Log-Drossel-Stempel, `!state.X || now - ...`
                 "_bootPhase3", // V18.308 — deferierte Boot-Arbeit (Kreaturen), `if (!state.X) return` (in _bootDeferCreatures gesetzt, im Loop gedraint, dann null)
-                "_bakeWorker", // V18.314 — Off-thread-Skin-Bäcker, `if (state.X !== undefined) return` (lazy am ersten Bake)
-                "_bakeReqMap", // V18.314 — Bake-Request→Resolver-Map, lazy mit _bakeWorker (new Map())
-                "_bakeReqId", // V18.314 — Bake-Request-Zähler, lazy mit _bakeWorker (0), dann `++state.X`
                 "_deferredAvatarSoul", // V18.304 — deferierter Avatar-Bau, am Boot gesetzt, im Loop `if (state.X)` gedraint, dann null
                 "_bootAvatarDelay", // V18.304 — Boot-Frame-Zähler vor dem Avatar-Bau, `(state.X || 0) + 1`
                 "_bpEditTick", // V18.358 — Bauplan-Part-Edit-Zähler für die Recipe-Book-Signatur, `(state.X || 0) + 1`

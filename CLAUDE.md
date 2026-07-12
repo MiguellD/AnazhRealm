@@ -6,21 +6,26 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.454 — DIE KONVERGENZ)
+## Stand (V18.456 — KONVERGENZ III: EIN MENSCH, EIN TIER)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
 Körper→Eigenschaften ist ZAHL (Bär>Wolf>Fuchs HP · invers im Tempo, EINE Größen-Fold-Quelle);
 Bestand = **Mensch + Hirsch·Wolf·Fuchs·Bär (+ Pferd)**, `werde wolf` verkörpert per Chat.
-`gate:altlasten` (im check) hält Gefallenes strukturell draußen. **DAS HERZ + DIE KONVERGENZ
-(V18.454): EIN MENSCH.** Der Da-Vinci-Teile-Baum ist das eine Gesetz — koerper-core `bauMensch(F)`
-(288 Knoten verbatim, fabrik-gehakt) + `morphAuf(B,dials)`; Lab-Shell UND Stamm bauen NUR daraus
-(Stamm: geteilte Geometrien + PBR-Klassen, Rig = Gelenk-Gruppen; Peers über `_dialsAusGenom`).
-Die Stamm-Körper-Pipeline ist GEFALLEN (8-KH-Atlas landmarks+humanSkeleton, Avatar-Metaball/Bäcker,
-Relief-Gesicht, AVATAR_SKIN_RES, gate:koerper-atlas); die Zwillings-Wand trägt das Baum-Nachbau-
-Verbot. Tetrapoda: `werde wolf` trägt die ECHTE Kreatur (Metaball-Haut, 1st-Person-Regel);
-Mensch-Dials tragen Stats (dieselbe Größen-Achse, Default exakt 1.0). OFFEN an der Naht: Outfit/
-Haar (Lab-Systeme) noch nicht im Stamm. **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
+`gate:altlasten` (im check) hält Gefallenes strukturell draußen. **DIE KONVERGENZ (V18.454–.456):
+EIN MENSCH, EIN TIER.** Der Da-Vinci-Teile-Baum ist das eine Mensch-Gesetz — koerper-core
+`bauMensch(F)` (288 Knoten verbatim, fabrik-gehakt) + `morphAuf(B,dials)`; der Lab-Baum ist das
+eine Tier-Gesetz — tetrapoda-core `bauTier(F,dials)` (verbatim, MESHFREI; deriveTierParams =
+NaN-Wand-Chokepoint, versteht Buch-KURZ `neck/leg` UND Lab-LANG `neckLen/legLen`). Lab-Shell UND
+Stamm bauen NUR daraus (Stamm: geteilte Geometrien + PBR-Klassen + Hide-Fell; Mensch-Rig =
+Gelenk-Gruppen, Tier-Gang = `_animateTierBaum` im EINEN Chokepoint `_animateCompoundMotion`;
+Baum-Skala = Parts-Mechanik-Kalibrierung f2, Tags/Stats lesen unverändert `_soulParts`/bodyParts).
+Die Stamm-Körper-Pipeline (V18.454: 8-KH-Atlas, Avatar-Metaball/Bäcker, Relief-Gesicht) UND die
+Metaball-KREATUR-Klasse (V18.456: bake-core/bake-worker, spec v2+Goldens, Skin-Isosurface,
+Gesichts-LOD, gate:creature-contract) sind GEFALLEN — Rückkehr-Wand 26 Namen, KONVERGENZ-Band
+trägt die NaN-LINSE (finite Welt-BBox je Gattung). OFFEN an der Naht: Outfit/Haar (Lab) nicht im
+Stamm · Stamm-Fell ohne Strähnen + dunkler als Lab-Ton · Trab statt CPG-Kür · Fern-Merge
+(~235 Meshes/Tier, Geometrien geteilt). **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
 Gesetzbücher (Phänotyp-Zwilling tot [foundry→phyto-core] · Tier-Allometrie+CPG in tetrapoda-core ·
 Progression+Terzschichtung in klang-core · Feder-Koeffizienten in vehicle-core.FAHR · Membran-
 Palette in porta-core; die Stamm-Lofi-Improvisation ist BEWUSST ein eigener Komponist [Emotion+
@@ -48,10 +53,10 @@ Readback — echte Augen auf Present-losem Holz). **OFFEN:** die eine Schöpfer-
   Genese/Ökologie) · Speicher (Snapshot/Taille) · Spieler (Seelen/Bewegung/Werkstatt/Ökonomie) ·
   Anschluss (P2P/Portale) + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10, cores.manifest.json): reine Daten+Mathe; Vertrag v1.2 = `PARAMS_BY_KIND` + must-ignore
-  + fail-closed (`docs/studio-vertrag.md`). Der Host ist der OFEN (bake-core/Rig/Lofi).
+  + fail-closed (`docs/studio-vertrag.md`). Der Host ist der OFEN (bauMensch-/bauTier-Guss + Lofi).
 - **Worker:** Foundry (= terrain-Brücke; Kanäle `get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; IDB disk-first, SHA-Stempel der Quellen) · voxel-worker (bit-identischer
-  Spiegel) · bake-worker (Haut).
+  Spiegel).
 - **Server:** save-server (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC;
   Kanäle pos·input-Lockstep·dsl·soul·vibe).
 
@@ -86,7 +91,7 @@ Readback — echte Augen auf Present-losem Holz). **OFFEN:** die eine Schöpfer-
 
 ## Workflows
 
-Dev-Loop: `npm run playtest:fast` (~25 s, 16 Checks) · Merge-Gate: `npm run playtest` (Verdikt
+Dev-Loop: `npm run playtest:fast` (~20 s, 18 Checks) · Merge-Gate: `npm run playtest` (Verdikt
 „Alle Invarianten OK" zählt, nie der Zähler) · Statik: `npm run check` (inkl. source-probes ·
 constitution · studio-vertrag · altlasten) · `npm run lint` / `format:check` · Navigation:
 `npm run atlas` (+ `--find <regex>`). Gates je Domäne: `gate:*` in package.json. Commits klein +

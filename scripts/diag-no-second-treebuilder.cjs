@@ -18,7 +18,7 @@ const server = http.createServer((req, res) => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"] });
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; window.__anazhHeadlessSkinResCap = 64; });
+    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const out = await page.evaluate(async () => {

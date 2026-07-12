@@ -50,7 +50,6 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__anazhHeadlessSkinResCap = 64;
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "load", timeout: 30000 });
     // Warmup: pumpen bis die Welt settled (Chunk-Plateau).

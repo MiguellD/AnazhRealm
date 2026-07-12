@@ -25,7 +25,7 @@ const MODE = process.argv[2] || "nogpu"; // nogpu | swiftshader
     const errs = [];
     page.on("pageerror", (e) => errs.push((e.stack || e.message).split("\n")[0]));
     page.on("console", (m) => { if (m.type() === "error") errs.push("[console] " + m.text().slice(0, 120)); });
-    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; window.__anazhHeadlessSkinResCap = 64; });
+    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const out = await page.evaluate(async () => {
         const start = performance.now();

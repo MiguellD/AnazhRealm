@@ -378,6 +378,30 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.456 — KONVERGENZ III: EIN TIER — der Studio-Baum trägt die Kreatur, die Metaball-Klasse fällt (Schöpfer „beende es champ, vollende es")
+
+Das in V18.455 benannte Tier ist getan: **tetrapoda-core.bauTier(F,dials)** (der verbatim
+Lab-Baum, ~46 teile + Schweif-/Hals-Segmente, MESHFREI über F-Fabriken) ist das EINE Tier-Gesetz —
+die Lab-Shell baut daraus (THREE-Fabriken + echte Materialien), der Stamm baut daraus
+(`_buildTierBaum`: geteilte Geometrien + PBR; das Fell trägt das Hide-Gesetz) und kalibriert den
+Baum selbst auf die Parts-Mechanik (f2 = Parts-Scheitel/Baum-Höhe; Tags/Stats/Physik lesen
+unverändert `_soulParts`). Die **Metaball-KREATUR-Klasse ist PHYSISCH GEFALLEN** (Def+Maschine+
+Spiegel+Tests+Doku): bake-core.js · bake-worker.js · spec/asset-contract/v2 (Vertrag+Goldens) ·
+`_buildCreatureSkinGeometry`/`_bakeSkinRequest`/`_ensureBakeWorker`/`_attachCreatureSkin`/
+`_addCreatureFace`/Gesichts-LOD-Reader/`CREATURE_FACE_LOD_DIST_SQ`/skin-Flaggen · 5 Diag-Skripte ·
+gate:creature-contract — Rückkehr-Wand +9 (26 gefallene Namen). Die Wurzel des unsichtbaren
+Wolfs war EIN NaN: `deriveTierParams` las `neckLen/legLen`, das Studio-Buch spricht `neck/leg` —
+der CHOKEPOINT versteht jetzt BEIDE Wortschätze mit Wolf-Referenz-Defaults (NaN-Wand, Lehre #13),
+und die neue **NaN-LINSE** im KONVERGENZ-Band prüft jede Gattung auf finite Welt-BBox.
+`werde wolf`-Verkörperung + Welt-Kreatur + Werkstatt-Vorschau laufen durch DENSELBEN Baum-Guss;
+Ausfall = LAUT + Mensch-Anker (nie ein zweiter Tier-Körper). safeEvaluate loggt Fehler jetzt LAUT
+(die „page.evaluate fehlgeschlagen"-Stummheit kostete eine Diagnose-Runde). Auge-bewiesen:
+Wolf+Bär stehen in der Kienspan-Welt (artifacts/tier-baum-wolf*.png). Grün: Batterie „Alle
+Invarianten OK" · fast 18/18 · check (54 Verfassungs-Gesetze) · eslint 0 Fehler.
+OFFEN benannt: Stamm-Fell ohne Strähnen + dunkler als der Lab-Ton (Hide-Kavität auf Klein-Kugeln) ·
+Trab statt CPG-Kür · Draw-Call-Realität ~235 Meshes/Tier (Geometrien geteilt, Fern-Merge = nächster
+Hebel) · 4 stumm-tolerierte evaluate-Nulls in Alt-Bändern (jetzt sichtbar geloggt).
+
 ### V18.455 — KONVERGENZ II: die Farb-Zwillinge fallen (Schöpfer „es sind noch immer nachbauten")
 
 Drei benannte Nachbauten, zwei gefallen: **MATERIAL_KLASSEN** (die flachen Lab-Materialfarben

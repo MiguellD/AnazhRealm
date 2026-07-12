@@ -201,7 +201,6 @@ const PROFI = { triRendered: 680000, drw: 208, visPct: 61, vramMB: 118 };
     console.log("=== ANAZHREALM (Zensus, volle Welt) ===");
     const ap = await browser.newPage();
     await ap.evaluateOnNewDocument(() => {
-        window.__anazhHeadlessSkinResCap = 64;
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
     });

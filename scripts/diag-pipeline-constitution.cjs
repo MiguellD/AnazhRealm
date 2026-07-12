@@ -84,12 +84,17 @@ law(
     "eine iframe-Impostor-Methode ist zurück"
 );
 
-// GESETZ 4 (P1/P7) — DIE ASSET-VERTRÄGE: Pflanzen v1 + Kreatur-Skin v2 eingefroren + gate-bewacht.
+// GESETZ 4 (P1/P7) — DIE ASSET-VERTRÄGE: Pflanzen v1 eingefroren + gate-bewacht.
+// (v2 Kreatur-Skin FIEL mit KONVERGENZ III V18.456 — die Kreatur ist der
+// tetrapoda-Baum, kein gebackenes Skin-Asset mehr; v3+ zählen weiter.)
 console.log("\nGesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht:");
 law("Vertrag v1 (Pflanzen) existiert", true, fs.existsSync(path.join(ROOT, "spec/asset-contract/v1/CONTRACT.md")));
-law("Vertrag v2 (Kreatur-Skin) existiert", true, fs.existsSync(path.join(ROOT, "spec/asset-contract/v2/CONTRACT.md")));
+law(
+    "Vertrag v2 (Kreatur-Skin) ist GEFALLEN (KONVERGENZ III — der Baum trägt)",
+    false,
+    fs.existsSync(path.join(ROOT, "spec/asset-contract/v2/CONTRACT.md"))
+);
 law("`gate:asset-contract` verdrahtet", true, /"gate:asset-contract"\s*:/.test(pkg));
-law("`gate:creature-contract` verdrahtet", true, /"gate:creature-contract"\s*:/.test(pkg));
 
 // GESETZ 5 (P0–P8) — JEDE REGEL HAT IHRE LINSE: die Pipeline-Gates existieren im package.json.
 console.log("\nGesetz 5 — jede Regel hat ihre Linse (die Gates existieren):");

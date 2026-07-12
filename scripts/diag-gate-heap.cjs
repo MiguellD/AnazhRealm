@@ -31,7 +31,7 @@ const server = http.createServer((req, res) => {
     let pageErr = null;
     page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; });
     // GENAU wie das Gate: Null-Renderer + Skin-Res-Cap.
-    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; window.__anazhHeadlessSkinResCap = 64; });
+    await page.evaluateOnNewDocument(() => { window.__anazhHeadlessNullRenderer = true; });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const mem = async (label) => {

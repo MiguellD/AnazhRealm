@@ -50,7 +50,7 @@ Fälle: 5 Gattungen × 2 Seeds (7, 12345) × LOD 0 + 2 ov-Kultur-Fälle
 
 ## Laufzeit des Gates
 
-Node-DIREKT (die v2-creature-contract-Klasse): `global.THREE = require(worlds/
+Node-DIREKT (Gesetzbuch-Gate ohne Browser): `global.THREE = require(worlds/
 terrain/lib/three-r128.min.js)` (das vendorte UMD lädt in Node), dann
 `require(vehicle-core.js)` — kein Browser, keine swiftshader-Fragilität. Der
 Selbst-Test (korrumpiertes Golden → rot) beweist bei jedem Lauf, dass die Linse

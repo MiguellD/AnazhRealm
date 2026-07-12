@@ -37,6 +37,18 @@ const FORBIDDEN = [
     { token: "tickPlayerAura", fiel: "V18.448" },
     { token: "_ensureAuraSkinShells", fiel: "V18.448" },
     { token: "AURA_TAG_HUE", fiel: "V18.448 (CREATURE_TASK_AURA_HUE lebt — anderes System)" },
+    // KONVERGENZ III (V18.456) — die Metaball-KREATUR-Klasse ist gefallen: die vier
+    // Gattungen tragen den Studio-Baum (tetrapoda-core.bauTier), die Skin-Isosurface
+    // (bake-core/bake-worker) + Gesichts-LOD + Bäcker-Protokoll sind physisch raus.
+    { token: "_buildCreatureSkinGeometry", fiel: "KONVERGENZ III — der Baum trägt die Gestalt" },
+    { token: "__bakeSkinGeometry", fiel: "KONVERGENZ III — bake-core/bake-worker sind gefallen" },
+    { token: "_bakeSkinRequest", fiel: "KONVERGENZ III — das Bäcker-Protokoll" },
+    { token: "_ensureBakeWorker", fiel: "KONVERGENZ III — der Bäcker-Worker" },
+    { token: "_attachCreatureSkin", fiel: "KONVERGENZ III — die Haut-Anhäng-Naht" },
+    { token: "_addCreatureFace", fiel: "KONVERGENZ III — der Baum trägt das ECHTE Gesicht" },
+    { token: "_creatureFaceLOD", fiel: "KONVERGENZ III — die Gesichts-LOD-Gruppe" },
+    { token: "CREATURE_FACE_LOD_DIST_SQ", fiel: "KONVERGENZ III" },
+    { token: "__anazhHeadlessSkinResCap", fiel: "KONVERGENZ III — der Headless-Skin-Res-Knopf" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
@@ -282,7 +294,7 @@ function scanLabBuster() {
 
 function main() {
     const root = path.join(__dirname, "..");
-    const files = ["anazhRealm.js", "voxel-worker.js", "bake-core.js", "index.html", "signaling-server.js"].map((f) =>
+    const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js"].map((f) =>
         path.join(root, f)
     );
 

@@ -1,6 +1,6 @@
 // diag-vehicle-contract.cjs — ASSET-VERTRAG v3 (Fahrzeuge): der Byte-Beweis
 // für vehicle-core.js buildInstance (Studio-Vertrag B2, docs/studio-vertrag.md).
-// Läuft DIREKT in Node (die v2-creature-contract-Klasse): vehicle-core braucht
+// Läuft DIREKT in Node (Gesetzbuch-Gate ohne Browser): vehicle-core braucht
 // nur THREE-Geometrie/Material-Klassen — das vendorte r128-UMD lädt in Node,
 // kein Browser, keine swiftshader-Fragilität.
 //

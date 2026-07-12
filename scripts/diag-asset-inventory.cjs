@@ -81,7 +81,6 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
-        window.__anazhHeadlessSkinResCap = 64;
     });
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
