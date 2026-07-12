@@ -378,6 +378,20 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.455 — KONVERGENZ II: die Farb-Zwillinge fallen (Schöpfer „es sind noch immer nachbauten")
+
+Drei benannte Nachbauten, zwei gefallen: **MATERIAL_KLASSEN** (die flachen Lab-Materialfarben
+lips/eye/iris/pupil/socket/dark/joint/shadow + shorts) und **SKIN_TONES/HAIR_COLORS** (die
+Paletten) wohnen jetzt im Gesetzbuch koerper-core — die Lab-Shell BAUT ihre Materialien daraus,
+der Stamm LIEST dieselben Klassen (`matFor`) und der Genom-Roller PICKT aus den Kern-Paletten
+(die Stamm-eigenen Hex-Listen sind gelöscht). Zwillings-Wand +2 (iris-Farbe · mahagoni-Palette,
+15 gesamt). **EHRLICH NICHT GETAN: das Tier.** Der Stamm bäckt die 4 Tiere weiter als Metaball
+über tetrapoda-core-Parts statt den Studio-Baum zu bauen — die bauTier-Extraktion verlangt eine
+Umstrukturierung der Studio-Datei (Fell-Strähnen mit Math.random INLINE im Baum-Bau, z. B. in der
+Schweif-Segment-Schleife) und den Schöpfer-Blick nach jedem Schritt; sie ist der nächste benannte
+Schnitt, nicht vergessen, nicht halb angefangen. Grün: Batterie „Alle Invarianten OK" · fast
+18/18 · smoke:labs · altlasten (15 Abdrücke).
+
 ### V18.454 — DIE KONVERGENZ: EIN MENSCH, und die Stamm-Körper-Pipeline FÄLLT (Schöpfer „wieso baust du ihn nach?! die pipeline entfernen — habe endlich den Mut")
 
 Der Da-Vinci-Teile-Baum ist das EINE Mensch-Gesetz: **koerper-core.bauMensch(F)** (der komplette

@@ -147,6 +147,29 @@
     })();
 
 
+    // KONVERGENZ II — DIE FARB-WAHRHEITEN wohnen im Gesetzbuch (Schöpfer „es sind
+    // noch immer nachbauten": die Stamm-KL-Tabelle und die Genom-Paletten waren
+    // ZWILLINGE der Lab-Werte — gefallen; beide Leser lesen NUR noch hier):
+    // MATERIAL_KLASSEN — die flachen Klassen-Farben der Lab-Materialien (Z.77,
+    // verbatim: lips/eye/iris/cornea/socket/dark/joint/shadow); skin/hair reisen
+    // als Genom/Wahl, shorts ist das Stamm-Würde-Band.
+    var MATERIAL_KLASSEN = Object.freeze({
+        lips: Object.freeze({ c: 0xaa5544, r: 0.4 }),
+        eye: Object.freeze({ c: 0xf5f5f0, r: 0.08 }),
+        iris: Object.freeze({ c: 0x2a4a6a, r: 0.15 }),
+        pupil: Object.freeze({ c: 0x000000, r: 0.2 }),
+        socket: Object.freeze({ c: 0x5a3320, r: 0.6 }),
+        dark: Object.freeze({ c: 0x050000, r: 0.9 }),
+        joint: Object.freeze({ c: 0x806060, r: 0.6 }),
+        shadow: Object.freeze({ c: 0x8a5840, r: 0.7 }),
+        shorts: Object.freeze({ c: 0x4a5058, r: 0.8 }),
+    });
+    // SKIN_TONES / HAIR_COLORS — die Lab-Paletten (Z.63/Z.79, verbatim):
+    // prettier-ignore
+    var SKIN_TONES = {porzellan:{hex:0xf0d5c0,name:'Porzellan'},hell:{hex:0xe3b898,name:'Hell'},sand:{hex:0xd4a17e,name:'Sand'},karamell:{hex:0xc48566,name:'Karamell'},bronze:{hex:0xa86a4d,name:'Bronze'},umbra:{hex:0x7d4a33,name:'Umbra'},mahagoni:{hex:0x5f3826,name:'Mahagoni'},ebenholz:{hex:0x3f2418,name:'Ebenholz'}};
+    // prettier-ignore
+    var HAIR_COLORS = {black:{base:0x141014,lt:0x2a2228,name:'Schwarz'},darkbrown:{base:0x2a1a10,lt:0x42291a,name:'Dunkelbraun'},brown:{base:0x472c18,lt:0x6b4226,name:'Braun'},chestnut:{base:0x6b3a1a,lt:0x8f5a2e,name:'Kastanie'},blond:{base:0xa9803f,lt:0xceac6a,name:'Blond'},platinum:{base:0xcfc097,lt:0xe8ddbf,name:'Platin'},ginger:{base:0x8a3b18,lt:0xb35e2a,name:'Rot'},grey:{base:0x6e6a66,lt:0x9a958f,name:'Grau'},white:{base:0xcecbc5,lt:0xeeece8,name:'Weiß'},blue:{base:0x244a8a,lt:0x4a78c0,name:'Blau'},pink:{base:0xb0497a,lt:0xd47aa6,name:'Pink'},teal:{base:0x1f6a66,lt:0x3a9a94,name:'Teal'}};
+
     // KONVERGENZ-WELLE: der 8-KH-Eigen-Atlas des Stamms (landmarks + humanSkeleton,
     // ~940 Z.) ist GEFALLEN — der EINE Mensch ist der Da-Vinci-Teile-Baum
     // (bauMensch + morphAuf, unten); beide Leser (Lab-Shell wie Stamm) bauen NUR
@@ -546,6 +569,9 @@
         labLandmarks: labLandmarks,
         bauMensch: bauMensch,
         morphAuf: morphAuf,
+        MATERIAL_KLASSEN: MATERIAL_KLASSEN,
+        SKIN_TONES: SKIN_TONES,
+        HAIR_COLORS: HAIR_COLORS,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,

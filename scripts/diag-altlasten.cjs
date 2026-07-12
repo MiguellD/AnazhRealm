@@ -188,6 +188,18 @@ const ZWILLINGE = [
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
+        fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
+    },
+    {
+        fingerprint: "mahagoni:{hex:0x5f3826",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
+    },
+    {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],

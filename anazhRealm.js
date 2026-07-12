@@ -16523,8 +16523,11 @@ class AnazhRealm {
     // wir haben ein kontinuierliches Form-Feld. Peer-deterministisch (gleicher Seed → gleicher Körper).
     _rollHumanoidGenome(seed) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
-        const skinTones = [0xc9a07a, 0xb07a52, 0x8a5a38, 0xe0b58e, 0x6b4429, 0xd9a878, 0x9c6b44];
-        const hairTones = [0x241712, 0x120d0a, 0x5a3a1e, 0x7a5a32, 0x3a3a3c, 0x2a1c12];
+        // KONVERGENZ II — die Paletten wohnen im Gesetzbuch (koerper-core.SKIN_TONES/
+        // HAIR_COLORS): der Roller PICKT aus der Lab-Wahrheit, kein Zwilling mehr.
+        const core = typeof window !== "undefined" && window.__koerperCore;
+        const skinTones = core && core.SKIN_TONES ? Object.keys(core.SKIN_TONES).map((k) => core.SKIN_TONES[k].hex) : [0xc48566];
+        const hairTones = core && core.HAIR_COLORS ? Object.keys(core.HAIR_COLORS).map((k) => core.HAIR_COLORS[k].base) : [0x2a1a10];
         return {
             sex: g.axis("sex"),
             build: g.axis("build"),
@@ -16592,20 +16595,14 @@ class AnazhRealm {
         const dials = Object.assign({}, core.START_PARAMS || {}, g.bmDials || this._dialsAusGenom(g));
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc89372;
         const hairCol = typeof g.hairColor === "number" ? g.hairColor : 0x241712;
-        // Klassen → Material (die Lab-Farbwahrheit; Haut/Haar aus dem Genom; Shorts = Würde-Band):
-        const KL = {
+        // KONVERGENZ II — die Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN,
+        // dieselbe Quelle wie die Lab-Materialien; kein Zwilling): nur Haut/Haar
+        // (Genom-Wahl aus den Kern-PALETTEN) reisen von außen herein.
+        const MK = core.MATERIAL_KLASSEN || {};
+        const KL = Object.assign({}, MK, {
             skin: { c: skinCol, r: 0.62 },
-            joint: { c: 0x806060, r: 0.6 },
-            dark: { c: 0x050000, r: 0.9 },
-            eye: { c: 0xf5f5f0, r: 0.08 },
-            iris: { c: 0x2a4a6a, r: 0.15 },
-            pupil: { c: 0x000000, r: 0.2 },
-            socket: { c: 0x5a3320, r: 0.6 },
-            shadow: { c: 0x8a5840, r: 0.7 },
-            lips: { c: 0xaa5544, r: 0.4 },
             hair: { c: hairCol, r: 0.85 },
-            shorts: { c: 0x4a5058, r: 0.8 },
-        };
+        });
         const matCache = this._koerperMatCache || (this._koerperMatCache = new Map());
         const matFor = (k) => {
             const kl = KL[k] || KL.skin;
@@ -82094,7 +82091,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.454.0";
+AnazhRealm.VERSION = "18.455.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
