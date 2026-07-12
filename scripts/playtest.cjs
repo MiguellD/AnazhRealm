@@ -55515,7 +55515,13 @@ async function checkBandRing5Soul(ctx) {
         out.defaultColorRed =
             currentMaterial() &&
             currentMaterial().color.getHex() === 0xc89372 &&
-            !!(currentMaterial().isMeshToonMaterial || currentMaterial().isMeshStandardMaterial);
+            // KONVERGENZ: die Haut-Referenz des Studio-Baums ist ein PBR-(Node-)Material
+            !!(
+                currentMaterial().isMeshToonMaterial ||
+                currentMaterial().isMeshStandardMaterial ||
+                currentMaterial().isMeshStandardNodeMaterial ||
+                currentMaterial().isNodeMaterial
+            );
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
         const humanParts = currentParts();

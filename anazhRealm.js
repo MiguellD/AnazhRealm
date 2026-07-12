@@ -14227,7 +14227,6 @@ class AnazhRealm {
             dpr: win.devicePixelRatio || 1,
             rendererType: r ? (r._isHeadlessNull ? "headless-null" : r.isWebGPURenderer ? "webgpu" : "other") : "none",
             webgpu: typeof nav.gpu !== "undefined",
-            avatarSkinRes: AnazhRealm.AVATAR_SKIN_RES || null,
             foliageRadius: [AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX],
         };
         // GPU-Adapter-Name, WENN der WebGPU-Backend ihn freilegt (feature-detect, nie annehmen).
@@ -16223,50 +16222,6 @@ class AnazhRealm {
         return core.buildSkeleton(g);
     }
 
-    // wahrerguss System B (GUSS 1) — DAS HUMANOIDE SKELETT-GESETZ (biped, anatomisch
-    // reference-kalibriert; Loomis/Vitruv 8-Kopf): ein aufrechter Zweibeiner aus echten
-    // Proportionen — Schritt = exakte Körpermitte (4 KH), Nabel auf φ (61.8 % v. unten),
-    // Schulter 2 KH breit, V-Taper (Schulter:Taille:Hüfte ≈ 1:0.66:0.78, geschlechts-
-    // moduliert), Glieder GEGLIEDERT (Ober-/Unterarm, Ober-/Unterschenkel, Hand, Fuß). In
-    // A-POSE gebaut (Arme ~45° abwärts → saubere Schulter-Verschmelzung, kein Weight-Bleed
-    // beim Skinnen). Die Glieder ÜBERLAPPEN Schulter/Becken → die Metaball-Haut
-    // (`_buildCreatureSkinGeometry`) verschmilzt sie zu EINER glatten Gestalt: der Strichmann
-    // (lose schwebende Zylinder) verschwindet by construction. EINE Einheit = Kopfhöhe (KH);
-    // `g.kh` skaliert auf Welt-Maß, `g.sex` ∈ [0..1] (0 = mask. V-Taper, 1 = weibl. Sanduhr).
-    // ── DIE GEMESSENE LANDMARK-WIRBELSÄULE (die EINE Quelle = „Baugruppe", V9.82): die 8-Kopf-
-    //    Proportionen (Referenz-vermessen aus den 5 Anatomie-Bildern) + die benannten Gelenk-
-    //    Knoten, genom-moduliert. Sowohl `_humanoidSkeleton` (die Haut-Parts) ALS AUCH
-    //    `_buildHumanoidRig` (die Skinning-Bones) lesen sie → Haut und Knochen sind sich PER
-    //    KONSTRUKTION einig, wo ein Gelenk sitzt (kein Parallel-Pfad: das Rig trug früher eine
-    //    zweite, leicht abweichende Magic-Number-Liste). Eine Landmarke verschieben hebt jeden
-    //    daran hängenden Muskel UND das Bone UND das Skinning auf einmal — kein Muskel von Hand.
-    //    `joint(name, s)` gibt die Knoten in KH (vor `kh`-Skala), s = Seite ±1; die Werte SIND
-    //    die Haut-Anker (das Glied beginnt/endet hier) → die Bones sitzen IM Fleisch.
-    static _humanoidLandmarks(g) {
-        // ALTLASTEN-NULL HERZ — die humanoiden Landmarken wohnen im Anatomie-
-        // Gesetzbuch (koerper-core, EINE Quelle für Rig + Haut + Werkstatt).
-        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
-        if (!core || typeof core.landmarks !== "function") {
-            throw new Error(
-                "koerper-core fehlt — das Landmark-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)"
-            );
-        }
-        return core.landmarks(g);
-    }
-
-    static _humanoidSkeleton(g) {
-        // ALTLASTEN-NULL HERZ — das humanoide Skelett-GESETZ (der Muskel-Atlas)
-        // wohnt im Anatomie-Gesetzbuch (koerper-core, EINE Quelle für Rig + Haut +
-        // Werkstatt; index.html lädt den Kern vor dem Stamm). Fail-closed: kein Kern, kein Mensch.
-        const core = (typeof globalThis !== "undefined" && globalThis.__koerperCore) || null;
-        if (!core || typeof core.humanSkeleton !== "function") {
-            throw new Error(
-                "koerper-core fehlt — das humanoide Skelett-Gesetz wohnt im Kern (index.html lädt ihn vor dem Stamm)"
-            );
-        }
-        return core.humanSkeleton(g);
-    }
-
     // ═══ F1-TIEFE (wahrerwuchs §11/§12) — DAS METABALL-HAUT-GESETZ (Skelett → Feld → Haut) ═══
     // Der mandat-§11.7-Kern für Kreaturen: ein virtuelles SKELETT (Knochen-Kapseln) erzeugt ein
     // glattes zusammenhängendes FELD (Σ Kapsel-Beiträge); seine ISOFLÄCHE (Surface Nets — DIE
@@ -16580,311 +16535,165 @@ class AnazhRealm {
             hairColor: g.pick("hair", hairTones),
         };
     }
+    // KONVERGENZ-WELLE — GENOM→DIAL-BRÜCKE: Peers/NPCs rollen ein Genom (sex/build/
+    // muscle/kh); der EINE Bau-Pfad ist bauMensch(dials) — die Brücke invertiert
+    // die KOERPER_DIAL_MAP-Zeilen (dieselbe Daten-Tabelle, EINE Quelle, kein
+    // zweiter Zahlensatz), sodass ein Genom exakt die Dials ergibt, die der alte
+    // lineare Pfad aus ihnen gemacht hätte. height = kh/PLAYER-Einheit.
+    _dialsAusGenom(g) {
+        const core = typeof window !== "undefined" && window.__koerperCore;
+        const start = core && core.START_PARAMS ? core.START_PARAMS : {};
+        const d = Object.assign({}, start);
+        const MAP = AnazhRealm.KOERPER_DIAL_MAP || [];
+        for (const row of MAP) {
+            if (!row || !Number.isFinite(row.base) || !Number.isFinite(row.mul) || row.mul === 0) continue;
+            if (row.axis === "khMul") {
+                const kh = Number.isFinite(g.kh) ? g.kh : 0.2125;
+                d[row.dial] = (kh / 0.2125 - row.base) / row.mul;
+            } else if (Number.isFinite(g[row.axis])) {
+                d[row.dial] = (g[row.axis] - row.base) / row.mul;
+            }
+        }
+        return d;
+    }
+
+    // KONVERGENZ-WELLE — DER STAMM LIEST DAS LAB-GESETZ: bauMensch (der Da-Vinci-
+    // Teile-Baum) + morphAuf (die Regler-Anwendung) laufen auf DATEN-Knoten;
+    // der Baum wird mit THREE-treuer Euler-XYZ-Komposition in Welt-Raum gefaltet:
+    //   fieldParts — Ellipsoide (skin·joint·lips·socket·dark) für die Metaball-Haut,
+    //   features   — Auge/Iris/Pupille/Brauen (nicht im Feld, sitzen AUF der Haut),
+    //   spec       — die Bone-Spezifikation aus den GELENK-GRUPPEN des Baums
+    //                (hip/knee/ankle/arm/elbow/hand/head — dieselbe Quelle wie die Teile).
+    // Skala: Lab-Einheiten (H=6-Loomis) → Welt über f = 8·kh/6 (die alte 8-KH-Welt-
+    // Höhe bleibt; der Größen-Dial reist in morphAufs charScale — EINMAL, nie doppelt).
+    // Fail-closed: kalter Kern → null (der Aufrufer scheitert LAUT wie beim Atlas).
+    // KONVERGENZ-WELLE — DER STAMM BAUT DEN STUDIO-KÖRPER SELBST (Schöpfer: „wieso
+    // baust du ihn nach?! die pipeline entfernen"): koerper-core.bauMensch liefert
+    // den EINEN Da-Vinci-Teile-Baum, morphAuf trägt die Regler — der Stamm gibt nur
+    // die THREE-Fabriken (der OFEN: geteilte Geometrien je Radius, PBR-Node-
+    // Materialien je Klasse, WebGPU-nativ) und hängt sein Rig an die GELENK-GRUPPEN
+    // des Baums. Die eigene Körper-Pipeline ist GEFALLEN (Muskel-Atlas · Landmarken ·
+    // Metaball-Haut · Bäcker · Skinning · Relief-Gesicht — AnazhRealm erzeugt nichts,
+    // was ein Studio kann). Rückgabe { mesh, rig, kh, bones:[] }; mesh = der Baum in
+    // Welt-Maß (f = 8·0.2125/6 je Lab-Einheit; JEDE Größe reist im morphAuf-charScale).
     _buildHumanoidRig(g) {
-        if (typeof THREE === "undefined" || typeof THREE.SkinnedMesh !== "function") return null;
+        if (typeof THREE === "undefined") return null;
         g = g || {};
-        const kh = g.kh || 1;
+        const kh = g.kh || 0.2125;
         const oy = g.oy || 0;
-        const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc98a63;
-        const parts = AnazhRealm._humanoidSkeleton(g);
-        // V18.316 — DER BÄCKER (Stufe 3): die Avatar-HAUT (res ~AVATAR_SKIN_RES, ~4-s-Isosurface) war
-        // der letzte synchrone Boot-Block. Jetzt bauen die Bones + das Gesicht SOFORT (billig); die
-        // Haut backt OFF-THREAD (echte Welt, über den bake-worker) bzw. SYNCHRON (headless = gate-treu).
-        // In First-Person sieht man den eigenen Körper ohnehin nicht → die kurze Haut-Verzögerung ist
-        // unsichtbar, der 4-s-Frame-Freeze verschwindet. (HAUT-opts: res 128-Klasse, taubin 8 = glatt,
-        // seamGroove 3 breit = weiche Muskel-Schatten, normalRelax 2 = ruhige Schulter/Brust-Normale.)
-        const avatarOpts = {
-            res: AnazhRealm.AVATAR_SKIN_RES,
-            taubinPasses: 8,
-            creaseSharpen: 0,
-            creaseMix: 0,
-            normalStep: 0.4,
-            kFloor: 0.04,
-            seamGroove: 3,
-            seamWidth: 0.15,
-            displace: true,
-            dispCap: 0.34,
-            normalRelax: 2,
-        };
-        // ── Bone-Spezifikation aus der EINEN Landmark-Quelle (_humanoidLandmarks) — dieselbe, die
-        //    _humanoidSkeleton die Haut-Parts gibt (Skinning-Bones sitzen per Konstruktion im Fleisch).
-        const J = AnazhRealm._humanoidLandmarks(g).joint;
-        const spec = [
-            ["hips", null, J("hips"), [0, 4.55, 0]],
-            ["spine", "hips", J("spine"), [0, 5.55, 0]],
-            ["chest", "spine", J("chest"), [0, 6.55, 0]],
-            ["neck", "chest", J("neck"), [0, 7.0, 0]],
-            ["head", "neck", J("head"), J("headTop")],
-        ];
-        for (const s of [1, -1]) {
-            const f = s > 0 ? "L" : "R";
-            spec.push(
-                ["shoulder" + f, "chest", J("shoulder", s), J("elbow", s)],
-                ["elbow" + f, "shoulder" + f, J("elbow", s), J("wrist", s)],
-                ["wrist" + f, "elbow" + f, J("wrist", s), J("hand", s)],
-                ["hip" + f, "hips", J("hip", s), J("knee", s)],
-                ["knee" + f, "hip" + f, J("knee", s), J("ankle", s)],
-                ["ankle" + f, "knee" + f, J("ankle", s), J("foot", s)]
+        const core = typeof window !== "undefined" && window.__koerperCore;
+        if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function") {
+            this.log(
+                "KÖRPER-KERN KALT: koerper-core.bauMensch fehlt — ohne Gesetzbuch kein Mensch (fail-closed).",
+                "ERROR"
             );
+            return null;
         }
-        const sc = (p) => [p[0] * kh, p[1] * kh + oy, p[2] * kh];
-        const bones = [];
-        const byName = {};
-        const segs = [];
-        for (const [name, parent, jp, se] of spec) {
-            const b = new THREE.Bone();
-            b.name = name;
-            const wp = sc(jp);
-            b._worldPos = wp;
-            byName[name] = b;
-            if (parent && byName[parent]) {
-                const pw = byName[parent]._worldPos;
-                b.position.set(wp[0] - pw[0], wp[1] - pw[1], wp[2] - pw[2]);
-                byName[parent].add(b);
-            } else {
-                b.position.set(wp[0], wp[1], wp[2]);
-            }
-            bones.push(b);
-            segs.push({ a: wp, b: sc(se) });
-        }
-        const rig = {
-            hips: byName.hips,
-            spine: byName.spine,
-            chest: byName.chest,
-            neck: byName.neck,
-            head: byName.head,
-            armL: { shoulder: byName.shoulderL, elbow: byName.elbowL, wrist: byName.wristL },
-            armR: { shoulder: byName.shoulderR, elbow: byName.elbowR, wrist: byName.wristR },
-            legL: { hip: byName.hipL, knee: byName.kneeL, ankle: byName.ankleL },
-            legR: { hip: byName.hipR, knee: byName.kneeR, ankle: byName.ankleR },
-            kh,
+        const dials = Object.assign({}, core.START_PARAMS || {}, g.bmDials || this._dialsAusGenom(g));
+        const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc89372;
+        const hairCol = typeof g.hairColor === "number" ? g.hairColor : 0x241712;
+        // Klassen → Material (die Lab-Farbwahrheit; Haut/Haar aus dem Genom; Shorts = Würde-Band):
+        const KL = {
+            skin: { c: skinCol, r: 0.62 },
+            joint: { c: 0x806060, r: 0.6 },
+            dark: { c: 0x050000, r: 0.9 },
+            eye: { c: 0xf5f5f0, r: 0.08 },
+            iris: { c: 0x2a4a6a, r: 0.15 },
+            pupil: { c: 0x000000, r: 0.2 },
+            socket: { c: 0x5a3320, r: 0.6 },
+            shadow: { c: 0x8a5840, r: 0.7 },
+            lips: { c: 0xaa5544, r: 0.4 },
+            hair: { c: hairCol, r: 0.85 },
+            shorts: { c: 0x4a5058, r: 0.8 },
         };
-        // DAS GESICHT — als Kind des KOPF-Bones (mesh-unabhängig → SOFORT, billig; folgt der Kopf-Pose).
+        const matCache = this._koerperMatCache || (this._koerperMatCache = new Map());
+        const matFor = (k) => {
+            const kl = KL[k] || KL.skin;
+            const key = k + "_" + kl.c;
+            if (!matCache.has(key)) {
+                let m;
+                try {
+                    m = this._buildPbrNodeMaterial
+                        ? this._buildPbrNodeMaterial({ color: kl.c, roughness: kl.r, metalness: 0 })
+                        : new THREE.MeshStandardMaterial({ color: kl.c, roughness: kl.r });
+                } catch (_e) {
+                    m = new THREE.MeshStandardMaterial({ color: kl.c, roughness: kl.r });
+                }
+                matCache.set(key, m);
+            }
+            return matCache.get(key);
+        };
+        // Geteilte Geometrien (der Stamm-OFEN wählt die Dichte — das Lab gießt 64er,
+        // die Welt trägt 20/14). r bleibt in der GEOMETRIE: base = sc, die morphAuf-
+        // Zahlen wirken byte-gleich zum Lab.
+        const geoCache = AnazhRealm._koerperGeoCache || (AnazhRealm._koerperGeoCache = new Map());
+        const kugelGeo = (r) => {
+            const key = "k" + r.toFixed(4);
+            if (!geoCache.has(key)) geoCache.set(key, new THREE.SphereGeometry(r, 20, 14));
+            return geoCache.get(key);
+        };
+        const zylGeo = (rt, rb, h) => {
+            const key = "z" + rt.toFixed(4) + "_" + rb.toFixed(4) + "_" + h.toFixed(4);
+            if (!geoCache.has(key)) geoCache.set(key, new THREE.CylinderGeometry(rt, rb, h, 14, 1));
+            return geoCache.get(key);
+        };
+        const F = {
+            gruppe: () => new THREE.Group(),
+            kugel: (r, k, sc) => {
+                if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt — der Knoten hält die Baum-Form
+                const mesh = new THREE.Mesh(kugelGeo(r), matFor(k));
+                if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
+                mesh.castShadow = k === "skin" || k === "joint";
+                mesh.receiveShadow = true;
+                return mesh;
+            },
+            zylinder: (rt, rb, h, k) => {
+                const mesh = new THREE.Mesh(zylGeo(rt, rb, h), matFor(k));
+                mesh.castShadow = k === "skin";
+                mesh.receiveShadow = true;
+                return mesh;
+            },
+        };
+        let B;
         try {
-            this._addHumanoidFace(rig, kh, oy, skinCol, g.hairColor);
-        } catch (_e) {
-            /* Gesicht optional — kein Crash */
+            B = core.bauMensch(F);
+            core.morphAuf(B, dials);
+        } catch (e) {
+            this.log("bauMensch scheiterte (" + (e && e.message) + ") — kein Mensch (fail-closed).", "ERROR");
+            return null;
         }
-        // ── SKINNING-Helfer: pro Vertex die 4 nächsten Bone-Segmente, invers-quadratisch (weicher
-        //    Gelenk-Blend; eps ∝ Glied-Maß verbreitert das Mischband → die Haut biegt glatt mit). ──
-        const wEps = 0.27 * kh * (0.27 * kh);
-        const dSeg2 = (px, py, pz, s) => {
-            const ax = s.a[0],
-                ay = s.a[1],
-                az = s.a[2];
-            const abx = s.b[0] - ax,
-                aby = s.b[1] - ay,
-                abz = s.b[2] - az;
-            const ab2 = abx * abx + aby * aby + abz * abz || 1e-6;
-            let t = ((px - ax) * abx + (py - ay) * aby + (pz - az) * abz) / ab2;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const dx = px - (ax + abx * t),
-                dy = py - (ay + aby * t),
-                dz = pz - (az + abz * t);
-            return dx * dx + dy * dy + dz * dz;
-        };
-        // ── finishSkin: gegeben die GEBACKENE Geometrie → skinWeights + SkinnedMesh + bind. Geteilt
-        //    vom sync- UND async-Pfad (der oy-Translate sitzt hier, damit Haut + Bone-Segs in EINEM
-        //    Raum [KH·kh + oy] liegen). ──
-        const finishSkin = (geom) => {
-            if (!geom) return null;
-            if (oy && typeof geom.translate === "function") geom.translate(0, oy, 0);
-            const pos = geom.attributes.position;
-            const VN = pos.count;
-            const skinIndex = new Uint16Array(VN * 4);
-            const skinWeight = new Float32Array(VN * 4);
-            for (let i = 0; i < VN; i++) {
-                const px = pos.getX(i),
-                    py = pos.getY(i),
-                    pz = pos.getZ(i);
-                const bd = [-1, -1, -1, -1],
-                    bv = [1e18, 1e18, 1e18, 1e18];
-                for (let b = 0; b < segs.length; b++) {
-                    const d = dSeg2(px, py, pz, segs[b]);
-                    if (d < bv[3]) {
-                        let p = 3;
-                        while (p > 0 && d < bv[p - 1]) {
-                            bv[p] = bv[p - 1];
-                            bd[p] = bd[p - 1];
-                            p--;
-                        }
-                        bv[p] = d;
-                        bd[p] = b;
-                    }
-                }
-                let sum = 0;
-                const w = [0, 0, 0, 0];
-                for (let k = 0; k < 4; k++)
-                    if (bd[k] >= 0) {
-                        w[k] = 1 / (bv[k] + wEps);
-                        sum += w[k];
-                    }
-                for (let k = 0; k < 4; k++) {
-                    skinIndex[i * 4 + k] = bd[k] >= 0 ? bd[k] : 0;
-                    skinWeight[i * 4 + k] = sum > 0 ? w[k] / sum : k === 0 ? 1 : 0;
-                }
-            }
-            geom.setAttribute("skinIndex", new THREE.Uint16BufferAttribute(skinIndex, 4));
-            geom.setAttribute("skinWeight", new THREE.Float32BufferAttribute(skinWeight, 4));
-            const mat = this._buildCreatureHideMaterial(skinCol, {
-                tags: g.tags || null,
-                skin: true,
-                shortsY: [3.66 * kh + oy, 4.5 * kh + oy],
-                shortsX: 0.95 * kh,
-            });
-            const mesh = new THREE.SkinnedMesh(geom, mat);
-            mesh.castShadow = true;
-            mesh.userData._creatureSkin = true;
-            mesh.add(bones[0]); // root (hips) als Kind der Mesh — Pflicht
-            mesh.updateMatrixWorld(true); // Bone-Welt-Matrizen VOR Skeleton/bind
-            const skeleton = new THREE.Skeleton(bones);
-            mesh.bind(skeleton);
-            rig._skeleton = skeleton;
-            return mesh;
-        };
-        // ── sync (headless / kein Worker) ODER async (echte Welt + Worker) ──
-        const headless = !!(this.state.renderer && this.state.renderer._isHeadlessNull);
-        const worker = headless ? null : this._ensureBakeWorker();
-        if (worker) {
-            const skinPromise = this._bakeSkinRequest(parts, avatarOpts).then((geom) => finishSkin(geom));
-            return { mesh: null, bones, rig, kh, skinPromise };
+        for (const pn of ["pelvis", "glute1", "glute-1"]) {
+            const teil = B.parts[pn];
+            if (teil && teil.material) teil.material = matFor("shorts");
         }
-        const geomSync = this._buildCreatureSkinGeometry(parts, avatarOpts);
-        const meshSync = finishSkin(geomSync);
-        return { mesh: meshSync, skeleton: rig._skeleton, bones, rig, kh };
+        const f = (8 * 0.2125) / 6.0;
+        const wrap = new THREE.Group();
+        wrap.scale.setScalar(f);
+        wrap.position.y = oy;
+        wrap.add(B.character);
+        wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
+        const P2 = (n2) => B.parts[n2] || null;
+        const rig = {
+            hips: B.character,
+            spine: P2("torso"),
+            chest: P2("torso"),
+            neck: P2("head"),
+            head: P2("head"),
+            armL: { shoulder: P2("arm1"), elbow: P2("elbow1"), wrist: P2("hand1") },
+            armR: { shoulder: P2("arm-1"), elbow: P2("elbow-1"), wrist: P2("hand-1") },
+            legL: { hip: P2("hip1"), knee: P2("knee1"), ankle: P2("ankle1") },
+            legR: { hip: P2("hip-1"), knee: P2("knee-1"), ankle: P2("ankle-1") },
+            // kh in BAUM-Einheiten: der Animator schreibt ·kh-Welt-Beträge auf Knoten
+            // UNTER wrap(·f) — kh/f hält die Amplituden welt-gleich.
+            kh: kh / f,
+            _baum: true,
+            _baumParts: B.parts,
+            _morphDials: dials,
+            _skinMat: matFor("skin"), // die EINE Haut-Referenz (Tint-/Material-Konsumenten)
+        };
+        return { mesh: wrap, rig, kh, bones: [] };
     }
 
-    // wahrerguss System B (GUSS 3) — DAS HUMANOIDE GESICHT: Augen (dunkel, glänzend, mit Catch-
-    // Light-Funke) + Nase (kleiner Keil) + Brauen, als Kinder des KOPF-Bones (sie folgen der
-    // Kopf-Rotation, nicht skinned). Positionen in Kopf-Bone-LOKAL (der Bone sitzt bei 7.2·KH;
-    // der Schädel-Mittelpunkt bei 7.5 → die Augen liegen leicht darüber, vorn auf der Gesichts-
-    // Ebene). Macht aus dem blanken Ei eine Person.
-    _addHumanoidFace(rig, kh, oy, skinColor, hairColor) {
-        if (typeof THREE === "undefined" || !rig || !rig.head) return;
-        const headBoneY = 7.2; // KH (= die Bone-Spec head-Pos); LOKAL-Offsets relativ dazu
-        // skullY MUSS dem Schädel-Zentrum in _humanoidSkeleton folgen — sonst rutscht Haar/Gesicht
-        // gegen den Schädel (der „schwarze Scheitel über dem Gesicht"-Bug). Gesichts-Y relativ dazu.
-        const skullY = 7.74;
-        const L = (xKH, yKH, zKH) => new THREE.Vector3(xKH * kh, (yKH - headBoneY) * kh, zKH * kh);
-        const eyeMat = (col, emissive, ei, rough) => {
-            let m;
-            try {
-                m = this._buildPbrNodeMaterial
-                    ? this._buildPbrNodeMaterial({ color: col, roughness: rough, metalness: 0 })
-                    : new THREE.MeshStandardMaterial({ color: col });
-            } catch (_e) {
-                m = new THREE.MeshStandardMaterial({ color: col });
-            }
-            if (emissive && m.emissive) {
-                m.emissive.setHex(col);
-                m.emissiveIntensity = ei || 0.4;
-            }
-            return m;
-        };
-        const skinM = eyeMat(typeof skinColor === "number" ? skinColor : 0xc0392b, false, 0, 0.62);
-        // wahrerguss System B — ein GESICHT mit RELIEF statt Punkt-Augen auf einem glatten Ei (der
-        // #1-Amateur-Tell: das las als gruselige Schaufensterpuppe). Brauen-Wulst + Nasen-Rücken +
-        // mandelige HALB-GEDECKELTE Augen (ein Oberlid in Hautton deckt die obere Hälfte → ruhiger
-        // Blick statt Weitstarr) + Ober-/Unterlippe geben dem Kopf eine Gesichts-EBENE.
-        // (Brauen-Wulst + Nasen-Rücken sind im SCHÄDEL-FELD verschmolzen — _humanoidSkeleton —
-        // statt hier aufgeklebt; das war der Mr.-Potato-Head-Fehler. Hier nur Augen/Lippen/Ohren.)
-        // AUGEN — mandelig, EINGESENKT, mit OBERLID (Hautton, deckt die obere Hälfte → halb-gedeckelter
-        // Blick) + dunkle Iris + winziger Catchlight-Funke. Augenabstand ≈ eine Augenbreite.
-        // ECHTES AUGEN-ASSEMBLY (Profi-Methode, der #1 „Mannequin→lebendig"-Hebel): KEIN nackter
-        //   dunkler Ball (das „googly"-Tell), sondern Sklera (Augenweiss) + recessed Iris + Pupille
-        //   + EIN scharfer Catchlight-Funke (die Hornhaut-Reflexion) + Ober-/Unterlid, die den Ball
-        //   umschliessen (decken die obere Iris → wacher, gesetzter Blick statt Glupschen).
-        const scleraGeom = new THREE.SphereGeometry(0.058 * kh, 18, 14);
-        scleraGeom.scale(1.2, 0.74, 0.62); // mandelig, leicht abgeflacht (bulgt nicht aus der Gesichts-Ebene)
-        const irisGeom = new THREE.SphereGeometry(0.034 * kh, 16, 12);
-        irisGeom.scale(1, 1, 0.42); // flache Iris-Scheibe auf der Sklera-Front
-        const pupilGeom = new THREE.SphereGeometry(0.015 * kh, 12, 10);
-        pupilGeom.scale(1, 1, 0.42);
-        const upperLidGeom = new THREE.SphereGeometry(0.086 * kh, 16, 10);
-        upperLidGeom.scale(1.34, 0.8, 0.92); // Oberlid mit Dicke, deckt die obere ~15% des Balls
-        const lowerLidGeom = new THREE.SphereGeometry(0.072 * kh, 14, 8);
-        lowerLidGeom.scale(1.22, 0.52, 0.86); // Unterlid-Wulst (Tränen-Kante, weich)
-        const sparkGeom = new THREE.SphereGeometry(0.0072 * kh, 8, 6);
-        const eyeZ = 0.33; // Sklera-Zentrum, leicht in die Augenhöhle gesenkt
-        for (const s of [-1, 1]) {
-            const ex = s * 0.158,
-                ey = skullY - 0.205; // Augenabstand ≈ eine Augenbreite, auf der Gesichts-Mittellinie
-            // Sklera — glänzendes warmes Augenweiss (nicht reinweiss), niedrige Roughness → die
-            //   Sky-IBL gibt den feuchten Glanz.
-            const sclera = new THREE.Mesh(scleraGeom, eyeMat(0xe9e2d4, false, 0, 0.16));
-            sclera.position.copy(L(ex, ey, eyeZ));
-            sclera.castShadow = false;
-            rig.head.add(sclera);
-            // Iris — warmes Braun, flache Scheibe knapp auf der Sklera-Front (recessed-Look)
-            const iris = new THREE.Mesh(irisGeom, eyeMat(0x5a3a22, false, 0, 0.22));
-            iris.position.copy(L(ex, ey, eyeZ + 0.028));
-            iris.castShadow = false;
-            rig.head.add(iris);
-            // Pupille — dunkler Kern in der Iris
-            const pupil = new THREE.Mesh(pupilGeom, eyeMat(0x0c0907, false, 0, 0.3));
-            pupil.position.copy(L(ex, ey, eyeZ + 0.033));
-            pupil.castShadow = false;
-            rig.head.add(pupil);
-            // Catchlight — EIN scharfer kleiner Funke oben-aussen (die Hornhaut-Reflexion = „lebendig")
-            const spark = new THREE.Mesh(sparkGeom, eyeMat(0xfffaf0, true, 0.95, 0.1));
-            spark.position.copy(L(ex + s * 0.014, ey + 0.018, eyeZ + 0.045));
-            spark.castShadow = false;
-            rig.head.add(spark);
-            // OBERLID — Haut-Dicke über dem Ball (deckt die obere Iris → kein nackter Glupsch-Ball)
-            const upperLid = new THREE.Mesh(upperLidGeom, skinM);
-            upperLid.position.copy(L(ex, ey + 0.066, eyeZ - 0.012));
-            upperLid.castShadow = false;
-            rig.head.add(upperLid);
-            // UNTERLID — dünner Haut-Wulst unter dem Auge
-            const lowerLid = new THREE.Mesh(lowerLidGeom, skinM);
-            lowerLid.position.copy(L(ex, ey - 0.058, eyeZ - 0.004));
-            lowerLid.castShadow = false;
-            rig.head.add(lowerLid);
-        }
-        // MUND — eine RUNDE Unterlippe (flache, breite Hautkuppe) + eine dünne dunkle Mund-FURCHE
-        // darüber (gewölbte Scheiben statt Boxen → kein rechteckiger Stempel; liest als Lippe + Spalt).
-        const lowerLip = new THREE.Mesh(new THREE.SphereGeometry(0.092 * kh, 12, 8), skinM);
-        lowerLip.scale.set(1.55, 0.5, 0.66); // breit, flach, dezent vor
-        lowerLip.position.copy(L(0, skullY - 0.58, 0.42)); // TIEFER (war auf Nasen-Höhe) → unter die Nase
-        lowerLip.castShadow = false;
-        rig.head.add(lowerLip);
-        const mouthSeam = new THREE.Mesh(new THREE.SphereGeometry(0.082 * kh, 12, 8), eyeMat(0x6a4332, false, 0, 0.6));
-        mouthSeam.scale.set(1.5, 0.22, 0.5); // dünn, schmaler + WEICHER getönt (lippen-braun, kein schwarzer Schlitz)
-        mouthSeam.position.copy(L(0, skullY - 0.53, 0.44));
-        mouthSeam.castShadow = false;
-        rig.head.add(mouthSeam);
-        // OHREN — kleine flache Muscheln an den Kopf-Seiten (auf Augen-/Nasen-Höhe, Hautton)
-        const earGeom = new THREE.SphereGeometry(0.09 * kh, 10, 8);
-        earGeom.scale(0.45, 1.15, 0.8); // flach an den Kopf gelegt, hochkant
-        for (const s of [-1, 1]) {
-            const ear = new THREE.Mesh(earGeom, skinM);
-            ear.position.copy(L(s * 0.44, skullY - 0.1, 0.0));
-            ear.castShadow = false;
-            rig.head.add(ear);
-        }
-        // HAAR — eine Kappe, die Scheitel + Hinterkopf + Seiten bis zur Stirn-/Brauen-Linie deckt
-        // (die Gesichts-Ebene darunter bleibt frei); kein kahler Schädel mehr. Dunkles Braun,
-        // leicht proud auf dem Schädel. DER größte „Mannequin→Person"-Hebel am Kopf.
-        const hairMat = eyeMat(typeof hairColor === "number" ? hairColor : 0x241712, false, 0, 0.72);
-        // HAAR als TEIL-KUGEL-CAP (nur die obere Kalotte, thetaLength 0.58π) → eine saubere Haarlinien-
-        //   KANTE statt eines vollen Blobs; nach HINTEN gekippt → Stirn frei, Nacken gedeckt.
-        // HAAR — eine schädel-hUGGENDE Kappe (kein Pilz/Helm-Überhang mehr): dünn proud auf dem
-        //   Schädel, Haarlinie vorn frei, Krone/Nacken gedeckt. (Echte Haar-Cards sind der nächste
-        //   Schritt für Qualität — diese schlanke Kappe ist die saubere Basis ohne Bowl-Rand.)
-        const hairGeom = new THREE.SphereGeometry(0.64 * kh, 28, 20, 0, Math.PI * 2, 0, Math.PI * 0.5);
-        hairGeom.scale(1.05, 1.02, 1.07); // hugt den Schädel knapp (dünne Schicht), nahezu uniform → kein ausladendes Ei
-        const hair = new THREE.Mesh(hairGeom, hairMat);
-        hair.position.copy(L(0, skullY - 0.12, -0.05)); // auf der Schädel-Kuppe, Haarlinie an der Stirn
-        hair.rotation.x = -0.18; // leicht nach hinten gekippt
-        hair.castShadow = true;
-        rig.head.add(hair);
-    }
-
-    // wahrerguss System B (GUSS 2) — die LEBENDIGE POSE: rotiert die Rig-Bones (absolute Werte
-    // pro Frame, kein Drift). Ruhe = KONTRAPOST (S-Kurve: Lehne über die Wirbelsäule, Spielbein
-    // gebeugt — die Beine bleiben am Boden, weil der Lean in spine/chest sitzt, nicht im Hüft-
-    // Root); Gehen = der 4-Posen-Walk-Cycle (Bein ±28°, Knie nur beugen, Arme gegenphasig,
-    // CoM-Bob doppelte Frequenz); Schwimmen = Vorlehnen + Kraul/Flattern.
     _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions) {
         if (!rig) return;
         const r = rig;
@@ -47065,6 +46874,11 @@ class AnazhRealm {
                 else g[row.axis] = val;
             }
         }
+        // KONVERGENZ-WELLE — die ECHTEN Dials reisen ROH zum bauMensch-Pfad (alle
+        // acht: height…arms treffen labMorph); die Genom-Achsen oben bleiben für
+        // Stats/Alt-Pfad. Größe reist im charScale von morphAuf — g.kh bleibt die
+        // Welt-Einheit (kein Doppel-Wachsen: der bauMensch-Pfad liest g.kh nicht).
+        g.bmDials = dials || null;
         let built = null;
         try {
             built = this._buildHumanoidRig(g);
@@ -47089,7 +46903,9 @@ class AnazhRealm {
                 mesh.receiveShadow = true;
                 group.add(mesh); // finishSkin hat bones[0] schon unter die Mesh gehängt + gebunden
                 group.userData.skinnedMesh = mesh;
-                group.userData.material = mesh.material;
+                // KONVERGENZ: der Baum trägt Klassen-Materialien — die EINE Haut-Referenz
+                // kommt aus dem Rig (Tint-/Farb-Konsumenten lesen weiter EIN Material).
+                group.userData.material = mesh.material || (built.rig && built.rig._skinMat) || null;
                 // V18.367 — die Avatar-Pipelines (Haut/Kopf/Augen/Gesicht) WARM kompilieren: der
                 // KOPF ist in 1st-Person unsichtbar (74250) → seine Pipeline blieb un-kompiliert bis
                 // zum ersten 3rd-Person-Frame = der „riesen Lag beim Wechsel" (die V18.322-Klasse).
@@ -82278,7 +82094,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.453.0";
+AnazhRealm.VERSION = "18.454.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -86357,7 +86173,6 @@ AnazhRealm.SKIN_GEOM_CACHE_CAP = 16;
 // Brust/Sixpack/Klavikel-Definition bleibt) und baut in ~13 s (Container; ~0,5–1 s real), einmalig →
 // dann gecacht (instant). EINE Quelle (kein Pro-Bau-Override-Passagier — wer Close-up-Detail will,
 // hebt diesen Wert; der Cache macht den Wiederbau ohnehin instant).
-AnazhRealm.AVATAR_SKIN_RES = 56; // V18.304 96→56: der Skin-Bau skaliert ~res³ → ~9.6s → ~1.9s headless (Schöpfer „der Avatar wird sowieso geändert, optimiere die Performance"); der gröbere Guss ist temporär bis zum Avatar-Redo
 // PID-Gewichte (velocity-Form auf loadScale). Konservativ: stabil > schnell.
 AnazhRealm.PERF_PID = Object.freeze({ p: 0.25, i: 0.5, d: 0 });
 // Die Stellgrößen-Bänder [min(=max gedrosselt), max(=volle Qualität)]. Der
@@ -86680,15 +86495,11 @@ AnazhRealm.MOTION_RIG_MAP = Object.freeze([
     Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
     Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
 ]);
-// ABSCHIEDS-WELLE (Koerper-Dock) — DIE DIAL→GENOM-ZUORDNUNG ALS DATEN: welcher
-// koerper-core-Morph-Dial (B4 `s`) welche Host-Genom-Achse (`_humanoidLandmarks`)
-// speist (axis = base + mul·dial). NUR ehrliche Matches: height→kh-Skala ·
-// mass→build (Fettanteil = schlank↔schwer) · tone→muscle · gender→sex (Lab 1 =
-// männlich ↔ Host 0 = maskuliner V-Taper, darum base 1/mul −1). BEWUSST unmapped
-// (kein ehrlicher Host-Proportions-Konsument): age (der Host altert über Haltung/
-// Animation, nicht Kopf-Proportion) · hairLen/hairVol (die Haar-Kappe ist Fest-
-// Geometrie) · arms (die A-Pose ist eine Bau-Konstante). Der NPC-Roller
-// (`_rollHumanoidGenome`) bleibt unberührt — das Studio definiert den AVATAR.
+// ABSCHIEDS-WELLE (Koerper-Dock) — DIE DIAL↔GENOM-ZUORDNUNG ALS DATEN (axis =
+// base + mul·dial): height→kh · mass→build · tone→muscle · gender→sex. Seit der
+// KONVERGENZ baut der Körper direkt aus koerper-core.bauMensch(dials) — die
+// Tabelle dient nur noch der GENOM→DIAL-BRÜCKE (`_dialsAusGenom`, Peers/NPCs:
+// invertiert je Zeile) und den Stat-Konsumenten (`_koerperDials`-Stempel).
 // ALTLASTEN-NULL HERZ — die Dial-Semantik wohnt im Anatomie-Gesetzbuch
 // (koerper-core.DIAL_MAP); der Stamm liest die EINE Quelle.
 Object.defineProperty(AnazhRealm, "KOERPER_DIAL_MAP", {

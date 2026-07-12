@@ -378,6 +378,29 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.454 — DIE KONVERGENZ: EIN MENSCH, und die Stamm-Körper-Pipeline FÄLLT (Schöpfer „wieso baust du ihn nach?! die pipeline entfernen — habe endlich den Mut")
+
+Der Da-Vinci-Teile-Baum ist das EINE Mensch-Gesetz: **koerper-core.bauMensch(F)** (der komplette
+Lab-Bau verbatim, 288 Knoten/108 Teile, fabrik-gehakt — Beweis 0 Abweichungen) + **morphAuf(B,
+dials)** (die Teil→Formel-Tabelle, 5-Kombi-Gitter 0 Abweichungen). BEIDE Leser bauen daraus: die
+Lab-Shell (THREE-64er, byte-gleicher Anblick) und der STAMM SELBST (geteilte 20/14-Geometrien je
+Radius, PBR-Node-Materialklassen, Rig = die GELENK-GRUPPEN des Baums, `_animateHumanoidRig`
+unverändert). GEFALLEN in derselben Welle: der 8-KH-Eigen-Atlas (koerper-core landmarks +
+humanSkeleton, 939 Z.) · die Stamm-Statics `_humanoidLandmarks`/`_humanoidSkeleton` · mein
+eigener Nachbau vom selben Tag (`_bauMenschParts`-Metaball-Flatten + Brücken + Eichung, 569 Z. —
+der Fehler, der die Welle auslöste) · `_addHumanoidFace`/`_addBauMenschFace` (das Gesicht wohnt
+im Baum: Augen/Iris/Pupille/Brauen) · AVATAR_SKIN_RES(+NAH) · gate:koerper-atlas + diag-koerper-
+tiefpass (Werkzeuge des gefallenen Haut-Gusses) · der Spindel-Zwilling (Wand trägt statt dessen
+das BAUM-NACHBAU-VERBOT: `reg('glute'…` wohnt nur im Gesetzbuch). Die Dial-Brücke `_dialsAusGenom`
+(KOERPER_DIAL_MAP invertiert) trägt Peers/NPCs in denselben Pfad; alle acht Studio-Regler treffen
+labMorph. MIT AUGEN: der Studio-Körper steht in der Kienspan-Welt (Gesicht, Brust, Shorts, Zehen
+auf dem Anker-Podest — artifacts/avatar-konvergenz-default-w8.png). EHRLICH OFFEN: Outfit/Haar
+(Lab-Shell-Systeme) noch nicht im Stamm (Körper trägt Shorts-Band); werk-render/skin-dump-
+Humanoid-Modi tot; das avatar-humanoid-Golden im Kreatur-Vertrag ist historisch (Fixture-Daten,
+Gate grün). Grün: Batterie „Alle Invarianten OK" · fast 18/18 (Avatar-Check gewandert: Baum statt
+SkinnedMesh) · check + altlasten (13 Abdrücke, Selbsttest feuert) · koerper-kern · nervensystem-
+labs (Probe gewandert: Rig KONSUMIERT bauMensch) · smoke:labs · lint.
+
 ### V18.453 — JEDES-HOLZ: die Welt ENTSTEHT auf jedem Holz (Schöpfer „das system muss auf jedem holz laufen, starten, in volle tiefe, evt. weniger ferne — genial, auch für dich")
 
 **Die HOLZ-LEITER.** EIN Daten-Profil je Holz-Klasse (`AnazhRealm.HOLZ_PROFILE`: **voll** Ring≤4/Schatten≤170m/Pixel-Cap 2 · **nah** Ring≤3/110m/Cap 1.25 · **kienspan** Ring≤2/Schatten AUS/Fern-Wasser aus/Cap 1/kein Antialias) setzt NUR Ferne-Deckel — die NÄHE (Voxel-Detail, LOD0, Substanz) bleibt IMMER voll („volle tiefe, weniger ferne"). Wahl: `?holz=` > localStorage `anazhHolz` > **AUTO** (`_holzWahl`: Adapter-Info-Probe vor dem Renderer-Bau, Software-Signatur [swiftshader/llvmpipe/lavapipe/software/cpu] → kienspan; 4-s-Race fail-soft → voll). `_applyHolzProfil` klemmt chunkRingRadius/shadowRange/farWater + loggt LAUT mit Überschreib-Hinweis; `_applyRenderScale` deckelt den DPR am EINEN Chokepoint (`_holzPixelCap`); kienspan rendert ohne shadowMap (halbierte Pipeline-Varianten). Der PID atmet weiter DARUNTER — das Profil ist Start+Deckel, KEIN Parallel-Regler (Gesetz #0). AUTO-Beweis auf dem Software-Container: die Probe wählt kienspan SELBST.

@@ -426,15 +426,13 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             res.x.humanDefTags = JSON.stringify(r.computeSoulCompoundTags(r.playerSoulDefs.human) || {});
             res.x.waechterGussLiest = (() => {
                 try {
+                    // KONVERGENZ: der 8-KH-Atlas ist gefallen — die Identitäts-Wahrheit ist
+                    // jetzt der EINE Baum: der Stamm-Rig KONSUMIERT bauMensch+morphAuf.
                     const core = window.__koerperCore;
-                    if (!core || typeof core.landmarks !== "function") return "err:kern fehlt";
-                    const g = { sex: 0.3, build: 0.6, muscle: 0.5 };
-                    const a = r.constructor._humanoidLandmarks(g);
-                    const b = core.landmarks(g);
-                    return (
-                        Math.abs(a.shoulderHalf - b.shoulderHalf) < 1e-12 &&
-                        Math.abs(a.joint("head")[1] - b.joint("head")[1]) < 1e-12
-                    );
+                    if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
+                        return "err:kern fehlt";
+                    const src = String(r._buildHumanoidRig).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "");
+                    return /bauMensch/.test(src) && /morphAuf/.test(src) && !/humanSkeleton/.test(src);
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }

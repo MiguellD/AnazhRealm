@@ -182,16 +182,16 @@ const ZWILLINGE = [
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
+        fingerprint: "reg('glute'+(sd===1?'1':'-1')",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
+    },
+    {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
-    },
-    {
-        fingerprint: "len * 0.5 + bulge * 0.25",
-        gesetzbuch: "koerper-core.js",
-        verboten: ["anazhRealm.js"],
-        fiel: "U7 — die fusiforme Muskel-Spindel (MUSC-Atlas) wohnt im Gesetzbuch (humanSkeleton)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",

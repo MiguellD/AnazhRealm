@@ -6,17 +6,21 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.453 — JEDES-HOLZ)
+## Stand (V18.454 — DIE KONVERGENZ)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
 Körper→Eigenschaften ist ZAHL (Bär>Wolf>Fuchs HP · invers im Tempo, EINE Größen-Fold-Quelle);
 Bestand = **Mensch + Hirsch·Wolf·Fuchs·Bär (+ Pferd)**, `werde wolf` verkörpert per Chat.
-`gate:altlasten` (im check) hält Gefallenes strukturell draußen. **DAS HERZ:** die Anatomie-GESETZE
-wohnen in den Gesetzbüchern (tetrapoda-core `buildSkeleton`+`ARCHETYPES`+`DIAL_MAP` · koerper-core
-`landmarks`+`DIAL_MAP`; der Stamm DELEGIERT fail-closed, index.html lädt die Kerne vor dem Stamm);
-`werde wolf` trägt die ECHTE Kreatur (Metaball-Haut, 1st-Person-Regel); Mensch-Dials tragen Stats
-(dieselbe Größen-Achse, Default exakt 1.0). **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
+`gate:altlasten` (im check) hält Gefallenes strukturell draußen. **DAS HERZ + DIE KONVERGENZ
+(V18.454): EIN MENSCH.** Der Da-Vinci-Teile-Baum ist das eine Gesetz — koerper-core `bauMensch(F)`
+(288 Knoten verbatim, fabrik-gehakt) + `morphAuf(B,dials)`; Lab-Shell UND Stamm bauen NUR daraus
+(Stamm: geteilte Geometrien + PBR-Klassen, Rig = Gelenk-Gruppen; Peers über `_dialsAusGenom`).
+Die Stamm-Körper-Pipeline ist GEFALLEN (8-KH-Atlas landmarks+humanSkeleton, Avatar-Metaball/Bäcker,
+Relief-Gesicht, AVATAR_SKIN_RES, gate:koerper-atlas); die Zwillings-Wand trägt das Baum-Nachbau-
+Verbot. Tetrapoda: `werde wolf` trägt die ECHTE Kreatur (Metaball-Haut, 1st-Person-Regel);
+Mensch-Dials tragen Stats (dieselbe Größen-Achse, Default exakt 1.0). OFFEN an der Naht: Outfit/
+Haar (Lab-Systeme) noch nicht im Stamm. **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
 Gesetzbücher (Phänotyp-Zwilling tot [foundry→phyto-core] · Tier-Allometrie+CPG in tetrapoda-core ·
 Progression+Terzschichtung in klang-core · Feder-Koeffizienten in vehicle-core.FAHR · Membran-
 Palette in porta-core; die Stamm-Lofi-Improvisation ist BEWUSST ein eigener Komponist [Emotion+
@@ -26,8 +30,8 @@ identisch, 6↔8-KH-Delta-Tabelle liegt) · U7 (Muskel-Atlas 595 Z. → koerper-
 byte-gleich) · U6c (Snap/Brandwand/metaParams in fachwerk-core, Goldens byte-treu) · U6d
 (Klingenprofil + OAKESHOTT in schmiede-core, 98k Werte identisch) · U1 (Apparat: toString-Zitate
 434→4 + gate:apparat-Ratchet + __consumes/__anker; 5 stumm-grüne Bänder geheilt); Zwillings-Wand
-= 13 Fingerabdrücke. OFFEN (`docs/ultraguss-plan.md`): U8 (W9 Himmel · W10 Wasser · Look-Goldens ·
-Stamm-Rig-Konvergenz 6-KH — alles braucht Render/Auge = DIE Schöpfer-Runde) · typeof-Voll-Wanderung.
+= 13 Fingerabdrücke. OFFEN (`docs/ultraguss-plan.md`): U8 (W9 Himmel · W10 Wasser · Look-Goldens —
+braucht die Schöpfer-Runde; die Rig-Konvergenz FIEL mit V18.454) · typeof-Voll-Wanderung.
 Davor: SYNERGIE (V18.448 — EINE
 Export-Form `PARAMS_BY_KIND`, EIN Umschlag `get-book`, EIN Ingest) · Nervensystem/Katalysator/Trias
 (V18.434–.447). **JEDES-HOLZ (V18.453):** die HOLZ-LEITER (`HOLZ_PROFILE` voll·nah·kienspan =

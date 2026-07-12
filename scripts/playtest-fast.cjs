@@ -176,12 +176,15 @@ function check(name, ok) {
             out.avatar = safe(() => {
                 const g = r._buildHumanGroup();
                 const rig = g && g.userData && g.userData.rig;
-                let skinned = false;
+                // KONVERGENZ: der Avatar IST der Studio-Baum (bauMensch) — kein SkinnedMesh
+                // mehr; die Wahrheit ist: Baum-Teile (Meshes) + Gelenk-Gruppen im Rig.
+                let meshN = 0;
                 if (g)
                     g.traverse((o) => {
-                        if (o.isSkinnedMesh) skinned = true;
+                        if (o.isMesh) meshN++;
                     });
-                return { ok: !!g, hasRig: !!rig, skinned };
+                const gelenke = !!(rig && rig.armL && rig.armL.shoulder && rig.legL && rig.legL.knee && rig.head);
+                return { ok: !!g, hasRig: !!rig, baum: rig ? rig._baum === true : false, meshN, gelenke };
             });
             // KREATUR baut (die geteilte Metaball-Pipeline)
             out.creatureWesen = safe(() => {
@@ -344,7 +347,10 @@ function check(name, ok) {
         check("getTerrainHeightAt(0,0) endlich", R.terrainHeightFinite === true);
         const av = R.avatar || {};
         check("AVATAR baut (_buildHumanGroup ohne Crash)", av.ok === true && !av.__err);
-        check("AVATAR ist ein Rig (SkinnedMesh + Bones)", av.hasRig === true && av.skinned === true);
+        check(
+            `AVATAR ist der Studio-Baum (bauMensch: ${av.meshN || 0} Teile + Gelenk-Gruppen)`,
+            av.hasRig === true && av.baum === true && av.gelenke === true && (av.meshN || 0) > 150
+        );
         const cw = R.creatureWesen || {};
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
         check("ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
