@@ -16242,9 +16242,13 @@ class AnazhRealm {
             const c = new THREE.Color(color);
             let albedo = T.vec3(c.r, c.g, c.b);
             const pl = T.positionLocal;
-            // COUNTER-SHADING (Bauch↓ / Rücken↑)
-            const yN = pl.y.mul(1.4).add(0.5).clamp(0, 1);
-            albedo = albedo.mul(T.mix(T.float(0.7), T.float(1.18), yN));
+            // COUNTER-SHADING (Bauch↓ / Rücken↑) — NICHT auf dem BAUM (opts.baum):
+            // der Gradient war für die EINE Metaball-Fläche gerechnet; auf 200
+            // Klein-Kugeln liest er als Pro-Kugel-Verdunklung → der Lab-Ton kippt.
+            if (!opts.baum) {
+                const yN = pl.y.mul(1.4).add(0.5).clamp(0, 1);
+                albedo = albedo.mul(T.mix(T.float(0.7), T.float(1.18), yN));
+            }
             // FELL-KORN (fein) + breite Ton-Zonen
             const fur = T.mx_fractal_noise_float
                 ? T.mx_fractal_noise_float(pl.mul(26.0), 3, 2.0, 0.5)
@@ -16262,9 +16266,11 @@ class AnazhRealm {
             // (Muskel-Naht / dichter Part-Stapel an Schulter/Klavikel/Brust) VIEW-ABHÄNGIG zu dunklen
             // „Riss"-Gassen (Schöpfer-Befund: „du schattierst die Normalen falsch"). Die gebackene AO
             // (occ, glatt) trägt den echten Kavitäts-Schatten. Fell behält den fwidth-Term (Mikro-Korn).
+            // BAUM: kein Kavitäts-Term — fwidth(normal) ist auf Klein-Kugeln
+            // überall hoch (Krümmung ~1) → konstantes ×0.72-Abdunkeln, kein Detail.
             let curv = T.float(0);
             if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
-            if (!opts.skin) albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
+            if (!opts.skin && !opts.baum) albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
             // PAINTED-ON SHORTS — eine weiße Boxer-Brief-Zone auf der HAUT selbst (Y-Band in
             // Geometrie-lokal): perfekt anliegend, mit NATÜRLICHEN Bein-Öffnungen, weil der Körper
             // die Beine schon getrennt hat. Eine Tube-Geometrie beulte als Rock — das hier ist die
@@ -16288,7 +16294,10 @@ class AnazhRealm {
             // verschattet, gerechnet aus der Form in _buildCreatureSkinGeometry, nicht der schwache
             // screen-space fwidth) → das Albedo bekommt Gelenk-/Achsel-/Muskel-Tiefe statt flach-
             // einfarbig. attribute("color") ist auf WebGPU STRIKT — die Skin-Geometrie setzt sie IMMER.
-            if (T.attribute) {
+            // BAUM: KEIN attribute("color") — die geteilten Kugel-Geometrien tragen
+            // kein gebackenes AO-Attribut (das war die Skin-Geometrie); ein fehlendes
+            // Attribut multipliziert die Albedo Richtung schwarz (der Dunkel-Befund).
+            if (T.attribute && !opts.baum) {
                 try {
                     let aoC = T.attribute("color", "vec3");
                     // In der SHORTS-Zone die Muskel-AO DÄMPFEN — Stoff ist glatt, soll NICHT die
@@ -16309,7 +16318,7 @@ class AnazhRealm {
             // glänzende Naht-Linien); Fell behält ihn. Haut variiert nur sanft mit dem Korn.
             mat.roughnessNode = T.float(rBase)
                 .add(furN.mul(rVar))
-                .sub(opts.skin ? T.float(0) : curv.mul(0.12))
+                .sub(opts.skin || opts.baum ? T.float(0) : curv.mul(0.12))
                 .clamp(0.4, 1.0);
             // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
             const vd =
@@ -16667,6 +16676,7 @@ class AnazhRealm {
                         if (this._buildCreatureHideMaterial)
                             m = this._buildCreatureHideMaterial(P.base != null ? P.base : 0x6b4a2e, {
                                 predator: P.diet > 0.5,
+                                baum: true, // Klein-Kugel-Modus: Korn+Rim, keine Metaball-Terme
                             });
                     } catch (_e3) {
                         m = null;
@@ -16682,6 +16692,25 @@ class AnazhRealm {
             }
             const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
             return mat(k, kl.c, kl.r);
+        };
+        // Strähnen-Material: dasselbe Fell-Gesetz, aber DoubleSide — die
+        // Kreuz-Quad-Strähnen werden von beiden Seiten gesehen.
+        const matStraehne = () => {
+            const baseHex = P.base != null ? P.base : 0x6b4a2e;
+            const k2 = "straehne_" + recId + "_" + baseHex;
+            if (!matCache.has(k2)) {
+                let m = null;
+                try {
+                    if (this._buildCreatureHideMaterial)
+                        m = this._buildCreatureHideMaterial(baseHex, { predator: P.diet > 0.5, baum: true });
+                } catch (_e4) {
+                    m = null;
+                }
+                if (!m) m = new THREE.MeshStandardMaterial({ color: baseHex, roughness: 0.93 });
+                m.side = THREE.DoubleSide;
+                matCache.set(k2, m);
+            }
+            return matCache.get(k2);
         };
         const geoCache = AnazhRealm._tierGeoCache || (AnazhRealm._tierGeoCache = new Map());
         const kugelGeo = (r, segs) => {
@@ -16700,6 +16729,7 @@ class AnazhRealm {
             gruppe: () => new THREE.Group(),
             kugel: (r, k, sc) => {
                 const m = new THREE.Mesh(kugelGeo(r), matFuer(k));
+                m.userData.sharedGeom = true; // geoCache-geteilt — der Dispose-Chokepoint lässt sie stehen
                 if (sc) m.scale.set(sc[0], sc[1], sc[2]);
                 m.castShadow = k === "fell";
                 m.receiveShadow = true;
@@ -16707,15 +16737,85 @@ class AnazhRealm {
             },
             zylinder: (rt, rb, h, k) => {
                 const m = new THREE.Mesh(zylGeo(rt, rb, h), matFuer(k));
+                m.userData.sharedGeom = true;
                 m.castShadow = k === "fell";
                 return m;
             },
-            kugelFein: (r, k, segs) => new THREE.Mesh(kugelGeo(r, Math.min(16, segs || 16)), matFuer(k)),
+            kugelFein: (r, k, segs) => {
+                const m = new THREE.Mesh(kugelGeo(r, Math.min(16, segs || 16)), matFuer(k));
+                m.userData.sharedGeom = true;
+                return m;
+            },
             v3: (x, y, z) => new THREE.Vector3(x, y, z),
             richte: (node, dir) => {
                 node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
             },
-            fellSchweif: () => {},
+            // Schweif-STRÄHNEN (KONVERGENZ-Schluss): die Lab-Streu (Kreuz-Quad-
+            // Strähnen, getStrandGeo-Form) DETERMINISTISCH (LCG je Segment statt
+            // Math.random — Lehre #7) und als EIN gemergtes Mesh pro Segment
+            // (statt ~250 Einzel-Meshes): wellt mit der Rute, kostet 1 Draw-Call.
+            fellSchweif: (segG, segR, i) => {
+                const Hh = P.size;
+                let sLcg = (9301 + i * 49297) >>> 0;
+                const rnd = () => {
+                    sLcg = (sLcg * 1103515245 + 12345) >>> 0;
+                    return sLcg / 4294967296;
+                };
+                const fBkX = 0,
+                    fBkY = -0.12,
+                    fBkZ = -0.92;
+                const pos = [];
+                const idx = [];
+                const q = new THREE.Quaternion();
+                const AB = new THREE.Vector3(0, -1, 0);
+                const d = new THREE.Vector3();
+                const v = new THREE.Vector3();
+                const n = (28 - i * 2) * 9;
+                let sN = 0;
+                for (let j = 0; j < n; j++) {
+                    const phi = rnd() * Math.PI;
+                    const theta = rnd() * Math.PI * 2;
+                    const dx = (rnd() - 0.5) * 0.25;
+                    const dy = (rnd() - 0.5) * 0.15;
+                    const dz = (rnd() - 0.5) * 0.25;
+                    const qr = rnd();
+                    if (Math.cos(phi) < -0.28) continue;
+                    const px = segR * 0.95 * Math.sin(phi) * Math.cos(theta);
+                    const py = segR * 1.18 * Math.cos(phi);
+                    const pz = segR * 1.18 * Math.sin(phi) * Math.sin(theta) - 0.048 * Hh;
+                    d.set(fBkX + dx, fBkY + dy, fBkZ + dz).normalize();
+                    q.setFromUnitVectors(AB, d);
+                    const l = Math.round((0.032 - i * 0.003 + qr * 0.03) / 0.004) * 0.004;
+                    if (l <= 0) continue;
+                    const w = 0.012 * 1.8,
+                        wt = Math.max(0.001, 0.012 * 0.65);
+                    // die 8 Kreuz-Quad-Ecken (getStrandGeo-Form), quat+pos gebacken
+                    const ecken = [
+                        [-w, 0, 0],
+                        [w, 0, 0],
+                        [wt, -l, 0],
+                        [-wt, -l, 0],
+                        [0, 0, -w],
+                        [0, 0, w],
+                        [0, -l, wt],
+                        [0, -l, -wt],
+                    ];
+                    const b = sN * 8;
+                    for (const e of ecken) {
+                        v.set(e[0], e[1], e[2]).applyQuaternion(q);
+                        pos.push(v.x + px, v.y + py, v.z + pz);
+                    }
+                    idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
+                    sN++;
+                }
+                if (!sN) return;
+                const geo = new THREE.BufferGeometry();
+                geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+                geo.setIndex(idx);
+                geo.computeVertexNormals();
+                const m = new THREE.Mesh(geo, matStraehne());
+                segG.add(m);
+            },
         };
         try {
             return { B: core.bauTier(F, dials), P, dials };
@@ -16725,23 +16825,141 @@ class AnazhRealm {
         }
     }
 
-    // Der kompakte Baum-Gang (Trab: diagonale Beinpaare) + Schweif-/Kopf-Leben.
-    // Bewusst einfach — die CPG-Politur (cpgStep-Kopplung) ist benannte Kür.
-    _animateTierBaum(group, t, walkPhase, moving) {
+    // DER FERN-GUSS — das Standbild des Baums für die Distanz (Erbe des
+    // V18.262-Render-Gesetzes „fern kostet fast nichts"): jede Gattung EINMAL
+    // (Cache je recId+Dials) in NIEDER-Tessellation gebacken (Kugel 8×6,
+    // Zylinder 6 — ab TIER_FERN_DIST sub-pixel-gleich), pro MATERIAL zu EINEM
+    // Mesh gemergt (~8 Draws statt ~235). Strähnen bleiben draußen (Flaum ist
+    // fern unsichtbar). Geometrien sind GETEILT (sharedGeom am Leser).
+    _tierFernTeile(soulKey, baum, ovOpt) {
+        void ovOpt; // die Dials sind in baum.dials bereits gemergt (Cache-Schlüssel)
+        if (!baum || !baum.B || !baum.B.teile || !baum.B.teile.wolf) return null;
+        let key;
+        try {
+            key = soulKey + "|" + JSON.stringify(baum.dials || {});
+        } catch (_e) {
+            key = null;
+        }
+        const cache = AnazhRealm._tierFernCache || (AnazhRealm._tierFernCache = new Map());
+        if (key && cache.has(key)) return cache.get(key);
+        const root = baum.B.teile.wolf;
+        root.updateMatrixWorld(true);
+        const buckets = new Map();
+        try {
+            root.traverse((node) => {
+                if (!node.isMesh || !node.geometry || !node.material) return;
+                const p = node.geometry.parameters;
+                if (!p) return; // Strähnen-BufferGeometry — fern unsichtbarer Flaum
+                let g2 = null;
+                if (node.geometry.type === "SphereGeometry") {
+                    g2 = new THREE.SphereGeometry(p.radius, 8, 6);
+                } else if (node.geometry.type === "CylinderGeometry") {
+                    g2 = new THREE.CylinderGeometry(p.radiusTop, p.radiusBottom, p.height, 6, 1);
+                } else {
+                    g2 = node.geometry.clone();
+                }
+                g2.applyMatrix4(node.matrixWorld);
+                if (!buckets.has(node.material)) buckets.set(node.material, []);
+                buckets.get(node.material).push(g2);
+            });
+        } catch (_e2) {
+            return null;
+        }
+        const teile = [];
+        for (const [mat2, geos] of buckets) {
+            const merged = this._mergeGeometries(geos);
+            if (merged) teile.push({ geo: merged, mat: mat2 });
+        }
+        if (key && teile.length) cache.set(key, teile);
+        return teile.length ? teile : null;
+    }
+
+    // Der Baum-GANG — das EINE Gang-Gesetz konsumiert (KONVERGENZ-Schluss): cpgStep
+    // (Phasen-Netz) + STAND_POSE + die MOTION-Profile (LIVE-Buch zuerst über die
+    // EINE Brücke _motionProfileName, Kern fail-soft) treiben die vier Bein-KETTEN
+    // des bauTier-Baums — Wurzel subtil, Knie/Pfote falten (die Lab-Ziel-Mathe
+    // direkt statt PD-geglättet; der PD ist die Live-Sim-Politur der Shell).
+    // Deterministisch: Stand-Unruhe aus t-Sinus, nie Random. Der CPG-Zustand
+    // wohnt am Körper (tb._gang), walkPhase ist nur der Phasen-Seed.
+    _animateTierBaum(group, t, walkPhase, moving, emotions) {
         const tb = group && group.userData && group.userData._tierBaum;
         if (!tb || !tb.teile) return;
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
         const T = tb.teile;
-        const amp = moving ? 0.5 : 0.05;
-        const sw = Math.sin(walkPhase);
-        const sw2 = Math.sin(walkPhase + Math.PI);
-        if (T.legFL) T.legFL.rotation.x = amp * sw;
-        if (T.legHR) T.legHR.rotation.x = amp * sw * 0.85;
-        if (T.legFR) T.legFR.rotation.x = amp * sw2;
-        if (T.legHL) T.legHL.rotation.x = amp * sw2 * 0.85;
-        if (T.headGroup)
-            T.headGroup.rotation.x = 0.05 * Math.sin(t * 1.7) + (moving ? 0.04 * Math.sin(walkPhase * 2) : 0);
+        const name = this._motionProfileName(moving, emotions, "kreatur") || (moving ? "joy" : "idle");
+        const P = this._motionStudioProfile(moving, emotions) ||
+            (core && core.MOTION && core.MOTION[name]) || {
+                freq: moving ? 3.2 : 0.25,
+                stride: moving ? 0.06 : 0,
+                tailAmp: 0.1,
+                tailRate: 0.5,
+                headX: -0.01,
+                sway: 0.006,
+            };
+        let st = Number(P.stride) || 0;
+        let freq = Number(P.freq) || 0.25;
+        if (moving && st < 0.02) {
+            st = 0.05; // Gehen heißt Schreiten — auch ein stilles Profil schreitet in Bewegung
+            freq = Math.max(freq, 2.2);
+        }
+        let g = tb._gang;
+        if (!g) {
+            g = tb._gang = {
+                ph: [walkPhase, walkPhase + Math.PI * 0.75, walkPhase + Math.PI * 1.5, walkPhase + Math.PI * 0.25],
+                lastT: t,
+            };
+        }
+        const dt = Math.max(0, Math.min(0.1, t - g.lastT));
+        g.lastT = t;
+        if (dt > 0 && core && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
+            core.cpgStep(g.ph, freq, core.CPG_COUPLING, dt);
+        }
+        const SP = (core && core.STAND_POSE) || [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ];
+        const roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0);
+        if (T.wolf) T.wolf.rotation.z = roll;
+        const ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        const spr = st > 0.08 ? 2.0 : st > 0.02 ? 1.4 : 1.0;
+        const seiten = [-1, 1, -1, 1];
+        for (let i = 0; i < 4; i++) {
+            const ph = g.ph[i];
+            const K = ketten[i];
+            const swing = Math.max(0, Math.sin(ph));
+            const stance = Math.max(0, -Math.sin(ph));
+            let z0, z1, z2, z3;
+            if (st < 0.002) {
+                // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
+                const wn = Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003;
+                const wShift = roll * seiten[i] * 0.025;
+                z0 = SP[i][0] + wn + wShift;
+                z1 = SP[i][1] + wn * 0.5 + wShift * 0.3;
+                z2 = SP[i][2] + wn * 0.3 - wShift * 0.2;
+                z3 = SP[i][3] + wn * 0.2;
+            } else {
+                z0 = Math.sin(ph) * st * spr;
+                z1 = Math.sin(ph) * st * 0.4 * spr;
+                z2 = swing * 0.8 + stance * 0.12 + Math.max(0, Math.sin(ph + 0.5)) * st * 0.4;
+                z3 = swing * 0.45 + stance * 0.05 + Math.max(0, Math.sin(ph + 1.0)) * st * 0.25;
+            }
+            if (K[0]) K[0].rotation.x = z0;
+            if (K[1]) K[1].rotation.x = z1;
+            if (K[2]) K[2].rotation.x = z2;
+            if (K[3]) K[3].rotation.x = z3;
+        }
+        if (T.headGroup) T.headGroup.rotation.x = (Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7);
+        const amp = Number(P.tailAmp) || 0.1;
+        const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
-        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * 2.4 - i * 0.5) * 0.14;
+        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {
@@ -16824,18 +17042,40 @@ class AnazhRealm {
             const bb = new THREE.Box3().setFromObject(baum.B.teile.wolf);
             const treeH = Math.max(1e-3, bb.max.y - bb.min.y);
             const f2 = pTop > 0 ? pTop / treeH : 1;
+            // DER FERN-GUSS (KONVERGENZ-Schluss, Erbe des V18.262-Render-Gesetzes):
+            // der Baum kostet ~235 Draws — jenseits TIER_FERN_DIST ist der Gang
+            // sub-pixel, dort trägt EIN gemergtes Standbild (~1 Mesh je Material,
+            // artweise gecacht + geometrie-GETEILT). updateCreatures toggelt.
+            const fernTeile = this._tierFernTeile(soulKey, baum, opts && opts.dialsOv);
             const wrap2 = new THREE.Group();
             wrap2.scale.setScalar(f2);
             wrap2.position.y = -bb.min.y * f2;
             wrap2.add(baum.B.teile.wolf);
             wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib
             group2.add(wrap2);
+            let wrap3 = null;
+            if (fernTeile && fernTeile.length) {
+                wrap3 = new THREE.Group();
+                wrap3.scale.setScalar(f2);
+                wrap3.position.y = -bb.min.y * f2;
+                for (const e of fernTeile) {
+                    const fm = new THREE.Mesh(e.geo, e.mat);
+                    fm.userData.sharedGeom = true; // art-gecacht — nie mit EINEM Tier sterben
+                    fm.castShadow = false;
+                    wrap3.add(fm);
+                }
+                wrap3.visible = false;
+                wrap3.userData._creatureSkin = true;
+                group2.add(wrap3);
+            }
             group2.userData._soulParts = parts2;
             group2.userData._tierBaum = {
                 teile: baum.B.teile,
                 tailSegs: baum.B.tailSegs,
                 neckSegs: baum.B.neckSegs,
                 f: f2,
+                wrap: wrap2,
+                fern: wrap3,
             };
             return group2;
         }
@@ -17277,7 +17517,7 @@ class AnazhRealm {
         // über den Baum-Gang; ALLE Aufrufer (Welt-Kreaturen, Peers, Verkörperung)
         // laufen hier durch — kein Parallel-Verzweigen an jedem Aufrufer.
         if (group && group.userData && group.userData._tierBaum) {
-            return this._animateTierBaum(group, t, walkPhase, moving);
+            return this._animateTierBaum(group, t, walkPhase, moving, emotions);
         }
         if (!group || !roles || !Array.isArray(group.children)) return;
         // ABSCHIEDS-WELLE (Motion-Vollendung) — das Studio-Profil EINMAL je Aufruf (lazy,
@@ -20306,6 +20546,20 @@ class AnazhRealm {
             // bleiben aktiv für ALLE Kreaturen (das ist der V8.49-Anker:
             // off-screen-Kreaturen leben weiter, sie zeigen sich nur nicht).
             if (inFrustum) {
+                // DER FERN-GUSS-Leser (KONVERGENZ-Schluss, Erbe V18.262): jenseits
+                // ~TIER_FERN_DIST·L trägt das gemergte Standbild (~8 Draws) statt
+                // des animierten Baums (~235) — der Gang ist dort sub-pixel. Nur im
+                // Frustum getoggelt (off-screen ist die ganze Gruppe unsichtbar);
+                // beim Frustum-Eintritt setzt DIESELBE Frame den korrekten Zustand.
+                const tB = creature.userData._tierBaum;
+                if (tB && tB.fern && tB.wrap) {
+                    const fL = creature.scale.x || 1;
+                    const nah = distSqToPlayer < AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
+                    if (tB.wrap.visible !== nah) {
+                        tB.wrap.visible = nah;
+                        tB.fern.visible = !nah;
+                    }
+                }
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
                 if (aura) {
@@ -81878,7 +82132,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.456.0";
+AnazhRealm.VERSION = "18.457.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -84105,6 +84359,13 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
+
+// DER FERN-GUSS (KONVERGENZ-Schluss) — die Distanz (Meter, Körpergröße L=1),
+// jenseits derer der animierte Baum (~235 Draws) gegen das gemergte Standbild
+// (~8 Draws) getauscht wird: bei 60 m ist ein ~0.1-u-Beinschwung < 1.2 px
+// (1080p/60°-FOV) — der Gang ist unsichtbar, das Bild bleibt. Als Quadrat,
+// weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
+AnazhRealm.TIER_FERN_DIST_SQ = 60 * 60;
 
 // Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen
 // aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf

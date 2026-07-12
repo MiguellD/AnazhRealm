@@ -378,6 +378,32 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.457 — DER KONVERGENZ-SCHLUSS: kein Offen mehr (Schöpfer „kein ehrliches offen mehr, schliesse deine dinge endlich ab!")
+
+Die vier benannten Tier-Offen sind GESCHLOSSEN: (1) der **CPG-Gang** — `_animateTierBaum`
+konsumiert das EINE Gang-Gesetz (cpgStep-Phasennetz + STAND_POSE + MOTION-Profile, LIVE-Buch
+zuerst über die Emotions-Brücke `_motionProfileName`, Kern fail-soft); die Lab-Ziel-Mathe treibt
+die vier Bein-KETTEN (Wurzel subtil, Knie/Pfote falten — gemessen Knie 0.82, Gegenbein diagonal
+negativ). (2) der **Fell-Ton** — das Hide-Gesetz trägt den Baum-Modus (`opts.baum`): Korn +
+Roughness + Rim bleiben, die Metaball-Terme fallen weg (Counter-Shading und Kavität waren für die
+EINE große Fläche gerechnet; `attribute("color")` ohne gebackenes AO-Attribut war der
+Dunkel-Täter) — der Lab-Ton ist zurück, auge-bewiesen. (3) die **Schweif-STRÄHNEN** —
+`F.fellSchweif` ist konsumiert: die Lab-Streu (Kreuz-Quad-Form) DETERMINISTISCH (LCG statt
+Math.random, Lehre #7) als EIN gemergtes Mesh je Segment (59k Strähnen-Verts, 8 Meshes, wellt mit
+der Rute). (4) **DER FERN-GUSS** — jenseits `TIER_FERN_DIST` (60 m·L) trägt ein art-gecachtes
+Standbild (~10 Meshes in Nieder-Tessellation statt ~235; `_tierFernTeile` + Leser in
+updateCreatures, KONSUM-Band-bewiesen); die Baum-Fabriken tragen jetzt `sharedGeom` (der
+Dispose-Chokepoint lässt geteilte Geometrien stehen). Die **4 stummen evaluate-Nulls** sind an der
+Wurzel geheilt (P2E-Blöcke: Kreatur-Cap-Isolation nach der V18.347-Klasse + `__restore()` in
+beiden Promise-Pfaden; `assignTaskToAllCreatures` bekam `{silent:true}` als filterFn — Test-Bug)
+— die Heilung ENTLARVTE 4 nie-gelaufene Checks (Soul-Klassen `.soul-sprite/.soul-geist` = gefallene
+Namen → auf fuchs/baer gewandert; 2 Kollateral-Rots meines ersten Restore-Ankers sofort
+mitgeheilt), und die neuen else-Wände machen künftige Null-Blöcke LAUT rot statt still grün.
+ENTSCHIEDEN (kein Offen): die Outfit/Haar-Wardrobe des Körperstudios ist Studio-Erlebnis
+(Shell-Look-Klasse wie der tetrapoda-Körperfell-Shader) — der Welt-Mensch trägt Baum-Haar +
+gemalte Shorts; ein Welt-Wardrobe wäre eine NEUE Welle auf Schöpfer-Ruf, kein Rest dieser.
+Grün: Batterie „Alle Invarianten OK" (0 stumme Nulls) · fast 18/18 · check · Auge (Ton/Stand/Gang-Pose).
+
 ### V18.456 — KONVERGENZ III: EIN TIER — der Studio-Baum trägt die Kreatur, die Metaball-Klasse fällt (Schöpfer „beende es champ, vollende es")
 
 Das in V18.455 benannte Tier ist getan: **tetrapoda-core.bauTier(F,dials)** (der verbatim

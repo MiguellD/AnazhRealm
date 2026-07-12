@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.456 — KONVERGENZ III: EIN MENSCH, EIN TIER)
+## Stand (V18.457 — KONVERGENZ GESCHLOSSEN: EIN MENSCH, EIN TIER)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);
@@ -23,9 +23,13 @@ Baum-Skala = Parts-Mechanik-Kalibrierung f2, Tags/Stats lesen unverändert `_sou
 Die Stamm-Körper-Pipeline (V18.454: 8-KH-Atlas, Avatar-Metaball/Bäcker, Relief-Gesicht) UND die
 Metaball-KREATUR-Klasse (V18.456: bake-core/bake-worker, spec v2+Goldens, Skin-Isosurface,
 Gesichts-LOD, gate:creature-contract) sind GEFALLEN — Rückkehr-Wand 26 Namen, KONVERGENZ-Band
-trägt die NaN-LINSE (finite Welt-BBox je Gattung). OFFEN an der Naht: Outfit/Haar (Lab) nicht im
-Stamm · Stamm-Fell ohne Strähnen + dunkler als Lab-Ton · Trab statt CPG-Kür · Fern-Merge
-(~235 Meshes/Tier, Geometrien geteilt). **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
+trägt die NaN-LINSE (finite Welt-BBox je Gattung). **SCHLUSS (V18.457):** der Stamm GEHT das
+Gang-Gesetz (cpgStep+STAND_POSE+MOTION via Emotions-Brücke; Knie/Pfote falten) · Fell im
+Baum-Modus des Hide-Gesetzes (Lab-Ton; Metaball-Terme nur noch auf Haut) · Rute trägt gemergte
+Seed-Strähnen (1 Draw/Segment) · DER FERN-GUSS (`TIER_FERN_DIST` 60 m·L: art-gecachtes Standbild
+~10 Meshes statt ~235; Baum-Fabriken tragen sharedGeom) · P2E-Bänder cap-isoliert + Null→LAUT-rot
+(4 nie-gelaufene Checks entlarvt+gewandert). ENTSCHIEDEN: Outfit/Haar-Wardrobe = Studio-Erlebnis
+(Shell-Look-Klasse), der Welt-Mensch trägt Baum-Haar + gemalte Shorts. **ULTRAGUSS I (V18.451):** die Labs LESEN ihre
 Gesetzbücher (Phänotyp-Zwilling tot [foundry→phyto-core] · Tier-Allometrie+CPG in tetrapoda-core ·
 Progression+Terzschichtung in klang-core · Feder-Koeffizienten in vehicle-core.FAHR · Membran-
 Palette in porta-core; die Stamm-Lofi-Improvisation ist BEWUSST ein eigener Komponist [Emotion+

@@ -1002,7 +1002,8 @@ async function checkBandV1723Harmony(ctx) {
             r.state.skyTintTarget = 0;
             r.state.skyTintStrength = 0;
         }
-        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
+        const spawnSrc =
+            r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
         out.spawnRings = /onPlayer/.test(spawnSrc) && /Math\.cos\(ang\)/.test(spawnSrc) && /rad/.test(spawnSrc);
         return out;
     });
@@ -1139,7 +1140,8 @@ async function checkBandV1727WritableField(ctx) {
         const cfg = r.constructor.LIFE_FIELD;
         out.hasConst = !!cfg && typeof cfg.pulseCenter === "number" && typeof cfg.max === "number";
         out.auraReadsOverlay = /_lifeOverlayAt/.test(window.__codeOf(r.auraAt));
-        const spawnSrc = r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
+        const spawnSrc =
+            r.dslEffects && r.dslEffects.spawn_creature ? window.__codeOf(r.dslEffects.spawn_creature) : "";
         out.spawnDeposits = /_depositLife/.test(spawnSrc); // die Geburt trägt Leben ins Feld
         // sauberer Start
         if (r.state.lifeField) r.state.lifeField.clear();
@@ -4880,18 +4882,12 @@ async function checkBandV1758CreatureNature(ctx) {
         "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
         res.calmIsCurious
     );
-    check(
-        "V17.58 W3 (NULL): die chaotische Aura hebt die Wariness deutlich über die sanfte",
-        res.angryScaresTimid
-    );
+    check("V17.58 W3 (NULL): die chaotische Aura hebt die Wariness deutlich über die sanfte", res.angryScaresTimid);
     check(
         "V17.58 W3: deine Aura treibt die Reaktion (chaotisch verschreckt mehr als sanft, gleiches Wesen)",
         res.auraDrivesReaction
     );
-    check(
-        "V17.58 W3 (NULL): ein GEBUNDENES Wesen ist weniger scheu (bond = Kühnheit)",
-        res.boldLessWaryThanTimid
-    );
+    check("V17.58 W3 (NULL): ein GEBUNDENES Wesen ist weniger scheu (bond = Kühnheit)", res.boldLessWaryThanTimid);
     check("V17.58 W3: KONSUM — die Bindung senkt die Scheu (Vertrauen)", res.bondReducesWariness);
     check("V17.58 W3: KONSUM — frieden dämpft die Bedrohung (neugierige Welt) vs pfad", res.friedenDampsMenace);
     check("V17.58 W3: ein fernes Wesen ist neutral (es wandert, ignoriert den Spieler)", res.farIsNeutral);
@@ -5562,7 +5558,9 @@ async function checkBandV1766FertigenFlow(ctx) {
         // Mach-Knöpfe existieren definitiv nicht mehr; der EINE FERTIGEN-Akt lebt im Stats-Panel. ---
         out.oldButtonsGone = typeof r._workshopRenderActions !== "function";
         // --- der EINE FERTIGEN-Akt lebt jetzt im Abschluss der Stats-Tabelle ---
-        out.statsPanelCallsFertigen = window.__codeOf(r._workshopRenderStatsPanel).includes("_workshopAppendFertigenRow");
+        out.statsPanelCallsFertigen = window
+            .__codeOf(r._workshopRenderStatsPanel)
+            .includes("_workshopAppendFertigenRow");
 
         // === ein DOMAIN-tragendes forging-Geraet vorbereiten (schoepfer = kein Stamina-Zug). EIN
         // eisen-Part (Einzel-Material → die Kosten sind eindeutig eisen) + ein schmiede-hammer-Op
@@ -6427,7 +6425,8 @@ async function checkBandOmegaWerkstattSpiegel(ctx) {
         // ── Ω-W3 CONSUM: die Vorschau LIEST das Verdikt (Source-Probe, kein GPU) ──
         o.consumRebuild = /_workshopPhysicsVerdict/.test(window.__codeOf(r._workshopRebuildPreviewMesh));
         o.consumTick =
-            /physicsVerdict/.test(window.__codeOf(r._workshopStartRAF)) && /rotation/.test(window.__codeOf(r._workshopStartRAF));
+            /physicsVerdict/.test(window.__codeOf(r._workshopStartRAF)) &&
+            /rotation/.test(window.__codeOf(r._workshopStartRAF));
         o.consumRender = /floatingParts/.test(window.__codeOf(r._workshopRender));
         return o;
     });
@@ -6914,8 +6913,18 @@ async function checkBandV1774UseByRole(ctx) {
         // Planes (computeMotionRoles ist pur — kein gefallener Def nötig).
         const wingParts = [
             { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: 0.62, y: 0.55, z: 0 } },
-            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: -0.62, y: 0.55, z: 0 } },
+            {
+                shape: "plane",
+                material: "federn",
+                size: { x: 0.9, y: 0.04, z: 0.5 },
+                position: { x: 0.62, y: 0.55, z: 0 },
+            },
+            {
+                shape: "plane",
+                material: "federn",
+                size: { x: 0.9, y: 0.04, z: 0.5 },
+                position: { x: -0.62, y: 0.55, z: 0 },
+            },
         ];
         out.motionRolesEmerge =
             wRoles.some((x) => x.role === "bein") &&
@@ -16392,9 +16401,7 @@ async function checkBandWelle6DSoul(ctx) {
         out.auraTickGone = typeof r.tickPlayerAura !== "function";
         out.auraShellsGone = typeof r._ensureAuraSkinShells !== "function";
         out.auraMapGone = !(window.AnazhRealm || r.constructor).AURA_TAG_HUE;
-        out.auraLoopGone = !/tickPlayerAura/.test(
-            window.__codeOf(r.startEternalLoop)
-        );
+        out.auraLoopGone = !/tickPlayerAura/.test(window.__codeOf(r.startEternalLoop));
         out.auraSendGone = typeof r._p2pBroadcastAura !== "function";
         // ALTLASTEN-NULL: der dedizierte Stub ist GANZ gefallen — eine aura-
         // Nachricht ist ein UNBEKANNTER Typ und wird vom Dispatcher generisch
@@ -16614,8 +16621,14 @@ async function checkBandWelle6DSoul(ctx) {
         check("Reflex 4: _playerDeathRespawn setzt deathWoundIntensity = 1.0", reflexResults.woundSetAt1);
         check("Reflex 4: Diskrimination — Wunde reduziert hpMax (dichte+härte-Penalty)", reflexResults.woundReducesHp);
         check("Reflex 4: tickPlayerVitals regeneriert Wunde linear", reflexResults.woundRegens);
-        check("Reflex 4 (ALTLASTEN-NULL): Respawn stellt HP voll + Gnade steht", reflexResults.respawnHpFull && reflexResults.respawnGraceSet);
-        check("Reflex 4 (ALTLASTEN-NULL): der Todesort trägt eine Lebens-Spur (das dritte Verb)", reflexResults.deathDepositsLife);
+        check(
+            "Reflex 4 (ALTLASTEN-NULL): Respawn stellt HP voll + Gnade steht",
+            reflexResults.respawnHpFull && reflexResults.respawnGraceSet
+        );
+        check(
+            "Reflex 4 (ALTLASTEN-NULL): der Todesort trägt eine Lebens-Spur (das dritte Verb)",
+            reflexResults.deathDepositsLife
+        );
         // (5) Werkzeug-Kosten
         check("Reflex 5: TOOL_OP_STAMINA_COST-Konstante existiert", reflexResults.hasStaminaCostConst);
         check("Reflex 5: STAMINA_REGEN_PER_SEC-Konstante existiert", reflexResults.hasStaminaRegenConst);
@@ -16994,16 +17007,25 @@ async function checkBandWelle6DSoul(ctx) {
     if (wave6d3aResults && !wave6d3aResults.error) {
         // Tod-Behandlung
         check("Welle 6.D Etappe 3a: damagePlayer-Methode existiert", wave6d3aResults.hasDamageMethod);
-        check("Welle 6.D Etappe 3a (NULL): _playerDeathRespawn existiert (Phönix-Maschine gefallen)", wave6d3aResults.hasTriggerPhoenixMethod);
+        check(
+            "Welle 6.D Etappe 3a (NULL): _playerDeathRespawn existiert (Phönix-Maschine gefallen)",
+            wave6d3aResults.hasTriggerPhoenixMethod
+        );
         check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals existiert", wave6d3aResults.hasTickPhoenixMethod);
-        check("Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt, phoenixUntil ist gefallen", wave6d3aResults.hasPhoenixState);
+        check(
+            "Welle 6.D Etappe 3a (NULL): respawnGraceUntil trägt, phoenixUntil ist gefallen",
+            wave6d3aResults.hasPhoenixState
+        );
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
             wave6d3aResults.damageOpInNonBroadcast
         );
         check("Welle 6.D Etappe 3a: damagePlayer reduziert HP", wave6d3aResults.hpDropped);
         check("Welle 6.D Etappe 3a: heatResist dämpft Feuer-Schaden", wave6d3aResults.heatResistReducesDamage);
-        check("Welle 6.D Etappe 3a (NULL): HP=0 → DERSELBE Körper (kein Gestalt-Tausch)", wave6d3aResults.killTriggersPhoenix);
+        check(
+            "Welle 6.D Etappe 3a (NULL): HP=0 → DERSELBE Körper (kein Gestalt-Tausch)",
+            wave6d3aResults.killTriggersPhoenix
+        );
         check("Welle 6.D Etappe 3a (NULL): respawnGraceUntil > now nach Tod", wave6d3aResults.phoenixUntilSet);
         check("Welle 6.D Etappe 3a (NULL): Rückkehr am Genesis-Anker (x/z)", wave6d3aResults.preDeathSoulRemembered);
         check("Welle 6.D Etappe 3a: Welt-Trauer — sorrow +0.3 nach Tod", wave6d3aResults.weltTrauerSorrow);
@@ -17014,7 +17036,10 @@ async function checkBandWelle6DSoul(ctx) {
             "Welle 6.D Etappe 3a (NULL): Doppelt-Tod-Schutz — die Respawn-Gnade blockt",
             wave6d3aResults.deathDoubleProtected
         );
-        check("Welle 6.D Etappe 3a (NULL): HP unangetastet während der Gnade", wave6d3aResults.hpUntouchedDuringPhoenix);
+        check(
+            "Welle 6.D Etappe 3a (NULL): HP unangetastet während der Gnade",
+            wave6d3aResults.hpUntouchedDuringPhoenix
+        );
         check("Welle 6.D Etappe 3a (NULL): tickPlayerVitals regeneriert Stamina", wave6d3aResults.tickRegenerates);
         // Min-Regel-Hybrid
         check("Welle 6.D Etappe 3a: PRECISION_DECAY-Konstante existiert", wave6d3aResults.hasPrecisionDecay);
@@ -17581,7 +17606,10 @@ async function checkBandWelle6DSoul(ctx) {
         check("Welle 6.D: computePlayerStats-Methode existiert", wave6dResults.hasComputeMethod);
         check("Welle 6.D: recomputePlayerStats-Methode existiert", wave6dResults.hasRecomputeMethod);
         check("Welle 6.D: das Selbst-Spec-Sheet (_ichBuildSpecSheet) existiert", wave6dResults.hasRenderMethod);
-        check("Welle 6.D Etappe 1.5: Mensch-Def + vier Tier-Körper tragen bodyParts", wave6dResults.allSoulsHaveBodyParts);
+        check(
+            "Welle 6.D Etappe 1.5: Mensch-Def + vier Tier-Körper tragen bodyParts",
+            wave6dResults.allSoulsHaveBodyParts
+        );
         check("Welle 6.D Etappe 1.5: jedes bodyPart hat shape + material", wave6dResults.bodyPartsHaveShapeMaterial);
         check(
             "Welle 6.D Etappe 1.5: computeSoulCompoundTags-Methode existiert",
@@ -17612,17 +17640,11 @@ async function checkBandWelle6DSoul(ctx) {
             wave6dResults.computedStatsHasAll
         );
         // Vision-Diskrimination (ALTLASTEN-NULL: Eigenschaften AUS dem Körper)
-        check(
-            "Welle 6.D: Diskrimination — Fuchs schneller als Bär (Größen-Achse)",
-            wave6dResults.fuchsFasterThanBaer
-        );
+        check("Welle 6.D: Diskrimination — Fuchs schneller als Bär (Größen-Achse)", wave6dResults.fuchsFasterThanBaer);
         check("Welle 6.D: Diskrimination — Fuchs springt höher als Bär", wave6dResults.fuchsJumpsHigherThanBaer);
         check("Welle 6.D: Diskrimination — Bär mehr HP als Fuchs (tank)", wave6dResults.baerHasMoreHpThanFuchs);
         check("Welle 6.D: HP-Ordnung Bär > Wolf > Fuchs (Skelett-Größe)", wave6dResults.hpOrderBaerWolfFuchs);
-        check(
-            "Welle 6.D: Tempo-Ordnung Fuchs > Wolf > Bär (invers zur Masse)",
-            wave6dResults.speedOrderFuchsWolfBaer
-        );
+        check("Welle 6.D: Tempo-Ordnung Fuchs > Wolf > Bär (invers zur Masse)", wave6dResults.speedOrderFuchsWolfBaer);
         check(
             "Welle 6.D: Wolf mehr Mana als Mensch (holz-magieleitung emergent, V18.196 lebend)",
             wave6dResults.wolfHasMoreManaThanHuman
@@ -20049,7 +20071,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" && window.__codeOf(r.generateTerrainWithParameters)) || "";
+            (typeof r.generateTerrainWithParameters === "function" &&
+                window.__codeOf(r.generateTerrainWithParameters)) ||
+            "";
         return {
             noExtendTerrain: typeof r.extendTerrain !== "function",
             noCaveDataAlloc: !/const\s+caveData\s*=\s*new\s+Float32Array/.test(srcGen),
@@ -20082,7 +20106,9 @@ async function checkBandVoxelTerrainCore(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const srcGen =
-            (typeof r.generateTerrainWithParameters === "function" && window.__codeOf(r.generateTerrainWithParameters)) || "";
+            (typeof r.generateTerrainWithParameters === "function" &&
+                window.__codeOf(r.generateTerrainWithParameters)) ||
+            "";
         const srcGet = (typeof r.getTerrainHeightAt === "function" && window.__codeOf(r.getTerrainHeightAt)) || "";
         const srcFind = (typeof r.findSurfaceAbove === "function" && window.__codeOf(r.findSurfaceAbove)) || "";
         return {
@@ -20172,8 +20198,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                     window.__codeOf(
                         Object.getOwnPropertyNames(proto)
                             .map((n) => proto[n])
-                            .find((f) => typeof f === "function" && /tickArchitectureCulling/.test(window.__codeOf(f))) ||
-                            function () {}
+                            .find(
+                                (f) => typeof f === "function" && /tickArchitectureCulling/.test(window.__codeOf(f))
+                            ) || function () {}
                     )
                 )
             ),
@@ -22737,7 +22764,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
                 /render\.drawCalls/.test(_lrC) && (_ltIdx === -1 || _lrC.indexOf("render.drawCalls") < _ltIdx);
         }
         out.overlayShowsRenderLoad =
-            /renderCalls/.test(window.__codeOf(r._perfSenseRender)) && /phaseMax|spike/i.test(window.__codeOf(r._perfSenseRender));
+            /renderCalls/.test(window.__codeOf(r._perfSenseRender)) &&
+            /phaseMax|spike/i.test(window.__codeOf(r._perfSenseRender));
 
         // (7) V18.269 — die Augen FAHREN: bei reiner RENDER-Last (viele Draw-Calls, CPU-
         // Phasen niedrig) drosselt der Regler die render-senkenden Hebel (Schatten-Intervall
@@ -22846,7 +22874,8 @@ async function checkBandWellePerfENexusGovernor(ctx) {
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
         // CONSUM (source-probe): der Regler trägt das Totband (growMs/throttleMs), nicht EINEN Sollwert.
         out.regulateHasDeadband =
-            /throttleMs/.test(window.__codeOf(r._nexusPerfRegulate)) && /growMs/.test(window.__codeOf(r._nexusPerfRegulate));
+            /throttleMs/.test(window.__codeOf(r._nexusPerfRegulate)) &&
+            /growMs/.test(window.__codeOf(r._nexusPerfRegulate));
         // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
@@ -23061,7 +23090,10 @@ async function checkBandJedesHolzExistenzBoden(ctx) {
         check("JEDES-HOLZ: Existenz-Boden-Band (realm)", false, res.error);
         return;
     }
-    check("JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1) + die Ramp KONSUMIERT ihn (Wachs- und Schrumpf-Pfad)", res.hasFloor && res.rampConsumesFloor);
+    check(
+        "JEDES-HOLZ: RING_EXIST_FLOOR existiert (≥1) + die Ramp KONSUMIERT ihn (Wachs- und Schrumpf-Pfad)",
+        res.hasFloor && res.rampConsumesFloor
+    );
     check(
         `JEDES-HOLZ: ohne Kopfraum (frameMs 50 ab Bild 1) wächst der Ring GENAU bis zum Existenz-Boden (${res.grownPath}) — die Welt ENTSTEHT auf jedem Holz, der PID regiert darüber`,
         res.growsToFloor && res.neverAboveFloor
@@ -23832,7 +23864,8 @@ async function checkBandPhasenBF(ctx) {
         out.c1Joint = !!(joint && joint.anchor && typeof joint.anchor.x === "number" && joint.axis);
         out.c2Src = /_idleMotion/.test(window.__codeOf(r.tickArchitectures));
         out.c5Curves =
-            /handleJump\(/.test(window.__codeOf(r._loopPlayerMovement)) && /Math\.exp/.test(window.__codeOf(r._loopPlayerMovement));
+            /handleJump\(/.test(window.__codeOf(r._loopPlayerMovement)) &&
+            /Math\.exp/.test(window.__codeOf(r._loopPlayerMovement));
         // SYNERGIE-WELLE — die Avatar-Aura ist GEFALLEN: C6 wandert auf die Abwesenheit.
         out.c6Src = typeof r.tickPlayerAura !== "function" && typeof r._ensureAuraSkinShells !== "function";
         out.d2Src = /_herdContagionAcc/.test(window.__codeOf(r._tickEmotionContagion));
@@ -24003,7 +24036,8 @@ async function checkBandPhasenBF(ctx) {
             !r.state.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
         out.c7MountSitz =
-            /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) && /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
+            /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
+            /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
         // V18.111 — A4: die Wasserfall-PLANE ist geschnitten (Builder weg, das
         // Abwärts-Material lebt als markierte Saat), der STEIL-SPLIT formt
@@ -24309,7 +24343,8 @@ async function checkBandPhasenBF(ctx) {
                 const em = fake.userData.emotions;
                 if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
                     return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
-                if (!/_setWeather/.test(window.__codeOf(r._loopWeatherAndGrowth))) return "Auto-Zug ruft _setWeather nicht";
+                if (!/_setWeather/.test(window.__codeOf(r._loopWeatherAndGrowth)))
+                    return "Auto-Zug ruft _setWeather nicht";
                 if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
                 return true;
             } finally {
@@ -28204,8 +28239,7 @@ async function checkBandWelle6HCreatures(ctx) {
         const tagsWesen = r.computeCreatureCompoundTags(wesen);
         // Die Tiere sind BEWUSST tag-identisch (V17.16-Spawn-Wand) — die
         // Diskrimination lebt in der GRÖSSEN-Achse (6.D-Band), nicht in Tags.
-        out.spriteMoreMagie =
-            Math.abs((tagsWolf.magieleitung || 0) - (tagsWesen.magieleitung || 0)) < 0.001;
+        out.spriteMoreMagie = Math.abs((tagsWolf.magieleitung || 0) - (tagsWesen.magieleitung || 0)) < 0.001;
         out.wesenMoreDichte = (tagsWesen.dichte || 0) > 0;
         out.spriteHasResoniert = (tagsWolf.resoniert || 0) > 0;
         out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
@@ -28339,10 +28373,7 @@ async function checkBandWelle6HCreatures(ctx) {
 
     if (wave6hP2aResults && !wave6hP2aResults.error) {
         check("Welle 6.H P2A: CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
-        check(
-            "Welle 6.H P2A (ALTLASTEN-NULL): exakt vier Seelen — Hirsch·Wolf·Fuchs·Bär",
-            wave6hP2aResults.threeSouls
-        );
+        check("Welle 6.H P2A (ALTLASTEN-NULL): exakt vier Seelen — Hirsch·Wolf·Fuchs·Bär", wave6hP2aResults.threeSouls);
         check("Welle 6.H P2A: CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
         check("Welle 6.H P2A: CREATURE_NAME_POOL ≥ 20 Namen", wave6hP2aResults.hasNamePool);
         check("Welle 6.H P2A: bodyParts haben shape+material-Schema", wave6hP2aResults.bodyPartsHaveSchema);
@@ -28363,7 +28394,10 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: Initial-Kreatur trägt Name aus Pool", wave6hP2aResults.initialHasName);
         check("Welle 6.H P2A: Initial-Kreatur hat Default-Task wander", wave6hP2aResults.initialHasTask);
         check("Welle 6.H P2A: Initial-Kreatur-Group hat ≥2 Sub-Meshes", wave6hP2aResults.initialHasChildren);
-        check("Welle 6.H P2A (NULL): Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)", wave6hP2aResults.spriteMoreMagie);
+        check(
+            "Welle 6.H P2A (NULL): Tiere tag-identisch (V17.16-Wand; Diskrimination = Größe)",
+            wave6hP2aResults.spriteMoreMagie
+        );
         check("Welle 6.H P2A: wesen-Compound trägt dichte > 0", wave6hP2aResults.wesenMoreDichte);
         check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
@@ -28587,7 +28621,7 @@ async function checkBandWelle6HCreatures(ctx) {
             set.has("creature_task") && set.has("creature_task_nearest") && set.has("creature_task_all");
 
         // Status-Bar
-        r.assignTaskToAllCreatures("wander", {}, { silent: true });
+        r.assignTaskToAllCreatures("wander");
         r.assignCreatureTask(r.state.creatures[0], "gather", { material: "holz" }, { silent: true });
         r.assignCreatureTask(r.state.creatures[1], "gather", { material: "holz" }, { silent: true });
         r.assignCreatureTask(r.state.creatures[2], "follow_player", {}, { silent: true });
@@ -28620,7 +28654,7 @@ async function checkBandWelle6HCreatures(ctx) {
             : false;
 
         // Cleanup für nachfolgende Tests
-        r.assignTaskToAllCreatures("wander", {}, { silent: true });
+        r.assignTaskToAllCreatures("wander");
         return out;
     });
 
@@ -30031,7 +30065,8 @@ async function checkBandV18147ForYou(ctx) {
         // (4) die Reihung ist verdrahtet: der Strom sortiert nach dem Score,
         // die Chips tragen „Für dich" (Konsum, nicht Existenz).
         out.sortWired =
-            /fuerdich/.test(window.__codeOf(r.renderLibraryUI)) && /_feedForYouScore/.test(window.__codeOf(r.renderLibraryUI));
+            /fuerdich/.test(window.__codeOf(r.renderLibraryUI)) &&
+            /_feedForYouScore/.test(window.__codeOf(r.renderLibraryUI));
         // (5) die DREI Sortier-Chips leben im DOM (Neueste · Für dich · Bewertung).
         const savedSort = r.state.feedSort;
         r._renderFeedSort();
@@ -31671,7 +31706,8 @@ async function checkBandWCIchWahrheit(ctx) {
             /spec-why-line/.test(window.__codeOf(r._specRenderBody)) &&
             /_blueprintRoleWhy/.test(window.__codeOf(r._specRenderBody));
         out.warumKarten =
-            /_blueprintRoleWhy/.test(window.__codeOf(r._recipeRow)) && /_blueprintRoleWhy/.test(window.__codeOf(r._feedRecipeCard));
+            /_blueprintRoleWhy/.test(window.__codeOf(r._recipeRow)) &&
+            /_blueprintRoleWhy/.test(window.__codeOf(r._feedRecipeCard));
         // (g) V18.172-Nachbau-Fund — das LEISTEN-LOCH ist tot: bei Ruhe verlässt
         // das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade; vorher
         // stand „Freude" mit 49 px + Doppel-Gap unsichtbar in der Leiste);
@@ -32373,7 +32409,9 @@ async function checkBandGammaGenese(ctx) {
             out.gatingNah = reads(nahSrc);
             out.gatingFern = reads(fernSrc);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
-            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(window.__codeOf(r._vegetationSampleSpawn));
+            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(
+                window.__codeOf(r._vegetationSampleSpawn)
+            );
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -39875,7 +39913,8 @@ async function checkBandV18331ReplayDeterminism(ctx) {
         out.inputSensitive = !eqBit(a1, b) && dist(a1, b) > 0.5; // (C)
         // CONSUM: der Replay treibt durch DENSELBEN Schritt-Pfad (kein Parallel-Sim).
         out.usesStep =
-            /_stepCharacter\(/.test(window.__codeOf(r.replayRun)) && /_loopPlayerMovement\(/.test(window.__codeOf(r.replayRun));
+            /_stepCharacter\(/.test(window.__codeOf(r.replayRun)) &&
+            /_loopPlayerMovement\(/.test(window.__codeOf(r.replayRun));
         return out;
     });
     check(
@@ -39936,35 +39975,83 @@ async function checkBandKonvergenzTierBaum(ctx) {
             }
             out.arten[art] = a;
         }
-        // (3) CONSUM — der Chokepoint bewegt die Baum-Beine (Diagonal-Trab).
+        // (3) CONSUM — der Chokepoint geht den CPG-Gang: das KNIE faltet (die
+        // Lab-Mathe legt das Leben in die Unter-Gelenke, die Wurzel schwingt
+        // subtil), das diagonale Gegenbein zieht negativ.
         const g2 = r._buildCreatureGroup("wolf");
         out.trab = false;
         if (g2 && g2.userData._tierBaum) {
             const T = g2.userData._tierBaum.teile;
-            const vorher = T.legFL ? T.legFL.rotation.x : null;
+            const knieVorher = T.flL ? T.flL.rotation.x : null;
             r._animateCompoundMotion(g2, null, 0.5, Math.PI / 2, true);
-            const nachher = T.legFL ? T.legFL.rotation.x : null;
+            const knieNachher = T.flL ? T.flL.rotation.x : null;
             out.trab =
-                vorher != null && nachher != null && Math.abs(nachher - vorher) > 0.1 && T.legFR.rotation.x < 0;
+                knieVorher != null && knieNachher != null && knieNachher - knieVorher > 0.3 && T.legFR.rotation.x < 0;
             r._disposeSoulGroup(g2);
+        }
+        // (5) DER FERN-GUSS + sein CONSUM: die Kreatur trägt das gemergte
+        // Standbild (wenige Meshes); updateCreatures toggelt es jenseits
+        // TIER_FERN_DIST (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
+        out.fernExists = false;
+        out.fernMeshN = -1;
+        out.fernFar = false;
+        out.fernNear = false;
+        const pm5 = r.state.playerMesh;
+        const saved5C = r.state.creatures;
+        const saved5E = r.state.creatureEmotions;
+        const origFrustum5 = r.isInFrustum;
+        let t5 = null;
+        try {
+            r.state.creatures = [];
+            r.state.creatureEmotions = [];
+            t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
+            if (t5 && t5.userData._tierBaum && t5.userData._tierBaum.fern) {
+                const tB5 = t5.userData._tierBaum;
+                out.fernExists = true;
+                let n5 = 0;
+                tB5.fern.traverse((m5) => {
+                    if (m5.isMesh) n5++;
+                });
+                out.fernMeshN = n5;
+                r.isInFrustum = () => true;
+                t5.position.set(pm5.position.x + 200, pm5.position.y, pm5.position.z + 200);
+                r.updateCreatures(0.016);
+                out.fernFar = tB5.fern.visible === true && tB5.wrap.visible === false;
+                t5.position.set(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2);
+                r.updateCreatures(0.016);
+                out.fernNear = tB5.wrap.visible === true && tB5.fern.visible === false;
+            }
+        } finally {
+            r.isInFrustum = origFrustum5;
+            if (t5) r.removeCreature(t5);
+            r.state.creatures = saved5C;
+            r.state.creatureEmotions = saved5E;
         }
         return out;
     });
     const arten = (res && res.arten) || {};
     for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
         const a = arten[art] || {};
-        check(`KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`, a.baum === true && a.meshN >= 2);
-        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
         check(
-            `KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`,
-            a.bboxFinit === true
+            `KONVERGENZ III (1) ${art} trägt den Studio-Baum (_tierBaum, ≥2 Meshes)`,
+            a.baum === true && a.meshN >= 2
         );
+        check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
+        check(`KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`, a.bboxFinit === true);
         check(
             `KONVERGENZ III (4) ${art}: ≤300 Meshes, Geometrien GETEILT (gemessen ${a.meshN} Meshes / ${a.geoUnique} Geos)`,
             a.meshN > 0 && a.meshN <= 300 && a.geoUnique > 0 && a.geoUnique < a.meshN
         );
     }
     check("KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal)", res && res.trab === true);
+    check(
+        `KONVERGENZ III (5) DER FERN-GUSS existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
+        !!res && res.fernExists === true && res.fernMeshN > 0 && res.fernMeshN <= 16
+    );
+    check(
+        "KONVERGENZ III (5) CONSUM: fern trägt das Standbild, nah der lebendige Baum",
+        !!res && res.fernFar === true && res.fernNear === true
+    );
 }
 
 // W-G (meister-plan §8.4, V18.177) — WERKSTATT-GELENKE BEGREIFBAR (R-015): die
@@ -40142,7 +40229,8 @@ async function checkBandWFFluss(ctx) {
         // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
         out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
         out.centernessBlend =
-            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) && /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
+            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) &&
+            /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
         // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
         out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
@@ -40242,7 +40330,9 @@ async function checkBandWEFrequenzband(ctx) {
         // (6) R-013 Schöpfer-Wort: Standard 0.06/0.06 als EINE Quelle + der
         // Restore migriert den alten auto-gebackenen 0.12-Default.
         out.defaults = Math.abs(SR.nightFloor - 0.06) < 1e-9 && Math.abs(SR.moonRim - 0.06) < 1e-9;
-        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(window.__codeOf(r._loadStateRestoreSoulAndAtmosphere));
+        out.restoreMigriert = /setTerrainNightFloor\(Math\.abs/.test(
+            window.__codeOf(r._loadStateRestoreSoulAndAtmosphere)
+        );
         return out;
     });
     check(
@@ -41381,9 +41471,24 @@ async function checkBandWelle6XAudit(ctx) {
         r.state.customSouls.leichtprobe = {
             label: "Leicht-Probe",
             bodyParts: [
-                { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: 0.5, y: 0.5, z: 0 } },
-                { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: -0.5, y: 0.5, z: 0 } },
-                { shape: "box", material: "federn", size: { x: 0.4, y: 0.5, z: 0.3 }, position: { x: 0, y: 0.4, z: 0 } },
+                {
+                    shape: "plane",
+                    material: "federn",
+                    size: { x: 0.9, y: 0.04, z: 0.5 },
+                    position: { x: 0.5, y: 0.5, z: 0 },
+                },
+                {
+                    shape: "plane",
+                    material: "federn",
+                    size: { x: 0.9, y: 0.04, z: 0.5 },
+                    position: { x: -0.5, y: 0.5, z: 0 },
+                },
+                {
+                    shape: "box",
+                    material: "federn",
+                    size: { x: 0.4, y: 0.5, z: 0.3 },
+                    position: { x: 0, y: 0.4, z: 0 },
+                },
             ],
         };
         r.applyPlayerSoul("leichtprobe");
@@ -42749,7 +42854,8 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // (Distanz + Höhe-über-Auge), NICHT an der absoluten Welt-Höhe → auf einen
         // Berg klettern bleicht den Boden um dich nicht mehr. Source-Probe (Render
         // pixel-blind), schützt gegen Rückfall auf `smoothstep(.., positionWorld.y)`.
-        const _aerSrc = typeof r._applySubstanceResponse === "function" ? window.__codeOf(r._applySubstanceResponse) : "";
+        const _aerSrc =
+            typeof r._applySubstanceResponse === "function" ? window.__codeOf(r._applySubstanceResponse) : "";
         out.aerialEyeRelative = _aerSrc.includes("cameraPosition") && _aerSrc.includes("hazeNear");
         // V17.3 — Entgrauen im Post-FX-Grading (headless nicht baubar — Source-
         // Probe wie V17.2, schuetzt gegen versehentliches Loeschen des Hebels).
@@ -43471,11 +43577,27 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         // Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
         const WING_PARTS = [
             { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: 0.62, y: 0.55, z: 0 } },
-            { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: -0.62, y: 0.55, z: 0 } },
+            {
+                shape: "plane",
+                material: "federn",
+                size: { x: 0.9, y: 0.04, z: 0.5 },
+                position: { x: 0.62, y: 0.55, z: 0 },
+            },
+            {
+                shape: "plane",
+                material: "federn",
+                size: { x: 0.9, y: 0.04, z: 0.5 },
+                position: { x: -0.62, y: 0.55, z: 0 },
+            },
         ];
         r.p2pHandleMessage(
-            JSON.stringify({ type: "soul", peerId: "pv1", soulName: "fluegel-probe", bodyParts: WING_PARTS, name: "Aria" })
+            JSON.stringify({
+                type: "soul",
+                peerId: "pv1",
+                soulName: "fluegel-probe",
+                bodyParts: WING_PARTS,
+                name: "Aria",
+            })
         );
         const pv1b = p2p.peers.get("pv1");
         out.builtinSoulName = !!pv1b && pv1b.soulName === "fluegel-probe";
@@ -43495,13 +43617,50 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         // in den Peer-Motion-Rollen).
         const LAEUFER_PARTS = [
             { shape: "box", material: "leder", size: { x: 0.55, y: 0.45, z: 1.2 }, position: { x: 0, y: 0.4, z: 0 } },
-            { shape: "sphere", material: "leder", size: { x: 0.42, y: 0.38, z: 0.45 }, position: { x: 0, y: 0.5, z: 0.85 } },
-            { shape: "cylinder", material: "knochen", size: { x: 0.15, y: 0.45, z: 0.15 }, position: { x: 0.25, y: 0.1, z: 0.4 } },
-            { shape: "cylinder", material: "knochen", size: { x: 0.15, y: 0.45, z: 0.15 }, position: { x: -0.25, y: 0.1, z: 0.4 } },
-            { shape: "cylinder", material: "knochen", size: { x: 0.15, y: 0.45, z: 0.15 }, position: { x: 0.25, y: 0.1, z: -0.4 } },
-            { shape: "cylinder", material: "knochen", size: { x: 0.15, y: 0.45, z: 0.15 }, position: { x: -0.25, y: 0.1, z: -0.4 } },
-            { shape: "cylinder", material: "leder", size: { x: 0.3, y: 0.45, z: 0.3 }, position: { x: 0, y: 0.4, z: -0.85 }, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
-            { shape: "cylinder", material: "leder", size: { x: 0.2, y: 0.4, z: 0.2 }, position: { x: 0, y: 0.4, z: -1.25 }, rotation: { x: Math.PI / 2, y: 0, z: 0 } },
+            {
+                shape: "sphere",
+                material: "leder",
+                size: { x: 0.42, y: 0.38, z: 0.45 },
+                position: { x: 0, y: 0.5, z: 0.85 },
+            },
+            {
+                shape: "cylinder",
+                material: "knochen",
+                size: { x: 0.15, y: 0.45, z: 0.15 },
+                position: { x: 0.25, y: 0.1, z: 0.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "knochen",
+                size: { x: 0.15, y: 0.45, z: 0.15 },
+                position: { x: -0.25, y: 0.1, z: 0.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "knochen",
+                size: { x: 0.15, y: 0.45, z: 0.15 },
+                position: { x: 0.25, y: 0.1, z: -0.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "knochen",
+                size: { x: 0.15, y: 0.45, z: 0.15 },
+                position: { x: -0.25, y: 0.1, z: -0.4 },
+            },
+            {
+                shape: "cylinder",
+                material: "leder",
+                size: { x: 0.3, y: 0.45, z: 0.3 },
+                position: { x: 0, y: 0.4, z: -0.85 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
+            {
+                shape: "cylinder",
+                material: "leder",
+                size: { x: 0.2, y: 0.4, z: 0.2 },
+                position: { x: 0, y: 0.4, z: -1.25 },
+                rotation: { x: Math.PI / 2, y: 0, z: 0 },
+            },
         ];
         r.p2pHandleMessage(
             JSON.stringify({ type: "soul", peerId: "pv1", soulName: "laeufer-probe", bodyParts: LAEUFER_PARTS })
@@ -43575,13 +43734,13 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         check("V8.34: Platzhalter-Mesh hat 2 Teile (Kegel+Kugel)", v834Results.placeholderMesh);
         check("V8.34: Peer-Entry trägt die V3-Felder", v834Results.entryHasV3Fields);
         check("V8.34: soul-Nachricht setzt soulName (Compound)", v834Results.builtinSoulName);
-        check(
-            "V8.34 (NULL): Peer-Seele reist als Compound (meshKind 'soul-custom', YXZ)",
-            v834Results.builtinMeshKind
-        );
+        check("V8.34 (NULL): Peer-Seele reist als Compound (meshKind 'soul-custom', YXZ)", v834Results.builtinMeshKind);
         check("V8.34: Peer-Seele hat animierbare Parts (Flügel-Anker)", v834Results.builtinHasParts);
         check("V8.34: Name-Schild wird aus dem Avatar-Namen erzeugt", v834Results.nameLabelCreated);
-        check("V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)", v834Results.soulChangeRebuilt);
+        check(
+            "V8.34: Soul-Wechsel baut den Peer-Avatar neu (→ Vierläufer + Schwanz-Rolle)",
+            v834Results.soulChangeRebuilt
+        );
         check("V8.34: Custom-Seele → meshKind 'soul-custom'", v834Results.customMeshKind);
         check("V8.34: Custom-Seele wird aus bodyParts gebaut", v834Results.customMeshBuilt);
         check("V8.34 (SYNERGIE): aura-Nachricht ist must-ignore (kein Aura-State)", v834Results.auraReceived);
@@ -47501,7 +47660,9 @@ async function checkBandG8R1DampedChannel(ctx) {
         if (r._p2pRate) delete r._p2pRate["g8r1-test"];
         // (5) Verdichtung + Verdrahtung (Source-Proben): der Kanal-Bucket sitzt
         // im onMessage-Eingang, beide Mesh-Empfänger nutzen das EINE Raten-Tor.
-        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(window.__codeOf(r._buildPortalOverlay));
+        out.wiredInOnMessage = /_portalChannelAdmit\(po, performance\.now\(\)\)/.test(
+            window.__codeOf(r._buildPortalOverlay)
+        );
         out.subworldUsesGate = /_p2pPeerRateAdmit\("subworld-net"/.test(window.__codeOf(r._p2pMsgSubworldNet));
         out.creaturePosUsesGate =
             /_p2pPeerRateAdmit\("creature-pos"/.test(window.__codeOf(r._p2pMsgCreaturePos)) &&
@@ -47746,8 +47907,11 @@ async function checkBandG8R4Immunity(ctx) {
         out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
         // (6) Verdrahtung (Source): sign/export/import tragen die Kette, die Lader sieben.
         out.signSetsChain =
-            /_appendProvenance/.test(window.__codeOf(r.signWorld)) && /_appendProvenance/.test(window.__codeOf(r.signBlueprint));
-        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(window.__codeOf(r._sanitizeImportedManifest));
+            /_appendProvenance/.test(window.__codeOf(r.signWorld)) &&
+            /_appendProvenance/.test(window.__codeOf(r.signBlueprint));
+        out.importPreservesChain = /_sanitizeProvenance\(m\.provenance\)/.test(
+            window.__codeOf(r._sanitizeImportedManifest)
+        );
         out.loaderSieves = /_artifactProvenanceTainted/.test(window.__codeOf(r._loadCustomWorlds));
         // restore
         delete r.state.signedWorlds["_g8r4_evil"];
@@ -50051,6 +50215,18 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
         const player = r.state.playerMesh.position;
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
+        // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
+        const __savedC = r.state.creatures;
+        const __savedE = r.state.creatureEmotions;
+        r.state.creatures = [];
+        r.state.creatureEmotions = [];
+        const __restore = () => {
+            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
+            r.state.creatures = __savedC;
+            r.state.creatureEmotions = __savedE;
+        };
         const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
         c.userData.name = "TestNira";
         out.findExact = r._findCreatureByName("TestNira") === c;
@@ -50122,7 +50298,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
                 return out;
             })
-            .catch((e) => ({ error: String(e) }));
+            .catch((e) => ({ error: String(e) }))
+            .then((res) => {
+                __restore();
+                return res;
+            });
     });
 
     if (wave6hP2eV1Results && !wave6hP2eV1Results.error) {
@@ -50177,8 +50357,13 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V1: maybeAnswerCreature mit unbekanntem Namen → 'Niemand hört zu'",
             wave6hP2eV1Results.unknownPolite
         );
-    } else if (wave6hP2eV1Results && wave6hP2eV1Results.error) {
-        check(`Welle 6.H P2E V1: evaluate-Fehler — ${wave6hP2eV1Results.error}`, false);
+    } else {
+        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
+        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
+        check(
+            `Welle 6.H P2E V1: evaluate-Fehler — ${(wave6hP2eV1Results && wave6hP2eV1Results.error) || "evaluate lieferte null"}`,
+            false
+        );
     }
 
     // ### Welle 6.H Phase 2E V1.1 — @-Adressen-Pattern + Soul-Farben ###
@@ -50216,6 +50401,18 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 7. Liste rendert Soul-Klassen auf creature-name
         const player = r.state.playerMesh.position;
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
+        // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
+        const __savedC = r.state.creatures;
+        const __savedE = r.state.creatureEmotions;
+        r.state.creatures = [];
+        r.state.creatureEmotions = [];
+        const __restore = () => {
+            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
+            r.state.creatures = __savedC;
+            r.state.creatureEmotions = __savedE;
+        };
         const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "fuchs");
         cSprite.userData.name = "TestSpriteV11";
         const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
@@ -50224,9 +50421,9 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         cGeist.userData.name = "TestGeistV11";
         if (typeof r._renderCreatureListUI === "function") r._renderCreatureListUI();
         const listEl = document.getElementById("creature-list");
-        out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-sprite"));
+        out.spriteHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-fuchs"));
         out.wesenHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-wesen"));
-        out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-geist"));
+        out.geistHasSoulClass = !!(listEl && listEl.querySelector(".creature-name.soul-baer"));
 
         // 8. Chat-Output: erfolgreicher LLM-Pfad würde Soul-Span erzeugen
         //    Wir testen den DOM-Pfad ohne echten API-Call durch
@@ -50246,7 +50443,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 const afterLines = chatOutput ? chatOutput.children.length : 0;
                 out.chatLineAdded = afterLines > beforeLines;
                 // Suche das Span mit chat-creature-name.soul-sprite
-                const spans = chatOutput ? chatOutput.querySelectorAll(".chat-creature-name.soul-sprite") : [];
+                const spans = chatOutput ? chatOutput.querySelectorAll(".chat-creature-name.soul-fuchs") : [];
                 out.chatHasSoulSpan = spans.length > 0;
                 // Plain-Text-Antwort enthält den Namen
                 const lastLine = chatOutput ? chatOutput.lastElementChild : null;
@@ -50256,7 +50453,11 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
                 return out;
             })
-            .catch((e) => ({ error: String(e) }));
+            .catch((e) => ({ error: String(e) }))
+            .then((res) => {
+                __restore();
+                return res;
+            });
     });
 
     if (wave6hP2eV11Results && !wave6hP2eV11Results.error) {
@@ -50278,7 +50479,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         );
         check("Welle 6.H P2E V1.1: '@ hallo' ohne Name wird abgelehnt", wave6hP2eV11Results.atWithoutNameRejected);
         check(
-            "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-sprite/.soul-wesen/.soul-geist auf creature-name",
+            "Welle 6.H P2E V1.1: Liste rendert Soul-Klassen .soul-fuchs/.soul-wesen/.soul-baer auf creature-name",
             wave6hP2eV11Results.spriteHasSoulClass &&
                 wave6hP2eV11Results.wesenHasSoulClass &&
                 wave6hP2eV11Results.geistHasSoulClass
@@ -50289,8 +50490,13 @@ async function checkBandWelle6HCreatureLlm(ctx) {
                 wave6hP2eV11Results.chatHasSoulSpan &&
                 wave6hP2eV11Results.chatLineHasName
         );
-    } else if (wave6hP2eV11Results && wave6hP2eV11Results.error) {
-        check(`Welle 6.H P2E V1.1: evaluate-Fehler — ${wave6hP2eV11Results.error}`, false);
+    } else {
+        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
+        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
+        check(
+            `Welle 6.H P2E V1.1: evaluate-Fehler — ${(wave6hP2eV11Results && wave6hP2eV11Results.error) || "evaluate lieferte null"}`,
+            false
+        );
     }
 
     // ### Welle 6.H Phase 2E V2 — Proaktive Kreatur-Sprache ###
@@ -50333,6 +50539,18 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         r.state.creatureProactiveSpeechEnabled = true;
         r.state.lastCreatureProactiveSpeech = -Infinity;
         const player = r.state.playerMesh.position;
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
+        // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
+        const __savedC = r.state.creatures;
+        const __savedE = r.state.creatureEmotions;
+        r.state.creatures = [];
+        r.state.creatureEmotions = [];
+        const __restore = () => {
+            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
+            r.state.creatures = __savedC;
+            r.state.creatureEmotions = __savedE;
+        };
         const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "fuchs");
         cSprite.userData.name = "ProacSprite";
         cSprite.userData.lastProactiveSpeech = -Infinity;
@@ -50439,6 +50657,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         out.toggleExists = !!toggleEl;
         out.toggleIsCheckbox = toggleEl && toggleEl.type === "checkbox";
 
+        __restore();
         return out;
     });
 
@@ -50500,8 +50719,13 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V2: UI-Toggle #creature-speech-toggle existiert im DOM (Checkbox)",
             wave6hP2eV2Results.toggleExists && wave6hP2eV2Results.toggleIsCheckbox
         );
-    } else if (wave6hP2eV2Results && wave6hP2eV2Results.error) {
-        check(`Welle 6.H P2E V2: evaluate-Fehler — ${wave6hP2eV2Results.error}`, false);
+    } else {
+        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
+        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
+        check(
+            `Welle 6.H P2E V2: evaluate-Fehler — ${(wave6hP2eV2Results && wave6hP2eV2Results.error) || "evaluate lieferte null"}`,
+            false
+        );
     }
 
     // ### Welle 6.H Phase 2E V3 — Welt-Aktion-Vorschläge der Kreatur ###
@@ -50561,6 +50785,18 @@ async function checkBandWelle6HCreatureLlm(ctx) {
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
         const player = r.state.playerMesh.position;
+        // V18.347-Klasse (Cap-Gotcha): die Kreatur-Liste ISOLIEREN — am vollen
+        // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
+        // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
+        const __savedC = r.state.creatures;
+        const __savedE = r.state.creatureEmotions;
+        r.state.creatures = [];
+        r.state.creatureEmotions = [];
+        const __restore = () => {
+            for (const __tc of r.state.creatures.slice()) r.removeCreature(__tc);
+            r.state.creatures = __savedC;
+            r.state.creatureEmotions = __savedE;
+        };
         const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
         c.userData.name = "TestProgramKreatur";
         const prompt = r._buildCreaturePersonaPrompt(c);
@@ -50642,6 +50878,7 @@ async function checkBandWelle6HCreatureLlm(ctx) {
         }
 
         r.setGameMode(origMode || "frieden");
+        __restore();
         return out;
     });
 
@@ -50717,8 +50954,13 @@ async function checkBandWelle6HCreatureLlm(ctx) {
             "Welle 6.H P2E V3: Reject-Button-Click → rejected_action-Memory (Spieler-Wille respektiert)",
             wave6hP2eV3Results.rejectButtonExists && wave6hP2eV3Results.memoryHasRejected
         );
-    } else if (wave6hP2eV3Results && wave6hP2eV3Results.error) {
-        check(`Welle 6.H P2E V3: evaluate-Fehler — ${wave6hP2eV3Results.error}`, false);
+    } else {
+        // STUMM-GRÜN-WAND: auch ein NULL-Ergebnis (geworfene evaluate) ist ROT —
+        // vorher übersprang der else-if-Guard die Checks still (die U1-Klasse).
+        check(
+            `Welle 6.H P2E V3: evaluate-Fehler — ${(wave6hP2eV3Results && wave6hP2eV3Results.error) || "evaluate lieferte null"}`,
+            false
+        );
     }
 }
 
@@ -55523,16 +55765,13 @@ async function checkBandRing5Soul(ctx) {
         const wolfTeile = (currentMesh().userData._tierBaum || {}).teile || {};
         const wolfRoles = r.computeMotionRoles(wolfBp.parts) || [];
         out.phoenixHasWingsAndTail =
-            !!wolfTeile.legFL &&
-            !!wolfTeile.legHR &&
-            wolfRoles.some((x) => x && x.role === "schwanz");
+            !!wolfTeile.legFL && !!wolfTeile.legHR && wolfRoles.some((x) => x && x.role === "schwanz");
         out.positionPreserved =
             Math.abs(currentMesh().position.x - posBefore.x) < 1e-6 &&
             Math.abs(currentMesh().position.y - posBefore.y) < 1e-6 &&
             Math.abs(currentMesh().position.z - posBefore.z) < 1e-6;
         // Dropdown synchronisiert sich (auf den Bauplan-Namen der Verkörperung)
-        out.dropdownSyncsToPhoenix =
-            select && (select.value === "koerper_wolf" || select.value === "bp_koerper_wolf");
+        out.dropdownSyncsToPhoenix = select && (select.value === "koerper_wolf" || select.value === "bp_koerper_wolf");
 
         // V18.331/.347 — KEIN Physics-Body mehr: Ammo ist physisch raus, der Spieler ist
         // body-frei (feld-native Kollision aus dem Dichtefeld, Velocity in state.playerVel).
@@ -55646,9 +55885,24 @@ async function checkBandRing5Soul(ctx) {
         r.state.customSouls.fluegelprobe = {
             label: "Flügel-Probe",
             bodyParts: [
-                { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-                { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: 0.62, y: 0.55, z: 0 } },
-                { shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x: -0.62, y: 0.55, z: 0 } },
+                {
+                    shape: "box",
+                    material: "federn",
+                    size: { x: 0.5, y: 0.55, z: 0.4 },
+                    position: { x: 0, y: 0.5, z: 0 },
+                },
+                {
+                    shape: "plane",
+                    material: "federn",
+                    size: { x: 0.9, y: 0.04, z: 0.5 },
+                    position: { x: 0.62, y: 0.55, z: 0 },
+                },
+                {
+                    shape: "plane",
+                    material: "federn",
+                    size: { x: 0.9, y: 0.04, z: 0.5 },
+                    position: { x: -0.62, y: 0.55, z: 0 },
+                },
             ],
         };
         r.applyPlayerSoul("fluegelprobe");
@@ -55661,16 +55915,16 @@ async function checkBandRing5Soul(ctx) {
         out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
 
         // Der Schweif wellt sich — am getragenen HIRSCH-Körper. KONVERGENZ III:
-        // der Schweif lebt in _tierBaum.tailSegs (der EINE Chokepoint
-        // _animateCompoundMotion routet Baum-Gruppen nach _animateTierBaum);
-        // eine Viertel-Periode (t·2.4 = sin) flippt das Vorzeichen messbar.
+        // der Schweif lebt in _tierBaum.tailSegs, profil-getrieben (idle:
+        // tailRate 0.5 · tailAmp 0.1 — Emotionen sind oben neutralisiert);
+        // t 0.1→3.1 hebt die Phase auf ~sin(1.55)≈1 → Delta ~0.095, robust.
         r.applyPlayerSoul("hirsch");
         const drGroup = currentMesh();
         r.state.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(0.1);
         const drTail = ((drGroup.userData._tierBaum || {}).tailSegs || [])[0] || null;
         const tailA = drTail ? drTail.rotation.y : 0;
-        r.animatePlayerSoul(0.1 + Math.PI / 2.4);
+        r.animatePlayerSoul(3.1);
         const tailB = drTail ? drTail.rotation.y : 0;
         out.dragonTailWaves = !!drTail && Math.abs(tailA - tailB) > 0.05;
         Object.assign(r.state.player.emotions, savedEmo);
@@ -55700,10 +55954,7 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
         check("Ring 5 (NULL): applyPlayerSoul('wolf') verkörpert (embody-Pfad)", ring5Results.applyReturnsTrue);
         check("Ring 5 (NULL): Wolf setzt state.player.soul = bp_koerper_wolf", ring5Results.phoenixSoulSet);
-        check(
-            "Ring 5 (NULL): der Wolf-Körper ist Compound-Seele (parts gebaut)",
-            ring5Results.phoenixColor
-        );
+        check("Ring 5 (NULL): der Wolf-Körper ist Compound-Seele (parts gebaut)", ring5Results.phoenixColor);
         check(
             "Ring 5 V2 (NULL): der Wolf trägt Bein-Anker + schwanz-Rolle (die EINE Rollen-Quelle)",
             ring5Results.phoenixHasWingsAndTail
@@ -55714,10 +55965,7 @@ async function checkBandRing5Soul(ctx) {
         check("Ring 5: Dropdown synchronisiert sich (UI ↔ State)", ring5Results.dropdownSyncsToPhoenix);
         check("Ring 5 (NULL): Chat 'werde hirsch' routet auf DSL player_soul", ring5Results.chatRoutedToDsl);
         check("Ring 5 (NULL): Chat 'werde hirsch' verkörpert den Hirsch", ring5Results.dragonSoulSet);
-        check(
-            "Ring 5 (NULL): der Hirsch-Körper ist Compound-Seele (parts gebaut)",
-            ring5Results.dragonColor
-        );
+        check("Ring 5 (NULL): der Hirsch-Körper ist Compound-Seele (parts gebaut)", ring5Results.dragonColor);
         check(
             "Ring 5 V2: der Hirsch trägt ≥4 bein-Rollen (Multi-Segment-Skelett) + schwanz-Rolle + Bein-Anker",
             ring5Results.dragonHasFourLegs
