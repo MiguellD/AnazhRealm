@@ -118,6 +118,85 @@
     ];
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  LOOK ALS GESETZ (V18.461) — Stoff-Palette + Kleid-Zonen + Haar-Streu.
+    //  Das Gesetz sagt WAS (welche Teile, welche Farbe, welche Verteilung),
+    //  die Deck-Technik ist Leser-Sache (das Lab näht seine echten Schnitte +
+    //  Frisuren, der Pipe-Bäcker hüllt/streut deterministisch). MESHFREI §8.
+    // ═══════════════════════════════════════════════════════════════════════
+    // Die Stoff-Palette (verbatim aus der Lab-Shell gewandert — Shell liest den Kern).
+    // prettier-ignore
+    var CLOTH_COLORS={white:{hex:0xe8e6e0,name:'Weiß'},charcoal:{hex:0x2a2c30,name:'Anthrazit'},grey:{hex:0x6b6e73,name:'Grau'},black:{hex:0x161618,name:'Schwarz'},navy:{hex:0x233047,name:'Navy'},blue:{hex:0x3a5a8a,name:'Blau'},red:{hex:0x8f3328,name:'Rot'},green:{hex:0x3a5a3a,name:'Grün'},olive:{hex:0x57592f,name:'Oliv'},mustard:{hex:0xb8893a,name:'Senf'},burgundy:{hex:0x5a2530,name:'Bordeaux'},sand:{hex:0xc9b487,name:'Sand'},teal:{hex:0x2a6a6a,name:'Petrol'}};
+    // Die Kleid-ZONEN: welcher Schnitt welche Baum-Teile hüllt (inflate = Hüllen-
+    // Abstand — das Lab-Prinzip „Kleidung wird AUS der Haut extrudiert" als Zeilen).
+    function kleidZonen(d) {
+        d = d || {};
+        var farbe = function (key, fallback) {
+            return (CLOTH_COLORS[key] || CLOTH_COLORS[fallback]).hex;
+        };
+        var zonen = [];
+        var top = d.top || "tshirt";
+        if (top !== "none") {
+            var topTeile = [
+                "ribcage", "chest", "waist", "upperBack",
+                "pec1", "pec-1", "abs", "oblique1", "oblique-1",
+                "lat1", "lat-1", "trap1", "trap-1", "breast1", "breast-1",
+            ];
+            // Ärmel = die GANZE Oberarm-Muskelgruppe (deltoid+bicep+tricep+uarm
+            // hängen alle am arm-Gelenk — eine Teil-Hülle allein ließe Haut ragen).
+            if (top === "tshirt" || top === "pullover" || top === "poncho")
+                topTeile = topTeile.concat([
+                    "deltoid1", "deltoid-1", "bicep1", "bicep-1",
+                    "tricep1", "tricep-1", "uarm1", "uarm-1",
+                ]);
+            zonen.push({ schnitt: top, teile: topTeile, hex: farbe(d.topColor, "navy"), inflate: 1.07 });
+        }
+        var bottom = d.bottom || "pants";
+        if (bottom !== "none") {
+            var botTeile = [
+                "pelvis", "glute1", "glute-1", "quad1", "quad-1", "vlat1", "vlat-1",
+                "adduct1", "adduct-1", "hamstring1", "hamstring-1",
+            ];
+            if (bottom === "pants")
+                botTeile = botTeile.concat(["kneecap1", "kneecap-1", "calf1", "calf-1", "shin1", "shin-1"]);
+            zonen.push({ schnitt: bottom, teile: botTeile, hex: farbe(d.bottomColor, "charcoal"), inflate: 1.06 });
+        }
+        var shoes = d.shoes || "sneaker";
+        if (shoes !== "none") {
+            // Der Fuß ist im Baum eine ANONYME Gruppe unter dem ankle-Gelenk
+            // (heel/mid/Zehen unregistriert) — die Schuh-Zone nennt das GELENK,
+            // der Leser hüllt alle Meshes darunter (Gruppen-Hüllen-Regel).
+            zonen.push({
+                schnitt: shoes,
+                teile: ["ankle1", "ankle-1"],
+                hex: farbe(d.shoeColor, "white"),
+                inflate: 1.12,
+            });
+        }
+        return zonen;
+    }
+    // Die Haar-STREU: der gewählte Stil als Streu-Zeilen über der Schädel-Kalotte
+    // (v1 trägt die „mittel"-Silhouette; die Stil-Tabelle wächst hier, nie im Leser).
+    function haarStreu(d) {
+        d = d || {};
+        var vol = typeof d.hairVol === "number" ? d.hairVol : 1.0;
+        var len = typeof d.hairLen === "number" ? d.hairLen : 1.0;
+        var stil = d.hairStyle || "mittel";
+        if (stil === "glatze") return [];
+        var dichte = Math.round(1400 * Math.max(0.3, vol) * (stil === "buzz" ? 0.6 : 1));
+        var laenge = 0.16 * Math.max(0.25, len) * (stil === "buzz" ? 0.25 : stil === "lang" ? 1.8 : 1);
+        // GEMESSEN an labProportionen (headSeg 0.78, Kopf-LOKAL): Schädel-
+        // Ellipsoid c=[0,0.39,0] · r=[0.402,0.450,0.402]. Die Kalotten-Schale
+        // liegt AUF der Haut, ihr Äquator ÜBER der Braue (browY 0.45) — der
+        // Halbkugel-Schnitt des Streuers lässt das Gesicht frei; die Nacken-
+        // Schale trägt den Hinterkopf. Strähnen kämmen nach hinten-unten.
+        // prettier-ignore
+        return [
+            { teil: "head", c: [0, 0.50, -0.02], r: 0.42, sc: [0.96, 0.82, 1.0], d: [0, -0.12, -0.85], n: dichte, l: laenge, t: 0.010 },
+            { teil: "head", c: [0, 0.28, -0.16], r: 0.36, sc: [0.90, 0.75, 0.70], d: [0, -0.55, -0.60], n: Math.round(dichte * 0.45), l: laenge * 1.2, t: 0.010 },
+        ];
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  B1 REZEPTE (Vertrags-Form) — EIN Rezept "mensch" (das Lab ist ein
     //  Dial-Studio, kein Preset-Katalog: der Startzustand IST die Gattung):
     //  kind "koerper", s = die acht numerischen Dials, fx.gestalt = die
@@ -571,6 +650,9 @@
         morphAuf: morphAuf,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         SKIN_TONES: SKIN_TONES,
+        CLOTH_COLORS: CLOTH_COLORS,
+        kleidZonen: kleidZonen,
+        haarStreu: haarStreu,
         HAIR_COLORS: HAIR_COLORS,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,

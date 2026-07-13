@@ -3270,6 +3270,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const m = new THREE.MeshStandardMaterial({ roughness: kl.r != null ? kl.r : 0.6, metalness: 0 });
         const lc = lin(kl.c != null ? kl.c : 0xc89372);
         m.color.setRGB(lc[0], lc[1], lc[2]);
+        if (k === "hair") m.side = THREE.DoubleSide; // Strähnen-Kreuzquads (wie straehne)
         if (kl.emissiv != null && m.emissive) {
             const le = lin(kl.emissiv);
             m.emissive.setRGB(le[0], le[1], le[2]);
@@ -3295,6 +3296,53 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     for (const pn of ["pelvis", "glute1", "glute-1"]) {
         const teil = B.parts[pn];
         if (teil && teil.material) teil.material = matFuer("shorts");
+    }
+    // DIE KLEID-HÜLLEN (V18.461): kern.kleidZonen sagt, WELCHE Teile welcher
+    // Schnitt hüllt — der Bäcker klont jedes Wirt-Mesh als Stoff-Hülle um den
+    // eigenen Ursprung (Lab-Prinzip „Kleidung wird AUS der Haut extrudiert");
+    // nennt die Zone eine GRUPPE (ankle: der Fuß ist im Baum anonym), hüllt er
+    // alle Meshes darunter. Der Gelenk-Guss merged je (Gelenk × Stoff-Farbe).
+    if (typeof kern.kleidZonen === "function") {
+        const huelle = (teil, m, infl) => {
+            const h = new THREE.Mesh(teil.geometry, m);
+            h.position.copy(teil.position);
+            h.quaternion.copy(teil.quaternion);
+            h.scale.copy(teil.scale).multiplyScalar(infl);
+            teil.parent.add(h);
+        };
+        for (const z of kern.kleidZonen(dials) || []) {
+            const km = "stoff_" + (z.hex >>> 0).toString(16);
+            KL[km] = { c: z.hex, r: 0.82 };
+            const m = matFuer(km);
+            const infl = z.inflate || 1.06;
+            for (const tn of z.teile || []) {
+                const teil = B.parts[tn];
+                if (!teil) continue;
+                if (teil.isMesh) {
+                    huelle(teil, m, infl);
+                    continue;
+                }
+                const kinder = [];
+                teil.traverse((n) => {
+                    if (n.isMesh && n.geometry) kinder.push(n);
+                });
+                for (const k of kinder) huelle(k, m, infl);
+            }
+        }
+    }
+    // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
+    // über die Schädel-Kalotte — dieselbe __streuGeo wie das Fell (Wurzel→
+    // Spitze-Verlauf als Vertex-Farben, deterministischer LCG). lod1 bleibt kahl.
+    if (!fein && typeof kern.haarStreu === "function") {
+        const tonH = lin(hairCol);
+        let seedH = 7117;
+        for (const row of kern.haarStreu(dials) || []) {
+            seedH++;
+            const wirt = B.parts[row.teil];
+            if (!wirt) continue;
+            const geo = __streuGeo(row, seedH, tonH);
+            if (geo) wirt.add(new THREE.Mesh(geo, matFuer("hair")));
+        }
     }
     const namen = [
         "torso",
