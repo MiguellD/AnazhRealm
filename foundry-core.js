@@ -3329,7 +3329,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     const skinCol = ov && typeof ov.skinColor === "number" ? ov.skinColor : 0xc89372;
     const hairCol = ov && typeof ov.hairColor === "number" ? ov.hairColor : 0x241712;
     const MK = kern.MATERIAL_KLASSEN || {};
-    const KL = Object.assign({}, MK, { skin: { c: skinCol, r: 0.62 }, hair: { c: hairCol, r: 0.85 } });
+    const KL = Object.assign({}, MK, {
+        skin: { c: skinCol, r: 0.62 },
+        haut: { c: skinCol, r: 0.58 }, // die glatte Hüllen-HAUT (V18.463)
+        hair: { c: hairCol, r: 0.85 },
+    });
     const fein = (lod | 0) >= 1;
     const segW = fein ? 8 : 20,
         segH = fein ? 6 : 14,
@@ -3372,37 +3376,331 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const teil = B.parts[pn];
         if (teil && teil.material) teil.material = matFuer("shorts");
     }
-    // DIE KLEID-HÜLLEN (V18.461): kern.kleidZonen sagt, WELCHE Teile welcher
-    // Schnitt hüllt — der Bäcker klont jedes Wirt-Mesh als Stoff-Hülle um den
-    // eigenen Ursprung (Lab-Prinzip „Kleidung wird AUS der Haut extrudiert");
-    // nennt die Zone eine GRUPPE (ankle: der Fuß ist im Baum anonym), hüllt er
-    // alle Meshes darunter. Der Gelenk-Guss merged je (Gelenk × Stoff-Farbe).
-    if (typeof kern.kleidZonen === "function") {
-        const huelle = (teil, m, infl) => {
-            const h = new THREE.Mesh(teil.geometry, m);
-            h.position.copy(teil.position);
-            h.quaternion.copy(teil.quaternion);
-            h.scale.copy(teil.scale).multiplyScalar(infl);
-            teil.parent.add(h);
+    // DIE HAUT+KLEID-HÜLLEN (V18.463, „die Haut fehlt"): DIESELBE Hüllen-
+    // Maschine wie das Studio (koerper-core: Voxel-Splat → Closing → Fill →
+    // Blur → Surface-Nets) baut GESCHLOSSENE glatte Hüllen über den Teil-
+    // Primitiven — eine HAUT-Hülle (Hals bis Knöchel, Kopf/Hände frei: dort
+    // trägt der Baum sein echtes Gesicht/seine Finger) und je kleidZonen-Zeile
+    // eine Stoff-Hülle. Gewichte je Vertex: 1/d⁴ über die Teil-Zentren (die
+    // Lab-Bindung), aggregiert aufs animierte GELENK → skinIndex/skinWeight
+    // reisen im Umschlag, die Welt bindet SkinnedMesh an Bone-Gelenke. Die
+    // V18.461-Inflate-Klone (Muskel-Relief-Kleidung) sind GEFALLEN.
+    const nodeNameFuerHuelle = new Map();
+    {
+        const namenH = [
+            "torso",
+            "head",
+            "arm1",
+            "arm-1",
+            "elbow1",
+            "elbow-1",
+            "hand1",
+            "hand-1",
+            "hip1",
+            "hip-1",
+            "knee1",
+            "knee-1",
+            "ankle1",
+            "ankle-1",
+        ];
+        nodeNameFuerHuelle.set(B.character, "mensch");
+        for (const n of namenH) if (B.parts[n]) nodeNameFuerHuelle.set(B.parts[n], n);
+    }
+    const skinJoints = ["mensch", "torso", "head", "arm1", "arm-1", "elbow1", "elbow-1", "hand1", "hand-1", "hip1", "hip-1", "knee1", "knee-1", "ankle1", "ankle-1"];
+    if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
+        B.character.updateMatrixWorld(true);
+        const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
+        const tmpM = new THREE.Matrix4();
+        const tmpV = new THREE.Vector3();
+        const animAhnH = (node) => {
+            let cur = node;
+            while (cur) {
+                if (nodeNameFuerHuelle.has(cur)) return nodeNameFuerHuelle.get(cur);
+                cur = cur.parent;
+            }
+            return "mensch";
         };
+        // Punkte eines Teil-Meshes in Charakter-Lokalraum (dicht: alle Vertices).
+        const punkteVon = (mesh, ziel, zentren, joint) => {
+            tmpM.multiplyMatrices(invChar, mesh.matrixWorld);
+            const pa = mesh.geometry.attributes.position;
+            let cx = 0,
+                cy = 0,
+                cz = 0;
+            for (let i = 0; i < pa.count; i++) {
+                tmpV.set(pa.getX(i), pa.getY(i), pa.getZ(i)).applyMatrix4(tmpM);
+                ziel.push([tmpV.x, tmpV.y, tmpV.z]);
+                cx += tmpV.x;
+                cy += tmpV.y;
+                cz += tmpV.z;
+            }
+            if (pa.count) zentren.push({ j: joint, c: [cx / pa.count, cy / pa.count, cz / pa.count] });
+        };
+        // Eine Hülle backen: Punkte → Feld → Nets → 2× Laplace → CLR-Push →
+        // Gewichte → SkinnedGeo. clr = Abstand AUS der Haut (das Lab-Prinzip;
+        // ohne ihn stechen die Muskel-Primitiven durch die Hülle).
+        const backeHuelle = (pts, zentren, klasse, vox, sigma, level, clr) => {
+            if (pts.length < 24) return;
+            const lo = [1e9, 1e9, 1e9],
+                hi = [-1e9, -1e9, -1e9];
+            for (const p of pts)
+                for (let d = 0; d < 3; d++) {
+                    if (p[d] < lo[d]) lo[d] = p[d];
+                    if (p[d] > hi[d]) hi[d] = p[d];
+                }
+            for (let d = 0; d < 3; d++) {
+                lo[d] -= 0.3;
+                hi[d] += 0.3;
+            }
+            const nx = Math.ceil((hi[0] - lo[0]) / vox) + 3,
+                ny = Math.ceil((hi[1] - lo[1]) / vox) + 3,
+                nz = Math.ceil((hi[2] - lo[2]) / vox) + 3;
+            let g = new Uint8Array(nx * ny * nz);
+            for (const p of pts) {
+                let a = Math.floor((p[0] - lo[0]) / vox),
+                    b = Math.floor((p[1] - lo[1]) / vox),
+                    c = Math.floor((p[2] - lo[2]) / vox);
+                if (a < 0) a = 0;
+                if (a >= nx) a = nx - 1;
+                if (b < 0) b = 0;
+                if (b >= ny) b = ny - 1;
+                if (c < 0) c = 0;
+                if (c >= nz) c = nz - 1;
+                g[a + nx * (b + ny * c)] = 1;
+            }
+            g = kern.voxDilate(g, nx, ny, nz, 1);
+            g = kern.voxDilate(g, nx, ny, nz, 2);
+            g = kern.voxErode(g, nx, ny, nz, 2);
+            g = kern.voxFill(g, nx, ny, nz);
+            let f = new Float32Array(g.length);
+            for (let i = 0; i < g.length; i++) f[i] = g[i];
+            f = kern.blur3(f, nx, ny, nz, sigma);
+            const sn = kern.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
+            if (!sn.verts.length || !sn.faces.length) return;
+            // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
+            // INNEN wickeln — FrontSide cullt dann die ganze Hülle (unsichtbar).
+            {
+                let cx = 0,
+                    cy = 0,
+                    cz = 0;
+                for (const v of sn.verts) {
+                    cx += v[0];
+                    cy += v[1];
+                    cz += v[2];
+                }
+                cx /= sn.verts.length;
+                cy /= sn.verts.length;
+                cz /= sn.verts.length;
+                let vote = 0;
+                for (const fc of sn.faces) {
+                    const A = sn.verts[fc[0]],
+                        Bv = sn.verts[fc[1]],
+                        C = sn.verts[fc[2]];
+                    const ux = Bv[0] - A[0],
+                        uy = Bv[1] - A[1],
+                        uz = Bv[2] - A[2];
+                    const vx = C[0] - A[0],
+                        vy = C[1] - A[1],
+                        vz = C[2] - A[2];
+                    const nx2 = uy * vz - uz * vy,
+                        ny2 = uz * vx - ux * vz,
+                        nz2 = ux * vy - uy * vx;
+                    vote += nx2 * (A[0] - cx) + ny2 * (A[1] - cy) + nz2 * (A[2] - cz) > 0 ? 1 : -1;
+                }
+                if (vote < 0) for (const fc of sn.faces) [fc[1], fc[2]] = [fc[2], fc[1]];
+            }
+            // 2× Laplace-Glättung (Nachbarn über Kanten):
+            for (let it = 0; it < 2; it++) {
+                const acc = new Float32Array(sn.verts.length * 3);
+                const cnt = new Uint16Array(sn.verts.length);
+                for (const fc of sn.faces)
+                    for (let e = 0; e < 3; e++) {
+                        const a = fc[e],
+                            b = fc[(e + 1) % 3];
+                        acc[a * 3] += sn.verts[b][0];
+                        acc[a * 3 + 1] += sn.verts[b][1];
+                        acc[a * 3 + 2] += sn.verts[b][2];
+                        cnt[a]++;
+                        acc[b * 3] += sn.verts[a][0];
+                        acc[b * 3 + 1] += sn.verts[a][1];
+                        acc[b * 3 + 2] += sn.verts[a][2];
+                        cnt[b]++;
+                    }
+                for (let i = 0; i < sn.verts.length; i++)
+                    if (cnt[i]) {
+                        const v = sn.verts[i],
+                            k = 0.5 / cnt[i];
+                        v[0] = v[0] * 0.5 + acc[i * 3] * k;
+                        v[1] = v[1] * 0.5 + acc[i * 3 + 1] * k;
+                        v[2] = v[2] * 0.5 + acc[i * 3 + 2] * k;
+                    }
+            }
+            // CLR-PUSH: jeden Vertex entlang seiner Flächen-Normale nach AUSSEN
+            // (die Vorlagen-Klarheit: Hülle ÜBER den Primitiven, kein Durchstoß).
+            if (clr) {
+                const VN = new Float32Array(sn.verts.length * 3);
+                for (const fc of sn.faces) {
+                    const A = sn.verts[fc[0]],
+                        Bv = sn.verts[fc[1]],
+                        C = sn.verts[fc[2]];
+                    const ux = Bv[0] - A[0],
+                        uy = Bv[1] - A[1],
+                        uz = Bv[2] - A[2];
+                    const vx = C[0] - A[0],
+                        vy = C[1] - A[1],
+                        vz = C[2] - A[2];
+                    const nx2 = uy * vz - uz * vy,
+                        ny2 = uz * vx - ux * vz,
+                        nz2 = ux * vy - uy * vx;
+                    for (const vi of fc) {
+                        VN[vi * 3] += nx2;
+                        VN[vi * 3 + 1] += ny2;
+                        VN[vi * 3 + 2] += nz2;
+                    }
+                }
+                for (let i = 0; i < sn.verts.length; i++) {
+                    const L = Math.hypot(VN[i * 3], VN[i * 3 + 1], VN[i * 3 + 2]) || 1;
+                    sn.verts[i][0] += (VN[i * 3] / L) * clr;
+                    sn.verts[i][1] += (VN[i * 3 + 1] / L) * clr;
+                    sn.verts[i][2] += (VN[i * 3 + 2] / L) * clr;
+                }
+            }
+            // Gewichte: 1/d⁴ über Teil-Zentren (Lab-Bindung), aggregiert je Gelenk, Top-4.
+            const nV = sn.verts.length;
+            const pos = new Float32Array(nV * 3);
+            const sIdx = new Float32Array(nV * 4);
+            const sWgt = new Float32Array(nV * 4);
+            const eW = 0.04;
+            for (let i = 0; i < nV; i++) {
+                const v = sn.verts[i];
+                pos[i * 3] = v[0];
+                pos[i * 3 + 1] = v[1];
+                pos[i * 3 + 2] = v[2];
+                const jw = {};
+                let sum = 0;
+                for (const z of zentren) {
+                    const dx = v[0] - z.c[0],
+                        dy = v[1] - z.c[1],
+                        dz = v[2] - z.c[2];
+                    const d2 = dx * dx + dy * dy + dz * dz;
+                    const w = 1 / ((d2 + eW) * (d2 + eW));
+                    jw[z.j] = (jw[z.j] || 0) + w;
+                    sum += w;
+                }
+                const top = Object.keys(jw)
+                    .map((j) => [skinJoints.indexOf(j), jw[j] / sum])
+                    .filter((e) => e[0] >= 0 && e[1] > 0.03)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 4);
+                let ts = 0;
+                for (const t of top) ts += t[1];
+                for (let k = 0; k < 4; k++) {
+                    sIdx[i * 4 + k] = top[k] ? top[k][0] : 0;
+                    sWgt[i * 4 + k] = top[k] ? top[k][1] / (ts || 1) : 0;
+                }
+            }
+            const idx = new Uint32Array(sn.faces.length * 3);
+            for (let i = 0; i < sn.faces.length; i++) {
+                idx[i * 3] = sn.faces[i][0];
+                idx[i * 3 + 1] = sn.faces[i][1];
+                idx[i * 3 + 2] = sn.faces[i][2];
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
+            geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
+            geo.setIndex(new THREE.BufferAttribute(idx, 1));
+            geo.computeVertexNormals();
+            const mesh = new THREE.Mesh(geo, matFuer(klasse));
+            mesh.userData.__skinned = true;
+            B.character.add(mesh);
+            mesh.position.set(0, 0, 0); // Geometrie ist Charakter-lokal
+            gebauteHuellen.push(mesh);
+        };
+        const gebauteHuellen = [];
+        const voxMul = fein ? 1.6 : 1.0;
+        // DIE SPREIZ-POSE (das Lab-Gesetz „bake once in a spread pose"): bei
+        // hängenden Armen verschmilzt das Voxel-Feld Arm+Torso zu EINEM Blob.
+        // Also: Arme heben + Beine leicht spreizen, Hüllen DORT backen, dann
+        // jeden Vertex per LBS (Gelenk-Delta Spreiz→Default) zurückrechnen —
+        // exakt die Transformation, die die Welt-Bones später live fahren.
+        const SPREIZ = { arm1: 1.05, "arm-1": -1.05, hip1: 0.14, "hip-1": -0.14 };
+        const spreizAlt = {};
+        for (const jn of Object.keys(SPREIZ)) {
+            const nd = B.parts[jn];
+            if (!nd) continue;
+            spreizAlt[jn] = nd.rotation.z;
+            nd.rotation.z += SPREIZ[jn];
+        }
+        B.character.updateMatrixWorld(true);
+        const mSpreiz = {};
+        for (const [nd, nm] of nodeNameFuerHuelle) {
+            mSpreiz[nm] = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
+        }
+        // 1) DIE HAUT: alle skin-Teile außer Kopf/Hände/Füße (dort echtes Detail).
+        {
+            const pts = [],
+                zen = [];
+            B.character.traverse((node) => {
+                if (!node.isMesh || !node.geometry) return;
+                const kl = node.material && node.material.userData && node.material.userData.__klasse;
+                if (kl !== "skin") return;
+                const j = animAhnH(node);
+                if (j === "head" || j === "hand1" || j === "hand-1" || j === "ankle1" || j === "ankle-1") return;
+                punkteVon(node, pts, zen, j);
+            });
+            backeHuelle(pts, zen, "haut", 0.05 * voxMul, 1.4, 0.42, 0.028);
+        }
+        // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
             KL[km] = { c: z.hex, r: 0.82 };
-            const m = matFuer(km);
-            const infl = z.inflate || 1.06;
+            const pts = [],
+                zen = [];
             for (const tn of z.teile || []) {
                 const teil = B.parts[tn];
                 if (!teil) continue;
-                if (teil.isMesh) {
-                    huelle(teil, m, infl);
-                    continue;
-                }
-                const kinder = [];
-                teil.traverse((n) => {
-                    if (n.isMesh && n.geometry) kinder.push(n);
-                });
-                for (const k of kinder) huelle(k, m, infl);
+                if (teil.isMesh) punkteVon(teil, pts, zen, animAhnH(teil));
+                else
+                    teil.traverse((n2) => {
+                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) punkteVon(n2, pts, zen, animAhnH(n2));
+                    });
             }
+            backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, 0.12);
+        }
+        // ZURÜCK IN DIE DEFAULT-POSE: Gelenke restaurieren, je Gelenk das
+        // Delta default×inv(spreiz) (Charakter-lokal), jeden Hüllen-Vertex
+        // gewichtet transformieren (die eine LBS-Formel), Normalen frisch.
+        for (const jn of Object.keys(spreizAlt)) B.parts[jn].rotation.z = spreizAlt[jn];
+        B.character.updateMatrixWorld(true);
+        const delta = {};
+        for (const [nd, nm] of nodeNameFuerHuelle) {
+            const mDef = new THREE.Matrix4().multiplyMatrices(invChar, nd.matrixWorld);
+            delta[nm] = mDef.multiply(new THREE.Matrix4().copy(mSpreiz[nm]).invert());
+        }
+        const deltaListe = skinJoints.map((nm) => delta[nm] || new THREE.Matrix4());
+        const vSrc = new THREE.Vector3();
+        const vAkk = new THREE.Vector3();
+        const vTmp = new THREE.Vector3();
+        for (const mesh of gebauteHuellen) {
+            const pa = mesh.geometry.attributes.position;
+            const si = mesh.geometry.attributes.skinIndex;
+            const sw = mesh.geometry.attributes.skinWeight;
+            const swA = sw.array,
+                siA = si.array; // r128-sicher (getComponent gibt es erst später)
+            for (let i = 0; i < pa.count; i++) {
+                vSrc.set(pa.getX(i), pa.getY(i), pa.getZ(i));
+                vAkk.set(0, 0, 0);
+                for (let k = 0; k < 4; k++) {
+                    const w = swA[i * 4 + k];
+                    if (!w) continue;
+                    vTmp.copy(vSrc).applyMatrix4(deltaListe[siA[i * 4 + k]]);
+                    vAkk.addScaledVector(vTmp, w);
+                }
+                pa.setXYZ(i, vAkk.x, vAkk.y, vAkk.z);
+            }
+            pa.needsUpdate = true;
+            mesh.geometry.computeVertexNormals();
         }
     }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
@@ -3441,6 +3739,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
+        // V18.463 — die Bone-Ordnung der Haut-/Kleid-Hüllen (skinIndex zeigt hierauf).
+        skinJoints: skinJoints,
     });
 }
 

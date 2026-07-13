@@ -16305,7 +16305,14 @@ class AnazhRealm {
         const klon = t0.root.clone(true);
         const teile = {};
         klon.traverse((n) => {
-            if (n.isGroup && n.name) teile[n.name] = n;
+            if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
+        });
+        // V18.463 — KLON-REBIND: SkinnedMesh.clone teilt das Template-Skelett —
+        // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
+        klon.traverse((n) => {
+            if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
+            const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
+            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
         });
         const f = (8 * 0.2125) / 6.0;
         const wrap = new THREE.Group();
@@ -16490,9 +16497,13 @@ class AnazhRealm {
         if (!skelett || !Array.isArray(skelett.joints) || !skelett.joints.length) return null;
         const root = new THREE.Group();
         const teile = {};
+        // V18.463 — trägt der Beipack skinJoints (Mensch-Hüllen), werden die
+        // Gelenke BONES (Bone erbt Object3D — Gruppen-Semantik bleibt), damit
+        // die Haut-/Kleid-Hüllen als SkinnedMesh binden können.
+        const mitBones = Array.isArray(skelett.skinJoints) && skelett.skinJoints.length > 0;
         for (const j of skelett.joints) {
             if (!j || !j.name) continue;
-            const g = new THREE.Group();
+            const g = mitBones ? new THREE.Bone() : new THREE.Group();
             g.name = j.name;
             teile[j.name] = g;
         }
@@ -16520,6 +16531,18 @@ class AnazhRealm {
         }
         if (!gebaut) return null;
         root.updateMatrixWorld(true);
+        // V18.463 — die Haut-/Kleid-Hüllen BINDEN: SkinnedMesh an die Bone-
+        // Gelenke der Default-Pose (Bind-Matrix = Welt-Pose beim Assemble;
+        // die Geometrie ist Charakter-lokal gebacken — deckungsgleich).
+        if (mitBones) {
+            const bones = skelett.skinJoints.map((nm) => teile[nm]).filter(Boolean);
+            root.traverse((n) => {
+                if (!n.isSkinnedMesh) return;
+                n.userData.__skinJoints = skelett.skinJoints.slice();
+                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.frustumCulled = false; // LBS bewegt Vertices — die Bind-BBox lügt
+            });
+        }
         const bb = new THREE.Box3().setFromObject(root);
         const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
         return {
@@ -63905,7 +63928,23 @@ class AnazhRealm {
         if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
-        const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+        // V18.463 — DIE HAUT-HÜLLE reist geskinnt: trägt der Eintrag skinIndex/
+        // skinWeight (die Hüllen-Maschine des Bäckers), wird er ein SkinnedMesh
+        // (Bindung übernimmt _ofenAssembleAsset, wenn die Gelenk-Bones stehen).
+        // skinIndex kommt als Float32 aus dem Umschlag → Uint16 (WebGPU-strikt).
+        let mesh;
+        if (m.skinIndex && m.skinIndex.array && m.skinWeight && m.skinWeight.array) {
+            const si = new Uint16Array(m.skinIndex.array.length);
+            for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
+            geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
+            geo.setAttribute(
+                "skinWeight",
+                new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4)
+            );
+            mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+        } else {
+            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+        }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         return mesh;
@@ -82060,7 +82099,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.462.0";
+AnazhRealm.VERSION = "18.463.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

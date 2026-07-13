@@ -281,90 +281,9 @@ function cuffRings(c0,drop,flare){drop=(drop==null?0.09:drop);flare=(flare==null
 var _outfitWT=null;  // body point cache shared across buildTop/buildBottom per rebuild
 // ===== voxel + naive surface-nets garment shell (browser-portable) =====
 // grid flat index i + nx*(j + ny*k); 6-connectivity to match scipy defaults.
-function _vox_dilate(g,nx,ny,nz,iters){
-  for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
-    for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
-      if(g[id]){o[id]=1;continue;}
-      if((i>0&&g[id-1])||(i<nx-1&&g[id+1])||(j>0&&g[id-nx])||(j<ny-1&&g[id+nx])||(k>0&&g[id-nx*ny])||(k<nz-1&&g[id+nx*ny]))o[id]=1;}
-    g=o;}
-  return g;}
-function _vox_erode(g,nx,ny,nz,iters){
-  for(var it=0;it<iters;it++){var o=new Uint8Array(g.length);
-    for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var id=i+nx*(j+ny*k);
-      if(!g[id])continue;
-      var keep=1;
-      if(i==0||!g[id-1])keep=0;else if(i==nx-1||!g[id+1])keep=0;
-      else if(j==0||!g[id-nx])keep=0;else if(j==ny-1||!g[id+nx])keep=0;
-      else if(k==0||!g[id-nx*ny])keep=0;else if(k==nz-1||!g[id+nx*ny])keep=0;
-      o[id]=keep;}
-    g=o;}
-  return g;}
-function _vox_fill(g,nx,ny,nz){               // fill enclosed holes (flood bg from border)
-  var reach=new Uint8Array(g.length),st=[];
-  function push(id){if(!g[id]&&!reach[id]){reach[id]=1;st.push(id);}}
-  for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){
-    if(i==0||i==nx-1||j==0||j==ny-1||k==0||k==nz-1)push(i+nx*(j+ny*k));}
-  while(st.length){var id=st.pop();var i=id%nx,j=((id/nx)|0)%ny,k=(id/(nx*ny))|0;
-    if(i>0)push(id-1);if(i<nx-1)push(id+1);if(j>0)push(id-nx);if(j<ny-1)push(id+nx);
-    if(k>0)push(id-nx*ny);if(k<nz-1)push(id+nx*ny);}
-  var o=new Uint8Array(g.length);
-  for(var x=0;x<g.length;x++)o[x]=(g[x]||!reach[x])?1:0;
-  return o;}
-function _gauss1d(sig){var r=Math.max(1,Math.ceil(sig*3)),w=[],s=0;
-  for(var i=-r;i<=r;i++){var e=Math.exp(-(i*i)/(2*sig*sig));w.push(e);s+=e;}
-  for(var i=0;i<w.length;i++)w[i]/=s;return {w:w,r:r};}
-function _blur3(f,nx,ny,nz,sig){var K=_gauss1d(sig),w=K.w,r=K.r,tmp=new Float32Array(f.length);
-  // x
-  for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-    for(var t=-r;t<=r;t++){var ii=i+t;if(ii<0)ii=0;if(ii>=nx)ii=nx-1;a+=w[t+r]*f[ii+nx*(j+ny*k)];}
-    tmp[i+nx*(j+ny*k)]=a;}
-  var out=new Float32Array(f.length);
-  // y
-  for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-    for(var t=-r;t<=r;t++){var jj=j+t;if(jj<0)jj=0;if(jj>=ny)jj=ny-1;a+=w[t+r]*tmp[i+nx*(jj+ny*k)];}
-    out[i+nx*(j+ny*k)]=a;}
-  // z
-  for(var k=0;k<nz;k++)for(var j=0;j<ny;j++)for(var i=0;i<nx;i++){var a=0;
-    for(var t=-r;t<=r;t++){var kk=k+t;if(kk<0)kk=0;if(kk>=nz)kk=nz-1;a+=w[t+r]*out[i+nx*(j+ny*kk)];}
-    tmp[i+nx*(j+ny*k)]=a;}
-  return tmp;}
-var _CPOS=[[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]];
-var _SNED=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
-function surfaceNets(F,nx,ny,nz,level,ox,oy,oz,vox){
-  var cnx=nx-1,cny=ny-1,cnz=nz-1;
-  var vid=new Int32Array(cnx*cny*cnz);for(var q=0;q<vid.length;q++)vid[q]=-1;
-  var verts=[],faces=[],c=new Float32Array(8);
-  function CID(i,j,k){return i+cnx*(j+cny*k);}
-  for(var k=0;k<cnz;k++)for(var j=0;j<cny;j++)for(var i=0;i<cnx;i++){
-    for(var e=0;e<8;e++)c[e]=F[(i+(e&1))+nx*((j+((e>>1)&1))+ny*(k+((e>>2)&1)))];
-    var mask=0;for(var e=0;e<8;e++)if(c[e]<level)mask|=(1<<e);
-    if(mask==0||mask==255)continue;
-    var px=0,py=0,pz=0,cnt=0;
-    for(var e=0;e<12;e++){var a=_SNED[e][0],b=_SNED[e][1];
-      if((c[a]<level)!=(c[b]<level)){var t=(level-c[a])/(c[b]-c[a]+1e-12);
-        px+=_CPOS[a][0]+t*(_CPOS[b][0]-_CPOS[a][0]);
-        py+=_CPOS[a][1]+t*(_CPOS[b][1]-_CPOS[a][1]);
-        pz+=_CPOS[a][2]+t*(_CPOS[b][2]-_CPOS[a][2]);cnt++;}}
-    var vi=verts.length;verts.push([(px/cnt+i)*vox+ox,(py/cnt+j)*vox+oy,(pz/cnt+k)*vox+oz]);
-    vid[CID(i,j,k)]=vi;
-    var s0=(c[0]<level);
-    for(var ax=0;ax<3;ax++){var corner=ax==0?1:ax==1?2:4;
-      if((c[0]<level)==(c[corner]<level))continue;
-      var iu=(ax+1)%3,iv=(ax+2)%3;
-      var dux=iu==0?1:0,duy=iu==1?1:0,duz=iu==2?1:0;
-      var dvx=iv==0?1:0,dvy=iv==1?1:0,dvz=iv==2?1:0;
-      var a0=i,b0=j,c0=k;
-      var a1=i-dux,b1=j-duy,c1=k-duz;
-      var a2=i-dux-dvx,b2=j-duy-dvy,c2=k-duz-dvz;
-      var a3=i-dvx,b3=j-dvy,c3=k-dvz;
-      if(a1<0||b1<0||c1<0||a2<0||b2<0||c2<0||a3<0||b3<0||c3<0)continue;
-      var A=vid[CID(a0,b0,c0)],B=vid[CID(a1,b1,c1)],C=vid[CID(a2,b2,c2)],D=vid[CID(a3,b3,c3)];
-      if(A<0||B<0||C<0||D<0)continue;
-      if(s0){faces.push([A,B,C]);faces.push([A,C,D]);}
-      else {faces.push([A,C,B]);faces.push([A,D,C]);}}
-  }
-  return {verts:verts,faces:faces};}
-
+// KONVERGENZ (V18.463): die Huellen-Maschine (voxel-ops + surface-nets) wohnt im GESETZBUCH
+// (koerper-core) -- die Shell LIEST sie; der Pipe-Baecker nutzt DIESELBE Maschine fuer die Welt.
+var _vox_dilate=window.__koerperCore.voxDilate,_vox_erode=window.__koerperCore.voxErode,_vox_fill=window.__koerperCore.voxFill,_blur3=window.__koerperCore.blur3,surfaceNets=window.__koerperCore.surfaceNets;
 // ---- build occupancy from point list (Nx3 array) ----
 function shellFromParts(inclPts,cutPts,vox,sigma,level,cuts){
   // bbox
