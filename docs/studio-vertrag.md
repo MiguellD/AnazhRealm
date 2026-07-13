@@ -325,7 +325,12 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   DERSELBE Bäcker läuft im Worker UND auf dem Host-Main-Thread (foundry-core
   ist auf beiden geladen) — ein Gesetz, zwei Scheduler; der Host assembliert
   NUR (Gelenk-Gruppen aus dem Skelett + die EINE Reply-Konversion) und
-  klont je Instanz aus dem Art-Memo.
+  klont je Instanz aus dem Art-Memo. LOOK-GESETZE (V18.460/.461): trägt der
+  Kern Zeilen-Tabellen (`fellStreu(P,M,T)` · `kleidZonen(d)` · `haarStreu(d)`),
+  KONSUMIERT der Bäcker sie (Streu/Hüllen deterministisch, Verlauf als
+  Vertex-Farben) — das Gesetz sagt WAS (Teile · Farben · Verteilung), die
+  Deck-TECHNIK ist Leser-Sache (das Lab behält seine Builder, Benchmark
+  unbewegt). Fehlt die Tabelle, bäckt der Bäcker kahl (DARF, fail-soft).
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
   `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],

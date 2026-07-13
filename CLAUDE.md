@@ -6,14 +6,22 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.460 — DIE FELL-STREU IST GESETZ)
+## Stand (V18.461 — LOOK ALS GESETZ vollständig: Fell · Haar · Kleid)
 
-**FELL (V18.460):** die komplette Tetrapoda-Körper-Streu wohnt als ZEILEN-TABELLE im Gesetzbuch
-(`fellStreu(P,M,T)`: Bein/Fuzz/Akzent-Zeilen verbatim + `art:"deck"`-DATEN-Zeile für den
-Torso-Mantel — Coverage ist Leser-Sache). Lab liest sie mit seinen Buildern (Benchmark steht,
-Gold-Mantel auge-geprüft), der Pipe-Bäcker deterministisch mit Wurzel→Spitze-Verlauf als
-VERTEX-Farben in die Gelenk-Wirte (der Guss merged, der Gang trägt das Fell; fern kahl-billig).
-Die Lab-Inline-Streu ist gefallen. DER WEG: haar-/kleidStreu (koerper-core) = dieselben Muster.
+**FELL (V18.460) + HAAR/KLEID (V18.461):** der Look wohnt als ZEILEN-TABELLEN in den
+Gesetzbüchern, die Deck-Technik ist Leser-Sache. tetrapoda-core `fellStreu(P,M,T)`
+(Bein/Fuzz/Akzent-Zeilen verbatim + `art:"deck"`-DATEN-Zeile; Lab-Benchmark steht,
+Gold-Mantel auge-geprüft; Pipe-Bäcker streut deterministisch, Wurzel→Spitze-Verlauf als
+VERTEX-Farben, der Guss merged je Wirt×Klasse, der Gang trägt das Fell, fern kahl-billig).
+koerper-core `CLOTH_COLORS` (Shell-Zwilling fiel, Wand=16) + `kleidZonen(d)` (Schnitt→
+Teil-Listen+Hex+inflate; Ärmel = GANZE Oberarm-Muskelgruppe; Fuß anonym → Schuh-Zone nennt
+das ankle-GELENK, Gruppen-Hüllen-Regel) + `haarStreu(d)` (Kalotten-Schale GEMESSEN auf dem
+Schädel-Ellipsoid, Äquator über der Braue = Gesicht frei). Bäcker: Stoff-Hüllen = Teil-Klone
+(Klasse `stoff_<hex>`, merged je Gelenk×Farbe), Haar via `__streuGeo` aufs head-Gelenk;
+lod0 39 Meshes (29+10), lod1 14 (Stoff-Silhouette + gemaltes Haar). Der Default-Welt-Mensch
+trägt die STUDIO-Garderobe (V18.457-Wardrobe-Entscheid GEDREHT — der Schöpfer will die
+Vorlagen in der Welt). MERKE: die Kerne leben AUSSERHALB des format:check-Scopes — nie
+`prettier --write` auf Gesetzbücher (verbatim-Blöcke!), neue Abschnitte rein additiv.
 
 ### Davor (V18.459 — DIE EINE PIPE VOLLENDET: alle Gattungen fahren)
 

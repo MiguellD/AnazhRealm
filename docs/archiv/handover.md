@@ -378,6 +378,33 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.461 — HAAR+KLEID SIND GESETZ (Schöpfer „menschen keine haut und kleider wie in den vorlagen?")
+
+Die zweite Hälfte der Schöpfer-Frage, dasselbe Muster wie die Fell-Streu: **koerper-core trägt
+jetzt `CLOTH_COLORS` (13 Stoff-Töne, verbatim aus der Lab-Shell — der Shell-Zwilling FIEL, sie
+liest den Kern; Zwillings-Wand +1 = 16) · `kleidZonen(d)` (welcher Schnitt welche Baum-Teile
+hüllt: top/bottom/shoes mit Teil-Namen-Listen, Palette-Hex, inflate 1.06–1.12 — Ärmel = die
+GANZE Oberarm-Muskelgruppe, sonst ragt Haut; der Fuß ist im Baum anonym → die Schuh-Zone nennt
+das ankle-GELENK, Gruppen-Hüllen-Regel) · `haarStreu(d)` (Frisur-Silhouette als Streu-Zeilen,
+GEMESSEN an labProportionen: Kalotten-Schale AUF dem Schädel-Ellipsoid, Äquator über der Braue
+→ Gesicht frei, Nacken-Schale für den Hinterkopf; stil/vol/len-Dials wirken, glatze→[]).**
+Der Mensch-Bäcker KONSUMIERT: Stoff-Hüllen = Teil-Klone um den eigenen Ursprung („Kleidung wird
+AUS der Haut extrudiert"), Klasse `stoff_<hex>` → der Gelenk-Guss merged je Gelenk×Farbe,
+Bewegung gratis; Haar = dieselbe `__streuGeo` wie das Fell (LCG, Wurzel→Spitze-Vertex-Verlauf,
+DoubleSide) auf dem head-Gelenk; lod1 behält Stoff-Silhouette + gemaltes Haar, Streu nur lod0.
+GEMESSEN: 39 gemergte Meshes lod0 (29 nackt + 10 Kleid/Haar-Buckets: navy×3 Gelenke,
+charcoal×5, weiß×2, haar×1) · 14 lod1 · Template-Clone unverändert 1–2 ms. Der Default-Welt-
+Mensch trägt jetzt die STUDIO-Garderobe (START_PARAMS: tshirt navy · pants charcoal · sneaker
+white · mittel darkbrown) — die V18.457-Entscheidung „Wardrobe = Studio-Erlebnis" ist damit
+GEDREHT (der Schöpfer will die Vorlagen in der Welt). Auge-bewiesen (3 Winkel,
+artifacts/avatar-kleid-default-w*.png): Hemd mit kurzen Ärmeln, Unterarme frei, Hose bis zu
+den Knöcheln, weiße Schuhe, Kalotten-Haar mit freiem Gesicht. Grün: Batterie „Alle Invarianten
+OK" · fast 18/18 (Avatar-Wand trägt 39) · check · koerper-kern 396k Werte identisch ·
+smoke-labs 7/7 · lint/format. LEHRE bestätigt: die Kerne leben AUSSERHALB des format:check-
+Scopes — ein verirrtes `prettier --write koerper-core.js` formatte den VERBATIM-bauMensch-Block
+um (Werte identisch, aber Byte-Regel verletzt) → revert + rein additive Neu-Einsetzung (+82
+Zeilen), die Zwillings-Wand hatte gefeuert und bewies sich damit selbst.
+
 ### V18.460 — DIE FELL-STREU IST GESETZ (Schöpfer „wieso haben tiere keine felle?")
 
 Die Antwort auf die Schöpfer-Frage war eine Schicht tiefer: Fell/Haar/Kleid waren SHELL-Code
