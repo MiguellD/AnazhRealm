@@ -1,7 +1,19 @@
 // diag-genom.cjs — DER WAHRE WUCHS (wahrerwuchs §7): das Bauplan-Genom. Aus EINEM
 // Seed × wenige formbare Achsen wächst die volle Palette (Moos → Mammutbaum, jung →
 // uralt), ohne hundert Rezepte. Reine Berechnung + Geometrie → headless verifizierbar
-// (der finale LOOK ist augen-bound, Wand 1). Bänder:
+// (der finale LOOK ist augen-bound, Wand 1).
+//
+// ⚠️ BEWUSSTER ZUSTAND (V18.462, roadmap §0 Trichter-Stufe 3 „heilen oder benennen"):
+// Dieser Diag kodiert das ALTE wahrerwuchs-§7-Größen-Gesetz (Genom WÜRFELT die
+// sizeClass, Spannweite bis 80 m). Seit dem NEUES-KLEID-Herz-Tausch ist die
+// sizeClass ein ABGELEITETES Etikett der phyto-core-gewachsenen Höhe
+// (anazhRealm.js ~50680: gigant nur sequoia/≥18 m · gross ≥9 m · strauch NIE;
+// gemessene Höhen 3.1–7.5 m) — 6 Bänder laufen darum STRUKTURELL rot
+// (0 Gigant → SPANNWEITEN/PHYSIK-Gigant/AFFINITÄT-Gigant/T1-Brettwurzel
+// vakuum-rot; T1-UV ist eine eigenständige offene Schuld). Der Diag ist NICHT
+// in den Gates verdrahtet; die Bänder-Wanderung aufs abgeleitete-Etikett-Gesetz
+// ist der benannte offene Faden. Alle übrigen Bänder (DETERMINISMUS · ROLLER ·
+// LEGACY · S3–S7 · FULLSTACK) messen weiter die lebende Wahrheit. Bänder:
 //   SPANNWEITEN — die Größenklasse spannt 1.5–80 m (Strauch · Baum · Gross · GIGANT)
 //   PHYSIK      — JEDE gewürfelte Variante steht (Ω-Φ2) + knickt nicht (Ω-Φ3-b)
 //   AFFINITÄT   — die Compound-Tags bleiben bit-identisch über ALLE Achsen-Werte (V17.17)

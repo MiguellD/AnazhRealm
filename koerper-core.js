@@ -174,26 +174,68 @@
         }
         return zonen;
     }
-    // Die Haar-STREU: der gewählte Stil als Streu-Zeilen über der Schädel-Kalotte
-    // (v1 trägt die „mittel"-Silhouette; die Stil-Tabelle wächst hier, nie im Leser).
+    // Die Haar-STREU: der gewählte Stil als Streu-Zeilen (V18.462: ALLE 10
+    // Lab-Stile als Silhouetten-Tabelle — die Stil-Tabelle wächst HIER, nie im
+    // Leser; das Lab näht seine reiche Technik weiter mit eigenen Buildern).
+    // GEMESSEN an labProportionen (headSeg 0.78, Kopf-LOKAL): Schädel-Ellipsoid
+    // c=[0,0.39,0] · r=[0.402,0.450,0.402]; Kalotten-Äquator ÜBER der Braue
+    // (browY 0.45) = Gesicht frei. Zeilen-Arten: Kalotten-Schale (Default,
+    // radial:1 = Richtung aus der Schalen-Normale) · quaste (Punkt-Büschel,
+    // Box-Streuung — Zopf) · knoten (Kugel-Schale radial — Dutt). lj = Längen-
+    // Streuung. Dichte skaliert mit hairVol, Länge mit hairLen.
     function haarStreu(d) {
         d = d || {};
-        var vol = typeof d.hairVol === "number" ? d.hairVol : 1.0;
-        var len = typeof d.hairLen === "number" ? d.hairLen : 1.0;
+        var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0);
+        var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
         var stil = d.hairStyle || "mittel";
-        if (stil === "glatze") return [];
-        var dichte = Math.round(1400 * Math.max(0.3, vol) * (stil === "buzz" ? 0.6 : 1));
-        var laenge = 0.16 * Math.max(0.25, len) * (stil === "buzz" ? 0.25 : stil === "lang" ? 1.8 : 1);
-        // GEMESSEN an labProportionen (headSeg 0.78, Kopf-LOKAL): Schädel-
-        // Ellipsoid c=[0,0.39,0] · r=[0.402,0.450,0.402]. Die Kalotten-Schale
-        // liegt AUF der Haut, ihr Äquator ÜBER der Braue (browY 0.45) — der
-        // Halbkugel-Schnitt des Streuers lässt das Gesicht frei; die Nacken-
-        // Schale trägt den Hinterkopf. Strähnen kämmen nach hinten-unten.
+        var K = [0, 0.5, -0.02], // Kalotten-Schale (Zentrum · Radius · Skala)
+            KR = 0.42,
+            KS = [0.96, 0.82, 1.0];
+        var N = [0, 0.28, -0.16], // Nacken-Schale
+            NR = 0.36,
+            NS = [0.9, 0.75, 0.7];
+        var zi = function (n, l, extra) {
+            var z = { teil: "head", c: K, r: KR, sc: KS, d: [0, -0.12, -0.85], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            if (extra) for (var k in extra) z[k] = extra[k];
+            return z;
+        };
+        var nacken = function (n, l, extra) {
+            var z = { teil: "head", c: N, r: NR, sc: NS, d: [0, -0.55, -0.6], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            if (extra) for (var k in extra) z[k] = extra[k];
+            return z;
+        };
         // prettier-ignore
-        return [
-            { teil: "head", c: [0, 0.50, -0.02], r: 0.42, sc: [0.96, 0.82, 1.0], d: [0, -0.12, -0.85], n: dichte, l: laenge, t: 0.010 },
-            { teil: "head", c: [0, 0.28, -0.16], r: 0.36, sc: [0.90, 0.75, 0.70], d: [0, -0.55, -0.60], n: Math.round(dichte * 0.45), l: laenge * 1.2, t: 0.010 },
-        ];
+        var STILE = {
+            glatze: [],
+            buzz: [zi(840, 0.035)],
+            kurz: [zi(1000, 0.09), nacken(400, 0.08)],
+            mittel: [zi(1400, 0.16), nacken(630, 0.192)],
+            lang: [
+                zi(1200, 0.29), nacken(700, 0.35, { lj: 0.2 }),
+                { teil: "head", c: [0, 0.3, -0.1], r: 0.4, sc: [0.95, 0.9, 0.85], d: [0, -0.8, -0.35], n: Math.round(700 * vol), l: 0.55 * len, lj: 0.25, t: 0.01 },
+            ],
+            locken: [
+                zi(1100, 0.14, { r: 0.45 }), zi(550, 0.13, { r: 0.48, d: [0, 0.1, -0.5] }),
+                nacken(400, 0.14, { r: 0.39 }),
+            ],
+            afro: [
+                { teil: "head", c: [0, 0.42, -0.02], r: 0.5, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(1500 * vol), l: 0.2 * len, lj: 0.1, t: 0.01 },
+                { teil: "head", c: [0, 0.42, -0.02], r: 0.56, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(700 * vol), l: 0.2 * len, lj: 0.12, t: 0.01 },
+            ],
+            zopf: [
+                zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
+                { teil: "head", art: "quaste", c: [0, 0.68, -0.38], box: [0.16, 0.06, 0.1], d: [0, -1, -0.22], n: Math.round(240 * vol), l: 0.7 * len, lj: 0.55, t: 0.02 },
+            ],
+            dutt: [
+                zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
+                { teil: "head", art: "knoten", c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [0, 0, 0], n: Math.round(420 * vol), l: 0.09 * len, lj: 0.06, t: 0.018 },
+            ],
+            undercut: [
+                zi(420, 0.03),
+                { teil: "head", c: [0, 0.58, -0.02], r: 0.4, sc: [0.9, 0.55, 0.95], d: [0.55, -0.5, -0.2], n: Math.round(550 * vol), l: 0.19 * len, lj: 0.12, t: 0.02 },
+            ],
+        };
+        return STILE[stil] || STILE.mittel;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

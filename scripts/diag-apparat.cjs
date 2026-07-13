@@ -91,6 +91,17 @@ function countToString(src) {
     return (stripComments(src).match(/\.toString\(\)/g) || []).length;
 }
 
+// V18.462 — DER typeof-RATCHET (ultraguss U1-Folge, die Voll-Wanderung ist
+// tabellen-getrieben offen): 891 namens-verankerte `typeof … === "function"`-
+// Existenz-Proben leben im Apparat. Der Bestand darf NUR SINKEN — jede neue
+// Probe liest den Anker-Katalog (window.__anker) oder beweist KONSUM
+// (window.__consumes); wandert eine Probe, sinkt die Zahl hier mit.
+const FROZEN_TYPEOF = 891;
+
+function countTypeof(src) {
+    return (stripComments(src).match(/typeof [^=\n]{1,80}=== "function"/g) || []).length;
+}
+
 function scanRatchet(playtestSrc) {
     const n = countToString(playtestSrc);
     const errs = [];
@@ -100,7 +111,14 @@ function scanRatchet(playtestSrc) {
                 `Neue Proben lesen window.__codeOf (kommentar-gestrippt), beweisen KONSUM via window.__consumes ` +
                 `oder proben Katalog-Existenz via window.__anker — nie rohes .toString().`
         );
-    return { n, errs };
+    const nT = countTypeof(playtestSrc);
+    if (nT > FROZEN_TYPEOF)
+        errs.push(
+            `typeof-Ratchet: ${nT} namens-verankerte typeof-Existenz-Proben in scripts/playtest.cjs ` +
+                `(eingefroren: ${FROZEN_TYPEOF}). Neue Proben lesen window.__anker/__consumes — der Bestand darf nur sinken ` +
+                `(sinkt er, FROZEN_TYPEOF mitsenken: der Ratchet klemmt nach unten nach).`
+        );
+    return { n, nT, errs };
 }
 
 // Den ANKER-KATALOG aus playtest.cjs lesen (die EINE frozen Tabelle).
@@ -120,7 +138,9 @@ function scanAnker(playtestSrc, stammSrc) {
         errs.push("Apparat-Schlüssel fehlt: window.__consumes ist nicht mehr in scripts/playtest.cjs definiert.");
     const entries = parseAnker(playtestSrc);
     if (!entries || entries.length === 0) {
-        errs.push("Apparat-Schlüssel fehlt: der ANKER-KATALOG (window.__anker) ist nicht mehr in scripts/playtest.cjs.");
+        errs.push(
+            "Apparat-Schlüssel fehlt: der ANKER-KATALOG (window.__anker) ist nicht mehr in scripts/playtest.cjs."
+        );
         return { entries: [], errs };
     }
     const code = stripComments(stammSrc);
@@ -143,11 +163,18 @@ function selftest() {
     // Klinge 1b: ein bloßer Kommentar zählt NICHT (die __codeOf-Disziplin).
     const comment = "const x = 1;\n" + "// y.toString() im Kommentar\n".repeat(FROZEN_TOSTRING + 5);
     if (countToString(comment) !== 0) fails.push("Ratchet zählt Kommentare mit (soll: 0)");
+    // Klinge 1c (V18.462): der typeof-Ratchet feuert bei Injektion über den Bestand.
+    const injectT = 'typeof r.probe === "function";\n'.repeat(FROZEN_TYPEOF + 1);
+    if (!scanRatchet(injectT).errs.some((e) => /typeof-Ratchet/.test(e)))
+        fails.push("typeof-Ratchet feuert nicht bei Injektion");
+    if (countTypeof('// typeof r.x === "function" im Kommentar\n'.repeat(9)) !== 0)
+        fails.push("typeof-Ratchet zählt Kommentare mit (soll: 0)");
     // Klinge 2: ein erfundenes Katalog-Symbol feuert die Katalog-Prüfung.
     const fakePlaytest =
         'window.__consumes = () => {};\nwindow.__anker = Object.freeze({\n    phantom: "_esGibtMichNicht9x7",\n});\n';
     const r = scanAnker(fakePlaytest, "class A { echteMethode() {} }");
-    if (r.errs.length !== 1 || !/phantom/.test(r.errs[0])) fails.push("Katalog-Prüfung feuert nicht bei Phantom-Symbol");
+    if (r.errs.length !== 1 || !/phantom/.test(r.errs[0]))
+        fails.push("Katalog-Prüfung feuert nicht bei Phantom-Symbol");
     if (fails.length) {
         console.log("❌ SELBST-TEST: " + fails.join(" · "));
         process.exit(1);
@@ -173,8 +200,13 @@ function main() {
         console.log(
             `ℹ️  Der Bestand sank (${ratchet.n} < ${FROZEN_TOSTRING}) — FROZEN_TOSTRING in scripts/diag-apparat.cjs nachziehen (der Ratchet darf enger).`
         );
+    if (ratchet.nT < FROZEN_TYPEOF)
+        console.log(
+            `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
+        );
     console.log(
-        `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate (Ratchet), ` +
+        `✅ DIE APPARAT-LINSE steht — ${ratchet.n}/${FROZEN_TOSTRING} rohe .toString()-Zitate + ` +
+            `${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (beide Ratchets nur-sinkend), ` +
             `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert.`
     );
 }
