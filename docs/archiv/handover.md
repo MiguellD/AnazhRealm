@@ -378,6 +378,32 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.463 — DIE HAUT (Schöpfer „du brauchst nicht meine augen — die haut fehlt, sämtliche dinge")
+
+Der A/B-Blick mit EIGENEN Augen (Fischer-Prinzip, kein Vertagen mehr): der Studio-Mensch trägt
+GLATTE Voxel-Hüllen (Haut + wasserdichte Kleider über den Muskel-Primitiven, LBS-geskinnt) — der
+Welt-Mensch trug rohe Teil-Bälle mit Inflate-Klonen. DIE WANDERUNG: **die Hüllen-MASCHINE
+(_vox_dilate/_vox_erode/_vox_fill/_blur3/surfaceNets) wohnt VERBATIM in koerper-core** (THREE-frei
+= MESHFREI §8; die Lab-Shell LIEST sie — Zwillings-Wand 17, Lab-Benchmark auge-identisch), der
+Bäcker konsumiert sie: **bakeMenschInstance bäckt EINE Haut-Hülle** (Hals–Knöchel; Kopf/Hände
+behalten das echte Baum-Detail) **+ je kleidZonen-Zeile EINE Stoff-Hülle** — in der SPREIZ-POSE
+(das Lab-Gesetz „bake once in a spread pose"; hängende Arme verschmolzen im Voxel-Feld mit dem
+Torso), per LBS-Gelenk-Delta in die Default-Pose zurückgerechnet. Gewichte je Vertex (1/d⁴ über
+Teil-Zentren, aggregiert aufs Gelenk, Top-4) reisen als **skinIndex/skinWeight im normalen
+Umschlag** (der Extractor kopiert Attribute schon immer); die Welt baut die Mensch-Gelenke als
+THREE.Bone, `_foundryBuildMesh` erkennt skinIndex → SkinnedMesh, `_ofenAssembleAsset` bindet in
+der Default-Pose, der Instanz-KLON rebindet auf SEINE Bones — **GPU-LBS bewegt Haut und Kleid mit
+dem bestehenden Rig-Animator.** Gefallen: die V18.461-Inflate-Klone (Muskel-Relief-Kleidung).
+Kalibrier-Lehren (je auge-gemessen): Nets-Wicklung braucht das Mehrheits-VOTUM (sonst FrontSide-
+gecullt = unsichtbar) · CLR-Klarheit Haut 0.028 / Stoff 0.12 (sonst sticht Haut durch den Ärmel) ·
+r128-Worker kennt getComponent nicht (rohe Arrays). kleidZonen-top = die Lab-Teile-Liste
+(Hals-Teile für den Kragen, pelvis/glutes für den untucked Saum-Überlapp). Wände: Wolf-Fell +
+mittel-Haar sha256-IDENTISCH (Streu unberührt) · Batterie „Alle Invarianten OK" · fast 18/18 ·
+smoke-labs 7/7 · gate:altlasten 17 Zwillinge. A/B-Paar: artifacts/ab-lab-mensch.png (Studio) vs
+avatar-kleid-default-w24.png (Welt) — die Silhouette ist Studio-Klasse. EHRLICH OFFEN: Stoff-
+TEXTUR (Lab-Canvas-Webung) + Säume/Kragen-Bündchen/armhem-Schnitte + SDF-Politur bleiben
+Lab-Erlebnis; die Welt trägt glatte Gesetz-Hüllen.
+
 ### V18.462 — DIE VOLLENDUNGS-WELLE (Schöpfer „vollende es champ, alles — siehst du noch all die offenen fäden?")
 
 Die Inventur (10 parallele Leser über Pläne+Code) fand die Fäden, dann fielen sie seriell:

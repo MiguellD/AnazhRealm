@@ -6,7 +6,19 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.462 — DIE VOLLENDUNGS-WELLE: W9 Himmel · W10 Wasser · Frisuren · fail-LAUT)
+## Stand (V18.463 — DIE HAUT: Hüllen-Maschine geteilt, SkinnedMesh durch die Pipe)
+
+**DIE HAUT (V18.463):** die Voxel-Hüllen-MASCHINE (vox-Ops + surfaceNets) wohnt VERBATIM in
+koerper-core (THREE-frei), Lab liest sie (Benchmark auge-identisch, Wand=17); der Mensch-Bäcker
+bäckt EINE glatte Haut-Hülle (Hals–Knöchel) + je kleidZonen-Zeile EINE Stoff-Hülle — in
+SPREIZ-POSE gebacken (sonst verschmilzt Arm+Torso im Voxel-Feld), per LBS-Delta in die
+Default-Pose zurückgerechnet; skinIndex/skinWeight reisen im normalen Umschlag, die Welt baut
+Bone-Gelenke + bindet SkinnedMesh (Klon rebindet auf SEINE Bones) → GPU-LBS trägt Haut+Kleid
+im bestehenden Animator. Inflate-Klone gefallen. MERKE: Nets braucht das Wicklungs-VOTUM
+(sonst unsichtbar) · CLR Haut 0.028/Stoff 0.12 · r128 kennt getComponent nicht. OFFEN als
+Lab-Erlebnis: Stoff-Textur · Säume/Bündchen/armhem · SDF-Politur.
+
+### Davor (V18.462 — DIE VOLLENDUNGS-WELLE: W9 Himmel · W10 Wasser · Frisuren · fail-LAUT)
 
 **W9+W10 GEBAUT:** `HIMMEL_GESETZ` + `WASSER_GESETZ` (foundry-core) — das Studio-GLSL
 INJIZIERT die Zahlen in seinen Shader-Text (semantischer Beweis alt==neu), die Welt (TSL)
