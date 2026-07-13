@@ -425,13 +425,18 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             res.x.humanDefTags = JSON.stringify(r.computeSoulCompoundTags(r.playerSoulDefs.human) || {});
             res.x.waechterGussLiest = (() => {
                 try {
-                    // KONVERGENZ: der 8-KH-Atlas ist gefallen — die Identitäts-Wahrheit ist
-                    // jetzt der EINE Baum: der Stamm-Rig KONSUMIERT bauMensch+morphAuf.
+                    // PIPE-VOLLENDUNG (V18.459): der Mensch fährt durch die Foundry — der
+                    // Stamm-Rig KONSUMIERT den Mensch-Ofen (_ofenMenschTemplate), der über
+                    // den Bäcker-Tisch (BAKERS_BY_KIND.koerper → bauMensch+morphAuf im
+                    // Bäcker) gießt. Die Identitäts-Wahrheit: Kern trägt das Gesetz, der
+                    // Tisch trägt die koerper-Zeile, der Rig liest den Ofen — und der
+                    // 8-KH-Atlas bleibt gefallen.
                     const core = window.__koerperCore;
                     if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
                         return "err:kern fehlt";
+                    const tisch = typeof BAKERS_BY_KIND !== "undefined" && typeof BAKERS_BY_KIND.koerper === "function";
                     const src = String(r._buildHumanoidRig).replace(/\/\/[^\n]*|\/\*[\s\S]*?\*\//g, "");
-                    return /bauMensch/.test(src) && /morphAuf/.test(src) && !/humanSkeleton/.test(src);
+                    return tisch && /_ofenMenschTemplate/.test(src) && !/humanSkeleton/.test(src);
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }

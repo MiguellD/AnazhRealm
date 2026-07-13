@@ -2973,8 +2973,6 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     };
     const B = kern.bauTier(F, dials);
     const root = B.teile.wolf;
-    root.updateMatrixWorld(true);
-    // Der ANIMIERTE Satz: die Gelenke, die das Gang-/Kopf-/Schweif-Gesetz treibt.
     const namen = [
         "wolf",
         "legFL",
@@ -3009,6 +3007,19 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         nodeName.set(seg, nm);
         tailNamen.push(nm);
     });
+    return __bakeGelenkBaum(root, "wolf", nodeName, fein, {
+        art: presetId,
+        tailSegs: tailNamen,
+        masse: B.masse || null,
+        base: typeof P.cB === "number" ? P.cB : null,
+    });
+}
+
+// ── DER GENERISCHE GELENK-GUSS (ein Gesetz für Tier UND Mensch): Meshes in den
+// Lokal-Raum ihres nächsten ANIMIERTEN Gelenks backen, je (Gelenk × Klasse)
+// mergen, Gelenk-Baum als __skelett-Beipack (mit root-Namen) anhängen. ──
+function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
+    root.updateMatrixWorld(true);
     const animAhn = (node) => {
         let cur = node;
         while (cur) {
@@ -3017,7 +3028,6 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         }
         return root;
     };
-    // Gelenk-Skelett: Name → {parent, lokale Pose relativ zum animierten Eltern-Gelenk}.
     const inv = new THREE.Matrix4();
     const loc = new THREE.Matrix4();
     const p3 = new THREE.Vector3(),
@@ -3025,16 +3035,23 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         s3 = new THREE.Vector3();
     const joints = [];
     for (const [node, name] of nodeName) {
-        let parentName = null;
-        if (node !== root) {
-            const pa = animAhn(node.parent);
-            parentName = nodeName.get(pa) || "wolf";
-        }
         if (node === root) {
-            joints.push({ name, parent: null, pos: [0, 0, 0], quat: [0, 0, 0, 1], scale: [1, 1, 1] });
+            // Die WURZEL trägt ihre EIGENE Pose mit (morphAuf legt z. B. den
+            // Größen-Dial als charScale auf den character-Root — hart [1,1,1]
+            // verwarf den Höhen-Dial: gemessen h1==h0, die D-Linse feuerte).
+            root.updateMatrixWorld(true);
+            loc.copy(root.matrixWorld).decompose(p3, q4, s3);
+            joints.push({
+                name,
+                parent: null,
+                pos: [p3.x, p3.y, p3.z],
+                quat: [q4.x, q4.y, q4.z, q4.w],
+                scale: [s3.x, s3.y, s3.z],
+            });
             continue;
         }
-        const paNode = node === root ? null : animAhn(node.parent);
+        const paNode = animAhn(node.parent);
+        const parentName = nodeName.get(paNode) || rootName;
         inv.copy(paNode.matrixWorld).invert();
         loc.multiplyMatrices(inv, node.matrixWorld);
         loc.decompose(p3, q4, s3);
@@ -3046,13 +3063,12 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             scale: [s3.x, s3.y, s3.z],
         });
     }
-    // Meshes je (Gelenk × Klasse) in Gelenk-Lokalraum backen + mergen.
-    const buckets = new Map(); // key "joint|klasse" → {geos, mat, joint}
+    const buckets = new Map();
     const tmp = new THREE.Matrix4();
     root.traverse((node) => {
         if (!node.isMesh || !node.geometry) return;
         const a = fein ? root : animAhn(node);
-        const jName = nodeName.get(a) || "wolf";
+        const jName = nodeName.get(a) || rootName;
         const klasse = (node.material && node.material.userData && node.material.userData.__klasse) || "fell";
         const key = jName + "|" + klasse;
         inv.copy(a.matrixWorld).invert();
@@ -3070,21 +3086,90 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         mesh.userData.__assetJoint = b.joint;
         out.add(mesh);
     }
-    // Original-Baum entsorgen (die Wegwerf-Instanz — wie der Pflanzen-Pfad).
     root.traverse((n) => {
         if (n.isMesh && n.geometry) n.geometry.dispose();
     });
-    out.userData.__skelett = {
-        art: presetId,
-        joints,
-        tailSegs: tailNamen,
-        masse: B.masse || null,
-        base: typeof P.cB === "number" ? P.cB : null,
-    };
+    out.userData.__skelett = Object.assign({ root: rootName, joints }, beipack || {});
     out.updateMatrixWorld(true);
     return out;
 }
 
+// ── DER MENSCH-GUSS: bauMensch(F) + morphAuf(dials) durch DENSELBEN Gelenk-Guss.
+// ov = { dials, skinColor, hairColor } (Genom/Studio — Zahlen; Farben reisen
+// linear via mp wie beim Tier). Gelenke = die Rig-Gruppen (torso·head·arm/
+// elbow/hand·hip/knee/ankle je Seite) — dieselben Namen liest der Stamm-Rig. ──
+function bakeMenschInstance(kern, presetId, seed, lod, ov) {
+    const dials = Object.assign({}, kern.START_PARAMS || {}, (ov && ov.dials) || {});
+    const skinCol = ov && typeof ov.skinColor === "number" ? ov.skinColor : 0xc89372;
+    const hairCol = ov && typeof ov.hairColor === "number" ? ov.hairColor : 0x241712;
+    const MK = kern.MATERIAL_KLASSEN || {};
+    const KL = Object.assign({}, MK, { skin: { c: skinCol, r: 0.62 }, hair: { c: hairCol, r: 0.85 } });
+    const fein = (lod | 0) >= 1;
+    const segW = fein ? 8 : 20,
+        segH = fein ? 6 : 14,
+        segZ = fein ? 6 : 14;
+    const lin = (hx) => {
+        const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+        return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)];
+    };
+    const matCache = {};
+    const matFuer = (k) => {
+        if (matCache[k]) return matCache[k];
+        const kl = KL[k] || KL.skin;
+        const m = new THREE.MeshStandardMaterial({ roughness: kl.r != null ? kl.r : 0.6, metalness: 0 });
+        const lc = lin(kl.c != null ? kl.c : 0xc89372);
+        m.color.setRGB(lc[0], lc[1], lc[2]);
+        if (kl.emissiv != null && m.emissive) {
+            const le = lin(kl.emissiv);
+            m.emissive.setRGB(le[0], le[1], le[2]);
+            m.emissiveIntensity = kl.emissivIntensitaet != null ? kl.emissivIntensitaet : 0.85;
+        }
+        m.userData.__klasse = k;
+        matCache[k] = m;
+        return m;
+    };
+    const F = {
+        gruppe: () => new THREE.Group(),
+        kugel: (r, k, sc) => {
+            if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt (wie der Stamm-Ofen zuvor)
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, segW, segH), matFuer(k));
+            if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
+            return mesh;
+        },
+        zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
+    };
+    const B = kern.bauMensch(F);
+    kern.morphAuf(B, dials);
+    // Die gemalten Shorts: dieselbe Teil-Namen-Regel wie der Stamm zuvor.
+    for (const pn of ["pelvis", "glute1", "glute-1"]) {
+        const teil = B.parts[pn];
+        if (teil && teil.material) teil.material = matFuer("shorts");
+    }
+    const namen = [
+        "torso",
+        "head",
+        "arm1",
+        "arm-1",
+        "elbow1",
+        "elbow-1",
+        "hand1",
+        "hand-1",
+        "hip1",
+        "hip-1",
+        "knee1",
+        "knee-1",
+        "ankle1",
+        "ankle-1",
+    ];
+    const nodeName = new Map();
+    nodeName.set(B.character, "mensch");
+    for (const n of namen) if (B.parts[n]) nodeName.set(B.parts[n], n);
+    return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
+        art: presetId,
+        base: skinCol,
+    });
+}
+
 // Der Tisch (M8: Tabelle vor if) — die Shell-Dispatch UND der Stamm-Kaltpfad
 // schlagen hier nach; neue MESHFREI-Gattungen registrieren eine Zeile.
-var BAKERS_BY_KIND = { kreatur: bakeTierInstance };
+var BAKERS_BY_KIND = { kreatur: bakeTierInstance, koerper: bakeMenschInstance };

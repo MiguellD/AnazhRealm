@@ -378,6 +378,30 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.459 — PIPE-VOLLENDUNG: ALLE Gattungen fahren (Schöpfer „vollende es sofern es so einfach, beende es")
+
+Der Tisch trägt jetzt die zweite Zeile: **`BAKERS_BY_KIND.koerper = bakeMenschInstance`** —
+bauMensch+morphAuf gießen im Bäcker (der generische **Gelenk-Guss `__bakeGelenkBaum`** wurde
+aus dem Tier-Bäcker herausgelöst: EIN Gesetz für Tier UND Mensch; die WURZEL-Pose reist mit —
+hart [1,1,1] verwarf den Größen-Dial, die D-Linse feuerte, gemessen h1==h0 → geheilt).
+`_buildHumanoidRig` ist Pipe-KONSUMENT geworden (Signatur+Rückgabe IDENTISCH — Animator/Equip/
+Werkstatt/Peers unberührt): der Mensch ist ein Template-Clone wie jede Kreatur — **gemessen
+1–2 ms, 29 gemergte Meshes statt 227**, Prefetch füllt den Default-Mensch off-thread (memo 9/9
+inkl. mensch durch den Worker), Hautton reist als ZAHL (`userData.hautTon` — die Pipe trägt
+Farben als Vertex-Daten auf geteilten Materialien, `_skinMat` fiel mit dem Inline-Bau). Der
+Assembler wurde generisch (`_ofenAssembleAsset`, root aus dem Skelett-Beipack). FAHRT-BEWEIS
+aller Gattungen durch DENSELBE build-asset-Kanal: **Pflanze ✓ · Kreatur ✓ (61) · Mensch ✓ (29) ·
+Fahrzeug gt ✓ (328) · Waffe langschwert ✓ (18)** — Fachwerk fährt seinen Daten-Kanal
+(export-settlement). Damit sind die Stamm-Hand-Tunnel Geschichte: es gibt EINEN Übersetzer.
+Auge: der Pipe-Mensch mit Massiv-Dials (Muskeln aus morphAuf), Hautton, gemalte Shorts
+(artifacts/avatar-konvergenz-massiv-w29.png). Die Holzkarren-Antwort: reittier_holzross ist
+das BESTAND-Pferd (Skelett-Guss, role vehicle) und erscheint neben den Garage-Autos in der
+Fahrzeug-Sektion — bei kaltem Buch ist es das EINZIGE sichtbare Fahrzeug; die Garage-Autos
+(gt/supersport/limousine/kompakt_fwd/suv) fahren durch die Pipe, sobald das Buch da ist.
+Gewandert: fast-Avatar-Check (29 gemergte Teile, Wand 10–120) · Ring-5-Hautton-Band (ZAHL statt
+Material-Objekt) · nervensystem-labs-D/X-Proben (Ofen-Konsum-Wahrheit). Grün: Batterie „Alle
+Invarianten OK" · fast 18/18 · check · gate:nervensystem-labs.
+
 ### V18.458 — DIE EINE PIPE: die Kreatur fährt durch die Foundry (Schöpfer „einen Übersetzer… eine einheitliche Pipe statt der Endlosloop pro Portal — geh")
 
 Der Befund des Schöpfers war präzise: die Foundry WAR schon die eine Pipe (get-book ·

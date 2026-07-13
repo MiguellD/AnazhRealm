@@ -6,19 +6,25 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.458 — DIE EINE PIPE: die Kreatur fährt durch die Foundry)
+## Stand (V18.459 — DIE EINE PIPE VOLLENDET: alle Gattungen fahren)
 
-**DIE EINE PIPE (V18.458, Vertrag §8.4):** die Foundry ist DER Übersetzer für alles — der
-Gattungs-Bäcker-Tisch `BAKERS_BY_KIND` (foundry-core, auch auf der Stamm-Seite geladen) bäckt
-MESHFREI-Kerne generisch: Kreatur = Asset (bauTier je Gelenk×Klasse gemergt → 61 statt 235
-Meshes, gelenkig; `__skelett`-Beipack im normalen Umschlag; lod1 = Fern-Standbild aus derselben
-Pipe; IDB/Prefetch gratis). Der Stamm assembliert nur (EINE Reply-Konversion `_foundryBuildMesh`)
-+ memoisiert je Art+Dials: **jede Kreatur ist ein Template-Clone (1 ms, 100 % Geo-Teilung) — die
+**DIE EINE PIPE (V18.458–.459, Vertrag §8.4):** die Foundry ist DER Übersetzer für ALLES.
+FAHRT-BEWEIS durch DENSELBEN build-asset-Kanal: Pflanze · Kreatur (61 Meshes statt 235) ·
+Mensch (29 statt 227) · Fahrzeug (gt 328) · Waffe (langschwert 18); Fachwerk fährt seinen
+Daten-Kanal (export-settlement). Der Gattungs-Bäcker-Tisch `BAKERS_BY_KIND` (foundry-core,
+auch Stamm-seitig geladen) bäckt MESHFREI-Kerne generisch über den EINEN Gelenk-Guss
+`__bakeGelenkBaum` (Wurzel-Pose reist mit — morphAufs Größen-Dial lebt dort); `__skelett`-
+Beipack im normalen Umschlag, lod1-Fern-Standbild, IDB/Prefetch gratis. Der Stamm assembliert
+nur (`_ofenAssembleAsset` + EINE Reply-Konversion `_foundryBuildMesh`) + memoisiert je
+Art+Dials: **Kreatur UND Mensch sind Template-Clones (1–2 ms, 100 % Geo-Teilung) — die
 Spawn-Freeze-Klasse ist strukturell tot**; kalt bäckt derselbe Bäcker sync (ein Gesetz, zwei
-Scheduler). Look: die STUDIO-Zahlen führen (mp; Farb-Gesetz: Hexe selbst→linear, r128 roh vs
-r184 auto; Körper-Ton = `P.cB`, `P.base` ist ein CSS-String!). Gefallen: `_buildTierBaum`-Tunnel,
-`_tierFernTeile`, `_buildCreatureHideMaterial`, tote werk-render-Modi. DER WEG: Mensch/Fahrzeuge/
-Schmiede auf denselben Tisch — der Portal-Loop wird Daten-Registrierung, keine Welle mehr.
+Scheduler). `_buildHumanoidRig` = Pipe-Konsument (Signatur/Rückgabe identisch; Hautton reist
+als ZAHL `userData.hautTon`). Look: die STUDIO-Zahlen führen (mp; Farb-Gesetz: Hexe
+selbst→linear, r128 roh vs r184 auto; Körper-Ton = `P.cB`, `P.base` ist ein CSS-String!).
+Gefallen: `_buildTierBaum`- UND Mensch-Inline-Tunnel, `_tierFernTeile`,
+`_buildCreatureHideMaterial`, `_skinMat`, tote werk-render-Modi. Holzkarren-Wahrheit:
+reittier_holzross = das BESTAND-Pferd neben den Garage-Autos; bei kaltem Buch das einzig
+Sichtbare.
 
 ### Davor (V18.457 — KONVERGENZ GESCHLOSSEN: EIN MENSCH, EIN TIER)
 

@@ -194,8 +194,7 @@ function check(name, ok) {
             // Menge ist exakt die vier ehrlichen Tiere.
             out.creatureGlut = safe(() => {
                 const names = (window.AnazhRealm || r.constructor).CREATURE_SOUL_NAMES || [];
-                const exakt =
-                    names.length === 4 && ["wesen", "wolf", "fuchs", "baer"].every((n) => names.includes(n));
+                const exakt = names.length === 4 && ["wesen", "wolf", "fuchs", "baer"].every((n) => names.includes(n));
                 return { ok: exakt };
             });
             // ERFINDER-WELLE — die NEUEN Tiere (wolf/fuchs/baer aus den tetrapoda-
@@ -353,13 +352,20 @@ function check(name, ok) {
         check("getTerrainHeightAt(0,0) endlich", R.terrainHeightFinite === true);
         const av = R.avatar || {};
         check("AVATAR baut (_buildHumanGroup ohne Crash)", av.ok === true && !av.__err);
+        // PIPE-VOLLENDUNG (V18.459): der Mensch ist ein Pipe-Asset — je (Gelenk ×
+        // Klasse) GEMERGT (~29 Meshes statt 227, voll gelenkig). Untergrenze 10 =
+        // die Struktur-Wand (Gelenke × Klassen), Obergrenze 120 = kein Rückfall
+        // in den ungemergten Baum.
         check(
-            `AVATAR ist der Studio-Baum (bauMensch: ${av.meshN || 0} Teile + Gelenk-Gruppen)`,
-            av.hasRig === true && av.baum === true && av.gelenke === true && (av.meshN || 0) > 150
+            `AVATAR ist der Studio-Baum aus der PIPE (${av.meshN || 0} gemergte Teile + Gelenk-Gruppen)`,
+            av.hasRig === true && av.baum === true && av.gelenke === true && (av.meshN || 0) >= 10 && av.meshN <= 120
         );
         const cw = R.creatureWesen || {};
         check(`KREATUR 'wesen' baut (${cw.children || 0} Teile)`, cw.ok === true && !cw.__err);
-        check("ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär", (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err);
+        check(
+            "ALTLASTEN-NULL: Seelen = exakt Hirsch·Wolf·Fuchs·Bär",
+            (R.creatureGlut || {}).ok === true && !(R.creatureGlut || {}).__err
+        );
         check(
             "DIE NEUEN TIERE bauen (Wolf·Fuchs·Bär aus den tetrapoda-Gattungen)",
             (R.creatureTiere || {}).wolf === true &&

@@ -55737,16 +55737,20 @@ async function checkBandRing5Soul(ctx) {
         // V18.259 — der Avatar ist PBR-HAUTTON 0xc89372 (das rote Soul-Sediment 0xc0392b
         // ist raus, d0836f4); lit MeshStandardMaterial. Die alte „gedämpftes Rot"-Erwartung
         // war die Toon-Era-Wahrheit, jetzt gemessen-tan.
-        out.defaultColorRed =
-            currentMaterial() &&
-            currentMaterial().color.getHex() === 0xc89372 &&
-            // KONVERGENZ: die Haut-Referenz des Studio-Baums ist ein PBR-(Node-)Material
-            !!(
-                currentMaterial().isMeshToonMaterial ||
-                currentMaterial().isMeshStandardMaterial ||
-                currentMaterial().isMeshStandardNodeMaterial ||
-                currentMaterial().isNodeMaterial
-            );
+        // PIPE-VOLLENDUNG (V18.459): die Farb-Wahrheit ist die ZAHL am Körper
+        // (userData.hautTon — Genom-Default 0xc89372); die Pipe trägt Farben als
+        // Vertex-Daten auf GETEILTEN Node-Materialien (kein per-Körper-Material mehr).
+        let pipeNodeMat = false;
+        currentMesh().traverse((n) => {
+            if (
+                !pipeNodeMat &&
+                n.isMesh &&
+                n.material &&
+                (n.material.isNodeMaterial || n.material.isMeshStandardNodeMaterial)
+            )
+                pipeNodeMat = true;
+        });
+        out.defaultColorRed = currentMesh().userData.hautTon === 0xc89372 && pipeNodeMat;
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
         const humanParts = currentParts();
@@ -55965,7 +55969,10 @@ async function checkBandRing5Soul(ctx) {
             `count=${ring5Results.dropdownOptionCount} values=${ring5Results.dropdownOptionValues}`
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
-        check("Ring 5/234: Mensch-Avatar ist lit NodeMaterial (PBR), Hautton 0xc89372", ring5Results.defaultColorRed);
+        check(
+            "Ring 5/234: Mensch-Avatar aus der PIPE — Hautton-Zahl 0xc89372 + lit NodeMaterial",
+            ring5Results.defaultColorRed
+        );
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);
         check("Ring 5 (NULL): applyPlayerSoul('wolf') verkörpert (embody-Pfad)", ring5Results.applyReturnsTrue);
         check("Ring 5 (NULL): Wolf setzt state.player.soul = bp_koerper_wolf", ring5Results.phoenixSoulSet);

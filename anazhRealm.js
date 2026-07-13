@@ -16277,6 +16277,12 @@ class AnazhRealm {
     // was ein Studio kann). Rückgabe { mesh, rig, kh, bones:[] }; mesh = der Baum in
     // Welt-Maß (f = 8·0.2125/6 je Lab-Einheit; JEDE Größe reist im morphAuf-charScale).
     _buildHumanoidRig(g) {
+        // PIPE-VOLLENDUNG (V18.459) — der Mensch fährt durch DIESELBE Foundry wie
+        // Kreatur und Pflanze: Template aus dem Mensch-Ofen (Bäcker-Tisch Zeile
+        // "koerper", memo je Dials+Farben), der Körper ist ein CLONE (Geometrien+
+        // Materialien geteilt). Signatur + Rückgabe {mesh, rig, kh, bones:[]}
+        // bleiben IDENTISCH — Animator/Equip/Werkstatt/Peers lesen unverändert.
+        // Der Stamm-Inline-Bau (eigene Fabriken/Geo-/Mat-Caches) ist GEFALLEN.
         if (typeof THREE === "undefined") return null;
         g = g || {};
         const kh = g.kh || 0.2125;
@@ -16292,83 +16298,26 @@ class AnazhRealm {
         const dials = Object.assign({}, core.START_PARAMS || {}, g.bmDials || this._dialsAusGenom(g));
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc89372;
         const hairCol = typeof g.hairColor === "number" ? g.hairColor : 0x241712;
-        // KONVERGENZ II — die Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN,
-        // dieselbe Quelle wie die Lab-Materialien; kein Zwilling): nur Haut/Haar
-        // (Genom-Wahl aus den Kern-PALETTEN) reisen von außen herein.
-        const MK = core.MATERIAL_KLASSEN || {};
-        const KL = Object.assign({}, MK, {
-            skin: { c: skinCol, r: 0.62 },
-            hair: { c: hairCol, r: 0.85 },
-        });
-        const matCache = this._koerperMatCache || (this._koerperMatCache = new Map());
-        const matFor = (k) => {
-            const kl = KL[k] || KL.skin;
-            const key = k + "_" + kl.c;
-            if (!matCache.has(key)) {
-                let m;
-                try {
-                    m = this._buildPbrNodeMaterial
-                        ? this._buildPbrNodeMaterial({ color: kl.c, roughness: kl.r, metalness: 0 })
-                        : new THREE.MeshStandardMaterial({ color: kl.c, roughness: kl.r });
-                } catch (_e) {
-                    m = new THREE.MeshStandardMaterial({ color: kl.c, roughness: kl.r });
-                }
-                matCache.set(key, m);
-            }
-            return matCache.get(key);
-        };
-        // Geteilte Geometrien (der Stamm-OFEN wählt die Dichte — das Lab gießt 64er,
-        // die Welt trägt 20/14). r bleibt in der GEOMETRIE: base = sc, die morphAuf-
-        // Zahlen wirken byte-gleich zum Lab.
-        const geoCache = AnazhRealm._koerperGeoCache || (AnazhRealm._koerperGeoCache = new Map());
-        const kugelGeo = (r) => {
-            const key = "k" + r.toFixed(4);
-            if (!geoCache.has(key)) geoCache.set(key, new THREE.SphereGeometry(r, 20, 14));
-            return geoCache.get(key);
-        };
-        const zylGeo = (rt, rb, h) => {
-            const key = "z" + rt.toFixed(4) + "_" + rb.toFixed(4) + "_" + h.toFixed(4);
-            if (!geoCache.has(key)) geoCache.set(key, new THREE.CylinderGeometry(rt, rb, h, 14, 1));
-            return geoCache.get(key);
-        };
-        const F = {
-            gruppe: () => new THREE.Group(),
-            kugel: (r, k, sc) => {
-                if (k === "cornea") return new THREE.Group(); // transparente Schale entfällt — der Knoten hält die Baum-Form
-                const mesh = new THREE.Mesh(kugelGeo(r), matFor(k));
-                if (sc) mesh.scale.set(sc[0], sc[1], sc[2]);
-                mesh.castShadow = k === "skin" || k === "joint";
-                mesh.receiveShadow = true;
-                return mesh;
-            },
-            zylinder: (rt, rb, h, k) => {
-                const mesh = new THREE.Mesh(zylGeo(rt, rb, h), matFor(k));
-                mesh.castShadow = k === "skin";
-                mesh.receiveShadow = true;
-                return mesh;
-            },
-        };
-        let B;
-        try {
-            B = core.bauMensch(F);
-            core.morphAuf(B, dials);
-        } catch (e) {
-            this.log("bauMensch scheiterte (" + (e && e.message) + ") — kein Mensch (fail-closed).", "ERROR");
+        const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, 0);
+        if (!t0 || !t0.teile || !t0.teile.mensch) {
+            this.log("Mensch-Ofen fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.", "ERROR");
             return null;
         }
-        for (const pn of ["pelvis", "glute1", "glute-1"]) {
-            const teil = B.parts[pn];
-            if (teil && teil.material) teil.material = matFor("shorts");
-        }
+        const klon = t0.root.clone(true);
+        const teile = {};
+        klon.traverse((n) => {
+            if (n.isGroup && n.name) teile[n.name] = n;
+        });
         const f = (8 * 0.2125) / 6.0;
         const wrap = new THREE.Group();
         wrap.scale.setScalar(f);
         wrap.position.y = oy;
-        wrap.add(B.character);
+        wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
-        const P2 = (n2) => B.parts[n2] || null;
+        wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
+        const P2 = (n2) => teile[n2] || null;
         const rig = {
-            hips: B.character,
+            hips: teile.mensch,
             spine: P2("torso"),
             chest: P2("torso"),
             neck: P2("head"),
@@ -16381,9 +16330,8 @@ class AnazhRealm {
             // UNTER wrap(·f) — kh/f hält die Amplituden welt-gleich.
             kh: kh / f,
             _baum: true,
-            _baumParts: B.parts,
             _morphDials: dials,
-            _skinMat: matFor("skin"), // die EINE Haut-Referenz (Tint-/Material-Konsumenten)
+            _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         };
         return { mesh: wrap, rig, kh, bones: [] };
     }
@@ -16533,9 +16481,10 @@ class AnazhRealm {
         }
         return recId + "|" + (lod | 0) + "|" + d;
     }
-    // Der Beipack-Leser: Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an
-    // ihren Gelenken. Liefert {root, teile, tailNamen, hoehe} oder null.
-    _ofenAssembleKreatur(meshes) {
+    // Der Beipack-Leser (GENERISCH für jede Gelenk-Gattung — Tier UND Mensch):
+    // Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an ihren Gelenken.
+    // Liefert {root, teile, tailNamen, hoehe, minY} oder null.
+    _ofenAssembleAsset(meshes) {
         if (!Array.isArray(meshes) || !meshes.length || typeof THREE === "undefined") return null;
         let skelett = null;
         for (const m of meshes) if (m && m.kind === "__skelett" && m.skelett) skelett = m.skelett;
@@ -16548,12 +16497,13 @@ class AnazhRealm {
             g.name = j.name;
             teile[j.name] = g;
         }
+        const rootName = skelett.root || "wolf";
         for (const j of skelett.joints) {
             if (!j || !j.name) continue;
             const g = teile[j.name];
             if (j.parent && teile[j.parent]) teile[j.parent].add(g);
-            else if (j.name === "wolf") root.add(g);
-            else (teile.wolf || root).add(g);
+            else if (j.name === rootName) root.add(g);
+            else (teile[rootName] || root).add(g);
             if (Array.isArray(j.pos)) g.position.set(j.pos[0], j.pos[1], j.pos[2]);
             if (Array.isArray(j.quat)) g.quaternion.set(j.quat[0], j.quat[1], j.quat[2], j.quat[3]);
             if (Array.isArray(j.scale)) g.scale.set(j.scale[0], j.scale[1], j.scale[2]);
@@ -16566,7 +16516,7 @@ class AnazhRealm {
             // Template-Geometrie ist über ALLE Klone geteilt — der Dispose-
             // Chokepoint (_disposeSoulGroup) lässt sharedGeom stehen.
             mesh.userData.sharedGeom = true;
-            (teile[m.joint] || teile.wolf || root).add(mesh);
+            (teile[m.joint] || teile[rootName] || root).add(mesh);
             gebaut++;
         }
         if (!gebaut) return null;
@@ -16602,7 +16552,7 @@ class AnazhRealm {
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                asm = this._ofenAssembleKreatur(eintraege);
+                asm = this._ofenAssembleAsset(eintraege);
             }
         } catch (e) {
             this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
@@ -16644,12 +16594,67 @@ class AnazhRealm {
         }
         return out;
     }
+    // DER MENSCH-OFEN (PIPE-VOLLENDUNG V18.459): derselbe Tisch, Zeile "koerper" —
+    // bauMensch+morphAuf backen im Bäcker, der Stamm assembliert + memoisiert je
+    // Dials+Farben. Der Spieler/Peer ist ein Template-Clone wie jede Kreatur.
+    _ofenMenschTemplate(dials, skinColor, hairColor, lod) {
+        const core = typeof window !== "undefined" && window.__koerperCore;
+        if (!core || typeof core.bauMensch !== "function") return null;
+        let dKey = "";
+        try {
+            dKey = JSON.stringify(dials || {});
+        } catch (_e) {
+            dKey = "";
+        }
+        const key = "mensch|" + (lod | 0) + "|" + dKey + "|" + (skinColor >>> 0) + "|" + (hairColor >>> 0);
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        if (memo.has(key)) return memo.get(key);
+        let asm = null;
+        try {
+            const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
+            if (BAKER && typeof BAKER.koerper === "function") {
+                const g = BAKER.koerper(core, "mensch", 0, lod | 0, { dials, skinColor, hairColor });
+                const eintraege = [];
+                g.traverse((o) => {
+                    if (o.isMesh) eintraege.push(this._ofenMeshEintragAusThree(o));
+                });
+                if (g.userData && g.userData.__skelett)
+                    eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
+                asm = this._ofenAssembleAsset(eintraege);
+            }
+        } catch (e) {
+            this.log("Mensch-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
+            asm = null;
+        }
+        if (asm) memo.set(key, asm);
+        return asm;
+    }
     // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
     // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
     _ofenPrefetchKreaturen() {
         const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
+        // Der DEFAULT-MENSCH (START_PARAMS + Anker-Farben) — Boot-Avatar/Peers:
+        // ov-frei → IDB-fähig; die Live-Buch-Dials backen kalt einmal je Änderung.
+        const kc = typeof window !== "undefined" && window.__koerperCore;
+        if (kc && kc.START_PARAMS) {
+            const dM = Object.assign({}, kc.START_PARAMS);
+            let dKeyM = "";
+            try {
+                dKeyM = JSON.stringify(dM);
+            } catch (_e) {
+                dKeyM = "";
+            }
+            const keyM = "mensch|0|" + dKeyM + "|" + (0xc89372 >>> 0) + "|" + (0x241712 >>> 0);
+            if (!memo.has(keyM)) {
+                this._foundryRequest("mensch", 0, 0, "summer", null).then((meshes) => {
+                    if (!meshes || !meshes.length || memo.has(keyM)) return;
+                    const asm = this._ofenAssembleAsset(meshes);
+                    if (asm) memo.set(keyM, asm);
+                });
+            }
+        }
         for (const soulKey of Object.keys(map)) {
             const recId = map[soulKey];
             if (!recId || gesehen.has(recId)) continue;
@@ -16661,7 +16666,7 @@ class AnazhRealm {
                 if (memo.has(key)) continue;
                 this._foundryRequest(recId, 0, lod, "summer", d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length || memo.has(key)) return;
-                    const asm = this._ofenAssembleKreatur(meshes);
+                    const asm = this._ofenAssembleAsset(meshes);
                     if (asm) memo.set(key, asm);
                 });
             }
@@ -46739,6 +46744,10 @@ class AnazhRealm {
                 // KONVERGENZ: der Baum trägt Klassen-Materialien — die EINE Haut-Referenz
                 // kommt aus dem Rig (Tint-/Farb-Konsumenten lesen weiter EIN Material).
                 group.userData.material = mesh.material || (built.rig && built.rig._skinMat) || null;
+                // PIPE-VOLLENDUNG: die Haut-Farb-WAHRHEIT (Genom/Studio-Zahl) reist am
+                // Körper — Leser (Band/Tint) fragen die Zahl, nicht ein Material-Objekt
+                // (die Pipe trägt Farben als Vertex-Daten auf geteilten Materialien).
+                group.userData.hautTon = mesh.userData && mesh.userData.hautTon;
                 // V18.367 — die Avatar-Pipelines (Haut/Kopf/Augen/Gesicht) WARM kompilieren: der
                 // KOPF ist in 1st-Person unsichtbar (74250) → seine Pipeline blieb un-kompiliert bis
                 // zum ersten 3rd-Person-Frame = der „riesen Lag beim Wechsel" (die V18.322-Klasse).
@@ -81934,7 +81943,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.458.0";
+AnazhRealm.VERSION = "18.459.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
