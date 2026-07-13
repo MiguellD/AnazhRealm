@@ -378,6 +378,27 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.460 — DIE FELL-STREU IST GESETZ (Schöpfer „wieso haben tiere keine felle?")
+
+Die Antwort auf die Schöpfer-Frage war eine Schicht tiefer: Fell/Haar/Kleid waren SHELL-Code
+(Anzeige-Schicht der Labs), nie GESETZ — die Pipe transportiert nur Gesetze. Jetzt wohnt die
+KOMPLETTE Körper-Streu des Tetrapoda-Labs als ZEILEN-TABELLE im Gesetzbuch:
+**`fellStreu(P, M, T)`** (tetrapoda-core, MESHFREI — reine Zahlen) — Bein-Lokale/Tuben ·
+Bauch/Brust/Hüft-Fuzz · Kehle/Mähne/Nacken/Schädel-Akzente verbatim als Zeilen, das
+Torso-DECKHAAR als DATEN-Zeile `art:"deck"` (Dichten/Längen/Töne + Wirte-Verteilung — die
+COVERAGE-Technik ist Leser-Sache). ZWEI LESER, EINE QUELLE: das Lab streut die Zeilen mit
+SEINEN Buildern (addFurLocal + Guide-Mesh-Mantel für deck — die Benchmark blieb stehen,
+auge-geprüft: der Gold-Mantel ist zurück; Math.random-Streu war nie byte-stabil, das Gesetz
+ist die VERTEILUNG), der Pipe-Bäcker streut deterministisch (LCG je Zeile) mit
+**Wurzel→Spitze-Farbverlauf als VERTEX-DATEN** (der Lab-Strähnen-Shader mischte
+fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader-Nachbau) in die
+Teil-Wirte — der bestehende Gelenk-Guss merged sie automatisch je Wirt×Klasse, der Gang trägt
+das Fell mit. lod1/fern bleibt kahl-billig. Auge-bewiesen: der WELT-Wolf trägt Zottel-Läufe,
+Brust-Kragen, Mähne, buschige Rute (artifacts/auge-buehne-welt.png) — die Lab-Inline-Streu
+(~30 Zeilen + placeFurOnMesh-Mantel + fuzz/accent-Blöcke) ist GEFALLEN, sie liest die Tabelle.
+Grün: Batterie „Alle Invarianten OK" · fast 18/18 · check. DER WEG: haar-/kleidStreu für den
+Menschen = dieselben Zeilen-Muster in koerper-core (die nächste Welle dieses Gesetzes).
+
 ### V18.459 — PIPE-VOLLENDUNG: ALLE Gattungen fahren (Schöpfer „vollende es sofern es so einfach, beende es")
 
 Der Tisch trägt jetzt die zweite Zeile: **`BAKERS_BY_KIND.koerper = bakeMenschInstance`** —

@@ -6,7 +6,16 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.459 — DIE EINE PIPE VOLLENDET: alle Gattungen fahren)
+## Stand (V18.460 — DIE FELL-STREU IST GESETZ)
+
+**FELL (V18.460):** die komplette Tetrapoda-Körper-Streu wohnt als ZEILEN-TABELLE im Gesetzbuch
+(`fellStreu(P,M,T)`: Bein/Fuzz/Akzent-Zeilen verbatim + `art:"deck"`-DATEN-Zeile für den
+Torso-Mantel — Coverage ist Leser-Sache). Lab liest sie mit seinen Buildern (Benchmark steht,
+Gold-Mantel auge-geprüft), der Pipe-Bäcker deterministisch mit Wurzel→Spitze-Verlauf als
+VERTEX-Farben in die Gelenk-Wirte (der Guss merged, der Gang trägt das Fell; fern kahl-billig).
+Die Lab-Inline-Streu ist gefallen. DER WEG: haar-/kleidStreu (koerper-core) = dieselben Muster.
+
+### Davor (V18.459 — DIE EINE PIPE VOLLENDET: alle Gattungen fahren)
 
 **DIE EINE PIPE (V18.458–.459, Vertrag §8.4):** die Foundry ist DER Übersetzer für ALLES.
 FAHRT-BEWEIS durch DENSELBEN build-asset-Kanal: Pflanze · Kreatur (61 Meshes statt 235) ·

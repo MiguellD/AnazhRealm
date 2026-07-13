@@ -2824,6 +2824,71 @@ function __tierMergeGeos(geos) {
 // Schweif-STRÄHNEN — die Lab-Streu (Kreuz-Quad-Form, getStrandGeo) DETERMINISTISCH
 // (LCG je Segment, nie Math.random — Welt-Substanz-Gesetz) als EIN Geometrie-Block
 // je Segment. Wandert aus dem Stamm hierher: die Pipe ist die eine Bau-Stelle.
+// Ein Strähnen-BLOCK aus einer Streu-Spec: n Strähnen über dem Ellipsoid
+// (Lab-Mathe verbatim: phi/theta-Streu, Richtungs-Jitter, Längen-Quantisierung),
+// Kreuz-Quads mit WURZEL→SPITZE-Farbverlauf als Vertex-Daten (der Lab-Shader
+// mischte fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader).
+function __streuGeo(row, seed, tonRGB) {
+    let sLcg = seed >>> 0 || 1;
+    const rnd = () => {
+        sLcg = (sLcg * 1103515245 + 12345) >>> 0;
+        return sLcg / 4294967296;
+    };
+    const pos = [];
+    const col = [];
+    const idx = [];
+    const q = new THREE.Quaternion();
+    const AB = new THREE.Vector3(0, -1, 0);
+    const d = new THREE.Vector3();
+    const v = new THREE.Vector3();
+    const rootC = [tonRGB[0] * 0.12, tonRGB[1] * 0.12, tonRGB[2] * 0.12];
+    let sN = 0;
+    for (let j = 0; j < row.n; j++) {
+        const phi = rnd() * Math.PI;
+        const theta = rnd() * Math.PI * 2;
+        const jx = (rnd() - 0.5) * 0.4;
+        const jy = (rnd() - 0.5) * 0.3;
+        const jz = (rnd() - 0.5) * 0.4;
+        const qr = rnd();
+        if (Math.cos(phi) < -0.05) continue;
+        d.set(row.d[0] + jx, row.d[1] + jy, row.d[2] + jz).normalize();
+        const px = row.r * row.sc[0] * Math.sin(phi) * Math.cos(theta) + row.c[0] - d.x * 0.012;
+        const py = row.r * row.sc[1] * Math.cos(phi) + row.c[1] - d.y * 0.012;
+        const pz = row.r * row.sc[2] * Math.sin(phi) * Math.sin(theta) + row.c[2] - d.z * 0.012;
+        q.setFromUnitVectors(AB, d);
+        const l = Math.round((row.l + qr * 0.015) / 0.004) * 0.004;
+        if (l <= 0) continue;
+        const w = row.t * 1.8,
+            wt = Math.max(0.001, row.t * 0.65);
+        const ecken = [
+            [-w, 0, 0, 0],
+            [w, 0, 0, 0],
+            [wt, -l, 0, 1],
+            [-wt, -l, 0, 1],
+            [0, 0, -w, 0],
+            [0, 0, w, 0],
+            [0, -l, wt, 1],
+            [0, -l, -wt, 1],
+        ];
+        const b = sN * 8;
+        for (const e of ecken) {
+            v.set(e[0], e[1], e[2]).applyQuaternion(q);
+            pos.push(v.x + px, v.y + py, v.z + pz);
+            const cc = e[3] ? tonRGB : rootC;
+            col.push(cc[0], cc[1], cc[2]);
+        }
+        idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
+        sN++;
+    }
+    if (!sN) return null;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    return geo;
+}
+
 function __tierStraehnenGeo(segR, i, Hh) {
     let s = (9301 + i * 49297) >>> 0;
     const rnd = () => {
@@ -2972,6 +3037,92 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
               },
     };
     const B = kern.bauTier(F, dials);
+    // DIE FELL-STREU (V18.460): das Look-Gesetz als Zeilen (kern.fellStreu) —
+    // deterministisch gestreut, Farbverlauf als Vertex-Daten, in die Teil-Wirte
+    // (der Gelenk-Guss merged sie je Wirt×Klasse; lod1/fern bleibt kahl-billig).
+    if (!fein && typeof kern.fellStreu === "function") {
+        try {
+            const T = {};
+            for (const nm of [
+                "belly",
+                "lowerAbd",
+                "croup",
+                "pelvis",
+                "throat",
+                "throatLower",
+                "mane",
+                "ribcage",
+                "waist",
+                "flank",
+                "cranium",
+            ]) {
+                const nd = B.teile[nm];
+                if (nd && nd.position) T[nm] = [nd.position.x, nd.position.y, nd.position.z];
+            }
+            if (B.neckStart && B.neckDir) {
+                const nm2 = B.neckStart.clone().add(B.neckDir.clone().multiplyScalar(0.5));
+                T.neckMid = [nm2.x, nm2.y, nm2.z];
+            }
+            const lin2 = (hx) => {
+                const f2 = (v2) => (v2 <= 0.04045 ? v2 / 12.92 : Math.pow((v2 + 0.055) / 1.055, 2.4));
+                return [f2(((hx >> 16) & 255) / 255), f2(((hx >> 8) & 255) / 255), f2((hx & 255) / 255)];
+            };
+            const toene = {
+                B: lin2(typeof P.cB === "number" ? P.cB : 0x6b4a2e),
+                D: lin2(typeof P.cD === "number" ? P.cD : 0x3a2e1c),
+                L: lin2(typeof P.cL === "number" ? P.cL : 0xc0a060),
+            };
+            const rows = kern.fellStreu(P, B.masse, T) || [];
+            let seed = 4242;
+            const streue = (row, ton) => {
+                const node = B.teile[row.teil];
+                seed++;
+                if (!node) return;
+                const geo = __streuGeo(row, seed, toene[ton] || toene.B);
+                if (!geo) return;
+                const klass = ton === "D" ? "straehneD" : ton === "L" ? "straehneL" : "straehne";
+                node.add(new THREE.Mesh(geo, matFuer(klass)));
+            };
+            const H2 = (B.masse && B.masse.H) || 2.4;
+            const bX2 = (B.masse && B.masse.bX) || 1;
+            for (const row of rows) {
+                if (row.art === "deck") {
+                    // Der Pipe-Deck: die Gesetz-Dichten über die Rumpf-Teil-Ellipsoide
+                    // (die Wirte-Liste der Zeile trägt die Verteilung).
+                    for (const [wirt, anteil] of row.wirte || []) {
+                        const t3 = T[wirt];
+                        if (!t3) continue;
+                        const basis = {
+                            teil: "wolf",
+                            c: t3,
+                            r: 0.3 * H2 * Math.sqrt(anteil * 3),
+                            sc: [bX2, 0.95, 1.15],
+                            d: row.d,
+                        };
+                        streue(
+                            Object.assign({ n: Math.round(row.uDens * anteil), l: row.underL, t: 0.008 }, basis),
+                            "D"
+                        );
+                        streue(
+                            Object.assign({ n: Math.round(row.gDens * anteil), l: row.guardL, t: 0.006 }, basis),
+                            "B"
+                        );
+                        streue(
+                            Object.assign({ n: Math.round(row.gDens * anteil * row.hellQuote) }, basis, {
+                                l: 0.06,
+                                t: 0.008,
+                            }),
+                            "L"
+                        );
+                    }
+                    continue;
+                }
+                streue(row, row.ton);
+            }
+        } catch (_eF) {
+            /* Streu optional — der Baum bleibt heil */
+        }
+    }
     const root = B.teile.wolf;
     const namen = [
         "wolf",

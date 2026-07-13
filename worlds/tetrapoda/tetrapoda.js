@@ -140,37 +140,32 @@ function buildAnimal(){
   H=__B.masse.H;sY=__B.masse.sY;hY=__B.masse.hY;sZ=__B.masse.sZ;hZ=__B.masse.hZ;lv=__B.masse.lv;by=__B.masse.by;tv=__B.masse.tv;bt=__B.masse.bt;
   var bX=__B.masse.bX,croup=__B.teile.croup,pelvis=__B.teile.pelvis,throatLower=__B.teile.throatLower,cranium=__B.teile.cranium,neckStart=__B.neckStart,neckDir=__B.neckDir,neckEnd=__B.neckEnd;
 
-  var fBack=new THREE.Vector3(0,0.04,-0.78);var bodyMesh=createBodyGuideMesh();placeFurOnMesh(bodyMesh,P.uDens,P.underL,0.008,matStrandDk,fBack);placeFurOnMesh(bodyMesh,P.gDens,P.guardL,0.006,matStrand,fBack);placeFurOnMesh(bodyMesh,P.gDens*0.2,0.07,0.008,matStrandDk,fBack);placeFurOnMesh(bodyMesh,P.gDens*0.1,0.06,0.008,matStrandLt,fBack);
-  var humLen2=P.legLen*H,humAng2=25*Math.PI/180;var humFull=new THREE.Vector3(0,-humLen2*Math.cos(humAng2),-humLen2*Math.sin(humAng2));var radLen2=P.legLen*1.45*H,radAng2=10*Math.PI/180;var radFull=new THREE.Vector3(0,-radLen2*Math.cos(radAng2),radLen2*Math.sin(radAng2));var metaLen2=P.legLen*0.91*H,metaAng2=15*Math.PI/180;var metaFull=new THREE.Vector3(0,-metaLen2*Math.cos(metaAng2),metaLen2*Math.sin(metaAng2));
-  // Front leg fur: all addFurLocal on leg groups, no floating fuzz
-  addFurLocal(legFL,new THREE.Vector3(0,0.04*H,0),0.085*H,[1.10,1.32,1.05*lv],new THREE.Vector3(0,0.02,-0.80),1000,0.032,0.006,matStrand);addFurLocal(legFR,new THREE.Vector3(0,0.04*H,0),0.085*H,[1.10,1.32,1.05*lv],new THREE.Vector3(0,0.02,-0.80),1000,0.032,0.006,matStrand);
-  addFurLocal(legFL,new THREE.Vector3(0,0.075*H,0),0.035*H,[1.05,1.0,1.0*lv],new THREE.Vector3(0,0.02,-0.80),250,0.032,0.006,matStrand);addFurLocal(legFR,new THREE.Vector3(0,0.075*H,0),0.035*H,[1.05,1.0,1.0*lv],new THREE.Vector3(0,0.02,-0.80),250,0.032,0.006,matStrand);
-  addFurTube(flU,humFull,0.10*H,0.055*H*Math.pow(bt,0.4),[0.9,1.0,0.65],new THREE.Vector3(0,0.02,-0.80),1500,0.032,0.006,matStrand);addFurTube(frU,humFull,0.10*H,0.055*H*Math.pow(bt,0.4),[0.9,1.0,0.65],new THREE.Vector3(0,0.02,-0.80),1500,0.032,0.006,matStrand);
-  addFurLocal(flU,humFull,0.045*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.02,-0.78),250,0.028,0.006,matStrand);addFurLocal(frU,humFull,0.045*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.02,-0.78),250,0.028,0.006,matStrand);
-  addFurTube(flL,radFull,0.055*H*Math.pow(bt,0.4),0.035*H*Math.pow(bt,0.8),[0.9,1.0,0.55],new THREE.Vector3(0,-0.02,-0.80),1000,0.028,0.006,matStrand);addFurTube(frL,radFull,0.055*H*Math.pow(bt,0.4),0.035*H*Math.pow(bt,0.8),[0.9,1.0,0.55],new THREE.Vector3(0,-0.02,-0.80),1000,0.028,0.006,matStrand);
-  addFurLocal(flP,metaFull.clone().multiplyScalar(0.5),0.045*H*Math.pow(bt,0.8),[1.0,1.6,0.80],new THREE.Vector3(0,-0.05,-0.70),400,0.024,0.005,matStrand);addFurLocal(frP,metaFull.clone().multiplyScalar(0.5),0.045*H*Math.pow(bt,0.8),[1.0,1.6,0.80],new THREE.Vector3(0,-0.05,-0.70),400,0.024,0.005,matStrand);
-  var femLen2=P.legLen*1.27*H,femAng2=35*Math.PI/180;var femFull2=new THREE.Vector3(0,-femLen2*Math.cos(femAng2),femLen2*Math.sin(femAng2));var tibLen2=P.legLen*1.73*H,tibAng2=45*Math.PI/180;var tibFull2=new THREE.Vector3(0,-tibLen2*Math.cos(tibAng2),-tibLen2*Math.sin(tibAng2));var metaTLen2=P.legLen*1.18*H,metaTAng2=5*Math.PI/180;var metaTFull2=new THREE.Vector3(0,-metaTLen2*Math.cos(metaTAng2),metaTLen2*Math.sin(metaTAng2));
-  // Hind leg fur: Y scale matches glute mesh (1.10*lv), all on leg groups
-  addFurLocal(legHL,new THREE.Vector3(0,0.030*H,-0.020*H),0.080*H*1.35,[1.10,1.10*lv,1.22*lv],new THREE.Vector3(0,0.05,-0.78),1200,0.032,0.006,matStrand);addFurLocal(legHR,new THREE.Vector3(0,0.030*H,-0.020*H),0.080*H*1.35,[1.10,1.10*lv,1.22*lv],new THREE.Vector3(0,0.05,-0.78),1200,0.032,0.006,matStrand);
-  addFurLocal(legHL,new THREE.Vector3(0,0.060*H,-0.020*H),0.050*H*1.35,[1.15,1.10*lv,1.15*lv],new THREE.Vector3(0,0.10,-0.75),700,0.030,0.006,matStrand);addFurLocal(legHR,new THREE.Vector3(0,0.060*H,-0.020*H),0.050*H*1.35,[1.15,1.10*lv,1.15*lv],new THREE.Vector3(0,0.10,-0.75),700,0.030,0.006,matStrand);
-  addFurLocal(legHL,new THREE.Vector3(0,0.06*H,-0.020*H),0.03*H*1.35,[1.05,1.10*lv,1.0*lv],new THREE.Vector3(0,0.05,-0.78),300,0.032,0.006,matStrand);addFurLocal(legHR,new THREE.Vector3(0,0.06*H,-0.020*H),0.03*H*1.35,[1.05,1.10*lv,1.0*lv],new THREE.Vector3(0,0.05,-0.78),300,0.032,0.006,matStrand);
-  addFurTube(hlT,femFull2,0.10*H,0.055*H*Math.pow(bt,0.4),[0.9,1.0,0.7],new THREE.Vector3(0,-0.05,-0.75),1800,0.032,0.006,matStrand);addFurTube(hrT,femFull2,0.10*H,0.055*H*Math.pow(bt,0.4),[0.9,1.0,0.7],new THREE.Vector3(0,-0.05,-0.75),1800,0.032,0.006,matStrand);
-  addFurLocal(hlT,femFull2,0.045*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.05,-0.73),300,0.028,0.006,matStrand);addFurLocal(hrT,femFull2,0.045*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.05,-0.73),300,0.028,0.006,matStrand);
-  addFurLocal(hlT,new THREE.Vector3(0,0,0.045*H),0.055*H,[0.55,1.1,0.45],new THREE.Vector3(0,0.05,-0.75),500,0.032,0.006,matStrand);addFurLocal(hrT,new THREE.Vector3(0,0,0.045*H),0.055*H,[0.55,1.1,0.45],new THREE.Vector3(0,0.05,-0.75),500,0.032,0.006,matStrand);
-  addFurTube(hlT,femFull2,0.08*H,0.04*H,[0.8,1.0,0.8],new THREE.Vector3(0,-0.05,-0.75),800,0.032,0.006,matStrand,new THREE.Vector3(0,0,-0.026*H));addFurTube(hrT,femFull2,0.08*H,0.04*H,[0.8,1.0,0.8],new THREE.Vector3(0,-0.05,-0.75),800,0.032,0.006,matStrand,new THREE.Vector3(0,0,-0.026*H));
-  addFurTube(hlC,tibFull2,0.055*H*Math.pow(bt,0.4),0.035*H*Math.pow(bt,0.8),[0.9,1.0,0.5],new THREE.Vector3(0,-0.05,-0.75),1000,0.028,0.006,matStrand);addFurTube(hrC,tibFull2,0.055*H*Math.pow(bt,0.4),0.035*H*Math.pow(bt,0.8),[0.9,1.0,0.5],new THREE.Vector3(0,-0.05,-0.75),1000,0.028,0.006,matStrand);
-  addFurLocal(hlC,tibFull2,0.040*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.05,-0.72),250,0.028,0.006,matStrand);addFurLocal(hrC,tibFull2,0.040*H*Math.pow(bt,0.4),[1.3,0.6,1.0],new THREE.Vector3(0,-0.05,-0.72),250,0.028,0.006,matStrand);
-  addFurLocal(hlP,metaTFull2.clone().multiplyScalar(0.5),0.045*H*Math.pow(bt,0.8),[1.0,1.6,0.80],new THREE.Vector3(0,-0.05,-0.70),400,0.024,0.005,matStrand);addFurLocal(hrP,metaTFull2.clone().multiplyScalar(0.5),0.045*H*Math.pow(bt,0.8),[1.0,1.6,0.80],new THREE.Vector3(0,-0.05,-0.70),400,0.024,0.005,matStrand);
-  buildGroupFur(legFL);buildGroupFur(legFR);buildGroupFur(legHL);buildGroupFur(legHR);buildGroupFur(flU);buildGroupFur(frU);buildGroupFur(flL);buildGroupFur(frL);buildGroupFur(flP);buildGroupFur(frP);buildGroupFur(hlT);buildGroupFur(hrT);buildGroupFur(hlC);buildGroupFur(hrC);buildGroupFur(hlP);buildGroupFur(hrP);
-  var fDown=new THREE.Vector3(0,-0.50,-0.20),fOut=new THREE.Vector3(0,0.04,-0.78);
-  fuzz(belly.position,0.30*H,[bX*0.92,0.50+by*0.8,0.96],fDown,800,0.024,0.006,matStrand);fuzz(lowerAbd.position,0.28*H,[bX*0.83,0.48,0.90],fDown,600,0.022,0.006,matStrand);
-  fuzz(new THREE.Vector3(0,sY-0.42*H+by*2,-0.40-by*1.5),0.12,[1.4,0.5,1.6],fDown,300,0.022,0.005,matStrand);
-  fuzz(new THREE.Vector3(-0.16,hY-0.02*H,-0.60),0.10,[1.5,0.9,1.3],fOut,400,0.028,0.006,matStrand);fuzz(new THREE.Vector3(0.16,hY-0.02*H,-0.60),0.10,[1.5,0.9,1.3],fOut,400,0.028,0.006,matStrand);
-  fuzz(new THREE.Vector3(-0.14,hY-0.06*H,-0.75),0.09,[1.4,0.9,1.3],fOut,350,0.028,0.006,matStrand);fuzz(new THREE.Vector3(0.14,hY-0.06*H,-0.75),0.09,[1.4,0.9,1.3],fOut,350,0.028,0.006,matStrand);
-  fuzz(croup.position,0.20*H,[bX*1.04,0.44,0.36],fOut,500,0.030,0.006,matStrand);fuzz(pelvis.position,0.28*H,[bX*0.79,0.66,0.42],fOut,500,0.030,0.006,matStrand);
-  accentFur(throat.position.clone().add(new THREE.Vector3(0,-0.02*H,0)),0.05*H,[1.0,0.8,1.2],new THREE.Vector3(0,-0.3,-0.6),600,0.05,0.007,matStrandDk,-0.5);
-  accentFur(throatLower.position.clone().add(new THREE.Vector3(0,-0.015*H,0)),0.045*H,[1.0,0.8,1.2],new THREE.Vector3(0,-0.3,-0.6),500,0.045,0.007,matStrandDk,-0.5);
-  if(P.maneCount>0)accentFur(mane.position,0.062*H,[0.85,0.70,1.38],new THREE.Vector3(0,0.15,-0.65),P.maneCount,P.maneLen,0.011,matStrandDk);var neckMidPos=neckStart.clone().add(neckDir.clone().multiplyScalar(0.5));accentFur(neckMidPos,0.10*H,[0.90,0.94,1.18],fOut,800,0.10,0.009,matStrand);accentFur(cranium.position.clone().add(headGroup.position),P.skullR*H,[0.95,0.96,1.26],new THREE.Vector3(0,0.04,-0.78),30,0.03,0.005,matStrandDk,0.10);
+  /* V18.460 DIE FELL-STREU IST GESETZ: die komplette Koerper-Streu wohnt als
+     Zeilen-Tabelle im Gesetzbuch (__tetrapodaCore.fellStreu) -- dieselben Zeilen
+     liest der Welt-Baecker. Die Shell streut sie mit IHREN Materialien/Buildern
+     (addFurLocal + Instancing); die Inline-Streu, der Guide-Mesh-Mantel und die
+     fuzz/accent-Bloecke sind GEFALLEN (eine Quelle, zwei Leser). */
+  (function(){
+    var T={};
+    var TN={belly:belly,lowerAbd:lowerAbd,croup:croup,pelvis:pelvis,throat:throat,throatLower:throatLower,mane:mane,ribcage:ribcage,waist:waist,flank:flank,cranium:cranium};
+    for(var nm in TN){if(TN[nm]&&TN[nm].position)T[nm]=[TN[nm].position.x,TN[nm].position.y,TN[nm].position.z];}
+    var nMid=neckStart.clone().add(neckDir.clone().multiplyScalar(0.5));T.neckMid=[nMid.x,nMid.y,nMid.z];
+    var wirte={wolf:wolf,headGroup:headGroup,legFL:legFL,legFR:legFR,legHL:legHL,legHR:legHR,flU:flU,frU:frU,flL:flL,frL:frL,flP:flP,frP:frP,hlT:hlT,hrT:hrT,hlC:hlC,hrC:hrC,hlP:hlP,hrP:hrP};
+    var toene={B:matStrand,D:matStrandDk,L:matStrandLt};
+    var rows=__tetrapodaCore.fellStreu(P,__B.masse,T)||[];
+    for(var i2=0;i2<rows.length;i2++){var row=rows[i2];
+      if(row.art==="deck"){
+        /* der Guide-Mesh-Mantel des Labs, gespeist aus der GESETZ-Zeile */
+        var fBack=new THREE.Vector3(row.d[0],row.d[1],row.d[2]);var bodyMesh=createBodyGuideMesh();
+        placeFurOnMesh(bodyMesh,row.uDens,row.underL,0.008,matStrandDk,fBack);
+        placeFurOnMesh(bodyMesh,row.gDens,row.guardL,0.006,matStrand,fBack);
+        placeFurOnMesh(bodyMesh,row.gDens*row.dunkelQuote,0.07,0.008,matStrandDk,fBack);
+        placeFurOnMesh(bodyMesh,row.gDens*row.hellQuote,0.06,0.008,matStrandLt,fBack);
+        continue;}
+      var wirt=wirte[row.teil];if(!wirt)continue;
+      addFurLocal(wirt,new THREE.Vector3(row.c[0],row.c[1],row.c[2]),row.r,row.sc,new THREE.Vector3(row.d[0],row.d[1],row.d[2]),row.n,row.l,row.t,toene[row.ton]||matStrand);}
+  })();
+  buildGroupFur(legFL);buildGroupFur(legFR);buildGroupFur(legHL);buildGroupFur(legHR);buildGroupFur(flU);buildGroupFur(frU);buildGroupFur(flL);buildGroupFur(frL);buildGroupFur(flP);buildGroupFur(frP);buildGroupFur(hlT);buildGroupFur(hrT);buildGroupFur(hlC);buildGroupFur(hrC);buildGroupFur(hlP);buildGroupFur(hrP);buildGroupFur(wolf);buildGroupFur(headGroup);
   furInstanced=buildInstancedFur();wolf.add(furInstanced);scene.add(wolf);
   if(contactShadow){contactShadow.scale.setScalar(H*0.55);contactShadow.position.y=0.002;}
   controls.target.set(0,sY*0.38,0);controls.update();phys.init();emo.set(emoMode);document.getElementById('loading').style.display='none';
