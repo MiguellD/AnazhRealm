@@ -434,18 +434,31 @@ bewacht danach) und der Sign-off des Ergebnisses.
 
 ---
 
-### W9 — Der Himmel 1:1 (E-D-Folge) · mittel
+### W9 — Der Himmel 1:1 (E-D-Folge) · mittel · **GEBAUT V18.462**
 
-**Ziel:** der eigene Wolken-Dome übersetzt das Studio-Himmels-Gesetz vollständig — Kriterium 1+3
+> ✓ GEBAUT (V18.462): das Wolken-Feld ist HIMMEL_GESETZ (foundry-core) — das Studio-GLSL
+> injiziert die Zahlen (semantischer Shader-Beweis alt==neu), der Welt-Dome (createGalaxySkybox)
+> adoptiert Parallaxe-Projektion + 2 fbm-Felder + Deckungs-/lit-Gesetz (uSunCol = Rayleigh-Quelle).
+> Auge-bewiesen (artifacts/himmel-*.png: Tag klar/bedeckt/Dämmerung/Nacht); diag-night-probe grün,
+> Batterie-Band gewandert. Die V18.369-Zenit-Kompensation fiel MIT dem alten Feld (andere Abtastung).
+
+**Ziel (historisch):** der eigene Wolken-Dome übersetzt das Studio-Himmels-Gesetz vollständig — Kriterium 1+3
 SCHLIESSEN den Himmel ein (E-D-Auflösung; die Tag-Nebel-/skyB-Anker stehen seit V18.416/.421).
 Offen ist das WOLKEN-Feld selbst (Deckung/Formen/Dichte gegen das Studio-GLSL, phytogenesis
 602–650) auf dem Dome (anazhRealm 14617–14675, Zenit-Kompensation V18.369 bewahren). **Linse:**
 die diag-parity-Himmel-Zone (Baseline Himmel-Δ 110 → Ziel-Band nach der W5.3/5.4-Kalibrierung);
 Mechanik-Wand: Tag/Nacht-Zyklus + `diag-night-probe` byte-unberührt.
 
-### W10 — Die Wasser-OBERFLÄCHE 1:1 (E-D-Folge) · mittel-groß
+### W10 — Die Wasser-OBERFLÄCHE 1:1 (E-D-Folge) · mittel-groß · **GEBAUT V18.462**
 
-**Ziel:** Shader/Spiegelung/Licht der Wasser-Oberfläche = der Studio-Teich/Bach-Look
+> ✓ GEBAUT (V18.462): WASSER_GESETZ (foundry-core) — das Studio-GLSL injiziert ALLE Zeilen
+> (semantischer Beweis), das Welt-Hydro-Material adoptiert Beer-Lambert-Farben · Schlick-Fresnel ·
+> Himmel-Spiegelung (uSkyCol = die eine Tag/Nacht-Quelle; Planar-RT bleibt bewusster Studio-Perf-
+> Entscheid) · Licht-Schattierung · Sonnen-Spec (Rayleigh-uSunCol); die auditierten Welt-Systeme
+> (Tiefenpuffer-Ufer · Schaum-Verschmelzen V18.367–.374 · Alpha-Kante) blieben. Wände: diag-worker-
+> watersheet maxDiff 0 ✓ · gate:fern-wasser ✓; das W6-Provisorium ist zurück auf AN.
+
+**Ziel (historisch):** Shader/Spiegelung/Licht der Wasser-Oberfläche = der Studio-Teich/Bach-Look
 (phytogenesis 1078–1191) auf unserem Sheet — **der AUTOMAT bleibt unser** (Flood/CA/Tiefe/Fluss =
 die Mechanik, byte-unberührt: `diag-worker-watersheet` maxDiff 0 ist die Wand). Mit W10 fällt das
 W6-Fern-Wasser-Provisorium zurück auf AN (`atmosphere.farWater`). **Linse:** die

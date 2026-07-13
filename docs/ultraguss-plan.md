@@ -5,8 +5,15 @@
 > EIGENER Komponist geurteilt) · U6a ✓ (garage FAHR-Konstanten) · U6b ✓ (porta membranPalette) ·
 > U3a ✓ (Buster-Klasse + Linse).
 > **ULTRAGUSS II (V18.452, seriell-agentisch): U3-Kern ✓ · U7 ✓ · U6c ✓ · U6d ✓ · U1 ✓.**
-> **OFFEN:** U8 (W9 Himmel · W10 Wasser · Look-Goldens · Rig-Konvergenz — braucht Render/Auge =
-> DIE Schöpfer-Runde) · U1-Folge (typeof-Voll-Wanderung, tabellen-getrieben) · Rinden-Vereinigung.
+> **ULTRAGUSS III (V18.462): W9 Himmel ✓ (HIMMEL_GESETZ in foundry-core — Studio-GLSL injiziert,
+> Welt-Dome adoptiert, auge-bewiesen Tag/bedeckt/Dämmerung/Nacht) · W10 Wasser-Oberfläche ✓
+> (WASSER_GESETZ: Beer-Lambert · Schlick-Fresnel · Himmel-Spiegelung · Licht/Spec; Automat
+> byte-unberührt maxDiff 0; Fern-Wasser-Provisorium zurück AN) · typeof-RATCHET ✓ (891
+> eingefroren, nur-sinkend, gate:apparat; die VOLL-Wanderung bleibt tabellen-getrieben offen) ·
+> die Rig-Konvergenz-Zeile FIEL schon mit V18.454 (KONVERGENZ).**
+> **OFFEN:** Look-Goldens (--mint braucht echte GPU = DIE Schöpfer-Runde,
+> `docs/abnahme-drehbuch.md` liegt bereit) · typeof-Voll-Wanderung (hinterm Ratchet) ·
+> Rinden-Vereinigung.
 
 > Fundament: die Herz-Vermessung (12 Messagenten über alle 8 Domänen-Nähte + Stamm-Sediment +
 > Erlebnis + Apparat, 11.07.2026). Jede Zahl unten ist gegriffen, nicht geraten.

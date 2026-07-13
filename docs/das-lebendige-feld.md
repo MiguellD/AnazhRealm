@@ -7,9 +7,10 @@
 > Vektor, der noch vorwärts zeigt (§6–§7). Damit der nächste Agent NICHT wieder ein
 > Pflaster-System baut, sondern auf dem Vorhandenen weiterwächst.
 
-**Stand: V18.94 (10.06.2026) — der ganze Seelen-Bogen ist DURCH und im Code GEMESSEN; seit
-V18.84–.94 FLIESST auch der Körper (der Wasser-CA-Bogen, vollendet + gemergt). Der Master-Blick
-über alle Säulen vorwärts: `docs/archiv/gigant-plan.md`.**
+**Stand: V18.462 (13.07.2026, Doku-Wahrheit-Welle) — der ganze Seelen-Bogen ist DURCH und im
+Code GEMESSEN; der Körper FLIESST seit V18.84–.94 (Wasser-CA) und trägt seit der KONVERGENZ
+(V18.454–.461) den EINEN Studio-Körper (Mensch + Tier aus den Gesetzbüchern, Look als Gesetz).
+Der Live-Stand wohnt im CLAUDE.md-Kopf; der Tisch des Offenen in `docs/roadmap.md` §0.**
 Die Reflexion vom 01.06.2026 (Schöpfer + Agent) kartierte eine Vision, die als Hülle
 stand, aber an fünf Stellen flach war. Diese fünf Stellen sind seither GEBAUT und
 verifiziert — das Dokument hat sich darum von einer **Diagnose** („wohin driftete die
@@ -30,14 +31,15 @@ der dem Affekt seinen Konsumenten gibt) und die **Resonanz-Vereinheitlichung** (
 „ein Produkt-Vektor, viele Leser"). Der V17.92–.118-Tiefe-Fundament-Bogen + der V18-Wasser-
 Bogen bauten den KÖRPER weiter (Terrain · Render · Wasser-Geometrie); die **echte Fluid-Dynamik
 ist seit V18.84–.94 GEBAUT** (der Wasser-CA: `_tickWaterCA` + Quellen-Pin + Flow-Regel — Wasser
-fliesst nach UND ruht; `docs/archiv/terrain-t4-wasser-ca-plan.md`). Der offene Körper-Vektor ist
-jetzt die **Naht-Vollendung N1/N2** (`docs/archiv/terrain-koharenz-plan.md` §12). **Der geordnete
-Rest-Backlog lebt in `docs/roadmap.md` „⭐ DER PLAN VORWÄRTS" + `docs/archiv/gigant-plan.md` (§5).**
+fliesst nach UND ruht; `docs/archiv/terrain-t4-wasser-ca-plan.md`). Die Naht-Vollendung N1/N2
+ist ENTSCHIEDEN und geschlossen (V18.372, „Naht-Entscheidung" in `docs/roadmap.md` §0). **Der
+geordnete Rest-Backlog lebt in `docs/roadmap.md` §0 (der Tisch); `docs/archiv/gigant-plan.md`
+ist Archiv-Referenz, kein Master-Blick vorwärts mehr.**
 
 Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix),
-`world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel), `kampf-plan.md`
-(der aktive Crafting-/Kampf-Bogen), `crafting-konzept.md` (Hylomorphismus = das
-Material/Form-Substrat). Die VOLLENDETEN Arc-Pläne liegen im Archiv:
+`archiv/world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel),
+`archiv/kampf-plan.md` (der Crafting-/Kampf-Bogen, vollendet), `archiv/crafting-konzept.md`
+(Hylomorphismus = das Material/Form-Substrat). Die VOLLENDETEN Arc-Pläne liegen im Archiv:
 `archiv/dsl-weltregeln-plan.md`, `archiv/lebendige-wertung-plan.md` (das DRITTE Verb),
 `archiv/emotion-kern-plan.md`, `archiv/resonanz-system.md`.
 

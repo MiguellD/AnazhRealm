@@ -378,6 +378,44 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.462 — DIE VOLLENDUNGS-WELLE (Schöpfer „vollende es champ, alles — siehst du noch all die offenen fäden?")
+
+Die Inventur (10 parallele Leser über Pläne+Code) fand die Fäden, dann fielen sie seriell:
+**W9 HIMMEL 1:1** — `HIMMEL_GESETZ` (foundry-core): das Studio-Wolken-Feld als Zahlen (Parallaxe-
+Projektion sp=dir.xz/(dir.y+0.16) · 2 fbm-Felder · Deckungs-smoothstep · lit-Beleuchtung · Ränder);
+das Studio-GLSL INJIZIERT sie in seinen Text (semantischer Beweis: 91 Zahlen + Skelett identisch
+zu HEAD), der Welt-Dome (createGalaxySkybox, TSL) adoptiert das Feld (uSunCol = Rayleigh-Hue der
+EINEN _atmosphere-Quelle; NaN-Klemme unterm Horizont, das Studio brancht). GEFALLEN mit dem alten
+Feld: V17.10-Warp-FBM · V18.369-Zenit-Kompensation · V18.366-Mond-Ambient (die Vorlage trägt Nacht-
+Wolken über ihr lit-Grau). Auge: himmel-{tag-klar,tag-bedeckt,daemmerung,nacht}.png; diag-night-
+probe grün; Band gewandert. **W10 WASSER-OBERFLÄCHE 1:1** — `WASSER_GESETZ` (foundry-core): Beer-
+Lambert wK=(6.5,2.0,1.2) · Wellen-Kaskade · Schlick-Fresnel · Himmel-Spiegelung (sky·0.68-Fallback;
+Planar-RT bleibt bewusster Studio-Perf-Entscheid) · Licht (0.86+0.18·diff+0.08·whgt) · Spec (120,
+1.35) · Schaum-Farben; Studio injiziert ALLE Zeilen (Beweis: 115 Zahlen identisch, Unterwasser-
+Nebel-Zwilling fiel), das Welt-Hydro-Material adoptiert Farben/Fresnel/Spiegel/Licht/Spec — die
+auditierten Welt-Systeme (Tiefenpuffer-Ufer · Schaum-Verschmelzen V18.367–.374 · Alpha-Kante)
+blieben. Wände: diag-worker-watersheet maxDiff 0 · gate:fern-wasser; **das W6-Fern-Wasser-
+Provisorium ist zurück auf AN** (der _foundryEnabled-Default-AUS-Term fiel). 2 Bänder gewandert.
+**FRISUREN-TABELLE** — haarStreu trägt alle 10 Lab-Stile als Zeilen (gemessene Schädel-Schalen;
+neue Zeilen-Arten in __streuGeo: radial=Schalen-Normale [afro], quaste=Punkt-Büschel [zopf],
+knoten=Kugel-Schale [dutt], lj=Längen-Streuung — der Default-Pfad ist RNG-eingefroren: Wolf-Fell
++ mittel-Haar sha256-identisch vor/nach). Auge: avatar-frisuren-w14.png (lang·afro·zopf·dutt
+unterscheidbar). **fail-LAUT** — der kalte-Buch-Pfad stirbt nicht mehr stumm: _foundryRequest-
+Chokepoint warnt ratenbegrenzt, das 45-s-Timeout spricht, Architektur ohne Builder trägt bei
+BEREITEM Buch einen Magenta-Platzhalter, der Mensch ohne Rig einen Not-Körper (heilt beim Ingest-
+Nachguss), tote Prefetches sprechen. **typeof-RATCHET** — gate:apparat friert 891 namens-verankerte
+typeof-Existenz-Proben ein (nur-sinkend, Selbsttest feuert); die Voll-Wanderung bleibt tabellen-
+getrieben offen. **DOKU-WAHRHEIT** — das-lebendige-feld-Stand-Kopf (V18.94→heute, tote Zeiger
+geheilt) · Doc-Map (nervensystem RUND, studio-vertrag/ultraguss/analyse-Zeilen ergänzt) ·
+diag-genom als BEWUSSTER Zustand benannt (6 Bänder kodieren das gefallene wahrerwuchs-§7-Größen-
+Gesetz; sizeClass ist seit dem Herz-Tausch ein abgeleitetes Etikett — Bänder-Wanderung = benannter
+Faden; ebenso vorbestehend: diag-atmosphere „Fill NACHT" 0.1169, HEAD-identisch). **DAS ABNAHME-
+DREHBUCH** (docs/abnahme-drehbuch.md): die EINE Schöpfer-Runde als geführtes Skript (W8-Punkte ·
+look-golden --mint · perf.json · E-C/E-E/E-F mit Defaults + E-C-Diskrepanz-Notiz · DoD 5 ·
+LOOK-Stau-Galerie mit Referenz-Schüssen). Vertrag §8.4: WELT-LOOK-GESETZE ergänzt. Grün: Batterie
+„Alle Invarianten OK" · fast 18/18 · check · lint · format · smoke-labs 7/7 · gate:apparat ·
+gate:fern-wasser · watersheet maxDiff 0 · night-probe.
+
 ### V18.461 — HAAR+KLEID SIND GESETZ (Schöpfer „menschen keine haut und kleider wie in den vorlagen?")
 
 Die zweite Hälfte der Schöpfer-Frage, dasselbe Muster wie die Fell-Streu: **koerper-core trägt

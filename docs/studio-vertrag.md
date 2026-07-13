@@ -331,6 +331,11 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   Vertex-Farben) — das Gesetz sagt WAS (Teile · Farben · Verteilung), die
   Deck-TECHNIK ist Leser-Sache (das Lab behält seine Builder, Benchmark
   unbewegt). Fehlt die Tabelle, bäckt der Bäcker kahl (DARF, fail-soft).
+  WELT-LOOK-GESETZE (V18.462, dasselbe Muster eine Ebene höher): der Himmel
+  (`HIMMEL_GESETZ`) und die Wasser-Oberfläche (`WASSER_GESETZ`) wohnen als
+  Zahlen-Tabellen in foundry-core — das Studio-GLSL INJIZIERT sie in seinen
+  Shader-Text (semantischer Beweis: alt==neu), der Welt-Renderer (TSL) LIEST
+  dieselben Tabellen. Editiert der Schöpfer die Tabelle, folgen BEIDE Leser.
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
   `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],

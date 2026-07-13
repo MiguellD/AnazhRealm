@@ -80,8 +80,9 @@ neues Groß-Bauen, sondern ein Trichter — vier Stufen, in dieser Reihenfolge:
 
 1. **Die Schöpfer-Runde** (Trichter-Stufe 1 — W8 · DoD 5 · look-golden · perf.json · E-C/E-E/E-F ·
    LOOK-Stau). → `paritaet-vollendung-plan.md` W8/§3 · `nervensystem-plan.md` TEIL VIII · §4 ★.
-2. **W9 Himmel 1:1 + W10 Wasser-Oberfläche 1:1** (die zwei benannten, ungebauten Bau-Wellen).
-   → `paritaet-vollendung-plan.md`.
+2. **W9 Himmel 1:1 + W10 Wasser-Oberfläche 1:1 — ✓ GEBAUT V18.462** (HIMMEL_GESETZ/WASSER_GESETZ
+   in foundry-core, Studio injiziert + Welt adoptiert, Wände grün, Augen liegen).
+   → `paritaet-vollendung-plan.md` W9/W10 (GEBAUT-Notizen).
 3. **Der lebendige Körper:** Säule II-2 (Fuß-IK/Foot-Lock/Blending/Spring) + Gusse 2 (Glied-/
    Muskel-Grammatik) / 4 (Körper-Editor) / 5 (Substanz-Tiefe). → `lebendiger-koerper-plan.md`.
 4. **Seelen-Vertiefung:** Emotion→Regel-Emergenz (hand-codierte Kopplungen als evolvierbare

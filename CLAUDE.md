@@ -6,7 +6,25 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.461 — LOOK ALS GESETZ vollständig: Fell · Haar · Kleid)
+## Stand (V18.462 — DIE VOLLENDUNGS-WELLE: W9 Himmel · W10 Wasser · Frisuren · fail-LAUT)
+
+**W9+W10 GEBAUT:** `HIMMEL_GESETZ` + `WASSER_GESETZ` (foundry-core) — das Studio-GLSL
+INJIZIERT die Zahlen in seinen Shader-Text (semantischer Beweis alt==neu), die Welt (TSL)
+LIEST dieselben Tabellen: Wolken-Feld (Parallaxe+2·fbm+lit; uSunCol=Rayleigh-Quelle;
+V18.369-Zenit-Kompensation fiel MIT dem alten Feld) · Wasser (Beer-Lambert · Schlick-
+Fresnel · Himmel-Spiegelung [Planar-RT = Studio-Perf-Entscheid] · Licht/Spec; auditierte
+Ufer/Schaum-Systeme blieben; Automat byte-unberührt maxDiff 0). **Fern-Wasser-Provisorium
+zurück AN.** haarStreu trägt ALLE 10 Frisuren (Zeilen-Arten radial/quaste/knoten in
+__streuGeo — Default-RNG eingefroren, Fell sha256-gleich). fail-LAUT: kalter-Buch-Pfad
+spricht (Chokepoint-Warn · Timeout-Wort · Magenta-Platzhalter · Not-Körper). typeof-
+RATCHET in gate:apparat (891, nur-sinkend; Voll-Wanderung offen). Doku-Wahrheit: Feld-Doc-
+Kopf + Doc-Map nachgezogen, diag-genom (+ diag-atmosphere Fill-NACHT) als bewusste rote
+Zustände BENANNT. `docs/abnahme-drehbuch.md` = deine EINE Runde (W8 · look-golden --mint ·
+perf.json · E-C/E-E/E-F · DoD 5 · LOOK-Galerie). OFFEN danach: nur noch die Runde selbst ·
+typeof-Voll-Wanderung · Rinden-Vereinigung · diag-genom-Bänder-Wanderung · Frisur/Schnitt-
+Technik-Reichtum (Lab-Builder) als künftige Gesetz-Zeilen.
+
+### Davor (V18.461 — LOOK ALS GESETZ vollständig: Fell · Haar · Kleid)
 
 **FELL (V18.460) + HAAR/KLEID (V18.461):** der Look wohnt als ZEILEN-TABELLEN in den
 Gesetzbüchern, die Deck-Technik ist Leser-Sache. tetrapoda-core `fellStreu(P,M,T)`
