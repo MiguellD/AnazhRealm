@@ -245,6 +245,12 @@ const ZWILLINGE = [
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
+        fingerprint: "burgundy:{hex:0x5a2530",
+        gesetzbuch: "koerper-core.js",
+        verboten: ["worlds/koerperstudio/koerperstudio.js", "anazhRealm.js"],
+        fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
+    },
+    {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
         gesetzbuch: "schmiede-core.js",
         verboten: ["anazhRealm.js"],
@@ -284,19 +290,23 @@ function scanZwillinge() {
 // Tag trägt die AKTUELLE Version — ein stale ?v= serviert den Studios altes
 // Gesetz aus dem HTTP-Cache (gemessen 11.07.: alle acht Labs stale).
 function scanLabBuster() {
+    // V18.461: die Wand deckt JEDEN Buster (Kern UND Shell UND Wurzel-Seite) —
+    // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
+    // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
     const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
     const errs = [];
-    const worlds = fs.readdirSync(path.join(root, "worlds"));
-    for (const w of worlds) {
+    const seiten = [path.join(root, "index.html")];
+    for (const w of fs.readdirSync(path.join(root, "worlds"))) {
         const idx = path.join(root, "worlds", w, "index.html");
-        if (!fs.existsSync(idx)) continue;
+        if (fs.existsSync(idx)) seiten.push(idx);
+    }
+    for (const idx of seiten) {
         const src = fs.readFileSync(idx, "utf8");
-        const re = /src="[^"]*-core\.js\?v=([0-9.]+)"/g;
+        const re = /\?v=([0-9.]+)/g;
         let m;
         while ((m = re.exec(src))) {
-            if (m[1] !== version)
-                errs.push(`worlds/${w}/index.html lädt Kern mit stale ?v=${m[1]} (aktuell ${version})`);
+            if (m[1] !== version) errs.push(`${path.relative(root, idx)} trägt stale ?v=${m[1]} (aktuell ${version})`);
         }
     }
     return errs;
