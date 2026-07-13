@@ -14669,6 +14669,7 @@ class AnazhRealm {
         }
         const {
             uniform,
+            vec2,
             vec3,
             float,
             positionLocal,
@@ -14681,6 +14682,7 @@ class AnazhRealm {
             smoothstep,
             clamp,
             pow,
+            max,
             Fn,
         } = TSL;
         // V17.10 — die Wolken-Wurzel-Heilung: der Himmel nutzt jetzt DIESELBE
@@ -14702,6 +14704,9 @@ class AnazhRealm {
         // Sonne hin). EINE Quelle: derselbe sunDir, der DirectionalLight + das
         // Gras-Gegenlicht speist (`_dayNightApplyDirectionalLight`-Sync).
         const uSunDir = uniform(new THREE.Vector3(0.4, 0.8, 0.3).normalize());
+        // W9 — die Sonnen-FARBE fürs Wolken-Gesetz (Rayleigh-Hue der EINEN
+        // _atmosphere-Quelle; Schreiber: _dayNightApplyDirectionalLight).
+        const uSunCol = uniform(new THREE.Color(1, 0.95, 0.85));
 
         // 3D-Hash-Noise (Vendor-Spiegel der alten GLSL `noise(vec3)`):
         // dieselben Magic-Konstanten, dieselbe Smoothstep-Kurve, dieselbe
@@ -14746,81 +14751,83 @@ class AnazhRealm {
         const nebulaTint = float(0.5).add(n1.add(n2).div(2.0).mul(0.5));
         const nebula = uNebulaColor.mul(nebulaTint);
 
-        // V17.2 — WOLKEN: der flache 2-Octaven-Layer wird ein GEMALTER Ghibli-
-        // Himmel. Der Befund (ghibli-tiefe-diagnose): der Himmel ist die halbe
-        // epische Wirkung, aber `cloudCover` war EIN flacher Wert. Heilung (render-
-        // only, kein Buffer/Determinismus): 4-Octaven-FBM (bauschige Cumulus-Formen)
-        // mit Domain-Warp, vertikale Band-Formung, Fake-Selbstschattierung (helle
-        // Kerne / weiche graue Ränder) + Sonnen-Glow (golden-hour-Rand). Werte
-        // browser-justierbar. Volumetrische Billboard-Türme mit Parallaxe wären
-        // V17.2-b (falls der Browser-Audit mehr Plastik will).
-        const tC = uTime.mul(0.012);
-        // V17.10 — Domain-Warp + FBM aus mx-Simplex (sauber, präzisions-stabil).
-        // Der Warp knetet die Sample-Koordinate (organische Ränder); mx_fractal
-        // macht die Oktaven INTERN (billiger + bauschiger als 4 Hand-Oktaven).
-        // V17.10-perf: EIN Warp-Sample (skalar, isotrop angewandt) statt drei —
-        // 7 mx_noise/Fragment waren zu teuer (Warmup-Streaming-Regression
-        // gemessen 16→10 Chunks). Ein skalarer Warp gibt organische Ränder fast
-        // gleich gut, kostet 1 statt 3 Calls.
-        const _wn = (p) => (mxNoise ? mxNoise(p) : noise3(p).sub(0.5).mul(2.0));
-        const warp = _wn(vDir.mul(1.7).add(vec3(tC, tC.mul(0.4), float(0.0)))).mul(0.4);
-        const cp = vDir
-            .mul(2.6)
-            .add(vec3(tC, tC.mul(0.3), tC.mul(0.7)))
-            .add(warp);
-        // 3-Oktaven-FBM aus mx_noise_float (API-sicher: nur position-Arg). 3
-        // statt 4 Oktaven (Perf); jede Oktave sauberes, stabiles Simplex (kein
-        // hash3-Präzisions-Chaos). Fallback: der alte noise3-Pfad.
-        let fbm;
-        if (mxNoise) {
-            // V18.181-merge-Λ Sub 3g (V18.177, clever-gauss) — vierte Oktave
-            // (AAA-Detail-Standard): die feine Mikrostruktur in Cumulus-Rändern,
-            // sichtbar als zerrissene Fetzen statt glatter Schwellen-Kante.
-            const o1 = mxNoise(cp);
-            const o2 = mxNoise(cp.mul(2.03)).mul(0.5);
-            const o3 = mxNoise(cp.mul(4.01)).mul(0.25);
-            const o4 = mxNoise(cp.mul(8.05)).mul(0.125);
-            fbm = o1.add(o2).add(o3).add(o4).div(1.875).mul(0.5).add(0.5);
-        } else {
-            const o1 = noise3(cp);
-            const o2 = noise3(cp.mul(2.03)).mul(0.5);
-            const o3 = noise3(cp.mul(4.01)).mul(0.25);
-            const o4 = noise3(cp.mul(8.05)).mul(0.125);
-            fbm = o1.add(o2).add(o3).add(o4).div(1.875);
-        }
-        // cloudCover senkt die Schwelle → mehr Deckung (Wetter moduliert weiter):
-        // klar (~0.32) → thr 0.53 (verstreute Cumulus), Regen (~0.9) → thr 0.28
-        // (Overcast). Weiche Kanten über 0.2 Breite.
-        const thr = float(0.66).sub(uCloudCover.mul(0.42));
-        // V18.369 — ZENIT-FÜLLE (Schöpfer „beim Hochsehen IMMER ein Nebelring, das Zentrum
-        // transparent — wie ein Radierer löscht die Wolken zentral, egal wohin ich schaue").
-        // WURZEL (gemessen, KEIN screen-Space-Term): das isotrope `vDir·2.6`-Sampling unter-
-        // sampelt die Wolken-Noise am Zenit — alle Blickrichtungen nach oben ballen sich auf
-        // (0,1,0) → die Zenit-Kappe spannt nur ~4 Noise-Zellen, das Horizont-Band ~36 → die
-        // FBM-Spitzen, die die Schwelle überschreiten, treten überm Kopf NIE auf (Zenit 10 %
-        // vs Horizont 87 % Deckung bei Overcast). Heilung: die Schwelle sinkt sanft zum Zenit
-        // → die Deckung wird GLEICHMÄSSIG über die Kuppel (Overcast deckt auch direkt oben,
-        // sunny bleibt überall klar). vDir.y-only = welt-fest, kein Sonnen-Halo berührt, KEIN
-        // neuer Noise-Sample (nur ein smoothstep → keine Performance-Krücke). Knöpfe: Lift 0.16,
-        // Rampe 0.25→0.85 (wie weit unter dem Zenit die Kompensation greift).
-        const thrEff = thr.sub(float(0.16).mul(smoothstep(float(0.25), float(0.85), vDir.y)));
-        // V17.5 — weichere Dichte-Kante (0.28 statt 0.2) → sanfter „vereint",
-        // keine harten Wolken-Ränder (Schöpfer-Audit „nicht sauber vereint").
-        const density = smoothstep(thrEff, thrEff.add(float(0.28)), fbm);
-        // V17.5 — Horizont-Dunst-Formung (KEIN schmaler Höhen-Ring mehr): die
-        // alte `·smoothstep(1.3,0.42)`-Zenit-Dämpfung konzentrierte die Wolken
-        // in einem schmalen Band ~10-25° überm Horizont → wo der Blick zentral
-        // hinfiel (Horizont/hoch), war KEIN Band → „im Zentrum verschwinden die
-        // Wolken, seitlich sind sie" (der Schöpfer-„Filter"-Befund). Heilung:
-        // die Wolken füllen den GANZEN Himmel über dem Horizont, nur ein sanfter
-        // Dunst-Anstieg knapp über dem Horizont (kein Zenit-Cut). Die FBM-Lücken
-        // (Cumulus) geben die Struktur, nicht das Band.
-        const band = smoothstep(float(-0.1), float(0.1), vDir.y);
-        const cloudAmt = clamp(density.mul(band), float(0.0), float(1.0));
-        // Fake-Volumen: helle Kerne (hohes fbm = Cumulus-Top), weiche graue Ränder
-        // (nahe der Schwelle = ausgedünnte Fetzen) → der „plastische" Eindruck.
-        const lit = smoothstep(thr, float(1.0), fbm);
-        const cloudShade = mix(float(0.7), float(1.05), lit);
+        // W9 — DAS WOLKEN-FELD FOLGT DEM STUDIO-GESETZ (HIMMEL_GESETZ im
+        // Gesetzbuch foundry-core — DIESELBEN Zahlen injiziert das Studio in
+        // sein GLSL, EINE Quelle, zwei Leser): Himmelsebenen-Projektion mit
+        // Parallaxe sp=dir.xz/(dir.y+projY), ZWEI fbm-Abtastungen (5-Oktaven-
+        // Value-Noise, h21/vn verbatim), Deckungs-smoothstep aus uCloudCover,
+        // Horizont-Ausklang, Sonnen-Beleuchtung (uSunCol = Rayleigh-Hue der
+        // EINEN _atmosphere-Quelle), weiche Ränder aus dem feinen Feld.
+        // GEFALLEN mit dem alten Feld: der V17.10-Warp-FBM, die V18.369-Zenit-
+        // Kompensation (die Parallaxe tastet anders ab) und das V18.366-Mond-
+        // Ambient (das lit-Grau der Vorlage trägt die Nacht-Wolken) — die
+        // Vorlage IST die Benchmark. Unter dem Horizont klemmt max(y,hor0) den
+        // Nenner: das Studio brancht if(hh>0.015), TSL rechnet durch — der
+        // Horizont-Ausklang löscht den Beitrag, die Klemme hält die Division
+        // endlich (sonst NaN unterm Horizont).
+        const HG = (typeof globalThis !== "undefined" && globalThis.HIMMEL_GESETZ) || {
+            projY: 0.16,
+            s1: 1.6,
+            s2: 3.7,
+            drift: [0.02, 0.014],
+            drift2: 1.6,
+            dens: [0.54, 0.42, 0.8, 0.3],
+            mixN: [0.7, 0.3],
+            hor: [0.015, 0.2],
+            litGrau: [0.62, 0.65, 0.71],
+            litSonne: [1.15, 0.15],
+            litSa: 0.65,
+            bedeckt: [0.34, 0.36, 0.42],
+            bedecktK: 0.55,
+            edge: [0.5, 0.4, 0.6],
+            deck: 0.92,
+            fbm: { okt: 5, lac: 2.03, off: 1.7 },
+            grad: { up: 0.55, dn: 0.5, hazeY: 2.2 },
+        };
+        const h21 = Fn(([q]) => {
+            const p = fract(q.mul(vec2(123.34, 345.45)));
+            const p2 = p.add(dot(p, p.add(34.345)));
+            return fract(p2.x.mul(p2.y));
+        });
+        const vn2 = Fn(([q]) => {
+            const i = floor(q);
+            const f0 = fract(q);
+            const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)));
+            return mix(
+                mix(h21(i), h21(i.add(vec2(1.0, 0.0))), f.x),
+                mix(h21(i.add(vec2(0.0, 1.0))), h21(i.add(vec2(1.0, 1.0))), f.x),
+                f.y
+            );
+        });
+        const fbm2 = Fn(([q]) => {
+            let s = float(0.0);
+            let p = q;
+            let a = 0.5;
+            for (let o = 0; o < HG.fbm.okt; o++) {
+                s = s.add(vn2(p).mul(a));
+                p = p.mul(HG.fbm.lac).add(HG.fbm.off);
+                a *= 0.5;
+            }
+            return s;
+        });
+        const sp = vDir.xz.div(max(vDir.y, float(HG.hor[0])).add(HG.projY));
+        const dr = vec2(uTime.mul(HG.drift[0]), uTime.mul(HG.drift[1]));
+        const nA = fbm2(sp.mul(HG.s1).add(dr));
+        const nB = fbm2(sp.mul(HG.s2).sub(dr.mul(HG.drift2)));
+        const cov = uCloudCover;
+        const dens = smoothstep(
+            float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
+            float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
+            nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
+        ).mul(smoothstep(float(HG.hor[0]), float(HG.hor[1]), vDir.y));
+        const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
+        const litW = mix(
+            vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
+            uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
+            saW.mul(HG.litSa)
+        );
+        const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
+        const cloudAmt = clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
         // V18.181-merge-Λ Sub 3g (V18.177, clever-gauss DIE WELT ERWACHT —
         // AAA-Profi-Atmosphäre): die Sonnen-Halo-Schichten. AAA-Pattern: drei
         // kaskadierte Glow-Layer + Sonnen-Disc-Highlight, damit die Sonne am
@@ -14831,25 +14838,14 @@ class AnazhRealm {
         const sunGlowWide = pow(sunDot, float(4.0)); // Wolken-Wärme (golden hour)
         const sunGlowMid = pow(sunDot, float(28.0)); // enger heller Halo
         const sunGlowDisc = pow(sunDot, float(240.0)); // bright Sonnen-Disc (sichtbar als Kugel)
-        // Wolken-Grundfarbe folgt der Himmel-Helligkeit (Nacht graublau → Tag warm-weiß).
+        // Himmel-Helligkeit — das Gate der Sonnen-Halos (isDayMix unten).
         const skyLum = uNebulaColor.x.add(uNebulaColor.y).add(uNebulaColor.z).div(3.0);
-        const baseCloud = mix(
-            vec3(0.4, 0.43, 0.52),
-            vec3(1.0, 0.99, 0.96),
-            clamp(skyLum.mul(2.2), float(0.0), float(1.0))
-        );
-        // Wolken: Cumulus mit goldenem Glow-Rand (V17.2-Form) + sun-back-lit (V18.177).
-        // V18.366 — NACHT-MONDLICHT auf den Wolken (Schöpfer „nachts verschwinden die Wolken
-        // — das wäre das Mondlicht wie das Tageslicht der Profiweg"): nachts (skyLum klein →
-        // baseCloud dunkel) lesen die Wolken kaum gegen den dunklen Himmel → der bewölkte
-        // Nachthimmel wirkt „aufgerissen". Ein kühles Mondlicht-Ambient (∝ 1−Tag) hebt sie,
-        // damit der Himmel ÜBERALL als bewölkt liest (nicht nur am hellen Horizont/Mond-Rand).
-        const nightCloudLight = clamp(float(1.0).sub(skyLum.mul(3.5)), float(0.0), float(1.0));
-        const cloudColor = baseCloud
-            .mul(cloudShade)
-            .add(vec3(1.0, 0.82, 0.55).mul(sunGlowWide.mul(0.55)))
-            .add(vec3(1.0, 0.9, 0.7).mul(sunGlowMid.mul(0.4))) // sun-back-lit am Cumulus-Rand
-            .add(vec3(0.13, 0.16, 0.24).mul(nightCloudLight)); // kühles Mondlicht-Ambient nachts
+        // W9 — die Wolken-FARBE ist das Studio-Gesetz: grau→sonnenbeschienen
+        // (litW), bedeckt→dunkler/grauer. Die alten Welt-Terme (baseCloud aus
+        // skyLum · cloudShade · Cumulus-Glow-Adds · V18.366-Mond-Ambient)
+        // fielen MIT dem Feld — nachts trägt das lit-Grau der Vorlage die
+        // Wolken (uSunCol wird zur Mond-Farbe, die EINE _atmosphere-Quelle).
+        const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
 
         // V18.392 — DAS NEUE KLEID (WELT-DARSTELLUNG): der VERTIKALE HIMMEL-GRADIENT (Vorlagen-Form
         // `hh>0 ? mix(uHor,uTop,pow(hh,0.55)) : mix(uHor,uBot,pow(-hh,0.5))`). Der Befund (diag-horizon-
@@ -14863,8 +14859,10 @@ class AnazhRealm {
         const _lumN = nebula.x.mul(0.3).add(nebula.y.mul(0.59)).add(nebula.z.mul(0.11));
         const _hazeCol = mix(nebula, vec3(_lumN.add(0.34), _lumN.add(0.36), _lumN.add(0.4)), float(0.55));
         const _botCol = nebula.mul(float(0.42));
-        const _upC = pow(clamp(vDir.y, float(0.0), float(1.0)), float(0.5));
-        const _dnC = pow(clamp(vDir.y.negate(), float(0.0), float(1.0)), float(0.5));
+        // W9 — die pow-Kurven des Vertikal-Gradienten lesen das Gesetz (Vorlage
+        // 0.55 oben / 0.5 unten — die Welt trug 0.5/0.5, eine stille Drift).
+        const _upC = pow(clamp(vDir.y, float(0.0), float(1.0)), float(HG.grad.up));
+        const _dnC = pow(clamp(vDir.y.negate(), float(0.0), float(1.0)), float(HG.grad.dn));
         const _above = mix(_hazeCol, nebula, _upC);
         const _below = mix(_hazeCol, _botCol, _dnC);
         const _hemiBlend = smoothstep(float(-0.03), float(0.03), vDir.y);
@@ -14896,6 +14894,7 @@ class AnazhRealm {
             nebulaColor: uNebulaColor,
             cloudCover: uCloudCover,
             sunDir: uSunDir,
+            sunCol: uSunCol,
         };
 
         const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
@@ -16649,7 +16648,13 @@ class AnazhRealm {
             const keyM = "mensch|0|" + dKeyM + "|" + (0xc89372 >>> 0) + "|" + (0x241712 >>> 0);
             if (!memo.has(keyM)) {
                 this._foundryRequest("mensch", 0, 0, "summer", null).then((meshes) => {
-                    if (!meshes || !meshes.length || memo.has(keyM)) return;
+                    // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
+                    // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
+                    if (!meshes || !meshes.length) {
+                        if (!memo.has(keyM)) this.log("OFEN-PREFETCH LEER: mensch (Buch kalt/Timeout)", "WARN");
+                        return;
+                    }
+                    if (memo.has(keyM)) return;
                     const asm = this._ofenAssembleAsset(meshes);
                     if (asm) memo.set(keyM, asm);
                 });
@@ -16665,7 +16670,12 @@ class AnazhRealm {
                 const key = this._ofenKreaturKey(recId, d.dials, lod);
                 if (memo.has(key)) continue;
                 this._foundryRequest(recId, 0, lod, "summer", d.istDefault ? null : d.dials).then((meshes) => {
-                    if (!meshes || !meshes.length || memo.has(key)) return;
+                    if (!meshes || !meshes.length) {
+                        if (!memo.has(key))
+                            this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
+                        return;
+                    }
+                    if (memo.has(key)) return;
                     const asm = this._ofenAssembleAsset(meshes);
                     if (asm) memo.set(key, asm);
                 });
@@ -31821,6 +31831,7 @@ class AnazhRealm {
             pow,
             normalize,
             cross,
+            reflect,
             select: cond,
             Fn,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
@@ -31833,9 +31844,31 @@ class AnazhRealm {
         // Zehn Live-Uniforms (uniform-Knoten mit .value-Setter)
         const uTime = uniform(0.0);
         const uFlowSpeed = uniform(0.5);
-        const uDeep = uniform(new THREE.Color(0x0d2e4f)); // Vorlage: Beer-Lambert deepC (exp(-wK*0.85))
-        const uShallow = uniform(new THREE.Color(0x5aacc6)); // Vorlage: Beer-Lambert shallowC, heller/cyaner
-        const uFoam = uniform(new THREE.Color(0xdff1ff));
+        // W10 — DIE WASSER-FARBEN SIND DAS STUDIO-GESETZ (WASSER_GESETZ in
+        // foundry-core, dieselben Zahlen injiziert das Studio-GLSL): Beer-
+        // Lambert shallowC=exp(-wK*flach) · deepC=exp(-wK*tief) · Schaum-Farbe
+        // verbatim — raw als linear (r128-Farb-Gesetz), die Hex-Näherungen
+        // (0x0d2e4f/0x5aacc6/0xdff1ff) sind gefallen.
+        const WG = (typeof globalThis !== "undefined" && globalThis.WASSER_GESETZ) || {
+            wK: [6.5, 2.0, 1.2],
+            flach: 0.13,
+            tief: 0.85,
+            fresnel: [0.02, 0.98, 5.0],
+            spiegel: { dim: 0.68 },
+            licht: [0.86, 0.18, 0.08],
+            spec: [120.0, 1.35],
+            schaum: { farbe: [0.93, 0.96, 0.98] },
+        };
+        const _wgBeer = (d) =>
+            new THREE.Color().setRGB(Math.exp(-WG.wK[0] * d), Math.exp(-WG.wK[1] * d), Math.exp(-WG.wK[2] * d));
+        const uDeep = uniform(_wgBeer(WG.tief));
+        const uShallow = uniform(_wgBeer(WG.flach));
+        const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
+        // W10 — das Wasser spiegelt DEN Himmel (uSkyCol = die eine Tag/Nacht-
+        // Quelle) und glitzert in der Rayleigh-Sonnenfarbe (uSunCol) — Schreiber:
+        // _dayNightApplyWaterMaterials.
+        const uSkyCol = uniform(new THREE.Color(0.8, 0.87, 0.91));
+        const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
         const uFogColor = uniform(new THREE.Color(0x88a0c8));
@@ -32188,7 +32221,6 @@ class AnazhRealm {
         const foamD = clamp(max(max(foam, depthFoam).mul(detailFade), whitewater).add(uEmotion.mul(0.25)), 0.0, 1.0);
 
         const colWithFoam = mix(baseCol, uFoam, foamD.mul(0.7));
-        const lit = colWithFoam.mul(uLight);
 
         // W-F (V18.175, Teilwelle 2 „Flow-Wellen") — die FLOW-ausgerichtete
         // Mikro-Kräuselung der NORMALE (FRAGMENT-Stage, nicht Vertex): das
@@ -32223,23 +32255,40 @@ class AnazhRealm {
             .mul(fmag)
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
-        // Sonnen-Glitzern (Blinn-Phong wie Wasserfall, Exponent 48 statt 40).
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        const halfV = normalize(normalize(uSunDir).add(viewDir));
-        const spec = pow(max(dot(nFlow, halfV), 0.0), 48.0);
-        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.7).mul(uLight));
+        // W10 — SCHLICK-FRESNEL + HIMMEL-SPIEGELUNG (Studio-Gesetz, WASSER_GESETZ):
+        // fres = f0 + f1·(1−n·v)^f2; das Wasser spiegelt DEN Himmel — der
+        // Fallback-Zenit-Abfall (upY aus dem reflektierten Strahl → sky·dim)
+        // verbatim wie die Vorlage; die Planar-Spiegel-TEXTUR bleibt Studio-
+        // Sache (Perf-Entscheid, ultraguss-plan U8). Der alte pow-3-Fresnel
+        // (nur Alpha) ist gefallen — EIN Fresnel für Spiegel UND Alpha.
+        const ndvW = clamp(dot(nFlow, viewDir), 0.0, 1.0);
+        const fres = float(WG.fresnel[0]).add(
+            float(WG.fresnel[1]).mul(pow(float(1.0).sub(ndvW), float(WG.fresnel[2])))
+        );
+        const upYW = clamp(reflect(viewDir.negate(), nFlow).y.mul(0.5).add(0.5), 0.0, 1.0);
+        const skyMirror = mix(uSkyCol, uSkyCol.mul(WG.spiegel.dim), upYW);
+        const mirrored = mix(colWithFoam, skyMirror, fres);
+        // W10 — die LICHT-SCHATTIERUNG der Vorlage: ×(l0 + l1·diff + l2·Wellenhöhe),
+        // uLight trägt Tag/Nacht weiter (die Welt-Gain-Quelle bleibt EINE).
+        const diffW = max(dot(nFlow, normalize(uSunDir)), 0.0);
+        const lit = mirrored
+            .mul(float(WG.licht[0]).add(diffW.mul(WG.licht[1])).add(vWave.mul(WG.licht[2])))
+            .mul(uLight);
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn
+        // aus dem Gesetz, Farbe = die Rayleigh-Sonne (uSunCol) statt Fix-Warmweiß.
+        const spec = pow(max(dot(reflect(normalize(uSunDir).negate(), nFlow), viewDir), 0.0), float(WG.spec[0]));
+        const withSpec = lit.add(uSunCol.mul(spec).mul(WG.spec[1]).mul(uLight));
 
         // Fog — Custom-Shader erbt THREE.Fog nicht.
         const fogF = smoothstep(uFogNear, uFogFar, vFogDepth);
         const colFogged = mix(withSpec, uFogColor, fogF);
 
-        // Fresnel-Opazität: am Horizont fast opak, von oben klarer.
-        // V18.374 — die distanz-geflachte Fresnel-Normale war das ENTSCHEIDENDE Experiment gegen das
-        // steile-Lauf-Kern-Moiré: 0 Effekt → das Muster sitzt NICHT in der Normale (`n` ist nach den
-        // Displace-Glättungen ≈ up), sondern in der Wasser-MESH-TESSELLATION am grazing-Blick (das
-        // angeforderte `antialias:true`/MSAA glättet sie auf echter GPU, swiftshader zeigt sie roh).
-        // Der No-op-Fix gegen ein Nicht-Problem ist verworfen (V18.372-Lehre, kein toter Shader-Code).
-        const fres = pow(float(1.0).sub(max(dot(viewDir, n), 0.0)), 3.0);
+        // Fresnel-Opazität: am Horizont fast opak, von oben klarer. W10: liest
+        // den EINEN Schlick-Fresnel des Gesetzes (oben) — die Welt-Alpha-Anker
+        // 0.8/0.97 bleiben (auditierte Ufer-/Kanten-Kette V18.14–.17 unberührt).
+        // (V18.374-Notiz gilt weiter: das steile-Lauf-Kern-Moiré sitzt in der
+        // Mesh-Tessellation am grazing-Blick, nicht in der Normale.)
         const alpha0 = mix(float(0.8), float(0.97), fres);
         // Schicht 3: an der Uferlinie ausfaden — ein weicher, durchscheinender
         // Wasser-Saum statt einer harten Mesh-Kante gegen das Terrain (heilt auch
@@ -32291,6 +32340,8 @@ class AnazhRealm {
             shallow: uShallow,
             foam: uFoam,
             sunDir: uSunDir,
+            skyCol: uSkyCol,
+            sunCol: uSunCol,
             light: uLight,
             fogColor: uFogColor,
             fogNear: uFogNear,
@@ -34186,18 +34237,15 @@ class AnazhRealm {
     _ensureFarWaterSheet() {
         const s = this.state;
         if (!s.scene || typeof THREE === "undefined") return;
-        // W6 (Paritäts-Vollendung) — PROVISORIUM, REVERSIBEL: im Studio-Regime ist das
-        // Fern-Wasser DEFAULT AUS (dieselbe Vor-Studio-Relikt-Klasse wie Mantle/Shell —
-        // der Studio-Nebel schließt an der Wald-Kante ~194 m, das Sheet baute bis
-        // fog.far+60 DARÜBER HINAUS; `outR = max((ringR+2.5)·span, fogFar+60)` ragt
-        // beweisbar über den Nebel = eine Fremd-Silhouetten-QUELLE). ABER: Fern-Wasser
-        // ist ECHTE Hydro-Wahrheit (keine Kulisse) → KEIN hartes Gate, sondern der
-        // bestehende saubere Schalter als Default — `atmosphere.farWater === true`
-        // (expliziter User-/Schöpfer-Wille) erzwingt es AUCH im Studio-Regime; der
-        // endgültige Entscheid ist E-D (Wasser-Scope von Kriterium 1, W8).
-        const _farOff =
-            (s.atmosphere && s.atmosphere.farWater === false) ||
-            (this._foundryEnabled() && !(s.atmosphere && s.atmosphere.farWater === true));
+        // W10 — DAS W6-PROVISORIUM IST ZURÜCK AUF AN (der Plan-Schluss: „mit W10
+        // fällt das Fern-Wasser-Provisorium zurück auf AN"): die Oberfläche trägt
+        // jetzt das STUDIO-Gesetz (WASSER_GESETZ: Beer-Lambert · Himmel-Spiegelung ·
+        // Licht/Spec) — das Fern-Sheet ist keine Fremd-Silhouette mehr, sondern
+        // studio-treue Hydro-Wahrheit. AUS-Pfade bleiben NUR: explizites
+        // `atmosphere.farWater === false` (Schalter) und die HOLZ-Profile
+        // nah/kienspan (Ferne-Deckel). Der W6-Studio-Regime-Default-AUS-Term
+        // (`_foundryEnabled() && !== true`) ist gefallen.
+        const _farOff = s.atmosphere && s.atmosphere.farWater === false;
         if (_farOff) {
             if (s.farWater) this._disposeFarWaterSheet();
             return;
@@ -46757,9 +46805,22 @@ class AnazhRealm {
             attachMesh(built.mesh); // der Baum steht sofort (sync — kein async-Pfad mehr)
             return group;
         }
-        // Kein Rig (in der vendored r184/WebGPU nie der Fall) → leere Gruppe statt des
-        // alten Box-Toon-Avatars (rotes Sediment 0xc0392b + _refreshToonGradient, beides
-        // gestrichen — PBR ist die EINE Wahrheit). _buildHumanoidRig ist die EINE Quelle.
+        // Kein Rig (in der vendored r184/WebGPU nie der Fall) → fail-LAUT (V18.462):
+        // statt der STUMM-leeren Gruppe (unsichtbarer Spieler!) ein sichtbarer
+        // Not-Körper (Magenta-Kapsel) + Konsolen-Wort; der Ingest-Nachguss
+        // (applyPlayerSoul beim Buch-Eintreffen) ersetzt ihn wie zuvor. Der alte
+        // Box-Toon-Avatar bleibt gestrichen — das hier ist kein Look, sondern
+        // die sichtbare Wunde (niemand debuggt einen unsichtbaren Spieler).
+        this.log("MENSCH-BAU OHNE RIG: Not-Körper statt leerer Gruppe (heilt beim Ingest-Nachguss)", "WARN");
+        const notK = new THREE.Mesh(
+            typeof THREE.CapsuleGeometry === "function"
+                ? new THREE.CapsuleGeometry(0.3, 1.1, 4, 8)
+                : new THREE.SphereGeometry(0.5, 8, 6),
+            new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true })
+        );
+        notK.position.y = 0.85;
+        notK.userData.__kaltPlatzhalter = "mensch";
+        group.add(notK);
         return group;
     }
 
@@ -60714,7 +60775,33 @@ class AnazhRealm {
         }
         const builders = this._architectureBuilders();
         const builder = builders[entry.type];
-        if (!builder) return null;
+        if (!builder) {
+            // fail-LAUT (V18.462): ein platzierter Eintrag OHNE Builder (z. B.
+            // fahrzeug_<preset> aus einem Save, bevor das Buch die Blueprints
+            // registriert hat) war STUMM-unsichtbar. Jetzt: ratenbegrenztes
+            // Konsolen-Wort; bei BEREITEM Buch (der Eintrag kann nicht mehr
+            // selbst heilen) zusätzlich ein sichtbarer Magenta-Platzhalter —
+            // beim kalten Buch bleibt der Eintrag kalt (der Ingest-Refill baut).
+            const now = Date.now();
+            if (!this._archKaltWarnAt || now - this._archKaltWarnAt > 10000) {
+                this._archKaltWarnAt = now;
+                this.log(
+                    `ARCHITEKTUR OHNE BUILDER: "${entry.type}" (Buch ${this._foundry && this._foundry.ready ? "BEREIT — unbekannter Typ!" : "kalt — heilt beim Ingest"})`,
+                    "WARN"
+                );
+            }
+            if (this._foundry && this._foundry.ready && this._foundry.recipes) {
+                const ph = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.6, 0.6),
+                    new THREE.MeshBasicMaterial({ color: 0xff00ff, wireframe: true })
+                );
+                ph.position.set(entry.position.x || 0, (entry.position.y || 0) + 0.3, entry.position.z || 0);
+                ph.userData.__kaltPlatzhalter = entry.type;
+                this.state.scene.add(ph);
+                return ph;
+            }
+            return null;
+        }
         const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
         const group = builder(entry.seed);
         group.position.set(entry.position.x || 0, baseY, entry.position.z || 0);
@@ -63174,7 +63261,22 @@ class AnazhRealm {
             // ein Miss ist dann ein ehrliches null wie heute vor f.ready). Default (Hook undefined)
             // = heutiges Verhalten, byte-gleich; Linse `gate:pack-contract` (Source + Verhalten).
             if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
-            if (!f.ready || !f.worker) return null;
+            if (!f.ready || !f.worker) {
+                // fail-LAUT (V18.462, Gesetz #0: Invariante in den Chokepoint):
+                // das kalte Buch stirbt nicht mehr STUMM — ein ratenbegrenztes
+                // Konsolen-Wort (max 1×/10 s) benennt den null-Pfad; das
+                // Verhalten bleibt fail-soft (Aufrufer deferrieren + heilen
+                // beim Ingest — kein neuer Pfad, nur Sichtbarkeit).
+                const now = Date.now();
+                if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
+                    this._foundryKaltWarnAt = now;
+                    this.log(
+                        `FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`,
+                        "WARN"
+                    );
+                }
+                return null;
+            }
             return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
                 if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
                 return meshes;
@@ -63206,6 +63308,9 @@ class AnazhRealm {
             setTimeout(() => {
                 if (f.pending.has(reqId)) {
                     f.pending.delete(reqId);
+                    // fail-LAUT (V18.462): das Timeout ist vom kalten Buch
+                    // unterscheidbar — der Aufrufer sieht sonst beide als null.
+                    this.log(`FOUNDRY TIMEOUT: build-asset(${presetId}) nach 45 s ohne Reply → null`, "WARN");
                     resolve(null);
                 }
             }, 45000);
@@ -76728,6 +76833,12 @@ class AnazhRealm {
         if (this.state.skyboxUniforms && this.state.skyboxUniforms.sunDir) {
             this.state.skyboxUniforms.sunDir.value.copy(sunDir).normalize();
         }
+        // W9 — die Wolken-Beleuchtung des Studio-Gesetzes liest die Rayleigh-
+        // Sonnenfarbe der EINEN _atmosphere-Quelle (nachts wird sie zur Mond-
+        // Farbe — die Nacht-Wolken folgen gratis). Raw als linear (r128-Gesetz).
+        if (this.state.skyboxUniforms && this.state.skyboxUniforms.sunCol && a && a.col) {
+            this.state.skyboxUniforms.sunCol.value.setRGB(a.col.r, a.col.g, a.col.b);
+        }
     }
 
     // Ambient-Light: Mitternacht 0.18, Mittag 0.6, dann durch joy/awe/sorrow
@@ -77100,6 +77211,12 @@ class AnazhRealm {
                 if (uniforms.fogNear) uniforms.fogNear.value = fog.near;
                 if (uniforms.fogFar) uniforms.fogFar.value = fog.far;
             }
+            // W10 — „das Wasser spiegelt DEN Himmel" (Studio-Kopplung 1:1): die
+            // EINE Tag/Nacht-Himmelsfarbe (nebulaColor) speist die Spiegelung,
+            // die EINE Licht-Farbe (Richtlicht = Rayleigh-Sonne/Mond) den Glitzer.
+            if (uniforms.skyCol && this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor)
+                uniforms.skyCol.value.copy(this.state.skyboxUniforms.nebulaColor.value);
+            if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
         applyToTSL(this.state.waterfallUniforms);
@@ -81943,7 +82060,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.461.0";
+AnazhRealm.VERSION = "18.462.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

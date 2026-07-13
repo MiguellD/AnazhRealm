@@ -600,6 +600,15 @@ function init() {
     {
         // GRADIENT-HIMMEL + ECHTE WOLKEN: prozedurales Dichtefeld mit Parallaxe, von der Sonne beleuchtet, Deckung vom Wetter
         const skyGeo = new THREE.SphereGeometry(1, 32, 20);
+        // W9 -- die Wolken-Feld-ZAHLEN wohnen im Gesetzbuch (foundry-core.HIMMEL_GESETZ,
+        // EINE Quelle mit dem Welt-Dome); dieser Shader injiziert sie in seinen Text.
+        // gf = GLSL-float-Literal (Dezimalpunkt-Pflicht); ohne Gesetzbuch ist die Seite
+        // ohnehin tot (PORTAL_SKY wohnt daneben) -- kein stiller Fallback.
+        const HG = HIMMEL_GESETZ;
+        const gf = (x) => {
+            const s = String(x);
+            return /[.e]/.test(s) ? s : s + ".0";
+        };
         const skyMat = new THREE.ShaderMaterial({
             uniforms: {
                 uTop: { value: new THREE.Color(PORTAL_SKY.top) },
@@ -617,20 +626,20 @@ function init() {
                 "uniform vec3 uTop,uHor,uBot,uSunDir,uSunCol;uniform float uHaze,uTime,uCover;varying vec3 vd;",
                 "float h21(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}",
                 "float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(h21(i),h21(i+vec2(1,0)),f.x),mix(h21(i+vec2(0,1)),h21(i+vec2(1,1)),f.x),f.y);}",
-                "float fbm(vec2 p){float s=0.0,a=0.5;for(int i=0;i<5;i++){s+=a*vn(p);p=p*2.03+1.7;a*=0.5;}return s;}",
+                "float fbm(vec2 p){float s=0.0,a=0.5;for(int i=0;i<" + HG.fbm.okt + ";i++){s+=a*vn(p);p=p*" + gf(HG.fbm.lac) + "+" + gf(HG.fbm.off) + ";a*=0.5;}return s;}",
                 "void main(){vec3 dir=normalize(vd);float hh=dir.y;",
-                "  vec3 c=hh>0.0?mix(uHor,uTop,pow(clamp(hh,0.0,1.0),0.55)):mix(uHor,uBot,pow(clamp(-hh,0.0,1.0),0.5));",
-                "  c=mix(c,uHor,uHaze*clamp(1.0-abs(hh)*2.2,0.0,1.0));",
-                "  if(hh>0.015){",
-                "    vec2 sp=dir.xz/(dir.y+0.16); vec2 dr=vec2(uTime*0.020,uTime*0.014);", // Projektion auf Himmelsebene -> Parallaxe, langsame Drift
-                "    float n=fbm(sp*1.6+dr); float n2=fbm(sp*3.7-dr*1.6);",
-                "    float cov=uCover; float dens=smoothstep(0.54-cov*0.42,0.80-cov*0.30,n*0.7+n2*0.3);",
-                "    float hor=smoothstep(0.015,0.20,dir.y); dens*=hor;", // Wolken klingen zum Horizont aus
+                "  vec3 c=hh>0.0?mix(uHor,uTop,pow(clamp(hh,0.0,1.0)," + gf(HG.grad.up) + ")):mix(uHor,uBot,pow(clamp(-hh,0.0,1.0)," + gf(HG.grad.dn) + "));",
+                "  c=mix(c,uHor,uHaze*clamp(1.0-abs(hh)*" + gf(HG.grad.hazeY) + ",0.0,1.0));",
+                "  if(hh>" + gf(HG.hor[0]) + "){",
+                "    vec2 sp=dir.xz/(dir.y+" + gf(HG.projY) + "); vec2 dr=vec2(uTime*" + gf(HG.drift[0]) + ",uTime*" + gf(HG.drift[1]) + ");", // Projektion auf Himmelsebene -> Parallaxe, langsame Drift
+                "    float n=fbm(sp*" + gf(HG.s1) + "+dr); float n2=fbm(sp*" + gf(HG.s2) + "-dr*" + gf(HG.drift2) + ");",
+                "    float cov=uCover; float dens=smoothstep(" + gf(HG.dens[0]) + "-cov*" + gf(HG.dens[1]) + "," + gf(HG.dens[2]) + "-cov*" + gf(HG.dens[3]) + ",n*" + gf(HG.mixN[0]) + "+n2*" + gf(HG.mixN[1]) + ");",
+                "    float hor=smoothstep(" + gf(HG.hor[0]) + "," + gf(HG.hor[1]) + ",dir.y); dens*=hor;", // Wolken klingen zum Horizont aus
                 "    float sa=clamp(dot(dir,normalize(uSunDir))*0.5+0.5,0.0,1.0);",
-                "    vec3 lit=mix(vec3(0.62,0.65,0.71),uSunCol*1.15+0.15,sa*0.65);", // grau bis sonnenbeschienen
-                "    lit=mix(lit,vec3(0.34,0.36,0.42),cov*0.55);", // bedeckt -> dunkler/grauer
-                "    float edge=smoothstep(0.0,0.5,n2)*0.4+0.6;", // weiche Raender
-                "    c=mix(c,lit,dens*edge*0.92);",
+                "    vec3 lit=mix(vec3(" + gf(HG.litGrau[0]) + "," + gf(HG.litGrau[1]) + "," + gf(HG.litGrau[2]) + "),uSunCol*" + gf(HG.litSonne[0]) + "+" + gf(HG.litSonne[1]) + ",sa*" + gf(HG.litSa) + ");", // grau bis sonnenbeschienen
+                "    lit=mix(lit,vec3(" + gf(HG.bedeckt[0]) + "," + gf(HG.bedeckt[1]) + "," + gf(HG.bedeckt[2]) + "),cov*" + gf(HG.bedecktK) + ");", // bedeckt -> dunkler/grauer
+                "    float edge=smoothstep(0.0," + gf(HG.edge[0]) + ",n2)*" + gf(HG.edge[1]) + "+" + gf(HG.edge[2]) + ";", // weiche Raender
+                "    c=mix(c,lit,dens*edge*" + gf(HG.deck) + ");",
                 "  }",
                 "  gl_FragColor=vec4(c,1.0);",
                 "}",
@@ -2007,6 +2016,14 @@ function buildForest() {
     // 2b) WASSER: zwei Teiche + Bach. Lebendige Oberflaeche - animierte Wellen-NORMALEN (bewegte Himmelsspiegelung + Sonnenfunkeln); Bach hat Fliessrichtung.
     {
         const W = water();
+        // W10 -- die Wasser-Look-ZAHLEN wohnen im Gesetzbuch (foundry-core.WASSER_GESETZ,
+        // EINE Quelle mit dem Welt-Hydro-Material); dieser Shader injiziert sie in seinen
+        // Text. gw = GLSL-float-Literal; ohne Gesetzbuch ist die Seite tot (PORTAL_SKY).
+        const WG = WASSER_GESETZ;
+        const gw = (x) => {
+            const s = String(x);
+            return /[.e]/.test(s) ? s : s + ".0";
+        };
         const mkWaterMat = (flow, center, Rb, seaMode) => {
             const mat = new THREE.MeshStandardMaterial({
                 color: 0x20444d,
@@ -2046,7 +2063,7 @@ function buildForest() {
                         "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
                         "float depth01 = uRb>0.1 ? clamp(1.0-length(vWPos.xz-uCenter)/uRb,0.0,1.0) : 0.42; depth01=pow(depth01,0.7); if(uSeaMode>0.5){ float sward=length(vWPos.xz)-" +
                             COAST_D.toFixed(1) +
-                            "; if(sward<-4.0)discard; depth01=pow(clamp((sward-12.0)/18.0,0.0,1.0),0.85); } vec2 fl=uFlow*uTime*1.2; float whgt=0.0; vec2 grad=vec2(0.0); float kf=0.17, aw=1.5, om=0.55; for(int o=0;o<4;o++){ float tx=kf*(vWPos.x-fl.x)+uTime*om; float ty=kf*1.13*(vWPos.z-fl.y)-uTime*om*0.9; whgt+=aw*(sin(tx)+sin(ty)); grad+=aw*kf*vec2(cos(tx),1.13*cos(ty)); kf*=2.2; aw*=0.6; om*=1.4832; }   /* WELLEN-GESETZ: spektrale Kaskade (k_n=k0*L^n, a_n=a0*g^n) + Tiefwasser-Dispersion (om_n=om0*sqrt(L)^n). L=2.2 g=0.6 */ float amp=mix(0.16,0.40,depth01)*(0.7+0.9*uWind); vec3 wn=normalize(vec3(-grad.x*amp,1.0,-grad.y*amp)); vec3 Vd=normalize(cameraPosition-vWPos); float ndv=clamp(dot(wn,Vd),0.0,1.0); float fres=0.02+0.98*pow(1.0-ndv,5.0); vec3 Rd=reflect(-Vd,wn); float upY=clamp(Rd.y*0.5+0.5,0.0,1.0); vec3 skyCol=mix(uSkyCol,uSkyCol*0.68,upY); vec4 rc=uReflMatrix*vec4(vWPos,1.0); vec2 ruv=rc.xy/max(rc.w,0.0001); ruv+=wn.xz*0.13; vec3 mirr=texture2D(uReflMap,clamp(ruv,0.001,0.999)).rgb; vec3 reflCol=mix(skyCol,mirr,uReflMix); vec3 wK=vec3(6.5,2.0,1.2); vec3 shallowC=exp(-wK*0.13), deepC=exp(-wK*0.85); vec3 wcol=mix(shallowC,deepC,depth01); vec3 Ld=uSunDirW; float spec=pow(max(dot(reflect(-Ld,wn),Vd),0.0),120.0); float diff=max(dot(wn,Ld),0.0); vec3 outc=mix(wcol,reflCol,fres); outc*=(0.86+0.18*diff+0.08*whgt); outc+=uSunColW*spec*1.35; float walpha=clamp(mix(0.55,0.95,depth01)+fres*0.32,0.0,1.0); walpha*=smoothstep(0.0,0.06,depth01);   /* weicher Auslauf am Rand: keine harte Naht */ float edgeFoam=smoothstep(0.26,0.0,depth01); float crestFoam=smoothstep(1.8,2.7,whgt); float foam=clamp(edgeFoam*(0.5+0.5*sin(whgt*4.0+uTime*2.8))+crestFoam*0.6,0.0,0.85); outc=mix(outc,vec3(0.93,0.96,0.98),foam); walpha=max(walpha,foam*0.95); gl_FragColor=vec4(outc, walpha);",
+                            "; if(sward<-4.0)discard; depth01=pow(clamp((sward-12.0)/18.0,0.0,1.0),0.85); } vec2 fl=uFlow*uTime*" + gw(WG.wellen.adv) + "; float whgt=0.0; vec2 grad=vec2(0.0); float kf=" + gw(WG.wellen.k0) + ", aw=" + gw(WG.wellen.a0) + ", om=" + gw(WG.wellen.om0) + "; for(int o=0;o<" + WG.wellen.okt + ";o++){ float tx=kf*(vWPos.x-fl.x)+uTime*om; float ty=kf*" + gw(WG.wellen.ky) + "*(vWPos.z-fl.y)-uTime*om*" + gw(WG.wellen.omy) + "; whgt+=aw*(sin(tx)+sin(ty)); grad+=aw*kf*vec2(cos(tx)," + gw(WG.wellen.ky) + "*cos(ty)); kf*=" + gw(WG.wellen.L) + "; aw*=" + gw(WG.wellen.g) + "; om*=" + gw(WG.wellen.disp) + "; }   /* WELLEN-GESETZ (WASSER_GESETZ, foundry-core): spektrale Kaskade (k_n=k0*L^n, a_n=a0*g^n) + Tiefwasser-Dispersion (om_n=om0*sqrt(L)^n) */ float amp=mix(" + gw(WG.amp[0]) + "," + gw(WG.amp[1]) + ",depth01)*(" + gw(WG.wind[0]) + "+" + gw(WG.wind[1]) + "*uWind); vec3 wn=normalize(vec3(-grad.x*amp,1.0,-grad.y*amp)); vec3 Vd=normalize(cameraPosition-vWPos); float ndv=clamp(dot(wn,Vd),0.0,1.0); float fres=" + gw(WG.fresnel[0]) + "+" + gw(WG.fresnel[1]) + "*pow(1.0-ndv," + gw(WG.fresnel[2]) + "); vec3 Rd=reflect(-Vd,wn); float upY=clamp(Rd.y*0.5+0.5,0.0,1.0); vec3 skyCol=mix(uSkyCol,uSkyCol*" + gw(WG.spiegel.dim) + ",upY); vec4 rc=uReflMatrix*vec4(vWPos,1.0); vec2 ruv=rc.xy/max(rc.w,0.0001); ruv+=wn.xz*" + gw(WG.spiegel.verzerr) + "; vec3 mirr=texture2D(uReflMap,clamp(ruv,0.001,0.999)).rgb; vec3 reflCol=mix(skyCol,mirr,uReflMix); vec3 wK=vec3(" + gw(WG.wK[0]) + "," + gw(WG.wK[1]) + "," + gw(WG.wK[2]) + "); vec3 shallowC=exp(-wK*" + gw(WG.flach) + "), deepC=exp(-wK*" + gw(WG.tief) + "); vec3 wcol=mix(shallowC,deepC,depth01); vec3 Ld=uSunDirW; float spec=pow(max(dot(reflect(-Ld,wn),Vd),0.0)," + gw(WG.spec[0]) + "); float diff=max(dot(wn,Ld),0.0); vec3 outc=mix(wcol,reflCol,fres); outc*=(" + gw(WG.licht[0]) + "+" + gw(WG.licht[1]) + "*diff+" + gw(WG.licht[2]) + "*whgt); outc+=uSunColW*spec*" + gw(WG.spec[1]) + "; float walpha=clamp(mix(" + gw(WG.alpha[0]) + "," + gw(WG.alpha[1]) + ",depth01)+fres*" + gw(WG.alpha[2]) + ",0.0,1.0); walpha*=smoothstep(0.0," + gw(WG.alpha[3]) + ",depth01);   /* weicher Auslauf am Rand: keine harte Naht */ float edgeFoam=smoothstep(" + gw(WG.schaum.ufer) + ",0.0,depth01); float crestFoam=smoothstep(" + gw(WG.schaum.kammA) + "," + gw(WG.schaum.kammB) + ",whgt); float foam=clamp(edgeFoam*(0.5+0.5*sin(whgt*" + gw(WG.schaum.sinF) + "+uTime*" + gw(WG.schaum.sinT) + "))+crestFoam*" + gw(WG.schaum.kamm) + ",0.0," + gw(WG.schaum.max) + "); outc=mix(outc,vec3(" + gw(WG.schaum.farbe[0]) + "," + gw(WG.schaum.farbe[1]) + "," + gw(WG.schaum.farbe[2]) + "),foam); walpha=max(walpha,foam*" + gw(WG.schaum.deck) + "); gl_FragColor=vec4(outc, walpha);",
                         "water-frag"
                     );
             };
@@ -3533,7 +3550,8 @@ function updateWorld(dt) {
         _camUnder = _ws !== null && camera.position.y < _ws - 0.12;
         if (_camUnder) {
             const dl = 0.2 + 0.8 * atm.lum; // Tageslicht dringt ein: nachts fast schwarz, mittags tuerkis
-            _w3.setRGB(Math.exp(-6.5 * 0.3), Math.exp(-2.0 * 0.3), Math.exp(-1.2 * 0.3)).multiplyScalar(dl); // gleiche Absorption wK=(6.5,2.0,1.2) wie im Wasser-Shader
+            const _uwK = WASSER_GESETZ.wK; // W10: die EINE Absorption (Gesetzbuch) — Shader und Unterwasser-Nebel lesen dieselbe Zeile
+            _w3.setRGB(Math.exp(-_uwK[0] * 0.3), Math.exp(-_uwK[1] * 0.3), Math.exp(-_uwK[2] * 0.3)).multiplyScalar(dl);
             scene.fog.color.copy(_w3);
             if (scene.background && scene.background.isColor) scene.background.copy(_w3);
             scene.fog.near = 0.3;

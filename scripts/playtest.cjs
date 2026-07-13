@@ -42786,7 +42786,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             r._followCelestialBodies();
         }
         const skySrc = r.createGalaxySkybox ? window.__codeOf(r.createGalaxySkybox) : "";
-        out.skyboxCloudFbm = skySrc.includes("fbm") && skySrc.includes("sunGlow") && skySrc.includes("cloudShade");
+        // W9 — das Band WANDERT mit dem Code (Lehre 6): das Wolken-Feld ist jetzt
+        // das STUDIO-GESETZ (HIMMEL_GESETZ aus foundry-core: Parallaxe-Projektion,
+        // zwei fbm-Felder, Deckungs-smoothstep, lit-Beleuchtung) — die alten
+        // Welt-Terme (cloudShade/Warp) sind gefallen.
+        out.skyboxCloudFbm =
+            skySrc.includes("HIMMEL_GESETZ") &&
+            skySrc.includes("fbm2") &&
+            skySrc.includes("litW") &&
+            !skySrc.includes("cloudShade");
         // V17.10 — die Wolken-Wurzel: der Himmel nutzt jetzt mx_noise (dieselbe
         // Noise-Sprache wie Terrain/Vegetation) statt des hash3-Präzisions-Chaos.
         out.skyboxMxNoise = skySrc.includes("mxNoise") && skySrc.includes("mx_noise_float");
@@ -42973,7 +42981,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             "V17.J3: die Sonne orbitet NICHT mehr den Welt-Ursprung (fern bei fernem Spieler)",
             v828Results.sunNotAtOrigin
         );
-        check("V17.2: Wolken-Shader ist FBM-gemalt (fbm + sunGlow + cloudShade)", v828Results.skyboxCloudFbm);
+        check("W9: Wolken-Feld folgt dem STUDIO-GESETZ (HIMMEL_GESETZ + fbm2 + litW)", v828Results.skyboxCloudFbm);
         check("V17.10: Himmel nutzt mx_noise (eine Noise-Sprache, kein hash3-Flackern)", v828Results.skyboxMxNoise);
         check(
             `V17.12: Terrain-colorNode (triplanar-Textur) baut OHNE geschluckte Exception${v828Results.terrainColorNodeError ? " — " + v828Results.terrainColorNodeError : ""}`,
@@ -43184,7 +43192,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             // V9.56-i): die Spec liest jetzt `nFlow` (die flow-gekräuselte Normale,
             // abgeleitet aus n → das Glitzern wandert stromab) statt `n`.
             waterSpecular =
-                /pow\(max\(dot\(nFlow,\s*halfV\)/.test(builderSrc) &&
+                // W10 — das Band WANDERT (Lehre 6): der Glitzer ist jetzt das
+                // STUDIO-Gesetz (reflect-basiert, WASSER_GESETZ.spec, Rayleigh-uSunCol).
+                /pow\(max\(dot\(reflect\(/.test(builderSrc) &&
+                /WG\.spec\[0\]/.test(builderSrc) &&
                 /nFlow\s*=\s*normalize\(n\.add/.test(builderSrc) &&
                 /normalize\(uSunDir\)/.test(builderSrc);
             // V13.5 (Schicht 3): Tiefenpuffer-Uferlinie via viewportLinearDepth + waterThick.
@@ -43257,7 +43268,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v830Results && !v830Results.error) {
         check("V8.30: Sterne testen gegen Tiefenpuffer (kein Overlay)", v830Results.starsDepthTest);
         check("V8.30: Wasser-Shader hat diagonale Multi-Wellen (kein Schachbrett)", v830Results.waterDiagonalWaves);
-        check("V8.30: Wasser-Shader hat Sonnen-Glitzern (Spekular)", v830Results.waterSunGlitter);
+        check(
+            "W10: Wasser-Glitzer folgt dem STUDIO-GESETZ (reflect + WASSER_GESETZ.spec)",
+            v830Results.waterSunGlitter
+        );
         check("V8.30: Wasser-Shader hat uSunDir-Uniform (Tag-Nacht-Sync)", v830Results.waterHasSunUniform);
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
@@ -43395,7 +43409,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         if (wFresMat) {
             const builderSrc = window.__codeOf(r._ensureHydroSurfaceMaterial);
             // Fresnel = pow(1 - max(dot(viewDir, n), 0), 3) im colorNode-Tree.
-            out.waterFresnel = /fres\s*=\s*pow/.test(builderSrc) && /max\(dot\(viewDir,\s*n\)/.test(builderSrc);
+            // W10 — das Band WANDERT: der EINE Fresnel ist Schlick (WASSER_GESETZ.fresnel),
+            // treibt Spiegel UND Alpha (alpha0 liest fres).
+            out.waterFresnel =
+                /WG\.fresnel\[0\]/.test(builderSrc) &&
+                /alpha0 = mix\(float\(0\.8\), float\(0\.97\), fres\)/.test(builderSrc);
         }
 
         // Fog-Slider erlaubt bis 300 %.
@@ -43413,7 +43431,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
         check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
-        check("V8.32: Wasser-Shader hat Fresnel-Opazität (Sterne nicht durchs Wasser)", v832Results.waterFresnel);
+        check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) treibt Spiegel + Alpha", v832Results.waterFresnel);
         check("V8.32: Fog-Slider geht bis 300 %", v832Results.fogSliderTo300);
         check("V8.32: setFogDistance akzeptiert 3.0", v832Results.fogDistanceTo3);
     } else {

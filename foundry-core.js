@@ -87,6 +87,52 @@ const PORTAL_SKY = {
     sun: 0xfff2d9, // Mittags-Sonnenfarbe (warm, = uSunCol (1,0.95,0.85))
 };
 
+// W9 — DAS HIMMEL-GESETZ: das Wolken-Feld des Terrain-Studios als ZAHLEN.
+// EINE Quelle, zwei Leser: das Studio-GLSL (phytogenesis) injiziert sie in
+// seinen Shader-Text, der Welt-Dome (createGalaxySkybox, TSL) liest sie beim
+// Bau. Deck-Technik ist Leser-Sache (GLSL vs TSL), die VERTEILUNG ist Gesetz.
+// var (nicht const): reist als globalThis.HIMMEL_GESETZ zum Stamm-Leser.
+// prettier-ignore
+var HIMMEL_GESETZ = {
+    projY: 0.16,               // Himmelsebenen-Projektion sp = dir.xz/(dir.y+projY)
+    s1: 1.6, s2: 3.7,          // die zwei Feld-Abtastungen (grob/fein)
+    drift: [0.02, 0.014],      // Drift dr = uTime*(x,y); Feld 2 läuft -drift*drift2
+    drift2: 1.6,
+    dens: [0.54, 0.42, 0.8, 0.3], // smoothstep(a-cov*b, c-cov*d, n*mixN0+n2*mixN1)
+    mixN: [0.7, 0.3],
+    hor: [0.015, 0.2],         // Wolken klingen zum Horizont aus
+    litGrau: [0.62, 0.65, 0.71],  // grau → sonnenbeschienen: mix(grau, sun*k0+k1, sa*litSa)
+    litSonne: [1.15, 0.15], litSa: 0.65,
+    bedeckt: [0.34, 0.36, 0.42], bedecktK: 0.55, // bedeckt → dunkler/grauer
+    edge: [0.5, 0.4, 0.6],     // weiche Ränder: smoothstep(0,e0,n2)*e1+e2
+    deck: 0.92,                // finaler Misch-Anteil
+    fbm: { okt: 5, lac: 2.03, off: 1.7 }, // Value-Noise-fbm der Vorlage
+    grad: { up: 0.55, dn: 0.5, hazeY: 2.2 }, // Vertikal-Gradient (pow-Kurven + Haze-Fenster)
+};
+
+// W10 — DAS WASSER-OBERFLÄCHEN-GESETZ: der Teich/Bach/Meer-Look des Terrain-
+// Studios als ZAHLEN. EINE Quelle, zwei Leser: das Studio-GLSL (mkWaterMat +
+// Unterwasser-Nebel) injiziert ALLE Zeilen, das Welt-Hydro-Material (TSL)
+// liest die adoptierte Teilmenge (Beer-Lambert-Farben · Schlick-Fresnel ·
+// Himmel-Spiegelung · Licht-Schattierung · Sonnen-Spec · Schaum-Farbe); die
+// auditierten Welt-Systeme (Tiefenpuffer-Ufer · Schaum-Verschmelzen · Alpha-
+// Kante, V18.14–.374) bleiben Welt-Sache. Die Spiegel-TEXTUR bleibt Studio-
+// Sache (Perf-Entscheid: die Welt spiegelt den Himmel über Fresnel, keine
+// Planar-RT — ultraguss-plan U8).
+// prettier-ignore
+var WASSER_GESETZ = {
+    wK: [6.5, 2.0, 1.2],       // Beer-Lambert-Absorption
+    flach: 0.13, tief: 0.85,   // shallowC=exp(-wK*flach), deepC=exp(-wK*tief)
+    wellen: { k0: 0.17, a0: 1.5, om0: 0.55, L: 2.2, g: 0.6, disp: 1.4832, ky: 1.13, omy: 0.9, okt: 4, adv: 1.2 },
+    amp: [0.16, 0.4], wind: [0.7, 0.9], // Normal-Amplitude: mix(a0,a1,depth)*(w0+w1*wind)
+    fresnel: [0.02, 0.98, 5.0],         // Schlick: f0 + f1*(1-ndv)^f2
+    spiegel: { dim: 0.68, verzerr: 0.13 }, // Himmel-Fallback mix(sky, sky*dim, upY); UV-Verzerrung
+    licht: [0.86, 0.18, 0.08],          // outc *= (l0 + l1*diff + l2*whgt)
+    spec: [120.0, 1.35],                // Sonnen-Glitzer pow(...,s0)*s1
+    alpha: [0.55, 0.95, 0.32, 0.06],    // mix(a0,a1,depth)+fres*a2; Auslauf smoothstep(0,a3,depth)
+    schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
+};
+
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
 // (REZEPTE/BUILD); SOLL/DARF-Blöcke wachsen unter v1 (must-ignore trägt sie).
@@ -2842,6 +2888,13 @@ function __streuGeo(row, seed, tonRGB) {
     const d = new THREE.Vector3();
     const v = new THREE.Vector3();
     const rootC = [tonRGB[0] * 0.12, tonRGB[1] * 0.12, tonRGB[2] * 0.12];
+    // V18.462 — ZEILEN-ARTEN (Frisuren-Gesetz): "streu" = Kalotten-Schale
+    // (Default, RNG-Reihenfolge UNVERÄNDERT — die Fell-Streu ist eingefroren),
+    // + `radial:1` (Richtung = Schalen-Normale, afro), "quaste" = Punkt-Büschel
+    // mit Box-Streuung (Zopf), "knoten" = volle Kugel-Schale radial (Dutt).
+    // `lj` = Längen-Streuung (Default 0.015 wie bisher).
+    const art = row.art === "quaste" || row.art === "knoten" ? row.art : "streu";
+    const lj = row.lj != null ? row.lj : 0.015;
     let sN = 0;
     for (let j = 0; j < row.n; j++) {
         const phi = rnd() * Math.PI;
@@ -2850,13 +2903,35 @@ function __streuGeo(row, seed, tonRGB) {
         const jy = (rnd() - 0.5) * 0.3;
         const jz = (rnd() - 0.5) * 0.4;
         const qr = rnd();
-        if (Math.cos(phi) < -0.05) continue;
-        d.set(row.d[0] + jx, row.d[1] + jy, row.d[2] + jz).normalize();
-        const px = row.r * row.sc[0] * Math.sin(phi) * Math.cos(theta) + row.c[0] - d.x * 0.012;
-        const py = row.r * row.sc[1] * Math.cos(phi) + row.c[1] - d.y * 0.012;
-        const pz = row.r * row.sc[2] * Math.sin(phi) * Math.sin(theta) + row.c[2] - d.z * 0.012;
+        let px, py, pz;
+        if (art === "quaste") {
+            px = row.c[0] + (phi / Math.PI - 0.5) * row.box[0];
+            py = row.c[1] + (theta / (Math.PI * 2) - 0.5) * row.box[1];
+            pz = row.c[2] + (qr - 0.5) * row.box[2];
+            d.set(row.d[0] + jx * 0.3, row.d[1] + jy * 0.3, row.d[2] + jz * 0.3).normalize();
+        } else if (art === "knoten") {
+            const cph = phi / Math.PI - 0.5; // volle Kugel: cos(phi) gleichverteilt
+            const sph = Math.sqrt(Math.max(0, 1 - 4 * cph * cph));
+            const nx = sph * Math.cos(theta);
+            const ny = 2 * cph;
+            const nz = sph * Math.sin(theta);
+            px = row.c[0] + row.r * row.sc[0] * nx;
+            py = row.c[1] + row.r * row.sc[1] * ny;
+            pz = row.c[2] + row.r * row.sc[2] * nz;
+            d.set(nx + jx * 0.75, ny + jy * 0.75, nz + jz * 0.75).normalize();
+        } else {
+            if (Math.cos(phi) < -0.05) continue;
+            if (row.radial) {
+                d.set(Math.sin(phi) * Math.cos(theta) + jx, Math.cos(phi) + jy, Math.sin(phi) * Math.sin(theta) + jz).normalize();
+            } else {
+                d.set(row.d[0] + jx, row.d[1] + jy, row.d[2] + jz).normalize();
+            }
+            px = row.r * row.sc[0] * Math.sin(phi) * Math.cos(theta) + row.c[0] - d.x * 0.012;
+            py = row.r * row.sc[1] * Math.cos(phi) + row.c[1] - d.y * 0.012;
+            pz = row.r * row.sc[2] * Math.sin(phi) * Math.sin(theta) + row.c[2] - d.z * 0.012;
+        }
         q.setFromUnitVectors(AB, d);
-        const l = Math.round((row.l + qr * 0.015) / 0.004) * 0.004;
+        const l = Math.round((row.l + qr * lj) / 0.004) * 0.004;
         if (l <= 0) continue;
         const w = row.t * 1.8,
             wt = Math.max(0.001, row.t * 0.65);
