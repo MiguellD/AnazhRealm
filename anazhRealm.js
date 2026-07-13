@@ -16222,127 +16222,6 @@ class AnazhRealm {
         return core.buildSkeleton(g);
     }
 
-    // wahrerguss System A×B — DAS FELL/HIDE-MATERIAL (Profi-Rezept, Material-Agent): macht aus
-    // der glatten Einfarb-Haut lebendiges Gewebe. KEINE Bitmap — aus der Form gerechnet:
-    //  · COUNTER-SHADING (Bauch dunkler, Rücken heller — real bei Tieren)
-    //  · FELL-KORN (feines Mehr-Oktaven-Noise = Strähnen-Brechung) + breite Ton-Zonen
-    //  · KAVITÄT (Krümmung → Gelenk-/Falten-Schatten)
-    //  · ROUGHNESS-VARIATION (#1 Hebel — Fell ist nie uniform-glatt)
-    //  · WARMES SSS-BACKLIGHT-RIM (Fresnel → die Silhouette glüht im Gegenlicht = lebendig)
-    // positionLocal hält es instanz-stabil; setzt colorNode+roughnessNode+outputNode selbst
-    // (eigenständig, kein _applySubstanceResponse-Konflikt). Fallback: schlichtes Material.
-    _buildCreatureHideMaterial(color, opts = {}) {
-        if (typeof THREE === "undefined" || typeof THREE.MeshStandardNodeMaterial !== "function") {
-            return typeof THREE.MeshStandardMaterial === "function" ? new THREE.MeshStandardMaterial({ color }) : null;
-        }
-        const mat = new THREE.MeshStandardNodeMaterial({ color, roughness: 0.85, metalness: 0 });
-        const T = THREE.TSL;
-        if (!T || !T.positionLocal || !T.vec3 || !T.float) return mat;
-        try {
-            const c = new THREE.Color(color);
-            let albedo = T.vec3(c.r, c.g, c.b);
-            const pl = T.positionLocal;
-            // COUNTER-SHADING (Bauch↓ / Rücken↑) — NICHT auf dem BAUM (opts.baum):
-            // der Gradient war für die EINE Metaball-Fläche gerechnet; auf 200
-            // Klein-Kugeln liest er als Pro-Kugel-Verdunklung → der Lab-Ton kippt.
-            if (!opts.baum) {
-                const yN = pl.y.mul(1.4).add(0.5).clamp(0, 1);
-                albedo = albedo.mul(T.mix(T.float(0.7), T.float(1.18), yN));
-            }
-            // FELL-KORN (fein) + breite Ton-Zonen
-            const fur = T.mx_fractal_noise_float
-                ? T.mx_fractal_noise_float(pl.mul(26.0), 3, 2.0, 0.5)
-                : T.mx_noise_float
-                  ? T.mx_noise_float(pl.mul(26.0))
-                  : T.float(0);
-            const broad = T.mx_noise_float ? T.mx_noise_float(pl.mul(3.2)) : T.float(0);
-            // HAUT vs FELL: ein Mensch (opts.skin) will glatte Haut — das Fell-Korn liest sonst
-            // als Dreck/Blutergüsse; nur ein Hauch Mottle bleibt. Ein Tier behält das volle Korn.
-            const grain = opts.skin ? 0.035 : 0.13;
-            const broadAmt = opts.skin ? 0.04 : 0.1;
-            albedo = albedo.mul(T.float(1.0).add(fur.mul(grain)).add(broad.mul(broadAmt)));
-            // KAVITÄT (Krümmung → Gelenk-/Falten-Schatten). Auf HAUT (opts.skin) wird der screen-space
-            // fwidth-Term NICHT zur Albedo-Verdunklung genutzt: er verdunkelt JEDE Normal-Diskontinuität
-            // (Muskel-Naht / dichter Part-Stapel an Schulter/Klavikel/Brust) VIEW-ABHÄNGIG zu dunklen
-            // „Riss"-Gassen (Schöpfer-Befund: „du schattierst die Normalen falsch"). Die gebackene AO
-            // (occ, glatt) trägt den echten Kavitäts-Schatten. Fell behält den fwidth-Term (Mikro-Korn).
-            // BAUM: kein Kavitäts-Term — fwidth(normal) ist auf Klein-Kugeln
-            // überall hoch (Krümmung ~1) → konstantes ×0.72-Abdunkeln, kein Detail.
-            let curv = T.float(0);
-            if (T.fwidth && T.normalWorld) curv = T.fwidth(T.normalWorld).length().mul(2.2).clamp(0, 1);
-            if (!opts.skin && !opts.baum) albedo = albedo.mul(T.float(1.0).sub(curv.mul(0.28)));
-            // PAINTED-ON SHORTS — eine weiße Boxer-Brief-Zone auf der HAUT selbst (Y-Band in
-            // Geometrie-lokal): perfekt anliegend, mit NATÜRLICHEN Bein-Öffnungen, weil der Körper
-            // die Beine schon getrennt hat. Eine Tube-Geometrie beulte als Rock — das hier ist die
-            // Referenz-Lösung. Übersteuert Hautton+Counter-Shading, bekommt aber die AO-Tiefe.
-            let shortsBand = null;
-            if (opts.shortsY && T.smoothstep) {
-                const yb = opts.shortsY[0],
-                    yt = opts.shortsY[1];
-                let band = T.smoothstep(T.float(yb - 0.05), T.float(yb + 0.06), pl.y).mul(
-                    T.smoothstep(T.float(yt + 0.05), T.float(yt - 0.06), pl.y)
-                );
-                // X-Tor: nur das zentrale Becken bemalen, NICHT die Hände, die auf Hüfthöhe ruhen.
-                if (opts.shortsX)
-                    band = band.mul(
-                        T.smoothstep(T.float(opts.shortsX + 0.12), T.float(opts.shortsX - 0.05), pl.x.abs())
-                    );
-                shortsBand = band;
-                albedo = T.mix(albedo, T.vec3(0.92, 0.93, 0.96), band);
-            }
-            // GEBACKENE AO (System A) — die Vertex-Farbe trägt die GEOMETRISCHE Kavität (Mulden
-            // verschattet, gerechnet aus der Form in _buildCreatureSkinGeometry, nicht der schwache
-            // screen-space fwidth) → das Albedo bekommt Gelenk-/Achsel-/Muskel-Tiefe statt flach-
-            // einfarbig. attribute("color") ist auf WebGPU STRIKT — die Skin-Geometrie setzt sie IMMER.
-            // BAUM: KEIN attribute("color") — die geteilten Kugel-Geometrien tragen
-            // kein gebackenes AO-Attribut (das war die Skin-Geometrie); ein fehlendes
-            // Attribut multipliziert die Albedo Richtung schwarz (der Dunkel-Befund).
-            if (T.attribute && !opts.baum) {
-                try {
-                    let aoC = T.attribute("color", "vec3");
-                    // In der SHORTS-Zone die Muskel-AO DÄMPFEN — Stoff ist glatt, soll NICHT die
-                    // Leisten-/Innenschenkel-Furche zeigen (die teilte die weißen Briefs in „zwei
-                    // Backen vorne"). Briefs werden gleichmäßig weiß.
-                    if (shortsBand) aoC = T.mix(aoC, T.vec3(1, 1, 1), shortsBand.mul(0.85));
-                    albedo = albedo.mul(aoC);
-                } catch (_e) {
-                    /* kein color-Attribut → unverschattet (kein Crash) */
-                }
-            }
-            mat.colorNode = T.vec4(albedo, 1.0);
-            // ROUGHNESS-VARIATION (#1 Hebel) — Haut etwas glatter (sanfter Glanz) als Fell.
-            const furN = fur.mul(0.5).add(0.5);
-            const rBase = opts.skin ? 0.62 : 0.8,
-                rVar = opts.skin ? 0.08 : 0.18;
-            // Haut: KEIN curv-Roughness-Term (er liest dieselbe view-abhängige Normal-Diskontinuität →
-            // glänzende Naht-Linien); Fell behält ihn. Haut variiert nur sanft mit dem Korn.
-            mat.roughnessNode = T.float(rBase)
-                .add(furN.mul(rVar))
-                .sub(opts.skin || opts.baum ? T.float(0) : curv.mul(0.12))
-                .clamp(0.4, 1.0);
-            // WARMES SSS-BACKLIGHT-RIM (Fresnel) — lebendiges Gegenlicht-Glühen.
-            const vd =
-                T.positionViewDirection ||
-                (T.cameraPosition && T.positionWorld ? T.cameraPosition.sub(T.positionWorld).normalize() : null);
-            const nv = T.normalView || T.transformedNormalView;
-            if (vd && nv && T.output) {
-                const fres = vd.dot(nv).clamp(0, 1).oneMinus().pow(2.6);
-                const warm = opts.predator ? T.vec3(1.0, 0.5, 0.25) : T.vec3(1.0, 0.72, 0.45);
-                // HAUT: das warme Rim SEHR DEZENT (0.07) — das Fresnel-Rim leuchtet nicht nur an
-                // der Silhouette, sondern LECKT in jede konkave Mulde (Augenhöhle · Achsel · Taille ·
-                // Muskel-Furche), wo es als roter „Wund"-Fleck liest (GEMESSEN am Avatar-Render, das
-                // mit dem Muskel-Relief schlimmer wurde). 0.07 hält den Silhouetten-Hauch, räumt die
-                // Mulden-Röte. Fell behält das volle Glühen (0.36).
-                const rimAmt = opts.skin ? 0.07 : 0.36;
-                const o = T.output;
-                mat.outputNode = T.vec4(o.xyz.add(warm.mul(fres.mul(rimAmt))), o.w);
-            }
-        } catch (_e) {
-            if (typeof window !== "undefined") window.__hideMatError = String((_e && _e.message) || _e);
-        }
-        return mat;
-    }
-
     // wahrerguss System B (GUSS 5) — DER GENOM-ROLLER: aus EINEM Seed ein deterministisches
     // Körper-Genom (Geschlecht · Statur · Muskel · Kopf-Verhältnis · Größe · Haut/Haar-Ton). DER
     // RPM-übertreffende Hebel: unendliche distinkte Körper aus EINEM Gesetz — RPM hat feste Presets,
@@ -16622,258 +16501,172 @@ class AnazhRealm {
     // identisch → Compound-MAX byte-gleich, die V17.16-Affinitäts-Wand). null =
     // kein ehrliches Mapping / kaltes Buch → der Aufrufer bleibt bei den frozen
     // Modul-bodyParts (byte-alt).
-    // KONVERGENZ III — DER STAMM BAUT DAS STUDIO-TIER SELBST: tetrapoda-core.bauTier
-    // liefert den EINEN Vierbeiner-Baum (dieselben Kugeln wie das Lab); der Stamm gibt
-    // THREE-Fabriken (geteilte Geometrien, PBR-Klassen aus TIER_MATERIAL_KLASSEN,
-    // Fell = P-Farbe als Material — die Strähnen sind Lab-Kür, F.fellSchweif ist hier
-    // still). Die PARTS-Wahrheit (_tetrapodaSoulParts) bleibt die MECHANIK (Tags/
-    // Größe/Statusbar/Allometrie) — der Baum ist die GESTALT. Selbst-eichend: der
-    // Baum wird auf die Parts-Höhe skaliert (EINE Formel, keine Magic je Art).
-    _buildTierBaum(soulKey, ovOpt) {
+    // ═══ DIE EINE PIPE (V18.458) — DER KREATUR-OFEN ═══
+    // Die Gattung reist als ASSET durch DIESELBE Foundry wie die Pflanzen: der
+    // Gattungs-Bäcker (foundry-core.BAKERS_BY_KIND.kreatur — EIN Gesetz, läuft im
+    // Worker UND hier) bäckt den bauTier-Baum je (Gelenk × Klasse) gemergt +
+    // liefert den Gelenk-Baum als __skelett-Beipack. Der Stamm ASSEMBLIERT nur
+    // (Arrays → Meshes über die EINE Konversion _foundryBuildMesh, Gelenk-Gruppen
+    // aus dem Skelett) und MEMOIERT je Art+Dials+Stufe: jede Kreatur ist ein
+    // Template-CLONE (Geometrien+Materialien GETEILT, ~1 ms) statt eines Baus.
+    // Warm macht der Boot-Prefetch (off-thread, IDB disk-first); kalt bäckt
+    // DERSELBE Bäcker einmal synchron (Headless/Erstkontakt). Die alten
+    // Stamm-Tunnel (_buildTierBaum-Inline-Fabriken · _tierFernTeile ·
+    // Hide-Interpretation) sind GEFALLEN — die Studio-Zahlen (mp) führen.
+    _ofenKreaturDials(recId, ovOpt) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
-        if (!core || typeof core.bauTier !== "function") return null;
-        const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
-        if (!recId) return null;
-        // Dial-Quelle: das LIVE-Buch (Schöpfer-editiert) — kaltes Buch fällt auf die
-        // KERN-Defaults der Art zurück (PRESETS[recId].s — dieselbe eine Quelle,
-        // nie auf Legacy-bodyParts).
-        const preset = core.PRESETS && core.PRESETS[recId] && core.PRESETS[recId].s;
-        const s0 = this._tetrapodaStudioDials(recId) || (preset ? Object.assign({}, preset) : null);
-        const dials = ovOpt && typeof ovOpt === "object" ? Object.assign({}, s0 || {}, ovOpt) : s0;
-        if (!dials) return null;
-        let P;
-        try {
-            P = core.deriveTierParams(dials);
-        } catch (_e) {
-            return null;
-        }
-        const TK = core.TIER_MATERIAL_KLASSEN || {};
-        const matCache = this._tierMatCache || (this._tierMatCache = new Map());
-        const mat = (key, c, r) => {
-            const k = key + "_" + c;
-            if (!matCache.has(k)) {
-                let m;
-                try {
-                    m = this._buildPbrNodeMaterial
-                        ? this._buildPbrNodeMaterial({ color: c, roughness: r, metalness: 0 })
-                        : new THREE.MeshStandardMaterial({ color: c, roughness: r });
-                } catch (_e2) {
-                    m = new THREE.MeshStandardMaterial({ color: c, roughness: r });
-                }
-                matCache.set(k, m);
-            }
-            return matCache.get(k);
-        };
-        const matFuer = (k) => {
-            if (k === "fell" || k === "straehne" || k === "straehneD" || k === "straehneL") {
-                // KONVERGENZ III — das FELL trägt das Hide-Gesetz (Counter-Shading +
-                // Korn + Roughness-Variation + Rim): dieselbe eine Material-Quelle,
-                // die zuvor die Metaball-Haut trug, jetzt auf dem Studio-Baum.
-                const kf = "fell_" + recId + "_" + (P.base != null ? P.base : 0x6b4a2e);
-                if (!matCache.has(kf)) {
-                    let m = null;
-                    try {
-                        if (this._buildCreatureHideMaterial)
-                            m = this._buildCreatureHideMaterial(P.base != null ? P.base : 0x6b4a2e, {
-                                predator: P.diet > 0.5,
-                                baum: true, // Klein-Kugel-Modus: Korn+Rim, keine Metaball-Terme
-                            });
-                    } catch (_e3) {
-                        m = null;
-                    }
-                    if (!m)
-                        m = new THREE.MeshStandardMaterial({
-                            color: P.base != null ? P.base : 0x6b4a2e,
-                            roughness: 0.93,
-                        });
-                    matCache.set(kf, m);
-                }
-                return matCache.get(kf);
-            }
-            const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
-            return mat(k, kl.c, kl.r);
-        };
-        // Strähnen-Material: dasselbe Fell-Gesetz, aber DoubleSide — die
-        // Kreuz-Quad-Strähnen werden von beiden Seiten gesehen.
-        const matStraehne = () => {
-            const baseHex = P.base != null ? P.base : 0x6b4a2e;
-            const k2 = "straehne_" + recId + "_" + baseHex;
-            if (!matCache.has(k2)) {
-                let m = null;
-                try {
-                    if (this._buildCreatureHideMaterial)
-                        m = this._buildCreatureHideMaterial(baseHex, { predator: P.diet > 0.5, baum: true });
-                } catch (_e4) {
-                    m = null;
-                }
-                if (!m) m = new THREE.MeshStandardMaterial({ color: baseHex, roughness: 0.93 });
-                m.side = THREE.DoubleSide;
-                matCache.set(k2, m);
-            }
-            return matCache.get(k2);
-        };
-        const geoCache = AnazhRealm._tierGeoCache || (AnazhRealm._tierGeoCache = new Map());
-        const kugelGeo = (r, segs) => {
-            const s2 = segs || 14;
-            const key = "k" + r.toFixed(4) + "_" + s2;
-            if (!geoCache.has(key))
-                geoCache.set(key, new THREE.SphereGeometry(r, s2, Math.max(8, Math.round(s2 * 0.75))));
-            return geoCache.get(key);
-        };
-        const zylGeo = (rt, rb, h) => {
-            const key = "z" + rt.toFixed(4) + "_" + rb.toFixed(4) + "_" + h.toFixed(4);
-            if (!geoCache.has(key)) geoCache.set(key, new THREE.CylinderGeometry(rt, rb, h, 10, 1));
-            return geoCache.get(key);
-        };
-        const F = {
-            gruppe: () => new THREE.Group(),
-            kugel: (r, k, sc) => {
-                const m = new THREE.Mesh(kugelGeo(r), matFuer(k));
-                m.userData.sharedGeom = true; // geoCache-geteilt — der Dispose-Chokepoint lässt sie stehen
-                if (sc) m.scale.set(sc[0], sc[1], sc[2]);
-                m.castShadow = k === "fell";
-                m.receiveShadow = true;
-                return m;
-            },
-            zylinder: (rt, rb, h, k) => {
-                const m = new THREE.Mesh(zylGeo(rt, rb, h), matFuer(k));
-                m.userData.sharedGeom = true;
-                m.castShadow = k === "fell";
-                return m;
-            },
-            kugelFein: (r, k, segs) => {
-                const m = new THREE.Mesh(kugelGeo(r, Math.min(16, segs || 16)), matFuer(k));
-                m.userData.sharedGeom = true;
-                return m;
-            },
-            v3: (x, y, z) => new THREE.Vector3(x, y, z),
-            richte: (node, dir) => {
-                node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
-            },
-            // Schweif-STRÄHNEN (KONVERGENZ-Schluss): die Lab-Streu (Kreuz-Quad-
-            // Strähnen, getStrandGeo-Form) DETERMINISTISCH (LCG je Segment statt
-            // Math.random — Lehre #7) und als EIN gemergtes Mesh pro Segment
-            // (statt ~250 Einzel-Meshes): wellt mit der Rute, kostet 1 Draw-Call.
-            fellSchweif: (segG, segR, i) => {
-                const Hh = P.size;
-                let sLcg = (9301 + i * 49297) >>> 0;
-                const rnd = () => {
-                    sLcg = (sLcg * 1103515245 + 12345) >>> 0;
-                    return sLcg / 4294967296;
-                };
-                const fBkX = 0,
-                    fBkY = -0.12,
-                    fBkZ = -0.92;
-                const pos = [];
-                const idx = [];
-                const q = new THREE.Quaternion();
-                const AB = new THREE.Vector3(0, -1, 0);
-                const d = new THREE.Vector3();
-                const v = new THREE.Vector3();
-                const n = (28 - i * 2) * 9;
-                let sN = 0;
-                for (let j = 0; j < n; j++) {
-                    const phi = rnd() * Math.PI;
-                    const theta = rnd() * Math.PI * 2;
-                    const dx = (rnd() - 0.5) * 0.25;
-                    const dy = (rnd() - 0.5) * 0.15;
-                    const dz = (rnd() - 0.5) * 0.25;
-                    const qr = rnd();
-                    if (Math.cos(phi) < -0.28) continue;
-                    const px = segR * 0.95 * Math.sin(phi) * Math.cos(theta);
-                    const py = segR * 1.18 * Math.cos(phi);
-                    const pz = segR * 1.18 * Math.sin(phi) * Math.sin(theta) - 0.048 * Hh;
-                    d.set(fBkX + dx, fBkY + dy, fBkZ + dz).normalize();
-                    q.setFromUnitVectors(AB, d);
-                    const l = Math.round((0.032 - i * 0.003 + qr * 0.03) / 0.004) * 0.004;
-                    if (l <= 0) continue;
-                    const w = 0.012 * 1.8,
-                        wt = Math.max(0.001, 0.012 * 0.65);
-                    // die 8 Kreuz-Quad-Ecken (getStrandGeo-Form), quat+pos gebacken
-                    const ecken = [
-                        [-w, 0, 0],
-                        [w, 0, 0],
-                        [wt, -l, 0],
-                        [-wt, -l, 0],
-                        [0, 0, -w],
-                        [0, 0, w],
-                        [0, -l, wt],
-                        [0, -l, -wt],
-                    ];
-                    const b = sN * 8;
-                    for (const e of ecken) {
-                        v.set(e[0], e[1], e[2]).applyQuaternion(q);
-                        pos.push(v.x + px, v.y + py, v.z + pz);
-                    }
-                    idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
-                    sN++;
-                }
-                if (!sN) return;
-                const geo = new THREE.BufferGeometry();
-                geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-                geo.setIndex(idx);
-                geo.computeVertexNormals();
-                const m = new THREE.Mesh(geo, matStraehne());
-                segG.add(m);
-            },
-        };
-        try {
-            return { B: core.bauTier(F, dials), P, dials };
-        } catch (e) {
-            this.log("bauTier scheiterte (" + (e && e.message) + ") — Tier fail-closed.", "ERROR");
-            return null;
-        }
+        if (!core || !core.GATTUNGEN || !core.GATTUNGEN[recId]) return null;
+        const basis = core.GATTUNGEN[recId];
+        const buch = this._tetrapodaStudioDials(recId);
+        const dials = Object.assign({}, basis, buch || {}, ovOpt && typeof ovOpt === "object" ? ovOpt : {});
+        // istDefault steuert den IDB-Pfad: nur die unveränderte Gattungs-Gestalt
+        // darf die Platte lesen/schreiben (Regler-Unikate bleiben Unikate, W-A1).
+        const istDefault = !ovOpt && JSON.stringify(dials) === JSON.stringify(Object.assign({}, basis));
+        return { dials, istDefault };
     }
-
-    // DER FERN-GUSS — das Standbild des Baums für die Distanz (Erbe des
-    // V18.262-Render-Gesetzes „fern kostet fast nichts"): jede Gattung EINMAL
-    // (Cache je recId+Dials) in NIEDER-Tessellation gebacken (Kugel 8×6,
-    // Zylinder 6 — ab TIER_FERN_DIST sub-pixel-gleich), pro MATERIAL zu EINEM
-    // Mesh gemergt (~8 Draws statt ~235). Strähnen bleiben draußen (Flaum ist
-    // fern unsichtbar). Geometrien sind GETEILT (sharedGeom am Leser).
-    _tierFernTeile(soulKey, baum, ovOpt) {
-        void ovOpt; // die Dials sind in baum.dials bereits gemergt (Cache-Schlüssel)
-        if (!baum || !baum.B || !baum.B.teile || !baum.B.teile.wolf) return null;
-        let key;
+    _ofenKreaturKey(recId, dials, lod) {
+        let d = "";
         try {
-            key = soulKey + "|" + JSON.stringify(baum.dials || {});
+            d = JSON.stringify(dials || {});
         } catch (_e) {
-            key = null;
+            d = "";
         }
-        const cache = AnazhRealm._tierFernCache || (AnazhRealm._tierFernCache = new Map());
-        if (key && cache.has(key)) return cache.get(key);
-        const root = baum.B.teile.wolf;
+        return recId + "|" + (lod | 0) + "|" + d;
+    }
+    // Der Beipack-Leser: Reply-Einträge → Gelenk-Gruppen (benannt!) + Meshes an
+    // ihren Gelenken. Liefert {root, teile, tailNamen, hoehe} oder null.
+    _ofenAssembleKreatur(meshes) {
+        if (!Array.isArray(meshes) || !meshes.length || typeof THREE === "undefined") return null;
+        let skelett = null;
+        for (const m of meshes) if (m && m.kind === "__skelett" && m.skelett) skelett = m.skelett;
+        if (!skelett || !Array.isArray(skelett.joints) || !skelett.joints.length) return null;
+        const root = new THREE.Group();
+        const teile = {};
+        for (const j of skelett.joints) {
+            if (!j || !j.name) continue;
+            const g = new THREE.Group();
+            g.name = j.name;
+            teile[j.name] = g;
+        }
+        for (const j of skelett.joints) {
+            if (!j || !j.name) continue;
+            const g = teile[j.name];
+            if (j.parent && teile[j.parent]) teile[j.parent].add(g);
+            else if (j.name === "wolf") root.add(g);
+            else (teile.wolf || root).add(g);
+            if (Array.isArray(j.pos)) g.position.set(j.pos[0], j.pos[1], j.pos[2]);
+            if (Array.isArray(j.quat)) g.quaternion.set(j.quat[0], j.quat[1], j.quat[2], j.quat[3]);
+            if (Array.isArray(j.scale)) g.scale.set(j.scale[0], j.scale[1], j.scale[2]);
+        }
+        let gebaut = 0;
+        for (const m of meshes) {
+            if (!m || m.kind === "__skelett") continue;
+            const mesh = this._foundryBuildMesh(m);
+            if (!mesh) continue;
+            // Template-Geometrie ist über ALLE Klone geteilt — der Dispose-
+            // Chokepoint (_disposeSoulGroup) lässt sharedGeom stehen.
+            mesh.userData.sharedGeom = true;
+            (teile[m.joint] || teile.wolf || root).add(mesh);
+            gebaut++;
+        }
+        if (!gebaut) return null;
         root.updateMatrixWorld(true);
-        const buckets = new Map();
-        try {
-            root.traverse((node) => {
-                if (!node.isMesh || !node.geometry || !node.material) return;
-                const p = node.geometry.parameters;
-                if (!p) return; // Strähnen-BufferGeometry — fern unsichtbarer Flaum
-                let g2 = null;
-                if (node.geometry.type === "SphereGeometry") {
-                    g2 = new THREE.SphereGeometry(p.radius, 8, 6);
-                } else if (node.geometry.type === "CylinderGeometry") {
-                    g2 = new THREE.CylinderGeometry(p.radiusTop, p.radiusBottom, p.height, 6, 1);
-                } else {
-                    g2 = node.geometry.clone();
-                }
-                g2.applyMatrix4(node.matrixWorld);
-                if (!buckets.has(node.material)) buckets.set(node.material, []);
-                buckets.get(node.material).push(g2);
-            });
-        } catch (_e2) {
-            return null;
-        }
-        const teile = [];
-        for (const [mat2, geos] of buckets) {
-            const merged = this._mergeGeometries(geos);
-            if (merged) teile.push({ geo: merged, mat: mat2 });
-        }
-        if (key && teile.length) cache.set(key, teile);
-        return teile.length ? teile : null;
+        const bb = new THREE.Box3().setFromObject(root);
+        const hoehe = Number.isFinite(bb.max.y - bb.min.y) ? Math.max(1e-3, bb.max.y - bb.min.y) : 1;
+        return {
+            root,
+            teile,
+            tailNamen: Array.isArray(skelett.tailSegs) ? skelett.tailSegs.slice() : [],
+            hoehe,
+            minY: Number.isFinite(bb.min.y) ? bb.min.y : 0,
+        };
     }
-
+    // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN
+    // Bäcker synchron (foundry-core auf der Stamm-Seite — ein Gesetz, zwei
+    // Scheduler). null = LAUT beim Aufrufer (fail-closed, kein Ersatz-Körper).
+    _ofenKreaturTemplate(recId, ovOpt, lod) {
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        const d = this._ofenKreaturDials(recId, ovOpt);
+        if (!core || !d) return null;
+        const key = this._ofenKreaturKey(recId, d.dials, lod);
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        if (memo.has(key)) return memo.get(key);
+        let asm = null;
+        try {
+            const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
+            if (BAKER && typeof BAKER.kreatur === "function") {
+                const g = BAKER.kreatur(core, recId, 0, lod | 0, d.dials);
+                const eintraege = [];
+                g.traverse((o) => {
+                    if (o.isMesh) eintraege.push(this._ofenMeshEintragAusThree(o));
+                });
+                if (g.userData && g.userData.__skelett)
+                    eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
+                asm = this._ofenAssembleKreatur(eintraege);
+            }
+        } catch (e) {
+            this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
+            asm = null;
+        }
+        if (asm) memo.set(key, asm);
+        return asm;
+    }
+    // Der sync-Zwilling des Shell-Extractors (worlds/terrain/phytogenesis
+    // __extractAssetMesh): DIESELBE Eintrags-Form, damit _ofenAssembleKreatur/
+    // _foundryBuildMesh die EINE Konversion bleiben. Arrays reisen als Referenz
+    // (die Wegwerf-Instanz stirbt, die Puffer leben im Eintrag weiter).
+    _ofenMeshEintragAusThree(mesh) {
+        const geo = mesh.geometry;
+        const mat = mesh.material || {};
+        const out = { kind: "unknown" };
+        if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
+        out.mat = {
+            roughness: typeof mat.roughness === "number" ? mat.roughness : 0.7,
+            metalness: typeof mat.metalness === "number" ? mat.metalness : 0,
+            flatShading: !!mat.flatShading,
+            envMapIntensity: typeof mat.envMapIntensity === "number" ? mat.envMapIntensity : 1,
+            side: mat.side === THREE.DoubleSide ? 2 : 0,
+            alphaTest: typeof mat.alphaTest === "number" ? mat.alphaTest : 0,
+            hasNormalMap: !!mat.normalMap,
+        };
+        if (mat.color && typeof mat.color.r === "number") out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
+        if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
+            out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
+            out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
+        }
+        if (geo && geo.attributes) {
+            for (const name in geo.attributes) {
+                const at = geo.attributes[name];
+                if (!at || !at.array) continue;
+                out[name] = { array: at.array, itemSize: at.itemSize || 3 };
+            }
+            if (geo.index) out.index = geo.index.array;
+        }
+        return out;
+    }
+    // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
+    // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
+    _ofenPrefetchKreaturen() {
+        const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        const gesehen = new Set();
+        for (const soulKey of Object.keys(map)) {
+            const recId = map[soulKey];
+            if (!recId || gesehen.has(recId)) continue;
+            gesehen.add(recId);
+            const d = this._ofenKreaturDials(recId, null);
+            if (!d) continue;
+            for (const lod of [0, 1]) {
+                const key = this._ofenKreaturKey(recId, d.dials, lod);
+                if (memo.has(key)) continue;
+                this._foundryRequest(recId, 0, lod, "summer", d.istDefault ? null : d.dials).then((meshes) => {
+                    if (!meshes || !meshes.length || memo.has(key)) return;
+                    const asm = this._ofenAssembleKreatur(meshes);
+                    if (asm) memo.set(key, asm);
+                });
+            }
+        }
+    }
     // Der Baum-GANG — das EINE Gang-Gesetz konsumiert (KONVERGENZ-Schluss): cpgStep
     // (Phasen-Netz) + STAND_POSE + die MOTION-Profile (LIVE-Buch zuerst über die
     // EINE Brücke _motionProfileName, Kern fail-soft) treiben die vier Bein-KETTEN
@@ -17023,14 +16816,16 @@ class AnazhRealm {
         if (typeof THREE === "undefined") return null;
         const soulKey = AnazhRealm.CREATURE_SOULS[soulName] ? soulName : "wesen";
         const soul = AnazhRealm.CREATURE_SOULS[soulKey];
-        // KONVERGENZ III — JEDE Kreatur ist der STUDIO-BAUM (bauTier): dieselben
-        // Kugeln wie das Lab, die Parts-Wahrheit bleibt die Mechanik (Tags/Physik/
-        // Allometrie lesen _soulParts). Custom-Namen kanonisieren oben auf wesen →
-        // auch sie tragen den Baum. Das Metaball-Tier (Skin-Isosurface + Gesichts-
-        // LOD + Bäcker) ist GEFALLEN — fail-closed statt Rückfall: ein kalter Kern
-        // liefert LAUT null, nie einen zweiten Körper.
-        const baum = this._buildTierBaum(soulKey, opts && opts.dialsOv);
-        if (baum && baum.B && baum.B.teile && baum.B.teile.wolf) {
+        // DIE EINE PIPE (V18.458) — JEDE Kreatur ist ein FOUNDRY-ASSET: das
+        // Art-Template kommt aus dem Kreatur-Ofen (Bäcker-Tisch der Pipe, memo +
+        // Prefetch), die Kreatur ist ein CLONE (Geometrien+Materialien GETEILT,
+        // ~1 ms — der Spawn-Freeze ist strukturell tot). Die Parts-Wahrheit
+        // bleibt die Mechanik (Tags/Physik/Allometrie lesen _soulParts). Custom-
+        // Namen kanonisieren oben auf wesen. Fail-closed: kalter Kern → LAUT
+        // null, nie ein Ersatz-Körper.
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
+        const t0 = recId ? this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 0) : null;
+        if (t0 && t0.teile && t0.teile.wolf) {
             const parts2 = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
             const group2 = new THREE.Group();
             let pTop = 0;
@@ -17039,47 +16834,47 @@ class AnazhRealm {
                 const t2 = ((p.position && p.position.y) || 0) + ((p.size && p.size.y) || 0) / 2;
                 if (t2 > pTop) pTop = t2;
             }
-            const bb = new THREE.Box3().setFromObject(baum.B.teile.wolf);
-            const treeH = Math.max(1e-3, bb.max.y - bb.min.y);
-            const f2 = pTop > 0 ? pTop / treeH : 1;
-            // DER FERN-GUSS (KONVERGENZ-Schluss, Erbe des V18.262-Render-Gesetzes):
-            // der Baum kostet ~235 Draws — jenseits TIER_FERN_DIST ist der Gang
-            // sub-pixel, dort trägt EIN gemergtes Standbild (~1 Mesh je Material,
-            // artweise gecacht + geometrie-GETEILT). updateCreatures toggelt.
-            const fernTeile = this._tierFernTeile(soulKey, baum, opts && opts.dialsOv);
+            const f2 = pTop > 0 ? pTop / t0.hoehe : 1;
+            const klon = t0.root.clone(true);
+            const teile = {};
+            klon.traverse((n) => {
+                if (n.isGroup && n.name) teile[n.name] = n;
+            });
+            const tailSegs = (t0.tailNamen || []).map((n) => teile[n]).filter(Boolean);
             const wrap2 = new THREE.Group();
             wrap2.scale.setScalar(f2);
-            wrap2.position.y = -bb.min.y * f2;
-            wrap2.add(baum.B.teile.wolf);
+            wrap2.position.y = -t0.minY * f2;
+            wrap2.add(klon);
             wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib
             group2.add(wrap2);
+            // DER FERN-GUSS aus DERSELBEN Pipe: lod1 = das gemergte Standbild
+            // (~8 Meshes). updateCreatures toggelt wrap↔fern (TIER_FERN_DIST).
             let wrap3 = null;
-            if (fernTeile && fernTeile.length) {
+            const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1);
+            if (t1 && t1.root) {
                 wrap3 = new THREE.Group();
                 wrap3.scale.setScalar(f2);
-                wrap3.position.y = -bb.min.y * f2;
-                for (const e of fernTeile) {
-                    const fm = new THREE.Mesh(e.geo, e.mat);
-                    fm.userData.sharedGeom = true; // art-gecacht — nie mit EINEM Tier sterben
-                    fm.castShadow = false;
-                    wrap3.add(fm);
-                }
+                wrap3.position.y = -t0.minY * f2;
+                const fernKlon = t1.root.clone(true);
+                fernKlon.traverse((n) => {
+                    if (n.isMesh) n.castShadow = false;
+                });
+                wrap3.add(fernKlon);
                 wrap3.visible = false;
                 wrap3.userData._creatureSkin = true;
                 group2.add(wrap3);
             }
             group2.userData._soulParts = parts2;
             group2.userData._tierBaum = {
-                teile: baum.B.teile,
-                tailSegs: baum.B.tailSegs,
-                neckSegs: baum.B.neckSegs,
+                teile,
+                tailSegs,
                 f: f2,
                 wrap: wrap2,
                 fern: wrap3,
             };
             return group2;
         }
-        this.log(`Tier-Baum für „${soulKey}" fiel aus (kalter Kern?) — fail-closed, kein Metaball-Rückfall.`, "ERROR");
+        this.log(`Kreatur-Ofen für „${soulKey}" fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.`, "ERROR");
         return null;
     }
 
@@ -62687,6 +62482,9 @@ class AnazhRealm {
                                 worker.postMessage({ type: "get-book", reqId: "book" });
                             } catch (_e) {}
                             this._foundryPrefetchLibrary();
+                            // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
+                            // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze).
+                            this._ofenPrefetchKreaturen();
                         } else if (m.type === "book") {
                             this._foundryIngestBook(m);
                         } else if (m.type === "asset") {
@@ -63952,6 +63750,52 @@ class AnazhRealm {
     // Studio-Dither-Blende — NUR unter dem foundryCrossfade-Gate gestempelt (Material und
     // Attribute entstehen im selben Build-Pass → per Konstruktion konsistent; ohne Flag null
     // Extra-Speicher). Ohne `stage` (Alt-Aufrufer/Diag) → Stempel-Wert 0 = ungemaskt.
+    // DIE EINE PIPE — die EINE Reply-Mesh→THREE-Konversion (N4.1 bleibt: genau EINMAL;
+    // der Pflanzen-Gruppen-Bau UND der Kreatur-Ofen rufen sie). Null bei kaputtem Eintrag.
+    _foundryBuildMesh(m) {
+        if (!m || !m.position || !m.position.array) return null;
+        // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
+        // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
+        if (m.position.array.length > 600000) return null;
+        const T = THREE;
+        const geo = new T.BufferGeometry();
+        geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
+        if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
+        const vcount = m.position.array.length / 3;
+        if (m.color && m.color.array && m.color.array.length >= vcount * 3)
+            geo.setAttribute(
+                "color",
+                new T.BufferAttribute(m.color.array, m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3)
+            );
+        else {
+            // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER
+            // (fehlt es -> schwarz/Crash, die schwarze Konifere). Fehlt die Vorlagen-Farbe,
+            // ein kind-Default (bark braun, laub gruen) fuellen statt schwarz.
+            // W7b: ein ZWEIT-KERN-Mesh (kind "unknown", Fahrzeug paint/glass/clay) traegt
+            // seine MATERIAL-Farbe im Reply (m.mat.color, r128-linear) -> sie fuellt das
+            // Attribut; Pflanzen-kinds bleiben byte-gleich (der Guard greift nur "unknown").
+            const def =
+                m.kind === "bark" || m.kind === "stem"
+                    ? [0.32, 0.22, 0.13]
+                    : m.kind === "unknown" && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
+                      ? m.mat.color
+                      : [0.2, 0.34, 0.13];
+            const carr = new Float32Array(vcount * 3);
+            for (let v = 0; v < vcount; v++) {
+                carr[v * 3] = def[0];
+                carr[v * 3 + 1] = def[1];
+                carr[v * 3 + 2] = def[2];
+            }
+            geo.setAttribute("color", new T.BufferAttribute(carr, 3));
+        }
+        if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
+        if (!m.normal || !m.normal.array) geo.computeVertexNormals();
+        const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+    }
     _foundryBuildGroup(meshes, stage) {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
@@ -63959,50 +63803,8 @@ class AnazhRealm {
         try {
             group = new T.Group();
             for (const m of meshes) {
-                if (!m || !m.position || !m.position.array) continue;
-                // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
-                // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
-                if (m.position.array.length > 600000) continue;
-                const geo = new T.BufferGeometry();
-                geo.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
-                if (m.normal && m.normal.array) geo.setAttribute("normal", new T.BufferAttribute(m.normal.array, 3));
-                const vcount = m.position.array.length / 3;
-                if (m.color && m.color.array && m.color.array.length >= vcount * 3)
-                    geo.setAttribute(
-                        "color",
-                        new T.BufferAttribute(
-                            m.color.array,
-                            m.color.itemSize && m.color.itemSize <= 3 ? m.color.itemSize : 3
-                        )
-                    );
-                else {
-                    // WebGPU-STRIKT: colorNode = attribute("color") verlangt das Attribut IMMER
-                    // (fehlt es -> schwarz/Crash, die schwarze Konifere). Fehlt die Vorlagen-Farbe,
-                    // ein kind-Default (bark braun, laub gruen) fuellen statt schwarz.
-                    // W7b: ein ZWEIT-KERN-Mesh (kind "unknown", Fahrzeug paint/glass/clay) traegt
-                    // seine MATERIAL-Farbe im Reply (m.mat.color, r128-linear) -> sie fuellt das
-                    // Attribut; Pflanzen-kinds bleiben byte-gleich (der Guard greift nur "unknown").
-                    const def =
-                        m.kind === "bark" || m.kind === "stem"
-                            ? [0.32, 0.22, 0.13]
-                            : m.kind === "unknown" && m.mat && Array.isArray(m.mat.color) && m.mat.color.length === 3
-                              ? m.mat.color
-                              : [0.2, 0.34, 0.13];
-                    const carr = new Float32Array(vcount * 3);
-                    for (let v = 0; v < vcount; v++) {
-                        carr[v * 3] = def[0];
-                        carr[v * 3 + 1] = def[1];
-                        carr[v * 3 + 2] = def[2];
-                    }
-                    geo.setAttribute("color", new T.BufferAttribute(carr, 3));
-                }
-                if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
-                if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
-                if (!m.normal || !m.normal.array) geo.computeVertexNormals();
-                const mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                group.add(mesh);
+                const mesh = this._foundryBuildMesh(m);
+                if (mesh) group.add(mesh);
             }
         } catch (_e) {
             return null;
@@ -82132,7 +81934,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.457.0";
+AnazhRealm.VERSION = "18.458.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

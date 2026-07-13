@@ -378,6 +378,36 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.458 — DIE EINE PIPE: die Kreatur fährt durch die Foundry (Schöpfer „einen Übersetzer… eine einheitliche Pipe statt der Endlosloop pro Portal — geh")
+
+Der Befund des Schöpfers war präzise: die Foundry WAR schon die eine Pipe (get-book ·
+build-asset · IDB · LODs), aber nur die Pflanzen fuhren auf ihr — jede weitere Gattung bekam
+einen Hand-Tunnel im Stamm (eigene Fabriken, eigenes Material, eigenes Fern-System, Spawn-Bau
+auf dem Main-Thread = die Freeze-Klasse). Jetzt: **§8.4 DER GATTUNGS-BÄCKER** (Vertrag v1.2,
+normativ) — foundry-core trägt den Tisch `BAKERS_BY_KIND` (`kreatur: bakeTierInstance`); der
+build-asset-Dispatch bäckt MESHFREI-Kerne generisch (tabellengetrieben M8, tetrapoda bleibt
+THREE-frei). Der Bäcker baut den bauTier-Baum, mergt je (Gelenk × Klasse) — **61 Meshes statt
+235, voll gelenkig** — und liefert den Gelenk-Baum als `__skelett`-Pseudo-Eintrag im NORMALEN
+Asset-Umschlag (must-ignore: Leser ohne position-Guard überspringen ihn, IDB trägt ihn gratis;
+additiv reisen `mesh.joint` + `mat.emissive`). Der Stamm ASSEMBLIERT nur (Gelenk-Gruppen +
+die EINE Reply-Konversion `_foundryBuildMesh` — aus `_foundryBuildGroup` herausgelöst, N4.1a
+zählt weiter genau 1 Roh-Naht) und MEMOIERT je Art+Dials+Stufe: **jede Kreatur ist ein
+Template-CLONE (gemessen 1 ms, 100 % Geometrie-Teilung) — die Spawn-Freeze-Klasse ist
+strukturell tot** (Prefetch füllt das Memo off-thread nach dem Book-Ingest: 8/8 gemessen;
+kalt bäckt DERSELBE Bäcker einmal synchron, 94 ms — ein Gesetz, zwei Scheduler, foundry-core
+lädt jetzt auch auf der Stamm-Seite). Der Fern-Guss kommt als lod1 aus derselben Pipe (11
+Meshes, der Stamm-eigene `_tierFernTeile` FIEL). GEFALLEN außerdem: `_buildTierBaum`
+(Inline-Fabriken/Strähnen/Geo-Cache — die Strähnen wohnen jetzt im Bäcker),
+`_buildCreatureHideMaterial` (die Look-Interpretation: **die Studio-ZAHLEN führen** — mp
+reist, `_foundryTreeMaterial` löst auf), die toten werk-render-Modi (humanoid:/__skel,
+Metaball-Ära). Zwei Farb-Lehren gemessen: r128 `setHex` schreibt roh / r184 wandelt — der
+Bäcker rechnet Hexe SELBST nach linear (`setRGB`, scheduler-neutral); und `P.base` ist ein
+CSS-STRING (Lab-Hintergrund), der Körper-Ton heißt `cB`. Auge-PAAR (artifacts/auge-paar-*):
+Welt-Wolf trägt den Lab-Ton. Rückkehr-Wand +3. Grün: Batterie „Alle Invarianten OK" · fast
+18/18 (21 s — die Pipe ist SCHNELLER) · check 54 Gesetze (N4.1-Linse kennt das Ofen-Tor).
+DER WEG WEITER: Mensch/Fahrzeuge/Schmiede auf denselben Tisch (je eine `BAKERS_BY_KIND`-Zeile
+bzw. vorhandenes buildInstance) — der Portal-Loop ist damit Daten-Registrierung, keine Welle.
+
 ### V18.457 — DER KONVERGENZ-SCHLUSS: kein Offen mehr (Schöpfer „kein ehrliches offen mehr, schliesse deine dinge endlich ab!")
 
 Die vier benannten Tier-Offen sind GESCHLOSSEN: (1) der **CPG-Gang** — `_animateTierBaum`

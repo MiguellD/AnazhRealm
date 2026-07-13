@@ -6,7 +6,21 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.457 — KONVERGENZ GESCHLOSSEN: EIN MENSCH, EIN TIER)
+## Stand (V18.458 — DIE EINE PIPE: die Kreatur fährt durch die Foundry)
+
+**DIE EINE PIPE (V18.458, Vertrag §8.4):** die Foundry ist DER Übersetzer für alles — der
+Gattungs-Bäcker-Tisch `BAKERS_BY_KIND` (foundry-core, auch auf der Stamm-Seite geladen) bäckt
+MESHFREI-Kerne generisch: Kreatur = Asset (bauTier je Gelenk×Klasse gemergt → 61 statt 235
+Meshes, gelenkig; `__skelett`-Beipack im normalen Umschlag; lod1 = Fern-Standbild aus derselben
+Pipe; IDB/Prefetch gratis). Der Stamm assembliert nur (EINE Reply-Konversion `_foundryBuildMesh`)
++ memoisiert je Art+Dials: **jede Kreatur ist ein Template-Clone (1 ms, 100 % Geo-Teilung) — die
+Spawn-Freeze-Klasse ist strukturell tot**; kalt bäckt derselbe Bäcker sync (ein Gesetz, zwei
+Scheduler). Look: die STUDIO-Zahlen führen (mp; Farb-Gesetz: Hexe selbst→linear, r128 roh vs
+r184 auto; Körper-Ton = `P.cB`, `P.base` ist ein CSS-String!). Gefallen: `_buildTierBaum`-Tunnel,
+`_tierFernTeile`, `_buildCreatureHideMaterial`, tote werk-render-Modi. DER WEG: Mensch/Fahrzeuge/
+Schmiede auf denselben Tisch — der Portal-Loop wird Daten-Registrierung, keine Welle mehr.
+
+### Davor (V18.457 — KONVERGENZ GESCHLOSSEN: EIN MENSCH, EIN TIER)
 
 Die Fantasie-Altlasten sind physisch gefallen (Phönix·Drache·Glutwesen·Sprite·Geist·Wächter·Avatar-
 Aura); der Tod ist feld-nativ (`_playerDeathRespawn`: Anker-Rückkehr + Wunde + `_depositLife`);

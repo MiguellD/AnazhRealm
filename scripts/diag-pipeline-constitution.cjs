@@ -342,7 +342,10 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
             const win = anazhNC.slice(idx, idx + 700);
             if (!/\.then\(\(meshes\)/.test(win)) continue; // kein Reply-Leser (gibt es heute nicht)
             sites++;
-            if (/_foundryBuildGroup\(meshes/.test(win)) routed++;
+            // DIE EINE PIPE (V18.458): der Kreatur-Ofen ist das zweite legitime Tor —
+            // _ofenAssembleKreatur routet durch DIESELBE Mesh-Konversion
+            // (_foundryBuildMesh; N4.1a zählt weiterhin GENAU EINE Roh-Naht).
+            if (/_foundryBuildGroup\(meshes|_ofenAssembleKreatur\(meshes/.test(win)) routed++;
         }
         law(
             `N4.1: jeder Reply-Leser routet durch die EINE Naht (${routed}/${sites} Sites, erwartet ≥5)`,

@@ -2774,3 +2774,317 @@ function buildInstance(presetId, seed, lod, ov) {
     __dials = sDials;
     return g;
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// DIE EINE PIPE (V18.458) — DER GATTUNGS-BÄCKER-TISCH.
+// Ein MESHFREI-Kern (Vertrag §8: er liefert GESETZE, keine Gestalt) wird von der
+// PIPE gebacken: der Dispatch in der Foundry-Shell schlägt hier nach
+// (BAKERS_BY_KIND[preset.kind]) statt einem Kern-buildInstance — tabellengetrieben
+// (M8), kein Kern-spezifisches Literal, tetrapoda-core bleibt THREE-frei.
+// Derselbe Bäcker läuft im Worker (r128) UND auf dem Stamm-Main-Thread (r184,
+// Kalt-Start/Headless) — EIN Gesetz, zwei Scheduler, byte-gleiche Ausgabe.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Indizierter Merge (pos+nor+idx, Offsets verschoben) — bewusst pur (kein
+// BufferGeometryUtils: r128 heißt mergeBufferGeometries, r184 mergeGeometries —
+// die Pipe darf nicht an einer Namens-Drift der Addons hängen).
+function __tierMergeGeos(geos) {
+    let nv = 0,
+        ni = 0;
+    for (const g of geos) {
+        nv += g.attributes.position.count;
+        ni += g.index ? g.index.count : g.attributes.position.count;
+    }
+    const pos = new Float32Array(nv * 3);
+    const nor = new Float32Array(nv * 3);
+    const idx = new Uint32Array(ni);
+    let vo = 0,
+        io = 0;
+    for (const g of geos) {
+        pos.set(g.attributes.position.array, vo * 3);
+        nor.set(g.attributes.normal.array, vo * 3);
+        const c = g.attributes.position.count;
+        if (g.index) {
+            const ia = g.index.array;
+            for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo;
+            io += ia.length;
+        } else {
+            for (let i = 0; i < c; i++) idx[io + i] = vo + i;
+            io += c;
+        }
+        vo += c;
+    }
+    const out = new THREE.BufferGeometry();
+    out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+    out.setIndex(new THREE.BufferAttribute(idx, 1));
+    return out;
+}
+
+// Schweif-STRÄHNEN — die Lab-Streu (Kreuz-Quad-Form, getStrandGeo) DETERMINISTISCH
+// (LCG je Segment, nie Math.random — Welt-Substanz-Gesetz) als EIN Geometrie-Block
+// je Segment. Wandert aus dem Stamm hierher: die Pipe ist die eine Bau-Stelle.
+function __tierStraehnenGeo(segR, i, Hh) {
+    let s = (9301 + i * 49297) >>> 0;
+    const rnd = () => {
+        s = (s * 1103515245 + 12345) >>> 0;
+        return s / 4294967296;
+    };
+    const pos = [];
+    const idx = [];
+    const q = new THREE.Quaternion();
+    const AB = new THREE.Vector3(0, -1, 0);
+    const d = new THREE.Vector3();
+    const v = new THREE.Vector3();
+    const n = (28 - i * 2) * 9;
+    let sN = 0;
+    for (let j = 0; j < n; j++) {
+        const phi = rnd() * Math.PI;
+        const theta = rnd() * Math.PI * 2;
+        const dx = (rnd() - 0.5) * 0.25;
+        const dy = (rnd() - 0.5) * 0.15;
+        const dz = (rnd() - 0.5) * 0.25;
+        const qr = rnd();
+        if (Math.cos(phi) < -0.28) continue;
+        const px = segR * 0.95 * Math.sin(phi) * Math.cos(theta);
+        const py = segR * 1.18 * Math.cos(phi);
+        const pz = segR * 1.18 * Math.sin(phi) * Math.sin(theta) - 0.048 * Hh;
+        d.set(dx, -0.12 + dy, -0.92 + dz).normalize();
+        q.setFromUnitVectors(AB, d);
+        const l = Math.round((0.032 - i * 0.003 + qr * 0.03) / 0.004) * 0.004;
+        if (l <= 0) continue;
+        const w = 0.0216,
+            wt = 0.0078;
+        const ecken = [
+            [-w, 0, 0],
+            [w, 0, 0],
+            [wt, -l, 0],
+            [-wt, -l, 0],
+            [0, 0, -w],
+            [0, 0, w],
+            [0, -l, wt],
+            [0, -l, -wt],
+        ];
+        const b = sN * 8;
+        for (const e of ecken) {
+            v.set(e[0], e[1], e[2]).applyQuaternion(q);
+            pos.push(v.x + px, v.y + py, v.z + pz);
+        }
+        idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
+        sN++;
+    }
+    if (!sN) return null;
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    return geo;
+}
+
+// DER TIER-GUSS: baut den bauTier-Baum des Gattungs-Kerns mit ECHTEN THREE-
+// Fabriken, bäckt jede Mesh-Geometrie in den LOKAL-Raum ihres nächsten
+// ANIMIERTEN Gelenks und mergt je (Gelenk × Material-Klasse) → wenige Meshes,
+// voll gelenkig. Rückgabe: THREE.Group, Meshes FLACH auf IDENTITY (der
+// Asset-Extractor bäckt matrixWorld — Identity = no-op), userData.__assetJoint
+// je Mesh + group.userData.__skelett (Gelenk-Baum + tailSegs + masse) als
+// Beipack. lod0 = gelenkig (Segmente 20/14) · lod≥1 = EIN Standbild
+// (Segmente 8/6, ohne Strähnen) für die Ferne.
+function bakeTierInstance(kern, presetId, seed, lod, ov) {
+    const dials0 = (kern.GATTUNGEN && kern.GATTUNGEN[presetId]) || {};
+    const dials = ov && typeof ov === "object" ? Object.assign({}, dials0, ov) : Object.assign({}, dials0);
+    const P = kern.deriveTierParams(dials);
+    const TK = kern.TIER_MATERIAL_KLASSEN || {};
+    const fein = (lod | 0) >= 1;
+    const segW = fein ? 8 : 20,
+        segH = fein ? 6 : 14,
+        segZ = fein ? 6 : 10;
+    // Material-SPEC je Klasse: reine MeshStandard-Zahlen (Farbe/Rauheit/Seite/
+    // Emissiv) — die Regler REISEN (mp im Asset-Reply), der Welt-Resolver
+    // (_foundryTreeMaterial) baut EXAKT dieses Material. Kein Shader-Nachbau.
+    const matCache = {};
+    const matFuer = (k) => {
+        if (matCache[k]) return matCache[k];
+        let c, r, em, emI;
+        if (k === "fell") {
+            // Der KÖRPER-Ton = cB (der Fell-Textur-Grundton des Labs — P.base ist
+            // ein CSS-String für den Lab-Hintergrund, KEINE Fell-Zahl).
+            c = typeof P.cB === "number" ? P.cB : 0x6b4a2e;
+            r = 0.93;
+        } else if (k === "straehne") {
+            c = P.cB != null ? P.cB : 0x6b4a2e;
+            r = 0.92;
+        } else if (k === "straehneD") {
+            c = P.cD != null ? P.cD : 0x4a3320;
+            r = 0.92;
+        } else if (k === "straehneL") {
+            c = P.cL != null ? P.cL : 0x8a6a48;
+            r = 0.88;
+        } else {
+            const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
+            c = kl.c;
+            r = kl.r != null ? kl.r : 0.5;
+            if (kl.emissiv != null) {
+                em = kl.emissiv;
+                emI = kl.emissivIntensitaet != null ? kl.emissivIntensitaet : 0.85;
+            }
+        }
+        // FARB-GESETZ (scheduler-neutral): r128 setHex schreibt ROH, r184 wandelt
+        // sRGB→linear automatisch — derselbe Bäcker muss auf BEIDEN dieselben
+        // Bytes liefern. Wir rechnen den (sRGB-gemeinten) Hex SELBST nach linear
+        // und setzen per setRGB (in beiden Versionen konversionsfrei-roh):
+        // die Welt (r184, sRGB-Ausgabe) zeigt dann exakt den Studio-Ton.
+        const lin = (hx) => {
+            const f = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+            return [f(((hx >> 16) & 255) / 255), f(((hx >> 8) & 255) / 255), f((hx & 255) / 255)];
+        };
+        const m = new THREE.MeshStandardMaterial({ roughness: r, metalness: 0 });
+        const lc = lin(c);
+        m.color.setRGB(lc[0], lc[1], lc[2]);
+        if (k.indexOf("straehne") === 0) m.side = THREE.DoubleSide;
+        if (em != null && m.emissive) {
+            const le = lin(em);
+            m.emissive.setRGB(le[0], le[1], le[2]);
+            m.emissiveIntensity = emI;
+        }
+        m.userData.__klasse = k;
+        matCache[k] = m;
+        return m;
+    };
+    const F = {
+        gruppe: () => new THREE.Group(),
+        kugel: (r, k, sc) => {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(r, segW, segH), matFuer(k));
+            if (sc) m.scale.set(sc[0], sc[1], sc[2]);
+            return m;
+        },
+        zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
+        kugelFein: (r, k, segs) =>
+            new THREE.Mesh(new THREE.SphereGeometry(r, fein ? 8 : Math.min(16, segs || 16), fein ? 6 : 12), matFuer(k)),
+        v3: (x, y, z) => new THREE.Vector3(x, y, z),
+        richte: (node, dir) => {
+            node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+        },
+        fellSchweif: fein
+            ? () => {}
+            : (segG, segR, i) => {
+                  const geo = __tierStraehnenGeo(segR, i, P.size);
+                  if (geo) segG.add(new THREE.Mesh(geo, matFuer("straehne")));
+              },
+    };
+    const B = kern.bauTier(F, dials);
+    const root = B.teile.wolf;
+    root.updateMatrixWorld(true);
+    // Der ANIMIERTE Satz: die Gelenke, die das Gang-/Kopf-/Schweif-Gesetz treibt.
+    const namen = [
+        "wolf",
+        "legFL",
+        "legFR",
+        "legHL",
+        "legHR",
+        "flU",
+        "flL",
+        "flP",
+        "frU",
+        "frL",
+        "frP",
+        "hlT",
+        "hlC",
+        "hlP",
+        "hrT",
+        "hrC",
+        "hrP",
+        "headGroup",
+        "jawGroup",
+        "earL",
+        "earR",
+        "lidTL",
+        "lidTR",
+        "tailRoot",
+    ];
+    const nodeName = new Map();
+    for (const n of namen) if (B.teile[n]) nodeName.set(B.teile[n], n);
+    const tailNamen = [];
+    (B.tailSegs || []).forEach((seg, i) => {
+        const nm = "tailSeg" + i;
+        nodeName.set(seg, nm);
+        tailNamen.push(nm);
+    });
+    const animAhn = (node) => {
+        let cur = node;
+        while (cur) {
+            if (nodeName.has(cur)) return cur;
+            cur = cur.parent;
+        }
+        return root;
+    };
+    // Gelenk-Skelett: Name → {parent, lokale Pose relativ zum animierten Eltern-Gelenk}.
+    const inv = new THREE.Matrix4();
+    const loc = new THREE.Matrix4();
+    const p3 = new THREE.Vector3(),
+        q4 = new THREE.Quaternion(),
+        s3 = new THREE.Vector3();
+    const joints = [];
+    for (const [node, name] of nodeName) {
+        let parentName = null;
+        if (node !== root) {
+            const pa = animAhn(node.parent);
+            parentName = nodeName.get(pa) || "wolf";
+        }
+        if (node === root) {
+            joints.push({ name, parent: null, pos: [0, 0, 0], quat: [0, 0, 0, 1], scale: [1, 1, 1] });
+            continue;
+        }
+        const paNode = node === root ? null : animAhn(node.parent);
+        inv.copy(paNode.matrixWorld).invert();
+        loc.multiplyMatrices(inv, node.matrixWorld);
+        loc.decompose(p3, q4, s3);
+        joints.push({
+            name,
+            parent: parentName,
+            pos: [p3.x, p3.y, p3.z],
+            quat: [q4.x, q4.y, q4.z, q4.w],
+            scale: [s3.x, s3.y, s3.z],
+        });
+    }
+    // Meshes je (Gelenk × Klasse) in Gelenk-Lokalraum backen + mergen.
+    const buckets = new Map(); // key "joint|klasse" → {geos, mat, joint}
+    const tmp = new THREE.Matrix4();
+    root.traverse((node) => {
+        if (!node.isMesh || !node.geometry) return;
+        const a = fein ? root : animAhn(node);
+        const jName = nodeName.get(a) || "wolf";
+        const klasse = (node.material && node.material.userData && node.material.userData.__klasse) || "fell";
+        const key = jName + "|" + klasse;
+        inv.copy(a.matrixWorld).invert();
+        tmp.multiplyMatrices(inv, node.matrixWorld);
+        const g2 = node.geometry.clone();
+        g2.applyMatrix4(tmp);
+        if (!buckets.has(key)) buckets.set(key, { geos: [], mat: node.material, joint: jName });
+        buckets.get(key).geos.push(g2);
+    });
+    const out = new THREE.Group();
+    for (const b of buckets.values()) {
+        const merged = b.geos.length === 1 ? b.geos[0] : __tierMergeGeos(b.geos);
+        if (b.geos.length > 1) for (const g of b.geos) g.dispose();
+        const mesh = new THREE.Mesh(merged, b.mat);
+        mesh.userData.__assetJoint = b.joint;
+        out.add(mesh);
+    }
+    // Original-Baum entsorgen (die Wegwerf-Instanz — wie der Pflanzen-Pfad).
+    root.traverse((n) => {
+        if (n.isMesh && n.geometry) n.geometry.dispose();
+    });
+    out.userData.__skelett = {
+        art: presetId,
+        joints,
+        tailSegs: tailNamen,
+        masse: B.masse || null,
+        base: typeof P.cB === "number" ? P.cB : null,
+    };
+    out.updateMatrixWorld(true);
+    return out;
+}
+
+// Der Tisch (M8: Tabelle vor if) — die Shell-Dispatch UND der Stamm-Kaltpfad
+// schlagen hier nach; neue MESHFREI-Gattungen registrieren eine Zeile.
+var BAKERS_BY_KIND = { kreatur: bakeTierInstance };

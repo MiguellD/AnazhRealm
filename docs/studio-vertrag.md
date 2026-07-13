@@ -306,9 +306,26 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   der trotzdem `buildInstance` trägt, ist eine Vertrags-Verletzung
   (Widerspruch, der Validator wird rot). Strukturell gedeckt: der
   build-asset-Dispatch der Brücke wählt Zweit-Kerne NUR mit
-  `typeof buildInstance === "function"` — ein MESHFREI-Kern kann den
-  Mesh-Kanal per Konstruktion nicht betreten. Alle übrigen Blöcke (B1 REZEPTE
+  `typeof buildInstance === "function"` — ODER, seit §8.4, über den
+  Gattungs-Bäcker-Tisch der Pipe. Alle übrigen Blöcke (B1 REZEPTE
   MUSS · B4 PARAMS SOLL · G4.3 STUDIO_VERTRAG) gelten unverändert.
+- **§8.4 v1.2 — DER GATTUNGS-BÄCKER (DIE EINE PIPE, V18.458, NORMATIV):** ein
+  MESHFREI-Kern bleibt THREE-frei — seine GESTALT bäckt die PIPE: foundry-core
+  trägt den Tisch `BAKERS_BY_KIND` (`{ kreatur: bakeTierInstance }`, M8:
+  Tabelle vor if). Der build-asset-Dispatch der Brücke wählt einen Zweit-Kern
+  auch DANN, wenn er kein `buildInstance` trägt, aber
+  `BAKERS_BY_KIND[preset.kind]` eine Formel hat — der Bäcker erhält den KERN
+  als Argument (`bakeTierInstance(kern, presetId, seed, lod, ov)`) und
+  konsumiert dessen GESETZE (bauTier · deriveTierParams ·
+  TIER_MATERIAL_KLASSEN). Der Reply ist der NORMALE Asset-Umschlag; additiv
+  (must-ignore) reisen: `mesh.joint` (das animierte Gelenk des Meshes),
+  `mat.emissive`/`mat.emissiveIntensity` (nur wenn nicht-schwarz) und EIN
+  Pseudo-Eintrag `{ kind: "__skelett", skelett: { joints, tailSegs, masse } }`
+  (Leser ohne position-Guard überspringen ihn; IDB trägt ihn gratis).
+  DERSELBE Bäcker läuft im Worker UND auf dem Host-Main-Thread (foundry-core
+  ist auf beiden geladen) — ein Gesetz, zwei Scheduler; der Host assembliert
+  NUR (Gelenk-Gruppen aus dem Skelett + die EINE Reply-Konversion) und
+  klont je Instanz aus dem Art-Memo.
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
   `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],

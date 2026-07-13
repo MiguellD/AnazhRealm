@@ -4883,6 +4883,9 @@ init();
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
         const out = { kind: __assetMaterialKind(mesh.material) };
+        // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
+        // Pflanzen tragen das Feld nie — additiv, must-ignore).
+        if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
         // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
         // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
         // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes
@@ -4907,6 +4910,12 @@ init();
             // LINEAR -> raw-Komponenten (die Farb-Regel: treue Anker als linear).
             if (zweitKern && mat.color && typeof mat.color.r === "number")
                 out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
+            // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
+            // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
+            if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
+                out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
+                out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
+            }
         }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +
@@ -4960,14 +4969,25 @@ init();
             // feine Stufe). Extraktion/Dispose identisch: die Meshes reisen engine-neutral,
             // mat-Regler fliessen mit; der zweitKern-Flag steuert die mat.color-Serialisierung.
             let zweit = null;
+            let zweitBaecker = null; // DIE EINE PIPE (V18.458): Gattungs-Bäcker für MESHFREI-Kerne
             if (typeof msg.presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, msg.presetId)) {
                 for (const zk of __zweitKerne()) {
+                    if (!zk.kern.PRESETS || !Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, msg.presetId))
+                        continue;
+                    if (typeof zk.kern.buildInstance === "function") {
+                        zweit = zk;
+                        break;
+                    }
+                    // MESHFREI-Kern (Vertrag §8 — kein eigener GL-Bau): die PIPE bäckt ihn
+                    // über den Tisch BAKERS_BY_KIND (foundry-core, tabellengetrieben M8).
+                    const __pk = zk.kern.PRESETS[msg.presetId];
                     if (
-                        zk.kern.PRESETS &&
-                        Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, msg.presetId) &&
-                        typeof zk.kern.buildInstance === "function"
+                        __pk &&
+                        typeof BAKERS_BY_KIND !== "undefined" &&
+                        typeof BAKERS_BY_KIND[__pk.kind] === "function"
                     ) {
                         zweit = zk;
+                        zweitBaecker = BAKERS_BY_KIND[__pk.kind];
                         break;
                     }
                 }
@@ -4981,7 +5001,9 @@ init();
             // laufen ov-frei — der Welt-Pfad bleibt byte-vertraglich rein, W-A1-Gesetz:
             // ov umgeht IDB + f.cache am Host).
             const g = isZweitKern
-                ? zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
+                ? zweitBaecker
+                    ? zweitBaecker(zweit.kern, msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
+                    : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
                 : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
             g.traverse((o) => {
@@ -4990,6 +5012,10 @@ init();
                     if (m) meshes.push(m);
                 }
             });
+            // DIE EINE PIPE: der Gelenk-Baum reist als Pseudo-Eintrag im selben
+            // Reply (kein neuer Kanal; Leser ohne position-Guard überspringen ihn,
+            // IDB trägt ihn gratis mit).
+            if (g.userData && g.userData.__skelett) meshes.push({ kind: "__skelett", skelett: g.userData.__skelett });
             // Aufraeumen (kein Leak in der Foundry): Geometrien + Materialien der Wegwerf-Instanz.
             g.traverse((o) => {
                 if (o.isMesh) {

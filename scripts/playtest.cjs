@@ -39961,6 +39961,21 @@ async function checkBandKonvergenzTierBaum(ctx) {
                         if (n.geometry) a.geoSet.add(n.geometry.uuid);
                     }
                 });
+                // DIE EINE PIPE: Teilung lebt ÜBER Klone — ein ZWEITES Tier derselben
+                // Art teilt jede Geometrie (Template-Clone), nicht die Meshes intern.
+                const gz = r._buildCreatureGroup(art);
+                if (gz) {
+                    let geteilt = 0,
+                        n2 = 0;
+                    gz.traverse((n) => {
+                        if (n.isMesh) {
+                            n2++;
+                            if (n.geometry && a.geoSet.has(n.geometry.uuid)) geteilt++;
+                        }
+                    });
+                    a.klonTeilt = n2 > 0 && geteilt === n2;
+                    r._disposeSoulGroup(gz);
+                }
                 a.faceLOD = !!(g.userData && g.userData._creatureFaceLOD);
                 // DIE NaN-LINSE: Welt-BBox finit + sinnvoll (0.05..20 Einheiten hoch).
                 const bb = new THREE.Box3().setFromObject(g);
@@ -40039,8 +40054,8 @@ async function checkBandKonvergenzTierBaum(ctx) {
         check(`KONVERGENZ III (1) ${art} trägt KEINEN Metaball-Rest (Gesichts-LOD tot)`, a.faceLOD === false);
         check(`KONVERGENZ III (2) NaN-LINSE: ${art}-Welt-BBox finit + sinnvoll`, a.bboxFinit === true);
         check(
-            `KONVERGENZ III (4) ${art}: ≤300 Meshes, Geometrien GETEILT (gemessen ${a.meshN} Meshes / ${a.geoUnique} Geos)`,
-            a.meshN > 0 && a.meshN <= 300 && a.geoUnique > 0 && a.geoUnique < a.meshN
+            `KONVERGENZ III/PIPE (4) ${art}: ≤120 Meshes (Gelenk-Merge, gemessen ${a.meshN}), Klone TEILEN jede Geometrie`,
+            a.meshN > 0 && a.meshN <= 120 && a.klonTeilt === true
         );
     }
     check("KONVERGENZ III (3) CONSUM: der Chokepoint trabt die Baum-Beine (diagonal)", res && res.trab === true);

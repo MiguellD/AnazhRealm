@@ -49,6 +49,13 @@ const FORBIDDEN = [
     { token: "_creatureFaceLOD", fiel: "KONVERGENZ III — die Gesichts-LOD-Gruppe" },
     { token: "CREATURE_FACE_LOD_DIST_SQ", fiel: "KONVERGENZ III" },
     { token: "__anazhHeadlessSkinResCap", fiel: "KONVERGENZ III — der Headless-Skin-Res-Knopf" },
+    // DIE EINE PIPE (V18.458) — die Stamm-Tunnel neben der Foundry sind gefallen:
+    // die Kreatur ist ein Pipe-Asset (Gattungs-Bäcker BAKERS_BY_KIND in foundry-core,
+    // Ofen-Assemblierung + Memo/Clone im Stamm). Kein Inline-Baum-Bau, kein eigenes
+    // Fern-System, keine Look-Interpretation mehr.
+    { token: "_buildTierBaum", fiel: "DIE EINE PIPE — der Stamm-Inline-Baum-Tunnel" },
+    { token: "_tierFernTeile", fiel: "DIE EINE PIPE — das Stamm-eigene Fern-System (lod1 kommt aus der Pipe)" },
+    { token: "_buildCreatureHideMaterial", fiel: "DIE EINE PIPE — die Look-Interpretation (mp/Studio-Zahlen führen)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
@@ -155,7 +162,9 @@ function checkSoulKeys() {
     while ((m = re.exec(block))) keys.push(m[1]);
     const errs = [];
     if (keys.length !== SOUL_KEYS_EXPECTED.length || !SOUL_KEYS_EXPECTED.every((k) => keys.includes(k))) {
-        errs.push(`CREATURE_SOULS-Schlüssel = [${keys.join(", ")}] — erwartet exakt [${SOUL_KEYS_EXPECTED.join(", ")}]`);
+        errs.push(
+            `CREATURE_SOULS-Schlüssel = [${keys.join(", ")}] — erwartet exakt [${SOUL_KEYS_EXPECTED.join(", ")}]`
+        );
     }
     return errs;
 }
@@ -286,7 +295,8 @@ function scanLabBuster() {
         const re = /src="[^"]*-core\.js\?v=([0-9.]+)"/g;
         let m;
         while ((m = re.exec(src))) {
-            if (m[1] !== version) errs.push(`worlds/${w}/index.html lädt Kern mit stale ?v=${m[1]} (aktuell ${version})`);
+            if (m[1] !== version)
+                errs.push(`worlds/${w}/index.html lädt Kern mit stale ?v=${m[1]} (aktuell ${version})`);
         }
     }
     return errs;
@@ -305,7 +315,11 @@ function main() {
         const hits = scan([tmp]);
         fs.unlinkSync(tmp);
         const fired = hits.length === 1 && /tickPhoenixDeath/.test(hits[0]);
-        console.log(fired ? "✅ SELBST-TEST: die Wand feuert (1 Injektion erkannt, Kommentar ignoriert)" : `❌ SELBST-TEST: ${JSON.stringify(hits)}`);
+        console.log(
+            fired
+                ? "✅ SELBST-TEST: die Wand feuert (1 Injektion erkannt, Kommentar ignoriert)"
+                : `❌ SELBST-TEST: ${JSON.stringify(hits)}`
+        );
         process.exit(fired ? 0 : 1);
     }
 
