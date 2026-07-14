@@ -1761,7 +1761,10 @@ function bakeImpostorAtlas() {
         const s = _impSpecs[i];
         let tree;
         try {
-            tree = buildInstance(s.sp, s.seed, 1, { crownBase: s.crownBase, trunkMul: s.trunkMul });
+            /* M2 (Bäcker-Vereinigung): trägt der Spec ein explizites ov (Welt-Anfrage über den
+               bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
+               Defaults). Der Studio-Wald-Pfad (specs mit crownBase/trunkMul) bleibt byte-identisch. */
+            tree = buildInstance(s.sp, s.seed, 1, s.ov !== undefined ? s.ov : { crownBase: s.crownBase, trunkMul: s.trunkMul });
         } catch (e) {
             continue;
         }
@@ -1855,7 +1858,15 @@ function bakeImpostorAtlas() {
     renderer.autoClear = _pAC;
     renderer.setScissorTest(false);
     renderer.setRenderTarget(pRT);
-    renderer.setViewport(0, 0, innerWidth, innerHeight);
+    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-Worker gibt es kein innerWidth/innerHeight
+    // (ReferenceError) — dort ist der Offscreen-Baecker 256x256 (__foundryBakeRenderer).
+    // Der Fenster-Pfad (Studio/iframe) liest weiter die echten Fenstermasse, byte-identisch.
+    renderer.setViewport(
+        0,
+        0,
+        typeof innerWidth !== "undefined" ? innerWidth : 256,
+        typeof innerHeight !== "undefined" ? innerHeight : 256
+    );
     renderer.setClearColor(0x000000, pA);
     WIND.uTime.value = pT;
     SEASON.uLeafPresence.value = pPres;
@@ -5082,15 +5093,25 @@ init();
     // keinen. Wir bauen EINEN kleinen Offscreen-WebGL-Renderer (nie am DOM, kein Display-Loop) und
     // zeigen den globalen `renderer` darauf. Anderer Kontext-Typ als AnazhRealms WebGPU -> kein
     // Konflikt (wie die Diag-Offscreen-Renderer). Einmalig, gecacht.
+    // BÄCKER-VEREINIGUNG (Worker-Naht): im Foundry-WORKER gibt es kein window und kein implizites
+    // DOM-Canvas — Scope-Halter G (window ODER self) traegt den Cache, und der Worker-Zweig reicht
+    // ein OffscreenCanvas an r128 (Feature-Guard; fehlt es, fail-closed -> null -> payload null).
+    // Der iframe-Pfad bleibt byte-identisch (window vorhanden -> implizites Canvas wie bisher).
     function __foundryBakeRenderer() {
-        if (window.__foundryGL) return window.__foundryGL;
+        const G = typeof window !== "undefined" ? window : self;
+        if (G.__foundryGL) return G.__foundryGL;
         try {
-            const gl = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: false });
+            const opts = { antialias: true, alpha: true, preserveDrawingBuffer: false };
+            if (typeof window === "undefined") {
+                if (typeof OffscreenCanvas === "undefined") return null; // Worker ohne OffscreenCanvas: kein GL-Baecker moeglich
+                opts.canvas = new OffscreenCanvas(256, 256);
+            }
+            const gl = new THREE.WebGLRenderer(opts);
             gl.setSize(256, 256, false);
             if (THREE.sRGBEncoding !== undefined) gl.outputEncoding = THREE.sRGBEncoding;
             gl.toneMapping = THREE.ACESFilmicToneMapping;
             gl.toneMappingExposure = 1.0;
-            window.__foundryGL = gl;
+            G.__foundryGL = gl;
             // eslint-disable-next-line no-global-assign
             renderer = gl; // der Studio-Baecker liest `renderer` -> auf den Offscreen-GL zeigen
             return gl;
@@ -5188,11 +5209,13 @@ init();
             }
             const gl = __foundryBakeRenderer();
             if (!gl) throw new Error("kein Offscreen-Renderer");
-            const CB = { eiche: 0.42, fichte: 0.3, birke: 0.42, weide: 0.4, tanne: 0.3, mammut: 0.46 };
-            const TMUL = 0.5;
-            const crownBase = CB[presetId] != null ? CB[presetId] : 0.4;
+            // M2 (Bäcker-Vereinigung): das Bake-Subjekt IST der Welt-Baum — ov reist
+            // VERBATIM aus der Anfrage (Welt baut ov-frei = Preset-Defaults; die alten
+            // Studio-Wald-Konstanten CB/TMUL gehören NUR dem buildForest-Pfad). Sonst
+            // passt die Karte nicht zur Nahstufe (Stamm-Dicke/Kronen-Ansatz-Pop bei 40 m).
+            const bakeOv = msg.ov || null;
             // EINE Bake-Zelle -> K=1. Frueheres Target (anderes K) verwerfen, Rebake erzwingen.
-            _impSpecs = [{ sp: presetId, seed: seed, crownBase: crownBase, trunkMul: TMUL }];
+            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv }];
             _impCellOf = {};
             _impCellOf[presetId + "|0"] = 0;
             _impBakedSig = "";
@@ -5215,7 +5238,7 @@ init();
             gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
             // Seitenverhaeltnis (Studio-Rahmen, per-Art) + Weltmass-Hoehe aus dem L1-Bake-Subjekt.
             const aspect = _impWR[presetId + seed] || 0.5;
-            const l1 = buildInstance(presetId, seed, 1, { crownBase: crownBase, trunkMul: TMUL });
+            const l1 = buildInstance(presetId, seed, 1, bakeOv);
             const box = new THREE.Box3().setFromObject(l1);
             const height = Math.max(0.5, box.max.y - Math.min(0, box.min.y));
             l1.traverse((o) => {
