@@ -5,7 +5,7 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.469)
+## §0 · DER TISCH — was offen ist (Stand V18.471)
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
@@ -14,19 +14,22 @@
    V18.469); die GPU-Hälfte braucht **`anazhRealmPerf.json` vom echten Holz** (Flugschreiber
    POSTet automatisch → `state/anazhRealmPerf.json` committen — der Trace trägt jetzt auch den
    Impostor-Zensus + worstFrames mit Phasen).
-   (b) **Baum-L2 = Blobs** — Verdacht: RTT-Bake scheitert auf echtem WebGPU terminal
-   (rttFailed → Canvas-Silhouette für immer); der Zensus im Trace entscheidet. Danach: Bake
-   robust machen ODER Karten-Qualität (Auflösung/Beleuchtung) heben. Container-Wand: swiftshader
-   stirbt ab ~6M Tris — das Fern-Auge geht nur auf echtem Holz.
+   (b) **Baum-L2 = Blobs → DIE BÄCKER-VEREINIGUNG IST GEBAUT (V18.471, beidseitig):**
+   der Welt-RTT-Nachbau fiel physisch, `_tickImpostorBake` konsumiert `bake-impostor`,
+   der Studio-Bäcker läuft im Worker (OffscreenCanvas; `gate:baecker-kanal` beweist den
+   vollen 8-Winkel-Atlas live), Bake-Subjekt = Welt-Baum (ov verbatim, M2), Nicht-Leere-
+   Wand + Kind-Wächter (M1). Ferne Bäume = echte Studio-Karten, Bakes verlassen den
+   Interaktionspfad. OFFEN daraus: die ZWEIT-KERN-BÄCKEREI im Studio (Tor-Records fallen
+   bis dahin ehrlich auf die Skelett-Silhouette — der Pflanzen-Bäcker kennt sie nicht) ·
+   das Urteil vom echten Holz (Zensus im Trace; Container-Wand: swiftshader stirbt ab
+   ~6M Tris, das Fern-Auge geht nur beim Schöpfer).
    (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
    9 Gattungen × 8 Facetten, 55 Zellen verankert, 20 Differenzen benannt. Die größten:
    LOD-Leitern — haus [0,1,2] EHRLICH bewiesen · fahrzeug/tor/klinge [0] bewusst (Wirt
    gradiert; Fahrzeug-Fernstufe fehlt real: 328 Meshes je Distanz) · kreatur/koerper/klang
    ganz ohne Stufen-Zeile (wolf 81 Meshes, mensch/tier ohne Geometrie-LOD) ·
-   Bäcker-Parallelpfad: `bake-impostor`-Kanal (Studio-Norm „KEIN Nachbau") ungenutzt,
-   `_tickImpostorBake` ist der Nachbau → VEREINIGUNGS-WELLE (OffscreenCanvas-Bäcker im
-   Worker, Stamm konsumiert den Kanal, Nachbau fällt — heilt zugleich L2-Blob-Verdacht
-   und GPU-Bake-Hitches) · mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
+   Bäcker-Vereinigung BEIDSEITIG GEBAUT (s. (b), Konsum-Matrix-Probe ✅) ·
+   mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
    klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
    (d) **Tiefe statt Oberfläche** — Fahrzeugphysik · Körpermechanik (Fuß-IK/Foot-Lock) ·
    Schwertschwung · Stadtpflanzung. Je Domäne: messen, dann das Gesetz vertiefen.

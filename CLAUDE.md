@@ -19,12 +19,18 @@ zählt mit):** (1) die LOD-LEITER: haus [0,1,2] EHRLICH (3 distinct durch die Pi
 fahrzeug/tor/klinge [0] = bewusstes Vertrags-Urteil (Wirt gradiert; Tor-Impostor gebaut
 V18.465, Fahrzeug-Fernstufe offen: gt=328 Meshes auf jede Distanz) · kreatur/koerper/klang
 tragen GAR KEINE Stufen-Zeile (wolf=81 Meshes, kein Geometrie-LOD für mensch/tier);
-(2) der STUDIO-BÄCKER-KANAL `bake-impostor`
-(phytogenesis: „der Studio-Bäcker IST die Fernstufe, KEIN Nachbau") wird vom Stamm NIE
-gerufen — die Welt-Ferne backt im Nachbau `_tickImpostorBake` (Parallelpfad-Klasse; zudem
-worker-untauglich: `__foundryBakeRenderer` liest window + baut canvas-los). Die
-VEREINIGUNGS-WELLE (OffscreenCanvas-Bäcker im Worker + Stamm konsumiert den Kanal +
-Nachbau fällt) ist die benannte nächste Welle — die Matrix-Probe dreht sich dann von ▒ auf ✅.
+(2) die BÄCKER-VEREINIGUNG ist GEBAUT — beidseitig (V18.471): der RTT-Nachbau
+(`_bakeImpostorAtlasRTT` + Blit/Dilate/Szenen) fiel physisch; `_tickImpostorBake` konsumiert
+`bake-impostor`, `_applyStudioImpostorPayload` malt die vertikal-gestapelten bottom-up-Pixel
+Y-geflippt in den horizontalen Atlas + übernimmt den Studio-Rahmen (EINE Quelle, ATOMIC-Swap,
+`_reframeImpostorFlat` für instanzierte Quads); Studio-Seite worker-tauglich (OffscreenCanvas-
+Renderer, innerWidth-Guard; `gate:baecker-kanal` = Live-Beweis: voller 8-Winkel-Atlas im
+Worker). Review-Ernte gefixt: M1 Kind-Wächter + NICHT-LEERE-WAND (ein Zweit-Kern-Preset —
+Tor — bäckte im Pflanzen-Bäcker eine LEERE Karte als „Erfolg" → ferne Tore fallen jetzt ehrlich
+auf die Skelett-Silhouette, Zensus ehrlich; die Zweit-Kern-Bäckerei im Studio ist der benannte
+Folgeschritt) · M2 Bake-Subjekt = Welt-Baum (ov reist VERBATIM — vorher Studio-Wald-Konstanten
+→ Karte≠Baum-Pop am 40-m-Crossfade). Disziplin blieb: 1 Bake in Flug · Watchdog · 3×-Retry ·
+Zensus · headless bäckt nie.
 
 Der Bogen darüber ist der **Schöpfer-Browser-Befund (14.07., roadmap §0.1):** Erstarren
 (nach Reset kurz spielbar, friert wiederkehrend — CPU-Hälfte entlastet: `gate:erstarren`,
