@@ -42837,6 +42837,18 @@ class AnazhRealm {
         // manuellen Override merken (siehe setBlueprintAsArmor)
         bp.roleManual = true;
         bp.portalMeta = this._sanitizePortalMeta(portalMeta, bp.label || name);
+        // V18.464 — STEHENDE Eintraege nachziehen: Affordances werden beim Spawn
+        // eingefroren (V-Kommentar am Spawn-Chokepoint) — ein BEREITS platziertes
+        // Tor blieb nach dem Zielen tot bis Reload. Dieselbe EINE Rechen-Quelle
+        // (computeBlueprintAffordances), einmal je lebendem Eintrag dieses Typs.
+        const arches = this.state.architectures;
+        if (Array.isArray(arches)) {
+            for (const entry of arches) {
+                if (entry && entry.type === name) {
+                    entry.affordances = this.computeBlueprintAffordances(bp);
+                }
+            }
+        }
         return { ok: true, name };
     }
 
@@ -46834,6 +46846,392 @@ class AnazhRealm {
         } else if (!prompt.hidden) {
             prompt.hidden = true;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // V18.464 — DIE WELT-MEMBRAN: die Portal-PASSAGE in der Hauptwelt.
+    // Bisher stand jedes Tor-Gestalt-Portal mit LEEREM Loch da — die Membran
+    // (das Herzstück des Porta-Looks) lebte nur in der Lab-Shell. Jetzt liest
+    // die Welt DASSELBE Gesetz (porta-core MEMBRAN_GESETZ + membranUniforms +
+    // membranPalette) und baut daraus ihr TSL-Material — die Technik (TSL-
+    // Knoten statt GLSL-Raymarch-Strings) ist Leser-Sache, die ZAHLEN sind
+    // EINE Quelle (diag-membran-gesetz). Der Bogen-Beschnitt faltet in die
+    // Alpha (das TSL-Idiom des Hauses statt discard, s. Dither-Blende).
+    // Aktivierung = Spieler-Nähe (das Welt-Analog zur Lab-Türöffnung, Gesetz
+    // aktivDepth/finalK) · Hindurchgehen durch die Membran-Ebene = BETRETEN
+    // (derselbe enterPortal-Chokepoint wie die E-Taste).
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Die geteilte Membran-Geometrie je Gestalt (Plane spanW×height, Gesetz-seg).
+    _membranGeometryFor(tor) {
+        if (!this._membranGeoMemo) this._membranGeoMemo = new Map();
+        let geo = this._membranGeoMemo.get(tor.gestalt);
+        if (!geo) {
+            const mu = tor.mu;
+            const seg = tor.gesetz.seg;
+            geo = new THREE.PlaneGeometry(mu.spanW, mu.height, seg, seg);
+            geo.translate(0, mu.midY, 0);
+            this._membranGeoMemo.set(tor.gestalt, geo);
+        }
+        return geo;
+    }
+
+    // Das Membran-Material eines Eintrags — der TSL-Port des Shell-Shaders
+    // (worlds/portale/porta.js buildMembrane = die Formel-Referenz; alle
+    // Konstanten aus MEMBRAN_GESETZ/membranUniforms, per-Gestalt statische
+    // Dials sind ins Node-Netz GEFALTET). Liefert { mat, u } mit den vier
+    // lebenden Uniforms (time · camL [Kamera in TOR-LOKALEN Koordinaten —
+    // der ganze Marsch läuft im Lab-Koordinatenrahmen, Welt-Transform trägt
+    // das Mesh] · activate · waveDepth).
+    _membranMaterialFor(tor) {
+        const T = THREE;
+        const TSL = T.TSL;
+        const MG = tor.gesetz;
+        const MU = tor.mu;
+        const MM = MG.march;
+        const ML = MG.look;
+        const u = {
+            time: TSL.uniform(0),
+            camL: TSL.uniform(new T.Vector3(0, MU.centerY, 8)),
+            act: TSL.uniform(0),
+            pulse: TSL.uniform(1),
+            waveDepth: TSL.uniform(MU.waveDepth),
+        };
+        // Bogen-Oberkante als DataTexture (dieselbe 64er-Gesetz-Tabelle wie die Shell).
+        const W = MG.profilW;
+        const data = new Uint8Array(W * 4);
+        for (let i = 0; i < W; i++) {
+            const b = Math.round(MU.profil[i] * 255);
+            data[i * 4] = b;
+            data[i * 4 + 1] = b;
+            data[i * 4 + 2] = b;
+            data[i * 4 + 3] = 255;
+        }
+        const topTex = new T.DataTexture(data, W, 1, T.RGBAFormat);
+        topTex.minFilter = T.LinearFilter;
+        topTex.magFilter = T.LinearFilter;
+        topTex.needsUpdate = true;
+        const F = (x) => TSL.float(x);
+        const PAL = MU.pal;
+        const vPA = TSL.vec3(PAL.PA[0], PAL.PA[1], PAL.PA[2]);
+        const vPB = TSL.vec3(PAL.PB[0], PAL.PB[1], PAL.PB[2]);
+        const vPC = TSL.vec3(PAL.PC[0], PAL.PC[1], PAL.PC[2]);
+        const vPD = TSL.vec3(PAL.PD[0], PAL.PD[1], PAL.PD[2]);
+        const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
+        // hash/vn/fbm — die Shell-Formeln als Fn (das W9-Himmel-Muster).
+        const hash2 = TSL.Fn(([q]) => {
+            const p = TSL.fract(q.mul(TSL.vec2(123.34, 345.45)));
+            const p2 = p.add(TSL.dot(p, p.add(F(34.345))));
+            return TSL.fract(p2.x.mul(p2.y));
+        });
+        const vn2 = TSL.Fn(([q]) => {
+            const i = TSL.floor(q);
+            const f0 = TSL.fract(q);
+            const f = f0.mul(f0).mul(F(3.0).sub(f0.mul(2.0)));
+            return TSL.mix(
+                TSL.mix(hash2(i), hash2(i.add(TSL.vec2(1.0, 0.0))), f.x),
+                TSL.mix(hash2(i.add(TSL.vec2(0.0, 1.0))), hash2(i.add(TSL.vec2(1.0, 1.0))), f.x),
+                f.y
+            );
+        });
+        const fbmN = (q, okt) => {
+            let s = F(0.0);
+            let p = q;
+            let a = 0.5;
+            for (let o = 0; o < okt; o++) {
+                s = s.add(vn2(p).mul(a));
+                p = p.mul(2.05).add(1.3);
+                a *= 0.5;
+            }
+            return s;
+        };
+        // ── Hfull(q): die stehende Welle (Vertex-Verformung, Shell-verbatim) ──
+        const centerXY = TSL.vec2(0.0, MU.centerY);
+        const Hfull = (q) => {
+            const c = q.sub(centerXY);
+            const r = TSL.length(c);
+            const a = TSL.atan(c.y, c.x);
+            const t = u.time;
+            const Rb = F(1.0).div(
+                TSL.sqrt(
+                    TSL.pow(TSL.cos(a).div(F(MU.rimAx)), F(2.0))
+                        .add(TSL.pow(TSL.sin(a).div(F(MU.rimAy)), F(2.0)))
+                        .add(F(1e-4))
+                )
+            );
+            const rr = TSL.clamp(r.div(Rb), F(0.0), F(1.4));
+            const twist = a.mul(F(MG.twistK)).add(F(MU.swirl).div(r.add(F(MG.swirlR0))));
+            const om = t.mul(F(MG.om));
+            const outw = TSL.sin(rr.mul(F(MG.kk)).sub(om).add(twist));
+            const refl = TSL.sin(F(2.0).sub(rr).mul(F(MG.kk)).sub(om).add(twist));
+            const wave = outw.add(refl.mul(F(MG.refl))).mul(TSL.exp(rr.negate().mul(F(MG.damp))));
+            const pierce = TSL.sin(t.mul(F(MG.pierce[0])))
+                .mul(TSL.exp(rr.mul(rr).negate().mul(F(MG.pierce[1]))))
+                .mul(F(MG.pierce[2]));
+            const micro = fbmN(c.mul(F(MG.micro[0])).sub(TSL.vec2(t.mul(F(MG.micro[1])), t.mul(F(MG.micro[1])))), 3).mul(
+                F(MG.micro[2])
+            );
+            const h = TSL.clamp(wave.mul(F(MG.hGain[0])).add(pierce).add(micro).mul(F(MG.hGain[1])), F(-1.0), F(1.0));
+            return h.mul(u.waveDepth).mul(F(MG.waveDepthK[0] + MG.waveDepthK[1] * MU.wave));
+        };
+        const xy = TSL.positionGeometry.xy;
+        const d0 = Hfull(xy);
+        const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
+        mat.positionNode = TSL.vec3(xy.x, xy.y, d0);
+        // ── Fragment: Beschnitt (Alpha-Fold) + Raymarch (12 Schritte entfaltet) ──
+        const uu = TSL.clamp(xy.x.sub(F(MU.left)).div(F(MU.spanW)), F(0.0), F(1.0));
+        const topY = F(MU.baseY).add(TSL.texture(topTex, TSL.vec2(uu, 0.5)).r.mul(F(MU.height)));
+        const keep = TSL.step(xy.y, topY.add(F(0.002)));
+        // Normale aus der Wellen-Ableitung (Fragment-Rekonstruktion — exakt die
+        // Shell-Differenzen, nur pro Fragment statt pro Vertex interpoliert).
+        const e = MG.eps;
+        const dxx = Hfull(xy.add(TSL.vec2(e, 0.0)));
+        const dyy = Hfull(xy.add(TSL.vec2(0.0, e)));
+        const nrm = TSL.normalize(TSL.cross(TSL.vec3(e, 0.0, dxx.sub(d0)), TSL.vec3(0.0, e, dyy.sub(d0))));
+        const vLocal = TSL.vec3(xy.x, xy.y, d0);
+        const Vd = TSL.normalize(u.camL.sub(vLocal));
+        const rd = Vd.negate();
+        // Realm-Fenster (statisch je Gestalt → JS-gefaltet, Shell-Normierung).
+        const wRaw = MM.winC.map((c) => Math.max(0, 1 - Math.abs(MU.realm - c) / MM.win));
+        const ws = wRaw[0] + wRaw[1] + wRaw[2] + wRaw[3] + 1e-4;
+        const win = wRaw.map((v) => v / ws);
+        const frq = MM.frqK[0] + MU.fractal * MM.frqK[1];
+        const spF = MM.spK[0] + MU.energy * MM.spK[1];
+        const center3 = TSL.vec3(0.0, MU.centerY, 0.0);
+        let inter = TSL.vec3(0.0, 0.0, 0.0);
+        for (let i = 0; i < MM.steps; i++) {
+            const q = vLocal.add(rd.mul(F(i * MU.step + MM.t0)));
+            const rel = q.sub(center3);
+            const r = TSL.max(TSL.length(rel.xy), F(0.003));
+            const ang = TSL.atan(rel.y, rel.x);
+            const dep = r.mul(F(MM.depK[1])).add(F(i * MU.step * MM.depK[0]));
+            const sp = u.time.mul(F(spF));
+            const lp = TSL.log(r).mul(F(MM.lpK)).sub(sp);
+            const swirl = ang.add(F(MU.swirl).div(r));
+            let v = F(0.0);
+            let tc = F(0.0);
+            if (win[0] > 0.001) {
+                const K = MM.wurm;
+                const s0 = TSL.sin(lp.mul(F(K[0] * frq)).add(swirl.mul(F(K[1]))).add(dep.mul(F(MU.twist * K[2]))))
+                    .mul(0.5)
+                    .add(0.5);
+                v = v.add(s0.mul(s0).mul(F(win[0])));
+                tc = tc.add(TSL.fract(lp.mul(F(K[3])).add(swirl.mul(F(K[4] / 6.28318)))).mul(F(win[0])));
+            }
+            if (win[1] > 0.001) {
+                const K = MM.facet;
+                const KK = K[0] + MU.fractal * K[1];
+                const fa = TSL.abs(TSL.mod(swirl, F(6.28318 / KK)).sub(F(3.14159 / KK)));
+                const cc = TSL.cos(fa.mul(F(KK))).mul(0.5).add(0.5);
+                const s1 = TSL.sin(lp.mul(F(K[2] * frq))).mul(0.5).add(0.5);
+                v = v.add(cc.mul(cc).mul(cc).mul(s1).mul(F(win[1])));
+                tc = tc.add(TSL.fract(fa.mul(F(K[3])).add(lp.mul(F(K[4])))).mul(F(win[1])));
+            }
+            if (win[2] > 0.001) {
+                const K = MM.plasma;
+                const warp = fbmN(TSL.vec2(lp.mul(F(K[0] * frq)), dep.mul(F(K[1])).add(sp.mul(F(K[2])))), 4);
+                const pf0 = fbmN(
+                    TSL.vec2(ang.mul(F(K[3])).add(warp.mul(F(K[4]))), dep.mul(F(K[5] * frq)).sub(sp.mul(F(K[6])))),
+                    4
+                );
+                const pf = F(1.0).sub(TSL.abs(pf0.mul(2.0).sub(1.0)));
+                const plasma = TSL.pow(TSL.clamp(pf, F(0.0), F(1.0)), F(K[7]));
+                v = v.add(plasma.mul(F(K[8] * win[2])));
+                tc = tc.add(TSL.fract(pf.mul(F(K[9])).add(lp.mul(F(K[10]))).add(dep.mul(F(K[11])))).mul(F(win[2])));
+            }
+            if (win[3] > 0.001) {
+                const K = MM.nebel;
+                const n1 = fbmN(
+                    TSL.vec2(ang.mul(F(K[0] * frq)).add(TSL.sin(lp).mul(F(K[1]))), dep.mul(F(K[2])).add(sp.mul(F(K[3])))),
+                    4
+                );
+                const n2 = fbmN(
+                    TSL.vec2(ang.mul(F(K[4] * frq)).sub(n1.mul(F(K[5]))), dep.mul(F(K[6])).add(sp.mul(F(K[7])))),
+                    4
+                );
+                const neb = TSL.pow(TSL.clamp(n1.mul(n2).mul(F(K[8])), F(0.0), F(1.0)), F(K[9]));
+                v = v.add(neb.mul(F(K[10] * win[3])));
+                tc = tc.add(TSL.fract(n1.mul(F(K[11])).add(dep.mul(F(K[12])))).mul(F(win[3])));
+            }
+            v = TSL.max(F(0.0), v.sub(F(MM.vCut[0]))).mul(F(MM.vCut[1]));
+            const g = v.div(F(1.0).add(r.mul(r).mul(F(MM.gDen[0]))).add(dep.mul(F(MM.gDen[1]))));
+            inter = inter.add(pal(tc).mul(g).mul(F(Math.pow(MM.att, i))));
+        }
+        const N = nrm;
+        const Rf = TSL.reflect(Vd.negate(), N);
+        const st = TSL.step(F(ML.star[0]), hash2(TSL.floor(Rf.xy.mul(F(ML.star[1])).add(TSL.vec2(Rf.z.mul(F(ML.star[2])), Rf.z.mul(F(ML.star[2])))))));
+        const sky = pal(Rf.y.mul(F(ML.skyK[0])).add(F(ML.skyK[1])))
+            .mul(F(ML.skyK[2]))
+            .add(TSL.vec3(st, st, st).mul(F(ML.star[3])));
+        const fres = TSL.pow(F(1.0).sub(TSL.max(TSL.dot(N, Vd), F(0.0))), F(ML.fresPow));
+        const spec = TSL.pow(
+            TSL.max(TSL.dot(Rf, TSL.normalize(TSL.vec3(ML.specDir[0], ML.specDir[1], ML.specDir[2]))), F(0.0)),
+            F(ML.specPow)
+        );
+        const dc = TSL.length(vLocal.sub(center3).xy);
+        const core = TSL.exp(dc.mul(dc).negate().mul(F(ML.core[0])))
+            .mul(F(ML.core[1] + MU.open * ML.core[2]))
+            .mul(TSL.sin(u.time.mul(F(ML.core[5]))).mul(F(ML.core[4])).add(F(ML.core[3])));
+        let col = inter
+            .mul(F(ML.mixK[0]))
+            .add(sky.mul(fres).mul(F(MU.reflect * ML.mixK[1])))
+            .add(TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2]).mul(spec).mul(F(ML.specK * MU.reflect)))
+            .add(pal(F(ML.corePal)).mul(core).mul(F(ML.mixK[3])));
+        col = col.mul(
+            u.act
+                .mul(F(ML.finalK[2]))
+                .add(F(ML.finalK[1]))
+                .mul(F(ML.finalK[0]))
+                .mul(u.pulse.mul(F(ML.finalK[4])).add(F(ML.finalK[3])))
+        );
+        // ACES (Shell-verbatim) — die Welt-Ausgabe-Transform bleibt Leser-Sache.
+        const aces = (x) =>
+            TSL.clamp(
+                x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)),
+                F(0.0),
+                F(1.0)
+            );
+        mat.colorNode = TSL.vec4(aces(col), 1.0);
+        mat.opacityNode = keep;
+        mat.alphaTest = 0.5;
+        mat.transparent = false;
+        mat.userData.portalMembran = true; // Linsen-Marker
+        return { mat, u };
+    }
+
+    // Der Membran-Tick: baut/pflegt je sichtbarem Portal-Eintrag mit Tor-Gestalt
+    // EINE Membran (Registry je entry.id), atmet die Uniforms und prüft das
+    // HINDURCHGEHEN (Ebenen-Kreuzung in der Apertur → enterPortal — derselbe
+    // Chokepoint wie die E-Taste). Scan 1 Hz (bounded), Uniform-Atem pro Frame.
+    _tickPortalMembranes(currentTime) {
+        const st = this.state;
+        if (!st || !st.scene || typeof THREE === "undefined" || !THREE.MeshBasicNodeMaterial || !THREE.TSL) return;
+        if (!this._portalMembranes) this._portalMembranes = new Map();
+        const reg = this._portalMembranes;
+        const pm = st.playerMesh;
+        if (!pm || !pm.position) return;
+        const px = pm.position.x;
+        const py = pm.position.y;
+        const pz = pm.position.z;
+        const SICHT = 180;
+        // ── 1-Hz-Scan: Kandidaten einsammeln + Verwaiste räumen ──
+        if (!this._membranScanAt || currentTime - this._membranScanAt > 1) {
+            this._membranScanAt = currentTime;
+            const seen = new Set();
+            const arches = st.architectures;
+            if (Array.isArray(arches)) {
+                for (const entry of arches) {
+                    if (!entry || !entry.position) continue;
+                    if (!(entry.affordances && entry.affordances.isPortal)) continue;
+                    const dx = entry.position.x - px;
+                    const dz = entry.position.z - pz;
+                    if (dx * dx + dz * dz > SICHT * SICHT) continue;
+                    const tor = this._torGesetzFor(entry);
+                    if (!tor) continue; // Part-Gestalt-Portale tragen ihre eigene sichtbare Passage
+                    seen.add(entry.id);
+                    if (!reg.has(entry.id)) this._membranBauFor(entry, tor);
+                }
+            }
+            for (const [id, rec] of reg) {
+                if (!seen.has(id)) {
+                    if (rec.mesh) {
+                        st.scene.remove(rec.mesh);
+                        if (rec.mesh.material) rec.mesh.material.dispose();
+                    }
+                    reg.delete(id);
+                }
+            }
+        }
+        if (reg.size === 0) return;
+        // ── pro Frame: Atem + Hindurchgehen ──
+        const reach = AnazhRealm.PORTAL_REACH_M;
+        for (const rec of reg.values()) {
+            const entry = rec.entry;
+            const mu = rec.tor.mu;
+            const MG = rec.tor.gesetz;
+            const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+            const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+            const c = Math.cos(ry);
+            const s = Math.sin(ry);
+            const dx = px - entry.position.x;
+            const dz = pz - entry.position.z;
+            const d = Math.hypot(dx, dz);
+            const act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
+            rec.u.time.value = currentTime;
+            rec.u.act.value = act;
+            rec.u.pulse.value = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
+            rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
+            // Kamera in Tor-lokalen Koordinaten (der Marsch läuft im Lab-Rahmen).
+            const cam = st.camera;
+            if (cam && cam.position) {
+                const cxw = cam.position.x - entry.position.x;
+                const czw = cam.position.z - entry.position.z;
+                rec.u.camL.value.set(
+                    (cxw * c - czw * s) / scale,
+                    (cam.position.y - (entry.position.y - 0.5)) / scale,
+                    (cxw * s + czw * c) / scale
+                );
+            }
+            // ── HINDURCHGEHEN: Spieler kreuzt die Membran-Ebene in der Apertur ──
+            const lx = (dx * c - dz * s) / scale;
+            const lz = (dx * s + dz * c) / scale;
+            const ly = (py - (entry.position.y - 0.5)) / scale;
+            const inApertur =
+                Math.abs(lx) < mu.rimAx * 0.92 && ly > mu.baseY - 0.2 && ly < mu.apexY + 0.4 && Math.abs(lz) < mu.zFace + 1.2;
+            // Re-Arm beim VERLASSEN der Apertur-Zone: ein Durchgang verbraucht die
+            // Waffnung (kein Doppelfeuer in einem Pass), wer die Zone verlässt und
+            // erneut kreuzt (egal welche Richtung), betritt wieder.
+            if (rec.armed === false && !inApertur) rec.armed = true;
+            if (
+                rec.armed !== false &&
+                inApertur &&
+                typeof rec.lastLz === "number" &&
+                Math.sign(rec.lastLz) !== 0 &&
+                Math.sign(lz) !== 0 &&
+                Math.sign(lz) !== Math.sign(rec.lastLz) &&
+                !this._portalOverlay
+            ) {
+                rec.armed = false;
+                this.enterPortal(entry);
+            }
+            rec.lastLz = inApertur ? lz : null;
+        }
+    }
+
+    // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
+    // fehl, trägt die Passage eine schlichte Kern-Farb-Fläche statt GAR
+    // nichts — sichtbar-hässlich schlägt unsichtbar-stumm).
+    _membranBauFor(entry, tor) {
+        const st = this.state;
+        let mesh = null;
+        let u = null;
+        try {
+            const built = this._membranMaterialFor(tor);
+            u = built.u;
+            mesh = new THREE.Mesh(this._membranGeometryFor(tor), built.mat);
+        } catch (err) {
+            this.log(`Welt-Membran-Bau fehlgeschlagen (${tor.gestalt}): ${err && err.message}`, "WARN");
+            const pc = tor.mu.pal && tor.mu.pal.core;
+            const col = pc ? new THREE.Color(Math.min(1, pc[0]), Math.min(1, pc[1]), Math.min(1, pc[2])) : new THREE.Color(0.4, 0.6, 1.0);
+            const flach = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
+            mesh = new THREE.Mesh(this._membranGeometryFor(tor), flach);
+            u = {
+                time: { value: 0 },
+                camL: { value: new THREE.Vector3() },
+                act: { value: 0 },
+                pulse: { value: 1 },
+                waveDepth: { value: 0 },
+            };
+        }
+        mesh.position.set(entry.position.x, entry.position.y - 0.5, entry.position.z);
+        if (Number.isFinite(entry.rotationY) && entry.rotationY !== 0) mesh.rotation.y = entry.rotationY;
+        if (Number.isFinite(entry.scale) && entry.scale !== 1) mesh.scale.setScalar(entry.scale);
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        mesh.frustumCulled = false; // Wellen-Verformung sprengt die statische Hülle (≤ Handvoll Meshes)
+        mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
+        st.scene.add(mesh);
+        this._portalMembranes.set(entry.id, { entry, tor, mesh, u, armed: true, lastLz: null });
     }
 
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
@@ -62904,6 +63302,15 @@ class AnazhRealm {
                 if (bps[name]._foundryAutoSpecies && typeof bps[name].studioGestalt !== "string") {
                     bps[name].studioGestalt = id;
                 }
+                // V18.464 — HEILUNG persistierter Alt-Klone (dieselbe Chokepoint-Regel):
+                // die role-DATEN-Zeile der Policy (gate → "portal") nachstempeln, damit
+                // ein VOR dieser Welle registriertes tor_* beim naechsten Ingest zum
+                // Welt-Tor wird (Affordances der STEHENDEN Eintraege zieht der
+                // Spawn/setBlueprintAsPortal nach — Neu-Spawns tragen sie sofort).
+                if (bps[name]._foundryAutoSpecies && pol.role && !bps[name].role) {
+                    bps[name].role = pol.role;
+                    bps[name].roleManual = true;
+                }
                 continue; // existiert (historische Arten + schon registrierte)
             }
             // AUSLÖSCHUNGS-WELLE — die Donor-Auflösung: ein LEBENDER Blueprint (tree → baum_eiche,
@@ -62932,6 +63339,12 @@ class AnazhRealm {
             // fahrzeug_/tor_/baum_) seine Studio-Gestalt — der Name ist nicht mehr der einzige
             // Traeger (die „Klon wird zum Donor-Schwert"-Klasse ist strukturell tot).
             clone.studioGestalt = id;
+            // V18.464 — die role-DATEN-Zeile der Policy stempeln (gate → "portal"):
+            // jedes registrierte Studio-Tor ist ab Geburt ein Welt-Tor.
+            if (pol.role) {
+                clone.role = pol.role;
+                clone.roleManual = true;
+            }
             bps[name] = clone;
             registered++;
         }
@@ -63957,12 +64370,18 @@ class AnazhRealm {
         // (kein „Maske liest fehlendes Attribut"-Crash auf Alt-Geometrie).
         const xfade = !!(this.state && this.state.foundryCrossfade === true);
         // Cache-Key: kind + gerundete Regler (bounded — je Preset-Charakter ein Material).
+        // V18.464 — die GLUT reist mit (portal-D6-Heilung): der Umschlag traegt
+        // mp.emissive/[r,g,b] + mp.emissiveIntensity (Tor-Rahmen glow-Dial,
+        // Glut-Kanten), der Konsument warf sie bisher weg — das Welt-Tor war matt.
+        const emis = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
+        const emisI = emis && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : emis ? 1 : 0;
         const key =
             (mp
                 ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
                 : kind) +
             (xfade ? "|xf" : "") +
-            (mp && mp.webe ? "|w:" + mp.webe : "");
+            (mp && mp.webe ? "|w:" + mp.webe : "") +
+            (emis ? "|e:" + emis.map((v) => v.toFixed(2)).join(",") + "@" + emisI.toFixed(2) : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         try {
@@ -63973,6 +64392,10 @@ class AnazhRealm {
                 side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
             if (env !== 1) mat.envMapIntensity = env;
+            if (emis) {
+                mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
+                mat.emissiveIntensity = emisI;
+            }
             // W5.1 (Paritäts-Vollendung) — TINT-KONTINUITÄT L0/L1↔L2 (Studio FIX v27,
             // foundry-core.js:200/244: Per-Instanz-Tint NUR auf dem LAUB, multiplikativ,
             // aus dem POSITIONS-Hash — identisch über ALLE Stufen): die Foundry-3D-Stufen
@@ -80152,6 +80575,9 @@ class AnazhRealm {
                 // ### Skybox und Planeten ### (V9.44-f → _loopSkyboxPlanets)
                 this._loopSkyboxPlanets(currentTime);
 
+                // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
+                this._tickPortalMembranes(currentTime);
+
                 // ### Fähigkeiten ###
                 Object.keys(this.state.abilities).forEach((ability) => {
                     if (this.state.keys[ability]) this.state.abilities[ability](this, this.state);
@@ -82333,12 +82759,18 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // ε (Nervensystem-Plan TEIL VIII Punkt 4) — DIE TOR-DOMAENE ALS DATEN-ZEILE: porta-core
     // (cores.manifest.json) liefert kind:"gate"-Rezepte; die Platzierung reist als Rezept-DATEN
     // (fx.place mode "site" + siteTag "tor", N5.6 — streut heute nicht), darum placeExtra null.
+    // V18.464 — role: "portal" als DATEN-Zeile (Tabelle vor if): ein platziertes
+    // tor_<rezept> IST ab Geburt ein Welt-Tor (isPortal-Affordance, E-Betreten,
+    // Default-Ziel Skelett-Welt wie jedes meta-lose Portal; `richte portal …`
+    // zielt es um). Vorher war ein Studio-Tor reine Dekoration — die einzige
+    // Trigger-Maschine (computeBlueprintAffordances) sah es nie.
     gate: Object.freeze({
         prefix: "tor_",
         donor: "tor_basis",
         grown: false,
         builtIn: false,
         placeExtra: null,
+        role: "portal",
     }),
     // W-A4a (Katalysator-Bogen §7, ε-Checkliste) — DIE WAFFEN-/WERKZEUG-DOMAENE ALS DATEN-ZEILE:
     // schmiede-core (cores.manifest.json) liefert kind:"weapon"-Rezepte (alle 21 Gattungen des

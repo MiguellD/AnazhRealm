@@ -61,6 +61,7 @@
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",
         "gate:membran-gesetz": "node scripts/diag-membran-gesetz.cjs",
+        "gate:portal-membran": "node scripts/diag-portal-membran.cjs",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",

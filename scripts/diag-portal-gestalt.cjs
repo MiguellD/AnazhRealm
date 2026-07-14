@@ -194,8 +194,17 @@ function deriveGestalt(srcNC) {
             };
         }
         // (A2) Set-Paritaet: die LIVE-Blueprints mit studioGestalt == die Quelle-Ableitung.
+        // V18.464 (Linsen-Heilung, Lehre 6): seit der ERFINDER-WELLE stempelt der
+        // Auto-Register-Chokepoint studioGestalt auf JEDEN Klon (baum_/fahrzeug_/
+        // haus_/klinge_/tor_<rezept>, Marke _foundryAutoSpecies) — die Quelle-
+        // Ableitung (Literal-Zeilen im Stamm) kann nur die HANDGESCHRIEBENEN
+        // Traeger sehen. Auto-Klone gehoeren nicht in diese Paritaet (ihre
+        // Registrier-Wahrheit prueft gate:rezept-katalog).
         res.liveSet = Object.keys(r.state.blueprints || {})
-            .filter((n) => typeof (r.state.blueprints[n] || {}).studioGestalt === "string")
+            .filter((n) => {
+                const bp = r.state.blueprints[n] || {};
+                return typeof bp.studioGestalt === "string" && !bp._foundryAutoSpecies;
+            })
             .sort();
         // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben.
         res.b.terrain = r._foundryPresetForEntry({ type: "welt_terrain" });
