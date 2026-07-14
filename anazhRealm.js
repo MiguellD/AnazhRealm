@@ -30994,7 +30994,11 @@ class AnazhRealm {
         if (!core || !core.PRESETS || typeof core.membranUniforms !== "function") return null;
         let gestalt = null;
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
-        if (bp && typeof bp.studioGestalt === "string") gestalt = bp.studioGestalt;
+        // Domänen-Wand (Review-Härtung): die studioGestalt-Zeile zählt nur für
+        // PORTAL-Blueprints — ein künftiges gleichnamiges Preset einer anderen
+        // Domäne (z.B. fachwerk „kathedrale") darf keinem Haus still eine
+        // Tor-Hülle geben. tor_*-Katalog-Tore laufen über den Präfix-Pfad.
+        if (bp && typeof bp.studioGestalt === "string" && bp.role === "portal") gestalt = bp.studioGestalt;
         if (!gestalt) {
             const pol = AnazhRealm.KIND_POLICY.gate;
             if (pol && pol.prefix && entry.type.indexOf(pol.prefix) === 0) {
