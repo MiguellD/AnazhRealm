@@ -1,15 +1,21 @@
 // diag-baecker-kanal.cjs — DIE BÄCKER-KANAL-LINSE (Bäcker-Vereinigung, Studio-Seite):
 // beweist, dass der Studio-Bäcker `bake-impostor` im Foundry-WEB-WORKER antwortet (nicht nur
 // im iframe). Bootet den Studio-Generator als Worker (dieselben WORKER_SCRIPTS wie
-// asset-worker-harness.cjs — kein zweiter Boot-Pfad), schickt EIN
-// {type:"bake-impostor", presetId:"eiche", seed:7} und prüft das Reply:
-//   payload != null · albedo/normal-Länge 128*256*8*4 · Atlas nicht komplett 0 ·
-//   Rahmen (aspect) + Weltmass (height) endlich und > 0.
+// asset-worker-harness.cjs — kein zweiter Boot-Pfad) und prüft DREI Fälle:
+//   1. {type:"bake-impostor", presetId:"eiche", seed:7} — der Pflanzen-Pfad:
+//      payload != null · albedo/normal-Länge 128*256*8*4 · Atlas nicht komplett 0 ·
+//      Alpha-Deckung > 64 Pixel · Rahmen (aspect) + Weltmass (height) endlich und > 0.
+//   2. ZWEIT-KERN-BÄCKEREI: das ERSTE gate-Rezept aus dem Buch (get-book, kind==="gate") —
+//      derselbe Kanal, das Bake-Subjekt baut der Manifest-Kern (porta buildInstance);
+//      dieselben Prüfungen (payload nicht-null, albedo NICHT-LEER, height/aspect endlich).
+//   3. FAIL-CLOSED: ein UNBEKANNTES Preset (kein Kern kennt es) MUSS sauber scheitern —
+//      payload null, kein Worker-Wurf (die LEERE-KARTE-Klasse bleibt tot).
 // PIXEL-WAHRHEIT: albedo/normal kommen aus gl.readRenderTargetPixels (8 Blickwinkel VERTIKAL
 // gestapelt, Zeilen bottom-up) — diese Linse prüft PRÄSENZ + MASSE, nicht die Malrichtung
 // (das Y-Flip-Gesetz lebt beim Konsumenten, dem Welt-Atlas).
-// SELBST-TEST: synthetisch korrupte Stats (payload null · falsche Länge · Alles-0-Atlas)
-// MÜSSEN rot erkannt werden — die Linse ist nicht vakuös.
+// SELBST-TEST: synthetisch korrupte Stats (payload null · falsche Länge · Alles-0-Atlas ·
+// leere Alpha-Deckung · nicht-null payload beim Unbekannten) MÜSSEN rot erkannt werden —
+// die Linse ist nicht vakuös.
 //
 //   node scripts/diag-baecker-kanal.cjs        (exit 0 = GRÜN, 1 = ROT, 2 = Harness-Fehler)
 const fs = require("fs");
@@ -34,6 +40,7 @@ const MIME = {
 // ── DIE SOLL-ZAHLEN (die fixe Naht: __replyBakeImpostor, cw=128 ch=256 V=8) ──────────────
 const SOLL = { cw: 128, ch: 256, V: 8 };
 const SOLL_LEN = SOLL.cw * SOLL.ch * SOLL.V * 4; // 1.048.576 Bytes je Atlas
+const SOLL_ALPHA_PX = 64; // NICHT-LEERE-WAND: mehr als 64 gedeckte Alpha-Pixel = es wurde WIRKLICH gebacken
 
 // Reine Prüf-Funktion (auch der Selbst-Test ruft sie) → Liste roter Befunde.
 function pruefe(st) {
@@ -52,8 +59,25 @@ function pruefe(st) {
     if (st.normalLen !== SOLL_LEN) rot.push(`normal-Länge ${st.normalLen} != ${SOLL_LEN} (cw*ch*V*4)`);
     if (!(st.albedoNonNull > 0)) rot.push("albedo ist komplett 0 — der Atlas ist leer (nichts gebacken)");
     if (!(st.normalNonNull > 0)) rot.push("normal ist komplett 0 — der Normal-Atlas ist leer");
+    if (!(st.alphaPx > SOLL_ALPHA_PX))
+        rot.push(
+            `Alpha-Deckung ${st.alphaPx} <= ${SOLL_ALPHA_PX} Pixel — LEERE Karte als „Erfolg" (M1-Klasse: nichts gebacken)`
+        );
     if (!(st.aspect > 0) || !isFinite(st.aspect)) rot.push(`aspect unbrauchbar: ${st.aspect}`);
     if (!(st.height > 0) || !isFinite(st.height)) rot.push(`height unbrauchbar: ${st.height}`);
+    return rot;
+}
+
+// FAIL-CLOSED-Prüfung (Fall 3): ein UNBEKANNTES Preset muss payload null liefern, ohne Wurf.
+function pruefeUnbekannt(st) {
+    const rot = [];
+    if (!st || !st.got) {
+        rot.push("keine Antwort auf das unbekannte Preset (Kanal stumm/hing — statt sauberem payload null)");
+        return rot;
+    }
+    if (st.workerError) rot.push(`Worker-Wurf beim unbekannten Preset (statt fail-closed): ${st.workerError}`);
+    if (!st.payloadNull)
+        rot.push("unbekanntes Preset lieferte payload != null — fail-closed gerissen (LEERE-KARTE-Klasse lebt)");
     return rot;
 }
 
@@ -71,13 +95,30 @@ function selbstTest() {
         normalLen: SOLL_LEN,
         albedoNonNull: 12345,
         normalNonNull: SOLL_LEN,
+        alphaPx: 4096,
     };
     const faelle = [
         ["synthetisch grün -> KEIN Befund", pruefe(gruen).length === 0],
         ["payload null -> feuert", pruefe({ got: true, payloadNull: true }).length > 0],
         ["falsche albedo-Länge -> feuert", pruefe(Object.assign({}, gruen, { albedoLen: SOLL_LEN - 4 })).length > 0],
         ["Alles-0-Atlas -> feuert", pruefe(Object.assign({}, gruen, { albedoNonNull: 0 })).length > 0],
+        [
+            "LEERE Karte (Alpha-Deckung 0) -> feuert",
+            pruefe(Object.assign({}, gruen, { alphaPx: 0 })).length > 0,
+        ],
         ["kaputter Rahmen (aspect NaN) -> feuert", pruefe(Object.assign({}, gruen, { aspect: NaN })).length > 0],
+        [
+            "Unbekannt: payload null ohne Wurf -> KEIN Befund",
+            pruefeUnbekannt({ got: true, payloadNull: true, workerError: null }).length === 0,
+        ],
+        [
+            "Unbekannt: payload != null -> feuert",
+            pruefeUnbekannt({ got: true, payloadNull: false, workerError: null }).length > 0,
+        ],
+        [
+            "Unbekannt: Worker-Wurf -> feuert",
+            pruefeUnbekannt({ got: true, payloadNull: true, workerError: "boom" }).length > 0,
+        ],
     ];
     let ok = true;
     console.log("===== SELBST-TEST DER LINSE (synthetisch, GPU-frei) =====");
@@ -115,18 +156,30 @@ function pageHtml() {
     const reqId = "bk" + seq++;
     pending.set(reqId, res);
     worker.postMessage(Object.assign({ reqId }, msg));
+    // FRIST statt Hänger: bleibt der Kanal stumm (Wurf ohne Reply), meldet die Linse
+    // "keine Antwort" (got:false) statt das Harness in den Timeout zu reißen.
+    setTimeout(() => { if (pending.has(reqId)) { pending.delete(reqId); res(null); } }, 90000);
   });
   const nonNull = (u) => { let n = 0; for (let i = 0; i < u.length; i++) if (u[i] !== 0) n++; return n; };
+  const alphaPx = (u) => { let n = 0; for (let i = 3; i < u.length; i += 4) if (u[i] > 32) n++; return n; };
   window.__bakeStats = (presetId, seed) => ask({ type: "bake-impostor", presetId: presetId, seed: seed }).then((r) => {
-    const p = r && r.payload;
-    if (!p) return { got: true, payloadNull: true };
+    if (!r) return { got: false, workerError: S.error };
+    const p = r.payload;
+    if (!p) return { got: true, payloadNull: true, workerError: S.error };
     const a = p.albedo || new Uint8Array(0), n = p.normal || new Uint8Array(0);
     return {
-      got: true, payloadNull: false, presetId: r.presetId, seed: r.seed,
+      got: true, payloadNull: false, presetId: r.presetId, seed: r.seed, workerError: S.error,
       cw: p.cw, ch: p.ch, V: p.V, aspect: p.aspect, height: p.height,
       albedoLen: a.length, normalLen: n.length,
-      albedoNonNull: nonNull(a), normalNonNull: nonNull(n),
+      albedoNonNull: nonNull(a), normalNonNull: nonNull(n), alphaPx: alphaPx(a),
     };
+  });
+  // Das ERSTE gate-Rezept aus dem ECHTEN Buch (get-book) — kein hartkodierter Spiegel:
+  // ein Schöpfer-Edit an porta-core PRESETS fließt automatisch in diese Linse.
+  window.__erstesGateRezept = () => ask({ type: "get-book" }).then((r) => {
+    const b = (r && r.book) || {};
+    for (const id in b) if (b[id] && b[id].kind === "gate") return id;
+    return null;
   });
 })();
 </script></body>`;
@@ -158,6 +211,9 @@ function pageHtml() {
         args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
     });
     let stats = null;
+    let gateId = null;
+    let gateStats = null;
+    let unbekannt = null;
     try {
         const page = await browser.newPage();
         const meldungen = [];
@@ -171,29 +227,41 @@ function pageHtml() {
         const st = await page.evaluate(() => window.__AW);
         if (st.error) throw new Error("WORKER-BOOT: " + st.error);
         stats = await page.evaluate(() => window.__bakeStats("eiche", 7));
-        if (!stats || stats.payloadNull) {
+        // Fall 2 — ZWEIT-KERN-BÄCKEREI: das erste gate-Rezept aus dem ECHTEN Buch.
+        gateId = await page.evaluate(() => window.__erstesGateRezept());
+        if (gateId) gateStats = await page.evaluate((id) => window.__bakeStats(id, 7), gateId);
+        // Fall 3 — FAIL-CLOSED: ein Preset, das KEIN Kern kennt -> payload null, kein Wurf.
+        unbekannt = await page.evaluate(() => window.__bakeStats("__diag-unbekanntes-preset__", 7));
+        if (!stats || stats.payloadNull || !gateStats || gateStats.payloadNull) {
             // Rot-Diagnose: die Worker-Warnung ([phyto] bake-impostor …) trägt den Grund.
-            for (const m of meldungen.slice(-6)) console.error("  [seite] " + m);
+            for (const m of meldungen.slice(-8)) console.error("  [seite] " + m);
         }
     } finally {
         await browser.close();
         server.close();
     }
 
+    const zeile = (s) =>
+        `cw=${s.cw} ch=${s.ch} V=${s.V} · albedo=${s.albedoLen}B (nicht-0: ${s.albedoNonNull}, Alpha-Px: ${s.alphaPx})` +
+        ` · normal=${s.normalLen}B (nicht-0: ${s.normalNonNull}) · aspect=${Number(s.aspect).toFixed(3)} · height=${Number(s.height).toFixed(2)}m`;
     console.log("\n=== BÄCKER-KANAL — bake-impostor im Foundry-Worker (eiche, seed 7) ===");
-    if (stats && !stats.payloadNull) {
-        console.log(
-            `  Reply: cw=${stats.cw} ch=${stats.ch} V=${stats.V} · albedo=${stats.albedoLen}B (nicht-0: ${stats.albedoNonNull})` +
-                ` · normal=${stats.normalLen}B (nicht-0: ${stats.normalNonNull}) · aspect=${Number(stats.aspect).toFixed(3)} · height=${Number(stats.height).toFixed(2)}m`
-        );
-    }
+    if (stats && stats.got && !stats.payloadNull) console.log("  Reply: " + zeile(stats));
     const rot = pruefe(stats);
+    console.log(`\n=== ZWEIT-KERN-BÄCKEREI — erstes gate-Rezept aus dem Buch: ${gateId || "KEINES GEFUNDEN"} (seed 7) ===`);
+    if (gateStats && gateStats.got && !gateStats.payloadNull) console.log("  Reply: " + zeile(gateStats));
+    if (!gateId) rot.push("kein gate-Rezept im Buch (get-book) — die Zweit-Kern-Rezepte reisen nicht");
+    else for (const x of pruefe(gateStats)) rot.push(`[gate ${gateId}] ${x}`);
+    console.log("\n=== FAIL-CLOSED — unbekanntes Preset (__diag-unbekanntes-preset__) ===");
+    if (unbekannt) console.log(`  Reply: payloadNull=${unbekannt.payloadNull === true} · workerError=${unbekannt.workerError || "keiner"}`);
+    for (const x of pruefeUnbekannt(unbekannt)) rot.push(`[unbekannt] ${x}`);
     if (rot.length) {
         console.error("\n❌ ROT — Befunde:");
         for (const x of rot) console.error("  • " + x);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — der Studio-Bäcker antwortet im Worker: voller 8-Winkel-Atlas (Albedo+Normal), Rahmen+Höhe tragfähig.");
+    console.log(
+        "\n✅ GRÜN — der Studio-Bäcker antwortet im Worker: voller 8-Winkel-Atlas (Albedo+Normal) für Pflanze UND Zweit-Kern-Tor, Rahmen+Höhe tragfähig, Unbekanntes scheitert sauber (payload null)."
+    );
     process.exit(0);
 })().catch((e) => {
     console.error("Harness-Fehler:", (e && e.stack) || e);

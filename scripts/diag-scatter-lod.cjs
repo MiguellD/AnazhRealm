@@ -12,6 +12,12 @@
 //     jetzt ALLE geschnittenen Regionen — der 2×2-Fächer um den Spieler wird
 //     abgedeckt (Quell-Probe: der Block walkt rx0..rx1/rz0..rz1, nicht nur
 //     die Home-Region).
+//   F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): platzierte Fern-Leaves
+//     (Impostor-Quads) über ein 4×4-Region-Raster, A/B durch DIESELBE Pipe:
+//     S=1 (per-Region-Keying, die V18.300/V18.303-Welt) vs S=SCATTER_FERN_
+//     SUPERREGION (Super-Region). Erwartung ≥4× weniger lod2-Gruppen, Slot-
+//     Bilanz dicht (Empty-Dispose räumt beide Welten restlos), und die EINE
+//     Key-Funktion (_archFernRegionKey) ist der einzige Konstanten-Leser.
 //
 //   node scripts/diag-scatter-lod.cjs
 "use strict";
@@ -57,6 +63,23 @@ function check(name, ok, detail) {
     check(
         "P: der Promotions-Block walkt ALLE geschnittenen Regionen (rx0..rx1 × rz0..rz1)",
         /rx0/.test(promoBlock) && /rz1/.test(promoBlock) && /_promoteScatterCell/.test(promoBlock)
+    );
+    // ── F (Quelle): EIN Keying-Chokepoint, kein zweiter Ableitungs-Ort ──
+    // Die Konstante hat GENAU zwei Code-Vorkommen (Definition + der eine Leser in
+    // _archFernRegionKey), und _archInstanceGroupFor mappt den Key VOR jedem Keying
+    // (auch der Batch-Zweig erbt ihn — er wird NACH dem Mapping aufgerufen).
+    const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
+    const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
+    const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 2600) : "";
+    check(
+        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 2 Code-Vorkommen (Definition + _archFernRegionKey)",
+        fernConstUses === 2 && src.includes("_archFernRegionKey(name, leaf, regionKey) {"),
+        `vorkommen=${fernConstUses}`
+    );
+    check(
+        "F(Quelle): der Keying-Chokepoint mappt VOR dem Batch-Zweig (_archFernRegionKey zuerst)",
+        gfHead.indexOf("this._archFernRegionKey(") >= 0 &&
+            gfHead.indexOf("this._archFernRegionKey(") < gfHead.indexOf("_archBatchGroupFor")
     );
 
     await new Promise((r) => server.listen(PORT, r));
@@ -161,6 +184,78 @@ function check(name, ok, detail) {
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
+        // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
+        // Platzierte Impostor-Quads (strauch-Fernstufe, headless = Silhouetten-Fallback,
+        // derselbe Chokepoint) über ein 4×4-Region-Raster: S=1 reproduziert das alte
+        // per-Region-Keying (VORHER), die Produktions-Konstante keyt SUPER-REGIONEN
+        // (NACHHER). Zählung = region-gekeyte Fern-Wrapper (+ Batches); danach Remove →
+        // die Empty-Dispose muss BEIDE Welten restlos räumen (Slot-Bilanz dicht).
+        const fern = {};
+        try {
+            const AR = r.constructor; // die Klasse (Statics) — window trägt nur die Instanz
+            const S0 = AR.SCATTER_FERN_SUPERREGION;
+            fern.s0 = S0;
+            // Unit: die EINE Key-Funktion — fern+Region → Super-Region; nicht-fern/null/gemappt unberührt.
+            fern.unit =
+                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:7,9") ===
+                    "p:s:" + Math.floor(7 / S0) + "," + Math.floor(9 / S0) &&
+                r._archFernRegionKey("fscatter:eiche:3:2", {}, "5,5") ===
+                    "s:" + Math.floor(5 / S0) + "," + Math.floor(5 / S0) &&
+                r._archFernRegionKey("busch_hazel", { leafKey: "f:strauch|1|1|summer:0" }, "p:7,9") === "p:7,9" &&
+                r._archFernRegionKey("x", { leafKey: "fimp:a" }, null) === null &&
+                r._archFernRegionKey("x", { leafKey: "fimp:a" }, "p:s:1,2") === "p:s:1,2";
+            // Das strauch-Impostor-Flat über die ECHTE Pipe ziehen (LOD1-Subjekt lädt async).
+            let flat = null;
+            const dlF = performance.now() + 30000;
+            while (performance.now() < dlF) {
+                flat = r._foundryFlattenFor({ seed: 7 }, "strauch", 2);
+                if (flat && flat.instanceable) break;
+                await new Promise((r2) => setTimeout(r2, 100));
+            }
+            fern.flat = !!(flat && flat.instanceable && flat.lod === 2);
+            if (fern.flat) {
+                const R = AR.ARCH_REGION_M;
+                const zaehle = () => {
+                    let w = 0,
+                        b = 0;
+                    for (const k of r.state.archInstanceGroups.keys()) if (k.includes("@") && k.includes("#fimp:")) w++;
+                    if (r.state.archBatches) for (const k of r.state.archBatches.keys()) if (k.includes("@")) b++;
+                    return { w, b };
+                };
+                const welt = (S) => {
+                    AR.SCATTER_FERN_SUPERREGION = S;
+                    const vor = zaehle();
+                    const entries = [];
+                    for (let gx = 0; gx < 4; gx++)
+                        for (let gz = 0; gz < 4; gz++) {
+                            const e = {
+                                type: "busch_hazel",
+                                seed: 7,
+                                scale: 1,
+                                position: { x: (900 + gx) * R + 8, y: 0, z: (900 + gz) * R + 8 },
+                            };
+                            r._archInstanceAdd(e, flat);
+                            entries.push(e);
+                        }
+                    const mit = zaehle();
+                    for (const e of entries) r._archInstanceRemove(e);
+                    const nach = zaehle();
+                    return { gruppen: mit.w - vor.w, batches: mit.b - vor.b, leck: nach.w - vor.w };
+                };
+                const a = welt(1); // VORHER: per-Region (die V18.300/V18.303-Welt)
+                const b = welt(S0); // NACHHER: Super-Region (Produktions-Konstante)
+                AR.SCATTER_FERN_SUPERREGION = S0;
+                fern.vorher = a.gruppen;
+                fern.nachher = b.gruppen;
+                fern.batchesVorher = a.batches;
+                fern.batchesNachher = b.batches;
+                fern.leckA = a.leck;
+                fern.leckB = b.leck;
+            }
+        } catch (e) {
+            fern.err = String((e && e.message) || e);
+        }
+        res.f = fern;
         return res;
     });
 
@@ -185,6 +280,28 @@ function check(name, ok, detail) {
             `nachlauf=${out.h.nachlauf} drainiert=${out.h.drainiert}`
         );
     else check("H: Hysterese-Block erreicht", false);
+    if (out.f) {
+        check(
+            "F: die EINE Fern-Key-Funktion (Unit: fern→Super-Region, nicht-fern/null/gemappt unberührt)",
+            out.f.unit === true,
+            out.f.err || ""
+        );
+        check("F: strauch-Impostor-Flat über die echte Pipe (lod=2)", out.f.flat === true, out.f.err || "");
+        check(
+            `F: DIE DIÄT — 4×4 Regionen: per-Region ${out.f.vorher} → Super-Region ${out.f.nachher} Fern-Gruppen (≥4× weniger)`,
+            Number.isFinite(out.f.vorher) &&
+                Number.isFinite(out.f.nachher) &&
+                out.f.vorher >= 16 &&
+                out.f.nachher >= 1 &&
+                out.f.vorher >= 4 * out.f.nachher,
+            `batches ${out.f.batchesVorher}→${out.f.batchesNachher} · S=${out.f.s0}`
+        );
+        check(
+            "F: Slot-Bilanz dicht — die Empty-Dispose räumt BEIDE Welten restlos",
+            out.f.leckA === 0 && out.f.leckB === 0,
+            `leckA=${out.f.leckA} leckB=${out.f.leckB}`
+        );
+    } else check("F: Fern-Diät-Block erreicht", false);
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
@@ -194,7 +311,7 @@ function check(name, ok, detail) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei) und die Promotion liest den ganzen Region-Fächer."
+        "\n✅ GRÜN — die Scatter-Stufen folgen der LIVE-Distanz (Re-Allokation über den EINEN Zellen-Chokepoint, Hysterese churn-frei), die Promotion liest den ganzen Region-Fächer, und die Fern-Gruppen tragen die Super-Region-Diät (EIN Keying-Chokepoint, Bilanz dicht)."
     );
 })().catch((e) => {
     console.error("DIAG-FEHLER:", e);

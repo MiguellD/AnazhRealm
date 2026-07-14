@@ -38,16 +38,20 @@
    Bäcker-Vereinigung BEIDSEITIG GEBAUT (s. (b), Konsum-Matrix-Probe ✅) ·
    mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
    klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
-   (d) **Tiefe statt Oberfläche (Schöpfer-Browser-Befunde 14.07., je eine Matrix-Zelle):**
-   FAHRZEUG-Geist beim Platzieren zeigt den alten Wagen (der Ghost-Pfad liest Donor-Parts
-   statt der Studio-Gestalt) · FAHREN bewegt den Spieler in Sitzpose, das Fahrzeug bleibt
-   stehen (der Drive-Tick bewegt den Reiter, nie den Fahrzeug-Eintrag) · TIERE STAPELN
-   sich (keine Separations-Kraft; Emotionen/Charaktere existieren im Feld, werden aber
-   nicht in Bewegungs-DIFFERENZIERUNG konsumiert — die Verhaltens-Zelle der Matrix) ·
-   WASSER kriecht optisch Wände hoch / spiegelt winkelabhängig übers Terrain (Sheet-
-   Render-Klasse; der Existenz-Boden V18.473 heilt das NICHT-Erscheinen, der LOOK der
-   Kanten bleibt eine eigene Welle) · Avatar-Kleider/Bewegung ≠ Studio · Fahrzeugphysik ·
-   Körpermechanik (Fuß-IK/Foot-Lock) · Schwertschwung · Stadtpflanzung.
+   (d) **Tiefe statt Oberfläche — VOLLENDE-WELLE V18.474 (kein Aufschieben):**
+   GEBAUT+bewiesen: DC-Diät der Fern-Gruppen (Super-Region-Keying am EINEN Chokepoint,
+   16→1 Gruppen bei 4×4; gate:scatter-lod F-Block) · FAHRZEUG ganz (Geist liest die
+   Studio-Gestalt; der Fahr-Tick bewegt den EINTRAG über den Matrix-Chokepoint, 14,4 m
+   bewiesen, Reiter-Kollisions-Skip, persistiert; gate:vehicle-drive) · TIERE entstapeln
+   + differenzieren sich (Separations-Kraft, NaN-fest, ohne Math.random; Stats/Emotion
+   modulieren Radius/Tempo; gate:tier-separation) · ZWEIT-KERN-BÄCKEREI (Tor-Karten echt,
+   gate:baecker-kanal drachentor nicht-leer; Welt-Wächter geweitet). WASSER-FORENSIK
+   liegt (3 Wurzeln mit Zeilen: Dach-Blur ohne Höhen-Gate = Wand-Kriechen · Fern-Wasser-
+   Rim bei terrainTopY=−∞ = Spiegel-Film über Land · CA-KEEP-Fixpunkt = ewige Blobs) —
+   der Bau ist V18.475, direkt anschließend. OFFEN danach: Avatar-Kleider/Bewegung ≠
+   Studio · Kreatur-Tris/LOD (Tri-Zensus im nächsten Trace) · Fahrzeugphysik-Tiefe ·
+   Körpermechanik (Fuß-IK) · Schwertschwung · Stadtpflanzung/Straßen · Stau-Qualifikation
+   (V18.129-Damm-Design: BEWUSSTER Schöpfer-Entscheid, nicht still ändern).
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
    `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
    Nervensystem-DoD 5 · E-C/E-E/E-F.

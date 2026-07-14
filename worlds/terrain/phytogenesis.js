@@ -1763,8 +1763,18 @@ function bakeImpostorAtlas() {
         try {
             /* M2 (Bäcker-Vereinigung): trägt der Spec ein explizites ov (Welt-Anfrage über den
                bake-impostor-Kanal), bäckt GENAU dieses — Karte==Welt-Baum (ov-frei = Preset-
-               Defaults). Der Studio-Wald-Pfad (specs mit crownBase/trunkMul) bleibt byte-identisch. */
-            tree = buildInstance(s.sp, s.seed, 1, s.ov !== undefined ? s.ov : { crownBase: s.crownBase, trunkMul: s.trunkMul });
+               Defaults). Der Studio-Wald-Pfad (specs mit crownBase/trunkMul) bleibt byte-identisch.
+               ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt): trägt der Spec einen eigenen Bauer (`bau` —
+               das buildInstance eines Manifest-Kerns, __replyBakeImpostor setzt ihn), baut DER das
+               Bake-Subjekt mit seinen kompletten Materialien; ohne `bau` läuft der Pflanzen-Pfad
+               unverändert (der Studio-Wald setzt nie `bau`). */
+            tree = (typeof s.bau === "function" ? s.bau : buildInstance)(
+                s.sp,
+                s.seed,
+                1,
+                s.ov !== undefined ? s.ov : { crownBase: s.crownBase, trunkMul: s.trunkMul }
+            );
+            if (!tree) continue; // fail-soft: ein Kern-Bauer darf null liefern (unbekanntes Rezept) — Zelle bleibt leer statt Wurf mit halb-gebundenem Renderer-State
         } catch (e) {
             continue;
         }
@@ -5209,13 +5219,36 @@ init();
             }
             const gl = __foundryBakeRenderer();
             if (!gl) throw new Error("kein Offscreen-Renderer");
+            // ZWEIT-KERN-BÄCKEREI (M1-Folgeschritt, Studio-Seite): ein Preset, das NICHT im
+            // Pflanzen-Buch steht, baut sein Bake-Subjekt durch den ERSTEN Manifest-Kern,
+            // dessen PRESETS es trägt — exakt der __replyBuildAsset-Dispatch (__zweitKerne()-
+            // Schleife). Der Kern liefert die KOMPLETTE Gruppe (eigene Materialien); der
+            // Bake-Rahmen (impostorFrame/scanRadialXZ über die gebaute Gruppe) ist geometrie-
+            // agnostisch und bleibt. Kennt KEIN Kern das Preset: fail-closed (Wurf -> payload
+            // null) — nie wieder eine LEERE Karte als „Erfolg".
+            let zweit = null;
+            if (typeof presetId === "string" && !Object.prototype.hasOwnProperty.call(PRESETS, presetId)) {
+                for (const zk of __zweitKerne()) {
+                    if (
+                        zk.kern.PRESETS &&
+                        Object.prototype.hasOwnProperty.call(zk.kern.PRESETS, presetId) &&
+                        typeof zk.kern.buildInstance === "function"
+                    ) {
+                        zweit = zk;
+                        break;
+                    }
+                }
+                if (!zweit) throw new Error("kein Kern kennt Preset " + presetId);
+            }
+            const __bau = zweit ? (sp, sd, lod, ov) => zweit.kern.buildInstance(sp, sd, lod, ov) : null;
             // M2 (Bäcker-Vereinigung): das Bake-Subjekt IST der Welt-Baum — ov reist
             // VERBATIM aus der Anfrage (Welt baut ov-frei = Preset-Defaults; die alten
             // Studio-Wald-Konstanten CB/TMUL gehören NUR dem buildForest-Pfad). Sonst
             // passt die Karte nicht zur Nahstufe (Stamm-Dicke/Kronen-Ansatz-Pop bei 40 m).
+            // Das M2-Gesetz gilt dem Zweit-Kern-Zweig identisch (ov verbatim in `bau`).
             const bakeOv = msg.ov || null;
             // EINE Bake-Zelle -> K=1. Frueheres Target (anderes K) verwerfen, Rebake erzwingen.
-            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv }];
+            _impSpecs = [{ sp: presetId, seed: seed, ov: bakeOv, bau: __bau }];
             _impCellOf = {};
             _impCellOf[presetId + "|0"] = 0;
             _impBakedSig = "";
@@ -5236,9 +5269,10 @@ init();
             gl.readRenderTargetPixels(_impRT, 0, 0, cw, ch * V, albedo);
             const normal = new Uint8Array(cw * ch * V * 4);
             gl.readRenderTargetPixels(_impNrmRT, 0, 0, cw, ch * V, normal);
-            // Seitenverhaeltnis (Studio-Rahmen, per-Art) + Weltmass-Hoehe aus dem L1-Bake-Subjekt.
+            // Seitenverhaeltnis (Studio-Rahmen, per-Art) + Weltmass-Hoehe aus dem L1-Bake-Subjekt
+            // (derselbe Bauer wie die Atlas-Zelle: Zweit-Kern-buildInstance oder Pflanzen-Pfad).
             const aspect = _impWR[presetId + seed] || 0.5;
-            const l1 = buildInstance(presetId, seed, 1, bakeOv);
+            const l1 = (__bau || buildInstance)(presetId, seed, 1, bakeOv);
             const box = new THREE.Box3().setFromObject(l1);
             const height = Math.max(0.5, box.max.y - Math.min(0, box.min.y));
             l1.traverse((o) => {

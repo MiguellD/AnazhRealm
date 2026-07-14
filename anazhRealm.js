@@ -19433,6 +19433,133 @@ class AnazhRealm {
         return out;
     }
 
+    // V18.472 (C1 — DIE TIERE ENTSTAPELN; Schöpfer 14.07.: „tiere staken sich"):
+    // die SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint (updateCreatures ruft
+    // sie JEDEN Frame auf die LIVE-Richtung, NACH dem aiDir-Cache — die Kraft
+    // wird nie stale gebacken). Für jede Kreatur die Nachbarn im Paar-Radius
+    // (~2·Körperradius, bodySize-skaliert) → Abstoß-Vektor in die Zielrichtung
+    // gemischt (linear 1→0 zum Radius-Rand, Summe auf 1 geklemmt). O(n²) über
+    // creatures (maxCreatures 20 — quadratisch trivial), squared-Distance-Early-
+    // Out. DETERMINISTISCH (Lehre 7): nur Positionen + der Array-Index als
+    // Goldwinkel-Tie-Break bei exakter Deckung (jede Kreatur drückt in ihre
+    // EIGENE Index-Richtung — ein perfekt gestapeltes Paar trennt sich ohne
+    // Math.random, die spawnCreatureAt-Goldwinkel-Disziplin V18.170).
+    _applyCreatureSeparation(creature, index, direction, speed) {
+        const SEP = AnazhRealm.CREATURE_SEPARATION;
+        const creatures = this.state.creatures || [];
+        if (creatures.length < 2) return;
+        const ud = creature.userData || {};
+        const bsI = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        let pushX = 0;
+        let pushZ = 0;
+        for (let j = 0; j < creatures.length; j++) {
+            if (j === index) continue;
+            const other = creatures[j];
+            if (!other || !other.position || other === creature) continue;
+            const oud = other.userData || {};
+            const bsJ = Number.isFinite(oud.bodySize) ? oud.bodySize : 1;
+            const radius = SEP.radiusBaseM * 0.5 * (bsI + bsJ);
+            const dx = creature.position.x - other.position.x;
+            const dz = creature.position.z - other.position.z;
+            const dSq = dx * dx + dz * dz;
+            if (dSq >= radius * radius) continue;
+            const d = Math.sqrt(dSq);
+            const w = 1 - d / radius; // 1 bei voller Deckung → 0 am Rand
+            if (d > 1e-4) {
+                pushX += (dx / d) * w;
+                pushZ += (dz / d) * w;
+            } else {
+                // exakte Deckung: der Goldwinkel des EIGENEN Index (deterministisch)
+                const ang = index * 2.39996;
+                pushX += Math.cos(ang) * w;
+                pushZ += Math.sin(ang) * w;
+            }
+        }
+        if (pushX === 0 && pushZ === 0) return;
+        // Klemme: ein dichter Haufen darf keinen Explosions-Impuls summieren.
+        const pl = Math.hypot(pushX, pushZ);
+        if (pl > 1) {
+            pushX /= pl;
+            pushZ /= pl;
+        }
+        direction.x += pushX * speed * SEP.strength;
+        direction.z += pushZ * speed * SEP.strength;
+    }
+
+    // V18.472 (C2 — DIE CHARAKTER-BEWEGUNG; KONSUM, keine Erfindung): die freie
+    // Bewegung LIEST die vorhandenen Achsen. GECACHT pro Soul×bodySize (die
+    // _creatureTemperament-Cache-Disziplin V18.107):
+    //   speedMul — die EINE Stat-Pipeline (_creatureBodySpeedMultiplier =
+    //     computeCreatureStats.speed / 7; typische Spanne 0.7–1.45: sprite
+    //     flink ~1.2, Gigant träge ~0.8), geklemmt auf [0.6, 1.6].
+    //   leashM — die Mut-Achse aus TEMPERAMENT_PROFILES.fleeMul (die W3-Furcht-
+    //     Achse, invertiert: wehrhaft 0.5 → 28 m Basis · wild 0.7 → ~24.7 m ·
+    //     sanft 1.0 → ~19.7 m · scheu 1.7 → 8 m) × der GRÖSSEN-ACHSE (bodySize —
+    //     die Tiere sind bewusst tag-identisch, Lehre 8: Differenzierung über
+    //     Größe/Gattung, nie Tags): das Kitz (0.6) bleibt bei ~16.8 m nah am
+    //     Anker, der GIGANT (2.7) streift bis ~75.6 m; ein scheues kleines
+    //     Custom-Wesen hält ~4.8 m.
+    _creatureMoveCharacter(creature) {
+        const ud = creature.userData || {};
+        const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
+        if (ud._moveChar && ud._moveCharKey === key) return ud._moveChar;
+        const K = AnazhRealm.CREATURE_CHARAKTER;
+        const raw = this._creatureBodySpeedMultiplier(creature);
+        const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
+        const prof =
+            AnazhRealm.TEMPERAMENT_PROFILES[this._creatureTemperament(creature)] ||
+            AnazhRealm.TEMPERAMENT_PROFILES.scheu;
+        // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
+        const mut = Math.max(0, Math.min(1, (1.7 - (Number.isFinite(prof.fleeMul) ? prof.fleeMul : 1)) / 1.2));
+        const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        const leashM = (K.leashBaseM + K.leashSpanM * (mut * 2 - 1)) * bs;
+        ud._moveChar = Object.freeze({ speedMul, leashM });
+        ud._moveCharKey = key;
+        return ud._moveChar;
+    }
+
+    // V18.472 (C2) — das CHARAKTER-WANDERN: die EINE Wander-Quelle der freien
+    // Bewegung (beide historischen Zufalls-Drift-Stellen — Flucht-Fallback +
+    // NEUTRAL — rufen hierher). Vorher: pro Frame weißes Math.random-Rauschen,
+    // das sich zu ~0 mittelte — die Wesen standen praktisch still, stapelten
+    // sich und zeigten keinen Charakter. Jetzt: ein ZUG pro Zeit-Slot
+    // (strideSec), Heading DETERMINISTISCH aus netId × Slot (sin-Hash — dekorre-
+    // liert, kein Math.random; ein Goldwinkel-INKREMENT wäre falsch: die Summe
+    // rotierender Einheitsvektoren bleibt beschränkt → Kreisel statt Streifen).
+    // Die Moment-Emotionen modulieren Amplitude + Rhythmus (chaos fahrig +
+    // kürzere Schritte bis +50 %, sorrow gedämpft bis −40 %, Boden 0.3), die
+    // LEINE (leashM je Charakter) zieht jenseits ihrer Länge zurück zum Anker
+    // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher).
+    _creatureCharacterWander(creature, direction, speed) {
+        const K = AnazhRealm.CREATURE_CHARAKTER;
+        const ud = creature.userData || {};
+        const em = ud.emotions;
+        let amp = 1 + (em ? (em.chaos || 0) * K.chaosGain - (em.sorrow || 0) * K.sorrowDamp : 0);
+        if (amp < K.ampFloor) amp = K.ampFloor;
+        const stride = K.strideSec / Math.max(0.5, amp);
+        const t = this.state.creatureAnimationTime || 0;
+        const slot = Math.floor(t / stride);
+        if (ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading)) {
+            ud._wanderSlot = slot;
+            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
+            ud._wanderHeading = (h - Math.floor(h)) * Math.PI * 2;
+        }
+        const mag = speed * K.wanderSpeedMul * amp;
+        direction.set(Math.cos(ud._wanderHeading) * mag, 0, Math.sin(ud._wanderHeading) * mag);
+        // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
+        if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
+        const leash = this._creatureMoveCharacter(creature).leashM;
+        const dx = ud.wanderAnchor.x - creature.position.x;
+        const dz = ud.wanderAnchor.z - creature.position.z;
+        const d = Math.hypot(dx, dz);
+        if (d > leash) {
+            const pull = K.anchorPull * speed * Math.min(1, (d - leash) / Math.max(1, leash));
+            direction.x += (dx / d) * pull;
+            direction.z += (dz / d) * pull;
+        }
+    }
+
     // V18.210 (§1-A3) — der BISS auf eine BEUTE-KREATUR (analog _tickCreatureHuntStrike,
     // aber Ziel ist eine ANDERE Kreatur statt des Spielers). Modus-Gate
     // identisch (pfad-only); Cooldown identisch.
@@ -20288,7 +20415,11 @@ class AnazhRealm {
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             const emotion = this.state.creatureEmotions[i];
-            const speed = emotion === "happy" ? 2 : 1;
+            // V18.472 (C2 — KONSUM der EINEN Stat-Pipeline in die FREIE Bewegung;
+            // die Task-Pfade konsumieren sie seit 6.H): die Charakter-Geschwindig-
+            // keit (computeCreatureStats.speed / 7, geklemmt [0.6, 1.6]) — ein
+            // sprite flitzt, ein Gigant schreitet. Gecacht pro Soul×bodySize.
+            const speed = (emotion === "happy" ? 2 : 1) * this._creatureMoveCharacter(creature).speedMul;
             const jumpHeight = emotion === "happy" ? 1.2 : 0.8;
             // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
@@ -20371,7 +20502,8 @@ class AnazhRealm {
                         if (fromPlayer.length() < NAT.fleeRadius) {
                             direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
                         } else {
-                            direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                            // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
+                            this._creatureCharacterWander(creature, direction, speed);
                         }
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
@@ -20425,8 +20557,10 @@ class AnazhRealm {
                             );
                             this._tickCreatureScentStrike(creature);
                         } else {
-                            // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches Wandern.
-                            direction.set((Math.random() - 0.5) * speed, 0, (Math.random() - 0.5) * speed);
+                            // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches
+                            // Wandern. V18.472 (C2): das CHARAKTER-Wandern (Stats/Emotionen/Leine)
+                            // statt weißem Rauschen — die EINE Wander-Quelle.
+                            this._creatureCharacterWander(creature, direction, speed);
                         }
                     }
                 }
@@ -20437,6 +20571,12 @@ class AnazhRealm {
             } else {
                 direction = scratchDir.copy(creature.userData.aiDir);
             }
+
+            // V18.472 (C1 — DIE TIERE ENTSTAPELN): die SEPARATIONS-KRAFT wirkt
+            // JEDEN Frame auf die LIVE-Richtung (nach dem aiDir-Cache — nie stale
+            // gebacken): Nachbarn im ~2·Körperradius stoßen ab, deterministisch
+            // aus Positionen + Index (kein Math.random, Lehre 7).
+            this._applyCreatureSeparation(creature, i, direction, speed);
 
             // V11.0-d.2 (Pfeiler D — Wasser ↔ Kreaturen, Tiefen-Scheue +
             // Schwimm-Surface): bei nahe-Spieler-Kreaturen den Wasser-
@@ -48703,6 +48843,18 @@ class AnazhRealm {
     dismountArchitecture() {
         const archId = this.state.player.mountedArch;
         if (archId === null || archId === undefined) return { ok: false, reason: "not_mounted" };
+        // B2 (14.07.) — die RUHE-Wahrheit final stempeln: die letzte Fahr-Position/-Gier
+        // liegt schon in entry.position/rotationY (Persistenz-Felder — der Snapshot trägt
+        // sie wie jede Architektur-Bewegung); die Blocker decken sie exakt (der Schwellen-
+        // Takt im Tick ließe sonst bis zu 0.5 m Rest-Versatz stehen).
+        const entry =
+            this._mountedEntry && this._mountedEntry.id === archId
+                ? this._mountedEntry
+                : (this.state.architectures || []).find((e) => e.id === archId);
+        if (entry && entry.blockerAABBs) {
+            this._populateBlockerAABBs(entry);
+            entry._blockerStampAt = null;
+        }
         this.state.player.mountedArch = null;
         this.log(`Ausgestiegen`, "INFO");
         return { ok: true };
@@ -48806,25 +48958,32 @@ class AnazhRealm {
             entry.position.y = pm.y - sitz;
             entry._rideY = null;
         }
-        // Mesh-Position sofort updaten (sonst lagt das Visual einen Frame).
+        // Die Gier folgt der Fahrt-Richtung — für BEIDE Visual-Pfade (B2 14.07.: das
+        // Foundry-Fahrzeug ist INSTANZIERT, entry.mesh = null — die Gier-Glättung darf
+        // nicht am Mesh hängen). entry.rotationY ist die EINE Gier-Wahrheit (Persistenz-
+        // Feld + `_archEntryWorldMatrix` + `_blockerComputePartAABB` lesen sie).
+        const v = this.state.playerVel;
+        const vx = v ? v.x() : 0;
+        const vz = v ? v.z() : 0;
+        const sp = Math.hypot(vx, vz);
+        if (sp > 0.4) {
+            const targetYaw = Math.atan2(vx, vz);
+            let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
+            let d = targetYaw - cur;
+            while (d > Math.PI) d -= 2 * Math.PI;
+            while (d < -Math.PI) d += 2 * Math.PI;
+            cur += d * (1 - Math.exp(-4 * tick));
+            entry._rideYaw = cur;
+            entry.rotationY = cur;
+        }
+        // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
+        entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+        // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
+        // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
+        // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
-            const v = this.state.playerVel;
-            const vx = v ? v.x() : 0;
-            const vz = v ? v.z() : 0;
-            const sp = Math.hypot(vx, vz);
-            if (sp > 0.4) {
-                const targetYaw = Math.atan2(vx, vz);
-                let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
-                let d = targetYaw - cur;
-                while (d > Math.PI) d -= 2 * Math.PI;
-                while (d < -Math.PI) d += 2 * Math.PI;
-                cur += d * (1 - Math.exp(-4 * tick));
-                entry._rideYaw = cur;
-                entry.mesh.rotation.y = cur;
-            }
-            // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
-            entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+            if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
             const prof = this._vehicleProfile(entry);
             if (prof && prof.roles) {
                 this._animateCompoundMotion(
@@ -48834,6 +48993,25 @@ class AnazhRealm {
                     entry._ridePhase,
                     sp > 0.4
                 );
+            }
+        } else if (entry.instanced) {
+            this._archInstanceUpdate(entry);
+        }
+        // B2 — die BLOCKER ZIEHEN MIT (dieselbe Spawn-Quelle `_populateBlockerAABBs`;
+        // gegen den eigenen Reiter kollidieren sie nie — `_stepCharacterStructures`
+        // überspringt riddenId). Schwellen-getaktet (>0.5 m / >0.1 rad seit dem letzten
+        // Stempel — kein Per-Frame-Array-Churn); das Absteigen stempelt final.
+        if (entry.blockerAABBs) {
+            const st = entry._blockerStampAt;
+            const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+            if (
+                !st ||
+                Math.abs(st.x - entry.position.x) > 0.5 ||
+                Math.abs(st.z - entry.position.z) > 0.5 ||
+                Math.abs(st.ry - ry) > 0.1
+            ) {
+                this._populateBlockerAABBs(entry);
+                entry._blockerStampAt = { x: entry.position.x, z: entry.position.z, ry };
             }
         }
     }
@@ -50896,6 +51074,10 @@ class AnazhRealm {
             // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
             // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
             // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
+            // V18.474 — käme hier je eine FERN-Stufe mit Region-Key an, kollabierte
+            // der Keying-Chokepoint sie auf die SUPER-REGION (_archFernRegionKey,
+            // die Draw-Call-Diät der Fern-Gruppen); die Streu-Fernstufe selbst
+            // bleibt GLOBAL (null ist gröber als jede Super-Region).
             this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree" ? regX + "," + regZ : null,
             foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
         );
@@ -51086,9 +51268,14 @@ class AnazhRealm {
                 // Ganzes entsorgen. GLOBALE Gruppen (Bäume alle LODs seit W2-D; LOD1/2-Fern-
                 // Laub seit V18.303) werden über REGIONEN geteilt — ein Ganz-Dispose würde
                 // die Bäume ALLER anderen Regionen mitreißen → dort per-Slot freigeben.
+                // V18.474 — privat ist NUR der EIGENE Region-Suffix (`@` + key dieser Region):
+                // ein SUPER-REGION-Key der Fern-Diät (`@s:SX,SZ`, _archFernRegionKey) ist über
+                // bis zu 4×4 Regionen GETEILT — ihn ganz zu entsorgen risse die Fern-Quads der
+                // Nachbar-Regionen mit → auch er geht den per-Slot-Free-Pfad.
                 if (Array.isArray(cell.slots)) {
+                    const own = "@" + key;
                     for (const s of cell.slots) {
-                        if (typeof s.key === "string" && s.key.includes("@")) regionGroupKeys.add(s.key);
+                        if (typeof s.key === "string" && s.key.endsWith(own)) regionGroupKeys.add(s.key);
                         else {
                             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(s.key);
                             if (g) this._archGroupFree(g, s.slot);
@@ -59289,11 +59476,74 @@ class AnazhRealm {
         return g;
     }
 
+    // B1 (Schöpfer-Browser-Befund 14.07.) — DIE GEIST-VORSCHAU LIEST DIE EINE QUELLE: beim
+    // Platzieren zeigte der Ghost den ALTEN Donor-Wagen (KIND_SUBSTANCE-Parts), erst das
+    // platzierte Objekt trug die Studio-Gestalt. Jetzt spiegelt der Ghost EXAKT die Quell-
+    // Entscheidung des finalen Eintrags (`_rebuildArchitectureMesh`: Foundry-Preset →
+    // `_foundryFlattenFor`, Stufe 0 = Platzier-Nähe; Variante über die EINE Werkstatt-Seed-
+    // Konvention, `_heldFoundryGroup`). Fail-soft: Foundry aus/kalt/lädt → null (der Donor-
+    // Ghost bleibt; `_foundryFlattenFor` hat die Anfrage schon gefeuert, `tickBuildMode`
+    // swappt zur Studio-Gestalt, sobald das Asset dockt). Geteilte Studio-Geometrie reist
+    // sharedGeom-markiert + hält den V4(B)-Ref (`foundrySrcGroup`) — der Phantom-Dispose
+    // (`_disposeSoulGroup`) lässt sie stehen und gibt den Ref zurück; das Ghost-Material ist
+    // der GECACHTE transparente Klon (`_ghostMaterialFor`, kein Leck in die platzierte Welt).
+    _buildStudioPlacementGhost(bp) {
+        if (!bp || typeof bp.name !== "string") return null;
+        if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
+        const preset = this._foundryPresetForEntry({ type: bp.name });
+        if (!preset) return null;
+        // Same → Variante EXAKT wie Werkstatt/Hand (dieselbe Hash-Konvention — EIN Zug, viele Leser).
+        const rawSeed =
+            (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase) != null
+                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
+                : bp.name;
+        let seedNum = 0;
+        const seedStr = String(rawSeed);
+        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const flat = this._foundryFlattenFor({ seed: seedNum, type: bp.name }, preset, 0);
+        if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length) {
+            // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-
+            // Ghost zur Studio-Gestalt; false = kann nicht → Donor-Ghost bleibt (fail-soft).
+            if (flat === null && this.state.buildMode) this.state.buildMode.phantomStudioPending = bp.name;
+            return null;
+        }
+        const grp = new THREE.Group();
+        for (const leaf of flat.leaves) {
+            if (!leaf.geom || !leaf.mat) continue;
+            const mesh = new THREE.Mesh(leaf.geom, this._ghostMaterialFor(leaf.mat));
+            mesh.applyMatrix4(leaf.localMatrix);
+            mesh.castShadow = false;
+            mesh.userData.sharedGeom = true; // GETEILTE Studio-Geometrie — der Dispose lässt sie stehen
+            // Der Tint-Anker liest die NIE-getintete Quell-Farbe (der geteilte Ghost-Klon
+            // bliebe sonst nach einem Rot/Grün-Frame die „Original"-Basis → Drift).
+            if (leaf.mat.color) mesh.userData._origColor = leaf.mat.color.getHex();
+            grp.add(mesh);
+        }
+        if (!grp.children.length) return null;
+        const src = flat.leaves[0]._srcGroup;
+        if (src) {
+            src._liveRefs = (src._liveRefs || 0) + 1;
+            grp.userData.foundrySrcGroup = src;
+        }
+        grp.userData.studioGhost = true;
+        if (this.state.buildMode && this.state.buildMode.phantomStudioPending === bp.name) {
+            this.state.buildMode.phantomStudioPending = null;
+        }
+        return grp;
+    }
+
     // Das Platzier-Phantom: die gemergte (gecachte) Geometrie + der gecachte transparente Material-Klon.
     // Mergeable (≥6 Teile, keine connections) → der geteilte Pfad (kein Leck, gecachter Ghost-Mat-Klon);
     // kleiner/fallback-Bauplan → `_buildFromBlueprint` mit FRISCHEN Per-Teil-Materialien (Mutation sicher,
     // weil nicht geteilt). castShadow aus (ein Ghost wirft keinen Schatten).
-    _buildPlacementGhost(bp) {
+    // B1: ZUERST die Studio-Gestalt (dieselbe Quelle wie der finale Eintrag) — nur wenn das
+    // Studio sie (noch) nicht trägt, der Donor-Bau. `opts.donorOnly` = der Prebake-Pfad
+    // (Merge-Cache/Pipeline wärmen, OHNE für jeden Katalog-Bauplan einen Studio-Bake zu feuern).
+    _buildPlacementGhost(bp, opts) {
+        if (!(opts && opts.donorOnly)) {
+            const studio = this._buildStudioPlacementGhost(bp);
+            if (studio) return studio;
+        }
         const group = this._buildArchMeshMerged(bp);
         const merged = !!(group.userData && group.userData.archMerged);
         group.traverse((node) => {
@@ -59343,7 +59593,10 @@ class AnazhRealm {
                 continue;
             }
             try {
-                const g = this._buildPlacementGhost(bp); // warm: Merge-Cache + Ghost-Mat-Klone
+                // B1: donorOnly — der Prebake wärmt Merge-Cache + Ghost-Mat-Klone des Donor-Pfads;
+                // Studio-Ghost-Assets zieht erst die ECHTE Auswahl (kein Katalog-weiter Bake-Sturm,
+                // und disposeAfter darf hier nie geteilte Studio-Geometrie treffen).
+                const g = this._buildPlacementGhost(bp, { donorOnly: true }); // warm: Merge-Cache + Ghost-Mat-Klone
                 this._warmCompilePipeline(g, true); // warm: die WebGPU-Pipeline des transparenten Klons (s.u.), dann Geometrie frei
             } catch (_e) {
                 /* defensiv — ein einzelner Bauplan-Fehler darf das Idle-Vorbacken nicht abbrechen */
@@ -60764,15 +61017,16 @@ class AnazhRealm {
             rec.rttFailed = true;
             return 0;
         }
-        // M1 (Bäcker-Vereinigung, Review-Ernte): der Studio-Bäcker ist der PFLANZEN-Bäcker
-        // (phyto buildInstance) — ein Zweit-Kern-Preset (Tor: kind "gate") würde dort eine
-        // LEERE Gruppe backen und als Erfolg reisen (fernes Tor verschwindet, Zensus lügt).
-        // KIND-WÄCHTER am EINEN Dispatch: nur Pflanzen-Kinds reisen; alles andere fällt
-        // terminal auf die Skelett-Silhouette (ehrlich sichtbar + Zensus ehrlich) — die
-        // Zweit-Kern-Bäckerei im Studio ist der benannte nächste Schritt (roadmap §0.1b).
+        // M1 (Bäcker-Vereinigung, Review-Ernte) + V18.474 ZWEIT-KERN-BÄCKEREI: der Studio-
+        // Bäcker dispatcht jetzt GENERISCH über die Manifest-Kerne (__replyBakeImpostor,
+        // das __replyBuildAsset-Muster) — Pflanzen UND Tore backen echte 8-Winkel-Karten
+        // (gate:baecker-kanal beweist drachentor nicht-leer). Der KIND-WÄCHTER bleibt als
+        // Positivliste der GEURTEILTEN Bake-Kinds (nur impostor-Policy-Zeilen landen je hier);
+        // Unbekanntes fällt studio-seitig fail-closed (payload null) + an der NICHT-LEEREN-
+        // WAND — terminal Silhouette, Zensus ehrlich.
         const _fb = this._foundry;
         const bKind = _fb && _fb.recipes && _fb.recipes[presetId] && _fb.recipes[presetId].kind;
-        if (bKind && !/^(tree|shrub|flower|grass|rock)$/.test(bKind)) {
+        if (bKind && !/^(tree|shrub|flower|grass|rock|gate)$/.test(bKind)) {
             rec.rttFailed = true;
             return 0;
         }
@@ -61563,6 +61817,10 @@ class AnazhRealm {
         }
     }
     _archInstanceGroupFor(name, leafIdx, leaf, regionKey) {
+        // V18.474 — die EINE Fern-Key-Ableitung VOR jedem Keying (der Batch-Zweig unten erbt
+        // sie mit): Fern-Leaves (Impostor-Quads/L2) kollabieren von der Region auf die
+        // SUPER-REGION (s. _archFernRegionKey — Chokepoint, kein zweiter Ableitungs-Ort).
+        regionKey = this._archFernRegionKey(name, leaf, regionKey);
         // V18.353/.356 PHASE A.2 — der Batch-Pfad (region-gekeyt, Default an). Der alte
         // `useBatchedFoliage` (der gescheiterte V18.289-1-GB-Global-Batch) ist GESTRICHEN —
         // `useBatchedArch` (die Region-Batch) hat ihn abgelöst, kein doppelter Schalter.
@@ -61750,6 +62008,36 @@ class AnazhRealm {
         return "p:" + Math.floor((entry.position.x || 0) / R) + "," + Math.floor((entry.position.z || 0) / R);
     }
 
+    // V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN: die EINE Fern-Key-Ableitung (Gesetz #0/
+    // Lehre 2 — Chokepoint, kein zweiter Ableitungs-Ort). Trägt ein Leaf die FERN-Stufe
+    // (Impostor-Quad `fimp:` · Foundry-L2-Geometrie `f:…|2|…` · Grammatik `_lod2` · Streu-
+    // Fernstufe `fscatter:…:2`), wird sein Region-Key auf die SUPER-REGION gemappt (4×4
+    // Regionen teilen EINE Gruppe, Marker `s:`): Impostor-Quads sind camera-facing, ihr
+    // per-Region-Frustum-Cull-Nutzen ist gering, der Gruppen-Preis (1 Draw-Call je winziger
+    // Gruppe) hoch. Die STREU-Fernstufe bleibt GLOBAL (null-Key, V18.303/V18.390 — gröber
+    // als jede Super-Region, hier fällt nichts zurück); der Mapper deckt die PLATZIERTEN
+    // Fern-Leaves (`p:regX,regZ` — Büsche + Nicht-Kronen-Arten trugen bislang JE REGION
+    // eigene winzige Impostor-Gruppen). Buchhaltung per Konstruktion konsistent: ALLE
+    // Free-/Realloc-/Refill-/Drain-Pfade lesen die GESPEICHERTEN {key,slot}-Paare aus dem
+    // Add; ein Super-Key (`@p:s:` / `@s:`) ist über REGIONEN GETEILT und wird deshalb nie
+    // von einer einzelnen Region ganz-disposed (s. _disposeScatterRegion: nur der EIGENE
+    // `@regX,regZ`-Suffix ist region-privat) — die Empty-Dispose (`_archInstanceRemove`,
+    // liveCount 0) räumt ihn, wenn der letzte Bewohner geht.
+    _archFernRegionKey(name, leaf, regionKey) {
+        if (regionKey == null) return regionKey;
+        const lk = leaf && typeof leaf.leafKey === "string" ? leaf.leafKey : "";
+        const fern =
+            lk.startsWith("fimp:") ||
+            /^f:[^|]*\|\d+\|2\|/.test(lk) ||
+            (typeof name === "string" && (name.endsWith("_lod2") || /^fscatter:.*:2$/.test(name)));
+        if (!fern) return regionKey;
+        const S = AnazhRealm.SCATTER_FERN_SUPERREGION;
+        if (!(Number.isFinite(S) && S > 1)) return regionKey; // S=1 = das alte per-Region-Keying (A/B-Hebel der Linse)
+        const m = /^(p:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+        if (!m) return regionKey; // schon gemappt (s:) oder fremdes Format → unberührt (idempotent)
+        return (m[1] || "") + "s:" + Math.floor(Number(m[2]) / S) + "," + Math.floor(Number(m[3]) / S);
+    }
+
     // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
     // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
     // W5.4 (Paritäts-Vollendung) — DER EINE SLOT-CHOKEPOINT LERNT DIE BAND-MITGLIEDSCHAFT:
@@ -61855,13 +62143,24 @@ class AnazhRealm {
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
     }
 
-    // Die Instanz-Matrizen eines Eintrags neu schreiben (Mount-Follow nutzt
-    // das NICHT — moveable ist vom Instancing ausgeschlossen —, aber der
-    // Helfer hält den Pfad sauber für künftige bewegliche Instanzen).
+    // Die Instanz-Matrizen eines Eintrags neu schreiben. B2 (14.07.) — der Mount-Follow
+    // NUTZT das jetzt: die klassische moveable-Wand (`_archFlattenBlueprint` → classic)
+    // gilt nur dem Grammatik-Pfad; ein FOUNDRY-Fahrzeug (fahrzeug_gt …) IST instanziert
+    // (entry.mesh = null) — beim Fahren zieht dieser EINE Matrix-Update-Weg die Instanz
+    // nach. Die Flat-Quelle ist DIESELBE wie `_rebuildArchitectureMesh` (Gesetz #0):
+    // instFoundry → `_foundryFlattenFor` auf der SERVIERTEN Stufe (Cache-Treffer — die
+    // Slots wurden aus exakt diesem Flat alloziert), sonst der klassische Bauplan-Flat.
     _archInstanceUpdate(entry) {
         if (!entry.instanced || !entry.instSlots) return;
-        const flat = this._archFlattenBlueprint(entry.type);
-        if (!flat.instanceable) return;
+        const fPreset = entry.instFoundry && this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
+        const flat = fPreset
+            ? this._foundryFlattenFor(
+                  entry,
+                  fPreset,
+                  Number.isFinite(entry._servedLod) ? entry._servedLod : entry._lodLevel
+              )
+            : this._archFlattenBlueprint(entry.type);
+        if (!flat || !flat.instanceable) return;
         const ew = this._archEntryWorldMatrix(
             entry,
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
@@ -61875,8 +62174,10 @@ class AnazhRealm {
             g.mesh.setMatrixAt(slot, m);
             if (g.kind !== "batch") {
                 g.mesh.instanceMatrix.needsUpdate = true;
-                g.mesh.boundingSphere = null; // Raycast-Cull, s. _archGroupFree
             }
+            // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree) —
+            // gilt BEIDEN Arten (die V18.358-Batch-Lehre: THREE cacht sie sonst stale).
+            g.mesh.boundingSphere = null;
         }
     }
 
@@ -68520,9 +68821,11 @@ class AnazhRealm {
         bm.active = true;
         bm.slotIndex = idx;
         bm.blueprintName = blueprintName;
+        bm.phantomStudioPending = null; // B1 — frische Auswahl, kein Alt-Pending
         // V18.350 — der Ghost liest die GETEILTE Merge-Cache (gemeinsam mit der platzierten Struktur)
         // statt N Per-Teil-Meshes neu zu bauen → kein Auswahl-Hänger (das Idle-Vorbacken hält die Cache
         // warm). Transparenz/castShadow regelt `_buildPlacementGhost` (gecachter Material-Klon, kein Leck).
+        // B1: die Studio-Gestalt führt, wenn das Studio sie trägt (dieselbe Quelle wie der finale Eintrag).
         const phantom = this._buildPlacementGhost(this.state.blueprints[blueprintName]);
         if (this.state.scene) this.state.scene.add(phantom);
         bm.phantomMesh = phantom;
@@ -68559,6 +68862,7 @@ class AnazhRealm {
         bm.active = false;
         bm.blueprintName = null;
         bm.phantomMesh = null;
+        bm.phantomStudioPending = null; // B1 — kein Heil-Swap für einen verlassenen Bauplan
         this._updateBuildModeHud();
     }
 
@@ -68841,6 +69145,21 @@ class AnazhRealm {
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
+        // B1 — der Donor-Ghost HEILT zur Studio-Gestalt, sobald das Asset dockt (fail-soft-
+        // Rückweg der Geist-Vorschau; ratenbegrenzt — kein Per-Frame-Flatten-Versuch).
+        if (bm.phantomStudioPending === bm.blueprintName && this.state.blueprints) {
+            const nowMs = performance.now();
+            if (!bm._studioGhostRetryAt || nowMs >= bm._studioGhostRetryAt) {
+                bm._studioGhostRetryAt = nowMs + 500;
+                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName]);
+                if (studio) {
+                    if (this.state.scene) this.state.scene.remove(bm.phantomMesh);
+                    this._disposeSoulGroup(bm.phantomMesh);
+                    bm.phantomMesh = studio;
+                    if (this.state.scene) this.state.scene.add(studio);
+                }
+            }
+        }
         const target = this._resolvePhantomTarget();
         bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
@@ -83529,7 +83848,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.473.0";
+AnazhRealm.VERSION = "18.474.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87523,6 +87842,17 @@ AnazhRealm.GRASS_BLADE_H = 0.42;
 // horizontalem Span > MAX_SPAN bleiben global (ihre Bounding-Sphere spannt zu weit → kein Cull-Wert).
 AnazhRealm.ARCH_REGION_M = 256;
 AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
+// V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN (Schöpfer-Trace 14.07.: 1733 Draw-Calls →
+// ~72 ms CPU-Render-Submit; die V18.303-Messung: per-Region-Keying sprengte 426→1693 dc,
+// „allein ~1000 winzige LOD2-Fern-Gruppen mit ~2 Instanzen"). HERLEITUNG der 4: Fern-Leaves
+// (Impostor-Quads) sind camera-facing — ihr per-Region-Frustum-Cull-Nutzen ist gering, ihr
+// Gruppen-Preis (1 Draw-Call je winziger Gruppe) hoch. 4×4 Regionen à 256 m = 1024 m Kante
+// deckt die ganze Fern-Sichtweite (Fernstufe lebt jenseits thresh12 bis zum Fog) in EINER
+// Gruppe je Art, bleibt aber ENDLICH begrenzt → der Rücken-Cull beim Umdrehen lebt weiter
+// (die Gruppen-Bounds weiten sich automatisch: instanz-bewusste Bounding-Sphere, jeder Add
+// invalidiert sie). Konsumiert wird die Konstante an GENAU EINER Stelle: _archFernRegionKey
+// (der Keying-Chokepoint) — kein zweiter Ableitungs-Ort (gate:scatter-lod, Block F).
+AnazhRealm.SCATTER_FERN_SUPERREGION = 4;
 // DAS NEUE KLEID — die Verts-Schwelle, ab der ein platziertes Leaf den InstancedMesh-Pfad (geteilte
 // geom, N Matrizen) statt des Region-Batch (kopiert je Instanz) nimmt. Bäume (LOD0 ~262k / LOD1 ~40k
 // Verts) liegen weit darüber → EINE Geometrie statt N Kopien (der GPU-Katalysator des Studios); leichte
@@ -88343,6 +88673,36 @@ AnazhRealm.CREATURE_HUNT = Object.freeze({
     // (engerer Kreis um die Beute), grösser = stabiler (weniger Tunnel-Drift).
     // 4 m ist die typische Schritt-Weite eines wandernden Wesens (~2 s Bewegung).
     scentProbeM: 4,
+});
+// V18.472 (C1 — DIE TIERE ENTSTAPELN, Schöpfer 14.07.: „tiere staken sich, obwohl
+// wir emotionen, unterschiedliches verhalten und charaktere sein sollten"): die
+// SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint (`_applyCreatureSeparation`,
+// jeden Frame auf die LIVE-Richtung). Linse: gate:tier-separation.
+AnazhRealm.CREATURE_SEPARATION = Object.freeze({
+    radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2 ≈ 2·Körperradius
+    strength: 1.5, // Abstoß-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand, Summe geklemmt
+});
+// V18.472 (C2 — DIE CHARAKTER-BEWEGUNG; KONSUM vorhandener Achsen, keine Erfindung):
+// die freie Bewegung liest computeCreatureStats.speed (Faktor-Spanne: speed/7,
+// typisch 0.7–1.45, geklemmt [0.6, 1.6]) · die Mut-Achse aus TEMPERAMENT_PROFILES
+// .fleeMul (Leinen-Basis: wehrhaft 28 m · wild ~24.7 m · sanft ~19.7 m · scheu 8 m)
+// × die GRÖSSEN-ACHSE bodySize (die Tiere sind bewusst tag-identisch — Lehre 8:
+// Differenzierung über Größe/Gattung, nie Tags; Kitz 0.6 → ~16.8 m, GIGANT 2.7 →
+// ~75.6 m) · die Moment-Emotionen (chaos macht fahrig bis +50 %, sorrow dämpft
+// bis −40 %).
+AnazhRealm.CREATURE_CHARAKTER = Object.freeze({
+    speedMulMin: 0.6, // Klemm-Boden der Charakter-Geschwindigkeit (stats.speed / STAT-Base 7)
+    speedMulMax: 1.6, // Klemm-Deckel
+    leashBaseM: 18, // m — die Grund-Leine um den Anker (Geburtsort), × bodySize
+    leashSpanM: 10, // m — ± Spanne über die Mut-Achse (mutig streift weiter, furchtsam bleibt nah)
+    anchorPull: 1.2, // Heim-Zug jenseits der Leine (× speed, wächst mit der Überdehnung, geklemmt auf 1×);
+    // > wanderSpeedMul/(Überdehnungs-Anteil): ein voll-auswärts gerichteter Zug kippt ab
+    // ~1.375× Leine sicher heimwärts — die Leine ist eine WAND mit weichem Rand, kein Gummiband
+    strideSec: 2.5, // s — die Wander-Schritt-Periode (EIN Zug pro Slot, deterministisch aus netId × Slot)
+    wanderSpeedMul: 0.45, // Wander-Tempo relativ zur vollen Bewegungs-Geschwindigkeit (Schlendern)
+    chaosGain: 0.5, // Moment-chaos → fahriger (mehr Amplitude + kürzere Schritte)
+    sorrowDamp: 0.4, // Moment-sorrow → gedämpfter
+    ampFloor: 0.3, // Boden der Emotions-Modulation (ein trauriges Wesen schlurft, es friert nie ein)
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

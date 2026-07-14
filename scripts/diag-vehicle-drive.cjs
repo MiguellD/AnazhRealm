@@ -24,8 +24,18 @@
 //         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
 //         byte-gleich gegen die emergente Formel nachgerechnet; floats bleibt in
 //         BEIDEN die Substanz-Entscheidung (das Lab kennt kein Wasser).
+//   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
+//     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
+//     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
+//     die Instanz-Matrix (der EINE _archInstanceUpdate-Weg) + die Blocker (_populate-
+//     BlockerAABBs) mitgezogen sein und der Snapshot (buildStateSnapshot) die neue
+//     Position tragen. Statisch dazu A6: _tickMountedMovement ist an den Chokepoint
+//     gebunden (pos folgt pm · _archInstanceUpdate · Blocker), _archInstanceUpdate ist
+//     foundry-bewusst (EINE Flat-Quelle wie _rebuildArchitectureMesh).
 //   SELBST-TEST (--selftest): (1) ein verfaelschtes fahrprofil → die Divergenz-
-//     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert.
+//     Linse feuert; (2) eine Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert;
+//     (3) B2: „Eintrag bleibt stehen"/„Instanz-Matrix klebt am Spawn" → die Fahr-
+//     Verdikt-Linse feuert; ein Stamm ohne _archInstanceUpdate-Bindung → A6 feuert.
 //   node scripts/diag-vehicle-drive.cjs [--selftest]
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -106,6 +116,22 @@ function scalarDiffs(a, b) {
     return DRIVE_KEYS.filter((k) => a && b && Number.isFinite(a[k]) && Number.isFinite(b[k]) && a[k] !== b[k]);
 }
 
+// ── B2 — DAS FAHR-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test lesen sie —
+// die Linse ist beweisbar nicht-vakuoes). Rueckgabe: Liste der Verstoesse (leer = gruen).
+function driveVerdict(d) {
+    const out = [];
+    if (!d || d.spawned !== true) out.push("spawn");
+    if (!d || d.mounted !== true) out.push("mount");
+    if (!d || !(d.dist > 1)) out.push("dist<=1m"); // die stehende Probe: > 1 m nach N Fahr-Ticks
+    if (!d || d.seated !== true) out.push("seat"); // der Spieler sitzt darauf
+    if (!d || !Number.isFinite(d.visDX) || !Number.isFinite(d.visDZ) || d.visDX > 0.05 || d.visDZ > 0.05)
+        out.push("visual"); // Instanz-Matrix/Mesh zieht mit (die B2-Wurzel)
+    if (!d || !Number.isFinite(d.blockerMax) || d.blockerMax > 8) out.push("blocker");
+    if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
+    if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
+    return out;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "vehicle-core.js"));
@@ -152,6 +178,22 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         move !== null && rides.every((n) => countOcc(anazhNC, n) === 1 && countOcc(move, n) === 1),
         rides.map((n) => `${n}=${countOcc(anazhNC, n)}`).join(" "),
     ]);
+    // B2 (14.07.) — der GERITTENE Eintrag haengt am EINEN Bewegungs-Chokepoint: Position
+    // folgt dem Reiter, die Instanz-Matrix zieht ueber den EINEN Update-Weg mit, die
+    // Blocker folgen. [^.] vor dem Namen = die DEFINITION, nie der this.-Aufruf.
+    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\(dt\)\s*\{/);
+    out.push([
+        "A6/B2: _tickMountedMovement bindet den Eintrag an den Chokepoint (pos folgt pm + _archInstanceUpdate + Blocker)",
+        tmm !== null &&
+            /entry\.position\.x = pm\.x/.test(tmm) &&
+            /_archInstanceUpdate\(entry\)/.test(tmm) &&
+            /_populateBlockerAABBs\(entry\)/.test(tmm),
+    ]);
+    const aiu = fnBody(anazhNC, /[^.]_archInstanceUpdate\(entry\)\s*\{/);
+    out.push([
+        "A6/B2: _archInstanceUpdate liest die EINE Flat-Quelle (foundry-bewusst: _foundryFlattenFor ODER _archFlattenBlueprint)",
+        aiu !== null && /_foundryFlattenFor/.test(aiu) && /_archFlattenBlueprint/.test(aiu),
+    ]);
     return out;
 }
 
@@ -179,6 +221,34 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         check(
             "Selbst-Test 3: Shell mit eigenem FAHR-Literal → die Umzugs-Wand feuert",
             a1.some((l) => l[1] === false)
+        );
+        // V3 (B2): die FAHR-VERDIKT-Linse feuert auf beide Verletzungs-Klassen des Befunds.
+        const healthy = {
+            spawned: true,
+            mounted: true,
+            dist: 14.4,
+            seated: true,
+            visDX: 0.001,
+            visDZ: 0.001,
+            blockerMax: 2.1,
+            riderSkip: true,
+            snapDist: 14.4,
+        };
+        check("Selbst-Test 4 (B2): gesunde Fahr-Probe == 0 Verstoesse", driveVerdict(healthy).length === 0);
+        check(
+            "Selbst-Test 5 (B2): ‚der Eintrag bleibt stehen' → die Fahr-Linse feuert",
+            driveVerdict(Object.assign({}, healthy, { dist: 0.0, snapDist: 0.0 })).length >= 1
+        );
+        check(
+            "Selbst-Test 6 (B2): ‚die Instanz-Matrix klebt am Spawn' → die Fahr-Linse feuert",
+            driveVerdict(Object.assign({}, healthy, { visDX: 14.4 })).length >= 1
+        );
+        // V4 (B2): ein Stamm OHNE die Chokepoint-Bindung → die A6-Wand feuert.
+        const brokenAnazh = anazhSrc.replace("this._archInstanceUpdate(entry);", "");
+        const a6 = staticLaws(vcSrc, garageSrc, brokenAnazh, phytoSrc).filter((l) => l[0].startsWith("A6"));
+        check(
+            "Selbst-Test 7 (B2): _tickMountedMovement ohne _archInstanceUpdate → die A6-Wand feuert",
+            a6.some((l) => l[1] === false)
         );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuoes.");
@@ -322,6 +392,78 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         } catch (e) {
             res.profErr = (e && e.message) || String(e);
         }
+        // ===== B-d (B2 14.07.): DIE FAHR-PROBE — nach N Fahr-Ticks bewegt sich der EINTRAG =====
+        try {
+            const pm = r.state.playerMesh.position;
+            const spawnAt = { x: pm.x + 5, y: pm.y, z: pm.z };
+            const entry = r.spawnArchitecture("fahrzeug_gt", spawnAt, { silent: true, precise: true });
+            res.drive = { spawned: !!entry };
+            if (entry) {
+                // Studio-Gestalt andocken lassen (der Bau ist async: Flat-Miss → Anfrage → Bau).
+                const dl2 = performance.now() + 45000;
+                while (!entry.instanced && !entry.mesh && performance.now() < dl2) {
+                    r._rebuildArchitectureMesh(entry);
+                    if (entry.instanced || entry.mesh) break;
+                    await new Promise((res3) => setTimeout(res3, 200));
+                }
+                res.drive.visualKind = entry.instanced ? "instanced" : entry.mesh ? "mesh" : "kalt";
+                const m0 = { x: entry.position.x, z: entry.position.z };
+                const mres = r.mountArchitecture(entry);
+                res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
+                // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
+                // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
+                if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
+                for (let i = 0; i < 120; i++) {
+                    pm.x += 0.12;
+                    r._tickMountedMovement(0.05);
+                }
+                res.drive.dist = Math.hypot(entry.position.x - m0.x, entry.position.z - m0.z);
+                res.drive.seated =
+                    r.state.player.mountedArch === entry.id &&
+                    Number.isFinite(entry._sitzHeight) &&
+                    Math.abs(pm.y - (entry.position.y + entry._sitzHeight)) < 0.06;
+                // Das VISUAL zieht mit (die B2-Wurzel: die Instanz-Matrix blieb am Spawn stehen).
+                if (entry.instanced && entry.instSlots && entry.instSlots.length) {
+                    const sl = entry.instSlots[0];
+                    const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(sl.key);
+                    if (g && g.mesh && typeof g.mesh.getMatrixAt === "function") {
+                        const mm = new THREE.Matrix4();
+                        g.mesh.getMatrixAt(sl.slot, mm);
+                        res.drive.visDX = Math.abs(mm.elements[12] - entry.position.x);
+                        res.drive.visDZ = Math.abs(mm.elements[14] - entry.position.z);
+                    }
+                } else if (entry.mesh) {
+                    res.drive.visDX = Math.abs(entry.mesh.position.x - entry.position.x);
+                    res.drive.visDZ = Math.abs(entry.mesh.position.z - entry.position.z);
+                }
+                // Blocker folgen (max. Zentrums-Abstand aller Boxen zur neuen Position) +
+                // blocken den eigenen Reiter nie (der riddenId-Skip im Kapsel-Chokepoint).
+                if (entry.blockerAABBs) {
+                    let bMax = 0;
+                    for (const b of entry.blockerAABBs) {
+                        const cx = (b.minX + b.maxX) / 2;
+                        const cz = (b.minZ + b.maxZ) / 2;
+                        bMax = Math.max(bMax, Math.hypot(cx - entry.position.x, cz - entry.position.z));
+                    }
+                    res.drive.blockerMax = bMax;
+                }
+                res.drive.riderSkip = /riddenId/.test(String(r._stepCharacterStructures));
+                // Persistenz: der Snapshot traegt die GEFAHRENE Position (wie jede Architektur-Bewegung).
+                const snap = r.buildStateSnapshot();
+                const se =
+                    snap && Array.isArray(snap.architectures)
+                        ? snap.architectures.find((a) => a.id === entry.id)
+                        : null;
+                res.drive.snapDist = se ? Math.hypot(se.position.x - m0.x, se.position.z - m0.z) : null;
+                // Aufraeumen (die Probe hinterlaesst nichts).
+                r.dismountArchitecture();
+                r.removeArchitecture(entry);
+                if (r.state.playerVel) r.state.playerVel.setValue(0, 0, 0);
+                r.state._fieldVy = 0;
+            }
+        } catch (e) {
+            res.driveErr = (e && e.message) || String(e);
+        }
         void expected;
         return res;
     }, nodeExpected);
@@ -391,6 +533,16 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         "B-c: floats bleibt SUBSTANZ-Entscheidung (Lab exportiert kein floats — gt == wagen, derselbe Donor)",
         !!pg && !!pw && typeof pg.floats === "boolean" && pg.floats === pw.floats,
         pg && pw ? `gt=${pg.floats} wagen=${pw.floats}` : ""
+    );
+    // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).
+    const dv = driveVerdict(out.drive);
+    check(
+        "B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Spieler sitzt darauf · Instanz-Matrix + Blocker ziehen mit · Snapshot traegt es",
+        dv.length === 0,
+        out.driveErr ||
+            (out.drive
+                ? `kind=${out.drive.visualKind} dist=${(out.drive.dist || 0).toFixed(2)}m vis=${out.drive.visDX}${dv.length ? " fehlt:" + dv.join(",") : ""}`
+                : "keine Probe")
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
 
