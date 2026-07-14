@@ -995,7 +995,7 @@ function fbm2(x, y) {
 
 function buildTube(geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick) {
     return __rindenGesetz().buildTubeGesetz(
-        { perp: perp, vcross: vcross, vlen: vlen, vnorm: vnorm, vsub: vsub, clamp: clamp, lerp: lerp },
+        { perp: perp, vcross: vcross, vlen: vlen, vnorm: vnorm, vsub: vsub, clamp: clamp, lerp: lerp, THREE: THREE },
         geos,
         rings,
         P,

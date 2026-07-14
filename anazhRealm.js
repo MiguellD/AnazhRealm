@@ -22286,7 +22286,8 @@ class AnazhRealm {
                     const gattung = m[1].toLowerCase();
                     const charakter = m[2].toLowerCase();
                     const f = this._foundry;
-                    const preset = this._foundryPresetFor(gattung) || (f && f.recipes && f.recipes[gattung] ? gattung : null);
+                    const preset =
+                        this._foundryPresetFor(gattung) || (f && f.recipes && f.recipes[gattung] ? gattung : null);
                     const rec = preset && f && f.recipes ? f.recipes[preset] : null;
                     if (!rec) {
                         append(`Kein Studio-Rezept „${gattung}" im Buch.`);
@@ -22299,9 +22300,7 @@ class AnazhRealm {
                     }
                     const kern = typeof globalThis !== "undefined" ? globalThis[achse.ns] : null;
                     const tabelle = kern ? kern[achse.tabelle] : null;
-                    const zeileName = tabelle
-                        ? Object.keys(tabelle).find((k) => k.toLowerCase() === charakter)
-                        : null;
+                    const zeileName = tabelle ? Object.keys(tabelle).find((k) => k.toLowerCase() === charakter) : null;
                     if (!zeileName) {
                         append(
                             tabelle

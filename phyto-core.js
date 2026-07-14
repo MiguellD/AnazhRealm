@@ -1530,7 +1530,6 @@
         return { keep: keep, f0: f0, f1: f1, f1o: f1o };
     }
 
-
     // ════════════════════════════════════════════════════════════════════
     // U2b — DAS RINDEN-GESETZ (V18.467, rein additiv): die EINE Rinden-
     // Wahrheit wohnt im Pflanzen-Gesetzbuch. VERBATIM aus foundry-core
@@ -1544,239 +1543,239 @@
     // Geometrie-Vokabular wird vom Wirt INJIZIERT [vok], __lod reist als
     // Parameter statt Modul-Zustand).
     // ════════════════════════════════════════════════════════════════════
-function vn2(x, y) {
-    const xi = Math.floor(x),
-        yi = Math.floor(y),
-        xf = x - xi,
-        yf = y - yi;
-    const h = (a, b) => {
-        let n = (Math.imul(a, 1597) + Math.imul(b, 51749)) | 0;
-        n = (n << 13) ^ n;
-        const nn = Math.imul(n, n);
-        const t = (Math.imul(nn, 15731) + 789221) | 0;
-        const m = (Math.imul(n, t) + 1376312589) | 0;
-        return 1 - (m & 0x7fffffff) / 1073741824;
-    };
-    const u = xf * xf * (3 - 2 * xf),
-        v = yf * yf * (3 - 2 * yf);
-    const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
-        x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
-    return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
-}
-
-function fbm2(x, y) {
-    return vn2(x, y) * 0.6 + vn2(x * 2.3 + 11, y * 2.3) * 0.27 + vn2(x * 5.1, y * 5.1 + 7) * 0.13;
-}
-
-function barkProfile(P) {
-    const t = P.barkType || (P.conifer ? "conifer" : "oak");
-    const T = {
-        oak: { ridges: 9, depth: 0.4, vSharp: 1.7, plate: 0.55, hFreq: 2.4, lichen: 0.5, papery: 0 },
-        sequoia: { ridges: 14, depth: 0.52, vSharp: 1.5, plate: 0.2, hFreq: 1.1, lichen: 0.18, papery: 0 },
-        conifer: { ridges: 8, depth: 0.34, vSharp: 1.3, plate: 0.8, hFreq: 3.0, lichen: 0.55, papery: 0 },
-        willow: { ridges: 10, depth: 0.42, vSharp: 1.6, plate: 0.45, hFreq: 2.0, lichen: 0.5, papery: 0 },
-        birch: { ridges: 5, depth: 0.07, vSharp: 1.0, plate: 0.1, hFreq: 5.5, lichen: 0.12, papery: 1 },
-        smooth: { ridges: 5, depth: 0.1, vSharp: 1.1, plate: 0.2, hFreq: 3.0, lichen: 0.3, papery: 0 },
-    };
-    return T[t] || T.oak;
-}
-
-function buildTubeGesetz(vok, geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick, lodIn) {
-    // Vokabular-Injektion (U2b): die Geometrie-Helfer bleiben Leser-Sache —
-    // der Wirt (foundry-core) reicht SEINE Funktionen, das GESETZ formt.
-    const { perp, vcross, vlen, vnorm, vsub, clamp, lerp } = vok;
-    const __lod = lodIn;
-    const M = rings.length;
-    if (M < 2) return;
-    const prof = barkProfile(P);
-    const baseR = rings[0].r,
-        thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
-    const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
-    const ridges =
-        barkThick !== undefined
-            ? Math.max(3, Math.round(prof.ridges * clamp(baseR / trunkR, 0.28, 1)))
-            : Math.round(lerp(4, prof.ridges, bthick)); // Wurzel: Furchen in WELT-Groesse des Stamms (nicht enger), nur Tiefe wie Stamm
-    let R = Math.max(6, Math.round(ridges * (bthick > 0.6 ? 3.0 : 2.4)));
-    R =
-        typeof __lod !== "undefined" && __lod === 2
-            ? Math.max(4, Math.round(R * 0.4))
-            : Math.max(5, R - (typeof __lod !== "undefined" ? __lod * 4 : 0)); // Stamm (thick) SCHARF, Aeste sparsam
-    const depth = prof.depth * lerp(0.28, 1, bthick),
-        lichenA = prof.lichen * (typeof __lichen !== "undefined" ? __lichen : 0.6);
-    const lichenCol = new THREE.Color(0x8a946a),
-        mossCol = new THREE.Color(0x556a3a);
-    const seed = rings[0].c[0] * 7.3 + rings[0].c[2] * 3.1;
-    // Bogenlaenge entlang des Strangs
-    const sA = [0];
-    for (let i = 1; i < M; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
-    const totL = sA[M - 1] || 1;
-    const dirs = [];
-    for (let i = 0; i < M - 1; i++) {
-        const d = vsub(rings[i + 1].c, rings[i].c),
-            l = vlen(d) || 1e-9;
-        dirs.push([d[0] / l, d[1] / l, d[2] / l]);
+    function vn2(x, y) {
+        const xi = Math.floor(x),
+            yi = Math.floor(y),
+            xf = x - xi,
+            yf = y - yi;
+        const h = (a, b) => {
+            let n = (Math.imul(a, 1597) + Math.imul(b, 51749)) | 0;
+            n = (n << 13) ^ n;
+            const nn = Math.imul(n, n);
+            const t = (Math.imul(nn, 15731) + 789221) | 0;
+            const m = (Math.imul(n, t) + 1376312589) | 0;
+            return 1 - (m & 0x7fffffff) / 1073741824;
+        };
+        const u = xf * xf * (3 - 2 * xf),
+            v = yf * yf * (3 - 2 * yf);
+        const x1 = h(xi, yi) + (h(xi + 1, yi) - h(xi, yi)) * u,
+            x2 = h(xi, yi + 1) + (h(xi + 1, yi + 1) - h(xi, yi + 1)) * u;
+        return (x1 + (x2 - x1) * v) * 0.5 + 0.5;
     }
-    dirs.push(dirs[M - 2]);
-    let u = perp(dirs[0]),
-        v = vnorm(vcross(dirs[0], u));
-    const stride = R + 1;
-    // NARBEN: der Stamm ZEICHNET seine Geschichte auf — wo die unteren Schattenaeste starben (unter crownBase), bleibt eine Wunde.
-    const isTrunk = thick > 0.6,
-        scarTop = (P.crownBase || 0) * P.height;
-    const nScar = isTrunk ? Math.max(3, Math.min(8, Math.round(P.height * 0.6))) : 0;
-    const scarH = [],
-        scarA = [];
-    if (isTrunk) {
-        const ss = seed * 1.7 + 9.1;
-        for (let k = 0; k < nScar; k++) {
-            scarH.push(scarTop * (0.12 + 0.8 * (nScar > 1 ? k / (nScar - 1) : 0.5)));
-            scarA.push(ss + k * 2.3999632);
+
+    function fbm2(x, y) {
+        return vn2(x, y) * 0.6 + vn2(x * 2.3 + 11, y * 2.3) * 0.27 + vn2(x * 5.1, y * 5.1 + 7) * 0.13;
+    }
+
+    function barkProfile(P) {
+        const t = P.barkType || (P.conifer ? "conifer" : "oak");
+        const T = {
+            oak: { ridges: 9, depth: 0.4, vSharp: 1.7, plate: 0.55, hFreq: 2.4, lichen: 0.5, papery: 0 },
+            sequoia: { ridges: 14, depth: 0.52, vSharp: 1.5, plate: 0.2, hFreq: 1.1, lichen: 0.18, papery: 0 },
+            conifer: { ridges: 8, depth: 0.34, vSharp: 1.3, plate: 0.8, hFreq: 3.0, lichen: 0.55, papery: 0 },
+            willow: { ridges: 10, depth: 0.42, vSharp: 1.6, plate: 0.45, hFreq: 2.0, lichen: 0.5, papery: 0 },
+            birch: { ridges: 5, depth: 0.07, vSharp: 1.0, plate: 0.1, hFreq: 5.5, lichen: 0.12, papery: 1 },
+            smooth: { ridges: 5, depth: 0.1, vSharp: 1.1, plate: 0.2, hFreq: 3.0, lichen: 0.3, papery: 0 },
+        };
+        return T[t] || T.oak;
+    }
+
+    function buildTubeGesetz(vok, geos, rings, P, barkBase, barkTip, trunkR, noFlute, barkThick, lodIn) {
+        // Vokabular-Injektion (U2b): die Geometrie-Helfer UND THREE bleiben Leser-Sache —
+        // der Wirt (foundry-core) reicht SEINE Funktionen, das GESETZ formt (phyto-core
+        // selbst bleibt THREE-frei, wie buildBoulderGeometry).
+        const { perp, vcross, vlen, vnorm, vsub, clamp, lerp, THREE } = vok;
+        const __lod = lodIn;
+        const M = rings.length;
+        if (M < 2) return;
+        const prof = barkProfile(P);
+        const baseR = rings[0].r,
+            thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
+        const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
+        const ridges =
+            barkThick !== undefined
+                ? Math.max(3, Math.round(prof.ridges * clamp(baseR / trunkR, 0.28, 1)))
+                : Math.round(lerp(4, prof.ridges, bthick)); // Wurzel: Furchen in WELT-Groesse des Stamms (nicht enger), nur Tiefe wie Stamm
+        let R = Math.max(6, Math.round(ridges * (bthick > 0.6 ? 3.0 : 2.4)));
+        R =
+            typeof __lod !== "undefined" && __lod === 2
+                ? Math.max(4, Math.round(R * 0.4))
+                : Math.max(5, R - (typeof __lod !== "undefined" ? __lod * 4 : 0)); // Stamm (thick) SCHARF, Aeste sparsam
+        const depth = prof.depth * lerp(0.28, 1, bthick),
+            lichenA = prof.lichen * 0.6; // __lichen existierte in keinem Regime — der alte Guard fiel IMMER auf 0.6
+        const lichenCol = new THREE.Color(0x8a946a),
+            mossCol = new THREE.Color(0x556a3a);
+        const seed = rings[0].c[0] * 7.3 + rings[0].c[2] * 3.1;
+        // Bogenlaenge entlang des Strangs
+        const sA = [0];
+        for (let i = 1; i < M; i++) sA[i] = sA[i - 1] + vlen(vsub(rings[i].c, rings[i - 1].c));
+        const totL = sA[M - 1] || 1;
+        const dirs = [];
+        for (let i = 0; i < M - 1; i++) {
+            const d = vsub(rings[i + 1].c, rings[i].c),
+                l = vlen(d) || 1e-9;
+            dirs.push([d[0] / l, d[1] / l, d[2] / l]);
         }
-    } // goldener Winkel = echte Phyllotaxis
-    const pos = [],
-        idx = [],
-        aw = [],
-        ac = [],
-        at = [],
-        cl = [],
-        uvs = [];
-    const tri = (t) => {
-        const f = t - Math.floor(t);
-        return 1 - Math.abs(2 * f - 1);
-    };
-    for (let i = 0; i < M; i++) {
-        if (i > 0) {
-            const d1 = dirs[i];
-            const du = u[0] * d1[0] + u[1] * d1[1] + u[2] * d1[2];
-            u = [u[0] - d1[0] * du, u[1] - d1[1] * du, u[2] - d1[2] * du];
-            const ul = vlen(u);
-            u = ul < 1e-5 ? perp(d1) : [u[0] / ul, u[1] / ul, u[2] / ul];
-            v = vnorm(vcross(d1, u));
-        }
-        const ring = rings[i],
-            c = ring.c,
-            sun = clamp(c[1] / P.height, 0, 1),
-            sv = ring.sway,
-            along = sA[i];
-        const col = barkBase.clone().lerp(barkTip, sun * 0.5 + (ring.depth / Math.max(1, P.maxDepth)) * 0.32);
-        const nB = Math.max(3, Math.round(P.roots || 5)),
-            _fy = Math.max(0, c[1]),
-            fluteOn = !noFlute && thick > 0.45 && P._bphase != null && (typeof __lod === "undefined" || __lod < 2),
-            fluteY = fluteOn ? Math.exp(-_fy / (P.height * 0.3)) + 0.62 * Math.exp(-_fy / (P.height * 0.07)) : 0,
-            fluteAmp = fluteY * (0.16 + (P.flare || 0) * 0.4);
-        let _fd = 0,
-            _fr = 0,
-            _fg = 0,
-            _fb = 0;
-        for (let j = 0; j <= R; j++) {
-            const a = j / R,
-                rad = a * 6.2831;
-            let relief,
-                mB,
-                tintL = 0,
-                tintM = 0;
-            if (prof.papery) {
-                // Birke: glatt, helle Rinde, dunkle Lentizellen
-                relief = 0.5 + (fbm2(a * 9, along * 0.7 + seed) - 0.5) * 0.45;
-                const band = Math.floor(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 1.2);
-                const stripe = tri(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 0.5);
-                const dash = fbm2(a * 6.5 + seed, band * 4.3);
-                const lent = stripe > 0.74 && dash > 0.5 ? clamp((dash - 0.5) / 0.3, 0, 1) : 0; // kurze horizontale Striche
-                const peel = fbm2(a * 2.2, along * 0.5 + seed * 1.3) > 0.66 ? 0.1 : 0; // papierartige Schichtkanten
-                mB = (1.0 - lent * 0.66 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
-            } else {
-                const vWarp = fbm2(a * 1.6 + seed, along * 0.35) * 1.5;
-                let vf = tri(a * ridges + vWarp);
-                vf = Math.pow(vf, prof.vSharp); // vertikale Furchen
-                const hWarp = fbm2(a * 0.6, along * 0.7 + seed) * 1.5;
-                let hf = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
-                relief = vf * (1 - prof.plate) + vf * hf * prof.plate;
-                const micro = (fbm2(a * 5, along * 5) - 0.5) * 0.32 + (fbm2(a * 13, along * 13) - 0.5) * 0.16;
-                relief = clamp(relief + micro, 0, 1);
-                mB = Math.pow(relief, 1.35) * 0.74 + 0.26; // gebackenes AO: Risse tief & dunkel
-                const lk = fbm2(a * 0.9 + 30, along * 0.55);
-                tintL = clamp((lk - 0.58) / 0.22, 0, 1) * lichenA * clamp(1.3 - along / totL, 0.2, 1) * relief;
-                tintM =
-                    clamp((fbm2(a * 1.3, along * 0.4 + 50) - 0.6) / 0.2, 0, 1) *
-                    clamp(1.4 - along / (totL * 0.4), 0, 1) *
-                    lichenA *
-                    0.7; // Moos am Fuss
-                if (barkThick !== undefined) {
-                    tintL *= 0.25;
-                    tintM *= 0.25;
-                    mB = mB * 0.72 + 0.3;
-                } // WURZEL/TOTAST: kaum Moos, weniger AO -> gleiche Helligkeit wie der Stamm
-            }
-            const ridge = Math.pow(Math.max(0, Math.cos(nB * (rad - (P._bphase || 0)))), 1.8);
-            const flute = Math.min(1.62, Math.max(0.7, 1 + fluteAmp * (1.45 * ridge - 0.3)));
-            let scarR = 0,
-                scarDark = 0;
+        dirs.push(dirs[M - 2]);
+        let u = perp(dirs[0]),
+            v = vnorm(vcross(dirs[0], u));
+        const stride = R + 1;
+        // NARBEN: der Stamm ZEICHNET seine Geschichte auf — wo die unteren Schattenaeste starben (unter crownBase), bleibt eine Wunde.
+        const isTrunk = thick > 0.6,
+            scarTop = (P.crownBase || 0) * P.height;
+        const nScar = isTrunk ? Math.max(3, Math.min(8, Math.round(P.height * 0.6))) : 0;
+        const scarH = [],
+            scarA = [];
+        if (isTrunk) {
+            const ss = seed * 1.7 + 9.1;
             for (let k = 0; k < nScar; k++) {
-                const dh = (c[1] - scarH[k]) / 0.5,
-                    dth = Math.atan2(Math.sin(rad - scarA[k]), Math.cos(rad - scarA[k])) / 0.5;
-                const d2 = dh * dh + dth * dth;
-                if (d2 > 9) continue;
-                const gg = Math.exp(-d2);
-                scarR += -0.42 * gg + 0.24 * Math.max(0, d2 - 0.9) * Math.exp(-d2 * 0.6); // konkave Delle + aufgeworfener Wulst-Kragen
-                if (gg > scarDark) scarDark = gg;
+                scarH.push(scarTop * (0.12 + 0.8 * (nScar > 1 ? k / (nScar - 1) : 0.5)));
+                scarA.push(ss + k * 2.3999632);
             }
-            let disp = ring.r * (1 + (relief - 0.62) * depth + scarR) * flute;
-            if (j === R) disp = _fd; // NAHT ZU: Position der Saumspalte = exakt Spalte 0
-            const vx = c[0] + (Math.cos(rad) * u[0] + Math.sin(rad) * v[0]) * disp,
-                vy = c[1] + (Math.cos(rad) * u[1] + Math.sin(rad) * v[1]) * disp,
-                vz = c[2] + (Math.cos(rad) * u[2] + Math.sin(rad) * v[2]) * disp;
-            pos.push(vx, vy, vz);
-            uvs.push(a, i / (M - 1));
-            aw.push(sv, sv * 1.5 + vx * 0.6 + vz * 0.6, clamp(2.6 - sv * 1.6, 0.5, 2.6));
-            ac.push(c[0], c[1], c[2]);
-            at.push(0);
-            let r = col.r * mB,
-                g = col.g * mB,
-                b = col.b * mB;
-            r = lerp(r, lichenCol.r, tintL);
-            g = lerp(g, lichenCol.g, tintL);
-            b = lerp(b, lichenCol.b, tintL);
-            r = lerp(r, mossCol.r, tintM);
-            g = lerp(g, mossCol.g, tintM);
-            b = lerp(b, mossCol.b, tintM);
-            const wd = 0.6 * scarDark;
-            r = lerp(r, col.r * 0.26, wd);
-            g = lerp(g, col.g * 0.22, wd);
-            b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
-            if (j === R) {
-                r = _fr;
-                g = _fg;
-                b = _fb;
-            } // NAHT ZU: Farbe der Saumspalte = exakt Spalte 0
-            if (j === 0) {
-                _fd = disp;
-                _fr = r;
-                _fg = g;
-                _fb = b;
+        } // goldener Winkel = echte Phyllotaxis
+        const pos = [],
+            idx = [],
+            aw = [],
+            ac = [],
+            at = [],
+            cl = [],
+            uvs = [];
+        const tri = (t) => {
+            const f = t - Math.floor(t);
+            return 1 - Math.abs(2 * f - 1);
+        };
+        for (let i = 0; i < M; i++) {
+            if (i > 0) {
+                const d1 = dirs[i];
+                const du = u[0] * d1[0] + u[1] * d1[1] + u[2] * d1[2];
+                u = [u[0] - d1[0] * du, u[1] - d1[1] * du, u[2] - d1[2] * du];
+                const ul = vlen(u);
+                u = ul < 1e-5 ? perp(d1) : [u[0] / ul, u[1] / ul, u[2] / ul];
+                v = vnorm(vcross(d1, u));
             }
-            cl.push(r, g, b);
+            const ring = rings[i],
+                c = ring.c,
+                sun = clamp(c[1] / P.height, 0, 1),
+                sv = ring.sway,
+                along = sA[i];
+            const col = barkBase.clone().lerp(barkTip, sun * 0.5 + (ring.depth / Math.max(1, P.maxDepth)) * 0.32);
+            const nB = Math.max(3, Math.round(P.roots || 5)),
+                _fy = Math.max(0, c[1]),
+                fluteOn = !noFlute && thick > 0.45 && P._bphase != null && (typeof __lod === "undefined" || __lod < 2),
+                fluteY = fluteOn ? Math.exp(-_fy / (P.height * 0.3)) + 0.62 * Math.exp(-_fy / (P.height * 0.07)) : 0,
+                fluteAmp = fluteY * (0.16 + (P.flare || 0) * 0.4);
+            let _fd = 0,
+                _fr = 0,
+                _fg = 0,
+                _fb = 0;
+            for (let j = 0; j <= R; j++) {
+                const a = j / R,
+                    rad = a * 6.2831;
+                let relief,
+                    mB,
+                    tintL = 0,
+                    tintM = 0;
+                if (prof.papery) {
+                    // Birke: glatt, helle Rinde, dunkle Lentizellen
+                    relief = 0.5 + (fbm2(a * 9, along * 0.7 + seed) - 0.5) * 0.45;
+                    const band = Math.floor(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 1.2);
+                    const stripe = tri(along * 10 + (fbm2(a * 1.4, seed) - 0.5) * 0.5);
+                    const dash = fbm2(a * 6.5 + seed, band * 4.3);
+                    const lent = stripe > 0.74 && dash > 0.5 ? clamp((dash - 0.5) / 0.3, 0, 1) : 0; // kurze horizontale Striche
+                    const peel = fbm2(a * 2.2, along * 0.5 + seed * 1.3) > 0.66 ? 0.1 : 0; // papierartige Schichtkanten
+                    mB = (1.0 - lent * 0.66 - peel) * (0.9 + 0.1 * fbm2(a * 5, along * 3));
+                } else {
+                    const vWarp = fbm2(a * 1.6 + seed, along * 0.35) * 1.5;
+                    let vf = tri(a * ridges + vWarp);
+                    vf = Math.pow(vf, prof.vSharp); // vertikale Furchen
+                    const hWarp = fbm2(a * 0.6, along * 0.7 + seed) * 1.5;
+                    let hf = Math.pow(tri(along * prof.hFreq + hWarp), 1.3); // horizontale Plattenrisse
+                    relief = vf * (1 - prof.plate) + vf * hf * prof.plate;
+                    const micro = (fbm2(a * 5, along * 5) - 0.5) * 0.32 + (fbm2(a * 13, along * 13) - 0.5) * 0.16;
+                    relief = clamp(relief + micro, 0, 1);
+                    mB = Math.pow(relief, 1.35) * 0.74 + 0.26; // gebackenes AO: Risse tief & dunkel
+                    const lk = fbm2(a * 0.9 + 30, along * 0.55);
+                    tintL = clamp((lk - 0.58) / 0.22, 0, 1) * lichenA * clamp(1.3 - along / totL, 0.2, 1) * relief;
+                    tintM =
+                        clamp((fbm2(a * 1.3, along * 0.4 + 50) - 0.6) / 0.2, 0, 1) *
+                        clamp(1.4 - along / (totL * 0.4), 0, 1) *
+                        lichenA *
+                        0.7; // Moos am Fuss
+                    if (barkThick !== undefined) {
+                        tintL *= 0.25;
+                        tintM *= 0.25;
+                        mB = mB * 0.72 + 0.3;
+                    } // WURZEL/TOTAST: kaum Moos, weniger AO -> gleiche Helligkeit wie der Stamm
+                }
+                const ridge = Math.pow(Math.max(0, Math.cos(nB * (rad - (P._bphase || 0)))), 1.8);
+                const flute = Math.min(1.62, Math.max(0.7, 1 + fluteAmp * (1.45 * ridge - 0.3)));
+                let scarR = 0,
+                    scarDark = 0;
+                for (let k = 0; k < nScar; k++) {
+                    const dh = (c[1] - scarH[k]) / 0.5,
+                        dth = Math.atan2(Math.sin(rad - scarA[k]), Math.cos(rad - scarA[k])) / 0.5;
+                    const d2 = dh * dh + dth * dth;
+                    if (d2 > 9) continue;
+                    const gg = Math.exp(-d2);
+                    scarR += -0.42 * gg + 0.24 * Math.max(0, d2 - 0.9) * Math.exp(-d2 * 0.6); // konkave Delle + aufgeworfener Wulst-Kragen
+                    if (gg > scarDark) scarDark = gg;
+                }
+                let disp = ring.r * (1 + (relief - 0.62) * depth + scarR) * flute;
+                if (j === R) disp = _fd; // NAHT ZU: Position der Saumspalte = exakt Spalte 0
+                const vx = c[0] + (Math.cos(rad) * u[0] + Math.sin(rad) * v[0]) * disp,
+                    vy = c[1] + (Math.cos(rad) * u[1] + Math.sin(rad) * v[1]) * disp,
+                    vz = c[2] + (Math.cos(rad) * u[2] + Math.sin(rad) * v[2]) * disp;
+                pos.push(vx, vy, vz);
+                uvs.push(a, i / (M - 1));
+                aw.push(sv, sv * 1.5 + vx * 0.6 + vz * 0.6, clamp(2.6 - sv * 1.6, 0.5, 2.6));
+                ac.push(c[0], c[1], c[2]);
+                at.push(0);
+                let r = col.r * mB,
+                    g = col.g * mB,
+                    b = col.b * mB;
+                r = lerp(r, lichenCol.r, tintL);
+                g = lerp(g, lichenCol.g, tintL);
+                b = lerp(b, lichenCol.b, tintL);
+                r = lerp(r, mossCol.r, tintM);
+                g = lerp(g, mossCol.g, tintM);
+                b = lerp(b, mossCol.b, tintM);
+                const wd = 0.6 * scarDark;
+                r = lerp(r, col.r * 0.26, wd);
+                g = lerp(g, col.g * 0.22, wd);
+                b = lerp(b, col.b * 0.2, wd); // dunkles Wundholz im Narbenzentrum
+                if (j === R) {
+                    r = _fr;
+                    g = _fg;
+                    b = _fb;
+                } // NAHT ZU: Farbe der Saumspalte = exakt Spalte 0
+                if (j === 0) {
+                    _fd = disp;
+                    _fr = r;
+                    _fg = g;
+                    _fb = b;
+                }
+                cl.push(r, g, b);
+            }
         }
+        for (let i = 0; i < M - 1; i++)
+            for (let j = 0; j < R; j++) {
+                const aI = i * stride + j,
+                    bI = aI + 1,
+                    cI = aI + stride,
+                    dI = cI + 1;
+                idx.push(aI, bI, dI, aI, dI, cI);
+            }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setIndex(idx);
+        g.computeVertexNormals();
+        g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
+        g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
+        g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+        g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
+        g.setAttribute("color", new THREE.Float32BufferAttribute(cl, 3));
+        geos.push(g);
     }
-    for (let i = 0; i < M - 1; i++)
-        for (let j = 0; j < R; j++) {
-            const aI = i * stride + j,
-                bI = aI + 1,
-                cI = aI + stride,
-                dI = cI + 1;
-            idx.push(aI, bI, dI, aI, dI, cI);
-        }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    g.setAttribute("aWind", new THREE.Float32BufferAttribute(aw, 3));
-    g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ac, 3));
-    g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-    g.setAttribute("aType", new THREE.Float32BufferAttribute(at, 1));
-    g.setAttribute("color", new THREE.Float32BufferAttribute(cl, 3));
-    geos.push(g);
-}
-
 
     root.__phytoCore = {
         vn2: vn2,
