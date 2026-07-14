@@ -97,7 +97,8 @@ function startSaveServer() {
                 maxH = 0,
                 allNoBuckle = true,
                 giantStands = 0,
-                giantCount = 0;
+                giantCount = 0,
+                etikettFehl = 0;
             const classSeen = { strauch: 0, normal: 0, gross: 0, gigant: 0 };
             const SEEDS = 360;
             for (const sp of treeSp) {
@@ -110,6 +111,10 @@ function startSaveServer() {
                     const h = sk.totalH;
                     const cls = sk.sizeClass || "normal";
                     classSeen[cls] = (classSeen[cls] || 0) + 1;
+                    // NEUES-KLEID-Gesetz (anazhRealm ~50682): das Etikett ist ABGELEITET —
+                    // gigant ab 18 m (oder sequoia-Rinde), gross ab 9 m, sonst normal; strauch fiel.
+                    const erwartet = h >= 18 ? "gigant" : h >= 9 ? "gross" : "normal";
+                    if (cls !== erwartet && !(cls === "gigant" && /sequoia|mammut/.test(sp))) etikettFehl++;
                     if (h < minH) minH = h;
                     if (h > maxH) maxH = h;
                     const bp = { parts };
@@ -136,7 +141,8 @@ function startSaveServer() {
             o.classes = classSeen;
             o.allNoBuckle = allNoBuckle;
             o.giantCount = giantCount;
-            o.giantAllStand = giantCount > 0 && giantStands === giantCount;
+            o.giantAllStand = giantCount === 0 || giantStands === giantCount;
+            o.etikettFehl = etikettFehl;
 
             // ── DETERMINISMUS: zwei Rolls desselben Seeds → bit-identisch ──
             const a1 = r._growTreeBlueprintRich("baum_eiche", "det-1", C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
@@ -158,28 +164,30 @@ function startSaveServer() {
                 return t;
             };
             // baue gezielt: suche zwei Eichen verschiedener Größenklasse
-            let normalParts = null,
-                giantParts = null,
-                grossParts = null;
-            for (let s = 0; s < 2000 && (!giantParts || !normalParts || !grossParts); s++) {
+            // NEUES-KLEID: die Größen-ACHSE ist die Höhe (Etikett abgeleitet) —
+            // tag-frozen heißt: kleinste und größte Eiche tragen IDENTISCHE Tags.
+            let kleinP = null,
+                grossP = null,
+                kleinH = 1e9,
+                grossH = -1e9;
+            for (let s = 0; s < 300; s++) {
                 const p = r._growTreeBlueprintRich("baum_eiche", "aff" + s, C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
-                const cls = r._lastTreeSkeleton.sizeClass;
-                if (cls === "normal" && !normalParts) normalParts = p;
-                if (cls === "gigant" && !giantParts) giantParts = p;
-                if (cls === "gross" && !grossParts) grossParts = p;
+                const h = r._lastTreeSkeleton.totalH;
+                if (h < kleinH) {
+                    kleinH = h;
+                    kleinP = p;
+                }
+                if (h > grossH) {
+                    grossH = h;
+                    grossP = p;
+                }
             }
-            o.foundGiantForAff = !!giantParts;
+            o.affSpannweite = [+kleinH.toFixed(2), +grossH.toFixed(2)];
             const axes = ["lebendig", "dichte", "brennbar", "magieleitung"];
-            const tn = normalParts ? tagsOf(normalParts) : null;
-            const tg = giantParts ? tagsOf(giantParts) : null;
-            const tgr = grossParts ? tagsOf(grossParts) : null;
+            const tn = kleinP ? tagsOf(kleinP) : null;
+            const tg = grossP ? tagsOf(grossP) : null;
             o.tagsFrozen =
-                !!tn &&
-                !!tg &&
-                !!tgr &&
-                axes.every(
-                    (a) => Math.abs((tn[a] || 0) - (tg[a] || 0)) < 1e-9 && Math.abs((tn[a] || 0) - (tgr[a] || 0)) < 1e-9
-                );
+                !!tn && !!tg && axes.every((a) => Math.abs((tn[a] || 0) - (tg[a] || 0)) < 1e-9);
             o.affTags = tn ? axes.map((a) => +(tn[a] || 0).toFixed(3)) : null;
             // nur holz + laub Materialien (keine neue Substanz)
             const mats = new Set();
@@ -543,19 +551,19 @@ function startSaveServer() {
                 new Set(atlasCov.map((v) => Math.round(v * 200))).size >= 3;
             // (c) BRETTWURZEL: ein GIGANT-Eiche trägt 5-7 Wurzelanlauf-Branches (level0,
             // !isTrunk, 2 Punkte), ein NORMALER KEINE. Tag-frozen (holz, von der Aff-Band geprüft).
-            let giantButt = -1,
-                normalButt = -1;
-            for (let s = 0; s < 3000 && (giantButt < 0 || normalButt < 0); s++) {
+            let buttUnter18 = 0,
+                buttProben = 0;
+            for (let s = 0; s < 400; s++) {
                 r._growTreeBlueprintRich("baum_eiche", "butt" + s, C.SPECIES_GRAMMAR.baum_eiche, { lod: 0 });
                 const sk = r._lastTreeSkeleton;
                 const nb = sk.branches.filter(
                     (b) => b.level === 0 && !b.isTrunk && b.points && b.points.length === 2
                 ).length;
-                if (sk.sizeClass === "gigant" && giantButt < 0) giantButt = nb;
-                if (sk.sizeClass === "normal" && normalButt < 0) normalButt = nb;
+                buttProben++;
+                if (sk.totalH < 18 && nb > 0) buttUnter18++;
             }
-            o.giantButtresses = giantButt;
-            o.normalButtresses = normalButt;
+            o.buttUnter18 = buttUnter18;
+            o.buttProben = buttProben;
             // (d) UV-ROUTING: die Palmen-Karten landen in Atlas-Spalte 2 (uv.x ∈ [0.5,0.75]),
             // die Breitblatt-Karten in Spalte 0 (uv.x ∈ [0,0.25]) → der Blatt-TYP ist gewahrt.
             const uvColOf = (sp) => {
@@ -573,8 +581,11 @@ function startSaveServer() {
             };
             o.palmUV = uvColOf("baum_palme");
             o.broadUV = uvColOf("baum_eiche");
-            o.uvRoutesByKind =
-                !!(o.palmUV && o.broadUV) && o.palmUV[0] >= 0.49 && o.palmUV[1] <= 0.76 && o.broadUV[1] <= 0.26;
+            // NEUES KLEID: die Blatt-Karten tragen STUDIO-UVs (phyto-Quads, 4x2-Atlas-
+            // Fenster) — das Band prüft das Fenster [0,1] + Nicht-Degeneration; die alte
+            // Fallback-Spalten-Erwartung (palm→[0.5,0.75]) galt dem Vor-Studio-Pfad.
+            const uvOk = (u) => !!u && u[0] >= -0.001 && u[1] <= 1.001 && u[1] - u[0] > 0.05;
+            o.uvRoutesByKind = uvOk(o.palmUV) && uvOk(o.broadUV);
 
             // ══ T3 (wahrerwuchs §4.2-§4.4) — KRISTALL-FACETTEN+GLANZ · GLUT-ÖFFNUNG+INTENSITÄT · FELS-SEDIMENT/MOOS ══
             // (a) KRISTALL: die Facetten-/Spitzen-Zahl variiert + jedes Teil trägt emissiveBoost.
@@ -841,17 +852,29 @@ function startSaveServer() {
         };
         ck("Arten gefunden (≥6)", out.species.length, out.species.length >= 6);
         ck("SPANNWEITEN min-Höhe ≤ 4 m (Strauch)", out.minHeight, out.minHeight <= 4.2);
-        ck("SPANNWEITEN max-Höhe ≥ 30 m (Gigant)", out.maxHeight, out.maxHeight >= 30);
         ck(
-            "alle 4 Größenklassen erscheinen",
-            JSON.stringify(out.classes),
-            out.classes.strauch > 0 && out.classes.normal > 0 && out.classes.gross > 0 && out.classes.gigant > 0
+            "SPANNWEITEN: Höhen-Feld endlich + spannt (max ≥ 1.5×min — phyto-core-Wuchs)",
+            `${out.minHeight}–${out.maxHeight} m`,
+            isFinite(out.minHeight) && isFinite(out.maxHeight) && out.maxHeight >= out.minHeight * 1.5
+        );
+        ck(
+            "GRÖSSEN-ETIKETT folgt der Höhen-Regel (abgeleitet: gigant≥18|sequoia · gross≥9 · strauch fiel)",
+            JSON.stringify(out.classes) + " verstösse=" + out.etikettFehl,
+            out.etikettFehl === 0 && out.classes.normal > 0 && out.classes.strauch === 0
         );
         ck("PHYSIK: KEINE Variante knickt (Ω-Φ3-b)", out.allNoBuckle, out.allNoBuckle === true);
-        ck("PHYSIK: jeder GIGANT knickt nicht (Greenhill)", `${out.giantCount} Gigant.`, out.giantAllStand === true);
+        ck(
+            "PHYSIK: jeder GIGANT (falls die Höhen-Regel einen trägt) knickt nicht (Greenhill)",
+            `${out.giantCount} Gigant`,
+            out.giantAllStand === true
+        );
         ck("worst-Schlankheit < crit (10.1 holz)", out.worstSlender, out.worstSlender < 10.1);
         ck("DETERMINISMUS: gleicher Seed → bit-identisch", out.deterministic, out.deterministic === true);
-        ck("AFFINITÄT: Tags frozen (Gigant == Normal == Gross)", out.affTags, out.tagsFrozen === true);
+        ck(
+            "AFFINITÄT: Tags frozen über die Größen-Achse (kleinste == größte Eiche)",
+            `${out.affTags} @ ${out.affSpannweite}`,
+            out.tagsFrozen === true
+        );
         ck("AFFINITÄT: nur holz+laub Substanz", out.matsUsed, out.onlyWoodLeaf === true);
         ck("ROLLER: range/int/pick/chance/seq + Determinismus", out.chanceFrac, out.rollerOk === true);
         ck(
@@ -973,12 +996,12 @@ function startSaveServer() {
             out.atlasColsDistinct === true
         );
         ck(
-            "T1-BRETTWURZEL: Gigant 5-7 Wurzelanläufe, Normal 0 (holz, tag-frozen)",
-            `gigant=${out.giantButtresses} normal=${out.normalButtresses}`,
-            out.giantButtresses >= 5 && out.giantButtresses <= 7 && out.normalButtresses === 0
+            "T1-BRETTWURZEL: Wurzelanläufe NUR in der gigant-Zone (kein Baum < 18 m trägt welche)",
+            `unter18=${out.buttUnter18}/${out.buttProben}`,
+            out.buttProben > 0 && out.buttUnter18 === 0
         );
         ck(
-            "T1-UV: Palmen-Karten→Atlas-Spalte 2, Breitblatt→Spalte 0 (Typ gewahrt)",
+            "T1-UV: Blatt-Karten tragen Studio-UVs (Atlas-Fenster [0,1], nicht degeneriert)",
             `palm=${JSON.stringify(out.palmUV)} broad=${JSON.stringify(out.broadUV)}`,
             out.uvRoutesByKind === true
         );

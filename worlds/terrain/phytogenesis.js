@@ -4930,6 +4930,7 @@ init();
                 out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
             // DIE EINE PIPE: Emissiv reist NUR wenn nicht-schwarz (additiv, must-ignore;
             // Pflanzen/Fahrzeuge tragen schwarz → Feld fehlt → Replies byte-gleich).
+            if (zweitKern && mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
             if (zweitKern && mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
                 out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
                 out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;

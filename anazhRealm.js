@@ -16602,6 +16602,7 @@ class AnazhRealm {
             hasNormalMap: !!mat.normalMap,
         };
         if (mat.color && typeof mat.color.r === "number") out.mat.color = [mat.color.r, mat.color.g, mat.color.b];
+        if (mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -63792,7 +63793,9 @@ class AnazhRealm {
         const key =
             (mp
                 ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
-                : kind) + (xfade ? "|xf" : "");
+                : kind) +
+            (xfade ? "|xf" : "") +
+            (mp && mp.webe ? "|w:" + mp.webe : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         try {
@@ -63850,6 +63853,15 @@ class AnazhRealm {
                 } else {
                     mat.colorNode = TSL.vec4(vcol, 1.0);
                 }
+            } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
+                // STOFF-WEBUNG (V18.464, Studio-getCloth-Charakter): eine feine
+                // Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
+                // Baumwolle fein, Leder/Gummi glatt-marmoriert) — rein additiv,
+                // nur wenn die Gesetz-Zeile eine Webungs-Art mitgibt.
+                const wf = mp.webe === "knit" ? 90.0 : mp.webe === "wool" ? 70.0 : mp.webe === "denim" ? 160.0 : mp.webe === "cotton" ? 140.0 : 24.0;
+                const wa = mp.webe === "knit" ? 0.1 : mp.webe === "wool" ? 0.08 : mp.webe === "leather" ? 0.05 : mp.webe === "rubber" ? 0.03 : 0.06;
+                const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
+                mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
                 // Fels/Kristall/Blume/Laub: die Vertex-Farbe, die Regler (rough/metal/flat/env) sind
                 // schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.

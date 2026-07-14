@@ -3350,6 +3350,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const lc = lin(kl.c != null ? kl.c : 0xc89372);
         m.color.setRGB(lc[0], lc[1], lc[2]);
         if (k === "hair") m.side = THREE.DoubleSide; // Strähnen-Kreuzquads (wie straehne)
+        if (kl.webe) m.userData.__webe = kl.webe; // Stoff-Webung (Welt-Leser moduliert Mikro-Struktur)
         if (kl.emissiv != null && m.emissive) {
             const le = lin(kl.emissiv);
             m.emissive.setRGB(le[0], le[1], le[2]);
@@ -3654,7 +3655,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
         for (const z of kern.kleidZonen(dials) || []) {
             const km = "stoff_" + (z.hex >>> 0).toString(16);
-            KL[km] = { c: z.hex, r: 0.82 };
+            // STOFF-CHARAKTER (V18.464): rough je Schnitt aus der Gesetz-Zeile
+            // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
+            KL[km] = { c: z.hex, r: typeof z.rough === "number" ? z.rough : 0.82, webe: z.webe || null };
             const pts = [],
                 zen = [];
             for (const tn of z.teile || []) {

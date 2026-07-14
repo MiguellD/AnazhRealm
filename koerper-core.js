@@ -152,7 +152,17 @@
                     "deltoid1", "deltoid-1", "bicep1", "bicep-1",
                     "tricep1", "tricep-1", "uarm1", "uarm-1",
                 ]);
-            zonen.push({ schnitt: top, teile: topTeile, hex: farbe(d.topColor, "navy"), inflate: 1.07 });
+            // STOFF-CHARAKTER (V18.464): die Lab-Material-Zeile je Schnitt
+            // (getCloth-Aufrufe verbatim) — rough + Webungs-Art reisen mit,
+            // damit Strick ≠ Baumwolle ≠ Denim ≠ Leder auch in der WELT liest.
+            zonen.push({
+                schnitt: top,
+                teile: topTeile,
+                hex: farbe(d.topColor, "navy"),
+                inflate: 1.07,
+                rough: top === "pullover" ? 0.92 : top === "tank" ? 0.82 : top === "poncho" ? 0.88 : 0.85,
+                webe: top === "pullover" ? "knit" : top === "poncho" ? "wool" : "cotton",
+            });
         }
         var bottom = d.bottom || "pants";
         if (bottom !== "none") {
@@ -162,7 +172,14 @@
             ];
             if (bottom === "pants")
                 botTeile = botTeile.concat(["kneecap1", "kneecap-1", "calf1", "calf-1", "shin1", "shin-1"]);
-            zonen.push({ schnitt: bottom, teile: botTeile, hex: farbe(d.bottomColor, "charcoal"), inflate: 1.06 });
+            zonen.push({
+                schnitt: bottom,
+                teile: botTeile,
+                hex: farbe(d.bottomColor, "charcoal"),
+                inflate: 1.06,
+                rough: bottom === "pants" ? 0.82 : 0.85,
+                webe: bottom === "pants" ? "denim" : "cotton",
+            });
         }
         var shoes = d.shoes || "sneaker";
         if (shoes !== "none") {
@@ -174,6 +191,8 @@
                 teile: ["ankle1", "ankle-1"],
                 hex: farbe(d.shoeColor, "white"),
                 inflate: 1.12,
+                rough: shoes === "boot" ? 0.45 : 0.55,
+                webe: shoes === "boot" ? "leather" : "rubber",
             });
         }
         return zonen;
