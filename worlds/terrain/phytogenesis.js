@@ -4904,6 +4904,17 @@ init();
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
+        // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
+        // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
+        // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut
+        // daraus die Flügel-Animation (Rotation um die Hinge-Achse auf den GEBACKENEN
+        // Geschlossen-Pose-Vertices). Pflanzen/Fahrzeuge tragen das Feld nie.
+        for (let anc = mesh.parent; anc; anc = anc.parent) {
+            if (anc.userData && typeof anc.userData.side === "number") {
+                out.tuer = { seite: anc.userData.side, hx: anc.position.x, zf: anc.position.z };
+                break;
+            }
+        }
         // DIE MATERIAL-REGLER FLIESSEN MIT (einspeisung der regler): die echten MeshStandard-Parameter
         // dieses Materials als reine Daten -> AnazhRealm baut EXAKT dasselbe Material. Fels matt,
         // Kristall glaenzend+facettiert (flatShading), Gras env-gedaempft — alles OHNE hartkodiertes

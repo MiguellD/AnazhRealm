@@ -6,7 +6,26 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.464 — DIE VOLLE PASSAGE: Portale ganz · Fernwald live · Kollisions-Wahrheit)
+## Stand (V18.465 — DIE LEBENDIGEN TORE: Flügel öffnen sich · Tor-Fernstufe · Klammer-Wände)
+
+**FLÜGEL + FERNSTUFE (V18.465):** die Tür-Flügel LEBEN in der Welt — das Scharnier reist als
+additives `out.tuer`-Feld im Umschlag (Brücke liest `userData.side` der porta-Flügel-Gruppen),
+durch Mesh→Leaf→Instanz-Gruppe (`g.tuer`), und `_tickTorFluegel` dreht die gebackenen
+Geschlossen-Pose-Vertices um die Hinge-Achse (M = EntryWorld·WorldScale·T(h)·R·T(−h);
+Ziel = Nähe-Aktivierung × `TOR_FLUEGEL_OFFEN` 1.95 = das Welt-Analog zum Lab-E/R;
+geisttor: 120 Flügel-Meshes, bewiesen in gate:portal-membran F). Die Tor-FERNSTUFE ist der
+Wirts-Auto-Impostor, den der porta-Vertrag ausdrücklich dem Wirt zuweist: `KIND_POLICY.gate
+impostor:true` → dieselbe 8-Winkel-RTT-Bäckerei wie die Bäume (vorher volle L0-Schwere auf jede
+Distanz). Zwei KLAMMER-WÄNDE fielen dabei: die EIN-STUFEN-KLAMMER klemmt tree-ish Arten mit
+genau einer deklarierten Stufe (gate=[0]; Wunsch 1 baute sonst ein inhaltsgleiches Zweit-Group)
+und die Band-Pflege prüft Flat-IDENTITÄT (kollabierte Partner = kein voll-opaker Doppel-Draw im
+Band). Dazu die Review-Ernte der V18.464-Welle (adversariell, Physik/TSL node-bewiesen
+defekt-frei): Fallback-Stufen-Wahrheit im Scatter-Datensatz · @-Regional-Slot-Wand + bpName-Guard
+im LOD-Tick · Schatten-Zwilling trägt L1 · Promotion-Skala aus der Layer-Tabelle ·
+Membran-Textur-dispose · Domänen-Wand am Tor-Gesetz-Resolver. OFFEN: typeof-Voll-Wanderung ·
+Rinden-Vereinigung (U2b, Byte-Beweis-Welle) · die EINE Schöpfer-Browser-Runde (W8/Look-Goldens).
+
+### Davor (V18.464 — DIE VOLLE PASSAGE: Portale ganz · Fernwald live · Kollisions-Wahrheit)
 
 **PORTALE VOLL (V18.464):** die Membran wohnt als GESETZ in porta-core (`MEMBRAN_GESETZ` +
 `membranUniforms` + `deriveFrame`, rein additiv — die Shell INJIZIERT die Zahlen in ihr GLSL

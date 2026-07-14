@@ -99,7 +99,9 @@ function check(name, ok, detail) {
         const boxes = entry.blockerAABBs || [];
         res.k = { boxCount: boxes.length };
         const hit = (wx, wy, wz) =>
-            boxes.some((b) => wx >= b.minX && wx <= b.maxX && wz >= b.minZ && wz <= b.maxZ && wy >= b.botY && wy <= b.topY);
+            boxes.some(
+                (b) => wx >= b.minX && wx <= b.maxX && wz >= b.minZ && wz <= b.maxZ && wy >= b.botY && wy <= b.topY
+            );
         const ex = entry.position.x,
             ey = entry.position.y - 0.5,
             ez = entry.position.z;
@@ -127,9 +129,35 @@ function check(name, ok, detail) {
             const t0 = rec.u.time.value;
             r._tickPortalMembranes(3.7);
             res.m.atmet = rec.u.time.value !== t0;
-            res.m.echt = !!(rec.mesh.material && rec.mesh.material.userData && rec.mesh.material.userData.portalMembran);
+            res.m.echt = !!(
+                rec.mesh.material &&
+                rec.mesh.material.userData &&
+                rec.mesh.material.userData.portalMembran
+            );
             res.m.marker = res.m.echt || !!rec.mesh.material.isMeshBasicMaterial;
         }
+
+        // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
+        // Erst MATERIALISIEREN (das Asset ist async — der Rewarm-Weg von Hand,
+        // das Gestalt-Gate-C-Muster), dann Nähe + Ticks.
+        const dlF = performance.now() + 90000;
+        while (!entry.instanced && performance.now() < dlF) {
+            r._rebuildArchitectureMesh(entry);
+            if (entry.instanced) break;
+            await new Promise((r2) => setTimeout(r2, 300));
+        }
+        res.fInstanced = entry.instanced === true;
+        p.x = ex;
+        p.z = ez + 2.0;
+        p.y = ey + 1.0;
+        for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
+        const recF = r._portalMembranes.get(entry.id);
+        res.f = {
+            fluegelGefunden: !!(recF && recF._fluegel && recF._fluegel.length > 0),
+            anzahl: recF && recF._fluegel ? recF._fluegel.length : 0,
+            geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
+            winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
+        };
 
         // ── W: Hindurchgehen (Ebenen-Kreuzung in der Apertur → enterPortal) ──
         let entered = 0;
@@ -174,7 +202,11 @@ function check(name, ok, detail) {
     check("Boot + warmes Buch (geisttor im LIVE-Buch)", out.boot && out.warm);
     check("welt_portal gespawnt + Tor-Gesetz aufgelöst", out.spawned && out.torGesetz, `gestalt=${out.gestalt}`);
     if (out.k) {
-        check("K: Gesetz-Hülle trägt 5 Boxen (Pfosten×2 · Schultern×2 · Krone)", out.k.boxCount === 5, `boxen=${out.k.boxCount}`);
+        check(
+            "K: Gesetz-Hülle trägt 5 Boxen (Pfosten×2 · Schultern×2 · Krone)",
+            out.k.boxCount === 5,
+            `boxen=${out.k.boxCount}`
+        );
         check("K: die APERTUR ist körperlich FREI (5 Probe-Punkte, Torso-Höhe)", out.k.aperturFrei === true);
         check("K: die PFOSTEN sind solide (beidseitig)", out.k.pfostenSolide === true);
         check("K: die KRONE über dem Scheitel ist solide", out.k.kroneSolide === true);
@@ -186,6 +218,14 @@ function check(name, ok, detail) {
         check("M: Material trägt den portalMembran-Marker (oder fail-LAUT-Fallback)", out.m.marker === true);
         check("M: der ECHTE TSL-Gesetz-Graph baute (kein Fallback noetig)", out.m.echt === true);
     } else check("M: Membran-Block erreicht", false);
+    if (out.f) {
+        check(
+            `F: Flügel-Meshes durch die Pipe gefunden (${out.f.anzahl})`,
+            out.f.fluegelGefunden === true,
+            `anzahl=${out.f.anzahl}`
+        );
+        check(`F: die Flügel ÖFFNEN sich dem Reisenden (Winkel ${out.f.winkel})`, out.f.geoeffnet === true);
+    } else check("F: Flügel-Block erreicht", false);
     if (out.w) {
         check("W: Hindurchgehen durch die Apertur feuert enterPortal (genau 1×)", out.w.feuert === true);
         check("W: kein Doppelfeuer im selben Pass (Rueck-Kreuzen in der Zone stumm)", out.w.keinDoppel === true);

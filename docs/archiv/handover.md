@@ -378,6 +378,37 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.465 — DIE LEBENDIGEN TORE (Schöpfer „champ, beende es, alle module")
+
+Die zwei in V18.464 benannten OFFEN-Punkte fielen: **(1) Tür-Flügel in der Welt** — das
+Scharnier reist als additives `out.tuer`-Feld durch die EINE Pipe (Brücken-Extraktor liest
+`userData.side` + Hinge-Position der porta-Flügel-Gruppen; keine Reply-Goldens betroffen —
+Tor-Goldens sind node-seitig), Mesh→Leaf→Instanz-Gruppe tragen es weiter, und
+`_tickTorFluegel` (im Membran-Tick, nur Registry-Portale) dreht die gebackenen
+Geschlossen-Pose-Vertices um die Hinge-Achse — Ziel-Winkel = Nähe-Aktivierung ×
+`TOR_FLUEGEL_OFFEN` (1.95, der Shell-DOOR_OPEN-Spiegel), weich geglättet, Vorzeichen =
+seite·sign(zf) (die Shell-Wahrheit). Beweis: gate:portal-membran F (geisttor 120
+Flügel-Meshes, Winkel 1.94 bei Annäherung). **(2) Tor-Fernstufe** — `KIND_POLICY.gate
+impostor:true` (die Daten-Zeile, die der porta-Vertrag ausdrücklich vorsieht: „L2-Auto-
+Impostor ist Sache des Wirts") → ferne Tore sind 8-Winkel-Billboards aus DERSELBEN
+RTT-Bäckerei wie die Bäume. Zwei dabei entdeckte KLAMMER-LÜCKEN geheilt: die
+EIN-STUFEN-KLAMMER (tree-ish Arten mit genau einer deklarierten Stufe klemmen jeden
+Wunsch dorthin — Wunsch 1 baute sonst ein inhaltsgleiches Zweit-Group; Baum [0,1,2] +
+Strauch [1,2] byte-alt, asset-contract-Goldens grün) und die Band-IDENTITÄTS-WAND
+(kollabiert die Klammer den Partner auf die Primär-Gruppe, bleibt das Band leer — kein
+voll-opaker Doppel-Draw). Dazu die Review-Ernte der V18.464-Welle (drei adversarielle
+Dimensionen; Physik: Ecken-Hülle node-bewiesen maxErr 1.4e-14, alle 7 Tor-Presets endlich;
+TSL: Formeltreue Term-für-Term + GN() über alle 102 injizierten Werte bewiesen): B1
+Fallback-Stufen-Wahrheit (Scatter-Datensatz trägt die MATERIALISIERTE Stufe; der Tick
+nimmt den Billboard-Fallback für Nah-Wünsche nicht an — die eingefrorene Loch-Zelle ist
+unmöglich) · B2 @-Regional-Slot-Wand + bpName-Guard (kein per-Slot-Free in Region-Gruppen,
+kein Churn für geklemmte Arten) · Schatten-Zwilling trägt L1 (sonst Alpha-Test-Overdraw-
+Schatten nach dem Schatten-Flip) · Promotion-Skala aus der Layer-Tabelle (der promotete
+Baum ploppte in anderer Größe) · Membran-Textur-dispose · Domänen-Wand am Tor-Gesetz-
+Resolver (role:"portal"-Guard) · Symphonie-Verb ans echte Klang-System. Merge-Gate:
+check + playtest voll GRÜN, gates portal-membran (19✅ inkl. F) · trias · asset-contract ·
+portal-gestalt · scatter-lod GRÜN.
+
 ### V18.464 — DIE VOLLE PASSAGE (Schöpfer „ultracode — ferne baumLODs korrekter, alle portale vollständig, keine halben sachen mehr")
 
 Ultracode-Welle in fünf Schnitten, geboren aus einer 4-Leser-Verstehen-Welle (35 Defekte mit

@@ -47254,6 +47254,12 @@ class AnazhRealm {
             // Waffnung (kein Doppelfeuer in einem Pass), wer die Zone verlässt und
             // erneut kreuzt (egal welche Richtung), betritt wieder.
             if (rec.armed === false && !inApertur) rec.armed = true;
+            // ── V18.465 — DIE TÜR-FLÜGEL ÖFFNEN SICH DEM REISENDEN: die Flügel-
+            // Meshes (g.tuer aus der Pipe) drehen um ihre Hinge-Achse — Ziel-
+            // Winkel = Nähe-Aktivierung × TOR_FLUEGEL_OFFEN (das Welt-Analog zum
+            // Lab-E/R-Toggle, DOOR_OPEN=1.95 der Shell), weich geglättet. Läuft
+            // nur für Registry-Portale (≤ Handvoll), ferne Tore stehen zu. ──
+            this._tickTorFluegel(rec, entry, act);
             if (
                 rec.armed !== false &&
                 inApertur &&
@@ -47306,6 +47312,61 @@ class AnazhRealm {
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
         this._portalMembranes.set(entry.id, { entry, tor, mesh, u, armed: true, lastLz: null });
+    }
+
+    // V18.465 — die Flügel eines Portal-Eintrags drehen (Scharnier-Rotation im
+    // Template-Raum VOR der Welt-Scale, auf den GEBACKENEN Geschlossen-Pose-
+    // Vertices: M = EntryWorld · WorldScale · T(h)·R_y(±a)·T(−h)). Vorzeichen =
+    // seite·sign(zf) (die Shell-Wahrheit: leafL −a · leafR +a, hinten gespiegelt).
+    // Die Flügel-Slots werden je Eintrag EINMAL aus entry.instSlots abgeleitet
+    // und beim Slot-Wechsel (LOD/Cull-Rebuild) neu gesammelt.
+    _tickTorFluegel(rec, entry, act) {
+        const slots = entry.instSlots;
+        if (!Array.isArray(slots) || !slots.length) return;
+        if (rec._fluegelSrc !== slots) {
+            rec._fluegelSrc = slots;
+            rec._fluegel = [];
+            const groups = this.state.archInstanceGroups;
+            if (groups) {
+                for (const s of slots) {
+                    const g = groups.get(s.key);
+                    if (g && g.tuer) rec._fluegel.push({ g, slot: s.slot, tuer: g.tuer });
+                }
+            }
+            rec._fluegelWinkel = 0;
+        }
+        if (!rec._fluegel || !rec._fluegel.length) return;
+        const ziel = act * AnazhRealm.TOR_FLUEGEL_OFFEN;
+        const alt = rec._fluegelWinkel || 0;
+        const neu = alt + (ziel - alt) * 0.12;
+        if (Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
+        rec._fluegelWinkel = neu;
+        const T = THREE;
+        const ew = this._archEntryWorldMatrix(entry, this._torTmpEw || (this._torTmpEw = new T.Matrix4()));
+        const mA = this._torTmpA || (this._torTmpA = new T.Matrix4());
+        const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
+        for (const f of rec._fluegel) {
+            const t = f.tuer;
+            const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+            // T(h)·R_y(sign·neu)·T(−h) — kompakt über drei Matrizen:
+            mA.makeRotationY(sign * neu);
+            mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
+            mB.multiply(mA); // T(h)·R
+            mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
+            mB.multiply(mA); // T(h)·R·T(−h)
+            // EntryWorld enthält bereits die Welt-Skala/Rotation des Eintrags;
+            // die Flügel-Leaves tragen localMatrix = WorldScale — die steckt in
+            // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
+            mA.multiplyMatrices(ew, this._foundryWorldScaleMatrix(rec.tor.gestalt));
+            mA.multiply(mB);
+            try {
+                f.g.mesh.setMatrixAt(f.slot, mA);
+                if (f.g.kind !== "batch" && f.g.mesh.instanceMatrix) f.g.mesh.instanceMatrix.needsUpdate = true;
+                f.g.mesh.boundingSphere = null;
+            } catch (_e) {
+                /* Slot kann nach Rebuild kurz stale sein — nächster Tick sammelt neu */
+            }
+        }
     }
 
     // Eine Konsumable aktivieren — addet einen Boost via Etappe-2-System.
@@ -49591,6 +49652,17 @@ class AnazhRealm {
         }
         const flat = this._foundryFlattenFor(entry, preset, desired);
         if (!flat || !flat.instanceable) return false; // lädt/kann nicht → Band leer, nächster Tick
+        // V18.465 — DIE KLAMMER-WAND: kollabiert die kindStages-Klammer den
+        // Partner auf DIESELBE servierte Stufe wie die Primärstufe (Arten mit
+        // wenigen Stufen + Wirts-Impostor — Tore: Wunsch 0/1 → dieselbe
+        // L0-Gruppe), wäre die Band-Mitgliedschaft ein voll-opaker Doppel-Draw
+        // derselben Instanzen. Die Flats sind je servierter Stufe gecacht →
+        // Identitäts-Vergleich ist der exakte Test. Band bleibt leer.
+        const primFlat = this._foundryFlattenFor(entry, preset, entry._lodLevel | 0);
+        if (primFlat && flat === primFlat) {
+            entry._lodBandLevel = null;
+            return cur !== null;
+        }
         this._archInstanceAdd(entry, flat, { band: true, bandLod: desired });
         return true;
     }
@@ -61268,6 +61340,7 @@ class AnazhRealm {
             castShadow,
             regional,
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
+            tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
         };
         // V4(B) — NUR im NEU-Gruppen-Zweig (nach dem `if (g) return g;`-Early-Return, NICHT im
         // Batch-Pfad, NICHT in _archInstanceGroupGrow → g-Identität bleibt): der Ref-Zähler der
@@ -64913,6 +64986,10 @@ class AnazhRealm {
         }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+        // V18.465 — das Tür-Scharnier reist ans Mesh (Umschlag out.tuer, additiv):
+        // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
+        // Membran-Tick dreht die Flügel um die Hinge-Achse.
+        if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
         return mesh;
     }
     _foundryBuildGroup(meshes, stage) {
@@ -65384,6 +65461,18 @@ class AnazhRealm {
             // sind; der Clamp-Kurzschluss (_servedLod) hält den Wechsel churn-frei.
             const _polL = _rec && AnazhRealm.KIND_POLICY[_rec.kind];
             if (_polL && _polL.lodServe && _polL.lodServe[lod] != null) lod = _polL.lodServe[lod];
+        } else {
+            // V18.465 — EIN-STUFEN-KLAMMER auch für tree-ish (Wirts-Impostor-)
+            // Arten: deklariert die Art GENAU EINE Stufe (Tor: gate=[0]), klemmt
+            // jeder Nah-/Mittel-Wunsch dorthin — sonst baute der Worker je
+            // Wunsch-Stufe ein inhaltsgleiches Zweit-Group (Doppel-Cache; das
+            // Crossfade-Band trüge einen voll-opaken Doppel-Draw derselben
+            // Instanzen). Mehr-Stufen-Arten (Baum [0,1,2] · Strauch [1,2])
+            // bleiben byte-alt.
+            const _rec2 = f.recipes && f.recipes[preset];
+            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
+            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
         }
         const season = this.state.season || "summer";
         const key = preset + "|" + variant + "|" + lod + "|" + season;
@@ -65442,6 +65531,8 @@ class AnazhRealm {
                     geom: child.geometry,
                     mat: child.material,
                     localMatrix: I,
+                    // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
+                    tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
                     leafKey: "f:" + key + ":" + p,
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
@@ -83078,7 +83169,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.464.0";
+AnazhRealm.VERSION = "18.465.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83145,6 +83236,12 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Default-Ziel Skelett-Welt wie jedes meta-lose Portal; `richte portal …`
     // zielt es um). Vorher war ein Studio-Tor reine Dekoration — die einzige
     // Trigger-Maschine (computeBlueprintAffordances) sah es nie.
+    // V18.465 — impostor: true (der Wirts-Auto-Impostor, den der porta-Vertrag
+    // ausdrücklich dem Wirt zuweist: „Tore tragen NUR Stufe 0; L1=L0-Grade +
+    // L2-Auto-Impostor sind Sache des Wirts", porta-core B2): die Fernstufe
+    // eines Tors ist das 8-Winkel-Billboard aus DERSELBEN RTT-Bäckerei wie die
+    // Bäume — vorher renderte jedes Tor seine volle L0-Schwere (Geflecht:
+    // hunderte CatmullRom-Tubes) auf JEDE Distanz bis zum generischen Cull.
     gate: Object.freeze({
         prefix: "tor_",
         donor: "tor_basis",
@@ -83152,6 +83249,7 @@ AnazhRealm.KIND_POLICY = Object.freeze({
         builtIn: false,
         placeExtra: null,
         role: "portal",
+        impostor: true,
     }),
     // W-A4a (Katalysator-Bogen §7, ε-Checkliste) — DIE WAFFEN-/WERKZEUG-DOMAENE ALS DATEN-ZEILE:
     // schmiede-core (cores.manifest.json) liefert kind:"weapon"-Rezepte (alle 21 Gattungen des
@@ -87177,6 +87275,9 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
+// V18.465 — der offene Flügel-Winkel der Welt-Tore (Spiegel der Lab-Shell
+// DOOR_OPEN=1.95, worlds/portale/porta.js — das Welt-Analog: Nähe öffnet).
+AnazhRealm.TOR_FLUEGEL_OFFEN = 1.95;
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
 // ein Rate-Limit je Sekunde schützen den Kanal vor einer flutenden Sub-Welt.
