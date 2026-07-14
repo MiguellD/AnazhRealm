@@ -14412,7 +14412,7 @@ class AnazhRealm {
                 : null,
             worstFrames: fr.worst,
             // V18.469 — der Fern-Regime-Beweis vom echten Holz: rttGescheitert > 0
-            // heißt „der Schöpfer sieht Silhouetten-Blobs statt RTT-Karten".
+            // heißt „der Schöpfer sieht Silhouetten-Blobs statt Studio-Karten".
             impostorZensus: this._impostorCensus(),
         };
     }
@@ -28094,7 +28094,7 @@ class AnazhRealm {
                         if (opts.impostorKey && _Ta.attribute) {
                             // V18.390 (Eins W3 — DER 8-VIEW-IMPOSTOR, Vorlagen-Shader Z.1820/1821
                             // in TSL übersetzt): der ferne LOD2-Baum ist EIN camera-facing Quad,
-                            // das aus dem 8-View-RTT-Atlas die ZWEI angrenzenden Peilungs-Zellen
+                            // das aus dem 8-View-Studio-Atlas die ZWEI angrenzenden Peilungs-Zellen
                             // sampelt (Blend über fract) — die Silhouette DREHT mit der Kamera
                             // (SpeedTree-Multi-View) und respektiert die INSTANZ-Rotation (aRot).
                             // Instanz-Dekodierung OHNE Instanz-Matrix-Zugriff: die Geometrie-
@@ -28176,7 +28176,7 @@ class AnazhRealm {
                                         });
                                         if (_keepFin) _alpha = _alpha.mul(_keepFin);
                                     }
-                                    // der Atlas trägt die VOLLE Baumfarbe (RTT des echten Baums);
+                                    // der Atlas trägt die VOLLE Baumfarbe (Studio-Bake des echten Baums);
                                     // vertex-color = weiß (Identität), Tint via instanceColor.
                                     albedoNode = _samp.rgb;
                                     mat.alphaTest = 0.34; // Vorlagen-ath (weiche Kronen-Ränder bleiben)
@@ -51132,9 +51132,9 @@ class AnazhRealm {
         // das Chunk-Streaming nichts baut), warm die Merge-Cache der Hotbar-Baupläne → Auswahl/Ghost/
         // Platzieren ohne Hänger. Budgetiert (eins/Tick, nur unter Budget).
         this._tickBlueprintPrebake();
-        // V18.390 (Eins W3) — der budgetierte 8-View-RTT-Impostor-Bake (einer/Tick,
-        // lazy beim ersten LOD2-Bedarf enqueued; headless/Null-Renderer = No-op —
-        // der Canvas-Fallback trägt, gate-treu).
+        // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte 8-View-Impostor-Bake
+        // (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker; lazy beim ersten
+        // LOD2-Bedarf enqueued; headless/Null-Renderer = No-op — der Fallback trägt, gate-treu).
         this._tickImpostorBake();
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
@@ -60172,7 +60172,7 @@ class AnazhRealm {
         const skel = bp._skeleton;
         // V18.388/.390 — DIE KRONE (K5-IMPOSTOR → Eins W3 8-VIEW): der ferne Baum
         // (LOD2) baut als EIN camera-facing Billboard-Quad (6 Verts) mit 8-View-
-        // RTT-Atlas + Normal-Atlas statt Rinde + hunderte Blatt-Karten
+        // Studio-Atlas + Normal-Atlas statt Rinde + hunderte Blatt-Karten
         // (LOD0 ~10704 Verts). Fließt UNVERÄNDERT durch den
         // EINEN Skeleton-Leaf/HISM-Pfad (Gesetz #0 — KEIN Parallel-System): dasselbe
         // useInstanceTint (konstante Kronenfarbe über die LODs), dasselbe Wind-Sway/
@@ -60327,11 +60327,11 @@ class AnazhRealm {
     //       alle 8 Zellen repliziert) + ein NEUTRALER Normal-Atlas (0x8080ff = zur
     //       Kamera) → das Material ist ab dem ersten Frame vollständig verdrahtet,
     //       headless/Null-Renderer bleibt dies der EINZIGE Pfad (gate-treu).
-    //   (2) LAZY + BUDGETIERT (echter Renderer): `_tickImpostorBake` bäckt per RTT
-    //       den ECHTEN LOD1-Baum aus 8 Y-Peilungen (128×256/Zelle) + Normal-Atlas +
-    //       2px-Dilation, dann ATOMIC `tex.image`-Swap — die Textur-IDENTITÄT bleibt
-    //       stabil (gleiche Dimensionen, nur Re-Upload → kein Pipeline-Recompile,
-    //       die gpu-lens-Wand V18.322/.324).
+    //   (2) LAZY + BUDGETIERT (echter Renderer): `_tickImpostorBake` fragt den
+    //       STUDIO-Bäcker im Foundry-Worker (Kanal "bake-impostor" — Bäcker-Vereinigung,
+    //       KEIN Welt-Nachbau) und malt die Reply-Pixel als ATOMIC `tex.image`-Swap —
+    //       die Textur-IDENTITÄT bleibt stabil (gleiche Dimensionen, nur Re-Upload →
+    //       kein Pipeline-Recompile, die gpu-lens-Wand V18.322/.324).
     // Gecacht in `this._impostorAtlasMap` (INSTANZ-Map, nicht serialisiert/audit-
     // relevant) → idempotent (EIN Record je Key). Mit W2 (3 Varianten × 6 Arten)
     // sind es maximal 18 Atlanten.
@@ -60341,14 +60341,14 @@ class AnazhRealm {
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         // Der Bäcker-Spec aus der EINEN Quelle (foundry-core PORTAL_RENDER_CONFIG.impostor,
         // LIVE über get-render-config — „Drähte statt Kopien"): Blickwinkel + Zell-Maße
-        // teilen Studio-Bäcker und dieser RTT-Bäcker; Fallback = die bisherigen Werte
+        // teilen Studio-Bäcker und dieser Welt-Konsument; Fallback = die bisherigen Werte
         // (vor dem Worker-ready / exotische Einbettung).
         const _ic = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.impostor) || {};
         const V = _ic.views || 8,
             cw = _ic.cellW || 128,
             ch = _ic.cellH || 256;
         // (1) Fallback: die deterministische Silhouette in alle 8 Zellen (bis der
-        // RTT-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
+        // Studio-Bake sie ersetzt zeigt jede Peilung dasselbe Bild = V18.388-Qualität).
         const cell = this._bakeImpostorSilhouetteCanvas(key, skeleton, cw, ch);
         if (!cell) return null;
         const atlasCanvas = document.createElement("canvas");
@@ -60398,7 +60398,7 @@ class AnazhRealm {
             frame: skeleton ? this._impostorFrame(skeleton) : null,
         };
         this._impostorAtlasMap.set(key, rec);
-        // (2) den echten RTT-Bake einreihen — NUR mit echtem Renderer (headless/
+        // (2) den echten Studio-Bake einreihen — NUR mit echtem Renderer (headless/
         // Null-Renderer → der Canvas-Fallback trägt, gate-treu).
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull && rec.frame) {
@@ -60409,7 +60409,7 @@ class AnazhRealm {
     }
 
     // DER IMPOSTOR-ZENSUS (V18.469, Schöpfer „baum l2 immernoch blobs"): sagt,
-    // welches Fern-Regime WIRKLICH auf dem Holz läuft — echte 8-Winkel-RTT-Karte
+    // welches Fern-Regime WIRKLICH auf dem Holz läuft — echte 8-Winkel-Studio-Karte
     // (rttBaked) · terminal gescheiterter Bake = Canvas-Silhouette für immer
     // (rttFailed — DAS ist der Blob-Verdacht) · noch wartend (Silhouette bis der
     // Bake dran ist). Reist im Flugschreiber-Trace (anazhRealmPerf.json) und ist
@@ -60464,8 +60464,8 @@ class AnazhRealm {
         return null;
     }
 
-    // V18.390 (Eins W3) — der budgetierte RTT-Bake-Tick (EINER pro Tick, läuft im
-    // Idle-Pass neben `_tickBlueprintPrebake` — der Bäcker plant voraus, V18.350).
+    // V18.390 (Eins W3) → BÄCKER-VEREINIGUNG — der budgetierte Bake-Tick (EIN Bake in
+    // Flug; der Bäcker ist das STUDIO im Foundry-Worker, Kanal "bake-impostor").
     // Headless/Null-Renderer/vor rendererReady → No-op (der Fallback trägt).
     _tickImpostorBake() {
         const st = this.state;
@@ -60518,11 +60518,24 @@ class AnazhRealm {
         // Impostor); der Gate verhinderte genau das Backen des Billboards, das die Last SENKT. Der
         // Impostor-Bake ist die AUSNAHME zu V18.282: er ADDIERT keine Optik, er ERSETZT die schwere
         // L2-Geometrie durch die billige Karte (netto last-SENKEND, permanent). Er bleibt streng
-        // gedeckelt (ein RTT-Bake pro Frame, async über mehrere Frames, die Queue drainet sich
+        // gedeckelt (EIN Bake in Flug, async über mehrere Frames, die Queue drainet sich
         // selbst) → ein bounded transienter Spike gegen einen bleibenden Gewinn, wie das Studio
         // seinen Wald-Atlas eager bäckt. Headless/Null-Renderer → weiter no-op (unten).
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return 0;
+        // BÄCKER-VEREINIGUNG (Studio-Norm phytogenesis „der Studio-Bäcker IST die Fernstufe,
+        // KEIN Nachbau"): der Bake reist als "bake-impostor" zum Foundry-Worker — der Welt-
+        // RTT-Nachbau ist GESCHNITTEN (kein zweiter Bäcker, Gesetz #0). Ohne Foundry-Welt
+        // existiert kein Bäcker: der Schlüssel fällt TERMINAL (Zensus „gescheitert" statt
+        // ewiges „wartend"; die Canvas-Silhouette trägt sichtbar weiter).
+        if (!this._foundryEnabled()) {
+            const key0 = this._impostorBakeQueue.shift();
+            const rec0 = this._impostorAtlasMap && this._impostorAtlasMap.get(key0);
+            if (rec0 && !rec0.rttBaked) rec0.rttFailed = true;
+            return 0;
+        }
+        const f = this._ensureAssetFoundry();
+        if (!f || !f.ready || !f.worker) return 0; // das Studio bootet noch — die Schlüssel warten in der Queue
         const key = this._impostorBakeQueue.shift();
         const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
         if (!rec || rec.rttBaked || rec.rttFailed) {
@@ -60531,11 +60544,39 @@ class AnazhRealm {
             this._impostorBakeDropped = (this._impostorBakeDropped || 0) + 1;
             return 0;
         }
+        // Das Studio-Preset: Foundry-Records tragen es direkt (rec.species = Preset), Grammatik-
+        // Records übersetzen über die EINE Auflösung. Ohne Rezept kann kein Bäcker backen →
+        // terminal (deterministisch, kein Retry-Sinn).
+        const presetId = rec.foundry ? rec.species : this._foundryPresetFor(rec.species);
+        if (!presetId) {
+            rec.rttFailed = true;
+            return 0;
+        }
+        // M1 (Bäcker-Vereinigung, Review-Ernte): der Studio-Bäcker ist der PFLANZEN-Bäcker
+        // (phyto buildInstance) — ein Zweit-Kern-Preset (Tor: kind "gate") würde dort eine
+        // LEERE Gruppe backen und als Erfolg reisen (fernes Tor verschwindet, Zensus lügt).
+        // KIND-WÄCHTER am EINEN Dispatch: nur Pflanzen-Kinds reisen; alles andere fällt
+        // terminal auf die Skelett-Silhouette (ehrlich sichtbar + Zensus ehrlich) — die
+        // Zweit-Kern-Bäckerei im Studio ist der benannte nächste Schritt (roadmap §0.1b).
+        const _fb = this._foundry;
+        const bKind = _fb && _fb.recipes && _fb.recipes[presetId] && _fb.recipes[presetId].kind;
+        if (bKind && !/^(tree|shrub|flower|grass|rock)$/.test(bKind)) {
+            rec.rttFailed = true;
+            return 0;
+        }
         this._impostorBakePending = true;
         this._impostorBakePendingSince = performance.now();
         this._impostorBakePendingKey = key;
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
-        this._bakeImpostorAtlasRTT(key, rec)
+        // Seed = derselbe wie der bisherige Bake-Gegenstand: die Foundry-LOD1 wurde je Record mit
+        // `_foundryRequest(preset, variant, 1, season)` gebaut → seed = rec.variantIndex; die
+        // Saison reist aus dem Record (fimp-Key trägt sie), sonst die aktuelle Welt-Saison.
+        const season = rec.season || (st && st.season) || "summer";
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, season)
+            .then((payload) => {
+                if (!this._applyStudioImpostorPayload(rec, payload))
+                    throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
+            })
             .catch((e) => {
                 // V18.464 (baum-D7): bounded Retry statt terminal — der Canvas-Fallback
                 // bleibt sichtbar, aber die Art heilt sich beim nächsten Versuch.
@@ -60552,237 +60593,127 @@ class AnazhRealm {
         return 1;
     }
 
-    // V18.390 (Eins W3 — die Vorlagen-`bakeImpostorAtlas` Z.1607-1664 übersetzt) —
-    // der ECHTE Offscreen-RTT-Bake: der LOD1-Baum (dieselbe Quelle, aus der die
-    // Vorlage rastert — poolL[1]) wird aus 8 Y-Peilungen orthografisch in den
-    // 8-Zellen-Atlas gerendert (128×256/Zelle) + ein NORMAL-Atlas (MeshNormal-
-    // Override, view-space wie die Vorlage r128-packNormalToRGB) + 2px-CPU-Dilation
-    // (Kronenfarbe in transparente Randtexel → Mips mischen Blattfarbe statt
-    // Clear-Grün, kein dunkler Halo). WebGPU-Wand: der MAIN-Renderer bäckt (EIN
-    // GPUDevice — ein zweiter Offscreen-WebGPURenderer hätte ein FREMDES Device,
-    // dessen Texturen der Haupt-Renderer nicht sampeln kann); der Transfer läuft
-    // über `readRenderTargetPixelsAsync` → 2D-Canvas → ATOMIC `tex.image`-Swap
-    // (Textur-Identität stabil → kein Pipeline-Recompile, gpu-lens-Wand). FLACH
-    // gebacken (neutrales Hemisphere-Licht, Vorlage Z.1618): der Atlas ist Albedo —
-    // die LICHTRICHTUNG kommt zur Laufzeit per-Fragment aus der EINEN PBR-Lichtung.
-    async _bakeImpostorAtlasRTT(key, rec) {
-        const st = this.state;
-        const rend = st.renderer;
-        if (!rend || rend._isHeadlessNull || !rec || !rec.frame) return;
-        const V = rec.views,
-            cw = rec.cellW,
-            ch = rec.cellH;
-        // Der LOD1-Baum als Bake-Subjekt (Leaves aus der EINEN Flatten-Quelle;
-        // geteilte Geometrien/Materialien — NICHT disposen).
-        // P5 (DAS NEUE KLEID — DER IMPOSTOR AUF DEM EINEN HAUPT-RENDERER): trägt der Record die
-        // Foundry-Flagge, ist das Subjekt der FOUNDRY-LOD1-Baum (worker-produzierte Geometrie, in
-        // `_foundryEnsureImpostorRecord` vorgelegt als `_foundryBakeLeaves`) — DIESELBE RTT-Maschine,
-        // KEIN Bake-iframe mehr. Sonst der klassische Grammatik-LOD1 (der Chokepoint gibt bei lebender
-        // Foundry null, aber der Foundry-Zweig braucht `_buildVariantLODs` gar nicht).
-        let bakeLeaves;
-        if (rec.foundry) {
-            bakeLeaves = rec._foundryBakeLeaves;
-            if (!Array.isArray(bakeLeaves) || bakeLeaves.length === 0)
-                throw new Error("Foundry-LOD1 ohne Leaves für " + key);
-        } else {
-            const keys = this._buildVariantLODs(rec.species, rec.variantIndex);
-            const lod1Key = keys && keys[1];
-            if (!lod1Key) throw new Error("kein LOD1-Bauplan für " + key);
-            const flat = this._archFlattenBlueprint(lod1Key);
-            if (!flat || !Array.isArray(flat.leaves) || flat.leaves.length === 0)
-                throw new Error("LOD1 ohne Leaves für " + key);
-            bakeLeaves = flat.leaves;
-        }
-        const group = new THREE.Group();
-        for (const leaf of bakeLeaves) {
-            if (leaf.shadowTwin) continue; // der Schatten-Zwilling gehört nicht ins Bild
-            const mesh = new THREE.Mesh(leaf.geom, leaf.mat);
-            if (leaf.localMatrix) {
-                mesh.matrixAutoUpdate = false;
-                mesh.matrix.copy(leaf.localMatrix);
-            }
-            group.add(mesh);
-        }
-        const bs = new THREE.Scene();
-        // Ü1 — DIE r128→r184-LICHT-ÜBERSETZUNG AUCH IM BAKE-RIG (der „Billboards falsche
-        // Farbe"-Befund): die Vorlagen-1.05 ist LEGACY-Licht (keine 1/π-BRDF-Normierung) —
-        // numerisch kopiert bäckt der Atlas ~π-DUNKEL (die grauen Silhouetten). Dieselbe
-        // dokumentierte Regel wie das Welt-Rig (AnazhRealm.LEGACY_LICHT), EIN weiterer
-        // Anwendungs-Ort. Der Atlas bleibt ein FLACHER Albedo-Bake (Vorlage Z.462/1618) —
-        // ALLES gerichtete Licht (Tag/Wetter-Drift) macht die PBR-Lichtung pro Frame.
-        bs.add(new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.05 * AnazhRealm.LEGACY_LICHT));
-        bs.add(group);
-        const halfW = rec.frame.halfW,
-            halfH = rec.frame.halfH;
-        // Die Kamera steht NAH (ortho braucht keine Distanz für die Größe, nur
-        // Clearance vor der Krone): GEMESSEN bräunte die geteilte Aerial-Perspektive
-        // des Foliage-Materials die Krone bei ~55 m Bake-Distanz (distanz-basierter
-        // outputNode) — nah gebacken bleibt die Krone farbtreu (wie diag-werk-render).
-        const cam = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, 0.1, 500);
-        cam.position.set(0, halfH, Math.max(halfW * 1.5 + 3, 8));
-        cam.lookAt(0, halfH, 0);
-        cam.updateProjectionMatrix();
-        // Ruhiger Bake mit voller Krone (Vorlage Z.1621): Wind 0 + LOD-Dither-Maske
-        // AUS (sonst dithert das V18.387-Crossfade die Karten am Bake-Abstand weg).
-        const wu = st.windUniforms;
-        const pWind = wu && wu.uWindTime ? wu.uWindTime.value : null;
-        if (pWind != null) wu.uWindTime.value = 0;
-        const lu = st.lodUniforms;
-        const pMask = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
-        if (pMask != null) lu.uLodMaskOn.value = 0;
-        const prevRT = typeof rend.getRenderTarget === "function" ? rend.getRenderTarget() : null;
-        const prevClear = new THREE.Color();
-        let prevAlpha = 1;
-        try {
-            rend.getClearColor(prevClear);
-            prevAlpha = rend.getClearAlpha();
-        } catch (_e) {
-            /* Clear-State optional */
-        }
-        const rtCol = new THREE.RenderTarget(cw, ch, { depthBuffer: true });
-        rtCol.texture.colorSpace = THREE.SRGBColorSpace; // sRGB-kodiert wie der Canvas-Fallback
-        const rtNrm = new THREE.RenderTarget(cw, ch, { depthBuffer: true }); // Normalen linear
+    // BÄCKER-VEREINIGUNG — DEN STUDIO-PAYLOAD KONSUMIEREN (die fixe Naht phytogenesis
+    // `__replyBakeImpostor`): payload = { cw:128, ch:256, V:8, aspect, height, albedo, normal }.
+    // PIXEL-WAHRHEIT: albedo/normal kommen aus `gl.readRenderTargetPixels(_impRT,0,0,cw,ch·V)` —
+    // die 8 Blickwinkel sind VERTIKAL gestapelt (Zelle v = Zeilen v·ch..(v+1)·ch) und WebGL-
+    // readPixels liefert Zeilen BOTTOM-UP → je Zelle Y-flippen und in den HORIZONTALEN Welt-
+    // Atlas ((cw·V)×ch, Zelle v bei x=v·cw) malen. Der Studio-Bäcker hat Dilation + Rahmen
+    // schon gemacht (bakeImpostorAtlas — kein Nachbau hier). ATOMIC SWAP: DIESELBEN Textur-
+    // Objekte (Identität stabil → kein Pipeline-Recompile, gpu-lens-Wand V18.322/.324), nur
+    // das Bild wechselt (gleiche Dimensionen → reiner Re-Upload). Fail-closed: Dimensions-
+    // Drift zwischen Studio-Reply und Record (beide lesen PORTAL_RENDER_CONFIG.impostor)
+    // → false → die Retry-Disziplin des Tick greift.
+    _applyStudioImpostorPayload(rec, payload) {
+        if (!rec || !payload || typeof document === "undefined") return false;
+        const V = payload.V | 0,
+            cw = payload.cw | 0,
+            ch = payload.ch | 0;
+        if (V !== rec.views || cw !== rec.cellW || ch !== rec.cellH) return false;
+        const need = cw * ch * V * 4;
+        if (!payload.albedo || payload.albedo.length !== need) return false;
+        // M1 (Review-Ernte) — DIE NICHT-LEERE-WAND: ein Bäcker-Fehler im Studio (leere
+        // Gruppe, interner catch) liefert dimensionstreue CLEAR-Pixel (alpha 0 überall).
+        // Eine leere Karte darf NIE als Erfolg reisen (rttBaked=true + degenerierter
+        // Rahmen = fernes Objekt verschwindet) → false, die Retry-/Terminal-Disziplin
+        // des Tick urteilt. Geprüft wird ALPHA (Silhouetten-Deckung), vor jeder Adoption.
+        let opak = 0;
+        const a = payload.albedo;
+        for (let i = 3; i < need; i += 4) if (a[i] > 8) opak++;
+        if (opak < 64) return false;
         const colCanvas = document.createElement("canvas");
         colCanvas.width = cw * V;
         colCanvas.height = ch;
-        const colCtx = colCanvas.getContext("2d", { willReadFrequently: true });
-        const nrmCanvas = document.createElement("canvas");
-        nrmCanvas.width = cw * V;
-        nrmCanvas.height = ch;
-        const nrmCtx = nrmCanvas.getContext("2d", { willReadFrequently: true });
-        if (!colCtx || !nrmCtx) throw new Error("2D-Kontext für den Atlas-Blit fehlt");
-        // MeshNormalMaterial (Core-Klasse — der WebGPURenderer konvertiert sie nativ
-        // zur Node-Variante; exakt der Vorlagen-Override Z.1616, KEIN Bootstrap-Edit
-        // nötig): packt die view-space-Normale als RGB (n·0.5+0.5).
-        if (!this._impostorNormalOverride)
-            this._impostorNormalOverride = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
-        const _stage = (s) => {
-            if (typeof window !== "undefined") window.__impostorBakeStage = key + ":" + s;
-        };
-        try {
-            for (let v = 0; v < V; v++) {
-                // Ansicht v = der Baum aus Peilung v·45° (Kamera fix, Baum gegenrotiert — Vorlage Z.1640).
-                group.rotation.y = -v * ((Math.PI * 2) / V);
-                group.updateMatrixWorld(true);
-                rend.setRenderTarget(rtCol);
-                rend.setClearColor(0x2f4a22, 0); // Clear = Laubgrün(alpha 0): Mips bluten Blattfarbe statt Schwarz
-                _stage("col-render-" + v);
-                rend.render(bs, cam);
-                _stage("col-read-" + v);
-                let buf = await rend.readRenderTargetPixelsAsync(rtCol, 0, 0, cw, ch);
-                this._impostorBlitPixels(colCtx, buf, v * cw, cw, ch);
-                bs.overrideMaterial = this._impostorNormalOverride;
-                rend.setRenderTarget(rtNrm);
-                rend.setClearColor(0x8080ff, 1); // Hintergrund-Normale = zur Kamera (neutral)
-                _stage("nrm-render-" + v);
-                rend.render(bs, cam);
-                _stage("nrm-read-" + v);
-                buf = await rend.readRenderTargetPixelsAsync(rtNrm, 0, 0, cw, ch);
-                bs.overrideMaterial = null;
-                this._impostorBlitPixels(nrmCtx, buf, v * cw, cw, ch);
-            }
-            _stage("views-done");
-        } finally {
-            bs.overrideMaterial = null;
-            rend.setRenderTarget(prevRT || null);
-            try {
-                rend.setClearColor(prevClear, prevAlpha);
-            } catch (_e) {
-                /* Clear-State optional */
-            }
-            if (pWind != null) wu.uWindTime.value = pWind;
-            if (pMask != null) lu.uLodMaskOn.value = pMask;
-            rtCol.dispose();
-            rtNrm.dispose();
-        }
-        this._impostorDilate(colCtx, cw * V, ch, 2); // 2px-Dilation gegen den dunklen Mip-Halo (Vorlage Z.1653)
-        // ATOMIC SWAP: DIESELBEN Textur-Objekte (Identität stabil → kein Recompile),
-        // nur das Bild wechselt (gleiche Dimensionen → reiner Re-Upload).
+        const colCtx = colCanvas.getContext("2d");
+        if (!colCtx) return false;
+        this._paintStudioAtlasCells(colCtx, payload.albedo, cw, ch, V);
         rec.map.image = colCanvas;
         rec.map.needsUpdate = true;
-        if (rec.nmap) {
-            rec.nmap.image = nrmCanvas;
-            rec.nmap.needsUpdate = true;
+        if (rec.nmap && payload.normal && payload.normal.length === need) {
+            const nrmCanvas = document.createElement("canvas");
+            nrmCanvas.width = cw * V;
+            nrmCanvas.height = ch;
+            const nrmCtx = nrmCanvas.getContext("2d");
+            if (nrmCtx) {
+                this._paintStudioAtlasCells(nrmCtx, payload.normal, cw, ch, V);
+                rec.nmap.image = nrmCanvas;
+                rec.nmap.needsUpdate = true;
+            }
+        }
+        // RAHMEN-EINHEIT (eine Quelle!): payload.aspect (= halfW/halfH des Studio-Bake-Rahmens,
+        // `_impWR`) + payload.height (Weltmaß des L1-Bake-Subjekts, Studio-FIX v26: Quad-Höhe =
+        // volle L1-Boxhöhe) ERSETZEN den vorläufigen Welt-Rahmen aus dem LOD1-Scan — Textur-
+        // Rahmung und Quad-Geometrie lesen fortan DIESELBE Studio-Antwort (sonst Verzerrung).
+        // NUR Foundry-Records (Quad im TEMPLATE-lokalen Maß wie payload.height); Grammatik-
+        // Records leben in Skelett-Weltmaßen — dort bliebe der Skelett-Rahmen (derselbe
+        // Formel-Kern __phytoCore.impostorFrame), der Pfad ist bei lebender Foundry ohnehin
+        // strukturell tot (_buildVariantLODs-Chokepoint).
+        const aspect = Number(payload.aspect),
+            height = Number(payload.height);
+        if (rec.foundry && Number.isFinite(aspect) && aspect > 0 && Number.isFinite(height) && height > 0) {
+            const halfH = height * 0.5;
+            rec.frame = { totalH: height, maxR: rec.frame ? rec.frame.maxR : 0, halfH, halfW: halfH * aspect };
+            this._reframeImpostorFlat(rec);
         }
         rec.rttBaked = true;
         if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
+        return true;
     }
 
-    // V18.390 (Eins W3) — RTT-Readback → Atlas-Zelle. DIE BACKEND-ORIENTIERUNGS-REGEL
-    // (08.07., der „Billboards auf dem Kopf"-Schöpfer-Befund auf echter GPU): die
-    // `readRenderTargetPixelsAsync`-Zeilen-Ordnung ist BACKEND-abhängig — der
-    // WebGL(2)-Backend liefert BOTTOM-UP (GL-readPixels-Konvention, row 0 = Bild-
-    // Unterkante → FLIPPEN), der ECHTE WebGPU-Backend TOP-DOWN (WGPU-Texturen sind
-    // y-down → NICHT flippen). Die alte „GEMESSEN bottom-up"-Zeile war auf dem
-    // Container-WebGL2-FALLBACK gemessen und als universell verallgemeinert — auf
-    // der Schöpfer-GPU (WebGPU) stand darum jede Karte kopfüber. Dieselbe Regel gilt
-    // für Farb- UND Normal-Atlas (beide reisen durch diesen einen Blit).
-    _impostorBlitPixels(ctx, buf, dx, w, h) {
-        const be = this.state.renderer && this.state.renderer.backend;
-        const flip = !(be && be.isWebGPUBackend === true);
-        const img = ctx.createImageData(w, h);
-        const row = w * 4;
-        for (let y = 0; y < h; y++) {
-            const src = (flip ? h - 1 - y : y) * row;
-            const dst = y * row;
-            for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
-        }
-        ctx.putImageData(img, dx, 0);
-    }
-
-    // V18.390 (Eins W3) — die 2px-CPU-Dilation (Vorlagen-Shader Z.1656 als Canvas-
-    // Pass): Kronenfarbe in transparente Randtexel fluten, Alpha bleibt 0 → die
-    // Mips mischen Blattfarbe statt Clear-Grün (kein dunkler Halo an fernen Karten).
-    // IN-MEMORY (08.07., der Schöpfer-Log-Befund „115× willReadFrequently"): der alte
-    // Pfad rief getImageData/putImageData PRO PASS PRO BAKE = ein GPU→CPU-Readback-
-    // Sturm auf dem Main-Thread mitten im Boot. Jetzt EIN Readback + Pässe als Ping-
-    // Pong auf zwei typed Arrays + EIN Write — byte-identisches Ergebnis (dieselbe
-    // Nachbar-Max-Regel auf denselben Daten), N−1 Readbacks weniger je Aufruf.
-    _impostorDilate(ctx, w, h, radiusPx) {
-        const passes = Math.max(1, radiusPx | 0);
-        const img = ctx.getImageData(0, 0, w, h);
-        let d = img.data;
-        let o = new Uint8ClampedArray(d.length);
-        for (let p = 0; p < passes; p++) {
-            o.set(d);
-            for (let y = 0; y < h; y++) {
-                for (let x = 0; x < w; x++) {
-                    const idx = (y * w + x) * 4;
-                    if (d[idx + 3] > 12) continue; // opak genug — bleibt
-                    let bestA = 0,
-                        br = d[idx],
-                        bg = d[idx + 1],
-                        bb = d[idx + 2];
-                    for (let dy = -1; dy <= 1; dy++) {
-                        const yy = y + dy;
-                        if (yy < 0 || yy >= h) continue;
-                        for (let dxp = -1; dxp <= 1; dxp++) {
-                            if (dxp === 0 && dy === 0) continue;
-                            const xx = x + dxp;
-                            if (xx < 0 || xx >= w) continue;
-                            const ni = (yy * w + xx) * 4;
-                            if (d[ni + 3] > bestA) {
-                                bestA = d[ni + 3];
-                                br = d[ni];
-                                bg = d[ni + 1];
-                                bb = d[ni + 2];
-                            }
-                        }
-                    }
-                    if (bestA > 12) {
-                        o[idx] = br;
-                        o[idx + 1] = bg;
-                        o[idx + 2] = bb;
-                        // Alpha bleibt 0 (nur die FARBE flutet)
-                    }
-                }
+    // Eine vertikal gestapelte, bottom-up Studio-Atlas-Spalte (cw × ch·V) in die horizontale
+    // Welt-Atlas-Zeile malen: Zelle v = Puffer-Zeilen v·ch..(v+1)·ch (Zeile v·ch = BILD-UNTERKANTE
+    // der Ansicht v, GL-Konvention) → Y-Flip je Zelle → putImageData bei x=v·cw.
+    _paintStudioAtlasCells(ctx, buf, cw, ch, V) {
+        const row = cw * 4;
+        for (let v = 0; v < V; v++) {
+            const img = ctx.createImageData(cw, ch);
+            const base = v * ch;
+            for (let y = 0; y < ch; y++) {
+                const src = (base + (ch - 1 - y)) * row;
+                const dst = y * row;
+                for (let i = 0; i < row; i++) img.data[dst + i] = buf[src + i];
             }
-            const t = d;
-            d = o;
-            o = t;
+            ctx.putImageData(img, v * cw, 0);
         }
-        img.data.set(d);
-        ctx.putImageData(img, 0, 0);
+    }
+
+    // DER RE-FRAME-WEG (das Geometrie-Pendant zum ATOMIC tex.image-Swap): war das Billboard-Quad
+    // beim Eintreffen des Studio-Bakes schon instanziert (rec._flat entsteht ab Record+Frame,
+    // VOR dem Bake), werden seine Attribute IN PLACE auf den Studio-Rahmen umgeschrieben — das
+    // Quad (rec._flat.leaves[0].geom) wird von allen HISM-Gruppen GETEILT, gleiche Buffer-Größe
+    // = reiner Re-Upload, Geometrie-IDENTITÄT stabil → kein Pipeline-Recompile (dieselbe
+    // gpu-lens-Wand wie der Textur-Swap V18.322/.324). Die Ecken-Wahrheit trägt das uv-Attribut
+    // (u=1 ↔ +halfW · v=1 ↔ y=H, exakt die `_buildImpostorCrossGeometry`-Corners); aFlex=(v)²
+    // bleibt {0,1} und braucht keinen Rewrite. Bekannte Rest-Konstante: die Crossfade-Sichthöhe
+    // (frame.halfH·2, in `_buildPbrNodeMaterial` als Shader-Konstante gebacken) behält den
+    // Vor-Bake-Wert — ein Fade-BAND-Detail, keine Geometrie-/Textur-Wahrheit.
+    _reframeImpostorFlat(rec) {
+        const leaf = rec && rec._flat && Array.isArray(rec._flat.leaves) ? rec._flat.leaves[0] : null;
+        const g = leaf && leaf.geom;
+        if (!g || !rec.frame) return;
+        const H = rec.frame.halfH * 2,
+            hw = rec.frame.halfW;
+        const pos = g.getAttribute("position"),
+            impX = g.getAttribute("aImpX"),
+            uv = g.getAttribute("uv");
+        if (!pos || !impX || !uv) return;
+        for (let i = 0; i < pos.count; i++) {
+            pos.setY(i, uv.getY(i) > 0.5 ? H : 0);
+            impX.setX(i, uv.getX(i) > 0.5 ? hw : -hw);
+        }
+        pos.needsUpdate = true;
+        impX.needsUpdate = true;
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        // die camera-facing Ecke kann in JEDE horizontale Richtung zeigen → Hülle weiten
+        // (dieselbe Regel wie beim Erst-Bau in `_buildImpostorCrossGeometry`).
+        if (g.boundingBox) {
+            g.boundingBox.min.x -= hw;
+            g.boundingBox.min.z -= hw;
+            g.boundingBox.max.x += hw;
+            g.boundingBox.max.z += hw;
+        }
+        if (g.boundingSphere) g.boundingSphere.radius += hw;
     }
 
     // Die deterministische Silhouetten-Zeichnung (aus Key-Hash + skeleton.kind).
@@ -63593,9 +63524,9 @@ class AnazhRealm {
         if (this._foundry) return this._foundry;
         const f = {
             worker: null, // P3a: der Studio-Generator als Web-Worker (Geometrie/Daten, kein DOM)
-            // P5: das GL-Bake-iframe ist GESCHNITTEN — der Impostor-Atlas backt jetzt auf dem EINEN
-            // Haupt-Renderer (RTT, `_bakeImpostorAtlasRTT` über die `foundry`-Flagge). Ein Renderer,
-            // ein Bake-Pfad; kein null-origin-iframe mehr.
+            // P5→BÄCKER-VEREINIGUNG: das GL-Bake-iframe UND der Welt-RTT-Nachbau sind
+            // GESCHNITTEN — der Impostor-Atlas backt im STUDIO-Bäcker dieses Workers
+            // (Kanal "bake-impostor" → Reply "impostor"). EIN Bäcker, ein Bake-Pfad.
             ready: false,
             pending: new Map(),
             reqSeq: 1,
@@ -63702,10 +63633,17 @@ class AnazhRealm {
                                 f.pending.delete(m.reqId);
                                 ps(m.plan || null);
                             }
+                        } else if (m.type === "impostor") {
+                            // BÄCKER-VEREINIGUNG — der Studio-Bäcker antwortet (Kanal
+                            // "bake-impostor" → Reply "impostor" mit den Atlas-Pixeln + Rahmen).
+                            // DASSELBE pending-Routing wie build-asset/settlement (EIN
+                            // Mechanismus, kein Parallelpfad); Konsum: `_applyStudioImpostorPayload`.
+                            const pi = f.pending.get(m.reqId);
+                            if (pi) {
+                                f.pending.delete(m.reqId);
+                                pi(m.payload || null);
+                            }
                         }
-                        // impostor (P5): der Worker liefert die LOD1-GEOMETRIE; der 8-Winkel-Atlas backt daraus
-                        // auf dem EINEN Haupt-Renderer (RTT, `_foundryEnsureImpostorRecord` → `_bakeImpostorAtlasRTT`).
-                        // Kein Bake-iframe mehr.
                     };
                 })
                 .catch(() => {
@@ -64435,6 +64373,37 @@ class AnazhRealm {
             }, 45000);
         });
     }
+    // BÄCKER-VEREINIGUNG — die Fernstufe EINES (Preset,Seed) beim STUDIO-Bäcker anfragen
+    // (Kanal "bake-impostor" → phytogenesis `__replyBakeImpostor` → `bakeImpostorAtlas`,
+    // KEIN Nachbau: editiert der Schöpfer Bäcker/Shader/Framing im Studio, fließt es
+    // automatisch in die Welt-Ferne). Resolvt mit dem payload (oder null bei Fehler/
+    // Timeout — der Tick-Aufrufer trägt die Retry-Disziplin). DASSELBE pending-Routing
+    // wie build-asset (EIN Mechanismus, reqIds disjunkt über den "imp"-Präfix).
+    _foundryBakeImpostorRequest(presetId, seed, season) {
+        const f = this._foundry;
+        if (!f || !f.ready || !f.worker) return Promise.resolve(null);
+        const reqId = "imp" + f.reqSeq++;
+        return new Promise((resolve) => {
+            f.pending.set(reqId, resolve);
+            try {
+                f.worker.postMessage({ type: "bake-impostor", reqId, presetId, seed, season: season || "summer" });
+            } catch (_e) {
+                f.pending.delete(reqId);
+                resolve(null);
+                return;
+            }
+            // Endliches Timeout wie build-asset: der pending-Eintrag darf nie ewig leben
+            // (der Tick-Watchdog IMPOSTOR_BAKE_TIMEOUT_MS räumt das SICHTBARE Pending
+            // früher; ein sehr später Erfolg darf trotzdem noch heilen — idempotent-gut).
+            setTimeout(() => {
+                if (f.pending.has(reqId)) {
+                    f.pending.delete(reqId);
+                    this.log(`FOUNDRY TIMEOUT: bake-impostor(${presetId}) nach 45 s ohne Reply → null`, "WARN");
+                    resolve(null);
+                }
+            }, 45000);
+        });
+    }
     // L2 — die Fernstufe: den STUDIO-Baecker (bakeImpostorAtlas) im iframe anwerfen; er liefert den
     // 8-Winkel-Billboard-Atlas (Albedo + Normal) + Rahmen. AnazhRealm platziert das Billboard — kein
     // eigener Baecker, der Studio-Edit fliesst mit (der Schoepfer-Weg).
@@ -64620,12 +64589,12 @@ class AnazhRealm {
     // L2 — den Studio-Billboard-Atlas EINES (Preset,Variante) holen + als AnazhRealm-Impostor-Record
     // halten (in `_impostorAtlasMap`, das die EINE Impostor-Material-Quelle liest). Null solange der
     // Studio-Bake laeuft (der Aufrufer laesst L2 kalt), false bei Fehler (Aufrufer nimmt Geometrie).
-    // P5 (DAS NEUE KLEID — DER IMPOSTOR AUF DEM EINEN HAUPT-RENDERER, KEIN iframe): das Bake-Subjekt
-    // ist der FOUNDRY-LOD1-Baum (worker-produzierte Geometrie). Wir holen die LOD1-Gruppe aus dem
-    // Foundry-Cache; sobald sie steht, baut `_ensureImpostorAtlas` (die EINE Impostor-Quelle) den Record
-    // mit Silhouetten-Fallback + reiht den RTT-Bake ein (`_bakeImpostorAtlasRTT` liest über die
-    // `foundry`-Flagge die LOD1-Leaves). DIESELBE Maschine wie die Grammatik-Impostoren — ein Renderer,
-    // ein Bake-Pfad. Headless/Null-Renderer → der Silhouetten-Fallback bleibt (gate-treu, kein RTT).
+    // BÄCKER-VEREINIGUNG (nach P5): die ECHTEN Atlas-Pixel bäckt der STUDIO-Bäcker im Foundry-Worker
+    // (Kanal "bake-impostor", `_tickImpostorBake` → `_applyStudioImpostorPayload`) — die LOD1-Gruppe
+    // aus dem Foundry-Cache dient hier nur noch dem VORLÄUFIGEN Rahmen + der Silhouetten-Farbe
+    // (der Studio-Reply ersetzt den Rahmen, RAHMEN-EINHEIT). `_ensureImpostorAtlas` (die EINE
+    // Impostor-Quelle) baut Record + Fallback + reiht den Bake ein. Headless/Null-Renderer →
+    // der Silhouetten-Fallback bleibt (gate-treu, kein Bake enqueued).
     _foundryEnsureImpostorRecord(preset, variant, season) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
         const key = "fimp:" + preset + "|" + variant + "|" + season;
@@ -64649,7 +64618,7 @@ class AnazhRealm {
                         this._scatterRefillPending = true;
                         // DER SELBST-MATERIALISIERENDE RECORD (08.07., GEMESSEN: nach dem Prefetch
                         // standen 0 Records — der erste ensure-Aufruf postet nur die Anfrage; erst
-                        // ein Aufruf NACH der Ankunft baut Record + Rahmen + reiht den RTT-Bake
+                        // ein Aufruf NACH der Ankunft baut Record + Rahmen + reiht den Studio-Bake
                         // ein, und den machte erst irgendwann der Scatter): im Ankunfts-Moment
                         // sofort re-ensuren (Cache-Hit → Record formt sich, Bake-Queue füllt sich,
                         // `_tickImpostorBake` drainet eager — kein Warten auf den Zufalls-Leser).
@@ -64691,19 +64660,20 @@ class AnazhRealm {
             }
         });
         const maxR = Math.sqrt(_rad2);
-        // Die Bake-Subjekt-Leaves aus der LOD1-Gruppe (geteilte Geometrien/Materialien — NICHT disposen).
-        const I = new THREE.Matrix4();
+        // Die LOD1-Kind-Meshes (geteilte Geometrien — NICHT disposen): Substanz-Gate + Farbquelle
+        // für die Fallback-Silhouette. Das BAKE-Subjekt lebt seit der Bäcker-Vereinigung im
+        // Studio-Worker (bake-impostor) — die Welt hält keine Bake-Leaves mehr.
         const leaves = [];
         for (const child of group.children) {
-            if (child.geometry && child.material)
-                leaves.push({ geom: child.geometry, mat: child.material, localMatrix: I });
+            if (child.geometry && child.material) leaves.push({ geom: child.geometry });
         }
         if (!leaves.length) {
             this._impostorAtlasMap.set(key, false);
             return false;
         }
-        // Synthetisches Skelett-Hint NUR für Frame + Fallback-Silhouette (die echte Geometrie backt der
-        // RTT); die EINE Impostor-Quelle `_ensureImpostorAtlas` baut Record + Texturen + reiht den Bake ein.
+        // Synthetisches Skelett-Hint NUR für den VORLÄUFIGEN Frame + die Fallback-Silhouette (die
+        // echten Pixel + der endgültige Rahmen kommen vom Studio-Bäcker); die EINE Impostor-Quelle
+        // `_ensureImpostorAtlas` baut Record + Texturen + reiht den Bake ein.
         const conifer = /fichte|tanne|kiefer|mammut/.test(preset);
         // V18.464 (baum-D7-Heilung): die Fallback-Silhouette trug für JEDE Art
         // dasselbe fixe Grün (Birke=Fichte=Weide). Jetzt: die Kronen-Farbe aus den
@@ -64753,9 +64723,9 @@ class AnazhRealm {
             return false;
         }
         rec.foundry = true;
-        rec._foundryBakeLeaves = leaves; // -> `_bakeImpostorAtlasRTT` liest sie über die Flagge
         rec.species = preset;
         rec.variantIndex = variant;
+        rec.season = season || "summer"; // reist mit dem Bake-Request zum Studio-Bäcker
         this._scatterRefillPending = true;
         return rec;
     }
@@ -65311,7 +65281,7 @@ class AnazhRealm {
         // DAS NEUE KLEID (der 252-Nachbau-Fern-Baum-Befund): auch die BAUM-BILLBOARDS [Impostor]
         // vorwärmen — der Fern-Scatter serviert LOD2 = das Studio-Billboard. Jeder Record-Miss
         // POSTET seine LOD1-Anfrage sofort (parallel zur Bibliothek oben, kein 8-ms-Schlaf mehr);
-        // der RTT-Bake folgt budgetiert über `_tickImpostorBake`, sobald die Geometrie dockt.
+        // der Studio-Bake folgt budgetiert über `_tickImpostorBake`, sobald die Geometrie dockt.
         const impSeason = this.state.season || "summer";
         for (const sp of spec.species) {
             if (typeof this._foundryPresetIsTree === "function" && !this._foundryPresetIsTree(sp)) continue;
@@ -65567,7 +65537,7 @@ class AnazhRealm {
         if (lod > 2) lod = 2;
         // L2 fuer BAEUME = das STUDIO-Billboard (dein bakeImpostorAtlas), NICHT die schwere L2-
         // Geometrie (~15k Verts × dichter Fernwald = Overdraw-Freeze) — genau wie die Vorlage die
-        // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein RTT),
+        // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein Studio-Bake),
         // nur auf eine billige Karte geflacht. Fels/Kristall/Blume bleiben L2-Geometrie.
         if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
         // DIE STUFEN-WAHRHEIT JE ART ALS VERTRAGS-DATEN (LOD-WURZEL 08.07.): die Distanz-
@@ -65650,8 +65620,8 @@ class AnazhRealm {
             // Übersetzung lebt HIER im einen Chokepoint (localMatrix der Flat-Leaves): jede
             // Platzierung (Wald · Scatter · Understory · L2-Billboard) erbt sie automatisch,
             // die Kronen-Schüchternheits-Radien (schon welt-getunt, eiche 5.2 m) bleiben korrekt,
-            // die `_foundryBakeLeaves` bleiben TEMPLATE-LOKAL (der RTT-Rahmen framet die Box der
-            // ungescalten Gruppe — ein Scale dort sprengte den Atlas). Grammatik-Pfad unberührt.
+            // der Impostor-Rahmen bleibt TEMPLATE-LOKAL (der Studio-Bäcker framet den
+            // ungescalten Baum — ein Scale dort sprengte den Atlas). Grammatik-Pfad unberührt.
             const I = this._foundryWorldScaleMatrix(preset);
             // Die Schatten-Distanz (V18.265) trägt die Foundry mit: NUR die nahe Stufe (lod 0)
             // wirft Schatten; die fernen lod1/lod2-Bäume werfen einen winzigen, fog-verschleierten
@@ -73395,14 +73365,14 @@ class AnazhRealm {
         // werkstatt"): die WELT serviert einen BAUM auf der L2-Stufe als 8-Winkel-Impostor
         // (`_foundryFlattenFor` → `_foundryBuildImpostorFlat`, NICHT die schwere L2-Geometrie). Die
         // Vorschau MUSS dasselbe zeigen (Vorschau == Welt), sonst lügt sie. Der Impostor-Record backt
-        // aus DEMSELBEN Studio-Baum (LOD1-RTT) → die Karte „stammt vom jeweiligen Baum ab". Die eine
+        // aus DEMSELBEN Studio-Baum (Studio-Bäcker, bake-impostor) → die Karte „stammt vom jeweiligen Baum ab". Die eine
         // Impostor-Geometrie ist camera-facing + dekodiert Rotation/Skala aus der INSTANZ-Matrix →
         // als 1-Instanz-InstancedMesh bauen (identity → aRot 0, weiss = kein Tint, der Atlas trägt die
         // Farbe), NICHT als plain Mesh (sonst fehlt die Instanz-Matrix). Fels/Kristall/Blume behalten
         // die L2-Geometrie (kein Impostor) — nur Bäume zweigen ab.
         if (lod === 2 && typeof this._foundryPresetIsTree === "function" && this._foundryPresetIsTree(preset)) {
             const flat = this._foundryBuildImpostorFlat({ seed: seedNum }, preset);
-            if (flat === null) return "pending"; // der RTT-Bake läuft → ehrliches Interim, Vorschau bei Ankunft neu
+            if (flat === null) return "pending"; // der Studio-Bake läuft → ehrliches Interim, Vorschau bei Ankunft neu
             if (flat && Array.isArray(flat.leaves) && flat.leaves.length) {
                 const Ti = THREE;
                 const outImp = new Ti.Group();
@@ -83401,7 +83371,7 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // V18.465 — impostor: true (der Wirts-Auto-Impostor, den der porta-Vertrag
     // ausdrücklich dem Wirt zuweist: „Tore tragen NUR Stufe 0; L1=L0-Grade +
     // L2-Auto-Impostor sind Sache des Wirts", porta-core B2): die Fernstufe
-    // eines Tors ist das 8-Winkel-Billboard aus DERSELBEN RTT-Bäckerei wie die
+    // eines Tors ist das 8-Winkel-Billboard aus DERSELBEN Bäckerei wie die
     // Bäume — vorher renderte jedes Tor seine volle L0-Schwere (Geflecht:
     // hunderte CatmullRom-Tubes) auf JEDE Distanz bis zum generischen Cull.
     gate: Object.freeze({
@@ -84275,9 +84245,9 @@ AnazhRealm.OCCLUSION = Object.freeze({
 // dass ein Streaming-Frame nie am Deko-Bau kippt (der Ring-Kopfraum-Timer überlebt), groß
 // genug, dass eine warme Region (~6-10 ms nach 3a) in 1-2 Scheiben steht.
 AnazhRealm.SCATTER_SLICE_MS = 6;
-// W4.3 — der Impostor-Bake-Watchdog: hängt ein async RTT-Bake länger, wird er graziös
-// verworfen (rttFailed, Canvas-Fallback) statt die Queue für immer zu blocken. Weit über
-// jedem legitimen Bake (~100-500 ms real; swiftshader Sekunden), aber ENDLICH.
+// W4.3 — der Impostor-Bake-Watchdog: hängt ein async Studio-Bake (Worker-Reply) länger,
+// wird er graziös verworfen (Retry, dann rttFailed + Canvas-Fallback) statt die Queue für
+// immer zu blocken. Weit über jedem legitimen Bake, aber ENDLICH.
 AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS = 15000;
 AnazhRealm.SCATTER = Object.freeze({
     cellM: 3.4, // Plan §3.5 — Baum-Zell-Raster (die Canopy-Schicht)

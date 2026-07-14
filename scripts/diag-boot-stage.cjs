@@ -168,17 +168,26 @@ const server = http.createServer((req, res) => {
                         r._impostorBakePending = true;
                         r._impostorBakePendingSince = performance.now() - (A2.IMPOSTOR_BAKE_TIMEOUT_MS + 5000);
                         r._impostorBakePendingKey = anyKey;
+                        const prevTries = anyRec.rttTries;
                         const tokBefore = r._impostorBakeTok || 0;
                         r._tickImpostorBake();
                         o.watchdog = {
                             pendingCleared: r._impostorBakePending === false,
-                            recFailed: anyRec.rttFailed === true,
+                            // V18.464 (baum-D7, Lehre 6 — die Linse wandert mit): der Watchdog
+                            // verwirft graziös MIT bounded Retry — der erste Hänger RE-QUEUED den
+                            // Schlüssel (rttTries<3), erst der dritte wird terminal rttFailed.
+                            // BEIDE Dispositionen sind die gesunde Wand (nie still verhungern).
+                            recDisposed:
+                                anyRec.rttFailed === true || r._impostorBakeQueue.indexOf(anyKey) >= 0,
                             tokenBumped: (r._impostorBakeTok || 0) > tokBefore,
                         };
                         // WIEDERHERSTELLEN (die Gate-Hook-Lehre)
                         const qi = r._impostorBakeQueue.indexOf("__wd_dummy");
                         if (qi >= 0) r._impostorBakeQueue.splice(qi, 1);
+                        const qk = r._impostorBakeQueue.indexOf(anyKey);
+                        if (qk >= 0) r._impostorBakeQueue.splice(qk, 1);
                         anyRec.rttFailed = prevFailed;
+                        anyRec.rttTries = prevTries;
                         r._impostorBakePending = prevPending;
                         r._impostorBakePendingSince = prevSince;
                         r._impostorBakePendingKey = prevKey;
@@ -233,8 +242,8 @@ const server = http.createServer((req, res) => {
             pass: !!(out.selftest && out.selftest.firesOnInject && out.selftest.healsOnClean),
         });
         checks.push({
-            name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · rttFailed · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,
-            pass: !!(out.watchdog && out.watchdog.pendingCleared && out.watchdog.recFailed && out.watchdog.tokenBumped),
+            name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · Retry/rttFailed · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,
+            pass: !!(out.watchdog && out.watchdog.pendingCleared && out.watchdog.recDisposed && out.watchdog.tokenBumped),
         });
     }
     let fails = 0;

@@ -1,10 +1,12 @@
-// diag-foundry-impostor.cjs — P5-BEWEIS: der Impostor-Atlas backt auf dem EINEN Haupt-Renderer (RTT),
-// das GL-Bake-iframe ist GESCHNITTEN. Zwei Teile:
+// diag-foundry-impostor.cjs — P5/BÄCKER-VEREINIGUNGS-BEWEIS: die Welt-Fernstufe konsumiert den
+// STUDIO-Bäcker (Foundry-Worker-Kanal "bake-impostor"), der Welt-RTT-Nachbau + das GL-Bake-iframe
+// sind GESCHNITTEN. Zwei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt einen Record mit
-//     `foundry:true` + `_foundryBakeLeaves` (die LOD1-Geometrie) an; KEIN asset-foundry-iframe im DOM;
-//     die drei iframe-Methoden sind weg. Der RTT ist headless ein No-op (Silhouetten-Fallback trägt).
-//   B (echter swiftshader-Renderer, BEST-EFFORT): der RTT-Bake läuft (`__impostorRttBaked` steigt) ohne
-//     page-error. Der LOOK des Atlas bleibt das Schöpfer-Auge (echte GPU); hier zählt „läuft, crasht nicht".
+//     `foundry:true` + Frame + Fallback-Atlas an; der Bake-Tick spricht den Kanal "bake-impostor"
+//     (kein RTT-Nachbau: `_bakeImpostorAtlasRTT` weg); KEIN asset-foundry-iframe im DOM; die drei
+//     iframe-Methoden sind weg. Headless enqueued NIE (Silhouetten-Fallback trägt, gate-treu).
+//   B (echter swiftshader-Renderer, BEST-EFFORT): der Studio-Bake läuft (`__impostorRttBaked` steigt)
+//     ohne page-error. Der LOOK des Atlas bleibt das Schöpfer-Auge (echte GPU); hier zählt „läuft, crasht nicht".
 //   node scripts/diag-foundry-impostor.cjs
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -71,6 +73,7 @@ async function driveImpostor(page) {
                 out.err = "Worker nicht ready";
                 return out;
             }
+            // (die Vereinigungs-Proben unten brauchen den Record — rec bleibt im Scope)
             // Den Impostor-Record treiben: erst lädt die LOD1-Geometrie (null), dann steht der Record.
             let rec = null;
             const dl2 = performance.now() + 45000;
@@ -88,12 +91,23 @@ async function driveImpostor(page) {
             if (rec) {
                 out.rec = {
                     foundry: rec.foundry === true,
-                    bakeLeaves: Array.isArray(rec._foundryBakeLeaves) ? rec._foundryBakeLeaves.length : 0,
                     hasMap: !!rec.map,
                     hasFrame: !!(rec.frame && rec.frame.halfH > 0),
                     views: rec.views,
                 };
             }
+            // BÄCKER-VEREINIGUNG: der Bake-Tick spricht den Studio-Kanal, der RTT-Nachbau ist weg.
+            const strip = (x) =>
+                String(x)
+                    .replace(/\/\*[\s\S]*?\*\//g, "")
+                    .replace(/\/\/[^\n]*/g, "");
+            out.vereinigung = {
+                kanalImTick: /bake-impostor|_foundryBakeImpostorRequest/.test(strip(r._tickImpostorBake)),
+                requestMethode: typeof r._foundryBakeImpostorRequest === "function",
+                payloadKonsument: typeof r._applyStudioImpostorPayload === "function",
+                rttNachbau: typeof r._bakeImpostorAtlasRTT,
+                bakeLeavesWeg: !(rec && rec._foundryBakeLeaves),
+            };
             // Kein asset-foundry-iframe im DOM (das Bake-iframe ist geschnitten).
             out.hasIframe = !!document.querySelector('iframe[src*="asset-foundry"]');
             // Die drei iframe-Methoden sind weg.
@@ -134,9 +148,10 @@ async function driveImpostor(page) {
     const A = await driveImpostor(pageA);
     await browserA.close();
 
-    console.log("=== P5 — TEIL A: MECHANIK (Null-Renderer) ===");
+    console.log("=== P5/BÄCKER-VEREINIGUNG — TEIL A: MECHANIK (Null-Renderer) ===");
     console.log(`  Worker ready: ${A.ready}`);
     console.log(`  Impostor-Record: ${JSON.stringify(A.rec)}`);
+    console.log(`  Vereinigung (Kanal/Methoden/kein Nachbau): ${JSON.stringify(A.vereinigung)}`);
     console.log(`  asset-foundry-iframe im DOM: ${A.hasIframe} (erwartet false)`);
     console.log(`  iframe-Methoden (erwartet 3x undefined): ${JSON.stringify(A.cutMethods)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
@@ -146,10 +161,18 @@ async function driveImpostor(page) {
     if (!A.rec) errs.push("A: kein Impostor-Record entstanden (die LOD1-Geometrie lud nicht?)");
     else {
         if (!A.rec.foundry) errs.push("A: der Record traegt NICHT die foundry-Flagge (falscher Pfad)");
-        if (!(A.rec.bakeLeaves > 0)) errs.push("A: der Record hat KEINE _foundryBakeLeaves (kein Bake-Subjekt)");
         if (!A.rec.hasMap) errs.push("A: der Record hat keinen Atlas-Fallback (map)");
         if (!A.rec.hasFrame) errs.push("A: der Record hat keinen Frame");
     }
+    if (A.vereinigung) {
+        if (!A.vereinigung.kanalImTick)
+            errs.push("A: `_tickImpostorBake` spricht NICHT den Studio-Kanal (bake-impostor)");
+        if (!A.vereinigung.requestMethode) errs.push("A: `_foundryBakeImpostorRequest` fehlt");
+        if (!A.vereinigung.payloadKonsument) errs.push("A: `_applyStudioImpostorPayload` fehlt");
+        if (A.vereinigung.rttNachbau !== "undefined")
+            errs.push(`A: der RTT-Nachbau `+"`_bakeImpostorAtlasRTT`"+` lebt noch (${A.vereinigung.rttNachbau})`);
+        if (!A.vereinigung.bakeLeavesWeg) errs.push("A: der Record traegt noch `_foundryBakeLeaves` (totes Bake-Subjekt)");
+    } else if (A.ready) errs.push("A: die Vereinigungs-Proben liefen nicht");
     if (A.hasIframe) errs.push("A: ein asset-foundry-iframe LEBT noch im DOM (P3b nicht geschnitten)");
     if (A.cutMethods) {
         for (const [k, v] of Object.entries(A.cutMethods))
@@ -200,7 +223,7 @@ async function driveImpostor(page) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Foundry-Impostor backt über den EINEN Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves), das GL-Bake-iframe ist geschnitten (kein DOM-iframe, die drei Methoden weg). Der Atlas-LOOK ist das Schoepfer-Auge auf echter GPU."
+        "\n✅ GRÜN — die Welt-Fernstufe konsumiert den STUDIO-Bäcker (Kanal bake-impostor, foundry-Record + Frame), der Welt-RTT-Nachbau + das GL-Bake-iframe sind geschnitten (kein DOM-iframe, die Methoden weg). Der Atlas-LOOK ist das Schoepfer-Auge auf echter GPU."
     );
     process.exit(0);
 })().catch((e) => {

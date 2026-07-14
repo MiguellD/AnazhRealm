@@ -67,12 +67,20 @@ law(
     "der ~275-Zeilen-Inline-Bau lebt wieder"
 );
 
-// GESETZ 3 (P5) — DER IMPOSTOR BACKT AUF DEM EINEN HAUPT-RENDERER: kein GL-Bake-iframe; der RTT liest die Foundry-Leaves.
-console.log("\nGesetz 3 — der Impostor backt auf dem EINEN Haupt-Renderer (kein Bake-iframe):");
+// GESETZ 3 (P5 → BÄCKER-VEREINIGUNG) — DER STUDIO-BÄCKER IST DIE FERNSTUFE: der Stamm konsumiert
+// den Kanal "bake-impostor" (phytogenesis `__replyBakeImpostor`), der Welt-RTT-Nachbau ist
+// GESCHNITTEN (kein zweiter Bäcker); kein GL-Bake-iframe.
+console.log("\nGesetz 3 — der Studio-Bäcker ist die Fernstufe (kein Nachbau, kein Bake-iframe):");
 law(
-    "`_bakeImpostorAtlasRTT` liest bei der `foundry`-Flagge die LOD1-Bake-Leaves",
+    'der Stamm konsumiert den Studio-Bäcker-Kanal ("bake-impostor" → `_applyStudioImpostorPayload`)',
     true,
-    /if \(rec\.foundry\)/.test(anazhNC) && /_foundryBakeLeaves/.test(anazhNC)
+    /"bake-impostor"/.test(anazhNC) && /_applyStudioImpostorPayload/.test(anazhNC)
+);
+law(
+    "der Welt-RTT-Nachbau bleibt geschnitten (kein `_bakeImpostorAtlasRTT`/`_impostorBlitPixels`/`_impostorDilate`/`_foundryBakeLeaves`)",
+    false,
+    /_bakeImpostorAtlasRTT|_impostorBlitPixels|_impostorDilate|_foundryBakeLeaves/.test(anazhNC),
+    "der RTT-Nachbau ist zurück"
 );
 law(
     "KEIN asset-foundry-Bake-iframe (kein `iframe.src = …asset-foundry`)",

@@ -185,7 +185,7 @@ an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 | `AnazhRealm.LEGACY_LICHT` (§26-Statics) | die EINE Konstante (Math.PI), kein Tuning-Knopf                  |
 | `_dayNightApplyDirectionalLight`        | Sonne/KEY · FILL · RIM · BACK (je `base × LEGACY_LICHT × a.lum`) |
 | `_dayNightApplyAmbient`                 | der Hemi-Tag-Term (`0.45 × LEGACY_LICHT × sunHeight`)            |
-| `_bakeImpostorAtlasRTT`                 | das Bake-Rig (Hemi `1.05 × LEGACY_LICHT` — die π-Falle im Atlas) |
+| (Bäcker-Vereinigung)                    | der Impostor-Atlas backt seit der Vereinigung im r128-STUDIO-Bäcker (`bake-impostor`) — dort gilt die Legacy-Lichtwelt nativ, kein Welt-Bake-Rig mehr |
 
 **Ü2 — FARBE (raw-als-linear):** r128 las Hex-Farben ALS LINEAR — treue Studio-Werte reisen
 deshalb als ROHE lineare Zahlen und werden roh=linear gelesen (nie als sRGB-Hex re-interpretiert):
