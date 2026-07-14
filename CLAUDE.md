@@ -6,7 +6,23 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.465 — DIE LEBENDIGEN TORE: Flügel öffnen sich · Tor-Fernstufe · Klammer-Wände)
+## Stand (V18.466 — DIE CHARAKTER-ACHSEN: die Studios sprechen in der Welt)
+
+**CHARAKTER-ACHSEN (V18.466, Schöpfer „schau die studios an, du wirst sehen was fehlt"):**
+die Studios tragen ORTHOGONALE Design-Sprachen, die die Welt nie wählen konnte — jetzt
+sprechen sie: **„präge <gattung> auf <charakter>"** schreibt über die `KIND_CHARAKTER`-Tabelle
+(M8) in den EINEN Regler-Kanal (`state.workshop.studioOv`): Schmiede-**TRADITIONEN**
+(Frank·Nihon·Pars·Urvolk·Brut — `ov.__tradition` FORMT die Klinge im Kern, rein additiv,
+ov-frei byte-golden; 5 unverwechselbare Fingerprints je Gattung) und Garage-**KULTUREN**
+(cavallo·toro·stern·vorsprung·monolith — die fx-Dial-Vektoren reisen roh; vehicle-core lädt
+jetzt main-seitig). **„spiele <genre>"** wählt eines der 22 Genesis-Genres für das Lofi-Pad
+(state.klangPreset — der Konsument existierte, nur das Verb fehlte; „spiele heimat" = zurück).
+Linse: gate:charakter-achsen (T formt · K trägt · G ≥20 · V Konsum-Proben + Selbst-Test).
+MERKE: __-Schlüssel in ov sind STEUER-Passagiere (wandern nie in Bau-Parameter) · die
+Studio-Augen-Runde (swiftshader-Screenshots aller 8 Studios) fand die Lücke — schauen schlägt
+greppen. OFFEN: typeof-Voll-Wanderung · Rinden-Vereinigung (U2b) · die Schöpfer-Browser-Runde.
+
+### Davor (V18.465 — DIE LEBENDIGEN TORE: Flügel öffnen sich · Tor-Fernstufe · Klammer-Wände)
 
 **FLÜGEL + FERNSTUFE (V18.465):** die Tür-Flügel LEBEN in der Welt — das Scharnier reist als
 additives `out.tuer`-Feld im Umschlag (Brücke liest `userData.side` der porta-Flügel-Gruppen),

@@ -22237,6 +22237,95 @@ class AnazhRealm {
                 },
             },
             {
+                // V18.466 — DIE KLANG-WAHL ALS VERB (die Studios sprechen): das
+                // Genesis-Lab exportiert 22 Genre-Rezepte (kind "klang"); der EINE
+                // Lofi-Konsument liest state.klangPreset seit der ERFINDER-WELLE —
+                // nur das VERB fehlte. "spiele heimat" = zurück aufs Host-Rezept.
+                example: "spiele techno",
+                re: /^spiele\s+([a-zäöüß0-9_-]+)$/i,
+                run: (m, append) => {
+                    const wahl = m[1].toLowerCase();
+                    if (wahl === "heimat") {
+                        this.state.klangPreset = null;
+                        append("Klang: zurück zur Heimat-Stimme (Host-Lofi).");
+                        return;
+                    }
+                    const f = this._foundry;
+                    const rec = f && f.recipes ? f.recipes[wahl] : null;
+                    if (rec && rec.kind === "klang") {
+                        this.state.klangPreset = wahl;
+                        append(`Klang: das Lofi-Pad führt jetzt „${rec.lab || wahl}" (Genesis-Studio).`);
+                    } else {
+                        const genres =
+                            f && f.recipes
+                                ? Object.keys(f.recipes)
+                                      .filter((k) => f.recipes[k] && f.recipes[k].kind === "klang")
+                                      .join(" · ")
+                                : "";
+                        append(
+                            genres
+                                ? `Kein Klang-Genre „${wahl}". Das Studio kennt: ${genres} — oder „spiele heimat".`
+                                : "Das Klang-Buch ist noch kalt — gleich nochmal versuchen."
+                        );
+                    }
+                },
+            },
+            {
+                // V18.466 — DIE CHARAKTER-ACHSEN ALS VERB (Tabelle vor if, M8): die
+                // Studios tragen orthogonale Design-Sprachen — Schmiede-TRADITIONEN
+                // (Frank/Nihon/Pars/Urvolk/Brut) und Garage-KULTUREN (cavallo/toro/
+                // stern/vorsprung/monolith) — beide als DATEN in den Gesetzbüchern
+                // exportiert, aber nie welt-wählbar. Das Verb schreibt in den EINEN
+                // Regler-Kanal (state.workshop.studioOv, W-A1): JEDER künftige Bau
+                // dieses Rezepts (Hand · Welt · Vorschau) trägt den Charakter.
+                // "präge langschwert auf frank" bzw. Kultur-Name = zurücksetzen ist
+                // implizit (Frank/Basiskultur SIND gültige Tabellen-Zeilen).
+                example: "präge langschwert auf nihon",
+                re: /^pr(?:ä|ae)ge\s+([a-zäöüß0-9_-]+)\s+auf\s+([a-zäöüß0-9_-]+)$/i,
+                run: (m, append) => {
+                    const gattung = m[1].toLowerCase();
+                    const charakter = m[2].toLowerCase();
+                    const f = this._foundry;
+                    const preset = this._foundryPresetFor(gattung) || (f && f.recipes && f.recipes[gattung] ? gattung : null);
+                    const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+                    if (!rec) {
+                        append(`Kein Studio-Rezept „${gattung}" im Buch.`);
+                        return;
+                    }
+                    const achse = AnazhRealm.KIND_CHARAKTER[rec.kind];
+                    if (!achse) {
+                        append(`„${rec.lab || preset}" (${rec.kind}) trägt keine Charakter-Achse.`);
+                        return;
+                    }
+                    const kern = typeof globalThis !== "undefined" ? globalThis[achse.ns] : null;
+                    const tabelle = kern ? kern[achse.tabelle] : null;
+                    const zeileName = tabelle
+                        ? Object.keys(tabelle).find((k) => k.toLowerCase() === charakter)
+                        : null;
+                    if (!zeileName) {
+                        append(
+                            tabelle
+                                ? `Die ${achse.wort} des Studios: ${Object.keys(tabelle).join(" · ")}.`
+                                : `Das ${achse.wort}-Gesetzbuch ist nicht geladen.`
+                        );
+                        return;
+                    }
+                    const ws = this.state.workshop || (this.state.workshop = {});
+                    if (!ws.studioOv) ws.studioOv = {};
+                    ws.studioOv[preset] = Object.assign({}, ws.studioOv[preset], achse.ov(zeileName, tabelle));
+                    // gecachte Bauten dieses Rezepts verwerfen, damit der Charakter
+                    // sofort führt (der ov-Kanal ist cache-frei per W-A1-Gesetz).
+                    if (f && f.cache && typeof f.cache.forEach === "function") {
+                        const tot = [];
+                        f.cache.forEach((_v, k) => {
+                            if (String(k).indexOf(preset + "|") === 0) tot.push(k);
+                        });
+                        for (const k of tot) f.cache.delete(k);
+                    }
+                    append(`Geprägt: „${rec.lab || preset}" trägt fortan die ${achse.wort} „${zeileName}".`);
+                },
+            },
+            {
                 example: "aktiviere anazh-symphonie",
                 re: /^aktiviere\s+anazh-symphonie(?:\s.*)?$/i,
                 run: (m, append) => {
@@ -83169,7 +83258,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.465.0";
+AnazhRealm.VERSION = "18.466.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -83212,6 +83301,27 @@ AnazhRealm.ACHSEN_FARBE = Object.freeze({
     magieleitung: "#d4a3ff", // magisches Lila
     glut: "#ff7a59", // warmes Feuer
     lebendig: "#7bd389", // frisches Gruen
+});
+
+// V18.466 — DIE CHARAKTER-ACHSEN-TABELLE (M8: Tabelle vor if): welche orthogonale
+// Design-Sprache eine Rezept-Domäne trägt, wo ihre Tabelle im Gesetzbuch wohnt und
+// wie die Wahl als ov-Passagier reist. Schmiede: __tradition ist der STEUER-Schlüssel
+// (buildInstance formt die Gattung damit); Garage: die Kultur-fx-Dials reisen roh
+// (die vehicle-Merge-Ordnung konsumiert sie seit je). Eine neue Domänen-Achse ist
+// EINE Zeile hier, kein Verb-Zweig.
+AnazhRealm.KIND_CHARAKTER = Object.freeze({
+    weapon: Object.freeze({
+        ns: "__schmiedeCore",
+        tabelle: "TRADITIONEN",
+        wort: "Tradition",
+        ov: (name) => ({ __tradition: name }),
+    }),
+    vehicle: Object.freeze({
+        ns: "__vehicleCore",
+        tabelle: "CULTURES",
+        wort: "Kultur",
+        ov: (name, tab) => Object.assign({}, tab[name] && tab[name].fx),
+    }),
 });
 
 AnazhRealm.KIND_POLICY = Object.freeze({

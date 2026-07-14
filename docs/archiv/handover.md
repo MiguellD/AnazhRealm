@@ -378,6 +378,29 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.466 — DIE CHARAKTER-ACHSEN (Schöpfer „du siehst die studios, schau sie an, du wirst sehen was noch fehlt")
+
+Die Studio-AUGEN-Runde (swiftshader-Screenshots aller 8 Studios — schauen schlägt greppen)
+fand die Lücke: die Studios tragen ORTHOGONALE Design-Sprachen, die die Gesetzbücher längst
+exportieren, die die Welt aber nie wählen konnte — Schmiede-TRADITIONEN (Frank/Nihon/Pars/
+Urvolk/Brut; schmiede-core nannte die Schuld selbst: „Die TRADITION ist im Wirts-Kanal
+LAB-FEST Frank"), Garage-KULTUREN (cavallo/toro/stern/vorsprung/monolith, `CULTURES`-fx-
+Dial-Vektoren) und 22 Klang-Genres (der Lofi-Konsument las state.klangPreset seit der
+ERFINDER-WELLE — nur das Verb fehlte). Geschlossen in drei Nähten: (1) schmiede-core
+buildInstance liest `ov.__tradition` (rein additiv; die Tradition reist als OBJEKT in
+shapeByTradition + tradWerkstoff + die Möbel-Bauer [buildGuard/Grip/Pommel folgten noch
+currentTrad — der erste Wurf formte NICHT, die Linsen-Probe fing es]; __-Schlüssel sind
+STEUER-Passagiere und wandern nie in Bau-Parameter; ov-frei byte-golden, gate:schmiede-
+contract grün). (2) Das Welt-Verb „präge <gattung> auf <charakter>" schreibt über die
+KIND_CHARAKTER-Tabelle (M8: weapon→TRADITIONEN · vehicle→CULTURES, EINE Zeile je künftige
+Domänen-Achse) in den EINEN Regler-Kanal state.workshop.studioOv (W-A1) + verwirft den
+preset-Cache; vehicle-core lädt main-seitig (porta-Muster). (3) „spiele <genre>" /
+„spiele heimat" setzt state.klangPreset mit Genre-Liste bei Fehlwahl. End-to-end im
+Browser bewiesen (Techno führt das Pad · Langschwert trägt Nihon · GT trägt Toro) +
+stehende Linse gate:charakter-achsen (T: 5 unverwechselbare Fingerprints, fail-soft auf
+Frank · K: fx-Vektoren · G: 22 · V: Konsum-Quell-Proben · Selbst-Test). check + playtest
+grün.
+
 ### V18.465 — DIE LEBENDIGEN TORE (Schöpfer „champ, beende es, alle module")
 
 Die zwei in V18.464 benannten OFFEN-Punkte fielen: **(1) Tür-Flügel in der Welt** — das

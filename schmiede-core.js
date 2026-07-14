@@ -2866,16 +2866,26 @@
         if (!name || !GATTUNGEN[name]) return null;
         materials();
         var tp = Object.assign({ flat: 0.42, _kBase: 0 }, GATTUNGEN[name]);
+        // V18.466 (rein additiv) — DIE TRADITION IST WÄHLBAR: ov.__tradition
+        // (Frank/Nihon/Pars/Urvolk/Brut — die TRADITIONEN-Tabelle) wählt die
+        // orthogonale Design-Sprache; ohne ov bleibt der Bau byte-identisch
+        // LAB-FEST Frank (die v5-Klingen-Goldens laufen ov-frei). __-Schlüssel
+        // sind STEUER-Passagiere und wandern nie in die Bau-Parameter.
+        var trad =
+            ov && typeof ov.__tradition === "string" && TRADITIONEN[ov.__tradition]
+                ? TRADITIONEN[ov.__tradition]
+                : currentTrad;
         if (tp.task) {
             tp.task = Object.assign({}, tp.task);
-            tp.task.werkstoff = tradWerkstoff(currentTrad);
+            tp.task.werkstoff = tradWerkstoff(trad);
             applyTask(tp);
             snapBases(tp);
         } else snapBases(tp);
-        shapeByTradition(tp, currentTrad);
+        shapeByTradition(tp, trad);
         if (ov && typeof ov === "object") {
             for (var k in ov) {
                 if (!Object.prototype.hasOwnProperty.call(ov, k)) continue;
+                if (k.indexOf("__") === 0) continue;
                 tp[k] = ov[k];
             }
         }
@@ -2887,9 +2897,9 @@
             var S = stations(tp);
             if (!S.impact) {
                 g.add(loftBlade(tp, S));
-                g.add(buildGuard(tp, S, currentTrad));
-                g.add(buildGrip(tp, S, currentTrad));
-                g.add(buildPommel(tp, S, currentTrad));
+                g.add(buildGuard(tp, S, trad));
+                g.add(buildGrip(tp, S, trad));
+                g.add(buildPommel(tp, S, trad));
             } else {
                 if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
                 g.add(buildHaft(tp, S));
