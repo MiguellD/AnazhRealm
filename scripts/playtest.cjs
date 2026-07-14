@@ -41039,20 +41039,19 @@ async function checkBandTailleGolden(ctx) {
     const { page, check } = ctx;
     // V18.171 — DER LEUCHTTURM (R-035, taille-spec §7): der Broker-Protokoll-
     // DRIFT-WÄCHTER. Jeder im signaling-server gelesene `msg.type === "X"`-Typ
-    // MUSS in §7 der Taille-Spec (DE + EN-Spiegel) dokumentiert sein — ein
-    // neuer Broker-Typ ohne Andock-Vertrag ist der Riss von morgen. Plus: der
-    // Ein-Befehl-Self-Host existiert (npm run leuchtturm + Skript).
+    // MUSS in §7 der Taille-Spec dokumentiert sein — ein neuer Broker-Typ ohne
+    // Andock-Vertrag ist der Riss von morgen. (Der EN-Spiegel fiel mit der
+    // Informations-Diät V18.468 — EINE Spec, kein Übersetzungs-Zwilling; der
+    // Test wanderte mit, Lehre #6.) Plus: der Ein-Befehl-Self-Host existiert.
     try {
         const brokerSrc = fs.readFileSync(path.join(__dirname, "..", "signaling-server.js"), "utf8");
         const specDe = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.md"), "utf8");
-        const specEn = fs.readFileSync(path.join(__dirname, "..", "docs", "taille-spec.en.md"), "utf8");
         const typen = new Set();
         for (const m of brokerSrc.matchAll(/msg\.type === "([a-z-]+)"/g)) typen.add(m[1]);
         const fehltDe = [...typen].filter((t) => !specDe.includes("`" + t));
-        const fehltEn = [...typen].filter((t) => !specEn.includes("`" + t));
         check(
-            `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert (DE${fehltDe.length ? " fehlt: " + fehltDe.join(",") : ""} · EN${fehltEn.length ? " fehlt: " + fehltEn.join(",") : ""})`,
-            fehltDe.length === 0 && fehltEn.length === 0
+            `Leuchtturm §7: alle ${typen.size} Broker-Typen sind im Andock-Vertrag dokumentiert${fehltDe.length ? " (fehlt: " + fehltDe.join(",") + ")" : ""}`,
+            fehltDe.length === 0
         );
         const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
         check(
