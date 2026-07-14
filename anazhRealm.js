@@ -14124,10 +14124,21 @@ class AnazhRealm {
         if (!div) {
             div = document.createElement("div");
             div.id = "perf-panel";
+            // V18.472 — SCREENSHOT-FIRST (Schöpfer: „damit du durch das Panel im Screenshot
+            // alles sauber auswerten kannst"): opakerer Grund, größere Mono-Schrift, feste
+            // Breite — jedes Feld muss ein JPEG/Downscale überleben.
             div.style.cssText =
-                "position:fixed;top:10px;right:12px;z-index:50;font:600 11px/1.5 ui-monospace,SFMono-Regular,monospace;" +
-                "color:#cfe6ff;background:rgba(8,16,26,0.5);padding:6px 10px;border-radius:8px;pointer-events:none;" +
-                "user-select:none;white-space:nowrap;border:1px solid rgba(120,200,255,0.22)";
+                "position:fixed;top:10px;right:12px;z-index:50;width:392px;" +
+                "font:700 13px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;" +
+                "color:#e8f2ff;background:rgba(5,11,19,0.92);padding:10px 12px;border-radius:10px;" +
+                "pointer-events:none;user-select:none;border:1px solid rgba(120,200,255,0.35)";
+            div.innerHTML =
+                '<div id="pp-head"></div>' +
+                '<canvas id="pp-ring" width="368" height="64" style="display:block;margin:6px 0;border:1px solid rgba(120,200,255,0.25);border-radius:4px"></canvas>' +
+                '<div id="pp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px"></div>' +
+                '<div id="pp-buckets" style="margin-top:4px"></div>' +
+                '<div id="pp-worst" style="margin-top:4px;color:#ffb3b3"></div>' +
+                '<div style="margin-top:4px;color:#9fb8d0;font-weight:600">Export: Einstellungen → Leistung → „Perf-Daten exportieren"</div>';
             document.body.appendChild(div);
         }
         return div;
@@ -14144,28 +14155,153 @@ class AnazhRealm {
         if (this.state.perfPanel === false) return;
         const div = this._ensurePerfPanelDiv();
         if (!div) return;
-        // leicht gedrosselt (die perfSense-Werte sind schon EWMA-geglättet) — die EINE Zeile.
+        // gedrosselt (alle Quellen sind schon geführt: perfSense-EWMA · Flugschreiber · Zensus).
         const now = typeof performance !== "undefined" ? performance.now() : Date.now();
-        if (this._perfPanelLast && now - this._perfPanelLast < 200) return;
+        if (this._perfPanelLast && now - this._perfPanelLast < 500) return;
         this._perfPanelLast = now;
         const s = this.state.perfSense;
-        if (!s) {
-            div.textContent = "— fps";
+        const fr = this.state.flightRecorder;
+        const head = document.getElementById("pp-head");
+        if (!s || !head) {
+            if (head) head.textContent = "— fps";
             return;
         }
-        // DIE EINE QUELLE (synergetisch): perfSense trägt frameMs/renderCalls/renderTris (V18.268);
-        // die Zieleffizienz-Stellgrößen liest der Panel als reine Anzeige (kein zweiter Zähler).
+        // ── Kopf: Version (der Screenshot MUSS sie tragen) + die große fps-Zahl ──
         const fps = s.frameMs > 0 ? Math.round(1000 / s.frameMs) : 0;
         const fpsCol = fps < 30 ? "#ff8a8a" : fps < 55 ? "#ffd166" : "#8fe98f";
-        const rScalePct = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
-        const folResPct = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
-        const dc = Math.round(s.renderCalls || 0);
-        const trisK = Math.round((s.renderTris || 0) / 1000);
-        const pmesh = this.state.playerMesh && this.state.playerMesh.position;
-        const posStr = pmesh ? `  ·  ${pmesh.x.toFixed(0)}, ${pmesh.y.toFixed(0)}, ${pmesh.z.toFixed(0)}` : "";
-        div.innerHTML =
-            `<span style="color:${fpsCol}">${fps}</span> fps · ${rScalePct}% · ` +
-            `Laub ${folResPct}% · ${dc}dc · ${trisK}k▲${posStr}`;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        head.innerHTML =
+            `<span style="font-size:22px;color:${fpsCol}">${fps}</span><span style="color:#9fb8d0"> fps</span>` +
+            `<span style="float:right;color:#9fb8d0;font-weight:600">V${AnazhRealm.VERSION}` +
+            (pm ? ` · ${pm.x.toFixed(0)},${pm.y.toFixed(0)},${pm.z.toFixed(0)}` : "") +
+            "</span>";
+        // ── Sekunden-Ring (max-Frame je Sekunde, ~3 min): Stocker als Balken ──
+        const cv = document.getElementById("pp-ring");
+        if (cv && fr && fr.secRing && cv.getContext) {
+            const ctx = cv.getContext("2d");
+            if (ctx) {
+                const W = cv.width,
+                    H = cv.height,
+                    CAP = 250;
+                ctx.fillStyle = "rgba(5,11,19,1)";
+                ctx.fillRect(0, 0, W, H);
+                const N = fr.secRing.length;
+                const n = fr.secRingN | 0;
+                const bw = W / N;
+                for (let i = 0; i < n; i++) {
+                    // ältester zuerst: Ring rückwärts ab secRingI
+                    const v = fr.secRing[(fr.secRingI - n + i + N) % N];
+                    if (!(v > 0)) continue;
+                    const h = Math.min(1, v / CAP) * (H - 2);
+                    ctx.fillStyle = v < 17 ? "#4caf50" : v < 33 ? "#8fe98f" : v < 100 ? "#ffd166" : "#ff6b6b";
+                    ctx.fillRect(i * bw, H - 1 - h, Math.max(1, bw - 0.5), h);
+                }
+                // Führungslinien 17/33/100 ms + Beschriftung (Screenshot-lesbar)
+                ctx.fillStyle = "rgba(160,200,255,0.45)";
+                for (const g of [17, 33, 100]) {
+                    const gy = H - 1 - Math.min(1, g / CAP) * (H - 2);
+                    ctx.fillRect(0, gy, W, 1);
+                    ctx.fillText(g + "ms", W - 34, gy - 2);
+                }
+                ctx.fillStyle = "#9fb8d0";
+                ctx.fillText("max-Frame je Sekunde → " + n + "s", 4, 10);
+            }
+        }
+        // ── Kern-Zahlen (2 Spalten, Label gedimmt / Wert hell) ──
+        const grid = document.getElementById("pp-grid");
+        if (grid) {
+            const row = (l, v, col) =>
+                `<div><span style="color:#9fb8d0;font-weight:600">${l} </span><span style="color:${col || "#e8f2ff"}">${v}</span></div>`;
+            const worst0 = fr && fr.worst && fr.worst[0];
+            const ms = fr && fr.memSeries && fr.memSeries.length ? fr.memSeries[fr.memSeries.length - 1] : null;
+            const heap = ms && Number.isFinite(ms.heapMB) ? ms.heapMB.toFixed(0) + " MB" : "—";
+            const z = typeof this._impostorCensus === "function" ? this._impostorCensus() : null;
+            const rsc = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
+            const fol = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+            grid.innerHTML =
+                row("frame ø", (+s.frameMs).toFixed(1) + " ms") +
+                row(
+                    "frame max",
+                    fr ? fr.maxFrameMs.toFixed(0) + " ms" : "—",
+                    fr && fr.maxFrameMs > 100 ? "#ff8a8a" : undefined
+                ) +
+                row("draw-calls", Math.round(s.renderCalls || 0)) +
+                row("tris", Math.round((s.renderTris || 0) / 1000) + "k") +
+                row("heap", heap) +
+                row(
+                    "GPU-Lücke",
+                    worst0 ? worst0.gpuGapMs + " ms" : "—",
+                    worst0 && worst0.gpuGapMs > 80 ? "#ff8a8a" : undefined
+                ) +
+                row("render/Laub", rsc + "% / " + fol + "%") +
+                row(
+                    "Impostor",
+                    z ? `${z.rttGebacken}✓ ${z.silhouetteWartend}○ ${z.rttGescheitert}✗` : "—",
+                    z && z.rttGescheitert > 0 ? "#ff8a8a" : "#8fe98f"
+                );
+        }
+        // ── Verteilung (die 6 Flugschreiber-Eimer als Prozent-Zeile) ──
+        const bk = document.getElementById("pp-buckets");
+        if (bk && fr && fr.frames > 0) {
+            const L = ["<17", "17-33", "33-50", "50-100", "100-200", ">200"];
+            const C = ["#4caf50", "#8fe98f", "#ffd166", "#ffab5e", "#ff8a8a", "#ff5252"];
+            bk.innerHTML =
+                '<span style="color:#9fb8d0;font-weight:600">ms-Verteilung </span>' +
+                fr.buckets
+                    .map(
+                        (c2, i) => `<span style="color:${C[i]}">${L[i]}:${((c2 / fr.frames) * 100).toFixed(0)}%</span>`
+                    )
+                    .join(" ");
+        }
+        // ── die schlimmsten 3 Frames (mit Top-CPU-Phase — die Attribution im Bild) ──
+        const wd = document.getElementById("pp-worst");
+        if (wd && fr && fr.worst && fr.worst.length) {
+            wd.innerHTML = fr.worst
+                .slice(0, 3)
+                .map((w) => {
+                    let top = "";
+                    try {
+                        const e = Object.entries(w.cpu || {}).sort((a, c) => c[1] - a[1])[0];
+                        if (e && e[1] > 0.5) top = ` ${e[0]}:${e[1].toFixed(0)}ms`;
+                    } catch {
+                        /* Anzeige-only */
+                    }
+                    return `⚠ ${w.frameMs}ms (GPU ${w.gpuGapMs} · CPU ${w.cpuSumMs}${top} · ${w.drawCalls}dc)`;
+                })
+                .join("<br>");
+        }
+    }
+
+    // V18.472 — DER PERF-EXPORT (Schöpfer: „ein File, das ich im Chat zustellen kann"):
+    // derselbe Flugschreiber-Trace, der an den save-server POSTet, als Download —
+    // plus der Sekunden-Ring (der Verlaufs-Kontext des Panels). EINE Quelle, zwei Rohre.
+    _exportPerfTrace() {
+        try {
+            const trace = this._flightRecorderBuildTrace();
+            if (!trace) return null;
+            const fr = this.state.flightRecorder;
+            if (fr && fr.secRing && fr.secRingN > 0) {
+                const N = fr.secRing.length,
+                    n = fr.secRingN | 0,
+                    out = new Array(n);
+                for (let i = 0; i < n; i++) out[i] = +fr.secRing[(fr.secRingI - n + i + N) % N].toFixed(1);
+                trace.sekundenRingMaxMs = out; // ältester → jüngster
+            }
+            trace.exportiertAm = new Date().toISOString();
+            const name =
+                "anazhRealmPerf-V" + AnazhRealm.VERSION + "-" + trace.exportiertAm.replace(/[:.]/g, "-") + ".json";
+            const json = JSON.stringify(trace, null, 1);
+            if (typeof document !== "undefined" && typeof Blob !== "undefined" && typeof URL !== "undefined") {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+                a.download = name;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            }
+            return { name, bytes: json.length };
+        } catch (_e) {
+            return null;
+        }
     }
 
     // V18.293 — DER FLUGSCHREIBER (die Blackbox). Flugzeuge raten nicht, warum sie
@@ -14258,6 +14394,27 @@ class AnazhRealm {
             const b =
                 frameMs < 17 ? 0 : frameMs < 33 ? 1 : frameMs < 50 ? 2 : frameMs < 100 ? 3 : frameMs < 200 ? 4 : 5;
             fr.buckets[b]++;
+            // V18.472 — DER SEKUNDEN-RING (die EINE Verlaufs-Quelle für Panel + Export):
+            // je Sekunde der SCHLIMMSTE Frame (max, nicht Mittel — Stocker sind das Signal).
+            // 180 Slots ≈ 3 Minuten Spiel; Ring-Schreiben ist ein Array-Write, nie ein Zähler-Zwilling.
+            {
+                const nowR = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+                if (!fr.secRing) {
+                    fr.secRing = new Float32Array(180);
+                    fr.secRingI = 0;
+                    fr.secRingN = 0;
+                    fr._secStart = nowR;
+                    fr._secMax = 0;
+                }
+                if (frameMs > fr._secMax) fr._secMax = frameMs;
+                if (nowR - fr._secStart >= 1000) {
+                    fr.secRing[fr.secRingI] = fr._secMax;
+                    fr.secRingI = (fr.secRingI + 1) % fr.secRing.length;
+                    if (fr.secRingN < fr.secRing.length) fr.secRingN++;
+                    fr._secStart = nowR;
+                    fr._secMax = 0;
+                }
+            }
             const targetMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
             if (frameMs > targetMs) fr.overBudget++;
             // einen STOCKER fangen (über der spürbaren Schwelle) + nur die schlimmsten N halten
@@ -79262,6 +79419,20 @@ class AnazhRealm {
                 if (div) div.style.display = this.state.perfPanel ? "block" : "none";
             });
         }
+        // V18.472 — der Perf-Export-Button (unter dem Panel-Toggle): lädt den
+        // Flugschreiber-Trace (+ Sekunden-Ring) als .json herunter — die Datei,
+        // die der Schöpfer im Chat zustellt. EINE Quelle (_flightRecorderBuildTrace).
+        const expBtn = document.getElementById("perf-export-btn");
+        if (expBtn) {
+            expBtn.addEventListener("click", () => {
+                const r2 = this._exportPerfTrace();
+                const st2 = document.getElementById("perf-export-status");
+                if (st2)
+                    st2.textContent = r2
+                        ? `${r2.name} (${Math.round(r2.bytes / 1024)} kB)`
+                        : "noch keine Daten — erst ein paar Sekunden spielen";
+            });
+        }
 
         // Welle 6.G3 (V8.24) — Tag-Nacht-Slider + Tageszeit-Slider.
         // Tag-Länge: 1-60 Min. Tageszeit: 0-1000 (skaliert auf 0..1, drei
@@ -83280,7 +83451,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.467.0";
+AnazhRealm.VERSION = "18.472.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

@@ -321,6 +321,15 @@ function scanLabBuster() {
             if (m[1] !== version) errs.push(`${path.relative(root, idx)} trägt stale ?v=${m[1]} (aktuell ${version})`);
         }
     }
+    // V18.472 (Perf-Panel-Linse fing es): AnazhRealm.VERSION driftete vier Wellen lang
+    // (18.467 während package.json 18.471 trug) — jeder Flugschreiber-Trace + Panel-Kopf
+    // log über die Version. DIESELBE Wand deckt jetzt die Runtime-Konstante: EIN Gesetz,
+    // alle Versions-Träger == package.json.
+    const stammSrc = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+    const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
+    if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
+    else if (vm[1] !== version)
+        errs.push(`AnazhRealm.VERSION trägt stale "${vm[1]}" (package.json ${version}) — Trace/Panel lügen über die Version`);
     return errs;
 }
 

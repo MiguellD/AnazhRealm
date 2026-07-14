@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.471.0",
+    "version": "18.472.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -66,6 +66,7 @@
         "gate:erstarren": "node scripts/diag-erstarren.cjs",
         "gate:konsum-matrix": "node scripts/diag-konsum-matrix.cjs",
         "gate:baecker-kanal": "node scripts/diag-baecker-kanal.cjs",
+        "gate:perf-panel": "node scripts/diag-perf-panel.cjs",
         "gate:charakter-achsen": "node scripts/diag-charakter-achsen.cjs",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",

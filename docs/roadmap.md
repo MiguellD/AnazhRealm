@@ -11,9 +11,12 @@
    Urteil: „nichts vollständig"):**
    (a) **ERSTARREN** — nach Reset kurz spielbar, friert wiederkehrend. CPU-Hälfte headless
    ENTLASTET (`gate:erstarren`: kein Todes-Spiral, kein Freeze; Membran-Recompile-Wand gebaut
-   V18.469); die GPU-Hälfte braucht **`anazhRealmPerf.json` vom echten Holz** (Flugschreiber
-   POSTet automatisch → `state/anazhRealmPerf.json` committen — der Trace trägt jetzt auch den
-   Impostor-Zensus + worstFrames mit Phasen).
+   V18.469); die GPU-Hälfte braucht das ECHTE Holz — **der Transport ist gebaut (V18.472,
+   `gate:perf-panel`):** das Perf-Panel ist screenshot-auswertbar (Version · Sekunden-Ring
+   ~3 min max-Frame/s · Kern-Zahlen · ms-Verteilung · schlimmste Frames mit Phase ·
+   Impostor-Zensus) und „Perf-Daten exportieren (.json)" in den Einstellungen lädt den
+   Flugschreiber-Trace als Datei für den Chat. Beifang: AnazhRealm.VERSION driftete 4 Wellen
+   (18.467) — die Buster-Wand deckt jetzt auch die Runtime-Konstante.
    (b) **Baum-L2 = Blobs → DIE BÄCKER-VEREINIGUNG IST GEBAUT (V18.471, beidseitig):**
    der Welt-RTT-Nachbau fiel physisch, `_tickImpostorBake` konsumiert `bake-impostor`,
    der Studio-Bäcker läuft im Worker (OffscreenCanvas; `gate:baecker-kanal` beweist den
