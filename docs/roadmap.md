@@ -18,9 +18,15 @@
    (rttFailed → Canvas-Silhouette für immer); der Zensus im Trace entscheidet. Danach: Bake
    robust machen ODER Karten-Qualität (Auflösung/Beleuchtung) heben. Container-Wand: swiftshader
    stirbt ab ~6M Tris — das Fern-Auge geht nur auf echtem Holz.
-   (c) **Regler+LOD-Vollständigkeit** — Avatar/Kreaturen als Blueprints MIT Studio-Reglern
-   (die Dial-Kanäle existieren: ov/`morphAuf`/deriveTierParams — die Welt EXPONIERT sie nicht)
-   + ehrliche LOD-Leitern je Gattung; Häuser: Platzierung/Straßensystem/LODs.
+   (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
+   9 Gattungen × 8 Facetten, 55 Zellen verankert, 21 Differenzen benannt. Die größten:
+   LOD-Leiter im Vertrag NUR für Pflanzen (fahrzeug 328 Meshes · tor 329 · wolf 81 auf
+   jede Distanz nur L0 — kindStages braucht Nicht-Pflanzen-Zeilen + Welt-Konsum) ·
+   Bäcker-Parallelpfad: `bake-impostor`-Kanal (Studio-Norm „KEIN Nachbau") ungenutzt,
+   `_tickImpostorBake` ist der Nachbau → VEREINIGUNGS-WELLE (OffscreenCanvas-Bäcker im
+   Worker, Stamm konsumiert den Kanal, Nachbau fällt — heilt zugleich L2-Blob-Verdacht
+   und GPU-Bake-Hitches) · mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
+   klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
    (d) **Tiefe statt Oberfläche** — Fahrzeugphysik · Körpermechanik (Fuß-IK/Foot-Lock) ·
    Schwertschwung · Stadtpflanzung. Je Domäne: messen, dann das Gesetz vertiefen.
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):

@@ -6,24 +6,33 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.469 — DIE ERSTARREN-JAGD beginnt: der Schöpfer-Browser-Befund ist der Bogen)
+## Stand (V18.470 — DIE KONSUM-MATRIX: Gattung × Facette, gemessen statt geglaubt)
 
-**Der Schöpfer SAH die Welt (14.07.) — sein Befund ist der neue aktive Bogen (roadmap §0.1):**
-Erstarren (nach Reset kurz spielbar, friert wiederkehrend) · Baum-L2 = Blobs · Avatar/Kreaturen/
-Häuser ohne Regler-Blueprints + LOD-Leitern · Straßensystem/Stadtpflanzung/Fahrzeugphysik/
-Schwertschwung oberflächlich. **V18.469 liefert die erste Ernte:** die MEMBRAN-RECOMPILE-WAND
-(Tor-Material kompiliert GENAU EINMAL — vorher TSL-Bau + Pipeline-Compile je 180-m-Wieder-
-Annäherung + Geometrie-Leck; jetzt Fern-Schlaf statt dispose) · `gate:erstarren` (kalter Boot =
-Nach-Reset-Realität · 2400-Tick-Wander-Lauf mit Phasen-Attribution: Q1 98 ms → Q4 9,8 ms, kein
-Todes-Spiral, kein CPU-Freeze · Membran-Wand · Selbst-Test) · der **IMPOSTOR-ZENSUS** reist im
-Flugschreiber-Trace (rttGescheitert>0 = „der Schöpfer sieht Silhouetten-Blobs") — **die
-GPU-Hälfte der Jagd braucht `anazhRealmPerf.json` vom echten Holz** (der Flugschreiber POSTet
-beim Spielen automatisch an den save-server → committen). Dazu: EN-Spiegel-Wächter migriert
-(Leuchtturm §7 prüft die EINE Spec). Davor V18.468 Informations-Diät (git ist das Archiv:
-docs/archiv + 255 Waisen-Skripte + referenz physisch gefallen, CLAUDE.md = eine Seite, Lehre 15)
-· V18.467 Rinden-Vereinigung · V18.466 Charakter-Achsen · V18.465 lebendige Tore · V18.464 volle
-Passage (Detail = git log). OFFEN daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet
-(nur-sinkend, Urteil V18.467) · das formale Abnahme-Drehbuch (look-golden --mint · DoD 5).
+**Die Schöpfer-These „die meisten Konsume sind gleich" ist jetzt eine MASCHINE**
+(`gate:konsum-matrix`): 9 Gattungen × 8 Facetten (LODs·Rahmen·Bewegung·Material·Körper·
+Platzierung·Anwendung·Dynamik), Vertragsseite über die ECHTE Pipe (Harness jetzt
+manifest-getrieben = Produktions-Boot, alle 107 Rezepte aller Kerne im Buch; Daten-Kanal-
+Goldens begründet re-gemünzt, 52 Geometrie-Goldens byte-unberührt) + Weltseite über
+verifizierte Chokepoint-Proben. 55 Zellen verankert (nur-wachsend), 21 Differenzen benannt.
+**Die zwei größten gemessenen Lücken:** (1) die LOD-LEITER existiert im Vertrag NUR für
+Pflanzen — fahrzeug gt=328 Meshes · tor drachentor=329 · wolf=81 auf JEDE Distanz nur L0
+(kindStages kennt keine Nicht-Pflanzen-Zeile); (2) der STUDIO-BÄCKER-KANAL `bake-impostor`
+(phytogenesis: „der Studio-Bäcker IST die Fernstufe, KEIN Nachbau") wird vom Stamm NIE
+gerufen — die Welt-Ferne backt im Nachbau `_tickImpostorBake` (Parallelpfad-Klasse; zudem
+worker-untauglich: `__foundryBakeRenderer` liest window + baut canvas-los). Die
+VEREINIGUNGS-WELLE (OffscreenCanvas-Bäcker im Worker + Stamm konsumiert den Kanal +
+Nachbau fällt) ist die benannte nächste Welle — die Matrix-Probe dreht sich dann von ▒ auf ✅.
+
+Der Bogen darüber ist der **Schöpfer-Browser-Befund (14.07., roadmap §0.1):** Erstarren
+(nach Reset kurz spielbar, friert wiederkehrend — CPU-Hälfte entlastet: `gate:erstarren`,
+Membran-Recompile-Wand V18.469; **die GPU-Hälfte braucht `anazhRealmPerf.json` vom echten
+Holz**, der Flugschreiber POSTet beim Spielen automatisch → committen, der Trace trägt den
+Impostor-Zensus) · Baum-L2 = Blobs · Regler-Blueprints + LOD-Leitern je Gattung ·
+Straßensystem/Stadtpflanzung/Fahrzeugphysik/Schwertschwung-Tiefe. Davor V18.468
+Informations-Diät (git ist das Archiv, Lehre 15) · V18.467 Rinden-Vereinigung · V18.466
+Charakter-Achsen · V18.465 lebendige Tore · V18.464 volle Passage (Detail = git log).
+OFFEN daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet (nur-sinkend) ·
+das formale Abnahme-Drehbuch (look-golden --mint · DoD 5).
 
 ## Architektur (die Karte)
 
