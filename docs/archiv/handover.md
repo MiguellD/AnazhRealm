@@ -378,6 +378,43 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.464 — DIE VOLLE PASSAGE (Schöpfer „ultracode — ferne baumLODs korrekter, alle portale vollständig, keine halben sachen mehr")
+
+Ultracode-Welle in fünf Schnitten, geboren aus einer 4-Leser-Verstehen-Welle (35 Defekte mit
+Beweis-Zitaten): **(1) Membran als Gesetz** — `MEMBRAN_GESETZ` + `membranUniforms` + `deriveFrame`
+rein additiv in porta-core (buildGate liest die extrahierte Rahmen-Staffelung; gate:porta-contract
+byte-grün), die Lab-Shell INJIZIERT die Zahlen in ihr GLSL (W9-Muster; diag-membran-gesetz =
+Zwillings-Wand + Ableitungs-Wand 15 Fälle + Konsum-Wand), porta-core lädt main-seitig.
+**(2) Kollisions-Wahrheit** — `_blockerComputePartAABB` transformiert die 8 Ecken der orientierten
+Box (Part-Euler XYZ + entry.rotationY, die Mesh-Wahrheit) statt des halfMax-Quadrats: das
+haus_basis-Innere war durch Wand-QUADRATE unbetretbar (Tür-Lücken-Zusage gebrochen), der rotierte
+Quarz-Ring der Welt-Portale war ein unsichtbarer Riegel MITTEN in der sichtbaren Tor-Öffnung,
+45°-Parts hatten Löcher; Tor-Gestalt-Einträge tragen ihre Hülle aus dem GESETZ (deriveGate:
+Pfosten+Schultern+Krone, Öffnung FREI); `_blockerReach` weitet die Nah-Culls. **(3) Portale VOLL** —
+die Welt baut je Tor-Gestalt-Portal ihr TSL-Passage-Material aus DEMSELBEN Gesetz
+(`_tickPortalMembranes`; Aktivierung = Spieler-Nähe; fail-LAUT-Farbfläche statt nichts);
+Hindurchgehen durch die Membran-Ebene IST Betreten (derselbe enterPortal-Chokepoint wie E,
+Re-Arm beim Zonen-Verlassen, seitlich stumm — diag-portal-membran beweist K/M/W); `tor_*` ist ab
+Geburt Welt-Tor (KIND_POLICY-role-Zeile), setBlueprintAsPortal zieht STEHENDE Einträge nach
+(Affordance-Spawn-Freeze), der Material-Chokepoint konsumiert mp.emissive (Tor-Glut).
+**(4) Fernwald live** — der Scatter-Emit-Schwanz wanderte byte-treu in den EINEN Zellen-Chokepoint
+`_scatterMaterializeCell` (gate:scatter-ab grün), darauf `_tickScatterLod` (Rolling-Slice,
+Hysterese-stabil, deferred-sicher): die Stufen + Band-Partner waren auf die BAU-Zeit-Distanz
+eingefroren — beim Umherlaufen verschwanden ferne Bäume ganz und nahe Billboards lösten sich in
+Nichts auf; Promotion walkt jetzt den ganzen promoteM-Region-Fächer statt nur der Home-Region;
+das degenerierte Impostor-Fallback-Quad (alle Verts auf der Stammachse — „volle Silhouette" war
+eine Lüge) fällt LAUT auf Karten-LOD2; RTT-Bake bounded Retry (3) statt Session-permanentem
+rttFailed; Fallback-Silhouetten-Farbe aus den ECHTEN Vertex-Farben statt Einheits-Grün; Schatten
+L0+L1 (die Nur-L0-Regel stammte aus thresh01≈80m-Zeiten — seit V18.390 verlor jeder Baum ab 20 m
+den Schatten mitten im Sichtfeld). **(5) Inventur-Schlüsse** — diag-genom-Crash (Refactor-Leiche
+giantParts→grossP; die Linse urteilt wieder: ALLE BÄNDER GRÜN), Nacht-Fill stirbt mit der Sonne
+(diag-atmosphere grün), `ACHSEN_FARBE` als EINE eingefrorene Farb-Tabelle, gate:fern-wasser prüft
+BEIDE Regime (die Linse verifizierte nur die gefallene V18.411-Weiche). Linsen-Wanderungen (Lehre
+6): portal-gestalt A-Set-Parität (Auto-Klone), Verfassungs-Gesetz-1-Probe (return null im
+Chokepoint). Neue Gates: membran-gesetz · portal-membran · scatter-lod. OFFEN benannt:
+Tür-Flügel-Animation in der Welt (das Flatten bäckt die Hinge-Pivots weg) · Tor-Fernstufe
+(kindStages gate=[0] ist der eingefrorene Vertrags-Stand).
+
 ### V18.463 — DIE HAUT (Schöpfer „du brauchst nicht meine augen — die haut fehlt, sämtliche dinge")
 
 Der A/B-Blick mit EIGENEN Augen (Fischer-Prinzip, kein Vertagen mehr): der Studio-Mensch trägt

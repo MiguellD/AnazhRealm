@@ -39753,10 +39753,12 @@ async function checkBandV18265ShadowDistance(ctx) {
         const out = {};
         out.hasMethod = typeof r._archGroupCastsShadow === "function";
         if (!out.hasMethod) return out;
-        // UNIT: ferne LOD1/LOD2-Bäume werfen KEINEN Schatten; LOD0-Bäume +
-        // echte Bauten (kein _lodN) werfen weiter Schatten.
+        // UNIT (V18.464 — der Test wandert mit dem Gesetz): L0 UND L1 werfen
+        // Schatten (seit thresh01=20 verlor sonst jeder Baum ab 20 m seinen
+        // Schatten mitten im Sichtfeld); NUR die Fernstufe L2 wirft nie.
+        // Bauten (kein _lodN) werfen weiter.
         out.lod0Casts = r._archGroupCastsShadow("grown_baum_eiche_v3") === true;
-        out.lod1NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod1") === false;
+        out.lod1NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod1") === true;
         out.lod2NoCast = r._archGroupCastsShadow("grown_baum_eiche_v3_lod2") === false;
         out.structureCasts = r._archGroupCastsShadow("tempel") === true;
         // CONSUM (source-probe): die Gruppen-Erzeugung liest die Methode, der
@@ -39786,7 +39788,7 @@ async function checkBandV18265ShadowDistance(ctx) {
         return out;
     });
     check("V18.265: _archGroupCastsShadow — LOD0 + Bauten werfen Schatten", res.lod0Casts && res.structureCasts);
-    check("V18.265: ferne LOD1/LOD2-Bäume werfen KEINEN Schatten (Schatten-Distanz)", res.lod1NoCast && res.lod2NoCast);
+    check("V18.464: L1 wirft (Schatten bis zur Fernstufe), NUR L2 wirft keinen", res.lod1NoCast && res.lod2NoCast);
     check(
         "V18.265: Gruppen-Bau liest die Methode + Capacity-Grow trägt das Flag (CONSUM)",
         res.groupForReads && res.growCarries

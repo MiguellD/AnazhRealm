@@ -6,7 +6,32 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.463 — DIE HAUT: Hüllen-Maschine geteilt, SkinnedMesh durch die Pipe)
+## Stand (V18.464 — DIE VOLLE PASSAGE: Portale ganz · Fernwald live · Kollisions-Wahrheit)
+
+**PORTALE VOLL (V18.464):** die Membran wohnt als GESETZ in porta-core (`MEMBRAN_GESETZ` +
+`membranUniforms` + `deriveFrame`, rein additiv — die Shell INJIZIERT die Zahlen in ihr GLSL
+[W9-Muster], porta-core lädt jetzt AUCH main-seitig); die Welt baut daraus je Tor-Gestalt-Portal
+ihr TSL-Passage-Material (`_tickPortalMembranes`: Aktivierung=Spieler-Nähe, Bogen-Beschnitt als
+Alpha-Fold, fail-LAUT-Farbfläche statt nichts) — **Hindurchgehen durch die Membran-Ebene IST
+Betreten** (derselbe enterPortal-Chokepoint wie E, Re-Arm beim Zonen-Verlassen). Kollision folgt
+der SICHTBAREN Studio-Form: `_populateBlockerAABBs` leitet für Tor-Gestalten Pfosten+Schultern+
+Krone aus deriveGate ab (Öffnung FREI — der unsichtbare Quarz-Riegel fiel); `tor_*` trägt
+role:"portal" als KIND_POLICY-Daten-Zeile (ab Geburt Welt-Tor, Default Skelett-Welt);
+setBlueprintAsPortal zieht STEHENDE Einträge nach; der Material-Chokepoint konsumiert
+mp.emissive (die Tor-Glut). **KOLLISIONS-WAHRHEIT:** `_blockerComputePartAABB` = exakte
+ECKEN-HÜLLE (Part-Euler + entry.rotationY) statt halfMax-Quadrat — das Haus-Innere ist wieder
+betretbar (Tür-Lücke hielt nicht), rotierte Bauten kollidieren am sichtbaren Ort. **FERNWALD
+LIVE (baum-D1/D2):** der Emit-Schwanz wanderte in den EINEN Zellen-Chokepoint
+`_scatterMaterializeCell` (scatter-ab byte-grün), `_tickScatterLod` re-alloziert Stufen nach
+LIVE-Distanz (Hysterese-stabil, deferred-sicher); Promotion walkt den ganzen Region-Fächer;
+degeneriertes Impostor-Fallback-Quad fällt LAUT auf Karten-LOD2; RTT-Bake mit bounded Retry +
+Fallback-Farbe aus echten Vertex-Farben; Schatten: L0+L1 werfen (seit thresh01=20 verlor jeder
+Baum ab 20 m den Schatten), nur L2 nie. Inventur-Schlüsse: diag-genom-Crash (Refactor-Leiche) ·
+Nacht-Fill stirbt mit der Sonne · `ACHSEN_FARBE`-Tabelle · fern-wasser prüft BEIDE Regime.
+Linsen: gate:membran-gesetz · gate:portal-membran · gate:scatter-lod. OFFEN: Tür-Flügel-Animation
+in der Welt (Flatten bäckt die Pivots weg) · Tor-Fernstufe (kindStages gate=[0] ist Vertrags-Stand).
+
+### Davor (V18.463 — DIE HAUT: Hüllen-Maschine geteilt, SkinnedMesh durch die Pipe)
 
 **DIE HAUT (V18.463):** die Voxel-Hüllen-MASCHINE (vox-Ops + surfaceNets) wohnt VERBATIM in
 koerper-core (THREE-frei), Lab liest sie (Benchmark auge-identisch, Wand=17); der Mensch-Bäcker

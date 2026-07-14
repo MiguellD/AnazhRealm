@@ -49,9 +49,12 @@ law(
     /_foundryPresetFor\(species\)/.test(anazhNC)
 );
 law(
-    'der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → continue`)',
+    // V18.464 (Linse wandert mit, Lehre 6): die Unterdrückung lebt seit der
+    // Zellen-Chokepoint-Extraktion (_scatterMaterializeCell) als `return null`
+    // statt `continue` — dasselbe Gesetz, neuer Träger.
+    'der Scatter unterdrückt den Baum-Grammatik-Nachbau bei lebender Foundry (`layer.kind === "tree" && _foundryEnabled() → return null` im Zellen-Chokepoint)',
     true,
-    /layer\.kind === "tree" && this\._foundryEnabled\(\)\)\s*continue/.test(anazhNC)
+    /layer\.kind === "tree" && this\._foundryEnabled\(\)\)\s*return null/.test(anazhNC)
 );
 
 // GESETZ 2 (P6) — EIN WUCHS: der Studio-Generator delegiert an die geteilte Quelle, KEIN Parallel-Wuchs.
