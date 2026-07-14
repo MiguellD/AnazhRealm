@@ -5,28 +5,42 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.468)
+## §0 · DER TISCH — was offen ist (Stand V18.469)
 
-1. **DIE EINE SCHÖPFER-RUNDE (der Engpass — eine Browser-Session tilgt ALLE Sign-off-Schulden):**
-   W8-Abnahme · `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
-   `anazhRealmPerf.json` einfangen (der Flugschreiber POSTet beim Spielen automatisch) ·
-   Nervensystem-DoD 5 (das Wort) · die 3 Ein-Wort-Entscheide E-C/E-E/E-F · der LOOK-Stau.
-   → **`docs/abnahme-drehbuch.md`** (liegt bereit, je Punkt das Kriterium).
-2. **typeof-Voll-Wanderung** — bewusst NUR-SINKENDER Ratchet (`gate:apparat`, 891 Proben in
+1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
+   Urteil: „nichts vollständig"):**
+   (a) **ERSTARREN** — nach Reset kurz spielbar, friert wiederkehrend. CPU-Hälfte headless
+   ENTLASTET (`gate:erstarren`: kein Todes-Spiral, kein Freeze; Membran-Recompile-Wand gebaut
+   V18.469); die GPU-Hälfte braucht **`anazhRealmPerf.json` vom echten Holz** (Flugschreiber
+   POSTet automatisch → `state/anazhRealmPerf.json` committen — der Trace trägt jetzt auch den
+   Impostor-Zensus + worstFrames mit Phasen).
+   (b) **Baum-L2 = Blobs** — Verdacht: RTT-Bake scheitert auf echtem WebGPU terminal
+   (rttFailed → Canvas-Silhouette für immer); der Zensus im Trace entscheidet. Danach: Bake
+   robust machen ODER Karten-Qualität (Auflösung/Beleuchtung) heben. Container-Wand: swiftshader
+   stirbt ab ~6M Tris — das Fern-Auge geht nur auf echtem Holz.
+   (c) **Regler+LOD-Vollständigkeit** — Avatar/Kreaturen als Blueprints MIT Studio-Reglern
+   (die Dial-Kanäle existieren: ov/`morphAuf`/deriveTierParams — die Welt EXPONIERT sie nicht)
+   + ehrliche LOD-Leitern je Gattung; Häuser: Platzierung/Straßensystem/LODs.
+   (d) **Tiefe statt Oberfläche** — Fahrzeugphysik · Körpermechanik (Fuß-IK/Foot-Lock) ·
+   Schwertschwung · Stadtpflanzung. Je Domäne: messen, dann das Gesetz vertiefen.
+2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
+   `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
+   Nervensystem-DoD 5 · E-C/E-E/E-F.
+3. **typeof-Voll-Wanderung** — bewusst NUR-SINKENDER Ratchet (`gate:apparat`, 891 Proben in
    playtest.cjs bei 22 Katalog-Ankern); die Wanderung verlangt Konsum-Urteil je Probe, eine
    blinde Massen-Migration würde die Beweise schwächen (Urteil V18.467). Kein Jetzt-Schluss.
-3. **Die Kommentar-Diät des Stamms** (Folge der Informations-Diät V18.468): anazhRealm.js trägt
+4. **Die Kommentar-Diät des Stamms** (Folge der Informations-Diät V18.468): anazhRealm.js trägt
    ~26k Kommentarzeilen, davon ~3,3k Versions-Archäologie. FALLE: Linsen ankern auf Kommentaren
    (Source-Proben zitieren Kommentar-Text; Absenz-Greps laufen über `window.__codeOf`, WEIL
    Kommentare gefallene Namen zitieren) — die Diät verlangt Anker-Wanderung in derselben Welle,
    nie blindes Strippen.
-4. **Der nächste GROSSE Bogen (Schöpfer-Wahl, erst wenn 1 steht):** (a) der lebendige Körper
+5. **Der nächste GROSSE Bogen (Schöpfer-Wahl, erst wenn 1 steht):** (a) der lebendige Körper
    (Fuß-IK/Foot-Lock/Blending/Spring; Stoff-Textur · Säume · SDF-Politur als Lab-Erlebnis) ·
    (b) Seelen-Vertiefung (Emotion→Regel-EMERGENZ · KI als volle Co-Schöpferin opt-in ·
    Emotion→Farbe-Konstanten in `dslComposeFieldColor`) · (c) der UX-Bogen (§3-Ende: die ~19
    gebauten-aber-UI-losen Subsystem-APIs verdrahten) · (d) die gemerkten Fäden (§4).
    Empfehlung: (a) → (b).
-5. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):**
+6. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):**
    N5.4 scatter-Verdrahtung [wartet aufs erste scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
    Rüstung/Trank-Rezepte + Geräte-Gestalten + L1-Diät [warten auf Lab-Presets/-Entscheide] ·
    W-A2 Auto-Impostor [wartet auf eine Worldgen-Massen-Domäne ohne ehrliche Stufen] · TAA-Lite
@@ -34,7 +48,7 @@
    blöcke · plantForest↔planForestCell [NUR unter Byte-Beweis] · Totholz-Saat + start_plattform
    [bis fachwerk sie deckt] · Frisur/Schnitt-Technik-Reichtum (Lab-Builder) als künftige
    Gesetz-Zeilen · diag-genom-Bänder-Wanderung.
-6. **Bewusst-rote Zustände (benannt, nicht vergessen):** diag-genom „0 Gigant" (Refactor-Leiche,
+7. **Bewusst-rote Zustände (benannt, nicht vergessen):** diag-genom „0 Gigant" (Refactor-Leiche,
    heilen oder dauerhaft begründen) · diag-atmosphere Fill-NACHT (der Nacht-Fill stirbt mit der
    Sonne — seit V18.464 Gesetz, die Linse ist Waise; bei Wieder-Bedarf aus git holen).
 

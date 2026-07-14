@@ -6,25 +6,24 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.468 — DIE INFORMATIONS-DIÄT: git ist das Archiv)
+## Stand (V18.469 — DIE ERSTARREN-JAGD beginnt: der Schöpfer-Browser-Befund ist der Bogen)
 
-**Schöpfer-Urteil bestätigt und vollzogen:** das Projekt archivierte doppelt — alles, was in
-`docs/archiv/` (6,1 MB · 56 Dateien · handover-Chronik), in vollendeten Plan-Docs, in 255
-Waisen-Skripten und in `referenz/` lag, liegt VOLLSTÄNDIG in der git-Historie. Die Kopien fielen
-physisch; **die Chronik IST `git log`** (Commit-Message = Chronik-Eintrag, kein Doppel-Eintrag
-mehr). Überlebt hat nur das Operative: 9 Docs (Norm · Vision · Tisch · Drehbuch — Karte in
-`docs/README.md`) + die von Gates/CI/Docs erreichten Skripte. OFFEN bleibt: **die EINE
-Schöpfer-Browser-Runde** (`docs/abnahme-drehbuch.md` liegt bereit — W8 · look-golden --mint ·
-perf.json · DoD 5 · E-C/E-E/E-F) · die **Kommentar-Diät des Stamms** (~26k Kommentarzeilen,
-Linsen ankern auf Kommentar-Text → Anker-Wanderung in derselben Welle, nie blind strippen;
-roadmap §0.3) · der bewusst nur-sinkende **typeof-Ratchet** (`gate:apparat`, Urteil V18.467).
-Jüngste Substanz-Wellen (Detail = git log): V18.467 Rinden-Vereinigung (Rinden-Gesetz in
-phyto-core, foundry delegiert, byte-bewiesen) · V18.466 Charakter-Achsen („präge <gattung> auf
-<charakter>" · „spiele <genre>" — Schmiede-TRADITIONEN + Garage-KULTUREN + 22 Genres welt-wählbar,
-`gate:charakter-achsen`) · V18.465 lebendige Tore (Flügel öffnen sich · Tor-Fernstufe ·
-Klammer-Wände) · V18.464 volle Passage (Membran-GESETZ in porta-core + TSL-Passage ·
-Kollisions-Wahrheit als Ecken-Hülle · Fernwald-LOD live, `gate:portal-membran` ·
-`gate:scatter-lod`).
+**Der Schöpfer SAH die Welt (14.07.) — sein Befund ist der neue aktive Bogen (roadmap §0.1):**
+Erstarren (nach Reset kurz spielbar, friert wiederkehrend) · Baum-L2 = Blobs · Avatar/Kreaturen/
+Häuser ohne Regler-Blueprints + LOD-Leitern · Straßensystem/Stadtpflanzung/Fahrzeugphysik/
+Schwertschwung oberflächlich. **V18.469 liefert die erste Ernte:** die MEMBRAN-RECOMPILE-WAND
+(Tor-Material kompiliert GENAU EINMAL — vorher TSL-Bau + Pipeline-Compile je 180-m-Wieder-
+Annäherung + Geometrie-Leck; jetzt Fern-Schlaf statt dispose) · `gate:erstarren` (kalter Boot =
+Nach-Reset-Realität · 2400-Tick-Wander-Lauf mit Phasen-Attribution: Q1 98 ms → Q4 9,8 ms, kein
+Todes-Spiral, kein CPU-Freeze · Membran-Wand · Selbst-Test) · der **IMPOSTOR-ZENSUS** reist im
+Flugschreiber-Trace (rttGescheitert>0 = „der Schöpfer sieht Silhouetten-Blobs") — **die
+GPU-Hälfte der Jagd braucht `anazhRealmPerf.json` vom echten Holz** (der Flugschreiber POSTet
+beim Spielen automatisch an den save-server → committen). Dazu: EN-Spiegel-Wächter migriert
+(Leuchtturm §7 prüft die EINE Spec). Davor V18.468 Informations-Diät (git ist das Archiv:
+docs/archiv + 255 Waisen-Skripte + referenz physisch gefallen, CLAUDE.md = eine Seite, Lehre 15)
+· V18.467 Rinden-Vereinigung · V18.466 Charakter-Achsen · V18.465 lebendige Tore · V18.464 volle
+Passage (Detail = git log). OFFEN daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet
+(nur-sinkend, Urteil V18.467) · das formale Abnahme-Drehbuch (look-golden --mint · DoD 5).
 
 ## Architektur (die Karte)
 
