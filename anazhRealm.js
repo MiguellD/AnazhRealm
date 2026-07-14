@@ -30224,7 +30224,9 @@ class AnazhRealm {
             for (let a = 0; a < arches.length; a++) {
                 const e = arches[a];
                 if (!e || !e.blockerAABBs || !e.position) continue;
-                if (Math.abs(e.position.x - sx) > 80 || Math.abs(e.position.z - sz) > 80) continue;
+                // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
+                const rcCull = 80 + (e._blockerReach || 0);
+                if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
                 const boxes = e.blockerAABBs;
                 for (let bi = 0; bi < boxes.length; bi++) {
                     const bx = boxes[bi];
@@ -30816,40 +30818,89 @@ class AnazhRealm {
         return Number.isFinite(dichte) && dichte >= AnazhRealm.BLOCKER_DENSITY_MIN;
     }
 
-    // Welt-Raum-AABB eines einzelnen Parts (vor Rotation). Wir nutzen
-    // max(sx, sz)·0.5 als Halbradius — orientation-frei sicher bei jeder
-    // Part-Rotation (kleine Überdeckung, aber kein Loch). topY = entry-Boden
-    // (Position.y − 0.5 = Boden-Heuristik aus `spawnArchitecture`) + lokale
-    // Part-Position.y + halbe Part-Höhe. Die `damm`-Topologie aus V9.64 ist
-    // ein Spezialfall davon (ein Part mit Material `stein`).
+    // Welt-Raum-AABB eines einzelnen Parts — die EXAKTE ECKEN-HÜLLE (V18.464).
+    // Vorher: halfMax = max(sx,sz)·0.5 als Quadrat, Rotation ignoriert. Das war
+    // DOPPELT falsch (gemessen, Ultracode-Welle): (a) dünne Wände wurden zu
+    // Quadraten — die haus_basis-Seitenwand (0.3×4.8) deckte als 4.8×4.8-Quadrat
+    // das GESAMTE Haus-Innere → die versprochene TÜR-LÜCKE führte in unsichtbare
+    // Wände; der rotierte Quarz-Ring der Welt-Portale wurde ein flacher Riegel
+    // MITTEN in der sichtbaren Tor-Öffnung. (b) 45°-gierte Parts ragten ÜBER das
+    // Quadrat hinaus (echte Ecke bei ·√2/2 > ·1/2) — das „kein Loch"-Versprechen
+    // war eine Lüge. Jetzt: die 8 Ecken der orientierten Box (part.rotation als
+    // Euler XYZ — exakt die Mesh-Anwendung `sub.rotation.set(x,y,z)` — PLUS
+    // entry.rotationY, die der Mesh-Pfad seit W-H trägt und die Kollision nie
+    // sah) werden transformiert, die achsen-parallele Hülle umschließt sie.
+    // Exakt für achs-parallele Parts, korrekt-umhüllend für jede Rotation;
+    // Rückgabe-Form unverändert → alle drei Leser (Spieler-Kapsel · Raycast ·
+    // Wasser-Stempel) heilen an diesem EINEN Chokepoint mit.
     _blockerComputePartAABB(entry, part) {
         if (!part || !part.size || !part.position) return null;
-        // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden:
-        // dort ist `group.position = (entry.x, entry.y-0.5, entry.z)` + `group.
-        // scale.setScalar(entry.scale)`, also landet ein Part bei lokaler Position
-        // `part.position` in Welt bei `groupOrigin + part.position·scale`, Größe
-        // `part.size·scale`. Der Stempel rechnete OHNE scale → bei worldgen-
-        // skalierten Strukturen (Cluster-Spawn, Save-Restore) saß der SOLID-
-        // Wasser-Stempel an einer anderen Stelle/Größe als die sichtbare Struktur
-        // → das Wasser flutete den sichtbaren, aber ungestempelten Ring = der
-        // „Wasser-Schatten zur Struktur" (Schöpfer-Befund, gemessen mit
-        // diag-scale-stamp: Stempel scale-invariant 4,4×16,8 bei scale 1 UND 2).
-        // Jetzt deckungsgleich mit Mesh + Kollision (die beide skalieren).
+        // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden
+        // (groupOrigin + part.position·scale, Größe part.size·scale — der
+        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp).
         const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const sx = (part.size.x || 1) * scale;
-        const sz = (part.size.z || 1) * scale;
-        const sy = (part.size.y || 1) * scale;
-        const halfMax = Math.max(sx, sz) * 0.5;
-        const cx = entry.position.x + (part.position.x || 0) * scale;
-        const cz = entry.position.z + (part.position.z || 0) * scale;
-        // V9.74 (Welle C.3) — botY ergänzt: der Cell-Stempel-Pfad
-        // (`_stampArchitectureSolidCellsInto`) braucht beide Y-Grenzen, um
-        // die vertikale Höhe der Architektur korrekt im Cell-Feld zu
-        // setzen. V9.65 hatte nur topY (Hydrosphäre-Surface-Hebung).
-        const centerY = entry.position.y - 0.5 + (part.position.y || 0) * scale;
-        const topY = centerY + sy * 0.5;
-        const botY = centerY - sy * 0.5;
-        return { minX: cx - halfMax, maxX: cx + halfMax, minZ: cz - halfMax, maxZ: cz + halfMax, topY, botY };
+        const hx = ((part.size.x || 1) / 2) * scale;
+        const hy = ((part.size.y || 1) / 2) * scale;
+        const hz = ((part.size.z || 1) / 2) * scale;
+        const px = (part.position.x || 0) * scale;
+        const py = (part.position.y || 0) * scale;
+        const pz = (part.position.z || 0) * scale;
+        // Part-Euler (XYZ, Spiegel von THREE.Euler 'XYZ' — die Mesh-Wahrheit).
+        const pr = part.rotation || null;
+        const ax = pr ? pr.x || 0 : 0;
+        const ay = pr ? pr.y || 0 : 0;
+        const az = pr ? pr.z || 0 : 0;
+        const a = Math.cos(ax),
+            b = Math.sin(ax),
+            c = Math.cos(ay),
+            d = Math.sin(ay),
+            e = Math.cos(az),
+            f = Math.sin(az);
+        const ae = a * e,
+            af = a * f,
+            be = b * e,
+            bf = b * f;
+        const m11 = c * e,
+            m12 = -c * f,
+            m13 = d,
+            m21 = af + be * d,
+            m22 = ae - bf * d,
+            m23 = -b * c,
+            m31 = bf - ae * d,
+            m32 = be + af * d,
+            m33 = a * c;
+        // Entry-Gier (W-H V18.179): x' = x·cos + z·sin, z' = −x·sin + z·cos.
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const rc = Math.cos(ry),
+            rs = Math.sin(ry);
+        const ox = entry.position.x,
+            oy = entry.position.y - 0.5,
+            oz = entry.position.z;
+        let minX = Infinity,
+            maxX = -Infinity,
+            minZ = Infinity,
+            maxZ = -Infinity,
+            topY = -Infinity,
+            botY = Infinity;
+        for (let k = 0; k < 8; k++) {
+            const lx = k & 1 ? hx : -hx;
+            const ly = k & 2 ? hy : -hy;
+            const lz = k & 4 ? hz : -hz;
+            // Part-Rotation → Part-Offset → Entry-Gier → Entry-Ursprung.
+            const qx = m11 * lx + m12 * ly + m13 * lz + px;
+            const qy = m21 * lx + m22 * ly + m23 * lz + py;
+            const qz = m31 * lx + m32 * ly + m33 * lz + pz;
+            const wx = ox + qx * rc + qz * rs;
+            const wz = oz - qx * rs + qz * rc;
+            const wy = oy + qy;
+            if (wx < minX) minX = wx;
+            if (wx > maxX) maxX = wx;
+            if (wz < minZ) minZ = wz;
+            if (wz > maxZ) maxZ = wz;
+            if (wy > topY) topY = wy;
+            if (wy < botY) botY = wy;
+        }
+        return { minX, maxX, minZ, maxZ, topY, botY };
     }
 
     // V9.75 (Welle C.4+5) — Blocker-AABBs in den Architektur-Eintrag schreiben.
@@ -30863,6 +30914,20 @@ class AnazhRealm {
     // Mechanik gestrichen (V9.75) — das Cell-Feld trägt die Wahrheit. Der
     // Stempel iteriert `state.architectures` direkt, kein Bucket nötig.
     _populateBlockerAABBs(entry) {
+        // V18.464 — TOR-GESTALT-KOLLISION FOLGT DEM GESETZ: trägt der Eintrag
+        // eine porta-Tor-Gestalt (studioGestalt-Zeile ODER Katalog-Typ tor_*),
+        // deckt die Kollision die SICHTBARE Studio-Form (Pfosten + Bogen aus
+        // deriveGate/deriveFrame — Öffnung FREI), nicht mehr die Alt-Substanz-
+        // Parts (der rotierte Quarz-Ring war ein unsichtbarer Riegel MITTEN in
+        // der sichtbaren Tor-Öffnung). Regime-frei + deterministisch am Spawn
+        // (Lockstep): die Gestalt-ZEILE entscheidet, nie der Buch-Lade-Stand.
+        // Die Parts bleiben unberührte SUBSTANZ-Wahrheit (Tags/Judge).
+        const torBoxes = this._torBlockerAABBs(entry);
+        if (torBoxes && torBoxes.length) {
+            entry.blockerAABBs = torBoxes;
+            this._blockerStampReach(entry);
+            return;
+        }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
@@ -30873,6 +30938,108 @@ class AnazhRealm {
         }
         if (solidAABBs.length === 0) return;
         entry.blockerAABBs = solidAABBs;
+        this._blockerStampReach(entry);
+    }
+
+    // V18.464 — die horizontale REICHWEITE der Blocker-Hülle (max. Abstand einer
+    // AABB-Kante vom Entry-Ursprung). Die Nah-Culls der Leser (Spieler-Kapsel
+    // 60 m · Raycast 80 m) maßen bisher vom ZENTRUM — ein großes/skaliertes
+    // Bauwerk verlor jenseits davon die Kollision seiner Randparts. Die Leser
+    // addieren jetzt diese gestempelte Reichweite (physik-D6-Heilung).
+    _blockerStampReach(entry) {
+        if (!entry || !entry.blockerAABBs) return;
+        let r = 0;
+        for (const b of entry.blockerAABBs) {
+            r = Math.max(
+                r,
+                Math.abs(b.minX - entry.position.x),
+                Math.abs(b.maxX - entry.position.x),
+                Math.abs(b.minZ - entry.position.z),
+                Math.abs(b.maxZ - entry.position.z)
+            );
+        }
+        entry._blockerReach = r;
+    }
+
+    // V18.464 — DAS TOR-GESETZ EINES EINTRAGS: liefert die reinen porta-Zahlen
+    // (Dial-Satz p · membranUniforms mu · MEMBRAN_GESETZ), wenn der Bauplan des
+    // Eintrags eine gate-Gestalt trägt — via studioGestalt-DATEN-Zeile
+    // (welt_portal → geisttor …) oder Katalog-Präfix (KIND_POLICY.gate.prefix:
+    // tor_drachentor → drachentor). EINE Quelle: porta-core (seit V18.464 auch
+    // main-seitig geladen, index.html). Memoisiert je Gestalt-Name. null wenn
+    // kein Tor / Kern nicht geladen (headless-Gates ohne porta-core → Alt-Pfad).
+    _torGesetzFor(entry) {
+        if (!entry || typeof entry.type !== "string") return null;
+        const core = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
+        if (!core || !core.PRESETS || typeof core.membranUniforms !== "function") return null;
+        let gestalt = null;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (bp && typeof bp.studioGestalt === "string") gestalt = bp.studioGestalt;
+        if (!gestalt) {
+            const pol = AnazhRealm.KIND_POLICY.gate;
+            if (pol && pol.prefix && entry.type.indexOf(pol.prefix) === 0) {
+                gestalt = entry.type.slice(pol.prefix.length);
+            }
+        }
+        const pre = gestalt ? core.PRESETS[gestalt] : null;
+        if (!pre || pre.kind !== "gate") return null;
+        if (!this._torGesetzMemo) this._torGesetzMemo = new Map();
+        let g = this._torGesetzMemo.get(gestalt);
+        if (!g) {
+            const p = core.gateParams(pre);
+            g = { gestalt, p, mu: core.membranUniforms(p), gesetz: core.MEMBRAN_GESETZ };
+            this._torGesetzMemo.set(gestalt, g);
+        }
+        return g;
+    }
+
+    // V18.464 — die Tor-KOLLISIONS-HÜLLE aus dem Gesetz: Pfosten (beidseitig,
+    // volle Rahmenbreite jambW·Ordnungen) + Bogen-Schultern (die Rundung über
+    // der Kämpferlinie, mittig FREI) + Krone über dem Scheitel. Als PSEUDO-
+    // Parts durch DENSELBEN AABB-Chokepoint (_blockerComputePartAABB) gejagt —
+    // Skala + Entry-Gier erben gratis, kein zweiter Mathe-Pfad. Die Öffnung
+    // (Spannweite 2·M bis zur Bogenkurve) bleibt frei: Hindurchgehen ist
+    // körperlich möglich (der ganze Sinn eines Tors).
+    _torBlockerAABBs(entry) {
+        const tor = this._torGesetzFor(entry);
+        if (!tor) return null;
+        const mu = tor.mu;
+        if (!mu || !Number.isFinite(mu.apexY)) return null;
+        const halbTiefe = Math.max(
+            mu.zFace + 0.05,
+            (mu.orders - 1) * mu.depthStep + (mu.frameDepth * (1 + 0.18 * (mu.orders - 1))) / 2
+        );
+        const tiefe = halbTiefe * 2;
+        const pfostenB = Math.max(0.3, mu.jambW * (mu.orders + 0.5));
+        const kroneH = Math.max(0.3, mu.jambW * 1.3);
+        const rise = Math.max(0.05, mu.apexY - mu.springY);
+        const schulterB = mu.rimAx * 0.45;
+        const schulterY0 = mu.springY + rise * 0.3;
+        const pseudo = [
+            // Pfosten L/R — von der Öffnungskante (±rimAx) nach außen, volle Höhe.
+            { position: { x: -(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 }, size: { x: pfostenB, y: mu.apexY, z: tiefe } },
+            { position: { x: +(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 }, size: { x: pfostenB, y: mu.apexY, z: tiefe } },
+            // Bogen-Schultern — die Haunches über der Kämpferlinie (Mitte frei).
+            {
+                position: { x: -(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
+                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
+            },
+            {
+                position: { x: +(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
+                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
+            },
+            // Krone — Schlussstein-/Rim-Zone über dem Scheitel, volle Breite.
+            {
+                position: { x: 0, y: mu.apexY + kroneH / 2, z: 0 },
+                size: { x: 2 * (mu.rimAx + pfostenB), y: kroneH, z: tiefe },
+            },
+        ];
+        const boxes = [];
+        for (const part of pseudo) {
+            const aabb = this._blockerComputePartAABB(entry, part);
+            if (aabb) boxes.push(aabb);
+        }
+        return boxes;
     }
 
     // V9.50-a — das nächste Fluss-Segment an (x,z), falls (x,z) im gecarvten
@@ -80641,8 +80808,11 @@ class AnazhRealm {
             const e = arches[a];
             if (!e || !e.blockerAABBs || !e.position) continue;
             if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
-            // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler
-            if (Math.abs(e.position.x - pos.x) > 60 || Math.abs(e.position.z - pos.z) > 60) continue;
+            // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler.
+            // V18.464: + gestempelte Blocker-Reichweite (_blockerReach) — der
+            // Zentrums-Cull verlor bei großen/skalierten Bauwerken die Rand-Parts.
+            const cullR = 60 + (e._blockerReach || 0);
+            if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
             const boxes = e.blockerAABBs;
             for (let b = 0; b < boxes.length; b++) {
                 supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
