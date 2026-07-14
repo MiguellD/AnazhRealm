@@ -158,7 +158,12 @@ const REP = {
             const env = await getData("get-book");
             const book = env.book || env.recipes || {};
             const rc = env.renderConfig || {};
-            const stages = (rc.lod && rc.lod.kindStages) || {};
+            // Der GANZE Vertrag: Haupt-Block + die Zweit-Kern-Blöcke (zusatzKindStages,
+            // W7b/N2 — der Host mergt sie am Ingest-Chokepoint; die Linse liest dieselbe
+            // Vollständigkeit, sonst misst sie eine Phantom-Lücke wie V18.470 erste Fassung).
+            const stages = Object.assign({}, (rc.lod && rc.lod.kindStages) || {});
+            const zusatz = (rc.lod && rc.lod.zusatzKindStages) || {};
+            for (const block of Object.values(zusatz)) Object.assign(stages, block || {});
             const out = { kindStages: stages, gattung: {} };
             const byKind = {};
             for (const [id, r] of Object.entries(book)) {

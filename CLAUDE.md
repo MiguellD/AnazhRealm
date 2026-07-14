@@ -14,9 +14,12 @@ Platzierung·Anwendung·Dynamik), Vertragsseite über die ECHTE Pipe (Harness je
 manifest-getrieben = Produktions-Boot, alle 107 Rezepte aller Kerne im Buch; Daten-Kanal-
 Goldens begründet re-gemünzt, 52 Geometrie-Goldens byte-unberührt) + Weltseite über
 verifizierte Chokepoint-Proben. 55 Zellen verankert (nur-wachsend), 21 Differenzen benannt.
-**Die zwei größten gemessenen Lücken:** (1) die LOD-LEITER existiert im Vertrag NUR für
-Pflanzen — fahrzeug gt=328 Meshes · tor drachentor=329 · wolf=81 auf JEDE Distanz nur L0
-(kindStages kennt keine Nicht-Pflanzen-Zeile); (2) der STUDIO-BÄCKER-KANAL `bake-impostor`
+**Die größten gemessenen Lücken (Korrektur nach Voll-Vertrags-Lesung — zusatzKindStages
+zählt mit):** (1) die LOD-LEITER: haus [0,1,2] EHRLICH (3 distinct durch die Pipe) ·
+fahrzeug/tor/klinge [0] = bewusstes Vertrags-Urteil (Wirt gradiert; Tor-Impostor gebaut
+V18.465, Fahrzeug-Fernstufe offen: gt=328 Meshes auf jede Distanz) · kreatur/koerper/klang
+tragen GAR KEINE Stufen-Zeile (wolf=81 Meshes, kein Geometrie-LOD für mensch/tier);
+(2) der STUDIO-BÄCKER-KANAL `bake-impostor`
 (phytogenesis: „der Studio-Bäcker IST die Fernstufe, KEIN Nachbau") wird vom Stamm NIE
 gerufen — die Welt-Ferne backt im Nachbau `_tickImpostorBake` (Parallelpfad-Klasse; zudem
 worker-untauglich: `__foundryBakeRenderer` liest window + baut canvas-los). Die

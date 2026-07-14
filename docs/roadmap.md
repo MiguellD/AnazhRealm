@@ -19,9 +19,10 @@
    robust machen ODER Karten-Qualität (Auflösung/Beleuchtung) heben. Container-Wand: swiftshader
    stirbt ab ~6M Tris — das Fern-Auge geht nur auf echtem Holz.
    (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
-   9 Gattungen × 8 Facetten, 55 Zellen verankert, 21 Differenzen benannt. Die größten:
-   LOD-Leiter im Vertrag NUR für Pflanzen (fahrzeug 328 Meshes · tor 329 · wolf 81 auf
-   jede Distanz nur L0 — kindStages braucht Nicht-Pflanzen-Zeilen + Welt-Konsum) ·
+   9 Gattungen × 8 Facetten, 55 Zellen verankert, 20 Differenzen benannt. Die größten:
+   LOD-Leitern — haus [0,1,2] EHRLICH bewiesen · fahrzeug/tor/klinge [0] bewusst (Wirt
+   gradiert; Fahrzeug-Fernstufe fehlt real: 328 Meshes je Distanz) · kreatur/koerper/klang
+   ganz ohne Stufen-Zeile (wolf 81 Meshes, mensch/tier ohne Geometrie-LOD) ·
    Bäcker-Parallelpfad: `bake-impostor`-Kanal (Studio-Norm „KEIN Nachbau") ungenutzt,
    `_tickImpostorBake` ist der Nachbau → VEREINIGUNGS-WELLE (OffscreenCanvas-Bäcker im
    Worker, Stamm konsumiert den Kanal, Nachbau fällt — heilt zugleich L2-Blob-Verdacht
