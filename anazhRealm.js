@@ -22240,15 +22240,31 @@ class AnazhRealm {
                 example: "aktiviere anazh-symphonie",
                 re: /^aktiviere\s+anazh-symphonie(?:\s.*)?$/i,
                 run: (m, append) => {
-                    // V1-Platzhalter, bis Ring 4 Web-Audio bringt: ein DSL-Programm
-                    // belebt die Kreaturen sichtbar (happy + schneller).
+                    // V18.464 — das Verb koppelt an das ECHTE Klang-System (der alte
+                    // „V1-Platzhalter, bis Ring 4 Web-Audio bringt"-Text war eine Lüge:
+                    // die Symphonie lebt längst — initSymphony/masterGain, derselbe
+                    // Chokepoint wie der #anazh-symphony-toggle; Chat-Enter ist die
+                    // User-Geste, die Autoplay-Policy erfüllt). Das DSL-Belebungs-
+                    // Programm bleibt als sichtbare Begleit-Geste.
+                    const s = this.state.symphony;
+                    let klang = false;
+                    if (s && !s.enabled) {
+                        klang = !!this.initSymphony();
+                    } else if (s && s.enabled && s.masterGain && s.ctx) {
+                        s.masterGain.gain.setValueAtTime(0.35, s.ctx.currentTime);
+                        klang = true;
+                    }
                     this.addNewAbility(
                         "anazhSymphony",
                         ["chain", ["creatures_emotion", "happy"], ["creatures_speed_mul", 1.5]],
                         "human"
                     );
                     this.state.abilities["anazhSymphony"]();
-                    append("Anazh-Symphonie V1 aktiviert (Web-Audio kommt mit Ring 4)");
+                    append(
+                        klang
+                            ? "Anazh-Symphonie aktiviert — die Welt klingt (und die Kreaturen beleben sich)."
+                            : "Anazh-Symphonie: Belebung aktiv; Klang konnte nicht starten (kein Audio-Kontext)."
+                    );
                 },
             },
             {
