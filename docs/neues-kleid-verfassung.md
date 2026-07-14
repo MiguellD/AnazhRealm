@@ -19,7 +19,7 @@ Wald-/Vegetations-Assets ist — ohne Parallelcode. Acht Phasen, seriell im Haup
 | **P2** | Kern-Split `foundry-core.js` (Studio-Generator als geteilte Quelle) | `gate:portal-boot` (die Shell liest die Globals) |
 | **P3a** | Foundry iframe → Worker (Geometrie off-thread) | `gate:foundry-warm` (der Worker bäckt echte Assets headless) |
 | **P4** | Die Foundry ist die EINE aktive Baum-Quelle | der Chokepoint `_buildVariantLODs` (null bei lebender Foundry) + der Scatter-Gate + `gate:foundry-deadlock` |
-| **P5** | Der Impostor backt auf dem EINEN Haupt-Renderer | `_bakeImpostorAtlasRTT` (foundry-Zweig) + `gate:foundry-impostor` (kein iframe) |
+| **P5** | Der Impostor backt im STUDIO-Bäcker (Bäcker-Vereinigung: Worker-Kanal `bake-impostor`, kein Welt-Nachbau) | `_tickImpostorBake` → `_foundryBakeImpostorRequest` → `_applyStudioImpostorPayload` + `gate:foundry-impostor` (kein iframe, kein RTT-Nachbau) |
 | **P6** | EIN Wuchs (der Studio-Generator liest den geteilten Kern) | `growTreeNodes` delegiert an `__phytoCore.growSkeleton`, Inline-Wuchs geschnitten + `gate:asset-contract` (output-neutral) |
 | **P7** | Der Asset-Vertrag v2 (die erste Kreatur dockt an) | `spec/asset-contract/v2/` + `gate:creature-contract` (bake-core Skin byte-exakt in Node) |
 | **P8** | Die Verfassung: Struktur ersetzt Ermahnung | `gate:constitution` (diese Gesetze als statische Linse im `check`) |
@@ -51,14 +51,22 @@ delegiert an `__core.growSkeleton`). Der alte ~275-Zeilen-Inline-Parallel-Wuchs 
 GESCHNITTEN — es gibt keine driftende Kopie mehr (Gesetz #0). Fehlt der Kern, gibt es ein
 graceful-leeres Ergebnis (die Gates fangen einen fehlenden Kern sofort).
 
-### Gesetz 3 — der Impostor backt auf dem EINEN Haupt-Renderer
+### Gesetz 3 — der STUDIO-Bäcker ist die Fernstufe (Bäcker-Vereinigung, kein Nachbau)
 
-Der 8-Winkel-Impostor-Atlas backt über den Haupt-Renderer-RTT (`_bakeImpostorAtlasRTT`, der bei der
-`foundry`-Flagge die worker-produzierte LOD1-Geometrie als `_foundryBakeLeaves` liest) — KEIN
-GL-Bake-iframe mehr. Die drei iframe-Impostor-Methoden (`_foundryRequestImpostor` ·
-`_foundryEnsureBakeIframe` · `_foundryBuildImpostorRecord`) sind geschnitten; kein null-origin-iframe
-wird erzeugt. Headless/Null-Renderer → der Silhouetten-Fallback trägt (RTT no-op, gate-treu); der
-Atlas-LOOK ist das Schöpfer-Auge auf echter GPU.
+Der 8-Winkel-Impostor-Atlas backt im STUDIO-Bäcker des Foundry-Workers (phytogenesis
+`bakeImpostorAtlas` über den Kanal `bake-impostor` → Reply `impostor`): `_tickImpostorBake`
+fragt je Record (`presetId`, `seed = variantIndex`, `season`), `_applyStudioImpostorPayload`
+malt die vertikal gestapelten, bottom-up Reply-Pixel Y-geflippt in den horizontalen Welt-Atlas
+(ATOMIC `tex.image`-Swap, Textur-Identität stabil) und übernimmt den Studio-Rahmen
+(`payload.aspect/height` — RAHMEN-EINHEIT, `_reframeImpostorFlat` schreibt ein schon
+instanziertes Quad in place um). Der frühere Welt-RTT-Nachbau (`_bakeImpostorAtlasRTT` ·
+`_impostorBlitPixels` · `_impostorDilate` · `_foundryBakeLeaves`) ist GESCHNITTEN — ein Bäcker,
+eine Quelle; die Bake-DISZIPLIN blieb (ein Bake in Flug · Watchdog `IMPOSTOR_BAKE_TIMEOUT_MS` ·
+3× Retry, dann terminal `rttFailed` · Zensus-Zähler). KEIN GL-Bake-iframe: die drei
+iframe-Impostor-Methoden (`_foundryRequestImpostor` · `_foundryEnsureBakeIframe` ·
+`_foundryBuildImpostorRecord`) bleiben geschnitten. Headless/Null-Renderer → der
+Silhouetten-Fallback trägt (nichts wird enqueued, gate-treu); der Atlas-LOOK ist das
+Schöpfer-Auge auf echter GPU.
 
 ### Gesetz 4 — die Asset-Verträge sind eingefroren + gate-bewacht
 
