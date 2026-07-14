@@ -66,12 +66,33 @@
    (Source-Proben zitieren Kommentar-Text; Absenz-Greps laufen über `window.__codeOf`, WEIL
    Kommentare gefallene Namen zitieren) — die Diät verlangt Anker-Wanderung in derselben Welle,
    nie blindes Strippen.
-5. **Der nächste GROSSE Bogen (Schöpfer-Wahl, erst wenn 1 steht):** (a) der lebendige Körper
-   (Fuß-IK/Foot-Lock/Blending/Spring; Stoff-Textur · Säume · SDF-Politur als Lab-Erlebnis) ·
-   (b) Seelen-Vertiefung (Emotion→Regel-EMERGENZ · KI als volle Co-Schöpferin opt-in ·
-   Emotion→Farbe-Konstanten in `dslComposeFieldColor`) · (c) der UX-Bogen (§3-Ende: die ~19
-   gebauten-aber-UI-losen Subsystem-APIs verdrahten) · (d) die gemerkten Fäden (§4).
-   Empfehlung: (a) → (b).
+5. **DIE DREI BÖGEN — vom PROFI-ORAKEL gereiht (8/10 System-Audits, 14.07.; je Mechanik
+   „wie machen es die Besten?", Referenzen im Audit-Journal wf_790d891e):**
+   **BOGEN 1 — RENDER (die Trace-Zahlen töten):** Material-je-Farbe → instanceColor über EIN
+   geteiltes Material (heute baut _archLeafMaterial je Part-Farbe eigenes Material+Pipeline —
+   der 1733-dc-Treiber; WELLE) → WebGPU-RenderBundles (THREE.BundleGroup liegt UNGENUTZT im
+   vendored r184 — statische Region-Subbäume einmal aufzeichnen; BOGEN) → Kreatur-Guss:
+   Rigid-Bind-GPU-Skinning (~5 Draws/Tier statt 81) + 3-Stufen-Leiter (der 26M-Tri-Wal; BOGEN).
+   **BOGEN 2 — KÖRPER (die sichtbarste Qualität):** weg-getriebene Gang-Phase statt Zeit
+   (Fuß-Gleiten; WELLE) + Posen-BLEND statt hartem Idle/Walk-Schnitt (WELLE) → Two-Bone-Fuß-IK
+   + Foot-Lock + Becken/Rumpf-Pitch für Mensch UND Tier (Tiere schweben heute 0,5 m + Sinus;
+   BOGEN) → Schwertschwung als 3-Phasen-Oberkörper-Layer + Klinge-Kapsel-Sweep + Hit-Stop
+   (swingSpeed∝1/√I erreicht endlich den Kampf; WELLE) → Tod-Kippen entlang _fieldGradient
+   statt Sofort-Despawn (WELLE).
+   **BOGEN 3 — LEBENDIGE KOPPLUNG (Welt reagiert):** Fluss-Strömung wirkt auf Schwimmer/Boot
+   (flowX/flowZ am EINEN Bewegungs-Chokepoint; WELLE) → Ripple/Splash/Kielwasser (kleines
+   kamerazentriertes Wellen-RT; BOGEN) → Gras-Interaktions-Sphären (Spieler/Ritt/Tiere biegen
+   Halme, GoT-Muster; WELLE) → EIN Wind-RICHTUNGS-Vektor für alles Sway (WELLE) → Szenen-
+   Refraktion (Beer-Lambert aufs echte Hintergrund-Pixel; WELLE).
+   QUER (wenn MP dran): Reconnect-Backoff+restartIce (WELLE) · Host-Sequencer für DSL-Ops ·
+   Zustands-CRC-Desync-Linse (Factorio-Muster) · 30-Hz-Snap-Interpolationspuffer. WEITERE
+   Orakel-Wellen: Quake-ClipVelocity (Gleiten statt Vollstopp; WELLE) · Fahr-Kinematik
+   (Rocket-League-GDC: Gierrate∝Input×Tempo, raus aus dem Geh-Controller; BOGEN) · Sync-Edit-
+   Remesh in Region/Worker (239-ms-Carve-Freeze; BOGEN) · Kachel-Erosion async (BOGEN) ·
+   Bloom-Mip-Kette (CoD-AW-Muster; WELLE) · seeded PRNG-Streams für ALLE Gameplay-Würfe ·
+   Impostor-Elevation (octahedral; BOGEN). Alt-Empfehlung (a) lebendiger Körper / (b) Seelen-
+   Vertiefung bleibt — Bogen 2 IST (a). NOCH UNGELESEN (Orakel gestoppt): regler · architektur ·
+   klang — Wiederaufnahme billig (8 Leser gecacht, resumeFromRunId wf_790d891e-152).
 6. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):**
    N5.4 scatter-Verdrahtung [wartet aufs erste scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
    Rüstung/Trank-Rezepte + Geräte-Gestalten + L1-Diät [warten auf Lab-Presets/-Entscheide] ·
