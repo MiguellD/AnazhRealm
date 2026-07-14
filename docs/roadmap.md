@@ -45,13 +45,16 @@
    bewiesen, Reiter-Kollisions-Skip, persistiert; gate:vehicle-drive) · TIERE entstapeln
    + differenzieren sich (Separations-Kraft, NaN-fest, ohne Math.random; Stats/Emotion
    modulieren Radius/Tempo; gate:tier-separation) · ZWEIT-KERN-BÄCKEREI (Tor-Karten echt,
-   gate:baecker-kanal drachentor nicht-leer; Welt-Wächter geweitet). WASSER-FORENSIK
-   liegt (3 Wurzeln mit Zeilen: Dach-Blur ohne Höhen-Gate = Wand-Kriechen · Fern-Wasser-
-   Rim bei terrainTopY=−∞ = Spiegel-Film über Land · CA-KEEP-Fixpunkt = ewige Blobs) —
-   der Bau ist V18.475, direkt anschließend. OFFEN danach: Avatar-Kleider/Bewegung ≠
-   Studio · Kreatur-Tris/LOD (Tri-Zensus im nächsten Trace) · Fahrzeugphysik-Tiefe ·
-   Körpermechanik (Fuß-IK) · Schwertschwung · Stadtpflanzung/Straßen · Stau-Qualifikation
-   (V18.129-Damm-Design: BEWUSSTER Schöpfer-Entscheid, nicht still ändern).
+   gate:baecker-kanal drachentor nicht-leer; Welt-Wächter geweitet). DIE WASSER-WAHRHEIT
+   IST GEBAUT (V18.475, gate:wasser-wahrheit 4 Fixtures + Selbst-Tests): Höhen-Gate des
+   Dach-Blurs in BEIDEN Spiegeln (Wand-Kriechen tot; gate:worker-watersheet WIEDER
+   STEHEND, maxDiff 0) · Rim-Wand (terrainTopY=−∞ heißt unbekannt, nie nass — der
+   Spiegel-Film über Land fällt) · Verdunstungs-Boden (settled Zungen unter Render-
+   Schwelle verdunsten, Quellen nie — die ewigen Blobs fallen) · Stau-Qualifikation nach
+   Profi-Maßstab (nur geerdete, geschlossene Basen dämmen — Pfosten/Stege nie; echte
+   Dämme leben). OFFEN danach: Avatar-Kleider/Bewegung ≠ Studio · Kreatur-Tris/LOD
+   (Tri-Zensus im nächsten Trace) · Fahrzeugphysik-Tiefe · Körpermechanik (Fuß-IK) ·
+   Schwertschwung · Stadtpflanzung/Straßen — Reihung folgt dem Profi-Orakel-Audit.
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
    `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
    Nervensystem-DoD 5 · E-C/E-E/E-F.

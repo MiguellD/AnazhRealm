@@ -27388,7 +27388,11 @@ class AnazhRealm {
                 // fällt an der Wurzel; Seen/Ozean kommen unverändert durch.
                 const wx = ox + (ci + 0.5) * step;
                 const wz = oz + (ck + 0.5) * step;
-                const L = this._waterRunSurfaceAt(wx, wz);
+                // V18.475 (F2) — das Bett reist mit (solidG = Unterkante der höchsten
+                // SOLID-Zelle, +step = Bett-OBERFLÄCHE, die V18.378-Wahrheit): nasse
+                // Flood-Spalten behalten so ihre Rim-Füllung (Bett < rim per Flood-
+                // Konstruktion) — nur „unbekannt" (−Inf) verliert sie (die Rim-Wand).
+                const L = this._waterRunSurfaceAt(wx, wz, solidG[gi] + step);
                 let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
                 // LIVE: der CA-Delta obendrauf (Live-Dach − Flood-Dach, geclampt).
                 if (level) {
@@ -27479,6 +27483,22 @@ class AnazhRealm {
         // Wet-only-Glätten (SMOOTH_PASSES × Radius 1 — die Oberflächenspannung): nimmt
         // die 1.8-m-Treppen + die CA-Stufen-Fronten, ohne das Ufer zum Trockenen zu
         // ziehen (trocken bleibt trocken/NaN).
+        // V18.475 — DAS HÖHEN-GATE DES DACH-BLURS (Schöpfer-Befund 14.07. „Wasser kriecht
+        // die Wände hoch" = Phantom-Wasserfälle): der Kernel mittelte Plateau-Lauf- und
+        // Tal-Pool-Dächer ÜBER DIE KLIPPE hinweg (der 3×3 liest auch diagonal über eine
+        // 1-Spalten-Wand) — bei 20 m Fall zog er Tal-Dächer nahe der Wand ~+10 m hoch,
+        // und der VERT_SPLIT formte aus den überhöhten Quads Lippe+Vorhang = ein PHANTOM-
+        // Wasserfall an der Wand. Das Gate: ein Nachbar zählt NUR bei |top_nb − top_roh|
+        // ≤ BLUR_GATE = K·step mit K=2. HERLEITUNG: eine echte CA-Stufen-Front ist ≤ 1
+        // Zelle (1,8 m) hoch und SOLL glätten; ab 2 Zellen (3,6 m) ist es eine WAND —
+        // dort trennt der VERT_SPLIT (3·step) ohnehin in Lippe+Vorhang, der Blur darf die
+        // Etagen nicht vorweg verschmieren. ROH gegen ROH (pass-invariant + symmetrisch):
+        // beide Chunk-Nachbarn sehen am geteilten Rand dieselben rohen Pad-Dächer →
+        // dieselben Gate-Urteile → naht-frei per Konstruktion. Mirror byte-identisch in
+        // voxel-worker.js `buildWaterSheetGeometry` (diag-worker-watersheet, maxDiff 0).
+        // Linse: `gate:wasser-wahrheit` Fixture 1 (Klippe).
+        const BLUR_GATE = step * 2;
+        const topRawG = Float64Array.from(topG);
         let cur = topG;
         let buf = new Float64Array(GW * GW);
         for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
@@ -27494,8 +27514,11 @@ class AnazhRealm {
                         const nx = gx + dx2;
                         const nz = gz + dz2;
                         if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                        const v = cur[nx + nz * GW];
+                        const ng = nx + nz * GW;
+                        const v = cur[ng];
                         if (!Number.isNaN(v)) {
+                            // V18.475 — das Höhen-Gate (s.o.): nur Dächer derselben Etage.
+                            if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
                             sum += v;
                             n++;
                         }
@@ -27567,8 +27590,13 @@ class AnazhRealm {
                             const nx = gx + dx2;
                             const nz = gz + dz2;
                             if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                            if (Number.isNaN(tops[nx + nz * GW])) continue; // nur NASSE Nachbarn (kein Ufer-Zug)
-                            sum += arr[nx + nz * GW];
+                            const ng = nx + nz * GW;
+                            if (Number.isNaN(tops[ng])) continue; // nur NASSE Nachbarn (kein Ufer-Zug)
+                            // V18.475 — dasselbe HÖHEN-GATE wie der tops-Blur (Herleitung dort):
+                            // Bett/Slope/Flow bluten nicht über die Klippe — Plateau-Lauf und
+                            // Tal-Pool sind zwei Etagen, keine Nachbarn.
+                            if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
+                            sum += arr[ng];
                             nn++;
                         }
                     }
@@ -31050,7 +31078,18 @@ class AnazhRealm {
                     // Phantom: nur neben echten Atlas-Wasser-Körpern (3×3); die Atlas-
                     // priority-flood hat die 2D-Konnektivität schon berechnet, dies ist
                     // die Voxel-Verfeinerung des Ufers.
-                    if (rim > -Infinity && terrainTopY < rim) {
+                    // V18.475 — DIE RIM-WAND (F2, Schöpfer-Befund 14.07. „spiegelnder Filter
+                    // über Terrain, winkelabhängig"): der Rim-Pfad greift NUR bei ENDLICHEM
+                    // terrainTopY. −Infinity hieß bisher „Rim BEDINGUNGSLOS" — der Fern-
+                    // Wasser-Pfad (`_ensureFarWaterSheet`) fragte so, und jede LAND-Spalte
+                    // im 16-m-3×3-Umfeld eines Körpers zählte nass → schwebende Fern-Quads
+                    // über trockenem Ufer = der grazing-Winkel-Spiegel. „Unbekannt" (nicht-
+                    // finit) heißt jetzt KEINE Rim-Erweiterung, nie „immer nass"; wer die
+                    // Rim-Füllung echter Ufer will, reicht sein Terrain (eine Quelle: das
+                    // Bett/colSurf der Spalte). +Infinity (die Existenz-Probe) war schon
+                    // immer rim-frei (`+∞ < rim` ist false) — unverändert. Mirror byte-
+                    // identisch im Worker; Linse: `gate:wasser-wahrheit` Fixture 2.
+                    if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) {
                         level = rim;
                     }
                 }
@@ -31070,7 +31109,17 @@ class AnazhRealm {
             level = waterLevel;
         }
         const river = this._hydroRiverAt(x, z);
-        if (river && river.surfaceY > level) level = river.surfaceY;
+        if (river && river.surfaceY > level) {
+            // V18.475 — DIE RIM-WAND GILT AUCH DEM FLUSS (F2, Urteil): `_hydroRiverAt`
+            // trifft die VOLLE Carve-Breite inkl. Bank-RAMPE (dist ≤ halfW + bankW) mit
+            // surfaceY = Makro − 0.25·depth + bulge — auf der Rampe liegt das oft ÜBER
+            // dem Boden. Bei terrainTopY === −Infinity („Boden unbekannt", der Fern-
+            // Wasser-Pfad) zählt darum NUR der Kanal-KERN (centerness > 0 ⇔ dist <
+            // halfW — dort ist Wasser per Carve-Konstruktion sicher). +Infinity (die
+            // bewusste Existenz-Probe: colSrc/CA-Quellen) und endliches Terrain behalten
+            // die volle Breite — die Nah-Welt klippt Bänke über ihre SOLID-Zellen selbst.
+            if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
+        }
         return level;
     }
 
@@ -31091,8 +31140,15 @@ class AnazhRealm {
     // (Atlas-L, Flood-Zellen, Carve, Worker) bleibt unangetastet.
     // Erst-Wurf-Fenster (S-Vermerk): Schritt 6 m × ±3 Taps; Kurven werden
     // als lokale Gerade gesampelt (bei 18 m Reichweite sanft genug).
-    _waterRunSurfaceAt(x, z) {
-        const L = this._atlasWaterLevelAt(x, z, -Infinity);
+    // V18.475 (F2) — `terrainTopY` reist zur ZENTRUMS-Frage durch: seit der Rim-Wand
+    // heißt −Infinity „unbekannt = keine Rim-Erweiterung" — der Sheet-Bau kennt sein
+    // Bett (solidG + step, dieselbe V18.378-Bett-Wahrheit wie aDepth) und reicht es,
+    // damit echte Ufer-Spalten ihre Rim-Füllung BEHALTEN. Die ±18-m-Along-Flow-Samples
+    // bleiben ehrlich −Infinity (dort ist der Boden wirklich unbekannt — ein trockener
+    // Sample fällt aus der Gewichtung, wie ein fehlender schon immer). Callers ohne
+    // Terrain-Wissen (Boot/Tauch) lassen den Default — dort deckt der Körper-Spiegel.
+    _waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
+        const L = this._atlasWaterLevelAt(x, z, terrainTopY);
         if (!(L > -Infinity)) return L;
         const river = this._hydroRiverAt(x, z);
         if (!river) return L;
@@ -67555,6 +67611,45 @@ class AnazhRealm {
         return moved;
     }
 
+    // V18.475 (F3) — DER VERDUNSTUNGS-BODEN (Schöpfer-Befund 14.07. „Blobs, die bleiben"):
+    // der KEEP-Fixpunkt (EPS_FLOW ≈ (1−KEEP)·1.1, V18.93) ist für ABGEKLUNGENE Zungen eine
+    // Falle — Wasser, das der CA in flood-trockene Spalten trug (V18.91-Live-Only), settled
+    // bei Level 0.5–0.9 ÜBER der Render-Schwelle (0.5, `_caColumnScan`) und fror EWIG ein =
+    // permanente Sheets über trockenem Grund. HEILUNG: ist ein Chunk ruhig (bewegte Magnitude
+    // < SETTLE über CA_EVAP.QUIET_TICKS, gezählt in `_tickWorldWaterCA`), verdunstet sein
+    // Live-Wasser in flood-trockenen Zellen langsam auf 0 (RATE/Tick; Rest < SNAP fällt ganz).
+    // Das ist — wie der Quellen-Pin (W-B) und der Stau-Tropf (V18.129) — eine BEWUSSTE,
+    // dokumentierte NICHT-ERHALTUNG: der Pin schöpft am Rand des geschlossenen Systems,
+    // die Verdunstung nimmt am anderen. NIE verdunstet: (a) QUELL-Spalten (src — das
+    // unendliche Reservoir bleibt der Pin-Vertrag), (b) Flood-WATER-Zellen (die statische
+    // Ruhe-Wahrheit — ein See-Schelf ist kein Blob, er gehört dem Körper). PURE über die
+    // Arrays (headless beweisbar) — Linse: `gate:wasser-wahrheit` Fixture 3.
+    _caEvaporateSettled(level, cells, src, dim, dimY, band) {
+        const WATER = AnazhRealm.CELL_STATE.WATER;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
+        const CFG = AnazhRealm.CA_EVAP;
+        const dimSq = dim * dim;
+        const jHi = band ? Math.min(dimY - 1, band.jMax) : dimY - 1;
+        const jLo = band ? Math.max(0, band.jMin) : 0;
+        let evap = 0;
+        for (let j = jLo; j <= jHi; j++) {
+            const baseJ = j * dimSq;
+            for (let c = 0; c < dimSq; c++) {
+                if (src && src[c]) continue; // Quell-Spalten: NIE verdunsten
+                const idx = baseJ + c;
+                const lv = level[idx];
+                if (lv <= 0) continue;
+                const cs = cells[idx];
+                if (cs === WATER || cs === SOLID) continue; // nur LIVE-Zungen über trockenem Grund
+                const nv = lv - CFG.RATE;
+                const next = nv < CFG.SNAP ? 0 : nv;
+                evap += lv - next;
+                level[idx] = next;
+            }
+        }
+        return evap;
+    }
+
     // T4a-2 (terrain-t4-wasser-ca-plan §3) — die REAKTIVE Wasser-Level-Schicht in der WELT.
     // `state.waterLevelCells` ("cx,cz" → Float32Array) lebt SEPARAT von den Chunk-Entries → sie
     // überlebt einen Carve-Rebuild (wie das Life-Overlay V17.27), lokal-reaktiv (nicht persistiert,
@@ -67594,14 +67689,45 @@ class AnazhRealm {
             if (!e || e.mode !== "fill") continue;
             const r = Number(e.r) || 0;
             if (r * 2 < CFG.MIN_EXTENT) continue;
-            works.push({ minX: e.x - r, maxX: e.x + r, minZ: e.z - r, maxZ: e.z + r, topY: (Number(e.y) || 0) + r });
+            works.push({
+                minX: e.x - r,
+                maxX: e.x + r,
+                minZ: e.z - r,
+                maxZ: e.z + r,
+                topY: (Number(e.y) || 0) + r,
+                botY: (Number(e.y) || 0) - r,
+            });
         }
         if (archs) {
+            // V18.475 (F4) — DIE STAU-QUALIFIKATION (Schöpfer-Entscheid 14.07., Profi-
+            // Maßstab: „Wasser staut an dem, was im Sim-Gitter wirklich solide+geerdet+
+            // geschlossen ist — nie an einer Bounding-Box"). Vorher genügte JEDES
+            // Architektur-AABB ≥ MIN_EXTENT (1,6 m) — jede Hauswand/Steg-Planke wurde
+            // zum Damm-Werk, die Kappe stieg auf den Spill-Pegel (bis +12,6 m), src=2
+            // tropfte aktiv nach → Wasser-BLOBS an Gebäuden, die nie stauen sollten
+            // (Schöpfer-Screenshot). Ein AABB zählt jetzt NUR als Damm, wenn es
+            //   (a) GEERDET ist — seine Basis liegt ≤ 1 Sim-Zelle (1,8 m) über dem
+            //       Terrain seiner Spalte (unter einem schwebenden/hohen Bauteil ist
+            //       Weg — es hält kein Wasser), UND
+            //   (b) GESCHLOSSEN ist — es deckt in BEIDEN Achsen mindestens EINE volle
+            //       Sim-Zelle (1,8 m): Pfosten (0,4 m), dünne Wände (0,3 m), Stege und
+            //       offene Rahmen fallen. Das ist die billigste EHRLICHE Prüfung: was
+            //       schmaler als eine Zelle ist, kann im Zell-Gitter keine Fluss-Spalte
+            //       über die volle Breite versiegeln. TUER-Öffnungen bleiben frei: die
+            //       Tür-Parts sind nicht solid (kein AABB), die dünnen Wand-AABBs
+            //       daneben fallen an (b) — ein Haus wird nie zum Damm.
+            // Echte Dämme (geerdete, voll-zellige Riegel) stauen WEITER bis zur Krone
+            // (das V18.129-Design lebt). Fill-Edits (oben) bleiben unangetastet — eine
+            // Fill-Kugel IST Terrain (solide+geerdet per Konstruktion).
+            // Linse: `gate:wasser-wahrheit` Fixture 4; Stau-Harness: `gate:carve`.
+            const CELL = this._voxelChunkConfig(0).step;
             for (const entry of archs) {
                 if (!entry || !entry.blockerAABBs) continue;
                 for (const a of entry.blockerAABBs) {
-                    if (Math.max(a.maxX - a.minX, a.maxZ - a.minZ) < CFG.MIN_EXTENT) continue;
-                    works.push({ minX: a.minX, maxX: a.maxX, minZ: a.minZ, maxZ: a.maxZ, topY: a.topY });
+                    if (Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < CELL) continue; // (b) geschlossen
+                    const terrY = this._terrainMacroSurfaceY((a.minX + a.maxX) * 0.5, (a.minZ + a.maxZ) * 0.5);
+                    if (Number.isFinite(terrY) && Number.isFinite(a.botY) && a.botY > terrY + CELL) continue; // (a) geerdet
+                    works.push({ minX: a.minX, maxX: a.maxX, minZ: a.minZ, maxZ: a.maxZ, topY: a.topY, botY: a.botY });
                 }
             }
         }
@@ -67609,9 +67735,18 @@ class AnazhRealm {
         // — eine Atlas-Probe pro Werk; Werke fern jedes Wassers (rim=-Inf) bleiben
         // drin (jenseits des Atlas gilt die Boden+Skin-Kappe, auch dort darf gedämmt
         // werden — der Spill-Scan entscheidet die Substanz).
+        // V18.475 (F2) — die Rim-Frage reist mit der Werk-BASIS (botY): seit der
+        // Rim-Wand heißt −Inf „keine Rim-Erweiterung"; die ehrliche Frage hier ist
+        // „steht das Werk IM Wasser?" — Basis unter dem Spiegel ⇒ rim greift (das
+        // alte Verdikt), Basis über dem Spiegel ⇒ das Werk ist trocken-fundiert und
+        // bleibt drin (identisches Verdikt: seine Krone lag ohnehin über rim+0.9).
         const qualified = [];
         for (const w of works) {
-            const rim = this._atlasWaterLevelAt((w.minX + w.maxX) * 0.5, (w.minZ + w.maxZ) * 0.5, -Infinity);
+            const rim = this._atlasWaterLevelAt(
+                (w.minX + w.maxX) * 0.5,
+                (w.minZ + w.maxZ) * 0.5,
+                Number.isFinite(w.botY) ? w.botY : -Infinity
+            );
             if (rim > -Infinity && w.topY <= rim + 0.9) continue;
             qualified.push(w);
         }
@@ -67795,7 +67930,12 @@ class AnazhRealm {
                 barrier[c] = bY;
                 if (this._atlasWaterLevelAt(x, z, Infinity) > -Infinity) anySource = true;
                 if (ix === 0 || kz === 0 || ix === w - 1 || kz === h - 1) {
-                    const rim = this._atlasWaterLevelAt(x, z, -Infinity);
+                    // V18.475 (F2) — die Rand-Rim-Frage trägt den BEKANNTEN Boden (bY,
+                    // die Spalten-Barriere): Boden unter dem Spiegel ⇒ rim+0.5 (die
+                    // V18.93-Außenwelt hält bis dahin), Boden ÜBER dem Spiegel ⇒ die
+                    // Boden+Skin-Kappe (2 Zellen) — konsistent zur Kappen-Welt, die
+                    // dieselbe Spalte im Nachbar-Chunk trüge.
+                    const rim = this._atlasWaterLevelAt(x, z, bY);
                     init[c] = Math.max(bY, rim > -Infinity ? rim + 0.5 : bY + 2 * step);
                 }
             }
@@ -67927,18 +68067,26 @@ class AnazhRealm {
                     const wx = ox + (i + 0.5) * cfg.step;
                     const wz = oz + (k + 0.5) * cfg.step;
                     if (this._atlasWaterLevelAt(wx, wz, Infinity) > -Infinity) src[c] = 1;
-                    const rim = this._atlasWaterLevelAt(wx, wz, -Infinity);
+                    // V18.475 (F2) — der Spalten-Boden ZUERST (höchste SOLID-Zelle): die
+                    // Rim-Frage trägt seit der Rim-Wand das ECHTE Bett statt −Inf. Boden
+                    // unter dem Spiegel (Ufer-Schelf, gegrabener Kanal am See) ⇒ die
+                    // rim-Kappe wie immer (der See speist den Kanal bis zu SEINEM Niveau);
+                    // Boden ÜBER dem Spiegel ⇒ ehrlich die Boden+Skin-Kappe (2 Zellen) —
+                    // dort existiert ohnehin kein gleich-hohes Wasser-Nachbarfeld, die
+                    // Kappe unter dem eigenen Boden war totes Papier.
+                    let gj = -1;
+                    for (let j = dimY - 1; j >= 0; j--) {
+                        if (cells[c + j * dimSq] === SOLID) {
+                            gj = j;
+                            break;
+                        }
+                    }
+                    const bedTop = oy + (gj + 1) * cfg.step; // Boden-OBERFLÄCHE (gj=-1 → oy)
+                    const rim = this._atlasWaterLevelAt(wx, wz, bedTop);
                     if (rim > -Infinity) {
                         cap[c] = Math.max(0, Math.min(dimY - 1, Math.floor((rim + 0.5 - oy) / cfg.step)));
                     } else {
-                        // jenseits des Atlas: Boden (höchste SOLID-Zelle) + 2 Zellen Skin.
-                        let gj = -1;
-                        for (let j = dimY - 1; j >= 0; j--) {
-                            if (cells[c + j * dimSq] === SOLID) {
-                                gj = j;
-                                break;
-                            }
-                        }
+                        // jenseits des Atlas / Boden über dem Spiegel: Boden + 2 Zellen Skin.
                         cap[c] = Math.min(dimY - 1, (gj >= 0 ? gj : 0) + 2);
                     }
                     // V18.129 — der STAU-SPIEGEL: liegt die Spalte in einem Werk-Feld,
@@ -68211,6 +68359,40 @@ class AnazhRealm {
                 }
             }
         }
+        // V18.475 (F3) — DER VERDUNSTUNGS-BODEN (Chokepoint `_caEvaporateSettled`, Doku
+        // dort): NACH Pin/Tick/Naht-Tausch ist `a.moved` die volle Roh-Bewegung — sie
+        // führt die Ruhe-Zählung (`entry._caStillTicks`, lifecycle-gebunden wie _caWoken).
+        // Erst nach QUIET_TICKS Ruhe beginnt die Verdunstung; das MAX_TICKS-Fenster pro
+        // Ruhe-Episode garantiert die Terminierung (ein quell-genährter Ufer-Saum, dessen
+        // Nachschub die Verdunstung ewig ausgliche, friert nach dem Fenster ehrlich ein —
+        // die V18.93-Settle-Disziplin schlägt den Dauer-Pump). Die verdunstete Magnitude
+        // zählt in `a.moved` → das Re-Mesh sieht das Schwinden (der Blob VERBLASST statt
+        // zu springen), und `total` bleibt die ehrliche Tick-Bilanz.
+        {
+            const EVAP = AnazhRealm.CA_EVAP;
+            for (const a of active) {
+                const e = this.state.voxelChunks.get(a.key);
+                if (!e) continue;
+                if (a.moved < SETTLE) e._caStillTicks = (e._caStillTicks || 0) + 1;
+                else e._caStillTicks = 0;
+                a.evap = 0;
+                if (e._caStillTicks >= EVAP.QUIET_TICKS && e._caStillTicks < EVAP.QUIET_TICKS + EVAP.MAX_TICKS) {
+                    const ev = this._caEvaporateSettled(
+                        a.level,
+                        a.cells,
+                        srcMap ? srcMap.get(a.key) : null,
+                        dim,
+                        dimY,
+                        a.band
+                    );
+                    if (ev > 0) {
+                        a.evap = ev;
+                        a.moved += ev;
+                        total += ev;
+                    }
+                }
+            }
+        }
         // T4b — die bewegten Chunks neu rendern: das Surface-Mesh liest das LIVE-Level (caDelta) → das
         // Wasser fliesst sichtbar. Budgetiert über die bestehende `pendingWaterIso`-Queue (4/Frame) → kein
         // Spike. Nur bei echter Bewegung (kein Rebuild im Ruhe-Zustand → kein Render-Wandel ohne Carve).
@@ -68272,6 +68454,12 @@ class AnazhRealm {
         }
         for (const a of active) {
             if (a.moved < SETTLE) {
+                // V18.475 (F3) — solange die Verdunstung ARBEITET (a.evap > 0), bleibt
+                // der Chunk aktiv: sonst fröre eine halb-verdunstete Zunge über der
+                // Render-Schwelle wieder ein (genau die Blob-Klasse). Terminierung
+                // garantiert das MAX_TICKS-Fenster (s.o.) — danach ist evap 0 und
+                // dieser Zweig settled wie immer.
+                if (a.evap > 0) continue;
                 // V18.292 — der SETTLE-Final-Mesh teilt den Fluss-Throttle: ein
                 // PERPETUELLER Fluss „settled" nie echt, er ping-pongt zwischen
                 // moved>0.5 (oben, gedrosselt) und moved<SETTLE (hier) → ohne den
@@ -83848,7 +84036,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.474.0";
+AnazhRealm.VERSION = "18.475.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -84371,6 +84559,19 @@ AnazhRealm.CA_FLOW_KEEP = 0.95;
 // SETTLE-Final-Mesh bleibt unbedingt (der Ruhe-Stand wird immer gezeichnet).
 // Browser-justierbar (1 = jeder Frame wie vor V18.292, 4 = 15 Hz).
 AnazhRealm.CA_REMESH_TICK_INTERVAL = 4;
+
+// V18.475 (F3) — DIE VERDUNSTUNG ABGEKLUNGENER ZUNGEN (der fünfte Gleichgewichts-Term
+// neben Decay · Kappe · Fixpunkt · Stau): settled Live-Wasser in flood-trockenen Zellen
+// (die V18.91-Ausbreitung) verdunstet langsam auf 0 statt am KEEP-Fixpunkt (Level 0.5–0.9,
+// ÜBER der Render-Schwelle) ewig zu stehen — „Blobs, die bleiben" (Schöpfer 14.07.).
+// Chokepoint: `_caEvaporateSettled` (bewusste Nicht-Erhaltung, Doku dort). Browser-
+// justierbar: RATE höher = schnelleres Verblassen; MAX_TICKS deckt 1.0 → 0 pro Episode.
+AnazhRealm.CA_EVAP = Object.freeze({
+    QUIET_TICKS: 12, // Ruhe-Ticks (Roh-Bewegung < SETTLE), bevor die Verdunstung beginnt
+    RATE: 0.01, // Level-Schwund pro Tick — 0.9 → 0 in ~90 Ticks: sichtbar sanft, kein Pop
+    SNAP: 0.05, // Rest unter der Sichtbarkeit fällt ganz (kein ewiger Sub-Film)
+    MAX_TICKS: 130, // Verdunstungs-Fenster pro Ruhe-Episode — quell-genährte Säume frieren danach ein (kein Dauer-Pump)
+});
 
 // V18.129 — DAS HOCH-BECKEN (A4-Rest, gigant-plan §5): die STAU-Regel des
 // Wasser-Automaten — die vierte Gleichgewichts-Regel neben Decay·Kappe·

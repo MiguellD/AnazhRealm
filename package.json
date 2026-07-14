@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.474.0",
+    "version": "18.475.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -45,6 +45,8 @@
         "gate:seam-normal": "node scripts/diag-seam-normal.cjs",
         "gate:godray": "node scripts/diag-godray.cjs",
         "gate:fern-wasser": "node scripts/diag-fern-wasser.cjs",
+        "gate:wasser-wahrheit": "node scripts/diag-wasser-wahrheit.cjs",
+        "gate:worker-watersheet": "node scripts/diag-worker-watersheet.cjs",
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
         "grass-load": "node scripts/diag-grass-load.cjs",
         "scene-cull": "node scripts/diag-scene-cull.cjs",

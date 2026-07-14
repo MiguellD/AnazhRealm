@@ -1156,7 +1156,10 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
                 // bis zum Body-Spiegel, wenn Terrain UNTER dem Spiegel liegt (jede
                 // Tiefe, kein 3,6-m-Cap mehr). Heilt die vertikalen Ufer-Wände; kein
                 // Hang-Schatten (Terrain über Spiegel bleibt abgelehnt), kein Phantom.
-                if (rim > -Infinity && terrainTopY < rim) {
+                // V18.475 — DIE RIM-WAND (Mirror, F2): der Rim-Pfad greift NUR bei
+                // ENDLICHEM terrainTopY — „unbekannt" (−Inf) heißt KEINE Rim-Erweiterung,
+                // nie „immer nass" (Herleitung im Main).
+                if (Number.isFinite(terrainTopY) && rim > -Infinity && terrainTopY < rim) {
                     level = rim;
                 }
             }
@@ -1170,7 +1173,12 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
         level = waterLevel;
     }
     const river = hydroRiverAt(x, z);
-    if (river && river.surfaceY > level) level = river.surfaceY;
+    if (river && river.surfaceY > level) {
+        // V18.475 — DIE RIM-WAND GILT AUCH DEM FLUSS (Mirror, F2): bei terrainTopY ===
+        // −Infinity zählt NUR der Kanal-KERN (centerness > 0 ⇔ dist < halfW); +Infinity
+        // (Existenz-Probe) und endliches Terrain behalten die volle Carve-Breite.
+        if (terrainTopY !== -Infinity || river.centerness > 0) level = river.surfaceY;
+    }
     return level;
 }
 
@@ -1178,8 +1186,10 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
 // (Along-Flow-Tiefpass NUR auf den Kanal-KERN via centerness; NARBEN-WAND am Ufer bleibt
 // roh). Deps `atlasWaterLevelAt` + `hydroRiverAt` (mit flowX/flowZ/centerness) sind
 // gespiegelt. MUSS bit-identisch zum Main bleiben (diag-worker-watersheet).
-function waterRunSurfaceAt(x, z) {
-    const L = atlasWaterLevelAt(x, z, -Infinity);
+// V18.475 (F2, Mirror) — `terrainTopY` reist zur Zentrums-Frage durch (der Sheet-Bau
+// reicht sein Bett); die Along-Flow-Samples bleiben ehrlich −Infinity (Doku im Main).
+function waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
+    const L = atlasWaterLevelAt(x, z, terrainTopY);
     if (!(L > -Infinity)) return L;
     const river = hydroRiverAt(x, z);
     if (!river) return L;
@@ -1313,7 +1323,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             const faceY = oy + (sc.floodTopJ + 1) * step;
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
-            const L = waterRunSurfaceAt(wx, wz);
+            // V18.475 (F2, Mirror) — das Bett reist mit (solidG + step, Doku im Main).
+            const L = waterRunSurfaceAt(wx, wz, solidG[gi] + step);
             let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
             if (level) {
                 const floodRel = (sc.floodTopJ + 1) * step;
@@ -1389,6 +1400,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             solidG[gi] = gj >= 0 ? oy + gj * step : oy;
         }
     }
+    // V18.475 — DAS HÖHEN-GATE DES DACH-BLURS (Mirror zu `_computeWaterSheetData`,
+    // Herleitung dort): ein Nachbar zählt nur bei |top_nb − top_roh| ≤ K·step (K=2) —
+    // der Blur mittelt keine Plateau- und Tal-Dächer mehr über die Klippe (Phantom-
+    // Wasserfälle). ROH gegen ROH = pass-invariant + naht-symmetrisch. Byte-identisch.
+    const BLUR_GATE = step * 2;
+    const topRawG = Float64Array.from(topG);
     let cur = topG;
     let buf = new Float64Array(GW * GW);
     for (let pass = 0; pass < SMOOTH_PASSES; pass++) {
@@ -1404,8 +1421,11 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                     const nx = gx + dx2;
                     const nz = gz + dz2;
                     if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                    const v = cur[nx + nz * GW];
+                    const ng = nx + nz * GW;
+                    const v = cur[ng];
                     if (!Number.isNaN(v)) {
+                        // V18.475 — das Höhen-Gate (s.o.): nur Dächer derselben Etage.
+                        if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
                         sum += v;
                         n++;
                     }
@@ -1461,8 +1481,12 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
                         const nx = gx + dx2;
                         const nz = gz + dz2;
                         if (nx < 0 || nz < 0 || nx >= GW || nz >= GW) continue;
-                        if (Number.isNaN(tops[nx + nz * GW])) continue;
-                        sum += arr[nx + nz * GW];
+                        const ng = nx + nz * GW;
+                        if (Number.isNaN(tops[ng])) continue;
+                        // V18.475 — dasselbe HÖHEN-GATE wie der tops-Blur (Mirror):
+                        // Bett/Slope/Flow bluten nicht über die Klippe.
+                        if (Math.abs(topRawG[ng] - topRawG[g]) > BLUR_GATE) continue;
+                        sum += arr[ng];
                         nn++;
                     }
                 }
