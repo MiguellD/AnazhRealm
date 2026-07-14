@@ -4059,10 +4059,14 @@ class AnazhRealm {
     // es weich (nicht jeder Pick resoniert, nur wahrscheinlicher je stärker die
     // Achse). aura kann null sein (kein playerMesh) → freie Palette wie bisher.
     dslComposeFieldColor(rng, aura) {
+        // V18.464 — die Achsen-Farben lesen die EINE Tabelle (ACHSEN_FARBE):
+        // dieselben Hexe streuten frei zwischen Nexus-Farbwahl und Emotions-
+        // Triggern (roadmap §0.4 Rest-Schuld, Parallelpfad-Klasse).
+        const AF = AnazhRealm.ACHSEN_FARBE;
         if (aura) {
-            if (aura.magieleitung > 0.6 && rng() < aura.magieleitung) return "#d4a3ff";
-            if (aura.glut > 0.6 && rng() < aura.glut) return "#ff7a59";
-            if (aura.lebendig > 0.6 && rng() < aura.lebendig) return "#7bd389";
+            if (aura.magieleitung > 0.6 && rng() < aura.magieleitung) return AF.magieleitung;
+            if (aura.glut > 0.6 && rng() < aura.glut) return AF.glut;
+            if (aura.lebendig > 0.6 && rng() < aura.lebendig) return AF.lebendig;
         }
         return this.dslComposeColor(rng);
     }
@@ -9846,7 +9850,7 @@ class AnazhRealm {
         // von Welt-Wirkung aus, damit sich die emotionalen Zustände nicht
         // überlagern und sichtbar bleiben.
         trigger("joy", ["skybox_color", "#f7d358"]); // warmes Gelb
-        trigger("awe", ["skybox_color", "#d4a3ff"]); // magisches Lila
+        trigger("awe", ["skybox_color", AnazhRealm.ACHSEN_FARBE.magieleitung]); // magisches Lila (die EINE Tabelle)
         trigger("sorrow", ["weather", "rainy"]);
         trigger("hope", ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]]);
         trigger("peace", ["creatures_speed_mul", 0.7]);
@@ -77632,7 +77636,13 @@ class AnazhRealm {
                 fl.target.updateMatrixWorld();
             }
             fl.color.setRGB(F.r * a.col.r, F.g * a.col.g, F.b * a.col.b);
-            fl.intensity = F.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul;
+            // V18.464 (diag-atmosphere-Heilung): das Laub-Bounce-Fill ist SONNEN-Licht
+            // aus zweiter Hand — es stirbt mit der Sonne am Horizont (derselbe Fade wie
+            // der Richtungs-Körper). Vorher leuchtete nachts ein grünes Rest-Fill mit
+            // ~0.12 (a.lum fällt nur auf 0.06) — die Schattenseite las grünstichig
+            // statt mond-geführt; das Gate stand dauerhaft rot (Fill NACHT < 0.1).
+            fl.intensity =
+                F.base * AnazhRealm.LEGACY_LICHT * a.lum * tint.lightMul * this._celestialHorizonFade(sunDir.y);
         }
         // Vorlagen-RIM (phytogenesis Z.1294): kühles Gegenlicht von der sonnen-abgewandten Seite,
         // SEITLICH versetzt (⟂ zur Sonne) → eine Gegenlicht-Kante, die Laub/Stamm gegen den Himmel
@@ -82962,6 +82972,16 @@ AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, roc
 // Auto-Art in die Wald-Nischen; null = nur Katalog/Werkstatt) · impostor (N4.4: true = die
 // Fernstufe dieser kind-Klasse ist das 8-Winkel-Billboard, `_foundryPresetIsTree` liest NUR
 // diese Zeile — keine Zeile/false = L2 bleibt Geometrie [rock/flower/grass/vehicle]).
+// V18.464 — DIE ACHSEN-FARBEN (roadmap §0.4 Rest-Schuld geschlossen): die EINE
+// eingefrorene Farb-Quelle der Feld-Achsen. Nexus-Farbwahl (dslComposeFieldColor)
+// und Emotions-Trigger (awe) LESEN sie — vorher streuten dieselben Hexe frei im
+// Stamm (Parallelpfad-Klasse: eine Paletten-Aenderung driftete auseinander).
+AnazhRealm.ACHSEN_FARBE = Object.freeze({
+    magieleitung: "#d4a3ff", // magisches Lila
+    glut: "#ff7a59", // warmes Feuer
+    lebendig: "#7bd389", // frisches Gruen
+});
+
 AnazhRealm.KIND_POLICY = Object.freeze({
     tree: Object.freeze({ prefix: "baum_", donor: "baum_eiche", grown: true, placeExtra: "forest", impostor: true }),
     // N4.4 — RENDER-ONLY-ZEILE: shrub traegt bewusst KEIN prefix/donor (der Auto-Register-

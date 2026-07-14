@@ -191,7 +191,7 @@ function startSaveServer() {
             o.affTags = tn ? axes.map((a) => +(tn[a] || 0).toFixed(3)) : null;
             // nur holz + laub Materialien (keine neue Substanz)
             const mats = new Set();
-            (giantParts || normalParts || []).forEach((p) => mats.add(p.material));
+            (grossP || kleinP || []).forEach((p) => mats.add(p.material)); // V18.464: Refactor-Leiche giantParts/normalParts -> lebende Namen
             o.onlyWoodLeaf = [...mats].every((m) => m === "holz" || m === "laub");
             o.matsUsed = [...mats];
 

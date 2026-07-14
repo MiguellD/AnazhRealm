@@ -5,6 +5,10 @@
 // (4) nasse Vertices sitzen exakt bei Atlas-L − drop, (5) COVERAGE: ≥90 % der atlas-nassen
 // in-Region-Zellen im Annulus tragen ein Quad, (6) Re-Anker beim Spieler-Crossing,
 // (7) der Toggle (`atmosphere.farWater=false`) räumt sauber. Reine CPU-Geometrie (~40 s).
+// V18.464 — ZWEI LÄUFE: der Alt-Mechanik-Lauf (foundry deterministisch aus, V18.411-Hook)
+// UND der PRODUKTIONS-Lauf (foundry AN — seit V18.462 ist das Provisorium zurück auf AN,
+// der Studio-Regime-Default-AUS-Term ist gefallen; die Linse prüfte bis dahin NUR die
+// gefallene Weiche = Verifikation von Existenz statt Konsum).
 // (Das ältere `diag-far-water.cjs` ist die H3-Region-Gate-Diagnose — ein ANDERES Werkzeug.)
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -36,22 +40,15 @@ const server = http.createServer((req, res) => {
         res.end(data);
     });
 });
-(async () => {
-    await new Promise((r) => server.listen(PORT, r));
-    const browser = await puppeteer.launch({
-        headless: "new",
-        args: ["--no-sandbox", "--disable-gpu"],
-        protocolTimeout: 240000,
-    });
+async function runOnce(browser, noFoundry) {
     const page = await browser.newPage();
-    await page.evaluateOnNewDocument(() => {
+    await page.evaluateOnNewDocument((nf) => {
         window.__anazhHeadlessNullRenderer = true;
-        // W6 (V9.56-i — die Linse wandert mit dem Entscheid): im Studio-Regime ist das
-        // Fern-Wasser DEFAULT AUS (Provisorium bis E-D) — diese Linse prüft die lebende
-        // ALT-Mechanik (Atlas-Treue · Coverage · Re-Anker · Toggle) → Foundry deterministisch
-        // aus, wie die anderen Alt-Mechanik-Bänder (der V18.411-Hook).
-        window.__anazhGateNoFoundry = true;
-    });
+        // V18.464: Lauf 1 = Alt-Mechanik (Foundry deterministisch aus, V18.411-Hook);
+        // Lauf 2 = PRODUKTIONS-Regime (Foundry an — das Fern-Wasser ist seit V18.462
+        // auch dort DEFAULT AN, die alte Regime-Weiche ist gefallen).
+        if (nf) window.__anazhGateNoFoundry = true;
+    }, noFoundry);
     page.on("pageerror", (e) => console.log("[PAGE-ERROR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
     await page.waitForFunction(
@@ -202,7 +199,7 @@ const server = http.createServer((req, res) => {
         o.toggleOnRebuilt = !!(s.farWater && s.farWater.mesh);
         return o;
     });
-    console.log("\n===== FERN-WASSER — LINSE (V18.381) =====\n");
+    console.log(`\n===== FERN-WASSER — LINSE (V18.381) — Regime: ${noFoundry ? "ALT (foundry aus)" : "PRODUKTION (foundry an)"} =====\n`);
     console.log(`  gebaut: ${out.built} · Quads: ${out.quads} · Bau ${out.builtMs} ms · outR ${out.builtOutR} m`);
     if (out.built) {
         console.log(`  Material-Vertrag (5 Attribute): ${JSON.stringify(out.attrs)} → ${out.attrsOk ? "OK" : "FEHLT"}`);
@@ -233,7 +230,20 @@ const server = http.createServer((req, res) => {
     console.log(
         `\n  ${ok ? "✅ DAS FERN-WASSER STEHT: atlas-treu, ring-löchrig (kein Doppel-Wasser), voll gedeckt, Lifecycle sauber." : "❌ Fern-Wasser weicht ab — prüfen."}\n`
     );
+    await page.close();
+    return ok;
+}
+
+(async () => {
+    await new Promise((r) => server.listen(PORT, r));
+    const browser = await puppeteer.launch({
+        headless: "new",
+        args: ["--no-sandbox", "--disable-gpu"],
+        protocolTimeout: 240000,
+    });
+    const okAlt = await runOnce(browser, true);
+    const okProd = await runOnce(browser, false);
     await browser.close();
     await new Promise((r) => server.close(r));
-    process.exit(ok ? 0 : 1);
+    process.exit(okAlt && okProd ? 0 : 1);
 })();
