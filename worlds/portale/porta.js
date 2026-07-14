@@ -8,6 +8,11 @@ var PC=window.__portaCore;
 var SLIDERS=PC.SLIDERS;
 var PRESETS={};Object.keys(PC.PRESETS).forEach(function(id){PRESETS[PC.PRESETS[id].lab]=PC.PRESETS[id].s;});  // Anzeige-Map: Schöpfer-Wortlaut → Dial-Vektor (byte-gleiche Werte)
 var lerp=PC.lerp,clamp=PC.clamp,interpTop=PC.interpTop,pk=PC.pk;
+/* V18.464 — DIE MEMBRAN LIEST DAS GESETZ (W9-Muster): die Passage-Zahlen wohnen
+   in porta-core.MEMBRAN_GESETZ; die Shell INJIZIERT sie in ihr GLSL (GN = Zahl →
+   GLSL-float-Literal; semantischer Beweis alt==neu: scripts/diag-membran-gesetz.cjs). */
+var MG=PC.MEMBRAN_GESETZ;
+function GN(x){var s=String(x);return s.indexOf('.')>=0||s.indexOf('e')>=0||s.indexOf('E')>=0?s:s+'.0';}
 
 var scene,camera,renderer,composer,fxaa,cinePass,controls,clock;
 var gate,membrane,memMat,rimMat,D,rebuildTimer=null,leafL=null,leafR=null,leafLB=null,leafRB=null,doorAngle=0,doorAngleB=0,doorTarget=0,doorTargetB=0,portalLight,fogGroup=null,fogMat=null,depthRT=null,DOOR_OPEN=1.95;
@@ -33,21 +38,23 @@ function buildGate(p){
 // ============================================================
 function buildMembrane(){
   if(membrane)scene.remove(membrane);
-  var prof=D.prof,springY=D.springY,baseY=D.baseY,M=D.M,p=D.p;
-  var left=D.leftSpringX,right=D.rightSpringX,apexY=D.apexY;
-  var spanW=right-left,height=apexY-baseY,midY=(baseY+apexY)/2;
+  var p=D.p;
+  /* V18.464 — die EINE Zahlen-Quelle: porta-core.membranUniforms (Rahmen aus deriveGate,
+     Bogen-Profil-Tabelle, Palette) + MEMBRAN_GESETZ (die GLSL-injizierten Konstanten). */
+  var MU=window.__portaCore.membranUniforms(p);
+  var MM=MG.march,ML=MG.look;
   // Bogen-Oberkante als DataTexture (robuste Beschneidung im Shader, statt GLSL-Array)
-  var W=64,data=new Uint8Array(W*4);
-  for(var i=0;i<W;i++){var xx=left+spanW*i/(W-1);var ty=interpTop(prof,xx)+springY;var tn=clamp((ty-baseY)/Math.max(0.001,height),0,1);var b=Math.round(tn*255);data[i*4]=b;data[i*4+1]=b;data[i*4+2]=b;data[i*4+3]=255;}
+  var W=MG.profilW,data=new Uint8Array(W*4);
+  for(var i=0;i<W;i++){var b=Math.round(MU.profil[i]*255);data[i*4]=b;data[i*4+1]=b;data[i*4+2]=b;data[i*4+3]=255;}
   var topTex=new THREE.DataTexture(data,W,1,THREE.RGBAFormat);topTex.minFilter=THREE.LinearFilter;topTex.magFilter=THREE.LinearFilter;topTex.needsUpdate=true;
   /* ULTRAGUSS U6: das Farb-Gesetz wohnt im Gesetzbuch (__portaCore.membranPalette). */
-  var PAL=window.__portaCore.membranPalette(p),core=PAL.core,PA=PAL.PA,PB=PAL.PB,PC=PAL.PC,PD=PAL.PD;
-  var centerW=new THREE.Vector3(0,baseY+D.jambH*0.55,0.0);
+  var PAL=MU.pal,PA=PAL.PA,PB=PAL.PB,PC=PAL.PC,PD=PAL.PD;
+  var centerW=new THREE.Vector3(0,MU.centerY,0.0);
   memMat=new THREE.ShaderMaterial({uniforms:{
       uTime:{value:0},uCam:{value:new THREE.Vector3()},
-      uTopTex:{value:topTex},uLeft:{value:left},uW:{value:spanW},uBaseY:{value:baseY},uHspan:{value:height},uSpringX:{value:Math.max(Math.abs(left),Math.abs(right))},
-      uWave:{value:clamp(p.wave,0,1)},uWaveDepth:{value:Math.max(0.05,D.zFace*0.10)},uRimAx:{value:Math.abs(D.leftSpringX)},uRimAy:{value:(D.apexY-D.baseY)*0.52},uStep:{value:0.06+p.tunnel*0.20},uTwist:{value:p.twist},uFrac:{value:p.fractal},uEnergy:{value:p.energy},uOpen:{value:clamp(0.4+p.energy*0.6,0,1)},uCenter:{value:centerW},
-      uRealm:{value:p.realm},uSwirl:{value:p.swirl*0.5},uReflect:{value:p.reflect},uActivate:{value:doorAngle/DOOR_OPEN},uPulse:{value:1},
+      uTopTex:{value:topTex},uLeft:{value:MU.left},uW:{value:MU.spanW},uBaseY:{value:MU.baseY},uHspan:{value:MU.height},uSpringX:{value:MU.springX},
+      uWave:{value:MU.wave},uWaveDepth:{value:MU.waveDepth},uRimAx:{value:MU.rimAx},uRimAy:{value:MU.rimAy},uStep:{value:MU.step},uTwist:{value:MU.twist},uFrac:{value:MU.fractal},uEnergy:{value:MU.energy},uOpen:{value:MU.open},uCenter:{value:centerW},
+      uRealm:{value:MU.realm},uSwirl:{value:MU.swirl},uReflect:{value:MU.reflect},uActivate:{value:doorAngle/DOOR_OPEN},uPulse:{value:1},
       uPA:{value:new THREE.Vector3(PA[0],PA[1],PA[2])},uPB:{value:new THREE.Vector3(PB[0],PB[1],PB[2])},uPC:{value:new THREE.Vector3(PC[0],PC[1],PC[2])},uPD:{value:new THREE.Vector3(PD[0],PD[1],PD[2])}},
     side:THREE.DoubleSide,transparent:false,depthWrite:true,
     vertexShader:[
@@ -59,17 +66,17 @@ function buildMembrane(){
       " vec2 c=q-uCenter.xy;float r=length(c);float a=atan(c.y,c.x);float t=uTime;",
       " float Rb=1.0/sqrt(pow(cos(a)/uRimAx,2.0)+pow(sin(a)/uRimAy,2.0)+1e-4);",   // Randradius in Blickrichtung (Öffnungs-Ellipse)
       " float rr=clamp(r/Rb,0.0,1.4);",                                            // normiert: 1.0 = Sheetrand
-      " float twist=a*2.0+uSwirl/(r+0.25);",                                        // gleiche Windung wie Farbspirale → verschmilzt
-      " float om=t*3.0,kk=13.8;",                                                   // Wellenzahl skaliert mit Öffnung
+      " float twist=a*"+GN(MG.twistK)+"+uSwirl/(r+"+GN(MG.swirlR0)+");",            // gleiche Windung wie Farbspirale → verschmilzt
+      " float om=t*"+GN(MG.om)+",kk="+GN(MG.kk)+";",                                // Wellenzahl skaliert mit Öffnung
       " float outw=sin(rr*kk-om+twist);",                                           // auslaufende Welle
       " float refl=sin((2.0-rr)*kk-om+twist);",                                     // am Rand REFLEKTIERT (Pfad 2-rr) → Interferenz
-      " float wave=(outw+refl*0.72)*exp(-rr*0.7);",                                 // stehende Welle, am Rand verdichtet
-      " float pierce=sin(t*2.2)*exp(-rr*rr*6.0)*1.5;",                             // zentraler Tropfen-Durchstoß (oszilliert durch)
-      " float micro=fbm(c*3.0-vec2(t*0.3))*0.10;",
-      " float h=clamp((wave*0.55+pierce+micro)*0.62,-1.0,1.0);",                    // normiert [-1,1]
-      " return h*uWaveDepth*(0.65+0.35*uWave);",                                    // Tiefe aus Geometrie ((Ebenen-2)·Schritt), NIE über die Türebene
+      " float wave=(outw+refl*"+GN(MG.refl)+")*exp(-rr*"+GN(MG.damp)+");",          // stehende Welle, am Rand verdichtet
+      " float pierce=sin(t*"+GN(MG.pierce[0])+")*exp(-rr*rr*"+GN(MG.pierce[1])+")*"+GN(MG.pierce[2])+";", // zentraler Tropfen-Durchstoß (oszilliert durch)
+      " float micro=fbm(c*"+GN(MG.micro[0])+"-vec2(t*"+GN(MG.micro[1])+"))*"+GN(MG.micro[2])+";",
+      " float h=clamp((wave*"+GN(MG.hGain[0])+"+pierce+micro)*"+GN(MG.hGain[1])+",-1.0,1.0);", // normiert [-1,1]
+      " return h*uWaveDepth*("+GN(MG.waveDepthK[0])+"+"+GN(MG.waveDepthK[1])+"*uWave);", // Tiefe aus Geometrie ((Ebenen-2)·Schritt), NIE über die Türebene
       "}",
-      "void main(){vec2 xy=position.xy;vXY=xy;float e=0.06;float d0=Hfull(xy),dxx=Hfull(xy+vec2(e,0.0)),dyy=Hfull(xy+vec2(0.0,e));",
+      "void main(){vec2 xy=position.xy;vXY=xy;float e="+GN(MG.eps)+";float d0=Hfull(xy),dxx=Hfull(xy+vec2(e,0.0)),dyy=Hfull(xy+vec2(0.0,e));",
       " vec3 dx=vec3(e,0.0,dxx-d0),dy=vec3(0.0,e,dyy-d0);vec3 nrm=normalize(cross(dx,dy));",
       " vec3 pos=vec3(xy,d0);vec4 wp=modelMatrix*vec4(pos,1.0);vW=wp.xyz;vN=normalize(mat3(modelMatrix)*nrm);",
       " gl_Position=projectionMatrix*modelViewMatrix*vec4(pos,1.0);}"].join('\n'),
@@ -84,35 +91,35 @@ function buildMembrane(){
       " float u=clamp((vXY.x-uLeft)/uW,0.0,1.0);float topY=uBaseY+texture2D(uTopTex,vec2(u,0.5)).r*uHspan;",
       " if(vXY.y>topY+0.002||vXY.y<uBaseY-0.002||abs(vXY.x)>uSpringX+0.002)discard;",
       " vec3 N=normalize(vN);vec3 Vd=normalize(uCam-vW);vec3 rd=-Vd;",
-      " float w0=max(0.0,1.0-abs(uRealm-0.0)/0.40);",
-      " float w1=max(0.0,1.0-abs(uRealm-0.34)/0.40);",
-      " float w2=max(0.0,1.0-abs(uRealm-0.67)/0.40);",
-      " float w3=max(0.0,1.0-abs(uRealm-1.0)/0.40);",
+      " float w0=max(0.0,1.0-abs(uRealm-"+GN(MM.winC[0])+")/"+GN(MM.win)+");",
+      " float w1=max(0.0,1.0-abs(uRealm-"+GN(MM.winC[1])+")/"+GN(MM.win)+");",
+      " float w2=max(0.0,1.0-abs(uRealm-"+GN(MM.winC[2])+")/"+GN(MM.win)+");",
+      " float w3=max(0.0,1.0-abs(uRealm-"+GN(MM.winC[3])+")/"+GN(MM.win)+");",
       " float ws=w0+w1+w2+w3+1e-4;w0/=ws;w1/=ws;w2/=ws;w3/=ws;",
       " vec3 inter=vec3(0.0);float att=1.0;",
-      " for(int i=0;i<12;i++){",
-      "   vec3 q=vW+rd*(float(i)*uStep+0.04);vec3 rel=q-uCenter;",
-      "   float r=max(length(rel.xy),0.003);float ang=atan(rel.y,rel.x);float dep=float(i)*uStep*1.6+r*0.1;",
-      "   float t=uTime;float sp=t*(0.3+uEnergy*0.6);float lp=log(r)*2.0-sp;float swirl=ang+uSwirl/r;float frq=1.0+uFrac*2.2;",
+      " for(int i=0;i<"+String(MM.steps)+";i++){",
+      "   vec3 q=vW+rd*(float(i)*uStep+"+GN(MM.t0)+");vec3 rel=q-uCenter;",
+      "   float r=max(length(rel.xy),0.003);float ang=atan(rel.y,rel.x);float dep=float(i)*uStep*"+GN(MM.depK[0])+"+r*"+GN(MM.depK[1])+";",
+      "   float t=uTime;float sp=t*("+GN(MM.spK[0])+"+uEnergy*"+GN(MM.spK[1])+");float lp=log(r)*"+GN(MM.lpK)+"-sp;float swirl=ang+uSwirl/r;float frq="+GN(MM.frqK[0])+"+uFrac*"+GN(MM.frqK[1])+";",
       "   float v=0.0,tc=0.0;",
-      "   if(w0>0.001){float s0=0.5+0.5*sin(lp*3.0*frq+swirl*2.0+uTwist*dep*4.0);v+=w0*s0*s0;tc+=w0*fract(lp*0.15+0.5*swirl/6.28318);}",
-      "   if(w1>0.001){float K=8.0+uFrac*9.0;float fa=abs(mod(swirl,6.28318/K)-3.14159/K);float cc=0.5+0.5*cos(fa*K);v+=w1*cc*cc*cc*(0.5+0.5*sin(lp*4.0*frq));tc+=w1*fract(fa*1.5+lp*0.1);}",
-      "   if(w2>0.001){float warp=fbm(vec2(lp*0.7*frq,dep*0.6+sp*0.2));float pf=fbm(vec2(ang*2.4+warp*3.5,dep*1.4*frq-sp*0.5));pf=1.0-abs(2.0*pf-1.0);float plasma=pow(clamp(pf,0.0,1.0),3.0);v+=w2*plasma*1.25;tc+=w2*fract(pf*1.3+lp*0.08+dep*0.15);}",
-      "   if(w3>0.001){float n1=fbm(vec2(ang*1.0*frq+sin(lp)*0.6,dep*0.7+sp*0.12));float n2=fbm(vec2(ang*2.2*frq-n1*1.5,dep*1.3+sp*0.2));float neb=pow(clamp(n1*n2*2.0,0.0,1.0),2.0);v+=w3*neb*1.0;tc+=w3*fract(n1*1.2+dep*0.18);}",
-      "   v=max(0.0,v-0.10)*1.4;",
-      "   float g=v/(1.0+r*r*2.2+dep*0.35);",
-      "   inter+=pal(tc)*g*att;att*=0.9;",
+      "   if(w0>0.001){float s0=0.5+0.5*sin(lp*"+GN(MM.wurm[0])+"*frq+swirl*"+GN(MM.wurm[1])+"+uTwist*dep*"+GN(MM.wurm[2])+");v+=w0*s0*s0;tc+=w0*fract(lp*"+GN(MM.wurm[3])+"+"+GN(MM.wurm[4])+"*swirl/6.28318);}",
+      "   if(w1>0.001){float K="+GN(MM.facet[0])+"+uFrac*"+GN(MM.facet[1])+";float fa=abs(mod(swirl,6.28318/K)-3.14159/K);float cc=0.5+0.5*cos(fa*K);v+=w1*cc*cc*cc*(0.5+0.5*sin(lp*"+GN(MM.facet[2])+"*frq));tc+=w1*fract(fa*"+GN(MM.facet[3])+"+lp*"+GN(MM.facet[4])+");}",
+      "   if(w2>0.001){float warp=fbm(vec2(lp*"+GN(MM.plasma[0])+"*frq,dep*"+GN(MM.plasma[1])+"+sp*"+GN(MM.plasma[2])+"));float pf=fbm(vec2(ang*"+GN(MM.plasma[3])+"+warp*"+GN(MM.plasma[4])+",dep*"+GN(MM.plasma[5])+"*frq-sp*"+GN(MM.plasma[6])+"));pf=1.0-abs(2.0*pf-1.0);float plasma=pow(clamp(pf,0.0,1.0),"+GN(MM.plasma[7])+");v+=w2*plasma*"+GN(MM.plasma[8])+";tc+=w2*fract(pf*"+GN(MM.plasma[9])+"+lp*"+GN(MM.plasma[10])+"+dep*"+GN(MM.plasma[11])+");}",
+      "   if(w3>0.001){float n1=fbm(vec2(ang*"+GN(MM.nebel[0])+"*frq+sin(lp)*"+GN(MM.nebel[1])+",dep*"+GN(MM.nebel[2])+"+sp*"+GN(MM.nebel[3])+"));float n2=fbm(vec2(ang*"+GN(MM.nebel[4])+"*frq-n1*"+GN(MM.nebel[5])+",dep*"+GN(MM.nebel[6])+"+sp*"+GN(MM.nebel[7])+"));float neb=pow(clamp(n1*n2*"+GN(MM.nebel[8])+",0.0,1.0),"+GN(MM.nebel[9])+");v+=w3*neb*"+GN(MM.nebel[10])+";tc+=w3*fract(n1*"+GN(MM.nebel[11])+"+dep*"+GN(MM.nebel[12])+");}",
+      "   v=max(0.0,v-"+GN(MM.vCut[0])+")*"+GN(MM.vCut[1])+";",
+      "   float g=v/(1.0+r*r*"+GN(MM.gDen[0])+"+dep*"+GN(MM.gDen[1])+");",
+      "   inter+=pal(tc)*g*att;att*="+GN(MM.att)+";",
       " }",
       " vec3 Rf=reflect(-Vd,N);",
-      " float st=step(0.955,hash(floor(Rf.xy*95.0+vec2(Rf.z*5.0))));",
-      " vec3 sky=pal(Rf.y*0.5+0.5)*0.30+vec3(st)*0.42;",
-      " float fres=pow(1.0-max(dot(N,Vd),0.0),3.0);",
-      " float spec=pow(max(dot(Rf,normalize(vec3(0.4,0.7,0.6))),0.0),60.0);",
-      " float dc=length((vW-uCenter).xy);float core=exp(-dc*dc*12.0)*(0.5+uOpen*0.5)*(0.7+0.3*sin(uTime*1.4));",
-      " vec3 col=inter*1.35+sky*fres*uReflect*0.55+vec3(1.0,0.95,0.85)*spec*1.5*uReflect+pal(0.1)*core*1.0;",
-      "  col*=1.4*(0.55+0.55*uActivate)*(0.90+0.13*uPulse);gl_FragColor=vec4(aces(col),1.0);",
+      " float st=step("+GN(ML.star[0])+",hash(floor(Rf.xy*"+GN(ML.star[1])+"+vec2(Rf.z*"+GN(ML.star[2])+"))));",
+      " vec3 sky=pal(Rf.y*"+GN(ML.skyK[0])+"+"+GN(ML.skyK[1])+")*"+GN(ML.skyK[2])+"+vec3(st)*"+GN(ML.star[3])+";",
+      " float fres=pow(1.0-max(dot(N,Vd),0.0),"+GN(ML.fresPow)+");",
+      " float spec=pow(max(dot(Rf,normalize(vec3("+GN(ML.specDir[0])+","+GN(ML.specDir[1])+","+GN(ML.specDir[2])+"))),0.0),"+GN(ML.specPow)+");",
+      " float dc=length((vW-uCenter).xy);float core=exp(-dc*dc*"+GN(ML.core[0])+")*("+GN(ML.core[1])+"+uOpen*"+GN(ML.core[2])+")*("+GN(ML.core[3])+"+"+GN(ML.core[4])+"*sin(uTime*"+GN(ML.core[5])+"));",
+      " vec3 col=inter*"+GN(ML.mixK[0])+"+sky*fres*uReflect*"+GN(ML.mixK[1])+"+vec3("+GN(ML.specCol[0])+","+GN(ML.specCol[1])+","+GN(ML.specCol[2])+")*spec*"+GN(ML.specK)+"*uReflect+pal("+GN(ML.corePal)+")*core*"+GN(ML.mixK[3])+";",
+      "  col*="+GN(ML.finalK[0])+"*("+GN(ML.finalK[1])+"+"+GN(ML.finalK[2])+"*uActivate)*("+GN(ML.finalK[3])+"+"+GN(ML.finalK[4])+"*uPulse);gl_FragColor=vec4(aces(col),1.0);",
       "}"].join('\n')});
-  var geo=new THREE.PlaneGeometry(spanW,height,90,90);geo.translate(0,midY,0);
+  var geo=new THREE.PlaneGeometry(MU.spanW,MU.height,MG.seg,MG.seg);geo.translate(0,MU.midY,0);
   membrane=new THREE.Mesh(geo,memMat);membrane.position.set(0,0,0.0);membrane.castShadow=false;membrane.frustumCulled=false;scene.add(membrane);
 }
 
@@ -177,7 +184,7 @@ void main(){
   float sceneVZ=viewZ(texture2D(uDepth,suv).x);
   float jit=h21(suv*uResolution+fract(uTime));
   float trans=1.0; vec3 acc=vec3(0.0); float dt=(tf-tn)/24.0;
-  float om=uTime*3.0,kk=13.8;
+  float om=uTime*${GN(MG.om)},kk=${GN(MG.kk)};
   for(int i=0;i<24;i++){
     float tt=tn+(float(i)+jit)*dt; vec3 p=ro+rd*tt;
     if((uViewMatrix*vec4(p,1.0)).z < sceneVZ) break;
@@ -220,9 +227,9 @@ function animate(){requestAnimationFrame(animate);var t=clock.getElapsedTime();
  if(leafLB)leafLB.rotation.y=doorAngleB;if(leafRB)leafRB.rotation.y=-doorAngleB;
  if(memMat){memMat.uniforms.uTime.value=t;memMat.uniforms.uCam.value.copy(camera.position);
   if(memMat.uniforms.uActivate)memMat.uniforms.uActivate.value=openM;
-  if(memMat.uniforms.uPulse)memMat.uniforms.uPulse.value=0.5+0.5*Math.sin(t*1.25);
-  if(memMat.uniforms.uWaveDepth&&D)memMat.uniforms.uWaveDepth.value=D.zFace*(0.10+0.85*openM);}   // zu: kaum; offen: bis zur Eingangsebene
- var pulse=0.5+0.5*Math.sin(t*1.25);                                   // gemeinsamer Atem — vereint Portal + Nebel
+  if(memMat.uniforms.uPulse)memMat.uniforms.uPulse.value=0.5+0.5*Math.sin(t*MG.puls);
+  if(memMat.uniforms.uWaveDepth&&D)memMat.uniforms.uWaveDepth.value=D.zFace*(MG.aktivDepth[0]+MG.aktivDepth[1]*openM);}   // zu: kaum; offen: bis zur Eingangsebene (Gesetz aktivDepth)
+ var pulse=0.5+0.5*Math.sin(t*MG.puls);                                // gemeinsamer Atem — vereint Portal + Nebel (Gesetz puls)
  if(fogMat&&D){fogMat.uniforms.uTime.value=t;fogMat.uniforms.uCam.value.copy(camera.position);fogMat.uniforms.uPulse.value=pulse;fogMat.uniforms.uAct.value=(D.p.fog!==undefined?D.p.fog:0.85)*(0.7+0.35*openM);
    if(memMat){fogMat.uniforms.uPA.value.copy(memMat.uniforms.uPA.value);fogMat.uniforms.uPB.value.copy(memMat.uniforms.uPB.value);fogMat.uniforms.uPC.value.copy(memMat.uniforms.uPC.value);fogMat.uniforms.uPD.value.copy(memMat.uniforms.uPD.value);}}
  if(portalLight&&D){portalLight.position.set(0,D.springY*0.55,0.0);portalLight.intensity=(0.3+openM*3.4)*(0.8+0.28*pulse);}

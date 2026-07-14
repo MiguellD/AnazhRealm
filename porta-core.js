@@ -203,6 +203,19 @@
     //  Rückgabe: {gate, D, leafL, leafR, leafLB, leafRB, rimMat} — die Shell
     //  verdrahtet daraus ihre Animations-Referenzen.
     // ============================================================
+    // ── die RAHMEN-STAFFELUNG als reine Ableitung (V18.464, extrahiert byte-treu
+    //    aus buildGate — der Beweis ist gate:porta-contract; membranUniforms +
+    //    der Welt-Leser [Kollisions-Hülle] lesen DIESELBE Formel, kein Nachbau). ──
+    // prettier-ignore
+    function deriveFrame(p,D){
+      var M=D.M;
+      var frameDepth=Math.max(0.4,M*0.7);
+      var depthStep=(frameDepth*0.6)*(0.4+p.depth);
+      var ordersUser=Math.max(1,Math.round(p.orders));
+      var orders=(p.wLace>0.03)?Math.max(ordersUser,1+Math.ceil(1.0/Math.max(0.18,depthStep))):ordersUser;   // Türfreiheit als Funktion der Tiefe, nicht fix 5
+      return {frameDepth:frameDepth,depthStep:depthStep,orders:orders,zFace:(orders-1)*depthStep+0.06};
+    }
+
     // prettier-ignore
     function buildGate(p,doorAngles){
       var doorAngle=doorAngles&&typeof doorAngles.front==="number"?doorAngles.front:0;
@@ -210,10 +223,11 @@
       var leafL=null,leafR=null,leafLB=null,leafRB=null,rimMat=null;
       var D=deriveGate(p);var rng=mulberry32(0x50FA);
       var M=D.M,baseY=D.baseY,springY=D.springY,apexY=D.apexY,jambW=D.jambW,prof=D.prof;
-      var frameDepth=Math.max(0.4,M*0.7),refY=baseY+D.jambH*0.5;
-      var depthStep=(frameDepth*0.6)*(0.4+p.depth),ordersUser=Math.max(1,Math.round(p.orders));
-      var orders=(p.wLace>0.03)?Math.max(ordersUser,1+Math.ceil(1.0/Math.max(0.18,depthStep))):ordersUser;   // Türfreiheit als Funktion der Tiefe, nicht fix 5
-      D.orders=orders;D.depthStep=depthStep;D.zFace=(orders-1)*depthStep+0.06;
+      var FR=deriveFrame(p,D);
+      var frameDepth=FR.frameDepth,refY=baseY+D.jambH*0.5;
+      var depthStep=FR.depthStep;
+      var orders=FR.orders;
+      D.orders=orders;D.depthStep=depthStep;D.zFace=FR.zFace;
       var gate=new THREE.Group();
       var stone=new THREE.Color().setHSL(0.62-(0.62-0.07)*p.hue,0.16+0.14*p.hue,0.40);
       var fmat=new THREE.MeshStandardMaterial({color:stone,roughness:lerp(0.88,0.16,p.metal),metalness:lerp(0.05,0.97,p.metal),emissive:new THREE.Color().setHSL(0.09,0.7,0.5),emissiveIntensity:lerp(0.04,0.55,p.glow)});
@@ -377,6 +391,133 @@
         };
     }
 
+    // ── DIE MEMBRAN ALS GESETZ (V18.464, rein additiv — W9-Muster): die
+    // PASSAGE-Zahlen der Lab-Shell (worlds/portale/porta.js buildMembrane)
+    // als EINE Tabelle. Die Shell INJIZIERT diese Zahlen in ihr GLSL
+    // (semantischer Beweis alt==neu, diag-membran-gesetz), die Welt (TSL)
+    // LIEST dieselbe Tabelle für ihr Portal-Passage-Material. Die TECHNIK
+    // (GLSL-Raymarch vs TSL-Knoten) bleibt Leser-Sache; hier wohnen NUR
+    // Zahlen + reine Ableitungen (THREE-frei, MESHFREI-artig). Arrays sind
+    // POSITIONAL — die Shell-GLSL-Zeilen sind die Lesart-Referenz.
+    var MEMBRAN_GESETZ = {
+        profilW: 64, // Bogen-Oberkante: Sample-Breite der Top-Textur/Tabelle
+        seg: 90, // Plane-Unterteilung (Vertex-Welle braucht Dichte)
+        eps: 0.06, // Normalen-Differenzschritt e (Vertex-Shader)
+        om: 3.0, // Wellen-Kreisfrequenz om = t*3.0
+        kk: 13.8, // Wellenzahl (radiale Tropfenwelle)
+        refl: 0.72, // reflektierte Welle (Pfad 2-rr) Gewicht
+        damp: 0.7, // exp(-rr*0.7) Randverdichtung
+        twistK: 2.0, // twist = a*2.0 + swirl/(r+0.25)
+        swirlR0: 0.25,
+        pierce: [2.2, 6.0, 1.5], // sin(t*2.2)*exp(-rr²*6)*1.5
+        micro: [3.0, 0.3, 0.1], // fbm(c*3 - t*0.3)*0.10
+        hGain: [0.55, 0.62], // h = clamp((wave*0.55+pierce+micro)*0.62,-1,1)
+        waveDepthK: [0.65, 0.35], // * uWaveDepth*(0.65+0.35*wave)
+        waveDepthMin: 0.05,
+        waveDepthZ: 0.1, // uWaveDepth = max(0.05, zFace*0.10)
+        stepK: [0.06, 0.2], // uStep = 0.06 + tunnel*0.20
+        rimAyK: 0.52, // uRimAy = (apexY-baseY)*0.52
+        swirlK: 0.5, // uSwirl = swirl*0.5
+        openK: [0.4, 0.6], // uOpen = clamp(0.4+energy*0.6, 0, 1)
+        centerK: 0.55, // Zentrum-Y = baseY + jambH*0.55
+        march: {
+            steps: 12,
+            t0: 0.04, // Strahl-Versatz je Schritt: i*uStep + 0.04
+            depK: [1.6, 0.1], // dep = i*uStep*1.6 + r*0.1
+            spK: [0.3, 0.6], // sp = t*(0.3 + energy*0.6)
+            lpK: 2.0, // lp = log(r)*2.0 - sp
+            frqK: [1.0, 2.2], // frq = 1.0 + fractal*2.2
+            win: 0.4, // Realm-Fenster-Breite
+            winC: [0.0, 0.34, 0.67, 1.0], // Realm-Fenster-Zentren
+            vCut: [0.1, 1.4], // v = max(0, v-0.10)*1.4
+            gDen: [2.2, 0.35], // g = v/(1 + r²*2.2 + dep*0.35)
+            att: 0.9, // Transmissions-Dämpfung je Schritt
+            // die vier Innenwelt-Modi (Wurmloch·Facette·Plasma·Nebel) —
+            // positional, Referenz: porta.js Fragment w0..w3-Zeilen.
+            wurm: [3.0, 2.0, 4.0, 0.15, 0.5],
+            facet: [8.0, 9.0, 4.0, 1.5, 0.1],
+            plasma: [0.7, 0.6, 0.2, 2.4, 3.5, 1.4, 0.5, 3.0, 1.25, 1.3, 0.08, 0.15],
+            nebel: [1.0, 0.6, 0.7, 0.12, 2.2, 1.5, 1.3, 0.2, 2.0, 2.0, 1.0, 1.2, 0.18],
+        },
+        look: {
+            star: [0.955, 95.0, 5.0, 0.42], // step(0.955, hash(Rf*95+z*5))*0.42
+            skyK: [0.5, 0.5, 0.3], // pal(Rf.y*0.5+0.5)*0.30
+            fresPow: 3.0,
+            specDir: [0.4, 0.7, 0.6],
+            specPow: 60.0,
+            specCol: [1.0, 0.95, 0.85],
+            specK: 1.5,
+            core: [12.0, 0.5, 0.5, 0.7, 0.3, 1.4], // exp(-dc²*12)*(0.5+open*0.5)*(0.7+0.3*sin(t*1.4))
+            corePal: 0.1,
+            mixK: [1.35, 0.55, 1.5, 1.0], // inter·1.35 + sky·fres·refl·0.55 + spec·1.5 + core·1.0
+            finalK: [1.4, 0.55, 0.55, 0.9, 0.13], // ·1.4·(0.55+0.55·act)·(0.90+0.13·pulse)
+        },
+        puls: 1.25, // uPulse = 0.5+0.5*sin(t*1.25)
+        aktivDepth: [0.1, 0.85], // Atem: uWaveDepth = zFace*(0.10+0.85*open)
+    };
+
+    // membranUniforms(p) — die REINE Ableitung der Membran-Uniform-Zahlen aus
+    // einem vollen Parametersatz (gateParams-Ausgang). Byte-treu zur Shell
+    // (buildMembrane Z.36–51): Geometrie-Rahmen aus deriveGate, Bogen-Oberkante
+    // als 64er-Sample-Tabelle (0..1 normiert — die Shell macht daraus ihre
+    // DataTexture, die Welt ihre eigene), Palette aus membranPalette. Kein
+    // THREE, keine Technik — nur Zahlen.
+    function membranUniforms(p) {
+        var MG = MEMBRAN_GESETZ;
+        var D = deriveGate(p);
+        var FR = deriveFrame(p, D);
+        D.orders = FR.orders;
+        D.depthStep = FR.depthStep;
+        D.zFace = FR.zFace;
+        var left = D.leftSpringX,
+            right = D.rightSpringX;
+        var spanW = right - left;
+        var height = D.apexY - D.baseY;
+        var midY = (D.baseY + D.apexY) / 2;
+        var W = MG.profilW;
+        var profil = [];
+        for (var i = 0; i < W; i++) {
+            var xx = left + (spanW * i) / (W - 1);
+            var ty = interpTop(D.prof, xx) + D.springY;
+            profil.push(clamp((ty - D.baseY) / Math.max(0.001, height), 0, 1));
+        }
+        return {
+            left: left,
+            right: right,
+            spanW: spanW,
+            height: height,
+            midY: midY,
+            baseY: D.baseY,
+            springY: D.springY,
+            apexY: D.apexY,
+            jambH: D.jambH,
+            jambW: D.jambW,
+            M: D.M,
+            zFace: D.zFace,
+            orders: FR.orders,
+            frameDepth: FR.frameDepth,
+            depthStep: FR.depthStep,
+            centerY: D.baseY + D.jambH * MG.centerK,
+            springX: Math.max(Math.abs(left), Math.abs(right)),
+            rimAx: Math.abs(D.leftSpringX),
+            rimAy: (D.apexY - D.baseY) * MG.rimAyK,
+            step: MG.stepK[0] + p.tunnel * MG.stepK[1],
+            waveDepth: Math.max(MG.waveDepthMin, D.zFace * MG.waveDepthZ),
+            swirl: p.swirl * MG.swirlK,
+            open: clamp(MG.openK[0] + p.energy * MG.openK[1], 0, 1),
+            wave: clamp(p.wave, 0, 1),
+            twist: p.twist,
+            fractal: p.fractal,
+            energy: p.energy,
+            realm: p.realm,
+            reflect: p.reflect,
+            glow: p.glow,
+            fog: p.fog,
+            profil: profil,
+            pal: membranPalette(p),
+        };
+    }
+
     root.__portaCore = {
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
@@ -390,7 +531,10 @@
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)
         messen: messen,
         deriveGate: deriveGate,
+        deriveFrame: deriveFrame,
         membranPalette: membranPalette,
+        MEMBRAN_GESETZ: MEMBRAN_GESETZ,
+        membranUniforms: membranUniforms,
         archProfile: archProfile,
         interpTop: interpTop,
         // Bau-Fläche (die Shell baut ihre Struktur aus DIESER Quelle)

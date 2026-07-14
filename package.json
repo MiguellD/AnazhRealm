@@ -60,6 +60,7 @@
         "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",
+        "gate:membran-gesetz": "node scripts/diag-membran-gesetz.cjs",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",
