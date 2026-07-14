@@ -9,9 +9,9 @@
 
 ## 0 · Vorab lesen (2 min)
 
-- `docs/analyse/hud-lesenotiz-w8.md` — **dc = Σ drawCalls EINES Frames über alle Pässe.
-  Erwartetes Band bei voller Bühne: ~900–1600.** (NICHT 436 = Fehldeutung, NICHT
-  38108 = Regression der V18.427-Klasse.)
+- **dc = Σ drawCalls EINES Frames über alle Pässe. Erwartetes Band bei voller Bühne:
+  ~900–1600.** (NICHT 436 = Fehldeutung, NICHT 38108 = Regression der V18.427-Klasse.
+  Herleitung: git-Historie, `docs/analyse/hud-lesenotiz-w8.md`.)
 
 ## 1 · W8-Abnahme (der Paritäts-Sign-off)
 
@@ -50,7 +50,7 @@ Alles frisch gebaut und headless auge-geprüft (artifacts/ trägt die Referenz-S
 | Tore | `asset-tor.png` | Porta-Membran |
 | Emotions-Posen (`wut`, `freude` im Chat) | — | Profil sichtbar im Gang |
 
-## 4 · Die drei Ein-Wort-Entscheide (§3 im Paritäts-Plan — Defaults stehen)
+## 4 · Die drei Ein-Wort-Entscheide (Defaults stehen — Herkunft: Paritäts-Plan §3, git-Historie)
 
 - **E-C** — Materialisierungs-Pop kalter Bäume (`_foundryRewarmColdTrees`): eigener
   Fall von „kein LOD-Pop"? *(Hinweis: W8-Schritt 6 führte E-C als „entschieden",

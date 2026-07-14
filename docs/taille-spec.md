@@ -5,7 +5,7 @@
 > ausführbare Form dieses Vertrags — sie werden **NIE regeneriert** (Konformanz-Band Ω4 lädt sie
 > für immer; `scripts/diag-taille.cjs` prüft sie bei jedem Lauf). Wächst die Taille über diese
 > eine Seite + vier Dateien + fünf Gesetze hinaus, ist DAS der Geruch des Fehlers
-> (`docs/archiv/taille-plan.md` §4 — Anti-Scope).
+> (Anti-Scope-Herleitung: `taille-plan.md` §4, git-Historie).
 
 ## Die zwei Sätze (alles andere folgt aus ihnen)
 
@@ -146,4 +146,5 @@ dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
   Antwort-Typen ignorieren. Felder bestehender Typen werden NIE umgedeutet.
 - **Betrieb:** HTTP 4312 (statisch + lokale Saves, localhost-only-POST) · WS 4313;
   TLS/wss terminiert ein Reverse-Proxy davor; TURN optional client-seitig
-  (`localStorage.anazhTurn`). Englischer Spiegel: `docs/taille-spec.en.md`.
+  (`localStorage.anazhTurn`). (Der englische Spiegel fiel mit der Informations-Diät
+  V18.468 — bei Bedarf: git-Historie `docs/taille-spec.en.md`.)

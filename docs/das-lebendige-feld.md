@@ -36,12 +36,11 @@ ist ENTSCHIEDEN und geschlossen (V18.372, „Naht-Entscheidung" in `docs/roadmap
 geordnete Rest-Backlog lebt in `docs/roadmap.md` §0 (der Tisch); `docs/archiv/gigant-plan.md`
 ist Archiv-Referenz, kein Master-Blick vorwärts mehr.**
 
-Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix),
-`archiv/world-portal.md` (die Bibliothek von Alexandria — das Fern-Ziel),
-`archiv/kampf-plan.md` (der Crafting-/Kampf-Bogen, vollendet), `archiv/crafting-konzept.md`
-(Hylomorphismus = das Material/Form-Substrat). Die VOLLENDETEN Arc-Pläne liegen im Archiv:
-`archiv/dsl-weltregeln-plan.md`, `archiv/lebendige-wertung-plan.md` (das DRITTE Verb),
-`archiv/emotion-kern-plan.md`, `archiv/resonanz-system.md`.
+Verwandte Anker: `state-of-realm.md` (die Vision/Testamente + die Stand-Matrix). **Alle
+`archiv/…`-Zitate in diesem Doc zeigen seit der Informations-Diät (V18.468) in die
+git-Historie** (`git log --all --oneline -- docs/archiv` · lesen: `git show <sha>:<pfad>`) —
+die vollendeten Arc-Pläne (world-portal · kampf-plan · crafting-konzept · dsl-weltregeln ·
+lebendige-wertung · emotion-kern · resonanz-system u. a.) liegen dort vollständig.
 
 ---
 
