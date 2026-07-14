@@ -14411,6 +14411,9 @@ class AnazhRealm {
                   }
                 : null,
             worstFrames: fr.worst,
+            // V18.469 — der Fern-Regime-Beweis vom echten Holz: rttGescheitert > 0
+            // heißt „der Schöpfer sieht Silhouetten-Blobs statt RTT-Karten".
+            impostorZensus: this._impostorCensus(),
         };
     }
 
@@ -47280,20 +47283,31 @@ class AnazhRealm {
                 for (const entry of arches) {
                     if (!entry || !entry.position) continue;
                     if (!(entry.affordances && entry.affordances.isPortal)) continue;
-                    const dx = entry.position.x - px;
-                    const dz = entry.position.z - pz;
-                    if (dx * dx + dz * dz > SICHT * SICHT) continue;
                     const tor = this._torGesetzFor(entry);
                     if (!tor) continue; // Part-Gestalt-Portale tragen ihre eigene sichtbare Passage
+                    // ERSTARREN-LEHRE (V18.469): der Eintrag bleibt registriert, solange er
+                    // LEBT — gebaut wird lazy beim ersten Sicht-Kontakt, danach nie wieder.
+                    // (Vorher: dispose beim Verlassen + Neu-Bau beim Wiederkommen = ein
+                    // TSL-Bau + WebGPU-Pipeline-Compile pro 180-m-Grenzübertritt, dazu ein
+                    // Geometrie-Leck, weil nur das Material fiel.)
                     seen.add(entry.id);
-                    if (!reg.has(entry.id)) this._membranBauFor(entry, tor);
+                    if (!reg.has(entry.id)) {
+                        const dx = entry.position.x - px;
+                        const dz = entry.position.z - pz;
+                        if (dx * dx + dz * dz > SICHT * SICHT) continue;
+                        this._membranBauFor(entry, tor);
+                    }
                 }
             }
             for (const [id, rec] of reg) {
                 if (!seen.has(id)) {
+                    // Nur ein WIRKLICH gefallener Eintrag räumt — mit GANZER Hülle
+                    // (das Material trägt den topTex-dispose-Listener; die Geometrie
+                    // gehört ebenso dazu).
                     if (rec.mesh) {
                         st.scene.remove(rec.mesh);
                         if (rec.mesh.material) rec.mesh.material.dispose();
+                        if (rec.mesh.geometry) rec.mesh.geometry.dispose();
                     }
                     reg.delete(id);
                 }
@@ -47313,6 +47327,14 @@ class AnazhRealm {
             const dx = px - entry.position.x;
             const dz = pz - entry.position.z;
             const d = Math.hypot(dx, dz);
+            // Fern-Schlaf: jenseits der Sicht ruht die Membran (unsichtbar, kein
+            // Uniform-Takt) — das Material bleibt kompiliert stehen (Erstarren-Lehre).
+            if (d > SICHT) {
+                if (rec.mesh && rec.mesh.visible) rec.mesh.visible = false;
+                rec.lastLz = null;
+                continue;
+            }
+            if (rec.mesh && !rec.mesh.visible) rec.mesh.visible = true;
             const act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
             rec.u.time.value = currentTime;
             rec.u.act.value = act;
@@ -60384,6 +60406,37 @@ class AnazhRealm {
             this._impostorBakeQueue.push(key);
         }
         return rec;
+    }
+
+    // DER IMPOSTOR-ZENSUS (V18.469, Schöpfer „baum l2 immernoch blobs"): sagt,
+    // welches Fern-Regime WIRKLICH auf dem Holz läuft — echte 8-Winkel-RTT-Karte
+    // (rttBaked) · terminal gescheiterter Bake = Canvas-Silhouette für immer
+    // (rttFailed — DAS ist der Blob-Verdacht) · noch wartend (Silhouette bis der
+    // Bake dran ist). Reist im Flugschreiber-Trace (anazhRealmPerf.json) und ist
+    // devtools-lesbar: anazhRealm._impostorCensus().
+    _impostorCensus() {
+        const m = this._impostorAtlasMap;
+        if (!m || m.size === 0) return null;
+        let gebacken = 0,
+            gescheitert = 0,
+            wartend = 0;
+        const gescheitertArten = [];
+        for (const rec of m.values()) {
+            if (rec.rttBaked) gebacken++;
+            else if (rec.rttFailed) {
+                gescheitert++;
+                if (gescheitertArten.length < 8) gescheitertArten.push(rec.key);
+            } else wartend++;
+        }
+        return {
+            atlanten: m.size,
+            rttGebacken: gebacken,
+            rttGescheitert: gescheitert,
+            silhouetteWartend: wartend,
+            haengendeBakes: this._impostorBakeHung || 0,
+            verworfeneBakes: this._impostorBakeDropped || 0,
+            gescheitertArten,
+        };
     }
 
     // V18.390 (Eins W3) — der EINE Bake-/Quad-Rahmen (Bake-Kamera UND Billboard-
