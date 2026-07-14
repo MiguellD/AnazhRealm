@@ -9,23 +9,27 @@
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
-   (a) **ERSTARREN** — nach Reset kurz spielbar, friert wiederkehrend. CPU-Hälfte headless
-   ENTLASTET (`gate:erstarren`: kein Todes-Spiral, kein Freeze; Membran-Recompile-Wand gebaut
-   V18.469); die GPU-Hälfte braucht das ECHTE Holz — **der Transport ist gebaut (V18.472,
-   `gate:perf-panel`):** das Perf-Panel ist screenshot-auswertbar (Version · Sekunden-Ring
-   ~3 min max-Frame/s · Kern-Zahlen · ms-Verteilung · schlimmste Frames mit Phase ·
-   Impostor-Zensus) und „Perf-Daten exportieren (.json)" in den Einstellungen lädt den
-   Flugschreiber-Trace als Datei für den Chat. Beifang: AnazhRealm.VERSION driftete 4 Wellen
-   (18.467) — die Buster-Wand deckt jetzt auch die Runtime-Konstante.
-   (b) **Baum-L2 = Blobs → DIE BÄCKER-VEREINIGUNG IST GEBAUT (V18.471, beidseitig):**
-   der Welt-RTT-Nachbau fiel physisch, `_tickImpostorBake` konsumiert `bake-impostor`,
-   der Studio-Bäcker läuft im Worker (OffscreenCanvas; `gate:baecker-kanal` beweist den
-   vollen 8-Winkel-Atlas live), Bake-Subjekt = Welt-Baum (ov verbatim, M2), Nicht-Leere-
-   Wand + Kind-Wächter (M1). Ferne Bäume = echte Studio-Karten, Bakes verlassen den
-   Interaktionspfad. OFFEN daraus: die ZWEIT-KERN-BÄCKEREI im Studio (Tor-Records fallen
-   bis dahin ehrlich auf die Skelett-Silhouette — der Pflanzen-Bäcker kennt sie nicht) ·
-   das Urteil vom echten Holz (Zensus im Trace; Container-Wand: swiftshader stirbt ab
-   ~6M Tris, das Fern-Auge geht nur beim Schöpfer).
+   (a) **PERFORMANCE — DER ERSTE ECHTE TRACE IST GELESEN (14.07., V18.473):** die Maschine
+   des Schöpfers ist RENDER-GEBUNDEN — steady 85 ms/Frame, davon ~72 ms CPU-Render-Submit
+   bei ~1733 Draw-Calls (GPU-Lücke steady nur ~6 ms); die Sekunden-Stalls (bis 8,7 s) sind
+   GPU-Events bei Tri-Spikes auf 20–26M Dreiecke. GEBAUT V18.473: der EXISTENZ-BODEN des
+   Dispatchers (`gate:existenz-boden` — Budget dauerhaft leer ließ pendingWaterIso/Scatter/
+   Gras monoton wachsen [Heap +1,6 MB/s]: Schwimm-Physik ohne sichtbares Wasser; jetzt
+   fließt Substanz JEDEN Frame, Deko jeden 4.) · die TRI-ATTRIBUTION im Flugschreiber
+   (Freeze-Snapshots tragen die Top-5-Teilbäume nach Dreiecken — der nächste Trace NENNT
+   den 26M-Wal; Verdacht: Kreaturen ~1M+ Tris/Stück ohne LOD, s. (c)) · die NACHT-KARTEN-
+   Dimmung (tagLicht-Uniform: eingebackenes Studio-Tageslicht fällt mit der Sonne).
+   OFFEN (die zwei gemessenen Steady-Hebel): **die DRAW-CALL-DIÄT der Fern-Gruppen**
+   (V18.303-Notiz: ~1000 winzige LOD2-Gruppen durch per-Region-Keying — Impostor-Quads
+   gröber keyen) und **Kreatur-Tris/LOD** (Matrix (c)). Der Transport steht (V18.472
+   Panel + Export; Narbe respektiert: adaptive Auflösung bleibt aus — Submit-Kosten,
+   nicht Fill, tragen den steady state).
+   (b) **Baum-L2: DIE BÄCKER-VEREINIGUNG IST AUF ECHTEM HOLZ BESTÄTIGT** (Schöpfer-Trace
+   14.07.: Zensus 204 gebacken · 0 gescheitert · 0 wartend — jede Ferne trägt echte
+   Studio-Karten). Nacht-Glühen-Klasse gefixt V18.473 (tagLicht-Uniform: das eingebackene
+   Studio-Tageslicht fällt mit der Sonne, Boden 0.12 = Mond-Silhouette — Schöpfer-Auge
+   bestätigt es nachts). OFFEN: die ZWEIT-KERN-BÄCKEREI im Studio (Tor-Records fallen bis
+   dahin ehrlich auf die Skelett-Silhouette — der Pflanzen-Bäcker kennt sie nicht).
    (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
    9 Gattungen × 8 Facetten, 55 Zellen verankert, 20 Differenzen benannt. Die größten:
    LOD-Leitern — haus [0,1,2] EHRLICH bewiesen · fahrzeug/tor/klinge [0] bewusst (Wirt
@@ -34,8 +38,16 @@
    Bäcker-Vereinigung BEIDSEITIG GEBAUT (s. (b), Konsum-Matrix-Probe ✅) ·
    mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
    klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
-   (d) **Tiefe statt Oberfläche** — Fahrzeugphysik · Körpermechanik (Fuß-IK/Foot-Lock) ·
-   Schwertschwung · Stadtpflanzung. Je Domäne: messen, dann das Gesetz vertiefen.
+   (d) **Tiefe statt Oberfläche (Schöpfer-Browser-Befunde 14.07., je eine Matrix-Zelle):**
+   FAHRZEUG-Geist beim Platzieren zeigt den alten Wagen (der Ghost-Pfad liest Donor-Parts
+   statt der Studio-Gestalt) · FAHREN bewegt den Spieler in Sitzpose, das Fahrzeug bleibt
+   stehen (der Drive-Tick bewegt den Reiter, nie den Fahrzeug-Eintrag) · TIERE STAPELN
+   sich (keine Separations-Kraft; Emotionen/Charaktere existieren im Feld, werden aber
+   nicht in Bewegungs-DIFFERENZIERUNG konsumiert — die Verhaltens-Zelle der Matrix) ·
+   WASSER kriecht optisch Wände hoch / spiegelt winkelabhängig übers Terrain (Sheet-
+   Render-Klasse; der Existenz-Boden V18.473 heilt das NICHT-Erscheinen, der LOOK der
+   Kanten bleibt eine eigene Welle) · Avatar-Kleider/Bewegung ≠ Studio · Fahrzeugphysik ·
+   Körpermechanik (Fuß-IK/Foot-Lock) · Schwertschwung · Stadtpflanzung.
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
    `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
    Nervensystem-DoD 5 · E-C/E-E/E-F.

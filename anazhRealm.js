@@ -14485,8 +14485,50 @@ class AnazhRealm {
                 pos,
                 activeKeys,
             },
+            // V18.473 — DIE TRI-ATTRIBUTION (Schöpfer-Trace: Spikes bis 26M Dreiecke,
+            // niemand wusste WO): nur auf Freeze-Frames (selten, worst-Cap) die Top-5
+            // Szenen-Teilbäume nach Dreiecken — die nächste Datei NENNT den Wal.
+            triZensus: this._flightRecorderTriCensus(),
             atFrame: (st.flightRecorder && st.flightRecorder.frames) || 0,
         };
+    }
+
+    // Top-5 Szenen-Teilbäume nach Dreiecks-Last (instanz-gewichtet: InstancedMesh
+    // zählt geometrie-Tris × count). Läuft NUR im Freeze-Snapshot — ein Walk über
+    // ~500 Kinder ist dort vernachlässigbar gegen den >250-ms-Frame selbst.
+    _flightRecorderTriCensus() {
+        try {
+            const sc = this.state.scene;
+            if (!sc || !sc.children) return null;
+            const out = [];
+            for (const child of sc.children) {
+                let tris = 0;
+                child.traverse((o) => {
+                    const g = o.geometry;
+                    if (!g) return;
+                    const idx = g.index
+                        ? g.index.count
+                        : g.attributes && g.attributes.position
+                          ? g.attributes.position.count
+                          : 0;
+                    let t = idx / 3;
+                    if (o.isInstancedMesh && Number.isFinite(o.count)) t *= o.count;
+                    if (o.visible === false) t = 0;
+                    tris += t;
+                });
+                if (tris < 10000) continue;
+                const name =
+                    child.name ||
+                    (child.userData && (child.userData.bpName || child.userData.species || child.userData.kind)) ||
+                    child.type ||
+                    "?";
+                out.push({ name: String(name).slice(0, 48), trisK: Math.round(tris / 1000) });
+            }
+            out.sort((a, b) => b.trisK - a.trisK);
+            return out.slice(0, 5);
+        } catch {
+            return null; // der Flugschreiber darf NIE stören
+        }
     }
 
     // Eine kleine, EHRLICHE Selbst-Diagnose des schlimmsten Frames: GPU-gebunden
@@ -27725,6 +27767,11 @@ class AnazhRealm {
             // Distanz-Spanne bis zum vollen Faktor. Live-tunbar (Schöpfer-Sign-off).
             hazeNear: TSL.uniform(70.0),
             hazeFar: TSL.uniform(350.0),
+            // V18.473 — DIE TAG-LICHT-ACHSE (0 = tiefe Nacht, 1 = voller Tag; Schreiber:
+            // das EINE Himmels-Update, derselbe _celestialHorizonFade wie das Key-Licht).
+            // Konsument: die Impostor-Karte — ihr Atlas trägt EINGEBACKENES Studio-
+            // Tageslicht, das mit der Sonne fallen MUSS (Nacht-Glühen-Klasse, 14.07.).
+            tagLicht: TSL.uniform(1.0),
             // B8 — das warme Struktur-RIM (Fresnel-Saum, die Ghibli-Silhouetten-
             // Kante im Gegenlicht). 0 = aus. Live-tunbar (Schöpfer-Sign-off).
             rimStrength: TSL.uniform(
@@ -28335,7 +28382,15 @@ class AnazhRealm {
                                     }
                                     // der Atlas trägt die VOLLE Baumfarbe (Studio-Bake des echten Baums);
                                     // vertex-color = weiß (Identität), Tint via instanceColor.
-                                    albedoNode = _samp.rgb;
+                                    // V18.473 — das EINGEBACKENE Studio-Tageslicht fällt mit der Sonne
+                                    // (tagLicht-Uniform, das EINE Himmels-Update schreibt sie): nachts
+                                    // leuchtete die Karte sonst heller als jede echte Geometrie
+                                    // (Schöpfer-Screenshot 14.07.). Boden 0.12 = Mond-Silhouette.
+                                    const _auN = this._ensureAtmoUniforms();
+                                    albedoNode =
+                                        _auN && _auN.tagLicht
+                                            ? _samp.rgb.mul(_auN.tagLicht.mul(_Ta.float(0.88)).add(_Ta.float(0.12)))
+                                            : _samp.rgb;
                                     mat.alphaTest = 0.34; // Vorlagen-ath (weiche Kronen-Ränder bleiben)
                                     // ── Normal-Atlas → Billboard-Rahmen → per-Fragment-Licht ──
                                     const _nc = _Ta
@@ -78107,6 +78162,12 @@ class AnazhRealm {
                 a.lum *
                 tint.lightIntensity *
                 this._celestialHorizonFade(sunDir.y);
+            // V18.473 — DIE EINE TAG-LICHT-ACHSE (Schöpfer-Nacht-Screenshot: ferne
+            // Karten LEUCHTEN im Dunkel): der Impostor-Atlas trägt EINGEBACKENES
+            // Studio-Tageslicht — mit der Sonne muss es fallen. Derselbe Fade,
+            // der das Key-Licht dimmt, schreibt die Uniform; die Karte liest sie.
+            if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht)
+                this.state.atmoUniforms.tagLicht.value = this._celestialHorizonFade(sunDir.y) * Math.max(0, a.lum);
         } else {
             const M = AnazhRealm.MOONLIGHT;
             // V18.390 — der Mond-Pfad BLEIBT (V18.377/.378: Richtung aus der EINEN Quelle,
@@ -78117,6 +78178,9 @@ class AnazhRealm {
             // V18.378 — der Fade liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
             dl.intensity = M.intensity * tint.lightMul * this._celestialHorizonFade(md.y);
+            // V18.473 — Nacht: die Tag-Licht-Achse fällt auf 0 (Mond zählt nicht als
+            // Tageslicht — die Karten tragen ihr eingebackenes SONNEN-Licht).
+            if (this.state.atmoUniforms && this.state.atmoUniforms.tagLicht) this.state.atmoUniforms.tagLicht.value = 0;
         }
         // V18.390 — Eins W1: das GRÜNE BOUNCE-FILL (Vorlage fillL, Z.1177): gerichtetes,
         // grün-getöntes Licht von der sonnen-ABGEWANDTEN Seite (Laub-/Boden-Bounce) formt
@@ -82417,12 +82481,26 @@ class AnazhRealm {
     _dispatchFrameJobs(jobs, budget) {
         const ran = [];
         const sorted = jobs.slice().sort((a, b) => (a.prio || 0) - (b.prio || 0));
+        // V18.473 — DER EXISTENZ-BODEN (Schöpfer-Trace vom echten Holz, 14.07.: die Maschine
+        // ist render-gebunden [Pflicht ~72 ms > Frame-Ziel] → remainingMs war DAUERHAFT ≤ 0 →
+        // `break` ließ pendingWaterIso/Scatter/Grass monoton wachsen [Heap +1,6 MB/s], die
+        // Wasser-ZELLEN trugen Schwimm-Physik ohne je sichtbare Oberfläche zu bekommen).
+        // Dieselbe Lehre wie der Ring (Existenz vor Framerate, Lehre 13): Welt-SUBSTANZ
+        // (prio 1) bekommt JEDEN Frame einen Zeit-Boden, Deko (prio ≥ 2) jeden 4. Frame
+        // einen kleinen — die Queues MÜSSEN abfließen, der Regler atmet nur DARÜBER.
+        this._schedFrameNo = (this._schedFrameNo || 0) + 1;
         for (const job of sorted) {
             if (!job || typeof job.run !== "function") continue;
-            const sacred = (job.prio || 0) === 0;
-            if (!sacred && budget.remainingMs() <= 0) break; // Budget leer → niedrige Jobs warten
+            const prio = job.prio || 0;
+            const sacred = prio === 0;
+            let ms = budget.remainingMs();
+            if (!sacred && ms <= 0) {
+                if (prio === 1) ms = AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS;
+                else if (this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
+                else continue;
+            }
             try {
-                job.run(sacred ? Infinity : budget.remainingMs());
+                job.run(sacred ? Infinity : ms);
                 ran.push(job.name);
             } catch (e) {
                 if (typeof this._loopErrorBoundary === "function") this._loopErrorBoundary(e);
@@ -83451,7 +83529,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.472.0";
+AnazhRealm.VERSION = "18.473.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87455,6 +87533,12 @@ AnazhRealm.ARCH_INSTANCE_SHARE_VERTS = 8192;
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.
 AnazhRealm.FRAME_SCHED_MIN_MS = 2;
+// V18.473 — DER EXISTENZ-BODEN des Dispatchers (Schöpfer-Trace: render-gebundene Maschine →
+// Budget dauerhaft leer → die Substanz-Queues [Wasser-Iso · Scatter · Gras] wuchsen monoton,
+// Wasser blieb unsichtbar trotz Schwimm-Physik). Substanz (prio 1) läuft JEDEN Frame mit
+// diesem Boden; Deko (prio ≥ 2) jeden 4. Frame mit dem kleinen. Existenz vor Framerate.
+AnazhRealm.FRAME_SCHED_SUBSTANZ_FLOOR_MS = 4;
+AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS = 2.5;
 // V18.355 — PHASE C (Fixed-Timestep, Fiedler): die FIXE Sim-Schrittweite (60 Hz). FIXED_MAX_ACCUM
 // klemmt die per-Frame-Zeit gegen den Spiral-of-Death (ein 2-s-Hitch akkumuliert nicht 120 Steps);
 // FIXED_MAX_STEPS ist die harte Obergrenze pro Frame (überschüssige Zeit fällt weg → kein Einhol-Sturm).
