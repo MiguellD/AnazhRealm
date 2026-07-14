@@ -50284,6 +50284,45 @@ class AnazhRealm {
                 // Studio-Geometrie) — nah=fern=Studio, KEIN Grammatik-Bake mehr. Lädt das Asset noch (cache-
                 // miss), fällt DIESER Frame auf Grammatik zurück (kein Loch); ist es gecacht (Dauerzustand),
                 // ist der Scatter rein Foundry. Foundry-gegated → der headless-Gate (foundry aus) bleibt grün.
+                const rec = this._scatterMaterializeCell(
+                    region,
+                    layer,
+                    layerSalt,
+                    cellX,
+                    cellZ,
+                    cellM,
+                    tf,
+                    dist,
+                    surfY,
+                    species,
+                    variantIndex,
+                    visH,
+                    lod,
+                    regX,
+                    regZ,
+                    false
+                );
+                if (!rec) continue;
+                region.cells.push(rec);
+                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn
+                if (layer.promotable) this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                emitted++;
+            }
+        }
+        return emitted;
+    }
+
+
+    // V18.464 — DIE EINE ZELLEN-MATERIALISIERUNG (extrahiert byte-treu aus dem
+    // Emit-Schwanz von _scatterRegionWork; gate:scatter-ab bleibt die Byte-Wand):
+    // baut fuer EINE Streu-Zelle die Instanz-Slots (Foundry-Flat ODER Grammatik,
+    // inkl. Crossfade-Band-Partner + Paritaets-Tint) auf der GEWUENSCHTEN Stufe
+    // und liefert den Zellen-Datensatz — oder null (deferriert/ungemappt).
+    // ZWEI Leser: der Region-Bau (Erst-Emission) und der Scatter-LOD-Tick
+    // (_tickScatterLod — die Heilung der eingefrorenen Bau-Zeit-Stufen).
+    // ctxNoDefer: der LOD-Tick markiert die Region NICHT als deferriert
+    // (er laesst die alte Stufe stehen und versucht es naechste Runde).
+    _scatterMaterializeCell(region, layer, layerSalt, cellX, cellZ, cellM, tf, dist, surfY, species, variantIndex, visH, lod, regX, regZ, ctxNoDefer) {
                 let bpName = null,
                     foundryFlat = null;
                 // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss WEG, nicht überlagert werden;
@@ -50320,8 +50359,8 @@ class AnazhRealm {
                     } else {
                         // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
                         // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
-                        region._deferredFoundry = true;
-                        continue;
+                        if (!ctxNoDefer) region._deferredFoundry = true;
+                        return null;
                     }
                 }
                 if (!bpName) {
@@ -50329,9 +50368,9 @@ class AnazhRealm {
                     // Quelle (kein Nachbau). Ein foundry-gemappter Baum kann hier NICHT landen (oben deferriert);
                     // die Sicherheits-Wand bleibt trotzdem stehen: bei lebender Foundry rendert KEIN Baum Grammatik
                     // (gate:no-second-treebuilder beweist es). Foundry-aus → Grammatik trägt alles (gate-treu).
-                    if (layer.kind === "tree" && this._foundryEnabled()) continue;
+                    if (layer.kind === "tree" && this._foundryEnabled()) return null;
                     const keys = this._buildVariantLODs(species, variantIndex);
-                    if (!keys) continue;
+                    if (!keys) return null;
                     bpName = keys[lod] || keys[0];
                 }
                 // PARITÄT (Schöpfer „billiger Abklatsch" — die ROTEN/violetten Kronen, im Paritäts-Bild
@@ -50372,7 +50411,7 @@ class AnazhRealm {
                         : null,
                     foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
                 );
-                if (!slots) continue;
+                if (!slots) return null;
                 // AUSLÖSCHUNGS-WELLE (Feld B, W8-Schuld „Scatter-Fern-Bäume ohne Band-
                 // Residency"): der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN
                 // Stufen — DIESELBE Partner-Quelle wie die Architektur (`_lodBandPartnerFor`,
@@ -50412,7 +50451,7 @@ class AnazhRealm {
                         }
                     }
                 }
-                region.cells.push({
+                return {
                     cellX,
                     cellZ,
                     cellM,
@@ -50425,13 +50464,98 @@ class AnazhRealm {
                     slots,
                     x: tf.x,
                     z: tf.z,
-                });
-                // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn
-                if (layer.promotable) this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
-                emitted++;
-            }
+                };
+    }
+
+
+    // V18.464 — DER SCATTER-LOD-TICK (die Heilung der eingefrorenen Bau-Zeit-
+    // Stufen): der Fernwald wählte Stufe + Crossfade-Band-Partner EINMAL beim
+    // Region-Bau (Distanz zum BAU-Zeit-Spieler), der Dither-Shader maskiert
+    // aber nach LIVE-Distanz — beim Umherlaufen verschwanden ferne Bäume ganz
+    // (kein L2-Billboard resident) und nahe Billboards lösten sich in Nichts
+    // auf statt in Geometrie (GEMESSEN, Ultracode-Verstehen-Welle baum-D1).
+    // Jetzt wandert ein gedeckeltes Rolling-Slice über die Zellen (das
+    // _tickArchitectureLOD-Muster: bounded Scan + wenige Reallokationen pro
+    // Frame) und rechnet mit DENSELBEN Quellen neu: _chooseLODForDistance
+    // (Hysterese, cell.lod als Zustand) + _scatterMaterializeCell (der EINE
+    // Zellen-Chokepoint — Foundry-Flat/Grammatik/Band-Partner/Tint identisch
+    // zum Erst-Bau). Lädt das Ziel-Asset noch, bleibt die ALTE Stufe stehen
+    // (kein Loch; Retry in der nächsten Runde — ctxNoDefer hält die Region
+    // aus dem Refill-Re-Stream heraus).
+    _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
+        const map = this.state.scatterRegions;
+        if (!map || map.size === 0 || !playerPos) return 0;
+        const SC = AnazhRealm.SCATTER;
+        if (!this._scatterLayerByName) {
+            this._scatterLayerByName = new Map();
+            for (const l of SC.layers) this._scatterLayerByName.set(l.name, l);
         }
-        return emitted;
+        const keys = Array.from(map.keys());
+        if (!this._scatterLodCursor) this._scatterLodCursor = { k: 0, c: 0 };
+        const cur = this._scatterLodCursor;
+        let scanned = 0;
+        let realloc = 0;
+        let hops = 0;
+        while (scanned < maxScan && realloc < maxRealloc && hops <= keys.length) {
+            if (cur.k >= keys.length) cur.k = 0;
+            const key = keys[cur.k];
+            const region = map.get(key);
+            const cells = region && Array.isArray(region.cells) ? region.cells : null;
+            if (!cells || cur.c >= cells.length) {
+                cur.k++;
+                cur.c = 0;
+                hops++;
+                continue;
+            }
+            const cell = cells[cur.c++];
+            scanned++;
+            if (!cell || !cell.slots || !cell.bpName) continue; // promoted/freigegeben
+            const layer = this._scatterLayerByName.get(cell.layer);
+            if (!layer) continue;
+            const dx = cell.x - playerPos.x;
+            const dz = cell.z - playerPos.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
+            const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
+            const visH = layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
+            const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
+            if (newLod === cell.lod) continue;
+            // dieselbe Oberflächen-Quelle wie der Erst-Bau (Feld → Voxel-Fallback)
+            const field = this._sampleBakedField ? this._sampleBakedField(cell.x, cell.z) : null;
+            const surfY = field ? field.height : this._voxelSurfaceY ? this._voxelSurfaceY(cell.x, cell.z) : 0;
+            let layerSalt = 0;
+            for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
+            const comma = key.indexOf(",");
+            const regX = parseInt(key.slice(0, comma), 10);
+            const regZ = parseInt(key.slice(comma + 1), 10);
+            // ZUERST materialisieren (deferred-sicher): kommt null (Asset lädt),
+            // bleibt die alte Stufe unangetastet stehen.
+            const rec = this._scatterMaterializeCell(
+                region,
+                layer,
+                layerSalt,
+                cell.cellX,
+                cell.cellZ,
+                cell.cellM,
+                tf,
+                dist,
+                Number.isFinite(surfY) ? surfY : 0,
+                cell.species,
+                cell.variantIndex,
+                visH,
+                newLod,
+                regX,
+                regZ,
+                true
+            );
+            if (!rec) continue;
+            this._scatterFreeSlots(cell.slots);
+            cell.lod = rec.lod;
+            cell.bpName = rec.bpName;
+            cell.slots = rec.slots;
+            realloc++;
+        }
+        return realloc;
     }
 
     _disposeScatterRegion(key) {
@@ -50659,16 +50783,30 @@ class AnazhRealm {
         // des Spielers walken (die nahen Cells leben dort).
         let promotions = 0;
         const pr2 = SC.promoteM * SC.promoteM;
-        const homeRegion = map.get(`${pRegX},${pRegZ}`);
-        if (homeRegion && Array.isArray(homeRegion.cells)) {
-            for (let i = 0; i < homeRegion.cells.length && promotions < 3; i++) {
-                const cell = homeRegion.cells[i];
-                if (!cell.slots) continue; // schon promoted/freigegeben
-                if (!cell.promotable) continue; // V18.225 — nur die Baum-Schicht kristallisiert
-                const dx = cell.x - playerPos.x;
-                const dz = cell.z - playerPos.z;
-                if (dx * dx + dz * dz <= pr2) {
-                    if (this._promoteScatterCell(cell)) promotions++;
+        // V18.464 (baum-D2-Heilung): die Promotion scannte NUR die Home-Region —
+        // eine Zelle wenige Meter jenseits der 256-m-Region-Grenze promotete NIE
+        // (ihr Billboard stand unsichtbar-flach in Griffweite). Jetzt laufen ALLE
+        // Regionen, deren Quadrat den promoteM-Kreis schneidet (max 2×2 — der
+        // Kreis r=64 passt in eine 256er-Region); der pr2-Filter je Zelle bleibt.
+        const regM = AnazhRealm.SCATTER.regionM;
+        const pr = AnazhRealm.SCATTER.promoteM;
+        const rx0 = Math.floor((playerPos.x - pr) / regM);
+        const rx1 = Math.floor((playerPos.x + pr) / regM);
+        const rz0 = Math.floor((playerPos.z - pr) / regM);
+        const rz1 = Math.floor((playerPos.z + pr) / regM);
+        for (let rX = rx0; rX <= rx1 && promotions < 3; rX++) {
+            for (let rZ = rz0; rZ <= rz1 && promotions < 3; rZ++) {
+                const region = map.get(`${rX},${rZ}`);
+                if (!region || !Array.isArray(region.cells)) continue;
+                for (let i = 0; i < region.cells.length && promotions < 3; i++) {
+                    const cell = region.cells[i];
+                    if (!cell.slots) continue; // schon promoted/freigegeben
+                    if (!cell.promotable) continue; // V18.225 — nur die Baum-Schicht kristallisiert
+                    const dx = cell.x - playerPos.x;
+                    const dz = cell.z - playerPos.z;
+                    if (dx * dx + dz * dz <= pr2) {
+                        if (this._promoteScatterCell(cell)) promotions++;
+                    }
                 }
             }
         }
@@ -60013,7 +60151,14 @@ class AnazhRealm {
             if (performance.now() - since > AnazhRealm.IMPOSTOR_BAKE_TIMEOUT_MS) {
                 const hungKey = this._impostorBakePendingKey;
                 const hungRec = hungKey && this._impostorAtlasMap ? this._impostorAtlasMap.get(hungKey) : null;
-                if (hungRec) hungRec.rttFailed = true;
+                // V18.464 (baum-D7-Heilung): ein transienter Hänger (Boot-Last, langsamer
+                // Readback) fror die Art PERMANENT auf der Fallback-Silhouette ein.
+                // Jetzt: bounded Retry (3 Versuche), erst dann terminal rttFailed.
+                if (hungRec) {
+                    hungRec.rttTries = (hungRec.rttTries || 0) + 1;
+                    if (hungRec.rttTries < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(hungKey);
+                    else hungRec.rttFailed = true;
+                }
                 this._impostorBakeTok = (this._impostorBakeTok || 0) + 1;
                 this._impostorBakePending = false;
                 this._impostorBakeHung = (this._impostorBakeHung || 0) + 1;
@@ -60049,7 +60194,11 @@ class AnazhRealm {
         const _tok = (this._impostorBakeTok = (this._impostorBakeTok || 0) + 1);
         this._bakeImpostorAtlasRTT(key, rec)
             .catch((e) => {
-                rec.rttFailed = true; // graziös: der Canvas-Fallback bleibt sichtbar
+                // V18.464 (baum-D7): bounded Retry statt terminal — der Canvas-Fallback
+                // bleibt sichtbar, aber die Art heilt sich beim nächsten Versuch.
+                rec.rttTries = (rec.rttTries || 0) + 1;
+                if (rec.rttTries < 3 && this._impostorBakeQueue) this._impostorBakeQueue.push(key);
+                else rec.rttFailed = true;
                 if (typeof window !== "undefined") window.__impostorRttError = String((e && e.message) || e);
             })
             .finally(() => {
@@ -60480,6 +60629,22 @@ class AnazhRealm {
         };
         if (laubMat && laubMat.tags) matOpts.tags = laubMat.tags;
         const mat = this._sharedFoliageMaterial(matOpts);
+        // V18.464 (baum-D3-Heilung): die Kreuz-Geometrie liegt VOLLSTÄNDIG auf der
+        // Stammachse — ihre Fläche entsteht NUR über mat.positionNode (TSL-Wiring).
+        // Schlug das Wiring fehl (kein impostorBillboard-Marker), wäre der ferne
+        // Baum ein unsichtbares Null-Flächen-Quad (die dokumentierte „volle
+        // Silhouette" war eine Lüge). Dann: LAUT + null → der Aufrufer fällt auf
+        // die sichtbare Karten-LOD2 zurück (der ehrliche Graceful-Pfad).
+        if (!(mat && mat.userData && mat.userData.impostorBillboard)) {
+            if (!this._impostorWiringWarned) {
+                this._impostorWiringWarned = true;
+                this.log(
+                    `Impostor-TSL-Wiring fehlgeschlagen (${(typeof window !== "undefined" && window.__impostorAtlasError) || "unbekannt"}) — ferne Bäume fallen auf Karten-LOD2.`,
+                    "WARN"
+                );
+            }
+            return null;
+        }
         return { geom, mat, localMatrix: new THREE.Matrix4() };
     }
 
@@ -60676,7 +60841,13 @@ class AnazhRealm {
     // mit (re-add in die neue Gruppe). Echte Bauten (Tempel etc.: kein `_lodN`) +
     // die nahen LOD0-Bäume werfen weiter Schatten.
     _archGroupCastsShadow(name) {
-        return !/_lod[12]$/.test(String(name || ""));
+        // V18.464 (baum-D4-Heilung): die V18.265-Regel „nur LOD0 castet" stammte aus
+        // der Zeit, als LOD1 erst jenseits ~80 m begann. Seit V18.390 gilt thresh01=20
+        // — ein Baum 25 m vor dem Spieler verlor seinen Schatten mitten im Sichtfeld
+        // (Shadow-Range 170 m). Jetzt: L0 UND L1 werfen, nur die Fernstufe L2/Impostor
+        // nie. Kein Doppel-Schatten im Band: Shadow-Maps sind Tiefen-Tests — zwei
+        // deckungsgleiche Werfer verdunkeln nicht doppelt.
+        return !/_lod2$/.test(String(name || ""));
     }
 
     // Die InstancedMesh-Gruppe für (Bauplan, Leaf) lazy erzeugen/holen.
@@ -64190,10 +64361,46 @@ class AnazhRealm {
         // Synthetisches Skelett-Hint NUR für Frame + Fallback-Silhouette (die echte Geometrie backt der
         // RTT); die EINE Impostor-Quelle `_ensureImpostorAtlas` baut Record + Texturen + reiht den Bake ein.
         const conifer = /fichte|tanne|kiefer|mammut/.test(preset);
+        // V18.464 (baum-D7-Heilung): die Fallback-Silhouette trug für JEDE Art
+        // dasselbe fixe Grün (Birke=Fichte=Weide). Jetzt: die Kronen-Farbe aus den
+        // ECHTEN Vertex-Farben des Assets mitteln (das oberste Drittel = Krone).
+        let laubHex = 0x4a8a3a;
+        try {
+            let best = null;
+            for (const lf of leaves) {
+                const g = lf.geom;
+                if (g && g.attributes && g.attributes.color && g.attributes.position) {
+                    if (!best || g.attributes.color.count > best.attributes.color.count) best = g;
+                }
+            }
+            if (best) {
+                const col = best.attributes.color;
+                const pos = best.attributes.position;
+                const yCut = totalH * 0.55;
+                let r = 0,
+                    gg = 0,
+                    b = 0,
+                    n = 0;
+                const step = Math.max(1, Math.floor(col.count / 256));
+                for (let i = 0; i < col.count; i += step) {
+                    if (pos.getY(i) < yCut) continue;
+                    r += col.getX(i);
+                    gg += col.getY(i);
+                    b += col.getZ(i);
+                    n++;
+                }
+                if (n > 8) {
+                    const cl = (v) => Math.max(0, Math.min(255, Math.round((v / n) * 255)));
+                    laubHex = (cl(r) << 16) | (cl(gg) << 8) | cl(b);
+                }
+            }
+        } catch (_e) {
+            /* Fallback-Farbe bleibt */
+        }
         const skelHint = {
             totalH,
             anchors: [{ x: maxR, y: totalH, z: 0 }],
-            foliageColor: 0x4a8a3a,
+            foliageColor: laubHex,
             grammar: { foliage: { kind: conifer ? "needleSpray" : "leaf" } },
         };
         const rec = this._ensureImpostorAtlas(key, skelHint);
@@ -64234,6 +64441,18 @@ class AnazhRealm {
         };
         if (laubMat && laubMat.tags) matOpts.tags = laubMat.tags;
         const mat = this._sharedFoliageMaterial(matOpts);
+        // V18.464 (baum-D3-Heilung, s. _buildImpostorLeaf): ohne TSL-Wiring ist das
+        // Achsen-Quad unsichtbar — LAUT + false statt stummer leerer Fernwald.
+        if (!(mat && mat.userData && mat.userData.impostorBillboard)) {
+            if (!this._impostorWiringWarned) {
+                this._impostorWiringWarned = true;
+                this.log(
+                    `Impostor-TSL-Wiring fehlgeschlagen (${(typeof window !== "undefined" && window.__impostorAtlasError) || "unbekannt"}) — Studio-Fernstufe nicht baubar.`,
+                    "WARN"
+                );
+            }
+            return false;
+        }
         rec._flat = {
             instanceable: true,
             reason: "foundry-impostor",
@@ -65064,13 +65283,13 @@ class AnazhRealm {
             // Boden-Schatten, der den zweiten Voll-Render nicht lohnt. Der `leaf.castShadow`-Override
             // (60842/60948) gewinnt gegen `_archGroupCastsShadow` (der aus dem Namen `_lodN` liest —
             // den die Foundry-Einträge NICHT im Typ tragen, ihr LOD lebt im leafKey).
-            // W5.4 (Paritäts-Vollendung) — DIESE Zeile IST die Schatten-Regel der DOPPEL-
-            // MITGLIEDSCHAFT: im L0/L1-Band ist der Eintrag in BEIDEN Stufen resident, aber nur
-            // die NAH-Stufe (lod 0) wirft Schatten — der Schatten-Pass ist UNGEMASKT (wie im
-            // Studio), zwei werfende Stufen wären eine sichtbare Doppel-Verdunklung im Band.
-            // Im L1/L2-Band werfen beide Mitglieder ohnehin keinen (die V18.265-Fern-Regel,
-            // byte-unverändert). Genau EIN Schatten-Träger je Baum, per Konstruktion.
-            const castsShadow = lod < 1;
+            // W5.4 → V18.464 (baum-D4-Heilung): „nur lod 0 wirft" liess seit der
+            // V18.390-Schwellen-Senkung (thresh01=20) jeden L1-Baum (20–40 m dn) mitten
+            // im Sichtfeld schattenlos — der Schatten-Pop an der L0-Kante. Jetzt werfen
+            // L0 UND L1; nur die Fernstufe (lod 2/Impostor) nie. Die alte Doppel-
+            // Verdunklungs-Sorge im Band greift nicht: Shadow-Maps sind Tiefen-Tests,
+            // zwei (nahezu) deckungsgleiche Werfer verdunkeln nicht doppelt.
+            const castsShadow = lod < 2;
             for (let p = 0; p < group.children.length; p++) {
                 const child = group.children[p];
                 if (!child.geometry || !child.material) continue;
@@ -81804,6 +82023,7 @@ class AnazhRealm {
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
+        this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
