@@ -9505,7 +9505,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.466.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.467.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9519,29 +9519,29 @@
         <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
-        <script src="phyto-core.js?v=18.466.0" defer></script>
+        <script src="phyto-core.js?v=18.467.0" defer></script>
         <!-- DIE EINE PIPE (V18.458): das Bake-Gesetzbuch der Pipe (Gattungs-Bäcker-
              Tisch BAKERS_BY_KIND) lädt auch auf dem Stamm — der Kalt-/Headless-Pfad
              bäckt Kreaturen main-thread durch DENSELBEN Bäcker wie der Worker
              (ein Gesetz, zwei Scheduler). THREE steht (Module vor defer). -->
-        <script src="foundry-core.js?v=18.466.0" defer></script>
+        <script src="foundry-core.js?v=18.467.0" defer></script>
         <!-- ALTLASTEN-NULL HERZ: die Anatomie-Gesetzbücher (MESHFREI, reine
              Daten+Mathe) laden VOR dem Stamm — er delegiert Skelett/Landmarken
              an die EINE Quelle (dieselben Kerne trägt der Foundry-Worker). -->
-        <script src="koerper-core.js?v=18.466.0" defer></script>
-        <script src="tetrapoda-core.js?v=18.466.0" defer></script>
+        <script src="koerper-core.js?v=18.467.0" defer></script>
+        <script src="tetrapoda-core.js?v=18.467.0" defer></script>
         <!-- V18.464 — porta-core main-seitig: der Stamm liest das Tor-GESETZ synchron
              (Kollisions-Hülle deterministisch am Spawn [Lockstep] + Membran-Zahlen);
              namespaced IIFE (__portaCore), THREE-frei auf Top-Level. -->
-        <script src="porta-core.js?v=18.466.0" defer></script>
+        <script src="porta-core.js?v=18.467.0" defer></script>
         <!-- V18.466 — vehicle-core main-seitig: das präge-Verb liest die KULTUREN-
              Tabelle (Charakter-Achse der Garage) synchron; namespaced IIFE
              (__vehicleCore), dasselbe porta-Muster. -->
-        <script src="vehicle-core.js?v=18.466.0" defer></script>
+        <script src="vehicle-core.js?v=18.467.0" defer></script>
         <!-- ULTRAGUSS U6d: das Klingen-Gesetzbuch (Top-Level THREE-frei, reine
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
-        <script src="schmiede-core.js?v=18.466.0" defer></script>
-        <script src="anazhRealm.js?v=18.466.0" defer></script>
+        <script src="schmiede-core.js?v=18.467.0" defer></script>
+        <script src="anazhRealm.js?v=18.467.0" defer></script>
     </body>
 </html>

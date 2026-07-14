@@ -378,6 +378,27 @@ Viel Glück. Bau die Welt weiter. Die Vision wartet auf das letzte Kapitel.
 
 ## Versions-Chronik — die volle Wellen-Historie (jüngste oben)
 
+### V18.467 — DIE RINDEN-VEREINIGUNG (Schöpfer „vollende es, die offenen dinge klar, schliesse es ab")
+
+U2b geschlossen: das Rinden-Gesetz — vn2/fbm2 (deterministisches Rinden-Rauschen,
+Math.imul-Hash), barkProfile (die Arten-Tabelle: oak/sequoia/conifer/willow/birch/smooth
+mit Furchen·Platten·Lentizellen·papery) und buildTubeGesetz (die Tube-Form: Furchen-Profil
+× Sonnen-Lerp × Birken-Lentizellen) — wohnt jetzt VERBATIM im Pflanzen-Gesetzbuch
+(phyto-core, rein additiv). foundry-core DELEGIERT: das Geometrie-Vokabular des Wirts
+(perp/vcross/vlen/vnorm/vsub/clamp/lerp) wird injiziert, `__lod` reist als Parameter
+statt Modul-Zustand; fehlt phyto-core, wirft die Delegation LAUT (phyto lädt in jedem
+Regime vor foundry — Manifest-Ordnung + index.html). Byte-Beweis in drei Wänden:
+diag:foundry-parity (720er-Korpus iframe↔Worker byte-identisch) · gate:asset-contract
+(cv:1-Goldens byte-genau) · gate:phyto-core (Main+Worker EINE Quelle). Die Zwillings-Wand
+(gate:altlasten) trägt den 18. Fingerabdruck („ridges: 14, depth: 0.52" nur im Gesetzbuch,
+verboten in foundry-core + Stamm). — Die typeof-VOLL-WANDERUNG wurde EHRLICH geurteilt
+statt fake-geschlossen: 891 namens-verankerte Existenz-Proben in playtest.cjs gegen 22
+Katalog-Anker; eine mechanische Massen-Migration machte den Katalog zum Namens-Spiegel
+(dieselbe Struktur-Steuer, kein Konsum-Gewinn) und SCHWÄCHTE die Beweise — die Wanderung
+verlangt Konsum-Urteil je Probe und bleibt der bewusst nur-sinkende Ratchet (gate:apparat,
+FROZEN_TYPEOF klemmt nach unten nach). Merge-Gate: check GRÜN (54 Verfassungs-Gesetze) ·
+playtest voll GRÜN (Alle Invarianten OK).
+
 ### V18.466 — DIE CHARAKTER-ACHSEN (Schöpfer „du siehst die studios, schau sie an, du wirst sehen was noch fehlt")
 
 Die Studio-AUGEN-Runde (swiftshader-Screenshots aller 8 Studios — schauen schlägt greppen)

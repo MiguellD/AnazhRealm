@@ -6,7 +6,24 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.466 — DIE CHARAKTER-ACHSEN: die Studios sprechen in der Welt)
+## Stand (V18.467 — DIE RINDEN-VEREINIGUNG: das Rinden-Gesetz wohnt im Pflanzen-Gesetzbuch)
+
+**U2b GESCHLOSSEN (V18.467):** die EINE Rinden-Wahrheit — Rinden-Rauschen (vn2/fbm2),
+das barkProfile-ARTEN-Gesetz (oak·sequoia·conifer·willow·birch·smooth: Furchen · Platten ·
+Lentizellen · papery) und die Tube-FORM (`buildTubeGesetz`) — wanderte VERBATIM nach
+phyto-core (rein additiv); foundry-core DELEGIERT (Geometrie-Vokabular wird injiziert
+[vok], `__lod` reist als Parameter statt Modul-Zustand; fehlt phyto-core, wirft es LAUT).
+Byte-Beweis: diag:foundry-parity 720er-Korpus byte-identisch · gate:asset-contract
+Goldens byte-genau · gate:phyto-core Main+Worker EINE Quelle. Die Zwillings-Wand trägt
+den 18. Fingerabdruck (gate:altlasten). **typeof-Voll-Wanderung EHRLICH GEURTEILT:**
+891 Proben in playtest.cjs bei 22 Katalog-Ankern — eine blinde Massen-Migration würde
+die Beweise SCHWÄCHEN (Katalog als Namens-Spiegel = gleiche Struktur-Steuer, kein
+Konsum-Gewinn); die Wanderung verlangt Konsum-Urteil je Probe und bleibt der bewusst
+nur-sinkende Ratchet (`gate:apparat`) — kein Jetzt-Schluss, keine halbe Sache.
+OFFEN bleibt allein die EINE Schöpfer-Browser-Runde (W8 · look-golden --mint ·
+perf.json · DoD 5 · E-C/E-E/E-F — `docs/abnahme-drehbuch.md` liegt bereit).
+
+### Davor (V18.466 — DIE CHARAKTER-ACHSEN: die Studios sprechen in der Welt)
 
 **CHARAKTER-ACHSEN (V18.466, Schöpfer „schau die studios an, du wirst sehen was fehlt"):**
 die Studios tragen ORTHOGONALE Design-Sprachen, die die Welt nie wählen konnte — jetzt

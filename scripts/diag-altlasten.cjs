@@ -179,6 +179,12 @@ const ZWILLINGE = [
         fiel: "U2 — der Phänotyp-Zwilling (foundry-core delegiert an treePhenotype)",
     },
     {
+        fingerprint: "ridges: 14, depth: 0.52",
+        gesetzbuch: "phyto-core.js",
+        verboten: ["foundry-core.js", "anazhRealm.js"],
+        fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
+    },
+    {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
         gesetzbuch: "tetrapoda-core.js",
         verboten: ["worlds/tetrapoda/tetrapoda.js", "anazhRealm.js"],
