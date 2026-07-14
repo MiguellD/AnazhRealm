@@ -124,6 +124,7 @@ function check(name, ok, detail) {
         res.probeGefunden = !!probe;
         if (!probe) return res;
         const lodVorher = probe.lod;
+        const bpVorher = probe.bpName;
         const slotsVorher = JSON.stringify(probe.slots);
         // ── L: der Spieler springt — nahe Zelle: WEIT weg (Stufe steigt);
         //       ferne Zelle: NAH heran (Stufe sinkt, Ziel ~innerM+8) ──
@@ -143,6 +144,10 @@ function check(name, ok, detail) {
             lodVorher,
             lodNachher: probe.lod,
             gewandert: wandel === 1 && (naeher ? probe.lod < lodVorher : probe.lod > lodVorher),
+            // Stufen-GEKLEMMTE Arten (bpName über die Stufen identisch) tauschen
+            // BEWUSST keine Slots (Review-Fix B2 — kein Churn); nur ein echter
+            // Gestalt-Wechsel (bpName anders) muss die Slots re-allozieren.
+            bpGewechselt: probe.bpName !== bpVorher,
             slotsGetauscht: JSON.stringify(probe.slots) !== slotsVorher,
             slotsLeben: Array.isArray(probe.slots) && probe.slots.length > 0,
         };
@@ -167,7 +172,11 @@ function check(name, ok, detail) {
             `L: die Stufe WANDERT nach dem Weg-Sprung (${out.l.lodVorher} → ${out.l.lodNachher})`,
             out.l.gewandert === true
         );
-        check("L: die Slots wurden re-alloziert (alte frei, neue leben)", out.l.slotsGetauscht && out.l.slotsLeben);
+        check(
+            "L: Slots re-alloziert bei Gestalt-Wechsel (bzw. bewusst behalten bei geklemmter Art)",
+            out.l.slotsLeben && (out.l.bpGewechselt ? out.l.slotsGetauscht : !out.l.slotsGetauscht),
+            `bpGewechselt=${out.l.bpGewechselt} getauscht=${out.l.slotsGetauscht}`
+        );
     } else check("L: LOD-Block erreicht", false);
     if (out.h)
         check(

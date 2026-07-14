@@ -31041,8 +31041,14 @@ class AnazhRealm {
         const schulterY0 = mu.springY + rise * 0.3;
         const pseudo = [
             // Pfosten L/R — von der Öffnungskante (±rimAx) nach außen, volle Höhe.
-            { position: { x: -(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 }, size: { x: pfostenB, y: mu.apexY, z: tiefe } },
-            { position: { x: +(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 }, size: { x: pfostenB, y: mu.apexY, z: tiefe } },
+            {
+                position: { x: -(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
+                size: { x: pfostenB, y: mu.apexY, z: tiefe },
+            },
+            {
+                position: { x: +(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
+                size: { x: pfostenB, y: mu.apexY, z: tiefe },
+            },
             // Bogen-Schultern — die Haunches über der Kämpferlinie (Mitte frei).
             {
                 position: { x: -(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
@@ -46992,15 +46998,20 @@ class AnazhRealm {
             const pierce = TSL.sin(t.mul(F(MG.pierce[0])))
                 .mul(TSL.exp(rr.mul(rr).negate().mul(F(MG.pierce[1]))))
                 .mul(F(MG.pierce[2]));
-            const micro = fbmN(c.mul(F(MG.micro[0])).sub(TSL.vec2(t.mul(F(MG.micro[1])), t.mul(F(MG.micro[1])))), 3).mul(
-                F(MG.micro[2])
-            );
+            const micro = fbmN(
+                c.mul(F(MG.micro[0])).sub(TSL.vec2(t.mul(F(MG.micro[1])), t.mul(F(MG.micro[1])))),
+                3
+            ).mul(F(MG.micro[2]));
             const h = TSL.clamp(wave.mul(F(MG.hGain[0])).add(pierce).add(micro).mul(F(MG.hGain[1])), F(-1.0), F(1.0));
             return h.mul(u.waveDepth).mul(F(MG.waveDepthK[0] + MG.waveDepthK[1] * MU.wave));
         };
         const xy = TSL.positionGeometry.xy;
         const d0 = Hfull(xy);
         const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
+        // V18.464-Review (f): die per-Material geminte Profil-Textur folgt dem
+        // Material-dispose (material.dispose() disposed in three KEINE Texturen —
+        // der GC-Sweep hätte sonst GPU-Kopien nur der Browser-GC überlassen).
+        mat.addEventListener("dispose", () => topTex.dispose());
         mat.positionNode = TSL.vec3(xy.x, xy.y, d0);
         // ── Fragment: Beschnitt (Alpha-Fold) + Raymarch (12 Schritte entfaltet) ──
         const uu = TSL.clamp(xy.x.sub(F(MU.left)).div(F(MU.spanW)), F(0.0), F(1.0));
@@ -47036,7 +47047,12 @@ class AnazhRealm {
             let tc = F(0.0);
             if (win[0] > 0.001) {
                 const K = MM.wurm;
-                const s0 = TSL.sin(lp.mul(F(K[0] * frq)).add(swirl.mul(F(K[1]))).add(dep.mul(F(MU.twist * K[2]))))
+                const s0 = TSL.sin(
+                    lp
+                        .mul(F(K[0] * frq))
+                        .add(swirl.mul(F(K[1])))
+                        .add(dep.mul(F(MU.twist * K[2])))
+                )
                     .mul(0.5)
                     .add(0.5);
                 v = v.add(s0.mul(s0).mul(F(win[0])));
@@ -47046,8 +47062,12 @@ class AnazhRealm {
                 const K = MM.facet;
                 const KK = K[0] + MU.fractal * K[1];
                 const fa = TSL.abs(TSL.mod(swirl, F(6.28318 / KK)).sub(F(3.14159 / KK)));
-                const cc = TSL.cos(fa.mul(F(KK))).mul(0.5).add(0.5);
-                const s1 = TSL.sin(lp.mul(F(K[2] * frq))).mul(0.5).add(0.5);
+                const cc = TSL.cos(fa.mul(F(KK)))
+                    .mul(0.5)
+                    .add(0.5);
+                const s1 = TSL.sin(lp.mul(F(K[2] * frq)))
+                    .mul(0.5)
+                    .add(0.5);
                 v = v.add(cc.mul(cc).mul(cc).mul(s1).mul(F(win[1])));
                 tc = tc.add(TSL.fract(fa.mul(F(K[3])).add(lp.mul(F(K[4])))).mul(F(win[1])));
             }
@@ -47061,12 +47081,22 @@ class AnazhRealm {
                 const pf = F(1.0).sub(TSL.abs(pf0.mul(2.0).sub(1.0)));
                 const plasma = TSL.pow(TSL.clamp(pf, F(0.0), F(1.0)), F(K[7]));
                 v = v.add(plasma.mul(F(K[8] * win[2])));
-                tc = tc.add(TSL.fract(pf.mul(F(K[9])).add(lp.mul(F(K[10]))).add(dep.mul(F(K[11])))).mul(F(win[2])));
+                tc = tc.add(
+                    TSL.fract(
+                        pf
+                            .mul(F(K[9]))
+                            .add(lp.mul(F(K[10])))
+                            .add(dep.mul(F(K[11])))
+                    ).mul(F(win[2]))
+                );
             }
             if (win[3] > 0.001) {
                 const K = MM.nebel;
                 const n1 = fbmN(
-                    TSL.vec2(ang.mul(F(K[0] * frq)).add(TSL.sin(lp).mul(F(K[1]))), dep.mul(F(K[2])).add(sp.mul(F(K[3])))),
+                    TSL.vec2(
+                        ang.mul(F(K[0] * frq)).add(TSL.sin(lp).mul(F(K[1]))),
+                        dep.mul(F(K[2])).add(sp.mul(F(K[3])))
+                    ),
                     4
                 );
                 const n2 = fbmN(
@@ -47078,12 +47108,23 @@ class AnazhRealm {
                 tc = tc.add(TSL.fract(n1.mul(F(K[11])).add(dep.mul(F(K[12])))).mul(F(win[3])));
             }
             v = TSL.max(F(0.0), v.sub(F(MM.vCut[0]))).mul(F(MM.vCut[1]));
-            const g = v.div(F(1.0).add(r.mul(r).mul(F(MM.gDen[0]))).add(dep.mul(F(MM.gDen[1]))));
-            inter = inter.add(pal(tc).mul(g).mul(F(Math.pow(MM.att, i))));
+            const g = v.div(
+                F(1.0)
+                    .add(r.mul(r).mul(F(MM.gDen[0])))
+                    .add(dep.mul(F(MM.gDen[1])))
+            );
+            inter = inter.add(
+                pal(tc)
+                    .mul(g)
+                    .mul(F(Math.pow(MM.att, i)))
+            );
         }
         const N = nrm;
         const Rf = TSL.reflect(Vd.negate(), N);
-        const st = TSL.step(F(ML.star[0]), hash2(TSL.floor(Rf.xy.mul(F(ML.star[1])).add(TSL.vec2(Rf.z.mul(F(ML.star[2])), Rf.z.mul(F(ML.star[2])))))));
+        const st = TSL.step(
+            F(ML.star[0]),
+            hash2(TSL.floor(Rf.xy.mul(F(ML.star[1])).add(TSL.vec2(Rf.z.mul(F(ML.star[2])), Rf.z.mul(F(ML.star[2]))))))
+        );
         const sky = pal(Rf.y.mul(F(ML.skyK[0])).add(F(ML.skyK[1])))
             .mul(F(ML.skyK[2]))
             .add(TSL.vec3(st, st, st).mul(F(ML.star[3])));
@@ -47095,11 +47136,19 @@ class AnazhRealm {
         const dc = TSL.length(vLocal.sub(center3).xy);
         const core = TSL.exp(dc.mul(dc).negate().mul(F(ML.core[0])))
             .mul(F(ML.core[1] + MU.open * ML.core[2]))
-            .mul(TSL.sin(u.time.mul(F(ML.core[5]))).mul(F(ML.core[4])).add(F(ML.core[3])));
+            .mul(
+                TSL.sin(u.time.mul(F(ML.core[5])))
+                    .mul(F(ML.core[4]))
+                    .add(F(ML.core[3]))
+            );
         let col = inter
             .mul(F(ML.mixK[0]))
             .add(sky.mul(fres).mul(F(MU.reflect * ML.mixK[1])))
-            .add(TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2]).mul(spec).mul(F(ML.specK * MU.reflect)))
+            .add(
+                TSL.vec3(ML.specCol[0], ML.specCol[1], ML.specCol[2])
+                    .mul(spec)
+                    .mul(F(ML.specK * MU.reflect))
+            )
             .add(pal(F(ML.corePal)).mul(core).mul(F(ML.mixK[3])));
         col = col.mul(
             u.act
@@ -47110,11 +47159,7 @@ class AnazhRealm {
         );
         // ACES (Shell-verbatim) — die Welt-Ausgabe-Transform bleibt Leser-Sache.
         const aces = (x) =>
-            TSL.clamp(
-                x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)),
-                F(0.0),
-                F(1.0)
-            );
+            TSL.clamp(x.mul(x.mul(2.51).add(0.03)).div(x.mul(x.mul(2.43).add(0.59)).add(0.14)), F(0.0), F(1.0));
         mat.colorNode = TSL.vec4(aces(col), 1.0);
         mat.opacityNode = keep;
         mat.alphaTest = 0.5;
@@ -47201,7 +47246,10 @@ class AnazhRealm {
             const lz = (dx * s + dz * c) / scale;
             const ly = (py - (entry.position.y - 0.5)) / scale;
             const inApertur =
-                Math.abs(lx) < mu.rimAx * 0.92 && ly > mu.baseY - 0.2 && ly < mu.apexY + 0.4 && Math.abs(lz) < mu.zFace + 1.2;
+                Math.abs(lx) < mu.rimAx * 0.92 &&
+                ly > mu.baseY - 0.2 &&
+                ly < mu.apexY + 0.4 &&
+                Math.abs(lz) < mu.zFace + 1.2;
             // Re-Arm beim VERLASSEN der Apertur-Zone: ein Durchgang verbraucht die
             // Waffnung (kein Doppelfeuer in einem Pass), wer die Zone verlässt und
             // erneut kreuzt (egal welche Richtung), betritt wieder.
@@ -47236,7 +47284,9 @@ class AnazhRealm {
         } catch (err) {
             this.log(`Welt-Membran-Bau fehlgeschlagen (${tor.gestalt}): ${err && err.message}`, "WARN");
             const pc = tor.mu.pal && tor.mu.pal.core;
-            const col = pc ? new THREE.Color(Math.min(1, pc[0]), Math.min(1, pc[1]), Math.min(1, pc[2])) : new THREE.Color(0.4, 0.6, 1.0);
+            const col = pc
+                ? new THREE.Color(Math.min(1, pc[0]), Math.min(1, pc[1]), Math.min(1, pc[2]))
+                : new THREE.Color(0.4, 0.6, 1.0);
             const flach = new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide });
             mesh = new THREE.Mesh(this._membranGeometryFor(tor), flach);
             u = {
@@ -50336,7 +50386,6 @@ class AnazhRealm {
         return emitted;
     }
 
-
     // V18.464 — DIE EINE ZELLEN-MATERIALISIERUNG (extrahiert byte-treu aus dem
     // Emit-Schwanz von _scatterRegionWork; gate:scatter-ab bleibt die Byte-Wand):
     // baut fuer EINE Streu-Zelle die Instanz-Slots (Foundry-Flat ODER Grammatik,
@@ -50346,151 +50395,169 @@ class AnazhRealm {
     // (_tickScatterLod — die Heilung der eingefrorenen Bau-Zeit-Stufen).
     // ctxNoDefer: der LOD-Tick markiert die Region NICHT als deferriert
     // (er laesst die alte Stufe stehen und versucht es naechste Runde).
-    _scatterMaterializeCell(region, layer, layerSalt, cellX, cellZ, cellM, tf, dist, surfY, species, variantIndex, visH, lod, regX, regZ, ctxNoDefer) {
-                let bpName = null,
-                    foundryFlat = null;
-                // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss WEG, nicht überlagert werden;
-                // wir drehen uns ums Ziel"). Lebt das Studio (Foundry an) + kennt es die Art, ist die Foundry
-                // die EINZIGE Quelle: das ECHTE Studio-Asset (volle Stufe) ODER — solange es lädt — das STUDIO-
-                // BILLBOARD (LOD2, beim Boot vorgewärmt). Ist BEIDES noch nicht bereit (schmaler Boot-Spalt),
-                // wird der Fern-Baum DEFERRIERT (übersprungen) — NIE die Grammatik-Geometrie als Lückenbüßer.
-                // Der nächste Scatter-Durchgang (Bewegung/Thin, nach dem Impostor-Prefetch) platziert das Studio-
-                // Asset. So gibt es keinen Nachbau mehr, den man „drunter" findet, solange das Studio lebt.
-                // V3 — DER SCATTER TRÄGT DAS STUDIO-KLEID AUCH FÜR FELS/KIESEL (Schöpfer „hör auf zu weichen,
-                // wir wollen die aus dem Studio"): nicht nur Bäume — JEDE foundry-gemappte Streu-Art zieht ihr
-                // ECHTES Studio-Asset (Fels→findling/basalt/sediment/zacken/geroell · Kiesel→geroell · Blume ·
-                // Strauch). Die Impostor-Fernstufe (Krone→billiges Billboard) gilt NUR Bäumen; Fels/Kristall/
-                // Blume bleiben L2-Geometrie (die Foundry backt für sie keinen Impostor). Lädt das Asset noch →
-                // DEFERRIEREN (kein Grammatik-Nachbau); nur eine WIRKLICH ungemappte Art (kein Foundry-Zwilling)
-                // fällt auf die Grammatik-Deko, die DORT die einzige Quelle ist. Foundry-aus (headless) → alles
-                // Grammatik (gate-treu). So ist der Scatter nah=fern=Studio, kein Zweit-System mehr.
-                const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
-                if (foundryPreset) {
-                    const preset = foundryPreset;
-                    const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
-                    let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
-                    if (
-                        !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
-                        this._foundryPresetIsTree(preset)
-                    ) {
-                        // Nur Bäume haben ein gebackenes Fern-Billboard (LOD2); Fels/Blume nicht.
-                        const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
-                        if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
-                    }
-                    if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
-                        foundryFlat = ff;
-                        bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
-                    } else {
-                        // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
-                        // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
-                        if (!ctxNoDefer) region._deferredFoundry = true;
-                        return null;
-                    }
+    _scatterMaterializeCell(
+        region,
+        layer,
+        layerSalt,
+        cellX,
+        cellZ,
+        cellM,
+        tf,
+        dist,
+        surfY,
+        species,
+        variantIndex,
+        visH,
+        lod,
+        regX,
+        regZ,
+        ctxNoDefer
+    ) {
+        let bpName = null,
+            foundryFlat = null;
+        // DAS NEUE KLEID — EINE Baum-Quelle (Schöpfer „der Nachbau muss WEG, nicht überlagert werden;
+        // wir drehen uns ums Ziel"). Lebt das Studio (Foundry an) + kennt es die Art, ist die Foundry
+        // die EINZIGE Quelle: das ECHTE Studio-Asset (volle Stufe) ODER — solange es lädt — das STUDIO-
+        // BILLBOARD (LOD2, beim Boot vorgewärmt). Ist BEIDES noch nicht bereit (schmaler Boot-Spalt),
+        // wird der Fern-Baum DEFERRIERT (übersprungen) — NIE die Grammatik-Geometrie als Lückenbüßer.
+        // Der nächste Scatter-Durchgang (Bewegung/Thin, nach dem Impostor-Prefetch) platziert das Studio-
+        // Asset. So gibt es keinen Nachbau mehr, den man „drunter" findet, solange das Studio lebt.
+        // V3 — DER SCATTER TRÄGT DAS STUDIO-KLEID AUCH FÜR FELS/KIESEL (Schöpfer „hör auf zu weichen,
+        // wir wollen die aus dem Studio"): nicht nur Bäume — JEDE foundry-gemappte Streu-Art zieht ihr
+        // ECHTES Studio-Asset (Fels→findling/basalt/sediment/zacken/geroell · Kiesel→geroell · Blume ·
+        // Strauch). Die Impostor-Fernstufe (Krone→billiges Billboard) gilt NUR Bäumen; Fels/Kristall/
+        // Blume bleiben L2-Geometrie (die Foundry backt für sie keinen Impostor). Lädt das Asset noch →
+        // DEFERRIEREN (kein Grammatik-Nachbau); nur eine WIRKLICH ungemappte Art (kein Foundry-Zwilling)
+        // fällt auf die Grammatik-Deko, die DORT die einzige Quelle ist. Foundry-aus (headless) → alles
+        // Grammatik (gate-treu). So ist der Scatter nah=fern=Studio, kein Zweit-System mehr.
+        const foundryPreset = this._foundryEnabled() ? this._foundryPresetFor(species) : null;
+        if (foundryPreset) {
+            const preset = foundryPreset;
+            const fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+            let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
+            if (
+                !(ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) &&
+                this._foundryPresetIsTree(preset)
+            ) {
+                // Nur Bäume haben ein gebackenes Fern-Billboard (LOD2); Fels/Blume nicht.
+                // V18.464-Review (B1): der LOD-Tick (ctxNoDefer) nimmt den Billboard-
+                // FALLBACK für einen NAH-Wunsch (lod<2) NICHT an — die alte Stufe
+                // bleibt stehen, der Tick retryt, bis die echte Stufe gecacht ist
+                // (sonst fror die Zelle als Nah-Billboard ein: der vLodD-Dither
+                // maskiert es nah aus = Loch statt Baum).
+                if (ctxNoDefer && lod < 2) return null;
+                const imp = this._foundryFlattenFor({ seed: fseed }, preset, 2);
+                if (imp && imp.instanceable && Array.isArray(imp.leaves) && imp.leaves.length) ff = imp;
+            }
+            if (ff && ff.instanceable && Array.isArray(ff.leaves) && ff.leaves.length) {
+                foundryFlat = ff;
+                bpName = "fscatter:" + preset + ":" + this._foundryVariantFor(fseed) + ":" + ff.lod;
+            } else {
+                // Studio-Asset noch nicht da → DEFERRIEREN (KEIN Grammatik-Nachbau). Die Region merkt
+                // sich das → `_tickScatterFoundryRefill` streamt sie neu, sobald das Studio liefert.
+                if (!ctxNoDefer) region._deferredFoundry = true;
+                return null;
+            }
+        }
+        if (!bpName) {
+            // Nur eine UNGEMAPPTE Art (foundryPreset null) erreicht das — ihre Grammatik ist die EINZIGE
+            // Quelle (kein Nachbau). Ein foundry-gemappter Baum kann hier NICHT landen (oben deferriert);
+            // die Sicherheits-Wand bleibt trotzdem stehen: bei lebender Foundry rendert KEIN Baum Grammatik
+            // (gate:no-second-treebuilder beweist es). Foundry-aus → Grammatik trägt alles (gate-treu).
+            if (layer.kind === "tree" && this._foundryEnabled()) return null;
+            const keys = this._buildVariantLODs(species, variantIndex);
+            if (!keys) return null;
+            bpName = keys[lod] || keys[0];
+        }
+        // PARITÄT (Schöpfer „billiger Abklatsch" — die ROTEN/violetten Kronen, im Paritäts-Bild
+        // gemessen): drei UNABHÄNGIGE 0..1-Würfe hießen {h,s,v}, wurden aber als ROHES RGB
+        // konsumiert (`tintColor.setRGB(tint.h, tint.s, tint.v)`, _scatterInstanceAdd) → jede
+        // Instanz bekam einen zufälligen Farbwurf, der die Studio-Blattfarbe MULTIPLIKATIV
+        // zerstörte (h=0.9,s=0.2 → rote Krone; Mittel 0.5 → 50 % zu dunkel). Die Studio-Vielfalt
+        // lebt schon in den 16 gewachsenen Varianten (offsetHSL beim Bau) — der Instanz-Tint ist
+        // NEUTRAL-NAH: ±8 % Luminanz + ein Hauch warm/kühl, nie ein Farbwurf. Die Felder heißen
+        // weiter h/s/v (der Konsument liest sie als r/g/b — EINE Naht, hier korrekt befüllt).
+        const _tl = 0.92 + this._pcgFloat(cellX ^ layerSalt, cellZ, 5) * 0.16; // Luminanz 0.92..1.08
+        const _tw = (this._pcgFloat(cellX ^ layerSalt, cellZ, 6) - 0.5) * 0.06; // warm/kühl ±3 %
+        const tint = {
+            h: Math.min(1.08, _tl + _tw),
+            s: _tl,
+            v: Math.min(1.08, Math.max(0, _tl - _tw)),
+        };
+        const slots = this._scatterInstanceAdd(
+            bpName,
+            tf.x,
+            Number.isFinite(surfY) ? surfY : 0,
+            tf.z,
+            tf.yaw,
+            tf.scale,
+            tint,
+            // V18.300 — der REGION-Key (regX,regZ) macht die Streu-Gruppe lokal +
+            // frustum-cullbar. V18.303 — das Per-Region-Keying half beim Drehen, aber
+            // es sprengte die Draw-Calls (426→1693, allein ~1000 winzige LOD2-Fern-
+            // Gruppen mit ~2 Instanzen, GEMESSEN) → LOD1/2 wurden GLOBAL.
+            // V18.390 (Eins W2 — der Wald-Kollaps, diff-A1 §5D): die VORLAGEN-WEISHEIT
+            // „Bäume GLOBAL instanziert, NUR der Boden gekachelt" — die tree-Schicht
+            // geht auf ALLEN LODs global (wenige große Batches statt N Regionen ×
+            // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
+            // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
+            // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
+            this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree" ? regX + "," + regZ : null,
+            foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
+        );
+        if (!slots) return null;
+        // AUSLÖSCHUNGS-WELLE (Feld B, W8-Schuld „Scatter-Fern-Bäume ohne Band-
+        // Residency"): der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN
+        // Stufen — DIESELBE Partner-Quelle wie die Architektur (`_lodBandPartnerFor`,
+        // kein zweites Band), die Partner-Slots reisen im selben cell.slots-Satz
+        // (Region-Dispose räumt beide; der Dither-Shader blendet per vLodD-Rampe).
+        if (
+            foundryFlat &&
+            this.state.foundryCrossfade === true &&
+            foundryPreset &&
+            this._foundryPresetIsTree(foundryPreset)
+        ) {
+            const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
+            const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
+            // derselbe deterministische Varianten-Seed wie der Primär-Flat (Formel-Zwilling)
+            const _fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
+            if (_partner != null && _partner !== _curLod) {
+                const pf = this._foundryFlattenFor({ seed: _fseed }, foundryPreset, _partner);
+                if (pf && pf.instanceable && Array.isArray(pf.leaves) && pf.leaves.length && pf.lod !== _curLod) {
+                    const pSlots = this._scatterInstanceAdd(
+                        "fscatter:" + foundryPreset + ":" + this._foundryVariantFor(_fseed) + ":" + pf.lod,
+                        tf.x,
+                        Number.isFinite(surfY) ? surfY : 0,
+                        tf.z,
+                        tf.yaw,
+                        tf.scale,
+                        tint,
+                        null, // Bäume sind GLOBAL instanziert (V18.390-Weisheit)
+                        pf
+                    );
+                    if (pSlots) for (const ps of pSlots) slots.push(ps);
                 }
-                if (!bpName) {
-                    // Nur eine UNGEMAPPTE Art (foundryPreset null) erreicht das — ihre Grammatik ist die EINZIGE
-                    // Quelle (kein Nachbau). Ein foundry-gemappter Baum kann hier NICHT landen (oben deferriert);
-                    // die Sicherheits-Wand bleibt trotzdem stehen: bei lebender Foundry rendert KEIN Baum Grammatik
-                    // (gate:no-second-treebuilder beweist es). Foundry-aus → Grammatik trägt alles (gate-treu).
-                    if (layer.kind === "tree" && this._foundryEnabled()) return null;
-                    const keys = this._buildVariantLODs(species, variantIndex);
-                    if (!keys) return null;
-                    bpName = keys[lod] || keys[0];
-                }
-                // PARITÄT (Schöpfer „billiger Abklatsch" — die ROTEN/violetten Kronen, im Paritäts-Bild
-                // gemessen): drei UNABHÄNGIGE 0..1-Würfe hießen {h,s,v}, wurden aber als ROHES RGB
-                // konsumiert (`tintColor.setRGB(tint.h, tint.s, tint.v)`, _scatterInstanceAdd) → jede
-                // Instanz bekam einen zufälligen Farbwurf, der die Studio-Blattfarbe MULTIPLIKATIV
-                // zerstörte (h=0.9,s=0.2 → rote Krone; Mittel 0.5 → 50 % zu dunkel). Die Studio-Vielfalt
-                // lebt schon in den 16 gewachsenen Varianten (offsetHSL beim Bau) — der Instanz-Tint ist
-                // NEUTRAL-NAH: ±8 % Luminanz + ein Hauch warm/kühl, nie ein Farbwurf. Die Felder heißen
-                // weiter h/s/v (der Konsument liest sie als r/g/b — EINE Naht, hier korrekt befüllt).
-                const _tl = 0.92 + this._pcgFloat(cellX ^ layerSalt, cellZ, 5) * 0.16; // Luminanz 0.92..1.08
-                const _tw = (this._pcgFloat(cellX ^ layerSalt, cellZ, 6) - 0.5) * 0.06; // warm/kühl ±3 %
-                const tint = {
-                    h: Math.min(1.08, _tl + _tw),
-                    s: _tl,
-                    v: Math.min(1.08, Math.max(0, _tl - _tw)),
-                };
-                const slots = this._scatterInstanceAdd(
-                    bpName,
-                    tf.x,
-                    Number.isFinite(surfY) ? surfY : 0,
-                    tf.z,
-                    tf.yaw,
-                    tf.scale,
-                    tint,
-                    // V18.300 — der REGION-Key (regX,regZ) macht die Streu-Gruppe lokal +
-                    // frustum-cullbar. V18.303 — das Per-Region-Keying half beim Drehen, aber
-                    // es sprengte die Draw-Calls (426→1693, allein ~1000 winzige LOD2-Fern-
-                    // Gruppen mit ~2 Instanzen, GEMESSEN) → LOD1/2 wurden GLOBAL.
-                    // V18.390 (Eins W2 — der Wald-Kollaps, diff-A1 §5D): die VORLAGEN-WEISHEIT
-                    // „Bäume GLOBAL instanziert, NUR der Boden gekachelt" — die tree-Schicht
-                    // geht auf ALLEN LODs global (wenige große Batches statt N Regionen ×
-                    // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
-                    // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
-                    // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
-                    this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree"
-                        ? regX + "," + regZ
-                        : null,
-                    foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
-                );
-                if (!slots) return null;
-                // AUSLÖSCHUNGS-WELLE (Feld B, W8-Schuld „Scatter-Fern-Bäume ohne Band-
-                // Residency"): der Foundry-Baum an einer Stufen-Kante wohnt in BEIDEN
-                // Stufen — DIESELBE Partner-Quelle wie die Architektur (`_lodBandPartnerFor`,
-                // kein zweites Band), die Partner-Slots reisen im selben cell.slots-Satz
-                // (Region-Dispose räumt beide; der Dither-Shader blendet per vLodD-Rampe).
-                if (
-                    foundryFlat &&
-                    this.state.foundryCrossfade === true &&
-                    foundryPreset &&
-                    this._foundryPresetIsTree(foundryPreset)
-                ) {
-                    const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
-                    const _partner = this._lodBandPartnerFor(dist, visH, _curLod);
-                    // derselbe deterministische Varianten-Seed wie der Primär-Flat (Formel-Zwilling)
-                    const _fseed = ((cellX * 73856093) ^ (cellZ * 19349663) ^ (variantIndex + 1)) >>> 0;
-                    if (_partner != null && _partner !== _curLod) {
-                        const pf = this._foundryFlattenFor({ seed: _fseed }, foundryPreset, _partner);
-                        if (
-                            pf &&
-                            pf.instanceable &&
-                            Array.isArray(pf.leaves) &&
-                            pf.leaves.length &&
-                            pf.lod !== _curLod
-                        ) {
-                            const pSlots = this._scatterInstanceAdd(
-                                "fscatter:" + foundryPreset + ":" + this._foundryVariantFor(_fseed) + ":" + pf.lod,
-                                tf.x,
-                                Number.isFinite(surfY) ? surfY : 0,
-                                tf.z,
-                                tf.yaw,
-                                tf.scale,
-                                tint,
-                                null, // Bäume sind GLOBAL instanziert (V18.390-Weisheit)
-                                pf
-                            );
-                            if (pSlots) for (const ps of pSlots) slots.push(ps);
-                        }
-                    }
-                }
-                return {
-                    cellX,
-                    cellZ,
-                    cellM,
-                    layer: layer.name,
-                    promotable: layer.promotable === true,
-                    species,
-                    variantIndex,
-                    lod,
-                    bpName,
-                    slots,
-                    x: tf.x,
-                    z: tf.z,
-                };
+            }
+        }
+        return {
+            cellX,
+            cellZ,
+            cellM,
+            layer: layer.name,
+            promotable: layer.promotable === true,
+            species,
+            variantIndex,
+            // V18.464-Review (B1): die MATERIALISIERTE Stufe (Fallback-Wahrheit) —
+            // diente ein Boot-Spalt das Billboard statt der Nah-Stufe, trägt der
+            // Datensatz lod=2 und der LOD-Tick heilt die Zelle, sobald die echte
+            // Stufe gecacht ist. Foundry-frei (Grammatik) bleibt lod byte-alt.
+            lod: foundryFlat && Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod,
+            bpName,
+            slots,
+            x: tf.x,
+            z: tf.z,
+        };
     }
-
 
     // V18.464 — DER SCATTER-LOD-TICK (die Heilung der eingefrorenen Bau-Zeit-
     // Stufen): der Fernwald wählte Stufe + Crossfade-Band-Partner EINMAL beim
@@ -50536,12 +50603,26 @@ class AnazhRealm {
             if (!cell || !cell.slots || !cell.bpName) continue; // promoted/freigegeben
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
+            // V18.464-Review (B2): Zellen mit REGION-PRIVATEN Slots (@regX,regZ —
+            // Boden-Schichten auf L0) bleiben dem Region-Lifecycle überlassen: ein
+            // per-Slot-Free in @-Gruppen null-skaliert Instanzen am WELT-URSPRUNG
+            // (der dokumentierte Bounding-Sphere-Hazard aus _disposeScatterRegion) —
+            // diese Gruppen sterben nur als Ganzes mit ihrer Region.
+            let hatRegional = false;
+            for (const s of cell.slots) {
+                if (s && typeof s.key === "string" && s.key.indexOf("@") >= 0) {
+                    hatRegional = true;
+                    break;
+                }
+            }
+            if (hatRegional) continue;
             const dx = cell.x - playerPos.x;
             const dz = cell.z - playerPos.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
             if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
             const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
-            const visH = layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
+            const visH =
+                layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             if (newLod === cell.lod) continue;
             // dieselbe Oberflächen-Quelle wie der Erst-Bau (Feld → Voxel-Fallback)
@@ -50573,6 +50654,15 @@ class AnazhRealm {
                 true
             );
             if (!rec) continue;
+            // V18.464-Review (B2): Stufen-GEKLEMMTE Arten (kindStages einstufig,
+            // z.B. Fels) liefern denselben bpName — kein sichtbarer Wechsel, also
+            // kein Slot-Tausch: die frischen Duplikat-Slots sofort zurückgeben und
+            // nur den Hysterese-Zustand quittieren (kein Churn pro Band-Kreuzung).
+            if (rec.bpName === cell.bpName) {
+                this._scatterFreeSlots(rec.slots);
+                cell.lod = newLod;
+                continue;
+            }
             this._scatterFreeSlots(cell.slots);
             cell.lod = rec.lod;
             cell.bpName = rec.bpName;
@@ -50690,12 +50780,23 @@ class AnazhRealm {
         // LOD0-Bauplan (die Hero-Form) für den echten Baum
         const keys = this._buildVariantLODs(cellEntry.species, cellEntry.variantIndex);
         if (!keys || !keys[0]) return null;
+        // V18.464-Review: die Skalen-Streuung aus der LAYER-TABELLE (der Zellen-
+        // Datensatz trug scaleBase/scaleVar nie — die Defaults 0.7/0.66 liessen
+        // den promoteten ECHTEN Baum in anderer Größe ploppen als seinen
+        // Deko-Zwilling, der seit dem Retune 0.6/1.5 streut).
+        let promLayer = null;
+        for (const l of AnazhRealm.SCATTER.layers) {
+            if (l.name === layerName) {
+                promLayer = l;
+                break;
+            }
+        }
         const tf = this._scatterCellTransform(
             cellEntry.cellX,
             cellEntry.cellZ,
             cellEntry.cellM,
-            cellEntry.scaleBase,
-            cellEntry.scaleVar
+            promLayer ? promLayer.scaleBase : cellEntry.scaleBase,
+            promLayer ? promLayer.scaleVar : cellEntry.scaleVar
         );
         const surfY = this._voxelSurfaceY ? this._voxelSurfaceY(tf.x, tf.z) : cellEntry.y || 0;
         // Deko-Slots freigeben BEVOR der echte Baum spawnt (kein Doppel-Mesh)
@@ -60002,8 +60103,13 @@ class AnazhRealm {
                 }
             }
             // V18.389 — der dedizierte Schatten-Zwilling (aus der L1-Silhouette/Anker-Wolke).
+            // V18.464-Review (e): der Zwilling trägt jetzt AUCH L1 — seit dem
+            // Schatten-Flip (L0+L1 werfen) hätte die L1-Kartenwolke sonst Alpha-
+            // Test-Overdraw-Schatten geworfen (exakt die Klasse, die V18.389
+            // eliminierte). Karten/Klingen bleiben über die Twin-Existenz stumm;
+            // der sichtbare Kronen-Kern bleibt L0-only (Anzeige, kein Caster).
             let twinLeaf = null;
-            if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) === 0) {
+            if (this.state.foliageShadowTwin !== false && (skel.lodLevel | 0) <= 1) {
                 const twinGeom = this._buildTreeShadowTwinGeometry(skel);
                 const twinMat = twinGeom && this._treeShadowTwinMaterial();
                 if (twinGeom && twinMat) {
@@ -64691,8 +64797,26 @@ class AnazhRealm {
                 // Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
                 // Baumwolle fein, Leder/Gummi glatt-marmoriert) — rein additiv,
                 // nur wenn die Gesetz-Zeile eine Webungs-Art mitgibt.
-                const wf = mp.webe === "knit" ? 90.0 : mp.webe === "wool" ? 70.0 : mp.webe === "denim" ? 160.0 : mp.webe === "cotton" ? 140.0 : 24.0;
-                const wa = mp.webe === "knit" ? 0.1 : mp.webe === "wool" ? 0.08 : mp.webe === "leather" ? 0.05 : mp.webe === "rubber" ? 0.03 : 0.06;
+                const wf =
+                    mp.webe === "knit"
+                        ? 90.0
+                        : mp.webe === "wool"
+                          ? 70.0
+                          : mp.webe === "denim"
+                            ? 160.0
+                            : mp.webe === "cotton"
+                              ? 140.0
+                              : 24.0;
+                const wa =
+                    mp.webe === "knit"
+                        ? 0.1
+                        : mp.webe === "wool"
+                          ? 0.08
+                          : mp.webe === "leather"
+                            ? 0.05
+                            : mp.webe === "rubber"
+                              ? 0.03
+                              : 0.06;
                 const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
                 mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
             } else {
@@ -64782,10 +64906,7 @@ class AnazhRealm {
             const si = new Uint16Array(m.skinIndex.array.length);
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
-            geo.setAttribute(
-                "skinWeight",
-                new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4)
-            );
+            geo.setAttribute("skinWeight", new T.BufferAttribute(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
