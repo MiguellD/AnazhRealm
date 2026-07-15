@@ -5,7 +5,7 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.476)
+## §0 · DER TISCH — was offen ist (Stand V18.478)
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
@@ -50,13 +50,26 @@
    settlement-Präzedenz] die aktuelle Wahl aus koerperstudio [8 Dials + Gestalt:
    Haut/Haar/Kleider/Farben] und tetrapoda [5 Dials je Gattung] fail-closed in den
    Welt-Guss — Avatar wird live neu gegossen, Spawns tragen die Dials, Snapshot
-   persistiert). OFFEN in (c): kreatur/koerper/klang ohne VERTRAGS-Stufen-Zeile
-   (tier.lods TEIL bis der Vertrag Stufen trägt) · P2P-GESTALT (der soul-Kanal trägt
-   keine Gestalt/Dials — Peers sehen ihre eigene Avatar-/Kreatur-Wahrheit; benannte
-   Folge-Naht) · Fahrzeug-Billboard-LOOK (aspect 3.995 breit-flach — das Schöpfer-
-   Auge urteilt, der Container kann WebGPU-Frames nicht capturen [gemessene Narbe]) ·
-   Straßensystem = 0 Treffer · klinge/streu ohne Kollision (bewusst? urteilen) ·
-   haus ohne Betreten-Verb.
+   persistiert). **V18.478 (DIE NAHT-VOLLENDUNG) schloss die vier benannten Reste
+   von (c):** P2P-GESTALT (`gate:p2p-gestalt` — der soul-Kanal trägt die Avatar-
+   Übergabe additiv, der Empfänger validiert am SELBEN Validator, der Peer-Guss
+   führt sie transient über _activePeerUebergabe; zwei Peers bleiben eigenständig,
+   der eigene Avatar unberührt) · RELOAD-TREUE (`gate:reload-treue` — der Guss
+   friert die wirksame Übergabe je Wesen ein [group.userData.gussDials], der
+   Snapshot trägt sie, der Restore pinnt sie durch DENSELBEN Validator: die Kreatur
+   kehrt wie gegossen wieder, auch wenn die Übergabe sich änderte) · VERTRAGS-
+   STUFEN-ZEILE (tetrapoda/koerper-core tragen additiv `kindStages {kreatur:[0,1]}`
+   / `{koerper:[0,1]}` — die Ofen-Leiter ist jetzt VERTRAGS-Wahrheit, §8.5 normativ;
+   tier.lods bleibt Matrix-TEIL, weil 2 Stufen < das 3-Stufen-Soll) · BÄCKER-OV
+   (`gate:fahrzeug-fern` erweitert — der fimp-Key trägt jetzt den ov-Hash, geprägte
+   Entries ziehen IHRE Impostor-Karte statt fern als L0-Geometrie zu fallen; die
+   V18.477-Stempel-Wand fiel, ungeprägter Baum-Pfad byte-alt). OFFEN in (c):
+   klang ohne Stufen-Zeile (meshfrei, B2 N/A — kein Ofen) · Fahrzeug-Billboard-
+   LOOK (aspect 3.995 breit-flach — das Schöpfer-Auge urteilt, der Container kann
+   WebGPU-Frames nicht capturen [gemessene Narbe]) · P2P-Kreatur-Gestalt (die
+   Avatar-Gestalt reist, die Kreatur-Gestalt gehört an den Kreatur-Sync-Pfad, der
+   heute keine Dials trägt — benannte Folge-Naht) · Straßensystem = 0 Treffer ·
+   klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
    (d) **Tiefe statt Oberfläche — VOLLENDE-WELLE V18.474 (kein Aufschieben):**
    GEBAUT+bewiesen: DC-Diät der Fern-Gruppen (Super-Region-Keying am EINEN Chokepoint,
    16→1 Gruppen bei 4×4; gate:scatter-lod F-Block) · FAHRZEUG ganz (Geist liest die

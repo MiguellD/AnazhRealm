@@ -357,6 +357,20 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   `_lofiChordDurationMs` fährt das Studio-Tempo; kaltes Buch → die
   LOFI_*-Konstanten byte-alt (fail-soft, G4.1). Spender heute:
   `klang-core.js` (22 Genesis-Genres, `kind:"klang"`).
+- **§8.5 v1.2 — DIE OFEN-STUFEN-ZEILE (V18.478, NORMATIV, rein additiv):** ein
+  MESHFREI-Kern mit Pipe-Bäcker (§8.4) DARF `PORTAL_RENDER_CONFIG.lod.
+  kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
+  LOD-STUFEN, die der GATTUNGS-BÄCKER seiner Gestalt bäckt (dieselbe Form wie
+  B2-kindStages: nicht-leer, strikt aufsteigend, 0..2 — derselbe Validator);
+  B2 bleibt N/A (kein buildInstance). Die Brücke sammelt sie GENERISCH wie
+  jede Zweit-Kern-Zeile (`cfg.lod.zusatzKindStages`, W7b/N2), der Host mergt
+  am EINEN Ingest-Chokepoint. Sie ist die VERTRAGS-Wahrheit der bereits
+  gebauten Ofen-Leiter — der Wächter ist `gate:konsum-matrix` (Stufen müssen
+  EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (`gate:tier-fern`
+  · `gate:kreatur-kosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
+  unverändert). Spender heute: `tetrapoda-core.js` (`kreatur:[0,1]` — bauTier
+  Gelenk-Baum/Fern-Standbild) · `koerper-core.js` (`koerper:[0,1]` —
+  bakeMenschInstance fein/Fern-Guss).
 
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1

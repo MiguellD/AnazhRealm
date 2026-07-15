@@ -7803,7 +7803,21 @@ class AnazhRealm {
             entry.catalog = this._p2pSanitizeCatalog(msg.catalog);
             this._renderMeshWorldCatalog();
         }
-        if (changed) this._p2pApplyPeerSoul(entry);
+        // P2P-GESTALT (V18.478) — die Avatar-Übergabe des Senders: durch DENSELBEN
+        // Validator (_studioUebergabeValidate, EINE Quelle — kein Zweit-Wächter)
+        // und als PER-PEER-Wahrheit (entry.uebergabe, NICHT state.studioUebergabe —
+        // zwei Spieler tragen verschiedene Avatare). Ändert sie sich, wird der
+        // Peer-Avatar neu gegossen (auch bei gleichem soulName).
+        let uebergabeChanged = false;
+        const uK = msg.uebergabe && msg.uebergabe.koerper;
+        const cleanU = uK ? this._studioUebergabeValidate("koerper", uK) : null;
+        const prevU = entry.uebergabe ? JSON.stringify(entry.uebergabe) : "";
+        const nextU = cleanU ? JSON.stringify(cleanU) : "";
+        if (prevU !== nextU) {
+            entry.uebergabe = cleanU;
+            uebergabeChanged = true;
+        }
+        if (changed || uebergabeChanged) this._p2pApplyPeerSoul(entry);
         entry.lastSeen = performance.now() / 1000;
     }
 
@@ -8029,6 +8043,9 @@ class AnazhRealm {
             // als [{id, label, hash}], annonciert über den soul-Kanal. Der
             // Bibliothek-Drawer macht ihn browsbar.
             catalog: [],
+            // P2P-GESTALT (V18.478) — die validierte Avatar-Übergabe DIESES Peers
+            // ({s, gestalt} oder null), per-Peer (nicht die eigene state-Wahrheit).
+            uebergabe: null,
             lastSeen: performance.now() / 1000,
         };
         p2p.peers.set(peerId, entry);
@@ -8063,7 +8080,19 @@ class AnazhRealm {
         let group = null;
         let kind = "placeholder";
         if (def && typeof def.build === "function") {
-            group = def.build();
+            // P2P-GESTALT (V18.478) — der Peer-Avatar-Guss FÜHRT die Übergabe des
+            // SENDERS (entry.uebergabe.koerper): transient gesetzt, damit der EINE
+            // Leser _koerperStudioDials sie über die eigene wählt; try/finally räumt
+            // sie IMMER (kein Leck in den nächsten lokalen Stat-/Guss-Read). Nur der
+            // human-Guss liest sie; andere Seelen ignorieren das Feld byte-alt.
+            const peerU = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : null;
+            const savedActive = this._activePeerUebergabe;
+            this._activePeerUebergabe = peerU;
+            try {
+                group = def.build();
+            } finally {
+                this._activePeerUebergabe = savedActive;
+            }
             kind = "soul";
         } else if (def && Array.isArray(def.bodyParts) && def.bodyParts.length > 0) {
             // ABSCHIEDS-WELLE (Konvergenz C) — Built-ins OHNE Hand-Skelett (Phönix/
@@ -8424,6 +8453,15 @@ class AnazhRealm {
         // öffentlich-harmlos (eine Welt-Bezeichnung, kein Pfad/Zustand).
         const dwell = this._loadPortalDwelling();
         if (dwell) msg.dwell = dwell.label;
+        // P2P-GESTALT (V18.478) — die Avatar-GESTALT des Senders reist additiv im
+        // soul-Kanal: koerper.{s,gestalt} (Kleider/Haut/Haar), nur wenn nicht-leer
+        // (die Taille-Wände existieren, der Payload ist klein). Alte Clients
+        // ignorieren das Feld (must-ignore); der eigene Avatar liest weiter lokal.
+        // NUR koerper: die Kreatur-Gestalt gehört an den Kreatur-Sync-Pfad (die
+        // pos-Kette, die heute keine Dials trägt) — ein soul-getragenes Feld ohne
+        // Konsument wäre ein toter Parallelpfad (benannte Folge-Naht, roadmap §0).
+        const su = this.state.studioUebergabe;
+        if (su && su.koerper && su.koerper.s) msg.uebergabe = { koerper: su.koerper };
         this.p2pSend(msg);
     }
 
@@ -16753,7 +16791,14 @@ class AnazhRealm {
             }
         }
         const chosenSoul = this._pickCreatureSoulName(soulName);
-        const group = this._buildCreatureGroup(chosenSoul);
+        // RELOAD-TREUE (V18.478) — der GUSS bindet die Studio-Dials: beim RESTORE
+        // reichen wir die beim ersten Guss eingefrorenen Dials als dialsOv herein
+        // (opts.dialsOv), damit die Kreatur wie GEGOSSEN wiederkehrt — auch wenn die
+        // AKTUELLE Übergabe inzwischen andere Werte trägt (der Richter-Befund:
+        // sonst würden vormals klein gegossene Wölfe nach dem Reload groß). Frischer
+        // Spawn liest die aktuelle Übergabe wie bisher (kein dialsOv → byte-alt).
+        const gussOv = opts.dialsOv && typeof opts.dialsOv === "object" ? opts.dialsOv : null;
+        const group = this._buildCreatureGroup(chosenSoul, gussOv ? { dialsOv: gussOv } : undefined);
         if (!group) return null;
         group.position.set(x, y, z);
         group.visible = true;
@@ -16786,6 +16831,32 @@ class AnazhRealm {
         // aktuellen Zeitstempel. Vision §1.1: die Welt erinnert sich, wann
         // diese Person zum ersten Mal kam.
         group.userData.bornAt = Date.now();
+        // RELOAD-TREUE (V18.478) — der GUSS-STEMPEL der Studio-Dials: reichte der
+        // Restore eingefrorene Dials herein, kehren sie am Wesen zurück; sonst
+        // frieren wir die JETZT wirksame Übergabe dieser Gattung ein — ABER NUR
+        // wenn eine aktiv war (Default-Kreaturen bleiben feld-los + byte-alt). So
+        // trägt der Snapshot die Guss-Wahrheit, nicht die spätere Übergabe.
+        {
+            const recIdS = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul];
+            if (gussOv) {
+                group.userData.gussDials = gussOv;
+            } else if (
+                recIdS &&
+                this.state.studioUebergabe &&
+                this.state.studioUebergabe.kreatur &&
+                this.state.studioUebergabe.kreatur[recIdS] &&
+                this.state.studioUebergabe.kreatur[recIdS].s
+            ) {
+                const eff = this._tetrapodaStudioDials(recIdS);
+                if (eff && typeof eff === "object") {
+                    try {
+                        group.userData.gussDials = JSON.parse(JSON.stringify(eff));
+                    } catch (_e) {
+                        /* nicht-klonbar → kein Stempel (fail-closed) */
+                    }
+                }
+            }
+        }
         // Welle 6.H Phase 2F.2 — Equipped-Slots wie Spieler. Initial leer;
         // wird via equipCreatureTool/equipCreatureArmor mutiert. Persistent
         // über _serializeCreature → snap.equipped.
@@ -16856,6 +16927,14 @@ class AnazhRealm {
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
+            // RELOAD-TREUE (V18.478) — die eingefrorenen Guss-Dials reisen mit (nur
+            // vorhanden, wenn die Kreatur unter einer Studio-Übergabe gegossen wurde;
+            // Default-Kreaturen tragen das Feld nicht → byte-alt). Der Restore pinnt
+            // sie als dialsOv, damit das Wesen wie GEGOSSEN wiederkehrt.
+            gussDials:
+                ud.gussDials && typeof ud.gussDials === "object" && !Array.isArray(ud.gussDials)
+                    ? ud.gussDials
+                    : undefined,
             // Welle 6.H Phase 2F.2 — Equipped-Slots persistieren. Tasks +
             // carrying bleiben weiterhin Geste (nicht persistiert), aber
             // Werkzeug + Rüstung sind Identitäts-Komponenten wie Memory.
@@ -16874,11 +16953,24 @@ class AnazhRealm {
         if (!snap || !snap.position) return null;
         // W-D/M-F1 — der Restore ist PRECISE (bit-treu): das Wesen wacht auf, wo
         // es stand — auch direkt neben dem Spieler (die Klemme gilt nur frischen Spawns).
+        // RELOAD-TREUE (V18.478) — die eingefrorenen Guss-Dials kehren zurück, ABER
+        // durch DENSELBEN Validator (die Kreatur-PARAMS-Clamps): ein hand-editierter
+        // Save kann keine Riesen-Dials einschleusen. Die Gattung (= recId) pinnt
+        // TETRAPODA_SOUL_MAP; das validierte s reist als dialsOv in den Neu-Guss.
+        let restoreDials;
+        if (snap.gussDials && typeof snap.gussDials === "object" && !Array.isArray(snap.gussDials)) {
+            const recIdR = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[snap.soul];
+            if (recIdR) {
+                const clean = this._studioUebergabeValidate("kreatur", { gattung: recIdR, s: snap.gussDials });
+                if (clean && clean.s) restoreDials = clean.s;
+            }
+        }
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
             // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
             // neuen netId eine andere Größe).
             bodySize: Number.isFinite(snap.bodySize) ? snap.bodySize : undefined,
+            dialsOv: restoreDials,
         });
         if (!c) return null;
         if (typeof snap.name === "string" && snap.name.length > 0) {
@@ -18599,7 +18691,15 @@ class AnazhRealm {
         // (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance), in dem
         // kleidZonen/haarStreu die Strings heute schon lesen: EIN Leser, kein
         // Parallelpfad. Ohne Übergabe byte-alt (die Buch-Referenz | null).
-        const ue = this.state && this.state.studioUebergabe && this.state.studioUebergabe.koerper;
+        // P2P-GESTALT (V18.478) — baut gerade der Peer-Avatar-Guss, FÜHRT die
+        // (bereits validierte) Übergabe des SENDERS: _p2pApplyPeerSoul setzt sie
+        // transient in this._activePeerUebergabe und räumt sie danach (try/finally).
+        // So sieht ein Mitspieler die Gestalt, die der Sender ins Studio wählte —
+        // OHNE Parallelpfad: derselbe EINE Merge, nur die Quelle ist der Peer.
+        const ue =
+            this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
+                ? this._activePeerUebergabe
+                : this.state && this.state.studioUebergabe && this.state.studioUebergabe.koerper;
         if (ue && ue.s && typeof ue.s === "object") {
             return Object.assign({}, s || {}, ue.s, ue.gestalt && typeof ue.gestalt === "object" ? ue.gestalt : {});
         }
@@ -62942,7 +63042,9 @@ class AnazhRealm {
         // `_foundryRequest(preset, variant, 1, season)` gebaut → seed = rec.variantIndex; die
         // Saison reist aus dem Record (fimp-Key trägt sie), sonst die aktuelle Welt-Saison.
         const season = rec.season || (st && st.season) || "summer";
-        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, season)
+        // BÄCKER-OV (V18.478) — ist der Record geprägt (rec.ov, aus _foundryEnsureImpostorRecord),
+        // bäckt der Studio-Bäcker das UNIKAT (die ov reist mit); ungeprägte Records byte-alt.
+        this._foundryBakeImpostorRequest(presetId, rec.variantIndex, season, rec.ov || undefined)
             .then((payload) => {
                 if (!this._applyStudioImpostorPayload(rec, payload))
                     throw new Error("Studio-Bäcker ohne brauchbaren Payload für " + key);
@@ -66847,14 +66949,20 @@ class AnazhRealm {
     // automatisch in die Welt-Ferne). Resolvt mit dem payload (oder null bei Fehler/
     // Timeout — der Tick-Aufrufer trägt die Retry-Disziplin). DASSELBE pending-Routing
     // wie build-asset (EIN Mechanismus, reqIds disjunkt über den "imp"-Präfix).
-    _foundryBakeImpostorRequest(presetId, seed, season) {
+    _foundryBakeImpostorRequest(presetId, seed, season, ov) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const reqId = "imp" + f.reqSeq++;
         return new Promise((resolve) => {
             f.pending.set(reqId, resolve);
             try {
-                f.worker.postMessage({ type: "bake-impostor", reqId, presetId, seed, season: season || "summer" });
+                // BÄCKER-OV (V18.478) — die Prägung reist ADDITIV in den Bake (msg.ov nur
+                // wenn non-null): das Bake-Subjekt ist dann die GEPRÄGTE Gestalt, die Karte
+                // trägt das Unikat. Ohne ov byte-identisch (kein Feld → der Kern baut den
+                // Default). __-Schlüssel bleiben STEUER-Passagiere (der Kern konsumiert sie).
+                const msg = { type: "bake-impostor", reqId, presetId, seed, season: season || "summer" };
+                if (ov && typeof ov === "object") msg.ov = ov;
+                f.worker.postMessage(msg);
             } catch (_e) {
                 f.pending.delete(reqId);
                 resolve(null);
@@ -67064,16 +67172,20 @@ class AnazhRealm {
     // (der Studio-Reply ersetzt den Rahmen, RAHMEN-EINHEIT). `_ensureImpostorAtlas` (die EINE
     // Impostor-Quelle) baut Record + Fallback + reiht den Bake ein. Headless/Null-Renderer →
     // der Silhouetten-Fallback bleibt (gate-treu, kein Bake enqueued).
-    _foundryEnsureImpostorRecord(preset, variant, season) {
+    _foundryEnsureImpostorRecord(preset, variant, season, ov) {
         if (!this._impostorAtlasMap) this._impostorAtlasMap = new Map();
-        const key = "fimp:" + preset + "|" + variant + "|" + season;
+        // BÄCKER-OV (V18.478) — ein GEPRÄGTES Entry (ov) trägt seinen eigenen Record:
+        // der fimp-Key + das LOD1-Bake-Subjekt (gkey) + der Bake tragen den ov-Hash
+        // (die EINE _studioOvHash-Quelle). Ohne ov byte-identisch (Key + gkey byte-alt).
+        const ovH = ov && typeof ov === "object" ? "|ov:" + this._studioOvHash(ov) : "";
+        const key = "fimp:" + preset + "|" + variant + "|" + season + ovH;
         const cached = this._impostorAtlasMap.get(key);
         if (cached === "pending") return null;
         if (cached !== undefined) return cached; // Record ODER false (Foundry kann das nicht)
         if (typeof THREE === "undefined" || typeof document === "undefined") return null;
         // Die LOD1-Geometrie ist das Bake-Subjekt — aus dem Foundry-Cache (dieselbe Quelle wie der
         // nahe Foundry-Baum). Fehlt sie, EINMAL anfordern; der nächste Tick findet sie gecacht.
-        const gkey = preset + "|" + variant + "|1|" + (season || "summer");
+        const gkey = preset + "|" + variant + "|1|" + (season || "summer") + ovH;
         const group = this._foundryCacheGet(gkey);
         if (group === undefined) {
             const f = this._ensureAssetFoundry();
@@ -67081,7 +67193,7 @@ class AnazhRealm {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(gkey)) {
                 f.requested.add(gkey);
-                this._foundryRequest(preset, variant, 1, season || "summer").then((meshes) => {
+                this._foundryRequest(preset, variant, 1, season || "summer", ov || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(gkey, this._foundryBuildGroup(meshes, { lod: 1, preset }));
                         this._scatterRefillPending = true;
@@ -67092,7 +67204,7 @@ class AnazhRealm {
                         // sofort re-ensuren (Cache-Hit → Record formt sich, Bake-Queue füllt sich,
                         // `_tickImpostorBake` drainet eager — kein Warten auf den Zufalls-Leser).
                         try {
-                            this._foundryEnsureImpostorRecord(preset, variant, season);
+                            this._foundryEnsureImpostorRecord(preset, variant, season, ov || undefined);
                         } catch (_ei) {}
                     } else {
                         f.requested.delete(gkey); // Timeout: nicht dauerhaft doomen
@@ -67195,6 +67307,9 @@ class AnazhRealm {
         rec.species = preset;
         rec.variantIndex = variant;
         rec.season = season || "summer"; // reist mit dem Bake-Request zum Studio-Bäcker
+        // BÄCKER-OV (V18.478) — der Record merkt sich seine Prägung: _tickImpostorBake
+        // reicht rec.ov an den Studio-Bäcker, damit die Karte das Unikat trägt.
+        if (ov && typeof ov === "object") rec.ov = ov;
         this._scatterRefillPending = true;
         return rec;
     }
@@ -67208,8 +67323,13 @@ class AnazhRealm {
     _foundryBuildImpostorFlat(entry, preset) {
         const variant = this._foundryVariantFor(entry.seed);
         const season = this.state.season || "summer";
-        const rec = this._foundryEnsureImpostorRecord(preset, variant, season);
-        if (rec === null) return null; // Studio-Bake laeuft
+        // BÄCKER-OV (V18.478) — ein geprägtes Entry zieht seinen ov-Record (die Karte
+        // trägt das Unikat). Ist er noch nicht gebacken (null), fällt der geprägte
+        // Pfad auf GEOMETRIE (der Aufrufer nimmt die geprägte L2 — nie kalt, nie die
+        // falsche ungeprägte Karte); ungeprägte Entries byte-alt (ovE null → alter Pfad).
+        const ovE = this._artifactStudioOv(entry);
+        const rec = this._foundryEnsureImpostorRecord(preset, variant, season, ovE || undefined);
+        if (rec === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!rec || !rec.map || !rec.frame) return false;
         if (rec._flat) return rec._flat;
         const geom = this._buildImpostorCrossGeometry(null, rec.frame);
@@ -67793,14 +67913,16 @@ class AnazhRealm {
         if (lod > 2) lod = 2;
         const season = this.state.season || "summer";
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie.
-        // PRÄGUNG-WELT (V18.477): der Spiegel der Flatten-Wand — ein GESTEMPELTER
-        // Eintrag reist nie über die ov-blinde Karte, sein Dock-Urteil fällt unten
-        // über den |ov:-Geometrie-Key (sonst urteilte der Peek „ready" über ein
-        // Billboard, das der Flatten für diesen Eintrag nie servieren wird).
-        if (lod >= 2 && this._foundryPresetIsTree(preset) && !this._artifactStudioOv(entry)) {
-            const key = "fimp:" + preset + "|" + variant + "|" + season;
+        // BÄCKER-OV (V18.478): der Peek spiegelt den ov-Record der Flatten-Route — ein
+        // GESTEMPELTER Eintrag ist „gedockt", wenn SEINE ov-Karte gebacken ist (sonst
+        // reicht der Flatten die geprägte Geometrie: nicht kalt, aber auch nicht die
+        // Billboard-Diät — der Rewarm baut sie als Geometrie, korrekt). Ungeprägt byte-alt.
+        if (lod >= 2 && this._foundryPresetIsTree(preset)) {
+            const peekOv = this._artifactStudioOv(entry);
+            const key =
+                "fimp:" + preset + "|" + variant + "|" + season + (peekOv ? "|ov:" + this._studioOvHash(peekOv) : "");
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
-            return !!(rec && rec !== "pending");
+            return !!(rec && rec !== "pending" && rec !== false);
         }
         if (preset === "strauch") lod = Math.max(1, lod);
         // V18.477 — der Peek spiegelt AUCH die EIN-STUFEN-KLAMMER des Flattens
@@ -68034,14 +68156,12 @@ class AnazhRealm {
         // Geometrie (~15k Verts × dichter Fernwald = Overdraw-Freeze) — genau wie die Vorlage die
         // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein Studio-Bake),
         // nur auf eine billige Karte geflacht. Fels/Kristall/Blume bleiben L2-Geometrie.
-        // PRÄGUNG-WELT (V18.477, Verify-Ernte): die Impostor-Karte ist ov-BLIND (der
-        // fimp-Key trägt kein ov, der Bäcker backt ungeprägt) — ein GESTEMPELTER
-        // Eintrag zeigte fern die falsche (ungeprägte) Gestalt und poppte am
-        // Crossfade auf sein Unikat. Die Wand: Stempel ⇒ Geometrie-Stufe statt
-        // Karte (Wahrheit vor Diät; Unikate sind selten, heute nur vehicle/weapon
-        // via KIND_CHARAKTER — die EIN-STUFEN-KLAMMER unten klemmt sie auf L0).
-        if (lod >= 2 && this._foundryPresetIsTree(preset) && !this._artifactStudioOv(entry))
-            return this._foundryBuildImpostorFlat(entry, preset);
+        // BÄCKER-OV (V18.478) — der fimp-Key trägt jetzt den ov-Hash: ein GESTEMPELTER
+        // Eintrag zieht seine EIGENE Impostor-Karte (das Unikat), die V18.477-Stempel-
+        // Wand fällt. _foundryBuildImpostorFlat routet geprägt über den ov-Record und
+        // fällt fail-closed auf die geprägte Geometrie, solange die Karte bäckt (nie
+        // die falsche ungeprägte Karte, nie kalt). Ungeprägt byte-alt.
+        if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
         // DIE STUFEN-WAHRHEIT JE ART ALS VERTRAGS-DATEN (LOD-WURZEL 08.07.): die Distanz-
         // Wahl clampt auf die Stufen, die das Studio für diese ART deklariert + selbst nutzt
         // (`PORTAL_RENDER_CONFIG.lod.kindStages`, live über das Nervensystem — Gras/Strauch
@@ -86374,7 +86494,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.477.0";
+AnazhRealm.VERSION = "18.478.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

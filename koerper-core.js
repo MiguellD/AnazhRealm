@@ -20,6 +20,12 @@
     var VERSION = "1.0.0";
     var STUDIO_VERTRAG = 1; // G4.3
     var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
+    // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
+    // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
+    // (bakeMenschInstance: Stufe 0 = feiner Gelenk-Baum · Stufe 1 = gemergter
+    // Fern-Guss, _menschFernToggle). B2 bleibt N/A (kein buildInstance) — die
+    // Zeile ist die VERTRAGS-Wahrheit der Pipe-Bäckerei (BAKERS_BY_KIND).
+    var PORTAL_RENDER_CONFIG = { lod: { kindStages: { koerper: [0, 1] } } };
 
     // ── Der Lab-Startzustand (byte-treu Lab Z.105) — Morph-Dials + String-Wahlen ──
     // prettier-ignore
@@ -822,6 +828,7 @@
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
+        PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { koerper: PARAMS },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):

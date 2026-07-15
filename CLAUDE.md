@@ -6,27 +6,37 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.477 — DIE NIVEAU-VOLLENDUNG: die Studio-Naht fließt auf gleichem Niveau)
+## Stand (V18.478 — DIE NAHT-VOLLENDUNG: die vier benannten Reste sind geschlossen)
 
-**Der Studio-Vergleich (Vertrag · Welt · Editor, drei Leser + frische Matrix) fand vier
-echte Risse — alle in EINER Welle geschlossen, je mit Linse:** PRÄGUNG-WELT
-(`gate:praegung-welt`: das präge-Verb war reine Vorschau-Wahrheit — jetzt reist die
-Prägung als Guss-Stempel `studioOv` MIT dem Artefakt in Hand/Welt/Snapshot/place-DSL;
-ov-Hash trennt Cache+Batch, ungeprägter Pfad byte-identisch; die EINE Räumungs-Naht
-`_foundryCacheEvict` heilt den präge-Flush [Verify-CONFIRMED: requested-Verhungern]) ·
-FAHRZEUG-FERNSTUFE (`gate:fahrzeug-fern`, Tor-Präzedenz impostor:true — gt fern
-328 Meshes/28k Tris → 1 Quad/2 Tris; geritten = L0; Stempel-Wand: geprägt nie über die
-ov-blinde Karte) · TIER-FERN-HYSTERESE (`gate:tier-fern`: der Fern-Guss existierte
-[wolf 80→11], es fehlte das ±10-%-Band; Klassen-Schluss auch am mensch-Toggle —
-TIER_FERN_HYST ist die EINE Fern-Bande) · STUDIO-ÜBERGABE (`gate:studio-uebergabe`,
-der tiefste Riss: KEIN Studio trug die Live-Bearbeitung — der W12-Kanal `uebergabe`
-[terrain-settlement-Präzedenz] trägt jetzt koerperstudio-Gestalt+Dials und
-tetrapoda-Dials fail-closed in den Welt-Guss; Avatar-Kleider ≙ Studio lokal GEBAUT).
-OFFEN benannt: P2P-Gestalt (soul-Kanal trägt keine Gestalt/Dials — Peers sehen die
-eigene Wahrheit) · Fahrzeug-Billboard-LOOK (Schöpfer-Auge; Container capturet keine
-WebGPU-Frames, gemessene Narbe) · tier.lods TEIL bis der Vertrag Stufen trägt.
+**Die V18.477-Niveau-Vollendung ließ vier Punkte benannt-offen — V18.478 schließt alle
+vier, je mit Linse (alles additiv/render-seitig, die fixe Sim byte-unberührt):**
+P2P-GESTALT (`gate:p2p-gestalt`: der soul-Kanal trägt die Avatar-Übergabe additiv, der
+Empfänger validiert am SELBEN `_studioUebergabeValidate`, der Peer-Guss führt sie
+transient über `_activePeerUebergabe` [try/finally, kein Leck]; zwei Peers bleiben über
+distinkte Ofen-Keys eigenständig, der eigene Avatar byte-identisch) · RELOAD-TREUE
+(`gate:reload-treue`: der Guss friert die wirksame Übergabe je Wesen ein [`gussDials`,
+nur wenn aktiv — sonst byte-alt], der Snapshot trägt sie, der Restore pinnt sie durch
+DENSELBEN Validator als dialsOv — die Kreatur kehrt wie gegossen wieder, auch wenn die
+Übergabe sich änderte; der Richter-Befund [mittel] ist tot) · VERTRAGS-STUFEN-ZEILE
+(tetrapoda/koerper-core tragen additiv `PORTAL_RENDER_CONFIG.lod.kindStages`
+[kreatur:[0,1] · koerper:[0,1]], §8.5 normativ — die längst gebaute Ofen-Leiter ist
+jetzt VERTRAGS-Wahrheit; tier.lods bleibt Matrix-TEIL, weil 2 < das 3-Stufen-Soll) ·
+BÄCKER-OV (der fimp-Key trägt jetzt den ov-Hash, geprägte Entries ziehen IHRE Impostor-
+Karte statt fern als L0-Geometrie zu fallen; die V18.477-Stempel-Wand fiel, der
+Bake-Request trägt msg.ov [die Brücke las es schon], ungeprägter Baum-Pfad byte-alt;
+`gate:fahrzeug-fern` erweitert). OFFEN benannt: klang ohne Stufen-Zeile (meshfrei, kein
+Ofen) · Fahrzeug-Billboard-LOOK + P2P-Kreatur-Gestalt (Schöpfer-Auge/Kreatur-Sync-Pfad).
 
-Davor V18.476 DIE ORAKEL-UMSETZUNG (acht Tier-1-Wellen, je EINE Linse: kopplung ·
+Davor V18.477 DIE NIVEAU-VOLLENDUNG — der Studio-Vergleich (Vertrag · Welt · Editor,
+drei Leser + frische Matrix) fand vier echte Risse, alle in EINER Welle geschlossen:
+PRÄGUNG-WELT (`gate:praegung-welt`: die Prägung reist als Guss-Stempel `studioOv` MIT
+dem Artefakt in Hand/Welt/Snapshot/place-DSL, ov-Hash trennt Cache+Batch, die EINE
+Räumungs-Naht `_foundryCacheEvict` heilt den präge-Flush [Verify-CONFIRMED]) ·
+FAHRZEUG-FERNSTUFE (`gate:fahrzeug-fern`, impostor:true, geritten = L0) ·
+TIER-FERN-HYSTERESE (`gate:tier-fern`, TIER_FERN_HYST = die EINE Fern-Bande, auch am
+mensch-Toggle) · STUDIO-ÜBERGABE (`gate:studio-uebergabe`, der W12-Kanal `uebergabe`
+trägt Gestalt+Dials fail-closed in den Welt-Guss). Davor V18.476 DIE ORAKEL-UMSETZUNG
+(acht Tier-1-Wellen, je EINE Linse: kopplung ·
 koerper-bewegung · kampf-gefuehl · schritt-klang · render-diaet [EIN Material je
 Tag-Signatur + r184-INDEX-KONSISTENZ #i/#x am Batch-Key] · gpu-zeit [timestamp-query,
 gpuMs echt|proxy] · kreatur-kosten · reconnect — alles render-seitig, fixe Sim

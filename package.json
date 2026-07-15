@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.477.0",
+    "version": "18.478.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -75,7 +75,9 @@
         "gate:gpu-zeit": "node scripts/diag-gpu-zeit.cjs",
         "gate:existenz-boden": "node scripts/diag-existenz-boden.cjs",
         "gate:charakter-achsen": "node scripts/diag-charakter-achsen.cjs",
+        "gate:p2p-gestalt": "node scripts/diag-p2p-gestalt.cjs",
         "gate:praegung-welt": "node scripts/diag-praegung-welt.cjs",
+        "gate:reload-treue": "node scripts/diag-reload-treue.cjs",
         "gate:studio-uebergabe": "node scripts/diag-studio-uebergabe.cjs",
         "gate:tier-separation": "node scripts/diag-tier-separation.cjs",
         "gate:reconnect": "node scripts/diag-reconnect.cjs",

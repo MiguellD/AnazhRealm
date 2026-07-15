@@ -159,24 +159,30 @@ function pruefeQuelle(quelle) {
     }
     // (P4) Die Serve-Chokepoints routen lod>=2 über GENAU diese Politik (Quell-Proben
     // am Chokepoint — Lehre 2: die Invariante lebt dort, nicht am Aufrufer).
-    // V18.477: die Route trägt die STEMPEL-WAND (!_artifactStudioOv — geprägte
-    // Einträge reisen nie über die ov-blinde Karte); die Proben wandern mit.
+    // V18.478 (Bäcker-ov): die Stempel-Wand ist GEFALLEN — geprägte Entries ziehen
+    // jetzt IHRE ov-Karte (der fimp-Key trägt den ov-Hash), die Route ist ov-blind
+    // für den ungeprägten Fall byte-alt. Die Proben wandern mit.
     if (
-        !/lod >= 2 && this\._foundryPresetIsTree\(preset\) && !this\._artifactStudioOv\(entry\)\)\s*\n\s*return this\._foundryBuildImpostorFlat\(entry, preset\)/.test(
+        !/lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/.test(
+            quelle
+        )
+    )
+        rot.push("_foundryFlattenFor: die lod>=2-Impostor-Route fehlt (Fernstufe serviert Geometrie)");
+    if (
+        !/if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) \{\s*\n\s*const peekOv = this\._artifactStudioOv\(entry\);/.test(
             quelle
         )
     )
         rot.push(
-            "_foundryFlattenFor: die lod>=2-Impostor-Route (mit Stempel-Wand) fehlt (Fernstufe serviert Geometrie oder geprägt reist über die ov-blinde Karte)"
+            "_foundryEntryReady: der Dock-Peek kennt die lod>=2-Impostor-Route (mit ov-Spiegel) nicht (Rewarm urteilt übers falsche Asset)"
         );
-    if (
-        !/lod >= 2 && this\._foundryPresetIsTree\(preset\) && !this\._artifactStudioOv\(entry\)\) \{\s*\n\s*const key = "fimp:"/.test(
-            quelle
-        )
-    )
+    // Bäcker-ov: der fimp-Key + das Bake-Subjekt (gkey) + der Bake tragen den ov-Hash.
+    if (!/const ovH = ov && typeof ov === "object" \? "\|ov:" \+ this\._studioOvHash\(ov\) : "";/.test(quelle))
         rot.push(
-            "_foundryEntryReady: der Dock-Peek kennt die lod>=2-Impostor-Route (mit Stempel-Wand) nicht (Rewarm urteilt übers falsche Asset)"
+            "_foundryEnsureImpostorRecord: der ov-Hash fehlt im fimp-Key (geprägte Karte kollabiert mit der ungeprägten)"
         );
+    if (!/if \(ov && typeof ov === "object"\) msg\.ov = ov;/.test(quelle))
+        rot.push("_foundryBakeImpostorRequest: die ov reist nicht zum Studio-Bäcker (die Karte bäckt ungeprägt)");
     // (M) DIE GERITTEN-WAND — verhaltensecht: Distanz-Autorität + Fahr-Pin.
     const lodFuer = ladeMethode(quelle, "_foundryLodForEntry", "entry");
     const D = ladeLodDistances(quelle);
@@ -262,15 +268,24 @@ function selbstTest() {
         ohneWaechter !== STAMM && pruefeQuelle(ohneWaechter).length > 0,
     ]);
     // 4. Die Serve-Route gerissen (Impostor-Zweig entfernt) -> MUSS feuern.
-    // V18.477: die Route trägt die Stempel-Wand — die Mutation wandert mit
+    // V18.478 (Bäcker-ov): die Stempel-Wand ist gefallen — die Mutation wandert mit
     // (regex-basiert; der !== STAMM-Guard macht ein No-op-Replace LAUT rot).
     const ohneRoute = STAMM.replace(
-        /lod >= 2 && this\._foundryPresetIsTree\(preset\) && !this\._artifactStudioOv\(entry\)\)\s*\n\s*return this\._foundryBuildImpostorFlat\(entry, preset\);/,
-        "false) return null;"
+        /if \(lod >= 2 && this\._foundryPresetIsTree\(preset\)\) return this\._foundryBuildImpostorFlat\(entry, preset\);/,
+        "if (false) return null;"
     );
     faelle.push([
         "ohne lod>=2-Impostor-Route in _foundryFlattenFor -> feuert",
         ohneRoute !== STAMM && pruefeQuelle(ohneRoute).length > 0,
+    ]);
+    // 4b. Der ov-Hash aus dem fimp-Key gestrippt -> MUSS feuern (geprägte Karte kollabiert).
+    const ohneOvHash = STAMM.replace(
+        'const ovH = ov && typeof ov === "object" ? "|ov:" + this._studioOvHash(ov) : "";',
+        'const ovH = "";'
+    );
+    faelle.push([
+        "ohne den ov-Hash im fimp-Key -> feuert (geprägte Karte kollabiert mit der ungeprägten)",
+        ohneOvHash !== STAMM && pruefeQuelle(ohneOvHash).length > 0,
     ]);
     // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
     const ohneWand = STAMM.replace("thresh01: 20,", "thresh01: -1,").replace("thresh12: 40,", "thresh12: -1,");
