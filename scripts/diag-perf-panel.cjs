@@ -8,7 +8,7 @@
 //   (P) das PANEL füllt seine Felder aus den EINEN Quellen (perfSense ·
 //       Flugschreiber-Sekunden-Ring/Eimer/worst · Impostor-Zensus) —
 //       Kopf trägt die VERSION (der Screenshot muss sie tragen), Grid
-//       trägt frame/dc/tris/GPU-Lücke, der Ring-Canvas ist gemalt.
+//       trägt frame/dc/tris/GPU (echt|proxy), der Ring-Canvas ist gemalt.
 //   (E) der EXPORT liefert denselben Flugschreiber-Trace als Datei:
 //       Name anazhRealmPerf-V<version>-….json, parsebares JSON mit
 //       session/worstFrames/impostorZensus/sekundenRingMaxMs.
@@ -133,8 +133,10 @@ function check(name, ok, detail) {
     }
     check("(P) Kopf trägt fps + VERSION (Screenshot-Pflichtfeld)", /fps/.test(out.head) && out.head.includes("V" + require(path.join(root, "package.json")).version), out.head.slice(0, 60));
     check(
-        "(P) Grid trägt die Kern-Zahlen (frame · draw-calls · tris · GPU-Lücke · Impostor)",
-        /frame ø/.test(out.grid) && /draw-calls/.test(out.grid) && /tris/.test(out.grid) && /GPU-Lücke/.test(out.grid) && /Impostor/.test(out.grid)
+        // GPU-ZEIT-WELLE: die GPU-Zeile trägt jetzt echtes gpuMs + das Quelle-Feld
+        // („GPU (echt)" | „GPU (proxy)") statt des reinen Subtraktions-Proxys.
+        "(P) Grid trägt die Kern-Zahlen (frame · draw-calls · tris · GPU (echt|proxy) · Impostor)",
+        /frame ø/.test(out.grid) && /draw-calls/.test(out.grid) && /tris/.test(out.grid) && /GPU \((echt|proxy)\)/.test(out.grid) && /Impostor/.test(out.grid)
     );
     check("(P) ms-Verteilung steht (6 Flugschreiber-Eimer)", /ms-Verteilung/.test(out.buckets) && /<17/.test(out.buckets));
     check(`(P) Sekunden-Ring rollt (${out.ringN}s) + Canvas ist GEMALT (${out.canvasPixel || 0} px)`, out.ringN >= 2 && (out.canvasPixel || 0) > 200);

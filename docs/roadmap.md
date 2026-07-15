@@ -5,7 +5,7 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.471)
+## §0 · DER TISCH — was offen ist (Stand V18.476)
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
@@ -19,11 +19,13 @@
    (Freeze-Snapshots tragen die Top-5-Teilbäume nach Dreiecken — der nächste Trace NENNT
    den 26M-Wal; Verdacht: Kreaturen ~1M+ Tris/Stück ohne LOD, s. (c)) · die NACHT-KARTEN-
    Dimmung (tagLicht-Uniform: eingebackenes Studio-Tageslicht fällt mit der Sonne).
-   OFFEN (die zwei gemessenen Steady-Hebel): **die DRAW-CALL-DIÄT der Fern-Gruppen**
-   (V18.303-Notiz: ~1000 winzige LOD2-Gruppen durch per-Region-Keying — Impostor-Quads
-   gröber keyen) und **Kreatur-Tris/LOD** (Matrix (c)). Der Transport steht (V18.472
-   Panel + Export; Narbe respektiert: adaptive Auflösung bleibt aus — Submit-Kosten,
-   nicht Fill, tragen den steady state).
+   Die beiden Steady-Hebel sind GEBAUT: die DC-Diät der Fern-Gruppen (V18.474,
+   Super-Region-Keying) und die RENDER-DIÄT (V18.476, s. §0.5 Bogen 1). Der Flug-
+   schreiber misst die GPU jetzt ECHT (V18.476 `gate:gpu-zeit`: timestamp-query im
+   r184, gpuMs + Quelle echt|proxy in Panel/worst/Trace — der Subtraktions-Proxy
+   fällt als einzige Wahrheit). OFFEN: **Kreatur-Tris** (Geometrie-LOD; die
+   Anim-Raten-Leiter steht, s. (c)) — **der nächste echte Trace urteilt** (gpuQuelle
+   „echt" + Tri-Zensus). Narbe respektiert: adaptive Auflösung bleibt aus.
    (b) **Baum-L2: DIE BÄCKER-VEREINIGUNG IST AUF ECHTEM HOLZ BESTÄTIGT** (Schöpfer-Trace
    14.07.: Zensus 204 gebacken · 0 gescheitert · 0 wartend — jede Ferne trägt echte
    Studio-Karten). Nacht-Glühen-Klasse gefixt V18.473 (tagLicht-Uniform: das eingebackene
@@ -31,12 +33,15 @@
    bestätigt es nachts). OFFEN: die ZWEIT-KERN-BÄCKEREI im Studio (Tor-Records fallen bis
    dahin ehrlich auf die Skelett-Silhouette — der Pflanzen-Bäcker kennt sie nicht).
    (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
-   9 Gattungen × 8 Facetten, 55 Zellen verankert, 20 Differenzen benannt. Die größten:
+   9 Gattungen × 8 Facetten, 57 Zellen verankert, 19 Differenzen benannt. Die größten:
    LOD-Leitern — haus [0,1,2] EHRLICH bewiesen · fahrzeug/tor/klinge [0] bewusst (Wirt
    gradiert; Fahrzeug-Fernstufe fehlt real: 328 Meshes je Distanz) · kreatur/koerper/klang
-   ganz ohne Stufen-Zeile (wolf 81 Meshes, mensch/tier ohne Geometrie-LOD) ·
+   ganz ohne VERTRAGS-Stufen-Zeile (wolf 81 Meshes; die WELT-Seite konsumiert seit
+   KREATUR-KOSTEN Geometrie-LOD für mensch [lod1-Fern-Guss, _menschFernToggle >40 m]
+   und tier [Standbild + Anim-Raten-Leiter 1/2·1/4·0, neutrale Stand-Pose] —
+   `gate:kreatur-kosten`; mensch.lods VOLL, tier.lods TEIL bis der Vertrag Stufen trägt) ·
    Bäcker-Vereinigung BEIDSEITIG GEBAUT (s. (b), Konsum-Matrix-Probe ✅) ·
-   mensch/tier ohne Geometrie-LOD · Straßensystem = 0 Treffer ·
+   Straßensystem = 0 Treffer ·
    klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
    (d) **Tiefe statt Oberfläche — VOLLENDE-WELLE V18.474 (kein Aufschieben):**
    GEBAUT+bewiesen: DC-Diät der Fern-Gruppen (Super-Region-Keying am EINEN Chokepoint,
@@ -52,9 +57,9 @@
    Spiegel-Film über Land fällt) · Verdunstungs-Boden (settled Zungen unter Render-
    Schwelle verdunsten, Quellen nie — die ewigen Blobs fallen) · Stau-Qualifikation nach
    Profi-Maßstab (nur geerdete, geschlossene Basen dämmen — Pfosten/Stege nie; echte
-   Dämme leben). OFFEN danach: Avatar-Kleider/Bewegung ≠ Studio · Kreatur-Tris/LOD
-   (Tri-Zensus im nächsten Trace) · Fahrzeugphysik-Tiefe · Körpermechanik (Fuß-IK) ·
-   Schwertschwung · Stadtpflanzung/Straßen — Reihung folgt dem Profi-Orakel-Audit.
+   Dämme leben). OFFEN danach: Avatar-KLEIDER ≠ Studio (die Bewegung ist seit V18.476
+   orakel-gebaut, s. §0.5 Bogen 2) · Kreatur-Tris/LOD (Tri-Zensus im nächsten Trace) ·
+   Fahrzeugphysik-Tiefe · Stadtpflanzung/Straßen — Reihung folgt dem Profi-Orakel-Audit.
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
    `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
    Nervensystem-DoD 5 · E-C/E-E/E-F.
@@ -67,32 +72,44 @@
    Kommentare gefallene Namen zitieren) — die Diät verlangt Anker-Wanderung in derselben Welle,
    nie blindes Strippen.
 5. **DIE DREI BÖGEN — vom PROFI-ORAKEL gereiht (8/10 System-Audits, 14.07.; je Mechanik
-   „wie machen es die Besten?", Referenzen im Audit-Journal wf_790d891e):**
-   **BOGEN 1 — RENDER (die Trace-Zahlen töten):** Material-je-Farbe → instanceColor über EIN
-   geteiltes Material (heute baut _archLeafMaterial je Part-Farbe eigenes Material+Pipeline —
-   der 1733-dc-Treiber; WELLE) → WebGPU-RenderBundles (THREE.BundleGroup liegt UNGENUTZT im
-   vendored r184 — statische Region-Subbäume einmal aufzeichnen; BOGEN) → Kreatur-Guss:
-   Rigid-Bind-GPU-Skinning (~5 Draws/Tier statt 81) + 3-Stufen-Leiter (der 26M-Tri-Wal; BOGEN).
-   **BOGEN 2 — KÖRPER (die sichtbarste Qualität):** weg-getriebene Gang-Phase statt Zeit
-   (Fuß-Gleiten; WELLE) + Posen-BLEND statt hartem Idle/Walk-Schnitt (WELLE) → Two-Bone-Fuß-IK
-   + Foot-Lock + Becken/Rumpf-Pitch für Mensch UND Tier (Tiere schweben heute 0,5 m + Sinus;
-   BOGEN) → Schwertschwung als 3-Phasen-Oberkörper-Layer + Klinge-Kapsel-Sweep + Hit-Stop
-   (swingSpeed∝1/√I erreicht endlich den Kampf; WELLE) → Tod-Kippen entlang _fieldGradient
-   statt Sofort-Despawn (WELLE).
-   **BOGEN 3 — LEBENDIGE KOPPLUNG (Welt reagiert):** Fluss-Strömung wirkt auf Schwimmer/Boot
-   (flowX/flowZ am EINEN Bewegungs-Chokepoint; WELLE) → Ripple/Splash/Kielwasser (kleines
-   kamerazentriertes Wellen-RT; BOGEN) → Gras-Interaktions-Sphären (Spieler/Ritt/Tiere biegen
-   Halme, GoT-Muster; WELLE) → EIN Wind-RICHTUNGS-Vektor für alles Sway (WELLE) → Szenen-
-   Refraktion (Beer-Lambert aufs echte Hintergrund-Pixel; WELLE).
-   QUER (wenn MP dran): Reconnect-Backoff+restartIce (WELLE) · Host-Sequencer für DSL-Ops ·
-   Zustands-CRC-Desync-Linse (Factorio-Muster) · 30-Hz-Snap-Interpolationspuffer. WEITERE
-   Orakel-Wellen: Quake-ClipVelocity (Gleiten statt Vollstopp; WELLE) · Fahr-Kinematik
-   (Rocket-League-GDC: Gierrate∝Input×Tempo, raus aus dem Geh-Controller; BOGEN) · Sync-Edit-
-   Remesh in Region/Worker (239-ms-Carve-Freeze; BOGEN) · Kachel-Erosion async (BOGEN) ·
-   Bloom-Mip-Kette (CoD-AW-Muster; WELLE) · seeded PRNG-Streams für ALLE Gameplay-Würfe ·
-   Impostor-Elevation (octahedral; BOGEN). Alt-Empfehlung (a) lebendiger Körper / (b) Seelen-
-   Vertiefung bleibt — Bogen 2 IST (a). NOCH UNGELESEN (Orakel gestoppt): regler · architektur ·
-   klang — Wiederaufnahme billig (8 Leser gecacht, resumeFromRunId wf_790d891e-152).
+   „wie machen es die Besten?", Referenzen im Audit-Journal wf_790d891e). DIE ACHT
+   TIER-1-WELLEN SIND GEBAUT (V18.476, je EINE Linse: kopplung · koerper-bewegung ·
+   kampf-gefuehl · schritt-klang · render-diaet · gpu-zeit · kreatur-kosten · reconnect):**
+   **BOGEN 1 — RENDER:** GEBAUT: die RENDER-DIÄT (EIN Material je Tag-Signatur statt je
+   Part-Farbe — der 1733-dc-Treiber; Farbe reist als Instanz-Kanal über _archSlotColor;
+   Review-Ernte: der Batch-Key trägt die r184-INDEX-KONSISTENZ #i/#x am Chokepoint,
+   gemischte Fixture in der Linse) · GPU-Zeit ECHT (timestamp-query, gpuMs echt|proxy).
+   OFFEN: WebGPU-RenderBundles (THREE.BundleGroup liegt UNGENUTZT im vendored r184 —
+   statische Region-Subbäume einmal aufzeichnen; BOGEN) → Kreatur-Guss: Rigid-Bind-
+   GPU-Skinning (~5 Draws/Tier statt 81) + 3-Stufen-Leiter (der 26M-Tri-Wal; BOGEN).
+   **BOGEN 2 — KÖRPER:** GEBAUT: weg-getriebene Gang-Phase (phase += speed·dt, das
+   Fahrzeug-Muster — Fuß-Gleiten tot) + Posen-BLEND w(speed) statt isMoving-Hartschnitt +
+   Two-Bone-Fuß-IK + Foot-Lock + Becken-Absenkung + Rumpf-Hang-Neigung + TIER-Bodenanker
+   (der 0,5-m-Schwebe-Sinus fällt; Root-Pitch aus 2 gecachten Bodenproben) · der
+   Schwertschwung (gate:kampf-gefuehl): 3-Phasen-Oberkörper-Layer, Dauer ∝ √I
+   (_swingDynamics — die attackSpeed-Parallel-Wahrheit fiel), Klingen-Kapsel-Sweep,
+   Hit-Stop 80 ms (nur Anzeige-Uhr), Tod-Kippen entlang _fieldGradient · SCHRITT-KLANG
+   (material-getriebene Timbres erde/stein/wasser über die EINE Klang-Maschine, Ereignis
+   je walkPhase-Halbzyklus). OFFEN: das Browser-Auge auf Gang/Schwung-Posen (Feel-Werte
+   in SWING_LAWS justierbar) · Avatar-KLEIDER ≠ Studio.
+   **BOGEN 3 — LEBENDIGE KOPPLUNG:** GEBAUT: Fluss-Strömung advektiert Schwimmer
+   (flowX/flowZ am EINEN Bewegungs-Chokepoint, Land nie) + Quake-ClipVelocity (Gleiten
+   statt Vollstopp, ≤3 Kontaktebenen) + EIN Wind-RICHTUNGS-Vektor für alles Sway
+   (Baum/Impostor/Gras DIESELBE Quelle) + Gras-Interaktions-Sphären (Spieler/Ritt/
+   Kreaturen biegen Halme, GoT-Muster, render-rein). OFFEN: Ripple/Splash/Kielwasser
+   (kamerazentriertes Wellen-RT; BOGEN) · Szenen-Refraktion (Beer-Lambert; WELLE).
+   QUER: GEBAUT: Reconnect-Backoff+restartIce (Perfect Negotiation) + Snap-
+   Interpolationspuffer (nur Nicht-Lockstep-Pfad; gate:reconnect) · Kreatur-Kosten
+   (Anim-Raten-Leiter fern 1/2·1/4·0 + Standbild-Freeze neutral + mensch-Fern-Guss
+   lod≥1; gate:kreatur-kosten). OFFEN (wenn MP dran): Host-Sequencer für DSL-Ops ·
+   Zustands-CRC-Desync-Linse (Factorio-Muster). WEITERE Orakel-Wellen: Fahr-Kinematik
+   (Rocket-League-GDC: Gierrate∝Input×Tempo, raus aus dem Geh-Controller; BOGEN) ·
+   Sync-Edit-Remesh in Region/Worker (239-ms-Carve-Freeze; BOGEN) · Kachel-Erosion
+   async (BOGEN) · Bloom-Mip-Kette (CoD-AW-Muster; WELLE) · seeded PRNG-Streams für
+   ALLE Gameplay-Würfe · Impostor-Elevation (octahedral; BOGEN). Alt-Empfehlung (a)
+   lebendiger Körper / (b) Seelen-Vertiefung bleibt — Bogen 2 IST (a). NOCH UNGELESEN
+   (Orakel gestoppt): regler · architektur · klang — Wiederaufnahme billig (8 Leser
+   gecacht, resumeFromRunId wf_790d891e-152).
 6. **Benannte Kleinreste MIT WARTEBEDINGUNG (bewusst geurteilt — nichts erfinden):**
    N5.4 scatter-Verdrahtung [wartet aufs erste scatter-Rezept] · N6.5 spring/pitch [M4-Entscheid] ·
    Rüstung/Trank-Rezepte + Geräte-Gestalten + L1-Diät [warten auf Lab-Presets/-Entscheide] ·

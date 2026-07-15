@@ -4354,8 +4354,15 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
+        // KAMPF-GEFÜHL (Test wandert mit, Lehre 6): der Kill despawnt NICHT mehr
+        // sofort — der Körper KIPPT erst (userData.dying, ~1 s + Nachklang), DANN
+        // kommt der bestehende Abschied. Die Frist synthetisch verstreichen lassen:
+        // updateCreatures räumt den gekippten Körper.
+        const kipptErst = killR.killed && !!c1.userData.dying && r.state.creatures.indexOf(c1) !== -1;
+        c1.userData.dying.t = 9999;
+        r.updateCreatures(0.016);
         out.killRemoves =
-            killR.killed && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+            kipptErst && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
@@ -4363,6 +4370,11 @@ async function checkBandV1753CreatureCombat(ctx) {
         const c2 = r.spawnCreatureAt(pm.x + 280, pm.y, pm.z + 280, "happy", "wesen");
         r.damageCreature(c2, 99999, { source: "world" });
         out.noLootForWorldKill = matUnits(p.inventory) === 0;
+        // KAMPF-GEFÜHL — auch der Welt-Tod kippt erst; den Körper synthetisch räumen.
+        if (c2.userData.dying) {
+            c2.userData.dying.t = 9999;
+            r.updateCreatures(0.016);
+        }
 
         // (8) der DSL-Op damage_creature schädigt eine Kreatur per Index (der Konsument)
         const c3 = r.spawnCreatureAt(pm.x + 300, pm.y, pm.z + 300, "happy", "wesen");
@@ -4389,7 +4401,10 @@ async function checkBandV1753CreatureCombat(ctx) {
     );
     check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
     check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
-    check("V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) entfernt die Kreatur aus state.creatures", res.killRemoves);
+    check(
+        "V17.53 Kampf C: KONSUM — ein Spieler-Kill (hp≤0) KIPPT die Kreatur (dying), der Abschied räumt sie nach der Frist",
+        res.killRemoves
+    );
     check(
         "V17.53 Kampf C: KONSUM — der Loot eines Spieler-Kills fällt ins Inventar (Erlegen ≡ Ernten)",
         res.lootToInventory
@@ -4438,17 +4453,35 @@ async function checkBandV1754PlayerAttack(ctx) {
         const _capG = r.state.maxCreatures;
         r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 16;
         const c1 = r.spawnCreatureAt(pm.x + 320, pm.y, pm.z + 320, "happy", "wesen");
+        // KAMPF-GEFÜHL (Test wandert mit, Lehre 6): der Klick ist nur noch das
+        // AUSLÖSEN des 3-Phasen-Schwungs — das TREFFEN macht der Klingen-Sweep in
+        // der Strike-Phase. Das Ziel VOR den Spieler stellen (Sweep-Reichweite) und
+        // den Schwung synthetisch über die Anzeige-Uhr durchtreiben.
+        const savedYaw = r.state.yaw;
+        r.state.yaw = 0;
+        c1.position.set(pm.x, pm.y, pm.z + 1.6);
+        p._swing = null;
         p.lastAttackAt = -Infinity;
         setEmo({});
         const hp1Before = c1.userData.hp;
         const atk1 = r._playerAttackCreature(c1);
+        let swT = p._swing ? p._swing.lastT : 0;
+        for (let k = 0; k < 80 && p._swing; k++) {
+            swT += 0.03;
+            r._tickKampfSchwung(swT);
+        }
         out.attackDamages = atk1 === true && c1.userData.hp < hp1Before;
         // (2) der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität via die W2-Brücke)
         out.attackFeelsChaos = e.chaos > 0;
-        // (3) attackSpeed-Cooldown: ein sofortiger zweiter Schlag prallt ab (kein Schaden)
+        // (3) der Schwung IST der Cooldown (Dauer ∝ √I): ein zweiter Klick WÄHREND des
+        // laufenden Schwungs prallt ab (kein neuer Schwung, kein Schaden — die Strike-
+        // Phase beider Klicks ist noch nicht getickt)
         const hp1Mid = c1.userData.hp;
-        const atk2 = r._playerAttackCreature(c1);
-        out.cooldownGates = atk2 === false && c1.userData.hp === hp1Mid;
+        const atkA = r._playerAttackCreature(c1);
+        const atkB = r._playerAttackCreature(c1);
+        out.cooldownGates = atkA === true && atkB === false && c1.userData.hp === hp1Mid;
+        p._swing = null;
+        r.state.yaw = savedYaw;
 
         // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
         // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
@@ -4458,6 +4491,11 @@ async function checkBandV1754PlayerAttack(ctx) {
         const leb2 = r.computeCreatureCompoundTags(c2).lebendig || 0;
         r.damageCreature(c2, 99999, { source: "player" });
         out.guiltGatedByLiving = leb2 > 0.02 ? e.sorrow > 0 : e.sorrow < 0.01;
+        // KAMPF-GEFÜHL — der Kill kippt erst (dying); den Körper synthetisch räumen.
+        if (c2.userData.dying) {
+            c2.userData.dying.t = 9999;
+            r.updateCreatures(0.016);
+        }
 
         // ALTLASTEN-NULL: das Material-Wesen (quarz-sprite) ist gefallen — alle
         // lebenden Kreaturen sind Tiere (lebendig > 0); das Schuld-GATE selbst
@@ -4495,10 +4533,13 @@ async function checkBandV1754PlayerAttack(ctx) {
         "V17.54 Kampf D: _pickCreatureAtCrosshair + _playerAttackCreature + die attack-Emotion + COMBAT_REACH existieren",
         res.exists
     );
-    check("V17.54 Kampf D: KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Angriff)", res.attackDamages);
+    check(
+        "V17.54 Kampf D: KONSUM — der LMB löst den Schwung aus, der Klingen-Sweep der Strike-Phase schädigt",
+        res.attackDamages
+    );
     check("V17.54 Kampf D: der Angriff feuert den Zorn-Affekt (chaos — die Kampf-Intensität)", res.attackFeelsChaos);
     check(
-        "V17.54 Kampf D: attackSpeed-Cooldown — ein sofortiger zweiter Schlag prallt ab (kein Schaden)",
+        "V17.54 Kampf D: Schwung-Cooldown (Dauer ∝ √I) — ein Klick WÄHREND des Schwungs prallt ab (kein Schaden)",
         res.cooldownGates
     );
     check(
@@ -18491,9 +18532,26 @@ async function checkBandWelle6GHylomorphism(ctx) {
                         }
                     });
                 } else if (eb.instanced) {
+                    // RENDER-DIÄT (V18.476): das geteilte Tag-Signatur-Material ist
+                    // WEISS, die Part-Farbe reist als Instanz-Farbe (leaf.tint =
+                    // _archPartTintColor-Hex; die Engine multipliziert instanceColor
+                    // auf den colorNode). Der GERENDERTE Wert ist mat.color × tint —
+                    // die Probe liest genau diese EINE Multiplikation (Alt-Pfad:
+                    // tint undefined ⇒ Material-Farbe pur, wie vor der Diät).
                     const flat = r._archFlattenBlueprint("felsbogen");
-                    if (flat.leaves[0] && flat.leaves[0].mat && flat.leaves[0].mat.color) {
-                        firstMeshHex = flat.leaves[0].mat.color.getHex();
+                    const l0 = flat.leaves[0];
+                    if (l0 && l0.mat && l0.mat.color) {
+                        const mc = l0.mat.color;
+                        let fr = mc.r;
+                        let fg = mc.g;
+                        let fbb = mc.b;
+                        if (l0.tint !== undefined) {
+                            fr *= ((l0.tint >> 16) & 0xff) / 255;
+                            fg *= ((l0.tint >> 8) & 0xff) / 255;
+                            fbb *= (l0.tint & 0xff) / 255;
+                        }
+                        firstMeshHex =
+                            (Math.round(fr * 255) << 16) | (Math.round(fg * 255) << 8) | Math.round(fbb * 255);
                     }
                 }
                 out.felsbogenMeshHex = firstMeshHex;
@@ -19943,10 +20001,17 @@ async function checkBandVoxelTerrainCore(ctx) {
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
-                const expected = voxelY + 0.5;
+                // KÖRPER-BEWEGUNG (4) — TIER-BODENKONTAKT: der +0.5-m-Schwebe-
+                // Anker + Sinus-Bob sind gefallen; die Sohlen stehen AUF
+                // _voxelSurfaceY (±0.5 deckt die Hang-Proben-Mitte; der
+                // Schwimm-Bob lebt nur noch im Wasser).
+                const expected = voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
-                out.creatureNotAtFallback = Math.abs(actual - 0.5) > 1.0;
+                // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
+                const fallbackY = r.state.terrainBaseHeight || 0;
+                out.creatureNotAtFallback =
+                    Math.abs(voxelY - fallbackY) < 1.0 ? true : Math.abs(actual - fallbackY) > 0.5;
             }
         }
 
@@ -19999,7 +20064,7 @@ async function checkBandVoxelTerrainCore(ctx) {
             voxelP5c1Results.creatureOnVoxelSurface
         );
         check(
-            "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y≠0.5)",
+            "Voxel V9.28: Kreatur fällt NICHT auf den groundHeightField-null-Fallback (y ≠ Fallback-Basis)",
             voxelP5c1Results.creatureNotAtFallback
         );
         // V9.37 Phase 5c.2.c.3.b.i: die zwei V9.28-Heightfield-Regression-

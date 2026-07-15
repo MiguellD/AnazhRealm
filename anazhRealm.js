@@ -685,6 +685,16 @@ class AnazhRealm {
                 lastBroadcastAt: 0,
                 lastError: null,
                 connected: false,
+                // RECONNECT #1 (Orakel Tier-1 #10) — WS-Rejoin. intentionalClose
+                // stempelt das BEWUSSTE Ende (shutdownP2PSync) — nur ungewollte
+                // Risse planen den Rejoin (Backoff 1 s·2^n, Deckel 30 s, SEEDED
+                // Jitter; s. _p2pScheduleReconnect). reconnectAttempt heilt erst
+                // mit dem nächsten OFFENEN Socket (open-Handler), bewusst NICHT
+                // im shutdown — der Retry-Loop re-initet über shutdown und
+                // verlöre sonst sein Backoff-Gedächtnis.
+                intentionalClose: false,
+                reconnectAttempt: 0,
+                reconnectTimer: null,
                 // V18.382 — LOCKSTEP-MP Stufe 2 (nur Inputs übers Netz, default AN):
                 // der Sender batcht pro Fixed-Step (seq · yaw · Tasten-Bitmask), der
                 // Empfänger simuliert den Fremd-Charakter durch DENSELBEN Schritt-Pfad.
@@ -6055,26 +6065,46 @@ class AnazhRealm {
         p2p.peerId = p2p.peerId || this.p2pGenerateId();
         p2p.room = room;
         p2p.lastError = null;
+        // RECONNECT #1 — dieser Aufbau ist GEWOLLT: die Abbruch-Markierung des
+        // letzten shutdown fällt (der close-Handler darf wieder heilen).
+        p2p.intentionalClose = false;
         try {
             const ws = new WebSocket(url);
             p2p.ws = ws;
+            // Stale-Wache in JEDEM Handler: ein Re-Init ersetzt p2p.ws — die
+            // asynchron nachlaufenden Events des ALTEN Sockets dürfen den
+            // frischen Zustand nicht anfassen (und nie einen Rejoin planen).
             ws.addEventListener("open", () => {
+                if (p2p.ws !== ws) return;
                 p2p.connected = true;
+                // RECONNECT #1 — die Verbindung steht: der Backoff-Zähler heilt.
+                p2p.reconnectAttempt = 0;
                 this._p2pSignal({ type: "join", room: p2p.room, peerId: p2p.peerId });
                 this.log(`P2P verbunden mit ${url} (raum=${p2p.room.slice(0, 8)}, peer=${p2p.peerId})`, "INFO");
                 this.p2pUpdateStatus();
             });
             ws.addEventListener("message", (event) => {
+                if (p2p.ws !== ws) return;
                 this.p2pHandleMessage(event.data);
                 this.p2pUpdateStatus();
             });
             ws.addEventListener("close", () => {
+                if (p2p.ws !== ws) return;
                 p2p.connected = false;
                 this._p2pClearAllPeerMeshes();
-                this.log("P2P-Verbindung beendet", "INFO");
                 this.p2pUpdateStatus();
+                // RECONNECT #1 (Orakel Tier-1 #10) — ein UNGEWOLLTER Riss
+                // (Netz-Blip, Server-Neustart) plant den Rejoin mit Exponential-
+                // Backoff (Raum+peerId sind bekannt); das bewusste close
+                // (shutdownP2PSync stempelt intentionalClose) bleibt endgültig.
+                if (p2p.enabled && !p2p.intentionalClose) {
+                    this._p2pScheduleReconnect();
+                } else {
+                    this.log("P2P-Verbindung beendet", "INFO");
+                }
             });
             ws.addEventListener("error", () => {
+                if (p2p.ws !== ws) return;
                 p2p.lastError = "WebSocket-Fehler (signaling-server läuft?)";
                 p2p.connected = false;
                 this.log("P2P-Fehler — signaling-server erreichbar?", "WARN");
@@ -6090,12 +6120,23 @@ class AnazhRealm {
 
     shutdownP2PSync() {
         const p2p = this.state.p2p;
+        // RECONNECT #1 — BEWUSSTES Ende: markieren (der close-Handler dieses
+        // Sockets plant dann nie einen Rejoin) + einen schon geplanten Rejoin
+        // fällen. Jeder explizite (Re-)Aufbau läuft hier durch (initP2PSync
+        // shuttet zuerst) — ein pendelnder Timer wäre sonst ein Parallelpfad.
+        p2p.intentionalClose = true;
+        if (p2p.reconnectTimer) {
+            clearTimeout(p2p.reconnectTimer);
+            p2p.reconnectTimer = null;
+        }
         if (p2p.ws) {
+            const warVerbunden = p2p.connected === true;
             try {
                 p2p.ws.close();
             } catch {
                 /* defensive */
             }
+            if (warVerbunden) this.log("P2P-Verbindung beendet", "INFO");
         }
         p2p.ws = null;
         p2p.connected = false;
@@ -6124,6 +6165,52 @@ class AnazhRealm {
         for (const [key, rc] of p2p.remoteCreatures) this._disposeRemoteCreature(key, rc);
         // W7 Phase 4 — die geholte Lobby-Liste verfällt mit der Verbindung.
         p2p.lobby.rooms = [];
+    }
+
+    // ── RECONNECT #1 (Orakel Tier-1 #10) — WS-REJOIN MIT EXPONENTIAL-BACKOFF ──
+    // Vorher beendete jeder Netz-Blip die Ko-Präsenz STILL: der close räumte
+    // die Peer-Meshes und blieb tot. Jetzt plant ein ungewollter Riss den
+    // Rejoin (Raum+peerId sind bekannt; der Server nimmt denselben peerId
+    // wieder an): 1 s·2^n, Deckel 30 s, plus SEEDED Jitter — deterministischer
+    // FNV-1a-Hash über Versuchszähler+peerId statt Math.random (Lehre 7:
+    // Substanz zieht nie aus Math.random; zwei Clients streuen trotzdem
+    // auseinander, weil ihre peerIds verschieden hashen). Abbruch NUR über
+    // das bewusste close (shutdownP2PSync stempelt intentionalClose).
+    _p2pReconnectJitterMs(attempt, peerId) {
+        const s = String(attempt) + ":" + String(peerId || "");
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193) >>> 0;
+        }
+        return h % AnazhRealm.P2P_RECONNECT_JITTER_MS;
+    }
+
+    // Die EINE Delay-Formel — ZWEI Leser: der WS-Rejoin (_p2pScheduleReconnect)
+    // und die RTC-Heilung (_p2pHealRtcPeer) atmen im selben Takt.
+    _p2pReconnectDelayMs(attempt, peerId) {
+        const base = Math.min(AnazhRealm.P2P_RECONNECT_MAX_MS, AnazhRealm.P2P_RECONNECT_BASE_MS * Math.pow(2, attempt));
+        return base + this._p2pReconnectJitterMs(attempt, peerId);
+    }
+
+    _p2pScheduleReconnect() {
+        const p2p = this.state.p2p;
+        if (!p2p.enabled || p2p.intentionalClose) return false;
+        if (p2p.reconnectTimer) return false; // schon geplant
+        if (!p2p.room) return false; // nie beigetreten — nichts zu heilen
+        const attempt = p2p.reconnectAttempt++;
+        const delay = this._p2pReconnectDelayMs(attempt, p2p.peerId);
+        this.log(`P2P-Riss — Rejoin-Versuch ${attempt + 1} in ${(delay / 1000).toFixed(1)} s`, "WARN");
+        p2p.reconnectTimer = setTimeout(() => {
+            p2p.reconnectTimer = null;
+            if (!p2p.enabled || p2p.intentionalClose) return;
+            const res = this.initP2PSync(p2p.room, { url: p2p.url });
+            // Scheitert schon der AUFBAU (kein close-Event kommt dann je),
+            // plant der nächste Versuch HIER — sonst trägt der close-Handler
+            // des frischen Sockets die Kette weiter.
+            if (!res || res.ok !== true) this._p2pScheduleReconnect();
+        }, delay);
+        return true;
     }
 
     // W7 Phase 1: roher WS-Versand. Trägt das Signaling (join, rtc-offer/
@@ -6224,7 +6311,19 @@ class AnazhRealm {
             this.log(`RTCPeerConnection-Aufbau fehlgeschlagen: ${err.message}`, "WARN");
             return null;
         }
-        const rtc = { pc, channel: null, open: false, isInitiator: false, pendingIce: [] };
+        const rtc = {
+            pc,
+            channel: null,
+            open: false,
+            isInitiator: false,
+            pendingIce: [],
+            // RECONNECT #2 — RTC-Heilung: Flanken-Gedächtnis (genau ein
+            // Heil-Versuch je failed-ÜBERGANG) + Backoff-Zähler + geplanter
+            // Heil-Timer (s. _p2pHealRtcPeer).
+            lastConnState: "new",
+            healAttempt: 0,
+            healTimer: null,
+        };
         p2p.rtcPeers.set(peerId, rtc);
         pc.onicecandidate = (ev) => {
             this._p2pSignal({
@@ -6235,13 +6334,63 @@ class AnazhRealm {
         };
         pc.ondatachannel = (ev) => this._p2pWireChannel(peerId, ev.channel);
         pc.onconnectionstatechange = () => {
-            if (pc.connectionState === "failed" || pc.connectionState === "closed") {
+            const cs = pc.connectionState;
+            // RECONNECT #2 — steht die Verbindung (wieder), heilt der Backoff.
+            if (cs === "connected") rtc.healAttempt = 0;
+            if (cs === "failed" || cs === "closed") {
                 rtc.open = false;
                 this._p2pUpdateMeshActive();
                 this.p2pUpdateStatus();
+                // RECONNECT #2 — GENAU EIN Heil-Versuch je failed-Übergang
+                // (Flanke, nie Pegel — kein restartIce-Sturm); Wiederholungen
+                // atmen über den Backoff in _p2pHealRtcPeer. "closed" ist
+                // endgültig (der Peer-Abbau räumt die Verbindung).
+                if (cs === "failed" && rtc.lastConnState !== "failed") this._p2pHealRtcPeer(peerId);
             }
+            rtc.lastConnState = cs;
         };
         return rtc;
+    }
+
+    // RECONNECT #2 — RTC-HEILUNG nach dem Perfect-Negotiation-Muster (MDN):
+    // connectionState "failed" setzte vorher nur open=false — die Verbindung
+    // blieb tot, obwohl restartIce() + Re-Offer sie meist heilt (neue ICE-
+    // Kandidaten nach Netzwechsel/NAT-Rebind). NUR der deterministische
+    // Initiator (lexikographisch kleinere peerId — DIESELBE Glare-Wand wie
+    // _p2pConnectToPeer) offeriert mit iceRestart; der andere ruft nur
+    // restartIce() (setzt das Restart-Flag) und wartet auf den Offer, den
+    // _p2pMsgRtcOffer wie jeden Offer beantwortet. Der erste Versuch je
+    // failed-Übergang läuft SOFORT, Wiederholungen über die EINE Backoff-
+    // Formel (_p2pReconnectDelayMs — 1 s·2^n ≤ 30 s + seeded Jitter). Den
+    // Zustand danach trägt die bestehende Lockstep-Anker-Selbstheilung.
+    _p2pHealRtcPeer(peerId) {
+        const p2p = this.state.p2p;
+        const rtc = p2p.rtcPeers.get(peerId);
+        if (!rtc || rtc.healTimer) return false;
+        const attempt = rtc.healAttempt || 0;
+        rtc.healAttempt = attempt + 1;
+        const run = () => {
+            rtc.healTimer = null;
+            if (p2p.rtcPeers.get(peerId) !== rtc) return; // Peer ging/ersetzt
+            if (rtc.pc.connectionState !== "failed") return; // schon geheilt
+            try {
+                if (typeof rtc.pc.restartIce === "function") rtc.pc.restartIce();
+            } catch {
+                /* defensive — ältere Engines ohne restartIce */
+            }
+            if (String(p2p.peerId) < String(peerId)) {
+                rtc.pc
+                    .createOffer({ iceRestart: true })
+                    .then((offer) => rtc.pc.setLocalDescription(offer))
+                    .then(() => {
+                        this._p2pSignal({ type: "rtc-offer", to: peerId, sdp: rtc.pc.localDescription });
+                    })
+                    .catch((err) => this.log(`RTC-Heil-Offer an ${peerId} fehlgeschlagen: ${err.message}`, "WARN"));
+            }
+        };
+        if (attempt === 0) run();
+        else rtc.healTimer = setTimeout(run, this._p2pReconnectDelayMs(attempt - 1, peerId));
+        return true;
     }
 
     _p2pWireChannel(peerId, channel) {
@@ -7304,6 +7453,11 @@ class AnazhRealm {
     _p2pCloseRtcPeer(peerId) {
         const rtc = this.state.p2p.rtcPeers.get(peerId);
         if (!rtc) return;
+        // RECONNECT #2 — ein geplanter Heil-Versuch stirbt mit dem Peer.
+        if (rtc.healTimer) {
+            clearTimeout(rtc.healTimer);
+            rtc.healTimer = null;
+        }
         try {
             if (rtc.channel) rtc.channel.close();
         } catch {
@@ -7540,29 +7694,46 @@ class AnazhRealm {
         const z = Number(msg.z);
         const yaw = Number(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
+        const nowMs = performance.now();
         // V18.382 — LOCKSTEP: treibt der Ghost diesen Peer (frisch gesteppt), wird die
         // pos-Nachricht zur AUTORITÄT für den Drift-Wächter umgeleitet (statt die glatte
         // Ghost-Bewegung mit 30-Hz-Snaps zu überschreiben). Ohne frischen Ghost (kein
-        // Lockstep/entseedet) exakt das alte Verhalten — graziöser Fallback.
-        const ls = entry.lockstep;
-        if (ls && ls.seeded && performance.now() - ls.lastStepAt < 1200) {
+        // Lockstep/entseedet) exakt das alte Verhalten — graziöser Fallback. Die EINE
+        // Frische-Frage lebt in _p2pLockstepDrives — der Snap-Sampler liest sie auch.
+        if (this._p2pLockstepDrives(entry, nowMs)) {
+            const ls = entry.lockstep;
             ls.authX = x;
             ls.authY = y;
             ls.authZ = z;
-            entry.lastSeen = performance.now() / 1000;
+            entry.lastSeen = nowMs / 1000;
+            // Der Ghost fährt — alte Snaps sind Geschichte (kein Misch-Render
+            // beim späteren Rückfall; der Puffer füllt sich dann frisch).
+            if (entry.snapBuf && entry.snapBuf.length) entry.snapBuf.length = 0;
             return;
         }
         // Ring 11 V3 — Bewegungs-Erkennung für die Peer-Animation: ein
         // spürbarer Positions-Sprung markiert "in Bewegung" für 0.25 s
         // (_p2pUpdatePeer leitet daraus den Geh-/Schwimm-Zyklus ab).
         if (Math.hypot(x - entry.x, z - entry.z) > 0.015) {
-            entry.lastMovedAt = performance.now() / 1000;
+            entry.lastMovedAt = nowMs / 1000;
         }
+        // RECONNECT #3 — SNAPSHOT-PUFFER (Valve-Source-Muster): der rohe 30-Hz-
+        // Snap landet mit Empfangszeit-Stempel im bounded Puffer; der Render
+        // (_p2pSampleSnapBuf) blickt fest P2P_SNAP_INTERP_DELAY_MS in die
+        // Vergangenheit und interpoliert zwischen den zwei passenden Snaps.
+        // NUR dieser Nicht-Lockstep-Pfad — der Lockstep-Ghost oben bleibt
+        // byte-heilig.
+        if (!entry.snapBuf) entry.snapBuf = [];
+        entry.snapBuf.push({ t: nowMs, x, y, z, yaw });
+        const over = entry.snapBuf.length - AnazhRealm.P2P_SNAP_BUF_MAX;
+        if (over > 0) entry.snapBuf.splice(0, over);
+        // Das Direkt-Schreiben bleibt der Fallback: unter 2 Snaps (Erst-
+        // Kontakt) rendert _p2pUpdatePeer weiter die rohe letzte Position.
         entry.x = x;
         entry.y = y;
         entry.z = z;
         entry.yaw = yaw;
-        entry.lastSeen = performance.now() / 1000;
+        entry.lastSeen = nowMs / 1000;
     }
 
     _p2pMsgDsl(msg, p2p) {
@@ -7823,6 +7994,10 @@ class AnazhRealm {
             avatarName: null,
             walkPhase: 0,
             lastMovedAt: 0,
+            // RECONNECT #3 — Snapshot-Puffer des Nicht-Lockstep-pos-Pfads:
+            // {t,x,y,z,yaw} in Empfangszeit, bounded (s. _p2pMsgPos). Der
+            // Render sampelt daraus ~120 ms in der Vergangenheit.
+            snapBuf: null,
             nameLabel: null,
             // W13 Phase 3 — Vibe-Pass-Identität des Peers. vibePassId ist der
             // behauptete öffentliche ed25519-Schlüssel; vibeVerified wird erst
@@ -7995,10 +8170,72 @@ class AnazhRealm {
 
     // Ring 11 V3 — pro-Frame-Update eines Peers: Position, Animation (aus dem
     // Positions-Stream abgeleitet), Aura, Name-Schild.
+    // V18.382-Lockstep · RECONNECT #3 — die EINE Frische-Frage: treibt der
+    // Lockstep-Ghost diesen Peer gerade (geseedet + frisch gesteppt)? ZWEI
+    // Leser (Chokepoint statt Kopie, Lehre 2): _p2pMsgPos (Autoritäts-
+    // Umleitung) und _p2pSampleSnapBuf (der Sampler tritt zurück).
+    _p2pLockstepDrives(entry, nowMs) {
+        const ls = entry.lockstep;
+        return !!(ls && ls.seeded && nowMs - ls.lastStepAt < 1200);
+    }
+
+    // RECONNECT #3 — der pure Interpolations-Kern (Fixture-fähig): findet die
+    // zwei Snaps um renderT und mischt linear; vor dem ältesten/hinter dem
+    // jüngsten wird GEKLEMMT (kein Extrapolations-Überschwingen). yaw reist
+    // über den kürzesten Bogen (atan2-Normalisierung) — kein 359°→1°-Spin.
+    _p2pSnapInterpolate(buf, renderT) {
+        if (!Array.isArray(buf) || buf.length === 0) return null;
+        const first = buf[0];
+        if (renderT <= first.t) return { x: first.x, y: first.y, z: first.z, yaw: first.yaw };
+        const last = buf[buf.length - 1];
+        if (renderT >= last.t) return { x: last.x, y: last.y, z: last.z, yaw: last.yaw };
+        for (let i = buf.length - 1; i >= 1; i--) {
+            const a = buf[i - 1];
+            const b = buf[i];
+            if (renderT >= a.t && renderT <= b.t) {
+                const span = b.t - a.t;
+                const f = span > 0 ? (renderT - a.t) / span : 1;
+                const dyaw = Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw));
+                return {
+                    x: a.x + (b.x - a.x) * f,
+                    y: a.y + (b.y - a.y) * f,
+                    z: a.z + (b.z - a.z) * f,
+                    yaw: a.yaw + dyaw * f,
+                };
+            }
+        }
+        return { x: last.x, y: last.y, z: last.z, yaw: last.yaw };
+    }
+
+    // RECONNECT #3 — der Render-Sampler: vor dem Zeichnen die Position
+    // P2P_SNAP_INTERP_DELAY_MS in der Vergangenheit aus dem Snap-Puffer
+    // interpolieren (Valve-Source-Muster — der feste Rückblick macht die
+    // rohen 30-Hz-Snaps butterweich und überbrückt einen verlorenen Snap).
+    // Tritt zurück, wenn der Lockstep-Ghost treibt (der bleibt byte-heilig)
+    // oder weniger als zwei Snaps liegen (rohes Erst-Kontakt-Verhalten).
+    _p2pSampleSnapBuf(entry, nowMs) {
+        const buf = entry.snapBuf;
+        if (!buf || buf.length < 2) return false;
+        if (this._p2pLockstepDrives(entry, nowMs)) return false;
+        const renderT = nowMs - AnazhRealm.P2P_SNAP_INTERP_DELAY_MS;
+        // Puffer-Diät: alles VOR dem älteren Stütz-Snap ist verbraucht.
+        while (buf.length > 2 && buf[1].t <= renderT) buf.shift();
+        const s = this._p2pSnapInterpolate(buf, renderT);
+        if (!s) return false;
+        entry.x = s.x;
+        entry.y = s.y;
+        entry.z = s.z;
+        entry.yaw = s.yaw;
+        return true;
+    }
+
     _p2pUpdatePeer(entry, t, dt) {
         const mesh = entry.mesh;
         if (!mesh) return;
         const nowSec = (typeof performance !== "undefined" ? performance.now() : t * 1000) / 1000;
+        // RECONNECT #3 — erst die interpolierte Vergangenheit samplen (nur
+        // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
+        this._p2pSampleSnapBuf(entry, nowSec * 1000);
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
         const underwater = typeof this.state.waterLevel === "number" && entry.y < this.state.waterLevel;
         // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
@@ -8032,12 +8269,48 @@ class AnazhRealm {
         // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
         // dem Positions-Stream — keine Extra-Bandbreite.
         if (entry.meshKind === "soul") {
-            const def = this.playerSoulDefs[entry.soulName];
-            if (def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
-                if (underwater) entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
-                else if (isMoving) entry.walkPhase += dt * 5.5;
-                def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+            // KREATUR-KOSTEN (3) — der FERNE Mensch trägt die gemergte lod1-
+            // Fern-Gestalt (der EINE Toggle-Chokepoint `_menschFernToggle`,
+            // TIER_FERN-Muster); hinterm Fern-Toggle ruht auch der Rig-Tick
+            // (die nahe Gestalt ist verdeckt — unsichtbar animiert niemand).
+            // Nur der Mensch-Guss trägt _menschFern; andere Seelen byte-alt.
+            let fernAktiv = false;
+            const mf = mesh.userData && mesh.userData._menschFern;
+            if (mf) {
+                const pp = this.state.playerMesh && this.state.playerMesh.position;
+                if (pp) {
+                    const fdx = entry.x - pp.x;
+                    const fdz = entry.z - pp.z;
+                    this._menschFernToggle(mesh, fdx * fdx + fdz * fdz);
+                }
+                fernAktiv = !!(mf.fern && mf.fern.visible);
             }
+            const def = this.playerSoulDefs[entry.soulName];
+            if (!fernAktiv && def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
+                if (underwater) {
+                    entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+                } else if (mesh.userData.rig) {
+                    // KÖRPER-BEWEGUNG — der Peer-Biped geht dieselbe WEG-PHASE +
+                    // Posen-Blende (der EINE Gang-Tick-Chokepoint): Tempo aus dem
+                    // Positions-Strom (EWMA + NaN-Wand, keine Extra-Bandbreite),
+                    // OHNE Boden-IK (Budget-Disziplin: der Fuß-Anker gehört dem
+                    // lokalen Avatar; der nahe Peer trägt Blend + Weg-Takt).
+                    let spd = 0;
+                    if (Number.isFinite(entry._gaitPX) && dt > 1e-4) {
+                        spd = Math.hypot(entry.x - entry._gaitPX, entry.z - entry._gaitPZ) / dt;
+                        if (!Number.isFinite(spd) || spd > 20) spd = 0;
+                    }
+                    entry._gaitSpeed = (entry._gaitSpeed || 0) * 0.7 + spd * 0.3;
+                    const gaitP = this._gaitTick(mesh, entry, entry._gaitSpeed, dt, null);
+                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater, undefined, gaitP);
+                } else {
+                    if (isMoving) entry.walkPhase += dt * 5.5;
+                    def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
+                }
+            }
+            entry._gaitPX = entry.x;
+            entry._gaitPZ = entry.z;
         }
         // Name-Schild folgt über dem Kopf.
         if (entry.nameLabel) {
@@ -10393,6 +10666,186 @@ class AnazhRealm {
         gain.connect(s.masterGain);
         osc.start(t);
         osc.stop(t + 0.2);
+    }
+
+    // KAMPF-GEFÜHL (Orakel Tier-1 #5) — der Treffer-One-Shot: die SUBSTANZ des
+    // Getroffenen färbt das Timbre (härte klirrt hell + sägig · dichte wummert
+    // tief · lebendig tönt weich) — dieselbe Tag→Klang-Sprache wie
+    // playInventoryHoverPing, DIESELBE Maschine (state.symphony.masterGain, KEIN
+    // zweiter AudioContext). Stimme-aus respektiert: ohne aktivierte Symphonie
+    // (s.enabled false) bleibt der Treffer stumm — kein Auto-Start.
+    _playKampfOneShot(tags) {
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx || !s.masterGain) return false;
+        const t = s.ctx.currentTime;
+        const haerte = (tags && tags["härte"]) || 0;
+        const dichte = (tags && tags.dichte) || 0;
+        const lebendig = (tags && tags.lebendig) || 0;
+        const osc = s.ctx.createOscillator();
+        osc.type = haerte >= Math.max(dichte, lebendig) ? "sawtooth" : lebendig >= dichte ? "sine" : "triangle";
+        osc.frequency.value = Math.max(60, 160 + haerte * 480 - dichte * 70);
+        const gain = s.ctx.createGain();
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.14, t + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+        osc.connect(gain);
+        gain.connect(s.masterGain);
+        osc.start(t);
+        osc.stop(t + 0.18);
+        return true;
+    }
+
+    // ═══ SCHRITT-KLANG (Orakel Tier-1 #7) — der konstanteste Feedback-Kanal ═══
+    // Material-getriebene Schritt- und Lande-Klänge, asset-frei (Farnell-
+    // Prinzip: die Quelle ist IMMER ein Rausch-Burst, das MATERIAL ist der
+    // Filter — Tabelle AnazhRealm.SCHRITT_KLANG, M8: Tabelle vor if). Alles
+    // RENDER-seitig (Konsument der Gang-Phase + der Sim-Wahrheiten isInAir/
+    // _fieldVy) — die fixe Sim liest und schreibt hier NIE.
+    // Linse: gate:schritt-klang.
+
+    // DER EINE SCHRITT-TICK (Konsument: animatePlayerSoul, direkt nach dem
+    // Gang-Tick — KEINE eigene Uhr): je Halbzyklus (π) der weg-getriebenen
+    // Gang-Phase fällt EIN Fuß = EIN Schritt, aber nur geerdet + über der
+    // Tempo-Schwelle (Mikro-Rutsch im Stand feuert nie); Luft/Schwimmen/
+    // Stand RE-ANKERN den Zähler stumm. Der Hit-Stop friert die Phase → die
+    // Schritte frieren gratis mit. Die LANDUNG hört den Luft→Boden-Übergang
+    // (s.isInAir — die EINE Grounded-Wahrheit der Feld-Physik) und wiegt den
+    // Aufprall über das render-seitig gesampelte Fall-Tempo (s._fieldVy) —
+    // bewusst NICHT über _landImpactPending: diesen One-Shot-Träger
+    // konsumiert die Ego-Kamera (nullt ihn VOR diesem Tick) und der Kampf-
+    // Hit-Juice füttert ihn mit (jeder Treffer würde poltern). Die Schwelle
+    // bleibt die EINE Konstante LAND_DIP_MIN_SPEED (kein Zwilling).
+    _schrittKlangTick(halter, speed, underwater, mesh) {
+        const s = this.state;
+        if (!halter || !mesh) return;
+        const k =
+            s._schrittKlang ||
+            (s._schrittKlang = {
+                halb: null, // verankerter Halbzyklus-Index (floor(phase/π))
+                luft: false, // war der letzte Tick in der Luft?
+                fallVy: 0, // negativstes vy der Luft-Strecke (Aufprall-Maß)
+                schritte: 0, // Ereignis-Zähler (Linsen-Messpunkte, render-only)
+                landungen: 0,
+                letzter: null, // Parameter des letzten Ereignisses
+            });
+        const grounded = s.isInAir !== true;
+        const vy = Number.isFinite(s._fieldVy) ? s._fieldVy : 0;
+        if (!grounded) {
+            if (vy < k.fallVy) k.fallVy = vy;
+            k.luft = true;
+        } else {
+            if (k.luft && -k.fallVy >= AnazhRealm.LAND_DIP_MIN_SPEED) {
+                this._schrittKlangEreignis(mesh, true, -k.fallVy);
+            }
+            k.luft = false;
+            k.fallVy = 0;
+        }
+        const T = AnazhRealm.SCHRITT_KLANG;
+        const phase = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
+        const halb = Math.floor(phase / Math.PI);
+        if (!grounded || underwater || !(speed > T.tempoMin) || k.halb === null || halb < k.halb) {
+            k.halb = halb; // ankern OHNE Ereignis (Stand/Luft/Schwimmen/Phasen-Reset)
+            return;
+        }
+        let n = halb - k.halb;
+        if (n <= 0) return;
+        k.halb = halb;
+        if (n > T.maxProTick) n = T.maxProTick; // Frame-Hänger → kein Burst-Schwall
+        for (let i = 0; i < n; i++) this._schrittKlangEreignis(mesh, false, 0);
+    }
+
+    // Das SCHRITT-EREIGNIS (Chokepoint für Schritt UND Landung): zählt IMMER
+    // (headless messbar), holt das Material am FUSS (position.y − FOOT_OFFSET)
+    // und ruft die Stimme nur hinter der s.enabled-Wand — Stimme aus ⇒ das
+    // Ereignis zählt, der Klang-Aufruf unterbleibt (Linsen-Vertrag).
+    _schrittKlangEreignis(mesh, landung, impact) {
+        const k = this.state._schrittKlang;
+        if (!k) return;
+        const fussY = mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+        const material = this._schrittMaterialAt(mesh.position.x, mesh.position.z, fussY);
+        const param = this._schrittKlangParams(material, landung, impact);
+        if (landung) k.landungen++;
+        else k.schritte++;
+        k.letzter = param;
+        const sym = this.state.symphony;
+        if (sym && sym.enabled && sym.ctx && sym.masterGain) this._playSchrittOneShot(param);
+    }
+
+    // MATERIAL AM FUSS — NASS SCHLÄGT FEST: steht der Fuß unter dem Wasser-
+    // spiegel (watender Ufer-Schritt; tiefes Wasser erreicht diesen Pfad nie —
+    // der Schwimmer feuert keine Schritte), platscht er. `_waterLevelAt` ist
+    // die EINE Wasser-Wahrheit (Ozean ∨ See ∨ Fluss), `_terrainMaterialAt`
+    // die EINE Boden-Wahrheit (dasselbe Feld, das der Grabe-Ertrag liest).
+    _schrittMaterialAt(x, z, y) {
+        const w = this._waterLevelAt(x, z);
+        if (Number.isFinite(w) && y < w + 0.02) return "wasser";
+        return this._terrainMaterialAt(x, z, y);
+    }
+
+    // Material → Timbre, PUR aus der Tabelle (unbekanntes Material fällt auf
+    // den Tabellen-Fallback). Die LANDUNG ist derselbe Burst, nur STÄRKER
+    // ∝ Aufprall-Tempo (√(2gh) — dieselbe Größe, die der Kamera-Dip wiegt),
+    // LÄNGER und TIEFER (Masse im Aufprall), am gainDeckel gedeckelt.
+    _schrittKlangParams(material, landung, impact) {
+        const T = AnazhRealm.SCHRITT_KLANG;
+        const name = Object.prototype.hasOwnProperty.call(T.material, material) ? material : T.fallback;
+        const m = T.material[name];
+        const p = {
+            material: name,
+            filter: m.filter,
+            freq: m.freq,
+            q: m.q,
+            dauer: m.dauer,
+            gain: m.gain,
+            landung: !!landung,
+        };
+        if (landung) {
+            const im = Number.isFinite(impact) && impact > 0 ? impact : 0;
+            p.gain = Math.min(T.gainDeckel, m.gain * (1 + Math.min(T.landGainSpanne, im * T.landGainProMs)));
+            p.dauer = m.dauer * T.landDauerFaktor;
+            p.freq = m.freq * T.landFreqFaktor;
+        }
+        return p;
+    }
+
+    // DIE STIMME — der gefilterte Rausch-Burst über die EXISTIERENDE Klang-
+    // Maschine (state.symphony.masterGain, KEIN zweiter AudioContext; ohne
+    // aktivierte Symphonie stumm — kein Auto-Start, dieselbe Wand wie
+    // _playKampfOneShot). EIN geteilter Rausch-Buffer je Kontext; der
+    // zufällige Start-Offset macht zwei Schritte nie sample-identisch.
+    // Math.random ist hier legal: reiner Klang-Körper, keine Welt-Substanz
+    // (Lehre 7 gilt der Welt, nicht dem Lautsprecher).
+    _playSchrittOneShot(param) {
+        const s = this.state.symphony;
+        if (!s || !s.enabled || !s.ctx || !s.masterGain || !param) return false;
+        const ctx = s.ctx;
+        let buf = s._schrittNoiseCtx === ctx ? s._schrittNoise : null;
+        if (!buf) {
+            const n = Math.max(1, Math.floor(ctx.sampleRate * 0.25));
+            buf = ctx.createBuffer(1, n, ctx.sampleRate);
+            const ch = buf.getChannelData(0);
+            for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+            s._schrittNoise = buf;
+            s._schrittNoiseCtx = ctx;
+        }
+        const t = ctx.currentTime;
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        const filt = ctx.createBiquadFilter();
+        filt.type = param.filter;
+        filt.frequency.value = param.freq;
+        filt.Q.value = param.q;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(param.gain, t + 0.004);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + param.dauer);
+        src.connect(filt);
+        filt.connect(gain);
+        gain.connect(s.masterGain);
+        const spielraum = buf.duration - param.dauer - 0.02;
+        src.start(t, spielraum > 0 ? Math.random() * spielraum : 0);
+        src.stop(t + param.dauer + 0.02);
+        return true;
     }
 
     // W4 V3 — die Ziel-Lautstärke der Wetter-Noise (Regen — gefiltertes
@@ -13532,6 +13985,21 @@ class AnazhRealm {
         sense.workerMeshN = ewma(sense.workerMeshN, m.workerMesh || 0);
         sense.bvhMs = ewma(sense.bvhMs, m.bvhMs || 0);
         sense.perChunkBuildMs = ewma(sense.perChunkBuildMs, (m.syncBuildMs || 0) + (m.bvhMs || 0));
+        // GPU-ZEIT-WELLE (Rang 1 der Orakel-Synthese) — DIE WAHRE GPU-ZEIT ALS EIGENE
+        // PHASE: `gpuMs` lebt im selben phase/phaseMax-Objekt (EWMA + abklingender Max
+        // wie jede Phase), aber BEWUSST NICHT in PERF_PHASES — jene Liste trägt die
+        // CPU-Phasen-Semantik (Flugschreiber-cpuSum, CPU-Verdikt, Spike-Suche); GPU-Zeit
+        // darin würde jede dieser Lesungen vergiften. Quelle je Frame: der ECHTE
+        // timestamp-query-Messwert (`_perfGpuSample` → "echt", 1 Frame Latenz) oder der
+        // heutige Subtraktions-Proxy frameMs − ΣCPU ("proxy" — enthält vsync/GC).
+        // Die rohen Werte reisen als f-Passagiere in den Flugschreiber-Snapshot.
+        const gpu = this._perfGpuSample(frameMs, f);
+        f.gpuMs = gpu.ms;
+        f.gpuQuelle = gpu.quelle;
+        sense.phase.gpuMs = ewma(sense.phase.gpuMs || 0, gpu.ms);
+        sense.phaseMax.gpuMs = Math.max(gpu.ms, (sense.phaseMax.gpuMs || 0) * 0.92);
+        sense.gpuQuelle = gpu.quelle;
+        this._perfGpuResolveKick(); // fire-and-forget — das Ergebnis landet im NÄCHSTEN Frame
         // V18.293 — DER FLUGSCHREIBER: die ROHEN Frame-Werte (f/m) fangen, BEVOR sie
         // zurückgesetzt werden. Bulletproof gekapselt — diese Fold-Funktion läuft
         // außerhalb der Loop-Fehler-Grenze (V18.278), ein Wurf hier bräche den Loop.
@@ -13541,6 +14009,67 @@ class AnazhRealm {
         this._nexusPerfRegulate(dtSec); // die RÜCKKOPPLUNG
         if (st.perfOverlay) this._perfSenseRender(); // der Debug-Dump (Entwickler, `perf`-Chatbefehl)
         this._perfPanelRender(); // V18.389 — das saubere Standalone-Panel (default sichtbar)
+    }
+
+    // GPU-ZEIT-WELLE — DIE MESSUNG STATT DES PROXYS. `gpuGapMs` war ein Subtraktions-
+    // Proxy (frameMs − ΣCPU): er enthält vsync-Wartezeit, GC und Compositor — unter
+    // vsync-Druck LÜGT er systematisch. Der vendored three-r184-WebGPURenderer trägt
+    // timestamp-query bereits: der WebGPUBackend fordert requiredFeatures FAIL-SOFT
+    // an (nur was adapter.features wirklich trägt) und schaltet `trackTimestamp`
+    // intern ab, wenn das Feature fehlt — nichts wirft, der Proxy bleibt dann die
+    // Quelle. `renderer.resolveTimestampsAsync("render")` (exakte r184-API, geprüft
+    // im vendored Build: Rückgabe = ms, spiegelt zudem `renderer.info.render.
+    // timestamp`) löst die Queries ASYNC über mapAsync — der Loop wird NIE geblockt,
+    // das Ergebnis landet im NÄCHSTEN Frame (1 Frame Latenz, ehrlich im Quelle-Feld).
+    //
+    // DIE QUELLE-WAHRHEIT: "echt" gibt es erst, wenn eine Auflösung wirklich GELANDET
+    // ist und FRISCH bleibt (< PERF_GPU_TS_STALE_MS) — Headless/Null-Renderer, ein
+    // fehlendes Feature oder ein sterbendes Device fallen sauber auf "proxy" zurück.
+    _perfGpuSample(frameMs, f) {
+        const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        if (
+            Number.isFinite(this._gpuTsLast) &&
+            Number.isFinite(this._gpuTsAtMs) &&
+            nowMs - this._gpuTsAtMs < AnazhRealm.PERF_GPU_TS_STALE_MS
+        ) {
+            return { ms: this._gpuTsLast, quelle: "echt" };
+        }
+        // der heutige Proxy (dieselbe Rechnung wie gpuGapMs im Flugschreiber-Snapshot)
+        let cpuSum = 0;
+        for (const k of AnazhRealm.PERF_PHASES) cpuSum += f[k] || 0;
+        return { ms: Math.max(0, frameMs - cpuSum), quelle: "proxy" };
+    }
+
+    // Der ASYNC-Leser (fire-and-forget): EIN Resolve in Flug (Guard `_gpuTsPending`),
+    // das Ergebnis in `_gpuTsLast`/`_gpuTsAtMs` (Instanz-Felder wie `_fpsLogRef` —
+    // nie serialisiert). `backend.trackTimestamp` ist die EINE fail-soft Wahrheit
+    // (r184 setzt sie nur, wenn das Device timestamp-query trägt); jeder Wurf wird
+    // geschluckt — dieser Pfad läuft außerhalb der Loop-Fehler-Grenze (V18.278).
+    _perfGpuResolveKick() {
+        const st = this.state;
+        const r = st.renderer;
+        if (!r || r._isHeadlessNull || !st.rendererReady || st._deviceLost) return;
+        if (this._gpuTsPending) return;
+        if (!r.backend || r.backend.trackTimestamp !== true) return;
+        if (typeof r.resolveTimestampsAsync !== "function") return;
+        this._gpuTsPending = true;
+        try {
+            r.resolveTimestampsAsync("render").then(
+                (v) => {
+                    this._gpuTsPending = false;
+                    if (Number.isFinite(v) && v >= 0) {
+                        this._gpuTsLast = v;
+                        this._gpuTsAtMs =
+                            typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+                    }
+                },
+                () => {
+                    this._gpuTsPending = false; // Reject fail-soft — der Proxy bleibt die Quelle
+                }
+            );
+        } catch (_e) {
+            this._gpuTsPending = false; // synchroner Wurf fail-soft (fremde/alte Renderer-Formen)
+        }
     }
 
     // DER PID-REGLER (die saubere Rückkopplung, statt Bang-Bang). δ = Ist − Soll
@@ -14094,6 +14623,7 @@ class AnazhRealm {
             `frame  ø ${s.frameMs.toFixed(1)}  max <span style="color:${fmCol}">${fm.toFixed(0)}</span> / soll ${targetMs} ms\n` +
             `stream ${ph("streaming")}  water ${ph("waterIso")}  arch ${ph("archCulling")}\n` +
             `creat  ${ph("creatures")}  phys  ${ph("physics")}  rend ${ph("render")} ms\n` +
+            `GPU    ${ph("gpuMs")} ms (${s.gpuQuelle === "echt" ? "echt: timestamp-query" : "proxy: frame−ΣCPU"})\n` +
             `RLOAD  <span style="color:${rcCol}">${rc.toFixed(0)}</span> draw-calls · ${(s.renderTris / 1e6).toFixed(2)}M tris  (max ${(s.renderCallsMax || 0).toFixed(0)} / ${((s.renderTrisMax || 0) / 1e6).toFixed(2)}M)\n` +
             `SPIKE  schlimmster ${spikeK} <span style="color:${spCol}">${spikeV.toFixed(0)}</span> ms · frame-max ${fm.toFixed(0)} ms\n` +
             `REGEL  loadScale <span style="color:${lsCol}">${(s.loadScale * 100).toFixed(0)}%</span>  δ ${(s.frameMs - targetMs).toFixed(1)} ms\n` +
@@ -14212,12 +14742,16 @@ class AnazhRealm {
         if (grid) {
             const row = (l, v, col) =>
                 `<div><span style="color:#9fb8d0;font-weight:600">${l} </span><span style="color:${col || "#e8f2ff"}">${v}</span></div>`;
-            const worst0 = fr && fr.worst && fr.worst[0];
             const ms = fr && fr.memSeries && fr.memSeries.length ? fr.memSeries[fr.memSeries.length - 1] : null;
             const heap = ms && Number.isFinite(ms.heapMB) ? ms.heapMB.toFixed(0) + " MB" : "—";
             const z = typeof this._impostorCensus === "function" ? this._impostorCensus() : null;
             const rsc = Math.round((this.state._renderScale != null ? this.state._renderScale : 1) * 100);
             const fol = Math.round((this.state._foliageResScale != null ? this.state._foliageResScale : 1) * 100);
+            // GPU-ZEIT-WELLE — das Grid trägt die WAHRE GPU-Zeit (EWMA) + das Quelle-Feld:
+            // "echt" = timestamp-query, "proxy" = frameMs−ΣCPU (der Screenshot zeigt IMMER,
+            // welcher Messung er glaubt). Rot über der Frame-Decke (PERF_TARGET_MS).
+            const gpuMs = s.phase && Number.isFinite(s.phase.gpuMs) ? s.phase.gpuMs : null;
+            const gpuQ = s.gpuQuelle === "echt" ? "echt" : "proxy";
             grid.innerHTML =
                 row("frame ø", (+s.frameMs).toFixed(1) + " ms") +
                 row(
@@ -14229,9 +14763,9 @@ class AnazhRealm {
                 row("tris", Math.round((s.renderTris || 0) / 1000) + "k") +
                 row("heap", heap) +
                 row(
-                    "GPU-Lücke",
-                    worst0 ? worst0.gpuGapMs + " ms" : "—",
-                    worst0 && worst0.gpuGapMs > 80 ? "#ff8a8a" : undefined
+                    "GPU (" + gpuQ + ")",
+                    gpuMs != null ? gpuMs.toFixed(1) + " ms" : "—",
+                    gpuMs != null && gpuMs > AnazhRealm.PERF_TARGET_MS ? "#ff8a8a" : undefined
                 ) +
                 row("render/Laub", rsc + "% / " + fol + "%") +
                 row(
@@ -14266,7 +14800,11 @@ class AnazhRealm {
                     } catch {
                         /* Anzeige-only */
                     }
-                    return `⚠ ${w.frameMs}ms (GPU ${w.gpuGapMs} · CPU ${w.cpuSumMs}${top} · ${w.drawCalls}dc)`;
+                    // GPU-ZEIT-WELLE — echtes gpuMs, wenn der Snapshot es trägt (alte
+                    // Snapshots ohne das Feld fallen auf den gpuGapMs-Proxy zurück).
+                    const g = Number.isFinite(w.gpuMs) ? w.gpuMs : w.gpuGapMs;
+                    const gq = w.gpuQuelle === "echt" ? "echt" : "proxy";
+                    return `⚠ ${w.frameMs}ms (GPU ${g} [${gq}] · CPU ${w.cpuSumMs}${top} · ${w.drawCalls}dc)`;
                 })
                 .join("<br>");
         }
@@ -14470,6 +15008,12 @@ class AnazhRealm {
             frameMs: +frameMs.toFixed(1),
             cpuSumMs: +cpuSum.toFixed(1),
             gpuGapMs: +gap.toFixed(1),
+            // GPU-ZEIT-WELLE — die WAHRE GPU-Zeit dieses Frames: der timestamp-query-
+            // Messwert ("echt", 1 Frame Latenz) oder der Subtraktions-Proxy ("proxy",
+            // = gpuGapMs). gpuGapMs bleibt daneben stehen — die Differenz echt↔Proxy
+            // ist selbst Diagnose (vsync/GC-Anteil der Lücke).
+            gpuMs: Number.isFinite(f.gpuMs) ? +(+f.gpuMs).toFixed(1) : +gap.toFixed(1),
+            gpuQuelle: f.gpuQuelle === "echt" ? "echt" : "proxy",
             cpu,
             drawCalls: calls,
             triangles: tris,
@@ -14538,9 +15082,14 @@ class AnazhRealm {
         const fr = this.state.flightRecorder;
         if (!fr || !fr.worst.length) return "noch kein Stocker erfasst (die Welt lief flüssig).";
         const w = fr.worst[0];
-        if (w.gpuGapMs > w.cpuSumMs) {
+        // GPU-ZEIT-WELLE — das Verdikt urteilt auf der EHRLICHSTEN verfügbaren Zahl:
+        // dem timestamp-query-Messwert ("echt"), sonst dem Subtraktions-Proxy (alte
+        // Traces ohne gpuMs/gpuQuelle fallen automatisch auf gpuGapMs zurück).
+        const wGpu = w.gpuQuelle === "echt" && Number.isFinite(w.gpuMs) ? w.gpuMs : w.gpuGapMs;
+        const wQuelle = w.gpuQuelle === "echt" ? "echt gemessen" : "Proxy frameMs−ΣCPU";
+        if (wGpu > w.cpuSumMs) {
             return (
-                `schlimmster Frame ${w.frameMs} ms ist GPU/Render-GEBUNDEN: ${w.gpuGapMs} ms Present/GPU ` +
+                `schlimmster Frame ${w.frameMs} ms ist GPU/Render-GEBUNDEN: ${wGpu} ms GPU (${wQuelle}) ` +
                 `vs nur ${w.cpuSumMs} ms CPU — bei ${w.drawCalls} draw-calls / ${(w.triangles / 1e6).toFixed(1)}M Dreiecken. ` +
                 `Der Hebel ist die RENDER-Last (Culling/Draw-Calls), nicht die CPU.`
             );
@@ -14554,7 +15103,7 @@ class AnazhRealm {
             }
         return (
             `schlimmster Frame ${w.frameMs} ms ist CPU-GEBUNDEN: Phase „${topK}" ${topV} ms ` +
-            `(GPU-Lücke nur ${w.gpuGapMs} ms). Der Hebel sitzt in „${topK}".`
+            `(GPU nur ${wGpu} ms, ${wQuelle}). Der Hebel sitzt in „${topK}".`
         );
     }
 
@@ -14607,6 +15156,13 @@ class AnazhRealm {
                       triangles: Math.round(s.renderTris || 0),
                       loadScalePct: Math.round((s.loadScale || 0) * 100),
                       phaseMsEwma: phaseMs,
+                      // GPU-ZEIT-WELLE — die eingeschwungene WAHRE GPU-Zeit + ihre Quelle:
+                      // "echt" = timestamp-query (der Schöpfer-Trace trägt künftig die
+                      // gemessene GPU-Zeit), "proxy" = frameMs−ΣCPU (headless / Feature fehlt).
+                      gpuMsEwma: s.phase && Number.isFinite(s.phase.gpuMs) ? +(+s.phase.gpuMs).toFixed(1) : null,
+                      gpuMaxMs:
+                          s.phaseMax && Number.isFinite(s.phaseMax.gpuMs) ? +(+s.phaseMax.gpuMs).toFixed(1) : null,
+                      gpuQuelle: s.gpuQuelle === "echt" ? "echt" : "proxy",
                   }
                 : null,
             worstFrames: fr.worst,
@@ -15785,37 +16341,183 @@ class AnazhRealm {
     // Parameter): `ampX` = die horizontale Sway-Amplitude (Gras 1.5 voll, Streu 1.2
     // zahmer), `windScale` = das per-Art-Wipfel-Dämpfen (Bäume ~0.2, Gras/Blüten 1.0;
     // weggelassen → kein Multiply, bit-identisch zum früheren Gras-Baum).
-    //   phase = uWindTime·1.7 + worldX·0.28 + worldZ·0.21   (per-Halm-Periodik)
-    //   gust  = sin(uWindTime·0.4 − worldX·0.03 − worldZ·0.024)·0.45 + 0.7
-    //           (nieder-frequente, übers Feld WANDERNDE Böen-Welle, λ~210 m ~16 s)
+    //   phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35   (per-Halm-Periodik)
+    //   gust  = sin(uWindTime·0.4 − dot(worldXZ, uWindDir)·0.0384)·0.45 + 0.7
+    //           (nieder-frequente, übers Feld WANDERNDE Böen-Welle, λ~164 m ~16 s)
     //   hf    = max(positionLocal.y, 0)  (Höhengewichtung → der Stamm/die Wurzel steht)
+    // KOPPLUNG (3) — WIND-RICHTUNG: der Orts-Term beider Phasen läuft ENTLANG der
+    // EINEN Richtungs-Quelle `uWindDir` (vec2, seeded + langsam wandernd, `_windDirAt`
+    // — GoT „Blowing from the West"): zwei Punkte QUER zur Windrichtung teilen die
+    // Phase (die Böen-Front ist eine Linie), LÄNGS wandert sie. Die Frequenzen sind
+    // die Beträge der alten festen Vektoren (|0.28,0.21| = 0.35 · |0.03,0.024| =
+    // 0.0384) → gleiche Wellenlängen, nur die Richtung lebt. Baum-Laub
+    // (`_applyVegetationResponse`) + Impostor lesen DASSELBE uWindDir.
+    // KOPPLUNG (4) — GRAS-INTERAKTION: die uBend-Sphären (Spieler·Ritt·nahe
+    // Kreaturen, GoT-Interaktions-Sphären) biegen Halme RADIAL weg — im SELBEN
+    // Versatz, render-rein, bodennah gewichtet (min(hf,1) → der Wipfel steht).
     // Render-rein (positionNode-Kontext, kein Worker/Buffer/Determinismus). Gibt den
     // vec3-Versatz zurück (Aufrufer addiert ihn auf positionLocal) oder null ohne wu.
     _windSwayOffset(TSL, opts = {}) {
         const wu = this.state.windUniforms;
         if (!wu) return null;
+        this._ensureWindCoupling(TSL);
         const { vec3, float, sin, cos, max, positionLocal, positionWorld } = TSL;
         const ampX = typeof opts.ampX === "number" ? opts.ampX : 1.5;
+        const wd = wu.uWindDir || null;
+        const dotWW = wd ? positionWorld.x.mul(wd.x).add(positionWorld.z.mul(wd.y)) : null;
         const phase = wu.uWindTime
             .mul(float(1.7))
-            .add(positionWorld.x.mul(float(0.28)))
-            .add(positionWorld.z.mul(float(0.21)));
+            .add(
+                dotWW ? dotWW.mul(float(0.35)) : positionWorld.x.mul(float(0.28)).add(positionWorld.z.mul(float(0.21)))
+            );
         const hf = max(positionLocal.y, float(0.0));
         const gust = sin(
             wu.uWindTime
                 .mul(float(0.4))
-                .sub(positionWorld.x.mul(float(0.03)))
-                .sub(positionWorld.z.mul(float(0.024)))
+                .sub(
+                    dotWW
+                        ? dotWW.mul(float(0.0384))
+                        : positionWorld.x.mul(float(0.03)).add(positionWorld.z.mul(float(0.024)))
+                )
         )
             .mul(float(0.45))
             .add(float(0.7));
         let windEff = wu.uWindStrength.mul(gust);
         if (typeof opts.windScale === "number") windEff = windEff.mul(float(opts.windScale));
-        const offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
-        const offZ = cos(phase.mul(float(0.7)))
+        let offX = sin(phase).mul(windEff).mul(hf).mul(float(ampX));
+        let offZ = cos(phase.mul(float(0.7)))
             .mul(windEff)
             .mul(hf);
+        // KOPPLUNG (4) — die Interaktions-Sphären (uBend: vec4 xyz+Radius, Radius 0 =
+        // Slot aus): Halme biegen sich RADIAL von der Sphäre weg, quadratisch weich
+        // auslaufend. NaN-Wand: dist trägt +1e-4 unter der Wurzel (nie 0 → keine
+        // Division durch 0), tote Slots liegen bei y=−1e6 (außer Reichweite) und
+        // Radius 0 → max(w, 0.05) hält den Nenner endlich, der Falloff wird exakt 0.
+        const uB = wu.uBend;
+        const sqrtN = TSL.sqrt;
+        const minN = TSL.min;
+        if (uB && uB.length && sqrtN && minN) {
+            let bendX = float(0.0);
+            let bendZ = float(0.0);
+            for (let i = 0; i < uB.length; i++) {
+                const b = uB[i];
+                const dx = positionWorld.x.sub(b.x);
+                const dy = positionWorld.y.sub(b.y);
+                const dz = positionWorld.z.sub(b.z);
+                const dist = sqrtN(dx.mul(dx).add(dy.mul(dy)).add(dz.mul(dz)).add(float(1e-4)));
+                const fall = max(float(0.0), float(1.0).sub(dist.div(max(b.w, float(0.05)))));
+                const soft = fall.mul(fall);
+                bendX = bendX.add(dx.div(dist).mul(soft));
+                bendZ = bendZ.add(dz.div(dist).mul(soft));
+            }
+            const hfB = minN(hf, float(1.0)); // Interaktion wirkt bodennah (Halm/Busch), nicht am Wipfel
+            offX = offX.add(bendX.mul(hfB).mul(float(0.4)));
+            offZ = offZ.add(bendZ.mul(hfB).mul(float(0.4)));
+        }
         return vec3(offX, float(0.0), offZ);
+    }
+
+    // KOPPLUNG (3) — die CPU-Seite der EINEN Wind-Richtung: eine seed-gebundene,
+    // langsam wandernde Richtung θ(t) = θ0(seed) + 0.5·sin(t·0.009 + φ1) +
+    // 0.22·sin(t·0.0257 + φ2) (Perioden ~698 s / ~244 s, ±~41° Mäander um die
+    // Seed-Grundrichtung — „Blowing from the West": EINE Himmelsrichtung, die
+    // atmet). SEEDED per FNV-1a über worldSeed+"-wind-dir" (eigener Stream-Suffix,
+    // Γ5-Disziplin: re-rollt nie einen anderen Strom; render-rein, keine Welt-
+    // Substanz). Reine Funktion (seed, t) → Peers/Replays sehen denselben Wind.
+    // Liefert {x, z} (Einheitsvektor in der XZ-Ebene).
+    _windDirAt(tSec) {
+        const seedStr = ((this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed") + "-wind-dir";
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < seedStr.length; i++) h = ((h ^ seedStr.charCodeAt(i)) * 16777619) >>> 0;
+        const base = (h / 4294967296) * Math.PI * 2;
+        const p1 = (((h >>> 5) & 1023) / 1023) * Math.PI * 2;
+        const p2 = (((h >>> 15) & 1023) / 1023) * Math.PI * 2;
+        const t = Number.isFinite(tSec) ? tSec : 0;
+        const theta = base + 0.5 * Math.sin(t * 0.009 + p1) + 0.22 * Math.sin(t * 0.0257 + p2);
+        return { x: Math.sin(theta), z: Math.cos(theta) };
+    }
+
+    // KOPPLUNG (3+4) — die geteilten Kopplungs-Uniforms auf dem EINEN windUniforms-
+    // Slot (Gesetz #0): `uWindDir` (vec2-Richtung; Leser: Gras/Streu via
+    // `_windSwayOffset` + Baum-Laub `_applyVegetationResponse` + Impostor-Billboard
+    // — DIESELBE Quelle) und `uBend` (GRAS_BEND_SLOTS × vec4-Interaktions-Sphären
+    // xyz+Radius; Radius 0 = Slot aus, y=−1e6 hält tote Sphären außer Reichweite).
+    // Idempotent; ohne TSL.uniform (z. B. der Skalar-Mock in gate:kopplung) bleibt
+    // ein schon gesetztes wu unangetastet. Der Frame-Tick in `_loopRender` speist
+    // beide (uWindDir aus `_windDirAt`, uBend aus `_tickGrasBend`).
+    _ensureWindCoupling(TSL) {
+        const wu = this.state.windUniforms;
+        if (!wu) return null;
+        if (!TSL || typeof TSL.uniform !== "function" || typeof THREE === "undefined") {
+            return wu.uWindDir ? wu : null;
+        }
+        if (!wu.uWindDir) {
+            const d0 = this._windDirAt(0);
+            wu.uWindDir = TSL.uniform(new THREE.Vector2(d0.x, d0.z));
+        }
+        if (!wu.uBend) {
+            wu.uBend = [];
+            for (let i = 0; i < AnazhRealm.GRAS_BEND_SLOTS; i++) {
+                wu.uBend.push(TSL.uniform(new THREE.Vector4(0, -1e6, 0, 0)));
+            }
+        }
+        return wu;
+    }
+
+    // KOPPLUNG (4) — die CPU-Seite der GoT-Interaktions-Sphären: füllt die uBend-
+    // Slots (Spieler · gerittenes Gefährt · die ≤4 NÄCHSTEN Kreaturen im Umkreis
+    // GRAS_BEND_CREATURE_DIST) pro Frame. Render-rein (nur Uniform-Werte — kein
+    // Sim-/Determinismus-Eingriff), O(Kreaturen) Distanz-Mathe ohne Alloc
+    // (persistente Auswahl-Arrays, Insertion-Auswahl statt Sort).
+    _tickGrasBend() {
+        const wu = this.state.windUniforms;
+        if (!wu || !wu.uBend) return;
+        const B = wu.uBend;
+        let slot = 0;
+        const pm = this.state.playerMesh;
+        if (pm && slot < B.length) B[slot++].value.set(pm.position.x, pm.position.y - 0.4, pm.position.z, 1.3);
+        const me = this._mountedEntry;
+        if (me && me.position && slot < B.length) {
+            B[slot++].value.set(
+                me.position.x,
+                me.position.y,
+                me.position.z,
+                Math.max(1.6, (me._rideHalfLen || 1) + 0.6)
+            );
+        }
+        const crs = this.state.creatures;
+        if (crs && crs.length && pm) {
+            const selD = this._bendSelD || (this._bendSelD = [Infinity, Infinity, Infinity, Infinity]);
+            const selI = this._bendSelI || (this._bendSelI = [-1, -1, -1, -1]);
+            selD[0] = selD[1] = selD[2] = selD[3] = Infinity;
+            selI[0] = selI[1] = selI[2] = selI[3] = -1;
+            for (let i = 0; i < crs.length; i++) {
+                const c = crs[i];
+                if (!c || !c.position) continue;
+                const dx = c.position.x - pm.position.x;
+                const dz = c.position.z - pm.position.z;
+                const d2 = dx * dx + dz * dz;
+                if (d2 > AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ) continue;
+                for (let k = 0; k < 4; k++) {
+                    if (d2 < selD[k]) {
+                        for (let m = 3; m > k; m--) {
+                            selD[m] = selD[m - 1];
+                            selI[m] = selI[m - 1];
+                        }
+                        selD[k] = d2;
+                        selI[k] = i;
+                        break;
+                    }
+                }
+            }
+            for (let k = 0; k < 4 && slot < B.length; k++) {
+                if (selI[k] < 0) break;
+                const c = crs[selI[k]];
+                const r = 0.8 + 0.5 * ((c.scale && c.scale.x) || 1);
+                B[slot++].value.set(c.position.x, c.position.y - 0.4, c.position.z, r);
+            }
+        }
+        while (slot < B.length) B[slot++].value.set(0, -1e6, 0, 0);
     }
 
     // V9.39 Phase 5c.2.c.3.b.iii — `_buildChunkGrass` + `_disposeChunkGrass`
@@ -16121,6 +16823,10 @@ class AnazhRealm {
     // konkrete Geste lebt im Moment, Identität lebt fort).
     _serializeCreature(creature) {
         if (!creature || !creature.userData) return null;
+        // KAMPF-GEFÜHL — ein sterbendes (kippendes) Wesen ist für die Welt schon
+        // gefallen: es reist NIE in einen Snapshot (sonst erwachte ein Toter beim
+        // Reload mit hp ≤ 0 — der Kipp ist reine Abschieds-Optik, keine Identität).
+        if (creature.userData.dying) return null;
         const ud = creature.userData;
         return {
             name: typeof ud.name === "string" ? ud.name : null,
@@ -16527,6 +17233,32 @@ class AnazhRealm {
         wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
         wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
+        // KREATUR-KOSTEN (3) — DER FERNE MENSCH aus DERSELBEN Pipe: lod1 = die
+        // gemergte Fern-Gestalt (bakeMenschInstance fein: alles in den Root
+        // gebacken, grobe Segmente [8×6 statt 20×14], grobe Hüllen, kahl —
+        // wenige Meshes statt des animierten Gelenk-Baums). Verdeckt gebaut
+        // (visible=false); der EINE Toggle-Chokepoint `_menschFernToggle`
+        // schaltet nah↔fern am Distanz-Band (das TIER_FERN-Muster). Fail-soft:
+        // kalter lod1-Guss → kein Fern-Zweig, alles bleibt byte-alt lod 0.
+        const t1 = this._ofenMenschTemplate(dials, skinCol, hairCol, 1);
+        if (t1 && t1.root) {
+            const fernKlon = t1.root.clone(true);
+            const teileF = {};
+            fernKlon.traverse((n) => {
+                if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
+            });
+            // Klon-Rebind (das V18.463-Muster): geklonte SkinnedMeshes an die
+            // EIGENEN Bones — nie am geteilten Template-Skelett hängen lassen.
+            fernKlon.traverse((n) => {
+                if (n.isMesh) n.castShadow = false;
+                if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
+                const bonesF = n.userData.__skinJoints.map((nm) => teileF[nm]).filter(Boolean);
+                if (bonesF.length) n.bind(new THREE.Skeleton(bonesF), n.bindMatrix.clone());
+            });
+            fernKlon.visible = false;
+            wrap.add(fernKlon);
+            wrap.userData._menschFern = { nah: klon, fern: fernKlon };
+        }
         const P2 = (n2) => teile[n2] || null;
         const rig = {
             hips: teile.mensch,
@@ -16548,7 +17280,268 @@ class AnazhRealm {
         return { mesh: wrap, rig, kh, bones: [] };
     }
 
-    _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions) {
+    // KREATUR-KOSTEN (3) — DER EINE MENSCH-FERN-TOGGLE (Chokepoint, das
+    // TIER_FERN-Muster): jenseits MENSCH_FERN_DIST_SQ trägt die gemergte
+    // lod1-Fern-Gestalt (wenige Draws, statisch — der Gang ist dort
+    // sub-pixel) statt des animierten Gelenk-Baums. Idempotent (visible
+    // nur bei Zustands-Wechsel geschrieben); no-op ohne Fern-Zweig.
+    // Konsument: der Peer-Tick (_p2pUpdatePeer) — der eigene Avatar steht
+    // bei Distanz 0 immer nah. Linse: gate:kreatur-kosten.
+    _menschFernToggle(group, distSq) {
+        const mf = group && group.userData && group.userData._menschFern;
+        if (!mf || !mf.nah || !mf.fern) return;
+        const nah = distSq < AnazhRealm.MENSCH_FERN_DIST_SQ;
+        if (mf.nah.visible !== nah) {
+            mf.nah.visible = nah;
+            mf.fern.visible = !nah;
+        }
+    }
+
+    // ═══ KÖRPER-BEWEGUNG (Orakel Bogen 2) — DIE GANG-GESETZE ═══════════════
+    // Gesetz #0: EINE kanonische Gang-Mathe; die Konsumenten sind
+    // animatePlayerSoul (Spieler), _p2pUpdatePeer (Peers) und
+    // _animateHumanoidRig (die Posen). Alles RENDER-seitig — kein Snapshot-/
+    // Worker-/Sim-Pfad liest diese Zahlen (die fixe Sim bleibt byte-unberührt).
+    // Linse: gate:koerper-bewegung.
+
+    // (1) WEG-PHASE — das Fahrzeug-Muster (entry._ridePhase wächst mit dem
+    // WEG, s. _tickMountedMovement) auf den Biped: Phase ∝ zurückgelegte
+    // Distanz / Schrittlänge („distance-matched phase", Uncharted/TLOU).
+    // EINE 2π-Phase = ein Schrittzyklus = 2 Schritte ⇒ rad/s = π·v/Schritt.
+    // Doppeltes Tempo ⇒ doppelte Phasen-Rate, die Schritt-DISTANZ bleibt
+    // konstant — der Sprint skatet nie mehr.
+    _gaitPhaseRate(speed, schritt) {
+        const v = Number(speed);
+        const s = Number(schritt);
+        if (!(v > 0) || !(s > 1e-3)) return 0;
+        return (Math.PI * v) / s;
+    }
+    // Die SCHRITTLÄNGE aus der GEBAUTEN Beinlänge (kh-Anatomie, EINMAL am Rig
+    // vermessen — kein Konstanten-Zwilling; Welt-Maßstab aus der Gelenk-Welt-
+    // Skala). Faktor 4.0 kalibriert auf die alte 5.5-rad/s-Optik beim
+    // Basistempo (state.speed 6): der Welt-Läufer ist übermenschlich schnell —
+    // ein anatomischer ~0.9·Bein-Schritt gäbe ~25 rad/s Bein-Wirbel.
+    _gaitSchrittLen(rig) {
+        if (!rig) return 3.4;
+        if (Number.isFinite(rig._schritt)) return rig._schritt;
+        let bein = 0;
+        try {
+            if (rig.legL && rig.legL.hip && rig.legL.knee && rig.legL.ankle) {
+                const sv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
+                rig.legL.hip.getWorldScale(sv);
+                const wpl = Math.abs(sv.y) || 1;
+                bein = (rig.legL.knee.position.length() + rig.legL.ankle.position.length()) * wpl;
+            }
+        } catch (_e) {
+            bein = 0;
+        }
+        rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, 4.0 * bein)) : 3.4;
+        return rig._schritt;
+    }
+    // (2) POSEN-BLEND — w(speed) mit exp-Glättung ERSETZT den harten
+    // isMoving-Schnitt (alte Schwelle 0.4 m/s): Rampe 0.25→0.55 m/s um die
+    // alte Schwelle, k=10-Glättung + harte ±0.2-Steilheits-Wand je Tick (die
+    // Linse misst Δw ≤ 0.2 beim Schwellen-Sprung). NaN-Wände VOR dem
+    // Gedächtnis (Lehre 13).
+    _gaitBlendStep(wPrev, speed, dt) {
+        const w0 = Number.isFinite(wPrev) ? Math.min(1, Math.max(0, wPrev)) : 0;
+        const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
+        const ziel = Math.min(1, Math.max(0, (v - 0.25) / 0.3));
+        const d = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
+        let dw = (ziel - w0) * (1 - Math.exp(-10 * d));
+        if (dw > 0.2) dw = 0.2;
+        else if (dw < -0.2) dw = -0.2;
+        return w0 + dw;
+    }
+    // (3) ZWEI-KNOCHEN-IK (geschlossene Formel, Kosinussatz) in der Sagittal-
+    // Ebene des Beins. vor = Ziel-Offset nach VORN, unten = nach UNTEN (beide
+    // in denselben Einheiten wie l1/l2). Rückgabe in der Rig-Konvention:
+    // hip = rotation.x der Hüfte (negativ = Bein schwingt vor), knee = Beuge
+    // ≥ 0 (positiv beugt NACH HINTEN — menschlich, die Schöpfer-Knie-Lehre
+    // 16.06.). NaN-Wand: Ziel im Hüftpunkt oder außer Reichweite → GESTRECKT
+    // Richtung Ziel, reached=false — nie NaN (die Linse beweist beides).
+    _twoBoneIK(l1, l2, vor, unten) {
+        const L1 = Number(l1);
+        const L2 = Number(l2);
+        if (!(L1 > 1e-6) || !(L2 > 1e-6)) return { hip: 0, knee: 0, reached: false };
+        const dF = Number.isFinite(vor) ? vor : 0;
+        const dU = Number.isFinite(unten) ? unten : 0;
+        let d = Math.hypot(dF, dU);
+        if (!(d > 1e-6)) return { hip: 0, knee: 0, reached: false }; // Ziel = Hüftpunkt
+        const at = Math.atan2(dF, dU); // Ziel-Winkel von der Senkrechten (vorwärts positiv)
+        if (d >= L1 + L2 - 1e-6) return { hip: -at, knee: 0, reached: false }; // außer Reichweite: gestreckt
+        const minD = Math.abs(L1 - L2) + 1e-6;
+        if (d < minD) d = minD;
+        const cosK = Math.max(-1, Math.min(1, (L1 * L1 + L2 * L2 - d * d) / (2 * L1 * L2)));
+        const knie = Math.PI - Math.acos(cosK);
+        const cosG = Math.max(-1, Math.min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)));
+        const hip = -(at + Math.acos(cosG));
+        if (!Number.isFinite(hip) || !Number.isFinite(knie)) return { hip: 0, knee: 0, reached: false };
+        return { hip, knee: knie, reached: true };
+    }
+    // (4) HANG-PITCH aus zwei Bodenproben (vorn/hinten). rotation.x-Konvention:
+    // +x kippt die Nase ABWÄRTS ⇒ vorn höher → negativ (die Nase hebt sich).
+    // Klemme ±0.6 rad (~34°) — steiler ist Kletterwand, kein Gang.
+    _slopePitch(gVorn, gHinten, spann) {
+        if (!Number.isFinite(gVorn) || !Number.isFinite(gHinten) || !(spann > 1e-3)) return 0;
+        const p = Math.atan2(gHinten - gVorn, spann);
+        return Math.max(-0.6, Math.min(0.6, p));
+    }
+    // DER EINE GANG-TICK (Chokepoint für Spieler UND Peers): akkumuliert die
+    // WEG-Phase am Halter (p/entry), glättet das Posen-Blend-Gewicht und
+    // skaliert die Amplitude mit dem Tempo (≈1 beim Basistempo, 1.3 im
+    // Sprint — schnelle Schritte schwingen weiter). opts.ik=true rüstet den
+    // Fuß-IK-Kontext — NUR der lokale Avatar (Distanz 0, das nächste Wesen
+    // überhaupt = die Budget-Disziplin des aiDiv-Musters); Peers tragen
+    // Blend + Weg-Takt ohne Boden-IK.
+    _gaitTick(mesh, halter, speed, dt, opts) {
+        const rig = mesh && mesh.userData && mesh.userData.rig;
+        if (!rig || !halter) return null;
+        const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
+        const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
+        const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
+        halter.walkPhase = (halter.walkPhase || 0) + d * this._gaitPhaseRate(v, this._gaitSchrittLen(rig)) * emoF;
+        halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
+        const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null });
+        g.w = halter._gaitW;
+        const vRef = Math.max(1, Number(this.state.speed) || 6);
+        g.amp = Math.max(0.7, Math.min(1.3, 0.55 + 0.45 * (v / vRef)));
+        g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw) : null;
+        return g;
+    }
+    // Der Boden unterm Fuß — der EINE Proben-Chokepoint des Biped-IK (die
+    // Linse stubbt IHN; die Kreatur probt über _creatureSlopeProbe).
+    _gaitBodenY(x, z) {
+        return this.getTerrainHeightAt(x, z);
+    }
+    // gecachte Bodenprobe (das _creatureGroundY-Muster): re-probt nur, wenn
+    // der Fuß > 0.3 m gewandert ist — kein Scan pro Frame.
+    _gaitProbe(p, x, z) {
+        const dx = x - p.x;
+        const dz = z - p.z;
+        if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.09) return;
+        const g = this._gaitBodenY(x, z);
+        p.x = x;
+        p.z = z;
+        p.g = Number.isFinite(g) ? g : NaN;
+    }
+    // FUSS-IK-KONTEXT (einmal vermessen — die GEBAUTE Wahrheit: Segment-Längen
+    // aus den Gelenk-Offsets ×Welt-Skala, Knöchel→Sohle aus der Neutral-Pose).
+    // Fail-soft: fehlende Gelenke / ungebauter Chunk → null (kein IK in diesem
+    // Frame, die Pose bleibt).
+    _gaitIKPrep(mesh, soleY, yaw) {
+        const r = mesh && mesh.userData && mesh.userData.rig;
+        if (!r || !Number.isFinite(soleY)) return null;
+        const L = r.legL;
+        const R = r.legR;
+        if (!L || !R || !L.hip || !L.knee || !L.ankle || !R.hip || !R.knee || !R.ankle || !r.hips) return null;
+        let ik = mesh.userData._gaitIK;
+        if (!ik) {
+            const tv = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
+            L.hip.getWorldScale(tv);
+            const wpl = Math.abs(tv.y) || 0;
+            const l1 = L.knee.position.length() * wpl;
+            const l2 = L.ankle.position.length() * wpl;
+            if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
+            L.ankle.getWorldPosition(tv);
+            const soleH = Math.max(0, tv.y - soleY);
+            ik = mesh.userData._gaitIK = {
+                l1,
+                l2,
+                wpl,
+                soleH,
+                hang: 0,
+                soleY: 0,
+                yaw: 0,
+                probeL: { x: NaN, z: NaN, g: NaN },
+                probeR: { x: NaN, z: NaN, g: NaN },
+                lockL: { on: false, x: 0, z: 0 },
+                lockR: { on: false, x: 0, z: 0 },
+                footL: { x: mesh.position.x, z: mesh.position.z },
+                footR: { x: mesh.position.x, z: mesh.position.z },
+            };
+        }
+        ik.soleY = soleY;
+        ik.yaw = Number.isFinite(yaw) ? yaw : 0;
+        this._gaitProbe(ik.probeL, ik.footL.x, ik.footL.z);
+        this._gaitProbe(ik.probeR, ik.footR.x, ik.footR.z);
+        if (!Number.isFinite(ik.probeL.g) || !Number.isFinite(ik.probeR.g)) return null;
+        // leichte RUMPF-Neigung am Hang: die Fuß-Proben entlang der Blick-
+        // Achse tragen die Steigung (exp-geglättet; Füße beisammen → 0).
+        const sep = (ik.footL.x - ik.footR.x) * Math.sin(ik.yaw) + (ik.footL.z - ik.footR.z) * Math.cos(ik.yaw);
+        let ziel = 0;
+        if (Math.abs(sep) > 0.15) {
+            ziel =
+                sep > 0
+                    ? this._slopePitch(ik.probeL.g, ik.probeR.g, Math.abs(sep))
+                    : this._slopePitch(ik.probeR.g, ik.probeL.g, Math.abs(sep));
+        }
+        ik.hang += (ziel - ik.hang) * 0.12;
+        if (!Number.isFinite(ik.hang)) ik.hang = 0;
+        return ik;
+    }
+    // FUSS-IK + FOOT-LOCK (KÖRPER-BEWEGUNG 3), NACH der Posen-Blende: das
+    // Becken senkt sich aufs tiefere Bein, der Stance-Fuß lockt an seiner
+    // gecachten Boden-Position (Two-Bone-IK ersetzt die Bein-Pose des
+    // Stand-Beins), der Rumpf lehnt leicht in den Hang. Das Schwung-Bein
+    // bleibt Pose (klassisches Stance-Lock); der Lock löst, sobald das Ziel
+    // die Reichweite verlässt (der übermenschlich schnelle Welt-Läufer —
+    // kein Zwangs-Spagat, kein Pop).
+    _gaitApplyFussIK(r, walkPhase, w, ik) {
+        const dyL = Math.max(-0.7, Math.min(0.7, ik.probeL.g - ik.soleY));
+        const dyR = Math.max(-0.7, Math.min(0.7, ik.probeR.g - ik.soleY));
+        // Becken: nur SENKEN (das tiefere Bein muss reichen; heben macht die Physik).
+        let drop = Math.min(dyL, dyR, 0) * 0.9;
+        const reach = ik.l1 + ik.l2;
+        if (drop < -0.3 * reach) drop = -0.3 * reach;
+        if (drop < -0.005 && r.hips && ik.wpl > 0) r.hips.position.y += drop / ik.wpl;
+        if (r.spine) r.spine.rotation.x += ik.hang * 0.35;
+        this._gaitLegIK(r.legL, ik, ik.probeL, ik.lockL, ik.footL, Math.sin(walkPhase), w);
+        this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, Math.sin(walkPhase + Math.PI), w);
+    }
+    _gaitLegIK(leg, ik, probe, lock, foot, sinPh, w) {
+        const av = this._gaitTmpV || (this._gaitTmpV = new THREE.Vector3());
+        leg.ankle.getWorldPosition(av); // FK nach Pose+Becken (frische Ahnen-Matrizen)
+        foot.x = av.x;
+        foot.z = av.z;
+        const geht = w >= 0.35;
+        const stance = geht ? sinPh > 0.1 : true; // Idle: beide Füße geplantet
+        if (!stance) {
+            lock.on = false;
+            return; // Schwung-Bein: die Pose bleibt (nur die Stance ankert)
+        }
+        let tx = foot.x;
+        let tz = foot.z;
+        if (geht) {
+            if (!lock.on) {
+                lock.on = true; // Stance-Beginn: den Fuß-Weltpunkt EINMAL einfrieren
+                lock.x = foot.x;
+                lock.z = foot.z;
+            }
+            tx = lock.x;
+            tz = lock.z;
+        } else if (Math.abs(probe.g - ik.soleY) < 0.03) {
+            return; // ebener Boden im Stand: die Kontrapost-Pose bleibt byte-alt
+        }
+        const hv = this._gaitTmpV2 || (this._gaitTmpV2 = new THREE.Vector3());
+        leg.hip.getWorldPosition(hv);
+        const vor = (tx - hv.x) * Math.sin(ik.yaw) + (tz - hv.z) * Math.cos(ik.yaw);
+        const unten = hv.y - (probe.g + ik.soleH);
+        if (!(unten > 0.05)) {
+            lock.on = false;
+            return; // Boden über der Hüfte (Klippe/ungebaut) — NaN-Wand
+        }
+        if (geht && Math.hypot(vor, unten) > (ik.l1 + ik.l2) * 0.98) {
+            lock.on = false;
+            return; // das Ziel entläuft der Reichweite → Lock löst, die Pose übernimmt
+        }
+        const res = this._twoBoneIK(ik.l1, ik.l2, vor, unten);
+        leg.hip.rotation.x = res.hip;
+        leg.knee.rotation.x = res.knee;
+        leg.ankle.rotation.x = -(res.hip + res.knee); // die Sohle bleibt eben
+    }
+
+    _animateHumanoidRig(rig, t, walkPhase, isMoving, underwater, emotions, gait) {
         if (!rig) return;
         const r = rig;
         const z = (b, v) => {
@@ -16556,9 +17549,6 @@ class AnazhRealm {
         };
         const x = (b, v) => {
             if (b) b.rotation.x = v;
-        };
-        const y = (b, v) => {
-            if (b) b.rotation.y = v;
         };
         // alles zuerst auf neutral (absolut → kein Drift zwischen Posen)
         for (const b of [r.hips, r.spine, r.chest, r.neck, r.head]) if (b) b.rotation.set(0, 0, 0);
@@ -16578,70 +17568,90 @@ class AnazhRealm {
             x(r.legR.hip, Math.sin(walkPhase * 1.6 + Math.PI) * kA);
             return;
         }
-        if (isMoving) {
-            const sw = Math.sin(walkPhase);
-            // Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag +0.4)
-            x(r.legL.hip, 0.5 * sw);
-            x(r.legR.hip, 0.5 * Math.sin(walkPhase + Math.PI));
-            // Knie beugt NACH HINTEN (Fuß hebt zum Gesäß — menschlich), gleiche Richtung wie die
-            // Sitz-Pose (+); negativ wäre Hyperextension/Vogel-Knie (Schöpfer-Befund 16.06.).
-            x(r.legL.knee, 0.85 * Math.max(0, Math.sin(walkPhase + 0.4)));
-            x(r.legR.knee, 0.85 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)));
-            // Arme gegen die Beine (Arm L mit Bein R)
-            x(r.armL.shoulder, -0.4 * sw);
-            x(r.armR.shoulder, 0.4 * sw);
-            x(r.armL.elbow, -0.3 - 0.2 * Math.max(0, -sw));
-            x(r.armR.elbow, -0.3 - 0.2 * Math.max(0, sw));
-            // Becken-Roll/Yaw + Brust-Gegendreh
-            z(r.hips, 0.05 * sw);
-            y(r.hips, 0.07 * sw);
-            y(r.chest, -0.06 * sw);
-            // CoM-Bob (doppelte Frequenz)
-            r.hips.position.y =
-                (r._baseHipY != null ? r._baseHipY : (r._baseHipY = r.hips.position.y)) +
-                Math.abs(Math.cos(walkPhase)) * 0.3 * (r.kh || 1);
-            return;
-        }
-        // RUHE — Kontrapost (Standbein rechts/R): Hüfte kippt, Wirbelsäule lehnt gegen, Kopf zurück.
-        // ABSCHIEDS-WELLE (Motion-Vollendung) — DER RIG ALS LESER: das koerper-fx.motion-
-        // Profil (Da-Vinci-Studio, über die EINE Emotions-Brücke) führt den Atem
-        // (breath/freq, auf das Lab-idle NORMALISIERT → neutral exakt byte-alt 0.02/1.6)
-        // und die Emotions-POSE (MOTION_RIG_MAP-Deltas relativ zum Lab-idle: sad → Kopf
-        // sinkt 0.18, joy → Arme heben 0.6, fear → Deckung). Fail-soft: kaltes Buch →
-        // mp null → die Host-Konstanten, byte-identisch. Der Rig bleibt der ANIMATOR
-        // (SkinnedMesh-Wand) — er LIEST nur die Studio-Zahlen (wahrerguss Säule II).
-        const mp = this._koerperMotionProfile(false, emotions);
-        const mref = mp ? this._koerperMotionProfile(false, null) : null;
-        const bAmp =
-            mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
-        const bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
-        const breath = Math.sin(t * bRate) * bAmp;
-        z(r.spine, 0.1); // Oberkörper lehnt zur Standbein-Seite
-        z(r.chest, -0.06); // Brust-Gegenkipp
-        z(r.neck, 0.05); // Kopf wieder aufrecht (krönt die S-Kurve)
-        x(r.spine, -0.02 + breath); // sanfter Atem
-        // Spielbein (L) leicht gebeugt + vorgestellt, Standbein (R) gestreckt
-        x(r.legL.hip, 0.08);
-        x(r.legL.knee, 0.16); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
-        x(r.legR.knee, 0.04);
-        // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper, aber mit etwas LUFT zum Rumpf
-        // (sonst presst der Arm eine pechschwarze Kontakt-FALTE in den Torso = ein „Riss"); ein
-        // entspannter Hang mit sichtbarer Lücke liest sauber als separater Arm.
-        z(r.armL.shoulder, -0.19);
-        z(r.armR.shoulder, 0.17);
-        x(r.armL.elbow, -0.18); // sanfte Ellbogen-Beuge
-        x(r.armR.elbow, -0.1);
-        // Die Emotions-Pose als DATEN-Deltas (mp === mref am Neutralpunkt → Schleife
-        // trägt Nullen → byte-alt; mp/mref sind dieselbe Preset-Referenz bei "idle").
-        if (mp && mref && mp !== mref) {
-            for (const row of AnazhRealm.MOTION_RIG_MAP) {
-                const dv = (Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0);
-                if (!dv) continue;
-                const seg = row.bone.split(".");
-                const bone = seg.length === 2 ? r[seg[0]] && r[seg[0]][seg[1]] : r[seg[0]];
-                if (bone && bone.rotation) bone.rotation[row.axis] += dv * row.mul;
+        // ═══ KÖRPER-BEWEGUNG (2) — POSEN-BLEND: w(speed) statt des harten
+        // isMoving-Schnitts. BEIDE Posen werden gerechnet und ADDITIV über das
+        // Null-Reset gelerpt (Ruhe ×(1−w) + Gehen ×w) — kein Plopp an der
+        // Schwelle. Fremde Aufrufer ohne gait (Peers-Nichtrig/Werkstatt-Linse)
+        // tragen w = isMoving ? 1 : 0 = byte-alt hart. Die Walk-AMPLITUDE
+        // skaliert mit dem Tempo (gait.amp — „distance-matched", schnelle
+        // Schritte schwingen weiter).
+        const w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
+        const amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
+        const add = (b, ax, v) => {
+            if (b && v) b.rotation[ax] += v;
+        };
+        if (w < 0.999) {
+            // ── RUHE ×(1−w) — Kontrapost (Standbein rechts/R): Hüfte kippt, Wirbelsäule
+            // lehnt gegen, Kopf zurück. ABSCHIEDS-WELLE (Motion-Vollendung) — DER RIG ALS
+            // LESER: das koerper-fx.motion-Profil (Da-Vinci-Studio, über die EINE Emotions-
+            // Brücke) führt den Atem (breath/freq, auf das Lab-idle NORMALISIERT → neutral
+            // exakt byte-alt 0.02/1.6) und die Emotions-POSE (MOTION_RIG_MAP-Deltas relativ
+            // zum Lab-idle: sad → Kopf sinkt 0.18, joy → Arme heben 0.6, fear → Deckung).
+            // Fail-soft: kaltes Buch → mp null → die Host-Konstanten, byte-identisch. Der
+            // Rig bleibt der ANIMATOR (SkinnedMesh-Wand) — er LIEST nur die Studio-Zahlen.
+            const wi = 1 - w;
+            const mp = this._koerperMotionProfile(false, emotions);
+            const mref = mp ? this._koerperMotionProfile(false, null) : null;
+            const bAmp =
+                mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
+            const bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
+            const breath = Math.sin(t * bRate) * bAmp;
+            add(r.spine, "z", 0.1 * wi); // Oberkörper lehnt zur Standbein-Seite
+            add(r.chest, "z", -0.06 * wi); // Brust-Gegenkipp
+            add(r.neck, "z", 0.05 * wi); // Kopf wieder aufrecht (krönt die S-Kurve)
+            add(r.spine, "x", (-0.02 + breath) * wi); // sanfter Atem
+            // Spielbein (L) leicht gebeugt + vorgestellt, Standbein (R) gestreckt
+            add(r.legL.hip, "x", 0.08 * wi);
+            add(r.legL.knee, "x", 0.16 * wi); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
+            add(r.legR.knee, "x", 0.04 * wi);
+            // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper, mit LUFT zum Rumpf
+            // (sonst presst der Arm eine Kontakt-FALTE in den Torso = ein „Riss").
+            add(r.armL.shoulder, "z", -0.19 * wi);
+            add(r.armR.shoulder, "z", 0.17 * wi);
+            add(r.armL.elbow, "x", -0.18 * wi); // sanfte Ellbogen-Beuge
+            add(r.armR.elbow, "x", -0.1 * wi);
+            // Die Emotions-Pose als DATEN-Deltas (mp === mref am Neutralpunkt → Schleife
+            // trägt Nullen → byte-alt; mp/mref sind dieselbe Preset-Referenz bei "idle").
+            if (mp && mref && mp !== mref) {
+                for (const row of AnazhRealm.MOTION_RIG_MAP) {
+                    const dv = ((Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0)) * wi;
+                    if (!dv) continue;
+                    const seg = row.bone.split(".");
+                    const bone = seg.length === 2 ? r[seg[0]] && r[seg[0]][seg[1]] : r[seg[0]];
+                    if (bone && bone.rotation) bone.rotation[row.axis] += dv * row.mul;
+                }
             }
         }
+        if (w > 0.001) {
+            // ── GEHEN ×w — Beine gegenphasig (Hüft-Schwung ±0.5; Knie nur beugen, Drag
+            // +0.4). Knie beugt NACH HINTEN (Fuß hebt zum Gesäß — menschlich), gleiche
+            // Richtung wie die Sitz-Pose (+); negativ wäre Hyperextension/Vogel-Knie
+            // (Schöpfer-Befund 16.06.).
+            const sw = Math.sin(walkPhase);
+            const wa = w * amp;
+            add(r.legL.hip, "x", 0.5 * sw * wa);
+            add(r.legR.hip, "x", 0.5 * Math.sin(walkPhase + Math.PI) * wa);
+            add(r.legL.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + 0.4)) * wa);
+            add(r.legR.knee, "x", 0.85 * Math.max(0, Math.sin(walkPhase + Math.PI + 0.4)) * wa);
+            // Arme gegen die Beine (Arm L mit Bein R)
+            add(r.armL.shoulder, "x", -0.4 * sw * wa);
+            add(r.armR.shoulder, "x", 0.4 * sw * wa);
+            add(r.armL.elbow, "x", (-0.3 - 0.2 * Math.max(0, -sw) * amp) * w);
+            add(r.armR.elbow, "x", (-0.3 - 0.2 * Math.max(0, sw) * amp) * w);
+            // Becken-Roll/Yaw + Brust-Gegendreh
+            add(r.hips, "z", 0.05 * sw * wa);
+            add(r.hips, "y", 0.07 * sw * wa);
+            add(r.chest, "y", -0.06 * sw * wa);
+        }
+        // CoM-Bob (doppelte Frequenz) — absolut über der EINMAL gecachten Basis;
+        // ×w: der Bob klingt beim Stopp aus, statt eingefroren stehenzubleiben.
+        if (r.hips) {
+            if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
+            r.hips.position.y = r._baseHipY + Math.abs(Math.cos(walkPhase)) * 0.3 * (r.kh || 1) * amp * w;
+        }
+        // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
+        // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
+        if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, w, gait.ik);
     }
 
     // ABSCHIEDS-WELLE (Koerper-Dock A2) — DIE EINE KREATUR-DIAL-QUELLE: liest die fünf
@@ -16875,13 +17885,18 @@ class AnazhRealm {
             } catch (_e) {
                 dKeyM = "";
             }
-            const keyM = "mensch|0|" + dKeyM + "|" + (0xc89372 >>> 0) + "|" + (0x241712 >>> 0);
-            if (!memo.has(keyM)) {
-                this._foundryRequest("mensch", 0, 0, "summer", null).then((meshes) => {
+            // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
+            // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gemergte
+            // Fern-Gestalt (der _menschFernToggle-Zweig). Warm = Spawn ~1 ms.
+            for (const lodM of [0, 1]) {
+                const keyM = "mensch|" + lodM + "|" + dKeyM + "|" + (0xc89372 >>> 0) + "|" + (0x241712 >>> 0);
+                if (memo.has(keyM)) continue;
+                this._foundryRequest("mensch", 0, lodM, "summer", null).then((meshes) => {
                     // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                     // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
                     if (!meshes || !meshes.length) {
-                        if (!memo.has(keyM)) this.log("OFEN-PREFETCH LEER: mensch (Buch kalt/Timeout)", "WARN");
+                        if (!memo.has(keyM))
+                            this.log(`OFEN-PREFETCH LEER: mensch lod${lodM} (Buch kalt/Timeout)`, "WARN");
                         return;
                     }
                     if (memo.has(keyM)) return;
@@ -16940,6 +17955,15 @@ class AnazhRealm {
             st = 0.05; // Gehen heißt Schreiten — auch ein stilles Profil schreitet in Bewegung
             freq = Math.max(freq, 2.2);
         }
+        // KREATUR-KOSTEN — der AUSKLINGE-SAUM: am Standbild-Saum schreibt
+        // updateCreatures ud._animFade (1→0); Schritt/Sway/Schwanz/Kopf klingen
+        // in die Stand-Pose aus (st→0 ⇒ der st<0.002-Stand-Zweig), damit der
+        // wrap↔fern-Toggle eine STEHENDE Gestalt trifft (kein Mid-Step-Pop).
+        // Fremde Aufrufer (Peers/Verkörperung/Werkstatt) tragen kein _animFade
+        // → fadeMul 1 = byte-alt.
+        const fade = group.userData._animFade;
+        const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
+        if (fadeMul < 1) st *= fadeMul;
         let g = tb._gang;
         if (!g) {
             g = tb._gang = {
@@ -16958,7 +17982,7 @@ class AnazhRealm {
             [0, 0, 0, 0],
             [0, 0, 0, 0],
         ];
-        const roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0);
+        const roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
         if (T.wolf) T.wolf.rotation.z = roll;
         const ketten = [
             [T.legFL, T.flU, T.flL, T.flP],
@@ -16993,8 +18017,8 @@ class AnazhRealm {
             if (K[2]) K[2].rotation.x = z2;
             if (K[3]) K[3].rotation.x = z3;
         }
-        if (T.headGroup) T.headGroup.rotation.x = (Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7);
-        const amp = Number(P.tailAmp) || 0.1;
+        if (T.headGroup) T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul;
+        const amp = (Number(P.tailAmp) || 0.1) * fadeMul;
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
@@ -17847,6 +18871,10 @@ class AnazhRealm {
         if (!creature || !creature.userData || creature.userData.kind !== "creature") {
             return { ok: false, reason: "not_creature" };
         }
+        // KAMPF-GEFÜHL — ein sterbendes (kippendes) Wesen ist inert: kein Doppel-Tod,
+        // kein Loot-Doppelgriff, keine Gegenwehr aus dem Fallen heraus (die Wand im
+        // EINEN Schadens-Chokepoint, Lehre 2 — kein Aufrufer muss es wissen).
+        if (creature.userData.dying) return { ok: false, reason: "dying" };
         const stats =
             creature.userData.stats && Number.isFinite(creature.userData.stats.hpMax)
                 ? creature.userData.stats
@@ -17967,7 +18995,35 @@ class AnazhRealm {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
         }
-        this.removeCreature(creature);
+        // ═══ KAMPF-GEFÜHL (Orakel Tier-1 #5) — TOD-KIPPEN statt Sofort-Despawn ═══
+        // Der Körper kippt render-seitig entlang der _fieldGradient-Hang-Richtung
+        // (~1 s, updateCreatures treibt die Rotation über `dying`), ein kurzer
+        // Nachklang — DANN der bestehende feld-native Abschied (removeCreature;
+        // Loot/Schuld/Triumph/Journal sind oben bereits gestempelt, die Anker-
+        // Rückkehr-Semantik bleibt unberührt). Ein sterbendes Wesen ist ab jetzt
+        // inert (damageCreature-Wand, keine KI, kein Sweep-Ziel).
+        const K = AnazhRealm.SWING_LAWS;
+        const g = this._fieldGradient(creature.position.x, creature.position.y + 0.5, creature.position.z, {});
+        let hx = g.x;
+        let hz = g.z;
+        const hMag = Math.hypot(hx, hz);
+        if (hMag > 0.05) {
+            hx /= hMag; // hangabwärts: die horizontale Komponente der Außen-Normale
+            hz /= hMag;
+        } else {
+            const ry = creature.rotation.y || 0; // flacher Boden: zur Seite der Blickrichtung
+            hx = Math.cos(ry);
+            hz = -Math.sin(ry);
+        }
+        creature.userData.dying = {
+            t: 0,
+            dauer: K.kippDauerSec,
+            nachklang: K.kippNachklangSec,
+            dirX: hx,
+            dirZ: hz,
+            baseQuat: creature.quaternion.clone(),
+            sounded: false,
+        };
     }
 
     // === Welle 6.H Phase 2B.1 — Helper: context-dependentes Args-Mapping ===
@@ -20352,6 +21408,122 @@ class AnazhRealm {
         return steht;
     }
 
+    // ═══ KREATUR-KOSTEN (Orakel-Synthese Tier-1 #2) — DIE ANIM-RATEN-LEITER ═══
+    // Gesetz #0: EINE kanonische Rate je Distanz, der Anim-Block in
+    // updateCreatures LIEST sie. Distanz RELATIV zur Standbild-Schwelle
+    // (dieselbe Wahrheit wie der wrap↔fern-Toggle): 1 = jeden Frame ·
+    // 2 = jeder 2. · 4 = jeder 4. · 0 = hinterm Standbild (gar nicht — die
+    // Gestalt steht eingefroren in der neutralen Stand-Pose). walkPhase +
+    // Animations-Uhr akkumulieren beim Halter JEDEN Frame weiter → der Gang
+    // bleibt gleich schnell, er wird nur seltener AUSGEWERTET (das aiDiv-
+    // Muster V17.115 U3, auf die Animation gehoben). Linse: gate:kreatur-kosten.
+    _creatureAnimDiv(dist, fernDist) {
+        if (!(fernDist > 0) || !(dist >= 0)) return 1;
+        if (dist >= fernDist) return 0;
+        if (dist >= fernDist * 0.75) return 4;
+        if (dist >= fernDist * 0.5) return 2;
+        return 1;
+    }
+    // Der AUSKLINGE-SAUM (die letzten 15 % vor der Standbild-Schwelle): 1 → 0
+    // linear — _animateTierBaum multipliziert Schritt/Schwanz/Sway/Kopf damit,
+    // sodass die Gestalt an der Schwelle STEHT (der Toggle trifft die Stand-
+    // Pose, kein Mid-Step-Pop). Jenseits der Schwelle konstant 0.
+    _creatureAnimFade(dist, fernDist) {
+        if (!(fernDist > 0) || !(dist >= 0)) return 1;
+        const saum = fernDist * 0.85;
+        if (dist <= saum) return 1;
+        if (dist >= fernDist) return 0;
+        return 1 - (dist - saum) / (fernDist - saum);
+    }
+    // Die NEUTRALE STAND-POSE (der Standbild-Freeze): friert den bauTier-Baum
+    // in der Kern-STAND_POSE ein (Bein-Ketten = Stand-Winkel · Schwanz/Kopf/
+    // Roll = 0) statt mitten im Schritt (vorher: harter Mid-Step-Pop beim
+    // Wieder-Annähern). tb._gang fällt — beim Aufwachen seedet der CPG frisch
+    // aus der weitergelaufenen walkPhase (kein dt-Sprung, kein stales Netz).
+    // Ketten-Ordnung = _animateTierBaum (die EINE Ketten-Wahrheit des Baums).
+    _tierBaumNeutralStance(group) {
+        const tb = group && group.userData && group.userData._tierBaum;
+        if (!tb || !tb.teile) return;
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        const SP = (core && core.STAND_POSE) || [
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ];
+        const T = tb.teile;
+        if (T.wolf) T.wolf.rotation.z = 0;
+        if (T.headGroup) T.headGroup.rotation.x = 0;
+        const ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        for (let i = 0; i < 4; i++) {
+            const K = ketten[i];
+            for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.x = SP[i][k];
+        }
+        const ts = tb.tailSegs || [];
+        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
+        tb._gang = null;
+    }
+
+    // ═══ KÖRPER-BEWEGUNG (4) — TIER-BODENKONTAKT ═══ zwei gecachte Boden-
+    // proben (vorn/hinten entlang der Blick-Achse) je NAHER Kreatur: Root-
+    // Pitch am Hang (_slopePitch, dieselbe EINE Hang-Formel wie der Biped) +
+    // geerdete Basis (Proben-Mitte). Dieselbe 0.5-m-/Budget-Disziplin wie
+    // _creatureGroundY (Frame-gebounded — das Terrain ist statisch). Die
+    // Halblänge kommt EINMAL aus der Parts-Wahrheit (_soulParts, die Mechanik-
+    // Quelle — kein Konstanten-Zwilling; skaliert mit der Körpergröße).
+    // Fail-soft: keine finite Probe → null (die Center-Probe führt).
+    // Linse: gate:koerper-bewegung.
+    _creatureSlopeProben(creature, centerG) {
+        const ud = creature.userData;
+        let hl = ud._slopeHalbLen;
+        if (!Number.isFinite(hl)) {
+            let len = 1.2;
+            const parts = ud._soulParts;
+            if (Array.isArray(parts) && parts.length) {
+                let minZ = Infinity;
+                let maxZ = -Infinity;
+                for (const q of parts) {
+                    const cz = (q && q.position && q.position.z) || 0;
+                    const hz = ((q && q.size && q.size.z) || 0) / 2;
+                    if (cz - hz < minZ) minZ = cz - hz;
+                    if (cz + hz > maxZ) maxZ = cz + hz;
+                }
+                if (Number.isFinite(maxZ - minZ) && maxZ - minZ > 0.2) len = maxZ - minZ;
+            }
+            hl = ud._slopeHalbLen = Math.min(4, Math.max(0.25, len * 0.35 * (creature.scale.x || 1)));
+        }
+        const yaw = creature.rotation.y || 0;
+        const fx = Math.sin(yaw) * hl;
+        const fz = Math.cos(yaw) * hl;
+        const pv = ud._slopeProbeV || (ud._slopeProbeV = { x: NaN, z: NaN, g: NaN });
+        const ph = ud._slopeProbeH || (ud._slopeProbeH = { x: NaN, z: NaN, g: NaN });
+        this._creatureSlopeProbe(pv, creature.position.x + fx, creature.position.z + fz);
+        this._creatureSlopeProbe(ph, creature.position.x - fx, creature.position.z - fz);
+        const gv = Number.isFinite(pv.g) ? pv.g : centerG;
+        const gh = Number.isFinite(ph.g) ? ph.g : centerG;
+        if (!Number.isFinite(gv) || !Number.isFinite(gh)) return null;
+        return { mitte: (gv + gh) / 2, pitch: this._slopePitch(gv, gh, 2 * hl) };
+    }
+    // EINE Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit
+    // freiem Frame-Budget (der Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse
+    // wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).
+    _creatureSlopeProbe(p, x, z) {
+        const dx = x - p.x;
+        const dz = z - p.z;
+        if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.25) return;
+        if (!(this._creatureGroundBudget > 0)) return;
+        this._creatureGroundBudget--;
+        const g = this._voxelSurfaceY(x, z);
+        p.x = x;
+        p.z = z;
+        p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
+    }
+
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
@@ -20412,8 +21584,40 @@ class AnazhRealm {
         // Frame GLATT mit der gecachten Richtung weiter. Der Frame-Zähler staffelt
         // die Neuberechnung über die Kreaturen (kein Sammel-Spike).
         const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
+        // KREATUR-KOSTEN (Orakel Tier-1 #2) — die Standbild-Schwelle als DISTANZ:
+        // EINE Wurzel pro Frame (die Anim-Raten-Leiter unten skaliert sie je
+        // Kreatur mit der Körpergröße L; der wrap↔fern-Toggle liest weiter das
+        // Quadrat — dieselbe Schwelle, zwei Einheiten derselben Wahrheit).
+        const tierFernDist = Math.sqrt(AnazhRealm.TIER_FERN_DIST_SQ);
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
+            // ═══ KAMPF-GEFÜHL — TOD-KIPPEN: ein sterbendes Wesen hat keine KI/Bewegung
+            // mehr. Der Körper kippt render-seitig (~90° smoothstep über kippDauerSec)
+            // entlang der beim Tod gemerkten Hang-Richtung (_fieldGradient); am Boden
+            // ein kurzer Nachklang (der bestehende sad-Ping), NACH der Frist der
+            // bestehende Abschied (removeCreature). Rein optisch — kein Sim-/Replay-
+            // Pfad liest die Rotation (die V18-Render-only-Disziplin des Hang-Pitch).
+            const dying = creature && creature.userData && creature.userData.dying;
+            if (dying) {
+                dying.t += delta;
+                const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
+                const ang = 1.45 * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
+                const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
+                axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
+                const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
+                q.setFromAxisAngle(axis, ang);
+                creature.quaternion.copy(q);
+                if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
+                if (u >= 1 && !dying.sounded) {
+                    dying.sounded = true;
+                    this.playCreaturePing("sad"); // der kurze Nachklang (bestehende Maschine)
+                }
+                if (dying.t >= dying.dauer + dying.nachklang) {
+                    this.removeCreature(creature);
+                    i--;
+                }
+                continue;
+            }
             const emotion = this.state.creatureEmotions[i];
             // V18.472 (C2 — KONSUM der EINEN Stat-Pipeline in die FREIE Bewegung;
             // die Task-Pfade konsumieren sie seit 6.H): die Charakter-Geschwindig-
@@ -20457,11 +21661,13 @@ class AnazhRealm {
 
             // V17.115 U3 — die Kreatur LIEST die Detail-Kaskade: ihre Distanz-Band
             // bestimmt, wie oft die teure KI-Richtung neu gerechnet wird. distSq
-            // (XZ) hier EINMAL berechnet (der Wasser-Kontext unten nutzt es wieder).
+            // (XZ) hier EINMAL berechnet (der Wasser-Kontext unten nutzt es wieder);
+            // die Wurzel EINMAL gezogen (Anim-Raten-Leiter unten liest sie wieder).
             const dxToPlayer = creature.position.x - playerPos.x;
             const dzToPlayer = creature.position.z - playerPos.z;
             const distSqToPlayer = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer;
-            const aiBand = this._detailBand(Math.sqrt(distSqToPlayer) / 43.2);
+            const distToPlayer = Math.sqrt(distSqToPlayer);
+            const aiBand = this._detailBand(distToPlayer / 43.2);
             const recomputeAI = aiBand.aiDiv <= 1 || !creature.userData.aiDir || (aiFrame + i) % aiBand.aiDiv === 0;
             // Bewegung: Welle 6.H Phase 1. Wenn ein non-wander-Task aktiv ist,
             // hat er Vorrang über die heutige Emotion-Logik (follow_player /
@@ -20629,6 +21835,22 @@ class AnazhRealm {
                 direction.z += (Math.random() - 0.5) * 2;
             }
 
+            // KOPPLUNG (1) — STRÖMUNG WIRKT auch auf SCHWIMMENDE Kreaturen: das Gate ist
+            // dieselbe Schwimm-Wahrheit wie ihr Y-Override (waterSurface !== null ⇔ nasse
+            // Spalte, Tiefe > 0.5 — Land-Läufer werden NIE geschoben). Quelle = DIESELBE
+            // EINE `_waterFlowAt` wie der Spieler-Chokepoint. `direction` IST hier die
+            // Frame-Velocity (addScaledVector(direction, delta)) und wird jeden Tick aus
+            // der KI neu gebaut (keine persistente Velocity) → der Flow addiert 1:1 als
+            // reine Advektion (k=1: Drift AUF Strömungstempo, on top der Schwimm-Absicht;
+            // nach dem aiDir-Cache-Write → nie stale in die KI-Richtung gebacken).
+            if (waterSurface !== null) {
+                const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
+                if (_fl) {
+                    direction.x += _fl.x;
+                    direction.z += _fl.z;
+                }
+            }
+
             creature.position.addScaledVector(direction, delta);
 
             // V18.100 (G4-1) — sanfter Decay des Kreatur-Innenlebens: Gefühle
@@ -20664,16 +21886,43 @@ class AnazhRealm {
                 if (mroles) {
                     const movingNow = direction.lengthSq() > 0.01;
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
-                    // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
-                    // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
-                    this._animateCompoundMotion(
-                        creature,
-                        mroles,
-                        this.state.creatureAnimationTime,
-                        creature.userData.walkPhase,
-                        movingNow,
-                        creature.userData.emotions
-                    );
+                    // KREATUR-KOSTEN (Orakel Tier-1 #2) — ANIM-RATEN-LOD: das aiDiv-
+                    // Muster (V17.115 U3) auf den Anim-Block gehoben. walkPhase +
+                    // creatureAnimationTime akkumulieren JEDEN Frame weiter → der Gang
+                    // bleibt gleich SCHNELL, ferne Wesen werten ihn nur seltener aus
+                    // (1/2 · 1/4; der (aiFrame+i)-Stagger verteilt die Auswertungen —
+                    // kein Sammel-Spike). Hinterm Standbild-Toggle (DIESELBE Distanz-
+                    // Wahrheit wie wrap↔fern) tickt GAR nichts — die Gestalt friert
+                    // EINMAL in der neutralen Stand-Pose ein (kein Mid-Step-Standbild).
+                    // Ohne Fern-Guss (fern fehlt) bleibt 1/4 die unterste Stufe: die
+                    // volle Gestalt bliebe sonst sichtbar im Schritt stehen.
+                    const fLA = creature.scale.x || 1;
+                    const fernDist = tierFernDist * fLA;
+                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist);
+                    const tBA = creature.userData._tierBaum;
+                    if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
+                    if (animDiv === 0) {
+                        if (!creature.userData._animEingefroren) {
+                            creature.userData._animEingefroren = true;
+                            this._tierBaumNeutralStance(creature);
+                        }
+                    } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
+                        creature.userData._animEingefroren = false;
+                        // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
+                        // die Stand-Pose — der Standbild-Toggle trifft eine STEHENDE
+                        // Gestalt (_animateTierBaum konsumiert _animFade).
+                        creature.userData._animFade = this._creatureAnimFade(distToPlayer, fernDist);
+                        // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
+                        // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
+                        this._animateCompoundMotion(
+                            creature,
+                            mroles,
+                            this.state.creatureAnimationTime,
+                            creature.userData.walkPhase,
+                            movingNow,
+                            creature.userData.emotions
+                        );
+                    }
                 }
             }
 
@@ -20694,11 +21943,43 @@ class AnazhRealm {
             const terrainHeight =
                 typeof _gY === "number" && Number.isFinite(_gY) ? _gY : this.state.terrainBaseHeight || 0;
             // V11.0-d.2 — wenn die Spalte nass + tief ist, schwebt die Kreatur
-            // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, sichtbar als
-            // halb-eingetaucht). Sonst sitzt sie wie bisher 0.5 m über dem
-            // Terrain (V8.49-Floating-Animation-Anker).
-            const baseY = waterSurface !== null ? waterSurface - 0.3 : terrainHeight + 0.5;
-            const floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
+            // 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface, samt Schwimm-Bob —
+            // byte-alt). KÖRPER-BEWEGUNG (4) — TIER-BODENKONTAKT an Land: der
+            // +0.5-m-Schwebe-Anker + Sinus-Bob sind GEFALLEN — die Sohlen des
+            // bauTier-Baums (wrap normalisiert minY→0 = die pawOffsets-Wahrheit
+            // des Kerns) stehen AUF dem Boden. Nahe Wesen (dieselbe Distanz-
+            // Wahrheit wie die Anim-Raten-Leiter) proben vorn/hinten (gecacht +
+            // Budget) → Root-Pitch folgt dem Hang, die Basis ist die Proben-
+            // Mitte; ferne stehen auf der Center-Probe (der Pitch klingt auf 0
+            // aus). Der Stance-Anker je Pfote (Two-Bone je Bein über die
+            // pawOffsets) ist der benannte Folgeschritt. Render-only — kein
+            // Sim-/Task-Pfad liest rotation.x.
+            let baseY;
+            let pitchZiel = 0;
+            let floatOffset = 0;
+            if (waterSurface !== null) {
+                baseY = waterSurface - 0.3;
+                floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
+            } else {
+                baseY = terrainHeight;
+                const fLB = creature.scale.x || 1;
+                if (distToPlayer < tierFernDist * fLB * 0.5) {
+                    const sp = this._creatureSlopeProben(creature, terrainHeight);
+                    if (sp) {
+                        baseY = sp.mitte;
+                        pitchZiel = sp.pitch;
+                    }
+                }
+            }
+            {
+                // Root-Pitch exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13).
+                const udP = creature.userData;
+                const pk = 1 - Math.exp(-8 * Math.min(0.1, delta || 0.016));
+                let hp = (udP._hangPitch || 0) + (pitchZiel - (udP._hangPitch || 0)) * pk;
+                if (!Number.isFinite(hp)) hp = 0;
+                udP._hangPitch = hp;
+                creature.rotation.x = hp;
+            }
             // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
             // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
             let hopOffset = 0;
@@ -28596,10 +29877,20 @@ class AnazhRealm {
                                     const _wu = this.state.windUniforms;
                                     if (_wu && _wu.uWindTime && opts.useFlexAttr) {
                                         const _fx = _Ta.attribute("aFlex", "float").clamp(0.0, 1.0);
-                                        const _ph = _wu.uWindTime
-                                            .mul(_Ta.float(1.1))
-                                            .add(_axis.x.mul(_Ta.float(0.18)))
-                                            .add(_axis.z.mul(_Ta.float(0.14)));
+                                        // KOPPLUNG (3) — der IMPOSTOR liest DIESELBE Richtungs-
+                                        // Quelle uWindDir wie Baum/Gras (Orts-Term = dot(axisXZ,
+                                        // windDir) × 0.228 = |0.18, 0.14|) → die ferne Karte wogt
+                                        // im Gleichtakt mit dem nahen Laub, kein Richtungs-Riss
+                                        // am 40-m-Crossfade. Ohne uWindDir: der alte feste Baum.
+                                        const _wcu = this._ensureWindCoupling(_Ta);
+                                        const _phSpatial =
+                                            _wcu && _wcu.uWindDir
+                                                ? _axis.x
+                                                      .mul(_wcu.uWindDir.x)
+                                                      .add(_axis.z.mul(_wcu.uWindDir.y))
+                                                      .mul(_Ta.float(0.228))
+                                                : _axis.x.mul(_Ta.float(0.18)).add(_axis.z.mul(_Ta.float(0.14)));
+                                        const _ph = _wu.uWindTime.mul(_Ta.float(1.1)).add(_phSpatial);
                                         _swayX = _Ta.sin(_ph).mul(_fx).mul(_Ta.float(0.22));
                                         _swayZ = _Ta
                                             .cos(_ph.mul(_Ta.float(0.7)))
@@ -29314,10 +30605,19 @@ class AnazhRealm {
                 const _wu = this.state.windUniforms;
                 if (_Tw && _Tw.positionLocal && _Tw.positionWorld && _Tw.sin && _Tw.cos && _wu && _wu.uWindTime) {
                     const _sway = Math.max(0, Math.min(1, responseProfile.wiegen));
-                    const _phase = _wu.uWindTime
-                        .mul(_Tw.float(1.1))
-                        .add(_Tw.positionWorld.x.mul(_Tw.float(0.18)))
-                        .add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
+                    // KOPPLUNG (3) — der Baum liest DIESELBE Richtungs-Quelle uWindDir wie
+                    // Gras/Streu/Impostor (GoT „Blowing from the West"): Orts-Term =
+                    // dot(worldXZ, windDir) × 0.228 (= |0.18, 0.14| — die alte Wellenlänge
+                    // bleibt, nur die Richtung lebt). Ohne uWindDir: der alte feste Baum.
+                    const _wcu = this._ensureWindCoupling(_Tw);
+                    const _phaseSpatial =
+                        _wcu && _wcu.uWindDir
+                            ? _Tw.positionWorld.x
+                                  .mul(_wcu.uWindDir.x)
+                                  .add(_Tw.positionWorld.z.mul(_wcu.uWindDir.y))
+                                  .mul(_Tw.float(0.228))
+                            : _Tw.positionWorld.x.mul(_Tw.float(0.18)).add(_Tw.positionWorld.z.mul(_Tw.float(0.14)));
+                    const _phase = _wu.uWindTime.mul(_Tw.float(1.1)).add(_phaseSpatial);
                     let _crownFactor;
                     let _flutterShift;
                     if (opts.useFlexAttr === true && _Tw.attribute) {
@@ -31178,6 +32478,28 @@ class AnazhRealm {
         }
         const smoothed = acc / wsum;
         return L + (smoothed - L) * center;
+    }
+
+    // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE FÜR BEWEGUNG ═══
+    // Der Fluss-Flow (flowX/flowZ) lebt kanonisch in `_hydroRiverAt` (Segment-Tangente,
+    // Einheitsvektor) — bis KOPPLUNG konsumierten ihn nur der Render (aFlow im Wasser-
+    // Sheet, Schaum scrollt stromab) und die Lauf-Glättung. Dieser Helfer ist die EINE
+    // physikalische Lesart für alle BEWEGUNGS-Konsumenten (Spieler-Chokepoint
+    // `_stepCharacter` 4b · schwimmende Kreaturen in `updateCreatures` · gerittenes
+    // Boot via `_afloat`): die Strömungs-GESCHWINDIGKEIT in m/s. Betrag =
+    // FLOW_ADVECT_SPEED × centerness (Mittellinie voll, Kanal-Kante 0 — die Bank-
+    // RAMPE schiebt NIE: dort stehen Land-Läufer). Reine Funktion der Welt-Position
+    // (seed-deterministisch wie die Hydrosphäre selbst → Replay/Lockstep bit-treu).
+    // NaN-Wand: degenerierte Richtung (|flow| ≈ 0, See-Punkt) → null.
+    _waterFlowAt(x, z) {
+        const rv = this._hydroRiverAt(x, z);
+        if (!rv) return null;
+        const m = Math.hypot(rv.flowX, rv.flowZ);
+        if (!(m > 1e-6) || !Number.isFinite(m)) return null;
+        const center = Number.isFinite(rv.centerness) ? Math.max(0, Math.min(1, rv.centerness)) : 0;
+        if (center <= 0) return null;
+        const speed = AnazhRealm.FLOW_ADVECT_SPEED * center;
+        return { x: (rv.flowX / m) * speed, z: (rv.flowZ / m) * speed };
     }
 
     // V9.59-a — semantische Wurzel der Welt-Awareness: "ist diese Position
@@ -42084,7 +43406,9 @@ class AnazhRealm {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
-                animate: (g, t, ph, mv, uw) => this._animateHuman(g, t, ph, mv, uw),
+                // KÖRPER-BEWEGUNG — der 7. Slot reicht gait durch (Emotions-Slot bleibt
+                // bewusst ungenutzt wie zuvor — der Spieler-Rig liest neutral, byte-alt).
+                animate: (g, t, ph, mv, uw, _em, gait) => this._animateHuman(g, t, ph, mv, uw, undefined, gait),
                 // V18.101 — POSITIONIERTE bodyParts (der Schöpfer-Befund „Körper
                 // holen zeigt nicht den getragenen Avatar"): vorher waren die
                 // Built-in-bodyParts positions-lose STAT-Schatten (alle Parts am
@@ -48045,6 +49369,10 @@ class AnazhRealm {
                 this._warmCompilePipeline(group, false);
             };
             attachMesh(built.mesh); // der Baum steht sofort (sync — kein async-Pfad mehr)
+            // KREATUR-KOSTEN (3) — die Fern-Gestalt-Refs am Gruppen-Level: der
+            // Peer-Tick liest entry.mesh.userData._menschFern (EIN Chokepoint,
+            // _menschFernToggle). null = kein lod1-Guss → Toggle no-op.
+            group.userData._menschFern = (built.mesh.userData && built.mesh.userData._menschFern) || null;
             return group;
         }
         // Kein Rig (in der vendored r184/WebGPU nie der Fall) → fail-LAUT (V18.462):
@@ -48066,17 +49394,18 @@ class AnazhRealm {
         return group;
     }
 
-    _animateHuman(group, t, walkPhase, isMoving, underwater, emotions) {
+    _animateHuman(group, t, walkPhase, isMoving, underwater, emotions, gait) {
         // GUSS 2b — der Rig-Avatar wird über die Bones bewegt (Walk/Idle/Kontrapost/Schwimm).
         // ABSCHIEDS-WELLE (Konvergenz C) — der tote Box-Avatar-Zweig (userData.parts ohne
         // Rig) ist GESCHNITTEN: `_buildHumanGroup` liefert seit V18.316 ausschließlich das
         // Rig (oder eine leere Gruppe ohne parts → hasSkeleton false, der Aufrufer kommt
         // nie hierher) — der Rig IST die eine Quelle, der Legacy-Zweig war unerreichbar.
+        // KÖRPER-BEWEGUNG — gait ({w, amp, ik}) reist vom EINEN Gang-Tick zum Rig durch.
         if (!group.userData || !group.userData.rig) return;
         // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne — wie ein Schwimmer);
         // die Glieder kraulen/flattern macht das Rig. An Land aufrecht (rotation.x = 0).
         group.rotation.x = underwater ? (isMoving ? 0.6 : 0.3) : 0;
-        this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions);
+        this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions, gait);
     }
 
     // M3(b)/V18.155 — die Sitz-Pose des menschlichen Avatars (Befund 10): die
@@ -48993,10 +50322,17 @@ class AnazhRealm {
         // (Wasserlinie, Erst-Wurf). Ragt das Terrain ÜBER die Wasserlinie,
         // führt es weiter (Auflaufen am Ufer per max() — kein Sonder-Pfad).
         const rideProf = this._vehicleProfile(entry);
+        // KOPPLUNG (1) — der SCHWIMM-Stempel: `_afloat` hält fest, ob das Gefährt in
+        // DIESEM Tick auf der Lauf-Fläche reitet (statt auf Terrain zu stehen). Der
+        // Bewegungs-Chokepoint (`_stepCharacter` 4b) liest ihn als Boots-Gate für die
+        // Strömungs-Advektion — der Reiter selbst ist nie `submerged` (er sitzt über
+        // dem Spiegel), das Boot folgt ihm horizontal (EINE Bewegungs-Quelle V18.150).
+        entry._afloat = false;
         if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
             const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
             if (runSurf > -Infinity && runSurf - 0.25 > groundY) {
                 groundY = runSurf - 0.25;
+                entry._afloat = true;
             }
         }
         if (Number.isFinite(groundY)) {
@@ -50660,14 +51996,16 @@ class AnazhRealm {
             // (beim ersten Frustum-Cull) und cacht sie → spät-gestreamte Instanzen liegen AUSSER-
             // halb → die ganze Region cullt, obwohl ein Baum direkt im Blickfeld steht. null →
             // THREE rechnet sie beim nächsten Cull neu (umschließt ALLE Instanzen) = korrekter Cull.
+            // V18.475 — die EINE Slot-Farbe (leaf.tint × Streu-Tint, _archSlotColor —
+            // DERSELBE Farb-Chokepoint wie _archInstanceAdd, keine zweite Naht).
+            const slotColor = this._archSlotColor(leaf, tintColor);
             if (g.kind === "batch") {
-                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint)
-                    g.mesh.setColorAt(slot, tintColor);
+                if (slotColor) g.mesh.setColorAt(slot, slotColor);
                 g.mesh.boundingSphere = null;
             } else {
                 g.mesh.instanceMatrix.needsUpdate = true;
-                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
-                    g.mesh.setColorAt(slot, tintColor);
+                if (slotColor) {
+                    g.mesh.setColorAt(slot, slotColor);
                     if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
                 }
                 if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
@@ -52987,38 +54325,73 @@ class AnazhRealm {
         }
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
-        let isMoving = false;
+        let speedNow = 0;
         if (this.state.playerVel) {
             const v = this.state.playerVel;
-            const speed = Math.hypot(v.x(), v.z());
-            isMoving = speed > 0.4;
+            speedNow = Math.hypot(v.x(), v.z());
+            if (!Number.isFinite(speedNow)) speedNow = 0;
         }
+        const isMoving = speedNow > 0.4;
         // V8.33 — unter Wasser schwimmt der Avatar statt zu laufen.
         const underwater = !!this.state.playerUnderwater;
-        // Walk-Phase nur in Bewegung akkumulieren (keine Glieder-Sprünge
-        // beim Stop). Frame-Delta aus animationLastTick.
+        // Frame-Delta aus animationLastTick. KAMPF-GEFÜHL (Orakel Tier-1 #5) —
+        // HIT-STOP: ein Treffer pausiert NUR diese ANZEIGE-Uhr (Gang- + Schwung-
+        // Phase frieren 60–100 ms, _hitStopFactor 0); die FIXE SIM
+        // (_loopFixedStep/_stepFixedSim) liest den Faktor NIE — gate:kampf-gefuehl
+        // beweist über die Fixed-Akku-Probe, dass die Sim-Zeit durchläuft.
         const last = p.animationLastTick;
-        const dt = last > -Infinity ? Math.max(0, currentTime - last) : 0;
+        const dt = (last > -Infinity ? Math.max(0, currentTime - last) : 0) * this._hitStopFactor(currentTime);
         p.animationLastTick = currentTime;
+        let gait = null;
         if (underwater) {
             // V8.33 — Schwimm-Takt. Die Phase läuft auch im Stillstand weiter
             // (Wasser-Treten strokt sanft), in Bewegung schneller — so springt
             // der Zug-Rhythmus nicht beim Start/Stopp.
             p.walkPhase += dt * (isMoving ? 5.0 : 2.3);
-        } else if (isMoving) {
-            // ABSCHIEDS-WELLE (walkPhase↔Profil-Brücke) — die SCHRITT-FREQUENZ liest das
-            // koerper-Bewegungsprofil über die EINE Emotions-Brücke, NORMALISIERT auf das
-            // Lab-Default-Gehen (MOTION_PROFILE_MAP.koerper.moving = "run", freq 2.0):
-            // neutral → Faktor 1 = byte-alt 5.5/4.5; sorrow → "pwalk" (1.6) = 0.8× träger.
+        } else if (hasSkeleton && mesh.userData.rig) {
+            // ═══ KÖRPER-BEWEGUNG — der Biped geht die WEG-PHASE (Phase ∝ Weg /
+            // Schrittlänge, das Fahrzeug-Muster — der Sprint skatet nie), das
+            // Posen-Blend w(speed) ersetzt den harten Schnitt, und der LOKALE
+            // Avatar (Distanz 0 — das nächste Wesen überhaupt, Budget-Disziplin)
+            // trägt Fuß-IK/Foot-Lock/Becken/Hang-Lehne (_gaitTick = der EINE
+            // Chokepoint). ABSCHIEDS-WELLE (walkPhase↔Profil-Brücke): die
+            // Emotions-Frequenz reist als KADENZ-Faktor weiter — neutral → 1 =
+            // reines distance-matching; sorrow → "pwalk" (1.6) = 0.8× träger.
             // Fail-soft: kaltes Buch → Faktor 1.
+            let emoF = 1;
+            const mpv = this._koerperMotionProfile(true, p.emotions);
+            const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
+            if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) emoF = mpv.freq / mpr.freq;
+            gait = this._gaitTick(mesh, p, speedNow, dt, {
+                emoFaktor: emoF,
+                ik: true,
+                soleY: mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET,
+                yaw: mesh.rotation.y,
+            });
+        } else if (isMoving) {
+            // Compound-/Nicht-Rig-Seelen bleiben zeit-getrieben byte-alt (der Rig
+            // ist der Biped-Konsument der Weg-Phase; Flügel/Räder takten zur Uhr).
+            // Die SCHRITT-FREQUENZ liest das koerper-Bewegungsprofil über die EINE
+            // Emotions-Brücke (neutral → Faktor 1 = byte-alt 5.5).
             let stepHz = 5.5;
             const mpv = this._koerperMotionProfile(true, p.emotions);
             const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
             if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) stepHz *= mpv.freq / mpr.freq;
             p.walkPhase += dt * stepHz;
         }
+        // SCHRITT-KLANG (Orakel Tier-1 #7) — EIN Konsument MEHR der Gang-Phase
+        // (keine eigene Uhr): je Halbzyklus ein Schritt, nur geerdet + über der
+        // Tempo-Schwelle; die Landung hört den Luft→Boden-Übergang. Der
+        // Hit-Stop friert die Phase → die Schritte frieren gratis mit; der
+        // Sattel kehrt oben um (mounted) → im Ritt klappern keine Füße.
+        this._schrittKlangTick(p, speedNow, underwater, mesh);
         if (hasSkeleton) {
-            def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater, p.emotions);
+            def.animate(mesh, currentTime, p.walkPhase, isMoving, underwater, p.emotions, gait);
+            // KAMPF-GEFÜHL — der 3-Phasen-Schwung als WEITERER additiver Oberkörper-
+            // Layer ÜBER der Lokomotion (das Ruhe/Gehen-Blend-Muster der Gang-Gesetze:
+            // dieselbe Null-Reset-Basis, danach += — kein zweites Rig-System). No-op
+            // ohne aktiven Schwung / ohne Rig.
+            this._applyKampfSchwungPose(mesh);
         } else {
             // ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE für jede Compound-
             // Seele (konvergierte Built-ins + Customs; die Spieler-Gruppe ist IMMER YXZ,
@@ -59246,11 +60619,13 @@ class AnazhRealm {
         return m;
     }
 
-    // Das geteilte Leaf-Material — spiegelt EXAKT die Material-Farb-Logik
-    // aus `_buildFromBlueprint` (V9.89-Worker-Mirror-Disziplin: identische
-    // Mathematik, der Test bewacht Drift). baseColor aus part.color oder
-    // Material-Substanz, Präzisions-Helligkeit 0.6..1.0, Opacity.
-    _archLeafMaterial(part) {
+    // V18.475 — RENDER-DIÄT: die EINE Part-Farb-Quelle (baseColor-Auflösung aus
+    // part.color/Material-Substanz + Präzisions-Helligkeit 0.6..1.0, 8-bit-
+    // gerundet wie das alte Material-Backen — spiegelt EXAKT `_buildFromBlueprint`
+    // + die Per-Vertex-Formel in `_mergeBlueprintByMaterial`). Konsumenten:
+    // _archLeafMaterial (glühende Substanz: in die Material-Signatur gebacken)
+    // + _archFlattenBlueprint (leaf.tint = Instanz-Farbe des geteilten Materials).
+    _archPartTintColor(part) {
         let baseColor = typeof part.color === "number" ? part.color : null;
         const partMatDef =
             typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
@@ -59263,10 +60638,35 @@ class AnazhRealm {
         const r8 = (baseColor >> 16) & 0xff;
         const g8 = (baseColor >> 8) & 0xff;
         const b8 = baseColor & 0xff;
-        const tintedColor =
+        return (
             ((Math.round(r8 * brightness) & 0xff) << 16) |
             ((Math.round(g8 * brightness) & 0xff) << 8) |
-            (Math.round(b8 * brightness) & 0xff);
+            (Math.round(b8 * brightness) & 0xff)
+        );
+    }
+
+    // Das geteilte Leaf-Material — spiegelt EXAKT die Material-Farb-Logik
+    // aus `_buildFromBlueprint` (V9.89-Worker-Mirror-Disziplin: identische
+    // Mathematik, der Test bewacht Drift). baseColor aus part.color oder
+    // Material-Substanz, Präzisions-Helligkeit 0.6..1.0, Opacity.
+    // V18.475 — RENDER-DIÄT (Schöpfer-Trace 14.07.: 1733 dc / ~72 ms Submit; die
+    // Schwester-Hälfte der V18.474-Fern-Diät): vorher baute JEDE Part-Farbe ihr
+    // EIGENES MeshStandardNodeMaterial → der Batch-Key (mat.uuid, _archBatchGroupFor)
+    // zersplitterte je Farbe in eigene Pipeline + eigenen Draw. Jetzt: EIN geteiltes
+    // Material je TAG-SIGNATUR (_sharedFoliageMaterial — das bewiesene V18.288-
+    // Muster); die Part-Farbe reist als INSTANZ-Farbe über den bestehenden Tint-
+    // Kanal (leaf.tint → _archSlotColor → setColorAt; die Engine multipliziert
+    // instanceColor/vBatchColor auf den colorNode — Vendor-verifiziert, neutral
+    // WEISS). AUSNAHME (fail-closed): GLÜHENDE Substanz behält die Farbe in der
+    // Signatur — das Emissiv im PBR-Bau konsumiert opts.color (Glut/Quarz glimmen
+    // in der EIGENEN Farbe; Spiegel der dortigen Klammer `emissiv − 0.5 > 0.01`,
+    // gate:render-diaet bewacht Drift) — memoisiert teilen identische Parts trotzdem.
+    // A/B-Hebel der Linse: ARCH_LEAF_MAT_SHARED=false = das alte Muster (nur zum
+    // Beweis, dass die Linse es erkannt hätte).
+    _archLeafMaterial(part) {
+        const tintedColor = this._archPartTintColor(part);
+        const partMatDef =
+            typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;
         const matOpts = { color: tintedColor };
         // W-E (§8.3) — die Antenne IST die Substanz (Spiegel zu _buildFromBlueprint).
         if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
@@ -59284,7 +60684,21 @@ class AnazhRealm {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
         }
-        return this._buildToonNodeMaterial(matOpts);
+        if (AnazhRealm.ARCH_LEAF_MAT_SHARED === false) return this._buildToonNodeMaterial(matOpts); // A/B-Hebel (Linse)
+        // Die Glüh-Frage über die EINE Profil-Quelle (_substanceResponseProfile;
+        // tagless fällt wie im PBR-Bau auf defaults.werk → glüht → fail-closed
+        // bleibt die Farbe gebacken).
+        const profil = matOpts.tags
+            ? this._substanceResponseProfile(matOpts.tags)
+            : AnazhRealm.SUBSTANCE_RESPONSE.defaults.werk;
+        const glueht = Math.max(0, (Number(profil && profil.emissiv) || 0) - 0.5) > 0.01;
+        if (!glueht) {
+            matOpts.color = 0xffffff; // die Farbe reist als Instanz-Kanal (leaf.tint)
+            matOpts.leafTint = true; // Signatur-Marker — keine Kollision mit echt-weiß gebackenen Signaturen
+        }
+        const mat = this._sharedFoliageMaterial(matOpts);
+        if (matOpts.leafTint && mat.userData) mat.userData.leafTint = true;
+        return mat;
     }
 
     // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — der minimale geom-Merger.
@@ -59448,7 +60862,11 @@ class AnazhRealm {
                 const waerme = +refMatDef.tags.lebendig || 0;
                 if (waerme > 0.5) matOpts.useInstanceTint = true;
             }
-            const mat = this._buildToonNodeMaterial(matOpts);
+            // V18.475 — RENDER-DIÄT (dieselbe Klasse): die Opts sind über alle
+            // Bauplan-Varianten identisch (globale holz/laub-Tags, Farbe per-Vertex)
+            // → das geteilte Tag-Signatur-Material statt eines frischen je Bauplan
+            // (Pipeline-Kollaps; die _foliageMatCache-Konvention: NIE disposen).
+            const mat = this._sharedFoliageMaterial(matOpts);
             leaves.push({ geom: merged, mat, localMatrix: new THREE.Matrix4() });
         }
         if (leaves.length === 0) return null;
@@ -61595,7 +63013,12 @@ class AnazhRealm {
                 geom.computeBoundingBox();
                 const mat = this._archLeafMaterial(part);
                 const localMatrix = new THREE.Matrix4().multiplyMatrices(parentMatrix, composePart(part, false));
-                leaves.push({ geom, mat, localMatrix });
+                const leaf = { geom, mat, localMatrix };
+                // V18.475 — RENDER-DIÄT: trägt das geteilte Material den leafTint-
+                // Marker (Farbe NICHT in der Signatur), reist die Part-Farbe als
+                // Instanz-Farbe (der EINE Slot-Farb-Chokepoint _archSlotColor).
+                if (mat.userData && mat.userData.leafTint) leaf.tint = this._archPartTintColor(part);
+                leaves.push(leaf);
             }
             seen.delete(blueprint.name);
         };
@@ -61604,7 +63027,9 @@ class AnazhRealm {
             // Unbenutzte Leaf-Ressourcen freigeben (nicht instancbar).
             for (const l of leaves) {
                 if (l.geom && l.geom.dispose) l.geom.dispose();
-                if (l.mat && l.mat.dispose) l.mat.dispose();
+                // V18.475 — geteilte Tag-Signatur-Materialien leben im
+                // _foliageMatCache (viele Leser) → NIE disposen.
+                if (l.mat && l.mat.dispose && !(l.mat.userData && l.mat.userData.sharedFoliage)) l.mat.dispose();
             }
             result.reason = blocked || "empty";
             cache.set(name, result);
@@ -61689,7 +63114,18 @@ class AnazhRealm {
         // V18.349 — per-Leaf-Override (der opake Kronen-Kern setzt castShadow:false): ein einzelner
         // Leaf darf den Namen-basierten Schatten-Default überstimmen; sonst der LOD-Default via Name.
         const castShadow = leaf.castShadow !== undefined ? !!leaf.castShadow : this._archGroupCastsShadow(name);
-        const batchKey = (leaf.mat.uuid || "m") + "#" + (castShadow ? "s" : "n") + (regional ? "@" + regionKey : "");
+        // V18.475 — RENDER-DIÄT: leaf.mat ist je TAG-SIGNATUR geteilt (_archLeafMaterial)
+        // → dieser mat.uuid-Key kollabiert die Part-FARBEN per Konstruktion in EINEN
+        // Batch (die Farbe reist als Instanz-Farbe, _archSlotColor) — vorher zersplitterte
+        // jede Farbe in eigene Pipeline + eigenen Draw (Schöpfer-Trace 1733 dc).
+        // V18.476 (Review-Ernte, CONFIRMED): der r184-BatchedMesh verlangt INDEX-KONSISTENZ
+        // („All geometries must consistently have index") — die alten Je-Farbe-Materialien
+        // trennten indizierte und nicht-indizierte Leafs (Kronen-Kern/Schatten-Zwilling sind
+        // bewusst NON-INDEXED) nur ZUFÄLLIG per Konstruktion. Der Key trägt die Konsistenz
+        // jetzt EXPLIZIT (#i/#x) am EINEN Chokepoint — kein Heilen an Aufrufern.
+        const idxKind = leaf.geom && leaf.geom.index ? "i" : "x";
+        const batchKey =
+            (leaf.mat.uuid || "m") + "#" + idxKind + (castShadow ? "s" : "n") + (regional ? "@" + regionKey : "");
         let batch = this.state.archBatches.get(batchKey);
         if (!batch) {
             // V18.353 PHASE A.2 — eine REGION ist klein → klein dimensioniert; Überlauf wächst
@@ -62094,6 +63530,25 @@ class AnazhRealm {
         return (m[1] || "") + "s:" + Math.floor(Number(m[2]) / S) + "," + Math.floor(Number(m[3]) / S);
     }
 
+    // V18.475 — RENDER-DIÄT: die EINE Slot-Farbe (der Farb-Chokepoint BEIDER
+    // Slot-Schreiber _archInstanceAdd + _scatterInstanceAdd — EINE Naht zum
+    // bestehenden Streu-/Entry-Tint, keine Kollision): Part-Farbe (leaf.tint,
+    // der Instanz-Kanal des geteilten Leaf-Materials) × Entry-/Streu-Tint
+    // (useInstanceTint, V18.181-Λ.2). null = kein Farb-Write (der Buffer bleibt
+    // un-alloziert wie vorher). PARITÄT: beide Kanäle MULTIPLIZIEREN auf den
+    // colorNode (Engine-Naht, neutral WEISS); leaf.tint via setHex = exakt der
+    // alte material.color-Weg (sRGB→linear), der Entry-Tint roh wie bisher.
+    _archSlotColor(leaf, entryTint) {
+        const useTint = !!(leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint);
+        const leafTint = leaf.tint;
+        if (leafTint === undefined && !useTint) return null;
+        const c = this._archTmpSlotColor || (this._archTmpSlotColor = new THREE.Color());
+        if (leafTint !== undefined) c.setHex(leafTint);
+        else c.setRGB(1, 1, 1);
+        if (useTint && entryTint) c.multiply(entryTint);
+        return c;
+    }
+
     // Einen Eintrag als Instanzen in die Registry schreiben (eine Instanz je
     // Leaf). entry.instSlots merkt sich (key, slot) je Leaf für Cull/Update.
     // W5.4 (Paritäts-Vollendung) — DER EINE SLOT-CHOKEPOINT LERNT DIE BAND-MITGLIEDSCHAFT:
@@ -62129,8 +63584,9 @@ class AnazhRealm {
         const slots = [];
         // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss V18.173): die HSL-Werte
         // werden als instanceColor RGB-getragen (0..1). Three.js' InstancedMesh
-        // alloziert mesh.instanceColor LAZY beim ersten setColorAt — wir setzen
-        // nur für Leaves mit useInstanceTint-Material (laub, fleisch).
+        // alloziert mesh.instanceColor LAZY beim ersten setColorAt. V18.475: OB
+        // und WAS geschrieben wird, entscheidet der EINE Farb-Chokepoint
+        // `_archSlotColor` (Part-Farbe leaf.tint × Entry-Tint bei useInstanceTint).
         // PARITÄT: der instanceColor MULTIPLIZIERT die Material-Farbe → neutral ist WEISS
         // (1,1,1); das alte 0.5-Grau war eine stille 50-%-Verdunkelung jeder tint-losen
         // Instanz (die „schwarzer Stamm"-Hälfte neben dem {h,s,v}-als-RGB-Wurf).
@@ -62153,20 +63609,19 @@ class AnazhRealm {
             const slot = this._archGroupAlloc(g);
             m.multiplyMatrices(ew, leaf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
-            // V18.181-merge-Λ Sub 3d: setColorAt nur für Materialien, die
-            // useInstanceTint lesen — lazy Allocation des instanceColor-Buffers.
+            // V18.181-merge-Λ Sub 3d / V18.475: die EINE Slot-Farbe (leaf.tint ×
+            // Entry-Tint, _archSlotColor) — lazy Allocation des Color-Buffers.
+            const slotColor = this._archSlotColor(leaf, tintColor);
             if (g.kind === "batch") {
                 // BatchedMesh verwaltet Matrix-/Color-Buffer intern (kein .count/.instanceMatrix).
                 // V18.358 — ABER die mesh-level boundingSphere MUSS nach jedem Add invalidiert
                 // werden (THREE cacht sie sonst stale → spät-platzierte Bauten cullen im Blickfeld).
-                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
-                    g.mesh.setColorAt(slot, tintColor);
-                }
+                if (slotColor) g.mesh.setColorAt(slot, slotColor);
                 g.mesh.boundingSphere = null;
             } else {
                 g.mesh.instanceMatrix.needsUpdate = true;
-                if (leaf.mat && leaf.mat.userData && leaf.mat.userData.useInstanceTint) {
-                    g.mesh.setColorAt(slot, tintColor);
+                if (slotColor) {
+                    g.mesh.setColorAt(slot, slotColor);
                     if (g.mesh.instanceColor) g.mesh.instanceColor.needsUpdate = true;
                 }
                 if (slot + 1 > g.mesh.count) g.mesh.count = slot + 1;
@@ -69824,34 +71279,258 @@ class AnazhRealm {
         this.state.player.stamina = Math.max(0, have - cost);
     }
 
-    // V17.54 Kampf-Bogen Phase D — der Spieler-Nahangriff auf eine Kreatur (der LMB-
-    // Konsument von damageCreature). attackSpeed gated die Schlagrate (Cooldown =
-    // 1/attackSpeed → eine schwere Keule schlägt seltener, eine flinke Klinge öfter),
-    // die Stamina kostet wie der Abbau (pfad). Schaden + Knockback sind der Spieler-
-    // Kombat-Stat (∝ ausgerüsteter Waffe, Phase B). Der W5-Affekt wird VON ANFANG AN
-    // gewebt: Zorn ∝ Waffen-härte (die W2-Brücke); die Schuld beim Töten eines
-    // lebendig-Wesens trägt _creatureCombatDeath.
-    _playerAttackCreature(creature) {
+    // V17.54 Kampf-Bogen Phase D → KAMPF-GEFÜHL (Orakel Tier-1 #5): der LMB-Klick ist
+    // nur noch das AUSLÖSEN des 3-Phasen-Schwungs (Windup/Strike/Recover) — das
+    // TREFFEN macht der Klingen-Sweep in der Strike-Phase (_kampfSweepTick), auch für
+    // das angeklickte Wesen. Der Cooldown IST die Schwung-Dauer ∝ √I (_swingDynamics,
+    // Ω-Φ4) — die attackSpeed-Parallel-Wahrheit (Material-Tags) ist für den SPIELER-
+    // Schwung GEFALLEN; alle Spieler-Konsumenten (Cooldown · Stats-HUD „Angriffstempo"
+    // · Werkstatt „Tempo") lesen die EINE Quelle _swingDauerFuerBlueprint. Die
+    // Kreaturen behalten ihr tag-emergentes Profil (ihr Körper IST ihre Substanz).
+    // Stamina + der Zorn-Affekt (W5) feuern beim Auslösen — wie zuvor beim Schlag.
+    _playerAttackCreature(_creature) {
+        return this._beginPlayerSwing();
+    }
+
+    // ═══ KAMPF-GEFÜHL — DIE EINE SCHWUNG-DAUER-QUELLE ═══
+    // Gesamt-Dauer = dauerProSqrtI · √I (I = Σ m·r² um den Griff, die GERECHNETE
+    // Ω-Φ4-Trägheit aus _swingDynamics), geklemmt [min, max]. Eine leichte Klinge
+    // schwingt flink, ein Fels-Hammer träge — MESSBAR (gate:kampf-gefuehl hält das
+    // Verhältnis zweier Waffen auf √(I2/I1) ± 5 %), kein Material-Tag-Parallelpfad.
+    _swingDauerFuerBlueprint(bp) {
+        const K = AnazhRealm.SWING_LAWS;
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return K.handDauerSec;
+        const I = this._swingDynamics(bp).swingInertia;
+        if (!(I > 1e-9)) return K.handDauerSec;
+        return Math.min(K.maxDauerSec, Math.max(K.minDauerSec, K.dauerProSqrtI * Math.sqrt(I)));
+    }
+    // die Dauer des GEHALTENEN Geräts (Faust → handDauerSec).
+    _playerSwingDauer() {
+        return this._swingDauerFuerBlueprint(this._heldImplementBlueprint());
+    }
+
+    // Der Schwung-Beginn: läuft schon einer, prallt der Klick ab (der Schwung IST der
+    // Cooldown — eine schwere Keule schlägt seltener, weil ihr √I die Dauer streckt).
+    _beginPlayerSwing() {
         const p = this.state.player;
         if (!p) return false;
-        const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
-        const atkSpeed = Math.max(0.2, stats.attackSpeed || 1);
+        if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
         const now = performance.now() / 1000;
-        const last = Number.isFinite(p.lastAttackAt) ? p.lastAttackAt : -Infinity;
-        if (now - last < 1 / atkSpeed) return false; // noch im Angriffs-Cooldown
-        p.lastAttackAt = now;
+        p.lastAttackAt = now; // Alt-Leser bleiben versorgt (reine Chronik, kein Gate mehr)
         this._consumeMouseStamina();
-        // der Affekt VOR dem möglichen Tod: Zorn/Kampf-Intensität ∝ der Substanz des GEHALTENEN
+        // der Affekt beim AUSLÖSEN: Zorn/Kampf-Intensität ∝ der Substanz des GEHALTENEN
         // Geräts (V17.57 W2-B: das eine „in der Hand"-Ding — Werkzeug + Waffe verschmolzen).
         const weaponName = p.equipped && p.equipped.held;
         this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
-        const pm = this.state.playerMesh.position;
-        const res = this.damageCreature(creature, stats.damage || 5, {
-            source: "player",
-            fromPos: { x: pm.x, y: pm.y, z: pm.z },
-            knockback: stats.knockback || 0,
-        });
-        return !!res.ok;
+        const K = AnazhRealm.SWING_LAWS;
+        const dauer = this._playerSwingDauer();
+        p._swing = {
+            t: 0,
+            dauer,
+            windupSec: dauer * K.windupFrac,
+            strikeSec: dauer * K.strikeFrac,
+            weapon: weaponName || null,
+            hits: new Set(), // Dedup je Schwung: EINE Klinge trifft EIN Wesen EINMAL
+            reach: this._kampfBladeReach(),
+            lastT: now,
+        };
+        return true;
+    }
+
+    // Der Schwung-Tick (im ewigen Loop, NACH der fixen Sim): läuft auf der ANZEIGE-
+    // Uhr — der Hit-Stop pausiert Gang + Schwung, die FIXE SIM läuft IMMER weiter.
+    // In der Strike-Phase fegt der Kapsel-Sweep entlang der Klinge.
+    _tickKampfSchwung(currentTime) {
+        const p = this.state.player;
+        const sw = p && p._swing;
+        if (!sw) return;
+        const rawDt = Math.min(0.1, Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime)));
+        sw.lastT = currentTime;
+        sw.t += rawDt * this._hitStopFactor(currentTime);
+        if (sw.t >= sw.dauer) {
+            p._swing = null; // Recover vollendet — der nächste Klick darf schwingen
+            return;
+        }
+        if (sw.t >= sw.windupSec && sw.t < sw.windupSec + sw.strikeSec) {
+            this._kampfSweepTick(sw, currentTime);
+        }
+    }
+
+    // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
+    // (Gang-Phase) + _tickKampfSchwung (Schwung-Phase) lesen den Faktor — NIE die Sim.
+    _hitStopFactor(nowSec) {
+        const p = this.state.player;
+        return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
+    }
+
+    // Die Klingen-Reichweite aus dem GEHALTENEN Bauplan (Substanz-Wahrheit: die
+    // längste Part-Spanne = die Klingen-Länge, dieselbe Achsen-Logik wie
+    // _inferGripPoint/handAxis) + Arm-Anteil; die leere Faust greift kurz.
+    _kampfBladeReach() {
+        const K = AnazhRealm.SWING_LAWS;
+        const bp = this._heldImplementBlueprint();
+        let len = 0.7; // Faust/leer: Armlänge
+        if (bp) {
+            const bb = this._compoundBBox(bp);
+            if (bb) {
+                len = Math.max(0.4, Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z));
+            }
+        }
+        return Math.min(K.reachMaxM, K.reachBaseM + len);
+    }
+
+    // ═══ KAMPF-GEFÜHL — DER KLINGEN-SWEEP (nur Strike-Phase) ═══
+    // Die Klinge ist eine Welt-KAPSEL: Ursprung an der Schulter, die Richtung fegt
+    // über den Strike-Fortschritt von +arcHalf nach −arcHalf um die Blickrichtung,
+    // Länge/Achse aus dem gehaltenen Gerät (_kampfBladeReach). Getestet gegen die
+    // Kreatur-Kapseln (vertikales Segment ∝ Körpergröße = scale.x, die Allometrie-
+    // Wahrheit). INVARIANTEN IM CHOKEPOINT (Lehre 2): NIE ein Ziel hinter dem
+    // Rücken (dot ≤ 0), Dedup je Schwung (hits-Set), sterbende Wesen sind inert —
+    // der Crosshair-Klick hat nur AUSGELÖST, getroffen wird HIER.
+    _kampfSweepTick(sw, nowSec) {
+        const pm = this.state.playerMesh;
+        const creatures = this.state.creatures;
+        if (!pm || !Array.isArray(creatures) || !creatures.length) return;
+        const K = AnazhRealm.SWING_LAWS;
+        const s = Math.max(0, Math.min(1, (sw.t - sw.windupSec) / Math.max(1e-6, sw.strikeSec)));
+        const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
+        const fx = Math.sin(yaw);
+        const fz = Math.cos(yaw); // Blickrichtung (die _loopCamera-Konvention)
+        const arcYaw = yaw + K.arcHalfRad * (1 - 2 * s);
+        const dx = Math.sin(arcYaw);
+        const dz = Math.cos(arcYaw);
+        const ox = pm.position.x;
+        const oy = pm.position.y + K.shoulderH;
+        const oz = pm.position.z;
+        const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
+        const ax = ox + dx * 0.25; // die Kapsel beginnt VOR dem Körper (nicht im Torso)
+        const az = oz + dz * 0.25;
+        const bx = ox + dx * reach;
+        const bz = oz + dz * reach;
+        const p = this.state.player;
+        for (let i = 0; i < creatures.length; i++) {
+            const c = creatures[i];
+            if (!c || !c.userData || c.userData.dying || sw.hits.has(c)) continue;
+            const tx = c.position.x - ox;
+            const tz = c.position.z - oz;
+            if (tx * fx + tz * fz <= 0) continue; // NIE hinter dem Rücken (die Wand)
+            const L = Math.max(0.3, c.scale.x || 1);
+            if (tx * tx + tz * tz > (reach + 2 * L) * (reach + 2 * L)) continue; // Grob-Gate
+            const rc = Math.max(0.35, 0.55 * L);
+            const d2 = this._segSegDistSq(
+                ax,
+                oy,
+                az,
+                bx,
+                oy,
+                bz,
+                c.position.x,
+                c.position.y + 0.1 * L,
+                c.position.z,
+                c.position.x,
+                c.position.y + 1.4 * L,
+                c.position.z
+            );
+            const rr = K.bladeRadiusM + rc;
+            if (d2 > rr * rr) continue;
+            sw.hits.add(c);
+            const stats = p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+            const res = this.damageCreature(c, stats.damage || 5, {
+                source: "player",
+                fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+                knockback: stats.knockback || 0,
+            });
+            if (res && res.ok) this._kampfHitJuice(c, nowSec);
+        }
+    }
+
+    // Kleinste Quadrat-Distanz zweier Strecken (Ericson, Real-Time Collision
+    // Detection §5.1.9) — allokationsfrei, reine Zahlen: der Sweep-Kern
+    // (Klingen-Kapsel vs Kreatur-Kapsel = Segment-Segment-Distanz vs Radien-Summe).
+    _segSegDistSq(p1x, p1y, p1z, q1x, q1y, q1z, p2x, p2y, p2z, q2x, q2y, q2z) {
+        const d1x = q1x - p1x;
+        const d1y = q1y - p1y;
+        const d1z = q1z - p1z;
+        const d2x = q2x - p2x;
+        const d2y = q2y - p2y;
+        const d2z = q2z - p2z;
+        const rx = p1x - p2x;
+        const ry = p1y - p2y;
+        const rz = p1z - p2z;
+        const a = d1x * d1x + d1y * d1y + d1z * d1z;
+        const e = d2x * d2x + d2y * d2y + d2z * d2z;
+        const f = d2x * rx + d2y * ry + d2z * rz;
+        let s = 0;
+        let t = 0;
+        if (a > 1e-12 || e > 1e-12) {
+            if (a <= 1e-12) {
+                t = Math.max(0, Math.min(1, f / e));
+            } else {
+                const c = d1x * rx + d1y * ry + d1z * rz;
+                if (e <= 1e-12) {
+                    s = Math.max(0, Math.min(1, -c / a));
+                } else {
+                    const b = d1x * d2x + d1y * d2y + d1z * d2z;
+                    const denom = a * e - b * b;
+                    s = denom > 1e-12 ? Math.max(0, Math.min(1, (b * f - c * e) / denom)) : 0;
+                    t = (b * s + f) / e;
+                    if (t < 0) {
+                        t = 0;
+                        s = Math.max(0, Math.min(1, -c / a));
+                    } else if (t > 1) {
+                        t = 1;
+                        s = Math.max(0, Math.min(1, (b - c) / a));
+                    }
+                }
+            }
+        }
+        const cx = p1x + d1x * s - (p2x + d2x * t);
+        const cy = p1y + d1y * s - (p2y + d2y * t);
+        const cz = p1z + d1z * s - (p2z + d2z * t);
+        return cx * cx + cy * cy + cz * cz;
+    }
+
+    // ═══ KAMPF-GEFÜHL — HIT-JUICE (render-seitig, nie Sim) ═══
+    // (1) HIT-STOP 60–100 ms: pausiert NUR die Anzeige-Uhr (_hitStopFactor liest
+    //     _hitStopUntil). (2) Kamera-Impuls über den BESTEHENDEN Landungs-Dip-
+    //     Mechanismus (_landImpactPending → LAND_DIP_* in _loopCamera — EINE
+    //     Quelle, kein zweiter Kamera-Kanal). (3) Tag→Timbre-One-Shot über die
+    //     EXISTIERENDE Klang-Maschine (state.symphony — kein zweiter AudioContext).
+    _kampfHitJuice(creature, nowSec) {
+        const K = AnazhRealm.SWING_LAWS;
+        const p = this.state.player;
+        if (p) p._hitStopUntil = nowSec + K.hitStopSec;
+        this.state._landImpactPending = Math.max(this.state._landImpactPending || 0, K.hitDipImpact);
+        this._playKampfOneShot(this.computeCreatureCompoundTags(creature) || {});
+    }
+
+    // ═══ KAMPF-GEFÜHL — DER OBERKÖRPER-LAYER (Windup/Strike/Recover) ═══
+    // Ein WEITERER additiver Posen-Layer ÜBER der Lokomotion (das Ruhe×(1−w) +
+    // Gehen×w-Muster der Gang-Gesetze: _animateHumanoidRig setzt die Null-Basis,
+    // danach addiert jeder Layer — kein zweites Rig-System). Die Kurve `lift` ist
+    // an BEIDEN Rändern exakt 0 (kein Pop beim Start/Ende): Windup hebt 0→1
+    // (smoothstep), Strike schlägt 1→−1 (schnell), Recover atmet −1→0. NUR der
+    // Oberkörper (rechter Arm + Rumpf-Drehung) — die Beine gehören dem Gang.
+    _applyKampfSchwungPose(mesh) {
+        const p = this.state.player;
+        const sw = p && p._swing;
+        const rig = mesh && mesh.userData && mesh.userData.rig;
+        if (!sw || !rig) return;
+        const ease = (u) => u * u * (3 - 2 * u);
+        const tW = sw.windupSec;
+        const tS = sw.strikeSec;
+        let lift;
+        if (sw.t < tW) lift = ease(Math.min(1, sw.t / Math.max(1e-6, tW)));
+        else if (sw.t < tW + tS) lift = 1 - 2 * ease(Math.min(1, (sw.t - tW) / Math.max(1e-6, tS)));
+        else lift = -1 + ease(Math.min(1, (sw.t - tW - tS) / Math.max(1e-6, sw.dauer - tW - tS)));
+        const add = (b, axis, v) => {
+            if (b && v) b.rotation[axis] += v;
+        };
+        add(rig.armR && rig.armR.shoulder, "x", -1.55 * lift); // Arm hebt rück (Windup) / schlägt durch (Strike)
+        add(rig.armR && rig.armR.shoulder, "z", 0.25 * Math.max(0, lift)); // das Ausholen öffnet die Schulter
+        add(rig.armR && rig.armR.elbow, "x", -0.6 * Math.max(0, lift)); // der Ellbogen lädt im Windup
+        add(rig.chest, "y", 0.38 * lift); // der Rumpf dreht mit (Windup auf, Strike zu)
+        add(rig.spine, "y", 0.16 * lift);
     }
 
     // V17.56 W2 (kampf-plan §8.1) — das GEHALTENE Gerät: das ausgerüstete Werkzeug (Welt-Arbeit)
@@ -76080,7 +77759,10 @@ class AnazhRealm {
             stats = [
                 ["Schaden", val("damage", 1)],
                 ["Rückschlag", val("knockback", 1)],
-                ["Tempo", val("attackSpeed", -1)],
+                // KAMPF-GEFÜHL — Tempo = Schwünge/s aus der EINEN Schwung-Dauer-Quelle
+                // (∝ 1/√I, _swingDynamics): die Zahl, die der Kampf wirklich lebt (die
+                // attackSpeed-Tag-Ablesung war eine Parallel-Wahrheit — gefallen).
+                ["Tempo", 1 / this._swingDauerFuerBlueprint(bp)],
             ];
         } else {
             return null; // architecture/station/portal/vehicle/consumable → keine Ausrüstungs-Werte
@@ -78041,7 +79723,10 @@ class AnazhRealm {
         const lines = [
             `Schaden       ${(stats.damage || 0).toFixed(1)}`,
             `Rückschlag    ${(stats.knockback || 0).toFixed(1)}`,
-            `Angriffstempo ${(stats.attackSpeed || 0).toFixed(2)}`,
+            // KAMPF-GEFÜHL — das Tempo liest die EINE Schwung-Quelle (Schwünge/s =
+            // 1/Dauer ∝ 1/√I des Gehaltenen), nicht mehr die attackSpeed-Tag-Parallel-
+            // Wahrheit (die als Kreatur-Profil weiterlebt — ihr Körper ist ihre Substanz).
+            `Angriffstempo ${(1 / this._playerSwingDauer()).toFixed(2)}/s`,
             `Geschwindigk. ${(stats.speed || 0).toFixed(2)}`,
             `Sprungkraft   ${(stats.jumpPower || 0).toFixed(2)}`,
             `Präzision     ${(stats.precision || 0).toFixed(2)}`,
@@ -81033,10 +82718,19 @@ class AnazhRealm {
         const holzProf = AnazhRealm.HOLZ_PROFILE[holz] || AnazhRealm.HOLZ_PROFILE.voll;
         // Opt-in Headless-Null-Renderer (GPU-frei) für den Mechanik-Playtest /
         // Server-Sim; sonst der echte WebGPU-Renderer (Produktion + alle Look-Tools).
+        // GPU-ZEIT-WELLE — trackTimestamp anfordern, FAIL-SOFT: der vendored r184-
+        // WebGPUBackend baut requiredFeatures selbst NUR aus adapter.features (das
+        // timestamp-query-Feature wird also nur angefordert, wenn der Adapter es
+        // trägt) und schaltet trackTimestamp intern ab, wenn es fehlt — init() wirft
+        // dadurch NIE. Fehlt es ⇒ perfSense bleibt beim Subtraktions-Proxy ("proxy").
         const renderer =
             typeof window !== "undefined" && window.__anazhHeadlessNullRenderer
                 ? this._makeHeadlessRenderer(canvas)
-                : new THREE.WebGPURenderer({ canvas, antialias: holzProf.antialias !== false });
+                : new THREE.WebGPURenderer({
+                      canvas,
+                      antialias: holzProf.antialias !== false,
+                      trackTimestamp: true,
+                  });
         // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR (Sonne 2.4
         // + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei 1.0 = ausgewaschen.
         // ACES rollt die HDR-Lichter filmisch ab. (NeutralToneMapping [Khronos] wäre
@@ -81074,6 +82768,21 @@ class AnazhRealm {
                 clearTimeout(initWatch);
                 this.state.rendererReady = true;
                 this.log("WebGPU-Renderer init() abgeschlossen — die Welt rendert jetzt auf der GPU.", "INFO");
+                // GPU-ZEIT-WELLE — trägt das Device timestamp-query wirklich? `backend.
+                // trackTimestamp` ist die EINE Wahrheit (r184 lässt sie nur stehen, wenn
+                // das Feature da ist); `_perfGpuResolveKick` liest DIESELBE Flagge pro
+                // Frame — hier wird sie nur EINMAL laut benannt (kein Spiegel-Feld).
+                try {
+                    const tt = renderer.backend && renderer.backend.trackTimestamp === true;
+                    this.log(
+                        tt
+                            ? `GPU-Zeit: timestamp-query aktiv — perfSense misst echtes gpuMs (Quelle „echt").`
+                            : `GPU-Zeit: timestamp-query fehlt auf diesem Adapter — der Subtraktions-Proxy bleibt (Quelle „proxy").`,
+                        "INFO"
+                    );
+                } catch (_e) {
+                    /* fail-soft — die Quelle-Wahrheit lebt in _perfGpuSample */
+                }
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
                 // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.
@@ -81862,6 +83571,12 @@ class AnazhRealm {
                 // Pointer-Lock; das kontinuierliche Mahlen in der strikeInterval-Kadenz).
                 this._tickHarvest();
 
+                // KAMPF-GEFÜHL (Orakel Tier-1 #5) — der 3-Phasen-Schwung-Tick: treibt
+                // Windup/Strike/Recover auf der ANZEIGE-Uhr (der Hit-Stop pausiert sie,
+                // die fixe Sim oben läuft immer weiter) und fegt in der Strike-Phase
+                // die Klingen-Kapsel durch die Kreaturen (_kampfSweepTick).
+                this._tickKampfSchwung(currentTime);
+
                 // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
                 // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
                 // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
@@ -82370,6 +84085,38 @@ class AnazhRealm {
             if (vy < -25) vy = -25;
         }
 
+        // 4b. KOPPLUNG (1) — STRÖMUNG WIRKT: der Fluss-Flow advektiert SCHWIMMENDE Körper
+        //     am EINEN Bewegungs-Chokepoint. Gate = dieselbe Schwimm-Wahrheit wie der ganze
+        //     Controller (`submerged`) ODER das gerittene SCHWIMMENDE Gefährt (`_afloat`,
+        //     von `_tickMountedMovement` aus der Boot-Schwimm-Entscheidung gestempelt — der
+        //     Reiter sitzt ÜBER dem Spiegel und ist nie submerged, das Boot folgt ihm
+        //     horizontal, EINE Bewegungs-Quelle V18.150). Land-Läufer werden NIE geschoben
+        //     (ohne Schwimm-Zustand existiert der Term nicht — auch nicht auf der Bank).
+        //     Herleitung k (TotK-Förderband): v += (flow − v)·k — der Schub wirkt auf den
+        //     SLIP (Relativgeschwindigkeit = Wasser-Drag), selbstlimitierend: der Körper
+        //     wird AUF Strömungstempo getragen und nie darüber (kein Overshoot, keine NaN,
+        //     ruhende Körper starten sofort zu driften). k = FLOW_ADVECT_K = 0.3 ≈ die
+        //     pro-Schritt-Verlustrate des Wasser-Damps oben (1 − 0.7) → der ruhende
+        //     Schwimmer erreicht ~0.56·FLOW_ADVECT_SPEED (die Luft-Brems-Kurve in
+        //     `_loopPlayerMovement` zehrt den Rest; gemessen in gate:kopplung), das
+        //     ungedämpfte Boot ~0.95×. Quelle: `_waterFlowAt` (EINE Strömungs-Quelle).
+        {
+            const rideEntry = this._mountedEntry;
+            const afloat = !!(
+                rideEntry &&
+                s.player &&
+                rideEntry.id === s.player.mountedArch &&
+                rideEntry._afloat === true
+            );
+            if (submerged || afloat) {
+                const fl = this._waterFlowAt(mesh.position.x, mesh.position.z);
+                if (fl) {
+                    vx += (fl.x - vx) * AnazhRealm.FLOW_ADVECT_K;
+                    vz += (fl.z - vz) * AnazhRealm.FLOW_ADVECT_K;
+                }
+            }
+        }
+
         // 5. Position vorintegrieren (world units, scaleFactor = 1).
         let nx = mesh.position.x + vx * dt;
         let ny = mesh.position.y + vy * dt;
@@ -82377,6 +84124,66 @@ class AnazhRealm {
 
         const feetY = ny - footDrop;
         const headY = ny + footDrop;
+
+        // 5b. KOPPLUNG (2) — GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source):
+        //     läuft der Körper in eine NICHT ERKLIMMBARE Wand (Terrain-Oberfläche im
+        //     Körperband feetY+STEP_UP..feetY+1.5 voraus — unter Augenhöhe 1.6, damit
+        //     Tunnel-Decken nicht zählen; begehbare Böden unterhalb der Stufe-hoch-Linie
+        //     sieht die Band-Probe nicht), wird die Velocity je KONTAKTEBENE geclippt:
+        //     v −= n·(v·n) (Overbounce 1.0) — bis zu SLIDE_CLIP_PLANES Ebenen (Ecke = 2,
+        //     Kerbe = 3; PM_SlideMove-Disziplin: jede Iteration nimmt die Ebene am NEUEN
+        //     Kandidaten), statt die Horizontalbewegung zu nullen. n = die horizontale
+        //     Spur der `_fieldGradient`-Außennormale an der Wand-Probe (vertikal
+        //     entscheidet Schritt 8). NaN-Wand: |∇| ≈ 0 (dichte-flaches Inneres) oder
+        //     rein vertikale Normale → keine verlässliche Ebene → fail-closed der alte
+        //     VOLL-STOPP (kein Eindringen — die Anti-Clip-Disziplin bleibt absolut).
+        //     Ein 45°-Anlauf behält so ~Tempo/2 entlang der Absicht statt 0 (gate:kopplung).
+        //     Läuft VOR der Struktur-/Kugel-Auflösung (die behalten das letzte Wort über
+        //     die Position); walkbare Hänge (≤ ~80° pro Tick-Schrittweite) bleiben unter
+        //     der Band-Linie → unberührt.
+        if (vx !== 0 || vz !== 0) {
+            const wallLine = feetY + AnazhRealm.PLAYER_STEP_UP + 0.05;
+            // Wand-Probe am Kandidaten: (a) Band-Probe feetY+STEP_UP..feetY+1.5 (findet
+            // Ledges/Wand-Köpfe im Körperband), (b) Solid-Probe auf Rumpf-Höhe feetY+1.1
+            // (fängt die HOHE Wand, deren Kopf über dem Band liegt — dort startet die
+            // Band-Probe im Soliden und sieht innerhalb des Bandes keine Kante). Liefert
+            // die Probe-Höhe für den Gradienten oder null (frei).
+            const wallAt = (px, pz) => {
+                const sB = this._fieldSurfaceBelow(px, feetY + 1.5, pz, 1.5 - AnazhRealm.PLAYER_STEP_UP);
+                if (sB !== null && sB > wallLine) return Math.min(sB, feetY + 1.1);
+                if (this._fieldSolid(px, feetY + 1.1, pz)) return feetY + 1.1;
+                return null;
+            };
+            let wallY = wallAt(nx, nz);
+            if (wallY !== null) {
+                const nrm = this._kopplungClipN || (this._kopplungClipN = {});
+                let cleared = false;
+                for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
+                    this._fieldGradient(nx, wallY, nz, nrm);
+                    const nh = Math.hypot(nrm.x, nrm.z);
+                    if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
+                    const nhx = nrm.x / nh;
+                    const nhz = nrm.z / nh;
+                    const into = vx * nhx + vz * nhz;
+                    if (into >= -1e-9) break; // keine Bewegung mehr IN die Ebene → festgefahren
+                    vx -= nhx * into; // PM_ClipVelocity: die Ebenen-Normal-Komponente fällt
+                    vz -= nhz * into;
+                    nx = mesh.position.x + vx * dt;
+                    nz = mesh.position.z + vz * dt;
+                    wallY = wallAt(nx, nz);
+                    if (wallY === null) {
+                        cleared = true;
+                        break;
+                    }
+                }
+                if (!cleared) {
+                    nx = mesh.position.x; // fail-closed: der alte Voll-Stopp (nie eindringen)
+                    nz = mesh.position.z;
+                    vx = 0;
+                    vz = 0;
+                }
+            }
+        }
 
         // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden
         //    Part-AABBs naher Bauwerke (`entry.blockerAABBs` — dichte ≥ 0.3, EINE Quelle mit
@@ -82438,24 +84245,13 @@ class AnazhRealm {
                 nz,
                 footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
             );
-            // 8b. FORWARD-BLOCK: läuft der Spieler horizontal in eine WAND (Oberfläche voraus
-            //     höher als feetY + STEP_UP = nicht erklimmbar)? → die horizontale Bewegung
-            //     ZURÜCKNEHMEN (am Wandfuß stehen, nicht eindringen → kein Clip am steilen Berg).
-            //     Die obere Wand-Kugel gleitet schon; dies ist der Fuß-Stopp gegen das Eindringen.
-            if (
-                terrSurf !== null &&
-                terrSurf > feetY + AnazhRealm.PLAYER_STEP_UP + 0.05 &&
-                (nx !== mesh.position.x || nz !== mesh.position.z)
-            ) {
-                nx = mesh.position.x;
-                nz = mesh.position.z;
-                terrSurf = this._fieldSurfaceBelow(
-                    nx,
-                    feetY + AnazhRealm.PLAYER_STEP_UP,
-                    nz,
-                    footDrop + AnazhRealm.PLAYER_STEP_UP + AnazhRealm.PLAYER_GROUND_SNAP + 4
-                );
-            }
+            // 8b (KOPPLUNG 2) — der alte FORWARD-BLOCK ist ABGELÖST: er nullte die
+            //     Horizontalbewegung KOMPLETT (Vollstopp) und war zudem TOT — die
+            //     Abwärts-Probe startet bei feetY+STEP_UP, also gilt terrSurf ≤
+            //     feetY+STEP_UP per Konstruktion und die Bedingung `> feetY+STEP_UP+0.05`
+            //     konnte nie feuern. Das GLEITEN übernimmt der lebende Wand-Klip in
+            //     Schritt 5b (PM_ClipVelocity: v −= n·(v·n) je Kontaktebene, bis
+            //     SLIDE_CLIP_PLANES; fail-closed bleibt der Voll-Stopp).
             // 8c. BODEN-SNAP — die effektive Oberfläche = die HÖHERE aus Terrain UND Struktur.
             const effSurf = Math.max(terrSurf === null ? -Infinity : terrSurf, supTop);
             const wasGrounded = s._fieldWasGrounded === true;
@@ -82478,10 +84274,29 @@ class AnazhRealm {
                         ny = restY;
                         vy = 0;
                         grounded = true;
-                        groundNormalY =
-                            supTop >= (terrSurf === null ? -Infinity : terrSurf)
-                                ? 1.0
-                                : this._fieldGradient(nx, terrSurf, nz, {}).y;
+                        if (supTop >= (terrSurf === null ? -Infinity : terrSurf)) {
+                            groundNormalY = 1.0; // Struktur-/Insel-Auflage: eben per Definition
+                        } else {
+                            const gN = this._kopplungSlideN || (this._kopplungSlideN = {});
+                            this._fieldGradient(nx, terrSurf, nz, gN);
+                            groundNormalY = gN.y;
+                            // KOPPLUNG (2) — STEILHANG: Gravitation ENTLANG der Ebene. Auf zu
+                            // steilem Grund (ny < maxWalkableSlopeY — DIESELBE Schwelle wie
+                            // onSteepSlope/Slope-Penalty) rutscht der Körper, statt magnetisch
+                            // zu haften: die Tangential-Projektion der Schwerkraft
+                            // g_t = g − n·(g·n) hat horizontal die Komponenten n.xz·n.y·|g|
+                            // (zeigt bergab per Konstruktion — n ist die Außen-Normale);
+                            // vertikal führt weiter der Boden-Snap (er folgt der Fläche
+                            // abwärts, bis der Hang zu schnell fällt → natürlicher Absprung).
+                            // NaN-Wand: |∇| ≈ 0 → `_fieldGradient` liefert (0,1,0) → ny = 1
+                            // → kein Term. Keine Brems-Kurve auf Steilhang (der Loop lässt
+                            // sie dort aus) → der Rutsch beschleunigt physikalisch.
+                            if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < s.maxWalkableSlopeY) {
+                                const gMag = -(s.gravity || -14.715);
+                                vx += gN.x * gN.y * gMag * dt;
+                                vz += gN.z * gN.y * gMag * dt;
+                            }
+                        }
                     }
                 }
             }
@@ -83655,6 +85470,15 @@ class AnazhRealm {
             // `_loopWeatherAndGrowth`) → der Wind LEBT zwischen den diskreten Wort-Wechseln.
             this.state.windUniforms.uWindStrength.value =
                 this._weatherFieldFor(this.state.weather).wind * AnazhRealm.WEATHER_WIND_AMP * (this._weatherWob || 1);
+            // KOPPLUNG (3+4) — die EINE Richtungs-Quelle + die Interaktions-Sphären
+            // ticken mit dem Wind-Uniform: uWindDir = der seeded Mäander `_windDirAt`
+            // (currentTime in Sekunden — dieselbe Uhr wie uWindTime), uBend = Spieler/
+            // Ritt/nahe Kreaturen (`_tickGrasBend`, render-rein).
+            if (this.state.windUniforms.uWindDir) {
+                const _wdir = this._windDirAt(currentTime);
+                this.state.windUniforms.uWindDir.value.set(_wdir.x, _wdir.z);
+            }
+            this._tickGrasBend();
         }
         // V18.387 — DAS NEUE KLEID S1-SHADER — uLodRef spiegelt live die EINE Quelle `state.lodRef`
         // (ein Slider wirkt ohne Mesh-Rebuild — dieselbe Zahl liest die CPU-`_lodPerceptionDistance`);
@@ -84036,7 +85860,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.475.0";
+AnazhRealm.VERSION = "18.476.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -84844,6 +86668,32 @@ AnazhRealm.HELD_MESH = Object.freeze({
 // Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
 // wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).
 AnazhRealm.COMBAT_REACH_M = 6;
+// ═══ KAMPF-GEFÜHL (Orakel Tier-1 #5) — DIE GESETZE DES SCHWUNGS ═══
+// Die EINE Schwung-Dauer-Quelle ist die GERECHNETE Trägheit (_swingDynamics,
+// Ω-Φ4: I = Σ m·r² um den Griff): Gesamt-Dauer = dauerProSqrtI·√I, geklemmt.
+// Die attackSpeed-Parallel-Wahrheit (Material-Tags) ist für den SPIELER-Schwung
+// gefallen — Cooldown/HUD/Werkstatt lesen diese Quelle (die Kreaturen behalten
+// das tag-emergente Profil: ihr Körper IST ihre Substanz). Feel-Werte browser-
+// justierbar; die MECHANIK (∝ √I · Sweep-Wände · Hit-Stop ≠ Sim) hält
+// gate:kampf-gefuehl.
+AnazhRealm.SWING_LAWS = Object.freeze({
+    dauerProSqrtI: 0.55, // s pro √(Masse·m²) — die Proportionalitäts-Konstante
+    minDauerSec: 0.25, // Klemme: auch ein Federmesser braucht einen Schwung
+    maxDauerSec: 1.8, // Klemme: auch ein Fels-Hammer vollendet unter 2 s
+    handDauerSec: 0.4, // die leere Faust (kein Bauplan → kein I)
+    windupFrac: 0.3, // Phase 1 — Ausholen (der Arm hebt über die Schulter)
+    strikeFrac: 0.25, // Phase 2 — der Hieb (NUR hier fegt der Kapsel-Sweep)
+    // Phase 3 — Recover = der Rest (1 − windup − strike)
+    arcHalfRad: 1.1, // der Hieb fegt ±63° um die Blickrichtung (nie hinter den Rücken)
+    bladeRadiusM: 0.35, // Kapsel-Radius der Klinge
+    reachBaseM: 0.9, // Arm-Anteil der Reichweite (Schulter → Hand)
+    reachMaxM: 6, // == COMBAT_REACH_M — die bestehende Kampf-Reichweite deckelt
+    shoulderH: 1.2, // Sweep-Ursprung über der Spieler-Körper-Position (m)
+    hitStopSec: 0.08, // 60–100 ms: NUR der Anzeige-/Anim-Layer pausiert, nie die Sim
+    hitDipImpact: 4.5, // m/s-Äquivalent in den bestehenden Kamera-Dip (LAND_DIP_*)
+    kippDauerSec: 1.0, // TOD-KIPPEN: der Körper kippt entlang _fieldGradient (~1 s)
+    kippNachklangSec: 0.35, // kurze Ruhe nach dem Aufschlag, DANN der Abschied
+});
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
 // kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte
@@ -86059,6 +87909,19 @@ AnazhRealm.P2P_BACKPRESSURE_BYTES = 16 * AnazhRealm.P2P_WORLD_CHUNK_SIZE;
 // Eine zentrale Stelle pro Wert — Drift-Schutz.
 AnazhRealm.OLLAMA_DEFAULT_ENDPOINT = "http://localhost:11434";
 AnazhRealm.P2P_DEFAULT_WS_URL = "ws://127.0.0.1:4313";
+// RECONNECT #1 (Orakel Tier-1 #10) — der Rejoin-Backoff: BASE·2^n, Deckel
+// MAX, plus deterministischer Jitter in [0, JITTER) ms (FNV-1a über
+// Versuchszähler+peerId — seeded statt Math.random, Lehre 7). EINE Formel
+// (_p2pReconnectDelayMs) — WS-Rejoin UND RTC-Heilung lesen sie beide.
+AnazhRealm.P2P_RECONNECT_BASE_MS = 1000;
+AnazhRealm.P2P_RECONNECT_MAX_MS = 30000;
+AnazhRealm.P2P_RECONNECT_JITTER_MS = 1000;
+// RECONNECT #3 — der Snapshot-Puffer des Nicht-Lockstep-pos-Pfads: der
+// Render blickt fest INTERP_DELAY ms in die Vergangenheit (Valve-Source-
+// Muster, Band 100–150 ms) und interpoliert zwischen den zwei passenden
+// Snaps; BUF_MAX deckelt den Puffer (bounded — ~0,7 s bei 30 Hz).
+AnazhRealm.P2P_SNAP_INTERP_DELAY_MS = 120;
+AnazhRealm.P2P_SNAP_BUF_MAX = 20;
 // W7 Phase 2 — Mindestabstand zwischen zwei world-pull-Antworten an
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
@@ -86327,6 +88190,13 @@ AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_S
 // (1080p/60°-FOV) — der Gang ist unsichtbar, das Bild bleibt. Als Quadrat,
 // weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
 AnazhRealm.TIER_FERN_DIST_SQ = 60 * 60;
+// KREATUR-KOSTEN (3) — DER MENSCH-FERN-GUSS: die Distanz (Meter), jenseits
+// derer die Menschen-Gestalt (Peers) den gemergten lod1-Guss trägt (grobe
+// Segmente, gebackener Root, kahl — wenige Draws, kein Rig-Tick) statt des
+// animierten Gelenk-Baums. 40 m: die Schritt-Amplitude (~0.15 u) ist dort
+// < 2.6 px (1080p/60°-FOV). Als Quadrat — der Peer-Tick führt distSq (XZ).
+// EIN Toggle-Chokepoint liest sie: _menschFernToggle.
+AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen
 // aus diesem Pool — Vision-Pfeiler §1.1 Co-Schöpfer-Beziehung wird auf
@@ -88054,6 +89924,14 @@ AnazhRealm.ARCH_REGION_CULL_MAX_SPAN = 128;
 // invalidiert sie). Konsumiert wird die Konstante an GENAU EINER Stelle: _archFernRegionKey
 // (der Keying-Chokepoint) — kein zweiter Ableitungs-Ort (gate:scatter-lod, Block F).
 AnazhRealm.SCATTER_FERN_SUPERREGION = 4;
+// V18.475 — DIE RENDER-DIÄT (Schöpfer-Trace 14.07., die zweite Hälfte neben V18.474): EIN
+// geteiltes Leaf-Material je TAG-SIGNATUR statt je Part-FARBE — die Farbe reist als Instanz-
+// Farbe (leaf.tint → _archSlotColor → setColorAt; die Engine multipliziert sie auf den
+// colorNode), der mat.uuid-Batch-Key (_archBatchGroupFor) kollabiert per Konstruktion.
+// Konsumiert wird die Konstante an GENAU EINER Stelle: _archLeafMaterial — als A/B-Hebel
+// der Linse (gate:render-diaet; false = das alte Je-Farbe-ein-Material-Muster, nur zum
+// Beweis, dass die Linse es erkannt hätte).
+AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
 // DAS NEUE KLEID — die Verts-Schwelle, ab der ein platziertes Leaf den InstancedMesh-Pfad (geteilte
 // geom, N Matrizen) statt des Region-Batch (kopiert je Instanz) nimmt. Bäume (LOD0 ~262k / LOD1 ~40k
 // Verts) liegen weit darüber → EINE Geometrie statt N Kopien (der GPU-Katalysator des Studios); leichte
@@ -88158,6 +90036,10 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // Lunge des Systems: dazwischen hält der Regler → fps ruht über 60 statt am 59er-Anschlag.
 AnazhRealm.PERF_HEADROOM_MS = 4;
 AnazhRealm.PERF_SENSE_ALPHA = 0.12; // EWMA-Gewicht: ruhige, peer-konsistente Wahrnehmung
+// GPU-ZEIT-WELLE — wie lange ein per timestamp-query aufgelöster GPU-Messwert als „echt"
+// gilt: bleibt die nächste Auflösung länger aus (Headless-Wechsel, Device-Verlust,
+// stockende mapAsync-Kette), fällt `_perfGpuSample` ehrlich auf den Proxy zurück.
+AnazhRealm.PERF_GPU_TS_STALE_MS = 2000;
 // V18.269 — GPU-Last-Proxy: ms-Äquivalent je Draw-Call. Die Render-Last (renderer.info,
 // die V18.268-Augen) ist GPU, nicht in p.render (CPU). Dieser Faktor hebt sie in die
 // Architektur-Domäne des Aktuators, damit der Regler unter Render-Last die render-senkenden
@@ -88989,6 +90871,26 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
+// FLOW_ADVECT_SPEED: die Strömungs-Geschwindigkeit im Fluss-KERN (m/s, centerness-
+// getapert zur Kanal-Kante). TotK-Förderband-Größenordnung: kräftig genug, den
+// ruhenden Schwimmer sichtbar zu tragen (~1,8 m/s effektiv nach Damp+Bremse),
+// schwach genug, dass aktives Schwimmen (3,3 m/s) stromauf gewinnt.
+AnazhRealm.FLOW_ADVECT_SPEED = 3.2;
+// FLOW_ADVECT_K: die pro-Schritt-Slip-Kopplung v += (flow − v)·k am Bewegungs-
+// Chokepoint. 0.3 = die pro-Schritt-Verlustrate des Wasser-Damps (1 − 0.7) →
+// selbstlimitierend AUF Strömungstempo (Herleitung: `_stepCharacter` 4b).
+AnazhRealm.FLOW_ADVECT_K = 0.3;
+// SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
+// PM_SlideMove: Wand = 1, Ecke = 2, Kerbe = 3 — mehr Ebenen sind degeneriert,
+// dann greift der fail-closed Voll-Stopp).
+AnazhRealm.SLIDE_CLIP_PLANES = 3;
+// GRAS_BEND_SLOTS: Interaktions-Sphären im Wind-Uniform (1 Spieler + 1 Ritt +
+// ≤4 nahe Kreaturen — GoT-Interaktions-Budget, vertex-shader-billig).
+AnazhRealm.GRAS_BEND_SLOTS = 6;
+// GRAS_BEND_CREATURE_DIST_SQ: nur Kreaturen im 18-m-Umkreis des Spielers biegen
+// Gras (18² = 324) — weiter draußen ist der Effekt sub-pixel (Distanz-LOD-Lehre).
+AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
 // VIEW-HEIGHT-SMOOTHING: die Füße rasten hart auf den Boden (korrekte Kollision), das AUGE
 // folgt geglättet (Tiefpass, exp-Lerp) → genau die „höhe etwas dämpfen, der Körper gleicht
 // aus"-Bitte. Das Voxel-Terrain ist auf Frame-Skala RAU (gemessen ~0,23 m/Frame); der Tiefpass
@@ -89007,6 +90909,31 @@ AnazhRealm.LAND_DIP_SCALE = 0.022; // m Dip pro m/s Aufprall
 AnazhRealm.LAND_DIP_MAX = 0.32; // maximaler Dip (harter Sturz)
 AnazhRealm.LAND_DIP_MIN_SPEED = 2.5; // m/s — darunter kein spürbarer Aufprall
 AnazhRealm.LAND_DIP_RECOVER_K = 8; // Rückfederungs-Rate (~300 ms zurück zur Ruhe)
+// ═══ SCHRITT-KLANG (Orakel Tier-1 #7) — Material → Timbre (gate:schritt-klang) ═══
+// Asset-freie Farnell-Synthese: die Quelle ist IMMER ein Rausch-Burst, das
+// MATERIAL ist der Filter (M8: Tabelle vor if). erde = dumpf-weich (Tiefpass
+// tief) · stein = hart-hell (Bandpass hoch) · glut = warm-mittig · quarz/eisen
+// = klirrend (hoher Q klingelt nach) · wasser = platschig (breiter Tiefpass,
+// länger). gain bewusst DEZENT unter dem Kampf-One-Shot (0.14) — der
+// konstanteste Feedback-Kanal eines 3D-Spiels darf alles, außer nerven.
+AnazhRealm.SCHRITT_KLANG = Object.freeze({
+    tempoMin: 0.9, // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
+    maxProTick: 2, // Frame-Hänger feuern keinen Burst-Schwall (max 2 Füße/Frame)
+    gainDeckel: 0.12, // absolute Decke jedes Bursts (unter dem Kampf-Treffer)
+    landGainProMs: 0.12, // Zusatz-Verstärkung je m/s Aufprall (∝ Fallhöhe via √(2gh))
+    landGainSpanne: 1.4, // maximaler Zusatz — ein harter Sturz bleibt gedeckelt
+    landDauerFaktor: 2.0, // die Landung klingt länger nach
+    landFreqFaktor: 0.7, // und tiefer — Masse im Aufprall
+    fallback: "stein",
+    material: Object.freeze({
+        erde: Object.freeze({ filter: "lowpass", freq: 420, q: 0.8, dauer: 0.09, gain: 0.045 }),
+        stein: Object.freeze({ filter: "bandpass", freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 }),
+        glut: Object.freeze({ filter: "bandpass", freq: 800, q: 1.0, dauer: 0.11, gain: 0.05 }),
+        quarz: Object.freeze({ filter: "bandpass", freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 }),
+        eisen: Object.freeze({ filter: "bandpass", freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 }),
+        wasser: Object.freeze({ filter: "lowpass", freq: 900, q: 0.7, dauer: 0.16, gain: 0.06 }),
+    }),
+});
 
 // Determinismus-Bogen P4 (Stufe 1) — Sicherheits-Cap für die Replay-Aufnahme (Frames).
 // 18000 ≈ 5 min bei 60 fps — genug für eine echte Spiel-Sequenz, gedeckelt gegen Runaway.

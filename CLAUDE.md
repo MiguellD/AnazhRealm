@@ -6,46 +6,42 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.470 — DIE KONSUM-MATRIX: Gattung × Facette, gemessen statt geglaubt)
+## Stand (V18.476 — DIE ORAKEL-UMSETZUNG: acht Tier-1-Wellen, je EINE Linse)
 
-**Die Schöpfer-These „die meisten Konsume sind gleich" ist jetzt eine MASCHINE**
-(`gate:konsum-matrix`): 9 Gattungen × 8 Facetten (LODs·Rahmen·Bewegung·Material·Körper·
-Platzierung·Anwendung·Dynamik), Vertragsseite über die ECHTE Pipe (Harness jetzt
-manifest-getrieben = Produktions-Boot, alle 107 Rezepte aller Kerne im Buch; Daten-Kanal-
-Goldens begründet re-gemünzt, 52 Geometrie-Goldens byte-unberührt) + Weltseite über
-verifizierte Chokepoint-Proben. 55 Zellen verankert (nur-wachsend), 21 Differenzen benannt.
-**Die größten gemessenen Lücken (Korrektur nach Voll-Vertrags-Lesung — zusatzKindStages
-zählt mit):** (1) die LOD-LEITER: haus [0,1,2] EHRLICH (3 distinct durch die Pipe) ·
-fahrzeug/tor/klinge [0] = bewusstes Vertrags-Urteil (Wirt gradiert; Tor-Impostor gebaut
-V18.465, Fahrzeug-Fernstufe offen: gt=328 Meshes auf jede Distanz) · kreatur/koerper/klang
-tragen GAR KEINE Stufen-Zeile (wolf=81 Meshes, kein Geometrie-LOD für mensch/tier);
-(2) die BÄCKER-VEREINIGUNG ist GEBAUT — beidseitig (V18.471): der RTT-Nachbau
-(`_bakeImpostorAtlasRTT` + Blit/Dilate/Szenen) fiel physisch; `_tickImpostorBake` konsumiert
-`bake-impostor`, `_applyStudioImpostorPayload` malt die vertikal-gestapelten bottom-up-Pixel
-Y-geflippt in den horizontalen Atlas + übernimmt den Studio-Rahmen (EINE Quelle, ATOMIC-Swap,
-`_reframeImpostorFlat` für instanzierte Quads); Studio-Seite worker-tauglich (OffscreenCanvas-
-Renderer, innerWidth-Guard; `gate:baecker-kanal` = Live-Beweis: voller 8-Winkel-Atlas im
-Worker). Review-Ernte gefixt: M1 Kind-Wächter + NICHT-LEERE-WAND (ein Zweit-Kern-Preset —
-Tor — bäckte im Pflanzen-Bäcker eine LEERE Karte als „Erfolg" → ferne Tore fallen jetzt ehrlich
-auf die Skelett-Silhouette, Zensus ehrlich; die Zweit-Kern-Bäckerei im Studio ist der benannte
-Folgeschritt) · M2 Bake-Subjekt = Welt-Baum (ov reist VERBATIM — vorher Studio-Wald-Konstanten
-→ Karte≠Baum-Pop am 40-m-Crossfade). Disziplin blieb: 1 Bake in Flug · Watchdog · 3×-Retry ·
-Zensus · headless bäckt nie.
+**Das Profi-Orakel („wie machen es die Besten?" als stehende Schärfung von Lehre 4;
+Audit + Reihung in roadmap §0.5) ist UMGESETZT — acht Wellen in einem Zug, alle
+render-seitig (die fixe Sim blieb unberührt, gate-bewiesen), je Welle eine Linse:**
+KOPPLUNG (`gate:kopplung`: Strömung advektiert Schwimmer · Quake-ClipVelocity-Gleiten ·
+EIN Wind-Richtungs-Vektor für alles Sway · Gras-Interaktions-Sphären) · KÖRPER
+(`gate:koerper-bewegung`: weg-getriebene Gang-Phase + Posen-Blend + Two-Bone-Fuß-IK/
+Foot-Lock/Becken/Rumpf-Hang + Tier-Bodenanker — der 0,5-m-Schwebe-Sinus fiel) · KAMPF
+(`gate:kampf-gefuehl`: 3-Phasen-Schwung ∝ √I aus _swingDynamics · Klingen-Kapsel-Sweep ·
+Hit-Stop nur auf der Anzeige-Uhr · Tod-Kippen entlang _fieldGradient) · SCHRITT-KLANG
+(`gate:schritt-klang`: Material-Timbres über die EINE Klang-Maschine) · RENDER-DIÄT
+(`gate:render-diaet`: EIN Material je Tag-Signatur, Farbe als Instanz-Kanal via
+_archSlotColor — der 1733-dc-Treiber; **Review-Ernte CONFIRMED: der Batch-Key trägt die
+r184-INDEX-KONSISTENZ #i/#x am EINEN Chokepoint**, gemischte Fixture wacht in der Linse) ·
+GPU-ZEIT (`gate:gpu-zeit`: timestamp-query im vendored r184, gpuMs + Quelle echt|proxy in
+Panel/worst/Trace) · KREATUR-KOSTEN (`gate:kreatur-kosten`: Anim-Raten-Leiter fern
+1/2·1/4·0 · Standbild-Freeze neutral · mensch-Fern-Guss lod≥1 — Matrix-Zelle mensch.lods
+VOLL) · RECONNECT (`gate:reconnect`: Exponential-Backoff+restartIce [Perfect Negotiation] ·
+Snap-Interpolationspuffer nur im Nicht-Lockstep-Pfad).
 
-Der Bogen darüber ist der **Schöpfer-Browser-Befund (14.07., roadmap §0.1):** Erstarren
-(nach Reset kurz spielbar, friert wiederkehrend — CPU-Hälfte entlastet: `gate:erstarren`,
-Membran-Recompile-Wand V18.469; **die GPU-Hälfte braucht `anazhRealmPerf.json` vom echten
-Holz**, der Flugschreiber POSTet beim Spielen automatisch → committen, der Trace trägt den
-Impostor-Zensus) · Baum-L2 = Blobs · Regler-Blueprints + LOD-Leitern je Gattung ·
-Straßensystem/Stadtpflanzung/Fahrzeugphysik/Schwertschwung-Tiefe. Davor V18.468
-Informations-Diät (git ist das Archiv, Lehre 15) · V18.467 Rinden-Vereinigung · V18.466
-Charakter-Achsen · V18.465 lebendige Tore · V18.464 volle Passage (Detail = git log).
-OFFEN daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet (nur-sinkend) ·
-das formale Abnahme-Drehbuch (look-golden --mint · DoD 5).
+Der Bogen darüber bleibt der **Schöpfer-Browser-Befund (14.07., roadmap §0.1):** beide
+gemessenen Steady-Hebel (DC-Diät V18.474 · Render-Diät V18.476) sind gebaut — **der
+nächste echte Trace urteilt** (der Flugschreiber misst die GPU jetzt ECHT und trägt den
+Tri-Zensus; er POSTet beim Spielen automatisch → committen). Davor: V18.475 Wasser-
+Wahrheit · V18.474 Vollende-Welle (Fahrzeug ganz · Tier-Separation · Zweit-Kern-Bäckerei ·
+DC-Diät) · V18.473 Existenz-Boden/Tri-Attribution/Nacht-Karten · V18.472 Panel+Export ·
+V18.471 Bäcker-Vereinigung · V18.470 Konsum-Matrix (`gate:konsum-matrix`, nur-wachsend) ·
+V18.469 Erstarren-CPU-Hälfte · V18.468 Informations-Diät (Detail = git log). OFFEN
+daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet (nur-sinkend) · das
+formale Abnahme-Drehbuch (look-golden --mint · DoD 5) · Avatar-Kleider ≠ Studio ·
+Bogen-1-Rest (RenderBundles · Kreatur-GPU-Skinning, roadmap §0.5).
 
 ## Architektur (die Karte)
 
-- **Stamm** `anazhRealm.js` (~88k, EINE Klasse, `npm run atlas` = 26 Zonen): Boden (Chunks/Wasser/
+- **Stamm** `anazhRealm.js` (~91k, EINE Klasse, `npm run atlas` = 26 Zonen): Boden (Chunks/Wasser/
   Genese/Ökologie) · Speicher (Snapshot/Taille) · Spieler (Seelen/Bewegung/Werkstatt/Ökonomie) ·
   Anschluss (P2P/Portale) + die Verben (appear·place·body·drive·wield·portal·rule) + KIND_POLICY.
 - **Kerne** (10, cores.manifest.json): reine Daten+Mathe; Vertrag v1.2 = `PARAMS_BY_KIND` + must-ignore

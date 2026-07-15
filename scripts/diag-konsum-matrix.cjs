@@ -105,7 +105,10 @@ const P = {
         dynamik: ["_tickAutoSettlement"],
     },
     mensch: {
-        lods: null, // KEIN Geometrie-LOD des Avatars (gemessene Leere)
+        // KREATUR-KOSTEN (Orakel Tier-1 #2): der lod1-Fern-Guss (bakeMenschInstance
+        // fein) wird KONSUMIERT — der EINE Toggle-Chokepoint + die EINE Distanz-
+        // Konstante (Peer-Tick liest sie; gate:kreatur-kosten misst den Konsum live).
+        lods: ["_menschFernToggle", "MENSCH_FERN_DIST_SQ"],
         rahmen: ["bauMensch"],
         bewegung: ["_animateCompoundMotion"],
         material: ["_koerperDials"],
@@ -115,7 +118,10 @@ const P = {
         dynamik: ["morphAuf"],
     },
     tier: {
-        lods: null, // KEIN Geometrie-LOD der Kreaturen (gemessene Leere)
+        // KREATUR-KOSTEN: das Standbild (wrap↔fern, TIER_FERN) + die Anim-Raten-
+        // Leiter (_creatureAnimDiv) werden konsumiert; TEIL bleibt ehrlich — die
+        // Vertrags-Seite trägt weiter keine kreatur-Stufen-Zeile (benannte Lücke).
+        lods: ["TIER_FERN_DIST_SQ", "_creatureAnimDiv"],
         rahmen: ["bauTier"],
         bewegung: ["_animateCompoundMotion"],
         material: ["computeCreatureStats"],
@@ -283,13 +289,13 @@ const REP = {
         "tor.rahmen|tor.bewegung|tor.material|tor.koerper|tor.platz|tor.verb|tor.dynamik",
         "klinge.rahmen|klinge.bewegung|klinge.material|klinge.platz|klinge.verb|klinge.dynamik",
         "haus.rahmen|haus.material|haus.koerper|haus.platz|haus.dynamik",
-        "mensch.rahmen|mensch.bewegung|mensch.material|mensch.koerper|mensch.verb|mensch.dynamik",
+        "mensch.lods|mensch.rahmen|mensch.bewegung|mensch.material|mensch.koerper|mensch.verb|mensch.dynamik",
         "tier.rahmen|tier.bewegung|tier.material|tier.koerper|tier.platz|tier.verb|tier.dynamik",
         "klang.verb|klang.dynamik",
     ]
         .join("|")
         .split("|");
-    const NIE_LEER = ["streu.lods", "fahrzeug.lods", "tor.lods", "haus.lods"];
+    const NIE_LEER = ["streu.lods", "fahrzeug.lods", "tor.lods", "haus.lods", "tier.lods"];
     let ratchetOk = true;
     const gefallen = [];
     for (const cell of VOLL_ANKER) {
