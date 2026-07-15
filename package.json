@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.476.0",
+    "version": "18.477.0",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -62,6 +62,7 @@
         "mint:asset-packs": "node scripts/mint-asset-packs.cjs",
         "gate:pack-contract": "node scripts/diag-pack-contract.cjs --selftest && node scripts/diag-pack-contract.cjs",
         "gate:vehicle-contract": "node scripts/diag-vehicle-contract.cjs",
+        "gate:fahrzeug-fern": "node scripts/diag-fahrzeug-fern.cjs",
         "gate:porta-contract": "node scripts/diag-porta-contract.cjs",
         "gate:membran-gesetz": "node scripts/diag-membran-gesetz.cjs",
         "gate:portal-membran": "node scripts/diag-portal-membran.cjs",
@@ -74,9 +75,12 @@
         "gate:gpu-zeit": "node scripts/diag-gpu-zeit.cjs",
         "gate:existenz-boden": "node scripts/diag-existenz-boden.cjs",
         "gate:charakter-achsen": "node scripts/diag-charakter-achsen.cjs",
+        "gate:praegung-welt": "node scripts/diag-praegung-welt.cjs",
+        "gate:studio-uebergabe": "node scripts/diag-studio-uebergabe.cjs",
         "gate:tier-separation": "node scripts/diag-tier-separation.cjs",
         "gate:reconnect": "node scripts/diag-reconnect.cjs",
         "gate:kreatur-kosten": "node scripts/diag-kreatur-kosten.cjs",
+        "gate:tier-fern": "node scripts/diag-tier-fern.cjs",
         "gate:koerper-bewegung": "node scripts/diag-koerper-bewegung.cjs",
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
         "gate:schritt-klang": "node scripts/diag-schritt-klang.cjs",

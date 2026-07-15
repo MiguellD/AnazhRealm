@@ -6,38 +6,40 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.476 — DIE ORAKEL-UMSETZUNG: acht Tier-1-Wellen, je EINE Linse)
+## Stand (V18.477 — DIE NIVEAU-VOLLENDUNG: die Studio-Naht fließt auf gleichem Niveau)
 
-**Das Profi-Orakel („wie machen es die Besten?" als stehende Schärfung von Lehre 4;
-Audit + Reihung in roadmap §0.5) ist UMGESETZT — acht Wellen in einem Zug, alle
-render-seitig (die fixe Sim blieb unberührt, gate-bewiesen), je Welle eine Linse:**
-KOPPLUNG (`gate:kopplung`: Strömung advektiert Schwimmer · Quake-ClipVelocity-Gleiten ·
-EIN Wind-Richtungs-Vektor für alles Sway · Gras-Interaktions-Sphären) · KÖRPER
-(`gate:koerper-bewegung`: weg-getriebene Gang-Phase + Posen-Blend + Two-Bone-Fuß-IK/
-Foot-Lock/Becken/Rumpf-Hang + Tier-Bodenanker — der 0,5-m-Schwebe-Sinus fiel) · KAMPF
-(`gate:kampf-gefuehl`: 3-Phasen-Schwung ∝ √I aus _swingDynamics · Klingen-Kapsel-Sweep ·
-Hit-Stop nur auf der Anzeige-Uhr · Tod-Kippen entlang _fieldGradient) · SCHRITT-KLANG
-(`gate:schritt-klang`: Material-Timbres über die EINE Klang-Maschine) · RENDER-DIÄT
-(`gate:render-diaet`: EIN Material je Tag-Signatur, Farbe als Instanz-Kanal via
-_archSlotColor — der 1733-dc-Treiber; **Review-Ernte CONFIRMED: der Batch-Key trägt die
-r184-INDEX-KONSISTENZ #i/#x am EINEN Chokepoint**, gemischte Fixture wacht in der Linse) ·
-GPU-ZEIT (`gate:gpu-zeit`: timestamp-query im vendored r184, gpuMs + Quelle echt|proxy in
-Panel/worst/Trace) · KREATUR-KOSTEN (`gate:kreatur-kosten`: Anim-Raten-Leiter fern
-1/2·1/4·0 · Standbild-Freeze neutral · mensch-Fern-Guss lod≥1 — Matrix-Zelle mensch.lods
-VOLL) · RECONNECT (`gate:reconnect`: Exponential-Backoff+restartIce [Perfect Negotiation] ·
-Snap-Interpolationspuffer nur im Nicht-Lockstep-Pfad).
+**Der Studio-Vergleich (Vertrag · Welt · Editor, drei Leser + frische Matrix) fand vier
+echte Risse — alle in EINER Welle geschlossen, je mit Linse:** PRÄGUNG-WELT
+(`gate:praegung-welt`: das präge-Verb war reine Vorschau-Wahrheit — jetzt reist die
+Prägung als Guss-Stempel `studioOv` MIT dem Artefakt in Hand/Welt/Snapshot/place-DSL;
+ov-Hash trennt Cache+Batch, ungeprägter Pfad byte-identisch; die EINE Räumungs-Naht
+`_foundryCacheEvict` heilt den präge-Flush [Verify-CONFIRMED: requested-Verhungern]) ·
+FAHRZEUG-FERNSTUFE (`gate:fahrzeug-fern`, Tor-Präzedenz impostor:true — gt fern
+328 Meshes/28k Tris → 1 Quad/2 Tris; geritten = L0; Stempel-Wand: geprägt nie über die
+ov-blinde Karte) · TIER-FERN-HYSTERESE (`gate:tier-fern`: der Fern-Guss existierte
+[wolf 80→11], es fehlte das ±10-%-Band; Klassen-Schluss auch am mensch-Toggle —
+TIER_FERN_HYST ist die EINE Fern-Bande) · STUDIO-ÜBERGABE (`gate:studio-uebergabe`,
+der tiefste Riss: KEIN Studio trug die Live-Bearbeitung — der W12-Kanal `uebergabe`
+[terrain-settlement-Präzedenz] trägt jetzt koerperstudio-Gestalt+Dials und
+tetrapoda-Dials fail-closed in den Welt-Guss; Avatar-Kleider ≙ Studio lokal GEBAUT).
+OFFEN benannt: P2P-Gestalt (soul-Kanal trägt keine Gestalt/Dials — Peers sehen die
+eigene Wahrheit) · Fahrzeug-Billboard-LOOK (Schöpfer-Auge; Container capturet keine
+WebGPU-Frames, gemessene Narbe) · tier.lods TEIL bis der Vertrag Stufen trägt.
 
-Der Bogen darüber bleibt der **Schöpfer-Browser-Befund (14.07., roadmap §0.1):** beide
-gemessenen Steady-Hebel (DC-Diät V18.474 · Render-Diät V18.476) sind gebaut — **der
-nächste echte Trace urteilt** (der Flugschreiber misst die GPU jetzt ECHT und trägt den
-Tri-Zensus; er POSTet beim Spielen automatisch → committen). Davor: V18.475 Wasser-
-Wahrheit · V18.474 Vollende-Welle (Fahrzeug ganz · Tier-Separation · Zweit-Kern-Bäckerei ·
-DC-Diät) · V18.473 Existenz-Boden/Tri-Attribution/Nacht-Karten · V18.472 Panel+Export ·
-V18.471 Bäcker-Vereinigung · V18.470 Konsum-Matrix (`gate:konsum-matrix`, nur-wachsend) ·
-V18.469 Erstarren-CPU-Hälfte · V18.468 Informations-Diät (Detail = git log). OFFEN
-daneben: Kommentar-Diät des Stamms (roadmap §0) · typeof-Ratchet (nur-sinkend) · das
-formale Abnahme-Drehbuch (look-golden --mint · DoD 5) · Avatar-Kleider ≠ Studio ·
-Bogen-1-Rest (RenderBundles · Kreatur-GPU-Skinning, roadmap §0.5).
+Davor V18.476 DIE ORAKEL-UMSETZUNG (acht Tier-1-Wellen, je EINE Linse: kopplung ·
+koerper-bewegung · kampf-gefuehl · schritt-klang · render-diaet [EIN Material je
+Tag-Signatur + r184-INDEX-KONSISTENZ #i/#x am Batch-Key] · gpu-zeit [timestamp-query,
+gpuMs echt|proxy] · kreatur-kosten · reconnect — alles render-seitig, fixe Sim
+unberührt). Der Bogen darüber bleibt der **Schöpfer-Browser-Befund (14.07., roadmap
+§0.1):** beide Steady-Hebel (DC-Diät V18.474 · Render-Diät V18.476) sind gebaut —
+**der nächste echte Trace urteilt** (Flugschreiber misst GPU ECHT + Tri-Zensus; er
+POSTet beim Spielen automatisch → committen). Davor: V18.475 Wasser-Wahrheit ·
+V18.474 Vollende-Welle · V18.473 Existenz-Boden · V18.472 Panel+Export · V18.471
+Bäcker-Vereinigung · V18.470 Konsum-Matrix · V18.469 Erstarren-CPU-Hälfte · V18.468
+Informations-Diät (Detail = git log). OFFEN daneben: Kommentar-Diät des Stamms
+(roadmap §0) · typeof-Ratchet (nur-sinkend) · das formale Abnahme-Drehbuch
+(look-golden --mint · DoD 5) · Bogen-1-Rest (RenderBundles · Kreatur-GPU-Skinning,
+roadmap §0.5).
 
 ## Architektur (die Karte)
 

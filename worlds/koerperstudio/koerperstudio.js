@@ -1989,5 +1989,28 @@ animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;ca
         if (typeof play !== "undefined" && play && play.on) return; /* Esc = Ninja-Park verlassen (exitPlay) */
         post({ type: "exit", world: "koerperstudio" });
     });
+    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE
+       Schöpfer-Bearbeitung additiv über DIESELBE Brücke (das settlement/event-
+       Zusatz-Kanal-Muster der terrain-Brücke): die acht numerischen Dials als s,
+       die String-Wahlen (skinTone/hairStyle/hairColor/top/topColor/bottom/
+       bottomColor/shoes/shoeColor) als gestalt — geschieden über typeof aus dem
+       EINEN params-Objekt (dieselbe Quelle, die das Lab live formt). Der Knopf
+       ist standalone hidden (nur das Portal enthüllt ihn) — bestehendes
+       Verhalten byte-unberührt. */
+    (function () {
+        var b = document.getElementById("btnUebergabe");
+        if (!b) return;
+        b.hidden = false;
+        b.addEventListener("click", function () {
+            var s = {};
+            var gestalt = {};
+            for (var k in params) {
+                if (!Object.prototype.hasOwnProperty.call(params, k)) continue;
+                if (typeof params[k] === "number") s[k] = params[k];
+                else if (typeof params[k] === "string") gestalt[k] = params[k];
+            }
+            post({ type: "uebergabe", world: "koerperstudio", kind: "koerper", s: s, gestalt: gestalt });
+        });
+    })();
     post({ type: "ready", world: "koerperstudio", label: LABEL, dsl: DSL });
 })();

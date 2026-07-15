@@ -65,10 +65,16 @@ const P = {
         dynamik: ["_tickFoliageThin|_tickScatterFoundryRefill"],
     },
     fahrzeug: {
-        lods: ["lodServe|kindStages"],
-        rahmen: ["jointRole = \"rad\"|role === \"rad\""],
-        bewegung: ["role === \"rad\""],
-        material: ["KIND_CHARAKTER"],
+        // FAHRZEUG-FERNSTUFE (V18.477, Tor-Präzedenz): KIND_POLICY.vehicle trägt
+        // die Impostor-Zeile — geparkte ferne Fahrzeuge reisen als 8-Winkel-Karte
+        // (gt: 328 Meshes/28k Tris → 1 Quad/2 Tris; gate:fahrzeug-fern misst live).
+        // TEIL bleibt ehrlich: die Vertrags-Seite deklariert weiter [0].
+        lods: ["lodServe|kindStages", "impostor: true"],
+        rahmen: ['jointRole = "rad"|role === "rad"'],
+        bewegung: ['role === "rad"'],
+        // PRÄGUNG-WELT (V18.477): der Charakter reist jetzt als Guss-Stempel bis
+        // in die Welt (_artifactStudioOv = der EINE Welt-Leser; gate:praegung-welt).
+        material: ["KIND_CHARAKTER", "_artifactStudioOv"],
         koerper: ["_blockerComputePartAABB"],
         platz: ["fx\\.place"],
         verb: ["_mountedVehicleProfile"],
@@ -80,7 +86,7 @@ const P = {
         bewegung: ["_tickTorFluegel"],
         material: ["_membranMaterialFor"],
         koerper: ["_torBlockerAABBs"],
-        platz: ["role: \"portal\""],
+        platz: ['role: "portal"'],
         verb: ["enterPortal"],
         dynamik: ["_tickPortalMembranes"],
     },
@@ -88,7 +94,9 @@ const P = {
         lods: null, // Waffen: bewusst einstufig (Hand-Objekt) — kein LOD-Konsum
         rahmen: ["handAxis"],
         bewegung: ["_swingDynamics"],
-        material: ["__tradition"],
+        // PRÄGUNG-WELT (V18.477): die Tradition reist als Guss-Stempel in den
+        // Hand-Guss (_heldFoundryGroup liest _artifactStudioOv; gate:praegung-welt).
+        material: ["__tradition", "_artifactStudioOv"],
         koerper: null, // Hand-Objekt ohne Welt-Kollision
         platz: ["_heldFoundryGroup"],
         verb: ["wield"],
@@ -119,9 +127,11 @@ const P = {
     },
     tier: {
         // KREATUR-KOSTEN: das Standbild (wrap↔fern, TIER_FERN) + die Anim-Raten-
-        // Leiter (_creatureAnimDiv) werden konsumiert; TEIL bleibt ehrlich — die
+        // Leiter (_creatureAnimDiv) werden konsumiert; V18.477 dazu die HYSTERESE
+        // (TIER_FERN_HYST — die EINE Fern-Bande, auch der mensch-Toggle liest sie;
+        // gate:tier-fern misst Guss+Band live). TEIL bleibt ehrlich — die
         // Vertrags-Seite trägt weiter keine kreatur-Stufen-Zeile (benannte Lücke).
-        lods: ["TIER_FERN_DIST_SQ", "_creatureAnimDiv"],
+        lods: ["TIER_FERN_DIST_SQ", "_creatureAnimDiv", "TIER_FERN_HYST"],
         rahmen: ["bauTier"],
         bewegung: ["_animateCompoundMotion"],
         material: ["computeCreatureStats"],
@@ -271,9 +281,9 @@ const REP = {
         console.log(
             "    " +
                 g.padEnd(8) +
-                FACETTEN.map((f) => (SYM[matrix[g][f].verdict] + " " + matrix[g][f].verdict.slice(0, 4)).padEnd(8)).join(
-                    ""
-                )
+                FACETTEN.map((f) =>
+                    (SYM[matrix[g][f].verdict] + " " + matrix[g][f].verdict.slice(0, 4)).padEnd(8)
+                ).join("")
         );
 
     console.log("\n  DIE DIFFERENZEN (was noch nicht konsumiert wird):");
@@ -340,7 +350,10 @@ const REP = {
     );
 
     // ── SELBST-TEST ──
-    check("SELBST-TEST: eine unmögliche Probe liest 0 (die Linse kann rot)", zaehl("__diese_methode_gibt_es_nicht__") === 0);
+    check(
+        "SELBST-TEST: eine unmögliche Probe liest 0 (die Linse kann rot)",
+        zaehl("__diese_methode_gibt_es_nicht__") === 0
+    );
 
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);

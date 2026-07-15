@@ -32,17 +32,31 @@
    Studio-Tageslicht fällt mit der Sonne, Boden 0.12 = Mond-Silhouette — Schöpfer-Auge
    bestätigt es nachts). OFFEN: die ZWEIT-KERN-BÄCKEREI im Studio (Tor-Records fallen bis
    dahin ehrlich auf die Skelett-Silhouette — der Pflanzen-Bäcker kennt sie nicht).
-   (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470):**
-   9 Gattungen × 8 Facetten, 57 Zellen verankert, 19 Differenzen benannt. Die größten:
-   LOD-Leitern — haus [0,1,2] EHRLICH bewiesen · fahrzeug/tor/klinge [0] bewusst (Wirt
-   gradiert; Fahrzeug-Fernstufe fehlt real: 328 Meshes je Distanz) · kreatur/koerper/klang
-   ganz ohne VERTRAGS-Stufen-Zeile (wolf 81 Meshes; die WELT-Seite konsumiert seit
-   KREATUR-KOSTEN Geometrie-LOD für mensch [lod1-Fern-Guss, _menschFernToggle >40 m]
-   und tier [Standbild + Anim-Raten-Leiter 1/2·1/4·0, neutrale Stand-Pose] —
-   `gate:kreatur-kosten`; mensch.lods VOLL, tier.lods TEIL bis der Vertrag Stufen trägt) ·
-   Bäcker-Vereinigung BEIDSEITIG GEBAUT (s. (b), Konsum-Matrix-Probe ✅) ·
-   Straßensystem = 0 Treffer ·
-   klinge/streu ohne Kollision (bewusst? urteilen) · haus ohne Betreten-Verb.
+   (c) **Regler+LOD-Vollständigkeit — jetzt GEMESSEN (`gate:konsum-matrix`, V18.470)
+   und in V18.477 (NIVEAU-VOLLENDUNG) an den echten Rissen GESCHLOSSEN:**
+   9 Gattungen × 8 Facetten, 57 Zellen verankert, 19 Differenzen benannt. GEBAUT
+   V18.477: **PRÄGUNG-WELT** (`gate:praegung-welt` — das präge-Verb war reine
+   VORSCHAU-Wahrheit; jetzt reist die Prägung als Guss-Stempel `studioOv` MIT dem
+   Artefakt in Hand + Welt + Snapshot + place-DSL, ov-Hash trennt Cache/Batch,
+   ungeprägter Pfad byte-identisch; die EINE Räumungs-Naht `_foundryCacheEvict`
+   heilt den präge-Flush) · **FAHRZEUG-FERNSTUFE** (`gate:fahrzeug-fern`, Tor-
+   Präzedenz KIND_POLICY impostor:true: gt fern 328 Meshes/28k Tris → 1 Quad/2 Tris;
+   geritten = L0-Wand; Stempel-Wand: geprägte Entries nie über die ov-blinde Karte) ·
+   **TIER-FERN-HYSTERESE** (`gate:tier-fern` — der Fern-Guss existierte [wolf 80→11
+   Meshes], es fehlte das ±10-%-Band; dieselbe Klasse am mensch-Toggle geschlossen,
+   TIER_FERN_HYST = die EINE Fern-Bande) · **STUDIO-ÜBERGABE** (`gate:studio-uebergabe`
+   — der tiefste Riss: KEIN Studio trug die LIVE-Bearbeitung des Schöpfers, die Welt
+   las nur gefrorene Kern-Presets; jetzt postet der W12-Kanal `uebergabe` [terrain-
+   settlement-Präzedenz] die aktuelle Wahl aus koerperstudio [8 Dials + Gestalt:
+   Haut/Haar/Kleider/Farben] und tetrapoda [5 Dials je Gattung] fail-closed in den
+   Welt-Guss — Avatar wird live neu gegossen, Spawns tragen die Dials, Snapshot
+   persistiert). OFFEN in (c): kreatur/koerper/klang ohne VERTRAGS-Stufen-Zeile
+   (tier.lods TEIL bis der Vertrag Stufen trägt) · P2P-GESTALT (der soul-Kanal trägt
+   keine Gestalt/Dials — Peers sehen ihre eigene Avatar-/Kreatur-Wahrheit; benannte
+   Folge-Naht) · Fahrzeug-Billboard-LOOK (aspect 3.995 breit-flach — das Schöpfer-
+   Auge urteilt, der Container kann WebGPU-Frames nicht capturen [gemessene Narbe]) ·
+   Straßensystem = 0 Treffer · klinge/streu ohne Kollision (bewusst? urteilen) ·
+   haus ohne Betreten-Verb.
    (d) **Tiefe statt Oberfläche — VOLLENDE-WELLE V18.474 (kein Aufschieben):**
    GEBAUT+bewiesen: DC-Diät der Fern-Gruppen (Super-Region-Keying am EINEN Chokepoint,
    16→1 Gruppen bei 4×4; gate:scatter-lod F-Block) · FAHRZEUG ganz (Geist liest die
@@ -57,9 +71,10 @@
    Spiegel-Film über Land fällt) · Verdunstungs-Boden (settled Zungen unter Render-
    Schwelle verdunsten, Quellen nie — die ewigen Blobs fallen) · Stau-Qualifikation nach
    Profi-Maßstab (nur geerdete, geschlossene Basen dämmen — Pfosten/Stege nie; echte
-   Dämme leben). OFFEN danach: Avatar-KLEIDER ≠ Studio (die Bewegung ist seit V18.476
-   orakel-gebaut, s. §0.5 Bogen 2) · Kreatur-Tris/LOD (Tri-Zensus im nächsten Trace) ·
+   Dämme leben). OFFEN danach: Kreatur-Tris/LOD (Tri-Zensus im nächsten Trace) ·
    Fahrzeugphysik-Tiefe · Stadtpflanzung/Straßen — Reihung folgt dem Profi-Orakel-Audit.
+   (Avatar-Kleider ≠ Studio ist seit V18.477 GEBAUT — die Studio-Übergabe trägt die
+   Garderobe in den Welt-Guss, s. (c); offen bleibt nur der P2P-Blick.)
 2. **Das formale Abnahme-Drehbuch bleibt offen** (`docs/abnahme-drehbuch.md`):
    `npm run look-golden -- --mint` (dein Auge einmal, die MSSIM-Maschine für immer) ·
    Nervensystem-DoD 5 · E-C/E-E/E-F.

@@ -344,6 +344,14 @@ class AnazhRealm {
             // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
             // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
             klangPreset: null,
+            // STUDIO-ÜBERGABE (Auftrag D) — die LIVE-Bearbeitung des Schöpfers reist
+            // aus dem Studio in die Welt (W12-Kanal "uebergabe", Empfänger
+            // _studioUebergabeEmpfang, fail-closed): koerper = {s, gestalt} — der
+            // Avatar-Dials-Leser _koerperStudioDials nimmt sie als Vorrang-Quelle;
+            // kreatur = je Gattung {s} — die Kreatur-Dial-Quelle _tetrapodaStudioDials
+            // mischt sie (Guss-Semantik: geprägt wird beim Guss, Bestand bleibt).
+            // Persistiert im Snapshot (Feld studioUebergabe); Linse: gate:studio-uebergabe.
+            studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: 8,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
@@ -2656,7 +2664,11 @@ class AnazhRealm {
             // Bauplan-Namen (built-in oder eigen): `["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]]`. Wird vom Hotbar (6.5)
             // und Werkstatt (6.6) als universeller Pfad benutzt.
-            spawn_blueprint: ([name, positionNode, seed, archId], ctx) => {
+            // PRÄGUNG-WELT — Slot 6 (optional) trägt den Guss-Stempel (studioOv) des
+            // platzierten Artefakts über die P2P-Naht; die Wand (plain object + Taille-
+            // Größe) hält der EINE Chokepoint spawnArchitecture. Alte Sender lassen den
+            // Slot weg (byte-alt), alte Empfänger ignorieren ihn (must-ignore-Destruktur).
+            spawn_blueprint: ([name, positionNode, seed, archId, studioOv], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -2688,6 +2700,9 @@ class AnazhRealm {
                 // ungedeckelt (autonomous=false) — sie sind gewollt + permanent.
                 const opts = { seed: s, autonomous: ctx.source === "nexus" };
                 if (sharedId) opts.id = sharedId;
+                // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
+                // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
+                if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
                 const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
             },
@@ -17287,10 +17302,16 @@ class AnazhRealm {
     // nur bei Zustands-Wechsel geschrieben); no-op ohne Fern-Zweig.
     // Konsument: der Peer-Tick (_p2pUpdatePeer) — der eigene Avatar steht
     // bei Distanz 0 immer nah. Linse: gate:kreatur-kosten.
+    // V18.477 (Klassen-Schluss, Verify-Ernte): dieselbe HYSTERESE wie am
+    // Tier-Toggle — ein Peer, der exakt an der Schwelle pendelt, flackerte
+    // sonst nah↔fern pro Frame (und riss den Rig-Tick/Gang-Pfad mit).
+    // TIER_FERN_HYST ist die EINE Fern-Hysterese-Bande aller Fern-Toggles.
     _menschFernToggle(group, distSq) {
         const mf = group && group.userData && group.userData._menschFern;
         if (!mf || !mf.nah || !mf.fern) return;
-        const nah = distSq < AnazhRealm.MENSCH_FERN_DIST_SQ;
+        const h = AnazhRealm.TIER_FERN_HYST;
+        const kante = mf.nah.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
+        const nah = distSq < AnazhRealm.MENSCH_FERN_DIST_SQ * kante;
         if (mf.nah.visible !== nah) {
             mf.nah.visible = nah;
             mf.fern.visible = !nah;
@@ -17662,7 +17683,19 @@ class AnazhRealm {
         const rec = f && f.recipes ? f.recipes[recId] : null;
         // WELCHES Rezept eine Seele liest, pinnt TETRAPODA_SOUL_MAP (Daten) — hier nur
         // die Form-Wache (must-ignore, kein kind-Literal: das klang-Leser-Muster).
-        return rec && rec.s && typeof rec.s === "object" ? rec.s : null;
+        const s = rec && rec.s && typeof rec.s === "object" ? rec.s : null;
+        // STUDIO-ÜBERGABE (Auftrag D) — die VORRANG-Quelle je Gattung: hat der
+        // Schöpfer aus dem Tetrapoda-Lab übergeben (validiert am EINEN Empfänger
+        // _studioUebergabeEmpfang), mischen die fünf allometrischen Dials ÜBER
+        // das gefrorene Buch. BEIDE Konsumenten dieser einen Quelle folgen
+        // automatisch: der Kreatur-Ofen (_ofenKreaturDials — der Memo-Key trägt
+        // die Dials im JSON, ein eigener Key je Übergabe) und die Mechanik
+        // (_tetrapodaSoulParts). Guss-Semantik: nur KÜNFTIGE Spawns lesen hier;
+        // bestehende Kreaturen bleiben wie gegossen. Ohne Übergabe byte-alt.
+        const ue = this.state && this.state.studioUebergabe && this.state.studioUebergabe.kreatur;
+        const ueS = ue && ue[recId] && ue[recId].s;
+        if (ueS && typeof ueS === "object") return Object.assign({}, s || {}, ueS);
+        return s;
     }
     // ABSCHIEDS-WELLE (Koerper-Dock A2) — DER STUDIO-GUSS EINER SEELE: gießt das
     // CREATURE_SKELETON_G-g der Seele mit dem dial-überschriebenen Archetyp neu
@@ -18160,6 +18193,14 @@ class AnazhRealm {
         return g.range("gigant", 1.9, 2.7); // GIGANT — ein Koloss (robust, träge), selten
     }
 
+    // STUDIO-ÜBERGABE (Auftrag D) — der size-Dial braucht KEINE eigene Achse
+    // (Lehre 2, ein Doppel-Faktor wurde GEMESSEN und verworfen): er reist
+    // bereits durch die EINE Pipe — die Übergabe-Dials (via
+    // _tetrapodaStudioDials → _ofenKreaturDials) formen den bauTier-Guss, und
+    // die WELT-Höhe eines Spawns folgt der Template-Höhe × bodySize-Wurf
+    // (gemessen: size 3.5/2.4 ⇒ ×1.458 am Spawn — gate:studio-uebergabe).
+    // Der bodySize-Wurf (die Größen-Zufalls-Achse) bleibt byte-alt.
+
     // T5 (wahrerwuchs §4.7 / Ω-B5 — DIE GALILEO-ALLOMETRIE, Quadrat-Kubik): ein größeres
     // Wesen braucht ÜBERPROPORTIONAL dicke Glieder. Die Biomechanik: Masse ∝ L³, die
     // tragende Glied-QUERSCHNITTSFLÄCHE muss mitwachsen ∝ L³ → der Glied-DURCHMESSER ∝ L^1.5.
@@ -18549,8 +18590,20 @@ class AnazhRealm {
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
-        const s = rec && rec.s;
-        return s && typeof s === "object" ? s : null;
+        const s0 = rec && rec.s;
+        const s = s0 && typeof s0 === "object" ? s0 : null;
+        // STUDIO-ÜBERGABE (Auftrag D) — die VORRANG-Quelle: hat der Schöpfer aus
+        // dem Da-Vinci-Studio übergeben (validiert am EINEN Empfänger
+        // _studioUebergabeEmpfang), mischen ihre Dials ÜBER das gefrorene Buch,
+        // und die Gestalt-Wahlen reisen im SELBEN Objekt mit — derselbe Fluss
+        // (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance), in dem
+        // kleidZonen/haarStreu die Strings heute schon lesen: EIN Leser, kein
+        // Parallelpfad. Ohne Übergabe byte-alt (die Buch-Referenz | null).
+        const ue = this.state && this.state.studioUebergabe && this.state.studioUebergabe.koerper;
+        if (ue && ue.s && typeof ue.s === "object") {
+            return Object.assign({}, s || {}, ue.s, ue.gestalt && typeof ue.gestalt === "object" ? ue.gestalt : {});
+        }
+        return s;
     }
 
     // ALTLASTEN-NULL HERZ — DER MENSCH HÄNGT AN DERSELBEN GRÖSSEN-ACHSE: die
@@ -22015,7 +22068,16 @@ class AnazhRealm {
                 const tB = creature.userData._tierBaum;
                 if (tB && tB.fern && tB.wrap) {
                     const fL = creature.scale.x || 1;
-                    const nah = distSqToPlayer < AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
+                    const grenzSq = AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
+                    // TIER-FERN-GUSS — HYSTERESE am EINEN Chokepoint (gate:
+                    // tier-fern): zwei Kanten statt einer — im ±TIER_FERN_HYST-
+                    // Band hält der LETZTE Zustand, ein Pendeln an der Schwelle
+                    // flackert nie (und gießt nie: geschaltet wird NUR visible,
+                    // die Templates bleiben memoisiert). Render-rein — kein
+                    // Sim-/Snapshot-Pfad liest diesen Zustand.
+                    const h = AnazhRealm.TIER_FERN_HYST;
+                    const kante = tB.wrap.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
+                    const nah = distSqToPlayer < grenzSq * kante;
                     if (tB.wrap.visible !== nah) {
                         tB.wrap.visible = nah;
                         tB.fern.visible = !nah;
@@ -23937,12 +23999,17 @@ class AnazhRealm {
                     ws.studioOv[preset] = Object.assign({}, ws.studioOv[preset], achse.ov(zeileName, tabelle));
                     // gecachte Bauten dieses Rezepts verwerfen, damit der Charakter
                     // sofort führt (der ov-Kanal ist cache-frei per W-A1-Gesetz).
+                    // V18.477 (Verify-Ernte, KRITISCH): über die EINE Räumungs-Naht
+                    // (_foundryCacheEvict) — der rohe delete ließ die Keys in der
+                    // requested-Dedup-Wache zurück (kein Re-Request je wieder →
+                    // permanentes Render-Verhungern bestehender Artefakte nach
+                    // nachträglichem präge) und verfälschte die cacheBytes-Bilanz.
                     if (f && f.cache && typeof f.cache.forEach === "function") {
                         const tot = [];
                         f.cache.forEach((_v, k) => {
                             if (String(k).indexOf(preset + "|") === 0) tot.push(k);
                         });
-                        for (const k of tot) f.cache.delete(k);
+                        for (const k of tot) this._foundryCacheEvict(k);
                     }
                     append(`Geprägt: „${rec.lab || preset}" trägt fortan die ${achse.wort} „${zeileName}".`);
                 },
@@ -37091,6 +37158,16 @@ class AnazhRealm {
         if (prov.length) out.provenance = prov;
         // Ω3(a) — die gereiste Autor-Behauptung (Metadatum) reist weiter.
         if (typeof bp.roleClaimed === "string" && bp.roleClaimed) out.roleClaimed = bp.roleClaimed;
+        // PRÄGUNG-WELT — der Guss-Stempel des Bauplans reist EXPLIZIT (deklariertes
+        // System-Feld, nicht via must-preserve): ein geprägtes Gerät bleibt geprägt
+        // über den Reload (die Hand liest bp.studioOv — sonst Guss-Verlust beim Laden).
+        if (bp.studioOv && typeof bp.studioOv === "object" && !Array.isArray(bp.studioOv)) {
+            try {
+                out.studioOv = JSON.parse(JSON.stringify(bp.studioOv));
+            } catch (_e) {
+                /* nicht-serialisierbar → fällt still (fail-closed) */
+            }
+        }
         // Ω2 — must-preserve: Unbekanntes überlebt den Round-Trip (EINE Quelle).
         this._carryUnknown(bp, out, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return out;
@@ -37196,6 +37273,19 @@ class AnazhRealm {
         if (prov.length) restored.provenance = prov;
         // Ω3(a) — die gereiste Autor-Behauptung (Metadatum, string-gewandet).
         if (typeof data.roleClaimed === "string" && data.roleClaimed) restored.roleClaimed = data.roleClaimed;
+        // PRÄGUNG-WELT — der Guss-Stempel kehrt zurück (Gegenstück zu _serializeBlueprint):
+        // NUR ein non-leeres plain object, tief kopiert + größen-bewacht (dieselbe
+        // 8-KiB-Taille-Wand wie _carryUnknown — kein Save-/Peer-Riesenstempel).
+        if (data.studioOv && typeof data.studioOv === "object" && !Array.isArray(data.studioOv)) {
+            try {
+                const json = JSON.stringify(data.studioOv);
+                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
+                    restored.studioOv = JSON.parse(json);
+                }
+            } catch (_e) {
+                /* nicht-serialisierbar → fällt still (fail-closed) */
+            }
+        }
         this._carryUnknown(data, restored, AnazhRealm.BLUEPRINT_KNOWN_KEYS);
         return restored;
     }
@@ -37286,6 +37376,19 @@ class AnazhRealm {
             dayLengthMinutes: this.state.dayLengthMinutes || 8,
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
+            // STUDIO-ÜBERGABE (Auftrag D) — die Schöpfer-Übergabe überlebt den Reload
+            // (V8.59-Klasse: sonst still auf die gefrorenen Kern-Presets zurück).
+            // Am Empfänger Taille-gedeckelt (≤ TAILLE_UNKNOWN_FIELD_MAX); der
+            // Restore läuft durch DENSELBEN Validator (_studioUebergabeValidate).
+            studioUebergabe: (() => {
+                const u = this.state.studioUebergabe;
+                return u && typeof u === "object"
+                    ? {
+                          koerper: u.koerper && typeof u.koerper === "object" ? u.koerper : null,
+                          kreatur: u.kreatur && typeof u.kreatur === "object" ? u.kreatur : {},
+                      }
+                    : { koerper: null, kreatur: {} };
+            })(),
             // V18.387 (DAS NEUE KLEID — DIE LEISTUNGSREGLER): die vier Perf-Regler des
             // Einstellungen-Drawers reisen im Snapshot (V8.59-Klasse — ein Regler, der nur in der
             // Session lebt, wird bei jedem Reload still zurückgesetzt). Ziel-FPS (perfTargetMs) ·
@@ -37468,6 +37571,9 @@ class AnazhRealm {
                 // Ω5 — die Gratis-Geburt überlebt den Reload (sonst wüsche der
                 // Save die Marke ab und der pfad erntete doch — GEMESSEN Z2b).
                 ...(a.freeBorn === true ? { freeBorn: true } : {}),
+                // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
+                // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
+                ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
                 // Φ7 (V18.190) — entry-level portalMeta (Halle-Slots): eine
                 // materialisierte Halle hat N Tore mit JE eigener worldAddress
                 // am entry.portalMeta. Ohne diese Persistenz würden alle
@@ -41650,6 +41756,33 @@ class AnazhRealm {
             }
             this.state.customSouls = restored;
         }
+        // STUDIO-ÜBERGABE (Auftrag D) — VOR playerSoul restaurieren (der Seelen-
+        // Guss liest _koerperStudioDials): jeder Snapshot-Wert läuft durch
+        // DENSELBEN fail-closed-Validator wie der W12-Empfang (Invarianten im
+        // Chokepoint, Lehre 2). Alt-Snapshots ohne Feld bleiben byte-alt
+        // (koerper null, kreatur {}); Müll fällt still.
+        if (state.studioUebergabe && typeof state.studioUebergabe === "object") {
+            const su = state.studioUebergabe;
+            const ziel =
+                this.state.studioUebergabe && typeof this.state.studioUebergabe === "object"
+                    ? this.state.studioUebergabe
+                    : (this.state.studioUebergabe = { koerper: null, kreatur: {} });
+            const k =
+                su.koerper && typeof su.koerper === "object"
+                    ? this._studioUebergabeValidate("koerper", su.koerper)
+                    : null;
+            if (k) ziel.koerper = { s: k.s, gestalt: k.gestalt };
+            if (su.kreatur && typeof su.kreatur === "object" && !Array.isArray(su.kreatur)) {
+                for (const g of Object.keys(su.kreatur)) {
+                    const e = su.kreatur[g];
+                    const c =
+                        e && typeof e === "object"
+                            ? this._studioUebergabeValidate("kreatur", { gattung: g, s: e.s })
+                            : null;
+                    if (c) ziel.kreatur[c.gattung] = { s: c.s };
+                }
+            }
+        }
         if (typeof state.playerSoul === "string") {
             const known =
                 this.playerSoulDefs[state.playerSoul] ||
@@ -42025,6 +42158,9 @@ class AnazhRealm {
                 precise: true,
                 // Ω5 — die Gratis-Geburt reist durch den Reload mit.
                 freeBorn: a.freeBorn === true,
+                // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
+                // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
+                studioOv: a.studioOv,
             });
             // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
             // tragen je eigene worldAddress; ohne diesen Schritt würden alle
@@ -44298,14 +44434,19 @@ class AnazhRealm {
         for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
         const variant = typeof this._foundryVariantFor === "function" ? this._foundryVariantFor(seedNum) : 1;
         const season = this.state.season || "summer";
+        // PRÄGUNG-WELT — der GESTEMPELTE Charakter des Artefakts (bp.studioOv, beim Guss
+        // gefroren) reist in den Hand-Bau: der ov-Hash trennt den Cache-Schlüssel (die
+        // ungeprägte Instanz bleibt byte-alt auf dem alten Schlüssel), das ov geht als
+        // 5. Arg an _foundryRequest (das die IDB-Platte per hasOv bewusst umgeht).
+        const heldOv = this._artifactStudioOv(bp);
         // Stufe 0 — die Hand ist NAH (kindStages.weapon == [0]; für mehrstufige Arten ist 0 die reiche Stufe).
-        const key = preset + "|" + variant + "|0|" + season;
+        const key = preset + "|" + variant + "|0|" + season + (heldOv ? "|ov:" + this._studioOvHash(heldOv) : "");
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, 0, season).then((meshes) => {
+                this._foundryRequest(preset, variant, 0, season, heldOv || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod: 0, preset }));
                         try {
@@ -44364,6 +44505,99 @@ class AnazhRealm {
         return wrap;
     }
 
+    // ── PRÄGUNG-WELT (Naht-Schluss, Linse gate:praegung-welt) ────────────────────────
+    // Der Regler-Kanal (state.workshop.studioOv, das präge-Verb V18.466) war reine
+    // VORSCHAU-Wahrheit: die Welt-Pfade (_foundryFlattenFor · _heldFoundryGroup) reichten
+    // nie ein ov durch — Prägung war Vorschau-Theater. Jetzt REIST die Prägung MIT DEM
+    // ARTEFAKT: beim GUSS (_forgeMaterialAndFreeze · schöpfer-wield · confirmBuild) wird
+    // die aktuelle Prägung als `studioOv` auf Bauplan bzw. Welt-Eintrag GESTEMPELT
+    // (tiefe Kopie); die Welt-Chokepoints lesen NUR den Stempel, nie den Live-Kanal —
+    // nachträgliches präge ändert bestehende Artefakte NICHT (geprägt wird beim Guss).
+    // Der Stempel reist im Snapshot (BLUEPRINT_KNOWN_KEYS + Architektur-Feldsatz) und im
+    // place-DSL (spawn_blueprint Slot 6) — alle Peers lesen dieselbe gestempelte Wahrheit.
+
+    // Der EINE deterministische ov-Hash: JSON-stabil (Schlüssel rekursiv sortiert) →
+    // FNV-1a 32 bit → hex. Er trennt Cache-/Request-/Batch-Schlüssel (leafKey) eines
+    // gestempelten Artefakts von den ungeprägten Instanzen — Cache-Reinheit in BEIDE
+    // Richtungen (ein geprägtes Entry vergiftet nie die ungeprägten, und umgekehrt).
+    // Bewusst OHNE "{" im Ergebnis (die Welt-Cache-Reinheits-Probe der Rezept-Linse
+    // prüft „kein JSON-Key im Cache"). Die Schlüssel leben in der bestehenden LRU
+    // (f.cache, FOUNDRY_CACHE_CAP + Byte-Wand) — gedeckelt, kein Leak.
+    // V18.477 (Verify-Ernte): (a) LÄNGEN-Zweitdiskriminator hinter dem FNV-1a —
+    // eine 32-bit-Kollision zweier Prägungen teilte sonst still den Cache-/Batch-
+    // Key (deterministisch falsch, selbstheilungsfrei); (b) WeakMap-Memo je
+    // Objekt-Identität (der Dock-Peek rechnet sonst je Rewarm-Tick × Eintrag neu;
+    // weak → kein Leak; Inhalt ist per Guss gefroren, Identität bleibt).
+    _studioOvHash(ov) {
+        if (!this._studioOvHashMemo) this._studioOvHashMemo = new WeakMap();
+        const memo = this._studioOvHashMemo.get(ov);
+        if (memo !== undefined) return memo;
+        const stable = (v) => {
+            if (v === null || typeof v !== "object") return JSON.stringify(v);
+            if (Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+            return (
+                "{" +
+                Object.keys(v)
+                    .sort()
+                    .map((k) => JSON.stringify(k) + ":" + stable(v[k]))
+                    .join(",") +
+                "}"
+            );
+        };
+        const s = stable(ov);
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 0x01000193);
+        }
+        const out = (h >>> 0).toString(16) + "." + s.length;
+        this._studioOvHashMemo.set(ov, out);
+        return out;
+    }
+
+    // Der EINE Lese-Punkt des Artefakt-Stempels (Bauplan ODER Welt-Eintrag): liefert
+    // ein non-leeres plain object oder null (fail-closed gegen Müll-Formen — ein
+    // manipulierter Save/Peer kann hier keinen Nicht-Objekt-Stempel einschleusen).
+    _artifactStudioOv(obj) {
+        const ov = obj ? obj.studioOv : null;
+        if (!ov || typeof ov !== "object" || Array.isArray(ov)) return null;
+        return Object.keys(ov).length ? ov : null;
+    }
+
+    // Der STEMPEL-Chokepoint des Gusses: liest die aktuelle Werkstatt-Prägung des
+    // Studio-Presets dieses Bauplans (der EINE W-A1-Kanal, _workshopStudioOvFor) und
+    // friert sie als bp.studioOv ein (tiefe JSON-Kopie — der Kanal wandert danach frei
+    // weiter, das Artefakt behält seinen Guss). Ein NEUER Guss ohne Prägung räumt einen
+    // Alt-Stempel (ehrliche Neu-Guss-Semantik); Nicht-Studio-Baupläne (kein Preset)
+    // bleiben byte-unberührt. __-Schlüssel (z. B. __tradition) sind STEUER-Passagiere
+    // und reisen unangetastet — der Kern konsumiert sie, der Host strippt NIE.
+    _stampStudioOv(bp, name) {
+        if (!bp) return;
+        const preset =
+            typeof this._foundryPresetForEntry === "function"
+                ? this._foundryPresetForEntry({ type: name || bp.name })
+                : null;
+        if (!preset) return;
+        const ov = typeof this._workshopStudioOvFor === "function" ? this._workshopStudioOvFor(preset) : null;
+        let gestempelt = false;
+        if (ov) {
+            try {
+                const json = JSON.stringify(ov);
+                // V18.477 (Verify-Ernte): dieselbe 8-KiB-Taille-Wand wie die
+                // Rückkehr-Seite (_deserializeBlueprint) — ein Riesen-Kanal
+                // stempelt gar nicht erst, sonst lebte er live und würde beim
+                // Reload still gewaschen (zwei Wahrheiten, asymmetrische Wände).
+                if (json && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
+                    bp.studioOv = JSON.parse(json);
+                    gestempelt = true;
+                }
+            } catch (_e) {
+                /* nicht-serialisierbar → kein Stempel (fail-closed) */
+            }
+        }
+        if (!gestempelt && bp.studioOv !== undefined) delete bp.studioOv;
+    }
+
     // S4 (kampf-plan §11.4) — der gemeinsame WERK-KERN, den JEDER Mach-Akt teilt (Gerät/Rüstung/…): Material
     // ziehen durchs §11.2-Mach-Tor (pfad+frieden zahlen, schöpfer frei) + die Präzision EINFRIEREN
     // (`forgedPrecision`-Snapshot, persistiert) + der schöpferische Affekt (Stolz ∝ Substanz, W2-Brücke).
@@ -44392,6 +44626,9 @@ class AnazhRealm {
             return { ok: false, reason: "not_enough_material", missing: gate.missing || {}, cost: gate.cost || {} };
         }
         bp.forgedPrecision = this._compoundAvgPrecisionFromParts(bp.parts);
+        // PRÄGUNG-WELT — der Guss stempelt: die JETZT aktive Werkstatt-Prägung friert
+        // als bp.studioOv ein (der EINE Werk-Kern deckt schmieden/weben/fertigen).
+        this._stampStudioOv(bp, name);
         // W5 (V18.192, R-031) — ein frisch geforgetes Werkzeug startet mit voller
         // wear (1.0). Spätere Hiebe zehren sie; bei Erschöpfung verlangt der
         // Mensch den Repair-Akt. Damit ist der Erste-Wurf ∞-Katalysator (Gesamt-
@@ -44539,7 +44776,14 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return this.equipHeld(name); // unbekannt → equipHeld liefert die saubere Ablehnung
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") return this.equipHeld(name);
+        if (Number.isFinite(bp.forgedPrecision) || mode === "schöpfer") {
+            // PRÄGUNG-WELT — im schöpfer-Modus gibt es keinen Schmiede-Akt: der Griff zu
+            // einem UNgeschmiedeten Gerät IST sein Guss → jetzt stempeln. Ein bereits
+            // GESCHMIEDETES Artefakt bleibt unangetastet (geprägt wird beim Guss, ein
+            // nachträgliches präge ändert Bestehendes nicht).
+            if (!Number.isFinite(bp.forgedPrecision) && mode === "schöpfer") this._stampStudioOv(bp, name);
+            return this.equipHeld(name);
+        }
         return this.forgeBlueprint(name);
     }
 
@@ -47103,6 +47347,14 @@ class AnazhRealm {
             // Inversion: DSL-Daten in die Quarantäne-Queue, NIE ausgeführt —
             // gewährt wird nur souverän).
             else if (msg.type === "capability") this._portalReceiveCapability(msg);
+            // STUDIO-ÜBERGABE (Auftrag D) — das Studio übergibt die LIVE-Bearbeitung
+            // des Schöpfers (Dials + Gestalt-Wahlen) an die Welt: dasselbe additive
+            // Zusatz-Kanal-Muster wie settlement/event der terrain-Brücke. Nur für
+            // TRUSTED Welten (die W12-Built-in-Studios) — eine sandboxed Fremd-Welt
+            // formt den Avatar nie. Fail-closed am EINEN Empfänger
+            // (_studioUebergabeEmpfang: kind-Positivliste · Kern-Buch-Clamps ·
+            // Taille-Cap · must-ignore).
+            else if (msg.type === "uebergabe" && po.trust !== "sandboxed") this._studioUebergabeEmpfang(msg);
             // W17 Phase A — der Transport-Shim einer Multiplayer-Welt postet
             // ihren Netz-Verkehr (`__anazhNet`-Envelope, kein `type`-Feld).
             else if (msg.__anazhNet === true) this._portalNetReceive(msg);
@@ -48133,6 +48385,161 @@ class AnazhRealm {
             `Die Welt „${(po.label || "?").slice(0, 40)}" reicht eine Fähigkeit: „${name}"${desc ? ` — ${desc}` : ""}. „gewähre ${name}" nimmt sie an (souveräne Geste).`,
             "INFO"
         );
+        return true;
+    }
+
+    // ═══ STUDIO-ÜBERGABE (Auftrag D) — DER W12-EMPFÄNGER ════════════════════
+    // Der tiefste gemessene Naht-Riss: KEIN Studio trug die LIVE-Bearbeitung
+    // des Schöpfers in die Welt — die Welt las nur die GEFRORENEN Kern-Presets
+    // (get-book). Jetzt postet das Studio additiv {type:"uebergabe"} über die
+    // bestehende W12-Brücke (das settlement/event-Präzedenz-Muster der
+    // terrain-Brücke), und DIESER eine Chokepoint validiert fail-closed:
+    // plain-object-Wände · kind-Positivliste (koerper|kreatur) · Zahlen-Clamps
+    // auf die PARAMS-Grenzen des jeweiligen KERN-Buchs · String-Wahlen gegen
+    // die Kern-Tabellen (SKIN_TONES/HAIR_COLORS/CLOTH_COLORS + die haarStreu-
+    // Stil-Maschine — alles aus dem GELADENEN Buch gelesen, nichts
+    // hart-kodiert; die Schnitt-Namen [top/bottom/shoes] sind im Kern eine
+    // OFFENE Domäne: kleidZonen behandelt jeden Namen fail-soft, die
+    // Form-Wand genügt dort) · Taille-Cap (TAILLE_UNKNOWN_FIELD_MAX, das
+    // studioOv-Stempel-Muster) · Unbekanntes must-ignore (fällt still, der
+    // Rest reist). DERSELBE Validator deckt den Snapshot-Restore
+    // (_loadStateRestoreSoulAndAtmosphere — Invarianten im Chokepoint,
+    // Lehre 2). Konsum über die EINEN Leser-Nähte: _koerperStudioDials
+    // (Avatar-Vorrang-Quelle + Live-Neu-Guss via applyPlayerSoul) und
+    // _tetrapodaStudioDials (künftige Kreatur-Spawns). Kaltes Kern-Buch →
+    // null (fail-closed: ohne Grenzen kein Clamp, keine Annahme).
+    // Linse: gate:studio-uebergabe.
+    _studioUebergabeValidate(kind, msg) {
+        if (!msg || typeof msg !== "object" || Array.isArray(msg)) return null;
+        // Taille-Cap (das studioOv-Muster): ein Riesen-Payload ist ein
+        // Quota-DoS, keine Übergabe — er fällt GANZ (still, kein Wurf).
+        try {
+            if (JSON.stringify(msg).length > AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) return null;
+        } catch (_e) {
+            return null;
+        }
+        const W = typeof window !== "undefined" ? window : globalThis;
+        const FORM = /^[a-z0-9_-]{1,32}$/; // die Form-Wand jeder String-Wahl
+        if (kind === "koerper") {
+            const core = W.__koerperCore;
+            const rows =
+                core && core.PARAMS_BY_KIND && Array.isArray(core.PARAMS_BY_KIND.koerper)
+                    ? core.PARAMS_BY_KIND.koerper
+                    : null;
+            if (!rows || !core.START_PARAMS) return null; // kaltes Kern-Buch → fail-closed
+            const s = {};
+            let nS = 0;
+            const sIn = msg.s;
+            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
+                // Dial-Positivliste = die B4-PARAMS-Zeilen des Buchs; je Zeile
+                // Finite-Wache + Clamp auf [min, max]. Fremde/NaN-Schlüssel: must-ignore.
+                for (const row of rows) {
+                    if (!row || typeof row.id !== "string") continue;
+                    const v = Number(sIn[row.id]);
+                    if (!Number.isFinite(v)) continue;
+                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
+                    nS++;
+                }
+            }
+            // Gestalt-Positivliste AUS DEM BUCH: die nicht-numerischen
+            // START_PARAMS-Schlüssel SIND die Gestalt-Wahlen (skinTone/hairStyle/
+            // hairColor/top/topColor/bottom/bottomColor/shoes/shoeColor).
+            const gestalt = {};
+            let nG = 0;
+            const gIn = msg.gestalt;
+            if (gIn && typeof gIn === "object" && !Array.isArray(gIn)) {
+                for (const k in core.START_PARAMS) {
+                    if (!Object.prototype.hasOwnProperty.call(core.START_PARAMS, k)) continue;
+                    if (typeof core.START_PARAMS[k] === "number") continue;
+                    const v = gIn[k];
+                    if (typeof v !== "string" || !FORM.test(v)) continue;
+                    if (k === "skinTone") {
+                        if (!core.SKIN_TONES || !Object.prototype.hasOwnProperty.call(core.SKIN_TONES, v)) continue;
+                    } else if (k === "hairColor") {
+                        if (!core.HAIR_COLORS || !Object.prototype.hasOwnProperty.call(core.HAIR_COLORS, v)) continue;
+                    } else if (/Color$/.test(k)) {
+                        if (!core.CLOTH_COLORS || !Object.prototype.hasOwnProperty.call(core.CLOTH_COLORS, v)) continue;
+                    } else if (k === "hairStyle") {
+                        // Stil-Liste FUNKTIONAL aus dem Buch: ein echter Stil formt in
+                        // der haarStreu-Maschine anders als "mittel" (der Kern-Fallback) —
+                        // ein erfundener Name fiele dort still auf mittel, also lassen
+                        // wir ihn GAR NICHT erst hinein (must-ignore).
+                        if (typeof core.haarStreu !== "function") continue;
+                        try {
+                            if (
+                                v !== "mittel" &&
+                                JSON.stringify(core.haarStreu({ hairStyle: v, hairLen: 1, hairVol: 1 })) ===
+                                    JSON.stringify(core.haarStreu({ hairStyle: "mittel", hairLen: 1, hairVol: 1 }))
+                            )
+                                continue;
+                        } catch (_e2) {
+                            continue;
+                        }
+                    }
+                    gestalt[k] = v;
+                    nG++;
+                }
+            }
+            if (!nS && !nG) return null; // leere Übergabe trägt nichts
+            return { s, gestalt };
+        }
+        if (kind === "kreatur") {
+            const core = W.__tetrapodaCore;
+            const rows =
+                core && core.PARAMS_BY_KIND && Array.isArray(core.PARAMS_BY_KIND.kreatur)
+                    ? core.PARAMS_BY_KIND.kreatur
+                    : null;
+            const gatt = typeof msg.gattung === "string" ? msg.gattung : "";
+            // Gattungs-Positivliste = die GATTUNGEN-Tabelle des Buchs (kein Literal).
+            if (!rows || !core.GATTUNGEN || !Object.prototype.hasOwnProperty.call(core.GATTUNGEN, gatt)) return null;
+            const s = {};
+            let nS = 0;
+            const sIn = msg.s;
+            if (sIn && typeof sIn === "object" && !Array.isArray(sIn)) {
+                for (const row of rows) {
+                    if (!row || typeof row.id !== "string") continue;
+                    const v = Number(sIn[row.id]);
+                    if (!Number.isFinite(v)) continue;
+                    s[row.id] = Math.min(row.max, Math.max(row.min, v));
+                    nS++;
+                }
+            }
+            if (!nS) return null;
+            return { gattung: gatt, s };
+        }
+        return null; // unbekannter kind: must-ignore (fail-closed)
+    }
+    _studioUebergabeEmpfang(msg) {
+        if (!msg || typeof msg !== "object" || Array.isArray(msg)) return false;
+        const kind = msg.kind === "koerper" || msg.kind === "kreatur" ? msg.kind : null; // Positivliste
+        if (!kind) return false;
+        const clean = this._studioUebergabeValidate(kind, msg);
+        if (!clean) return false;
+        const ue =
+            this.state.studioUebergabe && typeof this.state.studioUebergabe === "object"
+                ? this.state.studioUebergabe
+                : (this.state.studioUebergabe = { koerper: null, kreatur: {} });
+        if (kind === "koerper") {
+            ue.koerper = { s: clean.s, gestalt: clean.gestalt };
+            // DER LIVE-NEU-GUSS über den EINEN Seelen-Chokepoint (dasselbe Muster
+            // wie der Ingest-Nachguss in _foundryIngestRecipes): Position/Physik/
+            // Held reisen mit. Der Mensch-Ofen-Memo-Key trägt Dials+Gestalt (JSON)
+            // + Guss-Farben → die Übergabe prägt einen EIGENEN Key, der
+            // Default-Eintrag bleibt unvergiftet.
+            try {
+                this.applyPlayerSoul((this.state.player && this.state.player.soul) || "human");
+            } catch (_e) {
+                /* fail-soft: die Übergabe steht im State — der nächste Guss trägt sie */
+            }
+            this.log("Studio-Übergabe angenommen: der Avatar trägt die Schöpfer-Gestalt (Da-Vinci-Studio).", "INFO");
+        } else {
+            if (!ue.kreatur || typeof ue.kreatur !== "object") ue.kreatur = {};
+            ue.kreatur[clean.gattung] = { s: clean.s };
+            // Guss-Semantik: geprägt wird beim GUSS — künftige Spawns der Gattung
+            // lesen die Dials über die EINE Quelle (_tetrapodaStudioDials →
+            // _ofenKreaturDials/_tetrapodaSoulParts); bestehende Kreaturen bleiben.
+            this.log(`Studio-Übergabe angenommen: künftige „${clean.gattung}"-Spawns tragen die Studio-Dials.`, "INFO");
+        }
         return true;
     }
 
@@ -49331,6 +49738,29 @@ class AnazhRealm {
         // Stats/Alt-Pfad. Größe reist im charScale von morphAuf — g.kh bleibt die
         // Welt-Einheit (kein Doppel-Wachsen: der bauMensch-Pfad liest g.kh nicht).
         g.bmDials = dials || null;
+        // STUDIO-ÜBERGABE (Auftrag D) — die FARB-Gestalt des Schöpfers: trägt der
+        // Dial-Fluss (Vorrang-Quelle _koerperStudioDials) skinTone/hairColor-WAHLEN
+        // (Strings — NUR die Übergabe mischt sie ein, das Buch-s ist rein
+        // numerisch), übersetzt die EINE Kern-Tabelle sie in die Guss-Farben
+        // (ov.skinColor/ov.hairColor der Pipe; dieselben Zahlen stehen im
+        // Mensch-Ofen-Memo-Key). Ohne Übergabe byte-alt (Anker-Farben).
+        const kcU = typeof window !== "undefined" && window.__koerperCore;
+        if (dials && kcU) {
+            if (
+                typeof dials.skinTone === "string" &&
+                kcU.SKIN_TONES &&
+                Object.prototype.hasOwnProperty.call(kcU.SKIN_TONES, dials.skinTone)
+            ) {
+                g.skinColor = kcU.SKIN_TONES[dials.skinTone].hex >>> 0;
+            }
+            if (
+                typeof dials.hairColor === "string" &&
+                kcU.HAIR_COLORS &&
+                Object.prototype.hasOwnProperty.call(kcU.HAIR_COLORS, dials.hairColor)
+            ) {
+                g.hairColor = kcU.HAIR_COLORS[dials.hairColor].base >>> 0;
+            }
+        }
         let built = null;
         try {
             built = this._buildHumanoidRig(g);
@@ -62500,7 +62930,7 @@ class AnazhRealm {
         // WAND — terminal Silhouette, Zensus ehrlich.
         const _fb = this._foundry;
         const bKind = _fb && _fb.recipes && _fb.recipes[presetId] && _fb.recipes[presetId].kind;
-        if (bKind && !/^(tree|shrub|flower|grass|rock|gate)$/.test(bKind)) {
+        if (bKind && !/^(tree|shrub|flower|grass|rock|gate|vehicle)$/.test(bKind)) {
             rec.rttFailed = true;
             return 0;
         }
@@ -64170,6 +64600,20 @@ class AnazhRealm {
         // +14 Stein/Zyklus aus dem Nichts). Worldgen/Nexus-Spawns tragen die
         // Marke NICHT — die Welt selbst ist die legitime Quelle (Minecraft).
         if (opts.freeBorn === true) entry.freeBorn = true;
+        // PRÄGUNG-WELT — der Guss-Stempel reist am Eintrag (Welt-Wahrheit für Snapshot +
+        // P2P): NUR ein non-leeres plain object, tief JSON-kopiert, größen-bewacht
+        // (dieselbe 8-KiB-Taille-Wand wie _carryUnknown — ein Peer-/Save-Riesenstempel
+        // ist ein Quota-DoS, keine Prägung). _foundryFlattenFor liest ihn als Unikat-ov.
+        if (opts.studioOv && typeof opts.studioOv === "object" && !Array.isArray(opts.studioOv)) {
+            try {
+                const json = JSON.stringify(opts.studioOv);
+                if (json && json.length > 2 && json.length <= AnazhRealm.TAILLE_UNKNOWN_FIELD_MAX) {
+                    entry.studioOv = JSON.parse(json);
+                }
+            } catch (_e) {
+                /* nicht-serialisierbar → kein Stempel (fail-closed) */
+            }
+        }
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
         if (opts.autonomous === true) entry.autonomous = true;
@@ -66589,7 +67033,8 @@ class AnazhRealm {
     // klassifiziert seine Arten (`PRESETS[id].kind`), die Klassifikation fliesst durch die Rezept-
     // Bruecke (`get-recipes` -> `f.recipes`); (b) WELCHE kind-Klasse impostort, sagt die
     // KIND_POLICY-Zeile (`impostor: true` — heute tree + shrub, exakt die alte Wahrheitstafel;
-    // rock/flower/grass/vehicle tragen keine -> fail-closed keine Karte). Eine neue Domaene
+    // seit V18.465 gate und seit V18.477 vehicle [geparkt fern — die Geritten-Wand ist die
+    // Distanz-0-Autorität]; rock/flower/grass tragen keine -> fail-closed keine Karte). Eine neue Domaene
     // steuert ihre Fernstufe per DATEN-Zeile, ohne kind-Literal im Stamm. Fallback auf die
     // bekannten Baum-Presets, solange die Rezepte noch nicht geladen sind (headless / vor dem
     // Ingest — die Buch-lose Fruehphase; die Liste bleibt bewusst, sie waechst nicht).
@@ -67348,13 +67793,32 @@ class AnazhRealm {
         if (lod > 2) lod = 2;
         const season = this.state.season || "summer";
         // Baum-Fernstufe = das Billboard (Impostor-Record), nicht die Cache-Geometrie.
-        if (lod >= 2 && this._foundryPresetIsTree(preset)) {
+        // PRÄGUNG-WELT (V18.477): der Spiegel der Flatten-Wand — ein GESTEMPELTER
+        // Eintrag reist nie über die ov-blinde Karte, sein Dock-Urteil fällt unten
+        // über den |ov:-Geometrie-Key (sonst urteilte der Peek „ready" über ein
+        // Billboard, das der Flatten für diesen Eintrag nie servieren wird).
+        if (lod >= 2 && this._foundryPresetIsTree(preset) && !this._artifactStudioOv(entry)) {
             const key = "fimp:" + preset + "|" + variant + "|" + season;
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
             return !!(rec && rec !== "pending");
         }
         if (preset === "strauch") lod = Math.max(1, lod);
-        const key = preset + "|" + variant + "|" + lod + "|" + season;
+        // V18.477 — der Peek spiegelt AUCH die EIN-STUFEN-KLAMMER des Flattens
+        // (tree-ish Art mit GENAU einer deklarierten Stufe → jeder Wunsch klemmt
+        // dorthin): sonst fragt der Peek einen Key ab (z. B. gestempeltes Fahrzeug
+        // lod2|ov), den der Flatten nie baut (er baut lod0|ov) — falsches „kalt".
+        if (this._foundryPresetIsTree(preset)) {
+            const _rec2 = f.recipes && f.recipes[preset];
+            const _cfg2 = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+            const _st2 = _rec2 && _cfg2 && _cfg2.kindStages ? _cfg2.kindStages[_rec2.kind] : null;
+            if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
+        }
+        // PRÄGUNG-WELT — der Dock-Peek spiegelt den Flatten-Schlüssel: ein gestempelter
+        // Eintrag ist erst „gedockt", wenn SEIN Unikat (|ov:-Key) im Cache liegt — sonst
+        // urteilte der Rewarm „ready" über das falsche (ungeprägte) Asset.
+        const readyOv = this._artifactStudioOv(entry);
+        const key =
+            preset + "|" + variant + "|" + lod + "|" + season + (readyOv ? "|ov:" + this._studioOvHash(readyOv) : "");
         return f.cache.has(key) && f.cache.get(key) != null;
     }
     _foundryRewarmColdTrees() {
@@ -67510,30 +67974,37 @@ class AnazhRealm {
         while (f.cache.size > CAP || f.cacheBytes > BYTES) {
             const oldest = f.cache.keys().next().value;
             if (oldest === key) break; // nie den gerade gesetzten räumen (ein Über-Budget-Solo-Eintrag bleibt — weiche Wand)
-            // V4(B) — DEFERRED DISPOSE (per-Saison-Leck-Schließung): die geräumte Gruppe gibt ihre
-            // Geometrie NUR frei, wenn keine lebende InstancedMesh-Gruppe sie mehr hält (_liveRefs 0).
-            // Hält noch eine, wird sie `_evicted` markiert → der letzte _disposeArchInstanceGroup
-            // (Ref → 0) disposed sie dann. So kann eine Räumung nie einen sichtbaren Baum zerstören.
-            const og = f.cache.get(oldest);
-            f.cache.delete(oldest);
-            // ABSCHIEDS-WELLE (E) — das Gewicht der Räumung ausbuchen (die Bilanz bleibt exakt).
-            if (og && Number.isFinite(og._cacheBytes)) f.cacheBytes -= og._cacheBytes;
-            // H3 (gate:asset-inventory) — REINES INVENTUR-BUCH, kein Verhalten: ein LRU-
-            // geräumter Key ist eine BEWUSSTE Räumung, kein stilles Verhungern — die Linse
-            // liest dieses Buch, um die zwei Klassen zu trennen (requested ⊆ visible|cached;
-            // ein geräumter, noch in f.requested stehender Key wäre sonst ein falsches Rot).
-            if (!f.lruEvicted) f.lruEvicted = new Set();
-            f.lruEvicted.add(oldest);
-            // H3-HEILUNG (die vom Inventur-Bau benannte Verhungern-Klasse): der geraeumte Key
-            // verlaesst auch die requested-Dedup-Wache — sonst fragt KEINE On-demand-Wache
-            // (_foundryFlattenFor · Impostor-Ensure · Gras · Werkstatt-Vorschau) ihn je neu an
-            // und die Variante liefert bis zum Reload permanent null. Raeumen = wieder anfragbar.
-            if (f.requested) f.requested.delete(oldest);
-            if (og) {
-                if ((og._liveRefs || 0) > 0) og._evicted = true;
-                else this._disposeFoundryGroupGeom(og);
-            }
+            this._foundryCacheEvict(oldest);
         }
+    }
+    // V18.477 — DIE EINE RÄUMUNGS-NAHT (Verify-Ernte, kritisch; Lehre 2:
+    // Invarianten in den Chokepoint). JEDE Cache-Räumung (LRU-Überlauf UND
+    // präge-Flush) geht hier durch; rohe f.cache.delete-Räumungen sind verboten:
+    // (a) V4(B) DEFERRED DISPOSE — die geräumte Gruppe gibt ihre Geometrie NUR
+    //     frei, wenn keine lebende InstancedMesh-Gruppe sie hält (_liveRefs 0);
+    //     sonst `_evicted`-Marke → der letzte _disposeArchInstanceGroup disposed.
+    //     So kann eine Räumung nie einen sichtbaren Baum zerstören.
+    // (b) ABSCHIEDS-WELLE (E) — das Gewicht wird ausgebucht (cacheBytes exakt).
+    // (c) H3 (gate:asset-inventory) — Inventur-Buch: eine BEWUSSTE Räumung
+    //     (lruEvicted), kein stilles Verhungern (requested ⊆ visible|cached).
+    // (d) H3-HEILUNG — der Key verlässt die requested-Dedup-Wache, sonst fragt
+    //     KEINE On-demand-Wache (_foundryFlattenFor · Impostor-Ensure · Gras ·
+    //     Werkstatt-Vorschau) ihn je neu an → permanent null bis zum Reload.
+    //     Der rohe präge-Flush hatte genau diese Klasse: Räumen = wieder anfragbar.
+    _foundryCacheEvict(key) {
+        const f = this._foundry;
+        if (!f || !f.cache || !f.cache.has(key)) return false;
+        const og = f.cache.get(key);
+        f.cache.delete(key);
+        if (og && Number.isFinite(og._cacheBytes) && Number.isFinite(f.cacheBytes)) f.cacheBytes -= og._cacheBytes;
+        if (!f.lruEvicted) f.lruEvicted = new Set();
+        f.lruEvicted.add(key);
+        if (f.requested) f.requested.delete(key);
+        if (og) {
+            if ((og._liveRefs || 0) > 0) og._evicted = true;
+            else this._disposeFoundryGroupGeom(og);
+        }
+        return true;
     }
     // V4(B) — die geteilte Foundry-Baum-Geometrie EINMAL freigeben (das per-Saison-Leck: season
     // steckt im Cache-Key/leafKey → je Saison akkumulierte ein Satz Geometrien). NUR die Geometrie
@@ -67563,7 +68034,14 @@ class AnazhRealm {
         // Geometrie (~15k Verts × dichter Fernwald = Overdraw-Freeze) — genau wie die Vorlage die
         // Ferne als Billboard traegt. Das ferne Auge sieht deinen Baum (der Atlas ist dein Studio-Bake),
         // nur auf eine billige Karte geflacht. Fels/Kristall/Blume bleiben L2-Geometrie.
-        if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
+        // PRÄGUNG-WELT (V18.477, Verify-Ernte): die Impostor-Karte ist ov-BLIND (der
+        // fimp-Key trägt kein ov, der Bäcker backt ungeprägt) — ein GESTEMPELTER
+        // Eintrag zeigte fern die falsche (ungeprägte) Gestalt und poppte am
+        // Crossfade auf sein Unikat. Die Wand: Stempel ⇒ Geometrie-Stufe statt
+        // Karte (Wahrheit vor Diät; Unikate sind selten, heute nur vehicle/weapon
+        // via KIND_CHARAKTER — die EIN-STUFEN-KLAMMER unten klemmt sie auf L0).
+        if (lod >= 2 && this._foundryPresetIsTree(preset) && !this._artifactStudioOv(entry))
+            return this._foundryBuildImpostorFlat(entry, preset);
         // DIE STUFEN-WAHRHEIT JE ART ALS VERTRAGS-DATEN (LOD-WURZEL 08.07.): die Distanz-
         // Wahl clampt auf die Stufen, die das Studio für diese ART deklariert + selbst nutzt
         // (`PORTAL_RENDER_CONFIG.lod.kindStages`, live über das Nervensystem — Gras/Strauch
@@ -67610,13 +68088,21 @@ class AnazhRealm {
             if (Array.isArray(_st2) && _st2.length === 1) lod = _st2[0];
         }
         const season = this.state.season || "summer";
-        const key = preset + "|" + variant + "|" + lod + "|" + season;
+        // PRÄGUNG-WELT — ein GESTEMPELTER Welt-Eintrag (entry.studioOv, beim Guss/Bau
+        // gefroren) baut sein Unikat: der ov-Hash trennt den Cache-Schlüssel UND (via
+        // leafKey unten) den r184-Batch-Schlüssel am EINEN Chokepoint — ein geprägtes
+        // Entry vergiftet nie die ungeprägten Instanzen (und umgekehrt). Der Request
+        // reicht das ov als 5. Arg (die IDB-Platte bleibt per hasOv bewusst umgangen).
+        // Ohne Stempel: exakt der alte Schlüssel + Request — byte-identischer Pfad.
+        const entryOv = this._artifactStudioOv(entry);
+        const key =
+            preset + "|" + variant + "|" + lod + "|" + season + (entryOv ? "|ov:" + this._studioOvHash(entryOv) : "");
         const group = this._foundryCacheGet(key);
         if (group === undefined) {
             if (!f.requested) f.requested = new Set();
             if (!f.requested.has(key)) {
                 f.requested.add(key);
-                this._foundryRequest(preset, variant, lod, season).then((meshes) => {
+                this._foundryRequest(preset, variant, lod, season, entryOv || undefined).then((meshes) => {
                     if (meshes) {
                         this._foundryCacheSet(key, this._foundryBuildGroup(meshes, { lod, preset }));
                         this._scatterRefillPending = true; // ein Studio-Asset kam an → deferrierte Fern-Regionen neu streamen
@@ -70755,12 +71241,40 @@ class AnazhRealm {
         // erscheinen. Ein eigener (nicht-built-in) Bauplan reist als
         // define_blueprint mit — der Empfänger kennt ihn sonst nicht.
         const archId = this._newArchId();
+        // PRÄGUNG-WELT — der Guss-Stempel des platzierten Artefakts: ein beim CRAFT
+        // gestempelter Bauplan (bp.studioOv, pfad-Werk-Akt) FÜHRT; ohne eigenen Stempel
+        // gilt die JETZT gewählte Werkstatt-Prägung (der freie schöpfer-/frieden-Bau hat
+        // keinen Craft-Akt — confirmBuild IST sein Guss). Der Stempel reist am Eintrag
+        // (Snapshot) UND im place-DSL (Slot 6) zu allen Peers — EINE gestempelte Wahrheit.
+        const bmBp = this.state.blueprints && this.state.blueprints[bm.blueprintName];
+        const bmPreset =
+            typeof this._foundryPresetForEntry === "function"
+                ? this._foundryPresetForEntry({ type: bm.blueprintName })
+                : null;
+        let bmStamp = this._artifactStudioOv(bmBp) || (bmPreset ? this._workshopStudioOvFor(bmPreset) : null);
+        // V18.477 (Verify-Ernte): die tiefe Kopie EINMAL + fail-closed VOR dem Guss —
+        // ein nicht-serialisierbarer Kanalwert warf sonst NACH dem lokalen Spawn und
+        // VOR dem Broadcast (einseitige Welt: lokal existiert der Eintrag, Peers nie).
+        // Kein Stempel ist besser als eine gespaltene Welt.
+        if (bmStamp) {
+            try {
+                bmStamp = JSON.parse(JSON.stringify(bmStamp));
+            } catch (_e) {
+                bmStamp = null;
+            }
+        }
         // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn:
         // es erntet zu 0 (das Perpetuum-Verbot — die Modus-Wäsche schließt).
-        this.spawnArchitecture(bm.blueprintName, spawnPos, { id: archId, freeBorn: gate.free === true });
+        this.spawnArchitecture(bm.blueprintName, spawnPos, {
+            id: archId,
+            freeBorn: gate.free === true,
+            studioOv: bmStamp || undefined,
+        });
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
-            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
+            const spawnOp = bmStamp
+                ? ["spawn_blueprint", bm.blueprintName, posNode, 0, archId, bmStamp]
+                : ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
             const ownBp = this.state.blueprints[bm.blueprintName];
             const prog =
                 ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
@@ -85860,7 +86374,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.476.0";
+AnazhRealm.VERSION = "18.477.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -85894,7 +86408,8 @@ AnazhRealm.FOUNDRY_KIND_LOD = Object.freeze({ shrub: 2, grass: 2, flower: 0, roc
 // gesetzt; Baum erbt das Donor-true) · placeExtra ("forest" = _forestExtraSpecies streut die
 // Auto-Art in die Wald-Nischen; null = nur Katalog/Werkstatt) · impostor (N4.4: true = die
 // Fernstufe dieser kind-Klasse ist das 8-Winkel-Billboard, `_foundryPresetIsTree` liest NUR
-// diese Zeile — keine Zeile/false = L2 bleibt Geometrie [rock/flower/grass/vehicle]).
+// diese Zeile — keine Zeile/false = L2 bleibt Geometrie [rock/flower/grass]; tree/shrub/
+// gate/vehicle impostorn [vehicle: nur geparkt — geritten pinnt die Distanz auf 0 → L0]).
 // V18.464 — DIE ACHSEN-FARBEN (roadmap §0.4 Rest-Schuld geschlossen): die EINE
 // eingefrorene Farb-Quelle der Feld-Achsen. Nexus-Farbwahl (dslComposeFieldColor)
 // und Emotions-Trigger (awe) LESEN sie — vorher streuten dieselben Hexe frei im
@@ -85933,12 +86448,25 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     // Zeile steuert NUR die Impostor-Politik. Zusammen mit tree exakt die alte
     // tree|shrub-Wahrheitstafel (Baeume + Straeucher impostorn, sonst niemand).
     shrub: Object.freeze({ impostor: true }),
+    // V18.477 — FAHRZEUG-FERNSTUFE (Matrix-Zelle fahrzeug.lods, das Tor-Präzedenz V18.465
+    // 1:1 gespiegelt): impostor: true — die Fernstufe eines GEPARKTEN Fahrzeugs ist das
+    // 8-Winkel-Billboard aus DERSELBEN Bäckerei wie Baum + Tor (vehicle-core B2: „Fahrzeuge
+    // tragen NUR Stufe 0; L1=L0-Grade + L2-Auto-Impostor sind Sache des Wirts"). Vorher
+    // renderte jedes gt seine vollen 328 Meshes auf JEDE Distanz (kindStages [0] klemmte
+    // die Stufe, der Impostor-Pfad kannte den kind nicht). DIE GERITTEN-WAND (statisch-
+    // Semantik, dokumentiert): ein GERITTENES Fahrzeug erreicht den Impostor-Pfad nie —
+    // `_tickMountedMovement` pinnt entry.position frame-genau auf die Spieler-Position,
+    // die EINE Distanz-Autorität (`_foundryLodForEntry`/`_tickArchitectureLOD`) urteilt
+    // damit Distanz ≈ 0 → L0 Voll-Geometrie; das Billboard gilt nur dem geparkten (fernen)
+    // Eintrag — exakt die statische Baum-/Tor-Semantik. Der 40-m-Crossfade ist der
+    // generische Band-Tick (`_updateFoundryLodBand`), nichts Neues.
     vehicle: Object.freeze({
         prefix: "fahrzeug_",
         donor: "fahrzeug_wagen",
         grown: false,
         builtIn: false,
         placeExtra: null,
+        impostor: true,
     }),
     // ε (Nervensystem-Plan TEIL VIII Punkt 4) — DIE TOR-DOMAENE ALS DATEN-ZEILE: porta-core
     // (cores.manifest.json) liefert kind:"gate"-Rezepte; die Platzierung reist als Rezept-DATEN
@@ -88190,6 +88718,13 @@ AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_S
 // (1080p/60°-FOV) — der Gang ist unsichtbar, das Bild bleibt. Als Quadrat,
 // weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
 AnazhRealm.TIER_FERN_DIST_SQ = 60 * 60;
+// TIER-FERN-GUSS (gate:tier-fern) — DIE HYSTERESE-KANTE des wrap↔fern-
+// Toggles: ±10-%-Band um die Schwelle. nah fällt erst JENSEITS (1+h)·Grenze,
+// kehrt erst INNERHALB (1−h)·Grenze zurück — ein Distanz-Pendeln AN der
+// Kante schaltet nie pro Tick (kein Sichtbarkeits-Flackern; die Geometrie
+// ist das memoisierte lod1-Template, der Toggle schreibt NUR `visible`).
+// EIN Leser: der wrap↔fern-Chokepoint in updateCreatures.
+AnazhRealm.TIER_FERN_HYST = 0.1;
 // KREATUR-KOSTEN (3) — DER MENSCH-FERN-GUSS: die Distanz (Meter), jenseits
 // derer die Menschen-Gestalt (Peers) den gemergten lod1-Guss trägt (grobe
 // Segmente, gebackener Root, kahl — wenige Draws, kein Rig-Tick) statt des
@@ -88428,6 +88963,10 @@ AnazhRealm.BLUEPRINT_KNOWN_KEYS = Object.freeze([
     // diesen Eintrag würde _carryUnknown (Ω2 must-preserve) wear=1 als
     // unbekanntes Feld blind durchreichen → die Größen-Disziplin bräche.
     "wear",
+    // PRÄGUNG-WELT — der Guss-Stempel (studioOv) ist BEKANNTES System-Feld:
+    // der Serialize/Restore-Zwilling behandelt ihn explizit (Taille-Wand),
+    // _carryUnknown darf ihn nie blind doppelt tragen.
+    "studioOv",
 ]);
 AnazhRealm.MATERIAL_KNOWN_KEYS = Object.freeze(["name", "label", "builtIn", "color", "tags"]);
 AnazhRealm.TOOL_KNOWN_KEYS = Object.freeze([

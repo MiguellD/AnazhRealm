@@ -302,5 +302,43 @@ init();
     window.addEventListener("keydown", function (ev) {
         if (ev.key === "Escape") post({ type: "exit", world: "tetrapoda" });
     });
+    /* STUDIO-ÜBERGABE (Auftrag D) — „An die Welt übergeben": postet die AKTUELLE
+       Schöpfer-Bearbeitung additiv über DIESELBE Brücke (das settlement/event-
+       Zusatz-Kanal-Muster): gattung = das zuletzt gewählte Preset (data-p —
+       Slider-Feintuning löscht die active-Klasse, die Wahl bleibt gemerkt),
+       s = die fünf allometrischen Dials von den ECHTEN Slidern (dieselbe
+       Quelle wie deriveParams). Der Knopf ist standalone hidden (nur das
+       Portal enthüllt ihn) — bestehendes Verhalten byte-unberührt. */
+    (function () {
+        var b = document.getElementById("btnUebergabe");
+        if (!b) return;
+        b.hidden = false;
+        var aktiv = document.querySelector("#presets button.active");
+        var gattung = aktiv && aktiv.dataset ? aktiv.dataset.p : "wolf";
+        document.querySelectorAll("#presets button").forEach(function (pb) {
+            pb.addEventListener("click", function () {
+                gattung = pb.dataset.p;
+            });
+        });
+        var dial = function (id) {
+            var el = document.getElementById(id);
+            return el ? parseFloat(el.value) : NaN;
+        };
+        b.addEventListener("click", function () {
+            post({
+                type: "uebergabe",
+                world: "tetrapoda",
+                kind: "kreatur",
+                gattung: gattung,
+                s: {
+                    size: dial("sSize"),
+                    neck: dial("sNeck"),
+                    leg: dial("sLeg"),
+                    diet: dial("sDiet"),
+                    build: dial("sBuild"),
+                },
+            });
+        });
+    })();
     post({ type: "ready", world: "tetrapoda", label: LABEL, dsl: DSL });
 })();

@@ -323,8 +323,9 @@ law(
 //      Alt-Tuft-Nachbau = Fail-Open); der Bauer verbucht „leer" VOR dem Tuft-Fallback. Der
 //      Tuft-SCHNITT ist N7.3-gebunden (die Gras-Bänder üben den foundry-off-Pfad) — bis dahin
 //      wacht diese Wand + die Zensus-Klasse in gate:asset-inventory.
-// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree + shrub), kein
-//      kind-Literal in `_foundryPresetIsTree`; vehicle/rock/flower/grass impostorn fail-closed nicht.
+// N4.4 die Impostor-Entscheidung ist eine POLICY-ZEILE (`impostor: true` — tree/shrub/gate/
+//      vehicle [V18.477 Fahrzeug-Fernstufe, gate:fahrzeug-fern wacht]), kein kind-Literal in
+//      `_foundryPresetIsTree`; rock/flower/grass impostorn fail-closed nicht.
 console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuft-Wand · Impostor als Daten):");
 {
     const _fnBodyN4 = (re) => {
@@ -409,11 +410,15 @@ console.log("\nGesetz N4 — die Instance-Straße (eine Naht · mp führt · Tuf
         /tree:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC) &&
             /shrub:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
     );
+    // FAHRZEUG-FERNSTUFE (V18.477, Matrix-Zelle fahrzeug.lods — das Tor-Präzedenz V18.465
+    // gespiegelt): vehicle impostort jetzt BEWUSST (geparkt fern = 8-Winkel-Karte; geritten
+    // bleibt L0 über die Distanz-0-Wand, `gate:fahrzeug-fern` beweist beides). Das alte
+    // Gesetz „vehicle trägt KEINE Impostor-Zeile" ist damit GEDREHT — Tests wandern mit
+    // dem Code. rock/flower/grass bleiben impostor-frei (Geometrie-Fernstufe).
     law(
-        "N4.4: vehicle trägt KEINE Impostor-Zeile (Fernstufe bleibt Geometrie/Grade)",
-        false,
-        /vehicle:\s*Object\.freeze\(\{[^}]*impostor/.test(anazhNC),
-        "die vehicle-Policy-Zeile impostort plötzlich"
+        "N4.4: vehicle trägt die Impostor-Zeile (Fahrzeug-Fernstufe, `gate:fahrzeug-fern` wacht)",
+        true,
+        /vehicle:\s*Object\.freeze\(\{[^}]*impostor:\s*true/.test(anazhNC)
     );
     {
         const treeBody = _fnBodyN4(/_foundryPresetIsTree\(preset\) \{/);
