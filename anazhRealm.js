@@ -8332,7 +8332,10 @@ class AnazhRealm {
             const def = this.playerSoulDefs[entry.soulName];
             if (!fernAktiv && def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
                 if (underwater) {
-                    entry.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+                    // SCHWIMM-HEIMAT — derselbe Studio-Takt wie der lokale Avatar
+                    // (EIN Gesetz, beide Leser; fail-soft byte-gleich 5.0/2.3).
+                    const SG = AnazhRealm._schwimmGesetz();
+                    entry.walkPhase += dt * (isMoving ? SG.taktZug : SG.taktTreten);
                     def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
                 } else if (mesh.userData.rig) {
                     // KÖRPER-BEWEGUNG — der Peer-Biped geht dieselbe WEG-PHASE +
@@ -17670,15 +17673,18 @@ class AnazhRealm {
         if (underwater) {
             // Schwimm-Pose: der ganze Körper liegt waagerecht (die group-Lehne in _animateHuman);
             // hier kraulen die Arme + flattern die Beine, der Kopf hebt leicht (Blick voraus).
-            x(r.head, -0.35);
-            const aA = isMoving ? 1.3 : 0.6;
-            x(r.armL.shoulder, Math.sin(walkPhase) * aA - 0.3);
-            x(r.armR.shoulder, Math.sin(walkPhase + Math.PI) * aA - 0.3);
-            z(r.armL.shoulder, 0.5);
-            z(r.armR.shoulder, -0.5);
-            const kA = isMoving ? 0.4 : 0.16;
-            x(r.legL.hip, Math.sin(walkPhase * 1.6) * kA);
-            x(r.legR.hip, Math.sin(walkPhase * 1.6 + Math.PI) * kA);
+            // SCHWIMM-HEIMAT — die Kraul-Winkel wohnen im koerperstudio-
+            // Gesetzbuch (fx.bewegung.schwimmen.pose; fail-soft byte-gleich).
+            const SP = AnazhRealm._schwimmGesetz().pose;
+            x(r.head, SP.kopf);
+            const aA = isMoving ? SP.armZug : SP.armTreten;
+            x(r.armL.shoulder, Math.sin(walkPhase) * aA - SP.armAb);
+            x(r.armR.shoulder, Math.sin(walkPhase + Math.PI) * aA - SP.armAb);
+            z(r.armL.shoulder, SP.armSpreiz);
+            z(r.armR.shoulder, -SP.armSpreiz);
+            const kA = isMoving ? SP.beinZug : SP.beinTreten;
+            x(r.legL.hip, Math.sin(walkPhase * SP.beinTakt) * kA);
+            x(r.legR.hip, Math.sin(walkPhase * SP.beinTakt + Math.PI) * kA);
             return;
         }
         // ═══ KÖRPER-BEWEGUNG (2) — POSEN-BLEND: w(speed) statt des harten
@@ -18064,8 +18070,11 @@ class AnazhRealm {
         if (!tb || !tb.teile) return;
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         const T = tb.teile;
-        const name = this._motionProfileName(moving, emotions, "kreatur") || (moving ? "joy" : "idle");
-        const P = this._motionStudioProfile(moving, emotions) ||
+        // KREATUR-LEBEN/SCHWIMM-HEIMAT — der Körper-Zustand des Halters
+        // (updateCreatures stempelt ud._motionZustand) führt in der EINEN Brücke.
+        const zust = (group.userData && group.userData._motionZustand) || null;
+        const name = this._motionProfileName(moving, emotions, "kreatur", zust) || (moving ? "joy" : "idle");
+        const P = this._motionStudioProfile(moving, emotions, zust) ||
             (core && core.MOTION && core.MOTION[name]) || {
                 freq: moving ? 3.2 : 0.25,
                 stride: moving ? 0.06 : 0,
@@ -18640,19 +18649,28 @@ class AnazhRealm {
     // Säule II — _animateCompoundMotion kann das Rig nicht treiben, ohne es zu
     // zerstören). Fail-soft (G4.1): kaltes Buch/Rezept versteckt → null, jeder
     // Leser fällt byte-alt auf seine Konstante.
-    _motionStudioProfile(moving, emotions) {
+    _motionStudioProfile(moving, emotions, zustand) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
         const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
         if (!m) return null;
-        const p = m[this._motionProfileName(moving, emotions, "kreatur")];
+        const p = m[this._motionProfileName(moving, emotions, "kreatur", zustand)];
         return p && typeof p === "object" ? p : null;
     }
     // ABSCHIEDS-WELLE — DER EINE BRÜCKEN-RESOLVER (Daten-Tabelle MOTION_EMOTION_PROFILES,
     // Vorrang-Zeilen; keine Achse über der Schwelle → die MOTION_PROFILE_MAP-Default-
     // Zeile). BEIDE Leser (Rig `_koerperMotionProfile` + Compound `_motionStudioProfile`)
     // fließen hier durch — EINE Quelle, zwei Spalten (koerper/kreatur).
-    _motionProfileName(moving, emotions, column) {
+    _motionProfileName(moving, emotions, column, zustand) {
+        // KREATUR-LEBEN/SCHWIMM-HEIMAT — der KÖRPER-ZUSTAND führt VOR der
+        // Emotions-Achse (ein schwimmendes Wesen paddelt, ein jagendes pirscht —
+        // nie das Emotions-Kostüm): MOTION_ZUSTAND_PROFILES ist eine DATEN-
+        // Tabelle (M8); kein Zustand / keine Zeile → Emotions-Pfad byte-alt.
+        if (zustand) {
+            const zrow = AnazhRealm.MOTION_ZUSTAND_PROFILES[zustand];
+            const zname = zrow && zrow[column];
+            if (zname) return zname;
+        }
         const e = emotions && typeof emotions === "object" ? emotions : null;
         if (e) {
             for (const row of AnazhRealm.MOTION_EMOTION_PROFILES) {
@@ -21981,6 +21999,13 @@ class AnazhRealm {
                         waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
                     }
                 }
+                // SCHWIMM-HEIMAT — der Körper-Zustand für die EINE Motion-Brücke:
+                // schwimmt die Kreatur (dieselbe Wahrheit wie ihr Y-Override),
+                // paddelt der Baum-Gang (tetrapoda MOTION.schwimmen); an Land
+                // fällt NUR der Schwimm-Stempel (fremde Zustände bleiben).
+                const udZ = creature.userData;
+                if (waterSurface !== null) udZ._motionZustand = "schwimmen";
+                else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
             }
 
             if (hasHit) {
@@ -44054,7 +44079,9 @@ class AnazhRealm {
         // Linear bis staminaMax. Verbraucht durch applyOpToPart u. a.
         const staMax = this.state.player.staminaMax || 100;
         const sta = this.state.player.stamina || 0;
-        if (sta < staMax) {
+        // SCHWIMM-HEIMAT — unter Wasser ruht der Regen (die Züge zehren, das
+        // Wasser gibt nichts zurück); an Land byte-alt. EIN Regen-Chokepoint.
+        if (sta < staMax && !this.state.playerUnderwater) {
             const rate = AnazhRealm.STAMINA_REGEN_PER_SEC || 5;
             this.state.player.stamina = Math.min(staMax, sta + rate * dt);
         }
@@ -50008,7 +50035,14 @@ class AnazhRealm {
         if (!group.userData || !group.userData.rig) return;
         // Schwimmen: der GANZE Körper legt sich horizontal (group-Lehne — wie ein Schwimmer);
         // die Glieder kraulen/flattern macht das Rig. An Land aufrecht (rotation.x = 0).
-        group.rotation.x = underwater ? (isMoving ? 0.6 : 0.3) : 0;
+        // SCHWIMM-HEIMAT — die Lehne wohnt im koerperstudio-Gesetzbuch
+        // (fx.bewegung.schwimmen.lean; fail-soft byte-gleich 0.6/0.3).
+        if (underwater) {
+            const SL = AnazhRealm._schwimmGesetz().lean;
+            group.rotation.x = isMoving ? SL.zug : SL.treten;
+        } else {
+            group.rotation.x = 0;
+        }
         this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions, gait);
     }
 
@@ -55096,8 +55130,10 @@ class AnazhRealm {
         if (underwater) {
             // V8.33 — Schwimm-Takt. Die Phase läuft auch im Stillstand weiter
             // (Wasser-Treten strokt sanft), in Bewegung schneller — so springt
-            // der Zug-Rhythmus nicht beim Start/Stopp.
-            p.walkPhase += dt * (isMoving ? 5.0 : 2.3);
+            // der Zug-Rhythmus nicht beim Start/Stopp. SCHWIMM-HEIMAT: der Takt
+            // wohnt im koerperstudio-Gesetzbuch (fail-soft byte-gleich).
+            const SG = AnazhRealm._schwimmGesetz();
+            p.walkPhase += dt * (isMoving ? SG.taktZug : SG.taktTreten);
         } else if (hasSkeleton && mesh.userData.rig) {
             // ═══ KÖRPER-BEWEGUNG — der Biped geht die WEG-PHASE (Phase ∝ Weg /
             // Schrittlänge, das Fahrzeug-Muster — der Sprint skatet nie), das
@@ -84939,18 +84975,21 @@ class AnazhRealm {
     // (V8.30-Verhalten bewahrt). currentVy = aktuelle vy (m/s), depth = Tiefe
     // unter dem Wasser-Niveau (m), dive/rise = Tasten-Flags. Liefert die Ziel-vy.
     _swimVerticalVelocity(currentVy, depth, dive, rise) {
-        const d = Math.max(0, Math.min(8, depth));
+        // SCHWIMM-HEIMAT — die Zahlen wohnen im koerperstudio-Gesetzbuch
+        // (fx.bewegung.schwimmen, _schwimmGesetz fail-soft byte-gleich).
+        const S = AnazhRealm._schwimmGesetz();
+        const d = Math.max(0, Math.min(S.tiefeCap, depth));
         if (dive) {
-            // Abtauchen: Ziel-Sinkgeschwindigkeit -3.2 m/s, lerp-geglättet —
+            // Abtauchen: Ziel-Sinkgeschwindigkeit −tauchV m/s, lerp-geglättet —
             // überwindet den Auftrieb, der Spieler sinkt kontrolliert.
-            return currentVy + (-3.2 - currentVy) * 0.25;
+            return currentVy + (-S.tauchV - currentVy) * S.lerp;
         }
         if (rise) {
-            // Auftauchen: aktiv nach oben schwimmen, Ziel +3.2 m/s.
-            return currentVy + (3.2 - currentVy) * 0.25;
+            // Auftauchen: aktiv nach oben schwimmen, Ziel +aufV m/s.
+            return currentVy + (S.aufV - currentVy) * S.lerp;
         }
         // Neutral: Auftrieb — tiefer = stärkerer Aufwärts-Drift, gedeckelt.
-        return Math.min(2.5, Math.max(-2.5, currentVy * 0.45) + d * 0.18);
+        return Math.min(S.hubCap, Math.max(-S.hubCap, currentVy * S.hubK) + d * S.tiefeK);
     }
 
     // W10 ext. — vertikale Geschwindigkeit in einem lifting-Auftriebs-Feld.
@@ -85648,9 +85687,24 @@ class AnazhRealm {
         // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion);
         //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
         if (submerged) {
-            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, !!s.keys["shift"], !!s.keys[" "]);
-            vx *= 0.7;
-            vz *= 0.7;
+            // SCHWIMM-HEIMAT — Drag + Ausdauer aus dem koerperstudio-Gesetzbuch:
+            // aktive Züge (Shift-Tauchen / Space-Auftauchen) zehren ausdauerProS;
+            // erschöpft (stamina 0) trägt NUR der Auftrieb den Körper zur
+            // Oberfläche (kein Ertrinken — die Züge versiegen, das Wasser hebt).
+            const SG = AnazhRealm._schwimmGesetz();
+            let dive = !!s.keys["shift"];
+            let rise = !!s.keys[" "];
+            const pl = s.player;
+            if (pl && (dive || rise)) {
+                if (pl.stamina > 0) pl.stamina = Math.max(0, pl.stamina - SG.ausdauerProS * dt);
+                if (pl.stamina <= 0) {
+                    dive = false;
+                    rise = false;
+                }
+            }
+            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, dive, rise);
+            vx *= SG.drag;
+            vz *= SG.drag;
         } else {
             vy += (s.gravity || -14.715) * dt;
             if (vy < -25) vy = -25;
@@ -88250,6 +88304,50 @@ AnazhRealm._bewegungsKoeff = function (stat, fb) {
         if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
     } catch (_e) {}
     return fb;
+};
+// SCHWIMM-HEIMAT (Schöpfer 16.07.: „schwimmanimation lebt noch in anazh, nicht im
+// studio") — DER EINE SCHWIMM-GESETZ-LESER: die Wasser-Bewegung des Avatars wohnt
+// im koerperstudio-Gesetzbuch (PRESETS.mensch.fx.bewegung.schwimmen — Physik,
+// Takt, Lehne, Kraul-Pose, Ausdauer). Der Stamm liest fail-soft: Kern kalt /
+// Zeile fehlt → das byte-gleiche historische Literal-Set (SCHWIMM_FALLBACK).
+// Memo NUR im Erfolgs-Fall (ein spät ladender Kern friert nie den Fallback ein);
+// der Kern ist ein statisches Gesetzbuch — einmal warm, immer dieselbe Referenz.
+AnazhRealm.SCHWIMM_FALLBACK = Object.freeze({
+    tauchV: 3.2,
+    aufV: 3.2,
+    lerp: 0.25,
+    hubK: 0.45,
+    tiefeK: 0.18,
+    hubCap: 2.5,
+    tiefeCap: 8,
+    drag: 0.7,
+    taktZug: 5.0,
+    taktTreten: 2.3,
+    lean: Object.freeze({ zug: 0.6, treten: 0.3 }),
+    pose: Object.freeze({
+        kopf: -0.35,
+        armZug: 1.3,
+        armTreten: 0.6,
+        armAb: 0.3,
+        armSpreiz: 0.5,
+        beinZug: 0.4,
+        beinTreten: 0.16,
+        beinTakt: 1.6,
+    }),
+    ausdauerProS: 6,
+});
+AnazhRealm._schwimmGesetz = function () {
+    if (AnazhRealm._schwimmGesetzMemo) return AnazhRealm._schwimmGesetzMemo;
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+        const s = b && b.schwimmen;
+        if (s && Number.isFinite(s.tauchV) && s.lean && s.pose) {
+            AnazhRealm._schwimmGesetzMemo = s;
+            return s;
+        }
+    } catch (_e) {}
+    return AnazhRealm.SCHWIMM_FALLBACK;
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
@@ -92057,6 +92155,16 @@ AnazhRealm.KOERPER_HOST_RECIPE = "mensch";
 AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
     kreatur: Object.freeze({ moving: "joy", idle: "idle" }),
     koerper: Object.freeze({ moving: "run", idle: "idle" }),
+});
+// KREATUR-LEBEN/SCHWIMM-HEIMAT — DIE ZUSTAND→PROFIL-VORRANG-TABELLE (Daten, M8):
+// der ECHTE Körper-Zustand (updateCreatures stempelt ud._motionZustand: schwimmen ·
+// jagd · flucht) schlägt in der EINEN Brücke `_motionProfileName` die Emotions-
+// Achse — ein jagendes Wesen pirscht (tetrapoda "hunt", vorher TOTE Daten: kein
+// Pfad wählte es je), ein schwimmendes paddelt. Kein Zustand → byte-alt.
+AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
+    schwimmen: Object.freeze({ kreatur: "schwimmen" }),
+    jagd: Object.freeze({ kreatur: "hunt" }),
+    flucht: Object.freeze({ kreatur: "flee" }),
 });
 // ABSCHIEDS-WELLE — DIE EINE EMOTIONS→PROFIL-BRÜCKE (Daten, kein if-Baum): Zeilen in
 // VORRANG-Reihenfolge; die erste Achse (die 6 Host-Emotions-Achsen, EMOTION_AXES —

@@ -395,6 +395,41 @@
                         speed: { base: 7, leicht: 5, mag: 1.5 },
                         jumpPower: { base: 8, leicht: 5, mag: 2 },
                         staminaMax: { base: 100, leicht: 60, mag: 40 },
+                        // SCHWIMM-HEIMAT (rein additive DATEN-Zeile — Praezedenz: die
+                        // Bewegungs-Koeffizienten oben): DIE WASSER-BEWEGUNG des Avatars
+                        // als Gesetzbuch-Daten (byte-gleiche Zahlen des historischen
+                        // Host-Satzes). tauchV/aufV m/s (Shift/Space), lerp Glaettung,
+                        // Neutral-Auftrieb min(hubCap, max(-hubCap, vy*hubK) + d*tiefeK)
+                        // mit d = min(tiefeCap, Tiefe), drag Horizontal-Daempfer je
+                        // Schritt, taktZug/taktTreten der Schwimm-Phasentakt, lean die
+                        // Koerper-Lehne (rad), pose die Kraul-Winkel des Rigs (Kopf,
+                        // Arm-Zug/-Treten/-Absenkung/-Spreizung, Bein-Zug/-Treten/-Takt),
+                        // ausdauerProS die Ausdauer-Kosten aktiver Zuege. Der Wirt liest
+                        // fail-soft (_schwimmGesetz): Kern kalt -> seine Literale.
+                        schwimmen: {
+                            tauchV: 3.2,
+                            aufV: 3.2,
+                            lerp: 0.25,
+                            hubK: 0.45,
+                            tiefeK: 0.18,
+                            hubCap: 2.5,
+                            tiefeCap: 8,
+                            drag: 0.7,
+                            taktZug: 5.0,
+                            taktTreten: 2.3,
+                            lean: { zug: 0.6, treten: 0.3 },
+                            pose: {
+                                kopf: -0.35,
+                                armZug: 1.3,
+                                armTreten: 0.6,
+                                armAb: 0.3,
+                                armSpreiz: 0.5,
+                                beinZug: 0.4,
+                                beinTreten: 0.16,
+                                beinTakt: 1.6,
+                            },
+                            ausdauerProS: 6,
+                        },
                     },
                 },
             },

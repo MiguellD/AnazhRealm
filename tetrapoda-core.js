@@ -44,7 +44,12 @@
     hunt:{freq:0.9,stride:0.018,bodyX:0.10,bodyZ:0,headX:-0.12,headY:0,ear:0.0,tailAmp:0.02,tailRate:0.15,tension:1.6,bob:0.002,sway:0.002,kpMul:1.8,phases:[0,Math.PI*0.75,Math.PI*1.5,Math.PI*0.25]},
     flee:{freq:9.0,stride:0.18,bodyX:0.05,bodyZ:0,headX:0.01,headY:0,ear:-0.22,tailAmp:0.006,tailRate:11.0,tension:1.5,bob:0.030,sway:0.010,kpMul:1.5,phases:[0,Math.PI,Math.PI,0]},
     alert:{freq:0.08,stride:0,bodyX:-0.03,bodyZ:0,headX:-0.06,headY:0,ear:0.08,tailAmp:0.04,tailRate:0.6,tension:1.2,bob:0.001,sway:0.001,kpMul:1.3,phases:[0,0,0,0]},
-    showcase:{freq:0.1,stride:0,bodyX:0,bodyZ:0,headX:-0.02,headY:0,ear:0.12,tailAmp:0.16,tailRate:0.4,tension:0.9,bob:0.002,sway:0.012,kpMul:1.0,phases:[0,0,0,0]}
+    showcase:{freq:0.1,stride:0,bodyX:0,bodyZ:0,headX:-0.02,headY:0,ear:0.12,tailAmp:0.16,tailRate:0.4,tension:0.9,bob:0.002,sway:0.012,kpMul:1.0,phases:[0,0,0,0]},
+    // SCHWIMM-HEIMAT (rein additive DATEN-Zeile): der PADDEL-GANG — Trab-Phasen
+    // [0,pi,pi,0], Nase ueber Wasser (headX +), Schwanz als Ruder (tailAmp/Rate),
+    // gedaempftes Bob (das Wasser traegt). Der Wirt schaltet ihn ueber den
+    // Koerper-ZUSTAND "schwimmen" (_motionProfileName, nie ueber Emotionen).
+    schwimmen:{freq:2.2,stride:0.05,bodyX:0.06,bodyZ:0,headX:0.08,headY:0,ear:-0.05,tailAmp:0.28,tailRate:2.4,tension:1.1,bob:0.004,sway:0.02,kpMul:0.9,phases:[0,Math.PI,Math.PI,0]}
     };
 
     // ═══════════════════════════════════════════════════════════════════════
