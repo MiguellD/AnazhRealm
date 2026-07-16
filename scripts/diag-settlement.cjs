@@ -326,6 +326,32 @@ const FIXTURES = [
         res.offsetsDeterministic =
             r1.placed === r2.placed && JSON.stringify(off(e1, o1)) === JSON.stringify(off(e2, o1));
         // Slot-Anker == Export-Slot (der erste platzierte Eintrag traegt exakt slot.x/z + phi + seed).
+        // DORF-IN-TERRAIN (die Probe wandert mit dem Gesetz): das Prädikat spiegelt
+        // zusätzlich die Klippen-Wand der EINEN Slot-Quelle (Footprint-Δh über die
+        // vier obb-Ecken <= AUTO_SETTLEMENT.fundamentMaxDh).
+        const dhOf = (s) => {
+            const wx = o1.x + s.x;
+            const wz = o1.z + s.z;
+            const hM = r.getTerrainHeightAt(wx, wz);
+            let hMin = hM;
+            let hMax = hM;
+            const obb = s.obb || {};
+            if (Number.isFinite(obb.ex) && Number.isFinite(obb.ez)) {
+                const ry = s.phi || 0;
+                const rc = Math.cos(ry);
+                const rs = Math.sin(ry);
+                for (let k = 0; k < 4; k++) {
+                    const lx = k & 1 ? obb.ex : -obb.ex;
+                    const lz = k & 2 ? obb.ez : -obb.ez;
+                    const h = r.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
+                    if (Number.isFinite(h)) {
+                        hMin = Math.min(hMin, h);
+                        hMax = Math.max(hMax, h);
+                    }
+                }
+            }
+            return hMax - hMin;
+        };
         const s0 = plan.slots.find((s) => {
             const rec = f.recipes[s.kultur];
             const pol = rec && r.constructor.KIND_POLICY[rec.kind];
@@ -333,7 +359,8 @@ const FIXTURES = [
                 pol &&
                 pol.prefix &&
                 r.state.blueprints[pol.prefix + s.kultur] &&
-                r._isAboveWaterAt(o1.x + s.x, o1.z + s.z, 0.2)
+                r._isAboveWaterAt(o1.x + s.x, o1.z + s.z, 0.2) &&
+                dhOf(s) <= r.constructor.AUTO_SETTLEMENT.fundamentMaxDh
             );
         });
         const m0 = s0
@@ -343,6 +370,18 @@ const FIXTURES = [
             m0 &&
             Math.abs(m0.position.z - (o1.z + s0.z)) < 1e-9 &&
             m0.rotationY === (s0.phi || 0)
+        );
+        // DORF-IN-TERRAIN — der Footprint reist als entry.fundament, und die EINE
+        // Fundament-Wahrheit (_archFundamentBox) liefert am Berg-Anker ein Podest
+        // (topY > botY; das Gate-Terrain ist GEMESSEN geneigt, Δh >= 4.8 m).
+        const eF = e1.find((e) => e.fundament && Number.isFinite(e.fundament.ex));
+        res.fundamentTravels = e1.length > 0 && e1.every((e) => e.fundament && Number.isFinite(e.fundament.ex));
+        res.fundamentBox = !!(
+            eF &&
+            (() => {
+                const b = r._archFundamentBox(eF);
+                return b && b.topY > b.botY && b.minX < b.maxX;
+            })()
         );
         // 3) fail-closed: ein Slot mit unbekannter Kultur faellt (kein Spawn, kein Crash).
         const fake = JSON.parse(JSON.stringify(plan));
@@ -462,6 +501,14 @@ const FIXTURES = [
         `placed1=${out.placed1} placed2=${out.placed2}`
     );
     check("B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z, phi, seed)", out.slotAnchorExact === true);
+    check(
+        "B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}",
+        out.fundamentTravels === true
+    );
+    check(
+        "B: DORF-IN-TERRAIN — die EINE Fundament-Wahrheit liefert das Hang-Podest (topY > botY)",
+        out.fundamentBox === true
+    );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
     check("B: Γ5 — der Siedlungs-Same zieht aus dem :stadt-Stream (kein Math.random)", out.gammaStream === true);

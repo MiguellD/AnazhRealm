@@ -32944,9 +32944,72 @@ class AnazhRealm {
             const aabb = this._blockerComputePartAABB(entry, part);
             if (aabb) solidAABBs.push(aabb);
         }
+        // DORF-IN-TERRAIN — das FUNDAMENT ist Blocker-Wahrheit (derselbe EINE
+        // Chokepoint wie die Parts: Spawn + Restore + Dismount-Refresh laufen alle
+        // hier durch): der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
+        // ist SOLID (Spieler-Kapsel + Cell-Stempel + Wasser urteilen einheitlich —
+        // kein „unter das Haus schwimmen/laufen" am Hang). Rotation konservativ als
+        // Welt-AABB überdeckt (das Quadrat-über-Zylinder-Muster der Baum-Blocker).
+        const fu = this._archFundamentBox(entry);
+        if (fu) solidAABBs.push(fu);
         if (solidAABBs.length === 0) return;
         entry.blockerAABBs = solidAABBs;
         this._blockerStampReach(entry);
+    }
+
+    // DORF-IN-TERRAIN — die EINE Fundament-Geometrie-Wahrheit (Blocker UND Render-
+    // Podest lesen sie): aus entry.fundament {ex,ez} + LIVE-Terrain-Ecken. Liefert
+    // null auf ebenem Land (Podest < 0.25 m — byte-neutral zur Vor-Fundament-Welt)
+    // oder ohne fundament-Feld. Tiefe stets aus dem Dichte-Feld abgeleitet, nie
+    // persistiert (deterministisch — gleiche Welt, gleicher Sockel).
+    _archFundamentBox(entry) {
+        const f = entry && entry.fundament;
+        if (!f || !Number.isFinite(f.ex) || !Number.isFinite(f.ez)) return null;
+        if (typeof this.getTerrainHeightAt !== "function") return null;
+        const ox = entry.position.x || 0;
+        const oz = entry.position.z || 0;
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const rc = Math.cos(ry);
+        const rs = Math.sin(ry);
+        // Marge 0.35 m: der Sockel steht sichtbar unter der Schwelle hervor
+        // (Sockel-Look) und deckt die Fachwerk-Traufkante.
+        const ex = f.ex + 0.35;
+        const ez = f.ez + 0.35;
+        let hMin = Infinity;
+        let halfX = 0;
+        let halfZ = 0;
+        for (let k = 0; k < 4; k++) {
+            const lx = k & 1 ? ex : -ex;
+            const lz = k & 2 ? ez : -ez;
+            const cxw = lx * rc + lz * rs;
+            const czw = -lx * rs + lz * rc;
+            if (Math.abs(cxw) > halfX) halfX = Math.abs(cxw);
+            if (Math.abs(czw) > halfZ) halfZ = Math.abs(czw);
+            const h = this.getTerrainHeightAt(ox + cxw, oz + czw);
+            if (Number.isFinite(h) && h < hMin) hMin = h;
+        }
+        if (!Number.isFinite(hMin)) return null;
+        // Oberkante knapp unter der Haus-Basis (entry.y − 0.5 = Bauplan-Boden,
+        // s. _archEntryWorldMatrix baseY) — 5 cm Überlapp gegen Licht-Spalte;
+        // Unterkante 0.6 m UNTER der tiefsten Ecke (im Fels versiegelt).
+        const top = (Number.isFinite(entry.position.y) ? entry.position.y : 0) - 0.45;
+        const bot = hMin - 0.6;
+        if (!(top - bot > 0.25)) return null; // eben → kein Podest
+        // AABB-Felder = Blocker-Leser (konservativ, rotations-überdeckt);
+        // ex/ez/ry/x/z = Render-Leser (das GEDREHTE dichte Podest).
+        return {
+            minX: ox - halfX,
+            maxX: ox + halfX,
+            minZ: oz - halfZ,
+            maxZ: oz + halfZ,
+            topY: top,
+            botY: bot,
+            ex,
+            ez,
+            ry,
+            x: ox,
+            z: oz,
+        };
     }
 
     // V18.464 — die horizontale REICHWEITE der Blocker-Hülle (max. Abstand einer
@@ -37674,6 +37737,11 @@ class AnazhRealm {
                 // PRÄGUNG-WELT — der Guss-Stempel überlebt den Reload (sonst verlöre
                 // ein geprägtes Werk beim Restore seinen Charakter, V8.59-Klasse).
                 ...(a.studioOv && typeof a.studioOv === "object" ? { studioOv: a.studioOv } : {}),
+                // DORF-IN-TERRAIN — der Fundament-Footprint überlebt den Reload (das
+                // Podest + die Blocker-Wahrheit leiten die Tiefe live aus dem Feld ab).
+                ...(a.fundament && Number.isFinite(a.fundament.ex)
+                    ? { fundament: { ex: a.fundament.ex, ez: a.fundament.ez } }
+                    : {}),
                 // Φ7 (V18.190) — entry-level portalMeta (Halle-Slots): eine
                 // materialisierte Halle hat N Tore mit JE eigener worldAddress
                 // am entry.portalMeta. Ohne diese Persistenz würden alle
@@ -42261,6 +42329,9 @@ class AnazhRealm {
                 // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
                 // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
                 studioOv: a.studioOv,
+                // DORF-IN-TERRAIN — der Fundament-Footprint reist durch den Reload
+                // mit (derselbe EINE Sanitize-Chokepoint klemmt ihn).
+                fundament: a.fundament,
             });
             // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
             // tragen je eigene worldAddress; ohne diesen Schritt würden alle
@@ -64414,6 +64485,87 @@ class AnazhRealm {
     // Primär-Felder (`instanced`/`instSlots`/`instFoundry`) bleiben bei einem Band-Add
     // UNBERÜHRT. Add/Remove laufen weiterhin AUSSCHLIESSLICH durch diese zwei Chokepoints
     // (kein dritter Pfad — `_updateFoundryLodBand` ruft nur hierher).
+    // ═══ DORF-IN-TERRAIN — DAS FUNDAMENT-PODEST (Render-Seite) ═══
+    // EIN InstancedMesh-Pool für ALLE Haus-Sockel der Welt (1 Draw-Call, wächst
+    // per Verdopplung; freie Slots tragen die Null-Matrix). Die Geometrie-Wahrheit
+    // ist DIESELBE wie die der Blocker (`_archFundamentBox` — Gesetz #0): Oberkante
+    // an der Haus-Basis, Unterkante 0.6 m unter der tiefsten Footprint-Ecke, LIVE
+    // aus dem Dichte-Feld. Lebenszyklus hängt an den EINEN Instanz-Nähten
+    // (Add primär → ensure · Remove primär → free · DisposeAll → Pool-Abbau);
+    // kein Snapshot-Feld, kein Parallelpfad.
+    _archFundamentEnsure(entry) {
+        if (!entry || !entry.fundament || !this.state.scene) return;
+        const st = this.state;
+        let P = st.archFundament;
+        if (P && P.byId.has(entry.id)) return; // idempotent (LOD-Wechsel etc.)
+        const box = this._archFundamentBox(entry);
+        if (!box) return; // ebenes Land → kein Podest
+        if (!P) {
+            const geo =
+                this._archFundGeo ||
+                (this._archFundGeo = (() => {
+                    const g = new THREE.BoxGeometry(1, 1, 1);
+                    g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
+                    return g;
+                })());
+            const mat =
+                this._archFundMat ||
+                (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
+            const mesh = new THREE.InstancedMesh(geo, mat, 128);
+            mesh.count = 0;
+            mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
+            mesh.receiveShadow = true;
+            st.scene.add(mesh);
+            P = st.archFundament = { mesh, cap: 128, top: 0, free: [], byId: new Map() };
+        }
+        if (!P.free.length && P.top >= P.cap) {
+            // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
+            const bigger = new THREE.InstancedMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
+            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
+            bigger.count = P.mesh.count;
+            bigger.frustumCulled = false;
+            bigger.receiveShadow = true;
+            st.scene.add(bigger);
+            st.scene.remove(P.mesh);
+            P.mesh.dispose();
+            P.mesh = bigger;
+            P.cap *= 2;
+        }
+        const slot = P.free.length ? P.free.pop() : P.top++;
+        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
+        const q = this._archFundTmpQ || (this._archFundTmpQ = new THREE.Quaternion());
+        const v = this._archFundTmpV || (this._archFundTmpV = new THREE.Vector3());
+        const sc = this._archFundTmpS || (this._archFundTmpS = new THREE.Vector3());
+        const ax = this._archFundAxisY || (this._archFundAxisY = new THREE.Vector3(0, 1, 0));
+        q.setFromAxisAngle(ax, box.ry);
+        m.compose(v.set(box.x, box.topY, box.z), q, sc.set(box.ex * 2, box.topY - box.botY, box.ez * 2));
+        P.mesh.setMatrixAt(slot, m);
+        if (slot + 1 > P.mesh.count) P.mesh.count = slot + 1;
+        P.mesh.instanceMatrix.needsUpdate = true;
+        P.byId.set(entry.id, slot);
+    }
+    _archFundamentFree(entry) {
+        const P = this.state.archFundament;
+        if (!P || !entry) return;
+        const slot = P.byId.get(entry.id);
+        if (slot === undefined) return;
+        P.byId.delete(entry.id);
+        P.free.push(slot);
+        const m = this._archFundTmpM || (this._archFundTmpM = new THREE.Matrix4());
+        m.makeScale(0, 0, 0); // Null-Matrix = unsichtbar (kein Kompaktier-Aufwand)
+        P.mesh.setMatrixAt(slot, m);
+        P.mesh.instanceMatrix.needsUpdate = true;
+    }
+    _archFundamentDisposePool() {
+        const P = this.state.archFundament;
+        if (!P) return;
+        if (P.mesh) {
+            if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
+            P.mesh.dispose(); // instanceMatrix-Buffer; Geo/Mat sind geteilt (this._archFund*)
+        }
+        this.state.archFundament = null;
+    }
+
     _archInstanceAdd(entry, flat, opts) {
         // DAS NEUE KLEID — KEIN FALLBACK, DAS STUDIO IST DER MUSKEL (Schöpfer „AnazhRealm nur das Nerven-
         // system, nicht der Muskel"): der EINE Chokepoint, durch den JEDE platzierte Architektur ins Render-
@@ -64508,6 +64660,9 @@ class AnazhRealm {
         // liest sie, damit eine Ein-Stufen-Art (fels [0]) beim Schwellen-Uebertritt nicht
         // byte-identisch re-alloziert. Transient wie instFoundry (nicht im Snapshot).
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
+        // DORF-IN-TERRAIN — der Sockel lebt mit dem PRIMÄREN Instanz-Leben des
+        // Eintrags (Band-Adds returnen oben früher); ensure ist idempotent.
+        if (entry.fundament) this._archFundamentEnsure(entry);
     }
 
     // Die Instanz-Matrizen eines Eintrags neu schreiben. B2 (14.07.) — der Mount-Follow
@@ -64593,6 +64748,9 @@ class AnazhRealm {
         if (!bandOnly) {
             entry.instSlots = null;
             entry.instanced = false;
+            // DORF-IN-TERRAIN — der Sockel fällt mit dem primären Instanz-Leben
+            // (Cull/Prune/Remove/LOD-Switch laufen alle durch DIESE Naht).
+            if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of placedRegionKeys) {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
@@ -64633,6 +64791,9 @@ class AnazhRealm {
             for (const bg of this.state._regionBundles.values()) if (bg.parent) bg.parent.remove(bg);
             this.state._regionBundles.clear();
         }
+        // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
+        // die Respawn-Schleife baut ihn lazy neu.
+        this._archFundamentDisposePool();
     }
 
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
@@ -65051,6 +65212,15 @@ class AnazhRealm {
             } catch (_e) {
                 /* nicht-serialisierbar → kein Stempel (fail-closed) */
             }
+        }
+        // DORF-IN-TERRAIN — der Fundament-Footprint reist am Eintrag (Snapshot + Restore):
+        // nur die halben Ausdehnungen {ex,ez} (klein, geklemmt); die Podest-TIEFE leitet
+        // der Konsument LIVE aus dem Dichte-Feld ab (deterministisch, nie persistiert).
+        if (opts.fundament && Number.isFinite(opts.fundament.ex) && Number.isFinite(opts.fundament.ez)) {
+            entry.fundament = {
+                ex: Math.max(0.5, Math.min(24, +opts.fundament.ex)),
+                ez: Math.max(0.5, Math.min(24, +opts.fundament.ez)),
+            };
         }
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
@@ -66974,14 +67144,48 @@ class AnazhRealm {
         const wx = origin.x + slot.x;
         const wz = origin.z + slot.z;
         if (!this._isAboveWaterAt(wx, wz, 0.2)) return false; // die Wasser-Wand
-        const wy = this.getTerrainHeightAt(wx, wz) + 0.5;
+        // DORF-IN-TERRAIN (Schöpfer 16.07.: „Städte und Dörfer korrekt in die Höhe,
+        // in das Terrain gebaut") — die HÖHE urteilt über den FOOTPRINT, nicht über
+        // einen Punkt: die vier obb-Ecken (Export-Wahrheit, fachwerk exportSettlement)
+        // + das Zentrum werden gesamplet. Basis = MAX (keine Ecke im Berg), die
+        // Δh-Wand (AUTO_SETTLEMENT.fundamentMaxDh) lässt Klippen-Slots GESCHLOSSEN
+        // fallen (kein schwebendes Haus), und der Eintrag trägt `fundament` {ex,ez}
+        // — das Render-Podest + die Blocker-Wahrheit leiten Tiefe LIVE aus dem Feld
+        // ab (deterministisch, kein Höhen-Persistenz-Feld). Ebenes Land: hMax ==
+        // Zentrum → wy byte-identisch zur alten Punkt-Höhe. Ohne obb (fremder/alter
+        // Export): Punkt-Höhe wie zuvor (fail-soft, must-ignore-treu).
+        const hMitte = this.getTerrainHeightAt(wx, wz);
+        let hMax = hMitte;
+        let hMin = hMitte;
+        let fundament = null;
+        const obb = slot.obb;
+        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
+            const ry = slot.phi || 0;
+            const rc = Math.cos(ry);
+            const rs = Math.sin(ry);
+            for (let k = 0; k < 4; k++) {
+                const lx = k & 1 ? obb.ex : -obb.ex;
+                const lz = k & 2 ? obb.ez : -obb.ez;
+                const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
+                if (Number.isFinite(h)) {
+                    if (h > hMax) hMax = h;
+                    if (h < hMin) hMin = h;
+                }
+            }
+            const A = AnazhRealm.AUTO_SETTLEMENT;
+            if (hMax - hMin > A.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
+            fundament = { ex: obb.ex, ez: obb.ez };
+        }
+        const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
-        const entry = this.spawnArchitecture(
-            name,
-            { x: wx, y: wy, z: wz },
-            { seed: slot.seed >>> 0, rotationY: slot.phi || 0, silent: true, autonomous: !!(so && so.autonomous) }
-        );
+        const entry = this.spawnArchitecture(name, { x: wx, y: wy, z: wz }, {
+            seed: slot.seed >>> 0,
+            rotationY: slot.phi || 0,
+            silent: true,
+            autonomous: !!(so && so.autonomous),
+            fundament,
+        });
         return !!entry;
     }
     _spawnSettlementFromExport(plan, origin, so) {
@@ -87778,6 +87982,13 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nHMin: 8,
     nHSpan: 10,
     perTick: 2,
+    // DORF-IN-TERRAIN — die Klippen-Wand je HAUS-Slot: max. Höhendifferenz über
+    // die vier obb-Footprint-Ecken (m). Darunter trägt ein Fundament-Podest das
+    // Haus in den Hang (_archFundamentBox); darüber fällt der Slot geschlossen.
+    // GEMESSEN (16.07., Gate-Anker 400/400): legale Berg-Slots tragen Δh 4.8–13 m
+    // bei 12–21 m Footprints — Hang-Dörfer LEBEN von hohen Sockeln (Cinque-Terre-
+    // Wahrheit); nur die wahre Klippe (> 9 m über EIN Haus) fällt.
+    fundamentMaxDh: 9,
 });
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
