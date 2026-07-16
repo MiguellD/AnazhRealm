@@ -18074,7 +18074,7 @@ class AnazhRealm {
         // (updateCreatures stempelt ud._motionZustand) führt in der EINEN Brücke.
         const zust = (group.userData && group.userData._motionZustand) || null;
         const name = this._motionProfileName(moving, emotions, "kreatur", zust) || (moving ? "joy" : "idle");
-        const P = this._motionStudioProfile(moving, emotions, zust) ||
+        let P = this._motionStudioProfile(moving, emotions, zust) ||
             (core && core.MOTION && core.MOTION[name]) || {
                 freq: moving ? 3.2 : 0.25,
                 stride: moving ? 0.06 : 0,
@@ -18083,6 +18083,25 @@ class AnazhRealm {
                 headX: -0.01,
                 sway: 0.006,
             };
+        // KREATUR-LEBEN — die Verhaltens-AKTION als transienter Profil-Overlay
+        // (tetrapoda fx.verhalten; updateCreatures wählt/stempelt): profil-Felder
+        // überlagern P (einmal je Aktion gemerged), die Sonder-Kanäle dreh/
+        // kopfSweep/rollAmp/rollRate wirken unten an Rumpf/Kopf. Abgelaufene
+        // Aktion fällt hier (EIN Verfalls-Ort für beide Leser).
+        let VA = group.userData && group.userData._verhaltenAktion;
+        if (VA) {
+            const nowS = performance.now() / 1000;
+            if (nowS >= VA.bis || !VA.def) {
+                group.userData._verhaltenAktion = null;
+                VA = null;
+            } else if (VA.def.profil) {
+                if (!VA._P || VA._Pbase !== P) {
+                    VA._P = Object.assign({}, P, VA.def.profil);
+                    VA._Pbase = P;
+                }
+                P = VA._P;
+            }
+        }
         let st = Number(P.stride) || 0;
         let freq = Number(P.freq) || 0.25;
         if (moving && st < 0.02) {
@@ -18116,8 +18135,31 @@ class AnazhRealm {
             [0, 0, 0, 0],
             [0, 0, 0, 0],
         ];
-        const roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
-        if (T.wolf) T.wolf.rotation.z = roll;
+        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
+        // KREATUR-LEBEN — die Sonder-Kanäle der Aktion: Schüttel-Rolle, Ganz-
+        // körper-Drehung (linear über die Dauer — endet bei dreh=2π nahtlos),
+        // Kopf-Pendel (Scan). Ohne Aktion alles 0 = byte-alt.
+        let drehY = 0;
+        let sweepY = 0;
+        if (VA && VA.def) {
+            const nowS = performance.now() / 1000;
+            const d = VA.def;
+            if (Number.isFinite(d.rollAmp)) roll += Math.sin(nowS * (d.rollRate || 10)) * d.rollAmp * fadeMul;
+            if (Number.isFinite(d.dreh)) {
+                const frac = Math.max(0, Math.min(1, (nowS - VA.start) / Math.max(0.001, VA.bis - VA.start)));
+                drehY = d.dreh * frac;
+            }
+            if (Number.isFinite(d.kopfSweep)) sweepY = Math.sin(nowS * 1.3) * d.kopfSweep * fadeMul;
+        }
+        if (T.wolf) {
+            T.wolf.rotation.z = roll;
+            // KREATUR-LEBEN — bodyX-KONSUM: die reisende Rumpf-Neigung der
+            // Profile war bislang unkonsumiert (hunt pirscht jetzt wirklich
+            // geduckt, playbow verbeugt sich); der Hang-Pitch lebt getrennt
+            // am Kreatur-ROOT (creature.rotation.x) — kein Konflikt.
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul;
+            T.wolf.rotation.y = drehY;
+        }
         const ketten = [
             [T.legFL, T.flU, T.flL, T.flP],
             [T.legFR, T.frU, T.frL, T.frP],
@@ -18151,7 +18193,11 @@ class AnazhRealm {
             if (K[2]) K[2].rotation.x = z2;
             if (K[3]) K[3].rotation.x = z3;
         }
-        if (T.headGroup) T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul;
+        if (T.headGroup) {
+            T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul;
+            // KREATUR-LEBEN — das Scan-Pendel (kopfSweep); ohne Aktion 0 = byte-alt.
+            T.headGroup.rotation.y = sweepY;
+        }
         const amp = (Number(P.tailAmp) || 0.1) * fadeMul;
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
@@ -18656,6 +18702,100 @@ class AnazhRealm {
         if (!m) return null;
         const p = m[this._motionProfileName(moving, emotions, "kreatur", zustand)];
         return p && typeof p === "object" ? p : null;
+    }
+    // KREATUR-LEBEN — DER EINE VERHALTENS-LESER: die Verhaltens-Seele (Aktions-
+    // Katalog + Stimmung→Wahl) wohnt im tetrapoda-Gesetzbuch (fx.verhalten,
+    // reist im LIVE-Buch; Kern-Alias als fail-soft-Zwilling derselben Quelle).
+    // null = kaltes Buch UND kalter Kern → kein Verhalten (byte-alt).
+    _tetrapodaVerhalten() {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
+        const v = rec && rec.fx && rec.fx.verhalten;
+        if (v && v.aktionen && v.stimmung) return v;
+        const core = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+        const v2 = core && core.VERHALTEN;
+        return v2 && v2.aktionen && v2.stimmung ? v2 : null;
+    }
+    // KREATUR-LEBEN — der EINE Jagd/Flucht-Stempel für die Motion-Brücke:
+    // setzt/löscht NUR die eigenen Zustände (der Schwimm-Stempel im Wasser-
+    // Block führt physisch danach — Wasser schlägt Land).
+    _kreaturZustandStempel(creature, zustand) {
+        const ud = creature.userData;
+        if (!ud) return;
+        if (zustand) ud._motionZustand = zustand;
+        else if (ud._motionZustand === "jagd" || ud._motionZustand === "flucht") ud._motionZustand = null;
+    }
+    // KREATUR-LEBEN — der deterministische Verhaltens-Hash (FNV-1a über zwei
+    // Zahlen; kein Math.random — dieselbe Kreatur würfelt reproduzierbar).
+    _verhaltenHash(a, b) {
+        let h = 2166136261 >>> 0;
+        h ^= a >>> 0;
+        h = Math.imul(h, 16777619) >>> 0;
+        h ^= b >>> 0;
+        h = Math.imul(h, 16777619) >>> 0;
+        return h >>> 0;
+    }
+    // KREATUR-LEBEN — DER VERHALTENS-TICK (je nahe Kreatur, aus updateCreatures):
+    // wählt die STIMMUNG aus dem echten Zustand (jagd/flucht/schwimmen-Stempel →
+    // Emotions-Achsen → Tag/Nacht-BEDÜRFNIS: Pflanzenfresser weiden am Tag,
+    // nachts ruht das Wesen) und startet im deterministischen Takt (alle=[min,
+    // max] s, Hash aus Kreatur-Index + Zeit-Bucket) eine AKTION aus dem Buch.
+    // Die Aktion lebt transient an ud._verhaltenAktion; der Baum-Gang trägt sie
+    // (_animateTierBaum), der Bewegungs-Pfad liest ihr tempo, hop zündet den
+    // feld-nativen Hüpfer. Flucht/Schwimmen tragen KEIN Theater (Aktion fällt).
+    _tickKreaturVerhalten(creature, i, nowS) {
+        const ud = creature.userData;
+        if (!ud) return;
+        const z = ud._motionZustand;
+        if (z === "flucht" || z === "schwimmen") {
+            ud._verhaltenAktion = null;
+            return;
+        }
+        const V = this._tetrapodaVerhalten();
+        if (!V) return;
+        let mood;
+        if (z === "jagd") {
+            mood = "jagd";
+        } else {
+            const em = ud.emotions;
+            if (em && (Number(em.chaos) || 0) >= 0.5) mood = "alert";
+            else if (em && (Number(em.joy) || 0) >= 0.5) mood = "joy";
+            else {
+                // dieselbe EINE Sonnen-Formel (timeOfDay 0.5 = Mittag): tiefe
+                // Nacht = Ruhe; am Tag weiden Pflanzenfresser (diet ≤ 0.5,
+                // tetrapoda-Dials über die Soul-Karte — einmal je Wesen gemerkt).
+                const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+                const nacht = Math.sin(tod * Math.PI * 2 - Math.PI / 2) < -0.15;
+                if (ud._verhaltenDiet === undefined) {
+                    const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
+                    const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
+                    ud._verhaltenDiet = dials && Number.isFinite(dials.diet) ? dials.diet : 1;
+                }
+                mood = nacht ? "nacht" : ud._verhaltenDiet <= 0.5 ? "tag" : "idle";
+            }
+        }
+        const A = ud._verhaltenAktion;
+        if (A && nowS < A.bis) return; // die laufende Aktion spielt zu Ende
+        const row = V.stimmung[mood] || V.stimmung.idle;
+        if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return;
+        const alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
+        if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
+            // Stimmungs-Wechsel: neuen Takt würfeln (deterministisch), noch keine Aktion.
+            ud._verhaltenMood = mood;
+            const h0 = this._verhaltenHash(i + 1, (nowS * 10) | 0);
+            ud._verhaltenNext = nowS + alle[0] + ((h0 % 1000) / 1000) * (alle[1] - alle[0]);
+            return;
+        }
+        if (nowS < ud._verhaltenNext) return;
+        const h = this._verhaltenHash((i + 1) * 2654435761, nowS | 0);
+        const name = row.aktionen[h % row.aktionen.length];
+        const def = V.aktionen[name];
+        if (!def) return;
+        const dauer = Number.isFinite(def.dauer) ? def.dauer : 1;
+        ud._verhaltenAktion = { name, def, start: nowS, bis: nowS + dauer };
+        // hop zündet den feld-nativen Hüpfer (dieselbe EINE Sprungmechanik).
+        if (Number.isFinite(def.hop) && def.hop > 0 && !(ud._hopV > 0)) ud._hopV = def.hop;
+        ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
     }
     // ABSCHIEDS-WELLE — DER EINE BRÜCKEN-RESOLVER (Daten-Tabelle MOTION_EMOTION_PROFILES,
     // Vorrang-Zeilen; keine Achse über der Schwelle → die MOTION_PROFILE_MAP-Default-
@@ -21864,6 +22004,10 @@ class AnazhRealm {
                     // prüft die fleeThreshold selbst → ein getroffenes
                     // Raubtier fällt in den Flucht-Zweig darunter).
                     if (this._creatureHuntDrive(creature, wariness)) {
+                        // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
+                        // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
+                        // wählte es je — jetzt pirscht der Jäger sichtbar).
+                        this._kreaturZustandStempel(creature, "jagd");
                         const toPrey = scratchA.subVectors(playerPos, creature.position);
                         toPrey.y = 0;
                         if (toPrey.length() > 1.6) {
@@ -21877,13 +22021,16 @@ class AnazhRealm {
                         const fromPlayer = scratchA.subVectors(creature.position, playerPos);
                         fromPlayer.y = 0;
                         if (fromPlayer.length() < NAT.fleeRadius) {
+                            this._kreaturZustandStempel(creature, "flucht");
                             direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
                         } else {
+                            this._kreaturZustandStempel(creature, null);
                             // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
                             this._creatureCharacterWander(creature, direction, speed);
                         }
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
+                        this._kreaturZustandStempel(creature, null);
                         const toPlayer = scratchA.subVectors(playerPos, creature.position);
                         toPlayer.y = 0;
                         if (toPlayer.length() > 2) {
@@ -21929,11 +22076,14 @@ class AnazhRealm {
                         // Reichweite läuft separat (analog Spieler-Jagd).
                         const scentDir = this._creatureScentHuntDir(creature, wariness);
                         if (scentDir) {
+                            // KREATUR-LEBEN — auch die Witterungs-Jagd IST Jagd (ein Stempel).
+                            this._kreaturZustandStempel(creature, "jagd");
                             direction.copy(
                                 scentDir.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
                             );
                             this._tickCreatureScentStrike(creature);
                         } else {
+                            this._kreaturZustandStempel(creature, null);
                             // NEUTRAL — weder gelockt noch verschreckt noch witternd → gemächliches
                             // Wandern. V18.472 (C2): das CHARAKTER-Wandern (Stats/Emotionen/Leine)
                             // statt weißem Rauschen — die EINE Wander-Quelle.
@@ -22006,6 +22156,15 @@ class AnazhRealm {
                 const udZ = creature.userData;
                 if (waterSurface !== null) udZ._motionZustand = "schwimmen";
                 else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
+                // KREATUR-LEBEN — der Verhaltens-Tick (nahe Wesen, dieselbe
+                // 50-m-Kosten-Wand): Stimmung aus dem echten Zustand, Aktionen
+                // im deterministischen Takt; tempo bremst/stoppt die Bewegung
+                // unten, hop zündete beim Start den feld-nativen Hüpfer.
+                this._tickKreaturVerhalten(creature, i, performance.now() / 1000);
+                const VA = udZ._verhaltenAktion;
+                if (VA && VA.def && Number.isFinite(VA.def.tempo) && performance.now() / 1000 < VA.bis) {
+                    direction.multiplyScalar(Math.max(0, VA.def.tempo));
+                }
             }
 
             if (hasHit) {

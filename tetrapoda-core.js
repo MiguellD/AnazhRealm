@@ -52,6 +52,45 @@
     schwimmen:{freq:2.2,stride:0.05,bodyX:0.06,bodyZ:0,headX:0.08,headY:0,ear:-0.05,tailAmp:0.28,tailRate:2.4,tension:1.1,bob:0.004,sway:0.02,kpMul:0.9,phases:[0,Math.PI,Math.PI,0]}
     };
 
+    // ── KREATUR-LEBEN (rein additive DATEN-Zeilen): die VERHALTENS-SEELE des
+    // Showcase (joy: Spielverbeugung/Bocksprung/Drehen · hunt: Pirschen/
+    // Erstarren/Pounce · alert: Scannen/Schnappen · idle: Schuetteln/Gaehnen)
+    // als REISENDE Daten — plus die Beduerfnis-Stimmungen tag (Weiden der
+    // Pflanzenfresser) und nacht (Ruhen). Jede Aktion ist ein kurzer Profil-
+    // Overlay des Baum-Gangs (profil-Felder ueberlagern das MOTION-Preset)
+    // plus Sonder-Kanaele: dreh rad (Ganzkoerper-Drehung ueber die Dauer),
+    // kopfSweep rad (Kopf-Pendel), rollAmp/rollRate (Schuettel-Rolle), hop m/s
+    // (der feld-native Huepf-Impuls des Wirts), tempo (Bewegungs-Faktor
+    // waehrend der Aktion; 0 = innehalten). stimmung waehlt je Gemuetslage
+    // die Aktions-Liste + den Takt alle=[min,max] Sekunden (der Wirt jittert
+    // deterministisch aus der Kreatur-Identitaet — kein Zufall). Der Wirt
+    // waehlt/stempelt (updateCreatures), der Baum-Gang traegt den Overlay
+    // (_animateTierBaum). must-ignore: fremde Leser ueberlesen das Feld.
+    var VERHALTEN = {
+        aktionen: {
+            playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: -0.35, headX: 0.18, tailAmp: 0.5, tailRate: 6 }, tempo: 0 },
+            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: 3.2, tempo: 1.3 },
+            spin: { dauer: 1.1, profil: { freq: 4.0, stride: 0.06 }, dreh: 6.283, tempo: 0.2 },
+            stalk: { dauer: 2.6, profil: { freq: 0.7, stride: 0.014, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
+            freeze: { dauer: 1.4, profil: { freq: 0.02, stride: 0, tension: 1.8 }, tempo: 0 },
+            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: 4.5, tempo: 1.6 },
+            scan: { dauer: 1.8, profil: { freq: 0.06, stride: 0, headX: -0.08 }, kopfSweep: 0.5, tempo: 0 },
+            snap: { dauer: 0.5, profil: { headX: 0.22, freq: 1.5 } },
+            shake: { dauer: 0.8, profil: { freq: 0.2, stride: 0 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
+            yawn: { dauer: 1.3, profil: { headX: -0.3, freq: 0.05, stride: 0 }, tempo: 0 },
+            grasen: { dauer: 6.0, profil: { headX: 0.4, freq: 0.12, stride: 0.008, tailAmp: 0.18, tailRate: 1.2 }, tempo: 0.15 },
+            ruhen: { dauer: 16, profil: { freq: 0.04, stride: 0, bodyX: -0.08, headX: 0.12, tailAmp: 0.03, tailRate: 0.3 }, tempo: 0 },
+        },
+        stimmung: {
+            joy: { aktionen: ["playbow", "bound", "spin"], alle: [4, 9] },
+            jagd: { aktionen: ["stalk", "freeze", "pounce"], alle: [3, 7] },
+            alert: { aktionen: ["scan", "snap"], alle: [2, 5] },
+            idle: { aktionen: ["scan", "shake", "yawn"], alle: [7, 16] },
+            tag: { aktionen: ["grasen", "scan"], alle: [10, 22] },
+            nacht: { aktionen: ["ruhen", "yawn"], alle: [8, 18] },
+        },
+    };
+
     // ═══════════════════════════════════════════════════════════════════════
     //  B4 PARAMS — die fuenf Lab-Slider als DATEN (worlds/tetrapoda/index.html
     //  Z.42–51: min/max/step/value + die law-Zeilen woertlich).
@@ -131,6 +170,8 @@
                         cpgCoupling: JSON.parse(JSON.stringify(CPG_COUPLING)),
                         standPose: JSON.parse(JSON.stringify(STAND_POSE)),
                     },
+                    // KREATUR-LEBEN — die Verhaltens-Seele reist im Rezept (additiv, must-ignore).
+                    verhalten: JSON.parse(JSON.stringify(VERHALTEN)),
                 },
             };
         }
@@ -2065,6 +2106,7 @@
         MOTION: MOTION,
         CPG_COUPLING: CPG_COUPLING,
         STAND_POSE: STAND_POSE,
+        VERHALTEN: VERHALTEN,
         fellStreu: fellStreu,
     };
 })(typeof self !== "undefined" ? self : globalThis);

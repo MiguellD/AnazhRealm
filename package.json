@@ -83,6 +83,7 @@
         "gate:tier-separation": "node scripts/diag-tier-separation.cjs",
         "gate:reconnect": "node scripts/diag-reconnect.cjs",
         "gate:kreatur-kosten": "node scripts/diag-kreatur-kosten.cjs",
+        "gate:kreatur-leben": "node scripts/diag-kreatur-leben.cjs",
         "gate:tier-fern": "node scripts/diag-tier-fern.cjs",
         "gate:koerper-bewegung": "node scripts/diag-koerper-bewegung.cjs",
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
