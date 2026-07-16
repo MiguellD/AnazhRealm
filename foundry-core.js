@@ -2951,11 +2951,21 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
                 L: lin2(typeof P.cL === "number" ? P.cL : 0xc0a060),
             };
             const rows = kern.fellStreu(P, B.masse, T) || [];
+            // FELL=FLÄCHE (T4): die Gesetz-Zeilen tragen ABSOLUTE Strähnen-Zahlen,
+            // getunt an der Gattungs-BASIS-Größe — die Haut wächst aber ×(size/basis)².
+            // Der Bäcker (der EINE Chokepoint beider Scheduler) skaliert jede
+            // Streu-MENGE mit dem Flächen-Verhältnis (Deckel ×16 = Tri-Budget);
+            // Default-Guss (size == basis) bleibt byte-identisch (fellF === 1).
+            const basisSize =
+                dials0 && typeof dials0.size === "number" && dials0.size > 0 ? dials0.size : P.size || 2.4;
+            const fellF = Math.min(16, Math.max(1 / 16, Math.pow((P.size || basisSize) / basisSize, 2)));
             let seed = 4242;
             const streue = (row, ton) => {
                 const node = B.teile[row.teil];
                 seed++;
                 if (!node) return;
+                if (fellF !== 1 && row.n > 0)
+                    row = Object.assign({}, row, { n: Math.max(1, Math.round(row.n * fellF)) });
                 const geo = __streuGeo(row, seed, toene[ton] || toene.B);
                 if (!geo) return;
                 const klass = ton === "D" ? "straehneD" : ton === "L" ? "straehneL" : "straehne";

@@ -122,4 +122,12 @@ THREE_GLOBAL.TSL = TSL;
 if (typeof CSMShadowNode === "function") {
     THREE_GLOBAL.CSMShadowNode = CSMShadowNode;
 }
+// T3 (DC-SUBMIT-TÖTER) — BundleGroup lebt NUR im three/webgpu-Bundle (r184:
+// WebGPU-RenderBundles; der Renderer replayed statischer Subbäume statt sie
+// jeden Frame neu zu encoden). Soft-Anbindung wie PostProcessing/CSM: fehlt
+// das Symbol nach einem Vendor-Wechsel, bleibt der Region-Bundle-Pfad im
+// Stamm einfach aus (Meshes hängen dann direkt an der Szene — 0 Regress).
+if (typeof WEBGPU.BundleGroup === "function") {
+    THREE_GLOBAL.BundleGroup = WEBGPU.BundleGroup;
+}
 window.THREE = THREE_GLOBAL;

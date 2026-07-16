@@ -288,7 +288,8 @@ function selbstTest() {
         ohneOvHash !== STAMM && pruefeQuelle(ohneOvHash).length > 0,
     ]);
     // 5. Die Geritten-Wand: LOD_DISTANCES pervertiert (alles ab 0 m = Stufe 2) -> MUSS feuern.
-    const ohneWand = STAMM.replace("thresh01: 20,", "thresh01: -1,").replace("thresh12: 40,", "thresh12: -1,");
+    // TRI-BUDGET (T2, 16.07.): die Default-Literale wanderten 20/40 → 12/26 (LOD_TRI_BUDGET_MUL).
+    const ohneWand = STAMM.replace("thresh01: 12,", "thresh01: -1,").replace("thresh12: 26,", "thresh12: -1,");
     faelle.push([
         "Distanz-Autorität pervertiert (geritten = Stufe 2) -> feuert",
         ohneWand !== STAMM && pruefeQuelle(ohneWand).length > 0,

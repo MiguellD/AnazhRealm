@@ -6883,6 +6883,19 @@ async function checkBandV1774UseByRole(ctx) {
             label: "Spitzhacke (Substanz)",
             parts: JSON.parse(JSON.stringify(KS74.geraet_spitzhacke.parts)),
         };
+        // KÖRPER GANZ (T6) — koerper_human ist ALT_DOPPEL/donorOnly (V18.480) und fällt aus der
+        // primären Select-Sicht (der mensch-Eintrag der Studio-Gruppe ist seine Wahrheit). Der
+        // generische „Bauplan-Avatar gelistet + verkörperbar"-Pfad wandert auf einen eigenen
+        // role:soul-Bauplan (dieselben Parts — die Verkörperung bleibt ein Compound wie zuvor).
+        if (r.state.customSouls) delete r.state.customSouls["bp__t_avatar74"];
+        if (blu._t_avatar74) delete blu._t_avatar74;
+        blu._t_avatar74 = {
+            name: "_t_avatar74",
+            label: "Avatar (Test)",
+            role: "soul",
+            roleManual: true,
+            parts: JSON.parse(JSON.stringify(blu.koerper_human.parts)),
+        };
 
         // (1) _blueprintUseKind — aus Rolle + Form AUSGELESEN
         const kind = (n) => r._blueprintUseKind(blu[n]);
@@ -6924,21 +6937,32 @@ async function checkBandV1774UseByRole(ctx) {
             /spitzhacke/i.test(row.textContent || "")
         );
 
-        // (6) BUG b — die Seele-Select listet den built-in Bauplan-Avatar + Verkörpern registriert ihn
+        // (6) BUG b — die Seele-Select listet den Bauplan-Avatar + Verkörpern registriert ihn.
+        // KÖRPER GANZ (T6): der generische Pfad wird am eigenen role:soul-Bauplan gemessen;
+        // die STUDIO-SICHT dazu — koerper_human (Alt-Doppel) tritt NICHT mehr auf, die
+        // Studio-Gruppe trägt den Tier-Wert (koerper_wolf) mit Studio-Namen.
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
-        out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "koerper_human");
-        const emb = r.embodyBlueprint("koerper_human");
+        out.avatarListed = !!soulSel && [...soulSel.options].some((o) => o.value === "_t_avatar74");
+        out.studioSicht =
+            !!soulSel &&
+            [...soulSel.options].every((o) => o.value !== "koerper_human") &&
+            [...soulSel.options].some(
+                (o) =>
+                    (o.value === "koerper_wolf" || o.value === "bp_koerper_wolf") &&
+                    /^wolf\b/.test(o.textContent || "")
+            );
+        const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =
             emb.ok === true &&
-            p.soul === "bp_koerper_human" &&
-            !!(r.state.customSouls && r.state.customSouls["bp_koerper_human"]);
+            p.soul === "bp__t_avatar74" &&
+            !!(r.state.customSouls && r.state.customSouls["bp__t_avatar74"]);
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =
             !!soulSel2 &&
-            [...soulSel2.options].filter((o) => o.value === "koerper_human").length === 0 &&
-            [...soulSel2.options].some((o) => o.value === "bp_koerper_human");
+            [...soulSel2.options].filter((o) => o.value === "_t_avatar74").length === 0 &&
+            [...soulSel2.options].some((o) => o.value === "bp__t_avatar74");
 
         // V18.99 (G1 — Motion-Resonanz): (a) die Bewegungs-Rollen EMERGIEREN
         // für den Bauplan-Avatar (Bein + Flügel aus Form × Lage × Spiegelung,
@@ -6989,12 +7013,16 @@ async function checkBandV1774UseByRole(ctx) {
         if (typeof r.setGameMode === "function") r.setGameMode(savedMode);
         else r.state.worldMeta.gameMode = savedMode;
         r._clearBuildMode();
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
+        if (r.state.customSouls) {
+            delete r.state.customSouls["bp_koerper_human"];
+            delete r.state.customSouls["bp__t_avatar74"];
+        }
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
         for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
-        delete blu._t_v1774; // Test-Blueprint aufräumen
+        delete blu._t_v1774; // Test-Blueprints aufräumen
+        delete blu._t_avatar74;
         if (typeof r._renderHotbarDOM === "function") r._renderHotbarDOM();
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         if (typeof r.recomputePlayerStats === "function") r.recomputePlayerStats();
@@ -7022,8 +7050,12 @@ async function checkBandV1774UseByRole(ctx) {
         res.armorListed && res.heldDeviceListed
     );
     check(
-        "V17.74 Welle 1b BUG-b: die Seele-Select listet den built-in Bauplan-Avatar (koerper_human) als verkörperbar",
+        "V17.74 Welle 1b BUG-b: die Seele-Select listet einen Bauplan-Avatar (role:soul) als verkörperbar",
         res.avatarListed
+    );
+    check(
+        "KÖRPER GANZ (T6): die STUDIO-SICHT — Alt-Doppel koerper_human fällt aus dem Select, der Wolf steht mit Studio-Namen in der Studio-Gruppe",
+        res.studioSicht
     );
     check(
         "V17.74 Welle 1b BUG-b KONSUM: einen Bauplan-Avatar verkörpern formt + registriert ihn (player.soul=bp_…, customSoul), kein Doppel-Eintrag danach",
@@ -7086,10 +7118,13 @@ async function checkBandV1775MakeActCost(ctx) {
         const emb = r.embodyBlueprint("koerper_human");
         out.embodyFailsClean = emb.ok === false && p.soul === "human";
 
-        // (5) das Select RENDERT den Mangel sichtbar im Option-Text (kein stiller Fehlschlag)
+        // (5) das Select RENDERT den Mangel sichtbar im Option-Text (kein stiller Fehlschlag).
+        // KÖRPER GANZ (T6): koerper_human ist aus der Sicht (Alt-Doppel) — der Marker wird
+        // am STUDIO-Eintrag gemessen (koerper_wolf, un-verkörpert → Kosten-Suffix am Namen).
+        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_wolf"];
         if (typeof r._refreshSoulSelect === "function") r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
-        const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "koerper_human") : null;
+        const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "koerper_wolf") : null;
         out.optionShowsMissing = !!avatarOpt && avatarOpt.textContent.includes("fehlt");
 
         // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei).
@@ -43135,6 +43170,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // V8.29.1 — Render-Loop hält player.visible=true,
         // versteckt nur den KOPF im 1st-Person (headPart.visible
         // = cameraMode==="third"). Via Source-Pattern geprüft.
+        // T7 (16.07.) — Tests wandern mit dem Code: die Regel wohnt jetzt im
+        // Chokepoint `_applyEgoSicht` (lokales `third = cameraMode === "third"`);
+        // das Pattern akzeptiert BEIDE Formen, verlangt aber die Modus-Quelle
+        // in DERSELBEN Funktion (kein blindes `= third`-Match).
         {
             let found = false;
             const proto = Object.getPrototypeOf(r);
@@ -43142,7 +43181,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                 try {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
-                    if (/headPart\.visible\s*=\s*this\.state\.cameraMode/.test(window.__codeOf(fn))) found = true;
+                    const src = window.__codeOf(fn);
+                    if (
+                        /headPart\.visible\s*=\s*(this\.state\.cameraMode|third)\b/.test(src) &&
+                        /cameraMode\s*===\s*"third"/.test(src)
+                    )
+                        found = true;
                 } catch {
                     /* skip */
                 }
@@ -55800,15 +55844,16 @@ async function checkBandRing5Soul(ctx) {
         out.drawerSelectInDom = !!document.getElementById("player-soul-select");
         out.statusBarSoulInDom = !!document.getElementById("status-soul");
         const select = document.getElementById("player-soul-select");
-        // ALTLASTEN-NULL (V9.56-i): die Seele-Select listet den Menschen PLUS die
-        // verkörperbaren role:"soul"-Baupläne (koerper_human + die vier Tiere).
+        // ALTLASTEN-NULL (V9.56-i) + KÖRPER GANZ (T6): die Seele-Select listet den Menschen
+        // PLUS die vier Studio-Tiere (Studio-Gruppe; verkörpert → bp_-Wert). koerper_human
+        // ist ALT_DOPPEL (V18.480) und tritt NICHT mehr auf — der mensch-Eintrag trägt ihn.
         const ring5SoulVals = select ? [...select.options].map((o) => o.value) : [];
         out.dropdownHasBuiltinSouls =
             ring5SoulVals.includes("human") &&
             !ring5SoulVals.includes("phoenix") &&
             !ring5SoulVals.includes("dragon") &&
-            ring5SoulVals.includes("koerper_human") &&
-            ring5SoulVals.includes("koerper_wolf");
+            !ring5SoulVals.includes("koerper_human") &&
+            (ring5SoulVals.includes("koerper_wolf") || ring5SoulVals.includes("bp_koerper_wolf"));
         out.dropdownOptionCount = select ? select.options.length : -1;
         out.dropdownOptionValues = select ? [...select.options].map((o) => o.value).join(",") : "";
 

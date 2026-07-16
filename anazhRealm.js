@@ -48632,6 +48632,9 @@ class AnazhRealm {
                 /* fail-soft: die Übergabe steht im State — der nächste Guss trägt sie */
             }
             this.log("Studio-Übergabe angenommen: der Avatar trägt die Schöpfer-Gestalt (Da-Vinci-Studio).", "INFO");
+            // KÖRPER GANZ (T6) — die Übergabe ist SICHTBAR am mensch-Eintrag des
+            // Ich-Selects (✦ Studio-Gestalt): die Sicht folgt dem State sofort.
+            if (typeof this._refreshSoulSelect === "function") this._refreshSoulSelect();
         } else {
             if (!ue.kreatur || typeof ue.kreatur !== "object") ue.kreatur = {};
             ue.kreatur[clean.gattung] = { s: clean.s };
@@ -51300,6 +51303,11 @@ class AnazhRealm {
             fuchs: "koerper_fuchs",
             bär: "koerper_baer",
             baer: "koerper_baer",
+            // KÖRPER GANZ (T6) — die STUDIO-Namen des tetrapoda-Buchs (die primäre
+            // Ich-Sicht zeigt sie) sind ebenso sprechbar: „werde fox/bear/deer".
+            deer: "koerper_wesen",
+            fox: "koerper_fuchs",
+            bear: "koerper_baer",
         };
         // Welle 6.D Etappe 1.6 — auch Custom-Seelen tolerieren. Alias-Map gilt
         // weiter für deutsche/englische Built-in-Namen; sonst sanitizen wir den
@@ -51404,6 +51412,11 @@ class AnazhRealm {
         this.state.scene.add(newGroup);
         this.state.playerMesh = newGroup;
         this.state.player.soul = canonical;
+        // T7 (16.07.) — die Ego-Sicht SOFORT am Guss-Chokepoint (nicht erst im
+        // nächsten _loopCamera-Frame): der frisch gegossene Leib erschien sonst
+        // einen Frame lang ROH (Kopf von innen) — und jede headless-/Augen-
+        // Umgebung ohne Kamera-Tick dauerhaft (Raycast-Sonde: 6 → 0 Treffer).
+        this._applyEgoSicht();
         // P0.1 (Bühnen-Ordnung) — IDEMPOTENT AM CHOKEPOINT (die V18.423-Klasse): JEDER
         // erfolgreiche Seelen-Bau erfüllt den deferierten Boot-Avatar-Bau (V18.304) mit —
         // der Loop-Defer kann danach keinen zweiten Bau mehr stapeln, egal welcher Pfad
@@ -53241,7 +53254,9 @@ class AnazhRealm {
             if (batch) {
                 batch.refCount = (batch.refCount || 1) - 1;
                 if (batch.refCount <= 0) {
-                    if (this.state.scene && batch.mesh) this.state.scene.remove(batch.mesh);
+                    // T3 — parent-bewusst: der Batch kann in einer Region-BundleGroup hängen
+                    // (scene.remove wäre dort ein No-op = Leck + Geister-Draws im Replay).
+                    if (batch.mesh) this._archBundleSceneRemove(batch.mesh);
                     if (batch.mesh && typeof batch.mesh.dispose === "function") batch.mesh.dispose();
                     if (this.state.archBatches) this.state.archBatches.delete(batch.batchKey);
                 }
@@ -63706,7 +63721,25 @@ class AnazhRealm {
             // trägt der ganze Batch die Layer. Kein FOLIAGE_LAYER (der Zwilling ist kein Laub-Pass).
             if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
             else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub-Batch → FOLIAGE_LAYER
-            if (this.state.scene) this.state.scene.add(mesh);
+            // T3 — RENDERBUNDLES (DC-SUBMIT-TÖTER): der regionale Batch hängt in der
+            // REGION-BundleGroup statt direkt an der Szene → der Renderer recorded die
+            // Region EINMAL als WebGPU-RenderBundle und replayed sie (Submit-CPU ≈ 0;
+            // Sonde diag-render-bundle: CPU 4.23→1.06 ms, dc 1566→0, Pixel identisch).
+            // GEMESSENE Bundle-Semantik (dieselbe Sonde): Kamera/Licht/Fog/BatchedMesh-
+            // Matrizen LEBEN im Replay (Uniform-/Textur-Bindings); die DRAW-LISTE friert
+            // beim Record ein → (a) drei-seitiges Culling ist im Bundle wirkungslos, also
+            // frustumCulled/perObjectFrustumCulled AUS und der Region-Cull wandert auf die
+            // Bundle-Sichtbarkeit (_archRegionBundleCull, pro Frame in _projectObject
+            // ausgewertet); (b) JEDE Draw-Listen-Mutation (addInstance/deleteInstance/
+            // setGeometrySize/Mesh-Add/-Remove) MUSS das Bundle invalidieren
+            // (_archBundleTouch → needsUpdate → gezielter Re-Record NUR dieser Region).
+            const bundle = regional ? this._archRegionBundleFor(regionKey) : null;
+            if (bundle) {
+                mesh.frustumCulled = false;
+                mesh.perObjectFrustumCulled = false;
+                bundle.add(mesh);
+                bundle.needsUpdate = true;
+            } else if (this.state.scene) this.state.scene.add(mesh);
             batch = {
                 batchKey,
                 mesh,
@@ -63754,7 +63787,94 @@ class AnazhRealm {
             const curV = bg && bg.attributes.position ? bg.attributes.position.count : 0;
             const curI = bg && bg.index ? bg.index.count : 0;
             batch.mesh.setGeometrySize(curV + pos + 8192, curI + idx + 24576);
+            // T3 — setGeometrySize baut die GPU-Puffer NEU → ein recorded Bundle
+            // referenziert die alten → Re-Record der Region erzwingen.
+            this._archBundleTouch(batch);
             return batch.mesh.addGeometry(geom);
+        }
+    }
+
+    // T3 — RENDERBUNDLES (DC-SUBMIT-TÖTER, Sonde scripts/diag-render-bundle.cjs).
+    // EINE BundleGroup je Streu-/Platzier-Region: der WebGPU-Renderer recorded den
+    // statischen Region-Subbaum (die BatchedMeshes) EINMAL als RenderBundle und
+    // REPLAYED ihn — der per-Frame-Submit (renderObject-Encode je Draw) entfällt.
+    // Dynamisches (Kreaturen/Wasser/Spieler/InstancedMesh-Gruppen) bleibt DRAUSSEN:
+    // die Sonde hat gemessen, dass instanceMatrix-Attribute im Replay EINFRIEREN
+    // (nur Uniform-/Textur-Bindings leben) — BatchedMesh trägt seine Matrizen als
+    // Textur und ist deshalb der EINE bundle-sichere Pfad. Kill-Switch:
+    // `anazhRealm.state.useRegionRenderBundles=false` (+ Reload) = byte-alter Pfad.
+    _archRegionBundleFor(regionKey) {
+        if (regionKey == null || this.state.useRegionRenderBundles === false) return null;
+        if (typeof THREE.BundleGroup !== "function") return null; // Vendor ohne Bundles → alter Pfad
+        const scene = this.state.scene;
+        if (!scene) return null;
+        let map = this.state._regionBundles;
+        if (!map) map = this.state._regionBundles = new Map();
+        let bg = map.get(regionKey);
+        if (!bg) {
+            bg = new THREE.BundleGroup();
+            bg.name = "regionBundle:" + regionKey;
+            bg.userData.regionKey = regionKey;
+            // Analytische Region-Kugel für den Frame-Cull (Bundle-Sichtbarkeit ersetzt
+            // das im Replay eingefrorene three-Culling). Key-Formen: "x,z" · "p:x,z" ·
+            // Super-Region "s:x,z"/"p:s:x,z" (V18.474, S×S Regionen). ÜBER-Inklusion
+            // ist sicher (nur GPU-Preis), UNTER-Inklusion wäre ein Pop — daher der
+            // großzügige Höhen-/Überhang-Puffer.
+            const m = /^(p:)?(s:)?(-?\d+),(-?\d+)$/.exec(String(regionKey));
+            if (m) {
+                const S = m[2]
+                    ? Number.isFinite(AnazhRealm.SCATTER_FERN_SUPERREGION) && AnazhRealm.SCATTER_FERN_SUPERREGION > 1
+                        ? AnazhRealm.SCATTER_FERN_SUPERREGION
+                        : 4
+                    : 1;
+                const R = AnazhRealm.ARCH_REGION_M * S;
+                const cy = (Number.isFinite(this.state.terrainBaseHeight) ? this.state.terrainBaseHeight : 0) + 40;
+                bg.userData.cullSphere = new THREE.Sphere(
+                    new THREE.Vector3((Number(m[3]) + 0.5) * R, cy, (Number(m[4]) + 0.5) * R),
+                    R * Math.SQRT1_2 + 140
+                );
+            }
+            scene.add(bg);
+            map.set(regionKey, bg);
+        }
+        return bg;
+    }
+
+    // Der EINE Invalidierungs-Chokepoint: jede Draw-Listen-Mutation eines Batches
+    // (addInstance/deleteInstance/setInstanceCount/setGeometrySize) muss hierher —
+    // needsUpdate++ recorded NUR das Bundle dieser Region neu (Sonde: reRecordBegins=1).
+    _archBundleTouch(batch) {
+        const p = batch && batch.mesh ? batch.mesh.parent : null;
+        if (p && p.isBundleGroup) p.needsUpdate = true;
+    }
+
+    // Parent-bewusstes Entfernen (die scene.remove-Falle: remove() wirkt nur auf
+    // DIREKTE Kinder — ein Batch in der BundleGroup bliebe sonst hängen = Leck).
+    // Leere Bundles verlassen die Szene mit (Region weggestreamt).
+    _archBundleSceneRemove(mesh) {
+        const p = mesh ? mesh.parent : null;
+        if (!p) return;
+        p.remove(mesh);
+        if (p.isBundleGroup) {
+            p.needsUpdate = true;
+            if (p.children.length === 0) {
+                if (p.parent) p.parent.remove(p);
+                if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
+            }
+        }
+    }
+
+    // Pro Frame (aus _loopFrustumCulling, das Frustum steht dort schon): die
+    // Bundle-Sichtbarkeit IST das Region-Culling — _projectObject wertet `visible`
+    // jeden Frame aus, auch für gecachte Bundles (Replay wird übersprungen).
+    _archRegionBundleCull() {
+        const map = this.state._regionBundles;
+        if (!map || map.size === 0) return;
+        const fr = this._frustumCache;
+        if (!fr) return;
+        for (const bg of map.values()) {
+            const s = bg.userData.cullSphere;
+            bg.visible = !s || fr.intersectsSphere(s);
         }
     }
 
@@ -63988,13 +64108,16 @@ class AnazhRealm {
         // gibt es kein g.free/g.next, also ist liveCount die EINE Quelle für „dieser Wrapper ist leer").
         g.liveCount = (g.liveCount || 0) + 1;
         if (g.kind === "batch") {
+            let slot;
             try {
-                return g.mesh.addInstance(g.geomId);
+                slot = g.mesh.addInstance(g.geomId);
             } catch {
                 // maxInstanceCount-Überlauf → Instanz-Kapazität verdoppeln (V18.289-Probe)
                 g.mesh.setInstanceCount((g.mesh.maxInstanceCount || 1024) * 2);
-                return g.mesh.addInstance(g.geomId);
+                slot = g.mesh.addInstance(g.geomId);
             }
+            this._archBundleTouch(g.batch); // T3 — Draw-Liste wuchs → Region-Bundle re-recorden
+            return slot;
         }
         if (g.free.length > 0) return g.free.pop();
         if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
@@ -64010,6 +64133,7 @@ class AnazhRealm {
         if (g.kind === "batch") {
             if (typeof g.mesh.deleteInstance === "function") g.mesh.deleteInstance(slot);
             if (g.slotEntry) g.slotEntry[slot] = null;
+            this._archBundleTouch(g.batch); // T3 — Draw-Liste schrumpfte → Region-Bundle re-recorden
             return;
         }
         const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
@@ -64304,10 +64428,16 @@ class AnazhRealm {
         // zeigen auf denselben Batch); die Wrapper selbst überspringen.
         if (this.state.archBatches) {
             for (const b of this.state.archBatches.values()) {
-                if (this.state.scene && b.mesh) this.state.scene.remove(b.mesh);
+                // T3 — parent-bewusst (Batch kann in einer Region-BundleGroup hängen)
+                if (b.mesh) this._archBundleSceneRemove(b.mesh);
                 if (b.mesh && typeof b.mesh.dispose === "function") b.mesh.dispose();
             }
             this.state.archBatches.clear();
+        }
+        // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore).
+        if (this.state._regionBundles) {
+            for (const bg of this.state._regionBundles.values()) if (bg.parent) bg.parent.remove(bg);
+            this.state._regionBundles.clear();
         }
         if (!this.state.archInstanceGroups) return;
         for (const g of this.state.archInstanceGroups.values()) {
@@ -66451,8 +66581,12 @@ class AnazhRealm {
         const L = config.lod;
         const D = AnazhRealm.LOD_DISTANCES;
         if (L && typeof L === "object") {
-            if (Number.isFinite(L.d0)) D.thresh01 = L.d0;
-            if (Number.isFinite(L.d1)) D.thresh12 = L.d1;
+            // TRI-BUDGET (T2, 16.07.) — die Studio-Distanzen reisen durch den WELT-
+            // Straff-Faktor (LOD_TRI_BUDGET_MUL, s. Datenblock): das Studio führt,
+            // die Welt übersetzt tri-budgetiert (32M-Zensus/30M-Trace → Ziel ≤8M).
+            const _tb = AnazhRealm.LOD_TRI_BUDGET_MUL || { d0: 1, d1: 1 };
+            if (Number.isFinite(L.d0)) D.thresh01 = L.d0 * _tb.d0;
+            if (Number.isFinite(L.d1)) D.thresh12 = L.d1 * _tb.d1;
             if (Number.isFinite(L.fade)) D.fade = L.fade;
             if (Number.isFinite(L.fade0)) D.fade0 = L.fade0;
             if (Number.isFinite(L.hyst)) D.hysteresis = L.hyst;
@@ -67985,6 +68119,13 @@ class AnazhRealm {
         // N7.4 — die Daten-Wahrheit trägt: `!f || !f.ready` unten deckt jeden foundry-losen
         // Zustand (unter dem globalen Hook wird `_foundry` nie erzeugt; der sync-only-
         // Unit-Richter `__withNoFoundry` pumpt keine Ticks) — kein separater Regime-Read.
+        // URTEIL 16.07. — GEMESSENES LECK der N7.4-Annahme: das perf.d-Band ruft
+        // `tickArchitectureCulling` IM Hook-Fenster → in der warmen Studio-Welt lief der
+        // Rewarm mit (bakeBudget-Bauten via Grammatik-Wand = Burst ÜBER dem Cull-Budget,
+        // gebaut=8 > budget=6). Der Chokepoint liest jetzt DIESELBE Regime-Quelle
+        // (`_foundryEnabled`): Foundry aus → Rewarm ist No-op (Produktion byte-gleich,
+        // der Hook ist der einzige false-Fall mit lebendem `_foundry`).
+        if (!this._foundryEnabled()) return;
         // V18.395 — DIE FOUNDRY WARTET AUFS TERRAIN (Schöpfer „erst den Bereich sauber laden, DANN Detail;
         // der Ladefluss zu schwer, es erweitert"): baute in DIESEM Frame ein Terrain-Chunk, konvergiert die
         // Foundry NICHT (dieselbe „erst der Boden, dann der Wald"-Disziplin wie der scatterDeco-Job). So
@@ -80145,6 +80286,7 @@ class AnazhRealm {
     setCameraMode(mode) {
         const next = mode === "third" ? "third" : "first";
         this.state.cameraMode = next;
+        this._applyEgoSicht(); // T7 — der Modus-Schalter trägt die Sicht-Regel sofort (EINE Naht)
         const toggle = typeof document !== "undefined" ? document.getElementById("camera-mode-toggle") : null;
         if (toggle) {
             toggle.setAttribute("aria-pressed", next === "third" ? "true" : "false");
@@ -83093,34 +83235,78 @@ class AnazhRealm {
         if (!select) return;
         const previous = select.value;
         select.innerHTML = "";
-        for (const key of Object.keys(this.playerSoulDefs)) {
+        // KÖRPER GANZ (T6, Schöpfer 16.07. „wie kann ich meinen körper wechseln") — die
+        // primäre Sicht ist das STUDIO-BUCH, nicht der Bauplan-Katalog: zuoberst eine
+        // „Studio-Wesen"-Gruppe (mensch + die vier tetrapoda-Gattungen mit ihren
+        // STUDIO-Namen wolf/fox/bear/deer). Die Alt-Doppel (koerper_*, ALT_DOPPEL/
+        // donorOnly seit V18.480) bleiben als Werte/Aliase voll funktional (der Tier-
+        // Eintrag TRÄGT den koerper_<tier>-Wert — derselbe embody-Pfad), fallen aber
+        // als eigene „(Körper)"-Zeilen aus der Sicht (dasselbe W-A1-Flag wie alle Picker).
+        const seen = new Set();
+        const addOpt = (parent, value, text, title) => {
             const opt = document.createElement("option");
-            opt.value = key;
-            opt.textContent = this.playerSoulDefs[key].label;
-            select.appendChild(opt);
+            opt.value = value;
+            opt.textContent = text;
+            if (title) opt.title = title;
+            parent.appendChild(opt);
+            seen.add(value);
+            return opt;
+        };
+        const gStudio = document.createElement("optgroup");
+        gStudio.label = "Studio-Wesen";
+        // (1) mensch — die gegebene Identität (koerperstudio); die Studio-Übergabe
+        // (state.studioUebergabe.koerper) ist SICHTBAR am Eintrag (✦ Studio-Gestalt).
+        const ueK = this.state.studioUebergabe && this.state.studioUebergabe.koerper;
+        addOpt(
+            gStudio,
+            "human",
+            ueK ? "mensch ✦ Studio-Gestalt" : "mensch",
+            "koerperstudio — dein Menschen-Körper" + (ueK ? " (trägt die Live-Übergabe aus dem Studio)" : "")
+        );
+        // (2) die vier Gattungen des tetrapoda-Buchs, mit ihren Studio-Namen. Verkörpert
+        // (bp_koerper_<tier> als customSoul) → freier Wechsel; sonst der embody-Wert
+        // (koerper_<tier>) mit Kosten-Marker — derselbe change-Handler wie immer.
+        const SM = AnazhRealm.TETRAPODA_SOUL_MAP || {};
+        for (const soulKey of Object.keys(SM)) {
+            const studioName = SM[soulKey]; // deer · wolf · fox · bear
+            const bpName = `koerper_${soulKey}`;
+            if (this.state.customSouls && this.state.customSouls[`bp_${bpName}`]) {
+                addOpt(
+                    gStudio,
+                    `bp_${bpName}`,
+                    `${studioName} ✦`,
+                    `tetrapoda — ${studioName} (verkörpert, freier Wechsel)`
+                );
+            } else if (this.state.blueprints && this.state.blueprints[bpName]) {
+                const opt = addOpt(gStudio, bpName, studioName + " ⚒" + this._makeActCostSuffix(bpName));
+                opt.title = this._blueprintCostTooltip(bpName);
+            }
+        }
+        select.appendChild(gStudio);
+        for (const key of Object.keys(this.playerSoulDefs)) {
+            if (seen.has(key)) continue;
+            addOpt(select, key, this.playerSoulDefs[key].label);
         }
         if (this.state.customSouls) {
             for (const key of Object.keys(this.state.customSouls)) {
-                const opt = document.createElement("option");
-                opt.value = key;
-                opt.textContent = this.state.customSouls[key].label + " ✦";
-                select.appendChild(opt);
+                if (seen.has(key)) continue;
+                addOpt(select, key, this.state.customSouls[key].label + " ✦");
             }
         }
         // V17.74 Welle 1b (kampf-plan §11.5) — die GEBRAUCHS-Fläche listet AUCH noch-nicht-verkörperte
         // role:"soul"-Baupläne (die craftbaren Avatare, Built-in-Bibliothek INKLUSIVE) → der Spieler kann
         // sie hier VERKÖRPERN. Schon-verkörperte (bp_<name> liegt als customSoul) werden übersprungen
         // (oben gelistet), damit kein Doppel-Eintrag. ⚒ markiert „ein Bauplan-Avatar (verkörpern formt ihn)".
+        // KÖRPER GANZ (T6) — Alt-Doppel (donorOnly) treten hier nicht mehr auf: ihre Wahrheit
+        // steht mit Studio-Namen in der Gruppe oben (koerper_human ist der mensch-Eintrag).
         const blu = this.state.blueprints || {};
         for (const name of Object.keys(blu)) {
             const bp = blu[name];
             if (!bp || bp.role !== "soul" || !Array.isArray(bp.parts) || !bp.parts.length) continue;
+            if (seen.has(name) || bp.donorOnly) continue;
             if (this.state.customSouls && this.state.customSouls[`bp_${name}`]) continue; // schon verkörpert
-            const opt = document.createElement("option");
-            opt.value = name;
-            opt.textContent = (bp.label || name) + " ⚒" + this._makeActCostSuffix(name);
+            const opt = addOpt(select, name, (bp.label || name) + " ⚒" + this._makeActCostSuffix(name));
             opt.title = this._blueprintCostTooltip(name);
-            select.appendChild(opt);
         }
         const desired = previous || this.state.player.soul || "human";
         // Wenn die zuvor gewählte Option weg ist (z. B. Custom gelöscht),
@@ -84572,6 +84758,10 @@ class AnazhRealm {
             this.state.floatingIslands.forEach((island) => (island.visible = this.isInFrustum(island, frustum)));
         if (this.state.creatures)
             this.state.creatures.forEach((creature) => (creature.visible = this.isInFrustum(creature, frustum)));
+        // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Batches lebt auf der
+        // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
+        // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
+        this._archRegionBundleCull();
     }
 
     _loopAnimateUfos(currentTime) {
@@ -85711,6 +85901,28 @@ class AnazhRealm {
         }
     }
 
+    // T7 (16.07.) — DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-
+    // Person-Avatar-Sichtbarkeit (Kopf-Part + _creatureSkin-Ganzkörper-Wrap; Regel
+    // unverändert V8.29.1/KONVERGENZ III: 3rd sichtbar, 1st verborgen — die Kamera
+    // sitzt IM Leib). GEMESSEN (Raycast-Sonde 16.07.): die Regel lebte NUR im
+    // per-Frame _loopCamera — jeder Render VOR dem ersten Kamera-Tick (headless-/
+    // Augen-Sonden, die direkt rendern; der Frame zwischen Avatar-Guss und nächstem
+    // Tick) zeigte den ROHEN Kopf von innen (Sonde: SkinnedMesh-Treffer 0.4–0.7 m
+    // in der unteren Bildhälfte; nach dem Chokepoint-Ruf: 0). Jetzt rufen der
+    // Avatar-Guss (applyPlayerSoul) und der Modus-Schalter (setCameraMode) dieselbe
+    // Naht; _loopCamera bleibt der idempotente per-Frame-Halter (Gesetz #2:
+    // Invariante in den Chokepoint, nie Wachsamkeit).
+    _applyEgoSicht() {
+        const player = this.state.playerMesh;
+        if (!player) return;
+        const third = this.state.cameraMode === "third";
+        const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+        if (headPart) headPart.visible = third;
+        for (const ch of player.children) {
+            if (ch && ch.userData && ch.userData._creatureSkin) ch.visible = third;
+        }
+    }
+
     _loopCamera(currentTime) {
         // ### Kamera ###
         // V9.44-f — player/camera kamen vorher aus der Bewegungs-Sektion
@@ -85724,24 +85936,10 @@ class AnazhRealm {
             player.rotation.y = this.state.yaw;
             // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
             // den eigenen Körper zu sehen ist normal — Minecraft etc.
-            // tun das auch). Nur der KOPF wird im 1st-Person versteckt:
-            // die Kamera SITZT im Kopf, kein Spiel zeigt den eigenen
-            // Kopf von innen. Torso/Arme/Beine bleiben sichtbar beim
-            // Runterschauen. Im 3rd-Person ist alles sichtbar.
+            // tun das auch). Nur der KOPF wird im 1st-Person versteckt.
+            // T7: die Regel selbst wohnt in _applyEgoSicht (EINE Quelle).
             player.visible = true;
-            {
-                const headPart = player.userData && player.userData.parts && player.userData.parts.head;
-                if (headPart) headPart.visible = this.state.cameraMode === "third";
-                // HERZ/KONVERGENZ III: ein getragener Tier-Körper trägt den
-                // Studio-Baum als Ganzkörper-Wrap (_creatureSkin) — die Kamera
-                // sitzt im 1st IN ihm; er folgt derselben Kopf-Regel (3rd
-                // sichtbar, 1st verborgen).
-                for (const ch of player.children) {
-                    if (ch && ch.userData && ch.userData._creatureSkin) {
-                        ch.visible = this.state.cameraMode === "third";
-                    }
-                }
-            }
+            this._applyEgoSicht();
             if (this.state.cameraMode === "third") {
                 // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
                 // die Kamera vertikal; Distance bleibt konstant. Look-At
@@ -86568,7 +86766,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.478.0";
+AnazhRealm.VERSION = "18.481.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87557,9 +87755,20 @@ AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt 
 // File, folgt AnazhRealms LOD beim nächsten Laden). LOD ist REIN Render (nicht im deterministischen Sim-/
 // Replay-Pfad) → eine Live-Mutation dieses Statics ist determinismus-sicher.
 //   <thresh01 = L0 volle Geometrie · thresh01..thresh12 = L1 mittel · >thresh12 = L2 Studio-Billboard.
+// TRI-BUDGET (T2, 16.07.) — DER WELT-STRAFF-FAKTOR auf die Studio-LOD-Distanzen:
+// GEMESSEN trug die settled Standard-Szene ~32M Dreiecke (Zensus headless; der
+// Schöpfer-Trace sah 30M live) — L0/reiche Stufen über 20/40 m sind Profi-untypisch
+// (Kaskaden-Praxis: volle Geometrie NUR sehr nah). Der Faktor ist der WELT-seitige
+// Hebel (das Studio-L0-Gesetz bleibt unberührt: PORTAL_RENDER_CONFIG.lod führt
+// weiter, der Ingest-Chokepoint `_foundryIngestRenderConfig` übersetzt d0/d1 durch
+// DIESEN Faktor — ein Studio-Live-Edit fließt weiterhin, tri-budgetiert). 0.6/0.65
+// ⇒ 20/40 → 12/26. Die SSE-Höhen-Gewichtung (lodRef, visStretchMax) bleibt: ein
+// GROSSER Nah-Baum hält sein L0 proportional länger — der schöne Nah-Wald des
+// Schöpfer-Screenshots (L0 < 12 m) bleibt. EIN Leser-Paar: Ingest + die Defaults unten.
+AnazhRealm.LOD_TRI_BUDGET_MUL = Object.freeze({ d0: 0.6, d1: 0.65 });
 AnazhRealm.LOD_DISTANCES = {
-    thresh01: 20, // Studio LOD_D0 — dist > 20 m → LOD1
-    thresh12: 40, // Studio LOD_D1 — dist > 40 m → LOD2/Impostor (Studio-Billboard-Grenze)
+    thresh01: 12, // Studio LOD_D0 20 × TRI_BUDGET_MUL.d0 — dist > 12 m → LOD1 (T2: Default == Post-Ingest, headless == live)
+    thresh12: 26, // Studio LOD_D1 40 × TRI_BUDGET_MUL.d1 — dist > 26 m → LOD2/Impostor (Studio-Billboard-Grenze)
     hysteresis: 3.4, // Studio-Membership-Hysterese M (± Pufferzone gegen Flackern)
     lodRef: 12, // Studio uLodRef — Referenz-Sichthöhe (Screen-Space-Error-Bezug); die EINE uLodRef-Quelle (CPU+Shader)
     perfDistMulMax: 1.3, // max. Distanz-Multiplikator unter voller Last (AnazhRealm-Perf-Hebel, kein Vorlagen-Wert)
@@ -88938,10 +89147,15 @@ AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_S
 
 // DER FERN-GUSS (KONVERGENZ-Schluss) — die Distanz (Meter, Körpergröße L=1),
 // jenseits derer der animierte Baum (~235 Draws) gegen das gemergte Standbild
-// (~8 Draws) getauscht wird: bei 60 m ist ein ~0.1-u-Beinschwung < 1.2 px
-// (1080p/60°-FOV) — der Gang ist unsichtbar, das Bild bleibt. Als Quadrat,
-// weil der Loop distSqToPlayer (XZ) bereits ohne sqrt führt.
-AnazhRealm.TIER_FERN_DIST_SQ = 60 * 60;
+// (~8 Draws) getauscht wird. Als Quadrat, weil der Loop distSqToPlayer (XZ)
+// bereits ohne sqrt führt.
+// TRI-BUDGET (T2, 16.07.): 60 → 35 m. GEMESSEN tragen wolf-L0 315k / bear-L0
+// 338k Tris gegen ~17k im lod1-Standbild — bei 60 m standen bis zu ~2.4M
+// Kreatur-Tris in der Szene. Bei 35 m ist der ~0.1-u-Beinschwung ~2.7 px
+// (1080p/60°-FOV) — an der Sichtbarkeits-Kante, und die ±10-%-Hysterese
+// (TIER_FERN_HYST, gate:tier-fern) hält den Toggle flackerfrei; die Distanz
+// skaliert weiter mit der Körpergröße (fL) — der große Bär wechselt später.
+AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
 // TIER-FERN-GUSS (gate:tier-fern) — DIE HYSTERESE-KANTE des wrap↔fern-
 // Toggles: ±10-%-Band um die Schwelle. nah fällt erst JENSEITS (1+h)·Grenze,
 // kehrt erst INNERHALB (1−h)·Grenze zurück — ein Distanz-Pendeln AN der
@@ -88955,6 +89169,10 @@ AnazhRealm.TIER_FERN_HYST = 0.1;
 // animierten Gelenk-Baums. 40 m: die Schritt-Amplitude (~0.15 u) ist dort
 // < 2.6 px (1080p/60°-FOV). Als Quadrat — der Peer-Tick führt distSq (XZ).
 // EIN Toggle-Chokepoint liest sie: _menschFernToggle.
+// TRI-BUDGET (T2, 16.07.) — GEPRÜFT, bleibt 40: die Menschen-Gestalt ist kein
+// Tri-Wal (Segmente + Rig, kein 300k-Fell wie wolf/bear), Peers sind wenige,
+// und die 0.15-u-Schritt-Amplitude wäre unter 40 m sichtbar eingefroren —
+// straffen kaufte ~nichts und kostete Look. Der Tier-Hebel (60→35) trägt.
 AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // Identitäts-Anker: Namen-Pool. Jede Kreatur bekommt beim Spawn einen Namen

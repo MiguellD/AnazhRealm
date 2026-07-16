@@ -512,15 +512,25 @@ async function main() {
         P.cfg ? `d0=${P.cfg.d0} d1=${P.cfg.d1} fade=${P.cfg.fade} fade0=${P.cfg.fade0}` : ""
     );
     check("GLSL: die fin-EINblendung des Billboards (phytogenesis _impMat)", P.finRamp && P.finBranch);
-    // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen (beide Häuser, eine Zahl).
+    // Die Config-Heimat-Parität: LOD_DISTANCES-Defaults == Studio-lod-Zahlen DURCH den
+    // WELT-Straff-Faktor (TRI-BUDGET T2, 16.07.: LOD_TRI_BUDGET_MUL übersetzt d0/d1 am
+    // Ingest-Chokepoint — die Defaults müssen dem Post-Ingest-Wert gleichen, headless == live).
     const mLD =
         /AnazhRealm\.LOD_DISTANCES = \{[\s\S]*?thresh01:\s*([\d.]+),[\s\S]*?thresh12:\s*([\d.]+),[\s\S]*?fade:\s*([\d.]+),[\s\S]*?fade0:\s*([\d.]+),/.exec(
             anazhSrc
         );
+    const mTB = /AnazhRealm\.LOD_TRI_BUDGET_MUL = Object\.freeze\(\{ d0:\s*([\d.]+), d1:\s*([\d.]+) \}\)/.exec(anazhSrc);
+    const tbD0 = mTB ? +mTB[1] : 1,
+        tbD1 = mTB ? +mTB[2] : 1;
     check(
-        "LOD_DISTANCES-Defaults == Studio-lod-Zahlen (thresh01/thresh12/fade/fade0)",
-        !!mLD && +mLD[1] === P.cfg.d0 && +mLD[2] === P.cfg.d1 && +mLD[3] === P.cfg.fade && +mLD[4] === P.cfg.fade0,
-        mLD ? `${mLD[1]}/${mLD[2]}/${mLD[3]}/${mLD[4]}` : "LOD_DISTANCES nicht geparst"
+        "LOD_DISTANCES-Defaults == Studio-lod-Zahlen × LOD_TRI_BUDGET_MUL (thresh01/thresh12) · fade/fade0 studio-gleich",
+        !!mLD &&
+            !!mTB &&
+            +mLD[1] === P.cfg.d0 * tbD0 &&
+            +mLD[2] === P.cfg.d1 * tbD1 &&
+            +mLD[3] === P.cfg.fade &&
+            +mLD[4] === P.cfg.fade0,
+        mLD ? `${mLD[1]}/${mLD[2]}/${mLD[3]}/${mLD[4]} (mul ${tbD0}/${tbD1})` : "LOD_DISTANCES nicht geparst"
     );
     // phyto-core trägt DIESELBEN IGN-Koeffizienten im CODE (kommentar-gestrippte Quelle):
     const coreNC = stripComments(coreSrcRaw);
