@@ -22,6 +22,7 @@
         "stream-lab": "node scripts/diag-stream-lab.cjs",
         "look-lens": "node scripts/diag-look-physics.cjs",
         "look-golden": "node scripts/diag-look-golden.cjs",
+        "blick": "node scripts/diag-blick.cjs",
         "gate:page-error": "node scripts/diag-page-error.cjs",
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
