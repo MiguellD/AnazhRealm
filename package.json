@@ -46,6 +46,7 @@
         "gate:seam-normal": "node scripts/diag-seam-normal.cjs",
         "gate:godray": "node scripts/diag-godray.cjs",
         "gate:fern-wasser": "node scripts/diag-fern-wasser.cjs",
+        "gate:warm-start": "node scripts/diag-warm-start.cjs",
         "gate:wasser-wahrheit": "node scripts/diag-wasser-wahrheit.cjs",
         "gate:kopplung": "node scripts/diag-kopplung.cjs",
         "gate:worker-watersheet": "node scripts/diag-worker-watersheet.cjs",

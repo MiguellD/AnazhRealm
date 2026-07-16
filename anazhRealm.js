@@ -22997,6 +22997,155 @@ class AnazhRealm {
         return null;
     }
 
+    // ===== DER WARM-START (DAS FELD ZEICHNET §4, V18.484) =====
+    // LADEN IST EIN KLACKS: Γ5 macht den Chunk-Bau cachebar — der ROHE Worker-
+    // Reply (positions/normals/indices/colors/waterCells VOR jedem Architektur-
+    // Stempel/surfMap-Konsum; postMessage-transportiert = structured-clone-
+    // sicher by construction) reist UNVERÄNDERT in IndexedDB (DB
+    // "anazhChunkMesh", Store "chunks"). Der zweite Boot derselben Welt liest
+    // den Ring aus der Platte statt aus dem Meshing-Roundtrip. Foundry-
+    // Disziplin (`_foundryIdbInit`): Stempel-Mismatch → clear, jeder Fehler →
+    // still Worker-only (`_idbDead`), Headless/Null-Renderer → AUS (gate-
+    // deterministisch). Die EINE Naht ist `_fetchOrRequestChunkMesh` — der
+    // Konsum danach (BufferGeometry · Architektur-Stempel · Finalize) bleibt
+    // byte-gleich der Worker-Bahn.
+    // Hook-Override (das `__anazhAutoSettlement`-Muster): window.__anazhChunkIdb
+    // true → an (die Linse diag-warm-start erzwingt den Warm-Start headless),
+    // false → aus, sonst der Headless-Default AUS.
+    _chunkIdbInit() {
+        if (!this._chunkIdb) this._chunkIdb = {};
+        const c = this._chunkIdb;
+        if (c._idbReady) return c._idbReady;
+        const off = () => {
+            c._idbDead = true;
+            return null;
+        };
+        const hook = typeof window !== "undefined" ? window.__anazhChunkIdb : undefined;
+        if (
+            typeof indexedDB === "undefined" ||
+            hook === false ||
+            (hook !== true && this.state.renderer && this.state.renderer._isHeadlessNull)
+        ) {
+            c._idbReady = Promise.resolve(null);
+            c._idbDead = true;
+            return c._idbReady;
+        }
+        // Der Stempel: AnazhRealm.VERSION (Code-Stand — Main+Worker-Spiegel
+        // können jede Version wandern; jeder Release bustet, der bewusste
+        // Tradeoff statt SHA über den ~91k-Stamm) + genVersion (Genese-Gesetz
+        // der Welt) + macroAnker-Hash (persistiertes Erbgut — ein Import mit
+        // fremdem Anker darf nie alte Bytes lesen, Bericht §6). Mismatch →
+        // clear. Der SEED lebt im KEY (`_chunkIdbKey`), nicht im Stempel.
+        // Welt-Wechsel ohne Reload: der Stempel bleibt der der Boot-Welt —
+        // Keys sind seed-scoped (nie falsche Bytes), der nächste Boot bustet.
+        const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
+        const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
+        const stamp = AnazhRealm.VERSION + "|" + genV + "|" + this._fastHash(JSON.stringify(anker || null));
+        c._stamp = stamp;
+        c._idbReady = new Promise((resolve) => {
+            try {
+                const req = indexedDB.open("anazhChunkMesh", 1);
+                req.onupgradeneeded = () => {
+                    req.result.createObjectStore("chunks");
+                };
+                req.onerror = () => resolve(off());
+                req.onsuccess = () => {
+                    const db = req.result;
+                    const tx = db.transaction("chunks", "readwrite");
+                    const st = tx.objectStore("chunks");
+                    const g = st.get("__stamp");
+                    g.onsuccess = () => {
+                        if (g.result !== stamp) {
+                            // Gesetz-Version/Erbgut geändert → der GANZE Cache
+                            // ist potenziell Drift → leeren (Foundry-Disziplin).
+                            st.clear();
+                            st.put(stamp, "__stamp");
+                            c._count = 1; // nur der Stempel-Eintrag
+                        } else {
+                            // Zähler-Basis fürs Überlauf-Ventil (inkl. __stamp — grob genügt).
+                            const cn = st.count();
+                            cn.onsuccess = () => {
+                                c._count = cn.result | 0;
+                            };
+                        }
+                    };
+                    tx.oncomplete = () => {
+                        c._idbDb = db;
+                        resolve(db);
+                    };
+                    tx.onerror = () => resolve(off());
+                };
+            } catch (_e) {
+                resolve(off());
+            }
+        });
+        return c._idbReady;
+    }
+    // Der Warm-Start-Key: seed|cx,cz|lod — mehrere Welten teilen den Store
+    // (der Stempel bustet grob bei Erbgut-/Versions-Wechsel, s. _chunkIdbInit).
+    _chunkIdbKey(cx, cz, lod) {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        return `${seed}|${cx},${cz}|${lod}`;
+    }
+    _chunkIdbGet(key) {
+        const c = this._chunkIdb;
+        if (!c || c._idbDead || !c._idbDb) return Promise.resolve(null);
+        return new Promise((resolve) => {
+            try {
+                const g = c._idbDb.transaction("chunks", "readonly").objectStore("chunks").get(key);
+                g.onsuccess = () => resolve(g.result != null ? g.result : null);
+                g.onerror = () => resolve(null);
+            } catch (_e) {
+                resolve(null);
+            }
+        });
+    }
+    _chunkIdbPut(key, payload) {
+        const c = this._chunkIdb;
+        if (!c || c._idbDead || !c._idbDb || !payload) return;
+        try {
+            const tx = c._idbDb.transaction("chunks", "readwrite");
+            const st = tx.objectStore("chunks");
+            // GROBES Überlauf-Ventil statt echtem LRU (ehrlich benannt): der
+            // Zähler approximiert (Überschreiben desselben Keys zählt doppelt
+            // → räumt eher zu FRÜH als zu spät); bei Überlauf wird der GANZE
+            // Store geleert (Quota-Wand, Bericht §6) — der nächste Boot
+            // stiftet neu, Korrektheit hängt nie am Cache.
+            if ((c._count | 0) >= AnazhRealm.CHUNK_IDB_MAX) {
+                st.clear();
+                st.put(c._stamp, "__stamp");
+                c._count = 1;
+            }
+            // st.put KLONT SOFORT (synchron) — die ROHEN Worker-Bytes, bevor
+            // der Konsument den Architektur-Stempel in waterCells brennt.
+            st.put(payload, key).onerror = () => {
+                c._idbDead = true; // Quota/Fehler → still auf den Worker-only-Pfad (Foundry-Vorbild)
+            };
+            c._count = (c._count | 0) + 1;
+        } catch (_e) {
+            c._idbDead = true;
+        }
+    }
+    // Der Warm-Start-Gate (Read UND Write): liegt IRGENDEIN Edit in der
+    // 3×3-Chunk-Box um (cx,cz)? Dieselbe Box wie `_chunkRegionHasCarve`,
+    // aber OHNE mode-Filter — fill zählt mit (jeder Edit ändert die Density).
+    // r ≤ 12 < span 43.2 und das Density-Pad ist ±1 Cell → die 3×3-Box deckt
+    // den Mesh-Footprint konservativ. Billig (≤256 Edits, eine Box-Prüfung).
+    _chunkFootprintEditFrei(cx, cz) {
+        const edits = this.state.worldMeta && this.state.worldMeta.voxelEdits;
+        if (!edits || !edits.length) return true;
+        const { span } = this._voxelChunkConfig();
+        const loX = (cx - 1) * span,
+            hiX = (cx + 2) * span,
+            loZ = (cz - 1) * span,
+            hiZ = (cz + 2) * span;
+        for (let e = 0; e < edits.length; e++) {
+            const ed = edits[e];
+            if (ed && ed.x >= loX && ed.x <= hiX && ed.z >= loZ && ed.z <= hiZ) return false;
+        }
+        return true;
+    }
+
     // V9.91 (Welle Perf-3.c Phase 3): Cache-First-Mesh-Lookup für den
     // Streaming-Pfad. Drei Rückgabe-Varianten analog zu Phase-2-Density:
     //   (a) {empty, positions, ...} — Cache-Hit, der Build kann sofort
@@ -23006,6 +23155,9 @@ class AnazhRealm {
     //   (c) undefined — Worker unverfügbar, sync-Fallback.
     // **State-Gen-Schutz**: wenn voxelEdit während Roundtrip stateGen
     // bumpt, wird das stale Result verworfen.
+    // WARM-START (§4): VOR dem Worker-Zweig fragt ein edit-freier Footprint
+    // die IndexedDB (async, exakt die pending-Semantik); der resolve legt den
+    // Payload in denselben EINEN `voxelMeshCache`-Konsum-Pfad.
     _fetchOrRequestChunkMesh(cx, cz, lod) {
         const cacheKey = `${cx},${cz},${lod}`;
         if (this.state.voxelMeshCache && this.state.voxelMeshCache.has(cacheKey)) {
@@ -23018,6 +23170,48 @@ class AnazhRealm {
         if (!this.state.voxelMeshPending) this.state.voxelMeshPending = new Set();
         if (!this.state.voxelMeshGenAtRequest) this.state.voxelMeshGenAtRequest = new Map();
         if (this.state.voxelMeshPending.has(cacheKey)) return null;
+        // WARM-START-HIT (§4): IDB bereit + 3×3-Footprint edit-frei + kein
+        // gemerkter Store-Miss → async get anstoßen, pending vermerken, null
+        // (exakt die bestehende pending-Semantik). Der resolve legt den
+        // Payload in `state.voxelMeshCache` — derselbe EINE Konsum-Pfad,
+        // derselbe Gen-Stale-Filter wie der Worker-Zweig. Init lazy: der
+        // ERSTE Fetch stößt sie an und geht selbst noch den Worker-Weg.
+        if (!this._chunkIdb) this._chunkIdbInit();
+        const cIdb = this._chunkIdb;
+        if (
+            cIdb &&
+            cIdb._idbDb &&
+            !cIdb._idbDead &&
+            (!this.state._chunkIdbMiss || !this.state._chunkIdbMiss.has(cacheKey)) &&
+            this._chunkFootprintEditFrei(cx, cz)
+        ) {
+            const genAtIdbRequest = this.state.voxelWorkerStateGen;
+            this.state.voxelMeshPending.add(cacheKey);
+            this.state.voxelMeshGenAtRequest.set(cacheKey, genAtIdbRequest);
+            this._chunkIdbGet(this._chunkIdbKey(cx, cz, lod)).then((payload) => {
+                this.state.voxelMeshPending.delete(cacheKey);
+                this.state.voxelMeshGenAtRequest.delete(cacheKey);
+                // Derselbe Stale-Filter wie der Worker-Zweig: bumpte ein Edit
+                // die Gen während des Platten-Roundtrips, ist der Payload
+                // gegen alten State — verwerfen (der Pump resubmittet frisch).
+                if (this.state.voxelWorkerStateGen !== genAtIdbRequest) return;
+                if (payload) {
+                    if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
+                    this.state.voxelMeshCache.set(cacheKey, payload);
+                    // Diagnose-Zähler (Linse diag-warm-start), keine Spiel-Logik.
+                    this.state._chunkIdbHits = (this.state._chunkIdbHits | 0) + 1;
+                    if (!this.state._chunkIdbHitByKey) this.state._chunkIdbHitByKey = new Map();
+                    this.state._chunkIdbHitByKey.set(cacheKey, (this.state._chunkIdbHitByKey.get(cacheKey) | 0) + 1);
+                } else {
+                    // Store-MISS gemerkt: der nächste Pump-Tick nimmt direkt
+                    // den Worker (sonst fragte der Tick die Platte endlos).
+                    // Die Stiftung räumt den Merker wieder.
+                    if (!this.state._chunkIdbMiss) this.state._chunkIdbMiss = new Set();
+                    this.state._chunkIdbMiss.add(cacheKey);
+                }
+            });
+            return null;
+        }
         this.state.voxelMeshPending.add(cacheKey);
         const expectedStateGen = this.state.voxelWorkerStateGen;
         this.state.voxelMeshGenAtRequest.set(cacheKey, expectedStateGen);
@@ -23031,6 +23225,15 @@ class AnazhRealm {
                 this.state.voxelMeshGenAtRequest.delete(cacheKey);
                 if (!this.state.voxelMeshCache) this.state.voxelMeshCache = new Map();
                 this.state.voxelMeshCache.set(cacheKey, meshData);
+                // WARM-START-STIFTUNG (§4): NUR edit-freie Footprints und nur
+                // bei stehender Worldgen-Wahrheit (A3-Garantie — Atlas stand
+                // für diesen Build). Auch `empty:true` stiften (spart Retries).
+                // Der Put klont die ROHEN Worker-Bytes SOFORT (synchron), VOR
+                // dem Architektur-Stempel des Konsumenten.
+                if (this.state.voxelWorkerWorldgenSynced && this._chunkFootprintEditFrei(cx, cz)) {
+                    this._chunkIdbPut(this._chunkIdbKey(cx, cz, lod), meshData);
+                    if (this.state._chunkIdbMiss) this.state._chunkIdbMiss.delete(cacheKey);
+                }
             })
             .catch((err) => {
                 this.state.voxelMeshPending.delete(cacheKey);
@@ -88160,6 +88363,13 @@ AnazhRealm.VERSION = "18.483.0";
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
 AnazhRealm.FOUNDRY_CACHE_CAP = 256;
+// WARM-START (DAS FELD ZEICHNET §4) — Eintrags-Deckel des Chunk-Mesh-Stores
+// "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`, kein echtes LRU):
+// LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen
+// hundert MB und die Browser-Quota still (Bericht §6: 81-Chunk-Ring × 4
+// LOD-Varianten kann zweistellige MB erreichen — der Deckel trägt mehrere
+// Ringe, bevor er einmal grob leert). Tunable.
+AnazhRealm.CHUNK_IDB_MAX = 600;
 // ABSCHIEDS-WELLE (E, der benannte Trias-Faden) — DER GEWICHTS-DECKEL: der Eintrags-
 // Zähler allein war BYTE-BLIND (ein Haus-L0 trägt ≈ 7–8 MB Geometrie [V18.444 gemessen],
 // ein Blumen-L0 wenige KB — 256 schwere Einträge wären ~2 GB). Jetzt bilanziert
