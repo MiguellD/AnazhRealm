@@ -58082,6 +58082,10 @@ class AnazhRealm {
                 label: "Felsformation",
                 builtIn: true,
                 instanced: true,
+                // ABSCHIED DER ALT-DOPPEL — Studio-Pendant sediment/findling/zacken/geroell
+                // (via _formClass, diag-v1-resolve): Scatter nutzt sie weiter, kein Katalog-Auftritt.
+                donorOnly: true,
+                _altDoppel: "rock (_formClass)",
                 parts,
                 _formClass: this._lastLandmarkForm, // T-FULLSTACK: der Scatter wählt die Form nach dem Feld
             };
@@ -58097,6 +58101,9 @@ class AnazhRealm {
                 label: "Kristall-Formation",
                 builtIn: true,
                 instanced: true,
+                // ABSCHIED DER ALT-DOPPEL — Studio-Pendant: das EINE kristalle-Rezept.
+                donorOnly: true,
+                _altDoppel: "kristalle",
                 parts,
                 _formClass: this._lastLandmarkForm,
             };
@@ -58168,7 +58175,7 @@ class AnazhRealm {
             };
         }
 
-        return {
+        const defaults = {
             ...landmarkVariants,
             ...treeSpeciesBlueprints,
             waterfall: { name: "waterfall", label: "Wasserfall", builtIn: true, parts: waterfallParts },
@@ -58504,6 +58511,18 @@ class AnazhRealm {
             // V18.110 — C7: koerper_human/koerper_phoenix/koerper_dragon.
             ...builtinBodyBlueprints,
         };
+        // ABSCHIED DER ALT-DOPPEL — der EINE Stempel-Chokepoint (Tabelle: AnazhRealm.ALT_DOPPEL):
+        // Alt-Blueprints mit Studio-Pendant bleiben voll funktional (Worldgen · Saves · embody ·
+        // spawnArchitecture · Hotbar), verschwinden aber aus jeder Katalog-/Werkstatt-Sicht über
+        // das bestehende donorOnly-Flag (alle Picker/Listen lesen es schon). Built-ins entstehen
+        // je Init genau hier → jeder Load ist automatisch gestempelt (Saves tragen nur !builtIn).
+        for (const n in AnazhRealm.ALT_DOPPEL) {
+            if (defaults[n]) {
+                defaults[n].donorOnly = true;
+                defaults[n]._altDoppel = AnazhRealm.ALT_DOPPEL[n]; // Provenienz: das Studio-Pendant
+            }
+        }
+        return defaults;
     }
 
     // ### Welle 4 Phase 1 — Materialien als Tag-Profile ###
@@ -73519,6 +73538,9 @@ class AnazhRealm {
         for (const name of Object.keys(bps)) {
             const bp = bps[name];
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
+            // ABSCHIED DER ALT-DOPPEL — donorOnly-Versteckte (W-A1-Flag) treten auch im
+            // Rezeptbuch nicht auf (dieselbe Sicht-Regel wie Werkstatt-Liste/Omnibox/Feed).
+            if (bp.donorOnly) continue;
             const kind = this._blueprintUseKind(bp);
             const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
             if (groups[slot]) groups[slot].push(name);
@@ -76484,11 +76506,16 @@ class AnazhRealm {
     // EIN lebender Guss, der Wechsel disposed den alten tief (der Memo ist der EINE
     // Eigentuemer — die Meshes sind shared-markiert, der generische Vorschau-Dispose
     // laesst sie stehen; die Haut/das Rig attachen off-thread in die LEBENDE Gruppe).
-    _workshopOvenPreview(rec, preset, ov) {
+    _workshopOvenPreview(rec, preset, ov, lod) {
         const kind = rec && rec.kind;
         if (kind !== "kreatur" && kind !== "koerper" && kind !== "klang") return undefined;
         if (kind === "klang") return false;
-        const key = kind + "|" + preset + "|" + (ov ? JSON.stringify(ov) : "");
+        // WERKSTATT-VOLLSTAENDIGKEIT — die LOD-Wahl (ws.recipeLod, generisch aus den
+        // kindStages-VERTRAGS-Daten: kreatur/koerper tragen [0,1] seit V18.478) reist
+        // bis in den Ofen-Guss: der Bau traegt BEIDE Stufen (nah + fern aus DERSELBEN
+        // Pipe), die Wahl toggelt sie — exakt was die Welt am Distanz-Band tut.
+        const lodN = Number.isFinite(lod) ? Math.max(0, lod | 0) : 0;
+        const key = kind + "|" + preset + "|" + lodN + "|" + (ov ? JSON.stringify(ov) : "");
         const memo = this._wsOvenMemo;
         if (memo && memo.key === key && memo.group) return memo.group;
         if (memo && memo.group) {
@@ -76521,12 +76548,30 @@ class AnazhRealm {
             }
             if (soulKey) {
                 group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null });
-                // Die Knochen-Teile SICHTBAR lassen (ehrliches Interim, waehrend die Haut
-                // off-thread baeckt) — der Welt-Spawn versteckt sie, die Vorschau zeigt sie.
-                if (group) for (const ch of group.children) ch.visible = true;
+                // Die LOD-Wahl toggelt nah↔fern am Guss (userData._tierBaum, der Welt-
+                // Chokepoint-Struktur folgend): L0 = der Gelenk-Baum, L1 = das gemergte
+                // Standbild aus DERSELBEN Pipe. Fail-soft: kein fern-Guss → nah bleibt.
+                const tb = group && group.userData && group.userData._tierBaum;
+                if (tb && tb.wrap) {
+                    const useFern = lodN >= 1 && !!tb.fern;
+                    tb.wrap.visible = !useFern;
+                    if (tb.fern) tb.fern.visible = useFern;
+                } else if (group) {
+                    // Ohne Baum-Refs (Alt-Guss): die Teile sichtbar lassen (ehrliches Interim).
+                    for (const ch of group.children) ch.visible = true;
+                }
             }
         } else {
             group = this._buildHumanGroup(ov || undefined);
+            // Dieselbe Stufen-Wahl am Mensch-Guss (userData._menschFern = {nah, fern},
+            // der _menschFernToggle-Chokepoint-Struktur folgend). Fail-soft: kein
+            // lod1-Guss → alles bleibt byte-alt L0.
+            const mf = group && group.userData && group.userData._menschFern;
+            if (mf && mf.nah && mf.fern) {
+                const useFernM = lodN >= 1;
+                mf.nah.visible = !useFernM;
+                mf.fern.visible = useFernM;
+            }
         }
         if (!group || !group.children) return false;
         group.traverse((o) => {
@@ -76568,7 +76613,7 @@ class AnazhRealm {
         // ihre Gestalt selbst; der Foundry-Worker kennt sie nicht (MESHFREI per Vertrag).
         const ovenRec = f.recipes ? f.recipes[preset] : null;
         if (ovenRec && typeof ovenRec.kind === "string") {
-            const oven = this._workshopOvenPreview(ovenRec, preset, ov);
+            const oven = this._workshopOvenPreview(ovenRec, preset, ov, lod);
             if (oven !== undefined) return oven;
         }
         const season = this.state.season || "summer";
@@ -79105,9 +79150,12 @@ class AnazhRealm {
         // sind DATEN (kindStages, N7.5): traegt die Art mehr als eine ehrliche Stufe
         // (haus [0,1,2] · baum [0,1,2]), bekommt die REZEPT-Auswahl eine generische
         // LOD-Wahl — auch ohne PARAMS-Tabelle. Kein UI-Hardcode je Domaene.
+        // WERKSTATT-VOLLSTAENDIGKEIT — die Stufen-Zeile gilt BEIDEN Selektions-Modi
+        // (Rezept-Auswahl UND Bauplan): die Wahl reist als ws.recipeLod bzw.
+        // bp._recipeLod in DIESELBE Vorschau-Quelle (kein kind-Literal-if).
         const _cfgLodW = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
         const stages =
-            !bp && rec && _cfgLodW && _cfgLodW.kindStages && Array.isArray(_cfgLodW.kindStages[rec.kind])
+            rec && _cfgLodW && _cfgLodW.kindStages && Array.isArray(_cfgLodW.kindStages[rec.kind])
                 ? _cfgLodW.kindStages[rec.kind]
                 : null;
         const hasParams = Array.isArray(params) && params.length > 0;
@@ -79188,7 +79236,13 @@ class AnazhRealm {
             panel.appendChild(lodHead);
             const lodRow = document.createElement("div");
             lodRow.className = "workshop-recipe-btns workshop-recipe-lod";
-            const curLod = Number.isFinite(ws.recipeLod) ? ws.recipeLod : 0;
+            const curLod = bp
+                ? Number.isFinite(bp._recipeLod)
+                    ? bp._recipeLod
+                    : 0
+                : Number.isFinite(ws.recipeLod)
+                  ? ws.recipeLod
+                  : 0;
             const lodLabels = { 0: "L0 fein", 1: "L1 mittel", 2: "L2 fern" };
             for (const lv of stages) {
                 const b = document.createElement("button");
@@ -79197,9 +79251,10 @@ class AnazhRealm {
                 b.textContent = lodLabels[lv] || "L" + lv;
                 b.title = "Vorschau auf der ehrlichen Vertrags-Stufe " + lv;
                 b.addEventListener("click", () => {
-                    ws.recipeLod = lv;
+                    if (bp) bp._recipeLod = lv;
+                    else ws.recipeLod = lv;
                     if (typeof this._workshopRebuildPreviewMesh === "function") this._workshopRebuildPreviewMesh();
-                    this._workshopRenderStudioParams(panel);
+                    this._workshopRenderStudioParams(panel, bp);
                 });
                 lodRow.appendChild(b);
             }
@@ -86690,6 +86745,36 @@ AnazhRealm.KIND_POLICY = Object.freeze({
 // sitz/fahrprofil-Anker) — die sichtbare GESTALT kommt IMMER aus dem Studio (Appear-Pfad).
 // BEWUSST welt-invariant: die frühere Welt-Seed-Varianz der Donor-Parts (T4-Roller) entfiel
 // mit der Münze — die Substanz einer DOMÄNE ist fix, die Vielfalt kommt aus den Lab-Rezepten.
+// ABSCHIED DER ALT-DOPPEL (Schöpfer 16.07.: „entfernst das alte") — DIE EINE Tabelle der
+// Katalog-Doppel: jeder Schlüssel ist ein Alt-Blueprint, dessen Gestalt längst durch ein
+// Studio-Pendant fließt (Wert = das Pendant: Rezept-Id bzw. Domäne — reine Provenienz-Doku).
+// Sie bleiben LADE-FÄHIG und voll funktional (Saves · Worldgen-Scatter · Hotbar · embody-
+// Aliase · spawnArchitecture — alles byte-alt): _defaultBlueprints stempelt sie donorOnly
+// (das EINE W-A1-Versteck-Flag, das alle Picker/Listen/Feeds schon lesen — kein neuer
+// Parallelpfad) + _altDoppel (Provenienz). Physisch fallen sie NICHT — der Konsum ist
+// gemessen (playtest · Scatter · applyPlayerSoul-Aliase · Affinitäts-Listen). Die
+// dynamischen Formations-Doppel (fels_var*/kristall_var* → sediment…/kristalle) tragen
+// den Stempel direkt an ihrer Bau-Schleife (Namen entstehen erst zur Laufzeit).
+// BEWUSST NICHT hier: baum_eiche/birke/tanne — sie SIND der Katalog-Träger ihrer
+// gleichnamigen Studio-Rezepte (KIND_POLICY.tree-Präfix-Deckung; eiche ist zudem der
+// tree-Donor + Werkstatt-Default) — es gibt keine zweite sichtbare Zeile, nichts doppelt.
+AnazhRealm.ALT_DOPPEL = Object.freeze({
+    stein_block: "basalt",
+    kiesel: "geroell",
+    felsbrocken: "geroell",
+    felsbogen: "zacken",
+    felsturm: "zacken",
+    kristall_geode: "kristalle",
+    baum_kiefer: "fichte",
+    baum_erle: "weide",
+    baum_buche: "mammut",
+    reittier_holzross: "garage (fahrzeug_*, drive)",
+    koerper_human: "mensch (koerperstudio)",
+    koerper_wesen: "deer (tetrapoda)",
+    koerper_wolf: "wolf (tetrapoda)",
+    koerper_fuchs: "fox (tetrapoda)",
+    koerper_baer: "bear (tetrapoda)",
+});
 AnazhRealm.KIND_SUBSTANCE = Object.freeze({
     geraet_schwert: {
         label: "Schwert",
