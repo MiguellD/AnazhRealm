@@ -64722,9 +64722,7 @@ class AnazhRealm {
                     g.translate(0, -0.5, 0); // Ursprung = OBERKANTE (top-anchored)
                     return g;
                 })());
-            const mat =
-                this._archFundMat ||
-                (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
+            const mat = this._archFundMat || (this._archFundMat = new THREE.MeshLambertMaterial({ color: 0x7a7168 })); // Bruchstein-Grau
             const mesh = new THREE.InstancedMesh(geo, mat, 128);
             mesh.count = 0;
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
@@ -67393,13 +67391,17 @@ class AnazhRealm {
         const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
-        const entry = this.spawnArchitecture(name, { x: wx, y: wy, z: wz }, {
-            seed: slot.seed >>> 0,
-            rotationY: slot.phi || 0,
-            silent: true,
-            autonomous: !!(so && so.autonomous),
-            fundament,
-        });
+        const entry = this.spawnArchitecture(
+            name,
+            { x: wx, y: wy, z: wz },
+            {
+                seed: slot.seed >>> 0,
+                rotationY: slot.phi || 0,
+                silent: true,
+                autonomous: !!(so && so.autonomous),
+                fundament,
+            }
+        );
         return !!entry;
     }
     _spawnSettlementFromExport(plan, origin, so) {
@@ -85269,9 +85271,7 @@ class AnazhRealm {
         const nowS = performance.now() / 1000;
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         const wandFrisch =
-            Number.isFinite(s._wandKontaktAt) &&
-            nowS - s._wandKontaktAt < 0.18 &&
-            Number.isFinite(s._wandKontaktNx);
+            Number.isFinite(s._wandKontaktAt) && nowS - s._wandKontaktAt < 0.18 && Number.isFinite(s._wandKontaktNx);
         let mul = 0;
         let abX = 0;
         let abZ = 0;
@@ -86632,7 +86632,8 @@ class AnazhRealm {
                     kletterV = Number.isFinite(parkG.kletterV) ? parkG.kletterV : 3.2;
                     plK.stamina = Math.max(
                         0,
-                        plK.stamina - (Number.isFinite(parkG.kletterAusdauerProS) ? parkG.kletterAusdauerProS : 12) * nowDt
+                        plK.stamina -
+                            (Number.isFinite(parkG.kletterAusdauerProS) ? parkG.kletterAusdauerProS : 12) * nowDt
                     );
                     this.state.isInAir = true;
                 }
@@ -87970,7 +87971,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.482.0";
+AnazhRealm.VERSION = "18.483.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

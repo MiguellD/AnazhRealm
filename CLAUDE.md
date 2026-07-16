@@ -6,50 +6,50 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.478 — DIE NAHT-VOLLENDUNG: die vier benannten Reste sind geschlossen)
+## Stand (V18.483 — DIE GEFÜHLS-NAHT: die Erlebnisräume der Studios erreichen die Welt)
 
-**Die V18.477-Niveau-Vollendung ließ vier Punkte benannt-offen — V18.478 schließt alle
-vier, je mit Linse (alles additiv/render-seitig, die fixe Sim byte-unberührt):**
-P2P-GESTALT (`gate:p2p-gestalt`: der soul-Kanal trägt die Avatar-Übergabe additiv, der
-Empfänger validiert am SELBEN `_studioUebergabeValidate`, der Peer-Guss führt sie
-transient über `_activePeerUebergabe` [try/finally, kein Leck]; zwei Peers bleiben über
-distinkte Ofen-Keys eigenständig, der eigene Avatar byte-identisch) · RELOAD-TREUE
-(`gate:reload-treue`: der Guss friert die wirksame Übergabe je Wesen ein [`gussDials`,
-nur wenn aktiv — sonst byte-alt], der Snapshot trägt sie, der Restore pinnt sie durch
-DENSELBEN Validator als dialsOv — die Kreatur kehrt wie gegossen wieder, auch wenn die
-Übergabe sich änderte; der Richter-Befund [mittel] ist tot) · VERTRAGS-STUFEN-ZEILE
-(tetrapoda/koerper-core tragen additiv `PORTAL_RENDER_CONFIG.lod.kindStages`
-[kreatur:[0,1] · koerper:[0,1]], §8.5 normativ — die längst gebaute Ofen-Leiter ist
-jetzt VERTRAGS-Wahrheit; tier.lods bleibt Matrix-TEIL, weil 2 < das 3-Stufen-Soll) ·
-BÄCKER-OV (der fimp-Key trägt jetzt den ov-Hash, geprägte Entries ziehen IHRE Impostor-
-Karte statt fern als L0-Geometrie zu fallen; die V18.477-Stempel-Wand fiel, der
-Bake-Request trägt msg.ov [die Brücke las es schon], ungeprägter Baum-Pfad byte-alt;
-`gate:fahrzeug-fern` erweitert). OFFEN benannt: klang ohne Stufen-Zeile (meshfrei, kein
-Ofen) · Fahrzeug-Billboard-LOOK + P2P-Kreatur-Gestalt (Schöpfer-Auge/Kreatur-Sync-Pfad).
+**Die Reflexion (16.07.) fand die EINE Schicht, die nicht reiste: jedes Studio trägt
+einen ERLEBNISRAUM (Arena · Probestrecke · Ninja-Park · Verhaltens-Seele), dessen
+Gefühls-Gesetze Shell-only waren. V18.483 lässt sie in sechs Wellen reisen (alles
+additiv, Kerne rein additiv, fail-soft byte-alt):**
+DORF-IN-TERRAIN (Footprint-Höhe statt Punkt [4 obb-Ecken, Basis=MAX], Klippen-Wand
+`AUTO_SETTLEMENT.fundamentMaxDh` 9 m [GEMESSEN: legale Berg-Slots tragen Δh 4.8–13 m],
+`entry.fundament` reist, `_archFundamentBox` = EINE Wahrheit für Blocker UND Render-
+Podest [EIN InstancedMesh-Pool, 1 DC]; gate:settlement +2 Bänder) · SCHWIMM-HEIMAT
+(koerper-core `fx.bewegung.schwimmen` trägt Physik/Takt/Lehne/Kraul-Pose/Ausdauer,
+`_schwimmGesetz` fail-soft; Regen ruht unter Wasser; tetrapoda MOTION.schwimmen =
+Paddel-Gang) · KREATUR-LEBEN (gate:kreatur-leben, Klasse „tote reisende Daten": der
+KÖRPER-ZUSTAND führt in der EINEN Motion-Brücke [MOTION_ZUSTAND_PROFILES: jagd/flucht/
+schwimmen — das hunt-Preset reiste seit V18.476 ungewählt!]; tetrapoda `fx.verhalten`
+= 12 Aktionen + 6 Stimmungen inkl. Bedürfnisse [Pflanzenfresser weiden am Tag, nachts
+Ruhe], deterministisch [FNV, kein Math.random], Baum-Gang trägt Overlay + bodyX-Konsum,
+hop zündet den Feld-Hüpfer) · ARENA-GEFÜHL (schmiede-core `ARENA`: Schwung-Konstanten
+[N6.6-Revision — EIN Regler für Arena+Welt, Formel bleibt Ω-Φ4 √I], Hit-Stop/Dip
+skalieren mit TREFFER-ENERGIE [114-J-Eichung, KE=½Iω²·Zielgröße; Pfeil reicht ½mv²],
+Bogen-VEREINIGUNG v0=√(2E/mArrow) ≡ 34·√(zug·aus) + der AUSZUG [Halten spannt,
+FOV-Zug, Lösen skaliert v0]) · FAHR-GEFÜHL (vehicle-core `FAHR.lenkung` → exportDrive
+→ fahrprofil.lenkung: der Ritt fährt FAHRZEUG-EIGEN [W/S entlang der Gier, sf=1/(1+
+v·sfK), Gier-Rate v·tan(δ)/Radstand, Grip frisst Quer-Slip, Shift=Handbremse→Drift];
+nervensystem-vehicle-F-Band migriert [war seit V18.477 stale-rot]) · PARKOUR
+(koerper-core `fx.bewegung.parkour`: Wand-/Doppelsprung [Wand-Wahrheit fällt am EINEN
+Kapsel-Chokepoint gratis ab], Klettern [W an der Wand, Ausdauer], Rutsch [Taste C];
+Kern kalt → KEIN Parkour). OFFEN benannt: Slide-Pose des Rigs (Physik da, Pose fehlt) ·
+Fahrzeug-Billboard-LOOK + P2P-Kreatur-Gestalt · klang ohne Stufen-Zeile (meshfrei).
 
-Davor V18.477 DIE NIVEAU-VOLLENDUNG — der Studio-Vergleich (Vertrag · Welt · Editor,
-drei Leser + frische Matrix) fand vier echte Risse, alle in EINER Welle geschlossen:
-PRÄGUNG-WELT (`gate:praegung-welt`: die Prägung reist als Guss-Stempel `studioOv` MIT
-dem Artefakt in Hand/Welt/Snapshot/place-DSL, ov-Hash trennt Cache+Batch, die EINE
-Räumungs-Naht `_foundryCacheEvict` heilt den präge-Flush [Verify-CONFIRMED]) ·
-FAHRZEUG-FERNSTUFE (`gate:fahrzeug-fern`, impostor:true, geritten = L0) ·
-TIER-FERN-HYSTERESE (`gate:tier-fern`, TIER_FERN_HYST = die EINE Fern-Bande, auch am
-mensch-Toggle) · STUDIO-ÜBERGABE (`gate:studio-uebergabe`, der W12-Kanal `uebergabe`
-trägt Gestalt+Dials fail-closed in den Welt-Guss). Davor V18.476 DIE ORAKEL-UMSETZUNG
-(acht Tier-1-Wellen, je EINE Linse: kopplung ·
-koerper-bewegung · kampf-gefuehl · schritt-klang · render-diaet [EIN Material je
-Tag-Signatur + r184-INDEX-KONSISTENZ #i/#x am Batch-Key] · gpu-zeit [timestamp-query,
-gpuMs echt|proxy] · kreatur-kosten · reconnect — alles render-seitig, fixe Sim
-unberührt). Der Bogen darüber bleibt der **Schöpfer-Browser-Befund (14.07., roadmap
-§0.1):** beide Steady-Hebel (DC-Diät V18.474 · Render-Diät V18.476) sind gebaut —
-**der nächste echte Trace urteilt** (Flugschreiber misst GPU ECHT + Tri-Zensus; er
-POSTet beim Spielen automatisch → committen). Davor: V18.475 Wasser-Wahrheit ·
-V18.474 Vollende-Welle · V18.473 Existenz-Boden · V18.472 Panel+Export · V18.471
-Bäcker-Vereinigung · V18.470 Konsum-Matrix · V18.469 Erstarren-CPU-Hälfte · V18.468
-Informations-Diät (Detail = git log). OFFEN daneben: Kommentar-Diät des Stamms
-(roadmap §0) · typeof-Ratchet (nur-sinkend) · das formale Abnahme-Drehbuch
-(look-golden --mint · DoD 5) · Bogen-1-Rest (RenderBundles · Kreatur-GPU-Skinning,
-roadmap §0.5).
+Davor V18.482 DIE VERBINDUNGEN (Dörfer 0.1→7/km² + Start-Dorf · Submit-Wal: CPU
+4.28→1.23 ms, dc 1566→0 in der Sonde · Physik byte-paritätisch + Bogen-Verb komplett) ·
+V18.481 ERLEBNIS-VOLLENDUNG (T2 Kaskaden 32→30M · T3 Bundles · T4 Fell×Fläche · T6
+Körper-UI · T7 Boden) · V18.480 KANON (35 Alt-Doppel→0, Werkstatt-LOD-Knöpfe daten-
+getrieben) · V18.479 ERLEBNIS-ZIEL (roadmap §0.0 normativ + T0 AUGEN [`npm run blick`:
+echtes WebGPU headless via swiftshader-Vulkan] + T1 Blob-Tod + T2 Messung) · V18.478
+NAHT-VOLLENDUNG (P2P-Gestalt · Reload-Treue · §8.5-Stufenzeile · Bäcker-ov) · V18.477
+NIVEAU-VOLLENDUNG (Prägung-Welt · Fahrzeug-Fernstufe · Tier-Hysterese · Studio-
+Übergabe) · V18.476 ORAKEL-UMSETZUNG (acht Tier-1-Linsen; Detail = git log). Der Bogen
+darüber: **der Schöpfer spielt V18.483, der Flugschreiber-Trace urteilt** (GPU echt +
+Tri-Zensus, POSTet automatisch → committen; V18.481-Trace maß noch 96.9 ms CPU-Render
+VOR dem Submit-Wal-Fix). OFFEN daneben: Kommentar-Diät des Stamms (roadmap §0) ·
+typeof-Ratchet (nur-sinkend) · Abnahme-Drehbuch (look-golden --mint · DoD 5) ·
+Bogen-1-Rest (Kreatur-GPU-Skinning, roadmap §0.5).
 
 ## Architektur (die Karte)
 

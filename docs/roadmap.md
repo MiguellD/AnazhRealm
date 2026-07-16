@@ -5,7 +5,7 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.478)
+## §0 · DER TISCH — was offen ist (Stand V18.483)
 
 0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
    Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine
@@ -37,6 +37,15 @@
    Übergabe = Kleider/Bewegung deckungsgleich. DONE: Seite-an-Seite-Schuss.
    **T7 BODEN-BLICK** — die Spiegelung/Schwärze beim Runterschauen: mit den Augen
    reproduzieren, Wurzel benennen, heilen. DONE: Runterschau-Schuss sauber.
+   **STAND: T0–T7 sind GEBAUT (V18.479–482, je Commit-Chronik) + V18.483 DIE
+   GEFÜHLS-NAHT (die Reflexions-Lücken: Dorf-in-Terrain [Fundamente/Klippen-Wand] ·
+   Schwimm-Heimat · Kreatur-Leben [Zustand schaltet Gang, fx.verhalten] · Arena-
+   Gefühl [Energie-Hitstop, Bogen-Auszug] · Fahr-Gefühl [Garage-Lenkung/Drift] ·
+   Parkour [Wand-/Doppelsprung, Klettern, Rutsch]). Das MERGE-TOR bleibt: der
+   Schöpfer SPIELT V18.483, der Flugschreiber-Trace + das Auge urteilen.
+   BENANNT-OFFEN aus der Naht: Slide-POSE des Rigs (Physik+Kamera da, Körper-Pose
+   fehlt) · Bogen-Auszug-HUD (Zug-Anteil unsichtbar außer FOV) · Kreatur-Aktions-
+   Feinschliff am Schöpfer-Auge (grasen/ruhen-Winkel).**
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
