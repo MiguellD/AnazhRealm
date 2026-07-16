@@ -50965,6 +50965,19 @@ class AnazhRealm {
                 if (_sp && Number.isFinite(_sp.k) && Number.isFinite(_sp.c) && _sp.k > 0 && _sp.c >= 0) {
                     prof.spring = { k: _sp.k, c: _sp.c };
                 }
+                // FAHR-GEFÜHL (Garage-Vereinigung) — die Lenk-/Drift-Gesetze
+                // reisen ins Profil (NaN-Wand; nur RÄDRIGE Werke lenken — ein
+                // Reit-Bein-Werk bleibt richtungs-folgend byte-alt).
+                const _lk = _fp.lenkung;
+                if (
+                    _lk &&
+                    prof.radCount > 0 &&
+                    Number.isFinite(_lk.sfK) &&
+                    Number.isFinite(_lk.maxSteer) &&
+                    Number.isFinite(_lk.gripK)
+                ) {
+                    prof.lenkung = _lk;
+                }
             }
         } catch (_e) {}
         entry._vehicleProfile = prof;
@@ -51219,7 +51232,13 @@ class AnazhRealm {
         const vx = v ? v.x() : 0;
         const vz = v ? v.z() : 0;
         const sp = Math.hypot(vx, vz);
-        if (sp > 0.4) {
+        // FAHR-GEFÜHL — lenkt das Studio-Fahrzeug SELBST (_rideSteer vom
+        // Bewegungs-Tick), führt SEINE Gier direkt (die Lenkung ist die
+        // Wahrheit, kein Geschwindigkeits-Nachlauf); sonst byte-alt folgen.
+        if (entry._rideSteer) {
+            if (Number.isFinite(entry._rideYaw)) entry.rotationY = entry._rideYaw;
+            entry._rideSteer = false;
+        } else if (sp > 0.4) {
             const targetYaw = Math.atan2(vx, vz);
             let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
             let d = targetYaw - cur;
@@ -86399,11 +86418,66 @@ class AnazhRealm {
                 this.state.player.mountedArch !== undefined
                     ? this._mountedVehicleProfile()
                     : null;
-            if (ride) currentSpeed *= ride.topSpeedMul;
-            if (this.state.moveDirection.length() > 0) {
+            // A5/N6.4 — je Profil-Größe EIN Lese-Ort (die Hoists speisen BEIDE
+            // Zweige: den richtungs-folgenden Ritt UND den Lenk-Pfad unten).
+            const rideTop = ride ? ride.topSpeedMul : 1;
+            const rideKAcc = ride ? ride.kAcc : null;
+            const rideKBrake = ride ? ride.kBrake : null;
+            currentSpeed *= rideTop;
+            // FAHR-GEFÜHL (Garage-Vereinigung) — trägt das gerittene STUDIO-
+            // Fahrzeug die Lenk-Gesetze (fahrprofil.lenkung, vehicle-core FAHR),
+            // fährt der Ritt FAHRZEUG-EIGEN: W/S = Gas/Bremse ENTLANG der Gier,
+            // A/D = Lenkung (selbstzentrierend sf = 1/(1+v·sfK); Gier-Rate =
+            // v·tan(δ)/Radstand — erst Fahrt dreht, wie auf der Probestrecke),
+            // die Quer-Geschwindigkeit stirbt am GRIP (Reibkreis-Vereinfachung),
+            // Shift = HANDBREMSE (Grip fällt auf driftGripMul → Drift + hand-
+            // Decel; im Sattel sprintet niemand). KEIN Parallel-Pfad: dieselbe
+            // playerVel, dieselbe Step-Integration; ohne lenkung (kein Studio-
+            // Wagen / Kern kalt) der byte-alte richtungs-folgende Ritt.
+            const lenk = ride && ride.lenkung && this._mountedEntry ? ride.lenkung : null;
+            if (lenk) {
+                const ent = this._mountedEntry;
+                const v = this.state.playerVel;
+                let yaw = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
+                const fX = Math.sin(yaw);
+                const fZ = Math.cos(yaw);
+                let vLong = v.x() * fX + v.z() * fZ;
+                let vLat = v.x() * fZ - v.z() * fX; // Komponente entlang state.right
+                const steerIn = (this.state.keys["a"] ? 1 : 0) - (this.state.keys["d"] ? 1 : 0);
+                const sf = 1 / (1 + Math.abs(vLong) * lenk.sfK);
+                const delta = steerIn * lenk.maxSteer * sf;
+                const L = Number.isFinite(lenk.radstand) && lenk.radstand > 1 ? lenk.radstand : 2.6;
+                yaw += ((vLong * Math.tan(delta)) / L) * nowDt;
+                const hand = !!this.state.keys["shift"];
+                const zielSpeed = this.state.speed * rideTop * slopePenalty; // nie Sprint im Sattel
+                const ziel = this.state.keys["w"]
+                    ? zielSpeed
+                    : this.state.keys["s"]
+                      ? -zielSpeed * (Number.isFinite(lenk.kehrV) ? lenk.kehrV : 0.45)
+                      : 0;
+                const kL = this.state.keys["w"] || this.state.keys["s"] ? rideKAcc : rideKBrake;
+                vLong += (ziel - vLong) * (1 - Math.exp(-kL * nowDt));
+                if (hand && Number.isFinite(lenk.handDecel)) {
+                    vLong -= Math.sign(vLong) * Math.min(Math.abs(vLong), lenk.handDecel * nowDt);
+                }
+                const grip = lenk.gripK * (hand ? (Number.isFinite(lenk.driftGripMul) ? lenk.driftGripMul : 0.35) : 1);
+                vLat *= Math.max(0, 1 - grip * nowDt);
+                // NaN-Wand vor dem Gedächtnis (Lehre 13), dann zurück in Weltachsen;
+                // die Gier ans Gefährt (die EINE Gier-Wahrheit entry.rotationY).
+                if (!Number.isFinite(yaw) || !Number.isFinite(vLong) || !Number.isFinite(vLat)) {
+                    yaw = this.state.yaw;
+                    vLong = 0;
+                    vLat = 0;
+                }
+                const fX2 = Math.sin(yaw);
+                const fZ2 = Math.cos(yaw);
+                this.state.playerVel.setValue(fX2 * vLong + fZ2 * vLat, v.y(), fZ2 * vLong - fX2 * vLat);
+                ent._rideYaw = yaw;
+                ent._rideSteer = true; // der Yaw-Folge-Block im Mount-Tick ruht
+            } else if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
                 const v = this.state.playerVel;
-                const kAcc = ride ? ride.kAcc : this.state.isInAir ? 4.5 : 14;
+                const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? 4.5 : 14;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
                 const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
@@ -86416,7 +86490,7 @@ class AnazhRealm {
                 // Körper mit Masse abbremst (Quake/Source-Ground-Friction-Feel).
                 // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
                 const v = this.state.playerVel;
-                const kBrake = ride ? ride.kBrake : this.state.isInAir ? 1.5 : 9;
+                const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? 1.5 : 9;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
             }

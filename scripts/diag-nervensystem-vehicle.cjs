@@ -327,7 +327,11 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
         } catch (e) {
             res.e.err = (e && e.message) || String(e);
         }
-        // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 klemmt auf Stufe 0 =====
+        // ===== F: FAIL-CLOSED behavioral — die Distanz-Wahl 2 fordert NIE Stufe-2-
+        // Geometrie (V18.477 FAHRZEUG-FERNSTUFE: fern = Impostor-Politik [KIND_POLICY.
+        // vehicle impostor:true, gate:fahrzeug-fern haelt die Route]; ein Wirts-L1-
+        // GRADE-Request bleibt erlaubt — "L1/L2 gradet der Wirt", vehicle-core B2).
+        // Die Probe wanderte mit dem Gesetz (16.07.): vorher klemmte [0] hart. =====
         try {
             if (!f.requested) f.requested = new Set();
             const before = new Set(f.requested);
@@ -407,8 +411,8 @@ function staticLaws(anazhSrc, phytoSrc, vcSrc, manifestSrc) {
     check("E: _foundryBuildGroup baut die Gruppe (Kinder > 0)", out.e.groupChildren > 0, String(out.e.groupChildren));
     check("E: jedes Kind traegt das color-Attribut (WebGPU-STRIKT-Fill)", out.e.allHaveColor === true);
     check(
-        "F: die Distanz-Wahl 2 klemmt fuer kind:vehicle auf Stufe 0",
-        /\|0\|/.test(out.f.gtKey || ""),
+        "F: die Distanz-Wahl 2 fordert fuer kind:vehicle NIE Stufe-2-Geometrie (fern = Impostor-Politik)",
+        !/\|2\|/.test(out.f.gtKey || ""),
         out.f.err || String(out.f.gtKey)
     );
     check(

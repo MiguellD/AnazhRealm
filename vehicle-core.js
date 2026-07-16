@@ -2046,6 +2046,22 @@
             kBrakeRad: 3.5, // Roll-aus-k ÷ Masse (Raeder rollen aus)
             kBrakeBein: 8, // Stopp-k ÷ Masse (Beine/starr stoppen prompt)
         },
+        // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
+        // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
+        // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle
+        // Z.302), gripK der Quer-Slip-Abbau je Sekunde (die Reibkreis-VEREINFACHUNG
+        // des Wirts — das volle Slip-Winkel-Modell bleibt die Lab-Sim), driftGripMul
+        // der Grip-Anteil unter Handbremse (Lab-Muster FLatR·0.32), kehrV der
+        // Rueckwaerts-Anteil der S-Taste. exportDrive reicht sie (zusammen mit
+        // maxSteer/handDecel aus DIESEM Satz + dem Rezept-Radstand) als
+        // fahrprofil.lenkung ins Buch; der Wirt liest fail-soft (ohne lenkung
+        // bleibt der byte-alte richtungs-folgende Ritt).
+        lenkung: {
+            sfK: 0.05,
+            gripK: 6,
+            driftGripMul: 0.35,
+            kehrV: 0.45,
+        },
     };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
@@ -2117,6 +2133,17 @@
             mass: ph.mass,
             vmax: ph.vmax,
             spring: { k: P.springRate, c: P.damping },
+            // FAHR-GEFUEHL — die Lenk-/Drift-Gesetze reisen mit (EINE Quelle:
+            // FAHR; radstand fuer die Gier-Rate v·tan(δ)/L des Wirts).
+            lenkung: {
+                sfK: FAHR.lenkung.sfK,
+                maxSteer: FAHR.maxSteer,
+                gripK: FAHR.lenkung.gripK,
+                driftGripMul: FAHR.lenkung.driftGripMul,
+                handDecel: FAHR.handDecel,
+                kehrV: FAHR.lenkung.kehrV,
+                radstand: P.radstand,
+            },
         };
     }
 
