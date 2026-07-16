@@ -14,6 +14,11 @@
 //       neuen Ort.
 //   (4) HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht).
 //   (5) kein pageerror.
+//   (6) SICHT-BESITZ (SELBST GESPIELT 16.07.) — mit bereitem Ring weitet die
+//       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); die HÖHEN-
+//       ÖFFNUNG öffnet fog.far über der Umgebung (Spieler-Hub → > 1000) und
+//       schließt am Boden wieder (Wald-Gesetz); _fernRingDispose stellt
+//       camera.far wieder her (die Klippe war Ring-Besitz).
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -218,6 +223,67 @@ const server = http.createServer((req, res) => {
         res.reanchorTicks = ticks2;
         res.reanchorBudgeted = maxDelta2 > 0 && maxDelta2 <= F.refreshVertsProTick && ticks2 >= 2;
 
+        // ===== (6) SICHT-BESITZ: Kamera-Weitung + Höhen-Öffnung + Rücknahme =====
+        // Die Weitung geschah beim Pump (Ring wurde ready): far = Schale-3 + 500.
+        const camFarWide = F.schalen[F.schalen.length - 1].aussen + 500;
+        res.camFar = r.state.camera.far;
+        res.camFarWide = camFarWide;
+        res.camFarAlt = r._fernRingCamFarAlt;
+        res.camWidened =
+            r.state.camera.far === camFarWide &&
+            Number.isFinite(r._fernRingCamFarAlt) &&
+            r._fernRingCamFarAlt < camFarWide;
+        // Die HÖHEN-ÖFFNUNG durch den ECHTEN Loop (der Spieler-Hub reist per
+        // V18.356-Teleport-Adoption; die Kamera folgt in _loopCamera; die
+        // Umgebungs-Proben sind takt-gecacht). `_gameLoopTick` wird erst bei
+        // Renderer-Ready zugewiesen — erst darauf warten, dann DETERMINISTISCH
+        // pumpen BIS die Bedingung steht (kein Ritt auf dem ~1-Hz-Headless-RAF).
+        const dlLoop = performance.now() + 30000;
+        while (typeof r._gameLoopTick !== "function" && performance.now() < dlLoop) await sleep(200);
+        if (typeof r._gameLoopTick !== "function") res.loopFehler = "_gameLoopTick kam nie (Renderer-Ready)";
+        const fogVal = () => (r.state.scene.fog ? +r.state.scene.fog.far.toFixed(1) : null);
+        const pumpeBis = async (cond) => {
+            for (let i = 0; i < 24; i++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (e) {
+                    res.loopFehler = String(e && e.message);
+                }
+                if (cond(fogVal())) break;
+                await sleep(Math.ceil(F.oeffnungTaktMs * 0.7));
+            }
+            return fogVal();
+        };
+        const px = r.state.playerMesh.position.x;
+        const pz = r.state.playerMesh.position.z;
+        const hy = r.getTerrainHeightAt(px, pz);
+        r.state.playerMesh.position.y = (Number.isFinite(hy) ? hy : 0) + 1;
+        res.fogBoden = await pumpeBis((f) => Number.isFinite(f) && f < 300);
+        let umg = -Infinity;
+        for (let k = 0; k < 4; k++) {
+            const h = r.getTerrainHeightAt(
+                px + (k & 1 ? F.oeffnungProbeM : -F.oeffnungProbeM) * (k & 2 ? 0 : 1),
+                pz + (k & 1 ? F.oeffnungProbeM : -F.oeffnungProbeM) * (k & 2 ? 1 : 0)
+            );
+            if (Number.isFinite(h) && h > umg) umg = h;
+        }
+        r.state.playerMesh.position.y = umg + F.oeffnungVollM + 30;
+        res.fogGipfel = await pumpeBis((f) => Number.isFinite(f) && f > 1000);
+        r.state.playerMesh.position.y = (Number.isFinite(hy) ? hy : 0) + 1;
+        res.fogZurueck = await pumpeBis((f) => Number.isFinite(f) && f < 300);
+        res.oeffnungOk =
+            !res.loopFehler &&
+            Number.isFinite(res.fogBoden) &&
+            res.fogBoden < 300 &&
+            Number.isFinite(res.fogGipfel) &&
+            res.fogGipfel > 1000 &&
+            Number.isFinite(res.fogZurueck) &&
+            res.fogZurueck < 300;
+        // Die RÜCKNAHME: der Dispose stellt das alte far wieder her (Ring-Besitz).
+        const altVorDispose = r._fernRingCamFarAlt;
+        r._fernRingDispose();
+        res.disposeRestored = r.state.camera.far === altVorDispose && r.state.fernRing === null;
+
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;
         else window.__anazhFernRing = prevHook;
@@ -270,6 +336,17 @@ const server = http.createServer((req, res) => {
         out.probes2Bad === 0,
         `bad=${out.probes2Bad} worst=${out.probes2Worst && out.probes2Worst.toFixed(4)}`
     );
+    check(
+        "6: KAMERA-WEITUNG — far = Schale-3-aussen + 500, alter Wert gemerkt",
+        out.camWidened === true,
+        `far=${out.camFar} soll=${out.camFarWide} alt=${out.camFarAlt}`
+    );
+    check(
+        "6: HÖHEN-ÖFFNUNG — Boden Wald-Gesetz, über der Umgebung offen (>1000), zurück geschlossen",
+        out.oeffnungOk === true,
+        `boden=${out.fogBoden} gipfel=${out.fogGipfel} zurueck=${out.fogZurueck}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
+    );
+    check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {

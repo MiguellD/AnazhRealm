@@ -55,6 +55,12 @@
    V18.484 gießt den GRUNDSTEIN: Doktrin · Spiegel+Linse · Hitch-Telemetrie
    (LongTasks/GC/Pipelines/Upload-Bytes — die Stalls bekommen einen Namen) ·
    Stufe-1-Erstkonsument (Dither-Wal → ≤8M) · Fern-Ring v1 · Warm-Start v1.
+   SELBST GESPIELT (16.07., ich-spiele-Sonde, echtes WebGPU): steady 1.66M Tris/
+   40 dc (alt 20–26M/1733) — und zwei Sicht-Blocker gefunden+gefixt (camera.far
+   1000 clippte die 8-km-Schalen → Ring-eigene Weitung; Wald-Schleier ~120 m
+   verdeckte den Ring → HÖHEN-ÖFFNUNG: fog.far öffnet sich nur ÜBER der Umgebung,
+   Waldboden byte-alt). BENANNTER HEBEL aus der Telemetrie: ~15.8 Pipeline-
+   Kompilate/s WÄHREND des Spielens (Runtime-Warm-Compile fehlt noch).
    DANACH (nur nach Trace-Urteil): GPU-Cull/indirekte Draws · Fullscreen-Feld-Pass ·
    Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace + das Auge urteilen.
 

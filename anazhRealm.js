@@ -37396,6 +37396,17 @@ class AnazhRealm {
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
         }
         this._fernRingRefresh(F.refreshVertsProTick);
+        // DIE KAMERA-KLIPPE (SELBST GESPIELT 16.07., ich-spiele-Sonde): camera.far
+        // stand auf 1000 — die 8-km-Schalen wurden GECLIPPT, der Horizont KONNTE
+        // nicht existieren. Mit bereitem Ring weitet die Kamera auf Schalen-Rand
+        // + Marge; der Dispose stellt das alte far wieder her. EIN Ort (der Ring
+        // besitzt seine Sicht-Voraussetzung), idempotent über _fernRingCamFar.
+        const aussen = F.schalen[F.schalen.length - 1].aussen;
+        if (fr.ready && st.camera && st.camera.far < aussen + 500) {
+            if (!Number.isFinite(this._fernRingCamFarAlt)) this._fernRingCamFarAlt = st.camera.far;
+            st.camera.far = aussen + 500;
+            st.camera.updateProjectionMatrix();
+        }
     }
 
     // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen
@@ -37409,6 +37420,12 @@ class AnazhRealm {
             this._queueGeometryDispose(m.geometry);
         }
         if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        // die Kamera-Weitung zurücknehmen (die Klippe war der Ring-Besitz).
+        if (Number.isFinite(this._fernRingCamFarAlt) && this.state.camera) {
+            this.state.camera.far = this._fernRingCamFarAlt;
+            this.state.camera.updateProjectionMatrix();
+            this._fernRingCamFarAlt = null;
+        }
         this.state.fernRing = null;
     }
 
@@ -83198,6 +83215,51 @@ class AnazhRealm {
             fog.far = Math.min(fogFarBase, sm, visualEdgeTarget);
             const fogNearBase = visualEdgeTarget * 0.35 * (1 - rainyMix * 0.35);
             fog.near = Math.min(fogNearBase, fog.far * 0.45);
+            // DAS FELD ZEICHNET (§2 Stufe 2) — DIE HÖHEN-ÖFFNUNG (SELBST GESPIELT
+            // 16.07.: der Fern-Ring existierte, aber der Wald-Schleier bei ~120 m
+            // verdeckte ihn überall). Am WALDBODEN bleibt die Studio-Sichtweite
+            // byte-alt das Gesetz (Schöpfer-Wort „Sichtweite wie im Wald, kein
+            // Überflug-Feld erzwingen" — geehrt: ohne bereiten Fern-Ring passiert
+            // hier NICHTS). Steigt das Auge über die UMGEBUNG (Gipfel, Turm, über
+            // den Kronen), öffnet sich der Schleier stetig zum Ring — es gibt dort
+            // keinen Welt-Rand mehr zu verstecken, der Ring TRÄGT die Ferne.
+            // Die 4 Umgebungs-Proben sind takt-gecacht (kein Sample-Preis je Frame).
+            {
+                const frO = this.state.fernRing;
+                const camO = this.state.camera;
+                if (frO && frO.ready && camO) {
+                    const FO = AnazhRealm.FERN_RING;
+                    const nowO = performance.now();
+                    if (!this._oeffnungAt || nowO - this._oeffnungAt > FO.oeffnungTaktMs) {
+                        this._oeffnungAt = nowO;
+                        const ox = camO.position.x;
+                        const oz = camO.position.z;
+                        let umg = -Infinity;
+                        for (let k = 0; k < 4; k++) {
+                            const h = this.getTerrainHeightAt(
+                                ox + (k & 1 ? FO.oeffnungProbeM : -FO.oeffnungProbeM) * (k & 2 ? 0 : 1),
+                                oz + (k & 1 ? FO.oeffnungProbeM : -FO.oeffnungProbeM) * (k & 2 ? 1 : 0)
+                            );
+                            if (Number.isFinite(h) && h > umg) umg = h;
+                        }
+                        this._oeffnungUmgebung = umg;
+                    }
+                    const ueber = Number.isFinite(this._oeffnungUmgebung)
+                        ? camO.position.y - this._oeffnungUmgebung
+                        : 0;
+                    const tO = Math.max(
+                        0,
+                        Math.min(1, (ueber - FO.oeffnungAbM) / Math.max(1, FO.oeffnungVollM - FO.oeffnungAbM))
+                    );
+                    if (tO > 0) {
+                        const zielFar = fog.far + (FO.sichtOeffnungM - fog.far) * tO;
+                        if (zielFar > fog.far) {
+                            fog.far = zielFar;
+                            fog.near = Math.max(fog.near, zielFar * 0.3);
+                        }
+                    }
+                }
+            }
             // V15.4 — Aerial-Perspective-Sky-Farbe aus DERSELBEN Fog-Farbe
             // speisen (EINE Quelle -> tag/nacht/wetter-kohaerent). density +
             // hazeTop folgen Wetter (rainy = dichter + niedrigerer Gipfel-
@@ -89312,6 +89374,16 @@ AnazhRealm.FERN_RING = Object.freeze({
     reanchorDist: 180,
     anchorQuant: 24,
     refreshVertsProTick: 600,
+    // DIE HÖHEN-ÖFFNUNG (SELBST GESPIELT 16.07.): am Waldboden bleibt die
+    // Studio-Sichtweite das Gesetz (Schöpfer-Wort „Sichtweite wie im Wald");
+    // steigt das AUGE über die UMGEBUNG (4 Terrain-Proben im Probe-Radius),
+    // öffnet sich der Schleier zum Fern-Ring — Gipfel werden Aussichten.
+    // Ohne bereiten Ring passiert NICHTS (kein Überflug-Erzwingen, N7.4 geehrt).
+    oeffnungAbM: 14, // m Augen-Höhe über der Umgebung: hier beginnt die Öffnung (~Kronen-Höhe)
+    oeffnungVollM: 55, // hier ist sie voll (Gipfel/Turm)
+    oeffnungProbeM: 150, // Radius der 4 Umgebungs-Proben
+    sichtOeffnungM: 2800, // die offene Sicht (fog.far-Ziel bei voller Öffnung)
+    oeffnungTaktMs: 500, // die Umgebungs-Proben sind gecacht (kein 4×-Sample je Frame)
 });
 
 // V18.382 — LOCKSTEP-MP Stufe 2 (nur Inputs übers Netz): `jitterReserve` = die Frame-Reserve

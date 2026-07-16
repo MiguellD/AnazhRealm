@@ -22,10 +22,15 @@ gate:scatter-ab byte-grün) · WARM-START (`gate:warm-start`: uneditierte Chunk-
 IDB [Foundry-Disziplin, VERSION|genVersion|anker-Stempel], zweiter Boot ~1.7×, Byte-
 Gleichheit per FNV, Edit-Bypass ehrlich) · FERN-RING (`gate:fern-ring`: 3 Schalen bis
 8 km aus `_terrainMacroSurfaceY(x,z,false)`, welt-gesnappt, budgetiert, quantisiert;
-Höhen==Gesetz worst 0.0000). OFFEN benannt: Horizont-BILD fürs Schöpfer-Auge (Blick-
-Kamera schaut in den Hang; Nebel-Distanz-Tuning) · Multi-Seed-Sweep der Spiegel-Linse ·
-L1-Wander-Freeze der Boden-Schichten · Stufe-2-Vollausbau (GPU-Cull/indirekte Draws +
-Fullscreen-Feld-Pass) NUR nach Trace-Urteil (roadmap §0b).
+Höhen==Gesetz worst 0.0000). SELBST GESPIELT (ich-spiele-Sonde, echtes WebGPU: steady
+1.66M Tris/40 dc [alt 20–26M/1733]) — zwei Sicht-Blocker gefunden+gefixt: KAMERA-KLIPPE
+(camera.far 1000 clippte die 8-km-Schalen → Ring-eigene Weitung + Dispose-Rücknahme) ·
+HÖHEN-ÖFFNUNG (fog.far öffnet sich NUR über der Umgebung [4 takt-gecachte Proben,
+FERN_RING.oeffnung*]; Waldboden byte-alt — Schöpfer-Wort geehrt). OFFEN benannt:
+Runtime-Pipeline-Warm-Compile (~15.8 Kompilate/s WÄHREND des Spielens gemessen) ·
+Multi-Seed-Sweep der Spiegel-Linse · L1-Wander-Freeze der Boden-Schichten ·
+Stufe-2-Vollausbau (GPU-Cull/indirekte Draws + Fullscreen-Feld-Pass) NUR nach
+Trace-Urteil (roadmap §0b).
 
 Davor V18.483 — DIE GEFÜHLS-NAHT: die Erlebnisräume der Studios erreichen die Welt.
 
