@@ -65,16 +65,26 @@ function check(name, ok, detail) {
         /rx0/.test(promoBlock) && /rz1/.test(promoBlock) && /_promoteScatterCell/.test(promoBlock)
     );
     // ── F (Quelle): EIN Keying-Chokepoint, kein zweiter Ableitungs-Ort ──
-    // Die Konstante hat GENAU zwei Code-Vorkommen (Definition + der eine Leser in
-    // _archFernRegionKey), und _archInstanceGroupFor mappt den Key VOR jedem Keying
-    // (auch der Batch-Zweig erbt ihn — er wird NACH dem Mapping aufgerufen).
+    // Die Konstante hat GENAU fünf Code-Vorkommen: Definition + der eine ABLEITUNGS-
+    // Leser in _archFernRegionKey + drei RADIUS-Leser in _archRegionBundleFor (T3 —
+    // die analytische Bundle-Cull-Kugel einer Super-Region skaliert mit S; sie LIEST
+    // die Konstante, LEITET aber keinen Key ab). Die Ableitungs-Einzigkeit prüft die
+    // eigene Probe darunter: der `s:`-Super-Key wird an GENAU EINER Stelle gebaut.
+    // (Probe gewandert in DAS FELD URTEILT [das-feld-zeichnet §2 Stufe 1]: vorkommen
+    // war schon VOR der Welle 5 — der T3-Kugel-Konsum fehlte der Zählung.)
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
+    const fernDeriveSites = (src.match(/\+ "s:" \+/g) || []).length;
     const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
     const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 2600) : "";
     check(
-        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 2 Code-Vorkommen (Definition + _archFernRegionKey)",
-        fernConstUses === 2 && src.includes("_archFernRegionKey(name, leaf, regionKey) {"),
+        "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 5 Code-Vorkommen (Definition + _archFernRegionKey + 3 T3-Kugel-Radius-Leser)",
+        fernConstUses === 5 && src.includes("_archFernRegionKey(name, leaf, regionKey) {"),
         `vorkommen=${fernConstUses}`
+    );
+    check(
+        "F(Quelle): der `s:`-Super-Key wird an GENAU EINER Stelle abgeleitet (_archFernRegionKey)",
+        fernDeriveSites === 1,
+        `ableitungen=${fernDeriveSites}`
     );
     check(
         "F(Quelle): der Keying-Chokepoint mappt VOR dem Batch-Zweig (_archFernRegionKey zuerst)",
@@ -130,38 +140,79 @@ function check(name, ok, detail) {
         // Eine lebende Zelle suchen (Schicht-agnostisch — der Tick trägt alle
         // Schichten; im Null-Renderer deferrieren Baum-Fernstufen [kein RTT] →
         // meist proben wir eine Grammatik-Schicht, derselbe Chokepoint).
+        // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): die Probe MUSS eine
+        // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
+        // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
+        // BY DESIGN dem Region-Lifecycle (V18.464-B2; seit der Keying-Welle trägt
+        // JEDE Stufe der Boden-Schichten den Region-Key). Vorher war die Wahl
+        // flake-abhängig: je nach Foundry-Timing probte sie eine geschützte
+        // Boden-Zelle und maß den Guard statt des Wanderns.
         const map = r.state.scatterRegions;
-        let probe = null;
-        for (const c0 of [(c) => c.lod < 2, () => true]) {
+        const b2Privat = (c) =>
+            Array.isArray(c.slots) &&
+            c.slots.some((s) => {
+                if (!s || typeof s.key !== "string") return false;
+                const at = s.key.indexOf("@");
+                return at >= 0 && !(s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at));
+            });
+        const sucheProbe = (nurNah) => {
             for (const reg of map.values()) {
                 for (const c of reg.cells || []) {
-                    if (c.slots && c.bpName && c0(c)) {
-                        probe = c;
-                        break;
-                    }
+                    if (c.slots && c.bpName && !b2Privat(c) && (!nurNah || c.lod < 2)) return c;
                 }
-                if (probe) break;
             }
+            return null;
+        };
+        // BEVORZUGT eine NAHE Zelle (lod<2 → Weg-Sprung auf die vorgewärmte
+        // Fernstufe); IM FOUNDRY-REGIME ist diese Population fast leer (innerM 64:
+        // dn = raw·min(12/visH,1) < 15.4 verlangte visH ≥ ~50 m — die alten
+        // „lod 0"-Funde waren STUFEN-GEKLEMMTE Arten [Blume/Fels: requested 2,
+        // serviert ff.lod=0], deren „Wandern" nur der bpName-identische
+        // Hysterese-Quittieren-Pfad war; seit DAS FELD URTEILT sind sie region-
+        // privat + B2-geschützt). Kurz warten, dann die NAH-Richtung an einer
+        // echten Fern-Baum-Zelle proben — der STÄRKERE Beweis (echter Slot-Tausch).
+        let probe = null;
+        const dlP = performance.now() + 10000;
+        while (!probe && performance.now() < dlP) {
+            probe = sucheProbe(true);
             if (probe) break;
+            r._tickScatterStreaming(pm);
+            await new Promise((r2) => setTimeout(r2, 60));
         }
+        if (!probe) probe = sucheProbe(false);
         res.probeGefunden = !!probe;
         if (!probe) return res;
         const lodVorher = probe.lod;
         const bpVorher = probe.bpName;
         const slotsVorher = JSON.stringify(probe.slots);
         // ── L: der Spieler springt — nahe Zelle: WEIT weg (Stufe steigt);
-        //       ferne Zelle: NAH heran (Stufe sinkt, Ziel ~innerM+8) ──
+        //       ferne Zelle: NAH heran (Stufe sinkt). Nah-Ziel 20 m: die
+        //       Wahrnehmungs-Distanz dn ≤ raw (min(12/visH,1) ≤ 1) ⇒ raw 20 <
+        //       thresh12 − hysteresis = 22.6 ⇒ der Abstieg 2→1 ist für JEDE
+        //       Sichthöhe garantiert (das alte Ziel 30 lag für visH ≤ 12-
+        //       Subjekte AUSSERHALB des Abstiegs-Bandes — nie abgedeckt, weil
+        //       die Nah-Richtung vor der Keying-Welle nie gewählt wurde). ──
         const dx = probe.x - pm.x;
         const dz = probe.z - pm.z;
         const d0 = Math.hypot(dx, dz);
         const naeher = lodVorher >= 2;
-        const ziel = naeher ? 30 : 340;
+        const ziel = naeher ? 20 : 340;
         pm.x = probe.x - (dx / (d0 || 1)) * ziel;
         pm.z = probe.z - (dz / (d0 || 1)) * ziel;
+        // Der Wander-Loop YIELDET deadline-basiert: der Zellen-Chokepoint lässt
+        // bei ladendem Ziel-Asset die alte Stufe stehen (ctxNoDefer — „Retry in
+        // der nächsten Runde"); ein rein synchroner Loop könnte den async
+        // Foundry-Stufen-Bau nie ankommen sehen (die Nah-Richtung 2→1/0 wäre
+        // strukturell unmöglich). Dieselbe 30-s-Warte-Disziplin wie der
+        // F-Block (Flat lädt async, 100-ms-Polls).
         let wandel = 0;
-        for (let i = 0; i < 400 && !wandel; i++) {
-            r._tickScatterLod(pm, 8, 400);
-            if (probe.lod !== lodVorher) wandel = 1;
+        const dlW = performance.now() + 45000;
+        while (!wandel && performance.now() < dlW) {
+            for (let i = 0; i < 40 && !wandel; i++) {
+                r._tickScatterLod(pm, 8, 400);
+                if (probe.lod !== lodVorher) wandel = 1;
+            }
+            if (!wandel) await new Promise((r2) => setTimeout(r2, 150));
         }
         res.l = {
             lodVorher,

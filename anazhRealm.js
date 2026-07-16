@@ -53567,11 +53567,18 @@ class AnazhRealm {
             // Varianten × Leaves; tragbar, weil A+C die Gruppen-Zahl gesenkt haben).
             // Boden-Schichten (under/litter/rock) BLEIBEN region-gekachelt — sie
             // tragen die V18.300-Cull-Rate (diag-turn-cull bleibt die Wand).
-            // V18.474 — käme hier je eine FERN-Stufe mit Region-Key an, kollabierte
-            // der Keying-Chokepoint sie auf die SUPER-REGION (_archFernRegionKey,
-            // die Draw-Call-Diät der Fern-Gruppen); die Streu-Fernstufe selbst
-            // bleibt GLOBAL (null ist gröber als jede Super-Region).
-            this.state.useRegionFoliageCull !== false && lod === 0 && layer.kind !== "tree" ? regX + "," + regZ : null,
+            // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — der Dither-Wal fällt.
+            // MESSGRUND (V18.481-Trace): 7 anonyme Fern-Batches, 1188 Tris/Instanz,
+            // frustumCulled=false — der Shader-Dither cullt nur FRAGMENTE, die
+            // Vertex-Arbeit blieb für JEDE residente Instanz voll. Darum reicht
+            // jetzt JEDE Stufe der Nicht-Baum-Layer den Region-Key: die Fern-Stufe
+            // kollabiert am Keying-Chokepoint auf die SUPER-REGION (_archFernRegionKey
+            // matcht fscatter:*:2/_lod2 → `@s:` — keine V18.303-DC-Explosion),
+            // L0/L1 bleiben region-privat (`@regX,regZ`); regional=true gibt
+            // frustumCulled/Bundle-Cull, _disposeScatterRegion + Empty-Reap halten
+            // die Counts. Bäume bleiben GLOBAL (V18.390-Weisheit — ihr Fern-Wal
+            // ist per _tickScatterLod aufs Billboard geheilt).
+            this.state.useRegionFoliageCull !== false && layer.kind !== "tree" ? regX + "," + regZ : null,
             foundryFlat // V18.393 — Foundry-Flat (oder null → Grammatik-Fallback)
         );
         if (!slots) return null;
@@ -53673,15 +53680,26 @@ class AnazhRealm {
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
             // V18.464-Review (B2): Zellen mit REGION-PRIVATEN Slots (@regX,regZ —
-            // Boden-Schichten auf L0) bleiben dem Region-Lifecycle überlassen: ein
-            // per-Slot-Free in @-Gruppen null-skaliert Instanzen am WELT-URSPRUNG
-            // (der dokumentierte Bounding-Sphere-Hazard aus _disposeScatterRegion) —
-            // diese Gruppen sterben nur als Ganzes mit ihrer Region.
+            // Boden-Schichten nah) bleiben dem Region-Lifecycle überlassen: ein
+            // per-Slot-Free in privaten @-Gruppen null-skaliert Instanzen am WELT-
+            // URSPRUNG (der dokumentierte Bounding-Sphere-Hazard aus
+            // _disposeScatterRegion) — diese Gruppen sterben nur als Ganzes mit
+            // ihrer Region.
+            // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — SUPER-REGION-Slots
+            // (`@s:`/`@p:s:`, _archFernRegionKey) wandern WEITER: seit die Nicht-
+            // Baum-Fernstufe region-gekeyt ist, trüge sonst JEDE Fern-Zelle einen
+            // @-Slot und der LOD-Tick stünde still. Der per-Slot-Free ist für die
+            // GETEILTE Super-Region der schon dokumentierte Pfad (dieselbe Route wie
+            // _disposeScatterRegion; die Empty-Dispose reapt die leere Hülle) —
+            // geschützt bleibt NUR der private Region-Suffix (Key-Muster-Prüfung).
             let hatRegional = false;
             for (const s of cell.slots) {
-                if (s && typeof s.key === "string" && s.key.indexOf("@") >= 0) {
-                    hatRegional = true;
-                    break;
+                if (s && typeof s.key === "string") {
+                    const at = s.key.indexOf("@");
+                    if (at >= 0 && !(s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at))) {
+                        hatRegional = true;
+                        break;
+                    }
                 }
             }
             if (hatRegional) continue;
@@ -64791,8 +64809,10 @@ class AnazhRealm {
     // Fernstufe `fscatter:…:2`), wird sein Region-Key auf die SUPER-REGION gemappt (4×4
     // Regionen teilen EINE Gruppe, Marker `s:`): Impostor-Quads sind camera-facing, ihr
     // per-Region-Frustum-Cull-Nutzen ist gering, der Gruppen-Preis (1 Draw-Call je winziger
-    // Gruppe) hoch. Die STREU-Fernstufe bleibt GLOBAL (null-Key, V18.303/V18.390 — gröber
-    // als jede Super-Region, hier fällt nichts zurück); der Mapper deckt die PLATZIERTEN
+    // Gruppe) hoch. DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1): auch die NICHT-BAUM-
+    // Streu-Fernstufe kommt jetzt MIT Region-Key an und kollabiert hier auf `@s:` (vorher
+    // GLOBAL = frustumCulled false — der Dither-Wal); nur die BAUM-Streu bleibt global
+    // (V18.390-Weisheit, null-Key fällt oben durch). Der Mapper deckt zudem die PLATZIERTEN
     // Fern-Leaves (`p:regX,regZ` — Büsche + Nicht-Kronen-Arten trugen bislang JE REGION
     // eigene winzige Impostor-Gruppen). Buchhaltung per Konstruktion konsistent: ALLE
     // Free-/Realloc-/Refill-/Drain-Pfade lesen die GESPEICHERTEN {key,slot}-Paare aus dem
