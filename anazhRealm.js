@@ -50649,14 +50649,31 @@ class AnazhRealm {
             }
             floats = volSum > 0 && dSum / volSum < 0.55;
         }
+        // PHYSIK-NAHT (N6.5b) — die EMERGENZ-KOEFFIZIENTEN wohnen im GESETZBUCH
+        // (vehicle-core FAHR.hostEmergent, reine Daten): EINE Quelle fuer Lab-
+        // Vergleich UND Welt-Fallback. Fail-soft: Kern kalt/Feld fehlt → die
+        // byte-gleichen historischen Literale (NaN-Wand je Feld).
+        const _vcHE =
+            (typeof globalThis !== "undefined" &&
+                globalThis.__vehicleCore &&
+                globalThis.__vehicleCore.FAHR &&
+                globalThis.__vehicleCore.FAHR.hostEmergent) ||
+            null;
+        const _heN = (k, fb) => (_vcHE && Number.isFinite(_vcHE[k]) ? _vcHE[k] : fb);
         const prof = {
             radCount,
             beinCount,
             mass,
             floats,
-            topSpeedMul: 1 + Math.min(0.6, radCount * 0.12) + (radCount === 0 && beinCount >= 2 ? 0.15 : 0),
-            kAcc: Math.max(2.5, Math.min(10, 7 / mass)),
-            kBrake: radCount > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
+            topSpeedMul:
+                1 +
+                Math.min(_heN("radCap", 0.6), radCount * _heN("radMul", 0.12)) +
+                (radCount === 0 && beinCount >= 2 ? _heN("beinBonus", 0.15) : 0),
+            kAcc: Math.max(2.5, Math.min(10, _heN("kAcc", 7) / mass)),
+            kBrake:
+                radCount > 0
+                    ? Math.max(1.5, Math.min(6, _heN("kBrakeRad", 3.5) / mass))
+                    : Math.max(4, Math.min(10, _heN("kBrakeBein", 8) / mass)),
             roles,
         };
         // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
@@ -50674,6 +50691,16 @@ class AnazhRealm {
                 if (Number.isFinite(_fp.kAcc)) prof.kAcc = _fp.kAcc;
                 if (Number.isFinite(_fp.kBrake)) prof.kBrake = _fp.kBrake;
                 if (typeof _fp.floats === "boolean") prof.floats = _fp.floats;
+                // PHYSIK-NAHT (N6.5a) — der benannte spring-ANSCHLUSS wird KONSUMIERT:
+                // Federrate/Daempfung des Studio-Rezepts (exportDrive.spring {k,c} —
+                // DIESELBEN Zahlen, mit denen die Probefahrt federt) reisen ins Profil;
+                // _tickMountedMovement federt damit die Aufsitz-Hoehe/den Nick (render-
+                // seitig). NaN-Wand: nur finite k>0, c≥0 — sonst kein spring (der
+                // exp-Lerp-Fallback bleibt byte-alt).
+                const _sp = _fp.spring;
+                if (_sp && Number.isFinite(_sp.k) && Number.isFinite(_sp.c) && _sp.k > 0 && _sp.c >= 0) {
+                    prof.spring = { k: _sp.k, c: _sp.c };
+                }
             }
         } catch (_e) {}
         entry._vehicleProfile = prof;
@@ -50773,6 +50800,18 @@ class AnazhRealm {
             this._populateBlockerAABBs(entry);
             entry._blockerStampAt = null;
         }
+        // PHYSIK-NAHT (N6.5a) — die RUHE-Optik: Nick/Feder-Zustand nullen (das
+        // stehende Gefaehrt steht gerade); der EINE Visual-Weg zieht die Matrix nach.
+        // (call-Form MIT ABSICHT: die A6-Wand des vehicle-drive-Gates schneidet die
+        // ERSTE direkte Instanz-Update-Bindung aus dem Quelltext — die muss die
+        // Tick-Zeile in _tickMountedMovement bleiben, nicht dieser Ruhe-Refresh.
+        // Kommentar zitiert das Muster bewusst NICHT — die V18.267-Falle.)
+        if (entry && (entry._ridePitch || entry._rideVy)) {
+            entry._ridePitch = 0;
+            entry._rideVy = 0;
+            if (entry.mesh) entry.mesh.rotation.x = 0;
+            else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
+        }
         this.state.player.mountedArch = null;
         this.log(`Ausgestiegen`, "INFO");
         return { ok: true };
@@ -50870,8 +50909,33 @@ class AnazhRealm {
         }
         if (Number.isFinite(groundY)) {
             const targetY = groundY + (Number.isFinite(entry._groundClear) ? entry._groundClear : 0);
-            const k = 1 - Math.exp(-8 * tick);
-            entry.position.y = Number.isFinite(entry._rideY) ? entry._rideY + (targetY - entry._rideY) * k : targetY;
+            // PHYSIK-NAHT (N6.5a-KONSUM) — traegt das Studio-Rezept eine Federung
+            // (exportDrive.spring {k,c}, via _vehicleProfile), FEDERT die Aufsitz-
+            // Hoehe mit GENAU diesen Zahlen: gedaempfte Feder (semi-implizit; bei
+            // tick ≤ 0.1 und k ≤ ~400 stabil, ω·dt « 2) — das Gefaehrt schwingt
+            // beim Gelaendewechsel wie im Lab (Ueberschwingen ∝ ζ = c/2√k).
+            // Render-seitig (Sitz/Optik), die fixe Sim bleibt unberuehrt. NaN-/
+            // Ausreisser-Wand: nicht-finit ODER > 4 m Auslenkung → hart targetY
+            // (Chunk-Sprung/Teleport). Ohne spring: der byte-alte exp-Lerp-Pfad.
+            const spr = rideProf && rideProf.spring;
+            if (spr && Number.isFinite(entry._rideY)) {
+                let svy = Number.isFinite(entry._rideVy) ? entry._rideVy : 0;
+                svy += (spr.k * (targetY - entry._rideY) - spr.c * svy) * tick;
+                const sy = entry._rideY + svy * tick;
+                if (!Number.isFinite(sy) || !Number.isFinite(svy) || Math.abs(sy - targetY) > 4) {
+                    entry.position.y = targetY;
+                    entry._rideVy = 0;
+                } else {
+                    entry.position.y = sy;
+                    entry._rideVy = svy;
+                }
+            } else {
+                const k = 1 - Math.exp(-8 * tick);
+                entry.position.y = Number.isFinite(entry._rideY)
+                    ? entry._rideY + (targetY - entry._rideY) * k
+                    : targetY;
+                entry._rideVy = 0;
+            }
             entry._rideY = entry.position.y;
             const riderY = entry.position.y + sitz;
             pm.y = riderY;
@@ -50903,12 +50967,46 @@ class AnazhRealm {
         }
         // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
         entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+        // PHYSIK-NAHT (N6.5a, Nick) — das NICK-VERHALTEN aus dem STUDIO-GESETZ
+        // (wheelClearance-Form: pitch = a·(cgH/L)·pitchGain/k): Laengs-Beschleunigung
+        // aus der Reiter-Fahrt (Bremsen → Bug taucht, Anfahren → Squat), cgH/L aus
+        // der EIGENEN Werk-Geometrie (Sitz/Halbspanne), pitchGain aus dem Kern
+        // (fail-soft 2.6 — der U6-Wert), k = die Rezept-Federrate. Geglaettet mit
+        // der Feder-Rate √k; NaN-Wand + Klemme ±0.12 rad. NUR bei Feder-Rezept
+        // (Studio-Fahrzeug) — sonst bleibt _ridePitch 0 (Matrix byte-alt). Render-
+        // only: die Kollision liest weiter rotationY allein.
+        {
+            const sprN = rideProf && rideProf.spring;
+            if (sprN) {
+                const prevSp = Number.isFinite(entry._rideSp) ? entry._rideSp : sp;
+                let aLong = (sp - prevSp) / tick;
+                if (!Number.isFinite(aLong)) aLong = 0;
+                aLong = Math.max(-14, Math.min(14, aLong));
+                const cgH = Math.max(0.3, (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : 1) * 0.5);
+                const L = Math.max(1.6, 2 * (Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1));
+                const cgHL = Math.max(0.08, Math.min(0.5, cgH / L));
+                const vcF =
+                    typeof globalThis !== "undefined" && globalThis.__vehicleCore && globalThis.__vehicleCore.FAHR;
+                const pGain = vcF && Number.isFinite(vcF.pitchGain) ? vcF.pitchGain : 2.6;
+                let target = (-aLong * cgHL * pGain) / sprN.k;
+                if (!Number.isFinite(target)) target = 0;
+                target = Math.max(-0.12, Math.min(0.12, target));
+                const cur = Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0;
+                let np = cur + (target - cur) * (1 - Math.exp(-Math.sqrt(sprN.k) * tick));
+                if (!Number.isFinite(np)) np = 0;
+                entry._ridePitch = np;
+            } else if (entry._ridePitch) {
+                entry._ridePitch = 0;
+            }
+            entry._rideSp = sp;
+        }
         // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
             if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
+            entry.mesh.rotation.x = Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0;
             const prof = this._vehicleProfile(entry);
             if (prof && prof.roles) {
                 this._animateCompoundMotion(
@@ -52565,11 +52663,42 @@ class AnazhRealm {
         return slots;
     }
 
+    // SUBMIT-WAL — DIE EINE REAP-FRAGE (Gesetz #0): darf eine LEER gewordene Gruppe
+    // (liveCount 0) GANZ entsorgt werden? Ja für Foundry-Globale (#f:/#fimp:, per
+    // Art·Variante·LOD·Teil·Saison — wächst beim Wandern unbegrenzt) und JEDE
+    // regional gekeyte Gruppe (@…: platzierte Region @p:, Fern-Super-Region @s:,
+    // Streu-Region @regX,regZ — GEMESSEN [Wander-Zensus]: eine @reg-Gruppe, die
+    // per-Slot leert, während ihre Region lebt, verliert alle Slot-Referenzen und
+    // wird beim Region-Tod NIE mehr eingesammelt = Leck; der Voll-Dispose ist
+    // zudem strikt besser als die B2-Null-Skalen-Hülle am Ursprung). Lazy-
+    // Neuaufbau bei Annäherung via _archInstanceGroupFor (der bestehende Weg).
+    // NEIN nur für Grammatik-Globale (kein @, kein #f: — byte-alt, V18.390 W2-D;
+    // im Foundry-Regime strukturell leer, nur der foundry-aus-Pfad nutzt sie).
+    _archGroupKeyReapable(key) {
+        if (typeof key !== "string") return false;
+        return /#(f:|fimp:)/.test(key) || key.includes("@");
+    }
+
     _scatterFreeSlots(slots) {
         if (!Array.isArray(slots)) return;
+        const reap = [];
         for (const { key, slot } of slots) {
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
-            if (g) this._archGroupFree(g, slot);
+            if (g) {
+                this._archGroupFree(g, slot);
+                if (this._archGroupKeyReapable(key)) reap.push(key);
+            }
+        }
+        // SUBMIT-WAL (Flugschreiber-Befund: sceneChildren wächst monoton beim Wandern,
+        // Schöpfer-Trace 481 archInstanceGroup-Kinder): geht der LETZTE Bewohner einer
+        // geteilten/globalen Hülle, verlässt sie die Szene WIRKLICH — dieselbe Empty-
+        // Dispose wie _archInstanceRemove (V4(B)); _disposeArchInstanceGroup ist batch-/
+        // refcount-/foundry-src-bewusst. Vorher blieb jede leere InstancedMesh-Hülle
+        // (count am High-Water, global = frustumCulled false) als toter Draw-Call +
+        // Szene-Kind FÜR IMMER stehen — der eigentliche Submit-Wal.
+        for (const key of reap) {
+            const g = this.state.archInstanceGroups.get(key);
+            if (g && (g.liveCount || 0) <= 0) this._disposeArchInstanceGroup(key);
         }
     }
 
@@ -53199,6 +53328,7 @@ class AnazhRealm {
         // instanceMatrix freigeben; geom/mat geteilt → bleiben), kein per-Slot-Free
         // (das Null-Skalieren würde die Bounding-Sphere zum Ursprung aufblähen).
         const regionGroupKeys = region.regional ? new Set() : null;
+        const sharedSlots = regionGroupKeys ? [] : null;
         for (const cell of region.cells) {
             if (regionGroupKeys) {
                 // V18.390 (Eins W2) — NUR region-PRIVATE Gruppen (Key trägt @regX,regZ) als
@@ -53209,14 +53339,14 @@ class AnazhRealm {
                 // ein SUPER-REGION-Key der Fern-Diät (`@s:SX,SZ`, _archFernRegionKey) ist über
                 // bis zu 4×4 Regionen GETEILT — ihn ganz zu entsorgen risse die Fern-Quads der
                 // Nachbar-Regionen mit → auch er geht den per-Slot-Free-Pfad.
+                // SUBMIT-WAL — der per-Slot-Free läuft durch den EINEN Chokepoint
+                // _scatterFreeSlots (unten, gesammelt): dort reapt die Empty-Dispose
+                // die Hülle, deren LETZTER Bewohner mit dieser Region ging.
                 if (Array.isArray(cell.slots)) {
                     const own = "@" + key;
                     for (const s of cell.slots) {
                         if (typeof s.key === "string" && s.key.endsWith(own)) regionGroupKeys.add(s.key);
-                        else {
-                            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(s.key);
-                            if (g) this._archGroupFree(g, s.slot);
-                        }
+                        else sharedSlots.push(s);
                     }
                 }
             } else {
@@ -53233,6 +53363,7 @@ class AnazhRealm {
                 this.state.scatterLookup.delete(this._scatterCellKeyAt(cell.x, cell.z, layerName));
             }
         }
+        if (sharedSlots && sharedSlots.length) this._scatterFreeSlots(sharedSlots);
         if (regionGroupKeys) for (const gk of regionGroupKeys) this._disposeArchInstanceGroup(gk);
         map.delete(key);
         return true;
@@ -53264,7 +53395,10 @@ class AnazhRealm {
             return;
         }
         if (g.mesh) {
-            if (this.state.scene) this.state.scene.remove(g.mesh);
+            // SUBMIT-WAL — parent-bewusst (dieselbe scene.remove-Falle wie beim Batch):
+            // eine regionale Gruppe hängt in ihrer Region-BundleGroup; ein leeres Bundle
+            // verlässt die Szene mit (_archBundleSceneRemove räumt beides).
+            this._archBundleSceneRemove(g.mesh);
             if (typeof g.mesh.dispose === "function") g.mesh.dispose();
             // V4(B) — spiegelt die Ref-Erhöhung aus _archInstanceGroupFor: geht die letzte lebende
             // InstancedMesh-Gruppe dieser Foundry-Cache-Gruppe UND ist sie schon LRU-geräumt
@@ -61151,6 +61285,11 @@ class AnazhRealm {
         // HISM-treu (reine Instanz-Matrix); der Quadrat-AABB der Kollision
         // über-deckt den gedrehten ~zylindrischen Stamm (CLAUDE.md-Gotcha).
         const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        // PHYSIK-NAHT (N6.5a, Nick) — der RENDER-Nick des gerittenen Studio-Gefaehrts
+        // (_tickMountedMovement schreibt entry._ridePitch nur bei Feder-Rezept, sonst 0/
+        // undefined = byte-alte Matrix): ein kleiner R_x NACH R_y·S (Scale uniform →
+        // kommutiert). NUR Optik — Kollisions-AABB/Blocker lesen weiter rotationY allein.
+        const rp = Number.isFinite(entry._ridePitch) && entry._ridePitch !== 0 ? entry._ridePitch : 0;
         if (ry !== 0) {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
@@ -61173,6 +61312,7 @@ class AnazhRealm {
                 0,
                 1
             );
+            if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
             return m;
         }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
@@ -61180,6 +61320,7 @@ class AnazhRealm {
         m.elements[12] = entry.position.x || 0;
         m.elements[13] = baseY;
         m.elements[14] = entry.position.z || 0;
+        if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
         return m;
     }
 
@@ -63220,6 +63361,10 @@ class AnazhRealm {
             g.boundingBox.max.z += hw;
         }
         if (g.boundingSphere) g.boundingSphere.radius += hw;
+        // SUBMIT-WAL — das Quad wird von HISM-Gruppen geteilt, die in Region-Bundles
+        // hängen können (gecachtes Replay lädt keine Attribut-Updates hoch): der
+        // SELTENE Studio-Re-Frame (einmal je Art-Bake) recorded alle Region-Bundles neu.
+        if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
     }
 
     // Die deterministische Silhouetten-Zeichnung (aus Key-Hash + skeleton.kind).
@@ -63844,7 +63989,15 @@ class AnazhRealm {
     // (addInstance/deleteInstance/setInstanceCount/setGeometrySize) muss hierher —
     // needsUpdate++ recorded NUR das Bundle dieser Region neu (Sonde: reRecordBegins=1).
     _archBundleTouch(batch) {
-        const p = batch && batch.mesh ? batch.mesh.parent : null;
+        if (batch) this._archMeshBundleTouch(batch.mesh);
+    }
+
+    // SUBMIT-WAL — dieselbe Invalidierung für ein MESH in einer Region-BundleGroup
+    // (der InstancedMesh-Pfad hängt jetzt mit im Bundle): jede Mutation seiner
+    // Draw-Wahrheit (Slot-Alloc/-Free · instanceMatrix/instanceColor · Facade-
+    // Attribute · count) muss hierher — ein Nicht-Bundle-Parent ist ein No-op.
+    _archMeshBundleTouch(mesh) {
+        const p = mesh ? mesh.parent : null;
         if (p && p.isBundleGroup) p.needsUpdate = true;
     }
 
@@ -63965,6 +64118,10 @@ class AnazhRealm {
             ao.array[slot] = occluded ? 1 : 0;
             ao.needsUpdate = true;
         }
+        // SUBMIT-WAL — Facade-Attribut-Mutation (auch via _lodSlotOcclusionRefresh,
+        // AUSSERHALB des Alloc-Pfads): das Region-Bundle re-recorden, sonst friert
+        // der Wert im gecachten Replay ein.
+        this._archMeshBundleTouch(g.mesh);
     }
     // Occlusion-Wechsel OHNE LOD-Switch (fern-verdeckt ↔ fern-frei): die aOccl-Werte
     // der lebenden Slots nachziehen (das Studio schreibt vOcc pro Tick — der Host
@@ -64030,7 +64187,22 @@ class AnazhRealm {
         // FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
         if (leaf.shadowTwin) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
         else this._markFoliageLayer(mesh, regionKey, regional); // Subsystem 5: Laub bekommt ZUSÄTZLICH die FOLIAGE_LAYER
-        if (this.state.scene) this.state.scene.add(mesh);
+        // SUBMIT-WAL (T3-Vollendung) — auch die REGIONALE InstancedMesh-Gruppe hängt in
+        // der Region-BundleGroup statt einzeln an der Szene (ein Szene-Kind je Region
+        // statt Dutzende; die Foundry erzwingt via instanceShare den InstancedMesh-Pfad
+        // für JEDES Studio-Asset — der Batch-Bundle-Pfad allein deckte die Regionen nie).
+        // Bundle-Semantik (Sonde diag-render-bundle): die Draw-Liste friert beim Record
+        // ein → JEDE Mutation (Alloc/Free/Slot-Stempel/Matrix-Update/Grow) läuft durch
+        // die Chokepoints, die _archMeshBundleTouch rufen (Re-Record NUR dieser Region).
+        // Tür-Flügel-Leaves (leaf.tuer) bleiben DRAUSSEN: ihr Scharnier schreibt im
+        // Nähe-Tick per-Frame Matrizen (_tickTorFluegel) — Dauer-Re-Record wäre teurer
+        // als ihr einzelner Draw. Global (regionKey null, z.B. Bäume) bleibt byte-alt.
+        const bundle = regional && !leaf.tuer ? this._archRegionBundleFor(regionKey) : null;
+        if (bundle) {
+            mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
+            bundle.add(mesh);
+            bundle.needsUpdate = true;
+        } else if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
         g = {
@@ -64092,10 +64264,15 @@ class AnazhRealm {
         }
         next.count = g.next;
         next.instanceMatrix.needsUpdate = true;
-        if (this.state.scene) {
-            this.state.scene.remove(g.mesh);
-            this.state.scene.add(next);
-        }
+        // SUBMIT-WAL — parent-bewusster Swap (die scene.remove-Falle): eine regionale
+        // Gruppe hängt in ihrer Region-BundleGroup — der gewachsene Mesh bleibt im
+        // SELBEN Parent, das Bundle re-recorded (der alte Mesh referenziert tote Buffer).
+        const parent = g.mesh.parent;
+        if (parent) {
+            parent.remove(g.mesh);
+            parent.add(next);
+            if (parent.isBundleGroup) parent.needsUpdate = true;
+        } else if (this.state.scene) this.state.scene.add(next);
         g.mesh.dispose(); // gibt instanceMatrix-Buffer frei (geom/mat geteilt → bleiben)
         g.mesh = next;
         g.capacity = newCap;
@@ -64119,6 +64296,9 @@ class AnazhRealm {
             this._archBundleTouch(g.batch); // T3 — Draw-Liste wuchs → Region-Bundle re-recorden
             return slot;
         }
+        // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe/count in diesen Slot
+        // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
+        this._archMeshBundleTouch(g.mesh);
         if (g.free.length > 0) return g.free.pop();
         if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
         return g.next++;
@@ -64139,6 +64319,7 @@ class AnazhRealm {
         const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
         g.mesh.setMatrixAt(slot, z);
         g.mesh.instanceMatrix.needsUpdate = true;
+        this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — Matrix-Mutation → Region-Bundle re-recorden
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
         // (Crosshair-Pick) sphere-cullt gegen die gecachte Bounding; ohne Reset
         // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
@@ -64360,6 +64541,9 @@ class AnazhRealm {
             g.mesh.setMatrixAt(slot, m);
             if (g.kind !== "batch") {
                 g.mesh.instanceMatrix.needsUpdate = true;
+                // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
+                // Mount-Follow): das Region-Bundle re-recorden (nur während gefahren wird).
+                this._archMeshBundleTouch(g.mesh);
             }
             // boundingSphere invalidieren (Frustum-/Raycast-Cull, s. _archGroupFree) —
             // gilt BEIDEN Arten (die V18.358-Batch-Lehre: THREE cacht sie sonst stale).
@@ -64398,11 +64582,10 @@ class AnazhRealm {
                     // `#f:`/`#fimp:` im Leaf, per-Saison-Schlüssel) → ihre leer gewordene InstancedMesh-
                     // (instanceMatrix-)Hülle wird entsorgt UND (via _disposeArchInstanceGroup) die geteilte
                     // Geometrie deferred freigegeben. Die Leer-Bedingung (liveCount<=0 unten) bleibt strikt.
-                    if (
-                        (g.regional && typeof key === "string" && key.includes("@p:")) ||
-                        (typeof key === "string" && /#(f:|fimp:)/.test(key))
-                    )
-                        placedRegionKeys.add(key);
+                    // SUBMIT-WAL — die EINE Reap-Frage (_archGroupKeyReapable, geteilt mit
+                    // _scatterFreeSlots) fasst jetzt auch die Fern-Super-Region (@s:) —
+                    // das löst das V18.474-Versprechen („die Empty-Dispose räumt ihn") ein.
+                    if (this._archGroupKeyReapable(key)) placedRegionKeys.add(key);
                 }
             }
         entry.instSlotsBand = null;
@@ -64434,18 +64617,22 @@ class AnazhRealm {
             }
             this.state.archBatches.clear();
         }
-        // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore).
+        if (this.state.archInstanceGroups) {
+            for (const g of this.state.archInstanceGroups.values()) {
+                if (g.kind === "batch") continue; // geteiltes mesh schon oben disposed
+                // SUBMIT-WAL — parent-bewusst: regionale InstancedMesh-Gruppen hängen
+                // in Region-BundleGroups (scene.remove wäre dort ein No-op = Leck).
+                if (g.mesh) this._archBundleSceneRemove(g.mesh);
+                if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
+            }
+            this.state.archInstanceGroups.clear();
+        }
+        // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
+        // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).
         if (this.state._regionBundles) {
             for (const bg of this.state._regionBundles.values()) if (bg.parent) bg.parent.remove(bg);
             this.state._regionBundles.clear();
         }
-        if (!this.state.archInstanceGroups) return;
-        for (const g of this.state.archInstanceGroups.values()) {
-            if (g.kind === "batch") continue; // geteiltes mesh schon oben disposed
-            if (this.state.scene && g.mesh) this.state.scene.remove(g.mesh);
-            if (g.mesh && typeof g.mesh.dispose === "function") g.mesh.dispose();
-        }
-        this.state.archInstanceGroups.clear();
     }
 
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
@@ -66859,7 +67046,12 @@ class AnazhRealm {
     //     Dörfer sind besonders: 1 von `rarity` Zellen) + Seed + Größe + Anker-Jitter.
     //   · SITE-WÄNDE welt-deterministisch: flach (`_slopeAt`) · über Wasser
     //     (`_isAboveWaterAt`) · fern vom Welt-Spawn (`spawnClearM` — die Warmup-Welt
-    //     [Ring ~4] bleibt per Konstruktion dorffrei).
+    //     [Ring ~4] bleibt vom ZELL-Zug dorffrei). Fällt der Anker, sucht die
+    //     SITE-SUCHE (`_autoSettlementFindSite`, Probe-Ringe aus dem Zell-Seed) den
+    //     flachen Fleck der Zelle — erst dann fällt die Zelle ganz.
+    //   · START-DORF (`_autoSettlementStartInfo`): der Spawn-Ort trägt EINMALIG je
+    //     Welt ein nahes Dorf (~110–170 m, Γ5 ":startdorf") — die EINE deliberate
+    //     Ausnahme der Spawn-Klar-Wand; Gedächtnis `worldMeta.settlementCells.start`.
     //   · ASYNC (V18.423-Muster „die Region entsteht LEER und baut EINMAL"): die Zelle
     //     wird vorgemerkt, der Export läuft durch den EINEN Foundry-Worker, die Häuser
     //     materialisieren NACH Ankunft BUDGETIERT (perTick Slots je Idle-Tick, nur
@@ -66900,13 +67092,67 @@ class AnazhRealm {
         };
     }
     // Die welt-deterministischen SITE-WÄNDE am Anker (die Slot-Wände prüft
-    // `_spawnSettlementSlot` zusätzlich je Haus).
-    _autoSettlementSiteOk(x, z) {
+    // `_spawnSettlementSlot` zusätzlich je Haus). `noSpawnClear` (additiv) öffnet
+    // NUR dem deliberaten Start-Dorf die Spawn-Klar-Wand — Wasser/Steil bleiben
+    // für JEDE Site dieselbe EINE Wand (Gesetz #0, kein Parallel-Urteil).
+    _autoSettlementSiteOk(x, z, noSpawnClear) {
         const A = AnazhRealm.AUTO_SETTLEMENT;
-        if (Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        if (!noSpawnClear && Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
         if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
         return !(Number.isFinite(slope) && slope > A.slopeMax); // flach genug
+    }
+    // DIE SITE-SUCHE (Dörfer-Heilung, gemessen 14.07.: 23/33 Hash-Zellen fielen
+    // allein an der Steil-Wand des EINEN Anker-Punkts — 70 % Ausfall): ein Dorf
+    // sucht wie ein Siedler den flachen, trockenen Fleck NAHE des Ankers, statt
+    // an einem unglücklichen Punkt zu sterben. Rein deterministisch aus dem
+    // Zell-Seed (Γ5, kein Math.random): Anker zuerst, dann je Probe-Ring 4 Proben
+    // (Phase aus dem Seed, der zweite Ring um 45° verdreht) — jede Probe läuft
+    // durch DIESELBE Wand `_autoSettlementSiteOk`. null = die Zelle trägt kein Dorf.
+    _autoSettlementFindSite(info) {
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        if (this._autoSettlementSiteOk(info.x, info.z)) return { x: info.x, z: info.z };
+        const phase = (((info.seed >>> 4) & 0xff) / 255) * 2 * Math.PI;
+        for (let ri = 0; ri < A.siteProbeR.length; ri++) {
+            const rad = A.siteProbeR[ri] * A.cellM;
+            for (let i = 0; i < 4; i++) {
+                const a = phase + (i / 4) * 2 * Math.PI + ri * (Math.PI / 4);
+                const px = info.x + Math.cos(a) * rad;
+                const pz = info.z + Math.sin(a) * rad;
+                if (this._autoSettlementSiteOk(px, pz)) return { x: px, z: pz };
+            }
+        }
+        return null;
+    }
+    // DAS START-DORF (Schöpfer 14.07., 443 s gespielt: „noch nie eine stadt oder
+    // dorf gesehen"): der Spawn-Ort trägt EINMALIG je Welt ein nahes Dorf
+    // (~110–170 m), deterministisch aus dem Welt-Seed (Γ5-Stream ":startdorf",
+    // FNV-1a — das ":dorf"-Muster, kein Math.random). Die Kandidaten (Radien ×
+    // 8 Winkel, Phase aus dem Seed) laufen durch DIESELBEN Wasser-/Steil-Wände
+    // (`_autoSettlementSiteOk` mit offener Spawn-Klar-Wand — die EINE deliberate
+    // Ausnahme); kein tauglicher Fleck → null (fail-closed, dieselbe Welt urteilt
+    // immer gleich). Idempotenz über Reload trägt `worldMeta.settlementCells.start`
+    // (derselbe Spread-Pfad wie die Zell-Keys).
+    _autoSettlementStartInfo() {
+        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const wm = this.state.worldMeta || {};
+        const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
+        let h = 2166136261 >>> 0;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619) >>> 0;
+        }
+        const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
+        for (let ri = 0; ri < A.startRadiusM.length; ri++) {
+            for (let i = 0; i < 8; i++) {
+                const a = phase + (i / 8) * 2 * Math.PI;
+                const x = Math.cos(a) * A.startRadiusM[ri];
+                const z = Math.sin(a) * A.startRadiusM[ri];
+                if (!this._autoSettlementSiteOk(x, z, true)) continue;
+                return { key: "start", seed: h >>> 0 || 1, nH: A.nHMin + ((h >>> 24) % A.nHSpan), x, z };
+            }
+        }
+        return null;
     }
     // Der Kanal entscheidet (M8): Auto-Dörfer laufen NUR, wenn das LIVE-Buch
     // mindestens ein Rezept trägt, dessen Place-Auflösung durch den EINEN
@@ -66939,7 +67185,7 @@ class AnazhRealm {
         if (!i2) return Promise.resolve(null);
         const wm = st.worldMeta || (st.worldMeta = {});
         if (!wm.settlementCells || typeof wm.settlementCells !== "object") wm.settlementCells = {};
-        const key = cx + "," + cz;
+        const key = i2.key || cx + "," + cz; // Zell-Infos tragen cx,cz — das Start-Dorf trägt "start"
         if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
         // Der Anker läuft durch den EINEN Spawn-Chokepoint (nie auf dem Spieler —
         // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall; fern = no-op).
@@ -66989,6 +67235,23 @@ class AnazhRealm {
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        // DAS START-DORF zuerst (einmalig je Welt, s. _autoSettlementStartInfo): nur
+        // nahe des Ursprungs materialisieren (der Spieler steht beim Welt-Start dort;
+        // fern = später — kein Fern-Spawn hinter dem Rücken). Fail-closed + Session-
+        // gemerkt: eine Welt ohne tauglichen Fleck urteilt deterministisch immer gleich.
+        if (
+            (!cells || !cells.start) &&
+            !this._autoSettlementStartHopeless &&
+            playerPos.x * playerPos.x + playerPos.z * playerPos.z <= A.nearM * A.nearM
+        ) {
+            const si = this._autoSettlementStartInfo();
+            if (!si)
+                this._autoSettlementStartHopeless = true; // Instanz-Feld (die _editSaveTimer-Klasse)
+            else {
+                this._autoSettlementSpawnCell(0, 0, si);
+                return; // EIN Dorf-Akt pro Tick
+            }
+        }
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         const pcx = Math.floor(playerPos.x / A.cellM);
         const pcz = Math.floor(playerPos.z / A.cellM);
@@ -67006,11 +67269,16 @@ class AnazhRealm {
                 const ddx = info.x - playerPos.x;
                 const ddz = info.z - playerPos.z;
                 if (ddx * ddx + ddz * ddz > A.nearM * A.nearM) continue; // noch fern — später
-                if (!this._autoSettlementSiteOk(info.x, info.z)) {
-                    this._autoSettlementRejected.add(key); // Site untauglich (Wasser/steil/Spawn-nah)
+                const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
+                if (!site) {
+                    this._autoSettlementRejected.add(key); // die ganze Zelle untauglich (Wasser/steil/Spawn-nah)
                     continue;
                 }
-                this._autoSettlementSpawnCell(cx, cz, info);
+                this._autoSettlementSpawnCell(
+                    cx,
+                    cz,
+                    site.x === info.x && site.z === info.z ? info : Object.assign({}, info, { x: site.x, z: site.z })
+                );
                 return; // EIN Dorf-Akt pro Tick
             }
         }
@@ -72317,6 +72585,190 @@ class AnazhRealm {
         this._playKampfOneShot(this.computeCreatureCompoundTags(creature) || {});
     }
 
+    // ═══ BOGEN — DAS SCHIESS-VERB (B3-Inventar N4) ═══
+    // Erkennung am EINEN Preset-Resolver + LIVE-Buch: das gehaltene Gerät ist ein
+    // Bogen, wenn sein schmiede-Rezept fx.task.art === "bogen" trägt (die vier
+    // Bogen-Gattungen des Klingen-Labs). Fail-soft: Buch kalt / kein Rezept /
+    // kein Bogen → null → alle Klick-Pfade darunter (Nahkampf/Abbau) byte-alt.
+    _heldBogenRecipe() {
+        const eq = this.state.player && this.state.player.equipped;
+        const held = eq && eq.held;
+        if (!held) return null;
+        const f = this._foundry;
+        if (!f || !f.recipes) return null;
+        const preset =
+            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: held }) : null;
+        const rec = preset ? f.recipes[preset] : null;
+        return rec && rec.fx && rec.fx.task && rec.fx.task.art === "bogen" ? rec : null;
+    }
+
+    // Der Schuss: Klick = EIN Pfeil. Der Spann-Cooldown IST die Schwung-Dauer
+    // (_playerSwingDauer ∝ √I — die EINE Quelle, kein Parallel-Tempo); v0 aus der
+    // STUDIO-Wahrheit (fx.task: speedBase·√(zugkraft·auszug)); Richtung = Blick
+    // (yaw+pitch, die _loopCamera-Konvention); Start an der Schulter (SWING_LAWS.
+    // shoulderH). Deterministisch (kein Random); Stamina + Affekt wie der Hieb.
+    _beginPlayerShot(rec) {
+        const p = this.state.player;
+        const pm = this.state.playerMesh;
+        if (!p || !pm) return false;
+        const now = performance.now() / 1000;
+        if (Number.isFinite(p._shotCooldownUntil) && now < p._shotCooldownUntil) return false;
+        const dauer = this._playerSwingDauer();
+        p._shotCooldownUntil = now + dauer;
+        p.lastAttackAt = now;
+        this._consumeMouseStamina();
+        const heldName = p.equipped && p.equipped.held;
+        this._feelAction("attack", heldName ? { blueprint: heldName } : undefined);
+        const B = AnazhRealm.BOGEN_LAWS;
+        const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
+        const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
+        const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
+        let v0 = B.speedBase * Math.sqrt(zug * aus);
+        if (!Number.isFinite(v0) || v0 <= 0) v0 = B.speedBase; // NaN-Wand
+        const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
+        const pitch = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
+        const cp = Math.cos(pitch);
+        const dx = Math.sin(yaw) * cp;
+        const dy = Math.sin(pitch);
+        const dz = Math.cos(yaw) * cp;
+        const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+        const list = this.state._pfeile || (this.state._pfeile = []);
+        while (list.length >= B.maxPfeile) this._pfeilDespawn(list.shift()); // bounded
+        const K = AnazhRealm.SWING_LAWS;
+        const pf = {
+            x: pm.position.x + dx * B.muendungM,
+            y: pm.position.y + K.shoulderH + dy * B.muendungM,
+            z: pm.position.z + dz * B.muendungM,
+            vx: dx * v0,
+            vy: dy * v0,
+            vz: dz * v0,
+            born: now,
+            lastT: now,
+            dmg: stats.damage || 5,
+            kb: stats.knockback || 0,
+            mesh: null,
+        };
+        this._pfeilMeshAttach(pf);
+        list.push(pf);
+        return true;
+    }
+
+    // Der Pfeil-Tick (Anzeige-Uhr, NACH der fixen Sim — der Schwung-Tick-Nachbar):
+    // semi-implizite Integration in der EINEN Feld-Physik (state.gravity), Treffer-
+    // Urteil über den EINEN Sweep-Kern (_segSegDistSq: Flug-Segment vs Kreatur-
+    // Kapsel — exakt die Klingen-Sweep-Kapsel 0.1L..1.4L / 0.55L), Schaden über
+    // damageCreature + dieselbe Hit-Juice. Terrain stoppt (getTerrainHeightAt),
+    // die Lebenszeit deckelt. Bounded (maxPfeile), transient (kein Snapshot).
+    _tickPfeile(nowSec) {
+        const list = this.state._pfeile;
+        if (!list || !list.length) return;
+        const B = AnazhRealm.BOGEN_LAWS;
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -14.715;
+        const creatures = this.state.creatures || [];
+        for (let i = list.length - 1; i >= 0; i--) {
+            const pf = list[i];
+            const dt = Math.min(0.1, Math.max(0, nowSec - (Number.isFinite(pf.lastT) ? pf.lastT : nowSec)));
+            pf.lastT = nowSec;
+            if (nowSec - pf.born > B.maxFlugSec) {
+                this._pfeilDespawn(pf);
+                list.splice(i, 1);
+                continue;
+            }
+            if (dt <= 0) continue;
+            const ox = pf.x;
+            const oy = pf.y;
+            const oz = pf.z;
+            pf.vy += g * dt;
+            pf.x += pf.vx * dt;
+            pf.y += pf.vy * dt;
+            pf.z += pf.vz * dt;
+            // NaN-Wand: ein entgleister Pfeil fällt sofort aus der Welt.
+            if (!Number.isFinite(pf.x) || !Number.isFinite(pf.y) || !Number.isFinite(pf.z)) {
+                this._pfeilDespawn(pf);
+                list.splice(i, 1);
+                continue;
+            }
+            // Treffer: Flug-Segment (alt→neu) gegen die Kreatur-Kapseln.
+            let hit = null;
+            for (let c = 0; c < creatures.length; c++) {
+                const cr = creatures[c];
+                if (!cr || !cr.userData || cr.userData.dying) continue;
+                const L = Math.max(0.3, cr.scale.x || 1);
+                const tx = cr.position.x - pf.x;
+                const tz = cr.position.z - pf.z;
+                const stepR = Math.hypot(pf.x - ox, pf.y - oy, pf.z - oz) + 2 * L;
+                if (tx * tx + tz * tz > stepR * stepR) continue; // Grob-Gate
+                const rr = B.radiusM + Math.max(0.35, 0.55 * L);
+                const d2 = this._segSegDistSq(
+                    ox,
+                    oy,
+                    oz,
+                    pf.x,
+                    pf.y,
+                    pf.z,
+                    cr.position.x,
+                    cr.position.y + 0.1 * L,
+                    cr.position.z,
+                    cr.position.x,
+                    cr.position.y + 1.4 * L,
+                    cr.position.z
+                );
+                if (d2 <= rr * rr) {
+                    hit = cr;
+                    break;
+                }
+            }
+            if (hit) {
+                const res = this.damageCreature(hit, pf.dmg, {
+                    source: "player",
+                    fromPos: { x: ox, y: oy, z: oz },
+                    knockback: pf.kb,
+                });
+                if (res && res.ok) this._kampfHitJuice(hit, nowSec);
+                this._pfeilDespawn(pf);
+                list.splice(i, 1);
+                continue;
+            }
+            // Terrain stoppt den Flug (die EINE Boden-Wahrheit).
+            const gY = this.getTerrainHeightAt(pf.x, pf.z);
+            if (Number.isFinite(gY) && pf.y <= gY) {
+                this._pfeilDespawn(pf);
+                list.splice(i, 1);
+                continue;
+            }
+            if (pf.mesh) {
+                pf.mesh.position.set(pf.x, pf.y, pf.z);
+                pf.mesh.lookAt(pf.x + pf.vx, pf.y + pf.vy, pf.z + pf.vz);
+            }
+        }
+    }
+
+    // Pfeil-Optik (render-seitig, headless-fest: ohne THREE/Szene fliegt die
+    // reine Sim). EIN geteiltes Geo/Mat-Paar (der Schaft entlang +Z = lookAt-
+    // Konvention) — kein Alloc-Churn pro Schuss.
+    _pfeilMeshAttach(pf) {
+        if (typeof THREE === "undefined" || !this.state.scene) return;
+        try {
+            if (!this._pfeilGeo) {
+                this._pfeilGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.55, 5);
+                this._pfeilGeo.rotateX(Math.PI / 2);
+                this._pfeilMat = new THREE.MeshBasicMaterial({ color: 0x8a6a3a });
+            }
+            pf.mesh = new THREE.Mesh(this._pfeilGeo, this._pfeilMat);
+            pf.mesh.position.set(pf.x, pf.y, pf.z);
+            this.state.scene.add(pf.mesh);
+        } catch (_e) {
+            pf.mesh = null;
+        }
+    }
+
+    _pfeilDespawn(pf) {
+        if (pf && pf.mesh) {
+            if (pf.mesh.parent) pf.mesh.parent.remove(pf.mesh);
+            pf.mesh = null; // Geo/Mat sind GETEILT (kein Dispose je Pfeil)
+        }
+    }
+
     // ═══ KAMPF-GEFÜHL — DER OBERKÖRPER-LAYER (Windup/Strike/Recover) ═══
     // Ein WEITERER additiver Posen-Layer ÜBER der Lokomotion (das Ruhe×(1−w) +
     // Gehen×w-Muster der Gang-Gesetze: _animateHumanoidRig setzt die Null-Basis,
@@ -72716,6 +73168,19 @@ class AnazhRealm {
     }
 
     tryMouseBreak() {
+        // BOGEN (B3-Inventar N4) — ein gehaltener Bogen SCHIESST: das Fern-Gerät
+        // beansprucht den Klick VOR Nahkampf/Abbau (wer den Bogen hält, will den
+        // Pfeil — mit einem Bogen hackt niemand Fels). Fail-soft: Buch kalt /
+        // kein Bogen in der Hand → alle Pfade darunter byte-alt.
+        const bogenRec = this._heldBogenRecipe();
+        if (bogenRec) {
+            const bGate = this._mouseActionStaminaGate();
+            if (!bGate.ok) {
+                this.log(`Schuss: zu wenig Stamina (${bGate.have}/${bGate.cost}).`, "INFO");
+                return false;
+            }
+            return this._beginPlayerShot(bogenRec);
+        }
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
         // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
         // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
@@ -84471,6 +84936,10 @@ class AnazhRealm {
                 // die Klingen-Kapsel durch die Kreaturen (_kampfSweepTick).
                 this._tickKampfSchwung(currentTime);
 
+                // BOGEN (B3-Inventar N4) — der Pfeil-Tick: dieselbe Anzeige-Uhr wie der
+                // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
+                this._tickPfeile(currentTime);
+
                 // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
                 // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
                 // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
@@ -86766,7 +87235,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.481.0";
+AnazhRealm.VERSION = "18.482.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -87275,22 +87744,37 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 // N5.7-AUTO (Nachlese-Welle) — die WORLDGEN-AUTO-DORF-Daten (der eine Konsument:
 // `_tickAutoSettlement`; die Wände + Γ5-Disziplin dort dokumentiert):
-//   cellM        768-m-Welt-Zellen (welt-verankert wie planForestCell/das Busch-Raster)
-//   rarity       1 von 5 Zellen trägt ein Dorf (Hash-Existenz — Dörfer sind besonders,
-//                ~1 Dorf je ~3 km² vor den Site-Wänden)
+//   cellM        256-m-Welt-Zellen (welt-verankert wie planForestCell/das Busch-Raster)
+//   rarity       1 von 2 Zellen trägt ein Dorf (Hash-Existenz). DIE DATEN-ZEILE
+//                (Schöpfer 14.07., 443 s gespielt: „noch nie eine stadt oder dorf
+//                gesehen" — gemessen [headless-Zensus ±4 km]: cellM 768 × rarity 5
+//                = 0,1 Dörfer/km² effektiv, Distanz-zum-ersten-Dorf median 1228 m,
+//                13/16 Richtungen NICHTS binnen 8 km): der Begegnungs-Korridor ist
+//                2·nearM = 520 m breit ⇒ erwartete Erst-Begegnung ≈ rarity·cellM²/520.
+//                Alt: 5·768²/520 ≈ 5,7 km. Neu: 2·256²/520 ≈ 252 m — das Profi-Maß
+//                „binnen ~200–400 m Wanderung REAL ein Dorf" (≈ 6–7 Dörfer/km²
+//                effektiv, Site-Suche heilt die gemessene 70-%-Steil-Ausfallquote).
 //   nearM        Materialisierungs-Distanz Spieler↔Anker (näher kommen weckt die Zelle)
-//   spawnClearM  Mindestabstand vom Welt-Ursprung (die Warmup-/Boot-Welt [Ring ~4 ≈
-//                ~130 m] bleibt per Konstruktion dorffrei; nearM < spawnClearM ⇒ am
-//                Spawn stehend kann KEINE Zelle beides erfüllen)
-//   slopeMax     Site-Wand: der Anker muss flach sein (_slopeAt, |∇h| m/m)
+//   spawnClearM  Mindestabstand vom Welt-Ursprung für AUTO-Zellen (die Warmup-/Boot-
+//                Welt [Ring ~4 ≈ ~130 m] bleibt vom Zell-Zug dorffrei; nearM <
+//                spawnClearM ⇒ am Spawn stehend kann KEINE Zelle beides erfüllen —
+//                das EINE Spawn-nahe Dorf ist das deliberate START-DORF, s. u.)
+//   slopeMax     Site-Wand: die Site muss flach sein (_slopeAt, |∇h| m/m)
+//   siteProbeR   SITE-SUCHE (×cellM): fällt der Anker an einer Wand, suchen zwei
+//                deterministische Probe-Ringe den flachen/trockenen Fleck der Zelle
+//                (gemessen: 23/33 Hash-Zellen starben allein am EINEN Anker-Punkt)
+//   startRadiusM START-DORF-Kandidaten-Radien um den Welt-Ursprung (~110–170 m):
+//                EINMALIG je Welt, deterministisch aus dem Welt-Seed (":startdorf")
 //   nHMin/nHSpan Dorf-Größe 8..17 Häuser (deterministisch aus dem Zell-Hash)
 //   perTick      budgetierte Materialisierung: Häuser je Idle-Tick (BOOT_PHASE3-Muster)
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
-    cellM: 768,
-    rarity: 5,
+    cellM: 256,
+    rarity: 2,
     nearM: 260,
     spawnClearM: 320,
     slopeMax: 0.35,
+    siteProbeR: Object.freeze([0.15, 0.3]),
+    startRadiusM: Object.freeze([110, 130, 150, 170]),
     nHMin: 8,
     nHSpan: 10,
     perTick: 2,
@@ -87541,6 +88025,21 @@ AnazhRealm.WERTUNG = Object.freeze({
     phase4Weight: 0.5, // wie stark ein positiver δ_spieler den Regel-Reward hebt (× Nähe)
 });
 
+// PHYSIK-NAHT (B3-Inventar) — DER EINE BEWEGUNGS-KOEFFIZIENTEN-LESER: die Zahlen
+// der Bewegungs-Stats (speed/jumpPower/staminaMax) wohnen im koerperstudio-
+// Gesetzbuch (koerper-core PRESETS.mensch.fx.bewegung — reine Daten, dieselbe
+// Formel-Form base + (1−dichte)·leicht + achse·mag). Der Stamm liest fail-soft:
+// Kern kalt / Zeile fehlt / nicht-finit → das historische Literal-Trio (fb),
+// byte-gleiche Werte. Kein zweiter Zahlensatz (Gesetz #0/#2).
+AnazhRealm._bewegungsKoeff = function (stat, fb) {
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+        const row = b && b[stat];
+        if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
+    } catch (_e) {}
+    return fb;
+};
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
     damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
@@ -87558,9 +88057,21 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // Multiplikator (1-dichte) 4→5, magieleitung 1→1.5. Mensch springt
     // von 6.1 auf ~8.75; Phönix 9.4 auf 11.2; Drache 5.0 auf 7.4. Sprint
     // = 2× Walk wirkt damit deutlicher.
-    speed: (t) => 7 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 1.5,
-    jumpPower: (t) => 8 + (1 - (t.dichte || 0)) * 5 + (t.magieleitung || 0) * 2,
-    staminaMax: (t) => 100 + (1 - (t.dichte || 0)) * 60 + (t.wärmeleitung || 0) * 40,
+    // PHYSIK-NAHT — die drei Bewegungs-Stats lesen ihre Koeffizienten aus dem
+    // koerperstudio-Gesetzbuch (fx.bewegung via _bewegungsKoeff, fail-soft auf
+    // die byte-gleichen historischen Literale): der Lab-Wert IST der Welt-Wert.
+    speed: (t) => {
+        const K = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 });
+        return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.magieleitung || 0) * K.mag;
+    },
+    jumpPower: (t) => {
+        const K = AnazhRealm._bewegungsKoeff("jumpPower", { base: 8, leicht: 5, mag: 2 });
+        return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.magieleitung || 0) * K.mag;
+    },
+    staminaMax: (t) => {
+        const K = AnazhRealm._bewegungsKoeff("staminaMax", { base: 100, leicht: 60, mag: 40 });
+        return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.wärmeleitung || 0) * K.mag;
+    },
     // V18.196 — MANA-SYMMETRIE: die zweite Ausdauer-Achse, treibt aus
     // magieleitung statt aus (1-dichte). Symmetrisch zu staminaMax: base 50
     // + magieleitung·100 (max ~150 bei voll magieleitung) + resoniert·30
@@ -87643,6 +88154,25 @@ AnazhRealm.SWING_LAWS = Object.freeze({
     hitDipImpact: 4.5, // m/s-Äquivalent in den bestehenden Kamera-Dip (LAND_DIP_*)
     kippDauerSec: 1.0, // TOD-KIPPEN: der Körper kippt entlang _fieldGradient (~1 s)
     kippNachklangSec: 0.35, // kurze Ruhe nach dem Aufschlag, DANN der Abschied
+});
+
+// ═══ BOGEN (B3-Inventar N4 — das Schieß-Verb) — DIE GESETZE DES SCHUSSES ═══
+// Der Bogen ist das erste Fern-Gerät: wield (klinge_<bogen-rezept>) → Klick =
+// EIN Pfeil in der EINEN Feld-Physik (state.gravity — kein Ammo-Body, kein
+// zweiter Physik-Pfad; nichts persistiert). Die KRAFT ist Studio-Wahrheit:
+// v0 = speedBase · √(zugkraft·auszug) aus fx.task des schmiede-Rezepts
+// (Langbogen ≈ 1.00×, Kriegsbogen 1.18×, Recurve 0.82×, Reiterbogen 0.58×);
+// die DAUER (Spann-Cooldown) ist die EINE Schwung-Dauer-Quelle
+// (_swingDauerFuerBlueprint ∝ √I, Ω-Φ4 — ein schwerer Bogen spannt träger).
+// Treffer-Urteil über den EINEN Sweep-Kern (_segSegDistSq, dieselbe Kreatur-
+// Kapsel wie der Klingen-Sweep), Schaden über damageCreature (stats.damage —
+// die Bogen-Tags falten via HELD_STAT_WEIGHT). Feel-Werte browser-justierbar.
+AnazhRealm.BOGEN_LAWS = Object.freeze({
+    speedBase: 34, // m/s Pfeil-Basistempo (× √(zugkraft·auszug) des Rezepts)
+    maxFlugSec: 5, // Lebenszeit — danach fällt der Pfeil aus der Welt
+    radiusM: 0.12, // Pfeil-Kapselradius (aufs Kreatur-Kapsel-Urteil addiert)
+    maxPfeile: 16, // Deckel lebender Pfeile (bounded by construction)
+    muendungM: 1.2, // Start-Abstand vor der Schulter — kein Selbst-Treffer
 });
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung

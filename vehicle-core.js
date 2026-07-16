@@ -2033,6 +2033,19 @@
         heaveV: 0.035,
         heaveKMul: 1.3,
         heaveCMul: 1.15,
+        // ── PHYSIK-NAHT (N6.5b, rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-Zeile) —
+        // DIE HOST-EMERGENZ-KOEFFIZIENTEN: die Fallback-Fahr-Formel des Wirts (ein Werk OHNE
+        // Studio-Rezept: Tempo-Bonus je Rad, Ritt-Schritt je Bein, kAcc/kBrake je Masse)
+        // liest ihre Zahlen von HIER (EINE Quelle fuer Lab-Vergleich UND Welt-Fallback).
+        // Der Wirt liest fail-soft: Kern kalt → seine byte-gleichen historischen Literale.
+        hostEmergent: {
+            radMul: 0.12, // Tempo-Bonus je Rad (+12 %)
+            radCap: 0.6, // Deckel des Rad-Bonus (+60 %)
+            beinBonus: 0.15, // Ritt-Schritt (≥ 2 Beine, keine Raeder)
+            kAcc: 7, // Beschleunigungs-k ÷ Masse (schwer = traege)
+            kBrakeRad: 3.5, // Roll-aus-k ÷ Masse (Raeder rollen aus)
+            kBrakeBein: 8, // Stopp-k ÷ Masse (Beine/starr stoppen prompt)
+        },
     };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen

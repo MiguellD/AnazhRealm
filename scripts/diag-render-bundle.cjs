@@ -201,6 +201,23 @@ window.__probe = (async () => {
   const pixBump = await readPix();
   res.semantik.addMitBumpSichtbar = pixBump.sum !== pixNoBump.sum;
 
+  // Semantik 5h (SUBMIT-WAL) — InstancedMesh.setMatrixAt + needsUpdate + BUNDLE-Bump
+  // → der Re-Record MUSS die Mutation zeigen (der Stamm hängt jetzt auch regionale
+  // InstancedMesh-Gruppen ins Bundle; jede Mutation ruft _archMeshBundleTouch).
+  // UNÜBERSEHBAR: Instanz 0 wird ein 10er-Würfel MITTEN vor der Kamera (0,6,30).
+  if (im0) {
+    const preIm = await readPix();
+    const mv2 = new THREE.Matrix4().makeTranslation(0, 6, 30).scale(new THREE.Vector3(10, 10, 10));
+    im0.setMatrixAt(0, mv2);
+    im0.instanceMatrix.needsUpdate = true;
+    regions[0].bg.needsUpdate = true;
+    begins = 0;
+    renderer.render(scene, cam); // Re-Record — Attribut-Upload läuft im Record-Pfad
+    res.semantik.instBumpBegins = begins;
+    const pixImBump = await readPix();
+    res.semantik.instMitBumpSichtbar = pixImBump.sum !== preIm.sum;
+  }
+
   return res;
 })();
 </script></body></html>`;

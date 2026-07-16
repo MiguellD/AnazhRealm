@@ -385,6 +385,17 @@
                     place: { mode: "none" },
                     gestalt: gestalt,
                     motion: { presets: JSON.parse(JSON.stringify(MOTION)) },
+                    // PHYSIK-NAHT (rein additive DATEN-Zeile — Praezedenz: §8.5-Stufen-
+                    // Zeile): DIE BEWEGUNGS-KOEFFIZIENTEN des Avatars als Gesetzbuch-
+                    // Daten (byte-gleiche Zahlen des historischen Host-Satzes; Formel je
+                    // Stat: base + (1 − dichte)·leicht + <zweite Achse>·mag — speed/jump
+                    // lesen magieleitung, staminaMax liest waermeleitung). Der Wirt
+                    // (STAT_FROM_TAGS) liest fail-soft: Kern kalt → seine Literale.
+                    bewegung: {
+                        speed: { base: 7, leicht: 5, mag: 1.5 },
+                        jumpPower: { base: 8, leicht: 5, mag: 2 },
+                        staminaMax: { base: 100, leicht: 60, mag: 40 },
+                    },
                 },
             },
         };
