@@ -67331,6 +67331,17 @@ class AnazhRealm {
         const rec = this._foundryEnsureImpostorRecord(preset, variant, season, ovE || undefined);
         if (rec === null) return ovE ? false : null; // geprägt+backend → Geometrie · sonst L2 kalt
         if (!rec || !rec.map || !rec.frame) return false;
+        // T1 BLOB-TOD (Erlebnis-Ziel 16.07., Schöpfer-Screenshots: graue Tag-Blobs +
+        // beiges Nacht-Glühen = der Canvas-PLATZHALTER): mit ECHTEM Renderer erreicht
+        // die Silhouette NIE das Auge — bis die Studio-Karte gebacken ist (rttBaked),
+        // serviert der Aufrufer GEOMETRIE (false → Stufen-Klammer; das Bake-Subjekt
+        // liegt eh im Cache: Existenz + KORREKTE Gestalt vor Diät, die Karte löst
+        // beim Landen ab). Profis zeigen keine Platzhalter. Headless/Null-Renderer
+        // bleibt der Fallback die einzige Wahrheit (dort bäckt nie einer — gate-treu).
+        {
+            const rendB = this.state && this.state.renderer;
+            if (!rec.rttBaked && rendB && !rendB._isHeadlessNull) return false;
+        }
         if (rec._flat) return rec._flat;
         const geom = this._buildImpostorCrossGeometry(null, rec.frame);
         if (!geom) return false;
@@ -67922,7 +67933,15 @@ class AnazhRealm {
             const key =
                 "fimp:" + preset + "|" + variant + "|" + season + (peekOv ? "|ov:" + this._studioOvHash(peekOv) : "");
             const rec = this._impostorAtlasMap && this._impostorAtlasMap.get(key);
-            return !!(rec && rec !== "pending" && rec !== false);
+            // T1 BLOB-TOD-Spiegel: mit echtem Renderer ist „gedockt" erst die GEBACKENE
+            // Karte (rttBaked) — der Flatten serviert bis dahin Geometrie (unten weiter
+            // zum Geometrie-Key-Urteil statt falschem „ready" über den Platzhalter).
+            const rendP = this.state && this.state.renderer;
+            if (rec && rec !== "pending" && rec !== false && rendP && !rendP._isHeadlessNull && !rec.rttBaked) {
+                // fällt durch zum Geometrie-Key unten (die Stufen-Klammer klemmt lod)
+            } else {
+                return !!(rec && rec !== "pending" && rec !== false);
+            }
         }
         if (preset === "strauch") lod = Math.max(1, lod);
         // V18.477 — der Peek spiegelt AUCH die EIN-STUFEN-KLAMMER des Flattens

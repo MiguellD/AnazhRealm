@@ -7,6 +7,37 @@
 
 ## §0 · DER TISCH — was offen ist (Stand V18.478)
 
+0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
+   Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine
+   Alt/Neu-Doppel), mit Reglern UND Stufen, das in der Welt EXAKT so aussieht, sich
+   bewegt und anfühlt wie im Studio — bei spielbarer Framerate auf dem Schöpfer-Holz.
+   **Der Beweis ist NIE ein grünes Gate allein, sondern das BILD** (mein Auge via
+   Blick-Linse, das Schöpfer-Auge als Merge-Tor). Kein Teil gilt fertig ohne Schuss.
+   Die Teile, gereiht nach Erlebnis-Schmerz (gemessen an den 3 Schöpfer-Screenshots
+   vom 16.07. — FPS 4-7 · 30M Tris · 2700dc · Blob-L2 · Beige-Nacht · Fleck-Fell):
+   **T0 DIE AUGEN** — RT-Readback-Schuss statt Composite-Screenshot (die V18.359-
+   Narbe UMGANGEN, nicht wiederholt: readRenderTargetPixelsAsync existiert im r184).
+   **T1 BLOB-TOD** — kein Platzhalter erreicht je das Auge: bis die Studio-Karte
+   gebacken ist, trägt die Ferne GEOMETRIE (das Bake-Subjekt liegt eh im Cache);
+   der graue Canvas-Fallback fällt aus dem sichtbaren Pfad — damit stirbt auch das
+   Nacht-Beige. DONE: Tag+Nacht-Schuss ohne Blob.
+   **T2 TRI-BUDGET** — der Zensus nennt die Wale (Wolf-L0 = 477k Verts! Nadel-
+   Geometrie), dann Budget je Gattung nach Profi-Maß (Kreatur ≤50k, Baum-Kaskade);
+   Hebel = Detail-Stufen durch die EINE Pipe, nie Studio-L0-Gesetz anfassen.
+   DONE: steady ≤8M Tris in der Standard-Szene, FPS-Sprung am Schöpfer-Holz.
+   **T3 DC-SUBMIT** — nach T1+T2 NEU messen; bleibt CPU-Submit>30ms bei >1500dc:
+   RenderBundles-Sondierung (BundleGroup liegt ungenutzt im r184).
+   **T4 FELL=STUDIO** — Dichte skaliert mit der FLÄCHE (der Gigant ist heute
+   kahl-fleckig), Seite-an-Seite-Schuss Studio vs Welt. DONE: Bild-Paar deckungsgleich.
+   **T5 EIN-BAUPLAN-KANON** — Katalog/Werkstatt zeigen je Ding EINEN Eintrag
+   (das Studio-Rezept mit Reglern+Stufen); Alt-Doppel (grown_*, Alt-Tiere,
+   Alt-Mensch) fallen GANZ (Abschieds-Disziplin) oder aus der Sicht.
+   DONE: Katalog-Zensus = 1 Eintrag je Ding, jeder mit Regler+Stufen-Zeile.
+   **T6 KÖRPER GANZ** — verkörpern (embody) sichtbar im UI (<3 Klicks), Studio-
+   Übergabe = Kleider/Bewegung deckungsgleich. DONE: Seite-an-Seite-Schuss.
+   **T7 BODEN-BLICK** — die Spiegelung/Schwärze beim Runterschauen: mit den Augen
+   reproduzieren, Wurzel benennen, heilen. DONE: Runterschau-Schuss sauber.
+
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
    (a) **PERFORMANCE — DER ERSTE ECHTE TRACE IST GELESEN (14.07., V18.473):** die Maschine
