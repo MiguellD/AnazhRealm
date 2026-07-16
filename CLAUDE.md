@@ -6,7 +6,28 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.483 — DIE GEFÜHLS-NAHT: die Erlebnisräume der Studios erreichen die Welt)
+## Stand (V18.484 — DAS FELD ZEICHNET, DER GRUNDSTEIN: der Renderer wird ein Leser des Feldes)
+
+**Die Schöpfer-Vision (16.07., normativ `docs/das-feld-zeichnet.md`): die Welt ist eine
+FUNKTION, kein Sack — Render-Kosten binden an den SCHIRM, nicht an die Welt. V18.484
+gießt den Grundstein, alles GEMESSEN:** DER DRITTE SPIEGEL (`feld-wgsl.js` +
+`gate:dritter-spiegel`: das Terrain-Makro-Gesetz komplett in WGSL, GPU trifft f64-JS auf
+meanAbs 0.86 mm/p95 3.1 mm/max 8.3 mm über 5184 Proben; SEH-Spiegel, nie Physik-Wahrheit;
+Tabellen/Overlays aus den LEBENDEN Quellen) · HITCH-TELEMETRIE (`gate:hitch-telemetrie`:
+LongTasks·GC-Ring·Pipeline-Compiles·Upload-Bytes-Tap [queue.writeBuffer-Wrap, vendor
+byte-alt] in Flugschreiber/Panel/Trace — fing sofort 4.2-s-LongTask + 153 Pipeline-
+Compiles im Boot) · DAS FELD URTEILT (Dither-Wal: Nicht-Baum-Scatter ALLER Stufen
+region-gekeyt → `@s:`-Super-Region-Cull; nie-geculltes Foliage 3.14M→1.74M Tris [−43 %];
+gate:scatter-ab byte-grün) · WARM-START (`gate:warm-start`: uneditierte Chunk-Bytes in
+IDB [Foundry-Disziplin, VERSION|genVersion|anker-Stempel], zweiter Boot ~1.7×, Byte-
+Gleichheit per FNV, Edit-Bypass ehrlich) · FERN-RING (`gate:fern-ring`: 3 Schalen bis
+8 km aus `_terrainMacroSurfaceY(x,z,false)`, welt-gesnappt, budgetiert, quantisiert;
+Höhen==Gesetz worst 0.0000). OFFEN benannt: Horizont-BILD fürs Schöpfer-Auge (Blick-
+Kamera schaut in den Hang; Nebel-Distanz-Tuning) · Multi-Seed-Sweep der Spiegel-Linse ·
+L1-Wander-Freeze der Boden-Schichten · Stufe-2-Vollausbau (GPU-Cull/indirekte Draws +
+Fullscreen-Feld-Pass) NUR nach Trace-Urteil (roadmap §0b).
+
+Davor V18.483 — DIE GEFÜHLS-NAHT: die Erlebnisräume der Studios erreichen die Welt.
 
 **Die Reflexion (16.07.) fand die EINE Schicht, die nicht reiste: jedes Studio trägt
 einen ERLEBNISRAUM (Arena · Probestrecke · Ninja-Park · Verhaltens-Seele), dessen

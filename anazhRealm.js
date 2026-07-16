@@ -15114,7 +15114,8 @@ class AnazhRealm {
                     const sns = st.perfSense;
                     if (sns) {
                         const A = AnazhRealm.PERF_SENSE_ALPHA;
-                        sns.pipesNeuProS = (sns.pipesNeuProS || 0) + A * ((fr._pipesSec || 0) - (sns.pipesNeuProS || 0));
+                        sns.pipesNeuProS =
+                            (sns.pipesNeuProS || 0) + A * ((fr._pipesSec || 0) - (sns.pipesNeuProS || 0));
                     }
                     fr._pipesSec = 0;
                     fr.secRing[fr.secRingI] = fr._secMax;
@@ -88591,7 +88592,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.483.0";
+AnazhRealm.VERSION = "18.484.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
