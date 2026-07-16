@@ -85252,6 +85252,55 @@ class AnazhRealm {
         }
     }
 
+    // ═══ PARKOUR (Ninja-Park-Vereinigung) — DER LUFT-SPRUNG ═══
+    // Auf den FRISCHEN Space-Druck in der Luft (der Boden-Sprung läuft byte-alt
+    // durch handleJump): WANDSPRUNG zuerst (frischer Kapsel-Kontakt < 0.18 s →
+    // voller jumpPower·wandsprungMul + Abstoß entlang der Kontakt-Normale;
+    // der Kontakt wird VERBRAUCHT — kein Dauer-Feuer an derselben Wand), sonst
+    // DOPPELSPRUNG (bounded: doppelspruenge je Luftphase, die Landung füllt
+    // auf). Dieselbe A6b-Decken-Klemme wie der Boden-Sprung; die Gesetze
+    // wohnen im koerperstudio-Gesetzbuch (_parkourGesetz — Kern kalt → No-op).
+    _parkourLuftsprung() {
+        const P = AnazhRealm._parkourGesetz();
+        if (!P) return false;
+        const s = this.state;
+        if (s.playerUnderwater || !s.playerVel) return false;
+        if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
+        const nowS = performance.now() / 1000;
+        const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
+        const wandFrisch =
+            Number.isFinite(s._wandKontaktAt) &&
+            nowS - s._wandKontaktAt < 0.18 &&
+            Number.isFinite(s._wandKontaktNx);
+        let mul = 0;
+        let abX = 0;
+        let abZ = 0;
+        if (wandFrisch) {
+            mul = Number.isFinite(P.wandsprungMul) ? P.wandsprungMul : 1;
+            const ab = Number.isFinite(P.wandAbstoss) ? P.wandAbstoss : 6;
+            abX = s._wandKontaktNx * ab;
+            abZ = s._wandKontaktNz * ab;
+            s._wandKontaktAt = -Infinity; // verbraucht — neue Wand, neuer Sprung
+        } else if ((s._airJumps | 0) < (P.doppelspruenge | 0)) {
+            mul = Number.isFinite(P.doppelsprungMul) ? P.doppelsprungMul : 0.9;
+            s._airJumps = (s._airJumps | 0) + 1;
+        } else {
+            return false;
+        }
+        let jumpV = jp * mul;
+        const headroom = this._ceilingHeadroom();
+        if (headroom < 3.4) {
+            const g = Math.abs(s.gravity || -14.715);
+            jumpV = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
+            if (jumpV < 1.2) return false;
+        }
+        const v = s.playerVel;
+        s.playerVel.setValue(v.x() + abX, jumpV, v.z() + abZ);
+        s.isJumping = true;
+        s.isInAir = true;
+        return true;
+    }
+
     // V8.33 6.G4.e — vertikale Schwimm-Geschwindigkeit unter Wasser. Eine
     // reine Funktion (damit testbar, analog _emotionModulate / _tagToFrequency):
     // Shift taucht aktiv ab, Space hebt nach oben, ohne Eingabe wirkt der
@@ -85993,6 +86042,11 @@ class AnazhRealm {
             vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, dive, rise);
             vx *= SG.drag;
             vz *= SG.drag;
+        } else if (s._parkourKletter > 0) {
+            // PARKOUR — der Griff hält: KLETTERN ersetzt die Schwerkraft (Input-
+            // seitig gegated: W + frische Wand + Ausdauer; der Steig-Wert reist
+            // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
+            vy = s._parkourKletter;
         } else {
             vy += (s.gravity || -14.715) * dt;
             if (vy < -25) vy = -25;
@@ -86240,6 +86294,8 @@ class AnazhRealm {
         if (grounded) {
             s.lastGroundedTime = currentTime;
             s.isInAir = false;
+            // PARKOUR — die Landung füllt die Luft-Sprünge auf (EIN Erdungs-Ort).
+            if (s._airJumps) s._airJumps = 0;
             s.isJumping = false;
         } else {
             s.isInAir = true;
@@ -86340,6 +86396,13 @@ class AnazhRealm {
                     const push = radius - d;
                     pos.x += (dx / d) * push;
                     pos.z += (dz / d) * push;
+                    // PARKOUR — die WAND-WAHRHEIT fällt am EINEN Kapsel-Chokepoint
+                    // gratis ab: der horizontale Push IST der Kontakt (Normale =
+                    // Push-Richtung, von der Wand weg). Die Parkour-Leser
+                    // (Wandsprung/Klettern) lesen sie mit kurzem Verfall.
+                    this.state._wandKontaktNx = dx / d;
+                    this.state._wandKontaktNz = dz / d;
+                    this.state._wandKontaktAt = performance.now() / 1000;
                 } else {
                     // Achse genau in der Box → zur nächsten Seite hinausschieben
                     const toMinX = pos.x - box.minX + radius;
@@ -86435,6 +86498,38 @@ class AnazhRealm {
             // playerVel, dieselbe Step-Integration; ohne lenkung (kein Studio-
             // Wagen / Kern kalt) der byte-alte richtungs-folgende Ritt.
             const lenk = ride && ride.lenkung && this._mountedEntry ? ride.lenkung : null;
+            // ═══ PARKOUR (Ninja-Park-Vereinigung) — RUTSCH + KLETTERN ═══
+            // Die Verben existieren NUR mit dem koerperstudio-Gesetz (_parkourGesetz
+            // null → alles byte-alt) und nie im Sattel/Wasser. RUTSCH: Taste C am
+            // Boden über Mindest-Fahrt → slideDauerSec lang gleitet der Körper in
+            // der Start-Richtung (Tempo-Boost slideTempoMul, linear ausklingend auf
+            // Geh-Tempo; Kamera duckt über den EINEN Dip-Kanal); Luft/Ende löst.
+            const parkG = !ride && !this.state.playerUnderwater ? AnazhRealm._parkourGesetz() : null;
+            let slide = this.state._parkourSlide || null;
+            if (slide && (currentTime >= slide.bis || this.state.isInAir || !parkG)) {
+                slide = this.state._parkourSlide = null;
+            }
+            if (parkG) {
+                const cFresh = !!this.state.keys["c"] && !this.state._cWasDown;
+                this.state._cWasDown = !!this.state.keys["c"];
+                if (!slide && cFresh && !this.state.isInAir) {
+                    const v0 = this.state.playerVel;
+                    const sp0 = Math.hypot(v0.x(), v0.z());
+                    if (sp0 > (Number.isFinite(parkG.slideMinTempo) ? parkG.slideMinTempo : 6)) {
+                        const dauer = Number.isFinite(parkG.slideDauerSec) ? parkG.slideDauerSec : 0.68;
+                        slide = this.state._parkourSlide = {
+                            bis: currentTime + dauer,
+                            dauer,
+                            dx: v0.x() / sp0,
+                            dz: v0.z() / sp0,
+                            v0: sp0 * (Number.isFinite(parkG.slideTempoMul) ? parkG.slideTempoMul : 1.167),
+                        };
+                        this.state._landImpactPending = Math.max(this.state._landImpactPending || 0, 1.2);
+                    }
+                }
+            } else if (this.state._cWasDown) {
+                this.state._cWasDown = false;
+            }
             if (lenk) {
                 const ent = this._mountedEntry;
                 const v = this.state.playerVel;
@@ -86474,6 +86569,14 @@ class AnazhRealm {
                 this.state.playerVel.setValue(fX2 * vLong + fZ2 * vLat, v.y(), fZ2 * vLong - fX2 * vLat);
                 ent._rideYaw = yaw;
                 ent._rideSteer = true; // der Yaw-Folge-Block im Mount-Tick ruht
+            } else if (slide) {
+                // PARKOUR — der RUTSCH führt: Richtung eingefroren, Tempo klingt
+                // linear vom Boost auf das Geh-Tempo aus (WASD ruht — wer rutscht,
+                // lenkt mit dem Körper, nicht mit den Füßen).
+                const rest = Math.max(0, (slide.bis - currentTime) / Math.max(0.001, slide.dauer));
+                const spZiel = this.state.speed + Math.max(0, slide.v0 - this.state.speed) * rest;
+                const vSl = this.state.playerVel;
+                this.state.playerVel.setValue(slide.dx * spZiel, vSl.y(), slide.dz * spZiel);
             } else if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
                 const v = this.state.playerVel;
@@ -86500,13 +86603,41 @@ class AnazhRealm {
             // guter Plattformer. Plus VERDICHTET (V9.82): der Loop-Sprung läuft
             // durch handleJump — EINE Quelle (Coyote + Slope-Gate + A6b-Decken-
             // Klemme; der alte Inline-Pfad UMGING die Klemme = Parallel-Pfad).
-            if (this.state.keys[" "] && !this.state._spaceWasDown) this.state._jumpPressedAt = currentTime;
+            const spaceFresh = !!this.state.keys[" "] && !this.state._spaceWasDown;
+            if (spaceFresh) this.state._jumpPressedAt = currentTime;
             this.state._spaceWasDown = !!this.state.keys[" "];
             const buffered = currentTime - (this.state._jumpPressedAt || -Infinity) <= 0.12;
             if ((this.state.keys[" "] || buffered) && !this.state.isJumping) {
                 this.handleJump(currentTime);
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
+            } else if (spaceFresh && this.state.isJumping) {
+                // PARKOUR — der FRISCHE Druck in der Luft: Wand-/Doppelsprung
+                // (No-op ohne Studio-Gesetz/Kontakt/Kontingent — byte-alt).
+                if (this._parkourLuftsprung()) this.state._jumpPressedAt = -Infinity;
             }
+            // PARKOUR — KLETTERN: W gegen die FRISCHE Wand (der Kapsel-Kontakt
+            // hält sich selbst frisch, solange der Spieler hineindrückt) zehrt
+            // Ausdauer und trägt den Körper — der Step liest _parkourKletter
+            // als Steig-vy statt Schwerkraft. Erschöpft/W los/Wand weg → Fall.
+            let kletterV = 0;
+            if (
+                parkG &&
+                this.state.keys["w"] &&
+                !slide &&
+                Number.isFinite(this.state._wandKontaktAt) &&
+                currentTime - this.state._wandKontaktAt < 0.15
+            ) {
+                const plK = this.state.player;
+                if (plK && plK.stamina > 0) {
+                    kletterV = Number.isFinite(parkG.kletterV) ? parkG.kletterV : 3.2;
+                    plK.stamina = Math.max(
+                        0,
+                        plK.stamina - (Number.isFinite(parkG.kletterAusdauerProS) ? parkG.kletterAusdauerProS : 12) * nowDt
+                    );
+                    this.state.isInAir = true;
+                }
+            }
+            this.state._parkourKletter = kletterV;
         }
     }
 
@@ -88694,6 +88825,24 @@ AnazhRealm._schwimmGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm.SCHWIMM_FALLBACK;
+};
+// PARKOUR-HEIMAT — DER EINE PARKOUR-LESER: die Ninja-Park-Verben (Doppel-/
+// Wandsprung · Klettern · Rutsch) wohnen im koerperstudio-Gesetzbuch
+// (fx.bewegung.parkour). BEWUSST ohne Zahlen-Fallback: Kern kalt → null →
+// KEIN Parkour (das byte-alte Bewegungs-Verhalten) — die Verben existieren
+// NUR als Studio-Gesetz. Memo nur im Erfolgs-Fall.
+AnazhRealm._parkourGesetz = function () {
+    if (AnazhRealm._parkourGesetzMemo) return AnazhRealm._parkourGesetzMemo;
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+        const p = b && b.parkour;
+        if (p && Number.isFinite(p.kletterV) && Number.isFinite(p.wandAbstoss)) {
+            AnazhRealm._parkourGesetzMemo = p;
+            return p;
+        }
+    } catch (_e) {}
+    return null;
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,

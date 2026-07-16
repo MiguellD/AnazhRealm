@@ -430,6 +430,24 @@
                             },
                             ausdauerProS: 6,
                         },
+                        // PARKOUR-HEIMAT (rein additive DATEN-Zeile): die Ninja-Park-
+                        // Verben des Labs als reisende Gesetze -- Doppelsprung (Anzahl
+                        // + Anteil an jumpPower), Wandsprung (Anteil + horizontaler
+                        // Abstoss m/s), Klettern (W gegen die Wand: Steigtempo m/s +
+                        // Ausdauer-Kosten je s), Rutsch (Taste C: Tempo-Boost ueber
+                        // den Sprint [Lab 21/18], Dauer, Mindest-Fahrt). Der Wirt
+                        // liest fail-soft: Kern kalt -> KEIN Parkour (byte-alt).
+                        parkour: {
+                            doppelspruenge: 1,
+                            doppelsprungMul: 0.9,
+                            wandsprungMul: 1.0,
+                            wandAbstoss: 6,
+                            kletterV: 3.2,
+                            kletterAusdauerProS: 12,
+                            slideTempoMul: 1.167,
+                            slideDauerSec: 0.68,
+                            slideMinTempo: 6,
+                        },
                     },
                 },
             },
