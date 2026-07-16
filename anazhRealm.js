@@ -131,6 +131,11 @@ class AnazhRealm {
             // V18.381 — das FERN-WASSER-Sheet (Atlas-Kulisse jenseits des Chunk-Rings):
             // { mesh, anchorX/Z, builtRing, builtOutR, quads, builtMs } | null.
             farWater: null,
+            // STUFE 2 (das-feld-zeichnet §2) — DER FERN-RING: 3 Schalen-Meshes jenseits
+            // des Voxel-Rings, Höhen aus dem EINEN Makro-Gesetz (includeDetail=false).
+            // { meshes[3], material, schalen, anchorX/Z, builtRing, cursor, totalVerts,
+            //   refreshed, ready } | null. Headless-default AUS (Hook __anazhFernRing).
+            fernRing: null,
             voxelPopulatedChunks: null,
             // V9.40-c — Dirty-Queue für Async-Voxel-Rebuild nach Edit.
             dirtyVoxelChunks: null,
@@ -37183,6 +37188,229 @@ class AnazhRealm {
         this.state.farWater = null;
     }
 
+    // ===== DER FERN-RING (STUFE 2, das-feld-zeichnet §2 — DIE FERNE IST FELD) =====
+    // Jenseits des Voxel-Streaming-Rings zeichnet das EINE Höhen-Gesetz
+    // (`_terrainMacroSurfaceY(x, z, false)` — die analytische Fern-Wahrheit ohne
+    // Hochfrequenz-Detail) den Horizont als 3 Ring-Schalen: fixe Kosten (3 Draw-
+    // Calls, 2880 Vertices), unbegrenzte Tiefe. Kein Parallelpfad: die Höhen
+    // ziehen aus DERSELBEN Formel wie Dichte/Chunks/Hydro (Gesetz #0); die
+    // Vertex-XZ sind auf ein GROBES WELT-GITTER gesnappt (je Schale gröber) —
+    // beim Re-Zentrieren wandern nur die Gitter-Punkte, die Höhen SCHWIMMEN nie.
+    // Headless-default AUS (der Null-Renderer sieht nichts), Hook
+    // `window.__anazhFernRing` (true→an, false→aus; das __anazhAutoSettlement-
+    // Muster) führt für die Linse `diag-fern-ring`.
+
+    // Baut EINMAL die 3 Schalen (Ring-Segment-Gitter 96 Winkel × 10 Reihen je
+    // Schale) + das EINE geteilte Lambert-Material (vertexColors; der Nebel
+    // veredelt per Default). Die Höhen füllt `_fernRingRefresh` BUDGETIERT über
+    // Frames (BOOT_PHASE3-Muster) — bis dahin bleiben die Meshes unsichtbar.
+    _fernRingEnsure(playerPos) {
+        const st = this.state;
+        if (st.fernRing) return st.fernRing;
+        if (!st.scene || typeof THREE === "undefined" || !playerPos) return null;
+        const F = AnazhRealm.FERN_RING;
+        const cfg = this._voxelChunkConfig();
+        // Schale 1 beginnt AUSSERHALB des Ziel-Rings (nicht des Ramp-Ists — der
+        // Boot-Ramp wächst zum Ziel, der Fern-Ring darf das nahe Terrain nie
+        // durchschneiden): Ring-Kante (target+0.5)·span + randPad. Das Snap-
+        // Gitter (24 m) kann einen Punkt maximal ~17 m einwärts ziehen → randPad
+        // 40 hält die Kante sicher jenseits der gebauten Chunks.
+        const targetRing = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        const innerRand = (targetRing + 0.5) * cfg.span + F.randPad;
+        const schalen = F.schalen.map((s, i) =>
+            Object.freeze({
+                inner: i === 0 ? innerRand : F.schalen[i - 1].aussen,
+                aussen: s.aussen,
+                snap: s.snap,
+            })
+        );
+        const W = F.winkel;
+        const R = F.reihen;
+        const per = W * R;
+        // EIN Index-Muster für alle Schalen (Wicklung: Normalen zeigen nach +Y).
+        const indices = [];
+        for (let r = 0; r < R - 1; r++) {
+            for (let a = 0; a < W; a++) {
+                const a2 = (a + 1) % W;
+                const v00 = r * W + a;
+                const v01 = r * W + a2;
+                const v10 = (r + 1) * W + a;
+                const v11 = (r + 1) * W + a2;
+                indices.push(v00, v01, v10, v01, v11, v10);
+            }
+        }
+        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Lambert +
+        // vertexColors (die Höhen-Farbrampe), fog default AN (der Nebel deckt),
+        // DoubleSide (die Kamera darf unter den Saum tauchen, kein Loch).
+        const material = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const meshes = [];
+        for (let s = 0; s < schalen.length; s++) {
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute("position", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
+            geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
+            geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
+            geo.setIndex(indices);
+            const mesh = new THREE.Mesh(geo, material);
+            mesh.frustumCulled = false; // der Ring umgibt die Kamera ringsum
+            mesh.renderOrder = -1; // hinter der Welt (Depth-Test ordnet den Rest)
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.visible = false; // erst sichtbar, wenn der erste Höhen-Refresh durch ist
+            mesh.matrixAutoUpdate = false; // Vertex-XZ sind absolute Welt-Koordinaten
+            mesh.userData.inventar = "fern-ring"; // Identitäts-Stempel (H3-Familie)
+            st.scene.add(mesh);
+            meshes.push(mesh);
+        }
+        st.fernRing = {
+            meshes,
+            material,
+            schalen,
+            // der Anker folgt dem Spieler QUANTISIERT (kein Höhen-Schwimmen):
+            anchorX: Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant,
+            anchorZ: Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant,
+            builtRing: targetRing, // Sicht-Regler-Wechsel → Neubau (Kante folgt)
+            cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
+            totalVerts: per * schalen.length,
+            refreshed: 0, // Budget-Zähler (Linse)
+            ready: false,
+        };
+        return st.fernRing;
+    }
+
+    // Die Höhen-Farbrampe (schlicht — der Nebel veredelt): Wasser-Blau flach,
+    // Ufer-Sand, Land Grün → Fels-Grau → Schnee-Weiß über die Höhe überm Spiegel.
+    _fernRingColorInto(col, i, law, wl, wet) {
+        let r, g, b;
+        if (wet) {
+            r = 0.15;
+            g = 0.32;
+            b = 0.45; // Wasser-Blau (flach auf den Spiegel geklemmt)
+        } else {
+            const h = law - wl; // Höhe überm Wasserspiegel führt die Rampe
+            const mix = (t, a0, a1) => a0 + (a1 - a0) * Math.max(0, Math.min(1, t));
+            if (h < 6) {
+                // Ufer-Sand → Gras-Grün (2..6 m Blende)
+                const t = (h - 2) / 4;
+                r = mix(t, 0.72, 0.3);
+                g = mix(t, 0.65, 0.46);
+                b = mix(t, 0.47, 0.24);
+            } else if (h < 90) {
+                // Grün → Fels-Grau (45..90 m Blende)
+                const t = (h - 45) / 45;
+                r = mix(t, 0.3, 0.47);
+                g = mix(t, 0.46, 0.46);
+                b = mix(t, 0.24, 0.44);
+            } else {
+                // Fels → Schnee-Weiß (130..180 m Blende)
+                const t = (h - 130) / 50;
+                r = mix(t, 0.47, 0.93);
+                g = mix(t, 0.46, 0.94);
+                b = mix(t, 0.44, 0.96);
+            }
+        }
+        col.setXYZ(i, r, g, b);
+    }
+
+    // Der BUDGETIERTE Höhen-Refresh (~`refreshVertsProTick` Vertices je Frame,
+    // das BOOT_PHASE3-Muster — nie synchron alles): je Vertex Welt-XZ aufs
+    // Schalen-Snap-Gitter runden, Höhe = das EINE Gesetz (includeDetail=false);
+    // unter dem Wasserspiegel flach auf waterLevel − wasserDrop geklemmt. Die
+    // innerste Reihe jeder Schale taucht −saumDrop (Saum-Tauchkante unter
+    // Nebel-/Ring-Rand und Schalen-Naht). Liefert die Zahl erneuerter Vertices.
+    _fernRingRefresh(budget) {
+        const fr = this.state.fernRing;
+        if (!fr || fr.cursor >= fr.totalVerts) return 0;
+        const F = AnazhRealm.FERN_RING;
+        const W = F.winkel;
+        const R = F.reihen;
+        const per = W * R;
+        const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+        const dirty = [false, false, false];
+        let done = 0;
+        while (done < budget && fr.cursor < fr.totalVerts) {
+            const gIdx = fr.cursor;
+            const s = (gIdx / per) | 0;
+            const li = gIdx - s * per;
+            const row = (li / W) | 0;
+            const ai = li - row * W;
+            const sh = fr.schalen[s];
+            const rad = sh.inner + ((sh.aussen - sh.inner) * row) / (R - 1);
+            const ang = (ai / W) * Math.PI * 2;
+            const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
+            const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
+            const law = this._terrainMacroSurfaceY(sx, sz, false);
+            const wet = law < wl;
+            let y = wet ? wl - F.wasserDrop : law;
+            if (row === 0) y -= F.saumDrop; // die Saum-Tauchkante
+            const geo = fr.meshes[s].geometry;
+            geo.attributes.position.setXYZ(li, sx, y, sz);
+            this._fernRingColorInto(geo.attributes.color, li, law, wl, wet);
+            dirty[s] = true;
+            fr.cursor++;
+            done++;
+        }
+        for (let s = 0; s < fr.meshes.length; s++) {
+            if (!dirty[s]) continue;
+            const geo = fr.meshes[s].geometry;
+            geo.attributes.position.needsUpdate = true;
+            geo.attributes.color.needsUpdate = true;
+            geo.computeVertexNormals(); // 960 Vertices — billig, Lambert braucht Normalen
+        }
+        fr.refreshed += done;
+        if (!fr.ready && fr.cursor >= fr.totalVerts) {
+            fr.ready = true;
+            for (const m of fr.meshes) m.visible = true; // erst voll, dann sichtbar (kein Null-Blob)
+        }
+        return done;
+    }
+
+    // Der Frame-Tick (EIN Aufruf aus `_runFrameScheduler`, kein eigener Timer):
+    // Hook-Gate (headless ruht der Ring per Default), Ensure, Re-Zentrieren
+    // QUANTISIERT (erst ab `reanchorDist` Spieler-Wanderung — dann rollt der
+    // budgetierte Refresh einmal durch alle Schalen), Refresh-Scheibe.
+    _tickFernRing(playerPos) {
+        const st = this.state;
+        const hook = typeof window !== "undefined" ? window.__anazhFernRing : undefined;
+        if (hook === false) {
+            if (st.fernRing) this._fernRingDispose();
+            return;
+        }
+        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (!playerPos || !st.scene || typeof THREE === "undefined") return;
+        const F = AnazhRealm.FERN_RING;
+        let fr = st.fernRing;
+        // der Sicht-Regler (chunkRingRadius) verschiebt die Schale-1-Kante → Neubau
+        const targetRing = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        if (fr && fr.builtRing !== targetRing) {
+            this._fernRingDispose();
+            fr = null;
+        }
+        if (!fr) fr = this._fernRingEnsure(playerPos);
+        if (!fr) return;
+        const dx = playerPos.x - fr.anchorX;
+        const dz = playerPos.z - fr.anchorZ;
+        if (dx * dx + dz * dz > F.reanchorDist * F.reanchorDist) {
+            fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
+            fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
+            fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
+        }
+        this._fernRingRefresh(F.refreshVertsProTick);
+    }
+
+    // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen
+    // (der Tick baut die neue Welt lazy nach).
+    _fernRingDispose() {
+        const fr = this.state.fernRing;
+        if (!fr) return;
+        for (const m of fr.meshes || []) {
+            if (!m) continue;
+            if (this.state.scene) this.state.scene.remove(m);
+            this._queueGeometryDispose(m.geometry);
+        }
+        if (fr.material && typeof fr.material.dispose === "function") fr.material.dispose();
+        this.state.fernRing = null;
+    }
+
     _tickVoxelChunkStreaming(playerPos) {
         if (!this.state.voxelTerrainActive || !playerPos) return;
         if (!this.state.voxelChunks) this.state.voxelChunks = new Map();
@@ -42364,6 +42592,10 @@ class AnazhRealm {
         // gebackene Felder gebunden). _tickScatterStreaming re-streut die neue
         // Welt lazy. Die promoteten Cells (echte Bäume) reisen via Snapshot.
         if (typeof this._disposeAllScatterRegions === "function") this._disposeAllScatterRegions();
+        // STUFE 2 (das-feld-zeichnet §2) — der Fern-Ring trägt die Höhen der ALTEN
+        // Welt (das EINE Gesetz liest den Welt-Seed): am Welt-Identitäts-Wechsel
+        // entsorgen; der Tick baut die neue Welt lazy + budgetiert nach.
+        if (typeof this._fernRingDispose === "function") this._fernRingDispose();
         // V18.213 (DER LEBENDIGE GIGANT, MESH-MERGE) — die merged Geometries
         // sind welt-spezifisch (an die WELT-gewachsenen Variant-Baupläne
         // gebunden, deren Keys `grown_<species>_<hash>` welt-spezifisch sind).
@@ -87435,6 +87667,7 @@ class AnazhRealm {
         this._tickPendingVegSpawns(4);
         this._tickArchitectureLOD(5);
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
+        this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickSeason(performance.now()); // JAHRESZEIT: die langsame Jahres-Uhr (Foundry-Phaenologie)
         this._tickRain(performance.now()); // WETTER: sichtbarer Regen bei rainy/stormy
         this._tickCanopyStreaming();
@@ -89051,6 +89284,33 @@ AnazhRealm.FAR_WATER = Object.freeze({
     depth: 3.5,
     reanchorDist: 86.4,
     rebuildDelta: 80,
+});
+
+// STUFE 2 (das-feld-zeichnet §2) — DER FERN-RING: die Fern-Kulisse aus dem EINEN
+// Höhen-Gesetz (`_terrainMacroSurfaceY(x,z,false)`), 3 Ring-Schalen à 96×10
+// Vertices (3 Draw-Calls fix). `winkel`/`reihen` = das Segment-Gitter je Schale;
+// `schalen[i].aussen` = der Außenradius (Schale 1 beginnt an der Voxel-Ring-Kante
+// + `randPad`, jede weitere an der Vorgänger-Kante), `snap` = das GROBE Welt-
+// Gitter je Schale (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren NIE);
+// `saumDrop` = die Tauchkante der innersten Reihe (unter Nebel-/Ring-Rand und
+// Schalen-Naht); `wasserDrop` = die flache Wasser-Klemme (waterLevel − 0.4);
+// `reanchorDist` = die Anker-Hysterese (Re-Zentrieren erst ab dieser Wanderung);
+// `anchorQuant` = die Anker-Quantisierung; `refreshVertsProTick` = das Höhen-
+// Refresh-Budget je Frame (BOOT_PHASE3-Muster, 2880 Vertices ≈ 5 Frames).
+AnazhRealm.FERN_RING = Object.freeze({
+    winkel: 96,
+    reihen: 10,
+    schalen: Object.freeze([
+        Object.freeze({ aussen: 1400, snap: 24 }),
+        Object.freeze({ aussen: 3600, snap: 64 }),
+        Object.freeze({ aussen: 8000, snap: 160 }),
+    ]),
+    randPad: 40,
+    saumDrop: 6,
+    wasserDrop: 0.4,
+    reanchorDist: 180,
+    anchorQuant: 24,
+    refreshVertsProTick: 600,
 });
 
 // V18.382 — LOCKSTEP-MP Stufe 2 (nur Inputs übers Netz): `jitterReserve` = die Frame-Reserve
