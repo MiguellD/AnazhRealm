@@ -72778,11 +72778,14 @@ class AnazhRealm {
     // schwingt flink, ein Fels-Hammer träge — MESSBAR (gate:kampf-gefuehl hält das
     // Verhältnis zweier Waffen auf √(I2/I1) ± 5 %), kein Material-Tag-Parallelpfad.
     _swingDauerFuerBlueprint(bp) {
-        const K = AnazhRealm.SWING_LAWS;
-        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return K.handDauerSec;
+        // ARENA-GEFÜHL — die Schwung-KONSTANTEN wohnen im schmiede-Gesetzbuch
+        // (ARENA.schwung, N6.6-Revision: EIN Regler für Arena UND Welt); die
+        // FORMEL bleibt Wirts-Gesetz (Ω-Φ4: dauer = dauerProSqrtI·√I, geklemmt).
+        const S = AnazhRealm._arenaGesetz().schwung;
+        if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return S.handDauerSec;
         const I = this._swingDynamics(bp).swingInertia;
-        if (!(I > 1e-9)) return K.handDauerSec;
-        return Math.min(K.maxDauerSec, Math.max(K.minDauerSec, K.dauerProSqrtI * Math.sqrt(I)));
+        if (!(I > 1e-9)) return S.handDauerSec;
+        return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtI * Math.sqrt(I)));
     }
     // die Dauer des GEHALTENEN Geräts (Faust → handDauerSec).
     _playerSwingDauer() {
@@ -72976,11 +72979,35 @@ class AnazhRealm {
     //     Mechanismus (_landImpactPending → LAND_DIP_* in _loopCamera — EINE
     //     Quelle, kein zweiter Kamera-Kanal). (3) Tag→Timbre-One-Shot über die
     //     EXISTIERENDE Klang-Maschine (state.symphony — kein zweiter AudioContext).
-    _kampfHitJuice(creature, nowSec) {
+    // ARENA-GEFÜHL — Hit-Stop/Dip skalieren mit der TREFFER-ENERGIE (die
+    // Arena-Eichung keRefJ): KE = ½·I·ω² der Klinge (die GERECHNETE Ω-Φ4-
+    // Trägheit; ω = Sweep-Bogen/Strike-Zeit) × Ziel-Größe (scale.x, die
+    // Allometrie-Wahrheit) — ein Fels-Hammer auf einen Bären KRACHT (freeze
+    // 0.20/dip max), die Faust auf einen Sprite tickt (min). Der Pfeil-Pfad
+    // reicht seine ECHTE Flug-Energie als keOpt herein. Kern kalt → Fallback
+    // min==max = der byte-alte feste Hit-Stop/Dip.
+    _kampfHitJuice(creature, nowSec, keOpt) {
         const K = AnazhRealm.SWING_LAWS;
+        const G = AnazhRealm._arenaGesetz().gefuehl;
+        let ke = Number.isFinite(keOpt) ? keOpt : 0;
+        if (!Number.isFinite(keOpt)) {
+            const bp = this._heldImplementBlueprint();
+            if (bp) {
+                const I = this._swingDynamics(bp).swingInertia;
+                const sw = this.state.player && this.state.player._swing;
+                const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
+                const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
+                if (I > 0) ke = 0.5 * I * omega * omega;
+            }
+        }
+        const L = Math.max(0.3, (creature && creature.scale && creature.scale.x) || 1);
+        const e = Math.max(0, Math.min(1, (ke * Math.min(2, L)) / Math.max(1, G.keRefJ)));
         const p = this.state.player;
-        if (p) p._hitStopUntil = nowSec + K.hitStopSec;
-        this.state._landImpactPending = Math.max(this.state._landImpactPending || 0, K.hitDipImpact);
+        if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
+        this.state._landImpactPending = Math.max(
+            this.state._landImpactPending || 0,
+            G.dipMin + (G.dipMax - G.dipMin) * e
+        );
         this._playKampfOneShot(this.computeCreatureCompoundTags(creature) || {});
     }
 
@@ -73001,12 +73028,66 @@ class AnazhRealm {
         return rec && rec.fx && rec.fx.task && rec.fx.task.art === "bogen" ? rec : null;
     }
 
+    // ARENA-GEFÜHL — DER BOGEN-AUSZUG (render-seitig, nie Sim): solange gespannt
+    // wird, verengt sich der Blick fovRuhe→fovZug über auszugSec (relativ zur
+    // ECHTEN Ruhe-FOV des Spielers — d.fovRest führt); Abbruch (Bogen weg /
+    // Pointer frei) stellt das Sichtfeld wieder her. Kern kalt → nie ein
+    // Draw-Zustand → No-op (byte-alt).
+    _tickBogenZug(nowSec) {
+        const p = this.state.player;
+        const d = p && p._bogenDraw;
+        if (!d) return;
+        const cam = this.state.camera;
+        if (!this.state.isPointerLocked || !this._heldBogenRecipe()) {
+            p._bogenDraw = null;
+            if (cam && Number.isFinite(d.fovRest)) {
+                cam.fov = d.fovRest;
+                cam.updateProjectionMatrix();
+            }
+            return;
+        }
+        if (!cam) return;
+        const A = AnazhRealm._arenaGesetz().bogen;
+        const frac = Math.max(0, Math.min(1, (nowSec - d.start) / Math.max(0.001, A.auszugSec)));
+        const ruhe = Number.isFinite(d.fovRest) ? d.fovRest : A.fovRuhe;
+        const ziel = ruhe + (A.fovZug - A.fovRuhe) * frac;
+        if (Math.abs(cam.fov - ziel) > 0.01) {
+            cam.fov = ziel;
+            cam.updateProjectionMatrix();
+        }
+    }
+    // Das Lösen: stellt die FOV wieder her und schießt mit dem Auszug-Anteil
+    // (minAuszugFrac deckelt nach unten — ein Zucken ist kein Schuss ins Nichts).
+    _bogenRelease() {
+        const p = this.state.player;
+        if (!p) return;
+        const d = p._bogenDraw;
+        p._bogenDraw = null;
+        if (!d) return;
+        const cam = this.state.camera;
+        if (cam && Number.isFinite(d.fovRest)) {
+            cam.fov = d.fovRest;
+            cam.updateProjectionMatrix();
+        }
+        const rec = this._heldBogenRecipe();
+        if (!rec) return;
+        const A = AnazhRealm._arenaGesetz().bogen;
+        const held = Math.max(0, performance.now() / 1000 - d.start);
+        const frac = Math.max(
+            Number.isFinite(A.minAuszugFrac) ? A.minAuszugFrac : 1,
+            Math.min(1, A.auszugSec > 0 ? held / A.auszugSec : 1)
+        );
+        this._beginPlayerShot(rec, frac);
+    }
+
     // Der Schuss: Klick = EIN Pfeil. Der Spann-Cooldown IST die Schwung-Dauer
     // (_playerSwingDauer ∝ √I — die EINE Quelle, kein Parallel-Tempo); v0 aus der
-    // STUDIO-Wahrheit (fx.task: speedBase·√(zugkraft·auszug)); Richtung = Blick
-    // (yaw+pitch, die _loopCamera-Konvention); Start an der Schulter (SWING_LAWS.
-    // shoulderH). Deterministisch (kein Random); Stamina + Affekt wie der Hieb.
-    _beginPlayerShot(rec) {
+    // EINEN Schuss-Physik der Arena (v0 = √(2·E/mArrow), E = zugJouleRef·zugkraft·
+    // auszug — byte-identisch zur historischen Form speedBase·√(zug·aus)) × dem
+    // Auszug-Anteil (drawFrac vom Lösen); Richtung = Blick (yaw+pitch, die
+    // _loopCamera-Konvention); Start an der Schulter (SWING_LAWS.shoulderH).
+    // Deterministisch (kein Random); Stamina + Affekt wie der Hieb.
+    _beginPlayerShot(rec, drawFrac) {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
@@ -73022,7 +73103,12 @@ class AnazhRealm {
         const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
         const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
         const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
-        let v0 = B.speedBase * Math.sqrt(zug * aus);
+        // DIE EINE SCHUSS-PHYSIK (Arena-Vereinigung): v0 = √(2·E/mArrow) mit
+        // E = zugJouleRef·zugkraft·auszug — dieselbe Formel wie der Arena-
+        // Schießstand; mit den Fallback-Zahlen exakt speedBase·√(zug·aus).
+        const AB = AnazhRealm._arenaGesetz().bogen;
+        let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus) / Math.max(0.001, AB.mArrow));
+        if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
         if (!Number.isFinite(v0) || v0 <= 0) v0 = B.speedBase; // NaN-Wand
         const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
         const pitch = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
@@ -73123,7 +73209,12 @@ class AnazhRealm {
                     fromPos: { x: ox, y: oy, z: oz },
                     knockback: pf.kb,
                 });
-                if (res && res.ok) this._kampfHitJuice(hit, nowSec);
+                // ARENA-GEFÜHL — der Pfeil reicht seine ECHTE Flug-Energie
+                // (½·mArrow·v², dieselbe Arena-Eichung) in die Hit-Juice.
+                if (res && res.ok) {
+                    const vv = pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz;
+                    this._kampfHitJuice(hit, nowSec, 0.5 * AnazhRealm._arenaGesetz().bogen.mArrow * vv);
+                }
                 this._pfeilDespawn(pf);
                 list.splice(i, 1);
                 continue;
@@ -73578,7 +73669,22 @@ class AnazhRealm {
                 this.log(`Schuss: zu wenig Stamina (${bGate.have}/${bGate.cost}).`, "INFO");
                 return false;
             }
-            return this._beginPlayerShot(bogenRec);
+            // ARENA-GEFÜHL — DER AUSZUG: Halten spannt (das Halten-Muster des
+            // Abbaus: mousedown → hier; der Harvest-Kadenz-Tick spannt nicht
+            // neu), Loslassen löst (_bogenRelease skaliert v0 mit dem Auszug-
+            // Anteil, der Blick verengt sich fovRuhe→fovZug). Kern kalt →
+            // auszugSec 0 → der Klick schießt sofort voll (byte-alt).
+            const AB = AnazhRealm._arenaGesetz().bogen;
+            if (!(AB.auszugSec > 0)) return this._beginPlayerShot(bogenRec);
+            const pB = this.state.player;
+            if (pB._bogenDraw) return true; // spannt schon (Halte-Tick)
+            const nowB = performance.now() / 1000;
+            if (Number.isFinite(pB._shotCooldownUntil) && nowB < pB._shotCooldownUntil) return false;
+            pB._bogenDraw = {
+                start: nowB,
+                fovRest: this.state.camera && Number.isFinite(this.state.camera.fov) ? this.state.camera.fov : null,
+            };
+            return true;
         }
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
         // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
@@ -85342,6 +85448,10 @@ class AnazhRealm {
                 // Schwung (die fixe Sim bleibt unberührt); No-op ohne lebende Pfeile.
                 this._tickPfeile(currentTime);
 
+                // ARENA-GEFÜHL — der Bogen-Auszug (FOV-Zug + Abbruch-Wache);
+                // No-op ohne gespannten Bogen (byte-alt).
+                this._tickBogenZug(currentTime);
+
                 // ### Spielerbewegung + Sprung ### — V18.355/.358 PHASE C: die Bewegung läuft IM
                 // Akkumulator (`_stepFixedSim` pro FIXED_DT-Schritt, inkl. der Replay-Capture-Ernte)
                 // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
@@ -87490,6 +87600,9 @@ class AnazhRealm {
             if (!this.state.player) return;
             if (this._actionForBindingCode(this._eventToBindingCode(event)) === "break") {
                 this.state.player.breakHeld = false;
+                // ARENA-GEFÜHL — Loslassen löst den gespannten Bogen (der Auszug-
+                // Anteil skaliert v0; ohne Draw-Zustand ein No-op, byte-alt).
+                if (this.state.player._bogenDraw) this._bogenRelease();
             }
         });
     }
@@ -88642,6 +88755,49 @@ AnazhRealm.BOGEN_LAWS = Object.freeze({
     maxPfeile: 16, // Deckel lebender Pfeile (bounded by construction)
     muendungM: 1.2, // Start-Abstand vor der Schulter — kein Selbst-Treffer
 });
+// ═══ ARENA-GEFÜHL (Schöpfer-Vertrags-Akt 16.07.) — DER EINE GEFÜHLS-LESER ═══
+// Die Gefühls-Gesetze der schmiede-Arena (Schwung-Konstanten · energie-
+// skalierter Hit-Stop/Dip · die EINE Bogen-Physik + der Auszug) wohnen im
+// schmiede-Gesetzbuch (__schmiedeCore.ARENA). Der Stamm liest fail-soft: Kern
+// kalt → das byte-alte Verhalten (Fallback aus DENSELBEN SWING-/BOGEN_LAWS-
+// Literalen — kein Zahlen-Zwilling: fester Hit-Stop, fester Dip, Sofort-Schuss
+// ohne Auszug/FOV). Memo NUR im Erfolgs-Fall (ein spät ladender Kern friert
+// nie den Fallback ein).
+AnazhRealm.ARENA_FALLBACK = Object.freeze({
+    schwung: Object.freeze({
+        dauerProSqrtI: AnazhRealm.SWING_LAWS.dauerProSqrtI,
+        minDauerSec: AnazhRealm.SWING_LAWS.minDauerSec,
+        maxDauerSec: AnazhRealm.SWING_LAWS.maxDauerSec,
+        handDauerSec: AnazhRealm.SWING_LAWS.handDauerSec,
+    }),
+    gefuehl: Object.freeze({
+        freezeMinSec: AnazhRealm.SWING_LAWS.hitStopSec,
+        freezeMaxSec: AnazhRealm.SWING_LAWS.hitStopSec,
+        dipMin: AnazhRealm.SWING_LAWS.hitDipImpact,
+        dipMax: AnazhRealm.SWING_LAWS.hitDipImpact,
+        keRefJ: 114,
+    }),
+    bogen: Object.freeze({
+        mArrow: 0.05,
+        zugJouleRef: (AnazhRealm.BOGEN_LAWS.speedBase * AnazhRealm.BOGEN_LAWS.speedBase * 0.05) / 2,
+        auszugSec: 0, // 0 = kein Auszug: der Klick schießt sofort voll (byte-alt)
+        fovZug: 75,
+        fovRuhe: 75,
+        minAuszugFrac: 1,
+    }),
+});
+AnazhRealm._arenaGesetz = function () {
+    if (AnazhRealm._arenaGesetzMemo) return AnazhRealm._arenaGesetzMemo;
+    try {
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        const a = sc && sc.ARENA;
+        if (a && a.schwung && a.gefuehl && a.bogen && Number.isFinite(a.schwung.dauerProSqrtI)) {
+            AnazhRealm._arenaGesetzMemo = a;
+            return a;
+        }
+    } catch (_e) {}
+    return AnazhRealm.ARENA_FALLBACK;
+};
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
 // kostet Stamina. Ohne Kosten könnte der Spieler unbegrenzt Polier-Schritte

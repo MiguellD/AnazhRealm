@@ -2912,9 +2912,29 @@
     }
 
     // ── Der Namensraum (Vertrag v1.1 §7): Manifest-Blöcke + Gesetz- und Bau-Vokabular ──
+    // ═══ ARENA-GEFUEHL (rein additive DATEN-Zeilen, Schoepfer-Vertrags-Akt
+    // 16.07.: "vollende die verbindungen ... kein offen") — DIE GEFUEHLS-
+    // GESETZE der Pruefstand-Arena als REISENDE Daten. N6.6-Revision: der
+    // Kern traegt jetzt auch die SCHWUNG-Konstanten des Wirts (dauerProSqrtI
+    // et al. — die Omega-PHYSIS-Formel dauer = dauerProSqrtI*sqrt(I) bleibt
+    // Wirts-Gesetz, ihre ZAHLEN wohnen hier: EIN Regler fuer Arena UND Welt).
+    // gefuehl: Hit-Stop/Erschuetterung skalieren mit der TREFFER-ENERGIE
+    // (keRefJ — die 114-J-Eichung der Arena); der Wirt mappt freeze auf
+    // seine Anzeige-Uhr und shake auf den Kamera-Dip. bogen: die EINE
+    // Schuss-Physik v0 = sqrt(2*E/mArrow) mit E = zugJouleRef*zugkraft*
+    // auszug — byte-identisch zur historischen Wirts-Form 34*sqrt(zug*aus)
+    // (34^2*0.05/2 = 28.9 J); auszugSec/fovZug/fovRuhe = das Arena-Zieh-
+    // Gefuehl (Auszug ueber 0.9 s, Blick verengt 75->54).
+    var ARENA = {
+        schwung: { dauerProSqrtI: 0.55, minDauerSec: 0.25, maxDauerSec: 1.8, handDauerSec: 0.4 },
+        gefuehl: { freezeMinSec: 0.04, freezeMaxSec: 0.2, dipMin: 2.0, dipMax: 6.5, keRefJ: 114 },
+        bogen: { mArrow: 0.05, zugJouleRef: 28.9, auszugSec: 0.9, fovZug: 54, fovRuhe: 75, minAuszugFrac: 0.25 },
+    };
+
     root.__schmiedeCore = {
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
+        ARENA: ARENA,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },
