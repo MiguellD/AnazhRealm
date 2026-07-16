@@ -14056,6 +14056,27 @@ class AnazhRealm {
         sense.phaseMax.gpuMs = Math.max(gpu.ms, (sense.phaseMax.gpuMs || 0) * 0.92);
         sense.gpuQuelle = gpu.quelle;
         this._perfGpuResolveKick(); // fire-and-forget — das Ergebnis landet im NÄCHSTEN Frame
+        // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (c) PIPELINE-COMPILES: das
+        // Frame-Delta von renderer._pipelines.caches.size (vendor r184, gewöhnliche
+        // Property — reine Lesung, vendor bleibt byte-alt). Wachs-Guard: dispose()
+        // leert caches → Schrumpfen zählt nie negativ; Null-Renderer/WebGL tragen
+        // die Map nicht → fail-soft 0. Reist als f-Passagier (Muster f.gpuMs).
+        let nPipes = 0;
+        try {
+            const p = st.renderer && st.renderer._pipelines;
+            if (p && p.caches && typeof p.caches.size === "number") nPipes = p.caches.size;
+        } catch {
+            nPipes = 0; // fremde Renderer-Formen — der Zähler bleibt ehrlich 0
+        }
+        f.pipelinesNeu = Math.max(0, nPipes - (Number.isFinite(this._pipeLast) ? this._pipeLast : nPipes));
+        this._pipeLast = nPipes;
+        sense.pipesTotal = nPipes;
+        // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (d) UPLOAD-BYTES: den Laufzeit-
+        // Tap-Akku (queue.writeBuffer, Anbau an der rendererReady-Naht) je Frame
+        // konsumieren + nullen; EWMA für Panel/steadyState (uploadKBProS).
+        f.uploadBytes = this._uploadBytesAcc || 0;
+        this._uploadBytesAcc = 0;
+        sense.uploadBytesEwma = ewma(sense.uploadBytesEwma || 0, f.uploadBytes);
         // V18.293 — DER FLUGSCHREIBER: die ROHEN Frame-Werte (f/m) fangen, BEVOR sie
         // zurückgesetzt werden. Bulletproof gekapselt — diese Fold-Funktion läuft
         // außerhalb der Loop-Fehler-Grenze (V18.278), ein Wurf hier bräche den Loop.
@@ -14808,6 +14829,11 @@ class AnazhRealm {
             // welcher Messung er glaubt). Rot über der Frame-Decke (PERF_TARGET_MS).
             const gpuMs = s.phase && Number.isFinite(s.phase.gpuMs) ? s.phase.gpuMs : null;
             const gpuQ = s.gpuQuelle === "echt" ? "echt" : "proxy";
+            // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die vier Hitch-Zellen:
+            // LongTask-ms der letzten Sekunde · Major-GC-Zähler · neue Pipelines/s ·
+            // Upload-Rate (Frame-EWMA × fps → MB/s). Dieselben Quellen wie der Trace.
+            const ltSec = fr && fr._ltSec ? fr._ltSec : null;
+            const upMBs = ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) / 1048576;
             grid.innerHTML =
                 row("frame ø", (+s.frameMs).toFixed(1) + " ms") +
                 row(
@@ -14828,7 +14854,11 @@ class AnazhRealm {
                     "Impostor",
                     z ? `${z.rttGebacken}✓ ${z.silhouetteWartend}○ ${z.rttGescheitert}✗` : "—",
                     z && z.rttGescheitert > 0 ? "#ff8a8a" : "#8fe98f"
-                );
+                ) +
+                row("LT/s", ltSec ? ltSec.ms.toFixed(0) + " ms" : "—", ltSec && ltSec.ms > 50 ? "#ff8a8a" : undefined) +
+                row("GC", fr ? String(fr.gcN || 0) : "—") +
+                row("Pipes+", (s.pipesNeuProS || 0).toFixed(1) + "/s") +
+                row("Up MB/s", upMBs.toFixed(2), upMBs > 8 ? "#ffd166" : undefined);
         }
         // ── Verteilung (die 6 Flugschreiber-Eimer als Prozent-Zeile) ──
         const bk = document.getElementById("pp-buckets");
@@ -14881,6 +14911,16 @@ class AnazhRealm {
                 for (let i = 0; i < n; i++) out[i] = +fr.secRing[(fr.secRingI - n + i + N) % N].toFixed(1);
                 trace.sekundenRingMaxMs = out; // ältester → jüngster
             }
+            // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (b) der Heap-Delta-Ring reist
+            // analog (DIESELBEN Indizes wie secRing — kein Zähler-Zwilling): MB je Sekunde,
+            // scharfe Negativ-Zacken sind die Major-GCs (gcN zählt sie in memory.gcN).
+            if (fr && fr.gcRing && fr.secRingN > 0) {
+                const N2 = fr.gcRing.length,
+                    n2 = Math.min(fr.secRingN | 0, N2),
+                    out2 = new Array(n2);
+                for (let i = 0; i < n2; i++) out2[i] = +fr.gcRing[(fr.secRingI - n2 + i + N2) % N2].toFixed(2);
+                trace.sekundenRingHeapDeltaMB = out2; // ältester → jüngster
+            }
             trace.exportiertAm = new Date().toISOString();
             const name =
                 "anazhRealmPerf-V" + AnazhRealm.VERSION + "-" + trace.exportiertAm.replace(/[:.]/g, "-") + ".json";
@@ -14925,7 +14965,36 @@ class AnazhRealm {
             memSeries: [], // V18.294 — Leck-Detektor: Heap + Sammlungs-Größen über Zeit
             _leakAnnounced: false,
             _announced: false,
+            // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die vier Hitch-Summen der
+            // Sitzung (kumulativ, ab 0 — die Linse liest sie IMMER numerisch):
+            ltN: 0, // (a) LongTasks gesamt (Anzahl)
+            ltMs: 0, // (a) LongTasks gesamt (ms)
+            ltMaxMs: 0, // (a) längste LongTask der Sitzung (ms)
+            gcN: 0, // (b) scharfe Heap-Abfälle < −8 MiB je Sekunde ≈ Major-GC
+            pipesN: 0, // (c) neue Pipeline-Compiles gesamt (caches.size-Wachstum)
+            upBytes: 0, // (d) Upload-Bytes gesamt (queue.writeBuffer-Tap)
         };
+        // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (a) das LongTask-OHR: ein
+        // EINMALIGER PerformanceObserver akkumuliert Blocker >50 ms in einen
+        // Instanz-Akku (this._ltAcc — wie _gpuTsLast nie serialisiert). buffered:true
+        // fängt den Boot; fail-soft, wo der Entry-Typ fehlt (Firefox/Safari/Node).
+        // Zugriff über window (explizite Globals-Liste der Lint-Config bleibt unberührt).
+        const PerfObs = typeof window !== "undefined" ? window.PerformanceObserver : undefined;
+        if (!this._ltObs && typeof PerfObs === "function") {
+            try {
+                this._ltAcc = { n: 0, ms: 0, max: 0 };
+                this._ltObs = new PerfObs((l) => {
+                    for (const e of l.getEntries()) {
+                        this._ltAcc.n++;
+                        this._ltAcc.ms += e.duration;
+                        if (e.duration > this._ltAcc.max) this._ltAcc.max = e.duration;
+                    }
+                });
+                this._ltObs.observe({ type: "longtask", buffered: true });
+            } catch {
+                this._ltObs = null; // fail-soft — ohne Ohr bleiben ltN/ltMs ehrlich 0
+            }
+        }
         // EINMAL: beim Verlassen/Verstecken der Seite einen letzten Auszug sichern
         // (sonst geht die Sitzung verloren, bevor der periodische Save feuert).
         if (typeof window !== "undefined" && window.addEventListener) {
@@ -15000,8 +15069,49 @@ class AnazhRealm {
                     fr._secStart = nowR;
                     fr._secMax = 0;
                 }
+                // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (b) der Heap-Delta-Ring:
+                // EXAKT dieselben Indizes wie secRing (secRingI/secRingN) — nie ein
+                // Zähler-Zwilling; ein Slot = Heap-Delta-MB der Sekunde.
+                if (!fr.gcRing) fr.gcRing = new Float32Array(180);
                 if (frameMs > fr._secMax) fr._secMax = frameMs;
+                // HITCH-TELEMETRIE — (c)+(d) kumulative Summen der f-Passagiere aus dem Fold.
+                if (f && f.pipelinesNeu > 0) {
+                    fr.pipesN += f.pipelinesNeu;
+                    fr._pipesSec = (fr._pipesSec || 0) + f.pipelinesNeu;
+                }
+                if (f && f.uploadBytes > 0) fr.upBytes += f.uploadBytes;
                 if (nowR - fr._secStart >= 1000) {
+                    // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die Sekunden-Grenze ist
+                    // DIE Falte der Hitch-Zähler (EIN Takt, dieselben Ring-Indizes):
+                    // (a) LongTasks der Sekunde aus dem Observer-Akku lesen + nullen.
+                    const lt = this._ltAcc;
+                    if (lt) {
+                        fr._ltSec = { n: lt.n, ms: lt.ms, max: lt.max };
+                        fr.ltN += lt.n;
+                        fr.ltMs += lt.ms;
+                        if (lt.max > fr.ltMaxMs) fr.ltMaxMs = lt.max;
+                        lt.n = 0;
+                        lt.ms = 0;
+                        lt.max = 0;
+                    }
+                    // (b) Heap-Delta der Sekunde (Chrome performance.memory, sonst 0):
+                    // scharfes NEGATIV < −8 MiB ≈ Major-GC (der Sprung nach unten).
+                    let heapDeltaMB = 0;
+                    const mem = typeof performance !== "undefined" && performance.memory;
+                    if (mem) {
+                        const h = mem.usedJSHeapSize;
+                        if (Number.isFinite(fr._heapLast)) heapDeltaMB = (h - fr._heapLast) / 1048576;
+                        fr._heapLast = h;
+                        if (heapDeltaMB < -8) fr.gcN++;
+                    }
+                    fr.gcRing[fr.secRingI] = heapDeltaMB;
+                    // (c) Pipeline-Compiles der Sekunde → EWMA (steadyState.pipelines.neuProS).
+                    const sns = st.perfSense;
+                    if (sns) {
+                        const A = AnazhRealm.PERF_SENSE_ALPHA;
+                        sns.pipesNeuProS = (sns.pipesNeuProS || 0) + A * ((fr._pipesSec || 0) - (sns.pipesNeuProS || 0));
+                    }
+                    fr._pipesSec = 0;
                     fr.secRing[fr.secRingI] = fr._secMax;
                     fr.secRingI = (fr.secRingI + 1) % fr.secRing.length;
                     if (fr.secRingN < fr.secRing.length) fr.secRingN++;
@@ -15070,6 +15180,18 @@ class AnazhRealm {
             // ist selbst Diagnose (vsync/GC-Anteil der Lücke).
             gpuMs: Number.isFinite(f.gpuMs) ? +(+f.gpuMs).toFixed(1) : +gap.toFixed(1),
             gpuQuelle: f.gpuQuelle === "echt" ? "echt" : "proxy",
+            // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — die Hitch-Passagiere DIESES
+            // Stockers: LongTasks der Nachbarschaft (laufender Akku + letzte volle
+            // Sekunde — der Observer feuert als eigene Task, 1 Frame Latenz, der
+            // exakte Frame ist nie fangbar), neue Pipeline-Compiles + Upload-KB des
+            // Frames (f-Passagiere aus dem Fold, explizit gezogen wie gpuMs).
+            longTasks: (() => {
+                const a = this._ltAcc || { n: 0, ms: 0, max: 0 };
+                const sec = (st.flightRecorder && st.flightRecorder._ltSec) || { n: 0, ms: 0, max: 0 };
+                return { n: a.n + sec.n, ms: +(a.ms + sec.ms).toFixed(1), max: +Math.max(a.max, sec.max).toFixed(1) };
+            })(),
+            pipelinesNeu: Math.round(f.pipelinesNeu || 0),
+            uploadKB: +((f.uploadBytes || 0) / 1024).toFixed(1),
             cpu,
             drawCalls: calls,
             triangles: tris,
@@ -15179,6 +15301,10 @@ class AnazhRealm {
         // Sammlung) und das Wachstum über das Fenster lesen. Die Speicher-Anzeige
         // sagt „es leckt" — DAS sagt WAS. Genau die Attribution, die wir brauchen.
         const memReport = this._flightRecorderMemoryReport();
+        // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (b) gcN (scharfe Heap-Abfälle
+        // < −8 MiB je Sekunde ≈ Major-GC) reist neben heapGrowthMBPerSec. Additiv —
+        // kein bestehendes memory-Feld bewegt sich.
+        if (memReport) memReport.gcN = fr.gcN || 0;
         return {
             kind: "anazh-flight-recorder",
             version: AnazhRealm.VERSION,
@@ -15202,6 +15328,13 @@ class AnazhRealm {
                     "100-200ms (5-10fps)": fr.buckets[4],
                     ">200ms (<5fps)": fr.buckets[5],
                 },
+                // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (a) die LongTasks der
+                // Sitzung: Blocker >50 ms (Anzahl · Summe · längste), vom Observer-Ohr.
+                longTasks: {
+                    n: fr.ltN || 0,
+                    ms: +(fr.ltMs || 0).toFixed(0),
+                    maxMs: +(fr.ltMaxMs || 0).toFixed(1),
+                },
             },
             steadyState: s
                 ? {
@@ -15219,6 +15352,17 @@ class AnazhRealm {
                       gpuMaxMs:
                           s.phaseMax && Number.isFinite(s.phaseMax.gpuMs) ? +(+s.phaseMax.gpuMs).toFixed(1) : null,
                       gpuQuelle: s.gpuQuelle === "echt" ? "echt" : "proxy",
+                      // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (c) Pipeline-Stand
+                      // (total = caches.size, neuProS = Sekunden-EWMA) + (d) Upload-Rate
+                      // (Frame-EWMA × fps → KB/s). Additiv — kein Feld bewegt sich.
+                      pipelines: {
+                          total: Math.round(s.pipesTotal || 0),
+                          neuProS: +(+(s.pipesNeuProS || 0)).toFixed(2),
+                      },
+                      uploadKBProS: +(
+                          ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
+                          1024
+                      ).toFixed(1),
                   }
                 : null,
             worstFrames: fr.worst,
@@ -84667,6 +84811,26 @@ class AnazhRealm {
                     );
                 } catch (_e) {
                     /* fail-soft — die Quelle-Wahrheit lebt in _perfGpuSample */
+                }
+                // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (d) UPLOAD-BYTES: der
+                // EINE GPU-Chokepoint. JEDER Upload (Geometrie, Instanz-Matrizen,
+                // Uniforms) läuft durch device.queue.writeBuffer — ein LAUFZEIT-Wrap
+                // hier zählt alles, die vendor-Datei bleibt byte-alt (Lehre 11).
+                // Idempotent über __anazhTap; Konsum je Frame in _perfSenseFoldFrame.
+                try {
+                    const q = renderer.backend && renderer.backend.device && renderer.backend.device.queue;
+                    if (q && !q.__anazhTap && typeof q.writeBuffer === "function") {
+                        const orig = q.writeBuffer.bind(q);
+                        q.writeBuffer = (b, off, data, dOff, size) => {
+                            this._uploadBytesAcc =
+                                (this._uploadBytesAcc || 0) +
+                                (size != null ? size * (data.BYTES_PER_ELEMENT || 1) : (data && data.byteLength) || 0);
+                            return orig(b, off, data, dOff, size);
+                        };
+                        q.__anazhTap = true;
+                    }
+                } catch (_e) {
+                    /* fail-soft — ohne Tap bleibt uploadBytes ehrlich 0, nie ein Boot-Wurf */
                 }
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
