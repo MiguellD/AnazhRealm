@@ -47,6 +47,17 @@
    fehlt) · Bogen-Auszug-HUD (Zug-Anteil unsichtbar außer FOV) · Kreatur-Aktions-
    Feinschliff am Schöpfer-Auge (grasen/ruhen-Winkel).**
 
+0b. **DAS FELD ZEICHNET (16.07., Schöpfer-Vision — normativ `docs/das-feld-zeichnet.md`):**
+   Render-Kosten an den SCHIRM binden statt an die Welt; die Welt ist eine Funktion,
+   kein Sack. Drei Stufen (Feld URTEILT → Ferne IST Feld → Nähe zieht der Schirm),
+   Fundament = DER DRITTE SPIEGEL (Gesetze nach WGSL, Seh-Toleranz gemessen, nie
+   Physik-Wahrheit) + Warm-Start (Γ5 ⇒ perfekte Caches: Chunk-Bytes aus IDB).
+   V18.484 gießt den GRUNDSTEIN: Doktrin · Spiegel+Linse · Hitch-Telemetrie
+   (LongTasks/GC/Pipelines/Upload-Bytes — die Stalls bekommen einen Namen) ·
+   Stufe-1-Erstkonsument (Dither-Wal → ≤8M) · Fern-Ring v1 · Warm-Start v1.
+   DANACH (nur nach Trace-Urteil): GPU-Cull/indirekte Draws · Fullscreen-Feld-Pass ·
+   Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace + das Auge urteilen.
+
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
    (a) **PERFORMANCE — DER ERSTE ECHTE TRACE IST GELESEN (14.07., V18.473):** die Maschine

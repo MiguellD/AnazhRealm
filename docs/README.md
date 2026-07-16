@@ -15,6 +15,7 @@
 | `docs/taille-spec.md`                           | **NORMATIV** — die gefrorene Taille (Serialisierungs-Norm; Goldens in `spec/golden/v1/`).                                                      |
 | `docs/neues-kleid-verfassung.md`                | **NORMATIV** — die Pipeline-Verfassung (die Gesetze der EINEN Pipe; die Maschine dazu ist `gate:pipeline-constitution`).                       |
 | `docs/das-lebendige-feld.md`                    | **DER WAHRE NORDEN** — die Welt als EIN Feld, das alle lesen · schreiben · WERTEN. Vor Arbeit an Feld/Emotion/Nexus/DSL/Kreaturen ZUERST.      |
+| `docs/das-feld-zeichnet.md`                     | **NORMATIV** — der Render-Bogen des Feldes (der vierte Vers): drei Stufen · der dritte Spiegel (WGSL, Seh-Toleranz) · Warm-Start. Vor Render-/Perf-Bögen ZUERST. |
 | `docs/state-of-realm.md`                        | **DIE VISION** — die Pfeiler · die Heilige Lektion · die Stand-vs-Vision-Matrix · das Welten-Ultiversum.                                       |
 | `docs/abnahme-drehbuch.md`                      | **DIE EINE SCHÖPFER-RUNDE** — das ausstehende Browser-Sign-off-Drehbuch (W8 · look-golden --mint · perf.json · DoD 5 · E-C/E-E/E-F · Galerie). |
 | `docs/analyse/perf-paritaet-baseline-v18432.md` | Perf-Paritäts-Baseline — von `gate:perf-parity` konsumiert.                                                                                    |
