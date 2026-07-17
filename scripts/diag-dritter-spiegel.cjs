@@ -11,9 +11,15 @@
 //      Schritt 24 m — ganzzahlig = f32-exakt, innerhalb des Erosions-
 //      Heimat-Grids ±1024): je Punkt f64-Referenz (die EINE lebende Quelle
 //      `_terrainMacroSurfaceY`) gegen den GPU-Compute-Lauf; Bänder auf
-//      meanAbs / p95 / Anteil>2 m / max.
+//      meanAbs / p95 / Anteil>2 m / max — UND (V18.485) als MULTI-SEED-
+//      SWEEP über 3 Welten in EINEM Boot: das Gesetz liest genau 6 seed-
+//      abhängige Größen (_voxelNoise · _macroRidgeNoise · Anker/wm.macro ·
+//      erosion · tarns; base/steilheit/wasser sind seed-neutral) — die
+//      werden je Seed chirurgisch regeneriert (worldgen-identische
+//      Reihenfolge: Erosion DANN Tarns), kein Welt-Wechsel/Reload nötig.
 //   C) SELBST-TEST — ein absichtlich verfälschter Shader (cont0-Offset
-//      12→15) MUSS die Bänder sprengen, sonst wäre die Linse vakuös.
+//      12→15) MUSS die Bänder sprengen, sonst wäre die Linse vakuös
+//      (läuft 1×, auf dem Boot-Seed).
 "use strict";
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -45,6 +51,16 @@ const BAND_MEAN = 0.1; // m
 const BAND_P95 = 1.0; // m
 const BAND_UEBER2 = 0.01; // Anteil der Punkte mit |Δ| > 2 m
 const BAND_MAX = 30; // m
+
+// ── SWEEP-SEEDS (V18.485 — fest + deterministisch; Nr. 1 ist der Headless-
+//    Boot-Seed [ensureWorldMeta-Fallback], 2/3 tragen die echte
+//    _generateFreshWorldMeta-Form `w-<12>-<6>`; alea hasht jeden String).
+//    Dieselben Bänder gelten für ALLE Seeds — die Parität ist Gesetz der
+//    PORTIERUNG, nicht einer Welt. GEMESSEN 16.07.2026 (Erst-Sweep):
+//    alpha meanAbs 0.00047 m/max 0.01367 m (11 Tarns) · beta meanAbs
+//    0.00094 m/max 0.02068 m (11 Tarns) — dieselbe mm-Klasse wie der
+//    Boot-Seed. ──
+const SWEEP_SEEDS = ["anazh-realm-seed", "w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"];
 
 const MARKER = "+ 12.0;"; // cont0-Konstante — der Selbsttest-Griff
 const TAMPER = "+ 15.0;";
@@ -130,7 +146,7 @@ const server = http.createServer((req, res) => {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const out = await page.evaluate(
-        async (MARKER, TAMPER, N, START, STEP) => {
+        async (MARKER, TAMPER, N, START, STEP, SEEDS) => {
             const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
             const res = { fehler: [] };
             // Boot-Warte: das Gesetz + worldMeta müssen stehen.
@@ -148,34 +164,9 @@ const server = http.createServer((req, res) => {
             // Weiches Warten auf die Worldgen-Daten (Erosion + Hydro ready) —
             // die Linse soll ALLE Terme prüfen, nicht nur die Noise-Summe.
             const dlWg = performance.now() + 180000;
-            while (
-                (!r.state.erosion || !r.state.hydrosphere || !r.state.hydrosphere.ready) &&
-                performance.now() < dlWg
-            )
+            while ((!r.state.erosion || !r.state.hydrosphere || !r.state.hydrosphere.ready) && performance.now() < dlWg)
                 await sleep(250);
             if (!window.__feldWgsl) return { fatal: "__feldWgsl kam nie (Script-Tag konsumiert?)" };
-
-            // ── SYNCHRONER Block (keine awaits): Eingaben-Pack + f64-Referenz
-            // sehen garantiert DENSELBEN Welt-Stand. ──
-            const eingaben = window.__feldWgsl.spiegelEingaben(r);
-            const n = N * N;
-            const punkte = new Float32Array(n * 2);
-            const ref = new Float64Array(n);
-            let k = 0;
-            for (let j = 0; j < N; j++) {
-                for (let i = 0; i < N; i++) {
-                    const x = START + i * STEP;
-                    const z = START + j * STEP;
-                    punkte[k * 2] = x;
-                    punkte[k * 2 + 1] = z;
-                    ref[k] = r._terrainMacroSurfaceY(x, z); // die EINE lebende f64-Quelle
-                    k++;
-                }
-            }
-            res.erosionDa = eingaben.eroDim > 0;
-            res.ankerDa = eingaben.hatAnker === 1;
-            res.nTarns = eingaben.nTarns;
-            res.seed = r.state.worldMeta.seed;
 
             // ── GPU-Device (harness §2 Weg B: eigenes Device, renderer-frei) ──
             if (!navigator.gpu) return { fatal: "kein navigator.gpu" };
@@ -192,36 +183,25 @@ const server = http.createServer((req, res) => {
                 device.queue.writeBuffer(buf, 0, arr.buffer, arr.byteOffset, arr.byteLength);
                 return buf;
             };
-            // Uniform: 8×f32 + 4×u32 — exakt die Skalare-Struct-Reihenfolge.
-            const uniBytes = new ArrayBuffer(48);
-            const uf = new Float32Array(uniBytes, 0, 8);
-            const uu = new Uint32Array(uniBytes, 32, 4);
-            uf[0] = eingaben.base;
-            uf[1] = eingaben.steilheit;
-            uf[2] = eingaben.wasser;
-            uf[3] = eingaben.includeDetail;
-            uf[4] = eingaben.hatAnker;
-            uf[5] = eingaben.eroOriginX;
-            uf[6] = eingaben.eroOriginZ;
-            uf[7] = eingaben.eroCell;
-            uu[0] = eingaben.eroDim;
-            uu[1] = eingaben.nTarns;
-            uu[2] = eingaben.nTal;
-            uu[3] = n;
+            // Seed-NEUTRALE Ressourcen EINMAL: Proben-Gitter, Uniform-, Out-,
+            // Staging-Buffer (Größen hängen nur an n).
+            const n = N * N;
+            const punkte = new Float32Array(n * 2);
+            {
+                let k = 0;
+                for (let j = 0; j < N; j++) {
+                    for (let i = 0; i < N; i++) {
+                        punkte[k * 2] = START + i * STEP;
+                        punkte[k * 2 + 1] = START + j * STEP;
+                        k++;
+                    }
+                }
+            }
+            const punkteBuf = mkStorage(punkte);
             const uniBuf = device.createBuffer({
                 size: 48,
                 usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
             });
-            device.queue.writeBuffer(uniBuf, 0, uniBytes);
-            const bufs = [
-                mkStorage(eingaben.permVoxel),
-                mkStorage(eingaben.permMod12Voxel),
-                mkStorage(eingaben.permRidge),
-                mkStorage(eingaben.ankerPack),
-                mkStorage(eingaben.erosionGrid),
-                mkStorage(eingaben.tarnPack),
-                mkStorage(punkte),
-            ];
             const outBuf = device.createBuffer({
                 size: n * 4,
                 usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
@@ -231,7 +211,7 @@ const server = http.createServer((req, res) => {
                 usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
             });
 
-            const lauf = async (code, name) => {
+            const lauf = async (code, name, bufs) => {
                 device.pushErrorScope("validation");
                 const mod = device.createShaderModule({ code });
                 const ci = await mod.getCompilationInfo();
@@ -252,7 +232,7 @@ const server = http.createServer((req, res) => {
                         { binding: 4, resource: { buffer: bufs[3] } },
                         { binding: 5, resource: { buffer: bufs[4] } },
                         { binding: 6, resource: { buffer: bufs[5] } },
-                        { binding: 7, resource: { buffer: bufs[6] } },
+                        { binding: 7, resource: { buffer: punkteBuf } },
                         { binding: 8, resource: { buffer: outBuf } },
                     ],
                 });
@@ -275,15 +255,90 @@ const server = http.createServer((req, res) => {
                 return werte;
             };
 
-            // Lauf 1: der GELIEFERTE Shader (aus dem Script-Tag der Seite —
-            // beweist den Konsum-Pfad, nicht eine Node-Kopie).
-            const original = window.__feldWgsl.WGSL_MAKRO;
-            res.gpu = await lauf(original, "original");
-            // Lauf 2 (SELBST-TEST): absichtlich verfälschter Shader.
-            const verfaelscht = original.replace(MARKER, TAMPER);
-            res.verfaelschtGriff = verfaelscht !== original;
-            res.gpuBad = await lauf(verfaelscht, "verfaelscht");
-            res.ref = Array.from(ref);
+            // ── DER MULTI-SEED-SWEEP (V18.485): je Seed chirurgische REGENESIS,
+            // dann synchroner Pack/Referenz-Block, dann GPU-Lauf. Kein Welt-
+            // Wechsel (der ist per Design Reload-gebunden, anazhRealm ~13353) —
+            // das Gesetz liest genau 6 seed-abhängige Größen, die hier worldgen-
+            // identisch neu entstehen (Erosion DANN Tarns, ~24857-Reihenfolge). ──
+            res.seeds = [];
+            const seedAlt = r.state.worldMeta.seed;
+            const macroAlt = r.state.worldMeta.macro;
+            for (let sIdx = 0; sIdx < SEEDS.length; sIdx++) {
+                const seedK = SEEDS[sIdx];
+                if (r.state.worldMeta.seed !== seedK) {
+                    // REGENESIS: Ströme + Anker-ERBGUT + Erosion/Tarns fallen und
+                    // entstehen aus dem neuen Seed. wm.macro MUSS fallen — gültiges
+                    // ERBGUT gewinnt sonst über den Seed (_macroAnker liest es zuerst).
+                    r.state.worldMeta.seed = seedK;
+                    r._voxelNoise = null;
+                    r._macroRidgeNoise = null;
+                    r._macroAnkerCache = null;
+                    delete r.state.worldMeta.macro;
+                    r.state.erosionTiles = new Map();
+                    r._worldgenComputeErosionAndTarns();
+                }
+                // SYNCHRONER Block (keine awaits): Eingaben-Pack + f64-Referenz
+                // sehen garantiert DENSELBEN Welt-Stand.
+                const eingaben = window.__feldWgsl.spiegelEingaben(r);
+                const ref = new Float64Array(n);
+                for (let k = 0; k < n; k++) ref[k] = r._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1]);
+                // Uniform je Seed frisch (Anker/Erosions-Ursprung/Zähler wandern mit).
+                const uniBytes = new ArrayBuffer(48);
+                const uf = new Float32Array(uniBytes, 0, 8);
+                const uu = new Uint32Array(uniBytes, 32, 4);
+                uf[0] = eingaben.base;
+                uf[1] = eingaben.steilheit;
+                uf[2] = eingaben.wasser;
+                uf[3] = eingaben.includeDetail;
+                uf[4] = eingaben.hatAnker;
+                uf[5] = eingaben.eroOriginX;
+                uf[6] = eingaben.eroOriginZ;
+                uf[7] = eingaben.eroCell;
+                uu[0] = eingaben.eroDim;
+                uu[1] = eingaben.nTarns;
+                uu[2] = eingaben.nTal;
+                uu[3] = n;
+                device.queue.writeBuffer(uniBuf, 0, uniBytes);
+                const bufs = [
+                    mkStorage(eingaben.permVoxel),
+                    mkStorage(eingaben.permMod12Voxel),
+                    mkStorage(eingaben.permRidge),
+                    mkStorage(eingaben.ankerPack),
+                    mkStorage(eingaben.erosionGrid),
+                    mkStorage(eingaben.tarnPack),
+                ];
+                // Lauf: der GELIEFERTE Shader (aus dem Script-Tag der Seite —
+                // beweist den Konsum-Pfad, nicht eine Node-Kopie).
+                const gpu = await lauf(window.__feldWgsl.WGSL_MAKRO, "original:" + seedK, bufs);
+                if (sIdx === 0) {
+                    // SELBST-TEST (1×, Boot-Seed): absichtlich verfälschter Shader.
+                    const verfaelscht = window.__feldWgsl.WGSL_MAKRO.replace(MARKER, TAMPER);
+                    res.verfaelschtGriff = verfaelscht !== window.__feldWgsl.WGSL_MAKRO;
+                    res.gpuBad = await lauf(verfaelscht, "verfaelscht", bufs);
+                }
+                for (const b of bufs) {
+                    try {
+                        b.destroy();
+                    } catch (_e) {}
+                }
+                res.seeds.push({
+                    seed: seedK,
+                    erosionDa: eingaben.eroDim > 0,
+                    ankerDa: eingaben.hatAnker === 1,
+                    nTarns: eingaben.nTarns,
+                    gpu,
+                    ref: Array.from(ref),
+                });
+            }
+            // HYGIENE: Boot-Seed + ERBGUT zurück (kein Auto-Save eines Sweep-
+            // Seeds in localStorage); die abgeleiteten Ströme fallen mit — die
+            // Session endet hier, ein Erosions-Neulauf wäre totes Gewicht.
+            r.state.worldMeta.seed = seedAlt;
+            if (macroAlt !== undefined) r.state.worldMeta.macro = macroAlt;
+            else delete r.state.worldMeta.macro;
+            r._voxelNoise = null;
+            r._macroRidgeNoise = null;
+            r._macroAnkerCache = null;
             device.destroy();
             return res;
         },
@@ -291,26 +346,31 @@ const server = http.createServer((req, res) => {
         TAMPER,
         N,
         START,
-        STEP
+        STEP,
+        SWEEP_SEEDS
     );
 
     await browser.close();
     server.close();
 
-    console.log("\n===== DRITTER SPIEGEL — B) Seh-Parität (echtes WebGPU, headless) =====");
+    console.log("\n===== DRITTER SPIEGEL — B) Seh-Parität (echtes WebGPU, headless, MULTI-SEED) =====");
     if (!out || out.fatal) {
         console.log("FEHLER:", out ? out.fatal : "?", "· Page-Errors:", pageErrors.slice(0, 3).join(" | ") || "-");
         process.exit(1);
     }
-    console.log(
-        `  Welt: seed=${JSON.stringify(out.seed)} · Erosion=${out.erosionDa ? "da" : "FEHLT"} · ` +
-            `Anker=${out.ankerDa ? "da" : "fehlt"} · Tarns=${out.nTarns}`
-    );
     check("GPU-Lauf ohne Validation-/Compile-Fehler", out.fehler.length === 0, out.fehler.slice(0, 3).join(" | "));
-    check("Worldgen-Daten im Pack (Erosions-Heimat-Grid reiste)", out.erosionDa === true);
-    check("Makro-Anker im Pack (Ridge-/Tal-/Becken-Pfad wird geprüft)", out.ankerDa === true);
-    check("GPU-Ausgabe vorhanden", Array.isArray(out.gpu) && out.gpu.length === N * N);
-    if (fails > 0 || !out.gpu) {
+    check(
+        `Sweep komplett (${SWEEP_SEEDS.length} Seeds)`,
+        Array.isArray(out.seeds) && out.seeds.length === SWEEP_SEEDS.length
+    );
+    for (const s of out.seeds || []) {
+        check(
+            `Welt ${JSON.stringify(s.seed)}: Pack komplett (Erosion + Anker) + GPU-Ausgabe`,
+            s.erosionDa === true && s.ankerDa === true && Array.isArray(s.gpu) && s.gpu.length === N * N,
+            `Erosion=${s.erosionDa ? "da" : "FEHLT"} · Anker=${s.ankerDa ? "da" : "FEHLT"} · Tarns=${s.nTarns}`
+        );
+    }
+    if (fails > 0 || !out.seeds || !out.seeds.length) {
         console.log("\n❌ ROT — dritter Spiegel ohne gültigen GPU-Lauf.");
         process.exit(1);
     }
@@ -346,22 +406,30 @@ const server = http.createServer((req, res) => {
     };
     const fmt = (v) => (Number.isFinite(v) ? v.toFixed(5) : String(v));
 
-    const st = statistik(out.ref, out.gpu);
-    console.log(
-        `  Messung (${N}×${N} Punkte, [${START},${START + (N - 1) * STEP}] m): meanAbs=${fmt(st.meanAbs)} m · ` +
-            `p95=${fmt(st.p95)} m · p99=${fmt(st.p99)} m · max=${fmt(st.max)} m · ` +
-            `Anteil>2m=${(st.anteilUeber2 * 100).toFixed(3)} %`
-    );
-    check("keine NaN/Inf in der GPU-Ausgabe", st.kaputt === 0, `${st.kaputt} kaputte Werte`);
-    check(`BAND meanAbs <= ${BAND_MEAN} m`, st.meanAbs <= BAND_MEAN, `${fmt(st.meanAbs)} m`);
-    check(`BAND p95 <= ${BAND_P95} m`, st.p95 <= BAND_P95, `${fmt(st.p95)} m`);
-    check(`BAND Anteil>2m <= ${BAND_UEBER2 * 100} %`, st.anteilUeber2 <= BAND_UEBER2, `${(st.anteilUeber2 * 100).toFixed(3)} %`);
-    check(`BAND max <= ${BAND_MAX} m`, st.max <= BAND_MAX, `${fmt(st.max)} m`);
+    // DIE BÄNDER JE SEED — dieselben Grenzen für alle Welten (die Parität ist
+    // Gesetz der PORTIERUNG, nicht einer Welt).
+    for (const s of out.seeds) {
+        const st = statistik(s.ref, s.gpu);
+        console.log(
+            `  ${JSON.stringify(s.seed)} (${N}×${N} Punkte, [${START},${START + (N - 1) * STEP}] m): ` +
+                `meanAbs=${fmt(st.meanAbs)} m · p95=${fmt(st.p95)} m · p99=${fmt(st.p99)} m · ` +
+                `max=${fmt(st.max)} m · Anteil>2m=${(st.anteilUeber2 * 100).toFixed(3)} %`
+        );
+        check(`${s.seed}: keine NaN/Inf in der GPU-Ausgabe`, st.kaputt === 0, `${st.kaputt} kaputte Werte`);
+        check(`${s.seed}: BAND meanAbs <= ${BAND_MEAN} m`, st.meanAbs <= BAND_MEAN, `${fmt(st.meanAbs)} m`);
+        check(`${s.seed}: BAND p95 <= ${BAND_P95} m`, st.p95 <= BAND_P95, `${fmt(st.p95)} m`);
+        check(
+            `${s.seed}: BAND Anteil>2m <= ${BAND_UEBER2 * 100} %`,
+            st.anteilUeber2 <= BAND_UEBER2,
+            `${(st.anteilUeber2 * 100).toFixed(3)} %`
+        );
+        check(`${s.seed}: BAND max <= ${BAND_MAX} m`, st.max <= BAND_MAX, `${fmt(st.max)} m`);
+    }
 
     console.log("\n===== DRITTER SPIEGEL — C) Selbst-Test (Linse nicht vakuös) =====");
     check("Verfälschung griff (Marker ersetzt)", out.verfaelschtGriff === true);
     if (Array.isArray(out.gpuBad)) {
-        const stBad = statistik(out.ref, out.gpuBad);
+        const stBad = statistik(out.seeds[0].ref, out.gpuBad);
         console.log(
             `  verfälschter Shader: meanAbs=${fmt(stBad.meanAbs)} m · p95=${fmt(stBad.p95)} m · max=${fmt(stBad.max)} m`
         );
@@ -376,7 +444,9 @@ const server = http.createServer((req, res) => {
     }
 
     if (pageErrors.length) {
-        console.log(`  (Info) Page-Errors während des Boots: ${pageErrors.length} — ${pageErrors.slice(0, 2).join(" | ")}`);
+        console.log(
+            `  (Info) Page-Errors während des Boots: ${pageErrors.length} — ${pageErrors.slice(0, 2).join(" | ")}`
+        );
         check("kein Page-Error aus feld-wgsl.js", !pageErrors.some((e) => e.includes("feld-wgsl")));
     }
 
