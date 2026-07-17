@@ -6,7 +6,21 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.487 — DIE VOLLENDUNGS-WELLE: erst erstellen, dann reparieren)
+## Stand (V18.488 — DIE OFFENEN PUNKTE FALLEN: Feld-Pass · Feld-Cull · Zensus-Rest)
+
+**17.07. abends, alles GEBAUT + GEMESSEN:** DER FULLSCREEN-FELD-PASS (Ferne
+jenseits der Schalen = NULL Vertices: Polar-Höhenfeld 192×48 bis 40 km vom
+GPU-Feld-Zeichner + Fullscreen-WGSL-Raymarch als letzter Draw; gate:fern-ring
+Band 8: Texel==Gesetz worst 9.1 mm, echte Render-Probe 4608 Treffer-Pixel) ·
+DER FELD-CULL (Compute-Frustum-Cull + indirekte Draws, atomicAdd-Kompaktierung,
+setIndirect; gate:feld-cull: 11/11 → 0 bei 180°-Drehung, Selbsttest rot; halb
+~10 %: Puffer-Destroy beim Churn unvermessen) · DER ZENSUS-REST (alle 94
+Matrix-Befunde gestempelt: +20 ganz [Genre-Engine 22 Genres · Fahrzeug-Rest ·
+Kampf-Rest · Bewegungs-P3] · 4 teils · 23 offen mit Grund) · DER WAISEN-ABBAU
+(281→136: klang 121 + EPOCHEN 14 + BOGENMAT 6 wirklich konsumiert) ·
+KREATUR-FEINSCHLIFF mit AUGEN (Blick-Sonde, tetrapoda-Winkel).
+
+Davor V18.487 — DIE VOLLENDUNGS-WELLE: erst erstellen, dann reparieren.
 
 **Das Schöpfer-Wort (17.07., bindend): „fertig" heißt IM ECHTEN SPIEL eingefädelt —
 halb Gebautes heißt ehrlich halb (mit %), fail-soft ist der Bruch.** Gebaut:

@@ -96,9 +96,15 @@
    WGSL-Raymarch als LETZTER Draw (Depth-Test: nur Himmel-Pixel zahlen —
    Render-Kosten am SCHIRM); gate:fern-ring Band 8: Texel==f64-Gesetz worst
    9.1 mm bis 40 km + ECHTE Render-Probe (WebGPURenderer: 4608 Horizont-Pixel
-   getroffen, Konstant-Stufe beweist das Dreieck separat). OFFEN ehrlich (kein
-   Warte-Tor): GPU-Cull/indirekte Draws — der Vendor r184 trägt
-   multiDrawIndirect, der Pfad existiert, der Konsument fehlt · Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace +
+   getroffen, Konstant-Stufe beweist das Dreieck separat). DER FELD-CULL ist GEBAUT
+   (V18.488): Compute-Frustum-Cull + indirekte Draws auf echten fscatter-
+   Familien (Hüllkugel je Instanz gegen das EINE Frustum, atomicAdd-
+   Kompaktierung von Matrix+Tint+Fassade in Storage-Puffer, setIndirect →
+   drawIndexedIndirect, KEIN Readback; CPU-Quelle bleibt Wahrheit + wirft
+   den Schatten; gate:feld-cull misst: Kamera drauf 11/11, 180° weg → 0,
+   Injektions-Selbsttest rot). Ehrlich halb (~10 %): Storage-Puffer-Destroy
+   beim Gewand-Churn unvermessen (bounded ≤3 Familien). OFFEN: Stufe 3 ·
+   das steady-≤8M-DONE bleibt Schöpfer-Trace-Urteil. Das Merge-Tor bleibt: der Schöpfer-Trace +
    das Auge urteilen.
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
