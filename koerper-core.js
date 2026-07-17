@@ -512,13 +512,37 @@
                         // Schrittlaengen-Faktor der distance-matched Phase
                         // (Schritt = kalib * gebaute Beinlaenge) -- eicht die
                         // Welt-Optik auf ~5.5 rad/s beim Basistempo. Byte-gleich 4.0.
-                        schritt: { kalib: 4.0 },
+                        // ZENSUS-REST (V18.488, rein additiv): taktCompound = die
+                        // EINE Takt-Basis der zeit-getriebenen Compound-/Nicht-
+                        // Rig-Gaenge (rad/s; war der divergente Stamm-Zwilling
+                        // 5.5 lokal vs 5.0 Peer -- vereint auf 5.5, alle drei
+                        // Leser haengen an derselben Emotions-Bruecke);
+                        // klangTempoMin = die Schritt-Klang-Schwelle (m/s --
+                        // darunter feuert kein Schritt-Burst; die Timbre-Tabelle
+                        // wohnt im klang-Gesetzbuch SCHRITT_TIMBRE).
+                        schritt: { kalib: 4.0, taktCompound: 5.5, klangTempoMin: 0.9 },
                         // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
                         // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
                         // Platzieren) im Pfad-Modus -- reist wie ausdauerProS/
                         // kletterAusdauerProS als Koerper-Kosten-Feld (war die
                         // Stamm-Konstante MOUSE_ACTION_STAMINA_COST). Byte-gleich 5.
                         aktionAusdauer: 5,
+                        // STEILHANG-GESETZ (Zensus-Rest V18.488, rein additiv):
+                        // was der Koerper BEGEHEN kann -- maxSlopeY = cos(max.
+                        // Hangwinkel) der Boden-Normale (0.5 = 60 Grad; steiler
+                        // => onSteepSlope: Input-Drossel + Hangabtrieb), malus =
+                        // die Bewegungs-Drossel am Steilhang. Byte-gleich zu den
+                        // historischen Stamm-Literalen (0.5 / 0.2).
+                        hang: { maxSlopeY: 0.5, malus: 0.2 },
+                        // LANDUNGS-GEFUEHL (Zensus-Rest V18.488, rein additiv):
+                        // der Aufprall-Dip des Auges (View-Punch, Koerper faengt
+                        // den Stoss) + die Kamera-Koerper-Glaettung -- dipProV m
+                        // Dip je m/s Aufprall, dipMax der Deckel (harter Sturz),
+                        // minTempo die Spuer-Schwelle (gate't auch den Landungs-
+                        // Klang), erholK die Rueckfederung (~300 ms), kameraK
+                        // die Auge-folgt-Koerper-Glaettung. Byte-gleich
+                        // (0.022 / 0.32 / 2.5 / 8 / 14).
+                        landung: { dipProV: 0.022, dipMax: 0.32, minTempo: 2.5, erholK: 8, kameraK: 14 },
                     },
                     // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
                     // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE

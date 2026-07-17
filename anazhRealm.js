@@ -309,6 +309,9 @@ class AnazhRealm {
             // → `onSteepSlope=true`, Bewegungs-Input wird gedrosselt + Gravity
             // schiebt den Spieler hinab (Friction=0 ist die Voraussetzung dafür).
             // `groundNormalY` ist 1.0 wenn nicht geerdet (sentinel-flat).
+            // ZENSUS-REST V18.488 — das Steilhang-Gesetz wohnt im koerperstudio-
+            // Gesetzbuch (fx.bewegung.hang.maxSlopeY/.malus); init() seedet
+            // dieses Feld byte-gleich aus der EINEN Quelle (Boot-Gesetz-Eichung).
             maxWalkableSlopeY: 0.5,
             groundNormalY: 1.0,
             onSteepSlope: false,
@@ -8301,7 +8304,11 @@ class AnazhRealm {
             if (Array.isArray(entry.bodyParts)) {
                 if (entry._motionRoles === undefined) entry._motionRoles = this.computeMotionRoles(entry.bodyParts);
                 if (entry._motionRoles) {
-                    entry.walkPhase = (entry.walkPhase || 0) + (isMoving ? dt * 5.0 : 0);
+                    // ZENSUS-REST V18.488 — der Peer geht dieselbe Takt-Basis wie
+                    // der lokale Compound (schritt.taktCompound, war 5.0 vs 5.5)
+                    // und hängt an derselben Emotions-Brücke (_compoundTaktHz).
+                    entry.walkPhase =
+                        (entry.walkPhase || 0) + (isMoving ? dt * this._compoundTaktHz(entry.emotions) : 0);
                     // ABSCHIEDS-WELLE (Konvergenz C) — die EINE Schwimm-Lehne auch für
                     // Peer-Compound-Seelen (Built-ins Phönix/Drache + Customs; die
                     // Gruppe ist YXZ, s. _p2pApplyPeerSoul).
@@ -8359,7 +8366,8 @@ class AnazhRealm {
                     const gaitP = this._gaitTick(mesh, entry, entry._gaitSpeed, dt, null);
                     def.animate(mesh, t, entry.walkPhase, isMoving, underwater, undefined, gaitP);
                 } else {
-                    if (isMoving) entry.walkPhase += dt * 5.5;
+                    // ZENSUS-REST V18.488 — dieselbe EINE Takt-Basis (Chokepoint).
+                    if (isMoving) entry.walkPhase += dt * this._compoundTaktHz(entry.emotions);
                     def.animate(mesh, t, entry.walkPhase, isMoving, underwater);
                 }
             }
@@ -10765,6 +10773,23 @@ class AnazhRealm {
     // RENDER-seitig (Konsument der Gang-Phase + der Sim-Wahrheiten isInAir/
     // _fieldVy) — die fixe Sim liest und schreibt hier NIE.
     // Linse: gate:schritt-klang.
+
+    // ZENSUS-REST V18.488 — DIE EINE COMPOUND-TAKT-BASIS: der zeit-getriebene
+    // Gang der Compound-/Nicht-Rig-Seelen (lokal + Peer-Custom + Peer-Built-in)
+    // liest EINE Kern-Zahl (fx.bewegung.schritt.taktCompound; war der
+    // divergente Zwilling 5.5 lokal vs 5.0 Peer) und hängt an DERSELBEN
+    // Emotions-Brücke (freq-Ratio des koerper-Bewegungsprofils; ohne
+    // Emotionen → Faktor 1 — der Peer-Pfad ist damit angeschlossen und folgt,
+    // sobald Emotionen reisen). Fail-closed (Kern-Pflicht).
+    _compoundTaktHz(emotions) {
+        let hz = AnazhRealm._bewegungsBlock("schritt", ["kalib", "taktCompound"]).taktCompound;
+        if (emotions) {
+            const mpv = this._koerperMotionProfile(true, emotions);
+            const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
+            if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) hz *= mpv.freq / mpr.freq;
+        }
+        return hz;
+    }
 
     // DER EINE SCHRITT-TICK (Konsument: animatePlayerSoul, direkt nach dem
     // Gang-Tick — KEINE eigene Uhr): je Halbzyklus (π) der weg-getriebenen
@@ -56660,13 +56685,9 @@ class AnazhRealm {
         } else if (isMoving) {
             // Compound-/Nicht-Rig-Seelen bleiben zeit-getrieben byte-alt (der Rig
             // ist der Biped-Konsument der Weg-Phase; Flügel/Räder takten zur Uhr).
-            // Die SCHRITT-FREQUENZ liest das koerper-Bewegungsprofil über die EINE
-            // Emotions-Brücke (neutral → Faktor 1 = byte-alt 5.5).
-            let stepHz = 5.5;
-            const mpv = this._koerperMotionProfile(true, p.emotions);
-            const mpr = mpv ? this._koerperMotionProfile(true, null) : null;
-            if (mpv && mpr && Number.isFinite(mpv.freq) && mpr.freq > 0) stepHz *= mpv.freq / mpr.freq;
-            p.walkPhase += dt * stepHz;
+            // ZENSUS-REST V18.488 — die Takt-Basis + Emotions-Brücke wohnen im
+            // EINEN Chokepoint `_compoundTaktHz` (Kern: schritt.taktCompound).
+            p.walkPhase += dt * this._compoundTaktHz(p.emotions);
         }
         // SCHRITT-KLANG (Orakel Tier-1 #7) — EIN Konsument MEHR der Gang-Phase
         // (keine eigene Uhr): je Halbzyklus ein Schritt, nur geerdet + über der
@@ -86393,6 +86414,22 @@ class AnazhRealm {
                 this.log(`Versions-DOM-Sync-Fehler: ${e.message}`, "WARN");
             }
         }
+        // ZENSUS-REST V18.488 — DIE BOOT-GESETZ-EICHUNG: die Bewegungs-Boot-
+        // Defaults (speed/sprintSpeed/jumpPower) leiten sich aus DENSELBEN
+        // Kern-Koeffizienten ab, die recomputePlayerStats später mit den
+        // Seelen-Tags füllt (neutral: dichte 0/magieleitung 0 — kein zweiter
+        // Zahlensatz mehr vor dem ersten Recompute), und der Begehbarkeits-
+        // Winkel liest das Steilhang-Gesetz (fx.bewegung.hang). try-Wand:
+        // ein kalter Kern lässt die Konstruktor-Werte stehen (der Boot darf
+        // nie an der Eichung sterben — _kernPflichtWand meldet den Ausfall).
+        try {
+            const KS = AnazhRealm._bewegungsKoeff("speed");
+            const KJ = AnazhRealm._bewegungsKoeff("jumpPower");
+            this.state.speed = KS.base + KS.leicht;
+            this.state.sprintSpeed = this.state.speed * AnazhRealm.Gesetz("koerper:bewegung.sprintMul", 2);
+            this.state.jumpPower = KJ.base + KJ.leicht;
+            this.state.maxWalkableSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
+        } catch (_e) {}
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
         this.state.keybindings = this._loadKeybindings();
@@ -88443,7 +88480,12 @@ class AnazhRealm {
             // 0 wäre zu hart (gar keine Kontrolle), 1 wäre der heutige Bug
             // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
             // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
-            const slopePenalty = this.state.onSteepSlope ? 0.2 : 1.0;
+            // ZENSUS-REST V18.488 — der Steilhang-Malus wohnt im koerperstudio-
+            // Gesetzbuch (fx.bewegung.hang.malus; der Begehbarkeits-Winkel
+            // hang.maxSlopeY seedet state.maxWalkableSlopeY im Boot).
+            const slopePenalty = this.state.onSteepSlope
+                ? AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).malus
+                : 1.0;
             // C5 (gigant-plan §5) — BEWEGUNGS-FEEL: Beschleunigungs-/Brems-KURVEN
             // statt Sofort-Velocity (die vier Hebel, die „dynamisch" ausmachen) +
             // LUFTKONTROLLE (in der Luft greift der Input schwächer, Momentum
@@ -91003,6 +91045,26 @@ AnazhRealm._aktionAusdauer = function () {
     const a = AnazhRealm.Gesetz("koerper:bewegung.aktionAusdauer", null);
     if (Number.isFinite(a)) return a;
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.aktionAusdauer");
+};
+// LANDUNGS-GEFÜHL (Zensus-Rest V18.488) — DER EINE LANDUNGS-LESER: Aufprall-
+// Dip + Kamera-Glättung wohnen im koerperstudio-Gesetzbuch
+// (fx.bewegung.landung). Fail-closed (Kern-Pflicht) über _bewegungsBlock.
+AnazhRealm._landungGesetz = function () {
+    return AnazhRealm._bewegungsBlock("landung", ["dipProV", "dipMax", "minTempo", "erholK", "kameraK"]);
+};
+// SCHRITT-TIMBRE (Zensus-Rest V18.488) — DER EINE TIMBRE-LESER: das
+// Material→Filter-Gesetz des Schritt-Klangs wohnt im klang-Gesetzbuch
+// (SCHRITT_TIMBRE — Timbre ist Klang-Wissen; die Bewegungs-Schwelle wohnt
+// getrennt im koerper-Gesetzbuch). Fail-closed (Kern-Pflicht); Memo NUR im
+// Erfolgs-Fall.
+AnazhRealm._schrittTimbre = function () {
+    if (AnazhRealm._schrittTimbreMemo) return AnazhRealm._schrittTimbreMemo;
+    const t = AnazhRealm.Gesetz("klang:SCHRITT_TIMBRE", null);
+    if (t && t.material && t.material.stein && typeof t.fallback === "string") {
+        AnazhRealm._schrittTimbreMemo = t;
+        return t;
+    }
+    return AnazhRealm._kernPflichtBruch("klang:SCHRITT_TIMBRE");
 };
 // KREATUR-SEELE (Spiegel-Zensus 17.07.) — DER EINE VERHALTENS-GESETZ-LESER:
 // die Verhaltens-Zahlen der Welt-Wesen (jagd = Witterung/Biss · furcht =
@@ -95355,16 +95417,39 @@ AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
 // die Dämpfung (kein Bug). MAX_LAG = darüber snappt das Auge (Teleport/Respawn → kein Gummiband).
 // In der LUFT (Sprung/Fall) trackt es 1:1 (die ballistische Kurve), bei harter Landung führt der
 // View-Punch-Dip (Glättung snappt dann auf die Füße, sonst fechten Lag + Dip).
-AnazhRealm.CAMERA_SMOOTH_K = 14;
+// ZENSUS-REST V18.488 — das LANDUNGS-/KAMERA-GEFÜHL wohnt im koerperstudio-
+// Gesetzbuch (fx.bewegung.landung: dipProV/dipMax/minTempo/erholK/kameraK —
+// der Aufprall-Dip ist Körper-Gefühl, minTempo gate't auch den Landungs-
+// Klang). Die Statics bleiben die LESER (Getter, das SOUL_SWIM_LEAN-Muster);
+// die Zahlen-Zwillinge sind gefallen (Kern-Pflicht, fail-closed).
+Object.defineProperties(AnazhRealm, {
+    CAMERA_SMOOTH_K: {
+        get() {
+            return AnazhRealm._landungGesetz().kameraK;
+        },
+    },
+    LAND_DIP_SCALE: {
+        get() {
+            return AnazhRealm._landungGesetz().dipProV;
+        },
+    },
+    LAND_DIP_MAX: {
+        get() {
+            return AnazhRealm._landungGesetz().dipMax;
+        },
+    },
+    LAND_DIP_MIN_SPEED: {
+        get() {
+            return AnazhRealm._landungGesetz().minTempo;
+        },
+    },
+    LAND_DIP_RECOVER_K: {
+        get() {
+            return AnazhRealm._landungGesetz().erholK;
+        },
+    },
+});
 AnazhRealm.CAMERA_STEP_MAX_LAG = 0.5;
-// LANDUNGS-ABSORPTION (View-Punch à la Source `m_flFallVelocity`): beim Aufkommen federt
-// das Auge kurz ein und zurück — der Körper fängt den Stoß ab (die andere Hälfte von „der
-// Körper gleicht Höhe aus": Stufen-Smoothing oben + Landungs-Dämpfung hier). Tiefe ∝ Aufprall-
-// Tempo, gedeckelt; unter MIN_SPEED kein Dip (Geh-Buckel federt das Stufen-Smoothing schon ab).
-AnazhRealm.LAND_DIP_SCALE = 0.022; // m Dip pro m/s Aufprall
-AnazhRealm.LAND_DIP_MAX = 0.32; // maximaler Dip (harter Sturz)
-AnazhRealm.LAND_DIP_MIN_SPEED = 2.5; // m/s — darunter kein spürbarer Aufprall
-AnazhRealm.LAND_DIP_RECOVER_K = 8; // Rückfederungs-Rate (~300 ms zurück zur Ruhe)
 // ═══ SCHRITT-KLANG (Orakel Tier-1 #7) — Material → Timbre (gate:schritt-klang) ═══
 // Asset-freie Farnell-Synthese: die Quelle ist IMMER ein Rausch-Burst, das
 // MATERIAL ist der Filter (M8: Tabelle vor if). erde = dumpf-weich (Tiefpass
@@ -95372,23 +95457,29 @@ AnazhRealm.LAND_DIP_RECOVER_K = 8; // Rückfederungs-Rate (~300 ms zurück zur R
 // = klirrend (hoher Q klingelt nach) · wasser = platschig (breiter Tiefpass,
 // länger). gain bewusst DEZENT unter dem Kampf-One-Shot (0.14) — der
 // konstanteste Feedback-Kanal eines 3D-Spiels darf alles, außer nerven.
+// ZENSUS-REST V18.488 — die Tabelle trennt sich in ihre zwei Heimaten: die
+// Bewegungs-SCHWELLE (tempoMin) wohnt im koerperstudio-Gesetzbuch
+// (bewegung.schritt.klangTempoMin), das Material→Timbre-Gesetz im klang-
+// Gesetzbuch (SCHRITT_TIMBRE via _schrittTimbre) — die Getter sind die
+// Leser, die Zahlen-Zwillinge sind gefallen (Kern-Pflicht). Die restlichen
+// Zeilen (Tick-Deckel, Landungs-Wichtung) bleiben ehrlich Wirts-Mischpult.
 AnazhRealm.SCHRITT_KLANG = Object.freeze({
-    tempoMin: 0.9, // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
+    get tempoMin() {
+        // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
+        return AnazhRealm._bewegungsBlock("schritt", ["kalib", "klangTempoMin"]).klangTempoMin;
+    },
     maxProTick: 2, // Frame-Hänger feuern keinen Burst-Schwall (max 2 Füße/Frame)
     gainDeckel: 0.12, // absolute Decke jedes Bursts (unter dem Kampf-Treffer)
     landGainProMs: 0.12, // Zusatz-Verstärkung je m/s Aufprall (∝ Fallhöhe via √(2gh))
     landGainSpanne: 1.4, // maximaler Zusatz — ein harter Sturz bleibt gedeckelt
     landDauerFaktor: 2.0, // die Landung klingt länger nach
     landFreqFaktor: 0.7, // und tiefer — Masse im Aufprall
-    fallback: "stein",
-    material: Object.freeze({
-        erde: Object.freeze({ filter: "lowpass", freq: 420, q: 0.8, dauer: 0.09, gain: 0.045 }),
-        stein: Object.freeze({ filter: "bandpass", freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 }),
-        glut: Object.freeze({ filter: "bandpass", freq: 800, q: 1.0, dauer: 0.11, gain: 0.05 }),
-        quarz: Object.freeze({ filter: "bandpass", freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 }),
-        eisen: Object.freeze({ filter: "bandpass", freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 }),
-        wasser: Object.freeze({ filter: "lowpass", freq: 900, q: 0.7, dauer: 0.16, gain: 0.06 }),
-    }),
+    get fallback() {
+        return AnazhRealm._schrittTimbre().fallback;
+    },
+    get material() {
+        return AnazhRealm._schrittTimbre().material;
+    },
 });
 
 // Determinismus-Bogen P4 (Stufe 1) — Sicherheits-Cap für die Replay-Aufnahme (Frames).

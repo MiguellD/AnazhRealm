@@ -287,10 +287,54 @@
         return t;
     }
 
+    // ── SCHRITT-TIMBRE (Zensus-Rest V18.488, rein additive DATEN-Zeile —
+    //    Praezedenz: hostEmergent/DORF_NORM): das MATERIAL→FILTER-Gesetz des
+    //    Schritt-Klangs (Farnell-Synthese: die Quelle ist immer ein Rausch-
+    //    Burst, das Material ist der Filter). Wanderte aus dem Stamm
+    //    (SCHRITT_KLANG.material, byte-gleiche Werte); die Bewegungs-SCHWELLE
+    //    (klangTempoMin) wohnt getrennt im koerper-Gesetzbuch — Timbre ist
+    //    Klang-Wissen, Schwelle ist Koerper-Wissen. fallback = das Timbre
+    //    unbekannter Materialien. Der Wirt liest fail-soft byte-gleich. ──
+    // prettier-ignore
+    var SCHRITT_TIMBRE = {
+        fallback: 'stein',
+        material: {
+            erde:   { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
+            stein:  { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
+            glut:   { filter: 'bandpass', freq: 800,  q: 1.0, dauer: 0.11, gain: 0.05 },
+            quarz:  { filter: 'bandpass', freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 },
+            eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
+            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 }
+        }
+    };
+
+    // ── RHYTHMUS-MUSTER (Zensus-Rest V18.488, rein additive DATEN-Zeile):
+    //    das Trommel-Muster je LAWS.rhythm-Option auf dem 8-Schritt-Raster des
+    //    Wirts (Schritt-Indizes je Trommel; die volle Lab-Sim bleibt die
+    //    16-Step-Wahrheit — dies ist ihre 8-Step-Verdichtung fuers Welt-Pad).
+    //    Der Swing-Eintrag IST das historische Wirts-Pattern (byte-gleich
+    //    kick 0/3/4 · snare 2/6 · hihat alle) — jedes Genre ohne eigene Zeile
+    //    faellt auf ihn zurueck. None = pulslos (kein Groove, der Bass folgt
+    //    dem Puls-Anker Schritt 0). ──
+    // prettier-ignore
+    var RHYTHMUS_MUSTER = {
+        Swing:     { kick: [0, 3, 4],    snare: [2, 6],    hihat: [0, 1, 2, 3, 4, 5, 6, 7] },
+        Shuffle:   { kick: [0, 4],       snare: [2, 6],    hihat: [0, 1, 2, 3, 4, 5, 6, 7] },
+        Straight:  { kick: [0, 2, 4, 6], snare: [2, 6],    hihat: [1, 3, 5, 7] },
+        OneDrop:   { kick: [4],          snare: [4],       hihat: [0, 2, 4, 6] },
+        Breakbeat: { kick: [0, 3, 5],    snare: [2, 6, 7], hihat: [0, 2, 4, 6] },
+        Bossa:     { kick: [0, 3, 4, 7], snare: [2, 5],    hihat: [0, 1, 2, 3, 4, 5, 6, 7] },
+        Funk:      { kick: [0, 2, 5],    snare: [2, 6],    hihat: [0, 1, 2, 3, 4, 5, 6, 7] },
+        Rock:      { kick: [0, 4],       snare: [2, 6],    hihat: [0, 1, 2, 3, 4, 5, 6, 7] },
+        None:      { kick: [],           snare: [],        hihat: [] }
+    };
+
     root.__klangCore = {
         VERSION: VERSION,
         progressionDeg: progressionDeg,
         stack: stack,
+        SCHRITT_TIMBRE: SCHRITT_TIMBRE,
+        RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,
