@@ -69745,6 +69745,28 @@ class AnazhRealm {
         this._autoStlChannelBook = book;
         return live;
     }
+    // ZENSUS-REST V18.488 — DIE EPOCHEN-LEGENDE DER AUTO-SIEDLUNG: die
+    // EPOCHEN-Tafel des fachwerk-Gesetzbuchs (antike · mittelalter · hanse ·
+    // barock · gruenderzeit · alpin · mediterran · fernost · moderne) wird
+    // KONSUMIERT — jede dritte Siedlung trägt seed-deterministisch eine
+    // Legenden-Epoche (DP.epoche fixiert Region+Zeit im Kern-DORF-Gesetz),
+    // die übrigen würfelt der Same wie bisher (Region-Historie, byte-alt).
+    // Reine Funktion des Zell-Seeds: der Wege-Rebuild derselben Zelle trifft
+    // per Konstruktion dieselbe Epoche (kein Persistenz-Byte nötig).
+    _siedlungEpoche(seed) {
+        try {
+            const E = AnazhRealm.Gesetz("fachwerk:EPOCHEN", null);
+            if (!E || typeof E !== "object") return undefined;
+            const namen = Object.keys(E);
+            if (!namen.length) return undefined;
+            let h = (Math.imul((seed >>> 0) || 1, 2654435761) + 0x9e3779b9) >>> 0;
+            h = (h ^ (h >>> 16)) >>> 0;
+            if (h % 3 !== 0) return undefined; // 2 von 3 bleiben Region-Historie
+            return namen[(h >>> 4) % namen.length];
+        } catch (_e) {
+            return undefined;
+        }
+    }
     // Eine Dorf-Zelle deliberat heben (der Gate-/Test-Pfad UND der Tick teilen ihn):
     // reserviert bei Export-ANKUNFT (`worldMeta.settlementCells[key]`), stellt die
     // Slots in die budgetierte Bau-Queue. Fail-closed: kein Export → nichts markiert
@@ -69761,7 +69783,11 @@ class AnazhRealm {
         // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall; fern = no-op).
         const anchor = this._structureSpawnPos("haus_basis", { x: i2.x, y: 0, z: i2.z }, { state: st });
         this._autoSettlementPendingKey = key;
-        return this._foundryRequestSettlement({ seed: i2.seed, nH: i2.nH }).then((plan) => {
+        return this._foundryRequestSettlement({
+            seed: i2.seed,
+            nH: i2.nH,
+            epoche: this._siedlungEpoche(i2.seed), // ZENSUS-REST V18.488 — die Epochen-Legende
+        }).then((plan) => {
             this._autoSettlementPendingKey = null;
             if (!plan || !Array.isArray(plan.slots)) return null; // fail-closed (Foundry kalt)
             // DORF-ERLEBNIS — die Reservierung trägt das REBUILD-GEDÄCHTNIS
@@ -69833,7 +69859,11 @@ class AnazhRealm {
                 const rdz = c.z - playerPos.z;
                 if (rdx * rdx + rdz * rdz > A.nearM * A.nearM) continue;
                 this._stlWegePending = true; // Instanz-Feld (die _editSaveTimer-Klasse)
-                this._foundryRequestSettlement({ seed: c.seed, nH: c.nH }).then((plan2) => {
+                this._foundryRequestSettlement({
+                    seed: c.seed,
+                    nH: c.nH,
+                    epoche: this._siedlungEpoche(c.seed), // dieselbe EINE Epochen-Funktion (Rebuild-Treue)
+                }).then((plan2) => {
                     this._stlWegePending = false;
                     if (plan2) this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
                 });
