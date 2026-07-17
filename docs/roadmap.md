@@ -43,9 +43,8 @@
    Gefühl [Energie-Hitstop, Bogen-Auszug] · Fahr-Gefühl [Garage-Lenkung/Drift] ·
    Parkour [Wand-/Doppelsprung, Klettern, Rutsch]). Das MERGE-TOR bleibt: der
    Schöpfer SPIELT V18.483, der Flugschreiber-Trace + das Auge urteilen.
-   BENANNT-OFFEN aus der Naht: Slide-POSE des Rigs (Physik+Kamera da, Körper-Pose
-   fehlt) · Bogen-Auszug-HUD (Zug-Anteil unsichtbar außer FOV) · Kreatur-Aktions-
-   Feinschliff am Schöpfer-Auge (grasen/ruhen-Winkel).**
+   BENANNT-OFFEN aus der Naht (Slide-Pose + Bogen-Auszug-HUD fielen an V18.485):
+   Kreatur-Aktions-Feinschliff am Schöpfer-Auge (grasen/ruhen-Winkel).**
 
 0b. **DAS FELD ZEICHNET (16.07., Schöpfer-Vision — normativ `docs/das-feld-zeichnet.md`):**
    Render-Kosten an den SCHIRM binden statt an die Welt; die Welt ist eine Funktion,
@@ -59,8 +58,12 @@
    40 dc (alt 20–26M/1733) — und zwei Sicht-Blocker gefunden+gefixt (camera.far
    1000 clippte die 8-km-Schalen → Ring-eigene Weitung; Wald-Schleier ~120 m
    verdeckte den Ring → HÖHEN-ÖFFNUNG: fog.far öffnet sich nur ÜBER der Umgebung,
-   Waldboden byte-alt). BENANNTER HEBEL aus der Telemetrie: ~15.8 Pipeline-
-   Kompilate/s WÄHREND des Spielens (Runtime-Warm-Compile fehlt noch).
+   Waldboden byte-alt). V18.485 baute die benannten Hebel AUS DER EIGENEN
+   TELEMETRIE: der PIPELINE-WARM-OFEN (15.8 Sync-Kompilate/s im Spiel → Familien
+   wärmen am Münz-Chokepoint, gate:hitch-telemetrie Band 7) · die RÜCK-WANDERUNG
+   (Wander-Zensus 14.8M gefrorene L1-Tris/km → 4.4M, −70 %; B2-Einweg-Freeze
+   fiel an der Wurzel [Null-Skala erbt Position], gate:scatter-lod D-Bänder) ·
+   der MULTI-SEED-SPIEGEL (3 Welten in EINEM Boot, alle mm-Klasse).
    DANACH (nur nach Trace-Urteil): GPU-Cull/indirekte Draws · Fullscreen-Feld-Pass ·
    Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace + das Auge urteilen.
 

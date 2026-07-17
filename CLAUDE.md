@@ -6,7 +6,29 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.484 — DAS FELD ZEICHNET, DER GRUNDSTEIN: der Renderer wird ein Leser des Feldes)
+## Stand (V18.485 — DIE WARME MASCHINE: aus der eigenen Telemetrie gebaut)
+
+**Die Ultracode-Welle (16.07.): die eigenen Messwerkzeuge (Hitch-Telemetrie + Selbstspiel)
+nannten die Hebel, der Wander-Zensus entschied, alles GEMESSEN:** DER PIPELINE-WARM-OFEN
+(das V18.367-Loch: gewärmt wurde PLAIN, konsumiert wird InstancedMesh+Fassade+Tint/
+BatchedMesh — andere Pipeline-Keys, ~15.8 Sync-Kompilate/s IM SPIEL; jetzt merkt
+`_pipeOfenMerke` an den zwei Gruppen-Münz-Chokepoints jede neue Familie und
+`_pipeOfenTick` wärmt 1 Posten/Frame unter Budget mit der LEBENDEN Gruppe [Key matcht
+exakt] durch den EINEN `_warmCompilePipeline`; gate:hitch-telemetrie Band 7: 11 Familien
+gemünzt→gewärmt→Queue 0, Trace trägt pipelines.ofen*) · DIE RÜCK-WANDERUNG (Wander-
+Zensus: 1 km Wandern ⇒ 14.8M GEFRORENE private L1-Boden-Tris [B2-Einweg-Freeze, ~9×
+die sichtbare steady-Last]; Wurzel-Fix: die Null-Skala ERBT die Instanz-Position
+[der Ursprungs-Sphere-Hazard fällt, WEGEN dem B2 existierte] + Demote-Gate im LOD-Tick
+[nur → Fern-Stufe, Fade-Marge; Promotions bleiben Region-Lifecycle]; GEMESSEN
+14.8M→4.4M [−70 %; Rest = einstufige geroell-Buchhaltung, gleiche Geometrie je Stufe];
+gate:scatter-lod +4 D-Bänder, scatter-ab/slice byte-grün) · MULTI-SEED-SPIEGEL
+(gate:dritter-spiegel sweept 3 Welten in EINEM Boot — chirurgische Regenesis der 6
+seed-abhängigen Größen [wm.macro-ERBGUT fällt mit, sonst gewinnt es über den Seed];
+alle in mm-Klasse: meanAbs 0.47/0.86/0.94 mm) · ERLEBNIS-RESTE (Rutsch-Pose aus
+koerper-core `parkour.slidePose` [Überschreib-Schicht NACH dem Rig-Grundlauf, nur der
+lokale Spieler] · Bogen-Auszug-HUD [vierte Stats-Row, `_tickBogenZug` frame-genau]).
+
+Davor V18.484 — DAS FELD ZEICHNET, DER GRUNDSTEIN: der Renderer wird ein Leser des Feldes.
 
 **Die Schöpfer-Vision (16.07., normativ `docs/das-feld-zeichnet.md`): die Welt ist eine
 FUNKTION, kein Sack — Render-Kosten binden an den SCHIRM, nicht an die Welt. V18.484
@@ -27,42 +49,19 @@ Höhen==Gesetz worst 0.0000). SELBST GESPIELT (ich-spiele-Sonde, echtes WebGPU: 
 (camera.far 1000 clippte die 8-km-Schalen → Ring-eigene Weitung + Dispose-Rücknahme) ·
 HÖHEN-ÖFFNUNG (fog.far öffnet sich NUR über der Umgebung [4 takt-gecachte Proben,
 FERN_RING.oeffnung*]; Waldboden byte-alt — Schöpfer-Wort geehrt). OFFEN benannt:
-Runtime-Pipeline-Warm-Compile (~15.8 Kompilate/s WÄHREND des Spielens gemessen) ·
-Multi-Seed-Sweep der Spiegel-Linse · L1-Wander-Freeze der Boden-Schichten ·
 Stufe-2-Vollausbau (GPU-Cull/indirekte Draws + Fullscreen-Feld-Pass) NUR nach
-Trace-Urteil (roadmap §0b).
+Trace-Urteil (roadmap §0b) — Ofen/Rück-Wanderung/Multi-Seed fielen an V18.485.
 
-Davor V18.483 — DIE GEFÜHLS-NAHT: die Erlebnisräume der Studios erreichen die Welt.
-
-**Die Reflexion (16.07.) fand die EINE Schicht, die nicht reiste: jedes Studio trägt
-einen ERLEBNISRAUM (Arena · Probestrecke · Ninja-Park · Verhaltens-Seele), dessen
-Gefühls-Gesetze Shell-only waren. V18.483 lässt sie in sechs Wellen reisen (alles
-additiv, Kerne rein additiv, fail-soft byte-alt):**
-DORF-IN-TERRAIN (Footprint-Höhe statt Punkt [4 obb-Ecken, Basis=MAX], Klippen-Wand
-`AUTO_SETTLEMENT.fundamentMaxDh` 9 m [GEMESSEN: legale Berg-Slots tragen Δh 4.8–13 m],
-`entry.fundament` reist, `_archFundamentBox` = EINE Wahrheit für Blocker UND Render-
-Podest [EIN InstancedMesh-Pool, 1 DC]; gate:settlement +2 Bänder) · SCHWIMM-HEIMAT
-(koerper-core `fx.bewegung.schwimmen` trägt Physik/Takt/Lehne/Kraul-Pose/Ausdauer,
-`_schwimmGesetz` fail-soft; Regen ruht unter Wasser; tetrapoda MOTION.schwimmen =
-Paddel-Gang) · KREATUR-LEBEN (gate:kreatur-leben, Klasse „tote reisende Daten": der
-KÖRPER-ZUSTAND führt in der EINEN Motion-Brücke [MOTION_ZUSTAND_PROFILES: jagd/flucht/
-schwimmen — das hunt-Preset reiste seit V18.476 ungewählt!]; tetrapoda `fx.verhalten`
-= 12 Aktionen + 6 Stimmungen inkl. Bedürfnisse [Pflanzenfresser weiden am Tag, nachts
-Ruhe], deterministisch [FNV, kein Math.random], Baum-Gang trägt Overlay + bodyX-Konsum,
-hop zündet den Feld-Hüpfer) · ARENA-GEFÜHL (schmiede-core `ARENA`: Schwung-Konstanten
-[N6.6-Revision — EIN Regler für Arena+Welt, Formel bleibt Ω-Φ4 √I], Hit-Stop/Dip
-skalieren mit TREFFER-ENERGIE [114-J-Eichung, KE=½Iω²·Zielgröße; Pfeil reicht ½mv²],
-Bogen-VEREINIGUNG v0=√(2E/mArrow) ≡ 34·√(zug·aus) + der AUSZUG [Halten spannt,
-FOV-Zug, Lösen skaliert v0]) · FAHR-GEFÜHL (vehicle-core `FAHR.lenkung` → exportDrive
-→ fahrprofil.lenkung: der Ritt fährt FAHRZEUG-EIGEN [W/S entlang der Gier, sf=1/(1+
-v·sfK), Gier-Rate v·tan(δ)/Radstand, Grip frisst Quer-Slip, Shift=Handbremse→Drift];
-nervensystem-vehicle-F-Band migriert [war seit V18.477 stale-rot]) · PARKOUR
-(koerper-core `fx.bewegung.parkour`: Wand-/Doppelsprung [Wand-Wahrheit fällt am EINEN
-Kapsel-Chokepoint gratis ab], Klettern [W an der Wand, Ausdauer], Rutsch [Taste C];
-Kern kalt → KEIN Parkour). OFFEN benannt: Slide-Pose des Rigs (Physik da, Pose fehlt) ·
-Fahrzeug-Billboard-LOOK + P2P-Kreatur-Gestalt · klang ohne Stufen-Zeile (meshfrei).
-
-Davor V18.482 DIE VERBINDUNGEN (Dörfer 0.1→7/km² + Start-Dorf · Submit-Wal: CPU
+Davor V18.483 DIE GEFÜHLS-NAHT (die Erlebnisräume der Studios erreichen die Welt,
+sechs Wellen, Kerne rein additiv: Dorf-in-Terrain [Footprint-Höhe + `_archFundamentBox`
+= EINE Wahrheit für Blocker+Podest] · Schwimm-Heimat [`fx.bewegung.schwimmen`] ·
+Kreatur-Leben [Körper-Zustand führt die Motion-Brücke + `fx.verhalten` 12 Aktionen/
+6 Stimmungen, FNV-deterministisch] · Arena-Gefühl [`ARENA`: energie-skalierter
+Hit-Stop, Bogen-Vereinigung + Auszug] · Fahr-Gefühl [`FAHR.lenkung`: fahrzeug-eigener
+Ritt, Drift] · Parkour [`fx.bewegung.parkour`: Wand-/Doppelsprung, Klettern, Rutsch];
+benannt-offen: Fahrzeug-Billboard-LOOK + P2P-Kreatur-Gestalt · klang ohne Stufen-Zeile
+[meshfrei] · Kreatur-Aktions-Feinschliff; Detail = git log) ·
+V18.482 DIE VERBINDUNGEN (Dörfer 0.1→7/km² + Start-Dorf · Submit-Wal: CPU
 4.28→1.23 ms, dc 1566→0 in der Sonde · Physik byte-paritätisch + Bogen-Verb komplett) ·
 V18.481 ERLEBNIS-VOLLENDUNG (T2 Kaskaden 32→30M · T3 Bundles · T4 Fell×Fläche · T6
 Körper-UI · T7 Boden) · V18.480 KANON (35 Alt-Doppel→0, Werkstatt-LOD-Knöpfe daten-
