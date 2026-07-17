@@ -230,6 +230,16 @@ const ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(
 {const gp=new THREE.Mesh(new THREE.PlaneGeometry(800,800),new THREE.MeshStandardMaterial({color:0x1c222a,roughness:1,metalness:0}));
  gp.rotation.x=-Math.PI/2;gp.position.y=-0.004;gp.receiveShadow=true;ground.add(gp);
  const grid=new THREE.GridHelper(800,400,0x33485a,0x192833);grid.material.transparent=true;grid.material.opacity=0.5;ground.add(grid);}
+// ════════ STEIGUNGS-HÜGEL (17.07. — die Strecke war Glas): ein cos²-Hügel HINTER dem
+// Ziel-Cluster (x≈70, r 22, h 3.5) macht Steigung sicht- und tunbar; die EBENE bleibt
+// byte-alt (bodenY=0 überall sonst — Slalom/Tor/Cluster enden bei x≈48). DIESELBE
+// Funktion trägt Hügel-Mesh UND Fahrt (updateVehicle liest sie: Höhe·Hangabtrieb·Nick).
+function bodenY(x,z){const dx=x-70,dz=z,r=Math.hypot(dx,dz);if(r>=22)return 0;const u=Math.cos((r/22)*Math.PI*0.5);return 3.5*u*u;}
+{const hg=new THREE.PlaneGeometry(46,46,46,46);hg.rotateX(-Math.PI/2);
+ const hp=hg.attributes.position;for(let i=0;i<hp.count;i++){hp.setY(i,bodenY(hp.getX(i)+70,hp.getZ(i)));}
+ hg.computeVertexNormals();
+ const hm=new THREE.Mesh(hg,new THREE.MeshStandardMaterial({color:0x24303c,roughness:0.95,metalness:0}));
+ hm.position.set(70,0.002,0);hm.receiveShadow=true;ground.add(hm);}
 // ════════ FAHRSTRECKE: Pylonen-Slalom (umwerfbar) + echte Reifen-/Bremsspuren ════════
 const track={cones:[],skidGeo:null,skidIdx:0,SKMAX:2600,wheel:[]};
 function makeCone(sc){sc=sc||1;const g=new THREE.Group();
@@ -335,6 +345,12 @@ function updateVehicle(dt,t){
   car.vlat*=(1-low*0.6);
   if(input.throttle===0&&input.brake===0&&spd<0.08){car.vlong=0;car.vlat=0;car.yawRate*=0.5;}
   car.yaw+=car.yawRate*dt;
+  // ── STEIGUNG (17.07.): Hangabtrieb −G·sin(α) längs der Fahrt (α aus Bug/Heck-Proben
+  // derselben bodenY-Quelle wie der Hügel; auf der Ebene exakt 0 = byte-alt) ──
+  {const cyS=Math.cos(car.yaw),syS=Math.sin(car.yaw);
+   const gB=bodenY(car.x+cyS*b,car.z-syS*b),gH=bodenY(car.x-cyS*c,car.z+syS*c);
+   const grade=Math.atan2(gB-gH,L);car.grade=grade;
+   if(grade!==0)car.vlong-=FAHR.G*Math.sin(grade)*dt;}
   if(car.vlong>ph.vmax)car.vlong=ph.vmax; if(car.vlong<-ph.vmax*0.32)car.vlong=-ph.vmax*0.32;
   // ── Weltposition aus Körpergeschwindigkeit (vorwärts=(cos,−sin), links=(−sin,−cos)) ──
   const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
@@ -346,11 +362,17 @@ function updateVehicle(dt,t){
   const FG=VC.FAHR; const mPitch=aL*(cgH/L)*FG.pitchGain, mRoll=aQ*(cgH/W)*FG.rollGain, mHeave=-Math.abs(aL)*FG.heaveA-Math.abs(car.vlong)*FG.heaveV; // physikalische Amplitude (~2–3°), nicht übertrieben
   spPitch.step(mPitch,k,cd,dt); spRoll.step(mRoll,k,cd,dt); spHeave.step(mHeave,k*FG.heaveKMul,cd*FG.heaveCMul,dt);
   const idle=(car.speed<0.05)?(Math.sin(t*42)*0.0014+Math.sin(t*26)*0.0009):0;
-  gSprung.rotation.z=spPitch.x;
-  gSprung.rotation.x=spRoll.x+((car.speed<0.05)?Math.sin(t*40)*0.0006:0);
+  // ── STEIGUNG: Gelände-Nick/-Wank aus bodenY-Quer-/Längs-Proben (Ebene = 0 = byte-alt);
+  // addiert auf die Feder-Pose — die Karosserie legt sich in den Hang wie in der Welt ──
+  const cyP=Math.cos(car.yaw),syP=Math.sin(car.yaw);
+  const tPitch=Number.isFinite(car.grade)?car.grade:0;
+  const gRe=bodenY(car.x-syP*(W*0.5),car.z-cyP*(W*0.5)),gLi=bodenY(car.x+syP*(W*0.5),car.z+cyP*(W*0.5));
+  const tRoll=Math.atan2(gLi-gRe,W);
+  gSprung.rotation.z=spPitch.x+tPitch;
+  gSprung.rotation.x=spRoll.x+tRoll+((car.speed<0.05)?Math.sin(t*40)*0.0006:0);
   gSprung.position.y=spHeave.x+idle;
-  // Auto auf der Ebene platzieren
-  vehicle.position.x=car.x; vehicle.position.z=car.z; vehicle.rotation.y=car.yaw;
+  // Auto platzieren — die Höhe kommt aus derselben bodenY-Quelle (Ebene: exakt 0)
+  vehicle.position.x=car.x; vehicle.position.z=car.z; vehicle.position.y=bodenY(car.x,car.z); vehicle.rotation.y=car.yaw;
   // Räder: Abrollen ω=v/r + Vorderrad-Lenkung
   car.wheelAng+=car.vlong/Math.max(0.1,P.radR)*dt;
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
@@ -366,7 +388,7 @@ function updateChaseCam(dt,snap){
   if(camOrb.follow){const azT=Math.atan2(Math.sin(car.yaw),-Math.cos(car.yaw));   // Soll-Azimut: hinter dem Auto
     camOrb.az=lerpAngle(camOrb.az,azT,snap?1:1-Math.pow(0.0016,dt));
     camOrb.el+=(0.34-camOrb.el)*(snap?1:1-Math.pow(0.02,dt));}
-  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=0.78,lz=car.z;
+  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=0.78+bodenY(car.x,car.z),lz=car.z;
   _cf.set(lx+Math.cos(camOrb.az)*ce*d, ly+se*d, lz+Math.sin(camOrb.az)*ce*d);
   if(snap)cam.position.copy(_cf); else cam.position.lerp(_cf,1-Math.pow(0.0016,dt));
   cam.lookAt(lx,ly,lz);
