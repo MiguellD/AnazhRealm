@@ -6,7 +6,24 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.485 — DIE WARME MASCHINE: aus der eigenen Telemetrie gebaut)
+## Stand (V18.486 — DER SPIEGEL-ZENSUS: die Realität ist der Spiegel, der Wirt lernt)
+
+**Die Zensus-Welle (17.07., Schöpfer-Wette bestätigt): 6-Domänen-Matrix
+(`docs/zensus-matrix-v18486.md`, 94 Befunde) + Abbau:** das „darf" fiel (Vertrag+
+Validator für fx.bewegung/VERHALTEN/ARENA/FAHR.lenkung + SCHWIMM-PARITÄTS-WAND) ·
+REALITÄTS-EICHUNG (Gehen 1.5 m/s · sprintMul-Gesetz 4.5 · Sprung 0.53 m · g 9.81
+überall · Klettern 0.6 · Schwimmen 1.0/speedMul 0.85/leanSoul; gesetz-relative
+Speed-Floors; vmax-Anker des Ritts; 10 Playtest-Bänder gewandert) · STEIGUNGS-
+DREIKLANG (Hangabtrieb + Gelände-Nick/Wank im Ritt + Probestrecken-Hügel aus EINER
+bodenY-Quelle) · KAMPF-ZENSUS (Hieb-Geometrie/Stoß/Kipp/Pfeil-Flug→ARENA, Kampf-
+Quartett→koerper-Koeffizienten, die tote Waffen-GÜTE erreicht den Schaden) ·
+KREATUR-ZENSUS (Jagd/Furcht/Temperament/Wandern→tetrapoda-VERHALTEN, Gegenwehr =
+EINE Reichweite) · GENESIS-PORTAL-RING (alle Welt-Portale im Kreis R 11 m um den
+ersten Spawn, doppelt idempotent). OFFEN: Matrix-Rest (bewegung-Rest/welt/
+fahrzeug-Rest, roadmap §0c) · Konsum-Wächter (gate:konsum-bilanz — Export>Import
+wird Lern-Liste statt stillem must-ignore; benannt, nächste Welle).
+
+Davor V18.485 — DIE WARME MASCHINE: aus der eigenen Telemetrie gebaut.
 
 **Die Ultracode-Welle (16.07.): die eigenen Messwerkzeuge (Hitch-Telemetrie + Selbstspiel)
 nannten die Hebel, der Wander-Zensus entschied, alles GEMESSEN:** DER PIPELINE-WARM-OFEN
