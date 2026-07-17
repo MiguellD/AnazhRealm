@@ -62967,6 +62967,34 @@ class AnazhRealm {
     // gewärmte Familie kompiliert byte-alt synchron beim ersten Draw). `force`
     // ist der Linsen-Seam (gate:hitch-telemetrie pumpt die Wärm-Maschine
     // deterministisch, ohne am Budget-Tor zu hängen).
+    // DIE KERN-PFLICHT-WAND (Schöpfer 17.07.: „integrier vollends alles was
+    // reingehört — dein fail-soft ist der Bruch"): die Gesetzbücher sind
+    // PFLICHT im echten Spiel. Fehlt eines auf dem Main-Thread, SCHREIT die
+    // Welt sichtbar (rotes Banner + ERROR-Log) statt leise byte-alt zu laufen —
+    // ein halbes Ding IM System wird in der nächsten Iteration repariert; ein
+    // Ding hinter einem stillen Fallback existiert nie. Einmal je Boot, im
+    // Loop (defer-Scripts sind dann sicher geladen).
+    _kernPflichtWand() {
+        if (this._kernWandGeprueft) return;
+        this._kernWandGeprueft = true;
+        const fehlt = [];
+        for (const id in AnazhRealm.GESETZ_KERNE) {
+            const nsName = AnazhRealm.GESETZ_KERNE[id];
+            if (typeof globalThis === "undefined" || !globalThis[nsName]) fehlt.push(id);
+        }
+        if (!fehlt.length) return;
+        const text = "KERN FEHLT (Gesetzbuch lädt nicht auf dem Main-Thread): " + fehlt.join(" · ");
+        this.log(text, "ERROR");
+        if (typeof document !== "undefined" && document.body && !document.getElementById("kern-pflicht-banner")) {
+            const b = document.createElement("div");
+            b.id = "kern-pflicht-banner";
+            b.textContent = "⚠ " + text + " — die Welt läuft auf Fallback-Gesetzen!";
+            b.style.cssText =
+                "position:fixed;top:0;left:0;right:0;z-index:99999;background:#7a1010;color:#fff;" +
+                "font:14px monospace;padding:8px 12px;text-align:center";
+            document.body.appendChild(b);
+        }
+    }
     _pipeOfenTick(force) {
         const q = this._pipeOfenQueue;
         if (!q || !q.length) return;
@@ -86704,6 +86732,7 @@ class AnazhRealm {
                 // V18.485 — der Pipeline-Warm-Ofen: neue Konsum-Archetyp-Familien
                 // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
                 this._pipeOfenTick();
+                this._kernPflichtWand();
                 _pt = performance.now();
                 this._loopShadowUpdate();
                 this._loopRender(currentTime);
