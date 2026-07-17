@@ -21186,9 +21186,14 @@ class AnazhRealm {
             }
         }
         if (!nearest) return false;
-        ud.nextHuntStrikeAt = now + HUNT.strikeCooldownSec;
-        ud.lastHuntAt = now;
         const stats = this.computeCreatureStats(creature).stats || {};
+        // ZENSUS-REST V18.488 — der Biss-TAKT konsumiert das tag-emergente
+        // attackSpeed-Profil der Kreatur (leicht+flink beißt schneller, schwer
+        // träger): die Parallel-Wahrheit zur √I-Schwungdauer des Spielers ist
+        // damit KONSUMIERT statt tot (ihr Körper IST ihre Substanz).
+        ud.nextHuntStrikeAt =
+            now + HUNT.strikeCooldownSec / Math.max(0.25, Number.isFinite(stats.attackSpeed) ? stats.attackSpeed : 1);
+        ud.lastHuntAt = now;
         const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
         if (typeof this.damageCreature === "function") {
             this.damageCreature(nearest, dmg, { source: "jagd" });
@@ -21213,9 +21218,12 @@ class AnazhRealm {
         const ud = creature.userData || {};
         const now = performance.now() / 1000;
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
-        ud.nextHuntStrikeAt = now + HUNT.strikeCooldownSec;
-        ud.lastHuntAt = now;
         const stats = this.computeCreatureStats(creature).stats || {};
+        // ZENSUS-REST V18.488 — derselbe attackSpeed-Biss-Takt wie die
+        // Kreatur-vs-Kreatur-Jagd (EINE Regel, beide Chokepoints).
+        ud.nextHuntStrikeAt =
+            now + HUNT.strikeCooldownSec / Math.max(0.25, Number.isFinite(stats.attackSpeed) ? stats.attackSpeed : 1);
+        ud.lastHuntAt = now;
         const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
         this.damagePlayer(dmg, "jagd");
         this._feelCreatureAction(creature, "attack", 1);
@@ -75050,7 +75058,30 @@ class AnazhRealm {
         // Schießstand (die speedBase-Doppelkodierung ist geschlossen: auch die
         // NaN-Wand leitet aus der EINEN Joule-Eichung ab, kein zweites Literal).
         const AB = AnazhRealm._arenaGesetz().bogen;
-        let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus) / Math.max(0.001, AB.mArrow));
+        // ZENSUS-REST V18.488 — DAS MATERIAL SCHIESST MIT: der Wurfarm-Werkstoff
+        // des Rezepts (task.material — Langbogen eibe, Reiterbogen horn_sehne)
+        // wird gegen das BOGENMAT-Gesetzbuch aufgelöst (unbekanntes Material →
+        // holz-Anker) und skaliert die Joule-Eichung über die EINE Lab-Balken-
+        // Formel (ableitenBogen: dehnung→Recurve lädt die Kraft-Weg-Kurve +
+        // Wirkungsgrad) RELATIV zum holz-Anker (holz ⇒ Faktor 1, byte-alt).
+        // Fail-soft: kalter Kern ⇒ Faktor 1 (der tote BOGENMAT-Export lebt).
+        let matMul = 1;
+        try {
+            const bmName = task && typeof task.material === "string" ? task.material : null;
+            const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+            if (
+                bmName &&
+                bmName !== "holz" &&
+                sc &&
+                typeof sc.ableitenBogen === "function" &&
+                AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null)
+            ) {
+                const eMat = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: bmName }).energie;
+                const eHolz = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: "holz" }).energie;
+                if (Number.isFinite(eMat) && Number.isFinite(eHolz) && eHolz > 0) matMul = eMat / eHolz;
+            }
+        } catch (_e) {}
+        let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus * matMul) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
         if (!Number.isFinite(v0) || v0 <= 0) v0 = Math.sqrt((2 * AB.zugJouleRef) / Math.max(0.001, AB.mArrow)); // NaN-Wand
         const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
@@ -90981,6 +91012,22 @@ AnazhRealm._kampfKoeff = function (stat) {
     if (row && Number.isFinite(row.base) && Number.isFinite(row.dichte) && Number.isFinite(row.haerte)) return row;
     return AnazhRealm._kernPflichtBruch("koerper:kampf." + stat);
 };
+// EQUIP-FOLD-GEWICHTE (Zensus-Rest V18.488) — wie stark Gehaltenes/Waffe/
+// Rüstung/Werkzeug den Körper-Compound prägen, ist Körper-Gesetz
+// (koerper:kampf.fold); die vier Statics unten sind die LESER (Getter,
+// SOUL_SWIM_LEAN-Muster), die Zahlen-Zwillinge sind gefallen. Fail-closed.
+AnazhRealm._kampfFold = function () {
+    const f = AnazhRealm.Gesetz("koerper:kampf.fold", null);
+    if (
+        f &&
+        Number.isFinite(f.held) &&
+        Number.isFinite(f.weapon) &&
+        Number.isFinite(f.armor) &&
+        Number.isFinite(f.tool)
+    )
+        return f;
+    return AnazhRealm._kernPflichtBruch("koerper:kampf.fold");
+};
 // SCHWIMM-HEIMAT (Schöpfer 16.07.: „schwimmanimation lebt noch in anazh, nicht im
 // studio") — DER EINE SCHWIMM-GESETZ-LESER: die Wasser-Bewegung des Avatars wohnt
 // im koerperstudio-Gesetzbuch (PRESETS.mensch.fx.bewegung.schwimmen — Physik,
@@ -91170,21 +91217,34 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
 
 // Welle 6.D Etappe 3b — Stat-Stacking-Gewichte. Compound-Tags der ausge-
 // rüsteten Werkzeuge/Rüstung werden zur Soul-Tag-Basis addiert, dann läuft
-// STAT_FROM_TAGS. armorWeight 0.3 = Rüstung trägt spürbar, ersetzt Seele
-// nicht. toolWeight 0.15 = Werkzeug-in-Hand wirkt nur leicht (Werte aus
-// wave-6-design §5.3).
-AnazhRealm.ARMOR_STAT_WEIGHT = 0.3;
-AnazhRealm.TOOL_STAT_WEIGHT = 0.15;
-// V17.52 Kampf-Bogen Phase B — die ausgerüstete Waffe prägt das Kombat-Profil
-// STARK (mehr als Werkzeug 0.15, mehr als Rüstung 0.3): sie ist der Kern von
-// Schaden/Rückschlag/Tempo. Ihre Compound-Tags falten mit diesem Gewicht in den
-// Spieler-Compound (REUSE der Equip-Pipeline, kein separater „Waffen-Schaden"-Pfad).
-AnazhRealm.WEAPON_STAT_WEIGHT = 0.4;
-// V17.57 W2-B — das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen) prägt das Profil
-// STARK: seine Tags falten mit diesem Gewicht in den Spieler-Compound → Schaden/Rückschlag/
-// Tempo (Angriff) UND die Grab-/Schneid-Kraft (W1/W2) spiegeln dasselbe Gerät. (TOOL/WEAPON_
-// STAT_WEIGHT bleiben für den KREATUR-Equip-Fold, der getrennt {tool, armor} nutzt.)
-AnazhRealm.HELD_STAT_WEIGHT = 0.4;
+// STAT_FROM_TAGS. armor 0.3 = Rüstung trägt spürbar, ersetzt Seele nicht;
+// tool 0.15 = Werkzeug-in-Hand wirkt nur leicht; weapon/held 0.4 = die
+// Waffe/das EINE gehaltene Gerät prägt STARK (der Kern von Schaden/
+// Rückschlag/Tempo; TOOL/WEAPON bleiben der getrennte KREATUR-Equip-Fold).
+// ZENSUS-REST V18.488 — die vier Gewichte wohnen im koerperstudio-Gesetzbuch
+// (koerper:kampf.fold via _kampfFold, fail-closed); die Statics sind LESER.
+Object.defineProperties(AnazhRealm, {
+    ARMOR_STAT_WEIGHT: {
+        get() {
+            return AnazhRealm._kampfFold().armor;
+        },
+    },
+    TOOL_STAT_WEIGHT: {
+        get() {
+            return AnazhRealm._kampfFold().tool;
+        },
+    },
+    WEAPON_STAT_WEIGHT: {
+        get() {
+            return AnazhRealm._kampfFold().weapon;
+        },
+    },
+    HELD_STAT_WEIGHT: {
+        get() {
+            return AnazhRealm._kampfFold().held;
+        },
+    },
+});
 // V17.73 S9 (kampf-plan §10-F4) — das gehaltene Gerät SICHTBAR in der Hand: die Optik des
 // „in der Hand"-Geräts. Reuse von _buildFromBlueprint (kein Parallel-Pfad) → ein Mesh am
 // rechten Arm/Flügel des Avatars (schwingt mit dem _animateHuman-Walk-Cycle via der THREE-

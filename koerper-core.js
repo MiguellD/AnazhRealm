@@ -557,6 +557,13 @@
                         damage: { base: 5, dichte: 5, haerte: 15 },
                         knockback: { base: 1, dichte: 9, haerte: 2 },
                         defense: { base: 0, dichte: 8, haerte: 6 },
+                        // EQUIP-FOLD-GEWICHTE (Zensus-Rest V18.488, rein
+                        // additiv): wie stark das GEHALTENE Geraet (held),
+                        // die Waffe/Ruestung/das Werkzeug einer KREATUR den
+                        // Koerper-Compound praegen (Tag-Faltung vor
+                        // STAT_FROM_TAGS) -- Koerper-Gesetz, kein Stamm-
+                        // Literal. Byte-gleich (0.4 / 0.4 / 0.3 / 0.15).
+                        fold: { held: 0.4, weapon: 0.4, armor: 0.3, tool: 0.15 },
                     },
                 },
             },
