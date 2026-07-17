@@ -50805,6 +50805,30 @@ class AnazhRealm {
             group.rotation.x = 0;
         }
         this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions, gait);
+        // PARKOUR-RUTSCH-POSE (V18.485, benannt-offen aus V18.483: Physik+Kamera
+        // reisten, die POSE fehlte): NUR der lokale Spieler (group === playerMesh —
+        // Peers tragen eigene Meshes) während state._parkourSlide; die Winkel
+        // wohnen im koerperstudio-Gesetzbuch (parkour.slidePose — Kern kalt oder
+        // alt → keine Pose, byte-alt). ABSOLUT NACH dem Rig-Grundlauf gesetzt
+        // (dasselbe Überschreib-Muster wie der Schwimm-Zweig: kein Drift).
+        if (group === this.state.playerMesh && this.state._parkourSlide) {
+            const pg = AnazhRealm._parkourGesetz();
+            const SP = pg && pg.slidePose;
+            const rg = group.userData.rig;
+            if (SP && rg) {
+                group.rotation.x = SP.lehne;
+                const sx = (b, v) => {
+                    if (b) b.rotation.x = v;
+                };
+                sx(rg.head, SP.kopf);
+                sx(rg.legL && rg.legL.hip, -SP.beinVor);
+                sx(rg.legR && rg.legR.hip, -SP.beinVor * 0.85);
+                sx(rg.legL && rg.legL.knee, SP.knieKnick);
+                sx(rg.legR && rg.legR.knee, SP.knieKnick * 1.3);
+                sx(rg.armL && rg.armL.shoulder, SP.armStuetz);
+                sx(rg.armR && rg.armR.shoulder, SP.armFrei);
+            }
+        }
     }
 
     // M3(b)/V18.155 — die Sitz-Pose des menschlichen Avatars (Befund 10): die
@@ -73740,6 +73764,7 @@ class AnazhRealm {
                 cam.fov = d.fovRest;
                 cam.updateProjectionMatrix();
             }
+            this._bogenHudZeige(null);
             return;
         }
         if (!cam) return;
@@ -73751,6 +73776,32 @@ class AnazhRealm {
             cam.fov = ziel;
             cam.updateProjectionMatrix();
         }
+        this._bogenHudZeige(frac);
+    }
+    // V18.485 — DER AUSZUG WIRD SICHTBAR (benannt-offen aus V18.483: der
+    // Zug-Anteil lebte nur im FOV): die vierte Stats-HUD-Row füllt sich
+    // frame-genau mit dem Auszug-Anteil, sichtbar NUR während des Spannens.
+    // frac null = verstecken. DOM lazy-gecacht; headless/ohne DOM No-op.
+    _bogenHudZeige(frac) {
+        let h = this._bogenHud;
+        if (h === undefined) {
+            const row = typeof document !== "undefined" && document.getElementById("stats-hud-bogen-row");
+            h = this._bogenHud = row
+                ? {
+                      row,
+                      fill: document.getElementById("stats-hud-bogen-fill"),
+                      text: document.getElementById("stats-hud-bogen-text"),
+                  }
+                : null;
+        }
+        if (!h) return;
+        if (!Number.isFinite(frac)) {
+            if (!h.row.hidden) h.row.hidden = true;
+            return;
+        }
+        if (h.row.hidden) h.row.hidden = false;
+        if (h.fill) h.fill.setAttribute("width", String(Math.round(166 * frac)));
+        if (h.text) h.text.textContent = Math.round(frac * 100) + " %";
     }
     // Das Lösen: stellt die FOV wieder her und schießt mit dem Auszug-Anteil
     // (minAuszugFrac deckelt nach unten — ein Zucken ist kein Schuss ins Nichts).
@@ -73759,6 +73810,7 @@ class AnazhRealm {
         if (!p) return;
         const d = p._bogenDraw;
         p._bogenDraw = null;
+        this._bogenHudZeige(null);
         if (!d) return;
         const cam = this.state.camera;
         if (cam && Number.isFinite(d.fovRest)) {

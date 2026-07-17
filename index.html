@@ -7930,6 +7930,41 @@
                 </svg>
                 <span class="stats-hud-value" id="stats-hud-mana-text">40/40</span>
             </div>
+            <!-- V18.485 — DER BOGEN-AUSZUG (benannt-offen aus V18.483: der Zug-Anteil
+                 war unsichtbar außer FOV): vierte Row derselben Familie; _tickBogenZug
+                 füllt sie frame-genau, sichtbar NUR während des Spannens. -->
+            <div class="stats-hud-row" id="stats-hud-bogen-row" hidden>
+                <span class="stats-hud-glyph glyph-bogen" aria-hidden="true">➳</span>
+                <svg width="170" height="12" viewBox="0 0 170 12" aria-hidden="true">
+                    <defs>
+                        <linearGradient id="bogen-gradient" x1="0" x2="0" y1="0" y2="1">
+                            <stop offset="0" stop-color="#ffe2a8" />
+                            <stop offset="0.5" stop-color="#d69a3f" />
+                            <stop offset="1" stop-color="#704d14" />
+                        </linearGradient>
+                    </defs>
+                    <rect
+                        x="0"
+                        y="0"
+                        width="170"
+                        height="12"
+                        rx="3"
+                        fill="rgba(15, 8, 4, 0.85)"
+                        stroke="#8a6322"
+                        stroke-width="1"
+                    />
+                    <rect
+                        id="stats-hud-bogen-fill"
+                        x="2"
+                        y="2"
+                        width="0"
+                        height="8"
+                        rx="1.5"
+                        fill="url(#bogen-gradient)"
+                    />
+                </svg>
+                <span class="stats-hud-value" id="stats-hud-bogen-text">0 %</span>
+            </div>
             <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
         </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>

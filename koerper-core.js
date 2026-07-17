@@ -447,6 +447,20 @@
                             slideTempoMul: 1.167,
                             slideDauerSec: 0.68,
                             slideMinTempo: 6,
+                            // RUTSCH-POSE (V18.485, rein additiv): der Koerper legt
+                            // sich in den Gleit -- Lehne zurueck (rad, Ganzkoerper),
+                            // Beine voraus (Hueftbeuge + Knie-Knick), ein Arm
+                            // stuetzt hinten, der freie Arm balanciert, der Kopf
+                            // haelt den Blick voraus. Wirt liest fail-soft: Feld
+                            // fehlt (alter Kern) -> keine Pose (byte-alt).
+                            slidePose: {
+                                lehne: -0.85,
+                                beinVor: 1.15,
+                                knieKnick: 0.45,
+                                armStuetz: -0.9,
+                                armFrei: 0.4,
+                                kopf: 0.55,
+                            },
                         },
                     },
                 },
