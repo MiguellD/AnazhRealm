@@ -229,6 +229,21 @@ function validateManifest(m) {
             v.push("§8.2+ fx.bewegung.parkour unvollständig (kletterV/wandAbstoss/slideTempoMul)");
         else if (!p.slidePose || !Number.isFinite(p.slidePose.lehne))
             v.push("§8.2+ parkour.slidePose unvollständig (lehne fehlt)");
+        // SPIEGEL-ZENSUS 17.07. (BEWEGUNG-Rest) — die gereisten Boden-Blöcke
+        // sind Vertrag (dieselben Felder, die die _bewegungsBlock-Wand des
+        // Wirts prüft: EIN fehlendes Feld → ganz Fallback, nie Misch-Gesetz).
+        if (p && Number.isFinite(p.kletterV) && !Number.isFinite(p.kontaktFrischeSec))
+            v.push("§8.2+ parkour.kontaktFrischeSec fehlt (das EINE Wandkontakt-Fenster)");
+        const lf = fxB.luft;
+        if (!lf || !Number.isFinite(lf.kAcc) || !Number.isFinite(lf.kAccLuft) || !Number.isFinite(lf.kBrakeLuft))
+            v.push("§8.2+ fx.bewegung.luft unvollständig (kAcc/kAccLuft/kBrake/kBrakeLuft)");
+        const spg = fxB.sprung;
+        if (!spg || !Number.isFinite(spg.coyoteSec) || !Number.isFinite(spg.bufferSec))
+            v.push("§8.2+ fx.bewegung.sprung unvollständig (coyoteSec/bufferSec)");
+        if (!fxB.schritt || !Number.isFinite(fxB.schritt.kalib))
+            v.push("§8.2+ fx.bewegung.schritt.kalib fehlt (Gang-Kalibrierung)");
+        if (!Number.isFinite(fxB.aktionAusdauer))
+            v.push("§8.2+ fx.bewegung.aktionAusdauer fehlt (Maus-Arm-Aktion)");
     }
     if (m.arena) {
         const a = m.arena;

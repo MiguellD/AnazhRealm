@@ -24776,7 +24776,12 @@ async function checkBandPhaseAFundament(ctx) {
             tickGone: !/_ensureHorizonMantle/.test(window.__codeOf(r._runFrameScheduler)),
         };
         // ── A6 · Quellen + Begraben-Rettung behavioral (zustands-neutral).
-        out.a6SrcJump = /_ceilingHeadroom/.test(window.__codeOf(r.handleJump));
+        // Zensus 17.07. — die Decken-Klemme wohnt im EINEN Chokepoint-Helper
+        // _sprungDeckenKlemme (handleJump + _parkourLuftsprung lesen ihn).
+        out.a6SrcJump =
+            /_sprungDeckenKlemme/.test(window.__codeOf(r.handleJump)) &&
+            /_sprungDeckenKlemme/.test(window.__codeOf(r._parkourLuftsprung)) &&
+            /_ceilingHeadroom/.test(window.__codeOf(r._sprungDeckenKlemme));
         out.a6SrcEdit = /_rescuePlayerFromEditSolid/.test(window.__codeOf(r._addVoxelEdit));
         out.a6SrcCam = /_ceilingHeadroom/.test(window.__codeOf(r._loopCamera));
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —

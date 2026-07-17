@@ -393,8 +393,17 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   armZug armTreten armAb armSpreiz beinZug beinTreten beinTakt }
   ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
   wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
-  slideMinTempo slidePose { lehne beinVor knieKnick armStuetz armFrei
-  kopf } } }`. SCHWIMM-PARITÄT ist Vertrag: der Stamm-Fallback
+  slideMinTempo kontaktFrischeSec slidePose { lehne beinVor knieKnick
+  armStuetz armFrei kopf } } · luft { kAcc kAccLuft kBrake kBrakeLuft } ·
+  sprung { coyoteSec bufferSec } · schritt { kalib } · aktionAusdauer }`.
+  Spiegel-Zensus 17.07. (V18.486+, rein additiv): `luft` = die vier
+  C5-Boden-/Luft-Hebel der Beschleunigungs-/Brems-Kurven, `sprung` =
+  Coyote-/Jump-Buffer-Fenster, `schritt.kalib` = der Gang-Kalibrierfaktor,
+  `aktionAusdauer` = die Kosten der Maus-Arm-Aktion (Hieb/Abbau),
+  `parkour.kontaktFrischeSec` = das EINE Wandkontakt-Fenster (war der
+  divergente Stamm-Zwilling 0.18/0.15). Leser `AnazhRealm._bewegungsBlock`
+  (block-weise, ganz-oder-gar-nicht) + `_aktionAusdauer`, fail-soft
+  byte-gleich. SCHWIMM-PARITÄT ist Vertrag: der Stamm-Fallback
   (`SCHWIMM_FALLBACK`) MUSS zahlen-gleich zum Kern sein (Validator-Wand);
   `parkour` hat BEWUSST keinen Fallback (Kern kalt → kein Parkour).
 - **§8.3 `fx.klang` (Musik-Daten, W-A7):** ein Genre als reine Daten. Schema

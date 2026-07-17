@@ -468,6 +468,12 @@
                             wandAbstoss: 3,
                             kletterV: 0.6,
                             kletterAusdauerProS: 12,
+                            // WANDKONTAKT-FRISCHE (Zensus 17.07., rein additiv):
+                            // EIN Verfalls-Fenster fuer den Kapsel-Wand-Kontakt.
+                            // Wandsprung (0.18) und Klettern (0.15) lasen divergente
+                            // Stamm-Zwillinge -- vereint auf 0.18 (das Klettern haelt
+                            // den Kontakt ohnehin frame-frisch, solange W drueckt).
+                            kontaktFrischeSec: 0.18,
                             slideTempoMul: 1.167,
                             slideDauerSec: 0.68,
                             slideMinTempo: 4.5,
@@ -486,6 +492,33 @@
                                 kopf: 0.55,
                             },
                         },
+                        // LUFTKONTROLLE (Zensus 17.07., rein additive DATEN-Zeile):
+                        // die vier C5-Gefuehls-Hebel der Beschleunigungs-/Brems-
+                        // Kurven als Gesetzbuch-Daten (exp-Lerp 1-e^(-k*dt):
+                        // kAcc Boden-Beschleunigung ~70 ms bis 63 %, kAccLuft die
+                        // schwaechere Luftkontrolle, kBrake der Boden-Schlitter
+                        // ~110 ms, kBrakeLuft laesst den Sprung-Bogen ballistisch).
+                        // Byte-gleiche Zahlen des historischen Host-Satzes; der
+                        // Wirt liest fail-soft (_bewegungsBlock): Kern kalt ->
+                        // seine Literale.
+                        luft: { kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 },
+                        // SPRUNG-FENSTER (Zensus 17.07., rein additiv): die zwei
+                        // Plattformer-Toleranzen -- coyoteSec (Sprung kurz NACH
+                        // der Kante) + bufferSec (Space kurz VOR der Landung
+                        // gemerkt, feuert beim Aufsetzen). Byte-gleich zum
+                        // historischen Host-Satz (0.3 / 0.12).
+                        sprung: { coyoteSec: 0.3, bufferSec: 0.12 },
+                        // GANG-KALIBRIERUNG (Zensus 17.07., rein additiv): der
+                        // Schrittlaengen-Faktor der distance-matched Phase
+                        // (Schritt = kalib * gebaute Beinlaenge) -- eicht die
+                        // Welt-Optik auf ~5.5 rad/s beim Basistempo. Byte-gleich 4.0.
+                        schritt: { kalib: 4.0 },
+                        // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
+                        // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
+                        // Platzieren) im Pfad-Modus -- reist wie ausdauerProS/
+                        // kletterAusdauerProS als Koerper-Kosten-Feld (war die
+                        // Stamm-Konstante MOUSE_ACTION_STAMINA_COST). Byte-gleich 5.
+                        aktionAusdauer: 5,
                     },
                     // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
                     // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE

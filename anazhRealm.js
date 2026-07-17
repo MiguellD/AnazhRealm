@@ -300,7 +300,9 @@ class AnazhRealm {
             groundedLogInterval: 2.0,
             isJumping: false,
             lastGroundedTime: 0,
-            coyoteTime: 0.3,
+            // ZENSUS 17.07. — coyoteTime fiel als State-Zwilling: das Fenster
+            // wohnt im koerperstudio-Gesetzbuch (fx.bewegung.sprung.coyoteSec),
+            // handleJump liest es via _bewegungsBlock (fail-soft byte-gleich).
             isInAir: false,
             // Welle 6.A3 — Slope-Steepness. `maxWalkableSlopeY` ist cos(maxAngle):
             // 0.5 = cos(60°), das heißt Slopes bis ~60° gelten als begehbar. Steiler
@@ -17589,7 +17591,9 @@ class AnazhRealm {
     }
     // Die SCHRITTLÄNGE aus der GEBAUTEN Beinlänge (kh-Anatomie, EINMAL am Rig
     // vermessen — kein Konstanten-Zwilling; Welt-Maßstab aus der Gelenk-Welt-
-    // Skala). Faktor 4.0 kalibriert auf die alte 5.5-rad/s-Optik beim
+    // Skala). Der Kalibrierfaktor (Zensus 17.07.: war Stamm-Literal 4.0) wohnt
+    // im koerperstudio-Gesetzbuch (fx.bewegung.schritt.kalib, _bewegungsBlock
+    // fail-soft byte-gleich): er eicht auf die alte 5.5-rad/s-Optik beim
     // Basistempo (state.speed 6): der Welt-Läufer ist übermenschlich schnell —
     // ein anatomischer ~0.9·Bein-Schritt gäbe ~25 rad/s Bein-Wirbel.
     _gaitSchrittLen(rig) {
@@ -17606,7 +17610,8 @@ class AnazhRealm {
         } catch (_e) {
             bein = 0;
         }
-        rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, 4.0 * bein)) : 3.4;
+        const kalib = AnazhRealm._bewegungsBlock("schritt", AnazhRealm.SCHRITT_FALLBACK).kalib;
+        rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, kalib * bein)) : 3.4;
         return rig._schritt;
     }
     // (2) POSEN-BLEND — w(speed) mit exp-Glättung ERSETZT den harten
@@ -73641,10 +73646,13 @@ class AnazhRealm {
         });
     }
 
+    // ZENSUS 17.07. — die Ausdauer-Kosten der Maus-Arm-Aktion wohnen im
+    // koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer, _aktionAusdauer
+    // fail-soft byte-gleich auf MOUSE_ACTION_STAMINA_COST).
     _mouseActionStaminaGate() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return { ok: true, mode };
-        const cost = AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+        const cost = AnazhRealm._aktionAusdauer();
         const have = (this.state.player && this.state.player.stamina) || 0;
         return have >= cost ? { ok: true, mode, cost } : { ok: false, mode, cost, have };
     }
@@ -73652,7 +73660,7 @@ class AnazhRealm {
     _consumeMouseStamina() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return;
-        const cost = AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+        const cost = AnazhRealm._aktionAusdauer();
         const have = (this.state.player && this.state.player.stamina) || 0;
         this.state.player.stamina = Math.max(0, have - cost);
     }
@@ -86228,29 +86236,37 @@ class AnazhRealm {
         return hitY === null ? Infinity : Math.max(0, hitY - y0);
     }
 
+    // A6b — DIE EINE DECKEN-KLEMME (Zensus 17.07., Lehre 2: der Chokepoint statt
+    // zwei Kopien in handleJump + _parkourLuftsprung): unter einer NIEDRIGEN
+    // Decke (< 3.4 m Kopfraum — Höhle/Bauwerk) steigt der Sprung nur so hoch,
+    // wie Kopffreiheit da ist — v = √(2·g·Steighöhe), Marge 0.35 m vor der
+    // Decke (statt den Kopf mit voller Kraft in die Decke zu rammen: Penetration
+    // → Recovery schiebt den Body durch dünne Decken = „Kopf glitcht durch
+    // Höhlendecken"). Liefert den geklemmten Impuls, oder null wenn < 1.2 m/s
+    // (~keine Kopffreiheit — kein Sprung).
+    _sprungDeckenKlemme(jumpV) {
+        const headroom = this._ceilingHeadroom();
+        if (headroom >= 3.4) return jumpV;
+        const g = Math.abs(this.state.gravity || -9.81);
+        const v = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
+        return v < 1.2 ? null : v;
+    }
+
     handleJump(currentTime) {
         // ### Sprunglogik ###
         // Zweck: Abstrahiert Sprungmechanik für bessere Wartbarkeit
         if (this.state.playerVel) {
             const isGrounded = this.isPlayerGrounded();
-            const withinCoyoteTime = currentTime - this.state.lastGroundedTime <= this.state.coyoteTime;
+            // ZENSUS 17.07. — die Coyote-Toleranz wohnt im koerperstudio-
+            // Gesetzbuch (fx.bewegung.sprung, _bewegungsBlock fail-soft byte-gleich).
+            const withinCoyoteTime =
+                currentTime - this.state.lastGroundedTime <=
+                AnazhRealm._bewegungsBlock("sprung", AnazhRealm.SPRUNG_FALLBACK).coyoteSec;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
                 // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
                 if (!this._canSoulJumpFromSlope()) return;
-                // A6b — der Sprung-Impuls wird unter einer NIEDRIGEN Decke geklemmt
-                // (Höhle/Bauwerk): statt den Kopf mit voller Kraft in die Decke zu
-                // rammen (Penetration → Recovery schiebt den Body durch dünne Decken
-                // = „Kopf glitcht durch Höhlendecken") steigt der Sprung nur so hoch,
-                // wie Kopffreiheit da ist: v = √(2·g·Steighöhe), Marge 0.35 m vor der
-                // Decke. Ohne Kopffreiheit (< ~0.4 m Steigraum) kein Sprung.
-                let jumpV = this.state.jumpPower;
-                const headroom = this._ceilingHeadroom();
-                if (headroom < 3.4) {
-                    const g = Math.abs(this.state.gravity || -9.81);
-                    const rise = Math.max(0, headroom - 0.35);
-                    jumpV = Math.min(jumpV, Math.sqrt(2 * g * rise));
-                    if (jumpV < 1.2) return; // keine Kopffreiheit — kein Sprung
-                }
+                const jumpV = this._sprungDeckenKlemme(this.state.jumpPower);
+                if (jumpV === null) return; // keine Kopffreiheit — kein Sprung
                 // Feld-nativ: der Sprung-Impuls schreibt die vertikale Velocity in
                 // `state.playerVel.y` — `_stepCharacter` übernimmt sie als frischen Sprung
                 // (`bvy > _fieldVy`). Die Horizontale bleibt unberührt.
@@ -86271,11 +86287,12 @@ class AnazhRealm {
 
     // ═══ PARKOUR (Ninja-Park-Vereinigung) — DER LUFT-SPRUNG ═══
     // Auf den FRISCHEN Space-Druck in der Luft (der Boden-Sprung läuft byte-alt
-    // durch handleJump): WANDSPRUNG zuerst (frischer Kapsel-Kontakt < 0.18 s →
-    // voller jumpPower·wandsprungMul + Abstoß entlang der Kontakt-Normale;
-    // der Kontakt wird VERBRAUCHT — kein Dauer-Feuer an derselben Wand), sonst
-    // DOPPELSPRUNG (bounded: doppelspruenge je Luftphase, die Landung füllt
-    // auf). Dieselbe A6b-Decken-Klemme wie der Boden-Sprung; die Gesetze
+    // durch handleJump): WANDSPRUNG zuerst (frischer Kapsel-Kontakt <
+    // parkour.kontaktFrischeSec → voller jumpPower·wandsprungMul + Abstoß
+    // entlang der Kontakt-Normale; der Kontakt wird VERBRAUCHT — kein Dauer-
+    // Feuer an derselben Wand), sonst DOPPELSPRUNG (bounded: doppelspruenge je
+    // Luftphase, die Landung füllt auf). Dieselbe A6b-Decken-Klemme wie der
+    // Boden-Sprung (der EINE Helper _sprungDeckenKlemme); die Gesetze
     // wohnen im koerperstudio-Gesetzbuch (_parkourGesetz — Kern kalt → No-op).
     _parkourLuftsprung() {
         const P = AnazhRealm._parkourGesetz();
@@ -86285,8 +86302,11 @@ class AnazhRealm {
         if (s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined) return false;
         const nowS = performance.now() / 1000;
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
+        // ZENSUS 17.07. — das Frische-Fenster wohnt im parkour-Gesetz (war der
+        // divergente Stamm-Zwilling 0.18 vs 0.15 beim Klettern — vereint).
+        const frisch = Number.isFinite(P.kontaktFrischeSec) ? P.kontaktFrischeSec : 0.18;
         const wandFrisch =
-            Number.isFinite(s._wandKontaktAt) && nowS - s._wandKontaktAt < 0.18 && Number.isFinite(s._wandKontaktNx);
+            Number.isFinite(s._wandKontaktAt) && nowS - s._wandKontaktAt < frisch && Number.isFinite(s._wandKontaktNx);
         let mul = 0;
         let abX = 0;
         let abZ = 0;
@@ -86302,13 +86322,8 @@ class AnazhRealm {
         } else {
             return false;
         }
-        let jumpV = jp * mul;
-        const headroom = this._ceilingHeadroom();
-        if (headroom < 3.4) {
-            const g = Math.abs(s.gravity || -9.81);
-            jumpV = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
-            if (jumpV < 1.2) return false;
-        }
+        const jumpV = this._sprungDeckenKlemme(jp * mul);
+        if (jumpV === null) return false;
         const v = s.playerVel;
         s.playerVel.setValue(v.x() + abX, jumpV, v.z() + abZ);
         s.isJumping = true;
@@ -87622,7 +87637,11 @@ class AnazhRealm {
             } else if (this.state.moveDirection.length() > 0) {
                 this.state.moveDirection.normalize();
                 const v = this.state.playerVel;
-                const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? 4.5 : 14;
+                // ZENSUS 17.07. — die vier C5-Gefühls-Hebel wohnen im koerper-
+                // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-soft
+                // byte-gleich: Boden kAcc / Luft kAccLuft).
+                const LG = AnazhRealm._bewegungsBlock("luft", AnazhRealm.LUFT_FALLBACK);
+                const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? LG.kAccLuft : LG.kAcc;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
                 const tz = this.state.moveDirection.z * currentSpeed * slopePenalty;
@@ -87634,21 +87653,28 @@ class AnazhRealm {
                 // beim Bremsen"); k=9 gibt einen kurzen, spürbaren Schlitter (~110 ms), wie ein
                 // Körper mit Masse abbremst (Quake/Source-Ground-Friction-Feel).
                 // V18.150 — im Sattel rollt das Gefährt AUS (sein kBrake).
+                // ZENSUS 17.07. — kBrake/kBrakeLuft wohnen im Gesetzbuch
+                // (fx.bewegung.luft, fail-soft byte-gleich).
                 const v = this.state.playerVel;
-                const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? 1.5 : 9;
+                const LG = AnazhRealm._bewegungsBlock("luft", AnazhRealm.LUFT_FALLBACK);
+                const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? LG.kBrakeLuft : LG.kBrake;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
             }
 
             // C5 — JUMP-BUFFER: ein Space-Tipp kurz VOR der Landung wird gemerkt
-            // (0.12 s) und feuert beim Aufsetzen — das „klebrige" Sprung-Gefühl
-            // guter Plattformer. Plus VERDICHTET (V9.82): der Loop-Sprung läuft
+            // (sprung.bufferSec) und feuert beim Aufsetzen — das „klebrige"
+            // Sprung-Gefühl guter Plattformer; das Fenster wohnt im koerper-
+            // studio-Gesetzbuch (fx.bewegung.sprung, fail-soft byte-gleich).
+            // Plus VERDICHTET (V9.82): der Loop-Sprung läuft
             // durch handleJump — EINE Quelle (Coyote + Slope-Gate + A6b-Decken-
             // Klemme; der alte Inline-Pfad UMGING die Klemme = Parallel-Pfad).
             const spaceFresh = !!this.state.keys[" "] && !this.state._spaceWasDown;
             if (spaceFresh) this.state._jumpPressedAt = currentTime;
             this.state._spaceWasDown = !!this.state.keys[" "];
-            const buffered = currentTime - (this.state._jumpPressedAt || -Infinity) <= 0.12;
+            const buffered =
+                currentTime - (this.state._jumpPressedAt || -Infinity) <=
+                AnazhRealm._bewegungsBlock("sprung", AnazhRealm.SPRUNG_FALLBACK).bufferSec;
             if ((this.state.keys[" "] || buffered) && !this.state.isJumping) {
                 this.handleJump(currentTime);
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
@@ -87661,13 +87687,16 @@ class AnazhRealm {
             // hält sich selbst frisch, solange der Spieler hineindrückt) zehrt
             // Ausdauer und trägt den Körper — der Step liest _parkourKletter
             // als Steig-vy statt Schwerkraft. Erschöpft/W los/Wand weg → Fall.
+            // ZENSUS 17.07. — das Frische-Fenster ist das EINE parkour-Gesetz
+            // (kontaktFrischeSec; war der divergente Zwilling 0.15 vs 0.18).
             let kletterV = 0;
             if (
                 parkG &&
                 this.state.keys["w"] &&
                 !slide &&
                 Number.isFinite(this.state._wandKontaktAt) &&
-                currentTime - this.state._wandKontaktAt < 0.15
+                currentTime - this.state._wandKontaktAt <
+                    (Number.isFinite(parkG.kontaktFrischeSec) ? parkG.kontaktFrischeSec : 0.15)
             ) {
                 const plK = this.state.player;
                 if (plK && plK.stamina > 0) {
@@ -89951,6 +89980,51 @@ AnazhRealm._parkourGesetz = function () {
     } catch (_e) {}
     return null;
 };
+// BODEN-GEFÜHL (Spiegel-Zensus 17.07.) — DER EINE BEWEGUNGS-BLOCK-LESER: die
+// restlichen Boden-Gefühls-Blöcke (luft = die vier C5-Hebel der Beschleunigungs-/
+// Brems-Kurven · sprung = Coyote-/Buffer-Fenster · schritt = der Gang-
+// Kalibrierfaktor) wohnen im koerperstudio-Gesetzbuch (fx.bewegung.<block>).
+// Der Stamm liest fail-soft: Kern kalt / Block fehlt / EIN Feld nicht-finit →
+// der byte-gleiche historische Fallback (ganz oder gar nicht, nie Misch-
+// Gesetz). Memo NUR im Erfolgs-Fall (das _schwimmGesetz-Muster).
+AnazhRealm.LUFT_FALLBACK = Object.freeze({ kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 });
+AnazhRealm.SPRUNG_FALLBACK = Object.freeze({ coyoteSec: 0.3, bufferSec: 0.12 });
+AnazhRealm.SCHRITT_FALLBACK = Object.freeze({ kalib: 4.0 });
+AnazhRealm._bewegungsBlock = function (block, fb) {
+    const memo = AnazhRealm._bewegungsBlockMemo || (AnazhRealm._bewegungsBlockMemo = Object.create(null));
+    if (memo[block]) return memo[block];
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+        const g = b && b[block];
+        if (g) {
+            let ok = true;
+            for (const k in fb) {
+                if (!Number.isFinite(g[k])) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) {
+                memo[block] = g;
+                return g;
+            }
+        }
+    } catch (_e) {}
+    return fb;
+};
+// AKTIONS-AUSDAUER — die Kosten der Maus-Arm-Aktion (Hieb/Abbau/Platzieren)
+// wohnen im koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer, neben
+// ausdauerProS/kletterAusdauerProS); Fallback = die byte-alte Konstante
+// MOUSE_ACTION_STAMINA_COST (bleibt als Fallback + Test-Anker).
+AnazhRealm._aktionAusdauer = function () {
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+        if (b && Number.isFinite(b.aktionAusdauer)) return b.aktionAusdauer;
+    } catch (_e) {}
+    return AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+};
 // KREATUR-SEELE (Spiegel-Zensus 17.07.) — DER EINE VERHALTENS-GESETZ-LESER:
 // die Verhaltens-Zahlen der Welt-Wesen (jagd = Witterung/Biss · furcht =
 // Wariness/Flucht · temperament = Signaturen/Floor/Gegenwehr-Profile ·
@@ -91392,6 +91466,8 @@ AnazhRealm.IRON_BANDS = Object.freeze({
 // Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
 // niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
 // als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
+// ZENSUS 17.07. — nur noch der byte-gleiche FALLBACK: das Gesetz wohnt im
+// koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer), Leser _aktionAusdauer.
 AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
 
 // V17.55 W1 (kampf-plan.md §8/§9) — DER WURZELFEHLER GEHEILT: Abbauen kostet jetzt
