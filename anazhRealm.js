@@ -11117,6 +11117,29 @@ class AnazhRealm {
         const bassGain = ctx.createGain();
         bassGain.gain.value = 0.46;
         bassGain.connect(masterGain);
+        // ZENSUS-REST V18.488 — DER RAUM (Genre-DNA `space`): ein gedämpfter
+        // Feedback-Delay-Bus als Hall-Ersatz (asset-frei, ein Delay statt
+        // Faltung — das Lab-Gesetz Return = space·0.5 führt den Wet-Pegel,
+        // `_lofiTick` setzt ihn je Akkord aus dem Studio-Rezept; ohne Rezept
+        // bleibt der Bus stumm = byte-alt). Pad + Melodie + Groove senden;
+        // der Bass bleibt trocken (Tiefbass im Hall = Matsch).
+        const raumDelay = ctx.createDelay(1.5);
+        raumDelay.delayTime.value = 0.31;
+        const raumDaempfer = ctx.createBiquadFilter();
+        raumDaempfer.type = "lowpass";
+        raumDaempfer.frequency.value = 2400;
+        const raumFeedback = ctx.createGain();
+        raumFeedback.gain.value = 0.35;
+        const raumWet = ctx.createGain();
+        raumWet.gain.value = 0;
+        raumDelay.connect(raumDaempfer);
+        raumDaempfer.connect(raumFeedback);
+        raumFeedback.connect(raumDelay);
+        raumDaempfer.connect(raumWet);
+        raumWet.connect(masterGain);
+        gain.connect(raumDelay);
+        melodyGain.connect(raumDelay);
+        grooveGain.connect(raumDelay);
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
         for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -11132,8 +11155,10 @@ class AnazhRealm {
             melodyGain,
             grooveGain,
             bassGain,
+            raumWet, // ZENSUS-REST V18.488 — der space-Wet-Pegel (Genre-DNA)
             noiseBuffer,
             degree: 0,
+            bar: 0, // ZENSUS-REST V18.488 — der Takt-Zähler der progressionDeg-Wanderung
             lastChordAt: -Infinity,
             rngState: seedNum,
         };
@@ -11207,8 +11232,24 @@ class AnazhRealm {
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
         const STEPS = 8;
         const stepDur = durSec / STEPS;
+        // ZENSUS-REST V18.488 — DAS GENRE FÜHRT DIE MELODIE-SPRACHE
+        // (studio.melody + dna.flow/tension, klang-Gesetzbuch): None schweigt,
+        // Lazy tupft karg, MicroPoly wuselt dicht, BlueNotes färbt b-Töne,
+        // CallResponse echot die zweite Takthälfte leiser; flow verschiebt die
+        // Noten-Dichte um den LoFi-Anker 0.35 (das Boot-Genre bleibt byte-nah),
+        // tension würfelt dissonante Reibung (+1 Halbton, nie der Schlusston).
+        const studio = this._klangStudioPreset();
+        const mStil = studio && typeof studio.melody === "string" ? studio.melody : null;
+        if (mStil === "None") return [];
+        const dna = studio && studio.dna ? studio.dna : null;
+        const flow = dna && Number.isFinite(dna.flow) ? dna.flow : 0.35;
+        const tension = dna && Number.isFinite(dna.tension) ? dna.tension : 0;
+        const stilOnset = mStil === "Lazy" ? -0.2 : mStil === "MicroPoly" ? 0.2 : mStil === "PlayChanges" ? 0.05 : 0;
         // Onset-Neigung: joy belebt (mehr Noten), peace beruhigt (mehr Pausen).
-        const onsetBias = Math.max(0.2, Math.min(0.95, 0.6 + joy * 0.3 - peace * 0.35));
+        const onsetBias = Math.max(
+            0.2,
+            Math.min(0.95, 0.6 + joy * 0.3 - peace * 0.35 + (flow - 0.35) * 0.35 + stilOnset)
+        );
         const chordIdx = [degree, degree + 2, degree + 4, degree + 6];
         let idx = chordIdx[Math.floor(this._lofiRandom() * chordIdx.length)];
         let lastDelta = 0;
@@ -11230,11 +11271,18 @@ class AnazhRealm {
             if (peace > 0.5 && this._lofiRandom() < peace) len += 1;
             len = Math.min(len, STEPS - step);
             // DYNAMIK: ein starker Schritt klingt lauter.
-            const vel = 0.14 + 0.16 * strong;
+            // ZENSUS-REST V18.488 — CallResponse echot die Antwort-Hälfte leiser.
+            const vel = (0.14 + 0.16 * strong) * (mStil === "CallResponse" && step >= 4 ? 0.7 : 1);
             // Kleine Zeit-Humanisierung (±6 % eines Schritts) — nicht stur.
             const jitter = (this._lofiRandom() - 0.5) * 0.12 * stepDur;
+            // ZENSUS-REST V18.488 — die FARBE des Genres: BlueNotes senken den
+            // Ton mit 30 % Chance um einen Halbton (die blaue Terz/Quinte),
+            // tension reibt mit tension·20 % Chance einen Halbton nach oben.
+            let semi = this._lofiScaleSemitone(idx);
+            if (mStil === "BlueNotes" && this._lofiRandom() < 0.3) semi -= 1;
+            else if (tension > 0 && this._lofiRandom() < tension * 0.2) semi += 1;
             notes.push({
-                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (this._lofiScaleSemitone(idx) + 24) / 12),
+                freq: AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (semi + 24) / 12),
                 start: Math.max(0, step * stepDur + jitter),
                 dur: len * stepDur * 0.92,
                 idx,
@@ -11318,6 +11366,7 @@ class AnazhRealm {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
+        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
         // Körper: Sinus mit schnellem Tonhöhen-Abfall.
         const osc = ctx.createOscillator();
         osc.type = "sine";
@@ -11326,11 +11375,11 @@ class AnazhRealm {
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.85, t + 0.006);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24 * TB.kickDauer);
         osc.connect(env);
         env.connect(s.lofi.grooveGain);
         osc.start(t);
-        osc.stop(t + 0.28);
+        osc.stop(t + 0.28 * TB.kickDauer);
         // Klick: ein sehr kurzer hoch-gefilterter Noise-Tick — der Transient,
         // der den Schlag auch ohne Tiefbass-Wiedergabe trägt.
         const click = ctx.createBufferSource();
@@ -11355,20 +11404,21 @@ class AnazhRealm {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
+        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
         const src = ctx.createBufferSource();
         src.buffer = s.lofi.noiseBuffer;
         const hp = ctx.createBiquadFilter();
         hp.type = "highpass";
-        hp.frequency.value = 1200;
+        hp.frequency.value = 1200 * TB.snareHp;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
         env.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
-        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 * TB.snareDauer);
         src.connect(hp);
         hp.connect(env);
         env.connect(s.lofi.grooveGain);
         src.start(t);
-        src.stop(t + 0.22);
+        src.stop(t + 0.22 * TB.snareDauer);
     }
 
     // W4 V3 Phase 3 — ein synthetisches Hihat: ein sehr kurzer, hoch-
@@ -11377,6 +11427,7 @@ class AnazhRealm {
         const s = this.state.symphony;
         if (!s.ctx || !s.lofi || !s.lofi.grooveGain || !s.lofi.noiseBuffer) return;
         const ctx = s.ctx;
+        const TB = this._lofiDrumTimbre(); // ZENSUS-REST V18.488 — inst.drums färbt
         const src = ctx.createBufferSource();
         src.buffer = s.lofi.noiseBuffer;
         const hp = ctx.createBiquadFilter();
@@ -11384,16 +11435,50 @@ class AnazhRealm {
         // W4 V4 Sub-Schritt 1 — eine glut-Region schärft das Hihat: der
         // Hochpass steigt 7000..9500 Hz (dünner, „tssss" — eine Spur
         // Spannung in der Klangfarbe, ohne eine einzige Note zu ändern).
-        hp.frequency.value = 7000 + this._lofiWorldField().glut * 2500;
+        hp.frequency.value = (7000 + this._lofiWorldField().glut * 2500) * TB.hihatHp;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.22, t + 0.004);
+        env.gain.exponentialRampToValueAtTime(0.22 * TB.hihatGain, t + 0.004);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
         src.connect(hp);
         hp.connect(env);
         env.connect(s.lofi.grooveGain);
         src.start(t);
         src.stop(t + 0.08);
+    }
+
+    // ZENSUS-REST V18.488 — DAS GENRE WÄHLT DEN GROOVE: die Pattern-Tabelle je
+    // LAWS.rhythm-Option wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER — der
+    // Swing-Eintrag IST das historische Wirts-Pattern, byte-gleich); der Wirt
+    // wählt über studio.rhythm. Genre ohne eigene Zeile → Swing-Zeile; kaltes
+    // Buch → LOFI_GROOVE_PATTERN (byte-alt). One Drop lässt die Eins aus,
+    // Techno fährt Four-on-the-floor, Ambient/Cinematic (None) sind pulslos.
+    _lofiGroovePattern() {
+        const studio = this._klangStudioPreset();
+        const r = studio && typeof studio.rhythm === "string" ? studio.rhythm : null;
+        if (r) {
+            const M =
+                AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER." + r, null) ||
+                AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
+            if (M && Array.isArray(M.kick) && Array.isArray(M.snare) && Array.isArray(M.hihat)) return M;
+        }
+        return AnazhRealm.LOFI_GROOVE_PATTERN;
+    }
+
+    // ZENSUS-REST V18.488 — DAS SCHLAGZEUG DES GENRES (inst.drums): kleine
+    // Timbre-Faktoren je Instrumenten-Wahl des Gesetzbuchs — LoFi/Acoustic =
+    // der historische Klang (Faktor 1, byte-alt), Electronic = längere Kick +
+    // schärfere Snare, Brush = weiche Besen-Snare + leises Hihat, Perc =
+    // helles, perkussives Hihat. Tabelle vor if (M8).
+    _lofiDrumTimbre() {
+        const studio = this._klangStudioPreset();
+        const d = studio && studio.inst && typeof studio.inst.drums === "string" ? studio.inst.drums : null;
+        const T = {
+            Electronic: { kickDauer: 1.35, snareHp: 1.35, snareDauer: 0.75, hihatHp: 1.15, hihatGain: 1 },
+            Brush: { kickDauer: 0.9, snareHp: 0.8, snareDauer: 1.5, hihatHp: 0.9, hihatGain: 0.6 },
+            Perc: { kickDauer: 0.85, snareHp: 1.2, snareDauer: 0.8, hihatHp: 1.35, hihatGain: 1.1 },
+        };
+        return (d && T[d]) || { kickDauer: 1, snareHp: 1, snareDauer: 1, hihatHp: 1, hihatGain: 1 };
     }
 
     // W4 V3 Phase 3 — den Groove einer Akkord-Dauer spielen: das Trommel-
@@ -11405,7 +11490,7 @@ class AnazhRealm {
         const STEPS = 8;
         const stepDur = durSec / STEPS;
         const now = s.ctx.currentTime;
-        const pat = AnazhRealm.LOFI_GROOVE_PATTERN;
+        const pat = this._lofiGroovePattern(); // ZENSUS-REST V18.488 — das Genre wählt
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
         const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
@@ -11421,7 +11506,26 @@ class AnazhRealm {
     // W4 V3 — die nächste Akkord-Stufe per funktionaler Markov-Kette wählen.
     // Emotion biast die Wahl: joy/hope ziehen zu hellen Stufen (III/VI),
     // sorrow zu dunklen (i/ii°/iv) — die Harmonie spürt den Menschen.
+    // ZENSUS-REST V18.488 — DAS GENRE FÜHRT DIE PROGRESSION: trägt das Studio-
+    // Rezept eine harmony-Wahl (Blues 12-taktig · ii-V-I · Modal · Functional ·
+    // Polychord · Free), wandert die Stufe über die EINE Kern-Formel
+    // progressionDeg (klang-Gesetzbuch; RNG reist als Parameter — der
+    // Welt-Seed-Strom _lofiRandom bleibt die Quelle). Die Emotion färbt als
+    // inDev-Ausweichung (sorrow > 0.6 → die dunkle +4-Verschiebung des Labs).
+    // Kaltes Buch/keine harmony → die Markov-Kette LOFI_HARMONY (byte-alt).
     _lofiNextDegree(degree) {
+        const studio = this._klangStudioPreset();
+        const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
+        if (studio && typeof studio.harmony === "string" && kc && typeof kc.progressionDeg === "function") {
+            const lofi = this.state.symphony && this.state.symphony.lofi;
+            const bar = lofi ? (lofi.bar = (Number.isFinite(lofi.bar) ? lofi.bar : 0) + 1) : 1;
+            const emotions = (this.state.player && this.state.player.emotions) || {};
+            const inDev = (Number(emotions.sorrow) || 0) > 0.6;
+            try {
+                const r = kc.progressionDeg(studio.harmony, bar, () => this._lofiRandom(), inDev);
+                if (r && Number.isFinite(r.deg)) return ((r.deg % 7) + 7) % 7;
+            } catch (_e) {}
+        }
         const table = AnazhRealm.LOFI_HARMONY;
         const transitions = table[((degree % table.length) + table.length) % table.length] || table[0];
         const emotions = (this.state.player && this.state.player.emotions) || {};
@@ -11471,16 +11575,78 @@ class AnazhRealm {
     // jeder Leser fällt byte-alt auf seine LOFI_*-Konstante (fail-soft, G4.1).
     _klangStudioPreset() {
         const f = this._foundry;
-        if (!f || !f.recipes) return null;
         // ERFINDER-WELLE (Schoepfer „audiobauplaene liegen in der werkstatt aber kann
         // eigentlich nichts damit machen") — die WELT-KLANG-WAHL fuehrt: state.klangPreset
         // (aus der Werkstatt gesetzt, persistiert) waehlt das Genre; fail-soft aufs
         // Host-Rezept (byte-alt), wenn keine Wahl steht / der Name kein klang-Rezept ist.
         const chosen = this.state && typeof this.state.klangPreset === "string" ? this.state.klangPreset : null;
-        const cRec = chosen ? f.recipes[chosen] : null;
-        const rec = cRec && cRec.kind === "klang" ? cRec : f.recipes[AnazhRealm.KLANG_HOST_RECIPE];
-        const k = rec && rec.fx && rec.fx.klang;
-        return k && typeof k === "object" ? k : null;
+        if (f && f.recipes) {
+            const cRec = chosen ? f.recipes[chosen] : null;
+            const rec = cRec && cRec.kind === "klang" ? cRec : f.recipes[AnazhRealm.KLANG_HOST_RECIPE];
+            const k = rec && rec.fx && rec.fx.klang;
+            if (k && typeof k === "object") return k;
+        }
+        // ZENSUS-REST V18.488 — DAS KALTE BUCH LIEST DEN KERN: ohne Foundry-
+        // Rezept (Worker aus/Boot-Fenster) löst die Wahl direkt gegen die
+        // GENRES-Tafel des klang-Gesetzbuchs auf (dieselbe EINE Lab-Quelle,
+        // aus der die Rezepte abgeleitet sind: scaleFor(darkness) + SCALES) —
+        // die Welt-Musik ist damit genre-treu statt LOFI_*-Konstanten-stumm.
+        return (
+            (chosen ? this._klangGenreAusKern(chosen) : null) || this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE)
+        );
+    }
+
+    // ZENSUS-REST V18.488 — der GENRE-LESER des klang-Gesetzbuchs (kalte-Buch-
+    // Brücke von _klangStudioPreset): Rezept-Id → GENRES-Zeile (lowercase-
+    // Abgleich, "-klang"-Suffix der Kollisions-Ausnahmen fällt), Skala über
+    // die EINE Lab-Formel scaleFor(darkness) + SCALES. Memo je Id (die Tafel
+    // ist statisch); Kern kalt → null (jeder Leser fällt auf seine Konstante).
+    _klangGenreAusKern(id) {
+        const memo = this._klangGenreMemo || (this._klangGenreMemo = new Map());
+        if (memo.has(id)) return memo.get(id);
+        let out = null;
+        try {
+            const G = AnazhRealm.Gesetz("klang:GENRES", null);
+            const SC = AnazhRealm.Gesetz("klang:SCALES", null);
+            const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
+            if (G && SC && kc && typeof kc.scaleFor === "function") {
+                const wunsch = String(id || "lofi")
+                    .toLowerCase()
+                    .replace(/-klang$/, "");
+                let g = null;
+                for (const name of Object.keys(G)) {
+                    if (name.toLowerCase() === wunsch) {
+                        g = G[name];
+                        break;
+                    }
+                }
+                if (g) {
+                    const scaleName = kc.scaleFor(g.darkness);
+                    const scale = Array.isArray(SC[scaleName]) ? SC[scaleName].slice() : null;
+                    out = {
+                        bpm: g.bpm,
+                        scaleName,
+                        scale,
+                        dna: {
+                            swing: g.swing,
+                            darkness: g.darkness,
+                            color: g.color,
+                            flow: g.flow,
+                            tension: g.tension,
+                            space: g.space,
+                        },
+                        form: g.form,
+                        harmony: g.harmony,
+                        rhythm: g.rhythm,
+                        bass: g.bass,
+                        melody: g.melody,
+                        inst: g.inst,
+                    };
+                }
+            }
+        } catch (_e) {}
+        if (out) memo.set(id, out); // Memo NUR im Erfolgs-Fall (spät ladender Kern)
+        return out;
     }
     // Die Akkord-Dauer in ms. Das TEMPO führt das Studio-Klang-Rezept (W-A7:
     // Genesis "LoFi" bpm — der erste echte klang-Konsument; ohne Buch die
@@ -11506,22 +11672,24 @@ class AnazhRealm {
         const ctx = s.ctx;
         const now = ctx.currentTime;
         const stepDur = durSec / 8;
-        const rootOffset = this._lofiChordFromDegree(degree)[0];
+        const chord = this._lofiChordFromDegree(degree);
+        const rootOffset = chord[0];
         // Die Sub-Frequenz liegt eine Oktave unter dem Pad (55-104 Hz) — der
         // tiefe Körper. ABER ein reiner Sub-Ton ist auf kleinen Lautsprechern
         // fast stumm (V8.92-Lehre: ~70 Hz ist die Wiedergabe-Untergrenze).
         // Darum trägt jeder Bass-Schlag ZWEI Stimmen: die Sub (der Körper) +
         // eine Oktav-Stimme darüber (110-208 Hz — sie trägt den Bass auch auf
         // Anlagen, die den Tiefbass schlucken; wie der Noise-Klick die Kick).
-        const subFreq = AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (rootOffset - 12) / 12);
-        const voices = [
-            { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
-            { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
-        ];
+        const subFreqOf = (semi) => AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (semi - 12) / 12);
         const swing = this._grooveSwing(); // ZENSUS 17.07. — derselbe Genre-Shuffle wie der Groove
-        for (const step of AnazhRealm.LOFI_GROOVE_PATTERN.kick) {
-            const t = now + this._grooveStepTime(step, stepDur, swing);
-            const dur = stepDur * 1.4;
+        const spiele = (t, semi, dur, subOnly) => {
+            const subFreq = subFreqOf(semi);
+            const voices = subOnly
+                ? [{ freq: subFreq, attackPeak: 0.55, sustainPeak: 0.4 }]
+                : [
+                      { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
+                      { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
+                  ];
             for (const voice of voices) {
                 const osc = ctx.createOscillator();
                 osc.type = "triangle";
@@ -11536,6 +11704,54 @@ class AnazhRealm {
                 osc.start(t);
                 osc.stop(t + dur + 0.05);
             }
+        };
+        // ZENSUS-REST V18.488 — DAS GENRE FÜHRT DEN BASS (studio.bass, die
+        // LAWS.bass-Optionen des klang-Gesetzbuchs; Tabelle vor if): Walking
+        // schreitet die Akkord-Töne (1-3-5-7), RootFive wechselt Grundton/
+        // Quinte, Achtel treibt jeden Schritt, FunkRiff synkopiert mit
+        // Oktav-Kick, Riddim betont die Drei (One-Drop-Partner), Sub808
+        // trägt nur die Sub-Stimme, Drone hält den Grundton die ganze
+        // Akkord-Dauer, None schweigt. Ohne Studio-Rezept: die Kick-Schritte
+        // des Grooves mit dem Grundton (byte-alt). Der Grundton bleibt IMMER
+        // die EINE Skalen-Quelle (_lofiChordFromDegree).
+        const studio = this._klangStudioPreset();
+        const stil = studio && typeof studio.bass === "string" ? studio.bass : null;
+        if (stil === "None") return;
+        if (stil === "Drone") {
+            spiele(now, rootOffset, durSec, false);
+            return;
+        }
+        const kick = this._lofiGroovePattern().kick;
+        let plan;
+        if (stil === "Walking") {
+            plan = [
+                { step: 0, semi: chord[0] },
+                { step: 2, semi: chord[1] },
+                { step: 4, semi: chord[2] },
+                { step: 6, semi: chord[3] },
+            ];
+        } else if (stil === "RootFive") {
+            plan = kick.map((step, i) => ({ step, semi: i % 2 === 0 ? chord[0] : chord[2] }));
+        } else if (stil === "Achtel") {
+            plan = [0, 1, 2, 3, 4, 5, 6, 7].map((step) => ({ step, semi: chord[0], kurz: true }));
+        } else if (stil === "FunkRiff") {
+            plan = [
+                { step: 0, semi: chord[0] },
+                { step: 3, semi: chord[0], kurz: true },
+                { step: 5, semi: chord[2], kurz: true },
+                { step: 7, semi: chord[0] + 12, kurz: true },
+            ];
+        } else if (stil === "Riddim") {
+            plan = [{ step: 4, semi: chord[0], lang: true }];
+        } else if (stil === "Sub808") {
+            plan = kick.map((step) => ({ step, semi: chord[0], lang: true, subOnly: true }));
+        } else {
+            plan = kick.map((step) => ({ step, semi: chord[0] })); // Root/byte-alt
+        }
+        for (const n of plan) {
+            const t = now + this._grooveStepTime(n.step, stepDur, swing);
+            const dur = stepDur * (n.lang ? 2.2 : n.kurz ? 0.9 : 1.4);
+            spiele(t, n.semi, dur, !!n.subOnly);
         }
     }
 
@@ -11615,6 +11831,15 @@ class AnazhRealm {
         this._lofiPlayBass(degree, durSec);
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
+        // ZENSUS-REST V18.488 — DER RAUM des Genres: dna.space führt den
+        // Wet-Pegel des Delay-Busses (Lab-Gesetz Return = space·0.5 —
+        // Ambient/Cinematic hallen weit, Bebop steht trocken); ohne
+        // Studio-Rezept bleibt der Bus stumm (byte-alt).
+        if (s.lofi.raumWet) {
+            const st = this._klangStudioPreset();
+            const space = st && st.dna && Number.isFinite(st.dna.space) ? st.dna.space : 0;
+            s.lofi.raumWet.gain.value = Math.max(0, Math.min(0.5, space * 0.5));
+        }
         // W4 V4 — die Musik hört die Welt: das Welt-Affinitäts-Feld am
         // Spieler färbt die Klangfarbe der nächsten Akkord-Dauer.
         this._lofiApplyWorldTimbre(durSec);
@@ -24681,9 +24906,20 @@ class AnazhRealm {
                     }
                     const f = this._foundry;
                     const rec = f && f.recipes ? f.recipes[wahl] : null;
-                    if (rec && rec.kind === "klang") {
+                    // ZENSUS-REST V18.488 — auch das KALTE Buch kennt die Genres
+                    // (GENRES-Tafel des klang-Gesetzbuchs via _klangGenreAusKern);
+                    // die Antwort nennt die Musik-Wahrheit des Gesetzbuchs:
+                    // BPM · Skala (SCALE_LABELS) · Harmonie/Rhythmus-Gesetz.
+                    const kern = rec && rec.kind === "klang" ? null : this._klangGenreAusKern(wahl);
+                    const kx = rec && rec.kind === "klang" ? rec.fx && rec.fx.klang : kern;
+                    if (kx) {
                         this.state.klangPreset = wahl;
-                        append(`Klang: das Lofi-Pad führt jetzt „${rec.lab || wahl}" (Genesis-Studio).`);
+                        const skala = kx.scaleName
+                            ? AnazhRealm.Gesetz("klang:SCALE_LABELS." + kx.scaleName, kx.scaleName)
+                            : "?";
+                        append(
+                            `Klang: das Lofi-Pad führt jetzt „${(rec && rec.lab) || wahl}" — ${kx.bpm} BPM · ${skala} · ${kx.harmony || "?"}/${kx.rhythm || "?"}.`
+                        );
                     } else {
                         const genres =
                             f && f.recipes
