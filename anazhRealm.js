@@ -64139,6 +64139,14 @@ class AnazhRealm {
             laeufe: 0, // Compute-Fahrten (Linse)
             adoptiert: 0,
             verlassen: 0,
+            // SCHLUSS-WELLE 17.07. — die PUFFER-BILANZ des Gewand-Churns (Linse):
+            // abgelegt = eigene Storage-/Indirect-Attribute, deren Referenz beim
+            // Verlassen fiel · geloest = davon WIRKLICH am Backend zerstoert
+            // (renderer._attributes.delete → backend.destroyAttribute →
+            // GPUBuffer.destroy; ohne Backend-Eintrag [Null-Renderer/nie
+            // hochgeladen] gibt es nichts zu zerstoeren — kein Leck).
+            pufferAbgelegt: 0,
+            pufferGeloest: 0,
             letzterFehler: null, // Diagnose der Linse (Adoption fail-soft)
         };
         return this._feldCull;
@@ -64362,10 +64370,49 @@ class AnazhRealm {
             return null; // Adoption scheitert → CPU-Pfad bleibt GANZ (nie halb adoptieren)
         }
     }
+    // SCHLUSS-WELLE 17.07. — DER EXPLIZITE PUFFER-TOD des Gewands: die EIGENEN
+    // Storage-/Indirect-Attribute (Quell-/Ziel-Spiegel, Fassaden-Paare, Draw-
+    // Puffer) werden am Renderer-Backend ZERSTÖRT statt auf den GC zu warten
+    // (der Wander-Churn adoptiert/verlässt gebounded ≤ maxFamilien, aber jede
+    // Adoption münzt frische GPU-Puffer — ohne Destroy hielte VRAM bis zum
+    // GC-Zufall). Die saubere r184-API: renderer._attributes.delete(attr)
+    // (die EINE Attributes-DataMap) → backend.destroyAttribute →
+    // backend.get(attr).buffer.destroy() + Info-Buchhaltung. GETEILTE
+    // Geometrie-Attribute (position/index — die Quell-Familie lebt weiter)
+    // werden NIE angefasst; geomK wird deshalb auch nie disposed. Fail-soft
+    // je Attribut (Null-Renderer/nie hochgeladen → nichts zu zerstören).
+    // renOverride: die Linse fährt ihre Pässe mit EIGENEM Renderer — dessen
+    // Backend trägt die Puffer, also zerstört SIE dort (gate:feld-cull Band f).
+    _feldCullPufferFrei(gew, renOverride) {
+        const fc = this._feldCullEnsure();
+        const eigene = [
+            gew.drawAttr,
+            gew.srcM && gew.srcM.value,
+            gew.dstM && gew.dstM.value,
+            gew.srcC && gew.srcC.value,
+            gew.dstC && gew.dstC.value,
+        ];
+        for (const ia of gew.instAttrs || []) eigene.push(ia.srcA && ia.srcA.value, ia.dstA && ia.dstA.value);
+        const ren = renOverride || this.state.renderer;
+        const karte = ren && ren._attributes;
+        for (const a of eigene) {
+            if (!a) continue;
+            fc.pufferAbgelegt++;
+            try {
+                if (karte && typeof karte.delete === "function" && karte.has && karte.has(a)) {
+                    karte.delete(a); // → backend.destroyAttribute → GPUBuffer.destroy + Info-Zensus
+                    fc.pufferGeloest++;
+                }
+            } catch (e) {
+                fc.letzterFehler = "pufferFrei: " + ((e && e.message) || String(e));
+            }
+        }
+    }
     // Gewand ablegen (Gruppen-Dispose · Kapazitäts-Wachstum · Hook aus): der
     // Konsument fällt, die CPU-Quelle übernimmt wieder sichtbar — sofern sie
     // noch lebt (beim Dispose ist sie ohnehin auf dem Weg hinaus).
-    _feldCullVerlasse(schluessel) {
+    // renOverride reicht die Linse durch (s. _feldCullPufferFrei).
+    _feldCullVerlasse(schluessel, renOverride) {
         const fc = this._feldCull;
         if (!fc) return;
         const gew = fc.gewaender.get(schluessel);
@@ -64379,6 +64426,8 @@ class AnazhRealm {
             if (parent.isBundleGroup) parent.needsUpdate = true;
         }
         if (kons && typeof kons.dispose === "function") kons.dispose();
+        // SCHLUSS-WELLE — die GPU-Puffer des Gewands sterben EXPLIZIT (s.o.).
+        this._feldCullPufferFrei(gew, renOverride);
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(schluessel);
         if (g && g.mesh) {
             g.mesh.visible = true;

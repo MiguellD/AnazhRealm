@@ -22,6 +22,16 @@
 //   (d) SELBSTTEST — injizierte Immer-wahr-Sichtbarkeit (uImmer=1) MUSS das
 //       (c)-Kriterium rot fallen lassen (die Linse ist nicht vakuös).
 //   (e) kein pageerror.
+//   (f) CHURN — N× adoptieren+ablegen (der Wander-Churn): das Verlassen
+//       zerstört die EIGENEN Storage-/Indirect-Puffer EXPLIZIT am Backend
+//       (renderer._attributes.delete → GPUBuffer.destroy) — renderer.info
+//       .memory.storageAttributes/indirectStorageAttributes kehren nach
+//       JEDER Runde exakt auf die Grundlinie zurück (kein Puffer-Leck),
+//       die Zähler pufferAbgelegt/pufferGeloest belegen die Arbeit.
+//   (g) CHURN-SELBSTTEST — ein Verlassen OHNE Backend-Destroy (Null-
+//       Renderer-Pfad) LÄSST die Puffer stehen (info.memory bleibt erhöht)
+//       — das Leck wäre sichtbar, die Linse ist nicht vakuös; danach räumt
+//       _feldCullPufferFrei mit Renderer-Override nachweislich auf.
 //   node scripts/diag-feld-cull.cjs
 "use strict";
 const puppeteer = require("puppeteer");
@@ -271,6 +281,72 @@ const server = http.createServer((req, res) => {
             const immer = await fahre();
             gew.uImmer.value = 0;
             res.immer = immer.instanzen;
+
+            // ===== (f) CHURN — N× adoptieren+ablegen: kein Puffer-Leck =====
+            // Die Pässe liefen auf REN (echtes WebGPU) — die GPU-Puffer des
+            // Gewands leben in SEINEM Backend. Das Verlassen bekommt REN als
+            // Override und muss info.memory exakt auf die Grundlinie ziehen.
+            const memS = () => ({
+                s: ren.info.memory.storageAttributes | 0,
+                i: ren.info.memory.indirectStorageAttributes | 0,
+                bytes: (ren.info.memory.storageAttributesSize | 0) + (ren.info.memory.indirectStorageAttributesSize | 0),
+            });
+            const churn = { runden: 0, fehler: [], erhoeht: 0 };
+            const geloest0 = fc.pufferGeloest | 0;
+            r._feldCullVerlasse(gew.key, ren); // das Band-b/c/d-Gewand ablegen → Grundlinie OHNE Feld-Cull-Puffer
+            const basis = memS();
+            res.churnBasis = basis;
+            for (let k = 0; k < 4; k++) {
+                // Re-Adoption DIREKT über den echten Adoptions-Pfad (deterministisch —
+                // kein Spiel-Tick dazwischen, der die Quelle wachsen lassen könnte):
+                const g0 = r.state.archInstanceGroups.get(gew.key);
+                const g2 = g0 && r._feldCullKandidat(g0) ? r._feldCullAdoptiere(g0) : null;
+                if (!g2) {
+                    churn.fehler.push("k" + k + ": keine Re-Adoption (" + (fc.letzterFehler || "-") + ")");
+                    break;
+                }
+                // Pässe auf echtem WebGPU fahren → die Puffer entstehen WIRKLICH:
+                g2.srcM.value.array.set(g2.quelleMesh.instanceMatrix.array);
+                g2.srcM.value.needsUpdate = true;
+                g2.uAktiv.value = g2.quelleMesh.count | 0;
+                await ren.computeAsync(g2.passInit);
+                await ren.computeAsync(g2.passCull);
+                const mitten = memS();
+                if (!(mitten.s > basis.s && mitten.i > basis.i))
+                    churn.fehler.push("k" + k + ": Puffer entstanden nicht (s=" + mitten.s + " i=" + mitten.i + ")");
+                else churn.erhoeht++;
+                r._feldCullVerlasse(g2.key, ren);
+                const nach = memS();
+                if (nach.s !== basis.s || nach.i !== basis.i || nach.bytes !== basis.bytes)
+                    churn.fehler.push(
+                        "k" + k + ": LECK s=" + nach.s + "/" + basis.s + " i=" + nach.i + "/" + basis.i + " bytes=" + nach.bytes + "/" + basis.bytes
+                    );
+                churn.runden++;
+            }
+            res.churn = churn;
+            res.churnGeloest = (fc.pufferGeloest | 0) - geloest0;
+            res.churnAbgelegt = fc.pufferAbgelegt | 0;
+
+            // ===== (g) CHURN-SELBSTTEST: OHNE Backend-Destroy bliebe das Leck =====
+            const g0s = r.state.archInstanceGroups.get(gew.key);
+            const g3 = g0s && r._feldCullKandidat(g0s) ? r._feldCullAdoptiere(g0s) : null;
+            if (g3) {
+                g3.srcM.value.array.set(g3.quelleMesh.instanceMatrix.array);
+                g3.srcM.value.needsUpdate = true;
+                g3.uAktiv.value = g3.quelleMesh.count | 0;
+                await ren.computeAsync(g3.passInit);
+                await ren.computeAsync(g3.passCull);
+                const vorher = memS();
+                r._feldCullVerlasse(g3.key); // OHNE Override: der Spiel-Renderer (Null) trägt keine Backend-Puffer
+                const dazwischen = memS();
+                res.selbsttestLeckSichtbar = dazwischen.s === vorher.s && dazwischen.s > basis.s;
+                r._feldCullPufferFrei(g3, ren); // Aufräumen mit Override — die Bilanz muss wieder stimmen
+                const danach = memS();
+                res.selbsttestAufgeraeumt = danach.s === basis.s && danach.i === basis.i;
+            } else {
+                res.selbsttestLeckSichtbar = false;
+                res.selbsttestAufgeraeumt = false;
+            }
             ren.dispose();
         } catch (e) {
             res.computeFehler = (e && e.message) || String(e);
@@ -335,6 +411,22 @@ const server = http.createServer((req, res) => {
         `immer=${out.immer} lebend=${out.lebend}`
     );
     check("e: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
+    const ch = out.churn || { runden: 0, fehler: ["kein churn-Band gelaufen"], erhoeht: 0 };
+    check(
+        "f: CHURN — 4× adoptieren+ablegen: Puffer entstehen je Runde und sterben EXAKT auf die Grundlinie (kein Leck)",
+        ch.runden === 4 && ch.erhoeht === 4 && ch.fehler.length === 0,
+        `runden=${ch.runden} erhoeht=${ch.erhoeht} basis=${JSON.stringify(out.churnBasis)}${ch.fehler.length ? " FEHLER: " + ch.fehler.join(" · ") : ""}`
+    );
+    check(
+        "f: die Puffer-Bilanz zählt (pufferGeloest wuchs um ≥ 3 je Runde — Matrix+Draw mindestens)",
+        Number.isFinite(out.churnGeloest) && out.churnGeloest >= ch.runden * 3 && out.churnAbgelegt >= out.churnGeloest,
+        `geloest=${out.churnGeloest} abgelegt=${out.churnAbgelegt}`
+    );
+    check(
+        "g: CHURN-SELBSTTEST — ohne Backend-Destroy BLIEBE das Leck sichtbar; der Override räumt nachweislich auf",
+        out.selbsttestLeckSichtbar === true && out.selbsttestAufgeraeumt === true,
+        `leckSichtbar=${out.selbsttestLeckSichtbar} aufgeraeumt=${out.selbsttestAufgeraeumt}`
+    );
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
