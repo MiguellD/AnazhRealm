@@ -1996,6 +1996,20 @@
     const LOD1SKIP={geruest:1,boeden:1,innenwaende:1,herd:1,treppe:1,moebel:1}; // System-Hülle: Haut+Türen+Fenster, kein Innenleben
     // prettier-ignore
     const DORF_NORM={ gap:2.5, gapStadt:1.0, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };
+    // ── SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ (rein additive
+    // DATEN-Zeile): WO/WIEVIEL Doerfer die Welt traegt ist Siedlungs-Wissen
+    // (Praezedenzfall: die Wald-Dichte lebt in phyto-core forestStandDensity).
+    // cellM = Welt-Zellen-Raster (m) · rarity = 1 von N Zellen traegt ein Dorf
+    // (~7 Doerfer/km² effektiv) · nHMin/nHSpan = Dorf-Groesse nHMin..nHMin+
+    // nHSpan-1 Haeuser (deterministisch aus dem Zell-Hash) · slopeMax =
+    // Site-Wand (|grad h| m/m — flach genug zum Siedeln) · fundamentMaxDh =
+    // Klippen-Wand je Haus-Slot (m, max. Hoehendifferenz ueber die vier
+    // obb-Footprint-Ecken; darunter traegt ein Sockel-Podest das Haus in den
+    // Hang). Reist im Buch-Umschlag (get-book, Feld `siedlung`); der Wirt
+    // liest memoisiert + fail-soft byte-gleich (_siedlungGesetz). Seine
+    // Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM)
+    // bleiben ehrlich Wirts-Infrastruktur (AUTO_SETTLEMENT). ──
+    const SIEDLUNG = { cellM: 256, rarity: 2, nHMin: 8, nHSpan: 10, slopeMax: 0.35, fundamentMaxDh: 9 };
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
@@ -2940,6 +2954,7 @@
         distPunktOBB: distPunktOBB,
         ORTSNAME: ORTSNAME,
         DORF_NORM: DORF_NORM,
+        SIEDLUNG: SIEDLUNG,
         EPOCHEN: EPOCHEN,
         REGION_HIST: REGION_HIST,
         LOD1SKIP: LOD1SKIP,

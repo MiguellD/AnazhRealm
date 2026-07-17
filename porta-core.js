@@ -456,6 +456,13 @@
         aktivDepth: [0.1, 0.85], // Atem: uWaveDepth = zFace*(0.10+0.85*open)
     };
 
+    // SPIEGEL-ZENSUS 17.07. — DAS TUER-GESETZ (rein additive DATEN-Zeile):
+    // der Fluegel-Oeffnungswinkel (rad). Shell (DOOR_OPEN, porta.js) UND
+    // Wirt (TOR_FLUEGEL_OFFEN, anazhRealm.js) trugen dieselbe 1.95 als
+    // Zahlen-Zwilling — jetzt lesen BEIDE diese eine Quelle (fail-soft
+    // byte-gleich: kalter Kern -> das alte Literal).
+    var TUER_GESETZ = { offen: 1.95 };
+
     // membranUniforms(p) — die REINE Ableitung der Membran-Uniform-Zahlen aus
     // einem vollen Parametersatz (gateParams-Ausgang). Byte-treu zur Shell
     // (buildMembrane Z.36–51): Geometrie-Rahmen aus deriveGate, Bogen-Oberkante
@@ -534,6 +541,7 @@
         deriveFrame: deriveFrame,
         membranPalette: membranPalette,
         MEMBRAN_GESETZ: MEMBRAN_GESETZ,
+        TUER_GESETZ: TUER_GESETZ,
         membranUniforms: membranUniforms,
         archProfile: archProfile,
         interpTop: interpTop,

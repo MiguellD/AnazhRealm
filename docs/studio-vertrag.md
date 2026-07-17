@@ -303,7 +303,11 @@ B4 PARAMS (aus SLIDERS abgeleitet) · B5 als `messen`-Formel (Stich→Schub→Di
 pass/warn-Bänder trägt das Lab nicht — benannte Schuld) · B6 dsl (W12) +
 `fx.place {mode:"site", siteTag:"tor"}` als Platzierungs-Daten (N5.6);
 Split-Parität 14/14 hash-bewiesen, Andocken = reine Daten-Zeilen —
-der ε-Beweis, `gate:nervensystem-porta`). `schmiede-core.js` (W-A4a, ε —
+der ε-Beweis, `gate:nervensystem-porta`). Spiegel-Zensus 17.07. (V18.486+,
+rein additiv): **`TUER_GESETZ { offen }`** = der Flügel-Öffnungswinkel (rad)
+— Shell (`DOOR_OPEN`) UND Wirt (`AnazhRealm._tuerOffenRad()`, Fallback
+`TOR_FLUEGEL_OFFEN`) lesen die EINE Quelle (der 1.95-Zahlen-Zwilling ist
+geschlossen). `schmiede-core.js` (W-A4a, ε —
 GEBAUT 10.07.: B1 21 Gattungen `kind:"weapon"` [Waffen UND Werkzeuge, die
 tool:true-Marke reist in fx] · B2 `buildInstance` + `kindStages:{weapon:[0]}` +
 Goldens `spec/asset-contract/v5/` (`gate:schmiede-contract`, seed-invariant
@@ -326,7 +330,15 @@ Platzierungs-Daten (N5.7, W-A5b: exportSettlement [die DORF-QUELLE lebt im
 Kern] → `spawnSettlement` — der deliberate Kanal; Worldgen streut nicht);
 Split-Parität je Rezept × Stufe hash-bewiesen (buildInstance == die Shell-
 Komposition der Kern-Primitive), Andocken = reine Daten-Zeilen — der
-ε-Beweis, `gate:nervensystem-fachwerk`).
+ε-Beweis, `gate:nervensystem-fachwerk`). Spiegel-Zensus 17.07. (V18.486+,
+rein additiv): **`SIEDLUNG`** = das Siedlungs-Existenz-Gesetz (`cellM rarity
+nHMin nHSpan slopeMax fundamentMaxDh` — WO/WIEVIEL/WIE STEIL Dörfer die Welt
+trägt; Präzedenzfall Wald-Dichte in phyto-core). Es reist im Buch-Umschlag
+(`get-book`-Reply, Feld `siedlung`, M8-generisch: der erste Kern mit
+SIEDLUNG); der Wirt liest `AnazhRealm._siedlungGesetz()` (Ingest validiert
+ganz-oder-gar-nicht, Fallback = byte-gleiches `AUTO_SETTLEMENT`). Die
+Streaming-Regler (nearM/perTick/spawnClearM/siteProbeR/startRadiusM) bleiben
+ehrlich Wirts-Infrastruktur.
 
 ---
 
@@ -414,9 +426,11 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   der SELBEN Formel, keine zweite Wahrheit). Der EINE Host-Konsument ist das
   BESTEHENDE Lofi-System (kein Parallel-Audio, M4): `_klangStudioPreset()`
   liest das Rezept der DATEN-Zeile `AnazhRealm.KLANG_HOST_RECIPE` („lofi"),
-  `_lofiChordDurationMs` fährt das Studio-Tempo; kaltes Buch → die
-  LOFI_*-Konstanten byte-alt (fail-soft, G4.1). Spender heute:
-  `klang-core.js` (22 Genesis-Genres, `kind:"klang"`).
+  `_lofiChordDurationMs` fährt das Studio-Tempo, `_grooveSwing()` den
+  Genre-Shuffle (Spiegel-Zensus 17.07.: `dna.swing` — die Doppel-Quelle
+  GROOVE_SWING 0.58 vs Rezept 0.50 ist geschlossen, das Genre führt);
+  kaltes Buch → die LOFI_*-/GROOVE_SWING-Konstanten byte-alt (fail-soft,
+  G4.1). Spender heute: `klang-core.js` (22 Genesis-Genres, `kind:"klang"`).
 - **§8.5 v1.2 — DIE OFEN-STUFEN-ZEILE (V18.478, NORMATIV, rein additiv):** ein
   MESHFREI-Kern mit Pipe-Bäcker (§8.4) DARF `PORTAL_RENDER_CONFIG.lod.
   kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die

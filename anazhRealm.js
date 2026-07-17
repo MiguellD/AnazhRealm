@@ -11273,6 +11273,17 @@ class AnazhRealm {
         return (step - 1) * stepDur + swing * 2 * stepDur;
     }
 
+    // ZENSUS 17.07. — DER SWING liest das Studio-Genre: fx.klang.dna.swing des
+    // gewählten Rezepts (das bpm/scale-Muster; die Welt atmet den Shuffle des
+    // Genres — die Doppel-Quelle Stamm 0.58 vs LoFi-Rezept 0.50 ist
+    // geschlossen, das Genre führt). Kaltes Buch / kein dna → GROOVE_SWING
+    // byte-alt (fail-soft). swing 0 (Techno/Ambient) ist ein GÜLTIGER Wert.
+    _grooveSwing() {
+        const studio = this._klangStudioPreset();
+        const sw = studio && studio.dna ? studio.dna.swing : null;
+        return Number.isFinite(sw) ? sw : AnazhRealm.GROOVE_SWING;
+    }
+
     // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit Tonhöhen-Abfall
     // (200 → 70 Hz — hoch genug, dass auch kleine Lautsprecher ihn tragen)
     // + ein kurzer Noise-Klick, damit der Schlag-Transient auf JEDER Anlage
@@ -11372,8 +11383,9 @@ class AnazhRealm {
         const pat = AnazhRealm.LOFI_GROOVE_PATTERN;
         const emotions = (this.state.player && this.state.player.emotions) || {};
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
+        const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
         for (let step = 0; step < STEPS; step++) {
-            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            const t = now + this._grooveStepTime(step, stepDur, swing);
             if (pat.kick.indexOf(step) >= 0) this._lofiKick(t);
             if (pat.snare.indexOf(step) >= 0) this._lofiSnare(t);
             // peace > 0.6 lässt die Off-Beat-Hihats aus — ein ruhigerer Groove.
@@ -11481,8 +11493,9 @@ class AnazhRealm {
             { freq: subFreq, attackPeak: 0.5, sustainPeak: 0.32 },
             { freq: subFreq * 2, attackPeak: 0.46, sustainPeak: 0.3 },
         ];
+        const swing = this._grooveSwing(); // ZENSUS 17.07. — derselbe Genre-Shuffle wie der Groove
         for (const step of AnazhRealm.LOFI_GROOVE_PATTERN.kick) {
-            const t = now + this._grooveStepTime(step, stepDur, AnazhRealm.GROOVE_SWING);
+            const t = now + this._grooveStepTime(step, stepDur, swing);
             const dur = stepDur * 1.4;
             for (const voice of voices) {
                 const osc = ctx.createOscillator();
@@ -50506,8 +50519,9 @@ class AnazhRealm {
             if (rec.armed === false && !inApertur) rec.armed = true;
             // ── V18.465 — DIE TÜR-FLÜGEL ÖFFNEN SICH DEM REISENDEN: die Flügel-
             // Meshes (g.tuer aus der Pipe) drehen um ihre Hinge-Achse — Ziel-
-            // Winkel = Nähe-Aktivierung × TOR_FLUEGEL_OFFEN (das Welt-Analog zum
-            // Lab-E/R-Toggle, DOOR_OPEN=1.95 der Shell), weich geglättet. Läuft
+            // Winkel = Nähe-Aktivierung × _tuerOffenRad() (Zensus 17.07.: das
+            // EINE porta-Gesetz TUER_GESETZ.offen — dieselbe Quelle wie das
+            // Lab-E/R-Toggle DOOR_OPEN), weich geglättet. Läuft
             // nur für Registry-Portale (≤ Handvoll), ferne Tore stehen zu. ──
             this._tickTorFluegel(rec, entry, act);
             if (
@@ -50586,7 +50600,9 @@ class AnazhRealm {
             rec._fluegelWinkel = 0;
         }
         if (!rec._fluegel || !rec._fluegel.length) return;
-        const ziel = act * AnazhRealm.TOR_FLUEGEL_OFFEN;
+        // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
+        // (TUER_GESETZ.offen; TOR_FLUEGEL_OFFEN nur noch Fallback).
+        const ziel = act * AnazhRealm._tuerOffenRad();
         const alt = rec._fluegelWinkel || 0;
         const neu = alt + (ziel - alt) * 0.12;
         if (Math.abs(neu - alt) < 0.0005 && Math.abs(neu - ziel) < 0.001) return; // eingeschwungen
@@ -67790,6 +67806,29 @@ class AnazhRealm {
         this._foundryIngestRecipes(m.book, m.paramsByKind);
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
+        this._foundryIngestSiedlung(m.siedlung);
+    }
+    // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ aus dem Buch-
+    // Umschlag (fachwerk-core SIEDLUNG via Brücke, Feld `siedlung`): WO/WIEVIEL
+    // Dörfer die Welt trägt ist Siedlungs-Wissen. Gültigkeits-Wand ganz-oder-
+    // gar-nicht (EIN nicht-finites Feld → ganz byte-alt, nie Misch-Gesetz);
+    // der Leser `_siedlungGesetz` fällt sonst auf AUTO_SETTLEMENT (byte-
+    // gleiche Werte). Timing-ehrlich: JEDER Siedlungs-Urteils-Pfad läuft erst
+    // nach Buch-Ankunft (Kanal-Gate `_autoSettlementChannelLive` / Export-
+    // Roundtrip) — das Gesetz steht, bevor die erste Zelle geurteilt wird.
+    _foundryIngestSiedlung(s) {
+        if (
+            s &&
+            typeof s === "object" &&
+            Number.isFinite(s.cellM) &&
+            Number.isFinite(s.rarity) &&
+            Number.isFinite(s.nHMin) &&
+            Number.isFinite(s.nHSpan) &&
+            Number.isFinite(s.slopeMax) &&
+            Number.isFinite(s.fundamentMaxDh)
+        ) {
+            AnazhRealm._siedlungGesetzMemo = s;
+        }
     }
     _foundryIngestRecipes(book, paramsByKind) {
         const f = this._foundry;
@@ -68188,7 +68227,7 @@ class AnazhRealm {
         // in das Terrain gebaut") — die HÖHE urteilt über den FOOTPRINT, nicht über
         // einen Punkt: die vier obb-Ecken (Export-Wahrheit, fachwerk exportSettlement)
         // + das Zentrum werden gesamplet. Basis = MAX (keine Ecke im Berg), die
-        // Δh-Wand (AUTO_SETTLEMENT.fundamentMaxDh) lässt Klippen-Slots GESCHLOSSEN
+        // Δh-Wand (SIEDLUNG.fundamentMaxDh, das fachwerk-Gesetz) lässt Klippen-Slots GESCHLOSSEN
         // fallen (kein schwebendes Haus), und der Eintrag trägt `fundament` {ex,ez}
         // — das Render-Podest + die Blocker-Wahrheit leiten Tiefe LIVE aus dem Feld
         // ab (deterministisch, kein Höhen-Persistenz-Feld). Ebenes Land: hMax ==
@@ -68212,8 +68251,9 @@ class AnazhRealm {
                     if (h < hMin) hMin = h;
                 }
             }
-            const A = AnazhRealm.AUTO_SETTLEMENT;
-            if (hMax - hMin > A.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
+            // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG).
+            const S = AnazhRealm._siedlungGesetz();
+            if (hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
             fundament = { ex: obb.ex, ez: obb.ez };
         }
         const wy = hMax + 0.5;
@@ -68318,7 +68358,8 @@ class AnazhRealm {
     //     den Hook `__anazhAutoSettlement` (sichern + wiederherstellen, nie löschen).
     // Reine Zell-Wahrheit (cx,cz) → {seed, nH, Anker} oder null (Γ5, kein Math.random).
     _autoSettlementCellInfo(cx, cz) {
-        const A = AnazhRealm.AUTO_SETTLEMENT;
+        // ZENSUS 17.07. — Existenz/Raster/Größe sind fachwerk-Gesetz (SIEDLUNG).
+        const A = AnazhRealm._siedlungGesetz();
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:dorf:${cx},${cz}`;
         let h = 2166136261 >>> 0;
@@ -68344,11 +68385,12 @@ class AnazhRealm {
     // NUR dem deliberaten Start-Dorf die Spawn-Klar-Wand — Wasser/Steil bleiben
     // für JEDE Site dieselbe EINE Wand (Gesetz #0, kein Parallel-Urteil).
     _autoSettlementSiteOk(x, z, noSpawnClear) {
-        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
         if (!noSpawnClear && Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
         if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
-        return !(Number.isFinite(slope) && slope > A.slopeMax); // flach genug
+        // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
+        return !(Number.isFinite(slope) && slope > AnazhRealm._siedlungGesetz().slopeMax); // flach genug
     }
     // DIE SITE-SUCHE (Dörfer-Heilung, gemessen 14.07.: 23/33 Hash-Zellen fielen
     // allein an der Steil-Wand des EINEN Anker-Punkts — 70 % Ausfall): ein Dorf
@@ -68358,11 +68400,12 @@ class AnazhRealm {
     // (Phase aus dem Seed, der zweite Ring um 45° verdreht) — jede Probe läuft
     // durch DIESELBE Wand `_autoSettlementSiteOk`. null = die Zelle trägt kein Dorf.
     _autoSettlementFindSite(info) {
-        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (siteProbeR)
         if (this._autoSettlementSiteOk(info.x, info.z)) return { x: info.x, z: info.z };
         const phase = (((info.seed >>> 4) & 0xff) / 255) * 2 * Math.PI;
         for (let ri = 0; ri < A.siteProbeR.length; ri++) {
-            const rad = A.siteProbeR[ri] * A.cellM;
+            // ZENSUS 17.07. — das Zell-Raster ist fachwerk-Gesetz (SIEDLUNG.cellM).
+            const rad = A.siteProbeR[ri] * AnazhRealm._siedlungGesetz().cellM;
             for (let i = 0; i < 4; i++) {
                 const a = phase + (i / 4) * 2 * Math.PI + ri * (Math.PI / 4);
                 const px = info.x + Math.cos(a) * rad;
@@ -68433,7 +68476,9 @@ class AnazhRealm {
     }
 
     _autoSettlementStartInfo() {
-        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (startRadiusM)
+        // ZENSUS 17.07. — die Dorf-Größe ist fachwerk-Gesetz (SIEDLUNG.nHMin/nHSpan).
+        const S = AnazhRealm._siedlungGesetz();
         const wm = this.state.worldMeta || {};
         const s = `${wm.seed || "anazh-realm-seed"}:startdorf`;
         let h = 2166136261 >>> 0;
@@ -68448,7 +68493,7 @@ class AnazhRealm {
                 const x = Math.cos(a) * A.startRadiusM[ri];
                 const z = Math.sin(a) * A.startRadiusM[ri];
                 if (!this._autoSettlementSiteOk(x, z, true)) continue;
-                return { key: "start", seed: h >>> 0 || 1, nH: A.nHMin + ((h >>> 24) % A.nHSpan), x, z };
+                return { key: "start", seed: h >>> 0 || 1, nH: S.nHMin + ((h >>> 24) % S.nHSpan), x, z };
             }
         }
         return null;
@@ -68508,7 +68553,7 @@ class AnazhRealm {
         const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
         if (hook === false) return;
         if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
-        const A = AnazhRealm.AUTO_SETTLEMENT;
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (perTick/nearM)
         // (a) BUDGETIERTE MATERIALISIERUNG zuerst: ein angekommener Export baut seine
         // Häuser über Ticks verteilt — erst fertig wachsen, dann die nächste Zelle.
         const q = this._autoSettlementQueue;
@@ -68555,8 +68600,11 @@ class AnazhRealm {
             }
         }
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
-        const pcx = Math.floor(playerPos.x / A.cellM);
-        const pcz = Math.floor(playerPos.z / A.cellM);
+        // ZENSUS 17.07. — DASSELBE Zell-Raster wie die Zell-Wahrheit
+        // (_autoSettlementCellInfo): SIEDLUNG.cellM, das fachwerk-Gesetz.
+        const cellM = AnazhRealm._siedlungGesetz().cellM;
+        const pcx = Math.floor(playerPos.x / cellM);
+        const pcz = Math.floor(playerPos.z / cellM);
         for (let dz = -1; dz <= 1; dz++) {
             for (let dx = -1; dx <= 1; dx++) {
                 const cx = pcx + dx;
@@ -89582,6 +89630,12 @@ AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1
 //                EINMALIG je Welt, deterministisch aus dem Welt-Seed (":startdorf")
 //   nHMin/nHSpan Dorf-Größe 8..17 Häuser (deterministisch aus dem Zell-Hash)
 //   perTick      budgetierte Materialisierung: Häuser je Idle-Tick (BOOT_PHASE3-Muster)
+// ZENSUS 17.07. — GETEILTE WAHRHEIT: die GESETZ-Felder (cellM · rarity ·
+// nHMin/nHSpan · slopeMax · fundamentMaxDh = WO/WIEVIEL/WIE STEIL) wohnen im
+// fachwerk-Gesetzbuch (SIEDLUNG, reist im Buch-Umschlag — `_siedlungGesetz`
+// liest sie memoisiert + fail-soft byte-gleich); die STREAMING-Regler
+// (nearM · spawnClearM · siteProbeR · startRadiusM · perTick) bleiben ehrlich
+// Wirts-Infrastruktur in DIESER Konstante (zugleich der Gesetz-Fallback).
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     cellM: 256,
     rarity: 2,
@@ -89601,6 +89655,12 @@ AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     // Wahrheit); nur die wahre Klippe (> 9 m über EIN Haus) fällt.
     fundamentMaxDh: 9,
 });
+// DER EINE SIEDLUNGS-GESETZ-LESER (Zensus 17.07.): das Memo setzt der Buch-
+// Ingest (`_foundryIngestSiedlung`, validiert ganz-oder-gar-nicht); kaltes
+// Buch/alter Kern → AUTO_SETTLEMENT (byte-gleiche Werte, nie Misch-Gesetz).
+AnazhRealm._siedlungGesetz = function () {
+    return AnazhRealm._siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT;
+};
 // Max Foundry-Baum-Bauten je Frame (kein 300-Burst-Main-Thread-Spike). Klein halten — jeder
 // Bau lädt bis ~170k Verts als WebGPU-Buffer hoch; der per-Frame-Drain (_tickFoliageGrowth,
 // budget-gegated) tropft sie rein, wenn der Frame Luft hat. Tunable (Schöpfer-GPU balanciert).
@@ -93711,9 +93771,23 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
-// V18.465 — der offene Flügel-Winkel der Welt-Tore (Spiegel der Lab-Shell
-// DOOR_OPEN=1.95, worlds/portale/porta.js — das Welt-Analog: Nähe öffnet).
+// V18.465 — der offene Flügel-Winkel der Welt-Tore (das Welt-Analog: Nähe
+// öffnet). ZENSUS 17.07. — nur noch der byte-gleiche FALLBACK: der Winkel
+// wohnt im porta-Gesetzbuch (__portaCore.TUER_GESETZ.offen — Shell UND Welt
+// lesen die EINE Quelle), Leser `_tuerOffenRad` (memoisiert, fail-soft).
 AnazhRealm.TOR_FLUEGEL_OFFEN = 1.95;
+AnazhRealm._tuerOffenRad = function () {
+    if (Number.isFinite(AnazhRealm._tuerOffenMemo)) return AnazhRealm._tuerOffenMemo;
+    try {
+        const pc = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
+        const o = pc && pc.TUER_GESETZ ? pc.TUER_GESETZ.offen : null;
+        if (Number.isFinite(o)) {
+            AnazhRealm._tuerOffenMemo = o;
+            return o;
+        }
+    } catch (_e) {}
+    return AnazhRealm.TOR_FLUEGEL_OFFEN;
+};
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
 // ein Rate-Limit je Sekunde schützen den Kanal vor einer flutenden Sub-Welt.
@@ -94120,6 +94194,9 @@ AnazhRealm.LOFI_GROOVE_PATTERN = Object.freeze({
 });
 // Swing: die Off-Beat-Schritte (ungerade) werden verzögert — 0.5 = gerade,
 // ~0.6 = der typische Lofi/Jazz-Atem (Genre-Preset-Parameter, W4 V3).
+// ZENSUS 17.07. — nur noch der byte-alte FALLBACK: der Swing wohnt im
+// klang-Gesetzbuch (fx.klang.dna.swing je Genre), Leser `_grooveSwing`
+// (kaltes Buch → diese Konstante; die alte Doppel-Quelle ist geschlossen).
 AnazhRealm.GROOVE_SWING = 0.58;
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°

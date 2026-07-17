@@ -15,7 +15,9 @@ var MG=PC.MEMBRAN_GESETZ;
 function GN(x){var s=String(x);return s.indexOf('.')>=0||s.indexOf('e')>=0||s.indexOf('E')>=0?s:s+'.0';}
 
 var scene,camera,renderer,composer,fxaa,cinePass,controls,clock;
-var gate,membrane,memMat,rimMat,D,rebuildTimer=null,leafL=null,leafR=null,leafLB=null,leafRB=null,doorAngle=0,doorAngleB=0,doorTarget=0,doorTargetB=0,portalLight,fogGroup=null,fogMat=null,depthRT=null,DOOR_OPEN=1.95;
+/* ZENSUS 17.07. — der Fluegel-Oeffnungswinkel wohnt im Kern (TUER_GESETZ.offen);
+   Shell UND Welt (anazhRealm _tuerOffenRad) lesen die EINE Quelle (fail-soft 1.95). */
+var gate,membrane,memMat,rimMat,D,rebuildTimer=null,leafL=null,leafR=null,leafLB=null,leafRB=null,doorAngle=0,doorAngleB=0,doorTarget=0,doorTargetB=0,portalLight,fogGroup=null,fogMat=null,depthRT=null,DOOR_OPEN=(PC.TUER_GESETZ&&isFinite(PC.TUER_GESETZ.offen))?PC.TUER_GESETZ.offen:1.95;
 
 // archProfile · interpTop · deriveGate + die Geometrie-Hilfen (tubeMesh/torusMesh/
 // barBetween/quadBlock/normalsAlong) leben im Kern (__portaCore) — eine Quelle.

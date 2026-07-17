@@ -4673,6 +4673,19 @@ init();
             __post({ type: "settlement", world: "terrain", reqId: msg && msg.reqId, plan }, "*");
         }
     }
+    // SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ reist im Buch-
+    // Umschlag: GENERISCH wie __replySettlement (M8, kein Kern-Literal) liefert
+    // der ERSTE Manifest-Kern mit einer SIEDLUNG-Daten-Zeile (fachwerk-core:
+    // cellM/rarity/nHMin/nHSpan/slopeMax/fundamentMaxDh) das WO/WIEVIEL der
+    // Doerfer. Reine JSON-Daten; kein Kern -> null (der Host bleibt byte-alt).
+    function __zweitKernSiedlung() {
+        try {
+            for (const zk of __zweitKerne()) {
+                if (zk.kern && zk.kern.SIEDLUNG && typeof zk.kern.SIEDLUNG === "object") return zk.kern.SIEDLUNG;
+            }
+        } catch (_e) {}
+        return null;
+    }
     if (typeof window !== "undefined") {
         window.addEventListener("message", (event) => {
             if (event.source !== window.parent) return;
@@ -4902,6 +4915,10 @@ init();
                     paramsByKind: bp.paramsByKind,
                     worldParams: __worldParamsPayload(),
                     renderConfig: __renderConfigPayload(),
+                    // SPIEGEL-ZENSUS 17.07. — das Siedlungs-Existenz-Gesetz
+                    // (fachwerk SIEDLUNG) reist additiv mit; ein Alt-Empfaenger
+                    // ohne den Steckplatz ignoriert das Feld (must-ignore).
+                    siedlung: __zweitKernSiedlung(),
                 },
                 "*"
             );
