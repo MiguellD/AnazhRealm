@@ -565,6 +565,13 @@
                         // Literal. Byte-gleich (0.4 / 0.4 / 0.3 / 0.15).
                         fold: { held: 0.4, weapon: 0.4, armor: 0.3, tool: 0.15 },
                     },
+                    // ANATOMIE-ANKER (Zensus-Rest V18.488, rein additiv): die
+                    // SITZ-HUEFTE -- wie hoch das Koerper-ZENTRUM der sitzenden
+                    // Pose ueber dem Sattelpunkt liegt (m; die M3-Sitz-Pose
+                    // senkt die Huefte AUF den Sattel). Spieler-Anatomie,
+                    // gefaehrt-skalen-unabhaengig; war die Stamm-Konstante
+                    // SITZ_HIP_OFFSET. Byte-gleich 0.45.
+                    anatomie: { sitzHipOffset: 0.45 },
                 },
             },
         };

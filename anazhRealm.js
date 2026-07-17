@@ -52155,6 +52155,7 @@ class AnazhRealm {
         // trägt. holz 0.4 schwimmt, stein 0.85/eisen 0.9 sinken (Archimedes
         // in Tag-Sprache; Erst-Wurf-Schwelle, S-Vermerk).
         let floats = false;
+        let dichteMittel = 0.45; // ZENSUS-REST V18.488 — die Wasserlinien-Quelle (s. prof.dichte)
         if (bp && Array.isArray(bp.parts)) {
             let volSum = 0;
             let dSum = 0;
@@ -52170,6 +52171,7 @@ class AnazhRealm {
                 dSum += v * d;
             }
             floats = volSum > 0 && dSum / volSum < 0.55;
+            if (volSum > 0) dichteMittel = dSum / volSum;
         }
         // PHYSIK-NAHT (N6.5b) — die EMERGENZ-KOEFFIZIENTEN wohnen im GESETZBUCH
         // (vehicle-core FAHR.hostEmergent, reine Daten): EINE Quelle fuer Lab-
@@ -52187,15 +52189,21 @@ class AnazhRealm {
             beinCount,
             mass,
             floats,
+            // ZENSUS-REST V18.488 — die volumen-gewichtete Substanz-Dichte
+            // reist ins Profil (die Wasserlinien-Quelle: Archimedes statt
+            // Erst-Wurf-0.25; dieselbe Messung wie das floats-Gate).
+            dichte: dichteMittel,
             topSpeedMul:
                 1 +
                 Math.min(_heN("radCap", 0.6), radCount * _heN("radMul", 0.12)) +
                 (radCount === 0 && beinCount >= 2 ? _heN("beinBonus", 0.15) : 0),
-            kAcc: Math.max(2.5, Math.min(10, _heN("kAcc", 7) / mass)),
+            // ZENSUS-REST V18.488 — auch die KLEMM-GRENZEN sind Kern-Daten
+            // (hostEmergent, neben ihren Koeffizienten; fail-soft byte-gleich).
+            kAcc: Math.max(_heN("kAccMin", 2.5), Math.min(_heN("kAccMax", 10), _heN("kAcc", 7) / mass)),
             kBrake:
                 radCount > 0
-                    ? Math.max(1.5, Math.min(6, _heN("kBrakeRad", 3.5) / mass))
-                    : Math.max(4, Math.min(10, _heN("kBrakeBein", 8) / mass)),
+                    ? Math.max(_heN("kBrakeRadMin", 1.5), Math.min(_heN("kBrakeRadMax", 6), _heN("kBrakeRad", 3.5) / mass))
+                    : Math.max(_heN("kBrakeBeinMin", 4), Math.min(_heN("kBrakeBeinMax", 10), _heN("kBrakeBein", 8) / mass)),
             roles,
         };
         // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
@@ -52223,6 +52231,11 @@ class AnazhRealm {
                 // aus cgHeightOf: Bodenfreiheit+Gürtel+Aufbau) reist ins Profil;
                 // der Nick-Block liest sie statt der Host-Näherung sitz·0.5.
                 if (Number.isFinite(_fp.cgH) && _fp.cgH > 0) prof.cgH = _fp.cgH;
+                // ZENSUS-REST V18.488 — die RAD-/SPUR-Geometrie des Kerns reist
+                // ins Profil: radR dreht die Rad-Rolle mit Weg/radR (statt der
+                // Magie-Konstanten 2.2/1.6), spur trägt den Quer-Wank (cgH/W).
+                if (Number.isFinite(_fp.radR) && _fp.radR > 0) prof.radR = _fp.radR;
+                if (Number.isFinite(_fp.spur) && _fp.spur > 0) prof.spur = _fp.spur;
                 // PHYSIK-NAHT (N6.5a) — der benannte spring-ANSCHLUSS wird KONSUMIERT:
                 // Federrate/Daempfung des Studio-Rezepts (exportDrive.spring {k,c} —
                 // DIESELBEN Zahlen, mit denen die Probefahrt federt) reisen ins Profil;
@@ -52461,8 +52474,25 @@ class AnazhRealm {
         entry._afloat = false;
         if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
             const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
-            if (runSurf > -Infinity && runSurf - 0.25 > groundY) {
-                groundY = runSurf - 0.25;
+            // ZENSUS-REST V18.488 — die WASSERLINIE ist ARCHIMEDES statt
+            // Erst-Wurf-0.25: der eingetauchte Rumpf-Anteil = Dichteverhältnis
+            // (prof.dichte / Wasser-Schwelle 0.55 — dieselbe Messung wie das
+            // floats-Gate), × Rumpf-Höhe aus der Bauplan-BBox (gecacht am
+            // Entry; Klemmen halten den Rumpf sichtbar). Ein Eichen-Kahn liegt
+            // tiefer als ein Balsa-Floß — die Substanz zeichnet die Wasserlinie.
+            if (!Number.isFinite(entry._tauchTiefe)) {
+                const bpT = this.state.blueprints && this.state.blueprints[entry.type];
+                const bbT = bpT ? this._compoundBBox(bpT) : null;
+                const sclT = Number.isFinite(entry.scale) ? entry.scale : 1;
+                const rumpfH = bbT ? Math.max(0.3, (bbT.max.y - bbT.min.y) * sclT) : 1;
+                const anteil = Math.max(
+                    0.1,
+                    Math.min(0.95, (Number.isFinite(rideProf.dichte) ? rideProf.dichte : 0.45) / 0.55)
+                );
+                entry._tauchTiefe = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
+            }
+            if (runSurf > -Infinity && runSurf - entry._tauchTiefe > groundY) {
+                groundY = runSurf - entry._tauchTiefe;
                 entry._afloat = true;
             }
         }
@@ -52517,21 +52547,37 @@ class AnazhRealm {
         // FAHR-GEFÜHL — lenkt das Studio-Fahrzeug SELBST (_rideSteer vom
         // Bewegungs-Tick), führt SEINE Gier direkt (die Lenkung ist die
         // Wahrheit, kein Geschwindigkeits-Nachlauf); sonst byte-alt folgen.
+        // ZENSUS-REST V18.488 — das GIER-FOLGE-GEFÜHL (exp-k + Fahrt-Gate) wohnt
+        // im vehicle-Gesetzbuch (FAHR.hostEmergent.yawFolgeK/.fahrtGate; fail-
+        // soft byte-gleich 4 / 0.4 — dasselbe Gate speist unten die Bewegt-Optik).
+        const _vcHE2 =
+            (typeof globalThis !== "undefined" &&
+                globalThis.__vehicleCore &&
+                globalThis.__vehicleCore.FAHR &&
+                globalThis.__vehicleCore.FAHR.hostEmergent) ||
+            null;
+        const fahrtGate = _vcHE2 && Number.isFinite(_vcHE2.fahrtGate) ? _vcHE2.fahrtGate : 0.4;
         if (entry._rideSteer) {
             if (Number.isFinite(entry._rideYaw)) entry.rotationY = entry._rideYaw;
             entry._rideSteer = false;
-        } else if (sp > 0.4) {
+        } else if (sp > fahrtGate) {
             const targetYaw = Math.atan2(vx, vz);
             let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
             let d = targetYaw - cur;
             while (d > Math.PI) d -= 2 * Math.PI;
             while (d < -Math.PI) d += 2 * Math.PI;
-            cur += d * (1 - Math.exp(-4 * tick));
+            cur += d * (1 - Math.exp(-(_vcHE2 && Number.isFinite(_vcHE2.yawFolgeK) ? _vcHE2.yawFolgeK : 4) * tick));
             entry._rideYaw = cur;
             entry.rotationY = cur;
         }
         // Die Fahr-Phase wächst mit dem WEG (Rad-Umfang-Gefühl statt Uhr).
-        entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+        // ZENSUS-REST V18.488 — über den ECHTEN Rad-Radius des Kerns
+        // (exportDrive.radR): Rad-Winkel = Weg/radR; der rad-Konsument
+        // (applyJoint) multipliziert ×1.6, darum teilt die Phase durch
+        // (radR·1.6) — exakt Weg/radR am Rad. Ohne radR (Kreatur-Ritt/
+        // kaltes Buch) die byte-alte Magie-Konstante 2.2.
+        const _radR = rideProf && Number.isFinite(rideProf.radR) && rideProf.radR > 0 ? rideProf.radR : null;
+        entry._ridePhase = (entry._ridePhase || 0) + sp * tick * (_radR !== null ? 1 / (_radR * 1.6) : 2.2);
         // PHYSIK-NAHT (N6.5a, Nick) — das NICK-VERHALTEN aus dem STUDIO-GESETZ
         // (wheelClearance-Form: pitch = a·(cgH/L)·pitchGain/k): Laengs-Beschleunigung
         // aus der Reiter-Fahrt (Bremsen → Bug taucht, Anfahren → Squat), cgH/L aus
@@ -52581,8 +52627,35 @@ class AnazhRealm {
                 let np = cur + (target - cur) * (1 - Math.exp(-Math.sqrt(sprN.k) * tick));
                 if (!Number.isFinite(np)) np = 0;
                 entry._ridePitch = np;
-            } else if (entry._ridePitch) {
-                entry._ridePitch = 0;
+                // ZENSUS-REST V18.488 — QUER-WANK aus der Kurvenfahrt: die
+                // Lab-Formel wheelClearance (roll = aLat·(cgH/W)·rollGain/k)
+                // erreicht die Welt — aLat = v·GierRate, geklemmt an der
+                // EINEN Kern-Klammer A_LAT_MAX, spur aus exportDrive (fail-
+                // soft L·0.55), rollGain aus FAHR (fail-soft 1.8). Render-
+                // only, exp-geglättet wie der Nick; die tote Kern-Wahrheit
+                // rollGain/A_LAT_MAX wird damit KONSUMIERT.
+                const yawNow = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
+                let dYw = yawNow - (Number.isFinite(entry._rideYawPrev) ? entry._rideYawPrev : yawNow);
+                while (dYw > Math.PI) dYw -= 2 * Math.PI;
+                while (dYw < -Math.PI) dYw += 2 * Math.PI;
+                entry._rideYawPrev = yawNow;
+                let aLat = tick > 1e-5 ? sp * (dYw / tick) : 0;
+                if (!Number.isFinite(aLat)) aLat = 0;
+                const aLatMax = vc && Number.isFinite(vc.A_LAT_MAX) ? vc.A_LAT_MAX : 11;
+                aLat = Math.max(-aLatMax, Math.min(aLatMax, aLat));
+                const spurW =
+                    rideProf && Number.isFinite(rideProf.spur) && rideProf.spur > 0 ? rideProf.spur : L * 0.55;
+                const rGain = vcF && Number.isFinite(vcF.rollGain) ? vcF.rollGain : 1.8;
+                let rollT = (-aLat * Math.max(0.08, Math.min(0.9, cgH / spurW)) * rGain) / sprN.k;
+                if (!Number.isFinite(rollT)) rollT = 0;
+                rollT = Math.max(-0.12, Math.min(0.12, rollT));
+                const curKR = Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0;
+                let nKR = curKR + (rollT - curKR) * (1 - Math.exp(-Math.sqrt(sprN.k) * tick));
+                if (!Number.isFinite(nKR)) nKR = 0;
+                entry._rideKurvenRoll = nKR;
+            } else {
+                if (entry._ridePitch) entry._ridePitch = 0;
+                if (entry._rideKurvenRoll) entry._rideKurvenRoll = 0;
             }
             entry._rideSp = sp;
             // STEIGUNGS-DREIKLANG — Gelände-NICK/-WANK für JEDES gerittene Gefährt
@@ -52610,11 +52683,14 @@ class AnazhRealm {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
             if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
             // STEIGUNGS-DREIKLANG — Beschleunigungs-Nick + Gelände-Nick addieren,
-            // der Wank kommt als rotation.z dazu (beide 0 für Nicht-Gerittenes).
+            // der Wank kommt als rotation.z dazu (beide 0 für Nicht-Gerittenes);
+            // ZENSUS-REST V18.488 — der Kurven-Wank addiert auf den Gelände-Wank.
             entry.mesh.rotation.x =
                 (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
                 (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
-            entry.mesh.rotation.z = Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0;
+            entry.mesh.rotation.z =
+                (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
+                (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
             const prof = this._vehicleProfile(entry);
             if (prof && prof.roles) {
                 this._animateCompoundMotion(
@@ -52622,7 +52698,7 @@ class AnazhRealm {
                     prof.roles,
                     performance.now() / 1000,
                     entry._ridePhase,
-                    sp > 0.4
+                    sp > fahrtGate
                 );
             }
         } else if (entry.instanced) {
@@ -63011,7 +63087,11 @@ class AnazhRealm {
         const rp =
             (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
             (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
-        const rr = Number.isFinite(entry._rideRoll) && entry._rideRoll !== 0 ? entry._rideRoll : 0;
+        // ZENSUS-REST V18.488 — der Kurven-Wank addiert auf den Gelände-Wank
+        // (derselbe R_z wie der Group-Pfad; 0 für Nicht-Gerittenes).
+        const rr =
+            (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
+            (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
         if (ry !== 0) {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
@@ -88614,13 +88694,26 @@ class AnazhRealm {
                 const hand = !!this.state.keys["shift"];
                 // nie Sprint im Sattel; der VMAX-ANKER trägt auch den Lenk-Pfad.
                 const zielSpeed = (rideVmax !== null ? rideVmax : this.state.speed * rideTop) * slopePenalty;
-                const ziel = this.state.keys["w"]
-                    ? zielSpeed
-                    : this.state.keys["s"]
-                      ? -zielSpeed * (Number.isFinite(lenk.kehrV) ? lenk.kehrV : 0.45)
-                      : 0;
-                const kL = this.state.keys["w"] || this.state.keys["s"] ? rideKAcc : rideKBrake;
-                vLong += (ziel - vLong) * (1 - Math.exp(-kL * nowDt));
+                // ZENSUS-REST V18.488 — DIE ECHTE BREMSE: S bei Vorwärts-Fahrt
+                // bremst mit der Kern-Verzögerung (lenkung.brakeDecel, dieselbe
+                // Zahl wie die Probefahrt — vorher war S IMMER Rückwärtsgang);
+                // erst unter dem Fahrt-Gate wird S der Kehr-Zweig (kehrV).
+                const sBremse =
+                    !!this.state.keys["s"] &&
+                    vLong > 0.4 &&
+                    Number.isFinite(lenk.brakeDecel) &&
+                    lenk.brakeDecel > 0;
+                if (sBremse) {
+                    vLong = Math.max(0, vLong - lenk.brakeDecel * nowDt);
+                } else {
+                    const ziel = this.state.keys["w"]
+                        ? zielSpeed
+                        : this.state.keys["s"]
+                          ? -zielSpeed * (Number.isFinite(lenk.kehrV) ? lenk.kehrV : 0.45)
+                          : 0;
+                    const kL = this.state.keys["w"] || this.state.keys["s"] ? rideKAcc : rideKBrake;
+                    vLong += (ziel - vLong) * (1 - Math.exp(-kL * nowDt));
+                }
                 // STEIGUNGS-DREIKLANG (Zensus 17.07.) — HANGABTRIEB: die Gelände-
                 // Steigung längs der Fahrt wirkt als −g·sin(α) auf vLong (bergauf
                 // bremst, bergab schiebt — vorher fuhr der Wagen jede Steigung
@@ -94414,13 +94507,29 @@ AnazhRealm.LIFTING_RANGE_M = 10;
 AnazhRealm.LIFTING_DRIFT_PER_SEC = 2.0;
 
 // Welt-Reaktion-Konstanten (Welle 10b.3).
-AnazhRealm.MOUNT_RANGE_M = 3; // Spieler muss diese Nähe für E-Mount haben
+// ZENSUS-REST V18.488 — die AUFSITZ-REGELN wohnen in ihren Gesetzbüchern:
+// die E-Mount-Reichweite ist Fahr-Interaktions-Gesetz (vehicle:FAHR.
+// mountRangeM), die Sitz-Hüfte ist Körper-Anatomie (koerper:anatomie.
+// sitzHipOffset — das Körperzentrum der SITZENDEN Pose über dem Sattelpunkt,
+// W-D V18.170 R-010; dient jedem künftigen Sitz: Boot · Bank · Thron). Die
+// Statics sind LESER (Getter, fail-closed — Kern-Pflicht).
+Object.defineProperties(AnazhRealm, {
+    MOUNT_RANGE_M: {
+        get() {
+            const v = AnazhRealm.Gesetz("vehicle:FAHR.mountRangeM", null);
+            if (Number.isFinite(v) && v > 0) return v;
+            return AnazhRealm._kernPflichtBruch("vehicle:FAHR.mountRangeM");
+        },
+    },
+    SITZ_HIP_OFFSET: {
+        get() {
+            const v = AnazhRealm.Gesetz("koerper:anatomie.sitzHipOffset", null);
+            if (Number.isFinite(v)) return v;
+            return AnazhRealm._kernPflichtBruch("koerper:anatomie.sitzHipOffset");
+        },
+    },
+});
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
-// W-D (V18.170, R-010) — das Körperzentrum der SITZENDEN Pose über dem
-// Sattelpunkt (die M3-Sitz-Pose senkt die Hüfte auf den Sattel; die alte
-// Steh-Anatomie +0.9 ließ den Reiter GEMESSEN +0.90 m schweben). Dient
-// jedem künftigen Sitz (Boot · Bank · Thron).
-AnazhRealm.SITZ_HIP_OFFSET = 0.45;
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;

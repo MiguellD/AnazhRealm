@@ -2045,7 +2045,25 @@
             kAcc: 7, // Beschleunigungs-k ÷ Masse (schwer = traege)
             kBrakeRad: 3.5, // Roll-aus-k ÷ Masse (Raeder rollen aus)
             kBrakeBein: 8, // Stopp-k ÷ Masse (Beine/starr stoppen prompt)
+            // ── ZENSUS-REST V18.488 (rein additiv): die KLEMM-GRENZEN der
+            //    Emergenz-Formel wohnen NEBEN ihren Koeffizienten (waren
+            //    Stamm-Literale 2.5-10 / 1.5-6 / 4-10) + das GIER-FOLGE-
+            //    GEFUEHL des richtungs-folgenden Ritts (yawFolgeK = exp-k
+            //    der Gier-Glaettung; fahrtGate = m/s, ab der die Fahrt
+            //    dreht — auch die Schwelle der echten S-Bremse). ──
+            kAccMin: 2.5,
+            kAccMax: 10,
+            kBrakeRadMin: 1.5,
+            kBrakeRadMax: 6,
+            kBrakeBeinMin: 4,
+            kBrakeBeinMax: 10,
+            yawFolgeK: 4,
+            fahrtGate: 0.4,
         },
+        // ── ZENSUS-REST V18.488 (rein additive DATEN-Zeile): die AUFSITZ-
+        //    REICHWEITE des Welt-Ritts (m, E-Mount) — Interaktions-Gesetz des
+        //    Fahrens, kein Stamm-Literal. Byte-gleich 3. ──
+        mountRangeM: 3,
         // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
         // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
         // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle
@@ -2142,6 +2160,12 @@
             // aus KERN-Geometrie (radstand reist in lenkung) statt mit der
             // Host-Naeherung sitzHeight*0.5 / 2*halfLen (die faellt fail-soft).
             cgH: cgHeightOf(P),
+            // ZENSUS-REST V18.488 (rein additiv) — die RAD- und SPUR-Geometrie
+            // reist mit: radR dreht die Rad-Rolle des Wirts mit Weg/radR
+            // (statt Magie-Konstante 2.2), spur traegt den Quer-Wank
+            // (rollGain-Formel cgH/W — dieselbe wie wheelClearance).
+            radR: P.radR,
+            spur: P.spur,
             // FAHR-GEFUEHL — die Lenk-/Drift-Gesetze reisen mit (EINE Quelle:
             // FAHR; radstand fuer die Gier-Rate v·tan(δ)/L des Wirts).
             lenkung: {
@@ -2152,6 +2176,9 @@
                 handDecel: FAHR.handDecel,
                 kehrV: FAHR.lenkung.kehrV,
                 radstand: P.radstand,
+                // ZENSUS-REST V18.488 (rein additiv): die echte BREMSE der
+                // Probefahrt (m/s² — S bei Fahrt bremst statt rueckwaerts).
+                brakeDecel: FAHR.brakeDecel,
             },
         };
     }
