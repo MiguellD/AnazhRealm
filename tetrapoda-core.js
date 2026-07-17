@@ -89,6 +89,73 @@
             tag: { aktionen: ["grasen", "scan"], alle: [10, 22] },
             nacht: { aktionen: ["ruhen", "yawn"], alle: [8, 18] },
         },
+        // KREATUR-SEELE (Spiegel-Zensus 17.07., rein additive DATEN-Zeilen):
+        // die VERHALTENS-ZAHLEN der Welt-Wesen wohnen im Evolutions-Gesetzbuch —
+        // jagd (Witterung + Biss des Raubtiers) · furcht (Wariness-Gewichte +
+        // Flucht) · temperament (Resonanz-Signaturen + Gegenwehr-Profile +
+        // Floor) · wandern (Leine/Schlendern + Emotions-Modulation). Der Wirt
+        // liest memoisiert + fail-soft (AnazhRealm._verhaltenGesetz); seine
+        // Literal-Bloecke (CREATURE_HUNT/CREATURE_NATURE/TEMPERAMENT_*/
+        // CREATURE_CHARAKTER) sind der zahlen-gleiche Fallback — die
+        // KREATUR-SEELEN-PARITAETS-WAND im Vertrag-Validator erzwingt die
+        // Gleichheit. must-ignore: fremde Leser ueberlesen die Bloecke.
+        jagd: {
+            radius: 12, // m — Spieler-Witterungs-Reichweite (darueber wandert das Raubtier)
+            speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
+            strikeRange: 2.4, // m — Biss-Reichweite (die EINE Reichweiten-Wahrheit, auch Gegenwehr)
+            strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
+            damageMul: 0.8, // × dem damage-Stat des Wesens
+            fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
+            triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
+            scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
+            scentProbeM: 4, // m — Probe-Schritt der 4-Richtungs-Gradient-Suche
+        },
+        furcht: {
+            noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
+            menaceFromChaos: 1.3, // Aggression/Zorn verschreckt am staerksten
+            menaceFromSorrow: 0.5, // Trauer verunsichert etwas
+            calmFromPeace: 0.9, // Ruhe laedt ein
+            calmFromJoy: 0.5, // Freude lockt
+            boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kuehner
+            ["boldFromHärte"]: 0.6, // ein hartes Wesen steht fester
+            shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer
+            boldFromBond: 0.9, // Bindung macht mutig in Spieler-Naehe
+            friedenMenace: 0.3, // frieden daempft die Bedrohung stark
+            schoepferMenace: 0.1, // schoepfer: die Welt ist ruhig
+            curiousThreshold: -0.2, // Wariness darunter → neugierig (naeher)
+            fleeThreshold: 0.3, // Wariness darueber → scheu (fort)
+            fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv
+            fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
+            combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert ueber der Flucht-Schwelle
+            fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
+        },
+        temperament: {
+            signaturen: {
+                wehrhaft: { dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 },
+                wild: { brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 },
+                sanft: { lebendig: 1.4, ["zähigkeit"]: 0.5, dichte: -0.5, ["härte"]: -0.3 },
+                scheu: { transparent: 0.8, magieleitung: 0.6, dichte: -0.4 },
+            },
+            floor: 0.35, // beste Resonanz darunter → scheu (zarte Natur)
+            profile: {
+                wehrhaft: { strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 },
+                wild: { strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 },
+                sanft: { strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.0 },
+                scheu: { strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.7 },
+            },
+        },
+        wandern: {
+            speedMulMin: 0.6, // Klemm-Boden der Charakter-Geschwindigkeit (stats.speed / STAT-Base 7)
+            speedMulMax: 1.6, // Klemm-Deckel
+            leashBaseM: 18, // m — die Grund-Leine um den Anker (Geburtsort), × bodySize
+            leashSpanM: 10, // m — ± Spanne ueber die Mut-Achse
+            anchorPull: 1.2, // Heim-Zug jenseits der Leine (× speed, geklemmt auf 1×)
+            strideSec: 2.5, // s — die Wander-Schritt-Periode (deterministisch aus netId × Slot)
+            wanderSpeedMul: 0.45, // Wander-Tempo relativ zur vollen Bewegungs-Geschwindigkeit
+            chaosGain: 0.5, // Moment-chaos → fahriger (mehr Amplitude + kuerzere Schritte)
+            sorrowDamp: 0.4, // Moment-sorrow → gedaempfter
+            ampFloor: 0.3, // Boden der Emotions-Modulation (schlurfen, nie einfrieren)
+        },
     };
 
     // ═══════════════════════════════════════════════════════════════════════

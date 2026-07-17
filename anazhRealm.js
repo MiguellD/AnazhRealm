@@ -18273,11 +18273,26 @@ class AnazhRealm {
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
         if (fadeMul < 1) st *= fadeMul;
         let g = tb._gang;
+        // SPIEGEL-ZENSUS — der Gang-Phasen-Seed liest das GESETZ (P.phases je
+        // MOTION-Preset: Trab/Pass/Stand), nicht mehr den hartkodierten Trab;
+        // bei Profil-Wechsel wird re-geseedet (das Lab-Verhalten emo.set:
+        // `if(tgt.phases)cpgPhase=tgt.phases.slice()`) — die Flucht im
+        // Pass-Gang erreicht die Welt. Der walkPhase-Versatz (Per-Kreatur-
+        // Desync) bleibt; ohne phases-Feld (Fallback-Profil) bleibt der
+        // byte-alte Trab-Seed.
+        const phGesetz = Array.isArray(P.phases) && P.phases.length === 4 ? P.phases : null;
         if (!g) {
+            const off = phGesetz || [0, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.25];
             g = tb._gang = {
-                ph: [walkPhase, walkPhase + Math.PI * 0.75, walkPhase + Math.PI * 1.5, walkPhase + Math.PI * 0.25],
+                ph: [walkPhase + off[0], walkPhase + off[1], walkPhase + off[2], walkPhase + off[3]],
                 lastT: t,
+                profil: name,
             };
+        } else if (g.profil !== name) {
+            if (phGesetz) {
+                for (let pi = 0; pi < 4; pi++) g.ph[pi] = walkPhase + phGesetz[pi];
+            }
+            g.profil = name;
         }
         const dt = Math.max(0, Math.min(0.1, t - g.lastT));
         g.lastT = t;
@@ -19208,9 +19223,12 @@ class AnazhRealm {
         const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
         for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
         // Ψ1 — das EINE argmax-Organ liest; unter dem Floor bleibt „scheu".
+        // SPIEGEL-ZENSUS — Signaturen + Floor wohnen im tetrapoda-Gesetzbuch
+        // (VERHALTEN.temperament via _verhaltenGesetz, fail-soft byte-gleich).
+        const TG = AnazhRealm._verhaltenGesetz().temperament;
         const best =
-            this._resonateArgmax(tags, AnazhRealm.TEMPERAMENT_SIGNATURES, {
-                floor: AnazhRealm.TEMPERAMENT_FLOOR,
+            this._resonateArgmax(tags, TG.signaturen, {
+                floor: TG.floor,
             }).key || "scheu";
         creature.userData._temperament = best;
         creature.userData._temperamentSoul = soulKey;
@@ -19380,9 +19398,12 @@ class AnazhRealm {
         // über das damagePlayer-Modus-Gate + den pfad-Check unberührt. Die
         // W3-Furcht (fearUntil → Flucht via _creatureWariness) liest jetzt die
         // temperament-eigene Dauer (fleeMul) — KEIN globaler Schalter.
+        // SPIEGEL-ZENSUS — Profile + Furcht-Dauer wohnen im tetrapoda-Gesetzbuch
+        // (VERHALTEN.temperament/furcht via _verhaltenGesetz, fail-soft byte-gleich).
+        const VG = AnazhRealm._verhaltenGesetz();
         const temperament = this._creatureTemperament(creature);
-        const tProf = AnazhRealm.TEMPERAMENT_PROFILES[temperament] || AnazhRealm.TEMPERAMENT_PROFILES.scheu;
-        creature.userData.fearUntil = performance.now() / 1000 + AnazhRealm.CREATURE_NATURE.fearSec * tProf.fleeMul;
+        const tProf = VG.temperament.profile[temperament] || VG.temperament.profile.scheu;
+        creature.userData.fearUntil = performance.now() / 1000 + VG.furcht.fearSec * tProf.fleeMul;
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
@@ -19391,10 +19412,13 @@ class AnazhRealm {
             const chaos = (creature.userData.emotions && creature.userData.emotions.chaos) || 0;
             const strikeChance = Math.min(tProf.strikeCap, tProf.strike + chaos * tProf.strikeChaos);
             const pmPos = this.state.playerMesh && this.state.playerMesh.position;
+            // SPIEGEL-ZENSUS — die Gegenwehr schlägt mit der EINEN Biss-Reichweite
+            // (VERHALTEN.jagd.strikeRange 2.4; das nackte 4 fiel — zwei Reichweiten-
+            // Wahrheiten wurden eine, bewusster Wert-Entscheid der Zensus-Zeile).
             if (
                 strikeChance > 0 &&
                 pmPos &&
-                Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < 4 &&
+                Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < VG.jagd.strikeRange &&
                 Math.random() < strikeChance
             ) {
                 const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
@@ -19454,7 +19478,7 @@ class AnazhRealm {
             const lastHunt = creature.userData && creature.userData.lastHuntAt;
             if (
                 Number.isFinite(lastHunt) &&
-                performance.now() / 1000 - lastHunt < AnazhRealm.CREATURE_HUNT.triumphWindowSec
+                performance.now() / 1000 - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             ) {
                 this._feelAction("triumph", { magnitude: 1 });
                 this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
@@ -20817,7 +20841,9 @@ class AnazhRealm {
     // + den MODUS (frieden dämpft, schöpfer ruhig) + frische Kampf-Furcht. Negativ = neugierig (näher),
     // positiv = scheu (fort). Reuse: player.emotions + computeCreatureCompoundTags + bond + getGameMode.
     _creatureWariness(creature) {
-        const NAT = AnazhRealm.CREATURE_NATURE;
+        // SPIEGEL-ZENSUS — die Wariness-Gewichte wohnen im tetrapoda-Gesetzbuch
+        // (VERHALTEN.furcht via _verhaltenGesetz, fail-soft byte-gleich).
+        const NAT = AnazhRealm._verhaltenGesetz().furcht;
         const now = performance.now() / 1000;
         const ud = creature.userData || {};
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
@@ -20855,12 +20881,13 @@ class AnazhRealm {
     // Hunt sitzt im task-losen Bewegungs-Zweig).
     _creatureHuntDrive(creature, wariness) {
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return false;
-        if (wariness >= AnazhRealm.CREATURE_NATURE.fleeThreshold) return false;
+        const VG = AnazhRealm._verhaltenGesetz();
+        if (wariness >= VG.furcht.fleeThreshold) return false;
         if (this._creatureTemperament(creature) !== "wild") return false;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return false;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        return dist < AnazhRealm.CREATURE_HUNT.radius;
+        return dist < VG.jagd.radius;
     }
 
     // V18.210 (§1-A3) — DER ZWEITE JAGD-SINN: das WILDE Wesen WITTERT andere
@@ -20868,7 +20895,7 @@ class AnazhRealm {
     // nicht nur den Spieler. Der Wind trägt den Geruch (Quelle = Beute-Position,
     // strength = sizeFactor, V18.208) → das Raubtier folgt dem Gradienten.
     //
-    // Vier Probe-Richtungen (N/S/O/W) in CREATURE_HUNT.scentProbeM Schritten →
+    // Vier Probe-Richtungen (N/S/O/W) in VERHALTEN.jagd.scentProbeM Schritten →
     // höchste Geruch-Intensität zeigt die Richtung. Falls kein Geruch-Gradient
     // (alle vier Proben ≈ 0), returnt der Helper null → Caller fällt auf
     // neutrales Wandern zurück.
@@ -20879,8 +20906,9 @@ class AnazhRealm {
     _creatureScentHuntDir(creature, wariness) {
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
         if (this._creatureTemperament(creature) !== "wild") return null;
-        if (wariness >= AnazhRealm.CREATURE_NATURE.fleeThreshold) return null;
-        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const VG = AnazhRealm._verhaltenGesetz();
+        if (wariness >= VG.furcht.fleeThreshold) return null;
+        const HUNT = VG.jagd;
         const scentRange = HUNT.scentRangeM || 50;
         const probeStep = HUNT.scentProbeM || 4;
         const cx = creature.position.x;
@@ -21031,12 +21059,14 @@ class AnazhRealm {
         const ud = creature.userData || {};
         const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
         if (ud._moveChar && ud._moveCharKey === key) return ud._moveChar;
-        const K = AnazhRealm.CREATURE_CHARAKTER;
+        // SPIEGEL-ZENSUS — Leine + Profile wohnen im tetrapoda-Gesetzbuch
+        // (VERHALTEN.wandern/temperament via _verhaltenGesetz, fail-soft byte-gleich).
+        const VG = AnazhRealm._verhaltenGesetz();
+        const K = VG.wandern;
         const raw = this._creatureBodySpeedMultiplier(creature);
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
         const prof =
-            AnazhRealm.TEMPERAMENT_PROFILES[this._creatureTemperament(creature)] ||
-            AnazhRealm.TEMPERAMENT_PROFILES.scheu;
+            VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
         // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
         const mut = Math.max(0, Math.min(1, (1.7 - (Number.isFinite(prof.fleeMul) ? prof.fleeMul : 1)) / 1.2));
         const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
@@ -21059,7 +21089,7 @@ class AnazhRealm {
     // LEINE (leashM je Charakter) zieht jenseits ihrer Länge zurück zum Anker
     // (Geburtsort, lazy beim ersten freien Tick — Restore-sicher).
     _creatureCharacterWander(creature, direction, speed) {
-        const K = AnazhRealm.CREATURE_CHARAKTER;
+        const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
         const em = ud.emotions;
         let amp = 1 + (em ? (em.chaos || 0) * K.chaosGain - (em.sorrow || 0) * K.sorrowDamp : 0);
@@ -21092,7 +21122,7 @@ class AnazhRealm {
     // aber Ziel ist eine ANDERE Kreatur statt des Spielers). Modus-Gate
     // identisch (pfad-only); Cooldown identisch.
     _tickCreatureScentStrike(creature) {
-        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const HUNT = AnazhRealm._verhaltenGesetz().jagd;
         const now = performance.now() / 1000;
         const ud = creature.userData || {};
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
@@ -21132,7 +21162,7 @@ class AnazhRealm {
     // Wesens ist eine Journal-Erinnerung (der Kreis: die Bedrohung ist
     // LESBAR, kein unsichtbarer Schaden aus dem Nichts).
     _tickCreatureHuntStrike(creature) {
-        const HUNT = AnazhRealm.CREATURE_HUNT;
+        const HUNT = AnazhRealm._verhaltenGesetz().jagd;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return false;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
@@ -22158,7 +22188,10 @@ class AnazhRealm {
                     // sad-Wahl. Neugierig NÄHER (sanfte Aura, kühnes/gebundenes Wesen) · scheu FORT (chaotische
                     // Aura, scheues Wesen, oder getroffen) · sonst gemächlich wandern. Kein Skript — Emergenz.
                     const wariness = this._creatureWariness(creature);
-                    const NAT = AnazhRealm.CREATURE_NATURE;
+                    // SPIEGEL-ZENSUS — Furcht/Jagd-Zahlen aus dem tetrapoda-
+                    // Gesetzbuch (VERHALTEN via _verhaltenGesetz, fail-soft).
+                    const VG = AnazhRealm._verhaltenGesetz();
+                    const NAT = VG.furcht;
                     // PHASE E — die JAGD: ein wildes, unverängstigtes Wesen
                     // pirscht ZUR Beute (schneller als Schlendern) + beißt in
                     // Reichweite. Furcht schlägt Jagd (_creatureHuntDrive
@@ -22172,9 +22205,7 @@ class AnazhRealm {
                         const toPrey = scratchA.subVectors(playerPos, creature.position);
                         toPrey.y = 0;
                         if (toPrey.length() > 1.6) {
-                            direction.copy(
-                                toPrey.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
-                            );
+                            direction.copy(toPrey.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
                         }
                         this._tickCreatureHuntStrike(creature);
                     } else if (wariness >= NAT.fleeThreshold) {
@@ -22239,9 +22270,7 @@ class AnazhRealm {
                         if (scentDir) {
                             // KREATUR-LEBEN — auch die Witterungs-Jagd IST Jagd (ein Stempel).
                             this._kreaturZustandStempel(creature, "jagd");
-                            direction.copy(
-                                scentDir.normalize().multiplyScalar(speed * AnazhRealm.CREATURE_HUNT.speedBoost)
-                            );
+                            direction.copy(scentDir.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
                             this._tickCreatureScentStrike(creature);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -44760,7 +44789,7 @@ class AnazhRealm {
         // spürt den Ernst (sorrow+chaos via ACTION_TO_EMOTION.threatened).
         if (creatureStrike) {
             const hpFrac = stats.hpMax > 0 ? hp / stats.hpMax : 1;
-            if (hpFrac < AnazhRealm.CREATURE_HUNT.fearHpFrac) {
+            if (hpFrac < AnazhRealm._verhaltenGesetz().jagd.fearHpFrac) {
                 this._feelAction("threatened", { magnitude: 1 + (1 - hpFrac) });
             }
         }
@@ -89869,6 +89898,39 @@ AnazhRealm._parkourGesetz = function () {
     } catch (_e) {}
     return null;
 };
+// KREATUR-SEELE (Spiegel-Zensus 17.07.) — DER EINE VERHALTENS-GESETZ-LESER:
+// die Verhaltens-Zahlen der Welt-Wesen (jagd = Witterung/Biss · furcht =
+// Wariness/Flucht · temperament = Signaturen/Floor/Gegenwehr-Profile ·
+// wandern = Leine/Schlendern) wohnen im tetrapoda-Gesetzbuch (VERHALTEN —
+// reine Daten neben aktionen/stimmung). Der Stamm liest fail-soft: Kern
+// kalt / Block fehlt / nicht-finit → das byte-gleiche historische
+// Literal-Quartett (VERHALTEN_FALLBACK; die Gültigkeits-Wand deckt je Block
+// ein Wander-Feld — alter Kern → ganz byte-alt, nie Misch-Gesetz). Memo NUR
+// im Erfolgs-Fall (ein spät ladender Kern friert nie den Fallback ein).
+AnazhRealm._verhaltenGesetz = function () {
+    if (AnazhRealm._verhaltenGesetzMemo) return AnazhRealm._verhaltenGesetzMemo;
+    try {
+        const tc = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+        const v = tc && tc.VERHALTEN;
+        if (
+            v &&
+            v.jagd &&
+            Number.isFinite(v.jagd.strikeRange) &&
+            v.furcht &&
+            Number.isFinite(v.furcht.fleeThreshold) &&
+            v.temperament &&
+            v.temperament.signaturen &&
+            v.temperament.profile &&
+            Number.isFinite(v.temperament.floor) &&
+            v.wandern &&
+            Number.isFinite(v.wandern.leashBaseM)
+        ) {
+            AnazhRealm._verhaltenGesetzMemo = v;
+            return v;
+        }
+    } catch (_e) {}
+    return AnazhRealm.VERHALTEN_FALLBACK;
+};
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — hpMax/damage/knockback/defense
     // lesen ihre Koeffizienten aus dem koerperstudio-Gesetzbuch (fx.kampf via
@@ -94146,6 +94208,8 @@ AnazhRealm.CONTAGION_TARGET = Object.freeze({
 // (_creatureWariness) — deine Aura-Menace × der Natur des Wesens × Bindung × Modus. Browser-justierbar
 // (das Feel: wie scheu/neugierig, wann es kippt). Die MENACE ist chaos-dominant (deine Aggression,
 // V17.54 — feedback-frei: die Contagion treibt chaos NICHT, also kein Furcht-Runaway).
+// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.furcht;
+// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
 AnazhRealm.CREATURE_NATURE = Object.freeze({
     noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler (es wandert nur)
     menaceFromChaos: 1.3, // deine Aggression/Zorn verschreckt am stärksten (feedback-frei)
@@ -94176,6 +94240,9 @@ AnazhRealm.CREATURE_NATURE = Object.freeze({
 // (sanft), ätherisch-transparente flieht (scheu = Floor-Default, das W3-Erbe).
 // GEMESSEN an den Built-ins (Scores im Playtest-Band): wesen→wehrhaft (0.84) ·
 // geist→sanft (0.42) · sprite→scheu (1.01) — klare Margen.
+// SPIEGEL-ZENSUS 17.07. — das GESETZ (Signaturen + Floor + Profile) wohnt in
+// tetrapoda-core VERHALTEN.temperament; diese drei Statics sind der
+// byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
 AnazhRealm.TEMPERAMENT_SIGNATURES = Object.freeze({
     wehrhaft: Object.freeze({ dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 }),
     wild: Object.freeze({ brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 }),
@@ -94203,6 +94270,8 @@ AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
 // damagePlayer-Tor wie die Gegenwehr; die Rüstung dämpft FLACH (dealt =
 // max(1, amount − defense) — exakt die Kreatur-Formel, EINE Sprache).
 // Erst-Wurf-Werte (Abnahme-Regel: bauen, vermerken, weiterfahren).
+// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.jagd;
+// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
 AnazhRealm.CREATURE_HUNT = Object.freeze({
     radius: 12, // m — Spieler-Witterungs-Reichweite (darüber wandert das Raubtier)
     speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
@@ -94239,6 +94308,8 @@ AnazhRealm.CREATURE_SEPARATION = Object.freeze({
 // Differenzierung über Größe/Gattung, nie Tags; Kitz 0.6 → ~16.8 m, GIGANT 2.7 →
 // ~75.6 m) · die Moment-Emotionen (chaos macht fahrig bis +50 %, sorrow dämpft
 // bis −40 %).
+// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.wandern;
+// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
 AnazhRealm.CREATURE_CHARAKTER = Object.freeze({
     speedMulMin: 0.6, // Klemm-Boden der Charakter-Geschwindigkeit (stats.speed / STAT-Base 7)
     speedMulMax: 1.6, // Klemm-Deckel
@@ -94252,6 +94323,22 @@ AnazhRealm.CREATURE_CHARAKTER = Object.freeze({
     chaosGain: 0.5, // Moment-chaos → fahriger (mehr Amplitude + kürzere Schritte)
     sorrowDamp: 0.4, // Moment-sorrow → gedämpfter
     ampFloor: 0.3, // Boden der Emotions-Modulation (ein trauriges Wesen schlurft, es friert nie ein)
+});
+// KREATUR-SEELE (Spiegel-Zensus 17.07.) — der byte-gleiche Fallback des
+// _verhaltenGesetz-Lesers: die vier historischen Literal-Blöcke (oben), unter
+// den Kern-Namen (tetrapoda-core VERHALTEN.jagd/furcht/temperament/wandern)
+// gebündelt. Kern kalt → byte-alte Welt; die KREATUR-SEELEN-PARITÄTS-WAND im
+// Vertrag-Validator (gate:studio-vertrag) erzwingt Zahlen-Gleichheit
+// Stamm ↔ Gesetzbuch (die Drift-Linse, Lehre 1).
+AnazhRealm.VERHALTEN_FALLBACK = Object.freeze({
+    jagd: AnazhRealm.CREATURE_HUNT,
+    furcht: AnazhRealm.CREATURE_NATURE,
+    temperament: Object.freeze({
+        signaturen: AnazhRealm.TEMPERAMENT_SIGNATURES,
+        floor: AnazhRealm.TEMPERAMENT_FLOOR,
+        profile: AnazhRealm.TEMPERAMENT_PROFILES,
+    }),
+    wandern: AnazhRealm.CREATURE_CHARAKTER,
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

@@ -90,6 +90,23 @@ if (V) {
         "PRESETS.wolf.fx.verhalten reist im Rezept (der Buch-Pfad)",
         !!(rec && rec.fx && rec.fx.verhalten && rec.fx.verhalten.aktionen)
     );
+    // ── A3) DECKUNG: die KREATUR-SEELE reist (Spiegel-Zensus 17.07.) —
+    // jagd/furcht/temperament/wandern wohnen im Gesetzbuch, der Stamm liest
+    // sie über den EINEN _verhaltenGesetz-Leser (Paritäts-Wand: gate:studio-vertrag).
+    check(
+        "VERHALTEN trägt die Seelen-Blöcke jagd/furcht/temperament/wandern",
+        !!(
+            V.jagd &&
+            Number.isFinite(V.jagd.strikeRange) &&
+            V.furcht &&
+            Number.isFinite(V.furcht.fleeThreshold) &&
+            V.temperament &&
+            V.temperament.signaturen &&
+            V.temperament.profile &&
+            V.wandern &&
+            Number.isFinite(V.wandern.leashBaseM)
+        )
+    );
 }
 
 // ── B) KONSUM-ANKER im Stamm ──
@@ -101,6 +118,13 @@ probe("der Schwimm-Stempel lebt an der Wasser-Wahrheit", /_motionZustand = "schw
 probe("_animateTierBaum konsumiert bodyX (Rumpf-Neigung reist)", /T\.wolf\.rotation\.x = \(Number\(P\.bodyX\)/);
 probe("_animateTierBaum trägt den Aktions-Overlay", /_verhaltenAktion/);
 probe("der Verhaltens-Tick würfelt deterministisch (FNV, kein Math.random)", /_verhaltenHash\(/);
+// SPIEGEL-ZENSUS 17.07. — die Seelen-Konsum-Anker:
+probe(
+    "die Verhaltens-Zahlen fließen durch den EINEN memoisierten Leser (_verhaltenGesetz)",
+    /_verhaltenGesetzMemo/
+);
+probe("der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)", /Array\.isArray\(P\.phases\)/);
+probe("die Gegenwehr schlägt mit der EINEN Biss-Reichweite (jagd.strikeRange)", /< VG\.jagd\.strikeRange/);
 
 // ── C) SELBST-TEST: injizierte tote Zeile wird erkannt ──
 const fakeTargets = kreaturTargets.concat(["gibtsnicht"]);

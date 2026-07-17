@@ -158,6 +158,18 @@ Komponenten-SÄTZE, keine Klassen):
   rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
   — der Wirt wählt/stempelt FNV-deterministisch, der Baum-Gang trägt den
   Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
+  Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
+  `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
+  fearHpFrac triumphWindowSec scentRangeM scentProbeM }` · `furcht`
+  (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { signaturen
+  floor profile }` (Resonanz-Signaturen + Gegenwehr-Profile) · `wandern`
+  (Leine/Schlendern/Emotions-Modulation). Leser
+  `AnazhRealm._verhaltenGesetz()` (memoisiert, fail-soft); die
+  Stamm-Blöcke `CREATURE_HUNT/CREATURE_NATURE/TEMPERAMENT_*/
+  CREATURE_CHARAKTER` sind der Zahlen-Zwilling als Fallback — die
+  KREATUR-SEELEN-PARITÄTS-WAND im Validator erzwingt die Gleichheit.
+  Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
+  Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
