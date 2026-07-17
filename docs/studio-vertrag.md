@@ -132,6 +132,22 @@ Komponenten-SÄTZE, keine Klassen):
   gerechnet → `_vehicleProfile` liest DATEN statt zu raten (Abgeleitetes reist
   hier bewusst als Export der SELBEN Formel, nicht als zweite Wahrheit — M3)
   · `gate.tueren` · `creature.gang` (Phase 5).
+- **`FAHR.lenkung` (V18.483, vehicle-core → exportDrive → fahrprofil.lenkung):**
+  die Lenk-Gesetze des fahrzeug-eigenen Ritts als Daten
+  (`sfK · maxSteer · gripK · driftGripMul · handDecel · kehrV · radstand`) —
+  der Wirt fährt damit FAHRZEUG-EIGEN (W/S entlang der Gier, Grip frisst
+  Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
+- **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
+  als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
+  dipMin/Max keRefJ } · bogen { mArrow zugJouleRef auszugSec fovZug fovRuhe
+  minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`; Kern kalt →
+  `ARENA_FALLBACK` = das byte-alte GEFÜHLLOSE Verhalten (bewusst KEIN
+  Zahlen-Zwilling, anders als SCHWIMM).
+- **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
+  Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
+  rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
+  — der Wirt wählt/stempelt FNV-deterministisch, der Baum-Gang trägt den
+  Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
@@ -346,6 +362,19 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   ist benannt, der Konsum der bewusste Folge-Schritt). Spender heute:
   `koerper-core.js` (`mensch`, 10 Profile) · `tetrapoda-core.js`
   (wolf/fox/bear/deer, 6 Profile + CPG + Stand-Pose).
+- **§8.2+ `fx.bewegung` (Bewegungs-GESETZE des Körpers, V18.483/485):** die
+  Verben des Ninja-Parks + das Wasser als reine Daten, Leser sind die EINEN
+  Gesetz-Funktionen des Wirts (memoisiert, fail-soft):
+  `bewegung { speed { base leicht mag } · jumpPower { base leicht mag } ·
+  stamina { base traeger mag } · schwimmen { tauchV aufV lerp hubK tiefeK
+  hubCap tiefeCap drag taktZug taktTreten lean { zug treten } pose { kopf
+  armZug armTreten armAb armSpreiz beinZug beinTreten beinTakt }
+  ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
+  wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
+  slideMinTempo slidePose { lehne beinVor knieKnick armStuetz armFrei
+  kopf } } }`. SCHWIMM-PARITÄT ist Vertrag: der Stamm-Fallback
+  (`SCHWIMM_FALLBACK`) MUSS zahlen-gleich zum Kern sein (Validator-Wand);
+  `parkour` hat BEWUSST keinen Fallback (Kern kalt → kein Parkour).
 - **§8.3 `fx.klang` (Musik-Daten, W-A7):** ein Genre als reine Daten. Schema
   (bpm MUSS im Feld, Rest DARF): `klang { bpm, scaleName?, scale?: halbton[],
   dna?: { swing darkness color flow tension space }, form? harmony? rhythm?
@@ -374,8 +403,10 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
 
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
-`mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion) · `tetrapoda-core.js`
-(`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische Dials · fx.motion).
+`mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion + **fx.bewegung**
+[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+]) ·
+`tetrapoda-core.js` (`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische
+Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).
 Alle drei: keine KIND_POLICY-Zeile (keine Katalog-Blueprints — die Rezepte
 erscheinen als Studio-Rezepte in der Werkstatt, W-A1-Straße), `fx.place
 {mode:"none"}`, Daten-Goldens `spec/asset-contract/v7/` (`gate:daten-contract`).

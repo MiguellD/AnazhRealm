@@ -102,6 +102,10 @@ function loadCore(entry) {
             " meshfrei: N.MESHFREI === 1," + // v1.1 §8 — components-only-Kern (B2 N/A)
             " cfg: N.PORTAL_RENDER_CONFIG || null," +
             " paramsByKind: N.PARAMS_BY_KIND || null," +
+            " arena: N.ARENA || null," + // V18.486 — Gefühls-Blöcke sind Vertrag
+            " fahr: N.FAHR || null," +
+            " exportDrive: N.exportDrive || null," +
+            " verhalten: N.VERHALTEN || null," +
             " lehren: N.LEHREN || null }; })();";
     } else {
         code +=
@@ -112,6 +116,10 @@ function loadCore(entry) {
             " meshfrei: typeof MESHFREI !== 'undefined' && MESHFREI === 1," +
             " cfg: typeof PORTAL_RENDER_CONFIG !== 'undefined' ? PORTAL_RENDER_CONFIG : null," +
             " paramsByKind: typeof PARAMS_BY_KIND !== 'undefined' ? PARAMS_BY_KIND : null," +
+            " arena: typeof ARENA !== 'undefined' ? ARENA : null," + // V18.486
+            " fahr: typeof FAHR !== 'undefined' ? FAHR : null," +
+            " exportDrive: typeof exportDrive !== 'undefined' ? exportDrive : null," +
+            " verhalten: typeof VERHALTEN !== 'undefined' ? VERHALTEN : null," +
             " lehren: typeof LEHREN !== 'undefined' ? LEHREN : null };";
     }
     vm.runInContext(code, ctx, { timeout: 30000, filename: entry.file });
@@ -197,6 +205,69 @@ function validateManifest(m) {
                 else if (!(Array.isArray(l.pass) && l.pass.length === 2 && l.pass[0] < l.pass[1]))
                     v.push(`B5: Lehre "${l.id}" pass-Band [lo,hi] ungültig`);
             }
+    }
+    // V18.486 — DIE GEFÜHLS-BLÖCKE (V18.483/485) sind VERTRAG, nicht mehr nur
+    // must-ignore-„darf": trägt ein Kern sie, MUSS die Struktur stimmen
+    // (SOLL-Validierung; die PFLICHT je Kern prüft der Haupt-Lauf).
+    const fxB =
+        m.presets && m.presets.mensch && m.presets.mensch.fx && m.presets.mensch.fx.bewegung
+            ? m.presets.mensch.fx.bewegung
+            : null;
+    if (fxB) {
+        const s = fxB.schwimmen;
+        if (
+            !s ||
+            !Number.isFinite(s.tauchV) ||
+            !Number.isFinite(s.drag) ||
+            !s.lean ||
+            !s.pose ||
+            !Number.isFinite(s.ausdauerProS)
+        )
+            v.push("§8.2+ fx.bewegung.schwimmen unvollständig (tauchV/drag/lean/pose/ausdauerProS)");
+        const p = fxB.parkour;
+        if (!p || !Number.isFinite(p.kletterV) || !Number.isFinite(p.wandAbstoss) || !Number.isFinite(p.slideTempoMul))
+            v.push("§8.2+ fx.bewegung.parkour unvollständig (kletterV/wandAbstoss/slideTempoMul)");
+        else if (!p.slidePose || !Number.isFinite(p.slidePose.lehne))
+            v.push("§8.2+ parkour.slidePose unvollständig (lehne fehlt)");
+    }
+    if (m.arena) {
+        const a = m.arena;
+        if (
+            !a.schwung ||
+            !Number.isFinite(a.schwung.dauerProSqrtI) ||
+            !a.gefuehl ||
+            !Number.isFinite(a.gefuehl.keRefJ) ||
+            !a.bogen ||
+            !Number.isFinite(a.bogen.mArrow)
+        )
+            v.push("§B6+ ARENA unvollständig (schwung.dauerProSqrtI / gefuehl.keRefJ / bogen.mArrow)");
+    }
+    if (m.fahr) {
+        const L = m.fahr.lenkung;
+        if (
+            !L ||
+            !Number.isFinite(L.sfK) ||
+            !Number.isFinite(L.gripK) ||
+            !Number.isFinite(L.driftGripMul) ||
+            !Number.isFinite(L.kehrV)
+        )
+            v.push("§B6+ FAHR.lenkung unvollständig (sfK/gripK/driftGripMul/kehrV)");
+    }
+    if (m.verhalten) {
+        const V = m.verhalten;
+        const aOk = V.aktionen && typeof V.aktionen === "object" && Object.keys(V.aktionen).length >= 8;
+        const sOk =
+            V.stimmung &&
+            typeof V.stimmung === "object" &&
+            Object.values(V.stimmung).every(
+                (st) => st && Array.isArray(st.aktionen) && Array.isArray(st.alle) && st.alle.length === 2
+            );
+        if (!aOk || !sOk) v.push("§B6+ VERHALTEN unvollständig (aktionen ≥8 / stimmung{aktionen,alle[2]})");
+        else {
+            for (const k in V.stimmung)
+                for (const an of V.stimmung[k].aktionen)
+                    if (!V.aktionen[an]) v.push(`§B6+ VERHALTEN: Stimmung "${k}" nennt unbekannte Aktion "${an}"`);
+        }
     }
     return v;
 }
@@ -287,6 +358,79 @@ function validateManifest(m) {
         !!reg && /KP\[rec\.kind\]/.test(reg[0]) && /if \(!pol\) continue/.test(reg[0])
     );
 
+    // V18.486 — DIE PFLICHT JE KERN: die Gefühls-Blöcke der V18.483/485-Wellen
+    // sind Vertrag. Fehlt der Block im tragenden Kern, ist das ROT (vorher war
+    // alles nur must-ignore-„darf" — unbewacht, konnte still fallen).
+    const pflicht = {
+        "koerper-core.js": (m) =>
+            !!(
+                m.presets &&
+                m.presets.mensch &&
+                m.presets.mensch.fx &&
+                m.presets.mensch.fx.bewegung &&
+                m.presets.mensch.fx.bewegung.schwimmen &&
+                m.presets.mensch.fx.bewegung.parkour &&
+                m.presets.mensch.fx.bewegung.parkour.slidePose
+            ),
+        "schmiede-core.js": (m) => !!(m.arena && m.arena.schwung && m.arena.gefuehl && m.arena.bogen),
+        "vehicle-core.js": (m) => !!(m.fahr && m.fahr.lenkung && typeof m.exportDrive === "function"),
+        "tetrapoda-core.js": (m) => !!(m.verhalten && m.verhalten.aktionen && m.verhalten.stimmung),
+    };
+    for (const entry of CORES) {
+        if (!pflicht[entry.file]) continue;
+        let m = null;
+        try {
+            m = loadCore(entry);
+        } catch (_e) {}
+        check(
+            `PFLICHT ${entry.file}: trägt seinen Gefühls-Block (fx.bewegung/ARENA/FAHR.lenkung/VERHALTEN)`,
+            !!m && pflicht[entry.file](m)
+        );
+    }
+    // V18.486 — DIE SCHWIMM-PARITÄTS-WAND: der Stamm-Fallback (byte-alte Welt
+    // bei kaltem Kern) MUSS dem Kern-Gesetz zahlen-gleich sein — sonst driftet
+    // die Welt still, sobald jemand nur EINE Quelle editiert (die Gleichheit
+    // war bisher eine reine Hand-Invariante).
+    (function schwimmParitaet() {
+        let kern = null;
+        try {
+            const kc = CORES.find((c) => c.file === "koerper-core.js");
+            const m = loadCore(kc);
+            kern = m.presets.mensch.fx.bewegung.schwimmen;
+        } catch (_e) {}
+        let stamm = null;
+        try {
+            const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+            const i = src.indexOf("AnazhRealm.SCHWIMM_FALLBACK =");
+            const j = src.indexOf("\n});", i);
+            const block = src.slice(src.indexOf("=", i) + 1, j + 3);
+            stamm = vm.runInNewContext("(" + block + ")", { Object }, { timeout: 5000 });
+        } catch (_e) {}
+        const diffs = [];
+        const tief = (a, b, pfad) => {
+            if (typeof a === "number" || typeof b === "number") {
+                if (a !== b) diffs.push(`${pfad}: Kern=${a} Stamm=${b}`);
+                return;
+            }
+            if (!a || !b || typeof a !== "object" || typeof b !== "object") {
+                if (String(a) !== String(b)) diffs.push(`${pfad}: Typ-Drift`);
+                return;
+            }
+            for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) tief(a[k], b[k], pfad + "." + k);
+        };
+        if (kern && stamm) tief(kern, stamm, "schwimmen");
+        check(
+            "SCHWIMM-PARITÄT: SCHWIMM_FALLBACK (Stamm) == fx.bewegung.schwimmen (Kern), zahlen-gleich",
+            !!kern && !!stamm && diffs.length === 0,
+            diffs[0] ||
+                (!kern
+                    ? "Kern unlesbar"
+                    : !stamm
+                      ? "Stamm-Fallback unlesbar"
+                      : `${Object.keys(kern).length} Felder gleich`)
+        );
+    })();
+
     // SELBST-TEST — das Gate ist nicht vakuös: eine injizierte Verletzung
     // (Rezept ohne kind + kaputte rarity) MUSS erkannt werden.
     const broken = {
@@ -306,16 +450,32 @@ function validateManifest(m) {
         build: function () {},
         meshfrei: true,
     });
+    // V18.486 — auch die Gefühls-Block-Prüfungen feuern auf Injektion:
+    const bvFx = validateManifest({
+        vertrag: 1,
+        presets: {
+            mensch: { kind: "koerper", fx: { bewegung: { schwimmen: { tauchV: 1 }, parkour: { kletterV: 1 } } } },
+        },
+        build: function () {},
+        arena: { schwung: {} },
+        fahr: { lenkung: { sfK: 0.05 } },
+        verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
+    });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version · MESHFREI-Widerspruch)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · kindStages · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
             bv.some((s) => s.includes("kindStages.kaputt")) &&
             bv.some((s) => s.includes("kindStages.falschrum")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
-            bvMesh.some((s) => s.includes("MESHFREI")),
-        `${bv.length + bvVer.length + bvMesh.length} erkannt`
+            bvMesh.some((s) => s.includes("MESHFREI")) &&
+            bvFx.some((s) => s.includes("schwimmen unvollständig")) &&
+            bvFx.some((s) => s.includes("parkour unvollständig")) &&
+            bvFx.some((s) => s.includes("ARENA unvollständig")) &&
+            bvFx.some((s) => s.includes("FAHR.lenkung unvollständig")) &&
+            bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
+        `${bv.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
 
     if (errs.length) {
