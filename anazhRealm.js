@@ -68377,6 +68377,57 @@ class AnazhRealm {
     // Ausnahme); kein tauglicher Fleck → null (fail-closed, dieselbe Welt urteilt
     // immer gleich). Idempotenz über Reload trägt `worldMeta.settlementCells.start`
     // (derselbe Spread-Pfad wie die Zell-Keys).
+    // DER GENESIS-PORTAL-RING (Schöpfer 17.07.: „beim ersten Spawn, in der ersten
+    // Welt, die Kernportale um die Genesis-Plattform anordnen — dann kann ich
+    // schnell in die Studios"): EINMAL je Welt stehen alle Built-in-Welt-Portale
+    // (die WORLD_REGISTRY-Bibliothek: die 8 Studios + Skelett/Strom) im Kreis um
+    // den Ursprung — begehbarer Radius, aufs Terrain gesetzt, deterministisch
+    // (Ordnung = Bauplan-Reihenfolge, Seed je Platz fest). Idempotent DOPPELT:
+    // worldMeta-Stempel (reist mit dem Save) UND Existenz-Probe (ein restauriertes
+    // Ring-Portal nahe des Ursprungs setzt den Stempel nach — kein Duplikat,
+    // selbst wenn ein alter Save den Stempel nicht trägt). Fail-soft: Terrain
+    // noch nicht bereit / Bauplan fehlt → kein Stempel, der nächste Tick versucht
+    // es erneut; kalte Portal-Baupläne → kein Ring (byte-alt).
+    _genesisPortalRing(playerPos) {
+        const st = this.state;
+        const wm = st.worldMeta;
+        if (!wm || wm.genesisPortalRing || this._genesisRingFertig) return;
+        if (playerPos.x * playerPos.x + playerPos.z * playerPos.z > 60 * 60) return; // nur am Genesis-Ort
+        const bps = st.blueprints || {};
+        const namen = Object.keys(bps).filter((n) => {
+            const b = bps[n];
+            return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
+        });
+        if (!namen.length) return;
+        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Ursprungs
+        // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut.
+        for (const e of st.architectures || []) {
+            if (!e || !e.position) continue;
+            const d2 = e.position.x * e.position.x + e.position.z * e.position.z;
+            if (d2 <= 20 * 20 && namen.includes(e.type)) {
+                this._genesisRingFertig = true;
+                wm.genesisPortalRing = true;
+                return;
+            }
+        }
+        const R = 11;
+        let gebaut = 0;
+        for (let i = 0; i < namen.length; i++) {
+            const a = (i / namen.length) * 2 * Math.PI;
+            const x = Math.cos(a) * R;
+            const z = Math.sin(a) * R;
+            const y = this.getTerrainHeightAt(x, z);
+            if (!Number.isFinite(y)) return; // Terrain reift noch — nächster Tick
+            const entry = this.spawnArchitecture(namen[i], { x, y, z }, { seed: ((i + 1) * 7919) >>> 0 });
+            if (entry) gebaut++;
+        }
+        if (gebaut > 0) {
+            wm.genesisPortalRing = true;
+            this._genesisRingFertig = true;
+            this.log(`Genesis-Ring: ${gebaut} Kern-Portale im Kreis um die Plattform.`, "INFO");
+        }
+    }
+
     _autoSettlementStartInfo() {
         const A = AnazhRealm.AUTO_SETTLEMENT;
         const wm = this.state.worldMeta || {};
@@ -68479,6 +68530,9 @@ class AnazhRealm {
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
+        // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
+        // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Ursprung).
+        this._genesisPortalRing(playerPos);
         // DAS START-DORF zuerst (einmalig je Welt, s. _autoSettlementStartInfo): nur
         // nahe des Ursprungs materialisieren (der Spieler steht beim Welt-Start dort;
         // fern = später — kein Fern-Spawn hinter dem Rücken). Fail-closed + Session-
