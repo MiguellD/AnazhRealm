@@ -89981,13 +89981,63 @@ AnazhRealm.WERTUNG = Object.freeze({
 // Formel-Form base + (1−dichte)·leicht + achse·mag). Der Stamm liest fail-soft:
 // Kern kalt / Zeile fehlt / nicht-finit → das historische Literal-Trio (fb),
 // byte-gleiche Werte. Kein zweiter Zahlensatz (Gesetz #0/#2).
-AnazhRealm._bewegungsKoeff = function (stat, fb) {
+// ═══ DER EINE GESETZ-STROM (Schöpfer 17.07.: „der Fluss an Informationen, der
+// in den Untersystemen herrscht … der Import wächst durch den Export") ═══
+// Bisher lernte Anazh nur durch HAND-Leser: jeder Studio-Block brauchte seine
+// eigene Griff-Kette (globalThis.__xCore → PRESETS → fx → …). Der Fluss
+// tropfte, er herrschte nicht. JETZT: EIN generischer Chokepoint, durch den
+// JEDER Export JEDES Kerns sofort erreichbar ist — ein neues Studio-Gesetz
+// braucht nie wieder einen neuen Import-Pfad, nur einen Konsumenten mit Pfad.
+// Pfad-Form: "<kern>:<Weg>" — Großbuchstaben-Wurzel = Namensraum-Block
+// ("schmiede:ARENA.bogen"), sonst die fx-Heimat des Primär-Presets
+// ("koerper:bewegung.schwimmen" ≙ PRESETS.mensch.fx.bewegung.schwimmen).
+// Fail-soft per Konstruktion: kalter Kern / fehlender Ast / nicht-finite Zahl
+// → fallback (das byte-alte Verhalten). Memo je Pfad NUR im Erfolgs-Fall
+// (ein spät ladender Kern friert nie den Fallback ein). Die Domänen-Leser
+// unten (Schwimm/Parkour/Arena/…) behalten ihre GÜLTIGKEITS-Wände (ganz oder
+// gar nicht), greifen aber ALLE durch DIESEN Strom — und der Konsum-Wächter
+// (gate:konsum-bilanz) misst, was noch niemand trinkt.
+AnazhRealm.GESETZ_KERNE = Object.freeze({
+    koerper: "__koerperCore",
+    tetrapoda: "__tetrapodaCore",
+    schmiede: "__schmiedeCore",
+    vehicle: "__vehicleCore",
+    porta: "__portaCore",
+    fachwerk: "__fachwerkCore",
+    klang: "__klangCore",
+});
+AnazhRealm.Gesetz = function (pfad, fallback) {
+    const memo = AnazhRealm._gesetzStromMemo || (AnazhRealm._gesetzStromMemo = new Map());
+    if (memo.has(pfad)) return memo.get(pfad);
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-        const row = b && b[stat];
-        if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
+        const d = pfad.indexOf(":");
+        const nsName = d > 0 ? AnazhRealm.GESETZ_KERNE[pfad.slice(0, d)] : null;
+        const ns = nsName && typeof globalThis !== "undefined" ? globalThis[nsName] : null;
+        if (ns) {
+            const teile = pfad.slice(d + 1).split(".");
+            let v;
+            if (teile[0] in ns) {
+                v = ns; // Namensraum-Block (ARENA/VERHALTEN/FAHR/SIEDLUNG/…)
+            } else if (ns.PRESETS) {
+                const erst = Object.keys(ns.PRESETS)[0]; // fx-Heimat des Primär-Presets
+                v = ns.PRESETS[erst] && ns.PRESETS[erst].fx;
+            }
+            for (const t of teile) {
+                if (v == null) break;
+                v = v[t];
+            }
+            if (v !== undefined && v !== null && (typeof v !== "number" || Number.isFinite(v))) {
+                memo.set(pfad, v);
+                return v;
+            }
+        }
     } catch (_e) {}
+    return fallback;
+};
+
+AnazhRealm._bewegungsKoeff = function (stat, fb) {
+    const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);
+    if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
     return fb;
 };
 // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — DER EINE KAMPF-KOEFFIZIENTEN-LESER:
@@ -89998,9 +90048,7 @@ AnazhRealm._bewegungsKoeff = function (stat, fb) {
 // Literal-Trio (fb), byte-gleiche Werte (das _bewegungsKoeff-Muster).
 AnazhRealm._kampfKoeff = function (stat, fb) {
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const k = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.kampf;
-        const row = k && k[stat];
+        const row = AnazhRealm.Gesetz("koerper:kampf." + stat, null);
         if (row && Number.isFinite(row.base) && Number.isFinite(row.dichte) && Number.isFinite(row.haerte)) return row;
     } catch (_e) {}
     return fb;
@@ -90043,9 +90091,7 @@ AnazhRealm.SCHWIMM_FALLBACK = Object.freeze({
 AnazhRealm._schwimmGesetz = function () {
     if (AnazhRealm._schwimmGesetzMemo) return AnazhRealm._schwimmGesetzMemo;
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-        const s = b && b.schwimmen;
+        const s = AnazhRealm.Gesetz("koerper:bewegung.schwimmen", null);
         if (s && Number.isFinite(s.tauchV) && s.lean && s.pose) {
             AnazhRealm._schwimmGesetzMemo = s;
             return s;
@@ -90061,9 +90107,7 @@ AnazhRealm._schwimmGesetz = function () {
 AnazhRealm._parkourGesetz = function () {
     if (AnazhRealm._parkourGesetzMemo) return AnazhRealm._parkourGesetzMemo;
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-        const p = b && b.parkour;
+        const p = AnazhRealm.Gesetz("koerper:bewegung.parkour", null);
         if (p && Number.isFinite(p.kletterV) && Number.isFinite(p.wandAbstoss)) {
             AnazhRealm._parkourGesetzMemo = p;
             return p;
@@ -90085,9 +90129,7 @@ AnazhRealm._bewegungsBlock = function (block, fb) {
     const memo = AnazhRealm._bewegungsBlockMemo || (AnazhRealm._bewegungsBlockMemo = Object.create(null));
     if (memo[block]) return memo[block];
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-        const g = b && b[block];
+        const g = AnazhRealm.Gesetz("koerper:bewegung." + block, null);
         if (g) {
             let ok = true;
             for (const k in fb) {
@@ -90110,9 +90152,8 @@ AnazhRealm._bewegungsBlock = function (block, fb) {
 // MOUSE_ACTION_STAMINA_COST (bleibt als Fallback + Test-Anker).
 AnazhRealm._aktionAusdauer = function () {
     try {
-        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-        const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-        if (b && Number.isFinite(b.aktionAusdauer)) return b.aktionAusdauer;
+        const a = AnazhRealm.Gesetz("koerper:bewegung.aktionAusdauer", null);
+        if (Number.isFinite(a)) return a;
     } catch (_e) {}
     return AnazhRealm.MOUSE_ACTION_STAMINA_COST;
 };
@@ -90128,8 +90169,7 @@ AnazhRealm._aktionAusdauer = function () {
 AnazhRealm._verhaltenGesetz = function () {
     if (AnazhRealm._verhaltenGesetzMemo) return AnazhRealm._verhaltenGesetzMemo;
     try {
-        const tc = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-        const v = tc && tc.VERHALTEN;
+        const v = AnazhRealm.Gesetz("tetrapoda:VERHALTEN", null);
         if (
             v &&
             v.jagd &&
@@ -90367,8 +90407,7 @@ AnazhRealm.ARENA_FALLBACK = Object.freeze({
 AnazhRealm._arenaGesetz = function () {
     if (AnazhRealm._arenaGesetzMemo) return AnazhRealm._arenaGesetzMemo;
     try {
-        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        const a = sc && sc.ARENA;
+        const a = AnazhRealm.Gesetz("schmiede:ARENA", null);
         // Die Gültigkeits-Wand deckt je Block EIN Zensus-Feld mit: ein ALTER
         // Kern ohne die gereisten Zeilen fällt GANZ auf byte-alt zurück
         // (fail-soft, nie ein Misch-Gesetz aus halb Kern / halb undefined).
@@ -93810,8 +93849,7 @@ AnazhRealm.TOR_FLUEGEL_OFFEN = 1.95;
 AnazhRealm._tuerOffenRad = function () {
     if (Number.isFinite(AnazhRealm._tuerOffenMemo)) return AnazhRealm._tuerOffenMemo;
     try {
-        const pc = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
-        const o = pc && pc.TUER_GESETZ ? pc.TUER_GESETZ.offen : null;
+        const o = AnazhRealm.Gesetz("porta:TUER_GESETZ.offen", null);
         if (Number.isFinite(o)) {
             AnazhRealm._tuerOffenMemo = o;
             return o;
