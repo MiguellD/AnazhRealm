@@ -21065,8 +21065,7 @@ class AnazhRealm {
         const K = VG.wandern;
         const raw = this._creatureBodySpeedMultiplier(creature);
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
-        const prof =
-            VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
+        const prof = VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
         // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
         const mut = Math.max(0, Math.min(1, (1.7 - (Number.isFinite(prof.fleeMul) ? prof.fleeMul : 1)) / 1.2));
         const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
@@ -94015,9 +94014,7 @@ AnazhRealm._SOUL_SWIM_LEAN_FALLBACK = Object.freeze({ moving: 0.5, idle: 0.22 })
 Object.defineProperty(AnazhRealm, "SOUL_SWIM_LEAN", {
     get() {
         const s = AnazhRealm._schwimmGesetz();
-        return s && s.leanSoul && Number.isFinite(s.leanSoul.moving)
-            ? s.leanSoul
-            : AnazhRealm._SOUL_SWIM_LEAN_FALLBACK;
+        return s && s.leanSoul && Number.isFinite(s.leanSoul.moving) ? s.leanSoul : AnazhRealm._SOUL_SWIM_LEAN_FALLBACK;
     },
 });
 // ALTLASTEN-NULL — die Gnaden-Frist nach dem feld-nativen Tod (Sekunden):
