@@ -62821,7 +62821,16 @@ class AnazhRealm {
         const q = this._pipeOfenQueue;
         if (!q || !q.length) return;
         if (!this.state.renderer) return;
-        if (!force && this.state._frameOverBudget) return;
+        if (!force && this.state._frameOverBudget) {
+            // ANTI-VERHUNGERN (SELBST GESPIELT: unter Dauerlast — swiftshader,
+            // schwache Maschinen, Boot-Streaming — ist JEDER Frame über Budget,
+            // und genau dann münzt die Welt ihre Familien: gemessen 11 gemünzt /
+            // 0 gewärmt). Jeder 4. Frame wärmt trotzdem: compileAsync blockt den
+            // Frame nie, die Familien-Dedup deckelt die Gesamtmenge (kein Flood).
+            this._pipeOfenHunger = (this._pipeOfenHunger || 0) + 1;
+            if (this._pipeOfenHunger < 4) return;
+        }
+        this._pipeOfenHunger = 0;
         const post = q.shift();
         const mesh = post && post.mesh;
         if (!mesh || !mesh.geometry || !mesh.material) return;
@@ -88784,7 +88793,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.484.0";
+AnazhRealm.VERSION = "18.485.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
