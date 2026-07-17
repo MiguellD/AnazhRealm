@@ -54161,19 +54161,17 @@ class AnazhRealm {
             if (!cell || !cell.slots || !cell.bpName) continue; // promoted/freigegeben
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
-            // V18.464-Review (B2): Zellen mit REGION-PRIVATEN Slots (@regX,regZ —
-            // Boden-Schichten nah) bleiben dem Region-Lifecycle überlassen: ein
-            // per-Slot-Free in privaten @-Gruppen null-skaliert Instanzen am WELT-
-            // URSPRUNG (der dokumentierte Bounding-Sphere-Hazard aus
-            // _disposeScatterRegion) — diese Gruppen sterben nur als Ganzes mit
-            // ihrer Region.
+            // V18.464-Review (B2), REVIDIERT V18.485: Zellen mit REGION-PRIVATEN
+            // Slots (@regX,regZ — Boden-Schichten nah) waren KOMPLETT eingefroren
+            // (der Ursprungs-Bounding-Sphere-Hazard des per-Slot-Free). Der Hazard
+            // fiel an der WURZEL (die Null-Skala erbt die Position, _archGroupFree)
+            // — jetzt dürfen private Zellen ZURÜCK-wandern (→ Fern-Stufe, Gate
+            // unten), der WANDER-ZENSUS mass sonst 14.8M gefrorene L1-Tris nach
+            // 1 km (3015 Zellen; sichtbar-steady sind ~1.7M). Promotions (→ näher)
+            // bleiben dem Region-Lifecycle überlassen (B2-Weisheit: die Nah-Stufe
+            // entsteht ohnehin beim Region-Bau; kein Nah-Churn pro Band-Kreuzung).
             // DAS FELD URTEILT (das-feld-zeichnet §2 Stufe 1) — SUPER-REGION-Slots
-            // (`@s:`/`@p:s:`, _archFernRegionKey) wandern WEITER: seit die Nicht-
-            // Baum-Fernstufe region-gekeyt ist, trüge sonst JEDE Fern-Zelle einen
-            // @-Slot und der LOD-Tick stünde still. Der per-Slot-Free ist für die
-            // GETEILTE Super-Region der schon dokumentierte Pfad (dieselbe Route wie
-            // _disposeScatterRegion; die Empty-Dispose reapt die leere Hülle) —
-            // geschützt bleibt NUR der private Region-Suffix (Key-Muster-Prüfung).
+            // (`@s:`/`@p:s:`, _archFernRegionKey) wandern voll (beide Richtungen).
             let hatRegional = false;
             for (const s of cell.slots) {
                 if (s && typeof s.key === "string") {
@@ -54184,7 +54182,6 @@ class AnazhRealm {
                     }
                 }
             }
-            if (hatRegional) continue;
             const dx = cell.x - playerPos.x;
             const dz = cell.z - playerPos.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
@@ -54194,6 +54191,16 @@ class AnazhRealm {
                 layer.kind === "rock" ? 0 : this._lodTreeVisHeightFor(cell.species, cell.variantIndex, tf.scale);
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             if (newLod === cell.lod) continue;
+            // V18.485 — DIE RÜCK-WANDERUNG (der Einweg-Freeze fällt): private
+            // Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), und
+            // erst mit Fade-Marge (auch `fade` Meter näher wäre es noch L2 —
+            // kein Flackern am Dither-Band). Die leere private Hülle reapt
+            // _scatterFreeSlots über die EINE Reap-Frage (_archGroupKeyReapable).
+            if (hatRegional) {
+                const fadeM = Number.isFinite(AnazhRealm.LOD_DISTANCES.fade) ? AnazhRealm.LOD_DISTANCES.fade : 8;
+                if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
+                    continue;
+            }
             // dieselbe Oberflächen-Quelle wie der Erst-Bau (Feld → Voxel-Fallback)
             const field = this._sampleBakedField ? this._sampleBakedField(cell.x, cell.z) : null;
             const surfY = field ? field.height : this._voxelSurfaceY ? this._voxelSurfaceY(cell.x, cell.z) : 0;
@@ -65298,7 +65305,17 @@ class AnazhRealm {
             this._archBundleTouch(g.batch); // T3 — Draw-Liste schrumpfte → Region-Bundle re-recorden
             return;
         }
-        const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4().makeScale(0, 0, 0));
+        // V18.485 — die Null-Skala ERBT die letzte Instanz-POSITION (nur die obere
+        // 3×3 fällt auf 0): die lazy Bounding-Sphere spannt nie mehr zum Welt-
+        // Ursprung — der dokumentierte Hazard, WEGEN dem der B2-Guard private
+        // Boden-Zellen einfror. Visuell identisch (Skala 0 zeichnet kein Dreieck);
+        // _archZeroM ist jetzt Scratch (je Aufruf voll überschrieben).
+        const z = this._archZeroM || (this._archZeroM = new THREE.Matrix4());
+        g.mesh.getMatrixAt(slot, z);
+        const ze = z.elements;
+        ze[0] = ze[1] = ze[2] = 0;
+        ze[4] = ze[5] = ze[6] = 0;
+        ze[8] = ze[9] = ze[10] = 0;
         g.mesh.setMatrixAt(slot, z);
         g.mesh.instanceMatrix.needsUpdate = true;
         this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — Matrix-Mutation → Region-Bundle re-recorden

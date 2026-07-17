@@ -235,6 +235,93 @@ function check(name, ok, detail) {
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
+        // ── D (V18.485 — DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
+        //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
+        //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
+        //     leert sich und wird ge-reapt (die EINE Reap-Frage); der Ursprungs-
+        //     Sphere-Hazard fiel mit der positions-erbenden Null-Skala. Probe
+        //     NUR an ZWEI-stufigen Arten (strauch/eiche) — geklemmte Arten
+        //     (Blume/Fels) quittieren bewusst ohne Slot-Tausch. ──
+        const dblk = {};
+        try {
+            const zweiStufig = (c) =>
+                typeof c.bpName === "string" &&
+                (c.bpName.startsWith("fscatter:strauch:") || c.bpName.startsWith("fscatter:eiche:"));
+            let dz2 = null;
+            const dlD = performance.now() + 30000;
+            while (!dz2 && performance.now() < dlD) {
+                for (const reg of map.values()) {
+                    for (const c of reg.cells || []) {
+                        if (c.slots && c.bpName && c.lod < 2 && b2Privat(c) && zweiStufig(c)) {
+                            dz2 = c;
+                            break;
+                        }
+                    }
+                    if (dz2) break;
+                }
+                if (!dz2) {
+                    r._tickScatterStreaming(pm);
+                    r._tickScatterLod(pm, 8, 800);
+                    await new Promise((r2) => setTimeout(r2, 60));
+                }
+            }
+            dblk.zelleGefunden = !!dz2;
+            if (dz2) {
+                dblk.lodVor = dz2.lod;
+                dblk.bpVor = dz2.bpName;
+                const privat = (k) => {
+                    const at = k.indexOf("@");
+                    return at >= 0 && !(k.startsWith("@s:", at) || k.startsWith("@p:s:", at));
+                };
+                const privKeysVor = dz2.slots.map((s) => s.key).filter(privat);
+                dblk.privateSlotsVor = privKeysVor.length;
+                // Spieler geht: weit weg von der Zelle, aber unter der 480-m-
+                // Tick-Grenze (outerM + 96) — die Rück-Wanderung muss greifen.
+                pm.x = dz2.x + 420;
+                pm.z = dz2.z;
+                let dWandel = 0;
+                const dlW2 = performance.now() + 45000;
+                while (!dWandel && performance.now() < dlW2) {
+                    for (let i = 0; i < 40 && !dWandel; i++) {
+                        r._tickScatterLod(pm, 8, 800);
+                        if (dz2.lod === 2) dWandel = 1;
+                    }
+                    if (!dWandel) await new Promise((r2) => setTimeout(r2, 150));
+                }
+                dblk.demotet = dz2.lod === 2;
+                dblk.slotsFern =
+                    Array.isArray(dz2.slots) &&
+                    dz2.slots.length > 0 &&
+                    dz2.slots.every((s) => {
+                        const at = s.key.indexOf("@");
+                        return at >= 0 && (s.key.startsWith("@s:", at) || s.key.startsWith("@p:s:", at));
+                    });
+                // die private Hülle: ge-reapt (weg) oder restlos leer
+                dblk.huelleWeg = privKeysVor.every((k) => {
+                    const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
+                    return !g || (g.liveCount | 0) === 0;
+                });
+                // Null-Skala erbt die Position: kein Slot einer lebenden privaten
+                // Gruppe darf eine Ursprungs-Translation tragen (Sphere-Hazard).
+                let ursprungsHazard = 0;
+                if (r.state.archInstanceGroups) {
+                    for (const [k, g] of r.state.archInstanceGroups) {
+                        if (!privat(k) || !g.mesh || g.kind === "batch" || !g.mesh.instanceMatrix) continue;
+                        const arr = g.mesh.instanceMatrix.array;
+                        for (let sl = 0; sl < g.next; sl++) {
+                            const o = sl * 16;
+                            const skala0 = arr[o] === 0 && arr[o + 5] === 0 && arr[o + 10] === 0;
+                            const amUrsprung = arr[o + 12] === 0 && arr[o + 13] === 0 && arr[o + 14] === 0;
+                            if (skala0 && amUrsprung) ursprungsHazard++;
+                        }
+                    }
+                }
+                dblk.ursprungsHazard = ursprungsHazard;
+            }
+        } catch (e) {
+            dblk.err = String(e && e.message);
+        }
+        res.d = dblk;
         // ── F (V18.474 — DIE DRAW-CALL-DIÄT DER FERN-GRUPPEN): A/B durch DIESELBE Pipe ──
         // Platzierte Impostor-Quads (strauch-Fernstufe, headless = Silhouetten-Fallback,
         // derselbe Chokepoint) über ein 4×4-Region-Raster: S=1 reproduziert das alte
@@ -331,6 +418,30 @@ function check(name, ok, detail) {
             `nachlauf=${out.h.nachlauf} drainiert=${out.h.drainiert}`
         );
     else check("H: Hysterese-Block erreicht", false);
+    if (out.d) {
+        check(
+            "D: private Boden-Zelle GEFUNDEN (B2-Population, zwei-stufig)",
+            out.d.zelleGefunden === true,
+            out.d.err || `bp=${out.d.bpVor || "—"} lodVor=${out.d.lodVor}`
+        );
+        if (out.d.zelleGefunden) {
+            check(
+                "D: DIE RÜCK-WANDERUNG — die Zelle demotet auf die Fern-Stufe, sobald der Spieler geht",
+                out.d.demotet === true,
+                `lod ${out.d.lodVor} → ${out.d.demotet ? 2 : "blieb"}`
+            );
+            check(
+                "D: die Slots wandern nach @s: (Super-Region), die private Hülle leert/reapt",
+                out.d.slotsFern === true && out.d.huelleWeg === true,
+                `slotsFern=${out.d.slotsFern} hülleWeg=${out.d.huelleWeg} (private Slots vor: ${out.d.privateSlotsVor})`
+            );
+            check(
+                "D: kein Ursprungs-Sphere-Hazard (Null-Skala erbt die Position)",
+                out.d.ursprungsHazard === 0,
+                `hazard-Slots=${out.d.ursprungsHazard}`
+            );
+        }
+    } else check("D: Rück-Wanderungs-Block erreicht", false);
     if (out.f) {
         check(
             "F: die EINE Fern-Key-Funktion (Unit: fern→Super-Region, nicht-fern/null/gemappt unberührt)",
