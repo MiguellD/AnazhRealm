@@ -59,6 +59,9 @@ check("fx.verhalten reist im Kern (VERHALTEN: aktionen + stimmung)", !!(V && V.a
 if (V) {
     const missing = [];
     for (const mood in V.stimmung) {
+        // SCHLUSS-WELLE 17.07.: "schwellen" ist die Schwellen-DATEN-Zeile
+        // der Stimmungs-Tabelle (keine Stimmung) — überspringen.
+        if (mood === "schwellen") continue;
         const row = V.stimmung[mood];
         if (!row || !Array.isArray(row.aktionen)) {
             missing.push(mood + ":(leer)");
@@ -107,6 +110,38 @@ if (V) {
             Number.isFinite(V.wandern.leashBaseM)
         )
     );
+    // ── A4) SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke reisen:
+    // Stopp-Distanzen (jagd/furcht) · Stimmungs-Schwellen · freude/sprung ·
+    // Größen-Bänder · separation · aufgaben · herde · wasser.
+    check(
+        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude/sprung/groessen/separation/aufgaben/herde/wasser + Stopp-Distanzen)",
+        !!(
+            Number.isFinite(V.jagd && V.jagd.pirschStoppM) &&
+            Number.isFinite(V.furcht && V.furcht.neugierStoppM) &&
+            V.stimmung.schwellen &&
+            Number.isFinite(V.stimmung.schwellen.weideDiet) &&
+            V.freude &&
+            Number.isFinite(V.freude.tempoMul) &&
+            V.sprung &&
+            Number.isFinite(V.sprung.impulsProM) &&
+            Array.isArray(V.groessen) &&
+            V.groessen.length >= 2 &&
+            V.groessen.every((k) => k && typeof k.name === "string" && k.min > 0 && k.min < k.max) &&
+            V.separation &&
+            Number.isFinite(V.separation.radiusBaseM) &&
+            V.aufgaben &&
+            Number.isFinite(V.aufgaben.followTempo) &&
+            V.herde &&
+            Number.isFinite(V.herde.gewicht) &&
+            V.wasser &&
+            Number.isFinite(V.wasser.uferBias)
+        )
+    );
+    // Die Größen-Bänder sind lückenlos aufsteigend (die letzte Zeile fängt den Rest).
+    const gr = Array.isArray(V.groessen) ? V.groessen : [];
+    let grOk = gr.length >= 2;
+    for (let i = 1; i < gr.length; i++) if (!(gr[i].bis > gr[i - 1].bis)) grOk = false;
+    check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
 }
 
 // ── B) KONSUM-ANKER im Stamm ──
@@ -125,6 +160,15 @@ probe(
 );
 probe("der Gang-Phasen-Seed liest das Gesetz (P.phases statt hartem Trab)", /Array\.isArray\(P\.phases\)/);
 probe("die Gegenwehr schlägt mit der EINEN Biss-Reichweite (jagd.strikeRange)", /< VG\.jagd\.strikeRange/);
+// SCHLUSS-WELLE 17.07. — die Konsum-Anker der neun heimgekehrten Blöcke:
+probe("die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)", /_verhaltenGesetz\(\)\.stimmung\.schwellen/);
+probe("die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)", /_verhaltenGesetz\(\)\.groessen/);
+probe("die Separations-Kraft liest das Gesetz (VERHALTEN.separation)", /_verhaltenGesetz\(\)\.separation/);
+probe("die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)", /aufgaben\.followTempo/);
+probe("die Schwarm-Kohäsion liest das Gesetz (herde.gewicht/maxNachbarn)", /HERDE\.maxNachbarn/);
+probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
+probe("Pirsch-/Neugier-Stopp lesen das Gesetz (pirschStoppM/neugierStoppM)", /VG\.jagd\.pirschStoppM/);
+probe("der Hüpf-Impuls liest das Gesetz (sprung.impulsProM)", /VG\.sprung\.impulsProM/);
 
 // ── C) SELBST-TEST: injizierte tote Zeile wird erkannt ──
 const fakeTargets = kreaturTargets.concat(["gibtsnicht"]);

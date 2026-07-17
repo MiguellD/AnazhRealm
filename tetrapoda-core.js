@@ -88,6 +88,13 @@
             idle: { aktionen: ["scan", "shake", "yawn"], alle: [7, 16] },
             tag: { aktionen: ["grasen", "scan"], alle: [10, 22] },
             nacht: { aktionen: ["ruhen", "yawn"], alle: [8, 18] },
+            // SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-Zeile):
+            // die SCHWELLEN des Verhaltens-Ticks — ab wann das Gemuet die
+            // Stimmung waehlt (chaos→alert, joy→joy), wann die Nacht ruht
+            // (Sonnen-Sinus unter nachtSin) und wer weidet (diet ≤ weideDiet).
+            // KEINE Stimmungs-Zeile (kein aktionen/alle) — die Leser der
+            // Stimmungs-Tabelle ueberspringen den Schluessel (must-ignore).
+            schwellen: { chaos: 0.5, joy: 0.5, nachtSin: -0.15, weideDiet: 0.5 },
         },
         // KREATUR-SEELE (Spiegel-Zensus 17.07., rein additive DATEN-Zeilen):
         // die VERHALTENS-ZAHLEN der Welt-Wesen wohnen im Evolutions-Gesetzbuch —
@@ -109,6 +116,7 @@
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
             scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
             scentProbeM: 4, // m — Probe-Schritt der 4-Richtungs-Gradient-Suche
+            pirschStoppM: 1.6, // m — SCHLUSS-WELLE: naeher pirscht der Jaeger nicht heran (Stopp vor dem Biss)
         },
         furcht: {
             noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
@@ -128,6 +136,7 @@
             fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
             combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert ueber der Flucht-Schwelle
             fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
+            neugierStoppM: 2, // m — SCHLUSS-WELLE: naeher tritt ein neugieriges Wesen nicht heran
         },
         temperament: {
             signaturen: {
@@ -155,6 +164,61 @@
             chaosGain: 0.5, // Moment-chaos → fahriger (mehr Amplitude + kuerzere Schritte)
             sorrowDamp: 0.4, // Moment-sorrow → gedaempfter
             ampFloor: 0.3, // Boden der Emotions-Modulation (schlurfen, nie einfrieren)
+        },
+        // ── DIE SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-
+        // Zeilen): die letzten neun Stamm-Literale mit tetrapoda-Heimat kehren
+        // ins Evolutions-Gesetzbuch heim — freude (Joy-Tempo + Huepf-Hoehen) ·
+        // sprung (Hoehe→Impuls) · groessen (die Koerpergroessen-Baender,
+        // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
+        // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
+        // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
+        // furcht.neugierStoppM und stimmung.schwellen oben. Der Wirt liest
+        // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
+        // Werte sind byte-gleich den historischen Stamm-Literalen.
+        // must-ignore: fremde Leser ueberlesen die Bloecke. ──
+        freude: {
+            tempoMul: 2, // ein frohes Wesen bewegt sich doppelt so lebhaft
+            hopHochM: 1.2, // m — der frohe Huepfer
+            hopBasisM: 0.8, // m — der Grund-Huepfer (auch der creatureJump-Default)
+        },
+        sprung: {
+            impulsProM: 2.2, // Huepf-Hoehe (m) → Feld-Impuls (m/s) — die EINE Sprungmechanik (_hopV)
+        },
+        groessen: [
+            // Wurf-Baender der Koerpergroesse (roll ∈ [0,1) aus der Identitaet):
+            // roll < bis → range(name, min, max); die letzte Zeile faengt den Rest.
+            { name: "klein", bis: 0.18, min: 0.6, max: 0.82 }, // Jungtier/Zwerg (flink, zart)
+            { name: "normal", bis: 0.82, min: 0.85, max: 1.18 }, // typisch
+            { name: "gross", bis: 0.965, min: 1.25, max: 1.75 }, // ein grosses Tier
+            { name: "gigant", bis: 1, min: 1.9, max: 2.7 }, // GIGANT — ein Koloss (robust, traege), selten
+        ],
+        separation: {
+            radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2
+            strength: 1.5, // Abstoss-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand
+        },
+        aufgaben: {
+            followHaltM: 3.5, // m — Standard-Halte-Abstand des Folgens
+            followTempo: 4.0, // m/s — Folgen ist sichtbar schneller als Wandern
+            gatherHaltM: 1.5, // m — bei dieser Distanz zur Ziel-Architektur erntet die Kreatur
+            gatherTempo: 3.0, // m/s — etwas langsamer als Folgen, damit Sammeln sichtbar bleibt
+            uebergabeM: 2.0, // m — bei dieser Distanz zum Schoepfer uebergibt die Kreatur die Ernte
+            bauAbstandM: 4.0, // m — so weit vom Schoepfer entfernt baut die Kreatur
+            bauTempo: 3.0, // m/s — analog Sammeln (sichtbar-aktiv, ohne Hetze)
+            trinkHaltM: 1.5, // m — am Wasser-Punkt angekommen beginnt die Pause
+            trinkDauerS: 2.5, // s — die sichtbare Trink-Geste am Ufer
+            trinkSuchM: 40, // m — max Suchradius zum naechsten Wasser-Punkt
+            trinkTempo: 3.0, // m/s — sichtbares Gehen zum Ufer
+        },
+        herde: {
+            minAbstSq: 1, // m² — darunter zaehlt der Nachbar nicht zur Kohaesion (Deckung → Separation)
+            fensterSq: 25, // m² — das Kohaesions-Fenster (5 m) der neugierigen Schar
+            gewicht: 0.5, // Zug-Gewicht je Nachbar auf die Richtung
+            maxNachbarn: 6, // Kohaesions-Budget je Wesen (dann bricht der Scan ab)
+        },
+        wasser: {
+            tiefenScheuM: 1.5, // m — tiefer scheut das Wesen die Tiefe und strebt zum Ufer
+            schwimmTiefeM: 0.5, // m — ab dieser Tiefe schwimmt der Koerper am Spiegel (statt Grund)
+            uferBias: 1.5, // × speed — der Ufer-Zug der Tiefen-Scheu auf die freie Richtung
         },
     };
 

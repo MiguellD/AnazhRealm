@@ -280,17 +280,23 @@ function validateManifest(m) {
     if (m.verhalten) {
         const V = m.verhalten;
         const aOk = V.aktionen && typeof V.aktionen === "object" && Object.keys(V.aktionen).length >= 8;
+        // SCHLUSS-WELLE 17.07.: "schwellen" ist die Schwellen-DATEN-Zeile der
+        // Stimmungs-Tabelle (keine Stimmung) — die Zeilen-Prüfung überspringt sie.
         const sOk =
             V.stimmung &&
             typeof V.stimmung === "object" &&
-            Object.values(V.stimmung).every(
-                (st) => st && Array.isArray(st.aktionen) && Array.isArray(st.alle) && st.alle.length === 2
+            Object.entries(V.stimmung).every(
+                ([sk, st]) =>
+                    sk === "schwellen" ||
+                    (st && Array.isArray(st.aktionen) && Array.isArray(st.alle) && st.alle.length === 2)
             );
         if (!aOk || !sOk) v.push("§B6+ VERHALTEN unvollständig (aktionen ≥8 / stimmung{aktionen,alle[2]})");
         else {
-            for (const k in V.stimmung)
+            for (const k in V.stimmung) {
+                if (k === "schwellen") continue;
                 for (const an of V.stimmung[k].aktionen)
                     if (!V.aktionen[an]) v.push(`§B6+ VERHALTEN: Stimmung "${k}" nennt unbekannte Aktion "${an}"`);
+            }
         }
         // SPIEGEL-ZENSUS 17.07. — die KREATUR-SEELE ist Vertrag: die vier
         // gereisten Verhaltens-Blöcke (jagd/furcht/temperament/wandern) —
@@ -306,10 +312,31 @@ function validateManifest(m) {
             V.temperament.profile &&
             Number.isFinite(V.temperament.floor) &&
             V.wandern &&
-            Number.isFinite(V.wandern.leashBaseM);
+            Number.isFinite(V.wandern.leashBaseM) &&
+            // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
+            // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
+            Number.isFinite(V.jagd.pirschStoppM) &&
+            Number.isFinite(V.furcht.neugierStoppM) &&
+            V.stimmung &&
+            V.stimmung.schwellen &&
+            Number.isFinite(V.stimmung.schwellen.weideDiet) &&
+            V.freude &&
+            Number.isFinite(V.freude.tempoMul) &&
+            V.sprung &&
+            Number.isFinite(V.sprung.impulsProM) &&
+            Array.isArray(V.groessen) &&
+            V.groessen.length >= 2 &&
+            V.separation &&
+            Number.isFinite(V.separation.radiusBaseM) &&
+            V.aufgaben &&
+            Number.isFinite(V.aufgaben.followTempo) &&
+            V.herde &&
+            Number.isFinite(V.herde.gewicht) &&
+            V.wasser &&
+            Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange · furcht.fleeThreshold · temperament{signaturen,profile,floor} · wandern.leashBaseM)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{signaturen,profile,floor} · wandern.leashBaseM · stimmung.schwellen · freude/sprung/groessen/separation/aufgaben/herde/wasser)"
             );
     }
     return v;
@@ -425,7 +452,16 @@ function validateManifest(m) {
                 m.verhalten.jagd &&
                 m.verhalten.furcht &&
                 m.verhalten.temperament &&
-                m.verhalten.wandern
+                m.verhalten.wandern &&
+                // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke:
+                m.verhalten.stimmung.schwellen &&
+                m.verhalten.freude &&
+                m.verhalten.sprung &&
+                m.verhalten.groessen &&
+                m.verhalten.separation &&
+                m.verhalten.aufgaben &&
+                m.verhalten.herde &&
+                m.verhalten.wasser
             ),
     };
     for (const entry of CORES) {
@@ -464,6 +500,9 @@ function validateManifest(m) {
         "TEMPERAMENT_FLOOR",
         "TEMPERAMENT_PROFILES",
         "CREATURE_CHARAKTER",
+        // SCHLUSS-WELLE 17.07. — der Herden-Abstand wohnt im tetrapoda-
+        // Gesetzbuch (VERHALTEN.separation), der Stamm-Zwilling ist gefallen:
+        "CREATURE_SEPARATION",
     ];
     const zwillingsTreffer = (src) =>
         ZWILLINGE.filter((n) => new RegExp("^AnazhRealm\\." + n + "\\s*=", "m").test(src));

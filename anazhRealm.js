@@ -18772,10 +18772,15 @@ class AnazhRealm {
     _creatureBodySize(idStr) {
         const g = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size");
         const roll = g.axis("class");
-        if (roll < 0.18) return g.range("klein", 0.6, 0.82); // Jungtier/Zwerg (flink, zart)
-        if (roll < 0.82) return g.range("normal", 0.85, 1.18); // typisch
-        if (roll < 0.965) return g.range("gross", 1.25, 1.75); // ein großes Tier
-        return g.range("gigant", 1.9, 2.7); // GIGANT — ein Koloss (robust, träge), selten
+        // SCHLUSS-WELLE — die Größen-Bänder (klein/normal/groß/GIGANT) sind
+        // tetrapoda-Gesetz (VERHALTEN.groessen, Lehre 8: DIE Differenzierungs-
+        // Achse); derselbe Wurf (axis/range) → gleiche Welt bei gleichem Kern.
+        const K = AnazhRealm._verhaltenGesetz().groessen;
+        for (let i = 0; i < K.length - 1; i++) {
+            if (roll < K[i].bis) return g.range(K[i].name, K[i].min, K[i].max);
+        }
+        const letzte = K[K.length - 1];
+        return g.range(letzte.name, letzte.min, letzte.max);
     }
 
     // STUDIO-ÜBERGABE (Auftrag D) — der size-Dial braucht KEINE eigene Achse
@@ -19195,21 +19200,24 @@ class AnazhRealm {
         if (z === "jagd") {
             mood = "jagd";
         } else {
+            // SCHLUSS-WELLE — die Stimmungs-Schwellen des Ticks sind Gesetzbuch-
+            // Zeilen (tetrapoda VERHALTEN.stimmung.schwellen, fail-closed).
+            const SW = AnazhRealm._verhaltenGesetz().stimmung.schwellen;
             const em = ud.emotions;
-            if (em && (Number(em.chaos) || 0) >= 0.5) mood = "alert";
-            else if (em && (Number(em.joy) || 0) >= 0.5) mood = "joy";
+            if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
+            else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
                 // dieselbe EINE Sonnen-Formel (timeOfDay 0.5 = Mittag): tiefe
-                // Nacht = Ruhe; am Tag weiden Pflanzenfresser (diet ≤ 0.5,
+                // Nacht = Ruhe; am Tag weiden Pflanzenfresser (diet ≤ weideDiet,
                 // tetrapoda-Dials über die Soul-Karte — einmal je Wesen gemerkt).
                 const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-                const nacht = Math.sin(tod * Math.PI * 2 - Math.PI / 2) < -0.15;
+                const nacht = Math.sin(tod * Math.PI * 2 - Math.PI / 2) < SW.nachtSin;
                 if (ud._verhaltenDiet === undefined) {
                     const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
                     const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
                     ud._verhaltenDiet = dials && Number.isFinite(dials.diet) ? dials.diet : 1;
                 }
-                mood = nacht ? "nacht" : ud._verhaltenDiet <= 0.5 ? "tag" : "idle";
+                mood = nacht ? "nacht" : ud._verhaltenDiet <= SW.weideDiet ? "tag" : "idle";
             }
         }
         const A = ud._verhaltenAktion;
@@ -20481,18 +20489,21 @@ class AnazhRealm {
             drink: 880, // ~A5, helle Erfrischungs-Antwort (V11.0-d.3)
         });
     }
-    // V11.0-d.3 — drink-spezifische Konstanten (Pfeiler D).
+    // V11.0-d.3 — drink-spezifische Konstanten (Pfeiler D). SCHLUSS-WELLE
+    // 17.07.: die Getter bleiben die Chokepoints (alle Rufer unverändert),
+    // die ZAHLEN wohnen im tetrapoda-Gesetzbuch (VERHALTEN.aufgaben,
+    // fail-closed via _verhaltenGesetz — byte-gleiche Werte).
     static get CREATURE_DRINK_HALT_DIST() {
-        return 1.5; // m — am Wasser-Punkt angekommen, beginne Pause
+        return AnazhRealm._verhaltenGesetz().aufgaben.trinkHaltM; // m — am Wasser-Punkt angekommen, beginne Pause
     }
     static get CREATURE_DRINK_DURATION_S() {
-        return 2.5; // Sekunden — Pausen-Dauer am Ufer (Trink-Geste sichtbar)
+        return AnazhRealm._verhaltenGesetz().aufgaben.trinkDauerS; // s — Pausen-Dauer am Ufer (Trink-Geste sichtbar)
     }
     static get CREATURE_DRINK_SEARCH_RADIUS() {
-        return 40; // m — max Suchradius für nächsten Wasser-Punkt
+        return AnazhRealm._verhaltenGesetz().aufgaben.trinkSuchM; // m — max Suchradius für nächsten Wasser-Punkt
     }
     static get CREATURE_DRINK_SPEED() {
-        return 3.0; // m/s — gleich wie gather, sichtbares Bewegen
+        return AnazhRealm._verhaltenGesetz().aufgaben.trinkTempo; // m/s — gleich wie gather, sichtbares Bewegen
     }
     // V11.0-a (Pool-Foundation) — Mesh-Pool-Pattern (Genshin Instancing-System
     // / BotW Geometry-Recycling) als ehrlicher Bogen-Schluss für den V10.0-j.j-
@@ -20810,35 +20821,37 @@ class AnazhRealm {
             },
         ];
     }
-    // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten.
+    // Welle 6.H Phase 2B.1 — gather-spezifische Konstanten. SCHLUSS-WELLE
+    // 17.07.: die Zahlen wohnen im tetrapoda-Gesetzbuch (VERHALTEN.aufgaben).
     static get CREATURE_GATHER_HALT_DIST() {
-        return 1.5; // m — bei dieser Distanz zur Ziel-Architektur erntet die Kreatur
+        return AnazhRealm._verhaltenGesetz().aufgaben.gatherHaltM; // m — bei dieser Distanz erntet die Kreatur
     }
     static get CREATURE_GATHER_SPEED() {
-        return 3.0; // m/s — etwas langsamer als follow (4.0) damit Sammeln sichtbar bleibt
+        return AnazhRealm._verhaltenGesetz().aufgaben.gatherTempo; // m/s — langsamer als follow, Sammeln bleibt sichtbar
     }
     static get CREATURE_MEMORY_CAP() {
         return 200; // Erinnerungen pro Kreatur — Phase 2D.1 (V7.86): von 30 → 200 für persistente Identitäten mit Geschichte. Cap bleibt FIFO bei Überlauf. 50 Kreaturen × 200 Einträge × ~100 Byte = ~1 MB im Save-Worst-Case; in Praxis viel weniger weil Failures + alte Einträge selten sind.
     }
-    // Welle 6.H Phase 2B.5 — Zwei-Phasen-gather Konstanten.
+    // Welle 6.H Phase 2B.5 — Zwei-Phasen-gather Konstanten. SCHLUSS-WELLE
+    // 17.07.: die Zahlen wohnen im tetrapoda-Gesetzbuch (VERHALTEN.aufgaben).
     static get CREATURE_HANDOVER_DIST() {
-        return 2.0; // m — bei dieser Distanz zum Spieler übergibt Kreatur Ernte
+        return AnazhRealm._verhaltenGesetz().aufgaben.uebergabeM; // m — bei dieser Distanz übergibt die Kreatur die Ernte
     }
     static get CREATURE_FOLLOW_DISTANCE() {
-        return 3.5; // m — Standard-Halte-Abstand für follow_player
+        return AnazhRealm._verhaltenGesetz().aufgaben.followHaltM; // m — Standard-Halte-Abstand für follow_player
     }
     static get CREATURE_FOLLOW_MAX_SPEED() {
-        return 4.0; // m/s — schneller als wander damit Folgen sichtbar
+        return AnazhRealm._verhaltenGesetz().aufgaben.followTempo; // m/s — schneller als wander, Folgen bleibt sichtbar
     }
     // Welle 6.H Phase 2B.2 — build-spezifische Konstanten. Geste-Umkehrung
     // zu gather: Spieler ist Material-Quelle, Welt ist Bauplan-Senke. Drei
     // Phasen: take (zum Spieler), build (weg vom Spieler bis Bau-Distanz),
     // spawn (am Kreatur-Ort).
     static get CREATURE_BUILD_PLACEMENT_DIST() {
-        return 4.0; // m — wie weit von Spieler entfernt die Kreatur baut
+        return AnazhRealm._verhaltenGesetz().aufgaben.bauAbstandM; // m — wie weit vom Spieler entfernt die Kreatur baut
     }
     static get CREATURE_BUILD_SPEED() {
-        return 3.0; // m/s — analog gather (3.0), sichtbar-aktiv aber ohne Hetze
+        return AnazhRealm._verhaltenGesetz().aufgaben.bauTempo; // m/s — analog gather, sichtbar-aktiv aber ohne Hetze
     }
     // === Welle 6.H Phase 2E V2 — Proaktive Sprache ===
     //
@@ -21286,7 +21299,10 @@ class AnazhRealm {
     // EIGENE Index-Richtung — ein perfekt gestapeltes Paar trennt sich ohne
     // Math.random, die spawnCreatureAt-Goldwinkel-Disziplin V18.170).
     _applyCreatureSeparation(creature, index, direction, speed) {
-        const SEP = AnazhRealm.CREATURE_SEPARATION;
+        // SCHLUSS-WELLE — der Herden-Abstand ist Arterhaltungs-Gefühl und wohnt
+        // im tetrapoda-Gesetzbuch (VERHALTEN.separation, fail-closed); der
+        // Stamm-Zwilling CREATURE_SEPARATION ist gefallen (Absenz-Wand).
+        const SEP = AnazhRealm._verhaltenGesetz().separation;
         const creatures = this.state.creatures || [];
         if (creatures.length < 2) return;
         const ud = creature.userData || {};
@@ -22383,6 +22399,9 @@ class AnazhRealm {
         // Kreatur mit der Körpergröße L; der wrap↔fern-Toggle liest weiter das
         // Quadrat — dieselbe Schwelle, zwei Einheiten derselben Wahrheit).
         const tierFernDist = Math.sqrt(AnazhRealm.TIER_FERN_DIST_SQ);
+        // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
+        // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
+        const VGL = AnazhRealm._verhaltenGesetz();
         for (let i = 0; i < this.state.creatures.length; i++) {
             const creature = this.state.creatures[i];
             // ═══ KAMPF-GEFÜHL — TOD-KIPPEN: ein sterbendes Wesen hat keine KI/Bewegung
@@ -22417,8 +22436,11 @@ class AnazhRealm {
             // die Task-Pfade konsumieren sie seit 6.H): die Charakter-Geschwindig-
             // keit (computeCreatureStats.speed / 7, geklemmt [0.6, 1.6]) — ein
             // sprite flitzt, ein Gigant schreitet. Gecacht pro Soul×bodySize.
-            const speed = (emotion === "happy" ? 2 : 1) * this._creatureMoveCharacter(creature).speedMul;
-            const jumpHeight = emotion === "happy" ? 1.2 : 0.8;
+            // SCHLUSS-WELLE — Freude-Faktor + Hüpf-Höhen sind Gesetzbuch-Zeilen
+            // (tetrapoda VERHALTEN.freude, byte-gleiche Werte).
+            const speed =
+                (emotion === "happy" ? VGL.freude.tempoMul : 1) * this._creatureMoveCharacter(creature).speedMul;
+            const jumpHeight = emotion === "happy" ? VGL.freude.hopHochM : VGL.freude.hopBasisM;
             // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
             this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
@@ -22496,7 +22518,8 @@ class AnazhRealm {
                         this._kreaturZustandStempel(creature, "jagd");
                         const toPrey = scratchA.subVectors(playerPos, creature.position);
                         toPrey.y = 0;
-                        if (toPrey.length() > 1.6) {
+                        // SCHLUSS-WELLE — der Pirsch-Stopp ist Jagd-Gesetz (pirschStoppM).
+                        if (toPrey.length() > VG.jagd.pirschStoppM) {
                             direction.copy(toPrey.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
                         }
                         this._tickCreatureHuntStrike(creature);
@@ -22517,13 +22540,17 @@ class AnazhRealm {
                         this._kreaturZustandStempel(creature, null);
                         const toPlayer = scratchA.subVectors(playerPos, creature.position);
                         toPlayer.y = 0;
-                        if (toPlayer.length() > 2) {
+                        // SCHLUSS-WELLE — der Neugier-Stopp ist Furcht-Gesetz (neugierStoppM).
+                        if (toPlayer.length() > NAT.neugierStoppM) {
                             direction.copy(toPlayer.normalize().multiplyScalar(speed));
                         }
                         // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
                         // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
                         // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
                         if (inFrustum) {
+                            // SCHLUSS-WELLE — die Flocking-Zahlen sind Herden-Gesetz
+                            // (tetrapoda VERHALTEN.herde, byte-gleiche Werte).
+                            const HERDE = VG.herde;
                             let neighbors = 0;
                             const gcx = Math.floor(creature.position.x / FLOCK_CELL);
                             const gcz = Math.floor(creature.position.z / FLOCK_CELL);
@@ -22536,15 +22563,15 @@ class AnazhRealm {
                                         if (i === j) continue;
                                         const otherCreature = this.state.creatures[j];
                                         const dsq = creature.position.distanceToSquared(otherCreature.position);
-                                        if (dsq > 1 && dsq < 25) {
+                                        if (dsq > HERDE.minAbstSq && dsq < HERDE.fensterSq) {
                                             const toOther = scratchB.subVectors(
                                                 otherCreature.position,
                                                 creature.position
                                             );
                                             toOther.y = 0;
-                                            direction.add(toOther.normalize().multiplyScalar(0.5));
+                                            direction.add(toOther.normalize().multiplyScalar(HERDE.gewicht));
                                             neighbors++;
-                                            if (neighbors >= 6) break cellLoop;
+                                            if (neighbors >= HERDE.maxNachbarn) break cellLoop;
                                         }
                                     }
                                 }
@@ -22618,16 +22645,19 @@ class AnazhRealm {
             // V17.115 U3 — distSqToPlayer (XZ) ist oben schon berechnet (für die
             // Kaskaden-Band-Entscheidung); hier nur das <50-m-Wasser-Gate.
             if (distSqToPlayer < 2500) {
+                // SCHLUSS-WELLE — die Ufer-Scheu ist Wasser-Gesetz (tetrapoda
+                // VERHALTEN.wasser: Tiefen-Schwellen + Ufer-Bias, byte-gleich).
+                const WAS = VGL.wasser;
                 const wctx = this._creatureWaterContextAt(creature, this._creatureGroundY(creature));
                 if (wctx.inWater) {
-                    if (wctx.depthBelow > 1.5 && wctx.shoreDir && (!task || task.name === "wander")) {
+                    if (wctx.depthBelow > WAS.tiefenScheuM && wctx.shoreDir && (!task || task.name === "wander")) {
                         // shoreDir ist Kardinal-Vector3 (±1 oder 0) — keine
-                        // normalize() nötig. Bias 1.5× Speed gibt Tiefe-Scheue
-                        // klare Vorrang ohne Schwarm-Bewegung zu zerstören.
-                        direction.x += wctx.shoreDir.x * speed * 1.5;
-                        direction.z += wctx.shoreDir.z * speed * 1.5;
+                        // normalize() nötig. Der uferBias (× Speed) gibt der
+                        // Tiefen-Scheu klaren Vorrang ohne Schwarm-Bewegung zu zerstören.
+                        direction.x += wctx.shoreDir.x * speed * WAS.uferBias;
+                        direction.z += wctx.shoreDir.z * speed * WAS.uferBias;
                     }
-                    if (wctx.depthBelow > 0.5) {
+                    if (wctx.depthBelow > WAS.schwimmTiefeM) {
                         waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
                     }
                 }
@@ -23825,7 +23855,13 @@ class AnazhRealm {
         // (decay), der im `updateCreatures`-Loop ON TOP der feld-geerdeten baseY addiert wird —
         // die Erdung (`_creatureGroundY`) bleibt die Wahrheit, der Hüpfer reitet darauf.
         if (!creature || !creature.userData) return;
-        creature.userData._hopV = Math.max(creature.userData._hopV || 0, (jumpHeight || 0.8) * 2.2);
+        // SCHLUSS-WELLE — Höhe→Impuls-Faktor + Default-Höhe sind Gesetzbuch-
+        // Zeilen (tetrapoda VERHALTEN.sprung/freude, neben den hop-Werten).
+        const VG = AnazhRealm._verhaltenGesetz();
+        creature.userData._hopV = Math.max(
+            creature.userData._hopV || 0,
+            (jumpHeight || VG.freude.hopBasisM) * VG.sprung.impulsProM
+        );
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -91918,7 +91954,29 @@ AnazhRealm._verhaltenGesetz = function () {
             v.temperament.profile &&
             Number.isFinite(v.temperament.floor) &&
             v.wandern &&
-            Number.isFinite(v.wandern.leashBaseM)
+            Number.isFinite(v.wandern.leashBaseM) &&
+            // SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke sind
+            // Kern-Pflicht: je Block deckt EIN Feld (alter Kern → Bruch,
+            // nie ein Misch-Gesetz aus neuem Leser + fehlender Zeile).
+            Number.isFinite(v.jagd.pirschStoppM) &&
+            Number.isFinite(v.furcht.neugierStoppM) &&
+            v.stimmung &&
+            v.stimmung.schwellen &&
+            Number.isFinite(v.stimmung.schwellen.weideDiet) &&
+            v.freude &&
+            Number.isFinite(v.freude.tempoMul) &&
+            v.sprung &&
+            Number.isFinite(v.sprung.impulsProM) &&
+            Array.isArray(v.groessen) &&
+            v.groessen.length >= 2 &&
+            v.separation &&
+            Number.isFinite(v.separation.radiusBaseM) &&
+            v.aufgaben &&
+            Number.isFinite(v.aufgaben.followTempo) &&
+            v.herde &&
+            Number.isFinite(v.herde.gewicht) &&
+            v.wasser &&
+            Number.isFinite(v.wasser.uferBias)
         ) {
             AnazhRealm._verhaltenGesetzMemo = v;
             return v;
@@ -96163,14 +96221,11 @@ AnazhRealm.CONTAGION_TARGET = Object.freeze({
 // _verhaltenGesetz() (fail-closed); die historischen Literal-Blöcke
 // (CREATURE_HUNT/NATURE, TEMPERAMENT_*, CREATURE_CHARAKTER,
 // VERHALTEN_FALLBACK) trägt die git-Chronik.
-// V18.472 (C1 — DIE TIERE ENTSTAPELN, Schöpfer 14.07.: „tiere staken sich, obwohl
-// wir emotionen, unterschiedliches verhalten und charaktere sein sollten"): die
-// SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint (`_applyCreatureSeparation`,
-// jeden Frame auf die LIVE-Richtung). Linse: gate:tier-separation.
-AnazhRealm.CREATURE_SEPARATION = Object.freeze({
-    radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2 ≈ 2·Körperradius
-    strength: 1.5, // Abstoß-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand, Summe geklemmt
-});
+// V18.472 (C1 — DIE TIERE ENTSTAPELN, Schöpfer 14.07.): die SEPARATIONS-KRAFT
+// am EINEN Bewegungs-Chokepoint (`_applyCreatureSeparation`, jeden Frame auf
+// die LIVE-Richtung). Linse: gate:tier-separation. SCHLUSS-WELLE 17.07.: die
+// Zahlen (radiusBaseM/strength) wohnen im tetrapoda-Gesetzbuch
+// (VERHALTEN.separation) — der Stamm-Zwilling ist gefallen (Absenz-Wand).
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur
 // ein Kommentar. Self-limiting: der Hoffnungs-Schub hebt die Stimmungs-Valenz → über der
