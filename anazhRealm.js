@@ -52454,8 +52454,14 @@ class AnazhRealm {
             kAcc: Math.max(_heN("kAccMin", 2.5), Math.min(_heN("kAccMax", 10), _heN("kAcc", 7) / mass)),
             kBrake:
                 radCount > 0
-                    ? Math.max(_heN("kBrakeRadMin", 1.5), Math.min(_heN("kBrakeRadMax", 6), _heN("kBrakeRad", 3.5) / mass))
-                    : Math.max(_heN("kBrakeBeinMin", 4), Math.min(_heN("kBrakeBeinMax", 10), _heN("kBrakeBein", 8) / mass)),
+                    ? Math.max(
+                          _heN("kBrakeRadMin", 1.5),
+                          Math.min(_heN("kBrakeRadMax", 6), _heN("kBrakeRad", 3.5) / mass)
+                      )
+                    : Math.max(
+                          _heN("kBrakeBeinMin", 4),
+                          Math.min(_heN("kBrakeBeinMax", 10), _heN("kBrakeBein", 8) / mass)
+                      ),
             roles,
         };
         // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
@@ -69762,7 +69768,7 @@ class AnazhRealm {
             if (!E || typeof E !== "object") return undefined;
             const namen = Object.keys(E);
             if (!namen.length) return undefined;
-            let h = (Math.imul((seed >>> 0) || 1, 2654435761) + 0x9e3779b9) >>> 0;
+            let h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
             h = (h ^ (h >>> 16)) >>> 0;
             if (h % 3 !== 0) return undefined; // 2 von 3 bleiben Region-Historie
             return namen[(h >>> 4) % namen.length];
@@ -88984,10 +88990,7 @@ class AnazhRealm {
                 // Zahl wie die Probefahrt — vorher war S IMMER Rückwärtsgang);
                 // erst unter dem Fahrt-Gate wird S der Kehr-Zweig (kehrV).
                 const sBremse =
-                    !!this.state.keys["s"] &&
-                    vLong > 0.4 &&
-                    Number.isFinite(lenk.brakeDecel) &&
-                    lenk.brakeDecel > 0;
+                    !!this.state.keys["s"] && vLong > 0.4 && Number.isFinite(lenk.brakeDecel) && lenk.brakeDecel > 0;
                 if (sBremse) {
                     vLong = Math.max(0, vLong - lenk.brakeDecel * nowDt);
                 } else {
