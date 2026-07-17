@@ -49,8 +49,11 @@ function autoStaticLaws(anazhSrc) {
     const nc = stripComments(anazhSrc);
     return [
         [
-            "C-S1: _autoSettlementSpawnCell RESERVIERT (settlementCells[key] = 1 — das Spawn-einmal-Gedächtnis)",
-            /settlementCells\[key\] = 1/.test(nc),
+            // DORF-ERLEBNIS (17.07.) — das Band wandert MIT dem Gesetz: die
+            // Reservierung trägt jetzt das Rebuild-Gedächtnis {seed,nH,x,z}
+            // (Wege-Streifen über Reload) statt der nackten 1 — truthy bleibt.
+            "C-S1: _autoSettlementSpawnCell RESERVIERT (settlementCells[key] = {seed,nH,x,z} — das Spawn-einmal- + Rebuild-Gedächtnis)",
+            /settlementCells\[key\] = \{ seed:/.test(nc),
         ],
         [
             'C-S2: die Zell-Wahrheit zieht aus dem ":dorf"-Stream (Γ5, kein Math.random im Auto-Pfad)',
@@ -106,7 +109,7 @@ const FIXTURES = [
         const anazhSrcST = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
         const okAll = autoStaticLaws(anazhSrcST).every((l) => l[1] === true);
         check("Selbst-Test 3: die Auto-Dorf-Gesetze sind am HEAD gruen (Vorbedingung)", okAll);
-        const broken1 = anazhSrcST.replace("settlementCells[key] = 1", "settlementCells[key] = 0 ? 1 : 1 - 0");
+        const broken1 = anazhSrcST.replace("settlementCells[key] = { seed:", "settlementCells[key] = kaputt({ seed:");
         const cs1 = autoStaticLaws(broken1).find((l) => l[0].startsWith("C-S1"));
         check("Selbst-Test 4: Reservierung entfernt -> C-S1 feuert", cs1 && cs1[1] === false);
         const broken2 = anazhSrcST.replace(
@@ -440,13 +443,25 @@ const FIXTURES = [
                   ])
                 : null;
             res.c.planOk = !!(plan && plan !== "timeout" && Array.isArray(plan.slots));
-            res.c.reserved = !!(key && wm.settlementCells && wm.settlementCells[key] === 1);
+            // DORF-ERLEBNIS (17.07.) — das Band wandert MIT dem Gesetz: die
+            // Reservierung ist jetzt das Rebuild-Gedächtnis-OBJEKT {seed,nH,x,z}.
+            res.c.reserved = !!(
+                key &&
+                wm.settlementCells &&
+                wm.settlementCells[key] &&
+                typeof wm.settlementCells[key] === "object" &&
+                isFinite(wm.settlementCells[key].seed)
+            );
+            // DORF-ERLEBNIS — Brunnen/Wege heben bei ANKUNFT (deliberat, klein,
+            // budget-frei); die Budget-Wand gilt der HAUS-Materialisierung:
+            // Referenz ist der Stand NACH der Ankunft.
+            const archAnkunft = r.state.architectures.length;
             // Budget-Wand: ueber Budget materialisiert NICHTS.
             const fob = r.state._frameOverBudget;
             r.state._frameOverBudget = true;
             r._tickAutoSettlement({ x: cand ? cand.x : 0, z: cand ? cand.z : 0 });
             const archOverBudget = r.state.architectures.length;
-            res.c.budgetWall = archOverBudget === archBefore;
+            res.c.budgetWall = archOverBudget === archAnkunft;
             r.state._frameOverBudget = false;
             // Materialisierung: je Tick hoechstens perTick Slots (gezaehlt).
             let ticks = 0;
@@ -463,9 +478,13 @@ const FIXTURES = [
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
             res.c.budgeted = maxPerTick > 0 && maxPerTick <= A.perTick && ticks >= 2;
+            // DORF-ERLEBNIS — die Siedlung hebt jetzt auch BRUNNEN (brunnen_dorf,
+            // Architektur-Spawns der brunnen-Schicht): das Band wandert mit.
             res.c.allHaus = r.state.architectures
                 .slice(archBefore)
-                .every((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
+                .every(
+                    (e) => typeof e.type === "string" && (e.type.indexOf("haus_") === 0 || e.type === "brunnen_dorf")
+                );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
             for (let t2 = 0; t2 < 5; t2++) r._tickAutoSettlement({ x: cand.x, z: cand.z });

@@ -168,6 +168,27 @@ function shellPfad(name, seed, stufe) {
                       const H = FC.HAUS(THREE, FC.mat, hp2);
                       return { g: H.build({ gelaende: false }), H };
                   })();
+        // DORF-ERLEBNIS (17.07.) — die TÜR-FLÜGEL-SEPARATION wandert mit dem
+        // Kern (Lehre 6: Tests wandern mit dem Code): Tür-Blätter (userData.side)
+        // werden JE Blatt eigen gebakt + als Scharnier-Wrap angehängt — wörtlich
+        // der buildStufe-Pfad; der Rumpf bakt danach LÜCKENLOS wie zuvor.
+        const fluegelL = [];
+        st.g.updateMatrixWorld(true);
+        st.g.traverse((o) => {
+            if (o.userData && o.userData.door && typeof o.userData.side === "number") fluegelL.push(o);
+        });
+        const tuerWraps = [];
+        for (const Lf of fluegelL) {
+            const lg = {};
+            FC.bakeLOD(Lf, p.col, lg, 0, true);
+            const wg = FC.geomsZuGruppe(lg, p.col || null);
+            if (!wg.children.length) continue;
+            wg.position.set(Lf.position.x, 0, Lf.position.z);
+            wg.userData = { side: Lf.userData.side, offen: Lf.userData.offen || 0 };
+            if (Lf.parent) Lf.parent.remove(Lf);
+            tuerWraps.push(wg);
+        }
+        if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps;
         FC.bakeLOD(st.g, p.col, geoms, 0, true);
         disposeGroup(st.g);
     } else {
@@ -197,6 +218,8 @@ function shellPfad(name, seed, stufe) {
         B.fragStufe = undefined;
     }
     const g = FC.geomsZuGruppe(geoms, p.col || null);
+    // DORF-ERLEBNIS — die separierten Tür-Flügel reisen wie in buildInstance mit.
+    if (geoms.__tuerFluegel) for (const wg of geoms.__tuerFluegel) g.add(wg);
     g.userData = { kind: "haus", rezeptId: name, seed, lod: stufe };
     g.updateMatrixWorld(true);
     return g;

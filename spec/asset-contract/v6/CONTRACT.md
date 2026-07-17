@@ -48,7 +48,8 @@ __fachwerkCore.buildInstance(rezeptId, seed, lod, ov?) → THREE.Group | null
   - `0` ≙ Lab „Ring A · Promotion": der promoteBauen-Pfad (Vollbau inkl.
     Innenleben, RING-A-WÜRDE; Türme ≥6 Geschosse sparen Möbel+Innenwände,
     >11 Geschosse stapeln via Turm-Stapel-Gesetz) → `bakeLOD(0, alles=true)`
-    (LÜCKENLOS: der Host kennt keine lebenden Tür-/Fensterflügel).
+    (LÜCKENLOS für den Rumpf; seit DORF-ERLEBNIS 17.07.2026 werden die
+    TÜR-Blätter VOR dem Rumpf-Bake separiert — s. Nachtrag unten).
   - `1` ≙ Lab „Chunk Stufe 1 · nah": `fragFuer(B,1)` — die System-Hülle
     (LOD1F, kein Innenleben) + FENSTER-SCHLAF + INNENDÄMMER-Liner.
   - `2` ≙ Lab „Chunk Stufe 2 · Destillat": Warm-Pfad `fragFuer(B,1)` (misst
@@ -96,3 +97,26 @@ Semantik, obb, kultur, seed, rolle, baujahr, ov) + die benannten Siedlungs-
 Schichten (roads/platz/brunnen/mauer/fluss/laternen/… — v1 unkonsumiert
 erlaubt). EINGEFROREN (gemintet NUR wenn die Datei fehlt); Wächter
 `gate:settlement` (Selbst-Test: 1-mm-Slot-Versatz kippt den Fingerabdruck).
+
+## Nachtrag DORF-ERLEBNIS (17.07.2026) — Tür-Flügel-Separation + Tür-Zeile
+
+Vertrags-Akt (Schöpfer-Auftrag „das Haus wird betretbar", Re-Mint beider
+Goldens am 17.07.2026):
+
+- **Stufe 0 separiert die Tür-Blätter** (Haustür-Doppelflügel + Hintertür,
+  `userData.side` aus `tueren()`): jedes Blatt wird VOR dem Rumpf-Bake eigen
+  gebakt (haus-lokal, gebackene OFFEN-Pose — dieselbe bakeLOD-Wahrheit) und
+  reist als eigenes Group-Kind mit Scharnier-`userData {side, offen}` und der
+  Hinge-Position als Gruppen-Position — exakt der porta-Flügel-Pfad
+  (`__extractAssetMesh` → `out.tuer {seite,hx,zf,offen}` →
+  Host `_tickTorFluegel`: die Tür öffnet sich dem Reisenden). Der Rumpf bakt
+  danach LÜCKENLOS wie zuvor (`alles=true`); Stufen 1/2 unverändert (Türen
+  gebakt — fern dreht nichts). Die Split-Paritäts-Referenz (shellPfad im
+  Gate) komponiert die Separation wörtlich mit.
+- **exportSettlement trägt je Slot die additive `tuer`-Zeile**
+  ({x,z,w,h,y, W,D, hinten?} aus `dims.tuer` — Position/Maß der Haustür +
+  Kern-Footprint): der Host baut daraus Blocker-Wände MIT Tür-Lücke
+  (Betreten; alte Leser: must-ignore).
+- Goldens `haeuser.json` (L0-Fälle: ±Objekt-Zahl, Rumpf-Bytes ohne Türen)
+  und `siedlung.json` (Slots + tuer-Zeile) neu gemintet — die Bau-Primitive
+  selbst (HAUS/bakeLOD/fragFuer) sind byte-unberührt.

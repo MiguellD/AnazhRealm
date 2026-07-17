@@ -802,7 +802,7 @@
       beam(L,hex,-lh*0.02,-0.05,0.09,0.09,0.05,'metall');                                                                // AUSSEN: Knauf, bündig auf der Schauseite (−z)
       beam(L,hex,-lh*0.02,0.05,0.04,0.30,0.045,'metall'); beam(L,hex+0.02,-lh*0.10,0.062,0.11,0.045,0.045,'metall');     // INNEN: Drücker-Stange + Griff, bündig (+z)
       L.position.set(...deform(hx,cy,z)); L.rotation.y=(P.doorClosed?0:-sgn*openA)+(DEF_bk>0?hx*DEF_bk:0);                                                  // GESETZ: Haustür schwingt nach AUSSEN (über die Eingangstreppe) → Innenflur zur Treppe bleibt frei
-      L.userData={door:true,preOpen:(!P.doorClosed),openA:-sgn*openA,block:sgn<0?[-doorW/2,baseY,-Dp/2-0.1,0,baseY+doorH,-Dp/2+0.1]:[0,baseY,-Dp/2-0.1,doorW/2,baseY+doorH,-Dp/2+0.1]}; g.add(L); });
+      L.userData={door:true,preOpen:(!P.doorClosed),openA:-sgn*openA,block:sgn<0?[-doorW/2,baseY,-Dp/2-0.1,0,baseY+doorH,-Dp/2+0.1]:[0,baseY,-Dp/2-0.1,doorW/2,baseY+doorH,-Dp/2+0.1],side:sgn,offen:(P.doorClosed?0:-sgn*openA)}; g.add(L); });   // DORF-ERLEBNIS: side+offen = die Flügel-DATEN für den Welt-Pfad (buildStufe separiert, __extractAssetMesh reicht sie als out.tuer — exakt das porta-Muster)
     beam(g,0,baseY-0.02,-Dp/2+0.04,doorW+0.2,0.06,0.32,'stein');                                                            // Schwelle
     if(!P.veranda&&!P.portikus)aussentreppe(g,0,-Dp/2,0,-1,doorW);                                                                                     // Haustür-Treppe (vorne) — geteiltes Gesetz
     if(backDoor){ const bw2=Math.min(1.0,backDoor.hi-backDoor.lo-0.2), bcx=backDoor.cx, blh=doorH-0.12, bcy=baseY+blh/2, bz=Dp/2-0.07;  // Hintertür
@@ -811,7 +811,7 @@
       const L=grp(); const inner=leafFrame(bw2-0.04,blh,'holz',+1); inner.position.x=(bw2-0.04)/2; L.add(inner);   // Schauseite +z = aussen (Rückseite Haus)
       beam(L,bw2-0.18,0,0.07,0.05,0.05,0.06,'metall'); beam(L,bw2-0.18,blh*0.10,-0.05,0.04,0.26,0.045,'metall');   // aussen Knauf bündig am Blatt (+z) · innen Drücker (−z) — kein schwebender Würfel mehr
       L.position.set(...deform(bcx-(bw2-0.04)/2,bcy,bz)); L.rotation.y=(P.doorClosed?0:-openB)+(DEF_bk>0?(bcx-(bw2-0.04)/2)*DEF_bk:0);
-      L.userData={door:true,preOpen:(!P.doorClosed),openA:-openB,block:[bcx-bw2/2,baseY,Dp/2-0.1,bcx+bw2/2,baseY+doorH,Dp/2+0.1]}; g.add(L);
+      L.userData={door:true,preOpen:(!P.doorClosed),openA:-openB,block:[bcx-bw2/2,baseY,Dp/2-0.1,bcx+bw2/2,baseY+doorH,Dp/2+0.1],side:1,offen:(P.doorClosed?0:-openB)}; g.add(L);   // DORF-ERLEBNIS: Hintertür-Flügel-DATEN (ein Blatt, Hinge an der Bandseite)
       beam(g,bcx,baseY-0.02,Dp/2-0.04,bw2+0.2,0.06,0.3,'stein');                                                                   // Schwelle
       aussentreppe(g,bcx,Dp/2,0,1,bw2); }                                                                                          // Hintertür-Treppe — GLEICHES Gesetz wie vorne
     addCircR(-doorW/2-0.1,-Dp/2+0.05,doorW/2+0.1,-Dp/2+1.05,0,'haustür');                                                          // Haustür-Schwung (Flur)
@@ -1490,6 +1490,7 @@
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
     grundriss: P.grundriss,
     dims:{W,D:Dp,eaveY,ridgeY,baseY,egTop:levels[0].top, storeys:P.storeys, hip:P.hip, brace:P.brace, fw, balcDoorX:balcDoor?balcDoor.cx:null, backDoorX:backDoor?backDoor.cx:null,
+      tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
       loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY };
@@ -2650,6 +2651,32 @@
                           var H = HAUS(THREE, mat, hp2);
                           return { g: H.build({ gelaende: false }), H: H };
                       })();
+            // ═══ DORF-ERLEBNIS (17.07., additiv) — DIE TÜR BLEIBT EIN FLÜGEL ═══
+            // Haus-/Hintertür-Blätter (userData.side aus tueren()) werden NICHT in
+            // die Rollen-Geoms verschmolzen, sondern JE Blatt eigen gebakt (haus-
+            // lokal, gebackene Pose) und mit Scharnier-userData (side/offen, Hinge
+            // = Gruppen-Position) an die Ausgangs-Gruppe gehängt — exakt der porta-
+            // Flügel-Pfad: __extractAssetMesh liest side/position → out.tuer, der
+            // Host dreht die Flügel nähe-aktiviert (_tickTorFluegel). Häuser ohne
+            // Türblätter (ROUND / nur.tueren=false): leer — byte-alt.
+            var fluegelL = [];
+            st.g.updateMatrixWorld(true);
+            st.g.traverse(function (o) {
+                if (o.userData && o.userData.door && typeof o.userData.side === "number") fluegelL.push(o);
+            });
+            var tuerWraps = [];
+            for (var fi = 0; fi < fluegelL.length; fi++) {
+                var Lf = fluegelL[fi];
+                var lg = {};
+                bakeLOD(Lf, p.col, lg, 0, true); // dieselbe Bake-Wahrheit (AO/Illusion/Farben) wie der Rumpf
+                var wg = geomsZuGruppe(lg, p.col || null);
+                if (!wg.children.length) continue;
+                wg.position.set(Lf.position.x, 0, Lf.position.z); // HINGE-Achse (Extraktor liest anc.position)
+                wg.userData = { side: Lf.userData.side, offen: Lf.userData.offen || 0 };
+                if (Lf.parent) Lf.parent.remove(Lf);
+                tuerWraps.push(wg);
+            }
+            if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps; // reist neben den Rollen-Geoms (vo-lose Zeile, geomsZuGruppe überspringt sie)
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -2725,7 +2752,11 @@
         var L = lod | 0;
         var stufe = HOST_STUFEN[0];
         for (var i = 0; i < HOST_STUFEN.length; i++) if (HOST_STUFEN[i] <= L) stufe = HOST_STUFEN[i];
-        var g = geomsZuGruppe(buildStufe(p, stufe), p.col || null);
+        var gm = buildStufe(p, stufe);
+        var g = geomsZuGruppe(gm, p.col || null);
+        // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
+        // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
+        if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
         g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe };
         g.updateMatrixWorld(true);
         return g;
@@ -2898,6 +2929,24 @@
                 rolle: typeof hp.rolle === "string" ? hp.rolle : "wohnhaus",
                 baujahr: isFinite(hp.baujahr) ? hp.baujahr | 0 : 0,
                 ov: JSON.parse(JSON.stringify(hp)),
+                // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE + der Kern-Footprint
+                // W/D je Slot (dims-Wahrheit aus massBau) — der Host baut daraus die
+                // Blocker-Wände MIT Tür-Lücke (Betreten; Haus-lokal, vor slot.phi).
+                tuer: (function (dm) {
+                    if (!dm || !dm.tuer) return null;
+                    var tz = {
+                        x: dm.tuer.x,
+                        z: dm.tuer.z,
+                        w: dm.tuer.w,
+                        h: dm.tuer.h,
+                        y: dm.tuer.y,
+                        W: dm.W,
+                        D: dm.D,
+                    };
+                    if (dm.tuer.hinten)
+                        tz.hinten = { x: dm.tuer.hinten.x, z: dm.tuer.hinten.z, w: dm.tuer.hinten.w };
+                    return tz;
+                })(Bs[i].dims),
             });
         }
         return {

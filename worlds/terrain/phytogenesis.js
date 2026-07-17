@@ -4950,6 +4950,12 @@ init();
         for (let anc = mesh.parent; anc; anc = anc.parent) {
             if (anc.userData && typeof anc.userData.side === "number") {
                 out.tuer = { seite: anc.userData.side, hx: anc.position.x, zf: anc.position.z };
+                // DORF-ERLEBNIS (17.07., additiv, must-ignore): fachwerk-Haustür-
+                // Flügel reisen mit ihrer GEBACKENEN Offen-Pose (userData.offen,
+                // buildStufe-Separation) — der Host schliesst/öffnet relativ dazu.
+                // porta-Tore tragen das Feld nie → deren Replies bleiben byte-alt.
+                if (typeof anc.userData.offen === "number" && anc.userData.offen !== 0)
+                    out.tuer.offen = anc.userData.offen;
                 break;
             }
         }

@@ -33530,6 +33530,28 @@ class AnazhRealm {
             this._blockerStampReach(entry);
             return;
         }
+        // DORF-ERLEBNIS (17.07.) — HAUS MIT ECHTER TÜR-LÜCKE: trägt der Eintrag
+        // die exportierte Tür-Zeile (slot.tuer: Tür-Rect + Kern-Footprint W/D),
+        // deckt die Kollision den ECHTEN Hauskörper — 4 Wand-Riegel am W/D-Rand,
+        // Tür-Durchgänge (vorn + hinten) FREI, innen begehbar (Kollision nur an
+        // Wänden). Vorher galt die feste haus_basis-Substanz (6.6×5.6): bei
+        // grösseren Häusern stand sie als unsichtbarer Riegel MITTEN im Raum,
+        // ihre Tür-Lücke traf nie die sichtbare Tür. Ohne tuer-Zeile: byte-alt.
+        const hausParts = this._hausTuerBlockerParts(entry);
+        if (hausParts) {
+            const hausBoxes = [];
+            for (const part of hausParts) {
+                const aabb = this._blockerComputePartAABB(entry, part);
+                if (aabb) hausBoxes.push(aabb);
+            }
+            const fuH = this._archFundamentBox(entry);
+            if (fuH) hausBoxes.push(fuH);
+            if (hausBoxes.length) {
+                entry.blockerAABBs = hausBoxes;
+                this._blockerStampReach(entry);
+                return;
+            }
+        }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
@@ -33549,6 +33571,47 @@ class AnazhRealm {
         if (solidAABBs.length === 0) return;
         entry.blockerAABBs = solidAABBs;
         this._blockerStampReach(entry);
+    }
+
+    // DORF-ERLEBNIS — die HAUS-WAND-PARTS aus der Tür-Zeile (reine Daten, haus-
+    // lokal; derselbe Ecken-Hüllen-Chokepoint `_blockerComputePartAABB` rechnet
+    // sie mit entry.rotationY/scale in Welt-AABBs): 4 Wand-Riegel am Kern-
+    // Footprint W/D, Haustür + Hintertür als LÜCKEN (+ Sturz darüber). Höhe
+    // 3.1 m — die haus_basis-Wand-Höhe (EG); Obergeschosse blockern nicht,
+    // innen bleibt frei. Anbauten/Flügel jenseits des Kern-W/D tragen bewusst
+    // keine Wand (HALB: ~80 %, Rest = Anbau-Hüllen aus slot.ext — die ext-
+    // Hülle ALS Wand würde auch die Tür-Lücke wieder zustellen; nächste Welle).
+    _hausTuerBlockerParts(entry) {
+        const t = entry && entry.tuer;
+        if (!t || !Number.isFinite(t.W) || !Number.isFinite(t.D) || !(t.W > 1.5) || !(t.D > 1.5)) return null;
+        if (!Number.isFinite(t.w) || !(t.w > 0) || !Number.isFinite(t.z)) return null;
+        const H = 3.1;
+        const dick = 0.35;
+        const parts = [];
+        const wand = (px, pz, sx, sz, y0, y1) =>
+            parts.push({ position: { x: px, y: (y0 + y1) / 2, z: pz }, size: { x: sx, y: y1 - y0, z: sz } });
+        // Wand entlang X an der z-Kante zF, optional mit Tür-Lücke:
+        const wandX = (zF, luecke) => {
+            if (luecke) {
+                const g0 = Math.max(-t.W / 2, luecke.x - luecke.w / 2 - 0.15);
+                const g1 = Math.min(t.W / 2, luecke.x + luecke.w / 2 + 0.15);
+                if (g0 - -t.W / 2 > 0.05) wand((-t.W / 2 + g0) / 2, zF, g0 - -t.W / 2, dick, 0, H);
+                if (t.W / 2 - g1 > 0.05) wand((g1 + t.W / 2) / 2, zF, t.W / 2 - g1, dick, 0, H);
+                const oben =
+                    (Number.isFinite(luecke.y) ? luecke.y : 0.55) + (Number.isFinite(luecke.h) ? luecke.h : 2.05) + 0.1;
+                if (H - oben > 0.1) wand((g0 + g1) / 2, zF, g1 - g0, dick, oben, H); // Sturz über der Tür
+            } else wand(0, zF, t.W, dick, 0, H);
+        };
+        wandX(t.z, t); // Front (−z) mit Haustür-Lücke
+        wandX(
+            -t.z,
+            t.hinten && Number.isFinite(t.hinten.x) && Number.isFinite(t.hinten.w)
+                ? { x: t.hinten.x, w: t.hinten.w, y: t.y, h: t.h }
+                : null
+        ); // Rücken (+z), Hintertür-Lücke wenn vorhanden
+        wand(-t.W / 2, 0, dick, t.D, 0, H); // Seiten-Wände (fensterdurchstieg bleibt zu — ehrlich genug)
+        wand(t.W / 2, 0, dick, t.D, 0, H);
+        return parts;
     }
 
     // DORF-IN-TERRAIN — die EINE Fundament-Geometrie-Wahrheit (Blocker UND Render-
@@ -38576,6 +38639,9 @@ class AnazhRealm {
                 ...(a.fundament && Number.isFinite(a.fundament.ex)
                     ? { fundament: { ex: a.fundament.ex, ez: a.fundament.ez } }
                     : {}),
+                // DORF-ERLEBNIS — die Tür-Zeile überlebt den Reload (die Blocker-
+                // Tür-Lücke + der Flügel-Tick leiten alles live daraus ab).
+                ...(a.tuer && Number.isFinite(a.tuer.w) ? { tuer: a.tuer } : {}),
                 // Φ7 (V18.190) — entry-level portalMeta (Halle-Slots): eine
                 // materialisierte Halle hat N Tore mit JE eigener worldAddress
                 // am entry.portalMeta. Ohne diese Persistenz würden alle
@@ -43170,6 +43236,8 @@ class AnazhRealm {
                 // DORF-IN-TERRAIN — der Fundament-Footprint reist durch den Reload
                 // mit (derselbe EINE Sanitize-Chokepoint klemmt ihn).
                 fundament: a.fundament,
+                // DORF-ERLEBNIS — die Tür-Zeile reist durch den Reload mit.
+                tuer: a.tuer,
             });
             // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
             // tragen je eigene worldAddress; ohne diesen Schritt würden alle
@@ -50597,7 +50665,10 @@ class AnazhRealm {
                     if (g && g.tuer) rec._fluegel.push({ g, slot: s.slot, tuer: g.tuer });
                 }
             }
-            rec._fluegelWinkel = 0;
+            // DORF-ERLEBNIS — Haus-Recs starten in der GEBACKENEN Offen-Pose
+            // (rec._fluegelStart = Gesetz-Winkel): die Tür schliesst beim ersten
+            // Fern-Tick WEICH statt zu springen. Tore (gebacken zu): Start 0.
+            rec._fluegelWinkel = rec._fluegelStart || 0;
         }
         if (!rec._fluegel || !rec._fluegel.length) return;
         // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
@@ -50613,9 +50684,16 @@ class AnazhRealm {
         const mB = this._torTmpB || (this._torTmpB = new T.Matrix4());
         for (const f of rec._fluegel) {
             const t = f.tuer;
+            // DORF-ERLEBNIS — trägt der Flügel seine GEBACKENE Offen-Pose
+            // (t.offen, fachwerk-Haustüren: buildStufe-Separation), dreht er
+            // RELATIV dazu: fern (neu→0) um −offen zu (die Tür schliesst),
+            // nah (neu→Gesetz) auf die gebackene Offen-Pose. porta-Tore
+            // (gebacken ZU, kein offen-Feld) drehen wie bisher absolut.
             const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
-            // T(h)·R_y(sign·neu)·T(−h) — kompakt über drei Matrizen:
-            mA.makeRotationY(sign * neu);
+            const gz = AnazhRealm._tuerOffenRad() || 1;
+            const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
+            // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
+            mA.makeRotationY(winkel);
             mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
             mB.multiply(mA); // T(h)·R
             mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
@@ -50632,6 +50710,49 @@ class AnazhRealm {
             } catch (_e) {
                 /* Slot kann nach Rebuild kurz stale sein — nächster Tick sammelt neu */
             }
+        }
+    }
+
+    // ═══ DORF-ERLEBNIS (17.07.) — HAUS BETRETEN: die Tür öffnet sich dem
+    // Reisenden. Haus-Türflügel (leaf.tuer aus der fachwerk-Pipe — exakt der
+    // porta-Flügel-Pfad) drehen nähe-aktiviert um ihre Hinge-Achse durch
+    // DENSELBEN Chokepoint `_tickTorFluegel` wie die Welt-Tore (kein Parallel-
+    // System). Kandidaten (nur Einträge MIT Tür-Zeile = Siedlungs-Häuser)
+    // werden 1×/s gesammelt, der Frame-Tick dreht nur NAHE Häuser (< 40 m —
+    // jenseits davon serviert die lodServe-Fernstufe ohnehin gebakte Türen). ═══
+    _tickHausTueren(currentTime) {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm || !Array.isArray(st.architectures)) return;
+        if (!this._hausTuerScanT || currentTime - this._hausTuerScanT > 1000) {
+            this._hausTuerScanT = currentTime; // Instanz-Felder (die _editSaveTimer-Klasse: nicht serialisiert)
+            const nah = [];
+            const p = pm.position;
+            for (const e of st.architectures) {
+                if (!e || !e.tuer || !e.position || !e.instSlots) continue;
+                const dx = e.position.x - p.x;
+                const dz = e.position.z - p.z;
+                if (dx * dx + dz * dz < 1600) nah.push(e); // 40 m
+            }
+            this._hausTuerNah = nah;
+        }
+        const nah = this._hausTuerNah;
+        if (!nah || !nah.length) return;
+        const gz = AnazhRealm._tuerOffenRad();
+        for (const e of nah) {
+            if (!e.instSlots) continue; // zwischenzeitlich geculled
+            const d = Math.hypot(e.position.x - pm.position.x, e.position.z - pm.position.z);
+            // Reichweite = halbe Kern-Diagonale + Schwelle: die Tür beginnt sich
+            // ~5 m vor der Wand zu öffnen und steht offen, wenn man sie erreicht.
+            const reach = Math.max(e.tuer.W || 6, e.tuer.D || 6) * 0.5 + 1.2;
+            const act = Math.max(0, Math.min(1, 1 - (d - reach) / 5));
+            const rec =
+                e._tuerRec ||
+                (e._tuerRec = {
+                    tor: { gestalt: this._foundryPresetForEntry(e) || "haus" },
+                    _fluegelStart: gz, // Start = gebackene Offen-Pose (weiches Erst-Schliessen)
+                });
+            this._tickTorFluegel(rec, e, act);
         }
     }
 
@@ -59448,6 +59569,71 @@ class AnazhRealm {
                 instanced: true,
                 parts: glutbrunnenParts,
             },
+            // DORF-ERLEBNIS (17.07.) — der DORF-BRUNNEN: die brunnen-Schicht des
+            // Settlement-Exports (fachwerk exportSettlement, seit N5.7 benannt +
+            // unkonsumiert) bekommt ihren Welt-Körper. Gehoben über den EINEN
+            // Chokepoint `_spawnSettlementErlebnis` → `spawnArchitecture` (kein
+            // Parallel-System); reine Daten-Parts (Stein-Trog · Wasser-Spiegel ·
+            // Pfosten · Windebalken · Dach) — die Blocker-Wahrheit emergiert wie
+            // bei jedem Bauwerk aus der Substanz (stein/holz dicht → solide).
+            brunnen_dorf: {
+                name: "brunnen_dorf",
+                label: "Dorfbrunnen",
+                builtIn: true,
+                instanced: true,
+                parts: [
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 0, y: 0.4, z: 0 },
+                        size: { x: 1.7, y: 0.8, z: 1.7 },
+                        segments: 10,
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "stein",
+                        position: { x: 0, y: 0.84, z: 0 },
+                        size: { x: 1.85, y: 0.14, z: 1.85 },
+                        segments: 10,
+                    },
+                    // Wasser-Spiegel (quarz, leicht transparent — der Brunnen lebt)
+                    {
+                        shape: "cylinder",
+                        material: "quarz",
+                        position: { x: 0, y: 0.62, z: 0 },
+                        size: { x: 1.35, y: 0.06, z: 1.35 },
+                        segments: 10,
+                        opacity: 0.8,
+                    },
+                    // Zwei Pfosten + Windebalken + Satteldach-Platte
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -0.95, y: 1.5, z: 0 },
+                        size: { x: 0.16, y: 2.2, z: 0.16 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0.95, y: 1.5, z: 0 },
+                        size: { x: 0.16, y: 2.2, z: 0.16 },
+                    },
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: 2.1, z: 0 },
+                        rotation: { x: 0, y: 0, z: 1.5708 },
+                        size: { x: 0.18, y: 2.0, z: 0.18 },
+                        segments: 8,
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 2.72, z: 0 },
+                        size: { x: 2.5, y: 0.08, z: 1.1 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
@@ -65681,6 +65867,143 @@ class AnazhRealm {
         this.state.archFundament = null;
     }
 
+    // ═══ DORF-ERLEBNIS (17.07.) — DER WEGE-POOL (Strassen · Feldwege · Platz) ═══
+    // Das _archFundament-Muster 1:1: EIN InstancedMesh für ALLE Siedlungs-Boden-
+    // Streifen der Welt (1 Draw-Call, Verdopplungs-Wachstum, per-Instanz-Farbe).
+    // Die Höhen-Quelle ist DIESELBE wie die der Häuser (`getTerrainHeightAt`),
+    // jedes Segment folgt der Boden-Neigung (Pitch aus den Endpunkt-Höhen).
+    // KEIN Snapshot-Feld: die Streifen entstehen je Session deterministisch aus
+    // dem Settlement-Export (settlementCells-Gedächtnis + `_tickAutoSettlement`-
+    // Rebuild) — Reload-fest ohne ein einziges Save-Byte.
+    _stlWegeEnsurePool() {
+        const st = this.state;
+        if (!st.scene) return null;
+        let P = st.stlWege;
+        if (P) return P;
+        const geo = this._stlWegeGeo || (this._stlWegeGeo = new THREE.BoxGeometry(1, 1, 1));
+        const mat = this._stlWegeMat || (this._stlWegeMat = new THREE.MeshLambertMaterial({ color: 0xffffff })); // Farbe je Instanz (setColorAt)
+        const mesh = new THREE.InstancedMesh(geo, mat, 256);
+        // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
+        // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
+        mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
+        mesh.count = 0;
+        mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC (das Fundament-Muster)
+        mesh.receiveShadow = true;
+        st.scene.add(mesh);
+        P = st.stlWege = { mesh, cap: 256, top: 0 };
+        return P;
+    }
+    _stlWegeAddStrip(x, y, z, yaw, pitch, sx, sy, sz, farbe) {
+        const P = this._stlWegeEnsurePool();
+        if (!P) return;
+        if (P.top >= P.cap) {
+            // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
+            const bigger = new THREE.InstancedMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2);
+            bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
+            // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
+            bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
+            if (P.mesh.instanceColor) bigger.instanceColor.array.set(P.mesh.instanceColor.array);
+            bigger.count = P.mesh.count;
+            bigger.frustumCulled = false;
+            bigger.receiveShadow = true;
+            this.state.scene.add(bigger);
+            this.state.scene.remove(P.mesh);
+            P.mesh.dispose();
+            P.mesh = bigger;
+            P.cap *= 2;
+        }
+        const slot = P.top++;
+        const m = this._stlWegeTmpM || (this._stlWegeTmpM = new THREE.Matrix4());
+        const q = this._stlWegeTmpQ || (this._stlWegeTmpQ = new THREE.Quaternion());
+        const e = this._stlWegeTmpE || (this._stlWegeTmpE = new THREE.Euler());
+        const v = this._stlWegeTmpV || (this._stlWegeTmpV = new THREE.Vector3());
+        const s = this._stlWegeTmpS || (this._stlWegeTmpS = new THREE.Vector3());
+        const c = this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color());
+        e.set(pitch, yaw, 0, "YXZ");
+        q.setFromEuler(e);
+        m.compose(v.set(x, y, z), q, s.set(sx, sy, sz));
+        P.mesh.setMatrixAt(slot, m);
+        P.mesh.setColorAt(slot, c.setHex(farbe));
+        if (slot + 1 > P.mesh.count) P.mesh.count = slot + 1;
+        P.mesh.instanceMatrix.needsUpdate = true;
+        if (P.mesh.instanceColor) P.mesh.instanceColor.needsUpdate = true;
+    }
+    // Die Wege+Platz-Schichten EINES Settlement-Exports in den Pool heben —
+    // welt-verankert am Anker `origin`, Wasser-bewacht je Segment (dieselbe
+    // `_isAboveWaterAt`-Wand wie die Häuser; Fluss-Querungen bleiben offen —
+    // HALB: ~85 %, Rest = bruecken-Schicht des Exports [reist, unkonsumiert]).
+    // `key` = das Session-einmal-Gedächtnis (Set — kein Doppel-Bau je Boot).
+    _stlWegeBuild(plan, origin, key) {
+        if (!plan || !origin || !this.state.scene) return 0;
+        if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
+        if (key && this._stlWegeKeys.has(key)) return 0;
+        if (key) this._stlWegeKeys.add(key);
+        let n = 0;
+        const MAX = 900; // Kappe je Siedlung (Pool-Hygiene)
+        const strasse = (pts, w, farbe) => {
+            if (!Array.isArray(pts)) return;
+            for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
+                const ax = origin.x + pts[i].x;
+                const az = origin.z + pts[i].z;
+                const bx = origin.x + pts[i + 1].x;
+                const bz = origin.z + pts[i + 1].z;
+                const dx = bx - ax;
+                const dz = bz - az;
+                const len = Math.hypot(dx, dz);
+                if (!(len > 0.01)) continue;
+                if (!this._isAboveWaterAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
+                const y0 = this.getTerrainHeightAt(ax, az);
+                const y1 = this.getTerrainHeightAt(bx, bz);
+                if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
+                this._stlWegeAddStrip(
+                    (ax + bx) / 2,
+                    (y0 + y1) / 2 - 0.01, // Oberkante ~6 cm über Grund (sy 0.14)
+                    (az + bz) / 2,
+                    Math.atan2(dx, dz),
+                    -Math.atan2(y1 - y0, len), // Pitch: das Segment folgt dem Hang
+                    Math.max(1.2, w || 2.5),
+                    0.14,
+                    len + 0.3, // Überlapp — keine Lücken in Kurven
+                    farbe
+                );
+                n++;
+            }
+        };
+        for (const rd of plan.roads || []) strasse(rd.pts, rd.w, rd.gen >= 2 ? 0x7c6b4e : 0x8a7456);
+        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, 0x83744f);
+        // Der PLATZ (Anger/Markt) — EIN gedrehtes Boden-Rechteck aus demselben Pool.
+        const pz = plan.platz;
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
+            const wx = origin.x + pz.cx;
+            const wz = origin.z + pz.cz;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (Number.isFinite(wy) && this._isAboveWaterAt(wx, wz, 0.2)) {
+                this._stlWegeAddStrip(
+                    wx,
+                    wy - 0.01,
+                    wz,
+                    pz.phi || 0,
+                    0,
+                    pz.ex * 2,
+                    0.12,
+                    pz.ez * 2,
+                    pz.typ === "gras" ? 0x66804a : 0x94805e
+                );
+                n++;
+            }
+        }
+        return n;
+    }
+    _stlWegeDisposePool() {
+        const P = this.state.stlWege;
+        if (P && P.mesh) {
+            if (P.mesh.parent) P.mesh.parent.remove(P.mesh);
+            P.mesh.dispose();
+        }
+        this.state.stlWege = null;
+        if (this._stlWegeKeys) this._stlWegeKeys.clear(); // die Session-Marken fallen mit (Rebuild baut neu)
+    }
+
     _archInstanceAdd(entry, flat, opts) {
         // DAS NEUE KLEID — KEIN FALLBACK, DAS STUDIO IST DER MUSKEL (Schöpfer „AnazhRealm nur das Nerven-
         // system, nicht der Muskel"): der EINE Chokepoint, durch den JEDE platzierte Architektur ins Render-
@@ -65909,6 +66232,9 @@ class AnazhRealm {
         // DORF-IN-TERRAIN — der Fundament-Pool fällt mit (Welt-Wechsel/Restore);
         // die Respawn-Schleife baut ihn lazy neu.
         this._archFundamentDisposePool();
+        // DORF-ERLEBNIS — der Wege-Pool fällt mit; der settlementCells-Rebuild
+        // (`_tickAutoSettlement`) baut die Streifen lazy + deterministisch neu.
+        this._stlWegeDisposePool();
     }
 
     // Mesh aus Eintrag (re-)bauen und in die Szene hängen. Trennt Daten von
@@ -66336,6 +66662,17 @@ class AnazhRealm {
                 ex: Math.max(0.5, Math.min(24, +opts.fundament.ex)),
                 ez: Math.max(0.5, Math.min(24, +opts.fundament.ez)),
             };
+        }
+        // DORF-ERLEBNIS — die TÜR-ZEILE des Settlement-Exports reist am Eintrag
+        // (Snapshot + Restore, das fundament-Muster): Tür-Rect + Kern-Footprint
+        // W/D, haus-lokal. Konsument: `_hausTuerBlockerParts` (Blocker-Wände MIT
+        // Tür-Lücke — Betreten) + `_tickHausTueren` (Flügel-Nähe-Reichweite).
+        if (opts.tuer && Number.isFinite(opts.tuer.w) && Number.isFinite(opts.tuer.W) && Number.isFinite(opts.tuer.D)) {
+            try {
+                entry.tuer = JSON.parse(JSON.stringify(opts.tuer));
+            } catch (_e) {
+                /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
+            }
         }
         // V18.297 — autonom vom Nexus gespawnt → vom Cap (`_capNexusStructures`) bounded.
         // Die Welt wächst, hortet aber nicht: ist das Limit erreicht, verblasst das Fernste.
@@ -68327,9 +68664,48 @@ class AnazhRealm {
                 silent: true,
                 autonomous: !!(so && so.autonomous),
                 fundament,
+                // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
+                // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
+                tuer: slot.tuer || undefined,
             }
         );
         return !!entry;
+    }
+    // ═══ DORF-ERLEBNIS (17.07.) — DIE SIEDLUNG WIRD ERLEBNIS: der EINE Hebe-
+    // Chokepoint für die Nicht-Haus-Schichten des Exports (sie reisten seit
+    // N5.7 benannt + unkonsumiert): WEGE + FELDWEGE + PLATZ in den Wege-Pool
+    // (`_stlWegeBuild` — Boden-Streifen, dieselbe Höhen-Quelle wie die Häuser)
+    // und BRUNNEN als Architektur-Spawns am Slot (der EINE Chokepoint
+    // `spawnArchitecture`, Bauplan `brunnen_dorf` — kein Parallel-System).
+    // Aufrufer: `spawnSettlement` (deliberat) · `_autoSettlementSpawnCell`
+    // (Auto-Ankunft) · der Reload-Rebuild (so.nurWege — Brunnen sind da längst
+    // persistierte state.architectures). Unkonsumiert bleiben benannt: fences/
+    // felder/staende/mauer/fluss/bruecken/laternen/trees (must-ignore, offen).
+    _spawnSettlementErlebnis(plan, origin, so) {
+        if (!plan || !origin) return;
+        this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        if (so && so.nurWege) return;
+        if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
+        let n = 0;
+        for (const b of plan.brunnen) {
+            if (n >= 5) break; // Kappe (Kernel-Brunnen + je 8 Häuser einer)
+            if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
+            const wx = origin.x + b.x;
+            const wz = origin.z + b.z;
+            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy)) continue;
+            const entry = this.spawnArchitecture(
+                "brunnen_dorf",
+                { x: wx, y: wy + 0.5, z: wz },
+                {
+                    seed: ((plan.seed >>> 0 || 1) + n * 7919) >>> 0, // deterministisch je Siedlung+Platz
+                    silent: true,
+                    autonomous: !!(so && so.autonomous),
+                }
+            );
+            if (entry) n++;
+        }
     }
     _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
@@ -68378,6 +68754,13 @@ class AnazhRealm {
                 return null;
             }
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
+            // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
+            // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
+            const wmD = this.state.worldMeta || (this.state.worldMeta = {});
+            if (!wmD.settlementCells || typeof wmD.settlementCells !== "object") wmD.settlementCells = {};
+            const dKey = "d:" + seed;
+            if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
+            this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
             this.log(
                 `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`,
                 "INFO"
@@ -68597,8 +68980,17 @@ class AnazhRealm {
         return this._foundryRequestSettlement({ seed: i2.seed, nH: i2.nH }).then((plan) => {
             this._autoSettlementPendingKey = null;
             if (!plan || !Array.isArray(plan.slots)) return null; // fail-closed (Foundry kalt)
-            wm.settlementCells[key] = 1; // das Spawn-einmal-Gedächtnis (persistiert im worldMeta-Spread)
+            // DORF-ERLEBNIS — die Reservierung trägt das REBUILD-GEDÄCHTNIS
+            // {seed,nH,x,z} statt der nackten 1: Häuser/Brunnen persistieren als
+            // architectures, die WEGE-Streifen (kein Save-Byte) werden nach einem
+            // Reload aus dem deterministischen Export an DIESEM Anker neu gebaut
+            // (`_tickAutoSettlement`-Rebuild). Alle Leser fragen Existenz (truthy)
+            // — das Spawn-einmal-Gedächtnis bleibt, persistiert im worldMeta-Spread.
+            wm.settlementCells[key] = { seed: i2.seed, nH: i2.nH, x: anchor.x, z: anchor.z };
             this._autoSettlementQueue = { plan, origin: { x: anchor.x, z: anchor.z }, idx: 0, cellKey: key };
+            // Wege/Platz/Brunnen sofort bei ANKUNFT (klein + einmalig; die Häuser
+            // materialisieren budgetiert über die Ticks).
+            this._spawnSettlementErlebnis(plan, { x: anchor.x, z: anchor.z }, { key });
             if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
             return plan;
         });
@@ -68641,6 +69033,29 @@ class AnazhRealm {
         // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
         // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Ursprung).
         this._genesisPortalRing(playerPos);
+        // DORF-ERLEBNIS — DER WEGE-REBUILD (Reload-Treue über DENSELBEN
+        // settlementCells-Pfad): besiedelte Zellen mit Rebuild-Gedächtnis
+        // ({seed,nH,x,z}) bauen ihre Wege-Streifen je Session lazy neu —
+        // deterministisch aus DEMSELBEN Export am gemerkten Anker (Häuser +
+        // Brunnen sind persistierte architectures und respawnen NICHT: nurWege).
+        // Alt-Saves mit Wert 1 tragen kein Gedächtnis → keine Wege (fail-soft).
+        // EIN Roundtrip zur Zeit, nur nahe Zellen.
+        if (cells && !this._stlWegePending) {
+            for (const k in cells) {
+                const c = cells[k];
+                if (!c || typeof c !== "object" || !Number.isFinite(c.x) || !Number.isFinite(c.seed)) continue;
+                if (this._stlWegeKeys && this._stlWegeKeys.has(k)) continue;
+                const rdx = c.x - playerPos.x;
+                const rdz = c.z - playerPos.z;
+                if (rdx * rdx + rdz * rdz > A.nearM * A.nearM) continue;
+                this._stlWegePending = true; // Instanz-Feld (die _editSaveTimer-Klasse)
+                this._foundryRequestSettlement({ seed: c.seed, nH: c.nH }).then((plan2) => {
+                    this._stlWegePending = false;
+                    if (plan2) this._spawnSettlementErlebnis(plan2, { x: c.x, z: c.z }, { key: k, nurWege: true });
+                });
+                return; // EIN Dorf-Akt pro Tick
+            }
+        }
         // DAS START-DORF zuerst (einmalig je Welt, s. _autoSettlementStartInfo): nur
         // nahe des Ursprungs materialisieren (der Spieler steht beim Welt-Start dort;
         // fern = später — kein Fern-Spawn hinter dem Rücken). Fail-closed + Session-
@@ -86686,6 +87101,9 @@ class AnazhRealm {
 
                 // ### Portal-Membranen ### (V18.464 — die Passage atmet + Hindurchgehen)
                 this._tickPortalMembranes(currentTime);
+
+                // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
+                this._tickHausTueren(currentTime);
 
                 // ### Fähigkeiten ###
                 Object.keys(this.state.abilities).forEach((ability) => {
