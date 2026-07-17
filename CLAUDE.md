@@ -6,9 +6,28 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.488 — DIE OFFENEN PUNKTE FALLEN: Feld-Pass · Feld-Cull · Zensus-Rest)
+## Stand (V18.489 — DIE SCHLUSS-WELLE: Tetrapoda-Heimkehr · Teils→Ganz · Puffer-Tod · selbst gemessen)
 
-**17.07. abends, alles GEBAUT + GEMESSEN:** DER FULLSCREEN-FELD-PASS (Ferne
+**17.07. nachts, alles GEBAUT + GEMESSEN:** DIE 9 TETRAPODA-ZEILEN FALLEN
+(freude/sprung/groessen/separation/aufgaben/herde/wasser/stimmung.schwellen/
+Stopp-Distanzen wandern rein additiv in VERHALTEN; Leser fail-closed via
+_verhaltenGesetz [Wand je Block], die Task-Getter wurden Leser,
+CREATURE_SEPARATION-Zwilling gefallen → Absenz-Wand 18 Namen) · DIE 4
+TEILS-ZEILEN WURDEN GANZ (Zorn-Achse→angry [chaos ≥ 0.5 OHNE sorrow — der
+eigene Angriff speist nur chaos] · schmiede-VERTRAGS-AKT [10 tote Exporte
+gekürzt, Maschinen intern lebendig, 52/52 Geometrie-Goldens byte-gleich] ·
+klang-RAUM [hall/echo/DELAY_SENDS → Welt-Bus: returnProSpace, Tempo-Echo,
+Genre-Sends] · slide/showcase = deklarierte Lab-Vorschau; Matrix trägt KEIN
+TEILS mehr, 14 OFFEN[eigene Welle]) · DER FELD-CULL-PUFFER-TOD (Gewand-
+Ablegen zerstört die eigenen Storage-/Indirect-Puffer explizit via
+renderer._attributes.delete; gate:feld-cull Band f/g: 4× Churn → info.memory
+exakt Grundlinie 0/0/0, 35 Puffer gelöst, Leck-Selbsttest rot) · SELBST
+GESPIELT (ich-spiele-Sonde, echtes WebGPU, Feld-Pass+Feld-Cull aktiv):
+steady SONDE-ZAHL — dazu fielen zwei liegengebliebene Gate-Rots (Golden-
+Datenkanäle recipes/render-config + v7-daten waren seit V18.488 ungemünzt;
+worlds-Buster stale) per Mint-Mechanik + Buster-Welle.
+
+Davor V18.488 — DIE OFFENEN PUNKTE FALLEN (17.07. abends): DER FULLSCREEN-FELD-PASS (Ferne
 jenseits der Schalen = NULL Vertices: Polar-Höhenfeld 192×48 bis 40 km vom
 GPU-Feld-Zeichner + Fullscreen-WGSL-Raymarch als letzter Draw; gate:fern-ring
 Band 8: Texel==Gesetz worst 9.1 mm, echte Render-Probe 4608 Treffer-Pixel) ·

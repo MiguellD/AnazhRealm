@@ -1,11 +1,12 @@
 DER SPIEGEL-ZENSUS (17.07.) -- Stamm-Altlasten vs Studio-Gesetze, 6 Domaenen
 
 Die Matrix ist die Arbeitsliste des Abbaus (Groesse|Ist|Ort|Soll|Status|Prio|Fix).
-STAND V18.488 (Zensus-Rest-Welle): alle 94 Zeilen tragen einen Status --
-ERLEDIGT V18.486/487/488 = abgebaut (Wave/Detail: git log) · TEILS = der
-benannte Teil lebt, der Rest steht in der Klammer · OFFEN[Grund] = ehrlich
-nicht in dieser Welle machbar (tetrapoda-Kern parallel in Arbeit ·
-nicht-additive Kern-Aenderung = Vertrags-Akt · eigene Renderer-/UI-Welle).
+STAND V18.489 (Schluss-Welle): alle 94 Zeilen tragen einen Status --
+ERLEDIGT V18.486/487/488/489 = abgebaut (Wave/Detail: git log) · ENTSCHIEDEN =
+bewusst deklariert (Lab-only/kein Doppel, Begruendung in der Zeile) ·
+OFFEN[Grund] = ehrlich nicht machbar ohne eigene Welle (Renderer-/UI-/
+phyto-Welle · Studio-Byte-Beweis noetig). Die tetrapoda-Tabu-Zeilen und die
+TEILS-Zeilen sind GEFALLEN (V18.489); kein TEILS mehr in der Matrix.
 Zeilen-Nummern der Ist-Orte sind der Zensus-Stand 17.07. (seither gewandert).
 
 ===== BEWEGUNG =====
@@ -84,7 +85,7 @@ Alle fünf bekannten Befunde bestätigt, mit zwei Präzisierungen: die Gravitati
 | Temperament-Profile/-Signaturen | strike 0/0.3/0.45 · counterMul bis 0.85 · fleeMul 0.5–1.7 · Floor 0.35 | anazhRealm.js:93948–93966 | tetrapoda-core VERHALTEN (temperament) | ERLEDIGT V18.486 | 1 | Die vier Temperamente + Resonanz-Signaturen als Kern-Daten, `_creatureTemperament` liest die EINE Quelle. |
 | Wander-Charakter CREATURE_CHARAKTER | leashBaseM 18±10 m · wanderSpeedMul 0.45 · strideSec 2.5 · chaosGain 0.5 | anazhRealm.js:94011 | tetrapoda-core VERHALTEN (wandern) | ERLEDIGT V18.486 | 1 | Leine/Schlender-Tempo/Emotions-Modulation als `VERHALTEN.wandern` in den Kern. |
 | MOTION.phases (Gang-Muster) | Kern: flee=[0,π,π,0] u.a.; Stamm seedet IMMER Trab [0,¾π,1½π,¼π] | tetrapoda-core.js:42–52 vs anazhRealm.js:18278 | Stamm-Konsum in `_animateTierBaum` | ERLEDIGT V18.486 | 1 | `tb._gang.ph` aus `P.phases` seeden statt hartkodiert — der Pass-Gang der Flucht erreicht die Welt. |
-| MOTION-Kanäle ear/tension/bob/bodyZ/headY/kpMul | reisen in jedem fx.motion-Preset, Stamm liest 0 davon | tetrapoda-core.js:42–52 | Konsum in `_animateTierBaum` | OFFEN[tetrapoda parallel in Arbeit — Kanal-Konsum eigene Welle] | 2 | bob (Galopp-Federn) + ear mindestens konsumieren oder Nicht-Konsum im Vertrag vermerken. |
+| MOTION-Kanäle ear/tension/bob/bodyZ/headY/kpMul | reisen in jedem fx.motion-Preset, Stamm liest 0 davon | tetrapoda-core.js:42–52 | Konsum in `_animateTierBaum` | OFFEN[Kanal-Konsum (bob/ear/…) im Baum-Gang = eigene Welle; das Tabu fiel V18.489] | 2 | bob (Galopp-Federn) + ear mindestens konsumieren oder Nicht-Konsum im Vertrag vermerken. |
 | Joy-Tempo/Hüpf-Höhe | happy → Tempo ×2 · jumpHeight 1.2/0.8 m | anazhRealm.js:22095–22096 | tetrapoda-core VERHALTEN/MOTION | ERLEDIGT V18.489 (VERHALTEN.freude) | 2 | Freude-Faktor + Hüpf-Höhen als Kern-Daten neben `hop` (bound 3.2/pounce 4.5 wohnen schon dort). |
 | Größen-Klassen-Wurf `_creatureBodySize` | klein 0.6–0.82 (18 %) · normal 0.85–1.18 · groß 1.25–1.75 · Gigant 1.9–2.7 (3.5 %) | anazhRealm.js:18489–18495 | tetrapoda-core (Allometrie-Daten) | ERLEDIGT V18.489 (VERHALTEN.groessen, gleicher Wurf) | 2 | Die Größen-Verteilung (Lehre 8: DIE Differenzierungs-Achse) als Daten-Tabelle ins Gesetzbuch. |
 | Stimmungs-Schwellen Verhaltens-Tick | chaos/joy ≥ 0.5 · Nacht-Schwelle −0.15 · Weide-Grenze diet ≤ 0.5 | anazhRealm.js:18916–18929 | tetrapoda-core VERHALTEN.stimmung | ERLEDIGT V18.489 (stimmung.schwellen) | 2 | Schwellen als `stimmung.schwellen`-Zeilen reisen lassen, der Tick liest sie. |
@@ -128,7 +129,7 @@ Gesamturteil: Die Naht-Muster (bpm/scale, membranUniforms, exportSettlement-Slot
 | garage: Steigungs-Fahrgefühl | existiert NIRGENDS — Probestrecke flach, updateVehicle liest keine Bodenhöhe | worlds/garage/garage.js:230-232, 298-358 | vehicle-core FAHR (Hangwiderstand/Gravitations-Längskraft) + Lab-Hügel | ERLEDIGT V18.486 (Steigungs-Dreiklang) | 1 | FAHR um Steigungs-Term erweitern und der Probestrecke Rampen geben — sonst bleibt Berg-Fahren untunbar. |
 | koerperstudio: Coyote-Time | Stamm 0.3 s vs Lab 0.12 s (Celeste), Kern-Feld fehlt | anazhRealm.js:303 vs koerperstudio.js:1736 | koerper-core fx.bewegung.parkour.coyoteSec | ERLEDIGT V18.486 | 1 | EINE Kern-Zahl anlegen, beide Leser umhängen (Jump-Buffer 0.12 gleich mitheben — fehlt der Welt ganz). |
 | schmiede: Schwung-Phasen + Sweep-Geometrie (windupFrac 0.3 · strikeFrac 0.25 · arcHalfRad 1.1 · bladeRadiusM 0.35 · hitStop 0.08) | Stamm-Konstante, NICHT in ARENA | anazhRealm.js:89906-89923 (SWING_LAWS) | schmiede-core ARENA.schwung (dort liegt nur die √I-Dauer) | ERLEDIGT V18.486 | 2 | Phasen/Sweep-Felder in ARENA.schwung nachziehen, SWING_LAWS auf reinen Fallback schrumpfen. |
-| tetrapoda: Verhaltens-Kurven (18 Lab-Aktionen mit Ganzkörper-Envelopes: prance/hop/circle/zigzag/lookback…) | Lab-eigene emo.getBeh; Kern trägt nur 12 vereinfachte Profil-Overlays; Lab liest VERHALTEN nie (0 Treffer) | worlds/tetrapoda/tetrapoda.js:74-104 vs tetrapoda-core.js:69-92 | tetrapoda-core VERHALTEN (Kurven-Felder erweitern), Lab wird Leser | OFFEN[tetrapoda parallel in Arbeit — eigene Welle] | 2 | Lab-Kurven als Daten in VERHALTEN heben (bekannt-offen „Aktions-Feinschliff") — sonst zeigt die Vorschau ein anderes Tier als die Welt. |
+| tetrapoda: Verhaltens-Kurven (18 Lab-Aktionen mit Ganzkörper-Envelopes: prance/hop/circle/zigzag/lookback…) | Lab-eigene emo.getBeh; Kern trägt nur 12 vereinfachte Profil-Overlays; Lab liest VERHALTEN nie (0 Treffer) | worlds/tetrapoda/tetrapoda.js:74-104 vs tetrapoda-core.js:69-92 | tetrapoda-core VERHALTEN (Kurven-Felder erweitern), Lab wird Leser | OFFEN[Lab-Kurven-Hebung = eigene Welle (Studio-Byte-Beweis); das Tabu fiel V18.489] | 2 | Lab-Kurven als Daten in VERHALTEN heben (bekannt-offen „Aktions-Feinschliff") — sonst zeigt die Vorschau ein anderes Tier als die Welt. |
 | portale: Bodennebel + Portal-Glut-Licht (Intensität 0.3+openM·3.4, Puls; Nebel-Welle „exakt Membran") | nur Lab-Szene, Stamm 0 Treffer | worlds/portale/porta.js:139, 153-235 | porta-core (analog membranUniforms) + Stamm-Portal-Renderer | OFFEN[Portal-Renderer-Welle] | 2 | Glut/Nebel-Zahlen als portaCore-Ableitung exportieren; Welt-Portale stehen heute kalt und nebellos. |
 | portale: Tür-Öffnungswinkel 1.95 rad | Zahlen-Zwilling Lab↔Stamm, Kern kennt ihn nicht | porta.js:18 (DOOR_OPEN) vs anazhRealm.js:93400 (TOR_FLUEGEL_OFFEN) | porta-core (z.B. deriveGate/tuer) | ERLEDIGT V18.486 | 2 | EINE Kern-Zahl `tuerOffenRad`, beide Leser umhängen. |
 | terrain: Wald-Ökologie plantForest/standDensity (Feuchte·Hang·Höhe·bimodal) | Lab-Original + Stamm-„Adaption" (kein Kern-Export) | worlds/terrain/phytogenesis.js:1232,1249 vs anazhRealm.js:67363, 91876 | phyto-core (standDensity als reine Funktion) | OFFEN[phyto-Welle] | 2 | Ökologie-Formeln in phyto-core heben; heute driftet jedes Lab-Tuning stumm an der Welt vorbei. |

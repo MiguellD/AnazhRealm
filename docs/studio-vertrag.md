@@ -173,6 +173,24 @@ Komponenten-SÄTZE, keine Klassen):
   17.07.: die Stamm-Zwillinge `CREATURE_HUNT/CREATURE_NATURE/
   TEMPERAMENT_*/CREATURE_CHARAKTER` sind GEFALLEN; die
   ZWILLINGS-ABSENZ-WAND im Validator hält sie draußen).
+  Schluss-Welle 17.07. (V18.489, rein additiv): die letzten neun
+  tetrapoda-Heimat-Literale des Stamms sind heimgekehrt — `freude { tempoMul
+  hopHochM hopBasisM }` · `sprung { impulsProM }` · `groessen[]`
+  (Körpergrößen-Bänder) · `separation { radiusBaseM strength }` (der
+  Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand) · `aufgaben`
+  (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
+  `herde` (Schwarm-Kohäsion) · `wasser` (Ufer-Scheu) ·
+  `jagd.pirschStoppM`/`furcht.neugierStoppM` · `stimmung.schwellen`
+  (die Schwellen-DATEN-Zeile der Stimmungs-Tabelle — KEINE Stimmung,
+  Validator/Leser überspringen den Schlüssel). Alle Kern-Pflicht
+  (Wand je Block ein Feld; alter Kern → Bruch, nie Misch-Gesetz).
+  VERTRAGS-AKT V18.489 (schmiede-core, dokumentiert im Export-Block):
+  die zehn toten Mess-Exporte (`LEHREN_LAB · MATof · hrc · matHaerte ·
+  matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
+  sind aus dem Namensraum gekürzt — 0 Konsumenten repo-weit, die
+  Maschinen leben intern weiter, `buildInstance` byte-unberührt
+  (52/52 Goldens; nur die recipes/render-config-Datenkanäle wurden
+  per Mint-Mechanik neu gemünzt).
   Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
   Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
 

@@ -60,10 +60,18 @@
    (leanSoul 0.5/0.22) — und V18.487 ließ die FALLBACK-ZWILLINGE GANZ fallen
    (17 Stamm-Größen, Leser fail-closed `_kernPflichtBruch`, ZWILLINGS-ABSENZ-
    WAND in gate:studio-vertrag; Kern-Pflicht: index.html lädt ALLE Gesetzbücher,
-   `_kernPflichtWand` schreit). OFFEN ehrlich: der Prio-2/3-Rest der Matrix
-   (Doppel-Quellen/tote Exporte niederer Ordnung) + der Waisen-Abbau der
-   Konsum-Bilanz (281 gefrorene Waisen = die Lern-Liste, gate:konsum-bilanz
-   hält neue draußen).**
+   `_kernPflichtWand` schreit). V18.489 — DIE SCHLUSS-WELLE: die 9
+   tetrapoda-Tabu-Zeilen fielen (freude/sprung/groessen/separation/aufgaben/
+   herde/wasser/stimmung.schwellen/Stopp-Distanzen → VERHALTEN, Leser
+   fail-closed, CREATURE_SEPARATION-Zwilling gefallen [Absenz-Wand 18
+   Namen]) · die 4 TEILS-Zeilen wurden GANZ (Zorn-Achse→angry [chaos ohne
+   sorrow] · schmiede-Export-Schnitt [Vertrags-Akt, 10 tote Namen, Goldens
+   byte-unberührt] · klang-RAUM [hall/echo/DELAY_SENDS → Welt-Bus] ·
+   slide/showcase = deklarierte Lab-Vorschau) — die Matrix trägt KEIN
+   TEILS mehr; 14 OFFEN[eigene Welle] bleiben ehrlich benannt.
+   OFFEN ehrlich: der Waisen-Abbau der Konsum-Bilanz (136 gefrorene
+   Waisen = die Lern-Liste, gate:konsum-bilanz hält neue draußen) +
+   die 14 benannten Eigene-Welle-Zeilen (Renderer/UI/phyto/Lab-Byte-Beweis).**
 
 0b. **DAS FELD ZEICHNET (16.07., Schöpfer-Vision — normativ `docs/das-feld-zeichnet.md`):**
    Render-Kosten an den SCHIRM binden statt an die Welt; die Welt ist eine Funktion,
@@ -102,9 +110,12 @@
    Kompaktierung von Matrix+Tint+Fassade in Storage-Puffer, setIndirect →
    drawIndexedIndirect, KEIN Readback; CPU-Quelle bleibt Wahrheit + wirft
    den Schatten; gate:feld-cull misst: Kamera drauf 11/11, 180° weg → 0,
-   Injektions-Selbsttest rot). Ehrlich halb (~10 %): Storage-Puffer-Destroy
-   beim Gewand-Churn unvermessen (bounded ≤3 Familien). OFFEN: Stufe 3 ·
-   das steady-≤8M-DONE bleibt Schöpfer-Trace-Urteil. Das Merge-Tor bleibt: der Schöpfer-Trace +
+   Injektions-Selbsttest rot). V18.489 — der Feld-Cull-REST fiel: das
+   Gewand-Ablegen zerstört die eigenen Storage-/Indirect-Puffer EXPLIZIT
+   (renderer._attributes.delete → GPUBuffer.destroy; geteilte Geometrie-
+   Attribute nie); GEMESSEN gate:feld-cull Band f/g: 4× adoptieren+ablegen
+   → info.memory exakt zurück auf die Grundlinie 0/0/0, 35 Puffer gelöst,
+   Leck-Selbsttest feuert. STEADY-MASS-PLATZHALTER OFFEN: Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace +
    das Auge urteilen.
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
