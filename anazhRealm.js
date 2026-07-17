@@ -11119,27 +11119,44 @@ class AnazhRealm {
         bassGain.connect(masterGain);
         // ZENSUS-REST V18.488 — DER RAUM (Genre-DNA `space`): ein gedämpfter
         // Feedback-Delay-Bus als Hall-Ersatz (asset-frei, ein Delay statt
-        // Faltung — das Lab-Gesetz Return = space·0.5 führt den Wet-Pegel,
-        // `_lofiTick` setzt ihn je Akkord aus dem Studio-Rezept; ohne Rezept
-        // bleibt der Bus stumm = byte-alt). Pad + Melodie + Groove senden;
-        // der Bass bleibt trocken (Tiefbass im Hall = Matsch).
-        const raumDelay = ctx.createDelay(1.5);
+        // Faltung — das Lab-Gesetz Return = space·returnProSpace führt den
+        // Wet-Pegel, `_lofiTick` setzt ihn je Akkord aus dem Studio-Rezept;
+        // ohne Rezept bleibt der Bus stumm = byte-alt). SCHLUSS-WELLE 17.07.:
+        // die Bus-Zahlen sind klang-Gesetz (RAUM.echo — Feedback 0.42, Band
+        // 260-2800 Hz, tempo-synchron via _lofiTick) und je Kanal sitzt ein
+        // Genre-Send (RAUM.DELAY_SENDS: Dub badet, Bebop steht trocken).
+        // Der Bass bleibt trocken (Tiefbass im Hall = Matsch).
+        const RE0 = AnazhRealm.Gesetz("klang:RAUM.echo", null);
+        const raumDelay = ctx.createDelay(2.0);
         raumDelay.delayTime.value = 0.31;
+        const raumHochpass = ctx.createBiquadFilter();
+        raumHochpass.type = "highpass";
+        raumHochpass.frequency.value = RE0 && Number.isFinite(RE0.hpHz) ? RE0.hpHz : 260;
         const raumDaempfer = ctx.createBiquadFilter();
         raumDaempfer.type = "lowpass";
-        raumDaempfer.frequency.value = 2400;
+        raumDaempfer.frequency.value = RE0 && Number.isFinite(RE0.lpHz) ? RE0.lpHz : 2400;
         const raumFeedback = ctx.createGain();
-        raumFeedback.gain.value = 0.35;
+        raumFeedback.gain.value = RE0 && Number.isFinite(RE0.feedback) ? RE0.feedback : 0.35;
         const raumWet = ctx.createGain();
         raumWet.gain.value = 0;
-        raumDelay.connect(raumDaempfer);
+        raumDelay.connect(raumHochpass);
+        raumHochpass.connect(raumDaempfer);
         raumDaempfer.connect(raumFeedback);
         raumFeedback.connect(raumDelay);
         raumDaempfer.connect(raumWet);
         raumWet.connect(masterGain);
-        gain.connect(raumDelay);
-        melodyGain.connect(raumDelay);
-        grooveGain.connect(raumDelay);
+        // SCHLUSS-WELLE — die Genre-Sends je Kanal (Pad=harmony · Melodie=lead ·
+        // Groove=drums); Start 1 = voller Send (byte-alt), der Tick setzt die
+        // DELAY_SENDS-Zeile des gewählten Genres.
+        const raumSendPad = ctx.createGain();
+        const raumSendMelody = ctx.createGain();
+        const raumSendGroove = ctx.createGain();
+        gain.connect(raumSendPad);
+        raumSendPad.connect(raumDelay);
+        melodyGain.connect(raumSendMelody);
+        raumSendMelody.connect(raumDelay);
+        grooveGain.connect(raumSendGroove);
+        raumSendGroove.connect(raumDelay);
         const noiseBuffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.4), ctx.sampleRate);
         const nd = noiseBuffer.getChannelData(0);
         for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
@@ -11156,6 +11173,10 @@ class AnazhRealm {
             grooveGain,
             bassGain,
             raumWet, // ZENSUS-REST V18.488 — der space-Wet-Pegel (Genre-DNA)
+            raumDelay, // SCHLUSS-WELLE — der Tick synct das Echo aufs Genre-Tempo (RAUM.echo)
+            raumSendPad, // SCHLUSS-WELLE — die Genre-Sends je Kanal (RAUM.DELAY_SENDS)
+            raumSendMelody,
+            raumSendGroove,
             noiseBuffer,
             degree: 0,
             bar: 0, // ZENSUS-REST V18.488 — der Takt-Zähler der progressionDeg-Wanderung
@@ -11648,6 +11669,26 @@ class AnazhRealm {
         if (out) memo.set(id, out); // Memo NUR im Erfolgs-Fall (spät ladender Kern)
         return out;
     }
+    // SCHLUSS-WELLE 17.07. — die GENRE-ECHO-ANTEILE des Welt-Raum-Busses:
+    // RAUM.DELAY_SENDS des klang-Gesetzbuchs (Lab-byte-treu), aufgelöst über
+    // die gewählte Rezept-Id (lowercase-Abgleich wie _klangGenreAusKern);
+    // jedes Genre ohne eigene Zeile fällt auf die def-Zeile. null = kalter
+    // Kern → die Sends bleiben auf ihrem Start (voll, byte-alt).
+    _klangRaumSends() {
+        const table = AnazhRealm.Gesetz("klang:RAUM.DELAY_SENDS", null);
+        if (!table || typeof table !== "object") return null;
+        const chosen =
+            this.state && typeof this.state.klangPreset === "string"
+                ? this.state.klangPreset
+                : AnazhRealm.KLANG_HOST_RECIPE;
+        const wunsch = String(chosen || "lofi")
+            .toLowerCase()
+            .replace(/-klang$/, "");
+        for (const name of Object.keys(table)) {
+            if (name.toLowerCase() === wunsch) return table[name];
+        }
+        return table.def || null;
+    }
     // Die Akkord-Dauer in ms. Das TEMPO führt das Studio-Klang-Rezept (W-A7:
     // Genesis "LoFi" bpm — der erste echte klang-Konsument; ohne Buch die
     // LOFI_BPM-Konstante, byte-alt 60 BPM × 4 Schläge = 4 s); sorrow (Trauer)
@@ -11832,13 +11873,34 @@ class AnazhRealm {
         s.lofi.lastChordAt = now;
         s.lofi.degree = this._lofiNextDegree(degree);
         // ZENSUS-REST V18.488 — DER RAUM des Genres: dna.space führt den
-        // Wet-Pegel des Delay-Busses (Lab-Gesetz Return = space·0.5 —
+        // Wet-Pegel des Delay-Busses (Lab-Gesetz Return = space·returnProSpace —
         // Ambient/Cinematic hallen weit, Bebop steht trocken); ohne
-        // Studio-Rezept bleibt der Bus stumm (byte-alt).
+        // Studio-Rezept bleibt der Bus stumm (byte-alt). SCHLUSS-WELLE 17.07.:
+        // returnProSpace ist klang-Gesetz (RAUM.hall — die gehobene Hall-
+        // Formel des Lab-Mixers), das Echo synct aufs Genre-Tempo (RAUM.echo:
+        // punktierte Achtel, geklemmt) und je Kanal führt die DELAY_SENDS-
+        // Zeile des Genres den Send (Dub lebt vom Delay, Jazz kaum).
         if (s.lofi.raumWet) {
             const st = this._klangStudioPreset();
             const space = st && st.dna && Number.isFinite(st.dna.space) ? st.dna.space : 0;
-            s.lofi.raumWet.gain.value = Math.max(0, Math.min(0.5, space * 0.5));
+            const RH = AnazhRealm.Gesetz("klang:RAUM.hall", null);
+            const proSpace = RH && Number.isFinite(RH.returnProSpace) ? RH.returnProSpace : 0.5;
+            s.lofi.raumWet.gain.value = Math.max(0, Math.min(0.5, space * proSpace));
+            const RE = AnazhRealm.Gesetz("klang:RAUM.echo", null);
+            if (s.lofi.raumDelay && RE && Number.isFinite(RE.beatFrac)) {
+                const bpm = st && Number.isFinite(st.bpm) && st.bpm > 0 ? st.bpm : AnazhRealm.LOFI_BPM;
+                const beatSec = 60 / bpm;
+                s.lofi.raumDelay.delayTime.value = Math.max(
+                    RE.minSec || 0.06,
+                    Math.min(RE.maxSec || 1.8, beatSec * RE.beatFrac)
+                );
+            }
+            const ds = this._klangRaumSends();
+            if (ds && s.lofi.raumSendPad) {
+                s.lofi.raumSendPad.gain.value = Number.isFinite(ds.harmony) ? ds.harmony : 0;
+                s.lofi.raumSendMelody.gain.value = Number.isFinite(ds.lead) ? ds.lead : 0;
+                s.lofi.raumSendGroove.gain.value = Number.isFinite(ds.drums) ? ds.drums : 0;
+            }
         }
         // W4 V4 — die Musik hört die Welt: das Welt-Affinitäts-Feld am
         // Spieler färbt die Klangfarbe der nächsten Akkord-Dauer.
@@ -19261,7 +19323,12 @@ class AnazhRealm {
         if (e) {
             for (const row of AnazhRealm.MOTION_EMOTION_PROFILES) {
                 const v = Number(e[row.axis]) || 0;
-                if (v >= row.min && row[column]) return row[column][moving ? "moving" : "idle"];
+                if (v < row.min || !row[column]) continue;
+                // SCHLUSS-WELLE — die optionale GEGEN-ACHSEN-Wand einer Zeile
+                // (Zorn = chaos OHNE Bedrohungs-sorrow): liegt die benannte
+                // Gegen-Achse auf/über ihrer max-Schwelle, fällt die Zeile.
+                if (row.unter && (Number(e[row.unter.axis]) || 0) >= row.unter.max) continue;
+                return row[column][moving ? "moving" : "idle"];
             }
         }
         const d = AnazhRealm.MOTION_PROFILE_MAP[column];
@@ -95856,8 +95923,12 @@ AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     // ZENSUS-REST V18.488 — die erste koerper-ZUSTANDS-Zeile: der KAMPF-Zustand
     // des Avatars (frischer Schwung/Schuss, _koerperKampfZustand) wählt das
     // Lab-Profil "fight" (Garde-Haltung, Ellbogen 1.35 — vorher TOTE Daten:
-    // kein Pfad wählte es je). angry/showcase bleiben bewusst Lab-only (der
-    // Wirt trägt keine Zorn-Achse und kein Schaufenster-Verb — Matrix-Zeile).
+    // kein Pfad wählte es je). SCHLUSS-WELLE 17.07.: auch "angry" lebt (die
+    // Zorn-Achse chaos-ohne-sorrow, MOTION_EMOTION_PROFILES-Zeile 1);
+    // DEKLARIERT Lab-only bleiben "showcase" (kein Schaufenster-Verb der
+    // Welt) und "slide" (die Welt-Rutsch-Wahrheit ist parkour.slidePose,
+    // die Überschreib-Schicht NACH dem Rig-Grundlauf — MOTION.slide ist
+    // die Lab-Vorschau desselben Moments, Matrix-Zeilen 28/92).
     kampf: Object.freeze({ koerper: "fight" }),
 });
 // Wie lange die Kampf-HALTUNG nach dem letzten Angriff steht (s) — der Körper
@@ -95871,6 +95942,20 @@ AnazhRealm.KAMPF_HALTUNG_SEC = 3;
 // Compound-Kern `_animateCompoundMotion` über `_motionStudioProfile`) lesen DIESE
 // eine Tabelle über den EINEN Resolver `_motionProfileName`.
 AnazhRealm.MOTION_EMOTION_PROFILES = Object.freeze([
+    // SCHLUSS-WELLE 17.07. — DIE ZORN-ACHSE (Matrix „koerper MOTION angry"):
+    // der Wirt trägt Zorn als chaos OHNE Bedrohungs-Trauer — die BEDROHUNG
+    // (Phase E) speist sorrow+chaos, der EIGENE Angriff (attack-Appraisal
+    // 96047) nur chaos. Eine aufgewühlte Seele ohne sorrow steht also zornig
+    // (angry: Fäuste geballt, hipLZ-Stand), nicht ängstlich. `unter` ist die
+    // optionale GEGEN-ACHSEN-Wand der Zeile (greift nur, wenn die benannte
+    // Achse UNTER max bleibt); ohne kreatur-Spalte bleibt die Kreatur-Wahl
+    // byte-alt (alert/flee über die chaos-Zeile darunter).
+    Object.freeze({
+        axis: "chaos",
+        min: 0.5,
+        unter: Object.freeze({ axis: "sorrow", max: 0.3 }),
+        koerper: Object.freeze({ idle: "angry", moving: "run" }),
+    }),
     Object.freeze({
         axis: "chaos", // Furcht/Erregung (Phase E: threatened → sorrow+chaos)
         min: 0.5,

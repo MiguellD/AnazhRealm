@@ -329,12 +329,41 @@
         None:      { kick: [],           snare: [],        hihat: [] }
     };
 
+    // ── RAUM-AKUSTIK (Schluss-Welle 17.07., rein additive DATEN-Zeile):
+    //    die Raum-Gesetze des Lab-Mixers reisen als Daten (worlds/klang/
+    //    klang.js Z.143-160 + DELAY_SENDS Z.4133, byte-treu) —
+    //    hall = der Faltungshall (Impulsantwort 3.4 s / decay 2.4, Predelay
+    //    0.02 s, Return = space × returnProSpace) · echo = das tempo-
+    //    synchrone Echo (punktierte Achtel = beatFrac 0.75, Klemme
+    //    0.06-1.8 s, Feedback 0.42, Band 260-2800 Hz, Return = echo ×
+    //    returnProEcho) · DELAY_SENDS = die genre-typischen Echo-Anteile je
+    //    Kanal (Dub lebt vom Delay, Ambient badet darin, Jazz braucht fast
+    //    keins; def deckt jedes Genre ohne eigene Zeile). Der Welt-Spieler
+    //    konsumiert hall.returnProSpace + echo (Tempo-Sync/Feedback/Band)
+    //    + DELAY_SENDS auf seinem EINEN Delay-Raum-Bus; die volle Faltung
+    //    bleibt die Lab-Sim (das Welt-Pad bleibt asset-frei). ──
+    // prettier-ignore
+    var RAUM = {
+        hall: { impulseSec: 3.4, decay: 2.4, predelaySec: 0.02, returnProSpace: 0.5 },
+        echo: { beatFrac: 0.75, minSec: 0.06, maxSec: 1.8, feedback: 0.42, hpHz: 260, lpHz: 2800, returnProEcho: 0.85 },
+        DELAY_SENDS: {
+            Reggae:{ harmony:.4, lead:.34, drums:.1 }, Ambient:{ lead:.45, harmony:.3 },
+            LoFi:{ lead:.2, harmony:.12 }, BoomBap:{ lead:.16 }, Trap:{ lead:.2 },
+            DnB:{ lead:.22 }, Techno:{ lead:.26, harmony:.1 }, Modern:{ lead:.2 },
+            Dub:{ harmony:.5, lead:.42, drums:.2 }, Synthwave:{ lead:.3, harmony:.2 },
+            Bossa:{ lead:.18 }, Latin:{ lead:.14 }, Funk:{ lead:.14 },
+            Cinematic:{ lead:.3, harmony:.22 }, Vibes:{ lead:.16 }, Rock:{ lead:.18 },
+            def:{ lead:.12 }
+        }
+    };
+
     root.__klangCore = {
         VERSION: VERSION,
         progressionDeg: progressionDeg,
         stack: stack,
         SCHRITT_TIMBRE: SCHRITT_TIMBRE,
         RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
+        RAUM: RAUM,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,

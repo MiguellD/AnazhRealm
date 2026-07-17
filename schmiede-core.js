@@ -2484,8 +2484,10 @@
         const sori = hamon * h * (m.alpha || 1) * 0.6; // Sori: Krümmung aus diff. Kontraktion (emergent)
         return { hamon, h, edgeHRC, spineHRC, sori, canHarden, visible: hamon > 0.05 };
     }
-    const matHaerte = (m) => 3 * m.sigY,
-        matResilienz = (m) => (m.sigY * m.sigY) / (2 * m.E);
+    // VERTRAGS-AKT V18.489: matHaerte/matResilienz (3·sigY bzw. sigY²/2E)
+    // fielen GANZ — nie intern gerufen, nie extern konsumiert (Zensus-Zeile
+    // "Tote Kern-Exporte", 0 Treffer repo-weit; Lehre 3: Def+Export in EINER
+    // Welle). Die Formeln traegt die git-Chronik.
     function MATof(ws) {
         return MAT[ws] || MAT.stahl;
     }
@@ -2523,9 +2525,9 @@
     function intentControl(P) {
         return { schlag: 0.0, spalten: 0.05, hieb: 0.45, nutz: 0.5, stich: 0.9 }[P.intent] ?? 0.4;
     }
-    function pobZiel(intent) {
-        return { schlag: 0.66, spalten: 0.62, hieb: 0.4, nutz: 0.34, stich: 0.12 }[intent] ?? 0.4;
-    }
+    // VERTRAGS-AKT V18.489: pobZiel (Point-of-Balance-Ziel je Absicht) fiel
+    // GANZ — nie intern gerufen, nie extern konsumiert (Zensus-Zeile "Tote
+    // Kern-Exporte"). Die Tabelle traegt die git-Chronik.
     // ── GESCHLOSSENES GESETZ für den Keilwinkel — kein Loop, die Regime-Optima konvergieren analytisch ──
     //   β_split: der Keil muss die Selbsthemmung überschreiten (Reibungswinkel φ=atan μ) und beim Zurückfedern den Riss öffnen → β ≈ 2·k·φ
     //   β_cut:   kleinster Winkel, den die Schneide unter Schlag überlebt (Kantenfestigkeit: härterer Stahl dünner, härteres Ziel robuster)
@@ -3033,8 +3035,18 @@
         PARAMS_BY_KIND: { weapon: PARAMS },
         LEHREN: LEHREN_B5,
         buildInstance: buildInstance,
-        // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze)
-        LEHREN_LAB: LEHREN,
+        // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze).
+        // VERTRAGS-AKT V18.489 (Zensus-Zeile "Tote Kern-Exporte", Lehre 3/11):
+        // die zehn toten Mess-Exporte (LEHREN_LAB · MATof · hrc · matHaerte ·
+        // matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge)
+        // sind aus dem Namensraum gekuerzt — 0 Konsumenten repo-weit (die
+        // Shell destrukturiert sie nicht, der Wirt las sie nie; gemessen
+        // 17.07.). Die MASCHINEN bleiben intern lebendig (greifkraft/hrc/
+        // MATof speisen messen/befund, ableiten* die P-Praeparation);
+        // matHaerte/matResilienz/pobZiel waren ganz tot und fielen mit
+        // (Def + Export in EINER Welle). buildInstance ist byte-unberuehrt
+        // (Goldens gate:asset-contract gruen — kein Re-Mint noetig).
+        // BOGENMAT + ableitenBogen LEBEN seit V18.488 im Wirt.
         BANDS: BANDS,
         bandFor: bandFor,
         measure: measure,
@@ -3054,23 +3066,14 @@
         WERKSTOFF: WERKSTOFF,
         BOGENMAT: BOGENMAT,
         MAT: MAT,
-        MATof: MATof,
-        hrc: hrc,
         hamonGesetz: hamonGesetz,
-        matHaerte: matHaerte,
-        matResilienz: matResilienz,
         edgeBeta: edgeBeta,
         kantenLast: kantenLast,
         ANTHROPOS: ANTHROPOS,
-        greifkraft: greifkraft,
         griffD: griffD,
         intentControl: intentControl,
-        pobZiel: pobZiel,
         betaFromMechanik: betaFromMechanik,
         ableitenKeil: ableitenKeil,
-        ableitenPick: ableitenPick,
-        ableitenGraben: ableitenGraben,
-        ableitenKlinge: ableitenKlinge,
         ableitenBogen: ableitenBogen,
         applyTask: applyTask,
         tradWerkstoff: tradWerkstoff,
