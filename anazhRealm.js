@@ -69525,7 +69525,10 @@ class AnazhRealm {
             }
             seed = h >>> 0 || 1;
         }
-        const nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : 18;
+        // ZENSUS-REST V18.488 — der Stamm KLEMMT nur, er defaultet nie: ohne
+        // o.nH führt der Kern-Default (fachwerk DORF: DP.nH — die EINE
+        // Wahrheit; der divergente Stamm-Zwilling 18 vs Kern 24 ist gefallen).
+        const nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : undefined;
         const pm = this.state.playerMesh;
         const base =
             o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
