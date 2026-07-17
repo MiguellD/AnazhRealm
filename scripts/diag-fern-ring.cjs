@@ -63,7 +63,17 @@ const server = http.createServer((req, res) => {
     const browser = await puppeteer.launch({
         headless: true,
         protocolTimeout: 240000,
-        args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--no-sandbox", "--disable-setuid-sandbox"],
+        args: [
+            "--use-angle=swiftshader",
+            "--enable-unsafe-swiftshader",
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            // DER FELD-ZEICHNER (Band 7): echtes WebGPU trotz Null-Renderer —
+            // das dritter-spiegel-Rezept (swiftshader-Vulkan).
+            "--enable-unsafe-webgpu",
+            "--enable-features=Vulkan",
+            "--use-vulkan=swiftshader",
+        ],
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
@@ -284,6 +294,50 @@ const server = http.createServer((req, res) => {
         r._fernRingDispose();
         res.disposeRestored = r.state.camera.far === altVorDispose && r.state.fernRing === null;
 
+        // ===== (7) DER FELD-ZEICHNER (Stufe-2-Vollausbau): das Feld malt =====
+        // Neubau nach dem Dispose: Tick 1 baut den Ring, startet den EINEN
+        // GPU-Feld-Flug (feld-wgsl durch _feldZeichnerHoehen) UND läuft die
+        // erste CPU-Scheibe. Dann OHNE weitere Ticks auf den Flug warten:
+        // malt das Feld, ist der Ring BEREIT obwohl der CPU-Cursor noch vorn
+        // steht — der Horizont steht vor der CPU. Proben: |GPU-Höhe − f64-
+        // Gesetz| ≤ 0.5 m (SEH-Band; die Linse gate:dritter-spiegel misst mm,
+        // hier zählt der 8-km-Blick). Danach CPU zu Ende pumpen → Band 2 hat
+        // bereits bewiesen, dass die Verfeinerung exakt ist.
+        const sleep7 = (ms) => new Promise((rs) => setTimeout(rs, ms));
+        r._tickFernRing(r.state.playerMesh.position);
+        const fr7 = r.state.fernRing;
+        res.fzStart = !!(fr7 && (fr7.gpuFlug === true || (fr7.gpuLaeufe || 0) >= 1));
+        const dl7 = performance.now() + 90000;
+        while (fr7 && (fr7.gpuLaeufe || 0) < 1 && fr7.gpuFlug === true && performance.now() < dl7) await sleep7(100);
+        res.fzLaeufe = fr7 ? fr7.gpuLaeufe || 0 : 0;
+        res.fzCursor = fr7 ? fr7.cursor : -1;
+        res.fzTotal = fr7 ? fr7.totalVerts : -1;
+        res.fzReadyVorCpu = !!(fr7 && fr7.ready === true && fr7.cursor < fr7.totalVerts);
+        let fzWorst = -1;
+        let fzProben = 0;
+        if (fr7 && res.fzLaeufe >= 1) {
+            fzWorst = 0;
+            const wl7 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            for (let k = 0; k < 60; k++) {
+                const g = (fr7.cursor + 1 + ((k * 47) % (fr7.totalVerts - fr7.cursor - 1))) | 0;
+                const p7 = r._fernRingPunkt(fr7, g);
+                const law7 = r._terrainMacroSurfaceY(p7.x, p7.z, false);
+                let want = law7 < wl7 ? wl7 - F.wasserDrop : law7;
+                if (p7.row === 0) want -= F.saumDrop;
+                const y7 = fr7.meshes[p7.s].geometry.attributes.position.getY(p7.li);
+                const d7 = Math.abs(y7 - want);
+                if (d7 > fzWorst) fzWorst = d7;
+                fzProben++;
+            }
+        }
+        res.fzWorst = fzWorst;
+        res.fzProben = fzProben;
+        // CPU zu Ende (die Verfeinerung läuft über den GPU-Anstrich):
+        for (let t = 0; t < 100 && fr7 && fr7.cursor < fr7.totalVerts; t++)
+            r._tickFernRing(r.state.playerMesh.position);
+        res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts);
+        r._fernRingDispose();
+
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;
         else window.__anazhFernRing = prevHook;
@@ -347,6 +401,22 @@ const server = http.createServer((req, res) => {
         `boden=${out.fogBoden} gipfel=${out.fogGipfel} zurueck=${out.fogZurueck}${out.loopFehler ? " loopFehler=" + out.loopFehler : ""}`
     );
     check("6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt", out.disposeRestored === true);
+    check(
+        "7: DER FELD-ZEICHNER startet den GPU-Flug beim vollen Refresh (feld-wgsl im SPIEL konsumiert)",
+        out.fzStart === true && out.fzLaeufe >= 1,
+        `laeufe=${out.fzLaeufe}`
+    );
+    check(
+        "7: das Feld malt den Horizont VOR der CPU (ready bei cursor < totalVerts)",
+        out.fzReadyVorCpu === true,
+        `cursor=${out.fzCursor}/${out.fzTotal}`
+    );
+    check(
+        "7: GPU-Höhen im SEH-Band des dritten Spiegels (≤ 0.5 m auf 8 km, 60 Proben)",
+        out.fzProben >= 40 && out.fzWorst >= 0 && out.fzWorst <= 0.5,
+        `worst=${Number.isFinite(out.fzWorst) ? out.fzWorst.toFixed(4) : out.fzWorst} proben=${out.fzProben}`
+    );
+    check("7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)", out.fzCpuFertig === true);
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {
@@ -354,9 +424,10 @@ const server = http.createServer((req, res) => {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — DER FERN-RING STEHT: 3 Schalen aus dem EINEN Höhen-Gesetz (Fern-Wahrheit " +
-            "includeDetail=false, XZ welt-gesnappt), budgetierter Refresh, quantisiertes Re-Zentrieren, " +
-            "headless-default ruhig."
+        "\n✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
+            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Feld-Zeichner malt den vollen " +
+            "Refresh per GPU durch feld-wgsl (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, " +
+            "quantisiertes Re-Zentrieren, headless-default ruhig."
     );
     process.exit(0);
 })().catch((e) => {

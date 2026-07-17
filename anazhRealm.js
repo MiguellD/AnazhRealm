@@ -37433,6 +37433,44 @@ class AnazhRealm {
         col.setXYZ(i, r, g, b);
     }
 
+    // DER EINE PUNKT-HELFER (CPU-Schleife UND Feld-Zeichner lesen ihn): globaler
+    // Vertex-Index → Schale/Lokal-Index/Reihe + das aufs Schalen-Snap-Gitter
+    // gerundete Welt-XZ (beim Re-Zentrieren wandern nur Gitter-Punkte, die
+    // Höhen SCHWIMMEN nie).
+    _fernRingPunkt(fr, gIdx) {
+        const F = AnazhRealm.FERN_RING;
+        const W = F.winkel;
+        const R = F.reihen;
+        const per = W * R;
+        const s = (gIdx / per) | 0;
+        const li = gIdx - s * per;
+        const row = (li / W) | 0;
+        const ai = li - row * W;
+        const sh = fr.schalen[s];
+        const rad = sh.inner + ((sh.aussen - sh.inner) * row) / (R - 1);
+        const ang = (ai / W) * Math.PI * 2;
+        return {
+            s,
+            li,
+            row,
+            x: Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap,
+            z: Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap,
+        };
+    }
+
+    // DER EINE SETZ-HELFER (CPU und GPU schreiben durch DIESELBE Naht): Höhe →
+    // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
+    // Farbrampe. Kein Parallelpfad zwischen den beiden Ausführern.
+    _fernRingSetzVertex(fr, p, law, wl) {
+        const F = AnazhRealm.FERN_RING;
+        const wet = law < wl;
+        let y = wet ? wl - F.wasserDrop : law;
+        if (p.row === 0) y -= F.saumDrop; // die Saum-Tauchkante
+        const geo = fr.meshes[p.s].geometry;
+        geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
+        this._fernRingColorInto(geo.attributes.color, p.li, law, wl, wet);
+    }
+
     // Der BUDGETIERTE Höhen-Refresh (~`refreshVertsProTick` Vertices je Frame,
     // das BOOT_PHASE3-Muster — nie synchron alles): je Vertex Welt-XZ aufs
     // Schalen-Snap-Gitter runden, Höhe = das EINE Gesetz (includeDetail=false);
@@ -37442,32 +37480,14 @@ class AnazhRealm {
     _fernRingRefresh(budget) {
         const fr = this.state.fernRing;
         if (!fr || fr.cursor >= fr.totalVerts) return 0;
-        const F = AnazhRealm.FERN_RING;
-        const W = F.winkel;
-        const R = F.reihen;
-        const per = W * R;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         const dirty = [false, false, false];
         let done = 0;
         while (done < budget && fr.cursor < fr.totalVerts) {
-            const gIdx = fr.cursor;
-            const s = (gIdx / per) | 0;
-            const li = gIdx - s * per;
-            const row = (li / W) | 0;
-            const ai = li - row * W;
-            const sh = fr.schalen[s];
-            const rad = sh.inner + ((sh.aussen - sh.inner) * row) / (R - 1);
-            const ang = (ai / W) * Math.PI * 2;
-            const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
-            const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
-            const law = this._terrainMacroSurfaceY(sx, sz, false);
-            const wet = law < wl;
-            let y = wet ? wl - F.wasserDrop : law;
-            if (row === 0) y -= F.saumDrop; // die Saum-Tauchkante
-            const geo = fr.meshes[s].geometry;
-            geo.attributes.position.setXYZ(li, sx, y, sz);
-            this._fernRingColorInto(geo.attributes.color, li, law, wl, wet);
-            dirty[s] = true;
+            const p = this._fernRingPunkt(fr, fr.cursor);
+            const law = this._terrainMacroSurfaceY(p.x, p.z, false);
+            this._fernRingSetzVertex(fr, p, law, wl);
+            dirty[p.s] = true;
             fr.cursor++;
             done++;
         }
@@ -37484,6 +37504,182 @@ class AnazhRealm {
             for (const m of fr.meshes) m.visible = true; // erst voll, dann sichtbar (kein Null-Blob)
         }
         return done;
+    }
+
+    // ===== DER FELD-ZEICHNER (STUFE-2-VOLLAUSBAU, das-feld-zeichnet §2) =====
+    // Der dritte Spiegel (feld-wgsl.js) war bis hier reine Linsen-Wahrheit
+    // (gate:dritter-spiegel bewies die mm-Parität — das SPIEL konsumierte ihn
+    // nie). Jetzt ZEICHNET das Feld im Spiel: ein voller Fern-Ring-Refresh
+    // (Boot + Re-Anker) läuft als EIN GPU-Compute über alle Schalen-Punkte
+    // durch DENSELBEN WGSL-Text — der Horizont steht im nächsten Frame; die
+    // budgetierte CPU-Schleife verfeinert dieselben Vertices danach aufs
+    // f64-Gesetz (der SEH-Spiegel bleibt Seh-Wahrheit [f32, mm-Band der
+    // Linse], die Höhen==Gesetz-Linse behält ihr exaktes Band; Physik liest
+    // NIE diese Höhen). Ohne Device/Kern zeichnet die CPU allein — gleiche
+    // Formel, anderer Ausführer, kein Zahlen-Zwilling.
+
+    // Das Zeichen-Device: ZUERST das des Renderers (r184 WebGPUBackend — EIN
+    // Device, geteilt mit dem Zeichnen), sonst lazy ein EIGENES (einmalig,
+    // memoisiert; der Null-Renderer der Linsen hat keins — swiftshader-Vulkan
+    // liefert trotzdem echtes WebGPU). Beide Wege enden im selben Lauf.
+    _feldZeichnerDevice() {
+        try {
+            const be = this.state.renderer && this.state.renderer.backend;
+            const dev = be && be.device;
+            if (dev && typeof dev.createShaderModule === "function") return dev;
+        } catch (_e) {}
+        return null;
+    }
+    _feldZeichnerEigenDevice() {
+        if (this._feldZeichnerEigenDevP !== undefined) return this._feldZeichnerEigenDevP;
+        const gpu = typeof navigator !== "undefined" ? navigator.gpu : null;
+        if (!gpu) return (this._feldZeichnerEigenDevP = Promise.resolve(null));
+        this._feldZeichnerEigenDevP = gpu
+            .requestAdapter()
+            .then((ad) => (ad ? ad.requestDevice() : null))
+            .catch(() => null);
+        return this._feldZeichnerEigenDevP;
+    }
+
+    // EIN GPU-Lauf des Makro-Gesetzes über `punkte` ((x,z)-Paare, Float32):
+    // Eingaben-Pack aus den LEBENDEN Quellen (spiegelEingaben — Gesetz #0,
+    // kein Zahlen-Zwilling), Pipeline einmal kompiliert (memoisiert), Buffers
+    // je Lauf frisch + zerstört (Re-Anker ist selten). null = kein Device/
+    // Kern/Validierungsfehler → der Rufer lässt die CPU zeichnen.
+    async _feldZeichnerHoehen(punkte, includeDetail) {
+        const fw = (typeof window !== "undefined" && window.__feldWgsl) || null;
+        if (!fw || typeof fw.spiegelEingaben !== "function") return null;
+        const device = this._feldZeichnerDevice() || (await this._feldZeichnerEigenDevice());
+        if (!device) return null;
+        try {
+            const n = (punkte.length / 2) | 0;
+            const e = fw.spiegelEingaben(this);
+            if (!e) return null;
+            device.pushErrorScope("validation");
+            if (!this._feldZeichnerPipe || this._feldZeichnerPipeDev !== device) {
+                const mod = device.createShaderModule({ code: fw.WGSL_MAKRO });
+                this._feldZeichnerPipe = device.createComputePipeline({
+                    layout: "auto",
+                    compute: { module: mod, entryPoint: "main" },
+                });
+                this._feldZeichnerPipeDev = device;
+            }
+            const pipe = this._feldZeichnerPipe;
+            const mkStorage = (arr) => {
+                const buf = device.createBuffer({
+                    size: Math.max(4, arr.byteLength),
+                    usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+                });
+                device.queue.writeBuffer(buf, 0, arr.buffer, arr.byteOffset, arr.byteLength);
+                return buf;
+            };
+            const uniBytes = new ArrayBuffer(48);
+            const uf = new Float32Array(uniBytes, 0, 8);
+            const uu = new Uint32Array(uniBytes, 32, 4);
+            uf[0] = e.base;
+            uf[1] = e.steilheit;
+            uf[2] = e.wasser;
+            uf[3] = includeDetail ? 1 : 0; // der Ring liest das Gesetz OHNE Detail-Oktave
+            uf[4] = e.hatAnker;
+            uf[5] = e.eroOriginX;
+            uf[6] = e.eroOriginZ;
+            uf[7] = e.eroCell;
+            uu[0] = e.eroDim;
+            uu[1] = e.nTarns;
+            uu[2] = e.nTal;
+            uu[3] = n;
+            const uniBuf = device.createBuffer({ size: 48, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+            device.queue.writeBuffer(uniBuf, 0, uniBytes);
+            const bufs = [
+                mkStorage(e.permVoxel),
+                mkStorage(e.permMod12Voxel),
+                mkStorage(e.permRidge),
+                mkStorage(e.ankerPack),
+                mkStorage(e.erosionGrid),
+                mkStorage(e.tarnPack),
+                mkStorage(punkte),
+            ];
+            const outBuf = device.createBuffer({ size: n * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
+            const staging = device.createBuffer({ size: n * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const bind = device.createBindGroup({
+                layout: pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: { buffer: uniBuf } }].concat(
+                    bufs.map((b, i) => ({ binding: i + 1, resource: { buffer: b } })),
+                    [{ binding: 8, resource: { buffer: outBuf } }]
+                ),
+            });
+            const err = await device.popErrorScope();
+            if (err) {
+                this.log("Feld-Zeichner: WGSL-Validierung scheiterte — die CPU zeichnet. " + err.message, "ERROR");
+                return null;
+            }
+            const enc = device.createCommandEncoder();
+            const pass = enc.beginComputePass();
+            pass.setPipeline(pipe);
+            pass.setBindGroup(0, bind);
+            pass.dispatchWorkgroups(Math.ceil(n / 64));
+            pass.end();
+            enc.copyBufferToBuffer(outBuf, 0, staging, 0, n * 4);
+            device.queue.submit([enc.finish()]);
+            await staging.mapAsync(GPUMapMode.READ);
+            const werte = new Float32Array(staging.getMappedRange().slice(0));
+            staging.unmap();
+            for (const b of bufs.concat([uniBuf, outBuf, staging])) {
+                try {
+                    b.destroy();
+                } catch (_e) {}
+            }
+            return werte;
+        } catch (err) {
+            this.log("Feld-Zeichner: GPU-Lauf scheiterte (" + ((err && err.message) || err) + ") — die CPU zeichnet.", "WARN");
+            return null;
+        }
+    }
+
+    // Der Ring-Maler: alle Punkte des aktuellen Ankers packen, EIN Feld-Lauf,
+    // Ergebnis durch DIESELBE Setz-Naht wie die CPU. Generations-Stempel gegen
+    // überholte Flüge (Re-Anker/Dispose während der Lauf unterwegs ist); die
+    // CPU-Schleife verfeinert danach weiter (fr.cursor bleibt unberührt).
+    _fernRingGpuMal(fr) {
+        if (fr.gpuFlug) return;
+        const fw = (typeof window !== "undefined" && window.__feldWgsl) || null;
+        const gpuDa = this._feldZeichnerDevice() || (typeof navigator !== "undefined" && navigator.gpu);
+        if (!fw || !gpuDa) return;
+        const n = fr.totalVerts;
+        const punkte = new Float32Array(n * 2);
+        const pts = new Array(n);
+        for (let g = 0; g < n; g++) {
+            const p = this._fernRingPunkt(fr, g);
+            pts[g] = p;
+            punkte[g * 2] = p.x;
+            punkte[g * 2 + 1] = p.z;
+        }
+        fr.gpuFlug = true;
+        const gen = (fr.gen = (fr.gen || 0) + 1);
+        this._feldZeichnerHoehen(punkte, false)
+            .then((werte) => {
+                if (this.state.fernRing !== fr || fr.gen !== gen) return; // überholt (Re-Anker/Dispose)
+                fr.gpuFlug = false;
+                if (!werte) return; // kein Device/Fehler → die CPU zeichnet das Gesetz
+                const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+                // NUR ab dem Live-Cursor malen: Vertices davor hat die CPU schon
+                // aufs f64-Gesetz verfeinert — f32 überschreibt nie exakter.
+                for (let g = fr.cursor; g < n; g++) this._fernRingSetzVertex(fr, pts[g], werte[g], wl);
+                for (const m of fr.meshes) {
+                    m.geometry.attributes.position.needsUpdate = true;
+                    m.geometry.attributes.color.needsUpdate = true;
+                    m.geometry.computeVertexNormals();
+                }
+                fr.gpuLaeufe = (fr.gpuLaeufe || 0) + 1;
+                fr.gpuVerts = (fr.gpuVerts || 0) + n;
+                if (!fr.ready) {
+                    fr.ready = true;
+                    for (const m of fr.meshes) m.visible = true; // das Feld malte — der Horizont steht JETZT
+                }
+            })
+            .catch(() => {
+                if (this.state.fernRing === fr && fr.gen === gen) fr.gpuFlug = false;
+            });
     }
 
     // Der Frame-Tick (EIN Aufruf aus `_runFrameScheduler`, kein eigener Timer):
@@ -37515,7 +37711,13 @@ class AnazhRealm {
             fr.anchorX = Math.round(playerPos.x / F.anchorQuant) * F.anchorQuant;
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
+            fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
+            fr.gpuFlug = false;
         }
+        // DER FELD-ZEICHNER: ein anstehender VOLLER Refresh (Boot/Re-Anker)
+        // wird zuerst vom Feld gemalt (EIN GPU-Lauf, Horizont steht sofort);
+        // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
+        if (fr.cursor === 0) this._fernRingGpuMal(fr);
         this._fernRingRefresh(F.refreshVertsProTick);
         // DIE KAMERA-KLIPPE (SELBST GESPIELT 16.07., ich-spiele-Sonde): camera.far
         // stand auf 1000 — die 8-km-Schalen wurden GECLIPPT, der Horizont KONNTE
