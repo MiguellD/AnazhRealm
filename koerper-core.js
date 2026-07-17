@@ -392,8 +392,18 @@
                     // lesen magieleitung, staminaMax liest waermeleitung). Der Wirt
                     // (STAT_FROM_TAGS) liest fail-soft: Kern kalt → seine Literale.
                     bewegung: {
-                        speed: { base: 7, leicht: 5, mag: 1.5 },
-                        jumpPower: { base: 8, leicht: 5, mag: 2 },
+                        // DIE REALITAETS-EICHUNG (Schoepfer-Wort 17.07.: "die
+                        // Realitaet unser Spiegel") -- die Verben tragen
+                        // MENSCHEN-Masse: Gehen ~1.5 m/s (dichte-Spanne 1.15-2.0),
+                        // Sprint x4.5 ~6.8 m/s, Sprung ~0.53 m (bei g=9.81, faellt
+                        // mit derselben Welle von 1.5x-Erde), Klettern 0.6 m/s,
+                        // Schwimmen ~1.3 m/s. Die Arcade-Saetze (base 7 / Sprint x2
+                        // / jump 8 / kletterV 3.2 / tauchV 3.2) fielen mit dem Wort.
+                        speed: { base: 1.15, leicht: 0.6, mag: 0.25 },
+                        // Der Sprint-Faktor reist als Gesetz (war Stamm-Literal x2):
+                        // Gehen -> Sprint wie Mensch (1.5 -> ~6.8 = trainierter Lauf).
+                        sprintMul: 4.5,
+                        jumpPower: { base: 2.6, leicht: 1.0, mag: 0.5 },
                         staminaMax: { base: 100, leicht: 60, mag: 40 },
                         // SCHWIMM-HEIMAT (rein additive DATEN-Zeile — Praezedenz: die
                         // Bewegungs-Koeffizienten oben): DIE WASSER-BEWEGUNG des Avatars
@@ -407,16 +417,26 @@
                         // ausdauerProS die Ausdauer-Kosten aktiver Zuege. Der Wirt liest
                         // fail-soft (_schwimmGesetz): Kern kalt -> seine Literale.
                         schwimmen: {
-                            tauchV: 3.2,
-                            aufV: 3.2,
+                            // REALITAETS-EICHUNG 17.07.: Tauchen/Auftauchen ~1 m/s,
+                            // Hub-/Sink-Kappen menschlich (1.2/2 m/s), Kraul-Takt
+                            // ~1.6 Zuege/s (war 3.2/3.2/2.5/8/5.0/2.3 -- Arcade).
+                            tauchV: 1.0,
+                            aufV: 1.0,
                             lerp: 0.25,
                             hubK: 0.45,
                             tiefeK: 0.18,
-                            hubCap: 2.5,
-                            tiefeCap: 8,
+                            hubCap: 1.2,
+                            tiefeCap: 2,
                             drag: 0.7,
-                            taktZug: 5.0,
-                            taktTreten: 2.3,
+                            taktZug: 1.6,
+                            taktTreten: 0.9,
+                            // NEU (Zensus 17.07., zwei Stamm-Altlasten fallen):
+                            // speedMul = horizontales Wasser-Tempo relativ zum Gehen
+                            // (war hartkodiert 0.55 im Stamm; real: Kraul 1.3 von
+                            // Gehen 1.5); leanSoul = die Schwimm-Lehne der Compound-/
+                            // Nicht-Rig-Seelen (war Stamm-Konstante SOUL_SWIM_LEAN).
+                            speedMul: 0.85,
+                            leanSoul: { moving: 0.5, idle: 0.22 },
                             lean: { zug: 0.6, treten: 0.3 },
                             pose: {
                                 kopf: -0.35,
@@ -441,12 +461,16 @@
                             doppelspruenge: 1,
                             doppelsprungMul: 0.9,
                             wandsprungMul: 1.0,
-                            wandAbstoss: 6,
-                            kletterV: 3.2,
+                            // REALITAETS-EICHUNG 17.07.: Wand-Abstoss ~3 m/s,
+                            // Klettern 0.6 m/s (war 6/3.2 -- Arcade; real klettert
+                            // ein Mensch 0.3-0.5, sportlich 0.6), Rutsch-Eintritt
+                            // ab 4.5 m/s (nur aus dem Lauf, nie aus dem Gehen).
+                            wandAbstoss: 3,
+                            kletterV: 0.6,
                             kletterAusdauerProS: 12,
                             slideTempoMul: 1.167,
                             slideDauerSec: 0.68,
-                            slideMinTempo: 6,
+                            slideMinTempo: 4.5,
                             // RUTSCH-POSE (V18.485, rein additiv): der Koerper legt
                             // sich in den Gleit -- Lehne zurueck (rad, Ganzkoerper),
                             // Beine voraus (Hueftbeuge + Knie-Knick), ein Arm

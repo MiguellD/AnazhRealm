@@ -274,7 +274,7 @@ class AnazhRealm {
             playerVel: null,
             tmpTransform: null,
             scaleFactor: 1,
-            gravity: -14.715,
+            gravity: -9.81,
             // Determinismus-Bogen — der feld-native Kapsel-Controller (`_stepCharacter`)
             // treibt den Spieler aus dem Dichtefeld: kein per-Chunk-BVH-Build (der Lauf-Freeze
             // an der Wurzel), deterministisch, ein gecarvter Tunnel SOFORT begehbar. Die
@@ -9347,7 +9347,7 @@ class AnazhRealm {
                 example: "heile welt",
                 re: /^heile\s+welt\s*$/i,
                 build: () => ({
-                    program: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"], ["gravity", -14.715]],
+                    program: ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"], ["gravity", -9.81]],
                     describe: "Welt geheilt: sonnig, Kreaturen glücklich, Gravitation auf 1.5G zurück",
                 }),
             },
@@ -19659,8 +19659,11 @@ class AnazhRealm {
     _creatureBodySpeedMultiplier(creature) {
         if (!creature || typeof this.computeCreatureStats !== "function") return 1;
         const stats = this.computeCreatureStats(creature).stats;
-        const base = 7; // STAT_FROM_TAGS.speed-Base
-        if (!Number.isFinite(stats.speed) || stats.speed <= 0) return 1;
+        // REALITÄTS-EICHUNG 17.07. — normalisiert gegen die LEBENDE Gesetz-Base
+        // (fx.bewegung.speed.base; war hartkodiert 7 = der alte Arcade-Zwilling —
+        // eine Eichung des Kerns hätte alle Kreaturen still verlangsamt).
+        const base = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+        if (!Number.isFinite(stats.speed) || stats.speed <= 0 || !(base > 0)) return 1;
         return stats.speed / base;
     }
 
@@ -24839,7 +24842,7 @@ class AnazhRealm {
         // DETERMINISMUS-BOGEN P3 — keine Ammo-Welt/Reibung/CCD mehr zu „optimieren".
         // Der Chat-Befehl setzt nur noch die Schwerkraft-Konstante zurück (die
         // `_stepCharacter` als Skalar liest).
-        this.state.gravity = -14.715;
+        this.state.gravity = -9.81;
         this.log("Schwerkraft auf Standard zurückgesetzt (Feld-Physik — kein Ammo).");
     }
 
@@ -51789,6 +51792,20 @@ class AnazhRealm {
             const gHeck = this.getTerrainHeightAt(pm.x - dx, pm.z - dz);
             if (Number.isFinite(gBug)) groundY = Math.max(groundY, gBug);
             if (Number.isFinite(gHeck)) groundY = Math.max(groundY, gHeck);
+            // STEIGUNGS-DREIKLANG (Zensus 17.07. — die Probestrecke war Glas, die
+            // Welt trug nur die HÖHE): die Bug/Heck-Proben liegen schon da — der
+            // Gelände-NICK längs der Fahrt fällt gratis ab; zwei QUER-Proben
+            // liefern den WANK. Ziel-Winkel hier, Glättung unten im Pitch-Block;
+            // der HANGABTRIEB im Bewegungs-Tick liest dasselbe Ziel (EINE Quelle).
+            if (Number.isFinite(gBug) && Number.isFinite(gHeck))
+                entry._terrainPitchZiel = Math.atan2(gHeck - gBug, Math.max(0.5, 2 * half));
+            const wq = Math.max(0.6, half * 0.6);
+            const rxv = Math.cos(entry._rideYaw) * wq;
+            const rzv = -Math.sin(entry._rideYaw) * wq;
+            const gRe = this.getTerrainHeightAt(pm.x + rxv, pm.z + rzv);
+            const gLi = this.getTerrainHeightAt(pm.x - rxv, pm.z - rzv);
+            if (Number.isFinite(gRe) && Number.isFinite(gLi))
+                entry._terrainRollZiel = Math.atan2(gRe - gLi, Math.max(0.5, 2 * wq));
         }
         // W-F (V18.175) — das BOOT-SCHWIMMEN (die §8.8e-Synergie „dieselbe
         // Fläche, dieselbe Wahrheit"): ein schwimmfähiges Gefährt (Profil
@@ -51908,6 +51925,23 @@ class AnazhRealm {
                 entry._ridePitch = 0;
             }
             entry._rideSp = sp;
+            // STEIGUNGS-DREIKLANG — Gelände-NICK/-WANK für JEDES gerittene Gefährt
+            // (der Beschleunigungs-Nick oben bleibt Feder-exklusiv): die Karosserie
+            // legt sich in den Hang statt waagerecht zu „schweben". exp-geglättet,
+            // ±0.35 rad geklemmt; render-only (Kollision liest weiter rotationY).
+            {
+                const zP = Number.isFinite(entry._terrainPitchZiel)
+                    ? Math.max(-0.35, Math.min(0.35, entry._terrainPitchZiel))
+                    : 0;
+                const zR = Number.isFinite(entry._terrainRollZiel)
+                    ? Math.max(-0.35, Math.min(0.35, entry._terrainRollZiel))
+                    : 0;
+                const kT = 1 - Math.exp(-6 * tick);
+                const cP = Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0;
+                const cR = Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0;
+                entry._rideTerrainPitch = cP + (zP - cP) * kT;
+                entry._rideRoll = cR + (zR - cR) * kT;
+            }
         }
         // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
@@ -51915,7 +51949,12 @@ class AnazhRealm {
         if (entry.mesh) {
             entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
             if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
-            entry.mesh.rotation.x = Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0;
+            // STEIGUNGS-DREIKLANG — Beschleunigungs-Nick + Gelände-Nick addieren,
+            // der Wank kommt als rotation.z dazu (beide 0 für Nicht-Gerittenes).
+            entry.mesh.rotation.x =
+                (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
+                (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
+            entry.mesh.rotation.z = Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0;
             const prof = this._vehicleProfile(entry);
             if (prof && prof.roles) {
                 this._animateCompoundMotion(
@@ -52570,7 +52609,15 @@ class AnazhRealm {
     // beim Aufrufer — der Setter wendet nur die Kopplung an.
     _applyPlayerSpeed(v) {
         this.state.speed = v;
-        this.state.sprintSpeed = v * 2;
+        // REALITÄTS-EICHUNG 17.07. — der Sprint-Faktor wohnt im koerper-Gesetz
+        // (fx.bewegung.sprintMul: Gehen→Sprint wie Mensch); Kern kalt → byte-alt ×2.
+        let mul = 2;
+        try {
+            const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+            const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
+            if (b && Number.isFinite(b.sprintMul) && b.sprintMul > 0) mul = b.sprintMul;
+        } catch (_e) {}
+        this.state.sprintSpeed = v * mul;
     }
 
     // V18.201 — MANA-KONSUMENTEN Foundation (aktiv.md §4.E Folge zu V18.196).
@@ -60224,7 +60271,14 @@ class AnazhRealm {
             stats[stat] = AnazhRealm.STAT_FROM_TAGS[stat](finalTags);
         }
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed);
-        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed);
+        // REALITÄTS-EICHUNG 17.07. — der V17.90-Floor skaliert mit der LEBENDEN
+        // Gesetz-Base (Verhältnis 2/7 = byte-alt bei kaltem Kern; geeicht 1.15 →
+        // 0.33 m/s = Schwerlast-Kriechen, nie 0): der feste 2er fror sonst JEDE
+        // Dial-Differenz unter der neuen Menschen-Base ein.
+        if (Number.isFinite(stats.speed)) {
+            const floorBase = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+            stats.speed = Math.max((2 / 7) * floorBase, stats.speed);
+        }
         return stats;
     }
 
@@ -60238,7 +60292,13 @@ class AnazhRealm {
         if (Number.isFinite(stats.hpMax)) stats.hpMax = stats.hpMax * sizeHpMul;
         if (Number.isFinite(stats.staminaMax)) stats.staminaMax = stats.staminaMax * sizeHpMul;
         if (Number.isFinite(stats.manaMax)) stats.manaMax = stats.manaMax * sizeHpMul;
-        if (Number.isFinite(stats.speed)) stats.speed = Math.max(2, stats.speed * sizeSpeedMul);
+        // REALITÄTS-EICHUNG 17.07. — derselbe gesetz-relative Floor wie in
+        // _statsFromTags (2/7 der lebenden Base; der feste 2er klemmte unter
+        // der Menschen-Base jede Größen-Differenz auf denselben Wert).
+        if (Number.isFinite(stats.speed)) {
+            const floorBase = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+            stats.speed = Math.max((2 / 7) * floorBase, stats.speed * sizeSpeedMul);
+        }
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
         if (Number.isFinite(stats.jumpPower)) stats.jumpPower = stats.jumpPower * sizeSpeedMul;
     }
@@ -62225,7 +62285,12 @@ class AnazhRealm {
         // (_tickMountedMovement schreibt entry._ridePitch nur bei Feder-Rezept, sonst 0/
         // undefined = byte-alte Matrix): ein kleiner R_x NACH R_y·S (Scale uniform →
         // kommutiert). NUR Optik — Kollisions-AABB/Blocker lesen weiter rotationY allein.
-        const rp = Number.isFinite(entry._ridePitch) && entry._ridePitch !== 0 ? entry._ridePitch : 0;
+        // STEIGUNGS-DREIKLANG — Gelände-Nick addiert, Wank als R_z danach (beide
+        // nur beim gerittenen Gefährt gesetzt; Bäume/Bauwerke bleiben byte-alt).
+        const rp =
+            (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
+            (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
+        const rr = Number.isFinite(entry._rideRoll) && entry._rideRoll !== 0 ? entry._rideRoll : 0;
         if (ry !== 0) {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
@@ -62249,6 +62314,7 @@ class AnazhRealm {
                 1
             );
             if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
+            if (rr) m.multiply((this._archTmpRideRz || (this._archTmpRideRz = new THREE.Matrix4())).makeRotationZ(rr));
             return m;
         }
         // compose(T, R=identity, S) — direkt gesetzt (schneller als compose).
@@ -62257,6 +62323,7 @@ class AnazhRealm {
         m.elements[13] = baseY;
         m.elements[14] = entry.position.z || 0;
         if (rp) m.multiply((this._archTmpRideRx || (this._archTmpRideRx = new THREE.Matrix4())).makeRotationX(rp));
+        if (rr) m.multiply((this._archTmpRideRz || (this._archTmpRideRz = new THREE.Matrix4())).makeRotationZ(rr));
         return m;
     }
 
@@ -73922,7 +73989,7 @@ class AnazhRealm {
         const list = this.state._pfeile;
         if (!list || !list.length) return;
         const B = AnazhRealm.BOGEN_LAWS;
-        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -14.715;
+        const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
             const pf = list[i];
@@ -86049,7 +86116,7 @@ class AnazhRealm {
                 let jumpV = this.state.jumpPower;
                 const headroom = this._ceilingHeadroom();
                 if (headroom < 3.4) {
-                    const g = Math.abs(this.state.gravity || -14.715);
+                    const g = Math.abs(this.state.gravity || -9.81);
                     const rise = Math.max(0, headroom - 0.35);
                     jumpV = Math.min(jumpV, Math.sqrt(2 * g * rise));
                     if (jumpV < 1.2) return; // keine Kopffreiheit — kein Sprung
@@ -86108,7 +86175,7 @@ class AnazhRealm {
         let jumpV = jp * mul;
         const headroom = this._ceilingHeadroom();
         if (headroom < 3.4) {
-            const g = Math.abs(s.gravity || -14.715);
+            const g = Math.abs(s.gravity || -9.81);
             jumpV = Math.min(jumpV, Math.sqrt(2 * g * Math.max(0, headroom - 0.35)));
             if (jumpV < 1.2) return false;
         }
@@ -86869,7 +86936,7 @@ class AnazhRealm {
             // im koerperstudio-Gesetzbuch). Wand weg → nächster Frame fällt.
             vy = s._parkourKletter;
         } else {
-            vy += (s.gravity || -14.715) * dt;
+            vy += (s.gravity || -9.81) * dt;
             if (vy < -25) vy = -25;
         }
 
@@ -87080,7 +87147,7 @@ class AnazhRealm {
                             // → kein Term. Keine Brems-Kurve auf Steilhang (der Loop lässt
                             // sie dort aus) → der Rutsch beschleunigt physikalisch.
                             if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < s.maxWalkableSlopeY) {
-                                const gMag = -(s.gravity || -14.715);
+                                const gMag = -(s.gravity || -9.81);
                                 vx += gN.x * gN.y * gMag * dt;
                                 vz += gN.z * gN.y * gMag * dt;
                             }
@@ -87254,7 +87321,12 @@ class AnazhRealm {
             this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
         // V8.29.1 — Wasser bremst. Unter Wasser bewegt sich der Spieler
         // auf 55 % Geschwindigkeit — er schwimmt, watet nicht durch.
-        if (this.state.playerUnderwater) currentSpeed *= 0.55;
+        // ZENSUS 17.07. — das Wasser-Tempo wohnt im Schwimm-Gesetz (speedMul:
+        // Kraul relativ zum Gehen); die hartkodierte 0.55 fiel (Altlast).
+        if (this.state.playerUnderwater) {
+            const SGm = AnazhRealm._schwimmGesetz();
+            currentSpeed *= SGm && Number.isFinite(SGm.speedMul) ? SGm.speedMul : 0.55;
+        }
 
         this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
         this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
@@ -87307,7 +87379,15 @@ class AnazhRealm {
             const rideTop = ride ? ride.topSpeedMul : 1;
             const rideKAcc = ride ? ride.kAcc : null;
             const rideKBrake = ride ? ride.kBrake : null;
-            currentSpeed *= rideTop;
+            // REALITÄTS-EICHUNG 17.07. — DER VMAX-ANKER: ein Studio-Fahrzeug fährt
+            // seine EIGENE Kern-Wahrheit vmax (m/s aus carPhys/exportDrive), nicht
+            // das Spieler-Tempo × Mul (der alte Pfad koppelte den Wagen an die
+            // Fuß-Eichung: GT ~52 km/h, und Shift-Sprint wirkte NUR im nicht-
+            // lenkenden Ritt — beide Schiefen fallen; im Sattel sprintet niemand).
+            // Ohne vmax (Kreatur-Ritt/kaltes Buch) byte-alt topSpeedMul-relativ.
+            const rideVmax = ride && Number.isFinite(ride.vmax) && ride.vmax > 0 ? ride.vmax : null;
+            if (rideVmax !== null) currentSpeed = rideVmax;
+            else currentSpeed *= rideTop;
             // FAHR-GEFÜHL (Garage-Vereinigung) — trägt das gerittene STUDIO-
             // Fahrzeug die Lenk-Gesetze (fahrprofil.lenkung, vehicle-core FAHR),
             // fährt der Ritt FAHRZEUG-EIGEN: W/S = Gas/Bremse ENTLANG der Gier,
@@ -87365,7 +87445,8 @@ class AnazhRealm {
                 const L = Number.isFinite(lenk.radstand) && lenk.radstand > 1 ? lenk.radstand : 2.6;
                 yaw += ((vLong * Math.tan(delta)) / L) * nowDt;
                 const hand = !!this.state.keys["shift"];
-                const zielSpeed = this.state.speed * rideTop * slopePenalty; // nie Sprint im Sattel
+                // nie Sprint im Sattel; der VMAX-ANKER trägt auch den Lenk-Pfad.
+                const zielSpeed = (rideVmax !== null ? rideVmax : this.state.speed * rideTop) * slopePenalty;
                 const ziel = this.state.keys["w"]
                     ? zielSpeed
                     : this.state.keys["s"]
@@ -87373,6 +87454,16 @@ class AnazhRealm {
                       : 0;
                 const kL = this.state.keys["w"] || this.state.keys["s"] ? rideKAcc : rideKBrake;
                 vLong += (ziel - vLong) * (1 - Math.exp(-kL * nowDt));
+                // STEIGUNGS-DREIKLANG (Zensus 17.07.) — HANGABTRIEB: die Gelände-
+                // Steigung längs der Fahrt wirkt als −g·sin(α) auf vLong (bergauf
+                // bremst, bergab schiebt — vorher fuhr der Wagen jede Steigung
+                // tempo-blind). α kommt aus den Bug/Heck-Proben des Mount-Ticks
+                // (entry._terrainPitchZiel, EINE Quelle: dort uphill-negativ).
+                const mEnt = this._mountedEntry;
+                if (mEnt && Number.isFinite(mEnt._terrainPitchZiel)) {
+                    const gAbs = Math.abs(this.state.gravity || -9.81);
+                    vLong -= gAbs * Math.sin(-mEnt._terrainPitchZiel) * nowDt;
+                }
                 if (hand && Number.isFinite(lenk.handDecel)) {
                     vLong -= Math.sign(vLong) * Math.min(Math.abs(vLong), lenk.handDecel * nowDt);
                 }
@@ -89657,16 +89748,20 @@ AnazhRealm._bewegungsKoeff = function (stat, fb) {
 // Memo NUR im Erfolgs-Fall (ein spät ladender Kern friert nie den Fallback ein);
 // der Kern ist ein statisches Gesetzbuch — einmal warm, immer dieselbe Referenz.
 AnazhRealm.SCHWIMM_FALLBACK = Object.freeze({
-    tauchV: 3.2,
-    aufV: 3.2,
+    // REALITÄTS-EICHUNG 17.07. — der Fallback SPIEGELT das Kern-Gesetz
+    // zahlen-gleich (die SCHWIMM-PARITÄTS-WAND im Vertrag-Validator erzwingt es).
+    tauchV: 1.0,
+    aufV: 1.0,
     lerp: 0.25,
     hubK: 0.45,
     tiefeK: 0.18,
-    hubCap: 2.5,
-    tiefeCap: 8,
+    hubCap: 1.2,
+    tiefeCap: 2,
     drag: 0.7,
-    taktZug: 5.0,
-    taktTreten: 2.3,
+    taktZug: 1.6,
+    taktTreten: 0.9,
+    speedMul: 0.85,
+    leanSoul: Object.freeze({ moving: 0.5, idle: 0.22 }),
     lean: Object.freeze({ zug: 0.6, treten: 0.3 }),
     pose: Object.freeze({
         kopf: -0.35,
@@ -93672,7 +93767,18 @@ Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
 // ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE: jede Compound-Seele
 // (konvergierte Built-ins Phönix/Drache + Custom + Peers) legt sich unter Wasser
 // über DIESELBE Daten-Zeile (der Rig-Avatar trägt sie in _animateHuman weiter).
-AnazhRealm.SOUL_SWIM_LEAN = Object.freeze({ moving: 0.5, idle: 0.22 });
+// ZENSUS 17.07. — die Lehne WOHNT jetzt im Schwimm-Gesetz (schwimmen.leanSoul,
+// das TETRAPODA_DIAL_MAP-Getter-Muster): beide Konsumenten bleiben byte-gleich,
+// der Kern gewinnt; Kern kalt → das historische Literal (Fallback-Zwilling).
+AnazhRealm._SOUL_SWIM_LEAN_FALLBACK = Object.freeze({ moving: 0.5, idle: 0.22 });
+Object.defineProperty(AnazhRealm, "SOUL_SWIM_LEAN", {
+    get() {
+        const s = AnazhRealm._schwimmGesetz();
+        return s && s.leanSoul && Number.isFinite(s.leanSoul.moving)
+            ? s.leanSoul
+            : AnazhRealm._SOUL_SWIM_LEAN_FALLBACK;
+    },
+});
 // ALTLASTEN-NULL — die Gnaden-Frist nach dem feld-nativen Tod (Sekunden):
 // innerhalb dieser Frist zieht kein Schaden und feuert kein zweiter Respawn.
 AnazhRealm.RESPAWN_GRACE_SEC = 8;
