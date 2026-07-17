@@ -6,22 +6,39 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.486 — DER SPIEGEL-ZENSUS: die Realität ist der Spiegel, der Wirt lernt)
+## Stand (V18.487 — DIE VOLLENDUNGS-WELLE: erst erstellen, dann reparieren)
 
-**Die Zensus-Welle (17.07., Schöpfer-Wette bestätigt): 6-Domänen-Matrix
-(`docs/zensus-matrix-v18486.md`, 94 Befunde) + Abbau:** das „darf" fiel (Vertrag+
-Validator für fx.bewegung/VERHALTEN/ARENA/FAHR.lenkung + SCHWIMM-PARITÄTS-WAND) ·
-REALITÄTS-EICHUNG (Gehen 1.5 m/s · sprintMul-Gesetz 4.5 · Sprung 0.53 m · g 9.81
-überall · Klettern 0.6 · Schwimmen 1.0/speedMul 0.85/leanSoul; gesetz-relative
-Speed-Floors; vmax-Anker des Ritts; 10 Playtest-Bänder gewandert) · STEIGUNGS-
-DREIKLANG (Hangabtrieb + Gelände-Nick/Wank im Ritt + Probestrecken-Hügel aus EINER
-bodenY-Quelle) · KAMPF-ZENSUS (Hieb-Geometrie/Stoß/Kipp/Pfeil-Flug→ARENA, Kampf-
-Quartett→koerper-Koeffizienten, die tote Waffen-GÜTE erreicht den Schaden) ·
-KREATUR-ZENSUS (Jagd/Furcht/Temperament/Wandern→tetrapoda-VERHALTEN, Gegenwehr =
-EINE Reichweite) · GENESIS-PORTAL-RING (alle Welt-Portale im Kreis R 11 m um den
-ersten Spawn, doppelt idempotent). OFFEN: Matrix-Rest (bewegung-Rest/welt/
-fahrzeug-Rest, roadmap §0c) · Konsum-Wächter (gate:konsum-bilanz — Export>Import
-wird Lern-Liste statt stillem must-ignore; benannt, nächste Welle).
+**Das Schöpfer-Wort (17.07., bindend): „fertig" heißt IM ECHTEN SPIEL eingefädelt —
+halb Gebautes heißt ehrlich halb (mit %), fail-soft ist der Bruch.** Gebaut:
+KERN-PFLICHT (fachwerk-/klang-core FEHLTEN in index.html — Gesetze existierten
+nur im Testrahmen! Jetzt laden alle 10, `_kernPflichtWand` schreit rot) · DER
+EINE GESETZ-STROM (`AnazhRealm.Gesetz("kern:Weg")` — Namensraum/PRESETS-fx, memo,
+8 Leser-Familien) · DIE FALLBACK-ZWILLINGE FALLEN (17 Stamm-Größen weg
+[SCHWIMM/LUFT/SPRUNG/SCHRITT/VERHALTEN/ARENA_FALLBACK · SWING_/BOGEN_LAWS ·
+COMBAT_REACH_M · MOUSE_ACTION_STAMINA_COST · CREATURE_*/TEMPERAMENT_*]; alle
+Leser fail-closed via `_kernPflichtBruch`; ZWILLINGS-ABSENZ-WAND + Selbsttest in
+gate:studio-vertrag; 12 Playtest-Stellen + 2 Gates gewandert) · DORF-ERLEBNIS
+(Straßen/Platz/Brunnen aus dem Siedlungs-Export heben mit [`_stlWege*`,
+Rebuild-Gedächtnis über Reload]; Häuser BETRETBAR: Tür-Flügel-Separation im
+fachwerk-Kern [Vertrags-Akt, Goldens neu gemintet] + tuer-Zeile im Export →
+Blocker mit Tür-Lücke + `_tickHausTueren` öffnet dem Reisenden) · DER
+FELD-ZEICHNER (feld-wgsl IM SPIEL konsumiert: voller Fern-Ring-Refresh = EIN
+GPU-Compute, Horizont steht im nächsten Frame, CPU verfeinert aufs f64-Gesetz
+ab Live-Cursor; gate:fern-ring Band 7 mit echtem WebGPU: ready bei Cursor
+600/2880, worst 3.2 mm auf 8 km) · KONSUM-WÄCHTER (gate:konsum-bilanz, 281
+Waisen als Lern-Liste) · GENESIS-PORTAL-RING (alle Welt-Portale R 11 m um den
+ersten Spawn). OFFEN (ehrlich, kein Warte-Tor): GPU-Cull/indirekte Draws +
+Fullscreen-Feld-Pass (§0b) · Matrix-Prio-2/3-Rest + Waisen-Abbau (§0c) ·
+Kreatur-Aktions-Feinschliff am Schöpfer-Auge.
+
+Davor V18.486 — DER SPIEGEL-ZENSUS (17.07., Schöpfer-Wette bestätigt):
+6-Domänen-Matrix (94 Befunde) + Abbau — das „darf" fiel (Vertrag+Validator für
+fx.bewegung/VERHALTEN/ARENA/FAHR.lenkung) · REALITÄTS-EICHUNG (Gehen 1.5 m/s ·
+sprintMul 4.5 · Sprung 0.53 m · g 9.81 · Klettern 0.6 · Schwimmen 1.0/speedMul
+0.85; gesetz-relative Floors; vmax-Anker des Ritts; 10 Bänder gewandert) ·
+STEIGUNGS-DREIKLANG (Hangabtrieb + Gelände-Nick/Wank + Probestrecken-Hügel aus
+EINER bodenY-Quelle) · KAMPF-/KREATUR-ZENSUS (Geometrie/Stoß/Kipp/Flug→ARENA,
+Quartett→koerper, Verhalten→tetrapoda, Waffen-GÜTE in den Schaden).
 
 Davor V18.485 — DIE WARME MASCHINE: aus der eigenen Telemetrie gebaut.
 

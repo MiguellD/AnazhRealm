@@ -37599,8 +37599,14 @@ class AnazhRealm {
                 mkStorage(e.tarnPack),
                 mkStorage(punkte),
             ];
-            const outBuf = device.createBuffer({ size: n * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC });
-            const staging = device.createBuffer({ size: n * 4, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const outBuf = device.createBuffer({
+                size: n * 4,
+                usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC,
+            });
+            const staging = device.createBuffer({
+                size: n * 4,
+                usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST,
+            });
             const bind = device.createBindGroup({
                 layout: pipe.getBindGroupLayout(0),
                 entries: [{ binding: 0, resource: { buffer: uniBuf } }].concat(
@@ -37631,7 +37637,10 @@ class AnazhRealm {
             }
             return werte;
         } catch (err) {
-            this.log("Feld-Zeichner: GPU-Lauf scheiterte (" + ((err && err.message) || err) + ") — die CPU zeichnet.", "WARN");
+            this.log(
+                "Feld-Zeichner: GPU-Lauf scheiterte (" + ((err && err.message) || err) + ") — die CPU zeichnet.",
+                "WARN"
+            );
             return null;
         }
     }
@@ -89772,7 +89781,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.486.0";
+AnazhRealm.VERSION = "18.487.0";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

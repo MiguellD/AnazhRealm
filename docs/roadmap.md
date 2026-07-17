@@ -54,11 +54,16 @@
    Wand) · die Realitäts-Eichung (Gehen 1.5/Sprint-Gesetz 4.5/Sprung 0.53 m/g 9.81/
    Klettern 0.6/Schwimmen 1.0+speedMul 0.85+leanSoul; gesetz-relative Floors; vmax-
    Anker des Ritts) · der Steigungs-Dreiklang (Hangabtrieb + Gelände-Nick/Wank in Welt
-   UND Probestrecken-Hügel). DER ABBAU LÄUFT IN WELLEN, die Matrix ist die Liste —
-   Prio-1-Kern als Nächstes: SWING_LAWS-Rest→ARENA · Kampf-Stat-Quartett→koerper ·
-   TEMPERAMENT/HUNT→tetrapoda·fx.verhalten · Luftkontrolle/Sprung-Fenster→fx.bewegung ·
-   Waffen-Güte (measure) in den Schadens-Chokepoint (tot-studio!) · lean-Divergenz-
-   Entscheid (0.5/0.22 vs 0.6/0.3).**
+   UND Probestrecken-Hügel). DER PRIO-1-KERN IST ABGEBAUT (V18.486/487):
+   SWING_LAWS→ARENA · Kampf-Quartett→koerper · TEMPERAMENT/HUNT→tetrapoda ·
+   Luft/Sprung-Fenster→fx.bewegung · Waffen-Güte im Schaden · lean = Gesetz
+   (leanSoul 0.5/0.22) — und V18.487 ließ die FALLBACK-ZWILLINGE GANZ fallen
+   (17 Stamm-Größen, Leser fail-closed `_kernPflichtBruch`, ZWILLINGS-ABSENZ-
+   WAND in gate:studio-vertrag; Kern-Pflicht: index.html lädt ALLE Gesetzbücher,
+   `_kernPflichtWand` schreit). OFFEN ehrlich: der Prio-2/3-Rest der Matrix
+   (Doppel-Quellen/tote Exporte niederer Ordnung) + der Waisen-Abbau der
+   Konsum-Bilanz (281 gefrorene Waisen = die Lern-Liste, gate:konsum-bilanz
+   hält neue draußen).**
 
 0b. **DAS FELD ZEICHNET (16.07., Schöpfer-Vision — normativ `docs/das-feld-zeichnet.md`):**
    Render-Kosten an den SCHIRM binden statt an die Welt; die Welt ist eine Funktion,
@@ -78,8 +83,17 @@
    (Wander-Zensus 14.8M gefrorene L1-Tris/km → 4.4M, −70 %; B2-Einweg-Freeze
    fiel an der Wurzel [Null-Skala erbt Position], gate:scatter-lod D-Bänder) ·
    der MULTI-SEED-SPIEGEL (3 Welten in EINEM Boot, alle mm-Klasse).
-   DANACH (nur nach Trace-Urteil): GPU-Cull/indirekte Draws · Fullscreen-Feld-Pass ·
-   Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace + das Auge urteilen.
+   V18.487 — DER FELD-ZEICHNER (das Warte-Tor fiel, Schöpfer-Wort „keine
+   Wartewände"): feld-wgsl wird IM SPIEL konsumiert — der volle Fern-Ring-
+   Refresh (Boot/Re-Anker) läuft als EIN GPU-Compute durch den dritten Spiegel
+   (der Horizont steht im nächsten Frame), die CPU verfeinert dieselben
+   Vertices aufs f64-Gesetz ab dem Live-Cursor (EINE Setz-Naht, kein Zwilling);
+   gate:fern-ring Band 7 (echtes WebGPU): ready bei Cursor 600/2880, GPU-worst
+   3.2 mm auf 8 km, das Höhen==Gesetz-Band bleibt exakt. OFFEN ehrlich (kein
+   Warte-Tor mehr, nach Größe gereiht): GPU-Cull/indirekte Draws (Stufe-1-
+   Vollausbau des Dither-Wals) · Fullscreen-Feld-Pass (die Ferne ganz ohne
+   Schalen-Geometrie) · Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace +
+   das Auge urteilen.
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr
    Urteil: „nichts vollständig"):**
