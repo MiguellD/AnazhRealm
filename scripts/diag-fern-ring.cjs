@@ -336,7 +336,89 @@ const server = http.createServer((req, res) => {
         for (let t = 0; t < 100 && fr7 && fr7.cursor < fr7.totalVerts; t++)
             r._tickFernRing(r.state.playerMesh.position);
         res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts);
+
+        // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
+        // Der Pass ist Ring-Besitz (_tickFeldPass aus _tickFernRing): warte auf
+        // den EINEN Mal-Flug (Compute durch feld-wgsl), prüfe Struktur + Daten-
+        // Parität (Texel-Höhe == f64-Gesetz im Seh-Band), dann die ECHTE
+        // Render-Probe: ein WebGPURenderer zeichnet den Fullscreen-Raymarch —
+        // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
+        const P8 = r.constructor.FELD_PASS;
+        const dl8 = performance.now() + 90000;
+        let fp8 = r.state.feldPass;
+        while ((!fp8 || fp8.laeufe < 1) && performance.now() < dl8) {
+            r._tickFernRing(r.state.playerMesh.position);
+            fp8 = r.state.feldPass;
+            await sleep7(100);
+        }
+        res.fpDa = !!fp8;
+        res.fpLaeufe = fp8 ? fp8.laeufe : 0;
+        res.fpTexOk = !!(fp8 && fp8.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
+        res.fpSichtbar = !!(fp8 && fp8.mesh.visible === true);
+        let fpWorst = -1;
+        if (fp8 && fp8.laeufe >= 1) {
+            fpWorst = 0;
+            const F8 = r.constructor.FERN_RING;
+            const rMin8 = F8.schalen[F8.schalen.length - 1].aussen;
+            const wl8 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            for (let k = 0; k < 40; k++) {
+                const ix = (k * 37) % P8.az;
+                const iy = (k * 11) % P8.rad;
+                const rr = rMin8 + ((iy + 0.5) / P8.rad) * (P8.rMaxM - rMin8);
+                const aa = ((ix + 0.5) / P8.az - 0.5) * 2 * Math.PI;
+                const law8 = r._terrainMacroSurfaceY(
+                    fp8.anchorX + Math.cos(aa) * rr,
+                    fp8.anchorZ + Math.sin(aa) * rr,
+                    false
+                );
+                const want8 = law8 < wl8 ? wl8 : law8;
+                const d8 = Math.abs(fp8.daten[(iy * P8.az + ix) * 4] - want8);
+                if (d8 > fpWorst) fpWorst = d8;
+            }
+        }
+        res.fpWorst = fpWorst;
+        // Die ECHTE Render-Probe (der Null-Renderer der Seite zeichnet nie):
+        try {
+            const szene8 = new THREE.Scene();
+            const alterParent = fp8 ? fp8.mesh.parent : null;
+            if (fp8) szene8.add(fp8.mesh);
+            const cam8 = new THREE.PerspectiveCamera(60, 1.5, 1, 45000);
+            const bodenY = r._terrainMacroSurfaceY(fp8.anchorX, fp8.anchorZ, false);
+            cam8.position.set(fp8.anchorX, bodenY + 60, fp8.anchorZ);
+            cam8.lookAt(fp8.anchorX + 1000, bodenY + 40, fp8.anchorZ);
+            cam8.updateMatrixWorld(true);
+            fp8.U.camPos.value.copy(cam8.position);
+            fp8.U.invVP.value.multiplyMatrices(cam8.projectionMatrix, cam8.matrixWorldInverse).invert();
+            const ren8 = new THREE.WebGPURenderer({ antialias: false });
+            await ren8.init();
+            ren8.setSize(96, 64, false);
+            const rt8 = new THREE.RenderTarget(96, 64);
+            ren8.setRenderTarget(rt8);
+            // Diagnose-Stufe A: Konstant-Farbe (beweist das Fullscreen-Dreieck)
+            const echterOut = fp8.mat.outputNode;
+            fp8.mat.outputNode = THREE.TSL.vec4(1, 0, 0, 1);
+            fp8.mat.needsUpdate = true;
+            await ren8.renderAsync(szene8, cam8);
+            const bufA = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
+            let trefferA = 0;
+            for (let px = 0; px < 96 * 64; px++) if (bufA[px * 4] > 0) trefferA++;
+            res.fpTrefferKonstant = trefferA;
+            fp8.mat.outputNode = echterOut;
+            fp8.mat.needsUpdate = true;
+            await ren8.renderAsync(szene8, cam8);
+            const buf8 = await ren8.readRenderTargetPixelsAsync(rt8, 0, 0, 96, 64);
+            let treffer8 = 0;
+            for (let px = 0; px < 96 * 64; px++) {
+                if (buf8[px * 4 + 3] > 0 && buf8[px * 4] + buf8[px * 4 + 1] + buf8[px * 4 + 2] > 0) treffer8++;
+            }
+            res.fpTreffer = treffer8;
+            ren8.dispose();
+            if (fp8 && alterParent) alterParent.add(fp8.mesh);
+        } catch (e8) {
+            res.fpRenderErr = (e8 && e8.message) || String(e8);
+        }
         r._fernRingDispose();
+        res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
 
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;
@@ -417,6 +499,22 @@ const server = http.createServer((req, res) => {
         `worst=${Number.isFinite(out.fzWorst) ? out.fzWorst.toFixed(4) : out.fzWorst} proben=${out.fzProben}`
     );
     check("7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)", out.fzCpuFertig === true);
+    check(
+        "8: DER FELD-PASS existiert und das Feld malte seine Textur (Compute durch feld-wgsl)",
+        out.fpDa === true && out.fpLaeufe >= 1 && out.fpTexOk === true && out.fpSichtbar === true,
+        `laeufe=${out.fpLaeufe}`
+    );
+    check(
+        "8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl)",
+        out.fpWorst >= 0 && out.fpWorst <= 0.5,
+        `worst=${Number.isFinite(out.fpWorst) ? out.fpWorst.toFixed(4) : out.fpWorst}`
+    );
+    check(
+        "8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel",
+        Number.isFinite(out.fpTreffer) && out.fpTreffer > 50,
+        `treffer=${out.fpTreffer}${out.fpRenderErr ? " err=" + out.fpRenderErr : ""}`
+    );
+    check("8: der Pass fällt mit dem Ring (Dispose)", out.fpDisposed === true);
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {

@@ -89,10 +89,16 @@
    (der Horizont steht im nächsten Frame), die CPU verfeinert dieselben
    Vertices aufs f64-Gesetz ab dem Live-Cursor (EINE Setz-Naht, kein Zwilling);
    gate:fern-ring Band 7 (echtes WebGPU): ready bei Cursor 600/2880, GPU-worst
-   3.2 mm auf 8 km, das Höhen==Gesetz-Band bleibt exakt. OFFEN ehrlich (kein
-   Warte-Tor mehr, nach Größe gereiht): GPU-Cull/indirekte Draws (Stufe-1-
-   Vollausbau des Dither-Wals) · Fullscreen-Feld-Pass (die Ferne ganz ohne
-   Schalen-Geometrie) · Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace +
+   3.2 mm auf 8 km, das Höhen==Gesetz-Band bleibt exakt. DER FULLSCREEN-FELD-PASS
+   ist GEBAUT (V18.487): die Ferne jenseits der letzten Schale ist NULL
+   Vertices — ein polares Höhen+Farb-Feld (192×48 Texel bis 40 km, gemalt vom
+   SELBEN GPU-Feld-Zeichner, Farbe = die EINE Ring-Rampe) + ein Fullscreen-
+   WGSL-Raymarch als LETZTER Draw (Depth-Test: nur Himmel-Pixel zahlen —
+   Render-Kosten am SCHIRM); gate:fern-ring Band 8: Texel==f64-Gesetz worst
+   9.1 mm bis 40 km + ECHTE Render-Probe (WebGPURenderer: 4608 Horizont-Pixel
+   getroffen, Konstant-Stufe beweist das Dreieck separat). OFFEN ehrlich (kein
+   Warte-Tor): GPU-Cull/indirekte Draws — der Vendor r184 trägt
+   multiDrawIndirect, der Pfad existiert, der Konsument fehlt · Stufe 3. Das Merge-Tor bleibt: der Schöpfer-Trace +
    das Auge urteilen.
 
 1. **DER SCHÖPFER-BROWSER-BEFUND (14.07.2026 — der aktive Bogen; die Runde FAND statt, ihr

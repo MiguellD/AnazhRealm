@@ -37402,6 +37402,12 @@ class AnazhRealm {
     // Die Höhen-Farbrampe (schlicht — der Nebel veredelt): Wasser-Blau flach,
     // Ufer-Sand, Land Grün → Fels-Grau → Schnee-Weiß über die Höhe überm Spiegel.
     _fernRingColorInto(col, i, law, wl, wet) {
+        const f = this._fernRingFarbe(law, wl, wet);
+        col.setXYZ(i, f[0], f[1], f[2]);
+    }
+
+    // DIE EINE FARBRAMPE (Ring-Schalen UND Feld-Pass lesen sie — kein Zwilling).
+    _fernRingFarbe(law, wl, wet) {
         let r, g, b;
         if (wet) {
             r = 0.15;
@@ -37430,7 +37436,7 @@ class AnazhRealm {
                 b = mix(t, 0.44, 0.96);
             }
         }
-        col.setXYZ(i, r, g, b);
+        return [r, g, b];
     }
 
     // DER EINE PUNKT-HELFER (CPU-Schleife UND Feld-Zeichner lesen ihn): globaler
@@ -37691,6 +37697,207 @@ class AnazhRealm {
             });
     }
 
+    // ===== DER FELD-PASS (STUFE 2 VOLLENDET: die Ferne GANZ ohne Schalen-Geometrie) =====
+    // Jenseits der letzten Ring-Schale zeichnet ein FULLSCREEN-Raymarch die
+    // Ferne bis FELD_PASS.rMaxM — null Vertices, fixe Kosten am SCHIRM
+    // (das-feld-zeichnet §2: „die Render-Kosten binden an den SCHIRM"). EINE
+    // Quelle, kein viertes Gesetz-Duplikat: die Höhen kommen aus DEMSELBEN
+    // GPU-Feld-Zeichner (_feldZeichnerHoehen, feld-wgsl-Compute) als polares
+    // Höhen+Farb-Feld (RGBA-Textur, Farbe = die EINE Ring-Rampe), das Fragment
+    // marcht nur die TEXTUR (kein Gesetz im Fragment → keine Drift-Fläche).
+    // Gezeichnet als LETZTER Draw mit Depth-Test: nur Himmel-Pixel zahlen.
+    // Ohne Device/TSL existiert der Pass nicht (die Ring-Schalen tragen den
+    // 8-km-Blick allein — byte-alt, kein Regress).
+    _feldPassEnsure(fr) {
+        const st = this.state;
+        if (st.feldPass) return st.feldPass;
+        if (!st.scene || typeof THREE === "undefined") return null;
+        const TSL = THREE.TSL;
+        if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.uniform || !TSL.positionGeometry) return null;
+        const P = AnazhRealm.FELD_PASS;
+        const daten = new Float32Array(P.az * P.rad * 4);
+        const tex = new THREE.DataTexture(daten, P.az, P.rad, THREE.RGBAFormat, THREE.FloatType);
+        tex.minFilter = THREE.NearestFilter;
+        tex.magFilter = THREE.NearestFilter;
+        tex.needsUpdate = true;
+        const U = {
+            camPos: TSL.uniform(new THREE.Vector3()),
+            invVP: TSL.uniform(new THREE.Matrix4()),
+            anker: TSL.uniform(new THREE.Vector2()),
+            rMin: TSL.uniform(8000),
+            rMax: TSL.uniform(P.rMaxM),
+            wl: TSL.uniform(0),
+            hMax: TSL.uniform(500),
+            fogFarbe: TSL.uniform(new THREE.Color(0.62, 0.68, 0.78)),
+        };
+        // Der Raymarch (WGSL, roh): Strahl aus invVP, quadratische Schritt-
+        // Dichte (nah fein), Textur-Treffer → Rampen-Farbe + Fern-Nebel.
+        const marsch = TSL.wgslFn(
+            "fn feldPassMarsch(ndc: vec2<f32>, camPos: vec3<f32>, invVP: mat4x4<f32>, anker: vec2<f32>, rMin: f32, rMax: f32, wl: f32, hMax: f32, fogFarbe: vec3<f32>, tex: texture_2d<f32>) -> vec4<f32> {\n" +
+                "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
+                "    let fern = fern4.xyz / fern4.w;\n" +
+                "    let dir = normalize(fern - camPos);\n" +
+                "    let dim = textureDimensions(tex, 0);\n" +
+                "    let AZ = f32(dim.x);\n" +
+                "    let RAD = f32(dim.y);\n" +
+                "    let PI = 3.14159265358979;\n" +
+                "    var tVor = rMin * 0.8;\n" +
+                "    for (var i: i32 = 0; i < 96; i = i + 1) {\n" +
+                "        let q = (f32(i) + 1.0) / 96.0;\n" +
+                "        let t = rMin * 0.8 + (rMax - rMin * 0.8) * q * q;\n" +
+                "        let pos = camPos + dir * t;\n" +
+                "        if (pos.y > hMax && dir.y >= 0.0) { break; }\n" +
+                "        let rel = pos.xz - anker;\n" +
+                "        let r = length(rel);\n" +
+                "        if (r < rMin) { tVor = t; continue; }\n" +
+                "        if (r > rMax) { break; }\n" +
+                "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
+                "        let ix = i32(clamp(u, 0.0, 0.9999) * AZ) % dim.x;\n" +
+                "        let iy = clamp(i32((r - rMin) / (rMax - rMin) * RAD), 0, dim.y - 1);\n" +
+                "        let h = textureLoad(tex, vec2<i32>(ix, i32(iy)), 0);\n" +
+                "        if (pos.y <= h.r) {\n" +
+                "            var tFein = t;\n" +
+                "            var a = tVor;\n" +
+                "            var b = t;\n" +
+                "            for (var k: i32 = 0; k < 5; k = k + 1) {\n" +
+                "                let m = (a + b) * 0.5;\n" +
+                "                let pm = camPos + dir * m;\n" +
+                "                let relM = pm.xz - anker;\n" +
+                "                let rM = length(relM);\n" +
+                "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
+                "                let ixM = i32(clamp(uM, 0.0, 0.9999) * AZ) % dim.x;\n" +
+                "                let iyM = clamp(i32((rM - rMin) / (rMax - rMin) * RAD), 0, dim.y - 1);\n" +
+                "                let hM = textureLoad(tex, vec2<i32>(ixM, i32(iyM)), 0);\n" +
+                "                if (pm.y <= hM.r) { b = m; tFein = m; } else { a = m; }\n" +
+                "            }\n" +
+                "            let nebel = clamp((tFein - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
+                "            let farbe = mix(h.gba, fogFarbe, nebel);\n" +
+                "            return vec4<f32>(farbe, 1.0);\n" +
+                "        }\n" +
+                "        tVor = t;\n" +
+                "    }\n" +
+                "    return vec4<f32>(0.0, 0.0, 0.0, 0.0);\n" +
+                "}"
+        );
+        const mat = new THREE.MeshBasicNodeMaterial({ transparent: true, depthWrite: false, depthTest: true });
+        mat.fog = false;
+        // Fullscreen-Dreieck in NDC: der Vertex-Knoten setzt CLIP-Koordinaten
+        // direkt (z nahe far), die Kamera-Matrizen werden umgangen.
+        mat.vertexNode = TSL.vec4(TSL.positionGeometry.x, TSL.positionGeometry.y, 0.999999, 1.0);
+        const ndcNode = TSL.vec2(
+            TSL.screenUV.x.mul(2.0).sub(1.0),
+            TSL.float(1.0).sub(TSL.screenUV.y).mul(2.0).sub(1.0)
+        );
+        mat.outputNode = marsch({
+            ndc: ndcNode,
+            camPos: U.camPos,
+            invVP: U.invVP,
+            anker: U.anker,
+            rMin: U.rMin,
+            rMax: U.rMax,
+            wl: U.wl,
+            hMax: U.hMax,
+            fogFarbe: U.fogFarbe,
+            tex: TSL.texture(tex),
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3)
+        );
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 9999; // LETZTER Draw: nur Himmel-Pixel überleben den Depth-Test
+        mesh.matrixAutoUpdate = false;
+        mesh.visible = false; // erst sichtbar, wenn das Feld die Textur gemalt hat
+        mesh.userData.inventar = "feld-pass";
+        st.scene.add(mesh);
+        st.feldPass = { mesh, mat, tex, daten, U, anchorX: null, anchorZ: null, laeufe: 0, flug: false, gen: 0 };
+        return st.feldPass;
+    }
+
+    // Das Feld malt das polare Höhen+Farb-Feld: EIN Compute-Lauf des Zeichners
+    // über az×rad Polar-Punkte um den Ring-Anker, CPU packt Höhe (Wasser flach
+    // auf wl) + die EINE Ring-Rampe in die RGBA-Textur. Re-Anker → neu.
+    _feldPassMal(fp, fr) {
+        if (fp.flug) return;
+        const P = AnazhRealm.FELD_PASS;
+        const F = AnazhRealm.FERN_RING;
+        const rMin = F.schalen[F.schalen.length - 1].aussen;
+        const n = P.az * P.rad;
+        const punkte = new Float32Array(n * 2);
+        for (let iy = 0; iy < P.rad; iy++) {
+            const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
+            for (let ix = 0; ix < P.az; ix++) {
+                const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
+                const k = iy * P.az + ix;
+                punkte[k * 2] = fr.anchorX + Math.cos(a) * r;
+                punkte[k * 2 + 1] = fr.anchorZ + Math.sin(a) * r;
+            }
+        }
+        fp.flug = true;
+        const gen = ++fp.gen;
+        const ankerX = fr.anchorX;
+        const ankerZ = fr.anchorZ;
+        this._feldZeichnerHoehen(punkte, false)
+            .then((werte) => {
+                if (this.state.feldPass !== fp || fp.gen !== gen) return;
+                fp.flug = false;
+                if (!werte) return; // kein Device → der Pass bleibt unsichtbar, die Schalen tragen
+                const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
+                let hMax = -Infinity;
+                for (let k = 0; k < n; k++) {
+                    const law = werte[k];
+                    const wet = law < wl;
+                    const y = wet ? wl : law;
+                    const f = this._fernRingFarbe(law, wl, wet);
+                    fp.daten[k * 4] = y;
+                    fp.daten[k * 4 + 1] = f[0];
+                    fp.daten[k * 4 + 2] = f[1];
+                    fp.daten[k * 4 + 3] = f[2];
+                    if (y > hMax) hMax = y;
+                }
+                fp.tex.needsUpdate = true;
+                fp.U.rMin.value = rMin;
+                fp.U.wl.value = wl;
+                fp.U.hMax.value = hMax + 5;
+                fp.U.anker.value.set(ankerX, ankerZ);
+                fp.anchorX = ankerX;
+                fp.anchorZ = ankerZ;
+                fp.laeufe++;
+                fp.mesh.visible = true;
+            })
+            .catch(() => {
+                if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
+            });
+    }
+
+    // Der Pass-Tick (aus _tickFernRing — der Pass ist Ring-Besitz): Ensure,
+    // Re-Malen bei Anker-Wechsel, die zwei Kamera-Uniforms je Frame.
+    _tickFeldPass(fr) {
+        const st = this.state;
+        let fp = st.feldPass;
+        if (!fp) fp = this._feldPassEnsure(fr);
+        if (!fp) return;
+        if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ) this._feldPassMal(fp, fr);
+        const cam = st.camera;
+        if (cam && fp.mesh.visible) {
+            fp.U.camPos.value.copy(cam.position);
+            fp.U.invVP.value.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse).invert();
+            if (st.scene && st.scene.fog && st.scene.fog.color) fp.U.fogFarbe.value.copy(st.scene.fog.color);
+        }
+    }
+
+    _feldPassDispose() {
+        const fp = this.state.feldPass;
+        if (!fp) return;
+        if (this.state.scene) this.state.scene.remove(fp.mesh);
+        this._queueGeometryDispose(fp.mesh.geometry);
+        if (fp.mat && typeof fp.mat.dispose === "function") fp.mat.dispose();
+        if (fp.tex && typeof fp.tex.dispose === "function") fp.tex.dispose();
+        this.state.feldPass = null;
+    }
+
     // Der Frame-Tick (EIN Aufruf aus `_runFrameScheduler`, kein eigener Timer):
     // Hook-Gate (headless ruht der Ring per Default), Ensure, Re-Zentrieren
     // QUANTISIERT (erst ab `reanchorDist` Spieler-Wanderung — dann rollt der
@@ -37728,6 +37935,9 @@ class AnazhRealm {
         // die CPU-Scheibe darunter verfeinert dieselben Vertices aufs f64-Gesetz.
         if (fr.cursor === 0) this._fernRingGpuMal(fr);
         this._fernRingRefresh(F.refreshVertsProTick);
+        // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
+        // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
+        this._tickFeldPass(fr);
         // DIE KAMERA-KLIPPE (SELBST GESPIELT 16.07., ich-spiele-Sonde): camera.far
         // stand auf 1000 — die 8-km-Schalen wurden GECLIPPT, der Horizont KONNTE
         // nicht existieren. Mit bereitem Ring weitet die Kamera auf Schalen-Rand
@@ -37744,6 +37954,7 @@ class AnazhRealm {
     // Welt-Wechsel/Restore/Hook-aus: Schalen + das eigene Material entsorgen
     // (der Tick baut die neue Welt lazy nach).
     _fernRingDispose() {
+        this._feldPassDispose(); // der Pass ist Ring-Besitz — er fällt mit
         const fr = this.state.fernRing;
         if (!fr) return;
         for (const m of fr.meshes || []) {
@@ -90499,6 +90710,10 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // `reanchorDist` = die Anker-Hysterese (Re-Zentrieren erst ab dieser Wanderung);
 // `anchorQuant` = die Anker-Quantisierung; `refreshVertsProTick` = das Höhen-
 // Refresh-Budget je Frame (BOOT_PHASE3-Muster, 2880 Vertices ≈ 5 Frames).
+// DER FELD-PASS (Stufe 2 vollendet): das polare Höhen+Farb-Feld der Ferne
+// jenseits der letzten Ring-Schale — az×rad Texel bis rMaxM, gemalt vom
+// GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
+AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
 AnazhRealm.FERN_RING = Object.freeze({
     winkel: 96,
     reihen: 10,
