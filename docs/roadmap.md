@@ -46,6 +46,20 @@
    BENANNT-OFFEN aus der Naht (Slide-Pose + Bogen-Auszug-HUD fielen an V18.485):
    Kreatur-Aktions-Feinschliff am Schöpfer-Auge (grasen/ruhen-Winkel).**
 
+0c. **DER SPIEGEL-ZENSUS (17.07., Schöpfer-Wette „es sind noch sämtliche alte Systeme
+   da" — BESTÄTIGT): `docs/zensus-matrix-v18486.md` = die 6-Domänen-Matrix (94 Befunde:
+   26×Prio-1 · 32×Prio-2 · 36×Prio-3 — Stamm-Literale mit Gesetzbuch-Heimat, tote
+   Studio-Exporte, Doppel-Quellen). GEFALLEN am selben Tag (V18.486): das „darf"
+   (Vertrag+Validator für fx.bewegung/VERHALTEN/ARENA/FAHR.lenkung + Schwimm-Paritäts-
+   Wand) · die Realitäts-Eichung (Gehen 1.5/Sprint-Gesetz 4.5/Sprung 0.53 m/g 9.81/
+   Klettern 0.6/Schwimmen 1.0+speedMul 0.85+leanSoul; gesetz-relative Floors; vmax-
+   Anker des Ritts) · der Steigungs-Dreiklang (Hangabtrieb + Gelände-Nick/Wank in Welt
+   UND Probestrecken-Hügel). DER ABBAU LÄUFT IN WELLEN, die Matrix ist die Liste —
+   Prio-1-Kern als Nächstes: SWING_LAWS-Rest→ARENA · Kampf-Stat-Quartett→koerper ·
+   TEMPERAMENT/HUNT→tetrapoda·fx.verhalten · Luftkontrolle/Sprung-Fenster→fx.bewegung ·
+   Waffen-Güte (measure) in den Schadens-Chokepoint (tot-studio!) · lean-Divergenz-
+   Entscheid (0.5/0.22 vs 0.6/0.3).**
+
 0b. **DAS FELD ZEICHNET (16.07., Schöpfer-Vision — normativ `docs/das-feld-zeichnet.md`):**
    Render-Kosten an den SCHIRM binden statt an die Welt; die Welt ist eine Funktion,
    kein Sack. Drei Stufen (Feld URTEILT → Ferne IST Feld → Nähe zieht der Schirm),
