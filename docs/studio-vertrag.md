@@ -142,7 +142,17 @@ Komponenten-SÄTZE, keine Klassen):
   dipMin/Max keRefJ } · bogen { mArrow zugJouleRef auszugSec fovZug fovRuhe
   minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`; Kern kalt →
   `ARENA_FALLBACK` = das byte-alte GEFÜHLLOSE Verhalten (bewusst KEIN
-  Zahlen-Zwilling, anders als SCHWIMM).
+  Zahlen-Zwilling, anders als SCHWIMM). Spiegel-Zensus 17.07. (V18.486+,
+  rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
+  strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
+  `gefuehl` den Stoß + das Tod-Kippen (`stossCap stossProKb stossSkala
+  kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
+  radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
+  `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
+  Schadens-Faktor (Leser `_heldGueteFaktor`, beide Angriffs-Pfade). Diese
+  Geometrie-/Stoß-/Flug-Fallbacks SIND Zahlen-Zwillinge der Kern-Werte
+  (SWING_/BOGEN_LAWS, byte-alt bei kaltem Kern); nur das GEFÜHL
+  (freeze/dip/Auszug/Güte) bleibt bewusst gefühllos im Fallback.
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
   rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)

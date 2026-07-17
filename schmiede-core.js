@@ -2925,16 +2925,109 @@
     // auszug — byte-identisch zur historischen Wirts-Form 34*sqrt(zug*aus)
     // (34^2*0.05/2 = 28.9 J); auszugSec/fovZug/fovRuhe = das Arena-Zieh-
     // Gefuehl (Auszug ueber 0.9 s, Blick verengt 75->54).
+    // SPIEGEL-ZENSUS 17.07. (rein additiv, byte-gleiche Zahlen der bisherigen
+    // Stamm-Literale — SWING_/BOGEN_LAWS schrumpfen dort auf reine Fallbacks):
+    // schwung traegt jetzt auch die HIEB-GEOMETRIE (Phasen-Anteile, Sweep-
+    // Bogen +-arcHalfRad um den Blick, Klingen-Kapselradius, Arm-Anteil +
+    // Deckel der Reichweite, Sweep-Ursprung ueber der Koerper-Position);
+    // gefuehl den STOSS (push = min(stossCap, kb*stossProKb)*stossSkala als
+    // direkter Positions-Stoss) + das TOD-KIPPEN (Kipp-Dauer + Nachklang);
+    // bogen den PFEIL-FLUG (Lebenszeit, Kapselradius, Muendungs-Abstand vor
+    // der Schulter). guete: die GEMESSENE Waffen-Guete (gueteFaktor unten)
+    // mappt den bestandenen Lehren-Anteil linear [faktorLeer..faktorVoll] —
+    // ein Archetyp (alles pass) schlaegt mit faktorVoll = byte-alter Wucht.
     var ARENA = {
-        schwung: { dauerProSqrtI: 0.55, minDauerSec: 0.25, maxDauerSec: 1.8, handDauerSec: 0.4 },
-        gefuehl: { freezeMinSec: 0.04, freezeMaxSec: 0.2, dipMin: 2.0, dipMax: 6.5, keRefJ: 114 },
-        bogen: { mArrow: 0.05, zugJouleRef: 28.9, auszugSec: 0.9, fovZug: 54, fovRuhe: 75, minAuszugFrac: 0.25 },
+        schwung: {
+            dauerProSqrtI: 0.55,
+            minDauerSec: 0.25,
+            maxDauerSec: 1.8,
+            handDauerSec: 0.4,
+            windupFrac: 0.3,
+            strikeFrac: 0.25,
+            arcHalfRad: 1.1,
+            bladeRadiusM: 0.35,
+            reachBaseM: 0.9,
+            reachMaxM: 6,
+            shoulderH: 1.2,
+        },
+        gefuehl: {
+            freezeMinSec: 0.04,
+            freezeMaxSec: 0.2,
+            dipMin: 2.0,
+            dipMax: 6.5,
+            keRefJ: 114,
+            stossCap: 18,
+            stossProKb: 1.4,
+            stossSkala: 0.12,
+            kippDauerSec: 1.0,
+            kippNachklangSec: 0.35,
+        },
+        bogen: {
+            mArrow: 0.05,
+            zugJouleRef: 28.9,
+            auszugSec: 0.9,
+            fovZug: 54,
+            fovRuhe: 75,
+            minAuszugFrac: 0.25,
+            maxFlugSec: 5,
+            radiusM: 0.12,
+            muendungM: 1.2,
+        },
+        guete: { faktorVoll: 1.0, faktorLeer: 0.55 },
     };
+
+    // ── GUETE (rein additiv, Spiegel-Zensus 17.07.) — DIE GEMESSENE WAFFEN-GUETE
+    //    ALS KAMPF-FAKTOR: dieselbe P-Praeparation wie buildInstance (Gattung →
+    //    Task×Werkstoff → snapBases → Tradition → ov-Regler, __-Schluessel sind
+    //    STEUER-Passagiere), dann urteilt evalLehren gegen die Absichts-Baender;
+    //    der bestandene Anteil (pass 1 · warn 0.5 · fail 0; na zaehlt nicht)
+    //    mappt linear in [guete.faktorLeer, guete.faktorVoll]. Bogen → faktorVoll
+    //    (seine Kraft reist schon als zugkraft×auszug in der EINEN Schuss-
+    //    Physik). Der Wirt multipliziert den Faktor auf stats.damage — die
+    //    geschmiedete FORM kaempft: eine Attrappe schlaegt matt. ──
+    function gueteFaktor(rezeptId, ov) {
+        var name = REZEPT_ZU_GATTUNG[rezeptId];
+        if (!name || !GATTUNGEN[name]) return ARENA.guete.faktorVoll;
+        var tp = Object.assign({ flat: 0.42, _kBase: 0 }, GATTUNGEN[name]);
+        var trad =
+            ov && typeof ov.__tradition === "string" && TRADITIONEN[ov.__tradition]
+                ? TRADITIONEN[ov.__tradition]
+                : currentTrad;
+        if (tp.task) {
+            tp.task = Object.assign({}, tp.task);
+            tp.task.werkstoff = tradWerkstoff(trad);
+            applyTask(tp);
+            snapBases(tp);
+        } else snapBases(tp);
+        shapeByTradition(tp, trad);
+        if (ov && typeof ov === "object") {
+            for (var k in ov) {
+                if (!Object.prototype.hasOwnProperty.call(ov, k)) continue;
+                if (k.indexOf("__") === 0) continue;
+                tp[k] = ov[k];
+            }
+        }
+        if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
+        if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
+        var res = evalLehren(tp);
+        var sum = 0;
+        var n = 0;
+        for (var i = 0; i < res.length; i++) {
+            if (res[i].st === "na") continue;
+            n++;
+            if (res[i].st === "pass") sum += 1;
+            else if (res[i].st === "warn") sum += 0.5;
+        }
+        var score = n > 0 ? sum / n : 1;
+        var f = ARENA.guete.faktorLeer + (ARENA.guete.faktorVoll - ARENA.guete.faktorLeer) * score;
+        return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
+    }
 
     root.__schmiedeCore = {
         VERSION: VERSION,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         ARENA: ARENA,
+        gueteFaktor: gueteFaktor,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },

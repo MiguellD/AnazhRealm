@@ -19357,12 +19357,15 @@ class AnazhRealm {
             // DETERMINISMUS-BOGEN P3 — feld-nativer Knockback (kein Ammo-Impuls): ein
             // direkter Positions-Stoß weg vom Angreifer; `_creatureGroundY` erdet die
             // Kreatur im nächsten `updateCreatures`-Frame wieder.
+            // SPIEGEL-ZENSUS — Klemme + Skalen wohnen im schmiede-Gesetzbuch
+            // (ARENA.gefuehl: push = min(stossCap, kb·stossProKb)·stossSkala).
+            const G = AnazhRealm._arenaGesetz().gefuehl;
             const dx = creature.position.x - opts.fromPos.x;
             const dz = creature.position.z - opts.fromPos.z;
             const len = Math.hypot(dx, dz) || 1;
-            const push = Math.min(18, opts.knockback * 1.4);
-            creature.position.x += (dx / len) * push * 0.12;
-            creature.position.z += (dz / len) * push * 0.12;
+            const push = Math.min(G.stossCap, opts.knockback * G.stossProKb);
+            creature.position.x += (dx / len) * push * G.stossSkala;
+            creature.position.z += (dz / len) * push * G.stossSkala;
         }
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
@@ -19468,7 +19471,7 @@ class AnazhRealm {
         // Loot/Schuld/Triumph/Journal sind oben bereits gestempelt, die Anker-
         // Rückkehr-Semantik bleibt unberührt). Ein sterbendes Wesen ist ab jetzt
         // inert (damageCreature-Wand, keine KI, kein Sweep-Ziel).
-        const K = AnazhRealm.SWING_LAWS;
+        const K = AnazhRealm._arenaGesetz().gefuehl; // Kipp-Dauer + Nachklang = ARENA-Daten
         const g = this._fieldGradient(creature.position.x, creature.position.y + 0.5, creature.position.z, {});
         let hx = g.x;
         let hz = g.z;
@@ -73618,7 +73621,9 @@ class AnazhRealm {
         // Geräts (V17.57 W2-B: das eine „in der Hand"-Ding — Werkzeug + Waffe verschmolzen).
         const weaponName = p.equipped && p.equipped.held;
         this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
-        const K = AnazhRealm.SWING_LAWS;
+        // SPIEGEL-ZENSUS — die Phasen-Anteile wohnen im schmiede-Gesetzbuch
+        // (ARENA.schwung, fail-soft byte-alt via ARENA_FALLBACK).
+        const K = AnazhRealm._arenaGesetz().schwung;
         const dauer = this._playerSwingDauer();
         p._swing = {
             t: 0,
@@ -73663,7 +73668,7 @@ class AnazhRealm {
     // längste Part-Spanne = die Klingen-Länge, dieselbe Achsen-Logik wie
     // _inferGripPoint/handAxis) + Arm-Anteil; die leere Faust greift kurz.
     _kampfBladeReach() {
-        const K = AnazhRealm.SWING_LAWS;
+        const K = AnazhRealm._arenaGesetz().schwung;
         const bp = this._heldImplementBlueprint();
         let len = 0.7; // Faust/leer: Armlänge
         if (bp) {
@@ -73687,7 +73692,7 @@ class AnazhRealm {
         const pm = this.state.playerMesh;
         const creatures = this.state.creatures;
         if (!pm || !Array.isArray(creatures) || !creatures.length) return;
-        const K = AnazhRealm.SWING_LAWS;
+        const K = AnazhRealm._arenaGesetz().schwung;
         const s = Math.max(0, Math.min(1, (sw.t - sw.windupSec) / Math.max(1e-6, sw.strikeSec)));
         const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
         const fx = Math.sin(yaw);
@@ -73731,7 +73736,9 @@ class AnazhRealm {
             if (d2 > rr * rr) continue;
             sw.hits.add(c);
             const stats = p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
-            const res = this.damageCreature(c, stats.damage || 5, {
+            // WAFFEN-GÜTE — die GEMESSENE Schmiede-Arbeit (Lehren-Urteil des
+            // Kerns) skaliert den Schaden; kein schmiede-Gerät / Kern kalt → 1.
+            const res = this.damageCreature(c, (stats.damage || 5) * this._heldGueteFaktor(), {
                 source: "player",
                 fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
                 knockback: stats.knockback || 0,
@@ -73800,7 +73807,7 @@ class AnazhRealm {
     // reicht seine ECHTE Flug-Energie als keOpt herein. Kern kalt → Fallback
     // min==max = der byte-alte feste Hit-Stop/Dip.
     _kampfHitJuice(creature, nowSec, keOpt) {
-        const K = AnazhRealm.SWING_LAWS;
+        const K = AnazhRealm._arenaGesetz().schwung;
         const G = AnazhRealm._arenaGesetz().gefuehl;
         let ke = Number.isFinite(keOpt) ? keOpt : 0;
         if (!Number.isFinite(keOpt)) {
@@ -73839,6 +73846,45 @@ class AnazhRealm {
             typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: held }) : null;
         const rec = preset ? f.recipes[preset] : null;
         return rec && rec.fx && rec.fx.task && rec.fx.task.art === "bogen" ? rec : null;
+    }
+
+    // ═══ WAFFEN-GÜTE (Spiegel-Zensus 17.07.) — DIE SCHMIEDE-ARBEIT ERREICHT DEN KAMPF ═══
+    // schmiede-core MISST die Waffe (measure/evalLehren: Balance, Trägheit,
+    // Schneidenfase, Anti-Attrappe …), aber der Welt-Schaden las nur Compound-
+    // Tags — die geschmiedete FORM kämpfte nie. Jetzt liefert der Kern den
+    // EINEN Güte-Faktor (__schmiedeCore.gueteFaktor: bestandener Lehren-Anteil
+    // → linear [ARENA.guete.faktorLeer, faktorVoll]) und BEIDE Spieler-
+    // Angriffs-Pfade (Klingen-Sweep + Pfeil) multiplizieren ihn auf
+    // stats.damage. Fail-soft byte-alt: Kern kalt / kein schmiede-Rezept in
+    // der Hand → 1. Die Prägung (bp.studioOv, beim Guss gefroren) reist als ov
+    // in die Messung — ein verpfuschter Guss schlägt matt. Memo je
+    // preset|ov-Hash (das Urteil ist per Guss gefroren), gedeckelt.
+    _heldGueteFaktor() {
+        const eq = this.state.player && this.state.player.equipped;
+        const held = eq && eq.held;
+        if (!held) return 1;
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || typeof sc.gueteFaktor !== "function") return 1;
+        const f = this._foundry;
+        if (!f || !f.recipes) return 1;
+        const preset =
+            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: held }) : null;
+        if (!preset || !f.recipes[preset]) return 1;
+        const bp = this.state.blueprints && this.state.blueprints[held];
+        const ov = bp && typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
+        const key = preset + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const memo = this._gueteFaktorMemo || (this._gueteFaktorMemo = new Map());
+        let v = memo.get(key);
+        if (v === undefined) {
+            v = 1;
+            try {
+                const g = sc.gueteFaktor(preset, ov || undefined);
+                if (Number.isFinite(g) && g > 0) v = g;
+            } catch (_e) {}
+            if (memo.size > 64) memo.clear(); // gedeckelt (jeder Guss ein Schlüssel)
+            memo.set(key, v);
+        }
+        return v;
     }
 
     // ARENA-GEFÜHL — DER BOGEN-AUSZUG (render-seitig, nie Sim): solange gespannt
@@ -73926,7 +73972,7 @@ class AnazhRealm {
     // EINEN Schuss-Physik der Arena (v0 = √(2·E/mArrow), E = zugJouleRef·zugkraft·
     // auszug — byte-identisch zur historischen Form speedBase·√(zug·aus)) × dem
     // Auszug-Anteil (drawFrac vom Lösen); Richtung = Blick (yaw+pitch, die
-    // _loopCamera-Konvention); Start an der Schulter (SWING_LAWS.shoulderH).
+    // _loopCamera-Konvention); Start an der Schulter (ARENA.schwung.shoulderH).
     // Deterministisch (kein Random); Stamina + Affekt wie der Hieb.
     _beginPlayerShot(rec, drawFrac) {
         const p = this.state.player;
@@ -73940,17 +73986,17 @@ class AnazhRealm {
         this._consumeMouseStamina();
         const heldName = p.equipped && p.equipped.held;
         this._feelAction("attack", heldName ? { blueprint: heldName } : undefined);
-        const B = AnazhRealm.BOGEN_LAWS;
         const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
         const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
         const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
         // DIE EINE SCHUSS-PHYSIK (Arena-Vereinigung): v0 = √(2·E/mArrow) mit
         // E = zugJouleRef·zugkraft·auszug — dieselbe Formel wie der Arena-
-        // Schießstand; mit den Fallback-Zahlen exakt speedBase·√(zug·aus).
+        // Schießstand (die speedBase-Doppelkodierung ist geschlossen: auch die
+        // NaN-Wand leitet aus der EINEN Joule-Eichung ab, kein zweites Literal).
         const AB = AnazhRealm._arenaGesetz().bogen;
         let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
-        if (!Number.isFinite(v0) || v0 <= 0) v0 = B.speedBase; // NaN-Wand
+        if (!Number.isFinite(v0) || v0 <= 0) v0 = Math.sqrt((2 * AB.zugJouleRef) / Math.max(0.001, AB.mArrow)); // NaN-Wand
         const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
         const pitch = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
         const cp = Math.cos(pitch);
@@ -73959,18 +74005,20 @@ class AnazhRealm {
         const dz = Math.cos(yaw) * cp;
         const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
         const list = this.state._pfeile || (this.state._pfeile = []);
-        while (list.length >= B.maxPfeile) this._pfeilDespawn(list.shift()); // bounded
-        const K = AnazhRealm.SWING_LAWS;
+        while (list.length >= AnazhRealm.BOGEN_LAWS.maxPfeile) this._pfeilDespawn(list.shift()); // bounded (Wirts-Deckel)
+        const K = AnazhRealm._arenaGesetz().schwung;
         const pf = {
-            x: pm.position.x + dx * B.muendungM,
-            y: pm.position.y + K.shoulderH + dy * B.muendungM,
-            z: pm.position.z + dz * B.muendungM,
+            x: pm.position.x + dx * AB.muendungM,
+            y: pm.position.y + K.shoulderH + dy * AB.muendungM,
+            z: pm.position.z + dz * AB.muendungM,
             vx: dx * v0,
             vy: dy * v0,
             vz: dz * v0,
             born: now,
             lastT: now,
-            dmg: stats.damage || 5,
+            // WAFFEN-GÜTE — auch der Pfeil trägt das Lehren-Urteil des Kerns
+            // (Bogen → faktorVoll; ein geprägter Pfusch-Bogen bleibt denkbar).
+            dmg: (stats.damage || 5) * this._heldGueteFaktor(),
             kb: stats.knockback || 0,
             mesh: null,
         };
@@ -73988,7 +74036,7 @@ class AnazhRealm {
     _tickPfeile(nowSec) {
         const list = this.state._pfeile;
         if (!list || !list.length) return;
-        const B = AnazhRealm.BOGEN_LAWS;
+        const B = AnazhRealm._arenaGesetz().bogen;
         const g = Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81;
         const creatures = this.state.creatures || [];
         for (let i = list.length - 1; i >= 0; i--) {
@@ -89740,6 +89788,21 @@ AnazhRealm._bewegungsKoeff = function (stat, fb) {
     } catch (_e) {}
     return fb;
 };
+// KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — DER EINE KAMPF-KOEFFIZIENTEN-LESER:
+// die Zahlen der Kampf-Stats (hpMax/damage/knockback/defense) wohnen im
+// koerperstudio-Gesetzbuch (PRESETS.mensch.fx.kampf — reine Daten, Formel je
+// Stat: base + dichte-Tag·dichte + härte-Tag·haerte). Der Stamm liest
+// fail-soft: Kern kalt / Zeile fehlt / nicht-finit → das historische
+// Literal-Trio (fb), byte-gleiche Werte (das _bewegungsKoeff-Muster).
+AnazhRealm._kampfKoeff = function (stat, fb) {
+    try {
+        const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+        const k = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.kampf;
+        const row = k && k[stat];
+        if (row && Number.isFinite(row.base) && Number.isFinite(row.dichte) && Number.isFinite(row.haerte)) return row;
+    } catch (_e) {}
+    return fb;
+};
 // SCHWIMM-HEIMAT (Schöpfer 16.07.: „schwimmanimation lebt noch in anazh, nicht im
 // studio") — DER EINE SCHWIMM-GESETZ-LESER: die Wasser-Bewegung des Avatars wohnt
 // im koerperstudio-Gesetzbuch (PRESETS.mensch.fx.bewegung.schwimmen — Physik,
@@ -89807,8 +89870,18 @@ AnazhRealm._parkourGesetz = function () {
     return null;
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
-    hpMax: (t) => 50 + (t.dichte || 0) * 60 + (t.härte || 0) * 30,
-    damage: (t) => 5 + (t.härte || 0) * 15 + (t.dichte || 0) * 5,
+    // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — hpMax/damage/knockback/defense
+    // lesen ihre Koeffizienten aus dem koerperstudio-Gesetzbuch (fx.kampf via
+    // _kampfKoeff, fail-soft auf die byte-gleichen historischen Literale):
+    // der Lab-Wert IST der Welt-Wert (dasselbe Muster wie speed/jumpPower).
+    hpMax: (t) => {
+        const K = AnazhRealm._kampfKoeff("hpMax", { base: 50, dichte: 60, haerte: 30 });
+        return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
+    },
+    damage: (t) => {
+        const K = AnazhRealm._kampfKoeff("damage", { base: 5, dichte: 5, haerte: 15 });
+        return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
+    },
     // V17.51 Kampf-Bogen Phase A (kampf-plan.md §4-A) — die Kombat-Stats EMERGIEREN
     // aus der Substanz, GENAU im bestehenden Muster (Base + Tag·Gewicht; die Tabelle
     // IST die Regel). knockback ∝ dichte (Masse stößt zurück) + härte (schwach);
@@ -89816,7 +89889,10 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // dichte Keule schlägt langsam-wuchtig, eine leichte harte Klinge schnell. Der
     // GAMEPLAY-Konsum (Knockback-Impuls + Angriffs-Cooldown) folgt in Phase C/D; hier
     // wird das tag-emergente Profil definiert + sichtbar gemacht (renderPlayerStatsUI).
-    knockback: (t) => 1 + (t.dichte || 0) * 9 + (t.härte || 0) * 2,
+    knockback: (t) => {
+        const K = AnazhRealm._kampfKoeff("knockback", { base: 1, dichte: 9, haerte: 2 });
+        return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
+    },
     attackSpeed: (t) => 0.8 + (1 - (t.dichte || 0)) * 0.7 + (t.magieleitung || 0) * 0.3,
     // Schöpfer-Feedback 13.05.2026 (Welle 6.D Polish): „Mensch extrem
     // langsam, evt. Basegeschwindigkeit für alle etwas höher". Base 4→6,
@@ -89853,7 +89929,10 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // Rüstung blockt); ergänzt magicResist/heatResist (elementar) zum vollständigen
     // Defense-Trio. Base-los wie die elementaren Resists (ein weiches Wesen blockt ~0).
     // Konsum als flache Schadens-Reduktion (dealt = max(1, amount − defense)) in Phase C.
-    defense: (t) => (t.dichte || 0) * 8 + (t.härte || 0) * 6,
+    defense: (t) => {
+        const K = AnazhRealm._kampfKoeff("defense", { base: 0, dichte: 8, haerte: 6 });
+        return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
+    },
 });
 
 // SYNERGIE-WELLE — die AURA_TAG_HUE-Map ist mit der Avatar-Aura GEFALLEN
@@ -89903,6 +89982,11 @@ AnazhRealm.COMBAT_REACH_M = 6;
 // das tag-emergente Profil: ihr Körper IST ihre Substanz). Feel-Werte browser-
 // justierbar; die MECHANIK (∝ √I · Sweep-Wände · Hit-Stop ≠ Sim) hält
 // gate:kampf-gefuehl.
+// SPIEGEL-ZENSUS 17.07. — die Tabelle ist REINER FALLBACK: die lebenden Zahlen
+// (Dauer + Hieb-GEOMETRIE: Phasen, Sweep-Bogen, Klingen-Radius, Reichweite,
+// Schulter, Tod-Kippen) wohnen im schmiede-Gesetzbuch (ARENA.schwung/.gefuehl),
+// alle Konsumenten lesen _arenaGesetz(); DIESE Literale speisen nur noch
+// ARENA_FALLBACK (Kern kalt → byte-alt).
 AnazhRealm.SWING_LAWS = Object.freeze({
     dauerProSqrtI: 0.55, // s pro √(Masse·m²) — die Proportionalitäts-Konstante
     minDauerSec: 0.25, // Klemme: auch ein Federmesser braucht einen Schwung
@@ -89914,7 +89998,7 @@ AnazhRealm.SWING_LAWS = Object.freeze({
     arcHalfRad: 1.1, // der Hieb fegt ±63° um die Blickrichtung (nie hinter den Rücken)
     bladeRadiusM: 0.35, // Kapsel-Radius der Klinge
     reachBaseM: 0.9, // Arm-Anteil der Reichweite (Schulter → Hand)
-    reachMaxM: 6, // == COMBAT_REACH_M — die bestehende Kampf-Reichweite deckelt
+    reachMaxM: AnazhRealm.COMBAT_REACH_M, // EINE Sechs: die Kampf-Reichweite deckelt (Zensus: Leserin statt Zwilling)
     shoulderH: 1.2, // Sweep-Ursprung über der Spieler-Körper-Position (m)
     hitStopSec: 0.08, // 60–100 ms: NUR der Anzeige-/Anim-Layer pausiert, nie die Sim
     hitDipImpact: 4.5, // m/s-Äquivalent in den bestehenden Kamera-Dip (LAND_DIP_*)
@@ -89926,15 +90010,19 @@ AnazhRealm.SWING_LAWS = Object.freeze({
 // Der Bogen ist das erste Fern-Gerät: wield (klinge_<bogen-rezept>) → Klick =
 // EIN Pfeil in der EINEN Feld-Physik (state.gravity — kein Ammo-Body, kein
 // zweiter Physik-Pfad; nichts persistiert). Die KRAFT ist Studio-Wahrheit:
-// v0 = speedBase · √(zugkraft·auszug) aus fx.task des schmiede-Rezepts
-// (Langbogen ≈ 1.00×, Kriegsbogen 1.18×, Recurve 0.82×, Reiterbogen 0.58×);
+// v0 = √(2·E/mArrow) mit E = zugJouleRef·zugkraft·auszug aus fx.task des
+// schmiede-Rezepts (ARENA.bogen — die historische Doppelkodierung
+// speedBase 34 ↔ zugJouleRef 28.9 J = 34²·0.05/2 ist GESCHLOSSEN: nur noch
+// die Joule-Form existiert, die NaN-Wand leitet aus ihr ab);
 // die DAUER (Spann-Cooldown) ist die EINE Schwung-Dauer-Quelle
 // (_swingDauerFuerBlueprint ∝ √I, Ω-Φ4 — ein schwerer Bogen spannt träger).
 // Treffer-Urteil über den EINEN Sweep-Kern (_segSegDistSq, dieselbe Kreatur-
 // Kapsel wie der Klingen-Sweep), Schaden über damageCreature (stats.damage —
 // die Bogen-Tags falten via HELD_STAT_WEIGHT). Feel-Werte browser-justierbar.
+// SPIEGEL-ZENSUS 17.07. — die Flug-Zahlen (maxFlugSec/radiusM/muendungM) sind
+// REINER FALLBACK (die lebenden wohnen in ARENA.bogen); maxPfeile bleibt
+// ehrlich Wirts-Infrastruktur (Perf-Deckel, kein Gefühls-Gesetz).
 AnazhRealm.BOGEN_LAWS = Object.freeze({
-    speedBase: 34, // m/s Pfeil-Basistempo (× √(zugkraft·auszug) des Rezepts)
     maxFlugSec: 5, // Lebenszeit — danach fällt der Pfeil aus der Welt
     radiusM: 0.12, // Pfeil-Kapselradius (aufs Kreatur-Kapsel-Urteil addiert)
     maxPfeile: 16, // Deckel lebender Pfeile (bounded by construction)
@@ -89954,6 +90042,15 @@ AnazhRealm.ARENA_FALLBACK = Object.freeze({
         minDauerSec: AnazhRealm.SWING_LAWS.minDauerSec,
         maxDauerSec: AnazhRealm.SWING_LAWS.maxDauerSec,
         handDauerSec: AnazhRealm.SWING_LAWS.handDauerSec,
+        // SPIEGEL-ZENSUS 17.07. — die Hieb-GEOMETRIE reist mit (byte-gleiche
+        // Fallback-Zahlen aus DENSELBEN SWING_LAWS-Literalen, kein Zwilling).
+        windupFrac: AnazhRealm.SWING_LAWS.windupFrac,
+        strikeFrac: AnazhRealm.SWING_LAWS.strikeFrac,
+        arcHalfRad: AnazhRealm.SWING_LAWS.arcHalfRad,
+        bladeRadiusM: AnazhRealm.SWING_LAWS.bladeRadiusM,
+        reachBaseM: AnazhRealm.SWING_LAWS.reachBaseM,
+        reachMaxM: AnazhRealm.SWING_LAWS.reachMaxM,
+        shoulderH: AnazhRealm.SWING_LAWS.shoulderH,
     }),
     gefuehl: Object.freeze({
         freezeMinSec: AnazhRealm.SWING_LAWS.hitStopSec,
@@ -89961,22 +90058,50 @@ AnazhRealm.ARENA_FALLBACK = Object.freeze({
         dipMin: AnazhRealm.SWING_LAWS.hitDipImpact,
         dipMax: AnazhRealm.SWING_LAWS.hitDipImpact,
         keRefJ: 114,
+        // SPIEGEL-ZENSUS 17.07. — Stoß-Klemme/-Skalen + Tod-Kippen reisen mit
+        // (byte-gleiche historische Literale: push = min(18, kb·1.4)·0.12).
+        stossCap: 18,
+        stossProKb: 1.4,
+        stossSkala: 0.12,
+        kippDauerSec: AnazhRealm.SWING_LAWS.kippDauerSec,
+        kippNachklangSec: AnazhRealm.SWING_LAWS.kippNachklangSec,
     }),
     bogen: Object.freeze({
         mArrow: 0.05,
-        zugJouleRef: (AnazhRealm.BOGEN_LAWS.speedBase * AnazhRealm.BOGEN_LAWS.speedBase * 0.05) / 2,
+        // Die EINE Joule-Form (34²·0.05/2 — die speedBase-Doppelkodierung ist
+        // geschlossen, nur die Energie-Eichung existiert noch als Zahl).
+        zugJouleRef: 28.9,
         auszugSec: 0, // 0 = kein Auszug: der Klick schießt sofort voll (byte-alt)
         fovZug: 75,
         fovRuhe: 75,
         minAuszugFrac: 1,
+        // SPIEGEL-ZENSUS 17.07. — die Pfeil-Flug-Zahlen reisen mit (byte-
+        // gleiche Fallback-Zahlen aus DENSELBEN BOGEN_LAWS-Literalen).
+        maxFlugSec: AnazhRealm.BOGEN_LAWS.maxFlugSec,
+        radiusM: AnazhRealm.BOGEN_LAWS.radiusM,
+        muendungM: AnazhRealm.BOGEN_LAWS.muendungM,
     }),
+    // Waffen-Güte: Kern kalt → kein Lehren-Urteil möglich → Faktor 1 (byte-alt).
+    guete: Object.freeze({ faktorVoll: 1, faktorLeer: 1 }),
 });
 AnazhRealm._arenaGesetz = function () {
     if (AnazhRealm._arenaGesetzMemo) return AnazhRealm._arenaGesetzMemo;
     try {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         const a = sc && sc.ARENA;
-        if (a && a.schwung && a.gefuehl && a.bogen && Number.isFinite(a.schwung.dauerProSqrtI)) {
+        // Die Gültigkeits-Wand deckt je Block EIN Zensus-Feld mit: ein ALTER
+        // Kern ohne die gereisten Zeilen fällt GANZ auf byte-alt zurück
+        // (fail-soft, nie ein Misch-Gesetz aus halb Kern / halb undefined).
+        if (
+            a &&
+            a.schwung &&
+            a.gefuehl &&
+            a.bogen &&
+            Number.isFinite(a.schwung.dauerProSqrtI) &&
+            Number.isFinite(a.schwung.windupFrac) &&
+            Number.isFinite(a.gefuehl.stossCap) &&
+            Number.isFinite(a.bogen.muendungM)
+        ) {
             AnazhRealm._arenaGesetzMemo = a;
             return a;
         }

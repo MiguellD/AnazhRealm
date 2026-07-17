@@ -487,6 +487,20 @@
                             },
                         },
                     },
+                    // KAMPF-QUARTETT (Spiegel-Zensus 17.07., rein additive DATEN-
+                    // Zeile — Praezedenz: die Bewegungs-Koeffizienten oben): DIE
+                    // KAMPF-STAT-KOEFFIZIENTEN des Koerpers als Gesetzbuch-Daten
+                    // (byte-gleiche Zahlen des historischen Host-Satzes; Formel je
+                    // Stat: base + dichte-Tag*dichte + haerte-Tag*haerte — Masse
+                    // traegt HP/Stoss/Panzer, Haerte traegt Schaden/Panzer). Der
+                    // Wirt (STAT_FROM_TAGS via _kampfKoeff) liest fail-soft:
+                    // Kern kalt / Zeile fehlt -> seine byte-gleichen Literale.
+                    kampf: {
+                        hpMax: { base: 50, dichte: 60, haerte: 30 },
+                        damage: { base: 5, dichte: 5, haerte: 15 },
+                        knockback: { base: 1, dichte: 9, haerte: 2 },
+                        defense: { base: 0, dichte: 8, haerte: 6 },
+                    },
                 },
             },
         };

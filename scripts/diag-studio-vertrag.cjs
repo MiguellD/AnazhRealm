@@ -232,15 +232,24 @@ function validateManifest(m) {
     }
     if (m.arena) {
         const a = m.arena;
+        // SPIEGEL-ZENSUS 17.07. — die gereisten Zensus-Zeilen sind Vertrag:
+        // je Block deckt EIN Wander-Feld mit (windupFrac = Hieb-Geometrie,
+        // stossCap = Knockback-Wucht, muendungM = Pfeil-Flug — dieselben
+        // Felder, die die _arenaGesetz-Gültigkeits-Wand des Wirts prüft).
         if (
             !a.schwung ||
             !Number.isFinite(a.schwung.dauerProSqrtI) ||
+            !Number.isFinite(a.schwung.windupFrac) ||
             !a.gefuehl ||
             !Number.isFinite(a.gefuehl.keRefJ) ||
+            !Number.isFinite(a.gefuehl.stossCap) ||
             !a.bogen ||
-            !Number.isFinite(a.bogen.mArrow)
+            !Number.isFinite(a.bogen.mArrow) ||
+            !Number.isFinite(a.bogen.muendungM)
         )
-            v.push("§B6+ ARENA unvollständig (schwung.dauerProSqrtI / gefuehl.keRefJ / bogen.mArrow)");
+            v.push(
+                "§B6+ ARENA unvollständig (schwung.dauerProSqrtI/windupFrac · gefuehl.keRefJ/stossCap · bogen.mArrow/muendungM)"
+            );
     }
     if (m.fahr) {
         const L = m.fahr.lenkung;
