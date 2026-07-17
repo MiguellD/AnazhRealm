@@ -68,7 +68,7 @@
     // (_animateTierBaum). must-ignore: fremde Leser ueberlesen das Feld.
     var VERHALTEN = {
         aktionen: {
-            playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: -0.35, headX: 0.18, tailAmp: 0.5, tailRate: 6 }, tempo: 0 },
+            playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: 0.35, headX: 0.3, tailAmp: 0.5, tailRate: 6 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: Verbeugung senkt die FRONT (bodyX war -0.35 = Heck im Boden)
             bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: 3.2, tempo: 1.3 },
             spin: { dauer: 1.1, profil: { freq: 4.0, stride: 0.06 }, dreh: 6.283, tempo: 0.2 },
             stalk: { dauer: 2.6, profil: { freq: 0.7, stride: 0.014, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
@@ -78,8 +78,8 @@
             snap: { dauer: 0.5, profil: { headX: 0.22, freq: 1.5 } },
             shake: { dauer: 0.8, profil: { freq: 0.2, stride: 0 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
             yawn: { dauer: 1.3, profil: { headX: -0.3, freq: 0.05, stride: 0 }, tempo: 0 },
-            grasen: { dauer: 6.0, profil: { headX: 0.4, freq: 0.12, stride: 0.008, tailAmp: 0.18, tailRate: 1.2 }, tempo: 0.15 },
-            ruhen: { dauer: 16, profil: { freq: 0.04, stride: 0, bodyX: -0.08, headX: 0.12, tailAmp: 0.03, tailRate: 0.3 }, tempo: 0 },
+            grasen: { dauer: 6.0, profil: { headX: 0.95, freq: 0.12, stride: 0.008, tailAmp: 0.18, tailRate: 1.2 }, tempo: 0.15 }, // SCHAU-BEFUND 17.07.: 0.4 = Maul 23 Grad ueber dem Boden; 0.95 senkt die Nase ins Gras
+            ruhen: { dauer: 16, profil: { freq: 0.04, stride: 0, bodyX: 0.05, headX: 0.2, tailAmp: 0.03, tailRate: 0.3 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: -0.08 hob die Brust; Ruhe senkt Rumpf+Kopf leicht
         },
         stimmung: {
             joy: { aktionen: ["playbow", "bound", "spin"], alle: [4, 9] },
