@@ -1,6 +1,8 @@
 // diag-hitch-telemetrie.cjs — DIE HITCH-LINSE (das-feld-zeichnet §5.1): beweist
 // KONSUM der vier neuen Flugschreiber-Zähler (LongTasks · GC/Heap-Delta ·
-// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5). Ein ECHTER
+// Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5). Band 7
+// (V18.485): der PIPELINE-WARM-OFEN münzt Konsum-Familien am Gruppen-
+// Chokepoint und die Wärm-Maschine frisst sie (force-Pump, Queue → leer). Ein ECHTER
 // WebGPU-Lauf (swiftshader-Vulkan, wie diag-blick.cjs — KEIN Null-Renderer):
 // der Boot SELBST ist der Konsum-Beweis (Warm-Compile erzeugt Pipelines,
 // Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader erzeugt LongTasks).
@@ -55,6 +57,9 @@ function pruefeTraceFelder(trace) {
     const pp = trace.steadyState && trace.steadyState.pipelines;
     if (!pp || typeof pp.total !== "number" || typeof pp.neuProS !== "number")
         maengel.push("steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch");
+    // V18.485 — der Warm-Ofen reist im selben Pipeline-Block (Familien/gewärmt/offen).
+    if (!pp || typeof pp.ofenFamilien !== "number" || typeof pp.ofenGewaermt !== "number")
+        maengel.push("steadyState.pipelines {ofenFamilien,ofenGewaermt} fehlt oder ist nicht numerisch");
     if (!trace.steadyState || typeof trace.steadyState.uploadKBProS !== "number")
         maengel.push("steadyState.uploadKBProS fehlt oder ist nicht numerisch");
     return maengel;
@@ -191,6 +196,29 @@ function pruefeTraceFelder(trace) {
             upBytes: fr.upBytes,
             uploadBytesEwma: sns.uploadBytesEwma,
         };
+        // (4b) V18.485 — DER PIPELINE-WARM-OFEN: der Boot münzt Konsum-Familien
+        // (InstancedMesh/BatchedMesh am Gruppen-Chokepoint); die Wärm-Maschine wird
+        // hier DETERMINISTISCH leergepumpt (force-Seam — das Budget-Tor gehört dem
+        // Spiel, die Linse prüft die Maschine) und muss danach leer sein.
+        const ofenVor = {
+            familien: r._pipeOfenDone ? r._pipeOfenDone.size : 0,
+            offen: r._pipeOfenQueue ? r._pipeOfenQueue.length : 0,
+            gewaermt: r._pipeOfenGewaermt || 0,
+        };
+        const pumpMax = Math.min(ofenVor.offen + 4, 256);
+        for (let i = 0; i < pumpMax && r._pipeOfenQueue && r._pipeOfenQueue.length; i++) {
+            try {
+                r._pipeOfenTick(true);
+            } catch (_e) {}
+            await sleep(15);
+        }
+        res.ofen = {
+            familien: r._pipeOfenDone ? r._pipeOfenDone.size : 0,
+            offenVor: ofenVor.offen,
+            offenNach: r._pipeOfenQueue ? r._pipeOfenQueue.length : 0,
+            gewaermt: r._pipeOfenGewaermt || 0,
+            tickDa: typeof r._pipeOfenTick === "function",
+        };
         // (5) Trace direkt bauen (EINE Quelle — kein Warten auf den 4-s-Save).
         let trace = null;
         try {
@@ -297,6 +325,16 @@ function pruefeTraceFelder(trace) {
                   out.trace.steadyPipelines
               )} · uploadKBProS=${out.trace.steadyUploadKBProS}`
             : traceMaengel.join(" · ") + (out.traceWurf ? ` · Wurf: ${out.traceWurf}` : "")
+    );
+
+    // Band 7 — V18.485 DER PIPELINE-WARM-OFEN: der Boot münzt Familien (Konsum-
+    // Archetypen entstehen beim Streamen), die Wärm-Maschine wärmt sie und die
+    // Queue ist nach dem Pump LEER (die Maschine frisst, was gemünzt wurde).
+    const of = out.ofen || {};
+    band(
+        of.tickDa === true && of.familien > 0 && of.gewaermt > 0 && of.offenNach === 0,
+        "PIPELINE-WARM-OFEN (Konsum)",
+        `Familien=${of.familien} · gewärmt=${of.gewaermt} · Queue vor Pump=${of.offenVor} · nach Pump=${of.offenNach}`
     );
 
     // Band 6 — kein pageerror.

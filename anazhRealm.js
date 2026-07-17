@@ -15364,6 +15364,11 @@ class AnazhRealm {
                       pipelines: {
                           total: Math.round(s.pipesTotal || 0),
                           neuProS: +(+(s.pipesNeuProS || 0)).toFixed(2),
+                          // V18.485 — der Warm-Ofen-Stand (Familien gemünzt/gewärmt/
+                          // wartend): beweist KONSUM der Vorwärm-Maschine im Trace.
+                          ofenFamilien: this._pipeOfenDone ? this._pipeOfenDone.size : 0,
+                          ofenGewaermt: this._pipeOfenGewaermt || 0,
+                          ofenOffen: this._pipeOfenQueue ? this._pipeOfenQueue.length : 0,
                       },
                       uploadKBProS: +(
                           ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
@@ -62748,6 +62753,53 @@ class AnazhRealm {
         }
     }
 
+    // V18.485 — DER PIPELINE-WARM-OFEN (Hitch-Telemetrie maß ~15.8 NEUE Pipeline-
+    // Kompilate/s WÄHREND des Spielens; Lehre 14: schwere deterministische Arbeit
+    // nie synchron auf dem Interaktions-Pfad). Die V18.367-Klasse hatte ein LOCH:
+    // `_foundryBuildGroup` wärmte das Material als PLAIN-Gruppe, konsumiert wird es
+    // aber als InstancedMesh(+Fassade+instanceColor) bzw. BatchedMesh — deren
+    // Pipeline-Cache-Keys (Shader-Code × Render-State × Attribut-Layout) sind
+    // ANDERE Einträge → der erste sichtbare Frame kompilierte trotzdem synchron.
+    // Der Ofen merkt sich am GRUPPEN-MÜNZ-CHOKEPOINT (die einzigen zwei Orte, an
+    // denen Konsum-Archetypen entstehen) jede NEUE Familie (Material × Archetyp,
+    // dedupliziert) und wärmt sie budgetiert im Loop — mit der LEBENDEN Gruppe als
+    // Compile-Wurzel: zum Tick-Zeitpunkt trägt sie bereits Fassade + instanceColor
+    // (die Slot-Stempel liefen synchron nach der Münze) → der Key matcht den
+    // späteren echten Render exakt. Fail-soft per Konstruktion: headless/kein
+    // compileAsync → der EINE Warm-Helfer ist ein No-op, die Queue leert sich
+    // trotzdem; eine nicht-gewärmte Familie verhält sich byte-alt (Sync-Compile).
+    // Instanz-Felder (kein state.X — nicht serialisiert, wie _bootWarmDone).
+    _pipeOfenMerke(archetyp, mat, mesh) {
+        if (!mat || !mesh) return;
+        if (!this._pipeOfenDone) {
+            this._pipeOfenDone = new Set();
+            this._pipeOfenQueue = [];
+        }
+        const key = archetyp + "|" + mat.uuid;
+        if (this._pipeOfenDone.has(key)) return;
+        this._pipeOfenDone.add(key);
+        this._pipeOfenQueue.push({ mesh });
+    }
+    // EIN Posten je Frame, NUR unter Frame-Budget (BOOT_PHASE3-Muster) — die
+    // Familien-Deduplizierung deckelt die Gesamtzahl (kein V18.322-Compile-Flood).
+    // Ein Budget-Stau verzögert nur (Anticipation, nie Korrektheit: eine nicht
+    // gewärmte Familie kompiliert byte-alt synchron beim ersten Draw). `force`
+    // ist der Linsen-Seam (gate:hitch-telemetrie pumpt die Wärm-Maschine
+    // deterministisch, ohne am Budget-Tor zu hängen).
+    _pipeOfenTick(force) {
+        const q = this._pipeOfenQueue;
+        if (!q || !q.length) return;
+        if (!this.state.renderer) return;
+        if (!force && this.state._frameOverBudget) return;
+        const post = q.shift();
+        const mesh = post && post.mesh;
+        if (!mesh || !mesh.geometry || !mesh.material) return;
+        this._pipeOfenGewaermt = (this._pipeOfenGewaermt || 0) + 1;
+        try {
+            this._warmCompilePipeline(mesh, false);
+        } catch (_e) {}
+    }
+
     // V18.214 (DER LEBENDIGE GIGANT, Ω-G2 echte Tube-Geometrie) — baut aus
     // dem Skeleton (Polylinien) EINE bark-BufferGeometry mit Ring-von-6-
     // Vertices pro Polylinien-Punkt, lobed flare am Stamm-Fuß (Plan §3.3),
@@ -64796,6 +64848,9 @@ class AnazhRealm {
                 refCount: 0,
             };
             this.state.archBatches.set(batchKey, batch);
+            // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Batch-Familie
+            // (Material × BatchedMesh, dedupliziert je Familie).
+            this._pipeOfenMerke("b", leaf.mat, mesh);
         }
         let geomId = batch.geomIds.get(leaf.geom);
         if (geomId === undefined) {
@@ -65128,6 +65183,9 @@ class AnazhRealm {
             leaf._srcGroup._liveRefs = (leaf._srcGroup._liveRefs || 0) + 1;
         }
         this.state.archInstanceGroups.set(key, g);
+        // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
+        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie).
+        this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
         return g;
     }
 
@@ -86274,6 +86332,9 @@ class AnazhRealm {
                 // V18.396 — die nahen WebGPU-Pipelines async vorwärmen, BEVOR der Render an ihnen stallt
                 // (der Boot-Shader-Compile-Freeze). Selbst-gedrosselt + endet bei stabilem nahen Ring.
                 this._bootWarmCompileScene();
+                // V18.485 — der Pipeline-Warm-Ofen: neue Konsum-Archetyp-Familien
+                // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
+                this._pipeOfenTick();
                 _pt = performance.now();
                 this._loopShadowUpdate();
                 this._loopRender(currentTime);
