@@ -13936,6 +13936,9 @@ async function checkBandW4LofiPad(ctx) {
         const fK = r._foundry;
         const prevLofi = fK && fK.recipes ? fK.recipes.lofi : undefined;
         if (prevLofi) delete fK.recipes.lofi;
+        // Tests wandern V18.489 (Genre-Engine): kaltes Studio-Preset => byte-alter Host-Pfad.
+        const prevKSP = r._klangStudioPreset;
+        r._klangStudioPreset = () => null;
         // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (byte-alt: A-Moll).
         const deg0 = r._lofiChordFromDegree(0);
         const deg3 = r._lofiChordFromDegree(3);
@@ -13945,6 +13948,7 @@ async function checkBandW4LofiPad(ctx) {
         // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven.
         out.scaleSemitone =
             r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(7) === 12 && r._lofiScaleSemitone(2) === 3;
+        r._klangStudioPreset = prevKSP;
         if (prevLofi) fK.recipes.lofi = prevLofi;
         // W-A7-VERTIEFUNG — mit warmem Buch faltet der EINE Mapper in die Studio-
         // Skala (lofi → Blues [0,3,5,6,7,10], 6 Töne: idx 6 = Oktav-Wurzel +12).
@@ -14119,6 +14123,10 @@ async function checkBandW4LofiPad(ctx) {
             // _lofiWorldField, um die zwei Bias-Kanäle (Emotion 0.8,
             // Welt-Feld 0.4) sauber gegeneinander zu messen — selber
             // RNG-Strom (fixe rngState) → deterministischer Vergleich.
+            // Tests wandern V18.489: die Bias-/Determinismus-Baender messen die
+            // HOST-Markov-Kette (kaltes Studio); bar-Zaehler mit zuruecksetzen.
+            r._klangStudioPreset = () => null;
+            sym.lofi.bar = 0;
             {
                 const brightDeg = AnazhRealm.LOFI_BRIGHT_DEGREES;
                 const origField = r._lofiWorldField;
@@ -14181,6 +14189,8 @@ async function checkBandW4LofiPad(ctx) {
             emo.sorrow = 1;
             const brightSorrow = countBright();
             out.emotionBiasesHarmony = brightJoy > brightSorrow;
+            r._klangStudioPreset = prevKSP;
+            sym.lofi.bar = 0;
             // _lofiTick spielt den ersten Akkord (lastChordAt=
             // -Infinity → sofort fällig) + wählt die nächste Stufe.
             sym.lofi.degree = 0;
@@ -15751,7 +15761,8 @@ async function checkBandWelle6APolish(ctx) {
         // ist). V9.44-f — die Bewegung lebt in _loopPlayerMovement.
         const loopSrc = r._loopPlayerMovement ? window.__codeOf(r._loopPlayerMovement) : "";
         out.movementUsesSlopePenalty = /slopePenalty/.test(loopSrc);
-        out.movementHasSlopeBranch = /onSteepSlope\s*\?\s*0\.2/.test(loopSrc);
+        // Tests wandern V18.489: die Drossel liest das Steilhang-Gesetz (fx.bewegung.hang.malus).
+        out.movementHasSlopeBranch = /onSteepSlope[\s\S]{0,200}?_bewegungsBlock\("hang"/.test(loopSrc);
         out.movementSlideOnSlope = /!\s*this\.state\.onSteepSlope/.test(loopSrc);
 
         return out;
