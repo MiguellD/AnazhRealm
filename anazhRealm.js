@@ -51636,6 +51636,16 @@ class AnazhRealm {
                 if (Number.isFinite(_fp.kAcc)) prof.kAcc = _fp.kAcc;
                 if (Number.isFinite(_fp.kBrake)) prof.kBrake = _fp.kBrake;
                 if (typeof _fp.floats === "boolean") prof.floats = _fp.floats;
+                // ZENSUS 17.07. — DER VMAX-ANKER wird KONSUMIERT (Lehre 5: der
+                // Bewegungs-Tick las ride.vmax, aber das Profil reichte das
+                // exportDrive-Feld nie durch — der Anker war Existenz ohne
+                // Konsum; jetzt fährt ein Studio-Fahrzeug seine Kern-Wahrheit
+                // vmax in m/s). NaN-Wand: nur finite > 0.
+                if (Number.isFinite(_fp.vmax) && _fp.vmax > 0) prof.vmax = _fp.vmax;
+                // ZENSUS 17.07. — die SCHWERPUNKT-HÖHE des Kerns (exportDrive.cgH
+                // aus cgHeightOf: Bodenfreiheit+Gürtel+Aufbau) reist ins Profil;
+                // der Nick-Block liest sie statt der Host-Näherung sitz·0.5.
+                if (Number.isFinite(_fp.cgH) && _fp.cgH > 0) prof.cgH = _fp.cgH;
                 // PHYSIK-NAHT (N6.5a) — der benannte spring-ANSCHLUSS wird KONSUMIERT:
                 // Federrate/Daempfung des Studio-Rezepts (exportDrive.spring {k,c} —
                 // DIESELBEN Zahlen, mit denen die Probefahrt federt) reisen ins Profil;
@@ -51948,7 +51958,8 @@ class AnazhRealm {
         // PHYSIK-NAHT (N6.5a, Nick) — das NICK-VERHALTEN aus dem STUDIO-GESETZ
         // (wheelClearance-Form: pitch = a·(cgH/L)·pitchGain/k): Laengs-Beschleunigung
         // aus der Reiter-Fahrt (Bremsen → Bug taucht, Anfahren → Squat), cgH/L aus
-        // der EIGENEN Werk-Geometrie (Sitz/Halbspanne), pitchGain aus dem Kern
+        // dem KERN (Zensus 17.07.: exportDrive.cgH + lenkung.radstand; fail-soft
+        // die alte Sitz-/Halbspannen-Naeherung), pitchGain aus dem Kern
         // (fail-soft 2.6 — der U6-Wert), k = die Rezept-Federrate. Geglaettet mit
         // der Feder-Rate √k; NaN-Wand + Klemme ±0.12 rad. NUR bei Feder-Rezept
         // (Studio-Fahrzeug) — sonst bleibt _ridePitch 0 (Matrix byte-alt). Render-
@@ -51959,12 +51970,32 @@ class AnazhRealm {
                 const prevSp = Number.isFinite(entry._rideSp) ? entry._rideSp : sp;
                 let aLong = (sp - prevSp) / tick;
                 if (!Number.isFinite(aLong)) aLong = 0;
-                aLong = Math.max(-14, Math.min(14, aLong));
-                const cgH = Math.max(0.3, (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : 1) * 0.5);
-                const L = Math.max(1.6, 2 * (Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1));
+                // ZENSUS 17.07. — die Längs-Beschl.-Klemme liest die EINZIGE
+                // Kern-Quelle A_PITCH_MAX (g-equiv., dieselbe Klammer wie
+                // updateVehicle + Radkasten-Hüllkurve; die Stamm-±14 fällt,
+                // Fallback = der Kern-Wert 13 — Zwilling der EINEN Quelle).
+                const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+                const aMax = vc && Number.isFinite(vc.A_PITCH_MAX) ? vc.A_PITCH_MAX : 13;
+                aLong = Math.max(-aMax, Math.min(aMax, aLong));
+                // ZENSUS 17.07. — cgH/L aus der KERN-Geometrie, wo sie reist
+                // (exportDrive.cgH [cgHeightOf: Bodenfreiheit+Gürtel+Aufbau] +
+                // lenkung.radstand); fail-soft bleibt die alte Host-Näherung
+                // (Sitz-Hälfte / Halbspannen-Doppel), die Klemmen bleiben die
+                // Robustheits-Wand am Chokepoint.
+                const pCgH = rideProf && Number.isFinite(rideProf.cgH) && rideProf.cgH > 0 ? rideProf.cgH : null;
+                const cgH = Math.max(
+                    0.3,
+                    pCgH !== null ? pCgH : (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : 1) * 0.5
+                );
+                const radst = rideProf && rideProf.lenkung ? rideProf.lenkung.radstand : null;
+                const L = Math.max(
+                    1.6,
+                    Number.isFinite(radst) && radst > 1
+                        ? radst
+                        : 2 * (Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1)
+                );
                 const cgHL = Math.max(0.08, Math.min(0.5, cgH / L));
-                const vcF =
-                    typeof globalThis !== "undefined" && globalThis.__vehicleCore && globalThis.__vehicleCore.FAHR;
+                const vcF = vc && vc.FAHR;
                 const pGain = vcF && Number.isFinite(vcF.pitchGain) ? vcF.pitchGain : 2.6;
                 let target = (-aLong * cgHL * pGain) / sprN.k;
                 if (!Number.isFinite(target)) target = 0;

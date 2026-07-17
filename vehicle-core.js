@@ -2130,9 +2130,18 @@
             topSpeedMul: ph.vmax / VMAX_REF,
             kAcc: ph.aEngine / ph.vmax,
             kBrake: (ph.aEngine + FAHR.rollDecel) / ph.vmax,
+            // mass: BEWUSSTER must-ignore-Reisender (Zensus 17.07.): der Wirt
+            // traegt seine eigene Groessen-Achse (_compoundSizeFactor) — die
+            // Kern-Masse reist als Mess-Flaeche mit, wird aber nicht gefahren.
             mass: ph.mass,
             vmax: ph.vmax,
             spring: { k: P.springRate, c: P.damping },
+            // SPIEGEL-ZENSUS 17.07. (rein additiv) — die SCHWERPUNKT-HOEHE aus
+            // der EINEN Form-Formel (cgHeightOf: Bodenfreiheit + Guertel +
+            // Aufbau): der Wirt federt seinen Beschleunigungs-Nick mit cgH/L
+            // aus KERN-Geometrie (radstand reist in lenkung) statt mit der
+            // Host-Naeherung sitzHeight*0.5 / 2*halfLen (die faellt fail-soft).
+            cgH: cgHeightOf(P),
             // FAHR-GEFUEHL — die Lenk-/Drift-Gesetze reisen mit (EINE Quelle:
             // FAHR; radstand fuer die Gier-Rate v·tan(δ)/L des Wirts).
             lenkung: {

@@ -127,10 +127,16 @@ Komponenten-SÄTZE, keine Klassen):
 - Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
   Parallel-System): `vehicle.fahrprofil` — GEBAUT N6 (09.07.): NICHT die rohen
   Regler, sondern die ABGELEITETEN drive-Skalare des Wörterbuchs v1
-  (`topSpeedMul/kAcc/kBrake/mass/vmax/spring`), von der Brücke beim Buch-Bau
+  (`topSpeedMul/kAcc/kBrake/mass/vmax/spring`, Spiegel-Zensus 17.07. + `cgH`
+  [Schwerpunkt-Höhe aus `cgHeightOf`]), von der Brücke beim Buch-Bau
   aus der EINEN Kern-Formel `exportDrive(P)` (carPhys + FAHR + Federrate)
   gerechnet → `_vehicleProfile` liest DATEN statt zu raten (Abgeleitetes reist
-  hier bewusst als Export der SELBEN Formel, nicht als zweite Wahrheit — M3)
+  hier bewusst als Export der SELBEN Formel, nicht als zweite Wahrheit — M3).
+  Konsum-Stand (Zensus 17.07.): `vmax` = der Ritt-Tempo-Anker (Passthrough
+  vollendet — vorher Existenz ohne Konsum), `cgH`+`lenkung.radstand` = der
+  Beschleunigungs-Nick (die Host-Näherung Sitz/Halbspanne ist Fallback);
+  `mass` bleibt BEWUSSTER must-ignore-Reisender (die Welt fährt ihre eigene
+  Größen-Achse `_compoundSizeFactor`)
   · `gate.tueren` · `creature.gang` (Phase 5).
 - **`FAHR.lenkung` (V18.483, vehicle-core → exportDrive → fahrprofil.lenkung):**
   die Lenk-Gesetze des fahrzeug-eigenen Ritts als Daten
