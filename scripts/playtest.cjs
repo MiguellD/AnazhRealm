@@ -6949,8 +6949,7 @@ async function checkBandV1774UseByRole(ctx) {
             [...soulSel.options].every((o) => o.value !== "koerper_human") &&
             [...soulSel.options].some(
                 (o) =>
-                    (o.value === "koerper_wolf" || o.value === "bp_koerper_wolf") &&
-                    /^wolf\b/.test(o.textContent || "")
+                    (o.value === "koerper_wolf" || o.value === "bp_koerper_wolf") && /^wolf\b/.test(o.textContent || "")
             );
         const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =
@@ -16398,7 +16397,21 @@ async function checkBandWelle6DSoul(ctx) {
         r.recomputePlayerStats();
         out.stateSpeedMatches = Math.abs(r.state.speed - humanStats.speed) < 0.001;
         out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - humanStats.jumpPower) < 0.001;
-        out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * 2) < 0.001;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
+        // Sprint-Faktor wohnt im koerper-Gesetz (fx.bewegung.sprintMul,
+        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
+        const bewGesetz6d =
+            (globalThis.__koerperCore &&
+                globalThis.__koerperCore.PRESETS &&
+                globalThis.__koerperCore.PRESETS.mensch &&
+                globalThis.__koerperCore.PRESETS.mensch.fx &&
+                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+            null;
+        const sprintMul6d =
+            bewGesetz6d && Number.isFinite(bewGesetz6d.sprintMul) && bewGesetz6d.sprintMul > 0
+                ? bewGesetz6d.sprintMul
+                : 2;
+        out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
         out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
         out.statePlayerHasHpAndStamina =
             typeof r.state.player.hp === "number" &&
@@ -16522,7 +16535,21 @@ async function checkBandWelle6DSoul(ctx) {
         r.dslRun(["player_speed", 20], { source: "test" });
         out.speedAfterDsl = r.state.speed;
         out.sprintAfterDsl = r.state.sprintSpeed;
-        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * 2) < 0.001;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der
+        // Sprint-Faktor kommt aus dem koerper-Gesetz (fx.bewegung.sprintMul,
+        // Fallback 2 = byte-alt bei kaltem Kern), nicht mehr fix ×2.
+        const bewGesetzReflex =
+            (globalThis.__koerperCore &&
+                globalThis.__koerperCore.PRESETS &&
+                globalThis.__koerperCore.PRESETS.mensch &&
+                globalThis.__koerperCore.PRESETS.mensch.fx &&
+                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+            null;
+        const sprintMulReflex =
+            bewGesetzReflex && Number.isFinite(bewGesetzReflex.sprintMul) && bewGesetzReflex.sprintMul > 0
+                ? bewGesetzReflex.sprintMul
+                : 2;
+        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * sprintMulReflex) < 1e-9;
         out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
         // Restore baseline mit explizitem Soul-Reset (frühere Tests
         // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
@@ -16531,16 +16558,22 @@ async function checkBandWelle6DSoul(ctx) {
         r.state.player.deathWoundIntensity = 0;
         r.state.player.equipped = { held: null, armor: null };
         r.recomputePlayerStats();
-        // Höhere Base-Speed (Schöpfer-Wunsch): Mensch sollte ~8-9 sein
         const humanResult = r.computePlayerStats();
         out.humanSpeed = humanResult.stats.speed;
         out.humanTags = JSON.stringify(humanResult.tags);
         out.humanWound = r.state.player.deathWoundIntensity;
         out.humanBoostCount = r.state.player.boosts.length;
         // Mensch ist „balanced" — niedriges magieleitung, hoher dichte
-        // (durch sphere-Kopf-Aktivierung clamped auf 1). Speed-Base 7
-        // gibt Mensch genau 7 (= deutlich höher als vorher 6.1).
-        out.humanSpeedRaised = humanResult.stats.speed >= 7;
+        // (durch sphere-Kopf-Aktivierung clamped auf 1) ⇒ speed ≥ Base.
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
+        // mind. die LEBENDE Gesetz-Base (fx.bewegung.speed.base, Fallback 7
+        // = byte-alt bei kaltem Kern), nicht mehr hart „mind. 7".
+        const speedBaseReflex =
+            bewGesetzReflex && bewGesetzReflex.speed && Number.isFinite(bewGesetzReflex.speed.base)
+                ? bewGesetzReflex.speed.base
+                : 7;
+        out.humanSpeedBase = speedBaseReflex;
+        out.humanSpeedRaised = humanResult.stats.speed >= speedBaseReflex - 1e-9;
 
         // (4) Tod-Wunde persistent + regeneriert
         out.hasWoundIntensity = "deathWoundIntensity" in r.state.player;
@@ -16677,8 +16710,10 @@ async function checkBandWelle6DSoul(ctx) {
             reflexResults.dragonNoInnerFlip
         );
         // Sprint-Bug-Fix: player_speed setzt jetzt sprintSpeed mit
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal
+        // (war „= 2× speed" bzw. „mind. 7"; jetzt sprintMul/speed.base aus dem Gesetz).
         check(
-            "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = 2× speed",
+            "Welle 6.D Polish: player_speed-DSL-Op aktualisiert sprintSpeed = Gesetz-sprintMul × speed",
             reflexResults.sprintFollowsSpeed,
             `speed=${reflexResults.speedAfterDsl} sprint=${reflexResults.sprintAfterDsl}`
         );
@@ -16687,9 +16722,9 @@ async function checkBandWelle6DSoul(ctx) {
             reflexResults.sprintActuallyFaster
         );
         check(
-            "Welle 6.D Polish: Mensch-Speed mind. 7 (Base-Erhöhung, war vorher 6.1)",
+            "Welle 6.D Polish: Mensch-Speed mind. Gesetz-base (fx.bewegung.speed.base)",
             reflexResults.humanSpeedRaised,
-            `speed=${(reflexResults.humanSpeed || 0).toFixed(2)}`
+            `speed=${(reflexResults.humanSpeed || 0).toFixed(2)} base=${(reflexResults.humanSpeedBase || 0).toFixed(2)}`
         );
         // (4) Wunde
         check("Reflex 4: state.player.deathWoundIntensity existiert", reflexResults.hasWoundIntensity);
@@ -17732,7 +17767,8 @@ async function checkBandWelle6DSoul(ctx) {
         // State-Anwendung
         check("Welle 6.D: recomputePlayerStats setzt state.speed", wave6dResults.stateSpeedMatches);
         check("Welle 6.D: recomputePlayerStats setzt state.jumpPower", wave6dResults.stateJumpPowerMatches);
-        check("Welle 6.D: state.sprintSpeed = 2 × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „= 2× speed").
+        check("Welle 6.D: state.sprintSpeed = Gesetz-sprintMul × state.speed", wave6dResults.stateSprintIsDoubleSpeed);
         check("Welle 6.D: state.player.stats wird gecached", wave6dResults.statePlayerStatsCached);
         check(
             "Welle 6.D: state.player.hp + hpMax + stamina + staminaMax existieren (hp=hpMax)",
@@ -36201,7 +36237,12 @@ async function checkBandV18206SpeedTrade(ctx) {
         // (S1) Source: 1/sizeHpMul angewendet auf speed/attackSpeed/jumpPower
         const src = window.__codeOf(r.computePlayerStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: die Größen-Mul wanderte in die EINE Pipeline-Quelle _applySizeMultipliersToStats
         out.hasSizeSpeedMul = /sizeSpeedMul/.test(src);
-        out.appliedToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Stamm-Floor
+        // ist (2/7)·Gesetz-base (floorBase aus _bewegungsKoeff), nicht mehr das Literal 2.
+        out.appliedToSpeed =
+            /stats\.speed\s*=\s*Math\.max\(\s*\(2\s*\/\s*7\)\s*\*\s*floorBase,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(
+                src
+            );
         out.appliedToAttackSpeed =
             /stats\.attackSpeed\s*=\s*Math\.max\(0\.25,\s*stats\.attackSpeed\s*\*\s*sizeSpeedMul/.test(src);
         out.appliedToJumpPower = /stats\.jumpPower\s*=\s*stats\.jumpPower\s*\*\s*sizeSpeedMul/.test(src);
@@ -36264,8 +36305,22 @@ async function checkBandV18206SpeedTrade(ctx) {
                 out.largeJumpLower = true;
             }
 
-            // (S6) Floor-Disziplin: speed >= 2 (nie kaputt durch hohen sizeFactor)
-            out.speedFloorRespected = large.stats.speed >= 2;
+            // (S6) Floor-Disziplin: speed nie kaputt durch hohen sizeFactor.
+            // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
+            // Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; Fallback-
+            // base 7 ⇒ Floor 2 byte-alt bei kaltem Kern), nicht mehr fix 2.
+            const bewGesetzS =
+                (globalThis.__koerperCore &&
+                    globalThis.__koerperCore.PRESETS &&
+                    globalThis.__koerperCore.PRESETS.mensch &&
+                    globalThis.__koerperCore.PRESETS.mensch.fx &&
+                    globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+                null;
+            const speedFloorS =
+                (2 / 7) *
+                (bewGesetzS && bewGesetzS.speed && Number.isFinite(bewGesetzS.speed.base) ? bewGesetzS.speed.base : 7);
+            out.speedFloor = speedFloorS;
+            out.speedFloorRespected = large.stats.speed >= speedFloorS - 1e-9;
             out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
         } finally {
             if (r.state.player) {
@@ -36282,7 +36337,8 @@ async function checkBandV18206SpeedTrade(ctx) {
     });
 
     check("V18.206 (S1a) Source: sizeSpeedMul in computePlayerStats", res.hasSizeSpeedMul === true);
-    check("V18.206 (S1b) speed × sizeSpeedMul angewendet (mit Floor 2)", res.appliedToSpeed === true);
+    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor 2").
+    check("V18.206 (S1b) speed × sizeSpeedMul angewendet (mit Floor (2/7)·Gesetz-base)", res.appliedToSpeed === true);
     check("V18.206 (S1c) attackSpeed × sizeSpeedMul angewendet (mit Floor 0.25)", res.appliedToAttackSpeed === true);
     check("V18.206 (S1d) jumpPower × sizeSpeedMul angewendet", res.appliedToJumpPower === true);
     check(
@@ -36290,8 +36346,9 @@ async function checkBandV18206SpeedTrade(ctx) {
         res.largeSlower === true
     );
     check("V18.206 (S5b) Large hat niedrigeren jumpPower als Small", res.largeJumpLower === true);
+    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor speed ≥ 2").
     check(
-        `V18.206 (S6a) Floor speed ≥ 2 (gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
+        `V18.206 (S6a) Floor speed ≥ (2/7)·Gesetz-base (Floor ${res.speedFloor && res.speedFloor.toFixed(3)}, gemessen large=${res.largeSpeed && res.largeSpeed.toFixed(2)})`,
         res.speedFloorRespected === true
     );
     check(
@@ -36368,7 +36425,12 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const src = window.__codeOf(r.computeCreatureStats) + window.__codeOf(r._applySizeMultipliersToStats); // V18.312/.347: Größen-Mul in der EINEN Pipeline-Quelle
         out.hasSizeMul = /creatureSize/.test(src) && /Math\.sqrt/.test(src);
         out.appliesToHp = /stats\.hpMax\s*=\s*stats\.hpMax\s*\*\s*sizeHpMul/.test(src);
-        out.appliesToSpeed = /stats\.speed\s*=\s*Math\.max\(2,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(src);
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Stamm-Floor
+        // ist (2/7)·Gesetz-base (floorBase aus _bewegungsKoeff), nicht mehr das Literal 2.
+        out.appliesToSpeed =
+            /stats\.speed\s*=\s*Math\.max\(\s*\(2\s*\/\s*7\)\s*\*\s*floorBase,\s*stats\.speed\s*\*\s*sizeSpeedMul/.test(
+                src
+            );
 
         // (C2) Vergleich: kleine Kreatur (sizeFactor < 1) vs große (>1)
         if (!A.CREATURE_SOULS) {
@@ -36413,8 +36475,22 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         out.hpMonotone = hpMonotone;
         out.speedMonotone = speedMonotone;
 
-        // (C4) Floor-Disziplin: speed >= 2 für alle Kreaturen
-        out.allSpeedAtFloor = Object.values(stats).every((s) => s.speed >= 2);
+        // (C4) Floor-Disziplin für alle Kreaturen.
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
+        // Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; Fallback-
+        // base 7 ⇒ Floor 2 byte-alt bei kaltem Kern), nicht mehr fix 2.
+        const bewGesetzC =
+            (globalThis.__koerperCore &&
+                globalThis.__koerperCore.PRESETS &&
+                globalThis.__koerperCore.PRESETS.mensch &&
+                globalThis.__koerperCore.PRESETS.mensch.fx &&
+                globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+            null;
+        const speedBaseC =
+            bewGesetzC && bewGesetzC.speed && Number.isFinite(bewGesetzC.speed.base) ? bewGesetzC.speed.base : 7;
+        const speedFloorC = (2 / 7) * speedBaseC;
+        out.speedFloor = speedFloorC;
+        out.allSpeedAtFloor = Object.values(stats).every((s) => s.speed >= speedFloorC - 1e-9);
 
         // (C5) Es gibt Variation (nicht alle Kreaturen identisch)
         const hpValues = Object.values(stats).map((s) => s.hpMax);
@@ -36422,23 +36498,36 @@ async function checkBandV18208CreatureSizeSymmetry(ctx) {
         const hpRange = Math.max(...hpValues) - Math.min(...hpValues);
         const speedRange = Math.max(...speedValues) - Math.min(...speedValues);
         out.hpVariesAmongCreatures = hpRange > 1;
-        out.speedVariesAmongCreatures = speedRange > 0.5;
+        // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: die
+        // Mindest-Spanne 0.5 war auf Base 7 geeicht — sie skaliert mit der
+        // LEBENDEN Gesetz-Base (0.5·base/7; byte-alt bei kaltem Kern). Unter
+        // dem alten Fix-Floor 2 klemmte ohnehin ALLES auf denselben Wert.
+        out.speedRange = speedRange;
+        out.speedVariesAmongCreatures = speedRange > 0.5 * (speedBaseC / 7);
 
         return out;
     });
 
     check("V18.208 (C1a) Source: creatureSize + Math.sqrt in computeCreatureStats", res.hasSizeMul === true);
     check("V18.208 (C1b) hpMax × sizeHpMul angewendet", res.appliesToHp === true);
-    check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor 2) angewendet", res.appliesToSpeed === true);
+    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor 2").
+    check("V18.208 (C1c) speed × sizeSpeedMul (mit Floor (2/7)·Gesetz-base) angewendet", res.appliesToSpeed === true);
     check(
         `V18.208 (C2) AnazhRealm.CREATURE_SOULS existiert (${res.soulCount} Seelen)`,
         res.creatureSoulsExists === true
     );
     check(`V18.208 (C3a) HP-Monotonie über Kreatur-Spektrum (größer = mehr HP)`, res.hpMonotone === true);
     check(`V18.208 (C3b) Speed-Monotonie (größer = langsamer)`, res.speedMonotone === true);
-    check("V18.208 (C4) Floor speed ≥ 2 für alle Kreatur-Seelen", res.allSpeedAtFloor === true);
+    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal (war „Floor ≥ 2" / Spanne 0.5).
+    check(
+        `V18.208 (C4) Floor speed ≥ (2/7)·Gesetz-base (${res.speedFloor && res.speedFloor.toFixed(3)}) für alle Kreatur-Seelen`,
+        res.allSpeedAtFloor === true
+    );
     check(`V18.208 (C5a) HP variiert über Kreaturen (kein einheitlicher Wert)`, res.hpVariesAmongCreatures === true);
-    check(`V18.208 (C5b) Speed variiert über Kreaturen`, res.speedVariesAmongCreatures === true);
+    check(
+        `V18.208 (C5b) Speed variiert über Kreaturen (Spanne ${res.speedRange && res.speedRange.toFixed(3)} > 0.5·base/7)`,
+        res.speedVariesAmongCreatures === true
+    );
 }
 
 // V18.209 — KONSOLIDIERUNGS-WELLE (Schöpfer-Audit 14.06.: 5 Audit-Punkte
@@ -43363,7 +43452,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     if (typeof fn !== "function") continue;
                     const src = window.__codeOf(fn);
                     if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                    if (/playerUnderwater\)\s*currentSpeed\s*\*=/.test(src)) speedCut = true;
+                    // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
+                    // die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback
+                    // 0.55) statt der hartkodierten 0.55 — das Muster ist jetzt ein
+                    // if-Block: playerUnderwater) { … currentSpeed *= … speedMul … }.
+                    if (/playerUnderwater\)\s*\{[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
+                        speedCut = true;
                 } catch {
                     /* skip */
                 }
@@ -43563,7 +43657,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             out.riseLifts = rise > 0;
             out.neutralFloats = neutral > 0 && neutral <= 2.5;
             out.diveBelowNeutral = dive < neutral;
-            out.riseAboveNeutral = rise > neutral;
+            // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal:
+            // aktives Auftauchen konvergiert per lerp gegen Gesetz-aufV
+            // (schwimmen.aufV, geeicht 1.0 m/s). Nur beim Arcade-Satz (aufV
+            // 3.2) lag schon der EINE lerp-Schritt ab vy=0 über dem Neutral-
+            // Auftrieb — die Diskrimination misst jetzt die KONVERGIERTE
+            // Steig-Geschwindigkeit (→ aufV) gegen denselben Neutral-Auftrieb.
+            let riseKonv = 0;
+            for (let i = 0; i < 60; i++) riseKonv = r._swimVerticalVelocity(riseKonv, 4, false, true);
+            out.riseAboveNeutral = riseKonv > neutral;
             out.surfaceNoDrift = Math.abs(r._swimVerticalVelocity(0, 0, false, false)) < 0.01;
         }
         // Physik-Loop nutzt _swimVerticalVelocity mit Shift/Space,
