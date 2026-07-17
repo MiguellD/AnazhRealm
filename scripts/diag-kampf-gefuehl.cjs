@@ -140,8 +140,12 @@ const server = http.createServer((req, res) => {
             ]) {
                 if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
             }
-            if (!A.SWING_LAWS) return { error: "SWING_LAWS fehlt" };
-            const K = A.SWING_LAWS;
+            // KERN-PFLICHT 17.07. — der SWING_LAWS-Zwilling ist gefallen: die
+            // Schwung-/Gefühls-Gesetze leben NUR im schmiede-Gesetzbuch (ARENA).
+            const AG = A._arenaGesetz();
+            if (!AG || !AG.schwung || !AG.gefuehl) return { error: "ARENA-Gesetz fehlt" };
+            const K = AG.schwung;
+            const G = AG.gefuehl;
             const codeOf = (fn) =>
                 String(fn)
                     .replace(/\/\/.*$/gm, "")
@@ -270,7 +274,7 @@ const server = http.createServer((req, res) => {
             o.checks.bDedupEinmal = lauf1.hits === 1;
             o.checks.bNieRuecken = cRuecken.userData.hp === hpRueck0 && !cRuecken.userData.dying;
             o.checks.bHitStopGesetzt = Number.isFinite(p._hitStopUntil) && p._hitStopUntil > 1000;
-            o.checks.bKameraImpuls = (s._landImpactPending || 0) >= K.hitDipImpact - 1e-9;
+            o.checks.bKameraImpuls = (s._landImpactPending || 0) >= G.dipMin - 1e-9;
             // ein zweiter Schwung trifft WIEDER (der Dedup gilt JE Schwung, nicht
             // global) — das Ziel re-pinnen (der Knockback schob es hinaus).
             const pinNeben = () =>

@@ -439,109 +439,54 @@ function validateManifest(m) {
             !!m && pflicht[entry.file](m)
         );
     }
-    // V18.486 — DIE SCHWIMM-PARITÄTS-WAND: der Stamm-Fallback (byte-alte Welt
-    // bei kaltem Kern) MUSS dem Kern-Gesetz zahlen-gleich sein — sonst driftet
-    // die Welt still, sobald jemand nur EINE Quelle editiert (die Gleichheit
-    // war bisher eine reine Hand-Invariante).
-    (function schwimmParitaet() {
-        let kern = null;
+    // KERN-PFLICHT 17.07. — DIE ZWILLINGS-ABSENZ-WAND: die Schwimm- und
+    // Kreatur-Seelen-PARITÄTS-Wände sind GEGENSTANDSLOS — die Stamm-Zahlen-
+    // Zwillinge sind GEFALLEN (die Kerne sind Pflicht, alle Leser fail-closed:
+    // _kernPflichtBruch statt stiller byte-alter Ersatz-Welt). Diese Wand hält
+    // sie draußen: kehrt auch nur EIN gefallener Zwilling als echte Zeilen-
+    // Anfangs-Zuweisung in den Stamm zurück, wird das Gate rot (Kommentare
+    // zitieren straflos — die Wand matcht nur ^AnazhRealm.<Name> =).
+    const ZWILLINGE = [
+        "SCHWIMM_FALLBACK",
+        "LUFT_FALLBACK",
+        "SPRUNG_FALLBACK",
+        "SCHRITT_FALLBACK",
+        "VERHALTEN_FALLBACK",
+        "ARENA_FALLBACK",
+        "_SOUL_SWIM_LEAN_FALLBACK",
+        "SWING_LAWS",
+        "BOGEN_LAWS",
+        "COMBAT_REACH_M",
+        "MOUSE_ACTION_STAMINA_COST",
+        "CREATURE_HUNT",
+        "CREATURE_NATURE",
+        "TEMPERAMENT_SIGNATURES",
+        "TEMPERAMENT_FLOOR",
+        "TEMPERAMENT_PROFILES",
+        "CREATURE_CHARAKTER",
+    ];
+    const zwillingsTreffer = (src) =>
+        ZWILLINGE.filter((n) => new RegExp("^AnazhRealm\\." + n + "\\s*=", "m").test(src));
+    (function zwillingsAbsenz() {
+        let src = null;
         try {
-            const kc = CORES.find((c) => c.file === "koerper-core.js");
-            const m = loadCore(kc);
-            kern = m.presets.mensch.fx.bewegung.schwimmen;
+            src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
         } catch (_e) {}
-        let stamm = null;
-        try {
-            const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-            const i = src.indexOf("AnazhRealm.SCHWIMM_FALLBACK =");
-            const j = src.indexOf("\n});", i);
-            const block = src.slice(src.indexOf("=", i) + 1, j + 3);
-            stamm = vm.runInNewContext("(" + block + ")", { Object }, { timeout: 5000 });
-        } catch (_e) {}
-        const diffs = [];
-        const tief = (a, b, pfad) => {
-            if (typeof a === "number" || typeof b === "number") {
-                if (a !== b) diffs.push(`${pfad}: Kern=${a} Stamm=${b}`);
-                return;
-            }
-            if (!a || !b || typeof a !== "object" || typeof b !== "object") {
-                if (String(a) !== String(b)) diffs.push(`${pfad}: Typ-Drift`);
-                return;
-            }
-            for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) tief(a[k], b[k], pfad + "." + k);
-        };
-        if (kern && stamm) tief(kern, stamm, "schwimmen");
+        const treffer = src ? zwillingsTreffer(src) : ZWILLINGE;
         check(
-            "SCHWIMM-PARITÄT: SCHWIMM_FALLBACK (Stamm) == fx.bewegung.schwimmen (Kern), zahlen-gleich",
-            !!kern && !!stamm && diffs.length === 0,
-            diffs[0] ||
-                (!kern
-                    ? "Kern unlesbar"
-                    : !stamm
-                      ? "Stamm-Fallback unlesbar"
-                      : `${Object.keys(kern).length} Felder gleich`)
+            "ZWILLINGS-ABSENZ: kein gefallener Fallback-Zwilling kehrt als Stamm-Zuweisung wieder (" +
+                ZWILLINGE.length +
+                " Namen)",
+            !!src && treffer.length === 0,
+            treffer.length ? "wieder aufgetaucht: " + treffer.join(", ") : ZWILLINGE.length + " Namen abwesend"
         );
-    })();
-    // SPIEGEL-ZENSUS 17.07. — DIE KREATUR-SEELEN-PARITÄTS-WAND: die vier
-    // Stamm-Fallback-Blöcke (CREATURE_HUNT/CREATURE_NATURE/TEMPERAMENT_*/
-    // CREATURE_CHARAKTER — byte-alte Welt bei kaltem Kern) MÜSSEN dem
-    // tetrapoda-Gesetz (VERHALTEN.jagd/furcht/temperament/wandern)
-    // zahlen-gleich sein — die Drift-Linse des sanktionierten Zwillings
-    // (Lehre 1: die LINSE, nie Wachsamkeit).
-    (function kreaturSeeleParitaet() {
-        let kern = null;
-        try {
-            const tc = CORES.find((c) => c.file === "tetrapoda-core.js");
-            const m = loadCore(tc);
-            if (m.verhalten && m.verhalten.jagd)
-                kern = {
-                    jagd: m.verhalten.jagd,
-                    furcht: m.verhalten.furcht,
-                    temperament: m.verhalten.temperament,
-                    wandern: m.verhalten.wandern,
-                };
-        } catch (_e) {}
-        let stamm = null;
-        try {
-            const src = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
-            const block = (name) => {
-                const i = src.indexOf(`AnazhRealm.${name} =`);
-                const j = src.indexOf("\n});", i);
-                return vm.runInNewContext(
-                    "(" + src.slice(src.indexOf("=", i) + 1, j + 3) + ")",
-                    { Object },
-                    { timeout: 5000 }
-                );
-            };
-            const floorM = src.match(/AnazhRealm\.TEMPERAMENT_FLOOR = ([0-9.]+);/);
-            stamm = {
-                jagd: block("CREATURE_HUNT"),
-                furcht: block("CREATURE_NATURE"),
-                temperament: {
-                    signaturen: block("TEMPERAMENT_SIGNATURES"),
-                    floor: floorM ? Number(floorM[1]) : NaN,
-                    profile: block("TEMPERAMENT_PROFILES"),
-                },
-                wandern: block("CREATURE_CHARAKTER"),
-            };
-        } catch (_e) {}
-        const diffs = [];
-        const tief = (a, b, pfad) => {
-            if (typeof a === "number" || typeof b === "number") {
-                if (a !== b) diffs.push(`${pfad}: Kern=${a} Stamm=${b}`);
-                return;
-            }
-            if (!a || !b || typeof a !== "object" || typeof b !== "object") {
-                if (String(a) !== String(b)) diffs.push(`${pfad}: Typ-Drift`);
-                return;
-            }
-            for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) tief(a[k], b[k], pfad + "." + k);
-        };
-        if (kern && stamm) tief(kern, stamm, "verhalten");
+        // SELBST-TEST: die Wand ist nicht vakuös — ein injizierter Zwilling
+        // (präparierter Quelltext) MUSS gefunden werden.
+        const injiziert = src ? zwillingsTreffer(src + "\nAnazhRealm.SWING_LAWS = Object.freeze({});\n") : [];
         check(
-            "KREATUR-SEELEN-PARITÄT: CREATURE_HUNT/NATURE/TEMPERAMENT_*/CHARAKTER (Stamm) == VERHALTEN.jagd/furcht/temperament/wandern (Kern), zahlen-gleich",
-            !!kern && !!stamm && diffs.length === 0,
-            diffs[0] || (!kern ? "Kern unlesbar" : !stamm ? "Stamm-Fallback unlesbar" : "4 Blöcke zahlen-gleich")
+            "SELBST-TEST: ein injizierter Zwilling (SWING_LAWS-Zeile) feuert die Absenz-Wand",
+            injiziert.length === 1 && injiziert[0] === "SWING_LAWS",
+            injiziert.join(",") || "keine Erkennung"
         );
     })();
 

@@ -17623,7 +17623,7 @@ class AnazhRealm {
         } catch (_e) {
             bein = 0;
         }
-        const kalib = AnazhRealm._bewegungsBlock("schritt", AnazhRealm.SCHRITT_FALLBACK).kalib;
+        const kalib = AnazhRealm._bewegungsBlock("schritt", ["kalib"]).kalib;
         rig._schritt = bein > 0.1 ? Math.min(6, Math.max(0.8, kalib * bein)) : 3.4;
         return rig._schritt;
     }
@@ -19213,7 +19213,8 @@ class AnazhRealm {
     }
 
     // V18.107 — D4-VOLL: das TEMPERAMENT der Seele (argmax-Resonanz der
-    // geclampten Substanz-Tags gegen TEMPERAMENT_SIGNATURES, Floor → scheu).
+    // geclampten Substanz-Tags gegen das tetrapoda-Gesetz VERHALTEN
+    // .temperament.signaturen via _verhaltenGesetz, Floor → scheu).
     // Gecacht pro Soul (die Substanz ändert sich nur beim Seelen-Wechsel).
     // Konsumenten: die Gegenwehr + Furcht-Dauer (damageCreature, pfad-only)
     // + die Hof-Spec-Card (_creatureProfile — Vision-Mechanik SICHTBAR).
@@ -19707,7 +19708,7 @@ class AnazhRealm {
         // REALITÄTS-EICHUNG 17.07. — normalisiert gegen die LEBENDE Gesetz-Base
         // (fx.bewegung.speed.base; war hartkodiert 7 = der alte Arcade-Zwilling —
         // eine Eichung des Kerns hätte alle Kreaturen still verlangsamt).
-        const base = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+        const base = AnazhRealm._bewegungsKoeff("speed").base;
         if (!Number.isFinite(stats.speed) || stats.speed <= 0 || !(base > 0)) return 1;
         return stats.speed / base;
     }
@@ -21066,7 +21067,7 @@ class AnazhRealm {
     //   speedMul — die EINE Stat-Pipeline (_creatureBodySpeedMultiplier =
     //     computeCreatureStats.speed / 7; typische Spanne 0.7–1.45: sprite
     //     flink ~1.2, Gigant träge ~0.8), geklemmt auf [0.6, 1.6].
-    //   leashM — die Mut-Achse aus TEMPERAMENT_PROFILES.fleeMul (die W3-Furcht-
+    //   leashM — die Mut-Achse aus VERHALTEN.temperament.profile.fleeMul (W3-Furcht-
     //     Achse, invertiert: wehrhaft 0.5 → 28 m Basis · wild 0.7 → ~24.7 m ·
     //     sanft 1.0 → ~19.7 m · scheu 1.7 → 8 m) × der GRÖSSEN-ACHSE (bodySize —
     //     die Tiere sind bewusst tag-identisch, Lehre 8: Differenzierung über
@@ -60545,7 +60546,7 @@ class AnazhRealm {
         // 0.33 m/s = Schwerlast-Kriechen, nie 0): der feste 2er fror sonst JEDE
         // Dial-Differenz unter der neuen Menschen-Base ein.
         if (Number.isFinite(stats.speed)) {
-            const floorBase = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+            const floorBase = AnazhRealm._bewegungsKoeff("speed").base;
             stats.speed = Math.max((2 / 7) * floorBase, stats.speed);
         }
         return stats;
@@ -60565,7 +60566,7 @@ class AnazhRealm {
         // _statsFromTags (2/7 der lebenden Base; der feste 2er klemmte unter
         // der Menschen-Base jede Größen-Differenz auf denselben Wert).
         if (Number.isFinite(stats.speed)) {
-            const floorBase = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 }).base;
+            const floorBase = AnazhRealm._bewegungsKoeff("speed").base;
             stats.speed = Math.max((2 / 7) * floorBase, stats.speed * sizeSpeedMul);
         }
         if (Number.isFinite(stats.attackSpeed)) stats.attackSpeed = Math.max(0.25, stats.attackSpeed * sizeSpeedMul);
@@ -73799,8 +73800,8 @@ class AnazhRealm {
     // im aktiven Bau-Modus (selber Pfad wie F-Taste/confirmBuild).
     //
     // Modus-Gate (gleicher Pfad wie applyOpToPart 6.C2): in pfad-Modus
-    // zieht jede Aktion MOUSE_ACTION_STAMINA_COST=5 Stamina ab, ungenug
-    // → verweigern. In frieden + schöpfer kostenlos.
+    // zieht jede Aktion die Gesetz-Kosten (_aktionAusdauer) Stamina ab,
+    // ungenug → verweigern. In frieden + schöpfer kostenlos.
     //
     // Beide Aktionen sind über 6.C3-Keybindings rebindable. Der Default
     // ist Minecraft-Konvention; der Spieler darf LMB/RMB tauschen oder
@@ -74170,7 +74171,7 @@ class AnazhRealm {
 
     // ZENSUS 17.07. — die Ausdauer-Kosten der Maus-Arm-Aktion wohnen im
     // koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer, _aktionAusdauer
-    // fail-soft byte-gleich auf MOUSE_ACTION_STAMINA_COST).
+    // fail-closed: Kern-Pflicht, der Konstanten-Zwilling ist gefallen).
     _mouseActionStaminaGate() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return { ok: true, mode };
@@ -74234,7 +74235,7 @@ class AnazhRealm {
         const weaponName = p.equipped && p.equipped.held;
         this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
         // SPIEGEL-ZENSUS — die Phasen-Anteile wohnen im schmiede-Gesetzbuch
-        // (ARENA.schwung, fail-soft byte-alt via ARENA_FALLBACK).
+        // (ARENA.schwung, fail-closed — Kern-Pflicht).
         const K = AnazhRealm._arenaGesetz().schwung;
         const dauer = this._playerSwingDauer();
         p._swing = {
@@ -74617,7 +74618,7 @@ class AnazhRealm {
         const dz = Math.cos(yaw) * cp;
         const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
         const list = this.state._pfeile || (this.state._pfeile = []);
-        while (list.length >= AnazhRealm.BOGEN_LAWS.maxPfeile) this._pfeilDespawn(list.shift()); // bounded (Wirts-Deckel)
+        while (list.length >= AnazhRealm.MAX_PFEILE) this._pfeilDespawn(list.shift()); // bounded (Wirts-Deckel)
         const K = AnazhRealm._arenaGesetz().schwung;
         const pf = {
             x: pm.position.x + dx * AB.muendungM,
@@ -75198,7 +75199,7 @@ class AnazhRealm {
             // der andere Aufrufer bleibt unberührt; V17.9: reuse statt Duplikat).
             const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            if (creatureDist <= (AnazhRealm.COMBAT_REACH_M || 6) && creatureDist <= archDist) {
+            if (creatureDist <= AnazhRealm._arenaGesetz().schwung.reachMaxM && creatureDist <= archDist) {
                 const gate = this._mouseActionStaminaGate();
                 if (!gate.ok) {
                     this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
@@ -86783,7 +86784,7 @@ class AnazhRealm {
             // Gesetzbuch (fx.bewegung.sprung, _bewegungsBlock fail-soft byte-gleich).
             const withinCoyoteTime =
                 currentTime - this.state.lastGroundedTime <=
-                AnazhRealm._bewegungsBlock("sprung", AnazhRealm.SPRUNG_FALLBACK).coyoteSec;
+                AnazhRealm._bewegungsBlock("sprung", ["coyoteSec", "bufferSec"]).coyoteSec;
             if ((isGrounded || withinCoyoteTime) && !this.state.isJumping) {
                 // Welle 6.X.3 C3 — Soul-bound: Drache rutscht, Phönix klettert.
                 if (!this._canSoulJumpFromSlope()) return;
@@ -88166,7 +88167,7 @@ class AnazhRealm {
                 // ZENSUS 17.07. — die vier C5-Gefühls-Hebel wohnen im koerper-
                 // studio-Gesetzbuch (fx.bewegung.luft, _bewegungsBlock fail-soft
                 // byte-gleich: Boden kAcc / Luft kAccLuft).
-                const LG = AnazhRealm._bewegungsBlock("luft", AnazhRealm.LUFT_FALLBACK);
+                const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
                 const kAcc = rideKAcc !== null ? rideKAcc : this.state.isInAir ? LG.kAccLuft : LG.kAcc;
                 const f = 1 - Math.exp(-kAcc * nowDt);
                 const tx = this.state.moveDirection.x * currentSpeed * slopePenalty;
@@ -88182,7 +88183,7 @@ class AnazhRealm {
                 // ZENSUS 17.07. — kBrake/kBrakeLuft wohnen im Gesetzbuch
                 // (fx.bewegung.luft, fail-soft byte-gleich).
                 const v = this.state.playerVel;
-                const LG = AnazhRealm._bewegungsBlock("luft", AnazhRealm.LUFT_FALLBACK);
+                const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
                 const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? LG.kBrakeLuft : LG.kBrake;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
@@ -88200,7 +88201,7 @@ class AnazhRealm {
             this.state._spaceWasDown = !!this.state.keys[" "];
             const buffered =
                 currentTime - (this.state._jumpPressedAt || -Infinity) <=
-                AnazhRealm._bewegungsBlock("sprung", AnazhRealm.SPRUNG_FALLBACK).bufferSec;
+                AnazhRealm._bewegungsBlock("sprung", ["coyoteSec", "bufferSec"]).bufferSec;
             if ((this.state.keys[" "] || buffered) && !this.state.isJumping) {
                 this.handleJump(currentTime);
                 if (this.state.isJumping) this.state._jumpPressedAt = -Infinity;
@@ -90482,69 +90483,50 @@ AnazhRealm.Gesetz = function (pfad, fallback) {
     return fallback;
 };
 
-AnazhRealm._bewegungsKoeff = function (stat, fb) {
+// DIE FALLBACK-ZWILLINGE SIND GEFALLEN (Schöpfer-Wort 17.07.: „integrier
+// vollends alles was reingehört und nimm raus was rausgehört") — die Kerne
+// sind PFLICHT (index.html lädt alle Gesetzbücher, _kernPflichtWand meldet
+// den Ausfall): ein unlesbares Gesetz ist ein BRUCH, der schreit, nie eine
+// stille byte-alte Ersatz-Welt. Die Zahlen-Zwillinge des Stamms (SCHWIMM/
+// LUFT/SPRUNG/SCHRITT/VERHALTEN/ARENA_FALLBACK, SWING_LAWS, BOGEN_LAWS,
+// COMBAT_REACH_M, MOUSE_ACTION_STAMINA_COST, CREATURE_HUNT/NATURE,
+// TEMPERAMENT_*, CREATURE_CHARAKTER) existieren nicht mehr — die
+// Zwillings-Absenz-Wand (gate:studio-vertrag) hält sie draußen.
+AnazhRealm._kernPflichtBruch = function (pfad) {
+    throw new Error(
+        "KERN-PFLICHT verletzt: " +
+            pfad +
+            " ist unlesbar — das Gesetzbuch fehlt oder ist alt (index.html lädt alle Kerne; _kernPflichtWand meldet den Ausfall)."
+    );
+};
+AnazhRealm._bewegungsKoeff = function (stat) {
     const row = AnazhRealm.Gesetz("koerper:bewegung." + stat, null);
     if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
-    return fb;
+    return AnazhRealm._kernPflichtBruch("koerper:bewegung." + stat);
 };
 // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — DER EINE KAMPF-KOEFFIZIENTEN-LESER:
 // die Zahlen der Kampf-Stats (hpMax/damage/knockback/defense) wohnen im
 // koerperstudio-Gesetzbuch (PRESETS.mensch.fx.kampf — reine Daten, Formel je
-// Stat: base + dichte-Tag·dichte + härte-Tag·haerte). Der Stamm liest
-// fail-soft: Kern kalt / Zeile fehlt / nicht-finit → das historische
-// Literal-Trio (fb), byte-gleiche Werte (das _bewegungsKoeff-Muster).
-AnazhRealm._kampfKoeff = function (stat, fb) {
-    try {
-        const row = AnazhRealm.Gesetz("koerper:kampf." + stat, null);
-        if (row && Number.isFinite(row.base) && Number.isFinite(row.dichte) && Number.isFinite(row.haerte)) return row;
-    } catch (_e) {}
-    return fb;
+// Stat: base + dichte-Tag·dichte + härte-Tag·haerte). Fail-closed.
+AnazhRealm._kampfKoeff = function (stat) {
+    const row = AnazhRealm.Gesetz("koerper:kampf." + stat, null);
+    if (row && Number.isFinite(row.base) && Number.isFinite(row.dichte) && Number.isFinite(row.haerte)) return row;
+    return AnazhRealm._kernPflichtBruch("koerper:kampf." + stat);
 };
 // SCHWIMM-HEIMAT (Schöpfer 16.07.: „schwimmanimation lebt noch in anazh, nicht im
 // studio") — DER EINE SCHWIMM-GESETZ-LESER: die Wasser-Bewegung des Avatars wohnt
 // im koerperstudio-Gesetzbuch (PRESETS.mensch.fx.bewegung.schwimmen — Physik,
-// Takt, Lehne, Kraul-Pose, Ausdauer). Der Stamm liest fail-soft: Kern kalt /
-// Zeile fehlt → das byte-gleiche historische Literal-Set (SCHWIMM_FALLBACK).
-// Memo NUR im Erfolgs-Fall (ein spät ladender Kern friert nie den Fallback ein);
-// der Kern ist ein statisches Gesetzbuch — einmal warm, immer dieselbe Referenz.
-AnazhRealm.SCHWIMM_FALLBACK = Object.freeze({
-    // REALITÄTS-EICHUNG 17.07. — der Fallback SPIEGELT das Kern-Gesetz
-    // zahlen-gleich (die SCHWIMM-PARITÄTS-WAND im Vertrag-Validator erzwingt es).
-    tauchV: 1.0,
-    aufV: 1.0,
-    lerp: 0.25,
-    hubK: 0.45,
-    tiefeK: 0.18,
-    hubCap: 1.2,
-    tiefeCap: 2,
-    drag: 0.7,
-    taktZug: 1.6,
-    taktTreten: 0.9,
-    speedMul: 0.85,
-    leanSoul: Object.freeze({ moving: 0.5, idle: 0.22 }),
-    lean: Object.freeze({ zug: 0.6, treten: 0.3 }),
-    pose: Object.freeze({
-        kopf: -0.35,
-        armZug: 1.3,
-        armTreten: 0.6,
-        armAb: 0.3,
-        armSpreiz: 0.5,
-        beinZug: 0.4,
-        beinTreten: 0.16,
-        beinTakt: 1.6,
-    }),
-    ausdauerProS: 6,
-});
+// Takt, Lehne, Kraul-Pose, Ausdauer). Fail-closed (Kern-Pflicht): der Zahlen-
+// Zwilling SCHWIMM_FALLBACK ist gefallen. Memo NUR im Erfolgs-Fall; der Kern
+// ist ein statisches Gesetzbuch — einmal warm, immer dieselbe Referenz.
 AnazhRealm._schwimmGesetz = function () {
     if (AnazhRealm._schwimmGesetzMemo) return AnazhRealm._schwimmGesetzMemo;
-    try {
-        const s = AnazhRealm.Gesetz("koerper:bewegung.schwimmen", null);
-        if (s && Number.isFinite(s.tauchV) && s.lean && s.pose) {
-            AnazhRealm._schwimmGesetzMemo = s;
-            return s;
-        }
-    } catch (_e) {}
-    return AnazhRealm.SCHWIMM_FALLBACK;
+    const s = AnazhRealm.Gesetz("koerper:bewegung.schwimmen", null);
+    if (s && Number.isFinite(s.tauchV) && s.lean && s.pose && s.leanSoul && Number.isFinite(s.leanSoul.moving)) {
+        AnazhRealm._schwimmGesetzMemo = s;
+        return s;
+    }
+    return AnazhRealm._kernPflichtBruch("koerper:bewegung.schwimmen");
 };
 // PARKOUR-HEIMAT — DER EINE PARKOUR-LESER: die Ninja-Park-Verben (Doppel-/
 // Wandsprung · Klettern · Rutsch) wohnen im koerperstudio-Gesetzbuch
@@ -90566,53 +90548,45 @@ AnazhRealm._parkourGesetz = function () {
 // restlichen Boden-Gefühls-Blöcke (luft = die vier C5-Hebel der Beschleunigungs-/
 // Brems-Kurven · sprung = Coyote-/Buffer-Fenster · schritt = der Gang-
 // Kalibrierfaktor) wohnen im koerperstudio-Gesetzbuch (fx.bewegung.<block>).
-// Der Stamm liest fail-soft: Kern kalt / Block fehlt / EIN Feld nicht-finit →
-// der byte-gleiche historische Fallback (ganz oder gar nicht, nie Misch-
-// Gesetz). Memo NUR im Erfolgs-Fall (das _schwimmGesetz-Muster).
-AnazhRealm.LUFT_FALLBACK = Object.freeze({ kAcc: 14, kAccLuft: 4.5, kBrake: 9, kBrakeLuft: 1.5 });
-AnazhRealm.SPRUNG_FALLBACK = Object.freeze({ coyoteSec: 0.3, bufferSec: 0.12 });
-AnazhRealm.SCHRITT_FALLBACK = Object.freeze({ kalib: 4.0 });
-AnazhRealm._bewegungsBlock = function (block, fb) {
+// Fail-closed (Kern-Pflicht): Block fehlt / EIN Pflicht-Feld (felder) nicht-
+// finit → Bruch, nie Misch-Gesetz. Memo NUR im Erfolgs-Fall.
+AnazhRealm._bewegungsBlock = function (block, felder) {
     const memo = AnazhRealm._bewegungsBlockMemo || (AnazhRealm._bewegungsBlockMemo = Object.create(null));
     if (memo[block]) return memo[block];
-    try {
-        const g = AnazhRealm.Gesetz("koerper:bewegung." + block, null);
-        if (g) {
-            let ok = true;
-            for (const k in fb) {
-                if (!Number.isFinite(g[k])) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (ok) {
-                memo[block] = g;
-                return g;
+    const g = AnazhRealm.Gesetz("koerper:bewegung." + block, null);
+    if (g) {
+        let ok = true;
+        for (const k of felder) {
+            if (!Number.isFinite(g[k])) {
+                ok = false;
+                break;
             }
         }
-    } catch (_e) {}
-    return fb;
+        if (ok) {
+            memo[block] = g;
+            return g;
+        }
+    }
+    return AnazhRealm._kernPflichtBruch("koerper:bewegung." + block);
 };
 // AKTIONS-AUSDAUER — die Kosten der Maus-Arm-Aktion (Hieb/Abbau/Platzieren)
 // wohnen im koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer, neben
-// ausdauerProS/kletterAusdauerProS); Fallback = die byte-alte Konstante
-// MOUSE_ACTION_STAMINA_COST (bleibt als Fallback + Test-Anker).
+// ausdauerProS/kletterAusdauerProS). Fail-closed (Kern-Pflicht): der
+// Konstanten-Zwilling MOUSE_ACTION_STAMINA_COST ist gefallen.
 AnazhRealm._aktionAusdauer = function () {
-    try {
-        const a = AnazhRealm.Gesetz("koerper:bewegung.aktionAusdauer", null);
-        if (Number.isFinite(a)) return a;
-    } catch (_e) {}
-    return AnazhRealm.MOUSE_ACTION_STAMINA_COST;
+    const a = AnazhRealm.Gesetz("koerper:bewegung.aktionAusdauer", null);
+    if (Number.isFinite(a)) return a;
+    return AnazhRealm._kernPflichtBruch("koerper:bewegung.aktionAusdauer");
 };
 // KREATUR-SEELE (Spiegel-Zensus 17.07.) — DER EINE VERHALTENS-GESETZ-LESER:
 // die Verhaltens-Zahlen der Welt-Wesen (jagd = Witterung/Biss · furcht =
 // Wariness/Flucht · temperament = Signaturen/Floor/Gegenwehr-Profile ·
 // wandern = Leine/Schlendern) wohnen im tetrapoda-Gesetzbuch (VERHALTEN —
-// reine Daten neben aktionen/stimmung). Der Stamm liest fail-soft: Kern
-// kalt / Block fehlt / nicht-finit → das byte-gleiche historische
-// Literal-Quartett (VERHALTEN_FALLBACK; die Gültigkeits-Wand deckt je Block
-// ein Wander-Feld — alter Kern → ganz byte-alt, nie Misch-Gesetz). Memo NUR
-// im Erfolgs-Fall (ein spät ladender Kern friert nie den Fallback ein).
+// reine Daten neben aktionen/stimmung). Fail-closed (Kern-Pflicht): das
+// Literal-Quartett (VERHALTEN_FALLBACK samt CREATURE_HUNT/NATURE/
+// TEMPERAMENT_*/CHARAKTER) ist gefallen; die Gültigkeits-Wand deckt je
+// Block ein Feld — alter Kern → Bruch, nie Misch-Gesetz. Memo NUR im
+// Erfolgs-Fall.
 AnazhRealm._verhaltenGesetz = function () {
     if (AnazhRealm._verhaltenGesetzMemo) return AnazhRealm._verhaltenGesetzMemo;
     try {
@@ -90634,7 +90608,7 @@ AnazhRealm._verhaltenGesetz = function () {
             return v;
         }
     } catch (_e) {}
-    return AnazhRealm.VERHALTEN_FALLBACK;
+    return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — hpMax/damage/knockback/defense
@@ -90642,11 +90616,11 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // _kampfKoeff, fail-soft auf die byte-gleichen historischen Literale):
     // der Lab-Wert IST der Welt-Wert (dasselbe Muster wie speed/jumpPower).
     hpMax: (t) => {
-        const K = AnazhRealm._kampfKoeff("hpMax", { base: 50, dichte: 60, haerte: 30 });
+        const K = AnazhRealm._kampfKoeff("hpMax");
         return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
     },
     damage: (t) => {
-        const K = AnazhRealm._kampfKoeff("damage", { base: 5, dichte: 5, haerte: 15 });
+        const K = AnazhRealm._kampfKoeff("damage");
         return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
     },
     // V17.51 Kampf-Bogen Phase A (kampf-plan.md §4-A) — die Kombat-Stats EMERGIEREN
@@ -90657,7 +90631,7 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // GAMEPLAY-Konsum (Knockback-Impuls + Angriffs-Cooldown) folgt in Phase C/D; hier
     // wird das tag-emergente Profil definiert + sichtbar gemacht (renderPlayerStatsUI).
     knockback: (t) => {
-        const K = AnazhRealm._kampfKoeff("knockback", { base: 1, dichte: 9, haerte: 2 });
+        const K = AnazhRealm._kampfKoeff("knockback");
         return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
     },
     attackSpeed: (t) => 0.8 + (1 - (t.dichte || 0)) * 0.7 + (t.magieleitung || 0) * 0.3,
@@ -90670,15 +90644,15 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // koerperstudio-Gesetzbuch (fx.bewegung via _bewegungsKoeff, fail-soft auf
     // die byte-gleichen historischen Literale): der Lab-Wert IST der Welt-Wert.
     speed: (t) => {
-        const K = AnazhRealm._bewegungsKoeff("speed", { base: 7, leicht: 5, mag: 1.5 });
+        const K = AnazhRealm._bewegungsKoeff("speed");
         return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.magieleitung || 0) * K.mag;
     },
     jumpPower: (t) => {
-        const K = AnazhRealm._bewegungsKoeff("jumpPower", { base: 8, leicht: 5, mag: 2 });
+        const K = AnazhRealm._bewegungsKoeff("jumpPower");
         return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.magieleitung || 0) * K.mag;
     },
     staminaMax: (t) => {
-        const K = AnazhRealm._bewegungsKoeff("staminaMax", { base: 100, leicht: 60, mag: 40 });
+        const K = AnazhRealm._bewegungsKoeff("staminaMax");
         return K.base + (1 - (t.dichte || 0)) * K.leicht + (t.wärmeleitung || 0) * K.mag;
     },
     // V18.196 — MANA-SYMMETRIE: die zweite Ausdauer-Achse, treibt aus
@@ -90697,7 +90671,7 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // Defense-Trio. Base-los wie die elementaren Resists (ein weiches Wesen blockt ~0).
     // Konsum als flache Schadens-Reduktion (dealt = max(1, amount − defense)) in Phase C.
     defense: (t) => {
-        const K = AnazhRealm._kampfKoeff("defense", { base: 0, dichte: 8, haerte: 6 });
+        const K = AnazhRealm._kampfKoeff("defense");
         return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
     },
 });
@@ -90737,10 +90711,9 @@ AnazhRealm.HELD_MESH = Object.freeze({
     rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
     tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
 });
-// V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs (der LMB-
-// Raycast auf Kreaturen). Eine Kreatur näher als das UND näher als eine Architektur
-// wird angegriffen statt abgebaut. Browser-justierbar (die Wucht/Reichweite = Feel).
-AnazhRealm.COMBAT_REACH_M = 6;
+// V17.54 Kampf-Bogen Phase D — die Reichweite des Spieler-Nahangriffs liest
+// das schmiede-Gesetz (ARENA.schwung.reachMaxM via _arenaGesetz); der
+// Konstanten-Zwilling COMBAT_REACH_M ist gefallen (Kern-Pflicht).
 // ═══ KAMPF-GEFÜHL (Orakel Tier-1 #5) — DIE GESETZE DES SCHWUNGS ═══
 // Die EINE Schwung-Dauer-Quelle ist die GERECHNETE Trägheit (_swingDynamics,
 // Ω-Φ4: I = Σ m·r² um den Griff): Gesamt-Dauer = dauerProSqrtI·√I, geklemmt.
@@ -90749,130 +90722,39 @@ AnazhRealm.COMBAT_REACH_M = 6;
 // das tag-emergente Profil: ihr Körper IST ihre Substanz). Feel-Werte browser-
 // justierbar; die MECHANIK (∝ √I · Sweep-Wände · Hit-Stop ≠ Sim) hält
 // gate:kampf-gefuehl.
-// SPIEGEL-ZENSUS 17.07. — die Tabelle ist REINER FALLBACK: die lebenden Zahlen
-// (Dauer + Hieb-GEOMETRIE: Phasen, Sweep-Bogen, Klingen-Radius, Reichweite,
-// Schulter, Tod-Kippen) wohnen im schmiede-Gesetzbuch (ARENA.schwung/.gefuehl),
-// alle Konsumenten lesen _arenaGesetz(); DIESE Literale speisen nur noch
-// ARENA_FALLBACK (Kern kalt → byte-alt).
-AnazhRealm.SWING_LAWS = Object.freeze({
-    dauerProSqrtI: 0.55, // s pro √(Masse·m²) — die Proportionalitäts-Konstante
-    minDauerSec: 0.25, // Klemme: auch ein Federmesser braucht einen Schwung
-    maxDauerSec: 1.8, // Klemme: auch ein Fels-Hammer vollendet unter 2 s
-    handDauerSec: 0.4, // die leere Faust (kein Bauplan → kein I)
-    windupFrac: 0.3, // Phase 1 — Ausholen (der Arm hebt über die Schulter)
-    strikeFrac: 0.25, // Phase 2 — der Hieb (NUR hier fegt der Kapsel-Sweep)
-    // Phase 3 — Recover = der Rest (1 − windup − strike)
-    arcHalfRad: 1.1, // der Hieb fegt ±63° um die Blickrichtung (nie hinter den Rücken)
-    bladeRadiusM: 0.35, // Kapsel-Radius der Klinge
-    reachBaseM: 0.9, // Arm-Anteil der Reichweite (Schulter → Hand)
-    reachMaxM: AnazhRealm.COMBAT_REACH_M, // EINE Sechs: die Kampf-Reichweite deckelt (Zensus: Leserin statt Zwilling)
-    shoulderH: 1.2, // Sweep-Ursprung über der Spieler-Körper-Position (m)
-    hitStopSec: 0.08, // 60–100 ms: NUR der Anzeige-/Anim-Layer pausiert, nie die Sim
-    hitDipImpact: 4.5, // m/s-Äquivalent in den bestehenden Kamera-Dip (LAND_DIP_*)
-    kippDauerSec: 1.0, // TOD-KIPPEN: der Körper kippt entlang _fieldGradient (~1 s)
-    kippNachklangSec: 0.35, // kurze Ruhe nach dem Aufschlag, DANN der Abschied
-});
-
-// ═══ BOGEN (B3-Inventar N4 — das Schieß-Verb) — DIE GESETZE DES SCHUSSES ═══
-// Der Bogen ist das erste Fern-Gerät: wield (klinge_<bogen-rezept>) → Klick =
-// EIN Pfeil in der EINEN Feld-Physik (state.gravity — kein Ammo-Body, kein
-// zweiter Physik-Pfad; nichts persistiert). Die KRAFT ist Studio-Wahrheit:
-// v0 = √(2·E/mArrow) mit E = zugJouleRef·zugkraft·auszug aus fx.task des
-// schmiede-Rezepts (ARENA.bogen — die historische Doppelkodierung
-// speedBase 34 ↔ zugJouleRef 28.9 J = 34²·0.05/2 ist GESCHLOSSEN: nur noch
-// die Joule-Form existiert, die NaN-Wand leitet aus ihr ab);
-// die DAUER (Spann-Cooldown) ist die EINE Schwung-Dauer-Quelle
-// (_swingDauerFuerBlueprint ∝ √I, Ω-Φ4 — ein schwerer Bogen spannt träger).
-// Treffer-Urteil über den EINEN Sweep-Kern (_segSegDistSq, dieselbe Kreatur-
-// Kapsel wie der Klingen-Sweep), Schaden über damageCreature (stats.damage —
-// die Bogen-Tags falten via HELD_STAT_WEIGHT). Feel-Werte browser-justierbar.
-// SPIEGEL-ZENSUS 17.07. — die Flug-Zahlen (maxFlugSec/radiusM/muendungM) sind
-// REINER FALLBACK (die lebenden wohnen in ARENA.bogen); maxPfeile bleibt
-// ehrlich Wirts-Infrastruktur (Perf-Deckel, kein Gefühls-Gesetz).
-AnazhRealm.BOGEN_LAWS = Object.freeze({
-    maxFlugSec: 5, // Lebenszeit — danach fällt der Pfeil aus der Welt
-    radiusM: 0.12, // Pfeil-Kapselradius (aufs Kreatur-Kapsel-Urteil addiert)
-    maxPfeile: 16, // Deckel lebender Pfeile (bounded by construction)
-    muendungM: 1.2, // Start-Abstand vor der Schulter — kein Selbst-Treffer
-});
+// SPIEGEL-ZENSUS 17.07. / KERN-PFLICHT 17.07. — die Zahlen-Tabellen sind
+// GEFALLEN: Dauer + Hieb-GEOMETRIE (Phasen, Sweep-Bogen, Klingen-Radius,
+// Reichweite, Schulter, Tod-Kippen), Stoss/Hit-Stop/Dip und die Pfeil-Flug-
+// Physik wohnen im schmiede-Gesetzbuch (ARENA.schwung/.gefuehl/.bogen/.guete),
+// alle Konsumenten lesen _arenaGesetz() — fail-closed, kein SWING_LAWS/
+// BOGEN_LAWS/ARENA_FALLBACK-Zwilling mehr. maxPfeile blieb ehrlich WIRTS-
+// Infrastruktur (Perf-Deckel lebender Pfeile, kein Gefühls-Gesetz):
+AnazhRealm.MAX_PFEILE = 16;
 // ═══ ARENA-GEFÜHL (Schöpfer-Vertrags-Akt 16.07.) — DER EINE GEFÜHLS-LESER ═══
 // Die Gefühls-Gesetze der schmiede-Arena (Schwung-Konstanten · energie-
-// skalierter Hit-Stop/Dip · die EINE Bogen-Physik + der Auszug) wohnen im
-// schmiede-Gesetzbuch (__schmiedeCore.ARENA). Der Stamm liest fail-soft: Kern
-// kalt → das byte-alte Verhalten (Fallback aus DENSELBEN SWING-/BOGEN_LAWS-
-// Literalen — kein Zahlen-Zwilling: fester Hit-Stop, fester Dip, Sofort-Schuss
-// ohne Auszug/FOV). Memo NUR im Erfolgs-Fall (ein spät ladender Kern friert
-// nie den Fallback ein).
-AnazhRealm.ARENA_FALLBACK = Object.freeze({
-    schwung: Object.freeze({
-        dauerProSqrtI: AnazhRealm.SWING_LAWS.dauerProSqrtI,
-        minDauerSec: AnazhRealm.SWING_LAWS.minDauerSec,
-        maxDauerSec: AnazhRealm.SWING_LAWS.maxDauerSec,
-        handDauerSec: AnazhRealm.SWING_LAWS.handDauerSec,
-        // SPIEGEL-ZENSUS 17.07. — die Hieb-GEOMETRIE reist mit (byte-gleiche
-        // Fallback-Zahlen aus DENSELBEN SWING_LAWS-Literalen, kein Zwilling).
-        windupFrac: AnazhRealm.SWING_LAWS.windupFrac,
-        strikeFrac: AnazhRealm.SWING_LAWS.strikeFrac,
-        arcHalfRad: AnazhRealm.SWING_LAWS.arcHalfRad,
-        bladeRadiusM: AnazhRealm.SWING_LAWS.bladeRadiusM,
-        reachBaseM: AnazhRealm.SWING_LAWS.reachBaseM,
-        reachMaxM: AnazhRealm.SWING_LAWS.reachMaxM,
-        shoulderH: AnazhRealm.SWING_LAWS.shoulderH,
-    }),
-    gefuehl: Object.freeze({
-        freezeMinSec: AnazhRealm.SWING_LAWS.hitStopSec,
-        freezeMaxSec: AnazhRealm.SWING_LAWS.hitStopSec,
-        dipMin: AnazhRealm.SWING_LAWS.hitDipImpact,
-        dipMax: AnazhRealm.SWING_LAWS.hitDipImpact,
-        keRefJ: 114,
-        // SPIEGEL-ZENSUS 17.07. — Stoß-Klemme/-Skalen + Tod-Kippen reisen mit
-        // (byte-gleiche historische Literale: push = min(18, kb·1.4)·0.12).
-        stossCap: 18,
-        stossProKb: 1.4,
-        stossSkala: 0.12,
-        kippDauerSec: AnazhRealm.SWING_LAWS.kippDauerSec,
-        kippNachklangSec: AnazhRealm.SWING_LAWS.kippNachklangSec,
-    }),
-    bogen: Object.freeze({
-        mArrow: 0.05,
-        // Die EINE Joule-Form (34²·0.05/2 — die speedBase-Doppelkodierung ist
-        // geschlossen, nur die Energie-Eichung existiert noch als Zahl).
-        zugJouleRef: 28.9,
-        auszugSec: 0, // 0 = kein Auszug: der Klick schießt sofort voll (byte-alt)
-        fovZug: 75,
-        fovRuhe: 75,
-        minAuszugFrac: 1,
-        // SPIEGEL-ZENSUS 17.07. — die Pfeil-Flug-Zahlen reisen mit (byte-
-        // gleiche Fallback-Zahlen aus DENSELBEN BOGEN_LAWS-Literalen).
-        maxFlugSec: AnazhRealm.BOGEN_LAWS.maxFlugSec,
-        radiusM: AnazhRealm.BOGEN_LAWS.radiusM,
-        muendungM: AnazhRealm.BOGEN_LAWS.muendungM,
-    }),
-    // Waffen-Güte: Kern kalt → kein Lehren-Urteil möglich → Faktor 1 (byte-alt).
-    guete: Object.freeze({ faktorVoll: 1, faktorLeer: 1 }),
-});
+// skalierter Hit-Stop/Dip · die EINE Bogen-Physik + der Auszug · Waffen-Güte)
+// wohnen im schmiede-Gesetzbuch (__schmiedeCore.ARENA). Fail-closed
+// (Kern-Pflicht); Memo NUR im Erfolgs-Fall.
 AnazhRealm._arenaGesetz = function () {
     if (AnazhRealm._arenaGesetzMemo) return AnazhRealm._arenaGesetzMemo;
-    try {
-        const a = AnazhRealm.Gesetz("schmiede:ARENA", null);
-        // Die Gültigkeits-Wand deckt je Block EIN Zensus-Feld mit: ein ALTER
-        // Kern ohne die gereisten Zeilen fällt GANZ auf byte-alt zurück
-        // (fail-soft, nie ein Misch-Gesetz aus halb Kern / halb undefined).
-        if (
-            a &&
-            a.schwung &&
-            a.gefuehl &&
-            a.bogen &&
-            Number.isFinite(a.schwung.dauerProSqrtI) &&
-            Number.isFinite(a.schwung.windupFrac) &&
-            Number.isFinite(a.gefuehl.stossCap) &&
-            Number.isFinite(a.bogen.muendungM)
-        ) {
-            AnazhRealm._arenaGesetzMemo = a;
-            return a;
-        }
-    } catch (_e) {}
-    return AnazhRealm.ARENA_FALLBACK;
+    const a = AnazhRealm.Gesetz("schmiede:ARENA", null);
+    // Die Gültigkeits-Wand deckt je Block EIN Zensus-Feld mit: ein ALTER
+    // Kern ohne die gereisten Zeilen ist ein BRUCH, nie ein Misch-Gesetz
+    // aus halb Kern / halb undefined.
+    if (
+        a &&
+        a.schwung &&
+        a.gefuehl &&
+        a.bogen &&
+        Number.isFinite(a.schwung.dauerProSqrtI) &&
+        Number.isFinite(a.schwung.windupFrac) &&
+        Number.isFinite(a.gefuehl.stossCap) &&
+        Number.isFinite(a.bogen.muendungM)
+    ) {
+        AnazhRealm._arenaGesetzMemo = a;
+        return a;
+    }
+    return AnazhRealm._kernPflichtBruch("schmiede:ARENA");
 };
 
 // Welle 6.D Etappe 3a+ (Schöpfer-Feedback 13.05.2026) — Werkzeug-Anwendung
@@ -92040,12 +91922,9 @@ AnazhRealm.IRON_BANDS = Object.freeze({
     scale: 1 / 180,
 });
 
-// Welle 6.A6 — Maus-Aktionen (abbauen/platzieren). Eigener Kosten-Satz,
-// niedriger als TOOL_OP weil Bauen/Abbauen häufiger und niederschwelliger
-// als Polier-Schritte sind. Modus-Gate (frieden+schöpfer: 0, pfad: 5).
-// ZENSUS 17.07. — nur noch der byte-gleiche FALLBACK: das Gesetz wohnt im
-// koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer), Leser _aktionAusdauer.
-AnazhRealm.MOUSE_ACTION_STAMINA_COST = 5;
+// Welle 6.A6 — Maus-Aktionen (abbauen/platzieren): der Kosten-Satz wohnt im
+// koerperstudio-Gesetzbuch (fx.bewegung.aktionAusdauer), Leser _aktionAusdauer;
+// der Konstanten-Zwilling MOUSE_ACTION_STAMINA_COST ist gefallen (Kern-Pflicht).
 
 // V17.55 W1 (kampf-plan.md §8/§9) — DER WURZELFEHLER GEHEILT: Abbauen kostet jetzt
 // substanz-gebundene MÜHE (mehrere Hiebe statt Instant), und EINE Tauglichkeit (die
@@ -94673,14 +94552,12 @@ Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
 // ABSCHIEDS-WELLE (Konvergenz C) — DIE EINE SCHWIMM-LEHNE: jede Compound-Seele
 // (konvergierte Built-ins Phönix/Drache + Custom + Peers) legt sich unter Wasser
 // über DIESELBE Daten-Zeile (der Rig-Avatar trägt sie in _animateHuman weiter).
-// ZENSUS 17.07. — die Lehne WOHNT jetzt im Schwimm-Gesetz (schwimmen.leanSoul,
-// das TETRAPODA_DIAL_MAP-Getter-Muster): beide Konsumenten bleiben byte-gleich,
-// der Kern gewinnt; Kern kalt → das historische Literal (Fallback-Zwilling).
-AnazhRealm._SOUL_SWIM_LEAN_FALLBACK = Object.freeze({ moving: 0.5, idle: 0.22 });
+// ZENSUS 17.07. — die Lehne WOHNT im Schwimm-Gesetz (schwimmen.leanSoul,
+// das TETRAPODA_DIAL_MAP-Getter-Muster); fail-closed über _schwimmGesetz
+// (Kern-Pflicht), der Fallback-Zwilling ist gefallen.
 Object.defineProperty(AnazhRealm, "SOUL_SWIM_LEAN", {
     get() {
-        const s = AnazhRealm._schwimmGesetz();
-        return s && s.leanSoul && Number.isFinite(s.leanSoul.moving) ? s.leanSoul : AnazhRealm._SOUL_SWIM_LEAN_FALLBACK;
+        return AnazhRealm._schwimmGesetz().leanSoul;
     },
 });
 // ALTLASTEN-NULL — die Gnaden-Frist nach dem feld-nativen Tod (Sekunden):
@@ -94924,94 +94801,14 @@ AnazhRealm.CONTAGION_TARGET = Object.freeze({
     happy: { joy: 0.5, peace: 0.4 }, // ein freudiges Wesen hebt + beruhigt
     sad: { sorrow: 0.5 }, // ein leidendes Wesen betrübt
 });
-// V17.58 W3 (kampf-plan §9) — die NATÜRLICHE, aura-reaktive Kreatur: die Gewichte der WARINESS
-// (_creatureWariness) — deine Aura-Menace × der Natur des Wesens × Bindung × Modus. Browser-justierbar
-// (das Feel: wie scheu/neugierig, wann es kippt). Die MENACE ist chaos-dominant (deine Aggression,
-// V17.54 — feedback-frei: die Contagion treibt chaos NICHT, also kein Furcht-Runaway).
-// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.furcht;
-// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
-AnazhRealm.CREATURE_NATURE = Object.freeze({
-    noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler (es wandert nur)
-    menaceFromChaos: 1.3, // deine Aggression/Zorn verschreckt am stärksten (feedback-frei)
-    menaceFromSorrow: 0.5, // deine Trauer verunsichert etwas
-    calmFromPeace: 0.9, // deine Ruhe lädt ein
-    calmFromJoy: 0.5, // deine Freude lockt
-    boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kühner
-    boldFromHärte: 0.6, // ein hartes Wesen steht fester
-    shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer (die wilde Natur)
-    boldFromBond: 0.9, // eine Bindung macht das Wesen mutig in deiner Nähe (Vertrauen)
-    friedenMenace: 0.3, // frieden dämpft die Bedrohung stark (eine neugierige Welt)
-    schoepferMenace: 0.1, // schöpfer: die Welt ist ruhig (du regierst)
-    curiousThreshold: -0.2, // Wariness darunter → neugierig (näher)
-    fleeThreshold: 0.3, // Wariness darüber → scheu (fort)
-    fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv weg
-    fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
-    combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert über der Flucht-Schwelle
-    fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhält
-});
-// V18.107 — D4-VOLL (S-Design 10.06.): das TEMPERAMENT eines Wesens emergiert
-// aus seiner SEELEN-SUBSTANZ — dieselbe argmax-Resonanz-Sprache wie Werk-Rolle/
-// Motion-Rolle (`_blueprintResonance` gegen Signaturen, Invers-Achsen erlaubt),
-// auf den ÷3-normalisierten Tag-Vektor (PRODUCT_VECTOR_TAG_NORM — die V17.90-
-// Skala aller Resonanz-Leser; der [0,1]-CLAMP wäre falsch: die MAX-Aktivierung
-// sättigt fast jede dichte auf 1 → keine Diskriminierung, GEMESSEN). KEIN
-// globaler Schalter, KEIN Verhaltens-Import: dichte/harte Substanz steht ihren
-// Grund (wehrhaft), glühend-heiße entflammt (wild), lebendig-weiche weicht
-// (sanft), ätherisch-transparente flieht (scheu = Floor-Default, das W3-Erbe).
-// GEMESSEN an den Built-ins (Scores im Playtest-Band): wesen→wehrhaft (0.84) ·
-// geist→sanft (0.42) · sprite→scheu (1.01) — klare Margen.
-// SPIEGEL-ZENSUS 17.07. — das GESETZ (Signaturen + Floor + Profile) wohnt in
-// tetrapoda-core VERHALTEN.temperament; diese drei Statics sind der
-// byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
-AnazhRealm.TEMPERAMENT_SIGNATURES = Object.freeze({
-    wehrhaft: Object.freeze({ dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 }),
-    wild: Object.freeze({ brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 }),
-    sanft: Object.freeze({ lebendig: 1.4, ["zähigkeit"]: 0.5, dichte: -0.5, ["härte"]: -0.3 }),
-    scheu: Object.freeze({ transparent: 0.8, magieleitung: 0.6, dichte: -0.4 }),
-});
-AnazhRealm.TEMPERAMENT_FLOOR = 0.35; // beste Resonanz darunter → scheu (zarte Natur)
-// Die VERHALTENS-Profile pro Temperament (NUR im pfad-Modus konsumiert — der
-// Modus macht den Ernst, die Seele macht das WIE; frieden/schöpfer bleiben
-// über das damagePlayer-Modus-Gate + den pfad-Check unberührt): strike =
-// Basis-Gegenwehr-Chance, strikeChaos = Moment-Emotion moduliert (chaos),
-// counterMul = Härte des Gegenschlags (× damage), fleeMul = Furcht-Dauer
-// (× fearSec — wehrhafte fliehen kurz, scheue lang).
-AnazhRealm.TEMPERAMENT_PROFILES = Object.freeze({
-    wehrhaft: Object.freeze({ strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 }),
-    wild: Object.freeze({ strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 }),
-    sanft: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.0 }),
-    scheu: Object.freeze({ strike: 0, strikeChaos: 0, strikeCap: 0, counterMul: 0, fleeMul: 1.7 }),
-});
-// PHASE E (kampf-plan — die BEDROHUNG; GEMERKTER FADEN #2, der letzte
-// Affekt-Konsument): ein WILDES Wesen (Temperament aus der Seelen-Substanz,
-// kein hostile-Flag) JAGT die Beute — pfad-only (frieden/schöpfer kennen
-// keine Bedrohung), Furcht schlägt Jagd (ein getroffenes Raubtier flieht
-// nach seinem fleeMul wie jedes Wesen). Der Biss läuft durch dasselbe
-// damagePlayer-Tor wie die Gegenwehr; die Rüstung dämpft FLACH (dealt =
-// max(1, amount − defense) — exakt die Kreatur-Formel, EINE Sprache).
-// Erst-Wurf-Werte (Abnahme-Regel: bauen, vermerken, weiterfahren).
-// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.jagd;
-// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
-AnazhRealm.CREATURE_HUNT = Object.freeze({
-    radius: 12, // m — Spieler-Witterungs-Reichweite (darüber wandert das Raubtier)
-    speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
-    strikeRange: 2.4, // m — Biss-Reichweite
-    strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
-    damageMul: 0.8, // × dem damage-Stat des Wesens (die EINE Stat-Pipeline)
-    fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
-    triumphWindowSec: 20, // s — ein Jäger, so frisch er biss, gebiert beim Fall TRIUMPH
-    // V18.210 (§1-A3) — der ZWEITE Sinn: ein wildes Wesen WITTERT andere Beute
-    // (scheue/sanfte) über das Geruch-Feld (`_scentAt`, V18.202) — der Wind
-    // trägt den Geruch, das Raubtier folgt dem Gradienten. Die Reichweite
-    // (50 m) ist deutlich grösser als die Spieler-Witterung (12 m) — Wittern
-    // ist weiter als Sehen, der Wind trägt → der gemerkte Plan §1-A3
-    // („Raubtier mit Beute in 50m → bewegt sich").
-    scentRangeM: 50,
-    // Probe-Schritt (m) der 4-Richtungs-Gradient-Suche. Kleiner = präziser
-    // (engerer Kreis um die Beute), grösser = stabiler (weniger Tunnel-Drift).
-    // 4 m ist die typische Schritt-Weite eines wandernden Wesens (~2 s Bewegung).
-    scentProbeM: 4,
-});
+// KREATUR-SEELE — DIE ZWILLINGE SIND GEFALLEN (Kern-Pflicht 17.07.): das
+// Temperament-Gesetz (Signaturen + Floor + Gegenwehr-Profile), die Jagd
+// (Witterung/Biss), die Furcht (Wariness/Flucht) und der Wander-Charakter
+// (Leine/Schlendern) wohnen NUR noch im tetrapoda-Gesetzbuch
+// (VERHALTEN.temperament/jagd/furcht/wandern) — der EINE Leser ist
+// _verhaltenGesetz() (fail-closed); die historischen Literal-Blöcke
+// (CREATURE_HUNT/NATURE, TEMPERAMENT_*, CREATURE_CHARAKTER,
+// VERHALTEN_FALLBACK) trägt die git-Chronik.
 // V18.472 (C1 — DIE TIERE ENTSTAPELN, Schöpfer 14.07.: „tiere staken sich, obwohl
 // wir emotionen, unterschiedliches verhalten und charaktere sein sollten"): die
 // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint (`_applyCreatureSeparation`,
@@ -95019,46 +94816,6 @@ AnazhRealm.CREATURE_HUNT = Object.freeze({
 AnazhRealm.CREATURE_SEPARATION = Object.freeze({
     radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2 ≈ 2·Körperradius
     strength: 1.5, // Abstoß-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand, Summe geklemmt
-});
-// V18.472 (C2 — DIE CHARAKTER-BEWEGUNG; KONSUM vorhandener Achsen, keine Erfindung):
-// die freie Bewegung liest computeCreatureStats.speed (Faktor-Spanne: speed/7,
-// typisch 0.7–1.45, geklemmt [0.6, 1.6]) · die Mut-Achse aus TEMPERAMENT_PROFILES
-// .fleeMul (Leinen-Basis: wehrhaft 28 m · wild ~24.7 m · sanft ~19.7 m · scheu 8 m)
-// × die GRÖSSEN-ACHSE bodySize (die Tiere sind bewusst tag-identisch — Lehre 8:
-// Differenzierung über Größe/Gattung, nie Tags; Kitz 0.6 → ~16.8 m, GIGANT 2.7 →
-// ~75.6 m) · die Moment-Emotionen (chaos macht fahrig bis +50 %, sorrow dämpft
-// bis −40 %).
-// SPIEGEL-ZENSUS 17.07. — das GESETZ wohnt in tetrapoda-core VERHALTEN.wandern;
-// dieser Block ist der byte-gleiche fail-soft-Fallback (_verhaltenGesetz).
-AnazhRealm.CREATURE_CHARAKTER = Object.freeze({
-    speedMulMin: 0.6, // Klemm-Boden der Charakter-Geschwindigkeit (stats.speed / STAT-Base 7)
-    speedMulMax: 1.6, // Klemm-Deckel
-    leashBaseM: 18, // m — die Grund-Leine um den Anker (Geburtsort), × bodySize
-    leashSpanM: 10, // m — ± Spanne über die Mut-Achse (mutig streift weiter, furchtsam bleibt nah)
-    anchorPull: 1.2, // Heim-Zug jenseits der Leine (× speed, wächst mit der Überdehnung, geklemmt auf 1×);
-    // > wanderSpeedMul/(Überdehnungs-Anteil): ein voll-auswärts gerichteter Zug kippt ab
-    // ~1.375× Leine sicher heimwärts — die Leine ist eine WAND mit weichem Rand, kein Gummiband
-    strideSec: 2.5, // s — die Wander-Schritt-Periode (EIN Zug pro Slot, deterministisch aus netId × Slot)
-    wanderSpeedMul: 0.45, // Wander-Tempo relativ zur vollen Bewegungs-Geschwindigkeit (Schlendern)
-    chaosGain: 0.5, // Moment-chaos → fahriger (mehr Amplitude + kürzere Schritte)
-    sorrowDamp: 0.4, // Moment-sorrow → gedämpfter
-    ampFloor: 0.3, // Boden der Emotions-Modulation (ein trauriges Wesen schlurft, es friert nie ein)
-});
-// KREATUR-SEELE (Spiegel-Zensus 17.07.) — der byte-gleiche Fallback des
-// _verhaltenGesetz-Lesers: die vier historischen Literal-Blöcke (oben), unter
-// den Kern-Namen (tetrapoda-core VERHALTEN.jagd/furcht/temperament/wandern)
-// gebündelt. Kern kalt → byte-alte Welt; die KREATUR-SEELEN-PARITÄTS-WAND im
-// Vertrag-Validator (gate:studio-vertrag) erzwingt Zahlen-Gleichheit
-// Stamm ↔ Gesetzbuch (die Drift-Linse, Lehre 1).
-AnazhRealm.VERHALTEN_FALLBACK = Object.freeze({
-    jagd: AnazhRealm.CREATURE_HUNT,
-    furcht: AnazhRealm.CREATURE_NATURE,
-    temperament: Object.freeze({
-        signaturen: AnazhRealm.TEMPERAMENT_SIGNATURES,
-        floor: AnazhRealm.TEMPERAMENT_FLOOR,
-        profile: AnazhRealm.TEMPERAMENT_PROFILES,
-    }),
-    wandern: AnazhRealm.CREATURE_CHARAKTER,
 });
 // Die KI als KO-REGULATOR (Pfeiler 1, Symbiose): liest die langsame STIMMUNG (W3) und
 // TENDET sie — bei anhaltend trüber Stimmung eine tröstende Geste (Hoffnung), nicht nur

@@ -4446,7 +4446,7 @@ async function checkBandV1754PlayerAttack(ctx) {
             typeof r._pickCreatureAtCrosshair === "function" &&
             typeof r._playerAttackCreature === "function" &&
             !!r.constructor.ACTION_TO_EMOTION.attack &&
-            r.constructor.COMBAT_REACH_M > 0;
+            r.constructor._arenaGesetz().schwung.reachMaxM > 0;
 
         // (1) KONSUM — _playerAttackCreature schädigt eine Kreatur (der LMB-Konsument)
         // V18.370 — Cap-Headroom (die dokumentierte Creature-Cap-Flake): lokal raise/restore.
@@ -4846,7 +4846,7 @@ async function checkBandV1758CreatureNature(ctx) {
         const setEmo = (o) => {
             for (const k of Object.keys(e)) e[k] = o[k] || 0;
         };
-        const NAT = r.constructor.CREATURE_NATURE;
+        const NAT = r.constructor._verhaltenGesetz().furcht;
         out.exists = typeof r._creatureWariness === "function" && !!NAT && typeof NAT.fleeThreshold === "number";
 
         r.setGameMode("pfad");
@@ -4918,7 +4918,7 @@ async function checkBandV1758CreatureNature(ctx) {
         r.state.maxCreatures = _capG; // V18.370 — Cap-Headroom restore
         return out;
     });
-    check("V17.58 W3: _creatureWariness + CREATURE_NATURE existieren", res.exists);
+    check("V17.58 W3: _creatureWariness + VERHALTEN.furcht (Gesetz) existieren", res.exists);
     check(
         "V17.58 W3: KONSUM — eine sanfte Aura macht ein kühnes Wesen neugierig (Wariness ≤ Schwelle → näher)",
         res.calmIsCurious
@@ -24024,8 +24024,8 @@ async function checkBandPhasenBF(ctx) {
                 const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
                 for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
                 return (
-                    r._resonateArgmax(tags, AnazhRealm.TEMPERAMENT_SIGNATURES, {
-                        floor: AnazhRealm.TEMPERAMENT_FLOOR,
+                    r._resonateArgmax(tags, AnazhRealm._verhaltenGesetz().temperament.signaturen, {
+                        floor: AnazhRealm._verhaltenGesetz().temperament.floor,
                     }).key || "scheu"
                 );
             };
@@ -24042,9 +24042,9 @@ async function checkBandPhasenBF(ctx) {
         out.d4Konsum =
             /_creatureTemperament/.test(window.__codeOf(r.damageCreature)) &&
             /fleeMul/.test(window.__codeOf(r.damageCreature)) &&
-            AnazhRealm.TEMPERAMENT_PROFILES.sanft.strike === 0 &&
-            AnazhRealm.TEMPERAMENT_PROFILES.scheu.strike === 0 &&
-            AnazhRealm.TEMPERAMENT_PROFILES.wehrhaft.strike > 0;
+            AnazhRealm._verhaltenGesetz().temperament.profile.sanft.strike === 0 &&
+            AnazhRealm._verhaltenGesetz().temperament.profile.scheu.strike === 0 &&
+            AnazhRealm._verhaltenGesetz().temperament.profile.wehrhaft.strike > 0;
         // E2 — der Kosten-Walker zahlt die Substanz-Wahrheit.
         out.e2VillageCost = r._dslProgramWirkCost(["spawn_village", ["at", 0, 0, 0], 1]) === 20;
         out.e2Gate = /nexusWirk/.test(window.__codeOf(r._loopNexusUpdate));
@@ -27470,7 +27470,7 @@ async function checkBandWelle6Keybindings(ctx) {
         if (!r || !r.state) return null;
         const out = {};
         // Statische Konstante
-        out.hasStaminaCost = r.constructor.MOUSE_ACTION_STAMINA_COST === 5;
+        out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
         // Methoden-Existenz
         out.hasTryMouseBreak = typeof r.tryMouseBreak === "function";
         out.hasTryMousePlace = typeof r.tryMousePlace === "function";
@@ -27548,7 +27548,7 @@ async function checkBandWelle6Keybindings(ctx) {
     });
 
     if (wave6a6Results && !wave6a6Results.error) {
-        check("Welle 6.A6: MOUSE_ACTION_STAMINA_COST === 5", wave6a6Results.hasStaminaCost);
+        check("Welle 6.A6: aktionAusdauer-Gesetz === 5 (koerper-core, Zwilling gefallen)", wave6a6Results.hasStaminaCost);
         check("Welle 6.A6: tryMouseBreak existiert", wave6a6Results.hasTryMouseBreak);
         check("Welle 6.A6: tryMousePlace existiert", wave6a6Results.hasTryMousePlace);
         check("Welle 6.A6: removeArchitecture existiert", wave6a6Results.hasRemoveArchitecture);
@@ -30236,8 +30236,8 @@ async function checkBandPhaseEThreat(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        const HUNT = r.constructor.CREATURE_HUNT;
-        out.consts = !!HUNT && Object.isFrozen(HUNT) && HUNT.radius > 0 && HUNT.strikeRange > 0;
+        const HUNT = r.constructor._verhaltenGesetz().jagd;
+        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeRange > 0;
         // Die Raubtier-Seele (ALTLASTEN-NULL: der WOLF): registriert + predator-
         // markiert + aus BEIDEN Ambient-Pickern gefiltert (sparsam per Konstruktion).
         const soul = r.constructor.CREATURE_SOULS.wolf;
@@ -30272,7 +30272,7 @@ async function checkBandPhaseEThreat(ctx) {
             // (2) der Jagd-Trieb: pfad+nah+unverängstigt → JA; Furcht schlägt
             // Jagd; frieden kennt keine Bedrohung; eine sanfte Seele jagt nie.
             out.drivePfad = r._creatureHuntDrive(wolf, 0) === true;
-            out.fearBeatsHunt = r._creatureHuntDrive(wolf, r.constructor.CREATURE_NATURE.fleeThreshold) === false;
+            out.fearBeatsHunt = r._creatureHuntDrive(wolf, r.constructor._verhaltenGesetz().furcht.fleeThreshold) === false;
             r.setGameMode("frieden");
             out.friedenNoHunt = r._creatureHuntDrive(wolf, 0) === false;
             r.setGameMode("pfad");
@@ -31630,7 +31630,7 @@ async function checkBandPsi0Winkel(ctx) {
             motion: maxCos(A.MOTION_ROLE_SIGNATURES),
             workshop: maxCos(A.WORKSHOP_DOMAIN_SIGNATURES),
             op: maxCos(A.OP_CLASS_SIGNATURES),
-            temperament: maxCos(A.TEMPERAMENT_SIGNATURES),
+            temperament: maxCos(A._verhaltenGesetz().temperament.signaturen),
         };
     });
     // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
@@ -36870,8 +36870,8 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a3HuntDirExists = typeof r._creatureScentHuntDir === "function";
         out.a3StrikeExists = typeof r._tickCreatureScentStrike === "function";
         // (A3b) Konstanten gesetzt
-        out.a3ScentRangeM = A.CREATURE_HUNT.scentRangeM;
-        out.a3ScentProbeM = A.CREATURE_HUNT.scentProbeM;
+        out.a3ScentRangeM = A._verhaltenGesetz().jagd.scentRangeM;
+        out.a3ScentProbeM = A._verhaltenGesetz().jagd.scentProbeM;
         out.a3ConstsOk =
             typeof out.a3ScentRangeM === "number" &&
             out.a3ScentRangeM >= 30 &&
@@ -37052,7 +37052,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
     check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
     check(
-        `V18.210-A3b CREATURE_HUNT.scentRangeM/scentProbeM Konstanten (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`,
+        `V18.210-A3b VERHALTEN.jagd.scentRangeM/scentProbeM Gesetz (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`,
         res.a3ConstsOk === true
     );
     check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);

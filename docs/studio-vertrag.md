@@ -146,19 +146,18 @@ Komponenten-SÄTZE, keine Klassen):
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
   als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
   dipMin/Max keRefJ } · bogen { mArrow zugJouleRef auszugSec fovZug fovRuhe
-  minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`; Kern kalt →
-  `ARENA_FALLBACK` = das byte-alte GEFÜHLLOSE Verhalten (bewusst KEIN
-  Zahlen-Zwilling, anders als SCHWIMM). Spiegel-Zensus 17.07. (V18.486+,
+  minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
+  (Kern-Pflicht 17.07.: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
+  GEFALLEN; `MAX_PFEILE` blieb ehrlich Wirts-Deckel). Spiegel-Zensus 17.07. (V18.486+,
   rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
   strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
   `gefuehl` den Stoß + das Tod-Kippen (`stossCap stossProKb stossSkala
   kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
   radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
-  Schadens-Faktor (Leser `_heldGueteFaktor`, beide Angriffs-Pfade). Diese
-  Geometrie-/Stoß-/Flug-Fallbacks SIND Zahlen-Zwillinge der Kern-Werte
-  (SWING_/BOGEN_LAWS, byte-alt bei kaltem Kern); nur das GEFÜHL
-  (freeze/dip/Auszug/Güte) bleibt bewusst gefühllos im Fallback.
+  Schadens-Faktor (Leser `_heldGueteFaktor`, beide Angriffs-Pfade). Alle
+  Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
+  mehr (ZWILLINGS-ABSENZ-WAND).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
   rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
@@ -170,10 +169,10 @@ Komponenten-SÄTZE, keine Klassen):
   (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { signaturen
   floor profile }` (Resonanz-Signaturen + Gegenwehr-Profile) · `wandern`
   (Leine/Schlendern/Emotions-Modulation). Leser
-  `AnazhRealm._verhaltenGesetz()` (memoisiert, fail-soft); die
-  Stamm-Blöcke `CREATURE_HUNT/CREATURE_NATURE/TEMPERAMENT_*/
-  CREATURE_CHARAKTER` sind der Zahlen-Zwilling als Fallback — die
-  KREATUR-SEELEN-PARITÄTS-WAND im Validator erzwingt die Gleichheit.
+  `AnazhRealm._verhaltenGesetz()` (memoisiert, fail-closed — Kern-Pflicht
+  17.07.: die Stamm-Zwillinge `CREATURE_HUNT/CREATURE_NATURE/
+  TEMPERAMENT_*/CREATURE_CHARAKTER` sind GEFALLEN; die
+  ZWILLINGS-ABSENZ-WAND im Validator hält sie draußen).
   Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
   Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
 
@@ -404,7 +403,7 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   (wolf/fox/bear/deer, 6 Profile + CPG + Stand-Pose).
 - **§8.2+ `fx.bewegung` (Bewegungs-GESETZE des Körpers, V18.483/485):** die
   Verben des Ninja-Parks + das Wasser als reine Daten, Leser sind die EINEN
-  Gesetz-Funktionen des Wirts (memoisiert, fail-soft):
+  Gesetz-Funktionen des Wirts (memoisiert, fail-closed — Kern-Pflicht):
   `bewegung { speed { base leicht mag } · jumpPower { base leicht mag } ·
   stamina { base traeger mag } · schwimmen { tauchV aufV lerp hubK tiefeK
   hubCap tiefeCap drag taktZug taktTreten lean { zug treten } pose { kopf
@@ -420,10 +419,12 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   `aktionAusdauer` = die Kosten der Maus-Arm-Aktion (Hieb/Abbau),
   `parkour.kontaktFrischeSec` = das EINE Wandkontakt-Fenster (war der
   divergente Stamm-Zwilling 0.18/0.15). Leser `AnazhRealm._bewegungsBlock`
-  (block-weise, ganz-oder-gar-nicht) + `_aktionAusdauer`, fail-soft
-  byte-gleich. SCHWIMM-PARITÄT ist Vertrag: der Stamm-Fallback
-  (`SCHWIMM_FALLBACK`) MUSS zahlen-gleich zum Kern sein (Validator-Wand);
-  `parkour` hat BEWUSST keinen Fallback (Kern kalt → kein Parkour).
+  (block-weise, ganz-oder-gar-nicht) + `_aktionAusdauer` — fail-closed
+  (Kern-Pflicht 17.07.): die Stamm-Zahlen-Zwillinge (`SCHWIMM/LUFT/SPRUNG/
+  SCHRITT_FALLBACK`, `MOUSE_ACTION_STAMINA_COST`) sind GEFALLEN, ein
+  unlesbares Gesetz ist ein `_kernPflichtBruch` (die Wand schreit); die
+  ZWILLINGS-ABSENZ-WAND im Validator hält die Zwillinge draußen.
+  `parkour` bleibt Gesetz-Freiheit (kein parkour-Block → keine Verben).
 - **§8.3 `fx.klang` (Musik-Daten, W-A7):** ein Genre als reine Daten. Schema
   (bpm MUSS im Feld, Rest DARF): `klang { bpm, scaleName?, scale?: halbton[],
   dna?: { swing darkness color flow tension space }, form? harmony? rhythm?
