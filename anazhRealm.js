@@ -19043,8 +19043,24 @@ class AnazhRealm {
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
         if (!m) return null;
-        const p = m[this._motionProfileName(moving, emotions, "koerper")];
+        // ZENSUS-REST V18.488 — der KAMPF-ZUSTAND führt vor der Emotions-Achse
+        // (dieselbe Vorrang-Semantik wie die Kreatur-Spalte). NUR im Live-Read
+        // (emotions gesetzt): die Referenz-Reads (emotions=null) bleiben der
+        // NEUTRAL-Anker der Delta-/Ratio-Brücken — sonst wäre das fight-Delta 0.
+        const zust = emotions ? this._koerperKampfZustand() : null;
+        const p = m[this._motionProfileName(moving, emotions, "koerper", zust)];
         return p && typeof p === "object" ? p : null;
+    }
+    // ZENSUS-REST V18.488 — DER KAMPF-ZUSTAND DES AVATARS: im Schwung ODER in
+    // der Nachklang-Haltung (KAMPF_HALTUNG_SEC nach dem letzten Angriff) steht
+    // der Körper in Garde ("fight" — die erste lebende koerper-Zustands-Zeile).
+    _koerperKampfZustand() {
+        const p = this.state && this.state.player;
+        if (!p) return null;
+        if (p._swing) return "kampf";
+        const now = performance.now() / 1000;
+        if (Number.isFinite(p.lastAttackAt) && now - p.lastAttackAt < AnazhRealm.KAMPF_HALTUNG_SEC) return "kampf";
+        return null;
     }
     // ABSCHIEDS-WELLE (Koerper-Dock A1) — DIE EINE GESTALT-DIAL-QUELLE: liest die acht
     // Morph-Dials des Da-Vinci-Studios LIVE (f.recipes[mensch].s — das
@@ -95107,7 +95123,16 @@ AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     schwimmen: Object.freeze({ kreatur: "schwimmen" }),
     jagd: Object.freeze({ kreatur: "hunt" }),
     flucht: Object.freeze({ kreatur: "flee" }),
+    // ZENSUS-REST V18.488 — die erste koerper-ZUSTANDS-Zeile: der KAMPF-Zustand
+    // des Avatars (frischer Schwung/Schuss, _koerperKampfZustand) wählt das
+    // Lab-Profil "fight" (Garde-Haltung, Ellbogen 1.35 — vorher TOTE Daten:
+    // kein Pfad wählte es je). angry/showcase bleiben bewusst Lab-only (der
+    // Wirt trägt keine Zorn-Achse und kein Schaufenster-Verb — Matrix-Zeile).
+    kampf: Object.freeze({ koerper: "fight" }),
 });
+// Wie lange die Kampf-HALTUNG nach dem letzten Angriff steht (s) — der Körper
+// bleibt in Garde, dann löst sich die Spannung (Wirts-Gefühls-Regler).
+AnazhRealm.KAMPF_HALTUNG_SEC = 3;
 // ABSCHIEDS-WELLE — DIE EINE EMOTIONS→PROFIL-BRÜCKE (Daten, kein if-Baum): Zeilen in
 // VORRANG-Reihenfolge; die erste Achse (die 6 Host-Emotions-Achsen, EMOTION_AXES —
 // Kreaturen tragen dieselben, Phase E speist Furcht als sorrow+chaos) über ihrer
