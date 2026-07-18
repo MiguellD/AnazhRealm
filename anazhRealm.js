@@ -11345,18 +11345,23 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx || !s.lofi || !s.lofi.melodyGain) return;
         const ctx = s.ctx;
         const now = ctx.currentTime;
+        // GENRE-STIMMEN (18.07.) — die LEAD-Stimme des Gesetzbuchs (inst.lead
+        // wählt Wellenform/Pegel/Anschlag; tilt.lead mischt) — Flöte singt,
+        // LeadSynth sticht, Rhodes perlt. Fail-soft byte-alt (sine, Faktor 1).
+        const ST = this._lofiInstStimme("lead");
         for (const note of this._lofiMelodyNotes(degree, durSec)) {
             const osc = ctx.createOscillator();
-            osc.type = "sine";
+            osc.type = ST.type;
             osc.frequency.value = note.freq;
             const env = ctx.createGain();
             const t0 = now + note.start;
             // V8.88 — eine SINGENDE Hüllkurve (Anschlag → Halt → Ausklang).
             // V8.90 — der Spitzen-Pegel folgt der Noten-Dynamik (note.vel):
             // ein starker Takt-Schritt klingt lauter, ein schwacher leiser.
+            const vel = note.vel * ST.gain;
             env.gain.setValueAtTime(0, t0);
-            env.gain.linearRampToValueAtTime(note.vel, t0 + 0.05);
-            env.gain.linearRampToValueAtTime(note.vel * 0.6, t0 + note.dur * 0.7);
+            env.gain.linearRampToValueAtTime(vel, t0 + 0.05 * ST.attackMul);
+            env.gain.linearRampToValueAtTime(vel * 0.6, t0 + note.dur * 0.7);
             env.gain.linearRampToValueAtTime(0, t0 + note.dur);
             osc.connect(env);
             env.connect(s.lofi.melodyGain);
@@ -11401,7 +11406,7 @@ class AnazhRealm {
         osc.frequency.exponentialRampToValueAtTime(70, t + 0.08);
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.85, t + 0.006);
+        env.gain.exponentialRampToValueAtTime(0.85 * (TB.gainMul || 1), t + 0.006);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.24 * TB.kickDauer);
         osc.connect(env);
         env.connect(s.lofi.grooveGain);
@@ -11439,7 +11444,7 @@ class AnazhRealm {
         hp.frequency.value = 1200 * TB.snareHp;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.5, t + 0.005);
+        env.gain.exponentialRampToValueAtTime(0.5 * (TB.gainMul || 1), t + 0.005);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 * TB.snareDauer);
         src.connect(hp);
         hp.connect(env);
@@ -11465,7 +11470,7 @@ class AnazhRealm {
         hp.frequency.value = (7000 + this._lofiWorldField().glut * 2500) * TB.hihatHp;
         const env = ctx.createGain();
         env.gain.setValueAtTime(0.0001, t);
-        env.gain.exponentialRampToValueAtTime(0.22 * TB.hihatGain, t + 0.004);
+        env.gain.exponentialRampToValueAtTime(0.22 * TB.hihatGain * (TB.gainMul || 1), t + 0.004);
         env.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
         src.connect(hp);
         hp.connect(env);
@@ -11505,7 +11510,72 @@ class AnazhRealm {
             Brush: { kickDauer: 0.9, snareHp: 0.8, snareDauer: 1.5, hihatHp: 0.9, hihatGain: 0.6 },
             Perc: { kickDauer: 0.85, snareHp: 1.2, snareDauer: 0.8, hihatHp: 1.35, hihatGain: 1.1 },
         };
-        return (d && T[d]) || { kickDauer: 1, snareHp: 1, snareDauer: 1, hihatHp: 1, hihatGain: 1 };
+        const tb = Object.assign(
+            { kickDauer: 1, snareHp: 1, snareDauer: 1, hihatHp: 1, hihatGain: 1 },
+            (d && T[d]) || null
+        );
+        // GENRE-STIMMEN (18.07.) — tilt.drums (dB, die Genre-Mixer-Zeile des
+        // Gesetzbuchs) reist als linearer Faktor auf alle Trommel-Pegel.
+        const tDb = studio && studio.tilt && Number.isFinite(studio.tilt.drums) ? studio.tilt.drums : 0;
+        tb.gainMul = Math.pow(10, tDb / 20);
+        return tb;
+    }
+
+    // ═══ GENRE-STIMMEN (18.07.) — DIE INSTRUMENT-WAHL FÄRBT DIE MELODIE ═══
+    // klang-core deklariert je Genre inst.{harmony,lead,bass} (22 Genres, 19
+    // Instrument-Namen) + tilt.<rolle> (dB-Mixer) — der Host las NUR
+    // inst.drums: Dreieck-Pad für alles, 22 Genres klangen gleich. Jetzt der
+    // EINE Stimmen-Chokepoint (das _lofiDrumTimbre-Muster, Tabelle vor if):
+    // die WAHL des Gesetzbuchs wählt Wellenform + Pegel + Anschlag je Rolle —
+    // der Host bleibt ein Lofi-Ofen (Web-Audio-Osc, keine Lab-Synthese: die
+    // TECHNIK ist Leser-Sache, die WAHL ist Gesetz). Fail-soft byte-alt:
+    // kaltes Buch/unbekannter Name → die historische Stimme (triangle/sine/
+    // triangle, Faktor 1, Anschlag 1).
+    _lofiInstStimme(rolle) {
+        const studio = this._klangStudioPreset();
+        // Die Komposita sind ECHTE Leser (der Konsum-Wächter rastert inst.*/
+        // tilt.* nur über das Kompositum — die nackten Wörter kollidieren).
+        const name =
+            studio && studio.inst
+                ? rolle === "harmony"
+                    ? studio.inst.harmony
+                    : rolle === "lead"
+                      ? studio.inst.lead
+                      : studio.inst.bass
+                : null;
+        const T = {
+            GrandPiano: { type: "triangle", gain: 1, attackMul: 0.35 },
+            Rhodes: { type: "sine", gain: 1.1, attackMul: 0.6 },
+            Guitar: { type: "triangle", gain: 0.95, attackMul: 0.3 },
+            DistGuitar: { type: "square", gain: 0.5, attackMul: 0.4 },
+            Strings: { type: "sawtooth", gain: 0.5, attackMul: 1.6 },
+            SynthPad: { type: "sawtooth", gain: 0.45, attackMul: 2.0 },
+            LeadSynth: { type: "sawtooth", gain: 0.6, attackMul: 0.25 },
+            SynthBrass: { type: "sawtooth", gain: 0.55, attackMul: 0.5 },
+            Flute: { type: "sine", gain: 1.05, attackMul: 0.8 },
+            Vibraphone: { type: "sine", gain: 1.05, attackMul: 0.25 },
+            Marimba: { type: "sine", gain: 1, attackMul: 0.15 },
+            Kalimba: { type: "sine", gain: 1, attackMul: 0.15 },
+            Organ: { type: "square", gain: 0.5, attackMul: 0.9 },
+            Clavinet: { type: "square", gain: 0.5, attackMul: 0.2 },
+            DoubleBass: { type: "triangle", gain: 1, attackMul: 1 },
+            PickBass: { type: "square", gain: 0.55, attackMul: 0.5 },
+            SynthBass: { type: "sawtooth", gain: 0.6, attackMul: 0.6 },
+            ReeseBass: { type: "sawtooth", gain: 0.6, attackMul: 1 },
+            Sub808: { type: "sine", gain: 1.15, attackMul: 0.8 },
+        };
+        const alt = { harmony: "triangle", lead: "sine", bass: "triangle" };
+        const v = (typeof name === "string" && T[name]) || { type: alt[rolle] || "sine", gain: 1, attackMul: 1 };
+        const tiltDb =
+            studio && studio.tilt
+                ? rolle === "harmony"
+                    ? studio.tilt.harmony
+                    : rolle === "lead"
+                      ? studio.tilt.lead
+                      : studio.tilt.bass
+                : null;
+        const gain = v.gain * (Number.isFinite(tiltDb) ? Math.pow(10, tiltDb / 20) : 1);
+        return { type: v.type, gain, attackMul: v.attackMul, name: typeof name === "string" ? name : null };
     }
 
     // W4 V3 Phase 3 — den Groove einer Akkord-Dauer spielen: das Trommel-
@@ -11545,7 +11615,18 @@ class AnazhRealm {
         const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
         if (studio && typeof studio.harmony === "string" && kc && typeof kc.progressionDeg === "function") {
             const lofi = this.state.symphony && this.state.symphony.lofi;
-            const bar = lofi ? (lofi.bar = (Number.isFinite(lofi.bar) ? lofi.bar : 0) + 1) : 1;
+            let bar = lofi ? (lofi.bar = (Number.isFinite(lofi.bar) ? lofi.bar : 0) + 1) : 1;
+            // GENRE-FORM (18.07.) — die FORM rahmt die Harmonie-Reise: am
+            // Abschnitts-Ende (AAB 3 · AABA 4 · Vamp 2 · Build/Sonata 8 Takte,
+            // die Genre-Tafel-Wahl) beginnt der Bogen neu (der Takt-Zähler
+            // springt auf den Abschnitts-Anfang → progressionDeg kehrt zur
+            // Tonika-Phase zurück). Free/kaltes Buch → nie (byte-alt).
+            const FORM_TAKTE = { AAB: 3, AABA: 4, Vamp: 2, Build: 8, Sonata: 8 };
+            const ft = typeof studio.form === "string" ? FORM_TAKTE[studio.form] : null;
+            if (lofi && ft) {
+                bar = ((bar - 1) % ft) + 1;
+                lofi.formTakt = bar; // die Abschnitts-Uhr (Linse/HUD lesbar)
+            }
             const emotions = (this.state.player && this.state.player.emotions) || {};
             const inDev = (Number(emotions.sorrow) || 0) > 0.6;
             try {
@@ -11729,6 +11810,9 @@ class AnazhRealm {
         // Anlagen, die den Tiefbass schlucken; wie der Noise-Klick die Kick).
         const subFreqOf = (semi) => AnazhRealm.LOFI_BASE_FREQ * Math.pow(2, (semi - 12) / 12);
         const swing = this._grooveSwing(); // ZENSUS 17.07. — derselbe Genre-Shuffle wie der Groove
+        // GENRE-STIMMEN (18.07.) — die BASS-Stimme des Gesetzbuchs (inst.bass:
+        // Sub808 rund, PickBass knurrt, DoubleBass byte-alt; tilt.bass mischt).
+        const ST = this._lofiInstStimme("bass");
         const spiele = (t, semi, dur, subOnly) => {
             const subFreq = subFreqOf(semi);
             const voices = subOnly
@@ -11739,12 +11823,12 @@ class AnazhRealm {
                   ];
             for (const voice of voices) {
                 const osc = ctx.createOscillator();
-                osc.type = "triangle";
+                osc.type = ST.type;
                 osc.frequency.value = voice.freq;
                 const env = ctx.createGain();
                 env.gain.setValueAtTime(0, t);
-                env.gain.linearRampToValueAtTime(voice.attackPeak, t + 0.03);
-                env.gain.linearRampToValueAtTime(voice.sustainPeak, t + dur * 0.6);
+                env.gain.linearRampToValueAtTime(voice.attackPeak * ST.gain, t + 0.03);
+                env.gain.linearRampToValueAtTime(voice.sustainPeak * ST.gain, t + dur * 0.6);
                 env.gain.linearRampToValueAtTime(0, t + dur);
                 osc.connect(env);
                 env.connect(s.lofi.bassGain);
@@ -11825,14 +11909,18 @@ class AnazhRealm {
         // W4 V4 Sub-Schritt 1 — eine magieleitung-Region trägt einen leisen,
         // leicht verstimmten Oktav-Schimmer (das Welt-Feld färbt das Timbre).
         const shimmer = this._lofiWorldField().magieleitung > 0.6;
-        const attack = 0.8;
+        // GENRE-STIMMEN (18.07.) — die HARMONIE-Stimme des Gesetzbuchs
+        // (inst.harmony: GrandPiano perkussiv, SynthPad schwebt mit langem
+        // Anschlag, Rhodes weich; tilt.harmony mischt). Byte-alt: triangle/1/1.
+        const ST = this._lofiInstStimme("harmony");
+        const attack = 0.8 * ST.attackMul;
         const release = 1.4;
         const sustainAt = now + Math.max(attack, durSec - release);
         for (const freq of freqs) {
             for (const mult of voiceMults) {
-                const peak = mult === 1 ? 0.25 : 0.1; // die Oktav-Dopplung leiser
+                const peak = (mult === 1 ? 0.25 : 0.1) * ST.gain; // die Oktav-Dopplung leiser
                 const osc = ctx.createOscillator();
-                osc.type = "triangle";
+                osc.type = ST.type;
                 osc.frequency.value = freq * mult;
                 const env = ctx.createGain();
                 env.gain.setValueAtTime(0, now);
@@ -11846,12 +11934,12 @@ class AnazhRealm {
             }
             if (shimmer) {
                 const osc = ctx.createOscillator();
-                osc.type = "triangle";
+                osc.type = ST.type;
                 osc.frequency.value = freq * 2 * 1.006; // Oktave, leicht verstimmt
                 const env = ctx.createGain();
                 env.gain.setValueAtTime(0, now);
-                env.gain.linearRampToValueAtTime(0.045, now + attack);
-                env.gain.setValueAtTime(0.045, sustainAt);
+                env.gain.linearRampToValueAtTime(0.045 * ST.gain, now + attack);
+                env.gain.setValueAtTime(0.045 * ST.gain, sustainAt);
                 env.gain.linearRampToValueAtTime(0, now + durSec);
                 osc.connect(env);
                 env.connect(s.lofi.filter);

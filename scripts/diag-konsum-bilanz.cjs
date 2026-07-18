@@ -75,6 +75,16 @@ function blaetter(obj, prefix, tiefe, out) {
         new RegExp("[^a-zA-Z0-9_]" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^a-zA-Z0-9_]").test(stamm);
     const istGelesen = (pfad) => {
         const teile = pfad.split(".");
+        // KOMPOSITUM-REGEL (18.07., die Wort-Kollisions-Heilung): Blätter der
+        // benannten Stimmen-/Mixer-Tabellen (inst.* / tilt.*) gelten NUR als
+        // gelesen, wenn der Stamm das KOMPOSITUM liest (inst.drums,
+        // tilt.harmony, …) — die nackten Wörter (bass/lead/harmony) kollidieren
+        // mit Alltags-Code, der Wächter war für diese Klasse strukturell blind.
+        for (let i = 1; i < teile.length; i++) {
+            if (teile[i - 1] === "inst" || teile[i - 1] === "tilt") {
+                return wortImStamm(teile[i - 1] + "." + teile[i]);
+            }
+        }
         let urteilbar = 0;
         for (let i = teile.length - 1; i >= 0; i--) {
             const t = teile[i];
@@ -127,6 +137,16 @@ function blaetter(obj, prefix, tiefe, out) {
     const fake = "fake-core.js :: PRESETS.x.fx.zensusFakeExportXyz";
     const selbsttest = !BEKANNTE_WAISEN.has(fake) && !istGelesen("PRESETS.x.fx.zensusFakeExportXyz");
     console.log(`  ${selbsttest ? "✅" : "❌"} SELBSTTEST: injizierter Fake-Export fiele als neue Waise`);
+    // SELBSTTEST 2 (Kompositum-Regel): ein Fake-inst-Blatt MUSS rot fallen —
+    // vorher unmöglich (das nackte Wort kollidierte mit Alltags-Code); und
+    // das echte inst.drums-Blatt MUSS über sein Kompositum grün sein.
+    const selbsttest2 =
+        !istGelesen("PRESETS.lofi.fx.klang.inst.zensusFakeStimme") &&
+        istGelesen("PRESETS.lofi.fx.klang.inst.drums") &&
+        istGelesen("PRESETS.lofi.fx.klang.tilt.harmony");
+    console.log(
+        `  ${selbsttest2 ? "✅" : "❌"} SELBSTTEST 2: die Kompositum-Regel urteilt (Fake-inst-Blatt rot, inst.drums/tilt.harmony grün)`
+    );
     if (neueWaisen.length) {
         console.log(`\n❌ ROT — ${neueWaisen.length} NEUE Waise(n) (Anazh kennt noch nicht):`);
         for (const w of neueWaisen) console.log("    ! " + w);
