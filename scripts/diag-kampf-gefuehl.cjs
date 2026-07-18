@@ -415,6 +415,74 @@ const server = http.createServer((req, res) => {
             tick(4, 0.1); // t=1.4 > kippDauer + Nachklang → der bestehende Abschied
             o.checks.dDespawnNachFrist = s.creatures.indexOf(cTod) === -1;
 
+            // ── EINHEITSBREI-WAND (18.07.) — die 13 Gattungen differenzieren ──
+            // Fake-Blueprints mit BYTE-GLEICHEN Donor-Parts (KIND_SUBSTANCE.
+            // geraet_schwert) aber verschiedener studioGestalt: unterscheiden
+            // sich Dauer/Reichweite/Schaden, KANN die Quelle nur der Kern sein
+            // (kampfMasze) — die Donor-Parts können es nicht liefern (Absenz-
+            // Beweis im Konsum-Beweis). Selbst-Test: kampfMasze gestubbt →
+            // alles kollabiert auf EINE Dauer — die Wand MUSS es sehen.
+            try {
+                const sc = globalThis.__schmiedeCore;
+                const donorParts = JSON.parse(JSON.stringify(r.constructor.KIND_SUBSTANCE.geraet_schwert.parts));
+                const gattungen = ["dolch", "messer", "langschwert", "saebel", "grossschwert", "keule", "kriegsaxt"];
+                const probe = () => {
+                    const rows = [];
+                    for (const id of gattungen) {
+                        const bp = { name: "klinge_" + id, studioGestalt: id, parts: donorParts };
+                        const dauer = r._swingDauerFuerBlueprint(bp);
+                        const heldSaved = r._heldImplementBlueprint;
+                        r._heldImplementBlueprint = () => bp;
+                        let reach = null;
+                        let dmgF = null;
+                        try {
+                            reach = r._kampfBladeReach();
+                            dmgF = r._heldSchmiedeFaktor();
+                        } finally {
+                            r._heldImplementBlueprint = heldSaved;
+                        }
+                        rows.push({ id, dauer, reach, dmgF });
+                    }
+                    return rows;
+                };
+                r._kampfMaszeMemo = null; // frisch messen
+                const rows = probe();
+                const by = {};
+                for (const row of rows) by[row.id] = row;
+                o.brei = rows.map((x) => `${x.id}:${x.dauer.toFixed(2)}s/${x.reach.toFixed(2)}m/×${x.dmgF.toFixed(2)}`).join(" ");
+                o.checks.breiDauerDistinct = new Set(rows.map((x) => x.dauer.toFixed(3))).size >= 3;
+                o.checks.breiReachDistinct = new Set(rows.map((x) => x.reach.toFixed(2))).size >= 3;
+                o.checks.breiDmgDistinct = new Set(rows.map((x) => x.dmgF.toFixed(2))).size >= 3;
+                o.checks.breiOrdnung =
+                    by.dolch.dauer < by.grossschwert.dauer &&
+                    by.dolch.reach < by.grossschwert.reach &&
+                    by.messer.dmgF < by.langschwert.dmgF &&
+                    by.langschwert.dmgF < by.keule.dmgF;
+                // Texel==Gesetz: das UNGEKLEMMTE Paar langschwert/grossschwert
+                // hält dauer2/dauer1 == √(I2/I1) ± 5 % gegen kampfMasze.
+                const k1 = sc.kampfMasze("langschwert");
+                const k2 = sc.kampfMasze("grossschwert");
+                const soll = Math.sqrt(k2.traegheit / k1.traegheit);
+                const ist = by.grossschwert.dauer / by.langschwert.dauer;
+                o.breiRatio = { ist, soll };
+                o.checks.breiRatio = Math.abs(ist / soll - 1) < 0.05;
+                // Selbst-Test: ohne kampfMasze kollabiert alles auf die EINE
+                // Donor-Dauer — die Distinct-Wand MUSS rot sehen können.
+                const kmSaved = r._schmiedeKampfMasze;
+                r._schmiedeKampfMasze = () => null;
+                let stubRows = null;
+                try {
+                    stubRows = probe();
+                } finally {
+                    r._schmiedeKampfMasze = kmSaved;
+                }
+                o.checks.breiSelbsttest =
+                    new Set(stubRows.map((x) => x.dauer.toFixed(3))).size === 1 &&
+                    new Set(stubRows.map((x) => x.reach.toFixed(2))).size === 1;
+            } catch (eBrei) {
+                o.breiErr = (eBrei && eBrei.message) || String(eBrei);
+            }
+
             // ── Bühne restaurieren ──
             for (const c of [cNeben, cRuecken]) {
                 if (s.creatures.indexOf(c) !== -1) {
@@ -468,6 +536,24 @@ const server = http.createServer((req, res) => {
         );
         console.log(
             `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.pose0.armX.toFixed(2)} → ${out.pose.poseW.armX.toFixed(2)}\n`
+        );
+        if (out.brei) console.log(`  (BREI) ${out.brei}\n`);
+        check(
+            c.breiDauerDistinct && c.breiReachDistinct && c.breiDmgDistinct,
+            "EINHEITSBREI: byte-gleiche Donor-Parts, ≥3 distinkte Dauern/Reichweiten/Schadens-Faktoren — die Quelle ist der Kern (kampfMasze)" +
+                (out.breiErr ? " — FEHLER: " + out.breiErr : "")
+        );
+        check(
+            c.breiOrdnung,
+            "EINHEITSBREI: die Ordnung stimmt (Dolch flink+kurz < Grossschwert · Messer < Langschwert < Keule im Schaden)"
+        );
+        check(
+            c.breiRatio,
+            `EINHEITSBREI: Dauer-Verhältnis == √(I-Verhältnis) ± 5 % gegen kampfMasze (ist ${out.breiRatio ? out.breiRatio.ist.toFixed(3) : "?"} soll ${out.breiRatio ? out.breiRatio.soll.toFixed(3) : "?"})`
+        );
+        check(
+            c.breiSelbsttest,
+            "EINHEITSBREI-SELBSTTEST: kampfMasze gestubbt → alles kollabiert auf EINE Donor-Dauer (die Wand sieht den Riss)"
         );
         check(c.klickLoestNurAus, "KONSUM: der Crosshair-Klick löst NUR aus (kein attackSpeed, kein Direkt-Schaden)");
         check(c.cooldownLiestQuelle, "KONSUM: der Cooldown IST die Schwung-Dauer (_playerSwingDauer — EINE Quelle)");

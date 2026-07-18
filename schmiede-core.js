@@ -2941,6 +2941,12 @@
     var ARENA = {
         schwung: {
             dauerProSqrtI: 0.55,
+            // EINHEITSBREI-SCHNITT (18.07., rein additiv): die Dauer-Konstante
+            // für die GEMESSENE Trägheit (kampfMasze, echte kg·m² — andere
+            // Einheit als die Tag-Trägheit des Emergenz-Pfads): Langschwert
+            // (I 0.137) → ~0.52 s, Grossschwert (0.336) → ~0.81 s, Dolch
+            // klemmt flink auf minDauerSec, Vorschlaghammer träge auf max.
+            dauerProSqrtIKg: 1.4,
             minDauerSec: 0.25,
             maxDauerSec: 1.8,
             handDauerSec: 0.4,
@@ -2975,7 +2981,17 @@
             radiusM: 0.12,
             muendungM: 1.2,
         },
-        guete: { faktorVoll: 1.0, faktorLeer: 0.55 },
+        guete: {
+            faktorVoll: 1.0,
+            faktorLeer: 0.55,
+            // EINHEITSBREI-SCHNITT (18.07., rein additiv): der Schadens-Faktor
+            // der EFFEKTIVEN MASSE (kampfMasze.mEff / mEffRefKg, geklemmt) —
+            // Referenz = Langschwert (~0.25 kg): Messer schlägt gedämpft
+            // (dmgMin), Grossschwert ~1.7×, Keule/Hämmer klemmen auf dmgMax.
+            mEffRefKg: 0.25,
+            mEffDmgMin: 0.6,
+            mEffDmgMax: 2.2,
+        },
     };
 
     // ── GUETE (rein additiv, Spiegel-Zensus 17.07.) — DIE GEMESSENE WAFFEN-GUETE
@@ -2987,9 +3003,13 @@
     //    (seine Kraft reist schon als zugkraft×auszug in der EINEN Schuss-
     //    Physik). Der Wirt multipliziert den Faktor auf stats.damage — die
     //    geschmiedete FORM kaempft: eine Attrappe schlaegt matt. ──
-    function gueteFaktor(rezeptId, ov) {
+    // EINHEITSBREI-SCHNITT (18.07.) — DIE EINE P-PRÄPARATION (reine Extraktion
+    // aus gueteFaktor, byte-treu): Gattung → Task×Werkstoff → snapBases →
+    // Tradition → ov-Regler (__-Schlüssel sind STEUER-Passagiere). gueteFaktor
+    // UND kampfMasze lesen dieselbe Präparation — eine Wahrheit, zwei Urteile.
+    function prepP(rezeptId, ov) {
         var name = REZEPT_ZU_GATTUNG[rezeptId];
-        if (!name || !GATTUNGEN[name]) return ARENA.guete.faktorVoll;
+        if (!name || !GATTUNGEN[name]) return null;
         var tp = Object.assign({ flat: 0.42, _kBase: 0 }, GATTUNGEN[name]);
         var trad =
             ov && typeof ov.__tradition === "string" && TRADITIONEN[ov.__tradition]
@@ -3009,6 +3029,36 @@
                 tp[k] = ov[k];
             }
         }
+        return tp;
+    }
+
+    // EINHEITSBREI-SCHNITT (18.07.) — DIE KAMPF-MASSE JE GATTUNG: measure
+    // (die Metrologie) urteilt über die PRÄPARIERTE Gattung; der Wirt fährt
+    // Schwung-Dauer (∝ √Trägheit), Reichweite (Gesamtlänge) und Schadens-
+    // Faktor (effektive Masse) aus DIESEN Zahlen — ein Dolch ist flink+kurz,
+    // ein Grossschwert träge+lang. Bogen → null (die Schuss-Physik bleibt
+    // ARENA.bogen). Unbekanntes Rezept → null (die Gattungs-Tafel ist die
+    // Domänen-Wand — der Wirt fällt auf seinen Emergenz-Pfad für Eigenwerke).
+    function kampfMasze(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return null;
+        if (tp.modus === "bogen") return null;
+        if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
+        var m = measure(tp);
+        if (!m || !m.S || !isFinite(m.M) || !(m.S.L > 0)) return null;
+        var I = m.Inorm * m.M * m.S.L * m.S.L; // die rohe Trägheit um den Pivot (Inorm = I/(M·L²))
+        return {
+            laengeM: m.S.L,
+            masseKg: m.M,
+            traegheit: I,
+            mEff: m.mEffFrac * m.M,
+            pob: m.PoB,
+        };
+    }
+
+    function gueteFaktor(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return ARENA.guete.faktorVoll;
         if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
         if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
         var res = evalLehren(tp);
@@ -3030,6 +3080,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         ARENA: ARENA,
         gueteFaktor: gueteFaktor,
+        kampfMasze: kampfMasze,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },

@@ -75674,6 +75674,15 @@ class AnazhRealm {
         // FORMEL bleibt Wirts-Gesetz (Ω-Φ4: dauer = dauerProSqrtI·√I, geklemmt).
         const S = AnazhRealm._arenaGesetz().schwung;
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return S.handDauerSec;
+        // EINHEITSBREI-SCHNITT (18.07.): eine Studio-Klinge schwingt ihre
+        // GEMESSENE Trägheit (kampfMasze, echte kg·m² → dauerProSqrtIKg) —
+        // Dolch flink, Grossschwert träge. Die Donor-Tag-Trägheit ist für
+        // Studio-Klingen TOT; User-Eigenwerke behalten Ω-Φ4 (deren einzige
+        // Quelle — kein Zwilling: anderer Definitionsbereich).
+        const km = this._schmiedeKampfMasze(bp);
+        if (km && km.traegheit > 1e-9 && Number.isFinite(S.dauerProSqrtIKg)) {
+            return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtIKg * Math.sqrt(km.traegheit)));
+        }
         const I = this._swingDynamics(bp).swingInertia;
         if (!(I > 1e-9)) return S.handDauerSec;
         return Math.min(S.maxDauerSec, Math.max(S.minDauerSec, S.dauerProSqrtI * Math.sqrt(I)));
@@ -75747,9 +75756,18 @@ class AnazhRealm {
         const bp = this._heldImplementBlueprint();
         let len = 0.7; // Faust/leer: Armlänge
         if (bp) {
-            const bb = this._compoundBBox(bp);
-            if (bb) {
-                len = Math.max(0.4, Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z));
+            // EINHEITSBREI-SCHNITT (18.07.): die Studio-Klinge greift ihre
+            // GEMESSENE Gesamtlänge (kampfMasze.laengeM — Dolch 0.37 m,
+            // Grossschwert 1.60 m) statt der 2.13-m-Donor-bbox; User-
+            // Eigenwerke behalten die Substanz-bbox (deren einzige Quelle).
+            const km = this._schmiedeKampfMasze(bp);
+            if (km && Number.isFinite(km.laengeM) && km.laengeM > 0) {
+                len = Math.max(0.4, km.laengeM);
+            } else {
+                const bb = this._compoundBBox(bp);
+                if (bb) {
+                    len = Math.max(0.4, Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z));
+                }
             }
         }
         return Math.min(K.reachMaxM, K.reachBaseM + len);
@@ -75813,7 +75831,7 @@ class AnazhRealm {
             const stats = p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
             // WAFFEN-GÜTE — die GEMESSENE Schmiede-Arbeit (Lehren-Urteil des
             // Kerns) skaliert den Schaden; kein schmiede-Gerät / Kern kalt → 1.
-            const res = this.damageCreature(c, (stats.damage || 5) * this._heldGueteFaktor(), {
+            const res = this.damageCreature(c, (stats.damage || 5) * this._heldSchmiedeFaktor(), {
                 source: "player",
                 fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
                 knockback: stats.knockback || 0,
@@ -75888,7 +75906,11 @@ class AnazhRealm {
         if (!Number.isFinite(keOpt)) {
             const bp = this._heldImplementBlueprint();
             if (bp) {
-                const I = this._swingDynamics(bp).swingInertia;
+                // EINHEITSBREI-SCHNITT (18.07.): dieselbe Trägheits-Quelle wie
+                // die Dauer (kampfMasze für Studio-Klingen, Ω-Φ4 für Eigenwerke)
+                // — KE und Dauer rechnen nie in gemischten Einheiten.
+                const km = this._schmiedeKampfMasze(bp);
+                const I = km && km.traegheit > 0 ? km.traegheit : this._swingDynamics(bp).swingInertia;
                 const sw = this.state.player && this.state.player._swing;
                 const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
                 const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
@@ -75960,6 +75982,59 @@ class AnazhRealm {
             memo.set(key, v);
         }
         return v;
+    }
+
+    // ═══ EINHEITSBREI-SCHNITT (18.07.) — DIE KAMPF-MASSE DER GATTUNG ═══
+    // schmiede-core MISST jede Gattung (kampfMasze: Gesamtlänge, Masse, Trägheit
+    // um den Pivot, effektive Masse am Impact — dieselbe prepP-Präparation wie
+    // gueteFaktor). Der Wirt fährt Schwung-Dauer, Reichweite und Schadens-Faktor
+    // aus DIESEN Zahlen — die 13 byte-gleichen Donor-Parts sind für Studio-
+    // Klingen als Kampf-Quelle TOT. Auflösung SYNCHRON + Lockstep-fest (die
+    // Tor-Klasse): studioGestalt-DATEN-Zeile oder KIND_POLICY.weapon-Präfix,
+    // NIE der async Buch-Lade-Stand; die Gattungs-Tafel des Kerns ist die
+    // Domänen-Wand (unbekanntes Rezept/Bogen → null → Emergenz-Pfad der
+    // User-Eigenwerke byte-alt). Memo je Gestalt|ov-Hash (Guss-gefroren).
+    _schmiedeKampfMasze(bp) {
+        if (!bp) return null;
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || typeof sc.kampfMasze !== "function") return null;
+        let gestalt = typeof bp.studioGestalt === "string" ? bp.studioGestalt : null;
+        if (!gestalt && typeof bp.name === "string") {
+            const pol = AnazhRealm.KIND_POLICY.weapon;
+            if (pol && pol.prefix && bp.name.indexOf(pol.prefix) === 0) {
+                gestalt = bp.name.slice(pol.prefix.length);
+            }
+        }
+        if (!gestalt) return null;
+        const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
+        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const memo = this._kampfMaszeMemo || (this._kampfMaszeMemo = new Map());
+        let v = memo.get(key);
+        if (v === undefined) {
+            v = null;
+            try {
+                const m = sc.kampfMasze(gestalt, ov || undefined);
+                if (m && Number.isFinite(m.traegheit) && Number.isFinite(m.laengeM)) v = m;
+            } catch (_e) {}
+            if (memo.size > 64) memo.clear(); // gedeckelt (jeder Guss ein Schlüssel)
+            memo.set(key, v);
+        }
+        return v;
+    }
+
+    // Der Schadens-Faktor des GEHALTENEN Geräts: Güte (Lehren-Urteil) × effektive
+    // Masse (kampfMasze.mEff / ARENA.guete.mEffRefKg, geklemmt) — ein Messer
+    // schlägt gedämpft, eine Keule wuchtig, eine Attrappe matt. Kein schmiede-
+    // Rezept → nur die Güte (byte-alt: 1 × 1).
+    _heldSchmiedeFaktor() {
+        const g = this._heldGueteFaktor();
+        const bp = this._heldImplementBlueprint();
+        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        if (!km || !Number.isFinite(km.mEff)) return g;
+        const G = AnazhRealm._arenaGesetz().guete;
+        if (!G || !Number.isFinite(G.mEffRefKg) || !(G.mEffRefKg > 0)) return g;
+        const f = Math.max(G.mEffDmgMin, Math.min(G.mEffDmgMax, km.mEff / G.mEffRefKg));
+        return g * f;
     }
 
     // ARENA-GEFÜHL — DER BOGEN-AUSZUG (render-seitig, nie Sim): solange gespannt
@@ -76115,8 +76190,9 @@ class AnazhRealm {
             born: now,
             lastT: now,
             // WAFFEN-GÜTE — auch der Pfeil trägt das Lehren-Urteil des Kerns
-            // (Bogen → faktorVoll; ein geprägter Pfusch-Bogen bleibt denkbar).
-            dmg: (stats.damage || 5) * this._heldGueteFaktor(),
+            // (Bogen → faktorVoll; kampfMasze(bogen) = null → der mEff-Faktor
+            // bleibt 1: die Schuss-Kraft reist als zugkraft×auszug, nie doppelt).
+            dmg: (stats.damage || 5) * this._heldSchmiedeFaktor(),
             kb: stats.knockback || 0,
             mesh: null,
         };
