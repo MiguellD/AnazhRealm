@@ -71,9 +71,24 @@ function blaetter(obj, prefix, tiefe, out) {
     // schwimmen …), gilt der Ast als konsumiert (Daten-Tabellen-Zeilen wie
     // aktionen.stalk.dauer sind keine Waisen; der Wächter jagt NEUE BLÖCKE,
     // nicht Felder gelesener Tabellen — bewusst false-negative-arm).
-    const wortImStamm = (w) =>
-        new RegExp("[^a-zA-Z0-9_]" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^a-zA-Z0-9_]").test(stamm);
-    const istGelesen = (pfad) => {
+    // DREI KONSUM-FLÄCHEN (18.07., die Parkplatz-Auflösung): (1) der STAMM,
+    // (2) der OFEN (foundry-core — der Host-Bäcker liest die Material-Klassen-
+    // Tabellen der Kerne: kern.TIER_MATERIAL_KLASSEN/MATERIAL_KLASSEN), (3) die
+    // KERN-EIGENE MASCHINE (buildInstance/derive/… lesen ihre Tabellen selbst —
+    // die Welt LEBT DEFCOL/MASSNUR/P.sig durch jeden Bau; ein Schlüssel, der im
+    // eigenen Kern ≥ 2× als Wort steht [Definition + Leser], ist konsumiert;
+    // ein toter Export steht genau 1× — seine Definition).
+    const ofen = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+    const wortIn = (src, w) =>
+        new RegExp("[^a-zA-Z0-9_]" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^a-zA-Z0-9_]").test(src);
+    const wortImStamm = (w) => wortIn(stamm, w) || wortIn(ofen, w);
+    const anzahlIm = (src, w) => {
+        const m = src.match(
+            new RegExp("[^a-zA-Z0-9_]" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "[^a-zA-Z0-9_]", "g")
+        );
+        return m ? m.length : 0;
+    };
+    const istGelesen = (pfad, eigenSrc) => {
         const teile = pfad.split(".");
         // KOMPOSITUM-REGEL (18.07., die Wort-Kollisions-Heilung): Blätter der
         // benannten Stimmen-/Mixer-Tabellen (inst.* / tilt.*) gelten NUR als
@@ -82,7 +97,7 @@ function blaetter(obj, prefix, tiefe, out) {
         // mit Alltags-Code, der Wächter war für diese Klasse strukturell blind.
         for (let i = 1; i < teile.length; i++) {
             if (teile[i - 1] === "inst" || teile[i - 1] === "tilt") {
-                return wortImStamm(teile[i - 1] + "." + teile[i]);
+                return wortIn(stamm, teile[i - 1] + "." + teile[i]);
             }
         }
         let urteilbar = 0;
@@ -91,7 +106,13 @@ function blaetter(obj, prefix, tiefe, out) {
             if (t.length < 4 || GENERISCH.test(t) || t === "PRESETS" || t === "fx") continue;
             urteilbar++;
             if (wortImStamm(t)) return true;
+            // Kern-interne Maschine: die eigene Tabelle wird im eigenen Kern gelesen.
+            if (eigenSrc && anzahlIm(eigenSrc, t) >= 2) return true;
         }
+        // Leaf-Sonderfall der Maschinen-Regel (kurze sprechende Schlüssel wie
+        // P.sig/P.heck): das Blatt selbst ≥ 2× im eigenen Kern, ≥ 3 Zeichen.
+        const leaf = teile[teile.length - 1];
+        if (eigenSrc && leaf.length >= 3 && !GENERISCH.test(leaf) && anzahlIm(eigenSrc, leaf) >= 2) return true;
         return urteilbar === 0; // nur generische Segmente → nie urteilen
     };
     const neueWaisen = [];
@@ -116,9 +137,16 @@ function blaetter(obj, prefix, tiefe, out) {
                 blaetter(ns[top], top, 1, pfade);
             }
         }
+        let eigenSrc = "";
+        try {
+            for (const dep of entry.deps) eigenSrc += fs.readFileSync(path.join(root, dep), "utf8") + "\n";
+            eigenSrc += fs.readFileSync(path.join(root, entry.file), "utf8");
+        } catch (_e) {
+            eigenSrc = "";
+        }
         let waisen = 0;
         for (const p of pfade) {
-            if (istGelesen(p)) continue;
+            if (istGelesen(p, eigenSrc)) continue;
             const eintrag = entry.file + " :: " + p;
             if (BEKANNTE_WAISEN.has(eintrag)) {
                 bekannteGesehen.push(eintrag);
@@ -146,6 +174,17 @@ function blaetter(obj, prefix, tiefe, out) {
         istGelesen("PRESETS.lofi.fx.klang.tilt.harmony");
     console.log(
         `  ${selbsttest2 ? "✅" : "❌"} SELBSTTEST 2: die Kompositum-Regel urteilt (Fake-inst-Blatt rot, inst.drums/tilt.harmony grün)`
+    );
+    // SELBSTTEST 3 (Maschinen-Regel): ein Blatt, das im eigenen Kern nur EINMAL
+    // steht (seine Definition), bleibt Waise; ab 2 Vorkommen (Definition +
+    // Leser) gilt die Tabelle als von der eigenen Maschine gelebt.
+    const fakeKern1 = "var T = { zensusFakeTabelleXyz: 1 };";
+    const fakeKern2 = fakeKern1 + "\nconsume(T.zensusFakeTabelleXyz);";
+    const selbsttest3 =
+        !istGelesen("ZensusFakeWurzelXyz.zensusFakeTabelleXyz", fakeKern1) &&
+        istGelesen("ZensusFakeWurzelXyz.zensusFakeTabelleXyz", fakeKern2);
+    console.log(
+        `  ${selbsttest3 ? "✅" : "❌"} SELBSTTEST 3: die Maschinen-Regel urteilt (1× Definition = rot, 2× = gelesen)`
     );
     if (neueWaisen.length) {
         console.log(`\n❌ ROT — ${neueWaisen.length} NEUE Waise(n) (Anazh kennt noch nicht):`);
