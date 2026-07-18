@@ -56,6 +56,10 @@ const FORBIDDEN = [
     { token: "_buildTierBaum", fiel: "DIE EINE PIPE — der Stamm-Inline-Baum-Tunnel" },
     { token: "_tierFernTeile", fiel: "DIE EINE PIPE — das Stamm-eigene Fern-System (lod1 kommt aus der Pipe)" },
     { token: "_buildCreatureHideMaterial", fiel: "DIE EINE PIPE — die Look-Interpretation (mp/Studio-Zahlen führen)" },
+    // P0-INVENTUR 18.07. — der Phantom-Leser der Augen-Glut: das Vertrags-Feld
+    // heisst `ei` (tetrapoda TIER_MATERIAL_KLASSEN); der erfundene Name las nie
+    // einen Schreiber und der 0.85-Default gab jedem Kreatur-Auge 2.8x Glut.
+    { token: "emissivIntensitaet", fiel: "AUGEN-GLUT-SCHNITT — der Bäcker liest kl.ei (die Gesetzbuch-Wahrheit)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
@@ -335,8 +339,10 @@ function scanLabBuster() {
 
 function main() {
     const root = path.join(__dirname, "..");
-    const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js"].map((f) =>
-        path.join(root, f)
+    // AUGEN-GLUT-SCHNITT (18.07.): foundry-core (der Ofen/Bäcker) steht mit in
+    // der Wand — Phantom-Leser-Namen dürfen auch dort nicht nachwachsen.
+    const files = ["anazhRealm.js", "voxel-worker.js", "index.html", "signaling-server.js", "foundry-core.js"].map(
+        (f) => path.join(root, f)
     );
 
     if (process.argv.includes("--selftest")) {

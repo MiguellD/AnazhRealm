@@ -2868,7 +2868,11 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             r = kl.r != null ? kl.r : 0.5;
             if (kl.emissiv != null) {
                 em = kl.emissiv;
-                emI = kl.emissivIntensitaet != null ? kl.emissivIntensitaet : 0.85;
+                // AUGEN-GLUT-SCHNITT (P0-Inventur 18.07.): das Gesetzbuch-Feld heisst
+                // `ei` (tetrapoda TIER_MATERIAL_KLASSEN.tierauge) — der Phantom-Name
+                // las nie einen Schreiber und der 0.85-Default gab jedem Kreatur-Auge
+                // 2.8x Glut vs Lab. Ohne ei: THREE-Default 1 (kein Ofen-eigener Wert).
+                emI = kl.ei != null ? kl.ei : 1;
             }
         }
         // FARB-GESETZ (scheduler-neutral): r128 setHex schreibt ROH, r184 wandelt
@@ -3167,7 +3171,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         if (kl.emissiv != null && m.emissive) {
             const le = lin(kl.emissiv);
             m.emissive.setRGB(le[0], le[1], le[2]);
-            m.emissiveIntensity = kl.emissivIntensitaet != null ? kl.emissivIntensitaet : 0.85;
+            // AUGEN-GLUT-SCHNITT: dasselbe Vertrags-Feld `ei` wie der Tier-Bäcker
+            // (EINE Quelle; koerper deklariert heute kein emissiv — byte-neutral).
+            m.emissiveIntensity = kl.ei != null ? kl.ei : 1;
         }
         m.userData.__klasse = k;
         matCache[k] = m;
