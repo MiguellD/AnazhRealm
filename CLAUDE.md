@@ -6,10 +6,30 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.0 — MATRIX GRÜN + die Trace-Welle: Kamera-Kleber tot, Regler-Seed, Kein-WebGPU bewiesen)
+## Stand (V18.491.1 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, WGSL-Spec-Wand, Regler-Seed, Kein-WebGPU bewiesen)
 
-**18.07., dritte Welle (der Schöpfer-Trace urteilt — 2.8 fps auf starkem Holz + „Objekte
-hängen an der Kamera"):**
+**18.07., vierte Welle (zweiter Schöpfer-Trace 6.7 fps + Konsole urteilen — GPU echt 17 ms,
+CPU-render 88 ms: der Wal ist die CPU-Submit-/Fehler-Bahn, nie die GPU):**
+- WGSL-SPEC-WAND: der Feld-Pass-Raymarch mischte `i32 % u32` + `clamp(i32,·,u32)`
+  (textureDimensions = vec2<u32>) — das Schöpfer-Chrome-150-Dawn warf CreateShaderModule,
+  die invalide Pipeline riss JEDEN Queue.Submit ihres Render-Kontexts mit (weiße Welt,
+  21.9-s-Frames); der swiftshader-Dawn der Gates war nachsichtig. Einmal i32-casten;
+  gate:fern-ring Band 8 bleibt grün (echte Render-Probe).
+- ATTRIBUT-WAND: 957 Direkt-Konsumenten der geteilten foundry-Masken-Materialien
+  (Kreatur-Ofen u.a.) liefen ungestempelt → three warnte je RenderObject (aH0/aH0L/
+  aLodLevel-Konsolen-Flut). Null-Stempel am EINEN Konversions-Chokepoint
+  (_foundryBuildMesh, byte-gleiches Rendering); gate:foundry-crossfade ATTRIBUT-WAND-Band
+  (957 geprüft/0) + Band Z folgt jetzt dem LIVE-Formel-Zwilling (die 12.6-Kante war stale —
+  LOD_TRI_BUDGET_MUL macht thresh01 12/Kante 4.6; das Band war seit T2 nie grün).
+- UPLOAD-KLASSEN: der writeBuffer-Tap zählt Größen-Klassen (≤16K/≤256K/≤2M/>2M) —
+  die 38–53 MB/s Dauer-Uploads des Traces bekommen in der nächsten Datei einen Namen.
+- Der zweite Trace bestätigt die dritte Welle: Impostoren 115/115 gebacken, 0 wartend
+  (Kleber-Wand + Bake-Fluss leben), Seed klasse=mittel 0.6 konsumiert; OFFEN benannt:
+  Heap-Sägezahn (~25 MB/s Müll, GC-LongTasks 335 s/535 s) + CPU-render 88 ms bei 1281 dc
+  (die Nicht-Bundle-Draws) = die nächsten Wale, jetzt mit Mess-Namen.
+
+**Davor: 18.07., dritte Welle (der erste Schöpfer-Trace urteilt — 2.8 fps auf starkem Holz +
+„Objekte hängen an der Kamera"):**
 - KAMERA-KLEBER-WAND: tote Impostor-Slots (`_archGroupFree` Null-3×3 + lebende Translation)
   machten den Normal-Probe singulär (0/0→NaN bzw. 1e-5-Clamp→_sInst 1e5) — ein welt-
   spannendes camera-facing Quad mit dem Familien-Atlas (Fels/Kristall/Auto/Feueresse …).

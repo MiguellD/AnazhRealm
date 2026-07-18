@@ -15888,6 +15888,15 @@ class AnazhRealm {
                           ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
                           1024
                       ).toFixed(1),
+                      // (18.07.) die GRÖSSEN-KLASSEN der Uploads (Session-kumulativ aus dem
+                      // EINEN writeBuffer-Tap): WER die 38–53 MB/s trägt — viele kleine
+                      // Uniforms oder wenige grosse Geometrie-/Textur-Schübe.
+                      uploadKlassen: (() => {
+                          const B = this._uploadBuckets;
+                          if (!B) return null;
+                          const f = (x) => ({ n: x[0], mb: +(x[1] / 1048576).toFixed(1) });
+                          return { bis16K: f(B.b16K), bis256K: f(B.b256K), bis2M: f(B.b2M), ueber2M: f(B.gross) };
+                      })(),
                       // TRACE-BLINDSTELLEN-HEILUNG (18.07., Schöpfer-Trace 2.8 fps):
                       // (a) ALLE Stellgrößen des EINEN Reglers — der Trace zeigte nur
                       // loadScalePct 0 und ließ raten, wo renderScale/Schatten standen;
@@ -38622,6 +38631,13 @@ class AnazhRealm {
                 "    let fern = fern4.xyz / fern4.w;\n" +
                 "    let dir = normalize(fern - camPos);\n" +
                 "    let dim = textureDimensions(tex, 0);\n" +
+                "    // WGSL-SPEC-WAND (18.07., Schöpfer-Konsole): textureDimensions liefert\n" +
+                "    // vec2<u32> — i32 % u32 bzw. clamp(i32,·,u32) sind SPEC-INVALID. Der\n" +
+                "    // swiftshader-Dawn der Gates war nachsichtig, das Schöpfer-Chrome-150-Dawn\n" +
+                "    // nicht: CreateShaderModule warf, die invalide Pipeline riss den GANZEN\n" +
+                "    // Queue.Submit des Render-Kontexts mit (weiße Welt). Einmal i32-casten.\n" +
+                "    let AZi = i32(dim.x);\n" +
+                "    let RADi = i32(dim.y);\n" +
                 "    let AZ = f32(dim.x);\n" +
                 "    let RAD = f32(dim.y);\n" +
                 "    let PI = 3.14159265358979;\n" +
@@ -38636,9 +38652,9 @@ class AnazhRealm {
                 "        if (r < rMin) { tVor = t; continue; }\n" +
                 "        if (r > rMax) { break; }\n" +
                 "        let u = atan2(rel.y, rel.x) / (2.0 * PI) + 0.5;\n" +
-                "        let ix = i32(clamp(u, 0.0, 0.9999) * AZ) % dim.x;\n" +
-                "        let iy = clamp(i32((r - rMin) / (rMax - rMin) * RAD), 0, dim.y - 1);\n" +
-                "        let h = textureLoad(tex, vec2<i32>(ix, i32(iy)), 0);\n" +
+                "        let ix = i32(clamp(u, 0.0, 0.9999) * AZ) % AZi;\n" +
+                "        let iy = clamp(i32((r - rMin) / (rMax - rMin) * RAD), 0, RADi - 1);\n" +
+                "        let h = textureLoad(tex, vec2<i32>(ix, iy), 0);\n" +
                 "        if (pos.y <= h.r) {\n" +
                 "            var tFein = t;\n" +
                 "            var a = tVor;\n" +
@@ -38649,9 +38665,9 @@ class AnazhRealm {
                 "                let relM = pm.xz - anker;\n" +
                 "                let rM = length(relM);\n" +
                 "                let uM = atan2(relM.y, relM.x) / (2.0 * PI) + 0.5;\n" +
-                "                let ixM = i32(clamp(uM, 0.0, 0.9999) * AZ) % dim.x;\n" +
-                "                let iyM = clamp(i32((rM - rMin) / (rMax - rMin) * RAD), 0, dim.y - 1);\n" +
-                "                let hM = textureLoad(tex, vec2<i32>(ixM, i32(iyM)), 0);\n" +
+                "                let ixM = i32(clamp(uM, 0.0, 0.9999) * AZ) % AZi;\n" +
+                "                let iyM = clamp(i32((rM - rMin) / (rMax - rMin) * RAD), 0, RADi - 1);\n" +
+                "                let hM = textureLoad(tex, vec2<i32>(ixM, iyM), 0);\n" +
                 "                if (pm.y <= hM.r) { b = m; tFein = m; } else { a = m; }\n" +
                 "            }\n" +
                 "            let nebel = clamp((tFein - rMin) / (rMax - rMin), 0.0, 1.0) * 0.85;\n" +
@@ -72196,6 +72212,22 @@ class AnazhRealm {
         if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         if (m.index) geo.setIndex(new T.BufferAttribute(m.index, 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
+        // ATTRIBUT-WAND (18.07., Schöpfer-Konsole: „Vertex attribute aH0/aH0L/
+        // aLodLevel not found" im Dauer-Takt): die geteilten foundry-Materialien
+        // tragen unter foundryCrossfade die Masken-Attribut-Leser — aber NUR der
+        // Pflanzen-Gruppen-Bau (_foundryBuildGroup) stempelte; Kreatur-Ofen und
+        // jeder andere Direkt-Konsument DIESER einen Konversion liefen ungestempelt
+        // (three warnt je RenderObject, 957 Treffer in der Szene-Probe). Der
+        // Null-Stempel hier macht „Stempel-Wert 0 = ungemaskt" PHYSISCH wahr
+        // (byte-gleiches Rendering: three ersetzte fehlende Attribute ohnehin
+        // durch 0 — nur die Warnungs-Flut fällt); der Gruppen-Bau überschreibt
+        // mit echten Stufen-Werten (setAttribute ersetzt).
+        if (this.state && this.state.foundryCrossfade === true) {
+            const _z = new Float32Array(vcount);
+            geo.setAttribute("aLodLevel", new T.BufferAttribute(_z, 1));
+            geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
+            geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(vcount), 1));
+        }
         // V18.463 — DIE HAUT-HÜLLE reist geskinnt: trägt der Eintrag skinIndex/
         // skinWeight (die Hüllen-Maschine des Bäckers), wird er ein SkinnedMesh
         // (Bindung übernimmt _ofenAssembleAsset, wenn die Gelenk-Bones stehen).
@@ -88603,9 +88635,20 @@ class AnazhRealm {
                     if (q && !q.__anazhTap && typeof q.writeBuffer === "function") {
                         const orig = q.writeBuffer.bind(q);
                         q.writeBuffer = (b, off, data, dOff, size) => {
-                            this._uploadBytesAcc =
-                                (this._uploadBytesAcc || 0) +
-                                (size != null ? size * (data.BYTES_PER_ELEMENT || 1) : (data && data.byteLength) || 0);
+                            const _sz =
+                                size != null ? size * (data.BYTES_PER_ELEMENT || 1) : (data && data.byteLength) || 0;
+                            this._uploadBytesAcc = (this._uploadBytesAcc || 0) + _sz;
+                            // TRACE-BLINDSTELLE (18.07., Schöpfer-Trace 38–53 MB/s Uploads
+                            // ohne Täter): die GRÖSSEN-KLASSE nennt die Population — Uniforms
+                            // (≤16K, viele kleine) vs Instanz-Matrizen (≤256K) vs Geometrie/
+                            // Texturen (≥2M). Session-kumulativ, zwei Adds pro Upload.
+                            const _B =
+                                this._uploadBuckets ||
+                                (this._uploadBuckets = { b16K: [0, 0], b256K: [0, 0], b2M: [0, 0], gross: [0, 0] });
+                            const _slot =
+                                _sz <= 16384 ? _B.b16K : _sz <= 262144 ? _B.b256K : _sz <= 2097152 ? _B.b2M : _B.gross;
+                            _slot[0]++;
+                            _slot[1] += _sz;
                             return orig(b, off, data, dOff, size);
                         };
                         q.__anazhTap = true;
@@ -91991,7 +92034,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.0";
+AnazhRealm.VERSION = "18.491.1";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

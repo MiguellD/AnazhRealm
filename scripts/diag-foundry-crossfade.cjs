@@ -444,11 +444,24 @@ async function runPartB() {
                 res.zensus.push({ bh, dr, host, studio, ok: host === studio });
             }
         }
-        // Blatt-Kappe 24 (Studio) statt 12: großer Baum (bh 36) bei dr 20 → dnL = 20·(12/24) = 10
-        // ≤ D0−FADE0−M (12.6) → KEIN L1-Partner (das Laub lebt noch voll in L0; mit Kappe 12
-        // wäre dnL = 20 > 12.6 → Partner — die alte, halbierte Laub-Sichthöhe).
+        // Blatt-Kappe 24 (Studio): großer Baum (bh 36) bei dr 20 → dnL = 20·min(lodRef/24, 1).
+        // 18.07. — DIE STALE KANTE FIEL: die alte Erwartung nagelte „12.6" fest (Studio-D0 20
+        // − FADE0 − M), aber das Haus wendet BEWUSST LOD_TRI_BUDGET_MUL auf die Schwellen an
+        // (T2: thresh01 = 20×0.6 = 12 → Kante 4.6, dnL 10 > 4.6 ⇒ Partner IST korrekt — die
+        // Band-Erwartung konnte seit der T2-Welle nie grün sein). Jetzt rechnet der FORMEL-
+        // ZWILLING die Erwartung aus der LIVE-cfg (dasselbe Muster wie stageStudio oben);
+        // der Kappen-Beweis (leafVisCap == 24, NICHT an ref gekoppelt) bleibt hart.
         res.leafCapPartner = r._lodBandPartnerFor(20, 36, 0);
         res.leafCapValue = cfg.leafVisCap;
+        {
+            const lrLive = Number.isFinite(st.lodRef) && st.lodRef > 0 ? st.lodRef : cfg.lodRef;
+            const dnLZ = 20 * Math.min(1, lrLive / Math.min(36, cfg.leafVisCap));
+            const kanteZ =
+                cfg.thresh01 - (cfg.fade0 || 4) - (Number.isFinite(cfg.hysteresis) ? cfg.hysteresis : 0);
+            res.leafCapErwartet = dnLZ > kanteZ ? 1 : null;
+            res.leafCapDnL = +dnLZ.toFixed(2);
+            res.leafCapKante = +kanteZ.toFixed(2);
+        }
         // visStretchMax UNGEDECKELT: dn(100, 36) = 100·12/36 = 33.33 (der alte Deckel gab 80).
         res.stretchProbe = +r._lodPerceptionDistance(100, 36).toFixed(2);
         st._foliageDensityScale = fdPrev;
@@ -465,9 +478,32 @@ async function runPartB() {
         return res;
     });
 
+    // ── ATTRIBUT-WAND (18.07., Schöpfer-Konsole: „Vertex attribute aH0/aH0L/aLodLevel
+    // not found" im Dauer-Takt): JEDER Konsument eines Masken-Materials (userData.
+    // foundryCrossfade) MUSS die Stempel-Attribute tragen — der Null-Stempel sitzt am
+    // EINEN Konversions-Chokepoint (_foundryBuildMesh); der Gruppen-Bau überschreibt
+    // mit echten Stufen. Vor der Wand: 957 ungestempelte Meshes (Kreatur-Ofen +
+    // Direkt-Konsumenten) → three warnte je RenderObject. ──
+    const attrWand = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        let geprueft = 0,
+            verstoesse = 0;
+        r.state.scene.traverse((o) => {
+            if (!o.geometry || !o.material) return;
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of mats) {
+                if (!(m && m.userData && m.userData.foundryCrossfade === true)) continue;
+                geprueft++;
+                const a = o.geometry.attributes || {};
+                if (!a.aLodLevel || !a.aH0 || !a.aH0L) verstoesse++;
+            }
+        });
+        return { geprueft, verstoesse };
+    });
+
     await browser.close();
     server.close();
-    return { out, pageErrors };
+    return { out, pageErrors, attrWand };
 }
 
 async function main() {
@@ -622,7 +658,12 @@ async function main() {
     );
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
-    const { out, pageErrors } = await runPartB();
+    const { out, pageErrors, attrWand } = await runPartB();
+    check(
+        "ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie",
+        attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 100,
+        attrWand ? `geprüft=${attrWand.geprueft} · Verstöße=${attrWand.verstoesse}` : "Probe lief nicht"
+    );
     if (out.err) check("Teil (b) lief", false, out.err);
     else {
         check("W5.4: foundryCrossfade ist DEFAULT AN", out.flagDefault === true);
@@ -677,9 +718,9 @@ async function main() {
             bad.length ? JSON.stringify(bad.slice(0, 4)) : "35/35"
         );
         check(
-            "Z: die Blatt-Kappe ist die Studio-24 (phytogenesis Z.2392) — großer Baum (36 m) bei 20 m trägt KEINEN L1-Partner",
-            out.leafCapValue === 24 && out.leafCapPartner === null,
-            `cap=${out.leafCapValue} partner=${out.leafCapPartner}`
+            "Z: die Blatt-Kappe ist die Studio-24 (phytogenesis Z.2392) und der L1-Partner folgt dem LIVE-Formel-Zwilling",
+            out.leafCapValue === 24 && out.leafCapPartner === out.leafCapErwartet,
+            `cap=${out.leafCapValue} partner=${out.leafCapPartner} erwartet=${out.leafCapErwartet} (dnL=${out.leafCapDnL} Kante=${out.leafCapKante})`
         );
         check(
             "Z: die SSE-Sichthöhe ist UNGEDECKELT (foundry-core Z.196) — dn(100, 36) = 33.33 (der alte 15-m-Deckel gab 80)",
