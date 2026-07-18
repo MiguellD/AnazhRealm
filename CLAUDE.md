@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.5 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
+## Stand (V18.491.6 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
 
 **18.07., siebte Welle (ULTRACODE — die Profi-Doktrin „Kosten binden an Schirm+Änderung,
 nie an Weltgröße" wird Maschine; Verstehens-Sweep 4 Leser + adversariale Diff-Review):**

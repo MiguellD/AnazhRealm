@@ -65106,13 +65106,21 @@ class AnazhRealm {
             if (this._pipeOfenHunger < 4) return;
         }
         this._pipeOfenHunger = 0;
-        const post = q.shift();
-        const mesh = post && post.mesh;
-        if (!mesh || !mesh.geometry || !mesh.material) return;
-        this._pipeOfenGewaermt = (this._pipeOfenGewaermt || 0) + 1;
-        try {
-            this._warmCompilePipeline(mesh, false);
-        } catch (_e) {}
+        // OFEN-TAKT (18.07., fünfter Trace: Rückstau 72 offen bei ~10 Mints/s und
+        // 1 Wärmung/Frame ≈ 1/s bei 4.5 fps → 224 SYNC-Compiles in EINEM 7.1-s-
+        // render-Frame): bei Rückstau wärmt der Ofen bis zu 4 Posten je Tick —
+        // compileAsync blockt nie, nur die Anstoß-Kosten steigen minimal; die
+        // Familien-Dedup deckelt die Gesamtmenge weiterhin (kein Flood).
+        const n = q.length > 16 ? 4 : 1;
+        for (let i = 0; i < n && q.length; i++) {
+            const post = q.shift();
+            const mesh = post && post.mesh;
+            if (!mesh || !mesh.geometry || !mesh.material) continue;
+            this._pipeOfenGewaermt = (this._pipeOfenGewaermt || 0) + 1;
+            try {
+                this._warmCompilePipeline(mesh, false);
+            } catch (_e) {}
+        }
     }
 
     // ═══ DER FELD-CULL (das-feld-zeichnet §2 STUFE 1, Vollausbau) ═══
@@ -92372,7 +92380,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.5";
+AnazhRealm.VERSION = "18.491.6";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
