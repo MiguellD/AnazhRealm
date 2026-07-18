@@ -69994,6 +69994,12 @@ class AnazhRealm {
                 // DORF-ERLEBNIS — die Tür-Zeile des Exports (Blocker-Tür-Lücke +
                 // Flügel-Reichweite; alte Exporte ohne Feld → undefined, byte-alt).
                 tuer: slot.tuer || undefined,
+                // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — das Slot-Rezept
+                // (Kirche/Gasthaus/Armut/wohl/col, exportSettlement ov = die hp-
+                // Quelle von massBau) reist als Guss-Stempel: die Optik baut aus
+                // DERSELBEN Wahrheit wie Blocker/ext (buildInstance-ov überstimmt
+                // den Kultur-Default). Fremde Alt-Exporte ohne ov: must-ignore.
+                studioOv: slot.ov && typeof slot.ov === "object" ? slot.ov : undefined,
             }
         );
         return !!entry;

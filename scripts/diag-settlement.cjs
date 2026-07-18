@@ -72,6 +72,14 @@ function autoStaticLaws(anazhSrc) {
             "C-S4: der Auto-Zug ruht headless (Null-Renderer-Wand + __anazhAutoSettlement-Hook)",
             /_isHeadlessNull\) return;/.test(nc) && /__anazhAutoSettlement/.test(nc),
         ],
+        [
+            // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.): das Slot-Rezept (ov)
+            // reist als Guss-Stempel in den Spawn — die Optik baut aus DERSELBEN
+            // hp-Wahrheit wie Blocker/ext. Ohne diese Zeile ist das Dorf ein
+            // Kultur-Default-Klonfeld (der Riss).
+            "C-S5: _spawnSettlementSlot reicht slot.ov als studioOv (Optik == Plan, kein Kultur-Default-Klon)",
+            /studioOv: slot\.ov/.test(nc),
+        ],
     ];
 }
 
@@ -118,6 +126,11 @@ const FIXTURES = [
         );
         const cs3 = autoStaticLaws(broken2).find((l) => l[0].startsWith("C-S3"));
         check("Selbst-Test 5: Parallel-Platzierer injiziert -> C-S3 feuert", cs3 && cs3[1] === false);
+        // V4 (HAUS-DOPPELBAU): der ov-Stempel entfernt -> C-S5 feuert (der
+        // Doppelbau-Riss kann nicht still wiederkehren).
+        const broken3 = anazhSrcST.replace(/studioOv: slot\.ov/g, "/* ov verworfen */");
+        const cs5 = autoStaticLaws(broken3).find((l) => l[0].startsWith("C-S5"));
+        check("Selbst-Test 6: ov-Stempel entfernt -> C-S5 feuert", cs5 && cs5[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -374,6 +387,24 @@ const FIXTURES = [
             Math.abs(m0.position.z - (o1.z + s0.z)) < 1e-9 &&
             m0.rotationY === (s0.phi || 0)
         );
+        // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
+        // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
+        //     byte-gleich, per seed dem Export-Slot zugeordnet),
+        // (b) der Flatten-Chokepoint LIEST ihn (_artifactStudioOv non-null) und
+        //     zwei rollen-verschiedene Häuser trennen sich im ov-Hash — das
+        //     Dorf ist kein Kultur-Default-Klonfeld mehr.
+        res.ovTravels =
+            e1.length > 0 &&
+            e1.every((e) => {
+                const s = plan.slots.find((sl) => (sl.seed >>> 0) === e.seed);
+                return (
+                    s && e.studioOv && typeof e.studioOv === "object" && e.studioOv.rolle === (s.rolle || "wohnhaus")
+                );
+            });
+        const ovA = e1.length ? r._artifactStudioOv(e1[0]) : null;
+        const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
+        const ovB = eB ? r._artifactStudioOv(eB) : null;
+        res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
         // DORF-IN-TERRAIN — der Footprint reist als entry.fundament, und die EINE
         // Fundament-Wahrheit (_archFundamentBox) liefert am Berg-Anker ein Podest
         // (topY > botY; das Gate-Terrain ist GEMESSEN geneigt, Δh >= 4.8 m).
@@ -565,6 +596,14 @@ const FIXTURES = [
     check(
         "B: DORF-IN-TERRAIN — die EINE Fundament-Wahrheit liefert das Hang-Podest (topY > botY)",
         out.fundamentBox === true
+    );
+    check(
+        "B: HAUS-DOPPELBAU — der Slot-ov reist als studioOv an JEDEM Eintrag (rolle == Export)",
+        out.ovTravels === true
+    );
+    check(
+        "B: HAUS-DOPPELBAU — der Flatten-Chokepoint liest den Stempel (ov-Hash trennt Kirche von Wohnhaus)",
+        out.ovKeysSplit === true
     );
     check("B: fail-closed — unbekannte Kultur faellt (0 platziert, 1 uebersprungen)", out.failClosed === true);
     check('B: der Chat-Konsument "dorf [seed] [häuser]" steht in der Befehls-Tabelle', out.chatDorf === true);
