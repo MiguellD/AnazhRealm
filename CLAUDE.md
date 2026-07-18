@@ -6,9 +6,29 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.490.1 — MATRIX GRÜN: die neun Risse + die Matrix-Zellen M1–M5 sind geschnitten)
+## Stand (V18.491.0 — MATRIX GRÜN + die Trace-Welle: Kamera-Kleber tot, Regler-Seed, Kein-WebGPU bewiesen)
 
-**18.07., zweite Welle (ABSOLUTE VOLLENDUNG — die DoD-Matrix aus dem lebenden Code, jede
+**18.07., dritte Welle (der Schöpfer-Trace urteilt — 2.8 fps auf starkem Holz + „Objekte
+hängen an der Kamera"):**
+- KAMERA-KLEBER-WAND: tote Impostor-Slots (`_archGroupFree` Null-3×3 + lebende Translation)
+  machten den Normal-Probe singulär (0/0→NaN bzw. 1e-5-Clamp→_sInst 1e5) — ein welt-
+  spannendes camera-facing Quad mit dem Familien-Atlas (Fels/Kristall/Auto/Feueresse …).
+  Die Wand am EINEN Shader-Chokepoint: `_lebt = probe²>1e-12` + select (NaN·0=NaN!) ⇒
+  toter Slot: _sInst 0 UND _alpha 0. gate:foundry-impostor Teil C (echtes WebGPU):
+  Monster 3936 px (Selbsttest) · nach Free 0 px.
+- GERÄTE-PROFIL = REGLER-SEED: `_geraeteProfil` (EINE Quelle für Flugschreiber UND PID) —
+  Klasse schwach/mittel/stark × Pixel-Zuschlag → loadScale-STARTWERT (Prior, nie Urteil;
+  headless byte-alt). gate:regler-sim S5.
+- KEIN-WEBGPU BEWIESEN: `_gpuComputeFaehig` (Backend-Urteil, Existenz-Prüfungen waren
+  blind) wall Feld-Cull · Fullscreen-Feld-Pass (rohes WGSL) · Region-Bundles (API lebt NUR
+  im WebGPU-Backend — Crash-Klasse); Rückfall EINMAL laut (WARN), rendererType ehrlich
+  (webgl-fallback). gate:webgl-probe (forceWebGL-Hook, alle 5 Renderer-Münzstellen):
+  lebende sichtbare Welt auf swiftshader-GL, 0 Seiten-Fehler.
+- TRACE-BLINDSTELLEN GEHEILT: triZensus nennt Wale (Marker+Struktur-Label, Chunk-Boden
+  benannt) · steadyState trägt ALLE Stellgrößen · gruppenKlassen (Präfix-Zensus des
+  660er-Wachstums) · materialZensus (der Pipeline-Münzer der nächsten Datei).
+
+**Davor: 18.07., zweite Welle (ABSOLUTE VOLLENDUNG — die DoD-Matrix aus dem lebenden Code, jede
 Zelle grün oder final gestrichen; Merge-Gate + npm run check komplett grün):**
 - WAISEN-NULL: der Konsum-Wächter urteilt über DREI Flächen (Stamm · Ofen · Kern-Maschine,
   3 Selbsttests) — die 136-Eintrag-Lern-Liste war Linsen-Blindheit, sie ist LEER; tote
