@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.491.3",
+    "version": "18.491.4",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -143,6 +143,7 @@
         "gate:altlasten": "node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs",
         "gate:koerper-kern": "node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs",
         "gate:apparat": "node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs",
+        "gate:leistungs-vertrag": "node scripts/diag-leistungs-vertrag.cjs",
         "gate:konsum-bilanz": "node scripts/diag-konsum-bilanz.cjs"
     },
     "devDependencies": {

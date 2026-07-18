@@ -14718,7 +14718,18 @@ class AnazhRealm {
             //       gate:regler-sim deterministisch bleibt, nie Wanduhr).
             //   (2) SCHRUMPFEN erst ab dem Totband (kleine Ziel-Dips flattern die
             //       Kanten-Zellen nicht mehr; echter Überlast-Sturz schrumpft voll).
-            if (st._frameOverBudget) this._folRuheSec = 0;
+            // ZWEI-KREISE-MINI (18.07., sechste Welle): auch eine ERTRINKENDE GPU
+            // (echtes timestamp-gpuMs über der Frame-Decke) setzt die Ruhe-Uhr
+            // zurück — der Radius wächst nie in eine GPU hinein, die schon voll
+            // ist, selbst wenn die CPU-Frames Luft zeigen. NUR die echte Quelle
+            // urteilt (der Proxy lügt bei Hauptthread-Stalls; Sim/headless ohne
+            // timestamp bleiben byte-alt — gate:regler-sim unverändert).
+            const _gpuVoll =
+                sense.gpuQuelle === "echt" &&
+                sense.phase &&
+                Number.isFinite(sense.phase.gpuMs) &&
+                sense.phase.gpuMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
+            if (st._frameOverBudget || _gpuVoll) this._folRuheSec = 0;
             else this._folRuheSec = (this._folRuheSec || 0) + Math.min(0.3, (sense.frameMs || 17) / 1000);
             const _frRuhig = (this._folRuheSec || 0) >= AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S;
             st.foliageRadius =
@@ -15373,6 +15384,24 @@ class AnazhRealm {
                 for (let i = 0; i < n2; i++) out2[i] = +fr.gcRing[(fr.secRingI - n2 + i + N2) % N2].toFixed(2);
                 trace.sekundenRingHeapDeltaMB = out2; // ältester → jüngster
             }
+            // STILLSTAND-MÜLL (sechste Welle): der Median des Heap-Wachstums über
+            // Sekunden, in denen der Spieler STAND und kein Major-GC fiel — reiner
+            // Loop-Müll pro Sekunde, vom Streaming-Alibi getrennt (Welle-3-Ziel ≈ 0).
+            if (fr && fr.gcRing && fr.stillRing && fr.secRingN > 0) {
+                const N3 = fr.gcRing.length,
+                    n3 = Math.min(fr.secRingN | 0, N3);
+                const still = [];
+                for (let i = 0; i < n3; i++) {
+                    const idx = (fr.secRingI - n3 + i + N3) % N3;
+                    const d = fr.gcRing[idx];
+                    if (fr.stillRing[idx] === 1 && d > -8) still.push(d);
+                }
+                if (still.length >= 5) {
+                    still.sort((a, b) => a - b);
+                    trace.stillstandMuellMBProS = +still[Math.floor(still.length / 2)].toFixed(2);
+                    trace.stillstandSekunden = still.length;
+                }
+            }
             trace.exportiertAm = new Date().toISOString();
             const name =
                 "anazhRealmPerf-V" + AnazhRealm.VERSION + "-" + trace.exportiertAm.replace(/[:.]/g, "-") + ".json";
@@ -15630,6 +15659,25 @@ class AnazhRealm {
                             (sns.pipesNeuProS || 0) + A * ((fr._pipesSec || 0) - (sns.pipesNeuProS || 0));
                     }
                     fr._pipesSec = 0;
+                    // STILLSTAND-MÜLL (18.07., sechste Welle — Profi-Doktrin Welle 3):
+                    // je Sekunde merken, ob der Spieler STAND (< 0.5 m Bewegung) —
+                    // Heap-Wachstum in Still-Sekunden ist REINER Loop-Müll (kein
+                    // Streaming-Alibi). Gleiche Ring-Indizes, nie ein Zähler-Zwilling.
+                    if (!fr.stillRing) fr.stillRing = new Uint8Array(180);
+                    {
+                        const pm = st.playerMesh && st.playerMesh.position;
+                        let still = 0;
+                        if (pm) {
+                            if (fr._stillPos) {
+                                const dxS = pm.x - fr._stillPos.x,
+                                    dzS = pm.z - fr._stillPos.z;
+                                still = dxS * dxS + dzS * dzS < 0.25 ? 1 : 0;
+                                fr._stillPos.x = pm.x;
+                                fr._stillPos.z = pm.z;
+                            } else fr._stillPos = { x: pm.x, z: pm.z };
+                        }
+                        fr.stillRing[fr.secRingI] = still;
+                    }
                     fr.secRing[fr.secRingI] = fr._secMax;
                     fr.secRingI = (fr.secRingI + 1) % fr.secRing.length;
                     if (fr.secRingN < fr.secRing.length) fr.secRingN++;
@@ -15952,6 +16000,18 @@ class AnazhRealm {
                       // stehendem Spieler): Mints/Tode + die Top-Wiederkehrer-Schlüssel —
                       // die Familie, die im Kreis stirbt und wiederaufersteht, beim Namen.
                       gruppenChurn: this._archGruppenChurnZensus(),
+                      // (d) DER INGEST-TAKT (sechste Welle): freigegeben gesamt + Stau-
+                      // Spitze — der Beweis, dass Konversions-Bursts nie mehr bündeln.
+                      ingestTakt: {
+                          frei: this._foundryIngestFrei || 0,
+                          stau: this._foundryIngestQueue ? this._foundryIngestQueue.length : 0,
+                          stauMax: this._foundryIngestMaxQ || 0,
+                      },
+                      // (e) DIE BUNDLE-DECKUNG (Welle 1 der Profi-Doktrin): wieviel der
+                      // sichtbaren Render-Objekte in Region-RenderBundles leben — die
+                      // Nicht-Bundle-Population IST die per-Draw-Uniform-Bahn (~55k
+                      // Klein-Uploads/s). Der nächste Trace nennt die Ziele beim Namen.
+                      bundleDeckung: this._flightRecorderBundleDeckung(),
                   }
                 : null,
             worstFrames: fr.worst,
@@ -15993,6 +16053,50 @@ class AnazhRealm {
                 .slice(0, 8)
                 .map(([name, n]) => ({ name: String(name).slice(0, 40), n }));
             return { unique: seen.size, top };
+        } catch {
+            return null; // der Flugschreiber darf NIE stören
+        }
+    }
+
+    // DIE BUNDLE-DECKUNG (18.07., sechste Welle — Profi-Doktrin Welle 1): der
+    // per-Draw-Uniform-Sturm (~55k Klein-Uploads/s) skaliert mit den Render-
+    // Objekten AUSSERHALB der Region-RenderBundles. Diese Linse zählt sichtbare
+    // Renderables in/außerhalb Bundles und nennt die Top-Draußen-Familien —
+    // die Ziele der nächsten Bündelungs-Welle, beim Namen statt geraten.
+    _flightRecorderBundleDeckung() {
+        try {
+            const sc = this.state.scene;
+            if (!sc) return null;
+            let drin = 0,
+                draussen = 0;
+            const fam = new Map();
+            const walk = (o, imBundle) => {
+                const inB = imBundle || o.isBundleGroup === true;
+                if ((o.isMesh || o.isPoints || o.isLine) && o.visible !== false) {
+                    if (inB) drin++;
+                    else {
+                        draussen++;
+                        const u = o.userData || {};
+                        const label =
+                            o.name ||
+                            u.archInstanceKey ||
+                            u.inventar ||
+                            u.kind ||
+                            (o.material && (o.material.name || o.material.type)) ||
+                            o.type;
+                        const kurz = String(label).split(/[#@|]/)[0].slice(0, 32);
+                        fam.set(kurz, (fam.get(kurz) || 0) + 1);
+                    }
+                }
+                if (o.children) for (const c of o.children) walk(c, inB);
+            };
+            walk(sc, false);
+            const top = Array.from(fam.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([name, n]) => ({ name, n }));
+            const gesamt = drin + draussen;
+            return { drin, draussen, deckungPct: gesamt ? Math.round((drin / gesamt) * 100) : 0, topDraussen: top };
         } catch {
             return null; // der Flugschreiber darf NIE stören
         }
@@ -71541,8 +71645,20 @@ class AnazhRealm {
         // phytogenesis + libs) noch bootet. Der MISS vor dem Worker-Boot bleibt exakt
         // das alte null (der Aufrufer deferriert + fragt später — gate-treu: headless
         // ist der IDB-Cache ohnehin AUS, dort ist der Pfad byte-gleich zu vorher).
-        return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s)).then((hit) => {
-            if (hit) return hit;
+        // ═══ DER INGEST-TAKT (18.07., vierter Schöpfer-Trace: 5–6.4-s-LongTasks,
+        // 144 s von 304 s Session): Worker-Replies UND warme Platten-Treffer kamen
+        // in BURSTS an — ihre .then-Konversionen (_foundryBuildGroup, Geometrie-Bau)
+        // liefen als Microtasks GEBÜNDELT in einer Task. Der Takt sitzt am EINEN
+        // Chokepoint: JEDES Request-Ergebnis (Platte UND Worker) passiert
+        // _foundryIngestTakt — der Loop-Tick gibt pro Frame nur wenige frei (unter
+        // Budget 3, über Budget 1), die Konversion jedes freigegebenen folgt als
+        // Microtask IM selben Frame. Misses (null) passieren sofort (kein Stau),
+        // headless sofort (byte-schnelle Gates — die Slicing-Semantik ist dort
+        // bedeutungslos, der Null-Renderer kennt keine Frames). Kein Aufrufer
+        // ändert sich: die null-bis-fertig-Semantik der Konsumenten trägt schon. ═══
+        return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s))
+            .then((hit) => {
+                if (hit) return hit;
             // N3.4 (Pack-Kanon, spec/pack/v0/CONTRACT.md) — DER SHIP-PFAD-HOOK: der dokumentierte
             // Test-Hook `window.__anazhLiveBake === false` ueberspringt den Live-Worker-Fallback
             // (Pack/IDB-only — der kuenftige Auslieferungs-Pfad liest NUR gemintete Packs/Platte,
@@ -71565,11 +71681,39 @@ class AnazhRealm {
                 }
                 return null;
             }
-            return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
-                if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
-                return meshes;
-            });
-        });
+                return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
+                    if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
+                    return meshes;
+                });
+            })
+            .then((ergebnis) => this._foundryIngestTakt(ergebnis));
+    }
+    // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
+    // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame).
+    _foundryIngestTakt(x) {
+        if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
+        const r = this.state.renderer;
+        if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
+        const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
+        this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
+        return new Promise((res) => q.push(() => res(x)));
+    }
+    // Der Freigabe-Tick (EIN Aufruf je Loop-Frame): unter Budget 3 Freigaben,
+    // über Budget 1 (Fortschritts-Garantie — der Stau schrumpft IMMER; die
+    // Streaming-Heiligkeit bleibt, weil je Frame nur wenige Konversionen folgen).
+    _tickFoundryIngest() {
+        const q = this._foundryIngestQueue;
+        if (!q || !q.length) return;
+        const n = this.state._frameOverBudget ? 1 : 3;
+        for (let i = 0; i < n && q.length; i++) {
+            const frei = q.shift();
+            this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
+            try {
+                frei();
+            } catch (_e) {
+                /* eine gerissene Freigabe darf den Takt nie stoppen */
+            }
+        }
     }
     _foundryWorkerRequest(presetId, seed, lod, season, ov) {
         const f = this._foundry;
@@ -89723,6 +89867,11 @@ class AnazhRealm {
                 // V18.485 — der Pipeline-Warm-Ofen: neue Konsum-Archetyp-Familien
                 // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
                 this._pipeOfenTick();
+                // DER INGEST-TAKT (18.07., vierter Trace: 5–6.4-s-LongTasks — Reply-/
+                // Platten-BURSTS bündelten ihre Konversionen als Microtasks in EINER
+                // Task): der EINE Freigabe-Tick lässt pro Frame nur wenige Foundry-
+                // Konversionen durch (s. _foundryIngestTakt).
+                this._tickFoundryIngest();
                 this._kernPflichtWand();
                 // DER FELD-CULL (das-feld-zeichnet §2 Stufe 1 Vollausbau): das
                 // pro-Instanz-GPU-Urteil der schwersten Scatter-Familien — die
@@ -92164,7 +92313,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.3";
+AnazhRealm.VERSION = "18.491.4";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

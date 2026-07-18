@@ -6,7 +6,30 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.3 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, Grenzzyklus-Schnitt, Gnadenfrist, Kein-WebGPU bewiesen)
+## Stand (V18.491.4 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
+
+**18.07., siebte Welle (ULTRACODE — die Profi-Doktrin „Kosten binden an Schirm+Änderung,
+nie an Weltgröße" wird Maschine; Verstehens-Sweep 4 Leser + adversariale Diff-Review):**
+- DER INGEST-TAKT: Worker-Reply- UND Platten-Treffer-Bursts bündelten ihre Konversionen
+  (_foundryBuildGroup, bis ~170k Verts) als Microtasks in EINER Task = die 5–6.4-s-
+  LongTasks. Der EINE Chokepoint `_foundryRequest` → `_foundryIngestTakt`: jedes
+  Ergebnis passiert die Takt-Queue, der Loop gibt 3/Frame frei (über Budget 1, nie 0 —
+  Fortschritts-Garantie), Reihenfolge bleibt, Misses sofort, headless sofort (Gates
+  byte-schnell). Alle Konsumenten waren schon null-tolerant (Sweep-verifiziert, 0 awaits).
+- DER LEISTUNGS-VERTRAG (gate:leistungs-vertrag): 0 Stand-Churn · Gruppen klettern im
+  Stand nicht (1214→1214) · Takt-Sätze (nie synchron, 3/1, Reihenfolge, kein Verhungern,
+  headless sofort) · Linsen-KONSUM im Trace — die Laufzeit-Ökonomie ist versiegelt wie
+  die Gesetz-Zwillinge (gate:altlasten-Idee für die Ökonomie).
+- NEUE LINSEN: bundleDeckung (drin/draußen + Top-Draußen-Familien — die per-Draw-
+  Uniform-Bahn bekommt Ziele) · ingestTakt (frei/stau/stauMax) · stillstandMuellMBProS
+  (Median-Heap-Wachstum in Steh-Sekunden ohne GC — Loop-Müll ohne Streaming-Alibi).
+- ZWEI-KREISE-MINI: echtes gpuMs über der Frame-Decke setzt die Radius-Ruhe-Uhr zurück
+  (der Radius wächst nie in eine volle GPU; Proxy/Sim byte-alt).
+- SWEEP-ERNTE (benannt für die nächsten Wellen): Nicht-Bundle-Draws = VIER Chunk-
+  Populationen (Terrain ≤625 · Gras ~289 · Streu ~375 · Wasser/Stitch) + globale Baum-
+  Gruppen · Müll-Wal = ctx-lose `_terrainColumnContext`-Münzen im Feld-Pfad
+  (_fieldGradient/_fieldRaycast-DDA/Kreatur-Rays) + `_tickScatterLod`-Keys-Array
+  (~1–1.5 MB/s im Stand) — mit Zeilennummern im Chronik-Commit.
 
 **18.07., sechste Welle (vierter Trace: die Linsen überführen den GRENZZYKLUS — Radius
 atmete 58↔130 m, Churn-Linse nennt fscatter:blume ×6/1132 Wiederkehrer, GPU echt blieb
