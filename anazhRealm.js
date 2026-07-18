@@ -12893,8 +12893,9 @@ class AnazhRealm {
             for (const bp of Object.values(this.state.blueprints || {})) {
                 if (out.length >= LIMIT) return;
                 if (!bp || !Array.isArray(bp.parts)) continue;
-                // W-A1 (Donor-Abschied) — donorOnly-Spender treten in keinem Picker auf.
-                if (bp.donorOnly) continue;
+                // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel — donorOnly
+                // UND Render-Varianten (grown_*, *_var1+) treten nie auf.
+                if (!this._katalogSichtbar(bp.name, bp)) continue;
                 const role = this._displayRole(bp);
                 if (roles && !roles.includes(role)) continue;
                 // M4 (V18.158) — der EINE Heuhaufen + Kern: Name/Rolle(label)/Material/Tags.
@@ -34128,6 +34129,22 @@ class AnazhRealm {
                 return;
             }
         }
+        // FELS-/KRISTALL-HÜLLE (18.07.) — vierter Gesetz-Zweig (die Tor-Klasse):
+        // Streu-Formationen decken die GEMESSENE Studio-Hülle statt der
+        // Substanz-Variant-Parts. Fail-closed: keine Tafel/Hülle → Parts-Pfad.
+        const felsParts = this._felsBlockerParts(entry);
+        if (felsParts) {
+            const felsBoxes = [];
+            for (const part of felsParts) {
+                const aabb = this._blockerComputePartAABB(entry, part);
+                if (aabb) felsBoxes.push(aabb);
+            }
+            if (felsBoxes.length) {
+                entry.blockerAABBs = felsBoxes;
+                this._blockerStampReach(entry);
+                return;
+            }
+        }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
@@ -34365,6 +34382,32 @@ class AnazhRealm {
             }
         }
         return teile;
+    }
+
+    // FELS-/KRISTALL-HÜLLE (18.07., M1) — die Tor-Klasse, vierter Zweig: die
+    // Streu-Formationen (fels_var*/kristall_var*) trugen Kollision aus den
+    // seed-gemünzten Substanz-Parts, Optik aus dem Studio — zwei Quellen.
+    // Jetzt deckt die Kollision die GEMESSENE Studio-Hülle (fx.huelle der
+    // Tafel — im echten Worker über 4 Varianten vermessen), synchron +
+    // Lockstep-fest (__terrainCore.PHYTO_PRESETS). BEWUSST NUR die *_var-
+    // Streu-Klasse: felsbogen/felsturm behalten ihre Öffnungs-Parts
+    // (Welt-Substanz mit Durchgang — eine Voll-Box schlösse den Bogen).
+    _felsBlockerParts(entry) {
+        if (!entry || typeof entry.type !== "string") return null;
+        if (!/^(fels|kristall)_var\d+$/.test(entry.type)) return null;
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const tab = tc && tc.PHYTO_PRESETS;
+        if (!tab) return null;
+        const preset = this._foundryPresetForEntry(entry);
+        const rec = preset ? tab[preset] : null;
+        const h = rec && rec.kind === "rock" && rec.fx && rec.fx.huelle;
+        if (!h || !Number.isFinite(h.rx) || !Number.isFinite(h.y1)) return null;
+        return [
+            {
+                position: { x: 0, y: h.y1 / 2, z: 0 },
+                size: { x: h.rx * 2, y: h.y1, z: h.rz * 2 },
+            },
+        ];
     }
 
     // V18.464 — die Tor-KOLLISIONS-HÜLLE aus dem Gesetz: Pfosten (beidseitig,
@@ -67875,6 +67918,19 @@ class AnazhRealm {
         }
         return n;
     }
+    // KATALOG-SICHT (18.07., M1) — DER EINE SICHT-CHOKEPOINT aller Picker
+    // (Werkstatt-Liste · Rezeptbuch · Omnibox · Kreatur-Auftrag-Select):
+    // donorOnly-Spender UND die Render-Varianten (grown_*, fels/kristall/
+    // glut_var1+) treten NIRGENDS auf — je Gattung EIN Studio-Eintrag.
+    // Vorher galt die Regel nur der Werkstatt; Rezeptbuch/Omnibox/Auftrag
+    // zeigten die grown_-Doppel (die M1-Gelb-Zelle der Matrix).
+    _katalogSichtbar(name, bp) {
+        const b = bp || (this.state.blueprints && this.state.blueprints[name]);
+        if (!b || b.donorOnly) return false;
+        const n = typeof name === "string" && name ? name : b.name || "";
+        return !(/^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n));
+    }
+
     _stlWegeDisposePool() {
         const P = this.state.stlWege;
         if (P && P.mesh) {
@@ -78228,9 +78284,9 @@ class AnazhRealm {
         for (const name of Object.keys(bps)) {
             const bp = bps[name];
             if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) continue;
-            // ABSCHIED DER ALT-DOPPEL — donorOnly-Versteckte (W-A1-Flag) treten auch im
-            // Rezeptbuch nicht auf (dieselbe Sicht-Regel wie Werkstatt-Liste/Omnibox/Feed).
-            if (bp.donorOnly) continue;
+            // KATALOG-SICHT (18.07., M1): die EINE Sicht-Regel (donorOnly +
+            // Render-Varianten) — je Gattung EIN Studio-Eintrag im Rezeptbuch.
+            if (!this._katalogSichtbar(name, bp)) continue;
             const kind = this._blueprintUseKind(bp);
             const slot = kind === "place" && this._displayRole(bp) === "vehicle" ? "vehicle" : kind;
             if (groups[slot]) groups[slot].push(name);
@@ -79721,7 +79777,7 @@ class AnazhRealm {
             // W-A1/AUSLÖSCHUNG — donorOnly-Spender (heute keine Built-ins mehr; Alt-Saves) treten
             // in keinem nutzer-sichtbaren Picker auf (auch nicht im Baue-Auftrag-Select).
             const bpNames = Object.keys(this.state.blueprints || {})
-                .filter((n) => !(this.state.blueprints[n] && this.state.blueprints[n].donorOnly))
+                .filter((n) => this._katalogSichtbar(n))
                 .sort();
             const orderSelect = this._el(
                 "select",
@@ -80384,14 +80440,9 @@ class AnazhRealm {
         // mit „Felsformation" ×12 usw. fluteten. Wie das Studio EIN Rezept je Sorte zeigt, zeigt die
         // Werkstatt jetzt EINEN Repräsentanten je Formation (`*_var0`) — var1+ sind Streu-Render-
         // Details (der Scatter nutzt sie weiter, sie bleiben in state.blueprints, nur die UI bündelt).
-        const _isHiddenVariant = (n) => /^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n);
-        // W-A1/AUSLÖSCHUNG — die Donor-Substanz lebt als DATEN (KIND_SUBSTANCE); donorOnly-
-        // Blueprints (nur noch Alt-Saves/Tests) sind reine Daten-Spender: kein
-        // Katalog-Auftritt (die Gestalten kommen aus den Labs). Die Blueprints selbst
-        // bleiben voll funktional (Donor-Klonen · Tests · spawnArchitecture).
-        const blueprintNames = Object.keys(this.state.blueprints).filter(
-            (n) => !_isHiddenVariant(n) && !this.state.blueprints[n].donorOnly
-        );
+        // KATALOG-SICHT (18.07., M1): die Werkstatt-Regel IST jetzt die EINE
+        // Katalog-Regel (_katalogSichtbar) — alle Sicht-Flächen lesen sie.
+        const blueprintNames = Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n));
         // Liste der Baupläne
         list.innerHTML = "";
         for (const name of blueprintNames) {

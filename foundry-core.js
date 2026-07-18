@@ -2247,6 +2247,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.66, elong: 0.22, rnd: 0.42, rgh: 0.55, str: 0.1, gen: 0.55 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 2.7, rz: 1.9, y1: 1.8 },
             rkind: "boulder",
             size: 1.6,
             rockA: 0x8a8278,
@@ -2262,6 +2265,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.5, elong: 0.3, rnd: 0.3, rgh: 0.4, str: 0.2, gen: 0.32 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 1.9, rz: 1.9, y1: 4.7 },
             rkind: "columns",
             rockA: 0x33363a,
             rockB: 0x202327,
@@ -2278,6 +2284,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.3, elong: 0.4, rnd: 0.3, rgh: 0.5, str: 0.85, gen: 0.6 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 2.6, rz: 1.8, y1: 1.3 },
             rkind: "boulder",
             size: 1.9,
             rockA: 0xb09870,
@@ -2293,6 +2302,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.4, elong: 0.6, rnd: 0.12, rgh: 0.6, str: 0.1, gen: 0.55 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 2.6, rz: 1.6, y1: 1.3 },
             rkind: "boulder",
             size: 1.7,
             rockA: 0x6a6660,
@@ -2308,6 +2320,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.45, elong: 0.4, rnd: 0.25, rgh: 0.55, str: 0.1, gen: 0.85 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 2.1, rz: 2.1, y1: 1.9 },
             rkind: "scree",
             size: 1.8,
             rockA: 0x7a7268,
@@ -2324,6 +2339,9 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.5, elong: 0.5, rnd: 0.3, rgh: 0.4, str: 0.1, gen: 0.1 },
         fx: {
+            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
+            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
+            huelle: { rx: 3.1, rz: 2.2, y1: 3.3 },
             rkind: "crystal",
             size: 2.4,
             count: 20,

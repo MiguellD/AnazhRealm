@@ -558,6 +558,14 @@ function validateManifest(m) {
                 'const HG = (typeof globalThis !== "undefined" && globalThis.HIMMEL_GESETZ) || { projY: 0.16 };'
             );
             check("SELBST-TEST: ein injizierter Inline-Fallback feuert die Wand", inj === true);
+            // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
+            // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
+            // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle.
+            const pbaM = src && src.match(/_populateBlockerAABBs\(entry\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
+            check(
+                "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle (fx.huelle) im EINEN Chokepoint vor dem Parts-Pfad",
+                !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huelle: \{ rx:/.test(fc)
+            );
         })();
     })();
 
