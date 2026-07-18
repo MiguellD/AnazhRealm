@@ -14420,8 +14420,13 @@ class AnazhRealm {
             syncBuildMs: 0,
             workerMeshN: 0,
             bvhMs: 0,
-            // Regler-Zustand:
-            loadScale: 1, // 1 = volle Qualität, 0 = max gedrosselt
+            // Regler-Zustand: der Start ist der GERÄTE-SEED (18.07. — „das
+            // Geräte-Profil ist Telemetrie, kein Regler-Seed" fiel): ein PRIOR
+            // aus der EINEN Profil-Quelle (_geraeteProfil — Klasse × Pixel-
+            // Fläche), nie ein Urteil — der PID korrigiert ab Frame 1. Headless
+            // bleibt byte-alt (Seed 1, _geraeteReglerSeed-Wand).
+            loadScale: this._geraeteReglerSeed(), // 1 = volle Qualität, 0 = max gedrosselt
+            seedStart: this._geraeteReglerSeed(), // Telemetrie: was der Seed entschied (Flugschreiber)
             pidPrevErr: 0,
         };
     }
@@ -15442,31 +15447,86 @@ class AnazhRealm {
         return fr;
     }
 
+    // ═══ DAS GERÄTE-PROFIL — EINE QUELLE (18.07., Schöpfer: „das Geräte-Profil ist
+    // Telemetrie, kein Regler-Seed" — jetzt ist es BEIDES aus EINER Quelle). ═══
+    // Liest cores/deviceMemory/dpr/Schirm + GPU-Adapter-Info (feature-detect) und
+    // urteilt eine GROBE Klasse (schwach/mittel/stark) + den Regler-STARTWERT
+    // (loadScale-Prior). Der Seed ist ein PRIOR, nie ein Urteil: der EINE PID
+    // bleibt der Richter (er korrigiert in Sekunden) — aber ein schwaches Gerät
+    // zahlt den Überlast-Einbruch des optimistischen Kaltstarts (loadScale 1 =
+    // volle dpr-Auflösung + max Schatten/Arch-Radius im Boot-Sturm) nicht mehr,
+    // und ein starkes startet nicht künstlich gedrosselt. Memoisiert; solange
+    // die Adapter-Info noch fehlt (Renderer-Init async) wird NICHT memoisiert,
+    // damit der erste Leser nach dem Init die volle Wahrheit bekommt.
+    _geraeteProfil() {
+        if (this._geraeteProfilMemo) return this._geraeteProfilMemo;
+        const nav = typeof navigator !== "undefined" ? navigator : {};
+        const win = typeof window !== "undefined" ? window : {};
+        const r = this.state.renderer;
+        const cores = nav.hardwareConcurrency || 0;
+        const memGb = nav.deviceMemory || 0;
+        const dpr = win.devicePixelRatio || 1;
+        const mpix = Math.round((((win.innerWidth || 0) * dpr * (win.innerHeight || 0) * dpr) / 1e6) * 10) / 10;
+        let gpu = "";
+        try {
+            const info = r && r.backend && r.backend.adapter && r.backend.adapter.info;
+            if (info) gpu = [info.vendor, info.architecture, info.description].filter(Boolean).join(" ").trim();
+        } catch {
+            /* Adapter-Info nicht freigelegt — kein Beinbruch */
+        }
+        const g = gpu.toLowerCase();
+        // Grobe, EHRLICHE Marker (Chrome legt vendor/architecture frei, z.B.
+        // "nvidia ampere" · "intel gen-12lp" · "apple metal-3" · "arm valhall"):
+        const software = /swiftshader|software|llvmpipe|basic render/.test(g);
+        const mobil = /\b(arm|mali|qualcomm|adreno|imgtec|powervr|valhall)\b/.test(g);
+        const diskret = /nvidia|geforce|rtx|gtx|ampere|ada|turing|rdna|navi/.test(g) && !software;
+        const apple = /\bapple\b/.test(g);
+        let klasse = "mittel";
+        if (software || mobil || (memGb > 0 && memGb <= 4) || (cores > 0 && cores <= 4)) klasse = "schwach";
+        else if ((diskret || apple) && (memGb === 0 || memGb >= 8) && cores >= 8) klasse = "stark";
+        // Der Seed: Klassen-Basis minus Pixel-Zuschlag (grosse Hi-DPI-Flächen sind
+        // Fill-Last ab Frame 1 — dpr 2 auf 1440p sind bereits ~4.4 MPix).
+        let seed = klasse === "stark" ? 1 : klasse === "schwach" ? 0.45 : 0.7;
+        if (mpix > 6) seed -= 0.2;
+        else if (mpix > 4) seed -= 0.1;
+        seed = Math.max(0.3, Math.min(1, seed));
+        const profil = { klasse, seed, cores, memGb, dpr, mpix, gpu };
+        if (gpu) this._geraeteProfilMemo = profil; // erst mit Adapter-Wahrheit einfrieren
+        return profil;
+    }
+    // Der EINE Regler-Seed-Leser (nur der Sense-Init ruft ihn): headless/Null-
+    // Renderer bleibt BYTE-ALT (loadScale 1 — Gates sehen die volle Welt).
+    _geraeteReglerSeed() {
+        const r = this.state.renderer;
+        if (!r || r._isHeadlessNull) return 1;
+        const p = this._geraeteProfil();
+        return Number.isFinite(p.seed) ? p.seed : 1;
+    }
+
     // Das Geräte-Profil — einmal beim Init erfasst. Genau das, was die Champions
     // zuerst messen, um das Gerät zu VERSTEHEN (das fehlende Modell des Reglers).
+    // Liest die EINE Profil-Quelle (_geraeteProfil) und trägt Klasse + Seed als
+    // Telemetrie mit — der Trace zeigt, was der Seed entschieden hat.
     _flightRecorderDevice() {
         const nav = typeof navigator !== "undefined" ? navigator : {};
         const win = typeof window !== "undefined" ? window : {};
         const r = this.state.renderer;
+        const profil = this._geraeteProfil();
         const dev = {
             version: AnazhRealm.VERSION,
             userAgent: nav.userAgent || "?",
-            cores: nav.hardwareConcurrency || 0,
-            deviceMemoryGb: nav.deviceMemory || 0,
+            cores: profil.cores,
+            deviceMemoryGb: profil.memGb,
             screen: (win.innerWidth || 0) + "x" + (win.innerHeight || 0),
-            dpr: win.devicePixelRatio || 1,
+            dpr: profil.dpr,
             rendererType: r ? (r._isHeadlessNull ? "headless-null" : r.isWebGPURenderer ? "webgpu" : "other") : "none",
             webgpu: typeof nav.gpu !== "undefined",
             foliageRadius: [AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX],
+            klasse: profil.klasse,
+            reglerSeed: profil.seed,
+            seedKonsumiert: this.state.perfSense ? this.state.perfSense.seedStart : undefined,
         };
-        // GPU-Adapter-Name, WENN der WebGPU-Backend ihn freilegt (feature-detect, nie annehmen).
-        try {
-            const adapter = r && r.backend && r.backend.adapter;
-            const info = adapter && adapter.info;
-            if (info) dev.gpu = [info.vendor, info.architecture, info.description].filter(Boolean).join(" ").trim();
-        } catch {
-            /* Adapter-Info nicht freigelegt — kein Beinbruch */
-        }
+        if (profil.gpu) dev.gpu = profil.gpu;
         return dev;
     }
 

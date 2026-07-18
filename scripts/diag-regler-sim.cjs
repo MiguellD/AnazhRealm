@@ -176,6 +176,64 @@ const server = http.createServer((req, res) => {
                 o.s4Invariant = s4MaxDrift < 0.001;
                 o.s4 = { a: s4a, b: s4b };
                 o.gpuAppliersDrove = rsApplied > 0; // die Sim fuhr die echten Zweige (nicht vakuös)
+                // ── S5: DER GERÄTE-SEED (18.07., „das Geräte-Profil ist Telemetrie,
+                // kein Regler-Seed" fiel) — die EINE Profil-Quelle urteilt Klassen,
+                // der Sense-Init KONSUMIERT den Seed, headless bleibt byte-alt. ──
+                {
+                    const defO = (obj, k, v) => Object.defineProperty(obj, k, { get: () => v, configurable: true });
+                    const undefO = (obj, k) => delete obj[k];
+                    const fakeAdapter = (info) => {
+                        st.renderer.backend = { adapter: { info } };
+                    };
+                    const prevBackend = st.renderer.backend;
+                    const prof = (info, cores, mem, dpr, w, h) => {
+                        r._geraeteProfilMemo = null;
+                        fakeAdapter(info);
+                        defO(navigator, "hardwareConcurrency", cores);
+                        defO(navigator, "deviceMemory", mem);
+                        defO(window, "devicePixelRatio", dpr);
+                        defO(window, "innerWidth", w);
+                        defO(window, "innerHeight", h);
+                        return r._geraeteProfil();
+                    };
+                    const pStark = prof({ vendor: "nvidia", architecture: "ampere" }, 24, 32, 1, 1920, 1080);
+                    const pSchwach = prof({ vendor: "arm", architecture: "valhall" }, 8, 8, 1, 800, 600);
+                    const pMittel = prof({ vendor: "intel", architecture: "gen-12lp" }, 12, 16, 2, 1440, 765);
+                    o.s5 = { pStark, pSchwach, pMittel };
+                    o.s5Klassen =
+                        pStark.klasse === "stark" &&
+                        pStark.seed === 1 &&
+                        pSchwach.klasse === "schwach" &&
+                        Math.abs(pSchwach.seed - 0.45) < 1e-9 &&
+                        pMittel.klasse === "mittel" &&
+                        Math.abs(pMittel.seed - 0.6) < 1e-9; // 0.7 − 0.1 Hi-DPI-Zuschlag (4.4 MPix)
+                    // KONSUM: ein frischer Sense-Init (non-headless, Mittel-Profil aktiv)
+                    // startet loadScale AM SEED — nicht bei optimistischer 1.
+                    r._geraeteProfilMemo = null;
+                    st.perfSense = null;
+                    feed(17, Object.assign({}, HONEST));
+                    o.s5SeedStart = st.perfSense ? st.perfSense.seedStart : null;
+                    o.s5SeedKonsumiert =
+                        st.perfSense &&
+                        Math.abs(st.perfSense.seedStart - 0.6) < 1e-9 &&
+                        Math.abs(st.perfSense.loadScale - 0.6) < 0.06;
+                    // HEADLESS BYTE-ALT: derselbe Init unter Null-Renderer ⇒ Seed 1.
+                    st.renderer._isHeadlessNull = true;
+                    r._geraeteProfilMemo = null;
+                    st.perfSense = null;
+                    feed(17, Object.assign({}, HONEST));
+                    o.s5HeadlessAlt = st.perfSense && st.perfSense.seedStart === 1;
+                    st.renderer._isHeadlessNull = false;
+                    // Stubs zurücknehmen (die Gate-Hook-Lehre: sichern + wiederherstellen).
+                    undefO(navigator, "hardwareConcurrency");
+                    undefO(navigator, "deviceMemory");
+                    undefO(window, "devicePixelRatio");
+                    undefO(window, "innerWidth");
+                    undefO(window, "innerHeight");
+                    st.renderer.backend = prevBackend;
+                    r._geraeteProfilMemo = null;
+                    st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
+                }
             } finally {
                 st.renderer._isHeadlessNull = _origHeadless;
                 r._applyRenderScale = _origApplyRS;
@@ -219,6 +277,14 @@ const server = http.createServer((req, res) => {
         {
             name: `S3 starke GPU: alles wächst zurück (loadScale ${f2(out.s3.loadScale)}, Dichte ${f2(out.s3.density)}, renderScale ${f2(out.s3.renderScale)})`,
             pass: out.s3Recovered,
+        },
+        {
+            name: `S5 GERÄTE-SEED Klassen: stark=1 · schwach=0.45 · mittel-HiDPI=0.6 (${out.s5 ? [out.s5.pStark.klasse, out.s5.pSchwach.klasse, out.s5.pMittel.klasse].join("/") : "?"})`,
+            pass: out.s5Klassen === true,
+        },
+        {
+            name: `S5 SEED-KONSUM: frischer Sense-Init startet loadScale am Seed (${out.s5SeedStart}) · headless byte-alt (Seed 1: ${out.s5HeadlessAlt})`,
+            pass: out.s5SeedKonsumiert === true && out.s5HeadlessAlt === true,
         },
         {
             name: `S4 SESSION-ZEIT-INVARIANZ: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${out.s4MaxDrift})`,
