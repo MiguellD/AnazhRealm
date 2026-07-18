@@ -3590,3 +3590,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
 // Der Tisch (M8: Tabelle vor if) — die Shell-Dispatch UND der Stamm-Kaltpfad
 // schlagen hier nach; neue MESHFREI-Gattungen registrieren eine Zeile.
 var BAKERS_BY_KIND = { kreatur: bakeTierInstance, koerper: bakeMenschInstance };
+
+// DIAL-ZWILLINGS-ABSCHIED (18.07., rein additiv) — die Pflanzen-Rezept-Tafel
+// reist im Terrain-Namensraum zum SYNCHRONEN Stamm-Leser (die Tor-Klasse:
+// die Gestalt-Tafel entscheidet, nie der async Buch-Lade-Stand): der
+// GEFÜHLTE Baum (Wuchs → Kollision/Silhouette/Boot) liest DIESELBEN Dials
+// wie der GESEHENE (buildInstance liest dieselben PRESETS im Worker).
+// Zuweisung hier (nach der PRESETS-Definition — const ist kein Global).
+__terrainCore.PHYTO_PRESETS = PRESETS;

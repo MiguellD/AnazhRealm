@@ -56622,11 +56622,12 @@ class AnazhRealm {
         const c = ctx || {};
         const crown = c.crownForm || grammar.crown;
         const specialCrown = crown === "weeping" || crown === "vase" || crown === "schirm";
-        // DAS NEUE KLEID (Bäume an die Vorlagen-Dials, 04.07.2026) — die per-Art Basis-Regler
-        // EXAKT aus der Schöpfer-Vorlage (SPECIES_PHYTO_DIALS = phytogenesis v38 PRESETS), sofern
-        // die Art einen Eintrag trägt UND das Genom keine Sonder-Krone (weeping/vase/schirm)
-        // gewürfelt hat. Sonst der crown-abgeleitete Fallback (alte Arten + die Sonder-Kronen).
-        const preset = !specialCrown && AnazhRealm.SPECIES_PHYTO_DIALS && AnazhRealm.SPECIES_PHYTO_DIALS[speciesKey];
+        // DIAL-ZWILLINGS-ABSCHIED (18.07.) — die per-Art Basis-Regler aus der
+        // STUDIO-Tafel (_phytoStudioDials = foundry-core PRESETS, dieselbe
+        // Quelle wie der Render), sofern die Art ein Studio-Gesetz trägt UND
+        // das Genom keine Sonder-Krone (weeping/vase/schirm) gewürfelt hat.
+        // Sonst der crown-abgeleitete Fallback (Arten ohne Gesetz + Sonder-Kronen).
+        const preset = !specialCrown && this._phytoStudioDials(speciesKey);
         const conifer = preset ? preset.conifer : crown === "cone" || grammar.foliage.kind === "needleSpray";
         let apical, slim, trop, delta, leafD;
         if (preset) {
@@ -56665,9 +56666,14 @@ class AnazhRealm {
         // Kronen-Charakter: aus der Vorlage, sonst crown-abgeleitet. maxDepth bleibt der
         // AnazhRealm-Part-Budget-Wert (c.maxDepth, via countCap/leafBudget als LOD-Hebel) —
         // die Vorlagen-L-System-Tiefe (9/10) gehört NICHT in dieses Budget-System.
-        const dialCrownBase = preset ? preset.crownBase : crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24;
-        const dialConiferDroop = preset ? preset.coniferDroop : crown === "cone" ? 0.22 : 0.05;
-        const dialWindGain = preset ? preset.windGain : 1;
+        // Fehlende Kronen-Felder der Studio-Tafel (eiche trägt kein crownBase)
+        // leiten wie der gesetzlose Pfad aus der Krone ab — dieselben Zahlen,
+        // die die Literal-Kopie für diese Arten trug (byte-treu).
+        const dialCrownBase =
+            preset && preset.crownBase != null ? preset.crownBase : crown === "schirm" ? 0.5 : conifer ? 0.12 : 0.24;
+        const dialConiferDroop =
+            preset && preset.coniferDroop != null ? preset.coniferDroop : crown === "cone" ? 0.22 : 0.05;
+        const dialWindGain = preset && preset.windGain != null ? preset.windGain : 1;
         return {
             height: c.height,
             slim,
@@ -56690,13 +56696,49 @@ class AnazhRealm {
         };
     }
 
+    // DIAL-ZWILLINGS-ABSCHIED (18.07.) — DIE STUDIO-QUELLE DER PHÄNOTYP-REGLER:
+    // der GEFÜHLTE Baum (Wuchs → Kollision/Silhouette/Boot) liest DIESELBE
+    // Tafel wie der GESEHENE (buildInstance im Worker): foundry-core PRESETS,
+    // SYNCHRON über __terrainCore.PHYTO_PRESETS (die Tor-Klasse — die Tafel
+    // entscheidet, nie der async Buch-Lade-Stand; Lockstep-fest, kein Boot-
+    // Spalt). Die Literal-Kopie SPECIES_PHYTO_DIALS ist GEFALLEN — buche
+    // folgt jetzt mammut, erle weide (die Seen-Map-Wahrheit), nicht mehr der
+    // eiche-Kopie. Fehlende Kronen-Felder (crownBase/coniferDroop) leitet der
+    // Leser wie bisher aus der Krone ab. null → Grammatik-Fallback (Arten
+    // ohne Studio-Gesetz — deren einzige Quelle, kein Zwilling).
+    _phytoStudioDials(speciesKey) {
+        const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+        const tab = tc && tc.PHYTO_PRESETS;
+        if (!tab) return null;
+        const preset = this._foundryPresetFor(speciesKey);
+        const rec = preset ? tab[preset] : null;
+        if (!rec || !rec.s || !Number.isFinite(rec.s.api)) return null;
+        const s = rec.s;
+        const fx = rec.fx || {};
+        return {
+            api: s.api,
+            delta: s.delta,
+            slim: s.slim,
+            trop: s.trop,
+            leaf: s.leaf,
+            conifer: !!fx.conifer,
+            coniferDroop: Number.isFinite(fx.coniferDroop) ? fx.coniferDroop : undefined,
+            crownBase: Number.isFinite(fx.crownBase) ? fx.crownBase : undefined,
+            maxDepth: Number.isFinite(fx.maxDepth) ? fx.maxDepth : undefined,
+            windGain: Number.isFinite(fx.windGain) ? fx.windGain : undefined,
+            barkA: Number.isFinite(fx.barkA) ? fx.barkA : undefined,
+            barkB: Number.isFinite(fx.barkB) ? fx.barkB : undefined,
+            leafCol: Number.isFinite(fx.leafCol) ? fx.leafCol : undefined,
+        };
+    }
+
     // DAS NEUE KLEID — DIE REZEPT-QUELLE: liefert die 5 Vorlagen-Regler {api,slim,trop,delta,leaf}
-    // (+ conifer-Hinweis) für eine Spezies — das „Rezept" im Rezeptbuch. Bevorzugt den byte-treuen
-    // Vorlagen-PRESET (SPECIES_PHYTO_DIALS = phytogenesis v38); eine Art ohne Eintrag bekommt einen
-    // aus der Grammatik-Krone abgeleiteten Regler-Satz. EINE Rezept-Quelle, die durch die EINE
-    // Pipeline (`__phytoCore.treeParams` → phenotype + deriveParamsPlant) fliesst — kein Nachbauen.
+    // (+ conifer-Hinweis) für eine Spezies — das „Rezept" im Rezeptbuch. Bevorzugt die STUDIO-
+    // Tafel (_phytoStudioDials — foundry-core PRESETS, dieselbe Quelle wie der Render); eine Art
+    // ohne Studio-Gesetz bekommt einen aus der Grammatik-Krone abgeleiteten Regler-Satz. EINE
+    // Rezept-Quelle, die durch die EINE Pipeline (`__phytoCore.treeParams`) fliesst — kein Nachbauen.
     _treeRecipeDials(speciesKey, grammar) {
-        const preset = AnazhRealm.SPECIES_PHYTO_DIALS && AnazhRealm.SPECIES_PHYTO_DIALS[speciesKey];
+        const preset = this._phytoStudioDials(speciesKey);
         if (preset)
             return {
                 api: preset.api,
@@ -57099,14 +57141,16 @@ class AnazhRealm {
         }
         // ─── FOLIAGE AT ANCHORS (§3.4) ──────────────────────────────
         const fo = grammar.foliage;
-        // DAS NEUE KLEID K1 (V18.385) — die FARB-WURZELN aus der Vorlage: die Blatt-Farbe
-        // kommt aus der SPECIES_PALETTE (phyto leafCol), nicht mehr aus dem approximierten
-        // grammar-Wert. Der Gigant trägt den Sequoia-Ton. Die barkA/barkB reisen ins Skeleton
-        // → der Tube-Builder liest sie (die eine Palette, viele Leser, Gesetz #0).
+        // DIAL-ZWILLINGS-ABSCHIED (18.07.) — die FARB-WURZELN aus der STUDIO-
+        // Tafel (foundry-core PRESETS fx.barkA/barkB/leafCol — dieselbe Quelle
+        // wie der Render; der Gigant trägt den mammut-Ton derselben Tafel).
+        // Die Literal-Kopien SPECIES_PALETTE/_GIGANT sind GEFALLEN; Arten ohne
+        // Studio-Farben (blume) → der EINE neutrale Default.
+        const _sd = sizeClass === "gigant" ? this._phytoStudioDials("baum_mammut") : this._phytoStudioDials(speciesKey);
         const palette =
-            (sizeClass === "gigant" && AnazhRealm.SPECIES_PALETTE_GIGANT) ||
-            AnazhRealm.SPECIES_PALETTE[speciesKey] ||
-            AnazhRealm.SPECIES_PALETTE_DEFAULT;
+            _sd && _sd.barkA != null && _sd.leafCol != null
+                ? { barkA: _sd.barkA, barkB: _sd.barkB, leaf: _sd.leafCol }
+                : AnazhRealm.SPECIES_PALETTE_DEFAULT;
         skeleton.barkA = palette.barkA;
         skeleton.barkB = palette.barkB;
         // Herbst-Tönung (foliageVar-Achse, wahrerwuchs §4.1, tag-neutral — bleibt laub):
@@ -93127,113 +93171,11 @@ AnazhRealm.FOLIAGE_DENSITY = Object.freeze({
 // approximiertes Braun/Grün mehr — die exakten Werte der Vorlage. Die Birke trägt
 // ihre WEISSE Rinde (0xe6e6dc→0xf2f2ea), der Mammut/Sequoia sein Rot-Braun. Nur
 // Render-Farbe (KEIN Tag — Tags kommen aus `holz`/`laub`, die V17.16-Wand hält).
-AnazhRealm.SPECIES_PALETTE = Object.freeze({
-    baum_eiche: Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c }), // phyto eiche
-    baum_tanne: Object.freeze({ barkA: 0x4a3a2a, barkB: 0x6a5a42, leaf: 0x2e5a30 }), // phyto tanne
-    baum_kiefer: Object.freeze({ barkA: 0x4a2c1a, barkB: 0x6a4a30, leaf: 0x2e5526 }), // phyto fichte
-    baum_birke: Object.freeze({ barkA: 0xe6e6dc, barkB: 0xf2f2ea, leaf: 0x8ab84a }), // phyto birke (weiße Rinde)
-    baum_buche: Object.freeze({ barkA: 0x6a5a4a, barkB: 0x9a8a76, leaf: 0x6a9a3a }), // Buche (glatt-grau, hellgrün)
-    baum_erle: Object.freeze({ barkA: 0x3a2c22, barkB: 0x5a4a3a, leaf: 0x5a8a3a }), // Erle
-    baum_karst: Object.freeze({ barkA: 0x3a3028, barkB: 0x5a4e40, leaf: 0x5a7a3a }), // Karst (knorrig)
-    baum_totholz: Object.freeze({ barkA: 0x5a4a3a, barkB: 0x8a7a66, leaf: 0x6a6a4a }), // Totholz (grau-tot)
-    baum_palme: Object.freeze({ barkA: 0x6a5030, barkB: 0x8a6a44, leaf: 0x4a8a3a }), // Palme
-    baum_zypresse: Object.freeze({ barkA: 0x4a3a2a, barkB: 0x6a5a42, leaf: 0x2e5a34 }), // Zypresse (wie tanne)
-    busch_hazel: Object.freeze({ barkA: 0x3a2c1e, barkB: 0x5a4a34, leaf: 0x4a7a2c }), // phyto strauch
-    farn_busch: Object.freeze({ barkA: 0x3a3a26, barkB: 0x4a4a30, leaf: 0x4a8a3a }), // Farn
-    blume_gross: Object.freeze({ barkA: 0x3a5a2a, barkB: 0x4a6a34, leaf: 0x6a9a3a }), // Blume
-});
-// Der Sequoia/Mammut-Ton für die GIGANT-Größenklasse (phyto mammut) — die gigant-
-// gewachsene Eiche/Art trägt die rot-braune Riesen-Rinde.
-AnazhRealm.SPECIES_PALETTE_GIGANT = Object.freeze({ barkA: 0x7a3b22, barkB: 0x9a5a38, leaf: 0x3a5a30 });
 AnazhRealm.SPECIES_PALETTE_DEFAULT = Object.freeze({ barkA: 0x3a2c1e, barkB: 0x6a5a44, leaf: 0x4a7a2c });
-// DAS NEUE KLEID (Bäume an die Vorlagen-Dials, 04.07.2026) — die per-Art Phänotyp-Regler
-// EXAKT aus der Schöpfer-Vorlage (phytogenesis v38 PRESETS). Diese Zahlen sind vom
-// Schöpfer-Auge nach den Regeln der Natur justiert (KEIN Neu-Design, Copy-Adapt):
-//   api   — Apikaldominanz (exkurrent Nadel ↔ dekurrent Laub) → P.apical
-//   delta — da-Vinci-Δ (Flächenerhaltung an den Gabeln, r^Δ)
-//   slim  — McMahon-k (schlank ↔ gedrungen)
-//   trop  — Gravitropismus (aufrecht − ↔ hängend +)
-//   leaf  — Blattdichte
-//   conifer/coniferDroop/crownBase/windGain — Kronen-Charakter
-// `_phytoDialsFor` liest sie als BASIS-Vektor (kleiner deterministischer Jitter für
-// Natur-Varianz); die Genom-Achsen (age/size/crownForm) modulieren darauf. Nur Wuchs-
-// Zahlen — KEIN Tag, die Identität (Namen/holz+laub-Tags) bleibt unberührt (V17.16-Wand).
-// Zuordnung: baum_eiche←eiche · baum_tanne←tanne · baum_kiefer←fichte · baum_birke←birke ·
-// baum_buche/baum_erle←eiche (nächste breite Laub-Art).
-AnazhRealm.SPECIES_PHYTO_DIALS = Object.freeze({
-    baum_eiche: Object.freeze({
-        api: 0.3,
-        delta: 2.3,
-        slim: 0.45,
-        trop: -0.15,
-        leaf: 0.6,
-        conifer: false,
-        coniferDroop: 0.05,
-        crownBase: 0.24,
-        maxDepth: 9,
-        windGain: 0.9,
-    }), // phyto eiche
-    baum_tanne: Object.freeze({
-        api: 0.9,
-        delta: 2.1,
-        slim: 0.74,
-        trop: 0.05,
-        leaf: 0.78,
-        conifer: true,
-        coniferDroop: -0.05,
-        crownBase: 0.12,
-        maxDepth: 9,
-        windGain: 0.5,
-    }), // phyto tanne
-    baum_kiefer: Object.freeze({
-        api: 0.92,
-        delta: 2.05,
-        slim: 0.72,
-        trop: 0.1,
-        leaf: 0.7,
-        conifer: true,
-        coniferDroop: 0.22,
-        crownBase: 0.12,
-        maxDepth: 9,
-        windGain: 0.5,
-    }), // phyto fichte
-    baum_birke: Object.freeze({
-        api: 0.55,
-        delta: 2.2,
-        slim: 0.78,
-        trop: 0.42,
-        leaf: 0.42,
-        conifer: false,
-        coniferDroop: 0.05,
-        crownBase: 0.24,
-        maxDepth: 10,
-        windGain: 1.2,
-    }), // phyto birke
-    baum_buche: Object.freeze({
-        api: 0.3,
-        delta: 2.3,
-        slim: 0.45,
-        trop: -0.15,
-        leaf: 0.6,
-        conifer: false,
-        coniferDroop: 0.05,
-        crownBase: 0.24,
-        maxDepth: 9,
-        windGain: 0.9,
-    }), // ← eiche (breite Laub-Art)
-    baum_erle: Object.freeze({
-        api: 0.3,
-        delta: 2.3,
-        slim: 0.45,
-        trop: -0.15,
-        leaf: 0.6,
-        conifer: false,
-        coniferDroop: 0.05,
-        crownBase: 0.24,
-        maxDepth: 9,
-        windGain: 0.9,
-    }), // ← eiche (breite Laub-Art)
-});
+// DIAL-ZWILLINGS-ABSCHIED (18.07.): SPECIES_PALETTE/_GIGANT und
+// SPECIES_PHYTO_DIALS sind GEFALLEN — die EINE Tafel ist foundry-core
+// PRESETS (synchron via __terrainCore.PHYTO_PRESETS; Leser _phytoStudioDials).
+// Nur der neutrale Default bleibt (Arten ohne Studio-Farben, z. B. blume).
 AnazhRealm.SPECIES_GRAMMAR = Object.freeze({
     baum_tanne: Object.freeze({
         // Fichte/Tanne: konisch, dichte Whorls, needleSpray
