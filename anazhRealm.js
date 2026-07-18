@@ -61006,6 +61006,35 @@ class AnazhRealm {
                     },
                 ],
             },
+            // SCHICHT-VOLLENDUNG (18.07.) — der Marktstand der staende-Schicht
+            // (exportSettlement; das brunnen_dorf-Muster: builtIn-Daten-Parts,
+            // der EINE spawnArchitecture-Chokepoint hebt ihn am Platz-Rand).
+            marktstand_dorf: {
+                name: "marktstand_dorf",
+                label: "Marktstand",
+                builtIn: true,
+                instanced: true,
+                parts: [
+                    // Tischplatte + vier Pfosten + Plane (schräg)
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 0.85, z: 0 },
+                        size: { x: 1.8, y: 0.08, z: 1.0 },
+                    },
+                    { shape: "box", material: "holz", position: { x: -0.8, y: 1.1, z: -0.42 }, size: { x: 0.1, y: 2.2, z: 0.1 } },
+                    { shape: "box", material: "holz", position: { x: 0.8, y: 1.1, z: -0.42 }, size: { x: 0.1, y: 2.2, z: 0.1 } },
+                    { shape: "box", material: "holz", position: { x: -0.8, y: 0.95, z: 0.42 }, size: { x: 0.1, y: 1.9, z: 0.1 } },
+                    { shape: "box", material: "holz", position: { x: 0.8, y: 0.95, z: 0.42 }, size: { x: 0.1, y: 1.9, z: 0.1 } },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0, y: 2.05, z: 0 },
+                        rotation: { x: -0.28, y: 0, z: 0 },
+                        size: { x: 2.0, y: 0.06, z: 1.3 },
+                    },
+                ],
+            },
             // W6.G P3 Phase 1 — Felsformationen (emergente Welt-Bürger)
             felsbogen: { name: "felsbogen", label: "Felsbogen", builtIn: true, instanced: true, parts: felsbogenParts },
             felsturm: { name: "felsturm", label: "Felsturm", builtIn: true, instanced: true, parts: felsturmParts },
@@ -67799,6 +67828,51 @@ class AnazhRealm {
                 n++;
             }
         }
+        // SCHICHT-VOLLENDUNG (18.07.) — die ÄCKER (felder-Schicht): je OBB ein
+        // gedrehtes Boden-Rechteck (Acker-Braun) aus demselben Pool — dieselbe
+        // Mechanik wie der Platz, die Layout-Wahrheit des Gesetzbuchs lebt.
+        for (const fd of plan.felder || []) {
+            if (n >= MAX) break;
+            if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
+            const wx = origin.x + fd.cx;
+            const wz = origin.z + fd.cz;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy) || !this._isAboveWaterAt(wx, wz, 0.2)) continue;
+            this._stlWegeAddStrip(wx, wy - 0.02, wz, fd.phi || 0, 0, fd.ex * 2, 0.1, fd.ez * 2, 0x6b5836);
+            n++;
+        }
+        // SCHICHT-VOLLENDUNG (18.07.) — die ZÄUNE (fences-Schicht): je Segment
+        // ein schmaler hüfthoher Holz-Streifen aus demselben Pool (sy 0.85 —
+        // Sicht-Gestalt, bewusst KEIN Blocker: hüfthoch, das Dorf bleibt
+        // durchlässig wie im Lab).
+        for (const fz of plan.fences || []) {
+            if (n >= MAX) break;
+            if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
+            const ax = origin.x + fz.x0;
+            const az = origin.z + fz.z0;
+            const bx = origin.x + fz.x1;
+            const bz = origin.z + fz.z1;
+            const dx = bx - ax;
+            const dz = bz - az;
+            const len = Math.hypot(dx, dz);
+            if (!(len > 0.4)) continue;
+            if (!this._isAboveWaterAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue;
+            const y0 = this.getTerrainHeightAt(ax, az);
+            const y1 = this.getTerrainHeightAt(bx, bz);
+            if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
+            this._stlWegeAddStrip(
+                (ax + bx) / 2,
+                (y0 + y1) / 2 + 0.42,
+                (az + bz) / 2,
+                Math.atan2(dx, dz),
+                -Math.atan2(y1 - y0, len),
+                0.12,
+                0.85,
+                len,
+                0x6a4e32
+            );
+            n++;
+        }
         return n;
     }
     _stlWegeDisposePool() {
@@ -70518,6 +70592,32 @@ class AnazhRealm {
                 }
             );
             if (entry) n++;
+        }
+        // SCHICHT-VOLLENDUNG (18.07.) — DIE MARKTSTÄNDE (staende-Schicht, nur
+        // Markt-Plätze): das brunnen_dorf-Muster — builtIn-Bauplan, der EINE
+        // Chokepoint, Kappe 3, Wasser-Wand, deterministisch je Siedlung+Platz.
+        if (Array.isArray(plan.staende) && this.state.blueprints && this.state.blueprints.marktstand_dorf) {
+            let m = 0;
+            for (const st of plan.staende) {
+                if (m >= 3) break;
+                if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
+                const wx = origin.x + st.x;
+                const wz = origin.z + st.z;
+                if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+                const wy = this.getTerrainHeightAt(wx, wz);
+                if (!Number.isFinite(wy)) continue;
+                const entry = this.spawnArchitecture(
+                    "marktstand_dorf",
+                    { x: wx, y: wy + 0.5, z: wz },
+                    {
+                        seed: (((plan.seed >>> 0) || 1) + 53 + m * 7919) >>> 0,
+                        rotationY: ((((plan.seed >>> 0) + m * 97) >>> 2) % 628) / 100,
+                        silent: true,
+                        autonomous: !!(so && so.autonomous),
+                    }
+                );
+                if (entry) m++;
+            }
         }
         // SCHICHT-VOLLENDUNG (18.07.) — DIE HOF-BÄUME DER SIEDLUNG: die
         // exportierten Baum-Plätze ({x,z,h} — dorfLayout meidet Wege/Felder/

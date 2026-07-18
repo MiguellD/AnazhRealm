@@ -2962,16 +2962,20 @@
             welt: lay.welt,
             slots: slots,
             // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
-            // reisen — Wege/Platz (_stlWegeBuild), Brunnen + Hof-Bäume
-            // (Architektur-Spawns). Die Layout-Schichten ohne Studio-Gestalt
-            // (fences/felder/staende/mauer/fluss/bruecken/laternen/graph) sind
-            // aus dem Export GESTRICHEN — kein toter Passagier; das Lab liest
-            // sein Layout direkt aus dorfLayout (buildDorf), nie den Export.
+            // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
+            // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
+            // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
+            // _isAboveWaterAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
+            // Gestalt, Visionsscope gestrichen s. CLAUDE.md) sind aus dem
+            // Export GESTRICHEN — das Lab liest sein Layout direkt aus dorfLayout.
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
             brunnen: lay.brunnen,
             trees: lay.trees,
+            fences: lay.fences,
+            felder: lay.felder,
+            staende: lay.staende,
         };
     }
 

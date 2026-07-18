@@ -81,14 +81,22 @@ function autoStaticLaws(anazhSrc) {
             /studioOv: slot\.ov/.test(nc),
         ],
         [
-            // SCHICHT-VOLLENDUNG (18.07.): die Hof-Bäume des Exports heben als
-            // Studio-Bäume durch den EINEN Chokepoint (Orchestrierung, kein
-            // Parallel-System) — der Erlebnis-Hebel konsumiert plan.trees.
-            "C-S6: _spawnSettlementErlebnis hebt plan.trees als Studio-Bäume (spawnArchitecture, Brunnen-Muster)",
+            // SCHICHT-VOLLENDUNG (18.07.): die Hof-Bäume + Marktstände des
+            // Exports heben durch den EINEN Chokepoint (Orchestrierung, kein
+            // Parallel-System), Zäune + Äcker durch den Wege-Pool.
+            "C-S6: der Erlebnis-Hebel konsumiert trees/staende (spawnArchitecture) + fences/felder (Wege-Pool)",
             (() => {
                 const i = nc.indexOf("_spawnSettlementErlebnis(plan, origin, so) {");
                 const j = i >= 0 ? nc.indexOf("_spawnSettlementFromExport(", i) : -1;
-                return i >= 0 && j > i && /plan\.trees/.test(nc.slice(i, j)) && /baum_/.test(nc.slice(i, j));
+                const erlebnis = i >= 0 && j > i ? nc.slice(i, j) : "";
+                return (
+                    /plan\.trees/.test(erlebnis) &&
+                    /baum_/.test(erlebnis) &&
+                    /plan\.staende/.test(erlebnis) &&
+                    /marktstand_dorf/.test(erlebnis) &&
+                    /plan\.fences/.test(nc) &&
+                    /plan\.felder/.test(nc)
+                );
             })(),
         ],
     ];
@@ -270,18 +278,22 @@ const FIXTURES = [
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
         );
         // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
-        // trees reist (der Hof-Baum-Konsument), die gestaltlosen Schichten
-        // (fences/felder/staende/mauer/fluss/bruecken/laternen/graph) sind
-        // GESTRICHEN (kein toter Passagier, Vertrags-Akt).
+        // trees/fences/felder/staende reisen (Hof-Bäume + Zäune + Äcker +
+        // Marktstände haben Konsumenten); fluss/bruecken/graph (keine Welt-
+        // Wahrheit) und mauer/laternen (Visionsscope gestrichen, CLAUDE.md)
+        // sind GESTRICHEN (kein toter Passagier, Vertrags-Akt).
         check(
-            "SCHICHT-VOLLENDUNG: Export trägt trees, aber KEINE gestaltlosen Schichten mehr",
+            "SCHICHT-VOLLENDUNG: Export trägt trees/fences/felder/staende, aber fluss/bruecken/graph/mauer/laternen sind gestrichen",
             Array.isArray(stadt.trees) &&
-                stadt.fences === undefined &&
+                Array.isArray(stadt.fences) &&
+                Array.isArray(stadt.felder) &&
+                Array.isArray(stadt.staende) &&
                 stadt.mauer === undefined &&
                 stadt.laternen === undefined &&
-                stadt.staende === undefined &&
+                stadt.fluss === undefined &&
+                stadt.bruecken === undefined &&
                 stadt.graph === undefined,
-            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"}`
+            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"} fences=${Array.isArray(stadt.fences) ? stadt.fences.length : "fehlt"}`
         );
     }
 
@@ -546,7 +558,10 @@ const FIXTURES = [
                 .every(
                     (e) =>
                         typeof e.type === "string" &&
-                        (e.type.indexOf("haus_") === 0 || e.type === "brunnen_dorf" || e.type.indexOf("baum_") === 0)
+                        (e.type.indexOf("haus_") === 0 ||
+                            e.type === "brunnen_dorf" ||
+                            e.type === "marktstand_dorf" ||
+                            e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
