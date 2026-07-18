@@ -33941,6 +33941,25 @@ class AnazhRealm {
                 return;
             }
         }
+        // DONOR-ABSCHIED (18.07.) — FAHRZEUG-KOLLISION FOLGT DEM GESETZ (die
+        // Tor-Klasse, dritter Zweig): trägt der Eintrag eine vehicle-Gestalt,
+        // deckt die Kollision die SICHTBARE Studio-Form (exportDrive.huelle:
+        // Unterkörper + Greenhouse + Räder), nicht mehr die eingefrorene
+        // 2.1-m-Wagen-Donor-Substanz. Fail-closed: kein Kern/keine Gestalt →
+        // der generische Parts-Pfad bleibt byte-alt (User-Eigenwerke).
+        const fzgParts = this._fahrzeugBlockerParts(entry);
+        if (fzgParts) {
+            const fzgBoxes = [];
+            for (const part of fzgParts) {
+                const aabb = this._blockerComputePartAABB(entry, part);
+                if (aabb) fzgBoxes.push(aabb);
+            }
+            if (fzgBoxes.length) {
+                entry.blockerAABBs = fzgBoxes;
+                this._blockerStampReach(entry);
+                return;
+            }
+        }
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
@@ -34112,6 +34131,72 @@ class AnazhRealm {
             this._torGesetzMemo.set(gestalt, g);
         }
         return g;
+    }
+
+    // DONOR-ABSCHIED (18.07.) — DAS FAHRZEUG-GESETZ EINES EINTRAGS (das
+    // _torGesetzFor-Muster 1:1): liefert die reinen vehicle-Zahlen (exportDrive:
+    // sitz + huelle + Fahrwerte) aus dem SYNCHRON geladenen Kern (index.html —
+    // Lockstep-fest, nie der async Buch-Lade-Stand), wenn der Bauplan eine
+    // vehicle-Gestalt trägt — via studioGestalt-DATEN-Zeile oder Katalog-Präfix
+    // (KIND_POLICY.vehicle.prefix). Domänen-Wand: pre.kind === "vehicle" (die
+    // Tor-Wand-Klasse — ein gleichnamiges Fremd-Preset gibt keinem Werk still
+    // eine Fahrzeug-Hülle). Memoisiert je Gestalt. null wenn kein Fahrzeug /
+    // Kern nicht geladen (fail-closed → Donor-Pfad bleibt für User-Compounds).
+    _fahrzeugGesetzFor(entry) {
+        if (!entry || typeof entry.type !== "string") return null;
+        const core = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+        if (!core || !core.PRESETS || typeof core.exportDrive !== "function") return null;
+        let gestalt = null;
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        if (bp && typeof bp.studioGestalt === "string") gestalt = bp.studioGestalt;
+        if (!gestalt) {
+            const pol = AnazhRealm.KIND_POLICY.vehicle;
+            if (pol && pol.prefix && entry.type.indexOf(pol.prefix) === 0) {
+                gestalt = entry.type.slice(pol.prefix.length);
+            }
+        }
+        const pre = gestalt ? core.PRESETS[gestalt] : null;
+        if (!pre || pre.kind !== "vehicle") return null;
+        if (!this._fahrzeugGesetzMemo) this._fahrzeugGesetzMemo = new Map();
+        let g = this._fahrzeugGesetzMemo.get(gestalt);
+        if (!g) {
+            // s+fx ist exakt der Brücken-Merge (phytogenesis fahrprofil-Münze) —
+            // der Kern mergt DEFAULT_P+BASE_P intern davor: EINE Merge-Ordnung.
+            g = { gestalt, drive: core.exportDrive(Object.assign({}, pre.s, pre.fx)) };
+            this._fahrzeugGesetzMemo.set(gestalt, g);
+        }
+        return g;
+    }
+
+    // DONOR-ABSCHIED (18.07.) — die FAHRZEUG-KOLLISIONS-HÜLLE aus dem Gesetz
+    // (exportDrive.huelle): Unterkörper (nose..tail × ±bw × yFloor..yBelt) +
+    // Greenhouse (cowl..back × ±cw × yBelt..yRoof) + 4 Rad-Boxen an fAx/rAx.
+    // Als PSEUDO-Parts durch DENSELBEN AABB-Chokepoint (_blockerComputePartAABB)
+    // — Skala + Entry-Gier erben gratis, kein zweiter Mathe-Pfad (die Tor-Hülle
+    // als Vorbild). null → der generische Donor-Parts-Pfad bleibt (User-Werke).
+    _fahrzeugBlockerParts(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        if (!h || !Number.isFinite(h.noseX) || !Number.isFinite(h.tailX)) return null;
+        const teile = [
+            {
+                position: { x: (h.noseX + h.tailX) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
+                size: { x: h.noseX - h.tailX, y: h.yBelt - h.yFloor, z: h.bw * 2 },
+            },
+            {
+                position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + h.yRoof) / 2, z: 0 },
+                size: { x: Math.max(0.4, h.cowlX - h.backX), y: h.yRoof - h.yBelt, z: h.cw * 2 },
+            },
+        ];
+        for (const ax of [h.fAx, h.rAx]) {
+            for (const sz of [-1, 1]) {
+                teile.push({
+                    position: { x: ax, y: h.radR, z: (sz * h.spur) / 2 },
+                    size: { x: h.radR * 2, y: h.radR * 2, z: 0.26 },
+                });
+            }
+        }
+        return teile;
     }
 
     // V18.464 — die Tor-KOLLISIONS-HÜLLE aus dem Gesetz: Pfosten (beidseitig,
@@ -52652,7 +52737,19 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const scale = Number.isFinite(entry.scale) ? entry.scale : 1;
         entry._sitzHeight = AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-        if (bp) {
+        // DONOR-ABSCHIED (18.07.) — der SITZ folgt dem Gesetzbuch: trägt der
+        // Eintrag eine vehicle-Gestalt, kommt der Sattelpunkt aus exportDrive
+        // .sitz (der seatRow-Anker des Baus — flacher GT sitzt tief, hoher
+        // Truck hoch), nicht mehr aus dem 1.025-m-Wagen-Donor-Anker. Fail-
+        // closed: kein Gesetz → der emergente _attachPointFor bleibt die EINE
+        // Quelle der User-Eigenwerke (kein Zwilling: anderer Definitionsbereich).
+        const fzgSitz = (() => {
+            const fzg = this._fahrzeugGesetzFor(entry);
+            return fzg && fzg.drive && fzg.drive.sitz ? fzg.drive.sitz : null;
+        })();
+        if (fzgSitz && Number.isFinite(fzgSitz.y)) {
+            entry._sitzHeight = Math.max(0.45, fzgSitz.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
+        } else if (bp) {
             const sp = this._attachPointFor(bp, "sitz").point;
             if (Number.isFinite(sp.y)) {
                 // W-D (V18.170, R-010 — GEMESSEN +0.90 m Schwebe): die alte +0.9

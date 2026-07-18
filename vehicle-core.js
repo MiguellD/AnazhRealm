@@ -2143,8 +2143,35 @@
     function exportDrive(Pin) {
         const P = Object.assign({}, DEFAULT_P, BASE_P, Pin || {});
         const ph = carPhys(P);
+        // DONOR-ABSCHIED (18.07., rein additiv): die Stations-Wahrheit des Baus
+        // (derive + scal-Y-Linien + seatRow-Anker) reist als DATEN mit — der
+        // Wirt setzt Reiter-Sitz und Kollisions-Hülle aus dem Gesetzbuch statt
+        // aus einer eingefrorenen Donor-Substanz. buildInstance byte-unberührt.
+        const D = derive(P);
         const VMAX_REF = 10; // GT-Eich-Anker: vmax_GT≈16 / Host-Vier-Rad-Cap 1.6
         return {
+            // SITZ — der vordere seatRow-Anker (frontCx = cowlX − 0.72; Ober-
+            // kante der Sitzfläche ySill + 0.11 + 0.055; Fahrerseite z −0.4).
+            sitz: { x: D.cowlX - 0.72, y: P.fahrhoehe + 0.18 + 0.165, z: -0.4 },
+            // HÜLLE — die Blocker-Stationen (scal: bw = spur/2+0.13, cw =
+            // spur/2−0.06, ySill = fahrhoehe+0.18); der Wirt komponiert daraus
+            // Unterkörper + Greenhouse + Räder als Pseudo-Parts.
+            huelle: {
+                noseX: D.noseX,
+                tailX: D.tailX,
+                cowlX: D.cowlX,
+                backX: D.backX,
+                fAx: D.fAx,
+                rAx: D.rAx,
+                bw: P.spur / 2 + 0.13,
+                cw: P.spur / 2 - 0.06,
+                yFloor: P.fahrhoehe,
+                ySill: P.fahrhoehe + 0.18,
+                yBelt: P.guertel,
+                yRoof: P.dach,
+                radR: P.radR,
+                spur: P.spur,
+            },
             topSpeedMul: ph.vmax / VMAX_REF,
             kAcc: ph.aEngine / ph.vmax,
             kBrake: (ph.aEngine + FAHR.rollDecel) / ph.vmax,

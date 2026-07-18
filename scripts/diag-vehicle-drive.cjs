@@ -129,6 +129,11 @@ function driveVerdict(d) {
     if (!d || !Number.isFinite(d.blockerMax) || d.blockerMax > 8) out.push("blocker");
     if (!d || d.riderSkip !== true) out.push("riderSkip"); // nie gegen den eigenen Reiter
     if (!d || !(d.snapDist > 1)) out.push("persist"); // der Snapshot traegt die Fahrt
+    // DONOR-ABSCHIED (18.07.): Sitz == exportDrive.sitz-Formel UND != Wagen-Donor-
+    // Anker; Blocker-Huelle == exportDrive.huelle-Laenge (> 3 m — die 2.1-m-Donor-
+    // Box KANN das nicht liefern). Beide beweisen KONSUM des Kerns + ABSENZ des Donors.
+    if (!d || d.sitzKern !== true) out.push("sitzKern");
+    if (!d || d.huelleKern !== true) out.push("huelleKern");
     return out;
 }
 
@@ -194,6 +199,25 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         "A6/B2: _archInstanceUpdate liest die EINE Flat-Quelle (foundry-bewusst: _foundryFlattenFor ODER _archFlattenBlueprint)",
         aiu !== null && /_foundryFlattenFor/.test(aiu) && /_archFlattenBlueprint/.test(aiu),
     ]);
+    // DONOR-ABSCHIED (18.07.) — die Struktur-Wand: der Blocker-Chokepoint traegt
+    // den Fahrzeug-Zweig VOR dem generischen bp.parts-Pfad (die Tor-Klasse), der
+    // Sitz liest _fahrzeugGesetzFor, und der Kern exportiert sitz + huelle.
+    const pba = fnBody(anazhNC, /[^.]_populateBlockerAABBs\(entry\)\s*\{/);
+    out.push([
+        "A7/DONOR: _populateBlockerAABBs traegt den _fahrzeugBlockerParts-Zweig VOR dem generischen Parts-Pfad",
+        pba !== null &&
+            /_fahrzeugBlockerParts/.test(pba) &&
+            pba.indexOf("_fahrzeugBlockerParts") < pba.indexOf("bp.parts"),
+    ]);
+    const ma = fnBody(anazhNC, /[^.]mountArchitecture\(entry\)\s*\{/);
+    out.push([
+        "A7/DONOR: mountArchitecture liest den Kern-Sitz (_fahrzeugGesetzFor) vor dem Donor-_attachPointFor",
+        ma !== null && /_fahrzeugGesetzFor/.test(ma) && ma.indexOf("_fahrzeugGesetzFor") < ma.indexOf("_attachPointFor"),
+    ]);
+    out.push([
+        "A7/DONOR: exportDrive exportiert sitz + huelle (die Stations-Wahrheit reist als Daten)",
+        /sitz:\s*\{/.test(vcNC) && /huelle:\s*\{/.test(vcNC) && /noseX:\s*D\.noseX/.test(vcNC),
+    ]);
     return out;
 }
 
@@ -233,8 +257,16 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             blockerMax: 2.1,
             riderSkip: true,
             snapDist: 14.4,
+            sitzKern: true,
+            huelleKern: true,
         };
         check("Selbst-Test 4 (B2): gesunde Fahr-Probe == 0 Verstoesse", driveVerdict(healthy).length === 0);
+        // V5 (DONOR-ABSCHIED): der Rueckfall auf Donor-Sitz/Donor-Huelle MUSS feuern.
+        check(
+            "Selbst-Test 8 (DONOR): Donor-Sitz/Donor-Huelle → die Abschieds-Linse feuert",
+            driveVerdict(Object.assign({}, healthy, { sitzKern: false })).length >= 1 &&
+                driveVerdict(Object.assign({}, healthy, { huelleKern: false })).length >= 1
+        );
         check(
             "Selbst-Test 5 (B2): ‚der Eintrag bleibt stehen' → die Fahr-Linse feuert",
             driveVerdict(Object.assign({}, healthy, { dist: 0.0, snapDist: 0.0 })).length >= 1
@@ -410,6 +442,45 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
                 res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
+                // DONOR-ABSCHIED (18.07.) — der lebende KONSUM/ABSENZ-Beweis am
+                // frisch gespawnten Eintrag (Gier 0 — die Welt-AABB-Spanne ist die
+                // Laengs-Achse): Sitz == Kern-Formel UND != Donor-Anker; Blocker-
+                // Spanne == Kern-Huellen-Laenge (> 3 m — Donor-Box war 2.1 m).
+                try {
+                    const fzg = r._fahrzeugGesetzFor(entry);
+                    const drv = fzg && fzg.drive;
+                    const hip = r.constructor.SITZ_HIP_OFFSET;
+                    const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+                    const kernSitz =
+                        drv && drv.sitz && Number.isFinite(drv.sitz.y)
+                            ? Math.max(0.45, drv.sitz.y * sc + hip)
+                            : null;
+                    const donorSp = r._attachPointFor(r.state.blueprints.fahrzeug_gt, "sitz").point;
+                    const donorSitz = Number.isFinite(donorSp.y) ? Math.max(0.45, donorSp.y * sc + hip) : null;
+                    res.drive.sitzKern =
+                        kernSitz !== null &&
+                        Math.abs(entry._sitzHeight - kernSitz) < 1e-9 &&
+                        (donorSitz === null || Math.abs(entry._sitzHeight - donorSitz) > 0.01);
+                    if (entry.blockerAABBs && entry.blockerAABBs.length && drv && drv.huelle) {
+                        let mnX = Infinity;
+                        let mxX = -Infinity;
+                        let mnZ = Infinity;
+                        let mxZ = -Infinity;
+                        for (const b of entry.blockerAABBs) {
+                            mnX = Math.min(mnX, b.minX);
+                            mxX = Math.max(mxX, b.maxX);
+                            mnZ = Math.min(mnZ, b.minZ);
+                            mxZ = Math.max(mxZ, b.maxZ);
+                        }
+                        const span = Math.max(mxX - mnX, mxZ - mnZ);
+                        const soll = (drv.huelle.noseX - drv.huelle.tailX) * sc;
+                        res.drive.blockerSpan = span;
+                        res.drive.huelleSoll = soll;
+                        res.drive.huelleKern = span > 3 && Math.abs(span - soll) < 0.05;
+                    }
+                } catch (eD) {
+                    res.drive.donorErr = (eD && eD.message) || String(eD);
+                }
                 // N Fahr-Ticks: der REITER ist die horizontale Autoritaet (V18.150) — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
