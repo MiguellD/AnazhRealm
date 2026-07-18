@@ -71,3 +71,26 @@ Alles frisch gebaut und headless auge-geprüft (artifacts/ trägt die Referenz-S
 Jedes ✔ hier + das gemintete Golden + der perf-Trace = **W8 DONE, Trichter-Stufe 1
 getilgt**. Danach ist der Tisch frei für den nächsten großen Bogen (roadmap §0.4,
 Empfehlung: (a) der lebendige Körper → (b) Seelen-Vertiefung).
+
+## 7 · Die Vollendungs-Runde (V18.490 — die neun Schnitte am eigenen Auge)
+
+> Mechanisch fertig (Gates + Merge-Gate grün); dieses Kapitel ist DEIN Browser-Wort.
+> `npm run server` · Browser auf die Welt · HUD an. Je Punkt ein Wort.
+
+| # | Schritt | Kriterium | ✔/Wort |
+|---|---------|-----------|--------|
+| 7.1 | Chat `dorf 7 18` | Häuser sind KEINE Klone: Kirche (Kuppel), Gasthaus, Scheunen sichtbar verschieden | |
+| 7.2 | An einer Hauswand entlang + durch die Tür | Kollision == Optik (kein unsichtbarer Riegel, Tür-Lücke begehbar) | |
+| 7.3 | Zu einer Auto-Siedlung wandern | dieselbe Rollen-Vielfalt wie 7.1 (kein Kultur-Default-Feld) | |
+| 7.4 | `fahrzeug_gt` spawnen, aufsitzen | der Sitz liegt IM Cockpit (tief, ~GT-Schweller), nicht auf dem 1-m-Wagen-Bock | |
+| 7.5 | Absteigen, gegen die Karosserie laufen | die Kollision folgt der GT-Länge (~4.6 m: Bug/Heck/Greenhouse spürbar) | |
+| 7.6 | Dolch → Grossschwert → Keule in die Hand | Schwung flink (0.25 s) → träge (0.8 s+), Reichweite kurz→lang, Schaden matt→wuchtig | |
+| 7.7 | Eine Kreatur nachts ansehen | Augen glimmen DEZENT (0.3), kein Scheinwerfer-Glühen | |
+| 7.8 | Frischer Boot ohne Studio-Wahl | Haut/Haar aus der Palette (kein Einheits-Tan); Peer ohne Übergabe sieht auf beiden Clients GLEICH aus | |
+| 7.9 | Zum Genesis-Ring gehen | am Tor-Fuß atmet Bodennebel in Membran-Farben; ein warmes Licht pulst am nächsten Tor | |
+| 7.10 | Durch die Membran gehen | Hindurchgehen IST Betreten (kein E nötig) | |
+| 7.11 | Symphonie an, Genre wechseln (LoFi → Trap → Bossa → Cinematic) | Drums UND Harmonie/Lead/Bass klingen VERSCHIEDEN (kein Einheits-Dreieck-Pad) | |
+| 7.12 | Im Wald: buche + erle suchen | buche wirkt mammut-mächtig, erle weiden-hängend — und die Kollision folgt der Silhouette | |
+| 7.13 | Himmel + Wasser ansehen | UNVERÄNDERT (die Zwillinge fielen byte-treu — kein Look-Bruch) | |
+| 7.14 | 4× Gewand ablegen/anziehen, Panel | Puffer-Speicher kehrt auf die Grundlinie zurück (kein Wachstum) | |
+| 7.15 | HUD nach ~2 min | dc im Band ~900–1600 stabil (die neuen Nähte kosten kein Regime) | |

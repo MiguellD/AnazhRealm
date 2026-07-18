@@ -6,49 +6,47 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## P0-INVENTUR (18.07., aus dem LEBENDEN Code — 8 Leser; DoD: Konsum+Abschied+eine Quelle)
+## Stand (V18.490 — DIE VOLLENDUNGS-SCHNITTE: die neun Risse der P0-Inventur sind gefallen)
 
-Je Lab: schlimmster Riss (Erlebnis-Schmerz 1-5) — Abbau laeuft sequentiell, ein Commit je Schnitt.
-- fachwerk 4: HAUS-DOPPELBAU — Slot-ov (Kirche/Gasthaus/Armut, core:2931) wird vom Host VERWORFEN
-  (_spawnSettlementSlot reicht nur seed/phi; Render = Kultur-Default via _foundryVariantFor) →
-  Doerfer sind Klone, Blocker(Plan) != Optik(Default). SCHNITT LAEUFT.
-- vehicle 4: DONOR-GEIST — Gestalt buildInstance, Kollision+Sitz 2.1-m-Holzwagen (:91270/33944);
-  tor+haus haben die Heilung am selben Chokepoint (_populateBlockerAABBs), vehicle fehlt.
-- schmiede 4: EINHEITSBREI — 13 Klingen-Gattungen = byte-gleiche Donor-Parts → gleiche Schwung-
-  Dauer/Reichweite/Schaden; measure-Metrologie geladen und stumm.
-- terrain 3: SPECIES_PHYTO_DIALS/_PALETTE = Literal-Kopie der Buch-Dials (92629 vs f.recipes) —
-  gesehener Baum folgt dem Studio, gefuehlter (Kollision/Tags/Silhouette/Boot) nicht.
-- porta 3: membranUniforms.fog reist in den Host und liegt TOT (kein mu.fog-Leser) — Portale
-  ohne Bodennebel/Licht-Atem, sichtbar ab Minute 1 am Genesis-Ring.
-- klang 3: 22 Genres, Host liest NUR inst.drums — harmony/lead/bass/tilt/form stumm (Dreieck-Pad
-  fuer alles); Konsum-Waechter strukturell blind (Wort-Kollision).
-- koerper 3: Boot-Haut/Haar-Literale ausserhalb jeder Studio-Palette (17802/18508) + Ofen waermt
-  nur EIN Farb-Memo → jeder Genom-Peer giesst synchron kalt.
-- tetrapoda 3: Baecker liest kl.emissivIntensitaet statt ei (foundry:2867 vs tetra:1336) → alle
-  Kreatur-Augen 2.8x Glut vs Lab.
-- Quer: HIMMEL/WASSER_GESETZ-Fallback-Zwillinge (16068/35170) = die V18.487-Klasse, terrain fehlt
-  in GESETZ_KERNE (Kern-Pflicht blind); Konsum-Waechter rastert Funktions-Kerne nicht.
+**18.07., je Riss EIN Commit (Konsum im Spielpfad + Absenz-Wand), alles GEMESSEN; Merge-Gate
+„Alle Invarianten OK" (243 Bänder) + npm run check komplett grün:**
+- HAUS-DOPPELBAU tot: slot.ov reist als studioOv — Kirche/Gasthaus/Armut bauen die Export-
+  Wahrheit (Optik == Blocker); gate:settlement C-S5 + lebende ov-Hash-Trennung.
+- FAHRZEUG-DONOR tot: exportDrive trägt sitz+huelle (Kern-Stationen); Blocker-Chokepoint +
+  mountArchitecture lesen `_fahrzeugGesetzFor` (Tor-Klasse, Lockstep-fest); Donor bleibt
+  NUR Substanz/Judge + Emergenz-Quelle der User-Compounds. gate:vehicle-drive sitz/huelleKern.
+- EINHEITSBREI tot: schmiede.kampfMasze (prepP+measure) misst jede Gattung — Dauer ∝ √I
+  (dauerProSqrtIKg), Reichweite = S.L, Schaden × mEff/mEffRefKg (ARENA additiv);
+  gate:kampf-gefuehl: byte-gleiche Donor-Parts ⇒ ≥3 distinkte Dauern/Reichweiten/Faktoren.
+- DIAL-/PALETTE-ZWILLING tot: foundry-core PRESETS reist SYNCHRON (__terrainCore.PHYTO_PRESETS)
+  — gefühlt == gesehen (buche→mammut, erle→weide, karst/palme/zypresse folgen ihrer Seen-Map);
+  Literale physisch raus (Rückkehr-Wand 35 Namen).
+- HIMMEL/WASSER-ZWILLINGE tot: terrain steht in GESETZ_KERNE (__terrainCore), beide Leser
+  fail-closed (_kernPflichtBruch); Inline-Fallback-Wand (gate:studio-vertrag) + der Konsum-
+  Wächter rastert die Welt-Look-Gesetze (foundry-core 185 Blätter statt blind).
+- PORTA-FOG lebt: mu.fog speist den TSL-Bodennebel am Tor-Fuß (buildFog-Port, nähe-aktiviert)
+  + EIN geteiltes Portal-Licht (Lab-Atem-Formel); gate:portal-membran N-Block: Dial→mu→
+  Uniform→Draw lebendig.
+- GENRE-STIMMEN leben: inst.harmony/lead/bass wählen Wellenform+Pegel+Anschlag, tilt (dB)
+  mischt alle vier Rollen, form rahmt die Progression; der Konsum-Wächter urteilt inst/tilt
+  per KOMPOSITUM (die Wort-Kollisions-Blindheit ist geheilt, Selbsttest feuert).
+- BOOT-LITERALE tot: Haut/Haar aus SKIN_TONES/HAIR_COLORS (Γ5-Anker aus dem Welt-Seed), EIN
+  Farb-/Key-Münzer für Guss UND Prefetch (der Boot-Avatar trifft warm), das Peer-Identitäts-
+  Leck ist zu; der Bäcker-Default = benannte Kern-Anker (karamell/darkbrown, fail-closed).
+- AUGEN-GLUT tot: der Bäcker liest kl.ei (0.3 statt 2.8×-Phantom-Default); foundry-core
+  steht mit in der Rückkehr-Wand.
 
-## Stand (V18.489 — DIE SCHLUSS-WELLE: Tetrapoda-Heimkehr · Teils→Ganz · Puffer-Tod · selbst gemessen)
+BEWUSST DRAUSSEN (mit Grund): Lofi-Ofen bleibt Web-Audio-Osz (die Lab-Synthese-Engine ist
+Shell-Technik — die WAHL ist konsumiertes Gesetz) · Nebel ohne Depth-Soft-Pre-Pass (depthTest
+deckt Verdeckung, kein zweiter Render-Pass) · blume-Palette neutral (das Studio deklariert
+keine bark/leaf-Farben) · Settlement-Schichten fences/felder/staende/mauer/fluss/bruecken/
+laternen/trees benannt-unkonsumiert (must-ignore, eigene Erlebnis-Welle) · Schöpfer-Auge:
+look-golden --mint + die Abnahme-Runde (docs/abnahme-drehbuch.md §3 = Vollendungs-Checkliste).
 
-**17.07. nachts, alles GEBAUT + GEMESSEN:** DIE 9 TETRAPODA-ZEILEN FALLEN
-(freude/sprung/groessen/separation/aufgaben/herde/wasser/stimmung.schwellen/
-Stopp-Distanzen wandern rein additiv in VERHALTEN; Leser fail-closed via
-_verhaltenGesetz [Wand je Block], die Task-Getter wurden Leser,
-CREATURE_SEPARATION-Zwilling gefallen → Absenz-Wand 18 Namen) · DIE 4
-TEILS-ZEILEN WURDEN GANZ (Zorn-Achse→angry [chaos ≥ 0.5 OHNE sorrow — der
-eigene Angriff speist nur chaos] · schmiede-VERTRAGS-AKT [10 tote Exporte
-gekürzt, Maschinen intern lebendig, 52/52 Geometrie-Goldens byte-gleich] ·
-klang-RAUM [hall/echo/DELAY_SENDS → Welt-Bus: returnProSpace, Tempo-Echo,
-Genre-Sends] · slide/showcase = deklarierte Lab-Vorschau; Matrix trägt KEIN
-TEILS mehr, 14 OFFEN[eigene Welle]) · DER FELD-CULL-PUFFER-TOD (Gewand-
-Ablegen zerstört die eigenen Storage-/Indirect-Puffer explizit via
-renderer._attributes.delete; gate:feld-cull Band f/g: 4× Churn → info.memory
-exakt Grundlinie 0/0/0, 35 Puffer gelöst, Leck-Selbsttest rot) · SELBST
-GESPIELT (ich-spiele-Sonde, echtes WebGPU, Feld-Pass+Feld-Cull aktiv):
-steady SONDE-ZAHL — dazu fielen zwei liegengebliebene Gate-Rots (Golden-
-Datenkanäle recipes/render-config + v7-daten waren seit V18.488 ungemünzt;
-worlds-Buster stale) per Mint-Mechanik + Buster-Welle.
+Davor V18.489 — DIE SCHLUSS-WELLE (17.07. nachts): die 9 Tetrapoda-Zeilen fallen (VERHALTEN,
+fail-closed, Absenz-Wand 18 Namen) · 4 Teils→Ganz (Zorn-Achse→angry · schmiede-Vertrags-Akt
+[10 tote Exporte] · klang-RAUM [hall/echo/Sends] · Lab-Vorschau deklariert) · Feld-Cull-
+Puffer-Tod (Churn → Grundlinie 0/0/0, Leck-Selbsttest rot) · selbst gespielt (echtes WebGPU).
 
 Davor V18.488 — DIE OFFENEN PUNKTE FALLEN (17.07. abends): DER FULLSCREEN-FELD-PASS (Ferne
 jenseits der Schalen = NULL Vertices: Polar-Höhenfeld 192×48 bis 40 km vom
