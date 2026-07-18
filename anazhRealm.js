@@ -15519,7 +15519,17 @@ class AnazhRealm {
             deviceMemoryGb: profil.memGb,
             screen: (win.innerWidth || 0) + "x" + (win.innerHeight || 0),
             dpr: profil.dpr,
-            rendererType: r ? (r._isHeadlessNull ? "headless-null" : r.isWebGPURenderer ? "webgpu" : "other") : "none",
+            // KEIN-WEBGPU-GESCHICHTE: das BACKEND ist die Wahrheit (isWebGPURenderer
+            // bleibt true, auch wenn r184 still auf WebGL2 zurückfiel).
+            rendererType: r
+                ? r._isHeadlessNull
+                    ? "headless-null"
+                    : r.backend && r.backend.isWebGPUBackend === true
+                      ? "webgpu"
+                      : r.isWebGPURenderer
+                        ? "webgl-fallback"
+                        : "other"
+                : "none",
             webgpu: typeof nav.gpu !== "undefined",
             foliageRadius: [AnazhRealm.PERF_FOLIAGE_RADIUS_MIN, AnazhRealm.PERF_FOLIAGE_RADIUS_MAX],
             klasse: profil.klasse,
@@ -38471,6 +38481,16 @@ class AnazhRealm {
         const st = this.state;
         if (st.feldPass) return st.feldPass;
         if (!st.scene || typeof THREE === "undefined") return null;
+        // KEIN-WEBGPU-WAND (18.07.): das Fragment ist ROHES WGSL (TSL.wgslFn) —
+        // auf dem r184-WebGL2-Rückfall-Backend existiert wgslFn als FUNKTION
+        // weiter, kompiliert aber nie (GLSL-Backend). Die Existenz-Prüfung unten
+        // war dafür blind; die Fähigkeits-Wand urteilt am BACKEND. Ohne WebGPU
+        // existiert der Pass nicht — die Ring-Schalen tragen den 8-km-Blick
+        // allein (byte-alt, kein Regress), der Boot-Log benennt es EINMAL laut.
+        // Der __anazhFernRing-Hook bleibt der Linsen-Seam (gate:fern-ring Band 8
+        // fährt Null-Renderer + EIGENEN Probe-Renderer — die Wand weicht ihm).
+        if (!this._gpuComputeFaehig() && !(typeof window !== "undefined" && window.__anazhFernRing === true))
+            return null;
         const TSL = THREE.TSL;
         if (!TSL || !TSL.wgslFn || !TSL.texture || !TSL.uniform || !TSL.positionGeometry) return null;
         const P = AnazhRealm.FELD_PASS;
@@ -48061,7 +48081,7 @@ class AnazhRealm {
         canvas.height = h;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
         } catch (err) {
             this.log(`Feed-Vorschau: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;
@@ -64759,6 +64779,19 @@ class AnazhRealm {
     // Konsument sind die REGIONALEN fscatter-Familien: der region-private
     // geroell-Teppich (Wander-Zensus V18.485: der schwerste Nicht-Baum-Rest,
     // einstufig — er erreicht die Super-Region nie) und die @s:-Fernstufen.
+    // KEIN-WEBGPU-WAND (18.07.) — die EINE GPU-Compute-Fähigkeits-Quelle: die
+    // WGSL-Konsumenten (Feld-Cull-Compute · Fullscreen-Feld-Pass) leben NUR auf
+    // dem echten WebGPU-Backend. Der r184-WebGPURenderer fällt bei fehlendem
+    // Adapter (oder forceWebGL) STILL auf den WebGL2-Backend zurück — Klassen
+    // wie TSL.wgslFn/BundleGroup EXISTIEREN dort weiter, Existenz-Prüfungen
+    // sind blind (die V18.267-Falle in GPU-Form). Das Urteil fällt am Backend
+    // selbst; der Boot-Log benennt den Rückfall EINMAL laut (fail-soft wäre
+    // der Bruch). Der Feld-Zeichner braucht KEINE Wand: er fährt einen EIGENEN
+    // WebGPU-Device (renderer-unabhängig, device-gated per Konstruktion).
+    _gpuComputeFaehig() {
+        const r = this.state.renderer;
+        return !!(r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true);
+    }
     _feldCullEnsure() {
         if (this._feldCull) return this._feldCull;
         this._feldCull = {
@@ -65089,7 +65122,10 @@ class AnazhRealm {
             }
             return;
         }
-        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return; // headless ruht (Fern-Ring-Disziplin)
+        // KEIN-WEBGPU-WAND: headless ruht (Fern-Ring-Disziplin) UND der WebGL2-
+        // Rückfall-Backend adoptiert NIE (renderer.compute existiert dort nur als
+        // Name — die Fähigkeits-Wand urteilt am Backend, der Hook bleibt Linsen-Seam).
+        if (hook !== true && !this._gpuComputeFaehig()) return;
         if (!st.renderer || !st.scene || typeof THREE === "undefined" || !THREE.TSL) return;
         const fc = this._feldCullEnsure();
         this._feldCullLibLade();
@@ -67264,6 +67300,17 @@ class AnazhRealm {
     _archRegionBundleFor(regionKey) {
         if (regionKey == null || this.state.useRegionRenderBundles === false) return null;
         if (typeof THREE.BundleGroup !== "function") return null; // Vendor ohne Bundles → alter Pfad
+        // KEIN-WEBGPU-WAND (18.07.): NUR der WebGPU-Backend implementiert die
+        // Bundle-API (beginBundle/finishBundle/addBundle — im Vendor je EINMAL,
+        // WebGPU-only) — eine BundleGroup auf dem r184-WebGL2-Rückfall wirft im
+        // Render-Loop (backend.beginBundle undefined). Die Klassen-Existenz oben
+        // ist dafür blind (V18.267-Falle in GPU-Form); das Urteil fällt am
+        // BACKEND. Headless bleibt byte-alt (Gates unverändert — der Null-
+        // Renderer rendert nie, seine Bundles sind reine Gruppen-Knoten).
+        {
+            const _r = this.state.renderer;
+            if (_r && !_r._isHeadlessNull && !(_r.backend && _r.backend.isWebGPUBackend === true)) return null;
+        }
         const scene = this.state.scene;
         if (!scene) return null;
         let map = this.state._regionBundles;
@@ -78806,7 +78853,7 @@ class AnazhRealm {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
         } catch (err) {
             this.log(`Hof-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;
@@ -79475,7 +79522,7 @@ class AnazhRealm {
         canvas.height = size;
         let renderer;
         try {
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
         } catch (err) {
             this.log(`Ich-Bühne: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
             return null;
@@ -80705,7 +80752,7 @@ class AnazhRealm {
             // rendern → das Crafting-Auge blieb leer. Heilung: derselbe
             // WebGPURenderer wie die Haupt-Welt (eigenes Canvas, async init() +
             // rendererReady-Gate, render() — das Loop-Pattern aus createScene).
-            renderer = new THREE.WebGPURenderer({ canvas, antialias: true });
+            renderer = new THREE.WebGPURenderer({ canvas, antialias: true, forceWebGL: AnazhRealm._forceWebGL() });
         } catch (err) {
             this.log(
                 `Workshop-Preview: WebGPU-Renderer fehlgeschlagen (${err && err.message}) — Preview deaktiviert`,
@@ -88370,6 +88417,8 @@ class AnazhRealm {
                       canvas,
                       antialias: holzProf.antialias !== false,
                       trackTimestamp: true,
+                      // KEIN-WEBGPU-GESCHICHTE — der EINE forceWebGL-Hook (gate:webgl-probe).
+                      forceWebGL: AnazhRealm._forceWebGL(),
                   });
         // V15.0 — ACES-Filmic-Tone-Mapping: die Szene-Lichter sind HDR (Sonne 2.4
         // + Hemisphere/Ambient); ohne Tone-Mapping klemmen sie bei 1.0 = ausgewaschen.
@@ -88422,6 +88471,22 @@ class AnazhRealm {
                     );
                 } catch (_e) {
                     /* fail-soft — die Quelle-Wahrheit lebt in _perfGpuSample */
+                }
+                // KEIN-WEBGPU-GESCHICHTE (18.07.) — der Backend-Rückfall wird EINMAL
+                // laut benannt (fail-soft wäre der Bruch): der r184-WebGPURenderer
+                // fällt ohne Adapter (oder via forceWebGL-Hook) still auf WebGL2 —
+                // dann ruhen die WGSL-Konsumenten (Feld-Cull · Fullscreen-Feld-Pass,
+                // _gpuComputeFaehig-Wand), die CPU-Gesetze tragen GANZ.
+                try {
+                    if (!(renderer.backend && renderer.backend.isWebGPUBackend === true)) {
+                        this.log(
+                            "WebGL2-Rückfall aktiv (kein WebGPU-Backend): Feld-Cull + Fullscreen-Feld-Pass ruhen — " +
+                                "die CPU-Gesetze tragen die Welt GANZ; der Fern-Ring verfeinert auf CPU (+ eigenem WebGPU-Device, falls vorhanden).",
+                            "WARN"
+                        );
+                    }
+                } catch (_e) {
+                    /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 // HITCH-TELEMETRIE (das-feld-zeichnet §5.1) — (d) UPLOAD-BYTES: der
                 // EINE GPU-Chokepoint. JEDER Upload (Geometrie, Instanz-Matrizen,
@@ -96424,6 +96489,13 @@ AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Z
 // Framebuffer-Re-Alloc-Churn.
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
+// KEIN-WEBGPU-GESCHICHTE (18.07.) — der EINE forceWebGL-Hook: die Boot-Probe
+// (gate:webgl-probe) erzwingt den r184-WebGL2-Backend-Rückfall; ALLE fünf
+// Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen
+// DIESEN Chokepoint, damit die erzwungene Welt kohärent EIN Backend fährt.
+AnazhRealm._forceWebGL = function () {
+    return typeof window !== "undefined" && window.__anazhForceWebGL === true;
+};
 // V18.263 — DER PERFORMANCE-REGELKREIS (das System wertet seine eigene Last).
 // Die Loop-Phasen, deren Kosten der Nexus pro Frame misst (perfSense.phase).
 // (V18.281 — die toten ARCH_QUALITY_FPS_LOW/HIGH-Schwellen GEKEHRT: Reste des
