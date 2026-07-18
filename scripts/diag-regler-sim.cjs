@@ -234,6 +234,25 @@ const server = http.createServer((req, res) => {
                     r._geraeteProfilMemo = null;
                     st.perfSense = null; // die finally-Faltung initialisiert headless-ehrlich neu
                 }
+                // ── S6: DER GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace: Radius
+                // atmete 58↔130 m und baute dieselben Rand-Zellen im Kreis) — GEPULSTER
+                // Kopfraum (kurze Ruhe-Fenster zwischen Über-Budget-Wellen) bewegt den
+                // Radius NICHT mehr; ANHALTENDER Kopfraum wächst weiter (S3 bleibt). ──
+                {
+                    st.perfSense = null;
+                    for (let i = 0; i < 600; i++) feed(30, Object.assign({}, HONEST)); // auf den Boden
+                    const s6Start = st.foliageRadius;
+                    for (let w = 0; w < 6; w++) {
+                        for (let i = 0; i < 80; i++) feed(7, Object.assign({}, HONEST)); // kurzes Ruhe-Fenster
+                        for (let i = 0; i < 20; i++) feed(30, Object.assign({}, HONEST)); // die Welle bricht
+                    }
+                    const s6NachPuls = st.foliageRadius;
+                    o.s6PulsDelta = +Math.abs(s6NachPuls - s6Start).toFixed(2);
+                    o.s6PulsStill = o.s6PulsDelta < 1e-6; // gepulster Kopfraum: der Radius steht
+                    for (let i = 0; i < 1200; i++) feed(7, Object.assign({}, HONEST)); // anhaltende Ruhe
+                    o.s6RuheWaechst = st.foliageRadius > s6NachPuls + 1;
+                    o.s6 = { start: s6Start, nachPuls: s6NachPuls, nachRuhe: st.foliageRadius };
+                }
             } finally {
                 st.renderer._isHeadlessNull = _origHeadless;
                 r._applyRenderScale = _origApplyRS;
@@ -285,6 +304,10 @@ const server = http.createServer((req, res) => {
         {
             name: `S5 SEED-KONSUM: frischer Sense-Init startet loadScale am Seed (${out.s5SeedStart}) · headless byte-alt (Seed 1: ${out.s5HeadlessAlt})`,
             pass: out.s5SeedKonsumiert === true && out.s5HeadlessAlt === true,
+        },
+        {
+            name: `S6 GRENZZYKLUS-SCHNITT: gepulster Kopfraum bewegt den Radius NICHT (Δ ${out.s6PulsDelta}) · anhaltende Ruhe wächst (${out.s6 ? out.s6.nachPuls + "→" + out.s6.nachRuhe : "?"})`,
+            pass: out.s6PulsStill === true && out.s6RuheWaechst === true,
         },
         {
             name: `S4 SESSION-ZEIT-INVARIANZ: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${out.s4MaxDrift})`,

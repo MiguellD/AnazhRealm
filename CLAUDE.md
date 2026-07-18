@@ -6,7 +6,25 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.2 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, WGSL-Spec-Wand, Gnadenfrist, Kein-WebGPU bewiesen)
+## Stand (V18.491.3 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, Grenzzyklus-Schnitt, Gnadenfrist, Kein-WebGPU bewiesen)
+
+**18.07., sechste Welle (vierter Trace: die Linsen überführen den GRENZZYKLUS — Radius
+atmete 58↔130 m, Churn-Linse nennt fscatter:blume ×6/1132 Wiederkehrer, GPU echt blieb
+10–15 ms in den 5-s-Frames [die Proxy-Verdikte LOGEN — 5–6.4-s-LongTasks vom Worker-
+Reply-Ingest deckten die Lücke]):**
+- GRENZZYKLUS-SCHNITT: der Radius-Aktuator bekommt die Zeit-Wand — WACHSEN nur nach
+  PERF_FOLIAGE_GROW_RUHE_S (4) Sim-Sekunden ohne Über-Budget-Frame (jede Welle setzt
+  die Uhr zurück; Sim-Zeit via sense.frameMs, gate-deterministisch), SCHRUMPFEN erst
+  ab PERF_FOLIAGE_SHRINK_TOTBAND (8 m) Ziel-Abstand. Der Kreis „wachsen→Ingest-Sturm→
+  Kollaps→schrumpfen→Zellen frei→wachsen" ist tot. gate:regler-sim S6 (11/11):
+  gepulster Kopfraum Δ 0 · anhaltende Ruhe wächst 75→216.
+- PROXY-LÜGEN-WAND im Verdikt: deckt der LongTask-Akku >60 % der gpuGap-Lücke, urteilt
+  der Flugschreiber HAUPTTHREAD-BLOCKIERT (Worker-Reply-Ingest/Compile) statt „GPU-
+  gebunden" — echtes timestamp-gpuMs bleibt die Wahrheit.
+- Die Wale sind benannt: die fünf 4kV-InstancedMeshes sind das Studio-GRAS (3564-Vert-
+  Büschel, castShadow aus, ~12M der 18M Tris) — GPU trägt sie (echt 10–15 ms); OFFEN
+  bleibt die per-Draw-Uniform-Bahn (20M Klein-Uploads) + der synchrone Reply-Ingest
+  (der nach dem Zyklus-Tod nur noch beim echten Streamen feuert).
 
 **18.07., vierte Welle (zweiter Schöpfer-Trace 6.7 fps + Konsole urteilen — GPU echt 17 ms,
 CPU-render 88 ms: der Wal ist die CPU-Submit-/Fehler-Bahn, nie die GPU):**

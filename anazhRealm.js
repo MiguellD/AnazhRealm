@@ -14706,9 +14706,29 @@ class AnazhRealm {
             frTarget = Math.min(frTarget, _ringReach);
             const frCur = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
             const step = AnazhRealm.PERF_FOLIAGE_GROW_STEP;
-            // wachsen sanft (+step), schrumpfen schneller (−2·step) — die Sicherheit zuerst.
+            // DER GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace: der Radius
+            // atmete 58↔130 m — jede Welle baute dieselben Rand-Zellen neu [Churn-
+            // Linse: fscatter:blume ×6, 1132 Wiederkehrer], flutete den Foundry-
+            // Worker mit Re-Requests und der synchrone Reply-Ingest riss 5–6.4-s-
+            // LongTasks; GPU echt blieb dabei 10–15 ms — der Zyklus WAR die Last).
+            // Zwei Wände, die Kaltstart-Freeze-Disziplin als ZEIT-Wand:
+            //   (1) WACHSEN nur unter ANHALTENDEM Kopfraum (PERF_FOLIAGE_GROW_RUHE_S
+            //       Sim-Sekunden ohne Über-Budget — der eine Über-Budget-Frame der
+            //       Welle setzt die Uhr zurück; Sim-Zeit via sense.frameMs, damit
+            //       gate:regler-sim deterministisch bleibt, nie Wanduhr).
+            //   (2) SCHRUMPFEN erst ab dem Totband (kleine Ziel-Dips flattern die
+            //       Kanten-Zellen nicht mehr; echter Überlast-Sturz schrumpft voll).
+            if (st._frameOverBudget) this._folRuheSec = 0;
+            else this._folRuheSec = (this._folRuheSec || 0) + Math.min(0.3, (sense.frameMs || 17) / 1000);
+            const _frRuhig = (this._folRuheSec || 0) >= AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S;
             st.foliageRadius =
-                frCur < frTarget ? Math.min(frTarget, frCur + step) : Math.max(frTarget, frCur - step * 2);
+                frCur < frTarget
+                    ? _frRuhig
+                        ? Math.min(frTarget, frCur + step)
+                        : frCur
+                    : frTarget < frCur - AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND
+                      ? Math.max(frTarget, frCur - step * 2)
+                      : frCur;
         }
         // V18.277 — DIE KAPAZITÄTS-GEWACHSENE DICHTE (Schöpfer „Deko steigt bei Kapazität"): die
         // Schwester des Radius. `_foliageDensityScale` skaliert die Instanz-Zahl pro Zelle
@@ -15785,6 +15805,19 @@ class AnazhRealm {
         // Traces ohne gpuMs/gpuQuelle fallen automatisch auf gpuGapMs zurück).
         const wGpu = w.gpuQuelle === "echt" && Number.isFinite(w.gpuMs) ? w.gpuMs : w.gpuGapMs;
         const wQuelle = w.gpuQuelle === "echt" ? "echt gemessen" : "Proxy frameMs−ΣCPU";
+        // PROXY-LÜGEN-WAND (18.07., vierter Schöpfer-Trace): der Subtraktions-Proxy
+        // las Hauptthread-Stalls AUSSERHALB der Loop-Phasen (Worker-Reply-Ingest,
+        // 5–6.4-s-LongTasks) als „GPU" — echt gemessene 5-s-Frames trugen 10–15 ms
+        // GPU. Deckt der LongTask-Akku den Großteil der Lücke, urteilt das Verdikt
+        // HAUPTTHREAD statt GPU (nur der Proxy-Zweig — echtes gpuMs bleibt Wahrheit).
+        const wLt = w.longTasks && Number.isFinite(w.longTasks.ms) ? w.longTasks.ms : 0;
+        if (w.gpuQuelle !== "echt" && wGpu > w.cpuSumMs && wLt > 0.6 * w.gpuGapMs) {
+            return (
+                `schlimmster Frame ${w.frameMs} ms ist HAUPTTHREAD-BLOCKIERT (ausserhalb der Loop-Phasen): ` +
+                `LongTasks ${wLt} ms (max ${w.longTasks.max} ms) decken die ${w.gpuGapMs}-ms-Lücke — ` +
+                `Verdacht Worker-Reply-Ingest/Compile, NICHT die GPU (Proxy ohne timestamp-query).`
+            );
+        }
         if (wGpu > w.cpuSumMs) {
             return (
                 `schlimmster Frame ${w.frameMs} ms ist GPU/Render-GEBUNDEN: ${wGpu} ms GPU (${wQuelle}) ` +
@@ -92131,7 +92164,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.2";
+AnazhRealm.VERSION = "18.491.3";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -96734,6 +96767,13 @@ AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Z
 // Framebuffer-Re-Alloc-Churn.
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
+// GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace) — die zwei Radius-Wände:
+// Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (die eine Welle
+// des Zyklus setzt die Uhr zurück — der Radius jagt keinem kurzlebigen Kopfraum
+// mehr nach); Schrumpfen erst ab diesem Ziel-Abstand in Metern (Kanten-Zellen
+// flattern nicht — ein echter Überlast-Sturz [>8 m Ziel-Differenz] schrumpft voll).
+AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S = 4;
+AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND = 8;
 // GNADENFRIST (18.07.) — wie lange eine LEERE Instanz-Hülle (liveCount 0) im echten
 // Spiel weiterleben darf, bevor der Reaper sie räumt. Der zweite Schöpfer-Trace maß
 // +366 Gruppen-Re-Mints in 176 s bei stehendem Spieler: Familien oszillieren beim
