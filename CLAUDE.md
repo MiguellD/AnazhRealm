@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.4 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
+## Stand (V18.491.5 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
 
 **18.07., siebte Welle (ULTRACODE — die Profi-Doktrin „Kosten binden an Schirm+Änderung,
 nie an Weltgröße" wird Maschine; Verstehens-Sweep 4 Leser + adversariale Diff-Review):**
@@ -25,11 +25,20 @@ nie an Weltgröße" wird Maschine; Verstehens-Sweep 4 Leser + adversariale Diff-
   (Median-Heap-Wachstum in Steh-Sekunden ohne GC — Loop-Müll ohne Streaming-Alibi).
 - ZWEI-KREISE-MINI: echtes gpuMs über der Frame-Decke setzt die Radius-Ruhe-Uhr zurück
   (der Radius wächst nie in eine volle GPU; Proxy/Sim byte-alt).
-- SWEEP-ERNTE (benannt für die nächsten Wellen): Nicht-Bundle-Draws = VIER Chunk-
-  Populationen (Terrain ≤625 · Gras ~289 · Streu ~375 · Wasser/Stitch) + globale Baum-
-  Gruppen · Müll-Wal = ctx-lose `_terrainColumnContext`-Münzen im Feld-Pfad
-  (_fieldGradient/_fieldRaycast-DDA/Kreatur-Rays) + `_tickScatterLod`-Keys-Array
-  (~1–1.5 MB/s im Stand) — mit Zeilennummern im Chronik-Commit.
+- MÜLL-WAL GESCHNITTEN (Review-Nacharbeit derselben Welle): der EINE ctx-lose
+  Chokepoint `_terrainBaseDensityAt` füllt einen privaten SCRATCH statt je Feld-
+  Probe (Gradient x±/z± · Raycast-DDA · Kreatur-Rays · Fixed-Steps) einen frischen
+  Spalten-Kontext zu münzen (Werte byte-identisch — gate:worker-watersheet maxDiff 0;
+  Halter-Pfade münzen weiter frisch); `_tickScatterLod`-Keys-Spiegel nur bei
+  Größen-Wechsel + 128er-Auffrisch (~1–1.5 MB/s Stand-Müll tot).
+- REVIEW-NACHARBEIT (adversariale Diff-Review, 2 Prüfer): der Ingest-Drain wandert
+  auf die LÄUFT-IMMER-Seite des Frames (ein persistenter Phasen-Fehler hätte ihn
+  sonst für immer ausgehungert) · stillstandMuell zählt nur noch Sekunden OHNE
+  Ingest/Mints/Stall-Slots und nur mit echtem Speicher-Signal · die Mint-Map-
+  Schranke ist amortisiert + hart (Top-256-Fallback).
+- OFFEN (die letzte große Chirurgie, Ziele benannt): die VIER Nicht-Bundle-Chunk-
+  Populationen (Terrain ≤625 · Gras ~289 · Streu ~375 · Wasser/Stitch) + globale
+  Baum-Gruppen in die Bundle-Bahn — die bundleDeckung-Linse misst den Fortschritt.
 
 **18.07., sechste Welle (vierter Trace: die Linsen überführen den GRENZZYKLUS — Radius
 atmete 58↔130 m, Churn-Linse nennt fscatter:blume ×6/1132 Wiederkehrer, GPU echt blieb

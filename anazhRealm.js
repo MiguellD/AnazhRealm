@@ -15387,14 +15387,18 @@ class AnazhRealm {
             // STILLSTAND-MÜLL (sechste Welle): der Median des Heap-Wachstums über
             // Sekunden, in denen der Spieler STAND und kein Major-GC fiel — reiner
             // Loop-Müll pro Sekunde, vom Streaming-Alibi getrennt (Welle-3-Ziel ≈ 0).
-            if (fr && fr.gcRing && fr.stillRing && fr.secRingN > 0) {
+            // Review-geschärft: NUR mit echtem Speicher-Signal (sonst log die Linse
+            // ein selbstbewusstes 0.00 auf Firefox/Safari) und OHNE Stall-Slots
+            // (ein >1-s-Frame faltet mehrere Sekunden in EINEN Slot → bis ~5×
+            // überzeichnet — genau die Sessions, für die die Linse gebaut ist).
+            if (fr && fr.gcRing && fr.stillRing && fr.secRingN > 0 && Number.isFinite(fr._heapLast)) {
                 const N3 = fr.gcRing.length,
                     n3 = Math.min(fr.secRingN | 0, N3);
                 const still = [];
                 for (let i = 0; i < n3; i++) {
                     const idx = (fr.secRingI - n3 + i + N3) % N3;
                     const d = fr.gcRing[idx];
-                    if (fr.stillRing[idx] === 1 && d > -8) still.push(d);
+                    if (fr.stillRing[idx] === 1 && d > -8 && fr.secRing[idx] < 1000) still.push(d);
                 }
                 if (still.length >= 5) {
                     still.sort((a, b) => a - b);
@@ -15659,10 +15663,12 @@ class AnazhRealm {
                             (sns.pipesNeuProS || 0) + A * ((fr._pipesSec || 0) - (sns.pipesNeuProS || 0));
                     }
                     fr._pipesSec = 0;
-                    // STILLSTAND-MÜLL (18.07., sechste Welle — Profi-Doktrin Welle 3):
-                    // je Sekunde merken, ob der Spieler STAND (< 0.5 m Bewegung) —
-                    // Heap-Wachstum in Still-Sekunden ist REINER Loop-Müll (kein
-                    // Streaming-Alibi). Gleiche Ring-Indizes, nie ein Zähler-Zwilling.
+                    // STILLSTAND-MÜLL (18.07., sechste Welle — Profi-Doktrin Welle 3;
+                    // Review-geschärft): je Sekunde merken, ob WIRKLICH Stillstand war —
+                    // Spieler < 0.5 m bewegt UND kein Ingest freigegeben UND keine Gruppe
+                    // gemünzt (die Ruhe-Wand lässt den Radius GERADE im Stand wachsen —
+                    // ohne diese zwei Wächter zählte Streaming als „Loop-Müll" und die
+                    // Linse jagte den falschen Wal). Gleiche Ring-Indizes, kein Zwilling.
                     if (!fr.stillRing) fr.stillRing = new Uint8Array(180);
                     {
                         const pm = st.playerMesh && st.playerMesh.position;
@@ -15676,6 +15682,11 @@ class AnazhRealm {
                                 fr._stillPos.z = pm.z;
                             } else fr._stillPos = { x: pm.x, z: pm.z };
                         }
+                        const ingestJetzt = this._foundryIngestFrei || 0;
+                        const mintsJetzt = this._archGruppenMints || 0;
+                        if (ingestJetzt !== (fr._stillIngest || 0) || mintsJetzt !== (fr._stillMints || 0)) still = 0;
+                        fr._stillIngest = ingestJetzt;
+                        fr._stillMints = mintsJetzt;
                         fr.stillRing[fr.secRingI] = still;
                     }
                     fr.secRing[fr.secRingI] = fr._secMax;
@@ -27446,6 +27457,14 @@ class AnazhRealm {
     // per-Voxel `_terrainBaseDensityAtCol` über das ganze y-Band gelesen = BYTE-IDENTISCH (dieselben
     // Werte, nur einmal), ~3× weniger Arbeit. MUSS bit-identisch im Worker (`terrainColumnContext`).
     _terrainColumnContext(x, z) {
+        return this._terrainColumnContextIn(x, z, {});
+    }
+    // MÜLL-WAL-SCHNITT (18.07., siebte Welle) — die FÜLL-Variante: identische
+    // Werte, aber der Aufrufer stellt den Behälter. Halter-Pfade (Chunk-Bau,
+    // _fieldSurfaceBelow, Gradient-y-Paar) münzen weiter frisch über den
+    // Wrapper oben; NUR der ctx-lose Heiß-Pfad (_terrainBaseDensityAt) füllt
+    // seinen privaten Scratch — die Feld-Werte bleiben byte-identisch.
+    _terrainColumnContextIn(x, z, out) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
@@ -27473,7 +27492,15 @@ class AnazhRealm {
             hydroCarve = this._hydrosphereCarveAt(x, z);
             lake = this._hydrosphereLakeAt(x, z);
         }
-        return { n, base, surf, roughScale, ceilOffset, hydroActive, hydroCarve, lake };
+        out.n = n;
+        out.base = base;
+        out.surf = surf;
+        out.roughScale = roughScale;
+        out.ceilOffset = ceilOffset;
+        out.hydroActive = hydroActive;
+        out.hydroCarve = hydroCarve;
+        out.lake = lake;
+        return out;
     }
 
     // Die per-VOXEL-Hälfte (y-abhängig): die zwei Oberflächen-3D-Roughness-Bänder, die Höhlen-
@@ -27514,7 +27541,15 @@ class AnazhRealm {
     // Die EINE-Punkt-API (Edits/Raycast/Carve-Leser): Kontext + per-Voxel = byte-identisch zur alten
     // monolithischen Form. Der GRID-Pfad (`_voxelSampleDensityGrid`) hoistet den Kontext pro Spalte.
     _terrainBaseDensityAt(x, y, z) {
-        return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContext(x, z));
+        // MÜLL-WAL-SCHNITT (18.07., siebte Welle — Sweep-Befund: jede ctx-lose
+        // Feld-Probe [Gradient x±/z±, Raycast-DDA ~30–50 Proben/Ray, Kreatur-
+        // Rays, Fixed-Steps] münzte einen frischen Spalten-Kontext — der größte
+        // benannte Stand-Müll-Posten]. Der EINE ctx-lose Chokepoint füllt jetzt
+        // einen privaten SCRATCH: der Konsum in _terrainBaseDensityAtCol ist rein
+        // synchron (Hydro-Füller rufen nie zurück, geprüft), kein Aufrufer hält
+        // dieses ctx — Werte byte-identisch, nur die Allokation fällt.
+        const s = this._fieldCtxScratch || (this._fieldCtxScratch = {});
+        return this._terrainBaseDensityAtCol(x, y, z, this._terrainColumnContextIn(x, z, s));
     }
 
     // V12.0-perf.b — vollständige Terrain-Dichte = Basis + voxelEdit-Delta.
@@ -56173,7 +56208,20 @@ class AnazhRealm {
             this._scatterLayerByName = new Map();
             for (const l of SC.layers) this._scatterLayerByName.set(l.name, l);
         }
-        const keys = Array.from(map.keys());
+        // MÜLL-WAL-SCHNITT (18.07., siebte Welle — Sweep: dieses per-Frame-Keys-
+        // Array war ~1–1.5 MB/s Stand-Müll): der Schlüssel-Spiegel wird nur bei
+        // GRÖSSEN-Wechsel der Region-Map neu gemünzt (Add/Remove ändert size;
+        // ein Replace desselben Keys ist im Region-Lifecycle ausgeschlossen —
+        // Regionen werden disposed + neu gestreamt, nie in-place ersetzt).
+        // Netto-Null-Loch (Remove+Add zwischen zwei Ticks, size gleich): der
+        // 128er-Auffrisch-Takt deckelt die Stale-Zeit auf ~2 s — tote Schlüssel
+        // hoppt der Cursor ohnehin schadlos (map.get → null → weiter).
+        this._scatterLodKeyTick = (this._scatterLodKeyTick || 0) + 1;
+        let keys = this._scatterLodKeys;
+        if (!keys || this._scatterLodKeysN !== map.size || (this._scatterLodKeyTick & 127) === 0) {
+            keys = this._scatterLodKeys = Array.from(map.keys());
+            this._scatterLodKeysN = map.size;
+        }
         if (!this._scatterLodCursor) this._scatterLodCursor = { k: 0, c: 0 };
         const cur = this._scatterLodCursor;
         let scanned = 0;
@@ -67924,11 +67972,21 @@ class AnazhRealm {
         let m = this._archGruppenMintMap;
         if (!m) m = this._archGruppenMintMap = new Map();
         m.set(key, (m.get(key) || 0) + 1);
-        // bounded: bei >4096 Einträgen die Einmal-Mints fallen lassen (Wiederkehrer bleiben).
-        if (m.size > 4096) {
+        // bounded (Review-geschärft): der Sweep läuft AMORTISIERT (alle 256 Mints,
+        // nicht je Mint — sonst O(size) auf dem Streaming-Pfad), Einmal-Mints fallen
+        // zuerst; sind trotzdem >6144 Wiederkehrer (lange Wander-Session), hält der
+        // harte Fallback nur die Top-256 — Größe UND per-Mint-Kosten sind echte Schranken.
+        if (m.size > 4096 && (this._archGruppenMints & 255) === 0) {
             for (const [k, n] of m) {
                 if (n <= 1) m.delete(k);
                 if (m.size <= 2048) break;
+            }
+            if (m.size > 6144) {
+                const top = Array.from(m.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 256);
+                m.clear();
+                for (const [k, n] of top) m.set(k, n);
             }
         }
     }
@@ -89867,11 +89925,6 @@ class AnazhRealm {
                 // V18.485 — der Pipeline-Warm-Ofen: neue Konsum-Archetyp-Familien
                 // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
                 this._pipeOfenTick();
-                // DER INGEST-TAKT (18.07., vierter Trace: 5–6.4-s-LongTasks — Reply-/
-                // Platten-BURSTS bündelten ihre Konversionen als Microtasks in EINER
-                // Task): der EINE Freigabe-Tick lässt pro Frame nur wenige Foundry-
-                // Konversionen durch (s. _foundryIngestTakt).
-                this._tickFoundryIngest();
                 this._kernPflichtWand();
                 // DER FELD-CULL (das-feld-zeichnet §2 Stufe 1 Vollausbau): das
                 // pro-Instanz-GPU-Urteil der schwersten Scatter-Familien — die
@@ -89892,6 +89945,12 @@ class AnazhRealm {
             // (fängt den Block-Spike eines Sync-Builds — der nächste rAF feuert erst danach).
             // LÄUFT IMMER (auch nach einem abgefangenen Frame-Fehler) — der Regler bleibt am Leben.
             this._perfSenseFoldFrame(delta * 1000, delta);
+            // DER INGEST-TAKT — ebenfalls auf der LÄUFT-IMMER-Seite (Review-Riss 18.07.:
+            // im try-Block hätte ein PERSISTENTER Phasen-Fehler, den die Error-Boundary
+            // bewusst überlebt, den Drain für immer ausgehungert — Assets kämen nie an;
+            // die requested-Wache retryt nur bei null). Hier drainiert der Stau auch in
+            // einer verletzten Welt: 3 Freigaben je Frame unter Budget, 1 darüber.
+            this._tickFoundryIngest();
 
             // V18.304 — der DEFERIERTE Avatar-Bau: nach ein paar gerenderten Frames (die Welt/UI
             // ist sichtbar + ein paar Frames bedienbar) den Avatar EINMAL bauen. Der ~1.9-s-Skin-
@@ -92313,7 +92372,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.4";
+AnazhRealm.VERSION = "18.491.5";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
