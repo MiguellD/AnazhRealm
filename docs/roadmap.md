@@ -5,9 +5,9 @@
 > Samen?** (§4 Samen/Fäden). Alles Erledigte lebt in der git-Historie (`git log` = die Chronik;
 > die gefallenen Plan-Docs sind dort durchsuchbar: `git log --all --oneline -- docs/`).
 
-## §0 · DER TISCH — was offen ist (Stand V18.490; die neun P0-Inventur-Risse sind
-## GESCHNITTEN [CLAUDE.md Stand + git log 18.07.] — die Abnahme-Runde §7 des
-## Drehbuchs ist das offene Schöpfer-Wort dazu)
+## §0 · DER TISCH — was offen ist (Stand V18.490.1; die neun P0-Risse UND die
+## DoD-Matrix M1–M5 sind geschnitten [CLAUDE.md Stand + git log 18.07.] — offen
+## ist NUR die Schöpfer-Abnahme: docs/abnahme-drehbuch.md, 20 Schritte)
 
 0. **DAS ERLEBNIS-ZIEL (16.07., Schöpfer-Wort — DIES schlägt alles darunter):**
    Jedes Ding im Realm ist EIN Studio-geborenes Wesen — EIN Bauplan je Ding (keine

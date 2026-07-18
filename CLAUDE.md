@@ -6,10 +6,25 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.490 — DIE VOLLENDUNGS-SCHNITTE: die neun Risse der P0-Inventur sind gefallen)
+## Stand (V18.490.1 — MATRIX GRÜN: die neun Risse + die Matrix-Zellen M1–M5 sind geschnitten)
 
-**18.07., je Riss EIN Commit (Konsum im Spielpfad + Absenz-Wand), alles GEMESSEN; Merge-Gate
-„Alle Invarianten OK" (243 Bänder) + npm run check komplett grün:**
+**18.07., zweite Welle (ABSOLUTE VOLLENDUNG — die DoD-Matrix aus dem lebenden Code, jede
+Zelle grün oder final gestrichen; Merge-Gate + npm run check komplett grün):**
+- WAISEN-NULL: der Konsum-Wächter urteilt über DREI Flächen (Stamm · Ofen · Kern-Maschine,
+  3 Selbsttests) — die 136-Eintrag-Lern-Liste war Linsen-Blindheit, sie ist LEER; tote
+  Kern-Exporte fielen physisch (ANTHROPOS-Rest · DESTNUR/TURMNUR/NOISEAMP/_MAPPED/
+  LOD1SKIP · gapStadt), laneiv wird byte-gleich konsumiert.
+- KATALOG EIN EINTRAG: `_katalogSichtbar` = der EINE Sicht-Chokepoint (Werkstatt ·
+  Rezeptbuch · Omnibox · Auftrag-Select) — grown_*/Varianten-Doppel treten nirgends auf.
+- SIEDLUNG GANZ: Zäune + Äcker (Wege-Pool) · Marktstände (marktstand_dorf) · Hof-Bäume
+  (Studio-Bäume) leben; der Export trägt NUR gelebte Schichten (gate:settlement C-S6).
+- FELS-HÜLLE: Streu-Formationen (fels/kristall_var*) decken die GEMESSENE Studio-Hülle
+  (fx.huelle, im Worker über 4 Varianten vermessen) — vierter Gesetz-Blocker-Zweig.
+- ZWILLINGS-NULL: sprintMul/FAHR+hostEmergent fail-closed (_sprintMulGesetz/_fahrGesetz,
+  Gültigkeits-Wände), Parkour-Rutsch-Ternaries + tetrapoda-Motion-Drittsätze tot, die
+  Kampf-Kapsel liest ARENA (kapselRK/RMin/Y0/Y1), die Emotionen erreichen den Mensch-Rig.
+
+**Davor am selben Tag — DIE VOLLENDUNGS-SCHNITTE (erste Welle, je Riss EIN Commit):**
 - HAUS-DOPPELBAU tot: slot.ov reist als studioOv — Kirche/Gasthaus/Armut bauen die Export-
   Wahrheit (Optik == Blocker); gate:settlement C-S5 + lebende ov-Hash-Trennung.
 - FAHRZEUG-DONOR tot: exportDrive trägt sitz+huelle (Kern-Stationen); Blocker-Chokepoint +
@@ -36,12 +51,13 @@ terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) s
 - AUGEN-GLUT tot: der Bäcker liest kl.ei (0.3 statt 2.8×-Phantom-Default); foundry-core
   steht mit in der Rückkehr-Wand.
 
-BEWUSST DRAUSSEN (mit Grund): Lofi-Ofen bleibt Web-Audio-Osz (die Lab-Synthese-Engine ist
-Shell-Technik — die WAHL ist konsumiertes Gesetz) · Nebel ohne Depth-Soft-Pre-Pass (depthTest
-deckt Verdeckung, kein zweiter Render-Pass) · blume-Palette neutral (das Studio deklariert
-keine bark/leaf-Farben) · Settlement-Schichten fences/felder/staende/mauer/fluss/bruecken/
-laternen/trees benannt-unkonsumiert (must-ignore, eigene Erlebnis-Welle) · Schöpfer-Auge:
-look-golden --mint + die Abnahme-Runde (docs/abnahme-drehbuch.md §3 = Vollendungs-Checkliste).
+VISIONSSCOPE GESTRICHEN (final, kein Backlog): Stadtmauer-/Laternen-Schichten des
+Settlement-Exports (Stadt-Gestalt ohne Welt-Mechanik — nur ein neuer Schöpfer-Auftrag
+öffnet das wieder) · Klang = WAHL+Parameter am Host-Ofen (Genre wählt Stimmen/Mixer/Form/
+Raum; die Lab-Synthese-Engine bleibt Shell — DAS ist die eine Klang-Wahrheit) · Nebel ohne
+Depth-Soft-Pre-Pass (depthTest deckt) · blume-Palette neutral (kein Farb-Gesetz im Studio).
+OFFEN (das letzte Wort): die Schöpfer-Abnahme — docs/abnahme-drehbuch.md (20 Schritte,
+deckt die Matrix) + `npm run look-golden -- --mint` auf dem Schöpfer-Holz.
 
 Davor V18.489 — DIE SCHLUSS-WELLE (17.07. nachts): die 9 Tetrapoda-Zeilen fallen (VERHALTEN,
 fail-closed, Absenz-Wand 18 Namen) · 4 Teils→Ganz (Zorn-Achse→angry · schmiede-Vertrags-Akt
