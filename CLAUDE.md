@@ -6,6 +6,29 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
+## P0-INVENTUR (18.07., aus dem LEBENDEN Code — 8 Leser; DoD: Konsum+Abschied+eine Quelle)
+
+Je Lab: schlimmster Riss (Erlebnis-Schmerz 1-5) — Abbau laeuft sequentiell, ein Commit je Schnitt.
+- fachwerk 4: HAUS-DOPPELBAU — Slot-ov (Kirche/Gasthaus/Armut, core:2931) wird vom Host VERWORFEN
+  (_spawnSettlementSlot reicht nur seed/phi; Render = Kultur-Default via _foundryVariantFor) →
+  Doerfer sind Klone, Blocker(Plan) != Optik(Default). SCHNITT LAEUFT.
+- vehicle 4: DONOR-GEIST — Gestalt buildInstance, Kollision+Sitz 2.1-m-Holzwagen (:91270/33944);
+  tor+haus haben die Heilung am selben Chokepoint (_populateBlockerAABBs), vehicle fehlt.
+- schmiede 4: EINHEITSBREI — 13 Klingen-Gattungen = byte-gleiche Donor-Parts → gleiche Schwung-
+  Dauer/Reichweite/Schaden; measure-Metrologie geladen und stumm.
+- terrain 3: SPECIES_PHYTO_DIALS/_PALETTE = Literal-Kopie der Buch-Dials (92629 vs f.recipes) —
+  gesehener Baum folgt dem Studio, gefuehlter (Kollision/Tags/Silhouette/Boot) nicht.
+- porta 3: membranUniforms.fog reist in den Host und liegt TOT (kein mu.fog-Leser) — Portale
+  ohne Bodennebel/Licht-Atem, sichtbar ab Minute 1 am Genesis-Ring.
+- klang 3: 22 Genres, Host liest NUR inst.drums — harmony/lead/bass/tilt/form stumm (Dreieck-Pad
+  fuer alles); Konsum-Waechter strukturell blind (Wort-Kollision).
+- koerper 3: Boot-Haut/Haar-Literale ausserhalb jeder Studio-Palette (17802/18508) + Ofen waermt
+  nur EIN Farb-Memo → jeder Genom-Peer giesst synchron kalt.
+- tetrapoda 3: Baecker liest kl.emissivIntensitaet statt ei (foundry:2867 vs tetra:1336) → alle
+  Kreatur-Augen 2.8x Glut vs Lab.
+- Quer: HIMMEL/WASSER_GESETZ-Fallback-Zwillinge (16068/35170) = die V18.487-Klasse, terrain fehlt
+  in GESETZ_KERNE (Kern-Pflicht blind); Konsum-Waechter rastert Funktions-Kerne nicht.
+
 ## Stand (V18.489 — DIE SCHLUSS-WELLE: Tetrapoda-Heimkehr · Teils→Ganz · Puffer-Tod · selbst gemessen)
 
 **17.07. nachts, alles GEBAUT + GEMESSEN:** DIE 9 TETRAPODA-ZEILEN FALLEN
