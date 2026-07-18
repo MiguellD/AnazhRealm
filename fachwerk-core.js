@@ -1994,9 +1994,9 @@
   const T=NAMEN[region]||NAMEN.mitteleuropa;
   return T.v[(r()*T.v.length)|0]+T.n[(r()*T.n.length)|0]; }
     // prettier-ignore
-    const LOD1SKIP={geruest:1,boeden:1,innenwaende:1,herd:1,treppe:1,moebel:1}; // System-Hülle: Haut+Türen+Fenster, kein Innenleben
+    // VERTRAGS-AKT 18.07.: LOD1SKIP ist GESTRICHEN (0 Leser — der tote LOD1F-Zwilling).
     // prettier-ignore
-    const DORF_NORM={ gap:2.5, gapStadt:1.0, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };
+    const DORF_NORM={ gap:2.5, strasseW:5.0, laneW:3.2, gehweg:1.2, budget:170000, laneiv:17 };   // VERTRAGS-AKT 18.07.: gapStadt gestrichen (0 Leser, matchte kein lebendes Layout-Literal)
     // ── SPIEGEL-ZENSUS 17.07. — DAS SIEDLUNGS-EXISTENZ-GESETZ (rein additive
     // DATEN-Zeile): WO/WIEVIEL Doerfer die Welt traegt ist Siedlungs-Wissen
     // (Praezedenzfall: die Wald-Dichte lebt in phyto-core forestStandDensity).
@@ -2466,7 +2466,7 @@
   const laternen=[];                                                                          // LATERNEN-GESETZ: die moderne Stadt leuchtet
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
   if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
-    for(let u=6, fl=1; u<(rd.len||0)-4; u+=13+((u*7)%5), fl=-fl){ const q=at(rd,u);
+    for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
       const lx2=q.x+fl*q.nx*(rd.w/2+gw+0.35), lz2=q.z+fl*q.nz*(rd.w/2+gw+0.35);
       let ok=true;
       for(const q2 of obbs){ if(distPunktOBB(lx2,lz2,q2.o)<0.45){ok=false;break;} }
@@ -3007,7 +3007,6 @@
         SIEDLUNG: SIEDLUNG,
         EPOCHEN: EPOCHEN,
         REGION_HIST: REGION_HIST,
-        LOD1SKIP: LOD1SKIP,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
@@ -3034,12 +3033,8 @@
         texStein: texStein,
         // Bake-Vokabular (Sonde + Dorf der Shell bauen aus DIESER Quelle)
         KULLVOL: KULLVOL,
-        DESTNUR: DESTNUR,
-        TURMNUR: TURMNUR,
         MASSNUR: MASSNUR,
         LOD1F: LOD1F,
-        NOISEAMP: NOISEAMP,
-        _MAPPED: _MAPPED,
         _colFor: _colFor,
         _noise01: _noise01,
         bakeHaus: bakeHaus,

@@ -2512,11 +2512,12 @@
     }
     // ════ ANTHROPOS — zweite Materialtabelle: Körper als Greifer (geeicht: Optimum 33mm, Handbreite 88mm) ════
     const ANTHROPOS = {
+        // VERTRAGS-AKT 18.07.: handBreadth/handLength/wristNodeFrac sind
+        // GESTRICHEN (0 Leser — Def-only); gripOptD/gripSpread leben intern
+        // (greifkraft/griffD → measure.greifPct). Der ANTHROPOS-Export fiel
+        // mit (0 externe Leser — die Maschine bleibt intern lebendig).
         gripOptD: 0.034,
         gripSpread: 0.024,
-        handBreadth: 0.088,
-        handLength: 0.185,
-        wristNodeFrac: 0.224,
     };
     const greifkraft = (D) => Math.max(0, 1 - Math.pow((D - ANTHROPOS.gripOptD) / ANTHROPOS.gripSpread, 2));
     function griffD(control) {
@@ -2940,6 +2941,14 @@
     // ein Archetyp (alles pass) schlaegt mit faktorVoll = byte-alter Wucht.
     var ARENA = {
         schwung: {
+            // KAPSEL-GESETZ (18.07., rein additiv): die Kreatur-Trefferfläche
+            // des Klingen-Sweeps — vertikale Kapsel ∝ Körpergröße L (scale.x):
+            // Radius kapselRK·L (Boden kapselRMin), Segment kapselY0·L..kapselY1·L.
+            // Waren Wirts-Literale (0.55/0.35/0.1/1.4) — jetzt EINE Quelle.
+            kapselRK: 0.55,
+            kapselRMin: 0.35,
+            kapselY0: 0.1,
+            kapselY1: 1.4,
             dauerProSqrtI: 0.55,
             // EINHEITSBREI-SCHNITT (18.07., rein additiv): die Dauer-Konstante
             // für die GEMESSENE Trägheit (kampfMasze, echte kg·m² — andere
@@ -3120,7 +3129,6 @@
         hamonGesetz: hamonGesetz,
         edgeBeta: edgeBeta,
         kantenLast: kantenLast,
-        ANTHROPOS: ANTHROPOS,
         griffD: griffD,
         intentControl: intentControl,
         betaFromMechanik: betaFromMechanik,

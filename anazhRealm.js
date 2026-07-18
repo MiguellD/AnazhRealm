@@ -76382,7 +76382,9 @@ class AnazhRealm {
             if (tx * fx + tz * fz <= 0) continue; // NIE hinter dem Rücken (die Wand)
             const L = Math.max(0.3, c.scale.x || 1);
             if (tx * tx + tz * tz > (reach + 2 * L) * (reach + 2 * L)) continue; // Grob-Gate
-            const rc = Math.max(0.35, 0.55 * L);
+            // KAPSEL-GESETZ (18.07.): die Trefferfläche liest ARENA.schwung
+            // (kapselRK/RMin/Y0/Y1 — die Wirts-Literale sind gefallen).
+            const rc = Math.max(K.kapselRMin, K.kapselRK * L);
             const d2 = this._segSegDistSq(
                 ax,
                 oy,
@@ -76391,10 +76393,10 @@ class AnazhRealm {
                 oy,
                 bz,
                 c.position.x,
-                c.position.y + 0.1 * L,
+                c.position.y + K.kapselY0 * L,
                 c.position.z,
                 c.position.x,
-                c.position.y + 1.4 * L,
+                c.position.y + K.kapselY1 * L,
                 c.position.z
             );
             const rr = K.bladeRadiusM + rc;
