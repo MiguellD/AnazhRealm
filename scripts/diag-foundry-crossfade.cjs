@@ -501,9 +501,55 @@ async function runPartB() {
         return { geprueft, verstoesse };
     });
 
+    // ── DIE GNADENFRIST DES LEER-DISPOSE (18.07., zweiter Schöpfer-Trace: +366
+    // Gruppen-Re-Mints in 176 s — Familien oszillieren um liveCount 0, der Sofort-
+    // Reap machte jede Oszillation zum Voll-Dispose + Re-Mint). Vier Sätze:
+    // headless reapt SOFORT (byte-alte Gates) · echt hält die Frist die Hülle ·
+    // Realloc in der Frist mintet NICHT neu · der Reaper räumt nach Ablauf. ──
+    const gnade = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const o = {};
+        let bpName = null;
+        for (const n in st.blueprints) {
+            const fl = r._archFlattenBlueprint(n);
+            if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+                bpName = n;
+                break;
+            }
+        }
+        if (!bpName) return { err: "kein instanzierbarer Bauplan" };
+        const mkSlots = () => r._scatterInstanceAdd(bpName, 5000, 10, 5000, 0, 1, null, "999,999");
+        let slots = mkSlots();
+        if (!slots || !slots.length) return { err: "kein Slot entstanden" };
+        const keyA = slots[0].key;
+        r._scatterFreeSlots(slots);
+        o.hlSofortWeg = !st.archInstanceGroups.has(keyA);
+        const _oH = st.renderer._isHeadlessNull;
+        st.renderer._isHeadlessNull = false;
+        slots = mkSlots();
+        const keyB = slots[0].key;
+        const mintsVor = r._archGruppenMints;
+        r._scatterFreeSlots(slots);
+        o.echtBleibt = st.archInstanceGroups.has(keyB);
+        slots = mkSlots();
+        o.reMintInFrist = r._archGruppenMints - mintsVor;
+        r._archLeerReapT = 0;
+        r._tickArchGruppenReaper(performance.now() + 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000));
+        o.lebtNachReaper = st.archInstanceGroups.has(keyB);
+        r._scatterFreeSlots(slots);
+        const g2 = st.archInstanceGroups.get(keyB);
+        if (g2) g2._leerSeit = performance.now() - 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000);
+        r._archLeerReapT = 0;
+        r._tickArchGruppenReaper(performance.now());
+        o.reaperRaeumt = !st.archInstanceGroups.has(keyB);
+        st.renderer._isHeadlessNull = _oH;
+        return o;
+    });
+
     await browser.close();
     server.close();
-    return { out, pageErrors, attrWand };
+    return { out, pageErrors, attrWand, gnade };
 }
 
 async function main() {
@@ -658,11 +704,22 @@ async function main() {
     );
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
-    const { out, pageErrors, attrWand } = await runPartB();
+    const { out, pageErrors, attrWand, gnade } = await runPartB();
     check(
         "ATTRIBUT-WAND: kein Masken-Material auf ungestempelter Geometrie",
         attrWand && attrWand.verstoesse === 0 && attrWand.geprueft > 100,
         attrWand ? `geprüft=${attrWand.geprueft} · Verstöße=${attrWand.verstoesse}` : "Probe lief nicht"
+    );
+    check(
+        "GNADENFRIST: headless sofort · echt hält die Hülle · Realloc mintet nicht neu · Reaper räumt nach Ablauf",
+        gnade &&
+            !gnade.err &&
+            gnade.hlSofortWeg === true &&
+            gnade.echtBleibt === true &&
+            gnade.reMintInFrist === 0 &&
+            gnade.lebtNachReaper === true &&
+            gnade.reaperRaeumt === true,
+        gnade ? JSON.stringify(gnade) : "Probe lief nicht"
     );
     if (out.err) check("Teil (b) lief", false, out.err);
     else {

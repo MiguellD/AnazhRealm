@@ -6,7 +6,7 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.1 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, WGSL-Spec-Wand, Regler-Seed, Kein-WebGPU bewiesen)
+## Stand (V18.491.2 — MATRIX GRÜN + Trace-Wellen: Kamera-Kleber tot, WGSL-Spec-Wand, Gnadenfrist, Kein-WebGPU bewiesen)
 
 **18.07., vierte Welle (zweiter Schöpfer-Trace 6.7 fps + Konsole urteilen — GPU echt 17 ms,
 CPU-render 88 ms: der Wal ist die CPU-Submit-/Fehler-Bahn, nie die GPU):**
@@ -27,6 +27,20 @@ CPU-render 88 ms: der Wal ist die CPU-Submit-/Fehler-Bahn, nie die GPU):**
   (Kleber-Wand + Bake-Fluss leben), Seed klasse=mittel 0.6 konsumiert; OFFEN benannt:
   Heap-Sägezahn (~25 MB/s Müll, GC-LongTasks 335 s/535 s) + CPU-render 88 ms bei 1281 dc
   (die Nicht-Bundle-Draws) = die nächsten Wale, jetzt mit Mess-Namen.
+
+**18.07., fünfte Welle (dritter Trace: uploadKlassen überführt 12.8M Klein-Uploads ≤16K
+[2.4 GB, ~55k writeBuffer/s = die per-Draw-Uniform-Bahn ÜBER ALLE PÄSSE] + Gruppen-Churn
++366/176 s bei stehendem Spieler):**
+- GNADENFRIST DES LEER-DISPOSE: Familien oszillieren beim Wandern/LOD-Wechsel um
+  liveCount 0 — der Sofort-Reap (V18.485) machte jede Oszillation zum Voll-Dispose +
+  Re-Mint (Pipeline-Cache-Eintrag · voller Matrix-Upload [795 MB ≤256K-Klasse] ·
+  Heap-Müll). Der EINE Leer-Chokepoint `_archGroupLeerDispose`: headless reapt SOFORT
+  (byte-alte Gates), echt hält ARCH_LEER_GNADE_MS (10 s) + `_tickArchGruppenReaper`;
+  Realloc in der Frist = 0 Re-Mints. gate:foundry-crossfade GNADENFRIST-Band (4 Sätze).
+- CHURN-LINSE: die zwei Gruppen-Münz-Chokepoints + der Disposer zählen Mints/Tode,
+  ein Ring nennt die Top-WIEDERKEHRER-Schlüssel — steadyState.gruppenChurn im Export.
+- OFFEN (mit Mess-Namen): die per-Draw-Uniform-Bahn (~55k Klein-Uploads/s ≈ CPU-render
+  86 ms — Hebel: weniger Draws in die Bundles/Batches, Pass-Zahl) · Heap-Sägezahn.
 
 **Davor: 18.07., dritte Welle (der erste Schöpfer-Trace urteilt — 2.8 fps auf starkem Holz +
 „Objekte hängen an der Kamera"):**

@@ -15915,6 +15915,10 @@ class AnazhRealm {
                       // Leck, aber nie die KLASSE (fscatter/fimp/@s:/p:/global) — jetzt
                       // zählt der Export die Schlüssel-Präfixe und NENNT den Wächst.
                       gruppenKlassen: this._flightRecorderGruppenKlassen(),
+                      // (c) der CHURN-ZENSUS (18.07., zweiter Trace: +366 Gruppen bei
+                      // stehendem Spieler): Mints/Tode + die Top-Wiederkehrer-Schlüssel —
+                      // die Familie, die im Kreis stirbt und wiederaufersteht, beim Namen.
+                      gruppenChurn: this._archGruppenChurnZensus(),
                   }
                 : null,
             worstFrames: fr.worst,
@@ -55448,9 +55452,59 @@ class AnazhRealm {
         // refcount-/foundry-src-bewusst. Vorher blieb jede leere InstancedMesh-Hülle
         // (count am High-Water, global = frustumCulled false) als toter Draw-Call +
         // Szene-Kind FÜR IMMER stehen — der eigentliche Submit-Wal.
-        for (const key of reap) {
-            const g = this.state.archInstanceGroups.get(key);
-            if (g && (g.liveCount || 0) <= 0) this._disposeArchInstanceGroup(key);
+        // GNADENFRIST (18.07.) — der Leer-Dispose läuft durch den EINEN Chokepoint
+        // (_archGroupLeerDispose): sofort headless (byte-alt), im echten Spiel erst
+        // nach der Frist (der Churn-Befund: Familien oszillieren um liveCount 0).
+        for (const key of reap) this._archGroupLeerDispose(key);
+    }
+
+    // ═══ DIE GNADENFRIST DES LEER-DISPOSE (18.07., zweiter Schöpfer-Trace:
+    // archInstanceGroups +366 in 176 s bei stehendem Spieler/konstanter Welt —
+    // kleine Familien oszillieren beim Wandern/LOD-Wechsel um liveCount 0, und
+    // der SOFORT-Reap machte jede Oszillation zum Voll-Dispose + Re-Mint:
+    // neue InstancedMesh + GPU-Puffer + Bundle-Re-Record + Pipeline-Eintrag +
+    // Heap-Müll — die V18.427-Endlosschleifen-Klasse am Gruppen-Lebenszyklus). ═══
+    // Der EINE Leer-Chokepoint: headless reapt SOFORT (byte-alte Gates), im
+    // echten Spiel bekommt die leere Hülle ARCH_LEER_GNADE_MS — kehrt in der
+    // Frist ein Bewohner zurück (_archGroupAlloc löscht _leerSeit), lebt die
+    // Gruppe weiter (kein Re-Mint); bleibt sie leer, räumt der Reaper-Tick.
+    // Der Preis der Frist: eine leere Hülle ≤ Frist als toter Draw — der alte
+    // FÜR-IMMER-Wal bleibt tot (der Reaper kommt sicher).
+    _archGroupLeerDispose(key) {
+        const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
+        if (!g || (g.liveCount || 0) > 0) return;
+        const r = this.state.renderer;
+        if (!r || r._isHeadlessNull) {
+            this._disposeArchInstanceGroup(key);
+            return;
+        }
+        if (!g._leerSeit) g._leerSeit = performance.now();
+        (this._archLeerKandidaten || (this._archLeerKandidaten = new Set())).add(key);
+    }
+    // Der Reaper (1×/s aus dem Loop): räumt Kandidaten, deren Frist ablief;
+    // wiederbelebte (liveCount > 0 bzw. _leerSeit gelöscht) fallen still raus.
+    _tickArchGruppenReaper(now) {
+        const kand = this._archLeerKandidaten;
+        if (!kand || !kand.size) return;
+        if (this._archLeerReapT && now - this._archLeerReapT < 1000) return;
+        this._archLeerReapT = now;
+        const gnade = AnazhRealm.ARCH_LEER_GNADE_MS;
+        const groups = this.state.archInstanceGroups;
+        for (const key of Array.from(kand)) {
+            const g = groups && groups.get(key);
+            if (!g) {
+                kand.delete(key);
+                continue;
+            }
+            if ((g.liveCount || 0) > 0 || !g._leerSeit) {
+                g._leerSeit = 0; // wiederbelebt — die Frist beginnt beim nächsten Leerstand neu
+                kand.delete(key);
+                continue;
+            }
+            if (now - g._leerSeit >= gnade) {
+                this._disposeArchInstanceGroup(key);
+                kand.delete(key);
+            }
         }
     }
 
@@ -56152,6 +56206,7 @@ class AnazhRealm {
     _disposeArchInstanceGroup(groupKey) {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
         if (!g) return;
+        this._archGruppenDisposes = (this._archGruppenDisposes || 0) + 1; // CHURN-LINSE (18.07.)
         // DER FELD-CULL — der Dispose-Chokepoint legt ein getragenes GPU-Gewand
         // mit ab (der Konsument fällt MIT seiner Familie, nie ein Geister-Draw).
         if (this._feldCull && this._feldCull.gewaender.has(groupKey)) this._feldCullVerlasse(groupKey);
@@ -56388,6 +56443,9 @@ class AnazhRealm {
         // (einer in Flug, Kanal "bake-impostor" zum Studio-Bäcker; lazy beim ersten
         // LOD2-Bedarf enqueued; headless/Null-Renderer = No-op — der Fallback trägt, gate-treu).
         this._tickImpostorBake();
+        // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
+        // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
+        this._tickArchGruppenReaper(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -67388,6 +67446,7 @@ class AnazhRealm {
             slotEntry: batch.slotEntry,
         };
         this.state.archInstanceGroups.set(key, g);
+        this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
     }
 
@@ -67712,7 +67771,44 @@ class AnazhRealm {
         // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
         // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie).
         this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
+        this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
+    }
+
+    // CHURN-LINSE (18.07., zweiter Schöpfer-Trace: archInstanceGroups +366 in 176 s
+    // bei STEHENDEM Spieler und konstanten Architekturen — Re-Mints treiben
+    // Pipeline-Cache-Einträge, volle Matrix-Uploads und Heap-Müll): die zwei
+    // Gruppen-Münz-Chokepoints zählen Mints, der Disposer zählt Tode, und ein
+    // kleiner Ring merkt die letzten Schlüssel MIT Wiederkehr-Zähler — der
+    // Export nennt damit die KONKRETE Familie, die im Kreis stirbt und
+    // wiederaufersteht (nie raten, die Zahl führt).
+    _archGruppenMintMerke(key) {
+        this._archGruppenMints = (this._archGruppenMints || 0) + 1;
+        let m = this._archGruppenMintMap;
+        if (!m) m = this._archGruppenMintMap = new Map();
+        m.set(key, (m.get(key) || 0) + 1);
+        // bounded: bei >4096 Einträgen die Einmal-Mints fallen lassen (Wiederkehrer bleiben).
+        if (m.size > 4096) {
+            for (const [k, n] of m) {
+                if (n <= 1) m.delete(k);
+                if (m.size <= 2048) break;
+            }
+        }
+    }
+    // Die Top-Wiederkehrer (Mint-Zahl ≥ 2) — der Export-Leser.
+    _archGruppenChurnZensus() {
+        const m = this._archGruppenMintMap;
+        const top = [];
+        if (m) {
+            for (const [k, n] of m) if (n >= 2) top.push({ key: k, mints: n });
+            top.sort((a, b) => b.mints - a.mints);
+        }
+        return {
+            mints: this._archGruppenMints || 0,
+            tode: this._archGruppenDisposes || 0,
+            wiederkehrer: top.length,
+            top: top.slice(0, 10).map((t) => ({ key: String(t.key).slice(0, 64), mints: t.mints })),
+        };
     }
 
     // Kapazität verdoppeln: neue InstancedMesh, alte Matrizen kopieren.
@@ -67787,6 +67883,7 @@ class AnazhRealm {
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe/count in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
         this._archMeshBundleTouch(g.mesh);
+        g._leerSeit = 0; // GNADENFRIST — ein Bewohner kehrt zurück: die Hülle lebt, kein Re-Mint
         if (g.free.length > 0) return g.free.pop();
         if (g.next >= g.capacity) this._archInstanceGroupGrow(g);
         return g.next++;
@@ -68379,11 +68476,11 @@ class AnazhRealm {
             if (entry.fundament) this._archFundamentFree(entry);
         }
         for (const key of placedRegionKeys) {
-            const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             // V18.356 — vollständig leer = liveCount 0 (EINE Quelle für InstancedMesh UND Batch; vorher
             // prüfte nur g.free/g.next = InstancedMesh-only → geprunte PLATZIERTE Batch-Bauten leckten
             // ihre Region-Batch). _disposeArchInstanceGroup ist batch-bewusst (refcount → Batch-Dispose).
-            if (g && (g.liveCount || 0) <= 0) this._disposeArchInstanceGroup(key);
+            // GNADENFRIST (18.07.) — durch den EINEN Leer-Chokepoint (headless sofort, sonst Frist).
+            this._archGroupLeerDispose(key);
         }
     }
 
@@ -92034,7 +92131,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.1";
+AnazhRealm.VERSION = "18.491.2";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -96637,6 +96734,13 @@ AnazhRealm.PERF_FOLIAGE_RES_GROW_STEP = 0.02; // pro Aktuator-Tick — sanftes Z
 // Framebuffer-Re-Alloc-Churn.
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
+// GNADENFRIST (18.07.) — wie lange eine LEERE Instanz-Hülle (liveCount 0) im echten
+// Spiel weiterleben darf, bevor der Reaper sie räumt. Der zweite Schöpfer-Trace maß
+// +366 Gruppen-Re-Mints in 176 s bei stehendem Spieler: Familien oszillieren beim
+// Wandern/LOD-Wechsel um liveCount 0 — der Sofort-Reap machte jede Oszillation zum
+// Voll-Dispose + Re-Mint (Pipeline-Cache-Eintrag, voller Matrix-Upload, Heap-Müll).
+// 10 s deckt jede Wander-Oszillation; der FÜR-IMMER-Wal (V18.356) bleibt tot.
+AnazhRealm.ARCH_LEER_GNADE_MS = 10000;
 // KEIN-WEBGPU-GESCHICHTE (18.07.) — der EINE forceWebGL-Hook: die Boot-Probe
 // (gate:webgl-probe) erzwingt den r184-WebGL2-Backend-Rückfall; ALLE fünf
 // Renderer-Münzstellen (Welt · Feed-/Hof-/Ich-Bühne · Workshop-Preview) lesen
