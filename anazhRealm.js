@@ -16065,25 +16065,13 @@ class AnazhRealm {
         // Nenner: das Studio brancht if(hh>0.015), TSL rechnet durch — der
         // Horizont-Ausklang löscht den Beitrag, die Klemme hält die Division
         // endlich (sonst NaN unterm Horizont).
-        const HG = (typeof globalThis !== "undefined" && globalThis.HIMMEL_GESETZ) || {
-            projY: 0.16,
-            s1: 1.6,
-            s2: 3.7,
-            drift: [0.02, 0.014],
-            drift2: 1.6,
-            dens: [0.54, 0.42, 0.8, 0.3],
-            mixN: [0.7, 0.3],
-            hor: [0.015, 0.2],
-            litGrau: [0.62, 0.65, 0.71],
-            litSonne: [1.15, 0.15],
-            litSa: 0.65,
-            bedeckt: [0.34, 0.36, 0.42],
-            bedecktK: 0.55,
-            edge: [0.5, 0.4, 0.6],
-            deck: 0.92,
-            fbm: { okt: 5, lac: 2.03, off: 1.7 },
-            grad: { up: 0.55, dn: 0.5, hazeY: 2.2 },
-        };
+        // ZWILLINGS-ABSCHIED (18.07., die V18.487-Klasse): der Literal-Zwilling
+        // ist GEFALLEN — das Gesetz lebt NUR in foundry-core (__terrainCore),
+        // der Leser ist fail-closed (Kern-Pflicht: ein unlesbares Gesetz ist
+        // ein BRUCH, der schreit, nie eine still driftende Ersatz-Kopie).
+        const HG =
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
+            AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         const h21 = Fn(([q]) => {
             const p = fract(q.mul(vec2(123.34, 345.45)));
             const p2 = p.add(dot(p, p.add(34.345)));
@@ -35252,16 +35240,12 @@ class AnazhRealm {
         // Lambert shallowC=exp(-wK*flach) · deepC=exp(-wK*tief) · Schaum-Farbe
         // verbatim — raw als linear (r128-Farb-Gesetz), die Hex-Näherungen
         // (0x0d2e4f/0x5aacc6/0xdff1ff) sind gefallen.
-        const WG = (typeof globalThis !== "undefined" && globalThis.WASSER_GESETZ) || {
-            wK: [6.5, 2.0, 1.2],
-            flach: 0.13,
-            tief: 0.85,
-            fresnel: [0.02, 0.98, 5.0],
-            spiegel: { dim: 0.68 },
-            licht: [0.86, 0.18, 0.08],
-            spec: [120.0, 1.35],
-            schaum: { farbe: [0.93, 0.96, 0.98] },
-        };
+        // ZWILLINGS-ABSCHIED (18.07., die V18.487-Klasse): die adoptierte
+        // Teilmengen-Kopie ist GEFALLEN — das WASSER_GESETZ lebt NUR in
+        // foundry-core (__terrainCore), der Leser ist fail-closed.
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+            AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
         const _wgBeer = (d) =>
             new THREE.Color().setRGB(Math.exp(-WG.wK[0] * d), Math.exp(-WG.wK[1] * d), Math.exp(-WG.wK[2] * d));
         const uDeep = uniform(_wgBeer(WG.tief));
@@ -92064,6 +92048,10 @@ AnazhRealm.GESETZ_KERNE = Object.freeze({
     porta: "__portaCore",
     fachwerk: "__fachwerkCore",
     klang: "__klangCore",
+    // ZWILLINGS-ABSCHIED (18.07.): das Terrain-Studio steht im Strom — die
+    // Welt-Look-Gesetze (HIMMEL/WASSER, foundry-core __terrainCore) sind
+    // Kern-Pflicht wie jedes andere Gesetzbuch (die Wand meldet den Ausfall).
+    terrain: "__terrainCore",
 });
 AnazhRealm.Gesetz = function (pfad, fallback) {
     const memo = AnazhRealm._gesetzStromMemo || (AnazhRealm._gesetzStromMemo = new Map());

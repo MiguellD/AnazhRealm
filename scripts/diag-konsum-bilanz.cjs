@@ -32,9 +32,13 @@ function ladeKern(entry) {
     let code = "";
     for (const dep of entry.deps) code += fs.readFileSync(path.join(root, dep), "utf8") + "\n;";
     code += fs.readFileSync(path.join(root, entry.file), "utf8");
+    // ZWILLINGS-ABSCHIED 18.07.: der ns-lose Kern (foundry-core) rastert auch
+    // seine Welt-Look-Gesetze (HIMMEL/WASSER via __terrainCore) — vorher waren
+    // Funktions-Kern-Tabellen für den Wächter unsichtbar (0 foundry-Waisen als
+    // Beweis der Blindheit).
     code += entry.ns
         ? `\n;__ns = typeof ${entry.ns} !== 'undefined' ? ${entry.ns} : null;`
-        : `\n;__ns = { PRESETS: typeof PRESETS !== 'undefined' ? PRESETS : null };`;
+        : `\n;__ns = Object.assign({ PRESETS: typeof PRESETS !== 'undefined' ? PRESETS : null }, typeof __terrainCore !== 'undefined' ? __terrainCore : null);`;
     vm.runInContext(code, ctx, { timeout: 30000, filename: entry.file });
     return ctx.__ns;
 }

@@ -133,6 +133,14 @@ var WASSER_GESETZ = {
     schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
 };
 
+// ZWILLINGS-ABSCHIED (18.07., rein additiv) — DER TERRAIN-GESETZ-NAMENSRAUM:
+// die Welt-Look-Gesetze des Terrain-Studios als EIN Namensraum-Block, damit
+// der EINE Gesetz-Strom (AnazhRealm.Gesetz("terrain:…") via GESETZ_KERNE)
+// sie erreicht und die Kern-Pflicht-Wand den Ausfall meldet. var (nicht
+// const): reist als globalThis.__terrainCore zum Stamm-Leser — dieselbe
+// Klasse wie HIMMEL_GESETZ/WASSER_GESETZ selbst.
+var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ };
+
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke
 // (REZEPTE/BUILD); SOLL/DARF-Blöcke wachsen unter v1 (must-ignore trägt sie).

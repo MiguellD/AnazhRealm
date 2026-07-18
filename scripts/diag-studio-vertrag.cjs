@@ -527,6 +527,38 @@ function validateManifest(m) {
             injiziert.length === 1 && injiziert[0] === "SWING_LAWS",
             injiziert.join(",") || "keine Erkennung"
         );
+        // ZWILLINGS-ABSCHIED 18.07. — die INLINE-FALLBACK-Klasse (HIMMEL/WASSER):
+        // ein `globalThis.<GESETZ>) || {`-Zwilling im Stamm ist die V18.487-
+        // Klasse in Funktions-Gestalt. Die Wand: (a) das Muster ist im Stamm
+        // ABWESEND, (b) die Signatur-Literale wohnen NUR im Gesetzbuch
+        // (foundry-core), (c) terrain steht in GESETZ_KERNE (Kern-Pflicht
+        // deckt die Welt-Look-Gesetze). Code-förmige Muster — Kommentare
+        // zitieren die Namen straflos.
+        const inlineZwilling = (s) => /globalThis\.(HIMMEL|WASSER)_GESETZ\)\s*\|\|\s*\{/.test(s);
+        const signaturen = ["projY: 0.16", "wK: [6.5"];
+        (function inlineAbsenz() {
+            let fc = null;
+            try {
+                fc = fs.readFileSync(path.join(root, "foundry-core.js"), "utf8");
+            } catch (_e) {}
+            const imStamm = src ? signaturen.filter((sig) => src.indexOf(sig) >= 0) : signaturen;
+            check(
+                "ZWILLINGS-ABSENZ: kein globalThis-||-Inline-Fallback (HIMMEL/WASSER) im Stamm, Signaturen nur im Gesetzbuch",
+                !!src && !inlineZwilling(src) && imStamm.length === 0,
+                imStamm.length ? "Signatur im Stamm: " + imStamm.join(" · ") : "abwesend"
+            );
+            check(
+                "KONSUM: terrain steht in GESETZ_KERNE und foundry-core trägt __terrainCore (HIMMEL+WASSER)",
+                !!src &&
+                    /terrain:\s*"__terrainCore"/.test(src) &&
+                    !!fc &&
+                    /var __terrainCore = \{ HIMMEL_GESETZ/.test(fc)
+            );
+            const inj = inlineZwilling(
+                'const HG = (typeof globalThis !== "undefined" && globalThis.HIMMEL_GESETZ) || { projY: 0.16 };'
+            );
+            check("SELBST-TEST: ein injizierter Inline-Fallback feuert die Wand", inj === true);
+        })();
     })();
 
     // SELBST-TEST — das Gate ist nicht vakuös: eine injizierte Verletzung
