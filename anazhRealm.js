@@ -31098,10 +31098,26 @@ class AnazhRealm {
                                     const _V = _Ta.float(_rec.views);
                                     const _aImpX = _Ta.attribute("aImpX", "float");
                                     // ── Instanz-Dekodierung (der Normal-Probe) ──
+                                    // KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/
+                                    // Feueresse hängen an der Kamera"): ein FREIER Slot
+                                    // (_archGroupFree — Null-3×3, Translation bleibt) macht den
+                                    // Probe singulär — die Instanz-Normalen-Normierung teilt 0/0
+                                    // → Probe = NaN (bzw. 0⃗). Der alte 1e-5-Clamp beförderte genau
+                                    // diese Slots zu _sInst≈1e5: ein welt-spannendes camera-facing
+                                    // Quad, das mit dem Kopf mitdreht. NaN übersteht jede Arithmetik
+                                    // (NaN·0 = NaN) — nur select verwirft den nicht-gewählten
+                                    // Operanden, und greaterThan ist false für 0 UND NaN. Deshalb:
+                                    // fail-closed via _lebt.select — toter Slot ⇒ _sInst 0 (Quad
+                                    // kollabiert auf die Achse) UND _alpha 0 (alphaTest verwirft).
                                     const _probe = _Ta.normalLocal;
-                                    const _invS = _Ta.length(_probe).max(_Ta.float(1e-5));
-                                    const _sInst = _Ta.float(1.0).div(_invS);
-                                    const _aRot = _Ta.atan(_probe.z.negate(), _probe.x);
+                                    const _probeL2 = _probe.dot(_probe);
+                                    const _lebt = _probeL2.greaterThan(_Ta.float(1e-12));
+                                    const _invS = _Ta.sqrt(_probeL2).max(_Ta.float(1e-5));
+                                    const _sInst = _lebt.select(_Ta.float(1.0).div(_invS), _Ta.float(0.0));
+                                    const _aRot = _lebt.select(
+                                        _Ta.atan(_probe.z.negate(), _probe.x),
+                                        _Ta.float(0.0)
+                                    );
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -31127,7 +31143,10 @@ class AnazhRealm {
                                         _Ta.texture(_rec.map, _uvB),
                                         _fb
                                     );
-                                    _alpha = _samp.a;
+                                    // KAMERA-KLEBER-WAND (2. Riegel): toter Slot ⇒ alpha 0 —
+                                    // alphaTest 0.34 verwirft jedes Fragment, selbst wenn Sway-
+                                    // Offsets dem kollabierten Quad noch Sliver-Fläche geben.
+                                    _alpha = _lebt.select(_samp.a, _Ta.float(0.0));
                                     // W5.3 (Paritäts-Vollendung) — die fin-EINblendung des Billboards
                                     // (Studio _impMat-Fragment: fin = clamp((vCD−(uD1−uFade))/uFade,0,1),
                                     // discard wenn max(min(fin·2,1),vOcc) < _dh — die EINE Quelle
@@ -67548,7 +67567,11 @@ class AnazhRealm {
     // Einen Slot freigeben: Matrix auf Null-Scale (degeneriert → unsichtbar),
     // Slot in die Free-List. mesh.count bleibt am High-Water (Null-Instanzen
     // rendern kein Dreieck, sind aber im Draw-Loop — vernachlässigbar; reuse
-    // füllt sie wieder).
+    // füllt sie wieder). AUSNAHME Impostor-Quads: deren positionNode baut das
+    // Quad aus Translation + Normal-Probe NEU — die Null-3×3 macht den Probe
+    // singulär (NaN/0). Die KAMERA-KLEBER-WAND im Impostor-Shader
+    // (_buildPbrNodeMaterial, _lebt.select) schaltet tote Slots dort fail-closed
+    // stumm; dieser Free-Pfad bleibt bewusst byte-alt (EIN Chokepoint im Shader).
     _archGroupFree(g, slot) {
         g.liveCount = Math.max(0, (g.liveCount || 0) - 1); // V18.356 — Empty-Dispose-Quelle (beide Arten)
         if (g.kind === "batch") {

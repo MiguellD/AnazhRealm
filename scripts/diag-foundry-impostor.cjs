@@ -134,6 +134,118 @@ async function driveImpostor(page) {
     });
 }
 
+// ===== TEIL C — DIE KAMERA-KLEBER-WAND (18.07., Schöpfer: „Felsen/Kristalle/Autos/
+// Feueresse hängen an der Kamera, drehen mit dem Kopf mit") =====
+// Wurzel: _archGroupFree lässt die Null-3×3 mit lebender Translation zurück; der
+// Impostor-positionNode baut das Quad aus Translation + Normal-Probe NEU — der
+// singulär gewordene Probe (0/0-Normierung des InstanceNode) machte den toten Slot
+// zu einem welt-spannenden camera-facing Quad (NaN bzw. _sInst≈1e5). Die Wand:
+// _lebt = probe²>1e-12 (false für 0 UND NaN) + select statt Arithmetik (NaN·0=NaN!)
+// ⇒ toter Slot: _sInst=0 UND _alpha=0. Diese Probe beweist KONSUM auf echter GPU:
+//   (1) SELBSTTEST — ein Monster-Slot (Skala 1000, probe²>1e-12 ⇒ lebt) MUSS den
+//       Schirm fluten: die Linse SIEHT Müll, wenn Müll existiert.
+//   (2) DIE WAND — derselbe Slot durch den ECHTEN Free-Chokepoint (_archGroupFree)
+//       befreit ⇒ ~0 Pixel in seiner Schirm-Hälfte; der lebende Slot zeichnet weiter.
+// Läuft in Seite A (Null-Renderer-Spiel) mit FRISCHEM in-page WebGPURenderer —
+// exakt das gate:fern-ring-Band-8-Muster (swiftshader-real, deterministisch).
+async function kleberProbe(page) {
+    return await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const out = { err: null };
+        try {
+            const T = THREE;
+            // Record + Material durch die ECHTEN Chokepoints münzen. Eigener Key
+            // (frische Material-Signatur) + foundryCrossfade aus, damit die Nah-
+            // Ausblendung des Crossfades die Probe nicht maskiert.
+            const prevCf = r.state.foundryCrossfade;
+            r.state.foundryCrossfade = false;
+            const rec = r._ensureImpostorAtlas("gateKleber|0", { totalH: 8, anchors: [{ x: 2, z: 0 }] });
+            out.recDa = !!(rec && rec.map && rec.nmap);
+            const mat = r._sharedFoliageMaterial({
+                vertexColors: true,
+                useInstanceTint: true,
+                useFlexAttr: true,
+                impostorKey: "gateKleber|0",
+                side: T.DoubleSide,
+            });
+            r.state.foundryCrossfade = prevCf;
+            out.billboard = !!(mat && mat.userData && mat.userData.impostorBillboard);
+            if (!out.billboard) {
+                out.err = "Impostor-TSL-Wiring fehlgeschlagen: " + (window.__impostorAtlasError || "unbekannt");
+                return out;
+            }
+            // Achsen-Quad exakt nach dem Impostor-Rezept: Verts AUF der Stammachse,
+            // Fläche entsteht NUR über positionNode (aImpX × dekodierte Instanz-Skala).
+            const h = 8,
+                w = 4;
+            const geo = new T.BufferGeometry();
+            geo.setAttribute("position", new T.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, h, 0, 0, h, 0], 3));
+            geo.setAttribute("normal", new T.Float32BufferAttribute([1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0], 3));
+            geo.setAttribute("color", new T.Float32BufferAttribute([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], 3));
+            geo.setAttribute("uv", new T.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
+            geo.setAttribute("aImpX", new T.Float32BufferAttribute([-w, w, -w, w], 1));
+            geo.setAttribute("aFlex", new T.Float32BufferAttribute([0, 0, 0, 0], 1));
+            geo.setIndex([0, 1, 2, 2, 1, 3]);
+            const mesh = new T.InstancedMesh(geo, mat, 2);
+            mesh.frustumCulled = false;
+            const M = new T.Matrix4();
+            // Slot 0 (LEBT): links im Bild.
+            M.compose(new T.Vector3(-6, 0, 0), new T.Quaternion(), new T.Vector3(1, 1, 1));
+            mesh.setMatrixAt(0, M);
+            // Slot 1 (erst MONSTER, dann befreit): rechts im Bild.
+            M.compose(new T.Vector3(6, 0, 0), new T.Quaternion(), new T.Vector3(1000, 1000, 1000));
+            mesh.setMatrixAt(1, M);
+            mesh.count = 2;
+            mesh.instanceMatrix.needsUpdate = true;
+            const szene = new T.Scene();
+            szene.add(mesh);
+            szene.add(new T.AmbientLight(0xffffff, 3));
+            const cam = new T.PerspectiveCamera(60, 1.5, 0.5, 500);
+            cam.position.set(0, 4, 26);
+            cam.lookAt(0, 4, 0);
+            cam.updateMatrixWorld(true);
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            ren.setSize(96, 64, false);
+            const rt = new T.RenderTarget(96, 64);
+            ren.setRenderTarget(rt);
+            const zaehle = async () => {
+                await ren.renderAsync(szene, cam);
+                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, 96, 64);
+                let links = 0,
+                    rechts = 0;
+                for (let y = 0; y < 64; y++)
+                    for (let x = 0; x < 96; x++) {
+                        if (buf[(y * 96 + x) * 4 + 3] > 0) {
+                            if (x < 48) links++;
+                            else rechts++;
+                        }
+                    }
+                return { links, rechts };
+            };
+            // (1) SELBSTTEST: der Monster-Slot MUSS Pixel fluten (die Linse sieht Müll).
+            const vorher = await zaehle();
+            out.monsterPx = vorher.links + vorher.rechts;
+            // (2) DIE WAND: Slot 1 durch den ECHTEN Free-Chokepoint befreien.
+            const fakeG = { mesh, free: [], slotEntry: null, liveCount: 2 };
+            r._archGroupFree(fakeG, 1);
+            out.freeNull3x3 = (() => {
+                const chk = new T.Matrix4();
+                mesh.getMatrixAt(1, chk);
+                const e = chk.elements;
+                return e[0] === 0 && e[5] === 0 && e[10] === 0 && Math.abs(e[12] - 6) < 1e-6;
+            })();
+            const nachher = await zaehle();
+            out.lebtPx = nachher.links;
+            out.totPx = nachher.rechts;
+            ren.dispose();
+        } catch (e) {
+            out.err = (e && e.message) || String(e);
+        }
+        return out;
+    });
+}
+
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const errs = [];
@@ -146,6 +258,7 @@ async function driveImpostor(page) {
     });
     const { page: pageA, pageErrors: errA } = await bootPage(browserA, true);
     const A = await driveImpostor(pageA);
+    const C = await kleberProbe(pageA);
     await browserA.close();
 
     console.log("=== P5/BÄCKER-VEREINIGUNG — TEIL A: MECHANIK (Null-Renderer) ===");
@@ -179,6 +292,23 @@ async function driveImpostor(page) {
             if (v !== "undefined") errs.push(`A: die iframe-Methode ${k} existiert noch (${v})`);
     }
     if (errA.length) errs.push(`A: ${errA.length} Seiten-Fehler`);
+
+    console.log("\n=== TEIL C — DIE KAMERA-KLEBER-WAND (tote Impostor-Slots zeichnen NICHTS) ===");
+    console.log(`  Record/Billboard-Wiring: ${C.recDa}/${C.billboard}`);
+    console.log(`  Selbsttest Monster-Slot (Skala 1000) Pixel: ${C.monsterPx} (Linse MUSS Müll sehen)`);
+    console.log(`  Free-Chokepoint Null-3×3+Translation: ${C.freeNull3x3}`);
+    console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · toter Slot: ${C.totPx} px`);
+    if (C.err) console.log(`  Fehler: ${C.err}`);
+    if (C.err) errs.push(`C: Kleber-Probe brach ab — ${C.err}`);
+    else {
+        if (!C.billboard) errs.push("C: das Impostor-TSL-Wiring kam nicht zustande (kein Billboard-Marker)");
+        if (!(C.monsterPx > 200))
+            errs.push(`C-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`);
+        if (!C.freeNull3x3) errs.push("C: _archGroupFree schrieb nicht die erwartete Null-3×3 mit lebender Translation");
+        if (!(C.lebtPx > 40)) errs.push(`C: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
+        if (!(C.totPx <= 8))
+            errs.push(`C: der TOTE Slot zeichnet noch ${C.totPx} px (> 8) — die Kamera-Kleber-Wand hält NICHT`);
+    }
 
     // ===== TEIL B — DER RTT-BAKE LÄUFT (echter swiftshader-Renderer, OPT-IN) =====
     // NUR mit P5_REAL_RENDERER=1: zwei swiftshader-Seiten verhungern den Container-Event-Loop
