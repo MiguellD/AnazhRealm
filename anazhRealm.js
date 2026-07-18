@@ -51441,6 +51441,154 @@ class AnazhRealm {
         return { mat, u };
     }
 
+    // ═══ PORTA-NEBEL (18.07.) — DER TOTE KANAL LEBT: mu.fog erreicht die Welt ═══
+    // Der 'Bodennebel (volumetrisch)'-Dial des porta-Studios reiste seit V18.464
+    // in den Host und hatte NULL Leser — die Genesis-Ring-Tore standen nackt.
+    // Der TSL-Port des Lab-Nebels (worlds/portale/porta.js buildFog = die
+    // Formel-Referenz): Volumen-Raymarch in einer BackSide-Box um den Tor-Fuß —
+    // Dichte = Ellipsen-Profil (DIESELBEN rimAx/rimAy/om/kk wie die Membran) ×
+    // floorCut × Wellenfeld × fbm3 × nebelAct × Puls; Palette aus MU.pal (das
+    // Lab kopiert sie ohnehin jede Frame von der Membran). TECHNIK = Leser-
+    // Sache (16 statt 24 Schritte entfaltet, kein Depth-Soft-Pre-Pass —
+    // depthTest übernimmt die Verdeckung, floorCut kappt den Boden), die
+    // ZAHLEN sind EINE Quelle. Teilt das u-Objekt der Membran (time/camL/
+    // pulse — derselbe Tick-Atem) und trägt u.nebelAct als fünfte Uniform.
+    _nebelMaterialFor(tor, u) {
+        const T = THREE;
+        const TSL = T.TSL;
+        const MG = tor.gesetz;
+        const MU = tor.mu;
+        const F = (x) => TSL.float(x);
+        u.nebelAct = TSL.uniform(0);
+        const PAL = MU.pal;
+        const vPA = TSL.vec3(PAL.PA[0], PAL.PA[1], PAL.PA[2]);
+        const vPB = TSL.vec3(PAL.PB[0], PAL.PB[1], PAL.PB[2]);
+        const vPC = TSL.vec3(PAL.PC[0], PAL.PC[1], PAL.PC[2]);
+        const vPD = TSL.vec3(PAL.PD[0], PAL.PD[1], PAL.PD[2]);
+        const pal = (t) => vPA.add(vPB.mul(TSL.cos(vPC.mul(t).add(vPD).mul(F(6.28318)))));
+        // Box-Maße (Lab-Formeln buildFog, statisch je Gestalt → JS-gefaltet).
+        const m = this._nebelMasseFor(tor);
+        const h3 = TSL.Fn(([q]) => {
+            const p = TSL.fract(q.mul(F(0.3183099)).add(F(0.1))).mul(F(17.0));
+            return TSL.fract(p.x.mul(p.y).mul(p.z).mul(p.x.add(p.y).add(p.z)));
+        });
+        const vn3 = TSL.Fn(([q]) => {
+            const i = TSL.floor(q);
+            const f0 = TSL.fract(q);
+            const f = f0.mul(f0).mul(F(3.0).sub(f0.mul(2.0)));
+            const mixZ = (z) =>
+                TSL.mix(
+                    TSL.mix(h3(i.add(TSL.vec3(0, 0, z))), h3(i.add(TSL.vec3(1, 0, z))), f.x),
+                    TSL.mix(h3(i.add(TSL.vec3(0, 1, z))), h3(i.add(TSL.vec3(1, 1, z))), f.x),
+                    f.y
+                );
+            return TSL.mix(mixZ(0), mixZ(1), f.z);
+        });
+        const fbm3 = (p) =>
+            vn3(p)
+                .mul(F(0.5))
+                .add(vn3(p.mul(F(2.02)).add(F(1.3))).mul(F(0.25)))
+                .mul(F(1.2));
+        const ro = u.camL;
+        const vLocal = TSL.positionGeometry; // die Box-Geometrie ist tor-lokal gebaut
+        const rd = TSL.normalize(vLocal.sub(ro));
+        const bmin = TSL.vec3(-m.hx, m.mnY, -m.hz);
+        const bmax = TSL.vec3(m.hx, m.mxY, m.hz);
+        const t0 = bmin.sub(ro).div(rd);
+        const t1 = bmax.sub(ro).div(rd);
+        const tmn = TSL.min(t0, t1);
+        const tmx = TSL.max(t0, t1);
+        const tn = TSL.max(TSL.max(tmn.x, tmn.y), TSL.max(tmn.z, F(0.0)));
+        const tf = TSL.min(TSL.min(tmx.x, tmx.y), tmx.z);
+        const SCHRITTE = 16;
+        const dt = TSL.max(tf.sub(tn), F(0.0)).div(F(SCHRITTE));
+        const om = u.time.mul(F(MG.om));
+        const kk = F(MG.kk);
+        const jit = h3(vLocal.mul(F(37.7)).add(TSL.fract(u.time)));
+        const cy = MU.centerY;
+        let trans = F(1.0);
+        let acc = TSL.vec3(0.0, 0.0, 0.0);
+        for (let i = 0; i < SCHRITTE; i++) {
+            const tt = tn.add(F(i).add(jit).mul(dt));
+            const p = ro.add(rd.mul(tt));
+            const c = p.xy.sub(TSL.vec2(0.0, cy));
+            const r = TSL.length(c).add(F(1e-3));
+            const a = TSL.atan(c.y, c.x);
+            const Rb = F(1.0).div(
+                TSL.sqrt(
+                    TSL.pow(TSL.cos(a).div(F(MU.rimAx)), F(2.0))
+                        .add(TSL.pow(TSL.sin(a).div(F(MU.rimAy)), F(2.0)))
+                        .add(F(1e-4))
+                )
+            );
+            const rr = r.div(Rb);
+            const az = TSL.clamp(TSL.abs(p.z).div(F(Math.max(MU.zFace, 0.2))), F(0.0), F(1.0));
+            const coneR = az.mul(F(m.coneAdd)).add(F(1.0));
+            const twist = a.mul(F(2.0)).add(F(MU.swirl).div(r.add(F(0.25))));
+            const waveR = TSL.sin(rr.mul(kk).sub(om).add(twist))
+                .add(
+                    TSL.sin(F(2.0).sub(rr).mul(kk).sub(om).add(twist)).mul(F(0.72))
+                )
+                .mul(TSL.exp(rr.negate().mul(F(0.7))));
+            const waveZ = TSL.sin(az.mul(F(6.5)).sub(om.mul(F(0.85))).add(twist.mul(F(0.4))));
+            const w01 = TSL.clamp(waveR.mul(F(0.62)).add(waveZ.mul(F(0.38))).mul(F(0.5)).add(F(0.5)), F(0.0), F(1.0));
+            const fillIn = TSL.smoothstep(coneR.mul(F(0.44)), coneR.mul(F(0.86)), rr);
+            const wallOut = TSL.smoothstep(coneR.add(F(0.06)), coneR.sub(F(0.2)), rr);
+            const n = fbm3(p.mul(F(1.15)).add(TSL.vec3(F(0.0), F(0.0), u.time.mul(F(0.12)))));
+            const floorCut = TSL.smoothstep(F(MU.baseY - 0.12), F(MU.baseY + 0.1), p.y);
+            const dens = fillIn
+                .mul(wallOut)
+                .mul(floorCut)
+                .mul(TSL.smoothstep(F(0.15), F(0.85), w01).mul(F(0.88)).add(F(0.12)))
+                .mul(n.mul(F(0.5)).add(F(0.5)))
+                .mul(u.nebelAct)
+                .mul(u.pulse.mul(F(0.34)).add(F(0.82)));
+            const portalCol = TSL.max(pal(rr.mul(F(0.16)).add(w01.mul(F(0.16))).add(F(0.3))), TSL.vec3(0.0, 0.0, 0.0));
+            const glow = w01.mul(F(0.95)).add(F(0.42));
+            const lum = TSL.mix(TSL.vec3(0.56, 0.7, 0.93), portalCol.mul(F(1.85)), F(0.78))
+                .mul(glow)
+                .mul(u.pulse.mul(F(0.55)).add(F(0.6)));
+            const a2 = F(1.0).sub(TSL.exp(dens.mul(dt).mul(F(6.5)).negate()));
+            acc = acc.add(lum.mul(a2).mul(trans));
+            trans = trans.mul(F(1.0).sub(a2));
+        }
+        const mat = new T.MeshBasicNodeMaterial({
+            side: T.BackSide,
+            transparent: true,
+            depthWrite: false,
+        });
+        mat.colorNode = TSL.vec4(acc, 1.0);
+        mat.opacityNode = F(1.0).sub(trans);
+        mat.userData.portalNebel = true; // Linsen-Marker
+        return { mat };
+    }
+
+    // Die Nebel-Box-Maße (Lab buildFog, statisch je Gestalt): cy/rimAy/coneAdd/
+    // hx/hz/mnY/mxY — EIN Rechner für Material + Geometrie.
+    _nebelMasseFor(tor) {
+        const MU = tor.mu;
+        const coneAdd = ((MU.orders - 1) * MU.jambW) / MU.rimAx;
+        const hx = MU.rimAx * (1 + coneAdd) * 1.08;
+        const hz = MU.zFace * 1.04;
+        const mxY = MU.centerY + MU.rimAy * (1 + coneAdd) * 1.08;
+        const mnY = MU.baseY - 0.12;
+        return { coneAdd, hx, hz, mnY, mxY };
+    }
+
+    // Die geteilte Nebel-Geometrie je Gestalt (tor-lokal: Box übersetzt auf
+    // die Volumen-Mitte — positionGeometry IST damit der Lab-Rahmen).
+    _nebelGeometryFor(tor) {
+        if (!this._nebelGeoMemo) this._nebelGeoMemo = new Map();
+        let geo = this._nebelGeoMemo.get(tor.gestalt);
+        if (!geo) {
+            const m = this._nebelMasseFor(tor);
+            geo = new THREE.BoxGeometry(m.hx * 2, m.mxY - m.mnY, m.hz * 2);
+            geo.translate(0, (m.mnY + m.mxY) / 2, 0);
+            this._nebelGeoMemo.set(tor.gestalt, geo);
+        }
+        return geo;
+    }
+
     // Der Membran-Tick: baut/pflegt je sichtbarem Portal-Eintrag mit Tor-Gestalt
     // EINE Membran (Registry je entry.id), atmet die Uniforms und prüft das
     // HINDURCHGEHEN (Ebenen-Kreuzung in der Apertur → enterPortal — derselbe
@@ -51491,6 +51639,12 @@ class AnazhRealm {
                         if (rec.mesh.material) rec.mesh.material.dispose();
                         if (rec.mesh.geometry) rec.mesh.geometry.dispose();
                     }
+                    // PORTA-NEBEL — der Kasten fällt mit seinem Tor (dieselbe Hülle).
+                    if (rec.nebel) {
+                        st.scene.remove(rec.nebel);
+                        if (rec.nebel.material) rec.nebel.material.dispose();
+                        if (rec.nebel.geometry) rec.nebel.geometry.dispose();
+                    }
                     reg.delete(id);
                 }
             }
@@ -51513,15 +51667,24 @@ class AnazhRealm {
             // Uniform-Takt) — das Material bleibt kompiliert stehen (Erstarren-Lehre).
             if (d > SICHT) {
                 if (rec.mesh && rec.mesh.visible) rec.mesh.visible = false;
+                if (rec.nebel && rec.nebel.visible) rec.nebel.visible = false;
                 rec.lastLz = null;
                 continue;
             }
             if (rec.mesh && !rec.mesh.visible) rec.mesh.visible = true;
             const act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
+            rec._act = act;
             rec.u.time.value = currentTime;
             rec.u.act.value = act;
             rec.u.pulse.value = 0.5 + 0.5 * Math.sin(currentTime * MG.puls);
             rec.u.waveDepth.value = mu.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1] * act);
+            // PORTA-NEBEL — der Dial atmet: nebelAct = mu.fog · (0.7 + 0.35·act)
+            // (die Lab-Formel, act = das Welt-Analog zu openM); der Kasten lebt
+            // nur nähe-aktiviert (Raymarch-Kosten bleiben am Tor).
+            if (rec.nebel) {
+                if (rec.u.nebelAct) rec.u.nebelAct.value = mu.fog * (0.7 + 0.35 * act);
+                rec.nebel.visible = act > 0.001;
+            }
             // Kamera in Tor-lokalen Koordinaten (der Marsch läuft im Lab-Rahmen).
             const cam = st.camera;
             if (cam && cam.position) {
@@ -51567,6 +51730,36 @@ class AnazhRealm {
             }
             rec.lastLz = inApertur ? lz : null;
         }
+        // PORTA-LICHT-ATEM (18.07.) — das Lab-portalLight als EIN geteiltes
+        // Welt-Licht (Kapazitäts-Bindung: nie ein Licht je Tor — der Genesis-
+        // Ring trüge zehn): es steht am NÄCHSTEN aktiven Tor und atmet die
+        // Lab-Formel (0.3 + act·3.4)·(0.8 + 0.28·puls); kein Tor nah → aus.
+        let naeh = null;
+        for (const rec of reg.values()) {
+            if (!rec.mesh || !rec.mesh.visible || !(rec._act > 0.02)) continue;
+            if (!naeh || rec._act > naeh._act) naeh = rec;
+        }
+        this._tickPortalLicht(naeh);
+    }
+
+    _tickPortalLicht(rec) {
+        let li = this._portalLicht;
+        if (!rec) {
+            if (li) li.intensity = 0;
+            return;
+        }
+        if (!li) {
+            // Lab-Werte (porta.js: PointLight 0xffd9a0, Reichweite 14, decay 2).
+            li = this._portalLicht = new THREE.PointLight(0xffd9a0, 0, 14, 2);
+            li.castShadow = false;
+            this.state.scene.add(li);
+        }
+        const e = rec.entry;
+        const mu = rec.tor.mu;
+        const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * 0.55 * sc, e.position.z);
+        const pulse = rec.u && rec.u.pulse ? rec.u.pulse.value : 1;
+        li.intensity = (0.3 + rec._act * 3.4) * (0.8 + 0.28 * pulse);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -51604,7 +51797,30 @@ class AnazhRealm {
         mesh.frustumCulled = false; // Wellen-Verformung sprengt die statische Hülle (≤ Handvoll Meshes)
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
-        this._portalMembranes.set(entry.id, { entry, tor, mesh, u, armed: true, lastLz: null });
+        // PORTA-NEBEL (18.07.) — der Bodennebel-Kasten am Tor-Fuß (mu.fog war
+        // ein toter Kanal). Fail-soft LEISE: die Membran ist Pflicht, der
+        // Nebel Kür — ein TSL-Fehl lässt das Tor nackt, nie die Welt kaputt.
+        // Reiner Render (NIE Blocker — die Hit-Tests der Gates sehen ihn nicht).
+        let nebel = null;
+        if (u && u.time && tor.mu && Number.isFinite(tor.mu.fog) && tor.mu.fog > 0 && THREE.TSL) {
+            try {
+                const neb = this._nebelMaterialFor(tor, u);
+                nebel = new THREE.Mesh(this._nebelGeometryFor(tor), neb.mat);
+                nebel.position.copy(mesh.position);
+                nebel.rotation.y = mesh.rotation.y;
+                nebel.scale.copy(mesh.scale);
+                nebel.castShadow = false;
+                nebel.receiveShadow = false;
+                nebel.frustumCulled = false;
+                nebel.visible = false; // der Tick weckt ihn nähe-aktiviert (act > 0.001)
+                nebel.userData.inventar = "portal-nebel"; // Identitäts-Stempel
+                st.scene.add(nebel);
+            } catch (err) {
+                this.log(`Portal-Nebel-Bau fehlgeschlagen (${tor.gestalt}): ${err && err.message}`, "WARN");
+                nebel = null;
+            }
+        }
+        this._portalMembranes.set(entry.id, { entry, tor, mesh, nebel, u, armed: true, lastLz: null });
     }
 
     // V18.465 — die Flügel eines Portal-Eintrags drehen (Scharnier-Rotation im

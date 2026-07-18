@@ -132,9 +132,25 @@ function check(name, ok, detail) {
             res.m.echt = !!(
                 rec.mesh.material &&
                 rec.mesh.material.userData &&
+                rec.mesh.material.userData.portalNebel === undefined &&
                 rec.mesh.material.userData.portalMembran
             );
             res.m.marker = res.m.echt || !!rec.mesh.material.isMeshBasicMaterial;
+            // PORTA-NEBEL (18.07.) — die lebende Kette Dial→mu→Uniform→Draw:
+            // das fog-Gesetz trägt (mu.fog > 0), der Kasten hängt gestempelt in
+            // der Szene, und bei Spieler-Nähe (act > 0) speist mu.fog die
+            // nebelAct-Uniform > 0 + der Kasten ist sichtbar.
+            res.n = { gesetz: Number.isFinite(mu.fog) && mu.fog > 0 };
+            res.n.gebaut = !!(rec.nebel && rec.nebel.parent === r.state.scene);
+            res.n.stempel = !!(rec.nebel && rec.nebel.userData.inventar === "portal-nebel");
+            res.n.echt = !!(
+                rec.nebel &&
+                rec.nebel.material &&
+                rec.nebel.material.userData &&
+                rec.nebel.material.userData.portalNebel
+            );
+            res.n.uniform = !!(rec.u.nebelAct && rec.u.nebelAct.value > 0 && rec._act > 0);
+            res.n.sichtbar = !!(rec.nebel && rec.nebel.visible === (rec._act > 0.001));
         }
 
         // ── F: Tür-Flügel öffnen sich dem Reisenden (V18.465) ──
@@ -218,6 +234,13 @@ function check(name, ok, detail) {
         check("M: Material trägt den portalMembran-Marker (oder fail-LAUT-Fallback)", out.m.marker === true);
         check("M: der ECHTE TSL-Gesetz-Graph baute (kein Fallback noetig)", out.m.echt === true);
     } else check("M: Membran-Block erreicht", false);
+    if (out.n) {
+        check("N: das fog-Gesetz trägt (mu.fog > 0 — der Dial reist)", out.n.gesetz === true);
+        check("N: der Nebel-Kasten hängt gestempelt in der Szene (portal-nebel)", out.n.gebaut && out.n.stempel);
+        check("N: der ECHTE Nebel-TSL-Graph baute (portalNebel-Marker)", out.n.echt === true);
+        check("N: mu.fog speist die nebelAct-Uniform (> 0 bei Nähe) — die Kette Dial→mu→Uniform lebt", out.n.uniform === true);
+        check("N: der Kasten lebt nähe-aktiviert (visible == act > 0.001)", out.n.sichtbar === true);
+    } else check("N: Nebel-Block erreicht", false);
     if (out.f) {
         check(
             `F: Flügel-Meshes durch die Pipe gefunden (${out.f.anzahl})`,

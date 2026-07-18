@@ -183,6 +183,13 @@ check("Shell: Puls 1.25 nur noch als Gesetz", !/Math\.sin\(t\s*\*\s*1\.25\)/.tes
 const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
 check("Stamm konsumiert membranUniforms (Welt-Leser)", stamm.includes("membranUniforms"));
 check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GESETZ"));
+// PORTA-NEBEL (18.07.) — der KONSUM des vormals TOTEN Kanals: mu.fog speist
+// eine LEBENDE Uniform im Membran-Tick (kein String-Zufall — die exakte
+// Speise-Zeile) und der Nebel-Port existiert als Material-Bauer.
+check(
+    "Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick — der Kanal ist nicht mehr tot)",
+    /nebelAct\.value = mu\.fog/.test(stamm) && stamm.includes("_nebelMaterialFor")
+);
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
 
