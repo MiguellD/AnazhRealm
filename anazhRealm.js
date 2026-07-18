@@ -15737,11 +15737,33 @@ class AnazhRealm {
                     tris += t;
                 });
                 if (tris < 10000) continue;
-                const name =
+                // TRACE-IDENTITÄT (18.07.): der Schöpfer-Trace trug fünf anonyme
+                // „Mesh"-Wale (bis 2.8M Tris) — die Attribution war blind. Das EINE
+                // Label-Urteil liest alle etablierten Marker (archInstanceKey/
+                // archBatchKey/feldCull/inventar/kind) und fällt strukturell zurück
+                // (Typ×Instanzen×Verts) statt auf das nichtssagende „Mesh".
+                const u = child.userData || {};
+                let name =
                     child.name ||
-                    (child.userData && (child.userData.bpName || child.userData.species || child.userData.kind)) ||
-                    child.type ||
-                    "?";
+                    u.archInstanceKey ||
+                    u.archBatchKey ||
+                    (u.feldCull ? "feldCull:" + u.feldCull : null) ||
+                    u.inventar ||
+                    u.bpName ||
+                    u.species ||
+                    u.kind;
+                if (!name) {
+                    const g = child.geometry;
+                    const verts = g && g.attributes && g.attributes.position ? g.attributes.position.count : 0;
+                    name =
+                        (child.type || "?") +
+                        (child.isInstancedMesh ? "×" + (child.count | 0) : "") +
+                        "(" +
+                        Math.round(verts / 1000) +
+                        "kV" +
+                        (child.material && child.material.name ? "," + child.material.name : "") +
+                        ")";
+                }
                 out.push({ name: String(name).slice(0, 48), trisK: Math.round(tris / 1000) });
             }
             out.sort((a, b) => b.trisK - a.trisK);
@@ -15866,13 +15888,92 @@ class AnazhRealm {
                           ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
                           1024
                       ).toFixed(1),
+                      // TRACE-BLINDSTELLEN-HEILUNG (18.07., Schöpfer-Trace 2.8 fps):
+                      // (a) ALLE Stellgrößen des EINEN Reglers — der Trace zeigte nur
+                      // loadScalePct 0 und ließ raten, wo renderScale/Schatten standen;
+                      stellgroessen: {
+                          foliageRadius: st.foliageRadius != null ? Math.round(+st.foliageRadius) : null,
+                          foliageDensity:
+                              st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
+                          foliageRes: st._foliageResScale != null ? +(+st._foliageResScale).toFixed(2) : null,
+                          renderScale: st._renderScale != null ? +(+st._renderScale).toFixed(2) : null,
+                          archRadius:
+                              st.architectureCullingRadius != null ? Math.round(+st.architectureCullingRadius) : null,
+                          streamBudgetMs:
+                              st._voxelStreamBudgetMs != null ? +(+st._voxelStreamBudgetMs).toFixed(1) : null,
+                      },
+                      // (b) die GRUPPEN-KLASSEN: „archInstanceGroups 0→660" nannte das
+                      // Leck, aber nie die KLASSE (fscatter/fimp/@s:/p:/global) — jetzt
+                      // zählt der Export die Schlüssel-Präfixe und NENNT den Wächst.
+                      gruppenKlassen: this._flightRecorderGruppenKlassen(),
                   }
                 : null,
             worstFrames: fr.worst,
             // V18.469 — der Fern-Regime-Beweis vom echten Holz: rttGescheitert > 0
             // heißt „der Schöpfer sieht Silhouetten-Blobs statt Studio-Karten".
             impostorZensus: this._impostorCensus(),
+            // TRACE-BLINDSTELLEN-HEILUNG (18.07.): 37.8 NEUE Pipelines/s bei voll
+            // gewärmtem Ofen (44/44, Queue 0) — der Trace konnte nicht sagen, WER
+            // münzt. Der Material-Zensus zählt die LEBENDEN Materialien je Familie
+            // (unique nach uuid, Export-Zeitpunkt) — eine absurd wachsende Familie
+            // IST der Pipeline-Münzer der nächsten Datei.
+            materialZensus: this._flightRecorderMaterialFamilien(),
         };
+    }
+
+    _flightRecorderMaterialFamilien() {
+        try {
+            const sc = this.state.scene;
+            if (!sc) return null;
+            const seen = new Set();
+            const fam = new Map();
+            sc.traverse((o) => {
+                const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : null;
+                if (!mats) return;
+                for (const m of mats) {
+                    if (!m || !m.uuid || seen.has(m.uuid)) continue;
+                    seen.add(m.uuid);
+                    const u = m.userData || {};
+                    const f = u.sharedFoliage
+                        ? "sharedFoliage"
+                        : u.impostorBillboard
+                          ? "impostorBillboard"
+                          : m.name || m.type || "?";
+                    fam.set(f, (fam.get(f) || 0) + 1);
+                }
+            });
+            const top = Array.from(fam.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([name, n]) => ({ name: String(name).slice(0, 40), n }));
+            return { unique: seen.size, top };
+        } catch {
+            return null; // der Flugschreiber darf NIE stören
+        }
+    }
+
+    // TRACE-BLINDSTELLEN-HEILUNG (18.07.) — die KLASSEN der archInstanceGroups:
+    // der Leck-Verdikt nannte „0→660", aber nie WER wächst. Zählt die Schlüssel
+    // nach den etablierten Präfix-Klassen (Export-Zeitpunkt, ein Map-Walk).
+    _flightRecorderGruppenKlassen() {
+        try {
+            const m = this.state.archInstanceGroups;
+            if (!m || !m.size) return null;
+            const k = { fscatter: 0, fimp: 0, foundry: 0, superRegion: 0, platziert: 0, streuRegion: 0, global: 0 };
+            for (const key of m.keys()) {
+                if (typeof key !== "string") continue;
+                if (key.startsWith("fscatter:")) k.fscatter++;
+                else if (key.includes("#fimp:")) k.fimp++;
+                else if (key.includes("#f:")) k.foundry++;
+                if (key.includes("@s:") || key.includes("@p:s:")) k.superRegion++;
+                else if (key.includes("@p:")) k.platziert++;
+                else if (key.includes("@")) k.streuRegion++;
+                else k.global++;
+            }
+            return k;
+        } catch {
+            return null; // der Flugschreiber darf NIE stören
+        }
     }
 
     // V18.294 — einen Speicher-Mess-Punkt nehmen: Heap (Chrome `performance.memory`)
@@ -32479,6 +32580,10 @@ class AnazhRealm {
             return null;
         }
         this.state.scene.add(fresh.mesh);
+        // TRACE-IDENTITÄT (18.07., Schöpfer-Trace: fünf anonyme „Mesh"-Wale bis
+        // 2.8M Tris — niemand wusste WER): der Chunk-Boden trägt seinen Namen;
+        // der triZensus des Flugschreibers NENNT damit den Wal statt „Mesh".
+        if (fresh.mesh && !fresh.mesh.name) fresh.mesh.name = "voxelChunk:" + key + ":lod" + lod;
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
         const entry = {
