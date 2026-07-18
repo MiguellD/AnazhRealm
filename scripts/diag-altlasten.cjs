@@ -71,6 +71,10 @@ const FORBIDDEN = [
     { token: "SPECIES_PHYTO_DIALS", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Studio-Tafel führt (gefühlt == gesehen)" },
     { token: "SPECIES_PALETTE_GIGANT", fiel: "DIAL-ZWILLINGS-ABSCHIED — der Gigant trägt den mammut-Ton der Tafel" },
     { token: "SPECIES_PALETTE[", fiel: "DIAL-ZWILLINGS-ABSCHIED — die Art-Palette wohnt in der Studio-Tafel" },
+    // ZWILLINGS-ABSCHIED 18.07. (M3): der per-Feld-fail-soft-Helfer des
+    // Fahr-Profils — jedes Feld trug seinen Literal-Zwilling. Der EINE
+    // fail-closed Leser ist AnazhRealm._fahrGesetz (Gültigkeits-Wand).
+    { token: "_heN(", fiel: "FAHR-ZWILLINGS-ABSCHIED — _fahrGesetz liest fail-closed, kein Misch-Gesetz" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

@@ -18716,15 +18716,13 @@ class AnazhRealm {
         // (updateCreatures stempelt ud._motionZustand) führt in der EINEN Brücke.
         const zust = (group.userData && group.userData._motionZustand) || null;
         const name = this._motionProfileName(moving, emotions, "kreatur", zust) || (moving ? "joy" : "idle");
-        let P = this._motionStudioProfile(moving, emotions, zust) ||
-            (core && core.MOTION && core.MOTION[name]) || {
-                freq: moving ? 3.2 : 0.25,
-                stride: moving ? 0.06 : 0,
-                tailAmp: 0.1,
-                tailRate: 0.5,
-                headX: -0.01,
-                sway: 0.006,
-            };
+        // ZWILLINGS-ABSCHIED (18.07.): das Misch-Literal (idle-/joy-Zahlen
+        // gemischt) ist gefallen — die Kern-Tafel ist die EINZIGE Basis:
+        // unbekannter Profil-Name → die idle-Zeile der Tafel; Kern kalt →
+        // keine Animation (die Kern-Pflicht-Wand schreit ohnehin).
+        const MOT = core && core.MOTION;
+        let P = this._motionStudioProfile(moving, emotions, zust) || (MOT && (MOT[name] || MOT.idle)) || null;
+        if (!P) return;
         // KREATUR-LEBEN — die Verhaltens-AKTION als transienter Profil-Overlay
         // (tetrapoda fx.verhalten; updateCreatures wählt/stempelt): profil-Felder
         // überlagern P (einmal je Aktion gemerged), die Sonder-Kanäle dreh/
@@ -19675,13 +19673,26 @@ class AnazhRealm {
                 const flap = Math.sin(t * (moving ? 11 : 5.5) + r.phase) * (moving ? 0.65 : 0.3);
                 c.rotation.z = b.rz + flap * r.side;
             } else if (r.role === "schwanz") {
-                // W-A6-ERSTKONSUMENT: der Schwanz liest tailRate/tailAmp aus dem
-                // tetrapoda-Studio-Profil (fx.motion als DATEN — idle: 0.5/0.10 ruhig,
-                // moving [joy]: 5.5/0.38 lebhaft; flee [chaos-Brücke]: 11.0/0.006
-                // geklemmt); ohne Rezept byte-alt (2.2 / 0.28).
+                // W-A6 / ZWILLINGS-ABSCHIED (18.07.): der Schwanz liest tailRate/
+                // tailAmp aus dem Studio-Profil (Buch), sonst aus der SYNCHRONEN
+                // Kern-Tafel (MOTION joy/idle — dieselbe Brücke wie der Baum-
+                // Animator); der 2.2/0.28-Drittsatz ist gefallen. Kern kalt →
+                // kein Wedeln (die Kern-Pflicht-Wand schreit ohnehin).
                 const mp = studioProf();
-                const tr = mp && Number.isFinite(mp.tailRate) ? mp.tailRate : 2.2;
-                const ta = mp && Number.isFinite(mp.tailAmp) ? mp.tailAmp : 0.28;
+                const _tc = typeof window !== "undefined" && window.__tetrapodaCore;
+                const kernRow = _tc && _tc.MOTION && (_tc.MOTION[moving ? "joy" : "idle"] || _tc.MOTION.idle);
+                const tr =
+                    mp && Number.isFinite(mp.tailRate)
+                        ? mp.tailRate
+                        : kernRow && Number.isFinite(kernRow.tailRate)
+                          ? kernRow.tailRate
+                          : 0;
+                const ta =
+                    mp && Number.isFinite(mp.tailAmp)
+                        ? mp.tailAmp
+                        : kernRow && Number.isFinite(kernRow.tailAmp)
+                          ? kernRow.tailAmp
+                          : 0;
                 c.rotation.y = b.ry + Math.sin(t * tr + r.phase) * ta;
             } else if (r.role === "kopf") {
                 // ABSCHIEDS-WELLE — der KOPF liest die Studio-Haltung als DELTA relativ
@@ -45668,9 +45679,11 @@ class AnazhRealm {
                 label: "Mensch",
                 color: 0xff0000,
                 build: () => this._buildHumanGroup(),
-                // KÖRPER-BEWEGUNG — der 7. Slot reicht gait durch (Emotions-Slot bleibt
-                // bewusst ungenutzt wie zuvor — der Spieler-Rig liest neutral, byte-alt).
-                animate: (g, t, ph, mv, uw, _em, gait) => this._animateHuman(g, t, ph, mv, uw, undefined, gait),
+                // MOTION-VOLLENDUNG (18.07.) — die EMOTIONEN REISEN DURCH: der
+                // Rig-Posen-Block (MOTION_RIG_MAP: sad/joy/fear/fight-Garde des
+                // koerper-Gesetzbuchs) feuert jetzt im Spielpfad; neutral bleibt
+                // byte-alt (mp === mref → Delta 0, der Null-Anker im Rig).
+                animate: (g, t, ph, mv, uw, _em, gait) => this._animateHuman(g, t, ph, mv, uw, _em, gait),
                 // V18.101 — POSITIONIERTE bodyParts (der Schöpfer-Befund „Körper
                 // holen zeigt nicht den getragenen Avatar"): vorher waren die
                 // Built-in-bodyParts positions-lose STAT-Schatten (alle Parts am
@@ -52964,17 +52977,12 @@ class AnazhRealm {
             floats = volSum > 0 && dSum / volSum < 0.55;
             if (volSum > 0) dichteMittel = dSum / volSum;
         }
-        // PHYSIK-NAHT (N6.5b) — die EMERGENZ-KOEFFIZIENTEN wohnen im GESETZBUCH
-        // (vehicle-core FAHR.hostEmergent, reine Daten): EINE Quelle fuer Lab-
-        // Vergleich UND Welt-Fallback. Fail-soft: Kern kalt/Feld fehlt → die
-        // byte-gleichen historischen Literale (NaN-Wand je Feld).
-        const _vcHE =
-            (typeof globalThis !== "undefined" &&
-                globalThis.__vehicleCore &&
-                globalThis.__vehicleCore.FAHR &&
-                globalThis.__vehicleCore.FAHR.hostEmergent) ||
-            null;
-        const _heN = (k, fb) => (_vcHE && Number.isFinite(_vcHE[k]) ? _vcHE[k] : fb);
+        // PHYSIK-NAHT (N6.5b) / ZWILLINGS-ABSCHIED (18.07.) — die EMERGENZ-
+        // KOEFFIZIENTEN wohnen im GESETZBUCH (vehicle-core FAHR.hostEmergent)
+        // und der Leser ist FAIL-CLOSED (_fahrGesetz, Gültigkeits-Wand über
+        // alle Felder): die per-Feld-Literal-Zwillinge sind gefallen — ein
+        // alter Kern bricht laut statt still die Vor-Zensus-Welt zu fahren.
+        const HE = AnazhRealm._fahrGesetz().he;
         const prof = {
             radCount,
             beinCount,
@@ -52986,21 +52994,13 @@ class AnazhRealm {
             dichte: dichteMittel,
             topSpeedMul:
                 1 +
-                Math.min(_heN("radCap", 0.6), radCount * _heN("radMul", 0.12)) +
-                (radCount === 0 && beinCount >= 2 ? _heN("beinBonus", 0.15) : 0),
-            // ZENSUS-REST V18.488 — auch die KLEMM-GRENZEN sind Kern-Daten
-            // (hostEmergent, neben ihren Koeffizienten; fail-soft byte-gleich).
-            kAcc: Math.max(_heN("kAccMin", 2.5), Math.min(_heN("kAccMax", 10), _heN("kAcc", 7) / mass)),
+                Math.min(HE.radCap, radCount * HE.radMul) +
+                (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
+            kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
             kBrake:
                 radCount > 0
-                    ? Math.max(
-                          _heN("kBrakeRadMin", 1.5),
-                          Math.min(_heN("kBrakeRadMax", 6), _heN("kBrakeRad", 3.5) / mass)
-                      )
-                    : Math.max(
-                          _heN("kBrakeBeinMin", 4),
-                          Math.min(_heN("kBrakeBeinMax", 10), _heN("kBrakeBein", 8) / mass)
-                      ),
+                    ? Math.max(HE.kBrakeRadMin, Math.min(HE.kBrakeRadMax, HE.kBrakeRad / mass))
+                    : Math.max(HE.kBrakeBeinMin, Math.min(HE.kBrakeBeinMax, HE.kBrakeBein / mass)),
             roles,
         };
         // W7b (Studio-Vertrag B6) — DER fahrprofil-DATEN-OVERRIDE: traegt das LIVE-Rezept des
@@ -53356,16 +53356,11 @@ class AnazhRealm {
         // FAHR-GEFÜHL — lenkt das Studio-Fahrzeug SELBST (_rideSteer vom
         // Bewegungs-Tick), führt SEINE Gier direkt (die Lenkung ist die
         // Wahrheit, kein Geschwindigkeits-Nachlauf); sonst byte-alt folgen.
-        // ZENSUS-REST V18.488 — das GIER-FOLGE-GEFÜHL (exp-k + Fahrt-Gate) wohnt
-        // im vehicle-Gesetzbuch (FAHR.hostEmergent.yawFolgeK/.fahrtGate; fail-
-        // soft byte-gleich 4 / 0.4 — dasselbe Gate speist unten die Bewegt-Optik).
-        const _vcHE2 =
-            (typeof globalThis !== "undefined" &&
-                globalThis.__vehicleCore &&
-                globalThis.__vehicleCore.FAHR &&
-                globalThis.__vehicleCore.FAHR.hostEmergent) ||
-            null;
-        const fahrtGate = _vcHE2 && Number.isFinite(_vcHE2.fahrtGate) ? _vcHE2.fahrtGate : 0.4;
+        // ZENSUS-REST V18.488 / ZWILLINGS-ABSCHIED (18.07.) — das GIER-FOLGE-
+        // GEFÜHL (exp-k + Fahrt-Gate) liest den EINEN fail-closed FAHR-Leser
+        // (_fahrGesetz) — die 4/0.4-Literal-Zwillinge sind gefallen.
+        const _fahrG = AnazhRealm._fahrGesetz();
+        const fahrtGate = _fahrG.he.fahrtGate;
         if (entry._rideSteer) {
             if (Number.isFinite(entry._rideYaw)) entry.rotationY = entry._rideYaw;
             entry._rideSteer = false;
@@ -53375,7 +53370,7 @@ class AnazhRealm {
             let d = targetYaw - cur;
             while (d > Math.PI) d -= 2 * Math.PI;
             while (d < -Math.PI) d += 2 * Math.PI;
-            cur += d * (1 - Math.exp(-(_vcHE2 && Number.isFinite(_vcHE2.yawFolgeK) ? _vcHE2.yawFolgeK : 4) * tick));
+            cur += d * (1 - Math.exp(-_fahrG.he.yawFolgeK * tick));
             entry._rideYaw = cur;
             entry.rotationY = cur;
         }
@@ -53402,12 +53397,10 @@ class AnazhRealm {
                 const prevSp = Number.isFinite(entry._rideSp) ? entry._rideSp : sp;
                 let aLong = (sp - prevSp) / tick;
                 if (!Number.isFinite(aLong)) aLong = 0;
-                // ZENSUS 17.07. — die Längs-Beschl.-Klemme liest die EINZIGE
-                // Kern-Quelle A_PITCH_MAX (g-equiv., dieselbe Klammer wie
-                // updateVehicle + Radkasten-Hüllkurve; die Stamm-±14 fällt,
-                // Fallback = der Kern-Wert 13 — Zwilling der EINEN Quelle).
-                const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
-                const aMax = vc && Number.isFinite(vc.A_PITCH_MAX) ? vc.A_PITCH_MAX : 13;
+                // ZENSUS 17.07. / ZWILLINGS-ABSCHIED (18.07.) — die Längs-
+                // Beschl.-Klemme liest die EINZIGE Kern-Quelle A_PITCH_MAX
+                // über den fail-closed _fahrGesetz-Leser (der 13er-Zwilling fiel).
+                const aMax = _fahrG.aPitchMax;
                 aLong = Math.max(-aMax, Math.min(aMax, aLong));
                 // ZENSUS 17.07. — cgH/L aus der KERN-Geometrie, wo sie reist
                 // (exportDrive.cgH [cgHeightOf: Bodenfreiheit+Gürtel+Aufbau] +
@@ -53427,8 +53420,7 @@ class AnazhRealm {
                         : 2 * (Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1)
                 );
                 const cgHL = Math.max(0.08, Math.min(0.5, cgH / L));
-                const vcF = vc && vc.FAHR;
-                const pGain = vcF && Number.isFinite(vcF.pitchGain) ? vcF.pitchGain : 2.6;
+                const pGain = _fahrG.pitchGain;
                 let target = (-aLong * cgHL * pGain) / sprN.k;
                 if (!Number.isFinite(target)) target = 0;
                 target = Math.max(-0.12, Math.min(0.12, target));
@@ -53450,11 +53442,11 @@ class AnazhRealm {
                 entry._rideYawPrev = yawNow;
                 let aLat = tick > 1e-5 ? sp * (dYw / tick) : 0;
                 if (!Number.isFinite(aLat)) aLat = 0;
-                const aLatMax = vc && Number.isFinite(vc.A_LAT_MAX) ? vc.A_LAT_MAX : 11;
+                const aLatMax = _fahrG.aLatMax;
                 aLat = Math.max(-aLatMax, Math.min(aLatMax, aLat));
                 const spurW =
                     rideProf && Number.isFinite(rideProf.spur) && rideProf.spur > 0 ? rideProf.spur : L * 0.55;
-                const rGain = vcF && Number.isFinite(vcF.rollGain) ? vcF.rollGain : 1.8;
+                const rGain = _fahrG.rollGain;
                 let rollT = (-aLat * Math.max(0.08, Math.min(0.9, cgH / spurW)) * rGain) / sprN.k;
                 if (!Number.isFinite(rollT)) rollT = 0;
                 rollT = Math.max(-0.12, Math.min(0.12, rollT));
@@ -54154,15 +54146,11 @@ class AnazhRealm {
     // beim Aufrufer — der Setter wendet nur die Kopplung an.
     _applyPlayerSpeed(v) {
         this.state.speed = v;
-        // REALITÄTS-EICHUNG 17.07. — der Sprint-Faktor wohnt im koerper-Gesetz
-        // (fx.bewegung.sprintMul: Gehen→Sprint wie Mensch); Kern kalt → byte-alt ×2.
-        let mul = 2;
-        try {
-            const kc = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-            const b = kc && kc.PRESETS && kc.PRESETS.mensch && kc.PRESETS.mensch.fx && kc.PRESETS.mensch.fx.bewegung;
-            if (b && Number.isFinite(b.sprintMul) && b.sprintMul > 0) mul = b.sprintMul;
-        } catch (_e) {}
-        this.state.sprintSpeed = v * mul;
+        // ZWILLINGS-ABSCHIED (18.07.): der Sprint-Faktor ist fail-closed
+        // Kern-Pflicht (koerper:bewegung.sprintMul) — der stille ×2-Zwilling
+        // (die vor-Eichung-Welt) ist gefallen; ein alter Kern BRICHT laut,
+        // wie speed/jumpPower (_bewegungsKoeff) der gleichen Domäne.
+        this.state.sprintSpeed = v * AnazhRealm._sprintMulGesetz();
     }
 
     // V18.201 — MANA-KONSUMENTEN Foundation (aktiv.md §4.E Folge zu V18.196).
@@ -87972,7 +87960,7 @@ class AnazhRealm {
             const KS = AnazhRealm._bewegungsKoeff("speed");
             const KJ = AnazhRealm._bewegungsKoeff("jumpPower");
             this.state.speed = KS.base + KS.leicht;
-            this.state.sprintSpeed = this.state.speed * AnazhRealm.Gesetz("koerper:bewegung.sprintMul", 2);
+            this.state.sprintSpeed = this.state.speed * AnazhRealm._sprintMulGesetz();
             this.state.jumpPower = KJ.base + KJ.leicht;
             this.state.maxWalkableSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         } catch (_e) {}
@@ -90103,14 +90091,16 @@ class AnazhRealm {
                 if (!slide && cFresh && !this.state.isInAir) {
                     const v0 = this.state.playerVel;
                     const sp0 = Math.hypot(v0.x(), v0.z());
-                    if (sp0 > (Number.isFinite(parkG.slideMinTempo) ? parkG.slideMinTempo : 6)) {
-                        const dauer = Number.isFinite(parkG.slideDauerSec) ? parkG.slideDauerSec : 0.68;
+                    // ZWILLINGS-ABSCHIED (18.07.): die Rutsch-Zeile ist Wand-geprüft
+                    // (_parkourGesetz ganz-oder-gar-nicht) — die Ternary-Literale sind tot.
+                    if (sp0 > parkG.slideMinTempo) {
+                        const dauer = parkG.slideDauerSec;
                         slide = this.state._parkourSlide = {
                             bis: currentTime + dauer,
                             dauer,
                             dx: v0.x() / sp0,
                             dz: v0.z() / sp0,
-                            v0: sp0 * (Number.isFinite(parkG.slideTempoMul) ? parkG.slideTempoMul : 1.167),
+                            v0: sp0 * parkG.slideTempoMul,
                         };
                         this.state._landImpactPending = Math.max(this.state._landImpactPending || 0, 1.2);
                     }
@@ -92547,6 +92537,59 @@ AnazhRealm._bewegungsKoeff = function (stat) {
     if (row && Number.isFinite(row.base) && Number.isFinite(row.leicht) && Number.isFinite(row.mag)) return row;
     return AnazhRealm._kernPflichtBruch("koerper:bewegung." + stat);
 };
+// ZWILLINGS-ABSCHIED (18.07.) — der EINE Sprint-Faktor-Leser, fail-closed
+// (dieselbe Domänen-Disziplin wie _bewegungsKoeff — kein stiller ×2-Zwilling).
+AnazhRealm._sprintMulGesetz = function () {
+    const m = AnazhRealm.Gesetz("koerper:bewegung.sprintMul", null);
+    if (Number.isFinite(m) && m > 0) return m;
+    return AnazhRealm._kernPflichtBruch("koerper:bewegung.sprintMul");
+};
+// ZWILLINGS-ABSCHIED (18.07.) — DER EINE FAHR-GESETZ-LESER, fail-closed:
+// hostEmergent (Emergenz-Koeffizienten + Klemm-Grenzen + Gier-Folge) und die
+// Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in
+// EINER Gültigkeits-Wand — ganz oder gar nicht, ein alter Kern ergibt NIE
+// ein Misch-Gesetz aus halb Kern / halb Literal (die ~18 Stamm-Literal-
+// Zwillinge sind gefallen). Memo NUR im Erfolgs-Fall.
+AnazhRealm._fahrGesetz = function () {
+    if (AnazhRealm._fahrGesetzMemo) return AnazhRealm._fahrGesetzMemo;
+    const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+    const F = vc && vc.FAHR;
+    const he = F && F.hostEmergent;
+    const HE_FELDER = [
+        "radMul",
+        "radCap",
+        "beinBonus",
+        "kAcc",
+        "kBrakeRad",
+        "kBrakeBein",
+        "kAccMin",
+        "kAccMax",
+        "kBrakeRadMin",
+        "kBrakeRadMax",
+        "kBrakeBeinMin",
+        "kBrakeBeinMax",
+        "yawFolgeK",
+        "fahrtGate",
+    ];
+    if (
+        he &&
+        HE_FELDER.every((k) => Number.isFinite(he[k])) &&
+        Number.isFinite(F.pitchGain) &&
+        Number.isFinite(F.rollGain) &&
+        Number.isFinite(vc.A_PITCH_MAX) &&
+        Number.isFinite(vc.A_LAT_MAX)
+    ) {
+        AnazhRealm._fahrGesetzMemo = {
+            he,
+            pitchGain: F.pitchGain,
+            rollGain: F.rollGain,
+            aPitchMax: vc.A_PITCH_MAX,
+            aLatMax: vc.A_LAT_MAX,
+        };
+        return AnazhRealm._fahrGesetzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent");
+};
 // KAMPF-QUARTETT (Spiegel-Zensus 17.07.) — DER EINE KAMPF-KOEFFIZIENTEN-LESER:
 // die Zahlen der Kampf-Stats (hpMax/damage/knockback/defense) wohnen im
 // koerperstudio-Gesetzbuch (PRESETS.mensch.fx.kampf — reine Daten, Formel je
@@ -92596,7 +92639,18 @@ AnazhRealm._parkourGesetz = function () {
     if (AnazhRealm._parkourGesetzMemo) return AnazhRealm._parkourGesetzMemo;
     try {
         const p = AnazhRealm.Gesetz("koerper:bewegung.parkour", null);
-        if (p && Number.isFinite(p.kletterV) && Number.isFinite(p.wandAbstoss)) {
+        // ZWILLINGS-ABSCHIED (18.07.): die Gültigkeits-Wand deckt AUCH die
+        // Rutsch-Zeile (slideMinTempo/slideDauerSec/slideTempoMul) — ganz
+        // oder gar nicht: ein alter Kern ergibt NIE ein Misch-Gesetz aus
+        // halb Kern / halb Literal (die Ternary-Zwillinge sind gefallen).
+        if (
+            p &&
+            Number.isFinite(p.kletterV) &&
+            Number.isFinite(p.wandAbstoss) &&
+            Number.isFinite(p.slideMinTempo) &&
+            Number.isFinite(p.slideDauerSec) &&
+            Number.isFinite(p.slideTempoMul)
+        ) {
             AnazhRealm._parkourGesetzMemo = p;
             return p;
         }
