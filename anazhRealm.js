@@ -67885,13 +67885,40 @@ class AnazhRealm {
         // N Matrizen — exakt wie das Studio seinen Wald instanziert (der GPU-Katalysator). Die Wahl ist
         // GEOMETRIE-getrieben (universell) plus der explizite `instanceShare`-Merker (Foundry-Leaves).
         // Leichte platzierte Architektur (Wände/Deko < Schwelle) bleibt auf dem Region-Batch (V18.353).
+        // DER GRANULARITÄTS-KOLLAPS (18.07., fünfter Schöpfer-Trace: 1126 region-
+        // gekeyte Wrapper ≈ Art×Variante×Blatt×Region — Blume allein ~32/Region —
+        // WAREN die 2211–3219 Draw-Calls, der 65k/s-Uniform-Sturm UND die ~10
+        // Pipeline-Mints/s): der pauschale instanceShare-Zwang schickte auch das
+        // 200-Vert-Blümchen in eine EIGENE InstancedMesh. Jetzt zählt instanceShare
+        // nur noch als heavy, wenn das Teilen sich lohnt oder die Semantik es
+        // verlangt — KLEINE Foundry-Leaves kollabieren in den Region-Batch (und
+        // damit ins RenderBundle). Instanced bleiben: (a) echte Schwergewichte
+        // (> ARCH_BATCH_KLEIN_VERTS — der Batch KOPIERT je Geometrie), (b) Tür-
+        // Flügel (per-Frame-Scharnier-Matrizen), (c) MASKIERTE Stufen-Leaves
+        // (aLodLevel > 0, Bäume: die Instanz-Fassade trägt aH0×Skala — im Batch
+        // gäbe es nur den Template-Wert), (d) aOccl-Träger (Impostor-Quads: der
+        // Kleber-Wand-Probe-Decode + die per-Instanz-Occlusion leben instanced).
+        // Für UNMASKIERTE Leaves (aLodLevel 0 — alle Nicht-Baum-Kinds) ist die
+        // Fassaden-Semantik INERT (die Maske gated auf aLod>0.5) — der Kollaps
+        // ist look-treu; die Attribut-Wand stempelt alle Foundry-Geometrien
+        // uniform → Batch-Attribut-Konsistenz per Konstruktion.
+        const _aG = leaf && leaf.geom && leaf.geom.attributes;
+        const _lVerts = _aG && _aG.position ? _aG.position.count : 0;
+        const _maskiert = !!(
+            _aG &&
+            _aG.aLodLevel &&
+            _aG.aLodLevel.array &&
+            _aG.aLodLevel.array.length &&
+            _aG.aLodLevel.array[0] > 0.5
+        );
         const heavyLeaf =
-            (leaf && leaf.instanceShare) ||
+            _lVerts > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS ||
             (leaf &&
-                leaf.geom &&
-                leaf.geom.attributes &&
-                leaf.geom.attributes.position &&
-                leaf.geom.attributes.position.count > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS);
+                leaf.instanceShare === true &&
+                (_lVerts > AnazhRealm.ARCH_BATCH_KLEIN_VERTS ||
+                    !!leaf.tuer ||
+                    _maskiert ||
+                    !!(_aG && _aG.aOccl)));
         if (this.state.useBatchedArch && !heavyLeaf) return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
@@ -92380,7 +92407,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.6";
+AnazhRealm.VERSION = "18.491.7";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -96907,6 +96934,11 @@ AnazhRealm.ARCH_LEAF_MAT_SHARED = true;
 // platzierte Architektur (Wände/Deko) bleibt unter der Schwelle → Region-Batch (Draw-Call-Kollaps).
 // 8192 < die regionale Batch-Kapazität (32768 Verts) → ein Baum sprengte den Batch ohnehin.
 AnazhRealm.ARCH_INSTANCE_SHARE_VERTS = 8192;
+// DER GRANULARITÄTS-KOLLAPS (18.07.): unter dieser Verts-Schwelle lohnt das
+// instanceShare-Teilen nicht — kleine Foundry-Leaves (Blume/Fels/Kristall/
+// Kiesel, unmaskiert) kollabieren in den Region-Batch (RenderBundle-Bahn)
+// statt je Art×Variante×Blatt×Region eine eigene InstancedMesh zu münzen.
+AnazhRealm.ARCH_BATCH_KLEIN_VERTS = 2048;
 // V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.

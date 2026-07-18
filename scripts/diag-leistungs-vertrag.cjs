@@ -106,9 +106,10 @@ const server = http.createServer((req, res) => {
                 r._perfSenseFoldFrame(ms, ms / 1000);
             };
             for (let i = 0; i < 200; i++) feed(150); // Regler auf den Boden (Radius → 70)
-            // Settle bis QUIESZENZ in DIESEM Regime (Batches à 100 Ticks, 2 ruhige in Folge):
+            // Settle bis QUIESZENZ in DIESEM Regime (Batches à 100 Ticks, 2 ruhige in
+            // Folge; 180 s Deadline — erreicht der Boot sie nie, ist DAS der Befund):
             {
-                const dlQ = performance.now() + 90000;
+                const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
                 while (ruhigeBatches < 2 && performance.now() < dlQ) {
                     const mv = r._archGruppenMints || 0;
@@ -228,6 +229,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log("=== DER LEISTUNGS-VERTRAG — die Laufzeit-Ökonomie als Gate ===");
+    console.log(`  QUIESZENZ vor dem Stand-Fenster erreicht: ${out.quieszent}`);
     console.log(`  V1 STAND-CHURN: Mints im Stand-Fenster = ${out.standMints} (erwartet 0)`);
     console.log(`  V3 GRUPPEN-STABILITÄT: ${out.groups0} → max ${out.groupsMax} → ${out.groupsEnde}`);
     console.log(
@@ -240,6 +242,8 @@ const server = http.createServer((req, res) => {
 
     const errs = [];
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
+    if (!out.quieszent)
+        errs.push("QUIESZENZ: der Boot wurde in 180 s nie still — das Stand-Fenster maß Boot-Streaming, nicht Churn");
     if (!out.v1ChurnNull) errs.push(`V1: ${out.standMints} Gruppen-Mints im Stand (Vertrag: 0)`);
     if (!out.v3Stabil) errs.push(`V3: archInstanceGroups kletterte im Stand (${out.groups0} → ${out.groupsMax})`);
     if (!out.v2KeineSofort) errs.push("V2: ein Takt-Ergebnis resolvte SYNCHRON (der Burst-Schutz ist tot)");

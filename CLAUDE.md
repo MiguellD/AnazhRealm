@@ -6,9 +6,36 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.6 — MATRIX GRÜN + die Profi-Doktrin: Ingest-Takt, Leistungs-Vertrag, Grenzzyklus tot)
+## Stand (V18.491.7 — DER GRANULARITÄTS-KOLLAPS: die Wrapper-Flut stirbt am heavyLeaf-Chokepoint)
 
-**18.07., siebte Welle (ULTRACODE — die Profi-Doktrin „Kosten binden an Schirm+Änderung,
+**18.07., achte Welle (der Schöpfer verlangt den GROSSEN Schnitt statt Ameisenschritten —
+die Nicht-Bundle-Chirurgie beginnt an ihrer Wurzel):**
+- DER GRANULARITÄTS-KOLLAPS: der pauschale `instanceShare`-Zwang schickte auch das
+  200-Vert-Blümchen in eine EIGENE region-gekeyte InstancedMesh — 1126 Wrapper ≈
+  Art×Variante×Blatt×Region WAREN die 2211–3219 Draw-Calls, der 65k/s-Klein-Upload-
+  Sturm und die ~10 Pipeline-Mints/s des fünften Traces. Am EINEN heavyLeaf-
+  Chokepoint (`_archInstanceGroupFor`) zählt instanceShare jetzt nur noch als
+  heavy, wenn das Teilen sich lohnt oder die Semantik es verlangt: Verts >
+  ARCH_BATCH_KLEIN_VERTS (2048, der Batch KOPIERT je Geometrie) · Tür-Flügel
+  (Scharnier-Matrizen) · MASKIERTE Stufen-Leaves (aLodLevel>0.5 — die Instanz-
+  Fassade trägt aH0×Skala) · aOccl-Träger (Impostor-Quads, Kleber-Wand-Decode).
+  ALLE anderen kleinen Foundry-Leaves kollabieren in die Region-BatchedMesh —
+  und damit ins RenderBundle; für unmaskierte Leaves ist die Fassaden-Semantik
+  inert (Maske gated auf aLod>0.5), der Kollaps ist look-treu.
+- GEMESSEN (gleicher Headless-Boot, 900 Ticks, vor↔nach): Szene-InstancedMeshes
+  2127 → 411 (−81 %), Wrapper gesamt (inst+batch) 2349 → 655 (−72 %; Batches
+  222→244 tragen die Kollabierten). BEWIESEN: gate:leistungs-vertrag GRÜN mit
+  QUIESZENZ-Band (das 570-Mints-Rot war Boot-Streaming im zu kurzen Settle —
+  jetzt druckt+prüft das Gate die Quieszenz; Stand 0 Mints, Gruppen 1208→1208) ·
+  voller playtest „Alle Invarianten OK" · gate:foundry-crossfade (Stufen/Bänder/
+  Bilanz byte-grün) · gate:scatter-lod (Quell-Probe-Fenster 2600→8000 — der
+  Kollaps-Block sitzt zwischen Keying und Batch-Zweig) · npm run check. Der
+  nächste Schöpfer-Trace ist der Richter über dc/Uniform-Sturm — die
+  bundleDeckung-Linse misst den Fortschritt.
+- OFFEN daneben: die VIER Nicht-Bundle-Chunk-Populationen (Terrain ≤625 · Gras
+  ~289 · Streu ~375 · Wasser/Stitch) + globale Baum-Gruppen in die Bundle-Bahn.
+
+**Davor, siebte Welle (ULTRACODE — die Profi-Doktrin „Kosten binden an Schirm+Änderung,
 nie an Weltgröße" wird Maschine; Verstehens-Sweep 4 Leser + adversariale Diff-Review):**
 - DER INGEST-TAKT: Worker-Reply- UND Platten-Treffer-Bursts bündelten ihre Konversionen
   (_foundryBuildGroup, bis ~170k Verts) als Microtasks in EINER Task = die 5–6.4-s-

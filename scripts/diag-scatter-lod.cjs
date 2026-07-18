@@ -75,7 +75,9 @@ function check(name, ok, detail) {
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
     const fernDeriveSites = (src.match(/\+ "s:" \+/g) || []).length;
     const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
-    const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 2600) : "";
+    // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.7) sitzt zwischen
+    // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
+    const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 8000) : "";
     check(
         "F(Quelle): SCATTER_FERN_SUPERREGION hat genau 5 Code-Vorkommen (Definition + _archFernRegionKey + 3 T3-Kugel-Radius-Leser)",
         fernConstUses === 5 && src.includes("_archFernRegionKey(name, leaf, regionKey) {"),
