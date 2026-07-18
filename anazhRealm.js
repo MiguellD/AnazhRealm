@@ -70531,6 +70531,39 @@ class AnazhRealm {
             );
             if (entry) n++;
         }
+        // SCHICHT-VOLLENDUNG (18.07.) — DIE HOF-BÄUME DER SIEDLUNG: die
+        // exportierten Baum-Plätze ({x,z,h} — dorfLayout meidet Wege/Felder/
+        // Brunnen/Mauer) heben als STUDIO-Bäume durch den EINEN Chokepoint
+        // spawnArchitecture (reine Orchestrierung — die Gestalt bleibt Lab;
+        // h skaliert den Hof-Baum auf die Export-Höhe, eiche fx.height 6.2).
+        // Kappe 12 (Kapazitäts-Bindung: normale Architektur-LOD/Instanzen),
+        // Wasser-Wand, deterministisch je Siedlung+Platz (das Brunnen-Muster).
+        if (!Array.isArray(plan.trees)) return;
+        const baumArten = ["baum_eiche", "baum_birke"];
+        let t = 0;
+        for (const b of plan.trees) {
+            if (t >= 12) break;
+            if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
+            const wx = origin.x + b.x;
+            const wz = origin.z + b.z;
+            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+            const wy = this.getTerrainHeightAt(wx, wz);
+            if (!Number.isFinite(wy)) continue;
+            const seedT = (((plan.seed >>> 0) || 1) + 31 + t * 7919) >>> 0;
+            const art = baumArten[seedT % baumArten.length];
+            const entry = this.spawnArchitecture(
+                art,
+                { x: wx, y: wy, z: wz },
+                {
+                    seed: seedT,
+                    scale: Math.max(0.35, Math.min(0.8, (Number.isFinite(b.h) ? b.h : 3.4) / 6.2)),
+                    rotationY: ((seedT >>> 3) % 628) / 100,
+                    silent: true,
+                    autonomous: !!(so && so.autonomous),
+                }
+            );
+            if (entry) t++;
+        }
     }
     _spawnSettlementFromExport(plan, origin, so) {
         if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };

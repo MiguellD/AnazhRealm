@@ -2961,20 +2961,17 @@
             spawn: lay.spawn,
             welt: lay.welt,
             slots: slots,
-            // Benannte Siedlungs-Schichten (v1 unkonsumiert erlaubt, must-ignore):
+            // SCHICHT-VOLLENDUNG (18.07., Vertrags-Akt): NUR gelebte Schichten
+            // reisen — Wege/Platz (_stlWegeBuild), Brunnen + Hof-Bäume
+            // (Architektur-Spawns). Die Layout-Schichten ohne Studio-Gestalt
+            // (fences/felder/staende/mauer/fluss/bruecken/laternen/graph) sind
+            // aus dem Export GESTRICHEN — kein toter Passagier; das Lab liest
+            // sein Layout direkt aus dorfLayout (buildDorf), nie den Export.
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,
             brunnen: lay.brunnen,
-            fences: lay.fences,
-            felder: lay.felder,
-            staende: lay.staende,
             trees: lay.trees,
-            mauer: lay.mauer,
-            fluss: lay.fluss,
-            bruecken: lay.bruecken,
-            laternen: lay.laternen,
-            graph: lay.graph,
         };
     }
 

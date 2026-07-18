@@ -1,12 +1,12 @@
 {
     "{\"seed\":7,\"nH\":12}": {
-        "sha256": "9941c1fcb0037318ec0bf3ab77ea4845cfe4e3aacfd337df060e5d611c519bd7",
+        "sha256": "3324baa6d131f69b56ccd52160a7cc260046942dbdeb1eec9b075060bb68116f",
         "slots": 16,
         "name": "Villaalto",
         "groesse": "dorf"
     },
     "{\"seed\":12345,\"nH\":6}": {
-        "sha256": "639afa4196e71937a98eb22790c987b46c68e726f55869809c64cffc5e4db46c",
+        "sha256": "ea575b82dc5affeee34a365e31786987a24ab60efc476a85584de48ff1ef9d6f",
         "slots": 7,
         "name": "Grünbach",
         "groesse": "weiler"

@@ -80,6 +80,17 @@ function autoStaticLaws(anazhSrc) {
             "C-S5: _spawnSettlementSlot reicht slot.ov als studioOv (Optik == Plan, kein Kultur-Default-Klon)",
             /studioOv: slot\.ov/.test(nc),
         ],
+        [
+            // SCHICHT-VOLLENDUNG (18.07.): die Hof-Bäume des Exports heben als
+            // Studio-Bäume durch den EINEN Chokepoint (Orchestrierung, kein
+            // Parallel-System) — der Erlebnis-Hebel konsumiert plan.trees.
+            "C-S6: _spawnSettlementErlebnis hebt plan.trees als Studio-Bäume (spawnArchitecture, Brunnen-Muster)",
+            (() => {
+                const i = nc.indexOf("_spawnSettlementErlebnis(plan, origin, so) {");
+                const j = i >= 0 ? nc.indexOf("_spawnSettlementFromExport(", i) : -1;
+                return i >= 0 && j > i && /plan\.trees/.test(nc.slice(i, j)) && /baum_/.test(nc.slice(i, j));
+            })(),
+        ],
     ];
 }
 
@@ -131,6 +142,10 @@ const FIXTURES = [
         const broken3 = anazhSrcST.replace(/studioOv: slot\.ov/g, "/* ov verworfen */");
         const cs5 = autoStaticLaws(broken3).find((l) => l[0].startsWith("C-S5"));
         check("Selbst-Test 6: ov-Stempel entfernt -> C-S5 feuert", cs5 && cs5[1] === false);
+        // V5 (SCHICHT-VOLLENDUNG): der Baum-Konsum entfernt -> C-S6 feuert.
+        const broken4 = anazhSrcST.replace(/plan\.trees/g, "planXtrees");
+        const cs6 = autoStaticLaws(broken4).find((l) => l[0].startsWith("C-S6"));
+        check("Selbst-Test 7: plan.trees-Konsum entfernt -> C-S6 feuert", cs6 && cs6[1] === false);
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -253,6 +268,20 @@ const FIXTURES = [
             "Konsum-Probe: der städtische Export trägt ov.brandwand (der Kern-Pfad ruft DIESELBE Wahrheit wie buildDorf)",
             stadt.staedtisch === true && bwSlots >= 1,
             `groesse=${stadt.groesse} · brandwand-Slots=${bwSlots}`
+        );
+        // SCHICHT-VOLLENDUNG (18.07.): der Export trägt NUR gelebte Schichten —
+        // trees reist (der Hof-Baum-Konsument), die gestaltlosen Schichten
+        // (fences/felder/staende/mauer/fluss/bruecken/laternen/graph) sind
+        // GESTRICHEN (kein toter Passagier, Vertrags-Akt).
+        check(
+            "SCHICHT-VOLLENDUNG: Export trägt trees, aber KEINE gestaltlosen Schichten mehr",
+            Array.isArray(stadt.trees) &&
+                stadt.fences === undefined &&
+                stadt.mauer === undefined &&
+                stadt.laternen === undefined &&
+                stadt.staende === undefined &&
+                stadt.graph === undefined,
+            `trees=${Array.isArray(stadt.trees) ? stadt.trees.length : "fehlt"}`
         );
     }
 
@@ -509,12 +538,15 @@ const FIXTURES = [
             res.c.placed = archAfter - archBefore;
             res.c.ticks = ticks;
             res.c.budgeted = maxPerTick > 0 && maxPerTick <= A.perTick && ticks >= 2;
-            // DORF-ERLEBNIS — die Siedlung hebt jetzt auch BRUNNEN (brunnen_dorf,
-            // Architektur-Spawns der brunnen-Schicht): das Band wandert mit.
+            // DORF-ERLEBNIS — die Siedlung hebt jetzt auch BRUNNEN (brunnen_dorf)
+            // und HOF-BÄUME (SCHICHT-VOLLENDUNG 18.07.: Studio-Bäume der
+            // trees-Schicht): das Band wandert mit dem Gesetz.
             res.c.allHaus = r.state.architectures
                 .slice(archBefore)
                 .every(
-                    (e) => typeof e.type === "string" && (e.type.indexOf("haus_") === 0 || e.type === "brunnen_dorf")
+                    (e) =>
+                        typeof e.type === "string" &&
+                        (e.type.indexOf("haus_") === 0 || e.type === "brunnen_dorf" || e.type.indexOf("baum_") === 0)
                 );
             // C4 — IDEMPOTENZ: dieselbe Zelle nochmal -> 0 neue (Reservierung traegt).
             const again = await r._autoSettlementSpawnCell(parseInt(key), parseInt(key.split(",")[1]), cand);
