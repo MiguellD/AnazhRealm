@@ -3151,8 +3151,19 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
 // elbow/hand·hip/knee/ankle je Seite) — dieselben Namen liest der Stamm-Rig. ──
 function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     const dials = Object.assign({}, kern.START_PARAMS || {}, (ov && ov.dials) || {});
-    const skinCol = ov && typeof ov.skinColor === "number" ? ov.skinColor : 0xc89372;
-    const hairCol = ov && typeof ov.hairColor === "number" ? ov.hairColor : 0x241712;
+    // BOOT-LITERAL-ABSCHIED (18.07.): der ov-lose Bake zieht seine Default-
+    // Töne aus den KERN-Paletten (benannte Anker karamell/darkbrown — der
+    // Bäcker hält das Gesetzbuch ja in der Hand), nie mehr aus paletten-
+    // fremden Literalen. Kern ohne Paletten → Bruch (fail-closed, der
+    // Reply-Fänger meldet leer — die Tabellen sind Vertragsfläche).
+    const _sTone = kern.SKIN_TONES && kern.SKIN_TONES.karamell;
+    const _hTone = kern.HAIR_COLORS && kern.HAIR_COLORS.darkbrown;
+    const skinCol =
+        ov && typeof ov.skinColor === "number" ? ov.skinColor : _sTone ? _sTone.hex >>> 0 : null;
+    const hairCol =
+        ov && typeof ov.hairColor === "number" ? ov.hairColor : _hTone ? _hTone.base >>> 0 : null;
+    if (skinCol === null || hairCol === null)
+        throw new Error("koerper-Kern ohne Paletten (SKIN_TONES/HAIR_COLORS) — kein Guss-Ton ohne Gesetz");
     const MK = kern.MATERIAL_KLASSEN || {};
     const KL = Object.assign({}, MK, {
         skin: { c: skinCol, r: 0.62 },
@@ -3172,7 +3183,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         if (matCache[k]) return matCache[k];
         const kl = KL[k] || KL.skin;
         const m = new THREE.MeshStandardMaterial({ roughness: kl.r != null ? kl.r : 0.6, metalness: 0 });
-        const lc = lin(kl.c != null ? kl.c : 0xc89372);
+        // KL.skin trägt IMMER ein c (skinCol oben, palette-bewiesen) — der
+        // Ketten-Fallback ist derselbe Ton, kein zweiter Zahlensatz.
+        const lc = lin(kl.c != null ? kl.c : skinCol);
         m.color.setRGB(lc[0], lc[1], lc[2]);
         if (k === "hair") m.side = THREE.DoubleSide; // Strähnen-Kreuzquads (wie straehne)
         if (kl.webe) m.userData.__webe = kl.webe; // Stoff-Webung (Welt-Leser moduliert Mikro-Struktur)

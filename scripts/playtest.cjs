@@ -55985,8 +55985,12 @@ async function checkBandRing5Soul(ctx) {
         // ist raus, d0836f4); lit MeshStandardMaterial. Die alte „gedämpftes Rot"-Erwartung
         // war die Toon-Era-Wahrheit, jetzt gemessen-tan.
         // PIPE-VOLLENDUNG (V18.459): die Farb-Wahrheit ist die ZAHL am Körper
-        // (userData.hautTon — Genom-Default 0xc89372); die Pipe trägt Farben als
-        // Vertex-Daten auf GETEILTEN Node-Materialien (kein per-Körper-Material mehr).
+        // (userData.hautTon); die Pipe trägt Farben als Vertex-Daten auf
+        // GETEILTEN Node-Materialien (kein per-Körper-Material mehr).
+        // BOOT-LITERAL-ABSCHIED (18.07.): das Band wandert MIT dem Gesetz —
+        // der Default-Hautton ist MITGLIED der koerper-core-Palette
+        // (SKIN_TONES; Γ5-Anker aus dem Welt-Seed), kein palettenfremdes
+        // Literal mehr (0xc89372 stand in KEINER Studio-Tabelle).
         let pipeNodeMat = false;
         currentMesh().traverse((n) => {
             if (
@@ -55997,7 +56001,11 @@ async function checkBandRing5Soul(ctx) {
             )
                 pipeNodeMat = true;
         });
-        out.defaultColorRed = currentMesh().userData.hautTon === 0xc89372 && pipeNodeMat;
+        const kcTones = window.__koerperCore && window.__koerperCore.SKIN_TONES;
+        const hautTonInPalette =
+            !!kcTones &&
+            Object.keys(kcTones).some((k) => (kcTones[k].hex >>> 0) === (currentMesh().userData.hautTon >>> 0));
+        out.defaultColorRed = hautTonInPalette && pipeNodeMat;
         // V2: statt Geometrie-Typ prüfen wir die Group-Struktur
         // (Mensch hat torso/head/2 Arme/2 Beine = 6 Parts).
         const humanParts = currentParts();
@@ -56217,7 +56225,7 @@ async function checkBandRing5Soul(ctx) {
         );
         check("Ring 5: Default-Seele ist 'human'", ring5Results.defaultIsHuman);
         check(
-            "Ring 5/234: Mensch-Avatar aus der PIPE — Hautton-Zahl 0xc89372 + lit NodeMaterial",
+            "Ring 5/234: Mensch-Avatar aus der PIPE — Hautton MITGLIED der SKIN_TONES-Palette + lit NodeMaterial",
             ring5Results.defaultColorRed
         );
         check("Ring 5 V2: Mensch-Group hat torso/head/2 Arme/2 Beine", ring5Results.humanHasAllParts);

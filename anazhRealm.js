@@ -8095,7 +8095,13 @@ class AnazhRealm {
             // Leser _koerperStudioDials sie über die eigene wählt; try/finally räumt
             // sie IMMER (kein Leck in den nächsten lokalen Stat-/Guss-Read). Nur der
             // human-Guss liest sie; andere Seelen ignorieren das Feld byte-alt.
-            const peerU = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : null;
+            // BOOT-LITERAL-ABSCHIED (18.07., Identitäts-Leck): ein Peer OHNE
+            // Übergabe bekam still die EIGENE studioUebergabe des BETRACHTERS
+            // (peerU null → der Merge fiel auf state.studioUebergabe zurück) —
+            // Peer-Gestalt aus Viewer-Zustand. Jetzt: das leere Objekt als
+            // Sentinel — der Merge sieht „Peer ohne Wahl" und gießt den
+            // Anker-Default (auf allen Clients identisch), nie das Selbstbild.
+            const peerU = entry.uebergabe && entry.uebergabe.s ? entry.uebergabe : {};
             const savedActive = this._activePeerUebergabe;
             this._activePeerUebergabe = peerU;
             try {
@@ -17787,8 +17793,16 @@ class AnazhRealm {
             return null;
         }
         const dials = Object.assign({}, core.START_PARAMS || {}, g.bmDials || this._dialsAusGenom(g));
-        const skinCol = typeof g.skinColor === "number" ? g.skinColor : 0xc89372;
-        const hairCol = typeof g.hairColor === "number" ? g.hairColor : 0x241712;
+        // BOOT-LITERAL-ABSCHIED (18.07.): ohne explizite Guss-Farbe greift die
+        // Anker-Palette des Gesetzbuchs (fail-closed — der Kern ist oben schon
+        // als warm bewiesen, die Tabellen sind Vertragsfläche).
+        const anker = this._menschAnkerFarben();
+        if (!anker && (typeof g.skinColor !== "number" || typeof g.hairColor !== "number")) {
+            this.log("KÖRPER-KERN ohne Paletten (SKIN_TONES/HAIR_COLORS) — fail-closed, kein Ersatz-Ton.", "ERROR");
+            return null;
+        }
+        const skinCol = typeof g.skinColor === "number" ? g.skinColor : anker.skin;
+        const hairCol = typeof g.hairColor === "number" ? g.hairColor : anker.hair;
         const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, 0);
         if (!t0 || !t0.teile || !t0.teile.mensch) {
             this.log("Mensch-Ofen fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.", "ERROR");
@@ -18437,19 +18451,82 @@ class AnazhRealm {
         }
         return out;
     }
-    // DER MENSCH-OFEN (PIPE-VOLLENDUNG V18.459): derselbe Tisch, Zeile "koerper" —
-    // bauMensch+morphAuf backen im Bäcker, der Stamm assembliert + memoisiert je
-    // Dials+Farben. Der Spieler/Peer ist ein Template-Clone wie jede Kreatur.
-    _ofenMenschTemplate(dials, skinColor, hairColor, lod) {
-        const core = typeof window !== "undefined" && window.__koerperCore;
-        if (!core || typeof core.bauMensch !== "function") return null;
+    // BOOT-LITERAL-ABSCHIED (18.07.) — DIE ANKER-FARBEN AUS DER PALETTE: der
+    // Default-Mensch (Boot-Avatar, Peers ohne Übergabe, Ofen-Prefetch) zieht
+    // Haut/Haar aus den EINEN Kern-Tabellen (koerper-core SKIN_TONES/
+    // HAIR_COLORS) — FNV-deterministisch aus dem Welt-Seed (Γ5: reload-stabil,
+    // alle Peers identisch), nie mehr aus palettenfremden Literalen
+    // (0xc89372/0x241712 waren in KEINER Studio-Palette). Fail-closed: kalter
+    // Kern → null (der Rig-Guss schreit ohnehin — Kern-Pflicht).
+    _menschAnkerFarben() {
+        const kc = typeof window !== "undefined" && window.__koerperCore;
+        if (!kc || !kc.SKIN_TONES || !kc.HAIR_COLORS) return null;
+        const seed = ((this.state && this.state.worldSeed) >>> 0) || 1;
+        if (this._menschAnkerMemo && this._menschAnkerMemo.seed === seed) return this._menschAnkerMemo;
+        const pick = (tab, salt) => {
+            const keys = Object.keys(tab);
+            let h = (0x811c9dc5 ^ seed) >>> 0;
+            const s = "mensch:" + salt;
+            for (let i = 0; i < s.length; i++) {
+                h ^= s.charCodeAt(i);
+                h = Math.imul(h, 0x01000193);
+            }
+            return tab[keys[(h >>> 0) % keys.length]];
+        };
+        this._menschAnkerMemo = {
+            seed,
+            skin: pick(kc.SKIN_TONES, "haut").hex >>> 0,
+            hair: pick(kc.HAIR_COLORS, "haar").base >>> 0,
+        };
+        return this._menschAnkerMemo;
+    }
+
+    // DER EINE FARB-MÜNZER des Mensch-Gusses: Anker-Farben, von der Übergabe
+    // (skinTone/hairColor-WAHL-Strings → Kern-Tabellen-Lookup) überstimmt.
+    // Guss (_buildHumanGroup) UND Prefetch (_ofenPrefetchKreaturen) lesen
+    // DIESELBE Auflösung — der Boot-Avatar trifft sein Memo warm.
+    _menschGussFarben(dials) {
+        const kc = typeof window !== "undefined" && window.__koerperCore;
+        const anker = this._menschAnkerFarben();
+        const f = { skin: anker ? anker.skin : null, hair: anker ? anker.hair : null };
+        if (dials && kc) {
+            if (
+                typeof dials.skinTone === "string" &&
+                kc.SKIN_TONES &&
+                Object.prototype.hasOwnProperty.call(kc.SKIN_TONES, dials.skinTone)
+            ) {
+                f.skin = kc.SKIN_TONES[dials.skinTone].hex >>> 0;
+            }
+            if (
+                typeof dials.hairColor === "string" &&
+                kc.HAIR_COLORS &&
+                Object.prototype.hasOwnProperty.call(kc.HAIR_COLORS, dials.hairColor)
+            ) {
+                f.hair = kc.HAIR_COLORS[dials.hairColor].base >>> 0;
+            }
+        }
+        return f;
+    }
+
+    // DER EINE KEY-MÜNZER des Mensch-Ofens (18.07.): Guss und Prefetch münzen
+    // DENSELBEN Schlüssel — das Key-Format lebt genau einmal.
+    _ofenMenschKey(dials, skinColor, hairColor, lod) {
         let dKey = "";
         try {
             dKey = JSON.stringify(dials || {});
         } catch (_e) {
             dKey = "";
         }
-        const key = "mensch|" + (lod | 0) + "|" + dKey + "|" + (skinColor >>> 0) + "|" + (hairColor >>> 0);
+        return "mensch|" + (lod | 0) + "|" + dKey + "|" + (skinColor >>> 0) + "|" + (hairColor >>> 0);
+    }
+
+    // DER MENSCH-OFEN (PIPE-VOLLENDUNG V18.459): derselbe Tisch, Zeile "koerper" —
+    // bauMensch+morphAuf backen im Bäcker, der Stamm assembliert + memoisiert je
+    // Dials+Farben. Der Spieler/Peer ist ein Template-Clone wie jede Kreatur.
+    _ofenMenschTemplate(dials, skinColor, hairColor, lod) {
+        const core = typeof window !== "undefined" && window.__koerperCore;
+        if (!core || typeof core.bauMensch !== "function") return null;
+        const key = this._ofenMenschKey(dials, skinColor, hairColor, lod);
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         if (memo.has(key)) return memo.get(key);
         let asm = null;
@@ -18478,24 +18555,28 @@ class AnazhRealm {
         const map = AnazhRealm.TETRAPODA_SOUL_MAP || {};
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
         const gesehen = new Set();
-        // Der DEFAULT-MENSCH (START_PARAMS + Anker-Farben) — Boot-Avatar/Peers:
-        // ov-frei → IDB-fähig; die Live-Buch-Dials backen kalt einmal je Änderung.
+        // BOOT-LITERAL-ABSCHIED (18.07.) — der Prefetch münzt aus den LEBENDEN
+        // Quellen: DERSELBE Dial-Merge wie der Rig-Guss (START_PARAMS +
+        // _koerperStudioDials) und DERSELBE Farb-Münzer (_menschGussFarben:
+        // Anker-Palette, Übergabe überstimmt) durch den EINEN Key-Münzer —
+        // der Boot-Avatar trifft sein Memo warm statt synchron kalt zu gießen.
         const kc = typeof window !== "undefined" && window.__koerperCore;
         if (kc && kc.START_PARAMS) {
-            const dM = Object.assign({}, kc.START_PARAMS);
-            let dKeyM = "";
-            try {
-                dKeyM = JSON.stringify(dM);
-            } catch (_e) {
-                dKeyM = "";
-            }
+            const bmD = this._koerperStudioDials();
+            const dM = Object.assign({}, kc.START_PARAMS, bmD || {});
+            const fM = this._menschGussFarben(bmD);
             // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
             // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gemergte
             // Fern-Gestalt (der _menschFernToggle-Zweig). Warm = Spawn ~1 ms.
             for (const lodM of [0, 1]) {
-                const keyM = "mensch|" + lodM + "|" + dKeyM + "|" + (0xc89372 >>> 0) + "|" + (0x241712 >>> 0);
+                if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
+                const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
                 if (memo.has(keyM)) continue;
-                this._foundryRequest("mensch", 0, lodM, "summer", null).then((meshes) => {
+                this._foundryRequest("mensch", 0, lodM, "summer", {
+                    dials: dM,
+                    skinColor: fM.skin,
+                    hairColor: fM.hair,
+                }).then((meshes) => {
                     // fail-LAUT (V18.462): ein toter Prefetch war von Erfolg
                     // nicht unterscheidbar — das eine Wort macht ihn sichtbar.
                     if (!meshes || !meshes.length) {
@@ -51726,10 +51807,9 @@ class AnazhRealm {
         // zurück, wenn SkinnedMesh fehlt.
         const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
             FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
-        // PBR-HAUTTON (Schöpfer-Korrektur 18.06.: KEIN Rot, KEIN Toon — die Vision ist PBR-
-        // realistische Haut wie die Referenzbilder). Ein warmer natürlicher Hautton; das alte rote
-        // 0xc0392b war ein Sediment-Bug, kein Identitäts-Wille.
-        const skinTint = 0xc89372;
+        // BOOT-LITERAL-ABSCHIED (18.07.): der Hautton kommt aus der Studio-
+        // Palette (_menschAnkerFarben — Γ5 aus dem Welt-Seed), nie mehr aus
+        // einem palettenfremden Literal; die Übergabe überstimmt (unten).
         // ABSCHIEDS-WELLE (Koerper-Dock A1) — „kein eigener Avatar": die GESTALT-DIALS
         // kommen aus dem Da-Vinci-Studio (koerper-core `mensch`.s, LIVE über
         // `_koerperStudioDials`), die Dial→Genom-Zuordnung ist die DATEN-Tabelle
@@ -51741,7 +51821,7 @@ class AnazhRealm {
         // formt den Koerper LIVE); ohne Argument byte-alt (alle bestehenden Aufrufer).
         const dialsBase = this._koerperStudioDials();
         const dials = dialsOv && typeof dialsOv === "object" ? Object.assign({}, dialsBase || {}, dialsOv) : dialsBase;
-        const g = { kh: PLAYER_KH, oy: FOOT_Y, skinColor: skinTint };
+        const g = { kh: PLAYER_KH, oy: FOOT_Y };
         if (dials) {
             for (const row of AnazhRealm.KOERPER_DIAL_MAP) {
                 const v = Number(dials[row.dial]);
@@ -51756,29 +51836,12 @@ class AnazhRealm {
         // Stats/Alt-Pfad. Größe reist im charScale von morphAuf — g.kh bleibt die
         // Welt-Einheit (kein Doppel-Wachsen: der bauMensch-Pfad liest g.kh nicht).
         g.bmDials = dials || null;
-        // STUDIO-ÜBERGABE (Auftrag D) — die FARB-Gestalt des Schöpfers: trägt der
-        // Dial-Fluss (Vorrang-Quelle _koerperStudioDials) skinTone/hairColor-WAHLEN
-        // (Strings — NUR die Übergabe mischt sie ein, das Buch-s ist rein
-        // numerisch), übersetzt die EINE Kern-Tabelle sie in die Guss-Farben
-        // (ov.skinColor/ov.hairColor der Pipe; dieselben Zahlen stehen im
-        // Mensch-Ofen-Memo-Key). Ohne Übergabe byte-alt (Anker-Farben).
-        const kcU = typeof window !== "undefined" && window.__koerperCore;
-        if (dials && kcU) {
-            if (
-                typeof dials.skinTone === "string" &&
-                kcU.SKIN_TONES &&
-                Object.prototype.hasOwnProperty.call(kcU.SKIN_TONES, dials.skinTone)
-            ) {
-                g.skinColor = kcU.SKIN_TONES[dials.skinTone].hex >>> 0;
-            }
-            if (
-                typeof dials.hairColor === "string" &&
-                kcU.HAIR_COLORS &&
-                Object.prototype.hasOwnProperty.call(kcU.HAIR_COLORS, dials.hairColor)
-            ) {
-                g.hairColor = kcU.HAIR_COLORS[dials.hairColor].base >>> 0;
-            }
-        }
+        // STUDIO-ÜBERGABE (Auftrag D) — die FARB-Gestalt: der EINE Farb-Münzer
+        // (_menschGussFarben) löst Anker-Palette + Übergabe-Wahlen auf —
+        // Prefetch und Guss münzen DIESELBEN Zahlen (warmes Memo).
+        const fG = this._menschGussFarben(dials);
+        if (fG.skin !== null) g.skinColor = fG.skin;
+        if (fG.hair !== null) g.hairColor = fG.hair;
         let built = null;
         try {
             built = this._buildHumanoidRig(g);

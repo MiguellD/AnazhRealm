@@ -60,6 +60,11 @@ const FORBIDDEN = [
     // heisst `ei` (tetrapoda TIER_MATERIAL_KLASSEN); der erfundene Name las nie
     // einen Schreiber und der 0.85-Default gab jedem Kreatur-Auge 2.8x Glut.
     { token: "emissivIntensitaet", fiel: "AUGEN-GLUT-SCHNITT — der Bäcker liest kl.ei (die Gesetzbuch-Wahrheit)" },
+    // BOOT-LITERAL-ABSCHIED 18.07. — die palettenfremden Haut-/Haar-Töne des
+    // Boot-Menschen: Haut/Haar kommen aus koerper-core SKIN_TONES/HAIR_COLORS
+    // (Anker-Farben Γ5 aus dem Welt-Seed bzw. benannte Kern-Anker im Bäcker).
+    { token: "0xc89372", fiel: "BOOT-LITERAL-ABSCHIED — die Haut zieht aus der SKIN_TONES-Palette" },
+    { token: "0x241712", fiel: "BOOT-LITERAL-ABSCHIED — das Haar zieht aus der HAIR_COLORS-Palette" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.
