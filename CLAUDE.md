@@ -6,9 +6,50 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.7 — DER GRANULARITÄTS-KOLLAPS: die Wrapper-Flut stirbt am heavyLeaf-Chokepoint)
+## Stand (V18.491.8 — DIE SYNERGIE-WELLE: Uniform-Heimat · Observer-Diät · Chunk-Einbürgerung)
 
-**18.07., achte Welle (der Schöpfer verlangt den GROSSEN Schnitt statt Ameisenschritten —
+**19.07., neunte Welle (sechster Trace: avgFps 4.5→9.2, dc 631, GPU echt 14.6 ms — aber
+render-CPU 49 ms, 60M Klein-Uploads, 6067 Pipelines, LongTasks 454 s/718 s, Deckung 10 %.
+Der Schöpfer: „nicht pflastern — tief im Kern die Synergie". Der Vendor wurde GELESEN):**
+- DIE UNIFORM-HEIMAT (`_uniformHeimatTeilen`): r184 KLONT jede nicht-geteilte Uniform-
+  Gruppe je RenderObject — unsere vier Welt-Sätze (windUniforms inkl. uWindDir/uBend ·
+  atmoUniforms ~20 · lodUniforms 7 · hydroSurfaceUniforms 18) lebten als per-Objekt-
+  Kopien = der 60M-Klein-Upload-Sturm (9.3 GB ≤16K, ~9k writeBuffer/Frame bei 631 dc).
+  Jetzt: EIN renderGroup-Buffer je Satz, EIN Write je Render. Semantisch identisch per
+  Konstruktion (geteilte Singletons an geteilten Materialien — per-Objekt-Variation
+  reist in dieser Welt IMMER als Attribut).
+- DIE OBSERVER-DIÄT (`_materialObserverDiaet`): der r184-Monitor kurzschließt auf
+  hasNode (containsNode = true für JEDES TSL-Material) und befragt seine EIGENE
+  Änderungs-Erkennung (equals: worldMatrix · Material-Props · Attribut-Versionen ·
+  Geometrie-id · Morphs) NIE — jedes Objekt zahlte jeden Frame updateBefore/update/
+  Bindings. Die Diät (Chunk-Boden/Stitch · Gras · Streu/deko-fernfeld · Wasser)
+  stellt auf die equals()-Bahn; der renderId-Satz hält die Takt-Uniforms lebendig
+  (erstes Objekt je Material je Render). VENDOR-LOCH geschlossen: equals sieht
+  instanceMatrix/instanceColor NICHT (leben am Mesh, nicht in geometry.attributes)
+  — der Diät-Observer prüft ihre Versionen selbst (Pool-Refill = EIN Refresh).
+- DIE CHUNK-EINBÜRGERUNG (`_chunkBundleAnker`, p:-Keying wie die Platzier-Bahn):
+  Terrain-Boden · LOD-Stitch · Gras · Streu ziehen in die Region-BundleGroups
+  (Add/Remove = Re-Record NUR der Region; `_bundleKugelWeite` weitet die Cull-
+  Kugel um Berg-Chunks — Unter-Inklusion wäre ein Pop). WASSER BLEIBT DRAUSSEN
+  (GEMESSEN, blick-Sonde: sein viewportLinearDepth zwingt copyFramebufferToTexture
+  zum Pass-Bruch — currentPass.end existiert im Bundle-Encoder nicht); Bäume
+  bleiben bewusst global (V18.390-Kompromiss), beide tragen trotzdem Diät/Heimat.
+- DER OFEN-WIEDERANKER: r184 evictet Pipelines, wenn der letzte RenderObject einer
+  Familie stirbt — die Wander-Wiederkehr kompilierte SYNCHRON (6067 total, 24er-
+  Bursts in 7-s-Frames), der Ofen schwieg (Familie für immer in _pipeOfenDone).
+  Der Gruppen-Dispose entlässt die Familie (`g._ofenKey`) → Re-Mint wärmt ASYNC.
+  Dazu: DIE LINSE WIRD AKTUATOR — die Gnadenfrist skaliert mit der Mint-Zahl der
+  Churn-Linse (×Mints, Deckel ×6 = 60 s; die ×14-Blume im 51-s-Orbit stirbt).
+- BEWIESEN: voller playtest „Alle Invarianten OK" · check · foundry-crossfade ·
+  scatter-lod · leistungs-vertrag (Quieszenz, 0 Stand-Mints, 1217→1217) · blick
+  auf ECHTEM WebGPU grün (Substanz Tag+Nacht, Komposition == vorher) · Härtetest
+  Teleport+Rebuild+Pool-Zyklen unter Diät: 0 Seiten-Fehler. Szene-Kinder 523→~46.
+  Der nächste Schöpfer-Trace ist der Richter (bundleDeckung/uploadKlassen/render-CPU).
+- OFFEN daneben: Heap-Live-Set ~2.4 GB (GC-Pausen skalieren damit — Zensus fehlt) ·
+  Wasser-Bundle-Weg (bräuchte Depth-Copy VOR dem Bundle-Replay) · Diät auf die
+  Foliage-/Arch-Materialien ausweiten (nach Trace-Urteil).
+
+**Davor, achte Welle (der Schöpfer verlangt den GROSSEN Schnitt statt Ameisenschritten —
 die Nicht-Bundle-Chirurgie beginnt an ihrer Wurzel):**
 - DER GRANULARITÄTS-KOLLAPS: der pauschale `instanceShare`-Zwang schickte auch das
   200-Vert-Blümchen in eine EIGENE region-gekeyte InstancedMesh — 1126 Wrapper ≈

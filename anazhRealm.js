@@ -17167,6 +17167,8 @@ class AnazhRealm {
         // die Studio-gras-Geometrie bringt ihre eigene Halm-Höhe mit (localMaxY), der Tuft-
         // Alt-Pfad behält GRASS_BLADE_H. Gesät aus dem, was zuerst da ist.
         if (!wu.uBladeH) wu.uBladeH = uniform(this._grassStudioMaxY || AnazhRealm.GRASS_BLADE_H);
+        // UNIFORM-HEIMAT: der geteilte Wind-Satz reist als EIN renderGroup-Buffer.
+        this._uniformHeimatTeilen(wu);
         const mat = new THREE.MeshLambertNodeMaterial({ color: 0x5fa743, side: THREE.DoubleSide });
 
         // Wind-positionNode: die kohärente Böen-Welle kommt aus der EINEN Quelle
@@ -17279,6 +17281,9 @@ class AnazhRealm {
             /* Band optional — Gras bleibt pures Lambert */
         }
 
+        // OBSERVER-DIÄT (Pflicht-Paar mit der Uniform-Heimat oben): der Gras-
+        // Graph hängt nur an geteilten Wind-Uniforms + Attributen — equals()-Bahn.
+        this._materialObserverDiaet(mat);
         this.state._grassMat = mat;
         return mat;
     }
@@ -17413,6 +17418,9 @@ class AnazhRealm {
                 wu.uBend.push(TSL.uniform(new THREE.Vector4(0, -1e6, 0, 0)));
             }
         }
+        // UNIFORM-HEIMAT: auch die späten Kopplungs-Uniforms (uWindDir/uBend)
+        // reisen geteilt — der Satz bleibt EIN renderGroup-Buffer (idempotent).
+        this._uniformHeimatTeilen(wu);
         return wu;
     }
 
@@ -30124,7 +30132,12 @@ class AnazhRealm {
         // V9.75 (Welle C.4+5) — das Iso-Mesh ist seit jetzt das EINZIGE
         // Wasser-Mesh. Default sichtbar; der Toggle `_setVoxelWaterIsoVisible`
         // ist gestrichen (war Browser-Audit-Werkzeug der Migration-Phase).
-        this.state.scene.add(mesh);
+        // CHUNK-EINBÜRGERUNG: Wasser bleibt DRAUSSEN (GEMESSEN, blick-Sonde:
+        // sein viewportLinearDepth [weiche Ufer] zwingt copyFramebufferToTexture
+        // zum PASS-BRUCH — currentPass.end() existiert im Bundle-Encoder nicht,
+        // der Render wirft). Die Diät + geteilte Hydro-Uniforms tragen trotzdem.
+        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
+        else this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -30245,7 +30258,10 @@ class AnazhRealm {
             voxelChunkX: cx,
             voxelChunkZ: cz,
         };
-        this.state.scene.add(mesh);
+        // CHUNK-EINBÜRGERUNG: draußen wie der Iso-Pfad (viewportLinearDepth =
+        // Pass-Bruch, bundle-unverträglich — s. dort).
+        if (this.state.wasserImBundle === true) this._chunkBundleAnker(mesh, cx, cz);
+        else this.state.scene.add(mesh);
         this.state.voxelChunkWaterIso.set(key, mesh);
         return mesh;
     }
@@ -30844,7 +30860,7 @@ class AnazhRealm {
         if (!this.state.voxelChunkWaterIso) return;
         const mesh = this.state.voxelChunkWaterIso.get(key);
         if (mesh) {
-            if (this.state.scene) this.state.scene.remove(mesh);
+            this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(mesh.geometry);
         }
@@ -30861,6 +30877,10 @@ class AnazhRealm {
     _getVoxelChunkMaterial() {
         if (this.state.voxelChunkMaterial) return this.state.voxelChunkMaterial;
         const mat = this._buildToonNodeMaterial({ vertexColors: true, side: THREE.DoubleSide, geomorph: true });
+        // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
+        // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
+        // Morph-Attributen — die equals()-Bahn sieht Rebuilds (neue Geometrie-id).
+        this._materialObserverDiaet(mat);
         this.state.voxelChunkMaterial = mat;
         return mat;
     }
@@ -30874,6 +30894,86 @@ class AnazhRealm {
     // die Fog-Farbe, also tag/nacht/wetter-kohaerent). density = 1/Sicht-
     // Tiefe (klein -> Dunst greift erst weit), hazeBase/Top = Hoehen-Band, in
     // dem Gipfel in den Himmel ausbleichen. Werte browser-justierbar.
+    // ═══ DIE UNIFORM-HEIMAT (18.07., sechster Schöpfer-Trace: 60M Klein-Uploads
+    // ≤16K = 9.3 GB, ~9k writeBuffer je Frame bei 631 Draws — die per-Draw-
+    // Uniform-Bahn). WURZEL im Vendor gelesen (nie geraten): r184 KLONT jede
+    // Uniform-Gruppe, deren groupNode nicht shared ist, JE RenderObject
+    // (createBindings) — unsere geteilten Welt-Uniform-Sätze (Wind · Atmo ·
+    // LOD · Hydro) lebten als per-Objekt-Kopien, die der Monitor jedes Objekt
+    // jeden Frame neu hochladen ließ. Der Umzug in die GETEILTE renderGroup:
+    // EIN Buffer je Satz, EIN Write je Render, alle Konsumenten lesen
+    // denselben Speicher. Semantisch identisch per Konstruktion: die Sätze
+    // sind geteilte Singletons an geteilten Materialien — per-Objekt-Variation
+    // reist in dieser Welt IMMER als Attribut/Instanz-Daten, nie als Uniform.
+    // Idempotent (setGroup ist ein Setter); ohne renderGroup-Export byte-alt. ═══
+    _uniformHeimatTeilen(satz) {
+        const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+        const rg = TSL && TSL.renderGroup;
+        if (!rg || !satz) return satz;
+        const teile = (u) => {
+            if (u && u.isUniformNode === true && typeof u.setGroup === "function") u.setGroup(rg);
+        };
+        for (const k in satz) {
+            const u = satz[k];
+            if (Array.isArray(u)) for (const e of u) teile(e);
+            else teile(u);
+        }
+        return satz;
+    }
+
+    // ═══ DIE OBSERVER-DIÄT (18.07., Vendor-Monitor GELESEN: needsRefresh kurz-
+    // schließt auf hasNode, und containsNode() sagt für JEDES TSL-Material true
+    // — damit befragt r184 seine EIGENE Änderungs-Erkennung (equals(): world-
+    // Matrix · Material-Props · Attribut-id/version · Geometrie-id · Morphs)
+    // NIE und fasst jedes Objekt jeden Frame an: updateBefore/updateForRender/
+    // Bindings-Writes = das render-CPU-49-ms + der Klein-Upload-Sturm des
+    // sechsten Traces). Für Welt-Materialien, deren Node-Graph NUR aus
+    // geteilten renderGroup-Uniforms + Attributen + eingebauten Größen besteht
+    // (Chunk-Boden/Stitch · Gras · Streu · Wasser · Deko-Fernfeld), ist hasNode
+    // eine Lüge: nichts hängt am Objekt. Die Diät stellt den Monitor auf die
+    // ehrliche equals()-Bahn — Änderungen (Pool-Refill: instanceMatrix-Version ·
+    // Rebuild: neue Geometrie-id) werden weiter erkannt und hochgeladen,
+    // Unverändertes kostet EIN WeakMap-Get + einen Matrix-Vergleich. Der
+    // renderId-Satz des Monitors garantiert: das ERSTE Objekt je Material je
+    // Render refresht → die geteilten Takt-Uniforms leben. PFLICHT-PAAR: nur
+    // zusammen mit _uniformHeimatTeilen für ALLE mutierten Uniforms des
+    // Materials (per-Objekt-Klone würden sonst einfrieren). Headless inert
+    // (der Null-Renderer baut nie einen Observer). ═══
+    _materialObserverDiaet(mat) {
+        if (!mat || mat._anazhDiaet === true || typeof mat.setupObserver !== "function") return mat;
+        mat._anazhDiaet = true;
+        const alt = mat.setupObserver;
+        mat.setupObserver = function (builder) {
+            const o = alt.call(this, builder);
+            if (!o) return o;
+            o.hasNode = false;
+            // VENDOR-LOCH GESCHLOSSEN: equals() walkt nur geometry.attributes —
+            // instanceMatrix/instanceColor leben am MESH und wären unter der
+            // Diät unsichtbar (Pool-Refill = eingefrorene Instanzen). Der
+            // Versions-Wächter prüft sie VOR der Vendor-Bahn (je RenderObject,
+            // ein String-Vergleich; Mutation → genau EIN ehrlicher Refresh).
+            if (typeof o.needsRefresh === "function") {
+                const altNR = o.needsRefresh;
+                o.needsRefresh = function (ro, frame) {
+                    const obj = ro && ro.object;
+                    if (obj && obj.isInstancedMesh === true) {
+                        const im = obj.instanceMatrix,
+                            ic = obj.instanceColor;
+                        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
+                        const d = this.getRenderObjectData(ro);
+                        if (d._anazhInstV !== v) {
+                            d._anazhInstV = v;
+                            return true;
+                        }
+                    }
+                    return altNR.call(this, ro, frame);
+                };
+            }
+            return o;
+        };
+        return mat;
+    }
+
     _ensureAtmoUniforms() {
         if (this.state.atmoUniforms) return this.state.atmoUniforms;
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
@@ -31005,6 +31105,8 @@ class AnazhRealm {
         // V17.114 U1 — die §2-Synergie: der Aerial-Schleier koppelt an die
         // Kaskaden-Kante (der Dunst wandert mit dem Sicht-Ring).
         this._syncAtmoToViewDistance();
+        // UNIFORM-HEIMAT: der geteilte Welt-Satz reist als EIN renderGroup-Buffer.
+        this._uniformHeimatTeilen(this.state.atmoUniforms);
         return this.state.atmoUniforms;
     }
 
@@ -32162,6 +32264,8 @@ class AnazhRealm {
         } catch (_e) {
             u = null;
         }
+        // UNIFORM-HEIMAT: der geteilte LOD-Satz reist als EIN renderGroup-Buffer.
+        if (u) this._uniformHeimatTeilen(u);
         st.lodUniforms = u;
         return u;
     }
@@ -32760,7 +32864,8 @@ class AnazhRealm {
             this.state.voxelChunks.set(key, { empty: true });
             return null;
         }
-        this.state.scene.add(fresh.mesh);
+        // CHUNK-EINBÜRGERUNG (18.07.): der Boden zieht in die Region-BundleGroup.
+        this._chunkBundleAnker(fresh.mesh, cx, cz);
         // TRACE-IDENTITÄT (18.07., Schöpfer-Trace: fünf anonyme „Mesh"-Wale bis
         // 2.8M Tris — niemand wusste WER): der Chunk-Boden trägt seinen Namen;
         // der triZensus des Flugschreibers NENNT damit den Wal statt „Mesh".
@@ -33081,7 +33186,7 @@ class AnazhRealm {
     // (das Band spannt pos→tgt schon selbst — kein Doppel-Morph).
     _rebuildLodStitchBand(entry, bandVerts) {
         if (entry.lodStitchMesh) {
-            if (this.state.scene) this.state.scene.remove(entry.lodStitchMesh);
+            this._archBundleSceneRemove(entry.lodStitchMesh); // Bundle-Parent-bewusst
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -33172,7 +33277,17 @@ class AnazhRealm {
         // sind Terrain-Familie (render-only Naht-Brücke), namenlos direkt unter Scene —
         // ohne Stempel wären sie der Fail-Closed-Fallback der Inventur-Linse.
         mesh.userData.inventar = "terrain-stitch";
-        if (this.state.scene) this.state.scene.add(mesh);
+        // CHUNK-EINBÜRGERUNG: das Band folgt dem Parent seines Chunk-Bodens —
+        // dieselbe Region-BundleGroup per Konstruktion (oder Szene, byte-alt).
+        {
+            const p = entry.mesh && entry.mesh.parent;
+            if (p && p.isBundleGroup === true) {
+                mesh.frustumCulled = false;
+                p.add(mesh);
+                p.needsUpdate = true;
+                this._bundleKugelWeite(p, mesh);
+            } else if (this.state.scene) this.state.scene.add(mesh);
+        }
         entry.lodStitchMesh = mesh;
     }
 
@@ -33444,14 +33559,14 @@ class AnazhRealm {
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         if (entry && entry.mesh) {
-            if (this.state.scene) this.state.scene.remove(entry.mesh);
+            this._archBundleSceneRemove(entry.mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
             // V10.0-j.d — geometry.dispose deferred (siehe _queueGeometryDispose).
             this._queueGeometryDispose(entry.mesh.geometry);
             // V9.84 Perf-1.a — Material NICHT disposen: Singleton-geteilt.
         }
         // A1 — das Cross-LOD-Stitch-Band des Chunks räumen (render-only Begleiter).
         if (entry && entry.lodStitchMesh) {
-            if (this.state.scene) this.state.scene.remove(entry.lodStitchMesh);
+            this._archBundleSceneRemove(entry.lodStitchMesh);
             this._queueGeometryDispose(entry.lodStitchMesh.geometry);
             entry.lodStitchMesh = null;
         }
@@ -36338,6 +36453,10 @@ class AnazhRealm {
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
         };
+        // UNIFORM-HEIMAT + OBSERVER-DIÄT (Pflicht-Paar): alle Takt-Uniforms des
+        // Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
+        this._uniformHeimatTeilen(this.state.hydroSurfaceUniforms);
+        this._materialObserverDiaet(mat);
         this.state.hydroSurfaceMaterial = mat;
         return mat;
     }
@@ -36396,7 +36515,7 @@ class AnazhRealm {
         if (!mesh) return;
         if (!this.state._grassMeshPool) this.state._grassMeshPool = [];
         const pool = this.state._grassMeshPool;
-        if (this.state.scene) this.state.scene.remove(mesh);
+        this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
         mesh.visible = false;
         mesh.count = 0;
         const cap = AnazhRealm.GRASS_POOL_CAP;
@@ -36432,7 +36551,7 @@ class AnazhRealm {
         }
         const pool = this.state._grassMeshPool;
         for (const mesh of pool) {
-            if (this.state.scene && mesh.parent) this.state.scene.remove(mesh);
+            this._archBundleSceneRemove(mesh); // Bundle-Parent-bewusst
             if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
                 mesh.instanceMatrix.array = null;
             }
@@ -36864,7 +36983,7 @@ class AnazhRealm {
         inst.boundingSphere = null;
         if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
         if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
-        this.state.scene.add(inst);
+        this._chunkBundleAnker(inst, cx, cz); // CHUNK-EINBÜRGERUNG: Gras in die Region-BundleGroup
         this.state.voxelChunkGrass.set(key, inst);
         this.state.voxelChunkGrassLod.set(key, entryLod);
         // LOD-WURZEL (08.07.) — die gebaute Gras-STUFE merken:
@@ -37210,6 +37329,9 @@ class AnazhRealm {
         } catch {
             mat = new THREE.MeshLambertMaterial({ color: fallbackHex, side: THREE.DoubleSide });
         }
+        // OBSERVER-DIÄT: die Streu-Graphen (auch deko-fernfeld — derselbe
+        // Chokepoint) hängen nur an geteilten Wind-Uniforms + Attributen.
+        this._materialObserverDiaet(mat);
         cache.set(species.name, mat);
         return mat;
     }
@@ -37301,7 +37423,7 @@ class AnazhRealm {
             pool = [];
             this.state._scatterMeshPools.set(species.name, pool);
         }
-        if (this.state.scene) this.state.scene.remove(mesh);
+        this._archBundleSceneRemove(mesh); // CHUNK-EINBÜRGERUNG: Bundle-Parent-bewusst
         mesh.visible = false;
         mesh.count = 0;
         const cap = species.pool || 16;
@@ -37323,7 +37445,7 @@ class AnazhRealm {
         }
         for (const pool of this.state._scatterMeshPools.values()) {
             for (const mesh of pool) {
-                if (this.state.scene && mesh.parent) this.state.scene.remove(mesh);
+                this._archBundleSceneRemove(mesh); // Bundle-Parent-bewusst
                 if (mesh.instanceMatrix && typeof mesh.instanceMatrix.array !== "undefined") {
                     mesh.instanceMatrix.array = null;
                 }
@@ -37543,7 +37665,7 @@ class AnazhRealm {
             inst.boundingSphere = null;
             if (typeof inst.computeBoundingBox === "function") inst.computeBoundingBox();
             if (typeof inst.computeBoundingSphere === "function") inst.computeBoundingSphere();
-            this.state.scene.add(inst);
+            this._chunkBundleAnker(inst, cx, cz); // CHUNK-EINBÜRGERUNG: Streu in die Region-BundleGroup
             meshes.push({ name: sp.name, mesh: inst });
         }
         this.state.voxelChunkScatter.set(key, meshes);
@@ -37557,7 +37679,7 @@ class AnazhRealm {
             for (const it of list) {
                 const sp = reg.find((s) => s.name === it.name);
                 if (sp) this._releaseScatterMesh(sp, it.mesh);
-                else if (this.state.scene) this.state.scene.remove(it.mesh);
+                else this._archBundleSceneRemove(it.mesh); // Bundle-Parent-bewusst
             }
         }
         this.state.voxelChunkScatter.delete(key);
@@ -55685,7 +55807,14 @@ class AnazhRealm {
                 kand.delete(key);
                 continue;
             }
-            if (now - g._leerSeit >= gnade) {
+            // DIE LINSE WIRD AKTUATOR (18.07., sechster Trace: 1498 Wiederkehrer,
+            // fscatter:blume ×14 im ~51-s-Wander-Takt — die 10-s-Frist war für den
+            // Orbit-Zyklus blind): ein bekannter Wiederkehrer (Mint-Zahl der Churn-
+            // Linse ≥ 2) verdient die längere Leine — Frist × Mints, gedeckelt ×6
+            // (60 s). Preis: eine leere Hülle im Bundle ≈ frei (kein Draw, kein
+            // Walk); der Reaper bleibt die harte Schranke gegen den Für-immer-Wal.
+            const _mc = (this._archGruppenMintMap && this._archGruppenMintMap.get(key)) || 1;
+            if (now - g._leerSeit >= gnade * Math.min(6, Math.max(1, _mc))) {
                 this._disposeArchInstanceGroup(key);
                 kand.delete(key);
             }
@@ -56404,6 +56533,15 @@ class AnazhRealm {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
         if (!g) return;
         this._archGruppenDisposes = (this._archGruppenDisposes || 0) + 1; // CHURN-LINSE (18.07.)
+        // DER OFEN-WIEDERANKER (18.07., sechster Trace: pipelines.total 6067 bei
+        // 219 Ofen-Familien + 24er-Sync-Compile-Bursts in 7-s-Frames — r184
+        // EVICTET den Pipeline-Cache-Eintrag, wenn der letzte RenderObject einer
+        // Familie stirbt; die Wander-Wiederkehr kompilierte SYNCHRON am ersten
+        // Draw, und der Ofen schwieg, weil die Familie für immer in _pipeOfenDone
+        // stand). Der Dispose entlässt die Familie aus dem Dedup → der nächste
+        // Mint reiht sie NEU in den Ofen = ASYNC-Wärmung statt Sync-Stall
+        // (lebt die Pipeline noch, ist compileAsync ein billiger Cache-Treffer).
+        if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         // DER FELD-CULL — der Dispose-Chokepoint legt ein getragenes GPU-Gewand
         // mit ab (der Konsument fällt MIT seiner Familie, nie ein Geister-Draw).
         if (this._feldCull && this._feldCull.gewaender.has(groupKey)) this._feldCullVerlasse(groupKey);
@@ -67670,6 +67808,7 @@ class AnazhRealm {
             regional,
             slotEntry: batch.slotEntry,
         };
+        g._ofenKey = "b|" + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER (s. _disposeArchInstanceGroup)
         this.state.archInstanceGroups.set(key, g);
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
@@ -67780,6 +67919,60 @@ class AnazhRealm {
                 if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
             }
         }
+    }
+
+    // ═══ DIE CHUNK-EINBÜRGERUNG (18.07., sechster Schöpfer-Trace: bundleDeckung
+    // 10 % — 907 MeshStandardNodeMaterial + 215 streu-klein lebten als DIREKTE
+    // Szene-Kinder und zahlten je Frame den vollen renderObject-Walk + Encode =
+    // der render-CPU-49-ms-Kern). Die VIER Nicht-Bundle-Chunk-Populationen
+    // (Terrain-Boden · LOD-Stitch · Gras · Streu · Wasser-Sheet/Iso) sind
+    // STATISCH (Welt-gebackene Geometrie bzw. einmal gefüllte Instanz-Matrizen;
+    // Animation = geteilte Takt-Uniforms, im Replay lebendig) — sie ziehen in
+    // die Region-BundleGroups der Platzier-Bahn (p:-Keying, EIN Ableitungs-Ort
+    // wie _archPlacedRegionKey). Rebuild/Pool-Zyklen laufen über Remove+Add =
+    // Re-Record NUR der betroffenen Region (Kosten binden an ÄNDERUNG).
+    // Kill-Switch + Wände erbt der Anker von _archRegionBundleFor (headless:
+    // Bundles sind reine Gruppen-Knoten — Traversen/Raycasts steigen hinab). ═══
+    _chunkBundleRegionKey(cx, cz) {
+        const cfg = this._voxelChunkConfig();
+        const span = cfg && Number.isFinite(cfg.span) ? cfg.span : 43.2;
+        const R = AnazhRealm.ARCH_REGION_M;
+        return "p:" + Math.floor((cx * span) / R) + "," + Math.floor((cz * span) / R);
+    }
+    _chunkBundleAnker(mesh, cx, cz) {
+        if (!mesh) return;
+        let bundle = null;
+        if (Number.isFinite(cx) && Number.isFinite(cz))
+            bundle = this._archRegionBundleFor(this._chunkBundleRegionKey(cx, cz));
+        if (bundle) {
+            mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
+            bundle.add(mesh);
+            bundle.needsUpdate = true;
+            this._bundleKugelWeite(bundle, mesh);
+        } else if (this.state.scene) this.state.scene.add(mesh);
+    }
+    // Die Region-Kugel MUSS ihren Inhalt decken (Unter-Inklusion = Pop, s.
+    // _archRegionBundleFor): Berg-Chunks ragen über den pauschalen Höhen-
+    // Puffer — die Kugel wächst am Add um die Hülle des Neulings (Chunk-
+    // Geometrie ist welt-gebacken; InstancedMesh rechnet seine Instanzen ein).
+    _bundleKugelWeite(bundle, mesh) {
+        const s = bundle && bundle.userData && bundle.userData.cullSphere;
+        if (!s || !mesh) return;
+        let bs = null;
+        try {
+            if (mesh.isInstancedMesh === true && typeof mesh.computeBoundingSphere === "function") {
+                if (!mesh.boundingSphere) mesh.computeBoundingSphere();
+                bs = mesh.boundingSphere;
+            } else if (mesh.geometry) {
+                if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+                bs = mesh.geometry.boundingSphere;
+            }
+        } catch (_e) {
+            return;
+        }
+        if (!bs || !Number.isFinite(bs.radius) || bs.radius <= 0) return;
+        const d = s.center.distanceTo(bs.center) + bs.radius;
+        if (d > s.radius) s.radius = d;
     }
 
     // Pro Frame (aus _loopFrustumCulling, das Frustum steht dort schon): die
@@ -68020,6 +68213,7 @@ class AnazhRealm {
         // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
         // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie).
         this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
+        g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
     }
@@ -92436,7 +92630,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.7";
+AnazhRealm.VERSION = "18.491.8";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
