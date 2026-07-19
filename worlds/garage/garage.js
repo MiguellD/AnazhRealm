@@ -382,15 +382,15 @@ function updateVehicle(dt,t){
 // Verfolgerkamera — schwingt sanft hinter das Auto, blickt voraus
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück
 const _cf=new THREE.Vector3();
-const camOrb={az:Math.PI,el:0.34,dist:9.6,follow:true};let dragging=false,_lpx=0,_lpy=0;
+const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)let dragging=false,_lpx=0,_lpy=0;
 function lerpAngle(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
 function updateChaseCam(dt,snap){
   if(camOrb.follow){const azT=Math.atan2(Math.sin(car.yaw),-Math.cos(car.yaw));   // Soll-Azimut: hinter dem Auto
-    camOrb.az=lerpAngle(camOrb.az,azT,snap?1:1-Math.pow(0.0016,dt));
-    camOrb.el+=(0.34-camOrb.el)*(snap?1:1-Math.pow(0.02,dt));}
-  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=0.78+bodenY(car.x,car.z),lz=car.z;
+    camOrb.az=lerpAngle(camOrb.az,azT,snap?1:1-Math.pow(FAHR.kamera.azEase,dt));
+    camOrb.el+=(FAHR.kamera.el-camOrb.el)*(snap?1:1-Math.pow(FAHR.kamera.elEase,dt));}
+  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=FAHR.kamera.blickHoehe+bodenY(car.x,car.z),lz=car.z;
   _cf.set(lx+Math.cos(camOrb.az)*ce*d, ly+se*d, lz+Math.sin(camOrb.az)*ce*d);
-  if(snap)cam.position.copy(_cf); else cam.position.lerp(_cf,1-Math.pow(0.0016,dt));
+  if(snap)cam.position.copy(_cf); else cam.position.lerp(_cf,1-Math.pow(FAHR.kamera.posEase,dt));
   cam.lookAt(lx,ly,lz);
 }
 

@@ -2098,6 +2098,21 @@
             lowBlendV: 2.4,
             lowLatK: 0.6,
         },
+        // ── N8 (19.07., rein additive DATEN-Zeile — Praezedenz: zweispur) —
+        // DIE PROBEFAHRT-KAMERA ALS GESETZ: die Chase-Cam des Labs
+        // (updateChaseCam) faehrt HINTER dem Wagen — Elevation, Distanz,
+        // Blick-Hoehe und die Ease-Basen (Rest = 1 − pow(base, dt)) werden
+        // benannte Kern-Daten; die Shell liest sie byte-gleich, exportDrive
+        // reicht sie als fahrprofil.kamera in die Welt (der Welt-Ritt faehrt
+        // dieselbe Kamerafuehrung wie die Probestrecke). ──
+        kamera: {
+            el: 0.34,
+            dist: 9.6,
+            blickHoehe: 0.78,
+            azEase: 0.0016,
+            elEase: 0.02,
+            posEase: 0.0016,
+        },
     };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
@@ -2265,6 +2280,8 @@
                 aPitchMax: A_PITCH_MAX,
                 aLatMax: A_LAT_MAX,
             },
+            // N8 (rein additiv) — die Probefahrt-Kamera reist mit (s. FAHR.kamera).
+            kamera: FAHR.kamera,
         };
     }
 

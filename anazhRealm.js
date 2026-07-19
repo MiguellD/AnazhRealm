@@ -53766,6 +53766,11 @@ class AnazhRealm {
                 // fahrt (Reibkreis-Kappe, Lastverlagerung, Gier aus Reifenmoment)
                 // statt der gripK-Vereinfachung. NaN-Wand: nur mit den tragenden
                 // Größen; sonst bleibt der gripK-Pfad byte-alt (fail-closed).
+                // N8 (19.07.) — die Probefahrt-KAMERA reist ins Profil: der
+                // Welt-Ritt fährt dieselbe Chase-Cam wie die Probestrecke
+                // (hinter dem Wagen, Kern-Elevation/-Distanz/-Eases).
+                const _km = _fp.kamera;
+                if (_km && Number.isFinite(_km.el) && Number.isFinite(_km.dist) && _km.dist > 0) prof.kamera = _km;
                 const _zs = _fp.zweispur;
                 if (
                     _zs &&
@@ -53815,6 +53820,8 @@ class AnazhRealm {
         entry._fahrVLongPrev = null;
         entry._ridePitchV = 0;
         entry._rideKurvenRollV = 0;
+        entry._kamYaw = null; // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen
+        entry._kamT = 0;
         // V18.110 — C7: der SITZ-Punkt des Bauplans bestimmt, WO der Charakter
         // sitzt (expliziter sitz-Punkt ODER die emergente oberste flache
         // Fläche) — statt des festen MOUNT_FOLLOW_HEIGHT-Offsets. Gecacht am
@@ -92125,11 +92132,29 @@ class AnazhRealm {
             // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
             // (Drache hat lange Z-Achse) und Vorbereitung für V2-Glieder.
             player.rotation.y = this.state.yaw;
+            // N8 (19.07., Schöpfer-Spielbericht „er sitzt auf dem Dach"): der
+            // FAHRER SITZT IN DER KABINE — die vehicle-Gestalten sind
+            // geschlossene Karosserien (das Studio rendert keinen Fahrer; der
+            // Gesetz-Sitz 0.475 m liegt UNTER dem 1.2-m-Dach, ein aufrechter
+            // Avatar ragte durchs Blech). Beim Gesetz-Fahrzeug-Ritt ist der
+            // Avatar unsichtbar (render-only — Physik/Sitz-Anker unberührt);
+            // Kreatur-/Ross-Ritt bleibt sichtbar. Idempotent je Frame: der
+            // Abstieg stellt ihn im selben Chokepoint wieder her.
+            const _fahrKabine = (() => {
+                const p = this.state.player;
+                if (!p || p.mountedArch === null || p.mountedArch === undefined) return null;
+                const ent = this._mountedEntry;
+                if (!ent) return null;
+                const prof = this._vehicleProfile(ent);
+                if (!prof || !prof.lenkung) return null;
+                const fzg = this._fahrzeugGesetzFor(ent);
+                return fzg && fzg.drive && fzg.drive.huelle ? { ent, kam: prof.kamera || null } : null;
+            })();
             // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
             // den eigenen Körper zu sehen ist normal — Minecraft etc.
             // tun das auch). Nur der KOPF wird im 1st-Person versteckt.
             // T7: die Regel selbst wohnt in _applyEgoSicht (EINE Quelle).
-            player.visible = true;
+            player.visible = !_fahrKabine;
             this._applyEgoSicht();
             if (this.state.cameraMode === "third") {
                 // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
@@ -92141,12 +92166,37 @@ class AnazhRealm {
                 // sehen; im 3rd-Modus erwartet der Spieler aber, dass die
                 // Maus-Richtung mit der Kamera-Bewegung mitgeht (Maus hoch
                 // = Kamera höher um den Charakter herum).
-                const dist = this.state.cameraThirdDistance;
-                const height = this.state.cameraThirdHeight;
-                const cosPitch = Math.cos(this.state.pitch);
-                const camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
-                const camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
-                let camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                // N8 — DIE STUDIO-CHASE-CAM beim Gesetz-Fahrzeug-Ritt: die
+                // Kamera fährt HINTER dem Wagen (Kern-Azimut-Ease auf die
+                // Gier, feste Kern-Elevation/-Distanz, Blick auf blickHoehe)
+                // — dieselbe Führung wie die Probestrecke. Boden-Clamp +
+                // Kollisions-Raycast unten erben gratis (gleiche Bahn).
+                let camX, camZ, camY;
+                if (_fahrKabine && _fahrKabine.kam) {
+                    const ent = _fahrKabine.ent;
+                    const K = _fahrKabine.kam;
+                    const yawF = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
+                    let az = Number.isFinite(ent._kamYaw) ? ent._kamYaw : yawF;
+                    let d = yawF - az;
+                    while (d > Math.PI) d -= 2 * Math.PI;
+                    while (d < -Math.PI) d += 2 * Math.PI;
+                    const kDt = Math.min(0.1, Math.max(0.001, currentTime - (ent._kamT || currentTime)));
+                    ent._kamT = currentTime;
+                    az += d * (1 - Math.pow(K.azEase, kDt));
+                    ent._kamYaw = az;
+                    const ce = Math.cos(K.el);
+                    const se = Math.sin(K.el);
+                    camX = ent.position.x - Math.sin(az) * ce * K.dist;
+                    camZ = ent.position.z - Math.cos(az) * ce * K.dist;
+                    camY = ent.position.y + K.blickHoehe + se * K.dist;
+                } else {
+                    const dist = this.state.cameraThirdDistance;
+                    const height = this.state.cameraThirdHeight;
+                    const cosPitch = Math.cos(this.state.pitch);
+                    camX = player.position.x - Math.sin(this.state.yaw) * dist * cosPitch;
+                    camZ = player.position.z - Math.cos(this.state.yaw) * dist * cosPitch;
+                    camY = player.position.y + height - Math.sin(this.state.pitch) * dist;
+                }
                 // Boden-Clamp: Kamera nicht unter die Spieler-Füße.
                 const minCamY = player.position.y - 0.2;
                 if (camY < minCamY) camY = minCamY;
@@ -92961,7 +93011,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.12";
+AnazhRealm.VERSION = "18.491.13";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

@@ -50,9 +50,28 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.12 — DIE ZWILLINGS-JAGD: 15 Pflicht-fail-softs fallen als Klasse, 4 Domänen)
+## Stand (V18.491.13 — N8: KABINE + STUDIO-KAMERA — der Welt-Ritt sieht aus wie die Probefahrt)
 
-**19.07., dreizehnte Welle (Schöpfer-Karte §5: „Fail-closed statt fail-soft, wo Kern
+**19.07., vierzehnte Welle (Schöpfer-Spielbericht: „er sitzt auf dem Dach, wo ist die
+Studio-Kamera, die Fahrphysik ist die alte" — die Fahr-Auge-Sonde bewies: die Gesetz-
+Kette FLIESST [gesetz/lenkung/zweispur true, Sitz 0.925 == Kern-Formel], aber der
+Gesetz-Sitz liegt UNTER dem 1.2-m-GT-Dach — ein Avatar ragte durchs Blech, und die
+Welt hatte keine Folge-Kamera):**
+- DER FAHRER SITZT IN DER KABINE: beim Gesetz-Fahrzeug-Ritt (huelle vorhanden) ist
+  der Avatar unsichtbar (render-only, EIN idempotenter Chokepoint in _loopCamera —
+  das Studio rendert keinen Fahrer, die Welt tut es ihm gleich; Physik/Sitz-Anker
+  unberührt); Kreatur-/Ross-Ritt bleibt sichtbar mit Sitz-Pose.
+- DIE PROBEFAHRT-KAMERA REIST (FAHR-UMZUGS-Muster wie zweispur): FAHR.kamera
+  (el 0.34 · dist 9.6 · blickHoehe 0.78 · az/el/pos-Ease-Basen) — die Shell liest
+  byte-gleich (5 Literale umgezogen), exportDrive reicht kamera, der Welt-Ritt
+  fährt die Chase-Cam HINTER dem Wagen (Kern-Azimut-Ease auf die Gier, Snap beim
+  Aufstieg; Boden-Clamp + Kollisions-Raycast erben gratis — gleiche Bahn).
+- BEWIESEN: gate:vehicle-drive GRÜN (14.4 m in 120 Fahr-Ticks — die Kette fährt) ·
+  playtest:fast 18/18 · node --check Stamm+Kern+Shell. OFFEN ehrlich: das
+  fps-Urteil braucht den nächsten Schöpfer-Trace (heapZensus seit .10 an Bord —
+  er NENNT den 3-GB-GC-Wal) · Haut + Felle (Konsum-Tiefe Schnitt 2+3).
+
+**Davor, dreizehnte Welle (Schöpfer-Karte §5: „Fail-closed statt fail-soft, wo Kern
 Pflicht ist" + „Doku = Version" — die erste champion-Welle unter der goldenen
 Definition: 2 Finder + 15 adversariale Skeptiker, 29 Befunde → 15 bestätigt,
 14 sauber widerlegt [„bereits fail-closed" ist jetzt bewiesen, nicht behauptet]):**
