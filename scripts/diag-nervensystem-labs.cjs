@@ -115,10 +115,15 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             /DIAL_MAP\s*=\s*Object\.freeze/.test(fs.readFileSync(path.join(root, "tetrapoda-core.js"), "utf8")),
     ]);
     out.push([
+        // BAND GEWANDERT (19.07., c1c1271-Klasse): V18.483 gab dem Resolver den
+        // vierten Parameter (zustand — der Körper-Zustand führt die Motion-Brücke);
+        // die alte Drei-Argument-Signatur mit schließender Klammer maß eine
+        // Vergangenheit. Die Probe prüft den KONSUM (beide Leser fließen durch
+        // den Resolver), nicht die Aritäts-Momentaufnahme.
         "S8: die EINE Emotions-Bruecke (MOTION_EMOTION_PROFILES) existiert und BEIDE Leser fliessen durch _motionProfileName",
         /MOTION_EMOTION_PROFILES\s*=\s*Object\.freeze/.test(anazhNC) &&
-            (anazhNC.match(/_motionProfileName\(moving, emotions, "kreatur"\)/g) || []).length >= 1 &&
-            (anazhNC.match(/_motionProfileName\(moving, emotions, "koerper"\)/g) || []).length >= 1,
+            (anazhNC.match(/_motionProfileName\(moving, emotions, "kreatur"/g) || []).length >= 1 &&
+            (anazhNC.match(/_motionProfileName\(moving, emotions, "koerper"/g) || []).length >= 1,
     ]);
     out.push([
         "S9: der Rig ist LESER (_animateHumanoidRig ruft _koerperMotionProfile) + der Avatar-Bau liest die Dials (_buildHumanGroup ruft _koerperStudioDials)",
@@ -158,7 +163,7 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         const brokenKoerper = anazhSrc.replace('KOERPER_HOST_RECIPE = "mensch"', 'KOERPER_HOST_RECIPE = "roboter"');
         const s7 = staticLaws(brokenKoerper, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S7"));
         check("Selbst-Test 5: KOERPER_HOST_RECIPE verstellt -> S7 feuert", s7 && s7[1] === false);
-        const brokenBridge = anazhSrc.replace(/_motionProfileName\(moving, emotions, "koerper"\)/g, "null");
+        const brokenBridge = anazhSrc.replace(/_motionProfileName\(moving, emotions, "koerper"/g, "_getrennteBruecke(");
         const s8 = staticLaws(brokenBridge, brueckeSrc, manifestSrc, cores).find((l) => l[0].startsWith("S8"));
         check("Selbst-Test 6: koerper-Leser von der Bruecke getrennt -> S8 feuert", s8 && s8[1] === false);
         if (errs.length) {
