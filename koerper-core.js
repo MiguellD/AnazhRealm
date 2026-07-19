@@ -618,6 +618,12 @@
         sssPow: 3,
         sssFarbe: Object.freeze([1.0, 0.4, 0.25]),
         sssAmt: 0.15,
+        // Vollendung (19.07.): der Clearcoat der Lab-Haut (matSkin: 0.12/0.6)
+        // und das Atem-Noise-Displacement (snoise(pos·3 + t·0.1)·0.0035) —
+        // verbatim aus koerperstudio matSkin.
+        clearcoat: 0.12,
+        clearcoatRoughness: 0.6,
+        atem: Object.freeze({ freq: 3.0, amp: 0.0035, t: 0.1 }),
     });
     var HAAR_LOOK = Object.freeze({
         tipRimPow: 3,

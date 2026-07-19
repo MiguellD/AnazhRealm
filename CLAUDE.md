@@ -50,9 +50,47 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.18 — DIE CHUNK-BODEN-ENTLASSUNG: der GC-Wal verliert den Boden)
+## Stand (V18.491.19 — DIE LISTE FÄLLT: Look GANZ + Batch-Staging-Entlassung + GOLD-Urteile)
 
-**19.07., neunzehnte Welle (Schöpfer: „vollende die chunk-boden-entlassung, der bauplan
+**19.07., zwanzigste Welle (Schöpfer: „wie oft noch, bis du das endlich erledigst?" —
+die ewige Offen-Liste fällt in EINER Welle: zwei Schnitte, zwei finale Urteile):**
+- HAUT+FELLE GANZ (die multiplikativen Rest-Terme fallen): die Kerne tragen
+  die letzten Lab-Zahlen (FELL_LOOK.koerper: wrap 0.5 · atem 1.4/0.007/0.14 ·
+  microFur 500/0.55/[0.7,0.35,0.1]×0.3 · HAUT_LOOK: clearcoat 0.12/0.6 +
+  atem 3.0/0.0035/0.1), die Welt webt sie: WRAP-Licht als outputNode
+  (multipliziert den fertigen Output inkl. der Additive — die matFur-Ordnung),
+  ATEM als positionNode (mx_noise, TSL.time; NUR ungeskinnte fell/skin —
+  die haut-SkinnedMesh-Hülle bleibt still, Komposition unbewiesen), SPARKLE
+  als Lokal-Raster-Hash (Lab-Konstanten 12.9898/78.233/43758.5453; Basis
+  positionLocal statt vUv — der Merge garantiert kein uv, ehrlich benannt),
+  CLEARCOAT via MeshPhysicalNodeMaterial-Weiche für skin/haut. BEWIESEN:
+  Wolf-Guss kompiliert auf ECHTEM WebGPU (0 Seiten-Fehler, Kreatur lebt).
+- DIE BATCH-STAGING-ENTLASSUNG (der 481-MB-Klasse-Rest): dasselbe Muster wie
+  der Chunk-Boden — _tickBatchStagingEntlassung nullt das Staging gesettelter
+  Batches (Gnadenfrist + Upload-Probe); die RE-HYDRIERUNG braucht KEINE
+  Platte: batch.geomIds trägt Quelle→Slot, der Schreiber-Guard in
+  _archBatchAddGeometry stellt vor jedem addGeometry/Wachstum die Arrays aus
+  den lebenden Quellen wieder her (setGeometryAt je Slot → setGeometrySize
+  kopiert LEBENDEN Inhalt, kein Nullen-Loch). Upload-Probe geschärft
+  (position+index statt aller Attribute — ungebundene Stagings laden NIE) +
+  IDB-Existenz-Probe der Chunk-Entlassung bounded re-armiert (5 Proben).
+  Linse: halter.batchEntlassenN/batchFreiMB. BEWIESEN (chirurgische Probe am
+  ECHTEN Chokepoint, 6/6 GRÜN): Nullung · Bilanz · Schreiber-Guard mit
+  WACHSTUM auf entlassenem Staging · BYTE-TREUE per Fingerabdruck · Bilanz
+  zurück auf 0 · 0 Fehler. playtest:fast 18/18.
+- GOLD 2 GEFÄLLT (Welt-Puffer-Synthese, final): ihr Ziel — Batch-Pool-
+  Effizienz/Speicher — ist mit anderer Klinge erreicht (Klein-Münze −82 % +
+  Staging-Entlassung); ein Welt-Pool BRÄCHE die Region-Bundle-Bahn (ein
+  BatchedMesh kann nicht in mehreren Region-Bundles leben). Die Messlatte
+  bleibt stehen (batchFillPct · V5 < 700 MB · batchFreiMB) — regressiert
+  sie, öffnet der Bogen NEU. Kein stilles Streichen: dies ist das Urteil.
+- GOLD 3 GEFÄLLT (Source-Vendoring, final): sein Versprechen — Täter-Benennung
+  bei Vendor-Wechsel + patchbare Organe — trägt die VENDOR-ANKER-WAND längst
+  (11 Anker, FNV-Pins, Selbsttest); three-Source liegt nicht auf der Platte
+  (netz-restriktiv), ein Source-Build wäre ein eigener bewusster Akt. Wieder-
+  eröffnung NUR, wenn ein künftiger Organ-Schnitt am Minified scheitert.
+
+**Davor, neunzehnte Welle (Schöpfer: „vollende die chunk-boden-entlassung, der bauplan
 steht" — der 17.-Welle-Zensus wird Maschine; der letzte benannte Live-Set-Schnitt
 mit klarem Plan fällt):**
 - DIE ENTLASSUNG (_tickChunkBodenEntlassung, Gnadenfrist 10 s): nach Upload

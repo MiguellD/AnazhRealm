@@ -16180,6 +16180,15 @@ class AnazhRealm {
                         chunkFreiMB: this.state._chunkEntlassenBytes
                             ? +(this.state._chunkEntlassenBytes / 1048576).toFixed(1)
                             : 0,
+                        batchEntlassenN: (() => {
+                            let n = 0;
+                            if (this.state.archBatches)
+                                for (const b of this.state.archBatches.values()) if (b && b._entlassen) n++;
+                            return n;
+                        })(),
+                        batchFreiMB: this.state._batchEntlassenBytes
+                            ? +(this.state._batchEntlassenBytes / 1048576).toFixed(1)
+                            : 0,
                     };
                 })(),
             };
@@ -33509,17 +33518,22 @@ class AnazhRealm {
         // Upload-Probe: der Backend-Datensatz eines Attributs trägt .buffer
         // (WebGPU) bzw. .bufferGPU (WebGL-Fallback) erst NACH createAttribute
         // — vorher wäre das Nullen ein weißes Loch (die Reife-Wache-Klasse).
+        // GEPROBT werden NUR position + index: alle vom Material GEBUNDENEN
+        // Attribute laden im selben ersten Render; UNGEBUNDENE Stagings
+        // (z. B. uv eines Batch, dessen Material kein uv liest) laden NIE —
+        // eine Alle-Attribute-Probe wäre für sie ewig falsch (gemessen an
+        // den Batch-Stagings), ihr CPU-Staging ist trotzdem frei nullbar.
         try {
             const r = this.state.renderer;
             const be = r && r.backend;
             if (!be || typeof be.get !== "function") return false;
-            for (const k in geo.attributes) {
-                const d = be.get(geo.attributes[k]);
-                if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
-            }
+            const pos = geo.attributes && geo.attributes.position;
+            if (!pos) return false;
+            const d = be.get(pos);
+            if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
             if (geo.index) {
-                const d = be.get(geo.index);
-                if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
+                const di = be.get(geo.index);
+                if (!di || (di.buffer === undefined && di.bufferGPU === undefined)) return false;
             }
             return true;
         } catch (_e) {
@@ -33570,7 +33584,17 @@ class AnazhRealm {
             budget--;
             const idbKey = this._chunkIdbKey(eintrag.cx, eintrag.cz, entry.lod);
             this._chunkIdbGet(idbKey).then((payload) => {
-                if (!payload || payload.empty || !payload.positions) return; // Platte deckt nicht → resident
+                if (!payload || payload.empty || !payload.positions) {
+                    // Platte (noch) leer: BOUNDED re-armieren — der Worker-Put
+                    // kann nach dem Finalize kommen; Sync-Bauten ohne Put
+                    // fallen nach 5 Proben ehrlich aus der Entlassung.
+                    eintrag.versuche = (eintrag.versuche | 0) + 1;
+                    if (eintrag.versuche < 5 && !q.has(key)) {
+                        eintrag.seit = now;
+                        q.set(key, eintrag);
+                    }
+                    return;
+                }
                 const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
                 if (!e2 || e2 !== entry || e2._entlassen || !e2.mesh || e2.mesh !== eintrag.mesh) return;
                 if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) return;
@@ -57356,6 +57380,9 @@ class AnazhRealm {
         // CHUNK-BODEN-ENTLASSUNG (19.07.) — der Gnadenfrist-Tick nullt die
         // CPU-Arrays gesettelter, IDB-gedeckter Chunk-Böden (echt-only).
         this._tickChunkBodenEntlassung(performance.now());
+        // BATCH-STAGING-ENTLASSUNG (19.07.) — dasselbe Muster für die
+        // BatchedMesh-Stagings (Re-Hydrierung aus den lebenden Quellen).
+        this._tickBatchStagingEntlassung(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -68420,8 +68447,89 @@ class AnazhRealm {
         return g;
     }
 
+    // DIE BATCH-STAGING-ENTLASSUNG (19.07., der Batch-Staging-Rest fällt):
+    // BatchedMesh hält seine Merge-Geometrie DOPPELT — GPU-Puffer und CPU-
+    // Staging. Der GOLD-1-Zensus urteilte: das Staging wird nach dem Upload
+    // nie gelesen; die einzigen Schreiber sind addGeometry/setGeometryAt (der
+    // EINE Chokepoint hier) und setGeometrySize (Wachstum KOPIERT das alte
+    // Staging). Der Tick (_tickBatchStagingEntlassung) nullt das Staging
+    // gesettelter Batches (Gnadenfrist + Upload-Probe — dasselbe Muster wie
+    // die Chunk-Boden-Entlassung); die RE-HYDRIERUNG braucht KEINE Platte:
+    // batch.geomIds trägt Quelle→Slot und die Quell-Geometrien (Foundry-
+    // Blätter) leben — Null-Arrays in Batch-Größe + setGeometryAt je Quelle
+    // stellt das Staging VOR dem nächsten addGeometry/Wachstum wieder her
+    // (setGeometrySize kopiert danach LEBENDEN Inhalt, kein Zero-Loch).
+    // Headless bleibt resident (die Gates lesen byte-alt).
+    _batchStagingReHydrieren(batch) {
+        const bg = batch.mesh && batch.mesh.geometry;
+        if (!bg || batch._entlassen !== true) return;
+        for (const k in bg.attributes) {
+            const a = bg.attributes[k];
+            if (a && a.array === null && a._anazhArrTyp) a.array = new a._anazhArrTyp(a.count * a.itemSize);
+        }
+        if (bg.index && bg.index.array === null && bg.index._anazhArrTyp)
+            bg.index.array = new bg.index._anazhArrTyp(bg.index.count);
+        for (const [src, gid] of batch.geomIds) {
+            try {
+                batch.mesh.setGeometryAt(gid, src);
+            } catch (_e) {
+                /* toter Slot — der Rest re-hydriert weiter */
+            }
+        }
+        batch._entlassen = false;
+        this.state._batchEntlassenBytes = Math.max(
+            0,
+            (this.state._batchEntlassenBytes || 0) - (Number.isFinite(batch._entlassBytes) ? batch._entlassBytes : 0)
+        );
+        batch._entlassBytes = 0;
+        this._archBundleTouch(batch); // die Range-Uploads + der Re-Record decken jede Bahn
+    }
+    _tickBatchStagingEntlassung(now) {
+        const bs = this.state.archBatches;
+        if (!bs || !bs.size) return;
+        const r = this.state.renderer;
+        if (!r || r._isHeadlessNull) return; // headless: Gates lesen byte-alt
+        let budget = 3;
+        for (const batch of bs.values()) {
+            if (budget <= 0) break;
+            if (batch._entlassen || !batch.mesh || !batch.mesh.geometry) continue;
+            if (!Number.isFinite(batch._geoMutAt)) {
+                batch._geoMutAt = now; // Alt-Batch ohne Stempel: die Uhr startet jetzt
+                continue;
+            }
+            if (now - batch._geoMutAt < AnazhRealm.CHUNK_ENTLASS_GNADE_MS) continue;
+            const bg = batch.mesh.geometry;
+            if (!this._chunkBodenGpuHat(bg)) {
+                batch._geoMutAt = now; // nie gerendert/hochgeladen → Frist neu
+                continue;
+            }
+            let frei = 0;
+            for (const k in bg.attributes) {
+                const a = bg.attributes[k];
+                if (a && a.array && a.array.byteLength) {
+                    a._anazhArrTyp = a.array.constructor;
+                    frei += a.array.byteLength;
+                    a.array = null;
+                }
+            }
+            if (bg.index && bg.index.array && bg.index.array.byteLength) {
+                bg.index._anazhArrTyp = bg.index.array.constructor;
+                frei += bg.index.array.byteLength;
+                bg.index.array = null;
+            }
+            batch._entlassen = true;
+            batch._entlassBytes = frei;
+            this.state._batchEntlassenBytes = (this.state._batchEntlassenBytes || 0) + frei;
+            budget--;
+        }
+    }
+
     // addGeometry mit Puffer-Wachstum bei Überlauf (setGeometrySize, V18.289-Probe).
     _archBatchAddGeometry(batch, geom) {
+        // ENTLASSUNG: der Geometrie-Schreiber stempelt die Settle-Uhr und
+        // re-hydriert ein entlassenes Staging VOR jedem Schreiben/Wachstum.
+        batch._geoMutAt = performance.now();
+        if (batch._entlassen === true) this._batchStagingReHydrieren(batch);
         try {
             return batch.mesh.addGeometry(geom);
         } catch {
@@ -73282,13 +73390,30 @@ class AnazhRealm {
                 : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
+        // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
+        // 0.12/0.6) — skin/haut minten als Physical-Material (der Standard
+        // trägt keinen Lack); die Zahlen kommen NUR aus dem Kern-Gesetz.
+        const _hautL =
+            (kind === "skin" || kind === "haut") && typeof globalThis !== "undefined" && globalThis.__koerperCore
+                ? globalThis.__koerperCore.HAUT_LOOK
+                : null;
         try {
-            mat = new T.MeshStandardNodeMaterial({
+            const MatK =
+                _hautL && Number.isFinite(_hautL.clearcoat) && typeof T.MeshPhysicalNodeMaterial === "function"
+                    ? T.MeshPhysicalNodeMaterial
+                    : T.MeshStandardNodeMaterial;
+            mat = new MatK({
                 roughness: rough,
                 metalness: metal,
                 flatShading: flat,
                 side: sideDouble ? T.DoubleSide : T.FrontSide,
             });
+            if (MatK === T.MeshPhysicalNodeMaterial) {
+                mat.clearcoat = _hautL.clearcoat;
+                mat.clearcoatRoughness = Number.isFinite(_hautL.clearcoatRoughness)
+                    ? _hautL.clearcoatRoughness
+                    : 0.5;
+            }
             if (env !== 1) mat.envMapIntensity = env;
             if (emis) {
                 mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
@@ -73408,8 +73533,49 @@ class AnazhRealm {
                                 term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
                             if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
                                 term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
+                            // VOLLENDUNG (19.07.) — der microFur-SPARKLE (matFur:
+                            // hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt
+                            // kein garantiertes uv — das Lokal-Raster (positionLocal
+                            // ×dichte) trägt dieselbe Sparkle-Klasse, ehrlich benannt.
+                            const mf = L.microFur;
+                            if (mf && Array.isArray(mf.farbe) && TSL.positionLocal && TSL.floor && TSL.fract && TSL.sin && TSL.step) {
+                                const cell = TSL.floor(TSL.positionLocal.xz.mul(mf.dichte));
+                                const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
+                                term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
+                            }
                         }
                         if (add) mat.emissiveNode = add;
+                        // VOLLENDUNG (19.07.) — das WRAP-LICHT des Lab-Fells
+                        // (·(0.5+0.5·max(NdotV,0)) NACH allen Additiven — exakt
+                        // die matFur-Ordnung: outputNode multipliziert den
+                        // fertigen Output inkl. der emissive-Terme).
+                        if (Number.isFinite(L.wrap) && TSL.output && TSL.vec4) {
+                            const w = ndv.max(0.0).mul(L.wrap).add(1.0 - L.wrap);
+                            mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
+                        }
+                        // VOLLENDUNG (19.07.) — das ATEM-NOISE-Displacement der
+                        // Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier
+                        // mx_noise — dieselbe Rausch-Klasse, ehrlich benannt).
+                        // NUR ungeskinnte Klassen (fell = Tier-Körper, skin =
+                        // Mensch-Teile); die haut-SkinnedMesh-Hülle bleibt still
+                        // (positionNode×Skinning-Komposition unbewiesen).
+                        const at = L.atem;
+                        if (
+                            at &&
+                            (kind === "fell" || kind === "skin") &&
+                            TSL.positionLocal &&
+                            TSL.normalLocal &&
+                            TSL.mx_noise_float &&
+                            TSL.time
+                        ) {
+                            mat.positionNode = TSL.positionLocal.add(
+                                TSL.normalLocal.mul(
+                                    TSL.mx_noise_float(
+                                        TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))
+                                    ).mul(at.amp)
+                                )
+                            );
+                        }
                     }
                 } catch (_eL) {
                     /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
@@ -93498,7 +93664,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.18";
+AnazhRealm.VERSION = "18.491.19";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

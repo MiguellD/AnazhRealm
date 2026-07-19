@@ -1360,6 +1360,18 @@
             sheenPow: 5,
             sheenAmt: 0.15,
             sheenFarbe: Object.freeze([0.45, 0.25, 0.08]),
+            // Vollendung (19.07.): Wrap-Licht ·(0.5+0.5·NdotV), Atem-Noise-
+            // Displacement (snoise(pos·1.4 + t·0.14)·0.007) und der microFur-
+            // Sparkle (hash-Raster ×500, Schwelle 0.55, Rim³ ×0.3) — verbatim
+            // aus matFur `wolf_aureus_v22`.
+            wrap: 0.5,
+            atem: Object.freeze({ freq: 1.4, amp: 0.007, t: 0.14 }),
+            microFur: Object.freeze({
+                dichte: 500,
+                schwelle: 0.55,
+                farbe: Object.freeze([0.7, 0.35, 0.1]),
+                amt: 0.3,
+            }),
         }),
         straehne: Object.freeze({
             tipRimPow: 3,
