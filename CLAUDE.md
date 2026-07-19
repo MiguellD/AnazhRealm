@@ -50,9 +50,42 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.15 — DER FAHR-BOGEN-ABSCHLUSS: jedes rädrige Werk fährt das EINE Gesetz)
+## Stand (V18.491.16 — DIE OFFENEN PUNKTE FALLEN: Heave-Konsument + Atlas-Wächter-Diät)
 
-**19.07., sechzehnte Welle (Schöpfer: „weder die fahrphysik, noch sonst was ist fertig —
+**19.07., siebzehnte Welle (Schöpfer: „vollende die offenen punkte zuerst, ändere den
+code ohne zu testen, wenn der plan klar ist" — die zwei Klar-Plan-Punkte fallen, der
+dritte bekommt seinen Leser-Zensus statt eines Blind-Schnitts):**
+- DER HEAVE-KONSUMENT (N7-Rest): der Squat-Kanal des Kerns (zweispur.heaveA/V/
+  KMul/CMul) wird KONSUMIERT — dritte Feder-Dämpfer-Achse neben Nick/Wank
+  (Lab-Formel byte: m = −|aLong|·heaveA − |v|·heaveV, k·heaveKMul/c·heaveCMul,
+  Klemme ±0.08 m), Konsumenten sind die SITZ-HÖHE (der benannte Rest), das
+  Group-Visual und die Instanz-Matrix (dasselbe rp/rr-Muster — 0/undefined =
+  byte-alt für alles Nicht-Gerittene). Aufstieg/Abstieg nullen den Zustand.
+- DIE ATLAS-WÄCHTER-DIÄT (elfte-Welle-Rest): der Leser-Zensus überführte eine
+  KOMMENTAR-LÜGE — die Impostor-Materialien fließen durch _sharedFoliage-
+  Material und waren seit Welle 11 längst diätiert („bleiben BEWUSST
+  undiätiert" war falsch); ihre lebenden Atlanten lud nur die renderId-
+  Lebensader implizit nach. Jetzt urteilt der ATLAS-WÄCHTER beim Namen
+  (mat._anazhAtlasTexe im Diät-needsRefresh — Textur-KNOTEN sind für equals()
+  unsichtbar, Vendor-Beweis: _bindings.updateForRender läuft NUR unter
+  needsRefresh), gestempelt am Impostor-Wiring (map+nmap) und am Blatt-Atlas;
+  die MASKEN-Familie (_foundryTreeMaterial: Vertex-Farben + Stempel-Attribute
+  + geteilte LOD-Uniforms + statischer Atlas) fällt in die Diät; der
+  sharedFoliage-Kommentar sagt wieder die Wahrheit (sage a, tue a).
+- DER CHUNK-BODEN-ZENSUS (statt Blind-Schnitt): drei tragende Fakten für die
+  Entlassungs-Welle — (1) hasBVH ist tot (24345: „der Mesh trägt nur noch das
+  Visual", Physik lebt im Feld), (2) _rebuildLodStitchBand hat EINEN Caller,
+  den Geomorph-Pass, der bei Nachbar-LOD-Wechsel pos/tgt NEU beschreibt =
+  DAS ist die Grenz-Re-Hydrierungs-Pflicht, (3) onUploadCallback existiert im
+  WebGPU-Vendor NICHT (nur core/WebGL) — die Entlassung braucht manuelles
+  Array-Nullen + IDB-Re-Hydrierung beim Nachbar-Wechsel. Der Schnitt bleibt
+  ehrlich offen, jetzt mit Bauplan statt Vermutung.
+- FORMAT VOLLENDET: prettier --write auf dem Stamm (der 16.-Welle-Drift +
+  diese Welle in einem Zug), node --check grün. Auf Schöpfer-Order ohne
+  Test-Lauf committet (Klar-Plan-Regel; die Konsum-Probe der 16. Welle deckt
+  die Fahr-Kette, der nächste Ritt ist der Richter).
+
+**Davor, sechzehnte Welle (Schöpfer: „weder die fahrphysik, noch sonst was ist fertig —
 beende die dinge, schliesse sie ab" — der Fahr-Bogen schließt an seiner letzten Lücke:
 das Gesetz galt nur Katalog-Presets mit Buch-Rezept; Eigenwerke/Donor-Wagen ritten die
 alte richtungs-folgende Physik, first-Person aufs Blech, Pfeile taten nichts):**
