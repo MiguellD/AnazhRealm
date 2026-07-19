@@ -31109,6 +31109,21 @@ class AnazhRealm {
                             return true;
                         }
                     }
+                    // ATLAS-WÄCHTER (elfte-Welle-Rest): Materialien mit lebenden
+                    // Canvas-Atlanten (Impostor map/nmap · Blatt-Atlas) deklarieren
+                    // sie an mat._anazhAtlasTexe — Textur-KNOTEN sind für equals()
+                    // unsichtbar. Version klettert (Bake) → EIN ehrlicher Refresh
+                    // je Objekt bindet die frische Karte.
+                    const texe = ro && ro.material ? ro.material._anazhAtlasTexe : null;
+                    if (texe) {
+                        let va = "";
+                        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
+                        const d = this.getRenderObjectData(ro);
+                        if (d._anazhAtlasV !== va) {
+                            d._anazhAtlasV = va;
+                            return true;
+                        }
+                    }
                     return altNR.call(this, ro, frame);
                 };
             }
@@ -31839,6 +31854,12 @@ class AnazhRealm {
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
+                                    // ATLAS-WÄCHTER (elfte-Welle-Rest, 19.07.): die LEBENDEN
+                                    // Canvas-Atlanten (Studio-Bake setzt map/nmap.needsUpdate)
+                                    // deklarieren sich der Diät — equals() sieht Textur-KNOTEN
+                                    // nie; bisher lud nur die renderId-Lebensader den Bake
+                                    // implizit nach. Jetzt urteilt der Wächter BEIM NAMEN.
+                                    mat._anazhAtlasTexe = [_rec.map, _rec.nmap];
                                     _wired = true;
                                 }
                             } catch (_e) {
@@ -53838,7 +53859,11 @@ class AnazhRealm {
                             const s = bp.parts[i] && bp.parts[i].size;
                             if (!s) continue;
                             const r =
-                                (Math.max(Math.abs(Number(s.x) || 0), Math.abs(Number(s.y) || 0), Math.abs(Number(s.z) || 0)) *
+                                (Math.max(
+                                    Math.abs(Number(s.x) || 0),
+                                    Math.abs(Number(s.y) || 0),
+                                    Math.abs(Number(s.z) || 0)
+                                ) *
                                     scl) /
                                 2;
                             if (r > rr) rr = r;
@@ -53847,18 +53872,33 @@ class AnazhRealm {
                     }
                     const drv = core.exportDrive(P);
                     const _lk2 = drv && drv.lenkung;
-                    if (_lk2 && Number.isFinite(_lk2.sfK) && Number.isFinite(_lk2.maxSteer) && Number.isFinite(_lk2.gripK)) {
+                    if (
+                        _lk2 &&
+                        Number.isFinite(_lk2.sfK) &&
+                        Number.isFinite(_lk2.maxSteer) &&
+                        Number.isFinite(_lk2.gripK)
+                    ) {
                         prof.lenkung = _lk2;
                         const _zs2 = drv.zweispur;
-                        if (_zs2 && Number.isFinite(_zs2.Izz) && _zs2.Izz > 0 && Number.isFinite(_zs2.mass) && _zs2.mass > 0) {
+                        if (
+                            _zs2 &&
+                            Number.isFinite(_zs2.Izz) &&
+                            _zs2.Izz > 0 &&
+                            Number.isFinite(_zs2.mass) &&
+                            _zs2.mass > 0
+                        ) {
                             prof.zweispur = _zs2;
                         }
                         const _km2 = drv.kamera;
-                        if (_km2 && Number.isFinite(_km2.el) && Number.isFinite(_km2.dist) && _km2.dist > 0) prof.kamera = _km2;
-                        if (!prof.spring && drv.spring && Number.isFinite(drv.spring.k) && drv.spring.k > 0) prof.spring = drv.spring;
+                        if (_km2 && Number.isFinite(_km2.el) && Number.isFinite(_km2.dist) && _km2.dist > 0)
+                            prof.kamera = _km2;
+                        if (!prof.spring && drv.spring && Number.isFinite(drv.spring.k) && drv.spring.k > 0)
+                            prof.spring = drv.spring;
                         if (!Number.isFinite(prof.cgH) && Number.isFinite(drv.cgH) && drv.cgH > 0) prof.cgH = drv.cgH;
-                        if (!Number.isFinite(prof.radR) && Number.isFinite(drv.radR) && drv.radR > 0) prof.radR = drv.radR;
-                        if (!Number.isFinite(prof.spur) && Number.isFinite(drv.spur) && drv.spur > 0) prof.spur = drv.spur;
+                        if (!Number.isFinite(prof.radR) && Number.isFinite(drv.radR) && drv.radR > 0)
+                            prof.radR = drv.radR;
+                        if (!Number.isFinite(prof.spur) && Number.isFinite(drv.spur) && drv.spur > 0)
+                            prof.spur = drv.spur;
                     }
                 }
             } catch (_e4) {}
@@ -53892,6 +53932,8 @@ class AnazhRealm {
         entry._fahrVLongPrev = null;
         entry._ridePitchV = 0;
         entry._rideKurvenRollV = 0;
+        entry._rideHeave = 0; // N7-Rest — frischer Squat-Zustand je Aufstieg
+        entry._rideHeaveV = 0;
         entry._kamYaw = null; // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen
         entry._kamT = 0;
         // V18.110 — C7: der SITZ-Punkt des Bauplans bestimmt, WO der Charakter
@@ -53994,9 +54036,11 @@ class AnazhRealm {
         // ERSTE direkte Instanz-Update-Bindung aus dem Quelltext — die muss die
         // Tick-Zeile in _tickMountedMovement bleiben, nicht dieser Ruhe-Refresh.
         // Kommentar zitiert das Muster bewusst NICHT — die V18.267-Falle.)
-        if (entry && (entry._ridePitch || entry._rideVy)) {
+        if (entry && (entry._ridePitch || entry._rideVy || entry._rideHeave)) {
             entry._ridePitch = 0;
             entry._rideVy = 0;
+            entry._rideHeave = 0; // N7-Rest — das stehende Gefaehrt steht auf Feder-Null
+            entry._rideHeaveV = 0;
             if (entry.mesh) entry.mesh.rotation.x = 0;
             else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
         }
@@ -54166,7 +54210,9 @@ class AnazhRealm {
                 entry._rideVy = 0;
             }
             entry._rideY = entry.position.y;
-            const riderY = entry.position.y + sitz;
+            // HEAVE (N7-Rest) — der Squat senkt den SITZ mit (der benannte
+            // Sitz-Höhen-Konsument; render-/Gefühls-seitig, Blocker byte-alt).
+            const riderY = entry.position.y + sitz + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
             pm.y = riderY;
             // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen
             // (kein Ammo-Body, der synchronisiert werden müsste).
@@ -54321,11 +54367,43 @@ class AnazhRealm {
                 }
                 entry._rideKurvenRollV = rv;
                 entry._rideKurvenRoll = nKR;
+                // HEAVE (N7-Rest, 19.07.) — der SQUAT-Kanal wird KONSUMIERT: die
+                // Lab-Formel (garage spHeave: m = −|aLong|·heaveA − |v|·heaveV,
+                // Feder k·heaveKMul / c·heaveCMul) drückt den Aufbau bei Fahrt/
+                // Beschleunigung in die Federn [m]; Konsument ist die SITZ-HÖHE
+                // + das Visual (gSprung.position.y des Labs). Nur mit Zweispur-
+                // Kanal (er trägt heave*); render-only wie Nick/Wank.
+                const zsH = rideProf && rideProf.zweispur;
+                if (zsH && Number.isFinite(zsH.heaveA) && Number.isFinite(zsH.heaveKMul)) {
+                    const mH = -Math.abs(aLong) * zsH.heaveA - sp * (Number.isFinite(zsH.heaveV) ? zsH.heaveV : 0);
+                    const curH = Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0;
+                    let hv = Number.isFinite(entry._rideHeaveV) ? entry._rideHeaveV : 0;
+                    hv += (mH - sprN.k * zsH.heaveKMul * curH - sprN.c * (zsH.heaveCMul || 1) * hv) * th;
+                    let nH = curH + hv * th;
+                    if (!Number.isFinite(nH) || !Number.isFinite(hv)) {
+                        nH = 0;
+                        hv = 0;
+                    }
+                    if (nH > 0.08) {
+                        nH = 0.08;
+                        hv = Math.min(0, hv);
+                    } else if (nH < -0.08) {
+                        nH = -0.08;
+                        hv = Math.max(0, hv);
+                    }
+                    entry._rideHeaveV = hv;
+                    entry._rideHeave = nH;
+                } else if (entry._rideHeave) {
+                    entry._rideHeave = 0;
+                    entry._rideHeaveV = 0;
+                }
             } else {
                 if (entry._ridePitch) entry._ridePitch = 0;
                 if (entry._rideKurvenRoll) entry._rideKurvenRoll = 0;
+                if (entry._rideHeave) entry._rideHeave = 0;
                 entry._ridePitchV = 0;
                 entry._rideKurvenRollV = 0;
+                entry._rideHeaveV = 0;
             }
             entry._rideSp = sp;
             // STEIGUNGS-DREIKLANG — Gelände-NICK/-WANK für JEDES gerittene Gefährt
@@ -54350,7 +54428,12 @@ class AnazhRealm {
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
         if (entry.mesh) {
-            entry.mesh.position.set(entry.position.x, entry.position.y, entry.position.z);
+            // HEAVE (N7-Rest) — der Aufbau taucht mit dem Squat (render-only).
+            entry.mesh.position.set(
+                entry.position.x,
+                entry.position.y + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0),
+                entry.position.z
+            );
             if (Number.isFinite(entry._rideYaw)) entry.mesh.rotation.y = entry._rideYaw;
             // STEIGUNGS-DREIKLANG — Beschleunigungs-Nick + Gelände-Nick addieren,
             // der Wank kommt als rotation.z dazu (beide 0 für Nicht-Gerittenes);
@@ -64912,7 +64995,12 @@ class AnazhRealm {
     // = baseY = pos.y-0.5, group.scale = scalar(scale), keine Rotation).
     _archEntryWorldMatrix(entry, out) {
         const m = out || new THREE.Matrix4();
-        const baseY = Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0;
+        // HEAVE (N7-Rest, 19.07.) — der Squat des gerittenen Studio-Gefaehrts
+        // reist in die Instanz-Matrix (0/undefined fuer alles Nicht-Gerittene =
+        // byte-alte Matrix; dasselbe Muster wie rp/rr unten).
+        const baseY =
+            (Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0) +
+            (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         // W-H (V18.179) — die PRO-INSTANZ-ROTATION (der Klon-Killer): ein
         // instanzierter Wald, dessen Bäume ALLE nach Norden zeigen, liest sich als
@@ -67995,9 +68083,11 @@ class AnazhRealm {
             // größte verbliebene Jeden-Frame-Refresher. Ihr Graph hängt NUR an
             // geteilten Sätzen (Toon-Builder: Atmo/LOD/Wind — alle renderGroup)
             // + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/
-            // instanceColor UND die BatchedMesh-Daten-Texturen. Die Masken-/
-            // Impostor-PBR-Materialien (Atlas-Textur-KNOTEN — für equals
-            // unsichtbar, Atlanten backen live) bleiben BEWUSST undiätiert.
+            // instanceColor UND die BatchedMesh-Daten-Texturen. KORREKTUR
+            // (19.07., sage a, tue a): auch die Impostor-Materialien fließen
+            // durch DIESEN Chokepoint und waren damit längst diätiert — ihre
+            // lebenden Atlanten lud nur die renderId-Lebensader implizit nach;
+            // jetzt deckt sie der ATLAS-WÄCHTER (mat._anazhAtlasTexe) beim Namen.
             this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
@@ -73042,6 +73132,10 @@ class AnazhRealm {
                     mat.opacityNode = texN.a;
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
+                    // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
+                    // (heute statisch nach dem Mint; ein künftiger Live-Re-Bake
+                    // bleibt fail-closed sichtbar statt still eingefroren).
+                    mat._anazhAtlasTexe = [tex];
                 } else {
                     mat.colorNode = TSL.vec4(vcol, 1.0);
                 }
@@ -73101,6 +73195,13 @@ class AnazhRealm {
         } catch (_e) {
             mat = new T.MeshStandardMaterial({ vertexColors: true, side: sideDouble ? T.DoubleSide : T.FrontSide });
         }
+        // OBSERVER-DIÄT-AUSWEITUNG (elfte-Welle-Rest, 19.07.) — die MASKEN-
+        // Familie fällt in die Diät: ihr Graph hängt an Vertex-Farben +
+        // Stempel-Attributen (aLodLevel/aH0/aH0L — equals sieht Attribut-
+        // Versionen) + den GETEILTEN LOD-Uniforms (renderGroup-Heimat) + dem
+        // statischen Blatt-Atlas (Atlas-Wächter deckt ihn). Der Fallback-Pfad
+        // (MeshStandardMaterial, kein setupObserver) bleibt byte-alt.
+        this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
         return mat;
     }
@@ -93122,7 +93223,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.15";
+AnazhRealm.VERSION = "18.491.16";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
