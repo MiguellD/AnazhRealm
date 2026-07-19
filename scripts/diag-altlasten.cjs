@@ -349,6 +349,15 @@ function scanLabBuster() {
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
         errs.push(`AnazhRealm.VERSION trägt stale "${vm[1]}" (package.json ${version}) — Trace/Panel lügen über die Version`);
+    // DOKU=VERSION (19.07., Schöpfer-Karte §5.6 „Doku = Version"): der Stand-Kopf
+    // von CLAUDE.md ist die Chronik-Spitze — trägt er eine andere Version als
+    // package.json, LÜGT die Doku relativ zum Code (die 18.490/18.491-Drift-
+    // Klasse). DIESELBE Wand, ein weiterer Träger.
+    const claude = fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8");
+    const cm = claude.match(/## Stand \(V([0-9.]+)/);
+    if (!cm) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V… — die Doku-Wand braucht den Anker)");
+    else if (cm[1] !== version)
+        errs.push(`CLAUDE.md Stand-Kopf trägt stale V${cm[1]} (package.json ${version}) — die Chronik lügt relativ zum Code`);
     return errs;
 }
 
