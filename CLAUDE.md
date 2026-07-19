@@ -50,9 +50,35 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.16 — DIE OFFENEN PUNKTE FALLEN: Heave-Konsument + Atlas-Wächter-Diät)
+## Stand (V18.491.17 — HAUT + FELLE: das Shader-Gesetz der Studios erreicht die Welt)
 
-**19.07., siebzehnte Welle (Schöpfer: „vollende die offenen punkte zuerst, ändere den
+**19.07., achtzehnte Welle (Schöpfer: „weiter, vollende" — die benannten Konsum-Tiefe-
+Schnitte 2+3 fallen mit derselben Klinge wie die Fahrphysik; der Zensus fand die Lücke
+EXAKT: die Fell-Geometrie floss längst [fellStreu → Pipe-Bäcker, T4 Fell×Fläche], aber
+die Lab-SHADER-Gesetze — das, was Haut und Fell FÜHLBAR macht — reisten nie):**
+- DIE GESETZE ALS DATEN (Kerne rein additiv, verbatim-Zahlen der Lab-Shader):
+  tetrapoda FELL_LOOK (matFur `wolf_aureus_v22`: SSS-Rim pow4 ×0.5 + Gold-
+  Sheen pow5 ×0.15 · createDeepFurMat `deep_gold_fur_v3`: Spitzen-Rim pow3 +
+  Gold-Spec pow8 ×0.4) · koerper HAUT_LOOK (matSkin: warmer SSS-Fresnel-Saum
+  pow3 ×0.15) + HAAR_LOOK (`deep_human_fur_v1`: Spitzen-Rim/Spec).
+- DIE WELT WEBT SIE am EINEN Material-Chokepoint (_foundryTreeMaterial,
+  klasseLook-Weiche für fell/skin/haut/hair/straehne*): die Terme werden als
+  emissive-Additive gewoben — DIESELBE Post-Licht-Addition wie das Lab-GLSL.
+  Die Strähnen-Achse (Lab: aStrandY) reist längst als Farbverlauf des Bäckers
+  (__streuGeo: Wurzel = Ton×0.12) — die Luminanz-Ratio zum TON-ANKER
+  (mp.color, jetzt im Material-Key: je Gattungs-Ton EIN Material, bounded)
+  gewinnt vStrandY exakt zurück. Ohne Kern-LOOK/TSL-Symbole byte-alt; die
+  Kern-Zahlen sind die EINZIGE Quelle (kein Zwilling). Die Klassen-Materialien
+  laufen unter der Diät (Graph: Attribute + Konstanten — equals-sicher).
+- BEWIESEN (proportional, Schöpfer-Order „ohne Tests wenn Plan klar"):
+  node --check Stamm+beide Kerne · studio-vertrag GRÜN · TSL-Symbol-Wand
+  (positionViewDirection/normalView/emissiveNode im Vendor bestätigt).
+  OFFEN ehrlich am Look: Wrap-Licht + Atem-Noise-Displacement + microFur-
+  Sparkle (multiplikative/Vertex-Terme — brauchen outputNode/positionNode-
+  Akt) · Haut-Clearcoat (Standard-Material trägt keinen) — das Auge des
+  Schöpfers ist der Richter über den nächsten Schnitt.
+
+**Davor, siebzehnte Welle (Schöpfer: „vollende die offenen punkte zuerst, ändere den
 code ohne zu testen, wenn der plan klar ist" — die zwei Klar-Plan-Punkte fallen, der
 dritte bekommt seinen Leser-Zensus statt eines Blind-Schnitts):**
 - DER HEAVE-KONSUMENT (N7-Rest): der Squat-Kanal des Kerns (zweispur.heaveA/V/
