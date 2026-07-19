@@ -50,9 +50,44 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.14 — DIE ALCHEMIE-WELLE: vier Goldbarren gegen die Engine-Lücke)
+## Stand (V18.491.15 — DER FAHR-BOGEN-ABSCHLUSS: jedes rädrige Werk fährt das EINE Gesetz)
 
-**19.07., fünfzehnte Welle (Schöpfer: „schmieden wir das Ding zu Gold statt zu Godot" —
+**19.07., sechzehnte Welle (Schöpfer: „weder die fahrphysik, noch sonst was ist fertig —
+beende die dinge, schliesse sie ab" — der Fahr-Bogen schließt an seiner letzten Lücke:
+das Gesetz galt nur Katalog-Presets mit Buch-Rezept; Eigenwerke/Donor-Wagen ritten die
+alte richtungs-folgende Physik, first-Person aufs Blech, Pfeile taten nichts):**
+- DAS FORM-P-GESETZ (_vehicleProfile, nach dem Rezept-Override): trägt kein
+  Rezept die Fahr-Wahrheit (User-Eigenwerk · fahrzeug_wagen-Substanz · kaltes
+  Buch), leitet der Host den P-Vektor aus der EIGENEN Form ab (radstand =
+  Länge − Default-Überhänge · spur = Breite − Karosserie-Deckung · dach =
+  Höhe · radR aus den Rad-Parts — in die Studio-Regler-Domäne geklemmt) und
+  ruft DIESELBE exportDrive-Formel wie Probefahrt + Buch-Bau: EINE Formel,
+  kein Zwilling. Konsumiert: lenkung/zweispur/spring/kamera/cgH/radR/spur.
+  Die Geschwindigkeits-IDENTITÄT bleibt emergent (topSpeedMul/kAcc/kBrake aus
+  Substanz+Rädern; vmax bewusst ABWESEND), Sitz bleibt _attachPointFor,
+  Blocker bleiben die echten Parts.
+- KABINE ≠ CHASE-CAM (_fahrRitt in _loopCamera): die Studio-Chase-Cam gilt
+  JEDEM Gesetz-gelenkten Ritt; die Kabinen-Unsichtbarkeit NUR der
+  geschlossenen Studio-Karosserie (huelle) — auf dem offenen Eigenbau bleibt
+  der Reiter sichtbar.
+- DER AUFSTIEG SCHALTET SELBST: mountArchitecture mit Lenk-Gesetz merkt den
+  Modus (_mountVorKamera) und schaltet third (dort lebt die Chase-Cam);
+  Abstieg UND Auto-Abstieg (Gefährt abgebaut) stellen zurück.
+- DIE PFEILE FAHREN WIE IM STUDIO: PFEIL_ALIAS am EINEN Input-Chokepoint
+  (keydown/keyup) schreibt die kanonischen w/a/s/d — kein Zweit-Leser im
+  Bewegungs-/Lenk-Pfad (die garage liest KeyW||ArrowUp, die Welt jetzt auch).
+- BEWIESEN: Konsum-Probe am Substanz-Wagen OHNE Rezept — lenkung/zweispur/
+  kamera/spring leben (radstand 2.36 aus der eigenen Form), kAcc byte==
+  emergenter Formel, Pfeil-Event→keys.a, Mount→third→Abstieg→first, 150
+  Lenk-Ticks 3.26 m mit lebendem steer/0 NaN, Chase-Ast lief, Reiter
+  sichtbar, 0 Seiten-Fehler · gate:vehicle-drive GRÜN (alle Bänder, 14.4 m) ·
+  playtest:fast 18/18 · check GRÜN inkl. Anker-Wand · voller playtest „Alle
+  Invarianten OK". OFFEN ehrlich (unverändert benannt): 481-MB-Batch-Staging
+  (Vendor-Akt) · Chunk-Boden-Entlassung · Welt-Puffer-Synthese (GOLD 2) ·
+  Source-Vendoring (GOLD 3) · Haut+Felle (Konsum-Tiefe 2+3) · das fps-Urteil
+  des nächsten Schöpfer-Traces (heapZensus an Bord).
+
+**Davor, fünfzehnte Welle (Schöpfer: „schmieden wir das Ding zu Gold statt zu Godot" —
 Recherche bestätigte: die Community kämpft exakt an unserer Front [per-Objekt-UBO,
 20k Objekte = 15 fps, RenderBundles als Antwort]; der GOLD-1-Leser-Zensus WIDERLEGTE
 die onUpload-Hypothese ehrlich [entlassbar nur 2.6 MB] und nannte den wahren Wal:
