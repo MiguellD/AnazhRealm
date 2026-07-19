@@ -53804,6 +53804,65 @@ class AnazhRealm {
                 }
             }
         } catch (_e) {}
+        // FAHR-ABSCHLUSS (19.07., Schöpfer: „beende die dinge") — JEDES rädrige
+        // Werk fährt DASSELBE Gesetz: trägt kein Studio-Rezept die Fahr-Wahrheit
+        // (User-Eigenwerk · Donor-Wagen · kaltes Buch), leitet der Host den
+        // P-Vektor aus der EIGENEN Form ab (Länge/Breite/Höhe der Part-Hülle,
+        // Rad-Radius aus den Rad-Parts — in die Studio-Regler-Domäne geklemmt)
+        // und ruft DIESELBE exportDrive-Formel wie Probefahrt + Buch-Bau: EINE
+        // Formel, kein Zwilling. Konsumiert werden NUR Lenkung/Zweispur/Feder/
+        // Geometrie/Kamera — die Geschwindigkeits-IDENTITÄT (topSpeedMul/kAcc/
+        // kBrake aus Substanz + Rädern, oben) bleibt emergent; Sitz bleibt
+        // _attachPointFor, Blocker bleiben die echten Parts (keine Phantom-
+        // Hülle). NaN-Wand wie der Rezept-Pfad; ohne Kern fail-closed byte-alt.
+        if (prof.radCount > 0 && !prof.lenkung) {
+            try {
+                const core = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+                const ext =
+                    bp && core && typeof core.exportDrive === "function" ? this._compoundVisualExtent(bp) : null;
+                if (ext && ext.dx > 0 && ext.dz > 0) {
+                    const scl = Number.isFinite(entry.scale) ? entry.scale : 1;
+                    const L = Math.max(ext.dx, ext.dz) * scl;
+                    const W = Math.min(ext.dx, ext.dz) * scl;
+                    const P = {
+                        // radstand = Länge − DEFAULT-Überhänge (0.78+0.92); spur =
+                        // Breite − Karosserie-Deckung (2×0.13); dach = Form-Höhe.
+                        radstand: Math.max(2.2, Math.min(3.4, L - 1.7)),
+                        spur: Math.max(1.3, Math.min(1.9, W - 0.26)),
+                        dach: Math.max(0.9, Math.min(2, (ext.dy || 0) * scl)),
+                    };
+                    if (roles && Array.isArray(bp.parts)) {
+                        let rr = 0;
+                        for (let i = 0; i < roles.length; i++) {
+                            if (!roles[i] || roles[i].role !== "rad") continue;
+                            const s = bp.parts[i] && bp.parts[i].size;
+                            if (!s) continue;
+                            const r =
+                                (Math.max(Math.abs(Number(s.x) || 0), Math.abs(Number(s.y) || 0), Math.abs(Number(s.z) || 0)) *
+                                    scl) /
+                                2;
+                            if (r > rr) rr = r;
+                        }
+                        if (rr > 0) P.radR = Math.max(0.26, Math.min(0.42, rr));
+                    }
+                    const drv = core.exportDrive(P);
+                    const _lk2 = drv && drv.lenkung;
+                    if (_lk2 && Number.isFinite(_lk2.sfK) && Number.isFinite(_lk2.maxSteer) && Number.isFinite(_lk2.gripK)) {
+                        prof.lenkung = _lk2;
+                        const _zs2 = drv.zweispur;
+                        if (_zs2 && Number.isFinite(_zs2.Izz) && _zs2.Izz > 0 && Number.isFinite(_zs2.mass) && _zs2.mass > 0) {
+                            prof.zweispur = _zs2;
+                        }
+                        const _km2 = drv.kamera;
+                        if (_km2 && Number.isFinite(_km2.el) && Number.isFinite(_km2.dist) && _km2.dist > 0) prof.kamera = _km2;
+                        if (!prof.spring && drv.spring && Number.isFinite(drv.spring.k) && drv.spring.k > 0) prof.spring = drv.spring;
+                        if (!Number.isFinite(prof.cgH) && Number.isFinite(drv.cgH) && drv.cgH > 0) prof.cgH = drv.cgH;
+                        if (!Number.isFinite(prof.radR) && Number.isFinite(drv.radR) && drv.radR > 0) prof.radR = drv.radR;
+                        if (!Number.isFinite(prof.spur) && Number.isFinite(drv.spur) && drv.spur > 0) prof.spur = drv.spur;
+                    }
+                }
+            } catch (_e4) {}
+        }
         entry._vehicleProfile = prof;
         return prof;
     }
@@ -53891,6 +53950,14 @@ class AnazhRealm {
         // V18.150 — das Fahr-Profil LESBAR beim Aufsteigen (der V18.119-Kreis:
         // bauen → ablesen → lernen): der Spieler erfährt, WAS er reitet.
         const prof = this._vehicleProfile(entry);
+        // FAHR-ABSCHLUSS (19.07.) — der Aufstieg in ein GESETZ-gelenktes Werk
+        // schaltet SELBST in die Studio-Sicht: die Kern-Chase-Cam lebt im
+        // third-Ast von _loopCamera (der Schöpfer sah first-Person aufs Blech).
+        // Der vorige Modus kehrt beim Abstieg zurück (kein stiller Modus-Rest).
+        if (prof && prof.lenkung && this.state.cameraMode !== "third") {
+            this.state._mountVorKamera = this.state.cameraMode;
+            this.setCameraMode("third");
+        }
         const art =
             prof && prof.radCount > 0
                 ? `${prof.radCount}× Rad — rollt`
@@ -53934,6 +54001,11 @@ class AnazhRealm {
             else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
         }
         this.state.player.mountedArch = null;
+        // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
+        if (this.state._mountVorKamera) {
+            this.setCameraMode(this.state._mountVorKamera);
+            this.state._mountVorKamera = null;
+        }
         this.log(`Ausgestiegen`, "INFO");
         return { ok: true };
     }
@@ -53974,6 +54046,11 @@ class AnazhRealm {
             // Architektur ist verschwunden (z. B. abgebaut) → auto-dismount
             this.state.player.mountedArch = null;
             this._mountedEntry = null;
+            // FAHR-ABSCHLUSS (19.07.) — auch der Auto-Abstieg stellt die Sicht zurück.
+            if (this.state._mountVorKamera) {
+                this.setCameraMode(this.state._mountVorKamera);
+                this.state._mountVorKamera = null;
+            }
             return;
         }
         this._mountedEntry = entry;
@@ -89848,6 +89925,12 @@ class AnazhRealm {
             // bleibt state.keys unverändert (gibt der Loop nichts zum Lesen).
             if (inInput) return;
             this.state.keys[event.key.toLowerCase()] = true;
+            // FAHR-ABSCHLUSS (19.07.) — die PFEIL-TASTEN fahren wie im Studio
+            // (garage liest KeyW||ArrowUp · KeyA||ArrowLeft): Pfeile schreiben
+            // die KANONISCHEN Bewegungs-Tasten am EINEN Input-Chokepoint; der
+            // Bewegungs-/Lenk-Pfad kennt weiter nur w/a/s/d (kein Doppel-Leser).
+            const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
+            if (_pfeil) this.state.keys[_pfeil] = true;
             // Welle 6.C3 — Aktionen über Keybindings (event.code = Layout-
             // unabhängiger Code, z. B. "KeyF" statt "f"). 1-9 bleiben hard-
             // coded (Slot-Indizes, keine Aktion). Escape bleibt zusätzlich
@@ -89922,6 +90005,9 @@ class AnazhRealm {
         });
         window.addEventListener("keyup", (event) => {
             this.state.keys[event.key.toLowerCase()] = false;
+            // FAHR-ABSCHLUSS (19.07.) — der Pfeil-Alias löst symmetrisch.
+            const _pfeil = AnazhRealm.PFEIL_ALIAS[event.key];
+            if (_pfeil) this.state.keys[_pfeil] = false;
             // Welle 10b.3 — Z-Loslassen beendet Zoom.
             if (event.code === "KeyZ") {
                 this.setZoomActive(false);
@@ -92161,7 +92247,11 @@ class AnazhRealm {
             // Avatar unsichtbar (render-only — Physik/Sitz-Anker unberührt);
             // Kreatur-/Ross-Ritt bleibt sichtbar. Idempotent je Frame: der
             // Abstieg stellt ihn im selben Chokepoint wieder her.
-            const _fahrKabine = (() => {
+            // FAHR-ABSCHLUSS (19.07.): die Chase-Cam gilt JEDEM Gesetz-gelenkten
+            // Ritt (auch Eigenwerk/Donor — Form-P, dieselbe Formel); die KABINE
+            // (Fahrer unsichtbar) NUR der geschlossenen Studio-Karosserie
+            // (huelle) — auf dem offenen Eigenwerk bleibt der Reiter sichtbar.
+            const _fahrRitt = (() => {
                 const p = this.state.player;
                 if (!p || p.mountedArch === null || p.mountedArch === undefined) return null;
                 const ent = this._mountedEntry;
@@ -92169,13 +92259,13 @@ class AnazhRealm {
                 const prof = this._vehicleProfile(ent);
                 if (!prof || !prof.lenkung) return null;
                 const fzg = this._fahrzeugGesetzFor(ent);
-                return fzg && fzg.drive && fzg.drive.huelle ? { ent, kam: prof.kamera || null } : null;
+                return { ent, kam: prof.kamera || null, kabine: !!(fzg && fzg.drive && fzg.drive.huelle) };
             })();
             // V8.29.1 — Avatar im 1st-Person SICHTBAR (Schöpfer-Korrektur:
             // den eigenen Körper zu sehen ist normal — Minecraft etc.
             // tun das auch). Nur der KOPF wird im 1st-Person versteckt.
             // T7: die Regel selbst wohnt in _applyEgoSicht (EINE Quelle).
-            player.visible = !_fahrKabine;
+            player.visible = !(_fahrRitt && _fahrRitt.kabine);
             this._applyEgoSicht();
             if (this.state.cameraMode === "third") {
                 // Orbit-Kamera hinter + über dem Spieler. Pitch hebt/senkt
@@ -92193,9 +92283,9 @@ class AnazhRealm {
                 // — dieselbe Führung wie die Probestrecke. Boden-Clamp +
                 // Kollisions-Raycast unten erben gratis (gleiche Bahn).
                 let camX, camZ, camY;
-                if (_fahrKabine && _fahrKabine.kam) {
-                    const ent = _fahrKabine.ent;
-                    const K = _fahrKabine.kam;
+                if (_fahrRitt && _fahrRitt.kam) {
+                    const ent = _fahrRitt.ent;
+                    const K = _fahrRitt.kam;
                     const yawF = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
                     let az = Number.isFinite(ent._kamYaw) ? ent._kamYaw : yawF;
                     let d = yawF - az;
@@ -93032,7 +93122,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.14";
+AnazhRealm.VERSION = "18.491.15";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -97415,6 +97505,10 @@ Object.defineProperties(AnazhRealm, {
     },
 });
 AnazhRealm.MOUNT_FOLLOW_HEIGHT = 1.5; // Spieler sitzt oben drauf
+// FAHR-ABSCHLUSS (19.07.) — die Pfeil-Tasten schreiben die kanonischen
+// Bewegungs-Tasten (die Studio-Eingabe-Wahrheit: KeyW||ArrowUp usw.); der
+// EINE Input-Chokepoint (keydown/keyup) konsumiert die Map, kein Zweit-Leser.
+AnazhRealm.PFEIL_ALIAS = Object.freeze({ ArrowUp: "w", ArrowDown: "s", ArrowLeft: "a", ArrowRight: "d" });
 // W-D/M-F1 (V18.170, R-017) — der Min-Abstand frischer Kreatur-Spawns zum
 // Spieler (die M6-Struktur-Klemme aufs Wesen; Restore/Peer-Sicht = precise).
 AnazhRealm.CREATURE_SPAWN_CLEAR_M = 3;
