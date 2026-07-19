@@ -58,6 +58,12 @@ const ANKER = [
     { file: "vendor/three.core.min.js", sub: "setGeometrySize", organ: "_archBatchAddGeometry (Klein-Münze + Wachstum)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
+    // Chunk-Boden-Entlassung (Upload-Probe: backend.get(attr).buffer existiert erst nach createAttribute)
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "createAttribute(e,t){const r=this._getBufferAttribute(e)",
+        organ: "_chunkBodenGpuHat (Entlassungs-Upload-Probe)",
+    },
 ];
 
 function main() {

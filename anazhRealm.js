@@ -16164,6 +16164,11 @@ class AnazhRealm {
                             if (p) vKap += p.count;
                             if (b.mesh && typeof b.mesh._nextVertexStart === "number") vNutz += b.mesh._nextVertexStart;
                         }
+                    // CHUNK-BODEN-ENTLASSUNG (19.07.) — die Linse NENNT den Schnitt:
+                    // wie viele Böden entlassen sind + wie viele MB die Nullung trägt.
+                    let entlN = 0;
+                    if (this.state.voxelChunks)
+                        for (const e of this.state.voxelChunks.values()) if (e && e._entlassen === true) entlN++;
                     return {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
@@ -16171,6 +16176,10 @@ class AnazhRealm {
                         batches: this.state.archBatches ? this.state.archBatches.size : 0,
                         batchFillPct: vKap > 0 ? Math.round((vNutz / vKap) * 100) : null,
                         impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
+                        chunkEntlassenN: entlN,
+                        chunkFreiMB: this.state._chunkEntlassenBytes
+                            ? +(this.state._chunkEntlassenBytes / 1048576).toFixed(1)
+                            : 0,
                     };
                 })(),
             };
@@ -33173,6 +33182,13 @@ class AnazhRealm {
         this._applyCrossLodGeomorph(cx - 1, cz);
         this._applyCrossLodGeomorph(cx, cz + 1);
         this._applyCrossLodGeomorph(cx, cz - 1);
+        // CHUNK-BODEN-ENTLASSUNG: der frische Bau stellt sich zur Gnadenfrist an
+        // (ob entlassen wird, entscheidet der Tick: echt + Upload + IDB-gedeckt
+        // + edit-frei; headless nie — die Gates lesen byte-alt).
+        {
+            if (!this.state._chunkEntlassQueue) this.state._chunkEntlassQueue = new Map();
+            this.state._chunkEntlassQueue.set(key, { cx, cz, mesh: entry.mesh, seit: performance.now() });
+        }
         return entry;
     }
 
@@ -33190,6 +33206,12 @@ class AnazhRealm {
         if (!this.state.voxelChunks) return;
         const entry = this.state.voxelChunks.get(`${cx},${cz}`);
         if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) return;
+        // CHUNK-BODEN-ENTLASSUNG: ein entlassener Boden re-hydriert erst seine
+        // CPU-Arrays (IDB, async) — der Lauf ruft DIESEN Pass danach erneut.
+        if (entry._entlassen) {
+            if (entry._entlassen === true) this._chunkBodenReHydrieren(cx, cz);
+            return;
+        }
         const geom = entry.mesh.geometry;
         const pos = geom.attributes.position;
         const tgtAttr = geom.attributes.aMorphTarget;
@@ -33211,6 +33233,13 @@ class AnazhRealm {
             if (!nb || nb.empty || !nb.mesh || !nb.mesh.geometry) continue;
             const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
             if (nbLod <= myLod) continue; // nur an einen GROBEREN Nachbarn anschmiegen
+            // CHUNK-BODEN-ENTLASSUNG: ein entlassener Nachbar wird erst
+            // re-hydriert; der Warter läuft DIESEN Pass danach komplett neu.
+            if (nb._entlassen) {
+                if (nb._entlassen === true)
+                    this._chunkBodenReHydrieren(cx + dx, cz + dz, () => this._applyCrossLodGeomorph(cx, cz));
+                continue;
+            }
             coarseFaces.push({ dx, dz, nbGeom: nb.mesh.geometry, nbLod });
         }
         // Fast-Path: keine Cross-LOD-Grenze UND kein alter Morph/Band → nichts zu tun (Normalfall)
@@ -33454,6 +33483,170 @@ class AnazhRealm {
             } else if (this.state.scene) this.state.scene.add(mesh);
         }
         entry.lodStitchMesh = mesh;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // DIE CHUNK-BODEN-ENTLASSUNG (19.07., GC-Wal-Bogen) — der Zensus der 17.
+    // Welle lieferte den Bauplan: (1) hasBVH ist tot (die Physik liest das
+    // Dichte-FELD, der Mesh trägt nur das Visual), (2) der EINE CPU-Leser
+    // nach dem Build ist der Geomorph-Pass (_applyCrossLodGeomorph: eigene
+    // pos/nrm/col/idx + Nachbar-pos/idx — er läuft NUR aus dem Finalize bei
+    // Selbst-/Nachbar-Rebuild), (3) onUploadCallback existiert im WebGPU-
+    // Backend NICHT → die Entlassung ist MANUELL: nach Upload (Backend-Probe)
+    // + Gnadenfrist werden die CPU-TypedArrays gesettelter, edit-freier,
+    // IDB-gedeckter Chunk-Böden GENULLT; braucht ein Nachbar-Rebuild sie
+    // wieder, RE-HYDRIERT der Geomorph-Pass sie aus DENSELBEN IDB-Rohbytes —
+    // byte-identisch per Konstruktion: position/normal/color/index werden
+    // nach dem Build NIE mutiert (nur aMorphTarget/aMorphWeight, und die
+    // überschreibt der Pass VOLL → frische Null-Arrays statt Platte). KEIN
+    // needsUpdate beim Restore: die GPU hält dieselben Bytes, es reist
+    // nichts. HEADLESS bleibt alles resident (die Gates lesen die Arrays
+    // byte-alt); Edits im 3×3-Footprint blocken die Entlassung (dieselbe
+    // Wand wie Warm-Start-Read/Write); die Existenz-Probe entlässt NUR, was
+    // die Platte wirklich deckt (das Ventil-Clear kann sync-Bauten sonst
+    // un-re-hydrierbar machen — die bleiben resident).
+    _chunkBodenGpuHat(geo) {
+        // Upload-Probe: der Backend-Datensatz eines Attributs trägt .buffer
+        // (WebGPU) bzw. .bufferGPU (WebGL-Fallback) erst NACH createAttribute
+        // — vorher wäre das Nullen ein weißes Loch (die Reife-Wache-Klasse).
+        try {
+            const r = this.state.renderer;
+            const be = r && r.backend;
+            if (!be || typeof be.get !== "function") return false;
+            for (const k in geo.attributes) {
+                const d = be.get(geo.attributes[k]);
+                if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
+            }
+            if (geo.index) {
+                const d = be.get(geo.index);
+                if (!d || (d.buffer === undefined && d.bufferGPU === undefined)) return false;
+            }
+            return true;
+        } catch (_e) {
+            return false;
+        }
+    }
+    _chunkBodenNulle(geo) {
+        let frei = 0;
+        for (const k in geo.attributes) {
+            const a = geo.attributes[k];
+            if (a && a.array && a.array.byteLength) {
+                frei += a.array.byteLength;
+                a.array = null;
+            }
+        }
+        if (geo.index && geo.index.array && geo.index.array.byteLength) {
+            frei += geo.index.array.byteLength;
+            geo.index.array = null;
+        }
+        return frei;
+    }
+    _tickChunkBodenEntlassung(now) {
+        const q = this.state._chunkEntlassQueue;
+        if (!q || !q.size) return;
+        const r = this.state.renderer;
+        if (!r || r._isHeadlessNull) return; // headless: Gates lesen die Arrays byte-alt
+        const c = this._chunkIdb;
+        if (!c || !c._idbDb || c._idbDead) return;
+        let budget = 2;
+        for (const [key, eintrag] of q) {
+            if (budget <= 0) break;
+            if (now - eintrag.seit < AnazhRealm.CHUNK_ENTLASS_GNADE_MS) continue;
+            const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
+            // nur der IDENTISCHE, lebende, un-entlassene Bau — sonst verfällt der Posten.
+            if (!entry || entry.empty || entry._entlassen || !entry.mesh || entry.mesh !== eintrag.mesh) {
+                q.delete(key);
+                continue;
+            }
+            if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) {
+                q.delete(key);
+                continue;
+            }
+            if (!this._chunkBodenGpuHat(entry.mesh.geometry)) {
+                eintrag.seit = now; // noch nicht hochgeladen (nie gerendert) → Frist neu
+                continue;
+            }
+            q.delete(key);
+            budget--;
+            const idbKey = this._chunkIdbKey(eintrag.cx, eintrag.cz, entry.lod);
+            this._chunkIdbGet(idbKey).then((payload) => {
+                if (!payload || payload.empty || !payload.positions) return; // Platte deckt nicht → resident
+                const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
+                if (!e2 || e2 !== entry || e2._entlassen || !e2.mesh || e2.mesh !== eintrag.mesh) return;
+                if (!this._chunkFootprintEditFrei(eintrag.cx, eintrag.cz)) return;
+                let frei = this._chunkBodenNulle(e2.mesh.geometry);
+                if (
+                    e2.lodStitchMesh &&
+                    e2.lodStitchMesh.geometry &&
+                    this._chunkBodenGpuHat(e2.lodStitchMesh.geometry)
+                ) {
+                    frei += this._chunkBodenNulle(e2.lodStitchMesh.geometry);
+                }
+                e2._entlassen = true;
+                e2._entlassBytes = frei;
+                this.state._chunkEntlassenBytes = (this.state._chunkEntlassenBytes || 0) + frei;
+            });
+        }
+    }
+    // Die GRENZ-RE-HYDRIERUNG: stellt die CPU-Arrays eines entlassenen Chunks
+    // aus den IDB-Rohbytes wieder her (byte-identisch — KEIN needsUpdate, die
+    // GPU hält dieselben Daten), läuft danach den EIGENEN Geomorph-Pass und
+    // dann die Warter (z. B. den Nachbar-Pass, der den Leser brauchte).
+    _chunkBodenReHydrieren(cx, cz, dann) {
+        const key = `${cx},${cz}`;
+        const entry = this.state.voxelChunks && this.state.voxelChunks.get(key);
+        if (!entry || entry._entlassen !== true || !entry.mesh || !entry.mesh.geometry) {
+            if (dann) dann();
+            return;
+        }
+        if (!this._chunkRehydrierLauf) this._chunkRehydrierLauf = new Map();
+        const lauf = this._chunkRehydrierLauf;
+        if (lauf.has(key)) {
+            if (dann) lauf.get(key).push(dann); // EIN Lauf, viele Warter
+            return;
+        }
+        lauf.set(key, dann ? [dann] : []);
+        const mesh = entry.mesh;
+        this._chunkIdbGet(this._chunkIdbKey(cx, cz, entry.lod)).then((payload) => {
+            const warter = lauf.get(key) || [];
+            lauf.delete(key);
+            const e2 = this.state.voxelChunks && this.state.voxelChunks.get(key);
+            if (!e2 || e2 !== entry || e2._entlassen !== true || e2.mesh !== mesh) return; // frischer Bau trägt Arrays
+            if (!payload || !payload.positions) {
+                // Platte verloren (Ventil-Clear/Quota): ehrlich markieren — der
+                // Pass überspringt diesen Chunk, bis ihn der normale Streaming-
+                // Rebuild ersetzt (die Existenz-Probe macht das SELTEN).
+                e2._entlassVerloren = true;
+                this.log(`Chunk-Re-Hydrierung ${key}: IDB-Bytes fehlen — Boden bleibt bis zum Rebuild ungemorpht`, "WARN");
+                return;
+            }
+            const geo = mesh.geometry;
+            const setArr = (name, arr) => {
+                const a = geo.attributes[name];
+                if (a && arr) a.array = arr;
+            };
+            setArr("position", payload.positions);
+            setArr("normal", payload.normals);
+            setArr("color", payload.colors);
+            if (geo.index && payload.indices) geo.index.array = payload.indices;
+            // Morph-Attribute: der Pass überschreibt sie VOLL — frische Arrays.
+            setArr("aMorphTarget", new Float32Array(payload.positions.length));
+            setArr("aMorphWeight", new Float32Array(payload.positions.length / 3));
+            e2._entlassen = false;
+            this.state._chunkEntlassenBytes = Math.max(
+                0,
+                (this.state._chunkEntlassenBytes || 0) - (Number.isFinite(e2._entlassBytes) ? e2._entlassBytes : 0)
+            );
+            e2._entlassBytes = 0;
+            this._applyCrossLodGeomorph(cx, cz);
+            for (const w of warter) {
+                try {
+                    w();
+                } catch (_e) {
+                    /* Warter-Fehler isoliert */
+                }
+            }
+        });
     }
 
     // Nächster Punkt auf dem Dreieck (T[t..t+8] = A,B,C) zu P → out[0..2] (Ericson, RTCD §5.1.5).
@@ -57160,6 +57353,9 @@ class AnazhRealm {
         // GNADENFRIST (18.07.) — der Gruppen-Reaper räumt abgelaufene leere Hüllen (1×/s;
         // headless entsteht nie ein Kandidat — der Leer-Chokepoint reapt dort sofort).
         this._tickArchGruppenReaper(performance.now());
+        // CHUNK-BODEN-ENTLASSUNG (19.07.) — der Gnadenfrist-Tick nullt die
+        // CPU-Arrays gesettelter, IDB-gedeckter Chunk-Böden (echt-only).
+        this._tickChunkBodenEntlassung(performance.now());
         // N5.7-AUTO (Nachlese-Welle) — der Worldgen-Konsument des "settlement"-Kanals:
         // Dörfer entstehen von selbst (seed-deterministische Zellen, Site-Wände,
         // budgetierte Materialisierung; headless ruht er — s. _tickAutoSettlement).
@@ -93302,7 +93498,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.17";
+AnazhRealm.VERSION = "18.491.18";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -93314,6 +93510,10 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 256;
 // LOD-Varianten kann zweistellige MB erreichen — der Deckel trägt mehrere
 // Ringe, bevor er einmal grob leert). Tunable.
 AnazhRealm.CHUNK_IDB_MAX = 600;
+// CHUNK-BODEN-ENTLASSUNG (19.07.) — die Gnadenfrist zwischen Finalize und dem
+// Nullen der CPU-Arrays: lang genug, dass der Streaming-Schwall (Nachbar-
+// Rebuilds re-morphen die Grenze) abklingt, kurz genug für den GC-Wal.
+AnazhRealm.CHUNK_ENTLASS_GNADE_MS = 10000;
 // ABSCHIEDS-WELLE (E, der benannte Trias-Faden) — DER GEWICHTS-DECKEL: der Eintrags-
 // Zähler allein war BYTE-BLIND (ein Haus-L0 trägt ≈ 7–8 MB Geometrie [V18.444 gemessen],
 // ein Blumen-L0 wenige KB — 256 schwere Einträge wären ~2 GB). Jetzt bilanziert

@@ -50,9 +50,37 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.17 — HAUT + FELLE: das Shader-Gesetz der Studios erreicht die Welt)
+## Stand (V18.491.18 — DIE CHUNK-BODEN-ENTLASSUNG: der GC-Wal verliert den Boden)
 
-**19.07., achtzehnte Welle (Schöpfer: „weiter, vollende" — die benannten Konsum-Tiefe-
+**19.07., neunzehnte Welle (Schöpfer: „vollende die chunk-boden-entlassung, der bauplan
+steht" — der 17.-Welle-Zensus wird Maschine; der letzte benannte Live-Set-Schnitt
+mit klarem Plan fällt):**
+- DIE ENTLASSUNG (_tickChunkBodenEntlassung, Gnadenfrist 10 s): nach Upload
+  (Backend-Probe backend.get(attr).buffer/.bufferGPU — der 11. Vendor-Anker) +
+  edit-freiem 3×3-Footprint + IDB-EXISTENZ-Probe (entlassen wird NUR, was die
+  Platte deckt) werden die CPU-TypedArrays gesettelter Chunk-Böden + Stitch-
+  Bänder GENULLT (attr.array = null; Mesh/GPU leben weiter). HEADLESS bleibt
+  alles resident (die Gates lesen byte-alt); der Bau stellt sich im Finalize
+  zur Frist an, Identitäts-/Edit-Wände entwerten stale Posten.
+- DIE GRENZ-RE-HYDRIERUNG (_chunkBodenReHydrieren): der EINE CPU-Leser nach
+  dem Build ist der Geomorph-Pass (Zensus-Fakt 2) — er sieht _entlassen,
+  stellt die Arrays aus DENSELBEN IDB-Rohbytes wieder her (byte-identisch
+  per Konstruktion: pos/nrm/col/idx werden nie mutiert → KEIN needsUpdate,
+  es reist nichts zur GPU; aMorphTarget/-Weight überschreibt der Pass VOLL →
+  frische Arrays) und läuft danach sich selbst + die Warter (Nachbar-Pass).
+  Ein Lauf je Chunk, viele Warter; Platte-verloren (Ventil-Clear) → ehrlich
+  markiert + WARN, der Streaming-Rebuild ersetzt.
+- DIE LINSE NENNT den Schnitt: heapZensus.halter.chunkEntlassenN/chunkFreiMB.
+- BEWIESEN (Konsum-Probe auf ECHTEM WebGPU, alle 6 Bänder GRÜN in einem
+  Lauf): Entlassung lebt (position.array === null, Mesh in der Szene) →
+  Geomorph-Pass re-hydriert aus IDB (_entlassen fällt, Arrays zurück,
+  Morph-Attribute da) → Render läuft weiter → 0 Seiten-Fehler ·
+  playtest:fast 18/18 · node --check · gate:vendor-anker GRÜN (11 Anker,
+  Selbsttest feuert). Die swiftshader-Sonde sah 1 Chunk/0.2 MB im Fenster
+  (0.7 fps) — die Skala auf dem Schöpfer-Holz misst der nächste Trace
+  (heapZensus trägt die Zahlen).
+
+**Davor, achtzehnte Welle (Schöpfer: „weiter, vollende" — die benannten Konsum-Tiefe-
 Schnitte 2+3 fallen mit derselben Klinge wie die Fahrphysik; der Zensus fand die Lücke
 EXAKT: die Fell-Geometrie floss längst [fellStreu → Pipe-Bäcker, T4 Fell×Fläche], aber
 die Lab-SHADER-Gesetze — das, was Haut und Fell FÜHLBAR macht — reisten nie):**
