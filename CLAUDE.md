@@ -6,9 +6,37 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.8 — DIE SYNERGIE-WELLE: Uniform-Heimat · Observer-Diät · Chunk-Einbürgerung)
+## Stand (V18.491.9 — DIE REIFE-WACHE: der Record droppt keine unfertigen Bürger mehr)
 
-**19.07., neunte Welle (sechster Trace: avgFps 4.5→9.2, dc 631, GPU echt 14.6 ms — aber
+**19.07., zehnte Welle (Schöpfer-Spielbericht auf .8: „Terrain/Bäume erscheinen erst
+beim Abbauen/Platzieren" — Test-Verbot des Schöpfers: Wurzel lesen, schneiden, committen):**
+- DIE REIFE-WACHE (`_bundleReifeWache`): der Vendor-Record zeichnet nur, was
+  `_pipelines.isReady` bejaht, und versiegelt das Bundle DANACH bedingungslos
+  (`u.version = s.version`) — ein frisch gestreamter Bürger, dessen Pipeline noch
+  ASYNC kompiliert (der Ofen wärmt bewusst asynchron; der Wiederanker der neunten
+  Welle machte das Fenster HÄUFIG), fiel STUMM aus dem Replay, bis eine spätere
+  Mutation die Region zufällig neu recordete — das Abbauen des Schöpfers. Jetzt
+  kompiliert JEDER Bundle-Beitritt (Chunk-Anker · Stitch-Folge · Batch-/Instanz-
+  Münze · Feld-Cull-Gewand) seinen Bürger asynchron FERTIG und touched DANN den
+  aktuellen Bundle-Parent — der Re-Record kommt garantiert NACH der Reife (heiße
+  Pipelines: sofortiger Cache-Treffer, ein Touch, an Änderung gebunden).
+- REVIEW-NACHARBEIT (adversariale Diff-Review der neunten Welle, 3 bestätigte
+  Befunde geschnitten): `uSeasonMul` bricht das Pflicht-Paar (per Frame mutiert,
+  vom diät-behandelten Gras konsumiert, aber per-Objekt-geklont → Saison-
+  Patchwork) → in die Uniform-Heimat · `toggleTerrain` schaltete `visible`
+  bundle-blind (der Record liest visible, das Replay nie → Toggle inert/split-
+  brain) → re-recorded jetzt ALLE Region-Bundles · die Diät wächtert das
+  Pflicht-Paar selbst (kein renderGroup-Export → keine Diät, byte-alt) · auch
+  die fc-Familie (Feld-Cull-Gewand) verlässt beim Tod den Ofen-Dedup.
+- Bestätigt-sicher (Review, Vendor-Beweise): instanceMatrix.version lebt (Core-
+  Setter) · renderId ist je Pass (Schatten-Pass unbetroffen, Override-Material
+  nie diät-behandelt) · alle vier teilen-Aufrufe liegen VOR jedem ersten Build ·
+  Chunk-Schatten reisen durchs Bundle (je-Kontext-Records) · alle Dispose-Pfade
+  der fünf Populationen parent-bewusst. Getragene Invariante (dokumentiert):
+  Attribut-Uploads reisen im Replay NIE — jede Instanz-Mutation der Chunk-
+  Populationen MUSS über Remove+Add (Pool-Re-Anker) laufen; heute überall wahr.
+
+**Davor, neunte Welle (sechster Trace: avgFps 4.5→9.2, dc 631, GPU echt 14.6 ms — aber
 render-CPU 49 ms, 60M Klein-Uploads, 6067 Pipelines, LongTasks 454 s/718 s, Deckung 10 %.
 Der Schöpfer: „nicht pflastern — tief im Kern die Synergie". Der Vendor wurde GELESEN):**
 - DIE UNIFORM-HEIMAT (`_uniformHeimatTeilen`): r184 KLONT jede nicht-geteilte Uniform-

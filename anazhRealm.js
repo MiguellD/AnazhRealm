@@ -24530,6 +24530,11 @@ class AnazhRealm {
                 const mesh = entry.mesh;
                 if (mesh) mesh.visible = visible;
             }
+            // BUNDLE-SICHT (Review-Riss E1, 19.07.): `visible` liest der Record,
+            // nie das Replay — ohne Touch wäre der Toggle in Bundles inert bzw.
+            // split-brain (während „aus" recordete Regionen verlören den Chunk
+            // dauerhaft). Der Toggle re-recorded darum ALLE Region-Bundles.
+            if (this.state._regionBundles) for (const bg of this.state._regionBundles.values()) bg.needsUpdate = true;
             this.log(`Boden ${visible ? "aktiviert" : "deaktiviert"}`);
         } else {
             this.log("Boden nicht vorhanden – Erzeuge neuen Boden...");
@@ -30941,6 +30946,10 @@ class AnazhRealm {
     // (der Null-Renderer baut nie einen Observer). ═══
     _materialObserverDiaet(mat) {
         if (!mat || mat._anazhDiaet === true || typeof mat.setupObserver !== "function") return mat;
+        // PFLICHT-PAAR-WÄCHTER (Review-Notiz C): ohne renderGroup-Export wäre die
+        // Uniform-Heimat ein No-op — die Diät fröre dann per-Objekt-Klone ein.
+        // Kein renderGroup → keine Diät (byte-alt, der Vendor refresht weiter).
+        if (!(typeof THREE !== "undefined" && THREE.TSL && THREE.TSL.renderGroup)) return mat;
         mat._anazhDiaet = true;
         const alt = mat.setupObserver;
         mat.setupObserver = function (builder) {
@@ -33286,6 +33295,7 @@ class AnazhRealm {
                 p.add(mesh);
                 p.needsUpdate = true;
                 this._bundleKugelWeite(p, mesh);
+                this._bundleReifeWache(mesh);
             } else if (this.state.scene) this.state.scene.add(mesh);
         }
         entry.lodStitchMesh = mesh;
@@ -65532,7 +65542,10 @@ class AnazhRealm {
             const parent = quelle.parent;
             if (parent) {
                 parent.add(kons);
-                if (parent.isBundleGroup) parent.needsUpdate = true;
+                if (parent.isBundleGroup) {
+                    parent.needsUpdate = true;
+                    this._bundleReifeWache(kons); // Record droppt unfertige Pipelines (s. _bundleReifeWache)
+                }
             } else if (this.state.scene) this.state.scene.add(kons);
             // Der Ausführer wechselt: die Quelle bleibt die WAHRHEIT (Slots/Matrizen/
             // Raycast) UND der Schatten-Werfer, verlässt aber die Kamera — die Haus-
@@ -65631,6 +65644,10 @@ class AnazhRealm {
             parent.remove(kons);
             if (parent.isBundleGroup) parent.needsUpdate = true;
         }
+        // OFEN-WIEDERANKER (Review-Notiz H): auch die fc-Familie verlässt den
+        // Dedup — ein Re-Mint wärmt asynchron statt für immer zu schweigen.
+        if (this._pipeOfenDone && gew.gruppe && gew.gruppe.mat)
+            this._pipeOfenDone.delete("fc|" + gew.gruppe.mat.uuid);
         if (kons && typeof kons.dispose === "function") kons.dispose();
         // SCHLUSS-WELLE — die GPU-Puffer des Gewands sterben EXPLIZIT (s.o.).
         this._feldCullPufferFrei(gew, renOverride);
@@ -67772,6 +67789,7 @@ class AnazhRealm {
                 mesh.perObjectFrustumCulled = false;
                 bundle.add(mesh);
                 bundle.needsUpdate = true;
+                this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
             } else if (this.state.scene) this.state.scene.add(mesh);
             batch = {
                 batchKey,
@@ -67949,7 +67967,36 @@ class AnazhRealm {
             bundle.add(mesh);
             bundle.needsUpdate = true;
             this._bundleKugelWeite(bundle, mesh);
+            this._bundleReifeWache(mesh);
         } else if (this.state.scene) this.state.scene.add(mesh);
+    }
+
+    // ═══ DIE REIFE-WACHE (19.07., Schöpfer-Spielbericht: „Terrain/Bäume
+    // erscheinen erst beim Abbauen/Platzieren"): der Vendor-Record DROPPT
+    // unfertige Draws — im Record-Zweig zeichnet _renderObjects nur, was
+    // `_pipelines.isReady` bejaht, und `u.version = s.version` friert das
+    // Bundle DANACH bedingungslos ein. Ein frisch gestreamter Bürger, dessen
+    // Pipeline noch ASYNC kompiliert (der Ofen wärmt bewusst asynchron), fiel
+    // damit STUMM aus dem Replay — bis irgendeine spätere Mutation die Region
+    // zufällig neu recordete (das Abbauen des Schöpfers). Die Wache: jeder
+    // Bundle-Beitritt kompiliert seinen Bürger asynchron FERTIG und touched
+    // DANN den (aktuellen) Bundle-Parent — der Re-Record kommt garantiert
+    // NACH der Reife. Heiße Pipelines resolven als Cache-Treffer sofort
+    // (ein Touch mehr, ein Re-Record der Region — an Änderung gebunden);
+    // wandert der Bürger bis dahin (Pool), trifft der Touch seinen NEUEN
+    // Parent oder verpufft (parent-los = kein Bundle = nichts einzufrieren).
+    // Headless/kein compileAsync: No-op (der Null-Renderer recorded nie). ═══
+    _bundleReifeWache(mesh) {
+        const st = this.state;
+        const r = st.renderer;
+        if (!mesh || !r || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
+        if (!st.scene || !st.camera) return;
+        Promise.resolve(r.compileAsync(mesh, st.camera, st.scene))
+            .catch(() => {})
+            .finally(() => {
+                const p = mesh.parent;
+                if (p && p.isBundleGroup === true) p.needsUpdate = true;
+            });
     }
     // Die Region-Kugel MUSS ihren Inhalt decken (Unter-Inklusion = Pop, s.
     // _archRegionBundleFor): Berg-Chunks ragen über den pauschalen Höhen-
@@ -68184,6 +68231,7 @@ class AnazhRealm {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
             bundle.needsUpdate = true;
+            this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotEntry: Slot-Index → Architektur-Eintrag (Reverse-Map für den
         // Crosshair-Raycast — instanceId aus dem Treffer → Eintrag).
@@ -73522,6 +73570,10 @@ class AnazhRealm {
         const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
         if (!TSL || !TSL.uniform) return null;
         this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
+        // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
+        // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
+        // per-Objekt-Klon auf dem Stand seines letzten Refresh ein (Patchwork).
+        this._uniformHeimatTeilen(this.state.seasonUniforms);
         return this.state.seasonUniforms;
     }
 
@@ -92630,7 +92682,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.8";
+AnazhRealm.VERSION = "18.491.9";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
