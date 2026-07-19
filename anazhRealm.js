@@ -16497,8 +16497,7 @@ class AnazhRealm {
         // der Leser ist fail-closed (Kern-Pflicht: ein unlesbares Gesetz ist
         // ein BRUCH, der schreit, nie eine still driftende Ersatz-Kopie).
         const HG =
-            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
-            AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+            AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
         const h21 = Fn(([q]) => {
             const p = fract(q.mul(vec2(123.34, 345.45)));
             const p2 = p.add(dot(p, p.add(34.345)));
@@ -18882,7 +18881,7 @@ class AnazhRealm {
     _menschAnkerFarben() {
         const kc = typeof window !== "undefined" && window.__koerperCore;
         if (!kc || !kc.SKIN_TONES || !kc.HAIR_COLORS) return null;
-        const seed = ((this.state && this.state.worldSeed) >>> 0) || 1;
+        const seed = (this.state && this.state.worldSeed) >>> 0 || 1;
         if (this._menschAnkerMemo && this._menschAnkerMemo.seed === seed) return this._menschAnkerMemo;
         const pick = (tab, salt) => {
             const keys = Object.keys(tab);
@@ -31470,10 +31469,7 @@ class AnazhRealm {
                                     const _lebt = _probeL2.greaterThan(_Ta.float(1e-12));
                                     const _invS = _Ta.sqrt(_probeL2).max(_Ta.float(1e-5));
                                     const _sInst = _lebt.select(_Ta.float(1.0).div(_invS), _Ta.float(0.0));
-                                    const _aRot = _lebt.select(
-                                        _Ta.atan(_probe.z.negate(), _probe.x),
-                                        _Ta.float(0.0)
-                                    );
+                                    const _aRot = _lebt.select(_Ta.atan(_probe.z.negate(), _probe.x), _Ta.float(0.0));
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
                                     //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
                                     //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
@@ -35846,8 +35842,7 @@ class AnazhRealm {
         // Teilmengen-Kopie ist GEFALLEN — das WASSER_GESETZ lebt NUR in
         // foundry-core (__terrainCore), der Leser ist fail-closed.
         const WG =
-            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
-            AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
         const _wgBeer = (d) =>
             new THREE.Color().setRGB(Math.exp(-WG.wK[0] * d), Math.exp(-WG.wK[1] * d), Math.exp(-WG.wK[2] * d));
         const uDeep = uniform(_wgBeer(WG.tief));
@@ -52066,12 +52061,23 @@ class AnazhRealm {
             const coneR = az.mul(F(m.coneAdd)).add(F(1.0));
             const twist = a.mul(F(2.0)).add(F(MU.swirl).div(r.add(F(0.25))));
             const waveR = TSL.sin(rr.mul(kk).sub(om).add(twist))
-                .add(
-                    TSL.sin(F(2.0).sub(rr).mul(kk).sub(om).add(twist)).mul(F(0.72))
-                )
+                .add(TSL.sin(F(2.0).sub(rr).mul(kk).sub(om).add(twist)).mul(F(0.72)))
                 .mul(TSL.exp(rr.negate().mul(F(0.7))));
-            const waveZ = TSL.sin(az.mul(F(6.5)).sub(om.mul(F(0.85))).add(twist.mul(F(0.4))));
-            const w01 = TSL.clamp(waveR.mul(F(0.62)).add(waveZ.mul(F(0.38))).mul(F(0.5)).add(F(0.5)), F(0.0), F(1.0));
+            const waveZ = TSL.sin(
+                az
+                    .mul(F(6.5))
+                    .sub(om.mul(F(0.85)))
+                    .add(twist.mul(F(0.4)))
+            );
+            const w01 = TSL.clamp(
+                waveR
+                    .mul(F(0.62))
+                    .add(waveZ.mul(F(0.38)))
+                    .mul(F(0.5))
+                    .add(F(0.5)),
+                F(0.0),
+                F(1.0)
+            );
             const fillIn = TSL.smoothstep(coneR.mul(F(0.44)), coneR.mul(F(0.86)), rr);
             const wallOut = TSL.smoothstep(coneR.add(F(0.06)), coneR.sub(F(0.2)), rr);
             const n = fbm3(p.mul(F(1.15)).add(TSL.vec3(F(0.0), F(0.0), u.time.mul(F(0.12)))));
@@ -52083,7 +52089,15 @@ class AnazhRealm {
                 .mul(n.mul(F(0.5)).add(F(0.5)))
                 .mul(u.nebelAct)
                 .mul(u.pulse.mul(F(0.34)).add(F(0.82)));
-            const portalCol = TSL.max(pal(rr.mul(F(0.16)).add(w01.mul(F(0.16))).add(F(0.3))), TSL.vec3(0.0, 0.0, 0.0));
+            const portalCol = TSL.max(
+                pal(
+                    rr
+                        .mul(F(0.16))
+                        .add(w01.mul(F(0.16)))
+                        .add(F(0.3))
+                ),
+                TSL.vec3(0.0, 0.0, 0.0)
+            );
             const glow = w01.mul(F(0.95)).add(F(0.42));
             const lum = TSL.mix(TSL.vec3(0.56, 0.7, 0.93), portalCol.mul(F(1.85)), F(0.78))
                 .mul(glow)
@@ -53432,9 +53446,7 @@ class AnazhRealm {
             // Erst-Wurf-0.25; dieselbe Messung wie das floats-Gate).
             dichte: dichteMittel,
             topSpeedMul:
-                1 +
-                Math.min(HE.radCap, radCount * HE.radMul) +
-                (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
+                1 + Math.min(HE.radCap, radCount * HE.radMul) + (radCount === 0 && beinCount >= 2 ? HE.beinBonus : 0),
             kAcc: Math.max(HE.kAccMin, Math.min(HE.kAccMax, HE.kAcc / mass)),
             kBrake:
                 radCount > 0
@@ -61528,10 +61540,30 @@ class AnazhRealm {
                         position: { x: 0, y: 0.85, z: 0 },
                         size: { x: 1.8, y: 0.08, z: 1.0 },
                     },
-                    { shape: "box", material: "holz", position: { x: -0.8, y: 1.1, z: -0.42 }, size: { x: 0.1, y: 2.2, z: 0.1 } },
-                    { shape: "box", material: "holz", position: { x: 0.8, y: 1.1, z: -0.42 }, size: { x: 0.1, y: 2.2, z: 0.1 } },
-                    { shape: "box", material: "holz", position: { x: -0.8, y: 0.95, z: 0.42 }, size: { x: 0.1, y: 1.9, z: 0.1 } },
-                    { shape: "box", material: "holz", position: { x: 0.8, y: 0.95, z: 0.42 }, size: { x: 0.1, y: 1.9, z: 0.1 } },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -0.8, y: 1.1, z: -0.42 },
+                        size: { x: 0.1, y: 2.2, z: 0.1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0.8, y: 1.1, z: -0.42 },
+                        size: { x: 0.1, y: 2.2, z: 0.1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: -0.8, y: 0.95, z: 0.42 },
+                        size: { x: 0.1, y: 1.9, z: 0.1 },
+                    },
+                    {
+                        shape: "box",
+                        material: "holz",
+                        position: { x: 0.8, y: 0.95, z: 0.42 },
+                        size: { x: 0.1, y: 1.9, z: 0.1 },
+                    },
                     {
                         shape: "box",
                         material: "holz",
@@ -67915,10 +67947,7 @@ class AnazhRealm {
             _lVerts > AnazhRealm.ARCH_INSTANCE_SHARE_VERTS ||
             (leaf &&
                 leaf.instanceShare === true &&
-                (_lVerts > AnazhRealm.ARCH_BATCH_KLEIN_VERTS ||
-                    !!leaf.tuer ||
-                    _maskiert ||
-                    !!(_aG && _aG.aOccl)));
+                (_lVerts > AnazhRealm.ARCH_BATCH_KLEIN_VERTS || !!leaf.tuer || _maskiert || !!(_aG && _aG.aOccl)));
         if (this.state.useBatchedArch && !heavyLeaf) return this._archBatchGroupFor(name, leafIdx, leaf, regionKey);
         if (!this.state.archInstanceGroups) this.state.archInstanceGroups = new Map();
         const regional = regionKey != null && this.state.useRegionFoliageCull !== false;
@@ -71244,7 +71273,7 @@ class AnazhRealm {
                     "marktstand_dorf",
                     { x: wx, y: wy + 0.5, z: wz },
                     {
-                        seed: (((plan.seed >>> 0) || 1) + 53 + m * 7919) >>> 0,
+                        seed: ((plan.seed >>> 0 || 1) + 53 + m * 7919) >>> 0,
                         rotationY: ((((plan.seed >>> 0) + m * 97) >>> 2) % 628) / 100,
                         silent: true,
                         autonomous: !!(so && so.autonomous),
@@ -71271,7 +71300,7 @@ class AnazhRealm {
             if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
-            const seedT = (((plan.seed >>> 0) || 1) + 31 + t * 7919) >>> 0;
+            const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
             const art = baumArten[seedT % baumArten.length];
             const entry = this.spawnArchitecture(
                 art,
@@ -71752,28 +71781,28 @@ class AnazhRealm {
         return (hasOv ? Promise.resolve(null) : this._foundryIdbGet(presetId, seed, lod, s))
             .then((hit) => {
                 if (hit) return hit;
-            // N3.4 (Pack-Kanon, spec/pack/v0/CONTRACT.md) — DER SHIP-PFAD-HOOK: der dokumentierte
-            // Test-Hook `window.__anazhLiveBake === false` ueberspringt den Live-Worker-Fallback
-            // (Pack/IDB-only — der kuenftige Auslieferungs-Pfad liest NUR gemintete Packs/Platte,
-            // ein Miss ist dann ein ehrliches null wie heute vor f.ready). Default (Hook undefined)
-            // = heutiges Verhalten, byte-gleich; Linse `gate:pack-contract` (Source + Verhalten).
-            if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
-            if (!f.ready || !f.worker) {
-                // fail-LAUT (V18.462, Gesetz #0: Invariante in den Chokepoint):
-                // das kalte Buch stirbt nicht mehr STUMM — ein ratenbegrenztes
-                // Konsolen-Wort (max 1×/10 s) benennt den null-Pfad; das
-                // Verhalten bleibt fail-soft (Aufrufer deferrieren + heilen
-                // beim Ingest — kein neuer Pfad, nur Sichtbarkeit).
-                const now = Date.now();
-                if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
-                    this._foundryKaltWarnAt = now;
-                    this.log(
-                        `FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`,
-                        "WARN"
-                    );
+                // N3.4 (Pack-Kanon, spec/pack/v0/CONTRACT.md) — DER SHIP-PFAD-HOOK: der dokumentierte
+                // Test-Hook `window.__anazhLiveBake === false` ueberspringt den Live-Worker-Fallback
+                // (Pack/IDB-only — der kuenftige Auslieferungs-Pfad liest NUR gemintete Packs/Platte,
+                // ein Miss ist dann ein ehrliches null wie heute vor f.ready). Default (Hook undefined)
+                // = heutiges Verhalten, byte-gleich; Linse `gate:pack-contract` (Source + Verhalten).
+                if (typeof window !== "undefined" && window.__anazhLiveBake === false) return null;
+                if (!f.ready || !f.worker) {
+                    // fail-LAUT (V18.462, Gesetz #0: Invariante in den Chokepoint):
+                    // das kalte Buch stirbt nicht mehr STUMM — ein ratenbegrenztes
+                    // Konsolen-Wort (max 1×/10 s) benennt den null-Pfad; das
+                    // Verhalten bleibt fail-soft (Aufrufer deferrieren + heilen
+                    // beim Ingest — kein neuer Pfad, nur Sichtbarkeit).
+                    const now = Date.now();
+                    if (!this._foundryKaltWarnAt || now - this._foundryKaltWarnAt > 10000) {
+                        this._foundryKaltWarnAt = now;
+                        this.log(
+                            `FOUNDRY KALT: build-asset(${presetId}) ohne Buch/Worker → null (heilt beim Ingest)`,
+                            "WARN"
+                        );
+                    }
+                    return null;
                 }
-                return null;
-            }
                 return this._foundryWorkerRequest(presetId, seed, lod, s, hasOv ? ov : null).then((meshes) => {
                     if (meshes && meshes.length && !hasOv) this._foundryIdbPut(presetId, seed, lod, s, meshes);
                     return meshes;

@@ -173,10 +173,12 @@ const server = http.createServer((req, res) => {
             const fertig = [];
             for (let i = 0; i < 8; i++) {
                 fertig.push(false);
-                r._foundryIngestTakt(["payload" + i]).then(((idx) => () => {
-                    fertig[idx] = true;
-                    reihenfolge.push(idx);
-                })(i));
+                r._foundryIngestTakt(["payload" + i]).then(
+                    ((idx) => () => {
+                        fertig[idx] = true;
+                        reihenfolge.push(idx);
+                    })(i)
+                );
             }
             await sleep(0); // Microtasks leeren — NICHTS darf schon durch sein
             o.v2KeineSofort = fertig.every((x) => x === false);
