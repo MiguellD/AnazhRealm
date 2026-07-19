@@ -6,9 +6,38 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.10 — DIE OFFENE LISTE FÄLLT: Diät-Ausweitung + Live-Set-Zensus)
+## Stand (V18.491.11 — N7: DAS VOLLE ZWEISPUR-MODELL FLIESST — der Welt-Ritt fährt die Probefahrt)
 
-**19.07., elfte Welle (Schöpfer: „das war 5 % der offenen Punkte" — die benannten
+**19.07., zwölfte Welle (Schöpfer: „aus den Kernen fließt ein Bruchteil des Wahren —
+weder Haut noch Felle noch die Fahrzeugphysik" — der Konsum-TIEFE-Bogen beginnt bei
+der härtesten Fühlbarkeit; die Wahrheit stand im Kern selbst: „das volle Slip-
+Winkel-Modell bleibt die Lab-Sim"):**
+- N7 — DAS ZWEISPUR-GESETZ REIST: vehicle-core exportiert das komplette Modell
+  der Probefahrt (exportDrive.zweispur: Achsabstände b/c · Gier-Trägheit Izz =
+  m·(L²+W²)/12·izzK · Schräglauf-Steifigkeiten CA_F/CA_R · Reibkreis-Kappe
+  maxGrip×grip · Achslast m·G mit Längs-Lastverlagerung über cgH/L · Lenksäulen-
+  Lerps · kinematische Stand-Blende); die fünf Lab-privaten Literale zogen als
+  FAHR.zweispur in den Kern (FAHR-UMZUGS-Muster, Shell liest byte-gleich —
+  KEIN Zwilling bleibt).
+- DER WELT-RITT FÄHRT DAS MODELL: der Lenk-Pfad integriert Newton-Euler im
+  Körperframe wie updateVehicle — Schlupfwinkel je Achse → Seitenkräfte gegen
+  den Schlupf, am Reibkreis×Achslast gesättigt (Grip-Grenze ENTSTEHT; Bremsen
+  belädt vorn, Gas hinten), Gier aus dem Reifenmoment, Handbremse bricht die
+  Heck-Seitenführung (Übersteuern/Drift emergent statt simuliert), Stand-Blende
+  gegen Instabilität. Gesamt-aLong GEMESSEN (Antrieb+Bremse+Hang+Reifen) speist
+  Lastverlagerung + Feder. fail-closed: ohne zweispur (kaltes Buch/Kreatur-Ritt)
+  der byte-alte gripK-Pfad.
+- DIE FEDER WIRD ZWEITE ORDNUNG: Nick/Wank sind Feder-Dämpfer-ZUSTÄNDE
+  (x″ = m − k·x − c·x′, Rezept-k/c, Stabilitäts-Klemme dt ≤ 33 ms) statt
+  exp-Annäherung — der Bug taucht beim Bremsen ÜBER das Gleichgewicht und
+  schwingt aus, die Karosserie legt sich in die Kurve; gespeist aus den ECHTEN
+  Modell-Beschleunigungen (aLat aus Reifenkräften statt v·ω-Näherung).
+  Frischer Aufstieg = frischer Fahrzustand (kein Geister-Drift).
+- BEWIESEN (schnell, kein Theater): node --check beide · playtest:fast 18/18.
+  OFFEN ehrlich: Heave (Squat-Kanal braucht seinen Sitz-Höhen-Konsumenten) ·
+  Haut + Felle (die nächsten zwei Konsum-Tiefe-Schnitte, gleiche Klinge).
+
+**Davor, elfte Welle (Schöpfer: „das war 5 % der offenen Punkte" — die benannten
 offenen Punkte des Bogens fallen, weiter unter Test-Verbot):**
 - DIÄT-AUSWEITUNG auf die 164 sharedFoliage-Singletons (materialZensus-Spitze —
   der größte verbliebene Jeden-Frame-Refresher): möglich durch den BATCH-TEXTUR-

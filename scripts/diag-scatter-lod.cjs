@@ -75,7 +75,7 @@ function check(name, ok, detail) {
     const fernConstUses = (src.match(/AnazhRealm\.SCATTER_FERN_SUPERREGION/g) || []).length;
     const fernDeriveSites = (src.match(/\+ "s:" \+/g) || []).length;
     const gfIdx = src.indexOf("_archInstanceGroupFor(name, leafIdx, leaf, regionKey) {");
-    // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.10) sitzt zwischen
+    // 8000 Zeichen: der Granularitäts-Kollaps-Block (V18.491.11) sitzt zwischen
     // Keying und Batch-Zweig — das Fenster muss BEIDE Anker tragen.
     const gfHead = gfIdx >= 0 ? src.slice(gfIdx, gfIdx + 8000) : "";
     check(

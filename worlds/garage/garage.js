@@ -310,9 +310,9 @@ function updateVehicle(dt,t){
   const Izz=m*(L*L+W*W)/12*FAHR.izzK, cgH=cgHeightOf(P), grip=P.grip;     // Gier-Trägheit aus Masse·Abmessungen
   // Lenkung: geschwindigkeitsabhängig (oben weniger), zentriert sich ohne Eingabe
   const sf=1/(1+car.speed*0.05), steerTgt=input.steer*FAHR.maxSteer*sf;
-  car.steer+=(steerTgt-car.steer)*(input.steer!==0?0.18:0.30);
+  car.steer+=(steerTgt-car.steer)*(input.steer!==0?FAHR.zweispur.steerK:FAHR.zweispur.steerZentrK);  // N7 — Lenksaeulen-Lerps aus dem KERN (byte-gleich umgezogen)
   // ── Schlupfwinkel je Achse (Tiefpass im Nenner → bei Schritttempo stabil) ──
-  const vL=car.vlong, eps=1.4, dn=Math.abs(vL)+eps, sgn=vL>=0?1:-1;
+  const vL=car.vlong, eps=FAHR.zweispur.slipEps, dn=Math.abs(vL)+eps, sgn=vL>=0?1:-1;  // N7 — Kern-Satz
   const slipF=Math.atan2(car.vlat+car.yawRate*b, dn) - car.steer*sgn;
   const slipR=Math.atan2(car.vlat-car.yawRate*c, dn); car.slipF=slipF;car.slipR=slipR;
   // ── Achslasten mit LÄNGS-Lastverlagerung (Beschl→hinten, Brems→vorn) — koppelt Last an Grip ──
@@ -322,7 +322,7 @@ function updateVehicle(dt,t){
   const cap=FAHR.maxGrip*grip;
   let FlatF=-Math.max(-cap,Math.min(cap,FAHR.CA_F*slipF))*Wf;    // Seitenkraft wirkt dem Schlupf ENTGEGEN (Rückstellung)
   let FlatR=-Math.max(-cap,Math.min(cap,FAHR.CA_R*slipR))*Wr;
-  if(input.hand)FlatR*=0.32;                                    // HANDBREMSE: Heck-Seitenführung bricht weg → Übersteuern/Drift
+  if(input.hand)FlatR*=FAHR.zweispur.handLatMul;                                    // HANDBREMSE: Heck-Seitenführung bricht weg → Übersteuern/Drift
   // ── Längskraft: Antrieb (massenabh.) − Bremse/Handbremse − Widerstände − Längsanteil der Lenk-Seitenkraft ──
   let aDrive=0;
   if(input.throttle>0)aDrive+=ph.aEngine*input.throttle;
@@ -340,9 +340,9 @@ function updateVehicle(dt,t){
   // ── Gier aus Reifenmoment; bei Schritttempo auf kinematisch blenden (sonst instabil am Stand) ──
   const torque=b*FlatF*Math.cos(car.steer)-c*FlatR;
   car.yawRate+=(torque/Izz)*dt;
-  const spd=Math.hypot(car.vlong,car.vlat), low=Math.max(0,Math.min(1,1-spd/2.4));
+  const spd=Math.hypot(car.vlong,car.vlat), low=Math.max(0,Math.min(1,1-spd/FAHR.zweispur.lowBlendV));  // N7 — Kern-Satz
   car.yawRate=car.yawRate*(1-low)+(car.vlong*Math.tan(car.steer)/L)*low;
-  car.vlat*=(1-low*0.6);
+  car.vlat*=(1-low*FAHR.zweispur.lowLatK);
   if(input.throttle===0&&input.brake===0&&spd<0.08){car.vlong=0;car.vlat=0;car.yawRate*=0.5;}
   car.yaw+=car.yawRate*dt;
   // ── STEIGUNG (17.07.): Hangabtrieb −G·sin(α) längs der Fahrt (α aus Bug/Heck-Proben

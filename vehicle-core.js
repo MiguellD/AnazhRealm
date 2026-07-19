@@ -2080,6 +2080,24 @@
             driftGripMul: 0.35,
             kehrV: 0.45,
         },
+        // ── N7 (19.07., rein additive DATEN-Zeile — Praezedenz: lenkung) —
+        // DAS VOLLE ZWEISPUR-GESETZ REIST: die bisher Lab-privaten Groessen des
+        // Schlupfwinkel-Modells (updateVehicle) werden benannte Kern-Daten, damit
+        // exportDrive.zweispur den Welt-Ritt mit DEMSELBEN Modell fahren kann,
+        // das die Probefahrt faehrt (Reibkreis-Vereinfachung gripK bleibt der
+        // fail-soft-Pfad kalter Buecher). Werte byte-gleich den Lab-Literalen:
+        // steerK/steerZentrK = die per-Frame-Lerps der Lenksaeule (60-fps-Basis;
+        // Leser rechnen 1-(1-k)^(dt·60)), slipEps = Tiefpass im Schlupf-Nenner,
+        // handLatMul = Heck-Seitenfuehrungs-Rest unter Handbremse (FlatR·0.32),
+        // lowBlendV/lowLatK = kinematische Blende unterhalb Schritttempo. ──
+        zweispur: {
+            steerK: 0.18,
+            steerZentrK: 0.3,
+            slipEps: 1.4,
+            handLatMul: 0.32,
+            lowBlendV: 2.4,
+            lowLatK: 0.6,
+        },
     };
     // ── Rad-Bewegungshuellkurve: GEMESSEN aus der LIVE-Fahrphysik (gleiche Klammern/Federn wie updateVehicle), keine 1-g-Schaetzung ──
     //    vert  = Nicktauchen am Achs-x (aMax + Feder-Ueberschwingen ζ) + Squat(Heave)  → vertikaler Freigang Bogenscheitel↔Reifen
@@ -2206,6 +2224,46 @@
                 // ZENSUS-REST V18.488 (rein additiv): die echte BREMSE der
                 // Probefahrt (m/s² — S bei Fahrt bremst statt rueckwaerts).
                 brakeDecel: FAHR.brakeDecel,
+            },
+            // ── N7 (19.07., rein additiv) — DAS VOLLE ZWEISPUR-MODELL ALS GESETZ:
+            // bisher fuhr der Wirt die Reibkreis-VEREINFACHUNG (lenkung.gripK) und
+            // NUR die Probefahrt das echte Schlupfwinkel-Modell — der benannte
+            // Bruchteil. Jetzt reisen ALLE Groessen des updateVehicle-Modells:
+            // Achsabstaende b/c (CG mittig wie die Probefahrt), Gier-Traegheit
+            // Izz = m·(L²+W²)/12·izzK, Schraeglauf-Steifigkeiten CA_F/CA_R,
+            // Reibkreis-Kappe maxGrip·grip, Achslast-Basis m·G mit Laengs-
+            // Lastverlagerung ueber cgH/L, plus die Lenksaeulen-/Blende-Daten
+            // (FAHR.zweispur). Der Wirt integriert damit DASSELBE Newton-Euler-
+            // Modell im Koerperframe (Seitenkraefte gegen den Schlupf, Gier aus
+            // dem Reifenmoment, kinematische Blende am Stand); ohne zweispur
+            // (kaltes Buch) bleibt der gripK-Pfad byte-alt. Feder-Antwort:
+            // dieselben Momenten-Gains wie wheelClearance (pitch/roll/heave) —
+            // der Aufbau taucht beim Bremsen, legt sich in die Kurve, federt
+            // mit dem Rezept-k/c aus, exakt wie auf der Probestrecke.
+            zweispur: {
+                b: P.radstand * 0.5,
+                c: P.radstand * 0.5,
+                Izz: (ph.mass * (P.radstand * P.radstand + P.spur * P.spur)) / 12 * FAHR.izzK,
+                mass: ph.mass,
+                grip: P.grip,
+                CA_F: FAHR.CA_F,
+                CA_R: FAHR.CA_R,
+                maxGrip: FAHR.maxGrip,
+                G: FAHR.G,
+                steerK: FAHR.zweispur.steerK,
+                steerZentrK: FAHR.zweispur.steerZentrK,
+                slipEps: FAHR.zweispur.slipEps,
+                handLatMul: FAHR.zweispur.handLatMul,
+                lowBlendV: FAHR.zweispur.lowBlendV,
+                lowLatK: FAHR.zweispur.lowLatK,
+                pitchGain: FAHR.pitchGain,
+                rollGain: FAHR.rollGain,
+                heaveA: FAHR.heaveA,
+                heaveV: FAHR.heaveV,
+                heaveKMul: FAHR.heaveKMul,
+                heaveCMul: FAHR.heaveCMul,
+                aPitchMax: A_PITCH_MAX,
+                aLatMax: A_LAT_MAX,
             },
         };
     }

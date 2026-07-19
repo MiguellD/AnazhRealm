@@ -53723,6 +53723,29 @@ class AnazhRealm {
                 ) {
                     prof.lenkung = _lk;
                 }
+                // N7 (19.07.) — DAS VOLLE ZWEISPUR-GESETZ reist ins Profil: der
+                // Ritt fährt damit DASSELBE Schlupfwinkel-Modell wie die Probe-
+                // fahrt (Reibkreis-Kappe, Lastverlagerung, Gier aus Reifenmoment)
+                // statt der gripK-Vereinfachung. NaN-Wand: nur mit den tragenden
+                // Größen; sonst bleibt der gripK-Pfad byte-alt (fail-closed).
+                const _zs = _fp.zweispur;
+                if (
+                    _zs &&
+                    prof.lenkung &&
+                    Number.isFinite(_zs.Izz) &&
+                    _zs.Izz > 0 &&
+                    Number.isFinite(_zs.mass) &&
+                    _zs.mass > 0 &&
+                    Number.isFinite(_zs.CA_F) &&
+                    Number.isFinite(_zs.CA_R) &&
+                    Number.isFinite(_zs.maxGrip) &&
+                    Number.isFinite(_zs.b) &&
+                    _zs.b > 0 &&
+                    Number.isFinite(_zs.c) &&
+                    _zs.c > 0
+                ) {
+                    prof.zweispur = _zs;
+                }
             }
         } catch (_e) {}
         entry._vehicleProfile = prof;
@@ -53748,6 +53771,12 @@ class AnazhRealm {
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
+        // N7 — frischer Aufstieg = frischer Fahrzustand (Lenksäule zentriert,
+        // Gier-Rate null, Feder ruhig — kein Geister-Drift vom letzten Ritt).
+        entry._fahr = null;
+        entry._fahrVLongPrev = null;
+        entry._ridePitchV = 0;
+        entry._rideKurvenRollV = 0;
         // V18.110 — C7: der SITZ-Punkt des Bauplans bestimmt, WO der Charakter
         // sitzt (expliziter sitz-Punkt ODER die emergente oberste flache
         // Fläche) — statt des festen MOUNT_FOLLOW_HEIGHT-Offsets. Gecacht am
@@ -54061,8 +54090,12 @@ class AnazhRealm {
         {
             const sprN = rideProf && rideProf.spring;
             if (sprN) {
+                // N7 — die Feder liest die ECHTE Beschleunigung des Zweispur-
+                // Modells (Reifenkräfte + Bremse + Hang), wenn es fährt; sonst
+                // die alte Tempo-Delta-Näherung (fail-soft, Kreatur-Ritt etc.).
+                const fahrM = entry._fahr && Number.isFinite(entry._fahr.aLong) ? entry._fahr : null;
                 const prevSp = Number.isFinite(entry._rideSp) ? entry._rideSp : sp;
-                let aLong = (sp - prevSp) / tick;
+                let aLong = fahrM ? fahrM.aLong : (sp - prevSp) / tick;
                 if (!Number.isFinite(aLong)) aLong = 0;
                 // ZENSUS 17.07. / ZWILLINGS-ABSCHIED (18.07.) — die Längs-
                 // Beschl.-Klemme liest die EINZIGE Kern-Quelle A_PITCH_MAX
@@ -54088,12 +54121,29 @@ class AnazhRealm {
                 );
                 const cgHL = Math.max(0.08, Math.min(0.5, cgH / L));
                 const pGain = _fahrG.pitchGain;
-                let target = (-aLong * cgHL * pGain) / sprN.k;
-                if (!Number.isFinite(target)) target = 0;
-                target = Math.max(-0.12, Math.min(0.12, target));
+                // N7 — ZWEITE ORDNUNG statt exp-Annäherung (die Probefahrt-Feder
+                // spX.step: x'' = m − k·x − c·x'): der Aufbau taucht beim Bremsen
+                // ÜBER das Gleichgewicht und schwingt mit dem Rezept-k/c aus —
+                // Gleichgewicht m/k == das alte target (byte-nahes Steady-State).
+                // Stabilitäts-Klemme: Feder-dt ≤ 33 ms (expl. Euler, k ≤ ~120).
+                const th = Math.min(0.033, tick);
+                const mP = -aLong * cgHL * pGain;
                 const cur = Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0;
-                let np = cur + (target - cur) * (1 - Math.exp(-Math.sqrt(sprN.k) * tick));
-                if (!Number.isFinite(np)) np = 0;
+                let pv = Number.isFinite(entry._ridePitchV) ? entry._ridePitchV : 0;
+                pv += (mP - sprN.k * cur - sprN.c * pv) * th;
+                let np = cur + pv * th;
+                if (!Number.isFinite(np) || !Number.isFinite(pv)) {
+                    np = 0;
+                    pv = 0;
+                }
+                if (np > 0.12) {
+                    np = 0.12;
+                    pv = Math.min(0, pv);
+                } else if (np < -0.12) {
+                    np = -0.12;
+                    pv = Math.max(0, pv);
+                }
+                entry._ridePitchV = pv;
                 entry._ridePitch = np;
                 // ZENSUS-REST V18.488 — QUER-WANK aus der Kurvenfahrt: die
                 // Lab-Formel wheelClearance (roll = aLat·(cgH/W)·rollGain/k)
@@ -54107,23 +54157,40 @@ class AnazhRealm {
                 while (dYw > Math.PI) dYw -= 2 * Math.PI;
                 while (dYw < -Math.PI) dYw += 2 * Math.PI;
                 entry._rideYawPrev = yawNow;
-                let aLat = tick > 1e-5 ? sp * (dYw / tick) : 0;
+                // N7 — die Quer-Beschleunigung kommt aus dem REIFENMODELL, wenn
+                // das Zweispur-Gesetz fährt (fail-soft die Gier-Näherung v·ω):
+                let aLat = fahrM && Number.isFinite(fahrM.aLat) ? fahrM.aLat : tick > 1e-5 ? sp * (dYw / tick) : 0;
                 if (!Number.isFinite(aLat)) aLat = 0;
                 const aLatMax = _fahrG.aLatMax;
                 aLat = Math.max(-aLatMax, Math.min(aLatMax, aLat));
                 const spurW =
                     rideProf && Number.isFinite(rideProf.spur) && rideProf.spur > 0 ? rideProf.spur : L * 0.55;
                 const rGain = _fahrG.rollGain;
-                let rollT = (-aLat * Math.max(0.08, Math.min(0.9, cgH / spurW)) * rGain) / sprN.k;
-                if (!Number.isFinite(rollT)) rollT = 0;
-                rollT = Math.max(-0.12, Math.min(0.12, rollT));
+                // N7 — zweite Ordnung wie der Nick (Kurven-Wank lehnt ÜBER und
+                // schwingt mit k/c aus; Gleichgewicht == altes rollT).
+                const mR = -aLat * Math.max(0.08, Math.min(0.9, cgH / spurW)) * rGain;
                 const curKR = Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0;
-                let nKR = curKR + (rollT - curKR) * (1 - Math.exp(-Math.sqrt(sprN.k) * tick));
-                if (!Number.isFinite(nKR)) nKR = 0;
+                let rv = Number.isFinite(entry._rideKurvenRollV) ? entry._rideKurvenRollV : 0;
+                rv += (mR - sprN.k * curKR - sprN.c * rv) * th;
+                let nKR = curKR + rv * th;
+                if (!Number.isFinite(nKR) || !Number.isFinite(rv)) {
+                    nKR = 0;
+                    rv = 0;
+                }
+                if (nKR > 0.12) {
+                    nKR = 0.12;
+                    rv = Math.min(0, rv);
+                } else if (nKR < -0.12) {
+                    nKR = -0.12;
+                    rv = Math.max(0, rv);
+                }
+                entry._rideKurvenRollV = rv;
                 entry._rideKurvenRoll = nKR;
             } else {
                 if (entry._ridePitch) entry._ridePitch = 0;
                 if (entry._rideKurvenRoll) entry._rideKurvenRoll = 0;
+                entry._ridePitchV = 0;
+                entry._rideKurvenRollV = 0;
             }
             entry._rideSp = sp;
             // STEIGUNGS-DREIKLANG — Gelände-NICK/-WANK für JEDES gerittene Gefährt
@@ -91308,9 +91375,22 @@ class AnazhRealm {
                 let vLat = v.x() * fZ - v.z() * fX; // Komponente entlang state.right
                 const steerIn = (this.state.keys["a"] ? 1 : 0) - (this.state.keys["d"] ? 1 : 0);
                 const sf = 1 / (1 + Math.abs(vLong) * lenk.sfK);
-                const delta = steerIn * lenk.maxSteer * sf;
                 const L = Number.isFinite(lenk.radstand) && lenk.radstand > 1 ? lenk.radstand : 2.6;
-                yaw += ((vLong * Math.tan(delta)) / L) * nowDt;
+                const zs = ride.zweispur || null;
+                const fahr = zs ? ent._fahr || (ent._fahr = { steer: 0, yawRate: 0, aLong: 0, aLat: 0 }) : null;
+                let delta;
+                if (zs) {
+                    // N7 — DIE LENKSÄULE des Kerns: Ziel-Einschlag mit Selbst-
+                    // Zentrierung, Lerp framerate-ehrlich (Kern-Lerps sind
+                    // 60-fps-basiert: 1-(1-k)^(dt·60)).
+                    const sTgt = steerIn * lenk.maxSteer * sf;
+                    const kS = steerIn !== 0 ? zs.steerK : zs.steerZentrK;
+                    fahr.steer += (sTgt - fahr.steer) * (1 - Math.pow(1 - kS, nowDt * 60));
+                    delta = fahr.steer;
+                } else {
+                    delta = steerIn * lenk.maxSteer * sf;
+                    yaw += ((vLong * Math.tan(delta)) / L) * nowDt;
+                }
                 const hand = !!this.state.keys["shift"];
                 // nie Sprint im Sattel; der VMAX-ANKER trägt auch den Lenk-Pfad.
                 const zielSpeed = (rideVmax !== null ? rideVmax : this.state.speed * rideTop) * slopePenalty;
@@ -91344,14 +91424,74 @@ class AnazhRealm {
                 if (hand && Number.isFinite(lenk.handDecel)) {
                     vLong -= Math.sign(vLong) * Math.min(Math.abs(vLong), lenk.handDecel * nowDt);
                 }
-                const grip = lenk.gripK * (hand ? (Number.isFinite(lenk.driftGripMul) ? lenk.driftGripMul : 0.35) : 1);
-                vLat *= Math.max(0, 1 - grip * nowDt);
+                if (zs) {
+                    // ═══ N7 — DAS VOLLE ZWEISPUR-MODELL (dasselbe Newton-Euler wie
+                    // die Probefahrt, Kern-Gesetz exportDrive.zweispur): Schlupf-
+                    // winkel je Achse → Seitenkräfte gegen den Schlupf, gesättigt
+                    // am Reibkreis × Achslast (Längs-Lastverlagerung über cgH/L:
+                    // Bremsen belädt vorn, Gas hinten) → Gier aus dem Reifen-
+                    // moment; unterhalb Schritttempo kinematische Blende (stabil
+                    // am Stand). Handbremse bricht die Heck-Seitenführung
+                    // (handLatMul) — Übersteuern/Drift ENTSTEHT statt simuliert
+                    // zu werden. Der gripK-Pfad bleibt der fail-closed-Zweig. ═══
+                    const dtF = Math.min(0.05, Math.max(0.001, nowDt)); // Stabilitäts-Klemme (expl. Euler)
+                    const dn = Math.abs(vLong) + zs.slipEps;
+                    const sgn = vLong >= 0 ? 1 : -1;
+                    const slipF = Math.atan2(vLat + fahr.yawRate * zs.b, dn) - fahr.steer * sgn;
+                    const slipR = Math.atan2(vLat - fahr.yawRate * zs.c, dn);
+                    const cgH = Number.isFinite(ride.cgH) && ride.cgH > 0 ? ride.cgH : 0.9;
+                    const Wt = zs.mass * zs.G;
+                    const dW = ((fahr.aLong * cgH) / L) * zs.mass;
+                    const Wf = Math.max(0, Wt * (zs.c / L) - dW);
+                    const Wr = Math.max(0, Wt * (zs.b / L) + dW);
+                    const cap = zs.maxGrip * (Number.isFinite(zs.grip) && zs.grip > 0 ? zs.grip : 1);
+                    let FlatF = -Math.max(-cap, Math.min(cap, zs.CA_F * slipF)) * Wf;
+                    let FlatR = -Math.max(-cap, Math.min(cap, zs.CA_R * slipR)) * Wr;
+                    if (hand) FlatR *= zs.handLatMul;
+                    const cosD = Math.cos(fahr.steer);
+                    const aLatB = (FlatF * cosD + FlatR) / zs.mass;
+                    // Rotationskopplung + Längsanteil der Lenk-Seitenkraft (Newton-
+                    // Euler im Körperframe — wie updateVehicle):
+                    vLong += ((-FlatF * Math.sin(fahr.steer)) / zs.mass + vLat * fahr.yawRate) * dtF;
+                    vLat += (aLatB - vLong * fahr.yawRate) * dtF;
+                    const torque = zs.b * FlatF * cosD - zs.c * FlatR;
+                    fahr.yawRate += (torque / zs.Izz) * dtF;
+                    const spd = Math.hypot(vLong, vLat);
+                    const low = Math.max(0, Math.min(1, 1 - spd / zs.lowBlendV));
+                    fahr.yawRate = fahr.yawRate * (1 - low) + ((vLong * Math.tan(fahr.steer)) / L) * low;
+                    vLat *= 1 - low * zs.lowLatK;
+                    yaw += fahr.yawRate * dtF;
+                    fahr.aLat = aLatB; // die Feder-Antwort liest die ECHTE Querbeschleunigung
+                    // Die GESAMTE Längsbeschleunigung GEMESSEN (Antrieb + Bremse +
+                    // Hangabtrieb + Reifen — alles, was vLong diesen Tick bewegte):
+                    // speist die Lastverlagerung des NÄCHSTEN Schritts und den
+                    // Brems-Nick der Feder (der Bug taucht, der Squat drückt).
+                    const vPrev = Number.isFinite(ent._fahrVLongPrev) ? ent._fahrVLongPrev : vLong;
+                    fahr.aLong = Math.max(-zs.aPitchMax, Math.min(zs.aPitchMax, (vLong - vPrev) / dtF));
+                    ent._fahrVLongPrev = vLong;
+                } else {
+                    const grip =
+                        lenk.gripK * (hand ? (Number.isFinite(lenk.driftGripMul) ? lenk.driftGripMul : 0.35) : 1);
+                    vLat *= Math.max(0, 1 - grip * nowDt);
+                }
                 // NaN-Wand vor dem Gedächtnis (Lehre 13), dann zurück in Weltachsen;
                 // die Gier ans Gefährt (die EINE Gier-Wahrheit entry.rotationY).
                 if (!Number.isFinite(yaw) || !Number.isFinite(vLong) || !Number.isFinite(vLat)) {
                     yaw = this.state.yaw;
                     vLong = 0;
                     vLat = 0;
+                    if (fahr) {
+                        fahr.steer = 0;
+                        fahr.yawRate = 0;
+                        fahr.aLong = 0;
+                        fahr.aLat = 0;
+                    }
+                }
+                if (fahr && (!Number.isFinite(fahr.yawRate) || !Number.isFinite(fahr.steer))) {
+                    fahr.steer = 0;
+                    fahr.yawRate = 0;
+                    fahr.aLong = 0;
+                    fahr.aLat = 0;
                 }
                 const fX2 = Math.sin(yaw);
                 const fZ2 = Math.cos(yaw);
@@ -92775,7 +92915,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.10";
+AnazhRealm.VERSION = "18.491.11";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
