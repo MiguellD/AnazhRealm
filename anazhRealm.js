@@ -251,9 +251,14 @@ class AnazhRealm {
             // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
             erosion: null,
             keys: {},
-            speed: 6,
-            sprintSpeed: 12,
-            jumpPower: 12.0,
+            // ZWILLINGS-ABSCHIED (19.07.): der Ring-5-Zahlensatz 6/12/12.0 ist
+            // gefallen — 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei
+            // kaltem Kern steht der Spieler sichtbar (_kernPflichtWand nennt
+            // den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung
+            // (init) die Kern-Werte VOR dem ersten Loop-Frame.
+            speed: 0,
+            sprintSpeed: 0,
+            jumpPower: 0,
             yaw: 0,
             pitch: 0,
             mouseSensitivity: 0.002,
@@ -304,15 +309,15 @@ class AnazhRealm {
             // wohnt im koerperstudio-Gesetzbuch (fx.bewegung.sprung.coyoteSec),
             // handleJump liest es via _bewegungsBlock (fail-soft byte-gleich).
             isInAir: false,
-            // Welle 6.A3 — Slope-Steepness. `maxWalkableSlopeY` ist cos(maxAngle):
-            // 0.5 = cos(60°), das heißt Slopes bis ~60° gelten als begehbar. Steiler
-            // → `onSteepSlope=true`, Bewegungs-Input wird gedrosselt + Gravity
-            // schiebt den Spieler hinab (Friction=0 ist die Voraussetzung dafür).
+            // Welle 6.A3 — Slope-Steepness. Der Begehbarkeits-Winkel ist
+            // cos(maxAngle): 0.5 = cos(60°), Slopes bis ~60° gelten als
+            // begehbar. Steiler → `onSteepSlope=true`, Bewegungs-Input wird
+            // gedrosselt + Gravity schiebt den Spieler hinab.
+            // ZWILLINGS-ABSCHIED (19.07.): der State-Zwilling fiel (wie
+            // coyoteTime) — das Steilhang-Gesetz wohnt NUR im koerperstudio-
+            // Gesetzbuch (fx.bewegung.hang.maxSlopeY), die Leser lesen es
+            // direkt via _bewegungsBlock (fail-closed, memoisiert).
             // `groundNormalY` ist 1.0 wenn nicht geerdet (sentinel-flat).
-            // ZENSUS-REST V18.488 — das Steilhang-Gesetz wohnt im koerperstudio-
-            // Gesetzbuch (fx.bewegung.hang.maxSlopeY/.malus); init() seedet
-            // dieses Feld byte-gleich aus der EINEN Quelle (Boot-Gesetz-Eichung).
-            maxWalkableSlopeY: 0.5,
             groundNormalY: 1.0,
             onSteepSlope: false,
             _fpsFrames: 0,
@@ -11132,17 +11137,24 @@ class AnazhRealm {
         // 260-2800 Hz, tempo-synchron via _lofiTick) und je Kanal sitzt ein
         // Genre-Send (RAUM.DELAY_SENDS: Dub badet, Bebop steht trocken).
         // Der Bass bleibt trocken (Tiefbass im Hall = Matsch).
+        // ZWILLINGS-ABSCHIED (19.07.): die gedrifteten Literal-Arme
+        // (260/2400/0.35 gegen Kern 260/2800/0.42) sind gefallen —
+        // Gültigkeits-Wand nach dem _fahrGesetz-Muster (ganz oder gar
+        // nicht): kalter/alter Kern ohne RAUM.echo ist ein BRUCH, der
+        // schreit, nie ein stilles Misch-Gesetz.
         const RE0 = AnazhRealm.Gesetz("klang:RAUM.echo", null);
+        if (!RE0 || !["hpHz", "lpHz", "feedback"].every((k) => Number.isFinite(RE0[k])))
+            AnazhRealm._kernPflichtBruch("klang:RAUM.echo");
         const raumDelay = ctx.createDelay(2.0);
         raumDelay.delayTime.value = 0.31;
         const raumHochpass = ctx.createBiquadFilter();
         raumHochpass.type = "highpass";
-        raumHochpass.frequency.value = RE0 && Number.isFinite(RE0.hpHz) ? RE0.hpHz : 260;
+        raumHochpass.frequency.value = RE0.hpHz;
         const raumDaempfer = ctx.createBiquadFilter();
         raumDaempfer.type = "lowpass";
-        raumDaempfer.frequency.value = RE0 && Number.isFinite(RE0.lpHz) ? RE0.lpHz : 2400;
+        raumDaempfer.frequency.value = RE0.lpHz;
         const raumFeedback = ctx.createGain();
-        raumFeedback.gain.value = RE0 && Number.isFinite(RE0.feedback) ? RE0.feedback : 0.35;
+        raumFeedback.gain.value = RE0.feedback;
         const raumWet = ctx.createGain();
         raumWet.gain.value = 0;
         raumDelay.connect(raumHochpass);
@@ -11207,14 +11219,16 @@ class AnazhRealm {
     // W-A7-VERTIEFUNG (Nachlese-Welle) — DIE EINE SKALEN-QUELLE: das Studio-Klang-
     // Rezept führt neben dem Tempo auch die SKALA (fx.klang.scale — im Kern aus der
     // EINEN Lab-Formel scaleFor(darkness) VOR-ABGELEITET, exportDrive-Muster N6.2).
-    // Fail-soft (G4.1): Rezept versteckt/Feld fehlt/unsauber → die LOFI_SCALE-
-    // Konstante byte-alt (A natürlich Moll). Validierung fail-closed: nur ein
-    // nicht-leeres Array endlicher Halbtöne führt.
+    // ZWILLINGS-ABSCHIED (19.07.): der LOFI_SCALE-Konstanten-Zweig ist
+    // gefallen — ein fehlendes/unsauberes Rezept-Feld (must-ignore, fremdes
+    // Artefakt) fällt auf die Kern-Wahrheit des Host-Genres (fail-closed),
+    // nie mehr auf eine Stamm-Konstante. Validierung: nur ein nicht-leeres
+    // Array endlicher Halbtöne führt.
     _lofiActiveScale() {
         const studio = this._klangStudioPreset();
         const sc = studio && studio.scale;
         if (Array.isArray(sc) && sc.length > 0 && sc.every((v) => Number.isFinite(v))) return sc;
-        return AnazhRealm.LOFI_SCALE;
+        return this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE).scale;
     }
 
     // W4 V3 — ein Tonleiter-Index (kann > n−1, wickelt in höhere Oktaven) zu
@@ -11381,12 +11395,14 @@ class AnazhRealm {
     // ZENSUS 17.07. — DER SWING liest das Studio-Genre: fx.klang.dna.swing des
     // gewählten Rezepts (das bpm/scale-Muster; die Welt atmet den Shuffle des
     // Genres — die Doppel-Quelle Stamm 0.58 vs LoFi-Rezept 0.50 ist
-    // geschlossen, das Genre führt). Kaltes Buch / kein dna → GROOVE_SWING
-    // byte-alt (fail-soft). swing 0 (Techno/Ambient) ist ein GÜLTIGER Wert.
+    // geschlossen, das Genre führt). ZWILLINGS-ABSCHIED (19.07.): der
+    // GROOVE_SWING-Konstanten-Zweig ist gefallen — kein dna (fremdes
+    // Rezept-Feld, must-ignore) → die Kern-Wahrheit des Host-Genres
+    // (fail-closed). swing 0 (Techno/Ambient) ist ein GÜLTIGER Wert.
     _grooveSwing() {
         const studio = this._klangStudioPreset();
         const sw = studio && studio.dna ? studio.dna.swing : null;
-        return Number.isFinite(sw) ? sw : AnazhRealm.GROOVE_SWING;
+        return Number.isFinite(sw) ? sw : this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE).dna.swing;
     }
 
     // W4 V3 Phase 3 — eine synthetische Kick: ein Sinus mit Tonhöhen-Abfall
@@ -11482,19 +11498,19 @@ class AnazhRealm {
     // ZENSUS-REST V18.488 — DAS GENRE WÄHLT DEN GROOVE: die Pattern-Tabelle je
     // LAWS.rhythm-Option wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER — der
     // Swing-Eintrag IST das historische Wirts-Pattern, byte-gleich); der Wirt
-    // wählt über studio.rhythm. Genre ohne eigene Zeile → Swing-Zeile; kaltes
-    // Buch → LOFI_GROOVE_PATTERN (byte-alt). One Drop lässt die Eins aus,
-    // Techno fährt Four-on-the-floor, Ambient/Cinematic (None) sind pulslos.
+    // wählt über studio.rhythm. Genre ohne eigene Zeile → Swing-Zeile — sie
+    // deckt auch r=null (fehlendes Rezept-Feld, must-ignore) byte-gleich.
+    // ZWILLINGS-ABSCHIED (19.07.): der LOFI_GROOVE_PATTERN-Zwilling ist
+    // gefallen — kalter Kern → Bruch, der schreit. One Drop lässt die Eins
+    // aus, Techno fährt Four-on-the-floor, Ambient/Cinematic (None) pulslos.
     _lofiGroovePattern() {
         const studio = this._klangStudioPreset();
         const r = studio && typeof studio.rhythm === "string" ? studio.rhythm : null;
-        if (r) {
-            const M =
-                AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER." + r, null) ||
-                AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
-            if (M && Array.isArray(M.kick) && Array.isArray(M.snare) && Array.isArray(M.hihat)) return M;
-        }
-        return AnazhRealm.LOFI_GROOVE_PATTERN;
+        const M =
+            (r ? AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER." + r, null) : null) ||
+            AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
+        if (M && Array.isArray(M.kick) && Array.isArray(M.snare) && Array.isArray(M.hihat)) return M;
+        return AnazhRealm._kernPflichtBruch("klang:RHYTHMUS_MUSTER.Swing");
     }
 
     // ZENSUS-REST V18.488 — DAS SCHLAGZEUG DES GENRES (inst.drums): kleine
@@ -11679,8 +11695,9 @@ class AnazhRealm {
     // (klang-core → __replyRecipes → f.recipes, kind "klang"); der Host-Leser ist
     // das BESTEHENDE Lofi-System (kein Parallel-Audio, M4). Welches Genre das
     // Lofi-Pad führt, ist eine DATEN-Zeile (KLANG_HOST_RECIPE — naturgemäß "lofi",
-    // das Genre-Geschwister des Host-Sounds). Kaltes Buch/Foundry aus → null,
-    // jeder Leser fällt byte-alt auf seine LOFI_*-Konstante (fail-soft, G4.1).
+    // das Genre-Geschwister des Host-Sounds). Kaltes Buch/Foundry aus → die
+    // GENRES-Tafel des Kerns antwortet (fail-closed via _klangGenreAusKern;
+    // die LOFI_*-Konstanten-Zwillinge sind gefallen, 19.07.).
     _klangStudioPreset() {
         const f = this._foundry;
         // ERFINDER-WELLE (Schoepfer „audiobauplaene liegen in der werkstatt aber kann
@@ -11708,52 +11725,53 @@ class AnazhRealm {
     // Brücke von _klangStudioPreset): Rezept-Id → GENRES-Zeile (lowercase-
     // Abgleich, "-klang"-Suffix der Kollisions-Ausnahmen fällt), Skala über
     // die EINE Lab-Formel scaleFor(darkness) + SCALES. Memo je Id (die Tafel
-    // ist statisch); Kern kalt → null (jeder Leser fällt auf seine Konstante).
+    // ist statisch); Kern kalt → _kernPflichtBruch (fail-closed wie
+    // _schrittTimbre); unbekannter Wunsch → null (must-ignore, User-Rezept).
     _klangGenreAusKern(id) {
         const memo = this._klangGenreMemo || (this._klangGenreMemo = new Map());
         if (memo.has(id)) return memo.get(id);
+        // ZWILLINGS-ABSCHIED (19.07.): die Kern-Pflicht-Wand steht VOR jedem
+        // try (ein eigener catch würde den Bruch ersticken) — der deklarierte
+        // „Kern kalt → null → LOFI_*-Konstante"-Pfad ist gefallen.
+        const G = AnazhRealm.Gesetz("klang:GENRES", null);
+        const SC = AnazhRealm.Gesetz("klang:SCALES", null);
+        const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
+        if (!G || !SC || !kc || typeof kc.scaleFor !== "function") return AnazhRealm._kernPflichtBruch("klang:GENRES");
         let out = null;
-        try {
-            const G = AnazhRealm.Gesetz("klang:GENRES", null);
-            const SC = AnazhRealm.Gesetz("klang:SCALES", null);
-            const kc = typeof globalThis !== "undefined" ? globalThis.__klangCore : null;
-            if (G && SC && kc && typeof kc.scaleFor === "function") {
-                const wunsch = String(id || "lofi")
-                    .toLowerCase()
-                    .replace(/-klang$/, "");
-                let g = null;
-                for (const name of Object.keys(G)) {
-                    if (name.toLowerCase() === wunsch) {
-                        g = G[name];
-                        break;
-                    }
-                }
-                if (g) {
-                    const scaleName = kc.scaleFor(g.darkness);
-                    const scale = Array.isArray(SC[scaleName]) ? SC[scaleName].slice() : null;
-                    out = {
-                        bpm: g.bpm,
-                        scaleName,
-                        scale,
-                        dna: {
-                            swing: g.swing,
-                            darkness: g.darkness,
-                            color: g.color,
-                            flow: g.flow,
-                            tension: g.tension,
-                            space: g.space,
-                        },
-                        form: g.form,
-                        harmony: g.harmony,
-                        rhythm: g.rhythm,
-                        bass: g.bass,
-                        melody: g.melody,
-                        inst: g.inst,
-                    };
-                }
+        const wunsch = String(id || "lofi")
+            .toLowerCase()
+            .replace(/-klang$/, "");
+        let g = null;
+        for (const name of Object.keys(G)) {
+            if (name.toLowerCase() === wunsch) {
+                g = G[name];
+                break;
             }
-        } catch (_e) {}
-        if (out) memo.set(id, out); // Memo NUR im Erfolgs-Fall (spät ladender Kern)
+        }
+        if (g) {
+            const scaleName = kc.scaleFor(g.darkness);
+            const scale = Array.isArray(SC[scaleName]) ? SC[scaleName].slice() : null;
+            out = {
+                bpm: g.bpm,
+                scaleName,
+                scale,
+                dna: {
+                    swing: g.swing,
+                    darkness: g.darkness,
+                    color: g.color,
+                    flow: g.flow,
+                    tension: g.tension,
+                    space: g.space,
+                },
+                form: g.form,
+                harmony: g.harmony,
+                rhythm: g.rhythm,
+                bass: g.bass,
+                melody: g.melody,
+                inst: g.inst,
+            };
+        }
+        if (out) memo.set(id, out); // Memo NUR im Erfolgs-Fall (unbekannter Wunsch memo-frei)
         return out;
     }
     // SCHLUSS-WELLE 17.07. — die GENRE-ECHO-ANTEILE des Welt-Raum-Busses:
@@ -11777,12 +11795,16 @@ class AnazhRealm {
         return table.def || null;
     }
     // Die Akkord-Dauer in ms. Das TEMPO führt das Studio-Klang-Rezept (W-A7:
-    // Genesis "LoFi" bpm — der erste echte klang-Konsument; ohne Buch die
-    // LOFI_BPM-Konstante, byte-alt 60 BPM × 4 Schläge = 4 s); sorrow (Trauer)
-    // verlangsamt das Tempo um bis zu 50 %.
+    // Genesis "LoFi" bpm — der erste echte klang-Konsument). ZWILLINGS-
+    // ABSCHIED (19.07.): der LOFI_BPM-Konstanten-Zweig ist gefallen — ohne
+    // bpm-Feld antwortet die Kern-Wahrheit des Host-Genres (fail-closed,
+    // lofi 78 bpm); sorrow (Trauer) verlangsamt das Tempo um bis zu 50 %.
     _lofiChordDurationMs() {
         const studio = this._klangStudioPreset();
-        const bpm = studio && Number.isFinite(studio.bpm) && studio.bpm > 0 ? studio.bpm : AnazhRealm.LOFI_BPM;
+        const bpm =
+            studio && Number.isFinite(studio.bpm) && studio.bpm > 0
+                ? studio.bpm
+                : this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE).bpm;
         const beatMs = 60000 / bpm;
         const base = beatMs * AnazhRealm.LOFI_CHORD_BEATS;
         const emotions = (this.state.player && this.state.player.emotions) || {};
@@ -11977,17 +11999,26 @@ class AnazhRealm {
         if (s.lofi.raumWet) {
             const st = this._klangStudioPreset();
             const space = st && st.dna && Number.isFinite(st.dna.space) ? st.dna.space : 0;
+            // ZWILLINGS-ABSCHIED (19.07.): die stillen Literal-Arme (0.5 ·
+            // minSec 0.06 · maxSec 1.8 · der lautlos ausfallende Tempo-Sync)
+            // sind gefallen — kalter/alter Kern ohne RAUM ist ein BRUCH, der
+            // schreit (ganz oder gar nicht, das _fahrGesetz-Muster).
             const RH = AnazhRealm.Gesetz("klang:RAUM.hall", null);
-            const proSpace = RH && Number.isFinite(RH.returnProSpace) ? RH.returnProSpace : 0.5;
+            const proSpace =
+                RH && Number.isFinite(RH.returnProSpace)
+                    ? RH.returnProSpace
+                    : AnazhRealm._kernPflichtBruch("klang:RAUM.hall.returnProSpace");
             s.lofi.raumWet.gain.value = Math.max(0, Math.min(0.5, space * proSpace));
             const RE = AnazhRealm.Gesetz("klang:RAUM.echo", null);
-            if (s.lofi.raumDelay && RE && Number.isFinite(RE.beatFrac)) {
-                const bpm = st && Number.isFinite(st.bpm) && st.bpm > 0 ? st.bpm : AnazhRealm.LOFI_BPM;
+            if (!RE || !Number.isFinite(RE.beatFrac) || !Number.isFinite(RE.minSec) || !Number.isFinite(RE.maxSec))
+                AnazhRealm._kernPflichtBruch("klang:RAUM.echo");
+            if (s.lofi.raumDelay) {
+                const bpm =
+                    st && Number.isFinite(st.bpm) && st.bpm > 0
+                        ? st.bpm
+                        : this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE).bpm;
                 const beatSec = 60 / bpm;
-                s.lofi.raumDelay.delayTime.value = Math.max(
-                    RE.minSec || 0.06,
-                    Math.min(RE.maxSec || 1.8, beatSec * RE.beatFrac)
-                );
+                s.lofi.raumDelay.delayTime.value = Math.max(RE.minSec, Math.min(RE.maxSec, beatSec * RE.beatFrac));
             }
             const ds = this._klangRaumSends();
             if (ds && s.lofi.raumSendPad) {
@@ -18501,7 +18532,14 @@ class AnazhRealm {
         halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
         const g = halter._gait || (halter._gait = { w: 0, amp: 1, ik: null });
         g.w = halter._gaitW;
-        const vRef = Math.max(1, Number(this.state.speed) || 6);
+        // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
+        // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
+        // Wahrheit selbst (fail-closed via _bewegungsKoeff, kurzgeschlossen).
+        const vRef = Math.max(
+            1,
+            Number(this.state.speed) ||
+                AnazhRealm._bewegungsKoeff("speed").base + AnazhRealm._bewegungsKoeff("speed").leicht
+        );
         g.amp = Math.max(0.7, Math.min(1.3, 0.55 + 0.45 * (v / vRef)));
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw) : null;
         return g;
@@ -31051,8 +31089,7 @@ class AnazhRealm {
                         const mt = obj._matricesTexture,
                             ct = obj._colorsTexture,
                             it = obj._indirectTexture;
-                        const v =
-                            (mt ? mt.version : -1) + "|" + (ct ? ct.version : -1) + "|" + (it ? it.version : -1);
+                        const v = (mt ? mt.version : -1) + "|" + (ct ? ct.version : -1) + "|" + (it ? it.version : -1);
                         const d = this.getRenderObjectData(ro);
                         if (d._anazhBatchV !== v) {
                             d._anazhBatchV = v;
@@ -52619,7 +52656,8 @@ class AnazhRealm {
         }
         if (!rec._fluegel || !rec._fluegel.length) return;
         // ZENSUS 17.07. — der Öffnungswinkel ist das EINE porta-Gesetz
-        // (TUER_GESETZ.offen; TOR_FLUEGEL_OFFEN nur noch Fallback).
+        // (TUER_GESETZ.offen; der TOR_FLUEGEL_OFFEN-Zwilling fiel 19.07.,
+        // der Leser ist fail-closed).
         const ziel = act * AnazhRealm._tuerOffenRad();
         const alt = rec._fluegelWinkel || 0;
         const neu = alt + (ziel - alt) * 0.12;
@@ -65797,8 +65835,7 @@ class AnazhRealm {
         }
         // OFEN-WIEDERANKER (Review-Notiz H): auch die fc-Familie verlässt den
         // Dedup — ein Re-Mint wärmt asynchron statt für immer zu schweigen.
-        if (this._pipeOfenDone && gew.gruppe && gew.gruppe.mat)
-            this._pipeOfenDone.delete("fc|" + gew.gruppe.mat.uuid);
+        if (this._pipeOfenDone && gew.gruppe && gew.gruppe.mat) this._pipeOfenDone.delete("fc|" + gew.gruppe.mat.uuid);
         if (kons && typeof kons.dispose === "function") kons.dispose();
         // SCHLUSS-WELLE — die GPU-Puffer des Gewands sterben EXPLIZIT (s.o.).
         this._feldCullPufferFrei(gew, renOverride);
@@ -71983,19 +72020,17 @@ class AnazhRealm {
     // die übrigen würfelt der Same wie bisher (Region-Historie, byte-alt).
     // Reine Funktion des Zell-Seeds: der Wege-Rebuild derselben Zelle trifft
     // per Konstruktion dieselbe Epoche (kein Persistenz-Byte nötig).
+    // ZWILLINGS-ABSCHIED (19.07.): fail-closed — der kalte-Kern-Zweig
+    // (undefined = stilles Region-Historie-Würfeln, byte-alt) und das
+    // schluckende catch sind gefallen; die 2-von-3-Weiche bleibt byte-gleich.
     _siedlungEpoche(seed) {
-        try {
-            const E = AnazhRealm.Gesetz("fachwerk:EPOCHEN", null);
-            if (!E || typeof E !== "object") return undefined;
-            const namen = Object.keys(E);
-            if (!namen.length) return undefined;
-            let h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
-            h = (h ^ (h >>> 16)) >>> 0;
-            if (h % 3 !== 0) return undefined; // 2 von 3 bleiben Region-Historie
-            return namen[(h >>> 4) % namen.length];
-        } catch (_e) {
-            return undefined;
-        }
+        const E = AnazhRealm.Gesetz("fachwerk:EPOCHEN", null);
+        const namen = E && typeof E === "object" ? Object.keys(E) : [];
+        if (!namen.length) return AnazhRealm._kernPflichtBruch("fachwerk:EPOCHEN");
+        let h = (Math.imul(seed >>> 0 || 1, 2654435761) + 0x9e3779b9) >>> 0;
+        h = (h ^ (h >>> 16)) >>> 0;
+        if (h % 3 !== 0) return undefined; // 2 von 3 bleiben Region-Historie (die legitime Weiche)
+        return namen[(h >>> 4) % namen.length];
     }
     // Eine Dorf-Zelle deliberat heben (der Gate-/Test-Pfad UND der Tick teilen ihn):
     // reserviert bei Export-ANKUNFT (`worldMeta.settlementCells[key]`), stellt die
@@ -76826,7 +76861,7 @@ class AnazhRealm {
     // Verhalten, dann ist das Phantom „instabil" markiert (schwebt frei).
     //
     // 6.A5 — Stabilität: Hit-Normal-Y > 0.5 entspricht einer begehbaren
-    // Fläche (Slope flacher als ~60°, dieselbe Schwelle wie maxWalkableSlopeY
+    // Fläche (Slope flacher als ~60°, dieselbe Schwelle wie hang.maxSlopeY
     // in 6.A3). Wir geben nur ein Flag zurück; das Block-Verhalten („nicht
     // bauen wenn instabil") folgt mit den Spiel-Modi (6.C2).
     _resolvePhantomTarget() {
@@ -77793,23 +77828,27 @@ class AnazhRealm {
         // holz-Anker) und skaliert die Joule-Eichung über die EINE Lab-Balken-
         // Formel (ableitenBogen: dehnung→Recurve lädt die Kraft-Weg-Kurve +
         // Wirkungsgrad) RELATIV zum holz-Anker (holz ⇒ Faktor 1, byte-alt).
-        // Fail-soft: kalter Kern ⇒ Faktor 1 (der tote BOGENMAT-Export lebt).
+        // Fail-closed (Gültigkeits-Wand wie _arenaGesetz, 19.07.): kalter/
+        // alter Kern ohne BOGENMAT+ableitenBogen ist ein BRUCH, nie ein
+        // stiller holz-Anker; legitim bleibt NUR Material unbekannt/holz ⇒
+        // Faktor 1 (der Kern ankert identisch: BOGENMAT[t.material]||holz).
+        // Die Buch-Probe läuft über BOGENMAT.holz — der Anker-Eintrag
+        // existiert im lebenden Buch IMMER: Buch-fehlt wird Bruch,
+        // Material-unbekannt bleibt holz-Anker.
         let matMul = 1;
-        try {
-            const bmName = task && typeof task.material === "string" ? task.material : null;
+        const bmName = task && typeof task.material === "string" ? task.material : null;
+        if (bmName && bmName !== "holz") {
             const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-            if (
-                bmName &&
-                bmName !== "holz" &&
-                sc &&
-                typeof sc.ableitenBogen === "function" &&
-                AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null)
-            ) {
+            if (!sc || typeof sc.ableitenBogen !== "function" || !AnazhRealm.Gesetz("schmiede:BOGENMAT.holz", null))
+                AnazhRealm._kernPflichtBruch("schmiede:BOGENMAT/ableitenBogen");
+            if (AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null)) {
                 const eMat = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: bmName }).energie;
                 const eHolz = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: "holz" }).energie;
-                if (Number.isFinite(eMat) && Number.isFinite(eHolz) && eHolz > 0) matMul = eMat / eHolz;
-            }
-        } catch (_e) {}
+                if (!(Number.isFinite(eMat) && Number.isFinite(eHolz) && eHolz > 0))
+                    AnazhRealm._kernPflichtBruch("schmiede:ableitenBogen.energie");
+                matMul = eMat / eHolz;
+            } // sonst: Material nicht im lebenden Buch → holz-Anker (die legitime Weiche)
+        }
         let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus * matMul) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
         if (!Number.isFinite(v0) || v0 <= 0) v0 = Math.sqrt((2 * AB.zugJouleRef) / Math.max(0.001, AB.mArrow)); // NaN-Wand
@@ -77835,7 +77874,9 @@ class AnazhRealm {
             // WAFFEN-GÜTE — auch der Pfeil trägt das Lehren-Urteil des Kerns
             // (Bogen → faktorVoll; kampfMasze(bogen) = null → der mEff-Faktor
             // bleibt 1: die Schuss-Kraft reist als zugkraft×auszug, nie doppelt).
-            dmg: (stats.damage || 5) * this._heldSchmiedeFaktor(),
+            // ZWILLINGS-ABSCHIED (19.07.): der „|| 5"-Zwilling fiel — der
+            // Falsy-Arm liest die EINE Gesetz-Base (fail-closed _kampfKoeff).
+            dmg: (stats.damage || AnazhRealm._kampfKoeff("damage").base) * this._heldSchmiedeFaktor(),
             kb: stats.knockback || 0,
             mesh: null,
         };
@@ -89174,17 +89215,19 @@ class AnazhRealm {
         // Defaults (speed/sprintSpeed/jumpPower) leiten sich aus DENSELBEN
         // Kern-Koeffizienten ab, die recomputePlayerStats später mit den
         // Seelen-Tags füllt (neutral: dichte 0/magieleitung 0 — kein zweiter
-        // Zahlensatz mehr vor dem ersten Recompute), und der Begehbarkeits-
-        // Winkel liest das Steilhang-Gesetz (fx.bewegung.hang). try-Wand:
-        // ein kalter Kern lässt die Konstruktor-Werte stehen (der Boot darf
-        // nie an der Eichung sterben — _kernPflichtWand meldet den Ausfall).
+        // Zahlensatz mehr vor dem ersten Recompute). ZWILLINGS-ABSCHIED
+        // (19.07.): die Konstruktor-Werte sind NULL-SENTINELS (kein spielbarer
+        // Zahlensatz mehr) — bei kaltem Kern steht der Spieler sichtbar statt
+        // byte-alt zu laufen. try-Wand: der Boot darf nie an der Eichung
+        // sterben — _kernPflichtWand meldet den Ausfall. Der Begehbarkeits-
+        // Winkel (hang.maxSlopeY) hat KEINEN State-Seed mehr: seine Leser
+        // lesen den fail-closed _bewegungsBlock direkt.
         try {
             const KS = AnazhRealm._bewegungsKoeff("speed");
             const KJ = AnazhRealm._bewegungsKoeff("jumpPower");
             this.state.speed = KS.base + KS.leicht;
             this.state.sprintSpeed = this.state.speed * AnazhRealm._sprintMulGesetz();
             this.state.jumpPower = KJ.base + KJ.leicht;
-            this.state.maxWalkableSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         } catch (_e) {}
         // Welle 6.C3 — Keybindings VOR allen DOM-Listenern laden. State muss
         // existieren bevor das Settings-Panel rendert (sonst zeigt es leer).
@@ -90071,20 +90114,22 @@ class AnazhRealm {
         const jp = Number.isFinite(s.jumpPower) ? s.jumpPower : 8;
         // ZENSUS 17.07. — das Frische-Fenster wohnt im parkour-Gesetz (war der
         // divergente Stamm-Zwilling 0.18 vs 0.15 beim Klettern — vereint).
-        const frisch = Number.isFinite(P.kontaktFrischeSec) ? P.kontaktFrischeSec : 0.18;
+        // ZWILLINGS-ABSCHIED (19.07.): der Ternary-Zwilling fiel — das Feld
+        // steht in der Gültigkeits-Wand von _parkourGesetz (ganz oder gar nicht).
+        const frisch = P.kontaktFrischeSec;
         const wandFrisch =
             Number.isFinite(s._wandKontaktAt) && nowS - s._wandKontaktAt < frisch && Number.isFinite(s._wandKontaktNx);
         let mul = 0;
         let abX = 0;
         let abZ = 0;
         if (wandFrisch) {
-            mul = Number.isFinite(P.wandsprungMul) ? P.wandsprungMul : 1;
+            mul = P.wandsprungMul; // ZWILLINGS-ABSCHIED (19.07.): Wand-gedeckt, kein Ternary-Zwilling
             const ab = Number.isFinite(P.wandAbstoss) ? P.wandAbstoss : 6;
             abX = s._wandKontaktNx * ab;
             abZ = s._wandKontaktNz * ab;
             s._wandKontaktAt = -Infinity; // verbraucht — neue Wand, neuer Sprung
         } else if ((s._airJumps | 0) < (P.doppelspruenge | 0)) {
-            mul = Number.isFinite(P.doppelsprungMul) ? P.doppelsprungMul : 0.9;
+            mul = P.doppelsprungMul; // ZWILLINGS-ABSCHIED (19.07.): Wand-gedeckt, kein Ternary-Zwilling
             s._airJumps = (s._airJumps | 0) + 1;
         } else {
             return false;
@@ -91063,8 +91108,9 @@ class AnazhRealm {
                             this._fieldGradient(nx, terrSurf, nz, gN);
                             groundNormalY = gN.y;
                             // KOPPLUNG (2) — STEILHANG: Gravitation ENTLANG der Ebene. Auf zu
-                            // steilem Grund (ny < maxWalkableSlopeY — DIESELBE Schwelle wie
-                            // onSteepSlope/Slope-Penalty) rutscht der Körper, statt magnetisch
+                            // steilem Grund (ny < hang.maxSlopeY — DIESELBE Schwelle wie
+                            // onSteepSlope/Slope-Penalty, direkt aus dem fail-closed
+                            // Steilhang-Gesetz) rutscht der Körper, statt magnetisch
                             // zu haften: die Tangential-Projektion der Schwerkraft
                             // g_t = g − n·(g·n) hat horizontal die Komponenten n.xz·n.y·|g|
                             // (zeigt bergab per Konstruktion — n ist die Außen-Normale);
@@ -91073,7 +91119,8 @@ class AnazhRealm {
                             // NaN-Wand: |∇| ≈ 0 → `_fieldGradient` liefert (0,1,0) → ny = 1
                             // → kein Term. Keine Brems-Kurve auf Steilhang (der Loop lässt
                             // sie dort aus) → der Rutsch beschleunigt physikalisch.
-                            if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < s.maxWalkableSlopeY) {
+                            const hangMaxSlopeY = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
+                            if (gN.mag > 1e-6 && gN.y > 1e-4 && gN.y < hangMaxSlopeY) {
                                 const gMag = -(s.gravity || -9.81);
                                 vx += gN.x * gN.y * gMag * dt;
                                 vz += gN.z * gN.y * gMag * dt;
@@ -91102,7 +91149,8 @@ class AnazhRealm {
         s.playerVel.setValue(vx, vy, vz);
 
         s.groundNormalY = grounded ? groundNormalY : 1.0;
-        s.onSteepSlope = grounded && groundNormalY < s.maxWalkableSlopeY;
+        s.onSteepSlope =
+            grounded && groundNormalY < AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         s._groundedCache = grounded;
         s._groundedCachedAt = performance.now();
         s._fieldWasGrounded = grounded; // für die Boden-Haftung im nächsten Frame (kein Magnet im Fall)
@@ -91277,8 +91325,8 @@ class AnazhRealm {
             // (Spieler klettert senkrechte Wände). 0.2 lässt seitliches
             // Rauslenken zu, blockiert aber Voll-Vorwärts-Klettern.
             // ZENSUS-REST V18.488 — der Steilhang-Malus wohnt im koerperstudio-
-            // Gesetzbuch (fx.bewegung.hang.malus; der Begehbarkeits-Winkel
-            // hang.maxSlopeY seedet state.maxWalkableSlopeY im Boot).
+            // Gesetzbuch (fx.bewegung.hang.malus; den Begehbarkeits-Winkel
+            // hang.maxSlopeY lesen die Steilhang-Leser direkt, kein State-Seed).
             const slopePenalty = this.state.onSteepSlope
                 ? AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).malus
                 : 1.0;
@@ -91567,17 +91615,14 @@ class AnazhRealm {
                 this.state.keys["w"] &&
                 !slide &&
                 Number.isFinite(this.state._wandKontaktAt) &&
-                currentTime - this.state._wandKontaktAt <
-                    (Number.isFinite(parkG.kontaktFrischeSec) ? parkG.kontaktFrischeSec : 0.15)
+                currentTime - this.state._wandKontaktAt < parkG.kontaktFrischeSec
             ) {
                 const plK = this.state.player;
                 if (plK && plK.stamina > 0) {
                     kletterV = Number.isFinite(parkG.kletterV) ? parkG.kletterV : 3.2;
-                    plK.stamina = Math.max(
-                        0,
-                        plK.stamina -
-                            (Number.isFinite(parkG.kletterAusdauerProS) ? parkG.kletterAusdauerProS : 12) * nowDt
-                    );
+                    // ZWILLINGS-ABSCHIED (19.07.): der 12er-Ternary-Zwilling fiel —
+                    // kletterAusdauerProS steht in der Gültigkeits-Wand von _parkourGesetz.
+                    plK.stamina = Math.max(0, plK.stamina - parkG.kletterAusdauerProS * nowDt);
                     this.state.isInAir = true;
                 }
             }
@@ -92810,7 +92855,7 @@ class AnazhRealm {
 
         // Welle 6.A3 — Slope-Steepness. Pro Hit lesen wir die Surface-Normal,
         // tracken die FLACHSTE (höchstes Normal-Y). Wenn keine der getroffenen
-        // Flächen einen Normal-Y > maxWalkableSlopeY hat, gilt der Spieler als
+        // Flächen einen Normal-Y > hang.maxSlopeY (Steilhang-Gesetz) hat, gilt der Spieler als
         // „auf steilem Hang" — Bewegung wird gedrosselt + Gravity schiebt ab.
         let bestNormalY = 0;
 
@@ -92845,7 +92890,8 @@ class AnazhRealm {
         }
 
         this.state.groundNormalY = isGrounded ? bestNormalY : 1.0;
-        this.state.onSteepSlope = isGrounded && bestNormalY < this.state.maxWalkableSlopeY;
+        this.state.onSteepSlope =
+            isGrounded && bestNormalY < AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
 
         // Welle 6.X.5 D1 — Cache-Set am Ende des frischen Compute. Side-effects
         // (groundNormalY, onSteepSlope) sind oben bereits aktualisiert; Cache-
@@ -92915,7 +92961,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.11";
+AnazhRealm.VERSION = "18.491.12";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -93973,10 +94019,17 @@ AnazhRealm._parkourGesetz = function () {
         // Rutsch-Zeile (slideMinTempo/slideDauerSec/slideTempoMul) — ganz
         // oder gar nicht: ein alter Kern ergibt NIE ein Misch-Gesetz aus
         // halb Kern / halb Literal (die Ternary-Zwillinge sind gefallen).
+        // ZWILLINGS-ABSCHIED (19.07.): auch kontaktFrischeSec/wandsprungMul/
+        // doppelsprungMul/kletterAusdauerProS sind Pflicht-Felder — ihre
+        // Ternary-Zwillinge (0.18/0.15 · 1 · 0.9 · 12) sind gefallen.
         if (
             p &&
             Number.isFinite(p.kletterV) &&
             Number.isFinite(p.wandAbstoss) &&
+            Number.isFinite(p.kontaktFrischeSec) &&
+            Number.isFinite(p.wandsprungMul) &&
+            Number.isFinite(p.doppelsprungMul) &&
+            Number.isFinite(p.kletterAusdauerProS) &&
             Number.isFinite(p.slideMinTempo) &&
             Number.isFinite(p.slideDauerSec) &&
             Number.isFinite(p.slideTempoMul)
@@ -97606,20 +97659,15 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
 // V18.465 — der offene Flügel-Winkel der Welt-Tore (das Welt-Analog: Nähe
-// öffnet). ZENSUS 17.07. — nur noch der byte-gleiche FALLBACK: der Winkel
-// wohnt im porta-Gesetzbuch (__portaCore.TUER_GESETZ.offen — Shell UND Welt
-// lesen die EINE Quelle), Leser `_tuerOffenRad` (memoisiert, fail-soft).
-AnazhRealm.TOR_FLUEGEL_OFFEN = 1.95;
+// öffnet). ZWILLINGS-ABSCHIED (19.07.): der byte-gleiche Stamm-Fallback
+// TOR_FLUEGEL_OFFEN (1.95) ist gefallen — der Winkel wohnt NUR im porta-
+// Gesetzbuch (__portaCore.TUER_GESETZ.offen; Shell UND Welt lesen die EINE
+// Quelle), Leser fail-closed nach dem _sprintMulGesetz-Muster (Gesetz()
+// memoisiert je Pfad im Erfolgs-Fall — der private Memo fiel mit).
 AnazhRealm._tuerOffenRad = function () {
-    if (Number.isFinite(AnazhRealm._tuerOffenMemo)) return AnazhRealm._tuerOffenMemo;
-    try {
-        const o = AnazhRealm.Gesetz("porta:TUER_GESETZ.offen", null);
-        if (Number.isFinite(o)) {
-            AnazhRealm._tuerOffenMemo = o;
-            return o;
-        }
-    } catch (_e) {}
-    return AnazhRealm.TOR_FLUEGEL_OFFEN;
+    const o = AnazhRealm.Gesetz("porta:TUER_GESETZ.offen", null);
+    if (Number.isFinite(o) && o > 0) return o;
+    return AnazhRealm._kernPflichtBruch("porta:TUER_GESETZ.offen");
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr
 // einer Multiplayer-Sub-Welt übers Mesh. Ein Größen-Deckel je Nachricht +
@@ -97804,10 +97852,9 @@ AnazhRealm.P2P_MESSAGE_HANDLERS = Object.freeze({
 // einer Tonleiter + einer funktionalen Markov-Kette — kein fester Akkord-Satz
 // mehr. ~60 BPM, ein Akkord je 4 Schläge. Web-Audio nativ, kein Asset.
 AnazhRealm.LOFI_BASE_FREQ = 110; // A2
-// W4 V3 — die Tonleiter (A natürlich Moll: A B C D E F G) als Halbton-
-// Abstände zur Wurzel. Diatonische Septakkorde emergieren als gestapelte
-// Terzen über dieser Leiter (Stufe d → d, d+2, d+4, d+6).
-AnazhRealm.LOFI_SCALE = Object.freeze([0, 2, 3, 5, 7, 8, 10]);
+// ZWILLINGS-ABSCHIED (19.07.): LOFI_SCALE (A-Moll-Konstanten-Zwilling) ist
+// gefallen — die Skala wohnt im klang-Gesetzbuch (SCALES + scaleFor,
+// _lofiActiveScale liest fail-closed via _klangGenreAusKern).
 // W4 V3 — die funktionale Harmonie-Markov-Kette. Je Stufe (0=i … 6=VII) eine
 // Liste [nächste Stufe, Gewicht]: Tonika → Subdominante → Dominante → Tonika.
 // Eine seed-getriebene Wahl daraus — die Progression wiederholt sich nie
@@ -97858,7 +97905,9 @@ AnazhRealm.LOFI_HARMONY = Object.freeze([
 // Harmonie-Wahl: joy/hope ziehen zu hell, sorrow zu dunkel.
 AnazhRealm.LOFI_BRIGHT_DEGREES = Object.freeze([2, 5]); // III, VI
 AnazhRealm.LOFI_DARK_DEGREES = Object.freeze([0, 1, 3]); // i, ii°, iv
-AnazhRealm.LOFI_BPM = 60; // ruhiges Lofi-Tempo (Fallback — das Studio-Klang-Rezept führt, s. KLANG_HOST_RECIPE)
+// ZWILLINGS-ABSCHIED (19.07.): LOFI_BPM (60-BPM-Konstanten-Zwilling) ist
+// gefallen — das Tempo wohnt im klang-Gesetzbuch (GENRES, lofi 78 bpm),
+// die Leser fallen fail-closed auf _klangGenreAusKern(KLANG_HOST_RECIPE).
 // W-A7 (Wörterbuch v1.1 `klang`) — DATEN-Zeile: welches Genesis-Genre-Rezept das
 // Host-Lofi-Pad führt (`_klangStudioPreset` liest f.recipes[..].fx.klang LIVE).
 AnazhRealm.KLANG_HOST_RECIPE = "lofi";
@@ -98041,21 +98090,11 @@ AnazhRealm.HOLZ_PROFILE = Object.freeze({
     kienspan: Object.freeze({ ring: 2, shadowRange: 0, farWater: false, pixelCap: 1, antialias: false }),
 });
 AnazhRealm.LOFI_CHORD_BEATS = 4; // ein Akkord je 4 Schläge
-// W4 V3 Phase 3 — der Groove. Ein Trommel-Muster über demselben 8-Schritt-
-// Raster wie die Melodie (Schritt-Indizes je Trommel): Kick auf Takt-Eins +
-// dem „Und" vor Takt-Drei + Takt-Drei, Snare auf dem Backbeat, Hihat auf
-// allen Achteln. Synthetisch (Web Audio), kein Asset.
-AnazhRealm.LOFI_GROOVE_PATTERN = Object.freeze({
-    kick: Object.freeze([0, 3, 4]),
-    snare: Object.freeze([2, 6]),
-    hihat: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7]),
-});
-// Swing: die Off-Beat-Schritte (ungerade) werden verzögert — 0.5 = gerade,
-// ~0.6 = der typische Lofi/Jazz-Atem (Genre-Preset-Parameter, W4 V3).
-// ZENSUS 17.07. — nur noch der byte-alte FALLBACK: der Swing wohnt im
-// klang-Gesetzbuch (fx.klang.dna.swing je Genre), Leser `_grooveSwing`
-// (kaltes Buch → diese Konstante; die alte Doppel-Quelle ist geschlossen).
-AnazhRealm.GROOVE_SWING = 0.58;
+// ZWILLINGS-ABSCHIED (19.07.): LOFI_GROOVE_PATTERN und GROOVE_SWING sind
+// gefallen — das Trommel-Muster wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER,
+// der Swing-Eintrag IST das historische Wirts-Pattern byte-gleich; Leser
+// _lofiGroovePattern fail-closed), der Swing in fx.klang.dna.swing je Genre
+// (Leser _grooveSwing, fail-closed auf die Kern-Wahrheit des Host-Genres).
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
 AnazhRealm.ZOOM_FOV_DEG = 25; // Magnifying-Compound zoomt auf 25°
 AnazhRealm.MAGNIFYING_RAY_RANGE_M = 8; // Spieler muss innerhalb dieser Reichweite drauf schauen

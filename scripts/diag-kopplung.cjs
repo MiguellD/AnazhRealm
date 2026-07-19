@@ -129,8 +129,10 @@ const server = http.createServer((req, res) => {
                     _fieldVy: 0,
                     waterLevel: -50,
                     terrainBaseHeight: 0,
+                    // ZWILLINGS-ABSCHIED 19.07.: der Begehbarkeits-Winkel ist kein
+                    // State-Feld mehr — _stepCharacter liest das Steilhang-Gesetz
+                    // (hang.maxSlopeY) direkt aus dem Kern (fail-closed Memo-Leser).
                     worldMeta: { voxelTerrain: true },
-                    maxWalkableSlopeY: 0.5,
                     forward: new THREE.Vector3(),
                     right: new THREE.Vector3(),
                     moveDirection: new THREE.Vector3(),
@@ -283,7 +285,7 @@ const server = http.createServer((req, res) => {
                 }
             }
             // (b) STEILHANG: Ebene fällt mit Gradient 2,5 (~68°, Normale ny≈0.37 <
-            //     maxWalkableSlopeY 0.5) in +x — ohne Input rutscht der Körper bergab
+            //     hang.maxSlopeY 0.5, Kern-Gesetz) in +x — ohne Input rutscht der Körper bergab
             //     (Gravitation entlang der Ebene), statt magnetisch zu haften. Kugel-
             //     Auflösung aus (Isolation: sie kriecht am 68°-Hang ~1 mm/Tick
             //     positional — pre-existent, hier spricht allein der Gravitations-Term).
@@ -299,12 +301,9 @@ const server = http.createServer((req, res) => {
                 o.zahlen.steilhang = { x: sp.x, y: sp.y };
                 if (!(sp.x > 0.3)) fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
                 if (!(sp.y < 0.4)) fail(`F2b: der Rutsch folgte der Fläche nicht abwärts (y=${sp.y.toFixed(2)})`);
-                const noSlide = patchFn(
-                    r._stepCharacter,
-                    "_stepCharacter",
-                    "gN.y < s.maxWalkableSlopeY",
-                    "gN.y < -1"
-                );
+                // Tests wandern 19.07.: der Marker liest das Kern-Gesetz direkt
+                // (hoisted Konstante hangMaxSlopeY statt State-Feld).
+                const noSlide = patchFn(r._stepCharacter, "_stepCharacter", "gN.y < hangMaxSlopeY", "gN.y < -1");
                 if (!noSlide) fail("F2b-Selbsttest: Steilhang-Marker nicht in `_stepCharacter` (Fix fehlt?)");
                 else {
                     const stuck = mkSlopeShim();

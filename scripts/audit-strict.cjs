@@ -501,7 +501,6 @@ async function auditStateAndMethods() {
                 "jumpPower",
                 "scaleFactor",
                 "mouseSensitivity",
-                "maxWalkableSlopeY",
                 "uiActiveDrawer",
                 "weather",
                 "populatedChunks",

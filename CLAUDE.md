@@ -50,9 +50,36 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.11 — N7: DAS VOLLE ZWEISPUR-MODELL FLIESST — der Welt-Ritt fährt die Probefahrt)
+## Stand (V18.491.12 — DIE ZWILLINGS-JAGD: 15 Pflicht-fail-softs fallen als Klasse, 4 Domänen)
 
-**19.07., zwölfte Welle (Schöpfer: „aus den Kernen fließt ein Bruchteil des Wahren —
+**19.07., dreizehnte Welle (Schöpfer-Karte §5: „Fail-closed statt fail-soft, wo Kern
+Pflicht ist" + „Doku = Version" — die erste champion-Welle unter der goldenen
+Definition: 2 Finder + 15 adversariale Skeptiker, 29 Befunde → 15 bestätigt,
+14 sauber widerlegt [„bereits fail-closed" ist jetzt bewiesen, nicht behauptet]):**
+- KOERPER (7 Schnitte): die Konstruktor-Trias speed/sprintSpeed/jumpPower 6/12/12
+  (der DRITTE Zahlensatz derselben Domäne!) → Null-Sentinel, die Eichung setzt das
+  Gesetz; maxWalkableSlopeY-State-Zwilling fiel (drei Leser lesen _bewegungsBlock
+  („hang") direkt, fail-closed); fünf Parkour-Fallback-Ternaries (kontaktFrische
+  0.18 UND der 0.15-Drift-Zwilling · wandsprungMul · doppelsprungMul ·
+  kletterAusdauerProS) fielen, die Parkour-Gültigkeits-Wand trägt vier neue
+  Pflicht-Felder; Pfeil-dmg „|| 5" liest _kampfKoeff("damage").base.
+- KLANG (4): Raum-Bus-Init fail-closed — der 2400-Hz/0.35-DRIFT gegen Kern-2800/
+  0.42 ist tot (die Doku-Lüge in Audio-Form) · _klangGenreAusKern fail-closed,
+  LOFI_SCALE/LOFI_BPM/GROOVE_SWING/LOFI_GROOVE_PATTERN physisch gefallen ·
+  _lofiTick-Raum-Sync fail-closed · Groove aus RHYTHMUS_MUSTER (Kern-Swing
+  deckt byte-gleich).
+- PORTA/SCHMIEDE/FACHWERK (3): _tuerOffenRad fail-closed (TOR_FLUEGEL_OFFEN
+  1.95 physisch raus) · Bogen-matMul über __schmiedeCore.ableitenBogen mit
+  holz-Anker-Weiche · _siedlungEpoche fail-closed (kein stilles Würfeln mehr).
+- LINSEN GEWACHSEN: ZWILLINGE +5 Namen · altlasten-FORBIDDEN +maxWalkableSlopeY
+  (37 Token) · DOKU=VERSION-Wand (CLAUDE.md-Stand-Kopf == package.json, dieselbe
+  Wand wie Buster/AnazhRealm.VERSION) · Bänder gewandert (playtest · kopplung ·
+  nervensystem-labs: 4 rote → 1 Baseline-Rest S8).
+- BEWIESEN: voller playtest „Alle Invarianten OK" · check grün (Absenz-Selbsttests
+  feuern) · gate:kopplung (Steilhang-Rutsch 6.44 m auf Kern-Wahrheit) · format+lint.
+  Warmer Kern = byte-gleich AUSSER den drei absichtlich getöteten Drifts.
+
+**Davor, zwölfte Welle (Schöpfer: „aus den Kernen fließt ein Bruchteil des Wahren —
 weder Haut noch Felle noch die Fahrzeugphysik" — der Konsum-TIEFE-Bogen beginnt bei
 der härtesten Fühlbarkeit; die Wahrheit stand im Kern selbst: „das volle Slip-
 Winkel-Modell bleibt die Lab-Sim"):**

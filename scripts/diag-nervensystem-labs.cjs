@@ -13,7 +13,7 @@
 //     Chokepoint) · die Studio-Rezepte-Liste der Werkstatt führt sie (sichtbar/
 //     regelbar) · DER EINE AUDIO-KONSUMENT LEBT: _klangStudioPreset liest das
 //     Genesis-lofi-Genre, _lofiChordDurationMs fährt das Studio-Tempo (78 bpm →
-//     ~3077 ms) und fällt ohne Rezept byte-alt auf 4000 ms (LOFI_BPM 60).
+//     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
 //   node scripts/diag-nervensystem-labs.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -270,7 +270,10 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
             const prev = f.recipes.lofi;
             delete f.recipes.lofi;
             res.k.durFallback = r._lofiChordDurationMs();
-            res.k.scaleFallbackIsConst = r._lofiActiveScale() === window.anazhRealm.constructor.LOFI_SCALE; // byte-alt: DIESELBE Referenz
+            // Tests wandern 19.07. (ZWILLINGS-ABSCHIED): ohne Rezept antwortet
+            // der KERN (Blues-Skala aus scaleFor/SCALES) — die LOFI_SCALE-
+            // Konstante ist gefallen.
+            res.k.scaleFallbackKern = JSON.stringify(r._lofiActiveScale()) === "[0,3,5,6,7,10]";
             res.k.semi2Fallback = r._lofiScaleSemitone(2); // A-Moll: 3
             res.k.chord0Fallback = JSON.stringify(r._lofiChordFromDegree(0)); // [0,3,7,10]
             f.recipes.lofi = prev;
@@ -603,8 +606,8 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         String(out.k.durStudio)
     );
     check(
-        "K: ohne Rezept faellt das Tempo byte-alt auf LOFI_BPM (4000 ms) — fail-soft G4.1",
-        Math.abs(out.k.durFallback - 4000) < 1,
+        "K: ohne Rezept antwortet der KERN (GENRES lofi 78 bpm → ~3077 ms) — fail-closed, der LOFI_BPM-Zwilling fiel",
+        Math.abs(out.k.durFallback - (60000 / 78) * 4) < 1,
         String(out.k.durFallback)
     );
     check("K: nach der Wiederherstellung wieder Studio-Tempo", Math.abs(out.k.durRestored - out.k.durStudio) < 1);
@@ -624,10 +627,10 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         String(out.k.freq1Studio)
     );
     check(
-        "K2: versteckt → byte-alt (LOFI_SCALE-REFERENZ · semi2=3 · Akkord [0,3,7,10]) · wiederhergestellt → Studio",
-        out.k.scaleFallbackIsConst === true &&
-            out.k.semi2Fallback === 3 &&
-            out.k.chord0Fallback === "[0,3,7,10]" &&
+        "K2: versteckt → KERN-Blues ([0,3,5,6,7,10] · semi2=5 · Akkord [0,5,7,12]) · wiederhergestellt → Studio",
+        out.k.scaleFallbackKern === true &&
+            out.k.semi2Fallback === 5 &&
+            out.k.chord0Fallback === "[0,5,7,12]" &&
             out.k.semi2Restored === 5,
         `fallback semi2=${out.k.semi2Fallback} restored=${out.k.semi2Restored}`
     );
@@ -643,10 +646,10 @@ function staticLaws(anazhSrc, brueckeSrc, manifestSrc, cores) {
         (out.m && out.m.err) || JSON.stringify(out.m && out.m.idle)
     );
     check(
-        "M: KONSUM als ZAHL — Schwanz-Winkel Studio sin(0.5)·0.10, versteckt byte-alt sin(2.2)·0.28, wiederhergestellt Studio",
+        "M: KONSUM als ZAHL — Schwanz-Winkel Studio sin(0.5)·0.10, versteckt antwortet die KERN-Tafel (MOTION.idle, byte-gleiche Lab-Quelle), wiederhergestellt Studio",
         !!out.m &&
             Math.abs(out.m.tailStudio - Math.sin(0.5) * 0.1) < 1e-9 &&
-            Math.abs(out.m.tailFallback - Math.sin(2.2) * 0.28) < 1e-9 &&
+            Math.abs(out.m.tailFallback - Math.sin(0.5) * 0.1) < 1e-9 &&
             Math.abs(out.m.tailRestored - Math.sin(0.5) * 0.1) < 1e-9,
         out.m ? `studio=${out.m.tailStudio} fallback=${out.m.tailFallback}` : ""
     );

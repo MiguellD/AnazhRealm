@@ -13916,18 +13916,17 @@ async function checkBandW4LofiPad(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // W4 V3 — Tonleiter + Harmonie-Markov-Kette definiert.
-        const scale = AnazhRealm.LOFI_SCALE;
+        // W4 V3 — Harmonie-Markov-Kette definiert. ZWILLINGS-ABSCHIED 19.07.:
+        // die Konstanten-Zwillinge LOFI_SCALE/LOFI_BPM sind ABWESEND — Skala
+        // und Tempo wohnen im klang-Gesetzbuch (SCALES/scaleFor · GENRES).
         const harmony = AnazhRealm.LOFI_HARMONY;
         out.scaleHarmonyDefined =
-            Array.isArray(scale) &&
-            scale.length === 7 &&
-            Object.isFrozen(scale) &&
+            AnazhRealm.LOFI_SCALE === undefined &&
             Array.isArray(harmony) &&
             harmony.length === 7 &&
             Object.isFrozen(harmony) &&
             harmony.every((t) => Array.isArray(t) && t.length >= 1);
-        out.bpmDefined = AnazhRealm.LOFI_BPM === 60 && AnazhRealm.LOFI_BASE_FREQ === 110;
+        out.bpmDefined = AnazhRealm.LOFI_BPM === undefined && AnazhRealm.LOFI_BASE_FREQ === 110;
         // W-A7-VERTIEFUNG (V9.56-i — der Test wandert mit dem Code): die SKALA führt
         // seit der Nachlese-Welle das Studio-Klang-Rezept (_lofiActiveScale, Blues-
         // Skala bei warmem Buch) — die byte-alten Konstanten-Proben laufen darum mit
@@ -13936,18 +13935,20 @@ async function checkBandW4LofiPad(ctx) {
         const fK = r._foundry;
         const prevLofi = fK && fK.recipes ? fK.recipes.lofi : undefined;
         if (prevLofi) delete fK.recipes.lofi;
-        // Tests wandern V18.489 (Genre-Engine): kaltes Studio-Preset => byte-alter Host-Pfad.
+        // Tests wandern 19.07. (ZWILLINGS-ABSCHIED): kaltes Studio-Preset ⇒
+        // die KERN-Wahrheit des Host-Genres antwortet (Blues-Skala, fail-
+        // closed) — der byte-alte A-Moll-Konstanten-Pfad ist gefallen.
         const prevKSP = r._klangStudioPreset;
         r._klangStudioPreset = () => null;
-        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (byte-alt: A-Moll).
+        // W4 V3 — _lofiChordFromDegree stapelt diatonische Terzen (Kern: Blues).
         const deg0 = r._lofiChordFromDegree(0);
         const deg3 = r._lofiChordFromDegree(3);
         out.chordFromDegree =
-            JSON.stringify(deg0) === JSON.stringify([0, 3, 7, 10]) &&
-            JSON.stringify(deg3) === JSON.stringify([5, 8, 12, 15]);
-        // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven.
+            JSON.stringify(deg0) === JSON.stringify([0, 5, 7, 12]) &&
+            JSON.stringify(deg3) === JSON.stringify([6, 10, 15, 18]);
+        // W4 V3 Phase 2 — _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12).
         out.scaleSemitone =
-            r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(7) === 12 && r._lofiScaleSemitone(2) === 3;
+            r._lofiScaleSemitone(0) === 0 && r._lofiScaleSemitone(6) === 12 && r._lofiScaleSemitone(2) === 5;
         r._klangStudioPreset = prevKSP;
         if (prevLofi) fK.recipes.lofi = prevLofi;
         // W-A7-VERTIEFUNG — mit warmem Buch faltet der EINE Mapper in die Studio-
@@ -13957,12 +13958,15 @@ async function checkBandW4LofiPad(ctx) {
             (r._lofiScaleSemitone(2) === 5 &&
                 r._lofiScaleSemitone(6) === 12 &&
                 JSON.stringify(r._lofiChordFromDegree(0)) === JSON.stringify([0, 5, 7, 12]));
-        // W4 V3 Phase 3 — der Groove: Trommel-Muster + Swing.
-        const gp = AnazhRealm.LOFI_GROOVE_PATTERN;
+        // W4 V3 Phase 3 — der Groove. ZWILLINGS-ABSCHIED 19.07.: das Muster
+        // wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER.Swing IST das
+        // historische Wirts-Pattern), die Konstanten-Zwillinge
+        // LOFI_GROOVE_PATTERN/GROOVE_SWING sind ABWESEND.
+        const gp = AnazhRealm.Gesetz("klang:RHYTHMUS_MUSTER.Swing", null);
         out.grooveDefined =
-            typeof AnazhRealm.GROOVE_SWING === "number" &&
+            AnazhRealm.LOFI_GROOVE_PATTERN === undefined &&
+            AnazhRealm.GROOVE_SWING === undefined &&
             !!gp &&
-            Object.isFrozen(gp) &&
             Array.isArray(gp.kick) &&
             Array.isArray(gp.snare) &&
             Array.isArray(gp.hihat) &&
@@ -13985,13 +13989,13 @@ async function checkBandW4LofiPad(ctx) {
         out.majorLeanRaisesThird = freqsMajor[1] > freqs[1] && Math.abs(freqsMajor[0] - freqs[0]) < 0.01;
         // _lofiChordDurationMs — sorrow verlangsamt das Tempo. W-A7 (V9.56-i, der Test
         // wandert mit dem Code): das TEMPO führt seit dem klang-Dock das Studio-Genre
-        // (_klangStudioPreset, Genesis "lofi" bpm 78 wenn das Buch warm ist; kaltes
-        // Buch → LOFI_BPM 60 byte-alt) — die Erwartung liest DIESELBE kanonische
-        // Quelle statt der Konstante (kein Timing-Flake: Buch-Ankunft ist async).
+        // (_klangStudioPreset, Genesis "lofi" bpm 78; kaltes Buch → die Kern-GENRES-
+        // Tafel antwortet fail-closed, der LOFI_BPM-Zwilling fiel 19.07.) — die
+        // Erwartung liest DIESELBE kanonische Quelle (kein Timing-Flake: Buch async).
         const emo = r.state.player.emotions;
         const eBefore = { joy: emo.joy, hope: emo.hope, sorrow: emo.sorrow, peace: emo.peace };
         const kStudio = r._klangStudioPreset();
-        const kBpm = kStudio && Number.isFinite(kStudio.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 60;
+        const kBpm = kStudio && Number.isFinite(kStudio.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 78;
         const baseExpected = (60000 / kBpm) * 4;
         emo.sorrow = 0;
         const durCalm = r._lofiChordDurationMs();
@@ -14227,16 +14231,22 @@ async function checkBandW4LofiPad(ctx) {
     if (!w4v2Results || w4v2Results.error) {
         check("W4 V2/V3 erreichbar", false, (w4v2Results && w4v2Results.error) || "page.evaluate fehlgeschlagen");
     } else {
-        check("W4 V3: LOFI_SCALE (7 Töne) + LOFI_HARMONY (7 Stufen) frozen", w4v2Results.scaleHarmonyDefined);
-        check("W4 V2: LOFI_BPM=60 + LOFI_BASE_FREQ=110 definiert", w4v2Results.bpmDefined);
-        check("W4 V3: _lofiChordFromDegree stapelt diatonische Terzen (i=Am7, iv=Dm7)", w4v2Results.chordFromDegree);
-        check("W4 V3: _lofiScaleSemitone wickelt Oktaven (idx 7 → +12 Halbtöne)", w4v2Results.scaleSemitone);
+        check(
+            "W4 V3: LOFI_SCALE abwesend (Zwilling fiel 19.07.) + LOFI_HARMONY (7 Stufen) frozen",
+            w4v2Results.scaleHarmonyDefined
+        );
+        check("W4 V2: LOFI_BPM abwesend (Zwilling fiel 19.07.) + LOFI_BASE_FREQ=110", w4v2Results.bpmDefined);
+        check(
+            "W4 V3: _lofiChordFromDegree stapelt Terzen (kaltes Preset → Kern-Blues [0,5,7,12])",
+            w4v2Results.chordFromDegree
+        );
+        check("W4 V3: _lofiScaleSemitone wickelt Oktaven (6-Ton-Blues: idx 6 → +12)", w4v2Results.scaleSemitone);
         check(
             "W-A7-Vertiefung: der EINE Ton-Mapper faltet in die Studio-Skala (lofi → Blues, 6 Töne)",
             w4v2Results.scaleStudio
         );
         check(
-            "W4 V3 Phase 3: LOFI_GROOVE_PATTERN (kick/snare/hihat) + GROOVE_SWING definiert",
+            "W4 V3 Phase 3: RHYTHMUS_MUSTER.Swing (Kern) trägt kick/snare/hihat — LOFI_GROOVE_PATTERN/GROOVE_SWING abwesend",
             w4v2Results.grooveDefined
         );
         check(
@@ -15631,7 +15641,7 @@ async function checkBandWelle6APolish(ctx) {
     //
     // isPlayerGrounded liest pro Hit die Surface-Normal. Das flachste
     // Normal-Y wird in `state.groundNormalY` gespeichert; wenn keine
-    // begehbare Fläche dabei ist (Normal-Y < maxWalkableSlopeY=0.5,
+    // begehbare Fläche dabei ist (Normal-Y < hang.maxSlopeY=0.5,
     // entspricht >60° Steigung), gilt `state.onSteepSlope = true` und
     // der Bewegungs-Input wird auf 20 % gedrosselt. Damit klebt der
     // Spieler nicht mehr an senkrechten Wänden.
@@ -15639,10 +15649,13 @@ async function checkBandWelle6APolish(ctx) {
         const r = window.anazhRealm;
         if (!r) return null;
         const out = {};
-        // 6.A3 — state-Felder existieren mit korrekten Defaults
-        out.hasMaxWalkableSlopeY = typeof r.state.maxWalkableSlopeY === "number";
-        out.maxWalkableSlopeYValue = r.state.maxWalkableSlopeY;
-        out.maxWalkableSlopeYIs05 = Math.abs(r.state.maxWalkableSlopeY - 0.5) < 0.001;
+        // 6.A3 — Tests wandern 19.07.: der State-Zwilling fiel, die Leser
+        // lesen das Steilhang-Gesetz (hang.maxSlopeY) fail-closed direkt.
+        const hangMax = r.constructor._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
+        out.hasHangMaxSlopeY = typeof hangMax === "number";
+        out.hangMaxSlopeYValue = hangMax;
+        out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
+        out.stateZwillingAbwesend = !("maxWalkableSlopeY" in r.state);
         out.hasGroundNormalY = typeof r.state.groundNormalY === "number";
         out.hasOnSteepSlope = typeof r.state.onSteepSlope === "boolean";
 
@@ -15769,10 +15782,14 @@ async function checkBandWelle6APolish(ctx) {
     });
 
     if (wave6a3Results) {
-        check("Welle 6.A3: state.maxWalkableSlopeY existiert", wave6a3Results.hasMaxWalkableSlopeY);
+        check("Welle 6.A3: Steilhang-Gesetz (hang.maxSlopeY) fail-closed lesbar", wave6a3Results.hasHangMaxSlopeY);
         check(
-            "Welle 6.A3: maxWalkableSlopeY == 0.5 (cos 60° = walkable bis 60°)",
-            wave6a3Results.maxWalkableSlopeYIs05
+            "Welle 6.A3: hang.maxSlopeY == 0.5 (cos 60° = walkable bis 60°)",
+            wave6a3Results.hangMaxSlopeYIs05
+        );
+        check(
+            "Welle 6.A3: der State-Zwilling maxWalkableSlopeY ist abwesend (19.07.)",
+            wave6a3Results.stateZwillingAbwesend
         );
         check("Welle 6.A3: state.groundNormalY existiert", wave6a3Results.hasGroundNormalY);
         check("Welle 6.A3: state.onSteepSlope existiert", wave6a3Results.hasOnSteepSlope);

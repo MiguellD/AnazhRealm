@@ -75,6 +75,11 @@ const FORBIDDEN = [
     // Fahr-Profils — jedes Feld trug seinen Literal-Zwilling. Der EINE
     // fail-closed Leser ist AnazhRealm._fahrGesetz (Gültigkeits-Wand).
     { token: "_heN(", fiel: "FAHR-ZWILLINGS-ABSCHIED — _fahrGesetz liest fail-closed, kein Misch-Gesetz" },
+    // ZWILLINGS-ABSCHIED 19.07. — der State-Zwilling des Begehbarkeits-
+    // Winkels: das Steilhang-Gesetz wohnt im koerperstudio-Gesetzbuch
+    // (fx.bewegung.hang.maxSlopeY), die Leser lesen den fail-closed
+    // _bewegungsBlock direkt (kein Boot-Seed, kein State-Feld).
+    { token: "maxWalkableSlopeY", fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)" },
 ];
 
 // Die Seelen-Schlüssel-Wahrheit: CREATURE_SOULS = exakt die vier Tiere.

@@ -503,6 +503,16 @@ function validateManifest(m) {
         // SCHLUSS-WELLE 17.07. — der Herden-Abstand wohnt im tetrapoda-
         // Gesetzbuch (VERHALTEN.separation), der Stamm-Zwilling ist gefallen:
         "CREATURE_SEPARATION",
+        // ZWILLINGS-ABSCHIED 19.07. — der Tür-Öffnungswinkel wohnt im
+        // porta-Gesetzbuch (TUER_GESETZ.offen, Leser fail-closed):
+        "TOR_FLUEGEL_OFFEN",
+        // ZWILLINGS-ABSCHIED 19.07. — Groove/Skala/Tempo/Swing wohnen im
+        // klang-Gesetzbuch (RHYTHMUS_MUSTER · SCALES/scaleFor · GENRES),
+        // die vier Konstanten-Zwillinge sind gefallen:
+        "LOFI_GROOVE_PATTERN",
+        "GROOVE_SWING",
+        "LOFI_BPM",
+        "LOFI_SCALE",
     ];
     const zwillingsTreffer = (src) =>
         ZWILLINGE.filter((n) => new RegExp("^AnazhRealm\\." + n + "\\s*=", "m").test(src));
