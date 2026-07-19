@@ -6,9 +6,31 @@ das liest · schreibt · WERTET (`docs/das-lebendige-feld.md`). Die acht Schöpf
 terrain·garage·portale·schmiede·fachwerk·klang·koerperstudio·tetrapoda) sind die Gesetzbücher;
 **AnazhRealm erzeugt nichts, was ein Studio kann — es ist Boden · Speicher · Spieler · Anschluss.**
 
-## Stand (V18.491.9 — DIE REIFE-WACHE: der Record droppt keine unfertigen Bürger mehr)
+## Stand (V18.491.10 — DIE OFFENE LISTE FÄLLT: Diät-Ausweitung + Live-Set-Zensus)
 
-**19.07., zehnte Welle (Schöpfer-Spielbericht auf .8: „Terrain/Bäume erscheinen erst
+**19.07., elfte Welle (Schöpfer: „das war 5 % der offenen Punkte" — die benannten
+offenen Punkte des Bogens fallen, weiter unter Test-Verbot):**
+- DIÄT-AUSWEITUNG auf die 164 sharedFoliage-Singletons (materialZensus-Spitze —
+  der größte verbliebene Jeden-Frame-Refresher): möglich durch den BATCH-TEXTUR-
+  WÄCHTER im Diät-Observer — BatchedMesh trägt seine Instanz-Wahrheit in Daten-
+  Texturen (_matricesTexture/_colorsTexture/_indirectTexture), deren Versionen
+  equals() nicht sieht; der Wächter prüft sie selbst (Mutation → EIN Refresh).
+  Ihr Graph hängt nur an geteilten Sätzen (Toon-Builder: Atmo/LOD/Wind) +
+  Attributen + Instanz-Daten. Die Masken-/Impostor-PBR-Materialien (Atlas-
+  Textur-KNOTEN — für equals unsichtbar, Atlanten backen live) bleiben BEWUSST
+  undiätiert (der ehrliche Rest, nach Trace-Urteil).
+- DER LIVE-SET-ZENSUS (steadyState.heapZensus): GC-Pausen skalieren mit dem
+  LIVE-SET (3-GB-Heap), der Trace kannte nur Zähler — jetzt summiert die Linse
+  die CPU-TypedArray-Bytes der Szene je Familie (dedupliziert — Singletons
+  zählen einmal) + die großen Halter (Foundry-Cache N+MB aus der kanonischen
+  cacheBytes-Bilanz · Batch-Zahl · Impostor-Atlanten). Der nächste Trace NENNT
+  den GC-Wal statt zu raten.
+- EHRLICH OFFEN bleibt: der Wasser-Bundle-Weg (Vendor-Physik: viewportLinearDepth
+  bricht den Pass — bräuchte eine Depth-Copy VOR dem Bundle-Replay, Vendor-Akt) ·
+  die Impostor-/Masken-Diät (Atlas-Knoten-Wächter nötig) · der Live-Set-SCHNITT
+  selbst (der Zensus liefert erst die Ziele).
+
+**Davor, zehnte Welle (Schöpfer-Spielbericht auf .8: „Terrain/Bäume erscheinen erst
 beim Abbauen/Platzieren" — Test-Verbot des Schöpfers: Wurzel lesen, schneiden, committen):**
 - DIE REIFE-WACHE (`_bundleReifeWache`): der Vendor-Record zeichnet nur, was
   `_pipelines.isReady` bejaht, und versiegelt das Bundle DANACH bedingungslos

@@ -16023,6 +16023,10 @@ class AnazhRealm {
                       // Nicht-Bundle-Population IST die per-Draw-Uniform-Bahn (~55k
                       // Klein-Uploads/s). Der nächste Trace nennt die Ziele beim Namen.
                       bundleDeckung: this._flightRecorderBundleDeckung(),
+                      // (f) DER LIVE-SET-ZENSUS (zehnte Welle — GC-Wal): GC-Pausen
+                      // skalieren mit dem LIVE-SET (3-GB-Heap des sechsten Traces),
+                      // nicht mit der Rate — der Trace kannte nur Zähler, nie BYTES.
+                      heapZensus: this._flightRecorderHeapZensus(),
                   }
                 : null,
             worstFrames: fr.worst,
@@ -16064,6 +16068,68 @@ class AnazhRealm {
                 .slice(0, 8)
                 .map(([name, n]) => ({ name: String(name).slice(0, 40), n }));
             return { unique: seen.size, top };
+        } catch {
+            return null; // der Flugschreiber darf NIE stören
+        }
+    }
+
+    // DER LIVE-SET-ZENSUS (19.07., zehnte Welle — der GC-Wal bekommt Namen):
+    // summiert die CPU-seitig gehaltenen TypedArray-Bytes der Szene (Geometrie-
+    // Attribute + Index + Instanz-Puffer, DEDUPLIZIERT über Objekt-Identität —
+    // geteilte Singletons zählen EINMAL) je Familie, plus die großen Halter
+    // außerhalb der Szene (Foundry-Cache · Batch-Zahl · Impostor-Atlanten).
+    // Reine Lese-Linse, nur am Export-Zeitpunkt — der nächste Trace nennt,
+    // WER die ~2.4 GB Live-Set trägt, statt zu raten.
+    _flightRecorderHeapZensus() {
+        try {
+            const sc = this.state.scene;
+            if (!sc) return null;
+            const gesehen = new Set();
+            const fam = new Map();
+            let gesamt = 0;
+            const zaehle = (a, name) => {
+                if (!a || !a.array || gesehen.has(a)) return;
+                gesehen.add(a);
+                const b = a.array.byteLength || 0;
+                gesamt += b;
+                fam.set(name, (fam.get(name) || 0) + b);
+            };
+            sc.traverse((o) => {
+                const g = o.geometry;
+                if (!g) return;
+                const u = o.userData || {};
+                const nm =
+                    (o.name && o.name.split(":")[0]) ||
+                    u.inventar ||
+                    (u.archInstanceKey ? String(u.archInstanceKey).split("#")[0] : null) ||
+                    (u.archBatchKey ? "batch:" + String(u.archBatchKey).split("|")[0] : null) ||
+                    (u.hydroKind ? "wasser" : null) ||
+                    o.type;
+                if (g.attributes) for (const k in g.attributes) zaehle(g.attributes[k], nm);
+                zaehle(g.index, nm);
+                if (o.isInstancedMesh === true) {
+                    zaehle(o.instanceMatrix, nm);
+                    if (o.instanceColor) zaehle(o.instanceColor, nm);
+                }
+            });
+            const top = Array.from(fam.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10)
+                .map(([k, v]) => ({ familie: String(k).slice(0, 48), mb: +(v / 1048576).toFixed(1) }));
+            return {
+                szeneMB: +(gesamt / 1048576).toFixed(1),
+                top,
+                halter: (() => {
+                    const f = this._foundry;
+                    return {
+                        foundryCacheN: f && f.cache ? f.cache.size : 0,
+                        foundryCacheMB:
+                            f && Number.isFinite(f.cacheBytes) ? +(f.cacheBytes / 1048576).toFixed(1) : null,
+                        batches: this.state.archBatches ? this.state.archBatches.size : 0,
+                        impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
+                    };
+                })(),
+            };
         } catch {
             return null; // der Flugschreiber darf NIE stören
         }
@@ -30972,6 +31038,24 @@ class AnazhRealm {
                         const d = this.getRenderObjectData(ro);
                         if (d._anazhInstV !== v) {
                             d._anazhInstV = v;
+                            return true;
+                        }
+                    }
+                    // BATCH-TEXTUR-WÄCHTER (zehnte Welle — die Diät wird batch-
+                    // sicher): BatchedMesh trägt seine Instanz-Wahrheit in DATEN-
+                    // TEXTUREN (_matricesTexture/_colorsTexture/_indirectTexture),
+                    // deren Versionen equals() ebenso wenig sieht wie instanceMatrix.
+                    // Mutation (addInstance/setMatrixAt/Sichtbarkeit) → Version
+                    // klettert → genau EIN ehrlicher Refresh lädt sie nach.
+                    if (obj && obj.isBatchedMesh === true) {
+                        const mt = obj._matricesTexture,
+                            ct = obj._colorsTexture,
+                            it = obj._indirectTexture;
+                        const v =
+                            (mt ? mt.version : -1) + "|" + (ct ? ct.version : -1) + "|" + (it ? it.version : -1);
+                        const d = this.getRenderObjectData(ro);
+                        if (d._anazhBatchV !== v) {
+                            d._anazhBatchV = v;
                             return true;
                         }
                     }
@@ -67705,6 +67789,15 @@ class AnazhRealm {
         if (!mat) {
             mat = this._buildToonNodeMaterial(opts);
             mat.userData.sharedFoliage = true;
+            // OBSERVER-DIÄT-AUSWEITUNG (zehnte Welle — der offene Punkt fällt):
+            // die 164 sharedFoliage-Singletons (materialZensus-Spitze) sind der
+            // größte verbliebene Jeden-Frame-Refresher. Ihr Graph hängt NUR an
+            // geteilten Sätzen (Toon-Builder: Atmo/LOD/Wind — alle renderGroup)
+            // + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/
+            // instanceColor UND die BatchedMesh-Daten-Texturen. Die Masken-/
+            // Impostor-PBR-Materialien (Atlas-Textur-KNOTEN — für equals
+            // unsichtbar, Atlanten backen live) bleiben BEWUSST undiätiert.
+            this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
         return mat;
@@ -92682,7 +92775,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.9";
+AnazhRealm.VERSION = "18.491.10";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
