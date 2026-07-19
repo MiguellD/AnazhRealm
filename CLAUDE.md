@@ -50,9 +50,40 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.13 — N8: KABINE + STUDIO-KAMERA — der Welt-Ritt sieht aus wie die Probefahrt)
+## Stand (V18.491.14 — DIE ALCHEMIE-WELLE: vier Goldbarren gegen die Engine-Lücke)
 
-**19.07., vierzehnte Welle (Schöpfer-Spielbericht: „er sitzt auf dem Dach, wo ist die
+**19.07., fünfzehnte Welle (Schöpfer: „schmieden wir das Ding zu Gold statt zu Godot" —
+Recherche bestätigte: die Community kämpft exakt an unserer Front [per-Objekt-UBO,
+20k Objekte = 15 fps, RenderBundles als Antwort]; der GOLD-1-Leser-Zensus WIDERLEGTE
+die onUpload-Hypothese ehrlich [entlassbar nur 2.6 MB] und nannte den wahren Wal:
+Foundry-Familie 1.06 GB @ Ring 4 — Batch-Staging 623 + f.cache 351 + Quellen 87):**
+- GOLD 1 — DIE BATCH-KLEIN-MÜNZE: Batches starten mit ARCH_BATCH_MINT_VERTS
+  (8192) statt voller 32k-Reserve und wachsen über den bewiesenen Überlauf-Pfad
+  (setGeometrySize + Bundle-Touch). GEMESSEN am Vertrag-Regime: Szene-Live-Set
+  819 → 150.6 MB (−82 %). KORRIGIERT in derselben Welle: die 320-MB-Cache-Kappe
+  evictete im Warm-Fluss (crossfade-Rot: Proben-Baum fiel zwischen Wärmung und
+  Platzierung) → 512 MB bleibt die ehrliche Grenze (Kappe > Ring-Working-Set;
+  der Zensus maß 351 MB Working Set — der GC-Schnitt kam NIE aus dem Cache).
+- GOLD 2 (eröffnet) — DIE RESIDENZ-BILANZ: heapZensus.halter.batchFillPct
+  (genutzte/reservierte Batch-Verts — die Pool-Effizienz-Zahl der künftigen
+  Welt-Puffer-Synthese; nach der Klein-Münze 29 % im kleinen Regime).
+- GOLD 3 (eröffnet) — DIE VENDOR-ANKER-WAND (gate:vendor-anker, in der
+  check-Kette): 3 Vendor-Fingerabdrücke gepinnt (anker.lock.json — ein
+  three-Bump ist ab jetzt ein BEWUSSTER Akt) + 10 Anker-Substrings der fünf
+  Laufzeit-Organe (Diät · Heimat · Reife-Wache · Batch-Wächter · Pass-Physik) —
+  fällt einer, nennt die Wand Täter UND abhängiges Organ; Selbsttest feuert.
+- GOLD 4 — V5 SZENE-SPEICHER-BAND im Leistungs-Vertrag: Live-Set der
+  gesettelten kleinen Welt < 700 MB (gemessen 150.6) — keine künftige Welle
+  wächst das Live-Set still zurück in die GB-Klasse.
+- BEWIESEN: leistungs-vertrag GRÜN (V1 0 Mints · V5 150.6 MB · batchFill 29 %) ·
+  voller playtest „Alle Invarianten OK" · foundry-crossfade GRÜN (nach der
+  Kappen-Korrektur) · check GRÜN inkl. Anker-Wand. OFFEN ehrlich: der
+  481-MB-Batch-Staging-Rest (nie CPU-gelesen — bräuchte den Vendor-Akt) ·
+  Chunk-Boden-Entlassung (braucht Grenz-Re-Hydrierung; IDB-Rohbytes liegen
+  bereit) · die Welt-Puffer-Synthese selbst (GOLD 2, der große Bogen) ·
+  Source-Vendoring (GOLD 3, der große Bogen) — beide tragen jetzt Messlatte+Wand.
+
+**Davor, vierzehnte Welle (Schöpfer-Spielbericht: „er sitzt auf dem Dach, wo ist die
 Studio-Kamera, die Fahrphysik ist die alte" — die Fahr-Auge-Sonde bewies: die Gesetz-
 Kette FLIESST [gesetz/lenkung/zweispur true, Sitz 0.925 == Kern-Formel], aber der
 Gesetz-Sitz liegt UNTER dem 1.2-m-GT-Dach — ein Avatar ragte durchs Blech, und die

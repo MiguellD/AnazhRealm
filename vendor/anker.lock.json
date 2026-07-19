@@ -1,0 +1,14 @@
+{
+    "vendor/three.webgpu.min.js": {
+        "bytes": 637561,
+        "fnv": "4ab10262"
+    },
+    "vendor/three.core.min.js": {
+        "bytes": 384222,
+        "fnv": "db703418"
+    },
+    "vendor/three.tsl.min.js": {
+        "bytes": 23265,
+        "fnv": "5438276"
+    }
+}

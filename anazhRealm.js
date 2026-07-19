@@ -16152,11 +16152,24 @@ class AnazhRealm {
                 top,
                 halter: (() => {
                     const f = this._foundry;
+                    // GOLD 2 (19.07.) — DIE RESIDENZ-BILANZ: genutzte vs. reservierte
+                    // Batch-Verts (die Pool-Effizienz der künftigen Welt-Puffer-
+                    // Arbeit; nach der Klein-Münze soll fillPct hoch stehen).
+                    let vKap = 0,
+                        vNutz = 0;
+                    if (this.state.archBatches)
+                        for (const b of this.state.archBatches.values()) {
+                            const g = b.mesh && b.mesh.geometry;
+                            const p = g && g.attributes && g.attributes.position;
+                            if (p) vKap += p.count;
+                            if (b.mesh && typeof b.mesh._nextVertexStart === "number") vNutz += b.mesh._nextVertexStart;
+                        }
                     return {
                         foundryCacheN: f && f.cache ? f.cache.size : 0,
                         foundryCacheMB:
                             f && Number.isFinite(f.cacheBytes) ? +(f.cacheBytes / 1048576).toFixed(1) : null,
                         batches: this.state.archBatches ? this.state.archBatches.size : 0,
+                        batchFillPct: vKap > 0 ? Math.round((vNutz / vKap) * 100) : null,
                         impostorAtlanten: this._impostorAtlasMap ? this._impostorAtlasMap.size : 0,
                     };
                 })(),
@@ -67959,8 +67972,16 @@ class AnazhRealm {
             // regional bewiesen) → dieselbe Reserve fällt auf ~200 MB, wächst NUR wenn ein Batch wirklich
             // füllt. GEMESSEN: die Render-Last-Linse las die RESERVE als „gezeichnet" (Phantom 15.9M vs
             // echt 1.2M) — die Reserve war nie gezeichnet, aber ihre ALLOKATION war der echte Freeze.
-            const MAXV = regional ? 32768 : 65536;
-            const MAXI = regional ? 98304 : 196608;
+            // GOLD 1 (19.07., Leser-Zensus: 622.8 MB Batch-Staging @ Ring 4 —
+            // die Batches wurden mit VOLLER Kapazität gemünzt, obwohl der
+            // Wachstums-Pfad [_archBatchAddGeometry: catch → setGeometrySize +
+            // Bundle-Touch] seit V18.289 bewiesen ist): KLEIN münzen, wachsen
+            // lassen — die CPU-Staging- UND GPU-Reserve folgen dem ECHTEN
+            // Füllstand statt dem Worst-Case (Kosten an Änderung, nie an
+            // Weltgröße). Kapazitäts-Deckel (32768/512) bleiben im Wachstum
+            // unangetastet — nur der MÜNZ-Start sinkt.
+            const MAXV = AnazhRealm.ARCH_BATCH_MINT_VERTS;
+            const MAXI = AnazhRealm.ARCH_BATCH_MINT_IDX;
             const MAXINST = regional ? 512 : 2048;
             const mesh = new THREE.BatchedMesh(MAXINST, MAXV, MAXI, leaf.mat);
             mesh.castShadow = castShadow;
@@ -93011,7 +93032,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.13";
+AnazhRealm.VERSION = "18.491.14";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -93036,6 +93057,12 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // V18.281): kein Arbeits-Mengen-Churn, aber der byte-blinde Worst-Case (256
 // schwere Einträge ≈ 2 GB) fällt auf ein Viertel. Räumung bleibt graziös (H3:
 // re-anfragbar; _liveRefs-Disziplin — nie ein sichtbarer Baum). Tunable.
+// GOLD 1 (19.07., GEMESSEN + korrigiert): der Leser-Zensus maß 351.3 MB
+// WORKING SET @ Ring 4 — eine 320-MB-Kappe evictete mitten im Warm-Fluss
+// (gate:foundry-crossfade: der Proben-Baum fiel zwischen Wärmung und
+// Platzierung aus dem Cache). Die Kappe MUSS über dem Ring-Working-Set
+// liegen; der GC-Schnitt kam aus der Batch-Klein-Münze (819→150 MB), nie
+// aus dem Cache. 512 MB bleibt die ehrliche Grenze.
 AnazhRealm.FOUNDRY_CACHE_BYTES = 512 * 1024 * 1024;
 // DIE STUFEN-FALLBACK-KARTE JE ART (08.07., LOD-WURZEL): die LEBENDE Wahrheit sind die
 // Vertrags-DATEN `PORTAL_RENDER_CONFIG.lod.kindStages` (Baum [0,1,2] · Gras/Strauch [1,2]
@@ -97550,6 +97577,13 @@ AnazhRealm.ARCH_INSTANCE_SHARE_VERTS = 8192;
 // Kiesel, unmaskiert) kollabieren in den Region-Batch (RenderBundle-Bahn)
 // statt je Art×Variante×Blatt×Region eine eigene InstancedMesh zu münzen.
 AnazhRealm.ARCH_BATCH_KLEIN_VERTS = 2048;
+// GOLD 1 (19.07., Leser-Zensus): die BATCH-MÜNZ-Größe — Batches starten
+// KLEIN und wachsen über den bewiesenen Überlauf-Pfad (setGeometrySize +
+// Bundle-Touch) mit dem echten Füllstand. Vorher münzte jeder Region-Batch
+// die volle 32k-Vert-Reserve (622.8 MB CPU-Staging @ Ring 4 — der größte
+// Einzel-Halter des GC-Wals).
+AnazhRealm.ARCH_BATCH_MINT_VERTS = 8192;
+AnazhRealm.ARCH_BATCH_MINT_IDX = 24576;
 // V18.354 — PHASE B (Frame-Budget-Scheduler): der Boden des Deferrable-Budgets (ms). Selbst wenn
 // die Pflicht-Kosten (Physik/Render) das Frame-Ziel fast füllen, bleibt diese Kür-Zeit — das
 // Streaming ist eh heilig (prio 0, ungedrosselt), dieser Floor hält die niedrigeren Jobs am Leben.

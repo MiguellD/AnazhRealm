@@ -124,6 +124,15 @@ const server = http.createServer((req, res) => {
                 }
                 o.quieszent = ruhigeBatches >= 2;
             }
+            // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
+            // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
+            // gesettelten kleinen Welt — keine künftige Welle darf das Live-Set
+            // still zurück in die GB-Klasse wachsen lassen (die 819-MB-Messung
+            // VOR der Batch-Klein-Münze ist die Referenz; das Band liegt mit
+            // Kopfraum darunter).
+            const hz = r._flightRecorderHeapZensus ? r._flightRecorderHeapZensus() : null;
+            o.szeneMB = hz ? hz.szeneMB : null;
+            o.batchFillPct = hz && hz.halter ? hz.halter.batchFillPct : null;
             // ── V1 + V3: STAND-FENSTER (Spieler steht, 400 Ticks im Regime) ──
             const mints0 = r._archGruppenMints || 0;
             const groups0 = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
@@ -238,6 +247,7 @@ const server = http.createServer((req, res) => {
         `  V2 INGEST-TAKT: keineSofort=${out.v2KeineSofort} nachTick1=${out.v2NachTick1}/3 alle=${out.v2Alle} reihenfolge=${out.v2Reihenfolge} überBudget1=${out.v2UeberBudgetEins} headlessSofort=${out.v2HeadlessSofort}`
     );
     console.log(`  V4 LINSEN: verdrahtet=${out.v4Linsen} (bundleDeckung ${out.deckungPct}%)`);
+    console.log(`  V5 SZENE-SPEICHER: ${out.szeneMB} MB (Band < 700) · batchFill ${out.batchFillPct}%`);
     console.log(`  SELBSTTEST Churn-Linse feuert: ${out.selbsttestChurn}`);
     if (out.err) console.log(`  Fehler: ${out.err}`);
     if (pageErrors.length) console.log("  Seiten-Fehler:", pageErrors.slice(0, 3));
@@ -255,6 +265,8 @@ const server = http.createServer((req, res) => {
     if (!out.v2UeberBudgetEins) errs.push("V2: über Budget gab der Tick nicht exakt 1 frei");
     if (!out.v2HeadlessSofort) errs.push("V2: headless resolvte NICHT sofort (Gates würden kriechen)");
     if (!out.v4Linsen) errs.push("V4: die Mess-Flächen (bundleDeckung/ingestTakt/gruppenChurn) fehlen im Trace");
+    if (!(Number.isFinite(out.szeneMB) && out.szeneMB < 700))
+        errs.push(`V5: Szene-Live-Set ${out.szeneMB} MB ≥ 700 (die Klein-Münze/Residenz-Disziplin ist verletzt)`);
     if (!out.selbsttestChurn) errs.push("SELBSTTEST: die Churn-Linse zählte einen echten Mint NICHT (blind)");
     if (pageErrors.length) errs.push(`${pageErrors.length} Seiten-Fehler`);
 
