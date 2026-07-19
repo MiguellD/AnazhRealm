@@ -73067,13 +73067,23 @@ class AnazhRealm {
         // Glut-Kanten), der Konsument warf sie bisher weg — das Welt-Tor war matt.
         const emis = mp && Array.isArray(mp.emissive) && mp.emissive.length === 3 ? mp.emissive : null;
         const emisI = emis && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : emis ? 1 : 0;
+        // HAUT+FELLE (Konsum-Tiefe 2+3, 19.07.) — die KLASSEN-LOOK-Familie:
+        // Kreatur-/Mensch-Klassen, deren Lab-Shader-Gesetz (FELL_LOOK/HAUT_LOOK/
+        // HAAR_LOOK) hier gewoben wird. Der TON-Anker (mp.color, linear) reist
+        // in den Key: die Strähnen-Achse ist die Luminanz-Ratio zum Ton — je
+        // Gattungs-Ton EIN Material (bounded: Gattungen × 4 Klassen).
+        const klasseLook =
+            kind === "fell" || kind === "skin" || kind === "haut" || kind === "hair" || kind.indexOf("straehne") === 0;
         const key =
             (mp
                 ? kind + "|" + rough.toFixed(2) + "|" + metal.toFixed(2) + "|" + (flat ? 1 : 0) + "|" + env.toFixed(2)
                 : kind) +
             (xfade ? "|xf" : "") +
             (mp && mp.webe ? "|w:" + mp.webe : "") +
-            (emis ? "|e:" + emis.map((v) => v.toFixed(2)).join(",") + "@" + emisI.toFixed(2) : "");
+            (emis ? "|e:" + emis.map((v) => v.toFixed(2)).join(",") + "@" + emisI.toFixed(2) : "") +
+            (klasseLook && mp && Array.isArray(mp.color) && mp.color.length === 3
+                ? "|t:" + mp.color.map((v) => (+v).toFixed(3)).join(",")
+                : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         try {
@@ -73138,6 +73148,75 @@ class AnazhRealm {
                     mat._anazhAtlasTexe = [tex];
                 } else {
                     mat.colorNode = TSL.vec4(vcol, 1.0);
+                }
+            } else if (klasseLook) {
+                // HAUT+FELLE (Konsum-Tiefe 2+3, 19.07., Schöpfer: „weder Haut
+                // noch Felle fließen") — das SHADER-Gesetz der Studios erreicht
+                // die Welt: die Labs tragen ihre Griffigkeit als Fragment-Terme
+                // (koerperstudio matSkin: warmer SSS-Fresnel-Saum · tetrapoda
+                // matFur/createDeepFurMat: Fell-Rim + Gold-Sheen + Spitzen-Rim/
+                // -Spec), die Welt bäckte bisher nur die GEOMETRIE — Kreatur und
+                // Mensch lasen flach. Die Gesetze reisen als DATEN (FELL_LOOK/
+                // HAUT_LOOK/HAAR_LOOK, rein additive Kern-Blöcke, verbatim-
+                // Zahlen der Lab-Shader) und werden hier als emissive-Additive
+                // gewoben (dieselbe Post-Licht-Addition wie das Lab-GLSL).
+                // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf
+                // (__streuGeo: Wurzel = Ton×0.12) — die Luminanz-Ratio zum
+                // Ton-Anker (mp.color, im Key) gewinnt vStrandY exakt zurück.
+                // Ohne Kern-LOOK/TSL-Symbole: byte-alt (reine Look-Addition,
+                // die Kern-Zahlen sind die EINZIGE Quelle — kein Zwilling).
+                mat.colorNode = TSL.vec4(vcol, 1.0);
+                try {
+                    const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+                    const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+                    const strand = kind === "hair" || kind.indexOf("straehne") === 0;
+                    const L =
+                        kind === "skin" || kind === "haut"
+                            ? kkC && kkC.HAUT_LOOK
+                            : kind === "hair"
+                              ? kkC && kkC.HAAR_LOOK
+                              : kind === "fell"
+                                ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
+                                : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
+                    if (L && TSL.normalView && TSL.positionViewDirection && TSL.float && TSL.vec3) {
+                        const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
+                        const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
+                        let add = null;
+                        const term = (farbe, knoten) => {
+                            const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
+                            add = add ? add.add(t) : t;
+                        };
+                        if (strand) {
+                            const tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
+                            const tonL = tonA
+                                ? Math.max(1e-4, 0.2126 * tonA[0] + 0.7152 * tonA[1] + 0.0722 * tonA[2])
+                                : null;
+                            const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
+                            const sT =
+                                tonL !== null
+                                    ? vcol
+                                          .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                          .div(tonL)
+                                          .sub(wA)
+                                          .div(Math.max(1e-3, 1 - wA))
+                                          .clamp(0.0, 1.0)
+                                    : TSL.float(1.0);
+                            if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
+                                term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
+                            if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
+                                term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
+                        } else {
+                            if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
+                                term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
+                            if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
+                                term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
+                            if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
+                                term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
+                        }
+                        if (add) mat.emissiveNode = add;
+                    }
+                } catch (_eL) {
+                    /* Look-Addition optional — Geometrie + Vertex-Farben tragen byte-alt */
                 }
             } else if (mp && mp.webe && TSL.mx_noise_float && TSL.positionLocal) {
                 // STOFF-WEBUNG (V18.464, Studio-getCloth-Charakter): eine feine
@@ -93223,7 +93302,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.16";
+AnazhRealm.VERSION = "18.491.17";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).

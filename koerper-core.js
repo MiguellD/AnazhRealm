@@ -606,6 +606,28 @@
     // (bauMensch + morphAuf, unten); beide Leser (Lab-Shell wie Stamm) bauen NUR
     // noch daraus. Kein zweites Anatomie-Gesetz mehr.
 
+    // ════════════════════════════════════════════════════════════════════
+    // DER HAUT-/HAAR-LOOK (Konsum-Tiefe, 19.07., rein additiv) — das SHADER-
+    // Gesetz der Lab-Materialien als DATEN (verbatim-Zahlen aus
+    // koerperstudio.js: matSkin [warmer SSS-Fresnel-Saum pow3 ×0.15,
+    // Rauheit 0.62] und createDeepFurMat `deep_human_fur_v1` [Haar-Strähnen:
+    // Spitzen-Rim pow3 + Spec pow8 ×0.3 über der Wurzel→Spitze-Achse]).
+    // KONSUMENTEN: der Welt-Material-Resolver webt sie als Post-Licht-
+    // Additive (dieselbe GLSL-Addition des Labs). MESHFREI §8: reine Zahlen.
+    var HAUT_LOOK = Object.freeze({
+        sssPow: 3,
+        sssFarbe: Object.freeze([1.0, 0.4, 0.25]),
+        sssAmt: 0.15,
+    });
+    var HAAR_LOOK = Object.freeze({
+        tipRimPow: 3,
+        tipRimFarbe: Object.freeze([0.35, 0.18, 0.05]),
+        specPow: 8,
+        specAmt: 0.3,
+        specFarbe: Object.freeze([0.3, 0.15, 0.04]),
+        wurzelAnker: 0.12,
+    });
+
     // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
     // verbatim aus dem Stamm gewandert; khMul skaliert die EINE Kopfhöhen-Einheit):
     var DIAL_MAP = Object.freeze([
@@ -1001,6 +1023,8 @@
         bauMensch: bauMensch,
         morphAuf: morphAuf,
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
+        HAUT_LOOK: HAUT_LOOK,
+        HAAR_LOOK: HAAR_LOOK,
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):

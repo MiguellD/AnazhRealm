@@ -1344,6 +1344,34 @@
     });
 
     // ════════════════════════════════════════════════════════════════════
+    // DER FELL-LOOK (Konsum-Tiefe, 19.07., rein additiv) — das SHADER-Gesetz
+    // der Lab-Materialien als DATEN (verbatim-Zahlen aus tetrapoda.js:
+    // matFur `wolf_aureus_v22` [Körper-Fell: SSS-Rim pow4 ×0.5 + Gold-Sheen
+    // pow5 ×0.15] und createDeepFurMat `deep_gold_fur_v3` [Strähnen: Spitzen-
+    // Rim pow3 + Gold-Spec pow8 ×0.4 über der Wurzel→Spitze-Achse]).
+    // KONSUMENTEN: der Welt-Material-Resolver webt sie als Post-Licht-Additive
+    // (dieselbe GLSL-Addition der Labs); die Strähnen-Achse reist als
+    // Farbverlauf (__streuGeo: Wurzel = Ton×0.12). MESHFREI §8: reine Zahlen.
+    var FELL_LOOK = Object.freeze({
+        koerper: Object.freeze({
+            rimPow: 4,
+            rimFarbe: Object.freeze([0.55, 0.25, 0.07]),
+            rimAmt: 0.5,
+            sheenPow: 5,
+            sheenAmt: 0.15,
+            sheenFarbe: Object.freeze([0.45, 0.25, 0.08]),
+        }),
+        straehne: Object.freeze({
+            tipRimPow: 3,
+            tipRimFarbe: Object.freeze([0.55, 0.28, 0.07]),
+            specPow: 8,
+            specAmt: 0.4,
+            specFarbe: Object.freeze([0.5, 0.25, 0.06]),
+            wurzelAnker: 0.12,
+        }),
+    });
+
+    // ════════════════════════════════════════════════════════════════════
     // KONVERGENZ III — DER EINE TIER-BAU: bauTier(F, dials) baut den kompletten
     // Studio-Vierbeiner (verbatim aus worlds/tetrapoda/tetrapoda.js buildAnimal
     // gewandert; der Schöpfer formte ihn) über FABRIK-HAKEN — MESHFREI §8:
@@ -2226,6 +2254,7 @@
         cpgStep: cpgStep,
         bauTier: bauTier,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
+        FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
