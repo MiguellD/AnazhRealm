@@ -72822,13 +72822,26 @@ class AnazhRealm {
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
         return new Promise((res) => q.push(() => res(x)));
     }
-    // Der Freigabe-Tick (EIN Aufruf je Loop-Frame): unter Budget 3 Freigaben,
-    // über Budget 1 (Fortschritts-Garantie — der Stau schrumpft IMMER; die
-    // Streaming-Heiligkeit bleibt, weil je Frame nur wenige Konversionen folgen).
-    _tickFoundryIngest() {
+    // Der Freigabe-Tick (EIN Aufruf je Loop-Frame). SEKUNDEN-NORMALISIERT (WELLE 2): die
+    // Freigaben zielen auf `INGEST_RATE_PER_S` je ECHTER Sekunde, verteilt über die (bei
+    // niedriger fps seltenen) Frames — `n = round(rate·dt)`, gedeckelt durch INGEST_BURST_CAP.
+    // So lädt die Welt mit der Wanduhr (dem Schritt-/Fahr-Tempo), nicht mit der Framerate. Über
+    // Budget = halbe Rate (Fortschritts-Garantie: der Stau schrumpft IMMER, der Burst bleibt
+    // gedeckelt → kein LongTask). OHNE dt-Arg (Gate/Test-Aufruf) gilt die alte Frame-Semantik
+    // (3 unter / 1 über Budget) byte-gleich — gate:leistungs-vertrag unberührt.
+    _tickFoundryIngest(dtSec) {
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
-        const n = this.state._frameOverBudget ? 1 : 3;
+        let n;
+        if (!Number.isFinite(dtSec)) {
+            n = this.state._frameOverBudget ? 1 : 3; // Gate/Test-Pfad: byte-alte Frame-Semantik
+        } else {
+            const rate = this.state._frameOverBudget
+                ? AnazhRealm.INGEST_RATE_PER_S * 0.5
+                : AnazhRealm.INGEST_RATE_PER_S;
+            const dt = Math.min(0.25, Math.max(0.001, dtSec));
+            n = Math.max(1, Math.min(AnazhRealm.INGEST_BURST_CAP, Math.round(rate * dt)));
+        }
         for (let i = 0; i < n && q.length; i++) {
             const frei = q.shift();
             this._foundryIngestFrei = (this._foundryIngestFrei || 0) + 1; // Linse (freigegeben gesamt)
@@ -91191,8 +91204,10 @@ class AnazhRealm {
             // im try-Block hätte ein PERSISTENTER Phasen-Fehler, den die Error-Boundary
             // bewusst überlebt, den Drain für immer ausgehungert — Assets kämen nie an;
             // die requested-Wache retryt nur bei null). Hier drainiert der Stau auch in
-            // einer verletzten Welt: 3 Freigaben je Frame unter Budget, 1 darüber.
-            this._tickFoundryIngest();
+            // einer verletzten Welt. SEKUNDEN-NORMALISIERT (WELLE 2): `delta` (s) treibt die
+            // fps-unabhängige Freigabe-Rate — auf lahmer Hardware rollt jeder (seltene) Frame
+            // MEHR frei (gedeckelt), die Welt lädt mit der Wanduhr statt mit der Framerate.
+            this._tickFoundryIngest(delta);
 
             // V18.304 — der DEFERIERTE Avatar-Bau: nach ein paar gerenderten Frames (die Welt/UI
             // ist sichtbar + ein paar Frames bedienbar) den Avatar EINMAL bauen. Der ~1.9-s-Skin-
@@ -93792,7 +93807,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.23";
+AnazhRealm.VERSION = "18.491.24";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -98432,6 +98447,17 @@ AnazhRealm.PERF_SCENE_RES_LOAD_FLOOR = 0.68; // ertrinkende GPU im STAND: 68 % (
 AnazhRealm.PERF_CAM_ANGVEL_FULL = 1.6; // rad/s Blick-Winkelgeschwindigkeit für volle Bewegungs-Absenkung (~92°/s, ein zügiger Umsehen-Schwenk)
 AnazhRealm.PERF_CAM_POSVEL_FULL = 11; // m/s Translations-Geschwindigkeit für volle Absenkung (Gehen 1.5 vernachlässigbar, Fahren ≥11 voll)
 AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief bei Bewegung, ~170 ms zurück zur Schärfe im Stand (kein Schärfe-Pop)
+// WELLE 2 — DER SEKUNDEN-NORMALISIERTE INGEST-TAKT (visuelles Streaming fps-unabhängig):
+// der Ingest gab bisher `frameOverBudget ? 1 : 3` PRO FRAME frei → bei niedriger fps kamen
+// pro echter Sekunde viel weniger Assets an (bei 8 fps nur 8–24/s statt 180 → „die Regionen
+// laden nicht mit Schritttempo"). Jetzt zielt der Takt auf eine RATE je ECHTER SEKUNDE: jeder
+// (seltene) Frame rollt `rate·dt` Konversionen frei, gedeckelt durch den BURST-CAP (Schutz der
+// Frame-Zeit — kein Wiederaufleben der 5–6-s-LongTasks des vierten Traces). Die Welt lädt so mit
+// der Wanduhr statt mit der Framerate; auf lahmer Hardware ist genau das der Hebel (dort ist JEDER
+// Frame über Budget → die halbe Rate greift, aber dt·90 ≫ das alte 1/Frame). Über Budget = halbe
+// Rate (die Streaming-Heiligkeit bleibt: der Stau schrumpft immer, gedeckelt).
+AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
+AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
 // `setRenderScale`): die adaptive Render-Auflösung — die Zieleffizienz. Unter Last gibt die Pixel-
 // Ratio nach (das billigste Look-Opfer, ~4× Fill-Ersparnis bei halber Auflösung), mit Kopfraum

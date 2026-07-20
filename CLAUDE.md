@@ -50,7 +50,7 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.23 — DER DRITTE KOSTENTERM: WAHRNEHMUNG)
+## Stand (V18.491.24 — DIE NATUR-WELLEN: WAHRNEHMUNG + FPS-UNABHÄNGIGES STREAMING)
 
 **20.07., vierundzwanzigste Welle (Schöpfer: „lerne von der natur, wie ermöglicht
 unsere realität eine solche effizienz … komme zurück mit was du gelernt, wie kann man
@@ -58,7 +58,19 @@ das anwenden auf anazh" → dann „vollende es, giesse die dinge, sei der gigan
 der antwort wollen wir, es ist die zukunft". Die Recherche fand EIN Gesetz: die Natur
 rechnet nichts, was das Auge nicht auflöst — drei Ökonomien [Sender/Atmosphäre ·
 Kanal/Sehnerv-Deltas · Konsument/Fovea+Sakkade]. Das Kostengesetz „Schirm+Änderung"
-hat einen dritten Term: WAHRNEHMUNG. Welle 1 von fünf gießt ihn):**
+hat einen dritten Term: WAHRNEHMUNG. Zwei Wellen gegen die zwei lautesten Befunde
+gegossen + bewiesen; die drei tiefen strukturellen [Schattierungs-Persistenz ·
+GPU-Sicht-Ring · Hi-Z-Verdeckung] stehen ehrlich als benannte Wurzel-Chirurgie offen):**
+- WELLE 2 — DER SEKUNDEN-NORMALISIERTE INGEST-TAKT (gegen „die Regionen
+  laden nicht mit Schritttempo, wie erst beim Fahren"): der Ingest gab
+  `frameOverBudget?1:3` PRO FRAME frei → bei 8 fps nur 8–24 Assets/s. Jetzt
+  zielt der Takt auf eine RATE je ECHTER Sekunde (`n = round(rate·dt)`,
+  gedeckelt durch INGEST_BURST_CAP=8): auf lahmem Holz (jeder Frame über
+  Budget) kommen 64 statt 8 Assets/Sekunde durch — 8× schneller, die Welt
+  lädt mit der Wanduhr statt der Framerate. OHNE dt-Arg byte-alt (3/1) →
+  gate:leistungs-vertrag unberührt. Der Burst-Deckel verhindert das
+  Wiederaufleben der 5–6-s-LongTasks. BEWIESEN (deterministische Probe 7/7):
+  60 fps=3/Frame · 8 fps=8/Frame · Rate @8fps 64 vs alt 8.
 - DIE BEWEGUNGS-GEKOPPELTE SZENE-AUFLÖSUNG (der V18.390 benannte Rückweg,
   endlich gebaut): sakkadische Maskierung + Bewegungsunschärfe machen Detail
   bei schneller Kamera unsichtbar → die Szene-Auflösung darf DANN fallen
@@ -82,10 +94,23 @@ hat einen dritten Term: WAHRNEHMUNG. Welle 1 von fünf gießt ihn):**
   540→324 (nur 1 Realloc im Übergang) · Bewegungs-Ende → fol klettert zurück
   0.997/RT 540 · 0 Seiten-Fehler. playtest:fast 18/18 · gate:regler-sim 11/11
   (S3 „renderScale 1") · gate:leistungs-vertrag GRÜN · check GRÜN · lint 0 Err.
-  OFFEN (die vier Rest-Wellen, benannt): Schattierungs-Persistenz (Kanal) ·
-  GPU-generierter Sicht-Mittel-Ring (Wurzel) · Atmosphäre-als-LOD-Gesetz ·
-  Hi-Z-Verdeckung. Das fps-Urteil auf dem Schöpfer-Holz fällt der nächste
-  Trace (camMotion an Bord im Flugschreiber).
+  Das fps-Urteil auf dem Schöpfer-Holz fällt der nächste Trace (camMotion an
+  Bord im Flugschreiber).
+- OFFEN, ehrlich benannt (die drei tiefen Wurzel-Chirurgien der Natur-Antwort,
+  je Tage-Arbeit auf dem minified-WebGPU-Vendor — bewusst NICHT übers Knie
+  gebrochen [Schöpfer: „renne nicht wie ein irrer drauf los"]): (a) SCHATTIERUNGS-
+  PERSISTENZ — der Fern-Ring persistiert schon die GEOMETRIE (Refresh nur bei
+  Re-Anker), die Verschwendung ist die per-Frame-Fragment-Schattierung des
+  statischen Fernfelds; der Weg ist Textur-Raum-Cache/Impostor-Panorama (Anazh
+  hat den Impostor-Atlas schon — die Ausweitung ist der Schnitt). (b) HI-Z-
+  VERDECKUNG — Region-cullSpheres gegen die Vorframe-Tiefenpyramide (dichter =
+  billiger; braucht einen Compute-Downsample-Pass + Indirect-Draw-Gate, der
+  Feld-Cull ist das Fundament). (c) GPU-SICHT-MITTEL-RING — den Feld-Zeichner
+  (rechnet 40 km Höhen in EINEM Dispatch) nach innen ziehen, sodass der
+  sichtbare Mittel-Ring GPU-generiert statt gestreamt ist (Welle 2 lieferte den
+  tractablen Kern des Ziels: fps-unabhängiges Streaming). (d) ATMOSPHÄRE-ALS-
+  LOD — Tessellierung/Impostor-Schwelle aus der Streu-MTF ableiten; risikoreich
+  (das browser-getunte Look-System), darum nach Trace-Urteil.
 
 **Davor, dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
 komischen Pixelmustern zwischen Ring und Chunks — da ist noch etwas unsauber in
