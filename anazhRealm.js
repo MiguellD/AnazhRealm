@@ -69212,6 +69212,7 @@ class AnazhRealm {
         if (!map || map.size === 0) return;
         const fr = this._frustumCache;
         if (!fr) return;
+        this._occlProbeFrame = (this._occlProbeFrame || 0) + 1; // der Query-Probe-Takt (④)
         const hook = typeof window !== "undefined" ? window.__anazhBergCull : undefined;
         const bergAktiv =
             hook !== false &&
@@ -69285,6 +69286,22 @@ class AnazhRealm {
             if (u._occlProxy) u._occlProxy.visible = false;
             u._occlTreffer = 0;
             u._occlVerdeckt = false;
+            return;
+        }
+        // TRACE-URTEIL .29 (CPU-render 387 ms · GPU echt 352 ms): Queries JEDEN
+        // Frame zwingen den Vendor in QuerySet-Bau/-Destroy + Resolve + Map PRO
+        // FRAME (der Dawn-Cliff). Die Natur zahlt nicht pro Frage: der PROBE-
+        // TAKT fragt nur jeden queryTakt-ten Frame (Proxys dazwischen unsichtbar
+        // = 0 Queries, 0 Churn); das Verdikt hält bis zur nächsten Probe —
+        // Verdeckung ist zeitlich kohärent (Objekt-Permanenz).
+        this._occlProbeFrame = this._occlProbeFrame === undefined ? 0 : this._occlProbeFrame;
+        const probeFenster = this._occlProbeFrame % AnazhRealm.BERG_CULL.queryTakt === 0;
+        if (!probeFenster) {
+            if (u._occlProxy) u._occlProxy.visible = false;
+            if (u._occlVerdeckt) {
+                bg.visible = false;
+                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1;
+            }
             return;
         }
         let q = u._occlProxy;
@@ -94191,8 +94208,15 @@ class AnazhRealm {
             const st = this.state;
             const now = performance.now();
             if (st._resScaleAngewandt === undefined) st._resScaleAngewandt = 1;
+            // TRACE-URTEIL .29 (foliageRes wanderte 0.6↔0.68): der PID-Jitter
+            // ließ die Stufe langsam OSZILLIEREN — jeder Wobble = Realloc +
+            // Destroyed-Submit + 46-Bundle-Re-Record. TOT-BAND: angewandt wird
+            // nur ein Sprung ≥ 2 Stufen (0.1) ODER die Rückkehr auf exakt 1.0;
+            // dazu die längere Verweil-Wand.
+            const sprung = Math.abs(snapped - st._resScaleAngewandt);
+            const zielVoll = Math.abs(snapped - 1) < 1e-9 && st._resScaleAngewandt !== 1;
             if (
-                snapped !== st._resScaleAngewandt &&
+                (sprung >= 0.0999 || zielVoll) &&
                 (!st._resScaleWechselAt || now - st._resScaleWechselAt > AnazhRealm.RES_SCALE_DWELL_MS)
             ) {
                 st._resScaleAngewandt = snapped;
@@ -94503,7 +94527,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.29";
+AnazhRealm.VERSION = "18.491.30";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -99196,6 +99220,7 @@ AnazhRealm.BERG_CULL = Object.freeze({
     testMsSichtbar: 400, // Re-Test-Kadenz sichtbarer Regionen (amortisiert)
     testMsVerdeckt: 150, // verdeckte testen HÄUFIGER → schneller Un-Cull hinterm Grat
     budgetJeFrame: 6, // max Berg-Tests je Frame (≤ 6×15 Gesetz-Proben ≈ sub-ms)
+    queryTakt: 10, // Occlusion-Query-Probe-Fenster: nur jeder N-te Frame fragt (Dawn-QuerySet-Cliff)
 });
 // V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
 // `setRenderScale`): die adaptive Render-Auflösung — die Zieleffizienz. Unter Last gibt die Pixel-
@@ -99205,7 +99230,7 @@ AnazhRealm.BERG_CULL = Object.freeze({
 // Framebuffer-Re-Alloc-Churn.
 AnazhRealm.PERF_RENDER_SCALE_MIN = 1.0; // V18.390 — die adaptive Render-Auflösung DEAKTIVIERT (Floor=1): das per-Last-`setPixelRatio` realloziert auf WebGPU den Framebuffer → SCHWARZES FLACKERN (Schöpfer-Befund), und Downscaling hilft einer DRAW-CALL-Last (CPU) kaum → nur Matsch. Die Auflösung führt jetzt allein der User-Slider. Adaptive Auflösung kehrt flicker-frei zurück, falls je nötig (Render-Target-Scaling statt setPixelRatio).
 AnazhRealm.PERF_RENDER_SCALE_STEP = 0.05; // diskrete Rast-Stufe (Vorlage setRenderScale) — kein ständiges Framebuffer-Neu-Allozieren
-AnazhRealm.RES_SCALE_DWELL_MS = 400; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden + Bundle-Re-Record amortisiert)
+AnazhRealm.RES_SCALE_DWELL_MS = 1200; // Verweil-Hysterese je Auflösungs-Stufe (Destroyed-Texture-Wand: Realloc gebunden + Bundle-Re-Record amortisiert)
 // GRENZZYKLUS-SCHNITT (18.07., vierter Schöpfer-Trace) — die zwei Radius-Wände:
 // Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (die eine Welle
 // des Zyklus setzt die Uhr zurück — der Radius jagt keinem kurzlebigen Kopfraum

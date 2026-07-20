@@ -50,7 +50,26 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.29 — DIE DECK-STREU: Vegetation VOR dem Bau — ⑤ fällt ganz)
+## Stand (V18.491.30 — DAS TRACE-URTEIL .29: Query-Takt + Stufen-Tot-Band — die zwei neuen Täter fallen)
+
+**20.07., Schöpfer-Trace .29 (avgFps 2.6 — SCHLECHTER; CPU-render 387 ms EWMA ·
+GPU echt 352 ms · Destroyed-Texture lebt · foliageRes oszilliert 0.6↔0.68):
+zwei meiner neuen Maschinen hatten das falsche Kostenmodell, beide geschnitten:**
+- ④ DER QUERY-TAKT: Occlusion-Queries JEDEN Frame zwingen den Vendor in
+  QuerySet-Bau/-Destroy + Resolve + Map PRO FRAME (der Dawn-Cliff — CPU-render
+  387 ms). Jetzt fragt nur jeder 10. Frame (BERG_CULL.queryTakt, Proxys
+  dazwischen unsichtbar = 0 Queries); das Verdikt hält (Objekt-Permanenz).
+- DIE STUFEN-OSZILLATION: der PID-Jitter ließ foliageRes 0.6↔0.68 wandern —
+  jeder Wobble = Depth-Realloc + Destroyed-Submit + 46-Bundle-Re-Record.
+  TOT-BAND: angewandt wird nur ein Sprung ≥ 2 Stufen (0.1) oder die Rückkehr
+  auf 1.0; Verweil-Wand 400→1200 ms. Steady-State realloziert damit NIE mehr.
+- EHRLICH: das 352-ms-GPU-Rätsel auf dem Schöpfer-Holz ist NICHT voll erklärt
+  (Kandidaten: Query-Stalls [jetzt getaktet] · Fern-Pass-Zweitkontext ·
+  19.7-M-Tris-Spitzen der p:-Bundles [7.8 M je Nexus-Bau — der nächste
+  benannte Wal: platzierte Architektur braucht LOD/Impostor]). Der nächste
+  Trace nach diesen zwei Schnitten ist der Richter.
+
+**Davor, V18.491.29 — DIE DECK-STREU: Vegetation VOR dem Bau — ⑤ fällt ganz**
 
 **20.07., Schöpfer: „das war zurückweichen, traue dich" — er hatte recht: das
 Streu-Gesetz lebt im STAMM (kein Worker), meine Barriere war falsch. DIE
