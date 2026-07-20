@@ -16073,6 +16073,12 @@ class AnazhRealm {
                       // stehendem Spieler): Mints/Tode + die Top-Wiederkehrer-Schlüssel —
                       // die Familie, die im Kreis stirbt und wiederaufersteht, beim Namen.
                       gruppenChurn: this._archGruppenChurnZensus(),
+                      // WELLE 5 — der BERG-SCHATTEN im Trace: Tests gesamt + verdeckte
+                      // Region-Frames (die Verdeckungs-Ersparnis wird messbar).
+                      bergCull: {
+                          tests: this._bergCullTests || 0,
+                          verdecktFrames: this._bergCullVerdeckt || 0,
+                      },
                       // (d) DER INGEST-TAKT (sechste Welle): freigegeben gesamt + Stau-
                       // Spitze — der Beweis, dass Konversions-Bursts nie mehr bündeln.
                       ingestTakt: {
@@ -68791,17 +68797,96 @@ class AnazhRealm {
         if (d > s.radius) s.radius = d;
     }
 
+    // ═══ DER BERG-SCHATTEN (WELLE 5 der Natur-Antwort — FELD-NATIVES Hi-Z) ═══
+    // Die Natur zahlt nichts fürs Verdeckte: ein Berg verdeckt den Wald dahinter.
+    // „Die Besten" rekonstruieren Verdeckung aus gerasterten Depth-Pyramiden (Two-
+    // Pass-HZB), weil ihre Welten Asset-Säcke sind — ANAZH IST EINE FUNKTION: die
+    // Welt fragt ihr EIGENES Gesetz. Konservativer Sichtlinien-Test Kamera →
+    // Kugel-OBERKANTE gegen `_terrainMacroSurfaceY` (drei Azimut-Linien: Mitte ±
+    // Radius — die Kugel-Breite ist gedeckt; nur wenn ALLE drei klar vom Terrain
+    // überragt werden, ist die Region verdeckt). Amortisiert (Verdikt gecacht,
+    // Re-Test alle testMs; Budget je Frame) + asymmetrische Kadenz: VERDECKTE
+    // Regionen testen HÄUFIGER (schneller Un-Cull hinterm Grat — und der Rest-Pop
+    // fällt in die sakkadische Maskierung der Welle-1-Bewegungs-Auflösung).
+    // Nahe Regionen (< minDist) nie verdeckt (Sicherheit). Headless byte-alt
+    // (Gates zählen Sichtbares) — der Hook __anazhBergCull=true öffnet der Linse.
+    _bergSchattenVerdeckt(s) {
+        const cam = this.state.camera;
+        if (!cam) return false;
+        const B = AnazhRealm.BERG_CULL;
+        const cx = cam.position.x,
+            cy = cam.position.y,
+            cz = cam.position.z;
+        const dx = s.center.x - cx,
+            dz = s.center.z - cz;
+        const distXZ = Math.hypot(dx, dz);
+        if (!(distXZ > B.minDist)) return false; // nahe Regionen nie verdeckt
+        const topY = s.center.y + s.radius;
+        const px = -dz / distXZ,
+            pz = dx / distXZ; // horizontale Senkrechte zur Sichtlinie
+        this._bergCullTests = (this._bergCullTests || 0) + 1; // Linse
+        for (let seit = -1; seit <= 1; seit++) {
+            let blockiert = false;
+            for (let i = 0; i < B.proben; i++) {
+                const t = B.tMin + ((B.tMax - B.tMin) * i) / (B.proben - 1);
+                const lx = cx + dx * t + px * seit * s.radius * t;
+                const lz = cz + dz * t + pz * seit * s.radius * t;
+                const ly = cy + (topY - cy) * t; // Sichtlinie zur Oberkante
+                if (this._terrainMacroSurfaceY(lx, lz, false) > ly + B.marge) {
+                    blockiert = true;
+                    break;
+                }
+            }
+            if (!blockiert) return false; // EINE freie Linie → sichtbar
+        }
+        return true;
+    }
+
     // Pro Frame (aus _loopFrustumCulling, das Frustum steht dort schon): die
     // Bundle-Sichtbarkeit IST das Region-Culling — _projectObject wertet `visible`
     // jeden Frame aus, auch für gecachte Bundles (Replay wird übersprungen).
+    // Frustum (billig, jeden Frame) → BERG-SCHATTEN (amortisiert, nur frustum-
+    // sichtbare Kugeln; 2-Treffer-Hysterese gegen Einzel-Proben-Flackern).
     _archRegionBundleCull() {
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         const fr = this._frustumCache;
         if (!fr) return;
+        const hook = typeof window !== "undefined" ? window.__anazhBergCull : undefined;
+        const bergAktiv =
+            hook !== false &&
+            (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull)) &&
+            !!this.state.camera;
+        const B = AnazhRealm.BERG_CULL;
+        const now = performance.now();
+        let budget = B.budgetJeFrame;
         for (const bg of map.values()) {
             const s = bg.userData.cullSphere;
-            bg.visible = !s || fr.intersectsSphere(s);
+            if (!s) {
+                bg.visible = true;
+                continue;
+            }
+            let vis = fr.intersectsSphere(s);
+            if (vis && bergAktiv) {
+                const u = bg.userData;
+                const testMs = u._bergVerdeckt ? B.testMsVerdeckt : B.testMsSichtbar;
+                if (budget > 0 && (!u._bergTestAt || now - u._bergTestAt > testMs)) {
+                    budget--;
+                    u._bergTestAt = now;
+                    if (this._bergSchattenVerdeckt(s)) {
+                        u._bergTreffer = (u._bergTreffer || 0) + 1;
+                        if (u._bergTreffer >= 2) u._bergVerdeckt = true; // Hysterese: 2 Verdikte
+                    } else {
+                        u._bergTreffer = 0;
+                        u._bergVerdeckt = false; // frei → SOFORT sichtbar
+                    }
+                }
+                if (u._bergVerdeckt) {
+                    vis = false;
+                    this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // Linse (Frame-Summen)
+                }
+            }
+            bg.visible = vis;
         }
     }
 
@@ -93821,7 +93906,7 @@ class AnazhRealm {
 // nach jedem Bump. Jetzt: eine Klassen-Konstante, von beiden Stellen
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
-AnazhRealm.VERSION = "18.491.24";
+AnazhRealm.VERSION = "18.491.25";
 // Foundry-Cache-LRU-Deckel: max distinkte (Art|Variante|LOD|Saison)-Gestalten im Speicher.
 // Groß genug für die sichtbare Ring-Menge (kein Rebuild-Thrashing), gedeckelt gegen das
 // „Cache hält alles ewig"-Leck der unendlichen Welt. Tunable (Schöpfer-GPU balanciert es).
@@ -98472,6 +98557,19 @@ AnazhRealm.PERF_CAM_MOTION_DECAY_MS = 170; // Abkling-Zeitkonstante: SOFORT tief
 // Rate (die Streaming-Heiligkeit bleibt: der Stau schrumpft immer, gedeckelt).
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
+// WELLE 5 — DER BERG-SCHATTEN (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer
+// Sichtlinien-Test Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz. Je voller/bergiger
+// die Welt, desto BILLIGER wird sie (das Natur-Paradox: der Wald verdeckt sich selbst).
+AnazhRealm.BERG_CULL = Object.freeze({
+    minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
+    proben: 5, // Höhen-Proben je Sichtlinie
+    tMin: 0.2, // Proben-Fenster entlang der Linie (Kamera 0 → Kugel 1):
+    tMax: 0.85, //   nie direkt an Kamera/Kugel (dort deckt minDist bzw. die Kugel selbst)
+    marge: 2, // m — das Terrain muss die Linie KLAR überragen (konservativ, nie knapp)
+    testMsSichtbar: 400, // Re-Test-Kadenz sichtbarer Regionen (amortisiert)
+    testMsVerdeckt: 150, // verdeckte testen HÄUFIGER → schneller Un-Cull hinterm Grat
+    budgetJeFrame: 6, // max Berg-Tests je Frame (≤ 6×15 Gesetz-Proben ≈ sub-ms)
+});
 // V18.387 (DAS NEUE KLEID — DIE ZIELEFFIZIENZ, Vorlage phytogenesis.js Z.2401-2405 `_rScale` +
 // `setRenderScale`): die adaptive Render-Auflösung — die Zieleffizienz. Unter Last gibt die Pixel-
 // Ratio nach (das billigste Look-Opfer, ~4× Fill-Ersparnis bei halber Auflösung), mit Kopfraum

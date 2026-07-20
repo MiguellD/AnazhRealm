@@ -50,7 +50,7 @@ Unterwürfigkeit; der Mut kommt aus der Verifikation, nie aus der Kleinheit.
 DEFINITION in CLAUDE.md — sie ist bindend." Ultracode-Arbeiter laufen als `champion`
 (.claude/agents/champion.md), nie als Standard-Arbeiter.
 
-## Stand (V18.491.24 — DIE NATUR-WELLEN: WAHRNEHMUNG + FPS-UNABHÄNGIGES STREAMING)
+## Stand (V18.491.25 — DIE NATUR-WELLEN: WAHRNEHMUNG · STREAMING · LOCH-DECKEL · BERG-SCHATTEN)
 
 **20.07., vierundzwanzigste Welle (Schöpfer: „lerne von der natur, wie ermöglicht
 unsere realität eine solche effizienz … komme zurück mit was du gelernt, wie kann man
@@ -96,21 +96,30 @@ GPU-Sicht-Ring · Hi-Z-Verdeckung] stehen ehrlich als benannte Wurzel-Chirurgie 
   (S3 „renderScale 1") · gate:leistungs-vertrag GRÜN · check GRÜN · lint 0 Err.
   Das fps-Urteil auf dem Schöpfer-Holz fällt der nächste Trace (camMotion an
   Bord im Flugschreiber).
-- OFFEN, ehrlich benannt (die drei tiefen Wurzel-Chirurgien der Natur-Antwort,
-  je Tage-Arbeit auf dem minified-WebGPU-Vendor — bewusst NICHT übers Knie
-  gebrochen [Schöpfer: „renne nicht wie ein irrer drauf los"]): (a) SCHATTIERUNGS-
-  PERSISTENZ — der Fern-Ring persistiert schon die GEOMETRIE (Refresh nur bei
-  Re-Anker), die Verschwendung ist die per-Frame-Fragment-Schattierung des
-  statischen Fernfelds; der Weg ist Textur-Raum-Cache/Impostor-Panorama (Anazh
-  hat den Impostor-Atlas schon — die Ausweitung ist der Schnitt). (b) HI-Z-
-  VERDECKUNG — Region-cullSpheres gegen die Vorframe-Tiefenpyramide (dichter =
-  billiger; braucht einen Compute-Downsample-Pass + Indirect-Draw-Gate, der
-  Feld-Cull ist das Fundament). (c) GPU-SICHT-MITTEL-RING — den Feld-Zeichner
-  (rechnet 40 km Höhen in EINEM Dispatch) nach innen ziehen, sodass der
-  sichtbare Mittel-Ring GPU-generiert statt gestreamt ist (Welle 2 lieferte den
-  tractablen Kern des Ziels: fps-unabhängiges Streaming). (d) ATMOSPHÄRE-ALS-
-  LOD — Tessellierung/Impostor-Schwelle aus der Streu-MTF ableiten; risikoreich
-  (das browser-getunte Look-System), darum nach Trace-Urteil.
+- DER LOCH-DECKEL (Schöpfer-Screenshots: „Reflexion von Sonne/Mond auf Wasser,
+  wo kein Wasser sein sollte" — UNGELADENE Chunk-Bereiche ließen die Welt-
+  Wasser-Plane samt Spekular durchscheinen): die Fern-Ring-Innenkante beginnt
+  jetzt DIREKT am Spieler (0.5·span) statt an der Ziel-Ring-Kante — der Ring
+  deckt JEDES Loch mit wahrem Terrain (Chunks decken ihn per Depth); die
+  Durchstich-Angst fällt mit der ausgeweiteten Naht-Formel (alle Schale-0-
+  Reihen in der Chunk-Ziel-Zone [deckZoneRad] = VOLLES Gesetz −0.3, ×1.35-
+  Blende auf Makro). gate:fern-ring WANDERTE — alle Bänder GRÜN (worst 0.0000).
+- DER BERG-SCHATTEN (Welle 5, feld-natives Hi-Z — „die Besten" rekonstruieren
+  Verdeckung aus Depth-Pyramiden, die FUNKTIONS-Welt fragt ihr EIGENES Gesetz):
+  konservativer Sichtlinien-Test Kamera→Kugel-Oberkante gegen
+  _terrainMacroSurfaceY (3 Azimut-Linien ±Radius, marge 2 m) am EINEN Region-
+  Cull-Chokepoint — amortisiert (Budget 6/Frame, Kadenz 400/150 ms), 2-Verdikt-
+  Hysterese, Un-Cull SOFORT, nahe Regionen (<140 m) nie verdeckt; der Rest-Pop
+  fällt in die sakkadische Maskierung der Welle-1-Auflösung (Natur-Synergie).
+  Linse: steadyState.bergCull. BEWIESEN (chirurgische Probe 8/8): hinterm Grat
+  verdeckt · frei/hoch/nah sichtbar · Selbsttest (Riesen-Marge kippt) ·
+  Hysterese · Sofort-Un-Cull · 0 Fehler. Dichter = billiger — das Natur-Paradox.
+- OFFEN, ehrlich benannt (die zwei Rest-Chirurgien): (a) SCHATTIERUNGS-
+  PERSISTENZ — Textur-Raum-Cache/Impostor-Panorama fürs statische Fernfeld
+  (der 120-fps-Kanal-Hebel). (b) GPU-SICHT-MITTEL-RING — den Feld-Zeichner
+  nach innen ziehen (visuelle Meshes GPU-generiert; Welle 2 lieferte den
+  tractablen Kern: fps-unabhängiges Streaming). (c) ATMOSPHÄRE-ALS-LOD nach
+  Trace-Urteil (browser-getuntes Look-System).
 
 **Davor, dreiundzwanzigste Welle (Schöpfer-Screenshots „Höhenverschiebung mit
 komischen Pixelmustern zwischen Ring und Chunks — da ist noch etwas unsauber in
